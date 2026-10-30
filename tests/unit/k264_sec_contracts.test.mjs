@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, worker, ROOT, WORKER } from './harness.mjs';
+import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
 /* العاملُ المختبَر قبل KIVO_264 (حزمةٌ أقدم عبر KIVO_WORKER) ⇒ تخطٍّ معلن — KIVO_K264_STRICT=1 يفرض التشغيل */
 const K264 = fs.readFileSync(WORKER, 'utf8').includes("'session-changed'") || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264' };
 const TODAY = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return o; })();
@@ -23,6 +24,7 @@ async function world(mode) {
   const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
+  await installIrshadFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   return { env, C, su };
 }
@@ -32,12 +34,15 @@ const revOf = (env, k) => { const r = env.DB.q('SELECT rev FROM revs WHERE k = ?
 /* ══ C1 ══ */
 for (const mode of ['legacy', 'enforce']) test('(C1) [' + mode + '] uid يخالف صاحبَ الجلسة ⇒ 409 session-changed بلا أيّ كتابة · المطابقُ والغائبُ وnull كما كانت', K264, async () => {
   const { env, C, su } = await world(mode);
-  const K = 'bsdept:tst_d1:bassam_irshad_v1';
+  const K = 'bsdept:tst_d1:bassam_options_v1';
+  const permissions = JSON.parse(truth(env, 'bassam_perms_v1'));
+  permissions.emps.tst_d1.tst_e_emp1['emps/data'] = ['view', 'add', 'edit', 'del'];
+  env.DB.db.prepare("UPDATE kv SET v=? WHERE k='bassam_perms_v1' AND seq=0").run(JSON.stringify(permissions));
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok, 'tst_emp1');
   const g = await C.api('/api/get?keys=' + encodeURIComponent(K), { cookie: emp.ck }); const it = g.j.keys[K]; assert.ok(it && it.v, 'يقرأ مفتاحَ نطاقه');
   const cur = JSON.parse(it.v);
-  const rec = (n) => ({ id: 'k264c' + n, y: TODAY.year, m: TODAY.month, d: TODAY.day, loc: 'TEST_ONLY موقع ' + n, shift: 'TST-A', lang: 'TEST_ONLY لغة', n: 10 + n, by: 'tst_e_emp1', test: 'TEST_ONLY' });
-  const body = (n, extra) => Object.assign({ set: { [K]: JSON.stringify({ reports: (cur.reports || []).concat([rec(n)]) }) }, del: [], base: { [K]: it.rev } }, extra || {});
+  const rec = (n) => 'TEST_ONLY k264c' + n;
+  const body = (n, extra) => Object.assign({ set: { [K]: JSON.stringify({ ...cur, type: (cur.type || []).concat(rec(n)) }) }, del: [], base: { [K]: it.rev } }, extra || {});
   const v0 = truth(env, K), r0 = revOf(env, K), aud0 = env.DB.q('SELECT COUNT(*) AS n FROM aud')[0].n, sec0 = env.DB.q('SELECT COUNT(*) AS n FROM sec')[0].n;
   /* جلسةُ هذا المتصفح الآن tst_emp1 والطابورُ بُني لحسابٍ آخر (tst_sup1 · ثم مدير النظام) */
   for (const other of ['tst_sup1', 'su', '']) {
@@ -57,10 +62,10 @@ for (const mode of ['legacy', 'enforce']) test('(C1) [' + mode + '] uid يخال
   assert.ok(truth(env, K).includes('k264c1'), 'كُتب');
   /* الغائبُ وnull ⇒ السلوكُ القديم (لا عقدَ جديدٌ على عميلٍ قديم) */
   const it2 = (await C.api('/api/get?keys=' + encodeURIComponent(K), { cookie: emp.ck })).j.keys[K]; const cur2 = JSON.parse(it2.v);
-  const b2 = { set: { [K]: JSON.stringify({ reports: cur2.reports.concat([rec(2)]) }) }, del: [], base: { [K]: it2.rev } };
+  const b2 = { set: { [K]: JSON.stringify({ ...cur2, type: cur2.type.concat(rec(2)) }) }, del: [], base: { [K]: it2.rev } };
   const ok2 = await C.api('/api/save', { method: 'POST', cookie: emp.ck, body: b2 }); assert.equal(ok2.status, 200); assert.ok(truth(env, K).includes('k264c2'), 'بلا uid يُكتب كما كان');
   const it3 = (await C.api('/api/get?keys=' + encodeURIComponent(K), { cookie: emp.ck })).j.keys[K]; const cur3 = JSON.parse(it3.v);
-  const ok3 = await C.api('/api/save', { method: 'POST', cookie: emp.ck, body: { set: { [K]: JSON.stringify({ reports: cur3.reports.concat([rec(3)]) }) }, del: [], base: { [K]: it3.rev }, uid: null } });
+  const ok3 = await C.api('/api/save', { method: 'POST', cookie: emp.ck, body: { set: { [K]: JSON.stringify({ ...cur3, type: cur3.type.concat(rec(3)) }) }, del: [], base: { [K]: it3.rev }, uid: null } });
   assert.equal(ok3.status, 200); assert.ok(truth(env, K).includes('k264c3'), 'uid:null = غائب');
   /* مديرُ النظام بجلسته: uid مطابق ⇒ 200 · مخالف ⇒ 409 */
   /* Use a live KV resource; notification configuration now has its own relational API. */

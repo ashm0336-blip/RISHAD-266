@@ -208,7 +208,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     var rows = await env.DB.prepare('SELECT k, seq, existed, rev, v FROM authz_snap WHERE snap = ?1 ORDER BY k, seq').bind(sid).all();
     /* Reject the WHOLE snapshot before nextRev or any write, including a
        tombstone for a retired key: mixed rollback must not partially succeed. */
-    if (((rows && rows.results) || []).some(function (r0) { return resName(r0.k) === K_DSTATS || nfLegacyKey(r0.k) || cuLegacyKey(r0.k); })) return json({ ok: 0, err: 'domain-moved' }, 400);
+    if (((rows && rows.results) || []).some(function (r0) { return resName(r0.k) === K_DSTATS || nfLegacyKey(r0.k) || cuLegacyKey(r0.k) || irLegacyKey(r0.k); })) return json({ ok: 0, err: 'domain-moved' }, 400);
     var byK = {}; ((rows && rows.results) || []).forEach(function (r0) { var o = byK[r0.k] = byK[r0.k] || { existed: r0.existed, v: '' }; if (r0.existed) o.v += r0.v; });
     /* الانجراف: مفتاحٌ تغيّر بعد العملية (رقمُ مراجعته ≠ رقمِ العملية) — الرجوعُ يمحو ما بعدها، فلا يُنفَّذ إلا بتأكيدٍ صريح (force) */
     var smMeta = parseJson(sm.meta, {}) || {}, opRev = +smMeta.rev || 0, drift = [], kk0;
@@ -408,7 +408,7 @@ async function getRoute(env, url, ss) {
   var moreG = wantAll.length > GET_MAX && wantAll.slice(GET_MAX).some(function (k8) { return want.indexOf(k8) === -1; });
   var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
-  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
+  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
   for (var gi = 0; gi < want.length; gi++) {
     var gk = want[gi];
     if (isDeviceKey(gk)) continue;
@@ -416,6 +416,7 @@ async function getRoute(env, url, ss) {
     if (!rdG && !canSee(AG, gk)) continue;
     if (nfLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/notifications' }; continue; }
     if (cuLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/custody' }; continue; }
+    if (irLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/irshad' }; continue; }
     if (resName(gk) === K_DSTATS) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/dstats' }; continue; }
     var gv = rdG ? valsG[gk] : null;      /* لا قيمةَ لمن لا يقرأ — الرقمُ وحدَه */
     if (rdG && gk === K_USERS && gv != null) gv = usersScopeOut(usersNoOut(stripPh(gv), AG), AG);   /* KIVO_259 · SR-1: ولا رقمَ وظيفيَّ لحساب غيره · الفحصُ العميق (R4): ولا حسابَ خارج نطاقه (054) */
@@ -536,6 +537,7 @@ export default {
       if (path === '/api/notifications' || path === '/api/notifications/act' || path === '/api/notifications/export') return await nfRoute(env, request, url, ss);
       if(path === '/api/backup/restore')return await rsRoute(env,request,url,ss);if(path === '/api/admin/dept-wipe'||path === '/api/admin/dept-delete')return await rsWipeRoute(env,request,url,ss);if(path === '/api/employees/transition')return await rsEmployeeRoute(env,request,url,ss);
       if (path === '/api/custody' || path === '/api/custody/act' || path === '/api/custody/export') return await cuRoute(env, request, url, ss);
+      if (path === '/api/irshad' || path === '/api/irshad/act' || path === '/api/irshad/export') return await irRoute(env, request, url, ss);
       if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);
 
@@ -544,6 +546,7 @@ export default {
 
       /* R196 · Phase 3 — نافذةُ الاستدراك (حالةٌ خادمية؛ قاعدةُ الرفض على الكتابات ظلٌّ فقط) */
       if (path === '/api/retro') {
+        var retroMismatch = sessUidMismatch(env, url, ss, path); if (retroMismatch) return retroMismatch;
         var AR = await actorOf(env, ss.uid);
         if (!AR) return json({ ok: 0, err: 'session' }, 401);
         if (request.method === 'POST') { var rlR = await rlHit(env, 'sv', AR.u.id, RL_SAVE); if (rlR) return tooMany(rlR); }
@@ -761,6 +764,8 @@ export default {
           var stZ = [
             env.DB.prepare('DELETE FROM notification_user_state'), env.DB.prepare('DELETE FROM notification_targets'), env.DB.prepare('DELETE FROM notification_messages'),
             env.DB.prepare('DELETE FROM notification_dedup'), env.DB.prepare('DELETE FROM notification_type_overrides'), env.DB.prepare('DELETE FROM notification_checkpoints'),
+            env.DB.prepare('DELETE FROM irshad_requests'), env.DB.prepare('DELETE FROM irshad_report_languages'), env.DB.prepare('DELETE FROM irshad_reports'), env.DB.prepare('DELETE FROM irshad_catalog_entries'), env.DB.prepare('DELETE FROM irshad_retro_windows'),
+            env.DB.prepare("DELETE FROM meta WHERE k GLOB 'irshad:*:presence*'"),
             env.DB.prepare('DELETE FROM custody_request_outputs'), env.DB.prepare('DELETE FROM custody_requests'), env.DB.prepare('DELETE FROM custody_movements'), env.DB.prepare('DELETE FROM custody_issues'), env.DB.prepare('DELETE FROM custody_items'),
             env.DB.prepare('DELETE FROM restore_operations'), env.DB.prepare('DELETE FROM restore_preimage'), env.DB.prepare('DELETE FROM restore_snapshot_manifest'),
             env.DB.prepare('DELETE FROM daily_stats_day_locks'), env.DB.prepare('DELETE FROM daily_stats_month_locks'), env.DB.prepare('DELETE FROM daily_stats_days'),
@@ -1018,6 +1023,7 @@ export default {
       var keys = await kvAll(env, 'kv');
       for (var retiredNf in keys) if (nfLegacyKey(retiredNf)) delete keys[retiredNf];
       for (var retiredCu in keys) if (cuLegacyKey(retiredCu)) delete keys[retiredCu];
+      for (var retiredIr in keys) if (irLegacyKey(retiredIr)) delete keys[retiredIr];
       for (var retiredDs in keys) if (resName(retiredDs) === K_DSTATS) delete keys[retiredDs];
       for (var dk in keys) if (isDeviceKey(dk)) delete keys[dk];
       if (keys[K_USERS] != null) keys[K_USERS] = stripPh(keys[K_USERS]);

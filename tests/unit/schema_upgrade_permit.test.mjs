@@ -25,7 +25,7 @@ async function fixture(n = 5) {
   return { W, DB, env: { DB } };
 }
 function permit(B, changes = {}) {
-  const value = { version: 1, from: 5, to: 7, migrations: B.W.KIVO_MIGRATIONS.slice(5).map(m => m.name), operationId: randomUUID(), expiresAt: Date.now() + 60000, ...changes };
+  const value = { version: 1, from: 5, to: B.W.KIVO_MIGRATIONS.length, migrations: B.W.KIVO_MIGRATIONS.slice(5).map(m => m.name), operationId: randomUUID(), expiresAt: Date.now() + 60000, ...changes };
   const raw = JSON.stringify(value);
   B.DB.db.prepare('INSERT INTO meta(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v').run(KEY, raw);
   return raw;
@@ -34,14 +34,14 @@ const state = DB => DB.q("SELECT name,sql FROM sqlite_master WHERE type='table' 
 const stamp = DB => DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v;
 const readPermit = DB => DB.q('SELECT v FROM meta WHERE k=?', KEY)[0]?.v;
 
-test('cold schema7 worker refuses a restored schema5 database without an operator permit before any writes', async () => {
+test('cold current worker refuses a restored schema5 database without an operator permit before any writes', async () => {
   const B = await fixture(), before = state(B.DB);
   await assert.rejects(B.W.initDb(B.env), /migration-permit/);
   assert.deepEqual(state(B.DB), before);
 });
 
 test('invalid, unknown-field, wrong-source, wrong-target, wrong-migration and expired permits fail without writes', async () => {
-  const variants = [{ version: 2 }, { extra: true }, { from: 6 }, { to: 8 }, { migrations: ['0007_atomic_restore'] }, { operationId: 'not-an-operation-id' }, { expiresAt: Date.now() - 1 }];
+  const variants = [{ version: 2 }, { extra: true }, { from: 6 }, { to: 9 }, { migrations: ['0007_atomic_restore'] }, { operationId: 'not-an-operation-id' }, { expiresAt: Date.now() - 1 }];
   for (const change of variants) {
     const B = await fixture(); permit(B, change); const before = state(B.DB);
     await assert.rejects(B.W.migrateDb(B.env), /migration-permit/);
@@ -75,25 +75,25 @@ test('permit expiry is rechecked at actual SQL execution time', async () => {
   assert.equal(delayed, true); assert.deepEqual(state(B.DB), before);
 });
 
-test('migration6 commits once, failed7 retains the permit and retry consumes it only with7', async () => {
+test('migration6 commits once, failed7 retains the permit and retry consumes it only with the final migration', async () => {
   const B = await fixture(), raw = permit(B);
   B.DB.failIf = sql => /^CREATE TABLE IF NOT EXISTS restore_operations/.test(sql);
   await assert.rejects(B.W.migrateDb(B.env), /injected failure/); B.DB.failIf = null;
   assert.equal(stamp(B.DB), '6'); assert.equal(readPermit(B.DB), raw);
   const revs = B.DB.q('SELECT * FROM revs');
   await B.W.migrateDb(B.env);
-  assert.equal(stamp(B.DB), '7'); assert.equal(readPermit(B.DB), undefined);
+  assert.equal(stamp(B.DB), '8'); assert.equal(readPermit(B.DB), undefined);
   assert.deepEqual(B.DB.q('SELECT * FROM revs'), revs);
 });
 
-test('a failure after permit deletion rolls back the deletion and every migration7 statement', async () => {
+test('a failure after permit deletion rolls back the deletion and every migration8 statement', async () => {
   const B = await fixture(), raw = permit(B);
-  B.DB.failIf = sql => /^INSERT OR IGNORE INTO d1_migrations/.test(sql) && stamp(B.DB) === '7';
+  B.DB.failIf = sql => /^INSERT OR IGNORE INTO d1_migrations/.test(sql) && stamp(B.DB) === '8';
   await assert.rejects(B.W.migrateDb(B.env), /injected failure/); B.DB.failIf = null;
-  assert.equal(stamp(B.DB), '6'); assert.equal(readPermit(B.DB), raw);
-  assert.equal(B.DB.q("SELECT COUNT(*) n FROM sqlite_master WHERE name='restore_operations'")[0].n, 0);
-  assert.equal(B.DB.q("SELECT COUNT(*) n FROM d1_migrations WHERE name='0007_atomic_restore'")[0].n, 0);
-  await B.W.migrateDb(B.env); assert.equal(stamp(B.DB), '7'); assert.equal(readPermit(B.DB), undefined);
+  assert.equal(stamp(B.DB), '7'); assert.equal(readPermit(B.DB), raw);
+  assert.equal(B.DB.q("SELECT COUNT(*) n FROM sqlite_master WHERE name='irshad_reports'")[0].n, 0);
+  assert.equal(B.DB.q("SELECT COUNT(*) n FROM d1_migrations WHERE name='0008_irshad'")[0].n, 0);
+  await B.W.migrateDb(B.env); assert.equal(stamp(B.DB), '8'); assert.equal(readPermit(B.DB), undefined);
 });
 
 test('a ledger membership change with unchanged row count is fenced inside the batch', async () => {
@@ -142,8 +142,8 @@ test('two concurrent migration attempts cannot consume one permit or apply a mig
   const B = await fixture(); permit(B);
   const outcomes = await Promise.allSettled([B.W.migrateDb(B.env), B.W.migrateDb(B.env)]);
   assert.ok(outcomes.some(r => r.status === 'fulfilled'));
-  assert.equal(stamp(B.DB), '7'); assert.equal(readPermit(B.DB), undefined);
-  assert.equal(B.DB.q("SELECT COUNT(*) n FROM d1_migrations WHERE name IN ('0006_custody','0007_atomic_restore')")[0].n, 2);
+  assert.equal(stamp(B.DB), '8'); assert.equal(readPermit(B.DB), undefined);
+  assert.equal(B.DB.q("SELECT COUNT(*) n FROM d1_migrations WHERE name IN ('0006_custody','0007_atomic_restore','0008_irshad')")[0].n, 3);
 });
 
 test('missing migration ledger does not make an existing application database empty', async () => {
@@ -154,7 +154,7 @@ test('missing migration ledger does not make an existing application database em
 
 test('genuinely empty initialization remains supported and a stale empty plan cannot modify a restored database', async () => {
   const W = await worker(), DB = new D1Shim();
-  await W.migrateDb({ DB }); assert.equal(stamp(DB), '7'); assert.equal(readPermit(DB), undefined);
+  await W.migrateDb({ DB }); assert.equal(stamp(DB), '8'); assert.equal(readPermit(DB), undefined);
   const W2 = await worker(), empty = new D1Shim(), batch = empty.batch.bind(empty); let restored = false, before;
   empty.batch = async statements => {
     if (!restored && statements.some(s => /^CREATE TABLE IF NOT EXISTS kv /.test(s.sql))) {

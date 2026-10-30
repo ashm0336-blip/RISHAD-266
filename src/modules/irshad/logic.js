@@ -1,4 +1,5 @@
-class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","award+irshad+seized","irshad+seized+tasks","dstats+irshad","irshad+seized"]) {
+class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","admin+profile+seized","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","award+irshad+seized","irshad+seized+tasks","dstats+irshad","irshad+seized"]) {
+  static _irSessions = new WeakMap();
   hParts(t) {
     const e = this._hfmt().formatToParts(t),
       r = (t) => +e.find((e) => e.type === t).value;
@@ -69,90 +70,291 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     "البنجابية",
     "السواحلية",
   ];
-  bsToast(t, e) {
-    try {
-      const r = e || "err";
-      let a = document.getElementById("bs-toast");
-      a || ((a = document.createElement("div")), (a.id = "bs-toast"), document.body.appendChild(a));
-      const i =
-        "ok" === r
-          ? ["var(--toast-ok)", "var(--bg-toast)", "var(--toast-ok-bd)", "✓"]
-          : "warn" === r
-            ? ["var(--toast-warn)", "var(--bg-toast)", "var(--toast-warn-bd)", "⚠"]
-            : ["var(--toast-err)", "var(--bg-toast)", "var(--toast-err-bd)", "⚠"];
-      (a.setAttribute(
-        "style",
-        "position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-8px);z-index:2147483000;max-width:min(560px,92vw);direction:rtl;text-align:right;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;line-height:1.9;color:" +
-          i[0] +
-          ";background:" +
-          i[1] +
-          ";border:1px solid " +
-          i[2] +
-          ";border-radius:14px;padding:12px 18px;box-shadow:var(--shadow-elevated);opacity:0;transition:opacity .22s ease, transform .22s ease;pointer-events:none",
-      ),
-        (a.textContent = i[3] + "  " + String(null == t ? "" : t)),
-        requestAnimationFrame(() => {
-          try {
-            ((a.style.opacity = "1"), (a.style.transform = "translateX(-50%) translateY(0)"));
-          } catch (t) {}
-        }),
-        clearTimeout(this._bsToastT),
-        (this._bsToastT = setTimeout(() => {
-          try {
-            ((a.style.opacity = "0"), (a.style.transform = "translateX(-50%) translateY(-8px)"));
-          } catch (t) {}
-        }, 4200)));
-    } catch (t) {}
+  _irContext() {
+    const boot = window.__BS_BOOT || {}, auth = KIVO.BassamAuth, user = auth && auth.user && auth.user();
+    const dept = KIVO.BassamDepts && KIVO.BassamDepts.active && KIVO.BassamDepts.active();
+    if (this._irGone || this._irSessionStopped || boot.srv !== 1 || boot.cf !== 1 || !boot.uid || !user || String(user.id) !== String(boot.uid) ||
+      (KIVO.__BS_SRV && KIVO.__BS_SRV.sesChanged && KIVO.__BS_SRV.sesChanged())) return null;
+    return { uid: String(boot.uid), dept: String(dept || ""), key: String(boot.uid) + "\0" + String(dept || "") };
   }
-  loadIrshad() {
+  _irSame(context) { const now = this._irContext(); return !!now && !!context && now.key === context.key; }
+  _irInteger(value) { return Number.isSafeInteger(value) && value >= 0; }
+  _irBase(value) { return !!value && ["epoch", "reports", "languages", "locations", "retro"].every(k => this._irInteger(value[k])); }
+  _irClone(value) { return JSON.parse(JSON.stringify(value)); }
+  componentDidMount() {
+    if (super.componentDidMount) super.componentDidMount();
+    this._irGone = false;
+    const context = this._irContext(), sessionKey = context && context.key + "\0" + (this.props?.solo || "");
+    const sessions = Component._irSessions.get(window), retained = sessions?.get(sessionKey);
+    if (retained) {
+      sessions.delete(sessionKey);
+      this._irDraftStamp = retained.stamp; this._irTickets = retained.tickets; this._irReasonRequired = retained.reasons;
+      this._irReads = new Map();
+      this.setState({ irDraft: retained.draft, irEditId: retained.editId, irYear: retained.year, irMonth: retained.month, irDay: retained.day, irSaveErrMsg: retained.message });
+    }
+    this._irOnRemote = event => {
+      const context = this._irContext(), keys = event?.detail?.keys || [], dept = context?.dept || this._irActorKey?.split("\0")[1] || "";
+      const affected = event?.type === "bassam:authz" || keys.some(value => {
+        const key = String(value);
+        if (/^bassam_(?:perms|auth_users|depts|gdepts|platform)_v1$/.test(key)) return true;
+        const parts = /^bsdept:([^:]+):(.+)$/.exec(key);
+        if (parts && parts[1] !== dept) return false;
+        const name = parts ? parts[2] : key;
+        return /^bassam_irshad(?:_langs|_locs|_retro)?_v1$/.test(name) || /^bassam_(?:employees|staffing|shift_options|grants|perm_tpls)_v[0-9]+$/.test(name);
+      });
+      if (!affected) return;
+      this._irReads = new Map();
+      this.setState({ irCatalogs: null, irCalendar: null, irRecords: null, irDashboard: null, irRetro: null, irCloudError: "", irRefresh: (this.state.irRefresh || 0) + 1 });
+    };
+    window.addEventListener("bassam:remote", this._irOnRemote);
+    window.addEventListener("bassam:authz", this._irOnRemote);
+  }
+  componentWillUnmount() {
+    const context = this._irDraftStamp?.context || this._irTickets?.values().next().value?.context || this._irContext();
+    if (context) {
+      let sessions = Component._irSessions.get(window); if (!sessions) { sessions = new Map(); Component._irSessions.set(window, sessions); }
+      const key = context.key + "\0" + (this.props?.solo || "");
+      if (JSON.stringify(this.state.irDraft) !== JSON.stringify(this.emptyDraft()) || this._irTickets?.size) {
+        sessions.set(key, { draft: this._irClone(this.state.irDraft), editId: this.state.irEditId, year: this.state.irYear, month: this.state.irMonth, day: this.state.irDay, stamp: this._irDraftStamp, tickets: this._irTickets || new Map(), reasons: this._irReasonRequired, message: this.state.irSaveErrMsg || "مسودتك باقية في هذه الجلسة؛ راجعها قبل الحفظ" });
+      } else sessions.delete(key);
+    }
+    this._irGone = true; this._irReads = new Map();
+    if (this._irOnRemote) {
+      window.removeEventListener("bassam:remote", this._irOnRemote);
+      window.removeEventListener("bassam:authz", this._irOnRemote);
+    }
+    if (super.componentWillUnmount) super.componentWillUnmount();
+  }
+  _irFailure(code, status) {
+    const text = {
+      session: "تغيّرت الجلسة — مسودتك باقية هنا؛ أعد تسجيل الدخول قبل المتابعة",
+      context: "تغيّرت الإدارة — ارجع إلى إدارة المسودة قبل إعادة المحاولة",
+      conflict: "تغيّرت البيانات على الخادم؛ مسودتك باقية، حدّث البيانات وراجعها قبل إعادة الاعتماد",
+      invalid: "لم يصل تأكيد كامل من الخادم؛ مسودتك باقية، أعد المحاولة بالطلب نفسه",
+      network: "تعذّر تأكيد العملية على الخادم؛ مسودتك باقية لإعادة المحاولة",
+      forbidden: "صلاحيتك لا تشمل هذا الإجراء",
+    };
+    return { ok: 0, err: code, status: status || 0, message: text[code] || "رفض الخادم العملية (" + code + ")؛ لم يُعرض نجاح" };
+  }
+  async _irRequest(path, options, context) {
+    if (!context || !this._irSame(context)) return this._irFailure("session", 401);
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20000);
     try {
-      return JSON.parse(localStorage.getItem("bassam_irshad_v1")) || { reports: [] };
-    } catch (t) {
-      return { reports: [] };
+      const response = await window.fetch(path, { credentials: "same-origin", cache: "no-store", ...options, signal: controller.signal });
+      if (!this._irSame(context)) return this._irFailure("session", 401);
+      if (response.status === 401) { this._irSessionStopped = true; return this._irFailure("session", 401); }
+      let body; try { body = await response.json(); } catch (e) { return this._irFailure("invalid", response.status); }
+      if (!this._irSame(context)) return this._irFailure("session", 401);
+      if (body?.err === "session-changed") { this._irSessionStopped = true; return this._irFailure("session", 409); }
+      if (!response.ok || !body || body.ok !== 1) return { ...this._irFailure(response.status === 403 ? "forbidden" : response.status === 409 ? "conflict" : String(body?.err || "invalid"), response.status), why: body?.why, keys: body?.keys, details: body?.details };
+      return { ok: 1, data: body };
+    } catch (e) { return this._irFailure(this._irSame(context) ? "network" : "session"); }
+    finally { clearTimeout(timer); }
+  }
+  async _irRead(view, options = {}, context = this._irContext()) {
+    if (!context) return this._irFailure("session", 401);
+    const query = new URLSearchParams({ uid: context.uid, dept: context.dept, view });
+    Object.keys(options).forEach(k => { if (options[k] !== undefined && options[k] !== null) query.set(k, String(options[k])); });
+    const result = await this._irRequest("/api/irshad?" + query, { method: "GET" }, context);
+    if (!result.ok) return result;
+    const data = result.data;
+    if (data.dept !== context.dept || data.view !== view || !this._irBase(data.base) || !data.clock || !["y", "m", "d"].every(k => Number.isSafeInteger(data.clock[k]))) return this._irFailure("invalid");
+    if (view === "catalogs" && (!data.catalogs || ["languages", "locations"].some(k => !data.catalogs[k] || typeof data.catalogs[k].present !== "boolean" || !Array.isArray(data.catalogs[k].values) || data.catalogs[k].values.some(v => typeof v !== "string")))) return this._irFailure("invalid");
+    const metrics = value => value && ["trans", "bro", "pros", "pol", "ben"].every(k => typeof value[k] === "number" && Number.isFinite(value[k])) && this._irInteger(value.reports);
+    if (view === "records" && (!Array.isArray(data.rows) || data.rows.some(row => !row || typeof row.id !== "string" || row.langs != null && (!Array.isArray(row.langs) || row.langs.some(v => !v || typeof v !== "object"))) || data.rows.length > Number(options.limit || 100) || !this._irInteger(data.total) || !this._irInteger(data.monthTotal) || !Number.isSafeInteger(data.page) || data.page < 1 || ![data.next, data.prev].every(v => v == null || typeof v === "string"))) return this._irFailure("invalid");
+    if (view === "calendar" && (!Array.isArray(data.months) || !Array.isArray(data.days) || [...data.months, ...data.days].some(row => !row || !this._irInteger(row.n)) || !this._irInteger(data.total) || !this._irInteger(data.yearTotal) || !metrics(data.monthTotals))) return this._irFailure("invalid");
+    if (view === "dashboard") {
+      const dash = data.dashboard;
+      if (!dash || !dash.available || !Array.isArray(dash.available.years) || !Array.isArray(dash.available.months) || !this._irInteger(dash.available.total) || !["series", "previousSeries", "heat", "languages", "locations", "shifts", "shiftSeries", "locationSeries", "employees"].every(k => Array.isArray(dash[k])) || !metrics(dash.totals) || !metrics(dash.previous) || !dash.summary || !Array.isArray(dash.summary.rows) || !metrics(dash.summary.totals)) return this._irFailure("invalid");
+    }
+    return { ok: 1, data, contextKey: context.key };
+  }
+  _irRecordQuery() {
+    return { year: this.state.irYear, month: this.state.irMonth, shift: this.state.irLgShift === "all" ? undefined : this.state.irLgShift,
+      loc: this.state.irLgLoc === "all" ? undefined : this.state.irLgLoc, q: (this.state.irLgSearch || "").trim(),
+      limit: Math.min(200, this.state.irLedgerPerPage || 200), page: this.state.irLedgerPerPage === 0 ? 1 : this.state.irLedgerPage || 1 };
+  }
+  _irDashboardQuery() {
+    const t = this.state, today = this.hToday(), available = t.irDashboard?.dashboard?.available || { years: [today.y], months: [] };
+    const years = available.years.length ? available.years : [today.y], all = t.irDashYear == null || String(t.irDashYear) === "all";
+    const year = all || !years.includes(+t.irDashYear) ? years[0] : +t.irDashYear;
+    const months = available.months.filter(p => p.y === year).map(p => p.m).sort((a, b) => a - b);
+    let month = all ? "all" : t.irDashMonth == null ? "" : String(t.irDashMonth);
+    if (!all && month !== "all" && !months.includes(+month)) month = months.length ? String(months[months.length - 1]) : "all";
+    const query = { mode: t.irDashMode === "custom" ? "custom" : all ? "all" : "month", year, month, bucket: all || month === "all" ? "month" : "day", heatYear: year, sumQ: (t.irDashSumQ || "").trim() };
+    if (query.mode === "custom") {
+      const parse = value => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]).getTime() : null; };
+      const current = this.hGreg(today.y, today.m, today.d), end = new Date(current.getFullYear(), current.getMonth(), current.getDate()).getTime();
+      let from = parse(t.irDashFrom), to = parse(t.irDashTo); if (from == null) from = end - 29 * 864e5; if (to == null) to = end;
+      if (from > to) [from, to] = [to, from];
+      const date = value => { const h = this.hParts(new Date(value)); return h.y + "-" + h.m + "-" + h.d; };
+      const length = Math.round((to - from) / 864e5) + 1;
+      Object.assign(query, { from: date(from), to: date(to), previousFrom: date(from - length * 864e5), previousTo: date(from - 864e5), heatYear: this.hParts(new Date(to)).y, bucket: length <= 62 ? "day" : "month" });
+    }
+    return query;
+  }
+  async _irCollect(options, context = this._irContext()) {
+    let rows = [], cursor = "", base = null, total = null;
+    const seen = new Set();
+    do {
+      const result = await this._irRead("records", { ...options, limit: 200, page: cursor ? undefined : 1, cursor }, context);
+      if (!result.ok) return result;
+      const page = result.data;
+      if (base && JSON.stringify(base) !== JSON.stringify(page.base) || total !== null && total !== page.total) return this._irFailure("conflict", 409);
+      base = page.base; total = page.total; rows.push(...page.rows);
+      if (rows.length > total || page.next && seen.has(page.next)) return this._irFailure("invalid");
+      cursor = page.next || ""; if (cursor) seen.add(cursor);
+      if (!cursor && rows.length !== total) return this._irFailure("invalid");
+    } while (cursor);
+    return { ok: 1, rows, base, total, contextKey: context.key };
+  }
+  _irEnsure(view, options) {
+    const context = this._irContext();
+    if (!context) return;
+    this._irReads = this._irReads || new Map();
+    if (this._irActorKey !== context.key) {
+      this._irActorKey = context.key; this._irReads.clear();
+      this.state.irCalendar = null; this.state.irRecords = null; this.state.irCatalogs = null; this.state.irDashboard = null;
+    }
+    const signature = JSON.stringify([context.key, options]), previous = this._irReads.get(view);
+    if (previous && previous.signature === signature && (!previous.done || Date.now() - previous.at < 30000)) return;
+    const token = { signature, at: Date.now() }; this._irReads.set(view, token);
+    setTimeout(async () => {
+      const result = view === "records" && this.state.irLedgerPerPage === 0 ? await this._irCollect(options, context) : await this._irRead(view, options, context);
+      if (this._irReads.get(view) !== token || !this._irSame(context)) return;
+      if (!result.ok) { token.failed = true; this.setState({ irCloudError: result.message, irSaveErrMsg: result.message }); return; }
+      let data = result.data;
+      if (view === "records" && !data) data = { dept: context.dept, rows: result.rows, total: result.total, monthTotal: (this.state.irCalendar || {}).monthTotals?.reports ?? result.total, page: 1, pageSize: result.total, next: null, prev: null, base: result.base };
+      token.done = true;
+      data._contextKey = context.key;
+      this.setState({ ["ir" + view.charAt(0).toUpperCase() + view.slice(1)]: data, irCloudError: Array.from(this._irReads.values()).some(t => t.failed) ? this.state.irCloudError : "" });
+    }, 0);
+  }
+  _irRefresh() { this._irReads = new Map(); this.setState({ irRefresh: (this.state.irRefresh || 0) + 1 }); }
+  _irStampDraft(base, key) {
+    if (!this._irDraftStamp) {
+      const context = this._irContext(), source = base || this.state.irCalendar?.base;
+      const captured = key || this.state.irCalendar?._contextKey;
+      if (context && this._irBase(source)) this._irDraftStamp = { context: captured ? { ...context, key: captured } : context, base: this._irClone(source) };
     }
   }
-  saveIrshad(t) {
-    if (this._irCanWrite())
-      try {
-        localStorage.setItem("bassam_irshad_v1", JSON.stringify(t));
-      } catch (t) {}
-    else this.permDeny();
+  _irStampCatalog(kind) {
+    this._irCatalogStamps = this._irCatalogStamps || new Map();
+    const source = this.state.irCatalogs, context = this._irContext();
+    if (!this._irCatalogStamps.has(kind) && context && source && this._irBase(source.base)) this._irCatalogStamps.set(kind, { context: { ...context, key: source._contextKey || context.key }, base: this._irClone(source.base) });
+  }
+  _irEnsureRetro() {
+    const context = this._irContext(); if (!context) return;
+    this._irReads = this._irReads || new Map();
+    const prior = this._irReads?.get("retro"); if (prior && prior.context === context.key) return;
+    const token = { context: context.key }; this._irReads.set("retro", token);
+    setTimeout(async () => {
+      const query = new URLSearchParams({ uid: context.uid, dept: context.dept, res: "irshad" });
+      const result = await this._irRequest("/api/retro?" + query, { method: "GET" }, context);
+      if (this._irReads.get("retro") !== token || !this._irSame(context)) return;
+      if (!result.ok || !Array.isArray(result.data.windows)) { this.setState({ irCloudError: result.message || this._irFailure("invalid").message }); return; }
+      this.setState({ irRetro: result.data });
+    }, 0);
+  }
+  async _irRetroToggle(scope) {
+    if (!this.PC("approve")) return this.permDeny();
+    const context = this._irContext(); if (!context) { this.bsToast(this._irFailure("session").message); return; }
+    if (this._irRetroBusy) return;
+    this._irRetroBusy = true;
+    try {
+    const state = this.state.irRetro;
+    if (!state) { this.bsToast("انتظر قراءة نافذة الاستدراك من الخادم ثم أعد المحاولة"); this._irEnsureRetro(); return; }
+    const activeWindow = state.windows.find(w => w && !w.closedAt && w.until > Date.now() && w.scope?.y === scope.y && w.scope?.m === scope.m && (w.scope.d == null ? scope.d == null : w.scope.d === scope.d));
+    const body = { dept: context.dept, res: "irshad", act: activeWindow ? "close" : "open", ...(activeWindow ? { id: activeWindow.id } : { scope }) };
+    if (!activeWindow) {
+      const srv = KIVO.__BS_SRV;
+      if (!srv || typeof srv.askReason !== "function") { this.bsToast("تعذّر طلب سبب الاستدراك؛ لم تُفتح النافذة"); return; }
+      body.reason = await new Promise(resolve => srv.askReason("bsdept:" + context.dept + ":bassam_irshad_v1", ["ir.rec.retro.open"], resolve));
+      if (!body.reason || !this._irSame(context)) return;
+    }
+    const result = await this._irRequest("/api/retro?uid=" + encodeURIComponent(context.uid), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, context);
+    this.setState({ irRetro: null });
+    if (!result.ok || !result.data.window?.id) { this.bsToast(result.message || this._irFailure("invalid").message); this._irReads?.delete("retro"); this._irEnsureRetro(); return; }
+    this._irRefresh();
+    } finally { this._irRetroBusy = false; }
+  }
+  async _irMutate(op, fields, expected) {
+    const context = this._irContext();
+    if (!context) return this._irFailure("session", 401);
+    this._irTickets = this._irTickets || new Map();
+    const signature = JSON.stringify([context.key, op, fields]), intent = JSON.stringify([context.key, op, fields.id || fields.kind || (op === "delete-month" ? [fields.year, fields.month] : "")]);
+    const prior = Array.from(this._irTickets.values()).find(ticket => ticket.intent === intent);
+    let ticket = prior;
+    if (!ticket) {
+      const source = op === "catalog-replace" ? this.state.irCatalogs : this.state.irCalendar || this.state.irRecords || this.state.irDashboard;
+      if (!source || source.dept !== context.dept || source._contextKey && source._contextKey !== context.key) return this._irFailure("context");
+      if (["create", "edit"].includes(op) && !this._irDraftStamp) this._irStampDraft(source.base, source._contextKey);
+      const draft = ["create", "edit"].includes(op) ? this._irDraftStamp : op === "catalog-replace" ? this._irCatalogStamps?.get(fields.kind) : null;
+      if (draft && !this._irSame(draft.context)) return this._irFailure("context");
+      const base = draft ? draft.base : source?.base;
+      if (!this._irBase(base)) return this._irFailure("invalid");
+      let reason;
+      const required = this._irReasonRequired?.get(signature);
+      if (required) {
+        const srv = KIVO.__BS_SRV;
+        if (!srv || typeof srv.askReason !== "function") return this._irFailure("reason");
+        this._irAsking = this._irAsking || new Set();
+        if (this._irAsking.has(signature)) return this._irFailure("pending");
+        this._irAsking.add(signature);
+        try { reason = await new Promise(resolve => srv.askReason("bsdept:" + context.dept + ":bassam_irshad_v1", required, resolve)); }
+        finally { this._irAsking.delete(signature); }
+        if (!reason) return this._irFailure("cancelled");
+        if (!this._irSame(context)) return this._irFailure("session", 401);
+      }
+      if (!window.crypto || !window.crypto.getRandomValues) return this._irFailure("invalid");
+      const bytes = new Uint8Array(20); window.crypto.getRandomValues(bytes);
+      const requestId = "ir-" + Array.from(bytes, n => n.toString(16).padStart(2, "0")).join("");
+      const body = { uid: context.uid, dept: context.dept, requestId, base: this._irClone(base), op, ...this._irClone(fields) };
+      if (reason) body.reason = String(reason);
+      ticket = { context, requestId, op, signature, intent, body: JSON.stringify(body), expected, busy: false };
+      this._irTickets.set(signature, ticket);
+    }
+    if (!this._irSame(ticket.context)) return this._irFailure("context");
+    if (ticket.busy) return this._irFailure("pending");
+    ticket.busy = true;
+    try {
+      const result = await this._irRequest("/api/irshad/act", { method: "POST", headers: { "Content-Type": "application/json" }, body: ticket.body }, ticket.context);
+      if (!result.ok) {
+        if (result.status >= 400 && result.status < 500 && result.status !== 429) this._irTickets.delete(ticket.signature);
+        if (result.status === 409) this._irConflict = true;
+        if (result.status === 403 && result.why === "reason") {
+          this._irReasonRequired = this._irReasonRequired || new Map();
+          this._irReasonRequired.set(signature, Array.isArray(result.keys) ? result.keys : []);
+          result.message = "هذا الإجراء يتطلب سببًا؛ مسودتك باقية، اضغط الحفظ لإدخال السبب";
+        }
+        return result;
+      }
+      const ack = result.data;
+      if (ack.requestId !== ticket.requestId || ack.op !== op || !this._irInteger(ack.rev) || !this._irInteger(ack.n) || ticket.expected !== undefined && ack.n !== ticket.expected || !this._irBase(ack.base) || op === "create" && (typeof ack.id !== "string" || !ack.id)) return this._irFailure("invalid");
+      const sent = JSON.parse(ticket.body), affected = op === "catalog-replace" ? sent.kind : "reports";
+      if (ack.rev < sent.base[affected] || Object.keys(sent.base).some(k => ack.base[k] !== (k === affected ? ack.rev : sent.base[k]))) return this._irFailure("invalid");
+      this._irTickets.delete(ticket.signature); this._irRefresh();
+      if (op === "catalog-replace") this._irCatalogStamps?.delete(sent.kind);
+      return { ok: 1, receipt: ack, sameInput: ticket.signature === signature, submitted: sent };
+    } finally { ticket.busy = false; }
+  }
+  async _irApply(op, fields, expected, confirmed) {
+    const result = await this._irMutate(op, fields, expected);
+    if (this._irGone) return result;
+    if (!result.ok) { this.setState({ irSaveErrMsg: result.message, irCloudError: this._irConflict ? result.message : this.state.irCloudError }); this.bsToast(result.message); return result; }
+    if (confirmed) confirmed(result.receipt, result);
+    return result;
   }
   benOf(t) {
     return (t.langs || []).reduce((t, e) => t + (e.count || 0), 0) + (t.bro || 0) + (t.pros || 0) + (t.pol || 0);
   }
   loadIrshadLangs() {
-    try {
-      const t = localStorage.getItem("bassam_irshad_langs_v1");
-      if (t) {
-        const e = JSON.parse(t);
-        if (Array.isArray(e) && e.length) return e;
-      }
-    } catch (t) {}
+    const values = this.state.irCatalogs?.catalogs?.languages?.values;
+    if (Array.isArray(values) && values.length) return values.slice();
     return this.LANGS.slice();
   }
-  saveIrshadLangs(t) {
-    if (this._irCanWrite())
-      try {
-        localStorage.setItem("bassam_irshad_langs_v1", JSON.stringify(t));
-      } catch (t) {}
-    else this.permDeny();
-  }
   loadIrshadLocs() {
-    try {
-      const t = localStorage.getItem("bassam_irshad_locs_v1"),
-        e = t ? JSON.parse(t) : [];
-      return Array.isArray(e) ? e : [];
-    } catch (t) {
-      return [];
-    }
-  }
-  saveIrshadLocs(t) {
-    if (this._irCanWrite())
-      try {
-        localStorage.setItem("bassam_irshad_locs_v1", JSON.stringify(t));
-      } catch (t) {}
-    else this.permDeny();
+    return (this.state.irCatalogs?.catalogs?.locations?.values || []).slice();
   }
   loadStaffingIr() {
     try {
@@ -190,11 +392,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irYear: t.y,
       irMonth: t.m,
       irDay: t.d,
-      irOpenMonths: {},
-      irOpenDays: {},
       irDraft: this.emptyDraft(),
       irEditId: null,
       irSaveErrMsg: "",
+      irCloudError: "",
+      irCalendar: null,
+      irRecords: null,
+      irCatalogs: null,
+      irDashboard: null,
       irLedgerOpen: !1,
       irLedgerPage: 1,
       irLedgerPerPage: 10,
@@ -311,286 +516,88 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         irGoRecords: () => (this._bsHT("records"), this.setState({ irTab: "records" })),
         ...t,
       };
+    this._irEnsure("catalogs", {});
+    if (g) {
+      this._irEnsure("calendar", { year: e.irYear, month: e.irMonth });
+      this._irEnsure("records", this._irRecordQuery());
+      this._irEnsureRetro();
+    }
+    if (d) this._irEnsure("dashboard", this._irDashboardQuery());
+    const needed = g ? ["catalogs", "calendar", "records"] : ["catalogs", "dashboard"];
+    const commonBase = e.irCatalogs?.base;
+    const mixed = needed.every(k => this._irReads?.get(k)?.done) && needed.some(k => {
+      const read = e["ir" + k.charAt(0).toUpperCase() + k.slice(1)];
+      return !read || Object.keys(commonBase || {}).some(key => read.base[key] !== commonBase[key]);
+    });
+    const pending = mixed || needed.some(k => !this._irReads?.get(k)?.done);
+    c.irCloudBusy = pending && !e.irCloudError;
+    c.irCloudError = e.irCloudError || (mixed ? "تغيّرت البيانات أثناء القراءة؛ أعد تحديث النتائج للحصول على نسخة متسقة" : !this._irContext() ? this._irFailure("session").message : "");
+    c.irCloudBusy = pending && !c.irCloudError;
+    c.irCloudNotice = pending || !!c.irCloudError;
+    c.irCloudRetryLabel = this._irConflict ? "تحديث البيانات ومراجعة المسودة" : "إعادة المحاولة";
+    c.irCloudRetry = () => { if (this._irConflict) { this._irDraftStamp = null; this._irConflict = false; } this.setState({ irCloudError: "" }); this._irRefresh(); };
+    c.irOnDash = d && !pending;
+    c.irOnRecords = g && !pending;
     return (g && Object.assign(c, this._recordsCalVals()), d && Object.assign(c, this._dashVals()), c);
   }
   _dashVals() {
-    const t = this.state,
-      e = this.hToday(),
-      r = this.loadIrshad().reports || [],
-      a = 864e5,
-      i = this.MONTHS,
+    const t = this.state, e = this.hToday(), a = 864e5, i = this.MONTHS,
+      dash = t.irDashboard?.dashboard || {}, available = dash.available || { total: 0, years: [], months: [] },
+      totals = dash.totals || {}, previous = dash.previous || {},
       s = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
-      n = (t) => (KIVO.bsPct ? KIVO.bsPct(t) : String(Math.round(t || 0))),
-      o = (t) => Math.round(t || 0).toLocaleString("en-US"),
-      l = (t) => o(t).replace(/[0-9]/g, (t) => "٠١٢٣٤٥٦٧٨٩"[+t]),
-      h = (t) =>
-        (t = Math.round(t || 0)) >= 1e6
-          ? (t / 1e6).toFixed(1).replace(/\.0$/, "") + " مليون"
-          : t >= 1e4
-            ? Math.round(t / 1e3) + " ألف"
-            : t >= 1e3
-              ? (t / 1e3).toFixed(1).replace(/\.0$/, "") + " ألف"
-              : o(t),
-      d = (t) => (1 === t ? "يوم واحد" : 2 === t ? "يومين" : t >= 3 && t <= 10 ? t + " أيام" : KIVO.BassamCount(t, "يوم") + "");
-    this.__hpc = this.__hpc || {};
-    const g = (t) => (this.__hpc[t] || (this.__hpc[t] = this.hParts(new Date(t))), this.__hpc[t]),
-      c = (t) => new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime(),
-      p = (t) => {
-        const e = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t || "");
-        return e ? new Date(+e[1], +e[2] - 1, +e[3]).getTime() : null;
-      },
-      m = (t) => {
-        const e = new Date(t),
-          r = (t) => (t < 10 ? "0" + t : "" + t);
-        return e.getFullYear() + "-" + r(e.getMonth() + 1) + "-" + r(e.getDate());
-      },
-      u = (t) => t.d + " " + i[t.m - 1] + " " + t.y + " هـ",
-      f = (t) => (t.langs || []).reduce((t, e) => t + (e.count || 0), 0),
-      b = (t) => this.benOf(t),
-      S = r,
-      x = (t) => 1e4 * t.y + 100 * t.m + t.d,
-      y = (t) => 100 * t.y + t.m,
-      D = {},
-      L = {};
-    r.forEach((t) => {
-      t.y && ((D[t.y] = 1), (L[t.y + "-" + t.m] = 1));
-    });
-    let w = Object.keys(D)
-      .map(Number)
-      .sort((t, e) => e - t);
-    w.length || (w = [e.y]);
-    const v = null == t.irDashYear || "all" === String(t.irDashYear);
-    let P = v ? w[0] : +t.irDashYear;
-    w.indexOf(P) < 0 && (P = w[0]);
-    const M = [];
-    for (let t = 1; t <= 12; t++) L[P + "-" + t] && M.push(t);
-    let O = v ? "all" : null == t.irDashMonth ? "" : String(t.irDashMonth);
-    !v && "all" !== O && M.indexOf(+O) < 0 && (O = M.length ? String(M[M.length - 1]) : "all");
-    const E = (t, e) => this.hMonthDays(t, e),
-      k = (t, r) => (t > e.y ? 0 : t < e.y || r < e.m ? E(t, r) : r === e.m ? e.d : 0),
-      F = "custom" === t.irDashMode ? "custom" : v ? "all" : "month",
-      C = c(this.hGreg(e.y, e.m, e.d));
-    let T = p(t.irDashFrom),
-      _ = p(t.irDashTo);
-    if ("custom" === F && (null == T && (T = C - 29 * a), null == _ && (_ = C), T > _)) {
-      const t = T;
-      ((T = _), (_ = t));
-    }
-    let I = [],
-      N = [],
-      A = [],
-      B = !0,
-      Y = "",
-      H = "",
-      V = 0,
-      G = P;
-    if ("all" === F) {
-      ((I = S.slice()), (B = !1));
-      const t = {};
-      (r.forEach((e) => {
-        t[y(e)] = { y: e.y, m: e.m };
-      }),
-        (A = Object.keys(t)
-          .map(Number)
-          .sort((t, e) => t - e)
-          .map((e) => ({ k: e, lab: i[t[e].m - 1], full: i[t[e].m - 1] + " " + t[e].y + " هـ" }))),
-        (Y = "كل الفترة"));
-      let e = null;
-      if (
-        (r.forEach((t) => {
-          const r = x(t);
-          (null == e || r < e) && (e = r);
-        }),
-        null != e)
-      ) {
-        const t = Math.floor(e / 1e4),
-          r = Math.floor(e / 100) % 100,
-          i = e % 100;
-        try {
-          V = Math.round((C - c(this.hGreg(t, r, i))) / a) + 1;
-        } catch (t) {
-          V = 30 * A.length;
-        }
-      }
-      G = w[0];
-    } else if ("custom" === F) {
-      const t = g(T),
-        e = g(_),
-        r = 1e4 * t.y + 100 * t.m + t.d,
-        s = 1e4 * e.y + 100 * e.m + e.d;
-      if (
-        ((I = S.filter((t) => {
-          const e = x(t);
-          return e >= r && e <= s;
-        })),
-        (V = Math.round((_ - T) / a) + 1),
-        (B = V <= 62),
-        B)
-      )
-        for (let t = T; t <= _; t += a) {
-          const e = g(t);
-          A.push({ k: 1e4 * e.y + 100 * e.m + e.d, lab: String(e.d), full: u(e) });
-        }
-      else {
-        const t = {};
-        for (let e = T; e <= _; e += a) {
-          const r = g(e);
-          t[100 * r.y + r.m] = r;
-        }
-        A = Object.keys(t)
-          .map(Number)
-          .sort((t, e) => t - e)
-          .map((e) => ({ k: e, lab: i[t[e].m - 1], full: i[t[e].m - 1] + " " + t[e].y + " هـ" }));
-      }
-      Y = u(t) + " ← " + u(e);
-      const n = T - a,
-        o = g(T - V * a),
-        l = g(n),
-        h = 1e4 * o.y + 100 * o.m + o.d,
-        d = 1e4 * l.y + 100 * l.m + l.d;
-      ((N = S.filter((t) => {
-        const e = x(t);
-        return e >= h && e <= d;
-      })),
-        (H = u(o) + " ← " + u(l)),
-        (G = e.y));
-    } else if ("all" === O) {
-      ((I = S.filter((t) => t.y === P)), (B = !1));
-      for (let t = 1; t <= 12; t++) k(P, t) > 0 && A.push({ k: 100 * P + t, lab: i[t - 1], full: i[t - 1] + " " + P + " هـ" });
-      ((V = A.reduce((t, e) => t + k(P, e.k % 100), 0)), (Y = "كل أشهر " + P + " هـ"));
-      const t = P === e.y;
-      let r = D[P - 1] ? S.filter((t) => t.y === P - 1) : [];
-      (t && (r = r.filter((t) => t.m < e.m || (t.m === e.m && t.d <= e.d))),
-        (N = r),
-        (H = t ? "نفس الفترة من " + (P - 1) + " هـ" : "سنة " + (P - 1) + " هـ"));
+      n = v => KIVO.bsPct ? KIVO.bsPct(v) : String(Math.round(v || 0)),
+      o = v => Math.round(v || 0).toLocaleString("en-US"),
+      l = v => o(v).replace(/[0-9]/g, v => "٠١٢٣٤٥٦٧٨٩"[+v]),
+      h = v => { v = Math.round(v || 0); return v >= 1e6 ? (v / 1e6).toFixed(1).replace(/\.0$/, "") + " مليون" : v >= 1e4 ? Math.round(v / 1e3) + " ألف" : v >= 1e3 ? (v / 1e3).toFixed(1).replace(/\.0$/, "") + " ألف" : o(v); },
+      d = v => v === 1 ? "يوم واحد" : v === 2 ? "يومين" : v >= 3 && v <= 10 ? v + " أيام" : KIVO.BassamCount(v, "يوم") + "",
+      g = v => this.hParts(new Date(v)),
+      c = v => new Date(v.getFullYear(), v.getMonth(), v.getDate()).getTime(),
+      p = v => { const hit = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ""); return hit ? new Date(+hit[1], +hit[2] - 1, +hit[3]).getTime() : null; },
+      m = v => { const date = new Date(v), pad = n => String(n).padStart(2, "0"); return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate()); },
+      u = v => v.d + " " + i[v.m - 1] + " " + v.y + " هـ",
+      x = v => 1e4 * v.y + 100 * v.m + v.d, y = v => 100 * v.y + v.m,
+      w = available.years.length ? available.years : [e.y],
+      v = t.irDashYear == null || String(t.irDashYear) === "all";
+    let P = v ? w[0] : +t.irDashYear; if (!w.includes(P)) P = w[0];
+    const M = available.months.filter(v => v.y === P).map(v => v.m).sort((a,b) => a-b);
+    let O = v ? "all" : t.irDashMonth == null ? "" : String(t.irDashMonth);
+    if (!v && O !== "all" && !M.includes(+O)) O = M.length ? String(M[M.length - 1]) : "all";
+    const E = (y,m) => this.hMonthDays(y,m), k = (y,m) => y > e.y ? 0 : y < e.y || m < e.m ? E(y,m) : m === e.m ? e.d : 0,
+      F = t.irDashMode === "custom" ? "custom" : v ? "all" : "month", C = c(this.hGreg(e.y,e.m,e.d));
+    let T = p(t.irDashFrom), _ = p(t.irDashTo);
+    if (F === "custom") { if (T == null) T = C - 29*a; if (_ == null) _ = C; if (T > _) [T,_] = [_,T]; }
+    let A = [], B = true, Y = "", H = "", V = 0, G = P;
+    if (F === "all") {
+      B = false; A = available.months.slice().sort((a,b) => y(a)-y(b)).map(v => ({ k:y(v),lab:i[v.m-1],full:i[v.m-1]+" "+v.y+" هـ" }));
+      Y = "كل الفترة"; G = w[0];
+      if (available.first) V = Math.round((C-c(this.hGreg(available.first.y,available.first.m,available.first.d)))/a)+1;
+    } else if (F === "custom") {
+      const from = g(T), to = g(_); V = Math.round((_ - T)/a)+1; B = V <= 62; G = to.y;
+      if (B) for (let at=T;at<=_;at+=a) { const day=g(at); A.push({k:x(day),lab:String(day.d),full:u(day)}); }
+      else { const months=new Map(); for(let at=T;at<=_;at+=a){const day=g(at);months.set(y(day),day);} A=Array.from(months).sort((a,b)=>a[0]-b[0]).map(([key,v])=>({k:key,lab:i[v.m-1],full:i[v.m-1]+" "+v.y+" هـ"})); }
+      Y=u(from)+" ← "+u(to); H=u(g(T-V*a))+" ← "+u(g(T-a));
+    } else if (O === "all") {
+      B=false; for(let month=1;month<=12;month++) if(k(P,month)>0) A.push({k:100*P+month,lab:i[month-1],full:i[month-1]+" "+P+" هـ"});
+      V=A.reduce((sum,v)=>sum+k(P,v.k%100),0);Y="كل أشهر "+P+" هـ";H=P===e.y?"نفس الفترة من "+(P-1)+" هـ":"سنة "+(P-1)+" هـ";
     } else {
-      ((I = S.filter((t) => t.y === P && t.m === +O)), (B = !0));
-      const t = k(P, +O) || E(P, +O);
-      for (let e = 1; e <= t; e++) A.push({ k: 1e4 * P + 100 * +O + e, lab: String(e), full: e + " " + i[+O - 1] + " " + P + " هـ" });
-      ((V = t), (Y = i[+O - 1] + " " + P + " هـ"));
-      let r = P,
-        a = +O - 1;
-      a < 1 && ((a = 12), (r = P - 1));
-      const s = P === e.y && +O === e.m;
-      let n = L[r + "-" + a] ? S.filter((t) => t.y === r && t.m === a) : [];
-      (s && (n = n.filter((t) => t.d <= e.d)),
-        (N = n),
-        (H = s ? "أول " + d(e.d) + " من " + i[a - 1] + " " + r + " هـ" : i[a - 1] + " " + r + " هـ"));
+      V=k(P,+O)||E(P,+O);for(let day=1;day<=V;day++) A.push({k:1e4*P+100*(+O)+day,lab:String(day),full:day+" "+i[+O-1]+" "+P+" هـ"});
+      Y=i[+O-1]+" "+P+" هـ";let year=P,month=+O-1;if(month<1){month=12;year--;}
+      H=P===e.y&&+O===e.m?"أول "+d(e.d)+" من "+i[month-1]+" "+year+" هـ":i[month-1]+" "+year+" هـ";
     }
-    const j = N.length > 0 && "all" !== F;
-    "all" === F && (H = "");
-    const R = (t) => (t < 10 ? "0" + t : "" + t),
-      z = (t) => (B ? Math.floor(t / 1e4) + "-" + R(Math.floor(t / 100) % 100) + "-" + R(t % 100) : Math.floor(t / 100) + "-" + R(t % 100)),
-      U = B ? x : y,
-      W = (t, e) => {
-        const r = {};
-        return (
-          t.forEach((t) => {
-            const a = U(t);
-            r[a] = (r[a] || 0) + e(t);
-          }),
-          A.map((t) => r[t.k] || 0)
-        );
-      },
-      K = (t) => {
-        const e = W(I, t),
-          r = e.reduce((t, e) => t + e, 0);
-        let a = 0,
-          i = 0,
-          s = 0,
-          n = -1,
-          o = -1;
-        return (
-          e.forEach((t, e) => {
-            t > 0 && (s++, (0 === i || t > i) && ((i = t), (n = e)), (0 === a || t < a) && ((a = t), (o = e)));
-          }),
-          {
-            ser: e,
-            tot: r,
-            min: a,
-            max: i,
-            avg: s ? r / s : 0,
-            act: s,
-            gap: e.length - s,
-            peakShort: n >= 0 ? A[n].full.replace(/ هـ$/, "") : "—",
-            lowShort: o >= 0 ? A[o].full.replace(/ هـ$/, "") : "—",
-            peakNum: n >= 0 ? z(A[n].k) : "—",
-            lowNum: o >= 0 ? z(A[o].k) : "—",
-          }
-        );
-      },
-      J = [
-        { name: "الاسترشاد", desc: "عدد المستفيدين من الاسترشاد اللغوي", f: f, color: "#4a97cf" },
-        { name: "المطويات", desc: "عدد المطويات الموزّعة", f: (t) => t.bro || 0, color: "#2fa372" },
-        { name: "النيابة", desc: "عدد الحالات المحوَّلة للنيابة", f: (t) => t.pros || 0, color: "#d9793a" },
-        { name: "الشرطة", desc: "عدد الحالات المحوَّلة للشرطة", f: (t) => t.pol || 0, color: "#7e2a52" },
-      ],
-      X = K(b),
-      Q = J.map((t, e) => ({ m: t, st: K(t.f), i1: 0 === e, i2: 1 === e, i3: 2 === e, i4: 3 === e })),
-      $ = X.tot,
-      Z = N.reduce((t, e) => t + b(e), 0),
-      q = B ? "يوم" : "شهر",
-      tt = (t, e, r, a) => {
-        const i = t.length;
-        if (!i) return { line: "", area: "" };
-        const s = a || Math.max.apply(null, t.concat([1])),
-          n = (t) => (1 === i ? e / 2 : e - (t / (i - 1)) * e);
-        let o = "";
-        return (
-          t.forEach((t, e) => {
-            o += (e ? "L" : "M") + n(e).toFixed(1) + " " + ((t) => r - (s > 0 ? (t / s) * r : 0))(t).toFixed(1) + " ";
-          }),
-          { line: o, area: "M" + n(0).toFixed(1) + " " + r + " " + o.replace(/^M/, "L") + "L" + n(i - 1).toFixed(1) + " " + r + " Z" }
-        );
-      },
-      et = tt(X.ser, 1e3, 100),
-      rt = t.irDashBrk || "total",
-      at = this.loadShiftOptsIr(),
-      it = this.loadIrshadLocs(),
-      st = ["#4a97cf", "#d9793a", "#2fa372", "#7e2a52", "#7b8a94", "#b99751"];
-    let nt = [];
-    "shift" === rt
-      ? (nt = at
-          .map((t, e) => ({
-            name: t.name,
-            color: st[e % st.length],
-            ser: W(
-              I.filter((e) => e.shift === t.name),
-              b,
-            ),
-          }))
-          .filter((t) => t.ser.some((t) => t > 0)))
-      : "loc" === rt &&
-        (nt = it
-          .slice(0, 6)
-          .map((t, e) => ({
-            name: t,
-            color: st[e % st.length],
-            ser: W(
-              I.filter((e) => e.loc === t),
-              b,
-            ),
-          }))
-          .filter((t) => t.ser.some((t) => t > 0)));
-    const ot = "total" !== rt && nt.length > 0,
-      lt = ot ? A.map((t, e) => nt.reduce((t, r) => t + r.ser[e], 0)) : X.ser;
-    let ht = null;
-    if (j && !ot && N.length) {
-      const t = {};
-      N.forEach((e) => {
-        const r = U(e);
-        t[r] = (t[r] || 0) + b(e);
-      });
-      const e = Object.keys(t)
-        .map(Number)
-        .sort((t, e) => t - e)
-        .map((e) => t[e]);
-      if (e.length) {
-        const t = [];
-        for (let r = 0; r < A.length; r++) t.push(null == e[r] ? 0 : e[r]);
-        t.some((t) => t > 0) && (ht = t);
-      }
-    }
+    const j = (previous.reports || 0)>0 && F!=="all", q=B?"يوم":"شهر",
+      z = key => B ? Math.floor(key/1e4)+"-"+String(Math.floor(key/100)%100).padStart(2,"0")+"-"+String(key%100).padStart(2,"0") : Math.floor(key/100)+"-"+String(key%100).padStart(2,"0"),
+      U=B?x:y,
+      W = (points,metric) => { const map=new Map(points.map(v=>[U(v),v[metric]||0]));return A.map(v=>map.get(v.k)||0); },
+      K = metric => { const ser=W(dash.series||[],metric);let min=0,max=0,act=0,peak=-1,low=-1;ser.forEach((v,index)=>{if(v>0){act++;if(max===0||v>max){max=v;peak=index;}if(min===0||v<min){min=v;low=index;}}});const tot=ser.reduce((a,b)=>a+b,0);return{ser,tot,min,max,avg:act?tot/act:0,act,gap:ser.length-act,peakShort:peak<0?"—":A[peak].full.replace(/ هـ$/,""),lowShort:low<0?"—":A[low].full.replace(/ هـ$/,""),peakNum:peak<0?"—":z(A[peak].k),lowNum:low<0?"—":z(A[low].k)}; },
+      J=[{name:"الاسترشاد",desc:"عدد المستفيدين من الاسترشاد اللغوي",key:"trans",color:"#4a97cf"},{name:"المطويات",desc:"عدد المطويات الموزّعة",key:"bro",color:"#2fa372"},{name:"النيابة",desc:"عدد الحالات المحوَّلة للنيابة",key:"pros",color:"#d9793a"},{name:"الشرطة",desc:"عدد الحالات المحوَّلة للشرطة",key:"pol",color:"#7e2a52"}],
+      X=K("ben"),Q=J.map((v,index)=>({m:v,st:K(v.key),i1:index===0,i2:index===1,i3:index===2,i4:index===3})), $=X.tot,Z=previous.ben||0,
+      tt=(values,width,height,max)=>{if(!values.length)return{line:"",area:""};const top=max||Math.max(...values,1),point=index=>values.length===1?width/2:width-index/(values.length-1)*width;const line=values.map((v,index)=>(index?"L":"M")+point(index).toFixed(1)+" "+(height-v/top*height).toFixed(1)+" ").join("");return{line,area:"M"+point(0).toFixed(1)+" "+height+" "+line.replace(/^M/,"L")+"L"+point(values.length-1).toFixed(1)+" "+height+" Z"};},
+      et=tt(X.ser,1000,100),rt=t.irDashBrk||"total",at=this.loadShiftOptsIr(),it=this.loadIrshadLocs(),st=["#4a97cf","#d9793a","#2fa372","#7e2a52","#7b8a94","#b99751"];
+    const source = rt==="shift" ? at.map(v=>v.name) : rt==="loc" ? it.slice(0,6) : [], groups=rt==="shift"?dash.shiftSeries:dash.locationSeries,
+      nt=source.map((name,index)=>({name,color:st[index%st.length],ser:W((groups||[]).find(v=>v.name===name)?.points||[],"ben")})).filter(v=>v.ser.some(n=>n>0)),
+      ot=nt.length>0,lt=ot?A.map((v,index)=>nt.reduce((sum,g)=>sum+g.ser[index],0)):X.ser;
+    let ht=null;
+    if(j&&!ot){const values=(dash.previousSeries||[]).slice().sort((a,b)=>U(a)-U(b)).map(v=>v.ben||0);const series=A.map((v,index)=>values[index]||0);if(series.some(v=>v>0))ht=series;}
     const dt = ((t) => {
         if (!(t > 0)) return 10;
         const e = Math.pow(10, Math.floor(Math.log10(t))),
@@ -661,9 +668,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
       if (e.length) {
         const t = {};
-        r.filter((t) => t.y === G).forEach((e) => {
+        (dash.heat || []).forEach((e) => {
           const r = e.m + "-" + e.d;
-          t[r] = (t[r] || 0) + b(e);
+          t[r] = (t[r] || 0) + (e.ben || 0);
         });
         const n = Object.keys(t)
           .map((e) => t[e])
@@ -741,20 +748,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         const r = ((t - e) / e) * 100,
           a = Math.abs(r) < 0.5;
         return { txt: (a ? "◆ " : r >= 0 ? "▲ " : "▼ ") + n(Math.abs(r)) + "%", style: wt(r >= 0, a) };
-      },
-      Pt = {};
-    I.forEach((t) =>
-      (t.langs || []).forEach((t) => {
-        Pt[t.lang] = (Pt[t.lang] || 0) + (t.count || 0);
-      }),
-    );
-    let Mt = Object.keys(Pt)
-      .map((t) => ({ name: t, v: Pt[t] }))
+      };
+    let Mt = (dash.languages || [])
+      .map(row => ({ name: row.name, v: row.value, other: !!row.other }))
       .sort((t, e) => e.v - t.v);
-    if (Mt.length > 7) {
-      const t = Mt.slice(6);
-      ((Mt = Mt.slice(0, 6)), Mt.push({ name: "لغات أخرى (" + t.length + ")", v: t.reduce((t, e) => t + e.v, 0), other: !0 }));
-    }
+
     const Ot = Mt.reduce((t, e) => t + e.v, 0),
       Et = Math.max.apply(null, [1].concat(Mt.map((t) => t.v))),
       kt = Mt.map((t) => ({
@@ -767,28 +765,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ((t.v / Et) * 100).toFixed(2) +
           "%;background:" +
           (t.other ? "var(--bg-xc9cfd6)" : "var(--bg-xb99751)"),
-      })),
-      Ft = {},
-      Ct = {};
-    (I.forEach((t) => {
-      t.loc && (Ft[t.loc] = (Ft[t.loc] || 0) + b(t));
-    }),
-      N.forEach((t) => {
-        t.loc && (Ct[t.loc] = (Ct[t.loc] || 0) + b(t));
       }));
-    let Tt = Object.keys(Ft)
-      .map((t) => ({ name: t, v: Ft[t], p: Ct[t] || 0 }))
+    let Tt = (dash.locations || [])
+      .map(row => ({ name: row.name, v: row.value, p: row.previous || 0, other: !!row.other }))
       .sort((t, e) => e.v - t.v);
-    if (Tt.length > 7) {
-      const t = Tt.slice(6);
-      ((Tt = Tt.slice(0, 6)),
-        Tt.push({
-          name: "مواقع أخرى (" + t.length + ")",
-          v: t.reduce((t, e) => t + e.v, 0),
-          p: t.reduce((t, e) => t + e.p, 0),
-          other: !0,
-        }));
-    }
+
     const _t = Math.max.apply(null, [1].concat(Tt.map((t) => t.v))),
       It = Tt.map((t) => {
         const e = vt(t.v, t.p);
@@ -806,10 +787,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             (t.other ? "var(--bg-xc9cfd6)" : "var(--bg-x8a6f35)"),
         };
       }),
-      Nt = at.map((t, e) => {
-        const r = I.filter((e) => e.shift === t.name);
-        return { name: t.name, color: st[e % st.length], v: r.reduce((t, e) => t + b(e), 0), n: r.length, rs: r };
-      }),
+      Nt = at.map((option,index) => { const row=(dash.shifts||[]).find(v=>v.name===option.name)||{}; return {...row,name:option.name,color:st[index%st.length],v:row.ben||0,n:row.reports||0}; }),
       At = Nt.reduce((t, e) => t + e.v, 0) || 1,
       Bt = Nt.filter((t) => t.v > 0).map((t) => ({
         style: "height:100%;width:" + ((t.v / At) * 100).toFixed(2) + "%;background:" + t.color,
@@ -827,27 +805,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })),
       Vt = [
         ["إجمالي المستفيدين", $, Z],
-        ["عدد التقارير", I.length, N.length],
-        ["مستفيدو الاسترشاد", Q[0].st.tot, N.reduce((t, e) => t + f(e), 0)],
-        ["المطويات الموزّعة", Q[1].st.tot, N.reduce((t, e) => t + (e.bro || 0), 0)],
+        ["عدد التقارير", totals.reports, previous.reports],
+        ["مستفيدو الاسترشاد", Q[0].st.tot, previous.trans || 0],
+        ["المطويات الموزّعة", Q[1].st.tot, previous.bro || 0],
       ].map((t) => {
         const e = vt(t[1], t[2]);
         return { label: t[0], nums: o(t[2]) + " → " + o(t[1]), txt: e.txt, style: e.style };
       }),
-      Gt = {},
-      jt = {},
-      Rt = {},
-      zt = {};
-    (I.forEach((t) => {
-      t.eid && ((Gt[t.eid] = (Gt[t.eid] || 0) + b(t)), (Rt[t.eid] = (Rt[t.eid] || 0) + 1), (zt[t.eid] = { name: t.name, shift: t.shift }));
-    }),
-      N.forEach((t) => {
-        t.eid && (jt[t.eid] = (jt[t.eid] || 0) + b(t));
-      }));
-    const Ut = Object.keys(Gt)
-        .map((t) => ({ k: t, v: Gt[t], p: jt[t] || 0, n: Rt[t], nm: (zt[t] || {}).name || "—", sh: (zt[t] || {}).shift || "" }))
-        .sort((t, e) => e.v - t.v)
-        .slice(0, 6),
+      Ut = (dash.employees||[]).slice(0,6).map(row => ({k:row.key,v:row.ben||0,p:row.previous||0,n:row.reports||0,nm:row.name||"—",sh:row.shift||""})),
       Wt = Math.max.apply(null, [1].concat(Ut.map((t) => t.v))),
       Kt = Ut.map((t, e) => {
         const r = vt(t.v, t.p);
@@ -871,19 +836,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         };
       }),
       Jt = Nt.map((t) => {
-        const e = {};
-        t.rs.forEach((t) => {
-          t.eid && (e[t.eid] = 1);
-        });
-        const r = t.rs.reduce((t, e) => t + f(e), 0),
-          a = t.rs.reduce((t, e) => t + (e.bro || 0), 0),
-          i = t.rs.reduce((t, e) => t + (e.pros || 0) + (e.pol || 0), 0);
+        const r = t.trans || 0, a = t.bro || 0, i = (t.pros || 0) + (t.pol || 0);
         return {
           name: t.name,
           dot:
             "width:8px;height:8px;border-radius:3px;display:inline-block;margin-inline-end:7px;vertical-align:middle;background:" + t.color,
           reports: o(t.n),
-          emps: o(Object.keys(e).length),
+          emps: o(t.employees || 0),
           ben: o(t.v),
           avg: t.n ? (t.v / t.n).toFixed(1) : "0",
           trans: o(r),
@@ -900,7 +859,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }),
       Xt = (t.irDashSumQ || "").trim(),
       Qt = Jt.slice(),
-      $t = KIVO.BassamFind.filter(Xt, Qt, (t) => [t.name, t.code, t.type]),
+      $t = (dash.summary?.rows || []).map(row => Jt.find(t => t.name === row.name)).filter(Boolean),
       Zt = 0 === t.irDashSumPerPage ? 0 : t.irDashSumPerPage || 10,
       qt = 0 === Zt ? Math.max(1, $t.length) : Zt,
       te = Math.max(1, Math.ceil($t.length / qt)),
@@ -933,30 +892,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     const se = (t) =>
         "height:28px;width:28px;border:0;border-right:1px solid var(--bd-xe1e1e1);background:transparent;display:flex;align-items:center;justify-content:center;" +
-        (t ? "color:var(--fg-x475569);cursor:pointer" : "color:var(--fg-xcbd5e1);cursor:default"),
-      ne = {};
-    $t.forEach((t) => (ne[t.name] = 1));
-    const oe = I.filter((t) => ne[t.shift]),
-      le = oe.reduce((t, e) => t + b(e), 0),
-      he = {};
-    oe.forEach((t) => {
-      t.eid && (he[t.eid] = 1);
-    });
-    const de = {
-        label: Xt ? "إجمالي المعروض" : "الإجمالي",
-        reports: o(oe.length),
-        emps: o(Object.keys(he).length),
-        ben: o(le),
-        avg: oe.length ? (le / oe.length).toFixed(1) : "0",
-        trans: o(oe.reduce((t, e) => t + f(e), 0)),
-        bro: o(oe.reduce((t, e) => t + (e.bro || 0), 0)),
-        ref: o(oe.reduce((t, e) => t + (e.pros || 0) + (e.pol || 0), 0)),
-        share: ($ ? n((le / $) * 100) : "0") + "%",
-      },
+        (t ? "color:var(--fg-x475569);cursor:pointer" : "color:var(--fg-xcbd5e1);cursor:default");
+    const summary=dash.summary?.totals||{},de={label:Xt?"إجمالي المعروض":"الإجمالي",reports:o(summary.reports),emps:o(summary.employees),ben:o(summary.ben),avg:summary.reports?((summary.ben||0)/summary.reports).toFixed(1):"0",trans:o(summary.trans),bro:o(summary.bro),ref:o((summary.pros||0)+(summary.pol||0)),share:($?n((summary.ben||0)/$*100):"0")+"%"},
       ge = [{ dot: "#b99751", n: "الإجمالي", v: h($), p: "" }]
         .concat(Q.map((t) => ({ dot: t.m.color, n: t.m.name, v: h(t.st.tot), p: $ ? "(" + n((t.st.tot / $) * 100) + "٪)" : "" })))
         .concat([
-          { dot: "#7b8a94", n: "التقارير", v: o(I.length), p: "" },
+          { dot: "#7b8a94", n: "التقارير", v: o(totals.reports || 0), p: "" },
           { dot: "#7b8a94", n: "المتوسط لكل " + q, v: h(X.avg), p: "" },
           { dot: "#7b8a94", n: "أعلى", v: h(X.max), p: X.peakNum },
         ]),
@@ -1013,7 +954,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         " · " +
         d(V) +
         " · " +
-        KIVO.BassamCount(I.length, "تقرير") +
+        KIVO.BassamCount(totals.reports || 0, "تقرير") +
         "" +
         (j ? " · تُقارَن بـ " + H : "all" === F ? "" : " · لا توجد فترة سابقة للمقارنة"),
       irDashHeroLbl: "إجمالي المستفيدين من خدمة الاسترشاد · " + Y,
@@ -1023,10 +964,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irDashHeroArea: et.area,
       irDashHiVal: h(X.max),
       irDashHiSub: X.peakNum,
-      irDashHiTip: "أعلى قيمة سُجّلت — " + X.peakShort,
       irDashLoVal: h(X.min),
       irDashLoSub: X.lowNum,
-      irDashLoTip: "أدنى قيمة سُجّلت — " + X.lowShort,
       irDashAvgVal: h(X.avg),
       irDashAvgSub: B ? d(X.act) : KIVO.BassamCount(X.act, "شهر") + "",
       irDashGapOn: X.gap > 0,
@@ -1056,7 +995,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           r = e.max > e.min ? Math.max(0, Math.min(1, (e.avg - e.min) / (e.max - e.min))) : 0.5,
           a = Math.PI * r,
           i = tt(e.ser, 200, 40),
-          s = N.reduce((e, r) => e + t.m.f(r), 0),
+          s = previous[t.m.key] || 0,
           g = vt(e.tot, s);
         return {
           name: t.m.name,
@@ -1143,7 +1082,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irDashTopEmployees: Kt,
       irDashEmpOn: Kt.length > 0,
       irDashEmpOff: 0 === Kt.length,
-      irEmptyShow: 0 === r.length,
+      irEmptyShow: !(available.total > 0),
       irDashSumOpen: !!t.irDashSumOpen,
       irDashSumToggle: () => this.setState({ irDashSumOpen: !this.state.irDashSumOpen }),
       irDashSumChev: "transition:transform .2s;flex-shrink:0;" + (t.irDashSumOpen ? "transform:rotate(180deg)" : ""),
@@ -1180,12 +1119,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       e = this.hToday(),
       r = t.irYear,
       a = t.irMonth,
-      i = this.loadIrshad().reports || [],
-      s = (t, e, r) => i.filter((a) => !(a.y !== t || (null != e && a.m !== e) || (null != r && a.d !== r))).length,
+      calendar = t.irCalendar || { total: 0, yearTotal: 0, months: [], days: [], monthTotals: {} },
+      records = t.irRecords || { rows: [], total: 0, monthTotal: 0, page: 1 },
+      i = records.rows,
+      s = (y, m, d) => y !== r ? 0 : d != null ? (calendar.days.find(p => p.d === d)?.n || 0) : m != null ? (calendar.months.find(p => p.m === m)?.n || 0) : calendar.yearTotal,
       n = s(r),
       o = 12 * e.y + e.m,
-      l = t.irOpenMonths || {},
-      h = t.irOpenDays || {},
+      confirmedWindows = (t.irRetro?.windows || []).filter(w => w && w.scope && !w.closedAt && w.until > Date.now()),
+      l = Object.fromEntries(confirmedWindows.filter(w => w.scope.d == null).map(w => [w.scope.y + "-" + w.scope.m, true])),
+      h = Object.fromEntries(confirmedWindows.filter(w => w.scope.d != null).map(w => [w.scope.y + "-" + w.scope.m + "-" + w.scope.d, true])),
       d = this.MONTHS.map((t, i) => {
         const n = i + 1,
           h = a === n,
@@ -1250,15 +1192,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               this.setState(
                 h
                   ? { irYear: r, irMonth: n, irDay: r === e.y && n === e.m ? e.d : 1 }
-                  : { irYear: r, irMonth: n, irDay: r === e.y && n === e.m ? e.d : 1, irOpenMonths: {}, irOpenDays: {}, irLedgerOpen: !1 },
+                  : { irYear: r, irMonth: n, irDay: r === e.y && n === e.m ? e.d : 1, irLedgerOpen: !1 },
               ),
             dbl: (t) => {
               /* الموجة 1 · IRSZ-4: بلا صلاحية الاعتماد كانت النقرةُ المزدوجة لا تفعل شيئاً بصمت — الآن تشرح السبب */
               (t.stopPropagation(),
                 this.PC("approve")
-                  ? m
-                    ? this.setState({ irOpenMonths: { [g]: !0 }, irOpenDays: {}, irYear: r, irMonth: n, irLedgerOpen: !1 })
-                    : c && p && this.setState({ irOpenMonths: {} })
+                  ? (m || c && p) && this._irRetroToggle({ y: r, m: n, d: null })
                   : (m || (c && p)) && this.bsToast("فتحُ الشهر أو اليوم المقفل للاستدراك وإعادةُ قفله تحتاج صلاحية الاعتماد — راجع مدير الإدارة"));
             },
           }
@@ -1315,13 +1255,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           " م" +
           (n ? " — " + KIVO.BassamCount(n, "تقرير") + "" : " — لا تقارير") +
           (y ? " — انقضى، مقفل · " + (this.PC("approve") ? "نقرة مزدوجة لفتحه" : "فتحه يحتاج صلاحية الاعتماد") : D ? " — مفتوح للاستدراك" + (this.PC("approve") ? " · نقرة مزدوجة لإغلاقه" : "") : ""),
-        click: () => this.setState(l ? { irDay: i } : { irDay: i, irOpenDays: {}, irLedgerOpen: !1 }),
+        click: () => this.setState(l ? { irDay: i } : { irDay: i, irLedgerOpen: !1 }),
         dbl: (t) => {
           (t.stopPropagation(),
             this.PC("approve")
               ? u
-                ? this.setState({ irOpenMonths: { [c]: !0 }, irOpenDays: {} })
-                : f && this.setState((t) => ({ irOpenDays: t.irOpenDays && t.irOpenDays[m] ? {} : { [m]: !0 } }))
+                ? this._irRetroToggle({ y: r, m: a, d: null })
+                : f && this._irRetroToggle({ y: r, m: a, d: i })
               : (u || f) && this.bsToast("فتحُ الشهر أو اليوم المقفل للاستدراك وإعادةُ قفله تحتاج صلاحية الاعتماد — راجع مدير الإدارة"));
         },
         style:
@@ -1348,11 +1288,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       E = this.WEEKDAYS[this.hGreg(r, a, D).getDay()],
       k = this.loadShiftOptsIr(),
       F = O.shift ? this.employeesForShift(r, a, O.shift, E) : [],
-      C = O.langs.reduce((t, e) => t + (e.count || 0), 0),
-      T = parseInt(O.bro || "0", 10) || 0,
-      _ = parseInt(O.pros || "0", 10) || 0,
-      I = parseInt(O.pol || "0", 10) || 0,
       N = (t) => {
+        this._irStampDraft();
         const e = { ...(this.state.irDraft || this.emptyDraft()), ...t };
         this.setState({ irDraft: e, irSaveErrMsg: "" });
       },
@@ -1362,6 +1299,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
       B = (t, e, r, a, i, s, n, o) => {
         const l = t();
+        const kind = n === "irLangPopOpen" ? "languages" : "locations";
         return {
           rows: l.map((s, h) => {
             const d = this.state[a] === h;
@@ -1374,30 +1312,36 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 "display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font-size:12.5px;font-weight:400;color:var(--fg-x25343f);" +
                 (r === s ? "background:var(--bg-a185151810p08);color:var(--fg-x8a6f35)" : ""),
               selectClick: () => {
+                this._irStampDraft();
                 const t = this.state.irDraft || this.emptyDraft();
                 this.setState({ irDraft: { ...t, ...o(s) }, [n]: !1, [a]: -1, irSaveErrMsg: "" });
               },
               editVal: d ? (null != this.state[i] ? this.state[i] : s) : "",
               setEditVal: (t) => this.setState({ [i]: t.target.value }),
               startEdit: (t) => {
+                this._irStampCatalog(kind);
                 (t && t.stopPropagation && t.stopPropagation(), this.setState({ [a]: h, [i]: s }));
               },
-              saveEdit: () => {
+              saveEdit: async () => {
+                this._irStampCatalog(kind);
                 const n = (this.state[i] || "").trim();
                 if (!n || (n !== s && l.includes(n))) return void this.setState({ [a]: -1, [i]: "" });
                 const d = t();
-                ((d[h] = n), e(d));
+                d[h] = n;
+                const result = await e(d); if (!result.ok || result.sameInput === false) return;
                 const g = this.state.irDraft || this.emptyDraft(),
                   c = r === s ? o(n) : {};
                 this.setState({ irDraft: { ...g, ...c }, [a]: -1, [i]: "" });
               },
-              cancelEdit: () => this.setState({ [a]: -1, [i]: "" }),
-              delClick: (s) => {
+              cancelEdit: () => { this._irCatalogStamps?.delete(kind); this.setState({ [a]: -1, [i]: "" }); },
+              delClick: async (s) => {
+                this._irStampCatalog(kind);
                 s && s.stopPropagation && s.stopPropagation();
                 const n = t();
                 if (n.length <= 1) return;
                 const l = n[h];
-                (n.splice(h, 1), e(n));
+                n.splice(h, 1);
+                const result = await e(n); if (!result.ok || result.sameInput === false) return;
                 const d = this.state.irDraft || this.emptyDraft(),
                   g = r === l ? o("") : {};
                 this.setState({ irDraft: { ...d, ...g }, [a]: -1, [i]: "" });
@@ -1409,12 +1353,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           toggle: () => this.setState({ [n]: !this.state[n], [a]: -1 }),
           close: () => this.setState({ [n]: !1, [a]: -1 }),
           newVal: this.state[s] || "",
-          setNewVal: (t) => this.setState({ [s]: t.target.value }),
-          addNew: () => {
+          setNewVal: (t) => { this._irStampCatalog(kind); this.setState({ [s]: t.target.value }); },
+          addNew: async () => {
+            this._irStampCatalog(kind);
             const r = (this.state[s] || "").trim();
             if (r) {
               const a = t();
-              a.includes(r) || (a.push(r), e(a));
+              if (!a.includes(r)) { a.push(r); const result = await e(a); if (!result.ok || result.sameInput === false) return; }
             }
             this.setState({ [s]: "" });
           },
@@ -1422,7 +1367,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
       Y = B(
         () => this.loadIrshadLangs(),
-        (t) => this.saveIrshadLangs(t),
+        (values) => this._irApply("catalog-replace", { kind: "languages", values }, values.length),
         O.langSel,
         "irLangEditIdx",
         "irLangEditVal",
@@ -1432,7 +1377,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ),
       H = B(
         () => this.loadIrshadLocs(),
-        (t) => this.saveIrshadLocs(t),
+        (values) => this._irApply("catalog-replace", { kind: "locations", values }, values.length),
         O.loc,
         "irLocEditIdx",
         "irLocEditVal",
@@ -1440,21 +1385,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "irLocPopOpen",
         (t) => ({ loc: t }),
       ),
-      V = i.filter((t) => t.y === r && t.m === a).sort((t, e) => e.d - t.d || (e.ts || 0) - (t.ts || 0)),
-      G = V.reduce((t, e) => t + this.benOf(e), 0),
-      j = V.reduce((t, e) => t + (e.langs || []).reduce((t, e) => t + (e.count || 0), 0), 0),
-      R = V.reduce((t, e) => t + (e.bro || 0), 0),
-      z = V.reduce((t, e) => t + (e.pros || 0), 0),
-      U = V.reduce((t, e) => t + (e.pol || 0), 0),
-      W = (t.irLgSearch || "").trim().toLowerCase(),
-      K = V.filter(
-        (e) =>
-          !(
-            ("all" !== t.irLgShift && e.shift !== t.irLgShift) ||
-            ("all" !== t.irLgLoc && (e.loc || "") !== t.irLgLoc) ||
-            (W && !KIVO.BassamFind.match(W, [e.name, e.loc, e.shift, e.empno]))
-          ),
-      ),
+      monthTotal = calendar.monthTotals.reports || 0,
+      filteredTotal = records.total,
+      G = calendar.monthTotals.ben || 0,
+      j = calendar.monthTotals.trans || 0,
+      R = calendar.monthTotals.bro || 0,
+      z = calendar.monthTotals.pros || 0,
+      U = calendar.monthTotals.pol || 0,
+      K = i,
       J = (t) => {
         let e = "—";
         try {
@@ -1474,11 +1412,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return { dayLabel: t.d + "/" + t.m + "/" + t.y, gregLabel: e, timeLabel: r };
       },
       X = 0 === t.irLedgerPerPage ? 0 : t.irLedgerPerPage || 10,
-      Q = 0 === X ? Math.max(1, K.length) : X,
-      $ = Math.max(1, Math.ceil(K.length / Q)),
-      Z = Math.min(Math.max(1, t.irLedgerPage || 1), $),
+      Q = 0 === X ? Math.max(1, filteredTotal) : X,
+      $ = Math.max(1, Math.ceil(filteredTotal / Q)),
+      Z = Math.min(Math.max(1, records.page || 1), $),
       q = (Z - 1) * Q,
-      tt = K.slice(q, q + Q),
+      tt = K,
       et = [];
     {
       const t = [],
@@ -1516,9 +1454,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         (y
           ? "rgba(185,151,81,0.35);color:var(--fg-x9a7e40);background:var(--bg-a185151810p12)"
           : "rgba(148,163,184,0.35);color:var(--fg-x64748b);background:var(--bg-a1481631840p1)"),
-      irPrevYear: () => this.setState({ irYear: r - 1, irOpenMonths: {}, irOpenDays: {}, irLedgerOpen: !1 }),
-      irNextYear: () => this.setState({ irYear: r + 1, irOpenMonths: {}, irOpenDays: {}, irLedgerOpen: !1 }),
-      irGoCurrent: () => this.setState({ irYear: e.y, irMonth: e.m, irDay: e.d, irOpenMonths: {}, irOpenDays: {}, irLedgerOpen: !1 }),
+      irPrevYear: () => this.setState({ irYear: r - 1, irLedgerOpen: !1 }),
+      irNextYear: () => this.setState({ irYear: r + 1, irLedgerOpen: !1 }),
+      irGoCurrent: () => this.setState({ irYear: e.y, irMonth: e.m, irDay: e.d, irLedgerOpen: !1 }),
       irDays: x,
       irSelDateLabel: t.irDay + " " + this.MONTHS[a - 1] + " " + r + " هـ",
       irMonthAutoHint: u,
@@ -1537,15 +1475,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irCanEnter: M,
       irEntryTitle: (t.irEditId ? "تعديل تقرير — يوم " : "تسجيل تقرير — يوم ") + D + " " + L + " " + r + " هـ",
       irSaveBtnTitle: t.irEditId ? "حفظ التعديل" : "حفظ التقرير",
-      ...KIVO.BassamCount.pair("irKpiCount", String(V.length), "تقرير"),
+      ...KIVO.BassamCount.pair("irKpiCount", String(monthTotal), "تقرير"),
       irKpiBen: G.toLocaleString("en-US"),
       irKpiTrans: j.toLocaleString("en-US"),
       irKpiBro: R.toLocaleString("en-US"),
       irKpiRef: (z + U).toLocaleString("en-US"),
       irKpiPros: z.toLocaleString("en-US"),
       irKpiPol: U.toLocaleString("en-US"),
-      irInputStyle:
-        "width:100%;height:38px;padding:0 12px;font-size:12.5px;background:var(--bg-a2482502520p8);border:1px solid var(--bd-xe2e8f0);border-radius:11px;outline:none;font-family:'Cairo',sans-serif;color:var(--fg-x141414);box-sizing:border-box",
       irInputFocusStyle: "background:var(--bg-xffffff);border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px rgba(185,151,81,0.2)",
       irShiftOpts: k,
       irDraftShift: O.shift,
@@ -1581,6 +1517,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irLangNUp: () => N({ langN: A(O.langN, 1) }),
       irLangNDown: () => N({ langN: A(O.langN, -1) }),
       irAddLang: () => {
+        this._irStampDraft();
         const t = this.state.irDraft || this.emptyDraft();
         if (!t.langSel) return void this.setState({ irSaveErrMsg: "اختر اللغة قبل الإضافة" });
         const e = parseInt(t.langN || "0", 10) || 0;
@@ -1602,62 +1539,52 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irDraftLangs: O.langs.map((t, e) => ({
         label: t.lang + " — " + t.count,
         remove: () => {
+          this._irStampDraft();
           const t = this.state.irDraft || this.emptyDraft();
           this.setState({ irDraft: { ...t, langs: t.langs.filter((t, r) => r !== e) } });
         },
       })),
-      irDraftTotal: (C + T + _ + I).toLocaleString("en-US"),
-      irClearDraft: () => this.setState({ irDraft: this.emptyDraft(), irSaveErrMsg: "", irEditId: null }),
+      irClearDraft: () => { this._irDraftStamp = null; this.setState({ irDraft: this.emptyDraft(), irSaveErrMsg: "", irEditId: null }); },
       irSaveErr: !!t.irSaveErrMsg,
       irSaveErrMsg: t.irSaveErrMsg || "",
-      irIsEditing: !!t.irEditId,
-      irSaveReport: () => {
+      irSaveReport: async () => {
         const t = this.state.irDraft || this.emptyDraft();
-        if (!t.shift) return void this.setState({ irSaveErrMsg: "اختر الوردية أولاً" });
+        const editId = this.state.irEditId, context = this._irContext();
+        const pending = Array.from(this._irTickets?.values() || []).some(ticket => ticket.context.key === context?.key && ticket.op === (editId ? "edit" : "create") && (!editId || JSON.parse(ticket.body).id === editId));
+        if (!pending && !t.shift) return void this.setState({ irSaveErrMsg: "اختر الوردية أولاً" });
         const e = this.employeesForShift(r, a, t.shift, E).find((e) => e.eid === t.eid);
-        if (!e)
+        if (!pending && !e)
           return void this.setState({ irSaveErrMsg: this.bsOn("staff") ? "اختر موظفاً من قائمة المسكّنين في هذه الوردية" : "اختر الموظف" });
-        const i = this.loadIrshad(),
-          s = this.state.irEditId;
-        if (s) {
-          const r = (i.reports || []).findIndex((t) => t.id === s);
-          return -1 === r
-            ? void this.setState({ irSaveErrMsg: "التقرير الذي تحاول تعديله لم يعد موجوداً" })
-            : ((i.reports[r] = {
-                ...i.reports[r],
-                shift: t.shift,
-                eid: e.eid,
-                name: e.name,
-                loc: t.loc || "",
-                langs: t.langs.slice(),
-                bro: parseInt(t.bro || "0", 10) || 0,
-                pros: parseInt(t.pros || "0", 10) || 0,
-                pol: parseInt(t.pol || "0", 10) || 0,
-                editedTs: Date.now(),
-                editedBy: this.irActor(),
-              }),
-              this.saveIrshad(i),
-              void this.setState({ irDraft: this.emptyDraft(), irEditId: null, irSaveErrMsg: "" }));
-        }
-        const n = {
-          id: "r" + Date.now().toString(36) + Math.floor(1e6 * Math.random()).toString(36),
-          y: r,
-          m: a,
-          d: D,
-          ts: Date.now(),
+        const snapshot = JSON.stringify(t), day = [r, a, D].join("-");
+        const data = {
           shift: t.shift,
-          eid: e.eid,
-          name: e.name,
+          eid: e?.eid || t.eid || "",
           loc: t.loc || "",
-          actor: this.irActor(),
           langs: t.langs.slice(),
           bro: parseInt(t.bro || "0", 10) || 0,
           pros: parseInt(t.pros || "0", 10) || 0,
           pol: parseInt(t.pol || "0", 10) || 0,
         };
-        ((i.reports = [...(i.reports || []), n]),
-          this.saveIrshad(i),
-          this.setState({ irDraft: { ...this.emptyDraft(), shift: t.shift }, irSaveErrMsg: "" }));
+        if (!editId) Object.assign(data, { y: r, m: a, d: D });
+        await this._irApply(editId ? "edit" : "create", editId ? { id: editId, data } : { data }, 1, (ack, result) => {
+          if (!result.sameInput) {
+            const old = result.submitted.data;
+            if ((editId || [old.y, old.m, old.d].join("-") === day) && this.state.irEditId === editId) {
+              this._irDraftStamp = { context: this._irContext(), base: this._irClone(ack.base) };
+              this.setState({ irEditId: editId || ack.id, irSaveErrMsg: "تم تأكيد التقرير السابق؛ التعديل الأحدث باقٍ، راجعه ثم احفظ تعديله" });
+            }
+            return;
+          }
+          if (this.state.irEditId !== editId || JSON.stringify(this.state.irDraft) !== snapshot || [this.state.irYear, this.state.irMonth, this.state.irDay].join("-") !== day) {
+            if (this.state.irEditId === editId && [this.state.irYear, this.state.irMonth, this.state.irDay].join("-") === day) {
+              this._irDraftStamp = { context: this._irContext(), base: this._irClone(ack.base) };
+              this.setState({ irEditId: editId || ack.id, irSaveErrMsg: "تم تأكيد التقرير؛ التعديل الأحدث باقٍ، راجعه ثم احفظ تعديله" });
+            }
+            return;
+          }
+          this._irDraftStamp = null;
+          this.setState({ irDraft: editId ? this.emptyDraft() : { ...this.emptyDraft(), shift: t.shift }, irEditId: null, irSaveErrMsg: "" });
+        });
       },
       irLedgerOpen: !!t.irLedgerOpen,
       irLedgerToggle: () => this.setState({ irLedgerOpen: !this.state.irLedgerOpen }),
@@ -1670,9 +1597,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irLgFilesBtnStyle:
         "height:34px;display:flex;align-items:center;gap:6px;font-size:11.5px;border:1px solid var(--bd-xe2e8f0);border-radius:10px;padding:0 10px;cursor:pointer;font-family:'Cairo',sans-serif;background:var(--bg-xffffff);" +
         (t.irLgFilesOpen ? "color:var(--fg-xb99751);border-color:var(--bd-a185151810p4)" : "color:var(--fg-x475569)"),
-      irLgExportCsv: () => {
+      irLgExportCsv: async () => {
         if (!this.PC("export")) return;
-        const t = K.map((t) => {
+        const collection = await this._irCollect(this._irRecordQuery());
+        if (!collection.ok) { this.bsToast(collection.message); return; }
+        const t = collection.rows.map((t) => {
             const { dayLabel: e, gregLabel: r, timeLabel: a } = J(t);
             return [
               e,
@@ -1724,22 +1653,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irLgMonthLabel: L + " " + r + " هـ",
       irLgClearAllItemStyle:
         "display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;transition:background .15s;" +
-        (V.length > 0 ? "cursor:pointer;color:var(--fg-x141414)" : "cursor:not-allowed;color:var(--fg-xcbd5e1);opacity:.6"),
+        (monthTotal > 0 ? "cursor:pointer;color:var(--fg-x141414)" : "cursor:not-allowed;color:var(--fg-xcbd5e1);opacity:.6"),
       irLgClearAllAsk: () => {
-        this.PC("del") ? 0 !== V.length && this.setState({ irLgFilesOpen: !1, irLgClearAllConfirm: !0 }) : this.permDeny();
+        this.PC("del") ? 0 !== monthTotal && this.setState({ irLgFilesOpen: !1, irLgClearAllConfirm: !0 }) : this.permDeny();
       },
       irLgClearAllOpen: !!t.irLgClearAllConfirm,
       irLgClearAllStop: (t) => t.stopPropagation(),
       irLgClearAllCancel: () => this.setState({ irLgClearAllConfirm: !1 }),
-      irLgClearAllMsg: "سيتم حذف جميع تقارير " + L + " " + r + " هـ نهائياً (" + KIVO.BassamCount(V.length, "تقرير|مسجّل") + ").",
-      irLgClearAllDo: () => {
-        const t = this.loadIrshad(),
-          e = (t.reports || []).length;
-        ((t.reports = (t.reports || []).filter((t) => !(t.y === r && t.m === a))), this.saveIrshad(t));
-        const i = e - t.reports.length;
-        (this.setState({ irLgClearAllConfirm: !1, irLedgerPage: 1 }),
-          this.bsAck("تم حذف " + KIVO.BassamCount(i, "تقرير", "g") + " من " + L + " " + r + " هـ.", "ok"));
-      },
+      irLgClearAllMsg: "سيتم حذف جميع تقارير " + L + " " + r + " هـ نهائياً (" + KIVO.BassamCount(monthTotal, "تقرير|مسجّل") + ").",
+      irLgClearAllDo: () => this._irApply("delete-month", { year: r, month: a }, monthTotal, ack => {
+        this.setState({ irLgClearAllConfirm: !1, irLedgerPage: 1 });
+        this.bsAck("تم حذف " + KIVO.BassamCount(ack.n, "تقرير", "g") + " من " + L + " " + r + " هـ.", "ok");
+      }),
       ...(() => {
         const e = (e, r, a, i) => {
           const s = t[r],
@@ -1784,15 +1709,37 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ),
         };
       })(),
-      irLgShownCount: String(K.length),
-      irLgTotalCount: String(V.length),
-      irLedgerCount: KIVO.BassamCount(String(V.length), "تقرير") + "",
-      irLedgerSub: "كل تقارير الاسترشاد المسجّلة خلال " + L + " " + r + " هـ",
-      irLedgerHas: K.length > 0,
-      irLedgerEmpty: 0 === K.length,
-      irLedgerEmptyMsg: 0 === V.length ? "لا تقارير مسجّلة في هذا الشهر بعد" : "لا نتائج مطابقة للبحث/الفلترة الحالية",
+      irLgShownCount: String(filteredTotal),
+      irLgTotalCount: String(monthTotal),
+      irLedgerCount: KIVO.BassamCount(String(monthTotal), "تقرير") + "",
+      irLedgerHas: filteredTotal > 0,
+      irLedgerEmpty: 0 === filteredTotal,
+      irLedgerEmptyMsg: 0 === monthTotal ? "لا تقارير مسجّلة في هذا الشهر بعد" : "لا نتائج مطابقة للبحث/الفلترة الحالية",
       irLedgerRows: tt.map((t) => {
         const { dayLabel: e, gregLabel: r, timeLabel: a } = J(t);
+        const editReport = (e) => {
+            e && e.stopPropagation && e.stopPropagation();
+            this._irDraftStamp = null; this._irStampDraft(records.base, records._contextKey);
+
+            this.setState({
+              irYear: t.y,
+              irMonth: t.m,
+              irDay: t.d,
+              irEditId: t.id,
+              irDraft: {
+                shift: t.shift || "",
+                eid: t.eid || "",
+                loc: t.loc || "",
+                bro: String(t.bro || 0),
+                pros: String(t.pros || 0),
+                pol: String(t.pol || 0),
+                langs: (t.langs || []).slice(),
+                langSel: "",
+                langN: "",
+              },
+              irSaveErrMsg: "",
+            });
+          };
         return {
           dayLabel: e,
           gregLabel: r,
@@ -1809,31 +1756,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           pros: String(t.pros || 0),
           pol: String(t.pol || 0),
           ben: String(this.benOf(t)),
-          edit: (e) => {
-            e && e.stopPropagation && e.stopPropagation();
-            const r = t.y + "-" + t.m,
-              a = t.y + "-" + t.m + "-" + t.d;
-            this.setState({
-              irYear: t.y,
-              irMonth: t.m,
-              irDay: t.d,
-              irOpenMonths: { [r]: !0 },
-              irOpenDays: { [a]: !0 },
-              irEditId: t.id,
-              irDraft: {
-                shift: t.shift || "",
-                eid: t.eid || "",
-                loc: t.loc || "",
-                bro: String(t.bro || 0),
-                pros: String(t.pros || 0),
-                pol: String(t.pol || 0),
-                langs: (t.langs || []).slice(),
-                langSel: "",
-                langN: "",
-              },
-              irSaveErrMsg: "",
-            });
-          },
+          edit: editReport,
           ...this._rowMenu("ir" + t.id, [
             this.PC("edit")
               ? {
@@ -1841,30 +1764,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   color: "#b99751",
                   p1: "M12 20h9",
                   p2: "M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z",
-                  run: () => {
-                    const e = t.y + "-" + t.m,
-                      r = t.y + "-" + t.m + "-" + t.d;
-                    this.setState({
-                      irYear: t.y,
-                      irMonth: t.m,
-                      irDay: t.d,
-                      irOpenMonths: { [e]: !0 },
-                      irOpenDays: { [r]: !0 },
-                      irEditId: t.id,
-                      irDraft: {
-                        shift: t.shift || "",
-                        eid: t.eid || "",
-                        loc: t.loc || "",
-                        bro: String(t.bro || 0),
-                        pros: String(t.pros || 0),
-                        pol: String(t.pol || 0),
-                        langs: (t.langs || []).slice(),
-                        langSel: "",
-                        langN: "",
-                      },
-                      irSaveErrMsg: "",
-                    });
-                  },
+                  run: editReport,
                 }
               : null,
             this.PC("del")
@@ -1874,24 +1774,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   danger: !0,
                   p1: "M3 6h18",
                   p2: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2",
-                  run: () => {
-                    const e = this.loadIrshad();
-                    ((e.reports = (e.reports || []).filter((e) => e.id !== t.id)),
-                      this.saveIrshad(e),
-                      this.setState({ irTab: this.state.irTab }));
-                  },
+                  run: () => this._irApply("delete", { id: t.id }, 1),
                 }
               : null,
           ]),
           del: () => {
             if (!this.PC("del")) return void this.permDeny();
-            const e = this.loadIrshad();
-            ((e.reports = (e.reports || []).filter((e) => e.id !== t.id)), this.saveIrshad(e), this.setState({ irTab: this.state.irTab }));
+            return this._irApply("delete", { id: t.id }, 1);
           },
         };
       }),
-      ...KIVO.BassamCount.pair("irLedgerPgTotal", String(K.length), "سجل", "g"),
-      irLedgerPgRange: 0 === K.length ? "0" : q + 1 + "–" + Math.min(q + Q, K.length),
+      ...KIVO.BassamCount.pair("irLedgerPgTotal", String(filteredTotal), "سجل", "g"),
+      irLedgerPgRange: 0 === filteredTotal ? "0" : q + 1 + "–" + Math.min(q + Q, filteredTotal),
       irLedgerPgNums: et,
       irLedgerPerPage: String(X),
       irLedgerOnPerPage: (t) => {

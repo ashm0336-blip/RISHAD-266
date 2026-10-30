@@ -38,6 +38,12 @@ async function world() {
         if (m && !declared.includes(m[1]) && !Object.prototype.hasOwnProperty.call(extra.keys, k)) delete keys[k];
       }
     const cu = (extra.domains && extra.domains.custody) || [];
+    const ir = (await api('super', '/api/irshad/export')).json.domains || [];
+    const irshadDomains = declared.map(dept => ir.find(domain => domain.scope.departmentId === dept) || {
+      version: 1, scope: { departmentId: dept },
+      resources: { reports: false, languages: false, locations: false, retro: false, retroVersionPresent: false, retroVersion: null, retroWindowsPresent: false },
+      rows: { reports: [], languages: [], catalogs: [], windows: [] },
+    });
     const custodyDomains = declared
       .map(
         (dept) =>
@@ -56,8 +62,8 @@ async function world() {
         : nf[n].filter((r) => (n === 'states' ? r.message_scope : r.scope) === 'd:' + scope.departmentId);
     const domains =
       scope.kind === 'full'
-        ? { dailyStats: { version: 1, data: ds.data }, notifications: nf, ...(extra.domains || {}), custody: custodyDomains }
-        : { notifications: deptNF, custody: custodyDomains, ...(extra.domains || {}) };
+        ? { dailyStats: { version: 1, data: ds.data }, notifications: nf, irshad: irshadDomains, ...(extra.domains || {}), custody: custodyDomains }
+        : { notifications: deptNF, custody: custodyDomains, irshad: irshadDomains, ...(extra.domains || {}) };
     const request = {
       version: 1,
       requestId: 'TEST_ONLY_restore_' + ++rid,
@@ -70,6 +76,10 @@ async function world() {
         dailyStats: ds.rev,
         notifications: { rev: nf.rev, configRev: nf.configRev, broadcastRev: nf.broadcastRev },
         custody: Object.fromEntries(await Promise.all(declared.map(async (d) => [d, await W.cuRev(B.env, d)]))),
+        irshad: Object.fromEntries([...new Set(declared.concat(ir.map(domain => domain.scope.departmentId)))].map(d => [d, Object.fromEntries(['reports', 'languages', 'locations', 'retro'].map((name, i) => {
+          const resource = ['bassam_irshad_v1', 'bassam_irshad_langs_v1', 'bassam_irshad_locs_v1', 'bassam_irshad_retro_v1'][i];
+          return [name, B.DB.q('SELECT rev FROM revs WHERE k=?1', 'bsdept:' + d + ':' + resource)[0]?.rev || 0];
+        }))])),
       },
       keys,
       delete: [],
@@ -79,17 +89,17 @@ async function world() {
     };
     if (scope.kind === 'full')
       request.manifest = extra.manifest || {
-        version: 1,
+        version: 2,
         scope: 'full',
-        domains: { kv: 1, dailyStats: 1, notifications: 1, custody: 1 },
+        domains: { kv: 1, dailyStats: 1, notifications: 1, custody: 1, irshad: 1 },
         departments: declared,
         keys: Object.keys(keys),
       };
     else
       request.manifest = extra.manifest || {
-        version: 1,
+        version: 2,
         scope: 'dept',
-        domains: { kv: 1, notifications: 1, custody: 1 },
+        domains: { kv: 1, notifications: 1, custody: 1, irshad: 1 },
         departments: declared,
         keys: Object.keys(keys)
           .filter((k) => k !== 'bassam_perms_v1')
@@ -132,6 +142,11 @@ const TABLES = [
   'custody_movements',
   'custody_requests',
   'custody_request_outputs',
+  'irshad_reports',
+  'irshad_report_languages',
+  'irshad_catalog_entries',
+  'irshad_retro_windows',
+  'irshad_requests',
 ];
 const snap = (DB) =>
   Object.fromEntries(

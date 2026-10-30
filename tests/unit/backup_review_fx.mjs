@@ -30,7 +30,7 @@ export async function backupBrowser(B){
     DailyStats:{refresh:async()=>{const j=ok(await B.api('super','/api/dstats?uid='+IDS.super));dsRev=j.rev;return j.data;},revision:()=>dsRev},
     BassamNotif:{exportDomain:async dept=>ok(await B.api('super','/api/notifications/export'+(dept?'?dept='+encodeURIComponent(dept):''))),refresh:async()=>({ok:1})},
     Custody:{exportDomain:async dept=>ok(await B.api('super','/api/custody/export'+(dept?'?dept='+encodeURIComponent(dept):'')))},
-    __BS_SRV:{askReason:(k,keys,done)=>done('TEST_ONLY actual user reason'),resync:async()=>({ok:1})},bsConfirm:async()=>true,
+    __BS_SRV:{askReason:(k,keys,done)=>done('TEST_ONLY actual user reason'),resync:async()=>({ok:1}),dirty:()=>false,inflight:()=>false,sesChanged:()=>false,rev:key=>data.keys[key]?.rev||0},bsConfirm:async()=>true,
   };
   const page={state:{},setState(value){Object.assign(this.state,value);states.push(value);},bkToast:(...args)=>toasts.push(args),bkCapNote:()=>''};
   const fetch=async(url,options={})=>{
@@ -39,7 +39,7 @@ export async function backupBrowser(B){
     const response=await B.W.default.fetch(new Request('http://x'+url,{...options,headers}),B.env),dto=await response.clone().json();request.status=response.status;request.err=dto.err;
     return intercept?await intercept(request,response):response;
   };
-  const context=vm.createContext({KIVO,window:{__BS_BOOT:{srv:1,cf:1,uid:IDS.super},crypto:webcrypto,confirm:()=>true},localStorage:{},fetch,AbortController,setTimeout,clearTimeout,Uint8Array,URLSearchParams,Blob,Date,URL:{createObjectURL(blob){blobs.push(blob);return 'blob:TEST_ONLY';},revokeObjectURL(){}},document:{getElementById:()=>null,body:{appendChild(){}},createElement:()=>({click(){downloads.push(this.download);},remove(){}})},FileReader:class{readAsText(file){this.result=JSON.stringify(file);this.onload();}}});
+  const context=vm.createContext({KIVO,window:{__BS_BOOT:{srv:1,cf:1,uid:IDS.super,v:data.v},crypto:webcrypto,confirm:()=>true},localStorage:{},fetch,AbortController,setTimeout,clearTimeout,Uint8Array,URLSearchParams,Blob,Date,URL:{createObjectURL(blob){blobs.push(blob);return 'blob:TEST_ONLY';},revokeObjectURL(){}},document:{getElementById:()=>null,body:{appendChild(){}},createElement:()=>({click(){downloads.push(this.download);},remove(){}})},FileReader:class{readAsText(file){this.result=JSON.stringify(file);this.onload();}}});
   vm.runInContext(fs.readFileSync(path.join(ROOT,'src/services/548-atomic-backup.js'),'utf8'),context);
   return {KIVO,context,page,requests,writes,reads,toasts,states,blobs,downloads,
     intercept(fn){intercept=fn;},
@@ -49,6 +49,7 @@ export async function backupBrowser(B){
   };
 }
 export async function exportFull(C){
+  for(const name of ['_wpActor','_irBackupCapture','_irBackupFence','_irBackupDomain'])C.page[name]=C.method('src/modules/admin/logic.js',name);
   C.property('src/modules/admin/logic.js','exportBackup')();await until(()=>!!C.page._encPend||C.states.some(s=>s.backupMsg));
   assert.ok(C.page._encPend,JSON.stringify(C.page.state));return JSON.parse(C.page._encPend.json);
 }

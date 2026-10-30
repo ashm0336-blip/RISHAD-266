@@ -8,6 +8,7 @@
      modules/<slug>/{meta.json,helmet.css,view.html,logic.js}                  → client/pages/<name>.dc.html (esbuild minify للمضغوطة أصلاً)         (AUD-007)
      migrations/NNNN_<name>.sql (KIVO_249)                                     → workers/parts/051a-schema-migrations.js (KIVO_MIGRATIONS · KIVO_SCHEMA_VERSION)  (AUD-022 · ADR-011)
      schemas/api/bodies.schema.json                                         → workers/parts/051b-body-schemas.js (KIVO_BODY_SCHEMAS)
+     services/332-find-day.js (pure marked search block)                    → workers/parts/018a-find-engine.js (KIVO_FIND)
      plugins/lenses/<key>/manifest.json (KIVO_259)                              → KIVO_MANIFEST.lenses (الواجهة) · workers/parts/006a-lens-plugins.js (KIVO_LENS_PLUGINS)  (AUD-030 · ADR-018)
    الترتيبُ مهم: السجلُّ قبل الضمّ لأن جزءَ الخادم 004 مشتقٌّ هو نفسُه."""
 import os, sys, json, hashlib, subprocess, re
@@ -180,11 +181,29 @@ def gen_department_permission_slice(S):
     if result.returncode: raise SystemExit('permission slice generation failed: ' + result.stderr[-600:])
     return {norm(layout(S)['workersParts']) + '/051c-department-permission-slice.js': result.stdout.encode('utf-8')}
 
+def gen_find_engine(S):
+    """Derive the same pure search engine used by the UI; never fork its policy."""
+    source_path = os.path.join(S, 'services', '332-find-day.js')
+    if not os.path.isfile(source_path): return {}
+    source = rd(source_path)
+    begin = '/* @@KIVO_FIND_SHARED_BEGIN — the Worker derives this pure engine; one source. */'
+    end = '/* @@KIVO_FIND_SHARED_END */'
+    if source.count(begin) != 1 or source.count(end) != 1:
+        raise SystemExit('expected one marked pure Find engine in services/332-find-day.js')
+    body = source.split(begin, 1)[1].split(end, 1)[0].strip()
+    if body.count('KIVO.BassamFind = {') != 1 or not body.startswith('(function(){') or not body.endswith('})();'):
+        raise SystemExit('shared Find engine boundary/export changed; review generation')
+    body = body.replace('KIVO.BassamFind = {', 'return {', 1)
+    if re.search(r'\b(?:window|document|localStorage|sessionStorage|KIVO)\s*[.\[]', body):
+        raise SystemExit('shared Find engine must remain independent of browser state')
+    data = '/* Generated from the marked pure engine in src/services/332-find-day.js. Do not edit. */\nvar KIVO_FIND = ' + body + '\n'
+    return {norm(layout(S)['workersParts']) + '/018a-find-engine.js': data.encode('utf-8')}
+
 _main0 = main
 def main():
     S = os.path.abspath(sys.argv[sys.argv.index('--src') + 1]); check = '--check' in sys.argv
     produced = {}
-    produced.update(gen_registry(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S))
+    produced.update(gen_registry(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S)); produced.update(gen_find_engine(S))
     if os.path.exists(os.path.join(S, layout(S)['pagesManifest'])):
         mj, reg = gen_manifest(S); produced.update(mj); splice_pg(S, produced, reg)
     produced.update(gen_worker(S, produced)); produced.update(gen_pages(S))

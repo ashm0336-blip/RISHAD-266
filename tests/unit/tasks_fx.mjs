@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { PYTHON, makeTestEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, applySql, ROOT, DIST } from './harness.mjs';
+import {installIrshadFixture} from './irshad_legacy_seed_fx.mjs';
 
 export const TAG = 'TEST_ONLY';
 export const D = 'tst_d1';
@@ -180,6 +181,9 @@ export async function world({ worker, mode = 'legacy' } = {}) {
   const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); if (!su.ok) throw new Error('admin login');
   await applySql(env.DB, stdSeed());
+  // The historical SQL seed must not recreate a retired business document in a
+  // current database. Its actual canonical cutover preserves task/identity data.
+  if (env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '8') await installIrshadFixture(env);
   const store = tasksStore();
   await applySql(env.DB, p0Sql(store));
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");

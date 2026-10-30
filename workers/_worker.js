@@ -2738,6 +2738,223 @@ function permsRule(A, newJson, curJson) {
   }
   return { ok: true };
 }
+/* Generated from the marked pure engine in src/services/332-find-day.js. Do not edit. */
+var KIVO_FIND = (function(){
+    var AR_D = /[\u0660-\u0669]/g, FA_D = /[\u06F0-\u06F9]/g;
+    /* KIVO_265 · أداء (ملاحظةُ المالك 2026-10-19): التطبيعُ يُطبَّق على نصّ كل صفٍّ في كل ضغطة مفتاح (1000 صفٍّ × 12 تعبيراً) — والنصوصُ نفسُها
+       تتكرّر بين الضغطات، فتُذكَر مرةً (خريطةٌ محدودة تُفرَّغ عند امتلائها) */
+    var _nc = new Map(), NC_MAX = 20000;
+    function norm(v){
+      var k0 = String(v == null ? "" : v), c0 = _nc.get(k0);
+      if (c0 !== undefined) return c0;
+      var s = k0.toLowerCase();
+      s = s.replace(AR_D, function(d){ return String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48); });
+      s = s.replace(FA_D, function(d){ return String.fromCharCode(d.charCodeAt(0) - 0x06F0 + 48); });
+      s = s.replace(/[\u0640\u200e\u200f\u061c]/g, "");          /* تطويل وعلامات اتجاه */
+      s = s.replace(/[\u064B-\u0652\u0670]/g, "");                /* تشكيل */
+      s = s.replace(/[\u0623\u0625\u0622\u0671\u0672\u0673]/g, "\u0627");
+      s = s.replace(/\u0649/g, "\u064A");
+      s = s.replace(/\u0629/g, "\u0647");
+      s = s.replace(/[\u0624\u0626]/g, "\u0621");
+      s = s.replace(/[^0-9a-z\u0621-\u064A]+/g, " ");
+      s = s.replace(/\s+/g, " ").trim();
+      if (_nc.size >= NC_MAX) _nc.clear();
+      _nc.set(k0, s);
+      return s;
+    }
+    function tok(q){ var n = norm(q); return n ? n.split(" ") : []; }
+    function hay(fields){
+      var a = [];
+      (fields || []).forEach(function(f){
+        if (f == null) return;
+        if (Array.isArray(f)) { a.push(f.join(" ")); return; }
+        a.push(String(f));
+      });
+      return norm(a.join(" "));
+    }
+    /* المطابقة الواسعة: الكلمة موجودةٌ في أي موضع — تُستعمل عند خلوّ الدقيقة */
+    function hitLoose(tokens, fields){
+      if (!tokens || !tokens.length) return true;
+      var h = hay(fields), wsL = h.split(" ");
+      for (var i = 0; i < tokens.length; i++) {
+        var t2 = tokens[i];
+        if (h.indexOf(t2) !== -1) continue;
+        /* المركّب الملتصق فقط («عبدالله» على «عبد الله») — لا لصقَ بين نهاية
+           كلمةٍ وبداية أخرى، فذلك يخلط الاسمين */
+        var okC = false;
+        for (var j3 = 0; j3 < wsL.length && !okC; j3++) {
+          if (t2.length > wsL[j3].length) {
+            var jn2 = "", m3 = j3;
+            while (m3 < wsL.length && jn2.length < t2.length) { jn2 += wsL[m3]; m3++; }
+            if (jn2.indexOf(t2) === 0) okC = true;
+          }
+        }
+        if (!okC) return false;
+      }
+      return true;
+    }
+    /* المطابقة الدقيقة — بالكلمات لا ببداية الحقل وحدها:
+       كانت الكلمة تُطابَق من بداية الحقل كاملاً، فاستعلام «محمد ع» لا يجد
+       «محمد عطاوي» بدقّة وينهار إلى المطابقة الواسعة فيغرق في النتائج.
+       الآن: الكلمة تطابِق إن كانت بدايةَ كلمةٍ في الحقل («ع» تجد «عوض» لا
+       «سعود»)، و«ال» التعريف لا تحجب فـ«غامدي» تجد «الغامدي»، والمركّب
+       الملتصق مُدرَك فـ«عبدالله» تجد «عبد الله». وكلمات الاستعلام النصية
+       تُطابَق مرتّبةً داخل الحقل الواحد: «محمد ع» تعني محمداً تليه كلمةٌ
+       تبدأ بعين — لا أيَّ عينٍ في أي موضع. والأرقام تُطابَق بالاحتواء في
+       أي حقل، لأن جزء الجوال أو الهوية يُبحث به من وسطه عادةً. */
+    function fieldsNorm(fields){
+      var out = [];
+      (fields || []).forEach(function(f){
+        if (f == null) return;
+        var s = norm(Array.isArray(f) ? f.join(" ") : String(f));
+        if (s) out.push(s);
+      });
+      return out;
+    }
+    /* كلمات الوصل «بن/بنت/ابن/ال» ليست هدفاً للمطابقة: من يكتب «ب» يقصد
+       بدراً وبشرى، لا كلَّ من في اسمه «بن» أو «بنت» — وهي تبقى قابلةً
+       للإيجاد نصاً من الطبقة المرتّبة إن كُتبت كاملةً */
+    var CONN = { "بن": 1, "بنت": 1, "ابن": 1, "ال": 1 };
+    function wordPref(w, t){
+      if (CONN[w]) return false;
+      if (w.indexOf(t) === 0) return true;
+      if (w.indexOf("\u0627\u0644") === 0 && w.slice(2).indexOf(t) === 0) return true;
+      if (t.length > 2 && t.indexOf("\u0627\u0644") === 0 && w.indexOf(t.slice(2)) === 0) return true;
+      return false;
+    }
+    /* مطابقة كلمات الاستعلام مرتّبةً على كلمات حقلٍ واحد */
+    function seqHit(ts, f){
+      var ws = f.split(" "), i = 0;
+      for (var k = 0; k < ts.length; k++) {
+        var t = ts[k], hitAt = -1, adv = 0;
+        for (var j = i; j < ws.length; j++) {
+          if (wordPref(ws[j], t)) { hitAt = j; adv = 1; break; }
+          if (t.length > ws[j].length) {
+            var joined = "", m = j;
+            while (m < ws.length && joined.length < t.length) { joined += ws[m]; m++; }
+            if (joined.indexOf(t) === 0) { hitAt = j; adv = m - j; break; }
+          }
+        }
+        if (hitAt < 0) return false;
+        i = hitAt + adv;
+      }
+      return true;
+    }
+    function hit(tokens, fields){
+      if (!tokens || !tokens.length) return true;
+      var fs = fieldsNorm(fields), words = [], i, j;
+      for (i = 0; i < tokens.length; i++) {
+        var t2 = tokens[i];
+        if (/^[0-9]+$/.test(t2)) {
+          /* الرقم يُتابَع من أوّله رقماً رقماً: «618» تريك من رقمُه يبدأ
+             بها لا من صادفت وسطَ رقمه — والبحث من وسط الرقم تتكفّل به
+             الطبقتان التاليتان إن خلت هذه */
+          var okN = false;
+          for (j = 0; j < fs.length && !okN; j++) {
+            var wn = fs[j].split(" ");
+            for (var w2 = 0; w2 < wn.length; w2++) if (wn[w2].indexOf(t2) === 0) { okN = true; break; }
+          }
+          if (!okN) return false;
+        } else words.push(t2);
+      }
+      if (!words.length) return true;
+      /* «عبد الله» بمسافةٍ تجد «عبدالله» الملتصقة: تُجرَّب أيضاً صورُ دمج
+         الكلمات المتجاورة في الاستعلام — وعددها محدود فلا كلفة تُذكر */
+      var vars = [words];
+      if (words.length > 1 && words.length <= 6) {
+        var nMask = 1 << (words.length - 1);
+        for (var msk = 1; msk < nMask; msk++) {
+          var v = [words[0]];
+          for (i = 1; i < words.length; i++) {
+            if (msk & (1 << (i - 1))) v[v.length - 1] += words[i];
+            else v.push(words[i]);
+          }
+          vars.push(v);
+        }
+      }
+      for (j = 0; j < fs.length; j++)
+        for (var vi = 0; vi < vars.length; vi++)
+          if (seqHit(vars[vi], fs[j])) return true;
+      return false;
+    }
+    /* الطبقة المرتّبة: إن لم تبدأ حروفُك كلمةً فهي على الأقل تظهر بترتيبك
+       داخل حقلٍ واحد — «هيبي» تجد «اللهيبي»، و«محمد عو» لا تعطيك أبداً
+       اسماً ليس فيه محمد فعوض بهذا الترتيب. الأرقام هنا بالاحتواء (بحثُ
+       وسطِ الجوال أو الهوية). */
+    function hitChain(tokens, fields){
+      if (!tokens || !tokens.length) return true;
+      var fs = fieldsNorm(fields), words = [], i, j, k, at;
+      for (i = 0; i < tokens.length; i++) {
+        var t = tokens[i];
+        if (/^[0-9]+$/.test(t)) {
+          var okN = false;
+          for (j = 0; j < fs.length; j++) if (fs[j].indexOf(t) !== -1) { okN = true; break; }
+          if (!okN) return false;
+        } else words.push(t);
+      }
+      if (!words.length) return true;
+      for (j = 0; j < fs.length; j++) {
+        var f = fs[j], p = 0, ok = true;
+        for (k = 0; k < words.length; k++) { at = f.indexOf(words[k], p); if (at === -1) { ok = false; break; } p = at + words[k].length; }
+        if (ok) return true;
+        /* اللصق بين الأسماء ممنوع: لا يُعبَر إلى الاسم الثاني إلا إذا استُهلك
+           الأول كاملاً من أوّله (المركّب كـ«عبدالله») — فلا تجد «دح» في
+           «محمد حامد» ولا «دل» في «خالد لافي» */
+        var ws2 = f.split(" "), iw = 0; ok = true;
+        for (k = 0; k < words.length && ok; k++) {
+          var t4 = words[k], fnd = -1, adv = 1;
+          for (var j4 = iw; j4 < ws2.length; j4++) {
+            if (ws2[j4].indexOf(t4) !== -1) { fnd = j4; adv = 1; break; }
+            if (t4.length > ws2[j4].length) {
+              var jn = "", m4 = j4;
+              while (m4 < ws2.length && jn.length < t4.length) { jn += ws2[m4]; m4++; }
+              if (jn.indexOf(t4) === 0) { fnd = j4; adv = m4 - j4; break; }
+            }
+          }
+          if (fnd < 0) ok = false; else iw = fnd + adv;
+        }
+        if (ok) return true;
+      }
+      return false;
+    }
+    return {
+      norm: norm, tok: tok, hay: hay, hit: hit,
+      /* R183 (الملاحظة ١٤): طيُّ الأرقام وحدها (٠-٩ و۰-۹ ← 0-9) — لطرفَي المقارنة في البحوث الحرفية */
+      dig: function(v){ return String(v == null ? "" : v).replace(AR_D, function(d){ return String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48); }).replace(FA_D, function(d){ return String.fromCharCode(d.charCodeAt(0) - 0x06F0 + 48); }); },
+      match: function(q, fields){ return hit(tok(q), fields); },
+      hitChain: hitChain, hitLoose: hitLoose,
+      /* مصفاةٌ بثلاث طبقات كلها وفيّةٌ لترتيب ما كُتب: دقيقة (بدايات الكلمات
+         وبالترتيب) ← مرتّبة (الحروف بترتيبها ولو وسط الكلام) ← واسعة (كل
+         كلمةٍ موجودة ولو في حقلٍ آخر) — ولا تنزل طبقةً إلا إن خلت التي فوقها */
+      filter: function(q, list, fieldsOf){
+        var ts = tok(q);
+        if (!ts.length) return (list || []).slice();
+        var src = list || [];
+        var out = src.filter(function(row){ return hit(ts, fieldsOf(row)); });
+        if (!out.length) out = src.filter(function(row){ return hitChain(ts, fieldsOf(row)); });
+        if (!out.length) out = src.filter(function(row){ return hitLoose(ts, fieldsOf(row)); });
+        /* ترتيبٌ بالوجاهة لا بالهجاء وحده: من يبدأ اسمُه الأول بما كتبتَ
+           أولاً، ثم من في اسمه كلمةٌ تبدؤه، ثم البقية (كعائلات أل التعريف)
+           — فكتابة «ب» تُصدِّر بدراً وبشرى لا أصحاب الألف */
+        var t0 = null;
+        for (var i = 0; i < ts.length; i++) if (!/^[0-9]+$/.test(ts[i])) { t0 = ts[i]; break; }
+        if (!t0 || out.length < 2) return out;
+        var ranked = out.map(function(row, ix){
+          var fs = fieldsNorm(fieldsOf(row)), r = 2;
+          for (var j = 0; j < fs.length && r; j++) {
+            var ws = fs[j].split(" ");
+            for (var k = 0; k < ws.length; k++) {
+              if (CONN[ws[k]]) continue;
+              if (ws[k].indexOf(t0) === 0) { r = (k === 0 && j === 0) ? 0 : (r > 1 ? 1 : r); if (!r) break; }
+            }
+          }
+          return { row: row, r: r, ix: ix };
+        });
+        ranked.sort(function(a, b){ return a.r - b.r || a.ix - b.ix; });
+        return ranked.map(function(x){ return x.row; });
+      }
+    };
+  })();
 /* Typed notification domain. The static type defaults are mirrored from 441 REG;
    parity is tested. No notification business document is stored in KV. */
 function notifRule() {
@@ -4650,7 +4867,8 @@ async function nfCommit(env, A, st, base, action, scopes, casKey) {
   try {
     await env.DB.batch(all);
   } catch (e) {
-    if (isRevConflict(e)) throw nfErr("conflict", 409);
+    if (isRevConflict(e) || /KIVO_RESTORE_TARGET/.test(String(e))) throw nfErr("conflict", 409);
+    if (/KIVO_NOTIFICATION_LEGACY_SOURCE/.test(String(e))) throw nfErr("notification-legacy-source-present", 503);
     throw e;
   }
   var receipt = { ok: 1, rev: A ? await nfFeedRevision(env, A) : await nfRevision(env) };
@@ -5331,11 +5549,11 @@ function nfInsertPlans(env, plans) {
 function nfInsertEvent(env, m, targets, once) {
   return nfInsertPlans(env, [{ m: m, targets: targets, once: once || "" }]);
 }
-async function nfEmitEvents(env, A, events, internal, extra) {
+async function nfPlanEvents(env, A, events, internal) {
   await nfGuardRetired(env);
   nfArr(events, 200);
-  var cfg = nfCfg((await env.DB.prepare("SELECT * FROM notification_type_overrides").all()).results || []),
-    st = [],
+  var overrideRows = (await env.DB.prepare("SELECT * FROM notification_type_overrides").all()).results || [],
+    cfg = nfCfg(overrideRows),
     ids = [],
     plans = [];
   events.forEach(function (it) {
@@ -5448,20 +5666,25 @@ async function nfEmitEvents(env, A, events, internal, extra) {
     });
     ids = [];
   }
-  st = nfInsertPlans(env, plans).concat(extra || []);
+  return {
+    plans: plans, ids: ids, requested: requested, statements: nfInsertPlans(env, plans),
+    scopes: Array.from(new Set(plans.map(function (p) { return p.m.scope; }))),
+    guards: rsWitness(env, NF_TABLES.overrides[0], NF_TABLES.overrides[1], overrideRows).concat([
+      env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE k IN ('bassam_notif_sys_v1','bassam_bc_v1','bassam_notif_cfg_v1','bassam_notif_v1') OR k GLOB 'bsdept:*:bassam_notif_v1') THEN json_extract('{}','KIVO_NOTIFICATION_LEGACY_SOURCE') END"),
+    ]),
+  };
+}
+async function nfEmitEvents(env, A, events, internal, extra) {
+  var plan = await nfPlanEvents(env, A, events, internal), plans = plan.plans, ids = plan.ids,
+    requested = plan.requested, st = plan.statements.concat(extra || []);
+  if (st.length) st = plan.guards.concat(st);
   var result = await nfCommit(
     env,
     A,
     st,
     undefined,
     "emitted",
-    Array.from(
-      new Set(
-        plans.map(function (p) {
-          return p.m.scope;
-        }),
-      ),
-    ),
+    plan.scopes,
   );
   if (plans.length) {
     var found = await env.DB.prepare(
@@ -5883,7 +6106,10 @@ async function nfRoute(env, request, url, ss) {
   if (!A || A.u.dis) return json({ ok: 0, err: "session" }, 401);
   try {
     await nfGuardRetired(env);
-    if (url.pathname === "/api/notifications" && request.method === "GET") return json(await nfFeed(env, A, url));
+    if (url.pathname === "/api/notifications" && request.method === "GET") {
+      var dailyIr = await nfIrshadDaily(env, A, url); if (dailyIr.emitted) preOff(env);
+      return json(await nfFeed(env, A, url));
+    }
     if (url.pathname === "/api/notifications/export" && request.method === "GET") return json(await nfExport(env, A, url));
     if (url.pathname !== "/api/notifications/act" || request.method !== "POST") return json({ ok: 0, err: "method" }, 405);
     var bytes = await request.arrayBuffer();
@@ -8729,6 +8955,9 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
       domains.custody = domains.custody.filter(function (c) {
         return c && c.scope && allowed.has(c.scope.departmentId);
       });
+    if (domains.irshad) domains.irshad = domains.irshad.filter(function (domain) {
+      return domain && domain.scope && allowed.has(domain.scope.departmentId);
+    });
   } else {
     Object.keys(keys).forEach(function (k) {
       if (Object.prototype.hasOwnProperty.call(inputKeys, k) && k !== K_PERM) {
@@ -8740,6 +8969,7 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
        empty rowset is still an existing domain, not a missing legacy document. */
     delete domains.notifications;
     delete domains.custody;
+    delete domains.irshad;
   }
   if (domains.dailyStats) {
     delete domains.dailyStats;
@@ -9045,11 +9275,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody']);
+    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody', 'irshad']);
     if (
-      manifest.version !== 1 ||
+      manifest.version !== 2 ||
       manifest.scope !== 'full' ||
-      ['kv', 'dailyStats', 'notifications', 'custody'].some(function (k) {
+      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad'].some(function (k) {
         return manifest.domains[k] !== 1;
       })
     )
@@ -9060,7 +9290,7 @@ async function rsPrepare(env, A, body, meta, internal) {
       !isObj(body.domains) ||
       !body.domains.dailyStats ||
       !body.domains.notifications ||
-      !Array.isArray(body.domains.custody)
+      !Array.isArray(body.domains.custody) || !Array.isArray(body.domains.irshad)
     )
       throw rsError('restore-incomplete-manifest');
     var ids = declaredDepts.map(function (d) {
@@ -9079,15 +9309,18 @@ async function rsPrepare(env, A, body, meta, internal) {
       return c && c.scope && c.scope.departmentId;
     });
     if (!deq(ids.slice().sort(), scopes.sort())) throw rsError('restore-incomplete-custody');
+    if (!deq(ids.slice().sort(), body.domains.irshad.map(function (d) {
+      return d && d.scope && d.scope.departmentId;
+    }).sort())) throw rsError('restore-incomplete-irshad');
   } else {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'notifications', 'custody']);
+    rsShape(manifest.domains, ['kv', 'notifications', 'custody', 'irshad']);
     if (
-      manifest.version !== 1 ||
+      manifest.version !== 2 ||
       manifest.scope !== 'dept' ||
-      ['kv', 'notifications', 'custody'].some(function (k) {
+      ['kv', 'notifications', 'custody', 'irshad'].some(function (k) {
         return manifest.domains[k] !== 1;
       }) ||
       !deq(manifest.departments, [body.scope.departmentId]) ||
@@ -9095,7 +9328,10 @@ async function rsPrepare(env, A, body, meta, internal) {
       !body.domains.notifications ||
       !Array.isArray(body.domains.custody) ||
       body.domains.custody.length !== 1 ||
-      body.domains.custody[0].scope.departmentId !== body.scope.departmentId
+      body.domains.custody[0].scope.departmentId !== body.scope.departmentId ||
+      !Array.isArray(body.domains.irshad) || body.domains.irshad.length !== 1 ||
+      !body.domains.irshad[0] || !body.domains.irshad[0].scope ||
+      body.domains.irshad[0].scope.departmentId !== body.scope.departmentId
     )
       throw rsError('restore-incomplete-manifest');
     var prefix = 'bsdept:' + body.scope.departmentId + ':',
@@ -9126,9 +9362,9 @@ async function rsPrepare(env, A, body, meta, internal) {
     throw rsError('restore-scope', 403);
   if (!sup && (body.scope.kind !== 'dept' || !isMgrOf(A, dept) || !enfHeld(A, dept, 'backup.restore')))
     throw rsError('restore-policy', 403);
-  rsShape(body.base, ['epoch', 'kv', 'dailyStats', 'notifications', 'custody']);
+  rsShape(body.base, ['epoch', 'kv', 'dailyStats', 'notifications', 'custody', 'irshad']);
   rsNat(body.base.epoch);
-  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody']);
+  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody', 'irshad']);
   var fingerprint =
       (internal && internal.fingerprint) ||
       hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(cuCanonical(body))))),
@@ -9143,6 +9379,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   await nfGuardRetired(env);
   if (await dsLegacyPresent(env)) throw rsError('dstats-legacy-source-present', 503);
   if (await cuLegacyPresent(env)) throw rsError('custody-legacy-source-present', 503);
+  await irGuardRetired(env);
   if (!isObj(body.keys || {}) || !isObj(body.base.kv || {}) || !Array.isArray(body.delete || [])) throw rsError('restore-keys');
   var keys = Object.assign(Object.create(null), body.keys || {}),
     del = (body.delete || []).slice(),
@@ -9159,7 +9396,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   Object.keys(keys)
     .concat(del)
     .forEach(function (k) {
-      if (nfLegacyKey(k) || cuLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
+      if (nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
@@ -9273,7 +9510,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     .concat(del)
     .forEach(function (k) {
       if (typeof keys[k] !== 'string' && del.indexOf(k) < 0) throw rsError('restore-key-value');
-      if (nfLegacyKey(k) || cuLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
+      if (nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
       if (body.scope.kind === 'dept' && parseKey(k).dept !== dept && k !== K_PERM) throw rsError('restore-scope', 403);
       rsNat(base[k]);
       ops[k] = { op: 'backup.restore', scope: body.scope.kind, mode: body.mode, reason: body.reason };
@@ -9334,7 +9571,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { kv: kv.pend.length, dailyStats: 0, notifications: 0, custody: 0, kept: selection.kept },
+    counts: { kv: kv.pend.length, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, kept: selection.kept },
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
@@ -9436,6 +9673,31 @@ async function rsPrepare(env, A, body, meta, internal) {
       plan.counts.custody++;
     }
   }
+  if (domains.irshad) {
+    var irSeen = new Set();
+    for (var irDomain of domains.irshad) {
+      var irDept = irDomain && irDomain.scope && irDomain.scope.departmentId;
+      if (!irDept || !finalDeptIds.has(irDept) || irSeen.has(irDept) || removedDepartments.indexOf(irDept) >= 0 ||
+          (body.scope.kind === 'dept' && irDept !== dept)) throw rsError('restore-irshad-scope');
+      irSeen.add(irDept);
+      var ip = await irPlanRestore(env, A, irDomain, {
+        dept: irDept, base: (body.base.irshad || {})[irDept], scope: body.scope.kind,
+        mode: 'replace', reason: body.reason, finalKeys: keys,
+      });
+      if (body.mode === 'merge' && (Object.values((body.base.irshad || {})[irDept] || {}).some(function (v) { return v !== 0; }) ||
+          Object.values(ip.snapshotRows).some(function (rows) { return rows.length; })))
+        throw rsError('restore-merge-identity-collision', 409);
+      plan.guards.push.apply(plan.guards, ip.guards);
+      if (ip.changed) {
+        plan.statements.push.apply(plan.statements, ip.statements);
+        plan.revisionKeys.push.apply(plan.revisionKeys, ip.revisionKeys);
+        Object.keys(ip.snapshotRows).forEach(function (kind) {
+          plan.snapshots.push({ domain: 'irshad', table: irDept + ':' + kind, rows: ip.snapshotRows[kind] });
+        });
+      }
+      plan.counts.irshad++;
+    }
+  }
   /* Employee cleanup shares the same planner/transaction. An explicit restored
      custody candidate is its final state and must be validated by cuPlanRestore. */
   var cleaned = new Set();
@@ -9490,11 +9752,24 @@ async function rsPrepare(env, A, body, meta, internal) {
       plan.snapshots.push({ domain: 'custody', table: removed + ':' + n, rows: wipe.snapshotRows[n] });
     });
   }
+  for (var irRemoved of removedDepartments) {
+    var irWipe = await irPlanWipe(env, A, {
+      dept: irRemoved, base: (body.base.irshad || {})[irRemoved], intent: 'dept-delete',
+      reason: body.reason, finalKeys: keys,
+    });
+    plan.guards.push.apply(plan.guards, irWipe.guards);
+    plan.statements.push.apply(plan.statements, irWipe.statements);
+    plan.revisionKeys.push.apply(plan.revisionKeys, irWipe.revisionKeys);
+    Object.keys(irWipe.snapshotRows).forEach(function (kind) {
+      plan.snapshots.push({ domain: 'irshad', table: irRemoved + ':' + kind, rows: irWipe.snapshotRows[kind] });
+    });
+  }
   if (internal && internal.images) await rsImageArchivePlan(env, A, plan, reference, internal.images);
   await rsImageMetadataPlan(env, A, plan, reference);
   return plan;
 }
 async function rsCommit(env, A, plan, meta) {
+  await irGuardRetired(env);
   if (plan.receipt && plan.receipt.result_json) {
     var replay = JSON.parse(plan.receipt.result_json);
     replay.reauthRequired = !!replay.reauthRequired;
@@ -9515,7 +9790,7 @@ async function rsCommit(env, A, plan, meta) {
     };
   A = plan.author || A;
   var sid = enfSnapId('atomic'),
-    st = [rsEpochGuard(env.DB, plan.epoch)].concat(plan.guards),
+    st = [rsEpochGuard(env.DB, plan.epoch), irRetiredGuard(env)].concat(plan.guards),
     keys = Array.from(new Set(plan.revisionKeys)),
     now = Date.now(),
     changed = keys.length > 0 || !!plan.forceFence;
@@ -9660,11 +9935,12 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
                 .concat(requestedDepartments || []),
             ),
           ),
-    custody = Object.create(null);
-  depts.forEach(function (d) {
+    custody = Object.create(null), irshad = Object.create(null);
+  for (var d of depts) {
     if (typeof d !== 'string' || !d || d.length > 200 || BAD_ID_RX.test(d) || d.includes(':')) throw rsError('restore-departments');
     custody[d] = r[cuKey(d)] || 0;
-  });
+    irshad[d] = await irRevs(env, d);
+  }
   return {
     ok: 1,
     scope: scope,
@@ -9674,6 +9950,7 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
       dailyStats: r[K_DSTATS] || 0,
       notifications: { rev: r[NF_REV] || 0, configRev: r[NF_CFG_REV] || 0, broadcastRev: r[NF_BC_REV] || 0 },
       custody: custody,
+      irshad: irshad,
     },
     counts: { keys: Object.keys(kv).length, departments: depts.length },
   };
@@ -9778,8 +10055,10 @@ async function rsRoute(env, request, url, ss) {
     return json(await rsCommit(env, A, await rsPrepare(env, A, body, reqMeta(request)), reqMeta(request)));
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs, details: e.details }, e.status);
+    if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
+    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH/.test(String(e))) return json({ ok: 0, err: 'restore-epoch-changed' }, 409);
     if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e))) return json({ ok: 0, err: 'conflict' }, 409);
     throw e;
@@ -10158,6 +10437,31 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   plan.guards.push.apply(plan.guards, transition.guards);
   plan.statements.push.apply(plan.statements, transition.statements);
   plan.revisionKeys.push.apply(plan.revisionKeys, transition.revisionKeys);
+  var irWipeDepartments = Array.from(new Set(transition.transitions.filter(function (t) {
+    return t.intent === 'dept-wipe';
+  }).map(function (t) { return t.departmentId; }).concat(opt.__serverDepartmentWipes || [])));
+  var irDepartmentChange = kv.pend.find(function (pd) { return pd.k === K_DEPTS; }),
+    irFinalDepartments = irDepartmentChange ? (irDepartmentChange.act === 'del' ? [] : parseJson(irDepartmentChange.v, [])) : A.depts;
+  plan.snapshotRequired = plan.snapshotRequired || irWipeDepartments.length > 0;
+  for (var irDept of irWipeDepartments) {
+    var irBase = opt.__irshadBase;
+    if (!irBase) {
+      irBase = {};
+      IR_RES_NAMES.forEach(function (name, i) { irBase[name] = (body.base || {})[irKey(irDept, i)]; });
+    }
+    var irWipe = await irPlanWipe(env, A, {
+      dept: irDept, base: irBase, intent: opt.__wipeKind === 'delete' ||
+        !irFinalDepartments.some(function (d) { return d.id === irDept; }) ? 'dept-delete' : 'dept-wipe',
+      reason: body.reason || '',
+    });
+    plan.guards.push.apply(plan.guards, irWipe.guards);
+    plan.statements.push.apply(plan.statements, irWipe.statements);
+    plan.revisionKeys.push.apply(plan.revisionKeys, irWipe.revisionKeys);
+    plan.counts.irshad = (plan.counts.irshad || 0) + irWipe.snapshotRows.reports.length + irWipe.snapshotRows.catalogs.length + irWipe.snapshotRows.windows.length;
+    Object.keys(irWipe.snapshotRows).forEach(function (kind) {
+      plan.snapshots.push({ domain: 'irshad', table: irDept + ':' + kind, rows: irWipe.snapshotRows[kind] });
+    });
+  }
   if (!plan.snapshotRequired) plan.snapshots = [];
   else
     for (var dept of departments) {
@@ -10182,6 +10486,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     plan.snapshots.push.apply(plan.snapshots, np.snapshots);
     plan.counts.notifications = opt.__notificationCount || 0;
     plan.counts.accounts = opt.__accountCount || 0;
+    plan.counts.irshad = opt.__irshadCount || 0;
     await rsCustodyReceiptPreimage(env, d, plan);
     plan.fingerprint = opt.__wipeFingerprint;
   }
@@ -10200,6 +10505,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
 async function rsWipeInventory(env, A, dept, kind) {
   kind = kind || 'wipe';
   if (A.u.role !== 'super') throw rsError('forbidden', 403);
+  await irGuardRetired(env);
   var reference = await rsReferenceSnapshot(env, A.u.id);
   A = reference.A;
   if (
@@ -10222,6 +10528,8 @@ async function rsWipeInventory(env, A, dept, kind) {
       env.DB.prepare('SELECT COUNT(*) n FROM custody_items WHERE department_id=?1').bind(dept),
       env.DB.prepare('SELECT COUNT(*) n FROM custody_movements WHERE department_id=?1').bind(dept),
       env.DB.prepare('SELECT COUNT(*) n FROM notification_messages WHERE scope=?1').bind('d:' + dept),
+      env.DB.prepare('SELECT (SELECT COUNT(*) FROM irshad_reports WHERE department_id=?1)+(SELECT COUNT(*) FROM irshad_catalog_entries WHERE department_id=?1)+(SELECT COUNT(*) FROM irshad_retro_windows WHERE department_id=?1) n').bind(dept),
+      irRevisionRowsStatement(env, dept),
     ]),
     nf = await nfRead(env);
   return {
@@ -10244,6 +10552,7 @@ async function rsWipeInventory(env, A, dept, kind) {
         epoch: await rsEpoch(env),
         kv: kv,
         custody: await cuRev(env, dept),
+        irshad: irRevisionResult(counts[4].results || [], dept),
         notifications: { rev: nf.rev, configRev: nf.configRev, broadcastRev: nf.broadcastRev },
       },
       counts: {
@@ -10256,6 +10565,7 @@ async function rsWipeInventory(env, A, dept, kind) {
             : 0,
         custody: Number(counts[0].results[0].n) + Number(counts[1].results[0].n),
         notifications: Number(counts[2].results[0].n),
+        irshad: Number(counts[3].results[0].n),
       },
     },
   };
@@ -10281,7 +10591,7 @@ async function rsWipeRoute(env, request, url, ss) {
     if (input.uid !== undefined && input.uid !== ss.uid) throw rsError('session-changed', 409);
     if (typeof input.dept !== 'string' || typeof input.requestId !== 'string' || !/^[-A-Za-z0-9_]{8,100}$/.test(input.requestId))
       throw rsError('bad-body');
-    rsShape(input.base, ['epoch', 'kv', 'custody', 'notifications']);
+    rsShape(input.base, ['epoch', 'kv', 'custody', 'notifications', 'irshad']);
     var fingerprint = hex(
         await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({ kind: kind, input: cuCanonical(input) }))),
       ),
@@ -10305,7 +10615,7 @@ async function rsWipeRoute(env, request, url, ss) {
         if (typeof input.reason !== 'string' || input.reason.length > 300) throw rsError('bad-reason');
         why[k] = input.reason.trim();
       }
-      if (cuLegacyKey(k) || nfLegacyKey(k)) throw rsError('domain-moved');
+      if (cuLegacyKey(k) || nfLegacyKey(k) || irLegacyKey(k)) throw rsError('domain-moved');
       var e = ENT[resName(k)];
       if (e && typeof e.empty === 'string') set[k] = e.empty;
       else del.push(k);
@@ -10340,6 +10650,8 @@ async function rsWipeRoute(env, request, url, ss) {
         __wipeFingerprint: fingerprint,
         __notificationBase: input.base.notifications,
         __notificationCount: observed.counts.notifications,
+        __irshadBase: input.base.irshad,
+        __irshadCount: observed.counts.irshad,
         __accountCount: observed.counts.accounts,
         __wipeKind: kind,
         __physicalDeleteKeys:
@@ -10363,8 +10675,10 @@ async function rsWipeRoute(env, request, url, ss) {
     return json(outcome);
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
+    if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
+    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e)))
       return json({ ok: 0, err: 'conflict' }, 409);
     throw e;
@@ -10428,14 +10742,16 @@ async function rsEmployeeRoute(env, request, url, ss) {
     return json(outcome);
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
+    if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
+    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e)))
       return json({ ok: 0, err: 'conflict' }, 409);
     throw e;
   }
 }
-/* STAGED backup normalization. Read/validate only: the existing restore compiler
+/* Backup normalization. Read/validate only: the existing restore compiler
    remains the only writer and the only source of authorization/account policy. */
 function rsBCFail(code) {
   throw rsError('backup-' + code);
@@ -10498,6 +10814,14 @@ function rsBCRemapCU(domain, source, target) {
   cuValidateDomain(next, target);
   return next;
 }
+function rsBCRemapIR(domain, source, target) {
+  var next = rsBCClone(irValidateDomain(domain, source));
+  next.scope.departmentId = target;
+  Object.keys(IR_TABLES).forEach(function (kind) {
+    next.rows[kind].forEach(function (row) { row.department_id = target; });
+  });
+  return irValidateDomain(next, target);
+}
 function rsBCForbiddenKey(key) {
   var n = resName(key);
   return isDeviceKey(key) || isDeviceKey(n) || /(?:^|_)(?:sessions?|recovery|recover|cookies?|tokens?|credentials?)(?:_|$)/i.test(n);
@@ -10505,9 +10829,10 @@ function rsBCForbiddenKey(key) {
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
   var required = scope.kind === 'full' ? ['kv', 'dailyStats', 'notifications', 'custody'] : ['kv', 'notifications', 'custody'];
+  if (manifest.version === 2) required.push('irshad');
   rsShape(manifest.domains, required);
   if (
-    manifest.version !== 1 ||
+    ![1, 2].includes(manifest.version) ||
     manifest.scope !== scope.kind ||
     required.some(function (k) {
       return manifest.domains[k] !== 1;
@@ -10533,6 +10858,11 @@ function rsBCManifest(manifest, scope, keys, domains, departments) {
     return d && d.scope && d.scope.departmentId;
   });
   if (!deq(custody.slice().sort(), departments.slice().sort())) rsBCFail('incomplete-custody');
+  if (manifest.version === 2) {
+    if (!Array.isArray(domains.irshad) || !deq(domains.irshad.map(function (d) {
+      return d && d.scope && d.scope.departmentId;
+    }).sort(), departments.slice().sort())) rsBCFail('incomplete-irshad');
+  } else if (domains.irshad !== undefined) rsBCFail('irshad-manifest-version');
 }
 async function rsConvertBackup(env, A, file, opt) {
   opt = opt || {};
@@ -10573,7 +10903,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var input = Object.create(null),
     keys = Object.create(null),
     domains = file.domains === undefined ? {} : rsBCClone(file.domains);
-  rsShape(domains, ['dailyStats', 'notifications', 'custody']);
+  rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad']);
   Object.keys(file.data).forEach(function (k) {
     if (k === 'bassam_active_dept_v1') {
       summary.ignoredDevicePreferences.push(k);
@@ -10581,6 +10911,10 @@ async function rsConvertBackup(env, A, file, opt) {
     }
     if (['__proto__', 'constructor', 'prototype'].indexOf(k) >= 0 || typeof file.data[k] !== 'string') rsBCFail('data-shape');
     if (rsBCForbiddenKey(k)) rsBCFail('sensitive-device-key');
+    if (irLegacyKey(k)) {
+      var part = parseKey(k), i = IR_RES.indexOf(resName(k));
+      if (k !== (part.dept ? irKey(part.dept, i) : IR_RES[i])) rsBCFail('irshad-namespace');
+    }
     rsBCParse(file.data[k]);
     input[k] = file.data[k];
   });
@@ -10617,7 +10951,8 @@ async function rsConvertBackup(env, A, file, opt) {
       Array.isArray(domains.custody) && domains.custody.length === 1
         ? domains.custody[0].scope && domains.custody[0].scope.departmentId
         : null;
-    var hints = [prefixes[0], declared && declared[0], typed].filter(Boolean);
+    var irTyped = Array.isArray(domains.irshad) && domains.irshad.length === 1 ? domains.irshad[0].scope && domains.irshad[0].scope.departmentId : null;
+    var hints = [prefixes[0], declared && declared[0], typed, irTyped].filter(Boolean);
     if (new Set(hints).size > 1) rsBCFail('ambiguous-department');
     source = hints[0] || target;
     deptIds = [target];
@@ -10637,6 +10972,7 @@ async function rsConvertBackup(env, A, file, opt) {
     });
   }
   var cuKeys = Object.keys(keys).filter(cuLegacyKey),
+    irKeys = Object.keys(keys).filter(irLegacyKey),
     nfKeys = Object.keys(keys).filter(nfLegacyKey),
     dsKeys = Object.keys(keys).filter(function (k) {
       return resName(k) === K_DSTATS;
@@ -10644,10 +10980,11 @@ async function rsConvertBackup(env, A, file, opt) {
   if (
     (cuKeys.length && rsBCOwn(domains, 'custody')) ||
     (nfKeys.length && rsBCOwn(domains, 'notifications')) ||
-    (dsKeys.length && rsBCOwn(domains, 'dailyStats'))
+    (dsKeys.length && rsBCOwn(domains, 'dailyStats')) ||
+    (irKeys.length && rsBCOwn(domains, 'irshad'))
   )
     rsBCFail('duplicate-domain-source');
-  if (modern && (cuKeys.length || nfKeys.length || dsKeys.length)) rsBCFail('retired-key-in-modern-file');
+  if (modern && (cuKeys.length || nfKeys.length || dsKeys.length || (file.manifest && file.manifest.version === 2 && irKeys.length))) rsBCFail('retired-key-in-modern-file');
   if (scope.kind === 'dept' && (dsKeys.length || domains.dailyStats !== undefined)) rsBCFail('global-domain-in-department');
   if (modern) {
     // Validate the source declaration before an explicit scoped remap. Missing
@@ -10658,6 +10995,25 @@ async function rsConvertBackup(env, A, file, opt) {
       sourceKeys[scope.kind === 'dept' ? 'bsdept:' + source + ':' + resName(k) : k] = keys[k];
     });
     rsBCManifest(file.manifest, sourceScope, sourceKeys, domains, scope.kind === 'dept' ? [source] : deptIds);
+  }
+  if (domains.irshad !== undefined) {
+    if (!Array.isArray(domains.irshad)) rsBCFail('irshad-shape');
+    domains.irshad = domains.irshad.map(function (domain) {
+      var d = domain && domain.scope && domain.scope.departmentId;
+      if (typeof d !== 'string' || (scope.kind === 'full' ? deptIds.indexOf(d) < 0 : d !== source)) rsBCFail('irshad-scope');
+      return rsBCRemapIR(domain, d, scope.kind === 'dept' ? target : d);
+    });
+    if (new Set(domains.irshad.map(function (d) { return d.scope.departmentId; })).size !== domains.irshad.length) rsBCFail('irshad-duplicate');
+  } else if (legacy || file.manifest.version === 1) {
+    domains.irshad = deptIds.map(function (d) {
+      var docs = {};
+      IR_RES_NAMES.forEach(function (name, i) {
+        var key = irKey(d, i);
+        if (rsBCOwn(keys, key)) docs[name] = rsBCParse(keys[key]);
+      });
+      if (!Object.keys(docs).length) summary.emptyDomains.push('irshad:' + d);
+      return irValidateDomain(irConvert(d, docs), d);
+    });
   }
   if (domains.custody !== undefined) {
     if (!Array.isArray(domains.custody)) rsBCFail('custody-shape');
@@ -10803,7 +11159,7 @@ async function rsConvertBackup(env, A, file, opt) {
       });
     }
   }
-  cuKeys.concat(nfKeys, dsKeys).forEach(function (k) {
+  cuKeys.concat(nfKeys, dsKeys, irKeys).forEach(function (k) {
     delete keys[k];
   });
   // Conversion preserves credentials byte-for-byte; applySave/restore retains
@@ -10827,10 +11183,1459 @@ async function rsConvertBackup(env, A, file, opt) {
     manifest.departments = [target];
     manifest.keys = Object.keys(keys).map(resName);
   }
+  // A v1 source is validated before conversion. The compiled destination always
+  // declares the complete typed Irshad domain; v2 never receives empty fallbacks.
+  manifest.version = 2;
+  manifest.domains.irshad = 1;
+  manifest.keys = Object.keys(keys).map(function (k) { return scope.kind === 'dept' ? resName(k) : k; });
   rsBCManifest(manifest, scope, keys, domains, deptIds);
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
   if (file.perms !== undefined) result.permissionSlice = rsBCClone(file.perms);
   return result;
+}
+/* Typed Irshad business domain. Plans never commit or allocate revisions. */
+var IR_RES = ['bassam_irshad_v1', 'bassam_irshad_langs_v1', 'bassam_irshad_locs_v1', 'bassam_irshad_retro_v1'];
+var IR_RES_NAMES = ['reports', 'languages', 'locations', 'retro'];
+var IR_REQUEST_COLS = ['department_id', 'account_uid', 'request_id', 'fingerprint', 'resource_key', 'resource_rev', 'operation', 'result_n', 'result_id', 'created_at'];
+var IR_FIELDS = [
+  ['id', 'report_id', 'text'],
+  ['y', 'hijri_year', 'number'],
+  ['m', 'hijri_month', 'number'],
+  ['d', 'hijri_day', 'number'],
+  ['ts', 'created_at', 'number'],
+  ['shift', 'shift', 'text'],
+  ['eid', 'employee_key', 'text'],
+  ['name', 'employee_name', 'text'],
+  ['loc', 'location', 'text'],
+  ['actor', 'actor_label', 'text'],
+  ['bro', 'brochures', 'number'],
+  ['pros', 'prosecution', 'number'],
+  ['pol', 'police', 'number'],
+  ['editedTs', 'edited_at', 'number'],
+  ['editedBy', 'edited_by', 'text'],
+  // Existing supported legacy probe fields; preserve their exact field names
+  // and values. Do not reinterpret n/lang as current language beneficiaries.
+  ['lang', 'legacy_language', 'text'],
+  ['n', 'legacy_count', 'number'],
+  ['by', 'legacy_author', 'text'],
+  ['test', 'test_marker', 'text'],
+];
+var IR_LANG_BIT = Math.pow(2, IR_FIELDS.length);
+var IR_WIN_FIELDS = [
+  ['id', 'window_id', 'text'],
+  ['at', 'opened_at', 'number'],
+  ['until', 'until_at', 'number'],
+  ['hours', 'hours', 'number'],
+  ['reason', 'reason', 'text'],
+  ['reasonMissing', 'reason_missing', 'boolean'],
+  ['closedAt', 'closed_at', 'number'],
+];
+var IR_SCOPE_FIELDS = [
+  ['y', 'hijri_year', 'number'],
+  ['m', 'hijri_month', 'number'],
+  ['d', 'hijri_day', 'number'],
+];
+var IR_BY_FIELDS = [
+  ['id', 'by_id', 'text'],
+  ['un', 'by_username', 'text'],
+  ['ekey', 'by_employee_key', 'text'],
+  ['name', 'by_name', 'text'],
+];
+var IR_CLOSED_FIELDS = [
+  ['id', 'closed_by_id', 'text'],
+  ['un', 'closed_by_username', 'text'],
+  ['ekey', 'closed_by_employee_key', 'text'],
+];
+var IR_TABLES = {
+  reports: [
+    'irshad_reports',
+    ['department_id', 'sequence'].concat(
+      IR_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      ['presence_mask', 'languages_null'],
+    ),
+  ],
+  languages: [
+    'irshad_report_languages',
+    ['department_id', 'report_id', 'position', 'language', 'count', 'presence_mask'],
+  ],
+  catalogs: ['irshad_catalog_entries', ['department_id', 'kind', 'position', 'value']],
+  windows: [
+    'irshad_retro_windows',
+    ['department_id', 'sequence'].concat(
+      IR_WIN_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      IR_SCOPE_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      ['scope_mask'],
+      IR_BY_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      IR_CLOSED_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      ['presence_mask', 'by_kind', 'by_mask', 'closed_by_kind', 'closed_by_mask'],
+    ),
+  ],
+};
+function irError(code, status, path) {
+  var e = new Error(code);
+  e.irCode = code;
+  e.irStatus = status || 400;
+  if (path) e.irPath = path;
+  return e;
+}
+function irOwn(o, k) {
+  return Object.prototype.hasOwnProperty.call(o, k);
+}
+function irShape(o, allowed, path) {
+  if (
+    !isObj(o) ||
+    Object.keys(o).some(function (k) {
+      return allowed.indexOf(k) < 0;
+    })
+  )
+    throw irError('irshad-shape', 400, path);
+}
+function irText(v, path) {
+  if (typeof v !== 'string') throw irError('irshad-text', 400, path);
+  return v;
+}
+function irKey(d, i) {
+  return 'bsdept:' + d + ':' + IR_RES[i || 0];
+}
+function irMetaKey(d) {
+  return 'irshad:' + d + ':presence';
+}
+function irLegacyKey(k) {
+  return IR_RES.indexOf(resName(k)) >= 0;
+}
+function irLegacyPredicate() {
+  /* Include malformed suffixes so a cutover cannot stamp success while an
+     ambiguous known resource remains outside its canonical department key. */
+  return 'k IN(SELECT value FROM json_each(?1))' + IR_RES.map(function (name) {
+    return " OR k GLOB 'bsdept:*:" + name + "' OR k GLOB 'bsdept:*:" + name + ":*' OR k GLOB '" + name + ":*'";
+  }).join('');
+}
+function irScalar(v, type, path) {
+  if (v === null) return null;
+  if (type === 'number' && (typeof v !== 'number' || !Number.isFinite(v))) throw irError('irshad-number', 400, path);
+  if (type === 'text') irText(v, path);
+  if (type === 'boolean' && typeof v !== 'boolean') throw irError('irshad-boolean', 400, path);
+  return type === 'boolean' ? (v ? 1 : 0) : v;
+}
+function irEncodeFields(value, fields, row, path) {
+  var mask = 0;
+  fields.forEach(function (f, i) {
+    row[f[1]] = null;
+    if (irOwn(value, f[0])) {
+      mask += Math.pow(2, i);
+      row[f[1]] = irScalar(value[f[0]], f[2], path + '.' + f[0]);
+    }
+  });
+  return mask;
+}
+function irDecodeFields(row, fields, mask) {
+  var out = {};
+  fields.forEach(function (f, i) {
+    if (mask & Math.pow(2, i)) out[f[0]] = row[f[1]] === null ? null : f[2] === 'boolean' ? !!row[f[1]] : row[f[1]];
+  });
+  return out;
+}
+function irEncodePerson(value, fields, row, prefix, path) {
+  if (value === undefined) {
+    fields.forEach(function (f) {
+      row[f[1]] = null;
+    });
+    row[prefix + '_kind'] = 0;
+    row[prefix + '_mask'] = 0;
+    return;
+  }
+  if (value === null) {
+    fields.forEach(function (f) {
+      row[f[1]] = null;
+    });
+    row[prefix + '_kind'] = 1;
+    row[prefix + '_mask'] = 0;
+    return;
+  }
+  irShape(
+    value,
+    fields.map(function (f) {
+      return f[0];
+    }),
+    path,
+  );
+  row[prefix + '_kind'] = 2;
+  row[prefix + '_mask'] = irEncodeFields(value, fields, row, path);
+}
+function irEmptyDomain(d) {
+  return {
+    version: 1,
+    scope: { departmentId: d },
+    resources: {
+      reports: false,
+      languages: false,
+      locations: false,
+      retro: false,
+      retroVersionPresent: false,
+      retroVersion: null,
+      retroWindowsPresent: false,
+    },
+    rows: { reports: [], languages: [], catalogs: [], windows: [] },
+  };
+}
+function irConvert(d, docs) {
+  irText(d, 'scope');
+  if (!d || d.indexOf(':') >= 0) throw irError('irshad-scope');
+  irShape(docs, ['reports', 'languages', 'locations', 'retro'], 'resources');
+  var out = irEmptyDomain(d),
+    seen = new Set();
+  if (irOwn(docs, 'reports')) {
+    irShape(docs.reports, ['reports'], 'reports');
+    if (!Array.isArray(docs.reports.reports)) throw irError('irshad-reports-shape');
+    out.resources.reports = true;
+    docs.reports.reports.forEach(function (r, sequence) {
+      irShape(
+        r,
+        IR_FIELDS.map(function (f) {
+          return f[0];
+        }).concat(['langs']),
+        'reports[' + sequence + ']',
+      );
+      if (typeof r.id !== 'string' || seen.has(r.id))
+        throw irError('irshad-report-identity', 400, 'reports[' + sequence + '].id');
+      seen.add(r.id);
+      var row = { department_id: d, sequence: sequence, languages_null: 0 };
+      row.presence_mask = irEncodeFields(r, IR_FIELDS, row, 'reports[' + sequence + ']');
+      if (irOwn(r, 'langs')) {
+        row.presence_mask += IR_LANG_BIT;
+        if (r.langs === null) row.languages_null = 1;
+        else {
+          if (!Array.isArray(r.langs)) throw irError('irshad-languages-shape');
+          r.langs.forEach(function (l, position) {
+            irShape(l, ['lang', 'count'], 'reports[' + sequence + '].langs[' + position + ']');
+            var lr = { department_id: d, report_id: r.id, position: position };
+            lr.presence_mask = irEncodeFields(
+              l,
+              [
+                ['lang', 'language', 'text'],
+                ['count', 'count', 'number'],
+              ],
+              lr,
+              'reports[' + sequence + '].langs[' + position + ']',
+            );
+            out.rows.languages.push(lr);
+          });
+        }
+      }
+      out.rows.reports.push(row);
+    });
+  }
+  ['languages', 'locations'].forEach(function (kind) {
+    if (!irOwn(docs, kind)) return;
+    var list = docs[kind];
+    if (!Array.isArray(list)) throw irError('irshad-catalog-shape');
+    out.resources[kind] = true;
+    list.forEach(function (value, position) {
+      out.rows.catalogs.push({
+        department_id: d,
+        kind: kind,
+        position: position,
+        value: irText(value, kind + '[' + position + ']'),
+      });
+    });
+  });
+  if (irOwn(docs, 'retro')) {
+    irShape(docs.retro, ['v', 'windows'], 'retro');
+    out.resources.retro = true;
+    out.resources.retroVersionPresent = irOwn(docs.retro, 'v');
+    out.resources.retroVersion = out.resources.retroVersionPresent ? irScalar(docs.retro.v, 'number', 'retro.v') : null;
+    out.resources.retroWindowsPresent = irOwn(docs.retro, 'windows');
+    var wins = out.resources.retroWindowsPresent ? docs.retro.windows : [];
+    if (!Array.isArray(wins)) throw irError('irshad-retro-shape');
+    var ids = new Set();
+    wins.forEach(function (w, sequence) {
+      irShape(
+        w,
+        IR_WIN_FIELDS.map(function (f) {
+          return f[0];
+        }).concat(['scope', 'by', 'closedBy']),
+        'retro.windows[' + sequence + ']',
+      );
+      if (typeof w.id !== 'string' || ids.has(w.id)) throw irError('irshad-retro-identity');
+      ids.add(w.id);
+      irShape(w.scope, ['y', 'm', 'd'], 'retro.scope');
+      var row = { department_id: d, sequence: sequence };
+      row.presence_mask = irEncodeFields(w, IR_WIN_FIELDS, row, 'retro.windows[' + sequence + ']');
+      row.scope_mask = irEncodeFields(w.scope, IR_SCOPE_FIELDS, row, 'retro.scope');
+      irEncodePerson(w.by, IR_BY_FIELDS, row, 'by', 'retro.by');
+      irEncodePerson(w.closedBy, IR_CLOSED_FIELDS, row, 'closed_by', 'retro.closedBy');
+      out.rows.windows.push(row);
+    });
+  }
+  return out;
+}
+function irInflate(domain) {
+  var docs = {},
+    rows = domain.rows,
+    flags = domain.resources;
+  if (flags.reports) {
+    docs.reports = {
+      reports: rows.reports
+        .slice()
+        .sort(function (a, b) {
+          return a.sequence - b.sequence;
+        })
+        .map(function (r) {
+          var v = irDecodeFields(r, IR_FIELDS, r.presence_mask);
+          if (r.presence_mask & IR_LANG_BIT)
+            v.langs = r.languages_null
+              ? null
+              : rows.languages
+                  .filter(function (l) {
+                    return l.report_id === r.report_id;
+                  })
+                  .sort(function (a, b) {
+                    return a.position - b.position;
+                  })
+                  .map(function (l) {
+                    return irDecodeFields(
+                      l,
+                      [
+                        ['lang', 'language', 'text'],
+                        ['count', 'count', 'number'],
+                      ],
+                      l.presence_mask,
+                    );
+                  });
+          return v;
+        }),
+    };
+  }
+  ['languages', 'locations'].forEach(function (kind) {
+    if (flags[kind])
+      docs[kind] = rows.catalogs
+        .filter(function (r) {
+          return r.kind === kind;
+        })
+        .sort(function (a, b) {
+          return a.position - b.position;
+        })
+        .map(function (r) {
+          return r.value;
+        });
+  });
+  if (flags.retro) {
+    var retro = {};
+    if (flags.retroVersionPresent) retro.v = flags.retroVersion;
+    if (flags.retroWindowsPresent)
+      retro.windows = rows.windows
+        .slice()
+        .sort(function (a, b) {
+          return a.sequence - b.sequence;
+        })
+        .map(function (r) {
+          var w = irDecodeFields(r, IR_WIN_FIELDS, r.presence_mask);
+          w.scope = irDecodeFields(r, IR_SCOPE_FIELDS, r.scope_mask);
+          if (r.by_kind) w.by = r.by_kind === 1 ? null : irDecodeFields(r, IR_BY_FIELDS, r.by_mask);
+          if (r.closed_by_kind)
+            w.closedBy = r.closed_by_kind === 1 ? null : irDecodeFields(r, IR_CLOSED_FIELDS, r.closed_by_mask);
+          return w;
+        });
+    docs.retro = retro;
+  }
+  return docs;
+}
+function irFlags(flags) {
+  return (
+    (flags.reports ? 1 : 0) +
+    (flags.languages ? 2 : 0) +
+    (flags.locations ? 4 : 0) +
+    (flags.retro ? 8 : 0) +
+    (flags.retroVersionPresent ? 16 : 0) +
+    (flags.retroWindowsPresent ? 32 : 0)
+  );
+}
+function irMetaStatements(env, domain) {
+  var key = irMetaKey(domain.scope.departmentId),
+    st = [
+      env.DB.prepare('INSERT INTO meta(k,v)VALUES(?1,?2) ON CONFLICT(k)DO UPDATE SET v=excluded.v').bind(
+        key,
+        String(irFlags(domain.resources)),
+      ),
+    ];
+  st.push(env.DB.prepare('DELETE FROM meta WHERE k=?1').bind(key + ':retro-version'));
+  if (domain.resources.retroVersionPresent)
+    st.push(
+      env.DB.prepare('INSERT INTO meta(k,v)VALUES(?1,?2)').bind(
+        key + ':retro-version',
+        JSON.stringify(domain.resources.retroVersion),
+      ),
+    );
+  return st;
+}
+function irValidateDomain(domain, d) {
+  irShape(domain, ['version', 'scope', 'resources', 'rows'], 'domain');
+  irShape(domain.scope, ['departmentId'], 'domain.scope');
+  if (domain.version !== 1 || domain.scope.departmentId !== d) throw irError('irshad-domain-scope');
+  irShape(
+    domain.resources,
+    ['reports', 'languages', 'locations', 'retro', 'retroVersionPresent', 'retroVersion', 'retroWindowsPresent'],
+    'domain.resources',
+  );
+  irShape(domain.rows, Object.keys(IR_TABLES), 'domain.rows');
+  for (var kind in IR_TABLES) {
+    if (!Array.isArray(domain.rows[kind])) throw irError('irshad-domain-rows');
+    var cols = IR_TABLES[kind][1];
+    domain.rows[kind].forEach(function (r) {
+      irShape(r, cols, 'domain.rows.' + kind);
+      if (
+        r.department_id !== d ||
+        cols.some(function (c) {
+          return !irOwn(r, c);
+        })
+      )
+        throw irError('irshad-domain-row');
+    });
+  }
+  // Row deletion leaves stable sequence gaps. Validate their exact values rather
+  // than compacting unrelated history as though it were a new legacy array.
+  var sequences = {};
+  ['reports', 'windows'].forEach(function (kind) {
+    var seen = new Set(), ids = new Map(), idColumn = kind === 'reports' ? 'report_id' : 'window_id';
+    domain.rows[kind].forEach(function (row) {
+      if (!Number.isSafeInteger(row.sequence) || row.sequence < 0 || seen.has(row.sequence))
+        throw irError('irshad-domain-sequence');
+      seen.add(row.sequence); ids.set(row[idColumn], row.sequence);
+    });
+    sequences[kind] = ids;
+  });
+  var canonical = irConvert(d, irInflate(domain));
+  ['reports', 'windows'].forEach(function (kind) {
+    var idColumn = kind === 'reports' ? 'report_id' : 'window_id';
+    canonical.rows[kind].forEach(function (row) { row.sequence = sequences[kind].get(row[idColumn]); });
+  });
+  function comparable(value) {
+    var x = cuCanonical(value);
+    Object.keys(IR_TABLES).forEach(function (k) {
+      x.rows[k].sort(function (a, b) {
+        return JSON.stringify(a).localeCompare(JSON.stringify(b));
+      });
+    });
+    return x;
+  }
+  if (!deq(comparable(canonical), comparable(domain))) throw irError('irshad-domain-invalid');
+  return canonical;
+}
+function irSnapshotStatements(env, d) {
+  var statements = Object.keys(IR_TABLES).map(function (k) {
+    return env.DB.prepare('SELECT * FROM ' + IR_TABLES[k][0] + ' WHERE department_id=?1').bind(d);
+  });
+  statements.push(
+    env.DB.prepare('SELECT k,v FROM meta WHERE k=?1 OR k=?2').bind(irMetaKey(d), irMetaKey(d) + ':retro-version'),
+  );
+  return statements;
+}
+function irSnapshotResult(result, d) {
+  var domain = irEmptyDomain(d);
+  Object.keys(IR_TABLES).forEach(function (k, i) {
+    domain.rows[k] = result[i].results || [];
+  });
+  var meta = {};
+  (result[4].results || []).forEach(function (r) {
+    meta[r.k] = r.v;
+  });
+  var mask = Number(meta[irMetaKey(d)] || 0);
+  if (!Number.isSafeInteger(mask) || mask < 0 || mask > 63) throw irError('irshad-presence-invalid', 503);
+  if (irOwn(meta, irMetaKey(d) + ':retro-version') !== !!(mask & 16)) throw irError('irshad-presence-invalid', 503);
+  domain.resources = {
+    reports: !!(mask & 1),
+    languages: !!(mask & 2),
+    locations: !!(mask & 4),
+    retro: !!(mask & 8),
+    retroVersionPresent: !!(mask & 16),
+    retroVersion: mask & 16 ? parseJson(meta[irMetaKey(d) + ':retro-version'], null) : null,
+    retroWindowsPresent: !!(mask & 32),
+  };
+  return domain;
+}
+async function irSnapshot(env, d) {
+  return irSnapshotResult(await env.DB.batch(irSnapshotStatements(env, d)), d);
+}
+async function irLegacyPresent(env) {
+  return !!(await env.DB.prepare(
+    'SELECT 1 FROM kv WHERE ' + irLegacyPredicate() + ' LIMIT 1',
+  )
+    .bind(JSON.stringify(IR_RES))
+    .first());
+}
+function irInstallStatements(env, domain) {
+  var st = [];
+  Object.keys(IR_TABLES).forEach(function (k) {
+    st.push.apply(st, rsBulk(env, IR_TABLES[k][0], IR_TABLES[k][1], domain.rows[k]));
+  });
+  return st.concat(irMetaStatements(env, domain));
+}
+async function irLegacyPrepare(env) {
+  var predicate = irLegacyPredicate(),
+    args = [JSON.stringify(IR_RES)],
+    rows =
+      (
+        await env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + predicate + ' ORDER BY k,seq')
+          .bind(args[0])
+          .all()
+      ).results || [];
+  var departmentRows = (await env.DB.prepare('SELECT k,seq,v FROM kv WHERE k=?1 ORDER BY seq').bind(K_DEPTS).all()).results || [],
+    departments = parseJson(kvJoin(departmentRows)[K_DEPTS] || '[]', null), known = new Set();
+  if (!Array.isArray(departments)) throw irError('irshad-cutover-departments');
+  departmentRows.forEach(function (r, i) {
+    if (r.seq !== i || typeof r.v !== 'string') throw irError('irshad-cutover-departments');
+  });
+  departments.forEach(function (d) {
+    if (!isObj(d) || typeof d.id !== 'string' || !d.id || d.id.indexOf(':') >= 0 || known.has(d.id))
+      throw irError('irshad-cutover-departments');
+    known.add(d.id);
+  });
+  var grouped = new Map(),
+    docs = new Map();
+  rows.forEach(function (r) {
+    var p = parseKey(r.k), resource = IR_RES.indexOf(resName(r.k));
+    if (!p.dept || resource < 0 || r.k !== irKey(p.dept, resource)) throw irError('irshad-cutover-scope-unknown');
+    if (!known.has(p.dept)) throw irError('irshad-cutover-department-unregistered');
+    var list = grouped.get(r.k) || [];
+    if (r.seq !== list.length || typeof r.v !== 'string') throw irError('irshad-cutover-chunks');
+    list.push(r);
+    grouped.set(r.k, list);
+  });
+  grouped.forEach(function (list, key) {
+    var v;
+    try {
+      v = JSON.parse(
+        list
+          .map(function (r) {
+            return r.v;
+          })
+          .join(''),
+      );
+    } catch (e) {
+      throw irError('irshad-cutover-json');
+    }
+    var d = parseKey(key).dept,
+      obj = docs.get(d) || {};
+    obj[['reports', 'languages', 'locations', 'retro'][IR_RES.indexOf(resName(key))]] = v;
+    docs.set(d, obj);
+  });
+  var domains = [];
+  docs.forEach(function (doc, d) {
+    domains.push(irConvert(d, doc));
+  });
+  var names = Object.keys(IR_TABLES)
+      .map(function (k) {
+        return IR_TABLES[k][0];
+      })
+      .concat(['irshad_requests']),
+    existing =
+      (
+        await env.DB.prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name IN(SELECT value FROM json_each(?1))",
+        )
+          .bind(JSON.stringify(names))
+          .all()
+      ).results || [];
+  for (var t of existing)
+    if (await env.DB.prepare('SELECT 1 FROM ' + t.name + ' LIMIT 1').first())
+      throw irError('irshad-cutover-target-not-empty');
+  var metadata = (await env.DB.prepare("SELECT k,v FROM meta WHERE k GLOB 'irshad:*:presence*'").all()).results || [];
+  if (metadata.length) throw irError('irshad-cutover-target-not-empty');
+  var before = rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, predicate, args);
+  before.push.apply(before, rsWitness(env, 'kv', ['k', 'seq', 'v'], departmentRows, 'k=?1', [K_DEPTS]));
+  before.push(
+    env.DB.prepare(
+      "INSERT INTO meta(k,v)VALUES('ir_cutover_ready','validated') ON CONFLICT(k)DO UPDATE SET v=excluded.v",
+    ),
+  );
+  var after = [
+    env.DB.prepare(
+      'SELECT CASE WHEN EXISTS(' +
+        names
+          .map(function (n) {
+            return 'SELECT 1 FROM ' + n;
+          })
+          .join(' UNION ALL ') +
+        " LIMIT 1) OR EXISTS(SELECT 1 FROM meta WHERE k GLOB 'irshad:*:presence*') THEN json_extract('{}','KIVO_IRSHAD_TARGET_CHANGED') END",
+    ),
+  ];
+  domains.forEach(function (domain) {
+    after.push.apply(after, irInstallStatements(env, domain));
+  });
+  after.push(env.DB.prepare('DELETE FROM kv WHERE ' + predicate).bind(args[0]));
+  // Keep per-resource revisions exactly; only the global revision moves above all
+  // legacy resource revisions. The shared compiler owns future mutation stamps.
+  if (rows.length)
+    after.push(
+      env.DB.prepare(
+        "INSERT INTO meta(k,v)VALUES('rev',CAST((SELECT MAX(n)+1 FROM(SELECT COALESCE(MAX(rev),0) n FROM revs UNION ALL SELECT COALESCE(CAST(v AS INTEGER),0) FROM meta WHERE k='rev')) AS TEXT)) ON CONFLICT(k)DO UPDATE SET v=excluded.v",
+      ),
+    );
+  return {
+    before: before,
+    after: after,
+    domains: domains,
+    n: domains.reduce(function (n, d) {
+      return n + d.rows.reports.length;
+    }, 0),
+  };
+}
+
+async function irGuardRetired(env) {
+  if (await irLegacyPresent(env)) throw irError('irshad-legacy-source-present', 503);
+}
+function irRetiredGuard(env) {
+  return env.DB.prepare('SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE ' + irLegacyPredicate() +
+    ") THEN json_extract('{}','KIVO_IRSHAD_LEGACY_SOURCE') END").bind(JSON.stringify(IR_RES));
+}
+function irRevisionRowsStatement(env, d) {
+  return env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))')
+    .bind(JSON.stringify(IR_RES.map(function (_, i) { return irKey(d, i); })));
+}
+function irRevisionResult(rows, d) {
+  var out = {};
+  IR_RES_NAMES.forEach(function (name, i) {
+    var row = rows.find(function (r) { return r.k === irKey(d, i); }), value = row ? row.rev : 0;
+    if (!Number.isSafeInteger(value) || value < 0) throw irError('irshad-revision-invalid', 503);
+    out[name] = value;
+  });
+  return out;
+}
+async function irRevs(env, d) {
+  return irRevisionResult((await irRevisionRowsStatement(env, d).all()).results || [], d);
+}
+function irRevisionGuards(env, d, base, resources) {
+  resources = resources || IR_RES_NAMES;
+  if (!isObj(base) || !Array.isArray(resources) || !resources.length || new Set(resources).size !== resources.length)
+    throw irError('irshad-base');
+  var pairs = resources.map(function (name) {
+    var i = IR_RES_NAMES.indexOf(name);
+    if (i < 0 || !Number.isSafeInteger(base[name]) || base[name] < 0) throw irError('irshad-base');
+    return { k: irKey(d, i), rev: base[name] };
+  });
+  return [env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1) j WHERE COALESCE((SELECT rev FROM revs WHERE k=json_extract(j.value,'$.k')),0)<>json_extract(j.value,'$.rev')) THEN json_extract('{}','KIVO_REV_CONFLICT') END")
+    .bind(JSON.stringify(pairs))];
+}
+function irMarkResourceStatements(env, d, resource) {
+  var i = IR_RES_NAMES.indexOf(resource);
+  if (i < 0) throw irError('irshad-resource');
+  // Routine writes must preserve presence bits of independently edited resources.
+  var mask = i === 3 ? 56 : Math.pow(2, i), expression = i === 3
+    ? 'CASE WHEN (CAST(meta.v AS INTEGER)&8)=0 THEN (CAST(meta.v AS INTEGER)|56) ELSE (CAST(meta.v AS INTEGER)|40) END'
+    : '(CAST(meta.v AS INTEGER)|CAST(excluded.v AS INTEGER))', st = [env.DB.prepare(
+      'INSERT INTO meta(k,v)VALUES(?1,?2) ON CONFLICT(k)DO UPDATE SET v=CAST(' + expression + ' AS TEXT)',
+    ).bind(irMetaKey(d), String(mask))];
+  if (i === 3) st.push(env.DB.prepare('INSERT INTO meta(k,v) SELECT ?1,?2 WHERE (CAST((SELECT v FROM meta WHERE k=?3) AS INTEGER)&16)<>0 ON CONFLICT(k)DO NOTHING')
+    .bind(irMetaKey(d) + ':retro-version', '1', irMetaKey(d)));
+  return st;
+}
+async function irPlanState(env, d) {
+  var statements = irSnapshotStatements(env, d);
+  statements.push(env.DB.prepare('SELECT * FROM irshad_requests WHERE department_id=?1').bind(d));
+  statements.push(irRevisionRowsStatement(env, d));
+  var result = await env.DB.batch(statements), domain = irValidateDomain(irSnapshotResult(result, d), d),
+    snapshots = Object.assign({}, domain.rows, { meta: result[4].results || [], requests: result[5].results || [] }),
+    revs = irRevisionResult(result[6].results || [], d);
+  return { domain: domain, snapshotRows: snapshots, revs: revs };
+}
+async function irReplacementPlan(env, d, domain, base) {
+  await irGuardRetired(env);
+  var before = await irPlanState(env, d), guards = [irRetiredGuard(env)].concat(irRevisionGuards(env, d, base));
+  if (!deq(cuCanonical(before.revs), cuCanonical(base))) throw irError('irshad-conflict', 409);
+  Object.keys(IR_TABLES).forEach(function (kind) {
+    guards.push.apply(guards, rsWitness(env, IR_TABLES[kind][0], IR_TABLES[kind][1], before.snapshotRows[kind], 'department_id=?1', [d]));
+  });
+  guards.push.apply(guards, rsWitness(env, 'meta', ['k', 'v'], before.snapshotRows.meta, 'k=?1 OR k=?2', [irMetaKey(d), irMetaKey(d) + ':retro-version']));
+  guards.push.apply(guards, rsWitness(env, 'irshad_requests', IR_REQUEST_COLS, before.snapshotRows.requests, 'department_id=?1', [d]));
+  var statements = ['irshad_requests', 'irshad_report_languages', 'irshad_reports', 'irshad_catalog_entries', 'irshad_retro_windows']
+    .map(function (table) { return env.DB.prepare('DELETE FROM ' + table + ' WHERE department_id=?1').bind(d); });
+  statements.push.apply(statements, irInstallStatements(env, domain));
+  return {
+    guards: guards, statements: statements, revisionKeys: IR_RES.map(function (_, i) { return irKey(d, i); }),
+    snapshotRows: before.snapshotRows, count: domain.rows.reports.length + domain.rows.catalogs.length + domain.rows.windows.length,
+    changed: !deq(cuCanonical(before.domain), cuCanonical(domain)) || before.snapshotRows.requests.length > 0,
+    metadata: { departmentId: d },
+  };
+}
+async function irPlanRestore(env, A, domain, opt) {
+  irShape(opt, ['dept', 'base', 'scope', 'mode', 'reason', 'finalKeys'], 'restore');
+  if (opt.mode !== 'replace' || !['full', 'dept'].includes(opt.scope)) throw irError('irshad-restore-mode');
+  irShape(opt.base, IR_RES_NAMES, 'restore.base');
+  await cuRestorePermission(A, opt.dept, opt);
+  return irReplacementPlan(env, opt.dept, irValidateDomain(domain, opt.dept), opt.base);
+}
+async function irPlanWipe(env, A, opt) {
+  irShape(opt, ['dept', 'base', 'intent', 'reason', 'finalKeys'], 'wipe');
+  if (!A || !A.u || A.u.role !== 'super' || !['dept-wipe', 'dept-delete'].includes(opt.intent)) throw irError('irshad-wipe-permission', 403);
+  irShape(opt.base, IR_RES_NAMES, 'wipe.base');
+  var plan = await irReplacementPlan(env, opt.dept, irValidateDomain(irEmptyDomain(opt.dept), opt.dept), opt.base);
+  if (opt.intent === 'dept-delete') {
+    plan.changed = plan.changed || plan.snapshotRows.meta.length > 0;
+    plan.statements.push(env.DB.prepare('DELETE FROM meta WHERE k=?1 OR k=?2')
+      .bind(irMetaKey(opt.dept), irMetaKey(opt.dept) + ':retro-version'));
+  }
+  return plan;
+}
+async function irExport(env, A, url) {
+  var d = url.searchParams.get('dept') || '', uid = A && A.u && A.u.id;
+  if (typeof uid !== 'string') throw irError('irshad-export-permission', 403);
+  await irGuardRetired(env);
+  for (var attempt = 0; attempt < 3; attempt++) {
+    var revRow = await env.DB.prepare("SELECT v FROM meta WHERE k='rev'").first(), rev = Number(revRow && revRow.v) || 0,
+      authorityGuards = [], contexts = [], known;
+    if (!d) {
+      // Full export may have zero departments. Capture its principal and registry
+      // independently, then fence their raw bytes in the same read transaction.
+      var keys = [K_USERS, K_PERM, K_DEPTS, K_GDEPTS, K_PLAT], predicate = 'k IN(SELECT value FROM json_each(?1))',
+        rows = (await env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + predicate + ' ORDER BY k,seq').bind(JSON.stringify(keys)).all()).results || [],
+        raw = kvJoin(rows), fresh = actorFromKeys(raw, uid), chunks = {};
+      rows.forEach(function (row) {
+        var next = chunks[row.k] || 0;
+        if (row.seq !== next || typeof row.v !== 'string') throw irError('irshad-reference-chunks', 503);
+        chunks[row.k] = next + 1;
+      });
+      if (!fresh || fresh.u.role !== 'super') throw irError('irshad-export-permission', 403);
+      known = fresh.depts;
+      authorityGuards.push.apply(authorityGuards, rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, predicate, [JSON.stringify(keys)]));
+    } else {
+      var context = await irQueryContext(env, { u: { id: uid } }, d, { write: true });
+      known = context.A.depts; contexts.push(context);
+    }
+    if (!Array.isArray(known)) throw irError('irshad-export-departments');
+    if (known.some(function (x) { return !isObj(x) || typeof x.id !== 'string' || !x.id || x.id.indexOf(':') >= 0; }) ||
+        new Set(known.map(function (x) { return x.id; })).size !== known.length ||
+        (d && !known.some(function (x) { return x.id === d; }))) throw irError('irshad-export-departments');
+    var depts = d ? [d] : known.map(function (x) { return x.id; }).sort(),
+      statements = [irRetiredGuard(env), env.DB.prepare("SELECT v FROM meta WHERE k='rev'")], offsets = [];
+    if (!d) for (var dept of depts) contexts.push(await irQueryContext(env, { u: { id: uid } }, dept, { write: true }));
+    contexts.forEach(function (ctx) {
+      var actor = ctx.A;
+      if ((!d && actor.u.role !== 'super') || !canRead(actor, irKey(ctx.d)) || !deptInScope(actor, ctx.d) ||
+          (actor.u.role !== 'super' && (actor.enf ? !enfHeld(actor, ctx.d, 'backup.view') : !actsHeldOn(actor, ctx.d, 'admin/backup', ['view']))))
+        throw irError('irshad-export-permission', 403);
+      authorityGuards.push.apply(authorityGuards, ctx.guards);
+    });
+    var registered = known.map(function (x) { return x.id; }), orphanSql = Object.keys(IR_TABLES).map(function (kind) {
+      return 'SELECT department_id AS d FROM ' + IR_TABLES[kind][0];
+    }).concat(["SELECT substr(k,8,length(k)-16) AS d FROM meta WHERE k GLOB 'irshad:*:presence'"]).join(' UNION ');
+    statements.push(env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM (" + orphanSql +
+      ") o WHERE o.d IS NULL OR NOT EXISTS(SELECT 1 FROM json_each(?1) j WHERE j.value IS o.d)) THEN json_extract('{}','KIVO_IRSHAD_ORPHAN_SCOPE') END")
+      .bind(JSON.stringify(registered)));
+    statements.push.apply(statements, authorityGuards);
+    depts.forEach(function (dept) { offsets.push(statements.length); statements.push.apply(statements, irSnapshotStatements(env, dept)); });
+    var result;
+    try { result = await env.DB.batch(statements); }
+    catch (error) {
+      if (/KIVO_RESTORE_TARGET/.test(String(error))) throw irError('irshad-export-race', 409);
+      throw error;
+    }
+    var actual = Number((result[1].results[0] || {}).v) || 0;
+    if (actual !== rev) continue;
+    return { ok: 1, rev: actual, globalRev: actual, domains: depts.map(function (dept, i) {
+      return irValidateDomain(irSnapshotResult(result.slice(offsets[i], offsets[i] + 5), dept), dept);
+    }) };
+  }
+  throw irError('irshad-export-race', 409);
+}
+/* Irshad SQL reads. Authority is captured once from named references, never
+   from all KV or from a client-supplied principal/scope. */
+function irQueryNat(v) {
+  if (!Number.isSafeInteger(v) || v < 0) throw irError('irshad-revision', 503);
+  return v;
+}
+function irQueryParam(plan, value) {
+  plan.args.push(value);
+  return '?' + plan.args.length;
+}
+function irQueryBase(ctx) {
+  return Object.assign({}, ctx.base);
+}
+async function irQueryContext(env, actor, d, options) {
+  options = options || {};
+  if (!actor || !actor.u || typeof actor.u.id !== 'string') throw irError('irshad-denied', 403);
+  if (typeof d !== 'string' || !d || d.length > 200 || d.indexOf(':') >= 0) throw irError('irshad-scope');
+  var keys = [K_USERS, K_PERM, K_DEPTS, K_GDEPTS, K_PLAT, enfGrantsKey(d), enfScopeKey(d),
+      'bsdept:' + d + ':bassam_staffing_v3', 'bsdept:' + d + ':bassam_shift_options_v1',
+      'bsdept:' + d + ':bassam_employees_v1'],
+    resourceKeys = IR_RES.map(function (_, i) { return irKey(d, i); }),
+    revisionKeys = keys.concat(resourceKeys),
+    metaKeys = ['restore_epoch', 'authz_mode', 'authz_perm_mig', 'authz_scope_mig', 'authz_id_mig',
+      irMetaKey(d), irMetaKey(d) + ':retro-version'],
+    result = await env.DB.batch([
+      env.DB.prepare('SELECT k,seq,v FROM kv WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k,seq').bind(JSON.stringify(keys)),
+      env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k').bind(JSON.stringify(revisionKeys)),
+      env.DB.prepare('SELECT k,v FROM meta WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k').bind(JSON.stringify(metaKeys)),
+    ]),
+    rows = result.map(function (r) { if (!r || r.success === false) throw irError('irshad-context', 503); return r.results || []; }),
+    raw = Object.create(null), revs = Object.create(null), meta = Object.create(null);
+  keys.forEach(function (k) { raw[k] = null; });
+  var grouped = Object.create(null);
+  rows[0].forEach(function (r) {
+    var chunks = grouped[r.k] || (grouped[r.k] = []);
+    if (r.seq !== chunks.length || typeof r.v !== 'string') throw irError('irshad-reference-chunks', 503);
+    chunks.push(r.v);
+  });
+  Object.keys(grouped).forEach(function (k) { raw[k] = grouped[k].join(''); });
+  rows[1].forEach(function (r) { revs[r.k] = irQueryNat(r.rev); });
+  rows[2].forEach(function (r) { meta[r.k] = r.v; });
+  var presence = irOwn(meta, irMetaKey(d)) ? Number(meta[irMetaKey(d)]) : 0;
+  if (!Number.isSafeInteger(presence) || presence < 0 || presence > 63) throw irError('irshad-presence-invalid', 503);
+  var pre = Object.assign({}, env.__pre || {}, { live: true, kv: raw, revs: revs, meta: meta }),
+    captured = Object.assign({}, env, { __pre: pre }),
+    mode = await enfModeOf(captured),
+    A = actorFromKeys(raw, actor.u.id);
+  if (!A || !deptInScope(A, d) || !(A.depts || []).some(function (department) { return department && String(department.id) === d; }))
+    throw irError('irshad-denied', 403);
+  if (mode.mode === 'unavailable') throw irError('irshad-context', 503);
+  if (mode.mode === 'enforce') { A.enf = mode; enfAttachGrantsKeys(A, raw); }
+  captured.__enf = A.enf || null;
+  if (!options.write && !canRead(A, irKey(d))) throw irError('irshad-denied', 403);
+  var refs = await enfRefsFor(captured, [d], raw),
+    base = { epoch: irQueryNat(meta.restore_epoch == null ? 0 : Number(meta.restore_epoch)) },
+    resources = ['reports', 'languages', 'locations', 'retro'];
+  resources.forEach(function (name, i) { base[name] = revs[resourceKeys[i]] || 0; });
+  var guards = rsWitness(env, 'kv', ['k', 'seq', 'v'], rows[0], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(keys)])
+    .concat(rsWitness(env, 'revs', ['k', 'rev'], rows[1], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(revisionKeys)]))
+    .concat(rsWitness(env, 'meta', ['k', 'v'], rows[2], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(metaKeys)]));
+  return { env: captured, A: A, d: d, base: base, guards: guards, refs: refs, rawKeys: raw,
+    meta: meta, pv4: { staffing: refs.staffing[d] },
+    witness: await cuFingerprint({ uidValue: A.u.id, mode: mode, capture: rows }) };
+}
+async function irRowRead(env, d, ids) {
+  if (!Array.isArray(ids) || ids.length > 200 || ids.some(function (id) { return typeof id !== 'string'; }))
+    throw irError('irshad-row-query');
+  if (!ids.length) return [];
+  var out = await env.DB.batch([
+      env.DB.prepare('SELECT * FROM irshad_reports WHERE department_id=?1 AND report_id IN(SELECT value FROM json_each(?2)) ORDER BY sequence').bind(d, JSON.stringify(ids)),
+      env.DB.prepare('SELECT * FROM irshad_report_languages WHERE department_id=?1 AND report_id IN(SELECT value FROM json_each(?2)) ORDER BY report_id,position').bind(d, JSON.stringify(ids)),
+    ]), domain = irEmptyDomain(d);
+  domain.resources.reports = true;
+  domain.rows.reports = out[0].results || [];
+  domain.rows.languages = out[1].results || [];
+  return irInflate(domain).reports.reports;
+}
+function irQueryScope(ctx, alias) {
+  alias = alias || 'r';
+  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(alias)) throw irError('irshad-query');
+  var args = [ctx.d], where = 'r.department_id=?1';
+  if (ctx.A.enf && ctx.A.u.role !== 'super') {
+    var V = enfViewCtx(ctx.A, ctx.d, IR_RES[0], ctx.refs);
+    if (ENF_PROJ[IR_RES[0]].on(V)) {
+      var es = enfEmpScopeOf(V.E, ctx.d, V.ekey, 'Shift'), allowed = [], monthly = [];
+      if (es && es.mode === 'n/a') return { args: args, where: where.replace(/\br\./g, alias + '.'), sql: where.replace(/\br\./g, alias + '.') };
+      if (es && es.mode === 'list') {
+        var list = es.list || [];
+        for (var i = 0; i < list.length; i++) if (V.shiftOk(list[i], '')) allowed.push(String(list[i]));
+      }
+      else if (es && es.mode === 'staffing-bound') {
+        var staffing = ctx.refs.staffing[ctx.d];
+        Object.keys(isObj(staffing) ? staffing : {}).forEach(function (ym) {
+          var parts = ym.split('-'), y = Number(parts[0]), m = Number(parts[1]),
+            row = isObj(staffing[ym]) ? staffing[ym][V.ekey] : null,
+            shift = isObj(row) && row.shift ? String(row.shift) : '';
+          if (parts.length === 2 && Number.isFinite(y) && Number.isFinite(m) && y + '-' + m === ym && shift && V.shiftOk(shift, ym))
+            monthly.push({ y: y, m: m, shift: shift });
+        });
+      }
+      args.push(JSON.stringify(allowed), JSON.stringify(monthly));
+      // Exactly ENF_PROJ.hid: a blank shift or null/missing y/m is not hidden.
+      // Free-text location is deliberately not a Site ACL dimension.
+      where += " AND (r.shift IS NULL OR r.shift='' OR r.hijri_year IS NULL OR r.hijri_month IS NULL OR r.shift IN(SELECT value FROM json_each(?2)) OR EXISTS(SELECT 1 FROM json_each(?3) a WHERE r.hijri_year=json_extract(a.value,'$.y') AND r.hijri_month=json_extract(a.value,'$.m') AND r.shift=json_extract(a.value,'$.shift')))";
+    }
+  }
+  where = where.replace(/\br\./g, alias + '.');
+  return { args: args, where: where, sql: where };
+}
+function irQueryPlan(ctx) {
+  var scope = irQueryScope(ctx);
+  return { args: scope.args.slice(), prefix: 'WITH scoped AS(SELECT r.*,COALESCE((SELECT SUM(l.count) FROM irshad_report_languages l WHERE l.department_id=r.department_id AND l.report_id=r.report_id),0) trans FROM irshad_reports r WHERE ' + scope.where + '), data AS(SELECT *,trans+COALESCE(brochures,0)+COALESCE(prosecution,0)+COALESCE(police,0) ben FROM scoped) ', sql: '' };
+}
+function irQueryStatement(ctx, plan) {
+  return cuBind(ctx.env, plan.prefix + plan.sql, plan.args);
+}
+async function irQueryBatch(ctx, plans) {
+  var guards = ctx.guards.slice();
+  if (typeof irRetiredGuard === 'function') guards.push(irRetiredGuard(ctx.env));
+  try {
+    var result = await ctx.env.DB.batch(guards.concat(plans.map(function (p) { return irQueryStatement(ctx, p); })));
+    return result.slice(guards.length).map(function (r) {
+      if (!r || r.success === false) throw irError('irshad-read', 503);
+      return r.results || [];
+    });
+  } catch (e) {
+    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e && e.message))) throw irError('irshad-legacy-source-present', 503);
+    if (/KIVO_RESTORE_TARGET|KIVO_RESTORE_EPOCH/.test(String(e && e.message))) throw irError('irshad-read-race', 409);
+    throw e;
+  }
+}
+function irQueryMetricSql() {
+  return "COUNT(*) reports,COUNT(DISTINCT NULLIF(employee_key,'')) employees,COALESCE(SUM(trans),0) trans,COALESCE(SUM(brochures),0) bro,COALESCE(SUM(prosecution),0) pros,COALESCE(SUM(police),0) pol,COALESCE(SUM(ben),0) ben";
+}
+function irQueryMetrics(row) {
+  var out = {};
+  ['reports', 'employees', 'trans', 'bro', 'pros', 'pol', 'ben'].forEach(function (k) { out[k] = Number(row && row[k] || 0); });
+  return out;
+}
+function irQueryInt(v, fallback, min, max) {
+  var n = v === undefined || v === null || v === '' ? fallback : Number(v);
+  if (!Number.isSafeInteger(n) || n < min || n > max) throw irError('irshad-query');
+  return n;
+}
+function irQueryText(v, max) {
+  if (v === undefined || v === null) return '';
+  if (typeof v !== 'string' || v.length > max) throw irError('irshad-query');
+  return v;
+}
+function irQueryMonth(plan, y, m) {
+  return 'hijri_year=' + irQueryParam(plan, y) + ' AND hijri_month=' + irQueryParam(plan, m);
+}
+function irQueryCatalogPlan(ctx) {
+  var p = irQueryPlan(ctx);
+  p.sql = 'SELECT kind,value FROM irshad_catalog_entries WHERE department_id=?1 ORDER BY kind,position';
+  return p;
+}
+function irQueryCatalogDto(ctx, rows) {
+  var values = { languages: [], locations: [] }, mask = Number(ctx.meta[irMetaKey(ctx.d)] || 0);
+  rows.forEach(function (r) { if (values[r.kind]) values[r.kind].push(r.value); });
+  return { catalogs: { languages: { present: !!(mask & 2), values: values.languages }, locations: { present: !!(mask & 4), values: values.locations } } };
+}
+async function irQueryCatalogs(ctx) {
+  return irQueryCatalogDto(ctx, (await irQueryBatch(ctx, [irQueryCatalogPlan(ctx)]))[0]);
+}
+async function irQueryCalendar(ctx, q, clock) {
+  var y = irQueryInt(q.year, clock.y, 1000, 9999), m = irQueryInt(q.month, clock.m, 1, 12),
+    total = irQueryPlan(ctx), months = irQueryPlan(ctx), days = irQueryPlan(ctx), stats = irQueryPlan(ctx);
+  total.sql = 'SELECT COUNT(*) total,COALESCE(SUM(hijri_year=' + irQueryParam(total, y) + '),0) yearTotal FROM data';
+  months.sql = 'SELECT hijri_month m,COUNT(*) n FROM data WHERE hijri_year=' + irQueryParam(months, y) + ' GROUP BY hijri_month ORDER BY hijri_month';
+  days.sql = 'SELECT hijri_day d,COUNT(*) n FROM data WHERE ' + irQueryMonth(days, y, m) + ' GROUP BY hijri_day ORDER BY hijri_day';
+  stats.sql = 'SELECT ' + irQueryMetricSql() + ' FROM data WHERE ' + irQueryMonth(stats, y, m);
+  var rows = await irQueryBatch(ctx, [total, months, days, stats]), metrics = irQueryMetrics(rows[3][0]);
+  delete metrics.employees;
+  return { year: y, month: m, total: rows[0][0].total, yearTotal: rows[0][0].yearTotal,
+    months: rows[1].filter(function (r) { return r.m >= 1 && r.m <= 12; }),
+    days: rows[2].filter(function (r) { return r.d >= 1 && r.d <= 30; }), monthTotals: metrics };
+}
+async function irQueryRecords(ctx, q, clock) {
+  var y = irQueryInt(q.year, clock.y, 1000, 9999), m = irQueryInt(q.month, clock.m, 1, 12),
+    limit = irQueryInt(q.limit, 10, 1, 200), query = irQueryText(q.q, 500).trim(),
+    shift = q.shift == null ? null : irQueryText(q.shift, 4000),
+    loc = q.loc == null ? null : irQueryText(q.loc, 4000),
+    descriptor = { year: y, month: m, limit: limit, q: query, shift: shift, loc: loc, clock: [clock.y, clock.m, clock.d] }, token = null;
+  if (q.cursor) {
+    try { token = cuUncursor(irQueryText(q.cursor, 12000)); } catch (e) { throw irError('irshad-cursor'); }
+    irShape(token, ['v', 'uid', 'dept', 'w', 'query', 'page'], 'cursor');
+  }
+  var page = irQueryInt(q.page, token ? token.page : 1, 1, Number.MAX_SAFE_INTEGER);
+  if (token && (token.v !== 1 || token.w !== ctx.witness || token.uid !== ctx.A.u.id || token.dept !== ctx.d || !deq(token.query, descriptor) || token.page !== page))
+    throw irError('irshad-cursor-stale', 409);
+  function filtered(p) {
+    var f = irQueryMonth(p, y, m);
+    if (shift !== null && shift !== 'all') f += ' AND shift=' + irQueryParam(p, shift);
+    if (loc !== null && loc !== 'all') f += " AND COALESCE(location,'')=" + irQueryParam(p, loc);
+    return f;
+  }
+  var ids = null;
+  if (query) {
+    var search = irQueryPlan(ctx);
+    search.sql = 'SELECT report_id,employee_name,location,shift FROM data WHERE ' + filtered(search);
+    // Only the selected month and minimal search metadata enter JavaScript.
+    // KIVO_FIND is generated from the canonical client engine, not a new search.
+    ids = (await irQueryBatch(ctx, [search]))[0].filter(function (r) {
+      return KIVO_FIND.match(query, [r.employee_name, r.location, r.shift, undefined]);
+    }).map(function (r) { return r.report_id; });
+  }
+  function matches(p) {
+    return filtered(p) + (ids ? ' AND report_id IN(SELECT value FROM json_each(' + irQueryParam(p, JSON.stringify(ids)) + '))' : '');
+  }
+  var count = irQueryPlan(ctx), monthCount = irQueryPlan(ctx);
+  count.sql = 'SELECT COUNT(*) n FROM data WHERE ' + matches(count);
+  monthCount.sql = 'SELECT COUNT(*) n FROM data WHERE ' + irQueryMonth(monthCount, y, m);
+  var counts = await irQueryBatch(ctx, [count, monthCount]), total = counts[0][0].n,
+    pages = Math.max(1, Math.ceil(total / limit));
+  page = Math.min(page, pages);
+  var anchor = irQueryPlan(ctx), order = ' ORDER BY COALESCE(hijri_day,0) DESC,COALESCE(created_at,0) DESC,sequence';
+  anchor.sql = 'SELECT COALESCE(hijri_day,0) d,COALESCE(created_at,0) ts,sequence FROM data WHERE ' + matches(anchor) + order + ' LIMIT 1 OFFSET ' + ((page - 1) * limit);
+  var edge = (await irQueryBatch(ctx, [anchor]))[0][0], dto = [];
+  if (edge) {
+    var selected = irQueryPlan(ctx), f = matches(selected), dslot = irQueryParam(selected, edge.d), tslot = irQueryParam(selected, edge.ts), sslot = irQueryParam(selected, edge.sequence);
+    selected.sql = 'SELECT report_id FROM data WHERE ' + f + ' AND (COALESCE(hijri_day,0)<' + dslot + ' OR (COALESCE(hijri_day,0)=' + dslot + ' AND (COALESCE(created_at,0)<' + tslot + ' OR (COALESCE(created_at,0)=' + tslot + ' AND sequence>=' + sslot + '))))' + order + ' LIMIT ' + limit;
+    var selectedIds = (await irQueryBatch(ctx, [selected]))[0].map(function (r) { return r.report_id; }),
+      decoded = await irRowRead(ctx.env, ctx.d, selectedIds), map = new Map();
+    decoded.forEach(function (r) { map.set(r.id, r); });
+    dto = selectedIds.map(function (id) { if (!map.has(id)) throw irError('irshad-read-race', 409); return map.get(id); });
+  }
+  function cursor(n) { return cuCursor({ v: 1, uid: ctx.A.u.id, dept: ctx.d, w: ctx.witness, query: descriptor, page: n }); }
+  return { year: y, month: m, rows: dto, total: total, monthTotal: counts[1][0].n, page: page, pageSize: limit,
+    next: page < pages ? cursor(page + 1) : '', prev: page > 1 ? cursor(page - 1) : '' };
+}
+function irQueryDate(value) {
+  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value || '');
+  if (!m) throw irError('irshad-range');
+  var y = irQueryInt(m[1], 0, 1000, 9999), mo = irQueryInt(m[2], 0, 1, 12), d = irQueryInt(m[3], 0, 1, 30);
+  return { text: y + '-' + mo + '-' + d, n: y * 10000 + mo * 100 + d };
+}
+function irQueryRange(plan, range) {
+  if (!range) return '0';
+  var clauses = [];
+  if (range.y !== undefined) clauses.push('hijri_year=' + irQueryParam(plan, range.y));
+  if (range.m !== undefined) clauses.push('hijri_month=' + irQueryParam(plan, range.m));
+  if (range.from !== undefined) clauses.push('hijri_year*10000+hijri_month*100+hijri_day>=' + irQueryParam(plan, range.from));
+  if (range.to !== undefined) clauses.push('hijri_year*10000+hijri_month*100+hijri_day<=' + irQueryParam(plan, range.to));
+  return clauses.length ? clauses.join(' AND ') : '1';
+}
+function irQueryShiftNames(ctx) {
+  var configured = parseJson(ctx.rawKeys['bsdept:' + ctx.d + ':bassam_shift_options_v1'], null);
+  return Array.isArray(configured) && configured.length && configured.every(function (r) { return r && r.name; })
+    ? configured.map(function (r) { return r.name; })
+    : ['الوردية الأولى', 'الوردية الثانية', 'الوردية الثالثة', 'الوردية الرابعة'];
+}
+function irQueryTopGroups(plan, groupSql, label) {
+  plan.prefix += ', groups AS(' + groupSql + '), ranked AS(SELECT *,ROW_NUMBER() OVER(ORDER BY value DESC,orderKey) rn,COUNT(*) OVER() n FROM groups) ';
+  plan.sql = "SELECT name,value,previous,firstSequence,other FROM(SELECT name,value,previous,firstSequence,0 other,rn position FROM ranked WHERE n<=7 OR rn<=6 UNION ALL SELECT '" + label + " ('||COUNT(*)||')',SUM(value),SUM(previous),MIN(firstSequence),1,7 FROM ranked WHERE n>7 AND rn>6 HAVING COUNT(*)>0) ORDER BY position";
+}
+async function irQueryDashboard(ctx, q, clock) {
+  var availability = irQueryPlan(ctx);
+  availability.sql = 'SELECT hijri_year y,hijri_month m,COUNT(*) n,MIN(hijri_day) firstDay FROM data GROUP BY hijri_year,hijri_month ORDER BY hijri_year,hijri_month';
+  var initial = await irQueryBatch(ctx, [availability, irQueryCatalogPlan(ctx)]),
+    availableRows = initial[0], catalog = irQueryCatalogDto(ctx, initial[1]), years = [], first = null, total = 0;
+  availableRows.forEach(function (r) {
+    total += r.n;
+    if (r.y && years.indexOf(r.y) < 0) years.push(r.y);
+    if (r.y && r.m && r.firstDay != null) {
+      var candidate = { y: r.y, m: r.m, d: r.firstDay };
+      if (!first || candidate.y * 10000 + candidate.m * 100 + candidate.d < first.y * 10000 + first.m * 100 + first.d) first = candidate;
+    }
+  });
+  years.sort(function (a, b) { return b - a; });
+  if (!years.length) years.push(clock.y);
+  var mode = q.mode || 'all', year = irQueryInt(q.year, years[0], 1000, 9999),
+    month = q.month === 'all' || mode === 'all' ? 'all' : irQueryInt(q.month, clock.m, 1, 12),
+    heatYear = irQueryInt(q.heatYear, year, 1000, 9999), bucket = q.bucket || (month === 'all' ? 'month' : 'day'),
+    selection = { mode: mode, year: year, month: month, from: null, to: null, previousFrom: null, previousTo: null, heatYear: heatYear, bucket: bucket },
+    range = {}, previous = null;
+  if (['all', 'month', 'custom'].indexOf(mode) < 0 || ['day', 'month'].indexOf(bucket) < 0) throw irError('irshad-range');
+  if (mode === 'custom') {
+    var from = irQueryDate(q.from), to = irQueryDate(q.to), pf = irQueryDate(q.previousFrom), pt = irQueryDate(q.previousTo);
+    if (from.n > to.n || pf.n > pt.n) throw irError('irshad-range');
+    range = { from: from.n, to: to.n }; previous = { from: pf.n, to: pt.n };
+    Object.assign(selection, { from: from.text, to: to.text, previousFrom: pf.text, previousTo: pt.text });
+  } else if (mode === 'month') {
+    range = { y: year };
+    if (month !== 'all') range.m = month;
+    previous = month === 'all' ? { y: year - 1 } : { y: month === 1 ? year - 1 : year, m: month === 1 ? 12 : month - 1 };
+    if (year === clock.y && (month === 'all' || month === clock.m))
+      previous.to = previous.y * 10000 + (month === 'all' ? clock.m : previous.m) * 100 + clock.d;
+  }
+  var plans = [], names = irQueryShiftNames(ctx);
+  function plan(sql, r) {
+    var p = irQueryPlan(ctx); p.sql = sql.replace('$WHERE', irQueryRange(p, r)); plans.push(p); return p;
+  }
+  plan('SELECT ' + irQueryMetricSql() + ' FROM data WHERE $WHERE', range);
+  plan('SELECT ' + irQueryMetricSql() + ' FROM data WHERE $WHERE', previous);
+  var day = bucket === 'day' ? 'hijri_day' : 'NULL', groups = 'hijri_year,hijri_month' + (bucket === 'day' ? ',hijri_day' : '');
+  plan('SELECT hijri_year y,hijri_month m,' + day + ' d,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY ' + groups + ' ORDER BY ' + groups, range);
+  plan('SELECT hijri_year y,hijri_month m,' + day + ' d,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY ' + groups + ' ORDER BY ' + groups, previous);
+  plan('SELECT hijri_month m,hijri_day d,SUM(ben) ben FROM data WHERE $WHERE GROUP BY hijri_month,hijri_day ORDER BY hijri_month,hijri_day', { y: heatYear, to: clock.y * 10000 + clock.m * 100 + clock.d });
+  var languages = irQueryPlan(ctx), languageWhere = irQueryRange(languages, range);
+  irQueryTopGroups(languages, "SELECT CASE WHEN (l.presence_mask & 1)=0 THEN 'undefined' WHEN l.language IS NULL THEN 'null' ELSE l.language END name,COALESCE(SUM(l.count),0) value,0 previous,MIN(r.sequence) firstSequence,MIN(printf('%020d:%020d',r.sequence,l.position)) orderKey FROM data r JOIN irshad_report_languages l ON l.department_id=r.department_id AND l.report_id=r.report_id WHERE " + languageWhere + ' GROUP BY name', 'لغات أخرى');
+  plans.push(languages);
+  var locations = irQueryPlan(ctx), locationWhere = irQueryRange(locations, range), previousLocationWhere = irQueryRange(locations, previous);
+  irQueryTopGroups(locations, "SELECT location name,SUM(ben) value,COALESCE((SELECT SUM(p.ben) FROM data p WHERE p.location=r.location AND " + previousLocationWhere + "),0) previous,MIN(sequence) firstSequence,MIN(sequence) orderKey FROM data r WHERE " + locationWhere + " AND location IS NOT NULL AND location!='' GROUP BY location", 'مواقع أخرى');
+  plans.push(locations);
+  plan('SELECT shift name,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY shift', range);
+  var shiftPoints = irQueryPlan(ctx);
+  shiftPoints.sql = 'SELECT shift name,hijri_year y,hijri_month m,' + day + ' d,SUM(ben) ben FROM data WHERE ' + irQueryRange(shiftPoints, range) + ' AND shift IN(SELECT value FROM json_each(' + irQueryParam(shiftPoints, JSON.stringify(names)) + ')) GROUP BY shift,' + groups + ' ORDER BY ' + groups;
+  plans.push(shiftPoints);
+  var locationNames = catalog.catalogs.locations.values.slice(0, 6), locationPoints = irQueryPlan(ctx);
+  locationPoints.sql = 'SELECT location name,hijri_year y,hijri_month m,' + day + ' d,SUM(ben) ben FROM data WHERE ' + irQueryRange(locationPoints, range) + ' AND location IN(SELECT value FROM json_each(' + irQueryParam(locationPoints, JSON.stringify(locationNames)) + ')) GROUP BY location,' + groups + ' ORDER BY ' + groups;
+  plans.push(locationPoints);
+  plan("SELECT employee_key key,COUNT(*) reports,SUM(ben) ben,MIN(sequence) firstSequence,MAX(sequence) lastSequence FROM data WHERE $WHERE AND employee_key IS NOT NULL AND employee_key!='' GROUP BY employee_key ORDER BY ben DESC,firstSequence LIMIT 6", range);
+  var results = await irQueryBatch(ctx, plans), shiftsByName = new Map();
+  results[7].forEach(function (r) { shiftsByName.set(r.name, Object.assign({ name: r.name }, irQueryMetrics(r))); });
+  var shifts = names.map(function (name) { return shiftsByName.get(name) || Object.assign({ name: name }, irQueryMetrics()); }),
+    summaryRows = KIVO_FIND.filter(irQueryText(q.sumQ, 500).trim(), shifts, function (r) { return [r.name, undefined, undefined]; }),
+    union = irQueryPlan(ctx), unionWhere = irQueryRange(union, range), matchedNames = summaryRows.map(function (r) { return r.name; });
+  union.sql = 'SELECT ' + irQueryMetricSql() + ' FROM data WHERE ' + unionWhere + ' AND shift IN(SELECT value FROM json_each(' + irQueryParam(union, JSON.stringify(matchedNames)) + '))';
+  var previousEmployees = new Map(),
+    employeeSnapshots = irQueryPlan(ctx), lastSequences = results[10].map(function (r) { return r.lastSequence; }), previousEmployeePlan = irQueryPlan(ctx);
+  employeeSnapshots.sql = 'SELECT sequence,employee_name name,shift FROM data WHERE sequence IN(SELECT value FROM json_each(' + irQueryParam(employeeSnapshots, JSON.stringify(lastSequences)) + '))';
+  previousEmployeePlan.sql = 'SELECT employee_key key,SUM(ben) ben FROM data WHERE ' + irQueryRange(previousEmployeePlan, previous) + ' AND employee_key IN(SELECT value FROM json_each(' + irQueryParam(previousEmployeePlan, JSON.stringify(results[10].map(function (r) { return r.key; }))) + ')) GROUP BY employee_key';
+  var snapshots = new Map();
+  var employeeResults = await irQueryBatch(ctx, [union, employeeSnapshots, previousEmployeePlan]), summaryTotals = irQueryMetrics(employeeResults[0][0]);
+  employeeResults[1].forEach(function (r) { snapshots.set(r.sequence, r); });
+  employeeResults[2].forEach(function (r) { previousEmployees.set(r.key, r.ben); });
+  function series(rows, configured) {
+    return configured.map(function (name) { return { name: name, points: rows.filter(function (r) { return r.name === name; }).map(function (r) { return { y: r.y, m: r.m, d: r.d, ben: r.ben }; }) }; });
+  }
+  return { dashboard: { available: { total: total, first: first, years: years, months: availableRows.filter(function (r) { return r.y && r.m; }).map(function (r) { return { y: r.y, m: r.m }; }) },
+    selection: selection, totals: irQueryMetrics(results[0][0]), previous: irQueryMetrics(results[1][0]),
+    series: results[2], previousSeries: results[3], heat: results[4],
+    languages: results[5].map(function (r) { return { name: r.name, value: r.value, firstSequence: r.firstSequence, other: !!r.other }; }),
+    locations: results[6].map(function (r) { return Object.assign({}, r, { other: !!r.other }); }), shifts: shifts,
+    shiftSeries: series(results[8], names), locationSeries: series(results[9], locationNames),
+    employees: results[10].map(function (r) { var snapshot = snapshots.get(r.lastSequence) || {}; return { key: r.key, name: snapshot.name || '—', shift: snapshot.shift || '', reports: r.reports, ben: r.ben, previous: previousEmployees.get(r.key) || 0 }; }),
+    summary: { rows: summaryRows, totals: summaryTotals, all: shifts.length, matched: summaryRows.length } } };
+}
+async function irRead(env, actor, query) {
+  var q = query && query.searchParams ? Object.fromEntries(query.searchParams.entries()) : query || {},
+    view = q.view || 'calendar', ctx = await irQueryContext(env, actor, q.dept), now = Date.now(),
+    clock = Object.assign(cuClock(), { now: now }), out;
+  if (view === 'catalogs') out = await irQueryCatalogs(ctx);
+  else if (view === 'calendar') out = await irQueryCalendar(ctx, q, clock);
+  else if (view === 'records') out = await irQueryRecords(ctx, q, clock);
+  else if (view === 'dashboard') out = await irQueryDashboard(ctx, q, clock);
+  else throw irError('irshad-query');
+  var after = await irQueryContext(env, actor, ctx.d);
+  if (after.witness !== ctx.witness) throw irError('irshad-read-race', 409);
+  return Object.assign({ ok: 1, dept: ctx.d, base: irQueryBase(ctx), clock: clock, view: view }, out);
+}
+/* Irshad commands: affected typed rows, existing authorization, and one batch
+   for data, resource revision, audit, notification plan and request receipt. */
+function irRequestString(v, max) {
+  if (typeof v !== 'string' || !v || v.length > max) throw irError('irshad-request');
+  return v;
+}
+function irCheckBase(base) {
+  irShape(base, ['epoch'].concat(IR_RES_NAMES), 'base');
+  ['epoch'].concat(IR_RES_NAMES).forEach(function (k) {
+    if (!Number.isSafeInteger(base[k]) || base[k] < 0) throw irError('irshad-base');
+  });
+}
+function irActResource(b) {
+  return b.op === 'catalog-replace' ? b.kind : 'reports';
+}
+async function irReceipt(env, A, b, fingerprint) {
+  var row = await env.DB.prepare('SELECT * FROM irshad_requests WHERE department_id=?1 AND account_uid=?2 AND request_id=?3')
+    .bind(b.dept, A.u.id, b.requestId).first();
+  if (!row) return null;
+  if (row.fingerprint !== fingerprint) throw irError('irshad-request-reused', 409);
+  var base = Object.assign({}, b.base), resource = IR_RES_NAMES[IR_RES.indexOf(row.resource_key)];
+  if (!resource) resource = IR_RES_NAMES.find(function (_, i) { return irKey(b.dept, i) === row.resource_key; });
+  if (!resource || !Number.isSafeInteger(row.resource_rev) || row.resource_rev < 0) throw irError('irshad-receipt-invalid', 503);
+  base[resource] = row.resource_rev;
+  var ack = { ok: 1, requestId: b.requestId, op: row.operation, rev: row.resource_rev, n: row.result_n, base: base };
+  if (row.result_id !== null) ack.id = row.result_id;
+  return ack;
+}
+function irReceiptAuthority(ctx, b) {
+  var k = irKey(ctx.d, IR_RES_NAMES.indexOf(irActResource(b))), A = ctx.A;
+  if (!deptInScope(A, ctx.d) || !resOnCeiling(A, ctx.d, resOf(k))) throw irError('irshad-denied', 403);
+  var permitted = A.enf ? enfResWriter(A, ctx.d, resName(k)) :
+    authorizeActs(A, k, [b.op === 'create' ? 'add' : b.op.indexOf('delete') === 0 ? 'del' : 'edit']).ok;
+  if (!permitted) throw irError('irshad-denied', 403);
+}
+async function irRetroSnapshot(env, d) {
+  var out = await env.DB.batch([
+    env.DB.prepare('SELECT * FROM irshad_retro_windows WHERE department_id=?1 ORDER BY sequence').bind(d),
+    env.DB.prepare('SELECT k,v FROM meta WHERE k=?1 OR k=?2 ORDER BY k').bind(irMetaKey(d), irMetaKey(d) + ':retro-version'),
+  ]), domain = irEmptyDomain(d), meta = {};
+  (out[1].results || []).forEach(function (r) { meta[r.k] = r.v; });
+  var mask = Number(meta[irMetaKey(d)] || 0);
+  domain.resources.retro = !!(mask & 8);
+  domain.resources.retroVersionPresent = !!(mask & 16);
+  domain.resources.retroVersion = mask & 16 ? parseJson(meta[irMetaKey(d) + ':retro-version'], null) : null;
+  domain.resources.retroWindowsPresent = !!(mask & 32);
+  domain.rows.windows = out[0].results || [];
+  var state = irInflate(domain).retro;
+  if (!Number.isSafeInteger(mask) || mask < 0 || mask > 63) throw irError('irshad-presence-invalid', 503);
+  irValidateDomain(domain, d);
+  if (!isObj(state)) state = { v: 1, windows: [] };
+  else if (!Array.isArray(state.windows)) state = Object.assign({}, state, { windows: [] });
+  return { state: state, rows: domain.rows.windows, metaRows: out[1].results || [] };
+}
+async function irPermission(ctx, resource, before, after, reason) {
+  var k = irKey(ctx.d, IR_RES_NAMES.indexOf(resource)), retro = await irRetroSnapshot(ctx.env, ctx.d),
+    retroWin = {}, pv4 = {};
+  retroWin[ctx.d + '|irshad'] = retro.state.windows;
+  pv4[ctx.d] = ctx.pv4;
+  var set = {}, keys = {}, body = { why: {} }, X = null, c = {};
+  set[k] = JSON.stringify(after); keys[k] = 1;
+  if (reason) body.why[k] = reason;
+  if (ctx.A.enf) {
+    X = await enfSavePrep(ctx.env, ctx.A, body, set, [], keys, KIVO_BUILD.markers({}, keys), null, false, false, retroWin, pv4);
+    c.enf = enfCtxFor(X, k, ctx.d);
+  }
+  var result = X && X.batchDeny ? enfNo(X.batchDeny.why, X.batchDeny) :
+    canWrite(ctx.A, k, JSON.stringify(after), JSON.stringify(before), c);
+  if (!result.ok) {
+    var error = irError('irshad-denied', 403);
+    error.irDecision = result;
+    throw error;
+  }
+  var guards = rsWitness(ctx.env, IR_TABLES.windows[0], IR_TABLES.windows[1], retro.rows, 'department_id=?1', [ctx.d]);
+  return { decision: result, guards: guards, key: k };
+}
+function irMutationData(ctx, b, before, now) {
+  var create = b.op === 'create', fields = ['shift', 'eid', 'loc', 'langs', 'bro', 'pros', 'pol'];
+  irShape(b.data, create ? fields.concat(['y', 'm', 'd']) : fields, 'data');
+  fields.forEach(function (f) { if (!irOwn(b.data, f)) throw irError('irshad-data'); });
+  var out = Object.assign({}, before || {}, b.data);
+  ['shift', 'eid', 'loc'].forEach(function (f) { irText(out[f], 'data.' + f); });
+  if (!out.shift || !out.eid) throw irError('irshad-data');
+  ['bro', 'pros', 'pol'].forEach(function (f) {
+    if (!Number.isSafeInteger(out[f]) || out[f] < 0) throw irError('irshad-number');
+  });
+  if (!Array.isArray(out.langs)) throw irError('irshad-languages-shape');
+  out.langs.forEach(function (value) {
+    irShape(value, ['lang', 'count'], 'data.langs');
+    if (typeof value.lang !== 'string' || !value.lang || !Number.isSafeInteger(value.count) || value.count < 0)
+      throw irError('irshad-language-count');
+  });
+  if (create) {
+    if (!Number.isSafeInteger(out.y) || out.y < 1 || out.y > 9999 || !Number.isSafeInteger(out.m) || out.m < 1 || out.m > 12 ||
+        !Number.isSafeInteger(out.d) || out.d < 1 || out.d > 30) throw irError('irshad-date');
+    out.id = 'ir-' + randTok(); out.ts = now; out.actor = String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id);
+  } else { out.editedTs = now; out.editedBy = String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id); }
+  // A historical employee snapshot remains historical when its identity is unchanged.
+  if (create || out.eid !== before.eid || out.shift !== before.shift) {
+    var employees = parseJson(ctx.rawKeys['bsdept:' + ctx.d + ':bassam_employees_v1'], null);
+    if (!Array.isArray(employees)) throw irError('irshad-employees-unavailable', 503);
+    var matches = employees.filter(function (e) { return isObj(e) && e.eid === out.eid; });
+    if (matches.length !== 1) throw irError('irshad-employee');
+    if (create || out.eid !== before.eid) out.name = String(matches[0].name || 'بدون اسم');
+    if (capOnDept(ctx.A, ctx.d, 'staff')) {
+      var month = ctx.refs.staffing[ctx.d], schedule = isObj(month) && month[out.y + '-' + out.m], row = isObj(schedule) && schedule[out.eid];
+      if (!isObj(row) || row.shift !== out.shift || (Array.isArray(row.rest) && row.rest.indexOf(out.d) >= 0))
+        throw irError('irshad-employee-shift');
+    }
+  }
+  // The canonical codec validates every language child and optional historical field.
+  irConvert(ctx.d, { reports: { reports: [out] } });
+  return out;
+}
+function irBumpStatements(env, k, notify) {
+  var st = [env.DB.prepare("INSERT INTO meta(k,v) VALUES('rev',CAST(COALESCE((SELECT MAX(rev) FROM revs),0)+1 AS TEXT)) ON CONFLICT(k) DO UPDATE SET v=CAST(MAX(CAST(meta.v AS INTEGER),COALESCE((SELECT MAX(rev) FROM revs),0))+1 AS TEXT)"),
+    env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER)) ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(k)];
+  if (notify) st.push(env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER)) ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(NF_REV));
+  return st;
+}
+async function irNotificationPlan(ctx, b, before, after) {
+  var events = [], statements = [], guards = [], active = 0;
+  if (b.op === 'create') events.push({ type: 'ir_new', row: after[0] });
+  if (b.op === 'edit') events.push({ type: 'ir_edit', row: after[0], action: 'عُدّل' });
+  if (b.op === 'delete' || b.op === 'delete-month') before.forEach(function (row) { events.push({ type: 'ir_edit', row: row, action: 'حُذف' }); });
+  for (var start = 0; start < events.length; start += 200) {
+    var part = [];
+    for (var event of events.slice(start, start + 200)) {
+      var once = 'irshad:' + await cuFingerprint({ request: b.requestId, actor: ctx.A.u.id, report: event.row.id });
+      // Preserve the existing observer's valid-report template values; no new counting policy.
+      var vars = event.type === 'ir_new' ? { 'الرقم': '—', 'العدد': 0, 'الموقع': event.row.loc || '—', 'الموظف': event.row.name || '' } :
+        { 'الفعل': event.action, 'الرقم': '—', 'المُعدّل': String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id) };
+      Object.keys(vars).forEach(function (key) { if (typeof vars[key] === 'string') vars[key] = vars[key].slice(0, 4000); });
+      part.push({ type: event.type, dept: ctx.d, vars: vars, once: once });
+    }
+    var plan = await nfPlanEvents(ctx.env, ctx.A, part, true);
+    guards.push.apply(guards, plan.guards);
+    statements.push.apply(statements, plan.statements);
+    statements.push.apply(statements, nfRetention(ctx.env, Date.now(), plan.scopes));
+    active += plan.plans.length;
+  }
+  return { guards: guards, statements: statements, active: active };
+}
+async function irAct(env, A, b, meta) {
+  irShape(b, ['uid', 'dept', 'base', 'requestId', 'op', 'reason', 'data', 'id', 'year', 'month', 'kind', 'values'], 'body');
+  var fields = { create: ['data'], edit: ['id', 'data'], delete: ['id'], 'delete-month': ['year', 'month'], 'catalog-replace': ['kind', 'values'] };
+  if (!Object.prototype.hasOwnProperty.call(fields, b.op)) throw irError('irshad-operation');
+  irShape(b, ['uid', 'dept', 'base', 'requestId', 'op', 'reason'].concat(fields[b.op]), 'body');
+  irRequestString(b.requestId, 100); irRequestString(b.dept, 200); irCheckBase(b.base);
+  if (b.uid !== undefined && b.uid !== A.u.id) throw irError('session-changed', 409);
+  if (b.reason !== undefined && typeof b.reason !== 'string') throw irError('irshad-reason');
+  if (b.op === 'catalog-replace' && ['languages', 'locations'].indexOf(b.kind) < 0) throw irError('irshad-catalog-kind');
+  await irGuardRetired(env);
+  var ctx = await irQueryContext(env, A, b.dept, { write: true });
+  env = ctx.env; A = ctx.A;
+  if (b.base.epoch !== ctx.base.epoch) throw irError('restore-epoch-changed', 409);
+  irReceiptAuthority(ctx, b);
+  var fingerprint = await cuFingerprint({ body: b }), receipt = await irReceipt(env, A, b, fingerprint);
+  if (receipt) return receipt;
+  if (['epoch'].concat(IR_RES_NAMES).some(function (name) { return ctx.base[name] !== b.base[name]; })) throw irError('irshad-conflict', 409);
+  var resource = irActResource(b), resourceIndex = IR_RES_NAMES.indexOf(resource), k = irKey(ctx.d, resourceIndex),
+    before = [], after = [], statements = [], guards = ctx.guards.concat([rsEpochGuard(env.DB, b.base.epoch), irRetiredGuard(env)]),
+    now = Date.now(), resultId = null, n = 1, reason = String(b.reason || '').trim().slice(0, 300), where, args, raw;
+  if (b.op === 'catalog-replace') {
+    if (!Array.isArray(b.values)) throw irError('irshad-catalog-shape');
+    b.values.forEach(function (value) { irText(value, 'values'); });
+    raw = (await env.DB.prepare('SELECT * FROM irshad_catalog_entries WHERE department_id=?1 AND kind=?2 ORDER BY position').bind(ctx.d, b.kind).all()).results || [];
+    before = raw.map(function (row) { return row.value; }); after = b.values.slice(); n = after.length;
+    guards.push.apply(guards, rsWitness(env, IR_TABLES.catalogs[0], IR_TABLES.catalogs[1], raw, 'department_id=?1 AND kind=?2', [ctx.d, b.kind]));
+    statements.push(env.DB.prepare('DELETE FROM irshad_catalog_entries WHERE department_id=?1 AND kind=?2').bind(ctx.d, b.kind));
+    statements.push.apply(statements, rsBulk(env, IR_TABLES.catalogs[0], IR_TABLES.catalogs[1], after.map(function (value, position) { return { department_id: ctx.d, kind: b.kind, position: position, value: value }; })));
+  } else {
+    if (b.op === 'create') {
+      var sequence = await env.DB.prepare('SELECT COALESCE(MAX(sequence),-1)+1 n FROM irshad_reports WHERE department_id=?1').bind(ctx.d).first();
+      guards.push(env.DB.prepare("SELECT CASE WHEN (SELECT COALESCE(MAX(sequence),-1)+1 FROM irshad_reports WHERE department_id=?1)<>?2 THEN json_extract('{}','KIVO_IRSHAD_TARGET_CHANGED')END").bind(ctx.d, sequence.n));
+      after = [irMutationData(ctx, b, null, now)];
+      var created = irConvert(ctx.d, { reports: { reports: after } }); created.rows.reports[0].sequence = sequence.n;
+      statements.push.apply(statements, rsBulk(env, IR_TABLES.reports[0], IR_TABLES.reports[1], created.rows.reports));
+      statements.push.apply(statements, rsBulk(env, IR_TABLES.languages[0], IR_TABLES.languages[1], created.rows.languages));
+      resultId = after[0].id;
+    } else {
+      if (b.op === 'delete-month') {
+        if (!canRead(A, k)) throw irError('irshad-denied', 403);
+        if (!Number.isSafeInteger(b.year) || !Number.isSafeInteger(b.month) || b.month < 1 || b.month > 12) throw irError('irshad-date');
+        var scope = irQueryScope(ctx, 'irshad_reports'); args = scope.args.slice();
+        args.push(b.year); var yearSlot = '?' + args.length; args.push(b.month);
+        where = scope.sql + ' AND hijri_year=' + yearSlot + ' AND hijri_month=?' + args.length;
+      } else { irRequestString(b.id, 100000); where = 'department_id=?1 AND report_id=?2'; args = [ctx.d, b.id]; }
+      raw = (await rsBound(env.DB.prepare('SELECT * FROM irshad_reports WHERE ' + where + ' ORDER BY sequence'), args).all()).results || [];
+      if (!raw.length) throw irError('irshad-report-missing', 404);
+      var ids = raw.map(function (row) { return row.report_id; }), children = [], parts = rsChunks(ids);
+      for (var idPart of parts) {
+        var childRows = (await env.DB.prepare('SELECT * FROM irshad_report_languages WHERE department_id=?1 AND report_id IN(SELECT value FROM json_each(?2)) ORDER BY report_id,position').bind(ctx.d, JSON.stringify(idPart)).all()).results || [];
+        children.push.apply(children, childRows);
+        guards.push.apply(guards, rsWitness(env, IR_TABLES.languages[0], IR_TABLES.languages[1], childRows,
+          'department_id=?1 AND report_id IN(SELECT value FROM json_each(?2))', [ctx.d, JSON.stringify(idPart)]));
+      }
+      guards.push.apply(guards, rsWitness(env, IR_TABLES.reports[0], IR_TABLES.reports[1], raw, where, args));
+      var selected = irEmptyDomain(ctx.d); selected.resources.reports = true; selected.rows.reports = raw; selected.rows.languages = children;
+      before = irInflate(selected).reports.reports;
+      if (b.op === 'edit') {
+        after = [irMutationData(ctx, b, before[0], now)]; resultId = b.id;
+        var edited = irConvert(ctx.d, { reports: { reports: after } }); edited.rows.reports[0].sequence = raw[0].sequence;
+        statements.push(env.DB.prepare('DELETE FROM irshad_report_languages WHERE department_id=?1 AND report_id=?2').bind(ctx.d, b.id));
+        statements.push(env.DB.prepare('DELETE FROM irshad_reports WHERE department_id=?1 AND report_id=?2').bind(ctx.d, b.id));
+        statements.push.apply(statements, rsBulk(env, IR_TABLES.reports[0], IR_TABLES.reports[1], edited.rows.reports));
+        statements.push.apply(statements, rsBulk(env, IR_TABLES.languages[0], IR_TABLES.languages[1], edited.rows.languages));
+      } else {
+        n = before.length; resultId = b.op === 'delete' ? b.id : null;
+        parts.forEach(function (part) { statements.push(env.DB.prepare('DELETE FROM irshad_reports WHERE department_id=?1 AND report_id IN(SELECT value FROM json_each(?2))').bind(ctx.d, JSON.stringify(part))); });
+      }
+    }
+  }
+  var permission = await irPermission(ctx, resource, resource === 'reports' ? { reports: before } : before,
+    resource === 'reports' ? { reports: after } : after, reason);
+  guards.push.apply(guards, permission.guards);
+  var notifications = await irNotificationPlan(ctx, b, before, after);
+  guards.push.apply(guards, notifications.guards);
+  statements.push.apply(statements, irMarkResourceStatements(env, ctx.d, resource));
+  statements.push.apply(statements, irBumpStatements(env, k, notifications.active > 0));
+  statements.push.apply(statements, notifications.statements);
+  statements.push(env.DB.prepare("INSERT INTO irshad_requests(department_id,account_uid,request_id,fingerprint,resource_key,resource_rev,operation,result_n,result_id,created_at)VALUES(?1,?2,?3,?4,?5,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),?6,?7,?8,?9)").bind(ctx.d, A.u.id, b.requestId, fingerprint, k, b.op, n, resultId, now));
+  statements.push(env.DB.prepare("INSERT INTO aud(cid,ts,uid,un,dept,k,rev,etype,eid,ename,act,ctx,bef,aft,ip,dev,city)VALUES(?1,?2,?3,?4,?5,?6,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),'dataset',?7,'irshad',?8,?9,'','',?10,?11,?12)").bind(
+    'irshad_' + randTok(), now, A.u.id, String(A.u.un || ''), ctx.d, k, resultId || b.requestId, b.op,
+    JSON.stringify({ requestId: b.requestId, n: n, reason: reason }), (meta && meta.ip) || '', (meta && meta.dev) || '', (meta && meta.city) || ''));
+  var authzLog = A.enf && enfLogRow(A, k, permission.decision, '/api/irshad/act', meta || {});
+  if (authzLog) statements.push(enfLogStmt(env, authzLog));
+  try { await env.DB.batch(guards.concat(statements)); }
+  catch (error) {
+    preOff(env); receipt = await irReceipt(env, A, b, fingerprint);
+    if (receipt) return receipt;
+    if (isRevConflict(error) || /KIVO_RESTORE_TARGET|KIVO_IRSHAD_TARGET_CHANGED|UNIQUE constraint/.test(String(error))) throw irError('irshad-conflict', 409);
+    throw error;
+  }
+  preOff(env);
+  var ack = await irReceipt(env, A, b, fingerprint);
+  if (!ack) throw irError('irshad-receipt-unavailable', 503);
+  return ack;
+}
+async function irRoute(env, request, url, ss) {
+  try {
+    if (!((url.pathname === '/api/irshad' || url.pathname === '/api/irshad/export') && request.method === 'GET') &&
+        !(url.pathname === '/api/irshad/act' && request.method === 'POST')) return json({ ok: 0, err: 'method' }, 405);
+    var mismatch = sessUidMismatch(env, url, ss, '/api/irshad'); if (mismatch) return mismatch;
+    var A = await actorOf(env, ss.uid); if (!A) return json({ ok: 0, err: 'session' }, 401);
+    if (url.pathname === '/api/irshad/export') return json(await irExport(env, A, url));
+    if (request.method === 'GET') return json(await irRead(env, A, Object.fromEntries(url.searchParams)));
+    var read = await bodyRead(request, '/api/irshad/act'); if (read.res) return read.res;
+    var limit = await rlHit(env, 'sv', A.u.id, RL_SAVE); if (limit) return tooMany(limit);
+    return json(await irAct(env, A, read.v, reqMeta(request)));
+  } catch (error) { return irErrorResponse(error); }
+}
+function irErrorResponse(error) {
+    if (error.irCode) {
+      var data = { ok: 0, err: error.irCode };
+      if (error.irPath) data.at = error.irPath;
+      if (error.irDecision) { data.why = error.irDecision.why; data.keys = error.irDecision.reasonKeys || error.irDecision.keys || []; data.details = error.irDecision.detail || ''; }
+      return json(data, error.irStatus);
+    }
+    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(error))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
+    if (/KIVO_NOTIFICATION_LEGACY_SOURCE/.test(String(error))) return json({ ok: 0, err: 'notification-legacy-source-present' }, 503);
+    if (/KIVO_IRSHAD_ORPHAN_SCOPE/.test(String(error))) return json({ ok: 0, err: 'irshad-orphan-scope' }, 503);
+    if (/KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'restore-epoch-changed' }, 409);
+    if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT/.test(String(error))) return json({ ok: 0, err: 'irshad-conflict' }, 409);
+    if (error.nf) return json({ ok: 0, err: error.nf }, error.status);
+    throw error;
+}
+/* Replacement for the retired442 ir_day poll. One active department, one
+   Riyadh civil day, SQL aggregates only, and the existing NF once mechanism. */
+function irDailyManager(A) {
+  var u = A && A.u;
+  return !!(u && (u.role === 'super' || u.role === 'dept' || u.role === 'gm' || (u.role === 'staff' && u.mgr)));
+}
+function irDailyPlan(ctx, day) {
+  var scope = irQueryScope(ctx, 'r'), p = { args: scope.args.slice() },
+    where = scope.sql + ' AND r.hijri_year=' + irQueryParam(p, day.y) +
+      ' AND r.hijri_month=' + irQueryParam(p, day.m) + ' AND r.hijri_day=' + irQueryParam(p, day.d),
+    label = "COALESCE(NULLIF(r.location,''),'—')",
+    count = 'SELECT COUNT(*) FROM irshad_reports r WHERE ' + where,
+    top = 'SELECT ' + label + ' FROM irshad_reports r WHERE ' + where + ' GROUP BY ' + label + ' ORDER BY COUNT(*) DESC,MIN(r.sequence) LIMIT 1';
+  return { args: p.args, count: count, top: top };
+}
+async function nfIrshadDaily(env, actor, url) {
+  var now = Date.now(), minutes = pfRiyadhMins(now), d = url.searchParams.get('dept') || '';
+  if (minutes < 1410 || !d || !irDailyManager(actor)) return { emitted: 0 };
+  var ctx;
+  try { ctx = await irQueryContext(env, actor, d); }
+  catch (e) {
+    if (e.irStatus === 403) return { emitted: 0 };
+    if (e.irCode) throw nfErr(e.irCode, e.irStatus === 409 ? 409 : 503);
+    throw e;
+  }
+  if (!irDailyManager(ctx.A)) return { emitted: 0 };
+  var day = pfHijriAt(now), once = 'ir_day:' + day.dk, scope = nfScope(d),
+    existing = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
+  if (existing) return { emitted: 0 };
+  var aggregate = irDailyPlan(ctx, day), guards = ctx.guards.concat([rsEpochGuard(ctx.env.DB, ctx.base.epoch), irRetiredGuard(ctx.env)]), result;
+  try {
+    result = await ctx.env.DB.batch(guards.concat([
+      rsBound(ctx.env.DB.prepare('SELECT (' + aggregate.count + ') n,(' + aggregate.top + ') location'), aggregate.args),
+    ]));
+  } catch (e) {
+    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) throw nfErr('irshad-legacy-source-present', 503);
+    if (/KIVO_RESTORE_TARGET|KIVO_RESTORE_EPOCH/.test(String(e))) throw nfErr('conflict', 409);
+    throw e;
+  }
+  var summary = (result[guards.length].results || [])[0];
+  if (!summary || !Number.isSafeInteger(summary.n) || summary.n < 0) throw nfErr('irshad-daily-summary', 503);
+  if (!summary.n) return { emitted: 0 };
+  // The original observer reduced items[].n. Current supported IR reports have
+  // no items field, so beneficiaries stays0; langs/count is not substituted.
+  var plan = await nfPlanEvents(ctx.env, ctx.A, [{ type: 'ir_day', dept: d,
+      vars: { 'المحاضر': summary.n, 'المستفيدون': 0, 'الموقع': String(summary.location).slice(0, 4000) }, once: once, at: now }], true);
+  if (!plan.plans.length) return { emitted: 0 };
+  var seenGuard = ctx.env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2) THEN json_extract('{}','KIVO_IRSHAD_DAILY_SEEN') END").bind(scope, once),
+    sourceArgs = aggregate.args.slice(), sourcePlan = { args: sourceArgs },
+    nSlot = irQueryParam(sourcePlan, summary.n), locationSlot = irQueryParam(sourcePlan, summary.location),
+    sourceGuard = rsBound(ctx.env.DB.prepare('SELECT CASE WHEN (' + aggregate.count + ')<>' + nSlot +
+      ' OR (' + aggregate.top + ') IS NOT ' + locationSlot + " THEN json_extract('{}','KIVO_IRSHAD_DAILY_SOURCE_CHANGED') END"), sourceArgs),
+    statements = guards.concat(plan.guards, [sourceGuard, seenGuard]);
+  statements.push.apply(statements, irBumpStatements(ctx.env, NF_REV, false));
+  statements.push.apply(statements, plan.statements);
+  statements.push.apply(statements, nfRetention(ctx.env, now, plan.scopes));
+  try { await ctx.env.DB.batch(statements); }
+  catch (e) {
+    if (/KIVO_IRSHAD_DAILY_SEEN/.test(String(e))) {
+      var duplicate = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
+      if (duplicate) return { emitted: 0 };
+    }
+    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) throw nfErr('irshad-legacy-source-present', 503);
+    if (/KIVO_NOTIFICATION_LEGACY_SOURCE/.test(String(e))) throw nfErr('notification-legacy-source-present', 503);
+    if (/KIVO_RESTORE_TARGET|KIVO_RESTORE_EPOCH|KIVO_IRSHAD_DAILY_SOURCE_CHANGED|KIVO_IRSHAD_DAILY_SEEN/.test(String(e)))
+      throw nfErr('conflict', 409);
+    throw e;
+  }
+  preOff(ctx.env);
+  return { emitted: plan.plans.length };
 }
 /* ═══ R180: «الإحصائيات اليومية» — مخزنٌ عامٌّ واحد تحكمه أوراقُ الصفحة ═══
    كان المفتاحُ لمدير النظام وحده في الخادم، والشاشةُ تفتح الإدخالَ لكلِّ من مُنح الصفحة — فيُرفض حفظُه
@@ -12854,7 +14659,10 @@ var RETRO = { irshad: { cap: 'irshad/records', key: 'ir.rec.retro.open', res: 'b
               seized: { cap: 'seized/records', key: 'sz.rec.retro.open', res: 'bassam_seized_v1', state: 'bassam_seized_retro_v1', name: 'المضبوطات' } };
 var RETRO_SYS_OF = { 'bassam_irshad_v1': 'irshad', 'bassam_seized_v1': 'seized' };
 function retroKey(d, sys) { return 'bsdept:' + d + ':' + RETRO[sys].state; }
-async function retroState(env, d, sys) { var v = parseJson(await kvGet(env, 'kv', retroKey(d, sys)), null); return (isObj(v) && Array.isArray(v.windows)) ? v : { v: 1, windows: [] }; }
+async function retroState(env, d, sys) {
+  if (sys === 'irshad') { await irGuardRetired(env); return (await irRetroSnapshot(env, d)).state; }
+  var v = parseJson(await kvGet(env, 'kv', retroKey(d, sys)), null); return (isObj(v) && Array.isArray(v.windows)) ? v : { v: 1, windows: [] };
+}
 /* من يفتح نافذةَ استدراك: مدير النظام، أو حاملُ approve على ورقة السجلات في الإدارة — ذرّةُ G‑08 نفسُها التي تفتح الشهرَ واجهياً اليوم (وهي ترجمةُ ir/sz.rec.retro.open) */
 function retroMay(A, d, sys) { if (A && A.enf) return enfRetroMay(A, d, sys); if (A.u.role === 'super') return true; return !!d && deptInScope(A, d) && actsHeldOn(A, d, RETRO[sys].cap, ['approve']); }
 function retroScopeKey(sc) { return sc.y + '-' + sc.m + (sc.d == null ? '' : '-' + sc.d); }
@@ -12934,24 +14742,38 @@ function permv3Batch(A, set, del, evald, todo, pv3M, pv3Restore, pv2Restore) {
 /* ═══ /api/retro — نافذةُ الاستدراك (ir.rec.retro.open · sz.rec.retro.open): حالةٌ خادمية لكل (إدارة · نظام)، محدودةُ النطاق (شهرٌ أو يومٌ منقضٍ) والزمن (≤ RETRO_MAX_H) والفاعل (من الجلسة)، بسجلّ تدقيقٍ مستقل ═══
    لا تُنفَّذ قاعدةُ الرفض على الكتابات (Phase 3 ظلّ)؛ النافذةُ تُقاس بها wouldAllowRetro/wouldBlock فقط. الوصولُ: مدير النظام أو حاملُ approve (ذرّةُ G‑08 نفسُها). */
 async function retroApi(env, request, A, url, meta) {
+  try { return await retroApiRun(env, request, A, url, meta); }
+  catch (error) { return irErrorResponse(error); }
+}
+async function retroApiRun(env, request, A, url, meta) {
   var now = Date.now(), T = dsToday(now), b = null, sys, d;
   if (request.method === 'GET') { sys = String(url.searchParams.get('res') || ''); d = String(url.searchParams.get('dept') || A.u.deptId || ''); }
   else { var rb = await bodyRead(request, '/api/retro'); if (rb.res) return rb.res; b = rb.v; sys = String(b.res || ''); d = String(b.dept || A.u.deptId || ''); }   /* KIVO_264 · SOT-101: مخطّطُ الجسم (src/schemas/api/bodies.schema.json) */
   if (!Object.prototype.hasOwnProperty.call(RETRO, sys)) return json({ ok: 0, err: 'res' }, 400);   /* KIVO_264: «__proto__» وأمثالُه ليست نظاماً (كانت تمرّ فتنهار 500) */
   if (!d || !(A.depts || []).some(function (x) { return x && x.id === d; })) return json({ ok: 0, err: 'dept' }, 400);
+  var irCtx = null, irState = null;
+  if (sys === 'irshad') {
+    await irGuardRetired(env);
+    irCtx = await irQueryContext(env, A, d, { write: true }); env = irCtx.env; A = irCtx.A;
+    irState = await irRetroSnapshot(env, d);
+    irCtx.guards.push(irRetiredGuard(env));
+    irCtx.guards.push.apply(irCtx.guards, rsWitness(env, IR_TABLES.windows[0], IR_TABLES.windows[1], irState.rows, 'department_id=?1', [d]));
+    irCtx.guards.push.apply(irCtx.guards, rsWitness(env, 'meta', ['k', 'v'], irState.metaRows, 'k=?1 OR k=?2', [irMetaKey(d), irMetaKey(d) + ':retro-version']));
+  }
   var RS = PERMV3.retro[sys], may = retroMay(A, d, sys);
   var tob = A.u.role === 'super' ? { ok: true, why: 'super' } : KIVO_GUARDS.decide(RETRO[sys].key, permv2Ctx(A, d));
   if (!!tob.ok === may) RS.openDecisions.agree++; else RS.openDecisions.disagree++;
   if (request.method === 'GET') {
     if (!may && !canRead(A, 'bsdept:' + d + ':' + RETRO[sys].res)) return json({ ok: 0, err: 'perm' }, 403);
-    var stG = await retroState(env, d, sys);
+    var stG = irCtx ? irState.state : await retroState(env, d, sys);
+    if (irCtx) await env.DB.batch(irCtx.guards);
     return json({ ok: 1, res: sys, dept: d, today: T, now: now, maxHours: KIVO_BUILD.RETRO_MAX_H, defHours: KIVO_BUILD.RETRO_DEF_H, may: may, windows: stG.windows });
   }
   if (request.method !== 'POST') return json({ ok: 0, err: 'method' }, 405);
   var act = b.act === 'close' ? 'close' : 'open';
   if (!may && A.enf) { try { await enfInitDb(env); await enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: d, k: retroKey(d, sys), res: RETRO[sys].state, keys: RETRO[sys].key, decision: 'deny', why: 'perm', path: '/api/retro', ip: meta.ip }).run(); } catch (eL9) { swallow('retro-authz-log', eL9, env.__rid); } }
   if (!may) { RS.missingRetroPermission++; await secLog(env, { ts: now, uid: A.u.id, un: A.u.un, act: 'denied', target: retroKey(d, sys), detail: 'retro.' + act + ':perm', ip: meta.ip, city: meta.city, dev: meta.dev }); return json({ ok: 0, err: 'perm', key: RETRO[sys].key }, 403); }
-  var st9 = await retroState(env, d, sys), w, scope;
+  var st9 = irCtx ? irState.state : await retroState(env, d, sys), w, scope;
   if (act === 'open') {
     var sc0 = isObj(b.scope) ? b.scope : {}, y = parseInt(sc0.y, 10), m = parseInt(sc0.m, 10), dd0 = (sc0.d == null || sc0.d === '') ? null : parseInt(sc0.d, 10);
     if (!(y > 1300 && y < 1700 && m >= 1 && m <= 12) || (dd0 !== null && !(dd0 >= 1 && dd0 <= 30))) return json({ ok: 0, err: 'scope' }, 400);
@@ -12967,8 +14789,12 @@ async function retroApi(env, request, A, url, meta) {
   } else {
     var id = String(b.id || ''); w = null; for (var q = 0; q < st9.windows.length; q++) if (st9.windows[q] && st9.windows[q].id === id) w = st9.windows[q];
     if (!w) return json({ ok: 0, err: 'not-found' }, 404);
-    if (w.closedAt) return json({ ok: 1, window: w, already: 1 });
+    if (w.closedAt) { if (irCtx) await env.DB.batch(irCtx.guards); return json({ ok: 1, window: w, already: 1 }); }
     w.closedAt = now; w.closedBy = { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || '') }; scope = w.scope; RS.closes++;
+  }
+  if (irCtx) {
+    await irRetroCommit(irCtx, st9, w, scope, act, meta, now);
+    return json({ ok: 1, window: w, today: T, now: now, decision: { asis: may, toBe: !!tob.ok, why: tob.why || '' } });
   }
   var rev = await nextRev(env), key = retroKey(d, sys), stm = kvPutStmts(env, 'kv', key, JSON.stringify(st9));
   stm.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(key, rev));
@@ -12978,6 +14804,24 @@ async function retroApi(env, request, A, url, meta) {
   await env.DB.batch(stm);
   if (A.enf) { try { await enfInitDb(env); await enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: d, k: key, res: RETRO[sys].state, keys: RETRO[sys].key, scope: retroScopeKey(scope), decision: 'allow', why: act, reason: act === 'open' ? (w.reason || '') : '', path: '/api/retro', ip: meta.ip }).run(); } catch (eL8) { swallow('retro-authz-log', eL8, env.__rid); } }
   return json({ ok: 1, window: w, today: T, now: now, decision: { asis: may, toBe: !!tob.ok, why: tob.why || '' } });
+}
+async function irRetroCommit(ctx, state, window, scope, act, meta, now) {
+  var env = ctx.env, A = ctx.A, key = retroKey(ctx.d, 'irshad'), domain = irConvert(ctx.d, { retro: state }),
+    statements = [env.DB.prepare('DELETE FROM irshad_retro_windows WHERE department_id=?1').bind(ctx.d)];
+  statements.push.apply(statements, rsBulk(env, IR_TABLES.windows[0], IR_TABLES.windows[1], domain.rows.windows));
+  statements.push.apply(statements, irMarkResourceStatements(env, ctx.d, 'retro'));
+  statements.push.apply(statements, irBumpStatements(env, key, false));
+  statements.push(env.DB.prepare("INSERT INTO aud(cid,ts,uid,un,dept,k,rev,etype,eid,ename,act,ctx,bef,aft,ip,dev,city)VALUES(?1,?2,?3,?4,?5,?6,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),'retro',?7,?8,?9,?10,'',?11,?12,?13,?14)")
+    .bind('retro_' + window.id + '_' + act, now, A.u.id, String(A.u.un || ''), ctx.d, key, 'irshad:' + retroScopeKey(scope),
+      'استدراك ' + RETRO.irshad.name + ' ' + retroScopeKey(scope), act === 'open' ? 'opened' : 'closed',
+      JSON.stringify({ sys: 'irshad', scope: scope, key: RETRO.irshad.key }),
+      JSON.stringify(act === 'open' ? { until: window.until, hours: window.hours, reason: window.reason, by: window.by.un } : { closedAt: window.closedAt, by: String(A.u.un || '') }),
+      meta.ip || '', meta.dev || '', meta.city || ''));
+  if (A.enf) statements.push(enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: ctx.d,
+    k: key, res: RETRO.irshad.state, keys: RETRO.irshad.key, scope: retroScopeKey(scope), decision: 'allow', why: act,
+    reason: act === 'open' ? (window.reason || '') : '', path: '/api/retro', ip: meta.ip }));
+  await env.DB.batch(ctx.guards.concat(statements));
+  preOff(env);
 }
 /* ═══ R197/R198 · Phase 4 → 4.1 — Data Scope Shadow Mode: PERMV4 = { write, read } — نطاقُ كلِّ كتابةٍ (evaluateWrite) وكلِّ قراءةٍ فعلية (evaluateRead · D4‑01) يُحسب بـKIVO_SCOPE ويُقارَن بالحكم القديم ولا يغيّره ═══
    Phase 4.1 (v24.5): D4‑02/D4‑03 بدل AC‑01/AC‑02 (deny معلَن لمدير النظام على الفترات المقفلة/المغلقة بلا نافذة — السلوكُ الحالي كما هو) · D4‑04 ctx.deptCeiling (لا سجلَّ سقفٍ ⇒ unmigrated) · telemetry مستقل scope.write / scope.read.
@@ -13524,14 +15368,30 @@ var KIVO_MIGRATIONS = [
    "INSERT INTO meta(k,v) VALUES('restore_epoch','0') ON CONFLICT(k) DO NOTHING",
    "INSERT INTO meta(k,v) VALUES ('schema_version', '7') ON CONFLICT(k) DO UPDATE SET v=excluded.v"
   ]
+ },
+ {
+  "name": "0008_irshad",
+  "sql": [
+   "SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE k IN ('bassam_irshad_v1','bassam_irshad_langs_v1','bassam_irshad_locs_v1','bassam_irshad_retro_v1') OR k GLOB 'bsdept:*:bassam_irshad_v1' OR k GLOB 'bsdept:*:bassam_irshad_v1:*' OR k GLOB 'bassam_irshad_v1:*' OR k GLOB 'bsdept:*:bassam_irshad_langs_v1' OR k GLOB 'bsdept:*:bassam_irshad_langs_v1:*' OR k GLOB 'bassam_irshad_langs_v1:*' OR k GLOB 'bsdept:*:bassam_irshad_locs_v1' OR k GLOB 'bsdept:*:bassam_irshad_locs_v1:*' OR k GLOB 'bassam_irshad_locs_v1:*' OR k GLOB 'bsdept:*:bassam_irshad_retro_v1' OR k GLOB 'bsdept:*:bassam_irshad_retro_v1:*' OR k GLOB 'bassam_irshad_retro_v1:*') AND COALESCE((SELECT v FROM meta WHERE k='ir_cutover_ready'),'')!='validated' THEN json_extract('{}','KIVO_IRSHAD_VALIDATED_CUTOVER_REQUIRED') END",
+   "CREATE TABLE IF NOT EXISTS irshad_reports ( department_id TEXT NOT NULL, report_id TEXT NOT NULL, sequence INTEGER NOT NULL, hijri_year REAL,hijri_month REAL,hijri_day REAL,created_at REAL,shift TEXT, employee_key TEXT,employee_name TEXT,location TEXT,actor_label TEXT, brochures REAL,prosecution REAL,police REAL,edited_at REAL,edited_by TEXT, legacy_language TEXT,legacy_count REAL,legacy_author TEXT,test_marker TEXT, presence_mask INTEGER NOT NULL,languages_null INTEGER NOT NULL, PRIMARY KEY(department_id,report_id),UNIQUE(department_id,sequence) ) WITHOUT ROWID",
+   "CREATE INDEX IF NOT EXISTS irshad_report_timeline ON irshad_reports(department_id,hijri_year DESC,hijri_month DESC,hijri_day DESC,created_at DESC,sequence)",
+   "CREATE INDEX IF NOT EXISTS irshad_report_shift ON irshad_reports(department_id,shift,hijri_year,hijri_month,hijri_day,sequence)",
+   "CREATE TABLE IF NOT EXISTS irshad_report_languages ( department_id TEXT NOT NULL,report_id TEXT NOT NULL,position INTEGER NOT NULL, language TEXT,count REAL,presence_mask INTEGER NOT NULL, PRIMARY KEY(department_id,report_id,position), FOREIGN KEY(department_id,report_id) REFERENCES irshad_reports(department_id,report_id) ON DELETE CASCADE ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS irshad_catalog_entries ( department_id TEXT NOT NULL,kind TEXT NOT NULL,position INTEGER NOT NULL,value TEXT NOT NULL, PRIMARY KEY(department_id,kind,position) ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS irshad_retro_windows ( department_id TEXT NOT NULL,window_id TEXT NOT NULL,sequence INTEGER NOT NULL, hijri_year REAL,hijri_month REAL,hijri_day REAL,scope_mask INTEGER NOT NULL, opened_at REAL,until_at REAL,hours REAL,reason TEXT,reason_missing INTEGER, closed_at REAL,by_id TEXT,by_username TEXT,by_employee_key TEXT,by_name TEXT, closed_by_id TEXT,closed_by_username TEXT,closed_by_employee_key TEXT, presence_mask INTEGER NOT NULL,by_kind INTEGER NOT NULL,by_mask INTEGER NOT NULL, closed_by_kind INTEGER NOT NULL,closed_by_mask INTEGER NOT NULL, PRIMARY KEY(department_id,window_id),UNIQUE(department_id,sequence) ) WITHOUT ROWID",
+   "CREATE INDEX IF NOT EXISTS irshad_retro_scope ON irshad_retro_windows(department_id,hijri_year,hijri_month,hijri_day,until_at)",
+   "CREATE TABLE IF NOT EXISTS irshad_requests ( department_id TEXT NOT NULL,account_uid TEXT NOT NULL,request_id TEXT NOT NULL, fingerprint TEXT NOT NULL,resource_key TEXT NOT NULL,resource_rev INTEGER NOT NULL, operation TEXT NOT NULL,result_n INTEGER NOT NULL,result_id TEXT,created_at INTEGER NOT NULL, PRIMARY KEY(department_id,account_uid,request_id) ) WITHOUT ROWID",
+   "DELETE FROM meta WHERE k='ir_cutover_ready'",
+   "INSERT INTO meta(k,v) VALUES ('schema_version', '8') ON CONFLICT(k) DO UPDATE SET v=excluded.v"
+  ]
  }
 ];
-var KIVO_SCHEMA_VERSION = 7;
+var KIVO_SCHEMA_VERSION = 8;
 /* ═══ KIVO_263 · SOT-101 — مخطّطاتُ أجسام الطلبات المغيِّرة: المصدرُ src/schemas/api/bodies.schema.json (JSON Schema) ═══
    هذه النسخةُ مطابقةٌ له حرفاً (يفرضها tests/unit/body_schemas.test.mjs) — فالقاعدةُ واحدةٌ مكتوبةٌ مرةً، قابلةٌ للاختبار بلا واجهة.
    bodyCheck(route, body) ⇒ null (سليم) أو موضعُ أوّل مخالفة ('set.<k>' · 'base.<k>' · 'del[3]' …) — والمسارُ يردّ 400 {ok:0, err:'bad-body', at}
    قبل أيّ قراءةٍ أو كتابة. كان الخادمُ يحوّل القيمةَ غيرَ النصية بـString() فيُخزَّن «[object Object]» في المفتاح (سلامةُ البيانات). */
-var KIVO_BODY_SCHEMAS = {"/api/admin/dept-delete":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/admin/dept-wipe":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/authz-migrate":{"properties":{"act":{"maxLength":32,"type":["string","null"]},"force":{"type":["boolean","null"]},"generated":{"maxLength":20,"type":["number","string","null"]},"hash":{"maxLength":128,"type":["string","null"]},"inferable":{"type":["boolean","integer","null"]},"parts":{"items":{"maxLength":16,"type":"string"},"maxItems":8,"type":["array","null"]},"seed":{"maxLength":128,"type":["string","null"]},"snap":{"maxLength":128,"type":["string","null"]}},"type":"object"},"/api/authz-test":{"properties":{"method":{"maxLength":10,"type":["string","null"]},"path":{"maxLength":2000,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]},"vals":{"items":{"maxLength":300,"type":"string"},"maxItems":200,"type":["array","null"]}},"type":"object"},"/api/backup/restore":{"additionalProperties":false,"properties":{"backup":{"type":"object"},"base":{"type":"object"},"delete":{"type":["array","null"]},"domains":{"type":"object"},"keys":{"type":["object","null"]},"legacyConsent":{"type":"boolean"},"manifest":{"type":"object"},"mode":{"type":"string"},"permissionSlice":{"type":"object"},"phase":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"scope":{"type":"object"},"uid":{"type":"string"},"version":{"minimum":0,"type":"integer"}},"type":"object"},"/api/checkpw":{"properties":{"p":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/custody/act":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"color":{"type":"string"},"condition":{"type":"string"},"dept":{"type":"string"},"holderKey":{"type":"string"},"issueId":{"type":"string"},"item":{"type":"object"},"itemId":{"type":"string"},"kind":{"type":"string"},"lines":{"type":"array"},"note":{"type":"string"},"op":{"type":"string"},"patch":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/dstats":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"data":{"additionalProperties":false,"properties":{"haram":{"type":"object"},"locks":{"type":"object"},"nabawi":{"type":"object"}},"type":"object"},"operation":{"maxLength":40,"type":"string"},"ops":{"type":"object"},"reason":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["base","data"],"type":"object"},"/api/employees/transition":{"additionalProperties":false,"properties":{"accountProposals":{"type":"array"},"base":{"type":"object"},"deleteMode":{"type":"string"},"dept":{"type":"string"},"finalRows":{"type":"array"},"import":{"type":"object"},"intent":{"type":"string"},"options":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/guard/unlock":{"properties":{"all":{"type":["integer","boolean","null"]},"gk":{"maxLength":300,"type":["string","null"]},"gks":{"items":{"maxLength":300,"type":"string"},"maxItems":1000,"type":["array","null"]}},"type":"object"},"/api/login":{"properties":{"p":{"maxLength":1000,"type":["string","null"]},"u":{"maxLength":200,"type":"string"}},"type":"object"},"/api/logout":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill":{"additionalProperties":false,"type":"object"},"/api/me/tasks/act":{"additionalProperties":false,"properties":{"act":{"maxLength":8,"type":"string"},"i":{"minimum":0,"type":["integer","null"]},"id":{"maxLength":40,"type":["number","string"]},"idem":{"maxLength":40,"type":["string","null"]},"imgs":{"items":{"maxLength":80,"type":"string"},"maxItems":4,"type":["array","null"]},"k":{"maxLength":10,"type":"string"},"meta":{"items":{"additionalProperties":false,"properties":{"acc":{"minimum":0,"type":["number","null"]},"at":{"minimum":1,"type":"number"},"img":{"maxLength":80,"type":["string","null"]},"lat":{"type":["number","null"]},"lng":{"type":["number","null"]}},"required":["at"],"type":"object"},"maxItems":4,"type":["array","null"]},"note":{"maxLength":1000,"type":["string","null"]},"rm":{"items":{"maxLength":80,"type":"string"},"maxItems":12,"type":["array","null"]},"steps":{"additionalProperties":{"type":"boolean"},"type":["object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","act"],"type":"object"},"/api/notifications/act":{"additionalProperties":false,"properties":{"action":{"maxLength":40,"type":"string"},"all":{"type":"boolean"},"at":{"minimum":0,"type":"integer"},"b":{"type":"object"},"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":180,"type":"string"},"events":{"items":{"type":"object"},"maxItems":200,"type":"array"},"id":{"maxLength":800,"type":"string"},"link":{"maxLength":500,"type":"string"},"once":{"maxLength":500,"type":"string"},"onlyRead":{"type":"boolean"},"op":{"maxLength":40,"type":"string"},"own":{"items":{"maxLength":200,"type":"string"},"maxItems":20000,"type":"array"},"patch":{"type":"object"},"preview":{"type":"boolean"},"reset":{"type":"boolean"},"target":{"type":"object"},"title":{"maxLength":400,"type":"string"},"type":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"vars":{"type":"object"}},"required":["op"],"type":"object"},"/api/policy":{"properties":{"idleH":{"maxLength":16,"type":["number","string","null"]},"lockMin":{"maxLength":16,"type":["number","string","null"]},"lockN":{"maxLength":16,"type":["number","string","null"]},"pwMin":{"maxLength":16,"type":["number","string","null"]},"sessH":{"maxLength":16,"type":["number","string","null"]},"wrMin":{"maxLength":16,"type":["number","string","null"]}},"type":"object"},"/api/recover":{"properties":{"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/recovery/new":{"properties":{"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/reset":{"properties":{"admin":{"properties":{"name":{"maxLength":120,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]},"un":{"maxLength":64,"type":["string","null"]}},"type":["object","null"]},"confirm":{"maxLength":50,"type":["string","null"]},"keepBrand":{"type":["boolean","integer","null"]},"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/retro":{"properties":{"act":{"maxLength":16,"type":["string","null"]},"dept":{"maxLength":200,"type":["string","null"]},"hours":{"maxLength":16,"type":["number","string","null"]},"id":{"maxLength":100,"type":["string","null"]},"reason":{"maxLength":4000,"type":["string","null"]},"res":{"maxLength":64,"type":["string","null"]},"scope":{"properties":{"d":{"maxLength":8,"type":["integer","string","null"]},"m":{"maxLength":8,"type":["integer","string","null"]},"y":{"maxLength":8,"type":["integer","string","null"]}},"type":["object","null"]}},"type":"object"},"/api/save":{"properties":{"aud":{"type":["array","object","null"]},"base":{"additionalProperties":{"minimum":0,"type":"integer"},"type":"object"},"cur":{"maxLength":1000,"type":["string","null"]},"del":{"items":{"maxLength":300,"type":"string"},"maxItems":5000,"type":"array"},"ops":{"type":["object","array","null"]},"set":{"additionalProperties":{"type":"string"},"type":"object"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"type":["object","null"]}},"type":"object"},"/api/sess/kill":{"properties":{"all":{"type":["boolean","integer","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/cancel":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":"string"}},"required":["k","id","why"],"type":"object"},"/api/tasks/create":{"additionalProperties":false,"properties":{"asg":{"items":{"maxLength":80,"type":"string"},"maxItems":50,"type":["array","null"]},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"desc":{"maxLength":4000,"type":["string","null"]},"e":{"type":"number"},"force":{"type":["boolean","null"]},"grpL":{"maxLength":120,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"needs":{"items":{"maxLength":80,"type":"string"},"maxItems":8,"type":["array","null"]},"pol":{"type":["object","null"]},"prio":{"maxLength":10,"type":["string","null"]},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"rv":{"maxLength":10,"type":["string","object","null"]},"s":{"type":"number"},"shift":{"additionalProperties":false,"properties":{"name":{"maxLength":80,"type":"string"}},"type":["object","null"]},"t":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","s","e"],"type":"object"},"/api/tasks/extend":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","e"],"type":"object"},"/api/tasks/reassign":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":["number","null"]},"force":{"type":["boolean","null"]},"from":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/recur":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":["string","null"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"row":{"maxLength":40,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"required":["op"],"type":"object"},"/api/tasks/recur/run":{"additionalProperties":false,"properties":{"day":{"maxLength":10,"type":["string","null"]},"dept":{"maxLength":80,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/relink":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"from":{"maxLength":160,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/reopen":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id"],"type":"object"},"/api/tasks/review":{"additionalProperties":false,"properties":{"decision":{"maxLength":8,"type":"string"},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","ekey","decision"],"type":"object"},"/api/tasks/settings":{"additionalProperties":false,"properties":{"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string","null"]},"k":{"maxLength":10,"type":"string"},"pol":{"type":["object","null"]},"rv":{"maxLength":10,"type":["string","object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]}},"required":["k"],"type":"object"}};
+var KIVO_BODY_SCHEMAS = {"/api/admin/dept-delete":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/admin/dept-wipe":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/authz-migrate":{"properties":{"act":{"maxLength":32,"type":["string","null"]},"force":{"type":["boolean","null"]},"generated":{"maxLength":20,"type":["number","string","null"]},"hash":{"maxLength":128,"type":["string","null"]},"inferable":{"type":["boolean","integer","null"]},"parts":{"items":{"maxLength":16,"type":"string"},"maxItems":8,"type":["array","null"]},"seed":{"maxLength":128,"type":["string","null"]},"snap":{"maxLength":128,"type":["string","null"]}},"type":"object"},"/api/authz-test":{"properties":{"method":{"maxLength":10,"type":["string","null"]},"path":{"maxLength":2000,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]},"vals":{"items":{"maxLength":300,"type":"string"},"maxItems":200,"type":["array","null"]}},"type":"object"},"/api/backup/restore":{"additionalProperties":false,"properties":{"backup":{"type":"object"},"base":{"type":"object"},"delete":{"type":["array","null"]},"domains":{"type":"object"},"keys":{"type":["object","null"]},"legacyConsent":{"type":"boolean"},"manifest":{"type":"object"},"mode":{"type":"string"},"permissionSlice":{"type":"object"},"phase":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"scope":{"type":"object"},"uid":{"type":"string"},"version":{"minimum":0,"type":"integer"}},"type":"object"},"/api/checkpw":{"properties":{"p":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/custody/act":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"color":{"type":"string"},"condition":{"type":"string"},"dept":{"type":"string"},"holderKey":{"type":"string"},"issueId":{"type":"string"},"item":{"type":"object"},"itemId":{"type":"string"},"kind":{"type":"string"},"lines":{"type":"array"},"note":{"type":"string"},"op":{"type":"string"},"patch":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/dstats":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"data":{"additionalProperties":false,"properties":{"haram":{"type":"object"},"locks":{"type":"object"},"nabawi":{"type":"object"}},"type":"object"},"operation":{"maxLength":40,"type":"string"},"ops":{"type":"object"},"reason":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["base","data"],"type":"object"},"/api/employees/transition":{"additionalProperties":false,"properties":{"accountProposals":{"type":"array"},"base":{"type":"object"},"deleteMode":{"type":"string"},"dept":{"type":"string"},"finalRows":{"type":"array"},"import":{"type":"object"},"intent":{"type":"string"},"options":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/guard/unlock":{"properties":{"all":{"type":["integer","boolean","null"]},"gk":{"maxLength":300,"type":["string","null"]},"gks":{"items":{"maxLength":300,"type":"string"},"maxItems":1000,"type":["array","null"]}},"type":"object"},"/api/irshad/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"epoch":{"minimum":0,"type":"integer"},"languages":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","languages","locations","retro"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"id":{"type":"string"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"},"values":{"type":"array"},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/login":{"properties":{"p":{"maxLength":1000,"type":["string","null"]},"u":{"maxLength":200,"type":"string"}},"type":"object"},"/api/logout":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill":{"additionalProperties":false,"type":"object"},"/api/me/tasks/act":{"additionalProperties":false,"properties":{"act":{"maxLength":8,"type":"string"},"i":{"minimum":0,"type":["integer","null"]},"id":{"maxLength":40,"type":["number","string"]},"idem":{"maxLength":40,"type":["string","null"]},"imgs":{"items":{"maxLength":80,"type":"string"},"maxItems":4,"type":["array","null"]},"k":{"maxLength":10,"type":"string"},"meta":{"items":{"additionalProperties":false,"properties":{"acc":{"minimum":0,"type":["number","null"]},"at":{"minimum":1,"type":"number"},"img":{"maxLength":80,"type":["string","null"]},"lat":{"type":["number","null"]},"lng":{"type":["number","null"]}},"required":["at"],"type":"object"},"maxItems":4,"type":["array","null"]},"note":{"maxLength":1000,"type":["string","null"]},"rm":{"items":{"maxLength":80,"type":"string"},"maxItems":12,"type":["array","null"]},"steps":{"additionalProperties":{"type":"boolean"},"type":["object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","act"],"type":"object"},"/api/notifications/act":{"additionalProperties":false,"properties":{"action":{"maxLength":40,"type":"string"},"all":{"type":"boolean"},"at":{"minimum":0,"type":"integer"},"b":{"type":"object"},"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":180,"type":"string"},"events":{"items":{"type":"object"},"maxItems":200,"type":"array"},"id":{"maxLength":800,"type":"string"},"link":{"maxLength":500,"type":"string"},"once":{"maxLength":500,"type":"string"},"onlyRead":{"type":"boolean"},"op":{"maxLength":40,"type":"string"},"own":{"items":{"maxLength":200,"type":"string"},"maxItems":20000,"type":"array"},"patch":{"type":"object"},"preview":{"type":"boolean"},"reset":{"type":"boolean"},"target":{"type":"object"},"title":{"maxLength":400,"type":"string"},"type":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"vars":{"type":"object"}},"required":["op"],"type":"object"},"/api/policy":{"properties":{"idleH":{"maxLength":16,"type":["number","string","null"]},"lockMin":{"maxLength":16,"type":["number","string","null"]},"lockN":{"maxLength":16,"type":["number","string","null"]},"pwMin":{"maxLength":16,"type":["number","string","null"]},"sessH":{"maxLength":16,"type":["number","string","null"]},"wrMin":{"maxLength":16,"type":["number","string","null"]}},"type":"object"},"/api/recover":{"properties":{"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/recovery/new":{"properties":{"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/reset":{"properties":{"admin":{"properties":{"name":{"maxLength":120,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]},"un":{"maxLength":64,"type":["string","null"]}},"type":["object","null"]},"confirm":{"maxLength":50,"type":["string","null"]},"keepBrand":{"type":["boolean","integer","null"]},"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/retro":{"properties":{"act":{"maxLength":16,"type":["string","null"]},"dept":{"maxLength":200,"type":["string","null"]},"hours":{"maxLength":16,"type":["number","string","null"]},"id":{"maxLength":100,"type":["string","null"]},"reason":{"maxLength":4000,"type":["string","null"]},"res":{"maxLength":64,"type":["string","null"]},"scope":{"properties":{"d":{"maxLength":8,"type":["integer","string","null"]},"m":{"maxLength":8,"type":["integer","string","null"]},"y":{"maxLength":8,"type":["integer","string","null"]}},"type":["object","null"]}},"type":"object"},"/api/save":{"properties":{"aud":{"type":["array","object","null"]},"base":{"additionalProperties":{"minimum":0,"type":"integer"},"type":"object"},"cur":{"maxLength":1000,"type":["string","null"]},"del":{"items":{"maxLength":300,"type":"string"},"maxItems":5000,"type":"array"},"ops":{"type":["object","array","null"]},"set":{"additionalProperties":{"type":"string"},"type":"object"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"type":["object","null"]}},"type":"object"},"/api/sess/kill":{"properties":{"all":{"type":["boolean","integer","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/cancel":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":"string"}},"required":["k","id","why"],"type":"object"},"/api/tasks/create":{"additionalProperties":false,"properties":{"asg":{"items":{"maxLength":80,"type":"string"},"maxItems":50,"type":["array","null"]},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"desc":{"maxLength":4000,"type":["string","null"]},"e":{"type":"number"},"force":{"type":["boolean","null"]},"grpL":{"maxLength":120,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"needs":{"items":{"maxLength":80,"type":"string"},"maxItems":8,"type":["array","null"]},"pol":{"type":["object","null"]},"prio":{"maxLength":10,"type":["string","null"]},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"rv":{"maxLength":10,"type":["string","object","null"]},"s":{"type":"number"},"shift":{"additionalProperties":false,"properties":{"name":{"maxLength":80,"type":"string"}},"type":["object","null"]},"t":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","s","e"],"type":"object"},"/api/tasks/extend":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","e"],"type":"object"},"/api/tasks/reassign":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":["number","null"]},"force":{"type":["boolean","null"]},"from":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/recur":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":["string","null"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"row":{"maxLength":40,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"required":["op"],"type":"object"},"/api/tasks/recur/run":{"additionalProperties":false,"properties":{"day":{"maxLength":10,"type":["string","null"]},"dept":{"maxLength":80,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/relink":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"from":{"maxLength":160,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/reopen":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id"],"type":"object"},"/api/tasks/review":{"additionalProperties":false,"properties":{"decision":{"maxLength":8,"type":"string"},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","ekey","decision"],"type":"object"},"/api/tasks/settings":{"additionalProperties":false,"properties":{"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string","null"]},"k":{"maxLength":10,"type":"string"},"pol":{"type":["object","null"]},"rv":{"maxLength":10,"type":["string","object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]}},"required":["k"],"type":"object"}};
 function bodyTypeOk(t, v) {
   var ts = Array.isArray(t) ? t : [t], i;
   for (i = 0; i < ts.length; i++) {
@@ -13818,7 +15678,7 @@ async function migrateDb(env) {
   }
   for (i = 0; i < pending.length; i++) {
     var dataPlan = pending[i].name === '0004_daily_stats' ? await dsLegacyPrepare(env) :
-      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : null;
+      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : null;
     var st = [dbMigrationFence(env, state, permit)];
     if (dataPlan) st = st.concat(dataPlan.before);
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));
@@ -14904,8 +16764,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var set = (body && body.set) || {}, del = (body && body.del) || [], base = (body && body.base) || {};
   /* Retired document key: reject the entire mixed batch before any mutation. In
      particular a full restore must never acknowledge a partial relational restore. */
-  var moved = Object.keys(set).concat(del.map(String)).filter(function (k) { return resName(k) === K_DSTATS || nfLegacyKey(k) || cuLegacyKey(k); });
-  if (moved.length) { var denied = {}; moved.forEach(function (k) { denied[k] = { why: 'domain-moved', path: cuLegacyKey(k) ? '/api/custody' : nfLegacyKey(k) ? '/api/notifications' : '/api/dstats' }; }); return { v: await curRev(env), revs: {}, denied: denied, conflicts: {}, atomic: 'domain-moved' }; }
+  var moved = Object.keys(set).concat(del.map(String)).filter(function (k) { return resName(k) === K_DSTATS || nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k); });
+  if (moved.length) { var denied = {}; moved.forEach(function (k) { denied[k] = { why: 'domain-moved', path: irLegacyKey(k) ? '/api/irshad' : cuLegacyKey(k) ? '/api/custody' : nfLegacyKey(k) ? '/api/notifications' : '/api/dstats' }; }); return { v: await curRev(env), revs: {}, denied: denied, conflicts: {}, atomic: 'domain-moved' }; }
   /* R169: أحداثُ السجل المرافقة — تُقبل فقط لمفاتيح هذا الطلب، وتُكتب مع القيمة في الدفعة نفسِها */
   var audKeysOk = {}; for (var ka9 in set) audKeysOk[String(ka9)] = 1; for (var da9 = 0; da9 < del.length; da9++) audKeysOk[String(del[da9])] = 1;
   var audIn = audClean(body && body.aud, audKeysOk);
@@ -15324,7 +17184,7 @@ function limMsg(path) {
     ? 'الطلب أكبر من الحد المسموح (' + Math.round(n / 1048576) + 'MB)'
     : 'الصورة أكبر من الحد المسموح (' + Math.round(n / 1024) + 'KB) — صغّرها ثم أعد المحاولة';
 }
-function bodyLimit(path) { if(path === '/api/backup/restore'||path === '/api/employees/transition')return 8*1024*1024;if(path === '/api/admin/dept-wipe'||path === '/api/admin/dept-delete')return 1024*1024; if (path === '/api/custody/act') return 1024 * 1024; if (path === '/api/save' || path === '/api/dstats' || path === '/api/notifications/act') return BODY_MAX[path]; if (path.indexOf('/api/img/') === 0) return BODY_MAX['/api/img/']; return 64 * 1024; }
+function bodyLimit(path) { if(path === '/api/backup/restore'||path === '/api/employees/transition'||path === '/api/irshad/act')return 8*1024*1024;if(path === '/api/admin/dept-wipe'||path === '/api/admin/dept-delete')return 1024*1024; if (path === '/api/custody/act') return 1024 * 1024; if (path === '/api/save' || path === '/api/dstats' || path === '/api/notifications/act') return BODY_MAX[path]; if (path.indexOf('/api/img/') === 0) return BODY_MAX['/api/img/']; return 64 * 1024; }
 /* KIVO_253 · AUD-005 خطوة ٢ (SOT-048): script-src بلا 'unsafe-inline' — السكربتُ المضمَّن الوحيد في غلاف الإنتاج هو حقنُ __BS_BOOT ويحمل nonce الطلب؛
    كلُّ ما سواه أصولٌ خارجية من الأصل نفسِه ('self'). style-src تبقى 'unsafe-inline' (الأنماطُ المضمَّنة في الصفحات والمكوّنات — خطوةٌ لاحقة).
    بلا nonce (مسارٌ لا يحقن سكربتاً) يبقى الرأسُ صارماً أيضاً: لا 'unsafe-inline'. الصيغتان (الرأس · <meta> في الغلاف) من مصدرٍ واحد هنا. */
@@ -19199,7 +21059,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     var rows = await env.DB.prepare('SELECT k, seq, existed, rev, v FROM authz_snap WHERE snap = ?1 ORDER BY k, seq').bind(sid).all();
     /* Reject the WHOLE snapshot before nextRev or any write, including a
        tombstone for a retired key: mixed rollback must not partially succeed. */
-    if (((rows && rows.results) || []).some(function (r0) { return resName(r0.k) === K_DSTATS || nfLegacyKey(r0.k) || cuLegacyKey(r0.k); })) return json({ ok: 0, err: 'domain-moved' }, 400);
+    if (((rows && rows.results) || []).some(function (r0) { return resName(r0.k) === K_DSTATS || nfLegacyKey(r0.k) || cuLegacyKey(r0.k) || irLegacyKey(r0.k); })) return json({ ok: 0, err: 'domain-moved' }, 400);
     var byK = {}; ((rows && rows.results) || []).forEach(function (r0) { var o = byK[r0.k] = byK[r0.k] || { existed: r0.existed, v: '' }; if (r0.existed) o.v += r0.v; });
     /* الانجراف: مفتاحٌ تغيّر بعد العملية (رقمُ مراجعته ≠ رقمِ العملية) — الرجوعُ يمحو ما بعدها، فلا يُنفَّذ إلا بتأكيدٍ صريح (force) */
     var smMeta = parseJson(sm.meta, {}) || {}, opRev = +smMeta.rev || 0, drift = [], kk0;
@@ -19399,7 +21259,7 @@ async function getRoute(env, url, ss) {
   var moreG = wantAll.length > GET_MAX && wantAll.slice(GET_MAX).some(function (k8) { return want.indexOf(k8) === -1; });
   var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
-  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
+  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
   for (var gi = 0; gi < want.length; gi++) {
     var gk = want[gi];
     if (isDeviceKey(gk)) continue;
@@ -19407,6 +21267,7 @@ async function getRoute(env, url, ss) {
     if (!rdG && !canSee(AG, gk)) continue;
     if (nfLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/notifications' }; continue; }
     if (cuLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/custody' }; continue; }
+    if (irLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/irshad' }; continue; }
     if (resName(gk) === K_DSTATS) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/dstats' }; continue; }
     var gv = rdG ? valsG[gk] : null;      /* لا قيمةَ لمن لا يقرأ — الرقمُ وحدَه */
     if (rdG && gk === K_USERS && gv != null) gv = usersScopeOut(usersNoOut(stripPh(gv), AG), AG);   /* KIVO_259 · SR-1: ولا رقمَ وظيفيَّ لحساب غيره · الفحصُ العميق (R4): ولا حسابَ خارج نطاقه (054) */
@@ -19527,6 +21388,7 @@ export default {
       if (path === '/api/notifications' || path === '/api/notifications/act' || path === '/api/notifications/export') return await nfRoute(env, request, url, ss);
       if(path === '/api/backup/restore')return await rsRoute(env,request,url,ss);if(path === '/api/admin/dept-wipe'||path === '/api/admin/dept-delete')return await rsWipeRoute(env,request,url,ss);if(path === '/api/employees/transition')return await rsEmployeeRoute(env,request,url,ss);
       if (path === '/api/custody' || path === '/api/custody/act' || path === '/api/custody/export') return await cuRoute(env, request, url, ss);
+      if (path === '/api/irshad' || path === '/api/irshad/act' || path === '/api/irshad/export') return await irRoute(env, request, url, ss);
       if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);
 
@@ -19535,6 +21397,7 @@ export default {
 
       /* R196 · Phase 3 — نافذةُ الاستدراك (حالةٌ خادمية؛ قاعدةُ الرفض على الكتابات ظلٌّ فقط) */
       if (path === '/api/retro') {
+        var retroMismatch = sessUidMismatch(env, url, ss, path); if (retroMismatch) return retroMismatch;
         var AR = await actorOf(env, ss.uid);
         if (!AR) return json({ ok: 0, err: 'session' }, 401);
         if (request.method === 'POST') { var rlR = await rlHit(env, 'sv', AR.u.id, RL_SAVE); if (rlR) return tooMany(rlR); }
@@ -19752,6 +21615,8 @@ export default {
           var stZ = [
             env.DB.prepare('DELETE FROM notification_user_state'), env.DB.prepare('DELETE FROM notification_targets'), env.DB.prepare('DELETE FROM notification_messages'),
             env.DB.prepare('DELETE FROM notification_dedup'), env.DB.prepare('DELETE FROM notification_type_overrides'), env.DB.prepare('DELETE FROM notification_checkpoints'),
+            env.DB.prepare('DELETE FROM irshad_requests'), env.DB.prepare('DELETE FROM irshad_report_languages'), env.DB.prepare('DELETE FROM irshad_reports'), env.DB.prepare('DELETE FROM irshad_catalog_entries'), env.DB.prepare('DELETE FROM irshad_retro_windows'),
+            env.DB.prepare("DELETE FROM meta WHERE k GLOB 'irshad:*:presence*'"),
             env.DB.prepare('DELETE FROM custody_request_outputs'), env.DB.prepare('DELETE FROM custody_requests'), env.DB.prepare('DELETE FROM custody_movements'), env.DB.prepare('DELETE FROM custody_issues'), env.DB.prepare('DELETE FROM custody_items'),
             env.DB.prepare('DELETE FROM restore_operations'), env.DB.prepare('DELETE FROM restore_preimage'), env.DB.prepare('DELETE FROM restore_snapshot_manifest'),
             env.DB.prepare('DELETE FROM daily_stats_day_locks'), env.DB.prepare('DELETE FROM daily_stats_month_locks'), env.DB.prepare('DELETE FROM daily_stats_days'),
@@ -20009,6 +21874,7 @@ export default {
       var keys = await kvAll(env, 'kv');
       for (var retiredNf in keys) if (nfLegacyKey(retiredNf)) delete keys[retiredNf];
       for (var retiredCu in keys) if (cuLegacyKey(retiredCu)) delete keys[retiredCu];
+      for (var retiredIr in keys) if (irLegacyKey(retiredIr)) delete keys[retiredIr];
       for (var retiredDs in keys) if (resName(retiredDs) === K_DSTATS) delete keys[retiredDs];
       for (var dk in keys) if (isDeviceKey(dk)) delete keys[dk];
       if (keys[K_USERS] != null) keys[K_USERS] = stripPh(keys[K_USERS]);

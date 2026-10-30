@@ -9,6 +9,7 @@
    المتوقَّع = سلوكُ 263 حيث هو صحيحٌ بوضوح (docs/api.md · ADR · قراءةُ الكود). ما ستغيّره تيّاراتُ 264 المتوازية معلَّمٌ «KIVO_264-merge».
    التعرّضان المعروفان E1/E2 (scratchpad triage §4.2 — قرارُ المالك معلّق) لا يُؤكَّدان صحيحَين: يُطبعان تشخيصاً (t.diagnostic) فقط. */
 import { test } from 'node:test';
+import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -58,10 +59,16 @@ function world(mode) { if (!WORLDS.has(mode)) WORLDS.set(mode, build(mode)); ret
 async function build(mode) {
   const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login('admin', 'admin'); assert.ok(su.ok, 'admin');
-  const { sql, fx } = seed(); await applySql(env.DB, sql);
+  const { sql, fx } = seed(); await applySql(env.DB, sql); await installIrshadFixture(env);
   /* The fixture now seeds typed daily-statistics rows and never recreates retired KV. */
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
+  // Typed create validates a real employee/shift reference. Department two's
+  // existing TEST_ONLY employee needs the same current-month assignment as the
+  // old matrix's TST-A record; no account, permission or scope changes.
+  const staffing2 = { [fx.MK]: { tst_e_emp2: { shift: fx.shifts[0], rest: [] } } };
+  env.DB.db.prepare('INSERT INTO kv(k,seq,v)VALUES(?,0,?)').run(dk('tst_d2','staffing_v3'), JSON.stringify(staffing2));
   const W = { mode, env, C, fx, S: { su: su.ck }, UID: { su: su.j.uid, sa: 'tst_sa' } };
+  W.irRecords = (who, dept) => C.api('/api/irshad?' + new URLSearchParams({ uid: W.UID[who], dept, view: 'records', year: fx.today.y, month: fx.today.m, limit: 200 }), { cookie: W.S[who] });
   W.mintSa = (tok) => { const n = Date.now(); env.DB.exec(`INSERT OR REPLACE INTO sess (tok, uid, ts, la, dev, city) VALUES ('${tok}', 'tst_sa', ${n}, ${n}, 'd', 'TEST_ONLY')`); return 'bs_tok=' + tok; };
   W.S.sa = W.mintSa('tok_k264_sa');
   W.relogin = async (who) => { if (who === 'su') { const l = await C.login('admin', 'admin'); W.S.su = l.ck; return; } if (who === 'sa') { W.S.sa = W.mintSa('tok_k264_sa'); return; } const [u, p] = ACC[who]; const l = await C.login(u, p); assert.ok(l.ok, 'login ' + who); W.S[who] = l.ck; };
@@ -70,11 +77,22 @@ async function build(mode) {
   /* البيانات: صورتان لمدير النظام مربوطتان بمهام d1 واسترشاد d2 · صورةٌ مرفوعةٌ لموظف d1 لم تُربط (claim) · تنبيهاتُ النظام ·
      بياناتٌ قديمة لصفحةٍ خارج سقف d2 (المضبوطات) */
   /* KIVO_264 (دمج · SOT-101): عقدُ الصورة الخامّ — Content-Type: text/plain أو غائب (application/json ⇒ 415) */
-  for (const id of ['img_k264_t1', 'img_k264_i2']) assert.equal((await C.api('/api/img/' + id, { method: 'PUT', body: IMG, cookie: W.S.su, headers: { 'Content-Type': 'text/plain' } })).status, 200);
+  for (const id of ['img_k264_t1', 'img_k264_i2', 'img_k264_u4']) assert.equal((await C.api('/api/img/' + id, { method: 'PUT', body: IMG, cookie: W.S.su, headers: { 'Content-Type': 'text/plain' } })).status, 200);
   assert.equal((await C.api('/api/img/img_k264_c3', { method: 'PUT', body: IMG, cookie: W.S.emp1, headers: { 'Content-Type': 'text/plain' } })).status, 200, 'emp1 uploads (claim)');
-  const g = await C.api('/api/get?keys=' + encodeURIComponent(PK['d1.tasks'] + ',' + PK['d2.irshad']), { cookie: W.S.su });
-  const t1 = val(g, PK['d1.tasks']), i2 = val(g, PK['d2.irshad']); t1[fx.DAY][0][1] = 'img_k264_t1'; i2.reports[0].img = 'img_k264_i2';
-  const sv = await C.save(W.S.su, { [PK['d1.tasks']]: JSON.stringify(t1), [PK['d2.irshad']]: JSON.stringify(i2) });
+  const g = await C.api('/api/get?keys=' + encodeURIComponent(PK['d1.tasks']), { cookie: W.S.su });
+  const t1 = val(g, PK['d1.tasks']); t1[fx.DAY][0][1] = 'img_k264_t1';
+  const sv = await C.save(W.S.su, { [PK['d1.tasks']]: JSON.stringify(t1) });
+  // Isolated image ACL fixture: the migrated Irshad record DTO has no image
+  // field. Bind this existing image to its logical resource independently of
+  // report data, and leave another stored image without a claim/reference.
+  const bound = env.DB.db.prepare("UPDATE imgown SET st='bound',k=?,uid='',dept=? WHERE img=? AND st='claim'").run(PK['d2.irshad'], 'tst_d2', 'img_k264_i2');
+  assert.equal(Number(bound.changes), 1);
+  env.DB.db.prepare('INSERT INTO imgref(img,k)VALUES(?,?)').run('img_k264_i2', PK['d2.irshad']);
+  env.DB.db.prepare('DELETE FROM imgown WHERE img=?').run('img_k264_u4');
+  const irCatalog = await C.api('/api/irshad?' + new URLSearchParams({ uid: W.UID.su, dept: 'tst_d2', view: 'catalogs' }), { cookie: W.S.su });
+  assert.equal(irCatalog.status, 200);
+  const irAudit = await C.api('/api/irshad/act', { method: 'POST', cookie: W.S.su, body: { uid: W.UID.su, dept: 'tst_d2', requestId: 'TEST_ONLY_matrix_catalog_' + mode, base: irCatalog.j.base, op: 'catalog-replace', kind: 'locations', values: ['TEST_ONLY موقع'], reason: 'TEST_ONLY canonical d2 audit setup' } });
+  assert.equal(irAudit.status, 200); assert.equal(irAudit.j.n, 1, 'A real typed command supplies the department-two audit witness');
   assert.equal(sv.status, 200); assert.deepEqual(sv.j.denied, {}, 'setup writes');
   const nf = await C.api('/api/notifications/act', { method: 'POST', cookie: W.S.su, body: { uid: W.UID.su, op: 'emit', type: 'sc_deny', title: 'TEST_ONLY k264 system notification' } });
   assert.equal(nf.status, 200); assert.equal(nf.j.ok, 1, 'notification setup uses the typed API');
@@ -96,7 +114,21 @@ for (const mode of MODES) {
       const r = await C.api('/api/get?keys=' + encodeURIComponent(keys.join(',')), { cookie: W.S[who] }); assert.equal(r.status, 200, who);
       const exp = readSet(who, mode), got = r.j.keys || {};
       const read = Object.keys(PK).filter(l => got[PK[l]] && got[PK[l]].v != null);
-      assert.deepEqual(sorted(read), sorted([...exp].filter(l => !['dstats', 'nsys', 'd1.custody'].includes(l))), `${who}: المقروء من KV بعد نقل المجالات إلى واجهاتها`);
+      assert.deepEqual(sorted(read), sorted([...exp].filter(l => !['dstats', 'nsys', 'd1.custody', 'd1.irshad', 'd2.irshad'].includes(l))), `${who}: المقروء من KV بعد نقل المجالات إلى واجهاتها`);
+      for (const label of ['d1.irshad', 'd2.irshad']) {
+        const entry = got[PK[label]], dept = 'tst_' + label.split('.')[0];
+        if (entry) assert.deepEqual(entry, { v: null, rev: entry.rev, moved: '/api/irshad' }, `${who}: لا IRJSON في المفتاح المتقاعد`);
+        if (exp.has(label)) assert.ok(entry, `${who}: المورد المسموح يعلن انتقاله`);
+        const ir = await W.irRecords(who, dept);
+        assert.equal(ir.status, exp.has(label) ? 200 : 403, `${who}: صلاحية الاسترشاد نفسها في API العلائقي ${dept}`);
+        if (exp.has(label)) {
+          assert.equal(ir.j.ok, 1); assert.equal(ir.j.dept, dept);
+          const expected = label === 'd2.irshad' ? ['tstir21'] : mode === 'enforce' && ['sup1','emp1'].includes(who) ? ['tstir1','tstir4'] : ['tstir1','tstir2','tstir4'];
+          assert.deepEqual(sorted(ir.j.rows.map(row => row.id)), sorted(expected), `${who}: صفوف SQL بنفس إسقاط الوردية`);
+        } else assert.equal(ir.j.rows, undefined, `${who}: لا صفوف استرشاد بلا صلاحية`);
+      }
+      const boot = await C.boot(W.S[who]); assert.equal(boot.status, 200);
+      assert.deepEqual(Object.keys(boot.boot?.keys || {}).filter(key => /(?:^|:)bassam_irshad(?:_langs|_locs|_retro)?_v1$/.test(key)), [], `${who}: BOOT لا يعيد وثائق الاسترشاد المتقاعدة`);
       if (exp.has('d1.custody')) assert.deepEqual(got[PK['d1.custody']], {v:null,rev:got[PK['d1.custody']].rev,moved:'/api/custody'}, `${who}: لا عهد من وثيقة KV المتقاعدة`);
       const custody = await C.api('/api/custody?' + new URLSearchParams({dept:'tst_d1',view:'catalog'}), {cookie:W.S[who]});
       assert.equal(custody.status, exp.has('d1.custody') ? 200 : 403, `${who}: صلاحية العهد نفسها في API العلائقي`);
@@ -148,12 +180,14 @@ for (const mode of MODES) {
     }
   });
 
-  test(`[${mode}] /api/save — مفتاح تنبيهات النظام المتقاعد يُرفض صراحةً دون إعادة إنشائه`, since(163), async () => {
+  test(`[${mode}] /api/save — مفاتيح التنبيهات والاسترشاد المتقاعدة تُرفض صراحةً دون إعادة إنشائها`, since(163), async () => {
     const W = await world(mode);
-    const result = await W.C.save(W.S.su, { [PK.nsys]: JSON.stringify([{ id: 'TEST_ONLY_retired', msg: 'TEST_ONLY' }]) });
-    assert.equal(result.status, 200); assert.equal(result.j.atomic, 'domain-moved');
-    assert.deepEqual(result.j.denied[PK.nsys], { why: 'domain-moved', path: '/api/notifications' });
-    assert.equal(W.env.DB.q('SELECT COUNT(*) AS n FROM kv WHERE k = ?', PK.nsys)[0].n, 0);
+    for (const [key, route] of [[PK.nsys, '/api/notifications'], [PK['d1.irshad'], '/api/irshad'], [PK['d2.irshad'], '/api/irshad']]) {
+      const result = await W.C.save(W.S.su, { [key]: JSON.stringify([{ id: 'TEST_ONLY_retired', msg: 'TEST_ONLY' }]) });
+      assert.equal(result.status, 200); assert.equal(result.j.atomic, 'domain-moved');
+      assert.deepEqual(result.j.denied[key], { why: 'domain-moved', path: route });
+      assert.equal(W.env.DB.q('SELECT COUNT(*) AS n FROM kv WHERE k = ?', key)[0].n, 0);
+    }
   });
 
   /* ══ /api/retro — حالةُ نافذة الاستدراك (GET) وفتحُها/إغلاقُها (POST) ══ */
@@ -164,7 +198,7 @@ for (const mode of MODES) {
     for (const who of ACTIVE) {
       for (const [i, d] of ['tst_d1', 'tst_d2'].entries()) {
         const r = await C.api('/api/retro?res=irshad&dept=' + d, { cookie: W.S[who] }), e = GET[who][i];
-        if (e === 403) { assert.equal(r.status, 403, `${who} ${d}`); assert.equal(r.j.err, 'perm'); continue; }
+        if (e === 403) { assert.equal(r.status, 403, `${who} ${d}`); assert.equal(r.j.err, DEPTS_OF[who]?.includes(d) ? 'perm' : 'irshad-denied'); continue; }
         assert.equal(r.status, 200, `${who} ${d}`); assert.equal(r.j.may, e === 'may', `${who} ${d}: may`); assert.ok(Array.isArray(r.j.windows));
       }
       /* KIVO_264-merge (SOT-101 مخطّطُ جسم /api/retro — تيّارُ الخادم): جسمُ الفتح = ما يرسله العميلُ حرفاً (src/api/280-server-storage.js) ·
@@ -174,7 +208,7 @@ for (const mode of MODES) {
         assert.equal(op.status, 200, `${who}: open ${JSON.stringify(op.j).slice(0, 120)}`); assert.equal(op.j.window.by.id, W.UID[who], `${who}: الفاعلُ من الجلسة`);
         const cl = await C.api('/api/retro', { method: 'POST', cookie: W.S[who], body: { act: 'close', res: 'irshad', dept: 'tst_d1', id: op.j.window.id } });
         assert.equal(cl.status, 200, `${who}: close`); assert.ok(cl.j.window.closedAt > 0);
-      } else { assert.equal(op.status, 403, `${who}: open`); assert.equal(op.j.err, 'perm'); }
+      } else { assert.equal(op.status, 403, `${who}: open`); assert.equal(op.j.err, DEPTS_OF[who]?.includes('tst_d1') ? 'perm' : 'irshad-denied'); }
     }
   });
 
@@ -202,11 +236,11 @@ for (const mode of MODES) {
   /* ══ /api/imgs و /api/img/<id> — الصورةُ تتبع مالكها: claim لرافعها · bound بقراءة مفتاحها ══ */
   test(`[${mode}] /api/imgs · /api/img/<id> — الجردُ والقراءةُ بحكم المالك (claim لرافعها · bound بقراءة مفتاحه)`, since(163), async () => {
     const W = await world(mode), { C } = W;
-    const VIS = { su: ['c3', 'i2', 't1'], sa: ['c3', 'i2', 't1'], gm: ['i2', 't1'], dm1: ['t1'], dm2: ['i2'], dm3: [], sup1: ['t1'], emp1: ['c3', 't1'], fld: [], emp2: ['i2'] };
+    const VIS = { su: ['c3', 'i2', 't1', 'u4'], sa: ['c3', 'i2', 't1', 'u4'], gm: ['i2', 't1'], dm1: ['t1'], dm2: ['i2'], dm3: [], sup1: ['t1'], emp1: ['c3', 't1'], fld: [], emp2: ['i2'] };
     for (const who of ACTIVE) {
       const l = await C.api('/api/imgs', { cookie: W.S[who] }); assert.equal(l.status, 200, who);
       assert.deepEqual(sorted(Object.keys(l.j).filter(k => k.startsWith('img_k264_')).map(k => k.slice(9))), VIS[who], `${who}: الجرد`);
-      for (const id of ['t1', 'i2', 'c3']) { const r = await C.req('/api/img/img_k264_' + id, { cookie: W.S[who] }); assert.equal(r.status, VIS[who].includes(id) ? 200 : 403, `${who}: img ${id}`); }
+      for (const id of ['t1', 'i2', 'c3', 'u4']) { const r = await C.req('/api/img/img_k264_' + id, { cookie: W.S[who] }); assert.equal(r.status, VIS[who].includes(id) ? 200 : 403, `${who}: img ${id}`); }
     }
   });
 
@@ -260,14 +294,27 @@ for (const mode of MODES) {
        يحمل uid الجلسة (يُرسَل هنا من W.UID) أو صار بعضُ الرفض 409/4xx، يُعدَّل هذا السطرُ بقرار التيّار — والحكمُ بالأثر أدناه يبقى كما هو */
     const save = async (who, k, mut) => { const g = await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: W.S[who] }); const cur = val(g, k);
       const s = await C.save(W.S[who], { [k]: JSON.stringify(mut(cur)) }, [], { [k]: ((g.j.keys || {})[k] || {}).rev || 0 }); assert.equal(s.status, 200, who + ' ' + k + ': ' + JSON.stringify(s.j).slice(0, 120)); return s; };
-    const rec = (who, tag, sh) => ({ id: 'rk264' + tag + who, y: fx.today.y, m: fx.today.m, d: fx.today.d, ts: Date.now() + Math.floor(Math.random() * 1e6), shift: sh, eid: '', name: 'TEST_ONLY k264', loc: 'TEST_ONLY موقع', actor: who, langs: [], bro: 1, pros: 0, pol: 0 });
+    const irData = (dept, shift) => ({ y: fx.today.y, m: fx.today.m, d: fx.today.d, shift,
+      eid: dept === 'tst_d2' ? 'tst_e_emp2' : shift === 'TST-B' ? 'tst_e_supB' : 'tst_e_emp1',
+      loc: 'TEST_ONLY موقع', langs: [], bro: 1, pros: 0, pol: 0 });
     const stored = async (k) => val(await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: W.S.su }), k);
     for (const who of ACTIVE) {
       const got = [];
       let s = await save(who, PK.depts, v => { v.find(d => d.id === 'tst_d3').k264 = who; return v; }); got.push(outcome(s, PK.depts));
       for (const [tag, k, sh] of [['a', PK['d1.irshad'], 'TST-A'], ['b', PK['d1.irshad'], 'TST-B'], ['c', PK['d2.irshad'], 'TST-A']]) {
-        s = await save(who, k, v => { v = v || { reports: [] }; v.reports.push(rec(who, tag, sh)); return v; }); const o = outcome(s, k); got.push(o);
-        assert.equal(!!(await stored(k)).reports.find(r => r.id === 'rk264' + tag + who), o === 'W', `${who} ${tag}: المخزنُ يطابق الحكم`);
+        const dept = k.split(':')[1], before = await W.irRecords('su', dept);
+        assert.equal(before.status, 200);
+        const requestId = 'TEST_ONLY_matrix_' + mode + '_' + who + '_' + tag, data = irData(dept, sh);
+        s = await C.api('/api/irshad/act', { method: 'POST', cookie: W.S[who], body: { uid: W.UID[who], dept, requestId, base: before.j.base, op: 'create', data, reason: 'TEST_ONLY matrix role/scope check' } });
+        assert.ok([200, 403].includes(s.status), `${who} ${tag}: ${JSON.stringify(s.j)}`);
+        const o = s.status === 200 ? 'W' : 'D'; got.push(o);
+        const after = await W.irRecords('su', dept); assert.equal(after.status, 200);
+        if (o === 'W') {
+          assert.equal(s.j.ok, 1); assert.equal(s.j.requestId, requestId); assert.equal(s.j.op, 'create'); assert.equal(s.j.n, 1);
+          assert.equal(s.j.base.reports, s.j.rev); assert.ok(s.j.rev > before.j.base.reports);
+          const saved = after.j.rows.find(row => row.id === s.j.id); assert.ok(saved, `${who} ${tag}: المخزن يطابق ACK`);
+          assert.equal(saved.eid, data.eid); assert.equal(saved.shift, sh); assert.equal(saved.bro, 1); assert.equal(after.j.total, before.j.total + 1);
+        } else assert.deepEqual(after.j.rows, before.j.rows, `${who} ${tag}: الرفض لا يغيّر صفوف SQL`);
       }
       s = await save(who, PK['d1.tasks'], v => { v = v || {}; (v[fx.DAY] = v[fx.DAY] || []).push(['TEST_ONLY k264 ' + who, '', 'med', 'pending', null, null, null, [], '', null, null, null, null, Date.now() + Math.floor(Math.random() * 1e6), '', null, null, null, null, null, null, null]); return v; });
       got.push(outcome(s, PK['d1.tasks']));
@@ -314,7 +361,7 @@ for (const mode of MODES) {
     assert.equal(W.nSess('tst_supB'), 0, 'التجميدُ حذف جلساته (AUD-034)');
     const n = Date.now(); env.DB.exec(`INSERT INTO sess (tok, uid, ts, la, dev, city) VALUES ('tok_k264_stale', 'tst_supB', ${n}, ${n}, 'd', 'TEST_ONLY')`);
     try {
-      const CALLS = [['GET', '/api/get?keys=' + PK.users], ['GET', '/api/changes?since=0'], ['GET', '/api/retro?res=irshad&dept=tst_d1'], ['POST', '/api/retro', { act: 'open', res: 'irshad', dept: 'tst_d1' }],
+      const CALLS = [['GET', '/api/irshad?dept=tst_d1&view=records'], ['POST', '/api/irshad/act', { op:'create',dept:'tst_d1' }], ['GET', '/api/get?keys=' + PK.users], ['GET', '/api/changes?since=0'], ['GET', '/api/retro?res=irshad&dept=tst_d1'], ['POST', '/api/retro', { act: 'open', res: 'irshad', dept: 'tst_d1' }],
         ['GET', '/api/aud?dept=tst_d1'], ['GET', '/api/imgs'], ['GET', '/api/img/img_k264_t1'], ['GET', '/api/presence'], ['GET', '/api/sec'], ['POST', '/api/sess/kill', { uid: 'tst_emp1' }],
         ['GET', '/api/me'], ['POST', '/api/me/sess/kill', {}], ['POST', '/api/save', { set: { [PK['d1.irshad']]: '{"reports":[]}' }, del: [], base: {} }]];
       for (const [who, ck] of [['anon', undefined], ['frozen-old-cookie', W.frozenOldCk], ['frozen-stale-session', 'bs_tok=tok_k264_stale']]) {
@@ -332,7 +379,7 @@ for (const mode of MODES) {
 test('QA-264-D1 · الوحدةُ المطفأة وصفحةُ خارج السقف — القديمُ: لا قيمةَ لأحدٍ في الإدارة · الإنفاذُ: عيبٌ مثبَّت (المديرُ ومديرُ الفرع يقرآنها عبر backup.view)', since(163), async (t) => {
   for (const mode of MODES) {
     const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
-    const su = await C.login('admin', 'admin'); assert.ok(su.ok); const { sql } = seed(); await applySql(env.DB, sql);
+    const su = await C.login('admin', 'admin'); assert.ok(su.ok); const { sql } = seed(); await applySql(env.DB, sql); await installIrshadFixture(env);
     if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
     env.DB.exec(`INSERT INTO kv (k, seq, v) VALUES ('${PK['d2.seized']}', 0, '{"reports":[{"id":"tstsz2","loc":"TEST_ONLY","test":"TEST_ONLY"}]}')`);   /* بياناتٌ من قبل إطفاء الصفحة لـd2 */
     env.DB.exec(`INSERT OR REPLACE INTO revs (k, rev) VALUES ('${PK['d2.seized']}', 1)`);

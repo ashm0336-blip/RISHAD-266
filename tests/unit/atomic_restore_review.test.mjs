@@ -330,8 +330,11 @@ test('actual AppBackup export from redacted GET cache restores existing credenti
       Custody: { exportDomain: async () => ok(await B.api('super', '/api/custody/export')) },
       BassamCrypt: { ok: () => true },
       BassamIDB: { allForBackup: async () => ({}) },
+      BassamAuth: { user: () => B.users.find(user => user.id === IDS.super), isSuper: () => true },
+      __BS_SRV: { dirty: () => false, inflight: () => false, sesChanged: () => false, rev: key => response.keys[key]?.rev || 0 },
     },
-    context = vm.createContext({ KIVO, localStorage: {}, setTimeout: () => 0, Date }),
+    context = vm.createContext({ KIVO, window: { __BS_BOOT: { srv: 1, cf: 1, uid: IDS.super, v: response.v } }, localStorage: {}, setTimeout: () => 0, clearTimeout() {}, AbortController, URLSearchParams, Date,
+      fetch: async url => { const actual = await B.api('super', url); return { ok: actual.status >= 200 && actual.status < 300, status: actual.status, json: async () => actual.json }; } }),
     page = {
       state: {},
       setState(v) {
@@ -339,13 +342,20 @@ test('actual AppBackup export from redacted GET cache restores existing credenti
       },
     },
     factory = vm.runInContext('(function(){const s=true;return ' + source.slice(node.value.start, node.value.end) + ';})', context);
+  const cls = tree.body.find(n => n.type === 'ClassDeclaration' && n.id.name === 'Component');
+  for (const name of ['_wpActor', '_irBackupCapture', '_irBackupFence', '_irBackupDomain']) {
+    const method = cls.body.body.find(n => n.type === 'MethodDefinition' && n.key.name === name); assert.ok(method, name);
+    page[name] = vm.runInContext('({' + source.slice(method.start, method.end) + '}).' + name, context);
+  }
   factory.call(page)();
   for (let i = 0; i < 50 && !page._encPend; i++) await new Promise((r) => setImmediate(r));
   assert.ok(page._encPend, JSON.stringify(page.state));
   const file = JSON.parse(page._encPend.json);
   assert.equal(file.kind, 'full');
-  assert.equal(file.manifest.version, 1);
+  assert.equal(file.manifest.version, 2);
   assert.equal(file.manifest.domains.custody, 1);
+  assert.equal(file.manifest.domains.irshad, 1);
+  assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId).sort(), [D1, D2].sort());
   assert.equal(/p[12]\$/.test(file.data.bassam_auth_users_v1), false);
   const body = await B.body({
     keys: Object.fromEntries(Object.entries(file.data).filter(([k, v]) => typeof v === 'string' && k !== 'bassam_active_dept_v1')),
@@ -788,9 +798,14 @@ test('actual staged department export includes a manifest and normalized domains
       BassamNotif: { exportDomain: async (dept) => ok(await B.api('super', '/api/notifications/export?dept=' + dept)) },
       Custody: { exportDomain: async (dept) => ok(await B.api('super', '/api/custody/export?dept=' + dept)) },
       BassamImgRefs: { collect: () => [] },
+      BassamAuth: { user: () => B.users.find(user => user.id === IDS.super), isSuper: () => true },
+      __BS_SRV: { dirty: () => false, inflight: () => false, sesChanged: () => false, rev: key => read.keys[key]?.rev || 0 },
     },
     context = vm.createContext({
       KIVO,
+      window: { __BS_BOOT: { srv: 1, cf: 1, uid: IDS.super, v: read.v } },
+      fetch: async url => { const actual = await B.api('super', url); return { ok: actual.status >= 200 && actual.status < 300, status: actual.status, json: async () => actual.json }; },
+      AbortController, URLSearchParams, clearTimeout() {},
       localStorage: {},
       Blob,
       Date,
@@ -810,9 +825,12 @@ test('actual staged department export includes a manifest and normalized domains
   for (let i = 0; i < 100 && !blobs.length; i++) await new Promise((r) => setImmediate(r));
   assert.equal(blobs.length, 1, JSON.stringify(messages));
   const file = JSON.parse(await blobs[0].text());
+  assert.equal(file.manifest.version, 2);
   assert.equal(file.manifest.scope, 'dept');
   assert.deepEqual(file.manifest.departments, [D1]);
   assert.equal(file.manifest.domains.custody, 1);
+  assert.equal(file.manifest.domains.irshad, 1);
+  assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId), [D1]);
   const input = Object.fromEntries(Object.entries(file.data).map(([k, v]) => ['bsdept:' + D1 + ':' + k, v])),
     body = await B.body({ scope: { kind: 'dept', departmentId: D1 }, keys: input, domains: file.domains, manifest: file.manifest }),
     before = copy(B.DB.q('SELECT * FROM custody_movements'));

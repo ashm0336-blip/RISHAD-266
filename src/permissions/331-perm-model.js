@@ -279,35 +279,7 @@
     });
   }
 
-  /* ═══ ترحيل لمرة واحدة — سقف «نظام الاسترشاد» ═══
-     كان الاسترشاد خارج سجل الصفحات فيراه الجميع بلا سقف. بعد إدخاله صار
-     خاضعاً لسقف الإدارة كبقية الصفحات — ولو تُرك بلا ترحيل لفقدته صامتاً كل
-     إدارة تستخدمه اليوم. لذا يُمنح مرة واحدة للإدارات التي لديها تقارير
-     مسجّلة فيه فعلاً؛ ومن لا بيانات لديه يبدأ نظيفاً كما هو المطلوب. */
-  (function migrateIrshadCap(){
-    var FLAG = 'bassam_perm_irshad_cap_v1';
-    if (!isSuper()) return;   /* KIVO_263: ترحيلٌ عامّ يكتب مفاتيحَ لمدير النظام وحده (bassam_perms_v1 · العلامة) — من غيره كان يُرسَل فيرفضه الخادم برسالةٍ لم يتسبّب بها المستخدم («لم يُحفظ تعديلك على ترقية الصلاحيات»)؛ يجري حين يدخل مديرُ النظام */
-    try {
-      var R = (KIVO.BassamDepts && KIVO.BassamDepts.raw) || null;
-      if (!R) return;
-      if (R.getItem.call(localStorage, FLAG)) return;
-      var list = (KIVO.BassamDepts.list && KIVO.BassamDepts.list()) || [];
-      var o = permStore(), changed = false;
-      list.forEach(function(d){
-        var has = false;
-        try {
-          var raw = R.getItem.call(localStorage, 'bsdept:' + d.id + ':bassam_irshad_v1');
-          var st = raw ? JSON.parse(raw) : null;
-          has = !!(st && Array.isArray(st.reports) && st.reports.length);
-        } catch(e){}
-        if (!has) return;
-        var c = Array.isArray(o.caps[d.id]) ? o.caps[d.id].slice() : [];
-        if (c.indexOf('irshad') === -1) { c.push('irshad'); o.caps[d.id] = c; changed = true; }
-      });
-      if (changed) permSave(o);
-      R.setItem.call(localStorage, FLAG, '1');
-    } catch(e){}
-  })();
+  /* Irshad uses its typed API. Existing capability and grant values are preserved; no legacy JSON probe or automatic grant. */
   /* ═══ نظام المضبوطات — يُفعَّل مرة واحدة لكل إدارة تملك نظام الاسترشاد (شقيقه في القائمة) — ومدير النظام يعدّله من الإدارات كالمعتاد ═══ */
   (function migrateSeizedCap(){
     var FLAG = 'bassam_perm_seized_cap_v1';

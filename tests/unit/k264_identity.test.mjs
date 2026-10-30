@@ -6,6 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeLegacyTestEnv as makeEnv, client, applySql } from './harness.mjs';
+import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
 import { loadClient, shareNative, asWriter, sleep, until, fixture, pageText, TODAY } from './k264_vm.mjs';
 
 /* خادمٌ وهميٌّ بعقد C1: uid في الجسم ≠ هوية الجلسة ⇒ 409 session-changed */
@@ -25,7 +26,7 @@ function c1Server() {
   } };
   return S;
 }
-const K1 = 'bsdept:d1:bassam_irshad_v1', K2 = 'bsdept:d1:bassam_tasks_v1', K3 = 'bsdept:d1:bassam_options_v1';
+const K1 = 'bsdept:d1:bassam_options_v1', K2 = 'bsdept:d1:bassam_tasks_v1', K3 = 'bsdept:d1:bassam_award_v1';
 const bootX = { srv: 1, cf: 1, v: 10, uid: 'u_x', keys: { [K1]: '{}', [K2]: '{}', [K3]: '{}' }, revs: { [K1]: 1, [K2]: 2, [K3]: 3 } };
 
 test('D-3: كلُّ حفظٍ يحمل uid من __BS_BOOT — لا من علامة الجهاز (ولو كانت لحسابٍ آخر)', async () => {
@@ -34,7 +35,7 @@ test('D-3: كلُّ حفظٍ يحمل uid من __BS_BOOT — لا من علام�
   T.W.localStorage.setItem('bassam_session_v1', JSON.stringify({ uid: 'su', ts: now, la: now, mc: 0 }));   /* علامةٌ قديمة على الجهاز */
   T.run(['280-server-storage.js']);
   try {
-    T.set(K1, JSON.stringify({ reports: [{ id: 'k264a', test: 'TEST_ONLY' }] }));
+    T.set(K1, JSON.stringify({ type: ['TEST_ONLY k264a'] }));
     assert.ok(await until(() => T.saves().length >= 1, 3000), 'أُرسل الحفظ');
     const body = JSON.parse(T.saves()[0].body);
     assert.equal(body.uid, 'u_x', 'الجسمُ يحمل هويةَ الجلسة من الإقلاع: ' + T.saves()[0].body.slice(0, 160));
@@ -46,7 +47,7 @@ test('D-3: 409 session-changed ⇒ لا يُعاد إرسالُ الطابور �
   const S = c1Server();
   const T = loadClient({ C: S.C, boot: bootX, blocks: ['280-server-storage.js'] });
   try {
-    T.set(K1, JSON.stringify({ reports: [{ id: 'k264a', test: 'TEST_ONLY' }] }));
+    T.set(K1, JSON.stringify({ type: ['TEST_ONLY k264a'] }));
     assert.ok(await until(() => S.saved.length === 1, 3000), 'حفظُ X الأول قُبل');
     /* انقطاع: تعديلُ X يبقى في الطابور */
     T.net.down = true; T.W.dispatchEvent(new Event('offline'));
@@ -95,31 +96,44 @@ test('D-3: دخولُ حسابٍ آخر في تبويبٍ آخر (تتبدّل �
   } finally { A.dispose(); Other.dispose(); }
 });
 
-/* من طرفٍ إلى طرف على الخادم الحقيقي (t3): يُحكم بالعقد C1 كما في العامل؛ وإن لم يكن فيه بعدُ (يُنفَّذ في الخادم بالتوازي) يُحاكى العقدُ
-   بطبقةٍ رفيعة معلَنة أمام العامل الحقيقي (هويةُ الكوكي من /api/whoami) — فيُختبر تكاملُ الواجهة مع العقد الآن لا بعد الدمج */
+/* عقد C1 على العامل الحقيقي. المورد عام لطابور KV، ومخوّل لكلا الهويتين
+   ببيانات صلاحية اصطناعية مع حفظ إيجابي فعلي لكل منهما قبل تبديل الكوكي. */
 for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-3 (طرفٌ لطرف): تعديلُ X المعلَّق لا يُحفظ باسم Y بعد خروجٍ ودخولٍ في المتصفح نفسِه', async (t) => {
-  const K = 'bsdept:tst_d1:bassam_irshad_v1';
+  const K = 'bsdept:tst_d1:bassam_options_v1';
   const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : { KIVO_TEST_FIXTURE: 'allow' }); const C = client(env);
   const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, fixture().seed);
+  await installIrshadFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
+  /* Only synthetic fixture grants. Both users can edit this same live
+     reference; denial under Y must come from C1 rather than an own-only key. */
+  const permissions = JSON.parse(env.DB.q("SELECT v FROM kv WHERE k='bassam_perms_v1' AND seq=0")[0].v);
+  for (const eid of ['tst_e_emp1', 'tst_e_sup1']) permissions.emps.tst_d1[eid]['emps/data'] = ['view', 'add', 'edit', 'del'];
+  env.DB.db.prepare("UPDATE kv SET v=? WHERE k='bassam_perms_v1' AND seq=0").run(JSON.stringify(permissions));
   const X = await C.login('0000000113', '70113'); assert.ok(X.ok, 'X = tst_emp1');
+  const Y0 = await C.login('0000000111', '70111'); assert.ok(Y0.ok, 'Y = tst_sup1');
+  for (const [uid, user] of [['tst_emp1', X], ['tst_sup1', Y0]]) {
+    const value = (await C.api('/api/get?keys=' + encodeURIComponent(K), { cookie: user.ck })).j.keys[K];
+    const current = JSON.parse(value.v), tag = 'TEST_ONLY C1 permitted ' + uid;
+    const saved = await C.api('/api/save', { method: 'POST', cookie: user.ck, body: { uid, set: { [K]: JSON.stringify({ ...current, type: (current.type || []).concat(tag) }) }, del: [], base: { [K]: value.rev } } });
+    assert.equal(saved.status, 200); assert.equal(saved.j.ok, 1);
+    assert.ok(!(saved.j.denied || {})[K] && !(saved.j.conflicts || {})[K], 'Actual positive write for ' + uid);
+    assert.ok(env.DB.q('SELECT v FROM kv WHERE k=? ORDER BY seq', K).map(row => row.v).join('').includes(tag));
+  }
+  const auditY0 = env.DB.q("SELECT COUNT(*) AS n FROM aud WHERE k=? AND uid='tst_sup1'", K)[0].n;
   const bX = await C.boot(X.ck); assert.ok(bX.boot && bX.boot.keys[K]);
   const probe = await C.api('/api/save', { method: 'POST', cookie: X.ck, body: { set: {}, del: [], base: {}, uid: '__k264_probe__' } });
   const hasC1 = probe.status === 409 && probe.j && probe.j.err === 'session-changed';
-  t.diagnostic('C1 (409 session-changed): ' + (hasC1 ? 'في العامل' : 'غائبٌ في هذا العامل — يُحاكى أمامه'));
-  const Cx = hasC1 ? C : { req: async (p, o) => {
-    if (p.startsWith('/api/save') && o.body) { const b = JSON.parse(o.body); if (b.uid !== undefined) { const w = await C.api('/api/whoami', { cookie: o.cookie }); if (w.j && w.j.uid && w.j.uid !== b.uid) return new Response(JSON.stringify({ ok: 0, err: 'session-changed' }), { status: 409 }); } }
-    return C.req(p, o);
-  } };
+  t.diagnostic('C1 (409 session-changed): ' + (hasC1 ? 'في العامل' : 'غائبٌ في العامل الحالي'));
+  assert.ok(hasC1, 'The actual Worker must implement C1; no response adapter');
   const jar = { cookie: X.ck };
-  const A = loadClient({ C: Cx, boot: bX.boot, jar });
+  const A = loadClient({ C, boot: bX.boot, jar });
   try {
     await sleep(1500);
     A.net.down = true; A.W.dispatchEvent(new Event('offline'));
-    const cur = JSON.parse(A.get(K)); const rec = { id: 'k264x1', y: TODAY.year, m: TODAY.month, d: TODAY.day, loc: 'TEST_ONLY موقع D-3', shift: 'TST-A', lang: 'TEST_ONLY لغة', n: 7, by: 'tst_e_emp1', test: 'TEST_ONLY' };
-    A.set(K, JSON.stringify(Object.assign({}, cur, { reports: (cur.reports || []).concat([rec]) })));
+    const cur = JSON.parse(A.get(K));
+    A.set(K, JSON.stringify({ ...cur, type: (cur.type || []).concat('TEST_ONLY k264x1') }));
     await sleep(400);
     assert.equal(A.W.KIVO.__BS_SRV.dirty(), true);
     const lo = await C.api('/api/logout', { method: 'POST', cookie: X.ck }); assert.ok(lo.status < 400);
@@ -130,7 +144,7 @@ for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-3 (طرفٌ ل�
     assert.ok(sent.length && sent.every(b => b.uid === 'tst_emp1'), 'كلُّ حفظٍ أُرسل يحمل هويةَ X من الإقلاع');
     const stored = env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', K).map(r => r.v).join('');
     const audY = env.DB.q("SELECT COUNT(*) AS n FROM aud WHERE k = ? AND uid = 'tst_sup1'", K)[0].n;
-    assert.ok(!stored.includes('k264x1') && audY === 0, 'تعديلُ X لم يُحفظ باسم Y (ولا أثرَ له في سجل التدقيق باسمه)');
+    assert.ok(!stored.includes('k264x1') && audY === auditY0, 'تعديلُ X لم يُحفظ باسم Y (ولا أثرَ له في سجل التدقيق باسمه)');
     assert.equal(A.W.KIVO.__BS_SRV.sesChanged(), true); assert.ok(A.W.KIVO.__BS_SRV.orphaned().set.includes(K), 'ومعزولٌ في التبويب');
   } finally { A.dispose(); }
 });

@@ -11,7 +11,7 @@ const source=fs.readFileSync(path.join(ROOT,'src/modules/admin/logic.js'),'utf8'
 const klass=parse(source,{ecmaVersion:'latest'}).body.find(node=>node.type==='ClassDeclaration'&&node.id.name==='Component');
 const DEPT=D1;
 const copy=value=>JSON.parse(JSON.stringify(value));
-const inventory=(revision=4)=>({ok:1,dept:DEPT,base:{epoch:1,kv:{['bsdept:'+DEPT+':bassam_employees_v1']:revision},custody:revision,notifications:{rev:revision,configRev:1,broadcastRev:1}},counts:{keys:1,custody:2,notifications:3}});
+const inventory=(revision=4)=>({ok:1,dept:DEPT,base:{epoch:1,kv:{['bsdept:'+DEPT+':bassam_employees_v1']:revision},custody:revision,notifications:{rev:revision,configRev:1,broadcastRev:1},irshad:{reports:revision,languages:1,locations:1,retro:1}},counts:{keys:1,custody:2,notifications:3,irshad:4}});
 const response=(body,status=200)=>({ok:status>=200&&status<300,status,json:async()=>copy(body)});
 function world(fetch){
   let uid='TEST_ONLY_super';const calls=[],acks=[],reloads=[],timers=[],prompts=[],syncs=[];let reasonText='';
@@ -20,7 +20,7 @@ function world(fetch){
   for(const name of ['_wpActor','_wpCall','wpOpen','wpReview','wpGo','wpClose']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,context);}
   return {page,calls,acks,reloads,timers,prompts,syncs,setReason(value){reasonText=value;},switchActor(){uid='TEST_ONLY_other_super';context.__BS_BOOT.uid=uid;}};
 }
-function receipt(options,revision=5){const body=JSON.parse(options.body);return {ok:1,dept:body.dept,requestId:body.requestId,rev:revision,counts:{keys:1,custody:2,notifications:3}};}
+function receipt(options,revision=5){const body=JSON.parse(options.body);return {ok:1,dept:body.dept,requestId:body.requestId,rev:revision,counts:{keys:1,custody:2,notifications:3,irshad:4}};}
 
 test('wipe reads the server inventory and waits for a matching complete receipt before success/reload',async()=>{
   let settle;const B=world(async(url,options)=>options.method==='GET'?response(inventory()):await new Promise(resolve=>{settle=()=>resolve(response(receipt(options)));}));
@@ -49,6 +49,14 @@ test('wipe asks the original reason dialog only after explicit denial and retain
 });
 test('wipe reason cancellation preserves confirmation and does not invent a server reason',async()=>{
   const B=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,why:'reason',reasonKeys:['emp.record.bulk.delete']},403));await B.page.wpOpen(DEPT);B.page.setState({wpTxt:'TEST_ONLY retain'});await B.page.wpGo(DEPT);assert.equal(B.prompts.length,1);assert.equal(B.calls.filter(call=>call.options.method==='POST').length,1);assert.equal(B.page.state.wpTxt,'TEST_ONLY retain');assert.equal(B.acks.length,0);
+});
+
+test('wipe rejects an inventory or receipt that omits the migrated Irshad domain',async()=>{
+  const missing=inventory();delete missing.base.irshad;
+  const A=world(async()=>response(missing));await A.page.wpOpen(DEPT);assert.equal(A.page.state.wpBase,null);assert.equal(A.calls.filter(call=>call.options.method==='POST').length,0);
+  const B=world(async(url,options)=>{if(options.method==='GET')return response(inventory());const ack=receipt(options);delete ack.counts.irshad;return response(ack);});
+  await B.page.wpOpen(DEPT);B.page.setState({wpTxt:'TEST_ONLY preserved'});await B.page.wpGo(DEPT);
+  assert.equal(B.acks.length,0);assert.equal(B.page.state.wpDid,DEPT);assert.equal(B.page.state.wpTxt,'TEST_ONLY preserved');assert.equal(B.page._wpUncertain,true);
 });
 
 test('actual canonical wipe HTTP removes KV/CU/NF in one acknowledged operation and preserves accounts and department definition',async()=>{

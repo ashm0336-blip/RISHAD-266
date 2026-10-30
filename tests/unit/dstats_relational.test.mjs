@@ -394,6 +394,10 @@ function adminMethod(B, name) {
   return vm.runInContext('({' + part.text + '}).' + name, B.context);
 }
 const tick = () => new Promise(resolve => setImmediate(resolve));
+function startFullBackup(C) {
+  for (const name of ['_wpActor', '_irBackupCapture', '_irBackupFence', '_irBackupDomain']) C.page[name] = C.method('src/modules/admin/logic.js', name);
+  C.property('src/modules/admin/logic.js', 'exportBackup')();
+}
 
 test('historical workbook parsing uses a fresh API snapshot and its revision without browser business data', async () => {
   const old = { ...empty(), haram: { '1448-01-01': { worshippers: 1, umrah: 9 } } };
@@ -460,14 +464,16 @@ test('full backup waits for actual relational reads, includes every typed domain
     const B = await backupWorld(); await seedTypedDomains(B, populated());
     const C = await backupBrowser(B), actualRead = C.KIVO.DailyStats.refresh; let settle;
     C.KIVO.DailyStats.refresh = async () => await new Promise((resolve, reject) => { settle = async () => { if (!connected) reject(new TypeError('TEST_ONLY network outage')); else resolve(await actualRead()); }; });
-    C.property('src/modules/admin/logic.js', 'exportBackup')(); await backupUntil(() => !!settle);
+    startFullBackup(C); await backupUntil(() => !!settle);
     assert.equal(C.page._encPend, null); assert.equal(C.states.some(state => state.pwDlg), false);
     await settle(); await backupUntil(() => !!C.page._encPend || C.states.some(state => state.backupMsg));
     if (connected) {
       const file = JSON.parse(C.page._encPend.json);
       assert.equal(file.data[KEY], undefined); assert.equal(file.domains.dailyStats.version, 1);
       assert.equal(file.domains.dailyStats.rev, (await B.W.dsDomainRead(B.env)).rev); assert.deepEqual(file.domains.dailyStats.data, populated());
-      assert.deepEqual(file.manifest.domains, { kv: 1, dailyStats: 1, notifications: 1, custody: 1 });
+      assert.equal(file.manifest.version, 2);
+      assert.deepEqual(file.manifest.domains, { kv: 1, dailyStats: 1, notifications: 1, custody: 1, irshad: 1 });
+      assert.deepEqual(file.domains.irshad.map(domain => domain.scope.departmentId).sort(), file.manifest.departments.slice().sort());
       assert.ok(file.domains.notifications.messages.length); assert.equal(file.domains.custody.find(d => d.scope.departmentId === file.manifest.departments[0]).rows.items.length, 1);
       assert.ok(C.states.some(state => state.pwDlg?.mode === 'exp'));
     } else { assert.equal(C.page._encPend, null); assert.ok(C.states.at(-1).backupMsg); assert.equal(C.states.some(state => state.pwDlg), false); }
@@ -479,7 +485,7 @@ test('a new failed full-backup attempt invalidates an earlier encryption payload
   const B = await backupWorld(), C = await backupBrowser(B); let rejectRead;
   C.KIVO.DailyStats.refresh = async () => await new Promise((resolve, reject) => { rejectRead = reject; });
   C.page._encPend = { json: '{"TEST_ONLY":"obsolete backup"}' };
-  C.property('src/modules/admin/logic.js', 'exportBackup')();
+  startFullBackup(C);
   assert.equal(C.page._encPend, null, 'A new attempt discards the old encryption payload synchronously');
   await backupUntil(() => !!rejectRead); rejectRead(new TypeError('TEST_ONLY network outage')); await backupUntil(() => C.states.some(state => state.backupMsg));
   assert.equal(C.page._encPend, null); assert.ok(C.states.at(-1).backupMsg);

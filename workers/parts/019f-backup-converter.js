@@ -1,4 +1,4 @@
-/* STAGED backup normalization. Read/validate only: the existing restore compiler
+/* Backup normalization. Read/validate only: the existing restore compiler
    remains the only writer and the only source of authorization/account policy. */
 function rsBCFail(code) {
   throw rsError('backup-' + code);
@@ -61,6 +61,14 @@ function rsBCRemapCU(domain, source, target) {
   cuValidateDomain(next, target);
   return next;
 }
+function rsBCRemapIR(domain, source, target) {
+  var next = rsBCClone(irValidateDomain(domain, source));
+  next.scope.departmentId = target;
+  Object.keys(IR_TABLES).forEach(function (kind) {
+    next.rows[kind].forEach(function (row) { row.department_id = target; });
+  });
+  return irValidateDomain(next, target);
+}
 function rsBCForbiddenKey(key) {
   var n = resName(key);
   return isDeviceKey(key) || isDeviceKey(n) || /(?:^|_)(?:sessions?|recovery|recover|cookies?|tokens?|credentials?)(?:_|$)/i.test(n);
@@ -68,9 +76,10 @@ function rsBCForbiddenKey(key) {
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
   var required = scope.kind === 'full' ? ['kv', 'dailyStats', 'notifications', 'custody'] : ['kv', 'notifications', 'custody'];
+  if (manifest.version === 2) required.push('irshad');
   rsShape(manifest.domains, required);
   if (
-    manifest.version !== 1 ||
+    ![1, 2].includes(manifest.version) ||
     manifest.scope !== scope.kind ||
     required.some(function (k) {
       return manifest.domains[k] !== 1;
@@ -96,6 +105,11 @@ function rsBCManifest(manifest, scope, keys, domains, departments) {
     return d && d.scope && d.scope.departmentId;
   });
   if (!deq(custody.slice().sort(), departments.slice().sort())) rsBCFail('incomplete-custody');
+  if (manifest.version === 2) {
+    if (!Array.isArray(domains.irshad) || !deq(domains.irshad.map(function (d) {
+      return d && d.scope && d.scope.departmentId;
+    }).sort(), departments.slice().sort())) rsBCFail('incomplete-irshad');
+  } else if (domains.irshad !== undefined) rsBCFail('irshad-manifest-version');
 }
 async function rsConvertBackup(env, A, file, opt) {
   opt = opt || {};
@@ -136,7 +150,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var input = Object.create(null),
     keys = Object.create(null),
     domains = file.domains === undefined ? {} : rsBCClone(file.domains);
-  rsShape(domains, ['dailyStats', 'notifications', 'custody']);
+  rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad']);
   Object.keys(file.data).forEach(function (k) {
     if (k === 'bassam_active_dept_v1') {
       summary.ignoredDevicePreferences.push(k);
@@ -144,6 +158,10 @@ async function rsConvertBackup(env, A, file, opt) {
     }
     if (['__proto__', 'constructor', 'prototype'].indexOf(k) >= 0 || typeof file.data[k] !== 'string') rsBCFail('data-shape');
     if (rsBCForbiddenKey(k)) rsBCFail('sensitive-device-key');
+    if (irLegacyKey(k)) {
+      var part = parseKey(k), i = IR_RES.indexOf(resName(k));
+      if (k !== (part.dept ? irKey(part.dept, i) : IR_RES[i])) rsBCFail('irshad-namespace');
+    }
     rsBCParse(file.data[k]);
     input[k] = file.data[k];
   });
@@ -180,7 +198,8 @@ async function rsConvertBackup(env, A, file, opt) {
       Array.isArray(domains.custody) && domains.custody.length === 1
         ? domains.custody[0].scope && domains.custody[0].scope.departmentId
         : null;
-    var hints = [prefixes[0], declared && declared[0], typed].filter(Boolean);
+    var irTyped = Array.isArray(domains.irshad) && domains.irshad.length === 1 ? domains.irshad[0].scope && domains.irshad[0].scope.departmentId : null;
+    var hints = [prefixes[0], declared && declared[0], typed, irTyped].filter(Boolean);
     if (new Set(hints).size > 1) rsBCFail('ambiguous-department');
     source = hints[0] || target;
     deptIds = [target];
@@ -200,6 +219,7 @@ async function rsConvertBackup(env, A, file, opt) {
     });
   }
   var cuKeys = Object.keys(keys).filter(cuLegacyKey),
+    irKeys = Object.keys(keys).filter(irLegacyKey),
     nfKeys = Object.keys(keys).filter(nfLegacyKey),
     dsKeys = Object.keys(keys).filter(function (k) {
       return resName(k) === K_DSTATS;
@@ -207,10 +227,11 @@ async function rsConvertBackup(env, A, file, opt) {
   if (
     (cuKeys.length && rsBCOwn(domains, 'custody')) ||
     (nfKeys.length && rsBCOwn(domains, 'notifications')) ||
-    (dsKeys.length && rsBCOwn(domains, 'dailyStats'))
+    (dsKeys.length && rsBCOwn(domains, 'dailyStats')) ||
+    (irKeys.length && rsBCOwn(domains, 'irshad'))
   )
     rsBCFail('duplicate-domain-source');
-  if (modern && (cuKeys.length || nfKeys.length || dsKeys.length)) rsBCFail('retired-key-in-modern-file');
+  if (modern && (cuKeys.length || nfKeys.length || dsKeys.length || (file.manifest && file.manifest.version === 2 && irKeys.length))) rsBCFail('retired-key-in-modern-file');
   if (scope.kind === 'dept' && (dsKeys.length || domains.dailyStats !== undefined)) rsBCFail('global-domain-in-department');
   if (modern) {
     // Validate the source declaration before an explicit scoped remap. Missing
@@ -221,6 +242,25 @@ async function rsConvertBackup(env, A, file, opt) {
       sourceKeys[scope.kind === 'dept' ? 'bsdept:' + source + ':' + resName(k) : k] = keys[k];
     });
     rsBCManifest(file.manifest, sourceScope, sourceKeys, domains, scope.kind === 'dept' ? [source] : deptIds);
+  }
+  if (domains.irshad !== undefined) {
+    if (!Array.isArray(domains.irshad)) rsBCFail('irshad-shape');
+    domains.irshad = domains.irshad.map(function (domain) {
+      var d = domain && domain.scope && domain.scope.departmentId;
+      if (typeof d !== 'string' || (scope.kind === 'full' ? deptIds.indexOf(d) < 0 : d !== source)) rsBCFail('irshad-scope');
+      return rsBCRemapIR(domain, d, scope.kind === 'dept' ? target : d);
+    });
+    if (new Set(domains.irshad.map(function (d) { return d.scope.departmentId; })).size !== domains.irshad.length) rsBCFail('irshad-duplicate');
+  } else if (legacy || file.manifest.version === 1) {
+    domains.irshad = deptIds.map(function (d) {
+      var docs = {};
+      IR_RES_NAMES.forEach(function (name, i) {
+        var key = irKey(d, i);
+        if (rsBCOwn(keys, key)) docs[name] = rsBCParse(keys[key]);
+      });
+      if (!Object.keys(docs).length) summary.emptyDomains.push('irshad:' + d);
+      return irValidateDomain(irConvert(d, docs), d);
+    });
   }
   if (domains.custody !== undefined) {
     if (!Array.isArray(domains.custody)) rsBCFail('custody-shape');
@@ -366,7 +406,7 @@ async function rsConvertBackup(env, A, file, opt) {
       });
     }
   }
-  cuKeys.concat(nfKeys, dsKeys).forEach(function (k) {
+  cuKeys.concat(nfKeys, dsKeys, irKeys).forEach(function (k) {
     delete keys[k];
   });
   // Conversion preserves credentials byte-for-byte; applySave/restore retains
@@ -390,6 +430,11 @@ async function rsConvertBackup(env, A, file, opt) {
     manifest.departments = [target];
     manifest.keys = Object.keys(keys).map(resName);
   }
+  // A v1 source is validated before conversion. The compiled destination always
+  // declares the complete typed Irshad domain; v2 never receives empty fallbacks.
+  manifest.version = 2;
+  manifest.domains.irshad = 1;
+  manifest.keys = Object.keys(keys).map(function (k) { return scope.kind === 'dept' ? resName(k) : k; });
   rsBCManifest(manifest, scope, keys, domains, deptIds);
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
   if (file.perms !== undefined) result.permissionSlice = rsBCClone(file.perms);

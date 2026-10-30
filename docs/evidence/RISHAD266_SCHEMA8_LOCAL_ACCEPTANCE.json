@@ -1,0 +1,54 @@
+{
+  "status": "local-accepted-not-yet-deployed",
+  "schema": 8,
+  "gitBranch": "develop",
+  "baselineCommit": "b4f1a1098c8892aba0719885eb07a20b3838883d",
+  "counts": {
+    "tests": 1620,
+    "pass": 1610,
+    "fail": 0,
+    "skipped": 10,
+    "cancelled": 0
+  },
+  "testMethod": "Composite evidence; one full235-file run plus only affected fixture/case reruns. Not a fresh1620-case full run.",
+  "fullRunCounts": {
+    "tests": 1614,
+    "pass": 1540,
+    "fail": 64,
+    "cancelled": 0,
+    "skipped": 10,
+    "todo": 0
+  },
+  "repairedOriginalFailures": 64,
+  "additionalOrPreviouslyUnreportedCases": 6,
+  "historicalSkips": 10,
+  "workerSha256": "8696152963ff0d1d6fc9789c68a8dd03a77698ce73697222ac480b7ce2af82ff",
+  "build": {
+    "files": 131,
+    "budgetsPassed": 16,
+    "reassemblyChecksPassed": 19,
+    "irshadGzip": 40667,
+    "adminGzip": 156362,
+    "shellGzip": 29602,
+    "workerGzip": 367095
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 303,
+    "baselineWarnings": 302,
+    "newWarning": "irSnapshot is used by explicit verifier/test exports; no runtime consumer."
+  },
+  "preparedPreviewQA": {
+    "tests": 28,
+    "passed": 28,
+    "httpChecks": 51,
+    "cloudExecuted": false
+  },
+  "rollback": {
+    "archivedWorkerGuardsPassed": 4,
+    "actualArchivedCode": true,
+    "cloudRestoreDrillPerformed": false
+  },
+  "productionDeployed": false,
+  "databaseExportCreated": false
+}

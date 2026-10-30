@@ -1910,7 +1910,8 @@ async function nfCommit(env, A, st, base, action, scopes, casKey) {
   try {
     await env.DB.batch(all);
   } catch (e) {
-    if (isRevConflict(e)) throw nfErr("conflict", 409);
+    if (isRevConflict(e) || /KIVO_RESTORE_TARGET/.test(String(e))) throw nfErr("conflict", 409);
+    if (/KIVO_NOTIFICATION_LEGACY_SOURCE/.test(String(e))) throw nfErr("notification-legacy-source-present", 503);
     throw e;
   }
   var receipt = { ok: 1, rev: A ? await nfFeedRevision(env, A) : await nfRevision(env) };
@@ -2591,11 +2592,11 @@ function nfInsertPlans(env, plans) {
 function nfInsertEvent(env, m, targets, once) {
   return nfInsertPlans(env, [{ m: m, targets: targets, once: once || "" }]);
 }
-async function nfEmitEvents(env, A, events, internal, extra) {
+async function nfPlanEvents(env, A, events, internal) {
   await nfGuardRetired(env);
   nfArr(events, 200);
-  var cfg = nfCfg((await env.DB.prepare("SELECT * FROM notification_type_overrides").all()).results || []),
-    st = [],
+  var overrideRows = (await env.DB.prepare("SELECT * FROM notification_type_overrides").all()).results || [],
+    cfg = nfCfg(overrideRows),
     ids = [],
     plans = [];
   events.forEach(function (it) {
@@ -2708,20 +2709,25 @@ async function nfEmitEvents(env, A, events, internal, extra) {
     });
     ids = [];
   }
-  st = nfInsertPlans(env, plans).concat(extra || []);
+  return {
+    plans: plans, ids: ids, requested: requested, statements: nfInsertPlans(env, plans),
+    scopes: Array.from(new Set(plans.map(function (p) { return p.m.scope; }))),
+    guards: rsWitness(env, NF_TABLES.overrides[0], NF_TABLES.overrides[1], overrideRows).concat([
+      env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE k IN ('bassam_notif_sys_v1','bassam_bc_v1','bassam_notif_cfg_v1','bassam_notif_v1') OR k GLOB 'bsdept:*:bassam_notif_v1') THEN json_extract('{}','KIVO_NOTIFICATION_LEGACY_SOURCE') END"),
+    ]),
+  };
+}
+async function nfEmitEvents(env, A, events, internal, extra) {
+  var plan = await nfPlanEvents(env, A, events, internal), plans = plan.plans, ids = plan.ids,
+    requested = plan.requested, st = plan.statements.concat(extra || []);
+  if (st.length) st = plan.guards.concat(st);
   var result = await nfCommit(
     env,
     A,
     st,
     undefined,
     "emitted",
-    Array.from(
-      new Set(
-        plans.map(function (p) {
-          return p.m.scope;
-        }),
-      ),
-    ),
+    plan.scopes,
   );
   if (plans.length) {
     var found = await env.DB.prepare(
@@ -3143,7 +3149,10 @@ async function nfRoute(env, request, url, ss) {
   if (!A || A.u.dis) return json({ ok: 0, err: "session" }, 401);
   try {
     await nfGuardRetired(env);
-    if (url.pathname === "/api/notifications" && request.method === "GET") return json(await nfFeed(env, A, url));
+    if (url.pathname === "/api/notifications" && request.method === "GET") {
+      var dailyIr = await nfIrshadDaily(env, A, url); if (dailyIr.emitted) preOff(env);
+      return json(await nfFeed(env, A, url));
+    }
     if (url.pathname === "/api/notifications/export" && request.method === "GET") return json(await nfExport(env, A, url));
     if (url.pathname !== "/api/notifications/act" || request.method !== "POST") return json({ ok: 0, err: "method" }, 405);
     var bytes = await request.arrayBuffer();

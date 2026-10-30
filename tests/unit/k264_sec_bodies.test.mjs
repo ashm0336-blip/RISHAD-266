@@ -12,6 +12,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, worker, ROOT, SRC, WORKER, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { internals } from './internals.mjs';
+import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
 const SRCW = fs.readFileSync(WORKER, 'utf8');
 const K264 = SRCW.includes('"/api/policy":') || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264' };
 const SCH = JSON.parse(fs.readFileSync(path.join(SRC, 'schemas', 'api', 'bodies.schema.json'), 'utf8'));
@@ -34,6 +35,7 @@ test('(ب) الأجسامُ في مساراتها: السليمُ يمرّ · ا
   const env = makeTestEnv(); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
+  await installIrshadFixture(env);
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok);
   const meta = () => JSON.stringify(env.DB.q("SELECT k, v FROM meta WHERE k IN ('policy','rk','rk_meta')"));
   const post = (p, body, ck) => C.api(p, { method: 'POST', body, cookie: ck });

@@ -14,8 +14,8 @@ async function put(env, k, v) {
     'INSERT INTO revs (k, rev) VALUES (' + q(k) + ", (SELECT CAST(v AS INTEGER) FROM meta WHERE k = 'rev')) ON CONFLICT(k) DO UPDATE SET rev = excluded.rev;"].join('\n'));
 }
 const server = (env, k) => { const r = env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', k); return r.length ? r.map(x => x.v).join('') : null; };
-// Keep 96 live KV resources: custody now has its own typed API and invalidation.
-const RES = ['bassam_tasks_v1', 'bassam_irshad_v1', 'bassam_seized_v1', 'bassam_shift_options_v1', 'bassam_award_v1', 'bassam_options_v1', 'bassam_callsigns_v1', 'bassam_leave_kinds_v1'];
+// Keep 96 live KV resources; custody and Irshad have typed APIs/invalidation.
+const RES = ['bassam_tasks_v1', 'bassam_dreport_v1', 'bassam_seized_v1', 'bassam_shift_options_v1', 'bassam_award_v1', 'bassam_options_v1', 'bassam_callsigns_v1', 'bassam_leave_kinds_v1'];
 
 for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-1: 96 مفتاحاً تغيّرت عند زميل ⇒ كلُّها تصل التبويبَ المفتوح (لا تتوقف عند 80)', async () => {
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
@@ -55,6 +55,16 @@ function c2Server(n, page = 10, always = false) {
   } };
   return S;
 }
+test('Typed Irshad revisions reach the remote event without fetching or retaining a JSON document',async()=>{
+  const key='bsdept:d1:bassam_irshad_v1',S=c2Server(0);S.rev=11;S.revs[key]=11;
+  const T=loadClient({C:S.C,boot:{srv:1,cf:1,v:10,uid:'su',keys:{},revs:{}}}),events=[];
+  T.W.addEventListener('bassam:remote',event=>events.push(...(event.detail?.keys||[])));
+  try{
+    assert.ok(await until(()=>events.includes(key),4000));assert.equal(T.get(key),null);
+    assert.equal(T.W.__BS_BOOT.v,11);
+    assert.ok(T.urls.filter(x=>x.url.startsWith('/api/get')).every(x=>!decodeURIComponent(x.url).includes(key)));
+  }finally{T.dispose();}
+});
 test('D-1 (C2): جوابٌ مبتور (more: 1) يُتبَع فوراً من آخر مراجعةٍ وصلت حتى يكتمل — بلا انتظارٍ طويل في الصفحات التالية', async () => {
   const S = c2Server(35);
   const T = loadClient({ C: S.C, boot: { srv: 1, cf: 1, v: 10, uid: 'su', keys: {}, revs: {} } });

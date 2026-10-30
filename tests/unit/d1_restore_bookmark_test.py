@@ -26,12 +26,16 @@ TARGET = '00000001-00000002-00000003-' + 'a' * 32
 CURRENT = '00000005-00000006-00000007-' + 'b' * 32
 RESTORED = '00000009-0000000a-0000000b-' + 'c' * 32
 NAMES = ['0001_baseline', '0002_enforcement_tables', '0003_aud_legacy_import', '0004_daily_stats',
-         '0005_notifications', '0006_custody', '0007_atomic_restore']
+         '0005_notifications', '0006_custody', '0007_atomic_restore', '0008_irshad']
+CU_TABLES = ['custody_items', 'custody_issues', 'custody_movements', 'custody_requests', 'custody_request_outputs']
+RESTORE_TABLES = ['restore_operations', 'restore_preimage', 'restore_snapshot_manifest']
+IR_TABLES = ['irshad_reports', 'irshad_report_languages', 'irshad_catalog_entries', 'irshad_retro_windows', 'irshad_requests']
+SCHEMA_TABLES = {5: [], 6: CU_TABLES, 7: CU_TABLES + RESTORE_TABLES, 8: CU_TABLES + RESTORE_TABLES + IR_TABLES}
 TOKEN = 'TEST_ONLY_mock_bearer_token_never_real'
 
 
 def state(n, permit=0):
-    tables = [] if n == 5 else r.NEW_TABLES[:5] if n == 6 else r.NEW_TABLES
+    tables = SCHEMA_TABLES[n]
     return [{'success': True, 'results': [{'v': str(n)}]},
             {'success': True, 'results': [{'name': v} for v in NAMES[:n]]},
             {'success': True, 'results': [{'n': permit}]},
@@ -58,12 +62,19 @@ class FakeWrangler:
             value = {'bookmark': CURRENT}
         elif args[:3] == ['wrangler', 'd1', 'execute']:
             self.owner.assertEqual(args[args.index('--command') + 1], r.STATE_SQL)
-            value = state(7 if not self.restores else 5)
+            value = state(self.owner.record['source_schema'] if not self.restores else self.owner.record['expected_schema'])
             if not self.restores and self.failure == 'null-ledger': value[1]['results'][3]['name'] = None
             if self.restores and self.failure == 'post-permit': value[2]['results'][0]['n'] = 1
             if self.restores and self.failure == 'post-tables': value[3]['results'] = [{'name': 'custody_items'}]
             if not self.restores and self.failure == 'pre-legacy-authz': value[4]['results'][0]['v'] = 'legacy'
             if self.restores and self.failure == 'post-legacy-authz': value[4]['results'][0]['v'] = 'legacy'
+            if self.restores and self.failure == 'post-ir-table': value[3]['results'] = sorted(value[3]['results'] + [{'name': IR_TABLES[0]}], key=lambda row: row['name'])
+            if not self.restores and self.failure == 'pre-ir-table-missing': value[3]['results'] = [row for row in value[3]['results'] if row['name'] != IR_TABLES[-1]]
+            if not self.restores and self.failure == 'pre-ledger-null': value[1]['results'][-1]['name'] = None
+            if not self.restores and self.failure == 'pre-ledger-short': value[1]['results'].pop()
+            if not self.restores and self.failure == 'pre-ledger-wrong': value[1]['results'][-1]['name'] = '0008_TEST_ONLY_wrong'
+            if not self.restores and self.failure == 'pre-ledger-extra': value[1]['results'].append({'name': '0009_TEST_ONLY_extra'})
+            if not self.restores and self.failure == 'pre-ledger-order': value[1]['results'].reverse()
         elif args[:3] == ['wrangler', 'auth', 'token']:
             value = {'type': 'oauth', 'token': TOKEN}
             if self.failure == 'auth-api-token': value['type'] = 'api_token'
@@ -364,6 +375,63 @@ class Safety(unittest.TestCase):
         self.assertEqual(actual, ['d1', 'info', r.NAME, '--config', str(self.evidence / 'target.preview.toml'), '--json'])
         journal = json.loads((self.evidence / 'restore-journal.json').read_text('utf-8'))
         self.assertEqual((journal['status'], journal['destructive_attempts']), ('preflight-refused', 0))
+
+    def test_schema8_to7_verifies_all_old_tables_and_absence_of_every_irshad_table(self):
+        self.record.update(source_schema=8, expected_schema=7, expected_migrations=NAMES[:7]); self.write_review()
+        journal = self.run_tool()
+        self.assertEqual(journal['status'], 'verified')
+        self.assertEqual(journal['before']['upgradeTables'], sorted(CU_TABLES + RESTORE_TABLES + IR_TABLES))
+        self.assertEqual(journal['before']['migrations'], NAMES)
+        self.assertEqual(journal['after']['upgradeTables'], sorted(CU_TABLES + RESTORE_TABLES))
+        self.assertTrue(set(IR_TABLES).isdisjoint(journal['after']['upgradeTables']))
+        self.assertEqual((self.last.restores, self.last.connections, self.last.closed), (1, 1, 1))
+
+    def test_schema7_to8_requires_thirteen_upgrade_tables_and_eight_migrations(self):
+        self.record.update(source_schema=7, expected_schema=8, expected_migrations=NAMES); self.write_review()
+        journal = self.run_tool()
+        self.assertEqual(journal['before']['upgradeTables'], sorted(CU_TABLES + RESTORE_TABLES))
+        self.assertEqual(journal['after']['upgradeTables'], sorted(CU_TABLES + RESTORE_TABLES + IR_TABLES))
+        self.assertEqual(len(journal['after']['upgradeTables']), 13)
+        self.assertEqual(journal['after']['migrations'], NAMES)
+        self.assertEqual(self.last.restores, 1)
+        for table in IR_TABLES: self.assertIn("'" + table + "'", r.STATE_SQL)
+
+    def test_schema8_rollback_leftover_irshad_or_legacy_authz_remains_unverified_without_retry(self):
+        self.record.update(source_schema=8, expected_schema=7, expected_migrations=NAMES[:7]); self.write_review()
+        for failure in ['post-ir-table', 'post-legacy-authz']:
+            self.evidence = self.root / failure
+            with self.subTest(failure=failure), self.assertRaisesRegex(r.Refused, 'verification-failed-no-automatic-retry'):
+                self.run_tool(failure=failure)
+            self.assertEqual((self.last.post_calls, self.last.restores, self.last.connections, self.last.closed), (1, 1, 1, 1))
+            journal = json.loads((self.evidence / 'restore-journal.json').read_text('utf-8'))
+            self.assertEqual(journal['previous_bookmark'], CURRENT)
+            self.assertEqual(journal['status'], 'restored-but-verification-failed-no-automatic-retry')
+
+    def test_schema8_invalid_ledger_or_partial_tables_refuse_before_destructive_transport(self):
+        self.record.update(source_schema=8, expected_schema=7, expected_migrations=NAMES[:7]); self.write_review()
+        for failure in ['pre-ledger-null', 'pre-ledger-short', 'pre-ledger-wrong', 'pre-ledger-extra', 'pre-ledger-order', 'pre-ir-table-missing']:
+            self.evidence = self.root / failure
+            with self.subTest(failure=failure), self.assertRaisesRegex(r.Refused, 'preflight-refused'):
+                self.run_tool(failure=failure)
+            self.assertEqual((self.last.post_calls, self.last.restores, self.last.connections), (0, 0, 0))
+            self.assertNotIn('token', [arg for call in self.last.calls for arg in call])
+
+    def test_schema8_review_requires_the_complete_canonical_eight_migration_prefix_before_any_transport(self):
+        self.record.update(source_schema=8, expected_schema=7, expected_migrations=NAMES[:7]); self.write_review()
+        migration = self.root / 'migrations/0008_irshad.sql'; migration.unlink()
+        with self.assertRaisesRegex(r.Refused, 'reviewed-bookmark-record-invalid'): self.run_tool()
+        self.assertEqual(self.last.calls, []); self.assertEqual(self.last.restores, 0)
+        (migration.parent / '0008_wrong.sql').write_text('-- TEST_ONLY wrong canonical prefix', encoding='utf-8')
+        with self.assertRaisesRegex(r.Refused, 'reviewed-bookmark-record-invalid'): self.run_tool()
+        self.assertEqual(self.last.calls, []); self.assertEqual(self.last.restores, 0)
+
+    def test_old_schema_table_sets_stay_exact_and_do_not_accept_new_irshad_tables(self):
+        for schema, expected in [(5, []), (6, CU_TABLES), (7, CU_TABLES + RESTORE_TABLES), (8, CU_TABLES + RESTORE_TABLES + IR_TABLES)]:
+            with self.subTest(schema=schema):
+                self.assertEqual(r.metadata(state(schema), schema, NAMES, True)['upgradeTables'], sorted(expected))
+                if schema < 8:
+                    extra = state(schema); extra[3]['results'] = sorted(extra[3]['results'] + [{'name': IR_TABLES[0]}], key=lambda row: row['name'])
+                    with self.assertRaises(r.Refused): r.metadata(extra, schema, NAMES, True)
 
     def test_atomic_evidence_claim_allows_only_one_invocation_and_second_has_zero_transport_calls(self):
         barrier, claimed, second_done = threading.Barrier(2), threading.Event(), threading.Event()

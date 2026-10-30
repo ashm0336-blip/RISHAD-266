@@ -687,6 +687,17 @@ class Component extends DCLogic {
         const _tk = KIVO.BassamBusy ? KIVO.BassamBusy.start(_pre ? "جارٍ حفظ نسخة ما قبل الاستيراد…" : "جارٍ تجهيز نسخة الإدارة الاحتياطية…") : null;
         const D = KIVO.BassamDepts; if (!D) { if (_tk) _tk.done(); if (_cb) { try { _cb(); } catch (eD) {} } return; }
         const id = D.active(); const nm = D.activeName();
+        const srv = KIVO.__BS_SRV, boot = window.__BS_BOOT || {}, user = KIVO.BassamAuth?.user?.();
+        if (!srv || !user || String(user.id) !== String(boot.uid) || !Number.isSafeInteger(boot.v) || srv.dirty() || srv.inflight() || srv.sesChanged()) { if (_tk) _tk.done(); this.bkToast("حدّث البيانات وانتظر اكتمال الحفظ ثم أعد التصدير"); return; }
+        const snapshot = { uid: String(boot.uid), v: boot.v, revs: Object.fromEntries(D.keysOf(id).concat(["bassam_perms_v1"]).map(key => [key, srv.rev(key)])) };
+        const same = () => D.active() === id && String(KIVO.BassamAuth?.user?.()?.id || "") === snapshot.uid && String(boot.uid) === snapshot.uid && boot.v === snapshot.v && !srv.dirty() && !srv.inflight() && !srv.sesChanged() && Object.entries(snapshot.revs).every(([key, rev]) => srv.rev(key) === rev);
+        const read = async path => {
+          if (!same()) throw new Error("تغيّرت البيانات أو الجلسة");
+          const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20000);
+          try { const response = await fetch(path, { credentials: "same-origin", cache: "no-store", signal: controller.signal }), body = await response.json(); if (!response.ok || body?.ok !== 1 || !same()) throw new Error("تعذّر تأكيد نسخة الخادم"); return body; }
+          finally { clearTimeout(timer); }
+        };
+        const fence = async () => { const result = await read("/api/get?keys=&uid=" + encodeURIComponent(snapshot.uid)); if (result.v !== snapshot.v) throw new Error("حدّث البيانات ثم أعد التصدير"); };
         const pref = "bsdept:" + id + ":";
         const data = {};
         D.keysOf(id).forEach(kk => { data[kk.slice(pref.length)] = D.raw.getItem.call(localStorage, kk); });
@@ -701,6 +712,7 @@ class Component extends DCLogic {
             /* شريحة صلاحيات هذه الإدارة وحدها (سقفها + منح موظفيها) ترافق نسختها */
             let permSlice = null;
             try { const pm = JSON.parse(D.raw.getItem.call(localStorage, "bassam_perms_v1")) || {}; const capArr = (pm.caps || {})[id]; permSlice = { capSet: Array.isArray(capArr), cap: Array.isArray(capArr) ? capArr : null, emps: (pm.emps || {})[id] || {}, lenses: (pm.lenses || {})[id] }; } catch (eP) { permSlice = null; }
+            await fence();
             if (!KIVO.BassamNotif) throw new Error("خدمة التنبيهات غير متاحة");
             const notifications=await KIVO.BassamNotif.exportDomain(id);
             const custody=await KIVO.Custody.exportDomain(id);
@@ -708,8 +720,12 @@ class Component extends DCLogic {
             Object.keys(data).forEach(key=>{if (/(?:^|:)bassam_custody_v1$/.test(key)) delete data[key];});
             if (!notifications || notifications.ok !== 1) throw new Error("تعذّر تصدير تنبيهات الإدارة");
             if(!Array.isArray(custody.domains)||custody.domains.length!==1||custody.domains[0].scope.departmentId!==id)throw new Error("نطاق العهد لا يطابق الإدارة");
-            const manifest={version:1,scope:"dept",domains:{kv:1,notifications:1,custody:1},departments:[id],keys:Object.keys(data)};
-            const payload = {app:"bassam-crowd",version:3,kind:"dept",dept:nm,exportedAt:dt.toISOString(),data,domains:{notifications:notifications.domain,custody:custody.domains},manifest,perms:permSlice,idbImages:imgs || {},preImport:_pre};
+            const irshad = await read("/api/irshad/export?uid=" + encodeURIComponent(snapshot.uid) + "&dept=" + encodeURIComponent(id));
+            if (!Number.isSafeInteger(irshad.rev) || irshad.rev < 0 || irshad.globalRev !== snapshot.v || !Array.isArray(irshad.domains) || irshad.domains.length !== 1 || irshad.domains.some(domain => domain?.version !== 1 || domain.scope?.departmentId !== id || !domain.resources || !domain.rows || ["reports", "languages", "locations", "retro"].some(key => typeof domain.resources[key] !== "boolean") || ["reports", "languages", "catalogs", "windows"].some(key => !Array.isArray(domain.rows[key]) || domain.rows[key].some(row => row?.department_id !== id)))) throw new Error("مجال الاسترشاد ناقص أو لا يطابق الإدارة");
+            Object.keys(data).forEach(key => { if (/(?:^|:)bassam_irshad(?:_langs|_locs|_retro)?_v1$/.test(key)) delete data[key]; });
+            await fence();
+            const manifest={version:2,scope:"dept",domains:{kv:1,notifications:1,custody:1,irshad:1},departments:[id],keys:Object.keys(data)};
+            const payload = {app:"bassam-crowd",version:3,kind:"dept",dept:nm,exportedAt:dt.toISOString(),data,domains:{notifications:notifications.domain,custody:custody.domains,irshad:irshad.domains},manifest,perms:permSlice,idbImages:imgs || {},preImport:_pre};
             const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a2 = document.createElement("a"); a2.href = url;

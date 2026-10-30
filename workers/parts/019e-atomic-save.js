@@ -371,6 +371,31 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   plan.guards.push.apply(plan.guards, transition.guards);
   plan.statements.push.apply(plan.statements, transition.statements);
   plan.revisionKeys.push.apply(plan.revisionKeys, transition.revisionKeys);
+  var irWipeDepartments = Array.from(new Set(transition.transitions.filter(function (t) {
+    return t.intent === 'dept-wipe';
+  }).map(function (t) { return t.departmentId; }).concat(opt.__serverDepartmentWipes || [])));
+  var irDepartmentChange = kv.pend.find(function (pd) { return pd.k === K_DEPTS; }),
+    irFinalDepartments = irDepartmentChange ? (irDepartmentChange.act === 'del' ? [] : parseJson(irDepartmentChange.v, [])) : A.depts;
+  plan.snapshotRequired = plan.snapshotRequired || irWipeDepartments.length > 0;
+  for (var irDept of irWipeDepartments) {
+    var irBase = opt.__irshadBase;
+    if (!irBase) {
+      irBase = {};
+      IR_RES_NAMES.forEach(function (name, i) { irBase[name] = (body.base || {})[irKey(irDept, i)]; });
+    }
+    var irWipe = await irPlanWipe(env, A, {
+      dept: irDept, base: irBase, intent: opt.__wipeKind === 'delete' ||
+        !irFinalDepartments.some(function (d) { return d.id === irDept; }) ? 'dept-delete' : 'dept-wipe',
+      reason: body.reason || '',
+    });
+    plan.guards.push.apply(plan.guards, irWipe.guards);
+    plan.statements.push.apply(plan.statements, irWipe.statements);
+    plan.revisionKeys.push.apply(plan.revisionKeys, irWipe.revisionKeys);
+    plan.counts.irshad = (plan.counts.irshad || 0) + irWipe.snapshotRows.reports.length + irWipe.snapshotRows.catalogs.length + irWipe.snapshotRows.windows.length;
+    Object.keys(irWipe.snapshotRows).forEach(function (kind) {
+      plan.snapshots.push({ domain: 'irshad', table: irDept + ':' + kind, rows: irWipe.snapshotRows[kind] });
+    });
+  }
   if (!plan.snapshotRequired) plan.snapshots = [];
   else
     for (var dept of departments) {
@@ -395,6 +420,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     plan.snapshots.push.apply(plan.snapshots, np.snapshots);
     plan.counts.notifications = opt.__notificationCount || 0;
     plan.counts.accounts = opt.__accountCount || 0;
+    plan.counts.irshad = opt.__irshadCount || 0;
     await rsCustodyReceiptPreimage(env, d, plan);
     plan.fingerprint = opt.__wipeFingerprint;
   }
@@ -413,6 +439,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
 async function rsWipeInventory(env, A, dept, kind) {
   kind = kind || 'wipe';
   if (A.u.role !== 'super') throw rsError('forbidden', 403);
+  await irGuardRetired(env);
   var reference = await rsReferenceSnapshot(env, A.u.id);
   A = reference.A;
   if (
@@ -435,6 +462,8 @@ async function rsWipeInventory(env, A, dept, kind) {
       env.DB.prepare('SELECT COUNT(*) n FROM custody_items WHERE department_id=?1').bind(dept),
       env.DB.prepare('SELECT COUNT(*) n FROM custody_movements WHERE department_id=?1').bind(dept),
       env.DB.prepare('SELECT COUNT(*) n FROM notification_messages WHERE scope=?1').bind('d:' + dept),
+      env.DB.prepare('SELECT (SELECT COUNT(*) FROM irshad_reports WHERE department_id=?1)+(SELECT COUNT(*) FROM irshad_catalog_entries WHERE department_id=?1)+(SELECT COUNT(*) FROM irshad_retro_windows WHERE department_id=?1) n').bind(dept),
+      irRevisionRowsStatement(env, dept),
     ]),
     nf = await nfRead(env);
   return {
@@ -457,6 +486,7 @@ async function rsWipeInventory(env, A, dept, kind) {
         epoch: await rsEpoch(env),
         kv: kv,
         custody: await cuRev(env, dept),
+        irshad: irRevisionResult(counts[4].results || [], dept),
         notifications: { rev: nf.rev, configRev: nf.configRev, broadcastRev: nf.broadcastRev },
       },
       counts: {
@@ -469,6 +499,7 @@ async function rsWipeInventory(env, A, dept, kind) {
             : 0,
         custody: Number(counts[0].results[0].n) + Number(counts[1].results[0].n),
         notifications: Number(counts[2].results[0].n),
+        irshad: Number(counts[3].results[0].n),
       },
     },
   };
@@ -494,7 +525,7 @@ async function rsWipeRoute(env, request, url, ss) {
     if (input.uid !== undefined && input.uid !== ss.uid) throw rsError('session-changed', 409);
     if (typeof input.dept !== 'string' || typeof input.requestId !== 'string' || !/^[-A-Za-z0-9_]{8,100}$/.test(input.requestId))
       throw rsError('bad-body');
-    rsShape(input.base, ['epoch', 'kv', 'custody', 'notifications']);
+    rsShape(input.base, ['epoch', 'kv', 'custody', 'notifications', 'irshad']);
     var fingerprint = hex(
         await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({ kind: kind, input: cuCanonical(input) }))),
       ),
@@ -518,7 +549,7 @@ async function rsWipeRoute(env, request, url, ss) {
         if (typeof input.reason !== 'string' || input.reason.length > 300) throw rsError('bad-reason');
         why[k] = input.reason.trim();
       }
-      if (cuLegacyKey(k) || nfLegacyKey(k)) throw rsError('domain-moved');
+      if (cuLegacyKey(k) || nfLegacyKey(k) || irLegacyKey(k)) throw rsError('domain-moved');
       var e = ENT[resName(k)];
       if (e && typeof e.empty === 'string') set[k] = e.empty;
       else del.push(k);
@@ -553,6 +584,8 @@ async function rsWipeRoute(env, request, url, ss) {
         __wipeFingerprint: fingerprint,
         __notificationBase: input.base.notifications,
         __notificationCount: observed.counts.notifications,
+        __irshadBase: input.base.irshad,
+        __irshadCount: observed.counts.irshad,
         __accountCount: observed.counts.accounts,
         __wipeKind: kind,
         __physicalDeleteKeys:
@@ -576,8 +609,10 @@ async function rsWipeRoute(env, request, url, ss) {
     return json(outcome);
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
+    if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
+    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e)))
       return json({ ok: 0, err: 'conflict' }, 409);
     throw e;
@@ -641,8 +676,10 @@ async function rsEmployeeRoute(env, request, url, ss) {
     return json(outcome);
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
+    if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
+    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e)))
       return json({ ok: 0, err: 'conflict' }, 409);
     throw e;

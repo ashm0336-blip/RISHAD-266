@@ -29,6 +29,9 @@
 | `/api/identity-rehearsal` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/img/` | GET / PUT / DELETE | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `055-sec-headers.js` `bodyLimit` · `063-enf-api-and-handler.js` `handle` |
 | `/api/imgs` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
+| `/api/irshad` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
+| `/api/irshad/act` | POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `055-sec-headers.js` `bodyLimit` · `063-enf-api-and-handler.js` `handle` |
+| `/api/irshad/export` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
 | `/api/login` | POST | public — بلا جلسة (حارسُ المحاولات/المصدر حيث يلزم) | `062a-auth-routes.js` `authPublicRoutes` |
 | `/api/logout` | GET / POST | public — بلا جلسة (حارسُ المحاولات/المصدر حيث يلزم) | `062a-auth-routes.js` `authPublicRoutes` |
 | `/api/me` | GET | session — جلسةٌ صالحة (session) وحسابٌ قائمٌ غيرُ مجمَّد | `062a-auth-routes.js` `authSessionRoutes` |

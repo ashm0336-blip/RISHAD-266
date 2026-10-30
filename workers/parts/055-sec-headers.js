@@ -14,7 +14,7 @@ function limMsg(path) {
     ? 'الطلب أكبر من الحد المسموح (' + Math.round(n / 1048576) + 'MB)'
     : 'الصورة أكبر من الحد المسموح (' + Math.round(n / 1024) + 'KB) — صغّرها ثم أعد المحاولة';
 }
-function bodyLimit(path) { if(path === '/api/backup/restore'||path === '/api/employees/transition')return 8*1024*1024;if(path === '/api/admin/dept-wipe'||path === '/api/admin/dept-delete')return 1024*1024; if (path === '/api/custody/act') return 1024 * 1024; if (path === '/api/save' || path === '/api/dstats' || path === '/api/notifications/act') return BODY_MAX[path]; if (path.indexOf('/api/img/') === 0) return BODY_MAX['/api/img/']; return 64 * 1024; }
+function bodyLimit(path) { if(path === '/api/backup/restore'||path === '/api/employees/transition'||path === '/api/irshad/act')return 8*1024*1024;if(path === '/api/admin/dept-wipe'||path === '/api/admin/dept-delete')return 1024*1024; if (path === '/api/custody/act') return 1024 * 1024; if (path === '/api/save' || path === '/api/dstats' || path === '/api/notifications/act') return BODY_MAX[path]; if (path.indexOf('/api/img/') === 0) return BODY_MAX['/api/img/']; return 64 * 1024; }
 /* KIVO_253 · AUD-005 خطوة ٢ (SOT-048): script-src بلا 'unsafe-inline' — السكربتُ المضمَّن الوحيد في غلاف الإنتاج هو حقنُ __BS_BOOT ويحمل nonce الطلب؛
    كلُّ ما سواه أصولٌ خارجية من الأصل نفسِه ('self'). style-src تبقى 'unsafe-inline' (الأنماطُ المضمَّنة في الصفحات والمكوّنات — خطوةٌ لاحقة).
    بلا nonce (مسارٌ لا يحقن سكربتاً) يبقى الرأسُ صارماً أيضاً: لا 'unsafe-inline'. الصيغتان (الرأس · <meta> في الغلاف) من مصدرٍ واحد هنا. */

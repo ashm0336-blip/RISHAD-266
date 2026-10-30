@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, makeEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, applySql, ROOT, WORKER } from './harness.mjs';
+import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
 /* العاملُ المختبَر قبل الإصلاح (حزمةٌ أقدم عبر KIVO_WORKER) ⇒ تخطٍّ معلن — KIVO_K264_STRICT=1 يفرض التشغيل (به ثبت الإخفاقُ قبل الإصلاح) */
 const FIX = fs.readFileSync(WORKER, 'utf8').includes('QA-264-D1') || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264 (QA-264-D1)' };
 const ACC = { gm: ['0000000103', '70103'], dm1: ['0000000101', '70101'], dm2: ['0000000102', '70102'], sup1: ['0000000111', '70111'], emp2: ['0000000121', '70121'] };
@@ -28,6 +29,7 @@ async function world(mode) {
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
+  await installIrshadFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   /* بياناتٌ من قبل إخراج الصفحتين من سقف tst_d2 (الحفظُ يرفضها حتى لمدير النظام — فتُزرع في الجدول مباشرةً كما في مصفوفة QA) */
   for (const [k, v] of [[K['d2.seized'], '{"reports":[{"id":"tstsz2","loc":"TEST_ONLY","test":"TEST_ONLY"}]}'], [K['d2.award'], '{"recs":[{"id":"tstaw9","ekey":"tst_e_emp2","name":"TEST_ONLY","st":"TEST_ONLY"}]}']]) {
@@ -38,12 +40,17 @@ async function world(mode) {
   for (const w of Object.keys(ACC)) { const l = await C.login(ACC[w][0], ACC[w][1]); assert.ok(l.ok, 'login ' + w); S[w] = l.ck; }
   return { env, C, S };
 }
-/* ما يعود بقيمته في /api/get وفي حقن الإقلاع (يجب أن يتطابقا) */
+/* الموارد القديمة تتطابق في get/BOOT؛ الإرشاد يقرأ من واجهته العلائقية فقط. */
 async function readable(C, ck, why) {
   const r = await C.api('/api/get?keys=' + encodeURIComponent(L.map(l => K[l]).join(',')), { cookie: ck }); assert.equal(r.status, 200, why);
   const got = L.filter(l => r.j.keys[K[l]] && r.j.keys[K[l]].v != null);
   const bk = ((await C.boot(ck)).boot || {}).keys || {}, inBoot = L.filter(l => bk[K[l]] != null);
   assert.deepEqual(inBoot, got, why + ': حقنُ الإقلاع = /api/get');
+  const retired = r.j.keys[K['d2.irshad']];
+  if (retired) { assert.equal(retired.v, null, why + ': لا JSON إرشاد تشغيلي قديم'); assert.equal(retired.moved, '/api/irshad'); }
+  const ir = await C.api('/api/irshad?dept=tst_d2&view=records', { cookie: ck });
+  assert.ok(ir.status === 200 || ir.status === 403, why + ': typed Irshad ' + JSON.stringify(ir.j));
+  if (ir.status === 200) { assert.equal(ir.j.ok, 1); assert.deepEqual(ir.j.rows.map(row => row.id), ['tstir21']); got.push('d2.irshad'); }
   return got;
 }
 /* المتوقَّعُ واحدٌ في الوضعين — سلوكُ القديم (Production) هو المرجع */

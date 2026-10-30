@@ -15,7 +15,7 @@
   function counts(value) {
     return (
       record(value) &&
-      ['kv', 'dailyStats', 'notifications', 'custody', 'kept'].every(function (k) {
+      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'kept'].every(function (k) {
         return integer(value[k]);
       })
     );
@@ -122,7 +122,7 @@
     var read = await request('/api/backup/restore?' + query.toString(), {}, stamp);
     if (!read.ok) return read;
     var base = read.data.base;
-    if (!base || !integer(base.epoch) || !base.kv || !base.custody) return failure('invalid');
+    if (!base || !integer(base.epoch) || !base.kv || !base.custody || !base.irshad) return failure('invalid');
     var body = {
         version: 1,
         uid: stamp.uid,
@@ -208,13 +208,13 @@
         (c.kv || 0) +
         ' مجموعة بيانات و' +
         (c.custody || 0) +
-        ' نطاق عهد. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
+        ' نطاق عهد و' + (c.irshad || 0) + ' سجل استرشاد. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
         (legacy ? ' ستُحوَّل النسخة القديمة إلى المخطط الحالي قبل الكتابة.' : '') +
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'
           : '') +
         (legacy && i.summary.emptyDomains.length
-          ? ' النسخة القديمة لا تحمل ' + i.summary.emptyDomains.length + ' نطاق عهد أو تنبيهات؛ ستُستعاد فارغة وفق معنى النسخة القديمة.'
+          ? ' النسخة القديمة لا تحمل ' + i.summary.emptyDomains.length + ' نطاق عهد أو تنبيهات أو استرشاد؛ ستُستعاد فارغة وفق معنى النسخة القديمة.'
           : '') +
         (i.summary.preservedGlobals.length ? ' سيُحافظ على ' + i.summary.preservedGlobals.length + ' مورد عام غير مشمول بالنسخة.' : '');
     return KIVO.bsConfirm

@@ -1,8 +1,8 @@
 # KIVO — عقود الواجهة البرمجية `/api/*` (KIVO_259 · المصدرُ المقروء آلياً `src/api/contracts.json` · الشرحُ أدناه منذ KIVO_244 ومحدَّثٌ بالفروق)
 
-> **KIVO_255 (SOT-127 · SOT-100 · AUD-026)**: العقدُ المقروء آلياً في `src/api/contracts.json` (65 مساراً: الطرائق · مستوى الوصول · الجسم · مفاتيحُ الردّ لكل حالة)، و`tests/unit/api_contracts.test.mjs` يثبت أن قائمتَه = مساراتِ العامل حرفاً وأن الردودَ الفعلية (legacy وenforce) تحمل مفاتيحَ عقدها، وأن غيرَ العامّ بلا كوكي ⇒ 401 موحَّد. كلُّ ردّ يحمل `X-Kivo-Rid`، وكلُّ ردّ `/api/*` يحمل `Server-Timing: app;dur=<ms>`.
+> **KIVO_255 (SOT-127 · SOT-100 · AUD-026)**: العقدُ المقروء آلياً في `src/api/contracts.json` (68 مساراً: الطرائق · مستوى الوصول · الجسم · مفاتيحُ الردّ لكل حالة)، و`tests/unit/api_contracts.test.mjs` يثبت أن قائمتَه = مساراتِ العامل حرفاً وأن الردودَ الفعلية (legacy وenforce) تحمل مفاتيحَ عقدها، وأن غيرَ العامّ بلا كوكي ⇒ 401 موحَّد. كلُّ ردّ يحمل `X-Kivo-Rid`، وكلُّ ردّ `/api/*` يحمل `Server-Timing: app;dur=<ms>`.
 
-كل المسارات على الأصل نفسه (`same-origin`)؛ الطلبات المغيِّرة (POST/PUT/DELETE) يجب أن تحمل `Origin` مطابقاً أو `Sec-Fetch-Site ≠ cross-site`، وإلا 403 `{ok:0, err:'origin'}`. حدود الجسم: `/api/save` و`/api/dstats` و`/api/notifications/act` و`/api/employees/transition` و`/api/backup/restore` حتى 8 MB؛ `/api/custody/act` و`/api/admin/dept-wipe` و`/api/admin/dept-delete` حتى 1 MB؛ `/api/img/*` حتى 512 KB؛ غيرها 64 KB (413). الردود JSON بـ`Cache-Control: no-store` وترويسات الأمن (`nosniff` · `X-Frame-Options: SAMEORIGIN` · HSTS خارج localhost). الجلسة بكوكي `bs_tok` (HttpOnly · Secure · SameSite=Lax).
+كل المسارات على الأصل نفسه (`same-origin`)؛ الطلبات المغيِّرة (POST/PUT/DELETE) يجب أن تحمل `Origin` مطابقاً أو `Sec-Fetch-Site ≠ cross-site`، وإلا 403 `{ok:0, err:'origin'}`. حدود الجسم: `/api/save` و`/api/dstats` و`/api/notifications/act` و`/api/irshad/act` و`/api/employees/transition` و`/api/backup/restore` حتى 8 MB؛ `/api/custody/act` و`/api/admin/dept-wipe` و`/api/admin/dept-delete` حتى 1 MB؛ `/api/img/*` حتى 512 KB؛ غيرها 64 KB (413). الردود JSON بـ`Cache-Control: no-store` وترويسات الأمن (`nosniff` · `X-Frame-Options: SAMEORIGIN` · HSTS خارج localhost). الجلسة بكوكي `bs_tok` (HttpOnly · Secure · SameSite=Lax).
 
 مستويات الوصول: **عام** (بلا جلسة) · **جلسة** (أي حساب) · **فاعل** (جلسة + حساب قائم غير مجمَّد؛ تُفرض الصلاحيات والنطاق) · **مدير النظام** (`role=super`) · **إنفاذ** (يظهر فقط حين `KIVO_AUTHZ_MODE=enforce` — Preview). المسارات الإدارية (`presence · sec · sess/kill · guard · policy · overview · recovery · reset · permv2 · scope-dryrun · identity-*`) في وضع الإنفاذ لمدير النظام وحده (403 لغيره)؛ وفي النظام القديم بعضها مقصورٌ على `super` في معالجه وبعضها نطاقيّ (`scopeOk`: المستخدم نفسه أو مديرُ إدارته لموظفيها). العقود مثبتة في `tests/unit/api_contracts.test.mjs`.
 
@@ -132,3 +132,17 @@
 | `GET /api/recovery` | `{ok:1, key:string|null, used:object|null, backups:[…], backupLastLogin}` |
 | `GET /api/permv2` · `/api/scope-dryrun` · `/api/identity-rehearsal` · `/api/identity-preflight` | `{ok:1, version, docSha256, status, …}` · `{ok:1, worker, dryRun|rehearsal|preflight:{…}}` (قراءةٌ فقط · لا كتابة) |
 | الأخطاء | `404 {ok:0, err:'not-found'}` · `401 {ok:0, err:'session'}` · `400 {ok:0, err}` · `403 {ok:0, err:'forbidden'|'origin'}` · `413` · `429 {ok:0, err, retry}` · `500 {ok:0, err, detail, rid}` |
+
+## الاسترشاد العلائقي — مخطط8
+
+المرشح المحلي ينقل السجلات ولغاتها والقوائم ونوافذ الاستدراك إلى جداول D1؛ حالة النشر المثبتة تُراجع في Playbook.
+
+| المسار | الطريقة | العقد |
+| --- | --- | --- |
+| `/api/irshad` | GET | `dept` و`view=catalogs/calendar/records/dashboard`؛ قراءة محددة بالصفحة والنطاق، و`base` يحوي `epoch/reports/languages/locations/retro` |
+| `/api/irshad/act` | POST | `uid,dept,requestId,base,op` مع حقول العملية؛ `create/edit/delete/delete-month/catalog-replace`؛ التفويض الحالي داخل المعاملة نفسها |
+| `/api/irshad/export` | GET | مجال منظم لكل إدارة مصرح بها؛ تصدير كامل لمدير النظام، وإداري وفق `backup.view` وسقف الوحدة ونطاق الإدارة |
+
+حجم `/api/irshad/act` حتى8 MB. تحفظ الإعادة المطابقة إيصال الطلب؛ اختلاف جسم معرّف الطلب نفسه409، وتغير المراجعات أو حقبة الاستعادة409. لا يكتب الحفظ العام مفاتيح الاسترشاد المتقاعدة ولا يعيدها `/api/get` كوثائق؛ يعلن مسار المورد الجديد. `GET/POST /api/retro?res=irshad` يحتفظ بعقده الحالي ويقرأ/يكتب جدول النوافذ مع الحراس والسجل داخل دفعة واحدة؛ المضبوطات باقية بمسارها القائم.
+
+النسخة الحديثة تحمل `manifest.version=2` و`manifest.domains.irshad=1` و`domains.irshad` و`base.irshad` لكل إدارة معلنة، بما فيها المجال الفارغ الصريح. يُفحص الملف الأقدم قبل تحويله إلى العقد المنظم في مدخل الاستعادة فقط؛ لا يوجد مسار KV تشغيلي موازٍ للاستـرشاد.

@@ -52,11 +52,14 @@ function modern(t) {
     dailyStats: { version: 1, data: { haram: {}, nabawi: {}, locks: {} } },
     notifications: emptyNF(),
     custody: [D1, D2].map((d) => typedCU({ items: [], issues: [], moves: [] }, d)),
+    irshad: [D1, D2].map(departmentId => ({ version: 1, scope: { departmentId },
+      resources: { reports: false, languages: false, locations: false, retro: false, retroVersionPresent: false, retroVersion: null, retroWindowsPresent: false },
+      rows: { reports: [], languages: [], catalogs: [], windows: [] } })),
   };
   file.manifest = {
-    version: 1,
+    version: 2,
     scope: 'full',
-    domains: { kv: 1, dailyStats: 1, notifications: 1, custody: 1 },
+    domains: { kv: 1, dailyStats: 1, notifications: 1, custody: 1, irshad: 1 },
     departments: [D1, D2],
     keys: Object.keys(file.data),
   };
@@ -169,6 +172,9 @@ test('modern manifest requires its exact declared key/dept/domain coverage and p
     (f) => f.manifest.departments.pop(),
     (f) => f.domains.custody.pop(),
     (f) => delete f.domains.notifications,
+    (f) => delete f.domains.irshad,
+    (f) => f.domains.irshad.pop(),
+    (f) => delete f.manifest.domains.irshad,
     (f) => (f.data['bsdept:' + D1 + ':bassam_custody_v1'] = '{"items":[],"moves":[]}'),
   ]) {
     const broken = copy(file);

@@ -392,6 +392,9 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
       domains.custody = domains.custody.filter(function (c) {
         return c && c.scope && allowed.has(c.scope.departmentId);
       });
+    if (domains.irshad) domains.irshad = domains.irshad.filter(function (domain) {
+      return domain && domain.scope && allowed.has(domain.scope.departmentId);
+    });
   } else {
     Object.keys(keys).forEach(function (k) {
       if (Object.prototype.hasOwnProperty.call(inputKeys, k) && k !== K_PERM) {
@@ -403,6 +406,7 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
        empty rowset is still an existing domain, not a missing legacy document. */
     delete domains.notifications;
     delete domains.custody;
+    delete domains.irshad;
   }
   if (domains.dailyStats) {
     delete domains.dailyStats;
@@ -708,11 +712,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody']);
+    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody', 'irshad']);
     if (
-      manifest.version !== 1 ||
+      manifest.version !== 2 ||
       manifest.scope !== 'full' ||
-      ['kv', 'dailyStats', 'notifications', 'custody'].some(function (k) {
+      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad'].some(function (k) {
         return manifest.domains[k] !== 1;
       })
     )
@@ -723,7 +727,7 @@ async function rsPrepare(env, A, body, meta, internal) {
       !isObj(body.domains) ||
       !body.domains.dailyStats ||
       !body.domains.notifications ||
-      !Array.isArray(body.domains.custody)
+      !Array.isArray(body.domains.custody) || !Array.isArray(body.domains.irshad)
     )
       throw rsError('restore-incomplete-manifest');
     var ids = declaredDepts.map(function (d) {
@@ -742,15 +746,18 @@ async function rsPrepare(env, A, body, meta, internal) {
       return c && c.scope && c.scope.departmentId;
     });
     if (!deq(ids.slice().sort(), scopes.sort())) throw rsError('restore-incomplete-custody');
+    if (!deq(ids.slice().sort(), body.domains.irshad.map(function (d) {
+      return d && d.scope && d.scope.departmentId;
+    }).sort())) throw rsError('restore-incomplete-irshad');
   } else {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'notifications', 'custody']);
+    rsShape(manifest.domains, ['kv', 'notifications', 'custody', 'irshad']);
     if (
-      manifest.version !== 1 ||
+      manifest.version !== 2 ||
       manifest.scope !== 'dept' ||
-      ['kv', 'notifications', 'custody'].some(function (k) {
+      ['kv', 'notifications', 'custody', 'irshad'].some(function (k) {
         return manifest.domains[k] !== 1;
       }) ||
       !deq(manifest.departments, [body.scope.departmentId]) ||
@@ -758,7 +765,10 @@ async function rsPrepare(env, A, body, meta, internal) {
       !body.domains.notifications ||
       !Array.isArray(body.domains.custody) ||
       body.domains.custody.length !== 1 ||
-      body.domains.custody[0].scope.departmentId !== body.scope.departmentId
+      body.domains.custody[0].scope.departmentId !== body.scope.departmentId ||
+      !Array.isArray(body.domains.irshad) || body.domains.irshad.length !== 1 ||
+      !body.domains.irshad[0] || !body.domains.irshad[0].scope ||
+      body.domains.irshad[0].scope.departmentId !== body.scope.departmentId
     )
       throw rsError('restore-incomplete-manifest');
     var prefix = 'bsdept:' + body.scope.departmentId + ':',
@@ -789,9 +799,9 @@ async function rsPrepare(env, A, body, meta, internal) {
     throw rsError('restore-scope', 403);
   if (!sup && (body.scope.kind !== 'dept' || !isMgrOf(A, dept) || !enfHeld(A, dept, 'backup.restore')))
     throw rsError('restore-policy', 403);
-  rsShape(body.base, ['epoch', 'kv', 'dailyStats', 'notifications', 'custody']);
+  rsShape(body.base, ['epoch', 'kv', 'dailyStats', 'notifications', 'custody', 'irshad']);
   rsNat(body.base.epoch);
-  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody']);
+  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody', 'irshad']);
   var fingerprint =
       (internal && internal.fingerprint) ||
       hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(cuCanonical(body))))),
@@ -806,6 +816,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   await nfGuardRetired(env);
   if (await dsLegacyPresent(env)) throw rsError('dstats-legacy-source-present', 503);
   if (await cuLegacyPresent(env)) throw rsError('custody-legacy-source-present', 503);
+  await irGuardRetired(env);
   if (!isObj(body.keys || {}) || !isObj(body.base.kv || {}) || !Array.isArray(body.delete || [])) throw rsError('restore-keys');
   var keys = Object.assign(Object.create(null), body.keys || {}),
     del = (body.delete || []).slice(),
@@ -822,7 +833,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   Object.keys(keys)
     .concat(del)
     .forEach(function (k) {
-      if (nfLegacyKey(k) || cuLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
+      if (nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
@@ -936,7 +947,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     .concat(del)
     .forEach(function (k) {
       if (typeof keys[k] !== 'string' && del.indexOf(k) < 0) throw rsError('restore-key-value');
-      if (nfLegacyKey(k) || cuLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
+      if (nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
       if (body.scope.kind === 'dept' && parseKey(k).dept !== dept && k !== K_PERM) throw rsError('restore-scope', 403);
       rsNat(base[k]);
       ops[k] = { op: 'backup.restore', scope: body.scope.kind, mode: body.mode, reason: body.reason };
@@ -997,7 +1008,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { kv: kv.pend.length, dailyStats: 0, notifications: 0, custody: 0, kept: selection.kept },
+    counts: { kv: kv.pend.length, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, kept: selection.kept },
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
@@ -1099,6 +1110,31 @@ async function rsPrepare(env, A, body, meta, internal) {
       plan.counts.custody++;
     }
   }
+  if (domains.irshad) {
+    var irSeen = new Set();
+    for (var irDomain of domains.irshad) {
+      var irDept = irDomain && irDomain.scope && irDomain.scope.departmentId;
+      if (!irDept || !finalDeptIds.has(irDept) || irSeen.has(irDept) || removedDepartments.indexOf(irDept) >= 0 ||
+          (body.scope.kind === 'dept' && irDept !== dept)) throw rsError('restore-irshad-scope');
+      irSeen.add(irDept);
+      var ip = await irPlanRestore(env, A, irDomain, {
+        dept: irDept, base: (body.base.irshad || {})[irDept], scope: body.scope.kind,
+        mode: 'replace', reason: body.reason, finalKeys: keys,
+      });
+      if (body.mode === 'merge' && (Object.values((body.base.irshad || {})[irDept] || {}).some(function (v) { return v !== 0; }) ||
+          Object.values(ip.snapshotRows).some(function (rows) { return rows.length; })))
+        throw rsError('restore-merge-identity-collision', 409);
+      plan.guards.push.apply(plan.guards, ip.guards);
+      if (ip.changed) {
+        plan.statements.push.apply(plan.statements, ip.statements);
+        plan.revisionKeys.push.apply(plan.revisionKeys, ip.revisionKeys);
+        Object.keys(ip.snapshotRows).forEach(function (kind) {
+          plan.snapshots.push({ domain: 'irshad', table: irDept + ':' + kind, rows: ip.snapshotRows[kind] });
+        });
+      }
+      plan.counts.irshad++;
+    }
+  }
   /* Employee cleanup shares the same planner/transaction. An explicit restored
      custody candidate is its final state and must be validated by cuPlanRestore. */
   var cleaned = new Set();
@@ -1153,11 +1189,24 @@ async function rsPrepare(env, A, body, meta, internal) {
       plan.snapshots.push({ domain: 'custody', table: removed + ':' + n, rows: wipe.snapshotRows[n] });
     });
   }
+  for (var irRemoved of removedDepartments) {
+    var irWipe = await irPlanWipe(env, A, {
+      dept: irRemoved, base: (body.base.irshad || {})[irRemoved], intent: 'dept-delete',
+      reason: body.reason, finalKeys: keys,
+    });
+    plan.guards.push.apply(plan.guards, irWipe.guards);
+    plan.statements.push.apply(plan.statements, irWipe.statements);
+    plan.revisionKeys.push.apply(plan.revisionKeys, irWipe.revisionKeys);
+    Object.keys(irWipe.snapshotRows).forEach(function (kind) {
+      plan.snapshots.push({ domain: 'irshad', table: irRemoved + ':' + kind, rows: irWipe.snapshotRows[kind] });
+    });
+  }
   if (internal && internal.images) await rsImageArchivePlan(env, A, plan, reference, internal.images);
   await rsImageMetadataPlan(env, A, plan, reference);
   return plan;
 }
 async function rsCommit(env, A, plan, meta) {
+  await irGuardRetired(env);
   if (plan.receipt && plan.receipt.result_json) {
     var replay = JSON.parse(plan.receipt.result_json);
     replay.reauthRequired = !!replay.reauthRequired;
@@ -1178,7 +1227,7 @@ async function rsCommit(env, A, plan, meta) {
     };
   A = plan.author || A;
   var sid = enfSnapId('atomic'),
-    st = [rsEpochGuard(env.DB, plan.epoch)].concat(plan.guards),
+    st = [rsEpochGuard(env.DB, plan.epoch), irRetiredGuard(env)].concat(plan.guards),
     keys = Array.from(new Set(plan.revisionKeys)),
     now = Date.now(),
     changed = keys.length > 0 || !!plan.forceFence;
@@ -1323,11 +1372,12 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
                 .concat(requestedDepartments || []),
             ),
           ),
-    custody = Object.create(null);
-  depts.forEach(function (d) {
+    custody = Object.create(null), irshad = Object.create(null);
+  for (var d of depts) {
     if (typeof d !== 'string' || !d || d.length > 200 || BAD_ID_RX.test(d) || d.includes(':')) throw rsError('restore-departments');
     custody[d] = r[cuKey(d)] || 0;
-  });
+    irshad[d] = await irRevs(env, d);
+  }
   return {
     ok: 1,
     scope: scope,
@@ -1337,6 +1387,7 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
       dailyStats: r[K_DSTATS] || 0,
       notifications: { rev: r[NF_REV] || 0, configRev: r[NF_CFG_REV] || 0, broadcastRev: r[NF_BC_REV] || 0 },
       custody: custody,
+      irshad: irshad,
     },
     counts: { keys: Object.keys(kv).length, departments: depts.length },
   };
@@ -1441,8 +1492,10 @@ async function rsRoute(env, request, url, ss) {
     return json(await rsCommit(env, A, await rsPrepare(env, A, body, reqMeta(request)), reqMeta(request)));
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs, details: e.details }, e.status);
+    if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
+    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH/.test(String(e))) return json({ ok: 0, err: 'restore-epoch-changed' }, 409);
     if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e))) return json({ ok: 0, err: 'conflict' }, 409);
     throw e;

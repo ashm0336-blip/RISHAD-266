@@ -66,7 +66,8 @@ async function browser(B) {
         refresh: async () => ({ ok: 1 }),
       },
       Custody: { exportDomain: async (dept) => ok(await B.api('super', '/api/custody/export' + (dept ? '?dept=' + dept : ''))) },
-      __BS_SRV: { askReason: (k, keys, cb) => cb('TEST_ONLY actual user reason'), resync: async () => ({ ok: 1 }) },
+      __BS_SRV: { askReason: (k, keys, cb) => cb('TEST_ONLY actual user reason'), resync: async () => ({ ok: 1 }),
+        dirty: () => false, inflight: () => false, sesChanged: () => false, rev: key => data.keys[key]?.rev || 0 },
       bsConfirm: async () => true,
     },
     page = {
@@ -91,7 +92,7 @@ async function browser(B) {
   };
   const context = vm.createContext({
     KIVO,
-    window: { __BS_BOOT: { srv: 1, cf: 1, uid: IDS.super }, crypto: webcrypto, confirm: () => true },
+    window: { __BS_BOOT: { srv: 1, cf: 1, uid: IDS.super, v: data.v }, crypto: webcrypto, confirm: () => true },
     localStorage: {},
     URL: { createObjectURL: (blob) => ((exportBlob = blob), 'TEST_ONLY_blob'), revokeObjectURL() {} },
     document: { createElement: () => ({ click() {}, remove() {} }), body: { appendChild() {} } },
@@ -111,6 +112,8 @@ async function browser(B) {
     },
   });
   vm.runInContext(fs.readFileSync(path.join(CLIENT, 'services/548-atomic-backup.js'), 'utf8'), context);
+  for (const helper of ['_wpActor', '_irBackupCapture', '_irBackupFence', '_irBackupDomain'])
+    page[helper] = vm.runInContext('({' + sourcePart('modules/admin/logic.js', 'MethodDefinition', helper) + '}).' + helper, context);
   return {
     KIVO,
     context,
@@ -136,7 +139,10 @@ async function exported(B, C) {
   for (let n = 0; n < 100 && !C.page._encPend; n++) await new Promise((r) => setImmediate(r));
   assert.ok(C.page._encPend, JSON.stringify(C.page.state));
   const file = JSON.parse(C.page._encPend.json);
-  assert.equal(file.manifest.version, 1);
+  assert.equal(file.manifest.version, 2);
+  assert.equal(file.manifest.domains.irshad, 1);
+  assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId).sort(), file.manifest.departments.slice().sort());
+  assert.ok(C.requests.some(request => request.url.startsWith('/api/irshad/export?') && request.status === 200), 'Typed Irshad must come from the actual canonical HTTP export');
   assert.equal(/p[12]\$/.test(file.data.bassam_auth_users_v1), false);
   return file;
 }
@@ -459,4 +465,28 @@ test('actual healthy AppBackup export with an identical image body uses the shar
   assert.equal(Object.hasOwn(receipt, 'imagesRestored'), false);
   assert.equal(B.DB.q('SELECT v FROM imgs WHERE k=?1', id)[0].v, image);
   assert.deepEqual(C.writes, []);
+});
+
+
+test('a committed restore ACK missing its Irshad count remains uncertain until an identical explicit retry returns the complete receipt', async () => {
+  const B = await world(), C = await browser(B), file = await exported(B, C);
+  C.property('modules/admin/logic.js', 'importBackup')({ target: { files: [file], value: '' } });
+  let lose = true;
+  C.intercept(async (request, response) => {
+    if (lose && request.method === 'POST' && JSON.parse(request.body).phase === 'commit') {
+      lose = false;
+      const data = await response.json(); delete data.counts.irshad;
+      return new Response(JSON.stringify(data), { status: 200 });
+    }
+    return response;
+  });
+  const commit = C.method('modules/admin/logic.js', 'fbkCommit');
+  await commit.call(C.page, 'replace');
+  assert.ok(C.page._fbkPend?.ticket); assert.equal(C.page._fbkPend.uncertain, true);
+  assert.notEqual(C.page.state.backupMsg, 'اكتملت الاستعادة وأُنشئت لقطة ما قبلها على الخادم');
+  assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, 1);
+  await commit.call(C.page, 'replace'); assert.equal(C.page._fbkPend, null);
+  const sent = C.requests.filter(request => request.method === 'POST' && JSON.parse(request.body).phase === 'commit');
+  assert.equal(sent.length, 2); assert.equal(sent[0].body, sent[1].body);
+  assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, 1); assert.deepEqual(C.writes, []);
 });

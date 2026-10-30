@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, WORKER, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import {installIrshadFixture} from './irshad_legacy_seed_fx.mjs';
 const FIX = fs.readFileSync(WORKER, 'utf8').includes('sessUidMismatch') || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264 (uid على مسارَي القراءة)' };
 function seedSql() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {};
@@ -22,16 +23,20 @@ for (const mode of ['legacy', 'enforce']) test('(C1 · القراءة) [' + mode
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
+  await installIrshadFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok, 'tst_emp1');
   const v = +(env.DB.q("SELECT v FROM meta WHERE k = 'rev'")[0]).v;
   const base = await C.api('/api/changes?since=0', { cookie: emp.ck }); assert.equal(base.status, 200); assert.ok(base.j.keys.includes(K));
+  const year=env.DB.q('SELECT hijri_year y FROM irshad_reports WHERE department_id=?1 ORDER BY sequence LIMIT 1','tst_d1')[0].y,
+    typed='/api/irshad?'+new URLSearchParams({dept:'tst_d1',view:'calendar',year:String(year)});
   for (const other of ['tst_sup1', 'su', '']) {
     const q = '&uid=' + encodeURIComponent(other);
     const c = await C.api('/api/changes?since=0' + q, { cookie: emp.ck });
     assert.equal(c.status, 409, 'changes uid=' + JSON.stringify(other)); assert.deepEqual(c.j, { ok: 0, err: 'session-changed' }, 'بلا أسماء مفاتيح');
     const g = await C.api('/api/get?keys=' + encodeURIComponent(K) + q, { cookie: emp.ck });
     assert.equal(g.status, 409, 'get uid=' + JSON.stringify(other)); assert.deepEqual(g.j, { ok: 0, err: 'session-changed' }, 'بلا قيم');
+    const ir=await C.api(typed+q,{cookie:emp.ck});assert.equal(ir.status,409);assert.deepEqual(ir.j,{ok:0,err:'session-changed'});
   }
   /* قبل الانتظار الطويل: since = المراجعةُ الحالية مع wait=1 كان سينتظر حتى 25 ث */
   const t0 = Date.now(); const w = await C.api('/api/changes?since=' + v + '&wait=1&uid=tst_sup1', { cookie: emp.ck });
@@ -39,8 +44,14 @@ for (const mode of ['legacy', 'enforce']) test('(C1 · القراءة) [' + mode
   /* المطابقُ = الغائب */
   const cm = await C.api('/api/changes?since=0&uid=tst_emp1', { cookie: emp.ck }); assert.equal(cm.status, 200); assert.deepEqual(cm.j, base.j);
   const g0 = await C.api('/api/get?keys=' + encodeURIComponent(K), { cookie: emp.ck }), gm = await C.api('/api/get?keys=' + encodeURIComponent(K) + '&uid=tst_emp1', { cookie: emp.ck });
-  assert.equal(gm.status, 200); assert.ok(gm.j.keys[K] && gm.j.keys[K].v, 'المطابقُ يقرأ'); assert.deepEqual(gm.j, g0.j);
+  assert.equal(gm.status, 200); assert.equal(gm.j.keys[K].v,null);assert.equal(gm.j.keys[K].moved,'/api/irshad');assert.deepEqual(gm.j, g0.j);
+  const ir0=await C.api(typed,{cookie:emp.ck}),irm=await C.api(typed+'&uid=tst_emp1',{cookie:emp.ck});
+  assert.equal(irm.status,200);assert.ok(irm.j.yearTotal>0,'The matching principal reads the typed calendar');
+  const withoutNow=value=>({...value,clock:{y:value.clock.y,m:value.clock.m,d:value.clock.d}});
+  assert.deepEqual(withoutNow(irm.j),withoutNow(ir0.j));
+  assert.ok(Number.isSafeInteger(irm.j.clock.now)&&irm.j.clock.now>=ir0.j.clock.now);
   const sm = await C.api('/api/get?keys=bassam_notif_cfg_v1&uid=su', { cookie: su.ck }); assert.equal(sm.status, 200, 'مديرُ النظام بهويته');
   /* بلا جلسة: 401 قبل العقد */
   assert.equal((await C.api('/api/changes?since=0&uid=tst_emp1')).status, 401); assert.equal((await C.api('/api/get?keys=' + K + '&uid=tst_emp1')).status, 401);
+  assert.equal((await C.api(typed+'&uid=tst_emp1')).status,401);
 });
