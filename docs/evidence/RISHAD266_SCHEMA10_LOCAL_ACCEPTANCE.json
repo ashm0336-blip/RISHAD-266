@@ -296,7 +296,6 @@
     ".cache/operations10/build-lifecycle-final.log": "af5db129db725af8d2d17d9207f1242ac9c6b65bb302e4c7c8227a27ae93757f",
     ".cache/operations10/check-lifecycle-final.log": "0dc9583ec3ac1714e721a46a1d44e26a2200eea0b233c64810353fc512629f3c",
     ".cache/operations10/lint-lifecycle-final.log": "ff09406ae6080ead8a84e7aee2948f0a7ce8b4e2fffa714edc4305a237164fad",
-    ".cache/preview10/qa-independent-review.json": "2c8ff803b32188e01d0460ee85f27f98f7d4396993a21b3252516ddad6ff14b8",
     ".cache/preview10/rollback-archives-reverified.json": "cf8097aeb2bda80c1c6cd457a9cd0a9880239896f7d69c5836202dbff1be6790",
     ".cache/operations10/docs-accepted-final.log": "a72b96cb3742d5670b0ae7367528f9c4dd8370b626207f28dbb587dde09b5464",
     ".cache/operations10/secrets-accepted-final.json": "81aece55d963e573f4fcf74705d8e33c5aca341d4d1b79ebca36b2270f9d3804",
@@ -317,7 +316,8 @@
     ".cache/preview10/built-owneronly-parity-proof.json": "ce81a652d9a434d7e30c9d0d5ef38c25bc9b4ff82b0aae05a2c53fdb97e7e51b",
     ".cache/operations10/docs-tombstones-final.log": "a72b96cb3742d5670b0ae7367528f9c4dd8370b626207f28dbb587dde09b5464",
     ".cache/operations10/secrets-tombstones-final.json": "bbd5ae4d45e533df5c8385161973654877b2bd2d8ba5789eb59a1f17f7866546",
-    ".cache/operations10/secrets-tombstones-final.log": "24f2d1aba4e45e569b7ef1b04dff85df29d782fcd1e3a2c9f0670d3eaca61f3c"
+    ".cache/operations10/secrets-tombstones-final.log": "24f2d1aba4e45e569b7ef1b04dff85df29d782fcd1e3a2c9f0670d3eaca61f3c",
+    ".cache/preview10/qa-independent-review.baseline5d.json": "2c8ff803b32188e01d0460ee85f27f98f7d4396993a21b3252516ddad6ff14b8"
   },
   "accepted": true,
   "acceptedUtc": "2026-10-30T23:53:30.455018+00:00",
