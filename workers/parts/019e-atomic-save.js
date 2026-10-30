@@ -295,6 +295,22 @@ function rsSaveAudit(env, plan, A, meta, sid) {
   });
   return st;
 }
+/* This is the existing super-only whole-department lifecycle, not a public
+   per-resource delete override. Fence all resource revisions, including absent
+   resources, and compile physical deletion through the same atomic save plan. */
+function rsDepartmentOperationalDeletes(env, reference, A, body, departments) {
+  if (!Array.isArray(departments) || departments.length !== 1 || A.u.role !== 'super' ||
+      !A.depts.some(function (d) { return d.id === departments[0]; })) throw rsError('forbidden', 403);
+  var pending = [], guards = [], keys = [];
+  opDefinitions().forEach(function (definition) {
+    var key = 'bsdept:' + departments[0] + ':' + definition.resource,
+      have = reference.inputRevs[key] || 0, base = (body.base || {})[key], current = reference.inputKeys[key];
+    if (!Number.isSafeInteger(base) || base < 0 || base !== have) throw rsError('conflict', 409);
+    keys.push(key); guards.push(revGuard(env, key, have));
+    if (current != null) pending.push({k:key,act:'del',cur:current,v:null,have:have});
+  });
+  return {pending:pending,guards:guards,keys:keys};
+}
 async function rsSaveCommit(env, A, body, meta, opt) {
   opt = opt || {};
   var reference = opt.__reference || (await rsReferenceSnapshot(env, A.u.id)),
@@ -339,7 +355,14 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   }
   var kv = await applySave(env, body, A, meta, Object.assign({}, opt, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN }));
   kv.revs = kv.revs || reference.inputRevs;
-  if (opt.__serverDepartmentWipes) kv.serverDepartmentWipes = opt.__serverDepartmentWipes;
+  if (opt.__serverDepartmentWipes) {
+    var wipeOperations = rsDepartmentOperationalDeletes(env, reference, A, body, opt.__serverDepartmentWipes);
+    kv.serverDepartmentWipes = opt.__serverDepartmentWipes;
+    kv.pend.push.apply(kv.pend, wipeOperations.pending);
+    operationReadGuards.push.apply(operationReadGuards, wipeOperations.guards);
+    operationKeys = operationKeys.concat(wipeOperations.keys);
+    operationalSave = true;
+  }
   if (opt.__serverEmployeeIntent) kv.serverEmployeeIntent = opt.__serverEmployeeIntent;
   var transition = await cuPlanSaveTransition(env, A, body, kv);
   if (transition.blocked || !kv.ok) {
@@ -370,6 +393,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
             return t.departmentId;
           })
           .concat(opt.__employeeDept ? [opt.__employeeDept] : [])
+          .concat(opt.__serverDepartmentWipes || [])
           .concat(operationalSave ? operationKeys.filter(opIsResource).map(function(k){return opInfo(k).dept;}) : []),
       ),
     ),
@@ -497,9 +521,14 @@ async function rsWipeInventory(env, A, dept, kind) {
     throw rsError('forbidden', 403);
   var kv = Object.create(null);
   Object.keys(reference.inputKeys).forEach(function (k) {
-    if (parseKey(k).dept === dept && (!opIsResource(k) || reference.inputKeys[k] != null)) kv[k] = reference.inputRevs[k] || 0;
+    if (parseKey(k).dept === dept && !opIsResource(k)) kv[k] = reference.inputRevs[k] || 0;
   });
   var scopedCount = Object.keys(kv).length;
+  opDefinitions().forEach(function (definition) {
+    var key = 'bsdept:' + dept + ':' + definition.resource;
+    kv[key] = reference.inputRevs[key] || 0;
+    if (reference.inputKeys[key] != null) scopedCount++;
+  });
   var businessBase=await bdRestoreRevisions(env,[dept],false), businessCounts={};
   for(var def of bdDefinitions())businessCounts[def.name]=await bdCount(env,def,dept);
   if (kind === 'delete')
@@ -601,6 +630,7 @@ async function rsWipeRoute(env, request, url, ss) {
         if (typeof input.reason !== 'string' || input.reason.length > 300) throw rsError('bad-reason');
         why[k] = input.reason.trim();
       }
+      if (opIsResource(k)) return;
       if (cuLegacyKey(k) || nfLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k))) throw rsError('domain-moved');
       var e = ENT[resName(k)];
       if (e && typeof e.empty === 'string') set[k] = e.empty;
