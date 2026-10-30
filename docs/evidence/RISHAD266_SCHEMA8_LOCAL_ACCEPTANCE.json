@@ -1,5 +1,5 @@
 {
-  "status": "local-accepted-not-yet-deployed",
+  "status": "local-accepted-see-preview-acceptance",
   "schema": 8,
   "gitBranch": "develop",
   "baselineCommit": "b4f1a1098c8892aba0719885eb07a20b3838883d",
@@ -58,5 +58,6 @@
     "old131NegativeExecutionCaptured": false,
     "previewPermitCancelledBeforeDeployment": true,
     "cloudSchemaStill7": true
-  }
+  },
+  "previewAcceptance": "RISHAD266_SCHEMA8_PREVIEW_ACCEPTANCE.json"
 }
