@@ -3,7 +3,7 @@
   "recordType": "local-source-acceptance",
   "complete": true,
   "previewAccepted": false,
-  "workerSha256": "5d037629c5b483f15ab88bb9beb7d4179caf500a0f918815cb4e2862079ad225",
+  "workerSha256": "29708ae9a24c672d149f4ca4fc709c8930399cab682512c4e7035959c6fd6662",
   "cloudState": {
     "schema": 9,
     "deployment": "8655dc6a-2b48-47e1-a9c0-c198d03482aa",
@@ -86,13 +86,18 @@
       "name": "Approved whole-department lifecycle permanent regression",
       "cases": 6,
       "pass": 6
+    },
+    {
+      "name": "Migration revision-only tombstone regression",
+      "cases": 5,
+      "pass": 5
     }
   ],
   "countsMustNotBeSummed": true,
   "build": {
     "files": 133,
     "sizeGatesPassed": 16,
-    "workerGzipBytes": 439779,
+    "workerGzipBytes": 439802,
     "workerLimit": 440000,
     "adminGzipBytes": 147836,
     "adminLimit": 156600,
@@ -108,7 +113,7 @@
     "documentationChecksPassed": 17,
     "apiRoutes": 76,
     "handleLimitUnchanged": 635,
-    "secretScannedSourceFiles": 977,
+    "secretScannedSourceFiles": 978,
     "secretScannedDistTextFiles": 122
   },
   "nativeD1": {
@@ -131,8 +136,9 @@
   },
   "blockers": [],
   "remaining": [
-    "Save and push final tested department-lifecycle delta",
-    "Preview-only deployment,9-to10permit,migration and live QA",
+    "Save and push tested migration-only fix",
+    "Explicit approval to delete only expired permit31765d52-a701-4d4a-9c29-4c28b3beffb4",
+    "Fresh Preview authorization, deployment and live QA from attempt2",
     "Two export timestamp KV resources"
   ],
   "boundaries": {
@@ -157,8 +163,8 @@
     "migrations/0010_operational_domains.sql": "69d6fb5e509a2c7eb58bed311aa9c2d6d4b725871a49f99a919aa471c22bb2a7",
     "src/api/280-server-storage.js": "b3a7d16ef709a56b6eb419c2814741d700fadbb9c04e3ec4a77b5023405404e1",
     "src/api/contracts.json": "de713736666ec9eb74397713e93c4e925de03030e4e258ba34cfbddb20772b9b",
-    "workers/_worker.js": "5d037629c5b483f15ab88bb9beb7d4179caf500a0f918815cb4e2862079ad225",
-    "workers/parts.json": "1ea58cf07a964d6d1467cc5a6baa344e3d6e2a0a65ba21a67d6fa137d5387438",
+    "workers/_worker.js": "29708ae9a24c672d149f4ca4fc709c8930399cab682512c4e7035959c6fd6662",
+    "workers/parts.json": "b039aadb9e3b59466b39b6742aa9c3cdcbbdbc32f5cd13906d41608e6af449d8",
     "workers/parts/000-header-constants.js": "5e7888b4ca6fe79e1edb2afbf9c068b722fcabf0625ed1d4be243649ab67b152",
     "workers/parts/001-policy.js": "b76ad8a9a38cb39ed0d86c13494d3b13d61cc44b57846c44de6634bcd4a17d22",
     "workers/parts/002-seclog.js": "034d062c130d0601b40330284af67770b1cb343c38e1faeba06e3d22cfce70da",
@@ -205,7 +211,7 @@
     "workers/parts/019p-operations-scheduling.js": "db481957fd6a0c07c8dfea1c02cd0059ee7dbddb38bfa8f2ef29940063c8fcca",
     "workers/parts/019q-operations-people-tasks.js": "ee9beb53a6b2f0aba4cd8ea4d92b95fc9f31d6ad72514faa56c03624e7c682b7",
     "workers/parts/019r-operational-storage.js": "89cff60624afcd876e30c6059c9ffd44c191efba7010d1f8597e0a6799b1d4dd",
-    "workers/parts/019s-operational-migration.js": "40e5228aa8e6575956c18633131918f923cf9aa532c4db862bbe93a372749174",
+    "workers/parts/019s-operational-migration.js": "2f9e484787ef786739fe302201ef6e171c0cb3fd291c6095a98ada9ac2349581",
     "workers/parts/019t-operational-backup.js": "a968b39a41e7cc3761b62cd23042b4f6681617bf4bedd80dfccb5fe05120a6f8",
     "workers/parts/020-dstats.js": "ec9e8bba24e65bf282a11cbb4480ae83d8b53a7f9d0a03f4cbd5f0da2d8d1e86",
     "workers/parts/021-authz-core-intro.js": "6de2b3249119e0429cc0874734d321376486703d7f8ae5dbcfa89b36cf6db3f9",
@@ -279,7 +285,7 @@
     ".cache/operations10/lint-final.log": "01ddeace0cbd58f737d062c8c93c8a49ca591f397fd4aafdfc652dc43580dbce",
     ".cache/operations10/secrets-final.json": "0af424876745809596e46a9cdbb549c381479d66ff6c3e2b592c07868b4e930c",
     ".cache/operations10/docs-final-generated.log": "a72b96cb3742d5670b0ae7367528f9c4dd8370b626207f28dbb587dde09b5464",
-    ".cache/operations10/shared-source-final-review.json": "72587247ad8114acfd728b869aeaf56cd59555c73e8df0a06a33a9f309686035",
+    ".cache/operations10/shared-source-final-review.json": "e49f79753010e456779c770bd4e29263ac248bf65667972c220445e73b067d9f",
     ".cache/operations10/shared-source-review-baseline468.json": "d54403f13bb343d254d7516261b78f1215a97a2f5adb92c600e986261225d3c8",
     ".cache/operations10/department-lifecycle-final.tap": "656d537838917a34877693c073f3e5017e76a5f82baeac8a6491cfe6b6d6ed0c",
     ".cache/operations10/native10-dept-final.json": "906367d4e715aa01830407702d351d1ab52677325877200fa9e4ccc5ca91ee43",
@@ -294,10 +300,27 @@
     ".cache/preview10/rollback-archives-reverified.json": "cf8097aeb2bda80c1c6cd457a9cd0a9880239896f7d69c5836202dbff1be6790",
     ".cache/operations10/docs-accepted-final.log": "a72b96cb3742d5670b0ae7367528f9c4dd8370b626207f28dbb587dde09b5464",
     ".cache/operations10/secrets-accepted-final.json": "81aece55d963e573f4fcf74705d8e33c5aca341d4d1b79ebca36b2270f9d3804",
-    ".cache/operations10/secrets-accepted-final.log": "00e64c542e516248e0aba84215f548e6246299ebfa7f3713952b01dd24689c96"
+    ".cache/operations10/secrets-accepted-final.log": "00e64c542e516248e0aba84215f548e6246299ebfa7f3713952b01dd24689c96",
+    ".cache/operations10/native10-owneronly-final.json": "2162c9fba64322810e1e36c75270b1464c73a095933676791e34c9ed82622bdd",
+    ".cache/operations10/native10-owneronly-no-revisions.json": "7db71aad86630a405dd2e3d90e7577dda385e9b68764ffaadfef3980c8b86429",
+    ".cache/operations10/native10-owneronly-orphan-revisions.json": "cf10488f2d65651bd72e68ac60b8282a211b238b5553629ce169306211ccb84c",
+    ".cache/operations10/tombstone-regression-final.tap": "b09c4a9d5d85a44a43e05ce0dd4af5c73f3472e0cd0f21cbebbc7294b14f8a1a",
+    ".cache/operations10/tombstone-sql-parity.json": "f071de451155e69b6f0e993f66bfe235809568b8ddc87163426ba41577875848",
+    ".cache/operations10/migration10-only-byte-delta.json": "ab4fee06d1357d89e9d0b4f68c7090fbdddcefb798cf4b118b1ce15b37a018bc",
+    ".cache/operations10/build-tombstones-final.log": "393d2f1cd1bda4c42bd6849d8237f2c3f2a10d43d56778fd782444b5fbe7bc1d",
+    ".cache/operations10/check-tombstones-final.log": "ebb2c92c610973302b05347e8f781641050593e0a824fed04b67ceab95f59903",
+    ".cache/operations10/lint-tombstones-final.log": "ff09406ae6080ead8a84e7aee2948f0a7ce8b4e2fffa714edc4305a237164fad",
+    ".cache/operations10/shared-source-review-baseline5d.json": "72587247ad8114acfd728b869aeaf56cd59555c73e8df0a06a33a9f309686035",
+    ".cache/preview10/activation-result.json": "348398b8af9c8171c27db31d2fc9ea3a31003acc7bdf602add1315e54888ad83",
+    ".cache/preview10/activation-failure-state.json": "9f2f640abdd5ce6b04e0d45cc5862de7c39736fdf0abf5ce34e6c710da550b71",
+    ".cache/preview10/activation-revision-metadata.json": "ff17f9d04a9c4a35aea71307271483c52b4c764a24ae335b0a6d8e872cdecdc1",
+    ".cache/preview10/built-owneronly-parity-proof.json": "ce81a652d9a434d7e30c9d0d5ef38c25bc9b4ff82b0aae05a2c53fdb97e7e51b",
+    ".cache/operations10/docs-tombstones-final.log": "a72b96cb3742d5670b0ae7367528f9c4dd8370b626207f28dbb587dde09b5464",
+    ".cache/operations10/secrets-tombstones-final.json": "bbd5ae4d45e533df5c8385161973654877b2bd2d8ba5789eb59a1f17f7866546",
+    ".cache/operations10/secrets-tombstones-final.log": "24f2d1aba4e45e569b7ef1b04dff85df29d782fcd1e3a2c9f0670d3eaca61f3c"
   },
   "accepted": true,
-  "acceptedUtc": "2026-10-30T23:33:31.979296+00:00",
+  "acceptedUtc": "2026-10-30T23:53:30.455018+00:00",
   "sourceCheckpoint": {
     "commit": "d5a08a6f7c23f8ccdddf7539bdcef5bd0a945342",
     "pushedTo": "https://github.com/ashm0336-blip/RISHAD-266.git refs/heads/develop",
@@ -341,5 +364,23 @@
     "The334-case people/task follow-up includes12page cases also present in the UI140 count.",
     "Node40 QA planner tests use468 baseline; final native106/140HTTP uses5d with separately verified lifecycle delta.",
     "No live Time Travel restore drill or enterprise-load measurement."
-  ]
+  ],
+  "previousAcceptedWorkerSha256": "5d037629c5b483f15ab88bb9beb7d4179caf500a0f918815cb4e2862079ad225",
+  "migrationTombstonesFix": {
+    "permanentCases": 5,
+    "nativeCases": 10,
+    "nativePass": 10,
+    "knownSourceDocumentsRemainStrict": true,
+    "historicalRevisionValuesPreserved": true,
+    "sqlParityStatements": 228,
+    "sqlAndArgsUnchangedFor42Documents": true,
+    "ddlUnchanged": true,
+    "fullQaNotRepeated": "The complete Worker outside019s is byte-identical to the prior native106/140HTTP candidate; migration-only current native10/5unit is recorded separately."
+  },
+  "previewAttempt1": {
+    "accepted": false,
+    "record": "docs/evidence/RISHAD266_SCHEMA10_PREVIEW_ATTEMPT1.json",
+    "deployment": "34821a8d-175c-4c0d-9d0f-da2b33602720",
+    "schemaRemains": 9
+  }
 }

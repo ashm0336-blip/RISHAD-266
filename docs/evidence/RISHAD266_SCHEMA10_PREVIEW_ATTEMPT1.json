@@ -1,0 +1,41 @@
+{
+  "schema": 10,
+  "recordType": "preview-attempt1-not-accepted",
+  "accepted": false,
+  "codeCommit": "93fbcb98b824122d2cffe7dce4c4e15b5ee187c4",
+  "deployment": "34821a8d-175c-4c0d-9d0f-da2b33602720",
+  "url": "https://34821a8d.kivo-d81.pages.dev",
+  "branch": "test",
+  "environment": "preview",
+  "http": 500,
+  "automaticRetry": false,
+  "observedAfterFailure": {
+    "schema": 9,
+    "migrationLedger": 9,
+    "domainTables": 35,
+    "operationalTables": 0,
+    "ownerAndPermissionDocumentsMatch": true,
+    "productionAndR2ConfigurationsMatch": true,
+    "upgradePermitRemainsPresentAndMatches": true,
+    "operationalRevisionRows": 16,
+    "liveOperationalKvDocuments": 0,
+    "departmentDocumentRows": 0
+  },
+  "rootCause": {
+    "localReproduction": "The exact source and minified Worker accept schema9 owner-only state without revisions, but reject it before DDL when canonical revision-only tombstones refer to deleted departments.",
+    "fix": "Validate canonical revision metadata separately; retain registered-department membership for every live business document. Preserve every historical revision value and witness.",
+    "sourceWorkerSha256": "29708ae9a24c672d149f4ca4fc709c8930399cab682512c4e7035959c6fd6662",
+    "nativeCases": 10,
+    "permanentRegressionCases": 5,
+    "runtimeOutsideMigrationByteIdenticalToPreviousWorker": true,
+    "migrationSqlAndArgsByteIdenticalFor42Documents": true,
+    "ddlUnchanged": true
+  },
+  "permitOperationId": "31765d52-a701-4d4a-9c29-4c28b3beffb4",
+  "permitDeletionApproved": false,
+  "nextAction": "Await explicit approval before deleting this expired permit only; preserve all attempt1 deployments/archives/journals and use a separately reviewed attempt2 namespace.",
+  "limits": [
+    "Cloud stack details were not obtained; the source failure was reproduced locally and matches the observed state.",
+    "No database export, Production D1 query, R2 access, reset or department wipe was performed."
+  ]
+}

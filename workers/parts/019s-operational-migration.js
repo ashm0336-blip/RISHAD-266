@@ -112,14 +112,19 @@ async function opLegacyPrepare(env) {
       throw ocError("cutover-departments");
     known.add(department.id);
   });
-  function scoped(key) {
+  function canonical(key) {
     var info;
     try {
       info = opInfo(key);
     } catch (error) {
       throw ocError("cutover-scope");
     }
-    if (!info || !known.has(info.dept)) throw ocError("cutover-scope");
+    if (!info) throw ocError("cutover-scope");
+    return info;
+  }
+  function scoped(key) {
+    var info = canonical(key);
+    if (!known.has(info.dept)) throw ocError("cutover-scope");
     return info;
   }
   rows.forEach(function (row) {
@@ -131,7 +136,10 @@ async function opLegacyPrepare(env) {
     chunks.set(row.k, list);
   });
   revisionRows.forEach(function (row) {
-    scoped(row.k);
+    // Revision-only tombstones survive an authorized department deletion. They
+    // contain no business document to import and must retain their exact value.
+    // Live KV documents above still require a registered department.
+    canonical(row.k);
     if (!Number.isSafeInteger(row.rev) || row.rev < 0)
       throw ocError("cutover-revision");
   });

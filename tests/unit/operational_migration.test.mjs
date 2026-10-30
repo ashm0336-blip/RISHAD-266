@@ -101,6 +101,165 @@ function close(env) {
 async function commit(env, plan, tail = []) {
   return env.DB.batch([...plan.before, ...ddl(env), ...plan.after, ...tail]);
 }
+
+test("revision tombstones of removed departments survive an empty cutover without creating resources or departments", async () => {
+  for (const explicitEmptyDepartments of [false, true]) {
+    const env = fresh();
+    try {
+      if (explicitEmptyDepartments) put(env, C.K_DEPTS, []);
+      const definitions = C.opDefinitions().slice(0, 16);
+      definitions.forEach((definition, index) => {
+        env.DB.db
+          .prepare("INSERT INTO revs VALUES(?,?)")
+          .run(
+            "bsdept:TEST_ONLY_REMOVED_" +
+              (index % 2) +
+              ":" +
+              definition.resource,
+            index === 0
+              ? 0
+              : index === 15
+                ? Number.MAX_SAFE_INTEGER
+                : index + 11,
+          );
+      });
+      put(env, "TEST_ONLY_UNRELATED", { preserve: true });
+      const revisions = env.DB.q("SELECT * FROM revs ORDER BY k"),
+        sourceRows = env.DB.q("SELECT * FROM kv ORDER BY k,seq"),
+        plan = await C.opLegacyPrepare(env);
+      assert.equal(plan.n, 0);
+      assert.equal(plan.domains.length, 0);
+      await commit(env, plan);
+      assert.deepEqual(env.DB.q("SELECT * FROM revs ORDER BY k"), revisions);
+      assert.deepEqual(env.DB.q("SELECT * FROM kv ORDER BY k,seq"), sourceRows);
+      assert.equal(env.DB.q("SELECT COUNT(*)n FROM ops_nodes")[0].n, 0);
+      assert.equal(
+        env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,
+        "10",
+      );
+      assert.equal(env.DB.q("SELECT v FROM meta WHERE k='rev'")[0].v, "7");
+      assert.equal(env.DB.q("PRAGMA foreign_key_check").length, 0);
+    } finally {
+      close(env);
+    }
+  }
+});
+
+test("revision tombstones still require exact canonical namespaces and safe nonnegative values before DDL", async () => {
+  const canonical = "bsdept:TEST_ONLY_REMOVED:bassam_staffing_v3";
+  for (const [key, revision] of [
+    ["bassam_staffing_v3", 11],
+    ["bassam_staffing_v3:child", 11],
+    [canonical + ":child", 11],
+    ["other:TEST_ONLY_REMOVED:bassam_staffing_v3", 11],
+    ["bsdept::bassam_staffing_v3", 11],
+    [canonical, -1],
+    [canonical, 0.5],
+    [canonical, "TEST_ONLY invalid revision"],
+    [canonical, Number.MAX_SAFE_INTEGER + 1],
+  ]) {
+    const env = fresh();
+    try {
+      env.DB.db.prepare("INSERT INTO revs VALUES(?,?)").run(key, revision);
+      // SQLite itself can refuse decoding an unsafe INTEGER before the
+      // Worker validator sees it; either rejection must precede every write.
+      const beforeTables = env.DB.q(
+          "SELECT name,sql FROM sqlite_master ORDER BY name",
+        ),
+        beforeKV = env.DB.q("SELECT * FROM kv"),
+        beforeRevisions = env.DB.q(
+          "SELECT k,CAST(rev AS TEXT)rev FROM revs ORDER BY k",
+        ),
+        beforeMeta = env.DB.q("SELECT * FROM meta ORDER BY k");
+      await assert.rejects(
+        C.opLegacyPrepare(env),
+        key === canonical
+          ? /operations-cutover-revision|too large|safe integer/
+          : /operations-cutover-scope/,
+      );
+      assert.deepEqual(
+        env.DB.q("SELECT name,sql FROM sqlite_master ORDER BY name"),
+        beforeTables,
+      );
+      assert.deepEqual(env.DB.q("SELECT * FROM kv"), beforeKV);
+      assert.deepEqual(
+        env.DB.q("SELECT k,CAST(rev AS TEXT)rev FROM revs ORDER BY k"),
+        beforeRevisions,
+      );
+      assert.deepEqual(env.DB.q("SELECT * FROM meta ORDER BY k"), beforeMeta);
+      assert.equal(env.DB.q("SELECT COUNT(*)n FROM revs")[0].n, 1);
+    } finally {
+      close(env);
+    }
+  }
+});
+
+test("revision tombstones never authorize a live business document in an unregistered department", async () => {
+  for (const explicitEmptyDepartments of [false, true]) {
+    const env = fresh();
+    try {
+      if (explicitEmptyDepartments) put(env, C.K_DEPTS, []);
+      const key = "bsdept:TEST_ONLY_REMOVED:bassam_staffing_v3";
+      put(env, key, {});
+      env.DB.db.prepare("INSERT INTO revs VALUES(?,11)").run(key);
+      const before = snapshot(env);
+      await assert.rejects(C.opLegacyPrepare(env), /operations-cutover-scope/);
+      assert.equal(snapshot(env), before);
+    } finally {
+      close(env);
+    }
+  }
+});
+
+test("revision tombstones keep exact late revision and source-KV race guards inside the migration batch", async () => {
+  const first = "bsdept:TEST_ONLY_REMOVED:bassam_staffing_v3";
+  for (const change of [
+    (env) =>
+      env.DB.db.prepare("UPDATE revs SET rev=rev+1 WHERE k=?").run(first),
+    (env) => env.DB.db.prepare("DELETE FROM revs WHERE k=?").run(first),
+    (env) =>
+      env.DB.db
+        .prepare("INSERT INTO revs VALUES(?,12)")
+        .run("bsdept:TEST_ONLY_OTHER:bassam_plan_v1"),
+    (env) => put(env, first, {}),
+    (env) => put(env, "bassam_staffing_v3:child", {}),
+    (env) => put(env, C.K_DEPTS, [{ id: "TEST_ONLY_REMOVED" }]),
+  ]) {
+    const env = fresh();
+    try {
+      env.DB.db.prepare("INSERT INTO revs VALUES(?,11)").run(first);
+      const plan = await C.opLegacyPrepare(env);
+      change(env);
+      const afterMutation = snapshot(env);
+      await assert.rejects(commit(env, plan), /KIVO_RESTORE_TARGET/);
+      assert.equal(snapshot(env), afterMutation);
+    } finally {
+      close(env);
+    }
+  }
+});
+
+test("revision tombstones and department absence survive a late migration SQL rollback exactly", async () => {
+  const env = fresh();
+  try {
+    env.DB.db
+      .prepare("INSERT INTO revs VALUES(?,11)")
+      .run("bsdept:TEST_ONLY_REMOVED:bassam_staffing_v3");
+    const before = snapshot(env),
+      plan = await C.opLegacyPrepare(env);
+    await assert.rejects(
+      commit(env, plan, [
+        env.DB.prepare(
+          "INSERT INTO TEST_ONLY_MISSING_TOMBSTONE_TABLE VALUES(1)",
+        ),
+      ]),
+      /TEST_ONLY_MISSING_TOMBSTONE_TABLE/,
+    );
+    assert.equal(snapshot(env), before);
+  } finally {
+    close(env);
+  }
+});
 test("migration DDL is the aggregate canonical58-table schema and carries the closed cutover guard", () => {
   const p = C.ocPrepare(C.opDefinitions()),
     expected = C.ocCreateStatements(p);
