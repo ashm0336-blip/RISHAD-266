@@ -1,6 +1,5 @@
-/* Candidate custody transport: server authority, bounded DTOs and confirmed
- * mutation receipts only. No storage, serial allocation or business-event emit.
- * Staging only; not loaded by the accepted runtime. */
+/* Custody transport: server authority, bounded DTOs and confirmed mutation
+ * receipts. Included by the runtime shell; no local storage or allocation. */
 (function () {
   'use strict';
   var prepared = new WeakMap();

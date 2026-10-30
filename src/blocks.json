@@ -708,7 +708,7 @@
    "line": 10494,
    "origBytes": null,
    "origSha256": null,
-   "new": "Local custody candidate: typed API transport; not part of accepted release"
+   "new": "Typed custody API transport included by the runtime shell"
   },
   {
    "id": "services/548-atomic-backup.js",

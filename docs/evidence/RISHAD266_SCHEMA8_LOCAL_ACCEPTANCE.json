@@ -4,13 +4,13 @@
   "gitBranch": "develop",
   "baselineCommit": "b4f1a1098c8892aba0719885eb07a20b3838883d",
   "counts": {
-    "tests": 1620,
-    "pass": 1610,
+    "tests": 1622,
+    "pass": 1612,
     "fail": 0,
     "skipped": 10,
     "cancelled": 0
   },
-  "testMethod": "Composite evidence; one full235-file run plus only affected fixture/case reruns. Not a fresh1620-case full run.",
+  "testMethod": "Composite evidence: one full235-file run, affected fixture/case reruns, then two actual built-browser service-wiring tests after the bounded bootstrap fix. Not a fresh full1622-case run.",
   "fullRunCounts": {
     "tests": 1614,
     "pass": 1540,
@@ -20,16 +20,16 @@
     "todo": 0
   },
   "repairedOriginalFailures": 64,
-  "additionalOrPreviouslyUnreportedCases": 6,
+  "additionalOrPreviouslyUnreportedCases": 8,
   "historicalSkips": 10,
   "workerSha256": "8696152963ff0d1d6fc9789c68a8dd03a77698ce73697222ac480b7ce2af82ff",
   "build": {
-    "files": 131,
+    "files": 133,
     "budgetsPassed": 16,
     "reassemblyChecksPassed": 19,
     "irshadGzip": 40667,
     "adminGzip": 156362,
-    "shellGzip": 29602,
+    "shellGzip": 29661,
     "workerGzip": 367095
   },
   "lint": {
@@ -50,5 +50,13 @@
     "cloudRestoreDrillPerformed": false
   },
   "productionDeployed": false,
-  "databaseExportCreated": false
+  "databaseExportCreated": false,
+  "bootstrapFollowUp": {
+    "existingServices547And548AddedToShell": true,
+    "serviceMethodsUnchanged": true,
+    "actualEmittedServiceTestsPassed": 2,
+    "old131NegativeExecutionCaptured": false,
+    "previewPermitCancelledBeforeDeployment": true,
+    "cloudSchemaStill7": true
+  }
 }
