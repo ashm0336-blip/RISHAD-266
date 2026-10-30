@@ -657,11 +657,15 @@ async function irReplacementPlan(env, d, domain, base) {
   await irGuardRetired(env);
   var before = await irPlanState(env, d), guards = [irRetiredGuard(env)].concat(irRevisionGuards(env, d, base));
   if (!deq(cuCanonical(before.revs), cuCanonical(base))) throw irError('irshad-conflict', 409);
+  var emptyTables=[];
   Object.keys(IR_TABLES).forEach(function (kind) {
-    guards.push.apply(guards, rsWitness(env, IR_TABLES[kind][0], IR_TABLES[kind][1], before.snapshotRows[kind], 'department_id=?1', [d]));
+    if(!before.snapshotRows[kind].length)emptyTables.push(IR_TABLES[kind][0]);
+    else guards.push.apply(guards, rsWitness(env, IR_TABLES[kind][0], IR_TABLES[kind][1], before.snapshotRows[kind], 'department_id=?1', [d]));
   });
   guards.push.apply(guards, rsWitness(env, 'meta', ['k', 'v'], before.snapshotRows.meta, 'k=?1 OR k=?2', [irMetaKey(d), irMetaKey(d) + ':retro-version']));
-  guards.push.apply(guards, rsWitness(env, 'irshad_requests', IR_REQUEST_COLS, before.snapshotRows.requests, 'department_id=?1', [d]));
+  if(!before.snapshotRows.requests.length)emptyTables.push('irshad_requests');
+  else guards.push.apply(guards, rsWitness(env, 'irshad_requests', IR_REQUEST_COLS, before.snapshotRows.requests, 'department_id=?1', [d]));
+  if(emptyTables.length)guards.push(bdEmptyTableGuard(env,emptyTables,'department_id=?1',[d]));
   var statements = ['irshad_requests', 'irshad_report_languages', 'irshad_reports', 'irshad_catalog_entries', 'irshad_retro_windows']
     .map(function (table) { return env.DB.prepare('DELETE FROM ' + table + ' WHERE department_id=?1').bind(d); });
   statements.push.apply(statements, irInstallStatements(env, domain));

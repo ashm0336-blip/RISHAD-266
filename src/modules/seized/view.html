@@ -1,4 +1,5 @@
 <div dir="rtl" data-screen-label="نظام المضبوطات" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414);margin:0 auto;display:flex;flex-direction:column;gap:16px">
+<sc-if value="{{bcNotice}}" hint-placeholder-val="{{ false }}"><div style="{{irPmNoteStyle}}" role="status"><span>{{bcMessage}}</span><sc-if value="{{bcCanRefresh}}"><button onClick="{{bcRefresh}}" style="border:1px solid var(--bd-xcbd5e1);border-radius:8px;padding:4px 9px;font:inherit;background:var(--bg-xffffff);cursor:pointer">تحديث البيانات</button></sc-if></div></sc-if>
 <!-- صلاحية «عرض فقط»: سطرٌ واحد يقول السبب — الأزرار تختفي لا تُعطَّل،
      والزرّ الرمادي يثير سؤال «ليش ما يشتغل؟» بلا جواب -->
 <sc-if value="{{irPmReadOnly}}" hint-placeholder-val="{{ false }}">

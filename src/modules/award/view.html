@@ -1,4 +1,5 @@
 <div dir="rtl" data-screen-label="جائزة التميز" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414);margin:0 auto;display:flex;flex-direction:column;gap:16px">
+<sc-if value="{{bcNotice}}" hint-placeholder-val="{{ false }}"><div style="{{awPmNoteStyle}}" role="status"><span>{{bcMessage}}</span><sc-if value="{{bcCanRefresh}}"><button onClick="{{bcRefresh}}" style="border:1px solid var(--bd-xcbd5e1);border-radius:8px;padding:4px 9px;font:inherit;background:var(--bg-xffffff);cursor:pointer">تحديث البيانات</button></sc-if></div></sc-if>
 <!-- صلاحية «عرض فقط»: سطرٌ واحد يقول السبب — الأزرار تختفي لا تُعطَّل،
      والزرّ الرمادي يثير سؤال «ليش ما يشتغل؟» بلا جواب -->
 <sc-if value="{{awPmReadOnly}}" hint-placeholder-val="{{ false }}">
@@ -616,7 +617,7 @@
           <button type="button" title="مسح التنسيق" onClick="{{awEdClear}}">⌫ تنسيق</button>
         </div>
       </div>
-      <div class="aw-edarea" id="awEdBody" contenteditable="true"></div>
+      <div class="aw-edarea" id="awEdBody" contenteditable="true" onInput="{{awSetOnBody}}"></div>
       <div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap">
         <button onClick="{{awSetSave}}" style="border:0;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));color:var(--text-on-brand);padding:10px 20px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif">حفظ التعديلات</button>
         <button onClick="{{awSetCancel}}" style="border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x53565a);padding:10px 20px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif">إلغاء</button>

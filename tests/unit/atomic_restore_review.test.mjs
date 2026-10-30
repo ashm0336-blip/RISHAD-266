@@ -343,16 +343,17 @@ test('actual AppBackup export from redacted GET cache restores existing credenti
     },
     factory = vm.runInContext('(function(){const s=true;return ' + source.slice(node.value.start, node.value.end) + ';})', context);
   const cls = tree.body.find(n => n.type === 'ClassDeclaration' && n.id.name === 'Component');
-  for (const name of ['_wpActor', '_irBackupCapture', '_irBackupFence', '_irBackupDomain']) {
+  for (const name of ['_wpActor', '_irBackupCapture', '_irBackupFence']) {
     const method = cls.body.body.find(n => n.type === 'MethodDefinition' && n.key.name === name); assert.ok(method, name);
     page[name] = vm.runInContext('({' + source.slice(method.start, method.end) + '}).' + name, context);
   }
+  vm.runInContext(fs.readFileSync(path.join(SRC,'services/548-atomic-backup.js'),'utf8'),context);
   factory.call(page)();
   for (let i = 0; i < 50 && !page._encPend; i++) await new Promise((r) => setImmediate(r));
   assert.ok(page._encPend, JSON.stringify(page.state));
   const file = JSON.parse(page._encPend.json);
   assert.equal(file.kind, 'full');
-  assert.equal(file.manifest.version, 2);
+  assert.equal(file.manifest.version, 3);
   assert.equal(file.manifest.domains.custody, 1);
   assert.equal(file.manifest.domains.irshad, 1);
   assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId).sort(), [D1, D2].sort());
@@ -821,11 +822,12 @@ test('actual staged department export includes a manifest and normalized domains
     }),
     messages = [],
     page = { bkToast: (...v) => messages.push(v) };
+  vm.runInContext(fs.readFileSync(path.join(SRC,'services/548-atomic-backup.js'),'utf8'),context);
   vm.runInContext('({' + source.slice(node.start, node.end) + '}).bkExportRun', context).call(page);
   for (let i = 0; i < 100 && !blobs.length; i++) await new Promise((r) => setImmediate(r));
   assert.equal(blobs.length, 1, JSON.stringify(messages));
   const file = JSON.parse(await blobs[0].text());
-  assert.equal(file.manifest.version, 2);
+  assert.equal(file.manifest.version, 3);
   assert.equal(file.manifest.scope, 'dept');
   assert.deepEqual(file.manifest.departments, [D1]);
   assert.equal(file.manifest.domains.custody, 1);

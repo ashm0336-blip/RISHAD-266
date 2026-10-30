@@ -76,10 +76,11 @@ function rsBCForbiddenKey(key) {
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
   var required = scope.kind === 'full' ? ['kv', 'dailyStats', 'notifications', 'custody'] : ['kv', 'notifications', 'custody'];
-  if (manifest.version === 2) required.push('irshad');
+  if (manifest.version >= 2) required.push('irshad');
+  if (manifest.version >= 3) required.push('seized','awards');
   rsShape(manifest.domains, required);
   if (
-    ![1, 2].includes(manifest.version) ||
+    ![1, 2, 3].includes(manifest.version) ||
     manifest.scope !== scope.kind ||
     required.some(function (k) {
       return manifest.domains[k] !== 1;
@@ -105,11 +106,17 @@ function rsBCManifest(manifest, scope, keys, domains, departments) {
     return d && d.scope && d.scope.departmentId;
   });
   if (!deq(custody.slice().sort(), departments.slice().sort())) rsBCFail('incomplete-custody');
-  if (manifest.version === 2) {
+  if (manifest.version >= 2) {
     if (!Array.isArray(domains.irshad) || !deq(domains.irshad.map(function (d) {
       return d && d.scope && d.scope.departmentId;
     }).sort(), departments.slice().sort())) rsBCFail('incomplete-irshad');
   } else if (domains.irshad !== undefined) rsBCFail('irshad-manifest-version');
+  for(var def of bdDefinitions()) {
+    if(manifest.version>=3) {
+      var expected=departments.concat(def.name==='awards'&&scope.kind==='full'?['']:[]).sort();
+      if(!Array.isArray(domains[def.name])||!deq(domains[def.name].map(bdScope).sort(),expected))rsBCFail('incomplete-'+def.name);
+    } else if(domains[def.name]!==undefined)rsBCFail(def.name+'-manifest-version');
+  }
 }
 async function rsConvertBackup(env, A, file, opt) {
   opt = opt || {};
@@ -150,7 +157,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var input = Object.create(null),
     keys = Object.create(null),
     domains = file.domains === undefined ? {} : rsBCClone(file.domains);
-  rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad']);
+  rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
   Object.keys(file.data).forEach(function (k) {
     if (k === 'bassam_active_dept_v1') {
       summary.ignoredDevicePreferences.push(k);
@@ -187,7 +194,7 @@ async function rsConvertBackup(env, A, file, opt) {
       if (deptIds.indexOf(d) < 0) rsBCFail('unknown-department');
     });
     Object.keys(input).forEach(function (k) {
-      if (!parseKey(k).dept && resOf(k) && resOf(k).scope === 'dept') rsBCFail('unscoped-department-key');
+      if (!parseKey(k).dept && resOf(k) && resOf(k).scope === 'dept' && !AW_RES.slice(1).includes(k)) rsBCFail('unscoped-department-key');
       keys[k] = input[k];
     });
   } else {
@@ -218,8 +225,15 @@ async function rsConvertBackup(env, A, file, opt) {
       keys[dest] = input[k];
     });
   }
+  Object.keys(keys).filter(bdLegacyKey).forEach(function(k){
+    var def=bdDefinitions().find(function(def){return def.resources.includes(resName(k));}),part=parseKey(k),index=def.resources.indexOf(resName(k));
+    if(k!==(part.dept?def.key(part.dept,index):def.resources[index]))rsBCFail('business-namespace');
+    if(!part.dept&&!(def.name==='awards'&&index>0&&scope.kind==='full'))rsBCFail('business-global-scope');
+    if(part.dept&&!deptIds.includes(part.dept))rsBCFail('business-department');
+  });
   var cuKeys = Object.keys(keys).filter(cuLegacyKey),
     irKeys = Object.keys(keys).filter(irLegacyKey),
+    businessKeys = Object.keys(keys).filter(bdLegacyKey),
     nfKeys = Object.keys(keys).filter(nfLegacyKey),
     dsKeys = Object.keys(keys).filter(function (k) {
       return resName(k) === K_DSTATS;
@@ -231,7 +245,9 @@ async function rsConvertBackup(env, A, file, opt) {
     (irKeys.length && rsBCOwn(domains, 'irshad'))
   )
     rsBCFail('duplicate-domain-source');
-  if (modern && (cuKeys.length || nfKeys.length || dsKeys.length || (file.manifest && file.manifest.version === 2 && irKeys.length))) rsBCFail('retired-key-in-modern-file');
+  for(var def of bdDefinitions()) if(businessKeys.some(function(k){return def.resources.includes(resName(k));})&&rsBCOwn(domains,def.name))rsBCFail('duplicate-domain-source');
+  if (modern && (cuKeys.length || nfKeys.length || dsKeys.length || (file.manifest && file.manifest.version >= 2 && irKeys.length))) rsBCFail('retired-key-in-modern-file');
+  if(modern&&file.manifest.version>=3&&businessKeys.length)rsBCFail('retired-key-in-modern-file');
   if (scope.kind === 'dept' && (dsKeys.length || domains.dailyStats !== undefined)) rsBCFail('global-domain-in-department');
   if (modern) {
     // Validate the source declaration before an explicit scoped remap. Missing
@@ -261,6 +277,25 @@ async function rsConvertBackup(env, A, file, opt) {
       if (!Object.keys(docs).length) summary.emptyDomains.push('irshad:' + d);
       return irValidateDomain(irConvert(d, docs), d);
     });
+  }
+  for(var def of bdDefinitions()) {
+    if(domains[def.name]!==undefined) {
+      if(!Array.isArray(domains[def.name]))rsBCFail(def.name+'-shape');
+      domains[def.name]=domains[def.name].map(function(domain){
+        var d=bdScope(domain),global=def.name==='awards'&&d==='';
+        if(typeof d!=='string'||(global&&scope.kind!=='full')||(!global&&(scope.kind==='full'?!deptIds.includes(d):d!==source)))rsBCFail(def.name+'-scope');
+        var next=rsBCClone(def.validate(domain,d)),targetDept=scope.kind==='dept'?target:d;
+        if(targetDept!==d){next.scope={departmentId:targetDept};Object.keys(def.tables).forEach(function(kind){next.rows[kind].forEach(function(row){row.department_id=targetDept;});});}
+        return def.validate(next,targetDept);
+      });
+      if(new Set(domains[def.name].map(bdScope)).size!==domains[def.name].length)rsBCFail(def.name+'-duplicate');
+    } else if(legacy||file.manifest.version<3) {
+      domains[def.name]=deptIds.concat(def.name==='awards'&&scope.kind==='full'?['']:[]).map(function(d){
+        var docs={};def.names.forEach(function(name,i){var k=d?def.key(d,i):def.resources[i];if(rsBCOwn(keys,k))docs[name]=rsBCParse(keys[k]);});
+        if(!Object.keys(docs).length)summary.emptyDomains.push(def.name+':'+d);
+        return def.validate(def.convert(d,docs),d);
+      });
+    }
   }
   if (domains.custody !== undefined) {
     if (!Array.isArray(domains.custody)) rsBCFail('custody-shape');
@@ -406,7 +441,7 @@ async function rsConvertBackup(env, A, file, opt) {
       });
     }
   }
-  cuKeys.concat(nfKeys, dsKeys, irKeys).forEach(function (k) {
+  cuKeys.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
     delete keys[k];
   });
   // Conversion preserves credentials byte-for-byte; applySave/restore retains
@@ -432,8 +467,10 @@ async function rsConvertBackup(env, A, file, opt) {
   }
   // A v1 source is validated before conversion. The compiled destination always
   // declares the complete typed Irshad domain; v2 never receives empty fallbacks.
-  manifest.version = 2;
+  manifest.version = 3;
   manifest.domains.irshad = 1;
+  manifest.domains.seized = 1;
+  manifest.domains.awards = 1;
   manifest.keys = Object.keys(keys).map(function (k) { return scope.kind === 'dept' ? resName(k) : k; });
   rsBCManifest(manifest, scope, keys, domains, deptIds);
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };

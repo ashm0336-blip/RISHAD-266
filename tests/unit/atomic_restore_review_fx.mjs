@@ -60,10 +60,14 @@ async function world() {
       deptNF[n] = ['overrides', 'checkpoints'].includes(n)
         ? []
         : nf[n].filter((r) => (n === 'states' ? r.message_scope : r.scope) === 'd:' + scope.departmentId);
+    const sz=(await api('super','/api/seized/export')).json.domains||[],aw=(await api('super','/api/award/export')).json.domains||[],
+      empty=(d,names,rows,global=false)=>({version:1,scope:global?{kind:'global'}:{departmentId:d},resources:Object.fromEntries(names.map(n=>[n,false])),rows:Object.fromEntries(rows.map(n=>[n,[]]))}),
+      seized=declared.map(d=>sz.find(x=>x.scope.departmentId===d)||empty(d,['reports','catalog','actions','locations','jew','retro'],['resources','reports','items','photos','history','categories','catalogItems','actions','lists','windows'])),
+      awards=declared.concat(scope.kind==='full'?['']:[]).map(d=>aw.find(x=>d===''?x.scope.kind==='global':x.scope.departmentId===d)||empty(d,['records','docsV1','docsV2'],['resources','records','caseTexts','answers','scoreRows','scores','documents','sections','items'],d===''));
     const domains =
       scope.kind === 'full'
-        ? { dailyStats: { version: 1, data: ds.data }, notifications: nf, irshad: irshadDomains, ...(extra.domains || {}), custody: custodyDomains }
-        : { notifications: deptNF, custody: custodyDomains, irshad: irshadDomains, ...(extra.domains || {}) };
+        ? { dailyStats: { version: 1, data: ds.data }, notifications: nf, irshad: irshadDomains, seized, awards, ...(extra.domains || {}), custody: custodyDomains }
+        : { notifications: deptNF, custody: custodyDomains, irshad: irshadDomains, seized, awards, ...(extra.domains || {}) };
     const request = {
       version: 1,
       requestId: 'TEST_ONLY_restore_' + ++rid,
@@ -76,6 +80,7 @@ async function world() {
         dailyStats: ds.rev,
         notifications: { rev: nf.rev, configRev: nf.configRev, broadcastRev: nf.broadcastRev },
         custody: Object.fromEntries(await Promise.all(declared.map(async (d) => [d, await W.cuRev(B.env, d)]))),
+        ...(await api('super','/api/backup/restore?kind='+scope.kind+(scope.kind==='dept'?'&dept='+scope.departmentId:'')+'&departments='+encodeURIComponent(JSON.stringify(declared)))).json.base,
         irshad: Object.fromEntries([...new Set(declared.concat(ir.map(domain => domain.scope.departmentId)))].map(d => [d, Object.fromEntries(['reports', 'languages', 'locations', 'retro'].map((name, i) => {
           const resource = ['bassam_irshad_v1', 'bassam_irshad_langs_v1', 'bassam_irshad_locs_v1', 'bassam_irshad_retro_v1'][i];
           return [name, B.DB.q('SELECT rev FROM revs WHERE k=?1', 'bsdept:' + d + ':' + resource)[0]?.rev || 0];
@@ -89,17 +94,17 @@ async function world() {
     };
     if (scope.kind === 'full')
       request.manifest = extra.manifest || {
-        version: 2,
+        version: 3,
         scope: 'full',
-        domains: { kv: 1, dailyStats: 1, notifications: 1, custody: 1, irshad: 1 },
+        domains: { kv: 1, dailyStats: 1, notifications: 1, custody: 1, irshad: 1, seized: 1, awards: 1 },
         departments: declared,
         keys: Object.keys(keys),
       };
     else
       request.manifest = extra.manifest || {
-        version: 2,
+        version: 3,
         scope: 'dept',
-        domains: { kv: 1, notifications: 1, custody: 1, irshad: 1 },
+        domains: { kv: 1, notifications: 1, custody: 1, irshad: 1, seized: 1, awards: 1 },
         departments: declared,
         keys: Object.keys(keys)
           .filter((k) => k !== 'bassam_perms_v1')

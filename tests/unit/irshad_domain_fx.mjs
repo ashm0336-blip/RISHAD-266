@@ -10,7 +10,7 @@ const NAMED = ['IR_RES','IR_RES_NAMES','IR_FIELDS','IR_TABLES','IR_REQUEST_COLS'
   'irValidateDomain','irEmptyDomain','irSnapshot','irLegacyPrepare','irLegacyPresent','irInstallStatements','irRevs',
   'irRevisionGuards','irRetiredGuard','irGuardRetired','irMarkResourceStatements','irPlanRestore','irPlanWipe','irExport',
   'initDb','migrateDb','kvPutStmts','KIVO_MIGRATIONS','KIVO_SCHEMA_VERSION','actorOf','revGuard','rsPrepare','rsCommit',
-  'rsConvertBackup','rsRestoreInventory','rsWipeInventory','rsEpoch','rsSaveCommit','curRev','preOff','empTransitionContext','empPrepareTransition'];
+  'rsConvertBackup','rsRestoreInventory','rsWipeInventory','rsEpoch','rsSaveCommit','curRev','preOff','empTransitionContext','empPrepareTransition','bdDefinitions'];
 let instance=0;
 export async function candidateWorker(extraExports=[]) {
   const manifest=JSON.parse(fs.readFileSync(path.join(ROOT,'workers/parts.json'),'utf8')),
@@ -22,7 +22,8 @@ export async function candidateWorker(extraExports=[]) {
 }
 export function authorizeCandidateUpgrade(DB,W) {
   assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,'7');
-  assert.equal(W.KIVO_MIGRATIONS.length,8);
+  assert.equal(W.KIVO_MIGRATIONS.length,9);
+  assert.equal(W.KIVO_MIGRATIONS[7].name,'0008_irshad','Keep testing the actual migration8 cutover before the later schema9 domains');
   assert.equal(DB.q("SELECT k FROM meta WHERE k='schema_upgrade_permit_v1'").length,0);
   allowTestSchemaUpgrade(DB);
   return JSON.parse(DB.q("SELECT v FROM meta WHERE k='schema_upgrade_permit_v1'")[0].v);
@@ -31,7 +32,7 @@ export async function world({legacy=false,authorize=true,mode='enforce',extraExp
   const base=legacy?await legacyWorld({mode,through:'0007_atomic_restore'}):await currentWorld({mode}),
     W=await candidateWorker(extraExports);
   if(legacy&&!authorize)base.DB.exec("DELETE FROM meta WHERE k='schema_upgrade_permit_v1'");
-  assert.equal(W.KIVO_SCHEMA_VERSION,8,'Irshad migration must be generated and registered before these tests run');
+  assert.equal(W.KIVO_SCHEMA_VERSION,9,'Actual canonical schema9 includes the unchanged Irshad migration8 and the later business cutover');
   return {...base,canonicalW:base.W,W};
 }
 export async function seed(B,docs,dept=D1) {

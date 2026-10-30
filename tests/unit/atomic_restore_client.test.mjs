@@ -112,7 +112,7 @@ async function browser(B) {
     },
   });
   vm.runInContext(fs.readFileSync(path.join(CLIENT, 'services/548-atomic-backup.js'), 'utf8'), context);
-  for (const helper of ['_wpActor', '_irBackupCapture', '_irBackupFence', '_irBackupDomain'])
+  for (const helper of ['_wpActor', '_irBackupCapture', '_irBackupFence'])
     page[helper] = vm.runInContext('({' + sourcePart('modules/admin/logic.js', 'MethodDefinition', helper) + '}).' + helper, context);
   return {
     KIVO,
@@ -139,7 +139,7 @@ async function exported(B, C) {
   for (let n = 0; n < 100 && !C.page._encPend; n++) await new Promise((r) => setImmediate(r));
   assert.ok(C.page._encPend, JSON.stringify(C.page.state));
   const file = JSON.parse(C.page._encPend.json);
-  assert.equal(file.manifest.version, 2);
+  assert.equal(file.manifest.version, 3);
   assert.equal(file.manifest.domains.irshad, 1);
   assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId).sort(), file.manifest.departments.slice().sort());
   assert.ok(C.requests.some(request => request.url.startsWith('/api/irshad/export?') && request.status === 200), 'Typed Irshad must come from the actual canonical HTTP export');

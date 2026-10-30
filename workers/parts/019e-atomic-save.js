@@ -44,7 +44,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     plan.imagesReused = 0;
     return;
   }
-  var finalKeys = Object.assign(Object.create(null), reference.inputKeys),
+  var finalKeys = Object.assign(Object.create(null), reference.inputKeys, plan.relationalImageBefore || {}, plan.relationalImageReferences || {}),
     mentions = new Map(
       ids.map(function (id) {
         return [id, []];
@@ -54,6 +54,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     if (pd.act === 'del') delete finalKeys[pd.k];
     else finalKeys[pd.k] = pd.v;
   });
+  (plan.imgTouch||[]).forEach(function(t){finalKeys[t.k]=t.v;});
   Object.keys(finalKeys).forEach(function (key) {
     if (
       isDeviceKey(key) ||
@@ -93,7 +94,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     for (var key of mentions.get(id))
       if (!checkedKeys.has(key)) {
         checkedKeys.add(key);
-        if (await imgForeignIn(env, A, key, finalKeys[key], reference.inputKeys[key] || '')) reject();
+        if (await imgForeignIn(env, A, key, finalKeys[key], (plan.relationalImageCurrent||{})[key] || (plan.relationalImageBefore||{})[key] || reference.inputKeys[key] || '')) reject();
       }
   }
   // Include any upload fragments for these exact IDs. A late fragment or owner
@@ -140,8 +141,9 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     if (pd.act === 'del') delete values[pd.k];
     else values[pd.k] = pd.v;
   });
+  list.forEach(function(t){values[t.k]=t.v;});
   list.forEach(function (v) {
-    Object.keys(imgIdsIn(reference.inputKeys[v.k] || ''))
+    Object.keys(imgIdsIn((plan.relationalImageBefore||{})[v.k] || reference.inputKeys[v.k] || ''))
       .concat(Object.keys(imgIdsIn(v.v || '')))
       .forEach(function (id) {
         ids.add(id);
@@ -396,6 +398,8 @@ async function rsSaveCommit(env, A, body, meta, opt) {
       plan.snapshots.push({ domain: 'irshad', table: irDept + ':' + kind, rows: irWipe.snapshotRows[kind] });
     });
   }
+  await bdWipePlans(env,A,body,plan,irWipeDepartments,opt,irFinalDepartments);
+  await bdEmployeeCleanupPlan(env,A,body,plan,reference,opt,irWipeDepartments);
   if (!plan.snapshotRequired) plan.snapshots = [];
   else
     for (var dept of departments) {
@@ -421,6 +425,8 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     plan.counts.notifications = opt.__notificationCount || 0;
     plan.counts.accounts = opt.__accountCount || 0;
     plan.counts.irshad = opt.__irshadCount || 0;
+    plan.counts.seized = opt.__seizedCount || 0;
+    plan.counts.awards = opt.__awardsCount || 0;
     await rsCustodyReceiptPreimage(env, d, plan);
     plan.fingerprint = opt.__wipeFingerprint;
   }
@@ -454,6 +460,8 @@ async function rsWipeInventory(env, A, dept, kind) {
     if (parseKey(k).dept === dept) kv[k] = reference.inputRevs[k] || 0;
   });
   var scopedCount = Object.keys(kv).length;
+  var businessBase=await bdRestoreRevisions(env,[dept],false), businessCounts={};
+  for(var def of bdDefinitions())businessCounts[def.name]=await bdCount(env,def,dept);
   if (kind === 'delete')
     [K_DEPTS, K_USERS, K_PERM].forEach(function (k) {
       kv[k] = reference.inputRevs[k] || 0;
@@ -487,6 +495,8 @@ async function rsWipeInventory(env, A, dept, kind) {
         kv: kv,
         custody: await cuRev(env, dept),
         irshad: irRevisionResult(counts[4].results || [], dept),
+        seized: businessBase.seized[dept],
+        awards: businessBase.awards[dept],
         notifications: { rev: nf.rev, configRev: nf.configRev, broadcastRev: nf.broadcastRev },
       },
       counts: {
@@ -500,6 +510,8 @@ async function rsWipeInventory(env, A, dept, kind) {
         custody: Number(counts[0].results[0].n) + Number(counts[1].results[0].n),
         notifications: Number(counts[2].results[0].n),
         irshad: Number(counts[3].results[0].n),
+        seized: businessCounts.seized,
+        awards: businessCounts.awards,
       },
     },
   };
@@ -525,7 +537,7 @@ async function rsWipeRoute(env, request, url, ss) {
     if (input.uid !== undefined && input.uid !== ss.uid) throw rsError('session-changed', 409);
     if (typeof input.dept !== 'string' || typeof input.requestId !== 'string' || !/^[-A-Za-z0-9_]{8,100}$/.test(input.requestId))
       throw rsError('bad-body');
-    rsShape(input.base, ['epoch', 'kv', 'custody', 'notifications', 'irshad']);
+    rsShape(input.base, ['epoch', 'kv', 'custody', 'notifications', 'irshad', 'seized', 'awards']);
     var fingerprint = hex(
         await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({ kind: kind, input: cuCanonical(input) }))),
       ),
@@ -549,7 +561,7 @@ async function rsWipeRoute(env, request, url, ss) {
         if (typeof input.reason !== 'string' || input.reason.length > 300) throw rsError('bad-reason');
         why[k] = input.reason.trim();
       }
-      if (cuLegacyKey(k) || nfLegacyKey(k) || irLegacyKey(k)) throw rsError('domain-moved');
+      if (cuLegacyKey(k) || nfLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k))) throw rsError('domain-moved');
       var e = ENT[resName(k)];
       if (e && typeof e.empty === 'string') set[k] = e.empty;
       else del.push(k);
@@ -585,7 +597,11 @@ async function rsWipeRoute(env, request, url, ss) {
         __notificationBase: input.base.notifications,
         __notificationCount: observed.counts.notifications,
         __irshadBase: input.base.irshad,
+        __seizedBase: input.base.seized,
+        __awardsBase: input.base.awards,
         __irshadCount: observed.counts.irshad,
+        __seizedCount: observed.counts.seized,
+        __awardsCount: observed.counts.awards,
         __accountCount: observed.counts.accounts,
         __wipeKind: kind,
         __physicalDeleteKeys:
@@ -609,6 +625,7 @@ async function rsWipeRoute(env, request, url, ss) {
     return json(outcome);
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
+    if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
@@ -662,6 +679,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
         __employeeDept: input.dept,
         __employeeIntent: input.intent,
         __employeeResult: prepared.result,
+        __awardsBase: input.base.awards,
       });
     if (outcome.ok !== 1)
       return json(
@@ -676,6 +694,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
     return json(outcome);
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
+    if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);

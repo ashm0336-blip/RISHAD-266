@@ -20,7 +20,7 @@
   var ANON9 = BOOT.auth === "need";
   /* Relational domains have their own acknowledged APIs. A stale caller must not
      recreate a KV document or fall through to persistent device storage. */
-  function relationalKey9(k) { return /^(?:bsdept:[^:\s]+:)?bassam_(?:dstats|custody|irshad(?:_langs|_locs|_retro)?|notif(?:_cfg|_sys)?|bc)_v1$/.test(k); }
+  function relationalKey9(k) { return /^(?:bsdept:[^:\s]+:)?bassam_(?:dstats|custody|irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award|notif(?:_cfg|_sys)?|bc)_v1$/.test(k) || /^(?:bsdept:[^:\s]+:)?bassam_award_docs_v[12]$/.test(k); }
   var DEVK9 = { bassam_session_v1: 1, bslg_v1: 1, bassam_theme: 1,
                 bassam_active_dept_v1: 1, bassam_fresh_login_v1: 1, bassam_notif_mute_v1: 1 };
   /* «آخر صفحة مفتوحة» تفضيلُ جهازٍ لا بيانات فريق: كانت تُرسل للخادم — وعند الخروج
@@ -1070,7 +1070,7 @@
       };
       return Promise.resolve(0).then(function () { return step(0); });
     }
-    function pull9(keys, v) { var irKeys = keys.filter(function (k) { return /^(?:bsdept:[^:]+:)?bassam_irshad(?:_langs|_locs|_retro)?_v1$/.test(k); }); return getAll9(keys, null).then(function (changed) { BOOT.v = v; irKeys.forEach(notify); return Array.from(new Set(changed.concat(irKeys))); }); }
+    function pull9(keys, v) { var irKeys = keys.filter(function (k) { return /^(?:bsdept:[^:]+:)?bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(k); }); return getAll9(keys, null).then(function (changed) { BOOT.v = v; irKeys.forEach(notify); return Array.from(new Set(changed.concat(irKeys))); }); }
 
     /* ═══ KIVO_264 · D-4: مجموعةُ القراءة تتبع الصلاحيات بلا إعادة تحميل ═══
        /api/changes لا يبلّغ إلا عمّا تغيّرت مراجعتُه: منحُ صفحةٍ لا يغيّر مراجعةَ بياناتها فلا تصل (صفحةٌ فارغة حتى التحديث اليدوي)،
@@ -1084,7 +1084,7 @@
        وعدساتُها · ورقتي فيها · الوحداتُ المطفأة. مديرُ النظام يقرأ كلَّ شيءٍ فنصيبُه ثابت. والنطاقُ والمنحُ في الإنفاذ يحكمها وصفُ صلاحياتي
        (authzSync9 · az) لا هذا المفتاح. PROJ9 نسخةٌ من ENF_PROJ في الخادم (061-enf-read.js) — يُضاف إليها bassam_tasks_v1 إن صار الخادمُ يُسقطها. */
     var SLICEK9 = /^bassam_(perms|auth_users|depts|gdepts|platform)_v1$/;
-    var PROJ9 = { bassam_staffing_v2: 1, bassam_staffing_v3: 1, bassam_dreport_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1, bassam_seized_v1: 1 };
+    var PROJ9 = { bassam_staffing_v2: 1, bassam_staffing_v3: 1, bassam_dreport_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1 };
     function pj9(k, dflt) { try { var v = JSON.parse(mem[k] || "null"); return v == null ? dflt : v; } catch (e) { return dflt; } }   /* قيمةٌ تالفة ⇒ الافتراض */
     function slice9() {
       var U = pj9("bassam_auth_users_v1", []), me = null, i;

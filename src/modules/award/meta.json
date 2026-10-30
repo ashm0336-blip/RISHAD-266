@@ -1,6 +1,9 @@
 {
  "name": "Award",
  "slug": "award",
+ "logicParts": [
+  "../business-cloud.js"
+ ],
  "pre": "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<script src=\"./support.js\"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n",
  "mid": "\n</helmet>\n",
  "mid2": "\n</x-dc>\n",
@@ -20,10 +23,11 @@
    "src/modules/award/view.html",
    "src/modules/award/helmet.css"
   ],
-  "domain": "src/modules/award/logic.js",
+  "domain": [
+   "src/modules/award/logic.js",
+   "src/modules/award/../business-cloud.js"
+  ],
   "data": [
-   "bassam_award_docs_v1",
-   "bassam_award_docs_v2",
    "bassam_award_v1",
    "bassam_employees_v1"
   ],
@@ -63,7 +67,11 @@
    "gate:rev4.mjs",
    "gate:sec.mjs",
    "gate:theme248.mjs",
-   "gate:visual.mjs"
+   "gate:visual.mjs",
+   "tests/unit/award_domain.test.mjs",
+   "tests/unit/business_atomic.test.mjs",
+   "tests/unit/seized_award_cloud_http.test.mjs",
+   "tests/unit/seized_award_cloud_ui.test.mjs"
   ]
  }
 }

@@ -15,7 +15,7 @@
   function counts(value) {
     return (
       record(value) &&
-      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'kept'].every(function (k) {
+      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards', 'kept'].every(function (k) {
         return integer(value[k]);
       })
     );
@@ -76,6 +76,37 @@
       clearTimeout(timer);
     }
   }
+  async function exportDomains(options) {
+    var stamp=context(),srv=KIVO.__BS_SRV;
+    if(!stamp||!record(options)||!Array.isArray(options.departments)||!integer(options.v)||typeof options.full!=='boolean')throw Error('تعذّر تحديد نطاق النسخة');
+    var departments=options.departments.slice().sort(),domains={},images=Object.assign({},options.images||{});
+    if(new Set(departments).size!==departments.length||departments.some(function(d){return typeof d!=='string'||!d||d.includes(':');})||(!options.full&&departments.length!==1))throw Error('نطاق النسخة غير صالح');
+    function current(){return same(stamp)&&window.__BS_BOOT.v===options.v&&srv&&!srv.dirty()&&!srv.inflight()&&!srv.sesChanged();}
+    var specs=[
+      ['irshad',['reports','languages','locations','retro'],['reports','languages','catalogs','windows']],
+      ['seized',['reports','catalog','actions','locations','jew','retro'],['resources','reports','items','photos','history','categories','catalogItems','actions','lists','windows']],
+      ['award',['records','docsV1','docsV2'],['resources','records','caseTexts','answers','scoreRows','scores','documents','sections','items']],
+    ];
+    for(var spec of specs){
+      if(!current())throw Error('تغيّرت البيانات قبل اكتمال النسخة');
+      var route='/api/'+spec[0]+'/export?uid='+encodeURIComponent(stamp.uid)+(options.full?'':'&dept='+encodeURIComponent(departments[0])),response=await request(route,{},stamp),value=response.data;
+      var expected=departments.concat(options.full&&spec[0]==='award'?['']:[]).sort();
+      if(!response.ok||!current()||value.globalRev!==options.v||!Array.isArray(value.domains))throw Error('تعذّر تصدير المجال كاملًا');
+      var scope=function(d){return d&&d.scope&&d.scope.kind==='global'?'':d&&d.scope&&d.scope.departmentId;};
+      if(JSON.stringify(value.domains.map(scope).sort())!==JSON.stringify(expected)||value.domains.some(function(d){return d.version!==1||!record(d.resources)||!record(d.rows)||spec[1].some(function(k){return typeof d.resources[k]!=='boolean';})||JSON.stringify(Object.keys(d.rows).sort())!==JSON.stringify(spec[2].slice().sort())||spec[2].some(function(k){return !Array.isArray(d.rows[k])||d.rows[k].some(function(row){return !record(row)||row.department_id!==scope(d);});});}))throw Error('مجال النسخة ناقص أو خارج نطاقها');
+      domains[spec[0]==='award'?'awards':spec[0]]=value.domains;
+    }
+    var ids=new Set();
+    domains.seized.forEach(function(d){d.rows.photos.forEach(function(row){if(typeof row.image_id==='string')ids.add(row.image_id);});});
+    domains.awards.forEach(function(d){d.rows.records.forEach(function(row){['picture','employee_signature','approver_signature'].forEach(function(k){if(typeof row[k]==='string'&&/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(row[k]))ids.add(row[k]);});});});
+    for(var id of ids){
+      if(!current())throw Error('تغيّرت الجلسة أثناء تجميع النسخة');
+      if(!images[id]){if(!KIVO.BassamIDB||!KIVO.BassamIDB.get)throw Error('خدمة الصور غير متاحة');images[id]=await KIVO.BassamIDB.get(id);}
+      if(typeof images[id]!=='string'||!images[id])throw Error('تعذّر قراءة صورة؛ لم تُنشأ نسخة جزئية');
+    }
+    if(!current())throw Error('تغيّرت البيانات قبل اكتمال النسخة');
+    return {domains:domains,images:images};
+  }
   function identity() {
     if (!window.crypto || !window.crypto.getRandomValues) return null;
     var bytes = new Uint8Array(20);
@@ -122,7 +153,7 @@
     var read = await request('/api/backup/restore?' + query.toString(), {}, stamp);
     if (!read.ok) return read;
     var base = read.data.base;
-    if (!base || !integer(base.epoch) || !base.kv || !base.custody || !base.irshad) return failure('invalid');
+    if (!base || !integer(base.epoch) || !base.kv || !base.custody || !base.irshad || !base.seized || !base.awards) return failure('invalid');
     var body = {
         version: 1,
         uid: stamp.uid,
@@ -208,7 +239,7 @@
         (c.kv || 0) +
         ' مجموعة بيانات و' +
         (c.custody || 0) +
-        ' نطاق عهد و' + (c.irshad || 0) + ' سجل استرشاد. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
+        ' نطاق عهد و' + (c.irshad || 0) + ' سجل استرشاد و'+(c.seized||0)+' من بيانات المضبوطات و'+(c.awards||0)+' من بيانات التكريم. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
         (legacy ? ' ستُحوَّل النسخة القديمة إلى المخطط الحالي قبل الكتابة.' : '') +
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'
@@ -232,6 +263,7 @@
   }
   KIVO.BackupRestore = Object.freeze({
     context: context,
+    exportDomains: exportDomains,
     prepare: prepare,
     approve: approve,
     send: send,

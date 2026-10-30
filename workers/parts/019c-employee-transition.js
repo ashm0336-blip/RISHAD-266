@@ -11,7 +11,6 @@ var EMP_TRANSITION_RELATED = [
   'bassam_rounds_v1',
   'bassam_tasks_v1',
   'bassam_dreport_v1',
-  'bassam_award_v1',
   'bassam_shift_options_v1',
   'bassam_perm_tpls_v1',
   'bassam_grants_v1',
@@ -85,7 +84,7 @@ function empTransitionContextOf(A, d, intent, source, cuRevision) {
     ok: 1,
     dept: d,
     intent: intent,
-    base: { kv: base, custody: cuRevision },
+    base: { kv: base, custody: cuRevision, awards: Object.fromEntries(AW_NAMES.map(function(name,i){return [name,source.revs[awKey(d,i)]||0];})) },
     employees: empClone(employees),
     staffAccountKeys: (A.users || [])
       .filter(function (u) {
@@ -155,7 +154,7 @@ function empPrunePermissions(p, d, users, A) {
     if (!live.has(k)) empDropPermission(p, d, k);
   });
 }
-function empCleanupValues(values, removed, after, replace, wipe, staffOn, awardOn) {
+function empCleanupValues(values, removed, after, replace, wipe, staffOn) {
   var drop = new Set(cuRemovedHolderKeys(removed, after)),
     names = new Set(
       after.map(function (e) {
@@ -223,13 +222,6 @@ function empCleanupValues(values, removed, after, replace, wipe, staffOn, awardO
           }
         });
     });
-  if (awardOn) {
-    var aw = values.bassam_award_v1;
-    if (isObj(aw) && Array.isArray(aw.recs))
-      aw.recs = aw.recs.filter(function (r) {
-        return !(r && ((r.ekey && drop.has(String(r.ekey))) || (r.name && drop.has(String(r.name)))));
-      });
-  }
   if (replace || wipe) {
     if (staffOn) {
       var st = values.bassam_staffing_v3,
@@ -259,7 +251,6 @@ function empCleanupValues(values, removed, after, replace, wipe, staffOn, awardO
       values.bassam_staffing_locks_v1 = lk;
     }
     if (values.__dreportOn) values.bassam_dreport_v1 = {};
-    if (awardOn && isObj(values.bassam_award_v1) && Array.isArray(values.bassam_award_v1.recs)) values.bassam_award_v1.recs = [];
   }
 }
 function empApplySchedule(values, meta, validKeys, result) {
@@ -507,7 +498,8 @@ async function empPrepareTransition(env, A, input) {
   var d = input.dept,
     source = await empTransitionSource(env),
     context = empTransitionContextOf(A, d, input.intent, source, await cuRev(env, d));
-  empShape(input.base, ['epoch', 'kv', 'custody']);
+  empShape(input.base, ['epoch', 'kv', 'custody', 'awards']);
+  if(!deq(cuCanonical(input.base.awards),cuCanonical(context.base.awards)))throw cuError('award-conflict',409);
   if (!isObj(input.base.kv) || !Number.isSafeInteger(input.base.custody) || input.base.custody < 0)
     throw cuError('employee-transition-base');
   for (var key of Object.keys(context.base.kv))
@@ -570,8 +562,7 @@ async function empPrepareTransition(env, A, input) {
      skips disabled modules. The canonical resource guards still decide writes. */
   values.__staffOn = input.intent === 'delete' || capOnDept(A, d, 'staff');
   values.__dreportOn = input.intent === 'delete' || capOnDept(A, d, 'dreport');
-  var awardOn = input.intent === 'delete' || capOnDept(A, d, 'award');
-  empCleanupValues(values, replace ? before : removed, after, replace, wipe, values.__staffOn, awardOn);
+  empCleanupValues(values, replace ? before : removed, after, replace, wipe, values.__staffOn);
   if (replace && values.__staffOn) {
     var mk = input.import.year + '-' + input.import.month;
     delete values.bassam_staffing_locks_v1[mk];

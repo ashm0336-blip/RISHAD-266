@@ -1,0 +1,228 @@
+{
+  "schema": 9,
+  "accepted": true,
+  "evidenceKind": "targeted-composite",
+  "method": "Distinct named completed targeted cases plus explicit affected-case reruns; not a new full platform suite. Python rollback31 and internal SQL fault positions are recorded separately.",
+  "acceptedCounts": {
+    "tests": 325,
+    "pass": 325,
+    "skipped": 0,
+    "fail": 0,
+    "cancelled": 0
+  },
+  "applicationArtifactsUnchanged": true,
+  "testedArtifacts": {
+    "workers/_worker.js": "86d4e3c1189c74ef0fcf90fdc48591a7d1b01b06e98440f085ea120b610f2bf4",
+    "workers/parts.json": "863bbf8c4a88669eae300965744fea1a6c39a166fad34a5a55bf2c86ce8a44cc",
+    "migrations/0009_seized_awards.sql": "61bf7db7deefbc43c529c58841718cd9da52cd8736dd604d8e1465477574c8fb",
+    "pk265/_worker.js": "7e12ecca270df5d1a366fbd55c696f802a10afbada7866025549c9cc6fa8ed9c",
+    "pk265.build.json": "58d4b109114eac6e44fb393710782839d4aeaa529814d24c7140043e626d3a7a"
+  },
+  "groups": [
+    {
+      "name": "seized",
+      "method": "completed targeted run",
+      "tests": 37,
+      "pass": 37,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/next-domains/seized-canonical-only-receipts37.tap",
+          "sha256": "df5f817baf8cd3a0c5f537d6e34cce53c757f8ac750cf3590ec2eebe86e1261d"
+        }
+      ]
+    },
+    {
+      "name": "business integration",
+      "method": "completed targeted run",
+      "tests": 18,
+      "pass": 18,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/next-domains/business-canonical-final.tap",
+          "sha256": "e329c63ecc59ff707dca017dabec67ffa9863fbe24176a378e3602ab07046e5a"
+        }
+      ]
+    },
+    {
+      "name": "IR affected",
+      "method": "targeted composite",
+      "tests": 68,
+      "pass": 68,
+      "skipped": 0,
+      "initialFailures": 2,
+      "logs": [
+        {
+          "path": ".cache/next-domains/irshad-canonical9-affected.tap",
+          "sha256": "b992fbe3c40d3d6eae67b85bdc64a7385329397f8a3d5466c84ddc62cfbddcdd"
+        },
+        {
+          "path": ".cache/next-domains/irshad-migration8-explicit-final.tap",
+          "sha256": "50b138f01e57f2dca2f655b399e37cbea76d3e282f422c4e9fa4b8fd11e08f5d"
+        }
+      ]
+    },
+    {
+      "name": "shared restore",
+      "method": "targeted composite",
+      "tests": 92,
+      "pass": 92,
+      "skipped": 0,
+      "initialFailures": 15,
+      "logs": [
+        {
+          "path": ".cache/next-domains/shared-restore-regression-first.tap",
+          "sha256": "e6aaa1f3f9c711b9664c7bd8de1e5afdcd3c089f82689c184a1089de2b49ad9a"
+        },
+        {
+          "path": ".cache/next-domains/backup-client-fixtures-repaired.tap",
+          "sha256": "418a54eb1877a2b33834bfd8ce1d7d5a050b1d9a9eb27da0669eec35bb3838b4"
+        },
+        {
+          "path": ".cache/next-domains/backup-export-wiring-fixed.tap",
+          "sha256": "a61c179d17325de4d17a567abfea08906ade23702069417664596d6c42146191"
+        },
+        {
+          "path": ".cache/preview9/accounts-budget-final.tap",
+          "sha256": "bb13cff189992ef9edeadbf337c15f5a8f8eed711b46585410b6b5a71bc72f8b"
+        }
+      ]
+    },
+    {
+      "name": "final Award/periodic/tools",
+      "method": "completed targeted run",
+      "tests": 25,
+      "pass": 25,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/preview9/award-periodic-tools-final.tap",
+          "sha256": "d6ea876d01b42db50c1dfe0fd154772dc1f0dc76a5cb112bfecac187622f3ee8"
+        }
+      ]
+    },
+    {
+      "name": "UI targeted",
+      "method": "completed targeted run",
+      "tests": 58,
+      "pass": 58,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/next-domains/ui-trim-corrected.tap",
+          "sha256": "cec31705f9e01038bc17ce1687d0cc01580519023478d3472c8e5007c30af342"
+        }
+      ]
+    },
+    {
+      "name": "IR backup UI",
+      "method": "completed targeted run",
+      "tests": 4,
+      "pass": 4,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/next-domains/irshad-backup-fixture-current.tap",
+          "sha256": "60741b85c1d5182bdf3b09dfa111ccbe0752798a8f6b69100f42e672aee6cbf1"
+        }
+      ]
+    },
+    {
+      "name": "actual built UI/HTTP/HTML",
+      "method": "completed targeted run",
+      "tests": 8,
+      "pass": 8,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/next-domains/ui-built-final-proof.tap",
+          "sha256": "d4bf0a63f633515b37d145c535fc630665f288b3c5f1f4fd7304ea720123281b"
+        }
+      ]
+    },
+    {
+      "name": "retired browser storage",
+      "method": "completed targeted run",
+      "tests": 9,
+      "pass": 9,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/preview9/storage-retired-targeted.tap",
+          "sha256": "f285a7f00978281fe43af4bb339436b8cec9de57155f2a8affec9add09dcac01"
+        }
+      ]
+    },
+    {
+      "name": "source tool regressions",
+      "method": "completed targeted run",
+      "tests": 3,
+      "pass": 3,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/next-domains/source-tools-review-final-eol.tap",
+          "sha256": "5ec89a6f07fc45e08ac5c71d86e7d28c61ac492f4a3fed241690a495345ba858"
+        }
+      ]
+    },
+    {
+      "name": "CLI policy",
+      "method": "completed targeted run",
+      "tests": 1,
+      "pass": 1,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/next-domains/migration-cli-final-env.tap",
+          "sha256": "f2b8a4772631b60fe189534574202723d1a363d5822d80bb712d1422292e68c3"
+        }
+      ]
+    },
+    {
+      "name": "archived worker guards",
+      "method": "completed targeted run",
+      "tests": 6,
+      "pass": 6,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/preview9/previous-worker-guards.tap",
+          "sha256": "279d95fe7241e9e525e6a71c89170231c9d305366b667c5b77fff5114d484e98"
+        }
+      ]
+    }
+  ],
+  "workerTokenEquivalence": {
+    "testedSourceWorker": "b14c6e07702f8bf484c32dff452ad952745655d1903f4a72a46f68543ee497bc",
+    "finalWorker": "86d4e3c1189c74ef0fcf90fdc48591a7d1b01b06e98440f085ea120b610f2bf4",
+    "tokens": 463533,
+    "proof": ".cache/preview9/worker-final-token-proof.log",
+    "reason": "Only preserved line endings and a generated comment changed backend bytes; defaults JSON exactly unchanged."
+  },
+  "rollbackPythonTests": 31,
+  "restoreFaultPositions": 105,
+  "resetFaultPositions": 67,
+  "cloudAccepted": false,
+  "productionDeployed": false,
+  "databaseExportCreated": false,
+  "limits": [
+    "No full platform suite rerun",
+    "No live Time Travel restore drill",
+    "Legacy Award approval with absent business ID remains denied by the existing classifier",
+    "Global legacy Award references remain read-only"
+  ],
+  "status": "Local code accepted; cloud schema9 acceptance pending",
+  "baselineCommit": "4d8ab1e81cc5dd3fadad3acaf4963a76ba206f6e"
+}

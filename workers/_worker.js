@@ -6108,6 +6108,7 @@ async function nfRoute(env, request, url, ss) {
     await nfGuardRetired(env);
     if (url.pathname === "/api/notifications" && request.method === "GET") {
       var dailyIr = await nfIrshadDaily(env, A, url); if (dailyIr.emitted) preOff(env);
+      var seizedDue=await nfSeizedDue(env,A,url);if(seizedDue.emitted)preOff(env);
       return json(await nfFeed(env, A, url));
     }
     if (url.pathname === "/api/notifications/export" && request.method === "GET") return json(await nfExport(env, A, url));
@@ -7858,7 +7859,6 @@ var EMP_TRANSITION_RELATED = [
   'bassam_rounds_v1',
   'bassam_tasks_v1',
   'bassam_dreport_v1',
-  'bassam_award_v1',
   'bassam_shift_options_v1',
   'bassam_perm_tpls_v1',
   'bassam_grants_v1',
@@ -7932,7 +7932,7 @@ function empTransitionContextOf(A, d, intent, source, cuRevision) {
     ok: 1,
     dept: d,
     intent: intent,
-    base: { kv: base, custody: cuRevision },
+    base: { kv: base, custody: cuRevision, awards: Object.fromEntries(AW_NAMES.map(function(name,i){return [name,source.revs[awKey(d,i)]||0];})) },
     employees: empClone(employees),
     staffAccountKeys: (A.users || [])
       .filter(function (u) {
@@ -8002,7 +8002,7 @@ function empPrunePermissions(p, d, users, A) {
     if (!live.has(k)) empDropPermission(p, d, k);
   });
 }
-function empCleanupValues(values, removed, after, replace, wipe, staffOn, awardOn) {
+function empCleanupValues(values, removed, after, replace, wipe, staffOn) {
   var drop = new Set(cuRemovedHolderKeys(removed, after)),
     names = new Set(
       after.map(function (e) {
@@ -8070,13 +8070,6 @@ function empCleanupValues(values, removed, after, replace, wipe, staffOn, awardO
           }
         });
     });
-  if (awardOn) {
-    var aw = values.bassam_award_v1;
-    if (isObj(aw) && Array.isArray(aw.recs))
-      aw.recs = aw.recs.filter(function (r) {
-        return !(r && ((r.ekey && drop.has(String(r.ekey))) || (r.name && drop.has(String(r.name)))));
-      });
-  }
   if (replace || wipe) {
     if (staffOn) {
       var st = values.bassam_staffing_v3,
@@ -8106,7 +8099,6 @@ function empCleanupValues(values, removed, after, replace, wipe, staffOn, awardO
       values.bassam_staffing_locks_v1 = lk;
     }
     if (values.__dreportOn) values.bassam_dreport_v1 = {};
-    if (awardOn && isObj(values.bassam_award_v1) && Array.isArray(values.bassam_award_v1.recs)) values.bassam_award_v1.recs = [];
   }
 }
 function empApplySchedule(values, meta, validKeys, result) {
@@ -8354,7 +8346,8 @@ async function empPrepareTransition(env, A, input) {
   var d = input.dept,
     source = await empTransitionSource(env),
     context = empTransitionContextOf(A, d, input.intent, source, await cuRev(env, d));
-  empShape(input.base, ['epoch', 'kv', 'custody']);
+  empShape(input.base, ['epoch', 'kv', 'custody', 'awards']);
+  if(!deq(cuCanonical(input.base.awards),cuCanonical(context.base.awards)))throw cuError('award-conflict',409);
   if (!isObj(input.base.kv) || !Number.isSafeInteger(input.base.custody) || input.base.custody < 0)
     throw cuError('employee-transition-base');
   for (var key of Object.keys(context.base.kv))
@@ -8417,8 +8410,7 @@ async function empPrepareTransition(env, A, input) {
      skips disabled modules. The canonical resource guards still decide writes. */
   values.__staffOn = input.intent === 'delete' || capOnDept(A, d, 'staff');
   values.__dreportOn = input.intent === 'delete' || capOnDept(A, d, 'dreport');
-  var awardOn = input.intent === 'delete' || capOnDept(A, d, 'award');
-  empCleanupValues(values, replace ? before : removed, after, replace, wipe, values.__staffOn, awardOn);
+  empCleanupValues(values, replace ? before : removed, after, replace, wipe, values.__staffOn);
   if (replace && values.__staffOn) {
     var mk = input.import.year + '-' + input.import.month;
     delete values.bassam_staffing_locks_v1[mk];
@@ -8813,7 +8805,7 @@ function rsWitness(env, table, cols, rows, where, args) {
 function rsBulk(env, table, cols, rows) {
   return nfBulk(env, table, cols, rows, '');
 }
-function rsSnapshot(env, sid, domain, table, rows) {
+function rsSnapshotRows(sid, domain, table, rows) {
   var physical = [];
   rows.forEach(function (r, rowIndex) {
     var value = JSON.stringify(r);
@@ -8825,14 +8817,9 @@ function rsSnapshot(env, sid, domain, table, rows) {
       });
     }
   });
-  return rsBulk(
-    env,
-    'restore_preimage',
-    ['snapshot_id', 'domain', 'table_key', 'row_number', 'row_json'],
-    physical.map(function (value, i) {
-      return { snapshot_id: sid, domain: domain, table_key: table, row_number: i, row_json: value };
-    }),
-  );
+  return physical.map(function (value, i) {
+    return { snapshot_id: sid, domain: domain, table_key: table, row_number: i, row_json: value };
+  });
 }
 function rsMergeRows(old, next, cols, pk) {
   var map = new Map();
@@ -8958,6 +8945,7 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
     if (domains.irshad) domains.irshad = domains.irshad.filter(function (domain) {
       return domain && domain.scope && allowed.has(domain.scope.departmentId);
     });
+    ['seized','awards'].forEach(function(name){if(domains[name])domains[name]=domains[name].filter(function(domain){return allowed.has(bdScope(domain));});});
   } else {
     Object.keys(keys).forEach(function (k) {
       if (Object.prototype.hasOwnProperty.call(inputKeys, k) && k !== K_PERM) {
@@ -8970,6 +8958,8 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
     delete domains.notifications;
     delete domains.custody;
     delete domains.irshad;
+    delete domains.seized;
+    delete domains.awards;
   }
   if (domains.dailyStats) {
     delete domains.dailyStats;
@@ -9275,11 +9265,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody', 'irshad']);
+    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
     if (
-      manifest.version !== 2 ||
+      manifest.version !== 3 ||
       manifest.scope !== 'full' ||
-      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad'].some(function (k) {
+      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards'].some(function (k) {
         return manifest.domains[k] !== 1;
       })
     )
@@ -9316,11 +9306,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'notifications', 'custody', 'irshad']);
+    rsShape(manifest.domains, ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
     if (
-      manifest.version !== 2 ||
+      manifest.version !== 3 ||
       manifest.scope !== 'dept' ||
-      ['kv', 'notifications', 'custody', 'irshad'].some(function (k) {
+      ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards'].some(function (k) {
         return manifest.domains[k] !== 1;
       }) ||
       !deq(manifest.departments, [body.scope.departmentId]) ||
@@ -9362,9 +9352,13 @@ async function rsPrepare(env, A, body, meta, internal) {
     throw rsError('restore-scope', 403);
   if (!sup && (body.scope.kind !== 'dept' || !isMgrOf(A, dept) || !enfHeld(A, dept, 'backup.restore')))
     throw rsError('restore-policy', 403);
-  rsShape(body.base, ['epoch', 'kv', 'dailyStats', 'notifications', 'custody', 'irshad']);
+  rsShape(body.base, ['epoch', 'kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
+  for(var def of bdDefinitions()) {
+    var expected=(body.manifest.departments||[]).concat(def.name==='awards'&&body.scope.kind==='full'?['']:[]).sort();
+    if(!Array.isArray((body.domains||{})[def.name])||!deq(body.domains[def.name].map(bdScope).sort(),expected))throw rsError('restore-incomplete-'+def.name);
+  }
   rsNat(body.base.epoch);
-  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody', 'irshad']);
+  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
   var fingerprint =
       (internal && internal.fingerprint) ||
       hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(cuCanonical(body))))),
@@ -9380,6 +9374,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   if (await dsLegacyPresent(env)) throw rsError('dstats-legacy-source-present', 503);
   if (await cuLegacyPresent(env)) throw rsError('custody-legacy-source-present', 503);
   await irGuardRetired(env);
+  await bdGuardRetired(env);
   if (!isObj(body.keys || {}) || !isObj(body.base.kv || {}) || !Array.isArray(body.delete || [])) throw rsError('restore-keys');
   var keys = Object.assign(Object.create(null), body.keys || {}),
     del = (body.delete || []).slice(),
@@ -9396,7 +9391,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   Object.keys(keys)
     .concat(del)
     .forEach(function (k) {
-      if (nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
+      if (nfLegacyKey(k) || cuLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k)) || resName(k) === K_DSTATS) throw rsError('domain-moved');
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
@@ -9510,7 +9505,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     .concat(del)
     .forEach(function (k) {
       if (typeof keys[k] !== 'string' && del.indexOf(k) < 0) throw rsError('restore-key-value');
-      if (nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
+      if (nfLegacyKey(k) || cuLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k)) || resName(k) === K_DSTATS) throw rsError('domain-moved');
       if (body.scope.kind === 'dept' && parseKey(k).dept !== dept && k !== K_PERM) throw rsError('restore-scope', 403);
       rsNat(base[k]);
       ops[k] = { op: 'backup.restore', scope: body.scope.kind, mode: body.mode, reason: body.reason };
@@ -9571,7 +9566,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { kv: kv.pend.length, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, kept: selection.kept },
+    counts: { kv: kv.pend.length, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept },
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
@@ -9764,12 +9759,14 @@ async function rsPrepare(env, A, body, meta, internal) {
       plan.snapshots.push({ domain: 'irshad', table: irRemoved + ':' + kind, rows: irWipe.snapshotRows[kind] });
     });
   }
+  await bdRestorePlan(env,A,body,plan,domains,finalDeptIds,removedDepartments,keys);
   if (internal && internal.images) await rsImageArchivePlan(env, A, plan, reference, internal.images);
   await rsImageMetadataPlan(env, A, plan, reference);
   return plan;
 }
 async function rsCommit(env, A, plan, meta) {
   await irGuardRetired(env);
+  await bdGuardRetired(env);
   if (plan.receipt && plan.receipt.result_json) {
     var replay = JSON.parse(plan.receipt.result_json);
     replay.reauthRequired = !!replay.reauthRequired;
@@ -9790,21 +9787,17 @@ async function rsCommit(env, A, plan, meta) {
     };
   A = plan.author || A;
   var sid = enfSnapId('atomic'),
-    st = [rsEpochGuard(env.DB, plan.epoch), irRetiredGuard(env)].concat(plan.guards),
+    st = [rsEpochGuard(env.DB, plan.epoch), bdCommitRetiredGuard(env)].concat(plan.guards),
     keys = Array.from(new Set(plan.revisionKeys)),
     now = Date.now(),
     changed = keys.length > 0 || !!plan.forceFence;
-  plan.snapshots.forEach(function (s) {
-    st.push(
-      env.DB.prepare('INSERT INTO restore_snapshot_manifest(snapshot_id,domain,table_key,row_count) VALUES(?1,?2,?3,?4)').bind(
-        sid,
-        s.domain,
-        s.table,
-        s.rows.length,
-      ),
-    );
-    st.push.apply(st, rsSnapshot(env, sid, s.domain, s.table, s.rows));
+  var snapshotRows=[],snapshotManifest=[];
+  plan.snapshots.forEach(function(snapshot){
+    snapshotManifest.push({snapshot_id:sid,domain:snapshot.domain,table_key:snapshot.table,row_count:snapshot.rows.length});
+    for(var row of rsSnapshotRows(sid,snapshot.domain,snapshot.table,snapshot.rows))snapshotRows.push(row);
   });
+  st.push.apply(st,rsBulk(env,'restore_snapshot_manifest',['snapshot_id','domain','table_key','row_count'],snapshotManifest));
+  st.push.apply(st,rsBulk(env,'restore_preimage',['snapshot_id','domain','table_key','row_number','row_json'],snapshotRows));
   if (changed)
     st.push(
       env.DB.prepare(
@@ -9941,6 +9934,7 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
     custody[d] = r[cuKey(d)] || 0;
     irshad[d] = await irRevs(env, d);
   }
+  var businessBase=await bdRestoreRevisions(env,depts,scope.kind==='full');
   return {
     ok: 1,
     scope: scope,
@@ -9951,6 +9945,8 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
       notifications: { rev: r[NF_REV] || 0, configRev: r[NF_CFG_REV] || 0, broadcastRev: r[NF_BC_REV] || 0 },
       custody: custody,
       irshad: irshad,
+      seized: businessBase.seized,
+      awards: businessBase.awards,
     },
     counts: { keys: Object.keys(kv).length, departments: depts.length },
   };
@@ -10055,6 +10051,7 @@ async function rsRoute(env, request, url, ss) {
     return json(await rsCommit(env, A, await rsPrepare(env, A, body, reqMeta(request)), reqMeta(request)));
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs, details: e.details }, e.status);
+    if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
@@ -10110,7 +10107,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     plan.imagesReused = 0;
     return;
   }
-  var finalKeys = Object.assign(Object.create(null), reference.inputKeys),
+  var finalKeys = Object.assign(Object.create(null), reference.inputKeys, plan.relationalImageBefore || {}, plan.relationalImageReferences || {}),
     mentions = new Map(
       ids.map(function (id) {
         return [id, []];
@@ -10120,6 +10117,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     if (pd.act === 'del') delete finalKeys[pd.k];
     else finalKeys[pd.k] = pd.v;
   });
+  (plan.imgTouch||[]).forEach(function(t){finalKeys[t.k]=t.v;});
   Object.keys(finalKeys).forEach(function (key) {
     if (
       isDeviceKey(key) ||
@@ -10159,7 +10157,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     for (var key of mentions.get(id))
       if (!checkedKeys.has(key)) {
         checkedKeys.add(key);
-        if (await imgForeignIn(env, A, key, finalKeys[key], reference.inputKeys[key] || '')) reject();
+        if (await imgForeignIn(env, A, key, finalKeys[key], (plan.relationalImageCurrent||{})[key] || (plan.relationalImageBefore||{})[key] || reference.inputKeys[key] || '')) reject();
       }
   }
   // Include any upload fragments for these exact IDs. A late fragment or owner
@@ -10206,8 +10204,9 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     if (pd.act === 'del') delete values[pd.k];
     else values[pd.k] = pd.v;
   });
+  list.forEach(function(t){values[t.k]=t.v;});
   list.forEach(function (v) {
-    Object.keys(imgIdsIn(reference.inputKeys[v.k] || ''))
+    Object.keys(imgIdsIn((plan.relationalImageBefore||{})[v.k] || reference.inputKeys[v.k] || ''))
       .concat(Object.keys(imgIdsIn(v.v || '')))
       .forEach(function (id) {
         ids.add(id);
@@ -10462,6 +10461,8 @@ async function rsSaveCommit(env, A, body, meta, opt) {
       plan.snapshots.push({ domain: 'irshad', table: irDept + ':' + kind, rows: irWipe.snapshotRows[kind] });
     });
   }
+  await bdWipePlans(env,A,body,plan,irWipeDepartments,opt,irFinalDepartments);
+  await bdEmployeeCleanupPlan(env,A,body,plan,reference,opt,irWipeDepartments);
   if (!plan.snapshotRequired) plan.snapshots = [];
   else
     for (var dept of departments) {
@@ -10487,6 +10488,8 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     plan.counts.notifications = opt.__notificationCount || 0;
     plan.counts.accounts = opt.__accountCount || 0;
     plan.counts.irshad = opt.__irshadCount || 0;
+    plan.counts.seized = opt.__seizedCount || 0;
+    plan.counts.awards = opt.__awardsCount || 0;
     await rsCustodyReceiptPreimage(env, d, plan);
     plan.fingerprint = opt.__wipeFingerprint;
   }
@@ -10520,6 +10523,8 @@ async function rsWipeInventory(env, A, dept, kind) {
     if (parseKey(k).dept === dept) kv[k] = reference.inputRevs[k] || 0;
   });
   var scopedCount = Object.keys(kv).length;
+  var businessBase=await bdRestoreRevisions(env,[dept],false), businessCounts={};
+  for(var def of bdDefinitions())businessCounts[def.name]=await bdCount(env,def,dept);
   if (kind === 'delete')
     [K_DEPTS, K_USERS, K_PERM].forEach(function (k) {
       kv[k] = reference.inputRevs[k] || 0;
@@ -10553,6 +10558,8 @@ async function rsWipeInventory(env, A, dept, kind) {
         kv: kv,
         custody: await cuRev(env, dept),
         irshad: irRevisionResult(counts[4].results || [], dept),
+        seized: businessBase.seized[dept],
+        awards: businessBase.awards[dept],
         notifications: { rev: nf.rev, configRev: nf.configRev, broadcastRev: nf.broadcastRev },
       },
       counts: {
@@ -10566,6 +10573,8 @@ async function rsWipeInventory(env, A, dept, kind) {
         custody: Number(counts[0].results[0].n) + Number(counts[1].results[0].n),
         notifications: Number(counts[2].results[0].n),
         irshad: Number(counts[3].results[0].n),
+        seized: businessCounts.seized,
+        awards: businessCounts.awards,
       },
     },
   };
@@ -10591,7 +10600,7 @@ async function rsWipeRoute(env, request, url, ss) {
     if (input.uid !== undefined && input.uid !== ss.uid) throw rsError('session-changed', 409);
     if (typeof input.dept !== 'string' || typeof input.requestId !== 'string' || !/^[-A-Za-z0-9_]{8,100}$/.test(input.requestId))
       throw rsError('bad-body');
-    rsShape(input.base, ['epoch', 'kv', 'custody', 'notifications', 'irshad']);
+    rsShape(input.base, ['epoch', 'kv', 'custody', 'notifications', 'irshad', 'seized', 'awards']);
     var fingerprint = hex(
         await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({ kind: kind, input: cuCanonical(input) }))),
       ),
@@ -10615,7 +10624,7 @@ async function rsWipeRoute(env, request, url, ss) {
         if (typeof input.reason !== 'string' || input.reason.length > 300) throw rsError('bad-reason');
         why[k] = input.reason.trim();
       }
-      if (cuLegacyKey(k) || nfLegacyKey(k) || irLegacyKey(k)) throw rsError('domain-moved');
+      if (cuLegacyKey(k) || nfLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k))) throw rsError('domain-moved');
       var e = ENT[resName(k)];
       if (e && typeof e.empty === 'string') set[k] = e.empty;
       else del.push(k);
@@ -10651,7 +10660,11 @@ async function rsWipeRoute(env, request, url, ss) {
         __notificationBase: input.base.notifications,
         __notificationCount: observed.counts.notifications,
         __irshadBase: input.base.irshad,
+        __seizedBase: input.base.seized,
+        __awardsBase: input.base.awards,
         __irshadCount: observed.counts.irshad,
+        __seizedCount: observed.counts.seized,
+        __awardsCount: observed.counts.awards,
         __accountCount: observed.counts.accounts,
         __wipeKind: kind,
         __physicalDeleteKeys:
@@ -10675,6 +10688,7 @@ async function rsWipeRoute(env, request, url, ss) {
     return json(outcome);
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
+    if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
@@ -10728,6 +10742,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
         __employeeDept: input.dept,
         __employeeIntent: input.intent,
         __employeeResult: prepared.result,
+        __awardsBase: input.base.awards,
       });
     if (outcome.ok !== 1)
       return json(
@@ -10742,6 +10757,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
     return json(outcome);
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
+    if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
@@ -10829,10 +10845,11 @@ function rsBCForbiddenKey(key) {
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
   var required = scope.kind === 'full' ? ['kv', 'dailyStats', 'notifications', 'custody'] : ['kv', 'notifications', 'custody'];
-  if (manifest.version === 2) required.push('irshad');
+  if (manifest.version >= 2) required.push('irshad');
+  if (manifest.version >= 3) required.push('seized','awards');
   rsShape(manifest.domains, required);
   if (
-    ![1, 2].includes(manifest.version) ||
+    ![1, 2, 3].includes(manifest.version) ||
     manifest.scope !== scope.kind ||
     required.some(function (k) {
       return manifest.domains[k] !== 1;
@@ -10858,11 +10875,17 @@ function rsBCManifest(manifest, scope, keys, domains, departments) {
     return d && d.scope && d.scope.departmentId;
   });
   if (!deq(custody.slice().sort(), departments.slice().sort())) rsBCFail('incomplete-custody');
-  if (manifest.version === 2) {
+  if (manifest.version >= 2) {
     if (!Array.isArray(domains.irshad) || !deq(domains.irshad.map(function (d) {
       return d && d.scope && d.scope.departmentId;
     }).sort(), departments.slice().sort())) rsBCFail('incomplete-irshad');
   } else if (domains.irshad !== undefined) rsBCFail('irshad-manifest-version');
+  for(var def of bdDefinitions()) {
+    if(manifest.version>=3) {
+      var expected=departments.concat(def.name==='awards'&&scope.kind==='full'?['']:[]).sort();
+      if(!Array.isArray(domains[def.name])||!deq(domains[def.name].map(bdScope).sort(),expected))rsBCFail('incomplete-'+def.name);
+    } else if(domains[def.name]!==undefined)rsBCFail(def.name+'-manifest-version');
+  }
 }
 async function rsConvertBackup(env, A, file, opt) {
   opt = opt || {};
@@ -10903,7 +10926,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var input = Object.create(null),
     keys = Object.create(null),
     domains = file.domains === undefined ? {} : rsBCClone(file.domains);
-  rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad']);
+  rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
   Object.keys(file.data).forEach(function (k) {
     if (k === 'bassam_active_dept_v1') {
       summary.ignoredDevicePreferences.push(k);
@@ -10940,7 +10963,7 @@ async function rsConvertBackup(env, A, file, opt) {
       if (deptIds.indexOf(d) < 0) rsBCFail('unknown-department');
     });
     Object.keys(input).forEach(function (k) {
-      if (!parseKey(k).dept && resOf(k) && resOf(k).scope === 'dept') rsBCFail('unscoped-department-key');
+      if (!parseKey(k).dept && resOf(k) && resOf(k).scope === 'dept' && !AW_RES.slice(1).includes(k)) rsBCFail('unscoped-department-key');
       keys[k] = input[k];
     });
   } else {
@@ -10971,8 +10994,15 @@ async function rsConvertBackup(env, A, file, opt) {
       keys[dest] = input[k];
     });
   }
+  Object.keys(keys).filter(bdLegacyKey).forEach(function(k){
+    var def=bdDefinitions().find(function(def){return def.resources.includes(resName(k));}),part=parseKey(k),index=def.resources.indexOf(resName(k));
+    if(k!==(part.dept?def.key(part.dept,index):def.resources[index]))rsBCFail('business-namespace');
+    if(!part.dept&&!(def.name==='awards'&&index>0&&scope.kind==='full'))rsBCFail('business-global-scope');
+    if(part.dept&&!deptIds.includes(part.dept))rsBCFail('business-department');
+  });
   var cuKeys = Object.keys(keys).filter(cuLegacyKey),
     irKeys = Object.keys(keys).filter(irLegacyKey),
+    businessKeys = Object.keys(keys).filter(bdLegacyKey),
     nfKeys = Object.keys(keys).filter(nfLegacyKey),
     dsKeys = Object.keys(keys).filter(function (k) {
       return resName(k) === K_DSTATS;
@@ -10984,7 +11014,9 @@ async function rsConvertBackup(env, A, file, opt) {
     (irKeys.length && rsBCOwn(domains, 'irshad'))
   )
     rsBCFail('duplicate-domain-source');
-  if (modern && (cuKeys.length || nfKeys.length || dsKeys.length || (file.manifest && file.manifest.version === 2 && irKeys.length))) rsBCFail('retired-key-in-modern-file');
+  for(var def of bdDefinitions()) if(businessKeys.some(function(k){return def.resources.includes(resName(k));})&&rsBCOwn(domains,def.name))rsBCFail('duplicate-domain-source');
+  if (modern && (cuKeys.length || nfKeys.length || dsKeys.length || (file.manifest && file.manifest.version >= 2 && irKeys.length))) rsBCFail('retired-key-in-modern-file');
+  if(modern&&file.manifest.version>=3&&businessKeys.length)rsBCFail('retired-key-in-modern-file');
   if (scope.kind === 'dept' && (dsKeys.length || domains.dailyStats !== undefined)) rsBCFail('global-domain-in-department');
   if (modern) {
     // Validate the source declaration before an explicit scoped remap. Missing
@@ -11014,6 +11046,25 @@ async function rsConvertBackup(env, A, file, opt) {
       if (!Object.keys(docs).length) summary.emptyDomains.push('irshad:' + d);
       return irValidateDomain(irConvert(d, docs), d);
     });
+  }
+  for(var def of bdDefinitions()) {
+    if(domains[def.name]!==undefined) {
+      if(!Array.isArray(domains[def.name]))rsBCFail(def.name+'-shape');
+      domains[def.name]=domains[def.name].map(function(domain){
+        var d=bdScope(domain),global=def.name==='awards'&&d==='';
+        if(typeof d!=='string'||(global&&scope.kind!=='full')||(!global&&(scope.kind==='full'?!deptIds.includes(d):d!==source)))rsBCFail(def.name+'-scope');
+        var next=rsBCClone(def.validate(domain,d)),targetDept=scope.kind==='dept'?target:d;
+        if(targetDept!==d){next.scope={departmentId:targetDept};Object.keys(def.tables).forEach(function(kind){next.rows[kind].forEach(function(row){row.department_id=targetDept;});});}
+        return def.validate(next,targetDept);
+      });
+      if(new Set(domains[def.name].map(bdScope)).size!==domains[def.name].length)rsBCFail(def.name+'-duplicate');
+    } else if(legacy||file.manifest.version<3) {
+      domains[def.name]=deptIds.concat(def.name==='awards'&&scope.kind==='full'?['']:[]).map(function(d){
+        var docs={};def.names.forEach(function(name,i){var k=d?def.key(d,i):def.resources[i];if(rsBCOwn(keys,k))docs[name]=rsBCParse(keys[k]);});
+        if(!Object.keys(docs).length)summary.emptyDomains.push(def.name+':'+d);
+        return def.validate(def.convert(d,docs),d);
+      });
+    }
   }
   if (domains.custody !== undefined) {
     if (!Array.isArray(domains.custody)) rsBCFail('custody-shape');
@@ -11159,7 +11210,7 @@ async function rsConvertBackup(env, A, file, opt) {
       });
     }
   }
-  cuKeys.concat(nfKeys, dsKeys, irKeys).forEach(function (k) {
+  cuKeys.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
     delete keys[k];
   });
   // Conversion preserves credentials byte-for-byte; applySave/restore retains
@@ -11185,8 +11236,10 @@ async function rsConvertBackup(env, A, file, opt) {
   }
   // A v1 source is validated before conversion. The compiled destination always
   // declares the complete typed Irshad domain; v2 never receives empty fallbacks.
-  manifest.version = 2;
+  manifest.version = 3;
   manifest.domains.irshad = 1;
+  manifest.domains.seized = 1;
+  manifest.domains.awards = 1;
   manifest.keys = Object.keys(keys).map(function (k) { return scope.kind === 'dept' ? resName(k) : k; });
   rsBCManifest(manifest, scope, keys, domains, deptIds);
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
@@ -11852,11 +11905,15 @@ async function irReplacementPlan(env, d, domain, base) {
   await irGuardRetired(env);
   var before = await irPlanState(env, d), guards = [irRetiredGuard(env)].concat(irRevisionGuards(env, d, base));
   if (!deq(cuCanonical(before.revs), cuCanonical(base))) throw irError('irshad-conflict', 409);
+  var emptyTables=[];
   Object.keys(IR_TABLES).forEach(function (kind) {
-    guards.push.apply(guards, rsWitness(env, IR_TABLES[kind][0], IR_TABLES[kind][1], before.snapshotRows[kind], 'department_id=?1', [d]));
+    if(!before.snapshotRows[kind].length)emptyTables.push(IR_TABLES[kind][0]);
+    else guards.push.apply(guards, rsWitness(env, IR_TABLES[kind][0], IR_TABLES[kind][1], before.snapshotRows[kind], 'department_id=?1', [d]));
   });
   guards.push.apply(guards, rsWitness(env, 'meta', ['k', 'v'], before.snapshotRows.meta, 'k=?1 OR k=?2', [irMetaKey(d), irMetaKey(d) + ':retro-version']));
-  guards.push.apply(guards, rsWitness(env, 'irshad_requests', IR_REQUEST_COLS, before.snapshotRows.requests, 'department_id=?1', [d]));
+  if(!before.snapshotRows.requests.length)emptyTables.push('irshad_requests');
+  else guards.push.apply(guards, rsWitness(env, 'irshad_requests', IR_REQUEST_COLS, before.snapshotRows.requests, 'department_id=?1', [d]));
+  if(emptyTables.length)guards.push(bdEmptyTableGuard(env,emptyTables,'department_id=?1',[d]));
   var statements = ['irshad_requests', 'irshad_report_languages', 'irshad_reports', 'irshad_catalog_entries', 'irshad_retro_windows']
     .map(function (table) { return env.DB.prepare('DELETE FROM ' + table + ' WHERE department_id=?1').bind(d); });
   statements.push.apply(statements, irInstallStatements(env, domain));
@@ -11949,10 +12006,7 @@ async function irExport(env, A, url) {
 }
 /* Irshad SQL reads. Authority is captured once from named references, never
    from all KV or from a client-supplied principal/scope. */
-function irQueryNat(v) {
-  if (!Number.isSafeInteger(v) || v < 0) throw irError('irshad-revision', 503);
-  return v;
-}
+
 function irQueryParam(plan, value) {
   plan.args.push(value);
   return '?' + plan.args.length;
@@ -11961,55 +12015,15 @@ function irQueryBase(ctx) {
   return Object.assign({}, ctx.base);
 }
 async function irQueryContext(env, actor, d, options) {
-  options = options || {};
-  if (!actor || !actor.u || typeof actor.u.id !== 'string') throw irError('irshad-denied', 403);
-  if (typeof d !== 'string' || !d || d.length > 200 || d.indexOf(':') >= 0) throw irError('irshad-scope');
-  var keys = [K_USERS, K_PERM, K_DEPTS, K_GDEPTS, K_PLAT, enfGrantsKey(d), enfScopeKey(d),
-      'bsdept:' + d + ':bassam_staffing_v3', 'bsdept:' + d + ':bassam_shift_options_v1',
-      'bsdept:' + d + ':bassam_employees_v1'],
-    resourceKeys = IR_RES.map(function (_, i) { return irKey(d, i); }),
-    revisionKeys = keys.concat(resourceKeys),
-    metaKeys = ['restore_epoch', 'authz_mode', 'authz_perm_mig', 'authz_scope_mig', 'authz_id_mig',
-      irMetaKey(d), irMetaKey(d) + ':retro-version'],
-    result = await env.DB.batch([
-      env.DB.prepare('SELECT k,seq,v FROM kv WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k,seq').bind(JSON.stringify(keys)),
-      env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k').bind(JSON.stringify(revisionKeys)),
-      env.DB.prepare('SELECT k,v FROM meta WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k').bind(JSON.stringify(metaKeys)),
-    ]),
-    rows = result.map(function (r) { if (!r || r.success === false) throw irError('irshad-context', 503); return r.results || []; }),
-    raw = Object.create(null), revs = Object.create(null), meta = Object.create(null);
-  keys.forEach(function (k) { raw[k] = null; });
-  var grouped = Object.create(null);
-  rows[0].forEach(function (r) {
-    var chunks = grouped[r.k] || (grouped[r.k] = []);
-    if (r.seq !== chunks.length || typeof r.v !== 'string') throw irError('irshad-reference-chunks', 503);
-    chunks.push(r.v);
-  });
-  Object.keys(grouped).forEach(function (k) { raw[k] = grouped[k].join(''); });
-  rows[1].forEach(function (r) { revs[r.k] = irQueryNat(r.rev); });
-  rows[2].forEach(function (r) { meta[r.k] = r.v; });
-  var presence = irOwn(meta, irMetaKey(d)) ? Number(meta[irMetaKey(d)]) : 0;
-  if (!Number.isSafeInteger(presence) || presence < 0 || presence > 63) throw irError('irshad-presence-invalid', 503);
-  var pre = Object.assign({}, env.__pre || {}, { live: true, kv: raw, revs: revs, meta: meta }),
-    captured = Object.assign({}, env, { __pre: pre }),
-    mode = await enfModeOf(captured),
-    A = actorFromKeys(raw, actor.u.id);
-  if (!A || !deptInScope(A, d) || !(A.depts || []).some(function (department) { return department && String(department.id) === d; }))
-    throw irError('irshad-denied', 403);
-  if (mode.mode === 'unavailable') throw irError('irshad-context', 503);
-  if (mode.mode === 'enforce') { A.enf = mode; enfAttachGrantsKeys(A, raw); }
-  captured.__enf = A.enf || null;
-  if (!options.write && !canRead(A, irKey(d))) throw irError('irshad-denied', 403);
-  var refs = await enfRefsFor(captured, [d], raw),
-    base = { epoch: irQueryNat(meta.restore_epoch == null ? 0 : Number(meta.restore_epoch)) },
-    resources = ['reports', 'languages', 'locations', 'retro'];
-  resources.forEach(function (name, i) { base[name] = revs[resourceKeys[i]] || 0; });
-  var guards = rsWitness(env, 'kv', ['k', 'seq', 'v'], rows[0], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(keys)])
-    .concat(rsWitness(env, 'revs', ['k', 'rev'], rows[1], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(revisionKeys)]))
-    .concat(rsWitness(env, 'meta', ['k', 'v'], rows[2], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(metaKeys)]));
-  return { env: captured, A: A, d: d, base: base, guards: guards, refs: refs, rawKeys: raw,
-    meta: meta, pv4: { staffing: refs.staffing[d] },
-    witness: await cuFingerprint({ uidValue: A.u.id, mode: mode, capture: rows }) };
+  return bdQueryContext(env, actor, d, {
+    resources: IR_RES, resourceNames: IR_RES_NAMES,
+    metaKeys: function (dept) { return [irMetaKey(dept), irMetaKey(dept) + ':retro-version']; },
+    error: function (code, status) { return irError('irshad-' + code, status); },
+    validateMeta: function (meta, dept) {
+      var presence = irOwn(meta, irMetaKey(dept)) ? Number(meta[irMetaKey(dept)]) : 0;
+      if (!Number.isSafeInteger(presence) || presence < 0 || presence > 63) throw irError('irshad-presence-invalid', 503);
+    },
+  }, options);
 }
 async function irRowRead(env, d, ids) {
   if (!Array.isArray(ids) || ids.length > 200 || ids.some(function (id) { return typeof id !== 'string'; }))
@@ -12413,12 +12427,6 @@ function irMutationData(ctx, b, before, now) {
   irConvert(ctx.d, { reports: { reports: [out] } });
   return out;
 }
-function irBumpStatements(env, k, notify) {
-  var st = [env.DB.prepare("INSERT INTO meta(k,v) VALUES('rev',CAST(COALESCE((SELECT MAX(rev) FROM revs),0)+1 AS TEXT)) ON CONFLICT(k) DO UPDATE SET v=CAST(MAX(CAST(meta.v AS INTEGER),COALESCE((SELECT MAX(rev) FROM revs),0))+1 AS TEXT)"),
-    env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER)) ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(k)];
-  if (notify) st.push(env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER)) ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(NF_REV));
-  return st;
-}
 async function irNotificationPlan(ctx, b, before, after) {
   var events = [], statements = [], guards = [], active = 0;
   if (b.op === 'create') events.push({ type: 'ir_new', row: after[0] });
@@ -12518,7 +12526,7 @@ async function irAct(env, A, b, meta) {
   var notifications = await irNotificationPlan(ctx, b, before, after);
   guards.push.apply(guards, notifications.guards);
   statements.push.apply(statements, irMarkResourceStatements(env, ctx.d, resource));
-  statements.push.apply(statements, irBumpStatements(env, k, notifications.active > 0));
+  statements.push.apply(statements, bdBumpStatements(env, k, notifications.active > 0));
   statements.push.apply(statements, notifications.statements);
   statements.push(env.DB.prepare("INSERT INTO irshad_requests(department_id,account_uid,request_id,fingerprint,resource_key,resource_rev,operation,result_n,result_id,created_at)VALUES(?1,?2,?3,?4,?5,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),?6,?7,?8,?9)").bind(ctx.d, A.u.id, b.requestId, fingerprint, k, b.op, n, resultId, now));
   statements.push(env.DB.prepare("INSERT INTO aud(cid,ts,uid,un,dept,k,rev,etype,eid,ename,act,ctx,bef,aft,ip,dev,city)VALUES(?1,?2,?3,?4,?5,?6,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),'dataset',?7,'irshad',?8,?9,'','',?10,?11,?12)").bind(
@@ -12619,7 +12627,7 @@ async function nfIrshadDaily(env, actor, url) {
     sourceGuard = rsBound(ctx.env.DB.prepare('SELECT CASE WHEN (' + aggregate.count + ')<>' + nSlot +
       ' OR (' + aggregate.top + ') IS NOT ' + locationSlot + " THEN json_extract('{}','KIVO_IRSHAD_DAILY_SOURCE_CHANGED') END"), sourceArgs),
     statements = guards.concat(plan.guards, [sourceGuard, seenGuard]);
-  statements.push.apply(statements, irBumpStatements(ctx.env, NF_REV, false));
+  statements.push.apply(statements, bdBumpStatements(ctx.env, NF_REV, false));
   statements.push.apply(statements, plan.statements);
   statements.push.apply(statements, nfRetention(ctx.env, now, plan.scopes));
   try { await ctx.env.DB.batch(statements); }
@@ -12636,6 +12644,4018 @@ async function nfIrshadDaily(env, actor, url) {
   }
   preOff(ctx.env);
   return { emitted: plan.plans.length };
+}
+/* Shared capture of current authority, scope and revision witnesses.
+   Domain definitions are server constants; no business document or device storage. */
+async function bdQueryContext(env, actor, d, definition, options) {
+  options = options || {};
+  var global = options.global === true && definition.global === true;
+  var fail = definition.error || function (code, status) { return rsError(code, status); };
+  var natural = function (value) { if (!Number.isSafeInteger(value) || value < 0) throw fail('revision', 503); return value; };
+  if (!actor || !actor.u || typeof actor.u.id !== 'string') throw fail('denied', 403);
+  if ((options.global === true && !global) || typeof d !== 'string' || (!global && !d) || (global && d !== '') || d.length > 200 || d.indexOf(':') >= 0) throw fail('scope');
+  var keys = [K_USERS, K_PERM, K_DEPTS, K_GDEPTS, K_PLAT].concat(global ? [] : [enfGrantsKey(d), enfScopeKey(d),
+      'bsdept:' + d + ':bassam_staffing_v3', 'bsdept:' + d + ':bassam_shift_options_v1',
+      'bsdept:' + d + ':bassam_employees_v1']).concat(definition.extraKeys ? definition.extraKeys(d) : []),
+    resourceKeys = definition.resourceKeys ? definition.resourceKeys(d) : definition.resources.map(function (name) { return 'bsdept:' + d + ':' + name; }),
+    revisionKeys = keys.concat(resourceKeys),
+    metaKeys = ['restore_epoch', 'authz_mode', 'authz_perm_mig', 'authz_scope_mig', 'authz_id_mig'].concat(definition.metaKeys ? definition.metaKeys(d) : []),
+    result = await env.DB.batch([
+      env.DB.prepare('SELECT k,seq,v FROM kv WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k,seq').bind(JSON.stringify(keys)),
+      env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k').bind(JSON.stringify(revisionKeys)),
+      env.DB.prepare('SELECT k,v FROM meta WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k').bind(JSON.stringify(metaKeys)),
+    ]),
+    rows = result.map(function (r) { if (!r || r.success === false) throw fail('context', 503); return r.results || []; }),
+    raw = Object.create(null), revs = Object.create(null), meta = Object.create(null);
+  keys.forEach(function (k) { raw[k] = null; });
+  var grouped = Object.create(null);
+  rows[0].forEach(function (r) {
+    var chunks = grouped[r.k] || (grouped[r.k] = []);
+    if (r.seq !== chunks.length || typeof r.v !== 'string') throw fail('reference-chunks', 503);
+    chunks.push(r.v);
+  });
+  Object.keys(grouped).forEach(function (k) { raw[k] = grouped[k].join(''); });
+  rows[1].forEach(function (r) { revs[r.k] = natural(r.rev); });
+  rows[2].forEach(function (r) { meta[r.k] = r.v; });
+  if (definition.validateMeta) definition.validateMeta(meta, d);
+  var pre = Object.assign({}, env.__pre || {}, { live: true, kv: raw, revs: revs, meta: meta }),
+    captured = Object.assign({}, env, { __pre: pre }),
+    mode = await enfModeOf(captured),
+    A = actorFromKeys(raw, actor.u.id);
+  if (!A || (!global && (!deptInScope(A, d) || !(A.depts || []).some(function (department) { return department && String(department.id) === d; }))))
+    throw fail('denied', 403);
+  if (mode.mode === 'unavailable') throw fail('context', 503);
+  if (mode.mode === 'enforce') { A.enf = mode; enfAttachGrantsKeys(A, raw); }
+  captured.__enf = A.enf || null;
+  if (!options.write && !canRead(A, resourceKeys[0])) throw fail('denied', 403);
+  var refs = await enfRefsFor(captured, global ? [] : [d], raw),
+    base = { epoch: natural(meta.restore_epoch == null ? 0 : Number(meta.restore_epoch)) },
+    resources = definition.resourceNames;
+  resources.forEach(function (name, i) { base[name] = revs[resourceKeys[i]] || 0; });
+  var guards = rsWitness(env, 'kv', ['k', 'seq', 'v'], rows[0], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(keys)])
+    .concat(rsWitness(env, 'revs', ['k', 'rev'], rows[1], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(revisionKeys)]))
+    .concat(rsWitness(env, 'meta', ['k', 'v'], rows[2], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(metaKeys)]));
+  return { env: captured, A: A, d: d, base: base, guards: guards, refs: refs, rawKeys: raw,
+    resourceKeys: resourceKeys, meta: meta, pv4: { staffing: refs.staffing[d] },
+    witness: await cuFingerprint({ uidValue: A.u.id, mode: mode, capture: rows }) };
+}
+
+function bdBumpStatements(env, k, notify) {
+  var st = [env.DB.prepare("INSERT INTO meta(k,v) VALUES('rev',CAST(COALESCE((SELECT MAX(rev) FROM revs),0)+1 AS TEXT)) ON CONFLICT(k) DO UPDATE SET v=CAST(MAX(CAST(meta.v AS INTEGER),COALESCE((SELECT MAX(rev) FROM revs),0))+1 AS TEXT)"),
+    env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER)) ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(k)];
+  if (notify) st.push(env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER)) ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(NF_REV));
+  return st;
+}
+
+/* One absence guard for several empty relational tables, with bound scope.
+   Table names/predicates are server schema constants, never request input. */
+function bdEmptyTableGuard(env, tables, where, args) {
+  if (!Array.isArray(tables) || !tables.length || tables.some(function (name) { return !/^[a-z][a-z0-9_]*$/.test(name); })) throw rsError('domain-table');
+  return rsBound(env.DB.prepare('SELECT CASE WHEN ' + tables.map(function (name) {
+    return 'EXISTS(SELECT 1 FROM ' + name + ' WHERE ' + (where || '1') + ')';
+  }).join(' OR ') + " THEN json_extract('{}','KIVO_RESTORE_TARGET') END"), args || []);
+}
+/* Generated from the Seized module defaults and version; do not edit. */
+var SZ_DEFAULTS = {"catalog":{"ver":"النسخة الثالثة — 2026/07/02","cats":[{"name":"الأجهزة والمعدات","color":"#1d6fd6","def":"sto","items":[{"id":1,"name":"أجهزة التنصت الإلكترونية","desc":"معدات تقنية صُممت خصيصاً للاستماع أو تسجيل المحادثات والاتصالات بشكل سري","unit":"pc"},{"id":2,"name":"الطائرات اللاسلكية (الدرون)","desc":"مركبات جوية يتم التحكم بها عن بعد","unit":"pc"},{"id":3,"name":"أجهزة الاتصالات اللاسلكية والإرسال","desc":"معدات تقنية لإرسال واستقبال الإشارات عبر موجات الراديو","unit":"pc"},{"id":4,"name":"أجهزة البث والتسجيل الصوتي","desc":"أدوات إلكترونية مخصصة لنقل الإشارات الصوتية أو تخزينها","unit":"pc"},{"id":5,"name":"الشواحن المتنقلة (Power Banks)","desc":"بطاريات خارجية محمولة تحتوي على خلايا الليثيوم","unit":"pc"},{"id":6,"name":"أجهزة الحاسب الآلي (لابتوب)","desc":"أجهزة حاسوبية محمولة متكاملة","unit":"pc"},{"id":7,"name":"مكبرات الصوت والصافرات","desc":"أجهزة تضخيم الإشارات الصوتية أو تنبيهات عالية التردد","unit":"pc"},{"id":8,"name":"أجهزة الليزر ومؤشراتها","desc":"أدوات بصرية تصدر حزماً ضوئية مركزة","unit":"pc"},{"id":9,"name":"بطاريات الليثيوم","desc":"خلايا كيميائية عالية الكثافة تتطلب معايير سلامة خاصة","unit":"pc"},{"id":10,"name":"أسطوانات أجهزة التنفس الكبيرة","desc":"أوعية ضغط معدنية لتخزين غازات التنفس","unit":"pc"},{"id":11,"name":"كاميرات التصوير الاحترافية (غير مصرحة)","desc":"أجهزة بصرية متقدمة بعدسات قابلة للتبديل","unit":"pc"},{"id":12,"name":"الأجهزة الكهربائية والإلكترونية العامة","desc":"كافة المعدات التي تعمل بالطاقة الكهربائية","unit":"pc"}]},{"name":"الأدوات الحادة","color":"#f07d1a","def":"sec","items":[{"id":13,"name":"مضارب البيسبول والآلات الكبيرة","desc":"أدوات رياضية أو يدوية صلبة وطويلة","unit":"pc"},{"id":14,"name":"الأسلحة والآلات والسكاكين الحادة","desc":"أدوات معدنية لها حواف حادة أو نهايات مدببة","unit":"pc"},{"id":15,"name":"مقراض الأظافر","desc":"أداة معدنية صغيرة ذات حواف قاطعة","unit":"pc"},{"id":16,"name":"الأدوات المعدنية والحديدية","desc":"معدات من المعادن الصلبة تُستخدم في الصيانة","unit":"pc"},{"id":17,"name":"الأدوات الخشبية ذات النهايات الحادة","desc":"قطع خشبية برؤوس مدببة أو حواف قاطعة","unit":"pc"}]},{"name":"الأسلحة والذخائر","color":"#d02b2b","def":"sec","items":[{"id":18,"name":"النبال (القاذفات)","desc":"أدوات يدوية لإطلاق المقذوفات","unit":"pc"},{"id":19,"name":"الذخائر الحية","desc":"مقذوفات مجهزة بمواد دافعة ومتفجرة","unit":"pc"},{"id":20,"name":"الأسلحة النارية","desc":"أجهزة لإطلاق المقذوفات بقوة انفجار البارود","unit":"pc"},{"id":21,"name":"الصواعق والعصي الكهربائية","desc":"أجهزة تصدر شحنات كهربائية عالية الجهد","unit":"pc"},{"id":22,"name":"ألعاب الأطفال الشبيهة بالأسلحة والمجسمات","desc":"نماذج تحاكي شكل الأسلحة الحقيقية","unit":"pc"}]},{"name":"الأغراض الثمينة والأموال","color":"#c9a227","def":"sto","items":[{"id":23,"name":"المبالغ النقدية الكبيرة","desc":"عملات ورقية ومعدنية تبلغ قيمتها الحد المقرر أو أكثر","unit":"sar"},{"id":24,"name":"المجوهرات والذهب","desc":"سبائك ومعادن ثمينة وأحجار كريمة تبلغ الحد المقرر","unit":"pcval"}]},{"name":"الأغراض الشخصية","color":"#7b2fb5","def":"sto","items":[{"id":25,"name":"ملابس تحمل صور ذوات أرواح","desc":"أزياء تشتمل على رسوم أو صور لكائنات حية","unit":"pc"},{"id":26,"name":"الملابس العسكرية أو الشبيهة بها","desc":"أزياء رسمية للقوات المسلحة أو تحاكيها","unit":"pc"},{"id":27,"name":"الأدوات والمعدات الرياضية","desc":"أجهزة يدوية للتمارين البدنية","unit":"pc"},{"id":28,"name":"أدوات الدفاع عن النفس","desc":"آلات يدوية صلبة أو مسننة لصد الهجوم","unit":"pc"},{"id":29,"name":"المواد السائلة والهلامية (LAGs)","desc":"مواد سائلة أو هلامية بعبوات تتجاوز الأحجام المقررة","unit":"pc"},{"id":30,"name":"الحقائب والأمتعة الكبيرة","desc":"حقائب تتجاوز 56×45×25 سم أو وزنها 7 كجم","unit":"pc"},{"id":31,"name":"الأكياس والعبوات البلاستيكية غير الشفافة","desc":"لفائف وأوعية تحجب رؤية المحتويات","unit":"pc"},{"id":32,"name":"السجائر الإلكترونية ونكهاتها","desc":"أجهزة إلكترونية لتبخير السوائل المحتوية على النيكوتين","unit":"pc"},{"id":33,"name":"المواد السائلة (عصائر وألبان)","desc":"منتجات غذائية سائلة تخضع لقيود الأحجام","unit":"pc"},{"id":34,"name":"الملابس غير اللائقة","desc":"أزياء تخالف معايير الآداب العامة","unit":"pc"},{"id":35,"name":"عبوات الرذاذ (البخاخات)","desc":"حاويات تحتوي على مواد تحت الضغط","unit":"pc"}]},{"name":"الأمتعة والأغراض الكبيرة","color":"#8b6a5a","def":"sto","items":[{"id":36,"name":"السجاد والمفروشات والبطانيات","desc":"منسوجات وأغطية ذات أحجام كبيرة تعيق الحركة","unit":"pc"}]},{"name":"الحيوانات","color":"#222222","def":"sec","items":[{"id":37,"name":"الحيوانات بجميع أنواعها","desc":"كائنات حية أليفة أو مفترسة وطيور وحشرات","unit":"pc"}]},{"name":"المطبوعات والمواد المخالفة","color":"#4f6b7a","def":"sec","items":[{"id":38,"name":"الكتب والمنشورات المخلة بالآداب","desc":"مواد ورقية أو رقمية بمحتوى مخالف","unit":"pc"},{"id":39,"name":"المواد الدعائية غير المصرح بها","desc":"منشورات أو ملصقات ترويجية بلا إذن","unit":"pc"},{"id":40,"name":"الشعارات والأعلام السياسية أو العنصرية","desc":"منسوجات أو رموز تحمل دلالات سياسية أو عنصرية","unit":"pc"},{"id":41,"name":"الكتب والمصاحف غير المصرح بها","desc":"إصدارات دينية لم تحصل على فسح إعلامي","unit":"pc"}]},{"name":"المواد الغذائية والمشروبات","color":"#2e9e44","def":"des","items":[{"id":42,"name":"الأطعمة والمشروبات بعبوات كبيرة","desc":"وجبات وسوائل في أوعية ذات سعات كبيرة","unit":"pc"}]},{"name":"المواد القابلة للاشتعال","color":"#e35a15","def":"des","items":[{"id":43,"name":"المواد البترولية ومشتقاتها","desc":"سوائل هيدروكربونية سريعة الاشتعال","unit":"pc"},{"id":44,"name":"الألعاب النارية والمفرقعات","desc":"عبوات بمواد كيميائية قابلة للانفجار","unit":"pc"},{"id":45,"name":"القداحات وأدوات الاشتعال","desc":"أدوات يدوية لإنتاج لهب أو شرارة","unit":"pc"}]},{"name":"المواد الكيميائية والسامة","color":"#f2a516","def":"des","items":[{"id":46,"name":"الغازات المضغوطة","desc":"غازات محفوظة تحت ضغط عالٍ داخل أسطوانات","unit":"pc"},{"id":47,"name":"المواد السامة والمعدية","desc":"مركبات كيميائية أو مسببات أمراض","unit":"pc"},{"id":48,"name":"رذاذ الفلفل والمواد الحارقة","desc":"بخاخات مهيجة تسبب حروقاً وتآكلاً","unit":"pc"},{"id":49,"name":"السوائل القابلة للاشتعال (كحول ودهانات)","desc":"مركبات سائلة تشتعل بسهولة","unit":"pc"},{"id":50,"name":"المبيدات الحشرية","desc":"مواد كيميائية لإبادة الحشرات","unit":"pc"}]},{"name":"المواد المتفجرة والخطرة","color":"#b3161b","def":"sec","items":[{"id":51,"name":"المواد المشعة والملوثة","desc":"عناصر تصدر إشعاعات نووية","unit":"pc"},{"id":52,"name":"المتفجرات والصواعق العسكرية","desc":"عبوات ناسفة وصواعق للاستخدام الحربي","unit":"pc"}]},{"name":"المواد المخدرة والتبغ","color":"#5a3d33","def":"sec","items":[{"id":53,"name":"المخدرات والمؤثرات العقلية","desc":"مواد تؤثر على الجهاز العصبي ويُحظر تداولها","unit":"pc"},{"id":54,"name":"التبغ ومواد التدخين","desc":"منتجات من أوراق التبغ للتدخين أو المضغ","unit":"pc"}]},{"name":"فئات ممنوعة أمنياً","color":"#1a1a1a","def":"sec","items":[{"id":55,"name":"المتسولون والباعة المتجولون","desc":"أفراد يمارسون استجداء الأموال أو البيع بلا تصريح","unit":"case"}]},{"name":"وسائل النقل","color":"#0f8f80","def":"sto","items":[{"id":56,"name":"الدراجات والاسكوترات ووسائل التنقل","desc":"مركبات فردية بالدفع اليدوي أو المحركات","unit":"pc"},{"id":57,"name":"عربات الأطفال والكراسي الكبيرة","desc":"أدوات نقل تتجاوز السعات المكانية المحددة","unit":"pc"}]}]},"actions":[{"k":"sec","name":"أُحيل للجهة الأمنية","color":"#dc2626"},{"k":"des","name":"أُتلف / صودر","color":"#b45309"},{"k":"sto","name":"محفوظ بالمستودع","color":"#475569"}],"kinds":["أقراط","أساور","عقد","ساعات","خواتم"]};
+/* Generated from Award awEsc/awSecToHtml, one presentation source. */
+var AW_REFERENCE_HTML=(function(){var formatter=new(class{awEsc(t) {
+    return String(null == t ? "" : t)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+awSecToHtml(t) {
+    const e = (t && t.items) || [];
+    let a = "",
+      r = [];
+    const i = () => {
+      r.length && ((a += "<ul>" + r.join("") + "</ul>"), (r = []));
+    };
+    return (
+      e.forEach((t) => {
+        const e = "t" === t.k ? "p" : t.k || "p",
+          s = this.awEsc(t.t);
+        "l" !== e
+          ? (i(),
+            (a +=
+              "h" === e
+                ? "<h4>" + s + "</h4>"
+                : "s" === e
+                  ? "<h5>" + s + "</h5>"
+                  : "c" === e
+                    ? '<p><span class="chip">' + s + "</span></p>"
+                    : "<p>" + s + "</p>"))
+          : r.push("<li>" + s + "</li>");
+      }),
+      i(),
+      a
+    );
+  }})();return function(section){return formatter.awSecToHtml(section);};})();
+/* Typed seized domain. Codecs and plans are pure/prepared; only commands commit.
+   Scalar masks, witnesses and bulk SQL reuse the existing domain/compiler helpers. */
+var SZ_RES = [
+  "bassam_seized_v1",
+  "bassam_seized_cat_v1",
+  "bassam_seized_acts_v1",
+  "bassam_seized_locs_v1",
+  "bassam_seized_jew_v1",
+  "bassam_seized_retro_v1",
+];
+var SZ_NAMES = ["reports", "catalog", "actions", "locations", "jew", "retro"];
+var SZ_REPORT_FIELDS = [
+  ["id", "report_id", "text"],
+  ["y", "hijri_year", "number"],
+  ["m", "hijri_month", "number"],
+  ["d", "hijri_day", "number"],
+  ["ts", "created_at", "number"],
+  ["loc", "location", "text"],
+  ["actor", "actor_label", "text"],
+  ["actorKey", "actor_key", "text"],
+  ["no", "record_number", "text"],
+  ["note", "note", "text"],
+  ["shift", "shift", "text"],
+  ["eid", "employee_key", "text"],
+  ["name", "employee_name", "text"],
+  ["editedTs", "edited_at", "number"],
+  ["editedBy", "edited_by", "text"],
+  ["by", "legacy_author", "text"],
+  ["test", "test_marker", "text"],
+];
+var SZ_ITEM_FIELDS = [
+  ["n", "quantity", "number"],
+  ["val", "value", "number"],
+  ["act", "action_key", "text"],
+  ["kind", "kind", "text"],
+  ["kindTxt", "kind_text", "text"],
+];
+var SZ_CATEGORY_FIELDS = [
+  ["name", "name", "text"],
+  ["color", "color", "text"],
+  ["def", "default_action", "text"],
+];
+var SZ_CATALOG_ITEM_FIELDS = [
+  ["name", "name", "text"],
+  ["desc", "description", "text"],
+  ["unit", "unit", "text"],
+];
+var SZ_ACTION_FIELDS = [
+  ["k", "action_key", "text"],
+  ["name", "name", "text"],
+  ["color", "color", "text"],
+];
+var SZ_HISTORY_FIELDS = [
+  ["from", "from_action", "text"],
+  ["to", "to_action", "text"],
+  ["at", "at_label", "text"],
+  ["by", "actor_label", "text"],
+  ["t", "created_at", "number"],
+];
+var SZ_REQUEST_COLS = [
+  "department_id",
+  "account_uid",
+  "request_id",
+  "fingerprint",
+  "resource_key",
+  "resource_rev",
+  "operation",
+  "result_n",
+  "result_id",
+  "permission_mode",
+  "permission_keys",
+  "created_at",
+];
+var SZ_TABLES = {
+  resources: [
+    "seized_resource_state",
+    [
+      "department_id",
+      "resource",
+      "value_kind",
+      "list_kind",
+      "version_kind",
+      "version_number",
+      "version_text",
+    ],
+  ],
+  reports: [
+    "seized_reports",
+    ["department_id", "sequence"].concat(
+      SZ_REPORT_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      ["presence_mask", "items_kind"],
+    ),
+  ],
+  items: [
+    "seized_items",
+    [
+      "department_id",
+      "report_id",
+      "position",
+      "id_kind",
+      "id_number",
+      "id_text",
+      "id_token",
+    ].concat(
+      SZ_ITEM_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      ["presence_mask", "photos_kind", "history_kind"],
+    ),
+  ],
+  photos: [
+    "seized_item_photos",
+    ["department_id", "report_id", "item_position", "position", "image_id"],
+  ],
+  history: [
+    "seized_item_history",
+    ["department_id", "report_id", "item_position", "position"].concat(
+      SZ_HISTORY_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      ["presence_mask"],
+    ),
+  ],
+  categories: [
+    "seized_categories",
+    [
+      "department_id",
+      "position",
+      "id_kind",
+      "id_number",
+      "id_text",
+      "id_token",
+    ].concat(
+      SZ_CATEGORY_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      ["presence_mask", "items_kind"],
+    ),
+  ],
+  catalogItems: [
+    "seized_catalog_items",
+    [
+      "department_id",
+      "category_position",
+      "position",
+      "id_kind",
+      "id_number",
+      "id_text",
+      "id_token",
+    ].concat(
+      SZ_CATALOG_ITEM_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      ["presence_mask"],
+    ),
+  ],
+  actions: [
+    "seized_actions",
+    [
+      "department_id",
+      "position",
+      "id_kind",
+      "id_number",
+      "id_text",
+      "id_token",
+    ].concat(
+      SZ_ACTION_FIELDS.map(function (f) {
+        return f[1];
+      }),
+      ["presence_mask"],
+    ),
+  ],
+  lists: [
+    "seized_list_values",
+    ["department_id", "resource", "position", "value"],
+  ],
+  windows: ["seized_retro_windows", IR_TABLES.windows[1]],
+};
+function szError(code, status, path) {
+  var e = new Error(code);
+  e.szCode = code;
+  e.szStatus = status || 400;
+  if (path) e.szPath = path;
+  return e;
+}
+function szShape(value, keys, path) {
+  if (
+    !isObj(value) ||
+    Object.keys(value).some(function (k) {
+      return keys.indexOf(k) < 0;
+    })
+  )
+    throw szError("seized-shape", 400, path);
+}
+function szKey(d, i) {
+  return "bsdept:" + d + ":" + SZ_RES[i === undefined ? 0 : i];
+}
+var SZ_CONTEXT = {
+  resources: SZ_RES,
+  resourceNames: SZ_NAMES,
+  error: function (c, s) {
+    return szError("seized-" + c, s);
+  },
+  extraKeys: function (d) {
+    return [
+      "bassam_dreport_v1",
+      "bassam_rounds_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_dayshift_v1",
+    ].map(function (k) {
+      return "bsdept:" + d + ":" + k;
+    });
+  },
+};
+function szQueryContext(env, A, d, options) {
+  return bdQueryContext(env, A, d, SZ_CONTEXT, options);
+}
+function szLegacyKey(k) {
+  return SZ_RES.indexOf(resName(k)) >= 0;
+}
+function szPredicate() {
+  return (
+    "k IN(SELECT value FROM json_each(?1))" +
+    SZ_RES.map(function (k) {
+      return (
+        " OR k GLOB 'bsdept:*:" +
+        k +
+        "' OR k GLOB 'bsdept:*:" +
+        k +
+        ":*' OR k GLOB '" +
+        k +
+        ":*'"
+      );
+    }).join("")
+  );
+}
+function szRetiredGuard(env) {
+  return env.DB.prepare(
+    "SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE " +
+      szPredicate() +
+      ")THEN json_extract('{}','KIVO_SEIZED_LEGACY_SOURCE')END",
+  ).bind(JSON.stringify(SZ_RES));
+}
+async function szGuardRetired(env) {
+  if (
+    await env.DB.prepare("SELECT 1 FROM kv WHERE " + szPredicate() + " LIMIT 1")
+      .bind(JSON.stringify(SZ_RES))
+      .first()
+  )
+    throw szError("seized-legacy-source-present", 503);
+}
+function szEmptyDomain(d) {
+  if (typeof d !== "string" || !d || d.indexOf(":") >= 0)
+    throw szError("seized-scope");
+  var resources = {};
+  SZ_NAMES.forEach(function (n) {
+    resources[n] = false;
+  });
+  var rows = {};
+  Object.keys(SZ_TABLES).forEach(function (n) {
+    rows[n] = [];
+  });
+  return {
+    version: 1,
+    scope: { departmentId: d },
+    resources: resources,
+    rows: rows,
+  };
+}
+function szListKind(value, key) {
+  if (!irOwn(value, key)) return 0;
+  if (value[key] === null) return 1;
+  if (!Array.isArray(value[key])) throw szError("seized-list-shape", 400, key);
+  return 2;
+}
+function szIdEncode(value, row) {
+  row.id_kind = 0;
+  row.id_number = null;
+  row.id_text = null;
+  row.id_token = null;
+  if (!irOwn(value, "id")) return;
+  if (value.id === null) {
+    row.id_kind = 1;
+    return;
+  }
+  if (typeof value.id === "number" && Number.isFinite(value.id)) {
+    row.id_kind = 2;
+    row.id_number = value.id;
+    row.id_token = String(value.id);
+    return;
+  }
+  if (typeof value.id === "string") {
+    row.id_kind = 3;
+    row.id_text = value.id;
+    row.id_token = value.id;
+    return;
+  }
+  throw szError("seized-id");
+}
+function szIdDecode(row, out) {
+  if (row.id_kind)
+    out.id =
+      row.id_kind === 1
+        ? null
+        : row.id_kind === 2
+          ? row.id_number
+          : row.id_text;
+  return out;
+}
+function szVersionEncode(doc, key, state) {
+  state.version_kind = 0;
+  state.version_number = null;
+  state.version_text = null;
+  if (!irOwn(doc, key)) return;
+  var v = doc[key];
+  if (v === null) state.version_kind = 1;
+  else if (typeof v === "number" && Number.isFinite(v)) {
+    state.version_kind = 2;
+    state.version_number = v;
+  } else if (typeof v === "string") {
+    state.version_kind = 3;
+    state.version_text = v;
+  } else throw szError("seized-version");
+}
+function szVersionDecode(state, out, key) {
+  if (state.version_kind)
+    out[key] =
+      state.version_kind === 1
+        ? null
+        : state.version_kind === 2
+          ? state.version_number
+          : state.version_text;
+}
+function szConvert(d, docs) {
+  szShape(docs, SZ_NAMES, "documents");
+  var out = szEmptyDomain(d),
+    ids = new Set(),
+    catalogIds = new Set();
+  SZ_NAMES.forEach(function (name) {
+    if (!irOwn(docs, name)) return;
+    out.resources[name] = true;
+    var value = docs[name],
+      array = ["actions", "locations", "jew"].indexOf(name) >= 0,
+      state = {
+        department_id: d,
+        resource: name,
+        value_kind: value === null ? 1 : array ? 3 : 2,
+        list_kind: 0,
+        version_kind: 0,
+        version_number: null,
+        version_text: null,
+      };
+    if (value === null) {
+      out.rows.resources.push(state);
+      return;
+    }
+    if (array) {
+      if (!Array.isArray(value)) throw szError("seized-root-shape", 400, name);
+      state.list_kind = 2;
+    } else if (!isObj(value)) throw szError("seized-root-shape", 400, name);
+    if (name === "reports") {
+      szShape(value, ["reports"], "reports");
+      state.list_kind = szListKind(value, "reports");
+      (state.list_kind === 2 ? value.reports : []).forEach(
+        function (r, sequence) {
+          szShape(
+            r,
+            SZ_REPORT_FIELDS.map(function (f) {
+              return f[0];
+            }).concat(["items"]),
+            "report",
+          );
+          if (typeof r.id !== "string" || !r.id || ids.has(r.id))
+            throw szError("seized-report-identity");
+          ids.add(r.id);
+          var row = { department_id: d, sequence: sequence };
+          row.presence_mask = irEncodeFields(
+            r,
+            SZ_REPORT_FIELDS,
+            row,
+            "report",
+          );
+          row.items_kind = szListKind(r, "items");
+          out.rows.reports.push(row);
+          (row.items_kind === 2 ? r.items : []).forEach(
+            function (item, position) {
+              szShape(
+                item,
+                ["id", "photos", "hist"].concat(
+                  SZ_ITEM_FIELDS.map(function (f) {
+                    return f[0];
+                  }),
+                ),
+                "item",
+              );
+              var child = {
+                department_id: d,
+                report_id: r.id,
+                position: position,
+              };
+              szIdEncode(item, child);
+              child.presence_mask = irEncodeFields(
+                item,
+                SZ_ITEM_FIELDS,
+                child,
+                "item",
+              );
+              child.photos_kind = szListKind(item, "photos");
+              child.history_kind = szListKind(item, "hist");
+              out.rows.items.push(child);
+              (child.photos_kind === 2 ? item.photos : []).forEach(
+                function (image, index) {
+                  if (typeof image !== "string") throw szError("seized-photo");
+                  out.rows.photos.push({
+                    department_id: d,
+                    report_id: r.id,
+                    item_position: position,
+                    position: index,
+                    image_id: image,
+                  });
+                },
+              );
+              (child.history_kind === 2 ? item.hist : []).forEach(
+                function (h, index) {
+                  szShape(
+                    h,
+                    SZ_HISTORY_FIELDS.map(function (f) {
+                      return f[0];
+                    }),
+                    "history",
+                  );
+                  var hr = {
+                    department_id: d,
+                    report_id: r.id,
+                    item_position: position,
+                    position: index,
+                  };
+                  hr.presence_mask = irEncodeFields(
+                    h,
+                    SZ_HISTORY_FIELDS,
+                    hr,
+                    "history",
+                  );
+                  out.rows.history.push(hr);
+                },
+              );
+            },
+          );
+        },
+      );
+    } else if (name === "catalog") {
+      szShape(value, ["ver", "cats"], "catalog");
+      szVersionEncode(value, "ver", state);
+      state.list_kind = szListKind(value, "cats");
+      var names = new Set();
+      (state.list_kind === 2 ? value.cats : []).forEach(
+        function (cat, position) {
+          szShape(
+            cat,
+            ["id", "items"].concat(
+              SZ_CATEGORY_FIELDS.map(function (f) {
+                return f[0];
+              }),
+            ),
+            "category",
+          );
+          if (typeof cat.name !== "string" || names.has(cat.name))
+            throw szError("seized-category-identity");
+          names.add(cat.name);
+          var row = { department_id: d, position: position };
+          szIdEncode(cat, row);
+          row.presence_mask = irEncodeFields(
+            cat,
+            SZ_CATEGORY_FIELDS,
+            row,
+            "category",
+          );
+          row.items_kind = szListKind(cat, "items");
+          out.rows.categories.push(row);
+          (row.items_kind === 2 ? cat.items : []).forEach(
+            function (item, index) {
+              szShape(
+                item,
+                ["id"].concat(
+                  SZ_CATALOG_ITEM_FIELDS.map(function (f) {
+                    return f[0];
+                  }),
+                ),
+                "catalog-item",
+              );
+              if (
+                (typeof item.id !== "number" && typeof item.id !== "string") ||
+                !String(item.id) ||
+                catalogIds.has(String(item.id))
+              )
+                throw szError("seized-catalog-identity");
+              catalogIds.add(String(item.id));
+              var child = {
+                department_id: d,
+                category_position: position,
+                position: index,
+              };
+              szIdEncode(item, child);
+              child.presence_mask = irEncodeFields(
+                item,
+                SZ_CATALOG_ITEM_FIELDS,
+                child,
+                "catalog-item",
+              );
+              out.rows.catalogItems.push(child);
+            },
+          );
+        },
+      );
+    } else if (name === "actions") {
+      var keys = new Set();
+      value.forEach(function (action, position) {
+        szShape(
+          action,
+          ["id"].concat(
+            SZ_ACTION_FIELDS.map(function (f) {
+              return f[0];
+            }),
+          ),
+          "action",
+        );
+        if (typeof action.k !== "string" || !action.k || keys.has(action.k))
+          throw szError("seized-action-identity");
+        keys.add(action.k);
+        var row = { department_id: d, position: position };
+        szIdEncode(action, row);
+        row.presence_mask = irEncodeFields(
+          action,
+          SZ_ACTION_FIELDS,
+          row,
+          "action",
+        );
+        out.rows.actions.push(row);
+      });
+    } else if (name === "locations" || name === "jew")
+      value.forEach(function (v, position) {
+        if (typeof v !== "string") throw szError("seized-list-value");
+        out.rows.lists.push({
+          department_id: d,
+          resource: name,
+          position: position,
+          value: v,
+        });
+      });
+    else if (name === "retro") {
+      szShape(value, ["v", "windows"], "retro");
+      szVersionEncode(value, "v", state);
+      if (state.version_kind === 3) throw szError("seized-retro-version");
+      state.list_kind = szListKind(value, "windows");
+      if (state.list_kind === 1) throw szError("seized-retro-windows");
+      out.rows.windows = irConvert(d, { retro: value }).rows.windows;
+    }
+    out.rows.resources.push(state);
+  });
+  return out;
+}
+function szInflate(domain) {
+  var d = domain.scope.departmentId,
+    rows = domain.rows,
+    out = {},
+    ordered = function (list, key) {
+      return list.slice().sort(function (a, b) {
+        return a[key] - b[key];
+      });
+    };
+  rows.resources.forEach(function (state) {
+    var name = state.resource;
+    if (state.value_kind === 1) {
+      out[name] = null;
+      return;
+    }
+    var value = ["actions", "locations", "jew"].indexOf(name) >= 0 ? [] : {};
+    if (name === "reports") {
+      if (state.list_kind === 1) value.reports = null;
+      if (state.list_kind === 2)
+        value.reports = ordered(rows.reports, "sequence").map(function (r) {
+          var v = irDecodeFields(r, SZ_REPORT_FIELDS, r.presence_mask);
+          if (r.items_kind === 1) v.items = null;
+          if (r.items_kind === 2)
+            v.items = ordered(
+              rows.items.filter(function (i) {
+                return i.report_id === r.report_id;
+              }),
+              "position",
+            ).map(function (i) {
+              var item = szIdDecode(
+                i,
+                irDecodeFields(i, SZ_ITEM_FIELDS, i.presence_mask),
+              );
+              if (i.photos_kind === 1) item.photos = null;
+              if (i.photos_kind === 2)
+                item.photos = ordered(
+                  rows.photos.filter(function (p) {
+                    return (
+                      p.report_id === r.report_id &&
+                      p.item_position === i.position
+                    );
+                  }),
+                  "position",
+                ).map(function (p) {
+                  return p.image_id;
+                });
+              if (i.history_kind === 1) item.hist = null;
+              if (i.history_kind === 2)
+                item.hist = ordered(
+                  rows.history.filter(function (h) {
+                    return (
+                      h.report_id === r.report_id &&
+                      h.item_position === i.position
+                    );
+                  }),
+                  "position",
+                ).map(function (h) {
+                  return irDecodeFields(h, SZ_HISTORY_FIELDS, h.presence_mask);
+                });
+              return item;
+            });
+          return v;
+        });
+    } else if (name === "catalog") {
+      szVersionDecode(state, value, "ver");
+      if (state.list_kind === 1) value.cats = null;
+      if (state.list_kind === 2)
+        value.cats = ordered(rows.categories, "position").map(function (c) {
+          var v = szIdDecode(
+            c,
+            irDecodeFields(c, SZ_CATEGORY_FIELDS, c.presence_mask),
+          );
+          if (c.items_kind === 1) v.items = null;
+          if (c.items_kind === 2)
+            v.items = ordered(
+              rows.catalogItems.filter(function (i) {
+                return i.category_position === c.position;
+              }),
+              "position",
+            ).map(function (i) {
+              return szIdDecode(
+                i,
+                irDecodeFields(i, SZ_CATALOG_ITEM_FIELDS, i.presence_mask),
+              );
+            });
+          return v;
+        });
+    } else if (name === "actions")
+      value = ordered(rows.actions, "position").map(function (a) {
+        return szIdDecode(
+          a,
+          irDecodeFields(a, SZ_ACTION_FIELDS, a.presence_mask),
+        );
+      });
+    else if (name === "locations" || name === "jew")
+      value = ordered(
+        rows.lists.filter(function (r) {
+          return r.resource === name;
+        }),
+        "position",
+      ).map(function (r) {
+        return r.value;
+      });
+    else if (name === "retro") {
+      var ir = irEmptyDomain(d);
+      ir.resources.retro = true;
+      ir.resources.retroVersionPresent = !!state.version_kind;
+      ir.resources.retroVersion =
+        state.version_kind === 1 ? null : state.version_number;
+      ir.resources.retroWindowsPresent = state.list_kind === 2;
+      ir.rows.windows = rows.windows;
+      value = irInflate(ir).retro;
+    }
+    out[name] = value;
+  });
+  return out;
+}
+function szCanonical(value) {
+  if (Array.isArray(value)) return value.map(szCanonical);
+  if (value && typeof value === "object") {
+    var out = {};
+    Object.keys(value)
+      .sort()
+      .forEach(function (k) {
+        out[k] = szCanonical(value[k]);
+      });
+    return out;
+  }
+  return value;
+}
+function szValidateDomain(domain, d) {
+  szShape(domain, ["version", "scope", "resources", "rows"], "domain");
+  if (domain.version !== 1) throw szError("seized-domain-version");
+  szShape(domain.scope, ["departmentId"], "scope");
+  if (domain.scope.departmentId !== d) throw szError("seized-domain-scope");
+  szShape(domain.resources, SZ_NAMES, "resources");
+  szShape(domain.rows, Object.keys(SZ_TABLES), "rows");
+  Object.keys(SZ_TABLES).forEach(function (kind) {
+    if (!Array.isArray(domain.rows[kind])) throw szError("seized-domain-rows");
+    domain.rows[kind].forEach(function (row) {
+      szShape(row, SZ_TABLES[kind][1], kind);
+      if (
+        row.department_id !== d ||
+        SZ_TABLES[kind][1].some(function (c) {
+          return !irOwn(row, c);
+        })
+      )
+        throw szError("seized-domain-row");
+    });
+  });
+  var expected;
+  try {
+    expected = szConvert(d, szInflate(domain));
+  } catch (e) {
+    throw szError("seized-domain-invalid");
+  }
+  // Valid report sequence gaps survive deletes; explicit stable sequence is not renumbered.
+  var seen = new Set();
+  domain.rows.reports.forEach(function (r) {
+    if (
+      !Number.isSafeInteger(r.sequence) ||
+      r.sequence < 0 ||
+      seen.has(r.sequence)
+    )
+      throw szError("seized-domain-sequence");
+    seen.add(r.sequence);
+    var match = expected.rows.reports.find(function (x) {
+      return x.report_id === r.report_id;
+    });
+    if (match) match.sequence = r.sequence;
+  });
+  seen = new Set();
+  domain.rows.windows.forEach(function (r) {
+    if (
+      !Number.isSafeInteger(r.sequence) ||
+      r.sequence < 0 ||
+      seen.has(r.sequence)
+    )
+      throw szError("seized-domain-sequence");
+    seen.add(r.sequence);
+    var match = expected.rows.windows.find(function (x) {
+      return x.window_id === r.window_id;
+    });
+    if (match) match.sequence = r.sequence;
+  });
+  var canonicalRows = function (rows, cols) {
+    return rows
+      .map(function (r) {
+        return JSON.stringify(
+          cols.map(function (c) {
+            return r[c];
+          }),
+        );
+      })
+      .sort();
+  };
+  if (
+    !deq(domain.resources, expected.resources) ||
+    Object.keys(SZ_TABLES).some(function (k) {
+      return !deq(
+        canonicalRows(domain.rows[k], SZ_TABLES[k][1]),
+        canonicalRows(expected.rows[k], SZ_TABLES[k][1]),
+      );
+    })
+  )
+    throw szError("seized-domain-invalid");
+  return expected;
+}
+async function szExportDomain(env, d) {
+  var out = szEmptyDomain(d),
+    names = Object.keys(SZ_TABLES),
+    read = await env.DB.batch(
+      names.map(function (k) {
+        return env.DB.prepare(
+          "SELECT * FROM " + SZ_TABLES[k][0] + " WHERE department_id=?1",
+        ).bind(d);
+      }),
+    );
+  names.forEach(function (k, i) {
+    if (!read[i] || read[i].success === false)
+      throw szError("seized-read", 503);
+    out.rows[k] = read[i].results || [];
+  });
+  out.rows.resources.forEach(function (r) {
+    if (SZ_NAMES.indexOf(r.resource) < 0) throw szError("seized-resource", 503);
+    out.resources[r.resource] = true;
+  });
+  return szValidateDomain(out, d);
+}
+function szInstallStatements(env, domain) {
+  var out = [];
+  Object.keys(SZ_TABLES).forEach(function (k) {
+    out.push.apply(
+      out,
+      rsBulk(env, SZ_TABLES[k][0], SZ_TABLES[k][1], domain.rows[k]),
+    );
+  });
+  return out;
+}
+function szRevisionGuards(env, d, base) {
+  if (
+    !isObj(base) ||
+    SZ_NAMES.some(function (n) {
+      return !Number.isSafeInteger(base[n]) || base[n] < 0;
+    })
+  )
+    throw szError("seized-base");
+  var pairs = SZ_NAMES.map(function (n, i) {
+    return { k: szKey(d, i), v: base[n] };
+  });
+  return [
+    env.DB.prepare(
+      "SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1)e WHERE COALESCE((SELECT rev FROM revs WHERE k=json_extract(e.value,'$.k')),0) IS NOT json_extract(e.value,'$.v'))THEN json_extract('{}','KIVO_REV_CONFLICT')END",
+    ).bind(JSON.stringify(pairs)),
+  ];
+}
+function szRevisionRowsStatement(env, d) {
+  return env.DB.prepare(
+    "SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))",
+  ).bind(
+    JSON.stringify(
+      SZ_RES.map(function (_, i) {
+        return szKey(d, i);
+      }),
+    ),
+  );
+}
+function szRevisionResult(rows, d) {
+  var out = {};
+  SZ_NAMES.forEach(function (n, i) {
+    var r = rows.find(function (r) {
+      return r.k === szKey(d, i);
+    });
+    out[n] = r ? r.rev : 0;
+    if (!Number.isSafeInteger(out[n]) || out[n] < 0)
+      throw szError("seized-revision", 503);
+  });
+  return out;
+}
+async function szRevs(env, d) {
+  return szRevisionResult(
+    (await szRevisionRowsStatement(env, d).all()).results || [],
+    d,
+  );
+}
+async function szRetroSnapshot(env, d) {
+  var read = await env.DB.batch([
+      env.DB.prepare(
+        "SELECT * FROM seized_resource_state WHERE department_id=?1 AND resource='retro'",
+      ).bind(d),
+      env.DB.prepare(
+        "SELECT * FROM seized_retro_windows WHERE department_id=?1 ORDER BY sequence",
+      ).bind(d),
+    ]),
+    domain = szEmptyDomain(d);
+  domain.rows.resources = read[0].results || [];
+  domain.resources.retro = domain.rows.resources.length > 0;
+  domain.rows.windows = read[1].results || [];
+  szValidateDomain(domain, d);
+  var state = szInflate(domain).retro;
+  if (!isObj(state)) state = { v: 1, windows: [] };
+  else if (!Array.isArray(state.windows))
+    state = Object.assign({}, state, { windows: [] });
+  return {
+    state: state,
+    guards: rsWitness(
+      env,
+      SZ_TABLES.resources[0],
+      SZ_TABLES.resources[1],
+      domain.rows.resources,
+      "department_id=?1 AND resource='retro'",
+      [d],
+    ).concat(
+      rsWitness(
+        env,
+        SZ_TABLES.windows[0],
+        SZ_TABLES.windows[1],
+        domain.rows.windows,
+        "department_id=?1",
+        [d],
+      ),
+    ),
+  };
+}
+function szRetroStatements(env, d, state) {
+  var domain = szConvert(d, { retro: state });
+  return [
+    env.DB.prepare(
+      "DELETE FROM seized_retro_windows WHERE department_id=?1",
+    ).bind(d),
+    env.DB.prepare(
+      "DELETE FROM seized_resource_state WHERE department_id=?1 AND resource='retro'",
+    ).bind(d),
+  ].concat(
+    rsBulk(
+      env,
+      SZ_TABLES.resources[0],
+      SZ_TABLES.resources[1],
+      domain.rows.resources,
+    ),
+    rsBulk(
+      env,
+      SZ_TABLES.windows[0],
+      SZ_TABLES.windows[1],
+      domain.rows.windows,
+    ),
+  );
+}
+async function szDomainPlan(env, domain, d, options) {
+  options = options || {};
+  var next = szValidateDomain(domain, d),
+    before = await szExportDomain(env, d),
+    guards = [szRetiredGuard(env)],
+    statements = [],
+    snapshotRows = {},
+    revisionKeys = [];
+  Object.keys(SZ_TABLES).forEach(function (k) {
+    var spec = SZ_TABLES[k];
+    snapshotRows[k] = before.rows[k];
+    guards.push.apply(
+      guards,
+      rsWitness(env, spec[0], spec[1], before.rows[k], "department_id=?1", [d]),
+    );
+  });
+  var receipts =
+    (
+      await env.DB.prepare(
+        "SELECT * FROM seized_requests WHERE department_id=?1",
+      )
+        .bind(d)
+        .all()
+    ).results || [];
+  snapshotRows.requests = receipts;
+  guards.push.apply(
+    guards,
+    rsWitness(
+      env,
+      "seized_requests",
+      SZ_REQUEST_COLS,
+      receipts,
+      "department_id=?1",
+      [d],
+    ),
+  );
+  guards.push.apply(guards, szRevisionGuards(env, d, options.base));
+  var same = Object.keys(SZ_TABLES).every(function (k) {
+    var sorted = function (rows) {
+      return rows
+        .map(function (r) {
+          return JSON.stringify(szCanonical(r));
+        })
+        .sort();
+    };
+    return deq(sorted(before.rows[k]), sorted(next.rows[k]));
+  });
+  if (same && !receipts.length) {
+    var empty = Object.keys(SZ_TABLES).every(function (k) {
+      return !before.rows[k].length;
+    });
+    if (empty) {
+      var names = Object.keys(SZ_TABLES)
+        .map(function (k) {
+          return SZ_TABLES[k][0];
+        })
+        .concat(["seized_requests"]);
+      guards = [szRetiredGuard(env)].concat(
+        szRevisionGuards(env, d, options.base),
+        [
+          env.DB.prepare(
+            "SELECT CASE WHEN EXISTS(" +
+              names
+                .map(function (n) {
+                  return "SELECT 1 FROM " + n + " WHERE department_id=?1";
+                })
+                .join(" UNION ALL ") +
+              " LIMIT 1)THEN json_extract('{}','KIVO_RESTORE_TARGET')END",
+          ).bind(d),
+        ],
+      );
+    }
+    return {
+      guards: guards,
+      statements: [],
+      revisionKeys: [],
+      snapshotRows: snapshotRows,
+      changed: false,
+      counts: { seized: 0 },
+    };
+  }
+  // A matching business snapshot can still retire old internal receipts.
+  // It must not delete/reinsert the business rows that already match exactly.
+  if (same)
+    statements.push(
+      env.DB.prepare("DELETE FROM seized_requests WHERE department_id=?1").bind(
+        d,
+      ),
+    );
+  else {
+    // Children are removed before parents; business exports never contain receipts.
+    [
+      "requests",
+      "photos",
+      "history",
+      "items",
+      "reports",
+      "catalogItems",
+      "categories",
+      "actions",
+      "lists",
+      "windows",
+      "resources",
+    ].forEach(function (k) {
+      statements.push(
+        env.DB.prepare(
+          "DELETE FROM " +
+            (k === "requests" ? "seized_requests" : SZ_TABLES[k][0]) +
+            " WHERE department_id=?1",
+        ).bind(d),
+      );
+    });
+    statements.push.apply(statements, szInstallStatements(env, next));
+  }
+  SZ_NAMES.forEach(function (n, i) {
+    if (
+      !deq(
+        before.rows.resources.filter(function (r) {
+          return r.resource === n;
+        }),
+        next.rows.resources.filter(function (r) {
+          return r.resource === n;
+        }),
+      ) ||
+      !deq(szCanonical(szInflate(before)[n]), szCanonical(szInflate(next)[n]))
+    )
+      revisionKeys.push(szKey(d, i));
+  });
+  var result = {
+    guards: guards,
+    statements: statements,
+    revisionKeys: revisionKeys,
+    snapshotRows: snapshotRows,
+    changed: revisionKeys.length > 0 || receipts.length > 0,
+    counts: {
+      seized: Object.keys(SZ_TABLES).reduce(function (n, k) {
+        return n + before.rows[k].length;
+      }, 0),
+    },
+  };
+  if (!same)
+    result.imageProjection = {
+      k: szKey(d),
+      before: JSON.stringify(szInflate(before).reports || {}),
+      after: JSON.stringify(szInflate(next).reports || {}),
+    };
+  return result;
+}
+async function szLegacyPrepare(env) {
+  var predicate = szPredicate(),
+    args = [JSON.stringify(SZ_RES)],
+    rows =
+      (
+        await env.DB.prepare(
+          "SELECT k,seq,v FROM kv WHERE " + predicate + " ORDER BY k,seq",
+        )
+          .bind(args[0])
+          .all()
+      ).results || [],
+    departmentRows =
+      (
+        await env.DB.prepare("SELECT k,seq,v FROM kv WHERE k=?1 ORDER BY seq")
+          .bind(K_DEPTS)
+          .all()
+      ).results || [],
+    registered = parseJson(kvJoin(departmentRows)[K_DEPTS] || "[]", null),
+    known = new Set(),
+    chunks = new Map(),
+    documents = new Map();
+  if (!Array.isArray(registered)) throw szError("seized-cutover-departments");
+  departmentRows.forEach(function (r, i) {
+    if (r.seq !== i || typeof r.v !== "string")
+      throw szError("seized-cutover-departments");
+  });
+  registered.forEach(function (d) {
+    if (
+      !isObj(d) ||
+      typeof d.id !== "string" ||
+      !d.id ||
+      d.id.indexOf(":") >= 0 ||
+      known.has(d.id)
+    )
+      throw szError("seized-cutover-departments");
+    known.add(d.id);
+  });
+  rows.forEach(function (r) {
+    var d = parseKey(r.k).dept,
+      i = SZ_RES.indexOf(resName(r.k));
+    if (!d || i < 0 || r.k !== szKey(d, i) || !known.has(d))
+      throw szError("seized-cutover-scope");
+    var list = chunks.get(r.k) || [];
+    if (r.seq !== list.length || typeof r.v !== "string")
+      throw szError("seized-cutover-chunks");
+    list.push(r.v);
+    chunks.set(r.k, list);
+  });
+  chunks.forEach(function (parts, k) {
+    var value;
+    try {
+      value = JSON.parse(parts.join(""));
+    } catch (e) {
+      throw szError("seized-cutover-json");
+    }
+    var d = parseKey(k).dept,
+      docs = documents.get(d) || {};
+    docs[SZ_NAMES[SZ_RES.indexOf(resName(k))]] = value;
+    documents.set(d, docs);
+  });
+  var domains = [];
+  documents.forEach(function (docs, d) {
+    domains.push(szConvert(d, docs));
+  });
+  var tables = Object.keys(SZ_TABLES)
+      .map(function (k) {
+        return SZ_TABLES[k][0];
+      })
+      .concat(["seized_requests"]),
+    existing =
+      (
+        await env.DB.prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name IN(SELECT value FROM json_each(?1))",
+        )
+          .bind(JSON.stringify(tables))
+          .all()
+      ).results || [];
+  for (var t of existing)
+    if (await env.DB.prepare("SELECT 1 FROM " + t.name + " LIMIT 1").first())
+      throw szError("seized-cutover-target-not-empty");
+  var before = rsWitness(
+    env,
+    "kv",
+    ["k", "seq", "v"],
+    rows,
+    predicate,
+    args,
+  ).concat(
+    rsWitness(env, "kv", ["k", "seq", "v"], departmentRows, "k=?1", [K_DEPTS]),
+  );
+  before.push(
+    env.DB.prepare(
+      "INSERT INTO meta(k,v)VALUES('seized_cutover_ready','validated')ON CONFLICT(k)DO UPDATE SET v=excluded.v",
+    ),
+  );
+  var after = [
+    env.DB.prepare(
+      "SELECT CASE WHEN EXISTS(" +
+        tables
+          .map(function (n) {
+            return "SELECT 1 FROM " + n;
+          })
+          .join(" UNION ALL ") +
+        " LIMIT 1)THEN json_extract('{}','KIVO_SEIZED_TARGET_CHANGED')END",
+    ),
+  ];
+  domains.forEach(function (domain) {
+    after.push.apply(after, szInstallStatements(env, domain));
+  });
+  after.push(env.DB.prepare("DELETE FROM kv WHERE " + predicate).bind(args[0]));
+  if (rows.length)
+    after.push(
+      env.DB.prepare(
+        "INSERT INTO meta(k,v)VALUES('rev',CAST((SELECT MAX(n)+1 FROM(SELECT COALESCE(MAX(rev),0)n FROM revs UNION ALL SELECT COALESCE(CAST(v AS INTEGER),0)FROM meta WHERE k='rev'))AS TEXT))ON CONFLICT(k)DO UPDATE SET v=excluded.v",
+      ),
+    );
+  return {
+    before: before,
+    after: after,
+    domains: domains,
+    n: domains.reduce(function (n, d) {
+      return n + d.rows.reports.length;
+    }, 0),
+  };
+}
+/* Seized SQL reads. Only page rows and bounded catalogs reach the application;
+   historical aggregates remain in SQL and use the existing scope/Find engines. */
+function szQueryScope(ctx, alias) {
+  alias = alias || "r";
+  if (!/^[a-z][a-z0-9_]*$/i.test(alias)) throw szError("seized-query");
+  var args = [ctx.d],
+    where = "r.department_id=?1";
+  if (ctx.A.enf && ctx.A.u.role !== "super") {
+    var V = enfViewCtx(ctx.A, ctx.d, SZ_RES[0], ctx.refs);
+    if (ENF_PROJ[SZ_RES[0]].on(V)) {
+      var es = enfEmpScopeOf(V.E, ctx.d, V.ekey, "Shift"),
+        allowed = [],
+        monthly = [];
+      if (es && es.mode === "list")
+        (es.list || []).forEach(function (s) {
+          if (V.shiftOk(s, "")) allowed.push(String(s));
+        });
+      else if (es && es.mode === "staffing-bound")
+        Object.keys(ctx.refs.staffing[ctx.d] || {}).forEach(function (ym) {
+          var p = ym.split("-"),
+            row = (ctx.refs.staffing[ctx.d][ym] || {})[V.ekey],
+            shift = row && row.shift;
+          if (
+            p.length === 2 &&
+            Number(p[0]) + "-" + Number(p[1]) === ym &&
+            shift &&
+            V.shiftOk(shift, ym)
+          )
+            monthly.push({
+              y: Number(p[0]),
+              m: Number(p[1]),
+              shift: String(shift),
+            });
+        });
+      if (!(es && es.mode === "n/a")) {
+        args.push(JSON.stringify(allowed), JSON.stringify(monthly));
+        where +=
+          " AND(r.shift IS NULL OR r.shift='' OR r.hijri_year IS NULL OR r.hijri_month IS NULL OR r.shift IN(SELECT value FROM json_each(?2))OR EXISTS(SELECT 1 FROM json_each(?3)a WHERE r.hijri_year=json_extract(a.value,'$.y')AND r.hijri_month=json_extract(a.value,'$.m')AND r.shift=json_extract(a.value,'$.shift')))";
+      }
+    }
+  }
+  return { args: args, sql: where.replace(/\br\./g, alias + ".") };
+}
+async function szReadBatch(ctx, statements) {
+  try {
+    var guards = ctx.guards.concat([
+        rsEpochGuard(ctx.env.DB, ctx.base.epoch),
+        szRetiredGuard(ctx.env),
+      ]),
+      out = await ctx.env.DB.batch(guards.concat(statements));
+    return out.slice(guards.length).map(function (r) {
+      if (!r || r.success === false) throw szError("seized-read", 503);
+      return r.results || [];
+    });
+  } catch (e) {
+    if (/KIVO_SEIZED_LEGACY_SOURCE/.test(String(e)))
+      throw szError("seized-legacy-source-present", 503);
+    if (/KIVO_RESTORE_TARGET|KIVO_RESTORE_EPOCH/.test(String(e)))
+      throw szError("seized-read-race", 409);
+    throw e;
+  }
+}
+async function szCatalogSnapshot(ctx) {
+  var kinds = ["resources", "categories", "catalogItems", "actions", "lists"],
+    rows = await szReadBatch(
+      ctx,
+      kinds.map(function (k) {
+        return ctx.env.DB.prepare(
+          "SELECT * FROM " +
+            SZ_TABLES[k][0] +
+            " WHERE department_id=?1" +
+            (k === "resources"
+              ? " AND resource IN('catalog','actions','locations','jew')"
+              : ""),
+        ).bind(ctx.d);
+      }),
+    ),
+    domain = szEmptyDomain(ctx.d);
+  kinds.forEach(function (k, i) {
+    domain.rows[k] = rows[i];
+  });
+  domain.rows.resources.forEach(function (r) {
+    domain.resources[r.resource] = true;
+  });
+  szValidateDomain(domain, ctx.d);
+  var docs = szInflate(domain),
+    effective = {
+      // Same presentation as the original loaders. Raw null/empty/absence
+      // remain distinct in domain/export; a read never installs defaults.
+      catalog:
+        docs.catalog &&
+        Array.isArray(docs.catalog.cats) &&
+        docs.catalog.cats.length
+          ? docs.catalog
+          : SZ_DEFAULTS.catalog,
+      actions:
+        Array.isArray(docs.actions) && docs.actions.length
+          ? docs.actions
+          : SZ_DEFAULTS.actions,
+      locations: Array.isArray(docs.locations) ? docs.locations : [],
+      jew:
+        Array.isArray(docs.jew) && docs.jew.length
+          ? docs.jew.filter(function (v) {
+              return typeof v === "string" && v && v !== "أخرى";
+            })
+          : SZ_DEFAULTS.kinds,
+    },
+    guards = [];
+  kinds.forEach(function (k, i) {
+    guards.push.apply(
+      guards,
+      rsWitness(
+        ctx.env,
+        SZ_TABLES[k][0],
+        SZ_TABLES[k][1],
+        rows[i],
+        "department_id=?1" +
+          (k === "resources"
+            ? " AND resource IN('catalog','actions','locations','jew')"
+            : ""),
+        [ctx.d],
+      ),
+    );
+  });
+  return { domain: domain, docs: docs, effective: effective, guards: guards };
+}
+function szCatalogDto(snapshot) {
+  var out = {};
+  ["catalog", "actions", "locations", "jew"].forEach(function (k) {
+    out[k] = {
+      present: snapshot.domain.resources[k],
+      value: snapshot.effective[k],
+    };
+  });
+  return { catalogs: out };
+}
+function szCatalogIndex(snapshot) {
+  var out = [];
+  ((snapshot.effective.catalog || {}).cats || []).forEach(function (c) {
+    (c.items || []).forEach(function (i) {
+      out.push({
+        id: String(i.id),
+        name: i.name || "",
+        category: c.name || "",
+        color: c.color || "#94a3b8",
+        unit: i.unit || "pc",
+      });
+    });
+  });
+  return out;
+}
+function szShiftExpression(ctx, p) {
+  var configured = parseJson(
+      ctx.rawKeys["bsdept:" + ctx.d + ":bassam_shift_options_v1"],
+      null,
+    ),
+    periods = [];
+  if (
+    Array.isArray(configured) &&
+    configured.length &&
+    configured.every(function (s) {
+      return s && s.name;
+    })
+  )
+    configured.forEach(function (s) {
+      function minute(t) {
+        var a = String(t || "").split(":");
+        return a.length === 2 &&
+          Number.isFinite(+a[0]) &&
+          Number.isFinite(+a[1])
+          ? 60 * +a[0] + +a[1]
+          : null;
+      }
+      var from = minute(s.tStart),
+        to = minute(s.tEnd);
+      if (from !== null && to !== null)
+        periods.push({ name: s.name, from: from, to: to });
+    });
+  var slot = irQueryParam(p, JSON.stringify(periods)),
+    minute =
+      "(CAST(strftime('%H',r.created_at/1000,'unixepoch','+3 hours')AS INTEGER)*60+CAST(strftime('%M',r.created_at/1000,'unixepoch','+3 hours')AS INTEGER))",
+    from = "json_extract(s.value,'$.from')",
+    to = "json_extract(s.value,'$.to')";
+  // Operational time is Riyadh, matching the server's Hijri date contract.
+  return (
+    "CASE WHEN COALESCE(r.shift,'')!='' THEN r.shift WHEN COALESCE(r.created_at,0)=0 THEN '' ELSE COALESCE((SELECT json_extract(s.value,'$.name')FROM json_each(" +
+    slot +
+    ")s WHERE (" +
+    from +
+    "<=" +
+    to +
+    " AND " +
+    minute +
+    ">=" +
+    from +
+    " AND " +
+    minute +
+    "<" +
+    to +
+    ")OR(" +
+    from +
+    ">" +
+    to +
+    " AND(" +
+    minute +
+    ">=" +
+    from +
+    " OR " +
+    minute +
+    "<" +
+    to +
+    "))ORDER BY CAST(s.key AS INTEGER)LIMIT 1),'')END"
+  );
+}
+function szPlan(ctx, catalog, range) {
+  var scope = ctx.recordViewScope || szQueryScope(ctx),
+    p = { args: scope.args.slice(), sql: "" };
+  if (range)
+    scope = { sql: scope.sql + " AND(" + irQueryRange(p, range) + ")" };
+  var slot = irQueryParam(p, JSON.stringify(szCatalogIndex(catalog))),
+    displayShift = szShiftExpression(ctx, p);
+  p.prefix =
+    "WITH catalog AS(SELECT json_extract(value,'$.id')id,json_extract(value,'$.name')name,json_extract(value,'$.category')category,json_extract(value,'$.color')color,json_extract(value,'$.unit')unit FROM json_each(" +
+    slot +
+    ")), scoped AS(SELECT r.* FROM seized_reports r WHERE " +
+    scope.sql +
+    "), line AS(SELECT i.*,COALESCE(c.name,'')item_name,COALESCE(c.category,'')category,COALESCE(c.color,'#94a3b8')color,CASE WHEN COALESCE(c.unit,'pc')='sar' THEN 1 ELSE CAST(COALESCE(i.quantity,0)AS INTEGER)END qty,CASE COALESCE(c.unit,'pc')WHEN 'sar' THEN CAST(COALESCE(i.quantity,0)AS INTEGER)WHEN 'pcval' THEN CAST(COALESCE(i.value,0)AS INTEGER)ELSE 0 END sar FROM seized_items i JOIN scoped r ON i.department_id=r.department_id AND i.report_id=r.report_id LEFT JOIN catalog c ON i.id_token=c.id), data AS(SELECT r.*," +
+    displayShift +
+    " effective_shift,COALESCE(NULLIF(r.actor_key,''),NULLIF(r.employee_key,''),r.actor_label,'')rec_key,COALESCE(NULLIF(r.actor_label,''),r.employee_name,'')rec_name,COALESCE((SELECT SUM(qty)FROM line i WHERE i.report_id=r.report_id),0)qty,COALESCE((SELECT SUM(sar)FROM line i WHERE i.report_id=r.report_id),0)sar FROM scoped r) ";
+  return p;
+}
+function szRecordViewScope(ctx, q, clock) {
+  var scope = szQueryScope(ctx),
+    context = szDayContext(ctx, q, clock);
+  if (context.locked) {
+    var actorKey = String(ctx.A.u.ekey || ctx.A.u.id || ctx.A.u.un || ""),
+      parts = [
+        "COALESCE(NULLIF(r.actor_key,''),NULLIF(r.employee_key,''),r.actor_label,'')=?" +
+          (scope.args.length + 1),
+      ];
+    scope.args.push(actorKey);
+    if (context.myEmp) {
+      parts.push("r.employee_key=?" + (scope.args.length + 1));
+      scope.args.push(context.myEmp.eid);
+    }
+    scope.sql += " AND(" + parts.join(" OR ") + ")";
+  }
+  return scope;
+}
+async function szPlans(ctx, plans) {
+  return szReadBatch(
+    ctx,
+    plans.map(function (p) {
+      return rsBound(ctx.env.DB.prepare(p.prefix + p.sql), p.args);
+    }),
+  );
+}
+function szMetricsSql() {
+  return "COUNT(*) reports,COALESCE(SUM(qty),0)qty,COALESCE(SUM(sar),0)sar,COUNT(DISTINCT NULLIF(rec_key,''))employees";
+}
+function szMetrics(row, actions) {
+  return {
+    reports: Number((row && row.reports) || 0),
+    qty: Number((row && row.qty) || 0),
+    sar: Number((row && row.sar) || 0),
+    employees: Number((row && row.employees) || 0),
+    actions: actions || {},
+  };
+}
+async function szReportSnapshot(ctx, where, args) {
+  var names = ["reports", "items", "photos", "history"],
+    query = names.map(function (k) {
+      return rsBound(
+        ctx.env.DB.prepare(
+          "SELECT * FROM " + SZ_TABLES[k][0] + " WHERE " + where,
+        ),
+        args,
+      );
+    });
+  query.push(
+    ctx.env.DB.prepare(
+      "SELECT * FROM seized_resource_state WHERE department_id=?1 AND resource='reports'",
+    ).bind(ctx.d),
+  );
+  var result = await szReadBatch(ctx, query),
+    domain = szEmptyDomain(ctx.d),
+    guards = [];
+  names.forEach(function (k, i) {
+    domain.rows[k] = result[i];
+    guards.push.apply(
+      guards,
+      rsWitness(
+        ctx.env,
+        SZ_TABLES[k][0],
+        SZ_TABLES[k][1],
+        result[i],
+        where,
+        args,
+      ),
+    );
+  });
+  domain.rows.resources = result[4];
+  domain.resources.reports = result[4].length > 0;
+  guards.push.apply(
+    guards,
+    rsWitness(
+      ctx.env,
+      SZ_TABLES.resources[0],
+      SZ_TABLES.resources[1],
+      result[4],
+      "department_id=?1 AND resource='reports'",
+      [ctx.d],
+    ),
+  );
+  szValidateDomain(domain, ctx.d);
+  return {
+    domain: domain,
+    reports: (szInflate(domain).reports || {}).reports || [],
+    guards: guards,
+  };
+}
+async function szRows(ctx, ids) {
+  if (!ids.length) return [];
+  var snap = await szReportSnapshot(
+      ctx,
+      "department_id=?1 AND report_id IN(SELECT value FROM json_each(?2))",
+      [ctx.d, JSON.stringify(ids)],
+    ),
+    by = new Map();
+  snap.reports.forEach(function (r) {
+    by.set(r.id, r);
+  });
+  return ids.map(function (id) {
+    if (!by.has(id)) throw szError("seized-read-race", 409);
+    return by.get(id);
+  });
+}
+async function szCalendar(ctx, q, clock, catalog) {
+  var y = irQueryInt(q.year, clock.y, 1000, 9999),
+    m = irQueryInt(q.month, clock.m, 1, 12),
+    plans = [];
+  function add(sql) {
+    var p = szPlan(
+      ctx,
+      catalog,
+      sql.indexOf("$MONTH") >= 0 ? { y: y, m: m } : null,
+    );
+    if (sql.indexOf("$MONTH") >= 0)
+      sql = sql.replace("$MONTH", irQueryMonth(p, y, m));
+    if (sql.indexOf("$YEAR") >= 0)
+      sql = sql.replace("$YEAR", irQueryParam(p, y));
+    p.sql = sql;
+    plans.push(p);
+  }
+  add(
+    "SELECT COUNT(*)total,COALESCE(SUM(hijri_year=$YEAR),0)yearTotal FROM data",
+  );
+  add(
+    "SELECT hijri_month m,COUNT(*)n FROM data WHERE hijri_year=$YEAR GROUP BY hijri_month ORDER BY hijri_month",
+  );
+  add(
+    "SELECT hijri_day d,COUNT(*)n FROM data WHERE $MONTH GROUP BY hijri_day ORDER BY hijri_day",
+  );
+  add("SELECT " + szMetricsSql() + " FROM data WHERE $MONTH");
+  add(
+    "SELECT i.action_key k,SUM(i.qty)qty FROM line i JOIN data r ON i.report_id=r.report_id WHERE $MONTH GROUP BY i.action_key",
+  );
+  add(
+    "SELECT DISTINCT COALESCE(location,'')value FROM data WHERE $MONTH ORDER BY value",
+  );
+  var r = await szPlans(ctx, plans),
+    actions = {};
+  r[4].forEach(function (x) {
+    actions[x.k || ""] = x.qty;
+  });
+  return {
+    year: y,
+    month: m,
+    total: r[0][0].total,
+    yearTotal: r[0][0].yearTotal,
+    months: r[1].filter(function (x) {
+      return x.m >= 1 && x.m <= 12;
+    }),
+    days: r[2].filter(function (x) {
+      return x.d >= 1 && x.d <= 30;
+    }),
+    monthTotals: szMetrics(r[3][0], actions),
+    facets: {
+      locations: r[5].map(function (x) {
+        return x.value;
+      }),
+    },
+  };
+}
+async function szRecords(ctx, q, clock, catalog) {
+  var y = irQueryInt(q.year, clock.y, 1000, 9999),
+    m = irQueryInt(q.month, clock.m, 1, 12),
+    limit = irQueryInt(q.limit, 10, 1, 200),
+    term = irQueryText(q.q, 500).trim(),
+    loc = q.loc == null ? null : irQueryText(q.loc, 4000),
+    category = q.category == null ? null : irQueryText(q.category, 4000),
+    action = q.action == null ? null : irQueryText(q.action, 4000),
+    descriptor = {
+      year: y,
+      month: m,
+      day: irQueryInt(q.day, clock.d, 1, 30),
+      limit: limit,
+      q: term,
+      loc: loc,
+      category: category,
+      action: action,
+    },
+    token = null;
+  if (q.cursor) {
+    try {
+      token = cuUncursor(irQueryText(q.cursor, 12000));
+    } catch (e) {
+      throw szError("seized-cursor");
+    }
+    szShape(token, ["v", "uid", "dept", "w", "query", "page"], "cursor");
+  }
+  var page = irQueryInt(
+    q.page,
+    token ? token.page : 1,
+    1,
+    Number.MAX_SAFE_INTEGER,
+  );
+  if (
+    token &&
+    (token.v !== 1 ||
+      token.uid !== ctx.A.u.id ||
+      token.dept !== ctx.d ||
+      token.w !== ctx.witness ||
+      !deq(token.query, descriptor) ||
+      token.page !== page)
+  )
+    throw szError("seized-cursor-stale", 409);
+  function where(p) {
+    var w = irQueryMonth(p, y, m);
+    if (loc !== null && loc !== "all")
+      w += " AND COALESCE(location,'')=" + irQueryParam(p, loc);
+    if (category !== null && category !== "all")
+      w +=
+        " AND EXISTS(SELECT 1 FROM line i WHERE i.report_id=data.report_id AND i.category=" +
+        irQueryParam(p, category) +
+        ")";
+    if (action !== null && action !== "all")
+      w +=
+        " AND EXISTS(SELECT 1 FROM line i WHERE i.report_id=data.report_id AND i.action_key=" +
+        irQueryParam(p, action) +
+        ")";
+    return w;
+  }
+  var ids = null;
+  if (term) {
+    var search = szPlan(ctx, catalog, { y: y, m: m });
+    search.sql =
+      "SELECT report_id,rec_name,location,record_number,(SELECT json_group_array(item_name||' '||CASE WHEN kind='أخرى' THEN COALESCE(NULLIF(trim(kind_text),''),'أخرى')ELSE COALESCE(kind,'')END)FROM line i WHERE i.report_id=data.report_id)items FROM data WHERE " +
+      where(search);
+    ids = (await szPlans(ctx, [search]))[0]
+      .filter(function (r) {
+        return KIVO_FIND.match(
+          term,
+          [r.rec_name, r.location, r.record_number].concat(
+            parseJson(r.items, []),
+          ),
+        );
+      })
+      .map(function (r) {
+        return r.report_id;
+      });
+  }
+  function matches(p) {
+    return (
+      where(p) +
+      (ids
+        ? " AND report_id IN(SELECT value FROM json_each(" +
+          irQueryParam(p, JSON.stringify(ids)) +
+          "))"
+        : "")
+    );
+  }
+  var count = szPlan(ctx, catalog, { y: y, m: m });
+  count.sql = "SELECT COUNT(*)n FROM data WHERE " + matches(count);
+  var total = (await szPlans(ctx, [count]))[0][0].n,
+    pages = Math.max(1, Math.ceil(total / limit));
+  page = Math.min(page, pages);
+  var selected = szPlan(ctx, catalog, { y: y, m: m });
+  selected.sql =
+    "SELECT report_id FROM data WHERE " +
+    matches(selected) +
+    " ORDER BY COALESCE(hijri_day,0)DESC,COALESCE(created_at,0)DESC,sequence LIMIT " +
+    limit +
+    " OFFSET " +
+    (page - 1) * limit;
+  var selectedIds = (await szPlans(ctx, [selected]))[0].map(function (r) {
+      return r.report_id;
+    }),
+    rows = await szRows(ctx, selectedIds),
+    calendar = await szCalendar(ctx, q, clock, catalog);
+  function cursor(n) {
+    return cuCursor({
+      v: 1,
+      uid: ctx.A.u.id,
+      dept: ctx.d,
+      w: ctx.witness,
+      query: descriptor,
+      page: n,
+    });
+  }
+  return Object.assign(calendar, {
+    rows: rows,
+    total: total,
+    monthTotal: calendar.monthTotals.reports,
+    page: page,
+    pageSize: limit,
+    next: page < pages ? cursor(page + 1) : "",
+    prev: page > 1 ? cursor(page - 1) : "",
+  });
+}
+function szReference(ctx, name) {
+  var k = "bsdept:" + ctx.d + ":" + name;
+  if (!canRead(ctx.A, k)) return null;
+  return parseJson(enfProjectStr(ctx.A, k, ctx.rawKeys[k], ctx.refs), null);
+}
+function szDayContext(ctx, q, clock) {
+  var y = irQueryInt(q.year, clock.y, 1000, 9999),
+    m = irQueryInt(q.month, clock.m, 1, 12),
+    day = irQueryInt(q.day, clock.d, 1, 30),
+    key = y + "-" + m + "-" + day,
+    employees = szReference(ctx, "bassam_employees_v1"),
+    index = Object.create(null);
+  (Array.isArray(employees) ? employees : []).forEach(function (e) {
+    [e.eid, e.nid, e.name].forEach(function (k) {
+      if (k) index[String(k)] = e;
+    });
+  });
+  var report = (szReference(ctx, "bassam_dreport_v1") || {})[key],
+    staff = (szReference(ctx, "bassam_staffing_v3") || {})[y + "-" + m] || {},
+    round = (szReference(ctx, "bassam_rounds_v1") || {})[key],
+    shifts = [],
+    rows = {},
+    leaders = {},
+    spots = {},
+    labels = [],
+    weekday = typeof q.weekday === "string" ? q.weekday : "";
+  Object.keys((report && report.shifts) || {}).forEach(function (shift) {
+    var s = report.shifts[shift];
+    if (!s || !s.pulled) return;
+    shifts.push(shift);
+    leaders[shift] = {
+      chief: (s.leaders && s.leaders.chief) || "",
+      deputy: (s.leaders && s.leaders.deputy) || "",
+    };
+    rows[shift] = (s.roster || [])
+      .map(function (r) {
+        if (!r || !r.ekey || ["ab", "pm", "lv"].indexOf(r.st || "pr") >= 0)
+          return null;
+        var e = index[String(r.ekey)],
+          assignment =
+            staff[r.ekey] || (e && (staff[e.eid] || staff[e.nid])) || {},
+          rest = (s.rest && s.rest[r.ekey]) || assignment.rest || [];
+        if (
+          weekday &&
+          Array.isArray(rest) &&
+          rest.some(function (v) {
+            return (
+              v === weekday || "ال" + v === weekday || v === "ال" + weekday
+            );
+          })
+        )
+          return null;
+        return {
+          eid: e ? e.eid : r.ekey,
+          name: (e && e.name) || r.name || r.ekey,
+          key: r.ekey,
+          tin: !!r.tin,
+        };
+      })
+      .filter(Boolean);
+  });
+  var lens = function (k) {
+    return KIVO_BUILD.lensGate(ctx.A.perms, ctx.A.u, ctx.d, k).on;
+  };
+  (round && Array.isArray(round.d) ? round.d : []).forEach(function (floor) {
+    ["gates", "zones"].forEach(function (kind) {
+      if (!lens(kind)) return;
+      (floor[kind] || []).forEach(function (item) {
+        if (!item) return;
+        var label =
+          kind === "zones"
+            ? item.code || item.name || "مصلى"
+            : item.label || "باب " + (item.num || "");
+        if (labels.indexOf(label) < 0) labels.push(label);
+        (item.emp || []).forEach(function (k) {
+          var e = index[String(k)];
+          spots[e ? e.eid : String(k)] = label;
+        });
+      });
+    });
+  });
+  var me = ctx.A.u,
+    my = index[String(me.ekey)] || null,
+    isMgr =
+      me.role === "super" ||
+      me.role === "dept" ||
+      me.role === "gm" ||
+      (me.role === "staff" && !!me.mgr),
+    myRow = null,
+    present = [],
+    seen = new Set(),
+    leader = false;
+  shifts.forEach(function (s) {
+    rows[s].forEach(function (r) {
+      if (!seen.has(r.eid)) {
+        seen.add(r.eid);
+        present.push(r);
+      }
+      if (my && r.eid === my.eid)
+        myRow = { shift: s, eid: r.eid, name: r.name };
+    });
+    if (
+      my &&
+      [leaders[s].chief, leaders[s].deputy].some(function (k) {
+        return k && (k === my.name || k === my.eid || k === my.nid);
+      })
+    )
+      leader = true;
+  });
+  var dayShift = (szReference(ctx, "bassam_dayshift_v1") || {})[key] || "";
+  if (typeof dayShift !== "string") dayShift = "";
+  // BassamDayShift.get pins ordinary staff to their pulled/monthly shift.
+  if (me.role === "staff" && !/^mgr:/.test(String(me.ekey || ""))) {
+    var mine = "";
+    Object.keys((report && report.shifts) || {}).some(function (n) {
+      var sr = report.shifts[n];
+      if (!sr || !sr.pulled) return false;
+      return (sr.roster || []).some(function (r) {
+        if (!r || !r.ekey) return false;
+        var emp = index[String(r.ekey)],
+          matched = my ? emp && emp.eid === my.eid : r.ekey === me.ekey;
+        if (matched) mine = n;
+        return matched;
+      });
+    });
+    if (!mine) {
+      var monthly = staff[my ? my.eid : me.ekey] || (my && staff[my.nid]);
+      mine = (monthly && monthly.shift) || "";
+    }
+    dayShift = mine;
+  }
+  return {
+    year: y,
+    month: m,
+    day: day,
+    rep: !!report,
+    shifts: shifts,
+    rows: rows,
+    leaders: leaders,
+    spots: spots,
+    labels: labels,
+    present: present,
+    myEmp: my ? { eid: my.eid, name: my.name, nid: my.nid } : null,
+    isMgr: isMgr,
+    amLeader: leader,
+    locked: me.role === "staff" && !isMgr && !leader,
+    myRow: myRow,
+    dayShift: shifts.indexOf(dayShift) >= 0 ? dayShift : shifts[0] || dayShift,
+    hasRound: !!(
+      round &&
+      Array.isArray(round.d) &&
+      round.d.length &&
+      (lens("gates") || lens("zones"))
+    ),
+  };
+}
+async function hSeizedGet(env, A, url) {
+  var q =
+      url && url.searchParams
+        ? Object.fromEntries(url.searchParams)
+        : url || {},
+    view = q.view || "calendar",
+    ctx = await szQueryContext(env, A, q.dept),
+    clock = Object.assign(cuClock(), { now: Date.now() }),
+    catalog = await szCatalogSnapshot(ctx),
+    out;
+  if (view === "calendar" || view === "records")
+    ctx.recordViewScope = szRecordViewScope(ctx, q, clock);
+  if (view === "catalogs") out = szCatalogDto(catalog);
+  else if (view === "calendar") out = await szCalendar(ctx, q, clock, catalog);
+  else if (view === "records") out = await szRecords(ctx, q, clock, catalog);
+  else if (view === "context") out = { context: szDayContext(ctx, q, clock) };
+  else if (view === "dashboard")
+    out = await szDashboard(ctx, q, clock, catalog);
+  else throw szError("seized-query");
+  if ((await szQueryContext(env, A, ctx.d)).witness !== ctx.witness)
+    throw szError("seized-read-race", 409);
+  return Object.assign(
+    { ok: 1, dept: ctx.d, view: view, clock: clock, base: ctx.base },
+    out,
+  );
+}
+/* Dashboard aggregates over scoped typed rows, never a whole reports document. */
+function szDashboardPlan(ctx, catalog, range, previous) {
+  var p = szPlan(ctx, catalog),
+    current = irQueryRange(p, range),
+    prior = irQueryRange(p, previous);
+  p.prefix +=
+    ", selected AS(SELECT * FROM data WHERE " +
+    current +
+    "), previous AS(SELECT * FROM data WHERE " +
+    prior +
+    ") ";
+  return p;
+}
+function szActionMetrics(source, correlation) {
+  return (
+    "COALESCE((SELECT json_group_object(k,n)FROM(SELECT COALESCE(i.action_key,'')k,SUM(i.qty)n FROM line i JOIN " +
+    source +
+    " x ON i.report_id=x.report_id WHERE " +
+    (correlation || "1") +
+    " GROUP BY i.action_key)),'{}')actions"
+  );
+}
+function szDashboardMetric(row) {
+  return szMetrics(row, parseJson((row && row.actions) || "{}", {}));
+}
+async function szDashboard(ctx, q, clock, catalog) {
+  var available = szPlan(ctx, catalog);
+  available.sql =
+    "SELECT hijri_year y,hijri_month m,MIN(hijri_day)d,COUNT(*)n FROM data GROUP BY hijri_year,hijri_month ORDER BY hijri_year,hijri_month";
+  var availability = (await szPlans(ctx, [available]))[0],
+    years = [],
+    first = null,
+    total = 0;
+  availability.forEach(function (r) {
+    total += r.n;
+    if (r.y && years.indexOf(r.y) < 0) years.push(r.y);
+    if (r.y && r.m && r.d != null) {
+      var c = { y: r.y, m: r.m, d: r.d };
+      if (
+        !first ||
+        c.y * 10000 + c.m * 100 + c.d <
+          first.y * 10000 + first.m * 100 + first.d
+      )
+        first = c;
+    }
+  });
+  years.sort(function (a, b) {
+    return b - a;
+  });
+  if (!years.length) years.push(clock.y);
+  var mode = q.mode || "all",
+    year = irQueryInt(q.year, years[0], 1000, 9999),
+    month =
+      q.month === "all" || mode === "all"
+        ? "all"
+        : irQueryInt(q.month, clock.m, 1, 12),
+    heatYear = irQueryInt(q.heatYear, year, 1000, 9999),
+    bucket = q.bucket || (month === "all" ? "month" : "day"),
+    range = {},
+    previous = null,
+    selection = {
+      mode: mode,
+      year: year,
+      month: month,
+      heatYear: heatYear,
+      bucket: bucket,
+      from: null,
+      to: null,
+      previousFrom: null,
+      previousTo: null,
+    };
+  if (
+    ["all", "month", "custom"].indexOf(mode) < 0 ||
+    ["day", "month"].indexOf(bucket) < 0
+  )
+    throw szError("seized-range");
+  if (mode === "custom") {
+    var from = irQueryDate(q.from),
+      to = irQueryDate(q.to),
+      pf = irQueryDate(q.previousFrom),
+      pt = irQueryDate(q.previousTo);
+    if (from.n > to.n || pf.n > pt.n) throw szError("seized-range");
+    range = { from: from.n, to: to.n };
+    previous = { from: pf.n, to: pt.n };
+    Object.assign(selection, {
+      from: from.text,
+      to: to.text,
+      previousFrom: pf.text,
+      previousTo: pt.text,
+    });
+  } else if (mode === "month") {
+    range = { y: year };
+    if (month !== "all") range.m = month;
+    previous =
+      month === "all"
+        ? { y: year - 1 }
+        : { y: month === 1 ? year - 1 : year, m: month === 1 ? 12 : month - 1 };
+    if (year === clock.y && (month === "all" || month === clock.m))
+      previous.to =
+        previous.y * 10000 +
+        (month === "all" ? clock.m : previous.m) * 100 +
+        clock.d;
+  }
+  var plans = [],
+    names = irQueryShiftNames(ctx),
+    day = bucket === "day" ? "hijri_day" : "NULL",
+    group = "hijri_year,hijri_month" + (bucket === "day" ? ",hijri_day" : ""),
+    correlation =
+      "x.hijri_year IS r.hijri_year AND x.hijri_month IS r.hijri_month" +
+      (bucket === "day" ? " AND x.hijri_day IS r.hijri_day" : "");
+  function add(sql) {
+    var p = szDashboardPlan(ctx, catalog, range, previous);
+    p.sql = sql;
+    plans.push(p);
+    return p;
+  }
+  add(
+    "SELECT " +
+      szMetricsSql() +
+      "," +
+      szActionMetrics("selected") +
+      " FROM selected",
+  );
+  add(
+    "SELECT " +
+      szMetricsSql() +
+      "," +
+      szActionMetrics("previous") +
+      " FROM previous",
+  );
+  add(
+    "SELECT hijri_year y,hijri_month m," +
+      day +
+      " d," +
+      szMetricsSql() +
+      "," +
+      szActionMetrics("selected", correlation) +
+      " FROM selected r GROUP BY " +
+      group +
+      " ORDER BY " +
+      group,
+  );
+  add(
+    "SELECT hijri_year y,hijri_month m," +
+      day +
+      " d," +
+      szMetricsSql() +
+      "," +
+      szActionMetrics("previous", correlation) +
+      " FROM previous r GROUP BY " +
+      group +
+      " ORDER BY " +
+      group,
+  );
+  var heat = szPlan(ctx, catalog);
+  heat.sql =
+    "SELECT hijri_year y,hijri_month m,hijri_day d,SUM(qty)qty FROM data WHERE hijri_year=" +
+    irQueryParam(heat, heatYear) +
+    " GROUP BY hijri_month,hijri_day ORDER BY hijri_month,hijri_day";
+  plans.push(heat);
+  var categories = szDashboardPlan(ctx, catalog, range, previous);
+  irQueryTopGroups(
+    categories,
+    "SELECT i.category name,SUM(i.qty)value,0 previous,MIN(r.sequence)firstSequence,MIN(printf('%020d:%020d',r.sequence,i.position))orderKey FROM line i JOIN selected r ON i.report_id=r.report_id GROUP BY i.category",
+    "تصنيفات أخرى",
+  );
+  plans.push(categories);
+  var locations = szDashboardPlan(ctx, catalog, range, previous);
+  irQueryTopGroups(
+    locations,
+    "SELECT location name,SUM(qty)value,COALESCE((SELECT SUM(p.qty)FROM previous p WHERE p.location IS r.location),0)previous,MIN(sequence)firstSequence,MIN(sequence)orderKey FROM selected r WHERE location IS NOT NULL AND location!='' GROUP BY location",
+    "مواقع أخرى",
+  );
+  plans.push(locations);
+  add(
+    "SELECT effective_shift name," +
+      szMetricsSql() +
+      "," +
+      szActionMetrics("selected", "x.effective_shift IS r.effective_shift") +
+      " FROM selected r GROUP BY effective_shift",
+  );
+  var shiftPoints = add("");
+  shiftPoints.sql =
+    "SELECT effective_shift name,hijri_year y,hijri_month m," +
+    day +
+    " d,SUM(qty)qty FROM selected WHERE effective_shift IN(SELECT value FROM json_each(" +
+    irQueryParam(shiftPoints, JSON.stringify(names)) +
+    ")) GROUP BY effective_shift," +
+    group +
+    " ORDER BY " +
+    group;
+  var locationNames = Array.isArray(catalog.effective.locations)
+      ? catalog.effective.locations.slice(0, 6)
+      : [],
+    locationPoints = add("");
+  locationPoints.sql =
+    "SELECT location name,hijri_year y,hijri_month m," +
+    day +
+    " d,SUM(qty)qty FROM selected WHERE location IN(SELECT value FROM json_each(" +
+    irQueryParam(locationPoints, JSON.stringify(locationNames)) +
+    ")) GROUP BY location," +
+    group +
+    " ORDER BY " +
+    group;
+  add(
+    "SELECT rec_key key,COUNT(*)reports,SUM(qty)qty,MIN(sequence)firstSequence,MAX(sequence)lastSequence FROM selected WHERE rec_key!='' GROUP BY rec_key ORDER BY qty DESC,firstSequence LIMIT 6",
+  );
+  var results = await szPlans(ctx, plans),
+    byShift = new Map();
+  results[7].forEach(function (r) {
+    byShift.set(r.name, Object.assign({ name: r.name }, szDashboardMetric(r)));
+  });
+  var shifts = names.map(function (n) {
+      return byShift.get(n) || Object.assign({ name: n }, szMetrics());
+    }),
+    summaryRows = KIVO_FIND.filter(
+      irQueryText(q.sumQ, 500).trim(),
+      shifts,
+      function (r) {
+        return [r.name, undefined, undefined];
+      },
+    ),
+    summary = szDashboardPlan(ctx, catalog, range, previous),
+    selectedNames = irQueryParam(
+      summary,
+      JSON.stringify(
+        summaryRows.map(function (r) {
+          return r.name;
+        }),
+      ),
+    );
+  summary.prefix +=
+    ", summary AS(SELECT * FROM selected WHERE effective_shift IN(SELECT value FROM json_each(" +
+    selectedNames +
+    "))) ";
+  summary.sql =
+    "SELECT " +
+    szMetricsSql() +
+    "," +
+    szActionMetrics("summary") +
+    " FROM summary";
+  var snapshots = szDashboardPlan(ctx, catalog, range, previous);
+  snapshots.sql =
+    "SELECT sequence,rec_name name,effective_shift shift FROM selected WHERE sequence IN(SELECT value FROM json_each(" +
+    irQueryParam(
+      snapshots,
+      JSON.stringify(
+        results[10].map(function (r) {
+          return r.lastSequence;
+        }),
+      ),
+    ) +
+    "))";
+  var previousEmployees = szDashboardPlan(ctx, catalog, range, previous);
+  previousEmployees.sql =
+    "SELECT rec_key key,SUM(qty)qty FROM previous WHERE rec_key IN(SELECT value FROM json_each(" +
+    irQueryParam(
+      previousEmployees,
+      JSON.stringify(
+        results[10].map(function (r) {
+          return r.key;
+        }),
+      ),
+    ) +
+    ")) GROUP BY rec_key";
+  var extra = await szPlans(ctx, [summary, snapshots, previousEmployees]),
+    last = new Map(),
+    prior = new Map();
+  extra[1].forEach(function (r) {
+    last.set(r.sequence, r);
+  });
+  extra[2].forEach(function (r) {
+    prior.set(r.key, r.qty);
+  });
+  function points(rows) {
+    return rows.map(function (r) {
+      return Object.assign({ y: r.y, m: r.m, d: r.d }, szDashboardMetric(r));
+    });
+  }
+  function series(rows, configured) {
+    return configured.map(function (n) {
+      return {
+        name: n,
+        series: rows
+          .filter(function (r) {
+            return r.name === n;
+          })
+          .map(function (r) {
+            return { y: r.y, m: r.m, d: r.d, qty: r.qty };
+          }),
+      };
+    });
+  }
+  var color = new Map();
+  ((catalog.effective.catalog || {}).cats || []).forEach(function (c) {
+    color.set(c.name, c.color || "#94a3b8");
+  });
+  return {
+    dashboard: {
+      available: {
+        total: total,
+        years: years,
+        first: first,
+        months: availability
+          .filter(function (r) {
+            return r.y && r.m;
+          })
+          .map(function (r) {
+            return { y: r.y, m: r.m };
+          }),
+      },
+      selection: selection,
+      totals: szDashboardMetric(results[0][0]),
+      previous: szDashboardMetric(results[1][0]),
+      series: points(results[2]),
+      previousSeries: points(results[3]),
+      heat: results[4],
+      categories: results[5].map(function (r) {
+        return {
+          name: r.name,
+          value: r.value,
+          color: color.get(r.name) || "#94a3b8",
+          other: !!r.other,
+        };
+      }),
+      locations: results[6].map(function (r) {
+        return {
+          name: r.name,
+          value: r.value,
+          previous: r.previous,
+          other: !!r.other,
+        };
+      }),
+      employees: results[10].map(function (r) {
+        var snap = last.get(r.lastSequence) || {};
+        return {
+          key: r.key,
+          name: snap.name || "—",
+          shift: snap.shift || "",
+          qty: r.qty,
+          reports: r.reports,
+          previous: prior.get(r.key) || 0,
+        };
+      }),
+      shifts: shifts,
+      shiftSeries: series(results[8], names),
+      locationSeries: series(results[9], locationNames),
+      summary: {
+        rows: summaryRows,
+        totals: szDashboardMetric(extra[0][0]),
+        all: shifts.length,
+        matched: summaryRows.length,
+      },
+    },
+  };
+}
+/* Closed commands over affected rows; one commit includes data, images,
+   revisions, notifications, request receipt and audit. */
+function szCheckBase(base) {
+  szShape(base, ["epoch"].concat(SZ_NAMES), "base");
+  ["epoch"].concat(SZ_NAMES).forEach(function (k) {
+    if (!Number.isSafeInteger(base[k]) || base[k] < 0)
+      throw szError("seized-base");
+  });
+}
+function szAffected(b) {
+  return b.op === "catalog-replace"
+    ? [b.kind]
+    : b.op === "jew-rename"
+      ? ["reports", "jew"]
+      : ["reports"];
+}
+function szAuthority(ctx, b, affectedItems) {
+  (b.op === "jew-rename" && !(affectedItems > 0)
+    ? ["jew"]
+    : szAffected(b)
+  ).forEach(function (resource) {
+    var k = szKey(ctx.d, SZ_NAMES.indexOf(resource));
+    if (
+      !deptInScope(ctx.A, ctx.d) ||
+      !resOnCeiling(ctx.A, ctx.d, resOf(k)) ||
+      !(ctx.A.enf
+        ? enfResWriter(ctx.A, ctx.d, resName(k))
+        : authorizeActs(ctx.A, k, [
+            b.op === "create"
+              ? "add"
+              : b.op.indexOf("delete") === 0
+                ? "del"
+                : "edit",
+          ]).ok)
+    )
+      throw szError("seized-denied", 403);
+  });
+}
+async function szReceipt(ctx, b, fingerprint) {
+  var rows = await szReadBatch(ctx, [
+      ctx.env.DB.prepare(
+        "SELECT * FROM seized_requests WHERE department_id=?1 AND account_uid=?2 AND request_id=?3",
+      ).bind(ctx.d, ctx.A.u.id, b.requestId),
+    ]),
+    r = rows[0][0];
+  if (!r) return null;
+  if (r.fingerprint !== fingerprint)
+    throw szError("seized-request-reused", 409);
+  if (
+    !Number.isSafeInteger(r.resource_rev) ||
+    r.resource_rev < 0 ||
+    r.operation !== b.op ||
+    r.resource_key !== szKey(ctx.d, SZ_NAMES.indexOf(szAffected(b)[0]))
+  )
+    throw szError("seized-receipt-invalid", 503);
+  if (
+    !Number.isSafeInteger(r.result_n) ||
+    r.result_n < 0 ||
+    r.permission_mode !== (ctx.A.enf ? "enforce" : "legacy")
+  )
+    throw szError("seized-receipt-invalid", 503);
+  var required = parseJson(r.permission_keys, null);
+  if (
+    !Array.isArray(required) ||
+    required.length > 1000 ||
+    new Set(required).size !== required.length ||
+    required.some(function (k) {
+      if (typeof k !== "string") return true;
+      if (r.permission_mode === "enforce") return !KIVO_REGISTRY.byKey[k];
+      var p = k.split(":");
+      return (
+        p.length !== 2 ||
+        SZ_NAMES.indexOf(p[0]) < 0 ||
+        ["add", "edit", "del", "approve"].indexOf(p[1]) < 0
+      );
+    })
+  )
+    throw szError("seized-receipt-invalid", 503);
+  szAuthority(ctx, b, r.result_n);
+  if (
+    ctx.A.enf &&
+    required.some(function (k) {
+      return !enfHeld(ctx.A, ctx.d, k);
+    })
+  )
+    throw szError("seized-denied", 403);
+  if (
+    !ctx.A.enf &&
+    required.some(function (k) {
+      var p = k.split(":");
+      return !authorizeActs(ctx.A, szKey(ctx.d, SZ_NAMES.indexOf(p[0])), [p[1]])
+        .ok;
+    })
+  )
+    throw szError("seized-denied", 403);
+  var base = Object.assign({}, b.base),
+    affected = szAffected(b);
+  affected.forEach(function (k) {
+    base[k] = r.resource_rev;
+  });
+  var ack = {
+    ok: 1,
+    requestId: b.requestId,
+    op: r.operation,
+    rev: r.resource_rev,
+    n: r.result_n,
+    base: base,
+    affected: affected,
+  };
+  if (r.result_id !== null) ack.id = r.result_id;
+  return ack;
+}
+async function szPermission(ctx, resource, before, after, reason) {
+  var k = szKey(ctx.d, SZ_NAMES.indexOf(resource)),
+    retro = await szRetroSnapshot(ctx.env, ctx.d),
+    retroWin = {},
+    pv4 = {},
+    set = {},
+    keys = {},
+    body = { why: {} };
+  retroWin[ctx.d + "|seized"] = retro.state.windows;
+  pv4[ctx.d] = ctx.pv4;
+  set[k] = JSON.stringify(after);
+  keys[k] = 1;
+  if (reason) body.why[k] = reason;
+  var X = ctx.A.enf
+      ? await enfSavePrep(
+          ctx.env,
+          ctx.A,
+          body,
+          set,
+          [],
+          keys,
+          KIVO_BUILD.markers({}, keys),
+          null,
+          false,
+          false,
+          retroWin,
+          pv4,
+        )
+      : null,
+    c = X ? { enf: enfCtxFor(X, k, ctx.d) } : {},
+    decision =
+      X && X.batchDeny
+        ? enfNo(X.batchDeny.why, X.batchDeny)
+        : canWrite(
+            ctx.A,
+            k,
+            JSON.stringify(after),
+            before === undefined ? null : JSON.stringify(before),
+            c,
+          );
+  if (!decision.ok) {
+    var e = szError("seized-denied", 403);
+    e.szDecision = decision;
+    throw e;
+  }
+  var actualActs = [];
+  if (!ctx.A.enf) {
+    actualActs = Object.keys(
+      classifyMutation(
+        resOf(k),
+        before === undefined ? null : JSON.stringify(before),
+        JSON.stringify(after),
+        entOf(k),
+        opsOf(k),
+      ),
+    );
+    if (!actualActs.length) actualActs = ["edit"];
+  }
+  return {
+    guards: retro.guards,
+    decision: decision,
+    key: k,
+    actualActs: actualActs,
+    resource: resource,
+  };
+}
+function szItemData(ctx, value, old, index, catalog, now) {
+  szShape(
+    value,
+    ["id", "n", "val", "act", "kind", "kindTxt", "photos", "sourceIndex"],
+    "item",
+  );
+  if (
+    (typeof value.id !== "number" && typeof value.id !== "string") ||
+    !String(value.id)
+  )
+    throw szError("seized-item-id");
+  ["n", "val"].forEach(function (k) {
+    if (!Number.isSafeInteger(value[k]) || value[k] < 0)
+      throw szError("seized-item-number");
+  });
+  ["act", "kind", "kindTxt"].forEach(function (k) {
+    if (typeof value[k] !== "string" || value[k].length > 4000)
+      throw szError("seized-item-text");
+  });
+  if (
+    !Array.isArray(value.photos) ||
+    value.photos.length > 200 ||
+    value.photos.some(function (id) {
+      return (
+        typeof id !== "string" || !/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(id)
+      );
+    })
+  )
+    throw szError("seized-photo");
+  var ix = szCatalogIndex(catalog),
+    entry = ix.find(function (i) {
+      return i.id === String(value.id);
+    });
+  if (!entry && !(old && String(old.id) === String(value.id)))
+    throw szError("seized-item-catalog");
+  if (
+    !(
+      Array.isArray(catalog.effective.actions) ? catalog.effective.actions : []
+    ).some(function (a) {
+      return a.k === value.act;
+    }) &&
+    !(old && old.act === value.act)
+  )
+    throw szError("seized-item-action");
+  var out = Object.assign({}, value);
+  delete out.sourceIndex;
+  if (old && irOwn(old, "hist"))
+    out.hist = old.hist === null ? null : old.hist.slice();
+  else out.hist = [];
+  if (old && old.act !== out.act) {
+    out.hist = Array.isArray(out.hist) ? out.hist : [];
+    out.hist.push({
+      from: old.act || "",
+      to: out.act,
+      at: new Date(now).toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" }),
+      by: String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id),
+      t: now,
+    });
+  }
+  return out;
+}
+function szReportData(ctx, b, old, catalog, now) {
+  var create = b.op === "create";
+  szShape(
+    b.data,
+    (create ? ["y", "m", "d"] : []).concat(["loc", "no", "note", "items"]),
+    "data",
+  );
+  ["loc", "no", "note"].forEach(function (k) {
+    if (typeof b.data[k] !== "string" || b.data[k].length > 100000)
+      throw szError("seized-data");
+  });
+  if (
+    !Array.isArray(b.data.items) ||
+    !b.data.items.length ||
+    b.data.items.length > 200
+  )
+    throw szError("seized-items");
+  var used = new Set(),
+    oldItems = old && Array.isArray(old.items) ? old.items : [];
+  var items = b.data.items.map(function (item, index) {
+    var previous = null;
+    if (!create) {
+      var source = irOwn(item, "sourceIndex") ? item.sourceIndex : null;
+      if (source === null) {
+        var matches = [];
+        oldItems.forEach(function (v, i) {
+          if (v.id === item.id) matches.push(i);
+        });
+        if (matches.length > 1) throw szError("seized-item-history-ambiguous");
+        if (matches.length === 1) source = matches[0];
+      }
+      if (source !== null) {
+        if (
+          !Number.isSafeInteger(source) ||
+          source < 0 ||
+          source >= oldItems.length ||
+          used.has(source) ||
+          oldItems[source].id !== item.id
+        )
+          throw szError("seized-item-source");
+        used.add(source);
+        previous = oldItems[source];
+      }
+    }
+    return szItemData(ctx, item, previous, index, catalog, now);
+  });
+  var out = Object.assign({}, old || {}, b.data, { items: items });
+  if (create) {
+    ["y", "m", "d"].forEach(function (k) {
+      if (!Number.isSafeInteger(out[k])) throw szError("seized-date");
+    });
+    if (
+      out.y < 1000 ||
+      out.y > 9999 ||
+      out.m < 1 ||
+      out.m > 12 ||
+      out.d < 1 ||
+      out.d > 30
+    )
+      throw szError("seized-date");
+    out.id = "sz-" + randTok();
+    out.ts = now;
+    out.actor = String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id);
+    out.actorKey = String(ctx.A.u.ekey || ctx.A.u.id || ctx.A.u.un || "");
+  } else {
+    out.editedTs = now;
+    out.editedBy = String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id);
+  }
+  szConvert(ctx.d, { reports: { reports: [out] } });
+  return out;
+}
+function szResourceStatements(env, d, domain, name) {
+  var keys =
+      name === "catalog"
+        ? ["categories", "catalogItems"]
+        : name === "actions"
+          ? ["actions"]
+          : ["lists"],
+    out = [];
+  // Explicitly bound deletion predicates; each command owns one resource only.
+  out = keys
+    .slice()
+    .reverse()
+    .map(function (k) {
+      var st = env.DB.prepare(
+        "DELETE FROM " +
+          SZ_TABLES[k][0] +
+          " WHERE department_id=?1" +
+          (k === "lists" ? " AND resource=?2" : ""),
+      );
+      return k === "lists" ? st.bind(d, name) : st.bind(d);
+    });
+  out.push(
+    env.DB.prepare(
+      "DELETE FROM seized_resource_state WHERE department_id=?1 AND resource=?2",
+    ).bind(d, name),
+  );
+  out.push.apply(
+    out,
+    rsBulk(
+      env,
+      SZ_TABLES.resources[0],
+      SZ_TABLES.resources[1],
+      domain.rows.resources,
+    ),
+  );
+  keys.forEach(function (k) {
+    out.push.apply(
+      out,
+      rsBulk(env, SZ_TABLES[k][0], SZ_TABLES[k][1], domain.rows[k]),
+    );
+  });
+  return out;
+}
+function szMarkReports(env, d) {
+  return env.DB.prepare(
+    "INSERT INTO seized_resource_state(department_id,resource,value_kind,list_kind,version_kind,version_number,version_text)VALUES(?1,'reports',2,2,0,NULL,NULL)ON CONFLICT(department_id,resource)DO UPDATE SET value_kind=2,list_kind=2",
+  ).bind(d);
+}
+async function szCatalogInUse(ctx, name, before, after) {
+  var removed = [];
+  if (name === "catalog") {
+    var next = new Set();
+    ((after || {}).cats || []).forEach(function (c) {
+      (c.items || []).forEach(function (i) {
+        next.add(String(i.id));
+      });
+    });
+    ((before || {}).cats || []).forEach(function (c) {
+      (c.items || []).forEach(function (i) {
+        if (!next.has(String(i.id))) removed.push(String(i.id));
+      });
+    });
+  } else {
+    var nextValues = new Set(
+      (after || []).map(function (v) {
+        return name === "actions" ? v.k : v;
+      }),
+    );
+    (before || []).forEach(function (v) {
+      var k = name === "actions" ? v.k : v;
+      if (!nextValues.has(k)) removed.push(k);
+    });
+  }
+  if (!removed.length) return [];
+  var table = name === "locations" ? "seized_reports" : "seized_items",
+    column =
+      name === "catalog"
+        ? "id_token"
+        : name === "actions"
+          ? "action_key"
+          : name === "locations"
+            ? "location"
+            : "kind",
+    sql =
+      "SELECT 1 FROM " +
+      table +
+      " WHERE department_id=?1 AND " +
+      column +
+      " IN(SELECT value FROM json_each(?2))LIMIT 1",
+    args = [ctx.d, JSON.stringify(removed)];
+  if (await rsBound(ctx.env.DB.prepare(sql), args).first())
+    throw szError("seized-catalog-in-use", 409);
+  return [
+    rsBound(
+      ctx.env.DB.prepare(
+        "SELECT CASE WHEN EXISTS(" +
+          sql.replace("LIMIT 1", "") +
+          ")THEN json_extract('{}','KIVO_SEIZED_TARGET_CHANGED')END",
+      ),
+      args,
+    ),
+  ];
+}
+async function szImagePlan(ctx, before, after, ids) {
+  var oldIds =
+      (
+        await ctx.env.DB.prepare(
+          "SELECT DISTINCT image_id FROM seized_item_photos WHERE department_id=?1 ORDER BY image_id",
+        )
+          .bind(ctx.d)
+          .all()
+      ).results || [],
+    remaining =
+      (
+        await ctx.env.DB.prepare(
+          "SELECT DISTINCT image_id FROM seized_item_photos WHERE department_id=?1 AND report_id NOT IN(SELECT value FROM json_each(?2))ORDER BY image_id",
+        )
+          .bind(ctx.d, JSON.stringify(ids))
+          .all()
+      ).results || [],
+    images = new Set(
+      remaining.map(function (r) {
+        return r.image_id;
+      }),
+    );
+  after.forEach(function (r) {
+    (r.items || []).forEach(function (i) {
+      (i.photos || []).forEach(function (id) {
+        images.add(id);
+      });
+    });
+  });
+  if (images.size > IMG_CAP) throw szError("seized-image-reference-limit", 503);
+  var k = szKey(ctx.d),
+    oldProjection = JSON.stringify({
+      photos: oldIds.map(function (r) {
+        return r.image_id;
+      }),
+    }),
+    projection = JSON.stringify({ photos: Array.from(images) });
+  var guard = ctx.env.DB.prepare(
+      "SELECT CASE WHEN(SELECT COUNT(DISTINCT image_id)FROM seized_item_photos WHERE department_id=?1)<>json_array_length(?2)OR EXISTS(SELECT 1 FROM seized_item_photos WHERE department_id=?1 AND NOT EXISTS(SELECT 1 FROM json_each(?2)e WHERE e.value IS image_id))THEN json_extract('{}','KIVO_SEIZED_TARGET_CHANGED')END",
+    ).bind(
+      ctx.d,
+      JSON.stringify(
+        oldIds.map(function (r) {
+          return r.image_id;
+        }),
+      ),
+    ),
+    plan = {
+      guards: [guard],
+      statements: [],
+      imgTouch: [{ k: k, v: projection }],
+      relationalImageBefore: {},
+      operation: "save",
+      kv: { pend: [] },
+    };
+  plan.relationalImageBefore[k] = oldProjection;
+  var reference = { inputKeys: {} };
+  reference.inputKeys[k] = projection;
+  await rsImageMetadataPlan(ctx.env, ctx.A, plan, reference);
+  // Ownership is checked after the metadata snapshot that is fenced by the
+  // shared planner. A change before capture cannot turn a prior check stale.
+  if (await imgForeignIn(ctx.env, ctx.A, k, projection, oldProjection))
+    throw szError("seized-image-denied", 403);
+  plan.guards.push(
+    ctx.env.DB.prepare(
+      "SELECT CASE WHEN(SELECT COUNT(DISTINCT image_id)FROM seized_item_photos WHERE department_id=?1 AND report_id NOT IN(SELECT value FROM json_each(?2)))<>json_array_length(?3)OR EXISTS(SELECT 1 FROM seized_item_photos WHERE department_id=?1 AND report_id NOT IN(SELECT value FROM json_each(?2))AND NOT EXISTS(SELECT 1 FROM json_each(?3)e WHERE e.value IS image_id))THEN json_extract('{}','KIVO_SEIZED_TARGET_CHANGED')END",
+    ).bind(
+      ctx.d,
+      JSON.stringify(ids),
+      JSON.stringify(
+        remaining.map(function (r) {
+          return r.image_id;
+        }),
+      ),
+    ),
+  );
+  var newImages = Array.from(images).filter(function (id) {
+      return !oldIds.some(function (r) {
+        return r.image_id === id;
+      });
+    }),
+    bodies =
+      (
+        await ctx.env.DB.prepare(
+          "SELECT DISTINCT k FROM imgs WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k",
+        )
+          .bind(JSON.stringify(newImages))
+          .all()
+      ).results || [];
+  plan.guards.push(
+    ctx.env.DB.prepare(
+      "SELECT CASE WHEN(SELECT COUNT(DISTINCT k)FROM imgs WHERE k IN(SELECT value FROM json_each(?1)))<>json_array_length(?2)OR EXISTS(SELECT 1 FROM imgs WHERE k IN(SELECT value FROM json_each(?1))AND NOT EXISTS(SELECT 1 FROM json_each(?2)e WHERE e.value IS k))THEN json_extract('{}','KIVO_SEIZED_TARGET_CHANGED')END",
+    ).bind(
+      JSON.stringify(newImages),
+      JSON.stringify(
+        bodies.map(function (r) {
+          return r.k;
+        }),
+      ),
+    ),
+  );
+  // The existence snapshot is also followed by the same ownership check;
+  // body/owner changes after it are rejected by the two transaction fences.
+  if (await imgForeignIn(ctx.env, ctx.A, k, projection, oldProjection))
+    throw szError("seized-image-denied", 403);
+  return plan;
+}
+async function szNotifications(ctx, b, before, after, catalog) {
+  var events = [],
+    index = szCatalogIndex(catalog),
+    acts = Array.isArray(catalog.effective.actions)
+      ? catalog.effective.actions
+      : [],
+    who = String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id);
+  function itemName(i) {
+    var e = index.find(function (x) {
+      return x.id === String(i.id);
+    });
+    return e
+      ? e.name +
+          (i.kind
+            ? " · " + (i.kind === "أخرى" ? i.kindTxt || "أخرى" : i.kind)
+            : "") +
+          " ×" +
+          (i.n || 1)
+      : "بند " + i.id;
+  }
+  function actName(k) {
+    var a = acts.find(function (x) {
+      return x.k === k;
+    });
+    return a
+      ? a.name
+      : {
+          sec: "أُحيل للجهة الأمنية",
+          des: "أُتلف / صودر",
+          sto: "محفوظ بالمستودع",
+        }[k] || k;
+  }
+  function emit(type, r, vars) {
+    events.push({
+      type: type,
+      dept: ctx.d,
+      vars: vars,
+      report: r.id,
+      order: events.length,
+    });
+  }
+  if (b.op === "create")
+    after.forEach(function (r) {
+      var items = r.items || [];
+      emit("bx_new", r, {
+        الرقم: r.no || "—",
+        القطع: items.reduce(function (n, i) {
+          return n + (parseInt(i.n, 10) || 0);
+        }, 0),
+        الموقع: r.loc || "—",
+        الموظف: r.actor || r.name || "",
+      });
+      var sec = items.filter(function (i) {
+        return i.act === "sec";
+      });
+      if (sec.length)
+        emit("bx_sec", r, {
+          الرقم: r.no || "—",
+          البند: sec.map(itemName).join("، "),
+          الموظف: r.actor || r.name || "",
+        });
+      var sar = items.reduce(function (n, i) {
+        return (
+          n + (i.id === 23 ? parseInt(i.n, 10) || 0 : parseInt(i.val, 10) || 0)
+        );
+      }, 0);
+      if (sar >= 50000)
+        emit("bx_cash", r, {
+          الرقم: r.no || "—",
+          المبلغ: sar.toLocaleString("en-US"),
+          الحد: "50,000",
+        });
+    });
+  if (b.op === "delete" || b.op === "delete-month")
+    before.forEach(function (r) {
+      emit("bx_del", r, { الرقم: r.no || "—", المُعدّل: who });
+    });
+  if (["edit", "item-action"].indexOf(b.op) >= 0)
+    after.forEach(function (r) {
+      var old = before.find(function (x) {
+        return x.id === r.id;
+      });
+      (r.items || []).forEach(function (i, n) {
+        var pi = old && (old.items || [])[n];
+        if (pi && pi.act !== i.act)
+          emit("bx_upd", r, {
+            الرقم: r.no || "—",
+            البند: itemName(i),
+            من: actName(pi.act),
+            إلى: actName(i.act),
+            المُعدّل: who,
+          });
+      });
+    });
+  var out = { guards: [], statements: [], active: 0 };
+  for (var start = 0; start < events.length; start += 200) {
+    var part = [];
+    for (var e of events.slice(start, start + 200)) {
+      Object.keys(e.vars).forEach(function (k) {
+        if (typeof e.vars[k] === "string") e.vars[k] = e.vars[k].slice(0, 4000);
+      });
+      part.push({
+        type: e.type,
+        dept: ctx.d,
+        vars: e.vars,
+        link: e.type === "bx_del" ? "" : "seized:" + e.report,
+        once:
+          "seized:" +
+          (await cuFingerprint({
+            request: b.requestId,
+            uid: ctx.A.u.id,
+            report: e.report,
+            type: e.type,
+            order: e.order,
+          })),
+      });
+    }
+    var p = await nfPlanEvents(ctx.env, ctx.A, part, true);
+    out.guards.push.apply(out.guards, p.guards);
+    out.statements.push.apply(out.statements, p.statements);
+    out.statements.push.apply(
+      out.statements,
+      nfRetention(ctx.env, Date.now(), p.scopes),
+    );
+    out.active += p.plans.length;
+  }
+  return out;
+}
+async function hSeizedAct(env, actor, b, meta) {
+  var fields = {
+    create: ["data"],
+    edit: ["id", "data"],
+    delete: ["id"],
+    "delete-month": ["year", "month", "day"],
+    "item-action": ["id", "index", "act"],
+    "photo-delete": ["id", "index", "image"],
+    "catalog-replace": ["kind", "value"],
+    "jew-rename": ["from", "to"],
+  };
+  szShape(
+    b,
+    ["uid", "dept", "base", "requestId", "op", "reason"].concat(
+      fields[b && b.op] || [],
+    ),
+    "body",
+  );
+  if (!irOwn(fields, b.op)) throw szError("seized-operation");
+  irRequestString(b.requestId, 100);
+  irRequestString(b.dept, 200);
+  szCheckBase(b.base);
+  if (b.uid !== undefined && b.uid !== actor.u.id)
+    throw szError("session-changed", 409);
+  if (
+    b.reason !== undefined &&
+    (typeof b.reason !== "string" || b.reason.length > 100000)
+  )
+    throw szError("seized-reason");
+  if (
+    b.op === "catalog-replace" &&
+    ["catalog", "actions", "locations", "jew"].indexOf(b.kind) < 0
+  )
+    throw szError("seized-catalog-kind");
+  await szGuardRetired(env);
+  var ctx = await szQueryContext(env, actor, b.dept, { write: true });
+  env = ctx.env;
+  var A = ctx.A;
+  if (ctx.base.epoch !== b.base.epoch)
+    throw szError("restore-epoch-changed", 409);
+  szAuthority(ctx, b);
+  var fp = await cuFingerprint({ body: b }),
+    receipt = await szReceipt(ctx, b, fp);
+  if (receipt) return receipt;
+  if (
+    ["epoch"].concat(SZ_NAMES).some(function (k) {
+      return ctx.base[k] !== b.base[k];
+    })
+  )
+    throw szError("seized-conflict", 409);
+  var catalog = await szCatalogSnapshot(ctx),
+    before = [],
+    after = [],
+    guards = ctx.guards.concat(catalog.guards, [
+      rsEpochGuard(env.DB, b.base.epoch),
+      szRetiredGuard(env),
+    ]),
+    statements = [],
+    permissions = [],
+    affected = szAffected(b),
+    now = Date.now(),
+    reason = String(b.reason || "")
+      .trim()
+      .slice(0, 300),
+    n = 1,
+    id = null;
+  if (b.op === "catalog-replace") {
+    var resource = b.kind,
+      docs = {};
+    docs[resource] = b.value;
+    var domain = szConvert(ctx.d, docs),
+      old = catalog.docs[resource],
+      value = b.value;
+    if (resource === "catalog") {
+      if (!isObj(value) || !Array.isArray(value.cats))
+        throw szError("seized-catalog-shape");
+      n = value.cats.length;
+    } else {
+      if (!Array.isArray(value)) throw szError("seized-catalog-shape");
+      n = value.length;
+    }
+    guards.push.apply(
+      guards,
+      await szCatalogInUse(ctx, resource, catalog.effective[resource], value),
+    );
+    permissions.push(await szPermission(ctx, resource, old, value, reason));
+    statements.push.apply(
+      statements,
+      szResourceStatements(env, ctx.d, domain, resource),
+    );
+  } else {
+    var selected = [],
+      where,
+      raw = [];
+    if (b.op === "create") {
+      var reportPresence = await szReportSnapshot(
+        ctx,
+        "department_id=?1 AND report_id IN(SELECT value FROM json_each(?2))",
+        [ctx.d, "[]"],
+      );
+      guards.push.apply(guards, reportPresence.guards);
+      var seq = await env.DB.prepare(
+        "SELECT COALESCE(MAX(sequence),-1)+1 n FROM seized_reports WHERE department_id=?1",
+      )
+        .bind(ctx.d)
+        .first();
+      if (!Number.isSafeInteger(seq.n) || seq.n < 0)
+        throw szError("seized-sequence", 503);
+      guards.push(
+        env.DB.prepare(
+          "SELECT CASE WHEN(SELECT COALESCE(MAX(sequence),-1)+1 FROM seized_reports WHERE department_id=?1)IS NOT ?2 THEN json_extract('{}','KIVO_SEIZED_TARGET_CHANGED')END",
+        ).bind(ctx.d, seq.n),
+      );
+      after = [szReportData(ctx, b, null, catalog, now)];
+      var created = szConvert(ctx.d, { reports: { reports: after } });
+      created.rows.reports[0].sequence = seq.n;
+      ["reports", "items", "photos", "history"].forEach(function (k) {
+        statements.push.apply(
+          statements,
+          rsBulk(env, SZ_TABLES[k][0], SZ_TABLES[k][1], created.rows[k]),
+        );
+      });
+      id = after[0].id;
+    } else {
+      if (b.op === "delete-month") {
+        if (!canRead(A, szKey(ctx.d))) throw szError("seized-denied", 403);
+        var scope = szRecordViewScope(
+            ctx,
+            { year: b.year, month: b.month, day: b.day },
+            cuClock(),
+          ),
+          p = { args: scope.args.slice() };
+        where =
+          scope.sql +
+          " AND r.hijri_year=" +
+          irQueryParam(p, irQueryInt(b.year, 0, 1000, 9999)) +
+          " AND r.hijri_month=" +
+          irQueryParam(p, irQueryInt(b.month, 0, 1, 12));
+        selected = (
+          await szReadBatch(ctx, [
+            rsBound(
+              env.DB.prepare(
+                "SELECT r.report_id FROM seized_reports r WHERE " +
+                  where +
+                  " ORDER BY r.sequence",
+              ),
+              p.args,
+            ),
+          ])
+        )[0].map(function (r) {
+          return r.report_id;
+        });
+      } else if (b.op === "jew-rename") {
+        if (
+          typeof b.from !== "string" ||
+          !b.from ||
+          typeof b.to !== "string" ||
+          !b.to ||
+          b.from === b.to ||
+          b.to === "أخرى" ||
+          !Array.isArray(catalog.effective.jew) ||
+          catalog.effective.jew.indexOf(b.from) < 0 ||
+          catalog.effective.jew.indexOf(b.to) >= 0
+        )
+          throw szError("seized-kind-rename");
+        selected = (
+          await szReadBatch(ctx, [
+            env.DB.prepare(
+              "SELECT DISTINCT report_id FROM seized_items WHERE department_id=?1 AND kind=?2",
+            ).bind(ctx.d, b.from),
+          ])
+        )[0].map(function (r) {
+          return r.report_id;
+        });
+      } else {
+        irRequestString(b.id, 100000);
+        selected = [b.id];
+        id = b.id;
+      }
+      var snap = await szReportSnapshot(
+        ctx,
+        "department_id=?1 AND report_id IN(SELECT value FROM json_each(?2))",
+        [ctx.d, JSON.stringify(selected)],
+      );
+      guards.push.apply(guards, snap.guards);
+      raw = snap.domain.rows.reports;
+      before = snap.reports;
+      if (!before.length && b.op !== "delete-month" && b.op !== "jew-rename")
+        throw szError("seized-report-missing", 404);
+      if (b.op === "edit")
+        after = [szReportData(ctx, b, before[0], catalog, now)];
+      else if (b.op === "item-action" || b.op === "photo-delete") {
+        if (
+          !Number.isSafeInteger(b.index) ||
+          b.index < 0 ||
+          !before[0].items ||
+          !before[0].items[b.index]
+        )
+          throw szError("seized-item-missing", 404);
+        var r = JSON.parse(JSON.stringify(before[0])),
+          item = r.items[b.index];
+        if (b.op === "item-action") {
+          if (
+            typeof b.act !== "string" ||
+            !(catalog.effective.actions || []).some(function (a) {
+              return a.k === b.act;
+            })
+          )
+            throw szError("seized-item-action");
+          if (item.act === b.act) throw szError("seized-no-change", 409);
+          item.hist = Array.isArray(item.hist) ? item.hist : [];
+          item.hist.push({
+            from: item.act || "",
+            to: b.act,
+            at: new Date(now).toLocaleString("ar-SA", {
+              timeZone: "Asia/Riyadh",
+            }),
+            by: String(A.u.name || A.u.un || A.u.id),
+            t: now,
+          });
+          item.act = b.act;
+        } else {
+          if (
+            typeof b.image !== "string" ||
+            !Array.isArray(item.photos) ||
+            item.photos.indexOf(b.image) < 0
+          )
+            throw szError("seized-photo-missing", 404);
+          item.photos = item.photos.filter(function (i) {
+            return i !== b.image;
+          });
+        }
+        r.editedTs = now;
+        r.editedBy = String(A.u.name || A.u.un || A.u.id);
+        after = [r];
+      } else if (b.op === "jew-rename") {
+        n = 0;
+        after = before.map(function (row) {
+          var r = JSON.parse(JSON.stringify(row));
+          (r.items || []).forEach(function (i) {
+            if (i.kind === b.from) {
+              i.kind = b.to;
+              n++;
+            }
+          });
+          return r;
+        });
+        var jewel = catalog.effective.jew.map(function (v) {
+            return v === b.from ? b.to : v;
+          }),
+          jdoc = szConvert(ctx.d, { jew: jewel });
+        permissions.push(
+          await szPermission(ctx, "jew", catalog.docs.jew, jewel, reason),
+        );
+        statements.push.apply(
+          statements,
+          szResourceStatements(env, ctx.d, jdoc, "jew"),
+        );
+      } else n = before.length;
+      if (selected.length) {
+        statements.push(
+          env.DB.prepare(
+            "DELETE FROM seized_reports WHERE department_id=?1 AND report_id IN(SELECT value FROM json_each(?2))",
+          ).bind(ctx.d, JSON.stringify(selected)),
+        );
+        if (after.length) {
+          var next = szConvert(ctx.d, { reports: { reports: after } });
+          next.rows.reports.forEach(function (row) {
+            row.sequence = raw.find(function (r) {
+              return r.report_id === row.report_id;
+            }).sequence;
+          });
+          ["reports", "items", "photos", "history"].forEach(function (k) {
+            statements.push.apply(
+              statements,
+              rsBulk(env, SZ_TABLES[k][0], SZ_TABLES[k][1], next.rows[k]),
+            );
+          });
+        }
+      }
+    }
+    if (b.op !== "jew-rename" || n > 0) {
+      permissions.push(
+        await szPermission(
+          ctx,
+          "reports",
+          { reports: before },
+          { reports: after },
+          reason,
+        ),
+      );
+      var images = await szImagePlan(
+        ctx,
+        before,
+        after,
+        before.map(function (r) {
+          return r.id;
+        }),
+      );
+      guards.push.apply(guards, images.guards);
+      statements.push.apply(statements, images.statements);
+      statements.push(szMarkReports(env, ctx.d));
+    }
+  }
+  permissions.forEach(function (p) {
+    guards.push.apply(guards, p.guards);
+  });
+  var nf = await szNotifications(ctx, b, before, after, catalog);
+  guards.push.apply(guards, nf.guards);
+  statements.push.apply(
+    statements,
+    bdBumpStatements(
+      env,
+      szKey(ctx.d, SZ_NAMES.indexOf(affected[0])),
+      nf.active > 0,
+    ),
+  );
+  affected.slice(1).forEach(function (resource) {
+    statements.push(
+      env.DB.prepare(
+        "INSERT INTO revs(k,rev)VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER))ON CONFLICT(k)DO UPDATE SET rev=excluded.rev",
+      ).bind(szKey(ctx.d, SZ_NAMES.indexOf(resource))),
+    );
+  });
+  statements.push.apply(statements, nf.statements);
+  statements.push(
+    env.DB.prepare(
+      "INSERT INTO seized_requests(department_id,account_uid,request_id,fingerprint,resource_key,resource_rev,operation,result_n,result_id,permission_mode,permission_keys,created_at)VALUES(?1,?2,?3,?4,?5,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),?6,?7,?8,?9,?10,?11)",
+    ).bind(
+      ctx.d,
+      A.u.id,
+      b.requestId,
+      fp,
+      szKey(ctx.d, SZ_NAMES.indexOf(affected[0])),
+      b.op,
+      n,
+      id,
+      A.enf ? "enforce" : "legacy",
+      JSON.stringify(
+        Array.from(
+          new Set(
+            permissions.flatMap(function (p) {
+              return A.enf
+                ? p.decision.keys || []
+                : p.actualActs.map(function (act) {
+                    return p.resource + ":" + act;
+                  });
+            }),
+          ),
+        ).sort(),
+      ),
+      now,
+    ),
+  );
+  statements.push(
+    env.DB.prepare(
+      "INSERT INTO aud(cid,ts,uid,un,dept,k,rev,etype,eid,ename,act,ctx,bef,aft,ip,dev,city)VALUES(?1,?2,?3,?4,?5,?6,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),'seized',?7,'seized',?8,?9,'','',?10,?11,?12)",
+    ).bind(
+      "seized_" + randTok(),
+      now,
+      A.u.id,
+      String(A.u.un || ""),
+      ctx.d,
+      szKey(ctx.d),
+      id || b.requestId,
+      b.op,
+      JSON.stringify({ requestId: b.requestId, n: n, reason: reason }),
+      (meta && meta.ip) || "",
+      (meta && meta.dev) || "",
+      (meta && meta.city) || "",
+    ),
+  );
+  permissions.forEach(function (p) {
+    var log =
+      A.enf && enfLogRow(A, p.key, p.decision, "/api/seized/act", meta || {});
+    if (log) statements.push(enfLogStmt(env, log));
+  });
+  try {
+    await env.DB.batch(guards.concat(statements));
+  } catch (e) {
+    preOff(env);
+    var fresh = await szQueryContext(env, actor, b.dept, { write: true });
+    if (fresh.base.epoch !== b.base.epoch)
+      throw szError("restore-epoch-changed", 409);
+    szAuthority(fresh, b);
+    receipt = await szReceipt(fresh, b, fp);
+    if (receipt) return receipt;
+    if (
+      isRevConflict(e) ||
+      /KIVO_RESTORE_TARGET|KIVO_SEIZED_TARGET_CHANGED|UNIQUE constraint/.test(
+        String(e),
+      )
+    )
+      throw szError("seized-conflict", 409);
+    throw e;
+  }
+  preOff(env);
+  var acknowledged = await szQueryContext(env, actor, b.dept, { write: true });
+  if (acknowledged.base.epoch !== b.base.epoch)
+    throw szError("restore-epoch-changed", 409);
+  szAuthority(acknowledged, b);
+  receipt = await szReceipt(acknowledged, b, fp);
+  if (!receipt) throw szError("seized-receipt-unavailable", 503);
+  return receipt;
+}
+/* Award nominations and references. Pure lossless codec and plans; the shared
+   transaction/authority capture remains canonical. No device or R2 storage. */
+var AW_RES = ['bassam_award_v1', 'bassam_award_docs_v1', 'bassam_award_docs_v2'];
+var AW_NAMES = ['records', 'docsV1', 'docsV2'];
+var AW_FIELDS = [
+  ['id','business_id','text'], ['ekey','employee_key','text'], ['cat','category','text'], ['hij','hijri_date','text'],
+  ['score','score','number'], ['cases','case_count','number'], ['fileOk','file_ok','boolean'], ['ok','eligible','boolean'],
+  ['st','status','text'], ['comp','employee_number','text'], ['city','city','text'], ['field','work_field','text'],
+  ['phone','phone','text'], ['email','email','text'], ['declName','declarer_name','text'], ['by','approver_name','text'],
+  ['byTitle','approver_title','text'], ['wdesc','work_description','text'], ['wevid','work_evidence','text'],
+  ['pic','picture','text'], ['sigEmp','employee_signature','text'], ['sigBy','approver_signature','text'], ['byUser','author_name','text'],
+  ['name','legacy_name','text'], ['test','test_marker','text'], ['eid','legacy_employee_key','text'],
+  ['status','legacy_status','text'], ['emp','legacy_employee_name','text'], ['award','legacy_award','text'],
+  ['stWhy','status_reason','text'], ['why','legacy_reason','text'], ['reason','reason','text']
+];
+var AW_ARRAYS = ['caseTxt','ans','scores'];
+var AW_REQUEST_COLS = ['department_id','account_uid','request_id','fingerprint','resource_key','resource_rev','operation','result_n','result_id','permission_mode','permission_count','created_at'];
+var AW_CHECK_COLS = ['department_id','account_uid','request_id','position','check_kind','permission_key'];
+var AW_TABLES = {
+  resources: ['award_resources',['department_id','resource','root_kind','list_kind']],
+  records: ['award_records',['department_id','record_id','sequence'].concat(AW_FIELDS.map(function(f){return f[1];}),['presence_mask','case_text_kind','answers_kind','scores_kind'])],
+  caseTexts: ['award_case_texts',['department_id','record_id','position','value']],
+  answers: ['award_answers',['department_id','record_id','position','value']],
+  scoreRows: ['award_score_rows',['department_id','record_id','row_number']],
+  scores: ['award_scores',['department_id','record_id','row_number','column_number','value']],
+  documents: ['award_documents',['department_id','version','group_key','title','lead','foot','presence_mask','sections_kind']],
+  sections: ['award_doc_sections',['department_id','version','group_key','position','title','header','body','presence_mask','items_kind']],
+  items: ['award_doc_items',['department_id','version','group_key','section_position','position','kind','text','presence_mask']]
+};
+function awError(code,status){var e=new Error('award-'+code);e.awCode='award-'+code;e.awStatus=status||400;return e;}
+function awOwn(o,k){return Object.prototype.hasOwnProperty.call(o,k);}
+function awShape(o,keys){if(!isObj(o)||Object.keys(o).some(function(k){return keys.indexOf(k)<0;}))throw awError('shape');}
+function awNatural(v){if(!Number.isSafeInteger(v)||v<0)throw awError('revision',503);return v;}
+function awScope(d){if(typeof d!=='string'||d.length>200||d.indexOf(':')>=0)throw awError('scope');return d;}
+function awKey(d,i){return d?'bsdept:'+d+':'+AW_RES[i||0]:AW_RES[i||0];}
+var AW_DEFINITION={resources:AW_RES,resourceNames:AW_NAMES,global:true,error:awError,resourceKeys:function(d){return AW_RES.map(function(_,i){return awKey(d,i);});}};
+async function awQueryContext(env,A,d,options){return bdQueryContext(env,A,awScope(d),AW_DEFINITION,Object.assign({},options||{},{global:d===''}));}
+function awLegacyKey(k){return AW_RES.indexOf(resName(k))>=0;}
+function awLegacyPredicate(){return 'k IN(SELECT value FROM json_each(?1))'+AW_RES.map(function(n){return " OR k GLOB 'bsdept:*:"+n+"' OR k GLOB 'bsdept:*:"+n+":*' OR k GLOB '"+n+":*'";}).join('');}
+async function awLegacyPresent(env){return !!(await env.DB.prepare('SELECT 1 FROM kv WHERE '+awLegacyPredicate()+' LIMIT 1').bind(JSON.stringify(AW_RES)).first());}
+function awRetiredGuard(env){return env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE "+awLegacyPredicate()+") THEN json_extract('{}','KIVO_AWARD_LEGACY_SOURCE')END").bind(JSON.stringify(AW_RES));}
+async function awGuardRetired(env){if(await awLegacyPresent(env))throw awError('legacy-source-present',503);}
+function awScalar(v,type){if(v===null)return null;if(type==='text'&&typeof v!=='string'||type==='number'&&(typeof v!=='number'||!Number.isFinite(v))||type==='boolean'&&typeof v!=='boolean')throw awError('value-type');return type==='boolean'?(v?1:0):v;}
+function awHas(mask,bit){return Math.floor(mask/Math.pow(2,bit))%2===1;}
+function awPack(fields,object,row){var mask=0;fields.forEach(function(f,i){row[f[1]]=null;if(awOwn(object,f[0])){mask+=Math.pow(2,i);row[f[1]]=awScalar(object[f[0]],f[2]);}});return mask;}
+function awUnpack(fields,row){var value={};fields.forEach(function(f,i){if(awHas(row.presence_mask,i))value[f[0]]=row[f[1]]===null?null:f[2]==='boolean'?row[f[1]]===1:row[f[1]];});return value;}
+function awListKind(o,k){return !awOwn(o,k)?0:o[k]===null?1:Array.isArray(o[k])?2:(function(){throw awError('array-shape');})();}
+function awRecordKey(rec){
+  if(typeof rec.id==='string'&&rec.id)return 'id:'+encodeURIComponent(rec.id);
+  if(awOwn(rec,'id'))throw awError('record-identity');
+  var e=typeof rec.ekey==='string'?rec.ekey:'',n=typeof rec.name==='string'?rec.name:'';
+  if(!e&&!n)throw awError('record-identity');return 'legacy:'+encodeURIComponent(e)+':'+encodeURIComponent(n);
+}
+function awEmptyDomain(d){awScope(d);var rows={};Object.keys(AW_TABLES).forEach(function(k){rows[k]=[];});return {version:1,scope:d?{departmentId:d}:{kind:'global'},resources:{records:false,docsV1:false,docsV2:false},rows:rows};}
+function awConvert(d,docs){
+  awScope(d);awShape(docs,AW_NAMES);var domain=awEmptyDomain(d),out=domain.rows;
+  AW_NAMES.forEach(function(resource,index){
+    if(!awOwn(docs,resource))return;
+    if(!d&&resource==='records')throw awError('global-records');
+    var value=docs[resource],root={department_id:d,resource:resource,root_kind:value===null?1:2,list_kind:0};
+    if(value!==null)awShape(value,index===0?['recs']:['A','B','C']);
+    domain.resources[resource]=true;
+    if(index===0&&value!==null){
+      root.list_kind=awListKind(value,'recs');
+      if(root.list_kind===2){var ids=new Set();value.recs.forEach(function(rec,position){
+        awShape(rec,AW_FIELDS.map(function(f){return f[0];}).concat(AW_ARRAYS));
+        var recordKey=awRecordKey(rec);if(ids.has(recordKey))throw awError('record-identity');ids.add(recordKey);
+        var row={department_id:d,record_id:recordKey,sequence:value.recs.length-1-position},mask=awPack(AW_FIELDS,rec,row);
+        row.presence_mask=mask;row.case_text_kind=awListKind(rec,'caseTxt');row.answers_kind=awListKind(rec,'ans');row.scores_kind=awListKind(rec,'scores');out.records.push(row);
+        if(row.case_text_kind===2)rec.caseTxt.forEach(function(v,i){out.caseTexts.push({department_id:d,record_id:recordKey,position:i,value:awScalar(v,'text')});});
+        if(row.answers_kind===2)rec.ans.forEach(function(v,i){out.answers.push({department_id:d,record_id:recordKey,position:i,value:awScalar(v,'boolean')});});
+        if(row.scores_kind===2)rec.scores.forEach(function(values,i){
+          if(!Array.isArray(values))throw awError('scores-row');out.scoreRows.push({department_id:d,record_id:recordKey,row_number:i});
+          values.forEach(function(v,j){out.scores.push({department_id:d,record_id:recordKey,row_number:i,column_number:j,value:awScalar(v,'number')});});
+        });
+      });}
+    }else if(index>0&&value!==null){
+      ['A','B','C'].forEach(function(group){if(!awOwn(value,group))return;var doc=value[group];awShape(doc,['title','lead','foot','secs']);
+        var row={department_id:d,version:index,group_key:group,presence_mask:0,sections_kind:awListKind(doc,'secs')};
+        ['title','lead','foot'].forEach(function(k,i){row[k]=null;if(awOwn(doc,k)){row.presence_mask+=Math.pow(2,i);row[k]=awScalar(doc[k],'text');}});out.documents.push(row);
+        if(row.sections_kind===2)doc.secs.forEach(function(section,i){
+          awShape(section,['title','h','body','items']);var sec={department_id:d,version:index,group_key:group,position:i,presence_mask:0,items_kind:awListKind(section,'items')};
+          [['title','title'],['h','header'],['body','body']].forEach(function(pair,j){sec[pair[1]]=null;if(awOwn(section,pair[0])){sec.presence_mask+=Math.pow(2,j);sec[pair[1]]=awScalar(section[pair[0]],'text');}});out.sections.push(sec);
+          if(sec.items_kind===2)section.items.forEach(function(item,j){awShape(item,['k','t']);var child={department_id:d,version:index,group_key:group,section_position:i,position:j,kind:null,text:null,presence_mask:0};
+            if(awOwn(item,'k')){child.presence_mask+=1;child.kind=awScalar(item.k,'text');}if(awOwn(item,'t')){child.presence_mask+=2;child.text=awScalar(item.t,'text');}out.items.push(child);
+          });
+        });
+      });
+    }
+    out.resources.push(root);
+  });return domain;
+}
+function awInflate(domain){
+  var rows=domain.rows,out={};rows.resources.forEach(function(root){var resource=root.resource;
+    if(root.root_kind===1){out[resource]=null;return;}
+    if(resource==='records'){
+      var object={};if(root.list_kind===1)object.recs=null;
+      if(root.list_kind===2)object.recs=rows.records.slice().sort(function(a,b){return b.sequence-a.sequence;}).map(function(row){
+        var rec=awUnpack(AW_FIELDS,row),id=row.record_id;
+        if(row.case_text_kind===1)rec.caseTxt=null;else if(row.case_text_kind===2)rec.caseTxt=rows.caseTexts.filter(function(v){return v.record_id===id;}).sort(function(a,b){return a.position-b.position;}).map(function(v){return v.value;});
+        if(row.answers_kind===1)rec.ans=null;else if(row.answers_kind===2)rec.ans=rows.answers.filter(function(v){return v.record_id===id;}).sort(function(a,b){return a.position-b.position;}).map(function(v){return v.value===null?null:v.value===1;});
+        if(row.scores_kind===1)rec.scores=null;else if(row.scores_kind===2)rec.scores=rows.scoreRows.filter(function(v){return v.record_id===id;}).sort(function(a,b){return a.row_number-b.row_number;}).map(function(r){return rows.scores.filter(function(v){return v.record_id===id&&v.row_number===r.row_number;}).sort(function(a,b){return a.column_number-b.column_number;}).map(function(v){return v.value;});});
+        return rec;
+      });out[resource]=object;
+    }else{
+      var version=AW_NAMES.indexOf(resource),doc={};rows.documents.filter(function(r){return r.version===version;}).forEach(function(row){
+        var group={},g=row.group_key;['title','lead','foot'].forEach(function(k,i){if(awHas(row.presence_mask,i))group[k]=row[k];});
+        if(row.sections_kind===1)group.secs=null;else if(row.sections_kind===2)group.secs=rows.sections.filter(function(s){return s.version===version&&s.group_key===g;}).sort(function(a,b){return a.position-b.position;}).map(function(s){
+          var section={};[['title','title'],['h','header'],['body','body']].forEach(function(pair,i){if(awHas(s.presence_mask,i))section[pair[0]]=s[pair[1]];});
+          if(s.items_kind===1)section.items=null;else if(s.items_kind===2)section.items=rows.items.filter(function(i){return i.version===version&&i.group_key===g&&i.section_position===s.position;}).sort(function(a,b){return a.position-b.position;}).map(function(i){var item={};if(i.presence_mask&1)item.k=i.kind;if(i.presence_mask&2)item.t=i.text;return item;});return section;
+        });doc[g]=group;
+      });out[resource]=doc;
+    }
+  });return out;
+}
+function awSorted(rows){return rows.map(function(r){return cuCanonical(r);}).sort(function(a,b){var x=JSON.stringify(a),y=JSON.stringify(b);return x<y?-1:x>y?1:0;});}
+function awSameDomain(a,b){return deq(cuCanonical(a.scope),cuCanonical(b.scope))&&deq(cuCanonical(a.resources),cuCanonical(b.resources))&&Object.keys(AW_TABLES).every(function(k){return deq(awSorted(a.rows[k]),awSorted(b.rows[k]));});}
+function awValidateDomain(domain,d){
+  awScope(d);awShape(domain,['version','scope','resources','rows']);if(domain.version!==1)throw awError('domain-version');
+  if(d){awShape(domain.scope,['departmentId']);if(domain.scope.departmentId!==d)throw awError('domain-scope');}
+  else{awShape(domain.scope,['kind']);if(domain.scope.kind!=='global')throw awError('domain-scope');}
+  awShape(domain.resources,AW_NAMES);awShape(domain.rows,Object.keys(AW_TABLES));
+  Object.keys(AW_TABLES).forEach(function(kind){var cols=AW_TABLES[kind][1];if(!Array.isArray(domain.rows[kind]))throw awError('domain-rows');domain.rows[kind].forEach(function(row){awShape(row,cols);if(row.department_id!==d||cols.some(function(k){return !awOwn(row,k);}))throw awError('domain-row');});});
+  var sequence=new Map(),seen=new Set();domain.rows.records.forEach(function(row){if(!Number.isSafeInteger(row.sequence)||row.sequence<0||seen.has(row.sequence)||sequence.has(row.record_id))throw awError('record-sequence');seen.add(row.sequence);sequence.set(row.record_id,row.sequence);});
+  var canonical=awConvert(d,awInflate(domain));canonical.rows.records.forEach(function(row){row.sequence=sequence.get(row.record_id);});
+  if(!deq(cuCanonical(canonical.resources),cuCanonical(domain.resources)))throw awError('domain-presence');
+  Object.keys(AW_TABLES).forEach(function(kind){if(!deq(awSorted(canonical.rows[kind]),awSorted(domain.rows[kind])))throw awError('domain-noncanonical');});return domain;
+}
+function awInstallStatements(env,domain){var out=[];Object.keys(AW_TABLES).forEach(function(k){out.push.apply(out,rsBulk(env,AW_TABLES[k][0],AW_TABLES[k][1],domain.rows[k]));});return out;}
+async function awDomainState(env,d){
+  awScope(d);var kinds=Object.keys(AW_TABLES),statements=kinds.map(function(k){return env.DB.prepare('SELECT * FROM '+AW_TABLES[k][0]+' WHERE department_id=?1').bind(d);});
+  statements.push(env.DB.prepare('SELECT * FROM award_requests WHERE department_id=?1').bind(d));statements.push(env.DB.prepare('SELECT * FROM award_request_checks WHERE department_id=?1').bind(d));statements.push(env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(AW_RES.map(function(_,i){return awKey(d,i);}))));
+  var out=await env.DB.batch(statements),domain=awEmptyDomain(d),snapshots={};kinds.forEach(function(k,i){domain.rows[k]=out[i].results||[];snapshots[k]=domain.rows[k];});
+  domain.rows.resources.forEach(function(row){if(AW_NAMES.indexOf(row.resource)<0)throw awError('resource');domain.resources[row.resource]=true;});
+  awValidateDomain(domain,d);snapshots.requests=out[kinds.length].results||[];snapshots.requestChecks=out[kinds.length+1].results||[];var revs={};AW_NAMES.forEach(function(n,i){var row=(out[kinds.length+2].results||[]).find(function(r){return r.k===awKey(d,i);});revs[n]=awNatural(row?row.rev:0);});
+  return {domain:domain,snapshotRows:snapshots,revs:revs};
+}
+async function awCurrentDomain(env,d){return (await awDomainState(env,d)).domain;}
+async function awExportDomain(env,d){await awGuardRetired(env);return awCurrentDomain(env,d);}
+async function awRevs(env,d){var rows=await env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(AW_RES.map(function(_,i){return awKey(d,i);}))).all();var out={};AW_NAMES.forEach(function(n,i){var row=(rows.results||[]).find(function(r){return r.k===awKey(d,i);});out[n]=awNatural(row?row.rev:0);});return out;}
+function awPhysicalTables(){var out={};Object.keys(AW_TABLES).forEach(function(k){out[k]=AW_TABLES[k];});out.requests=['award_requests',AW_REQUEST_COLS];out.requestChecks=['award_request_checks',AW_CHECK_COLS];return out;}
+/* One exact raw-row/revision/source witness for the domain. In particular an
+   unchanged empty restore adds no DELETEs and only one guard, not11 guards. */
+function awStateGuard(env,d,snapshot,base){
+  var args=[d],checks=[],tables=awPhysicalTables();
+  Object.keys(tables).forEach(function(kind){var table=tables[kind][0],cols=tables[kind][1],rows=snapshot[kind]||[],slot='?'+(args.push(JSON.stringify(rows)));
+    checks.push('(SELECT COUNT(*) FROM '+table+' WHERE department_id=?1)<>json_array_length('+slot+')');
+    if(rows.length)checks.push('EXISTS(SELECT 1 FROM '+table+' t WHERE t.department_id=?1 AND NOT EXISTS(SELECT 1 FROM json_each('+slot+') e WHERE '+cols.map(function(c){return 't."'+c+'" IS json_extract(e.value,\'$."'+c+'"\')';}).join(' AND ')+'))');
+  });
+  if(base){AW_NAMES.forEach(function(n){awNatural(base[n]);});var revSlot='?'+args.push(JSON.stringify(AW_NAMES.map(function(n,i){return {k:awKey(d,i),rev:base[n]};})));
+    checks.push("EXISTS(SELECT 1 FROM json_each("+revSlot+") e WHERE COALESCE((SELECT rev FROM revs WHERE k=json_extract(e.value,'$.k')),0) IS NOT json_extract(e.value,'$.rev'))");}
+  var retiredSlot='?'+args.push(JSON.stringify(AW_RES));checks.push('EXISTS(SELECT 1 FROM kv WHERE '+awLegacyPredicate().replace(/\?1/g,retiredSlot)+')');
+  return rsBound(env.DB.prepare("SELECT CASE WHEN "+checks.join(' OR ')+" THEN json_extract('{}','KIVO_AWARD_TARGET_CHANGED')END"),args);
+}
+async function awDomainPlan(env,domain,d,opt){
+  opt=opt||{};awValidateDomain(domain,d);await awGuardRetired(env);var state=await awDomainState(env,d),base=opt.base||state.revs;
+  AW_NAMES.forEach(function(n){if(awNatural(base[n])!==state.revs[n])throw awError('conflict',409);});
+  var same=awSameDomain(state.domain,domain),changed=!same||state.snapshotRows.requests.length>0||state.snapshotRows.requestChecks.length>0;
+  if(!d&&changed)throw awError('global-references-readonly',403);
+  if(opt.intent==='employee-delete'||opt.intent==='employee-wipe'){
+    Object.keys(AW_TABLES).filter(function(k){return ['records','caseTexts','answers','scoreRows','scores'].indexOf(k)<0;}).forEach(function(k){if(!deq(awSorted(state.domain.rows[k]),awSorted(domain.rows[k])))throw awError('employee-cleanup-documents');});
+    var kept=new Set(domain.rows.records.map(function(row){return row.record_id;})),removed=state.domain.rows.records.filter(function(row){return !kept.has(row.record_id);}).map(function(row){return row.record_id;});
+    ['records','caseTexts','answers','scoreRows','scores'].forEach(function(k){if(!deq(awSorted(state.domain.rows[k].filter(function(row){return kept.has(row.record_id);})),awSorted(domain.rows[k])))throw awError('employee-cleanup-changed-survivor');});
+    var cleanup=[];if(removed.length){
+      cleanup.push(env.DB.prepare('DELETE FROM award_records WHERE department_id=?1 AND record_id IN(SELECT value FROM json_each(?2))').bind(d,JSON.stringify(removed)));
+      cleanup.push(env.DB.prepare('DELETE FROM award_requests WHERE department_id=?1 AND resource_key=?2').bind(d,awKey(d)));
+    }
+    return {guards:[awStateGuard(env,d,state.snapshotRows,base)],statements:cleanup,revisionKeys:removed.length?[awKey(d)]:[],snapshotRows:state.snapshotRows,count:removed.length,changed:removed.length>0};
+  }
+  var st=[];if(changed){
+    if(same)st.push(env.DB.prepare('DELETE FROM award_requests WHERE department_id=?1').bind(d));
+    else{
+      ['award_request_checks','award_requests','award_case_texts','award_answers','award_scores','award_score_rows','award_records','award_doc_items','award_doc_sections','award_documents','award_resources'].forEach(function(t){st.push(env.DB.prepare('DELETE FROM '+t+' WHERE department_id=?1').bind(d));});
+      st.push.apply(st,awInstallStatements(env,domain));
+    }
+  }
+  return {guards:[awStateGuard(env,d,state.snapshotRows,base)],statements:st,revisionKeys:changed?AW_RES.map(function(_,i){return awKey(d,i);}):[],snapshotRows:state.snapshotRows,count:domain.rows.records.length+domain.rows.documents.length+domain.rows.sections.length,changed:changed};
+}
+async function awLegacyPrepare(env){
+  var predicate=awLegacyPredicate(),names=Object.keys(awPhysicalTables()).map(function(k){return awPhysicalTables()[k][0];}),args=[JSON.stringify(AW_RES)],
+    rows=(await env.DB.prepare('SELECT k,seq,v FROM kv WHERE '+predicate+' ORDER BY k,seq').bind(args[0]).all()).results||[],
+    deptRows=(await env.DB.prepare('SELECT k,seq,v FROM kv WHERE k=?1 ORDER BY seq').bind(K_DEPTS).all()).results||[],known=new Set(),departments;
+  deptRows.forEach(function(row,i){if(row.seq!==i||typeof row.v!=='string')throw awError('cutover-departments');});
+  try{departments=JSON.parse(deptRows.map(function(row){return row.v;}).join('')||'[]');}catch(e){throw awError('cutover-departments');}
+  if(!Array.isArray(departments))throw awError('cutover-departments');departments.forEach(function(d){if(!isObj(d)||typeof d.id!=='string'||!d.id||d.id.indexOf(':')>=0||known.has(d.id))throw awError('cutover-departments');known.add(d.id);});
+  var chunks=new Map(),docs=new Map();rows.forEach(function(row){var p=parseKey(row.k),index=AW_RES.indexOf(resName(row.k)),d=p.dept||'';
+    if(index<0||row.k!==awKey(d,index)||(!d&&index===0))throw awError('cutover-scope-unknown');
+    if(d&&!known.has(d))throw awError('cutover-orphan-scope');var list=chunks.get(row.k)||[];
+    if(row.seq!==list.length||typeof row.v!=='string')throw awError('cutover-chunks');list.push(row.v);chunks.set(row.k,list);
+  });
+  chunks.forEach(function(list,key){var value;try{value=JSON.parse(list.join(''));}catch(e){throw awError('cutover-json');}var d=parseKey(key).dept||'',object=docs.get(d)||{};object[AW_NAMES[AW_RES.indexOf(resName(key))]]=value;docs.set(d,object);});
+  var domains=[];docs.forEach(function(value,d){domains.push(awConvert(d,value));});
+  var existing=(await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN(SELECT value FROM json_each(?1))").bind(JSON.stringify(names)).all()).results||[];
+  for(var table of existing)if(await env.DB.prepare('SELECT 1 FROM '+table.name+' LIMIT 1').first())throw awError('cutover-target-not-empty');
+  var before=rsWitness(env,'kv',['k','seq','v'],rows,predicate,args).concat(rsWitness(env,'kv',['k','seq','v'],deptRows,'k=?1',[K_DEPTS]));
+  before.push(env.DB.prepare("INSERT INTO meta(k,v)VALUES('aw_cutover_ready','validated')ON CONFLICT(k)DO UPDATE SET v=excluded.v"));
+  var after=[env.DB.prepare("SELECT CASE WHEN EXISTS("+names.map(function(n){return 'SELECT 1 FROM '+n;}).join(' UNION ALL ')+" LIMIT 1)THEN json_extract('{}','KIVO_AWARD_TARGET_CHANGED')END")];
+  domains.forEach(function(domain){after.push.apply(after,awInstallStatements(env,domain));});after.push(env.DB.prepare('DELETE FROM kv WHERE '+predicate).bind(args[0]),env.DB.prepare("DELETE FROM meta WHERE k='aw_cutover_ready'"));
+  if(rows.length)after.push(env.DB.prepare("INSERT INTO meta(k,v)VALUES('rev',CAST((SELECT MAX(n)+1 FROM(SELECT COALESCE(MAX(rev),0)n FROM revs UNION ALL SELECT COALESCE(CAST(v AS INTEGER),0)FROM meta WHERE k='rev'))AS TEXT))ON CONFLICT(k)DO UPDATE SET v=excluded.v"));
+  return {before:before,after:after,domains:domains,n:domains.reduce(function(n,d){return n+d.rows.records.length+d.rows.documents.length;},0)};
+}
+async function awPlanEmployeeCleanup(env,A,d,opt){
+  opt=opt||{};if(!d||!Array.isArray(opt.oldEmployees)||!Array.isArray(opt.newEmployees))throw awError('employee-cleanup-shape');
+  var state=await awDomainState(env,d),oldDoc=awInflate(state.domain),records=oldDoc.records&&oldDoc.records.recs;
+  var removed=new Set(cuRemovedHolderKeys(opt.oldEmployees,opt.newEmployees)),liveNames=new Set(opt.newEmployees.map(function(e){return typeof e==='string'?e:e&&e.name;})),removedNames=new Set();
+  opt.oldEmployees.forEach(function(e){var name=typeof e==='string'?e:e&&e.name;if(name&&!liveNames.has(name))removedNames.add(name);});
+  if(Array.isArray(records)){
+    oldDoc.records.recs=records.filter(function(rec){return !opt.all&&!((rec.ekey&&removed.has(String(rec.ekey)))||(!rec.ekey&&rec.name&&removedNames.has(String(rec.name))));});
+  }
+  var next=awConvert(d,oldDoc),sequences=new Map(state.domain.rows.records.map(function(row){return [row.record_id,row.sequence];}));next.rows.records.forEach(function(row){row.sequence=sequences.get(row.record_id);});
+  if(!deq(cuCanonical(state.domain),cuCanonical(next))){
+    var newEmployees=opt.newEmployees,
+      live=Object.create(null);newEmployees.forEach(function(e){if(typeof e==='string')live[e]=1;else if(e){if(e.eid)live[e.eid]=1;if(e.nid)live[e.nid]=1;if(e.name)live[e.name]=1;}});
+    var ctx={emps:{live:live},empsEmpty:newEmployees.length===0};
+    if(opt.all?!wipeAllowed(A,d,ctx):!empCleanAllowed(A,d,ctx)&&!actsHeldOn(A,d,'admin/import',['del']))throw awError('employee-cleanup-denied',403);
+  }
+  return awDomainPlan(env,next,d,{base:opt.base,reason:opt.reason,intent:opt.all?'employee-wipe':'employee-delete',finalKeys:opt.finalKeys});
+}
+function awNumber(value,min,max,fallback){if(value===undefined||value===null||value==='')return fallback;var n=Number(value);if(!Number.isSafeInteger(n)||n<min||n>max)throw awError('query');return n;}
+function awText(value,max){if(typeof value!=='string'||value.length>max)throw awError('query');return value;}
+function awEmployees(ctx){var list=parseJson(ctx.rawKeys['bsdept:'+ctx.d+':bassam_employees_v1']||'[]',null);if(!Array.isArray(list))throw awError('employees-unavailable',503);var map=new Map();list.forEach(function(e){var key=empStableKey(e);if(key&&!map.has(key))map.set(key,e);});return map;}
+function awDisplay(row,employees){var e=employees.get(row.employee_key),name=e&&e.name||row.declarer_name||'—',number=e&&e.empno||row.employee_number||'—';return {name:name,number:number};}
+function awListRecord(row){var rec={};AW_FIELDS.forEach(function(f,i){if(awHas(row.presence_mask,i)&&awOwn(row,f[1]))rec[f[0]]=row[f[1]]===null?null:f[2]==='boolean'?row[f[1]]===1:row[f[1]];});rec.recordKey=row.record_id;if(typeof rec.id!=='string'||!rec.id)rec.id=row.record_id;return rec;}
+function awListColumns(){return ['record_id','sequence','presence_mask'].concat(AW_FIELDS.filter(function(f){return ['pic','sigEmp','sigBy'].indexOf(f[0])<0;}).map(function(f){return f[1];})).join(',');}
+async function awRecordFragment(env,d,ids){
+  if(!Array.isArray(ids)||ids.length>200)throw awError('record-query');var domain=awEmptyDomain(d);domain.resources.records=true;domain.rows.resources=[{department_id:d,resource:'records',root_kind:2,list_kind:2}];
+  var kinds=['records','caseTexts','answers','scoreRows','scores'],out=await env.DB.batch(kinds.map(function(k){return env.DB.prepare('SELECT * FROM '+AW_TABLES[k][0]+' WHERE department_id=?1 AND record_id IN(SELECT value FROM json_each(?2))').bind(d,JSON.stringify(ids));}));
+  kinds.forEach(function(k,i){domain.rows[k]=out[i].results||[];});awValidateDomain(domain,d);return domain;
+}
+function awSummaryQueries(env,d){return [
+  env.DB.prepare("SELECT COUNT(*)total,COALESCE(SUM(CASE WHEN eligible=1 THEN 1 ELSE 0 END),0)eligible,AVG(CASE WHEN category='emp' AND score IS NOT NULL THEN score END)employeeScoreAverage,MAX(CASE WHEN category='emp' AND score IS NOT NULL THEN score END)topScore FROM award_records WHERE department_id=?1").bind(d),
+  env.DB.prepare('SELECT '+awListColumns()+" FROM award_records WHERE department_id=?1 AND category='emp' AND score IS NOT NULL ORDER BY score DESC,sequence DESC LIMIT 1").bind(d)
+];}
+async function awRecords(ctx,q){
+  var env=ctx.env,d=ctx.d,limit=awNumber(q.limit,1,200,10),query=q.q===undefined?'':awText(q.q,500),page=awNumber(q.page,1,1000000,1),token=null;
+  if(q.cursor){try{token=cuUncursor(awText(q.cursor,16000));}catch(e){throw awError('cursor');}
+    if(token.kind!=='award-records-v1'||token.witness!==ctx.witness||token.dept!==d||token.limit!==limit||token.q!==query)throw awError('cursor-stale',409);
+    page=awNumber(token.page,1,1000000,1);
+  }
+  var summarySt=awSummaryQueries(env,d),dataSt=env.DB.prepare('SELECT '+awListColumns()+' FROM award_records WHERE department_id=?1 ORDER BY sequence DESC').bind(d),results;
+  // Search uses the existing generated Find engine over text metadata only;
+  // photos, signatures and questionnaire children never enter the history scan.
+  if(query.trim())results=await env.DB.batch(ctx.guards.concat([awRetiredGuard(env)],summarySt,[dataSt]));
+  else{
+    var skip=(page-1)*limit;
+    dataSt=env.DB.prepare('SELECT '+awListColumns()+' FROM award_records WHERE department_id=?1 AND sequence<=COALESCE((SELECT sequence FROM award_records WHERE department_id=?1 ORDER BY sequence DESC LIMIT 1 OFFSET MIN(?2,MAX(0,CAST(((SELECT COUNT(*)FROM award_records WHERE department_id=?1)-1)/?3 AS INTEGER)*?3))),-1)ORDER BY sequence DESC LIMIT ?3').bind(d,skip,limit);
+    results=await env.DB.batch(ctx.guards.concat([awRetiredGuard(env)],summarySt,[dataSt]));
+  }
+  var tail=results.length-3,summary=Object.assign({},results[tail].results[0]),top=results[tail+1].results||[],rows=results[tail+2].results||[],employees=awEmployees(ctx),total=summary.total,filtered;
+  summary.topRecord=top.length?Object.assign(awListRecord(top[0]),{employeeName:awDisplay(top[0],employees).name}):null;
+  if(query.trim()){
+    rows=KIVO_FIND.filter(query,rows,function(row){var display=awDisplay(row,employees);return [display.name,display.number,row.status,row.employee_number,row.declarer_name];});filtered=rows.length;
+    page=Math.min(page,Math.max(1,Math.ceil(filtered/limit)));rows=rows.slice((page-1)*limit,page*limit);
+  }else filtered=total;
+  var pages=Math.max(1,Math.ceil(filtered/limit));
+  page=Math.min(page,pages);
+  function cursor(p){return cuCursor({kind:'award-records-v1',witness:ctx.witness,dept:d,limit:limit,q:query,page:p});}
+  return {recs:rows.map(awListRecord),total:total,filteredTotal:filtered,page:page,pageSize:limit,pages:pages,next:page<pages?cursor(page+1):null,prev:page>1?cursor(page-1):null,summary:summary};
+}
+function awLegacySectionHtml(section){
+  // The client formatter is canonical; this worker function is generated from it.
+  return AW_REFERENCE_HTML(section);
+}
+function awReferencePresentation(docs){
+  var v2=docs.docsV2;if(isObj(v2)&&['A','B','C'].every(function(k){return isObj(v2[k])&&Array.isArray(v2[k].secs)&&v2[k].secs.every(function(s){return typeof s.body==='string';});}))return v2;
+  var v1=docs.docsV1;if(!isObj(v1)||!['A','B','C'].every(function(k){return isObj(v1[k])&&Array.isArray(v1[k].secs);}))return null;
+  var out={};['A','B','C'].forEach(function(k){var g=v1[k];out[k]={title:g.title||'',lead:g.lead||'',foot:g.foot||'',secs:g.secs.map(function(s){return {title:s.h||s.title||'',body:typeof s.body==='string'?s.body:awLegacySectionHtml(s)};})};});return out;
+}
+async function awReferences(ctx){
+  var env=ctx.env,d=ctx.d,kinds=['resources','documents','sections','items'],st=kinds.map(function(k){return env.DB.prepare('SELECT * FROM '+AW_TABLES[k][0]+' WHERE department_id=?1'+(k==='resources'?" AND resource IN('docsV1','docsV2')":'')).bind(d);});
+  var out=await env.DB.batch(ctx.guards.concat([awRetiredGuard(env)],st)),domain=awEmptyDomain(d),offset=out.length-kinds.length;kinds.forEach(function(k,i){domain.rows[k]=out[offset+i].results||[];});domain.rows.resources.forEach(function(r){domain.resources[r.resource]=true;});awValidateDomain(domain,d);
+  var docs=awInflate(domain);return {references:{docsV1:{present:domain.resources.docsV1,value:awOwn(docs,'docsV1')?docs.docsV1:null},docsV2:{present:domain.resources.docsV2,value:awOwn(docs,'docsV2')?docs.docsV2:null},document:awReferencePresentation(docs)}};
+}
+async function hAwardGet(env,A,url){
+  var q=url&&url.searchParams?Object.fromEntries(url.searchParams):url||{},view=q.view||'records',global=q.scope==='global',d=global?'':String(q.dept||A.u.deptId||'');
+  if(['records','record','references','context'].indexOf(view)<0||global&&['references','context'].indexOf(view)<0)throw awError('view');
+  await awGuardRetired(env);var ctx=await awQueryContext(env,A,d,{write:true}),value;
+  if(view==='references'){
+    if(!canRead(ctx.A,awKey(d,1))||!canRead(ctx.A,awKey(d,2)))throw awError('denied',403);value=await awReferences(ctx);
+  }else if(view==='context'){
+    var readable=AW_RES.map(function(_,i){return canRead(ctx.A,awKey(d,i));});if(!readable.some(Boolean))throw awError('denied',403);
+    await env.DB.batch(ctx.guards.concat([awRetiredGuard(env)]));value={readable:{records:readable[0],docsV1:readable[1],docsV2:readable[2]},globalReadOnly:global};
+  }else{
+    if(!canRead(ctx.A,awKey(d)))throw awError('denied',403);
+    if(view==='records')value=await awRecords(ctx,q);
+    else{
+      var id=awText(q.id,12000),out=await env.DB.batch(ctx.guards.concat([awRetiredGuard(env),env.DB.prepare('SELECT record_id FROM award_records WHERE department_id=?1 AND(record_id=?2 OR business_id=?2)').bind(d,id)])),ids=(out[out.length-1].results||[]).map(function(r){return r.record_id;});
+      if(ids.length!==1)throw awError(ids.length?'record-ambiguous':'record-missing',ids.length?409:404);
+      var fragment=await awRecordFragment(ctx.env,d,ids);await ctx.env.DB.batch(ctx.guards.concat([awRetiredGuard(ctx.env)]));value={record:awInflate(fragment).records.recs[0],recordKey:ids[0]};
+    }
+  }
+  return Object.assign({ok:1,dept:d,scope:global?'global':'dept',view:view,base:Object.assign({},ctx.base)},value);
+}
+async function awPermission(ctx,index,before,after,reason){
+  var k=awKey(ctx.d,index),set={},keys={},body={why:{}},X=null,c={};set[k]=JSON.stringify(after);keys[k]=1;if(reason)body.why[k]=reason;
+  if(ctx.A.enf){var pv={};pv[ctx.d]=ctx.pv4;X=await enfSavePrep(ctx.env,ctx.A,body,set,[],keys,KIVO_BUILD.markers({},keys),null,false,false,{},pv);c.enf=enfCtxFor(X,k,ctx.d);}
+  var decision=X&&X.batchDeny?enfNo(X.batchDeny.why,X.batchDeny):canWrite(ctx.A,k,JSON.stringify(after),before===undefined?null:JSON.stringify(before),c);
+  if(!decision.ok){var e=awError('denied',403);e.awDecision=decision;throw e;}
+  var checks;if(ctx.A.enf)checks=(decision.keys||[]).map(function(key){return {kind:'enforce',key:key};});
+  else{var acts=Object.keys(classifyMutation(resOf(k),before===undefined?null:JSON.stringify(before),JSON.stringify(after),entOf(k),opsOf(k)));if(!acts.length)acts=['edit'];checks=acts.map(function(act){return {kind:'legacy',key:act};});}
+  return {decision:decision,checks:checks};
+}
+async function awReceiptRows(env,A,b){var result=await env.DB.batch([
+  env.DB.prepare('SELECT * FROM award_requests WHERE department_id=?1 AND account_uid=?2 AND request_id=?3').bind(b.dept,A.u.id,b.requestId),
+  env.DB.prepare('SELECT * FROM award_request_checks WHERE department_id=?1 AND account_uid=?2 AND request_id=?3 ORDER BY position').bind(b.dept,A.u.id,b.requestId)
+]);return {receipt:(result[0].results||[])[0]||null,checks:result[1].results||[]};}
+function awAck(row,b){var affected=AW_NAMES.find(function(_,i){return awKey(b.dept,i)===row.resource_key;});if(!affected||!Number.isSafeInteger(row.resource_rev)||row.resource_rev<0||row.result_n!==1)throw awError('receipt-invalid',503);var base=Object.assign({},b.base);base[affected]=row.resource_rev;var ack={ok:1,requestId:b.requestId,op:row.operation,affected:affected,rev:row.resource_rev,base:base,n:row.result_n};if(row.result_id!==null)ack.id=row.result_id;return ack;}
+async function awReplay(ctx,b,fingerprint,found){
+  var row=found.receipt;if(!row)return null;if(row.fingerprint!==fingerprint)throw awError('request-reused',409);
+  if(!Number.isSafeInteger(row.permission_count)||row.permission_count<0||found.checks.length!==row.permission_count||found.checks.some(function(c,i){return c.position!==i||typeof c.permission_key!=='string';}))throw awError('receipt-permission-proof-invalid',503);
+  var index=AW_RES.indexOf(resName(row.resource_key));if(index<0||row.resource_key!==awKey(ctx.d,index)||!resOnCeiling(ctx.A,ctx.d,resOf(row.resource_key)))throw awError('denied',403);
+  var mode=ctx.A.enf?'enforce':'legacy';if(row.permission_mode!==mode)throw awError('receipt-authority-changed',409);
+  if(mode==='enforce'){
+    if(!enfResWriter(ctx.A,ctx.d,AW_RES[index])||found.checks.some(function(c){return c.check_kind!=='enforce'||!KIVO_GUARDS.decide(c.permission_key,permv2Ctx(ctx.A,ctx.d)).ok;}))throw awError('denied',403);
+  }else if(!found.checks.length||found.checks.some(function(c){return c.check_kind!=='legacy'||!authorize(ctx.A,row.resource_key,c.permission_key).ok;}))throw awError('denied',403);
+  var where='department_id=?1 AND account_uid=?2 AND request_id=?3',args=[ctx.d,ctx.A.u.id,b.requestId];
+  await ctx.env.DB.batch(ctx.guards.concat([awRetiredGuard(ctx.env),rsEpochGuard(ctx.env.DB,b.base.epoch)],
+    rsWitness(ctx.env,'award_requests',AW_REQUEST_COLS,[row],where,args),rsWitness(ctx.env,'award_request_checks',AW_CHECK_COLS,found.checks,where,args)));
+  return awAck(row,b);
+}
+async function awEventPlan(ctx,b,before,after){
+  var events=[],row=after||before,once='award:'+await cuFingerprint({uid:ctx.A.u.id,requestId:b.requestId,id:row&&row.id,op:b.op});
+  if(b.op==='create')events.push({type:'aw_new',dept:ctx.d,once:once,vars:{'الاسم':row.name||row.emp||'—','المرشِّح':row.by||String(ctx.A.u.name||ctx.A.u.un||ctx.A.u.id)}});
+  else if(b.op==='delete')events.push({type:'aw_del',dept:ctx.d,once:once,own:row.eid?[row.eid]:[],vars:{'الاسم':row.name||row.emp||'—','المُعدّل':String(ctx.A.u.name||ctx.A.u.un||ctx.A.u.id)}});
+  else if(before&&after&&(before.status||before.st)!==(after.status||after.st)&&(after.status||after.st))events.push({type:'aw_res',dept:ctx.d,once:once,own:after.eid?[after.eid]:[],vars:{'القرار':/appr|اعتم|قبل/.test(String(after.status||after.st))?'اعتُمد':'رُفض','الجائزة':after.award||after.cat||'التميز'}});
+  events.forEach(function(event){Object.keys(event.vars).forEach(function(k){if(typeof event.vars[k]==='string')event.vars[k]=event.vars[k].slice(0,4000);});});
+  var plan=await nfPlanEvents(ctx.env,ctx.A,events,true);return {guards:plan.guards,statements:plan.statements.concat(nfRetention(ctx.env,Date.now(),plan.scopes)),active:plan.plans.length};
+}
+function awCommandShape(b){
+  var extras={create:['data'],edit:['id','data'],status:['id','status'],delete:['id'],'reference-replace':['version','document']};
+  if(!isObj(b)||!awOwn(extras,b.op))throw awError('operation');awShape(b,['uid','dept','requestId','base','op','reason'].concat(extras[b.op]));
+  if(typeof b.dept!=='string'||!b.dept)throw awError('global-references-readonly',403);awScope(b.dept);awText(b.requestId,100);if(!b.requestId)throw awError('request');
+  awShape(b.base,['epoch'].concat(AW_NAMES));['epoch'].concat(AW_NAMES).forEach(function(n){awNatural(b.base[n]);});
+  if(b.reason!==undefined&&typeof b.reason!=='string')throw awError('reason');return b;
+}
+async function hAwardAct(env,A,b,meta){
+  awCommandShape(b);if(b.uid!==undefined&&b.uid!==A.u.id){var identity=awError('session-changed',409);identity.awCode='session-changed';throw identity;}
+  await awGuardRetired(env);var ctx=await awQueryContext(env,A,b.dept,{write:true});env=ctx.env;A=ctx.A;
+  if(b.base.epoch!==ctx.base.epoch)throw awError('restore-epoch-changed',409);
+  var fingerprint=await cuFingerprint({body:b}),found=await awReceiptRows(env,A,b),replayed=await awReplay(ctx,b,fingerprint,found);if(replayed)return replayed;
+  if(AW_NAMES.some(function(n){return b.base[n]!==ctx.base[n];}))throw awError('conflict',409);
+  var index=b.op==='reference-replace'?b.version:0;if(b.op==='reference-replace'&&index!==1&&index!==2)throw awError('reference-version');
+  var key=awKey(ctx.d,index),resource=AW_NAMES[index],resourceRows=(await env.DB.prepare('SELECT * FROM award_resources WHERE department_id=?1 AND resource=?2').bind(ctx.d,resource).all()).results||[],
+    guards=ctx.guards.concat([awRetiredGuard(env),rsEpochGuard(env.DB,b.base.epoch)],rsWitness(env,'award_resources',AW_TABLES.resources[1],resourceRows,'department_id=?1 AND resource=?2',[ctx.d,resource])),
+    statements=[],beforeRecord=null,afterRecord=null,beforeValue,afterValue,resultId=null,now=Date.now(),reason=String(b.reason||'').trim().slice(0,300);
+  if(index>0){
+    var kinds=['documents','sections','items'],out=await env.DB.batch(kinds.map(function(k){return env.DB.prepare('SELECT * FROM '+AW_TABLES[k][0]+' WHERE department_id=?1 AND version=?2').bind(ctx.d,index);})),old=awEmptyDomain(ctx.d);
+    old.rows.resources=resourceRows;old.resources[resource]=resourceRows.length>0;kinds.forEach(function(k,i){old.rows[k]=out[i].results||[];guards.push.apply(guards,rsWitness(env,AW_TABLES[k][0],AW_TABLES[k][1],old.rows[k],'department_id=?1 AND version=?2',[ctx.d,index]));});awValidateDomain(old,ctx.d);
+    beforeValue=awInflate(old)[resource];afterValue=b.document;var documents={};documents[resource]=afterValue;var replacement=awConvert(ctx.d,documents);
+    ['award_doc_items','award_doc_sections','award_documents'].forEach(function(t){statements.push(env.DB.prepare('DELETE FROM '+t+' WHERE department_id=?1 AND version=?2').bind(ctx.d,index));});
+    statements.push(env.DB.prepare('DELETE FROM award_resources WHERE department_id=?1 AND resource=?2').bind(ctx.d,resource));statements.push.apply(statements,awInstallStatements(env,replacement));
+  }else{
+    var raw=[],fragment=null,recordId,sequence,permissionRecords=[];
+    if(b.op==='create'){
+      var seq=await env.DB.prepare('SELECT COALESCE(MAX(sequence),-1)+1 n FROM award_records WHERE department_id=?1').bind(ctx.d).first();sequence=seq.n;
+      guards.push(env.DB.prepare("SELECT CASE WHEN (SELECT COALESCE(MAX(sequence),-1)+1 FROM award_records WHERE department_id=?1)IS NOT ?2 THEN json_extract('{}','KIVO_AWARD_TARGET_CHANGED')END").bind(ctx.d,sequence));
+      if(sequence>0&&(!resourceRows.length||resourceRows[0].root_kind!==2||resourceRows[0].list_kind!==2))throw awError('record-resource-state',503);
+      var allowed=AW_FIELDS.map(function(f){return f[0];}).filter(function(n){return ['id','st','byUser'].indexOf(n)<0;}).concat(AW_ARRAYS);awShape(b.data,allowed);
+      if(typeof b.data.ekey!=='string'||!awEmployees(ctx).has(b.data.ekey))throw awError('employee');
+      afterRecord=Object.assign({},b.data,{id:'aw-'+randTok(),st:'قيد التحكيم',byUser:String(A.u.name||A.u.un||A.u.id)});recordId=awRecordKey(afterRecord);resultId=afterRecord.id;
+      var root=awEmptyDomain(ctx.d);root.rows.resources=resourceRows;root.resources.records=resourceRows.length>0;beforeValue=awInflate(root).records;
+    }else{
+      awText(b.id,12000);raw=(await env.DB.prepare('SELECT * FROM award_records WHERE department_id=?1 AND(record_id=?2 OR business_id=?2)').bind(ctx.d,b.id).all()).results||[];
+      if(raw.length!==1)throw awError(raw.length?'record-ambiguous':'record-missing',raw.length?409:404);recordId=raw[0].record_id;sequence=raw[0].sequence;
+      if(resourceRows.length!==1||resourceRows[0].root_kind!==2||resourceRows[0].list_kind!==2)throw awError('record-resource-state',503);
+      // Preserve the existing collection classifier's distinction between one
+      // deletion and a full wipe, using at most one real unchanged neighbour.
+      var fragmentIds=[recordId];if(b.op==='delete'){var neighbour=await env.DB.prepare('SELECT record_id FROM award_records WHERE department_id=?1 AND record_id<>?2 ORDER BY sequence DESC LIMIT 1').bind(ctx.d,recordId).first();if(neighbour)fragmentIds.push(neighbour.record_id);}
+      fragment=await awRecordFragment(env,ctx.d,fragmentIds);permissionRecords=awInflate(fragment).records.recs;beforeRecord=permissionRecords.find(function(rec){return awRecordKey(rec)===recordId;});resultId=typeof beforeRecord.id==='string'&&beforeRecord.id?beforeRecord.id:recordId;
+      ['records','caseTexts','answers','scoreRows','scores'].forEach(function(k){guards.push.apply(guards,rsWitness(env,AW_TABLES[k][0],AW_TABLES[k][1],fragment.rows[k],'department_id=?1 AND record_id IN(SELECT value FROM json_each(?2))',[ctx.d,JSON.stringify(fragmentIds)]));});
+      beforeValue={recs:permissionRecords};
+      if(b.op==='status'){if(typeof b.status!=='string'||!b.status)throw awError('status');afterRecord=Object.assign({},beforeRecord,{st:b.status});}
+      else if(b.op==='edit'){
+        awShape(b.data,AW_FIELDS.map(function(f){return f[0];}).filter(function(n){return ['id','st','byUser'].indexOf(n)<0;}).concat(AW_ARRAYS));
+        afterRecord=Object.assign({},beforeRecord,b.data);if(afterRecord.ekey!==beforeRecord.ekey&&!awEmployees(ctx).has(afterRecord.ekey))throw awError('employee');
+      }
+      statements.push(env.DB.prepare('DELETE FROM award_records WHERE department_id=?1 AND record_id=?2').bind(ctx.d,recordId));
+    }
+    afterValue={recs:b.op==='create'?[afterRecord]:permissionRecords.filter(function(rec){return awRecordKey(rec)!==recordId;}).concat(afterRecord?[afterRecord]:[])};
+    if(afterRecord){var typed=awConvert(ctx.d,{records:{recs:[afterRecord]}});typed.rows.records[0].sequence=sequence;if(typed.rows.records[0].record_id!==recordId)throw awError('record-identity');
+      ['records','caseTexts','answers','scoreRows','scores'].forEach(function(k){statements.push.apply(statements,rsBulk(env,AW_TABLES[k][0],AW_TABLES[k][1],typed.rows[k]));});}
+    if(b.op==='create')statements.push(env.DB.prepare("INSERT INTO award_resources(department_id,resource,root_kind,list_kind)VALUES(?1,'records',2,2)ON CONFLICT(department_id,resource)DO UPDATE SET root_kind=2,list_kind=2").bind(ctx.d));
+  }
+  var permission=await awPermission(ctx,index,beforeValue,afterValue,reason),nf=await awEventPlan(ctx,b,beforeRecord,afterRecord);guards.push.apply(guards,nf.guards);
+  statements.push.apply(statements,bdBumpStatements(env,key,nf.active>0));statements.push.apply(statements,nf.statements);
+  statements.push(env.DB.prepare("INSERT INTO award_requests(department_id,account_uid,request_id,fingerprint,resource_key,resource_rev,operation,result_n,result_id,permission_mode,permission_count,created_at)VALUES(?1,?2,?3,?4,?5,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),?6,1,?7,?8,?9,?10)").bind(ctx.d,A.u.id,b.requestId,fingerprint,key,b.op,resultId,A.enf?'enforce':'legacy',permission.checks.length,now));
+  statements.push.apply(statements,rsBulk(env,'award_request_checks',AW_CHECK_COLS,permission.checks.map(function(c,i){return {department_id:ctx.d,account_uid:A.u.id,request_id:b.requestId,position:i,check_kind:c.kind,permission_key:c.key};})));
+  statements.push(env.DB.prepare("INSERT INTO aud(cid,ts,uid,un,dept,k,rev,etype,eid,ename,act,ctx,bef,aft,ip,dev,city)VALUES(?1,?2,?3,?4,?5,?6,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),'dataset',?7,'award',?8,?9,'','',?10,?11,?12)").bind('award_'+randTok(),now,A.u.id,String(A.u.un||''),ctx.d,key,resultId||b.requestId,b.op,JSON.stringify({requestId:b.requestId,reason:reason,n:1}),(meta&&meta.ip)||'',(meta&&meta.dev)||'',(meta&&meta.city)||''));
+  var authz=A.enf&&enfLogRow(A,key,permission.decision,'/api/award/act',meta||{});if(authz)statements.push(enfLogStmt(env,authz));
+  try{await env.DB.batch(guards.concat(statements));}
+  catch(error){preOff(env);var fresh=await awQueryContext(env,A,b.dept,{write:true}),receipt=await awReceiptRows(fresh.env,fresh.A,b),ack=await awReplay(fresh,b,fingerprint,receipt);if(ack)return ack;
+    if(isRevConflict(error)||/KIVO_AWARD_TARGET_CHANGED|KIVO_RESTORE_TARGET|UNIQUE constraint/.test(String(error)))throw awError('conflict',409);throw error;}
+  preOff(env);var completed=await awReceiptRows(env,A,b);if(!completed.receipt)throw awError('receipt-unavailable',503);return awAck(completed.receipt,b);
+}
+/* Shared cutover/backup integration for the two schema9 business domains.
+   This is the only adapter to the existing atomic restore compiler. */
+function bdDefinitions() {
+  return [
+    {name:'seized',resources:SZ_RES,names:SZ_NAMES,key:szKey,empty:szEmptyDomain,validate:szValidateDomain,convert:szConvert,inflate:szInflate,plan:szDomainPlan,exportDomain:szExportDomain,revs:szRevs,context:szQueryContext,tables:SZ_TABLES},
+    {name:'awards',resources:AW_RES,names:AW_NAMES,key:awKey,empty:awEmptyDomain,validate:awValidateDomain,convert:awConvert,inflate:awInflate,plan:awDomainPlan,exportDomain:awExportDomain,revs:awRevs,context:awQueryContext,tables:AW_TABLES},
+  ];
+}
+function bdLegacyKey(key) { return SZ_RES.concat(AW_RES).some(function(name){return String(key)===name||String(key).endsWith(':'+name)||String(key).includes(':'+name+':')||String(key).startsWith(name+':');}); }
+function bdLegacyPredicate() {
+  return "k IN(SELECT value FROM json_each(?1)) OR EXISTS(SELECT 1 FROM json_each(?1) r WHERE k GLOB 'bsdept:*:'||r.value OR k GLOB 'bsdept:*:'||r.value||':*' OR k GLOB r.value||':*')";
+}
+function bdRetiredGuard(env) {
+  return env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE "+bdLegacyPredicate()+")THEN json_extract('{}','KIVO_BUSINESS_LEGACY_SOURCE')END").bind(JSON.stringify(SZ_RES.concat(AW_RES)));
+}
+function bdCommitRetiredGuard(env) {
+  // One transaction statement, with the same independent source predicates and errors.
+  return env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE "+irLegacyPredicate()+")THEN json_extract('{}','KIVO_IRSHAD_LEGACY_SOURCE')END,CASE WHEN EXISTS(SELECT 1 FROM kv WHERE "+bdLegacyPredicate().replace(/\?1/g,'?2')+")THEN json_extract('{}','KIVO_BUSINESS_LEGACY_SOURCE')END")
+    .bind(JSON.stringify(IR_RES),JSON.stringify(SZ_RES.concat(AW_RES)));
+}
+async function bdGuardRetired(env) {
+  if (await env.DB.prepare('SELECT 1 FROM kv WHERE '+bdLegacyPredicate()+' LIMIT 1').bind(JSON.stringify(SZ_RES.concat(AW_RES))).first()) throw rsError('business-legacy-source-present',503);
+}
+async function bdMigrationPrepare(env) {
+  var plans=[await szLegacyPrepare(env),await awLegacyPrepare(env)];
+  return {before:plans.flatMap(function(p){return p.before;}),after:plans.flatMap(function(p){return p.after;})};
+}
+function bdScope(domain) {
+  return domain && domain.scope && domain.scope.kind==='global' ? '' : domain && domain.scope && domain.scope.departmentId;
+}
+function bdPlanAppend(plan, definition, dept, addition) {
+  if(addition.imageProjection&&addition.imageProjection.before!==addition.imageProjection.after) {
+    var image=addition.imageProjection;
+    if(Object.keys(imgIdsIn(image.before||'')).length||Object.keys(imgIdsIn(image.after||'')).length) {
+      (plan.relationalImageBefore||(plan.relationalImageBefore=Object.create(null)))[image.k]=image.before;
+      (plan.imgTouch||(plan.imgTouch=[])).push({k:image.k,v:image.after});
+    }
+  }
+  plan.guards.push.apply(plan.guards,addition.guards);
+  plan.statements.push.apply(plan.statements,addition.statements);
+  plan.revisionKeys.push.apply(plan.revisionKeys,addition.changed ? addition.revisionKeys : []);
+  plan.counts[definition.name]=(plan.counts[definition.name]||0)+(addition.count===undefined?((addition.counts||{})[definition.name]||0):addition.count);
+  if (addition.changed) Object.keys(addition.snapshotRows).forEach(function(kind){
+    plan.snapshots.push({domain:definition.name,table:dept+':'+kind,rows:addition.snapshotRows[kind]});
+  });
+}
+function bdRestoreReferences(plan,def,d,domain,addition) {
+  var before=def.empty(d);Object.keys(def.tables).forEach(function(kind){before.rows[kind]=addition.snapshotRows[kind];});
+  var old=def.inflate(before),next=def.inflate(domain),name=def.name==='seized'?'reports':'records',key=def.key(d,0),
+    previous=JSON.stringify(old[name]||{}),candidate=JSON.stringify(next[name]||{});
+  // Read-only typed references are also required for an unchanged modern archive.
+  // They do not request image metadata writes or adopt ownership.
+  (plan.relationalImageCurrent||(plan.relationalImageCurrent=Object.create(null)))[key]=previous;
+  (plan.relationalImageReferences||(plan.relationalImageReferences=Object.create(null)))[key]=candidate;
+  if(!addition.imageProjection&&previous!==candidate)addition.imageProjection={k:key,before:previous,after:candidate};
+  return {before:old,after:next};
+}
+function bdRestoreCeiling(A,def,d,values) {
+  if(A.u.role==='super')return;
+  def.names.forEach(function(name,i){
+    if(!deq(values.before[name],values.after[name])&&!canRead(A,def.key(d,i)))throw rsError('restore-'+def.name+'-resource-denied',403);
+  });
+}
+function bdResetStatements(env) {
+  return ['seized_requests'].concat(Object.keys(SZ_TABLES).reverse().map(function(k){return SZ_TABLES[k][0];}),
+    ['award_request_checks','award_requests'],Object.keys(AW_TABLES).reverse().map(function(k){return AW_TABLES[k][0];}))
+    .map(function(table){return env.DB.prepare('DELETE FROM '+table);});
+}
+async function bdRestorePlan(env,A,body,plan,domains,finalDeptIds,removedDepartments,keys) {
+  for(var def of bdDefinitions()) {
+    if(domains[def.name]===undefined&&body.mode==='merge')continue;
+    if(!Array.isArray(domains[def.name])) throw rsError('restore-'+def.name+'-shape');
+    var seen=new Set();
+    for(var domain of domains[def.name]) {
+      var d=bdScope(domain), global=def.name==='awards'&&d==='';
+      if(typeof d!=='string'||(!global&&!finalDeptIds.has(d))||seen.has(d)||removedDepartments.includes(d)||(body.scope.kind==='dept'&&d!==body.scope.departmentId)||(global&&(body.scope.kind!=='full'||A.u.role!=='super'))) throw rsError('restore-'+def.name+'-scope',403);
+      seen.add(d);
+      if(!global) await cuRestorePermission(A,d,{scope:body.scope.kind,reason:body.reason});
+      var addition=await def.plan(env,def.validate(domain,d),d,{base:(body.base[def.name]||{})[d],reason:body.reason,intent:'restore',finalKeys:keys});
+      var restoredValues=bdRestoreReferences(plan,def,d,domain,addition);
+      if(!global)bdRestoreCeiling(A,def,d,restoredValues);
+      if(body.mode==='merge'&&Object.values(addition.snapshotRows).some(function(rows){return rows.length>0;})) throw rsError('restore-'+def.name+'-merge-target-not-empty',409);
+      bdPlanAppend(plan,def,d,addition);
+    }
+  }
+  for(var removed of removedDepartments) for(var def of bdDefinitions()) {
+    var addition=await def.plan(env,def.empty(removed),removed,{base:(body.base[def.name]||{})[removed],reason:body.reason,intent:'dept-delete',finalKeys:keys});
+    bdRestoreReferences(plan,def,removed,def.empty(removed),addition);
+    bdPlanAppend(plan,def,removed,addition);
+  }
+}
+async function bdRestoreRevisions(env,depts,full) {
+  var out={seized:Object.create(null),awards:Object.create(null)};
+  for(var d of depts) for(var def of bdDefinitions()) out[def.name][d]=await def.revs(env,d);
+  if(full) out.awards['']=await awRevs(env,'');
+  return out;
+}
+async function bdGlobalRevision(env) { var row=await env.DB.prepare("SELECT v FROM meta WHERE k='rev'").first(),value=row&&Number(row.v);if(!Number.isSafeInteger(value)||value<0)throw rsError('domain-revision',503);return value; }
+async function bdExport(env,actor,url,name) {
+  var def=bdDefinitions().find(function(d){return d.name===name;});
+  if(!def) throw rsError('domain-export');
+  var requested=url.searchParams.get('dept')||'', uid=actor.u.id;
+  for(var attempt=0;attempt<3;attempt++) {
+    var globals=[K_USERS,K_PERM,K_DEPTS,K_GDEPTS,K_PLAT], firstRev=await bdGlobalRevision(env),
+      authority=(await env.DB.prepare('SELECT k,seq,v FROM kv WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k,seq').bind(JSON.stringify(globals)).all()).results||[],
+      raw=kvJoin(authority), fresh=actorFromKeys(raw,uid);
+    if(!fresh||(!requested&&fresh.u.role!=='super')) throw rsError('domain-export-permission',403);
+    var chunks=Object.create(null); authority.forEach(function(row){if(typeof row.v!=='string'||row.seq!==(chunks[row.k]||0))throw rsError('domain-export-reference-chunks',503);chunks[row.k]=row.seq+1;});
+    var departments=(fresh.depts||[]).map(function(d){return d.id;});
+    if(departments.some(function(d){return typeof d!=='string'||!d||d.includes(':');})||new Set(departments).size!==departments.length)throw rsError('domain-export-departments');
+    if(requested&&!departments.includes(requested)) throw rsError('domain-export-scope',403);
+    var depts=requested?[requested]:departments.slice().sort(), domains=[], epoch=await rsEpoch(env);
+    if(!requested&&name==='awards') depts.push('');
+    for(var dept of depts) {
+      var ctx=await def.context(env,fresh,dept,{write:true,global:dept===''}), k=dept===''?AW_RES[1]:def.key(dept,0);
+      if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&ctx.A.u.role!=='super'&&(ctx.A.enf?!enfHeld(ctx.A,dept,'backup.view'):!actsHeldOn(ctx.A,dept,'admin/backup',['view'])))) throw rsError('domain-export-permission',403);
+      var readResources=(name==='seized'?def.resources.slice(0,5):def.resources).filter(function(_,i){return dept!==''||i>0;});
+      if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
+      domains.push(await def.exportDomain(ctx.env,dept));
+      await ctx.env.DB.batch(ctx.guards.concat([rsEpochGuard(ctx.env.DB,epoch),bdRetiredGuard(ctx.env)]));
+    }
+    var base=await bdRestoreRevisions(env,depts.filter(Boolean),!requested);
+    var orphan=Object.keys(def.tables).map(function(kind){return 'SELECT department_id d FROM '+def.tables[kind][0];}).join(' UNION '),allowed=departments.concat(name==='awards'?['']:[]);
+    await env.DB.batch([env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM ("+orphan+") o WHERE o.d IS NULL OR o.d NOT IN(SELECT value FROM json_each(?1)))THEN json_extract('{}','KIVO_BUSINESS_ORPHAN_SCOPE')END").bind(JSON.stringify(allowed))]);
+    await env.DB.batch(rsWitness(env,'kv',['k','seq','v'],authority,'k IN(SELECT value FROM json_each(?1))',[JSON.stringify(globals)]));
+    if(firstRev!==await bdGlobalRevision(env)||epoch!==await rsEpoch(env)) continue;
+    return {ok:1,domains:domains,globalRev:firstRev,epoch:epoch,departments:depts,base:base};
+  }
+  throw rsError('domain-export-conflict',409);
+}
+
+async function bdCount(env,definition,dept) {
+  var sql=Object.keys(definition.tables).map(function(kind){return '(SELECT COUNT(*) FROM '+definition.tables[kind][0]+' WHERE department_id=?1)';}).join('+');
+  var row=await env.DB.prepare('SELECT '+sql+' n').bind(dept).first();return Number(row.n);
+}
+async function bdWipePlans(env,A,body,plan,departments,opt,finalDepartments) {
+  for(var d of departments)for(var def of bdDefinitions()) {
+    var base=opt['__'+def.name+'Base'];
+    if(!base){base={};def.names.forEach(function(name,i){base[name]=(body.base||{})[def.key(d,i)];});}
+    var addition=await def.plan(env,def.empty(d),d,{base:base,reason:body.reason||'',intent:opt.__wipeKind==='delete'||!finalDepartments.some(function(row){return row.id===d;})?'dept-delete':'dept-wipe'});
+    bdPlanAppend(plan,def,d,addition);
+  }
+}
+async function bdEmployeeCleanupPlan(env,A,body,plan,reference,opt,wiped) {
+  for(var pd of plan.kv.pend) {
+    if(resName(pd.k)!=='bassam_employees_v1'||!parseKey(pd.k).dept)continue;
+    var d=parseKey(pd.k).dept;if(wiped.includes(d))continue;
+    if(opt.__serverEmployeeIntent&&opt.__serverEmployeeIntent.kind==='import-replace'&&!capOnDept(A,d,'award'))continue;
+    var oldEmployees=parseJson(pd.cur,[]),newEmployees=pd.act==='del'?[]:parseJson(pd.v,[]),before=new Set(oldEmployees.map(empStableKey)),after=new Set(newEmployees.map(empStableKey));
+    if(!Array.from(before).some(function(key){return !after.has(key);})&&!(opt.__serverEmployeeIntent&&/wipe|replace/.test(opt.__serverEmployeeIntent.kind)))continue;
+    var def=bdDefinitions()[1],base=opt.__awardsBase||{};
+    if(!opt.__awardsBase)AW_NAMES.forEach(function(name,i){base[name]=reference.inputRevs[awKey(d,i)]||0;});
+    var addition=await awPlanEmployeeCleanup(env,A,d,{oldEmployees:oldEmployees,newEmployees:newEmployees,base:base,reason:body.reason||((body.why||{})[pd.k])||'',all:!!(opt.__serverEmployeeIntent&&/wipe|replace/.test(opt.__serverEmployeeIntent.kind)),finalKeys:body.set||{}});
+    bdPlanAppend(plan,def,d,addition);
+  }
+}
+
+function bdErrorResponse(error) {
+  if(error.szCode)return json({ok:0,err:error.szCode,at:error.szPath,denied:error.szDecision},error.szStatus||400);
+  if(error.awCode)return json({ok:0,err:error.awCode,at:error.awPath,denied:error.awDecision},error.awStatus||400);
+  if(error.rs)return json({ok:0,err:error.rs},error.status);
+  if(/KIVO_(?:RESTORE_EPOCH|RESTORE_TARGET|REV_CONFLICT|SEIZED_TARGET|AWARD_TARGET)|UNIQUE constraint/.test(String(error)))return json({ok:0,err:'conflict'},409);
+  if(/KIVO_BUSINESS_LEGACY_SOURCE|KIVO_SEIZED_LEGACY_SOURCE|KIVO_AWARD_LEGACY_SOURCE/.test(String(error)))return json({ok:0,err:'business-legacy-source-present'},503);
+  return irErrorResponse(error);
+}
+async function bdRoute(env,request,url,ss,name) {
+  try {
+    var prefix=name==='seized'?'/api/seized':'/api/award';
+    if(!((url.pathname===prefix||url.pathname===prefix+'/export')&&request.method==='GET')&&!(url.pathname===prefix+'/act'&&request.method==='POST'))return json({ok:0,err:'method'},405);
+    var mismatch=sessUidMismatch(env,url,ss,prefix);if(mismatch)return mismatch;
+    var A=await actorOf(env,ss.uid);if(!A)return json({ok:0,err:'session'},401);
+    if(url.pathname===prefix+'/export')return json(await bdExport(env,A,url,name==='seized'?'seized':'awards'));
+    if(request.method==='GET')return json(await(name==='seized'?hSeizedGet(env,A,url):hAwardGet(env,A,url)));
+    var read=await bodyRead(request,prefix+'/act');if(read.res)return read.res;
+    if(read.v.uid!==undefined&&read.v.uid!==A.u.id)throw rsError('session-changed',409);
+    var limit=await rlHit(env,'sv',A.u.id,RL_SAVE);if(limit)return tooMany(limit);
+    return json(await(name==='seized'?hSeizedAct(env,A,read.v,reqMeta(request)):hAwardAct(env,A,read.v,reqMeta(request))));
+  } catch(error) {return bdErrorResponse(error);}
+}
+/* Former Seized browser polls, now scoped SQL facts and one NF transaction. */
+async function nfSeizedDueRun(env,actor,url) {
+  var now=Date.now(),minutes=pfRiyadhMins(now),d=url.searchParams.get('dept')||'';
+  if(!d||minutes<480||!irDailyManager(actor))return {emitted:0};
+  var saturday=new Date(now+3*3600000).getUTCDay()===6,day=pfHijriAt(now),candidates=[];
+  if(minutes>=540)candidates.push({type:'bx_old',once:'bx_old:'+day.y+'-'+day.m+'-'+day.d});
+  if(saturday)candidates.push({type:'bx_wk',once:'bx_wk:'+day.y+'-'+day.m+'-'+day.d});
+  if(!candidates.length)return {emitted:0};
+  var ctx;
+  try{ctx=await szQueryContext(env,actor,d);}catch(error){if(error.szStatus===403)return {emitted:0};throw error;}
+  if(!irDailyManager(ctx.A))return {emitted:0};
+  var scope=nfScope(d),once=JSON.stringify(candidates.map(function(e){return e.once;})),seen=(await ctx.env.DB.prepare('SELECT once_key FROM notification_dedup WHERE scope=?1 AND once_key IN(SELECT value FROM json_each(?2))').bind(scope,once).all()).results||[];
+  candidates=candidates.filter(function(e){return !seen.some(function(s){return s.once_key===e.once;});});
+  if(!candidates.length)return {emitted:0};
+  var q=szQueryScope(ctx,'r'),args=q.args.slice(),slot='?'+(args.push(now)),age='CAST(('+slot+'-COALESCE(r.created_at,0))/86400000 AS INTEGER)',
+    sql='SELECT COALESCE(SUM(CASE WHEN '+age+'>=30 THEN CAST(COALESCE(i.quantity,0)AS INTEGER) ELSE 0 END),0) oldCount,COALESCE(SUM(CAST(COALESCE(i.quantity,0)AS INTEGER)),0) total,MAX(0,COALESCE(MAX('+age+'),0)) days,COALESCE(SUM(CAST(COALESCE(i.value,0)AS INTEGER)),0) money FROM seized_items i JOIN seized_reports r ON r.department_id=i.department_id AND r.report_id=i.report_id WHERE '+q.sql+" AND i.action_key='sto'",
+    guards=ctx.guards.concat([rsEpochGuard(ctx.env.DB,ctx.base.epoch),szRetiredGuard(ctx.env)]),result=await ctx.env.DB.batch(guards.concat([rsBound(ctx.env.DB.prepare(sql),args)])),summary=result[result.length-1].results[0];
+  var events=candidates.filter(function(e){return e.type==='bx_old'?summary.oldCount>0:summary.total>0;}).map(function(e){return {type:e.type,dept:d,once:e.once,vars:e.type==='bx_old'?{'العدد':summary.oldCount,'الأيام':30}:{'العدد':summary.total,'الأيام':summary.days,'المبلغ':Number(summary.money).toLocaleString('en-US')}};});
+  if(!events.length)return {emitted:0};
+  var plan=await nfPlanEvents(ctx.env,ctx.A,events,true);if(!plan.plans.length)return {emitted:0};
+  var values=Object.keys(summary),sourceArgs=args.slice(),comparison=values.map(function(k){sourceArgs.push(summary[k]);return 's.'+k+' IS NOT ?'+sourceArgs.length;}).join(' OR '),
+    sourceGuard=rsBound(ctx.env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM ("+sql+")s WHERE "+comparison+")THEN json_extract('{}','KIVO_SEIZED_DUE_CHANGED')END"),sourceArgs),
+    emittedOnce=JSON.stringify(events.map(function(e){return e.once;})),seenGuard=ctx.env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key IN(SELECT value FROM json_each(?2)))THEN json_extract('{}','KIVO_SEIZED_DUE_SEEN')END").bind(scope,emittedOnce),statements=guards.concat(plan.guards,[sourceGuard,seenGuard],bdBumpStatements(ctx.env,NF_REV,false),plan.statements,nfRetention(ctx.env,now,plan.scopes));
+  try{await ctx.env.DB.batch(statements);}catch(error){
+    if(/KIVO_SEIZED_DUE_SEEN/.test(String(error))){var rows=(await ctx.env.DB.prepare('SELECT once_key FROM notification_dedup WHERE scope=?1 AND once_key IN(SELECT value FROM json_each(?2))').bind(scope,emittedOnce).all()).results||[];if(rows.length===events.length)return {emitted:0};}
+    if(/KIVO_RESTORE_TARGET|KIVO_RESTORE_EPOCH|KIVO_SEIZED_DUE_(?:SEEN|CHANGED)/.test(String(error)))throw nfErr('conflict',409);throw error;
+  }
+  preOff(ctx.env);return {emitted:plan.plans.length};
+}
+
+async function nfSeizedDue(env,actor,url) {
+  try{return await nfSeizedDueRun(env,actor,url);}
+  catch(error){
+    if(error.szCode)throw nfErr(error.szCode,error.szStatus===409?409:503);
+    if(/KIVO_SEIZED_LEGACY_SOURCE/.test(String(error)))throw nfErr('seized-legacy-source-present',503);
+    throw error;
+  }
 }
 /* ═══ R180: «الإحصائيات اليومية» — مخزنٌ عامٌّ واحد تحكمه أوراقُ الصفحة ═══
    كان المفتاحُ لمدير النظام وحده في الخادم، والشاشةُ تفتح الإدخالَ لكلِّ من مُنح الصفحة — فيُرفض حفظُه
@@ -14661,7 +18681,8 @@ var RETRO_SYS_OF = { 'bassam_irshad_v1': 'irshad', 'bassam_seized_v1': 'seized' 
 function retroKey(d, sys) { return 'bsdept:' + d + ':' + RETRO[sys].state; }
 async function retroState(env, d, sys) {
   if (sys === 'irshad') { await irGuardRetired(env); return (await irRetroSnapshot(env, d)).state; }
-  var v = parseJson(await kvGet(env, 'kv', retroKey(d, sys)), null); return (isObj(v) && Array.isArray(v.windows)) ? v : { v: 1, windows: [] };
+  if(sys==='seized'){await szGuardRetired(env);return (await szRetroSnapshot(env,d)).state;}
+  throw rsError('retro-resource');
 }
 /* من يفتح نافذةَ استدراك: مدير النظام، أو حاملُ approve على ورقة السجلات في الإدارة — ذرّةُ G‑08 نفسُها التي تفتح الشهرَ واجهياً اليوم (وهي ترجمةُ ir/sz.rec.retro.open) */
 function retroMay(A, d, sys) { if (A && A.enf) return enfRetroMay(A, d, sys); if (A.u.role === 'super') return true; return !!d && deptInScope(A, d) && actsHeldOn(A, d, RETRO[sys].cap, ['approve']); }
@@ -14743,7 +18764,7 @@ function permv3Batch(A, set, del, evald, todo, pv3M, pv3Restore, pv2Restore) {
    لا تُنفَّذ قاعدةُ الرفض على الكتابات (Phase 3 ظلّ)؛ النافذةُ تُقاس بها wouldAllowRetro/wouldBlock فقط. الوصولُ: مدير النظام أو حاملُ approve (ذرّةُ G‑08 نفسُها). */
 async function retroApi(env, request, A, url, meta) {
   try { return await retroApiRun(env, request, A, url, meta); }
-  catch (error) { return irErrorResponse(error); }
+  catch (error) { return bdErrorResponse(error); }
 }
 async function retroApiRun(env, request, A, url, meta) {
   var now = Date.now(), T = dsToday(now), b = null, sys, d;
@@ -14751,21 +18772,18 @@ async function retroApiRun(env, request, A, url, meta) {
   else { var rb = await bodyRead(request, '/api/retro'); if (rb.res) return rb.res; b = rb.v; sys = String(b.res || ''); d = String(b.dept || A.u.deptId || ''); }   /* KIVO_264 · SOT-101: مخطّطُ الجسم (src/schemas/api/bodies.schema.json) */
   if (!Object.prototype.hasOwnProperty.call(RETRO, sys)) return json({ ok: 0, err: 'res' }, 400);   /* KIVO_264: «__proto__» وأمثالُه ليست نظاماً (كانت تمرّ فتنهار 500) */
   if (!d || !(A.depts || []).some(function (x) { return x && x.id === d; })) return json({ ok: 0, err: 'dept' }, 400);
-  var irCtx = null, irState = null;
-  if (sys === 'irshad') {
-    await irGuardRetired(env);
-    irCtx = await irQueryContext(env, A, d, { write: true }); env = irCtx.env; A = irCtx.A;
-    irState = await irRetroSnapshot(env, d);
-    irCtx.guards.push(irRetiredGuard(env));
-    irCtx.guards.push.apply(irCtx.guards, rsWitness(env, IR_TABLES.windows[0], IR_TABLES.windows[1], irState.rows, 'department_id=?1', [d]));
-    irCtx.guards.push.apply(irCtx.guards, rsWitness(env, 'meta', ['k', 'v'], irState.metaRows, 'k=?1 OR k=?2', [irMetaKey(d), irMetaKey(d) + ':retro-version']));
-  }
+  var adapter=retroDomainAdapter(sys);
+  await adapter.retired(env);
+  var irCtx=await adapter.context(env,A,d,{write:true});env=irCtx.env;A=irCtx.A;
+  var irState=await adapter.snapshot(env,d);
+  irCtx.guards.push(adapter.retiredGuard(env));
+  irCtx.guards.push.apply(irCtx.guards,irState.guards);
   var RS = PERMV3.retro[sys], may = retroMay(A, d, sys);
   var tob = A.u.role === 'super' ? { ok: true, why: 'super' } : KIVO_GUARDS.decide(RETRO[sys].key, permv2Ctx(A, d));
   if (!!tob.ok === may) RS.openDecisions.agree++; else RS.openDecisions.disagree++;
   if (request.method === 'GET') {
     if (!may && !canRead(A, 'bsdept:' + d + ':' + RETRO[sys].res)) return json({ ok: 0, err: 'perm' }, 403);
-    var stG = irCtx ? irState.state : await retroState(env, d, sys);
+    var stG = irState.state;
     if (irCtx) await env.DB.batch(irCtx.guards);
     return json({ ok: 1, res: sys, dept: d, today: T, now: now, maxHours: KIVO_BUILD.RETRO_MAX_H, defHours: KIVO_BUILD.RETRO_DEF_H, may: may, windows: stG.windows });
   }
@@ -14773,7 +18791,7 @@ async function retroApiRun(env, request, A, url, meta) {
   var act = b.act === 'close' ? 'close' : 'open';
   if (!may && A.enf) { try { await enfInitDb(env); await enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: d, k: retroKey(d, sys), res: RETRO[sys].state, keys: RETRO[sys].key, decision: 'deny', why: 'perm', path: '/api/retro', ip: meta.ip }).run(); } catch (eL9) { swallow('retro-authz-log', eL9, env.__rid); } }
   if (!may) { RS.missingRetroPermission++; await secLog(env, { ts: now, uid: A.u.id, un: A.u.un, act: 'denied', target: retroKey(d, sys), detail: 'retro.' + act + ':perm', ip: meta.ip, city: meta.city, dev: meta.dev }); return json({ ok: 0, err: 'perm', key: RETRO[sys].key }, 403); }
-  var st9 = irCtx ? irState.state : await retroState(env, d, sys), w, scope;
+  var st9 = irState.state, w, scope;
   if (act === 'open') {
     var sc0 = isObj(b.scope) ? b.scope : {}, y = parseInt(sc0.y, 10), m = parseInt(sc0.m, 10), dd0 = (sc0.d == null || sc0.d === '') ? null : parseInt(sc0.d, 10);
     if (!(y > 1300 && y < 1700 && m >= 1 && m <= 12) || (dd0 !== null && !(dd0 >= 1 && dd0 <= 30))) return json({ ok: 0, err: 'scope' }, 400);
@@ -14793,35 +18811,34 @@ async function retroApiRun(env, request, A, url, meta) {
     w.closedAt = now; w.closedBy = { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || '') }; scope = w.scope; RS.closes++;
   }
   if (irCtx) {
-    await irRetroCommit(irCtx, st9, w, scope, act, meta, now);
+    await typedRetroCommit(irCtx,sys,adapter,st9,w,scope,act,meta,now);
     return json({ ok: 1, window: w, today: T, now: now, decision: { asis: may, toBe: !!tob.ok, why: tob.why || '' } });
   }
-  var rev = await nextRev(env), key = retroKey(d, sys), stm = kvPutStmts(env, 'kv', key, JSON.stringify(st9));
-  stm.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(key, rev));
-  stm.push(audEvStmt(env, { cid: 'retro_' + w.id + '_' + act, ts: now, uid: A.u.id, un: String(A.u.un || ''), dept: d, k: key, rev: rev, etype: 'retro', eid: sys + ':' + retroScopeKey(scope),
-    ename: 'استدراك ' + RETRO[sys].name + ' ' + retroScopeKey(scope), act: act === 'open' ? 'opened' : 'closed', ctx: JSON.stringify({ sys: sys, scope: scope, key: RETRO[sys].key }), bef: '',
-    aft: JSON.stringify(act === 'open' ? { until: w.until, hours: w.hours, reason: w.reason, by: w.by.un } : { closedAt: w.closedAt, by: String(A.u.un || '') }), ip: meta.ip, dev: meta.dev, city: meta.city }));
-  await env.DB.batch(stm);
-  if (A.enf) { try { await enfInitDb(env); await enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: d, k: key, res: RETRO[sys].state, keys: RETRO[sys].key, scope: retroScopeKey(scope), decision: 'allow', why: act, reason: act === 'open' ? (w.reason || '') : '', path: '/api/retro', ip: meta.ip }).run(); } catch (eL8) { swallow('retro-authz-log', eL8, env.__rid); } }
-  return json({ ok: 1, window: w, today: T, now: now, decision: { asis: may, toBe: !!tob.ok, why: tob.why || '' } });
 }
-async function irRetroCommit(ctx, state, window, scope, act, meta, now) {
-  var env = ctx.env, A = ctx.A, key = retroKey(ctx.d, 'irshad'), domain = irConvert(ctx.d, { retro: state }),
-    statements = [env.DB.prepare('DELETE FROM irshad_retro_windows WHERE department_id=?1').bind(ctx.d)];
-  statements.push.apply(statements, rsBulk(env, IR_TABLES.windows[0], IR_TABLES.windows[1], domain.rows.windows));
-  statements.push.apply(statements, irMarkResourceStatements(env, ctx.d, 'retro'));
-  statements.push.apply(statements, irBumpStatements(env, key, false));
+async function typedRetroCommit(ctx, sys, adapter, state, window, scope, act, meta, now) {
+  var env=ctx.env,A=ctx.A,key=retroKey(ctx.d,sys),statements=adapter.install(env,ctx.d,state);
+  statements.push.apply(statements, bdBumpStatements(env, key, false));
   statements.push(env.DB.prepare("INSERT INTO aud(cid,ts,uid,un,dept,k,rev,etype,eid,ename,act,ctx,bef,aft,ip,dev,city)VALUES(?1,?2,?3,?4,?5,?6,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),'retro',?7,?8,?9,?10,'',?11,?12,?13,?14)")
-    .bind('retro_' + window.id + '_' + act, now, A.u.id, String(A.u.un || ''), ctx.d, key, 'irshad:' + retroScopeKey(scope),
-      'استدراك ' + RETRO.irshad.name + ' ' + retroScopeKey(scope), act === 'open' ? 'opened' : 'closed',
-      JSON.stringify({ sys: 'irshad', scope: scope, key: RETRO.irshad.key }),
+    .bind('retro_' + window.id + '_' + act, now, A.u.id, String(A.u.un || ''), ctx.d, key, sys + ':' + retroScopeKey(scope),
+      'استدراك ' + RETRO[sys].name + ' ' + retroScopeKey(scope), act === 'open' ? 'opened' : 'closed',
+      JSON.stringify({ sys: sys, scope: scope, key: RETRO[sys].key }),
       JSON.stringify(act === 'open' ? { until: window.until, hours: window.hours, reason: window.reason, by: window.by.un } : { closedAt: window.closedAt, by: String(A.u.un || '') }),
       meta.ip || '', meta.dev || '', meta.city || ''));
   if (A.enf) statements.push(enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: ctx.d,
-    k: key, res: RETRO.irshad.state, keys: RETRO.irshad.key, scope: retroScopeKey(scope), decision: 'allow', why: act,
+    k: key, res: RETRO[sys].state, keys: RETRO[sys].key, scope: retroScopeKey(scope), decision: 'allow', why: act,
     reason: act === 'open' ? (window.reason || '') : '', path: '/api/retro', ip: meta.ip }));
   await env.DB.batch(ctx.guards.concat(statements));
   preOff(env);
+}
+
+function retroDomainAdapter(sys) {
+  if(sys==='seized')return {context:szQueryContext,snapshot:szRetroSnapshot,install:szRetroStatements,retired:szGuardRetired,retiredGuard:szRetiredGuard};
+  if(sys!=='irshad')throw rsError('retro-resource');
+  return {
+    context:irQueryContext,retired:irGuardRetired,retiredGuard:irRetiredGuard,
+    snapshot:async function(env,d){var snapshot=await irRetroSnapshot(env,d);snapshot.guards=rsWitness(env,IR_TABLES.windows[0],IR_TABLES.windows[1],snapshot.rows,'department_id=?1',[d]).concat(rsWitness(env,'meta',['k','v'],snapshot.metaRows,'k=?1 OR k=?2',[irMetaKey(d),irMetaKey(d)+':retro-version']));return snapshot;},
+    install:function(env,d,state){var domain=irConvert(d,{retro:state});return [env.DB.prepare('DELETE FROM irshad_retro_windows WHERE department_id=?1').bind(d)].concat(rsBulk(env,IR_TABLES.windows[0],IR_TABLES.windows[1],domain.rows.windows),irMarkResourceStatements(env,d,'retro'));},
+  };
 }
 /* ═══ R197/R198 · Phase 4 → 4.1 — Data Scope Shadow Mode: PERMV4 = { write, read } — نطاقُ كلِّ كتابةٍ (evaluateWrite) وكلِّ قراءةٍ فعلية (evaluateRead · D4‑01) يُحسب بـKIVO_SCOPE ويُقارَن بالحكم القديم ولا يغيّره ═══
    Phase 4.1 (v24.5): D4‑02/D4‑03 بدل AC‑01/AC‑02 (deny معلَن لمدير النظام على الفترات المقفلة/المغلقة بلا نافذة — السلوكُ الحالي كما هو) · D4‑04 ctx.deptCeiling (لا سجلَّ سقفٍ ⇒ unmigrated) · telemetry مستقل scope.write / scope.read.
@@ -15384,14 +19401,53 @@ var KIVO_MIGRATIONS = [
    "DELETE FROM meta WHERE k='ir_cutover_ready'",
    "INSERT INTO meta(k,v) VALUES ('schema_version', '8') ON CONFLICT(k) DO UPDATE SET v=excluded.v"
   ]
+ },
+ {
+  "name": "0009_seized_awards",
+  "sql": [
+   "SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE k IN ('bassam_award_v1','bassam_award_docs_v1','bassam_award_docs_v2') OR k GLOB 'bsdept:*:bassam_award_v1' OR k GLOB 'bsdept:*:bassam_award_v1:*' OR k GLOB 'bassam_award_v1:*' OR k GLOB 'bsdept:*:bassam_award_docs_v1' OR k GLOB 'bsdept:*:bassam_award_docs_v1:*' OR k GLOB 'bassam_award_docs_v1:*' OR k GLOB 'bsdept:*:bassam_award_docs_v2' OR k GLOB 'bsdept:*:bassam_award_docs_v2:*' OR k GLOB 'bassam_award_docs_v2:*') AND COALESCE((SELECT v FROM meta WHERE k='aw_cutover_ready'),'')<>'validated' THEN json_extract('{}','KIVO_AWARD_CUTOVER_REQUIRED') END",
+   "SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE k IN ('bassam_seized_v1','bassam_seized_cat_v1','bassam_seized_acts_v1','bassam_seized_locs_v1','bassam_seized_jew_v1','bassam_seized_retro_v1') OR k GLOB 'bsdept:*:bassam_seized_v1' OR k GLOB 'bsdept:*:bassam_seized_v1:*' OR k GLOB 'bassam_seized_v1:*' OR k GLOB 'bsdept:*:bassam_seized_cat_v1' OR k GLOB 'bsdept:*:bassam_seized_cat_v1:*' OR k GLOB 'bassam_seized_cat_v1:*' OR k GLOB 'bsdept:*:bassam_seized_acts_v1' OR k GLOB 'bsdept:*:bassam_seized_acts_v1:*' OR k GLOB 'bassam_seized_acts_v1:*' OR k GLOB 'bsdept:*:bassam_seized_locs_v1' OR k GLOB 'bsdept:*:bassam_seized_locs_v1:*' OR k GLOB 'bassam_seized_locs_v1:*' OR k GLOB 'bsdept:*:bassam_seized_jew_v1' OR k GLOB 'bsdept:*:bassam_seized_jew_v1:*' OR k GLOB 'bassam_seized_jew_v1:*' OR k GLOB 'bsdept:*:bassam_seized_retro_v1' OR k GLOB 'bsdept:*:bassam_seized_retro_v1:*' OR k GLOB 'bassam_seized_retro_v1:*') AND COALESCE((SELECT v FROM meta WHERE k='seized_cutover_ready'),'')!='validated' THEN json_extract('{}','KIVO_SEIZED_VALIDATED_CUTOVER_REQUIRED') END",
+   "CREATE TABLE IF NOT EXISTS seized_resource_state( department_id TEXT NOT NULL, resource TEXT NOT NULL, value_kind INTEGER NOT NULL, list_kind INTEGER NOT NULL, version_kind INTEGER NOT NULL, version_number REAL, version_text TEXT, PRIMARY KEY(department_id,resource) ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS seized_reports( department_id TEXT NOT NULL, sequence INTEGER NOT NULL, report_id TEXT NOT NULL, hijri_year REAL, hijri_month REAL, hijri_day REAL, created_at REAL, location TEXT, actor_label TEXT, actor_key TEXT, record_number TEXT, note TEXT, shift TEXT, employee_key TEXT, employee_name TEXT, edited_at REAL, edited_by TEXT, legacy_author TEXT, test_marker TEXT, presence_mask INTEGER NOT NULL, items_kind INTEGER NOT NULL, PRIMARY KEY(department_id,report_id), UNIQUE(department_id,sequence) ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS seized_items( department_id TEXT NOT NULL, report_id TEXT NOT NULL, position INTEGER NOT NULL, id_kind INTEGER NOT NULL, id_number REAL, id_text TEXT, id_token TEXT, quantity REAL, value REAL, action_key TEXT, kind TEXT, kind_text TEXT, presence_mask INTEGER NOT NULL, photos_kind INTEGER NOT NULL, history_kind INTEGER NOT NULL, PRIMARY KEY(department_id,report_id,position), FOREIGN KEY(department_id,report_id) REFERENCES seized_reports(department_id,report_id) ON DELETE CASCADE ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS seized_item_photos( department_id TEXT NOT NULL, report_id TEXT NOT NULL, item_position INTEGER NOT NULL, position INTEGER NOT NULL, image_id TEXT, PRIMARY KEY(department_id,report_id,item_position,position), FOREIGN KEY(department_id,report_id,item_position) REFERENCES seized_items(department_id,report_id,position) ON DELETE CASCADE ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS seized_item_history( department_id TEXT NOT NULL, report_id TEXT NOT NULL, item_position INTEGER NOT NULL, position INTEGER NOT NULL, from_action TEXT, to_action TEXT, at_label TEXT, actor_label TEXT, created_at REAL, presence_mask INTEGER NOT NULL, PRIMARY KEY(department_id,report_id,item_position,position), FOREIGN KEY(department_id,report_id,item_position) REFERENCES seized_items(department_id,report_id,position) ON DELETE CASCADE ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS seized_categories( department_id TEXT NOT NULL, position INTEGER NOT NULL, id_kind INTEGER NOT NULL, id_number REAL, id_text TEXT, id_token TEXT, name TEXT, color TEXT, default_action TEXT, presence_mask INTEGER NOT NULL, items_kind INTEGER NOT NULL, PRIMARY KEY(department_id,position) ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS seized_catalog_items( department_id TEXT NOT NULL, category_position INTEGER NOT NULL, position INTEGER NOT NULL, id_kind INTEGER NOT NULL, id_number REAL, id_text TEXT, id_token TEXT, name TEXT, description TEXT, unit TEXT, presence_mask INTEGER NOT NULL, PRIMARY KEY(department_id,category_position,position), FOREIGN KEY(department_id,category_position) REFERENCES seized_categories(department_id,position) ON DELETE CASCADE ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS seized_actions( department_id TEXT NOT NULL, position INTEGER NOT NULL, id_kind INTEGER NOT NULL, id_number REAL, id_text TEXT, id_token TEXT, action_key TEXT, name TEXT, color TEXT, presence_mask INTEGER NOT NULL, PRIMARY KEY(department_id,position) ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS seized_list_values( department_id TEXT NOT NULL, resource TEXT NOT NULL, position INTEGER NOT NULL, value TEXT, PRIMARY KEY(department_id,resource,position) ) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS seized_retro_windows( department_id TEXT NOT NULL, sequence INTEGER NOT NULL, window_id TEXT NOT NULL, opened_at REAL, until_at REAL, hours REAL, reason TEXT, reason_missing REAL, closed_at REAL, hijri_year REAL, hijri_month REAL, hijri_day REAL, scope_mask INTEGER NOT NULL, by_id TEXT, by_username TEXT, by_employee_key TEXT, by_name TEXT, closed_by_id TEXT, closed_by_username TEXT, closed_by_employee_key TEXT, presence_mask INTEGER NOT NULL, by_kind INTEGER NOT NULL, by_mask INTEGER NOT NULL, closed_by_kind INTEGER NOT NULL, closed_by_mask INTEGER NOT NULL, PRIMARY KEY(department_id,window_id), UNIQUE(department_id,sequence) ) WITHOUT ROWID",
+   "CREATE INDEX IF NOT EXISTS seized_report_timeline ON seized_reports(department_id,hijri_year,hijri_month,hijri_day DESC,created_at DESC,sequence)",
+   "CREATE INDEX IF NOT EXISTS seized_item_action ON seized_items(department_id,action_key,report_id)",
+   "CREATE INDEX IF NOT EXISTS seized_photo_reference ON seized_item_photos(image_id,department_id,report_id)",
+   "CREATE INDEX IF NOT EXISTS seized_item_identity ON seized_items(department_id,id_token,report_id)",
+   "CREATE INDEX IF NOT EXISTS seized_item_kind ON seized_items(department_id,kind,report_id)",
+   "CREATE INDEX IF NOT EXISTS seized_report_location ON seized_reports(department_id,location)",
+   "CREATE TABLE IF NOT EXISTS seized_requests(department_id TEXT NOT NULL,account_uid TEXT NOT NULL,request_id TEXT NOT NULL,fingerprint TEXT NOT NULL,resource_key TEXT NOT NULL,resource_rev INTEGER NOT NULL,operation TEXT NOT NULL,result_n INTEGER NOT NULL,result_id TEXT,permission_mode TEXT NOT NULL,permission_keys TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(department_id,account_uid,request_id))WITHOUT ROWID",
+   "DELETE FROM meta WHERE k='seized_cutover_ready'",
+   "CREATE TABLE IF NOT EXISTS award_resources(department_id TEXT NOT NULL,resource TEXT NOT NULL,root_kind INTEGER NOT NULL,list_kind INTEGER NOT NULL,PRIMARY KEY(department_id,resource)) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS award_records(department_id TEXT NOT NULL,record_id TEXT NOT NULL,sequence INTEGER NOT NULL,business_id TEXT,employee_key TEXT,category TEXT,hijri_date TEXT,score REAL,case_count REAL,file_ok INTEGER,eligible INTEGER,status TEXT,employee_number TEXT,city TEXT,work_field TEXT,phone TEXT,email TEXT,declarer_name TEXT,approver_name TEXT,approver_title TEXT,work_description TEXT,work_evidence TEXT,picture TEXT,employee_signature TEXT,approver_signature TEXT,author_name TEXT,legacy_name TEXT,test_marker TEXT,legacy_employee_key TEXT,legacy_status TEXT,legacy_employee_name TEXT,legacy_award TEXT,status_reason TEXT,legacy_reason TEXT,reason TEXT,presence_mask INTEGER NOT NULL,case_text_kind INTEGER NOT NULL,answers_kind INTEGER NOT NULL,scores_kind INTEGER NOT NULL,PRIMARY KEY(department_id,record_id),UNIQUE(department_id,sequence)) WITHOUT ROWID",
+   "CREATE INDEX IF NOT EXISTS award_record_order ON award_records(department_id,sequence DESC)",
+   "CREATE INDEX IF NOT EXISTS award_record_employee ON award_records(department_id,employee_key)",
+   "CREATE TABLE IF NOT EXISTS award_case_texts(department_id TEXT NOT NULL,record_id TEXT NOT NULL,position INTEGER NOT NULL,value TEXT,PRIMARY KEY(department_id,record_id,position),FOREIGN KEY(department_id,record_id)REFERENCES award_records(department_id,record_id)ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS award_answers(department_id TEXT NOT NULL,record_id TEXT NOT NULL,position INTEGER NOT NULL,value INTEGER,PRIMARY KEY(department_id,record_id,position),FOREIGN KEY(department_id,record_id)REFERENCES award_records(department_id,record_id)ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS award_score_rows(department_id TEXT NOT NULL,record_id TEXT NOT NULL,row_number INTEGER NOT NULL,PRIMARY KEY(department_id,record_id,row_number),FOREIGN KEY(department_id,record_id)REFERENCES award_records(department_id,record_id)ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS award_scores(department_id TEXT NOT NULL,record_id TEXT NOT NULL,row_number INTEGER NOT NULL,column_number INTEGER NOT NULL,value REAL,PRIMARY KEY(department_id,record_id,row_number,column_number),FOREIGN KEY(department_id,record_id,row_number)REFERENCES award_score_rows(department_id,record_id,row_number)ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS award_documents(department_id TEXT NOT NULL,version INTEGER NOT NULL,group_key TEXT NOT NULL,title TEXT,lead TEXT,foot TEXT,presence_mask INTEGER NOT NULL,sections_kind INTEGER NOT NULL,PRIMARY KEY(department_id,version,group_key)) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS award_doc_sections(department_id TEXT NOT NULL,version INTEGER NOT NULL,group_key TEXT NOT NULL,position INTEGER NOT NULL,title TEXT,header TEXT,body TEXT,presence_mask INTEGER NOT NULL,items_kind INTEGER NOT NULL,PRIMARY KEY(department_id,version,group_key,position),FOREIGN KEY(department_id,version,group_key)REFERENCES award_documents(department_id,version,group_key)ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS award_doc_items(department_id TEXT NOT NULL,version INTEGER NOT NULL,group_key TEXT NOT NULL,section_position INTEGER NOT NULL,position INTEGER NOT NULL,kind TEXT,text TEXT,presence_mask INTEGER NOT NULL,PRIMARY KEY(department_id,version,group_key,section_position,position),FOREIGN KEY(department_id,version,group_key,section_position)REFERENCES award_doc_sections(department_id,version,group_key,position)ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS award_requests(department_id TEXT NOT NULL,account_uid TEXT NOT NULL,request_id TEXT NOT NULL,fingerprint TEXT NOT NULL,resource_key TEXT NOT NULL,resource_rev INTEGER NOT NULL,operation TEXT NOT NULL,result_n INTEGER NOT NULL,result_id TEXT,permission_mode TEXT NOT NULL,permission_count INTEGER NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(department_id,account_uid,request_id)) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS award_request_checks(department_id TEXT NOT NULL,account_uid TEXT NOT NULL,request_id TEXT NOT NULL,position INTEGER NOT NULL,check_kind TEXT NOT NULL,permission_key TEXT NOT NULL,PRIMARY KEY(department_id,account_uid,request_id,position),FOREIGN KEY(department_id,account_uid,request_id)REFERENCES award_requests(department_id,account_uid,request_id)ON DELETE CASCADE) WITHOUT ROWID",
+   "INSERT INTO meta(k,v)VALUES('schema_version','9')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
+  ]
  }
 ];
-var KIVO_SCHEMA_VERSION = 8;
+var KIVO_SCHEMA_VERSION = 9;
 /* ═══ KIVO_263 · SOT-101 — مخطّطاتُ أجسام الطلبات المغيِّرة: المصدرُ src/schemas/api/bodies.schema.json (JSON Schema) ═══
    هذه النسخةُ مطابقةٌ له حرفاً (يفرضها tests/unit/body_schemas.test.mjs) — فالقاعدةُ واحدةٌ مكتوبةٌ مرةً، قابلةٌ للاختبار بلا واجهة.
    bodyCheck(route, body) ⇒ null (سليم) أو موضعُ أوّل مخالفة ('set.<k>' · 'base.<k>' · 'del[3]' …) — والمسارُ يردّ 400 {ok:0, err:'bad-body', at}
    قبل أيّ قراءةٍ أو كتابة. كان الخادمُ يحوّل القيمةَ غيرَ النصية بـString() فيُخزَّن «[object Object]» في المفتاح (سلامةُ البيانات). */
-var KIVO_BODY_SCHEMAS = {"/api/admin/dept-delete":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/admin/dept-wipe":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/authz-migrate":{"properties":{"act":{"maxLength":32,"type":["string","null"]},"force":{"type":["boolean","null"]},"generated":{"maxLength":20,"type":["number","string","null"]},"hash":{"maxLength":128,"type":["string","null"]},"inferable":{"type":["boolean","integer","null"]},"parts":{"items":{"maxLength":16,"type":"string"},"maxItems":8,"type":["array","null"]},"seed":{"maxLength":128,"type":["string","null"]},"snap":{"maxLength":128,"type":["string","null"]}},"type":"object"},"/api/authz-test":{"properties":{"method":{"maxLength":10,"type":["string","null"]},"path":{"maxLength":2000,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]},"vals":{"items":{"maxLength":300,"type":"string"},"maxItems":200,"type":["array","null"]}},"type":"object"},"/api/backup/restore":{"additionalProperties":false,"properties":{"backup":{"type":"object"},"base":{"type":"object"},"delete":{"type":["array","null"]},"domains":{"type":"object"},"keys":{"type":["object","null"]},"legacyConsent":{"type":"boolean"},"manifest":{"type":"object"},"mode":{"type":"string"},"permissionSlice":{"type":"object"},"phase":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"scope":{"type":"object"},"uid":{"type":"string"},"version":{"minimum":0,"type":"integer"}},"type":"object"},"/api/checkpw":{"properties":{"p":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/custody/act":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"color":{"type":"string"},"condition":{"type":"string"},"dept":{"type":"string"},"holderKey":{"type":"string"},"issueId":{"type":"string"},"item":{"type":"object"},"itemId":{"type":"string"},"kind":{"type":"string"},"lines":{"type":"array"},"note":{"type":"string"},"op":{"type":"string"},"patch":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/dstats":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"data":{"additionalProperties":false,"properties":{"haram":{"type":"object"},"locks":{"type":"object"},"nabawi":{"type":"object"}},"type":"object"},"operation":{"maxLength":40,"type":"string"},"ops":{"type":"object"},"reason":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["base","data"],"type":"object"},"/api/employees/transition":{"additionalProperties":false,"properties":{"accountProposals":{"type":"array"},"base":{"type":"object"},"deleteMode":{"type":"string"},"dept":{"type":"string"},"finalRows":{"type":"array"},"import":{"type":"object"},"intent":{"type":"string"},"options":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/guard/unlock":{"properties":{"all":{"type":["integer","boolean","null"]},"gk":{"maxLength":300,"type":["string","null"]},"gks":{"items":{"maxLength":300,"type":"string"},"maxItems":1000,"type":["array","null"]}},"type":"object"},"/api/irshad/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"epoch":{"minimum":0,"type":"integer"},"languages":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","languages","locations","retro"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"id":{"type":"string"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"},"values":{"type":"array"},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/login":{"properties":{"p":{"maxLength":1000,"type":["string","null"]},"u":{"maxLength":200,"type":"string"}},"type":"object"},"/api/logout":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill":{"additionalProperties":false,"type":"object"},"/api/me/tasks/act":{"additionalProperties":false,"properties":{"act":{"maxLength":8,"type":"string"},"i":{"minimum":0,"type":["integer","null"]},"id":{"maxLength":40,"type":["number","string"]},"idem":{"maxLength":40,"type":["string","null"]},"imgs":{"items":{"maxLength":80,"type":"string"},"maxItems":4,"type":["array","null"]},"k":{"maxLength":10,"type":"string"},"meta":{"items":{"additionalProperties":false,"properties":{"acc":{"minimum":0,"type":["number","null"]},"at":{"minimum":1,"type":"number"},"img":{"maxLength":80,"type":["string","null"]},"lat":{"type":["number","null"]},"lng":{"type":["number","null"]}},"required":["at"],"type":"object"},"maxItems":4,"type":["array","null"]},"note":{"maxLength":1000,"type":["string","null"]},"rm":{"items":{"maxLength":80,"type":"string"},"maxItems":12,"type":["array","null"]},"steps":{"additionalProperties":{"type":"boolean"},"type":["object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","act"],"type":"object"},"/api/notifications/act":{"additionalProperties":false,"properties":{"action":{"maxLength":40,"type":"string"},"all":{"type":"boolean"},"at":{"minimum":0,"type":"integer"},"b":{"type":"object"},"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":180,"type":"string"},"events":{"items":{"type":"object"},"maxItems":200,"type":"array"},"id":{"maxLength":800,"type":"string"},"link":{"maxLength":500,"type":"string"},"once":{"maxLength":500,"type":"string"},"onlyRead":{"type":"boolean"},"op":{"maxLength":40,"type":"string"},"own":{"items":{"maxLength":200,"type":"string"},"maxItems":20000,"type":"array"},"patch":{"type":"object"},"preview":{"type":"boolean"},"reset":{"type":"boolean"},"target":{"type":"object"},"title":{"maxLength":400,"type":"string"},"type":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"vars":{"type":"object"}},"required":["op"],"type":"object"},"/api/policy":{"properties":{"idleH":{"maxLength":16,"type":["number","string","null"]},"lockMin":{"maxLength":16,"type":["number","string","null"]},"lockN":{"maxLength":16,"type":["number","string","null"]},"pwMin":{"maxLength":16,"type":["number","string","null"]},"sessH":{"maxLength":16,"type":["number","string","null"]},"wrMin":{"maxLength":16,"type":["number","string","null"]}},"type":"object"},"/api/recover":{"properties":{"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/recovery/new":{"properties":{"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/reset":{"properties":{"admin":{"properties":{"name":{"maxLength":120,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]},"un":{"maxLength":64,"type":["string","null"]}},"type":["object","null"]},"confirm":{"maxLength":50,"type":["string","null"]},"keepBrand":{"type":["boolean","integer","null"]},"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/retro":{"properties":{"act":{"maxLength":16,"type":["string","null"]},"dept":{"maxLength":200,"type":["string","null"]},"hours":{"maxLength":16,"type":["number","string","null"]},"id":{"maxLength":100,"type":["string","null"]},"reason":{"maxLength":4000,"type":["string","null"]},"res":{"maxLength":64,"type":["string","null"]},"scope":{"properties":{"d":{"maxLength":8,"type":["integer","string","null"]},"m":{"maxLength":8,"type":["integer","string","null"]},"y":{"maxLength":8,"type":["integer","string","null"]}},"type":["object","null"]}},"type":"object"},"/api/save":{"properties":{"aud":{"type":["array","object","null"]},"base":{"additionalProperties":{"minimum":0,"type":"integer"},"type":"object"},"cur":{"maxLength":1000,"type":["string","null"]},"del":{"items":{"maxLength":300,"type":"string"},"maxItems":5000,"type":"array"},"ops":{"type":["object","array","null"]},"set":{"additionalProperties":{"type":"string"},"type":"object"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"type":["object","null"]}},"type":"object"},"/api/sess/kill":{"properties":{"all":{"type":["boolean","integer","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/cancel":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":"string"}},"required":["k","id","why"],"type":"object"},"/api/tasks/create":{"additionalProperties":false,"properties":{"asg":{"items":{"maxLength":80,"type":"string"},"maxItems":50,"type":["array","null"]},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"desc":{"maxLength":4000,"type":["string","null"]},"e":{"type":"number"},"force":{"type":["boolean","null"]},"grpL":{"maxLength":120,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"needs":{"items":{"maxLength":80,"type":"string"},"maxItems":8,"type":["array","null"]},"pol":{"type":["object","null"]},"prio":{"maxLength":10,"type":["string","null"]},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"rv":{"maxLength":10,"type":["string","object","null"]},"s":{"type":"number"},"shift":{"additionalProperties":false,"properties":{"name":{"maxLength":80,"type":"string"}},"type":["object","null"]},"t":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","s","e"],"type":"object"},"/api/tasks/extend":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","e"],"type":"object"},"/api/tasks/reassign":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":["number","null"]},"force":{"type":["boolean","null"]},"from":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/recur":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":["string","null"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"row":{"maxLength":40,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"required":["op"],"type":"object"},"/api/tasks/recur/run":{"additionalProperties":false,"properties":{"day":{"maxLength":10,"type":["string","null"]},"dept":{"maxLength":80,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/relink":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"from":{"maxLength":160,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/reopen":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id"],"type":"object"},"/api/tasks/review":{"additionalProperties":false,"properties":{"decision":{"maxLength":8,"type":"string"},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","ekey","decision"],"type":"object"},"/api/tasks/settings":{"additionalProperties":false,"properties":{"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string","null"]},"k":{"maxLength":10,"type":"string"},"pol":{"type":["object","null"]},"rv":{"maxLength":10,"type":["string","object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]}},"required":["k"],"type":"object"}};
+var KIVO_BODY_SCHEMAS = {"/api/admin/dept-delete":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/admin/dept-wipe":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/authz-migrate":{"properties":{"act":{"maxLength":32,"type":["string","null"]},"force":{"type":["boolean","null"]},"generated":{"maxLength":20,"type":["number","string","null"]},"hash":{"maxLength":128,"type":["string","null"]},"inferable":{"type":["boolean","integer","null"]},"parts":{"items":{"maxLength":16,"type":"string"},"maxItems":8,"type":["array","null"]},"seed":{"maxLength":128,"type":["string","null"]},"snap":{"maxLength":128,"type":["string","null"]}},"type":"object"},"/api/authz-test":{"properties":{"method":{"maxLength":10,"type":["string","null"]},"path":{"maxLength":2000,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]},"vals":{"items":{"maxLength":300,"type":"string"},"maxItems":200,"type":["array","null"]}},"type":"object"},"/api/award/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"docsV1":{"minimum":0,"type":"integer"},"docsV2":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"records":{"minimum":0,"type":"integer"}},"required":["epoch","records","docsV1","docsV2"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"document":{"type":"object"},"id":{"type":"string"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"status":{"type":"string"},"uid":{"type":"string"},"version":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/backup/restore":{"additionalProperties":false,"properties":{"backup":{"type":"object"},"base":{"type":"object"},"delete":{"type":["array","null"]},"domains":{"type":"object"},"keys":{"type":["object","null"]},"legacyConsent":{"type":"boolean"},"manifest":{"type":"object"},"mode":{"type":"string"},"permissionSlice":{"type":"object"},"phase":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"scope":{"type":"object"},"uid":{"type":"string"},"version":{"minimum":0,"type":"integer"}},"type":"object"},"/api/checkpw":{"properties":{"p":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/custody/act":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"color":{"type":"string"},"condition":{"type":"string"},"dept":{"type":"string"},"holderKey":{"type":"string"},"issueId":{"type":"string"},"item":{"type":"object"},"itemId":{"type":"string"},"kind":{"type":"string"},"lines":{"type":"array"},"note":{"type":"string"},"op":{"type":"string"},"patch":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/dstats":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"data":{"additionalProperties":false,"properties":{"haram":{"type":"object"},"locks":{"type":"object"},"nabawi":{"type":"object"}},"type":"object"},"operation":{"maxLength":40,"type":"string"},"ops":{"type":"object"},"reason":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["base","data"],"type":"object"},"/api/employees/transition":{"additionalProperties":false,"properties":{"accountProposals":{"type":"array"},"base":{"type":"object"},"deleteMode":{"type":"string"},"dept":{"type":"string"},"finalRows":{"type":"array"},"import":{"type":"object"},"intent":{"type":"string"},"options":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/guard/unlock":{"properties":{"all":{"type":["integer","boolean","null"]},"gk":{"maxLength":300,"type":["string","null"]},"gks":{"items":{"maxLength":300,"type":"string"},"maxItems":1000,"type":["array","null"]}},"type":"object"},"/api/irshad/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"epoch":{"minimum":0,"type":"integer"},"languages":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","languages","locations","retro"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"id":{"type":"string"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"},"values":{"type":"array"},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/login":{"properties":{"p":{"maxLength":1000,"type":["string","null"]},"u":{"maxLength":200,"type":"string"}},"type":"object"},"/api/logout":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill":{"additionalProperties":false,"type":"object"},"/api/me/tasks/act":{"additionalProperties":false,"properties":{"act":{"maxLength":8,"type":"string"},"i":{"minimum":0,"type":["integer","null"]},"id":{"maxLength":40,"type":["number","string"]},"idem":{"maxLength":40,"type":["string","null"]},"imgs":{"items":{"maxLength":80,"type":"string"},"maxItems":4,"type":["array","null"]},"k":{"maxLength":10,"type":"string"},"meta":{"items":{"additionalProperties":false,"properties":{"acc":{"minimum":0,"type":["number","null"]},"at":{"minimum":1,"type":"number"},"img":{"maxLength":80,"type":["string","null"]},"lat":{"type":["number","null"]},"lng":{"type":["number","null"]}},"required":["at"],"type":"object"},"maxItems":4,"type":["array","null"]},"note":{"maxLength":1000,"type":["string","null"]},"rm":{"items":{"maxLength":80,"type":"string"},"maxItems":12,"type":["array","null"]},"steps":{"additionalProperties":{"type":"boolean"},"type":["object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","act"],"type":"object"},"/api/notifications/act":{"additionalProperties":false,"properties":{"action":{"maxLength":40,"type":"string"},"all":{"type":"boolean"},"at":{"minimum":0,"type":"integer"},"b":{"type":"object"},"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":180,"type":"string"},"events":{"items":{"type":"object"},"maxItems":200,"type":"array"},"id":{"maxLength":800,"type":"string"},"link":{"maxLength":500,"type":"string"},"once":{"maxLength":500,"type":"string"},"onlyRead":{"type":"boolean"},"op":{"maxLength":40,"type":"string"},"own":{"items":{"maxLength":200,"type":"string"},"maxItems":20000,"type":"array"},"patch":{"type":"object"},"preview":{"type":"boolean"},"reset":{"type":"boolean"},"target":{"type":"object"},"title":{"maxLength":400,"type":"string"},"type":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"vars":{"type":"object"}},"required":["op"],"type":"object"},"/api/policy":{"properties":{"idleH":{"maxLength":16,"type":["number","string","null"]},"lockMin":{"maxLength":16,"type":["number","string","null"]},"lockN":{"maxLength":16,"type":["number","string","null"]},"pwMin":{"maxLength":16,"type":["number","string","null"]},"sessH":{"maxLength":16,"type":["number","string","null"]},"wrMin":{"maxLength":16,"type":["number","string","null"]}},"type":"object"},"/api/recover":{"properties":{"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/recovery/new":{"properties":{"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/reset":{"properties":{"admin":{"properties":{"name":{"maxLength":120,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]},"un":{"maxLength":64,"type":["string","null"]}},"type":["object","null"]},"confirm":{"maxLength":50,"type":["string","null"]},"keepBrand":{"type":["boolean","integer","null"]},"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/retro":{"properties":{"act":{"maxLength":16,"type":["string","null"]},"dept":{"maxLength":200,"type":["string","null"]},"hours":{"maxLength":16,"type":["number","string","null"]},"id":{"maxLength":100,"type":["string","null"]},"reason":{"maxLength":4000,"type":["string","null"]},"res":{"maxLength":64,"type":["string","null"]},"scope":{"properties":{"d":{"maxLength":8,"type":["integer","string","null"]},"m":{"maxLength":8,"type":["integer","string","null"]},"y":{"maxLength":8,"type":["integer","string","null"]}},"type":["object","null"]}},"type":"object"},"/api/save":{"properties":{"aud":{"type":["array","object","null"]},"base":{"additionalProperties":{"minimum":0,"type":"integer"},"type":"object"},"cur":{"maxLength":1000,"type":["string","null"]},"del":{"items":{"maxLength":300,"type":"string"},"maxItems":5000,"type":"array"},"ops":{"type":["object","array","null"]},"set":{"additionalProperties":{"type":"string"},"type":"object"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"type":["object","null"]}},"type":"object"},"/api/seized/act":{"additionalProperties":false,"properties":{"act":{"type":"string"},"base":{"additionalProperties":false,"properties":{"actions":{"minimum":0,"type":"integer"},"catalog":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"jew":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","catalog","actions","locations","jew","retro"],"type":"object"},"data":{"type":"object"},"day":{"minimum":1,"type":"integer"},"dept":{"type":"string"},"from":{"type":"string"},"id":{"type":"string"},"image":{"type":"string"},"index":{"type":"integer"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"to":{"type":"string"},"uid":{"type":"string"},"value":{"type":["object","array"]},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/sess/kill":{"properties":{"all":{"type":["boolean","integer","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/cancel":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":"string"}},"required":["k","id","why"],"type":"object"},"/api/tasks/create":{"additionalProperties":false,"properties":{"asg":{"items":{"maxLength":80,"type":"string"},"maxItems":50,"type":["array","null"]},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"desc":{"maxLength":4000,"type":["string","null"]},"e":{"type":"number"},"force":{"type":["boolean","null"]},"grpL":{"maxLength":120,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"needs":{"items":{"maxLength":80,"type":"string"},"maxItems":8,"type":["array","null"]},"pol":{"type":["object","null"]},"prio":{"maxLength":10,"type":["string","null"]},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"rv":{"maxLength":10,"type":["string","object","null"]},"s":{"type":"number"},"shift":{"additionalProperties":false,"properties":{"name":{"maxLength":80,"type":"string"}},"type":["object","null"]},"t":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","s","e"],"type":"object"},"/api/tasks/extend":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","e"],"type":"object"},"/api/tasks/reassign":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":["number","null"]},"force":{"type":["boolean","null"]},"from":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/recur":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":["string","null"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"row":{"maxLength":40,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"required":["op"],"type":"object"},"/api/tasks/recur/run":{"additionalProperties":false,"properties":{"day":{"maxLength":10,"type":["string","null"]},"dept":{"maxLength":80,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/relink":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"from":{"maxLength":160,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/reopen":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id"],"type":"object"},"/api/tasks/review":{"additionalProperties":false,"properties":{"decision":{"maxLength":8,"type":"string"},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","ekey","decision"],"type":"object"},"/api/tasks/settings":{"additionalProperties":false,"properties":{"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string","null"]},"k":{"maxLength":10,"type":"string"},"pol":{"type":["object","null"]},"rv":{"maxLength":10,"type":["string","object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]}},"required":["k"],"type":"object"}};
 function bodyTypeOk(t, v) {
   var ts = Array.isArray(t) ? t : [t], i;
   for (i = 0; i < ts.length; i++) {
@@ -15678,7 +19734,7 @@ async function migrateDb(env) {
   }
   for (i = 0; i < pending.length; i++) {
     var dataPlan = pending[i].name === '0004_daily_stats' ? await dsLegacyPrepare(env) :
-      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : null;
+      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : null;
     var st = [dbMigrationFence(env, state, permit)];
     if (dataPlan) st = st.concat(dataPlan.before);
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));
@@ -16764,8 +20820,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var set = (body && body.set) || {}, del = (body && body.del) || [], base = (body && body.base) || {};
   /* Retired document key: reject the entire mixed batch before any mutation. In
      particular a full restore must never acknowledge a partial relational restore. */
-  var moved = Object.keys(set).concat(del.map(String)).filter(function (k) { return resName(k) === K_DSTATS || nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k); });
-  if (moved.length) { var denied = {}; moved.forEach(function (k) { denied[k] = { why: 'domain-moved', path: irLegacyKey(k) ? '/api/irshad' : cuLegacyKey(k) ? '/api/custody' : nfLegacyKey(k) ? '/api/notifications' : '/api/dstats' }; }); return { v: await curRev(env), revs: {}, denied: denied, conflicts: {}, atomic: 'domain-moved' }; }
+  var moved = Object.keys(set).concat(del.map(String)).filter(function (k) { return resName(k) === K_DSTATS || nfLegacyKey(k) || cuLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k)); });
+  if (moved.length) { var denied = {}; moved.forEach(function (k) { denied[k] = { why: 'domain-moved', path: szLegacyKey(k) ? '/api/seized' : awLegacyKey(k) ? '/api/award' : irLegacyKey(k) ? '/api/irshad' : cuLegacyKey(k) ? '/api/custody' : nfLegacyKey(k) ? '/api/notifications' : '/api/dstats' }; }); return { v: await curRev(env), revs: {}, denied: denied, conflicts: {}, atomic: 'domain-moved' }; }
   /* R169: أحداثُ السجل المرافقة — تُقبل فقط لمفاتيح هذا الطلب، وتُكتب مع القيمة في الدفعة نفسِها */
   var audKeysOk = {}; for (var ka9 in set) audKeysOk[String(ka9)] = 1; for (var da9 = 0; da9 < del.length; da9++) audKeysOk[String(del[da9])] = 1;
   var audIn = audClean(body && body.aud, audKeysOk);
@@ -21059,7 +25115,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     var rows = await env.DB.prepare('SELECT k, seq, existed, rev, v FROM authz_snap WHERE snap = ?1 ORDER BY k, seq').bind(sid).all();
     /* Reject the WHOLE snapshot before nextRev or any write, including a
        tombstone for a retired key: mixed rollback must not partially succeed. */
-    if (((rows && rows.results) || []).some(function (r0) { return resName(r0.k) === K_DSTATS || nfLegacyKey(r0.k) || cuLegacyKey(r0.k) || irLegacyKey(r0.k); })) return json({ ok: 0, err: 'domain-moved' }, 400);
+    if (((rows && rows.results) || []).some(function (r0) { return resName(r0.k) === K_DSTATS || nfLegacyKey(r0.k) || cuLegacyKey(r0.k) || (irLegacyKey(r0.k) || bdLegacyKey(r0.k)); })) return json({ ok: 0, err: 'domain-moved' }, 400);
     var byK = {}; ((rows && rows.results) || []).forEach(function (r0) { var o = byK[r0.k] = byK[r0.k] || { existed: r0.existed, v: '' }; if (r0.existed) o.v += r0.v; });
     /* الانجراف: مفتاحٌ تغيّر بعد العملية (رقمُ مراجعته ≠ رقمِ العملية) — الرجوعُ يمحو ما بعدها، فلا يُنفَّذ إلا بتأكيدٍ صريح (force) */
     var smMeta = parseJson(sm.meta, {}) || {}, opRev = +smMeta.rev || 0, drift = [], kk0;
@@ -21259,7 +25315,7 @@ async function getRoute(env, url, ss) {
   var moreG = wantAll.length > GET_MAX && wantAll.slice(GET_MAX).some(function (k8) { return want.indexOf(k8) === -1; });
   var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
-  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
+  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && !bdLegacyKey(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
   for (var gi = 0; gi < want.length; gi++) {
     var gk = want[gi];
     if (isDeviceKey(gk)) continue;
@@ -21268,6 +25324,7 @@ async function getRoute(env, url, ss) {
     if (nfLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/notifications' }; continue; }
     if (cuLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/custody' }; continue; }
     if (irLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/irshad' }; continue; }
+    if (bdLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: szLegacyKey(gk) ? '/api/seized' : '/api/award' }; continue; }
     if (resName(gk) === K_DSTATS) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/dstats' }; continue; }
     var gv = rdG ? valsG[gk] : null;      /* لا قيمةَ لمن لا يقرأ — الرقمُ وحدَه */
     if (rdG && gk === K_USERS && gv != null) gv = usersScopeOut(usersNoOut(stripPh(gv), AG), AG);   /* KIVO_259 · SR-1: ولا رقمَ وظيفيَّ لحساب غيره · الفحصُ العميق (R4): ولا حسابَ خارج نطاقه (054) */
@@ -21389,6 +25446,8 @@ export default {
       if(path === '/api/backup/restore')return await rsRoute(env,request,url,ss);if(path === '/api/admin/dept-wipe'||path === '/api/admin/dept-delete')return await rsWipeRoute(env,request,url,ss);if(path === '/api/employees/transition')return await rsEmployeeRoute(env,request,url,ss);
       if (path === '/api/custody' || path === '/api/custody/act' || path === '/api/custody/export') return await cuRoute(env, request, url, ss);
       if (path === '/api/irshad' || path === '/api/irshad/act' || path === '/api/irshad/export') return await irRoute(env, request, url, ss);
+      if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');
+      if (path === '/api/award' || path === '/api/award/act' || path === '/api/award/export') return await bdRoute(env, request, url, ss, 'awards');
       if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);
 
@@ -21625,6 +25684,7 @@ export default {
             env.DB.prepare('DELETE FROM audit'), env.DB.prepare('DELETE FROM sess'), env.DB.prepare('DELETE FROM guard'),
             env.DB.prepare('DELETE FROM meta WHERE k IN (?1, ?2, ?3, ?4, ?5)').bind('rev', 'rk', 'rk_uid', 'rk_meta', 'rk_used')
           ];
+          stZ = bdResetStatements(env).concat(stZ);
           stZ = stZ.concat(kvPutStmts(env, 'kv', K_USERS, JSON.stringify(usersZ)));
           stZ.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2)').bind(K_USERS, 1));
           if (platZ) { stZ = stZ.concat(kvPutStmts(env, 'kv', K_PLAT, platZ)); stZ.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2)').bind(K_PLAT, 1)); }
@@ -21875,6 +25935,7 @@ export default {
       for (var retiredNf in keys) if (nfLegacyKey(retiredNf)) delete keys[retiredNf];
       for (var retiredCu in keys) if (cuLegacyKey(retiredCu)) delete keys[retiredCu];
       for (var retiredIr in keys) if (irLegacyKey(retiredIr)) delete keys[retiredIr];
+      for (var retiredBusiness in keys) if (bdLegacyKey(retiredBusiness)) delete keys[retiredBusiness];
       for (var retiredDs in keys) if (resName(retiredDs) === K_DSTATS) delete keys[retiredDs];
       for (var dk in keys) if (isDeviceKey(dk)) delete keys[dk];
       if (keys[K_USERS] != null) keys[K_USERS] = stripPh(keys[K_USERS]);

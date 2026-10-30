@@ -1,9 +1,6 @@
 /* Irshad SQL reads. Authority is captured once from named references, never
    from all KV or from a client-supplied principal/scope. */
-function irQueryNat(v) {
-  if (!Number.isSafeInteger(v) || v < 0) throw irError('irshad-revision', 503);
-  return v;
-}
+
 function irQueryParam(plan, value) {
   plan.args.push(value);
   return '?' + plan.args.length;
@@ -12,55 +9,15 @@ function irQueryBase(ctx) {
   return Object.assign({}, ctx.base);
 }
 async function irQueryContext(env, actor, d, options) {
-  options = options || {};
-  if (!actor || !actor.u || typeof actor.u.id !== 'string') throw irError('irshad-denied', 403);
-  if (typeof d !== 'string' || !d || d.length > 200 || d.indexOf(':') >= 0) throw irError('irshad-scope');
-  var keys = [K_USERS, K_PERM, K_DEPTS, K_GDEPTS, K_PLAT, enfGrantsKey(d), enfScopeKey(d),
-      'bsdept:' + d + ':bassam_staffing_v3', 'bsdept:' + d + ':bassam_shift_options_v1',
-      'bsdept:' + d + ':bassam_employees_v1'],
-    resourceKeys = IR_RES.map(function (_, i) { return irKey(d, i); }),
-    revisionKeys = keys.concat(resourceKeys),
-    metaKeys = ['restore_epoch', 'authz_mode', 'authz_perm_mig', 'authz_scope_mig', 'authz_id_mig',
-      irMetaKey(d), irMetaKey(d) + ':retro-version'],
-    result = await env.DB.batch([
-      env.DB.prepare('SELECT k,seq,v FROM kv WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k,seq').bind(JSON.stringify(keys)),
-      env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k').bind(JSON.stringify(revisionKeys)),
-      env.DB.prepare('SELECT k,v FROM meta WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k').bind(JSON.stringify(metaKeys)),
-    ]),
-    rows = result.map(function (r) { if (!r || r.success === false) throw irError('irshad-context', 503); return r.results || []; }),
-    raw = Object.create(null), revs = Object.create(null), meta = Object.create(null);
-  keys.forEach(function (k) { raw[k] = null; });
-  var grouped = Object.create(null);
-  rows[0].forEach(function (r) {
-    var chunks = grouped[r.k] || (grouped[r.k] = []);
-    if (r.seq !== chunks.length || typeof r.v !== 'string') throw irError('irshad-reference-chunks', 503);
-    chunks.push(r.v);
-  });
-  Object.keys(grouped).forEach(function (k) { raw[k] = grouped[k].join(''); });
-  rows[1].forEach(function (r) { revs[r.k] = irQueryNat(r.rev); });
-  rows[2].forEach(function (r) { meta[r.k] = r.v; });
-  var presence = irOwn(meta, irMetaKey(d)) ? Number(meta[irMetaKey(d)]) : 0;
-  if (!Number.isSafeInteger(presence) || presence < 0 || presence > 63) throw irError('irshad-presence-invalid', 503);
-  var pre = Object.assign({}, env.__pre || {}, { live: true, kv: raw, revs: revs, meta: meta }),
-    captured = Object.assign({}, env, { __pre: pre }),
-    mode = await enfModeOf(captured),
-    A = actorFromKeys(raw, actor.u.id);
-  if (!A || !deptInScope(A, d) || !(A.depts || []).some(function (department) { return department && String(department.id) === d; }))
-    throw irError('irshad-denied', 403);
-  if (mode.mode === 'unavailable') throw irError('irshad-context', 503);
-  if (mode.mode === 'enforce') { A.enf = mode; enfAttachGrantsKeys(A, raw); }
-  captured.__enf = A.enf || null;
-  if (!options.write && !canRead(A, irKey(d))) throw irError('irshad-denied', 403);
-  var refs = await enfRefsFor(captured, [d], raw),
-    base = { epoch: irQueryNat(meta.restore_epoch == null ? 0 : Number(meta.restore_epoch)) },
-    resources = ['reports', 'languages', 'locations', 'retro'];
-  resources.forEach(function (name, i) { base[name] = revs[resourceKeys[i]] || 0; });
-  var guards = rsWitness(env, 'kv', ['k', 'seq', 'v'], rows[0], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(keys)])
-    .concat(rsWitness(env, 'revs', ['k', 'rev'], rows[1], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(revisionKeys)]))
-    .concat(rsWitness(env, 'meta', ['k', 'v'], rows[2], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(metaKeys)]));
-  return { env: captured, A: A, d: d, base: base, guards: guards, refs: refs, rawKeys: raw,
-    meta: meta, pv4: { staffing: refs.staffing[d] },
-    witness: await cuFingerprint({ uidValue: A.u.id, mode: mode, capture: rows }) };
+  return bdQueryContext(env, actor, d, {
+    resources: IR_RES, resourceNames: IR_RES_NAMES,
+    metaKeys: function (dept) { return [irMetaKey(dept), irMetaKey(dept) + ':retro-version']; },
+    error: function (code, status) { return irError('irshad-' + code, status); },
+    validateMeta: function (meta, dept) {
+      var presence = irOwn(meta, irMetaKey(dept)) ? Number(meta[irMetaKey(dept)]) : 0;
+      if (!Number.isSafeInteger(presence) || presence < 0 || presence > 63) throw irError('irshad-presence-invalid', 503);
+    },
+  }, options);
 }
 async function irRowRead(env, d, ids) {
   if (!Array.isArray(ids) || ids.length > 200 || ids.some(function (id) { return typeof id !== 'string'; }))

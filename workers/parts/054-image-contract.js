@@ -765,8 +765,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var set = (body && body.set) || {}, del = (body && body.del) || [], base = (body && body.base) || {};
   /* Retired document key: reject the entire mixed batch before any mutation. In
      particular a full restore must never acknowledge a partial relational restore. */
-  var moved = Object.keys(set).concat(del.map(String)).filter(function (k) { return resName(k) === K_DSTATS || nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k); });
-  if (moved.length) { var denied = {}; moved.forEach(function (k) { denied[k] = { why: 'domain-moved', path: irLegacyKey(k) ? '/api/irshad' : cuLegacyKey(k) ? '/api/custody' : nfLegacyKey(k) ? '/api/notifications' : '/api/dstats' }; }); return { v: await curRev(env), revs: {}, denied: denied, conflicts: {}, atomic: 'domain-moved' }; }
+  var moved = Object.keys(set).concat(del.map(String)).filter(function (k) { return resName(k) === K_DSTATS || nfLegacyKey(k) || cuLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k)); });
+  if (moved.length) { var denied = {}; moved.forEach(function (k) { denied[k] = { why: 'domain-moved', path: szLegacyKey(k) ? '/api/seized' : awLegacyKey(k) ? '/api/award' : irLegacyKey(k) ? '/api/irshad' : cuLegacyKey(k) ? '/api/custody' : nfLegacyKey(k) ? '/api/notifications' : '/api/dstats' }; }); return { v: await curRev(env), revs: {}, denied: denied, conflicts: {}, atomic: 'domain-moved' }; }
   /* R169: أحداثُ السجل المرافقة — تُقبل فقط لمفاتيح هذا الطلب، وتُكتب مع القيمة في الدفعة نفسِها */
   var audKeysOk = {}; for (var ka9 in set) audKeysOk[String(ka9)] = 1; for (var da9 = 0; da9 < del.length; da9++) audKeysOk[String(del[da9])] = 1;
   var audIn = audClean(body && body.aud, audKeysOk);

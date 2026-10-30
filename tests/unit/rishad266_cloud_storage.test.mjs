@@ -21,7 +21,8 @@ const success = {
 };
 
 test('Relational domains cannot be recreated through the retired storage adapter', async () => {
-  const keys = ['bassam_dstats_v1', 'bassam_notif_v1', 'bassam_notif_cfg_v1', 'bassam_notif_sys_v1', 'bassam_bc_v1'];
+  const keys = ['bassam_dstats_v1', 'bassam_notif_v1', 'bassam_notif_cfg_v1', 'bassam_notif_sys_v1', 'bassam_bc_v1',
+    'bassam_seized_v1','bassam_seized_cat_v1','bassam_seized_acts_v1','bassam_seized_locs_v1','bassam_seized_jew_v1','bassam_seized_retro_v1','bassam_award_v1','bassam_award_docs_v1','bassam_award_docs_v2'];
   const native = new FakeStorage(), incoming = boot();
   for (const key of keys) for (const scoped of [key, 'bsdept:dA:' + key]) {
     native.setItem(scoped, 'TEST_ONLY quarantined legacy value');
@@ -31,7 +32,7 @@ test('Relational domains cannot be recreated through the retired storage adapter
   const T = loadClient({ C: noNetwork, boot: incoming, native, blocks: ['280-server-storage.js', '320-dept-storage.js'] });
   T.W.document.hidden = true;
   try {
-    for (const key of keys) {
+    for (const resource of keys) for (const key of [resource,'bsdept:dA:'+resource]) {
       assert.equal(T.get(key), null, 'No legacy local or boot value is consumed');
       assert.throws(() => T.set(key, '{"TEST_ONLY":"must-not-store"}'), /relational-domain-api-required/);
       assert.throws(() => T.W.localStorage.removeItem(key), /relational-domain-api-required/);

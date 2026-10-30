@@ -4995,15 +4995,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!result.ok) { this.bsToast("تعذر جرد الإدارة أو رفض الخادم حذفها؛ لم تُنفّذ أي كتابة", "warn"); return; }
       const data = result.body, base = data.base, natural = value => Number.isSafeInteger(value) && value >= 0,
         globalKeys = ["bassam_depts_v1", "bassam_auth_users_v1", "bassam_perms_v1"];
-      if (data.kind !== "delete" || data.dept !== target.id || !data.department || data.department.id !== target.id || typeof data.department.name !== "string" || !base || !natural(base.epoch) || !natural(base.custody) || !base.kv || typeof base.kv !== "object" || Array.isArray(base.kv) || globalKeys.some(key => !natural(base.kv[key])) || Object.entries(base.kv).some(([key, value]) => (!key.startsWith("bsdept:" + target.id + ":") && !globalKeys.includes(key)) || !natural(value)) || !base.irshad || ["reports", "languages", "locations", "retro"].some(key => !natural(base.irshad[key])) || !base.notifications || ["rev", "configRev", "broadcastRev"].some(key => !natural(base.notifications[key])) || !data.counts || ["keys", "accounts", "custody", "notifications", "irshad"].some(key => !natural(data.counts[key]))) {
+      if (data.kind !== "delete" || data.dept !== target.id || !data.department || data.department.id !== target.id || typeof data.department.name !== "string" || !base || !natural(base.epoch) || !natural(base.custody) || !base.kv || typeof base.kv !== "object" || Array.isArray(base.kv) || globalKeys.some(key => !natural(base.kv[key])) || Object.entries(base.kv).some(([key, value]) => (!key.startsWith("bsdept:" + target.id + ":") && !globalKeys.includes(key)) || !natural(value)) || !this._businessBaseValid(base) || !base.notifications || ["rev", "configRev", "broadcastRev"].some(key => !natural(base.notifications[key])) || !data.counts || ["keys", "accounts", "custody", "notifications", "irshad", "seized", "awards"].some(key => !natural(data.counts[key]))) {
         this.bsToast("وصل جرد ناقص من الخادم؛ لم يُسمح بحذف الإدارة", "warn"); return;
       }
       const draft = { dept: target.id, actor, data: JSON.parse(JSON.stringify(data)), ticket: null, uncertain: false, needsReview: false, confirmed: false };
       this._deptDeleteDraft = draft;
-      const counts = data.counts, populated = counts.keys + counts.accounts + counts.custody + counts.notifications + counts.irshad > 0,
+      const counts = data.counts, populated = counts.keys + counts.accounts + counts.custody + counts.notifications + counts.irshad + counts.seized + counts.awards > 0,
         name = data.department.name;
       if (populated) {
-        const accepted = await KIVO.bsConfirm({ title: "حذف إدارة «" + name + "»", msg: "جرد الخادم: " + counts.keys + " مورد بيانات، " + counts.accounts + " حساب إدارة/موظف، " + counts.custody + " سجل عهدة، " + counts.notifications + " تنبيه، " + counts.irshad + " سجل استرشاد. سيُحذف تعريف الإدارة وحساباتها وبياناتها ومراجع صورها نهائياً. حسابات مدير المنصة والإدارات العامة والإدارات الأخرى محفوظة. صدّر نسخة احتياطية قبل الحذف إن احتجتها.", ok: "احذف الإدارة وكل بياناتها", danger: true, typed: name });
+        const accepted = await KIVO.bsConfirm({ title: "حذف إدارة «" + name + "»", msg: "جرد الخادم: " + counts.keys + " مورد بيانات، " + counts.accounts + " حساب إدارة/موظف، " + counts.custody + " سجل عهدة، " + counts.notifications + " تنبيه، " + counts.irshad + " سجل استرشاد، "+counts.seized+" من بيانات المضبوطات، "+counts.awards+" من بيانات التكريم. سيُحذف تعريف الإدارة وحساباتها وبياناتها ومراجع صورها نهائياً. حسابات مدير المنصة والإدارات العامة والإدارات الأخرى محفوظة. صدّر نسخة احتياطية قبل الحذف إن احتجتها.", ok: "احذف الإدارة وكل بياناتها", danger: true, typed: name });
         if (!accepted || this._deptDeleteDraft !== draft || this._wpActor() !== actor) return;
         draft.confirmed = true; execute = true;
       } else {
@@ -5043,7 +5043,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return this.bsToast(draft.needsReview ? "تغيّرت بيانات الإدارة؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "permission" ? "صلاحيتك لا تسمح بحذف الإدارة؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
       }
       const receipt = result.body, natural = value => Number.isSafeInteger(value) && value >= 0;
-      if (receipt.mode !== "dept-delete" || receipt.dept !== draft.dept || receipt.requestId !== draft.ticket.requestId || !natural(receipt.rev) || !receipt.revs || typeof receipt.revs !== "object" || Array.isArray(receipt.revs) || Object.values(receipt.revs).some(value => !natural(value)) || !receipt.counts || ["keys", "accounts", "custody", "notifications", "irshad"].some(key => !natural(receipt.counts[key]))) {
+      if (receipt.mode !== "dept-delete" || receipt.dept !== draft.dept || receipt.requestId !== draft.ticket.requestId || !natural(receipt.rev) || !receipt.revs || typeof receipt.revs !== "object" || Array.isArray(receipt.revs) || Object.values(receipt.revs).some(value => !natural(value)) || !receipt.counts || ["keys", "accounts", "custody", "notifications", "irshad", "seized", "awards"].some(key => !natural(receipt.counts[key]))) {
         draft.uncertain = true; return this.bsToast("وصل تأكيد حذف ناقص؛ أعد محاولة الطلب نفسه قبل أي عملية أخرى", "warn");
       }
       if (this._wpActor() !== actor || this._deptDeleteDraft !== draft) return;
@@ -5075,10 +5075,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       return value;
     } finally { clearTimeout(timer); }
   }
-  async _irBackupDomain(departments, snapshot) {
-    const value = await this._irBackupFence(snapshot, true);
-    if (!Number.isSafeInteger(value.rev) || value.rev < 0 || !Array.isArray(value.domains) || value.domains.length !== departments.length || JSON.stringify(value.domains.map(d => d?.scope?.departmentId).sort()) !== JSON.stringify(departments.slice().sort()) || value.domains.some(d => d.version !== 1 || !d.resources || !d.rows || ["reports", "languages", "locations", "retro"].some(k => typeof d.resources[k] !== "boolean") || ["reports", "languages", "catalogs", "windows"].some(k => !Array.isArray(d.rows[k]) || d.rows[k].some(row => row?.department_id !== d.scope.departmentId)))) throw new Error("نسخة الاسترشاد ناقصة أو متعارضة؛ لم تُنشأ نسخة جزئية");
-    return value.domains;
+  _businessBaseValid(base) {
+    const spec={irshad:['reports','languages','locations','retro'],seized:['reports','catalog','actions','locations','jew','retro'],awards:['records','docsV1','docsV2']};
+    return base&&Object.entries(spec).every(([domain,names])=>base[domain]&&names.every(name=>Number.isSafeInteger(base[domain][name])&&base[domain][name]>=0));
   }
   async _wpCall(dept, body, actor, kind) {
     if (!actor || this._wpActor() !== actor) return { ok: 0, err: "session" };
@@ -5111,10 +5110,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (generation !== this._wpGeneration || this.state.wpDid !== dept || this._wpActor() !== actor) return;
     if (!result.ok) return void this.setState({ wpNeedsReview: true, wpMsg: "تعذّر جرد الإدارة من الخادم؛ لم تُنفّذ أي كتابة" });
     const body = result.body, base = body.base, natural = value => Number.isSafeInteger(value) && value >= 0;
-    if (body.dept !== dept || !base || !natural(base.epoch) || !natural(base.custody) || !base.kv || typeof base.kv !== "object" || Array.isArray(base.kv) || Object.entries(base.kv).some(([key, value]) => !key.startsWith("bsdept:" + dept + ":") || !natural(value)) || !base.irshad || ["reports", "languages", "locations", "retro"].some(key => !natural(base.irshad[key])) || !base.notifications || ["rev", "configRev", "broadcastRev"].some(key => !natural(base.notifications[key])) || !body.counts || !natural(body.counts.keys) || !natural(body.counts.custody) || !natural(body.counts.notifications) || !natural(body.counts.irshad))
+    if (body.dept !== dept || !base || !natural(base.epoch) || !natural(base.custody) || !base.kv || typeof base.kv !== "object" || Array.isArray(base.kv) || Object.entries(base.kv).some(([key, value]) => !key.startsWith("bsdept:" + dept + ":") || !natural(value)) || !this._businessBaseValid(base) || !base.notifications || ["rev", "configRev", "broadcastRev"].some(key => !natural(base.notifications[key])) || !body.counts || !natural(body.counts.keys) || !natural(body.counts.custody) || !natural(body.counts.notifications) || !natural(body.counts.irshad) || !natural(body.counts.seized) || !natural(body.counts.awards))
       return void this.setState({ wpNeedsReview: true, wpMsg: "وصل جرد ناقص من الخادم؛ لم يُسمح بالمسح" });
     this._wpTicket = null;
-    this.setState({ wpBase: JSON.parse(JSON.stringify(base)), wpBaseActor: actor, wpCounts: JSON.parse(JSON.stringify(body.counts)), wpNeedsReview: false, wpMsg: "جرد خادمي: " + body.counts.keys + " مورد، " + body.counts.custody + " سجل عهدة" + (natural(body.counts.notifications) ? "، " + body.counts.notifications + " تنبيه" : "") + "، " + body.counts.irshad + " سجل استرشاد. راجع القائمة قبل تأكيد المسح." });
+    this.setState({ wpBase: JSON.parse(JSON.stringify(base)), wpBaseActor: actor, wpCounts: JSON.parse(JSON.stringify(body.counts)), wpNeedsReview: false, wpMsg: "جرد خادمي: " + body.counts.keys + " مورد، " + body.counts.custody + " سجل عهدة" + (natural(body.counts.notifications) ? "، " + body.counts.notifications + " تنبيه" : "") + "، " + body.counts.irshad + " سجل استرشاد، "+body.counts.seized+" من بيانات المضبوطات، "+body.counts.awards+" من بيانات التكريم. راجع القائمة قبل تأكيد المسح." });
   }
   async wpGo(dept) {
     if (this._wpBusy) return;
@@ -5145,12 +5144,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return void this.setState({ wpNeedsReview: result.err === "conflict", wpMsg: result.err === "conflict" ? "تغيّرت بيانات الإدارة؛ لم يُنفّذ طلب المسح بهذه النسخة. أعد مراجعة الجرد قبل التأكيد." : result.err === "reason" ? "يشترط الخادم سبباً لهذا الإجراء؛ تأكيد المسح محفوظ" : result.err === "permission" ? "صلاحيتك لا تشمل مسح الإدارة" : "لم يصل تأكيد المسح؛ محفوظ طلبك لإعادة المحاولة نفسها دون ادعاء نجاح" });
       }
       const receipt = result.body;
-      if (receipt.dept !== dept || receipt.requestId !== ticket.body.requestId || !Number.isSafeInteger(receipt.rev) || receipt.rev < 0 || !receipt.counts || ["keys", "custody", "notifications", "irshad"].some(key => !Number.isSafeInteger(receipt.counts[key]) || receipt.counts[key] < 0))
+      if (receipt.dept !== dept || receipt.requestId !== ticket.body.requestId || !Number.isSafeInteger(receipt.rev) || receipt.rev < 0 || !receipt.counts || ["keys", "custody", "notifications", "irshad", "seized", "awards"].some(key => !Number.isSafeInteger(receipt.counts[key]) || receipt.counts[key] < 0))
         { this._wpUncertain = true; return void this.setState({ wpMsg: "تأكيد الخادم ناقص؛ لم يُعرض نجاح، أعد المحاولة بنفس الطلب" }); }
       if (this._wpActor() !== actor || this.state.wpDid !== dept) return;
       this._wpTicket = null; this._wpUncertain = false;
       this.setState({ wpDid: "", wpTxt: "", wpBase: null, wpCounts: null, wpNeedsReview: false, wpMsg: "", tick: (this.state.tick || 0) + 1 });
-      this.bsAck("مُسحت بيانات الإدارة والعهد والتنبيهات والاسترشاد المحددة، وحُفظ تعريف الإدارة؛ أكّد الخادم العملية", "ok");
+      this.bsAck("مُسحت بيانات الإدارة والعهد والتنبيهات والاسترشاد والمضبوطات والتكريم المحددة، وحُفظ تعريف الإدارة؛ أكّد الخادم العملية", "ok");
       try { if (srv && srv.resync) srv.resync(false); } catch (_) {}
     } finally { this._wpBusy = false; this.setState({ wpBusy: false }); }
   }
@@ -9643,7 +9642,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             if (counts.custody > 0) p.push({ label: "سجل العهد والأصناف (" + counts.custody + ")" });
             if (counts.notifications > 0) p.push({ label: "تنبيهات الإدارة (" + counts.notifications + ")" });
             if (counts.irshad > 0) p.push({ label: "سجلات الاسترشاد وقوائمه والاستدراك (" + counts.irshad + ")" });
-            const d = !!e.wpBase && ((counts.keys || 0) + (counts.custody || 0) + (counts.notifications || 0) + (counts.irshad || 0) > 0);
+            if (counts.seized > 0) p.push({label:"بيانات المضبوطات وتوابعها ("+counts.seized+")"});
+            if (counts.awards > 0) p.push({label:"بيانات التكريم ومراجعه ("+counts.awards+")"});
+            const d = !!e.wpBase && ((counts.keys || 0) + (counts.custody || 0) + (counts.notifications || 0) + (counts.irshad || 0) + (counts.seized || 0) + (counts.awards || 0) > 0);
             return {
               wpOn: !0,
               wpTitle: "مسح جميع بيانات إدارة «" + r + "»",
@@ -10362,12 +10363,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             if (!notificationExport || notificationExport.ok !== 1) throw new Error("تعذّر تصدير مجال التنبيهات");
             const declaredDepts=JSON.parse(s.bassam_depts_v1||"[]").map(d=>d.id);
             if(!Array.isArray(custodyExport.domains)||JSON.stringify(custodyExport.domains.map(d=>d.scope.departmentId).sort())!==JSON.stringify(declaredDepts.slice().sort()))throw new Error("نطاق العهد لا يطابق إدارات النسخة");
-            const irshadExport = await this._irBackupDomain(declaredDepts, snapshot);
-            Object.keys(s).forEach(key => { if (/(?:^|:)bassam_irshad(?:_langs|_locs|_retro)?_v1$/.test(key)) delete s[key]; });
+            const business = await KIVO.BackupRestore.exportDomains({departments:declaredDepts,full:true,v:snapshot.v,images:e||{}});
+            Object.keys(s).forEach(key => { if (/(?:^|:)bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(key)) delete s[key]; });
             await this._irBackupFence(snapshot);
-            const manifest={version:2,scope:"full",domains:{kv:1,dailyStats:1,notifications:1,custody:1,irshad:1},departments:declaredDepts,keys:Object.keys(s).filter(k=>typeof s[k]==="string"&&k!=="bassam_active_dept_v1")};
+            const manifest={version:3,scope:"full",domains:{kv:1,dailyStats:1,notifications:1,custody:1,irshad:1,seized:1,awards:1},departments:declaredDepts,keys:Object.keys(s).filter(k=>typeof s[k]==="string"&&k!=="bassam_active_dept_v1")};
             const a = new Date(),
-              r = { app: "bassam-crowd", version: 3, kind: "full", exportedAt: a.toISOString(), data: s, domains: {dailyStats:{version:1,rev:KIVO.DailyStats.revision(),data:dailyStats},notifications:notificationExport.domain,custody:custodyExport.domains,irshad:irshadExport}, manifest, idbImages: e || {} },
+              r = { app: "bassam-crowd", version: 3, kind: "full", exportedAt: a.toISOString(), data: s, domains: {dailyStats:{version:1,rev:KIVO.DailyStats.revision(),data:dailyStats},notifications:notificationExport.domain,custody:custodyExport.domains,...business.domains}, manifest, idbImages: business.images },
               i = KIVO.BassamCrypt;
             if (!i || !i.ok()) return void this.setState({ backupMsg: "تعذّر التصدير — التشفير غير متاح على هذا المتصفح" });
             ((this._encPend = {

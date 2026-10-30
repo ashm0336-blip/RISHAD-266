@@ -212,25 +212,7 @@
     var om = (o.marks || []).length + (o.paths || []).length, nmk = (n.marks || []).length + (n.paths || []).length; if (nmk > om) emit('pl_mark', { dept: did, vars: { 'النوع': (n.marks || []).length > (o.marks || []).length ? 'علامة' : 'مسار', 'الاسم': '', 'الموقع': '' } });
     if (!o.ap && n.ap) emit('pl_ok', { dept: did, vars: { 'الشهر': monLbl(n.apM || ''), 'العدد': ng.length } });
   };
-  WATCH['bassam_seized_v1'] = function(did, o, n){
-    var or = (o && o.reports) || [], nr = (n && n.reports) || []; var d = diffList(or, nr, function(r){ return r.id; }); var nm = function(r){ try { return r.name || ''; } catch(e){ return ''; } };
-    d.added.forEach(function(r){ var items = r.items || []; var q = items.reduce(function(a, it){ return a + (parseInt(it.n, 10) || 0); }, 0); emit('bx_new', { dept: did, vars: { 'الرقم': r.no || '—', 'القطع': q, 'الموقع': r.loc || '—', 'الموظف': r.actor || nm(r) }, link: 'seized:' + r.id });
-      var sec = items.filter(function(it){ return it.act === 'sec'; }); if (sec.length) emit('bx_sec', { dept: did, vars: { 'الرقم': r.no || '—', 'البند': sec.map(function(it){ return itemName(did, it); }).join('، '), 'الموظف': r.actor || nm(r) }, link: 'seized:' + r.id });
-      var sar = items.reduce(function(a, it){ return a + (it.id === 23 ? (parseInt(it.n, 10) || 0) : (parseInt(it.val, 10) || 0)); }, 0); if (sar >= 50000) emit('bx_cash', { dept: did, vars: { 'الرقم': r.no || '—', 'المبلغ': sar.toLocaleString('en-US'), 'الحد': '50,000' }, link: 'seized:' + r.id }); });
-    d.removed.forEach(function(r){ emit('bx_del', { dept: did, vars: { 'الرقم': r.no || '—', 'المُعدّل': who() } }); });
-    d.both.forEach(function(p){ var a = p[0], b = p[1]; (b.items || []).forEach(function(it, i){ var pi = (a.items || [])[i]; if (pi && pi.act !== it.act) emit('bx_upd', { dept: did, vars: { 'الرقم': b.no || '—', 'البند': itemName(did, it), 'من': actName(did, pi.act), 'إلى': actName(did, it.act), 'المُعدّل': who() }, link: 'seized:' + b.id }); }); });
-  };
-  function itemName(did, it){ try { var c = J(rawGet('bsdept:' + did + ':bassam_seized_cat_v1'), null); var cats = (c && c.cats) || []; for (var i = 0; i < cats.length; i++) { var f = (cats[i].items || []).filter(function(x){ return x.id === +it.id; })[0]; if (f) return f.name + (it.kind ? ' · ' + (it.kind === 'أخرى' ? (it.kindTxt || 'أخرى') : it.kind) : '') + ' ×' + (it.n || 1); } } catch(e){} return 'بند ' + it.id; }
-  function actName(did, k){ try { var l = J(rawGet('bsdept:' + did + ':bassam_seized_acts_v1'), null) || []; var a = l.filter(function(x){ return x.k === k; })[0]; if (a) return a.name; } catch(e){} return ({ sec:'أُحيل للجهة الأمنية', des:'أُتلف / صودر', sto:'محفوظ بالمستودع' })[k] || k; }
-  // Irshad events are planned on the server in the same transaction as the command.
-  WATCH['bassam_award_v1'] = function(did, o, n){
-    var or = (o && o.recs) || [], nr = (n && n.recs) || []; var d = diffList(or, nr, function(r){ return r.id || (r.name + r.ts); });
-    d.added.forEach(function(r){ emit('aw_new', { dept: did, vars: { 'الاسم': r.name || r.emp || '—', 'المرشِّح': r.by || who() } }); });
-    d.removed.forEach(function(r){ emit('aw_del', { dept: did, own: r.eid ? [r.eid] : [], vars: { 'الاسم': r.name || r.emp || '—', 'المُعدّل': who() } }); });
-    d.both.forEach(function(p){ var a = p[0], b = p[1]; if ((a.status || a.st) !== (b.status || b.st) && (b.status || b.st)) emit('aw_res', { dept: did, own: b.eid ? [b.eid] : [], vars: { 'القرار': /appr|اعتم|قبل/.test(String(b.status || b.st)) ? 'اعتُمد' : 'رُفض', 'الجائزة': b.award || b.cat || 'التميز' } }); });
-    var os = (o && o.secs) || (o && o.sections) || [], ns = (n && n.secs) || (n && n.sections) || []; if (!eq(os, ns) && os.length) emit('aw_ref', { dept: did, vars: { 'القسم': (ns[ns.length - 1] || {}).title || 'المراجع' } });
-    if (o && n && !o.pub && n.pub) emit('aw_pub', { dept: did, vars: { 'الجائزة': n.pubName || 'التميز', 'التفصيل': '' } });
-  };
+  // Seized and Award events are issued by their server transaction.
   WATCH['bassam_depts_v1'] = function(did, o, n){ var d = diffList(Array.isArray(o) ? o : [], Array.isArray(n) ? n : [], function(x){ return x.id; }); d.added.forEach(function(x){ emit('sy_dept', { vars: { 'الفعل': 'أُنشئت إدارة', 'الإدارة': x.name, 'التفصيل': '' } }); }); d.removed.forEach(function(x){ emit('sy_ddel', { vars: { 'النوع': 'إدارة', 'الإدارة': x.name, 'المُعدّل': who() } }); }); };
   WATCH['bassam_gdepts_v1'] = function(did, o, n){ var d = diffList(Array.isArray(o) ? o : [], Array.isArray(n) ? n : [], function(x){ return x.id; }); d.added.forEach(function(x){ emit('sy_dept', { vars: { 'الفعل': 'أُنشئت إدارة عامة', 'الإدارة': x.name, 'التفصيل': '' } }); }); d.removed.forEach(function(x){ emit('sy_ddel', { vars: { 'النوع': 'إدارة عامة', 'الإدارة': x.name, 'المُعدّل': who() } }); }); };
   WATCH['bassam_platform_v1'] = function(did, o, n){ o = o || {}; n = n || {}; if (!Object.keys(o).length) return;
@@ -264,7 +246,6 @@
     var u = me(); if (!u) return; var did = myDept(); var now = new Date(); var hh = now.getHours(); var T = todayKey();
     if (isMgr() || isSuper()) {
       /* المضبوطات: قطع محفوظة أكثر من 30 يوماً */
-      if (hh >= 9) try { var sz = J(rawGet('bsdept:' + did + ':bassam_seized_v1'), null); var old = 0, maxD = 0; ((sz && sz.reports) || []).forEach(function(r){ (r.items || []).forEach(function(it){ if (it.act !== 'sto') return; var days = Math.floor((Date.now() - (r.ts || 0)) / 86400000); if (days >= 30) { old += parseInt(it.n, 10) || 0; maxD = Math.max(maxD, days); } }); }); if (old) emit('bx_old', { dept: did, vars: { 'العدد': old, 'الأيام': 30 }, once: 'bx_old:' + T.key }); } catch(e){}
       /* المهام: «يقترب موعدها» و«متأخرة» صار يُصدرهما الخادمُ مرةً واحدة لكل صفّ (KIVO_265 · البند 10 — workers/parts/074-task-due.js) ولو لم تكن المنصةُ مفتوحةً عند المسؤول — فلا إصدارَ هنا */
       /* التقرير: مسحوب بلا اعتماد قبل نهاية الوردية بساعة */
       try { var dr = J(rawGet('bsdept:' + did + ':bassam_dreport_v1'), {}); var day = dr[T.y + '-' + T.m + '-' + T.d]; var shifts = J(rawGet('bsdept:' + did + ':bassam_shift_options_v1'), []) || []; if (day && day.shifts) Object.keys(day.shifts).forEach(function(sh){ var s = day.shifts[sh]; if (!s.pulled || s.ap) return; var so = (shifts || []).filter(function(x){ return (x.name || x) === sh; })[0]; var end = so && so.tEnd; if (!end) return; var m = /^(\d+):(\d+)/.exec(end); if (!m) return; var endMin = +m[1] * 60 + +m[2], nowMin = hh * 60 + now.getMinutes(); if (endMin - nowMin > 0 && endMin - nowMin <= 60) emit('rep_late', { dept: did, vars: { 'الوردية': sh, 'الوقت': end }, once: 'rep_late:' + T.key + ':' + sh }); }); } catch(e){}
@@ -274,7 +255,6 @@
       // No custody history polling on the client; due notices require server support.
       /* ملخص الاسترشاد اليومي 23:30 */
       /* ملخص المستودع الأسبوعي — السبت */
-      if (now.getDay() === 6 && hh >= 8) try { var sz2 = J(rawGet('bsdept:' + did + ':bassam_seized_v1'), null); var n2 = 0, mx = 0, val = 0; ((sz2 && sz2.reports) || []).forEach(function(r){ (r.items || []).forEach(function(it){ if (it.act !== 'sto') return; n2 += parseInt(it.n, 10) || 0; mx = Math.max(mx, Math.floor((Date.now() - (r.ts || 0)) / 86400000)); val += parseInt(it.val, 10) || 0; }); }); if (n2) emit('bx_wk', { dept: did, vars: { 'العدد': n2, 'الأيام': mx, 'المبلغ': val.toLocaleString('en-US') }, once: 'bx_wk:' + T.key }); } catch(e){}
     }
     if (isSuper()) {
       /* نسخة احتياطية قديمة */

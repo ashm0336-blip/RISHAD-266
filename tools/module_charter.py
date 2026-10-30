@@ -71,12 +71,15 @@ def main(argv):
     mods = [p['slug'] for p in J('src/modules/modules.json')['pages']]
     write, bad = '--write' in argv, []
     G = gate_files()
+    gate_available = bool(G) and os.path.isdir(os.path.join(ROOT, 'cfbench'))
     for slug in mods:
         mp = os.path.join(ROOT, 'src/modules', slug, 'meta.json')
         meta = json.load(open(mp, encoding='utf-8'))
         ch = meta.get('charter') or {}
         der = derive(slug, G)
         if write:
+            if not gate_available:
+                der['tests'] = sorted(set(ch.get('tests') or []) | set(der['tests']))
             own, pur = HUMAN[slug]
             meta['charter'] = dict({'owner': ch.get('owner') or own, 'purpose': ch.get('purpose') or pur}, **der)
             open(mp, 'w', encoding='utf-8').write(json.dumps(meta, ensure_ascii=False, indent=1) + '\n')
@@ -84,14 +87,14 @@ def main(argv):
         for k in ('owner', 'purpose', 'page', 'routes', 'ui', 'domain', 'data', 'permissions', 'tests'):
             if not ch.get(k): bad.append(slug + ': الحقل «' + k + '» غائب أو فارغ')
         for k in ('page', 'routes', 'ui', 'domain', 'data', 'permissions', 'tests'):
-            if k == 'tests' and not G:   # المستودعُ الرسمي بلا البوابة الدائمة (المختبر): الاختباراتُ المعلنة موجودةٌ وحسب
+            if k == 'tests' and not gate_available:   # المستودعُ الرسمي بلا البوابة الدائمة (المختبر): الاختباراتُ المعلنة موجودةٌ وحسب
                 miss = [t for t in ch.get(k) or [] if not os.path.exists(os.path.join(ROOT, t)) and not t.startswith(('cfbench/', 'gate:'))]
                 if miss: bad.append(slug + ': اختبارٌ معلنٌ غائب ' + ', '.join(miss))
                 continue
             if ch.get(k) and ch.get(k) != der[k]: bad.append(slug + ': «' + k + '» لا يطابق المصدر (أعد --write) — المصدر: ' + json.dumps(der[k], ensure_ascii=False)[:160])
         for f in (ch.get('ui') or []) + (ch.get('domain') if isinstance(ch.get('domain'), list) else [ch.get('domain') or '']):
             if f and not os.path.exists(os.path.join(ROOT, f)) and not f.endswith('helmet.css'): bad.append(slug + ': ملفٌّ غائب ' + f)
-        if G and ch.get('tests') and not any(t.split(':', 1)[-1] in G or t.startswith('tests/unit/') for t in ch['tests']):
+        if gate_available and ch.get('tests') and not any(t.split(':', 1)[-1] in G or t.startswith('tests/unit/') for t in ch['tests']):
             bad.append(slug + ': لا اختبارَ من اختباراتها في البوابة الدائمة ولا اختبارَ وحدة')
     if write: print('كُتب الميثاقُ في ' + str(len(mods)) + ' وحدة'); return 0
     for b in bad: print('  ✘', b)

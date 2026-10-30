@@ -166,7 +166,8 @@ test('modern manifest requires its exact declared key/dept/domain coverage and p
   const out = await t.convert(file);
   assert.equal(out.keys.bassam_auth_users_v1, raw);
   assert.equal(out.summary.legacy, false);
-  assert.deepEqual(out.summary.emptyDomains, []);
+  assert.deepEqual(out.summary.emptyDomains, ['seized:'+D1,'seized:'+D2,'awards:'+D1,'awards:'+D2,'awards:']);
+  assert.equal(out.manifest.version,3,'Historical manifest2 is upgraded at the import boundary');
   for (const mutate of [
     (f) => f.manifest.keys.pop(),
     (f) => f.manifest.departments.pop(),

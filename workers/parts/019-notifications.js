@@ -3151,6 +3151,7 @@ async function nfRoute(env, request, url, ss) {
     await nfGuardRetired(env);
     if (url.pathname === "/api/notifications" && request.method === "GET") {
       var dailyIr = await nfIrshadDaily(env, A, url); if (dailyIr.emitted) preOff(env);
+      var seizedDue=await nfSeizedDue(env,A,url);if(seizedDue.emitted)preOff(env);
       return json(await nfFeed(env, A, url));
     }
     if (url.pathname === "/api/notifications/export" && request.method === "GET") return json(await nfExport(env, A, url));

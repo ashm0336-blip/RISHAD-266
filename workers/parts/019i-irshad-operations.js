@@ -112,12 +112,6 @@ function irMutationData(ctx, b, before, now) {
   irConvert(ctx.d, { reports: { reports: [out] } });
   return out;
 }
-function irBumpStatements(env, k, notify) {
-  var st = [env.DB.prepare("INSERT INTO meta(k,v) VALUES('rev',CAST(COALESCE((SELECT MAX(rev) FROM revs),0)+1 AS TEXT)) ON CONFLICT(k) DO UPDATE SET v=CAST(MAX(CAST(meta.v AS INTEGER),COALESCE((SELECT MAX(rev) FROM revs),0))+1 AS TEXT)"),
-    env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER)) ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(k)];
-  if (notify) st.push(env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER)) ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(NF_REV));
-  return st;
-}
 async function irNotificationPlan(ctx, b, before, after) {
   var events = [], statements = [], guards = [], active = 0;
   if (b.op === 'create') events.push({ type: 'ir_new', row: after[0] });
@@ -217,7 +211,7 @@ async function irAct(env, A, b, meta) {
   var notifications = await irNotificationPlan(ctx, b, before, after);
   guards.push.apply(guards, notifications.guards);
   statements.push.apply(statements, irMarkResourceStatements(env, ctx.d, resource));
-  statements.push.apply(statements, irBumpStatements(env, k, notifications.active > 0));
+  statements.push.apply(statements, bdBumpStatements(env, k, notifications.active > 0));
   statements.push.apply(statements, notifications.statements);
   statements.push(env.DB.prepare("INSERT INTO irshad_requests(department_id,account_uid,request_id,fingerprint,resource_key,resource_rev,operation,result_n,result_id,created_at)VALUES(?1,?2,?3,?4,?5,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),?6,?7,?8,?9)").bind(ctx.d, A.u.id, b.requestId, fingerprint, k, b.op, n, resultId, now));
   statements.push(env.DB.prepare("INSERT INTO aud(cid,ts,uid,un,dept,k,rev,etype,eid,ename,act,ctx,bef,aft,ip,dev,city)VALUES(?1,?2,?3,?4,?5,?6,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),'dataset',?7,'irshad',?8,?9,'','',?10,?11,?12)").bind(

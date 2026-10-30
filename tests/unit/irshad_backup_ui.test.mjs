@@ -29,6 +29,9 @@ assert.ok(exportNode);
 const D1 = 'TEST_ONLY_department_1', D2 = 'TEST_ONLY_department_2';
 const domain = d => ({ version: 1, scope: { departmentId: d }, resources: { reports: false, languages: false, locations: false, retro: false,
   retroVersionPresent: false, retroVersion: null, retroWindowsPresent: false }, rows: { reports: [], languages: [], catalogs: [], windows: [] } });
+const businessDomain = (kind, d) => ({ version: 1, scope: d === '' ? { kind: 'global' } : { departmentId: d },
+  resources: Object.fromEntries((kind === 'seized' ? ['reports', 'catalog', 'actions', 'locations', 'jew', 'retro'] : ['records', 'docsV1', 'docsV2']).map(key => [key, false])),
+  rows: Object.fromEntries((kind === 'seized' ? ['resources', 'reports', 'items', 'photos', 'history', 'categories', 'catalogItems', 'actions', 'lists', 'windows'] : ['resources', 'records', 'caseTexts', 'answers', 'scoreRows', 'scores', 'documents', 'sections', 'items']).map(key => [key, []])) });
 const json = body => ({ ok: true, status: 200, json: async () => body });
 const settle = async () => { for (let i = 0; i < 8; i++) await new Promise(resolve => setImmediate(resolve)); };
 
@@ -56,19 +59,27 @@ function browser(kind, failure = '') {
     fetch: async (url, options) => {
       calls.push({ url: String(url), options });
       if (String(url).startsWith('/api/get?')) { fences++; return json({ ok: 1, v: failure === 'stale' || failure === 'concurrent' && fences === 2 ? 18 : 17, keys: {} }); }
-      assert.ok(String(url).startsWith('/api/irshad/export?'));
-      if (failure === 'department') active = D2;
-      const result = { ok: 1, rev: 4, globalRev: 17, domains: (kind === 'full' ? [D1, D2] : [D1]).map(domain) };
-      if (failure === 'missing') result.domains = [];
-      if (failure === 'scope') result.domains[0].scope.departmentId = 'TEST_ONLY_foreign';
-      if (failure === 'rows') result.domains[0].rows.windows = null;
+      const resource = /^\/api\/(irshad|seized|award)\/export\?/.exec(String(url))?.[1]; assert.ok(resource, String(url));
+      if (failure === 'department' && resource === 'irshad') active = D2;
+      const departments = kind === 'full' ? [D1, D2] : [D1], scopes = departments.concat(resource === 'award' && kind === 'full' ? [''] : []);
+      const result = { ok: 1, rev: 4, globalRev: 17, domains: scopes.map(d => resource === 'irshad' ? domain(d) : businessDomain(resource, d)) };
+      if (resource === 'irshad') {
+        if (failure === 'missing') result.domains = [];
+        if (failure === 'scope') result.domains[0].scope.departmentId = 'TEST_ONLY_foreign';
+        if (failure === 'rows') result.domains[0].rows.windows = null;
+      }
+      if (resource === 'seized' && failure === 'seized-missing') result.domains = [];
+      if (resource === 'award' && failure === 'award-scope') result.domains[0].scope.departmentId = 'TEST_ONLY_foreign';
+      if (resource === 'award' && failure === 'award-rows') result.domains[0].rows.answers = null;
+      if (resource === 'award' && failure === 'award-global-missing') result.domains = result.domains.filter(d => d.scope.kind !== 'global');
       return json(result);
     } };
   C.window = C; vm.createContext(C);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/services/548-atomic-backup.js'), 'utf8'), C);
   const page = { state: {}, setState(value) { Object.assign(this.state, value); }, bkToast: message => messages.push(message) };
   if (kind === 'full') {
     page._fullStamp = () => null;
-    for (const name of ['_wpActor', '_irBackupCapture', '_irBackupFence', '_irBackupDomain']) page[name] = method(adminSource, admin, name, C);
+    for (const name of ['_wpActor', '_irBackupCapture', '_irBackupFence']) page[name] = method(adminSource, admin, name, C);
     page.exportBackup = vm.runInContext('(function(){return (' + adminSource.slice(exportNode.value.start, exportNode.value.end) + ');})', C).call(page);
   } else {
     page.bkCapNote = () => '';
@@ -77,33 +88,36 @@ function browser(kind, failure = '') {
   return { page, C, calls, files, writes, messages, memory, setDirty(value) { dirty = value; } };
 }
 
-test('full backup includes manifest v2 and explicit typed empty Irshad for every declared department, removing retired JSON', async () => {
+test('full backup includes manifest v3, explicit typed empty business domains for every department and a separate global Award scope, removing retired JSON', async () => {
   const B = browser('full'); B.page.exportBackup(); await settle();
   assert.ok(B.page._encPend, B.page.state.backupMsg);
   const file = JSON.parse(B.page._encPend.json);
-  assert.equal(file.manifest.version, 2); assert.equal(file.manifest.domains.irshad, 1);
+  assert.equal(file.manifest.version, 3); assert.equal(file.manifest.domains.irshad, 1); assert.equal(file.manifest.domains.seized, 1); assert.equal(file.manifest.domains.awards, 1);
   assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId), [D1, D2]);
+  assert.deepEqual(file.domains.seized.map(d => d.scope.departmentId), [D1, D2]);
+  assert.deepEqual(file.domains.awards.map(d => d.scope.kind === 'global' ? '' : d.scope.departmentId), [D1, D2, '']);
   assert.equal(file.data['bsdept:' + D1 + ':bassam_irshad_v1'], undefined);
-  assert.equal(B.calls.filter(c => c.url.startsWith('/api/get?')).length, 2); assert.deepEqual(B.writes, []);
+  assert.equal(B.calls.filter(c => c.url.startsWith('/api/get?')).length, 2); assert.equal(B.calls.filter(c => /\/export\?/.test(c.url)).length, 3); assert.deepEqual(B.writes, []);
 });
 
 test('full backup refuses stale memory, concurrent server writes, pending local writes and incomplete/foreign typed domains', async () => {
-  for (const failure of ['stale', 'concurrent', 'dirty', 'missing', 'scope', 'rows']) {
+  for (const failure of ['stale', 'concurrent', 'dirty', 'missing', 'scope', 'rows', 'seized-missing', 'award-scope', 'award-rows', 'award-global-missing']) {
     const B = browser('full', failure); B.page.exportBackup(); await settle();
     assert.equal(B.page._encPend, null, failure); assert.equal(B.files.length, 0); assert.deepEqual(B.writes, []);
   }
 });
 
-test('department export uses captured session/department and includes an explicit empty Irshad domain in manifest v2', async () => {
+test('department export uses the actual 548 service and captured identity, with explicit empty business domains in manifest v3', async () => {
   const B = browser('dept'); B.page.exportBackup(); await settle();
   assert.equal(B.files.length, 1, B.messages.join(';'));
-  const file = B.files[0]; assert.equal(file.manifest.version, 2); assert.equal(file.manifest.domains.irshad, 1);
+  const file = B.files[0]; assert.equal(file.manifest.version, 3); assert.equal(file.manifest.domains.irshad, 1); assert.equal(file.manifest.domains.seized, 1); assert.equal(file.manifest.domains.awards, 1);
   assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId), [D1]); assert.equal(file.data.bassam_irshad_v1, undefined);
+  assert.deepEqual(file.domains.seized.map(d => d.scope.departmentId), [D1]); assert.deepEqual(file.domains.awards.map(d => d.scope.departmentId), [D1]);
   assert.ok(B.calls.find(c => c.url.includes('dept=' + D1))); assert.equal(B.writes.length, 1); assert.ok(B.writes[0][0].endsWith(':bassam_last_export_v1'));
 });
 
 test('department export never downloads a partial or mismatched snapshot or continues after active department changed', async () => {
-  for (const failure of ['stale', 'concurrent', 'dirty', 'missing', 'scope', 'rows', 'department']) {
+  for (const failure of ['stale', 'concurrent', 'dirty', 'missing', 'scope', 'rows', 'department', 'seized-missing', 'award-scope', 'award-rows']) {
     const B = browser('dept', failure); B.page.exportBackup(); await settle();
     assert.equal(B.files.length, 0, failure); assert.deepEqual(B.writes, [], failure);
   }

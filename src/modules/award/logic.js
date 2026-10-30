@@ -1,4 +1,57 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","award+irshad+seized"]) {
+  _businessSpec() {
+    return { prefix: "aw", path: "/api/award", logical: "bassam_award_v1", resources: ["records", "docsV1", "docsV2"], rows: "recs",
+      views: ["records", "record", "references", "context"], changed: /^bassam_(?:award(?:_docs)?|employees|grants|perm_tpls|perms|auth_users|depts|gdepts|platform)_v[0-9]+$/ };
+  }
+  _businessReadValid(view, data) {
+    if (view === "records") return Array.isArray(data.recs) && data.recs.every(row => row && typeof row.id === "string") &&
+      [data.total, data.filteredTotal, data.pageSize].every(value => this._bcInteger(value)) && Number.isSafeInteger(data.page) && data.page > 0 &&
+      [data.next, data.prev].every(value => value == null || typeof value === "string") && data.summary && this._bcInteger(data.summary.total) && this._bcInteger(data.summary.eligible);
+    if (view === "record") return data.record && typeof data.record === "object" && !Array.isArray(data.record) && typeof data.recordKey === "string" && !!data.recordKey;
+    if (view === "references") return data.scope === "dept" && data.references && ["docsV1", "docsV2"].every(key => typeof data.references[key]?.present === "boolean") &&
+      (data.references.document === null || data.references.document && ["A", "B", "C"].every(key => Array.isArray(data.references.document[key]?.secs) && data.references.document[key].secs.every(section => typeof section.title === "string" && typeof section.body === "string")));
+    return view === "context";
+  }
+  _businessAckValid(ack, body) {
+    const affected = body.op === "reference-replace" ? "docsV2" : "records";
+    return ack.affected === affected && ack.base[affected] === ack.rev && ack.rev > body.base[affected] &&
+      this._businessSpec().resources.every(key => key === affected || ack.base[key] === body.base[key]) &&
+      (affected !== "records" || typeof ack.id === "string" && (body.op === "create" || ack.id === body.id));
+  }
+  _businessConflict() { this._awDraftStamp = null; this._awReferenceStamp = null; this._awReferenceDocument = null; }
+  _businessRetain() {
+    const draft = Object.fromEntries(Object.keys(this.awBlank()).map(key => [key, this.state[key]]));
+    if (JSON.stringify(draft) === JSON.stringify(this.awBlank()) && this.state.awSetIdx == null && !this._bcTickets?.size) return null;
+    const editor = this.awEdEl(), referenceBody = editor ? this.awSanitize(editor.innerHTML || "") : this.state.awReferenceBody;
+    return { context: this._awDraftStamp?.context || this._awReferenceStamp?.context || this._bcContext(), draft: this._bcClone(draft),
+      stamp: this._awDraftStamp, referenceStamp: this._awReferenceStamp, referenceDocument: this._awReferenceDocument, referenceTarget: this._awReferenceTarget, referenceBody, confirmedCreate: this._awConfirmedCreate, awTab: this.state.awTab,
+      awSetGrp: this.state.awSetGrp, awSetIdx: this.state.awSetIdx, awSetH: this.state.awSetH, message: this.state.bcMessage };
+  }
+  _businessRestore(saved) {
+    if (!saved) return;
+    this._awDraftStamp = saved.stamp; this._awReferenceStamp = saved.referenceStamp; this._awReferenceDocument = saved.referenceDocument; this._awReferenceTarget = saved.referenceTarget; this._awConfirmedCreate = saved.confirmedCreate;
+    this.setState({ ...saved.draft, awTab: saved.awTab, awSetGrp: saved.awSetGrp, awSetIdx: saved.awSetIdx, awSetH: saved.awSetH, awReferenceBody: saved.referenceBody, bcMessage: saved.message || "مسودتك باقية في هذه الجلسة؛ راجعها قبل الحفظ" });
+    setTimeout(() => { const editor = this.awEdEl(); if (editor && this._bcSame(saved.context)) editor.innerHTML = this.awSanitize(saved.referenceBody || ""); }, 0);
+  }
+  componentDidMount() { if (super.componentDidMount) super.componentDidMount(); this._bcMount(); }
+  componentWillUnmount() { this._bcDispose(); if (super.componentWillUnmount) super.componentWillUnmount(); }
+  _awEnsureRecords() {
+    this._bcEnsure("records", { q: (this.state.awQ || "").trim(), page: this.state.awPerPage === 0 ? 1 : this.state.awPage || 1,
+      limit: Math.min(200, this.state.awPerPage || 200) }, this.state.awPerPage === 0);
+  }
+  async _awNew() {
+    const unresolved = [...this._bcTickets?.values() || []].filter(ticket => ticket.body.op === "create");
+    if (this._awConfirmedCreate || unresolved.length) {
+      const context = this._bcContext();
+      if (!context || typeof KIVO.bsConfirm !== "function") return void this.bsToast("أُكّد الترشيح السابق؛ تعديلاتك اللاحقة باقية للمراجعة قبل بدء نموذج آخر", "warn");
+      const confirmed = await KIVO.bsConfirm({ title: "بدء ترشيح جديد", msg: (unresolved.length ? "هناك طلب ترشيح غير مؤكد وقد يكون محفوظًا. راجع السجل أولًا. " : "الترشيح السابق محفوظ ومؤكد. ") + "بدء نموذج جديد يتخلى عن طلب النموذج السابق ويلغي تعديلاته غير المرسلة من هذا الجهاز؛ لا يلغي أي ترشيح محفوظ في السحابة.", ok: "راجعت السجل — ابدأ نموذجًا جديدًا" });
+      if (!confirmed || !this._bcSame(context)) return;
+      this._awConfirmedCreate = null; this._awDraftStamp = null;
+      unresolved.forEach(ticket => this._bcTickets.delete(ticket.intent));
+      this.setState({ ...this.awBlank(), awTab: "new", bcMessage: "" }); this._awDraftStamp = null; return;
+    }
+    this.setState({ awTab: "new" });
+  }
   /* عنوان التبويب #/award/<tab> — يُقرأ من خطّاف الهيكل عند كل تصيير ويُكتب عند كل تبديل؛ نسخ solo (داخل مؤشرات الإدارة) لا تشارك */ _bsHT(
     t,
   ) {
@@ -41,6 +94,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (e) {}
   }
   setState(t, e) {
+    if (t && typeof t === "object" && this.state && !this._awDraftStamp && Object.keys(this.awBlank()).some(key => key in t && t[key] !== this.state[key])) this._awDraftStamp = this._bcStamp();
     const r = super.setState(t, e);
     try {
       t &&
@@ -784,21 +838,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const e = (t) => (t < 10 ? "0" + t : String(t));
     return t.y + "-" + e(t.m) + "-" + e(t.d);
   }
-  awLoad() {
-    try {
-      const t = JSON.parse(localStorage.getItem("bassam_award_v1"));
-      return t && Array.isArray(t.recs) ? t : { recs: [] };
-    } catch (t) {
-      return { recs: [] };
-    }
-  }
-  awSaveStore(t) {
-    try {
-      localStorage.setItem("bassam_award_v1", JSON.stringify(t));
-    } catch (t) {
-      this.bsToast("تعذّر الحفظ — المساحة ممتلئة على الأرجح");
-    }
-  }
+
   awEmpList() {
     try {
       const t = JSON.parse(localStorage.getItem("bassam_employees_v1"));
@@ -893,14 +933,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       return !1;
     }
   }
-  AWDK = "bassam_award_docs_v2";
-  awRawLS() {
-    try {
-      return (KIVO.BassamDepts && KIVO.BassamDepts.raw) || null;
-    } catch (t) {
-      return null;
-    }
-  }
   awEsc(t) {
     return String(null == t ? "" : t)
       .replace(/&/g, "&amp;")
@@ -950,61 +982,30 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     );
   }
   awDocsGet() {
-    if (this.__awDocs) return this.__awDocs;
-    const t = this.awRawLS(),
-      e = (e) => {
-        try {
-          return t ? t.getItem.call(localStorage, e) : localStorage.getItem(e);
-        } catch (t) {
-          return null;
-        }
-      };
-    let a = null;
-    try {
-      const t = e(this.AWDK);
-      t && (a = JSON.parse(t));
-    } catch (t) {}
-    if (a && ["A", "B", "C"].every((t) => a[t] && Array.isArray(a[t].secs) && a[t].secs.every((t) => "string" == typeof t.body)))
-      return ((this.__awDocs = a), a);
-    let r = null;
-    try {
-      const t = e("bassam_award_docs_v1");
-      t && (r = JSON.parse(t));
-    } catch (t) {}
-    if (r && ["A", "B", "C"].every((t) => r[t] && Array.isArray(r[t].secs))) {
-      const t = {};
-      return (
-        ["A", "B", "C"].forEach((e) => {
-          t[e] = {
-            title: r[e].title || "",
-            lead: r[e].lead || "",
-            foot: r[e].foot || "",
-            secs: (r[e].secs || []).map((t) => ({
-              title: t.h || t.title || "",
-              body: "string" == typeof t.body ? t.body : this.awSecToHtml(t),
-            })),
-          };
-        }),
-        (this.__awDocs = t),
-        this.awDocsPut(t),
-        t
-      );
-    }
-    return ((this.__awDocs = this.awDocsSeed()), this.__awDocs);
+    const source = this._bcData("references"), empty = { A: { secs: [] }, B: { secs: [] }, C: { secs: [] } };
+    if (!source) return empty;
+    return source.references.document === null ? this.awDocsSeed() : source.references.document;
   }
-  awDocsPut(t) {
-    try {
-      const e = this.awRawLS(),
-        a = JSON.stringify(t);
-      e ? e.setItem.call(localStorage, this.AWDK, a) : localStorage.setItem(this.AWDK, a);
-    } catch (t) {
-      return (this.bsToast("تعذّر الحفظ — تحقّق من مساحة التخزين"), !1);
+  async awDocsPut(document) {
+    const source = this._bcData("references");
+    if (!source || source.scope !== "dept" || !this.awIsSuper()) { this.bsToast("انتظر قراءة مرجع الإدارة المسموح قبل الحفظ"); return false; }
+    this._awReferenceStamp = this._awReferenceStamp || this._bcStamp(source.base);
+    const result = await this._bcMutate("reference-replace", { version: 2, document }, { stamp: this._awReferenceStamp, count: 1 });
+    if (!result.ok) { this.bsToast(result.message); return false; }
+    this._awReferenceStamp = { context: result.context, base: this._bcClone(result.data.base) };
+    this._awReferenceDocument = this._bcClone(result.sent.document);
+    if (this._awReferenceTarget) {
+      const target = this._awReferenceTarget, section = result.sent.document[target.group]?.secs[target.index];
+      if (section) this._awReferenceTarget = { ...target, title: section.title, body: section.body };
     }
-    return ((this.__awDocs = t), !0);
+    if (!result.matches) { this.setState({ bcMessage: "أُكّد طلب المراجع السابق؛ تعديلاتك اللاحقة باقية ولم تُرسل تلقائيًا" }); return false; }
+    return true;
   }
-  awDocsMut(t) {
-    const e = JSON.parse(JSON.stringify(this.awDocsGet()));
-    return (t(e), !!this.awDocsPut(e) && (this.setState({ awTick: (this.state.awTick || 0) + 1, awSetArm: null }), !0));
+  async awDocsMut(t) {
+    const e = this._bcClone(this._awReferenceDocument || this.awDocsGet());
+    t(e);
+    if (!await this.awDocsPut(e)) return false;
+    this.setState({ awTick: (this.state.awTick || 0) + 1, awSetArm: null }); return true;
   }
   awMove(t, e, a) {
     const r = e + a;
@@ -1171,7 +1172,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   awHtmlNode(t, e) {
     try {
-      const a = new DOMParser().parseFromString('<div id="r">' + String(t || "") + "</div>", "text/html").getElementById("r");
+      const a = new DOMParser().parseFromString('<div id="r">' + this.awSanitize(t) + "</div>", "text/html").getElementById("r");
       return a
         ? (a.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach((t) => t.remove()),
           React.createElement("div", { key: e }, this.awKidsOf(a, e || "n")))
@@ -1185,18 +1186,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const e = new DOMParser().parseFromString('<div id="r">' + String(t || "") + "</div>", "text/html").getElementById("r");
       return e
         ? (e
-            .querySelectorAll("script,style,iframe,object,embed,link,meta,svg,math,form,input,button,textarea,base")
+            .querySelectorAll("script,style,iframe,frame,frameset,object,embed,link,meta,svg,math,form,input,button,textarea,base,img,picture,source,audio,video,track")
             .forEach((t) => t.remove()),
           e.querySelectorAll("*").forEach((t) => {
+            const styles = this.awStyleOf(t);
             Array.prototype.slice.call(t.attributes).forEach((e) => {
               const a = e.name.toLowerCase(),
-                r = String(e.value || "");
-              0 === a.indexOf("on")
+                r = String(e.value || "").replace(/[\u0000-\u0020\u007f]/g, "");
+              0 === a.indexOf("on") || ["background", "srcset", "poster", "ping", "srcdoc"].includes(a)
                 ? t.removeAttribute(e.name)
                 : ("href" !== a && "src" !== a && "xlink:href" !== a) || !/^\s*(javascript|data|vbscript):/i.test(r)
-                  ? "style" === a && /(expression|javascript:|vbscript:|url\s*\()/i.test(r) && t.removeAttribute(e.name)
+                  ? "style" === a && t.removeAttribute(e.name)
                   : t.removeAttribute(e.name);
             });
+            const css = Object.entries(styles).map(([key, value]) => key.replace(/[A-Z]/g, char => "-" + char.toLowerCase()) + ":" + value).join(";");
+            if (css) t.setAttribute("style", css);
           }),
           e.innerHTML)
         : "";
@@ -1386,18 +1390,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }),
       a.readAsDataURL(e));
   }
-  awDoSave() {
+  async awDoSave() {
     if (!this.awCan("add")) return void this.bsToast("صلاحية غير كافية — إضافة الترشيحات غير متاحة لك");
+    if (this._awConfirmedCreate) return void this.bsToast("أُكّد حفظ الترشيح السابق؛ راجع السجل قبل بدء ترشيح آخر. تعديلاتك اللاحقة باقية في النموذج.", "warn");
     const t = this.state;
     if (!this.awEmpOf(t.ekey)) return void this.bsToast("اختر الموظف المرشَّح أولاً", "warn");
     const e = this.awTotal(),
       a = this.awEligOk(),
       r = t.cases.filter(Boolean).length,
       i = "emp" === t.cat ? a : a && r > 0,
-      s = this.awLoad(),
-      o = KIVO.BassamAuth;
-    (s.recs.unshift({
-      id: "aw" + Date.now().toString(36) + Math.floor(1e6 * Math.random()).toString(36),
+      snapshot = JSON.stringify(Object.fromEntries(Object.keys(this.awBlank()).map(key => [key, t[key]]))),
+      data = {
       ekey: t.ekey,
       cat: t.cat,
       hij: this.hStr(this.hToday()),
@@ -1405,7 +1408,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       cases: "work" === t.cat ? r : null,
       fileOk: t.fileOk,
       ok: i,
-      st: "قيد التحكيم",
       comp: t.comp,
       city: t.city,
       field: t.field,
@@ -1422,21 +1424,29 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       caseTxt: t.caseTxt.slice(),
       ans: t.ans.slice(),
       scores: t.scores.map((t) => t.slice()),
-      byUser: (o && o.display && o.display().name) || "",
-    }),
-      this.awSaveStore(s),
-      this.setState({ ...this.awBlank(), awTab: "res", awPage: 1, awCrit: null, awTick: (this.state.awTick || 0) + 1 }),
-      this.bsAck("حُفظ الترشيح في السجل", "ok"));
+    };
+    this._awDraftStamp = this._awDraftStamp || this._bcStamp();
+    const result = await this._bcMutate("create", { data }, { stamp: this._awDraftStamp });
+    if (!result.ok) { this.bsToast(result.message); return; }
+    if (!this._bcSame(result.context)) return;
+    const current = JSON.stringify(Object.fromEntries(Object.keys(this.awBlank()).map(key => [key, this.state[key]])));
+    if (current === snapshot && JSON.stringify(result.sent.data) === JSON.stringify(data)) {
+      this.setState({ ...this.awBlank(), awTab: "res", awPage: 1, awCrit: null, awTick: (this.state.awTick || 0) + 1 });
+      this._awDraftStamp = null;
+    } else {
+      this._awConfirmedCreate = result.data.id;
+      this.setState({ bcMessage: "أُكّد الترشيح المرسل؛ تعديلاتك اللاحقة باقية للمراجعة ولم تُرسل تلقائيًا" });
+    }
+    this.bsAck("حُفظ الترشيح في السجل", "ok");
   }
-  awSetStatus(t, e) {
+  async awSetStatus(t, e) {
     if (!this.awCanApprove()) return void this.bsToast("الاعتماد لمدير الإدارة وحده");
-    const a = this.awLoad();
-    ((a.recs = a.recs.map((a) => (a.id === t ? { ...a, st: e } : a))),
-      this.awSaveStore(a),
-      this.setState({ awTick: (this.state.awTick || 0) + 1 }),
-      this.bsAck("معتمد" === e ? "اعتُمد الترشيح" : "استُبعد الترشيح", "معتمد" === e ? "ok" : "warn"));
+    const result = await this._bcMutate("status", { id: t, status: e });
+    if (!result.ok) return void this.bsToast(result.message);
+    if (!result.matches) return void this.bsToast("أُكّد القرار السابق؛ راجع السجل قبل تغيير القرار مجددًا", "warn");
+    this.bsAck("معتمد" === e ? "اعتُمد الترشيح" : "استُبعد الترشيح", "معتمد" === e ? "ok" : "warn");
   }
-  awDel(t, e) {
+  async awDel(t, e) {
     if (!this.awCan("del")) return void this.bsToast("صلاحيتك لا تشمل حذف الترشيحات");
     const a = this.state.awArm;
     if (!a || a.id !== t) {
@@ -1450,11 +1460,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }, 4e3)
       );
     }
-    const r = this.awLoad();
-    ((r.recs = r.recs.filter((e) => e.id !== t)),
-      this.awSaveStore(r),
-      this.setState({ awArm: null, awTick: (this.state.awTick || 0) + 1 }),
-      this.bsAck("حُذف الترشيح", "ok"));
+    const result = await this._bcMutate("delete", { id: t });
+    if (!result.ok) return void this.bsToast(result.message);
+    this.setState({ awArm: null, awTick: (this.state.awTick || 0) + 1 }); this.bsAck("حُذف الترشيح", "ok");
   }
   bsMenusPatch() {
     return { rowMenu: null, awDocOpen: null };
@@ -1493,6 +1501,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   renderVals() {
     this._bsHR();
+    this._awEnsureRecords();
     const t = this._awPermVals(),
       e = this.state,
       a = (t) =>
@@ -1533,7 +1542,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         awTabNewStyle: a(p),
         awTabNewIcon: r(p),
         awTabNewLbl: i(p),
-        awGoNew: () => this.setState({ awTab: "new" }),
+        awGoNew: () => this._awNew(),
         awTabResStyle: a(w),
         awTabResIcon: r(w),
         awTabResLbl: i(w),
@@ -1544,6 +1553,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         awGoDoc: () => this.setState({ awTab: "doc" }),
         ...t,
       };
+    if (h) this._bcEnsure("references");
+    Object.assign(g, this._bcStatusVals());
     return (p && Object.assign(g, this._awWizard()), w && Object.assign(g, this._awResults()), h && Object.assign(g, this._awDocs()), g);
   }
   _awWizard() {
@@ -1960,17 +1971,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   _awResults() {
     const t = this.state,
       e = (t) => this.awNum(t),
-      a = this.awLoad().recs,
-      r = a.filter((t) => "emp" === t.cat && null != t.score),
-      i = a.filter((t) => t.ok).length,
-      s = r.length ? r.reduce((t, e) => t + e.score, 0) / r.length : 0,
-      o = r.length
-        ? Math.max.apply(
-            null,
-            r.map((t) => t.score),
-          )
-        : 0,
-      n = r.filter((t) => t.score === o)[0],
+      confirmed = this._bcData("records"), summary = confirmed?.summary || {},
+      a = confirmed?.recs || [],
+      i = summary.eligible || 0,
+      s = summary.employeeScoreAverage,
+      o = summary.topScore,
+      n = summary.topRecord,
       l = (t) => {
         const e = this.awEmpOf(t.ekey);
         return (e && e.name) || t.declName || "—";
@@ -1980,12 +1986,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return (e && e.empno) || t.comp || "—";
       },
       d = (t.awQ || "").trim(),
-      p = KIVO.BassamFind.filter(d, a, (t) => [l(t), c(t), t.st, t.comp, t.declName]),
-      w = 0 === t.awPerPage ? Math.max(1, p.length) : t.awPerPage || 10,
-      h = Math.max(1, Math.ceil(p.length / w)),
-      g = Math.min(Math.max(1, t.awPage || 1), h),
+      p = a, total = confirmed?.filteredTotal || 0,
+      w = 0 === t.awPerPage ? Math.max(1, total) : t.awPerPage || 10,
+      h = Math.max(1, Math.ceil(total / w)),
+      g = confirmed?.page || Math.min(Math.max(1, t.awPage || 1), h),
       u = (g - 1) * w,
-      m = p.slice(u, u + w),
+      m = p,
       f = [];
     {
       const t = [],
@@ -2019,19 +2025,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       k = this.awCanApprove(),
       S = this.awCan("del");
     return {
-      awKpiTotal: String(a.length),
+      awKpiTotal: String(summary.total || 0),
       awKpiOk: String(i),
-      awKpiAvg: r.length ? e(s) : "—",
-      awKpiTop: r.length ? e(o) : "—",
+      awKpiAvg: s != null ? e(s) : "—",
+      awKpiTop: o != null ? e(o) : "—",
       awKpiTopHas: !!n,
       awKpiTopSub: n ? l(n) : "",
       awQ: t.awQ || "",
       awOnQ: (t) => this.setState({ awQ: t.target.value, awPage: 1 }),
-      awShown: String(p.length),
-      awTotalRecs: String(a.length),
+      awShown: String(total),
+      awTotalRecs: String(summary.total || 0),
       awHasRows: m.length > 0,
       awNoRows: 0 === m.length,
-      awEmptyMsg: a.length ? "لا نتائج مطابقة لـ «" + d + "»" : "لا توجد ترشيحات بعد — ابدأ من تبويب «ترشيح جديد»",
+      awEmptyMsg: !confirmed ? "انتظر قراءة الترشيحات من الخادم" : summary.total ? "لا نتائج مطابقة لـ «" + d + "»" : "لا توجد ترشيحات بعد — ابدأ من تبويب «ترشيح جديد»",
       awRows: m.map((a, r) => {
         const i = !(!t.awArm || t.awArm.id !== a.id),
           s =
@@ -2094,8 +2100,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             : x("#b91c1c"),
         };
       }),
-      ...KIVO.BassamCount.pair("awPgTotal", String(p.length), "سجل", "g"),
-      awPgRange: 0 === p.length ? "0" : u + 1 + "–" + Math.min(u + w, p.length),
+      ...KIVO.BassamCount.pair("awPgTotal", String(total), "سجل", "g"),
+      awPgRange: 0 === total ? "0" : u + 1 + "–" + Math.min(u + w, total),
       awPgNums: f,
       awPerPage: String(0 === t.awPerPage ? 0 : t.awPerPage || 10),
       awOnPerPage: (t) => {
@@ -2190,14 +2196,29 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   awSetOpen(t) {
     const e = this.state.awSetGrp,
       a = (this.awDocsGet()[e].secs || [])[t];
+    if (a) {
+      this._awReferenceStamp = this._bcStamp(this._bcData("references")?.base); this._awReferenceDocument = this._bcClone(this.awDocsGet());
+      this._awReferenceTarget = { group: e, index: t, title: a.title, body: a.body };
+    }
     a &&
-      (this.setState({ awSetIdx: t, awSetH: a.title || "", awSetArm: null }),
+      (this.setState({ awSetIdx: t, awSetH: a.title || "", awSetArm: null, awReferenceBody: this.awSanitize(a.body || "") }),
       setTimeout(() => {
         const t = this.awEdEl();
         t && ((t.innerHTML = this.awSanitize(a.body || "")), t.scrollIntoView({ behavior: "smooth", block: "nearest" }));
       }, 0));
   }
-  awSetCommit() {
+  _awHydrateEditor() {
+    if (this._awEditorPending || this.state.awSetIdx == null) return;
+    this._awEditorPending = true;
+    setTimeout(() => {
+      this._awEditorPending = false;
+      const editor = this.awEdEl();
+      if (editor && editor !== this._awEditorNode && this.state.awSetIdx != null && this._bcContext()) {
+        editor.innerHTML = this.awSanitize(this.state.awReferenceBody || ""); this._awEditorNode = editor;
+      }
+    }, 0);
+  }
+  async awSetCommit() {
     const t = this.state,
       e = t.awSetGrp,
       a = t.awSetIdx;
@@ -2205,10 +2226,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const r = String(t.awSetH || "").trim();
     if (!r) return void this.bsToast("عنوان القسم مطلوب", "warn");
     const i = this.awEdEl(),
-      s = i ? this.awSanitize(String(i.innerHTML || "")).trim() : "";
-    this.awDocsMut((t) => {
+      s = i ? this.awSanitize(String(i.innerHTML || "")).trim() : this.state.awReferenceBody || "";
+    const target = this._awReferenceTarget, currentSection = (this._awReferenceDocument || this.awDocsGet())[e]?.secs[a];
+    if (target && (target.group !== e || target.index !== a || currentSection?.title !== target.title || currentSection?.body !== target.body)) {
+      this.setState({ bcMessage: "تغيّر القسم أو موضعه؛ مسودتك باقية. أعد فتح القسم المحدث للمراجعة قبل استبداله" }); return;
+    }
+    this.state.awReferenceBody = s;
+    if (await this.awDocsMut((t) => {
       t[e].secs[a] = { title: r, body: s };
-    }) && (this.setState({ awSetIdx: null, awSetH: "" }), this.bsAck("حُفظ القسم", "ok"));
+    })) {
+      const editor = this.awEdEl(), current = editor ? this.awSanitize(String(editor.innerHTML || "")).trim() : this.state.awReferenceBody || "";
+      if (this.state.awSetIdx === a && String(this.state.awSetH || "").trim() === r && current === s) {
+        this.setState({ awSetIdx: null, awSetH: "", awReferenceBody: "" }); this._awReferenceStamp = null; this._awReferenceDocument = null; this._awReferenceTarget = null;
+      } else this.setState({ bcMessage: "أُكّد النص المرسل؛ تعديلاتك اللاحقة باقية للمراجعة" });
+      this.bsAck("حُفظ القسم", "ok");
+    }
   }
   awFmt(t) {
     const e = this.awEdEl();
@@ -2260,6 +2292,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
   }
   _awSetVals(t) {
+    this._awHydrateEditor();
     const e = this.state,
       a = -1 !== ["A", "B", "C"].indexOf(e.awSetGrp) ? e.awSetGrp : "A",
       r = (t[a] && t[a].secs) || [],
@@ -2297,7 +2330,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 : "#E1E1E1;background:var(--bg-xffffff);color:var(--fg-x53565a)") +
               ";padding:9px 15px;border-radius:9999px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif;display:inline-flex;align-items:center;gap:8px"),
           cnt: s(a === e[0]),
-          click: () => this.setState({ awSetGrp: e[0], awSetIdx: null, awSetArm: null }),
+          click: () => { this._awReferenceStamp = null; this._awReferenceDocument = null; this._awReferenceTarget = null; this.setState({ awSetGrp: e[0], awSetIdx: null, awSetArm: null }); },
         };
         var r;
       }),
@@ -2319,35 +2352,45 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           num: "width:28px;height:28px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:var(--bg-a185151810p12);color:var(--fg-x8a6f35)",
           upS: o(0 === s),
           dnS: o(s === r.length - 1),
-          up: () => {
-            0 !== s &&
-              (this.awDocsMut((t) => this.awMove(t[a].secs, s, -1)),
-              e.awSetIdx === s ? this.setState({ awSetIdx: s - 1 }) : e.awSetIdx === s - 1 && this.setState({ awSetIdx: s }));
+          up: async () => {
+            if (s !== 0 && await this.awDocsMut(t => this.awMove(t[a].secs, s, -1))) {
+              const index = this.state.awSetIdx === s ? s - 1 : this.state.awSetIdx === s - 1 ? s : this.state.awSetIdx;
+              const section = this._awReferenceDocument?.[a]?.secs[index];
+              if (section) this._awReferenceTarget = { group: a, index, title: section.title, body: section.body };
+              this.setState({ awSetIdx: index });
+            }
           },
-          dn: () => {
-            s !== r.length - 1 &&
-              (this.awDocsMut((t) => this.awMove(t[a].secs, s, 1)),
-              e.awSetIdx === s ? this.setState({ awSetIdx: s + 1 }) : e.awSetIdx === s + 1 && this.setState({ awSetIdx: s }));
+          dn: async () => {
+            if (s !== r.length - 1 && await this.awDocsMut(t => this.awMove(t[a].secs, s, 1))) {
+              const index = this.state.awSetIdx === s ? s + 1 : this.state.awSetIdx === s + 1 ? s : this.state.awSetIdx;
+              const section = this._awReferenceDocument?.[a]?.secs[index];
+              if (section) this._awReferenceTarget = { group: a, index, title: section.title, body: section.body };
+              this.setState({ awSetIdx: index });
+            }
           },
           editS: n(["#53565a", "#E1E1E1"]),
           edit: () => this.awSetOpen(s),
           delS: n(l ? ["#fff", "#b91c1c"] : ["#b91c1c", "#E1E1E1"]) + (l ? ";background:var(--bg-xb91c1c)" : ""),
           delT: l ? "تأكيد الحذف" : "حذف",
-          del: () => {
-            l
-              ? this.awDocsMut((t) => {
-                  t[a].secs.splice(s, 1);
-                }) && (this.setState({ awSetIdx: null }), this.bsAck("حُذف القسم", "ok"))
-              : this.setState({ awSetArm: { t: "del", i: s, g: a } });
+          del: async () => {
+            if (!l) return void this.setState({ awSetArm: { t: "del", i: s, g: a } });
+            if (await this.awDocsMut(t => { t[a].secs.splice(s, 1); })) {
+              this.setState({ awSetIdx: null }); this._awReferenceStamp = null; this._awReferenceDocument = null; this._awReferenceTarget = null; this.bsAck("حُذف القسم", "ok");
+            }
           },
         };
       }),
-      awSetAdd: () => {
+      awSetAdd: async () => {
         if (!this.awCan("add")) return void this.bsToast("صلاحيتك لا تشمل إضافة قسم — راجع مدير الإدارة");
         const t = r.length;
-        this.awDocsMut((t) => {
+        if (await this.awDocsMut((t) => {
           t[a].secs.push({ title: "قسم جديد", body: "<p>محتوى القسم...</p>" });
-        }) && setTimeout(() => this.awSetOpen(t), 0);
+        })) {
+          this._awReferenceStamp = null; this._awReferenceDocument = null;
+          this._awReferenceTarget = { group: a, index: t, title: "قسم جديد", body: "<p>محتوى القسم...</p>" };
+          this.setState({ awSetIdx: t, awSetH: "قسم جديد", awReferenceBody: "<p>محتوى القسم...</p>" });
+          setTimeout(() => { const editor = this.awEdEl(); if (editor) editor.innerHTML = this.awSanitize(this.state.awReferenceBody); }, 0);
+        }
       },
       awSetResetS:
         "border:1px solid " +
@@ -2356,19 +2399,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           : "#E1E1E1;background:var(--bg-xffffff);color:var(--fg-xc9702a)") +
         ";padding:9px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif",
       awSetResetT: l ? "تأكيد الاستعادة — يُلغى كل تعديل على هذه المجموعة" : "استعادة النص الأصلي",
-      awSetReset: () => {
-        this.awCan("del")
-          ? l
-            ? this.awDocsMut((t) => {
-                t[a] = this.awDocsSeed()[a];
-              }) && (this.setState({ awSetIdx: null }), this.bsAck("استُعيد النص الأصلي", "ok"))
-            : this.setState({ awSetArm: { t: "reset" } })
-          : this.bsToast("صلاحيتك لا تشمل استعادة النص الأصلي — راجع مدير الإدارة");
+      awSetReset: async () => {
+        if (!this.awCan("del")) return void this.bsToast("صلاحيتك لا تشمل استعادة النص الأصلي — راجع مدير الإدارة");
+        if (!l) return void this.setState({ awSetArm: { t: "reset" } });
+        if (await this.awDocsMut(t => { t[a] = this.awDocsSeed()[a]; })) {
+          this.setState({ awSetIdx: null }); this._awReferenceStamp = null; this._awReferenceDocument = null; this._awReferenceTarget = null; this.bsAck("استُعيد النص الأصلي", "ok");
+        }
       },
       awSetEditing: null != e.awSetIdx,
       awSetEdTitle: "تحرير القسم " + ((e.awSetIdx || 0) + 1),
       awSetH: e.awSetH || "",
       awSetOnH: (t) => this.setState({ awSetH: t.target.value }),
+      awSetOnBody: (event) => { this.state.awReferenceBody = this.awSanitize(event.target.innerHTML || ""); },
       awEdUndo: () => this.awFmt("undo"),
       awEdRedo: () => this.awFmt("redo"),
       awEdBlock: (t) => {
@@ -2402,7 +2444,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       awSetSave: () => {
         this.awCan("edit") ? this.awSetCommit() : this.bsToast("صلاحيتك لا تشمل تعديل المراجع — راجع مدير الإدارة");
       },
-      awSetCancel: () => this.setState({ awSetIdx: null, awSetH: "", awSetArm: null }),
+      awSetCancel: () => { this._awReferenceStamp = null; this._awReferenceDocument = null; this._awReferenceTarget = null; this.setState({ awSetIdx: null, awSetH: "", awSetArm: null, awReferenceBody: "" }); },
     };
   }
 }

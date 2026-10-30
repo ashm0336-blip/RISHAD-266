@@ -250,7 +250,7 @@ function rsWitness(env, table, cols, rows, where, args) {
 function rsBulk(env, table, cols, rows) {
   return nfBulk(env, table, cols, rows, '');
 }
-function rsSnapshot(env, sid, domain, table, rows) {
+function rsSnapshotRows(sid, domain, table, rows) {
   var physical = [];
   rows.forEach(function (r, rowIndex) {
     var value = JSON.stringify(r);
@@ -262,14 +262,9 @@ function rsSnapshot(env, sid, domain, table, rows) {
       });
     }
   });
-  return rsBulk(
-    env,
-    'restore_preimage',
-    ['snapshot_id', 'domain', 'table_key', 'row_number', 'row_json'],
-    physical.map(function (value, i) {
-      return { snapshot_id: sid, domain: domain, table_key: table, row_number: i, row_json: value };
-    }),
-  );
+  return physical.map(function (value, i) {
+    return { snapshot_id: sid, domain: domain, table_key: table, row_number: i, row_json: value };
+  });
 }
 function rsMergeRows(old, next, cols, pk) {
   var map = new Map();
@@ -395,6 +390,7 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
     if (domains.irshad) domains.irshad = domains.irshad.filter(function (domain) {
       return domain && domain.scope && allowed.has(domain.scope.departmentId);
     });
+    ['seized','awards'].forEach(function(name){if(domains[name])domains[name]=domains[name].filter(function(domain){return allowed.has(bdScope(domain));});});
   } else {
     Object.keys(keys).forEach(function (k) {
       if (Object.prototype.hasOwnProperty.call(inputKeys, k) && k !== K_PERM) {
@@ -407,6 +403,8 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
     delete domains.notifications;
     delete domains.custody;
     delete domains.irshad;
+    delete domains.seized;
+    delete domains.awards;
   }
   if (domains.dailyStats) {
     delete domains.dailyStats;
@@ -712,11 +710,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody', 'irshad']);
+    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
     if (
-      manifest.version !== 2 ||
+      manifest.version !== 3 ||
       manifest.scope !== 'full' ||
-      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad'].some(function (k) {
+      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards'].some(function (k) {
         return manifest.domains[k] !== 1;
       })
     )
@@ -753,11 +751,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'notifications', 'custody', 'irshad']);
+    rsShape(manifest.domains, ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
     if (
-      manifest.version !== 2 ||
+      manifest.version !== 3 ||
       manifest.scope !== 'dept' ||
-      ['kv', 'notifications', 'custody', 'irshad'].some(function (k) {
+      ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards'].some(function (k) {
         return manifest.domains[k] !== 1;
       }) ||
       !deq(manifest.departments, [body.scope.departmentId]) ||
@@ -799,9 +797,13 @@ async function rsPrepare(env, A, body, meta, internal) {
     throw rsError('restore-scope', 403);
   if (!sup && (body.scope.kind !== 'dept' || !isMgrOf(A, dept) || !enfHeld(A, dept, 'backup.restore')))
     throw rsError('restore-policy', 403);
-  rsShape(body.base, ['epoch', 'kv', 'dailyStats', 'notifications', 'custody', 'irshad']);
+  rsShape(body.base, ['epoch', 'kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
+  for(var def of bdDefinitions()) {
+    var expected=(body.manifest.departments||[]).concat(def.name==='awards'&&body.scope.kind==='full'?['']:[]).sort();
+    if(!Array.isArray((body.domains||{})[def.name])||!deq(body.domains[def.name].map(bdScope).sort(),expected))throw rsError('restore-incomplete-'+def.name);
+  }
   rsNat(body.base.epoch);
-  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody', 'irshad']);
+  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
   var fingerprint =
       (internal && internal.fingerprint) ||
       hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(cuCanonical(body))))),
@@ -817,6 +819,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   if (await dsLegacyPresent(env)) throw rsError('dstats-legacy-source-present', 503);
   if (await cuLegacyPresent(env)) throw rsError('custody-legacy-source-present', 503);
   await irGuardRetired(env);
+  await bdGuardRetired(env);
   if (!isObj(body.keys || {}) || !isObj(body.base.kv || {}) || !Array.isArray(body.delete || [])) throw rsError('restore-keys');
   var keys = Object.assign(Object.create(null), body.keys || {}),
     del = (body.delete || []).slice(),
@@ -833,7 +836,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   Object.keys(keys)
     .concat(del)
     .forEach(function (k) {
-      if (nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
+      if (nfLegacyKey(k) || cuLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k)) || resName(k) === K_DSTATS) throw rsError('domain-moved');
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
@@ -947,7 +950,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     .concat(del)
     .forEach(function (k) {
       if (typeof keys[k] !== 'string' && del.indexOf(k) < 0) throw rsError('restore-key-value');
-      if (nfLegacyKey(k) || cuLegacyKey(k) || irLegacyKey(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
+      if (nfLegacyKey(k) || cuLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k)) || resName(k) === K_DSTATS) throw rsError('domain-moved');
       if (body.scope.kind === 'dept' && parseKey(k).dept !== dept && k !== K_PERM) throw rsError('restore-scope', 403);
       rsNat(base[k]);
       ops[k] = { op: 'backup.restore', scope: body.scope.kind, mode: body.mode, reason: body.reason };
@@ -1008,7 +1011,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { kv: kv.pend.length, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, kept: selection.kept },
+    counts: { kv: kv.pend.length, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept },
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
@@ -1201,12 +1204,14 @@ async function rsPrepare(env, A, body, meta, internal) {
       plan.snapshots.push({ domain: 'irshad', table: irRemoved + ':' + kind, rows: irWipe.snapshotRows[kind] });
     });
   }
+  await bdRestorePlan(env,A,body,plan,domains,finalDeptIds,removedDepartments,keys);
   if (internal && internal.images) await rsImageArchivePlan(env, A, plan, reference, internal.images);
   await rsImageMetadataPlan(env, A, plan, reference);
   return plan;
 }
 async function rsCommit(env, A, plan, meta) {
   await irGuardRetired(env);
+  await bdGuardRetired(env);
   if (plan.receipt && plan.receipt.result_json) {
     var replay = JSON.parse(plan.receipt.result_json);
     replay.reauthRequired = !!replay.reauthRequired;
@@ -1227,21 +1232,17 @@ async function rsCommit(env, A, plan, meta) {
     };
   A = plan.author || A;
   var sid = enfSnapId('atomic'),
-    st = [rsEpochGuard(env.DB, plan.epoch), irRetiredGuard(env)].concat(plan.guards),
+    st = [rsEpochGuard(env.DB, plan.epoch), bdCommitRetiredGuard(env)].concat(plan.guards),
     keys = Array.from(new Set(plan.revisionKeys)),
     now = Date.now(),
     changed = keys.length > 0 || !!plan.forceFence;
-  plan.snapshots.forEach(function (s) {
-    st.push(
-      env.DB.prepare('INSERT INTO restore_snapshot_manifest(snapshot_id,domain,table_key,row_count) VALUES(?1,?2,?3,?4)').bind(
-        sid,
-        s.domain,
-        s.table,
-        s.rows.length,
-      ),
-    );
-    st.push.apply(st, rsSnapshot(env, sid, s.domain, s.table, s.rows));
+  var snapshotRows=[],snapshotManifest=[];
+  plan.snapshots.forEach(function(snapshot){
+    snapshotManifest.push({snapshot_id:sid,domain:snapshot.domain,table_key:snapshot.table,row_count:snapshot.rows.length});
+    for(var row of rsSnapshotRows(sid,snapshot.domain,snapshot.table,snapshot.rows))snapshotRows.push(row);
   });
+  st.push.apply(st,rsBulk(env,'restore_snapshot_manifest',['snapshot_id','domain','table_key','row_count'],snapshotManifest));
+  st.push.apply(st,rsBulk(env,'restore_preimage',['snapshot_id','domain','table_key','row_number','row_json'],snapshotRows));
   if (changed)
     st.push(
       env.DB.prepare(
@@ -1378,6 +1379,7 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
     custody[d] = r[cuKey(d)] || 0;
     irshad[d] = await irRevs(env, d);
   }
+  var businessBase=await bdRestoreRevisions(env,depts,scope.kind==='full');
   return {
     ok: 1,
     scope: scope,
@@ -1388,6 +1390,8 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
       notifications: { rev: r[NF_REV] || 0, configRev: r[NF_CFG_REV] || 0, broadcastRev: r[NF_BC_REV] || 0 },
       custody: custody,
       irshad: irshad,
+      seized: businessBase.seized,
+      awards: businessBase.awards,
     },
     counts: { keys: Object.keys(kv).length, departments: depts.length },
   };
@@ -1492,6 +1496,7 @@ async function rsRoute(env, request, url, ss) {
     return json(await rsCommit(env, A, await rsPrepare(env, A, body, reqMeta(request)), reqMeta(request)));
   } catch (e) {
     if (e.rs) return json({ ok: 0, err: e.rs, details: e.details }, e.status);
+    if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);

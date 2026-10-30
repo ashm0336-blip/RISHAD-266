@@ -113,7 +113,7 @@ test('normalized domains cannot forge scope, orphan children, masks, resources o
     assert.throws(() => W.irValidateDomain(bad, D1));
   }
 });
-test('actual startup schema8 backfills four resources without changing identities/revisions and removes every old KV chunk', async () => {
+test('actual migration8 startup under canonical schema9 backfills four resources without changing identities/revisions and removes every old KV chunk', async () => {
   const f = await world({ legacy: true }),
     legacy = doc(),
     before = identitySnapshot(f.DB),
@@ -123,7 +123,7 @@ test('actual startup schema8 backfills four resources without changing identitie
     await f.DB.batch(f.W.kvPutStmts(f.env, 'kv', f.W.irKey(D1, idx), JSON.stringify(value)));
   }
   await f.W.initDb(f.env);
-  assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, '8');
+  assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, '9');
   assert.deepEqual(f.W.irInflate(await f.W.irSnapshot(f.env, D1)), legacy);
   assert.deepEqual(identitySnapshot(f.DB), before);
   assert.deepEqual(f.DB.q('SELECT * FROM revs'), revBefore);
@@ -157,8 +157,8 @@ test('a source append after planning fails inside the same DDL/DML transaction',
   const plan = await f.W.irLegacyPrepare(f.env);
   f.DB.db.prepare('INSERT INTO kv(k,seq,v)VALUES(?,?,?)').run(key, 1, 'TEST_ONLY_late');
   const before = rawSnapshot(f),
-    migration = f.W.KIVO_MIGRATIONS.at(-1);
-  await assert.rejects(f.DB.batch([...plan.before, ...migration.sql.map((s) => f.DB.prepare(s)), ...plan.after]));
+    migration = f.W.KIVO_MIGRATIONS.find(m=>m.name==='0008_irshad');
+  await assert.rejects(f.DB.batch([...plan.before, ...migration.sql.map((s) => f.DB.prepare(s)), ...plan.after]),/KIVO_RESTORE_TARGET/);
   assert.deepEqual(rawSnapshot(f), before);
   assert.equal(f.DB.q("SELECT 1 FROM sqlite_master WHERE name='irshad_reports'").length, 0);
 });
@@ -167,14 +167,14 @@ test('a target writer after planning survives the failed cutover without being o
     key = f.W.irKey(D1);
   await f.DB.batch(f.W.kvPutStmts(f.env, 'kv', key, JSON.stringify(doc().reports)));
   const plan = await f.W.irLegacyPrepare(f.env),
-    migration = f.W.KIVO_MIGRATIONS.at(-1);
+    migration = f.W.KIVO_MIGRATIONS.find(m=>m.name==='0008_irshad');
   // Explicit out-of-band target state between read-only prepare and commit.
   for (const s of migration.sql.filter((s) => /^CREATE /.test(s))) f.DB.exec(s);
   f.DB.db
     .prepare('INSERT INTO irshad_catalog_entries(department_id,kind,position,value)VALUES(?,?,?,?)')
     .run(D1, 'languages', 0, 'TEST_ONLY_target');
   const before = rawSnapshot(f);
-  await assert.rejects(f.DB.batch([...plan.before, ...migration.sql.map((s) => f.DB.prepare(s)), ...plan.after]));
+  await assert.rejects(f.DB.batch([...plan.before, ...migration.sql.map((s) => f.DB.prepare(s)), ...plan.after]),/KIVO_IRSHAD_TARGET_CHANGED/);
   assert.deepEqual(rawSnapshot(f), before);
   assert.equal(f.DB.q('SELECT value FROM irshad_catalog_entries')[0].value, 'TEST_ONLY_target');
 });
@@ -219,13 +219,13 @@ for (const [label, resource, raw, suffix] of [
   assert.equal(f.DB.q("SELECT name FROM sqlite_master WHERE name GLOB 'irshad_*'").length, 0);
 });
 
-test('canonical 7-to-8 upgrade refuses a missing permit before DDL and consumes one exact explicit synthetic permit', async () => {
+test('canonical 7-to-9 upgrade fences migration8 and consumes one exact explicit synthetic permit at the final migration', async () => {
   const f = await world({ legacy: true, authorize: false }), before = rawSnapshot(f);
   await assert.rejects(f.W.initDb(f.env), /db-migration-permit-required/); assert.deepEqual(rawSnapshot(f), before);
   assert.equal(f.DB.q("SELECT name FROM sqlite_master WHERE name GLOB 'irshad_*'").length, 0);
   const permit = authorizeCandidateUpgrade(f.DB, f.W), names = f.W.KIVO_MIGRATIONS.map(m => m.name);
-  assert.equal(names.length, 8); assert.deepEqual(permit.migrations, names.slice(7)); assert.equal(permit.from, 7); assert.equal(permit.to, 8);
-  await f.W.initDb(f.env); assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, '8');
+  assert.equal(names.length, 9); assert.deepEqual(permit.migrations, names.slice(7)); assert.equal(permit.from, 7); assert.equal(permit.to, 9);
+  await f.W.initDb(f.env); assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, '9');
   assert.deepEqual(f.DB.q('SELECT name FROM d1_migrations ORDER BY name').map(row => row.name), names);
   assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_upgrade_permit_v1'").length, 0);
 });
@@ -266,7 +266,7 @@ test('registered department is required before any schema8 DDL or source removal
 test('department removal after cutover planning is rejected inside the pre-DDL fence', async () => {
   const f=await world({legacy:true}), key=f.W.irKey(D1);
   await f.DB.batch(f.W.kvPutStmts(f.env,'kv',key,JSON.stringify(doc().reports)));
-  const plan=await f.W.irLegacyPrepare(f.env), migration=f.W.KIVO_MIGRATIONS.at(-1);
+  const plan=await f.W.irLegacyPrepare(f.env), migration=f.W.KIVO_MIGRATIONS.find(m=>m.name==='0008_irshad');
   f.DB.db.prepare('UPDATE kv SET v=? WHERE k=? AND seq=0').run(JSON.stringify(f.keys.bassam_depts_v1.filter(d=>d.id!==D1)),'bassam_depts_v1');
   const before=rawSnapshot(f);
   await assert.rejects(f.DB.batch([...plan.before,...migration.sql.map(sql=>f.DB.prepare(sql)),...plan.after]),/KIVO_RESTORE_TARGET/);

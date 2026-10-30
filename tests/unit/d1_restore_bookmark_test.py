@@ -26,11 +26,12 @@ TARGET = '00000001-00000002-00000003-' + 'a' * 32
 CURRENT = '00000005-00000006-00000007-' + 'b' * 32
 RESTORED = '00000009-0000000a-0000000b-' + 'c' * 32
 NAMES = ['0001_baseline', '0002_enforcement_tables', '0003_aud_legacy_import', '0004_daily_stats',
-         '0005_notifications', '0006_custody', '0007_atomic_restore', '0008_irshad']
+         '0005_notifications', '0006_custody', '0007_atomic_restore', '0008_irshad', '0009_seized_awards']
 CU_TABLES = ['custody_items', 'custody_issues', 'custody_movements', 'custody_requests', 'custody_request_outputs']
 RESTORE_TABLES = ['restore_operations', 'restore_preimage', 'restore_snapshot_manifest']
 IR_TABLES = ['irshad_reports', 'irshad_report_languages', 'irshad_catalog_entries', 'irshad_retro_windows', 'irshad_requests']
 SCHEMA_TABLES = {5: [], 6: CU_TABLES, 7: CU_TABLES + RESTORE_TABLES, 8: CU_TABLES + RESTORE_TABLES + IR_TABLES}
+SCHEMA_TABLES[9] = r.SCHEMA9_TABLES
 TOKEN = 'TEST_ONLY_mock_bearer_token_never_real'
 
 
@@ -381,18 +382,18 @@ class Safety(unittest.TestCase):
         journal = self.run_tool()
         self.assertEqual(journal['status'], 'verified')
         self.assertEqual(journal['before']['upgradeTables'], sorted(CU_TABLES + RESTORE_TABLES + IR_TABLES))
-        self.assertEqual(journal['before']['migrations'], NAMES)
+        self.assertEqual(journal['before']['migrations'], NAMES[:8])
         self.assertEqual(journal['after']['upgradeTables'], sorted(CU_TABLES + RESTORE_TABLES))
         self.assertTrue(set(IR_TABLES).isdisjoint(journal['after']['upgradeTables']))
         self.assertEqual((self.last.restores, self.last.connections, self.last.closed), (1, 1, 1))
 
     def test_schema7_to8_requires_thirteen_upgrade_tables_and_eight_migrations(self):
-        self.record.update(source_schema=7, expected_schema=8, expected_migrations=NAMES); self.write_review()
+        self.record.update(source_schema=7, expected_schema=8, expected_migrations=NAMES[:8]); self.write_review()
         journal = self.run_tool()
         self.assertEqual(journal['before']['upgradeTables'], sorted(CU_TABLES + RESTORE_TABLES))
         self.assertEqual(journal['after']['upgradeTables'], sorted(CU_TABLES + RESTORE_TABLES + IR_TABLES))
         self.assertEqual(len(journal['after']['upgradeTables']), 13)
-        self.assertEqual(journal['after']['migrations'], NAMES)
+        self.assertEqual(journal['after']['migrations'], NAMES[:8])
         self.assertEqual(self.last.restores, 1)
         for table in IR_TABLES: self.assertIn("'" + table + "'", r.STATE_SQL)
 
@@ -419,7 +420,7 @@ class Safety(unittest.TestCase):
     def test_schema8_review_requires_the_complete_canonical_eight_migration_prefix_before_any_transport(self):
         self.record.update(source_schema=8, expected_schema=7, expected_migrations=NAMES[:7]); self.write_review()
         migration = self.root / 'migrations/0008_irshad.sql'; migration.unlink()
-        with self.assertRaisesRegex(r.Refused, 'reviewed-bookmark-record-invalid'): self.run_tool()
+        with self.assertRaisesRegex(r.Refused, 'preview-config-invalid'): self.run_tool()
         self.assertEqual(self.last.calls, []); self.assertEqual(self.last.restores, 0)
         (migration.parent / '0008_wrong.sql').write_text('-- TEST_ONLY wrong canonical prefix', encoding='utf-8')
         with self.assertRaisesRegex(r.Refused, 'reviewed-bookmark-record-invalid'): self.run_tool()
@@ -471,6 +472,46 @@ class Safety(unittest.TestCase):
         self.assertEqual(transports['second'].post_calls, 0)
         self.assertEqual(outcomes['first']['status'], 'verified')
         self.assertEqual(transports['first'].restores, 1)
+
+
+    def test_schema9_to8_uses_one_restore_and_verifies_both_complete_table_sets(self):
+        self.record.update(source_schema=9, expected_schema=8, expected_migrations=NAMES[:8]); self.write_review()
+        journal = self.run_tool(); fake = self.last
+        self.assertEqual(journal['status'], 'verified')
+        self.assertEqual(journal['before']['schema'], 9)
+        self.assertEqual(journal['before']['upgradeTables'], sorted(r.SCHEMA9_TABLES))
+        self.assertEqual(journal['after']['upgradeTables'], sorted(r.NEW_TABLES))
+        self.assertEqual(fake.restores, 1)
+        self.assertEqual(fake.post_calls, 1)
+
+    def test_schema9_rejects_partial_tables_extra_tables_wrong_ledger_and_outstanding_permit(self):
+        valid = state(9)
+        self.assertEqual(r.metadata(valid, 9, NAMES, True)['schema'], 9)
+        variants = []
+        partial = copy.deepcopy(valid); partial[3]['results'].pop(); variants.append(partial)
+        extra = copy.deepcopy(valid); extra[3]['results'].append({'name':'award_TEST_ONLY_extra'}); variants.append(extra)
+        ledger = copy.deepcopy(valid); ledger[1]['results'].pop(); variants.append(ledger)
+        variants.append(state(9, permit=1))
+        for value in variants:
+            with self.subTest(value=value):
+                with self.assertRaises(r.Refused): r.metadata(value, 9, NAMES, True)
+
+
+    def test_state_sql_detects_unreviewed_domain_tables_in_real_sqlite_before_restore(self):
+        import sqlite3
+        database = sqlite3.connect(':memory:')
+        self.addCleanup(database.close)
+        for table in r.SCHEMA9_TABLES:
+            database.execute('CREATE TABLE '+table+'(test_only INTEGER)')
+        database.execute('CREATE TABLE award_TEST_ONLY_unknown(test_only INTEGER)')
+        query = r.STATE_SQL.split(';')[3]
+        rows = [{'name':row[0]} for row in database.execute(query)]
+        self.assertIn({'name':'award_TEST_ONLY_unknown'},rows)
+        value = state(9); value[3]['results']=rows
+        with self.assertRaises(r.Refused): r.metadata(value,9,NAMES,True)
+        database.execute('DROP TABLE award_TEST_ONLY_unknown')
+        value[3]['results']=[{'name':row[0]} for row in database.execute(query)]
+        self.assertEqual(r.metadata(value,9,NAMES,True)['schema'],9)
 
 
 if __name__ == '__main__': unittest.main()

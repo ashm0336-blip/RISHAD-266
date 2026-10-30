@@ -199,11 +199,23 @@ def gen_find_engine(S):
     data = '/* Generated from the marked pure engine in src/services/332-find-day.js. Do not edit. */\nvar KIVO_FIND = ' + body + '\n'
     return {norm(layout(S)['workersParts']) + '/018a-find-engine.js': data.encode('utf-8')}
 
+def gen_seized_defaults(S):
+    """Use the UI's existing catalogue defaults as the sole source for SQL reads."""
+    result = subprocess.run([os.environ.get('KIVO_NODE', 'node'), os.path.join(ROOT, 'tools', 'seized_defaults.mjs'), S], capture_output=True, text=True, encoding='utf-8')
+    if result.returncode: raise SystemExit('Seized defaults generation failed: ' + result.stderr[-600:])
+    return {norm(layout(S)['workersParts']) + '/019k-seized-defaults.js': result.stdout.encode('utf-8')}
+
+def gen_award_reference_html(S):
+    """Derive the exact existing pure Award section formatter, never a second copy."""
+    result = subprocess.run([os.environ.get('KIVO_NODE', 'node'), os.path.join(ROOT, 'tools', 'award_reference_html.mjs'), S], capture_output=True, text=True, encoding='utf-8')
+    if result.returncode: raise SystemExit('Award formatter generation failed: ' + result.stderr[-600:])
+    return {norm(layout(S)['workersParts']) + '/019k-award-reference-html.js': result.stdout.encode('utf-8')}
+
 _main0 = main
 def main():
     S = os.path.abspath(sys.argv[sys.argv.index('--src') + 1]); check = '--check' in sys.argv
     produced = {}
-    produced.update(gen_registry(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S)); produced.update(gen_find_engine(S))
+    produced.update(gen_registry(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S)); produced.update(gen_find_engine(S)); produced.update(gen_seized_defaults(S)); produced.update(gen_award_reference_html(S))
     if os.path.exists(os.path.join(S, layout(S)['pagesManifest'])):
         mj, reg = gen_manifest(S); produced.update(mj); splice_pg(S, produced, reg)
     produced.update(gen_worker(S, produced)); produced.update(gen_pages(S))

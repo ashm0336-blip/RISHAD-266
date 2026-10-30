@@ -49,7 +49,7 @@ export async function backupBrowser(B){
   };
 }
 export async function exportFull(C){
-  for(const name of ['_wpActor','_irBackupCapture','_irBackupFence','_irBackupDomain'])C.page[name]=C.method('src/modules/admin/logic.js',name);
+  for(const name of ['_wpActor','_irBackupCapture','_irBackupFence'])C.page[name]=C.method('src/modules/admin/logic.js',name);
   C.property('src/modules/admin/logic.js','exportBackup')();await until(()=>!!C.page._encPend||C.states.some(s=>s.backupMsg));
   assert.ok(C.page._encPend,JSON.stringify(C.page.state));return JSON.parse(C.page._encPend.json);
 }

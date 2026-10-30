@@ -50,8 +50,8 @@ async function restoreExport(B,domain){
     nf[name].filter(row=>(name==='states'?row.message_scope:row.scope)==='d:'+D1);
   const custody=(await B.canonicalW.cuExport(B.env,A,new URL('http://x/export?dept='+D1))).domains,
     body={version:1,requestId:'TEST_ONLY_sparse_restore_'+ ++serial,scope,mode:'replace',reason:'TEST_ONLY sparse restore',
-      base:(await B.W.rsRestoreInventory(B.env,A,scope)).base,keys:{},delete:[],domains:{notifications,custody,irshad:[domain]},
-      manifest:{version:2,scope:'dept',domains:{kv:1,notifications:1,custody:1,irshad:1},departments:[D1],keys:[]}};
+      base:(await B.W.rsRestoreInventory(B.env,A,scope)).base,keys:{},delete:[],domains:{notifications,custody,irshad:[domain],...Object.fromEntries(await Promise.all(B.W.bdDefinitions().map(async def=>[def.name,[await def.exportDomain(B.env,D1)]])))},
+      manifest:{version:3,scope:'dept',domains:{kv:1,notifications:1,custody:1,irshad:1,seized:1,awards:1},departments:[D1],keys:[]}};
   return B.W.rsCommit(B.env,A,await B.W.rsPrepare(B.env,A,body,{}),{});
 }
 

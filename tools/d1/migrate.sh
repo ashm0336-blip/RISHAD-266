@@ -8,6 +8,12 @@ DB=${1:?database name}; DIR=${2:?migrations dir}; MODE=${3:-apply}
 require_preview_name "$DB"
 [ -d "$DIR" ] || { echo "Migration directory does not exist: $DIR" >&2; exit 5; }
 case "$MODE" in apply|--list|--no-backup) ;; *) echo "Unknown migration mode" >&2; exit 4 ;; esac
+# Schema9 has typed data plans and an explicit one-use app upgrade permit.
+# CLI apply cannot execute that canonical orchestration, even on an empty target.
+if [ "$MODE" != "--list" ] && [ -f "$DIR/0009_seized_awards.sql" ]; then
+  echo "Schema9 requires the reviewed Preview application initializer and upgrade permit; CLI apply is refused before backup or network." >&2
+  exit 6
+fi
 command -v wrangler >/dev/null || { echo "wrangler is not installed" >&2; exit 3; }
 CFG=$(preview_config "$DIR"); trap 'rm -f "$CFG"' EXIT
 PY=${KIVO_PYTHON:-python3}

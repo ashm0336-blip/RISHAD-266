@@ -1,6 +1,9 @@
 {
  "name": "Seized",
  "slug": "seized",
+ "logicParts": [
+  "../business-cloud.js"
+ ],
  "pre": "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<script src=\"./support.js\"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n",
  "mid": "\n</helmet>\n",
  "mid2": "\n</x-dc>\n",
@@ -20,16 +23,12 @@
    "src/modules/seized/view.html",
    "src/modules/seized/helmet.css"
   ],
-  "domain": "src/modules/seized/logic.js",
+  "domain": [
+   "src/modules/seized/logic.js",
+   "src/modules/seized/../business-cloud.js"
+  ],
   "data": [
-   "bassam_dreport_v1",
-   "bassam_rounds_v1",
-   "bassam_seized_acts_v1",
-   "bassam_seized_cat_v1",
-   "bassam_seized_jew_v1",
-   "bassam_seized_locs_v1",
-   "bassam_seized_v1",
-   "bassam_staffing_v3"
+   "bassam_seized_v1"
   ],
   "permissions": [
    "seized/dash",
@@ -67,7 +66,14 @@
    "gate:sec.mjs",
    "gate:sec163.mjs",
    "gate:theme248.mjs",
-   "gate:visual.mjs"
+   "gate:visual.mjs",
+   "tests/unit/business_atomic.test.mjs",
+   "tests/unit/seized_award_cloud_http.test.mjs",
+   "tests/unit/seized_award_cloud_ui.test.mjs",
+   "tests/unit/seized_codec.test.mjs",
+   "tests/unit/seized_due.test.mjs",
+   "tests/unit/seized_operations.test.mjs",
+   "tests/unit/seized_query.test.mjs"
   ]
  }
 }

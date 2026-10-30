@@ -29,13 +29,15 @@ BOOKMARK = re.compile(r'[a-f0-9]{8}-[a-f0-9]{8}-[a-f0-9]{8}-[a-f0-9]{32}')
 NEW_TABLES = ['custody_items', 'custody_issues', 'custody_movements', 'custody_requests', 'custody_request_outputs',
               'restore_operations', 'restore_preimage', 'restore_snapshot_manifest',
               'irshad_reports', 'irshad_report_languages', 'irshad_catalog_entries', 'irshad_retro_windows', 'irshad_requests']
+SCHEMA9_TABLES = NEW_TABLES + ['seized_resource_state', 'seized_reports', 'seized_items', 'seized_item_photos', 'seized_item_history', 'seized_categories', 'seized_catalog_items', 'seized_actions', 'seized_list_values', 'seized_retro_windows', 'seized_requests', 'award_resources', 'award_records', 'award_case_texts', 'award_answers', 'award_score_rows', 'award_scores', 'award_documents', 'award_doc_sections', 'award_doc_items', 'award_requests', 'award_request_checks']
 SCHEMA8_MIGRATIONS = ['0001_baseline', '0002_enforcement_tables', '0003_aud_legacy_import', '0004_daily_stats',
                       '0005_notifications', '0006_custody', '0007_atomic_restore', '0008_irshad']
+SCHEMA9_MIGRATIONS = SCHEMA8_MIGRATIONS + ['0009_seized_awards']
 STATE_SQL = (
     "SELECT v FROM meta WHERE k='schema_version';"
     'SELECT name FROM d1_migrations ORDER BY id;'
     "SELECT COUNT(*) n FROM meta WHERE k='schema_upgrade_permit_v1';"
-    "SELECT name FROM sqlite_master WHERE type='table' AND name IN (" + ','.join("'" + n + "'" for n in NEW_TABLES) + ') ORDER BY name;'
+    "SELECT name FROM sqlite_master WHERE type='table' AND name IN (" + ','.join("'" + n + "'" for n in SCHEMA9_TABLES) + " ) OR (type='table' AND (name GLOB 'custody_*' OR name GLOB 'restore_*' OR name GLOB 'irshad_*' OR name GLOB 'seized_*' OR name GLOB 'award_*')) ORDER BY name;"
     "SELECT v FROM meta WHERE k='authz_mode';"
 )
 
@@ -105,13 +107,15 @@ def reviewed_record(path, bookmark, names):
             raise ValueError()
         if record['bookmark'] != bookmark or record['expected_permit_absent'] is not True:
             raise ValueError()
-        if type(record['source_schema']) is not int or record['source_schema'] not in (5, 6, 7, 8):
+        if type(record['source_schema']) is not int or record['source_schema'] not in (5, 6, 7, 8, 9):
             raise ValueError()
-        if type(record['expected_schema']) is not int or record['expected_schema'] not in (5, 6, 7, 8):
+        if type(record['expected_schema']) is not int or record['expected_schema'] not in (5, 6, 7, 8, 9):
             raise ValueError()
         if len(names) < max(record['source_schema'], record['expected_schema']):
             raise ValueError()
-        if max(record['source_schema'], record['expected_schema']) == 8 and names[:8] != SCHEMA8_MIGRATIONS:
+        if max(record['source_schema'], record['expected_schema']) >= 8 and names[:8] != SCHEMA8_MIGRATIONS:
+            raise ValueError()
+        if max(record['source_schema'], record['expected_schema']) == 9 and names[:9] != SCHEMA9_MIGRATIONS:
             raise ValueError()
         if record['expected_migrations'] != names[:record['expected_schema']]:
             raise ValueError()
@@ -129,7 +133,7 @@ def reviewed_record(path, bookmark, names):
 
 def metadata(value, schema, names, require_no_permit):
     try:
-        if schema not in (5, 6, 7, 8) or len(names) < schema or (schema == 8 and names[:8] != SCHEMA8_MIGRATIONS):
+        if schema not in (5, 6, 7, 8, 9) or len(names) < schema or (schema >= 8 and names[:8] != SCHEMA8_MIGRATIONS) or (schema == 9 and names[:9] != SCHEMA9_MIGRATIONS):
             raise ValueError()
         if not isinstance(value, list) or len(value) != 5 or any(v.get('success') is not True for v in value):
             raise ValueError()
@@ -144,7 +148,7 @@ def metadata(value, schema, names, require_no_permit):
         if require_no_permit and rows[2][0]['n'] != 0:
             raise ValueError()
         tables = [v['name'] for v in rows[3]]
-        expected = sorted(NEW_TABLES[:5] if schema == 6 else NEW_TABLES[:8] if schema == 7 else NEW_TABLES if schema == 8 else [])
+        expected = sorted(NEW_TABLES[:5] if schema == 6 else NEW_TABLES[:8] if schema == 7 else NEW_TABLES if schema == 8 else SCHEMA9_TABLES if schema == 9 else [])
         if tables != expected:
             raise ValueError()
         if len(rows[4]) != 1 or rows[4][0]['v'] != 'enforce':

@@ -4,16 +4,16 @@
 (كان docs/ux-states.md جرداً ساكناً من KIVO_252 فتقادم: لافتةُ «بلا اتصال» أُضيفت في 254 والجردُ يقول «لا تنبيه»).
      python3 tools/ux_states.py           يكتب docs/ux-states.md
      python3 tools/ux_states.py --check   يعيد التوليد ويقارن (exit 1 عند فرق) + الآلياتُ العامة موجودةٌ في مواضعها + سقّاطةٌ لكل وحدة
-المنهج لكل وحدة (src/modules/<m>/view.html + logic.js): عدُّ المواضع بأنماطٍ ثابتة (أدناه) — مقياسٌ للحضور لا للجودة؛ والتحقّقُ الحيّ في
+المنهج لكل وحدة (view.html والمنطق وأجزاؤه المعلنة في Manifest؛ يشمل catch لمعالجة async): عدُّ المواضع بأنماطٍ ثابتة (أدناه) — مقياسٌ للحضور لا للجودة؛ والتحقّقُ الحيّ في
 k253offline.mjs (اللافتة والطابور) · k254ux.mjs (الهيكل · أعد المحاولة · h1) · ack.mjs (لا «تمّ» قبل الإقرار)."""
 import os, re, sys, json
-import glob
+from page_modules import read_logic
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'docs', 'ux-states.md'); BL = os.path.join(ROOT, 'tools', 'ux_states.json')
 PAT = {
     'فارغ': r'(?:["\'>«]\s*)(?:لا (?:توجد|يوجد|بيانات|نتائج|[؀-ۿ]{2,}\s[؀-ۿ]{2,})|(?:الملف|القائمة) فارغ(?:ة)?)',
     'تحميل': r'BassamBusy|bsBusy|جارٍ|جاري |skeleton|bs-skel',
-    'خطأ': r'تعذّر|تعذر|فشل|bsErrBar|\.catch\(',
+    'خطأ': r'تعذّر|تعذر|فشل|bsErrBar|(?:\.catch|\bcatch)\s*\(',
     'بلا اتصال': r'onLine|[\'"]offline[\'"]|BassamLink|انقطع الاتصال',
     'أعد المحاولة': r'أعد المحاولة|إعادة المحاولة|retry\(',
 }
@@ -36,10 +36,12 @@ def mods():
     d = os.path.join(ROOT, 'src', 'modules')
     return sorted(m for m in os.listdir(d) if os.path.isdir(os.path.join(d, m)))
 def count(m):
-    t = ''
-    for f in ['view.html', 'logic.js'] + sorted(os.path.basename(q) for q in glob.glob(os.path.join(ROOT, 'src', 'modules', m, 'logic-*.js'))):   # KIVO_265 · البند 19: أجزاءُ المنطق
-        p = os.path.join(ROOT, 'src', 'modules', m, f)
-        if os.path.exists(p): t += open(p, encoding='utf-8').read()
+    d=os.path.join(ROOT,'src','modules',m)
+    try: meta=json.load(open(os.path.join(d,'meta.json'),encoding='utf-8'))
+    except (OSError,ValueError): meta={}
+    t=read_logic(d,meta) if os.path.exists(os.path.join(d,'logic.js')) else ''
+    view=os.path.join(d,'view.html')
+    if os.path.exists(view):t+='\n'+open(view,encoding='utf-8').read()
     direct = t
     for namespace, rel in SHARED.items():
         if re.search(r'\bKIVO\.' + re.escape(namespace) + r'\b', direct):

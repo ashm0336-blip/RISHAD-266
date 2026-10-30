@@ -5,6 +5,9 @@
    منطقُ الصفحات الحقيقي في vm بساعةٍ ثابتة (w1_pages.mjs: 9 جمادى الأولى 1448 هـ ⇒ ربيع الآخر منقضٍ مقفل) — بياناتٌ اصطناعية (TEST_ONLY). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { SRC } from './harness.mjs';
 import { page, EV, NOW } from './w1_pages.mjs';
 
 const NOAP = (p, a) => a !== 'approve';   /* مديرُ إدارةٍ بلا «الاعتماد» (كحساب التدقيق dm) */
@@ -37,10 +40,31 @@ function irHintPage(can, {reason='TEST_ONLY hint reason',denied=false}={}) {
   return P;
 }
 
+/* Same pure-hint contract as Irshad, using Seized's actual typed retro handler.
+   Catalogs/context are explicit confirmed DTOs; they are not legacy KV adapters. */
+function szHintPage(can, {reason='TEST_ONLY hint reason',denied=false}={}) {
+  const P=page('seized',{can}),context={uid:'tst_dm1',dept:'tst_d1',key:'tst_dm1\0tst_d1'},windows=[];
+  const base={epoch:0,reports:0,catalog:0,actions:0,locations:0,jew:0,retro:0};
+  P.requests=[];P.reasons=[];P.c._bcContext=()=>context;P.c._bcEnsure=()=>{};
+  P.KIVO.__BS_SRV={askReason:(key,keys,done)=>{P.reasons.push({key,keys});done(reason);}};
+  const defaults=JSON.parse(fs.readFileSync(path.join(SRC,'modules/seized/defaults.json'),'utf8'));
+  P.c.state.szCatalogs={_contextKey:context.key,base,catalogs:{catalog:{present:false,value:{ver:P.c.SZ_VER,cats:defaults.cats}},actions:{present:false,value:defaults.actions},jew:{present:false,value:defaults.kinds},locations:{present:false,value:[]}}};
+  const dto=()=>({ok:1,res:'seized',dept:context.dept,today:P.c.hToday(),now:NOW,maxHours:24,defHours:1,may:true,windows:J(windows),_contextKey:context.key,_received:NOW});
+  P.c.state.szRetro=dto();
+  P.c._bcRequest=async(route,options)=>{
+    P.requests.push({route,options});if(options.method==='GET')return{ok:1,data:dto()};
+    const body=JSON.parse(options.body);if(denied)return{ok:0,status:403,message:'TEST_ONLY server refusal'};
+    const window={id:'TEST_ONLY_window_'+windows.length,scope:{...body.scope,d:body.scope.d??null},by:{id:context.uid},at:NOW,until:NOW+3600000,hours:1,reason:body.reason};
+    windows.push(window);return{ok:1,data:{ok:1,window:J(window),today:P.c.hToday(),now:NOW}};
+  };
+  P.pull=async()=>{const result=await P.c._bcRequest('/api/retro?uid='+context.uid+'&dept='+context.dept+'&res=seized',{method:'GET'});P.c.setState({szRetro:result.data});};
+  P.settle=()=>new Promise(resolve=>setImmediate(resolve));return P;
+}
+
 for (const slug of ['irshad', 'seized']) {
   const noun = slug === 'irshad' ? 'تقريرك' : 'محضرك';
   test('IRSZ-4 · ' + slug + ': بلا «الاعتماد» لا دعوةَ إلى نقرةٍ مزدوجة — التلميحُ والشرحُ وبطاقةُ الشهر وخانةُ اليوم تذكر السبب، والنقرةُ المزدوجة تشرحه ولا تفتح', () => {
-    const P = slug==='irshad'?irHintPage(NOAP):page(slug, { can: NOAP });
+    const P = slug==='irshad'?irHintPage(NOAP):szHintPage(NOAP);
     P.c.setState({ irMonth: 4, irDay: 3 });
     let V = P.V();
     assert.equal(V.irPmApprove, false);
@@ -63,7 +87,7 @@ for (const slug of ['irshad', 'seized']) {
     V.irMonths[4].dbl(EV); assert.equal(P.toasts.length, 2);
   });
   test('IRSZ-4 · ' + slug + ': من يملك «الاعتماد» يرى الإرشادَ كما كان وتفتح نقرتُه المزدوجة الشهرَ واليومَ بلا رسالة', async () => {
-    const P = slug==='irshad'?irHintPage(ALL):page(slug, { can: ALL });
+    const P = slug==='irshad'?irHintPage(ALL):szHintPage(ALL);
     P.c.setState({ irMonth: 4, irDay: 3 });
     let V = P.V();
     assert.equal(V.irMonthAutoTxt, 'الشهر انقضى — مقفل · انقر بطاقة الشهر نقرة مزدوجة لفتحه ثم أضف ' + noun + (slug === 'irshad' ? ' اليومي' : ''));
@@ -74,7 +98,11 @@ for (const slug of ['irshad', 'seized']) {
       await P.settle();assert.equal(P.c.state.irRetro,null,'ACK alone is not an active-window read');assert.equal(P.V().irMonthAutoHint,true);
       assert.equal(P.reasons.length,1);assert.equal(JSON.parse(P.requests[0].options.body).reason,'TEST_ONLY hint reason');
       await P.pull();assert.equal(P.V().irMonthAutoHint,false);assert.deepEqual(J(P.c.state.irRetro.windows[0].scope),{y:1448,m:4,d:null});
-    }else assert.deepEqual(J(P.c.state.irOpenMonths), { '1448-4': true });
+    }else{
+      await P.settle();assert.equal(P.c.state.szRetro,null,'ACK alone is not an active-window read');assert.equal(P.V().irMonthAutoHint,true);
+      assert.equal(P.reasons.length,1);assert.equal(JSON.parse(P.requests[0].options.body).reason,'TEST_ONLY hint reason');
+      await P.pull();assert.equal(P.V().irMonthAutoHint,false);assert.deepEqual(J(P.c.state.szRetro.windows[0].scope),{y:1448,m:4,d:null});
+    }
     assert.equal(P.toasts.length, 0);
     P.c.setState({ irMonth: 5, irDay: 3, irOpenMonths: {} });
     V = P.V();
@@ -83,7 +111,10 @@ for (const slug of ['irshad', 'seized']) {
     if(slug==='irshad'){
       await P.settle();assert.equal(P.V().irDayLockedHint,true);await P.pull();assert.equal(P.V().irDayLockedHint,false);
       assert.deepEqual(J(P.c.state.irRetro.windows[1].scope),{y:1448,m:5,d:3});
-    }else assert.deepEqual(J(P.c.state.irOpenDays), { '1448-5-3': true });
+    }else{
+      await P.settle();assert.equal(P.V().irDayLockedHint,true);await P.pull();assert.equal(P.V().irDayLockedHint,false);
+      assert.deepEqual(J(P.c.state.szRetro.windows[1].scope),{y:1448,m:5,d:3});
+    }
   });
 }
 
@@ -93,6 +124,15 @@ test('IRSZ-4 · الاسترشاد: إلغاء السبب أو رفض الخاد
     assert.equal(P.reasons.length,1);assert.equal(P.requests.filter(r=>r.options.method==='POST').length,options.denied?1:0);
     await P.pull();assert.deepEqual(J(P.c.state.irRetro.windows),[]);assert.equal(P.V().irMonthAutoHint,true);
     assert.deepEqual(J(P.c.state.irOpenMonths||{}),{});if(options.denied)assert.match(P.toasts.at(-1)[0],/server refusal/);
+  }
+});
+
+test('IRSZ-4 · المضبوطات: إلغاء السبب أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',async()=>{
+  for(const options of [{reason:''},{denied:true}]){
+    const P=szHintPage(ALL,options);P.c.setState({irMonth:4,irDay:3});P.V().irMonths[3].dbl(EV);await P.settle();
+    assert.equal(P.reasons.length,1);assert.equal(P.requests.filter(r=>r.options.method==='POST').length,options.denied?1:0);
+    await P.pull();assert.deepEqual(J(P.c.state.szRetro.windows),[]);assert.equal(P.V().irMonthAutoHint,true);
+    assert.deepEqual(J(P.c._szRetroFlags().months),{});if(options.denied)assert.match(P.toasts.at(-1)[0],/server refusal/);
   }
 });
 

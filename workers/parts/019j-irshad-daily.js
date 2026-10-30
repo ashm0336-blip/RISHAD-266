@@ -51,7 +51,7 @@ async function nfIrshadDaily(env, actor, url) {
     sourceGuard = rsBound(ctx.env.DB.prepare('SELECT CASE WHEN (' + aggregate.count + ')<>' + nSlot +
       ' OR (' + aggregate.top + ') IS NOT ' + locationSlot + " THEN json_extract('{}','KIVO_IRSHAD_DAILY_SOURCE_CHANGED') END"), sourceArgs),
     statements = guards.concat(plan.guards, [sourceGuard, seenGuard]);
-  statements.push.apply(statements, irBumpStatements(ctx.env, NF_REV, false));
+  statements.push.apply(statements, bdBumpStatements(ctx.env, NF_REV, false));
   statements.push.apply(statements, plan.statements);
   statements.push.apply(statements, nfRetention(ctx.env, now, plan.scopes));
   try { await ctx.env.DB.batch(statements); }

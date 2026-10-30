@@ -1,4 +1,149 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","daily+plan+seized+staff","admin+profile+seized","award+irshad+seized","irshad+seized+tasks","admin+seized","irshad+seized"]) {
+  _businessSpec() {
+    return { prefix: "sz", path: "/api/seized", logical: "bassam_seized_v1", resources: ["reports", "catalog", "actions", "locations", "jew", "retro"], rows: "rows",
+      views: ["records", "calendar", "catalogs", "dashboard", "context", "retro"], changed: /^bassam_(?:seized(?:_cat|_acts|_locs|_jew|_retro)?|employees|staffing(?:_snap|_locks)?|dreport|rounds|shift_options|dayshift|grants|perm_tpls|perms|auth_users|depts|gdepts|platform)_v[0-9]+$/ };
+  }
+  _businessReadValid(view, data, options = {}) {
+    if (!data.clock || !["y", "m", "d"].every(key => Number.isSafeInteger(data.clock[key]))) return false;
+    if (view === "records") return Array.isArray(data.rows) && data.rows.length <= Number(options.limit || 100) && data.rows.every(row => row && typeof row.id === "string" && (row.items === undefined || row.items === null || Array.isArray(row.items))) && this._bcInteger(data.total) && Number.isSafeInteger(data.page) && data.page > 0 && [data.next, data.prev].every(value => value === undefined || value === null || typeof value === "string") && Array.isArray(data.facets?.locations);
+    if (view === "catalogs") return data.catalogs && ["catalog", "actions", "locations", "jew"].every(key => typeof data.catalogs[key]?.present === "boolean") &&
+      Array.isArray(data.catalogs.catalog.value?.cats) && ["actions", "locations", "jew"].every(key => Array.isArray(data.catalogs[key].value));
+    if (view === "calendar") return Array.isArray(data.months) && Array.isArray(data.days) && [...data.months, ...data.days].every(row => this._bcInteger(row.n)) && data.monthTotals && this._bcInteger(data.monthTotals.reports);
+    if (view === "dashboard") {
+      const dash = data.dashboard, metrics = value => value && ["reports", "employees"].every(key => this._bcInteger(value[key])) &&
+        ["qty", "sar"].every(key => typeof value[key] === "number" && Number.isFinite(value[key])) && value.actions && typeof value.actions === "object";
+      return dash && Array.isArray(dash.available?.years) && Array.isArray(dash.available.months) && this._bcInteger(dash.available.total) &&
+        ["series", "previousSeries", "heat", "categories", "locations", "shifts", "employees", "shiftSeries", "locationSeries"].every(key => Array.isArray(dash[key])) &&
+        metrics(dash.totals) && metrics(dash.previous) && Array.isArray(dash.summary?.rows) && metrics(dash.summary.totals);
+    }
+    return view === "context" && data.context && Array.isArray(data.context.labels) && Array.isArray(data.context.present);
+  }
+  _businessAckValid(ack, body) {
+    const affected = body.op === "catalog-replace" ? [body.kind] : body.op === "jew-rename" ? ["reports", "jew"] : ["reports"];
+    return JSON.stringify(ack.affected) === JSON.stringify(affected) && this._businessSpec().resources.every(key =>
+      affected.includes(key) ? ack.base[key] === ack.rev && ack.rev > body.base[key] : ack.base[key] === body.base[key]) &&
+      (body.op === "catalog-replace" || body.op === "jew-rename" || body.op === "delete-month" || typeof ack.id === "string" && (body.op === "create" || ack.id === body.id));
+  }
+  _businessConflict() {
+    this._szDraftStamp = null; this._szNeedsReview = !!this.state.irEditId;
+    for (const stamp of this._szCatalogStamps?.values() || []) if (stamp) stamp.base = null;
+  }
+  _businessRetain() {
+    const editing = Object.entries(this.state).some(([key, value]) => /(?:EditVal|NewVal)$/.test(key) && !!value || key === "szUpdSel" && Object.keys(value || {}).length > 0);
+    if (JSON.stringify(this.state.irDraft) === JSON.stringify(this.emptyDraft()) && !this._bcTickets?.size && !editing) return null;
+    const local = { ...this.state }; this._businessSpec().views.forEach(view => { delete local[this._bcStateKey(view)]; }); delete local.bcPending;
+    return { context: this._szDraftStamp?.context || [...this._szCatalogStamps?.values() || []].find(stamp => stamp?.context)?.context || this._bcContext(), local: this._bcClone(local), draft: this._bcClone(this.state.irDraft), stamp: this._szDraftStamp,
+      catalogs: this._szCatalogStamps, uploads: this._szUploads, needsReview: this._szNeedsReview, year: this.state.irYear, month: this.state.irMonth, day: this.state.irDay, editId: this.state.irEditId, message: this.state.bcMessage };
+  }
+  _businessRestore(saved) {
+    if (!saved) return;
+    this._szDraftStamp = saved.stamp; this._szCatalogStamps = saved.catalogs; this._szUploads = saved.uploads; this._szNeedsReview = saved.needsReview;
+    this.setState({ ...saved.local, irDraft: saved.draft, irYear: saved.year, irMonth: saved.month, irDay: saved.day, irEditId: saved.editId, bcPending: false, bcMessage: saved.message || "مسودتك باقية في هذه الجلسة؛ راجعها قبل الحفظ" });
+  }
+  componentDidMount() { if (super.componentDidMount) super.componentDidMount(); this._bcMount(); }
+  componentWillUnmount() { this._bcDispose(); if (super.componentWillUnmount) super.componentWillUnmount(); }
+  _szRecordQuery() {
+    const state = this.state;
+    return { year: state.irYear, month: state.irMonth, day: state.irDay, q: (state.irLgSearch || "").trim(), loc: state.irLgLoc === "all" ? undefined : state.irLgLoc,
+      category: state.irLgCat === "all" ? undefined : state.irLgCat, action: state.irLgAct === "all" ? undefined : state.irLgAct,
+      limit: Math.min(200, state.irLedgerPerPage || 200), page: state.irLedgerPerPage === 0 ? 1 : state.irLedgerPage || 1 };
+  }
+  async _szCatalogWrite(kind, value) {
+    if (!this._irCanWrite()) { this.permDeny(); return false; }
+    if (!this._bcData("catalogs")) { this.bsToast("انتظر قراءة القوائم من الخادم قبل تعديلها"); return false; }
+    const count = kind === "catalog" ? value.cats.length : value.length;
+    const result = await this._bcMutate("catalog-replace", { kind, value }, { stamp: this._szCatalogStamps?.get(kind), count });
+    if (!result.ok) { this.bsToast(result.message); return false; }
+    this._szCatalogStamps = this._szCatalogStamps || new Map();
+    this._szCatalogStamps.set(kind, { context: result.context, base: this._bcClone(result.data.base), target: this._szCatalogStamps.get(kind)?.target });
+    if (!result.matches) { this.setState({ bcMessage: "أُكّد طلب القائمة السابق؛ راجع تعديلك اللاحق قبل إرساله" }); return false; }
+    return true;
+  }
+  _szStampCatalog(kind, target) {
+    this._szCatalogStamps = this._szCatalogStamps || new Map();
+    if (target !== undefined || !this._szCatalogStamps.has(kind)) {
+      const stamp = this._bcStamp(this._bcData("catalogs")?.base); this._szCatalogStamps.set(kind, stamp ? { ...stamp, target } : null);
+    }
+  }
+  async _szClearDraft() {
+    const unresolved = [...this._bcTickets?.values() || []].filter(ticket => ["create", "edit"].includes(ticket.body.op));
+    if (unresolved.length) {
+      const context = this._bcContext();
+      if (!context || typeof KIVO.bsConfirm !== "function") return void this.bsToast("هناك طلب غير مؤكد؛ راجع السجل قبل التخلي عن مسودته", "warn");
+      const confirmed = await KIVO.bsConfirm({ title: "مسح المسودة", msg: "قد يكون الطلب السابق محفوظًا في السحابة. راجع السجل أولًا. مسح المسودة يتخلى عن إعادة تأكيد طلبها ويمسح تعديلاتها من هذا الجهاز، ولا يلغي سجلًا محفوظًا في السحابة.", ok: "راجعت السجل — امسح المسودة" });
+      if (!confirmed || !this._bcSame(context)) return;
+      unresolved.forEach(ticket => this._bcTickets.delete(ticket.intent));
+    }
+    this._szDraftStamp = null; this._szNeedsReview = false; this.setState({ irDraft: this.emptyDraft(), irSaveErrMsg: "", irEditId: null, bcMessage: "" });
+  }
+  _szDashboardQuery() {
+    const state = this.state, today = this.hToday(), context = this._bcContext();
+    const available = this._bcData("dashboard")?.dashboard.available || (this._szAvailable?.context === context?.key ? this._szAvailable.value : { years: [], months: [] });
+    const years = available.years.length ? available.years : [today.y], all = state.irDashYear == null || String(state.irDashYear) === "all";
+    const year = all || !years.includes(+state.irDashYear) ? years[0] : +state.irDashYear;
+    const months = available.months.filter(row => row.y === year).map(row => row.m).sort((a, b) => a - b);
+    let month = all ? "all" : state.irDashMonth == null ? "" : String(state.irDashMonth);
+    if (!all && month !== "all" && !months.includes(+month)) month = months.length ? String(months[months.length - 1]) : "all";
+    const query = { mode: state.irDashMode === "custom" ? "custom" : all ? "all" : "month", year, month,
+      bucket: all || month === "all" ? "month" : "day", heatYear: year, sumQ: (state.irDashSumQ || "").trim() };
+    if (query.mode === "custom") {
+      const parse = value => { const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || ""); return match ? new Date(+match[1], +match[2] - 1, +match[3]).getTime() : null; };
+      const current = this.hGreg(today.y, today.m, today.d), end = new Date(current.getFullYear(), current.getMonth(), current.getDate()).getTime();
+      let from = parse(state.irDashFrom), to = parse(state.irDashTo); if (from == null) from = end - 29 * 864e5; if (to == null) to = end;
+      if (from > to) [from, to] = [to, from];
+      const date = value => { const h = this.hParts(new Date(value)); return h.y + "-" + h.m + "-" + h.d; }, length = Math.round((to - from) / 864e5) + 1;
+      Object.assign(query, { from: date(from), to: date(to), previousFrom: date(from - length * 864e5), previousTo: date(from - 864e5), heatYear: this.hParts(new Date(to)).y, bucket: length <= 62 ? "day" : "month" });
+    }
+    return query;
+  }
+  _szEnsureRetro() {
+    const context = this._bcContext(); if (!context) return;
+    this._bcReads = this._bcReads || new Map();
+    const prior = this._bcReads.get("retro"); if (prior?.context === context.key) return;
+    const token = { context: context.key }; this._bcReads.set("retro", token);
+    setTimeout(async () => {
+      const query = new URLSearchParams({ uid: context.uid, dept: context.dept, res: "seized" });
+      const result = await this._bcRequest("/api/retro?" + query, { method: "GET" }, context);
+      if (this._bcReads.get("retro") !== token || !this._bcSame(context)) return;
+      token.done = true;
+      if (!result.ok || result.data.dept !== context.dept || result.data.res !== "seized" || !Array.isArray(result.data.windows) || !this._bcInteger(result.data.now)) {
+        token.failed = true; this.setState({ bcMessage: result.message || this._bcFailure("invalid").message }); return;
+      }
+      this.setState({ szRetro: { ...result.data, _contextKey: context.key, _received: Date.now() } });
+    }, 0);
+  }
+  _szRetroFlags() {
+    const state = this._bcData("retro"), months = {}, days = {};
+    const now = state ? state.now + Math.max(0, Date.now() - state._received) : 0;
+    (state?.windows || []).filter(entry => !entry.closedAt && entry.until > now).forEach(entry => {
+      const scope = entry.scope || {}, key = scope.y + "-" + scope.m;
+      if (scope.d == null) months[key] = true; else days[key + "-" + scope.d] = true;
+    });
+    return { months, days };
+  }
+  async _szRetroToggle(scope) {
+    if (!this.PC("approve")) return this.permDeny();
+    if (this._szRetroBusy) return;
+    const context = this._bcContext(), state = this._bcData("retro");
+    if (!context || !state) { this.bsToast("انتظر قراءة نوافذ الاستدراك من الخادم ثم أعد المحاولة"); this._szEnsureRetro(); return; }
+    if (!state.may) return this.permDeny();
+    this._szRetroBusy = true;
+    try {
+      const now = state.now + Math.max(0, Date.now() - state._received);
+      const active = state.windows.find(item => !item.closedAt && item.until > now && item.scope?.y === scope.y && item.scope?.m === scope.m && (item.scope.d == null ? scope.d == null : item.scope.d === scope.d));
+      const body = { dept: context.dept, res: "seized", act: active ? "close" : "open", ...(active ? { id: active.id } : { scope }) };
+      if (!active) {
+        const srv = KIVO.__BS_SRV;
+        if (typeof srv?.askReason !== "function") return void this.bsToast("تعذّر طلب سبب الاستدراك؛ لم تُفتح النافذة");
+        body.reason = await new Promise(resolve => srv.askReason("bsdept:" + context.dept + ":bassam_seized_v1", ["sz.rec.retro.open"], resolve));
+        if (!body.reason || !this._bcSame(context)) return;
+      }
+      const result = await this._bcRequest("/api/retro?uid=" + encodeURIComponent(context.uid), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, context);
+      this._bcInvalidate();
+      if (!result.ok || typeof result.data.window?.id !== "string") this.bsToast(result.message || this._bcFailure("invalid").message);
+      this._szEnsureRetro();
+    } finally { this._szRetroBusy = false; }
+  }
   hGreg(t, e, s) {
     let a = new Date(new Date(2026, 5, 16).getTime() + 864e5 * (29.5306 * (12 * (t - 1448) + (e - 1)) + (s - 1)));
     try {
@@ -32,116 +177,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return ((this.__hg[s] = a), a);
   }
   SZ_VER = "النسخة الثالثة — 2026/07/02";
-  SZ_DEF_ACTS = [
-    { k: "sec", name: "أُحيل للجهة الأمنية", color: "#dc2626" },
-    { k: "des", name: "أُتلف / صودر", color: "#b45309" },
-    { k: "sto", name: "محفوظ بالمستودع", color: "#475569" },
-  ];
-  SZ_DEF_CATS() {
-    const t = (t, e, s, a) => ({
-      name: t,
-      color: e,
-      def: s,
-      items: a.map((t) => ({ id: t[0], name: t[1], desc: t[2] || "", unit: t[3] || "pc" })),
-    });
-    return [
-      t("الأجهزة والمعدات", "#1d6fd6", "sto", [
-        [1, "أجهزة التنصت الإلكترونية", "معدات تقنية صُممت خصيصاً للاستماع أو تسجيل المحادثات والاتصالات بشكل سري"],
-        [2, "الطائرات اللاسلكية (الدرون)", "مركبات جوية يتم التحكم بها عن بعد"],
-        [3, "أجهزة الاتصالات اللاسلكية والإرسال", "معدات تقنية لإرسال واستقبال الإشارات عبر موجات الراديو"],
-        [4, "أجهزة البث والتسجيل الصوتي", "أدوات إلكترونية مخصصة لنقل الإشارات الصوتية أو تخزينها"],
-        [5, "الشواحن المتنقلة (Power Banks)", "بطاريات خارجية محمولة تحتوي على خلايا الليثيوم"],
-        [6, "أجهزة الحاسب الآلي (لابتوب)", "أجهزة حاسوبية محمولة متكاملة"],
-        [7, "مكبرات الصوت والصافرات", "أجهزة تضخيم الإشارات الصوتية أو تنبيهات عالية التردد"],
-        [8, "أجهزة الليزر ومؤشراتها", "أدوات بصرية تصدر حزماً ضوئية مركزة"],
-        [9, "بطاريات الليثيوم", "خلايا كيميائية عالية الكثافة تتطلب معايير سلامة خاصة"],
-        [10, "أسطوانات أجهزة التنفس الكبيرة", "أوعية ضغط معدنية لتخزين غازات التنفس"],
-        [11, "كاميرات التصوير الاحترافية (غير مصرحة)", "أجهزة بصرية متقدمة بعدسات قابلة للتبديل"],
-        [12, "الأجهزة الكهربائية والإلكترونية العامة", "كافة المعدات التي تعمل بالطاقة الكهربائية"],
-      ]),
-      t("الأدوات الحادة", "#f07d1a", "sec", [
-        [13, "مضارب البيسبول والآلات الكبيرة", "أدوات رياضية أو يدوية صلبة وطويلة"],
-        [14, "الأسلحة والآلات والسكاكين الحادة", "أدوات معدنية لها حواف حادة أو نهايات مدببة"],
-        [15, "مقراض الأظافر", "أداة معدنية صغيرة ذات حواف قاطعة"],
-        [16, "الأدوات المعدنية والحديدية", "معدات من المعادن الصلبة تُستخدم في الصيانة"],
-        [17, "الأدوات الخشبية ذات النهايات الحادة", "قطع خشبية برؤوس مدببة أو حواف قاطعة"],
-      ]),
-      t("الأسلحة والذخائر", "#d02b2b", "sec", [
-        [18, "النبال (القاذفات)", "أدوات يدوية لإطلاق المقذوفات"],
-        [19, "الذخائر الحية", "مقذوفات مجهزة بمواد دافعة ومتفجرة"],
-        [20, "الأسلحة النارية", "أجهزة لإطلاق المقذوفات بقوة انفجار البارود"],
-        [21, "الصواعق والعصي الكهربائية", "أجهزة تصدر شحنات كهربائية عالية الجهد"],
-        [22, "ألعاب الأطفال الشبيهة بالأسلحة والمجسمات", "نماذج تحاكي شكل الأسلحة الحقيقية"],
-      ]),
-      t("الأغراض الثمينة والأموال", "#c9a227", "sto", [
-        [23, "المبالغ النقدية الكبيرة", "عملات ورقية ومعدنية تبلغ قيمتها الحد المقرر أو أكثر", "sar"],
-        [24, "المجوهرات والذهب", "سبائك ومعادن ثمينة وأحجار كريمة تبلغ الحد المقرر", "pcval"],
-      ]),
-      t("الأغراض الشخصية", "#7b2fb5", "sto", [
-        [25, "ملابس تحمل صور ذوات أرواح", "أزياء تشتمل على رسوم أو صور لكائنات حية"],
-        [26, "الملابس العسكرية أو الشبيهة بها", "أزياء رسمية للقوات المسلحة أو تحاكيها"],
-        [27, "الأدوات والمعدات الرياضية", "أجهزة يدوية للتمارين البدنية"],
-        [28, "أدوات الدفاع عن النفس", "آلات يدوية صلبة أو مسننة لصد الهجوم"],
-        [29, "المواد السائلة والهلامية (LAGs)", "مواد سائلة أو هلامية بعبوات تتجاوز الأحجام المقررة"],
-        [30, "الحقائب والأمتعة الكبيرة", "حقائب تتجاوز 56×45×25 سم أو وزنها 7 كجم"],
-        [31, "الأكياس والعبوات البلاستيكية غير الشفافة", "لفائف وأوعية تحجب رؤية المحتويات"],
-        [32, "السجائر الإلكترونية ونكهاتها", "أجهزة إلكترونية لتبخير السوائل المحتوية على النيكوتين"],
-        [33, "المواد السائلة (عصائر وألبان)", "منتجات غذائية سائلة تخضع لقيود الأحجام"],
-        [34, "الملابس غير اللائقة", "أزياء تخالف معايير الآداب العامة"],
-        [35, "عبوات الرذاذ (البخاخات)", "حاويات تحتوي على مواد تحت الضغط"],
-      ]),
-      t("الأمتعة والأغراض الكبيرة", "#8b6a5a", "sto", [[36, "السجاد والمفروشات والبطانيات", "منسوجات وأغطية ذات أحجام كبيرة تعيق الحركة"]]),
-      t("الحيوانات", "#222222", "sec", [[37, "الحيوانات بجميع أنواعها", "كائنات حية أليفة أو مفترسة وطيور وحشرات"]]),
-      t("المطبوعات والمواد المخالفة", "#4f6b7a", "sec", [
-        [38, "الكتب والمنشورات المخلة بالآداب", "مواد ورقية أو رقمية بمحتوى مخالف"],
-        [39, "المواد الدعائية غير المصرح بها", "منشورات أو ملصقات ترويجية بلا إذن"],
-        [40, "الشعارات والأعلام السياسية أو العنصرية", "منسوجات أو رموز تحمل دلالات سياسية أو عنصرية"],
-        [41, "الكتب والمصاحف غير المصرح بها", "إصدارات دينية لم تحصل على فسح إعلامي"],
-      ]),
-      t("المواد الغذائية والمشروبات", "#2e9e44", "des", [[42, "الأطعمة والمشروبات بعبوات كبيرة", "وجبات وسوائل في أوعية ذات سعات كبيرة"]]),
-      t("المواد القابلة للاشتعال", "#e35a15", "des", [
-        [43, "المواد البترولية ومشتقاتها", "سوائل هيدروكربونية سريعة الاشتعال"],
-        [44, "الألعاب النارية والمفرقعات", "عبوات بمواد كيميائية قابلة للانفجار"],
-        [45, "القداحات وأدوات الاشتعال", "أدوات يدوية لإنتاج لهب أو شرارة"],
-      ]),
-      t("المواد الكيميائية والسامة", "#f2a516", "des", [
-        [46, "الغازات المضغوطة", "غازات محفوظة تحت ضغط عالٍ داخل أسطوانات"],
-        [47, "المواد السامة والمعدية", "مركبات كيميائية أو مسببات أمراض"],
-        [48, "رذاذ الفلفل والمواد الحارقة", "بخاخات مهيجة تسبب حروقاً وتآكلاً"],
-        [49, "السوائل القابلة للاشتعال (كحول ودهانات)", "مركبات سائلة تشتعل بسهولة"],
-        [50, "المبيدات الحشرية", "مواد كيميائية لإبادة الحشرات"],
-      ]),
-      t("المواد المتفجرة والخطرة", "#b3161b", "sec", [
-        [51, "المواد المشعة والملوثة", "عناصر تصدر إشعاعات نووية"],
-        [52, "المتفجرات والصواعق العسكرية", "عبوات ناسفة وصواعق للاستخدام الحربي"],
-      ]),
-      t("المواد المخدرة والتبغ", "#5a3d33", "sec", [
-        [53, "المخدرات والمؤثرات العقلية", "مواد تؤثر على الجهاز العصبي ويُحظر تداولها"],
-        [54, "التبغ ومواد التدخين", "منتجات من أوراق التبغ للتدخين أو المضغ"],
-      ]),
-      t("فئات ممنوعة أمنياً", "#1a1a1a", "sec", [
-        [55, "المتسولون والباعة المتجولون", "أفراد يمارسون استجداء الأموال أو البيع بلا تصريح", "case"],
-      ]),
-      t("وسائل النقل", "#0f8f80", "sto", [
-        [56, "الدراجات والاسكوترات ووسائل التنقل", "مركبات فردية بالدفع اليدوي أو المحركات"],
-        [57, "عربات الأطفال والكراسي الكبيرة", "أدوات نقل تتجاوز السعات المكانية المحددة"],
-      ]),
-    ];
-  }
+
+
   SZ_PALETTE = ["#0e7490", "#9c3d6b", "#b45309", "#1e9a66", "#a5566e", "#2f5f8a", "#6e8a3a", "#640f2a"];
   loadIrshad() {
-    try {
-      return JSON.parse(localStorage.getItem("bassam_seized_v1")) || { reports: [] };
-    } catch (t) {
-      return { reports: [] };
-    }
-  }
-  saveIrshad(t) {
-    if (this._irCanWrite())
-      try {
-        localStorage.setItem("bassam_seized_v1", JSON.stringify(t));
-      } catch (t) {}
-    else this.permDeny();
+    return { reports: this._bcClone(this._bcData("records")?.rows || []) };
   }
   qtyOf(t) {
     return "sar" === this.unitOf(t.id) ? 1 : parseInt(t.n, 10) || 0;
@@ -159,109 +199,44 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   sarTot(t) {
     return (t.items || []).reduce((t, e) => t + this.sarOf(e), 0);
   }
-  irActorKey() {
-    try {
-      const t = KIVO.BassamAuth && KIVO.BassamAuth.user ? KIVO.BassamAuth.user() : null;
-      return (t && (t.ekey || t.id || t.un)) || "";
-    } catch (t) {
-      return "";
-    }
-  }
+
   recBy(t) {
     return (t && (t.actor || t.name)) || "—";
   }
-  recKey(t) {
-    return (t && (t.actorKey || t.eid || t.actor)) || "";
-  }
-  recShift(t) {
-    if (!t) return "";
-    if (t.shift) return t.shift;
-    const e = this.loadShiftOptsIr();
-    if (!t.ts || !e.length) return "";
-    const s = new Date(t.ts),
-      a = 60 * s.getHours() + s.getMinutes(),
-      r = (t) => {
-        const e = String(t || "").split(":");
-        return 2 === e.length ? 60 * +e[0] + +e[1] : null;
-      };
-    for (const t of e) {
-      const e = r(t.tStart),
-        s = r(t.tEnd);
-      if (null != e && null != s && (e <= s ? a >= e && a < s : a >= e || a < s)) return t.name;
-    }
-    return "";
-  }
+
+
   loadCat() {
-    try {
-      const t = localStorage.getItem("bassam_seized_cat_v1");
-      if (t) {
-        const e = JSON.parse(t);
-        if (e && Array.isArray(e.cats) && e.cats.length) return e;
-      }
-    } catch (t) {}
-    return { ver: this.SZ_VER, cats: this.SZ_DEF_CATS().map((t) => ({ ...t, items: t.items.map((t) => ({ ...t })) })) };
+    const source = this._bcData("catalogs");
+    if (!source) return { ver: "", cats: [] };
+    return this._bcClone(source.catalogs.catalog.value);
   }
   saveCat(t) {
-    if (this._irCanWrite())
-      try {
-        localStorage.setItem("bassam_seized_cat_v1", JSON.stringify(t));
-      } catch (t) {}
-    else this.permDeny();
+    return this._szCatalogWrite("catalog", t);
   }
   SZ_OTHER = "أخرى";
-  SZ_DEF_KINDS = ["أقراط", "أساور", "عقد", "ساعات", "خواتم"];
+
   loadKinds() {
-    try {
-      const t = localStorage.getItem("bassam_seized_jew_v1");
-      if (t) {
-        const e = JSON.parse(t);
-        if (Array.isArray(e) && e.length) return e.filter((t) => "string" == typeof t && t && t !== this.SZ_OTHER);
-      }
-    } catch (t) {}
-    return this.SZ_DEF_KINDS.slice();
+    const source = this._bcData("catalogs"); if (!source) return [];
+    return source.catalogs.jew.value.slice();
   }
   saveKinds(t) {
-    if (this._irCanWrite())
-      try {
-        localStorage.setItem("bassam_seized_jew_v1", JSON.stringify(t));
-      } catch (t) {}
-    else this.permDeny();
+    return this._szCatalogWrite("jew", t);
   }
   kindOf(t) {
     return t && t.kind ? (t.kind === this.SZ_OTHER ? (t.kindTxt || "").trim() || this.SZ_OTHER : t.kind) : "";
   }
   loadActs() {
-    try {
-      const t = localStorage.getItem("bassam_seized_acts_v1");
-      if (t) {
-        const e = JSON.parse(t);
-        if (Array.isArray(e) && e.length) return e;
-      }
-    } catch (t) {}
-    return this.SZ_DEF_ACTS.map((t) => ({ ...t }));
+    const source = this._bcData("catalogs"); if (!source) return [];
+    return this._bcClone(source.catalogs.actions.value);
   }
   saveActs(t) {
-    if (this._irCanWrite())
-      try {
-        localStorage.setItem("bassam_seized_acts_v1", JSON.stringify(t));
-      } catch (t) {}
-    else this.permDeny();
+    return this._szCatalogWrite("actions", t);
   }
   loadIrshadLocs() {
-    try {
-      const t = localStorage.getItem("bassam_seized_locs_v1"),
-        e = t ? JSON.parse(t) : [];
-      return Array.isArray(e) ? e : [];
-    } catch (t) {
-      return [];
-    }
+    return (this._bcData("catalogs")?.catalogs.locations.value || []).slice();
   }
   saveIrshadLocs(t) {
-    if (this._irCanWrite())
-      try {
-        localStorage.setItem("bassam_seized_locs_v1", JSON.stringify(t));
-      } catch (t) {}
-    else this.permDeny();
+    return this._szCatalogWrite("locations", t);
   }
   catIndex() {
     const t = this.loadCat(),
@@ -299,27 +274,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const e = this.actMap()[t];
     return e ? e.color : "#94a3b8";
   }
-  loadStaffingIr() {
-    try {
-      const t = localStorage.getItem("bassam_staffing_v3"),
-        e = t ? JSON.parse(t) : null,
-        s = e && "object" == typeof e ? e : {};
-      return KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(s) : s;
-    } catch (t) {
-      return {};
-    }
-  }
-  employeesForShift(t, e, s, a) {
-    const r = this.loadStaffingIr()[t + "-" + e] || {};
-    return this.loadEmployeesIr()
-      .filter((t) => {
-        const e = t && t.eid;
-        if (!e) return !1;
-        const i = r[e];
-        return !(!i || i.shift !== s) && !(Array.isArray(i.rest) ? i.rest : []).includes(a);
-      })
-      .map((t) => ({ eid: t.eid, name: t.name || "بدون اسم" }));
-  }
   emptyDraft() {
     return {
       shift: "",
@@ -344,203 +298,54 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const r = (e.myEmp && e.spots[e.myEmp.eid]) || "";
     return (!r || (a.loc && a.loc !== a.locAuto) || a.loc === r || ((a.loc = r), (a.locAuto = r)), a);
   }
-  szSaveRec(t) {
-    const e = this.state,
-      s = e.irYear,
-      a = e.irMonth,
-      r = e.irDay;
-    if (!(t.items || []).length) return (this.setState({ irSaveErrMsg: "اختر التصنيف والبند والكمية ثم «إضافة»" }), !1);
-    const i = this.loadIrshad(),
-      o = e.irEditId,
-      n = t.items.map((t) => ({
-        id: +t.id,
-        n: parseInt(t.n, 10) || 0,
-        val: parseInt(t.val, 10) || 0,
-        act: t.act,
-        kind: t.kind || "",
-        kindTxt: t.kindTxt || "",
-        photos: (t.photos || []).slice(),
-        hist: (t.hist || []).slice(),
-      }));
-    if (o) {
-      const e = (i.reports || []).findIndex((t) => t.id === o);
-      if (-1 === e) return (this.setState({ irSaveErrMsg: "السجل الذي تحاول تعديله لم يعد موجوداً" }), !1);
-      const s = i.reports[e],
-        a = {};
-      return (
-        n.forEach((t) => (t.photos || []).forEach((t) => (a[t] = 1))),
-        (s.items || []).forEach((t) =>
-          (t.photos || []).forEach((t) => {
-            if (!a[t])
-              try {
-                KIVO.BassamIDB && KIVO.BassamIDB.del(t);
-              } catch (t) {}
-          }),
-        ),
-        (i.reports[e] = {
-          ...s,
-          loc: t.loc || "",
-          no: (t.no || "").trim(),
-          note: (t.note || "").trim(),
-          items: n,
-          editedTs: Date.now(),
-          editedBy: this.irActor(),
-        }),
-        this.saveIrshad(i),
-        !0
-      );
+  async _szConfirmPhotos(items, context) {
+    for (const id of new Set(items.flatMap(item => item.photos || []))) {
+      const upload = this._szUploads?.get(id);
+      if (!upload || upload.confirmed) continue;
+      if (!this._bcSame(context) || typeof KIVO.BassamIDB?.set !== "function") return false;
+      try {
+        if (!upload.pending) upload.pending = KIVO.BassamIDB.set(id, upload.url);
+        const confirmed = await upload.pending;
+        if (confirmed !== true || !this._bcSame(context)) throw Error("لم يؤكد الخادم حفظ الصورة");
+        upload.confirmed = true;
+      } catch (error) {
+        this.setState({ irSaveErrMsg: "لم تُحفظ الصورة؛ صورتك ومسودتك باقيتان لإعادة المحاولة", bcMessage: "تعذّر تأكيد الصورة؛ لم يُرسل سجل الضبط" }); return false;
+      } finally { upload.pending = null; }
     }
-    const l = {
-      id: "r" + Date.now().toString(36) + Math.floor(1e6 * Math.random()).toString(36),
-      y: s,
-      m: a,
-      d: r,
-      ts: Date.now(),
-      loc: t.loc || "",
-      actor: this.irActor(),
-      actorKey: this.irActorKey(),
-      no: (t.no || "").trim(),
-      note: (t.note || "").trim(),
-      items: n,
-    };
-    return ((i.reports = [...(i.reports || []), l]), this.saveIrshad(i), !0);
+    return true;
   }
-  szDayCtx(t, e, s, a) {
-    const r = KIVO.BassamEmp,
-      i = this.loadEmployeesIr(),
-      o = {};
-    i.forEach((t) => {
-      (r && r.tokens ? r.tokens(t) : [t.eid, t.nid, t.name]).forEach((e) => {
-        e && (o[String(e)] = t);
+  async szSaveRec(t) {
+    const state = this.state, editId = state.irEditId, context = this._bcContext();
+    if (this._szNeedsReview) { this.setState({ irSaveErrMsg: "تغيّر المحضر على الخادم؛ مسودتك باقية. افتح المحضر المحدث للمراجعة قبل استبداله" }); return false; }
+    if (!this.PC(editId ? "edit" : "add")) { this.permDeny(); return false; }
+    if (!(t.items || []).length) { this.setState({ irSaveErrMsg: "اختر التصنيف والبند والكمية ثم «إضافة»" }); return false; }
+    if (!context) { this.setState({ irSaveErrMsg: this._bcFailure("session").message }); return false; }
+    const snapshot = JSON.stringify(state.irDraft), before = this.loadIrshad().reports.find(row => row.id === editId);
+    const items = t.items.map((item, index) => ({ id: item.id, n: parseInt(item.n, 10) || 0, val: parseInt(item.val, 10) || 0,
+      act: item.act, kind: item.kind || "", kindTxt: item.kindTxt || "", photos: (item.photos || []).slice(),
+      ...(editId && Number.isSafeInteger(item.sourceIndex) ? { sourceIndex: item.sourceIndex } : editId && before?.items?.[index]?.id === item.id ? { sourceIndex: index } : {}) }));
+    this._szDraftStamp = this._szDraftStamp || this._bcStamp();
+    if (!await this._szConfirmPhotos(items, context)) return false;
+    const data = { loc: t.loc || "", no: (t.no || "").trim(), note: (t.note || "").trim(), items };
+    if (!editId) Object.assign(data, { y: state.irYear, m: state.irMonth, d: state.irDay });
+    const result = await this._bcMutate(editId ? "edit" : "create", { ...(editId ? { id: editId } : {}), data }, { stamp: this._szDraftStamp });
+    if (!result.ok) { this.setState({ irSaveErrMsg: result.message }); return false; }
+    if (!this._bcSame(result.context)) return false;
+    if (JSON.stringify(this.state.irDraft) !== snapshot || !result.matches) {
+      const draft = this.state.irDraft, sentItems = result.sent.data.items;
+      const currentItems = draft.items.map((item, index) => {
+        const sourceIndex = Number.isSafeInteger(item.sourceIndex) ? sentItems.findIndex(old => old.sourceIndex === item.sourceIndex && old.id === item.id) : sentItems[index]?.id === item.id ? index : -1;
+        const next = { ...item }; if (sourceIndex >= 0) next.sourceIndex = sourceIndex; else delete next.sourceIndex; return next;
       });
-    });
-    const n = (t) => o[String(t)] || null,
-      l = t + "-" + e + "-" + s;
-    let h = null;
-    if (this.bsOn("dreport"))
-      try {
-        const t = JSON.parse(localStorage.getItem("bassam_dreport_v1") || "{}");
-        h = t[l] || null;
-      } catch (t) {}
-    const c = (this.bsOn("staff") && this.loadStaffingIr()[t + "-" + e]) || {},
-      d = [],
-      p = {},
-      m = {};
-    h &&
-      h.shifts &&
-      Object.keys(h.shifts).forEach((t) => {
-        const e = h.shifts[t];
-        if (!e || !e.pulled) return;
-        (d.push(t), (m[t] = e.leaders || {}));
-        const s = e.rest && "object" == typeof e.rest ? e.rest : {};
-        p[t] = (e.roster || [])
-          .map((t) => {
-            if (!t || !t.ekey) return null;
-            const e = n(t.ekey),
-              r = t.st || "pr";
-            if ("ab" === r || "pm" === r || "lv" === r) return null;
-            const i = (c[t.ekey] || (e && c[e.eid]) || (e && c[e.nid]) || {}).rest;
-            return ((Array.isArray(s[t.ekey]) ? s[t.ekey] : Array.isArray(i) ? i : []) || []).some(
-              (t) => t === a || "ال" + t === a || t === "ال" + a,
-            )
-              ? null
-              : { eid: e ? e.eid : t.ekey, name: (e && e.name) || t.name || t.ekey, key: t.ekey, tin: !!t.tin };
-          })
-          .filter(Boolean);
-      });
-    let g = null;
-    if (this.bsOn("daily/rounds"))
-      try {
-        g = JSON.parse(localStorage.getItem("bassam_rounds_v1") || "{}")[l] || null;
-      } catch (t) {}
-    const u = {},
-      f = [];
-    g &&
-      Array.isArray(g.d) &&
-      g.d.forEach((t) => {
-        [
-          ["gates", t.gates || []],
-          ["zones", t.zones || []],
-        ]
-          .filter(([t]) => this.bsLensOn(t))
-          .forEach(([t, e]) =>
-            e.forEach((e) => {
-              if (!e) return;
-              const s = ((t, e) =>
-                "zones" === t
-                  ? e.code || e.name || "مصلى"
-                  : "marks" === t
-                    ? e.label || e.kind || "معلم"
-                    : e.label || "باب " + (e.num || ""))(t, e);
-              (-1 === f.indexOf(s) && f.push(s),
-                (e.emp || []).forEach((t) => {
-                  const e = n(t);
-                  u[e ? e.eid : String(t)] = s;
-                }));
-            }),
-          );
-      });
-    let b = null;
-    try {
-      b = KIVO.BassamAuth && KIVO.BassamAuth.user ? KIVO.BassamAuth.user() : null;
-    } catch (t) {}
-    const y = (b && b.ekey && n(b.ekey)) || null,
-      S = !(!b || !("super" === b.role || "dept" === b.role || "gm" === b.role || ("staff" === b.role && b.mgr)));
-    let x = null;
-    d.forEach((t) =>
-      p[t].forEach((e) => {
-        y && e.eid === y.eid && (x = { shift: t, eid: e.eid, name: e.name });
-      }),
-    );
-    const D = !(
-        !y ||
-        !d.some((t) => {
-          const e = m[t];
-          return e && [e.chief, e.deputy].some((t) => t && (t === y.name || t === y.eid || t === y.nid));
-        })
-      ),
-      z = !(!b || "staff" !== b.role || S || D);
-    let w = "";
-    try {
-      w = (KIVO.BassamDayShift ? KIVO.BassamDayShift.get(t, e, s) : "") || "";
-    } catch (t) {}
-    const k = [],
-      O = {};
-    return (
-      d.forEach((t) =>
-        p[t].forEach((t) => {
-          O[t.eid] || ((O[t.eid] = 1), k.push(t));
-        }),
-      ),
-      {
-        rep: !!h,
-        shifts: d,
-        rows: p,
-        leaders: m,
-        spots: u,
-        labels: f,
-        shiftOf: (t) => {
-          let e = "";
-          return (
-            d.forEach((s) =>
-              p[s].forEach((a) => {
-                a.eid === t && (e = s);
-              }),
-            ),
-            e
-          );
-        },
-        present: k,
-        hasRound: !!(g && Array.isArray(g.d) && g.d.length && (this.bsLensOn("gates") || this.bsLensOn("zones"))),
-        me: b,
-        myEmp: y,
-        isMgr: S,
-        amLeader: D,
-        locked: z,
-        myRow: x,
-        dayShift: -1 !== d.indexOf(w) ? w : d[0] || w || "",
-      }
-    );
+      this._szDraftStamp = { context: result.context, base: this._bcClone(result.data.base) };
+      this.setState({ irEditId: result.data.id, irDraft: { ...draft, items: currentItems }, irSaveErrMsg: "أُكّد السجل المرسل؛ تعديلاتك اللاحقة باقية ولم تُرسل تلقائيًا" }); return false;
+    }
+    this._szDraftStamp = null; this.setState({ irSaveErrMsg: "" }); return true;
+  }
+  szDayCtx() {
+    const context = this._bcData("context")?.context;
+    const data = context || { rep: false, shifts: [], rows: {}, leaders: {}, spots: {}, labels: [], present: [], myEmp: null, isMgr: false, amLeader: false, locked: true, myRow: null, hasRound: false };
+    return { ...data, shiftOf: eid => Object.keys(data.rows || {}).filter(shift => data.rows[shift].some(row => row.eid === eid)).pop() || "" };
   }
   state = (() => {
     const t = this.hToday();
@@ -722,12 +527,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         irGoRecords: () => (this._bsHT("records"), this.setState({ irTab: "records" })),
         ...t,
       };
+    this._bcEnsure("catalogs");
+    Object.assign(p, this._bcStatusVals());
     return (d && Object.assign(p, this._recordsCalVals()), c && Object.assign(p, this._dashVals()), p);
   }
   _dashVals() {
+    this._bcEnsure("dashboard", this._szDashboardQuery());
+    const source = this._bcData("dashboard"), dash = source?.dashboard || {
+      available: { years: [], months: [], total: 0, first: null }, totals: { reports: 0, qty: 0, actions: {} }, previous: { reports: 0, qty: 0, actions: {} },
+      series: [], previousSeries: [], heat: [], categories: [], locations: [], shifts: [], shiftSeries: [], locationSeries: [], employees: [], summary: { rows: [], totals: { reports: 0, qty: 0, employees: 0, actions: {} } }
+    }, totals = dash.totals, previous = dash.previous;
+    if (source) this._szAvailable = { context: source._contextKey, value: dash.available };
     const t = this.state,
       e = this.hToday(),
-      s = this.loadIrshad().reports || [],
+      s = dash.heat,
       a = 864e5,
       r = this.MONTHS,
       i = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
@@ -757,16 +570,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
       u = (t) => t.d + " " + r[t.m - 1] + " " + t.y + " هـ",
       f = this.loadActs(),
-      b = (t) => (e) => this.actOf(e, t),
-      y = (b((f[0] || {}).k || "sec"), (t) => this.benOf(t)),
-      S = s,
+      b = key => row => row.actions?.[key] || 0,
+      y = row => row.qty || 0,
       x = (t) => 1e4 * t.y + 100 * t.m + t.d,
       D = (t) => 100 * t.y + t.m,
       z = {},
       w = {};
-    s.forEach((t) => {
-      t.y && ((z[t.y] = 1), (w[t.y + "-" + t.m] = 1));
-    });
+    dash.available.years.forEach(year => { z[year] = 1; });
+    dash.available.months.forEach(row => { w[row.y + "-" + row.m] = 1; });
     let k = Object.keys(z)
       .map(Number)
       .sort((t, e) => e - t);
@@ -788,8 +599,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const t = A;
       ((A = T), (T = t));
     }
-    let _ = [],
-      F = [],
+    let _ = dash.series,
+      F = dash.previousSeries,
       N = [],
       B = !0,
       K = "",
@@ -797,45 +608,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       H = 0,
       R = v;
     if ("all" === C) {
-      ((_ = S.slice()), (B = !1));
-      const t = {};
-      (s.forEach((e) => {
-        t[D(e)] = { y: e.y, m: e.m };
-      }),
-        (N = Object.keys(t)
-          .map(Number)
-          .sort((t, e) => t - e)
-          .map((e) => ({ k: e, lab: r[t[e].m - 1], full: r[t[e].m - 1] + " " + t[e].y + " هـ" }))),
-        (K = "كل الفترة"));
-      let e = null;
-      if (
-        (s.forEach((t) => {
-          const s = x(t);
-          (null == e || s < e) && (e = s);
-        }),
-        null != e)
-      ) {
-        const t = Math.floor(e / 1e4),
-          s = Math.floor(e / 100) % 100,
-          r = e % 100;
-        try {
-          H = Math.round((M - p(this.hGreg(t, s, r))) / a) + 1;
-        } catch (t) {
-          H = 30 * N.length;
-        }
-      }
+      B = false;
+      N = dash.available.months.slice().sort((a, b) => a.y - b.y || a.m - b.m)
+        .map(row => ({ k: 100 * row.y + row.m, lab: r[row.m - 1], full: r[row.m - 1] + " " + row.y + " هـ" }));
+      K = "كل الفترة";
+      const first = dash.available.first;
+      if (first) H = Math.round((M - p(this.hGreg(first.y, first.m, first.d))) / a) + 1;
       R = k[0];
     } else if ("custom" === C) {
       const t = d(A),
-        e = d(T),
-        s = 1e4 * t.y + 100 * t.m + t.d,
-        i = 1e4 * e.y + 100 * e.m + e.d;
+      e = d(T);
       if (
-        ((_ = S.filter((t) => {
-          const e = x(t);
-          return e >= s && e <= i;
-        })),
-        (H = Math.round((T - A) / a) + 1),
+        (        (H = Math.round((T - A) / a) + 1),
         (B = H <= 62),
         B)
       )
@@ -856,27 +640,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
       K = u(t) + " ← " + u(e);
       const o = A - a,
-        n = d(A - H * a),
-        l = d(o),
-        h = 1e4 * n.y + 100 * n.m + n.d,
-        c = 1e4 * l.y + 100 * l.m + l.d;
-      ((F = S.filter((t) => {
-        const e = x(t);
-        return e >= h && e <= c;
-      })),
-        (V = u(n) + " ← " + u(l)),
-        (R = e.y));
+      n = d(A - H * a),
+      l = d(o);
+      V = u(n) + " ← " + u(l);
+      R = e.y;
     } else if ("all" === L) {
-      ((_ = S.filter((t) => t.y === v)), (B = !1));
+      B = false;
       for (let t = 1; t <= 12; t++) I(v, t) > 0 && N.push({ k: 100 * v + t, lab: r[t - 1], full: r[t - 1] + " " + v + " هـ" });
       ((H = N.reduce((t, e) => t + I(v, e.k % 100), 0)), (K = "كل أشهر " + v + " هـ"));
       const t = v === e.y;
-      let s = z[v - 1] ? S.filter((t) => t.y === v - 1) : [];
-      (t && (s = s.filter((t) => t.m < e.m || (t.m === e.m && t.d <= e.d))),
-        (F = s),
-        (V = t ? "نفس الفترة من " + (v - 1) + " هـ" : "سنة " + (v - 1) + " هـ"));
+      V = t ? "نفس الفترة من " + (v - 1) + " هـ" : "سنة " + (v - 1) + " هـ";
     } else {
-      ((_ = S.filter((t) => t.y === v && t.m === +L)), (B = !0));
+      B = true;
       const t = I(v, +L) || P(v, +L);
       for (let e = 1; e <= t; e++) N.push({ k: 1e4 * v + 100 * +L + e, lab: String(e), full: e + " " + r[+L - 1] + " " + v + " هـ" });
       ((H = t), (K = r[+L - 1] + " " + v + " هـ"));
@@ -884,12 +659,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         a = +L - 1;
       a < 1 && ((a = 12), (s = v - 1));
       const i = v === e.y && +L === e.m;
-      let o = w[s + "-" + a] ? S.filter((t) => t.y === s && t.m === a) : [];
-      (i && (o = o.filter((t) => t.d <= e.d)),
-        (F = o),
-        (V = i ? "أول " + c(e.d) + " من " + r[a - 1] + " " + s + " هـ" : r[a - 1] + " " + s + " هـ"));
+      V = i ? "أول " + c(e.d) + " من " + r[a - 1] + " " + s + " هـ" : r[a - 1] + " " + s + " هـ";
     }
-    const G = F.length > 0 && "all" !== C;
+    const G = previous.reports > 0 && "all" !== C;
     "all" === C && (V = "");
     const U = (t) => (t < 10 ? "0" + t : "" + t),
       j = (t) => (B ? Math.floor(t / 1e4) + "-" + U(Math.floor(t / 100) % 100) + "-" + U(t % 100) : Math.floor(t / 100) + "-" + U(t % 100)),
@@ -933,12 +705,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
       q = f
         .slice(0, 4)
-        .map((t) => ({ name: t.name, desc: "عدد القطع التي كان إجراؤها: " + t.name, f: b(t.k), color: t.color || "#b99751" })),
-      J = (t) => (e) => (q[t] ? q[t].f(e) : 0),
+        .map((t) => ({ k: t.k, name: t.name, desc: "عدد القطع التي كان إجراؤها: " + t.name, f: b(t.k), color: t.color || "#b99751" })),
       W = Q(y),
       X = q.map((t, e) => ({ m: t, st: Q(t.f), i1: 0 === e, i2: 1 === e, i3: 2 === e, i4: 3 === e })),
       $ = W.tot,
-      tt = F.reduce((t, e) => t + y(e), 0),
+      tt = previous.qty || 0,
       et = B ? "يوم" : "شهر",
       st = (t, e, s, a) => {
         const r = t.length;
@@ -960,28 +731,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       nt = ["#4a97cf", "#d9793a", "#2fa372", "#7e2a52", "#7b8a94", "#b99751"];
     let lt = [];
     "shift" === rt
-      ? (lt = it
-          .map((t, e) => ({
-            name: t.name,
-            color: nt[e % nt.length],
-            ser: Z(
-              _.filter((e) => this.recShift(e) === t.name),
-              y,
-            ),
-          }))
-          .filter((t) => t.ser.some((t) => t > 0)))
-      : "loc" === rt &&
-        (lt = ot
-          .slice(0, 6)
-          .map((t, e) => ({
-            name: t,
-            color: nt[e % nt.length],
-            ser: Z(
-              _.filter((e) => e.loc === t),
-              y,
-            ),
-          }))
-          .filter((t) => t.ser.some((t) => t > 0)));
+      ? (lt = it.map((option, index) => ({ name: option.name, color: nt[index % nt.length],
+          ser: Z(dash.shiftSeries.find(row => row.name === option.name)?.series || [], y) })).filter(row => row.ser.some(value => value > 0)))
+      : "loc" === rt && (lt = ot.slice(0, 6).map((name, index) => ({ name, color: nt[index % nt.length],
+          ser: Z(dash.locationSeries.find(row => row.name === name)?.series || [], y) })).filter(row => row.ser.some(value => value > 0)));
     const ht = "total" !== rt && lt.length > 0,
       ct = ht ? N.map((t, e) => lt.reduce((t, s) => t + s.ser[e], 0)) : W.ser;
     let dt = null;
@@ -1151,23 +904,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         const s = ((t - e) / e) * 100,
           a = Math.abs(s) < 0.5;
         return { txt: (a ? "◆ " : s >= 0 ? "▲ " : "▼ ") + o(Math.abs(s)) + "%", style: Ot(s >= 0, a) };
-      },
-      Et = {},
-      Lt = {};
-    _.forEach((t) =>
-      (t.items || []).forEach((t) => {
-        const e = this.itemOf(t.id),
-          s = e ? e.cat : "غير مصنّف";
-        ((Et[s] = (Et[s] || 0) + this.qtyOf(t)), e && (Lt[s] = e.color));
-      }),
-    );
-    let Pt = Object.keys(Et)
-      .map((t) => ({ name: t, v: Et[t], c: Lt[t] || "#94a3b8" }))
-      .sort((t, e) => e.v - t.v);
-    if (Pt.length > 7) {
-      const t = Pt.slice(6);
-      ((Pt = Pt.slice(0, 6)), Pt.push({ name: "تصنيفات أخرى (" + t.length + ")", v: t.reduce((t, e) => t + e.v, 0), other: !0 }));
-    }
+      };
+    const Pt = dash.categories.map(row => ({ name: row.name, v: row.value, c: row.color, other: !!row.other }));
     const It = Pt.reduce((t, e) => t + e.v, 0),
       Ct = Math.max.apply(null, [1].concat(Pt.map((t) => t.v))),
       Mt = Pt.map((t) => ({
@@ -1180,28 +918,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ((t.v / Ct) * 100).toFixed(2) +
           "%;background:" +
           (t.other ? "var(--bg-xc9cfd6)" : t.c),
-      })),
-      At = {},
-      Tt = {};
-    (_.forEach((t) => {
-      t.loc && (At[t.loc] = (At[t.loc] || 0) + y(t));
-    }),
-      F.forEach((t) => {
-        t.loc && (Tt[t.loc] = (Tt[t.loc] || 0) + y(t));
       }));
-    let _t = Object.keys(At)
-      .map((t) => ({ name: t, v: At[t], p: Tt[t] || 0 }))
-      .sort((t, e) => e.v - t.v);
-    if (_t.length > 7) {
-      const t = _t.slice(6);
-      ((_t = _t.slice(0, 6)),
-        _t.push({
-          name: "مواقع أخرى (" + t.length + ")",
-          v: t.reduce((t, e) => t + e.v, 0),
-          p: t.reduce((t, e) => t + e.p, 0),
-          other: !0,
-        }));
-    }
+    const _t = dash.locations.map(row => ({ name: row.name, v: row.value, p: row.previous || 0, other: !!row.other }));
     const Ft = Math.max.apply(null, [1].concat(_t.map((t) => t.v))),
       Nt = _t.map((t) => {
         const e = vt(t.v, t.p);
@@ -1219,9 +937,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             (t.other ? "var(--bg-xc9cfd6)" : "var(--bg-x8a6f35)"),
         };
       }),
-      Bt = it.map((t, e) => {
-        const s = _.filter((e) => this.recShift(e) === t.name);
-        return { name: t.name, color: nt[e % nt.length], v: s.reduce((t, e) => t + y(e), 0), n: s.length, rs: s };
+      Bt = it.map((option, index) => {
+        const row = dash.shifts.find(value => value.name === option.name) || {};
+        return { ...row, name: option.name, color: nt[index % nt.length], v: row.qty || 0, n: row.reports || 0 };
       }),
       Kt = Bt.reduce((t, e) => t + e.v, 0) || 1,
       Vt = Bt.filter((t) => t.v > 0).map((t) => ({
@@ -1240,29 +958,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })),
       Gt = [
         ["إجمالي القطع", $, tt],
-        ["عدد المحاضر", _.length, F.length],
+        ["عدد المحاضر", totals.reports, previous.reports],
       ]
-        .concat(X.slice(0, 2).map((t, e) => [t.m.name, t.st.tot, F.reduce((t, s) => t + J(e)(s), 0)]))
+        .concat(X.slice(0, 2).map((t, e) => [t.m.name, t.st.tot, previous.actions?.[t.m.k] || 0]))
         .map((t) => {
           const e = vt(t[1], t[2]);
           return { label: t[0], nums: n(t[2]) + " → " + n(t[1]), txt: e.txt, style: e.style };
-        }),
-      Ut = {},
-      jt = {},
-      Yt = {},
-      Zt = {};
-    (_.forEach((t) => {
-      const e = this.recKey(t);
-      e && ((Ut[e] = (Ut[e] || 0) + y(t)), (Yt[e] = (Yt[e] || 0) + 1), (Zt[e] = { name: this.recBy(t), shift: this.recShift(t) }));
-    }),
-      F.forEach((t) => {
-        const e = this.recKey(t);
-        e && (jt[e] = (jt[e] || 0) + y(t));
-      }));
-    const Qt = Object.keys(Ut)
-        .map((t) => ({ k: t, v: Ut[t], p: jt[t] || 0, n: Yt[t], nm: (Zt[t] || {}).name || "—", sh: (Zt[t] || {}).shift || "" }))
-        .sort((t, e) => e.v - t.v)
-        .slice(0, 6),
+        });
+    const Qt = dash.employees.map(row => ({ k: row.key, v: row.qty || 0, p: row.previous || 0, n: row.reports || 0, nm: row.name || "—", sh: row.shift || "" })),
       qt = Math.max.apply(null, [1].concat(Qt.map((t) => t.v))),
       Jt = Qt.map((t, e) => {
         const s = vt(t.v, t.p);
@@ -1286,20 +989,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         };
       }),
       Wt = Bt.map((t) => {
-        const e = {};
-        t.rs.forEach((t) => {
-          const s = this.recKey(t);
-          s && (e[s] = 1);
-        });
-        const s = t.rs.reduce((t, e) => t + J(0)(e), 0),
-          a = t.rs.reduce((t, e) => t + J(1)(e), 0),
-          r = t.rs.reduce((t, e) => t + J(2)(e) + J(3)(e), 0);
+        const s = t.actions?.[q[0]?.k] || 0, a = t.actions?.[q[1]?.k] || 0,
+          r = (t.actions?.[q[2]?.k] || 0) + (t.actions?.[q[3]?.k] || 0);
         return {
           name: t.name,
           dot:
             "width:8px;height:8px;border-radius:3px;display:inline-block;margin-inline-end:7px;vertical-align:middle;background:" + t.color,
           reports: n(t.n),
-          emps: n(Object.keys(e).length),
+          emps: n(t.employees || 0),
           ben: n(t.v),
           avg: t.n ? (t.v / t.n).toFixed(1) : "0",
           trans: n(s),
@@ -1350,30 +1047,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const le = (t) =>
         "height:28px;width:28px;border:0;border-right:1px solid var(--bd-xe1e1e1);background:transparent;display:flex;align-items:center;justify-content:center;" +
         (t ? "color:var(--fg-x475569);cursor:pointer" : "color:var(--fg-xcbd5e1);cursor:default"),
-      he = {};
-    te.forEach((t) => (he[t.name] = 1));
-    const ce = _.filter((t) => he[this.recShift(t)]),
-      de = ce.reduce((t, e) => t + y(e), 0),
-      pe = {};
-    ce.forEach((t) => {
-      const e = this.recKey(t);
-      e && (pe[e] = 1);
-    });
-    const me = {
-        label: Xt ? "إجمالي المعروض" : "الإجمالي",
-        reports: n(ce.length),
-        emps: n(Object.keys(pe).length),
-        ben: n(de),
-        avg: ce.length ? (de / ce.length).toFixed(1) : "0",
-        trans: n(ce.reduce((t, e) => t + J(0)(e), 0)),
-        bro: n(ce.reduce((t, e) => t + J(1)(e), 0)),
-        ref: n(ce.reduce((t, e) => t + J(2)(e) + J(3)(e), 0)),
-        share: ($ ? o((de / $) * 100) : "0") + "%",
+      he = dash.summary.totals,
+      de = he.qty || 0,
+      me = {
+        label: Xt ? "إجمالي المعروض" : "الإجمالي", reports: n(he.reports || 0), emps: n(he.employees || 0), ben: n(de),
+        avg: he.reports ? (de / he.reports).toFixed(1) : "0", trans: n(he.actions?.[q[0]?.k] || 0), bro: n(he.actions?.[q[1]?.k] || 0),
+        ref: n((he.actions?.[q[2]?.k] || 0) + (he.actions?.[q[3]?.k] || 0)), share: ($ ? o((de / $) * 100) : "0") + "%",
       },
       ge = [{ dot: "#b99751", n: "الإجمالي", v: h($), p: "" }]
         .concat(X.map((t) => ({ dot: t.m.color, n: t.m.name, v: h(t.st.tot), p: $ ? "(" + o((t.st.tot / $) * 100) + "٪)" : "" })))
         .concat([
-          { dot: "#7b8a94", n: "المحاضر", v: n(_.length), p: "" },
+          { dot: "#7b8a94", n: "المحاضر", v: n(totals.reports), p: "" },
           { dot: "#7b8a94", n: "المتوسط لكل " + et, v: h(W.avg), p: "" },
           { dot: "#7b8a94", n: "أعلى", v: h(W.max), p: W.peakNum },
         ]),
@@ -1430,7 +1114,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         " · " +
         c(H) +
         " · " +
-        KIVO.BassamCount(_.length, "محضر") +
+        KIVO.BassamCount(totals.reports, "محضر") +
         "" +
         (G ? " · تُقارَن بـ " + V : "all" === C ? "" : " · لا توجد فترة سابقة للمقارنة"),
       irDashHeroLbl: "إجمالي القطع المضبوطة · " + K,
@@ -1545,7 +1229,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irDashLangRows: Mt,
       irDashLangOn: Mt.length > 0,
       irDashLangOff: 0 === Mt.length,
-      ...KIVO.BassamCount.pair("irDashLangTot", n(X[0].st.tot), "قطعة", "g"),
+      ...KIVO.BassamCount.pair("irDashLangTot", n(X[0]?.st.tot || 0), "قطعة", "g"),
       irDashLocRows: Nt,
       irDashLocOn: Nt.length > 0,
       irDashLocOff: 0 === Nt.length,
@@ -1560,7 +1244,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irDashTopEmployees: Jt,
       irDashEmpOn: Jt.length > 0,
       irDashEmpOff: 0 === Jt.length,
-      irEmptyShow: 0 === s.length,
+      irEmptyShow: 0 === dash.available.total,
       irDashSumOpen: !!t.irDashSumOpen,
       irDashSumToggle: () => this.setState({ irDashSumOpen: !this.state.irDashSumOpen }),
       irDashSumChev: "transition:transform .2s;flex-shrink:0;" + (t.irDashSumOpen ? "transform:rotate(180deg)" : ""),
@@ -1602,19 +1286,25 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     };
   }
   _recordsCalVals() {
+    this._bcEnsure("calendar", { year: this.state.irYear, month: this.state.irMonth, day: this.state.irDay });
+    this._bcEnsure("records", this._szRecordQuery(), this.state.irLedgerPerPage === 0);
+    this._bcEnsure("context", { year: this.state.irYear, month: this.state.irMonth, day: this.state.irDay });
+    this._szEnsureRetro();
     const t = this.state,
       e = this.hToday(),
       s = t.irYear,
       a = t.irMonth,
+      calendar = this._bcData("calendar"),
+      records = this._bcData("records"),
+      recordStamp = records ? this._bcStamp(records.base) : null,
       r = this.loadIrshad(),
-      i = this.szDayCtx(s, a, t.irDay, ""),
-      o = this.irActorKey(),
-      n = (r.reports || []).filter((t) => !i.locked || this.recKey(t) === o || (i.myEmp && t.eid === i.myEmp.eid)),
-      l = (t, e, s) => n.filter((a) => !(a.y !== t || (null != e && a.m !== e) || (null != s && a.d !== s))).length,
+      n = r.reports || [],
+      l = (year, month, day) => year !== s ? 0 : day != null ? month === a ? calendar?.days.find(row => row.d === day)?.n || 0 : 0 : month != null ? calendar?.months.find(row => row.m === month)?.n || 0 : calendar?.yearTotal || 0,
       h = l(s),
       c = 12 * e.y + e.m,
-      d = t.irOpenMonths || {},
-      p = t.irOpenDays || {},
+      flags = this._szRetroFlags(),
+      d = flags.months,
+      p = flags.days,
       m = this.MONTHS.map((t, r) => {
         const i = r + 1,
           o = a === i,
@@ -1683,11 +1373,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               ),
             dbl: (t) => {
               /* الموجة 1 · IRSZ-4: بلا صلاحية الاعتماد كانت النقرةُ المزدوجة لا تفعل شيئاً بصمت — الآن تشرح السبب */
-              (t.stopPropagation(),
+              return (t.stopPropagation(),
                 this.PC("approve")
                   ? g
-                    ? this.setState({ irOpenMonths: { [h]: !0 }, irOpenDays: {}, irYear: s, irMonth: i, irLedgerOpen: !1 })
-                    : p && m && this.setState({ irOpenMonths: {} })
+                    ? this._szRetroToggle({ y: s, m: i })
+                    : p && m && this._szRetroToggle({ y: s, m: i })
                   : (g || (p && m)) && this.bsToast("فتحُ الشهر أو اليوم المقفل للاستدراك وإعادةُ قفله تحتاج صلاحية الاعتماد — راجع مدير الإدارة"));
             },
           }
@@ -1746,11 +1436,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           (b ? " — انقضى، مقفل · " + (this.PC("approve") ? "نقرة مزدوجة لفتحه" : "فتحه يحتاج صلاحية الاعتماد") : S ? " — مفتوح للاستدراك" + (this.PC("approve") ? " · نقرة مزدوجة لإغلاقه" : "") : ""),
         click: () => this.setState(o ? { irDay: r } : { irDay: r, irOpenDays: {}, irLedgerOpen: !1 }),
         dbl: (t) => {
-          (t.stopPropagation(),
+          return (t.stopPropagation(),
             this.PC("approve")
               ? y
-                ? this.setState({ irOpenMonths: { [u]: !0 }, irOpenDays: {} })
-                : d && this.setState((t) => ({ irOpenDays: t.irOpenDays && t.irOpenDays[h] ? {} : { [h]: !0 } }))
+                ? this._szRetroToggle({ y: s, m: a })
+                : d && this._szRetroToggle({ y: s, m: a, d: r })
               : (y || d) && this.bsToast("فتحُ الشهر أو اليوم المقفل للاستدراك وإعادةُ قفله تحتاج صلاحية الاعتماد — راجع مدير الإدارة"));
         },
         style:
@@ -1772,11 +1462,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       v = !!p[s + "-" + a + "-" + k],
       E = f || (g === c && k < e.d),
       L = !y && E && !v,
-      P = !y && !L && this._irCanWrite(),
+      P = !!calendar && !!this._bcData("catalogs") && !!this._bcData("context") && !y && !L && this._irCanWrite(),
       I = this.WEEKDAYS[this.hGreg(s, a, k).getDay()],
       C = this.szDayCtx(s, a, k, I),
       M = this.szAutoFill(t.irDraft || this.emptyDraft(), C, !!t.irEditId),
       A = (t) => {
+        this._szDraftStamp = this._szDraftStamp || this._bcStamp(calendar?.base);
         const e = { ...(this.state.irDraft || this.emptyDraft()), ...t };
         this.setState({ irDraft: e, irSaveErrMsg: "" });
       },
@@ -1791,7 +1482,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       B = this.loadActs(),
       K = (this.actMap(), (V = M.cat), N.cats.find((t) => t.name === V) || null);
     var V;
-    const H = this.itemOf(+M.item),
+    const H = this.itemOf(M.item),
       R = (H && H.unit) || "pc",
       G = this.loadIrshad(),
       U = (t) =>
@@ -1869,24 +1560,28 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 editVal: c ? (null != this.state[r] ? this.state[r] : i) : "",
                 setEditVal: (t) => this.setState({ [r]: t.target.value }),
                 startEdit: (t) => {
+                   this._szStampCatalog("locations", i);
                   (t && t.stopPropagation && t.stopPropagation(), this.setState({ [a]: h, [r]: i }));
                 },
-                saveEdit: () => {
+                 saveEdit: async () => {
                   const o = (this.state[r] || "").trim();
+                   const stamp = this._szCatalogStamps?.get("locations");
+                   if (stamp?.target !== undefined && stamp.target !== i) return void this.bsToast("تغيّر الموقع أو موضعه؛ أعد فتحه للمراجعة قبل تعديله");
                   if (!o || (o !== i && l.includes(o))) return void this.setState({ [a]: -1, [r]: "" });
                   const c = t();
-                  ((c[h] = o), e(c));
+                   c[h] = o; if (!await e(c)) return;
+                   const updated = this._szCatalogStamps?.get("locations"); if (updated) updated.target = o;
                   const d = this.state.irDraft || this.emptyDraft(),
                     p = s === i ? n(o) : {};
-                  this.setState({ irDraft: { ...d, ...p }, [a]: -1, [r]: "" });
+                   this.setState({ irDraft: { ...d, ...p }, ...(this.state[r]?.trim() === o ? { [a]: -1, [r]: "" } : {}) });
                 },
-                cancelEdit: () => this.setState({ [a]: -1, [r]: "" }),
-                delClick: (i) => {
+                 cancelEdit: () => { this._szCatalogStamps?.delete("locations"); this.setState({ [a]: -1, [r]: "" }); },
+                 delClick: async (i) => {
                   i && i.stopPropagation && i.stopPropagation();
                   const o = t();
                   if (o.length <= 1) return;
                   const l = o[h];
-                  (o.splice(h, 1), e(o));
+                   o.splice(h, 1); if (!await e(o)) return;
                   const c = this.state.irDraft || this.emptyDraft(),
                     d = s === l ? n("") : {};
                   this.setState({ irDraft: { ...c, ...d }, [a]: -1, [r]: "" });
@@ -1898,14 +1593,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             toggle: () => this.setState({ [o]: !this.state[o], [a]: -1 }),
             close: () => this.setState({ [o]: !1, [a]: -1 }),
             newVal: this.state[i] || "",
-            setNewVal: (t) => this.setState({ [i]: t.target.value }),
-            addNew: () => {
+             setNewVal: (t) => { this._szStampCatalog("locations"); this.setState({ [i]: t.target.value }); },
+             addNew: async () => {
               const s = (this.state[i] || "").trim();
               if (s) {
                 const a = t();
-                a.includes(s) || (a.push(s), e(a));
+                 if (!a.includes(s)) { a.push(s); if (!await e(a)) return; }
               }
-              this.setState({ [i]: "" });
+               if ((this.state[i] || "").trim() === s) this.setState({ [i]: "" });
             },
           };
         })(
@@ -1921,7 +1616,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       Q = (t) =>
         "display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font-size:12.5px;font-weight:400;color:var(--fg-x25343f);" +
         (t ? "background:var(--bg-a185151810p08);color:var(--fg-x8a6f35)" : ""),
-      q = (t, e, s, a, r, i, o, n, l, h, c, d) =>
+      q = (kind, e, s, a, r, i, o, n, l, h, c, d) =>
         e.map((t, e) => {
           const p = this.state[c] === e,
             m = a(t);
@@ -1938,20 +1633,26 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             editVal: p ? (null != this.state[d] ? this.state[d] : r(t)) : "",
             setEditVal: (t) => this.setState({ [d]: t.target.value }),
             startEdit: (s) => {
+               this._szStampCatalog(kind, a(t));
               (s && s.stopPropagation && s.stopPropagation(), this.setState({ [c]: e, [d]: r(t) }));
             },
-            saveEdit: () => {
+             saveEdit: async () => {
               const s = (this.state[d] || "").trim();
-              (this.setState({ [c]: -1, [d]: "" }), s && s !== r(t) && l(t, e, s));
+               const stamp = this._szCatalogStamps?.get(kind);
+               if (stamp?.target !== undefined && stamp.target !== a(t)) return void this.bsToast("تغيّر العنصر أو موضعه؛ أعد فتحه للمراجعة قبل تعديله");
+               if (s && s !== r(t) && await l(t, e, s) === false) return;
+               const updated = this._szCatalogStamps?.get(kind);
+               if (updated && (kind === "jew" || kind === "catalog" && t && typeof t === "object" && !("id" in t))) updated.target = s;
+               if ((this.state[d] || "").trim() === s && this.state[c] === e) this.setState({ [c]: -1, [d]: "" });
             },
-            cancelEdit: () => this.setState({ [c]: -1, [d]: "" }),
-            delClick: (s) => {
-              (s && s.stopPropagation && s.stopPropagation(), h(t, e));
+             cancelEdit: () => { this._szCatalogStamps?.delete(kind); this.setState({ [c]: -1, [d]: "" }); },
+             delClick: async (s) => {
+               s && s.stopPropagation && s.stopPropagation(); await h(t, e);
             },
           };
         }),
       J = q(
-        0,
+        "catalog",
         N.cats,
         M.cat,
         (t) => t.name,
@@ -1971,17 +1672,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           }),
             this.setState({ szCatPopOpen: !1, szCatEditIdx: -1 }));
         },
-        (t, e, s) => {
+        async (t, e, s) => {
           const a = this.loadCat();
           if (a.cats.some((t, a) => a !== e && t.name === s)) return void this.bsToast("يوجد تصنيف بهذا الاسم");
           const r = a.cats[e].name;
-          ((a.cats[e].name = s), this.saveCat(a), M.cat === r && A({ cat: s }));
+          a.cats[e].name = s; if (!await this.saveCat(a)) return false; if (M.cat === r) A({ cat: s }); return true;
         },
-        (t, e) => {
+        async (t, e) => {
           if (U(t.name)) return void this.bsToast("لا يمكن حذف «" + t.name + "» لأنه مستخدم في محاضر محفوظة — عدّل اسمه أو أبقه");
           const s = this.loadCat();
-          s.cats.length <= 1 ||
-            (s.cats.splice(e, 1), this.saveCat(s), M.cat === t.name && A({ cat: "", item: 0 }), this.setState({ szCatEditIdx: -1 }));
+          if (s.cats.length <= 1) return false;
+          s.cats.splice(e, 1); if (!await this.saveCat(s)) return false;
+          if (M.cat === t.name) A({ cat: "", item: 0 }); this.setState({ szCatEditIdx: -1 }); return true;
         },
         "szCatEditIdx",
         "szCatEditVal",
@@ -1990,10 +1692,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       X = (t) => !W || KIVO.BassamFind.match(W, [t.name, String(t.id)]),
       $ = (t, e, s) =>
         q(
-          0,
+          "catalog",
           s,
-          +M.item,
-          (t) => t.id,
+           String(M.item),
+           (t) => String(t.id),
           (t) => t.name,
           () => t.color || "#94a3b8",
           (t) => String(t.id),
@@ -2001,21 +1703,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             (A({ cat: t.name, item: e.id, act: B.some((e) => e.k === t.def) ? t.def : B[0].k, n: "", val: "", kind: "", kindTxt: "" }),
               this.setState({ szItemPopOpen: !1, szItemEditIdx: -1, szItemQ: "" }));
           },
-          (t, s, a) => {
+          async (t, s, a) => {
             const r = this.loadCat(),
               i = r.cats[e].items.find((e) => e.id === t.id);
-            i && ((i.name = a), this.saveCat(r));
+            if (!i) return false; i.name = a; return await this.saveCat(r);
           },
-          (t, s) => {
-            if (((a = t.id), (G.reports || []).some((t) => (t.items || []).some((t) => +t.id === +a))))
+          async (t, s) => {
+            if (((a = t.id), (G.reports || []).some((t) => (t.items || []).some((t) => String(t.id) === String(a)))))
               return void this.bsToast("لا يمكن حذف «" + t.name + "» لأنه مستخدم في محاضر محفوظة — عدّل اسمه أو أبقه");
             var a;
             const r = this.loadCat(),
               i = r.cats[e];
-            ((i.items = i.items.filter((e) => e.id !== t.id)),
-              this.saveCat(r),
-              +M.item === t.id && A({ item: 0 }),
-              this.setState({ szItemEditIdx: -1 }));
+            i.items = i.items.filter((e) => e.id !== t.id);
+            if (!await this.saveCat(r)) return false;
+            if (String(M.item) === String(t.id)) A({ item: 0 }); this.setState({ szItemEditIdx: -1 }); return true;
           },
           "szItemEditIdx",
           "szItemEditVal",
@@ -2033,7 +1734,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         s.length && et.push({ name: t.name, color: t.color || "#94a3b8", rows: $(t, e, s) });
       });
     const st = q(
-        0,
+        "actions",
         B,
         M.act,
         (t) => t.k,
@@ -2043,23 +1744,24 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         (t) => {
           (A({ act: t.k }), this.setState({ szActPopOpen: !1, szActEditIdx: -1 }));
         },
-        (t, e, s) => {
+        async (t, e, s) => {
           const a = this.loadActs();
-          ((a[e].name = s), this.saveActs(a));
+          a[e].name = s; return await this.saveActs(a);
         },
-        (t, e) => {
+        async (t, e) => {
           if (((s = t.k), (G.reports || []).some((t) => (t.items || []).some((t) => t.act === s))))
             return void this.bsToast("لا يمكن حذف «" + t.name + "» لأنه مستخدم في محاضر محفوظة — عدّل اسمه أو أبقه");
           var s;
           const a = this.loadActs();
-          a.length <= 1 || (a.splice(e, 1), this.saveActs(a), M.act === t.k && A({ act: a[0].k }), this.setState({ szActEditIdx: -1 }));
+          if (a.length <= 1) return false; a.splice(e, 1); if (!await this.saveActs(a)) return false;
+          if (M.act === t.k) A({ act: a[0].k }); this.setState({ szActEditIdx: -1 }); return true;
         },
         "szActEditIdx",
         "szActEditVal",
       ),
       at = this.loadKinds(),
       rt = q(
-        0,
+        "jew",
         at,
         M.kind,
         (t) => t,
@@ -2069,61 +1771,36 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         (t) => {
           (A({ kind: t, kindTxt: "" }), this.setState({ szKindPopOpen: !1, szKindEditIdx: -1 }));
         },
-        (t, e, s) => {
+        async (t, e, s) => {
           const a = this.loadKinds();
           if (s === this.SZ_OTHER || a.some((t, a) => a !== e && t === s)) return void this.bsToast("يوجد نوع بهذا الاسم");
-          const r = a[e];
-          ((a[e] = s), this.saveKinds(a));
-          const i = this.loadIrshad();
-          let o = !1;
-          ((i.reports || []).forEach((t) =>
-            (t.items || []).forEach((t) => {
-              t.kind === r && ((t.kind = s), (o = !0));
-            }),
-          ),
-            o && this.saveIrshad(i),
-            M.kind === r && A({ kind: s }));
+          const r = a[e], result = await this._bcMutate("jew-rename", { from: r, to: s }, { stamp: this._szCatalogStamps?.get("jew"), count: null });
+          if (!result.ok) { this.bsToast(result.message); return false; }
+          this._szCatalogStamps?.delete("jew");
+          if (!result.matches) return false;
+          if (M.kind === r) A({ kind: s }); return true;
         },
-        (t, e) => {
+        async (t, e) => {
           if (((t) => (G.reports || []).some((e) => (e.items || []).some((e) => e.kind === t)))(t))
             return void this.bsToast("لا يمكن حذف «" + t + "» لأنه مستخدم في محاضر محفوظة — عدّل اسمه أو أبقه");
           const s = this.loadKinds();
-          s.length <= 1 || (s.splice(e, 1), this.saveKinds(s), M.kind === t && A({ kind: "" }), this.setState({ szKindEditIdx: -1 }));
+          if (s.length <= 1) return false; s.splice(e, 1); if (!await this.saveKinds(s)) return false;
+          if (M.kind === t) A({ kind: "" }); this.setState({ szKindEditIdx: -1 }); return true;
         },
         "szKindEditIdx",
         "szKindEditVal",
       ),
       it = "pcval" === R && M.kind === this.SZ_OTHER,
-      ot = n.filter((t) => t.y === s && t.m === a).sort((t, e) => e.d - t.d || (e.ts || 0) - (t.ts || 0)),
-      nt = ot.reduce((t, e) => t + this.benOf(e), 0),
-      lt = (t) => ot.reduce((e, s) => e + this.actOf(s, t), 0),
+      monthTotals = calendar?.monthTotals || { reports: 0, qty: 0, sar: 0, actions: {} },
+      monthCount = monthTotals.reports,
+      total = records?.total || 0,
+      nt = monthTotals.qty || 0,
+      lt = key => monthTotals.actions?.[key] || 0,
       ht = B[0] || { k: "sec", name: "—" },
       ct = B[1] || { k: "des", name: "—" },
       dt = B[2] || { k: "sto", name: "—" },
-      pt = ot.reduce((t, e) => t + this.sarTot(e), 0),
-      mt = (t.irLgSearch || "").trim().toLowerCase(),
-      gt = ot.filter(
-        (e) =>
-          !(
-            ("all" !== t.irLgLoc && (e.loc || "") !== t.irLgLoc) ||
-            ("all" !== t.irLgCat &&
-              !(e.items || []).some((e) => {
-                const s = this.itemOf(e.id);
-                return s && s.cat === t.irLgCat;
-              })) ||
-            ("all" !== t.irLgAct && !(e.items || []).some((e) => e.act === t.irLgAct)) ||
-            (mt &&
-              !KIVO.BassamFind.match(
-                mt,
-                [this.recBy(e), e.loc, e.no].concat(
-                  (e.items || []).map((t) => {
-                    const e = this.itemOf(t.id);
-                    return (e ? e.name : "") + " " + this.kindOf(t);
-                  }),
-                ),
-              ))
-          ),
-      ),
+      pt = monthTotals.sar || 0,
+      gt = records?.rows || [],
       ut = (t) => {
         let e = "—";
         try {
@@ -2143,11 +1820,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return { dayLabel: t.d + "/" + t.m + "/" + t.y, gregLabel: e, timeLabel: s };
       },
       ft = 0 === t.irLedgerPerPage ? 0 : t.irLedgerPerPage || 10,
-      bt = 0 === ft ? Math.max(1, gt.length) : ft,
-      yt = Math.max(1, Math.ceil(gt.length / bt)),
-      St = Math.min(Math.max(1, t.irLedgerPage || 1), yt),
+      bt = 0 === ft ? Math.max(1, total) : ft,
+      yt = Math.max(1, Math.ceil(total / bt)),
+      St = records?.page || Math.min(Math.max(1, t.irLedgerPage || 1), yt),
       xt = (St - 1) * bt,
-      Dt = gt.slice(xt, xt + bt),
+      Dt = gt,
       zt = [];
     {
       const t = [],
@@ -2178,11 +1855,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       kt =
         "width:100%;height:38px;padding:0 12px;font-size:12.5px;background:var(--bg-a2482502520p8);border:1px solid var(--bd-xe2e8f0);border-radius:11px;outline:none;font-family:'Cairo',sans-serif;color:var(--fg-x141414);box-sizing:border-box",
       Ot = (t) => (t.items || []).map((t, e) => j(t, e, !1)),
-      vt = () => {
-        const t = new Date(),
-          e = this.hToday();
-        return e.d + "/" + e.m + "/" + e.y + " " + String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
-      },
       Et = t.szUpd ? n.find((e) => e.id === t.szUpd) : null,
       Lt = Et
         ? (() => {
@@ -2209,18 +1881,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   btnStyle:
                     "height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--bd-xa8853f);background:linear-gradient(180deg,var(--bg-xc5a45c),var(--bg-xb99751));color:var(--text-on-brand);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;" +
                     (r !== t.act ? "cursor:pointer" : "opacity:.45;cursor:default"),
-                  apply: () => {
+                  apply: async () => {
                     if (r === t.act) return;
                     if (!this.PC("edit")) return void this.permDeny();
-                    const e = this.loadIrshad(),
-                      i = (e.reports || []).find((t) => t.id === Et.id);
-                    if (!i || !i.items[s]) return;
-                    const o = i.items[s];
-                    ((o.hist = (o.hist || []).concat([{ from: o.act, to: r, at: vt(), by: this.irActor(), t: Date.now() }])),
-                      (o.act = r),
-                      (i.editedTs = Date.now()),
-                      (i.editedBy = this.irActor()),
-                      this.saveIrshad(e));
+                  const result = await this._bcMutate("item-action", { id: Et.id, index: s, act: r }, { stamp: recordStamp });
+                  if (!result.ok) return void this.bsToast(result.message);
+                  if (!result.matches) return void this.bsToast("أُكّد الإجراء السابق؛ راجع المحضر قبل تغيير الإجراء مجددًا", "warn");
                     const n = { ...(this.state.szUpdSel || {}) };
                     (delete n[s],
                       this.setState({ szUpdSel: n }),
@@ -2313,20 +1979,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               })),
               szGalClose: () => this.setState({ szGal: null, szGalIdx: 0 }),
               szGalStop: (t) => t.stopPropagation(),
-              szGalDel: () => {
+              szGalDel: async () => {
                 if (!a) return;
                 if (!this.PC("del")) return void this.permDeny();
-                const t = this.loadIrshad(),
-                  e = (t.reports || []).find((t) => t.id === Pt.id);
-                if (!e) return;
-                const s = e.items[a.ii];
-                if (s) {
-                  ((s.photos = (s.photos || []).filter((t) => t !== a.iid)), this.saveIrshad(t));
-                  try {
-                    KIVO.BassamIDB && KIVO.BassamIDB.del(a.iid);
-                  } catch (t) {}
-                  (this.setState({ szGalIdx: 0 }), this.bsAck("حُذفت الصورة", "ok"));
-                }
+                const result = await this._bcMutate("photo-delete", { id: Pt.id, index: a.ii, image: a.iid }, { stamp: recordStamp });
+                if (!result.ok) return void this.bsToast(result.message);
+                 if (!result.matches) return void this.bsToast("أُكّد حذف الصورة السابق؛ راجع المحضر قبل حذف صورة أخرى", "warn");
+                 this.setState({ szGalIdx: 0 }); this.bsAck("حُذفت الصورة", "ok");
               },
               szGalDownload: () => {
                 if (a && a.url)
@@ -2391,7 +2050,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       szAddTitle: t.irEditId ? "حفظ التعديل على السجل" : "إضافة — تُحفظ فوراً في سجل الحركة",
       szAddLbl: t.irEditId ? "حفظ التعديل" : "إضافة",
       szCatVer: N.ver || this.SZ_VER,
-      ...KIVO.BassamCount.pair("irKpiCount", String(ot.length), "محضر"),
+      ...KIVO.BassamCount.pair("irKpiCount", String(monthCount), "محضر"),
       irKpiBen: nt.toLocaleString("en-US"),
       irKpiSar: pt.toLocaleString("en-US"),
       irKpiSarHas: pt > 0,
@@ -2447,17 +2106,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         this.setState({ szCatPopOpen: !t.szCatPopOpen, szCatEditIdx: -1, szItemPopOpen: !1, szActPopOpen: !1, szKindPopOpen: !1 }),
       szCatClose: () => this.setState({ szCatPopOpen: !1, szCatEditIdx: -1 }),
       szCatNewVal: t.szCatNewVal || "",
-      szCatNewSet: (t) => this.setState({ szCatNewVal: t.target.value }),
-      szCatAddNew: () => {
+      szCatNewSet: (t) => { this._szStampCatalog("catalog"); this.setState({ szCatNewVal: t.target.value }); },
+      szCatAddNew: async () => {
         const t = (this.state.szCatNewVal || "").trim();
         if (!t) return;
         const e = this.loadCat();
-        e.cats.some((e) => e.name === t)
-          ? this.bsToast("يوجد تصنيف بهذا الاسم")
-          : (e.cats.push({ name: t, color: this.SZ_PALETTE[e.cats.length % this.SZ_PALETTE.length], def: B[0].k, items: [] }),
-            this.saveCat(e),
-            this.setState({ szCatNewVal: "", szCatPopOpen: !1 }),
-            A({ cat: t, item: 0, act: B[0].k }));
+        if (e.cats.some(e => e.name === t)) return void this.bsToast("يوجد تصنيف بهذا الاسم");
+        if (!B.length) return void this.bsToast("انتظر قراءة القوائم من الخادم");
+        e.cats.push({ name: t, color: this.SZ_PALETTE[e.cats.length % this.SZ_PALETTE.length], def: B[0].k, items: [] });
+        if (!await this.saveCat(e)) return;
+        if ((this.state.szCatNewVal || "").trim() === t) this.setState({ szCatNewVal: "", szCatPopOpen: false }); A({ cat: t, item: 0, act: B[0].k });
       },
       szItemLabel: H ? H.id + " · " + H.name : K ? "— اختر البند —" : "اختر التصنيف أولاً",
       szItemColor: H ? H.color : "#cbd5e1",
@@ -2483,18 +2141,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       szItemQ: t.szItemQ || "",
       szItemSetQ: (t) => this.setState({ szItemQ: t.target.value }),
       szItemNewVal: t.szItemNewVal || "",
-      szItemNewSet: (t) => this.setState({ szItemNewVal: t.target.value }),
-      szItemAddNew: () => {
+      szItemNewSet: (t) => { this._szStampCatalog("catalog"); this.setState({ szItemNewVal: t.target.value }); },
+      szItemAddNew: async () => {
         const t = (this.state.szItemNewVal || "").trim();
         if (!t || !K) return void (K || this.bsToast("اختر التصنيف أولاً ثم أضف البند فيه"));
         const e = this.loadCat(),
           s = e.cats.find((t) => t.name === K.name);
         if (!s) return;
-        const a = { id: Math.max(57, ...e.cats.flatMap((t) => (t.items || []).map((t) => t.id))) + 1, name: t, desc: "", unit: "pc" };
-        (s.items.push(a),
-          this.saveCat(e),
-          this.setState({ szItemNewVal: "", szItemPopOpen: !1, szItemQ: "" }),
-          A({ item: a.id, act: B.some((t) => t.k === s.def) ? s.def : B[0].k }));
+        const a = { id: Math.max(57, ...e.cats.flatMap((t) => (t.items || []).map((t) => Number(t.id)).filter(Number.isFinite))) + 1, name: t, desc: "", unit: "pc" };
+        s.items.push(a); if (!await this.saveCat(e)) return;
+        if ((this.state.szItemNewVal || "").trim() === t) this.setState({ szItemNewVal: "", szItemPopOpen: false, szItemQ: "" });
+        A({ item: a.id, act: B.some(t => t.k === s.def) ? s.def : B[0]?.k || "" });
       },
       szUnitPc: "pc" === R || "case" === R || "pcval" === R,
       szUnitSar: "sar" === R,
@@ -2517,16 +2174,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         this.setState({ szActPopOpen: !t.szActPopOpen, szActEditIdx: -1, szCatPopOpen: !1, szItemPopOpen: !1, szKindPopOpen: !1 }),
       szActClose: () => this.setState({ szActPopOpen: !1, szActEditIdx: -1 }),
       szActNewVal: t.szActNewVal || "",
-      szActNewSet: (t) => this.setState({ szActNewVal: t.target.value }),
-      szActAddNew: () => {
+      szActNewSet: (t) => { this._szStampCatalog("actions"); this.setState({ szActNewVal: t.target.value }); },
+      szActAddNew: async () => {
         const t = (this.state.szActNewVal || "").trim();
         if (!t) return;
         const e = this.loadActs(),
           s = "a" + Date.now().toString(36);
-        (e.push({ k: s, name: t, color: "#475569" }),
-          this.saveActs(e),
-          this.setState({ szActNewVal: "", szActPopOpen: !1 }),
-          A({ act: s }));
+        e.push({ k: s, name: t, color: "#475569" }); if (!await this.saveActs(e)) return;
+        if ((this.state.szActNewVal || "").trim() === t) this.setState({ szActNewVal: "", szActPopOpen: false }); A({ act: s });
       },
       szKindLabel: M.kind || "— اختر نوع القطعة —",
       szKindColor: M.kind ? (it ? "#94a3b8" : "#c9a227") : "#cbd5e1",
@@ -2542,15 +2197,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         this.setState({ szKindPopOpen: !t.szKindPopOpen, szKindEditIdx: -1, szCatPopOpen: !1, szItemPopOpen: !1, szActPopOpen: !1 }),
       szKindClose: () => this.setState({ szKindPopOpen: !1, szKindEditIdx: -1 }),
       szKindNewVal: t.szKindNewVal || "",
-      szKindNewSet: (t) => this.setState({ szKindNewVal: t.target.value }),
-      szKindAddNew: () => {
+      szKindNewSet: (t) => { this._szStampCatalog("jew"); this.setState({ szKindNewVal: t.target.value }); },
+      szKindAddNew: async () => {
         const t = (this.state.szKindNewVal || "").trim();
         if (!t) return;
         if (t === this.SZ_OTHER) return void this.bsToast("«أخرى» موجودة دائماً في آخر القائمة");
         const e = this.loadKinds();
-        e.includes(t)
-          ? this.bsToast("يوجد نوع بهذا الاسم")
-          : (e.push(t), this.saveKinds(e), this.setState({ szKindNewVal: "", szKindPopOpen: !1 }), A({ kind: t, kindTxt: "" }));
+        if (e.includes(t)) return void this.bsToast("يوجد نوع بهذا الاسم");
+        e.push(t); if (!await this.saveKinds(e)) return;
+        if ((this.state.szKindNewVal || "").trim() === t) this.setState({ szKindNewVal: "", szKindPopOpen: false }); A({ kind: t, kindTxt: "" });
       },
       szKindOther: it,
       szKindTxt: M.kindTxt || "",
@@ -2569,9 +2224,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       szPhotoN: (M.photos || []).length ? "(" + M.photos.length + ")" : "",
       szPending: (M.photos || []).map((t) => ({ url: t.url })),
       szPendingHas: (M.photos || []).length > 0,
-      szAddItem: () => {
+      szAddItem: async () => {
         const t = this.state.irDraft || this.emptyDraft(),
-          e = this.itemOf(+t.item);
+          e = this.itemOf(t.item);
         if (!e) return void this.setState({ irSaveErrMsg: "اختر التصنيف ثم البند قبل الإضافة" });
         const s = e.unit || "pc",
           a = parseInt(t.n || "0", 10) || 0;
@@ -2591,7 +2246,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         });
         const l = this.state.irEditId ? (t.items || []).slice() : [],
           h = {
-            id: e.id,
+            id: this.state.irEditId && String(l[0]?.id) === String(e.id) ? l[0].id : e.id,
             n: a,
             val: ("pcval" === s && parseInt(t.val, 10)) || 0,
             act: o,
@@ -2599,9 +2254,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             kindTxt: i,
             photos: this.state.irEditId ? ((l[0] || {}).photos || []).concat(n) : n,
             hist: (this.state.irEditId && (l[0] || {}).hist) || [],
+             ...(this.state.irEditId && String(l[0]?.id) === String(e.id) && Number.isSafeInteger(l[0]?.sourceIndex) ? { sourceIndex: l[0].sourceIndex } : {}),
           },
           c = this.state.irEditId ? [h].concat(l.slice(1)) : [h];
-        this.szSaveRec({ ...t, items: c }) &&
+        await this.szSaveRec({ ...t, items: c }) &&
           this.setState({
             irDraft: { ...this.emptyDraft(), loc: t.loc, locAuto: t.locAuto, cat: t.cat, act: "" },
             irEditId: null,
@@ -2610,13 +2266,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             irLgPage: 1,
           });
       },
-      irClearDraft: () => this.setState({ irDraft: this.emptyDraft(), irSaveErrMsg: "", irEditId: null }),
+      irClearDraft: () => this._szClearDraft(),
       irSaveErr: !!t.irSaveErrMsg,
       irSaveErrMsg: t.irSaveErrMsg || "",
       irIsEditing: !!t.irEditId,
-      irSaveReport: () => {
+      irSaveReport: async () => {
         const t = this.szAutoFill(this.state.irDraft || this.emptyDraft(), C, !!this.state.irEditId);
-        this.szSaveRec(t) && this.setState({ irDraft: this.emptyDraft(), irEditId: null, irSaveErrMsg: "" });
+        await this.szSaveRec(t) && this.setState({ irDraft: this.emptyDraft(), irEditId: null, irSaveErrMsg: "" });
       },
       irLedgerOpen: !!t.irLedgerOpen,
       irLedgerToggle: () => this.setState({ irLedgerOpen: !this.state.irLedgerOpen }),
@@ -2629,9 +2285,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irLgFilesBtnStyle:
         "height:34px;display:flex;align-items:center;gap:6px;font-size:11.5px;border:1px solid var(--bd-xe2e8f0);border-radius:10px;padding:0 10px;cursor:pointer;font-family:'Cairo',sans-serif;background:var(--bg-xffffff);" +
         (t.irLgFilesOpen ? "color:var(--fg-xb99751);border-color:var(--bd-a185151810p4)" : "color:var(--fg-x475569)"),
-      irLgExportCsv: () => {
+      irLgExportCsv: async () => {
         if (!this.PC("export")) return;
-        const t = gt.map((t) => {
+        const context = this._bcContext(), catalogBase = this._bcData("catalogs")?.base;
+        const result = await this._bcCollect(this._szRecordQuery(), context);
+        if (!result.ok) return void this.bsToast(result.message);
+        if (!this._bcSame(context) || !this._bcBaseSame(catalogBase, result.data.base) || !this._bcBaseSame(this._bcData("catalogs")?.base, catalogBase)) return void this.bsToast("تغيّرت البيانات أثناء التصدير؛ حدّثها وأعد المحاولة");
+        const t = result.data.rows.map((t) => {
             const { dayLabel: e, gregLabel: s, timeLabel: a } = ut(t),
               r = (t.items || []).map((t, e) => j(t, e, !1));
             return [
@@ -2682,9 +2342,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irLgMonthLabel: O + " " + s + " هـ",
       irLgClearAllItemStyle:
         "display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;transition:background .15s;" +
-        (ot.length > 0 ? "cursor:pointer;color:var(--fg-x141414)" : "cursor:not-allowed;color:var(--fg-xcbd5e1);opacity:.6"),
+        (monthCount > 0 ? "cursor:pointer;color:var(--fg-x141414)" : "cursor:not-allowed;color:var(--fg-xcbd5e1);opacity:.6"),
       irLgClearAllAsk: () => {
-        this.PC("del") ? 0 !== ot.length && this.setState({ irLgFilesOpen: !1, irLgClearAllConfirm: !0 }) : this.permDeny();
+        this.PC("del") ? 0 !== monthCount && this.setState({ irLgFilesOpen: !1, irLgClearAllConfirm: !0 }) : this.permDeny();
       },
       irLgClearAllOpen: !!t.irLgClearAllConfirm,
       irLgClearAllStop: (t) => t.stopPropagation(),
@@ -2695,29 +2355,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         " " +
         s +
         " هـ نهائياً (" +
-        KIVO.BassamCount(ot.length, "محضر|مسجّل") +
+        KIVO.BassamCount(monthCount, "محضر|مسجّل") +
         ") مع " +
-        KIVO.BassamCount.agr(ot.length, "صوره", "صورهما", "صورها") +
+        KIVO.BassamCount.agr(monthCount, "صوره", "صورهما", "صورها") +
         ".",
-      irLgClearAllDo: () => {
-        const t = this.loadIrshad(),
-          e = (t.reports || []).length;
-        ((t.reports || [])
-          .filter((t) => t.y === s && t.m === a)
-          .forEach((t) =>
-            (t.items || []).forEach((t) =>
-              (t.photos || []).forEach((t) => {
-                try {
-                  KIVO.BassamIDB && KIVO.BassamIDB.del(t);
-                } catch (t) {}
-              }),
-            ),
-          ),
-          (t.reports = (t.reports || []).filter((t) => !(t.y === s && t.m === a))),
-          this.saveIrshad(t));
-        const r = e - t.reports.length;
-        (this.setState({ irLgClearAllConfirm: !1, irLedgerPage: 1 }),
-          this.bsAck("تم حذف " + KIVO.BassamCount(r, "محضر", "g") + " من " + O + " " + s + " هـ.", "ok"));
+      irLgClearAllDo: async () => {
+        if (!this.PC("del") || !calendar) return void this.permDeny();
+        const result = await this._bcMutate("delete-month", { year: s, month: a, day: k }, { stamp: this._bcStamp(calendar.base), count: monthCount });
+        if (!result.ok) return void this.bsToast(result.message);
+        if (!result.matches) return void this.bsToast("أُكّد الحذف السابق؛ راجع الفترة الحالية قبل تنفيذ حذف آخر", "warn");
+        this.setState({ irLgClearAllConfirm: false, irLedgerPage: 1 });
+        this.bsAck("تم حذف " + KIVO.BassamCount(result.data.n, "محضر", "g") + " من " + O + " " + s + " هـ.", "ok");
       },
       ...(() => {
         const e = (e, s, a, r) => {
@@ -2754,8 +2402,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "irLgLoc",
             "كل المواقع",
             [{ v: "all", name: "كل المواقع" }].concat(
-              ot
-                .map((t) => t.loc)
+              (records?.facets?.locations || [])
                 .filter((t, e, s) => t && s.indexOf(t) === e)
                 .map((t) => ({ v: t, name: t })),
             ),
@@ -2769,13 +2416,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ...e("irLgFa", "irLgAct", "كل الإجراءات", [{ v: "all", name: "كل الإجراءات" }].concat(B.map((t) => ({ v: t.k, name: t.name })))),
         };
       })(),
-      irLgShownCount: String(gt.length),
-      irLgTotalCount: String(ot.length),
-      irLedgerCount: KIVO.BassamCount(String(ot.length), "محضر") + "",
+      irLgShownCount: String(total),
+      irLgTotalCount: String(monthCount),
+      irLedgerCount: KIVO.BassamCount(String(monthCount), "محضر") + "",
       irLedgerSub: "كل محاضر المضبوطات المسجّلة خلال " + O + " " + s + " هـ",
       irLedgerHas: gt.length > 0,
       irLedgerEmpty: 0 === gt.length,
-      irLedgerEmptyMsg: 0 === ot.length ? "لا محاضر مسجّلة في هذا الشهر بعد" : "لا نتائج مطابقة للبحث/الفلترة الحالية",
+      irLedgerEmptyMsg: !records ? "انتظر قراءة المحاضر من الخادم" : 0 === monthCount ? "لا محاضر مسجّلة في هذا الشهر بعد" : "لا نتائج مطابقة للبحث/الفلترة الحالية",
       irLedgerRows: Dt.map((t) => {
         const { dayLabel: e, gregLabel: s, timeLabel: a } = ut(t),
           r = (t.items || []).reduce((t, e) => t + (e.photos || []).length, 0);
@@ -2827,19 +2474,22 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   color: "#b99751",
                   p1: "M12 20h9",
                   p2: "M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z",
-                  run: () => {
-                    const e = t.y + "-" + t.m,
-                      s = t.y + "-" + t.m + "-" + t.d;
+                  run: async () => {
+                    if (this._szNeedsReview) {
+                      if (typeof KIVO.bsConfirm !== "function") return void this.bsToast("مسودتك باقية؛ يلزم تأكيد مراجعة المحضر المحدث قبل استبدالها");
+                      const context = this._bcContext(), confirmed = await KIVO.bsConfirm({ title: "مراجعة المحضر المحدث", msg: "فتح المحضر المحدث يستبدل محتوى مسودتك الحالية بالنسخة المؤكدة. راجع مسودتك قبل المتابعة.", ok: "افتح النسخة المؤكدة" });
+                      if (!confirmed || !this._bcSame(context)) return;
+                    }
+                    this._szNeedsReview = false;
+                    this._szDraftStamp = recordStamp;
                     this.setState({
                       irYear: t.y,
                       irMonth: t.m,
                       irDay: t.d,
-                      irOpenMonths: { [e]: !0 },
-                      irOpenDays: { [s]: !0 },
                       irEditId: t.id,
                       irDraft: {
                         ...this.emptyDraft(),
-                        item: t.items && t.items[0] ? +t.items[0].id : 0,
+                        item: t.items && t.items[0] ? t.items[0].id : 0,
                         cat: t.items && t.items[0] && this.itemOf(t.items[0].id) ? this.itemOf(t.items[0].id).cat : "",
                         n: t.items && t.items[0] ? String(t.items[0].n || "") : "",
                         val: t.items && t.items[0] && t.items[0].val ? String(t.items[0].val) : "",
@@ -2849,7 +2499,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         loc: t.loc || "",
                         no: t.no || "",
                         note: t.note || "",
-                        items: (t.items || []).map((t) => ({ ...t, photos: (t.photos || []).slice(), hist: (t.hist || []).slice() })),
+                        items: (t.items || []).map((t, sourceIndex) => ({ ...t, sourceIndex, photos: (t.photos || []).slice(), hist: (t.hist || []).slice() })),
                       },
                       irSaveErrMsg: "",
                     });
@@ -2863,26 +2513,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   danger: !0,
                   p1: "M3 6h18",
                   p2: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2",
-                  run: () => {
-                    const e = this.loadIrshad();
-                    ((t.items || []).forEach((t) =>
-                      (t.photos || []).forEach((t) => {
-                        try {
-                          KIVO.BassamIDB && KIVO.BassamIDB.del(t);
-                        } catch (t) {}
-                      }),
-                    ),
-                      (e.reports = (e.reports || []).filter((e) => e.id !== t.id)),
-                      this.saveIrshad(e),
-                      this.setState({ irTab: this.state.irTab }));
+                  run: async () => {
+                    const result = await this._bcMutate("delete", { id: t.id }, { stamp: recordStamp });
+                    if (!result.ok) return void this.bsToast(result.message);
+                    this.bsAck("حُذف المحضر", "ok");
                   },
                 }
               : null,
           ]),
         };
       }),
-      ...KIVO.BassamCount.pair("irLedgerPgTotal", String(gt.length), "سجل", "g"),
-      irLedgerPgRange: 0 === gt.length ? "0" : xt + 1 + "–" + Math.min(xt + bt, gt.length),
+      ...KIVO.BassamCount.pair("irLedgerPgTotal", String(total), "سجل", "g"),
+      irLedgerPgRange: 0 === total ? "0" : xt + 1 + "–" + Math.min(xt + bt, total),
       irLedgerPgNums: zt,
       irLedgerPerPage: String(ft),
       irLedgerOnPerPage: (t) => {
@@ -2910,6 +2552,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   szOnFile(t) {
     const e = t && t.target && t.target.files && t.target.files[0];
     if (!e) return;
+    if (!this._bcContext()) return void this.bsToast(this._bcFailure("session").message);
+    this._szDraftStamp = this._szDraftStamp || this._bcStamp();
     const s = new Image(),
       a = URL.createObjectURL(e);
     ((s.onload = () => {
@@ -2923,9 +2567,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         URL.revokeObjectURL(a);
         const o = "szp_" + Date.now().toString(36) + "_" + Math.floor(1e9 * Math.random()).toString(36);
         ((this._szImg = this._szImg || {}), (this._szImg[o] = i));
-        try {
-          KIVO.BassamIDB && KIVO.BassamIDB.set(o, i);
-        } catch (t) {}
+        this._szUploads = this._szUploads || new Map(); this._szUploads.set(o, { url: i, confirmed: false });
         const n = this.state.irDraft || this.emptyDraft();
         if (null != this._szPhotoTarget && n.items[this._szPhotoTarget]) {
           const t = n.items.slice(),
