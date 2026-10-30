@@ -1,0 +1,462 @@
+{
+  "status": "preview-schema9-accepted",
+  "acceptedAtUtc": "2026-10-30T18:55:43.725Z",
+  "schema": 9,
+  "allBusinessMigrated": false,
+  "git": {
+    "repository": "https://github.com/ashm0336-blip/RISHAD-266",
+    "branch": "develop",
+    "baselineCommit": "4d8ab1e81cc5dd3fadad3acaf4963a76ba206f6e",
+    "migrationCommit": "05ca1972bb9a03c69f50a89dab58645f68d469a0",
+    "deployedCodeCommit": "eb45569ae52de112ff7a0eafaa99972ff95be534",
+    "pushIndependentlyVerified": true,
+    "mainModified": false,
+    "oldRepositoryModified": false
+  },
+  "deployment": {
+    "id": "8655dc6a-2b48-47e1-a9c0-c198d03482aa",
+    "url": "https://8655dc6a.kivo-d81.pages.dev",
+    "branch": "test",
+    "environment": "preview",
+    "alias": "https://test.kivo-d81.pages.dev",
+    "database": "bassam-db-preview",
+    "productionDeploymentUnchanged": true,
+    "productionConfigUnchanged": true,
+    "previewR2ConfigUnchanged": true,
+    "buildManifestSha256": "3974abfb6bc89dbb41df1fd7f65260cbc4e7145b6ef9d8d53368c6c6b6626ee8"
+  },
+  "testedArtifacts": {
+    "workers/_worker.js": "0de7dfadb691195517552610d9befd97bdc986ab9ad3bcb3c9fd9fb6b33aa10e",
+    "workers/parts.json": "354c14dcfa4d818c263ae05de90420e5154d41d29c69e8d8fe941f05fa309f55",
+    "pk265/_worker.js": "663fca50ff5a5e23b797408e045e3b7b28cd4710542bda60533f581e54033593",
+    "pk265.build.json": "3974abfb6bc89dbb41df1fd7f65260cbc4e7145b6ef9d8d53368c6c6b6626ee8"
+  },
+  "completedDomains": [
+    {
+      "name": "seized",
+      "logicalResources": 6,
+      "newRelationalTables": 11,
+      "scope": "Reports, items, photo references, history, catalog/actions/locations/kinds and retro windows"
+    },
+    {
+      "name": "award",
+      "logicalResources": 3,
+      "newRelationalTables": 11,
+      "scope": "Nominations, case texts, answers, scores, document versions, sections and items"
+    }
+  ],
+  "integration": {
+    "typedBackendAndFrontend": true,
+    "existingAccessPolicyPreserved": true,
+    "legacyRuntimePathsRemoved": true,
+    "atomicSharedRestoreManifest": 3,
+    "previousBackupManifestImportAtBoundary": [
+      1,
+      2
+    ],
+    "dualRuntimeStores": false,
+    "r2Writes": 0,
+    "existingAccountsPasswordPolicyModulesLensesAndDesignPreserved": true
+  },
+  "localAcceptance": {
+    "counts": {
+      "tests": 332,
+      "pass": 332,
+      "skipped": 0,
+      "fail": 0,
+      "cancelled": 0
+    },
+    "method": "Targeted composite325 unique cases for the original code, with unchanged areas retained and7 new D1-limit regressions for the provider fix; changed SQL additionally validated by18 atomic cases and native workerd85 checks. Not a full platform suite rerun.",
+    "fullPlatformSuiteRerun": false,
+    "rollbackPythonTests": 31,
+    "localRestoreFaultPositions": 105,
+    "localResetFaultPositions": 67,
+    "changedSqlRegressionTests": 7,
+    "freshSharedAtomicTests": 18,
+    "preparedQaTests": 37,
+    "recoveryToolMockTests": 26,
+    "offlineReadonlyTests": 10,
+    "offlinePublicTests": 7,
+    "nativeD1": {
+      "checks": 85,
+      "httpRequests": 112,
+      "cleanup": true,
+      "schema": 9,
+      "foreignKeyViolations": 0,
+      "protectedIdentitiesUnchanged": true,
+      "externalNetworkCalls": 0,
+      "r2Calls": 0,
+      "proof": ".cache/preview9/qa9-native-final.json",
+      "proofSha256": "36611d3ac3453b6641e18aa7ba06f6f2340ac8f464a548bf03e7d9e0986b0123",
+      "actualCloudDatabase": false
+    },
+    "build": {
+      "files": 133,
+      "performanceBudgetsPassed": 16,
+      "apiContractsPassed": 74,
+      "reconstructionEquivalencePassed": 19,
+      "eslintErrors": 0,
+      "eslintWarnings": 298,
+      "baselineEslintWarnings": 325,
+      "secretsFindings": 0
+    }
+  },
+  "activation": {
+    "http": 200,
+    "atUtc": "2026-10-30T18:48:29.610Z",
+    "requestCount": 1,
+    "automaticRetry": false,
+    "permitConsumed": true
+  },
+  "liveQa": {
+    "startedUtc": "2026-10-30T18:50:22.987Z",
+    "completedUtc": "2026-10-30T18:51:50.003Z",
+    "httpChecks": 85,
+    "checks": [
+      "identity-super",
+      "identity-manager",
+      "identity-staff",
+      "staff-overview-denied",
+      "principal-forgery-denied",
+      "dstats-save",
+      "dstats-cas",
+      "dstats-staff-denied",
+      "dstats-readback",
+      "notification-emit",
+      "notification-once",
+      "notification-target",
+      "notification-read",
+      "notification-export-denied",
+      "custody-type",
+      "custody-cas",
+      "custody-issue",
+      "custody-idempotency",
+      "custody-staff-denied",
+      "custody-return",
+      "kv-save-ack",
+      "kv-save-cas",
+      "employee-custody-context",
+      "employee-transition-denied",
+      "irshad-create",
+      "irshad-idempotency",
+      "irshad-cas",
+      "irshad-read-denied",
+      "irshad-write-denied",
+      "irshad-principal-forgery-denied",
+      "irshad-export-denied",
+      "irshad-readback",
+      "irshad-edit",
+      "irshad-delete-create",
+      "irshad-delete",
+      "irshad-catalog-languages",
+      "irshad-catalog-locations",
+      "irshad-dashboard",
+      "irshad-retro-open",
+      "irshad-retro-read",
+      "irshad-retro-close",
+      "irshad-old-get-moved",
+      "irshad-old-save-denied",
+      "irshad-export",
+      "seized-create",
+      "seized-idempotency",
+      "seized-cas",
+      "seized-read-denied",
+      "seized-write-denied",
+      "seized-principal-forgery-denied",
+      "seized-export-denied",
+      "seized-readback",
+      "seized-edit",
+      "seized-catalog-locations",
+      "seized-retro-open",
+      "seized-retro-read",
+      "seized-retro-close",
+      "seized-export-owned",
+      "award-create",
+      "award-idempotency",
+      "award-cas",
+      "award-read-outside-scope-denied",
+      "award-reference-read-outside-scope-denied",
+      "award-write-denied",
+      "award-export-denied",
+      "award-principal-forgery-denied",
+      "award-readback",
+      "award-edit",
+      "award-status",
+      "award-reference-department",
+      "award-global-readonly",
+      "award-export-owned",
+      "seized-old-get-moved",
+      "seized-old-save-denied",
+      "award-old-get-moved",
+      "award-old-save-denied",
+      "restore-staff-denied",
+      "restore-inspect-no-images",
+      "restore-commit",
+      "restore-idempotency",
+      "restore-readback",
+      "irshad-restore-readback",
+      "seized-restore-readback",
+      "award-restore-readback",
+      "protected-identities-preserved"
+    ],
+    "cleanupComplete": true,
+    "temporaryAccountsAndBusinessFixturesRemoved": true,
+    "existingOwnerAndProtectedDocumentsPreserved": true,
+    "auditHistoryRetained": true,
+    "restoreHistoryRetained": true,
+    "revisionTombstonesRetained": true,
+    "r2Calls": 0,
+    "productionD1Calls": 0
+  },
+  "independentPostflight": {
+    "completedUtc": "2026-10-30T18:55:39.410Z",
+    "readOnly": true,
+    "authenticatedReadRequests": 3,
+    "selectStatements": 56,
+    "migrations": [
+      "0001_baseline",
+      "0002_enforcement_tables",
+      "0003_aud_legacy_import",
+      "0004_daily_stats",
+      "0005_notifications",
+      "0006_custody",
+      "0007_atomic_restore",
+      "0008_irshad",
+      "0009_seized_awards"
+    ],
+    "typedMigrationTables": [
+      "award_answers",
+      "award_case_texts",
+      "award_doc_items",
+      "award_doc_sections",
+      "award_documents",
+      "award_records",
+      "award_request_checks",
+      "award_requests",
+      "award_resources",
+      "award_score_rows",
+      "award_scores",
+      "custody_issues",
+      "custody_items",
+      "custody_movements",
+      "custody_request_outputs",
+      "custody_requests",
+      "irshad_catalog_entries",
+      "irshad_report_languages",
+      "irshad_reports",
+      "irshad_requests",
+      "irshad_retro_windows",
+      "restore_operations",
+      "restore_preimage",
+      "restore_snapshot_manifest",
+      "seized_actions",
+      "seized_catalog_items",
+      "seized_categories",
+      "seized_item_history",
+      "seized_item_photos",
+      "seized_items",
+      "seized_list_values",
+      "seized_reports",
+      "seized_requests",
+      "seized_resource_state",
+      "seized_retro_windows"
+    ],
+    "authzMode": "enforce",
+    "retiredBusinessKvRows": 0,
+    "temporaryResidueTotal": 0,
+    "foreignKeyViolations": 0,
+    "permitAbsent": true,
+    "cutoverMarkersAbsent": true,
+    "ownerAccountCount": 1,
+    "protectedDocumentsMatchPreupgrade": true,
+    "retainedRestoreHistory": {
+      "receipts": 1,
+      "preimages": 63,
+      "manifests": 34
+    },
+    "retainedAuditCounts": {
+      "businessAudit": 27,
+      "seedAudit": 1,
+      "cleanupAudit": 1,
+      "authorizationAudit": 1
+    },
+    "globalRevisionStableAcrossReads": true,
+    "cloudMutations": 0,
+    "databaseExportCreated": false
+  },
+  "publicVerification": {
+    "checks": 33,
+    "passed": 33,
+    "failed": 0,
+    "requests": 33,
+    "scope": "Immutable deployment and test alias: roots, pings and thirteen actual build assets each; three prior supported-schema versions reject schema9 with503.",
+    "oldSchemaGuards": [
+      {
+        "schema": "5.2",
+        "id": "66af5a38-7c09-497d-8834-860f5f52b5c8",
+        "http": 503
+      },
+      {
+        "schema": "7",
+        "id": "f12dc3ce-eb2b-4768-8db2-020bf81f489b",
+        "http": 503
+      },
+      {
+        "schema": "8",
+        "id": "fc679d1e-de46-492e-9684-fad21feb4594",
+        "http": 503
+      }
+    ],
+    "assetBytesMatchedBuild": true
+  },
+  "firstAttempt": {
+    "deployment": "d7fa5202-f169-4b26-b0e5-facfbc446bfe",
+    "activationHTTP": 500,
+    "activationRequests": 1,
+    "schemaAfterFailure": 8,
+    "newBusinessTablesAfterFailure": 0,
+    "protectedIdentitiesUnchanged": true,
+    "codeCommit": "05ca1972bb9a03c69f50a89dab58645f68d469a0",
+    "retained": true,
+    "cause": "Native D1 compound SELECT limit5, missed by host SQLite default500. Native follow-up also exposed expression depth100 in a39-field restore witness.",
+    "fixes": [
+      "Four wide UNION guards rewritten as equivalent OR EXISTS",
+      "Award state witness AND/OR tree balanced; all39column checks and raw/revision/source guards retained"
+    ],
+    "expiredPermitCancellation": {
+      "userExplicitlyApproved": true,
+      "exactCompareAndSwap": true,
+      "schemaRemained8": true,
+      "protectedDocumentsUnchanged": true,
+      "businessDataWrites": 0,
+      "deploymentDeletes": 0
+    },
+    "evidenceArchive": {
+      "files": 13,
+      "hashesVerified": true,
+      "path": ".cache/preview9/attempt1-authorized-failed"
+    }
+  },
+  "rollback": {
+    "preupgradeBookmarkCaptured": true,
+    "bookmarkStoredPrivately": true,
+    "codeReference": {
+      "path": ".cache/preview8/RISHAD266_schema8_preview_05ce8ba_133.zip",
+      "sha256": "14334dd5ee46aa2fc49764bb1b9f88f090b93de13869e73cb951c0f9676835ba",
+      "files": 133
+    },
+    "newPreviewArchive": {
+      "path": ".cache/preview9/RISHAD266_schema9_preview_eb45569_133.zip",
+      "sha256": "dee95e8b1a185382a11293b21d5f8309308e9c7249501f4c2a1eeab3c548e65d",
+      "files": 133
+    },
+    "newSourceArchive": {
+      "path": ".cache/preview9/RISHAD266_schema9_source_eb45569.zip",
+      "sha256": "ec58ab8f47bea60f37e2df061dcc3dcc692d6030a8410715f4ed38b0cbb2c710",
+      "files": 949
+    },
+    "priorArchivesPreserved": true,
+    "databaseExportCreated": false,
+    "liveTimeTravelDrillPerformed": false,
+    "requirement": "Restore the Preview database to the preupgrade Time Travel bookmark with the matching schema8 code; code-only rollback is blocked. Availability depends on Cloudflare retention."
+  },
+  "protectedBoundaries": {
+    "previewDatabaseOnly": true,
+    "productionDeploymentAndConfigurationUnchanged": true,
+    "previewR2ConfigurationUnchanged": true,
+    "productionD1Calls": 0,
+    "r2Calls": 0,
+    "productionDeploymentPerformed": false,
+    "deploymentDeletes": 0,
+    "extraBusinessDataDeletion": false
+  },
+  "remaining": {
+    "sourceInventory": "docs/RISHAD266_KV_DOMAIN_INVENTORY.md",
+    "groups": 7,
+    "logicalResources": 23,
+    "next": "Staffing/shifts, daily report, rounds and operational plan as a dependency group; then tasks including recurrence and eligibility; employee references after stable-key analysis.",
+    "broadPageAuditLoadSimulationAndUserGuideDeferred": true,
+    "deferredPluginsStarted": false
+  },
+  "limitations": [
+    "Targeted composite evidence, not a new full platform test run or exhaustive page-by-page browser audit.",
+    "Fault sweeps are local. No fault injection or Time Travel restore drill was performed on the cloud database.",
+    "Preview fixtures are synthetic; this does not prove migration of actual Production data.",
+    "Legacy Award approval with absent business ID remains denied by the existing classifier; global historical references remain read-only.",
+    "Remaining domains still use cloud D1 KV/JSON. This batch does not claim complete platform migration."
+  ],
+  "privateEvidence": [
+    {
+      "path": ".cache/preview9/release-acceptance.json",
+      "sha256": "401e2c0e299520f86d158140ffe27bab6e61a874f8892255072cec3fb2f82b1d"
+    },
+    {
+      "path": ".cache/preview9/release-ready.attempt2-sealed.json",
+      "sha256": "83e6942f8f2d8ba8430962def09cabc23c43accc8efef0d3a4a137794fbcd372"
+    },
+    {
+      "path": ".cache/preview9/provider-push-verified.json",
+      "sha256": "5b9c010aab6287efa0146f92593e867d3cfd4745c45d2d2db65790a4be17392c"
+    },
+    {
+      "path": ".cache/preview9/code-archives.provider-fixed.json",
+      "sha256": "802c518a21e4784ee1636624272acf2c39517777dd1a8740dddf33a858f91cb6"
+    },
+    {
+      "path": ".cache/preview9/activation-result.json",
+      "sha256": "5e3a2469de75c1a47ed4634b555b1419db524ac2e41cc8c48df7757fdc052968"
+    },
+    {
+      "path": ".cache/preview9/deployment-schema9-verified.json",
+      "sha256": "069d760de3749b80477886375ab0b7dcb8f4d000b9d9454cb4cad35e8b3be312"
+    },
+    {
+      "path": ".cache/preview9/qa-live-result.json",
+      "sha256": "f020eb3b39e58a5512faf12acf2e3197d471238450207c03657714b01d8ba861"
+    },
+    {
+      "path": ".cache/preview9/final-independent-readonly.json",
+      "sha256": "ce02a925a7417e2c61152a0ac83fd97a2945c568deca6c9ded041ade3d242924"
+    },
+    {
+      "path": ".cache/preview9/public-schema9-proof.json",
+      "sha256": "ab59418bfa213452b9b50063688339f566615dffbd40e91003e210d12992b8b6"
+    },
+    {
+      "path": ".cache/preview9/qa9-native-final.json",
+      "sha256": "36611d3ac3453b6641e18aa7ba06f6f2340ac8f464a548bf03e7d9e0986b0123"
+    },
+    {
+      "path": ".cache/preview9/qa-independent-review.json",
+      "sha256": "5952343f376042d8ac7e7c7d7e50083e994abbb66e6b95e7ae4980615cdbef55"
+    },
+    {
+      "path": ".cache/preview9/core-independent-review.json",
+      "sha256": "a63c9d3eab41b764e3c8133739245b636922f4c864742e6fa548cae798524fd3"
+    },
+    {
+      "path": ".cache/preview9/verification-tools-review.json",
+      "sha256": "e1a4730ca7f9a61975846bb14befc2d5a7531b7cb5fe0244ea9feec2cf0e318c"
+    },
+    {
+      "path": ".cache/preview9/attempt1-archive.json",
+      "sha256": "feb567c304266bb035f96aa35a0b32be036bf9ac9b355e9201f83c23e202faef"
+    },
+    {
+      "path": ".cache/preview9/attempt1-authorized-failed/permit-cancelled.json",
+      "sha256": "544852ebed32f5949a86b0d574133bcf565723198638358f894825b9bbdfa4f0"
+    }
+  ],
+  "evidenceNotes": {
+    "compositeCount": "Group totals336 include four overlapping named cases. Reading TAP with universal newline normalization yields332 distinct cases, all passing; no tests were rerun to recount them.",
+    "historicalLogAlias": {
+      "originalPath": ".cache/preview9/previous-worker-guards.tap",
+      "preservedPath": ".cache/preview9/previous-worker-guards.before-attempt2.tap",
+      "sha256": "279d95fe7241e9e525e6a71c89170231c9d305366b667c5b77fff5114d484e98",
+      "reason": "The original composite log was preserved before the final-worker guard rerun. Historical sealed acceptance remains unchanged; resolve its original path to this matching immutable file."
+    },
+    "permitCancellationApprovalSource": "Explicit user approval in this chat, limited to the identified expired Preview permit; not inferred from the cancellation report.",
+    "acceptanceTime": "The later completion of the independent database postflight and public verification."
+  },
+  "redaction": "No credentials, user documents, password hashes, raw database exports or Time Travel bookmark values are included."
+}
