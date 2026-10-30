@@ -42,7 +42,7 @@ async function meTkIdent(env, A) {
   /* KIVO_265 · M-2 (المراجعةُ المستقلة لدمج 265): التفرّدُ في الحقلين معاً (070 tkTokRec — eid ∪ nid): مفتاحُ الحساب يحمله سجلٌّ واحدٌ بالضبط
      معرّفاً ثابتاً أو رقمَ هوية · ورمزا السجلّ (eid · nid) لا يُضافان إلا إن لم يحملهما سجلٌّ آخر في أيٍّ من الحقلين — كان رقمُ هويةِ سجلّي المساوي
      لمعرّف زميلٍ ثابت يُعطيني صفوفَه وصورَ توثيقه (القراءةُ وحدها: الكتابةُ تشترط العمود 14 = مفتاحي حرفاً). والمعرّفُ المشترك «غيرُ مرتبط» للطرفين */
-  var emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), rec = tkTokRec(emps, ek);
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), rec = tkTokRec(emps, ek);
   if (!rec) return out;
   /* KIVO_265 · F-1/R-24 (المراجعةُ المستقلة · fail-closed): سجلٌّ يحلّ إليه حسابٌ نشطٌ آخر في الإدارة (رقمُ هويته مفتاحُ حسابٍ ثانٍ مثلاً) ⇒ غيرُ مرتبطٍ لكليهما (070 tkRecShared) */
   if (tkRecShared(Array.isArray(A.users) ? A.users : parseJson(await kvGet(env, 'kv', K_USERS), []), emps, d, rec, u.id)) return out;
@@ -105,7 +105,7 @@ async function meTkList(env, A, url, request) {
   var rev = await tkRev(env, K);
   if (since && since === rev) return json({ ok: 1, now: now, me: me, rev: rev, same: 1 });   /* لا تغيّر في المخزن منذ آخر قراءة — ردٌّ رخيص للاستطلاع الدوري */
   var ym = String(url.searchParams.get('ym') || ''); if (ym && !METK_YM_RX.test(ym)) return json({ ok: 0, err: 'bad-ym' }, 400);
-  var S = parseJson(await kvGet(env, 'kv', K), {}); if (!isObj(S)) S = {};
+  var S = parseJson(await opResourceGet(env, K), {}); if (!isObj(S)) S = {};
   var all = [], months = {}, dk;
   for (dk in S) {
     if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk])) continue;
@@ -292,7 +292,7 @@ async function meTkImg(env, A, id) {
   if (!meTkPageOn(A)) return json({ ok: 0, err: 'off' }, 403);   /* SR-2.2 · F-7 */
   if (!METK_IMG_RX.test(id)) return json({ ok: 0, err: 'bad-id' }, 400);
   var I = await meTkIdent(env, A); if (!I.linked) return json({ ok: 0, err: 'forbidden' }, 403);
-  var K = meTkKey(I), S = parseJson(await kvGet(env, 'kv', K), {}), found = false, dk, i;
+  var K = meTkKey(I), S = parseJson(await opResourceGet(env, K), {}), found = false, dk, i;
   if (isObj(S)) for (dk in S) { if (found || !METK_DAY_RX.test(dk) || !Array.isArray(S[dk])) continue;
     for (i = 0; i < S[dk].length && !found; i++) { var r = S[dk][i]; if (meTkMine(r, I) && isObj(r[21]) && Array.isArray(r[21].imgs) && r[21].imgs.indexOf(id) !== -1) found = true; } }
   if (!found) return json({ ok: 0, err: 'forbidden' }, 403);
@@ -313,7 +313,7 @@ async function meTkLog(env, A, url) {
   var dk = String(url.searchParams.get('k') || ''), id = String(url.searchParams.get('id') || '');
   if (!METK_DAY_RX.test(dk) || !id || id.length > 40) return json({ ok: 0, err: 'bad-query' }, 400);
   var I = await meTkIdent(env, A); if (!I.linked) return json({ ok: 0, err: 'not-linked' }, 403);
-  var K = meTkKey(I), S = parseJson(await kvGet(env, 'kv', K), {}), L = isObj(S) && Array.isArray(S[dk]) ? S[dk] : [], r = null;
+  var K = meTkKey(I), S = parseJson(await opResourceGet(env, K), {}), L = isObj(S) && Array.isArray(S[dk]) ? S[dk] : [], r = null;
   for (var j = 0; j < L.length && !r; j++) if (meTkMine(L[j], I) && String(L[j][13]) === id) r = L[j];
   if (!r) return json({ ok: 0, err: 'not-found' }, 404);
   var e1 = tkEntId(r), e2 = (String(r[13]) + '_' + String(r[14])).slice(0, 80);

@@ -6,7 +6,7 @@ Object.assign(Component.prototype, {
   _tkCreateSrv(b) {
     if (this.state.tkBusy) return;
     this.setState({ tkBusy: !0 });
-    this._tkApi("/api/tasks/create", b).then((x) => {
+    return this._tkCommandApi("/api/tasks/create", b, "newTaskOpen").then((x) => {
       if ((this.setState({ tkBusy: !1 }), x.j && 1 === x.j.ok)) {
         const n = (x.j.rows || []).filter((r) => r.ekey).length,
           w = (x.j.elig || []).filter((q) => "متاح" !== q.result).length,
@@ -94,7 +94,7 @@ Object.assign(Component.prototype, {
     };
   },
   _tkActOpen(kind, r, k) {
-    this.setState(
+    this._tkOpen(
       {
         rowMenu: null,
         tkAct: { kind: kind, k: k, id: r[13], ekey: null == r[14] ? null : String(r[14]), title: r[0] || "مهمة", name: r[8] || "", s: r[15] || 0, e: r[16] || 0, eid: this._tkEntId(r),
@@ -143,7 +143,7 @@ Object.assign(Component.prototype, {
     const a = this.state.tkAct,
       st = this.state;
     if (!a || st.tkActBusy) return;
-    /* KIVO_265 · تأكيدُ «لمرة واحدة» لصفٍّ من سلسلة في نموذج التعديل: النافذةُ نفسُها ونصوصُها — والإنهاءُ يُرسل بعد وصول التعديل (_tkSettingsSrv) */
+    /* KIVO_265 · تأكيدُ «لمرة واحدة» لصفٍّ من سلسلة في نموذج التعديل: النافذةُ نفسُها ونصوصُها — والإنهاءُ مع التعديل في معاملة الخادم نفسها */
     if (a.form) return void this.setState({ tkAct: null, tkRecOk: !0 }, () => this.renderVals().submitTask());
     const why = String(st.tkActWhy || "").trim(),
       base = { k: a.k, id: a.id };
@@ -173,7 +173,7 @@ Object.assign(Component.prototype, {
       ((p = "/api/tasks/recur"), (b = { id: a.rec, op: { recpause: "pause", recresume: "resume", recstop: "stop" }[a.kind] }));
     } else return;
     this.setState({ tkActBusy: !0, tkActErr: "" });
-    this._tkApi(p, b).then((x) => {
+    (p === "/api/tasks/recur" ? this._tkCommandApi(p, b, "tkAct") : this._tkApi(p, b)).then((x) => {
       if (x.j && 1 === x.j.ok) {
         const OK = { approve: "اعتُمد الإنجاز — وصل الموظفَ التنبيه", return: "أُعيدت المهمة للموظف لاستكمال الإثبات", extend: "مُدّدت المهلة — ويستطيع الموظفُ البدءَ الآن",
           reassign: "أُعيد الإسناد — نسخةٌ جديدة للمكلَّف الجديد، وسجلُّ الأول باقٍ", cancel: "أُلغيت المهمة — يبقى صفُّها وسجلُّها", relink: "رُبطت المهمة بسجلّ الموظف — تظهر في «ملفي» له",
@@ -269,7 +269,7 @@ Object.assign(Component.prototype, {
         ("cancel" === a.kind ? "var(--danger)" : "approve" === a.kind ? "var(--success)" : "var(--border-brand)") +
         (st.tkActBusy ? ";opacity:.6" : ""),
       tkActDo: () => this._tkActRun(),
-      tkActCancel: () => this.setState({ tkAct: null, tkActForce: !1 }),
+      tkActCancel: () => this._tkClose("tkAct", { tkAct: null, tkActForce: !1 }),
       tkActCloseLbl: "log" === a.kind ? "إغلاق" : "رجوع",
     };
   },

@@ -7,8 +7,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import assert from 'node:assert/strict';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { PNG } from './tasks_fx.mjs';
+import { PNG, operationSaveBody, stored } from './tasks_fx.mjs';
 
 export const als = new AsyncLocalStorage();
 export const who = () => (als.getStore() || {}).who || '-';
@@ -50,22 +51,43 @@ export function instrument(env, opt = {}) {
   return S;
 }
 
-/* واجهةُ المدير بدلالة 242 لمفتاحٍ واحد */
+/* The SQL editor retains one sealed ticket. A conflict never merges/rebases or
+   writes automatically; a deliberate load() starts a reviewed fresh edit. */
 export class MgrClient {
-  constructor(Wd, ck, merge3, key, tag) { this.Wd = Wd; this.ck = ck; this.merge3 = merge3; this.K = key; this.tag = tag; }
-  async load() { const r = await asWho(this.tag, () => this.Wd.C.api('/api/get?keys=' + encodeURIComponent(this.K), { cookie: this.ck })); const it = r.j.keys[this.K]; this.mem = it.v; this.baseVal = it.v; this.krev = it.rev; return it; }
-  async edit(fn, extra = {}) {
-    const S = JSON.parse(this.mem); fn(S); let mine = JSON.stringify(S); this.mem = mine;
-    for (let t = 0; t < 40; t++) {
-      const body = Object.assign({ set: { [this.K]: mine }, del: [], base: { [this.K]: this.krev } }, extra);
-      const r = await asWho(this.tag, () => this.Wd.C.api('/api/save', { method: 'POST', cookie: this.ck, body })), j = r.j || {};
-      if (j.revs && j.revs[this.K]) { this.krev = j.revs[this.K]; this.baseVal = mine; this.mem = mine; return { ok: true, tries: t + 1, sent: mine }; }
-      if (j.conflicts && j.conflicts[this.K]) { const c = j.conflicts[this.K], theirs = c.cur == null ? null : String(c.cur); mine = this.merge3(this.baseVal, mine, theirs).v; this.mem = mine; this.baseVal = theirs; this.krev = c.rev || 0; continue; }
-      if (j.denied && j.denied[this.K]) return { ok: false, denied: j.denied[this.K].why };
-      return { ok: false, status: r.status, j };
-    }
-    return { ok: false, loop: true };
+  constructor(Wd, ck, _historicalMerge, key, tag) { this.Wd=Wd; this.ck=ck; this.K=key; this.tag=tag; this.ticket=null; }
+  async load() {
+    const r=await asWho(this.tag,()=>this.Wd.C.api('/api/operations/read?keys='+encodeURIComponent(this.K),{cookie:this.ck}));
+    if(r.status!==200||r.j.ok!==1||r.j.denied.includes(this.K)||!Object.hasOwn(r.j.base,this.K))throw Error('Typed editor read denied');
+    this.mem=JSON.stringify(Object.hasOwn(r.j.resources,this.K)?r.j.resources[this.K]:null);this.baseVal=this.mem;this.krev=r.j.base[this.K];this.epoch=r.j.epoch;this.ticket=null;return r.j;
   }
+  async edit(fn,extra={}) {
+    if(this.ticket)return{ok:false,status:409,reviewRequired:true,retainedDraft:true};
+    const value=JSON.parse(this.mem);fn(value);this.mem=JSON.stringify(value);
+    const raw=operationSaveBody(this.Wd.env,'/api/save',Object.assign({set:{[this.K]:this.mem},del:[],base:{[this.K]:this.krev}},extra));
+    if(this.epoch!==undefined)raw.epoch=this.epoch;
+    this.ticket={body:JSON.stringify(raw),sent:this.mem};return this.retry();
+  }
+  async retry() {
+    if(!this.ticket)throw Error('No sealed editor ticket');
+    const ticket=this.ticket,body=JSON.parse(ticket.body),r=await asWho(this.tag,()=>this.Wd.C.api('/api/save',{method:'POST',cookie:this.ck,body})),j=r.j||{};
+    if(r.status===200&&j.ok===1&&j.requestId===body.requestId&&j.epoch===body.epoch&&Number.isSafeInteger(j.revs?.[this.K])){
+      this.krev=j.revs[this.K];this.baseVal=ticket.sent;this.mem=ticket.sent;this.ticket=null;return{ok:true,tries:1,sent:ticket.sent,j};
+    }
+    return{ok:false,status:r.status,denied:j.denied?.[this.K]?.why,conflict:r.status===409,retainedDraft:true,sent:ticket.sent,body:ticket.body,j};
+  }
+}
+/* Test-driver action only: first prove the stale ticket cannot overwrite SQL,
+   including exact retry, then explicitly reload/review and enter the intent
+   against the fresh document. This is never an automatic editor merge. */
+export async function reviewAndApply(editor,intent,extra={}) {
+  const first=await editor.edit(intent,extra);
+  if(first.ok||!first.conflict)return first;
+  assert.equal(first.status,409);assert.equal(first.retainedDraft,true);
+  const ticket=editor.ticket.body,committed=stored(editor.Wd.env,editor.K),draft=editor.mem;
+  const retry=await editor.retry();assert.equal(retry.status,409);assert.equal(editor.ticket.body,ticket);assert.equal(editor.mem,draft);
+  assert.deepEqual(stored(editor.Wd.env,editor.K),committed,'An exact stale retry must not overwrite committed progress');
+  await editor.load(); // Explicit simulated user review; not part of edit/retry.
+  const reviewed=await editor.edit(intent,extra);return{...reviewed,tries:3,reviewed:true};
 }
 export async function upImg(Wd, ck, tag) {
   const id = 'img_tsk' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36) + '_' + tag;

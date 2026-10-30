@@ -21,6 +21,15 @@
   /* Relational domains have their own acknowledged APIs. A stale caller must not
      recreate a KV document or fall through to persistent device storage. */
   function relationalKey9(k) { return /^(?:bsdept:[^:\s]+:)?bassam_(?:dstats|custody|irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award|notif(?:_cfg|_sys)?|bc)_v1$/.test(k) || /^(?:bsdept:[^:\s]+:)?bassam_award_docs_v[12]$/.test(k); }
+  var operationResources9 = Object.freeze([
+    'bassam_employees_v1', 'bassam_options_v1', 'bassam_staffing_v3', 'bassam_staffing_v2',
+    'bassam_staffing_snap_v1', 'bassam_staffing_locks_v1', 'bassam_callsigns_v1', 'bassam_perm_limit_v1',
+    'bassam_shift_options_v1', 'bassam_plan_v1', 'bassam_zone_opts_v1', 'bassam_gate_opts_v1',
+    'bassam_mark_kinds_v1', 'bassam_rounds_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1',
+    'bassam_dreport_v1', 'bassam_dr_grp_v1', 'bassam_leave_kinds_v1', 'bassam_tasks_v1', 'bassam_tasks_locks_v1'
+  ]);
+  function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '')) !== -1; }
+  function operationKey9(k) { return typeof k === 'string' && /^bsdept:[^:\s,]+:bassam_[A-Za-z0-9_]+$/.test(k) && operationResource9(k); }
   var DEVK9 = { bassam_session_v1: 1, bslg_v1: 1, bassam_theme: 1,
                 bassam_active_dept_v1: 1, bassam_fresh_login_v1: 1, bassam_notif_mute_v1: 1 };
   /* «آخر صفحة مفتوحة» تفضيلُ جهازٍ لا بيانات فريق: كانت تُرسل للخادم — وعند الخروج
@@ -56,13 +65,13 @@
   /* ── الذاكرة: صورة المخزن التي تُقرأ منها كل القراءات ─────────────────── */
   var mem = Object.create(null);
   var seed = BOOT.keys || {};
-  for (var k0 in seed) if (!relationalKey9(k0) && !invalidScope9(k0)) mem[k0] = String(seed[k0]);
+  for (var k0 in seed) if (!relationalKey9(k0) && !operationResource9(k0) && !invalidScope9(k0)) mem[k0] = String(seed[k0]);
   try { BOOT.keys = null; } catch (e0) {}       /* لا داعي لنسختين في الذاكرة */
   /* ── نسخ المفاتيح: رقم النسخة التي بُني عليها كل مفتاح، وقيمتها كما جاءت
      من الخادم (الأساس). بهما يكتشف الخادم أن زميلاً سبقك على المفتاح نفسه،
      وبهما يُدمج تعديلك على تعديله بدل أن يمحو أحدهما الآخر. ── */
   var krev = Object.create(null), baseVal = Object.create(null);
-  (function () { var r0 = BOOT.revs || {}; for (var k in r0) if (!relationalKey9(k) && !invalidScope9(k)) krev[k] = r0[k]; for (var k2 in mem) baseVal[k2] = mem[k2]; try { BOOT.revs = null; } catch (e) {} })();
+  (function () { var r0 = BOOT.revs || {}; for (var k in r0) if (!relationalKey9(k) && !operationResource9(k) && !invalidScope9(k)) krev[k] = r0[k]; for (var k2 in mem) baseVal[k2] = mem[k2]; try { BOOT.revs = null; } catch (e) {} })();
   function unscoped(k) { var m = /^bsdept:[^:]+:(.+)$/.exec(String(k)); return m ? m[1] : String(k); }
   function notify(k) {
     /* أولاً حدث storage بالمفتاح المبادَأ: يُبطل ذاكرة القراءة في طبقة فصل الإدارات — ثم بثّ المنظومة بالمفتاح المجرّد للشاشات المستمعة */
@@ -610,6 +619,294 @@
     return again;
   }
   function clearQueue() { pSet = Object.create(null); pDel = Object.create(null); dirty = false; }
+
+  /* Operations use the existing queue and /api/save transport. Only confirmed
+     SQL projections live in mem; sealed request tickets never enter Storage. */
+  var operationsTickets9 = new WeakMap(), operationActive9 = null, operationEpoch9 = null, operationSnapshot9 = null;
+  var operationReads9 = Object.create(null), operationKnown9 = Object.create(null), operationReadId9 = 0, operationGeneration9 = 0;
+  function operationObject9(value) { return !!value && typeof value === 'object' && !Array.isArray(value); }
+  function operationInteger9(value) { return Number.isSafeInteger(value) && value >= 0; }
+  function operationClone9(value) { return JSON.parse(JSON.stringify(value)); }
+  function operationContext9() {
+    var user = KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user();
+    var dept = KIVO.BassamDepts && KIVO.BassamDepts.active && KIVO.BassamDepts.active();
+    return !sx9 && !bye9 && !ANON9 && UID9 && BOOT.uid === UID9 && user && String(user.id) === UID9 && dept
+      ? { uid: UID9, dept: String(dept), generation: operationGeneration9 } : null;
+  }
+  function operationSame9(stamp) {
+    var now = operationContext9();
+    return !!now && now.uid === stamp.uid && now.dept === stamp.dept && now.generation === stamp.generation;
+  }
+  function operationFailure9(err, status, uncertain) { return { ok: 0, err: err, status: status || 0, uncertain: !!uncertain }; }
+  function operationForget9(key, state) {
+    delete mem[key]; delete baseVal[key]; delete krev[key];
+    operationKnown9[key] = { state: state || 'unloaded' };
+    notify(key);
+  }
+  function operationInvalidate9(keys) {
+    if (!Array.isArray(keys) || operationSnapshot9 && operationSnapshot9.keys.some(function (key) { return keys.indexOf(key) !== -1 || keys.indexOf(unscoped(key)) !== -1; })) operationSnapshot9 = null;
+    var selected = Array.isArray(keys) ? Array.from(new Set(Object.keys(operationKnown9).concat(Object.keys(operationReads9), keys.filter(operationKey9))))
+      .filter(function (key) { return keys.indexOf(key) !== -1 || keys.indexOf(unscoped(key)) !== -1; }) : Object.keys(operationKnown9);
+    if (!Array.isArray(keys)) operationGeneration9++;
+    selected.forEach(function (key) { delete operationReads9[key]; operationForget9(key); });
+  }
+  async function operationRead9(keys) {
+    var stamp = operationContext9();
+    if (!stamp) return operationFailure9('session', 401);
+    if (!Array.isArray(keys) || !keys.length || keys.length > 80 || new Set(keys).size !== keys.length || !keys.every(operationKey9)) return operationFailure9('keys', 400);
+    keys = keys.slice();
+    var readId = ++operationReadId9;
+    keys.forEach(function (key) { operationReads9[key] = readId; });
+    try {
+      var response = await fetch('/api/operations/read?keys=' + encodeURIComponent(keys.join(',')) + '&uid=' + encodeURIComponent(stamp.uid), { credentials: 'same-origin', cache: 'no-store' });
+      if (response.status === 401) { sessGone9(); operationInvalidate9(); return operationFailure9('session', 401); }
+      var data = await response.json();
+      if (response.status === 409 && data && data.err === 'session-changed') { sesChanged9(null, '409'); operationInvalidate9(); return operationFailure9('session', 409); }
+      if (!operationSame9(stamp) || keys.some(function (key) { return operationReads9[key] !== readId; })) return operationFailure9('stale', 409);
+      if (!response.ok || !operationObject9(data) || data.ok !== 1 || data.uid !== stamp.uid || !operationInteger9(data.epoch) || !operationInteger9(data.v)
+          || !operationObject9(data.resources) || !Array.isArray(data.absent) || !Array.isArray(data.denied) || !operationObject9(data.base)) throw Error('operations-read-invalid');
+      var covered = Object.keys(data.resources).concat(data.absent, data.denied);
+      var readable = Object.keys(data.resources).concat(data.absent);
+      if (covered.length !== keys.length || new Set(covered).size !== covered.length || covered.some(function (key) { return keys.indexOf(key) === -1; })
+          || Object.keys(data.base).length !== readable.length || readable.some(function (key) { return !operationInteger9(data.base[key]); })
+          || Object.keys(data.base).some(function (key) { return readable.indexOf(key) === -1; })) throw Error('operations-read-invalid');
+      if (operationEpoch9 !== null && operationEpoch9 !== data.epoch) { operationInvalidate9(); stamp = operationContext9(); }
+      operationEpoch9 = data.epoch;
+      operationSnapshot9 = { uid: stamp.uid, dept: stamp.dept, generation: stamp.generation, epoch: data.epoch, v: data.v, keys: keys.slice(), base: operationClone9(data.base) };
+      keys.forEach(function (key) {
+        if (data.denied.indexOf(key) !== -1) { operationForget9(key, 'denied'); operationKnown9[key].stamp = stamp; return; }
+        var present = Object.prototype.hasOwnProperty.call(data.resources, key);
+        if (present) { mem[key] = JSON.stringify(data.resources[key]); baseVal[key] = mem[key]; }
+        else { delete mem[key]; delete baseVal[key]; }
+        krev[key] = data.base[key];
+        operationKnown9[key] = { state: present ? 'ready' : 'absent', epoch: data.epoch, rev: data.base[key], stamp: stamp };
+      });
+      keys.forEach(notify);
+      return operationClone9(data);
+    } catch (error) {
+      if (operationSnapshot9 && operationSnapshot9.keys.some(function (key) { return keys.indexOf(key) !== -1; })) operationSnapshot9 = null;
+      if (operationSame9(stamp)) keys.forEach(function (key) { if (operationReads9[key] === readId) operationForget9(key, 'error'); });
+      return operationFailure9('read', response && response.status);
+    }
+  }
+  function operationValue9(key) {
+    var stamp = operationContext9();
+    if (!stamp || !operationKey9(key) || key.split(':')[1] !== stamp.dept) throw Error('operations-scope-required');
+    return operationReference9(key);
+  }
+  function operationReference9(key) {
+    if (!operationContext9() || !operationKey9(key)) throw Error('operations-scope-required');
+    if (KIVO.__bsReadHook) KIVO.__bsReadHook(key);
+    var known = operationKnown9[key];
+    if (!known || !known.stamp || !operationSame9(known.stamp) || (known.state !== 'ready' && known.state !== 'absent')) throw Error('operations-read-required');
+    return known.state === 'absent' ? null : JSON.parse(mem[key]);
+  }
+  function operationScoped9(name) {
+    var stamp = operationContext9();
+    if (!stamp || operationResources9.indexOf(name) === -1) throw Error('operations-scope-required');
+    return 'bsdept:' + stamp.dept + ':' + name;
+  }
+  function operationDraft9() {
+    var stamp = operationContext9(), epoch = operationEpoch9;
+    if (!stamp || !operationInteger9(epoch)) throw Error('operations-read-required');
+    var bases = Object.create(null), used = Object.create(null), set = Object.create(null), removed = Object.create(null);
+    Object.keys(operationKnown9).forEach(function (key) { var known = operationKnown9[key]; if (known.epoch === epoch && ['ready', 'absent'].includes(known.state)) bases[key] = known.rev; });
+    function keyOf(name) {
+      if (!operationSame9(stamp) || operationEpoch9 !== epoch) throw Error('operations-draft-context-changed');
+      var key = operationScoped9(name), known = operationKnown9[key];
+      if (!Object.prototype.hasOwnProperty.call(bases, key) || !known || !known.stamp || !operationSame9(known.stamp) || !['ready', 'absent'].includes(known.state) || known.rev !== bases[key]) throw Error('operations-draft-review-required');
+      used[key] = bases[key];
+      return key;
+    }
+    return Object.freeze({
+      context: Object.freeze({ uid: stamp.uid, dept: stamp.dept, epoch: epoch }),
+      get: function (name) { var key = keyOf(name); return key in removed ? null : key in set ? operationClone9(set[key]) : operationValue9(key); },
+      set: function (name, value) { var key = keyOf(name); set[key] = operationClone9(value); delete removed[key]; },
+      remove: function (name) { var key = keyOf(name); removed[key] = 1; delete set[key]; },
+      stage: function () {
+        try {
+          Object.keys(used).forEach(function (key) { keyOf(unscoped(key)); });
+          return operationStage9({ set: set, del: Object.keys(removed), readBase: used });
+        } catch (error) { return operationFailure9('review-required', 409); }
+      }
+    });
+  }
+  /* Editor drafts use the same queue and receipt as every Operations write.
+     A retry never runs the edit callback again or adopts a newer base. */
+  var operationEditors9 = new WeakMap();
+  function operationEditor9(owner, action) {
+    if (!owner || (typeof owner !== 'object' && typeof owner !== 'function') || typeof action !== 'string' || !action) throw Error('operations-editor-required');
+    var editors = operationEditors9.get(owner);
+    if (!editors) { editors = Object.create(null); operationEditors9.set(owner, editors); }
+    return editors;
+  }
+  function operationBegin9(owner, action) {
+    var editors = operationEditor9(owner, action), prior = editors[action];
+    if (prior && prior.ticket && ['staged', 'queued', 'sending', 'uncertain'].includes(operationStatus9(prior.ticket).state)) return operationFailure9('pending', 409);
+    try { editors[action] = { draft: operationDraft9(), ticket: null, intent: null, prepared: false, error: null, promise: null }; return { ok: 1 }; }
+    catch (error) { return operationFailure9('read-required', 409); }
+  }
+  async function operationCommit9(owner, action, intent, edit) {
+    var editors = operationEditor9(owner, action), entry = editors[action], signature;
+    try { signature = JSON.stringify(intent); if (typeof signature !== 'string') throw Error('intent'); }
+    catch (error) { return operationFailure9('intent', 400); }
+    if (!entry) {
+      var begun = operationBegin9(owner, action); if (!begun.ok) return begun;
+      entry = editors[action];
+    }
+    if (entry.ticket) {
+      if (entry.intent !== signature) return Object.assign(operationFailure9('review-required', 409, true), { ticket: entry.ticket });
+      if (entry.promise) return entry.promise;
+      var state = operationStatus9(entry.ticket).state;
+      if (state !== 'uncertain') return entry.result || Object.assign(operationFailure9('pending', 409), { ticket: entry.ticket });
+    } else {
+      if (entry.prepared && entry.intent !== signature) return operationFailure9('review-required', 409);
+      if (entry.error) return entry.error;
+      if (!entry.prepared) {
+        entry.prepared = true; entry.intent = signature;
+        try { if (typeof edit !== 'function') throw Error('edit'); edit(entry.draft); }
+        catch (error) { entry.error = operationFailure9('review-required', 409); return entry.error; }
+      }
+      var ticket = entry.draft.stage(); if (!ticket || !ticket.requestId) return ticket || operationFailure9('changes', 400);
+      entry.ticket = ticket; entry.intent = signature;
+    }
+    entry.promise = operationFlush9(entry.ticket, operationStatus9(entry.ticket).state === 'uncertain').then(function (result) {
+      entry.result = Object.assign({}, result, { ticket: entry.ticket });
+      if (result && result.ok === 1 && editors[action] === entry) delete editors[action];
+      return entry.result;
+    }).finally(function () { entry.promise = null; });
+    return entry.promise;
+  }
+  function operationStage9(changes) {
+    var stamp = operationContext9();
+    if (!stamp) return operationFailure9('session', 401);
+    if (operationActive9 || dirty || inflight) return operationFailure9('pending', 409);
+    if (!operationObject9(changes) || !operationObject9(changes.set || {}) || !Array.isArray(changes.del || [])) return operationFailure9('changes', 400);
+    var set = changes.set || {}, del = changes.del || [], keys = Object.keys(set).concat(del);
+    if (!keys.length || keys.length > 80 || new Set(keys).size !== keys.length || keys.some(function (key) { return !operationKey9(key) || key.split(':')[1] !== stamp.dept; })) return operationFailure9('keys', 400);
+    if (!operationInteger9(operationEpoch9) || keys.some(function (key) { var known = operationKnown9[key]; return !known || !known.stamp || !operationSame9(known.stamp) || !['ready', 'absent'].includes(known.state) || known.epoch !== operationEpoch9; })) return operationFailure9('read-required', 409);
+    var readBase = changes.readBase || {};
+    if (!operationObject9(readBase) || Object.keys(readBase).length > 80 || Object.keys(readBase).some(function (key) {
+      var known = operationKnown9[key];
+      return !operationKey9(key) || key.split(':')[1] !== stamp.dept || !operationInteger9(readBase[key]) || !known || !known.stamp || !operationSame9(known.stamp) || !['ready', 'absent'].includes(known.state) || known.rev !== readBase[key];
+    })) return operationFailure9('read-required', 409);
+    if (!window.crypto || typeof window.crypto.randomUUID !== 'function') return operationFailure9('crypto', 0);
+    var snap = { set: Object.create(null), del: Object.create(null) };
+    try {
+      Object.keys(set).forEach(function (key) { var value = JSON.stringify(set[key]); if (typeof value !== 'string') throw Error('invalid'); snap.set[key] = value; });
+      del.forEach(function (key) { snap.del[key] = 1; });
+    } catch (error) { return operationFailure9('changes', 400); }
+    var requestId = window.crypto.randomUUID(), ticket = Object.freeze({ requestId: requestId });
+    keys.forEach(function (key) { if (key in snap.set) pSet[key] = snap.set[key]; else pDel[key] = 1; });
+    recount();
+    var body = JSON.parse(payload()); body.requestId = requestId; body.epoch = operationEpoch9;
+    Object.keys(readBase).forEach(function (key) { body.base[key] = readBase[key]; });
+    var before = Object.create(null);
+    keys.forEach(function (key) { before[key] = baseVal[key] == null ? null : baseVal[key]; });
+    operationActive9 = { ticket: ticket, stamp: stamp, keys: keys, snap: snap, before: before, body: JSON.stringify(body), epoch: operationEpoch9, state: 'staged', result: null };
+    operationsTickets9.set(ticket, operationActive9);
+    return ticket;
+  }
+  async function operationFlush9(ticket, retry) {
+    var operation = operationsTickets9.get(ticket);
+    if (operation && !operationSame9(operation.stamp)) return operationFailure9('session', 401, true);
+    if (operation && operation.state === 'confirmed') { operationCommitted9(operation); return operation.result; }
+    if (!operation || operationActive9 !== operation) return operationFailure9('ticket', 409);
+    if (!operationSame9(operation.stamp)) return operationFailure9('session', 401, true);
+    if (operationEpoch9 !== operation.epoch) return operationFailure9('epoch', 409);
+    if (operation.state === 'sending') return operationFailure9('pending', 409);
+    if (operation.state !== 'staged' && !(retry && operation.state === 'uncertain')) return operation.result || operationFailure9('review-required', 409);
+    operation.state = 'queued'; operation.result = null;
+    operation.keys.forEach(function (key) { if (key in operation.snap.set) pSet[key] = operation.snap.set[key]; else pDel[key] = 1; });
+    recount();
+    await flushAsync();
+    return operation.result || operationFailure9('pending', 0, true);
+  }
+  function operationUncertain9(operation, err, status) {
+    if (inflight === operation.snap) inflight = null;
+    operation.state = 'uncertain'; operation.result = operationFailure9(err, status, true);
+    warn(true);
+    settleWaiters(false);
+  }
+  function operationCommitted9(operation) {
+    if (!operationSame9(operation.stamp)) return;
+    try { window.dispatchEvent(new CustomEvent('bassam:operations-commit', { detail: {
+      uid: operation.stamp.uid, dept: operation.stamp.dept, requestId: operation.ticket.requestId,
+      changes: operation.keys.map(function (key) { return { key: key, before: operation.before[key], after: key in operation.snap.set ? operation.snap.set[key] : null }; })
+    } })); } catch (error) {}
+  }
+  async function operationSettle9(operation, status, data) {
+    if (!operationSame9(operation.stamp)) { operationUncertain9(operation, 'session', status); return; }
+    if (status === 401 || (status === 409 && data && data.err === 'session-changed')) {
+      operationUncertain9(operation, 'session', status); sessGone9(operation.snap); return;
+    }
+    var identity = operationObject9(data) && data.requestId === operation.ticket.requestId && data.epoch === operation.epoch && data.atomic === 1;
+    var revs = data && data.revs;
+    var success = status >= 200 && status < 300 && identity && data.ok === 1 && operationObject9(revs)
+      && Object.keys(revs).length === operation.keys.length && Object.keys(revs).every(function (key) { return operation.keys.indexOf(key) !== -1 && operationInteger9(revs[key]); })
+      && (!data.denied || (operationObject9(data.denied) && !Object.keys(data.denied).length))
+      && (!data.conflicts || (operationObject9(data.conflicts) && !Object.keys(data.conflicts).length));
+    if (success) {
+      var refresh = [];
+      if (operationSnapshot9 && operationSnapshot9.keys.some(function (key) { return operation.keys.indexOf(key) !== -1; })) operationSnapshot9 = null;
+      operation.keys.forEach(function (key) {
+        delete operationReads9[key];
+        var known = operationKnown9[key];
+        if (!known || !['ready', 'absent'].includes(known.state)) { refresh.push(key); return; }
+        if (known && known.stamp && operationSame9(known.stamp) && operationInteger9(known.rev) && known.rev > revs[key]) {
+          delete sent9[key]; delete why9[key]; return;
+        }
+        var present = key in operation.snap.set;
+        if (present) { mem[key] = operation.snap.set[key]; baseVal[key] = mem[key]; } else { delete mem[key]; delete baseVal[key]; }
+        krev[key] = revs[key]; operationKnown9[key] = { state: present ? 'ready' : 'absent', epoch: operation.epoch, rev: revs[key], stamp: operation.stamp };
+        delete sent9[key]; delete why9[key]; notify(key);
+      });
+      if (refresh.length) {
+        await operationRead9(refresh);
+        if (!operationSame9(operation.stamp) || refresh.some(function (key) {
+          var known = operationKnown9[key];
+          return !known || !known.stamp || !operationSame9(known.stamp) || !['ready', 'absent'].includes(known.state) || known.rev < revs[key];
+        })) {
+          operationUncertain9(operation, 'confirmation-read', status); operation.result.committed = 1; return;
+        }
+      }
+      inflight = null; operation.state = 'confirmed'; operation.result = { ok: 1, receipt: operationClone9(data) }; operationActive9 = null;
+      operationCommitted9(operation);
+      warn(false); settleWaiters(!dirty); kickIfDirty(); return;
+    }
+    var blocked = identity && data.ok === 0 && (status === 403 || status === 409);
+    var barriers = [];
+    ['denied', 'conflicts'].forEach(function (kind) {
+      if (!blocked || data[kind] === undefined) return;
+      if (!operationObject9(data[kind])) { blocked = false; return; }
+      Object.keys(data[kind]).forEach(function (key) { if (operation.keys.indexOf(key) === -1 || !operationObject9(data[kind][key])) blocked = false; else barriers.push(key); });
+    });
+    if (blocked && barriers.length) {
+      inflight = null; operation.state = status === 409 ? 'conflict' : 'denied';
+      operation.result = { ok: 0, err: operation.state, status: status, uncertain: false, details: operationClone9(data) };
+      operationActive9 = null; operationInvalidate9(operation.keys); settleWaiters(false); return;
+    }
+    operationUncertain9(operation, 'ack', status);
+  }
+  function operationRelease9(ticket) {
+    var operation = operationsTickets9.get(ticket);
+    if (!operation || operationActive9 !== operation || operation.state !== 'staged') return false;
+    operation.keys.forEach(function (key) { delete pSet[key]; delete pDel[key]; });
+    operation.state = 'released'; operationActive9 = null; recount(); return true;
+  }
+  function operationStatus9(ticket) {
+    var operation = ticket && operationsTickets9.get(ticket);
+    return operation ? { state: operation.state, requestId: operation.ticket.requestId, uncertain: operation.state === 'uncertain' }
+      : { state: operationActive9 ? operationActive9.state : 'idle', epoch: operationEpoch9 };
+  }
+  function operationReady9(keys) {
+    return !!operationContext9() && Array.isArray(keys) && keys.every(function (key) {
+      var known = operationKnown9[key];
+      return operationKey9(key) && known && known.stamp && operationSame9(known.stamp) && (known.state === 'denied' || ((known.state === 'ready' || known.state === 'absent') && known.epoch === operationEpoch9));
+    });
+  }
+  window.addEventListener('bassam:authz', function () { operationInvalidate9(); });
+  window.addEventListener('bassam:remote', function (event) { operationInvalidate9((event.detail && event.detail.keys) || []); });
   /* KIVO_243 · نافذةُ السبب: تُعلَّق المفاتيحُ (hold9) فلا تُرسل ولا تُعدّ محفوظة؛ «تأكيد» يُرسلها · «إلغاء» يعيدها إلى قيمة الخادم.
      «تذكّر للجلسة» يحفظ السببَ لمجموعة مفاتيح السبب نفسِها (مثل تغيير حالات الرصد) فلا يُسأل عنها ثانيةً في هذه الجلسة. */
   function holdKeys9(items) { for (var i = 0; i < items.length; i++) { var it = items[i]; if (!(it.k in pSet) && !(it.k in pDel)) { if (it.v != null) pSet[it.k] = it.v; else pDel[it.k] = 1; } hold9[it.k] = 1; } recount(); }
@@ -703,6 +1000,7 @@
   function kick() {
     if (sx9) { orphanize9(); return; }               /* KIVO_264 · D-3: تبدّلت الجلسة — ما يُكتب بعدها لا يُرسل باسم الهوية الجديدة */
     if (ANON9 || bye9) { clearQueue(); return; }
+    if (operationActive9 && operationActive9.state !== 'queued') return;
     if (sendT || inflight) return;
     sendT = setTimeout(function () { sendT = null; sendNow(); }, COALESCE_MS);
   }
@@ -743,10 +1041,15 @@
     if (sx9) { orphanize9(); settleWaiters(false); return; }
     if (ANON9 || bye9) { clearQueue(); settleWaiters(true); return; }
     if (inflight) return;
+    if (operationActive9 && operationActive9.state !== 'queued') return;
     if (!dirty) { settleWaiters(true); return; }
     /* لقطةٌ ثابتة، والطابورُ يبدأ جيلاً جديداً فارغاً — KIVO_243: ما ينتظر سبباً (hold9) يبقى في الطابور ولا يُرسل */
-    var snap, body, k9;
-    if (Object.keys(hold9).length) {
+    var snap, body, k9, operation = operationActive9;
+    if (operation) {
+      snap = operation.snap; body = operation.body; operation.state = 'sending';
+      operation.keys.forEach(function (key) { delete pSet[key]; delete pDel[key]; });
+      recount();
+    } else if (Object.keys(hold9).length) {
       var keep9 = { set: Object.create(null), del: Object.create(null) }; snap = { set: Object.create(null), del: Object.create(null) };
       for (k9 in pSet) (hold9[k9] ? keep9.set : snap.set)[k9] = pSet[k9];
       for (k9 in pDel) (hold9[k9] ? keep9.del : snap.del)[k9] = 1;
@@ -757,6 +1060,7 @@
     for (k9 in snap.set) { var L9 = sent9[k9] || (sent9[k9] = []); if (L9[L9.length - 1] !== snap.set[k9]) { L9.push(snap.set[k9]); if (L9.length > 4) L9.shift(); } }
     fetch("/api/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: body })
       .then(function (r) {
+        if (operation) return r.json().then(function (data) { return { status: r.status, data: data }; });
         if (sx9) return;
         if (r.status === 401) { sessGone9(snap); return; }
         /* KIVO_264 · D-3 (C1): الكوكي صار لهويةٍ غير هوية هذه الصفحة ⇒ لا إعادةَ إرسال: يُعزل الطابور ويُبلَّغ المستخدم ثم يُعاد التحميل */
@@ -781,6 +1085,7 @@
         return r.json();
       })
       .then(function (j) {
+        if (operation) return operationSettle9(operation, j.status, j.data);
         if (j === undefined || sx9) return;           /* عولج أعلاه أو عُزلت الجلسة أثناء الطلب */
         if (!saveAck9(j, snap)) throw new Error("invalid-save-acknowledgement");
         inflight = null;
@@ -791,6 +1096,7 @@
         kickIfDirty();
       })
       .catch(function (e) {
+        if (operation) { operationUncertain9(operation, 'network'); return; }
         if (sx9) return;
         if (inflight === snap) { inflight = null; requeue(snap); }
         warn(true, (e && e.message) || "");
@@ -812,6 +1118,7 @@
   function flushAsync(ms) {
     if (sx9) { orphanize9(); return Promise.resolve(false); }   /* KIVO_264 · D-3: لم يُحفظ — ولن يُحفظ باسم هويةٍ أخرى */
     if (ANON9 || bye9) { clearQueue(); return Promise.resolve(true); }
+    if (operationActive9 && operationActive9.state !== 'queued' && operationActive9.state !== 'sending') return Promise.resolve(false);
     if (!dirty && !inflight) return Promise.resolve(true);
     return new Promise(function (res) {
       var done = false;
@@ -826,6 +1133,7 @@
   /* إن فشل الإرسال، تُعاد المحاولة في الخلفية حتى ينجح */
   var retryT = null, fails = 0;
   function retryLater(ms) {
+    if (operationActive9) return;
     fails++;
     if (retryT) return;
     retryT = setTimeout(function () { retryT = null; sendNow(); },
@@ -895,13 +1203,13 @@
 
   /* ── تنبيه صريح حين يتعذّر الحفظ ───────────────────────────────────────── */
   function warn(bad) {
-    link9(bad ? "off" : "on", bad ? "تعديلات غير محفوظة — تُرسل عند عودة الاتصال" : presN9);
+    link9(bad ? "off" : "on", bad ? (operationActive9 ? "لم يتأكد الحفظ — أعد المحاولة بالطلب نفسه" : "تعديلات غير محفوظة — تُرسل عند عودة الاتصال") : presN9);
   }
 
   /* شبكة أمان أخيرة: لو بقي في الطابور شيء عند الإغلاق، يُرسَل بنبضة لا
      تنتظر جواباً — الوسيلة الوحيدة التي لا يقطعها المتصفّح عند الإغلاق */
   window.addEventListener("pagehide", function () {
-    if (bye9 || sx9) return;
+    if (bye9 || sx9 || operationActive9) return;
     /* ما كان طائراً لحظةَ الإغلاق قد يُقطَع طلبُه — يُعاد ضمُّه إلى النبضة الأخيرة */
     try { if (inflight) { requeue(inflight); inflight = null; } } catch (e0) {}
     if (!dirty) return;
@@ -915,11 +1223,14 @@
   var oGet = P.getItem, oSet = P.setItem, oDel = P.removeItem, oClear = P.clear, oKey = P.key;
   var oLen = Object.getOwnPropertyDescriptor(P, "length");
   function isLS(st) { return st === window.localStorage; }
+  function legacyMemoryKeys9() { return Object.keys(mem).filter(function (key) { return !operationResource9(key) && !relationalKey9(key); }); }
 
   P.getItem = function (k) {
     if (!isLS(this)) return oGet.call(this, k);
     k = String(k);
-    if (relationalKey9(k) || invalidScope9(k)) return null;
+    if (invalidScope9(k)) return null;
+    if (devKey9(k)) return oGet.call(this, k);
+    if (relationalKey9(k) || operationResource9(k)) return null;
     if (KIVO.__bsReadHook) KIVO.__bsReadHook(k);
     if (devKey9(k) || !teamKey9(k)) return oGet.call(this, k);  /* مفتاح جهاز أو مفتاحٌ خارج قائمة المزامنة: من المخزن الأصلي */
     var v9 = (k in mem) ? mem[k] : null;
@@ -948,7 +1259,8 @@
   P.setItem = function (k, v) {
     if (!isLS(this)) return oSet.call(this, k, v);
     k = String(k); v = String(v);
-    if (relationalKey9(k)) throw new Error('relational-domain-api-required');
+    if (devKey9(k)) return oSet.call(this, k, v);
+    if (relationalKey9(k) || operationResource9(k)) throw new Error('relational-domain-api-required');
     if (invalidScope9(k)) throw new Error('department-scope-required');
     if (devKey9(k) || !teamKey9(k)) return oSet.call(this, k, v);
     v = audTasks9(k, v);
@@ -959,7 +1271,8 @@
   P.removeItem = function (k) {
     if (!isLS(this)) return oDel.call(this, k);
     k = String(k);
-    if (relationalKey9(k)) throw new Error('relational-domain-api-required');
+    if (devKey9(k)) return oDel.call(this, k);
+    if (relationalKey9(k) || operationResource9(k)) throw new Error('relational-domain-api-required');
     if (invalidScope9(k)) throw new Error('department-scope-required');
     if (devKey9(k) || !teamKey9(k)) return oDel.call(this, k);
     if (!(k in mem)) return;
@@ -968,20 +1281,20 @@
   };
   P.clear = function () {
     if (!isLS(this)) return oClear.call(this);
-    for (var k in mem) { pDel[k] = 1; delete pSet[k]; dirty = true; }
-    mem = Object.create(null);
+    if (operationActive9) throw Error('relational-domain-api-required');
+    legacyMemoryKeys9().forEach(function (key) { pDel[key] = 1; delete pSet[key]; delete mem[key]; dirty = true; });
     kick();
   };
   P.key = function (i) {
     if (!isLS(this)) return oKey.call(this, i);
-    var ks = Object.keys(mem); i = +i;
+    var ks = legacyMemoryKeys9(); i = +i;
     return (i >= 0 && i < ks.length) ? ks[i] : null;
   };
   try {
     Object.defineProperty(P, "length", {
       configurable: true,
       get: function () {
-        return isLS(this) ? Object.keys(mem).length : (oLen && oLen.get ? oLen.get.call(this) : 0);
+        return isLS(this) ? legacyMemoryKeys9().length : (oLen && oLen.get ? oLen.get.call(this) : 0);
       }
     });
   } catch (eL) {}
@@ -1021,10 +1334,8 @@
     if (!net9) down9();
   })();
 
-  /* ── لافتة «تحديثات جديدة من الفريق» — وضع كلاود فلير وحده ──
-     كل ٢٥ ثانية يُسأل الخادم إن تقدّمت نسخة البيانات على نسخة هذه الشاشة.
-     حفظُ هذه الشاشة نفسها يرفع BOOT.v (في جواب /api/save) فلا تُنبَّه على
-     تعديلاتها هي — اللافتة لتعديلات الزملاء الآخرين فقط. */
+  /* The changes cursor advances only after the whole returned change set is
+     applied. A save ACK or subset read cannot skip another resource's update. */
   if (!ANON9) (function () {
     var busy9 = false;
     /* سحب المفاتيح المتغيّرة وتطبيقها في الذاكرة — الشاشات المستمعة تتحدّث فوراً */
@@ -1056,7 +1367,7 @@
     }
     /* جلبُ قائمة مفاتيح بدفعاتٍ ≤ 80 — يعيد ما تغيّر فعلاً؛ وأيُّ دفعةٍ تخفق ترفض الكلّ (فلا يتقدّم مؤشّرٌ على نقص) */
     function getAll9(keys, evict) {
-      var want = keys.filter(function (k) { return !relationalKey9(k) && !invalidScope9(k) && !busyKey9(k); }), changed = [];
+      var want = keys.filter(function (k) { return !relationalKey9(k) && !operationResource9(k) && !invalidScope9(k) && !busyKey9(k); }), changed = [];
       var step = function (i) {
         if (i >= want.length) { overFlush9(null); return changed; }
         var part = want.slice(i, i + GET_MAX9);
@@ -1070,7 +1381,7 @@
       };
       return Promise.resolve(0).then(function () { return step(0); });
     }
-    function pull9(keys, v) { var irKeys = keys.filter(function (k) { return /^(?:bsdept:[^:]+:)?bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(k); }); return getAll9(keys, null).then(function (changed) { BOOT.v = v; irKeys.forEach(notify); return Array.from(new Set(changed.concat(irKeys))); }); }
+    function pull9(keys, v) { var irKeys = keys.filter(function (k) { return operationResource9(k) || /^(?:bsdept:[^:]+:)?bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(k); }); return getAll9(keys, null).then(function (changed) { BOOT.v = v; irKeys.forEach(notify); return Array.from(new Set(changed.concat(irKeys))); }); }
 
     /* ═══ KIVO_264 · D-4: مجموعةُ القراءة تتبع الصلاحيات بلا إعادة تحميل ═══
        /api/changes لا يبلّغ إلا عمّا تغيّرت مراجعتُه: منحُ صفحةٍ لا يغيّر مراجعةَ بياناتها فلا تصل (صفحةٌ فارغة حتى التحديث اليدوي)،
@@ -1104,12 +1415,14 @@
       })]);
     }
     var sliceN9 = 0, slice0 = slice9();              /* نصيبي كما بُنيت عليه الصفحة */
-    var rsT9 = null, rsBusy9 = false, rsAgain9 = false, rsProj9 = false;
+    var rsT9 = null, rsBusy9 = false, rsAgain9 = false, rsProj9 = false, rsWait9 = [], rsActiveWait9 = [];
     function readSet9(proj) {
       if (proj) rsProj9 = true;
-      if (sx9 || bye9) return;
-      if (rsBusy9) { rsAgain9 = true; return; }
+      if (sx9 || bye9) return Promise.resolve({ ok: 0, err: 'session' });
+      var promise = new Promise(function (resolve) { rsWait9.push(resolve); });
+      if (rsBusy9) { rsAgain9 = true; return promise; }
       clearTimeout(rsT9); rsT9 = setTimeout(rsRun9, 400);
+      return promise;
     }
     readSetHook9 = readSet9;
     function seen9() {
@@ -1124,13 +1437,16 @@
       };
       return ask(0);
     }
-    function rsDone9(changed) {
+    function rsDone9(changed, ok) {
       rsBusy9 = false;
+      var waiters = rsActiveWait9; rsActiveWait9 = [];
+      waiters.forEach(function (resolve) { resolve({ ok: ok ? 1 : 0, changed: changed || [] }); });
       if (changed && changed.length) { try { window.dispatchEvent(new CustomEvent("bassam:remote", { detail: { keys: changed, v: BOOT.v } })); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
-      if (rsAgain9) { rsAgain9 = false; readSet9(false); }
+      if (rsAgain9 || rsWait9.length) { rsAgain9 = false; clearTimeout(rsT9); rsT9 = setTimeout(rsRun9, 400); }
     }
     function rsRun9() {
-      if (sx9 || bye9) return;
+      if (sx9 || bye9) { var stopped = rsWait9; rsWait9 = []; stopped.forEach(function (resolve) { resolve({ ok: 0, err: 'session' }); }); return; }
+      rsActiveWait9 = rsWait9; rsWait9 = [];
       rsBusy9 = true; var proj = rsProj9 && !!KIVO.__BS_AUTHZ; rsProj9 = false;
       seen9().then(function (S) {
         var cand = [], k;
@@ -1140,8 +1456,13 @@
         /* مراجعةُ التكامل W1-R1: تغيّر نصيبي (الإدارات · الهيكل · الصلاحيات) يغيّر عدسةَ قائمة الحسابات المُسقَطة ومراجعتُها لم تتغيّر — تُجدَّد معه
            (ما صار يُرى يظهر بلا إعادة تحميل · والحفظُ يمضي بلا تعارض). مديرُ النظام بلا إسقاطٍ (uscope9 فارغ) فلا تُعاد قائمتُه الكاملة */
         if (uscope9 && S[KU9] && (KU9 in mem) && cand.indexOf(KU9) < 0) cand.push(KU9);
-        return cand.length ? getAll9(cand, drop) : [];
-      }).then(rsDone9, function () { rsDone9(null); });
+        var current = operationContext9();
+        var operationKeys = current ? Object.keys(operationKnown9).filter(function (key) { return key.split(':')[1] === current.dept; }) : [];
+        return Promise.all([cand.length ? getAll9(cand, drop) : [], operationKeys.length ? operationRead9(operationKeys) : { ok: 1 }]).then(function (result) {
+          if (!result[1] || result[1].ok !== 1) throw Error('operations-resync-read');
+          return result[0];
+        });
+      }).then(function (changed) { rsDone9(changed, true); }, function () { rsDone9(null, false); });
     }
     /* مستمع دائم: طلب ينتظر عند الخادم حتى يقع تغيير، ثم يُفتح غيره فوراً — فتصل تعديلات الزملاء خلال ثانية.
        عند فشل الشبكة يُعاد بتباطؤ متدرّج، وعند إخفاء التبويب يتوقف ويستأنف عند العودة. */
@@ -1221,13 +1542,13 @@
   });
 
   KIVO.__BS_SRV = {
-    dirty: function () { return dirty; },
+    dirty: function () { return dirty || !!operationActive9; },
     denied: function (k) { return k == null ? deniedN9 : (deniedK9[k] || 0); },   /* KIVO_264 (المراجعة R2): denied(k) لمفتاحٍ بعينه */
     fails: function () { return fails; },
     flush: function () { return flushAsync(); },
     flushAsync: flushAsync,
     inflight: function () { return !!inflight; },
-    count: function () { return Object.keys(mem).length; },
+    count: function () { return legacyMemoryKeys9().length; },
     rev: function (k) { return krev[k] || 0; },
     merge3: merge3,
     /* KIVO_243: سببٌ آليّ لكتابةٍ تجريها الواجهةُ بنفسها (مثل تنقية الحالات القديمة) — في وضع الإنفاذ وحده */
@@ -1242,6 +1563,36 @@
     sesChanged: function () { return sx9; },
     orphaned: function () { return orphan9 ? { set: Object.keys(orphan9.set), del: Object.keys(orphan9.del) } : null; },
     /* KIVO_264 · D-4: إعادةُ مزامنة ما يقرؤه هذا المستخدم الآن (بعد تغيّر صلاحياته) — بلا إعادة تحميل */
-    resync: function (proj) { if (readSetHook9) readSetHook9(!!proj); }
+    resync: function (proj) { return readSetHook9 ? readSetHook9(!!proj) : Promise.resolve({ ok: 0, err: 'read-unavailable' }); },
+    operations: Object.freeze({
+      resources: operationResources9,
+      context: operationContext9,
+      snapshot: function () { return operationSnapshot9 && operationSame9(operationSnapshot9) ? operationClone9(operationSnapshot9) : null; },
+      read: operationRead9,
+      value: operationValue9,
+      reference: operationReference9,
+      key: operationScoped9,
+      get: function (name) { return operationValue9(operationScoped9(name)); },
+      text: function (name) { var value = operationValue9(operationScoped9(name)); return value === null ? null : JSON.stringify(value); },
+      state: function (name) { var key = operationScoped9(name), known = operationKnown9[key]; if (KIVO.__bsReadHook) KIVO.__bsReadHook(key); return known && known.stamp && operationSame9(known.stamp) ? known.state : 'unloaded'; },
+      draft: operationDraft9,
+      begin: operationBegin9,
+      commit: operationCommit9,
+      stage: operationStage9,
+      flush: function (ticket) { return operationFlush9(ticket, false); },
+      retry: function (ticket) { return operationFlush9(ticket, true); },
+      release: operationRelease9,
+      status: operationStatus9,
+      explain: function (result) {
+        var denied = result && result.details && result.details.denied;
+        if (!operationObject9(denied)) return '';
+        return Array.from(new Set(Object.keys(denied).map(function (key) {
+          var value = denied[key];
+          return operationObject9(value) && typeof value.why === 'string' ? whyText9(value.why) : '';
+        }).filter(Boolean))).join(' · ');
+      },
+      ready: operationReady9,
+      invalidate: operationInvalidate9
+    })
   };
 })();

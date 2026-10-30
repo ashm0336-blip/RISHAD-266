@@ -287,7 +287,7 @@ ENF_PROJ['bassam_staffing_v2'] = ENF_PROJ['bassam_staffing_v3'];
 async function enfRefsFor(env, depts, keys) {
   var out = { recs: {}, staffing: {} }, i, d;
   out.recs = await enfScopeRecs(env, depts, keys);
-  for (i = 0; i < depts.length; i++) { d = depts[i]; if (!d || out.staffing[d] !== undefined) continue; var sk = 'bsdept:' + d + ':bassam_staffing_v3'; var raw = keys && Object.prototype.hasOwnProperty.call(keys, sk) ? keys[sk] : (keys ? null : await kvGet(env, 'kv', sk)); out.staffing[d] = parseJson(raw, null); }
+  for (i = 0; i < depts.length; i++) { d = depts[i]; if (!d || out.staffing[d] !== undefined) continue; var sk = 'bsdept:' + d + ':bassam_staffing_v3'; var raw = keys && Object.prototype.hasOwnProperty.call(keys, sk) ? keys[sk] : (keys ? null : await opResourceGet(env, sk)); out.staffing[d] = parseJson(raw, null); }
   return out;
 }
 /* الإسقاطُ على نصّ قيمةٍ كما ستُرسل — يرمي عند الخطأ (fail-closed: المستدعي يرفض القراءة) */

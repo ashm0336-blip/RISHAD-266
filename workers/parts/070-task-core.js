@@ -246,13 +246,13 @@ function tkK(d) { return 'bsdept:' + d + ':bassam_tasks_v1'; }
 async function tkRev(env, k) { var r = await env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(k).first(); return (r && r.rev) || 0; }
 /* قفلُ الشهر في الخادم = الاعتمادُ الصريح وحده (true) — {mo:1} شهرٌ منقضٍ فُتح فهو مفتوح (lockState في 010) */
 async function tkLocked(env, d, ym) {
-  var L = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
+  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
   var v = isObj(L) ? L[ym] : undefined; return v === true || v === 1;
 }
 function tkYm(k) { var p = String(k).split('-'); return (+p[0]) + '-' + (+p[1]); }
 /* KIVO_265 · قفلُ اليوم: اليومُ المُغلق بيده (true على مفتاح «y-m-d» في مخزن الأقفال) لا تُضاف إليه مهامٌ جديدة — الإنشاءُ يُرفض والتكرارُ يتخطّاه */
 async function tkDayShut(env, d, k) {
-  var p = String(k).split('-'), L = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
+  var p = String(k).split('-'), L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
   return isObj(L) && L[(+p[0]) + '-' + (+p[1]) + '-' + (+p[2])] === true;
 }
 /* ── حدثُ تدقيقٍ للمهمة (etype=task · eid = هويةُ الكيان) ── */
@@ -270,20 +270,41 @@ function tkAud(K, r, act, ctx, bef, aft) {
    opt.srv: مسارُ مهامٍ في الخادم يبني من القيمة الحالية — فلا يمسّه حفظُ أفعال الموظف (tkKeepSelf) المخصّصُ للحفظ الخامّ من الواجهة. */
 var TK_TRIES = 8;
 function tkPause(n, ms) { return Math.min(1500, Math.max(5, ms || 0) * (0.5 + Math.random()) + 15 * n); }
-async function tkSave(env, request, A, K, fn, meta) {
+async function tkSave(env, request, A, K, fn, meta, command) {
   var mq = meta || (request ? reqMeta(request) : {}), last = 0;
-  for (var attempt = 0; attempt < TK_TRIES; attempt++) {
+  for (var attempt = 0; attempt < (command ? 1 : TK_TRIES); attempt++) {
     if (attempt) await new Promise(function (r) { setTimeout(r, tkPause(attempt, last)); });
     var t0 = Date.now();
-    var rev = await tkRev(env, K), S = parseJson(await kvGet(env, 'kv', K), {}); if (!isObj(S)) S = {};
+    var rev = await tkRev(env, K), S = parseJson(await opResourceGet(env, K), {}); if (!isObj(S)) S = {};
     var R = await fn(S, rev, attempt);
     if (!R || R.err) return R || { err: json({ ok: 0, err: 'state' }, 409) };
     if (R.noop) return R;
     var B = { set: {}, base: {}, aud: R.aud || [] }; B.set[K] = JSON.stringify(R.S2); B.base[K] = rev;
     if (R.why) { B.why = {}; B.why[K] = String(R.why).slice(0, 300); }               /* KIVO_265: سببُ الفعل للإنفاذ حين يلزمه سجلُّه (task.reopen — §12 audit.reason) */
-    var res = await applySave(env, B, A, mq, { srv: 1, quiet: 1 });
+    if (command) { B.requestId = command.body.requestId; B.epoch = command.body.epoch; }
+    var options = { srv: 1, quiet: 1 };
+    if (command) {
+      var classification = KIVO_GUARDS.classify('bassam_tasks_v1', S, R.S2, {});
+      R.result = Object.assign({}, R.result || {}, { commandActions: Array.from(new Set(command.actions.concat(classification ? classification.keys() : []))) });
+    }
+    if (command) Object.assign(options, { __reference: command.reference, __operationRequestId: command.body.requestId,
+      __operationFingerprint: command.fingerprint, __operationResult: R.result || {} });
+    var res;
+    try { res = await applySave(env, B, A, mq, options); }
+    catch (error) {
+      var epochChanged = /KIVO_RESTORE_EPOCH/.test(String(error));
+      if (!epochChanged && !/KIVO_REV_CONFLICT|KIVO_RESTORE_TARGET/.test(String(error)) && !(error.rs === 'conflict' && error.status === 409)) throw error;
+      last = Date.now() - t0;
+      // Interactive commands retain their original base/ticket. Existing
+      // server/self intents may retry against current data, never across restore.
+      if (command) return { err: json({ ok: 0, err: 'conflict' }, 409) };
+      if (epochChanged) return { err: json({ ok: 0, err: 'busy', msg: 'تغيّرت نسخة البيانات — راجع المهمة وأعد المحاولة' }, 409) };
+      continue;
+    }
     last = Date.now() - t0;
-    if (res.revs && res.revs[K]) { R.rev = res.revs[K]; return R; }
+    if ((!command || res.ok === 1) && res.revs && Object.prototype.hasOwnProperty.call(res.revs, K) && Number.isSafeInteger(res.revs[K]) && res.revs[K] >= 0) {
+      R.rev = res.revs[K]; if (command) R.receipt = res; return R;
+    }
     if (res.denied && res.denied[K]) {
       if ((await tkRev(env, K)) !== rev) continue;                                 /* رفضٌ على نسخةٍ تجاوزها حفظٌ متزامن ⇒ قراءةٌ جديدة */
       await secLog(env, { ts: Date.now(), uid: A.u.id, un: String(A.u.un || ''), act: 'denied', target: K, detail: String(res.denied[K].why || ''), ip: mq.ip, city: mq.city, dev: mq.dev });
@@ -394,4 +415,52 @@ function tkFind(L, id, ekey, hint) {
   if (typeof hint === 'number' && ok(L[hint])) return hint;
   for (var j = 0; j < L.length; j++) if (ok(L[j])) return j;
   return -1;
+}
+
+/* Interactive commands carry the original request fingerprint into the existing
+   operational receipt. The fresh reference also fences every derived input. */
+async function tkCommandContext(env, A, body, command, actions) {
+  var append = command === 'tasks.create';
+  if (!Number.isSafeInteger(body.epoch) || body.epoch < 0 ||
+      ((!append || body.base !== undefined) && (!Number.isSafeInteger(body.base) || body.base < 0)))
+    return tkNo(400, 'bad-body', '', { at: 'base' });
+  var reference = await rsReferenceSnapshot(env, A.u.id), actor = reference.A;
+  if (!actor || !actor.u) return tkNo(401, 'session');
+  ['tok', 'sessTs', '__tkSrv', '__tkSelf'].forEach(function (key) { if (A[key] !== undefined) actor[key] = A[key]; });
+  env = reference.env; A = actor;
+  var D = tkDeptOf(A, body.dept); if (D.err) return D;
+  if (!(A.depts || []).some(function (row) { return row && row.id === D.d; })) return tkNo(403, 'forbidden');
+  if (!(actions || []).every(function (action) { return tkHeld(A, D.d, action); })) return tkNo(403, 'denied');
+  if (body.epoch !== Number(reference.inputMeta.restore_epoch || 0)) return tkNo(409, 'restore-epoch-changed');
+  var receipt = await opCommandReceipt(env, A, command, body.requestId, body), key = tkK(D.d);
+  if (receipt.receipt && (!Array.isArray(receipt.receipt.commandActions) || !receipt.receipt.commandActions.every(function (action) { return tkHeld(A, D.d, action); }))) return tkNo(403, 'denied');
+  if (receipt.receipt) {
+    try { await env.DB.batch(rsReferenceGuards(env, reference)); }
+    catch (error) {
+      if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) throw rsError('conflict', 409);
+      throw error;
+    }
+  }
+  // Create appends to this freshly captured source; it never replaces a client
+  // document. Its server-side CAS remains in tkSave/the atomic compiler.
+  if (!append && !receipt.receipt && body.base !== Number(reference.inputRevs[key] || 0)) return tkNo(409, 'busy');
+  return { actions: actions || [], env: env, A: A, d: D.d, key: key, reference: reference, fingerprint: receipt.fingerprint, receipt: receipt.receipt, body: body };
+}
+function tkCommandReply(command, receipt) {
+  var reply = Object.assign({}, receipt, { rev: receipt.revs && receipt.revs[command.key] || receipt.v || 0 });
+  delete reply.commandActions;
+  return reply;
+}
+async function tkPreparedCommand(env, request, A, body, name, prepare, recurrence) {
+  var actions = recurrence && body.op === 'start' ? ['task.edit', 'task.create', 'task.assign'] : ['task.edit'];
+  var command = await tkCommandContext(env, A, body, name, actions);
+  if (command.err) return command.err;
+  if (command.receipt) return json(tkCommandReply(command, command.receipt));
+  var R = await tkSave(command.env, request, command.A, command.key, async function (S) {
+    var plan = await prepare(command.env, command.A, body, command.d, command.key, S);
+    return plan instanceof Response ? { err: plan } : plan;
+  }, null, command);
+  if (R.err) return R.err;
+  if (recurrence && !R.receipt.duplicate && typeof tkGateReset === 'function') await tkGateReset(command.env, 'rec', command.d);
+  return json(tkCommandReply(command, R.receipt));
 }

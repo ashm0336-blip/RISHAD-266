@@ -6,13 +6,13 @@
    بعد الرقعة يُرفض الحفظُ الخامّ نفسُه، ويبقى المسارُ الذاتيّ وحفظُ المسؤول (بمفاتيحه) كما هما. بياناتٌ اصطناعية وحدها. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, withPatch, KT, HR, hij, stored } from './tasks_fx.mjs';
+import { world, workerUnderTest, withPatch, KT, HR, hij, stored, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest(), WP = withPatch(WU.file, '06-selfwrite-route-only.patch');
 /* بعد دمج الرقعة (العاملُ يحملها) لا عاملَ «قبلها» يُختبر هنا — التوصيفُ يبقى صحيحاً على 263 ويُتخطّى */
 const MERGED = !WP.patched;
 const DM = ['0000000101', '70101'], EMP1 = ['0000000113', '70113'], EK = 'tst_e_emp1';
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body:operationSaveBody(W.env,p,taskCommandBody(W.env, p, body)) });
 const rowOf = (W, k, id) => (stored(W.env, KT)[k] || []).find((r) => Array.isArray(r) && r[13] === id);
 
 async function scenario(file, mode) {
@@ -25,12 +25,12 @@ async function scenario(file, mode) {
   const st = await post(W, e1.ck, '/api/me/tasks/act', { k, id, act: 'start' });
   assert.equal(st.status, 200, 'البدءُ من المسار الذاتي: ' + JSON.stringify(st.j));
   /* الهجوم: قراءةُ المخزن كاملاً (task.view) ثم حفظُه خاماً بصفّي «منجزاً» بأداءٍ مختار وتسليمٍ مزعوم */
-  const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT), { cookie: e1.ck });
-  assert.equal(g.status, 200); const S = JSON.parse(g.j.keys[KT].v), base = g.j.keys[KT].rev;
+  const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT), { cookie: e1.ck });
+  assert.equal(g.status, 200); const S = g.j.resources[KT], base = g.j.base[KT];
   const L = S[k], i = L.findIndex((r) => Array.isArray(r) && r[13] === id), now = Date.now();
   L[i] = L[i].slice(); L[i][3] = 'done'; L[i][12] = now; L[i][6] = ['early', 'مبكر بـ 2 س'];
   L[i][21] = { imgs: [], note: 'TEST_ONLY إنجازٌ مزعوم', at: now, sub: now };
-  const raw = await W.C.save(e1.ck, { [KT]: JSON.stringify(S) }, [], { [KT]: base });
+  const raw = await W.C.api('/api/save',{method:'POST',cookie:e1.ck,body:operationSaveBody(W.env,'/api/save',Object.assign({set:{ [KT]: JSON.stringify(S) },del:[],base:{ [KT]: base }},{}))});
   return { W, dm, e1, k, id, raw };
 }
 
@@ -53,9 +53,9 @@ for (const mode of ['legacy', 'enforce']) {
     const ap = await post(W, dm.ck, '/api/tasks/review', { k, id, ekey: EK, decision: 'approve' });
     assert.equal(ap.status, 200, JSON.stringify(ap.j)); r = rowOf(W, k, id); assert.equal(r[3], 'done'); assert.equal(r[23].rev.st, 'approved');
     /* المسؤولُ بمفاتيحه (task.edit/finish): حفظُه الخامّ على صفّ موظفٍ ما زال يُقبل — الرقعةُ تقصر «الذات» لا صلاحياتِ الإدارة */
-    const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT), { cookie: dm.ck }); const S = JSON.parse(g.j.keys[KT].v);
+    const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT), { cookie: dm.ck }); const S = g.j.resources[KT];
     const i = S[k].findIndex((q) => Array.isArray(q) && q[13] === id); S[k][i] = S[k][i].slice(); S[k][i][1] = 'TEST_ONLY وصفٌ عدّله المسؤول';
-    const ms = await W.C.save(dm.ck, { [KT]: JSON.stringify(S) }, [], { [KT]: g.j.keys[KT].rev });
+    const ms = await W.C.api('/api/save',{method:'POST',cookie:dm.ck,body:operationSaveBody(W.env,'/api/save',Object.assign({set:{ [KT]: JSON.stringify(S) },del:[],base:{ [KT]: g.j.base[KT] }},{}))});
     assert.ok(ms.j.revs && ms.j.revs[KT], 'حفظُ المسؤول: ' + JSON.stringify(ms.j));
   });
 }

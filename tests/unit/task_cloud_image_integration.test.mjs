@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { ROOT } from './harness.mjs';
-import { world, workerUnderTest, ME, KT, DAY, TAG, stored, rowsOf, HR, PNG } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, KT, DAY, TAG, stored, rowsOf, HR, PNG, taskCommandBody } from './tasks_fx.mjs';
 
 test('cloud task proof survives a lost commit response through explicit same-idem retry without duplicate images, audit or reconnect writes', async t => {
   const canonical = workerUnderTest();
@@ -18,7 +18,7 @@ test('cloud task proof survives a lost commit response through explicit same-ide
   const me = await W.login(ME.un, ME.pw), manager = await W.login('0000000101', '70101');
   const title = TAG + ' cloud image transport integration';
   const created = await W.C.api('/api/tasks/create', { method: 'POST', cookie: manager.ck,
-    body: { k: DAY, t: title, s: Date.now() - 60e3, e: Date.now() + 2 * HR, asg: [ME.eid], rv: 'none' } });
+    body: taskCommandBody(W.env, '/api/tasks/create', { k: DAY, t: title, s: Date.now() - 60e3, e: Date.now() + 2 * HR, asg: [ME.eid], rv: 'none' }) });
   assert.equal(created.status, 200, JSON.stringify(created.j));
   const id = created.j.rows[0].id, events = {}, calls = [], storage = [], KIVO = {};
   let loseSubmitResponse = false;

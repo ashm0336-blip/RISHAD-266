@@ -1,3 +1,6 @@
+import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { taskText } from './tasks_vm_operations_fx.mjs';
+import { taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
 /* KIVO_265 · البند 18 من قائمة صفحة المهام — إثباتٌ بموقعٍ وختمٍ زمني على الصورة («ملفي ← التوثيق والتسليم»):
      (1) سطرا الختم نقيّان: هجري + ميلادي + الساعة بالرياض · الإحداثيات أو «بلا موقع» · اسمُ الموظف · عنوانُ المهمة
      (2) الختمُ يُرسم على اللوحة نفسِها قبل الترميز (شريطٌ سفلي + سطران من اليمين) — فالمرفوعُ يحمله مرئياً لا الواجهة
@@ -57,16 +60,16 @@ function page(W, ck, o = {}) {
 const T = { y: +DAY.split('-')[0], m: +DAY.split('-')[1], d: +DAY.split('-')[2] };
 const E = { isStaff: true, T, myKey: ME.eid, keyOfTok: (x) => x, myRec: { name: NAME } };
 const Vf = (P) => P.c._tkVals({}, E, P.c.state);
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: operationSaveBody(W.env, p, taskCommandBody(W.env, p, body)) });
 const get = (W, ck, p) => W.C.api(p, { cookie: ck });
 const refOf = (P, id) => P.c._tkMine(E).find((x) => x.r.__x && String(x.r.__x.id) === String(id));
 const srvRow = (W, id) => (rowsOf(stored(W.env, KT), ME.eid).find((x) => x.r[13] === id) || {}).r || [];
 async function until(f, ms = 5000) { const t0 = Date.now(); for (;;) { let v = false; try { v = f(); } catch (e) { v = false; } if (v || Date.now() - t0 > ms) return v; await new Promise((r) => setTimeout(r, 10)); } }
 const mkTask = (W, ck, t, extra) => post(W, ck, '/api/tasks/create', Object.assign({ k: DAY, t: TAG + ' ' + t, s: Date.now() - 60e3, e: Date.now() + 2 * HR, asg: [ME.eid], rv: 'none' }, extra || {}));
-function wipe(W, eid) { const S = stored(W.env, KT); for (const d in S) S[d] = S[d].filter((r) => !(Array.isArray(r) && r[14] === eid)); putKV(W.env, KT, S); }
+async function wipe(W, eid) { const S = stored(W.env, KT); for (const d in S) S[d] = S[d].filter((r) => !(Array.isArray(r) && r[14] === eid)); await replaceOperationalFixture(W.env, KT, S); }
 async function raw(W, ck, mut) {
-  const g = await get(W, ck, '/api/get?keys=' + encodeURIComponent(KT)), S = JSON.parse(g.j.keys[KT].v);
-  mut(S); return post(W, ck, '/api/save', { set: { [KT]: JSON.stringify(S) }, base: { [KT]: g.j.keys[KT].rev } });
+  const g = await get(W, ck, "/api/operations/read?keys=" + encodeURIComponent(KT)), S = JSON.parse(taskText(g.j, KT));
+  mut(S); return post(W, ck, '/api/save', { set: { [KT]: JSON.stringify(S) }, base: { [KT]: g.j.base[KT] } });
 }
 const GEO = { lat: 24.7136, lng: 46.6753, acc: 12 };
 
@@ -126,7 +129,7 @@ for (const mode of ['legacy', 'enforce']) {
   test('[' + mode + '] (4) الخادم: meta مع submit ⇒ r21.meta بترتيب الصور · proof.meta في القراءة · فاسدٌ ⇒ 400 at:meta · حذفُ المسودّة يُسقطها · حفظُ المدير لا يمسّها', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);
-    wipe(W, ME.eid);
+    await wipe(W, ME.eid);
     const P = page(W, me.ck, { geo: GEO }); await P.MT.load(true);
     const c = await mkTask(W, dm.ck, 'مهمة الختم'); assert.equal(c.status, 200, JSON.stringify(c.j));
     const id = c.j.rows[0].id; await P.MT.load(true);

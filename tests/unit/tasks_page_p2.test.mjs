@@ -1,3 +1,6 @@
+import { attachTaskOperations, taskText } from './tasks_vm_operations_fx.mjs';
+import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { taskCommandBody } from './tasks_fx.mjs';
 /* KIVO_264 · KIVO-Tasks (المرحلة الثانية) — صفحةُ المهام الحقيقية (src/modules/tasks/logic.js في vm + KIVO.BassamPageKit الحقيقي) على العامل الحقيقي:
    الإنشاءُ من الخادم بالإعدادات المتقدمة (ق2 سياسةُ الإثبات · ق3 المراجِع · الاعتذار) و«نوع المهمة» الظاهر (ق5 التكرار — KIVO_265) · الأهليةُ «غير متاح» تُكشف قبل الإسناد ·
    مراجعةُ التسليم من الصفّ (اعتماد/إعادة بسبب) · حالاتُ سير العمل في الجدول واللوحة والفلتر · التعديلُ يحفظ 22 و23 · تغييرُ المكلَّف بعد نشاطه يُمنع (RC-13)
@@ -15,7 +18,7 @@ const LOGIC = moduleLogic('tasks');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 async function until(fn, ms = 4000) { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(20); } return false; }
 /* الصفحةُ لمدير الإدارة: تخزينُها المحلي = قيمُ الخادم · fetch يمرّ إلى العامل بجلسة المدير (كما في المتصفح) · __BS_BOOT.srv = 1 */
-function page(W, ck, storeJson, emps) {
+async function page(W, ck, storeJson, emps) {
   const store = new Map([['bassam_tasks_v1', storeJson], ['bassam_employees_v1', JSON.stringify(emps)]]);
   const KIVO = {}, toasts = [];
   const ctx = { KIVO, console, Intl, Date, Math, JSON, Promise, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, setTimeout, clearTimeout, setInterval: () => 0, clearInterval: () => 0,
@@ -36,9 +39,10 @@ function page(W, ck, storeJson, emps) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
+  const opsFixture = await attachTaskOperations(ctx, { store, W, ck });
   const c = new ctx.__C(); c._tkDayDef = () => 0;   /* اختباراتُ الشهر كاملاً (KIVO_265 · كروتُ الأيام: الافتراضي يومُ اليوم) */ c.state = Object.assign({}, c.state || {}, { locked: {} });
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);                 /* الصفحةُ تعرّف bsToast بنفسها (DOM) — يُلتقط هنا */
-  return { c, store, toasts, sync: async () => { const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT), { cookie: ck }); store.set('bassam_tasks_v1', g.j.keys[KT].v); c.setState({ tasksAll: JSON.parse(g.j.keys[KT].v) }); } };
+  return { c, opsFixture, store, toasts, sync: async () => { await opsFixture.sync(); c._tkLSBust(); c.setState({ tasksAll: opsFixture.operations.get("bassam_tasks_v1") || {} }); } };
 }
 const flatRows = (V) => (V.tlist || V.rows || []).concat(...((V.tlist || V.rows || []).map(t => t.kids || [])));
 function findRow(V, id) { for (const t of [].concat(V.rows || [], V.trows || [], V.tasks || [])) if (t && t.tkcT && t.tkcT[13] === id) return t; return null; }
@@ -47,8 +51,8 @@ function allRows(V) { const out = []; const seen = new Set(); const walk = (o, d
 
 test('الصفحة · الإنشاءُ من الخادم بالإعدادات المتقدمة → التسليمُ للمراجعة يظهر في الصف واللوحة والفلتر → الإعادةُ بسببٍ من الصف · التعديلُ يحفظ 22/23 · لا تغييرَ للمكلَّف بعد نشاطه', async () => {
   const W = await world({ worker: WU.file }); const dm = await W.login('0000000101', '70101'), me = await W.login(ME.un, ME.pw);
-  const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT + ',' + KE), { cookie: dm.ck });
-  const P = page(W, dm.ck, g.j.keys[KT].v, JSON.parse(g.j.keys[KE].v));
+  const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT + ',' + KE), { cookie: dm.ck });
+  const P = await page(W, dm.ck, taskText(g.j, KT), JSON.parse(taskText(g.j, KE)));
   /* يومُ النموذج = اليومُ الهجريّ المدنيّ لبدايتها (لا «اليوم التشغيلي» بمهلته — بين 00:00 و03:00 يختلفان) · والساعةُ بعد ساعتين بتوقيت هذا الجهاز */
   const h = new Date(Date.now() + 2 * 3600e3), [y, m, d] = hij(h.getTime()).split('-').map(Number), H12 = (h.getHours() % 12) || 12, AP = h.getHours() >= 12 ? 'م' : 'ص';
   /* (1) الإنشاء: صورتان + خطوتان · المراجِعُ أنا · لا اعتذار · يومياً لأسبوع — والمعاينةُ تلخّص الإعدادات قبل الاعتماد */
@@ -60,7 +64,7 @@ test('الصفحة · الإنشاءُ من الخادم بالإعدادات ا
      لا في advSum (كان: advSum يطابق «يومياً»)، والنهايةُ «في تاريخ» صراحةً (newRecEnd) بعد أن صار الافتراضيُّ «حتى الإيقاف» */
   assert.doesNotMatch(V.advSum, /يومياً|تتكرر/); assert.equal(V.tkRecOn, true); assert.equal(V.tkRecTypes[1].aria, 'true'); assert.match(V.tkRecSum, /^تتكرر يومياً · من \d+-\d+-\d+ حتى \d+-\d+-\d+$/);
   assert.ok(V.advRvOpts.some(o => o.v === 'tst_gm1'), 'مراجِعٌ آخر قابلٌ للاختيار');
-  V.submitTask();
+  await V.submitTask();
   assert.ok(await until(() => !P.c.state.newTaskOpen), 'أُغلق النموذج بعد ردّ الخادم: ' + JSON.stringify(P.toasts));
   const mine = rowsOf(stored(W.env, KT), ME.eid).filter(q => q.r[0] === 'TEST_ONLY من صفحة المهام');
   assert.ok(mine.length >= 1, 'أُنشئت في الخادم'); const r0 = mine.find(q => q.day === y + '-' + m + '-' + d) || mine[0], x = r0.r[23];
@@ -68,7 +72,7 @@ test('الصفحة · الإنشاءُ من الخادم بالإعدادات ا
   assert.equal(typeof r0.r[22], 'string', 'طابعُ هوية الكيان'); assert.ok(P.toasts.some(([t, k]) => k === 'ok' && /أُسندت/.test(t)));
   /* (2) الموظفُ يبدأ ويسلّم بصورتين وخطوتيه ⇒ بانتظار المراجعة */
   const k = r0.day, id = r0.r[13];
-  { const S9 = stored(W.env, KT); const q9 = S9[k].find((r) => r[13] === id); q9[15] = Date.now() - 3600e3; q9[16] = Date.now() + 3600e3; putKV(W.env, KT, S9); }   /* KIVO_265 · نافذةُ التنفيذ: لا بدءَ قبل الموعد — وساعةُ النموذج بتوقيت الجهاز قد تقع بعد يوم؛ يُقدَّم موعدُ الصفّ إلى الآن */
+  { const S9 = stored(W.env, KT); const q9 = S9[k].find((r) => r[13] === id); q9[15] = Date.now() - 3600e3; q9[16] = Date.now() + 3600e3; await replaceOperationalFixture(W.env, KT, S9); }   /* KIVO_265 · نافذةُ التنفيذ: لا بدءَ قبل الموعد — وساعةُ النموذج بتوقيت الجهاز قد تقع بعد يوم؛ يُقدَّم موعدُ الصفّ إلى الآن */
   const up = async (i) => { const iid = 'img_tskpg' + i + '_x' + i; await W.C.api('/api/img/' + iid, { method: 'PUT', cookie: me.ck, body: PNG, headers: { 'Content-Type': 'text/plain' } }); return iid; };
   assert.equal((await W.C.api('/api/me/tasks/act', { method: 'POST', cookie: me.ck, body: { k, id, act: 'decline', why: 'x' } })).j.err, 'policy', 'لا اعتذار بسياسة المهمة');
   await W.C.api('/api/me/tasks/act', { method: 'POST', cookie: me.ck, body: { k, id, act: 'start' } });
@@ -91,13 +95,12 @@ test('الصفحة · الإنشاءُ من الخادم بالإعدادات ا
   const day = +k.split('-')[2], i = stored(W.env, KT)[k].findIndex(q => q[13] === id);
   const editBase = { year: +k.split('-')[0], month: +k.split('-')[1], newTaskOpen: true, newDesc: 'تفاصيل', newPrio: 'high', newDay: day, newEDay: day, newSh: H12, newSm: 0, newSap: AP, newEh: H12, newEm: 45, newEap: AP,
     newAsg: 'direct', pickWt: '', newDur: '45', editRef: { d: day, i, grp: null, grpLabel: '' }, newAdvTouched: false };
-  P.c.setState(Object.assign({}, editBase, { newTitle: 'TEST_ONLY عنوانٌ معدَّل', newPick: { [MATE.eid]: MATE.name } }));
+  P.c._tkOpen(Object.assign({}, editBase, { newTitle: 'TEST_ONLY عنوانٌ معدَّل', newPick: { [MATE.eid]: MATE.name } }));
   { const pi = JSON.parse(P.store.get('bassam_tasks_v1'))[k][i]; assert.ok(pi && pi[13] === id && pi[14] === ME.eid && pi[11], 'صفُّ الصفحة نفسُه: ' + JSON.stringify(pi && [pi[13], pi[14], pi[11], k, i, P.c.state.year, P.c.state.month, P.c.state.editRef])); }
-  const before = P.store.get('bassam_tasks_v1'); P.c.renderVals().submitTask();
+  const before = P.store.get('bassam_tasks_v1'); await P.c.renderVals().submitTask();
   assert.equal(P.store.get('bassam_tasks_v1'), before, 'لم يُكتب شيء'); assert.ok(P.toasts.some(([t]) => /إعادة إسناد/.test(t)), 'رسالةٌ توجّه إلى إعادة الإسناد: ' + JSON.stringify(P.toasts.slice(-3)));
   P.c.setState(Object.assign({}, editBase, { newTitle: 'TEST_ONLY عنوانٌ معدَّل', newPick: { [ME.eid]: ME.name } }));
-  P.c.renderVals().submitTask();
-  const sv = await W.C.save(dm.ck, { [KT]: P.store.get('bassam_tasks_v1') }); assert.ok(sv.j.revs && sv.j.revs[KT], JSON.stringify(sv.j).slice(0, 200));
+  await P.c.renderVals().submitTask();
   const r2 = stored(W.env, KT)[k].find(q => q[13] === id);
   assert.equal(r2[0], 'TEST_ONLY عنوانٌ معدَّل'); assert.equal(r2[22], r1[22], 'الطابع (22) باقٍ'); assert.deepEqual(r2[23], r1[23], 'حقولُ الإدارة (23) باقية'); assert.deepEqual(r2[21], r1[21], 'والإثبات');
   /* (5) ق5 · سلسلةُ التكرار من قائمة الصفّ: إيقافٌ مؤقت (كلُّ نسخها) ثم استئناف — بلا سبب مطلوب · والخادمُ يحكم (task.edit) */
@@ -116,9 +119,9 @@ test('الصفحة · الإنشاءُ من الخادم بالإعدادات ا
 
 test('الصفحة · «غير مرتبطة» شارةٌ وربطٌ يدويّ من قائمة الصف (ق4) · التمديدُ من القائمة · الأهليةُ «غير متاح» تُكشف عند الإنشاء ولا يُنشأ إلا بالتأكيد', async () => {
   const W = await world({ worker: WU.file }); const dm = await W.login('0000000101', '70101');
-  const S = stored(W.env, KT); S[DAY].push(row({ id: 1760000077001, title: 'مسندةٌ بالاسم', eid: ME.name })); putKV(W.env, KT, S);
-  const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT + ',' + KE), { cookie: dm.ck });
-  const P = page(W, dm.ck, g.j.keys[KT].v, JSON.parse(g.j.keys[KE].v));
+  const S = stored(W.env, KT); S[DAY].push(row({ id: 1760000077001, title: 'مسندةٌ بالاسم', eid: ME.name })); await replaceOperationalFixture(W.env, KT, S);
+  const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT + ',' + KE), { cookie: dm.ck });
+  const P = await page(W, dm.ck, taskText(g.j, KT), JSON.parse(taskText(g.j, KE)));
   const [y, m] = DAY.split('-').map(Number); P.c.setState({ year: y, month: m });
   let R = allRows(P.c.renderVals()).find(t => t.tkcT[13] === 1760000077001);
   assert.equal(R.p2Unl, true); assert.equal(R.p2UnlTxt, 'غير مرتبطة');
@@ -142,7 +145,7 @@ test('الصفحة · «غير مرتبطة» شارةٌ وربطٌ يدويّ �
   /* الأهليةُ عند الإنشاء: tst_e_emp1 (وردية TST-A 06–14) في 03:00 الغد ⇒ «غير متاح» ⇒ نافذةُ تأكيد — ثم «إسنادٌ رغم ذلك» */
   const T0 = Math.floor((Date.now() + 3 * 3600e3) / 864e5) * 864e5 - 3 * 3600e3 + 864e5;
   const Sf = stored(W.env, 'bsdept:' + D + ':bassam_staffing_v3') || {}; const hk = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(T0 + 12 * 3600e3)).reduce((o, p) => (o[p.type] = +p.value, o), {});
-  const ym = hk.year + '-' + hk.month; Sf[ym] = Sf[ym] || {}; Sf[ym].tst_e_emp1 = { shift: 'TST-A', rest: [] }; putKV(W.env, 'bsdept:' + D + ':bassam_staffing_v3', Sf);
+  const ym = hk.year + '-' + hk.month; Sf[ym] = Sf[ym] || {}; Sf[ym].tst_e_emp1 = { shift: 'TST-A', rest: [] }; await replaceOperationalFixture(W.env, 'bsdept:' + D + ':bassam_staffing_v3', Sf);
   const sMs = T0 + 3 * 3600e3, eMs = sMs + 3600e3;
   P.c._tkCreateSrv({ k: hk.year + '-' + hk.month + '-' + hk.day, t: 'TEST_ONLY خارج الوردية', s: sMs, e: eMs, asg: ['tst_e_emp1'], pol: { m: 'any' }, rv: 'creator', dec: 1 });
   assert.ok(await until(() => !!P.c.state.tkElig), 'نافذةُ الأهلية: ' + JSON.stringify(P.toasts));

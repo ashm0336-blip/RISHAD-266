@@ -1,3 +1,6 @@
+import { attachTaskOperations, taskText } from './tasks_vm_operations_fx.mjs';
+import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { taskCommandBody } from './tasks_fx.mjs';
 /* KIVO_265 · البند 11 — صفحةُ المهام (src/modules/tasks/logic.js في vm + KIVO.BassamPageKit الحقيقي) على العامل الحقيقي: الإجراءاتُ الجماعية
    خانةُ اختيارٍ لكل صفّ · «تحديد الكل في الصفحة» · شريطٌ عند التحديد: اعتماد · تمديد (قيمةٌ واحدة) · إلغاء بسببٍ واحد · إعادةُ إسناد إلى موظفٍ واحد —
    بالمسارات القائمة صفّاً صفّاً (review · extend · cancel · reassign) مع مؤشّر تقدّم وملخّص (نجح · فشل بسببه · تُخطّي غيرُ المؤهّل بسببه). بياناتٌ اصطناعية (tasks_fx). */
@@ -13,7 +16,7 @@ const WU = workerUnderTest();
 const LOGIC = moduleLogic('tasks');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 async function until(fn, ms = 6000) { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await fn()) return true; await sleep(25); } return false; }
-function page(W, ck, storeJson, emps) {
+async function page(W, ck, storeJson, emps) {
   const store = new Map([['bassam_tasks_v1', storeJson], ['bassam_employees_v1', JSON.stringify(emps)]]);
   const KIVO = {}, toasts = [];
   const ctx = { KIVO, console, Intl, Date, Math, JSON, Promise, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, setTimeout, clearTimeout, setInterval: () => 0, clearInterval: () => 0,
@@ -34,9 +37,10 @@ function page(W, ck, storeJson, emps) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
+  const opsFixture = await attachTaskOperations(ctx, { store, W, ck });
   const c = new ctx.__C(); c._tkDayDef = () => 0;   /* اختباراتُ الشهر كاملاً (KIVO_265 · كروتُ الأيام: الافتراضي يومُ اليوم) */ c.state = Object.assign({}, c.state || {}, { locked: {} });
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);
-  return { c, store, toasts, sync: async () => { const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT), { cookie: ck }); store.set('bassam_tasks_v1', g.j.keys[KT].v); c.setState({ tasksAll: JSON.parse(g.j.keys[KT].v) }); } };
+  return { c, opsFixture, store, toasts, sync: async () => { await opsFixture.sync(); c._tkLSBust(); c.setState({ tasksAll: opsFixture.operations.get("bassam_tasks_v1") || {} }); } };
 }
 function allRows(V) { const out = []; const seen = new Set(); const walk = (o, d) => { if (!o || typeof o !== 'object' || d > 4 || seen.has(o)) return; seen.add(o); if (o.tkcT && Array.isArray(o.tkcT)) out.push(o); for (const k of Object.keys(o)) { const v = o[k]; if (Array.isArray(v)) v.forEach(x => walk(x, d + 1)); else if (v && typeof v === 'object' && k !== 'tkcT') walk(v, d + 1); } }; walk(V, 0); return out; }
 const rowOf = (V, id) => allRows(V).find((t) => t.tkcT[13] === id);
@@ -58,9 +62,9 @@ async function setup() {
     row({ id: G1, title: 'جماعي · عامة', s: now - 36e5, e: now + 36e5 }),
     row({ id: F1, title: 'جماعي · ستُحذف من الخادم', eid: ME.eid, s: now - 36e5, e: now + 36e5 }),
   );
-  putKV(W.env, KT, S);
-  const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT + ',' + KE), { cookie: dm.ck });
-  const P = page(W, dm.ck, g.j.keys[KT].v, JSON.parse(g.j.keys[KE].v));
+  await replaceOperationalFixture(W.env, KT, S);
+  const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT + ',' + KE), { cookie: dm.ck });
+  const P = await page(W, dm.ck, taskText(g.j, KT), JSON.parse(taskText(g.j, KE)));
   P.c.setState({ year: Y, month: M, perPage: 0 });
   return { W, dm, P };
 }
@@ -100,7 +104,7 @@ test('البند 11 · اعتمادٌ جماعي: المسلَّمةُ بانت�
 test('البند 11 · تمديدٌ جماعي بقيمةٍ واحدة: بلا مهلةٍ رسالة · المنجزةُ تُتخطّى · والفاشلُ في الخادم يُسجَّل بسببه ويبقى محدَّداً', async () => {
   const { W, P } = await setup();
   /* F1 تُحذف من الخادم بعد تحميل الصفحة ⇒ 404 not-found عند التنفيذ */
-  { const S = stored(W.env, KT); S[DAY] = S[DAY].filter((r) => r[13] !== F1); putKV(W.env, KT, S); }
+  { const S = stored(W.env, KT); S[DAY] = S[DAY].filter((r) => r[13] !== F1); await replaceOperationalFixture(W.env, KT, S); }
   let V = sel(P, [P1, D1, F1]);
   V.tkBulkActs[1].click(); V = P.c.renderVals(); assert.equal(V.tkBulkExtOn, true); assert.equal(V.tkBulkExts.length, 4);
   V.tkBulkDo(); assert.match(P.c.state.tkBulkErr, /اختر المهلةَ الجديدة/);

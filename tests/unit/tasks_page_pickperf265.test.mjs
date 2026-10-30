@@ -1,3 +1,4 @@
+import { attachTaskOperations } from './tasks_vm_operations_fx.mjs';
 /* KIVO_265 · البند 13 — أداءُ منتقي الإسناد مع 1000+ موظف (src/modules/tasks/logic.js في vm + KIVO.BassamPageKit الحقيقي · بلا خادم: المنتقي محلّي):
    إدارةٌ اصطناعية فيها 1200 موظف بجدولٍ شهري وتقرير يوم — القياسُ قبل/بعد (Date.now داخل الاختبار: الرسمُ الأول البارد · المتوسطُ الدافئ · أثناءُ الكتابة في البحث)
    · النموذجُ مخزَّنٌ لليوم ويُبطَل بتغيّر المخزن · عرضٌ نافذي (أوّل 60 ثم «عرض المزيد») · البحثُ يرشّح النموذجَ المخزَّن.
@@ -29,7 +30,7 @@ function dept() {
   return { emps, staffing: { [YM]: st }, dreport: { [DAYK]: roster }, users };
 }
 /* الصفحةُ لمدير الإدارة بلا خادم (fetch يعيد 0) — المنتقي كلُّه محلّي */
-function page(DP) {
+async function page(DP) {
   const store = new Map([['bassam_tasks_v1', '{}'], ['bassam_employees_v1', JSON.stringify(DP.emps)], ['bassam_staffing_v3', JSON.stringify(DP.staffing)], ['bassam_dreport_v1', JSON.stringify(DP.dreport)],
     ['bassam_options_v1', JSON.stringify({ work: ['ميداني', 'إداري'] })]]);
   const KIVO = {}, toasts = [];
@@ -51,15 +52,16 @@ function page(DP) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
+  const opsFixture = await attachTaskOperations(ctx, { store });
   const c = new ctx.__C(); c._tkDayDef = () => 0;   /* اختباراتُ الشهر كاملاً (KIVO_265 · كروتُ الأيام: الافتراضي يومُ اليوم) */ c.state = Object.assign({}, c.state || {}, { locked: {} });
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);
-  return { c, store, toasts, KIVO };
+  return { c, opsFixture, store, toasts, KIVO };
 }
 const shownEmps = (V) => V.pickGroups.reduce((a, g) => a + (g.emps || []).length, 0);
 const ms = (fn, n = 1) => { const t0 = Date.now(); for (let i = 0; i < n; i++) fn(); return (Date.now() - t0) / n; };
 
-test('البند 13 · منتقي الإسناد مع 1200 موظف: قياسُ الرسم البارد/الدافئ/أثناء الكتابة · النافذةُ 60 ثم «عرض المزيد» · البحثُ على النموذج المخزَّن · الإبطالُ بتغيّر المخزن', (t) => {
-  const DP = dept(), P = page(DP);
+test('البند 13 · منتقي الإسناد مع 1200 موظف: قياسُ الرسم البارد/الدافئ/أثناء الكتابة · النافذةُ 60 ثم «عرض المزيد» · البحثُ على النموذج المخزَّن · الإبطالُ بتغيّر المخزن', async (t) => {
+  const DP = dept(), P = await page(DP);
   const open = {}; SHIFTS.forEach((s) => { open[s] = true; });
   P.c.setState({ year: T.year, month: T.month, newTaskOpen: true, editRef: null, newAsg: 'direct', newPick: {}, pickQ: '', pickOpen: open, pickWt: '', newDay: T.day, newEDay: T.day });
   const cold = ms(() => P.c.renderVals());
@@ -93,7 +95,8 @@ test('البند 13 · منتقي الإسناد مع 1200 موظف: قياسُ 
   const e25 = V.pickGroups.map((g) => g.emps.find((e) => e.name.indexOf(' 25 ') >= 0)).find(Boolean); assert.ok(e25 && e25.isOff && e25.offLbl === 'غائب', 'مؤشَّرٌ غائباً من تقرير اليوم: ' + JSON.stringify(e25 && [e25.name, e25.offLbl]));
   /* الإبطال: يومٌ آخر ⇒ نموذجٌ جديد · تغيّرُ قائمة الموظفين ⇒ نموذجٌ جديد يحمل الزيادة · حدثُ المخزن (_tkLSBust) ⇒ إعادةُ القراءة */
   assert.notEqual(P.c.tkPickModel(T.day === 1 ? 2 : T.day - 1), M0, 'يومٌ آخر ⇒ نموذجٌ آخر'); const M1 = P.c.tkPickModel(T.day); assert.notEqual(M1, M0, 'العودةُ لليوم بعد يومٍ آخر: يُبنى من جديد (ذاكرةٌ ليومٍ واحد)');
-  const E2 = DP.emps.concat([{ eid: 'tst_pf_new', name: TAG + ' موظف جديد', work: 'ميداني' }]); P.store.set('bassam_employees_v1', JSON.stringify(E2));
+  const E2 = DP.emps.concat([{ eid: 'tst_pf_new', name: TAG + ' موظف جديد', work: 'ميداني' }]);
+  await P.opsFixture.replace('bassam_employees_v1', E2);
   const M2 = P.c.tkPickModel(T.day); assert.notEqual(M2, M1); assert.equal(M2.groups.reduce((a, g) => a + g.emps.length, 0), 1201, 'الزيادةُ ظاهرة');
   assert.equal(P.c.tkPickModel(T.day), M2); P.c._tkLSBust(); const M3 = P.c.tkPickModel(T.day); assert.notEqual(M3, M2, 'حدثُ المخزن يُبطل'); assert.equal(M3.groups.reduce((a, g) => a + g.emps.length, 0), 1201);
   /* تغيّرُ نسخة الحسابات ⇒ إعادةُ حكم «لا حساب نشطاً» */

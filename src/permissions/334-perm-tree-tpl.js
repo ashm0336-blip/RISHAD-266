@@ -312,9 +312,8 @@
     return '';
   }
   function tplHolders(tplId, did){
-    var d = did || curDept(), L = tplsList(d), out = [], KE = KIVO.BassamEmp, list = [];
-    try { var raw = (RAW && RAW.getItem) ? RAW.getItem.call(localStorage, 'bsdept:' + d + ':bassam_employees_v1') : localStorage.getItem('bassam_employees_v1');
-      list = JSON.parse(raw) || []; } catch(e){}
+    var d = did || curDept(), L = tplsList(d), out = [], KE = KIVO.BassamEmp;
+    var list = KIVO.__BS_SRV.operations.reference('bsdept:' + d + ':bassam_employees_v1') || [];
     list.forEach(function(x){ if (!x) return; var k = (KE && KE.key) ? KE.key(x) : (x.eid || x.nid || x.name);
       if (k && out.indexOf(k) === -1 && tplOfEmp(k, d, L) === tplId) out.push(k); });
     return out;
@@ -325,7 +324,7 @@
     try {
       var PM = KIVO.BassamPerm; if (!PM || !PM.empPerms || !ekey) return '';
       var toks = [ekey];
-      try { var list = JSON.parse(localStorage.getItem('bassam_employees_v1')) || []; var KE = KIVO.BassamEmp;
+      try { var list = KIVO.__BS_SRV.operations.reference('bsdept:' + (did || curDept()) + ':bassam_employees_v1') || []; var KE = KIVO.BassamEmp;
         var e = list.filter(function(x){ return ((KE && KE.key) ? KE.key(x) : (x.eid || x.nid || x.name)) === ekey || x.eid === ekey || x.nid === ekey || x.name === ekey; })[0];
         if (e) [e.eid, e.nid, e.name].forEach(function(t){ if (t && toks.indexOf(t) === -1) toks.push(t); }); } catch(e0){}
       var mineO = {}; for (var i = 0; i < toks.length; i++) { var o = PM.empPerms(toks[i], did) || {}; if (Object.keys(o).some(function(k){ return (o[k] || []).length; })) { mineO = o; break; } }
@@ -466,9 +465,9 @@
         /* الاسم يُقرأ حيّاً من سجل الموظف بمفتاحه الموحّد — فإن عُدّل في صفحة الموظفين انعكس هنا فوراً */
         var nm2 = u.name || 'موظف';
         try {
-          var list2 = JSON.parse(localStorage.getItem('bassam_employees_v1')) || [];
+          var list2 = KIVO.__BS_SRV.operations.get('bassam_employees_v1') || [];
           var KE = KIVO.BassamEmp;
-          var emp2 = list2.filter(function(x){ return ((KE && KE.key) ? KE.key(x) : (x.eid || x.nid || x.name)) === u.ekey; })[0];
+          var emp2 = KE && KE.resolve ? KE.resolve(list2, u.ekey) : list2.filter(function(x){ return x && [x.eid, x.nid, x.name].indexOf(u.ekey) !== -1; })[0];
           if (emp2) nm2 = emp2.name || nm2;
         } catch(e2){}
         var pl2 = ''; try { pl2 = permLabel(u.ekey); } catch(e3){}

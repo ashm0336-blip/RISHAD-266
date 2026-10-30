@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { world, workerUnderTest, ME, MATE, P0, KE, D, TAG, stored, putKV, addAccount } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, P0, KE, D, TAG, stored, putKV, addAccount, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const KU = 'bassam_auth_users_v1', DM = ['0000000101', '70101'];
@@ -20,7 +20,7 @@ for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
   const saveU = async (W, ck, fn) => {
     const g = (await W.C.api('/api/get?keys=' + KU, { cookie: ck })).j.keys[KU], L = JSON.parse(g.v); fn(L);
-    return W.C.api('/api/save', { method: 'POST', cookie: ck, body: Object.assign({ set: { [KU]: JSON.stringify(L) }, del: [], base: { [KU]: g.rev } }, mode === 'enforce' ? { why: { [KU]: TAG + ' F-1' } } : {}) });
+    return W.C.api('/api/save', { method: 'POST', cookie: ck, body: operationSaveBody(W.env, '/api/save', Object.assign({ set: { [KU]: JSON.stringify(L) }, del: [], base: { [KU]: g.rev } }, mode === 'enforce' ? { why: { [KU]: TAG + ' F-1' } } : {})) });
   };
   const acct = (id, un, ekey) => ({ id, un, ph: ph('70' + un.slice(-3), id), name: TAG + ' · ' + id, role: 'staff', deptId: D, ekey, dis: 0 });
 
@@ -48,7 +48,7 @@ for (const mode of ['legacy', 'enforce']) {
 
   test(M + '(د) ولا رفضَ كاذب: حسابٌ جديدٌ بمعرّف موظفٍ بلا حساب ⇒ يُكتب', async () => {
     const W = await world({ worker: WU.file, mode });
-    const E = stored(W.env, KE), base = E.find((e) => e.eid === ME.eid); E.push(Object.assign({}, base, { eid: 'tst_e_f1new', name: TAG + ' · بلا حساب', empno: '' })); putKV(W.env, KE, E);
+    const E = stored(W.env, KE), base = E.find((e) => e.eid === ME.eid); E.push(Object.assign({}, base, { eid: 'tst_e_f1new', name: TAG + ' · بلا حساب', empno: '' })); await replaceOperationalFixture(W.env, KE, E);
     const dm = await W.login(...DM);
     const r = await saveU(W, dm.ck, (L) => L.push(acct('newacct' + mode, '2000000297', 'tst_e_f1new')));
     assert.ok(r.j && r.j.revs && r.j.revs[KU] && stored(W.env, KU).some((u) => u.id === 'newacct' + mode), show(r));

@@ -30,9 +30,11 @@ async function bdQueryContext(env, actor, d, definition, options) {
   Object.keys(grouped).forEach(function (k) { raw[k] = grouped[k].join(''); });
   rows[1].forEach(function (r) { revs[r.k] = natural(r.rev); });
   rows[2].forEach(function (r) { meta[r.k] = r.v; });
+  var operational = await opCaptureReferences(env,raw,keys.filter(opIsResource));
+  raw = operational.keys; Object.assign(revs,operational.revs);
   if (definition.validateMeta) definition.validateMeta(meta, d);
   var pre = Object.assign({}, env.__pre || {}, { live: true, kv: raw, revs: revs, meta: meta }),
-    captured = Object.assign({}, env, { __pre: pre }),
+    captured = Object.assign({}, env, { __pre: pre, __opCapture: operational }),
     mode = await enfModeOf(captured),
     A = actorFromKeys(raw, actor.u.id);
   if (!A || (!global && (!deptInScope(A, d) || !(A.depts || []).some(function (department) { return department && String(department.id) === d; }))))
@@ -47,7 +49,8 @@ async function bdQueryContext(env, actor, d, definition, options) {
   resources.forEach(function (name, i) { base[name] = revs[resourceKeys[i]] || 0; });
   var guards = rsWitness(env, 'kv', ['k', 'seq', 'v'], rows[0], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(keys)])
     .concat(rsWitness(env, 'revs', ['k', 'rev'], rows[1], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(revisionKeys)]))
-    .concat(rsWitness(env, 'meta', ['k', 'v'], rows[2], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(metaKeys)]));
+    .concat(rsWitness(env, 'meta', ['k', 'v'], rows[2], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(metaKeys)]))
+    .concat(operational.guards);
   return { env: captured, A: A, d: d, base: base, guards: guards, refs: refs, rawKeys: raw,
     resourceKeys: resourceKeys, meta: meta, pv4: { staffing: refs.staffing[d] },
     witness: await cuFingerprint({ uidValue: A.u.id, mode: mode, capture: rows }) };

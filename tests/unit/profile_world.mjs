@@ -55,6 +55,49 @@ export function world(o) {
   };
   KIVO.BassamDepts = { active: () => o.active || 'd1', activeName: () => (depts.find((d) => d.id === (o.active || 'd1')) || {}).name || '', list: () => depts,
     ancestorsOf: (id) => (o.ancestors || {})[id] || [], nodeOf: (id) => (o.nodes || {})[id] || null, groupName: (g) => ((o.nodes || {})[g] || {}).name || '' };
+  /* Pure presentation fixture: these are explicitly confirmed typed projection
+     values. Actual network/draft/ACK behavior is exercised with real 280 in the
+     Operations suites and actual 545/Worker in the self-task HTTP suites. */
+  const resources = new Set(['bassam_employees_v1','bassam_options_v1','bassam_staffing_v3','bassam_staffing_v2','bassam_staffing_snap_v1','bassam_staffing_locks_v1','bassam_callsigns_v1','bassam_perm_limit_v1','bassam_shift_options_v1','bassam_plan_v1','bassam_zone_opts_v1','bassam_gate_opts_v1','bassam_mark_kinds_v1','bassam_rounds_v1','bassam_dayshift_v1','bassam_dayfocus_v1','bassam_dreport_v1','bassam_dr_grp_v1','bassam_leave_kinds_v1','bassam_tasks_v1','bassam_tasks_locks_v1']);
+  const projection = key => {
+    const name = String(key).split(':').at(-1);
+    if (unreadable.has(name)) throw Error('operations-read-denied');
+    return store.has(name) ? JSON.parse(store.get(name)) : null;
+  };
+  KIVO.__BS_SRV = { rev: () => 1, operations: Object.freeze({
+    resources: [...resources], get: projection,
+    key: name => 'bsdept:' + KIVO.BassamDepts.active() + ':' + name,
+    status: () => ({ epoch: 0, state: 'idle' }),
+    text: name => { const value = projection(name); return value == null ? null : JSON.stringify(value); },
+    reference: key => {
+      if (!String(key).startsWith('bsdept:' + KIVO.BassamDepts.active() + ':')) throw Error('operations-read-required');
+      return projection(key);
+    },
+    context: () => ({ uid: user?.id || '', dept: KIVO.BassamDepts.active(), generation: 1 }),
+    state: name => ({ state: unreadable.has(name) ? 'denied' : store.has(name) ? 'ready' : 'absent' }),
+    draft: () => { throw Error('TEST_ONLY presentation fixture cannot write business data'); },
+  }) };
+  if (o.tasks) {
+    const rows = [];
+    for (const [day, list] of Object.entries(o.tasks)) list.forEach((row, i) => {
+      if (String(row[14] || '') !== String(user?.ekey || '')) return;
+      const [y,m,d] = day.split('-').map(Number);
+      rows.push({ k: day, i, y, m, d, id: row[13], t: row[0], desc: row[1], prio: row[2], st: row[3], perf: row[6], by: row[9], dur: row[10],
+        acc: row[11], fin: row[12], at: row[13], s: row[15], e: row[16], dec: row[20], proof: row[21] });
+    });
+    const state = { rows, at: Date.now(), me: { linked: true }, loading: false, err: '' };
+    const noCommand = async () => ({ ok: false, uncertain: true, msg: 'TEST_ONLY no cloud command transport; draft retained' });
+    KIVO.BassamMyTasks = Object.freeze({ state: () => state, subscribe: () => () => {}, load: async () => state,
+      act: noCommand, submitProof: noCommand, img: async () => null,
+      queue: { state: () => ({ n: 0, items: [], failed: [], loaded: true, sending: false }), forRow: () => [], ACT: {} } });
+  }
+  for (const method of ['getItem','setItem','removeItem']) {
+    const original = localStorage[method].bind(localStorage);
+    localStorage[method] = (key, ...args) => {
+      if (resources.has(String(key).split(':').at(-1))) throw Error('TEST_ONLY retired business Storage access: ' + key);
+      return original(key, ...args);
+    };
+  }
   const can = o.can || (() => true);
   KIVO.BassamPerm = { on: () => true, lensOn: () => true, can: (k, a) => can(k, a), deptCap: () => [], deptTabs: () => [] };
   KIVO.BassamSup = { supName: () => false, tpls: () => [], isSupTpl: () => false, tplOf: () => null };
@@ -70,7 +113,7 @@ export function world(o) {
   c._pfAlive = true;
   const run = () => { const t = timers.splice(0); t.forEach((f) => { try { f(); } catch (e) { /* مؤقّتٌ أخفق — يظهر أثره في التأكيدات */ } }); };
   const flush = async () => { for (let i = 0; i < 6; i++) { await new Promise((r) => setImmediate(r)); run(); } };
-  return { c, KIVO, ctx, nav, replaced, fetches, loc, run, flush, v: () => c.renderVals() };
+  return { c, KIVO, ctx, nav, replaced, fetches, loc, run, flush, confirmed: projection, v: () => c.renderVals() };
 }
 /* نصُّ القيم كلِّها (لفحص «لا يظهر في أيّ مكان») */
 export const allText = (v) => JSON.stringify(v, (k, x) => (typeof x === 'function' ? undefined : x));

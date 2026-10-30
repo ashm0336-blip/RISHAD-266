@@ -23,8 +23,10 @@
   "domain": "src/modules/employees/logic.js",
   "data": [
    "bassam_custody_v1",
+   "bassam_dayshift_v1",
    "bassam_dreport_v1",
    "bassam_employees_v1",
+   "bassam_mark_kinds_v1",
    "bassam_options_v1",
    "bassam_perm_tpls_v1",
    "bassam_plan_v1",

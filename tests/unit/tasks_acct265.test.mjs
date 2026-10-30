@@ -11,22 +11,22 @@
      (و) التكرار: نسخةٌ جديدة لمكلَّفٍ عُطِّل حسابُه بعد إنشاء السلسلة لا تُولَّد (والسببُ في ردّ التوليد) ويُولَّد لغيره */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, MATE, P0, KT, KE, TAG, stored, putKV, addAccount, hij, HR } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, P0, KT, KE, TAG, stored, putKV, addAccount, hij, HR, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: operationSaveBody(W.env, p, taskCommandBody(W.env, p, body)) });
 const get = (W, ck, p) => W.C.api(p, { cookie: ck });
 const NOACCT = 'tst_e_noacct', NIDACCT = 'tst_e_nidacct', DUP1 = 'tst_e_dupnid1', DUP2 = 'tst_e_dupnid2';
 const allRows = (W) => Object.values(stored(W.env, KT) || {}).flat().filter(Array.isArray);
 const rowsOf = (W, ek) => allRows(W).filter((r) => r[14] === ek);
 const audN = (W, act) => W.env.DB.q('SELECT COUNT(*) AS n FROM aud WHERE k = ? AND act = ?', KT, act)[0].n;
 /* موظفون إضافيون اصطناعيون: بلا حساب · بحسابٍ مفتاحُه رقمُ هويته · رقمُ هويةٍ مكرَّر في سجلّين (وحسابٌ به) — ويُعطَّل حسابُ MATE */
-function seed(W) {
+async function seed(W) {
   const E = stored(W.env, KE), base = E.find((e) => e.eid === ME.eid);
   const mk = (eid, name, nid) => Object.assign({}, base, { eid, name: TAG + ' · ' + name, empno: '', nid });
   E.push(mk(NOACCT, 'بلا حساب'), mk(NIDACCT, 'حسابُه برقم الهوية', '1999000777'), mk(DUP1, 'هويةٌ مكرّرة ١', '1999000888'), mk(DUP2, 'هويةٌ مكرّرة ٢', '1999000888'));
-  putKV(W.env, KE, E);
+  await replaceOperationalFixture(W.env, KE, E);
   addAccount(W.env, { uid: 'tst_nidacct', un: '2000000377', pw: '70377', ekey: '1999000777' });
   addAccount(W.env, { uid: 'tst_dupnid', un: '2000000388', pw: '70388', ekey: '1999000888' });
   setDis(W, MATE.uid, 1);
@@ -38,7 +38,7 @@ for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) الأهلية: بلا حساب ⇒ «غير متاح» قاطع بسببه · حسابٌ معطَّل ⇒ قاطع بسببه · نشطٌ لم يدخل قطّ ⇒ ليس قاطعاً', async () => {
-    const W = await world({ worker: WU.file, mode }); seed(W); const dm = await W.login(...DM);
+    const W = await world({ worker: WU.file, mode }); await seed(W); const dm = await W.login(...DM);
     const s = Date.now() + 2 * HR, r = await get(W, dm.ck, '/api/tasks/eligibility?ekeys=' + [NOACCT, MATE.eid, ME.eid, NIDACCT, DUP1].join(',') + '&s=' + s + '&e=' + (s + HR));
     assert.equal(r.status, 200, JSON.stringify(r.j));
     const by = Object.fromEntries(r.j.items.map((x) => [x.ekey, x]));
@@ -51,7 +51,7 @@ for (const mode of ['legacy', 'enforce']) {
   });
 
   test(M + '(ب) الإنشاء: بلا حساب أو بحسابٍ معطَّل ⇒ 409 acct ولو بالتأكيد — بلا صفٍّ ولا حدث · والمجموعةُ المختلطة تُرفض كلُّها', async () => {
-    const W = await world({ worker: WU.file, mode }); seed(W); const dm = await W.login(...DM);
+    const W = await world({ worker: WU.file, mode }); await seed(W); const dm = await W.login(...DM);
     const n0 = allRows(W).length, c0 = audN(W, 'created');
     for (const [asg, force] of [[[NOACCT], false], [[NOACCT], true], [[MATE.eid], true], [[ME.eid, NOACCT], true]]) {
       const r = await post(W, dm.ck, '/api/tasks/create', body(asg, force ? { force: true } : null));
@@ -65,7 +65,7 @@ for (const mode of ['legacy', 'enforce']) {
   });
 
   test(M + '(ج) حسابٌ نشطٌ غيرُ متصل (لا جلسةَ له) ⇒ يُنشأ له — والاتصالُ لا يُشترط', async () => {
-    const W = await world({ worker: WU.file, mode }); seed(W); const dm = await W.login(...DM);
+    const W = await world({ worker: WU.file, mode }); await seed(W); const dm = await W.login(...DM);
     const r = await post(W, dm.ck, '/api/tasks/create', body([ME.eid, P0[2].eid]));
     assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 300));
     assert.equal(r.j.rows.length, 2); assert.ok(r.j.elig.every((x) => x.acct === 1 && !x.hard), JSON.stringify(r.j.elig));
@@ -73,7 +73,7 @@ for (const mode of ['legacy', 'enforce']) {
   });
 
   test(M + '(د) إعادةُ الإسناد: إلى من لا حسابَ له أو حسابُه معطَّل ⇒ 409 acct ولو بالتأكيد · بعد تفعيل الحساب ⇒ تمضي', async () => {
-    const W = await world({ worker: WU.file, mode }); seed(W); const dm = await W.login(...DM);
+    const W = await world({ worker: WU.file, mode }); await seed(W); const dm = await W.login(...DM);
     const c = await post(W, dm.ck, '/api/tasks/create', body([ME.eid]));
     assert.equal(c.status, 200, JSON.stringify(c.j).slice(0, 200)); const k = c.j.rows[0].k, id = c.j.rows[0].id;
     for (const to of [NOACCT, MATE.eid]) {
@@ -87,7 +87,7 @@ for (const mode of ['legacy', 'enforce']) {
   });
 
   test(M + '(و) التكرار: لا نسخةَ جديدة لمكلَّفٍ عُطِّل حسابُه بعد إنشاء السلسلة — وتُولَّد لغيره، والسببُ في ردّ التوليد', async () => {
-    const W = await world({ worker: WU.file, mode }); seed(W); setDis(W, MATE.uid, 0); const dm = await W.login(...DM);
+    const W = await world({ worker: WU.file, mode }); await seed(W); setDis(W, MATE.uid, 0); const dm = await W.login(...DM);
     const s = Date.now() + 30 * 60e3, to = hij(s + 6 * 864e5);
     const c = await post(W, dm.ck, '/api/tasks/create', { k: hij(s), t: TAG + ' سلسلةُ الحساب النشط', s, e: s + HR, asg: [ME.eid, MATE.eid], rv: 'none', force: true, rec: { t: 'daily', to } });
     assert.equal(c.status, 200, JSON.stringify(c.j).slice(0, 300));

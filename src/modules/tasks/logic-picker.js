@@ -414,7 +414,7 @@ Object.assign(Component.prototype, {
                   run: () => {
                     sL
                       ? this.bsToast(this._tkLockTxt(this.state.year, this.state.month, a.dayNum))
-                      : this.setState({ confirmDel: { d: d, i: -1, grp: m, n: r.length, title: a.title } });
+                      : this._tkOpen({ confirmDel: { d: d, i: -1, grp: m, n: r.length, title: a.title } });
                   },
                 }
               : null,

@@ -76,15 +76,13 @@ class Component extends DCLogic {
       e
     );
   }
-  /* ═══ KIVO_265 · البند 17 — ربطُ الأداء بمؤشرات الأداء: مؤشراتُ المهام للشهر الهجري من مخزن المهام المحلي للإدارة ═══
-     المصدر: localStorage «bassam_tasks_v1» (يُحوَّل في 320 إلى bsdept:<الإدارة النشطة>:bassam_tasks_v1 — المخزنُ نفسُه الذي تقرؤه صفحةُ المهام)
+  /* ═══ مؤشرات المهام للشهر الهجري من إسقاط Operations السحابي المؤكد للإدارة ═══
      = {"Y-M-D" هجري: [صفوف]} — أعمدةُ الصفّ: 3 الحالة · 6 الأداء [code,txt] · 11 وقتُ القبول/البدء · 15 البداية · 21 الإثبات {imgs, note}.
      المؤشراتُ (نقيّة — للاختبار): الإنجازُ في الوقت = on_time/early من المنجزة · التأخرُ = late من المنجزة · الالتزامُ بالتوثيق = منجزةٌ بإثبات
      (صورةٌ أو ملاحظة) من المنجزة · متوسطُ زمن القبول = متوسط (11 − 15) للمقبولة (سالبٌ = بدءٌ قبل الموعد). لا كتابةَ ولا طلبَ خادم */
   _tkStore() {
     try {
-      const r = localStorage.getItem("bassam_tasks_v1"),
-        t = r ? JSON.parse(r) : null;
+      const t = KIVO.__BS_SRV.operations.get("bassam_tasks_v1");
       return t && "object" === typeof t && !Array.isArray(t) ? t : {};
     } catch (n) {
       return {};

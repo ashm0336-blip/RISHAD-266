@@ -359,28 +359,31 @@
   function deptManagersPub(did){ return deptManagers(did).map(pubMgr); }
   /* التفرّد لا يكفي أن يُفحص بين الحسابات: رقم هوية موظفٍ لم يُفعَّل حسابه بعد
      يجب أن يحجز نفسه أيضاً، وإلا صادمه المدير وانكشف الخطأ متأخراً عند التفعيل */
-  function empHolder(v){
-    v = String(v||'').trim(); if (!v) return '';
-    var hit = '';
-    var scan = function(arr, dn){
-      if (!Array.isArray(arr) || hit) return;
-      for (var i = 0; i < arr.length; i++){
-        var e = arr[i]; if (!e) continue;
-        if (String(e.nid||'').trim() === v || String(e.phone||'').trim() === v){
-          hit = 'سجل الموظف «' + (e.name || '—') + '»' + (dn ? (' في إدارة «' + dn + '»') : '');
-          return;
+  async function empHolder(values){
+    var service = KIVO.__BS_SRV.operations, stamp = service.context();
+    if (!stamp) throw Error('operations-session-required');
+    var ids = D.list(), keys = ids.map(function(d){ return 'bsdept:' + d.id + ':bassam_employees_v1'; });
+    for (var i = 0; i < keys.length; i += 80) {
+      var result = await service.read(keys.slice(i, i + 80));
+      if (!result || result.ok !== 1 || result.denied.length) throw Error('operations-read-required');
+    }
+    var current = service.context();
+    if (!current || current.uid !== stamp.uid || current.dept !== stamp.dept || current.generation !== stamp.generation) throw Error('operations-session-changed');
+    return values.map(function(value){
+      var v = String(value || '').trim(); if (!v) return '';
+      for (var j = 0; j < ids.length; j++) {
+        var rows = service.reference(keys[j]) || [];
+        if (!Array.isArray(rows)) throw Error('operations-employees-invalid');
+        for (var r = 0; r < rows.length; r++) {
+          var e = rows[r]; if (!e) continue;
+          if (String(e.nid || '').trim() === v || String(e.phone || '').trim() === v)
+            return 'سجل الموظف «' + (e.name || '—') + '»' + (ids[j].name ? (' في إدارة «' + ids[j].name + '»') : '');
         }
       }
-    };
-    var ids = [];
-    try { ids = D.list(); } catch(e){ ids = []; }
-    for (var j = 0; j < ids.length && !hit; j++){
-      try { scan(JSON.parse(RAW.getItem.call(localStorage, 'bsdept:' + ids[j].id + ':bassam_employees_v1')), ids[j].name); } catch(e2){}
-    }
-    if (!hit) { try { scan(JSON.parse(localStorage.getItem('bassam_employees_v1')), ''); } catch(e3){} }
-    return hit;
+      return '';
+    });
   }
-  function setDeptManager(o){
+  async function setDeptManager(o){
     var g = requireSuper(); if (g) return Promise.resolve(g);
     o = o || {};
     var did   = String(o.deptId || '').trim();
@@ -403,8 +406,10 @@
     var exId = rec ? rec.id : '';
     if (taken(nid, exId))   return Promise.resolve({ ok:false, err:'رقم الهوية مستخدم في حساب آخر' });
     if (taken(phone, exId)) return Promise.resolve({ ok:false, err:'رقم الجوال مستخدم في حساب آخر' });
-    var h1 = empHolder(nid);   if (h1) return Promise.resolve({ ok:false, err:'رقم الهوية مسجّل في ' + h1 });
-    var h2 = empHolder(phone); if (h2) return Promise.resolve({ ok:false, err:'رقم الجوال مسجّل في ' + h2 });
+    var holders; try { holders = await empHolder([nid, phone]); } catch(error) { return { ok:false, err:'تعذّر التحقق من سجلات الموظفين — حدّث البيانات ثم أعد المحاولة' }; }
+    g = requireSuper(); if (g) return g;
+    if (holders[0]) return { ok:false, err:'رقم الهوية مسجّل في ' + holders[0] };
+    if (holders[1]) return { ok:false, err:'رقم الجوال مسجّل في ' + holders[1] };
     var un = nid || phone, alt = nid ? phone : '';
     return hashPw(empno).then(function(ph){
       var list = rawUsers() || [];
@@ -469,7 +474,7 @@
   function pubGm(r){ return { id:r.id, name:r.name||'', un:r.un||'', alt:r.alt||'', empno:r.no||'', dis:!!r.dis, gid:r.gid, ekey:r.ekey||'', title:roleTitle(r) }; }
   function groupManagerPub(gid){ var r = groupManager(gid); return r ? pubGm(r) : null; }
   function groupManagersPub(gid){ return groupManagers(gid).map(pubGm); }
-  function setGroupManager(o){
+  async function setGroupManager(o){
     var g = requireSuper(); if (g) return Promise.resolve(g);
     o = o || {};
     var gid   = String(o.gid    || '').trim();
@@ -491,8 +496,10 @@
     var rec = o.id ? (groupManagers(gid).filter(function(x){ return x.id === o.id; })[0] || null) : (o.add ? null : groupManager(gid)), exId = rec ? rec.id : '';
     if (taken(nid, exId))   return Promise.resolve({ ok:false, err:'رقم الهوية مستخدم في حساب آخر' });
     if (taken(phone, exId)) return Promise.resolve({ ok:false, err:'رقم الجوال مستخدم في حساب آخر' });
-    var h1 = empHolder(nid);   if (h1) return Promise.resolve({ ok:false, err:'رقم الهوية مسجّل في ' + h1 });
-    var h2 = empHolder(phone); if (h2) return Promise.resolve({ ok:false, err:'رقم الجوال مسجّل في ' + h2 });
+    var holders; try { holders = await empHolder([nid, phone]); } catch(error) { return { ok:false, err:'تعذّر التحقق من سجلات الموظفين — حدّث البيانات ثم أعد المحاولة' }; }
+    g = requireSuper(); if (g) return g;
+    if (holders[0]) return { ok:false, err:'رقم الهوية مسجّل في ' + holders[0] };
+    if (holders[1]) return { ok:false, err:'رقم الجوال مسجّل في ' + holders[1] };
     var un = nid || phone, alt = nid ? phone : '';
     return hashPw(empno).then(function(ph){
       var list = rawUsers() || [];

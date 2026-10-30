@@ -175,10 +175,17 @@ Object.assign(Component.prototype, {
     }
     return this._tkCollF;
   },
-  /* KIVO_265 · البند 13: قراءةٌ مخزَّنة لمخازن localStorage الكبيرة — JSON.parse مرةً لكل نصّ؛ يُبطَل بتغيّر النصّ (مقارنةٌ حرفية رخيصة)
-     أو بحدث المخزن (_tkLSBust من componentDidMount). المصفوفةُ المعادة مشتركة: تُقرأ ولا تُعدَّل */
+  /* Operational values are confirmed SQL projections. Device filters and
+     metadata keep their existing storage path. */
   _tkLS(k) {
-    const C = (this._tkLSC = this._tkLSC || {});
+    const S = this._tkOps(), C = (this._tkLSC = this._tkLSC || {});
+    if (S.resources.includes(k)) {
+      const context = S.context(), state = S.state(k), signature = JSON.stringify([context, S.status().epoch, state, KIVO.__BS_SRV.rev(S.key(k))]);
+      if (C[k] && C[k].signature === signature) return C[k].v;
+      const value = state === "denied" ? null : S.get(k);
+      C[k] = { signature: signature, v: value };
+      return value;
+    }
     let raw = null;
     try {
       raw = localStorage.getItem(k);

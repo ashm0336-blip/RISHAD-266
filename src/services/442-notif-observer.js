@@ -9,6 +9,18 @@
       bcWithdraw=I.bcWithdraw, bkTime=I.bkTime, cfg=I.cfg, deptName=I.deptName, depts=I.depts, dismiss=I.dismiss, dismissAll=I.dismissAll, emit=I.emit, fill=I.fill,
       goOk=I.goOk, isMgr=I.isMgr, isSuper=I.isSuper, list=I.list, markAll=I.markAll, markRead=I.markRead, me=I.me, monLbl=I.monLbl, muteGet=I.muteGet,
       muteSet=I.muteSet, myDept=I.myDept, rawGet=I.rawGet, rawSet=I.rawSet, resetCfg=I.resetCfg, setCfg=I.setCfg, typeOf=I.typeOf, types=I.types, unread=I.unread;
+  var operationOnce = null, operationEventIndex = 0;
+  emit = function(type, detail){
+    if (operationOnce) detail = Object.assign({}, detail, { once: operationOnce + ':' + type + ':' + operationEventIndex++ });
+    return I.emit(type, detail);
+  };
+  function operationKey(k){ var service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations; if (!service) throw Error('operations-read-required'); return service.resources.indexOf(unscoped(k)) !== -1; }
+  rawGet = function(k){
+    if (!operationKey(k)) return I.rawGet(k);
+    var key = /^bsdept:/.test(k) ? k : 'bsdept:' + myDept() + ':' + k;
+    var value = KIVO.__BS_SRV.operations.reference(key);
+    return value == null ? null : JSON.stringify(value);
+  };
   /* ═══ المراقب: استنتاج الأحداث من فروق المخازن (في متصفح الفاعل فقط) ═══ */
   var SNAP = {}; var WATCH = {};
   function unscoped(k){ return String(k).replace(/^bsdept:[^:]+:/, ''); }
@@ -147,8 +159,7 @@
     try { var p = day.split('-').map(Number); var fmt = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }); var t = new Date(); for (var i = -400; i <= 400; i++) { var d = new Date(t.getTime() + i * 86400000); var parts = {}; fmt.formatToParts(d).forEach(function(x){ parts[x.type] = x.value; }); if (+parts.year === p[0] && +parts.month === p[1] && +parts.day === p[2]) return WD[d.getDay()]; } } catch(e){} return '';
   }
   function isRestOn(rest, wdn){ return !!wdn && (rest || []).some(function(r){ return r === wdn || ('ال' + r) === wdn || r === ('ال' + wdn); }); }
-  function snapMerge(did, st){ try { var sn = J(rawGet('bsdept:' + did + ':bassam_staffing_snap_v1'), {}) || {}; var out = {}; Object.keys(st || {}).forEach(function(k){ out[k] = st[k]; }); Object.keys(sn).forEach(function(k){ if (sn[k] && sn[k].bucket) out[k] = sn[k].bucket; }); return out; } catch(e){ return st || {}; } }
-  function restBase(did, day, ek){ try { var st = snapMerge(did, J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {}) || {}); var mk = day.split('-').slice(0, 2).join('-'); var e = (st[mk] || {})[ek]; return e && Array.isArray(e.rest) ? e.rest : []; } catch(e){ return []; } }
+  function restBase(did, day, ek){ try { var st = J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {}) || {}; var mk = day.split('-').slice(0, 2).join('-'); var e = (st[mk] || {})[ek]; return e && Array.isArray(e.rest) ? e.rest : []; } catch(e){ return []; } }
   function pmCount(rep, day, ek){ var mk = day.split('-').slice(0, 2).join('-'); var n = 0; Object.keys(rep || {}).forEach(function(d){ if (d.indexOf(mk + '-') !== 0) return; var sh = (rep[d] || {}).shifts || {}; var hit = false; Object.keys(sh).forEach(function(s2){ ((sh[s2] || {}).roster || []).forEach(function(r){ if (r && r.ekey === ek && r.st === 'pm') hit = true; }); }); if (hit) n++; }); return n; }
   function ekeyByName(did, name){ try { var emps = J(rawGet('bsdept:' + did + ':bassam_employees_v1'), []); var e = (emps || []).filter(function(x){ return x.name === name || x.eid === name || x.nid === name; })[0]; if (!e) return ''; try { var E = KIVO.BassamEmp; if (E && E.key) return E.key(e) || ''; } catch (e2) {} return e.eid || e.nid || e.name || ''; } catch(e){ return ''; } }
   function ekeyOfTok(did, tok){ try { var emps = J(rawGet('bsdept:' + did + ':bassam_employees_v1'), []) || []; var e = emps.filter(function(x){ return x.eid === tok || x.nid === tok || x.name === tok; })[0]; return e ? (e.eid || e.name) : String(tok); } catch(e){ return String(tok); } }
@@ -225,7 +236,7 @@
   function onStore(ev){
     try {
       if (!ev || !ev.detail || ev.detail.remote) return;        /* الفاعل وحده يستنتج — التغييرات الواردة لا تولّد مرتين */
-      var k = String(ev.detail.key || ''); var u = unscoped(k); var W = WATCH[u]; if (!W) return;
+      var k = String(ev.detail.key || ''); var u = unscoped(k); var W = WATCH[u]; if (!W || operationKey(k)) return;
       if (_busy) return; _busy = true;
       var prev = SNAP[k]; var next = rawGet(k); SNAP[k] = next;
       if (prev === undefined) { if (String(next || '').length > 6000) { _busy = false; return; } prev = null; }   /* أول كتابة للمفتاح: سجلٌ واحد يُستنتج، وحمولةٌ كبيرة استيرادٌ لا يُنبَّه عنه */
@@ -236,9 +247,22 @@
     } catch(e){}
     _busy = false;
   }
-  function primeAll(){ try { var ks = (D() && D().raw && D().raw.allKeys) ? D().raw.allKeys() : []; ks.forEach(function(k){ if (WATCH[unscoped(k)]) SNAP[k] = rawGet(k); }); } catch(e){} }
+  function primeAll(){ try { var ks = (D() && D().raw && D().raw.allKeys) ? D().raw.allKeys() : []; ks.forEach(function(k){ if (WATCH[unscoped(k)] && !operationKey(k)) SNAP[k] = rawGet(k); }); } catch(e){} }
   /* الواردة من الخادم تُحدّث اللقطة حتى لا يُعدّ التغيير التالي فرقاً غريباً */
-  function onRemote(ev){ try { ((ev.detail && ev.detail.keys) || []).forEach(function(k){ if (WATCH[unscoped(k)]) SNAP[k] = rawGet(k); }); } catch(e){} }
+  function onRemote(ev){ try { ((ev.detail && ev.detail.keys) || []).forEach(function(k){ if (WATCH[unscoped(k)] && !operationKey(k)) SNAP[k] = rawGet(k); }); } catch(e){} }
+  function onOperationsCommit(ev){
+    var data = ev && ev.detail, user = me();
+    if (!data || !user || data.uid !== user.id || data.dept !== myDept() || typeof data.requestId !== 'string' || !Array.isArray(data.changes)) return;
+    try {
+      data.changes.forEach(function(change, index){
+        var watch = WATCH[unscoped(change.key)];
+        if (!watch || !operationKey(change.key) || deptOfKey(change.key) !== data.dept || change.before === change.after) return;
+        operationOnce = 'operations:' + data.requestId + ':' + index; operationEventIndex = 0;
+        try { watch(data.dept, J(change.before, null), J(change.after, null)); } finally { operationOnce = null; }
+      });
+      I.flushEvents();
+    } finally { operationOnce = null; }
+  }
 
   /* ═══ الفحص الدوري (المهلات والنصاب والمستودع) — في متصفح المدير/مدير النظام، مرة لكل مهلة ═══ */
   function todayKey(){ try { var p = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }).formatToParts(new Date()); var g = function(t){ return (p.filter(function(x){ return x.type === t; })[0] || {}).value; }; return { y:+g('year'), m:+g('month'), d:+g('day'), key: g('year') + '-' + g('month') + '-' + g('day') }; } catch(e){ var d = new Date(); return { y:d.getFullYear(), m:d.getMonth() + 1, d:d.getDate(), key:'g' + d.toISOString().slice(0, 10) }; } }
@@ -250,7 +274,7 @@
       /* التقرير: مسحوب بلا اعتماد قبل نهاية الوردية بساعة */
       try { var dr = J(rawGet('bsdept:' + did + ':bassam_dreport_v1'), {}); var day = dr[T.y + '-' + T.m + '-' + T.d]; var shifts = J(rawGet('bsdept:' + did + ':bassam_shift_options_v1'), []) || []; if (day && day.shifts) Object.keys(day.shifts).forEach(function(sh){ var s = day.shifts[sh]; if (!s.pulled || s.ap) return; var so = (shifts || []).filter(function(x){ return (x.name || x) === sh; })[0]; var end = so && so.tEnd; if (!end) return; var m = /^(\d+):(\d+)/.exec(end); if (!m) return; var endMin = +m[1] * 60 + +m[2], nowMin = hh * 60 + now.getMinutes(); if (endMin - nowMin > 0 && endMin - nowMin <= 60) emit('rep_late', { dept: did, vars: { 'الوردية': sh, 'الوقت': end }, once: 'rep_late:' + T.key + ':' + sh }); }); } catch(e){}
       /* نقص الغد */
-      if (hh >= 16) try { var stf = snapMerge(did, J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {})); var mon = stf[T.y + '-' + T.m] || {}; var cnt = {}; Object.keys(mon).forEach(function(ek){ var r = mon[ek]; if (!r || typeof r !== 'object' || ek.indexOf('__') === 0) return; cnt[r.shift] = (cnt[r.shift] || 0) + 1; }); var vals = Object.keys(cnt).map(function(k){ return cnt[k]; }); var avg = vals.length ? vals.reduce(function(a, b){ return a + b; }, 0) / vals.length : 0; Object.keys(cnt).forEach(function(sh){ if (avg && cnt[sh] < avg * 0.5) emit('st_gap', { dept: did, vars: { 'الوردية': sh, 'العدد': Math.ceil(avg * 0.5 - cnt[sh]) }, once: 'gap:' + T.key + ':' + sh }); }); } catch(e){}
+      if (hh >= 16) try { var stf = J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {}); var mon = stf[T.y + '-' + T.m] || {}; var cnt = {}; Object.keys(mon).forEach(function(ek){ var r = mon[ek]; if (!r || typeof r !== 'object' || ek.indexOf('__') === 0) return; cnt[r.shift] = (cnt[r.shift] || 0) + 1; }); var vals = Object.keys(cnt).map(function(k){ return cnt[k]; }); var avg = vals.length ? vals.reduce(function(a, b){ return a + b; }, 0) / vals.length : 0; Object.keys(cnt).forEach(function(sh){ if (avg && cnt[sh] < avg * 0.5) emit('st_gap', { dept: did, vars: { 'الوردية': sh, 'العدد': Math.ceil(avg * 0.5 - cnt[sh]) }, once: 'gap:' + T.key + ':' + sh }); }); } catch(e){}
       /* العهد المتأخرة */
       // No custody history polling on the client; due notices require server support.
       /* ملخص الاسترشاد اليومي 23:30 */
@@ -282,6 +306,7 @@
   /* ═══ التشغيل ═══ */
   primeAll();
   window.addEventListener('bassam:store', onStore);
+  window.addEventListener('bassam:operations-commit', onOperationsCommit);
   window.addEventListener('bassam:remote', onRemote);
   setTimeout(function(){ try { tick(); pollSec(); } catch(e){} }, 6000);
   setInterval(function(){ try { tick(); } catch(e){} }, 5 * 60000);

@@ -10,7 +10,7 @@
               · D.mukOf(tok) · D.rowOf(tok) · D.repToday                       */
 (function () {
   var WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-  function J(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+  function J(k, d) { var S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations; if (!S) throw Error('operations-read-required'); if (S.state(k) === 'denied') return d; var v = S.get(k); return v == null ? d : v; }
   function wdName(dt) { try { return new Date(dt).toLocaleDateString('ar-SA', { weekday: 'long' }); } catch (e) { return WD[new Date(dt).getDay()] || ''; } }
   /* اسم يوم الأسبوع لتاريخ هجري — بلا تحويل: اليومُ المطلوب هو اليوم الجاري في
      الغالب، وما عداه يُحسب بفارق الأيام عن اليوم الجاري في تقويم أم القرى */
@@ -95,8 +95,8 @@
      وتُطبَّق على اليوم الجاري وحده: يومٌ ماضٍ لا معنى لقياسه بساعة الآن، فيبقى
      «متاح» كما كان. ووردية بلا وقتٍ محدَّد لا نافذة لها فلا يُحكم بخروجٍ منها. */
   function shiftWindow(shiftName) {
+    var L = J('bassam_shift_options_v1', []);
     try {
-      var L = JSON.parse(localStorage.getItem('bassam_shift_options_v1')) || [];
       var sd = L.filter(function (x) { return x && x.name === shiftName; })[0];
       if (!sd || !sd.tStart || !sd.tEnd) return null;
       var p1 = String(sd.tStart).split(':'), p2 = String(sd.tEnd).split(':');

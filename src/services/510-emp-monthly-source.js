@@ -10,10 +10,9 @@
    بلا استبدال، وبقية الدوال بلا أثر — فلا لقطة تُكتب ولا تُقرأ.               */
 (function () {
   var LIVE = 'bassam_staffing_v3';
-  function J(s, d) { if (s == null) return d; try { var v = JSON.parse(s); return v == null ? d : v; } catch (e) { return d; } }
-  function ls(k, d) { try { return J(localStorage.getItem(k), d); } catch (e) { return d; } }
-  function all(live) { var src = (live && typeof live === 'object') ? live : ls(LIVE, {}); return src || {}; }
-  function bucket(ym) { var live = ls(LIVE, {}); return (live && live[ym]) || null; }
+  function readLive() { var value = KIVO.__BS_SRV.operations.get(LIVE); return value && typeof value === 'object' ? value : {}; }
+  function all(live) { return live && typeof live === 'object' ? live : readLive(); }
+  function bucket(ym) { var live = readLive(); return (live && live[ym]) || null; }
   var no = function () { return null; };
   KIVO.BassamStaffSnap = { KEY: 'bassam_staffing_snap_v1', get: no, take: no, release: function () { return { kept: false, existed: false }; }, drop: function () {}, ensure: no, all: all, bucket: bucket, has: function () { return false; }, meta: no, consumed: function () { return false; }, ym: function (y, m) { return y + '-' + m; } };
 })();

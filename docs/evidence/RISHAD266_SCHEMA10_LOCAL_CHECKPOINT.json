@@ -1,0 +1,189 @@
+{
+  "schema": 10,
+  "recordType": "tested-local-source-checkpoint",
+  "complete": false,
+  "previewAccepted": false,
+  "workerSha256": "4684164ded0a5b126b28aefd18e33cf40d9b1aab9db20ece2678291c55e6e1f7",
+  "cloudState": {
+    "schema": 9,
+    "deployment": "8655dc6a-2b48-47e1-a9c0-c198d03482aa",
+    "schema10CloudRequestsInThisBatch": 0
+  },
+  "operationalResources": 21,
+  "newPhysicalTables": 58,
+  "maxColumns": 92,
+  "testGroups": [
+    {
+      "name": "Typed codec and scheduling migration",
+      "pass": 42,
+      "evidence": [
+        "operational codec11",
+        "scheduling/migration23",
+        "people/task codec8"
+      ],
+      "scope": "separate component cases; no full-suite claim"
+    },
+    {
+      "name": "Transport, preload and shared readers",
+      "pass": 50
+    },
+    {
+      "name": "Plan, rounds and field UI",
+      "pass": 33
+    },
+    {
+      "name": "Admin shifts",
+      "pass": 8
+    },
+    {
+      "name": "Backup service",
+      "pass": 5
+    },
+    {
+      "name": "Affected backup conversion",
+      "pass": 14
+    },
+    {
+      "name": "Account policy",
+      "pass": 2
+    },
+    {
+      "name": "Real frontend backup flows and exact permission absence",
+      "pass": 9,
+      "newFlowCases": 4
+    },
+    {
+      "name": "Operations HTTP on SQLite",
+      "pass": 10
+    },
+    {
+      "name": "Affected people/task composite",
+      "cases": 312,
+      "pass": 307,
+      "historicalSkip": 5,
+      "outstandingFail": 0,
+      "scope": "composite by unique title, retained negatives plus matched successful reruns; not another full-suite run"
+    },
+    {
+      "name": "Latest task-policy delta",
+      "pass": 16,
+      "overlapsPreviousGroups": true
+    },
+    {
+      "name": "22 Task/Profile UI files",
+      "cases": 140,
+      "pass": 138,
+      "historicalSkip": 2,
+      "outstandingFail": 0,
+      "scope": "composite21files plus12unique verify cases; repeated V5 counted once"
+    },
+    {
+      "name": "Delete/cascade and module charter tooling",
+      "pass": 9
+    }
+  ],
+  "countsMustNotBeSummed": true,
+  "build": {
+    "files": 133,
+    "sizeGatesPassed": 16,
+    "workerGzipBytes": 439456,
+    "workerLimit": 440000,
+    "adminGzipBytes": 147836,
+    "adminLimit": 156600,
+    "shellGzipBytes": 29655,
+    "shellLimit": 29778,
+    "workerTokenEquivalence": true
+  },
+  "static": {
+    "eslintErrors": 0,
+    "eslintWarnings": 260,
+    "warningBaseline": 325,
+    "secretFindings": 0,
+    "documentationChecksPassed": 17,
+    "apiRoutes": 76,
+    "handleLimitUnchanged": 635
+  },
+  "nativeD1": {
+    "sourceDocuments": 42,
+    "employees": 100,
+    "departments": 2,
+    "physicalTables": 58,
+    "nodes": 3755,
+    "foreignKeyViolations": 0,
+    "fullRestoreStatements": 541,
+    "fullRestoreGuards": 525,
+    "maxRestoreStatementBytes": 5569,
+    "maxRestoreBindings": 14,
+    "notes": [
+      "Installed workerd/nativeD1 synthetic tests, no Cloudflare calls.",
+      "Some actual Worker routes run from Node against nativeD1proxy; not a CPUworkerd profile of every route.",
+      "Task notification delivery follows business ACK and is not inside that business transaction.",
+      "No live Time Travel restore drill."
+    ]
+  },
+  "blockers": [
+    {
+      "action": "Update existing department wipe/delete source to cover locked relational resources and task activity; synthetic local testing only",
+      "status": "not-applied-awaiting-specific-user-approval",
+      "reason": "Automatic review rejected broadening permanent deletion; platform-reset source approval does not cover department wipe/delete."
+    }
+  ],
+  "remaining": [
+    "Department wipe/delete acceptance",
+    "Independent local QA/native tool seals",
+    "Commit and push develop checkpoint",
+    "Preview-only deployment,9-to10permit,migration and live QA",
+    "Two export timestamp KV resources"
+  ],
+  "boundaries": {
+    "productionModified": false,
+    "r2Modified": false,
+    "mainModified": false,
+    "oldRepositoryModified": false,
+    "deploymentsDeleted": 0,
+    "databaseExportCreated": false,
+    "newPluginsStarted": false
+  },
+  "artifacts": {
+    "migrations/0010_operational_domains.sql": "69d6fb5e509a2c7eb58bed311aa9c2d6d4b725871a49f99a919aa471c22bb2a7",
+    "src/api/280-server-storage.js": "b3a7d16ef709a56b6eb419c2814741d700fadbb9c04e3ec4a77b5023405404e1",
+    "src/services/320-dept-storage.js": "306c40897867c1e3a85682eb658bca7771f0fea015e882ae1fcb08a769dba575",
+    "src/services/548-atomic-backup.js": "50131ee61003b8de7f5e1c67b01c5f7aa6724715389b794ac1da454572527876",
+    "tools/dup_nested.json": "3b32c90d87886332779a25c7d97cfcf573fc3f9556df9d37f78bd7e69719e38a",
+    "tools/module_charter.py": "f553aef78c90e05cbdcbb5e909eadf42a1ccffc7d9521d17ad494f864ac8a506",
+    "tools/perf_budget.json": "b2eca0ffb8a54072eab5c05dc0628ace7ac329a713ffd6ced7242d38c4993a79",
+    "tools/ux_states.json": "2b86723d8e3c23759c01be525fa8566f4f4ca3e6fe3df9723c672c6fe7dae7ff",
+    "workers/_worker.js": "4684164ded0a5b126b28aefd18e33cf40d9b1aab9db20ece2678291c55e6e1f7",
+    "workers/parts.json": "9cecc77bdc38cce422c3f3b280b831f4e6625d09e837e49f22d3de20e829a9e5",
+    "workers/parts/019d-atomic-restore.js": "4a0aa22270ec6a6bdcd70c2a6d22824fd6c8be09753e93f0de62dad2648bf82a",
+    "workers/parts/019e-atomic-save.js": "23e3fa8ec118bd1465065db7ccfea10ebb7a0631b6b2003ab6fb3745df09c293",
+    "workers/parts/019f-backup-converter.js": "4894f8a76c402787aaab2d0bce71c9d5d8dcf6762e670e2ef7ae480ed5c5843f",
+    "workers/parts/019o-operational-codec.js": "37ef7dd0ab5e2306b18b97cf6d76d1b107de57030c161c9a033179cc7705e2fc",
+    "workers/parts/019p-operations-scheduling.js": "db481957fd6a0c07c8dfea1c02cd0059ee7dbddb38bfa8f2ef29940063c8fcca",
+    "workers/parts/019q-operations-people-tasks.js": "ee9beb53a6b2f0aba4cd8ea4d92b95fc9f31d6ad72514faa56c03624e7c682b7",
+    "workers/parts/019r-operational-storage.js": "89cff60624afcd876e30c6059c9ffd44c191efba7010d1f8597e0a6799b1d4dd",
+    "workers/parts/019s-operational-migration.js": "40e5228aa8e6575956c18633131918f923cf9aa532c4db862bbe93a372749174",
+    "workers/parts/019t-operational-backup.js": "a968b39a41e7cc3761b62cd23042b4f6681617bf4bedd80dfccb5fe05120a6f8",
+    "workers/parts/063-enf-api-and-handler.js": "2789e3b86b57eada9a57af59df8feeca21df1096d7a9ddf13d556e94fade6721",
+    "workers/parts/070-task-core.js": "73edea63500c9ba386aeff54201646a57e78df41b1ed1d9dcab2693ea632deb5",
+    "workers/parts/071-task-mgmt.js": "af8d43a15701471450d3985d830fc0362c20085375485a2dae0dce9c874ae06e",
+    "workers/parts/073-task-recur.js": "f3df5b9fd71c364d91e38552e1cadf3d27082c4c9cd4ae1890d929f3b0b843e7"
+  },
+  "privateEvidence": {
+    ".cache/operations10/backup-flow-freeze.json": "70ec6834b1af592fe65ee57471eceefed2b5ee03500f0583274a47046bdd9823",
+    ".cache/operations10/task-edit-policy-final.json": "73e72f390b41bf0e01813ba5acc0f52bfb68cde46939f3c06f4cfe418c5f5f9e",
+    ".cache/operations10/people-tasks-composite-acceptance.json": "29278dff97824b7c0a1e78952727887a4d0937c3fa0b4d41b23bfc273369086e",
+    ".cache/operations10/ui-fixture-freeze.json": "8445ba2e8e425d21c9ec07408e8dede4924c914667eb9b068f861e584ad344bf",
+    ".cache/operations10/tasks-page-verify-freeze.json": "d074e56e7aa2b684dde59a68d0bf6fc3847e0649e26c292f101a26572768a42f",
+    ".cache/operations10/daily-ui-freeze.json": "36fec536615d26ad8c17f6f43c25f3fe5cc17ade4fc6ff483c523f79e04f961e",
+    ".cache/operations10/charter-tool-block-freeze.json": "187ce2f62af5d762899650949a29e104323fcdfbee056cf384a5fbf3e33c7868",
+    ".cache/operations10/http-final-freeze.json": "5e73450cd507c91cef836d1023c564aa299dc45c2fb2763a6f99c863287f677a",
+    ".cache/operations10/native10-lifecycle-fixed.json": "23bad3435b7d77f4cc8a9eea6d844156ba929c46c83d1520facb9af7c34e68ed",
+    ".cache/operations10/native10-full-dedup.json": "f085a0569545b560743ef9a62a6a4b9e63c0acaeda7aeb21d01ff86cc7a3c68b",
+    ".cache/operations10/ux-dup-final-review.json": "6d42489a4f610d0d91cd2757cbce9bed2e20c8a86c0f33e92654fb8c5cfde68c",
+    ".cache/operations10/build-final.log": "7b7ea3139b2d417dab65ca598032c1ed2e82c3a5c9c027f9de976a1aee39b3db",
+    ".cache/operations10/lint-final.log": "01ddeace0cbd58f737d062c8c93c8a49ca591f397fd4aafdfc652dc43580dbce",
+    ".cache/operations10/secrets-final.json": "0af424876745809596e46a9cdbb549c381479d66ff6c3e2b592c07868b4e930c",
+    ".cache/operations10/docs-final-generated.log": "a72b96cb3742d5670b0ae7367528f9c4dd8370b626207f28dbb587dde09b5464"
+  }
+}

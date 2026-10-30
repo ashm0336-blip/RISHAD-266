@@ -54,9 +54,13 @@ async function imgOwnOf(env, ik) { return await env.DB.prepare('SELECT img, st, 
    رموزُ GLOB إلى النمط)، فيبقى غيرَ محسوم. */
 async function imgKeysMentioning(env, ik, lim) {
   if (!/^[a-z0-9_]+$/.test(ik)) return [];
+  // Operational image references are maintained with the typed row mutation
+  // (and at cutover) in the existing canonical D1 relation, never in R2 here.
+  var typed = (await env.DB.prepare('SELECT k FROM imgref WHERE img=?1').bind(ik).all()).results || [];
+  var typedKeys = typed.map(function(row){return row.k;}).filter(opIsResource);
   var r = await env.DB.prepare('SELECT k FROM kv WHERE instr(v, ?1) > 0 AND (v GLOB ?2 OR v GLOB ?3) LIMIT ' + lim)
     .bind(ik, '*' + ik + '[^a-z0-9]*', '*' + ik).all();
-  return ((r && r.results) || []).map(function (x) { return x.k; });
+  return Array.from(new Set(typedKeys.concat(((r && r.results) || []).map(function (x) { return x.k; })))).slice(0,lim);
 }
 /* مَن يملك هذه الصورة؟ — سؤالٌ عن صورةٍ واحدة، لا مسحٌ للقاعدة كلها.
    كان البناءُ الأول يقرأ جدول kv كاملاً داخل طلب المستخدم ويمسحه بتعبيرٍ
@@ -827,7 +831,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (!CTX_RES[rnW]) continue;
     var dW = parseKey(k).dept; if (!dW || wipeCtx[dW] !== undefined) continue;
     var ekW = 'bsdept:' + dW + ':bassam_employees_v1';
-    var evW = Object.prototype.hasOwnProperty.call(set, ekW) ? String(set[ekW]) : await kvGet(env, 'kv', ekW);
+    var evW = Object.prototype.hasOwnProperty.call(set, ekW) ? String(set[ekW]) : await opResourceGet(env, ekW);
     empRaw9[dW] = evW;
     var elW = parseJson(evW, null);
     wipeCtx[dW] = Array.isArray(elW) ? !elW.length : false;
@@ -853,7 +857,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     /* الفحصُ العميق (R4): الحفظةُ تحمل القائمةَ كما رآها الفاعل — فتُكمَّل بما حُجب عنه (usersNoIn · usersScopeIn) كما ستُكتب */
     /* مراجعةُ التكامل W1-R1: قائمةٌ من إسقاطٍ قديم لا تُكتب (تعارض) ⇒ الحساباتُ بعد الدفعة هي الحالية */
     if (tkUs9b === null) { if (Object.prototype.hasOwnProperty.call(set, K_USERS) && !usStale9) { var tkUc9 = await kvGet(env, 'kv', K_USERS); tkUs9b = parseJson(usersScopeIn(usersNoIn(String(set[K_USERS]), tkUc9, A), tkUc9, A), []); } else tkUs9b = false; if (tkUs9b !== false && !Array.isArray(tkUs9b)) tkUs9b = []; }
-    tkCtx9[dT9] = { users: tkUs9, users2: tkUs9b || null, emps: tkEmps(Object.prototype.hasOwnProperty.call(empRaw9, dT9) ? empRaw9[dT9] : await kvGet(env, 'kv', 'bsdept:' + dT9 + ':bassam_employees_v1')) };
+    tkCtx9[dT9] = { users: tkUs9, users2: tkUs9b || null, emps: tkEmps(Object.prototype.hasOwnProperty.call(empRaw9, dT9) ? empRaw9[dT9] : await opResourceGet(env, 'bsdept:' + dT9 + ':bassam_employees_v1')) };
   }
   /* KIVO_265 · ملاحظةُ المالك (أمن): سياقُ تفرّد الهوية/الجوال/الرقم الوظيفي (018 empDupWhy) — قوائمُ موظفي الإدارات الأخرى
      بقيمتها الحالية (من سجلّ الإدارات) وحساباتُ الدخول من الفاعل نفسه؛ تُقرأ مرةً واحدة للدفعة ولمفاتيح الموظفين وحدها */
@@ -862,12 +866,12 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (resName(k) !== 'bassam_employees_v1' || !parseKey(k).dept || edCtx9) continue;
     /* لا قراءةَ لبقية الإدارات إلا إذا حملت الدفعةُ هويةً أو جوالاً أو رقماً وظيفياً ليس في القيمة الحالية (تعديلُ اسمٍ أو حالة لا يقرأ شيئاً) */
     /* القيمةُ الحالية من المخزن لا من empRaw9 (يحمل قيمةَ الدفعة نفسِها لمفاتيحها — فكان القديمُ = الجديد والقاعدةُ لا تعمل: فحصُ Test 2026-10-19) */
-    var oldE9 = empIdents(parseJson(await kvGet(env, 'kv', k), [])), newE9 = empIdents(parseJson(String(set[k]), [])), chg9 = false, q9;
+    var oldE9 = empIdents(parseJson(await opResourceGet(env, k), [])), newE9 = empIdents(parseJson(String(set[k]), [])), chg9 = false, q9;
     for (q9 in newE9.n) if (!oldE9.n[q9]) chg9 = true; for (q9 in newE9.p) if (!oldE9.p[q9]) chg9 = true; for (q9 in newE9.o) if (!oldE9.o[q9]) chg9 = true;
     if (!chg9) continue;
     var dl9 = parseJson(await kvGet(env, 'kv', 'bassam_depts_v1'), null), ids9 = [];
     (Array.isArray(dl9) ? dl9 : (dl9 && Array.isArray(dl9.list) ? dl9.list : [])).forEach(function (x) { if (x && x.id) ids9.push(String(x.id)); });
-    var em9 = ids9.length ? await kvMany(env, 'kv', ids9.map(function (id) { return 'bsdept:' + id + ':bassam_employees_v1'; })) : {};
+    var em9 = ids9.length ? await opResourceMany(env, ids9.map(function (id) { return 'bsdept:' + id + ':bassam_employees_v1'; })) : {};
     edCtx9 = { others: {}, users: Array.isArray(A.users) ? A.users : parseJson(await kvGet(env, 'kv', K_USERS), []) };
     for (var ei9 = 0; ei9 < ids9.length; ei9++) { var ek9 = 'bsdept:' + ids9[ei9] + ':bassam_employees_v1'; edCtx9.others[ids9[ei9]] = parseJson(em9[ek9] == null ? '[]' : String(em9[ek9]), []); }
   }
@@ -877,7 +881,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   for (k in set) {
     if (resName(k) !== 'bassam_shift_options_v1') continue;
     var dS = parseKey(k).dept; if (!dS) continue;
-    var oldS = parseJson(await kvGet(env, 'kv', k), null), newS = parseJson(String(set[k]), null);
+    var oldS = parseJson(await opResourceGet(env, k), null), newS = parseJson(String(set[k]), null);
     if (!Array.isArray(oldS) || !Array.isArray(newS) || oldS.length !== newS.length) continue;
     var inO = {}, inN = {}, goneS = [], bornS = [], qS;
     for (qS = 0; qS < oldS.length; qS++) if (isObj(oldS[qS]) && oldS[qS].name != null) inO[String(oldS[qS].name)] = 1;
@@ -904,7 +908,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var rnQ = resName(k);
     if (rnQ !== 'bassam_custody_v1' && rnQ !== 'bassam_employees_v1') continue;
     var EQ = entOf(k); if (!EQ || (!EQ.rename && !EQ.adopt)) continue;
-    var aQ = parseJson(await kvGet(env, 'kv', k), null), bQ = parseJson(String(set[k]), null);
+    var aQ = parseJson(await opResourceGet(env, k), null), bQ = parseJson(String(set[k]), null);
     if (aQ == null || bQ == null) continue;
     var infQ = {}; alignOld(EQ, aQ, bQ, infQ);
     if (infQ.ren) { protOp = 'custodyRename'; break; }
@@ -922,7 +926,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var it0 = todo[i], k0 = it0.k;
     if (isDeviceKey(k0)) { evald.push(null); continue; }
     if (it0.act === 'del' && k0 === K_USERS) { evald.push({ deny: 'users' }); continue; }
-    var cur0 = await kvGet(env, 'kv', k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
+    var cur0 = await opResourceGet(env, k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
     if (it0.act === 'set' && k0 === K_USERS && A.u.role !== 'super') {
       /* مراجعةُ التكامل W1-R1: قائمةٌ بُنيت على عدسةٍ غير عدسته الآن (usStale9) ⇒ تعارضٌ قبل usersNoIn/usersScopeIn/canWrite — فلا يُحكم على إسقاطٍ قديم
          ولا يُكتب منه شيء (ما صار يراه ولم يصله لا يُحسب حذفاً). ورفضُ الدفعة كلِّها في الإنفاذ (batchDeny) يبقى رفضاً
@@ -1004,7 +1008,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       var uI9 = parseJson(it0.v, []), uC9 = parseJson(cur0, []), uB9 = nmap(), uE9 = nmap(), uq9;
       (Array.isArray(uC9) ? uC9 : []).forEach(function (x) { if (x && x.id) uB9[String(x.id)] = x; });
       (Array.isArray(uI9) ? uI9 : []).forEach(function (x) { var w = x && x.id ? uB9[String(x.id)] : null; if (x && x.deptId && (!w || ['ekey', 'dis', 'deptId', 'role'].some(function (f) { return String(w[f] == null ? '' : w[f]) !== String(x[f] == null ? '' : x[f]); }))) uE9[String(x.deptId)] = 1; });
-      for (uq9 in uE9) { var uk9 = 'bsdept:' + uq9 + ':bassam_employees_v1'; uE9[uq9] = tkEmps(Object.prototype.hasOwnProperty.call(set, uk9) ? String(set[uk9]) : await kvGet(env, 'kv', uk9)); }
+      for (uq9 in uE9) { var uk9 = 'bsdept:' + uq9 + ':bassam_employees_v1'; uE9[uq9] = tkEmps(Object.prototype.hasOwnProperty.call(set, uk9) ? String(set[uk9]) : await opResourceGet(env, uk9)); }
       if (usersDupEkey(uI9, uC9, uE9)) { evald.push({ deny: 'users', cur: cur0, x: null }); continue; }
     }
     /* KIVO_261 (AUD-056 — كشفه المراجعُ الأمنيّ المستقل): بادئةُ المعرّف tst_ محجوزةٌ لحسابات عُدّة الاختبار (إشعاراتُ النظام تتجاهلها · SOT-183) —
@@ -1071,7 +1075,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (ev && ev.noop) { out.revs[k] = revs[k] || 0; continue; }
     if (it.act === 'del' && k === K_USERS) { out.denied[k] = usOut9(k, { why: 'users', rev: revs[k] || 0 }); continue; }
     /* حكمُ المرحلة الأولى وقيمتُها هما المعتمدان — فلا تُعاد قراءةٌ ولا حساب */
-    var cur = ev ? ev.cur : await kvGet(env, 'kv', k);
+    var cur = ev ? ev.cur : await opResourceGet(env, k);
     var P0 = parseKey(k);
     var have = revs[k] || 0;
     /* التعارض: قيمةٌ بُنيت على نسخةٍ تجاوزها الخادم — وقد حُكم عليها سلفاً */
@@ -1147,7 +1151,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       /* F-10 · F-2 (من SR-2.3): النسخةُ أوّلاً ثم القيمة — فإن كُتب بينهما فالقيمةُ أحدثُ من النسخة والحفظُ التالي يتعارض مرةً أخرى (آمن)؛
          والعكسُ (قيمةٌ قديمة بنسخةٍ أحدث) يجعل الحفظَ التالي يمرّ فيمحو ما كُتب بينهما ولم يره العميل */
       var rvQ = null; try { rvQ = await env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(kq9).first(); } catch (eRq) { rvQ = null; }
-      var curQ = await kvGet(env, 'kv', kq9);
+      var curQ = await opResourceGet(env, kq9);
       var lwQ = null; try { lwQ = await env.DB.prepare('SELECT ts, uid, un FROM aud WHERE k = ?1 ORDER BY ts DESC LIMIT 1').bind(kq9).first(); } catch (eLq) { lwQ = null; }
       var lwNameQ = ''; if (lwQ && lwQ.uid) { if (curUsers === null) curUsers = await usersList(env); var lwUQ = (curUsers || []).filter(function (x) { return x && x.id === lwQ.uid; })[0]; lwNameQ = (lwUQ && (lwUQ.name || lwUQ.un)) || lwQ.un || ''; }
       out.conflicts[kq9] = usOut9(kq9, { cur: curSafe(kq9, curQ), rev: (rvQ && rvQ.rev) || 0, by: lwNameQ, at: lwQ ? (lwQ.ts || 0) : 0, self: !!(lwQ && lwQ.uid === A.u.id) });

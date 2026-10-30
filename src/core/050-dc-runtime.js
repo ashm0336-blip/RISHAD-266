@@ -968,7 +968,7 @@
     const [w, hgt] = hint.split(",");
     return { minWidth: w.trim(), minHeight: hgt && hgt.trim() };
   }
-  function createComponentFactory(registry, ensureFetched) {
+  function createComponentFactory(registry, ensureFetched, ensureData, dataReady) {
     const React = getReact();
     const AncestorContext = React.createContext([]);
     class StreamableComponent extends React.Component {
@@ -1002,7 +1002,7 @@
           if (this.state.__err) this.setState({ __err: null });
           this.forceUpdate();
         };
-        this.__makeLogic(registry.get(this.__name).Logic, null);
+        this.__makeLogic(dataReady(this.__name) ? registry.get(this.__name).Logic : null, null);
         ensureFetched(this.__name);
       }
       /** Error-boundary hook: a render crash anywhere in this DC's subtree
@@ -1206,6 +1206,10 @@
               error: this.state.__err
             })
           );
+        }
+        if (!dataReady(this.__name)) {
+          if (!r.dataError) ensureData(this.__name).catch(() => {});
+          return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: r.dataError || undefined }));
         }
         this.__reconcileLogic();
         if (!r.tpl) {
@@ -1787,7 +1791,7 @@
       (name) => registry.get(name).htmlStreaming
     );
     const external = createExternalModules(() => registry.bumpAll());
-    const factory = createComponentFactory(registry, ensureFetched);
+    const factory = createComponentFactory(registry, ensureFetched, ensureData, dataReady);
     const host = {
       component: (name) => factory.getDC(name),
       placeholder: (props) => h(Placeholder, props),
@@ -1798,6 +1802,27 @@
       resolveExternalError: (url, name) => external.getError(url, name),
       pseudoClass
     };
+    function dataReady(name) {
+      return typeof KIVO.__dcPageReady !== "function" || KIVO.__dcPageReady(name);
+    }
+    function ensureData(name) {
+      const r = registry.get(name);
+      if (dataReady(name) || typeof KIVO.__dcBeforePage !== "function") return Promise.resolve();
+      if (r.dataPromise) return r.dataPromise;
+      r.dataError = null;
+      r.dataPromise = Promise.resolve().then(() => KIVO.__dcBeforePage(name)).then(() => {
+        if (!dataReady(name)) throw Error("operations-page-read-failed");
+        r.dataError = null;
+        try { window.dispatchEvent(new CustomEvent("dc:page-load-ready", { detail: { name } })); } catch (e) {}
+        registry.bump(name);
+      }).catch((error) => {
+        r.dataError = "تعذّر تأكيد بيانات الشاشة — أعد المحاولة";
+        try { window.dispatchEvent(new CustomEvent("dc:page-load-failed", { detail: { name } })); } catch (eventError) {}
+        registry.bump(name);
+        throw error;
+      }).finally(() => { r.dataPromise = null; });
+      return r.dataPromise;
+    }
     function ensureFetched(name) {
       const r = registry.get(name);
       if (r.fetched) return;
@@ -1820,7 +1845,8 @@
         }
         return res2.text();
       });
-      Promise.all([textP, loadLogicScript(doc, name)]).then(([t, logicOk]) => {
+      const dataP = ensureData(name);
+      Promise.all([textP, loadLogicScript(doc, name), dataP]).then(([t, logicOk]) => {
         if (!t) return;
         if (!logicOk) {
           r.fetched = false;
@@ -1844,14 +1870,19 @@
         }
         if (parsed.props) r.propsMeta = parsed.props;
         if (parsed.preview) r.preview = parsed.preview;
+        try { window.dispatchEvent(new CustomEvent("dc:page-load-ready", { detail: { name } })); } catch (e) {}
         if (parsed.template && !r.html) updateHtml(name, parsed.template);
         if (parsed.js && !r.Logic) updateJs(name, parsed.js);
       }).catch(
-        (e) => console.error(
+        (e) => {
+          r.fetched = false;
+          try { window.dispatchEvent(new CustomEvent("dc:page-load-failed", { detail: { name } })); } catch (eventError) {}
+          console.error(
           '[dc-runtime] sibling fetch for "' + name + '" threw:',
           url,
           e
-        )
+          );
+        }
       );
     }
     let rootName = null;

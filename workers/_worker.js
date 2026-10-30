@@ -4510,7 +4510,7 @@ async function nfRefs(env, A, only) {
     }
   });
   for (var i = 0; i < keys.length; i += 80) {
-    var vals = await kvMany(env, "kv", keys.slice(i, i + 80));
+    var vals = await opResourceMany(env, keys.slice(i, i + 80));
     Object.keys(vals).forEach(function (k) {
       var m = /^bsdept:([^:]+):bassam_(.*)$/.exec(k);
       if (m) refs[m[1]][m[2]] = parseJson(vals[k], null);
@@ -6724,7 +6724,7 @@ async function cuRead(env, A, q) {
   var token = q.cursor ? cuUncursor(q.cursor) : null,
     cutoff = y * 12 + m,
     currentCutoff = clock.y * 12 + clock.m,
-    employeeDoc = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1'), []);
+    employeeDoc = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'), []);
   if (!Array.isArray(employeeDoc)) throw cuError('custody-employees-shape');
   var employeeJson = JSON.stringify(employeeDoc),
     cte = cuResolvedCte(view === 'moves'),
@@ -7022,7 +7022,7 @@ async function cuAct(env, A, b, meta) {
       if (!Array.isArray(lines) || !lines.length || lines.length > 100) throw cuError('custody-lines');
       n = lines.length;
       // Existing employee documents are references only. The retired custody document is never read.
-      employees = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1'), []);
+      employees = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'), []);
       if (!Array.isArray(employees)) throw cuError('custody-employees-shape');
       for (var line of lines) {
         cuShape(line, ['itemId', 'holderKey', 'condition', 'color']);
@@ -7409,7 +7409,7 @@ async function cuPlanCleanup(env, A, opt) {
   if (await cuLegacyPresent(env)) throw cuError('custody-legacy-source-present', 503);
   if ((await cuRev(env, dept)) !== base) throw cuError('custody-conflict', 409);
   var employeeKey = 'bsdept:' + dept + ':bassam_employees_v1',
-    actual = parseJson(await kvGet(env, 'kv', employeeKey), []);
+    actual = parseJson(await opResourceGet(env, employeeKey), []);
   if (!deq(actual, opt.oldEmployees)) throw cuError('custody-employee-source-mismatch', 409);
   var all = intent !== 'employee-delete',
     holderKeys = all ? [] : cuRemovedHolderKeys(opt.oldEmployees, opt.newEmployees),
@@ -7714,7 +7714,7 @@ async function cuPlanSaveTransition(env, A, body, kvPlan) {
     var dept = parseKey(key).dept;
     if (!dept) continue;
     var pd = byKey.get(key),
-      before = pd ? parseJson(pd.cur, []) : parseJson(await kvGet(env, 'kv', key), []),
+      before = pd ? parseJson(pd.cur, []) : parseJson(await opResourceGet(env, key), []),
       after = pd
         ? pd.act === 'del'
           ? []
@@ -7796,7 +7796,7 @@ async function cuPlanSaveTransition(env, A, body, kvPlan) {
     if (blocked) continue;
     var key = 'bsdept:' + dept + ':bassam_employees_v1',
       pd = byKey.get(key),
-      before = pd ? parseJson(pd.cur, []) : parseJson(await kvGet(env, 'kv', key), []),
+      before = pd ? parseJson(pd.cur, []) : parseJson(await opResourceGet(env, key), []),
       after = pd ? (pd.act === 'del' ? [] : parseJson(pd.v, null)) : before;
     if (!Array.isArray(before) || !Array.isArray(after)) throw cuError('custody-transition-employees');
     if (after.length) throw cuError('custody-transition-wipe-employee-plan');
@@ -7907,9 +7907,14 @@ function empActionAllowed(A, d, intent) {
   if (!ok) throw cuError('employee-transition-forbidden', 403);
 }
 async function empTransitionSource(env) {
-  var known = env.__employeeReference;
-  if (known && isObj(known.keys) && isObj(known.revs)) return { keys: known.keys, revs: known.revs };
-  return { keys: await kvAll(env, 'kv'), revs: await revsAll(env) };
+  var known = env.__employeeReference,
+    raw = known && isObj(known.keys) ? known.keys : await kvAll(env, 'kv'),
+    capture = await opCaptureReferences(env, raw),
+    revs = Object.assign({},known && isObj(known.revs) ? known.revs : await revsAll(env),capture.revs);
+  // Validate the read context after the revision header. A changed source
+  // must fail rather than pair an old employee/schedule with a newer base.
+  if (capture.guards.length) await env.DB.batch(capture.guards);
+  return { keys:capture.keys,revs:revs,guards:capture.guards,snapshots:capture.snapshots };
 }
 function empTransitionContextOf(A, d, intent, source, cuRevision) {
   empActionAllowed(A, d, intent);
@@ -8549,11 +8554,12 @@ async function empPrepareTransition(env, A, input) {
         requestId: input.requestId,
       },
       allRequestedKeysRequired: true,
+      sourceGuards: source.guards,
     },
     result: result,
   };
 }
-async function rsReferenceSnapshot(env, uid) {
+async function rsReferenceSnapshot(env, uid, options) {
   /* One coherent reference snapshot feeds actor construction and applySave. Its
      complete row witness is rechecked INSIDE the eventual write transaction. */
   var inputs = await env.DB.batch([
@@ -8571,7 +8577,9 @@ async function rsReferenceSnapshot(env, uid) {
   (inputs[2].results || []).forEach(function (r) {
     inputRevs[r.k] = r.rev;
   });
-  env = Object.assign({}, env, { __pre: { live: true, kv: inputKeys, meta: inputMeta, revs: inputRevs } });
+  var operational = await opCaptureReferences(env, inputKeys, options && options.operationalKeys);
+  inputKeys = operational.keys; Object.assign(inputRevs, operational.revs);
+  env = Object.assign({}, env, { __pre: { live: true, kv: inputKeys, meta: inputMeta, revs: inputRevs }, __opCapture: operational });
   var currentActor = actorFromKeys(inputKeys, uid);
   if (!currentActor) throw rsError('session', 401);
   var currentMode = await enfModeOf(env);
@@ -8587,13 +8595,37 @@ async function rsReferenceSnapshot(env, uid) {
     inputKeys: inputKeys,
     inputMeta: inputMeta,
     inputRevs: inputRevs,
+    inputRevRows: inputs[2].results || [],
+    operational: operational,
     metaRows: inputs[1].results || [],
   };
 }
+function rsReferenceGuards(env, reference, allRevisions) {
+  if (!reference || !reference.operational) throw rsError('reference-unavailable', 503);
+  var guards = rsWitness(env, 'kv', ['k', 'seq', 'v'], reference.inputRows)
+    .concat(rsWitness(env, 'meta', ['k', 'v'], reference.metaRows, "k<>'rev'"))
+    .concat(reference.operational.guards);
+  if (allRevisions) {
+    if (!Array.isArray(reference.inputRevRows)) throw rsError('reference-revisions', 503);
+    guards.push.apply(guards, rsWitness(env, 'revs', ['k', 'rev'], reference.inputRevRows));
+  }
+  return guards;
+}
 async function rsCompileKV(env, A, kv, plan, inputRows) {
+  var operational = kv.pend.filter(function (pd) { return opIsResource(pd.k); });
+  if (operational.length) {
+    plan.counts.operations = operational.length;
+    // The save/restore caller fences its complete operational reference once.
+    await opCompilePending(env, plan, operational, env.__opCapture);
+  }
   var put = [],
     remove = [];
   for (var pd of kv.pend) {
+    if (opIsResource(pd.k)) {
+      if ((imgLike(pd.cur || '') || imgLike(pd.v || '')) && pd.cur !== pd.v)
+        (plan.imgTouch || (plan.imgTouch = [])).push({k: pd.k, v: pd.act === 'set' ? pd.v : ''});
+      continue;
+    }
     plan.guards.push(revGuard(env, pd.k, pd.have));
     var rows = inputRows.filter(function (row) {
       return row.k === pd.k;
@@ -8770,7 +8802,7 @@ function rsWitness(env, table, cols, rows, where, args) {
         env.DB.prepare(
           'SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1) j WHERE NOT EXISTS(SELECT 1 FROM ' +
             table +
-            " t WHERE t.k=json_extract(j.value,'$.k') AND t.seq=json_extract(j.value,'$.seq') AND length(CAST(t.v AS BLOB))=json_extract(j.value,'$.total') AND substr(CAST(t.v AS BLOB),json_extract(j.value,'$.offset'),json_extract(j.value,'$.bytes'))=CAST(json_extract(j.value,'$.text') AS BLOB))) THEN json_extract('{}','KIVO_RESTORE_TARGET') END",
+            " t WHERE t.k=json_extract(j.value,'$.k') AND t.seq=json_extract(j.value,'$.seq') AND length(CAST(t.v AS BLOB))=json_extract(j.value,'$.total') AND (json_extract(j.value,'$.bytes')=0 OR substr(CAST(t.v AS BLOB),json_extract(j.value,'$.offset'),json_extract(j.value,'$.bytes'))=CAST(json_extract(j.value,'$.text') AS BLOB)))) THEN json_extract('{}','KIVO_RESTORE_TARGET') END",
         ).bind(JSON.stringify(part)),
       );
     });
@@ -8864,6 +8896,7 @@ function rsPhysicalDeletes(kv, reference, keys) {
   keys.forEach(function (k) {
     if (!parseKey(k).dept) throw rsError('atomic-delete-scope');
     if (!Object.prototype.hasOwnProperty.call(reference.inputKeys, k)) return;
+    if (opIsResource(k) && reference.inputKeys[k] == null) return;
     var pd = by.get(k);
     if (!pd) {
       var e = ENT[resName(k)];
@@ -8948,7 +8981,7 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
     ['seized','awards'].forEach(function(name){if(domains[name])domains[name]=domains[name].filter(function(domain){return allowed.has(bdScope(domain));});});
   } else {
     Object.keys(keys).forEach(function (k) {
-      if (Object.prototype.hasOwnProperty.call(inputKeys, k) && k !== K_PERM) {
+      if ((opIsResource(k) ? inputKeys[k]!=null : Object.prototype.hasOwnProperty.call(inputKeys, k)) && k !== K_PERM) {
         delete keys[k];
         kept++;
       }
@@ -9265,11 +9298,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
+    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards','operations']);
     if (
-      manifest.version !== 3 ||
+      manifest.version !== 4 ||
       manifest.scope !== 'full' ||
-      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards'].some(function (k) {
+      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards','operations'].some(function (k) {
         return manifest.domains[k] !== 1;
       })
     )
@@ -9306,11 +9339,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
+    rsShape(manifest.domains, ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards','operations']);
     if (
-      manifest.version !== 3 ||
+      manifest.version !== 4 ||
       manifest.scope !== 'dept' ||
-      ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards'].some(function (k) {
+      ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards','operations'].some(function (k) {
         return manifest.domains[k] !== 1;
       }) ||
       !deq(manifest.departments, [body.scope.departmentId]) ||
@@ -9358,7 +9391,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     if(!Array.isArray((body.domains||{})[def.name])||!deq(body.domains[def.name].map(bdScope).sort(),expected))throw rsError('restore-incomplete-'+def.name);
   }
   rsNat(body.base.epoch);
-  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
+  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards','operations']);
   var fingerprint =
       (internal && internal.fingerprint) ||
       hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(cuCanonical(body))))),
@@ -9367,6 +9400,7 @@ async function rsPrepare(env, A, body, meta, internal) {
       .first();
   if (oldReceipt) {
     if (oldReceipt.fingerprint !== fingerprint) throw rsError('restore-request-reused', 409);
+    await env.DB.batch(rsReferenceGuards(env,reference));
     return { receipt: oldReceipt };
   }
   if (body.base.epoch !== (await rsEpoch(env))) throw rsError('restore-epoch-changed', 409);
@@ -9391,9 +9425,11 @@ async function rsPrepare(env, A, body, meta, internal) {
   Object.keys(keys)
     .concat(del)
     .forEach(function (k) {
-      if (nfLegacyKey(k) || cuLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k)) || resName(k) === K_DSTATS) throw rsError('domain-moved');
+      if (nfLegacyKey(k) || cuLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k)) || opIsResource(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
+  var operationalInput=opRestoreDocuments(body,reference,A);
+  Object.assign(keys,operationalInput.keys);
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
   keys = selection.keys;
   del = selection.del;
@@ -9401,9 +9437,10 @@ async function rsPrepare(env, A, body, meta, internal) {
   var physicalDeletes =
     body.scope.kind === 'full' && body.mode === 'replace'
       ? Object.keys(inputKeys).filter(function (k) {
-          return !!parseKey(k).dept && !Object.prototype.hasOwnProperty.call(keys, k);
+          return !!parseKey(k).dept && !opIsResource(k) && !Object.prototype.hasOwnProperty.call(keys, k);
         })
       : [];
+  physicalDeletes.push.apply(physicalDeletes,operationalInput.physicalDeletes);
   if (body.scope.kind === 'dept' && (body.permissionSlice !== undefined || Object.prototype.hasOwnProperty.call(keys, K_PERM))) {
     var requestedPerms = body.permissionSlice;
     if (requestedPerms === undefined) {
@@ -9459,6 +9496,13 @@ async function rsPrepare(env, A, body, meta, internal) {
     }
     Object.keys(inputKeys).forEach(function (k) {
       if (removedDepartments.indexOf(parseKey(k).dept) >= 0) {
+        if(opIsResource(k)){
+          if(inputKeys[k]==null)return;
+          var operationalEmpty=ENT[resName(k)]&&ENT[resName(k)].empty;
+          if(typeof operationalEmpty!=='string')throw rsError('restore-operations-empty');
+          keys[k]=operationalEmpty;physicalDeletes.push(k);
+          if(base[k]===undefined)base[k]=inputRevs[k]||0;return;
+        }
         if (Object.prototype.hasOwnProperty.call(keys, k)) throw rsError('restore-removed-department-payload');
         var empty = ENT[resName(k)] && ENT[resName(k)].empty;
         if (typeof empty === 'string') {
@@ -9480,7 +9524,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     throw rsError('restore-keys');
   if (body.scope.kind === 'full' && body.mode === 'replace')
     Object.keys(inputKeys).forEach(function (k) {
-      if (!parseKey(k).dept || Object.prototype.hasOwnProperty.call(keys, k)) return;
+      if (!parseKey(k).dept || opIsResource(k) || Object.prototype.hasOwnProperty.call(keys, k)) return;
       var empty = ENT[resName(k)] && ENT[resName(k)].empty;
       if (typeof empty === 'string') {
         keys[k] = empty;
@@ -9566,7 +9610,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { kv: kv.pend.length, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept },
+    counts: { kv: kv.pend.filter(function(pd){return !opIsResource(pd.k);}).length, operations:0, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept },
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
@@ -9575,6 +9619,7 @@ async function rsPrepare(env, A, body, meta, internal) {
      a permission edit between actor construction and commit cannot grant a stale request. */
   plan.guards.push.apply(plan.guards, rsWitness(env, 'kv', ['k', 'seq', 'v'], inputRows));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'meta', ['k', 'v'], reference.metaRows, "k<>'rev'"));
+  plan.guards.push.apply(plan.guards, reference.operational.guards);
   await rsCompileKV(env, A, kv, plan, inputRows);
   var domains = selection.domains;
   if (domains.notifications) {
@@ -9767,6 +9812,7 @@ async function rsPrepare(env, A, body, meta, internal) {
 async function rsCommit(env, A, plan, meta) {
   await irGuardRetired(env);
   await bdGuardRetired(env);
+  await opGuardRetired(env);
   if (plan.receipt && plan.receipt.result_json) {
     var replay = JSON.parse(plan.receipt.result_json);
     replay.reauthRequired = !!replay.reauthRequired;
@@ -9787,7 +9833,7 @@ async function rsCommit(env, A, plan, meta) {
     };
   A = plan.author || A;
   var sid = enfSnapId('atomic'),
-    st = [rsEpochGuard(env.DB, plan.epoch), bdCommitRetiredGuard(env)].concat(plan.guards),
+    st = [rsEpochGuard(env.DB, plan.epoch), bdCommitRetiredGuard(env), opRetiredGuard(env)].concat(plan.guards),
     keys = Array.from(new Set(plan.revisionKeys)),
     now = Date.now(),
     changed = keys.length > 0 || !!plan.forceFence;
@@ -9862,6 +9908,9 @@ async function rsCommit(env, A, plan, meta) {
         plan.imagesReused || 0,
       ),
     );
+  if (plan.intent === 'operations') st.push(env.DB.prepare(
+    "UPDATE restore_operations SET result_json=json_set(json_patch(json(?5),result_json),'$.atomic',1,'$.epoch',?3,'$.v',revision,'$.revs',json(COALESCE((SELECT json_group_object(j.value,COALESCE(r.rev,0))FROM json_each(?4)j LEFT JOIN revs r ON r.k=j.value),'{}'))) WHERE account_uid=?1 AND request_id=?2"
+  ).bind(A.u.id,plan.body.requestId,plan.epoch,JSON.stringify(plan.operationKeys),JSON.stringify(plan.operationResult||{})));
   var receiptExpected = plan.operation !== 'save' || plan.receiptRequired;
   st.push(
     receiptExpected
@@ -9932,6 +9981,7 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
   for (var d of depts) {
     if (typeof d !== 'string' || !d || d.length > 200 || BAD_ID_RX.test(d) || d.includes(':')) throw rsError('restore-departments');
     custody[d] = r[cuKey(d)] || 0;
+    opDefinitions().forEach(function(def){var k='bsdept:'+d+':'+def.resource;kv[k]=r[k]||0;});
     irshad[d] = await irRevs(env, d);
   }
   var businessBase=await bdRestoreRevisions(env,depts,scope.kind==='full');
@@ -10009,6 +10059,7 @@ async function rsRoute(env, request, url, ss) {
           .first();
       if (existing) {
         if (existing.fingerprint !== rawFingerprint) throw rsError('restore-request-reused', 409);
+        await env.DB.batch(rsReferenceGuards(env,reference));
         return json(await rsCommit(env, A, { receipt: existing }, reqMeta(request)));
       }
       var converted = await rsConvertBackup(env, A, body.backup, {
@@ -10050,6 +10101,7 @@ async function rsRoute(env, request, url, ss) {
     }
     return json(await rsCommit(env, A, await rsPrepare(env, A, body, reqMeta(request)), reqMeta(request)));
   } catch (e) {
+    if (e.ocCode) return json({ok:0,err:e.ocCode},e.status||400);
     if (e.rs) return json({ ok: 0, err: e.rs, details: e.details }, e.status);
     if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
@@ -10067,7 +10119,7 @@ function rsSaveNeedsAtomic(body) {
   return Object.keys((body && body.set) || {})
     .concat((body && body.del) || [])
     .some(function (k) {
-      return k === K_DEPTS || resName(k) === 'bassam_employees_v1';
+      return k === K_DEPTS || k === K_USERS || k === K_PERM || opIsResource(k);
     });
 }
 function rsImageIn(column, values, args) {
@@ -10300,7 +10352,7 @@ function rsSaveAudit(env, plan, A, meta, sid) {
   var supplied = audClean(plan.sourceBody.aud, allowed),
     rows = [],
     now = Date.now();
-  if (!A.__tkSrv)
+  if (!A.__tkSrv && !plan.serverTrusted)
     supplied = supplied.filter(function (e) {
       return !/^tk/i.test(e.cid);
     });
@@ -10367,13 +10419,46 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   });
   env = reference.env;
   A = actor;
+  var operationKeys = Object.keys(body.set || {}).concat(body.del || []),
+    operationalSave = operationKeys.some(opIsResource), referenceDependentSave = operationKeys.includes(K_USERS) || operationKeys.includes(K_PERM), operationFingerprint, operationRequestId, operationReadGuards=[];
+  if (operationalSave && !opt.__employeeRequestId && !opt.__wipeRequestId) {
+    operationRequestId = opt.__operationRequestId || body.requestId || (opt.srv ? enfSnapId('ops') : '');
+    if (typeof operationRequestId !== 'string' || !/^[-A-Za-z0-9_]{8,100}$/.test(operationRequestId)) throw rsError('operations-request-id');
+    if (!opt.srv && (!Number.isSafeInteger(body.epoch) || body.epoch < 0)) throw rsError('operations-epoch');
+    operationFingerprint = opt.__operationFingerprint || await cuFingerprint({uid:A.u.id,body:body});
+    var oldOperation = await env.DB.prepare('SELECT * FROM restore_operations WHERE account_uid=?1 AND request_id=?2').bind(A.u.id,operationRequestId).first();
+    if (oldOperation) {
+      if (oldOperation.fingerprint !== operationFingerprint || oldOperation.mode !== 'operations') throw rsError('operations-request-reused',409);
+      if (!opt.srv&&operationKeys.some(function(k){return !canRead(A,k);})) throw rsError('operations-denied',403);
+      await env.DB.batch(rsReferenceGuards(env, reference));
+      return Object.assign(JSON.parse(oldOperation.result_json),{duplicate:1,v:oldOperation.revision});
+    }
+    if (!opt.srv && body.epoch !== Number(reference.inputMeta.restore_epoch || 0)) throw rsError('restore-epoch-changed',409);
+    opt = Object.assign({},opt,{__allRequestedKeysRequired:true});
+  }
+  if(operationalSave){
+    for(var readKey of Object.keys(body.base||{}).filter(opIsResource)){
+      var readBase=body.base[readKey],writeKey=operationKeys.find(opIsResource),denied={},conflicts={};
+      opInfo(readKey);
+      if(!Number.isSafeInteger(readBase)||readBase<0)throw rsError('operations-base');
+      if(!opt.srv&&!canRead(A,readKey)){
+        denied[writeKey]={why:'read-reference-denied'};
+        return {ok:0,requestId:operationRequestId,epoch:body.epoch,revs:{},denied:denied,conflicts:{},atomic:1};
+      }
+      if(readBase!==(reference.inputRevs[readKey]||0)){
+        conflicts[writeKey]={why:'read-reference-changed'};
+        return {ok:0,requestId:operationRequestId,epoch:body.epoch,revs:{},denied:{},conflicts:conflicts,atomic:1};
+      }
+      operationReadGuards.push(revGuard(env,readKey,readBase));
+    }
+  }
   var kv = await applySave(env, body, A, meta, Object.assign({}, opt, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN }));
   kv.revs = kv.revs || reference.inputRevs;
   if (opt.__serverDepartmentWipes) kv.serverDepartmentWipes = opt.__serverDepartmentWipes;
   if (opt.__serverEmployeeIntent) kv.serverEmployeeIntent = opt.__serverEmployeeIntent;
   var transition = await cuPlanSaveTransition(env, A, body, kv);
   if (transition.blocked || !kv.ok) {
-    if (transition.coupled || opt.__allRequestedKeysRequired) {
+    if (transition.coupled || opt.__allRequestedKeysRequired || operationalSave) {
       var denied = Object.assign({}, kv.denied || (kv.out && kv.out.denied) || {}),
         conflicts = kv.conflicts || (kv.out && kv.out.conflicts) || {};
       var logs = Object.keys(denied).map(function (k) {
@@ -10383,11 +10468,11 @@ async function rsSaveCommit(env, A, body, meta, opt) {
         logs.push(enfLogStmt(env, r));
       });
       if (logs.length) await env.DB.batch(logs);
-      return { v: await curRev(env), revs: {}, denied: denied, conflicts: conflicts, atomic: kv.protectedOp || 'custody-transition' };
+      return { ok:0, requestId:operationRequestId, epoch:body.epoch, v: await curRev(env), revs: {}, denied: denied, conflicts: conflicts, atomic: operationalSave ? 1 : kv.protectedOp || 'custody-transition' };
     }
     return await applySave(env, body, A, meta, Object.assign({}, opt, { __cuPass: RESTORE_INTERNAL_TOKEN }));
   }
-  if (!transition.transitions.length && !opt.__serverDepartmentWipes && !opt.__employeeRequestId)
+  if (!transition.transitions.length && !opt.__serverDepartmentWipes && !opt.__employeeRequestId && !operationalSave && !referenceDependentSave)
     return await applySave(env, body, A, meta, Object.assign({}, opt, { __cuPass: RESTORE_INTERNAL_TOKEN }));
   kv.pend = kv.pend.filter(function (pd) {
     return pd.act === 'del' ? pd.cur != null : pd.v !== pd.cur;
@@ -10399,7 +10484,8 @@ async function rsSaveCommit(env, A, body, meta, opt) {
           .map(function (t) {
             return t.departmentId;
           })
-          .concat(opt.__employeeDept ? [opt.__employeeDept] : []),
+          .concat(opt.__employeeDept ? [opt.__employeeDept] : [])
+          .concat(operationalSave ? operationKeys.filter(opIsResource).map(function(k){return opInfo(k).dept;}) : []),
       ),
     ),
     scope = { kind: departments.length === 1 ? 'dept' : 'full' };
@@ -10407,12 +10493,13 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   var plan = {
     operation: 'save',
     body: {
-      requestId: opt.__wipeRequestId || opt.__employeeRequestId,
+      requestId: opt.__wipeRequestId || opt.__employeeRequestId || operationRequestId,
       scope: scope,
-      mode: opt.__employeeIntent || (opt.__serverDepartmentWipes ? 'dept-' + (opt.__wipeKind || 'wipe') : 'save'),
+      mode: opt.__employeeIntent || (opt.__serverDepartmentWipes ? 'dept-' + (opt.__wipeKind || 'wipe') : operationalSave ? 'operations' : 'save'),
       reason: String(body.reason || ''),
     },
     sourceBody: body,
+    serverTrusted: !!opt.srv,
     author: A,
     epoch: env.__restoreEpoch === undefined ? await rsEpoch(env) : env.__restoreEpoch,
     guards: [],
@@ -10423,13 +10510,17 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     authz: kv.authzRows || [],
     kv: kv,
     reauth: false,
-    bumpEpoch: true,
-    receiptRequired: !!(opt.__wipeRequestId || opt.__employeeRequestId),
+    bumpEpoch: !!(opt.__wipeRequestId || opt.__employeeRequestId || transition.transitions.length),
+    receiptRequired: !!(opt.__wipeRequestId || opt.__employeeRequestId || operationRequestId),
     forceFence: !!opt.__wipeRequestId,
     snapshotRequired: transition.transitions.some(function (t) {
       return /wipe|replace/.test(t.intent);
     }),
   };
+  if (operationRequestId) { plan.fingerprint=operationFingerprint; plan.intent='operations'; plan.operationKeys=Array.from(new Set(operationKeys)); plan.operationResult=opt.__operationResult||{}; }
+  plan.guards.push.apply(plan.guards,operationReadGuards);
+  if (referenceDependentSave || operationalSave) plan.guards.push.apply(plan.guards, reference.operational.guards);
+  if (opt.__operationSourceGuards) plan.guards.push.apply(plan.guards,opt.__operationSourceGuards);
   plan.guards.push.apply(plan.guards, rsWitness(env, 'kv', ['k', 'seq', 'v'], reference.inputRows));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'meta', ['k', 'v'], reference.metaRows, "k<>'rev'"));
   await rsCompileKV(env, A, kv, plan, reference.inputRows);
@@ -10495,6 +10586,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   }
   await rsImageMetadataPlan(env, A, plan, reference);
   var ack = await rsCommit(env, A, plan, meta);
+  if (operationRequestId) return Object.assign(ack,{v:ack.rev,denied:{},conflicts:{},atomic:1});
   if (opt.__employeeRequestId) return ack;
   if (opt.__serverDepartmentWipes) return Object.assign(ack, { dept: departments[0], requestId: opt.__wipeRequestId });
   var out = kv.out || { revs: {}, denied: {}, conflicts: {} };
@@ -10520,7 +10612,7 @@ async function rsWipeInventory(env, A, dept, kind) {
     throw rsError('forbidden', 403);
   var kv = Object.create(null);
   Object.keys(reference.inputKeys).forEach(function (k) {
-    if (parseKey(k).dept === dept) kv[k] = reference.inputRevs[k] || 0;
+    if (parseKey(k).dept === dept && (!opIsResource(k) || reference.inputKeys[k] != null)) kv[k] = reference.inputRevs[k] || 0;
   });
   var scopedCount = Object.keys(kv).length;
   var businessBase=await bdRestoreRevisions(env,[dept],false), businessCounts={};
@@ -10742,6 +10834,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
         __employeeDept: input.dept,
         __employeeIntent: input.intent,
         __employeeResult: prepared.result,
+        __operationSourceGuards: prepared.context.sourceGuards,
         __awardsBase: input.base.awards,
       });
     if (outcome.ok !== 1)
@@ -10766,6 +10859,52 @@ async function rsEmployeeRoute(env, request, url, ss) {
       return json({ ok: 0, err: 'conflict' }, 409);
     throw e;
   }
+}
+
+/* Existing reset transaction, delegated from the authenticated admin router. */
+async function rsResetRoute(env, request, path, url, AX, superX) {
+  if (!superX) return json({ ok: 0, err: 'forbidden' }, 403);
+  var rbz = await bodyRead(request, path); if (rbz.res) return rbz.res; var bz = rbz.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
+  var gkZ = 'pw:' + AX.u.id;
+  if (await guardLeft(env, gkZ) > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر قليلاً' });
+  var okZ = await verifyPw(String(bz.pw == null ? '' : bz.pw), AX.u.ph);
+  if (okZ === 'unsupported') return json({ ok: 0, err: ERR_ITER });
+  if (okZ !== true) { await guardFail(env, gkZ); return json({ ok: 0, err: 'كلمة المرور غير صحيحة' }); }
+  var rkZ = await metaGet(env, 'rk');
+  if (!rkZ) return json({ ok: 0, err: 'أنشئ مفتاح استعادة أولاً — التهيئة لا تُنفَّذ بدونه' });
+  if ((await verifyPw('rk:' + normKey(bz.key), rkZ)) !== true) { await guardFail(env, gkZ); return json({ ok: 0, err: 'مفتاح الاستعادة غير صحيح' }); }
+  if (String(bz.confirm || '') !== 'تهيئة') return json({ ok: 0, err: 'اكتب كلمة «تهيئة» للتأكيد' });
+  var adZ = isObj(bz.admin) ? bz.admin : {};
+  var unZ = String(adZ.un || '').trim(), nmZ = String(adZ.name || '').trim() || 'مدير النظام', pwZ = String(adZ.pw || '');
+  if (!unCheck(unZ)) return json({ ok: 0, err: 'اسم مستخدم مدير النظام: رقم جوال أو هوية من 10 أرقام' });
+  if (!pwCheck(pwZ, 'super')) return json({ ok: 0, err: 'كلمة مرور مدير النظام الجديد ضعيفة — 6 أرقام' });
+  await guardReset(env, gkZ);
+  var rmZ = reqMeta(request);
+  var keepBrand = !!bz.keepBrand, platZ = keepBrand ? await kvGet(env, 'kv', K_PLAT) : null;
+  var phZ = await hashPw(pwZ);
+  var usersZ = [{ id: 'su', un: unZ, ph: phZ, name: nmZ, role: 'super', mc: 1 }];
+  var stZ = [
+    env.DB.prepare('DELETE FROM notification_user_state'), env.DB.prepare('DELETE FROM notification_targets'), env.DB.prepare('DELETE FROM notification_messages'),
+    env.DB.prepare('DELETE FROM notification_dedup'), env.DB.prepare('DELETE FROM notification_type_overrides'), env.DB.prepare('DELETE FROM notification_checkpoints'),
+    env.DB.prepare('DELETE FROM irshad_requests'), env.DB.prepare('DELETE FROM irshad_report_languages'), env.DB.prepare('DELETE FROM irshad_reports'), env.DB.prepare('DELETE FROM irshad_catalog_entries'), env.DB.prepare('DELETE FROM irshad_retro_windows'),
+    env.DB.prepare("DELETE FROM meta WHERE k GLOB 'irshad:*:presence*'"),
+    env.DB.prepare('DELETE FROM custody_request_outputs'), env.DB.prepare('DELETE FROM custody_requests'), env.DB.prepare('DELETE FROM custody_movements'), env.DB.prepare('DELETE FROM custody_issues'), env.DB.prepare('DELETE FROM custody_items'),
+    env.DB.prepare('DELETE FROM restore_operations'), env.DB.prepare('DELETE FROM restore_preimage'), env.DB.prepare('DELETE FROM restore_snapshot_manifest'),
+    env.DB.prepare('DELETE FROM daily_stats_day_locks'), env.DB.prepare('DELETE FROM daily_stats_month_locks'), env.DB.prepare('DELETE FROM daily_stats_days'),
+    env.DB.prepare('DELETE FROM kv'), env.DB.prepare('DELETE FROM imgs'), env.DB.prepare('DELETE FROM revs'),
+    env.DB.prepare('DELETE FROM imgown'), env.DB.prepare('DELETE FROM imgref'), env.DB.prepare("DELETE FROM meta WHERE k = 'imgown'"),
+    env.DB.prepare('DELETE FROM audit'), env.DB.prepare('DELETE FROM sess'), env.DB.prepare('DELETE FROM guard'),
+    env.DB.prepare('DELETE FROM meta WHERE k IN (?1, ?2, ?3, ?4, ?5)').bind('rev', 'rk', 'rk_uid', 'rk_meta', 'rk_used')
+  ];
+  stZ = opResetStatements(env).concat(bdResetStatements(env),stZ);
+  stZ = stZ.concat(kvPutStmts(env, 'kv', K_USERS, JSON.stringify(usersZ)));
+  stZ.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2)').bind(K_USERS, 1));
+  if (platZ) { stZ = stZ.concat(kvPutStmts(env, 'kv', K_PLAT, platZ)); stZ.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2)').bind(K_PLAT, 1)); }
+  stZ.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rev', '1'));
+  if(!Number.isSafeInteger(env.__restoreEpoch)||env.__restoreEpoch>=Number.MAX_SAFE_INTEGER)throw dbGuardError('db-restore-epoch-invalid');
+  stZ.push(env.DB.prepare("INSERT INTO meta(k,v) VALUES('restore_epoch',?1) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(String(env.__restoreEpoch+1)),env.DB.prepare('DELETE FROM sec'),audEvStmt(env, { cid: 'reset_' + Date.now().toString(36), ts: Date.now(), uid: AX.u.id, un: AX.u.un, dept: '', k: 'system', rev: 1, etype: 'system', eid: 'platform', ename: 'المنصة', act: 'reset', ctx: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ }), bef: '', aft: '' }),secStmt(env, { uid: AX.u.id, un: AX.u.un, act: 'reset', detail: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ, byName: AX.u.name || '' }), ip: rmZ.ip, city: rmZ.city, dev: rmZ.dev }));
+  await env.DB.batch(stZ);
+  return json({ ok: 1 }, 200, clearCookie(url));
 }
 /* Backup normalization. Read/validate only: the existing restore compiler
    remains the only writer and the only source of authorization/account policy. */
@@ -10847,9 +10986,10 @@ function rsBCManifest(manifest, scope, keys, domains, departments) {
   var required = scope.kind === 'full' ? ['kv', 'dailyStats', 'notifications', 'custody'] : ['kv', 'notifications', 'custody'];
   if (manifest.version >= 2) required.push('irshad');
   if (manifest.version >= 3) required.push('seized','awards');
+  if (manifest.version >= 4) required.push('operations');
   rsShape(manifest.domains, required);
   if (
-    ![1, 2, 3].includes(manifest.version) ||
+    ![1, 2, 3, 4].includes(manifest.version) ||
     manifest.scope !== scope.kind ||
     required.some(function (k) {
       return manifest.domains[k] !== 1;
@@ -10886,6 +11026,8 @@ function rsBCManifest(manifest, scope, keys, domains, departments) {
       if(!Array.isArray(domains[def.name])||!deq(domains[def.name].map(bdScope).sort(),expected))rsBCFail('incomplete-'+def.name);
     } else if(domains[def.name]!==undefined)rsBCFail(def.name+'-manifest-version');
   }
+  if(manifest.version>=4)opValidateBackupDomains(domains.operations,departments);
+  else if(domains.operations!==undefined)rsBCFail('operations-manifest-version');
 }
 async function rsConvertBackup(env, A, file, opt) {
   opt = opt || {};
@@ -10908,7 +11050,7 @@ async function rsConvertBackup(env, A, file, opt) {
     kind = file.kind || scope.kind,
     summary = { legacy: legacy, emptyDomains: [], preservedGlobals: [], ignoredDevicePreferences: [], remapped: false },
     readGuards = [];
-  if (modern && (file.app !== 'bassam-crowd' || ![1, 2, 3].includes(file.version) || file.kind !== scope.kind)) rsBCFail('identity');
+  if (modern && (file.app !== 'bassam-crowd' || ![1, 2, 3, 4].includes(file.version) || file.kind !== scope.kind)) rsBCFail('identity');
   if (
     legacy &&
     (opt.legacyConsent !== true ||
@@ -10926,7 +11068,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var input = Object.create(null),
     keys = Object.create(null),
     domains = file.domains === undefined ? {} : rsBCClone(file.domains);
-  rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
+  rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards', 'operations']);
   Object.keys(file.data).forEach(function (k) {
     if (k === 'bassam_active_dept_v1') {
       summary.ignoredDevicePreferences.push(k);
@@ -11017,6 +11159,7 @@ async function rsConvertBackup(env, A, file, opt) {
   for(var def of bdDefinitions()) if(businessKeys.some(function(k){return def.resources.includes(resName(k));})&&rsBCOwn(domains,def.name))rsBCFail('duplicate-domain-source');
   if (modern && (cuKeys.length || nfKeys.length || dsKeys.length || (file.manifest && file.manifest.version >= 2 && irKeys.length))) rsBCFail('retired-key-in-modern-file');
   if(modern&&file.manifest.version>=3&&businessKeys.length)rsBCFail('retired-key-in-modern-file');
+  if(modern&&file.manifest.version>=4&&Object.keys(keys).some(opIsResource))rsBCFail('retired-key-in-modern-file');
   if (scope.kind === 'dept' && (dsKeys.length || domains.dailyStats !== undefined)) rsBCFail('global-domain-in-department');
   if (modern) {
     // Validate the source declaration before an explicit scoped remap. Missing
@@ -11213,6 +11356,7 @@ async function rsConvertBackup(env, A, file, opt) {
   cuKeys.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
     delete keys[k];
   });
+  opConvertBackupBoundary(keys,domains,deptIds,scope,source,modern?file.manifest.version:0,summary);
   // Conversion preserves credentials byte-for-byte; applySave/restore retains
   // its existing hash, final-owner and session policy for the eventual commit.
   Object.keys(keys).forEach(function (k) {
@@ -11236,10 +11380,11 @@ async function rsConvertBackup(env, A, file, opt) {
   }
   // A v1 source is validated before conversion. The compiled destination always
   // declares the complete typed Irshad domain; v2 never receives empty fallbacks.
-  manifest.version = 3;
+  manifest.version = 4;
   manifest.domains.irshad = 1;
   manifest.domains.seized = 1;
   manifest.domains.awards = 1;
+  manifest.domains.operations = 1;
   manifest.keys = Object.keys(keys).map(function (k) { return scope.kind === 'dept' ? resName(k) : k; });
   rsBCManifest(manifest, scope, keys, domains, deptIds);
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
@@ -12677,9 +12822,11 @@ async function bdQueryContext(env, actor, d, definition, options) {
   Object.keys(grouped).forEach(function (k) { raw[k] = grouped[k].join(''); });
   rows[1].forEach(function (r) { revs[r.k] = natural(r.rev); });
   rows[2].forEach(function (r) { meta[r.k] = r.v; });
+  var operational = await opCaptureReferences(env,raw,keys.filter(opIsResource));
+  raw = operational.keys; Object.assign(revs,operational.revs);
   if (definition.validateMeta) definition.validateMeta(meta, d);
   var pre = Object.assign({}, env.__pre || {}, { live: true, kv: raw, revs: revs, meta: meta }),
-    captured = Object.assign({}, env, { __pre: pre }),
+    captured = Object.assign({}, env, { __pre: pre, __opCapture: operational }),
     mode = await enfModeOf(captured),
     A = actorFromKeys(raw, actor.u.id);
   if (!A || (!global && (!deptInScope(A, d) || !(A.depts || []).some(function (department) { return department && String(department.id) === d; }))))
@@ -12694,7 +12841,8 @@ async function bdQueryContext(env, actor, d, definition, options) {
   resources.forEach(function (name, i) { base[name] = revs[resourceKeys[i]] || 0; });
   var guards = rsWitness(env, 'kv', ['k', 'seq', 'v'], rows[0], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(keys)])
     .concat(rsWitness(env, 'revs', ['k', 'rev'], rows[1], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(revisionKeys)]))
-    .concat(rsWitness(env, 'meta', ['k', 'v'], rows[2], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(metaKeys)]));
+    .concat(rsWitness(env, 'meta', ['k', 'v'], rows[2], 'k IN(SELECT value FROM json_each(?1))', [JSON.stringify(metaKeys)]))
+    .concat(operational.guards);
   return { env: captured, A: A, d: d, base: base, guards: guards, refs: refs, rawKeys: raw,
     resourceKeys: resourceKeys, meta: meta, pv4: { staffing: refs.staffing[d] },
     witness: await cuFingerprint({ uidValue: A.u.id, mode: mode, capture: rows }) };
@@ -16660,6 +16808,1529 @@ async function nfSeizedDue(env,actor,url) {
     throw error;
   }
 }
+/* Fixed relational shapes for operational resources. These descriptors contain
+   server constants, never user-selected SQL identifiers. JSON exists only at
+   the transport/policy boundary; every persisted business field has a column. */
+function ocScalar(type) {
+  if (['text', 'number', 'boolean', 'scalar'].indexOf(type) < 0) throw ocError('scalar-definition');
+  return { kind: 'scalar', type: type };
+}
+function ocObject(table, fields) { return { kind: 'object', table: table, fields: fields }; }
+function ocTuple(table, slots) { return { kind: 'tuple', table: table, slots: slots }; }
+function ocArray(table, entry) { return { kind: 'array', table: table, entry: entry }; }
+function ocMap(table, entry, options) { return Object.assign({ kind: 'map', table: table, entry: entry }, options || {}); }
+function ocUnion(table, choices) { return { kind: 'union', table: table, choices: choices }; }
+function ocError(code) { var e = new Error('operations-' + code); e.ocCode = 'operations-' + code; return e; }
+function ocOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+function ocObj(o) { return o !== null && typeof o === 'object' && !Array.isArray(o) && Object.prototype.toString.call(o) === '[object Object]'; }
+function ocSet(o, k, v) { Object.defineProperty(o, k, { value: v, enumerable: true, configurable: true, writable: true }); }
+function ocIdentifier(s) { if (typeof s !== 'string' || !/^[a-z][a-z0-9_]*$/.test(s)) throw ocError('sql-identifier'); return s; }
+function ocField(k) {
+  if (!/^[A-Za-z0-9_]+$/.test(k)) throw ocError('field-definition');
+  // SQLite identifiers ignore case; cAt and cat are distinct business fields.
+  // Escape underscores too, so a literal escape-looking key cannot collide.
+  return 'f_' + k.replace(/[_A-Z]/g,function(c){return c==='_'?'__':'_u'+c.charCodeAt(0).toString(16)+'_';});
+}
+var OC_BASE_COLUMNS = ['department_id', 'resource', 'row_key', 'parent_key', 'member_key', 'position', 'node_kind', 'variant', 'tuple_length', 'value_kind', 'value_text', 'value_number'];
+var OC_NODE_COLUMNS = ['department_id', 'resource', 'row_key', 'parent_key', 'member_key', 'position', 'node_kind', 'variant', 'tuple_length', 'schema_id', 'entity_kind'];
+function ocSignature(node) {
+  var fields = ocFields(node);
+  return JSON.stringify([node.kind, node.type || '', Object.keys(fields).sort().map(function (key) { return [key, ocSignature(fields[key])]; }),
+    node.entry ? ocSignature(node.entry) : '', (node.patterns || []).map(function (p) { return [p.pattern, ocSignature(p.schema)]; }),
+    (node.choices || []).map(ocSignature)]);
+}
+function ocFields(node) {
+  if (node.kind === 'object') return node.fields || {};
+  if (node.kind === 'tuple') { var out = {}; (node.slots || []).forEach(function (s, i) { out[String(i)] = s; }); return out; }
+  return node.kind === 'map' ? node.fixed || {} : {};
+}
+function ocPrepare(definitions) {
+  var tables = {}, nodes = new WeakSet(), resources = {}, order = [], declared = new Set(), signatures = new Map(), entities = {}, entitySignatures = new Map();
+  function entityFor(spec, scalarFields) {
+    var value = spec.node.kind === 'scalar', signature = value ? 'value:' + spec.node.type : JSON.stringify(scalarFields.map(function (key) { return [key, spec.fields[key].type]; }).sort());
+    if (!value && !scalarFields.length) { spec.entityTable = null; return; }
+    var prior = entitySignatures.get(signature);
+    if (prior) { spec.entityTable = prior; return; }
+    var name = spec.table, columns = ['department_id', 'resource', 'row_key', 'entity_kind'];
+    if (value) columns.push('value_kind', 'value_text', 'value_number');
+    scalarFields.forEach(function (key) { var c = ocField(key); columns.push(c + '_kind', c + '_text', c + '_number', c + '_position'); });
+    if (columns.length > 100) throw ocError('column-limit');
+    entities[name] = { table: name, columns: columns }; entitySignatures.set(signature, name); spec.entityTable = name;
+  }
+  function visit(node, parent, autoTable) {
+    if (!node || ['object', 'tuple', 'array', 'map', 'union', 'scalar'].indexOf(node.kind) < 0) throw ocError('definition');
+    if (nodes.has(node)) throw ocError('shared-container-definition');
+    nodes.add(node);
+    var declaredTable = ocIdentifier(node.table || autoTable), signature = ocSignature(node);
+    if (declared.has(declaredTable)) throw ocError('duplicate-table'); declared.add(declaredTable);
+    var prior = signatures.get(signature); if (prior) return prior;
+    var table = declaredTable, fields = ocFields(node), columns = OC_BASE_COLUMNS.slice();
+    var spec = { table: table, node: node, parent: parent, fields: fields, fieldSpecs: {}, segments: [], children: {}, columns: columns, entry: null, patterns: [], choices: [] };
+    ocSet(tables, table, spec); order.push(spec); signatures.set(signature, spec);
+    var fieldSpec = spec;
+    Object.keys(fields).sort().forEach(function (key) {
+      var child = fields[key], column = ocField(key);
+      if (!child) throw ocError('field-definition');
+      if (child.kind === 'scalar') {
+        // D1 allows100 columns per table. Wide records use fixed one-to-one
+        // detail tables, each with named business columns and a parent FK.
+        if (fieldSpec.columns.length + 4 > 100) {
+          var segmentTable = ocIdentifier(table + '_fields_' + (spec.segments.length + 1));
+          if (ocOwn(tables, segmentTable)) throw ocError('duplicate-table');
+          fieldSpec = { table: segmentTable, node: { kind: 'fields' }, parent: table, columns: OC_BASE_COLUMNS.slice(), fields: {}, scalarFields: [] };
+          spec.segments.push(fieldSpec); ocSet(tables, segmentTable, fieldSpec); order.push(fieldSpec);
+        }
+        fieldSpec.columns.push(column + '_kind', column + '_text', column + '_number', column + '_position');
+        if (fieldSpec !== spec) fieldSpec.fields[key] = child;
+        ocSet(spec.fieldSpecs, key, fieldSpec);
+      }
+      else ocSet(spec.children, key, visit(child, table));
+    });
+    if (node.kind === 'tuple' && !Array.isArray(node.slots)) throw ocError('tuple-definition');
+    if (node.kind === 'array' || node.kind === 'map') {
+      if (node.entry) spec.entry = visit(node.entry, table, table + '_values');
+      if (node.kind === 'array' && !spec.entry) throw ocError('entry-definition');
+      (node.patterns || []).forEach(function (pattern, index) {
+        if (typeof pattern.pattern !== 'string') throw ocError('pattern-definition');
+        spec.patterns.push({ re: new RegExp(pattern.pattern), spec: visit(pattern.schema, table, table + '_pattern_' + index) });
+      });
+    }
+    if (node.kind === 'union') {
+      if (!Array.isArray(node.choices) || !node.choices.length) throw ocError('union-definition');
+      node.choices.forEach(function (choice, i) { spec.choices.push(visit(choice, table, table + '_choice_' + i)); });
+    }
+    entityFor(spec, Object.keys(fields).filter(function (key) { return fields[key].kind === 'scalar' && spec.fieldSpecs[key] === spec; }).sort());
+    spec.segments.forEach(function (segment) { entityFor(segment, Object.keys(segment.fields).sort()); });
+    return spec;
+  }
+  definitions.forEach(function (definition) {
+    if (!definition || !/^bassam_[a-z0-9_]+$/.test(definition.resource) || ocOwn(resources, definition.resource)) throw ocError('resource-definition');
+    ocSet(resources, definition.resource, { definition: definition, spec: visit(definition.schema, null) });
+  });
+  return { resources: resources, tables: tables, order: order, entities: entities };
+}
+function ocForResource(prepared, resource) {
+  var root = prepared.resources[resource], selected = new Set(); if (!root) throw ocError('resource');
+  function walk(spec) {
+    if (!spec || selected.has(spec.table)) return; selected.add(spec.table);
+    (spec.segments || []).forEach(walk); Object.values(spec.children || {}).forEach(walk);
+    walk(spec.entry); (spec.patterns || []).forEach(function (p) { walk(p.spec); }); (spec.choices || []).forEach(walk);
+  }
+  walk(root.spec);
+  var out = { resources: {}, order: prepared.order.filter(function (spec) { return selected.has(spec.table); }), tables: {}, entities: {} };
+  out.resources[resource] = root;
+  out.order.forEach(function (spec) { out.tables[spec.table] = spec; if (spec.entityTable) out.entities[spec.entityTable] = prepared.entities[spec.entityTable]; });
+  return out;
+}
+function ocScalarPack(value, type) {
+  if (value === null) return [1, null, null];
+  if ((type === 'text' || type === 'scalar') && typeof value === 'string') return [2, value, null];
+  if ((type === 'number' || type === 'scalar') && typeof value === 'number' && Number.isFinite(value)) return [3, null, value];
+  if ((type === 'boolean' || type === 'scalar') && typeof value === 'boolean') return [4, null, value ? 1 : 0];
+  throw ocError('scalar-type');
+}
+function ocScalarUnpack(row, prefix, type, missing) {
+  var kind = row[prefix + 'kind'], text = row[prefix + 'text'], number = row[prefix + 'number'];
+  if (kind === 0 && missing) { if (text !== null || number !== null) throw ocError('noncanonical-scalar'); return undefined; }
+  var value = kind === 1 ? null : kind === 2 ? text : kind === 3 ? number : kind === 4 && (number === 0 || number === 1) ? !!number : undefined;
+  if (value === undefined || JSON.stringify(ocScalarPack(value, type)) !== JSON.stringify([kind, text, number])) throw ocError('noncanonical-scalar');
+  return value;
+}
+function ocEntry(spec, key) {
+  for (var i = 0; i < spec.patterns.length; i++) if (spec.patterns[i].re.test(key)) return spec.patterns[i].spec;
+  if (!spec.entry) throw ocError('unknown-map-key');
+  return spec.entry;
+}
+function ocKindMatches(node, value) {
+  if (node.kind === 'scalar') { try { ocScalarPack(value, node.type); return true; } catch (e) { return false; } }
+  if (node.kind === 'array' || node.kind === 'tuple') return Array.isArray(value);
+  return (node.kind === 'object' || node.kind === 'map') && ocObj(value);
+}
+function ocConvert(prepared, department, resource, value, present) {
+  if (typeof department !== 'string' || !department || department.length > 200 || department.indexOf(':') >= 0) throw ocError('department');
+  var root = prepared.resources[resource]; if (!root) throw ocError('resource');
+  var rows = {}; prepared.order.forEach(function (spec) { rows[spec.table] = []; });
+  function freshRow(spec, key, parent, member, position) {
+    var row = {}; spec.columns.forEach(function (column) { row[column] = /_kind$/.test(column) ? 0 : null; });
+    Object.assign(row, { department_id: department, resource: resource, row_key: key, parent_key: parent, member_key: member, position: position });
+    rows[spec.table].push(row); return row;
+  }
+  function write(spec, item, key, parent, member, position) {
+    var row = freshRow(spec, key, parent, member, position), fieldRows = {};
+    if (item === null) { row.node_kind = 1; return; }
+    var node = spec.node, kind = node.kind;
+    if (kind === 'scalar') {
+      row.node_kind = 7; var scalar = ocScalarPack(item, node.type);
+      row.value_kind = scalar[0]; row.value_text = scalar[1]; row.value_number = scalar[2]; return;
+    }
+    if (kind === 'union') {
+      var choices = spec.choices.filter(function (choice) { return ocKindMatches(choice.node, item); });
+      if (choices.length !== 1) throw ocError('ambiguous-union');
+      row.node_kind = 6; row.variant = spec.choices.indexOf(choices[0]);
+      write(choices[0], item, key + '/v:' + row.variant, key, '@', 0); return;
+    }
+    if (!ocKindMatches(node, item)) throw ocError('container-type');
+    row.node_kind = kind === 'object' ? 2 : kind === 'map' ? 3 : kind === 'array' ? 4 : 5;
+    fieldRows[spec.table] = row;
+    spec.segments.forEach(function (segment, index) {
+      var extra = freshRow(segment, key + '/p:' + index, key, null, index); extra.node_kind = 8; fieldRows[segment.table] = extra;
+    });
+    if (kind === 'tuple') { if (item.length > node.slots.length) throw ocError('tuple-length'); row.tuple_length = item.length; }
+    if (kind === 'array') {
+      for (var i = 0; i < item.length; i++) { if (!ocOwn(item, i)) throw ocError('array-hole'); write(spec.entry, item[i], key + '/i:' + i, key, null, i); }
+      return;
+    }
+    Object.keys(item).forEach(function (field, i) {
+      if (kind === 'tuple' && (!/^(0|[1-9]\d*)$/.test(field) || Number(field) >= item.length)) throw ocError('tuple-field');
+      var child = ocOwn(spec.fields, field) ? spec.fields[field] : null;
+      if (!child) {
+        if (kind !== 'map') throw ocError('unknown-field-' + field);
+        write(ocEntry(spec, field), item[field], key + '/e:' + encodeURIComponent(field), key, field, i); return;
+      }
+      if (child.kind === 'scalar') {
+        var column = ocField(field), packed = ocScalarPack(item[field], child.type);
+        var target = fieldRows[spec.fieldSpecs[field].table];
+        target[column + '_kind'] = packed[0]; target[column + '_text'] = packed[1]; target[column + '_number'] = packed[2];
+        target[column + '_position'] = i;
+      } else write(spec.children[field], item[field], key + '/f:' + encodeURIComponent(field), key, field, i);
+    });
+    if (kind === 'tuple') for (var t = 0; t < item.length; t++) if (!ocOwn(item, t)) throw ocError('array-hole');
+  }
+  if (present !== false) write(root.spec, value, '$', null, null, 0);
+  return { departmentId: department, resource: resource, rows: rows };
+}
+function ocInflate(prepared, domain) {
+  var root = prepared.resources[domain.resource], rows = domain.rows, used = new Set(), byTable = {};
+  if (!root || !rows || !ocObj(rows)) throw ocError('domain');
+  prepared.order.forEach(function (spec) {
+    var list = rows[spec.table] || [], map = new Map();
+    if (!Array.isArray(list)) throw ocError('rows');
+    list.forEach(function (row) {
+      if (!ocObj(row) || row.department_id !== domain.departmentId || row.resource !== domain.resource || typeof row.row_key !== 'string' || map.has(row.row_key) ||
+          Object.keys(row).length !== spec.columns.length || spec.columns.some(function (c) { return !ocOwn(row, c); })) throw ocError('row');
+      map.set(row.row_key, row);
+    }); byTable[spec.table] = map;
+  });
+  function read(spec, row) {
+    used.add(spec.table + '\0' + row.row_key);
+    if (row.node_kind === 1) return null;
+    var kind = spec.node.kind, value;
+    if (kind === 'scalar') return ocScalarUnpack(row, 'value_', spec.node.type, false);
+    if (kind === 'union') {
+      var alternative = spec.choices[row.variant];
+      if (!alternative) throw ocError('variant');
+      var branch = byTable[alternative.table].get(row.row_key + '/v:' + row.variant);
+      if (!branch) throw ocError('missing-variant');
+      return read(alternative, branch);
+    }
+    value = kind === 'array' || kind === 'tuple' ? [] : {};
+    if (kind === 'array') {
+      var entries = Array.from(byTable[spec.entry.table].values()).filter(function (r) { return r.parent_key === row.row_key; }).sort(function (a, b) { return a.position - b.position; });
+      entries.forEach(function (entry, index) { if (entry.position !== index) throw ocError('array-position'); value.push(read(spec.entry, entry)); });
+      return value;
+    }
+    var members = [], fieldRows = {}; fieldRows[spec.table] = row;
+    spec.segments.forEach(function (segment, index) {
+      var extra = byTable[segment.table].get(row.row_key + '/p:' + index);
+      if (!extra || extra.node_kind !== 8) throw ocError('missing-record-details');
+      used.add(segment.table + '\0' + extra.row_key); fieldRows[segment.table] = extra;
+    });
+    Object.keys(spec.fields).forEach(function (field) {
+      if (kind === 'tuple' && Number(field) >= row.tuple_length) return;
+      var schema = spec.fields[field];
+      if (schema.kind === 'scalar') {
+        var source = fieldRows[spec.fieldSpecs[field].table], scalar = ocScalarUnpack(source, ocField(field) + '_', schema.type, kind !== 'tuple');
+        if (scalar !== undefined) members.push({ key: field, value: scalar, position: source[ocField(field) + '_position'] });
+      } else {
+        var child = byTable[spec.children[field].table].get(row.row_key + '/f:' + encodeURIComponent(field));
+        if (child) members.push({ key: field, value: read(spec.children[field], child), position: child.position });
+        else if (kind === 'tuple') throw ocError('tuple-value');
+      }
+    });
+    if (kind === 'map') {
+      var candidates = [spec.entry].concat(spec.patterns.map(function (p) { return p.spec; })).filter(Boolean), entries = [], visited = new Set();
+      candidates.forEach(function (candidate) { if (visited.has(candidate.table)) return; visited.add(candidate.table); byTable[candidate.table].forEach(function (entry) { if (entry.parent_key === row.row_key && entry.row_key.startsWith(row.row_key + '/e:')) entries.push({ spec: candidate, row: entry }); }); });
+      entries.sort(function (a, b) { return a.row.position - b.row.position; }).forEach(function (entry) {
+        var key = entry.row.member_key;
+        if (typeof key !== 'string' || members.some(function (m) { return m.key === key; }) || ocOwn(spec.fields, key) || ocEntry(spec, key) !== entry.spec) throw ocError('map-member');
+        members.push({ key: key, value: read(entry.spec, entry.row), position: entry.row.position });
+      });
+    }
+    members.sort(function (a, b) { return a.position - b.position; }).forEach(function (member, index) {
+      if (member.position !== index) throw ocError('member-position');
+      ocSet(value, member.key, member.value);
+    });
+    if (kind === 'tuple' && (!Number.isSafeInteger(row.tuple_length) || row.tuple_length < 0 || row.tuple_length > spec.node.slots.length || value.length !== row.tuple_length)) throw ocError('tuple-length');
+    return value;
+  }
+  var rootRow = byTable[root.spec.table].get('$'), result = rootRow ? { present: true, value: read(root.spec, rootRow) } : { present: false };
+  prepared.order.forEach(function (spec) { byTable[spec.table].forEach(function (row) { if (!used.has(spec.table + '\0' + row.row_key)) throw ocError('orphan-row'); }); });
+  var canonical = ocConvert(prepared, domain.departmentId, domain.resource, result.value, result.present);
+  prepared.order.forEach(function (spec) {
+    function sorted(list) { return list.slice().sort(function (a, b) { return a.row_key.localeCompare(b.row_key); }).map(function (r) { return spec.columns.map(function (c) { return r[c]; }); }); }
+    if (JSON.stringify(sorted(canonical.rows[spec.table])) !== JSON.stringify(sorted(rows[spec.table] || []))) throw ocError('noncanonical-rows');
+  });
+  return result;
+}
+function ocPhysicalTables(prepared) {
+  var tables = { ops_nodes: OC_NODE_COLUMNS };
+  Object.keys(prepared.entities).forEach(function (name) { tables[name] = prepared.entities[name].columns; });
+  return tables;
+}
+function ocPhysicalRows(prepared, domain) {
+  var out = { ops_nodes: [] };
+  Object.keys(prepared.entities).forEach(function (name) { out[name] = []; });
+  prepared.order.forEach(function (spec) {
+    (domain.rows[spec.table] || []).forEach(function (row) {
+      var node = {}; OC_NODE_COLUMNS.forEach(function (column) { node[column] = column === 'schema_id' ? spec.table : column === 'entity_kind' ? spec.entityTable : row[column]; });
+      out.ops_nodes.push(node);
+      if (spec.entityTable) {
+        var entity = {}; prepared.entities[spec.entityTable].columns.forEach(function (column) { entity[column] = column === 'entity_kind' ? spec.entityTable : row[column]; });
+        out[spec.entityTable].push(entity);
+      }
+    });
+  });
+  out.ops_nodes.sort(function (a, b) { return a.row_key.split('/').length - b.row_key.split('/').length || a.row_key.localeCompare(b.row_key); });
+  return out;
+}
+function ocFromPhysical(prepared, department, resource, physical) {
+  var domain = { departmentId: department, resource: resource, rows: {} }, entities = {}, used = new Set();
+  var physicalTables = ocPhysicalTables(prepared), nodeIds = new Set();
+  if (!ocObj(physical) || Object.keys(physical).some(function (table) { return !ocOwn(physicalTables, table); })) throw ocError('physical-tables');
+  Object.keys(physicalTables).forEach(function (table) {
+    if (!Array.isArray(physical[table])) throw ocError('physical-table');
+    physical[table].forEach(function (row) { if (!ocObj(row) || Object.keys(row).length !== physicalTables[table].length || physicalTables[table].some(function (c) { return !ocOwn(row, c); })) throw ocError('physical-columns'); });
+  });
+  Object.keys(prepared.entities).forEach(function (name) {
+    var map = new Map(); (physical[name] || []).forEach(function (row) {
+      if (row.department_id !== department || row.resource !== resource || row.entity_kind !== name || map.has(row.row_key)) throw ocError('physical-row');
+      map.set(row.row_key, row);
+    }); entities[name] = map;
+  });
+  prepared.order.forEach(function (spec) { domain.rows[spec.table] = []; });
+  (physical.ops_nodes || []).forEach(function (node) {
+    if (nodeIds.has(node.row_key)) throw ocError('duplicate-node'); nodeIds.add(node.row_key);
+    var spec = prepared.tables[node.schema_id];
+    if (!spec || node.department_id !== department || node.resource !== resource || node.entity_kind !== spec.entityTable) throw ocError('node-schema');
+    var entity = spec.entityTable ? entities[spec.entityTable].get(node.row_key) : {};
+    if (!entity) throw ocError('missing-entity');
+    if (spec.entityTable) used.add(spec.entityTable + '\0' + node.row_key);
+    var row = {}; spec.columns.forEach(function (column) { row[column] = ocOwn(node, column) ? node[column] : ocOwn(entity, column) ? entity[column] : /_kind$/.test(column) ? 0 : null; });
+    domain.rows[spec.table].push(row);
+  });
+  Object.keys(entities).forEach(function (name) { entities[name].forEach(function (row) { if (!used.has(name + '\0' + row.row_key)) throw ocError('orphan-entity'); }); });
+  ocInflate(prepared, domain); return domain;
+}
+function ocCreateStatements(prepared) {
+  var out = ["CREATE TABLE IF NOT EXISTS ops_nodes(department_id TEXT NOT NULL,resource TEXT NOT NULL,row_key TEXT NOT NULL,parent_key TEXT,member_key TEXT,position INTEGER NOT NULL,node_kind INTEGER NOT NULL,variant INTEGER,tuple_length INTEGER,schema_id TEXT NOT NULL,entity_kind TEXT,PRIMARY KEY(department_id,resource,row_key),UNIQUE(department_id,resource,row_key,entity_kind),FOREIGN KEY(department_id,resource,parent_key)REFERENCES ops_nodes(department_id,resource,row_key)ON DELETE CASCADE)WITHOUT ROWID",
+    'CREATE INDEX IF NOT EXISTS ops_nodes_parent ON ops_nodes(department_id,resource,parent_key,member_key,position)'];
+  Object.keys(prepared.entities).forEach(function (name) {
+    var spec = prepared.entities[name], columns = spec.columns.map(function (column) {
+      var numeric = column === 'position' || column === 'node_kind' || column === 'variant' || column === 'tuple_length' || column !== 'entity_kind' && /_(kind|position)$/.test(column), number = /_number$/.test(column);
+      return '"' + column + '" ' + (numeric ? 'INTEGER' : number ? 'REAL' : 'TEXT') + (['department_id', 'resource', 'row_key', 'entity_kind'].indexOf(column) >= 0 ? ' NOT NULL' : '');
+    });
+    columns.push('CHECK(entity_kind=\'' + spec.table + '\')', 'PRIMARY KEY(department_id,resource,row_key)',
+      'FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE');
+    out.push('CREATE TABLE IF NOT EXISTS ' + spec.table + '(' + columns.join(',') + ') WITHOUT ROWID');
+  });
+  return out;
+}
+/* Operational scheduling shapes. Pure closed descriptors only; no storage,
+   permission or migration engine. Each factory creates fresh FK-owned nodes. */
+function osSchemaFields(names) {
+  var fields = {};
+  names.forEach(function (name) {
+    fields[name] = ocScalar("scalar");
+  });
+  return fields;
+}
+function osSchemaScalars(table) {
+  return ocArray(table, ocScalar("scalar"));
+}
+function osSchemaValue(table) {
+  return Object.assign(ocScalar("scalar"), { table: table });
+}
+function osSchemaShift(table) {
+  return ocObject(table, osSchemaFields(["name", "color", "tStart", "tEnd"]));
+}
+function osSchemaShiftList(table) {
+  return ocArray(
+    table,
+    ocUnion(table + "_entry", [
+      ocScalar("scalar"),
+      osSchemaShift(table + "_definition"),
+    ]),
+  );
+}
+function osSchemaStaffRow(table) {
+  var fields = osSchemaFields(["shift", "muk", "cs"]);
+  fields.rest = osSchemaScalars(table + "_rest");
+  fields.perm = ocUnion(table + "_perm", [
+    osSchemaScalars(table + "_perm_days"),
+    ocObject(table + "_perm_empty", {}),
+  ]);
+  fields.leaves = ocUnion(table + "_leaves", [
+    ocArray(
+      table + "_leave_ranges",
+      ocObject(
+        table + "_leave_range",
+        osSchemaFields(["fd", "fm", "td", "tm", "fy", "ty", "kind"]),
+      ),
+    ),
+    ocObject(table + "_leaves_empty", {}),
+  ]);
+  return ocObject(table, fields);
+}
+function osSchemaMonthBucket(table) {
+  return ocMap(table, osSchemaStaffRow(table + "_employee"), {
+    fixed: { __shifts: osSchemaShiftList(table + "_shifts") },
+  });
+}
+function osSchemaMonthLock(table) {
+  return ocUnion(table, [
+    ocScalar("boolean"),
+    ocObject(table + "_open", osSchemaFields(["mo"])),
+  ]);
+}
+function osSchemaCoreResources() {
+  return [
+    {
+      resource: "bassam_staffing_v3",
+      name: "staffing",
+      schema: ocMap("ops_staffing", osSchemaMonthBucket("ops_staffing_month")),
+    },
+    {
+      resource: "bassam_staffing_v2",
+      name: "staffingLegacy",
+      schema: ocMap(
+        "ops_staffing_legacy",
+        osSchemaStaffRow("ops_staffing_legacy_employee"),
+        {
+          patterns: [
+            {
+              pattern: "^\\d{4}-\\d{1,2}$",
+              schema: osSchemaMonthBucket("ops_staffing_legacy_month"),
+            },
+          ],
+        },
+      ),
+    },
+    // The former frozen employee-month feature has no active writer. Its known
+    // bucket is archived losslessly, never overlaid on the live schedule.
+    {
+      resource: "bassam_staffing_snap_v1",
+      name: "staffingArchive",
+      schema: ocMap(
+        "ops_staffing_archive",
+        ocObject("ops_staffing_archive_month", {
+          bucket: osSchemaMonthBucket("ops_staffing_archive_bucket"),
+        }),
+      ),
+    },
+    {
+      resource: "bassam_staffing_locks_v1",
+      name: "staffingLocks",
+      schema: ocMap(
+        "ops_staffing_locks",
+        osSchemaMonthLock("ops_staffing_lock"),
+      ),
+    },
+    {
+      resource: "bassam_callsigns_v1",
+      name: "callsigns",
+      schema: osSchemaScalars("ops_callsigns"),
+    },
+    {
+      resource: "bassam_perm_limit_v1",
+      name: "permissionLimit",
+      schema: osSchemaValue("ops_permission_limit"),
+    },
+    {
+      resource: "bassam_shift_options_v1",
+      name: "shifts",
+      schema: ocArray("ops_shift_options", osSchemaShift("ops_shift_option")),
+    },
+    {
+      resource: "bassam_dayshift_v1",
+      name: "dayShift",
+      schema: ocMap("ops_day_shifts", ocScalar("text")),
+    },
+    // Current day-focus is per-tab/device. This describes old cloud bytes only.
+    {
+      resource: "bassam_dayfocus_v1",
+      name: "legacyDayFocus",
+      schema: ocObject("ops_legacy_day_focus", osSchemaFields(["y", "m", "d"])),
+    },
+  ];
+}
+function osSchemaPoint(table) {
+  return ocObject(table, osSchemaFields(["x", "y"]));
+}
+function osSchemaPoints(table) {
+  return ocArray(table, osSchemaPoint(table + "_point"));
+}
+function osSchemaFieldLog(table) {
+  return ocArray(
+    table,
+    ocObject(
+      table + "_entry",
+      osSchemaFields(["at", "a", "st", "flow", "by", "why", "dur", "kind"]),
+    ),
+  );
+}
+function osSchemaElement(table, kind) {
+  var names = ["uid", "eid", "id", "name", "label", "kind", "hideLabel", "unp"];
+  if (kind === "paths") {
+    names = names.concat([
+      "code",
+      "type",
+      "dir",
+      "line",
+      "w",
+      "active",
+      "anim",
+    ]);
+    var path = osSchemaFields(names);
+    path.pts = osSchemaPoints(table + "_points");
+    return ocObject(table, path);
+  }
+  names = names.concat([
+    "sec",
+    "pri",
+    "off",
+    "closed",
+    "needN",
+    "uniNeed",
+    "fst",
+    "flow",
+    "fAt",
+    "fBy",
+    "fKind",
+    "cAt",
+    "cAtMs",
+    "cWhy",
+    "cBy",
+  ]);
+  if (kind === "zones")
+    names = names.concat([
+      "code",
+      "ser",
+      "d",
+      "cx",
+      "cy",
+      "rawA",
+      "area",
+      "rot",
+      "r",
+      "cat",
+      "yard",
+      "region",
+      "level",
+      "ztype",
+      "zcat",
+      "lang",
+      "lsz",
+      "count",
+      "cap",
+      "readiness",
+    ]);
+  else names = names.concat(["x", "y"]);
+  if (kind === "gates")
+    names = names.concat([
+      "num",
+      "hideNum",
+      "loc",
+      "gtype",
+      "route",
+      "cls",
+      "gid",
+      "pOf",
+      "leafNo",
+      "leafN",
+    ]);
+  var fields = osSchemaFields(names);
+  fields.emp = osSchemaScalars(table + "_employees");
+  fields.needS = ocMap(table + "_shift_needs", ocScalar("scalar"));
+  fields.fLog = osSchemaFieldLog(table + "_field_log");
+  if (kind === "gates") fields.cats = osSchemaScalars(table + "_categories");
+  if (kind === "zones") {
+    fields.pc = ocMap(table + "_prayer_counts", ocScalar("scalar"));
+    fields.pts = osSchemaPoints(table + "_legacy_points");
+    // Curve handles, not polygon holes. Legacy missing in/out is preserved.
+    fields.hs = ocArray(
+      table + "_handles",
+      ocObject(table + "_handle", {
+        in: osSchemaPoint(table + "_handle_in"),
+        out: osSchemaPoint(table + "_handle_out"),
+      }),
+    );
+  }
+  return ocObject(table, fields);
+}
+function osSchemaSector(table) {
+  var fields = osSchemaFields([
+    "id",
+    "code",
+    "name",
+    "cat",
+    "color",
+    "lead",
+    "note",
+    "showLbl",
+  ]);
+  fields.pts = osSchemaPoints(table + "_points");
+  fields.emp = osSchemaScalars(table + "_employees");
+  return ocObject(table, fields);
+}
+function osSchemaFloor(table) {
+  var fields = osSchemaFields([
+    "sid",
+    "id",
+    "n",
+    "name",
+    "num",
+    "iid",
+    "img",
+    "imgW",
+    "imgH",
+    "approved",
+    "ap",
+    "chip",
+    "chipTone",
+    "create",
+    "mpu",
+    "dens",
+    "showCodes",
+    "hideSectors",
+    "hideZones",
+    "hideGates",
+    "hideMarks",
+    "hidePaths",
+  ]);
+  ["zones", "gates", "marks", "paths"].forEach(function (kind) {
+    fields[kind] = ocArray(
+      table + "_" + kind,
+      osSchemaElement(table + "_" + kind + "_element", kind),
+    );
+  });
+  fields.sectors = ocArray(
+    table + "_sectors",
+    osSchemaSector(table + "_sector"),
+  );
+  return ocObject(table, fields);
+}
+function osSchemaFloors(table) {
+  return ocArray(table, osSchemaFloor(table + "_floor"));
+}
+function osSchemaPlanMonth(table) {
+  return ocUnion(table, [
+    osSchemaFloors(table + "_legacy_array"),
+    ocObject(table + "_record", {
+      c: ocScalar("scalar"),
+      mo: ocScalar("scalar"),
+      d: osSchemaFloors(table + "_floors"),
+    }),
+  ]);
+}
+function osSchemaPlan(table) {
+  var fields = osSchemaFields(["pMig"]);
+  fields.floors = osSchemaFloors(table + "_live_floors");
+  ["zones", "gates", "marks", "paths"].forEach(function (kind) {
+    fields[kind] = ocArray(
+      table + "_root_" + kind,
+      osSchemaElement(table + "_root_" + kind + "_element", kind),
+    );
+  });
+  fields.months = ocMap(table + "_months", osSchemaPlanMonth(table + "_month"));
+  fields.delMonths = ocMap(table + "_deleted_months", ocScalar("scalar"));
+  // No inner cfg writer exists in the current source. Unknown legacy members
+  // fail before DDL instead of being hidden in a JSON/attribute fallback.
+  fields.cfg = ocObject(table + "_legacy_cfg", {});
+  return ocObject(table, fields);
+}
+function osSchemaMonthControl(table) {
+  var fields = osSchemaFields(["ap", "mo", "auto", "perm"]);
+  fields.dopen = ocMap(table + "_open_days", ocScalar("scalar"));
+  fields.dshut = ocMap(table + "_closed_days", ocScalar("scalar"));
+  return ocUnion(table, [
+    ocScalar("scalar"),
+    ocObject(table + "_record", fields),
+  ]);
+}
+function osSchemaRoundDay(table) {
+  var fields = osSchemaFields([
+    "t",
+    "ap",
+    "auto",
+    "from",
+    "synced",
+    "off",
+  ]);
+  fields.imp = ocUnion(table + "_import", [
+    ocScalar("scalar"),
+    ocObject(table + "_import_source", osSchemaFields(["src", "day"])),
+  ]);
+  fields.d = osSchemaFloors(table + "_floors");
+  fields.shAp = ocMap(
+    table + "_shift_approvals",
+    ocObject(table + "_shift_approval", {
+      ap: ocScalar("scalar"),
+      at: ocScalar("scalar"),
+      byRep: ocScalar("scalar"),
+      snap: osSchemaFloors(table + "_approved_floors"),
+    }),
+  );
+  fields.mvLog = ocArray(
+    table + "_moves",
+    ocObject(
+      table + "_move",
+      osSchemaFields([
+        "t",
+        "kind",
+        "key",
+        "tok",
+        "fromI",
+        "toI",
+        "fromLbl",
+        "toLbl",
+        "by",
+        "name",
+      ]),
+    ),
+  );
+  return ocObject(table, fields);
+}
+function osSchemaOption(table) {
+  return ocUnion(table, [
+    ocScalar("scalar"),
+    ocObject(table + "_record", {
+      n: ocScalar("scalar"),
+      r: ocScalar("scalar"),
+      k: ocScalar("scalar"),
+      t: osSchemaScalars(table + "_types"),
+      c: ocUnion(table + "_code_or_categories", [
+        ocScalar("scalar"),
+        osSchemaScalars(table + "_categories"),
+      ]),
+    }),
+  ]);
+}
+function osSchemaZoneOptions(table) {
+  var fields = osSchemaFields(["hMig", "lvV"]);
+  ["region", "level", "ztype", "zcat"].forEach(function (kind) {
+    fields[kind] = ocArray(
+      table + "_" + kind,
+      osSchemaOption(table + "_" + kind + "_option"),
+    );
+  });
+  fields.zcatStyle = ocMap(
+    table + "_category_styles",
+    ocObject(
+      table + "_category_style",
+      osSchemaFields([
+        "f",
+        "o",
+        "s",
+        "sAuto",
+        "bs",
+        "bw",
+        "h",
+        "hc",
+        "hw",
+        "hg",
+      ]),
+    ),
+  );
+  return ocObject(table, fields);
+}
+function osSchemaPlanResources() {
+  var gates = {};
+  ["loc", "gtype", "kind", "route", "cls", "cat"].forEach(function (kind) {
+    gates[kind] = osSchemaScalars("ops_gate_options_" + kind);
+  });
+  return [
+    {
+      resource: "bassam_plan_v1",
+      name: "plan",
+      schema: osSchemaPlan("ops_plan"),
+    },
+    {
+      resource: "bassam_zone_opts_v1",
+      name: "zoneOptions",
+      schema: osSchemaZoneOptions("ops_zone_options"),
+    },
+    {
+      resource: "bassam_gate_opts_v1",
+      name: "gateOptions",
+      schema: ocObject("ops_gate_options", gates),
+    },
+    {
+      resource: "bassam_mark_kinds_v1",
+      name: "markKinds",
+      schema: osSchemaScalars("ops_mark_kinds"),
+    },
+    {
+      resource: "bassam_rounds_v1",
+      name: "rounds",
+      schema: ocMap("ops_rounds", null, {
+        fixed: { __pMig: ocScalar("scalar") },
+        patterns: [
+          {
+            pattern: "^m:\\d{4}-\\d{1,2}$",
+            schema: osSchemaMonthControl("ops_round_month"),
+          },
+          {
+            pattern: "^\\d{4}-\\d{1,2}-\\d{1,2}(?:-.+)?$",
+            schema: osSchemaRoundDay("ops_round_day"),
+          },
+        ],
+      }),
+    },
+  ];
+}
+var OC_SCHEDULING_RESOURCES = osSchemaCoreResources().concat(
+  osSchemaPlanResources(),
+);
+/* Operational source contracts only. Every container has its own fixed table.
+   These descriptors preserve transport shape/order/absence/null; they do not
+   grant writes, normalize legacy identities or run the old client migrations.
+   Source: 019c employee transition;031 fields;062c/070–074 Tasks;
+   Employees.logic and DailyReport.logic. The common compiler owns execution. */
+function ocptWho(table) {
+  return ocObject(table, {u:ocScalar('text'),e:ocScalar('text'),n:ocScalar('text')});
+}
+function ocptTaskDecision(table) {
+  return ocObject(table, {st:ocScalar('text'),at:ocScalar('number'),by:ocptWho(table+'_by'),sub:ocScalar('number'),why:ocScalar('text')});
+}
+function ocptTaskCancellation(table) {
+  return ocObject(table, {at:ocScalar('number'),by:ocptWho(table+'_by'),why:ocScalar('text'),rec:ocScalar('scalar')});
+}
+function ocptTaskManagement(table) {
+  return ocObject(table, {
+    v:ocScalar('number'),
+    by:ocptWho(table+'_by'),
+    pol:ocObject(table+'_policy', {m:ocScalar('text'),n:ocScalar('number'),steps:ocArray(table+'_policy_steps',ocScalar('text'))}),
+    rv:ocptWho(table+'_reviewer'),
+    dec:ocScalar('scalar'),
+    needs:ocArray(table+'_needs',ocScalar('text')),
+    elig:ocObject(table+'_eligibility', {res:ocScalar('text'),code:ocScalar('text'),at:ocScalar('number')}),
+    win:ocObject(table+'_window', {early:ocScalar('number'),late:ocScalar('number')}),
+    ext:ocArray(table+'_extensions',ocObject(table+'_extension', {at:ocScalar('number'),by:ocptWho(table+'_extension_by'),from:ocScalar('number'),to:ocScalar('number'),why:ocScalar('text')})),
+    rev:ocptTaskDecision(table+'_decision'),
+    revh:ocArray(table+'_decision_history',ocptTaskDecision(table+'_history_decision')),
+    asg:ocScalar('text'),
+    can:ocptTaskCancellation(table+'_cancellation'),
+    canh:ocArray(table+'_cancellation_history',ocptTaskCancellation(table+'_old_cancellation')),
+    re:ocObject(table+'_reassignment', {at:ocScalar('number'),by:ocptWho(table+'_reassign_by'),why:ocScalar('text'),to:ocObject(table+'_reassign_target', {e:ocScalar('text'),n:ocScalar('text')})}),
+    from:ocObject(table+'_predecessor', {id:ocScalar('scalar'),e:ocScalar('text'),at:ocScalar('number')}),
+    relink:ocArray(table+'_relinks',ocObject(table+'_relink', {at:ocScalar('number'),by:ocptWho(table+'_relink_by'),from:ocScalar('text'),to:ocScalar('text')})),
+    rec:ocObject(table+'_recurrence', {
+      id:ocScalar('text'),ver:ocScalar('number'),t:ocScalar('text'),
+      wd:ocArray(table+'_recurrence_weekdays',ocScalar('number')),
+      md:ocScalar('scalar'),n:ocScalar('number'),from:ocScalar('text'),to:ocScalar('text'),
+      paused:ocScalar('scalar'),stop:ocScalar('scalar'),by:ocptWho(table+'_recurrence_by'),
+      asg:ocArray(table+'_recurrence_assignees',ocScalar('text'))
+    }),
+    idem:ocScalar('text'),det:ocScalar('scalar')
+  });
+}
+function ocptTaskSelf(table) {
+  return ocObject(table, {
+    at:ocScalar('number'),why:ocScalar('text'),exp:ocScalar('number'),ack:ocScalar('number'),
+    stall:ocObject(table+'_stall', {at:ocScalar('number'),why:ocScalar('text')}),
+    q:ocArray(table+'_idempotency',ocScalar('text'))
+  });
+}
+function ocptTaskProof(table) {
+  return ocObject(table, {
+    imgs:ocArray(table+'_images',ocScalar('text')),note:ocScalar('text'),at:ocScalar('number'),
+    st:ocMap(table+'_steps',ocScalar('number')),sub:ocScalar('number'),draft:ocScalar('scalar'),
+    h:ocArray(table+'_history',ocObject(table+'_submission', {
+      at:ocScalar('number'),imgs:ocArray(table+'_submission_images',ocScalar('text')),
+      note:ocScalar('text'),n:ocScalar('number')
+    })),
+    meta:ocArray(table+'_image_metadata',ocObject(table+'_image_metadata_entry', {
+      img:ocScalar('text'),at:ocScalar('number'),lat:ocScalar('number'),lng:ocScalar('number'),acc:ocScalar('number')
+    }))
+  });
+}
+function ocptTaskRow(table) {
+  // 071:135 creation and Tasks.logic:3012 preserve the established tuple.
+  // Slot13 is an existing number|string business identity, not a SQL row key.
+  return ocTuple(table, [
+    ocScalar('text'),ocScalar('text'),ocScalar('text'),ocScalar('text'),
+    ocScalar('text'),ocScalar('text'),
+    ocArray(table+'_performance',ocScalar('text')),
+    ocArray(table+'_initials',ocScalar('text')),
+    ocScalar('text'),ocScalar('text'),ocScalar('number'),ocScalar('number'),
+    ocScalar('number'),ocScalar('scalar'),ocScalar('scalar'),ocScalar('number'),
+    ocScalar('number'),ocScalar('scalar'),ocScalar('text'),ocScalar('text'),
+    ocptTaskSelf(table+'_self'),ocptTaskProof(table+'_proof'),
+    ocScalar('text'),ocptTaskManagement(table+'_management')
+  ]);
+}
+function ocptReportRoster(table) {
+  return ocArray(table,ocObject(table+'_entry', {
+    ekey:ocScalar('text'),name:ocScalar('text'),empno:ocScalar('scalar'),shift:ocScalar('text'),
+    st:ocScalar('text'),pmk:ocScalar('text'),lvk:ocScalar('text'),
+    tin:ocScalar('scalar'),tfrom:ocScalar('text'),treason:ocScalar('text'),
+    // Historical read-only shape in442, not a new command input.
+    loc:ocScalar('scalar')
+  }));
+}
+function ocptReportShiftFields(table) {
+  return {
+    pulled:ocScalar('scalar'),roster:ocptReportRoster(table+'_roster'),
+    leaders:ocMap(table+'_leaders',ocScalar('text')),
+    sig:ocScalar('text'),
+    def:ocObject(table+'_definition', {color:ocScalar('text'),tStart:ocScalar('text'),tEnd:ocScalar('text')}),
+    rest:ocMap(table+'_rest',ocArray(table+'_rest_days',ocScalar('text'))),
+    muk:ocMap(table+'_extra_duty',ocScalar('scalar')),
+    restSrc:ocMap(table+'_rest_source',ocScalar('text')),
+    tout:ocMap(table+'_transferred_out',ocObject(table+'_transfer', {to:ocScalar('text'),why:ocScalar('text')})),
+    ap:ocScalar('scalar'),apBy:ocScalar('text'),apAt:ocScalar('text'),
+    // Historical442 notification reader exposes the continued-from day.
+    cont:ocScalar('scalar')
+  };
+}
+function ocptReportDay(table) {
+  // Old pulled/roster days and current shifts coexist losslessly. Do not run
+  // rpLoad's destructive conversion or remove historical leaders.coord.
+  return ocObject(table,Object.assign({
+    created:ocScalar('scalar'),
+    shifts:ocMap(table+'_shifts',ocObject(table+'_shift',ocptReportShiftFields(table+'_shift')))
+  },ocptReportShiftFields(table+'_legacy')));
+}
+function ocptReportMonth(table) {
+  return ocUnion(table, [
+    ocScalar('scalar'),
+    ocObject(table+'_record', {
+      ap:ocScalar('scalar'),mo:ocScalar('scalar'),auto:ocScalar('scalar'),
+      dopen:ocMap(table+'_open_days',ocScalar('scalar')),
+      dshut:ocMap(table+'_shut_days',ocScalar('scalar')),
+      perm:ocMap(table+'_permission_days',ocArray(table+'_employee_permission_days',ocScalar('scalar')))
+    })
+  ]);
+}
+var OC_PEOPLE_TASK_RESOURCES = [
+  {
+    resource:'bassam_employees_v1',name:'employees',
+    schema:ocArray('ops_employees',ocUnion('ops_employee_entry', [
+      //019c:112 explicitly accepts untouched historical string employees.
+      ocScalar('text'),
+      ocObject('ops_employee_record', {
+        eid:ocScalar('text'),name:ocScalar('text'),nid:ocScalar('text'),phone:ocScalar('text'),
+        empno:ocScalar('text'),email:ocScalar('text'),type:ocScalar('text'),work:ocScalar('text'),
+        gender:ocScalar('text'),shift:ocScalar('text'),group:ocScalar('text'),
+        account:ocScalar('text'),contact:ocScalar('text'),job:ocScalar('scalar')
+      })
+    ]))
+  },
+  {
+    resource:'bassam_options_v1',name:'employeeOptions',
+    schema:ocObject('ops_employee_options', {
+      type:ocArray('ops_employment_types',ocScalar('text')),
+      work:ocArray('ops_work_types',ocScalar('text'))
+    })
+  },
+  {
+    resource:'bassam_dreport_v1',name:'dailyReports',
+    schema:ocMap('ops_daily_reports',null, {
+      fixed:{__ldcs:ocMap('ops_report_leader_callsigns',ocScalar('text'))},
+      patterns:[
+        {pattern:'^m:\\d{4}-\\d{1,2}$',schema:ocptReportMonth('ops_report_month')},
+        {pattern:'^\\d{4}-\\d{1,2}-\\d{1,2}$',schema:ocptReportDay('ops_report_day')}
+      ]
+      //__lv/__lvU have deletion readers but no proven current value shape.
+      //Reject their presence before DDL rather than invent/drop business data.
+    })
+  },
+  {resource:'bassam_leave_kinds_v1',name:'leaveKinds',schema:ocArray('ops_leave_kinds',ocScalar('text'))},
+  {
+    resource:'bassam_dr_grp_v1',name:'reportGroups',
+    schema:ocObject('ops_report_groups', {on:ocScalar('scalar'),closed:ocMap('ops_report_closed_groups',ocScalar('scalar'))})
+  },
+  {
+    resource:'bassam_tasks_v1',name:'tasks',
+    schema:ocMap('ops_tasks',null, {patterns:[
+      {pattern:'^\\d{4}-\\d{1,2}-\\d{1,2}$',schema:ocArray('ops_task_day',ocptTaskRow('ops_task_row'))}
+    ]})
+  },
+  {
+    resource:'bassam_tasks_locks_v1',name:'taskLocks',
+    schema:ocMap('ops_task_locks',ocUnion('ops_task_lock', [
+      ocScalar('scalar'),ocObject('ops_task_lock_record',{mo:ocScalar('scalar')})
+    ]))
+  }
+];
+/* Canonical SQL resource access and row compiler. Policy engines consume a
+   derived projection in memory; no operational JSON is read/written in KV. */
+var OP_PREPARED = null;
+function opDefinitions() { return OC_SCHEDULING_RESOURCES.concat(OC_PEOPLE_TASK_RESOURCES); }
+function opRegistry() {
+  if (!OP_PREPARED) {
+    var out = Object.create(null), all = ocPrepare(opDefinitions());
+    opDefinitions().forEach(function (definition) { out[definition.resource] = { definition: definition, prepared: ocForResource(all, definition.resource) }; });
+    OP_PREPARED = out;
+  }
+  return OP_PREPARED;
+}
+function opPrepared(resource) { var entry = opRegistry()[resource]; if (!entry) throw ocError('resource'); return entry.prepared; }
+function opIsResource(k) { return !!opRegistry()[resName(k)]; }
+function opInfo(k) {
+  var resource = resName(k), entry = opRegistry()[resource]; if (!entry) return null;
+  var p = parseKey(k), dept = p.dept;
+  if (typeof dept !== 'string' || !dept || dept.length > 200 || dept.indexOf(':') >= 0 || k !== 'bsdept:' + dept + ':' + resource) throw ocError('resource-scope');
+  return { dept: dept, resource: resource, definition: entry.definition, prepared: entry.prepared };
+}
+function opPhysicalTables() {
+  var out = {}; opDefinitions().forEach(function (definition) { Object.assign(out, ocPhysicalTables(opPrepared(definition.resource))); }); return out;
+}
+function opResetStatements(env) {
+  return Object.keys(opPhysicalTables()).filter(function (table) { return table !== 'ops_nodes'; })
+    .map(function (table) { return env.DB.prepare('DELETE FROM ' + table); })
+    .concat([env.DB.prepare('UPDATE ops_nodes SET parent_key=NULL'),env.DB.prepare('DELETE FROM ops_nodes')]);
+}
+function opBulkInstall(env, resource, domain) {
+  var statements = [], prepared = opPrepared(resource), rows = ocPhysicalRows(prepared, domain), tables = ocPhysicalTables(prepared);
+  Object.keys(tables).forEach(function (table) { statements.push.apply(statements, opUpsertRows(env, {table: table, columns: tables[table]}, rows[table] || [])); });
+  return statements;
+}
+function opUpsertRows(env, spec, rows) {
+  var columns = spec.columns, mutable = columns.filter(function (c) { return c !== 'department_id' && c !== 'resource' && c !== 'row_key'; });
+  return rsChunks(rows).map(function (part) {
+    return env.DB.prepare('INSERT INTO ' + spec.table + '(' + columns.join(',') + ') SELECT ' + columns.map(function (c) { return "json_extract(j.value,'$." + c + "')"; }).join(',') +
+      ' FROM json_each(?1) j WHERE 1 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET ' + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(JSON.stringify(part));
+  });
+}
+function opStateGuards(env, info, domain) {
+  var guards = [], empty = [];
+  var tables = ocPhysicalTables(info.prepared), physical = ocPhysicalRows(info.prepared, domain);
+  Object.keys(tables).forEach(function (table) {
+    var rows = physical[table] || [];
+    if (!rows.length) empty.push(table);
+    else guards.push.apply(guards, rsWitness(env, table, tables[table], rows, 'department_id=?1 AND resource=?2', [info.dept, info.resource]));
+  });
+  for (var i = 0; i < empty.length; i += 24) guards.push(bdEmptyTableGuard(env, empty.slice(i, i + 24), 'department_id=?1 AND resource=?2', [info.dept, info.resource]));
+  return guards;
+}
+async function opLoadMany(env, keys) {
+  var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {};
+  wanted.forEach(function (key) {
+    var info = opInfo(key); if (!info) throw ocError('resource');
+    var request = { key: key, info: info, tables: ocPhysicalTables(info.prepared) }; physicalByKey[key] = {};
+    Object.keys(request.tables).forEach(function (table) {
+      if (!tableRequests[table]) tableRequests[table] = { columns:request.tables[table], pairs:[] };
+      tableRequests[table].pairs.push({department_id:info.dept,resource:info.resource}); physicalByKey[key][table] = [];
+    });
+    requests.push(request);
+  });
+  var tableNames=Object.keys(tableRequests);
+  tableNames.forEach(function(table){
+    var query=tableRequests[table];
+    batch.push(env.DB.prepare('SELECT '+query.columns.join(',')+' FROM '+table+" WHERE (department_id,resource) IN(SELECT json_extract(j.value,'$.department_id'),json_extract(j.value,'$.resource')FROM json_each(?1)j)").bind(JSON.stringify(query.pairs)));
+  });
+  if (!batch.length) return { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, globalRev:await bdGlobalRevision(env) };
+  var revisionIndex=batch.length;
+  batch.push(env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(wanted)));
+  batch.push(env.DB.prepare("SELECT v FROM meta WHERE k='rev'"));
+  var result = await env.DB.batch(batch), values = {}, domains = {}, guards = [], snapshots = [];
+  result.forEach(function (entry) { if (!entry || entry.success === false) throw ocError('read'); });
+  tableNames.forEach(function(table,index){(result[index].results||[]).forEach(function(row){
+    var key='bsdept:'+row.department_id+':'+row.resource;
+    if(!physicalByKey[key]||!physicalByKey[key][table])throw ocError('read-scope');
+    physicalByKey[key][table].push(row);
+  });});
+  (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
+  requests.forEach(function (request) {
+    var info = request.info, physical = physicalByKey[request.key];
+    var domain = ocFromPhysical(info.prepared, info.dept, info.resource, physical), projection = ocInflate(info.prepared, domain);
+    values[request.key] = projection.present ? JSON.stringify(projection.value) : null;
+    domains[request.key] = domain;
+    guards.push.apply(guards, opStateGuards(env, info, domain));
+    Object.keys(request.tables).forEach(function (table) { snapshots.push({ domain: 'operations', table: request.key + ':' + table, rows: physical[table] }); });
+    if (!ocOwn(revs, request.key)) revs[request.key] = 0;
+    guards.push(env.DB.prepare("SELECT CASE WHEN COALESCE((SELECT rev FROM revs WHERE k=?1),0)<>?2 THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(request.key, revs[request.key]));
+  });
+  return { values: values, domains: domains, guards: guards, snapshots: snapshots, revs: revs, globalRev:rsNat(Number((result[revisionIndex+1].results||[])[0].v)) };
+}
+async function opResourceMany(env, keys) {
+  var sql = [], kv = [], result = {}, cached = env.__opCapture;
+  keys.forEach(function (key) {
+    if (!opIsResource(key)) {
+      if(env.__pre&&env.__pre.live&&ocOwn(env.__pre.kv,key))result[key]=env.__pre.kv[key];else kv.push(key);
+    }
+    else if (cached && env.__pre && env.__pre.live && ocOwn(cached.keys, key)) result[key] = cached.keys[key];
+    else sql.push(key);
+  });
+  if (kv.length) Object.assign(result, await kvMany(env, 'kv', kv));
+  if (sql.length) { await opGuardRetired(env); Object.assign(result, (await opLoadMany(env, sql)).values); }
+  return result;
+}
+async function opResourceGet(env, key) { return (await opResourceMany(env, [key]))[key]; }
+async function opCommandReceipt(env,A,command,requestId,body) {
+  if(typeof requestId!=='string'||!/^[-A-Za-z0-9_]{8,100}$/.test(requestId))throw rsError('operations-request-id');
+  var fingerprint=await cuFingerprint({uid:A.u.id,command:command,body:body}),
+    row=await env.DB.prepare('SELECT * FROM restore_operations WHERE account_uid=?1 AND request_id=?2').bind(A.u.id,requestId).first();
+  if(row&&(row.mode!=='operations'||row.fingerprint!==fingerprint))throw rsError('operations-request-reused',409);
+  return {fingerprint:fingerprint,receipt:row?Object.assign(JSON.parse(row.result_json),{duplicate:1,v:row.revision}):null};
+}
+async function opCaptureReferences(env, raw, wanted) {
+  var keys = Object.assign(Object.create(null), raw), scoped = wanted;
+  if (!scoped) {
+    var departments = parseJson(raw[K_DEPTS] || '[]', null); if (!Array.isArray(departments)) throw ocError('departments');
+    scoped = []; departments.forEach(function (department) {
+      if (!department || typeof department.id !== 'string' || !department.id || department.id.includes(':')) throw ocError('departments');
+      opDefinitions().forEach(function (definition) { scoped.push('bsdept:' + department.id + ':' + definition.resource); });
+    });
+  }
+  scoped = scoped.filter(opIsResource); await opGuardRetired(env);
+  var state = await opLoadMany(env, scoped); Object.assign(keys, state.values);
+  return { keys: keys, guards: [opRetiredGuard(env)].concat(state.guards), snapshots: state.snapshots, domains: state.domains, revs: state.revs, globalRev:state.globalRev };
+}
+async function opChangeStatements(env, key, nextRaw, options) {
+  options = options || {};
+  var info = opInfo(key); if (!info) throw ocError('resource');
+  await opGuardRetired(env);
+  var state = options.state || await opLoadMany(env, [key]), before = state.domains[key],
+    base = options.base === undefined ? state.revs[key] : rsNat(options.base);
+  if (base !== state.revs[key]) throw rsError('conflict', 409);
+  var next;
+  try { next = nextRaw == null ? undefined : JSON.parse(nextRaw); } catch (e) { throw ocError('json'); }
+  var after = ocConvert(info.prepared, info.dept, info.resource, next, nextRaw != null), statements = [], changed = false,
+    physicalBefore = ocPhysicalRows(info.prepared, before), physicalAfter = ocPhysicalRows(info.prepared, after), tables = ocPhysicalTables(info.prepared);
+  Object.keys(tables).reverse().forEach(function (table) {
+    var keep = new Set(physicalAfter[table].map(function (row) { return row.row_key; })), remove = physicalBefore[table].filter(function (row) { return !keep.has(row.row_key); });
+    if (!remove.length) return; changed = true;
+    var chunks=rsChunks(remove.map(function (row) { return row.row_key; }));
+    // D1 limits cascading triggers more tightly than schema depth. Detach only
+    // removed nodes, in every chunk, before deleting any anchor. All statements
+    // stay in the guarded transaction; surviving rows retain their exact FKs.
+    if(table==='ops_nodes')chunks.forEach(function(part){
+      statements.push(env.DB.prepare('UPDATE ops_nodes SET parent_key=NULL WHERE department_id=?1 AND resource=?2 AND row_key IN(SELECT value FROM json_each(?3))').bind(info.dept,info.resource,JSON.stringify(part)));
+    });
+    chunks.forEach(function (part) {
+      statements.push(env.DB.prepare('DELETE FROM ' + table + ' WHERE department_id=?1 AND resource=?2 AND row_key IN(SELECT value FROM json_each(?3))').bind(info.dept, info.resource, JSON.stringify(part)));
+    });
+  });
+  Object.keys(tables).forEach(function (table) {
+    var spec = {table: table, columns: tables[table]}, prior = new Map(physicalBefore[table].map(function (row) { return [row.row_key, JSON.stringify(spec.columns.map(function (c) { return row[c]; }))]; }));
+    var write = physicalAfter[table].filter(function (row) { return prior.get(row.row_key) !== JSON.stringify(spec.columns.map(function (c) { return row[c]; })); });
+    if (write.length) changed = true;
+    statements.push.apply(statements, opUpsertRows(env, spec, write));
+  });
+  return { guards: [opRetiredGuard(env)].concat(state.guards), statements: statements, snapshots: state.snapshots,
+    revisionKeys: changed ? [key] : [], changed: changed, domain: after };
+}
+async function opCompilePending(env, plan, pending, capture) {
+  for (var item of pending) {
+    if(plan.operation!=='save'&&plan.body.mode==='merge'){
+      var current=capture&&capture.domains[item.k]|| (await opLoadMany(env,[item.k])).domains[item.k];
+      if(ocInflate(opInfo(item.k).prepared,current).present)throw rsError('restore-operations-merge-target-not-empty',409);
+    }
+    var addition = await opChangeStatements(env, item.k, item.act === 'del' ? null : item.v, { base: item.have, state: capture && capture.domains[item.k] ? {
+      domains: capture.domains, revs: capture.revs, guards: [] , snapshots: capture.snapshots.filter(function (s) { return s.table.startsWith(item.k + ':'); })
+    } : undefined });
+    plan.guards.push.apply(plan.guards, addition.guards); plan.statements.push.apply(plan.statements, addition.statements);
+    plan.revisionKeys.push.apply(plan.revisionKeys, addition.revisionKeys); plan.snapshots.push.apply(plan.snapshots, addition.snapshots);
+  }
+}
+async function opReadRoute(env, request, url, session) {
+  if (request.method !== 'GET') return json({ ok: 0, err: 'method' }, 405);
+  var mismatch = sessUidMismatch(env, url, session, '/api/operations/read'); if (mismatch) return mismatch;
+  try {
+    var wanted = Array.from(new Set(String(url.searchParams.get('keys') || '').split(',').filter(Boolean)));
+    if (!wanted.length || wanted.length > GET_MAX || wanted.some(function (key) { return !opInfo(key); })) throw ocError('read-keys');
+    // Establish authority before loading any business rows, including rows of
+    // a foreign department requested by a malicious/obsolete client.
+    var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [] }), A = reference.A,
+      eligible=new Set(wanted.filter(function(key){return canRead(A,key);})),refs=Array.from(eligible);
+    eligible.forEach(function (key) { var d = opInfo(key).dept; ['bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_employees_v1'].forEach(function (r) { refs.push('bsdept:' + d + ':' + r); }); });
+    var operational=await opCaptureReferences(reference.env,reference.inputKeys,refs);
+    reference.operational=operational;reference.inputKeys=operational.keys;Object.assign(reference.inputRevs,operational.revs);
+    reference.env=Object.assign({},reference.env,{__opCapture:operational,__pre:Object.assign({},reference.env.__pre,{kv:operational.keys,revs:reference.inputRevs})});
+    env = reference.env;
+    var resources = {}, absent = [], denied = [], base = {}, enfRefs = await enfRefsFor(env, Array.from(new Set(wanted.map(function (key) { return opInfo(key).dept; }))), reference.inputKeys);
+    wanted.forEach(function (key) {
+      if (!eligible.has(key)||!canRead(A, key)) { denied.push(key); return; }
+      var raw = reference.inputKeys[key];
+      if (A.enf && raw != null) raw = enfProjectStr(A, key, raw, enfRefs);
+      if (raw == null) absent.push(key); else resources[key] = JSON.parse(raw);
+      base[key] = reference.inputRevs[key] || 0;
+    });
+    await env.DB.batch(rsReferenceGuards(env,reference));
+    return json({ ok: 1, uid: session.uid, v:reference.operational.globalRev, epoch: Number(reference.inputMeta.restore_epoch || 0), resources: resources, absent: absent, denied: denied, base: base });
+  } catch (error) {
+    var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
+    if (error.rs || error.ocCode) return json({ ok: 0, err: error.rs || error.ocCode }, error.status || 400);
+    if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
+    throw error;
+  }
+}
+/* One-time canonical KV cutover. Runtime access is typed SQL in019r; this
+   reader exists only while initialization validates the original documents. */
+function opLegacyNames() {
+  return opDefinitions().map(function (definition) {
+    return definition.resource;
+  });
+}
+function opLegacyKey(k) {
+  var names = opLegacyNames();
+  return (
+    typeof k === "string" &&
+    k.split(":").some(function (part) {
+      return names.indexOf(part) >= 0;
+    })
+  );
+}
+function opLegacyPredicate() {
+  return "EXISTS(SELECT 1 FROM json_each(?1) op_legacy WHERE k=op_legacy.value OR k GLOB op_legacy.value||':*' OR k GLOB '*:'||op_legacy.value OR k GLOB '*:'||op_legacy.value||':*')";
+}
+function opRetiredGuard(env) {
+  return env.DB.prepare(
+    "SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE " +
+      opLegacyPredicate() +
+      ") THEN json_extract('{}','KIVO_OPERATIONS_LEGACY_SOURCE')END",
+  ).bind(JSON.stringify(opLegacyNames()));
+}
+async function opGuardRetired(env) {
+  if (
+    await env.DB.prepare(
+      "SELECT 1 FROM kv WHERE " + opLegacyPredicate() + " LIMIT 1",
+    )
+      .bind(JSON.stringify(opLegacyNames()))
+      .first()
+  ) {
+    var error = ocError("legacy-source-present");
+    error.status = 503;
+    throw error;
+  }
+}
+function opEmptyTargetGuards(env, tables) {
+  var statements = [];
+  // Bounded OR groups avoid D1's compound SELECT and expression-depth limits.
+  for (var i = 0; i < tables.length; i += 20) {
+    statements.push(
+      env.DB.prepare(
+        "SELECT CASE WHEN " +
+          tables
+            .slice(i, i + 20)
+            .map(function (table) {
+              return "EXISTS(SELECT 1 FROM " + table + ")";
+            })
+            .join(" OR ") +
+          " THEN json_extract('{}','KIVO_OPERATIONS_TARGET_CHANGED')END",
+      ),
+    );
+  }
+  return statements;
+}
+async function opLegacyPrepare(env) {
+  var predicate = opLegacyPredicate(),
+    args = [JSON.stringify(opLegacyNames())];
+  var captured = await env.DB.batch([
+    env.DB.prepare(
+      "SELECT k,seq,v FROM kv WHERE " + predicate + " ORDER BY k,seq",
+    ).bind(args[0]),
+    env.DB.prepare("SELECT k,seq,v FROM kv WHERE k=?1 ORDER BY seq").bind(
+      K_DEPTS,
+    ),
+    env.DB.prepare(
+      "SELECT k,rev FROM revs WHERE " + predicate + " ORDER BY k",
+    ).bind(args[0]),
+  ]);
+  if (
+    captured.some(function (result) {
+      return !result || result.success === false;
+    })
+  )
+    throw ocError("cutover-read");
+  var rows = captured[0].results || [],
+    departmentRows = captured[1].results || [],
+    revisionRows = captured[2].results || [];
+  var known = new Set(),
+    departments,
+    chunks = new Map(),
+    domains = [],
+    imageRows = [];
+  departmentRows.forEach(function (row, index) {
+    if (row.seq !== index || typeof row.v !== "string")
+      throw ocError("cutover-departments");
+  });
+  try {
+    departments = JSON.parse(
+      departmentRows
+        .map(function (row) {
+          return row.v;
+        })
+        .join("") || "[]",
+    );
+  } catch (error) {
+    throw ocError("cutover-departments");
+  }
+  if (!Array.isArray(departments)) throw ocError("cutover-departments");
+  departments.forEach(function (department) {
+    if (
+      !ocObj(department) ||
+      typeof department.id !== "string" ||
+      !department.id ||
+      department.id.length > 200 ||
+      department.id.indexOf(":") >= 0 ||
+      known.has(department.id)
+    )
+      throw ocError("cutover-departments");
+    known.add(department.id);
+  });
+  function scoped(key) {
+    var info;
+    try {
+      info = opInfo(key);
+    } catch (error) {
+      throw ocError("cutover-scope");
+    }
+    if (!info || !known.has(info.dept)) throw ocError("cutover-scope");
+    return info;
+  }
+  rows.forEach(function (row) {
+    scoped(row.k);
+    var list = chunks.get(row.k) || [];
+    if (row.seq !== list.length || typeof row.v !== "string")
+      throw ocError("cutover-chunks");
+    list.push(row.v);
+    chunks.set(row.k, list);
+  });
+  revisionRows.forEach(function (row) {
+    scoped(row.k);
+    if (!Number.isSafeInteger(row.rev) || row.rev < 0)
+      throw ocError("cutover-revision");
+  });
+  chunks.forEach(function (parts, key) {
+    var value,
+      info = scoped(key);
+    try {
+      value = JSON.parse(parts.join(""));
+    } catch (error) {
+      throw ocError("cutover-json");
+    }
+    // Every source document is decoded and validated before any DDL or write.
+    var domain = ocConvert(
+      info.prepared,
+      info.dept,
+      info.resource,
+      value,
+      true,
+    );
+    ocInflate(info.prepared, domain);
+    domains.push(domain);
+    Object.keys(imgIdsIn(parts.join("")))
+      .sort()
+      .forEach(function (image) {
+        imageRows.push({ img: image, k: key });
+      });
+  });
+  var imageKeys = Array.from(chunks.keys()),
+    imageArgs = [JSON.stringify(imageKeys)],
+    imageWhere = "k IN(SELECT value FROM json_each(?1))",
+    oldImageRows = [];
+  if (imageKeys.length) {
+    var imageRead = await env.DB.prepare(
+      "SELECT img,k FROM imgref WHERE " + imageWhere + " ORDER BY img,k",
+    )
+      .bind(imageArgs[0])
+      .all();
+    if (!imageRead || imageRead.success === false)
+      throw ocError("cutover-read");
+    oldImageRows = imageRead.results || [];
+  }
+  var tables = Object.keys(opPhysicalTables()),
+    present = await env.DB.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN(SELECT value FROM json_each(?1))",
+    )
+      .bind(JSON.stringify(tables))
+      .all();
+  if (!present || present.success === false) throw ocError("cutover-read");
+  var existing = present.results || [];
+  if (existing.length) {
+    var checked = await env.DB.batch(
+      existing.map(function (table) {
+        return env.DB.prepare("SELECT 1 FROM " + table.name + " LIMIT 1");
+      }),
+    );
+    if (
+      checked.some(function (result) {
+        return !result || result.success === false;
+      })
+    )
+      throw ocError("cutover-read");
+    if (
+      checked.some(function (result) {
+        return result.results && result.results.length;
+      })
+    )
+      throw ocError("cutover-target-not-empty");
+  }
+  var before = rsWitness(
+    env,
+    "kv",
+    ["k", "seq", "v"],
+    rows,
+    predicate,
+    args,
+  ).concat(
+    rsWitness(env, "kv", ["k", "seq", "v"], departmentRows, "k=?1", [K_DEPTS]),
+    rsWitness(env, "revs", ["k", "rev"], revisionRows, predicate, args),
+  );
+  if (imageKeys.length)
+    before.push.apply(
+      before,
+      rsWitness(
+        env,
+        "imgref",
+        ["img", "k"],
+        oldImageRows,
+        imageWhere,
+        imageArgs,
+      ),
+    );
+  before.push(
+    env.DB.prepare(
+      "INSERT INTO meta(k,v)VALUES('operations_cutover_ready','validated')ON CONFLICT(k)DO UPDATE SET v=excluded.v",
+    ),
+  );
+  var after = opEmptyTargetGuards(env, tables);
+  domains.forEach(function (domain) {
+    after.push.apply(after, opBulkInstall(env, domain.resource, domain));
+  });
+  if (imageKeys.length) {
+    after.push(
+      env.DB.prepare("DELETE FROM imgref WHERE " + imageWhere).bind(
+        imageArgs[0],
+      ),
+    );
+    rsChunks(imageRows).forEach(function (part) {
+      after.push(
+        env.DB.prepare(
+          "INSERT INTO imgref(img,k)SELECT json_extract(j.value,'$.img'),json_extract(j.value,'$.k')FROM json_each(?1)j",
+        ).bind(JSON.stringify(part)),
+      );
+    });
+  }
+  after.push(
+    env.DB.prepare("DELETE FROM kv WHERE " + predicate).bind(args[0]),
+    env.DB.prepare("DELETE FROM meta WHERE k='operations_cutover_ready'"),
+  );
+  if (rows.length)
+    after.push(
+      env.DB.prepare(
+        "INSERT INTO meta(k,v)VALUES('rev',CAST((SELECT MAX(n)+1 FROM(SELECT COALESCE(MAX(rev),0)n FROM revs UNION ALL SELECT COALESCE(CAST(v AS INTEGER),0)FROM meta WHERE k='rev'))AS TEXT))ON CONFLICT(k)DO UPDATE SET v=excluded.v",
+      ),
+    );
+  return {
+    before: before,
+    after: after,
+    domains: domains,
+    n: domains.length,
+    departmentRowsSha256: hex(
+      await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(JSON.stringify(departmentRows)),
+      ),
+    ),
+  };
+}
+/* Operational backup boundary: versioned typed rows, the existing policy
+   compiler and the existing atomic restore executor. No second restore path. */
+function opBackupDomain(prepared, domain) {
+  return { version:1, scope:{departmentId:domain.departmentId}, resource:domain.resource, rows:ocPhysicalRows(prepared,domain) };
+}
+function opBackupDecode(domain) {
+  rsShape(domain,['version','scope','resource','rows']); rsShape(domain.scope,['departmentId']);
+  if(domain.version!==1||typeof domain.resource!=='string'||!opRegistry()[domain.resource])throw rsError('restore-operations-domain');
+  var d=domain.scope.departmentId, k='bsdept:'+d+':'+domain.resource, info=opInfo(k);
+  return {key:k,domain:ocFromPhysical(info.prepared,d,info.resource,domain.rows),info:info};
+}
+function opValidateBackupDomains(domains,departments) {
+  if(!Array.isArray(domains))throw rsError('restore-incomplete-operations');
+  var expected=new Set(),seen=new Set(),decodedDomains=[];
+  departments.forEach(function(d){opDefinitions().forEach(function(def){expected.add('bsdept:'+d+':'+def.resource);});});
+  domains.forEach(function(item){
+    var decoded=opBackupDecode(item),key=decoded.key;
+    if(!expected.has(key)||seen.has(key))throw rsError('restore-operations-scope');seen.add(key);
+    decodedDomains.push(decoded);
+  });
+  if(seen.size!==expected.size)throw rsError('restore-incomplete-operations');
+  return decodedDomains;
+}
+function opRestoreDocuments(body,reference,A) {
+  var keys={},physicalDeletes=[];
+  opValidateBackupDomains(body.domains.operations,body.manifest.departments).forEach(function(decoded){
+    var key=decoded.key;
+    var projection=ocInflate(decoded.info.prepared,decoded.domain),raw=projection.present?JSON.stringify(projection.value):null;
+    if(rsNat(body.base.kv[key])!==(reference.inputRevs[key]||0))throw rsError('conflict',409);
+    if(raw===reference.inputKeys[key])return;
+    if(!canRead(A,key))throw rsError('restore-operations-resource-denied',403);
+    if(raw===null){
+      var empty=ENT[decoded.info.resource]&&ENT[decoded.info.resource].empty;
+      if(typeof empty!=='string')throw rsError('restore-operations-empty');
+      keys[key]=empty;physicalDeletes.push(key);
+    }else keys[key]=raw;
+  });
+  return {keys:keys,physicalDeletes:body.mode==='replace'?physicalDeletes:[]};
+}
+function opConvertBackupBoundary(keys,domains,departments,scope,source,version,summary) {
+  var oldKeys=Object.keys(keys).filter(opIsResource);
+  oldKeys.forEach(function(k){var info=opInfo(k);if(!departments.includes(info.dept))throw rsError('backup-unknown-department');});
+  if(version>=4) {
+    if(oldKeys.length)throw rsError('backup-retired-key-in-modern-file');
+    var sourceDepartments=scope.kind==='dept'?[source]:departments;
+    domains.operations=opValidateBackupDomains(domains.operations,sourceDepartments).map(function(decoded){
+      var target=scope.kind==='dept'?scope.departmentId:decoded.info.dept, projection=ocInflate(decoded.info.prepared,decoded.domain);
+      return opBackupDomain(decoded.info.prepared,ocConvert(decoded.info.prepared,target,decoded.info.resource,projection.value,projection.present));
+    });
+  } else {
+    if(domains.operations!==undefined)throw rsError('backup-operations-manifest-version');
+    domains.operations=[];
+    departments.forEach(function(d){opDefinitions().forEach(function(def){
+      var k='bsdept:'+d+':'+def.resource,prepared=opPrepared(def.resource),present=ocOwn(keys,k),value;
+      if(present){opInfo(k);value=rsBCParse(keys[k]);}else summary.emptyDomains.push('operations:'+k);
+      domains.operations.push(opBackupDomain(prepared,ocConvert(prepared,d,def.resource,value,present)));
+    });});
+  }
+  oldKeys.forEach(function(k){delete keys[k];});
+}
+async function opExport(env,request,url,session) {
+  var mismatch=sessUidMismatch(env,url,session,'/api/operations/export');if(mismatch)return mismatch;
+  if(request.method!=='GET')return json({ok:0,err:'method'},405);
+  try {
+    for(var attempt=0;attempt<3;attempt++){
+      var firstRev=await bdGlobalRevision(env),reference=await rsReferenceSnapshot(env,session.uid),A=reference.A,
+        requested=url.searchParams.get('dept')||'',departments=(A.depts||[]).map(function(d){return d.id;}),domains=[];
+      if(!requested&&A.u.role!=='super')throw rsError('operations-export-permission',403);
+      if(requested&&!departments.includes(requested))throw rsError('operations-export-scope',403);
+      if(requested)departments=[requested];
+      var refs=await enfRefsFor(reference.env,departments,reference.inputKeys);
+      for(var d of departments){
+        if(A.u.role!=='super'&&(A.enf?!enfHeld(A,d,'backup.view'):!actsHeldOn(A,d,'admin/backup',['view'])))throw rsError('operations-export-permission',403);
+        for(var def of opDefinitions()){
+          var k='bsdept:'+d+':'+def.resource,raw=reference.inputKeys[k];
+          if(!canRead(A,k))throw rsError('operations-export-permission',403);
+          if(A.enf&&raw!=null)raw=enfProjectStr(A,k,raw,refs);
+          var prepared=opPrepared(def.resource),domain=ocConvert(prepared,d,def.resource,raw==null?undefined:JSON.parse(raw),raw!=null);
+          domains.push(opBackupDomain(prepared,domain));
+        }
+      }
+      await reference.env.DB.batch(rsReferenceGuards(reference.env,reference));
+      var lastRev=await bdGlobalRevision(reference.env);if(firstRev!==lastRev)continue;
+      return json({ok:1,version:1,globalRev:lastRev,epoch:Number(reference.inputMeta.restore_epoch||0),domains:domains});
+    }
+    throw rsError('operations-export-conflict',409);
+  }catch(error){
+    if(error.rs||error.ocCode)return json({ok:0,err:error.rs||error.ocCode},error.status||400);
+    var guard=dbGuardFailure(error);if(guard)return json({ok:0,err:guard.err},guard.status);
+    if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT/.test(String(error)))return json({ok:0,err:'conflict'},409);
+    throw error;
+  }
+}
 /* ═══ R180: «الإحصائيات اليومية» — مخزنٌ عامٌّ واحد تحكمه أوراقُ الصفحة ═══
    كان المفتاحُ لمدير النظام وحده في الخادم، والشاشةُ تفتح الإدخالَ لكلِّ من مُنح الصفحة — فيُرفض حفظُه
    ويُعاد ما في الخادم. صار لكلِّ مسجدٍ ورقتُه (dstats/haram · dstats/nabawi)، ومَن يكتب أرقامَ مسجدٍ
@@ -18954,9 +20625,9 @@ async function permv4RefsLoad(env, set, del) {
   for (i = 0; i < ks.length; i++) {
     k = ks[i]; var rn = resName(k), d = parseKey(k).dept; if (!d) continue;
     var o = out[d] = out[d] || {};
-    if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && o.staffingLocks === undefined) o.staffingLocks = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_staffing_locks_v1'), {}) || {};
-    if (rn === 'bassam_tasks_v1' && o.tasksLocks === undefined) o.tasksLocks = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}) || {};
-    if ((rn === 'bassam_dreport_v1' || rn === 'bassam_rounds_v1' || rn === 'bassam_irshad_v1' || rn === 'bassam_staffing_v3') && o.staffing === undefined) o.staffing = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_staffing_v3'), null);
+    if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && o.staffingLocks === undefined) o.staffingLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_locks_v1'), {}) || {};
+    if (rn === 'bassam_tasks_v1' && o.tasksLocks === undefined) o.tasksLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}) || {};
+    if ((rn === 'bassam_dreport_v1' || rn === 'bassam_rounds_v1' || rn === 'bassam_irshad_v1' || rn === 'bassam_staffing_v3') && o.staffing === undefined) o.staffing = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_v3'), null);
   }
   return out;
 }
@@ -19443,14 +21114,81 @@ var KIVO_MIGRATIONS = [
    "CREATE TABLE IF NOT EXISTS award_request_checks(department_id TEXT NOT NULL,account_uid TEXT NOT NULL,request_id TEXT NOT NULL,position INTEGER NOT NULL,check_kind TEXT NOT NULL,permission_key TEXT NOT NULL,PRIMARY KEY(department_id,account_uid,request_id,position),FOREIGN KEY(department_id,account_uid,request_id)REFERENCES award_requests(department_id,account_uid,request_id)ON DELETE CASCADE) WITHOUT ROWID",
    "INSERT INTO meta(k,v)VALUES('schema_version','9')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
   ]
+ },
+ {
+  "name": "0010_operational_domains",
+  "sql": [
+   "SELECT CASE WHEN EXISTS(SELECT 1 FROM kv WHERE EXISTS(SELECT 1 FROM json_each('[\"bassam_staffing_v3\",\"bassam_staffing_v2\",\"bassam_staffing_snap_v1\",\"bassam_staffing_locks_v1\",\"bassam_callsigns_v1\",\"bassam_perm_limit_v1\",\"bassam_shift_options_v1\",\"bassam_dayshift_v1\",\"bassam_dayfocus_v1\",\"bassam_plan_v1\",\"bassam_zone_opts_v1\",\"bassam_gate_opts_v1\",\"bassam_mark_kinds_v1\",\"bassam_rounds_v1\",\"bassam_employees_v1\",\"bassam_options_v1\",\"bassam_dreport_v1\",\"bassam_leave_kinds_v1\",\"bassam_dr_grp_v1\",\"bassam_tasks_v1\",\"bassam_tasks_locks_v1\"]') op_legacy WHERE k=op_legacy.value OR k GLOB op_legacy.value||':*' OR k GLOB '*:'||op_legacy.value OR k GLOB '*:'||op_legacy.value||':*')) AND COALESCE((SELECT v FROM meta WHERE k='operations_cutover_ready'),'')<>'validated' THEN json_extract('{}','KIVO_OPERATIONS_VALIDATED_CUTOVER_REQUIRED')END",
+   "CREATE TABLE IF NOT EXISTS ops_nodes(department_id TEXT NOT NULL,resource TEXT NOT NULL,row_key TEXT NOT NULL,parent_key TEXT,member_key TEXT,position INTEGER NOT NULL,node_kind INTEGER NOT NULL,variant INTEGER,tuple_length INTEGER,schema_id TEXT NOT NULL,entity_kind TEXT,PRIMARY KEY(department_id,resource,row_key),UNIQUE(department_id,resource,row_key,entity_kind),FOREIGN KEY(department_id,resource,parent_key)REFERENCES ops_nodes(department_id,resource,row_key)ON DELETE CASCADE)WITHOUT ROWID",
+   "CREATE INDEX IF NOT EXISTS ops_nodes_parent ON ops_nodes(department_id,resource,parent_key,member_key,position)",
+   "CREATE TABLE IF NOT EXISTS ops_staffing_month_shifts_entry_choice_0(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"value_kind\" INTEGER,\"value_text\" TEXT,\"value_number\" REAL,CHECK(entity_kind='ops_staffing_month_shifts_entry_choice_0'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_staffing_month_shifts_definition(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_color_kind\" INTEGER,\"f_color_text\" TEXT,\"f_color_number\" REAL,\"f_color_position\" INTEGER,\"f_name_kind\" INTEGER,\"f_name_text\" TEXT,\"f_name_number\" REAL,\"f_name_position\" INTEGER,\"f_t_u45_nd_kind\" INTEGER,\"f_t_u45_nd_text\" TEXT,\"f_t_u45_nd_number\" REAL,\"f_t_u45_nd_position\" INTEGER,\"f_t_u53_tart_kind\" INTEGER,\"f_t_u53_tart_text\" TEXT,\"f_t_u53_tart_number\" REAL,\"f_t_u53_tart_position\" INTEGER,CHECK(entity_kind='ops_staffing_month_shifts_definition'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_staffing_month_employee_leave_range(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_fd_kind\" INTEGER,\"f_fd_text\" TEXT,\"f_fd_number\" REAL,\"f_fd_position\" INTEGER,\"f_fm_kind\" INTEGER,\"f_fm_text\" TEXT,\"f_fm_number\" REAL,\"f_fm_position\" INTEGER,\"f_fy_kind\" INTEGER,\"f_fy_text\" TEXT,\"f_fy_number\" REAL,\"f_fy_position\" INTEGER,\"f_kind_kind\" INTEGER,\"f_kind_text\" TEXT,\"f_kind_number\" REAL,\"f_kind_position\" INTEGER,\"f_td_kind\" INTEGER,\"f_td_text\" TEXT,\"f_td_number\" REAL,\"f_td_position\" INTEGER,\"f_tm_kind\" INTEGER,\"f_tm_text\" TEXT,\"f_tm_number\" REAL,\"f_tm_position\" INTEGER,\"f_ty_kind\" INTEGER,\"f_ty_text\" TEXT,\"f_ty_number\" REAL,\"f_ty_position\" INTEGER,CHECK(entity_kind='ops_staffing_month_employee_leave_range'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_staffing_month_employee(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_cs_kind\" INTEGER,\"f_cs_text\" TEXT,\"f_cs_number\" REAL,\"f_cs_position\" INTEGER,\"f_muk_kind\" INTEGER,\"f_muk_text\" TEXT,\"f_muk_number\" REAL,\"f_muk_position\" INTEGER,\"f_shift_kind\" INTEGER,\"f_shift_text\" TEXT,\"f_shift_number\" REAL,\"f_shift_position\" INTEGER,CHECK(entity_kind='ops_staffing_month_employee'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_staffing_lock_choice_0(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"value_kind\" INTEGER,\"value_text\" TEXT,\"value_number\" REAL,CHECK(entity_kind='ops_staffing_lock_choice_0'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_staffing_lock_open(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_mo_kind\" INTEGER,\"f_mo_text\" TEXT,\"f_mo_number\" REAL,\"f_mo_position\" INTEGER,CHECK(entity_kind='ops_staffing_lock_open'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_day_shifts_values(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"value_kind\" INTEGER,\"value_text\" TEXT,\"value_number\" REAL,CHECK(entity_kind='ops_day_shifts_values'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_legacy_day_focus(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_d_kind\" INTEGER,\"f_d_text\" TEXT,\"f_d_number\" REAL,\"f_d_position\" INTEGER,\"f_m_kind\" INTEGER,\"f_m_text\" TEXT,\"f_m_number\" REAL,\"f_m_position\" INTEGER,\"f_y_kind\" INTEGER,\"f_y_text\" TEXT,\"f_y_number\" REAL,\"f_y_position\" INTEGER,CHECK(entity_kind='ops_legacy_day_focus'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor_gates_element_field_log_entry(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_a_kind\" INTEGER,\"f_a_text\" TEXT,\"f_a_number\" REAL,\"f_a_position\" INTEGER,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_by_kind\" INTEGER,\"f_by_text\" TEXT,\"f_by_number\" REAL,\"f_by_position\" INTEGER,\"f_dur_kind\" INTEGER,\"f_dur_text\" TEXT,\"f_dur_number\" REAL,\"f_dur_position\" INTEGER,\"f_flow_kind\" INTEGER,\"f_flow_text\" TEXT,\"f_flow_number\" REAL,\"f_flow_position\" INTEGER,\"f_kind_kind\" INTEGER,\"f_kind_text\" TEXT,\"f_kind_number\" REAL,\"f_kind_position\" INTEGER,\"f_st_kind\" INTEGER,\"f_st_text\" TEXT,\"f_st_number\" REAL,\"f_st_position\" INTEGER,\"f_why_kind\" INTEGER,\"f_why_text\" TEXT,\"f_why_number\" REAL,\"f_why_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor_gates_element_field_log_entry'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor_gates_element(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_c_u41_t_kind\" INTEGER,\"f_c_u41_t_text\" TEXT,\"f_c_u41_t_number\" REAL,\"f_c_u41_t_position\" INTEGER,\"f_c_u41_t_u4d_s_kind\" INTEGER,\"f_c_u41_t_u4d_s_text\" TEXT,\"f_c_u41_t_u4d_s_number\" REAL,\"f_c_u41_t_u4d_s_position\" INTEGER,\"f_c_u42_y_kind\" INTEGER,\"f_c_u42_y_text\" TEXT,\"f_c_u42_y_number\" REAL,\"f_c_u42_y_position\" INTEGER,\"f_c_u57_hy_kind\" INTEGER,\"f_c_u57_hy_text\" TEXT,\"f_c_u57_hy_number\" REAL,\"f_c_u57_hy_position\" INTEGER,\"f_closed_kind\" INTEGER,\"f_closed_text\" TEXT,\"f_closed_number\" REAL,\"f_closed_position\" INTEGER,\"f_cls_kind\" INTEGER,\"f_cls_text\" TEXT,\"f_cls_number\" REAL,\"f_cls_position\" INTEGER,\"f_eid_kind\" INTEGER,\"f_eid_text\" TEXT,\"f_eid_number\" REAL,\"f_eid_position\" INTEGER,\"f_f_u41_t_kind\" INTEGER,\"f_f_u41_t_text\" TEXT,\"f_f_u41_t_number\" REAL,\"f_f_u41_t_position\" INTEGER,\"f_f_u42_y_kind\" INTEGER,\"f_f_u42_y_text\" TEXT,\"f_f_u42_y_number\" REAL,\"f_f_u42_y_position\" INTEGER,\"f_f_u4b_ind_kind\" INTEGER,\"f_f_u4b_ind_text\" TEXT,\"f_f_u4b_ind_number\" REAL,\"f_f_u4b_ind_position\" INTEGER,\"f_flow_kind\" INTEGER,\"f_flow_text\" TEXT,\"f_flow_number\" REAL,\"f_flow_position\" INTEGER,\"f_fst_kind\" INTEGER,\"f_fst_text\" TEXT,\"f_fst_number\" REAL,\"f_fst_position\" INTEGER,\"f_gid_kind\" INTEGER,\"f_gid_text\" TEXT,\"f_gid_number\" REAL,\"f_gid_position\" INTEGER,\"f_gtype_kind\" INTEGER,\"f_gtype_text\" TEXT,\"f_gtype_number\" REAL,\"f_gtype_position\" INTEGER,\"f_hide_u4c_abel_kind\" INTEGER,\"f_hide_u4c_abel_text\" TEXT,\"f_hide_u4c_abel_number\" REAL,\"f_hide_u4c_abel_position\" INTEGER,\"f_hide_u4e_um_kind\" INTEGER,\"f_hide_u4e_um_text\" TEXT,\"f_hide_u4e_um_number\" REAL,\"f_hide_u4e_um_position\" INTEGER,\"f_id_kind\" INTEGER,\"f_id_text\" TEXT,\"f_id_number\" REAL,\"f_id_position\" INTEGER,\"f_kind_kind\" INTEGER,\"f_kind_text\" TEXT,\"f_kind_number\" REAL,\"f_kind_position\" INTEGER,\"f_label_kind\" INTEGER,\"f_label_text\" TEXT,\"f_label_number\" REAL,\"f_label_position\" INTEGER,\"f_leaf_u4e__kind\" INTEGER,\"f_leaf_u4e__text\" TEXT,\"f_leaf_u4e__number\" REAL,\"f_leaf_u4e__position\" INTEGER,\"f_leaf_u4e_o_kind\" INTEGER,\"f_leaf_u4e_o_text\" TEXT,\"f_leaf_u4e_o_number\" REAL,\"f_leaf_u4e_o_position\" INTEGER,\"f_loc_kind\" INTEGER,\"f_loc_text\" TEXT,\"f_loc_number\" REAL,\"f_loc_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor_gates_element'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor_gates_element_fields_1(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_name_kind\" INTEGER,\"f_name_text\" TEXT,\"f_name_number\" REAL,\"f_name_position\" INTEGER,\"f_need_u4e__kind\" INTEGER,\"f_need_u4e__text\" TEXT,\"f_need_u4e__number\" REAL,\"f_need_u4e__position\" INTEGER,\"f_num_kind\" INTEGER,\"f_num_text\" TEXT,\"f_num_number\" REAL,\"f_num_position\" INTEGER,\"f_off_kind\" INTEGER,\"f_off_text\" TEXT,\"f_off_number\" REAL,\"f_off_position\" INTEGER,\"f_p_u4f_f_kind\" INTEGER,\"f_p_u4f_f_text\" TEXT,\"f_p_u4f_f_number\" REAL,\"f_p_u4f_f_position\" INTEGER,\"f_pri_kind\" INTEGER,\"f_pri_text\" TEXT,\"f_pri_number\" REAL,\"f_pri_position\" INTEGER,\"f_route_kind\" INTEGER,\"f_route_text\" TEXT,\"f_route_number\" REAL,\"f_route_position\" INTEGER,\"f_sec_kind\" INTEGER,\"f_sec_text\" TEXT,\"f_sec_number\" REAL,\"f_sec_position\" INTEGER,\"f_uid_kind\" INTEGER,\"f_uid_text\" TEXT,\"f_uid_number\" REAL,\"f_uid_position\" INTEGER,\"f_uni_u4e_eed_kind\" INTEGER,\"f_uni_u4e_eed_text\" TEXT,\"f_uni_u4e_eed_number\" REAL,\"f_uni_u4e_eed_position\" INTEGER,\"f_unp_kind\" INTEGER,\"f_unp_text\" TEXT,\"f_unp_number\" REAL,\"f_unp_position\" INTEGER,\"f_x_kind\" INTEGER,\"f_x_text\" TEXT,\"f_x_number\" REAL,\"f_x_position\" INTEGER,\"f_y_kind\" INTEGER,\"f_y_text\" TEXT,\"f_y_number\" REAL,\"f_y_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor_gates_element_fields_1'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor_marks_element(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_c_u41_t_kind\" INTEGER,\"f_c_u41_t_text\" TEXT,\"f_c_u41_t_number\" REAL,\"f_c_u41_t_position\" INTEGER,\"f_c_u41_t_u4d_s_kind\" INTEGER,\"f_c_u41_t_u4d_s_text\" TEXT,\"f_c_u41_t_u4d_s_number\" REAL,\"f_c_u41_t_u4d_s_position\" INTEGER,\"f_c_u42_y_kind\" INTEGER,\"f_c_u42_y_text\" TEXT,\"f_c_u42_y_number\" REAL,\"f_c_u42_y_position\" INTEGER,\"f_c_u57_hy_kind\" INTEGER,\"f_c_u57_hy_text\" TEXT,\"f_c_u57_hy_number\" REAL,\"f_c_u57_hy_position\" INTEGER,\"f_closed_kind\" INTEGER,\"f_closed_text\" TEXT,\"f_closed_number\" REAL,\"f_closed_position\" INTEGER,\"f_eid_kind\" INTEGER,\"f_eid_text\" TEXT,\"f_eid_number\" REAL,\"f_eid_position\" INTEGER,\"f_f_u41_t_kind\" INTEGER,\"f_f_u41_t_text\" TEXT,\"f_f_u41_t_number\" REAL,\"f_f_u41_t_position\" INTEGER,\"f_f_u42_y_kind\" INTEGER,\"f_f_u42_y_text\" TEXT,\"f_f_u42_y_number\" REAL,\"f_f_u42_y_position\" INTEGER,\"f_f_u4b_ind_kind\" INTEGER,\"f_f_u4b_ind_text\" TEXT,\"f_f_u4b_ind_number\" REAL,\"f_f_u4b_ind_position\" INTEGER,\"f_flow_kind\" INTEGER,\"f_flow_text\" TEXT,\"f_flow_number\" REAL,\"f_flow_position\" INTEGER,\"f_fst_kind\" INTEGER,\"f_fst_text\" TEXT,\"f_fst_number\" REAL,\"f_fst_position\" INTEGER,\"f_hide_u4c_abel_kind\" INTEGER,\"f_hide_u4c_abel_text\" TEXT,\"f_hide_u4c_abel_number\" REAL,\"f_hide_u4c_abel_position\" INTEGER,\"f_id_kind\" INTEGER,\"f_id_text\" TEXT,\"f_id_number\" REAL,\"f_id_position\" INTEGER,\"f_kind_kind\" INTEGER,\"f_kind_text\" TEXT,\"f_kind_number\" REAL,\"f_kind_position\" INTEGER,\"f_label_kind\" INTEGER,\"f_label_text\" TEXT,\"f_label_number\" REAL,\"f_label_position\" INTEGER,\"f_name_kind\" INTEGER,\"f_name_text\" TEXT,\"f_name_number\" REAL,\"f_name_position\" INTEGER,\"f_need_u4e__kind\" INTEGER,\"f_need_u4e__text\" TEXT,\"f_need_u4e__number\" REAL,\"f_need_u4e__position\" INTEGER,\"f_off_kind\" INTEGER,\"f_off_text\" TEXT,\"f_off_number\" REAL,\"f_off_position\" INTEGER,\"f_pri_kind\" INTEGER,\"f_pri_text\" TEXT,\"f_pri_number\" REAL,\"f_pri_position\" INTEGER,\"f_sec_kind\" INTEGER,\"f_sec_text\" TEXT,\"f_sec_number\" REAL,\"f_sec_position\" INTEGER,\"f_uid_kind\" INTEGER,\"f_uid_text\" TEXT,\"f_uid_number\" REAL,\"f_uid_position\" INTEGER,\"f_uni_u4e_eed_kind\" INTEGER,\"f_uni_u4e_eed_text\" TEXT,\"f_uni_u4e_eed_number\" REAL,\"f_uni_u4e_eed_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor_marks_element'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor_marks_element_fields_1(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_unp_kind\" INTEGER,\"f_unp_text\" TEXT,\"f_unp_number\" REAL,\"f_unp_position\" INTEGER,\"f_x_kind\" INTEGER,\"f_x_text\" TEXT,\"f_x_number\" REAL,\"f_x_position\" INTEGER,\"f_y_kind\" INTEGER,\"f_y_text\" TEXT,\"f_y_number\" REAL,\"f_y_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor_marks_element_fields_1'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor_paths_element_points_point(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_x_kind\" INTEGER,\"f_x_text\" TEXT,\"f_x_number\" REAL,\"f_x_position\" INTEGER,\"f_y_kind\" INTEGER,\"f_y_text\" TEXT,\"f_y_number\" REAL,\"f_y_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor_paths_element_points_point'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor_paths_element(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_active_kind\" INTEGER,\"f_active_text\" TEXT,\"f_active_number\" REAL,\"f_active_position\" INTEGER,\"f_anim_kind\" INTEGER,\"f_anim_text\" TEXT,\"f_anim_number\" REAL,\"f_anim_position\" INTEGER,\"f_code_kind\" INTEGER,\"f_code_text\" TEXT,\"f_code_number\" REAL,\"f_code_position\" INTEGER,\"f_dir_kind\" INTEGER,\"f_dir_text\" TEXT,\"f_dir_number\" REAL,\"f_dir_position\" INTEGER,\"f_eid_kind\" INTEGER,\"f_eid_text\" TEXT,\"f_eid_number\" REAL,\"f_eid_position\" INTEGER,\"f_hide_u4c_abel_kind\" INTEGER,\"f_hide_u4c_abel_text\" TEXT,\"f_hide_u4c_abel_number\" REAL,\"f_hide_u4c_abel_position\" INTEGER,\"f_id_kind\" INTEGER,\"f_id_text\" TEXT,\"f_id_number\" REAL,\"f_id_position\" INTEGER,\"f_kind_kind\" INTEGER,\"f_kind_text\" TEXT,\"f_kind_number\" REAL,\"f_kind_position\" INTEGER,\"f_label_kind\" INTEGER,\"f_label_text\" TEXT,\"f_label_number\" REAL,\"f_label_position\" INTEGER,\"f_line_kind\" INTEGER,\"f_line_text\" TEXT,\"f_line_number\" REAL,\"f_line_position\" INTEGER,\"f_name_kind\" INTEGER,\"f_name_text\" TEXT,\"f_name_number\" REAL,\"f_name_position\" INTEGER,\"f_type_kind\" INTEGER,\"f_type_text\" TEXT,\"f_type_number\" REAL,\"f_type_position\" INTEGER,\"f_uid_kind\" INTEGER,\"f_uid_text\" TEXT,\"f_uid_number\" REAL,\"f_uid_position\" INTEGER,\"f_unp_kind\" INTEGER,\"f_unp_text\" TEXT,\"f_unp_number\" REAL,\"f_unp_position\" INTEGER,\"f_w_kind\" INTEGER,\"f_w_text\" TEXT,\"f_w_number\" REAL,\"f_w_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor_paths_element'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor_sector(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_cat_kind\" INTEGER,\"f_cat_text\" TEXT,\"f_cat_number\" REAL,\"f_cat_position\" INTEGER,\"f_code_kind\" INTEGER,\"f_code_text\" TEXT,\"f_code_number\" REAL,\"f_code_position\" INTEGER,\"f_color_kind\" INTEGER,\"f_color_text\" TEXT,\"f_color_number\" REAL,\"f_color_position\" INTEGER,\"f_id_kind\" INTEGER,\"f_id_text\" TEXT,\"f_id_number\" REAL,\"f_id_position\" INTEGER,\"f_lead_kind\" INTEGER,\"f_lead_text\" TEXT,\"f_lead_number\" REAL,\"f_lead_position\" INTEGER,\"f_name_kind\" INTEGER,\"f_name_text\" TEXT,\"f_name_number\" REAL,\"f_name_position\" INTEGER,\"f_note_kind\" INTEGER,\"f_note_text\" TEXT,\"f_note_number\" REAL,\"f_note_position\" INTEGER,\"f_show_u4c_bl_kind\" INTEGER,\"f_show_u4c_bl_text\" TEXT,\"f_show_u4c_bl_number\" REAL,\"f_show_u4c_bl_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor_sector'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor_zones_element(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_area_kind\" INTEGER,\"f_area_text\" TEXT,\"f_area_number\" REAL,\"f_area_position\" INTEGER,\"f_c_u41_t_kind\" INTEGER,\"f_c_u41_t_text\" TEXT,\"f_c_u41_t_number\" REAL,\"f_c_u41_t_position\" INTEGER,\"f_c_u41_t_u4d_s_kind\" INTEGER,\"f_c_u41_t_u4d_s_text\" TEXT,\"f_c_u41_t_u4d_s_number\" REAL,\"f_c_u41_t_u4d_s_position\" INTEGER,\"f_c_u42_y_kind\" INTEGER,\"f_c_u42_y_text\" TEXT,\"f_c_u42_y_number\" REAL,\"f_c_u42_y_position\" INTEGER,\"f_c_u57_hy_kind\" INTEGER,\"f_c_u57_hy_text\" TEXT,\"f_c_u57_hy_number\" REAL,\"f_c_u57_hy_position\" INTEGER,\"f_cap_kind\" INTEGER,\"f_cap_text\" TEXT,\"f_cap_number\" REAL,\"f_cap_position\" INTEGER,\"f_cat_kind\" INTEGER,\"f_cat_text\" TEXT,\"f_cat_number\" REAL,\"f_cat_position\" INTEGER,\"f_closed_kind\" INTEGER,\"f_closed_text\" TEXT,\"f_closed_number\" REAL,\"f_closed_position\" INTEGER,\"f_code_kind\" INTEGER,\"f_code_text\" TEXT,\"f_code_number\" REAL,\"f_code_position\" INTEGER,\"f_count_kind\" INTEGER,\"f_count_text\" TEXT,\"f_count_number\" REAL,\"f_count_position\" INTEGER,\"f_cx_kind\" INTEGER,\"f_cx_text\" TEXT,\"f_cx_number\" REAL,\"f_cx_position\" INTEGER,\"f_cy_kind\" INTEGER,\"f_cy_text\" TEXT,\"f_cy_number\" REAL,\"f_cy_position\" INTEGER,\"f_d_kind\" INTEGER,\"f_d_text\" TEXT,\"f_d_number\" REAL,\"f_d_position\" INTEGER,\"f_eid_kind\" INTEGER,\"f_eid_text\" TEXT,\"f_eid_number\" REAL,\"f_eid_position\" INTEGER,\"f_f_u41_t_kind\" INTEGER,\"f_f_u41_t_text\" TEXT,\"f_f_u41_t_number\" REAL,\"f_f_u41_t_position\" INTEGER,\"f_f_u42_y_kind\" INTEGER,\"f_f_u42_y_text\" TEXT,\"f_f_u42_y_number\" REAL,\"f_f_u42_y_position\" INTEGER,\"f_f_u4b_ind_kind\" INTEGER,\"f_f_u4b_ind_text\" TEXT,\"f_f_u4b_ind_number\" REAL,\"f_f_u4b_ind_position\" INTEGER,\"f_flow_kind\" INTEGER,\"f_flow_text\" TEXT,\"f_flow_number\" REAL,\"f_flow_position\" INTEGER,\"f_fst_kind\" INTEGER,\"f_fst_text\" TEXT,\"f_fst_number\" REAL,\"f_fst_position\" INTEGER,\"f_hide_u4c_abel_kind\" INTEGER,\"f_hide_u4c_abel_text\" TEXT,\"f_hide_u4c_abel_number\" REAL,\"f_hide_u4c_abel_position\" INTEGER,\"f_id_kind\" INTEGER,\"f_id_text\" TEXT,\"f_id_number\" REAL,\"f_id_position\" INTEGER,\"f_kind_kind\" INTEGER,\"f_kind_text\" TEXT,\"f_kind_number\" REAL,\"f_kind_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor_zones_element'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor_zones_element_fields_1(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_label_kind\" INTEGER,\"f_label_text\" TEXT,\"f_label_number\" REAL,\"f_label_position\" INTEGER,\"f_lang_kind\" INTEGER,\"f_lang_text\" TEXT,\"f_lang_number\" REAL,\"f_lang_position\" INTEGER,\"f_level_kind\" INTEGER,\"f_level_text\" TEXT,\"f_level_number\" REAL,\"f_level_position\" INTEGER,\"f_lsz_kind\" INTEGER,\"f_lsz_text\" TEXT,\"f_lsz_number\" REAL,\"f_lsz_position\" INTEGER,\"f_name_kind\" INTEGER,\"f_name_text\" TEXT,\"f_name_number\" REAL,\"f_name_position\" INTEGER,\"f_need_u4e__kind\" INTEGER,\"f_need_u4e__text\" TEXT,\"f_need_u4e__number\" REAL,\"f_need_u4e__position\" INTEGER,\"f_off_kind\" INTEGER,\"f_off_text\" TEXT,\"f_off_number\" REAL,\"f_off_position\" INTEGER,\"f_pri_kind\" INTEGER,\"f_pri_text\" TEXT,\"f_pri_number\" REAL,\"f_pri_position\" INTEGER,\"f_r_kind\" INTEGER,\"f_r_text\" TEXT,\"f_r_number\" REAL,\"f_r_position\" INTEGER,\"f_raw_u41__kind\" INTEGER,\"f_raw_u41__text\" TEXT,\"f_raw_u41__number\" REAL,\"f_raw_u41__position\" INTEGER,\"f_readiness_kind\" INTEGER,\"f_readiness_text\" TEXT,\"f_readiness_number\" REAL,\"f_readiness_position\" INTEGER,\"f_region_kind\" INTEGER,\"f_region_text\" TEXT,\"f_region_number\" REAL,\"f_region_position\" INTEGER,\"f_rot_kind\" INTEGER,\"f_rot_text\" TEXT,\"f_rot_number\" REAL,\"f_rot_position\" INTEGER,\"f_sec_kind\" INTEGER,\"f_sec_text\" TEXT,\"f_sec_number\" REAL,\"f_sec_position\" INTEGER,\"f_ser_kind\" INTEGER,\"f_ser_text\" TEXT,\"f_ser_number\" REAL,\"f_ser_position\" INTEGER,\"f_uid_kind\" INTEGER,\"f_uid_text\" TEXT,\"f_uid_number\" REAL,\"f_uid_position\" INTEGER,\"f_uni_u4e_eed_kind\" INTEGER,\"f_uni_u4e_eed_text\" TEXT,\"f_uni_u4e_eed_number\" REAL,\"f_uni_u4e_eed_position\" INTEGER,\"f_unp_kind\" INTEGER,\"f_unp_text\" TEXT,\"f_unp_number\" REAL,\"f_unp_position\" INTEGER,\"f_yard_kind\" INTEGER,\"f_yard_text\" TEXT,\"f_yard_number\" REAL,\"f_yard_position\" INTEGER,\"f_zcat_kind\" INTEGER,\"f_zcat_text\" TEXT,\"f_zcat_number\" REAL,\"f_zcat_position\" INTEGER,\"f_ztype_kind\" INTEGER,\"f_ztype_text\" TEXT,\"f_ztype_number\" REAL,\"f_ztype_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor_zones_element_fields_1'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_live_floors_floor(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_ap_kind\" INTEGER,\"f_ap_text\" TEXT,\"f_ap_number\" REAL,\"f_ap_position\" INTEGER,\"f_approved_kind\" INTEGER,\"f_approved_text\" TEXT,\"f_approved_number\" REAL,\"f_approved_position\" INTEGER,\"f_chip_kind\" INTEGER,\"f_chip_text\" TEXT,\"f_chip_number\" REAL,\"f_chip_position\" INTEGER,\"f_chip_u54_one_kind\" INTEGER,\"f_chip_u54_one_text\" TEXT,\"f_chip_u54_one_number\" REAL,\"f_chip_u54_one_position\" INTEGER,\"f_create_kind\" INTEGER,\"f_create_text\" TEXT,\"f_create_number\" REAL,\"f_create_position\" INTEGER,\"f_dens_kind\" INTEGER,\"f_dens_text\" TEXT,\"f_dens_number\" REAL,\"f_dens_position\" INTEGER,\"f_hide_u47_ates_kind\" INTEGER,\"f_hide_u47_ates_text\" TEXT,\"f_hide_u47_ates_number\" REAL,\"f_hide_u47_ates_position\" INTEGER,\"f_hide_u4d_arks_kind\" INTEGER,\"f_hide_u4d_arks_text\" TEXT,\"f_hide_u4d_arks_number\" REAL,\"f_hide_u4d_arks_position\" INTEGER,\"f_hide_u50_aths_kind\" INTEGER,\"f_hide_u50_aths_text\" TEXT,\"f_hide_u50_aths_number\" REAL,\"f_hide_u50_aths_position\" INTEGER,\"f_hide_u53_ectors_kind\" INTEGER,\"f_hide_u53_ectors_text\" TEXT,\"f_hide_u53_ectors_number\" REAL,\"f_hide_u53_ectors_position\" INTEGER,\"f_hide_u5a_ones_kind\" INTEGER,\"f_hide_u5a_ones_text\" TEXT,\"f_hide_u5a_ones_number\" REAL,\"f_hide_u5a_ones_position\" INTEGER,\"f_id_kind\" INTEGER,\"f_id_text\" TEXT,\"f_id_number\" REAL,\"f_id_position\" INTEGER,\"f_iid_kind\" INTEGER,\"f_iid_text\" TEXT,\"f_iid_number\" REAL,\"f_iid_position\" INTEGER,\"f_img_kind\" INTEGER,\"f_img_text\" TEXT,\"f_img_number\" REAL,\"f_img_position\" INTEGER,\"f_img_u48__kind\" INTEGER,\"f_img_u48__text\" TEXT,\"f_img_u48__number\" REAL,\"f_img_u48__position\" INTEGER,\"f_img_u57__kind\" INTEGER,\"f_img_u57__text\" TEXT,\"f_img_u57__number\" REAL,\"f_img_u57__position\" INTEGER,\"f_mpu_kind\" INTEGER,\"f_mpu_text\" TEXT,\"f_mpu_number\" REAL,\"f_mpu_position\" INTEGER,\"f_n_kind\" INTEGER,\"f_n_text\" TEXT,\"f_n_number\" REAL,\"f_n_position\" INTEGER,\"f_name_kind\" INTEGER,\"f_name_text\" TEXT,\"f_name_number\" REAL,\"f_name_position\" INTEGER,\"f_num_kind\" INTEGER,\"f_num_text\" TEXT,\"f_num_number\" REAL,\"f_num_position\" INTEGER,\"f_show_u43_odes_kind\" INTEGER,\"f_show_u43_odes_text\" TEXT,\"f_show_u43_odes_number\" REAL,\"f_show_u43_odes_position\" INTEGER,\"f_sid_kind\" INTEGER,\"f_sid_text\" TEXT,\"f_sid_number\" REAL,\"f_sid_position\" INTEGER,CHECK(entity_kind='ops_plan_live_floors_floor'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan_month_record(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_c_kind\" INTEGER,\"f_c_text\" TEXT,\"f_c_number\" REAL,\"f_c_position\" INTEGER,\"f_mo_kind\" INTEGER,\"f_mo_text\" TEXT,\"f_mo_number\" REAL,\"f_mo_position\" INTEGER,CHECK(entity_kind='ops_plan_month_record'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_plan(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_p_u4d_ig_kind\" INTEGER,\"f_p_u4d_ig_text\" TEXT,\"f_p_u4d_ig_number\" REAL,\"f_p_u4d_ig_position\" INTEGER,CHECK(entity_kind='ops_plan'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_zone_options_level_option_record(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_k_kind\" INTEGER,\"f_k_text\" TEXT,\"f_k_number\" REAL,\"f_k_position\" INTEGER,\"f_n_kind\" INTEGER,\"f_n_text\" TEXT,\"f_n_number\" REAL,\"f_n_position\" INTEGER,\"f_r_kind\" INTEGER,\"f_r_text\" TEXT,\"f_r_number\" REAL,\"f_r_position\" INTEGER,CHECK(entity_kind='ops_zone_options_level_option_record'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_zone_options_category_style(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_bs_kind\" INTEGER,\"f_bs_text\" TEXT,\"f_bs_number\" REAL,\"f_bs_position\" INTEGER,\"f_bw_kind\" INTEGER,\"f_bw_text\" TEXT,\"f_bw_number\" REAL,\"f_bw_position\" INTEGER,\"f_f_kind\" INTEGER,\"f_f_text\" TEXT,\"f_f_number\" REAL,\"f_f_position\" INTEGER,\"f_h_kind\" INTEGER,\"f_h_text\" TEXT,\"f_h_number\" REAL,\"f_h_position\" INTEGER,\"f_hc_kind\" INTEGER,\"f_hc_text\" TEXT,\"f_hc_number\" REAL,\"f_hc_position\" INTEGER,\"f_hg_kind\" INTEGER,\"f_hg_text\" TEXT,\"f_hg_number\" REAL,\"f_hg_position\" INTEGER,\"f_hw_kind\" INTEGER,\"f_hw_text\" TEXT,\"f_hw_number\" REAL,\"f_hw_position\" INTEGER,\"f_o_kind\" INTEGER,\"f_o_text\" TEXT,\"f_o_number\" REAL,\"f_o_position\" INTEGER,\"f_s_kind\" INTEGER,\"f_s_text\" TEXT,\"f_s_number\" REAL,\"f_s_position\" INTEGER,\"f_s_u41_uto_kind\" INTEGER,\"f_s_u41_uto_text\" TEXT,\"f_s_u41_uto_number\" REAL,\"f_s_u41_uto_position\" INTEGER,CHECK(entity_kind='ops_zone_options_category_style'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_zone_options(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_h_u4d_ig_kind\" INTEGER,\"f_h_u4d_ig_text\" TEXT,\"f_h_u4d_ig_number\" REAL,\"f_h_u4d_ig_position\" INTEGER,\"f_lv_u56__kind\" INTEGER,\"f_lv_u56__text\" TEXT,\"f_lv_u56__number\" REAL,\"f_lv_u56__position\" INTEGER,CHECK(entity_kind='ops_zone_options'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_round_month_record(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_ap_kind\" INTEGER,\"f_ap_text\" TEXT,\"f_ap_number\" REAL,\"f_ap_position\" INTEGER,\"f_auto_kind\" INTEGER,\"f_auto_text\" TEXT,\"f_auto_number\" REAL,\"f_auto_position\" INTEGER,\"f_mo_kind\" INTEGER,\"f_mo_text\" TEXT,\"f_mo_number\" REAL,\"f_mo_position\" INTEGER,\"f_perm_kind\" INTEGER,\"f_perm_text\" TEXT,\"f_perm_number\" REAL,\"f_perm_position\" INTEGER,CHECK(entity_kind='ops_round_month_record'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_round_day_import_source(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_day_kind\" INTEGER,\"f_day_text\" TEXT,\"f_day_number\" REAL,\"f_day_position\" INTEGER,\"f_src_kind\" INTEGER,\"f_src_text\" TEXT,\"f_src_number\" REAL,\"f_src_position\" INTEGER,CHECK(entity_kind='ops_round_day_import_source'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_round_day_move(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_by_kind\" INTEGER,\"f_by_text\" TEXT,\"f_by_number\" REAL,\"f_by_position\" INTEGER,\"f_from_u49__kind\" INTEGER,\"f_from_u49__text\" TEXT,\"f_from_u49__number\" REAL,\"f_from_u49__position\" INTEGER,\"f_from_u4c_bl_kind\" INTEGER,\"f_from_u4c_bl_text\" TEXT,\"f_from_u4c_bl_number\" REAL,\"f_from_u4c_bl_position\" INTEGER,\"f_key_kind\" INTEGER,\"f_key_text\" TEXT,\"f_key_number\" REAL,\"f_key_position\" INTEGER,\"f_kind_kind\" INTEGER,\"f_kind_text\" TEXT,\"f_kind_number\" REAL,\"f_kind_position\" INTEGER,\"f_name_kind\" INTEGER,\"f_name_text\" TEXT,\"f_name_number\" REAL,\"f_name_position\" INTEGER,\"f_t_kind\" INTEGER,\"f_t_text\" TEXT,\"f_t_number\" REAL,\"f_t_position\" INTEGER,\"f_to_u49__kind\" INTEGER,\"f_to_u49__text\" TEXT,\"f_to_u49__number\" REAL,\"f_to_u49__position\" INTEGER,\"f_to_u4c_bl_kind\" INTEGER,\"f_to_u4c_bl_text\" TEXT,\"f_to_u4c_bl_number\" REAL,\"f_to_u4c_bl_position\" INTEGER,\"f_tok_kind\" INTEGER,\"f_tok_text\" TEXT,\"f_tok_number\" REAL,\"f_tok_position\" INTEGER,CHECK(entity_kind='ops_round_day_move'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_round_day_shift_approval(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_ap_kind\" INTEGER,\"f_ap_text\" TEXT,\"f_ap_number\" REAL,\"f_ap_position\" INTEGER,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_by_u52_ep_kind\" INTEGER,\"f_by_u52_ep_text\" TEXT,\"f_by_u52_ep_number\" REAL,\"f_by_u52_ep_position\" INTEGER,CHECK(entity_kind='ops_round_day_shift_approval'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_round_day(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_ap_kind\" INTEGER,\"f_ap_text\" TEXT,\"f_ap_number\" REAL,\"f_ap_position\" INTEGER,\"f_auto_kind\" INTEGER,\"f_auto_text\" TEXT,\"f_auto_number\" REAL,\"f_auto_position\" INTEGER,\"f_from_kind\" INTEGER,\"f_from_text\" TEXT,\"f_from_number\" REAL,\"f_from_position\" INTEGER,\"f_off_kind\" INTEGER,\"f_off_text\" TEXT,\"f_off_number\" REAL,\"f_off_position\" INTEGER,\"f_synced_kind\" INTEGER,\"f_synced_text\" TEXT,\"f_synced_number\" REAL,\"f_synced_position\" INTEGER,\"f_t_kind\" INTEGER,\"f_t_text\" TEXT,\"f_t_number\" REAL,\"f_t_position\" INTEGER,CHECK(entity_kind='ops_round_day'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_rounds(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_____p_u4d_ig_kind\" INTEGER,\"f_____p_u4d_ig_text\" TEXT,\"f_____p_u4d_ig_number\" REAL,\"f_____p_u4d_ig_position\" INTEGER,CHECK(entity_kind='ops_rounds'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_employee_record(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_account_kind\" INTEGER,\"f_account_text\" TEXT,\"f_account_number\" REAL,\"f_account_position\" INTEGER,\"f_contact_kind\" INTEGER,\"f_contact_text\" TEXT,\"f_contact_number\" REAL,\"f_contact_position\" INTEGER,\"f_eid_kind\" INTEGER,\"f_eid_text\" TEXT,\"f_eid_number\" REAL,\"f_eid_position\" INTEGER,\"f_email_kind\" INTEGER,\"f_email_text\" TEXT,\"f_email_number\" REAL,\"f_email_position\" INTEGER,\"f_empno_kind\" INTEGER,\"f_empno_text\" TEXT,\"f_empno_number\" REAL,\"f_empno_position\" INTEGER,\"f_gender_kind\" INTEGER,\"f_gender_text\" TEXT,\"f_gender_number\" REAL,\"f_gender_position\" INTEGER,\"f_group_kind\" INTEGER,\"f_group_text\" TEXT,\"f_group_number\" REAL,\"f_group_position\" INTEGER,\"f_job_kind\" INTEGER,\"f_job_text\" TEXT,\"f_job_number\" REAL,\"f_job_position\" INTEGER,\"f_name_kind\" INTEGER,\"f_name_text\" TEXT,\"f_name_number\" REAL,\"f_name_position\" INTEGER,\"f_nid_kind\" INTEGER,\"f_nid_text\" TEXT,\"f_nid_number\" REAL,\"f_nid_position\" INTEGER,\"f_phone_kind\" INTEGER,\"f_phone_text\" TEXT,\"f_phone_number\" REAL,\"f_phone_position\" INTEGER,\"f_shift_kind\" INTEGER,\"f_shift_text\" TEXT,\"f_shift_number\" REAL,\"f_shift_position\" INTEGER,\"f_type_kind\" INTEGER,\"f_type_text\" TEXT,\"f_type_number\" REAL,\"f_type_position\" INTEGER,\"f_work_kind\" INTEGER,\"f_work_text\" TEXT,\"f_work_number\" REAL,\"f_work_position\" INTEGER,CHECK(entity_kind='ops_employee_record'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_report_month_record(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_ap_kind\" INTEGER,\"f_ap_text\" TEXT,\"f_ap_number\" REAL,\"f_ap_position\" INTEGER,\"f_auto_kind\" INTEGER,\"f_auto_text\" TEXT,\"f_auto_number\" REAL,\"f_auto_position\" INTEGER,\"f_mo_kind\" INTEGER,\"f_mo_text\" TEXT,\"f_mo_number\" REAL,\"f_mo_position\" INTEGER,CHECK(entity_kind='ops_report_month_record'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_report_day_legacy_definition(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_color_kind\" INTEGER,\"f_color_text\" TEXT,\"f_color_number\" REAL,\"f_color_position\" INTEGER,\"f_t_u45_nd_kind\" INTEGER,\"f_t_u45_nd_text\" TEXT,\"f_t_u45_nd_number\" REAL,\"f_t_u45_nd_position\" INTEGER,\"f_t_u53_tart_kind\" INTEGER,\"f_t_u53_tart_text\" TEXT,\"f_t_u53_tart_number\" REAL,\"f_t_u53_tart_position\" INTEGER,CHECK(entity_kind='ops_report_day_legacy_definition'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_report_day_legacy_roster_entry(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_ekey_kind\" INTEGER,\"f_ekey_text\" TEXT,\"f_ekey_number\" REAL,\"f_ekey_position\" INTEGER,\"f_empno_kind\" INTEGER,\"f_empno_text\" TEXT,\"f_empno_number\" REAL,\"f_empno_position\" INTEGER,\"f_loc_kind\" INTEGER,\"f_loc_text\" TEXT,\"f_loc_number\" REAL,\"f_loc_position\" INTEGER,\"f_lvk_kind\" INTEGER,\"f_lvk_text\" TEXT,\"f_lvk_number\" REAL,\"f_lvk_position\" INTEGER,\"f_name_kind\" INTEGER,\"f_name_text\" TEXT,\"f_name_number\" REAL,\"f_name_position\" INTEGER,\"f_pmk_kind\" INTEGER,\"f_pmk_text\" TEXT,\"f_pmk_number\" REAL,\"f_pmk_position\" INTEGER,\"f_shift_kind\" INTEGER,\"f_shift_text\" TEXT,\"f_shift_number\" REAL,\"f_shift_position\" INTEGER,\"f_st_kind\" INTEGER,\"f_st_text\" TEXT,\"f_st_number\" REAL,\"f_st_position\" INTEGER,\"f_tfrom_kind\" INTEGER,\"f_tfrom_text\" TEXT,\"f_tfrom_number\" REAL,\"f_tfrom_position\" INTEGER,\"f_tin_kind\" INTEGER,\"f_tin_text\" TEXT,\"f_tin_number\" REAL,\"f_tin_position\" INTEGER,\"f_treason_kind\" INTEGER,\"f_treason_text\" TEXT,\"f_treason_number\" REAL,\"f_treason_position\" INTEGER,CHECK(entity_kind='ops_report_day_legacy_roster_entry'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_report_day_shift_transfer(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_to_kind\" INTEGER,\"f_to_text\" TEXT,\"f_to_number\" REAL,\"f_to_position\" INTEGER,\"f_why_kind\" INTEGER,\"f_why_text\" TEXT,\"f_why_number\" REAL,\"f_why_position\" INTEGER,CHECK(entity_kind='ops_report_day_shift_transfer'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_report_day_shift(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_ap_kind\" INTEGER,\"f_ap_text\" TEXT,\"f_ap_number\" REAL,\"f_ap_position\" INTEGER,\"f_ap_u41_t_kind\" INTEGER,\"f_ap_u41_t_text\" TEXT,\"f_ap_u41_t_number\" REAL,\"f_ap_u41_t_position\" INTEGER,\"f_ap_u42_y_kind\" INTEGER,\"f_ap_u42_y_text\" TEXT,\"f_ap_u42_y_number\" REAL,\"f_ap_u42_y_position\" INTEGER,\"f_cont_kind\" INTEGER,\"f_cont_text\" TEXT,\"f_cont_number\" REAL,\"f_cont_position\" INTEGER,\"f_pulled_kind\" INTEGER,\"f_pulled_text\" TEXT,\"f_pulled_number\" REAL,\"f_pulled_position\" INTEGER,\"f_sig_kind\" INTEGER,\"f_sig_text\" TEXT,\"f_sig_number\" REAL,\"f_sig_position\" INTEGER,CHECK(entity_kind='ops_report_day_shift'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_report_day(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_ap_kind\" INTEGER,\"f_ap_text\" TEXT,\"f_ap_number\" REAL,\"f_ap_position\" INTEGER,\"f_ap_u41_t_kind\" INTEGER,\"f_ap_u41_t_text\" TEXT,\"f_ap_u41_t_number\" REAL,\"f_ap_u41_t_position\" INTEGER,\"f_ap_u42_y_kind\" INTEGER,\"f_ap_u42_y_text\" TEXT,\"f_ap_u42_y_number\" REAL,\"f_ap_u42_y_position\" INTEGER,\"f_cont_kind\" INTEGER,\"f_cont_text\" TEXT,\"f_cont_number\" REAL,\"f_cont_position\" INTEGER,\"f_created_kind\" INTEGER,\"f_created_text\" TEXT,\"f_created_number\" REAL,\"f_created_position\" INTEGER,\"f_pulled_kind\" INTEGER,\"f_pulled_text\" TEXT,\"f_pulled_number\" REAL,\"f_pulled_position\" INTEGER,\"f_sig_kind\" INTEGER,\"f_sig_text\" TEXT,\"f_sig_number\" REAL,\"f_sig_position\" INTEGER,CHECK(entity_kind='ops_report_day'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_report_groups(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_on_kind\" INTEGER,\"f_on_text\" TEXT,\"f_on_number\" REAL,\"f_on_position\" INTEGER,CHECK(entity_kind='ops_report_groups'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_self_stall(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_why_kind\" INTEGER,\"f_why_text\" TEXT,\"f_why_number\" REAL,\"f_why_position\" INTEGER,CHECK(entity_kind='ops_task_row_self_stall'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_self(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_ack_kind\" INTEGER,\"f_ack_text\" TEXT,\"f_ack_number\" REAL,\"f_ack_position\" INTEGER,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_exp_kind\" INTEGER,\"f_exp_text\" TEXT,\"f_exp_number\" REAL,\"f_exp_position\" INTEGER,\"f_why_kind\" INTEGER,\"f_why_text\" TEXT,\"f_why_number\" REAL,\"f_why_position\" INTEGER,CHECK(entity_kind='ops_task_row_self'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_proof_submission(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_n_kind\" INTEGER,\"f_n_text\" TEXT,\"f_n_number\" REAL,\"f_n_position\" INTEGER,\"f_note_kind\" INTEGER,\"f_note_text\" TEXT,\"f_note_number\" REAL,\"f_note_position\" INTEGER,CHECK(entity_kind='ops_task_row_proof_submission'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_proof_image_metadata_entry(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_acc_kind\" INTEGER,\"f_acc_text\" TEXT,\"f_acc_number\" REAL,\"f_acc_position\" INTEGER,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_img_kind\" INTEGER,\"f_img_text\" TEXT,\"f_img_number\" REAL,\"f_img_position\" INTEGER,\"f_lat_kind\" INTEGER,\"f_lat_text\" TEXT,\"f_lat_number\" REAL,\"f_lat_position\" INTEGER,\"f_lng_kind\" INTEGER,\"f_lng_text\" TEXT,\"f_lng_number\" REAL,\"f_lng_position\" INTEGER,CHECK(entity_kind='ops_task_row_proof_image_metadata_entry'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_proof_steps_values(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"value_kind\" INTEGER,\"value_text\" TEXT,\"value_number\" REAL,CHECK(entity_kind='ops_task_row_proof_steps_values'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_proof(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_draft_kind\" INTEGER,\"f_draft_text\" TEXT,\"f_draft_number\" REAL,\"f_draft_position\" INTEGER,\"f_note_kind\" INTEGER,\"f_note_text\" TEXT,\"f_note_number\" REAL,\"f_note_position\" INTEGER,\"f_sub_kind\" INTEGER,\"f_sub_text\" TEXT,\"f_sub_number\" REAL,\"f_sub_position\" INTEGER,CHECK(entity_kind='ops_task_row_proof'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_by(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_e_kind\" INTEGER,\"f_e_text\" TEXT,\"f_e_number\" REAL,\"f_e_position\" INTEGER,\"f_n_kind\" INTEGER,\"f_n_text\" TEXT,\"f_n_number\" REAL,\"f_n_position\" INTEGER,\"f_u_kind\" INTEGER,\"f_u_text\" TEXT,\"f_u_number\" REAL,\"f_u_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_by'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_cancellation(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_rec_kind\" INTEGER,\"f_rec_text\" TEXT,\"f_rec_number\" REAL,\"f_rec_position\" INTEGER,\"f_why_kind\" INTEGER,\"f_why_text\" TEXT,\"f_why_number\" REAL,\"f_why_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_cancellation'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_eligibility(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_code_kind\" INTEGER,\"f_code_text\" TEXT,\"f_code_number\" REAL,\"f_code_position\" INTEGER,\"f_res_kind\" INTEGER,\"f_res_text\" TEXT,\"f_res_number\" REAL,\"f_res_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_eligibility'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_extension(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_from_kind\" INTEGER,\"f_from_text\" TEXT,\"f_from_number\" REAL,\"f_from_position\" INTEGER,\"f_to_kind\" INTEGER,\"f_to_text\" TEXT,\"f_to_number\" REAL,\"f_to_position\" INTEGER,\"f_why_kind\" INTEGER,\"f_why_text\" TEXT,\"f_why_number\" REAL,\"f_why_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_extension'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_predecessor(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_e_kind\" INTEGER,\"f_e_text\" TEXT,\"f_e_number\" REAL,\"f_e_position\" INTEGER,\"f_id_kind\" INTEGER,\"f_id_text\" TEXT,\"f_id_number\" REAL,\"f_id_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_predecessor'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_policy(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_m_kind\" INTEGER,\"f_m_text\" TEXT,\"f_m_number\" REAL,\"f_m_position\" INTEGER,\"f_n_kind\" INTEGER,\"f_n_text\" TEXT,\"f_n_number\" REAL,\"f_n_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_policy'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_reassign_target(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_e_kind\" INTEGER,\"f_e_text\" TEXT,\"f_e_number\" REAL,\"f_e_position\" INTEGER,\"f_n_kind\" INTEGER,\"f_n_text\" TEXT,\"f_n_number\" REAL,\"f_n_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_reassign_target'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_recurrence(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_from_kind\" INTEGER,\"f_from_text\" TEXT,\"f_from_number\" REAL,\"f_from_position\" INTEGER,\"f_id_kind\" INTEGER,\"f_id_text\" TEXT,\"f_id_number\" REAL,\"f_id_position\" INTEGER,\"f_md_kind\" INTEGER,\"f_md_text\" TEXT,\"f_md_number\" REAL,\"f_md_position\" INTEGER,\"f_n_kind\" INTEGER,\"f_n_text\" TEXT,\"f_n_number\" REAL,\"f_n_position\" INTEGER,\"f_paused_kind\" INTEGER,\"f_paused_text\" TEXT,\"f_paused_number\" REAL,\"f_paused_position\" INTEGER,\"f_stop_kind\" INTEGER,\"f_stop_text\" TEXT,\"f_stop_number\" REAL,\"f_stop_position\" INTEGER,\"f_t_kind\" INTEGER,\"f_t_text\" TEXT,\"f_t_number\" REAL,\"f_t_position\" INTEGER,\"f_to_kind\" INTEGER,\"f_to_text\" TEXT,\"f_to_number\" REAL,\"f_to_position\" INTEGER,\"f_ver_kind\" INTEGER,\"f_ver_text\" TEXT,\"f_ver_number\" REAL,\"f_ver_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_recurrence'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_relink(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_from_kind\" INTEGER,\"f_from_text\" TEXT,\"f_from_number\" REAL,\"f_from_position\" INTEGER,\"f_to_kind\" INTEGER,\"f_to_text\" TEXT,\"f_to_number\" REAL,\"f_to_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_relink'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_decision(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_at_kind\" INTEGER,\"f_at_text\" TEXT,\"f_at_number\" REAL,\"f_at_position\" INTEGER,\"f_st_kind\" INTEGER,\"f_st_text\" TEXT,\"f_st_number\" REAL,\"f_st_position\" INTEGER,\"f_sub_kind\" INTEGER,\"f_sub_text\" TEXT,\"f_sub_number\" REAL,\"f_sub_position\" INTEGER,\"f_why_kind\" INTEGER,\"f_why_text\" TEXT,\"f_why_number\" REAL,\"f_why_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_decision'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management_window(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_early_kind\" INTEGER,\"f_early_text\" TEXT,\"f_early_number\" REAL,\"f_early_position\" INTEGER,\"f_late_kind\" INTEGER,\"f_late_text\" TEXT,\"f_late_number\" REAL,\"f_late_position\" INTEGER,CHECK(entity_kind='ops_task_row_management_window'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row_management(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_asg_kind\" INTEGER,\"f_asg_text\" TEXT,\"f_asg_number\" REAL,\"f_asg_position\" INTEGER,\"f_dec_kind\" INTEGER,\"f_dec_text\" TEXT,\"f_dec_number\" REAL,\"f_dec_position\" INTEGER,\"f_det_kind\" INTEGER,\"f_det_text\" TEXT,\"f_det_number\" REAL,\"f_det_position\" INTEGER,\"f_idem_kind\" INTEGER,\"f_idem_text\" TEXT,\"f_idem_number\" REAL,\"f_idem_position\" INTEGER,\"f_v_kind\" INTEGER,\"f_v_text\" TEXT,\"f_v_number\" REAL,\"f_v_position\" INTEGER,CHECK(entity_kind='ops_task_row_management'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "CREATE TABLE IF NOT EXISTS ops_task_row(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_0_kind\" INTEGER,\"f_0_text\" TEXT,\"f_0_number\" REAL,\"f_0_position\" INTEGER,\"f_1_kind\" INTEGER,\"f_1_text\" TEXT,\"f_1_number\" REAL,\"f_1_position\" INTEGER,\"f_10_kind\" INTEGER,\"f_10_text\" TEXT,\"f_10_number\" REAL,\"f_10_position\" INTEGER,\"f_11_kind\" INTEGER,\"f_11_text\" TEXT,\"f_11_number\" REAL,\"f_11_position\" INTEGER,\"f_12_kind\" INTEGER,\"f_12_text\" TEXT,\"f_12_number\" REAL,\"f_12_position\" INTEGER,\"f_13_kind\" INTEGER,\"f_13_text\" TEXT,\"f_13_number\" REAL,\"f_13_position\" INTEGER,\"f_14_kind\" INTEGER,\"f_14_text\" TEXT,\"f_14_number\" REAL,\"f_14_position\" INTEGER,\"f_15_kind\" INTEGER,\"f_15_text\" TEXT,\"f_15_number\" REAL,\"f_15_position\" INTEGER,\"f_16_kind\" INTEGER,\"f_16_text\" TEXT,\"f_16_number\" REAL,\"f_16_position\" INTEGER,\"f_17_kind\" INTEGER,\"f_17_text\" TEXT,\"f_17_number\" REAL,\"f_17_position\" INTEGER,\"f_18_kind\" INTEGER,\"f_18_text\" TEXT,\"f_18_number\" REAL,\"f_18_position\" INTEGER,\"f_19_kind\" INTEGER,\"f_19_text\" TEXT,\"f_19_number\" REAL,\"f_19_position\" INTEGER,\"f_2_kind\" INTEGER,\"f_2_text\" TEXT,\"f_2_number\" REAL,\"f_2_position\" INTEGER,\"f_22_kind\" INTEGER,\"f_22_text\" TEXT,\"f_22_number\" REAL,\"f_22_position\" INTEGER,\"f_3_kind\" INTEGER,\"f_3_text\" TEXT,\"f_3_number\" REAL,\"f_3_position\" INTEGER,\"f_4_kind\" INTEGER,\"f_4_text\" TEXT,\"f_4_number\" REAL,\"f_4_position\" INTEGER,\"f_5_kind\" INTEGER,\"f_5_text\" TEXT,\"f_5_number\" REAL,\"f_5_position\" INTEGER,\"f_8_kind\" INTEGER,\"f_8_text\" TEXT,\"f_8_number\" REAL,\"f_8_position\" INTEGER,\"f_9_kind\" INTEGER,\"f_9_text\" TEXT,\"f_9_number\" REAL,\"f_9_position\" INTEGER,CHECK(entity_kind='ops_task_row'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "DELETE FROM meta WHERE k='operations_cutover_ready'",
+   "INSERT INTO meta(k,v)VALUES('schema_version','10')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
+  ]
  }
 ];
-var KIVO_SCHEMA_VERSION = 9;
+var KIVO_SCHEMA_VERSION = 10;
 /* ═══ KIVO_263 · SOT-101 — مخطّطاتُ أجسام الطلبات المغيِّرة: المصدرُ src/schemas/api/bodies.schema.json (JSON Schema) ═══
    هذه النسخةُ مطابقةٌ له حرفاً (يفرضها tests/unit/body_schemas.test.mjs) — فالقاعدةُ واحدةٌ مكتوبةٌ مرةً، قابلةٌ للاختبار بلا واجهة.
    bodyCheck(route, body) ⇒ null (سليم) أو موضعُ أوّل مخالفة ('set.<k>' · 'base.<k>' · 'del[3]' …) — والمسارُ يردّ 400 {ok:0, err:'bad-body', at}
    قبل أيّ قراءةٍ أو كتابة. كان الخادمُ يحوّل القيمةَ غيرَ النصية بـString() فيُخزَّن «[object Object]» في المفتاح (سلامةُ البيانات). */
-var KIVO_BODY_SCHEMAS = {"/api/admin/dept-delete":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/admin/dept-wipe":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/authz-migrate":{"properties":{"act":{"maxLength":32,"type":["string","null"]},"force":{"type":["boolean","null"]},"generated":{"maxLength":20,"type":["number","string","null"]},"hash":{"maxLength":128,"type":["string","null"]},"inferable":{"type":["boolean","integer","null"]},"parts":{"items":{"maxLength":16,"type":"string"},"maxItems":8,"type":["array","null"]},"seed":{"maxLength":128,"type":["string","null"]},"snap":{"maxLength":128,"type":["string","null"]}},"type":"object"},"/api/authz-test":{"properties":{"method":{"maxLength":10,"type":["string","null"]},"path":{"maxLength":2000,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]},"vals":{"items":{"maxLength":300,"type":"string"},"maxItems":200,"type":["array","null"]}},"type":"object"},"/api/award/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"docsV1":{"minimum":0,"type":"integer"},"docsV2":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"records":{"minimum":0,"type":"integer"}},"required":["epoch","records","docsV1","docsV2"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"document":{"type":"object"},"id":{"type":"string"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"status":{"type":"string"},"uid":{"type":"string"},"version":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/backup/restore":{"additionalProperties":false,"properties":{"backup":{"type":"object"},"base":{"type":"object"},"delete":{"type":["array","null"]},"domains":{"type":"object"},"keys":{"type":["object","null"]},"legacyConsent":{"type":"boolean"},"manifest":{"type":"object"},"mode":{"type":"string"},"permissionSlice":{"type":"object"},"phase":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"scope":{"type":"object"},"uid":{"type":"string"},"version":{"minimum":0,"type":"integer"}},"type":"object"},"/api/checkpw":{"properties":{"p":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/custody/act":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"color":{"type":"string"},"condition":{"type":"string"},"dept":{"type":"string"},"holderKey":{"type":"string"},"issueId":{"type":"string"},"item":{"type":"object"},"itemId":{"type":"string"},"kind":{"type":"string"},"lines":{"type":"array"},"note":{"type":"string"},"op":{"type":"string"},"patch":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/dstats":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"data":{"additionalProperties":false,"properties":{"haram":{"type":"object"},"locks":{"type":"object"},"nabawi":{"type":"object"}},"type":"object"},"operation":{"maxLength":40,"type":"string"},"ops":{"type":"object"},"reason":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["base","data"],"type":"object"},"/api/employees/transition":{"additionalProperties":false,"properties":{"accountProposals":{"type":"array"},"base":{"type":"object"},"deleteMode":{"type":"string"},"dept":{"type":"string"},"finalRows":{"type":"array"},"import":{"type":"object"},"intent":{"type":"string"},"options":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/guard/unlock":{"properties":{"all":{"type":["integer","boolean","null"]},"gk":{"maxLength":300,"type":["string","null"]},"gks":{"items":{"maxLength":300,"type":"string"},"maxItems":1000,"type":["array","null"]}},"type":"object"},"/api/irshad/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"epoch":{"minimum":0,"type":"integer"},"languages":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","languages","locations","retro"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"id":{"type":"string"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"},"values":{"type":"array"},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/login":{"properties":{"p":{"maxLength":1000,"type":["string","null"]},"u":{"maxLength":200,"type":"string"}},"type":"object"},"/api/logout":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill":{"additionalProperties":false,"type":"object"},"/api/me/tasks/act":{"additionalProperties":false,"properties":{"act":{"maxLength":8,"type":"string"},"i":{"minimum":0,"type":["integer","null"]},"id":{"maxLength":40,"type":["number","string"]},"idem":{"maxLength":40,"type":["string","null"]},"imgs":{"items":{"maxLength":80,"type":"string"},"maxItems":4,"type":["array","null"]},"k":{"maxLength":10,"type":"string"},"meta":{"items":{"additionalProperties":false,"properties":{"acc":{"minimum":0,"type":["number","null"]},"at":{"minimum":1,"type":"number"},"img":{"maxLength":80,"type":["string","null"]},"lat":{"type":["number","null"]},"lng":{"type":["number","null"]}},"required":["at"],"type":"object"},"maxItems":4,"type":["array","null"]},"note":{"maxLength":1000,"type":["string","null"]},"rm":{"items":{"maxLength":80,"type":"string"},"maxItems":12,"type":["array","null"]},"steps":{"additionalProperties":{"type":"boolean"},"type":["object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","act"],"type":"object"},"/api/notifications/act":{"additionalProperties":false,"properties":{"action":{"maxLength":40,"type":"string"},"all":{"type":"boolean"},"at":{"minimum":0,"type":"integer"},"b":{"type":"object"},"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":180,"type":"string"},"events":{"items":{"type":"object"},"maxItems":200,"type":"array"},"id":{"maxLength":800,"type":"string"},"link":{"maxLength":500,"type":"string"},"once":{"maxLength":500,"type":"string"},"onlyRead":{"type":"boolean"},"op":{"maxLength":40,"type":"string"},"own":{"items":{"maxLength":200,"type":"string"},"maxItems":20000,"type":"array"},"patch":{"type":"object"},"preview":{"type":"boolean"},"reset":{"type":"boolean"},"target":{"type":"object"},"title":{"maxLength":400,"type":"string"},"type":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"vars":{"type":"object"}},"required":["op"],"type":"object"},"/api/policy":{"properties":{"idleH":{"maxLength":16,"type":["number","string","null"]},"lockMin":{"maxLength":16,"type":["number","string","null"]},"lockN":{"maxLength":16,"type":["number","string","null"]},"pwMin":{"maxLength":16,"type":["number","string","null"]},"sessH":{"maxLength":16,"type":["number","string","null"]},"wrMin":{"maxLength":16,"type":["number","string","null"]}},"type":"object"},"/api/recover":{"properties":{"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/recovery/new":{"properties":{"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/reset":{"properties":{"admin":{"properties":{"name":{"maxLength":120,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]},"un":{"maxLength":64,"type":["string","null"]}},"type":["object","null"]},"confirm":{"maxLength":50,"type":["string","null"]},"keepBrand":{"type":["boolean","integer","null"]},"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/retro":{"properties":{"act":{"maxLength":16,"type":["string","null"]},"dept":{"maxLength":200,"type":["string","null"]},"hours":{"maxLength":16,"type":["number","string","null"]},"id":{"maxLength":100,"type":["string","null"]},"reason":{"maxLength":4000,"type":["string","null"]},"res":{"maxLength":64,"type":["string","null"]},"scope":{"properties":{"d":{"maxLength":8,"type":["integer","string","null"]},"m":{"maxLength":8,"type":["integer","string","null"]},"y":{"maxLength":8,"type":["integer","string","null"]}},"type":["object","null"]}},"type":"object"},"/api/save":{"properties":{"aud":{"type":["array","object","null"]},"base":{"additionalProperties":{"minimum":0,"type":"integer"},"type":"object"},"cur":{"maxLength":1000,"type":["string","null"]},"del":{"items":{"maxLength":300,"type":"string"},"maxItems":5000,"type":"array"},"ops":{"type":["object","array","null"]},"set":{"additionalProperties":{"type":"string"},"type":"object"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"type":["object","null"]}},"type":"object"},"/api/seized/act":{"additionalProperties":false,"properties":{"act":{"type":"string"},"base":{"additionalProperties":false,"properties":{"actions":{"minimum":0,"type":"integer"},"catalog":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"jew":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","catalog","actions","locations","jew","retro"],"type":"object"},"data":{"type":"object"},"day":{"minimum":1,"type":"integer"},"dept":{"type":"string"},"from":{"type":"string"},"id":{"type":"string"},"image":{"type":"string"},"index":{"type":"integer"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"to":{"type":"string"},"uid":{"type":"string"},"value":{"type":["object","array"]},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/sess/kill":{"properties":{"all":{"type":["boolean","integer","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/cancel":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":"string"}},"required":["k","id","why"],"type":"object"},"/api/tasks/create":{"additionalProperties":false,"properties":{"asg":{"items":{"maxLength":80,"type":"string"},"maxItems":50,"type":["array","null"]},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"desc":{"maxLength":4000,"type":["string","null"]},"e":{"type":"number"},"force":{"type":["boolean","null"]},"grpL":{"maxLength":120,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"needs":{"items":{"maxLength":80,"type":"string"},"maxItems":8,"type":["array","null"]},"pol":{"type":["object","null"]},"prio":{"maxLength":10,"type":["string","null"]},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"rv":{"maxLength":10,"type":["string","object","null"]},"s":{"type":"number"},"shift":{"additionalProperties":false,"properties":{"name":{"maxLength":80,"type":"string"}},"type":["object","null"]},"t":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","s","e"],"type":"object"},"/api/tasks/extend":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","e"],"type":"object"},"/api/tasks/reassign":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":["number","null"]},"force":{"type":["boolean","null"]},"from":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/recur":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":["string","null"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"row":{"maxLength":40,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"required":["op"],"type":"object"},"/api/tasks/recur/run":{"additionalProperties":false,"properties":{"day":{"maxLength":10,"type":["string","null"]},"dept":{"maxLength":80,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/relink":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"from":{"maxLength":160,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/reopen":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id"],"type":"object"},"/api/tasks/review":{"additionalProperties":false,"properties":{"decision":{"maxLength":8,"type":"string"},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","ekey","decision"],"type":"object"},"/api/tasks/settings":{"additionalProperties":false,"properties":{"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string","null"]},"k":{"maxLength":10,"type":"string"},"pol":{"type":["object","null"]},"rv":{"maxLength":10,"type":["string","object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]}},"required":["k"],"type":"object"}};
+var KIVO_BODY_SCHEMAS = {"/api/admin/dept-delete":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/admin/dept-wipe":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/authz-migrate":{"properties":{"act":{"maxLength":32,"type":["string","null"]},"force":{"type":["boolean","null"]},"generated":{"maxLength":20,"type":["number","string","null"]},"hash":{"maxLength":128,"type":["string","null"]},"inferable":{"type":["boolean","integer","null"]},"parts":{"items":{"maxLength":16,"type":"string"},"maxItems":8,"type":["array","null"]},"seed":{"maxLength":128,"type":["string","null"]},"snap":{"maxLength":128,"type":["string","null"]}},"type":"object"},"/api/authz-test":{"properties":{"method":{"maxLength":10,"type":["string","null"]},"path":{"maxLength":2000,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]},"vals":{"items":{"maxLength":300,"type":"string"},"maxItems":200,"type":["array","null"]}},"type":"object"},"/api/award/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"docsV1":{"minimum":0,"type":"integer"},"docsV2":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"records":{"minimum":0,"type":"integer"}},"required":["epoch","records","docsV1","docsV2"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"document":{"type":"object"},"id":{"type":"string"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"status":{"type":"string"},"uid":{"type":"string"},"version":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/backup/restore":{"additionalProperties":false,"properties":{"backup":{"type":"object"},"base":{"type":"object"},"delete":{"type":["array","null"]},"domains":{"type":"object"},"keys":{"type":["object","null"]},"legacyConsent":{"type":"boolean"},"manifest":{"type":"object"},"mode":{"type":"string"},"permissionSlice":{"type":"object"},"phase":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"scope":{"type":"object"},"uid":{"type":"string"},"version":{"minimum":0,"type":"integer"}},"type":"object"},"/api/checkpw":{"properties":{"p":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/custody/act":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"color":{"type":"string"},"condition":{"type":"string"},"dept":{"type":"string"},"holderKey":{"type":"string"},"issueId":{"type":"string"},"item":{"type":"object"},"itemId":{"type":"string"},"kind":{"type":"string"},"lines":{"type":"array"},"note":{"type":"string"},"op":{"type":"string"},"patch":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/dstats":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"data":{"additionalProperties":false,"properties":{"haram":{"type":"object"},"locks":{"type":"object"},"nabawi":{"type":"object"}},"type":"object"},"operation":{"maxLength":40,"type":"string"},"ops":{"type":"object"},"reason":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["base","data"],"type":"object"},"/api/employees/transition":{"additionalProperties":false,"properties":{"accountProposals":{"type":"array"},"base":{"type":"object"},"deleteMode":{"type":"string"},"dept":{"type":"string"},"finalRows":{"type":"array"},"import":{"type":"object"},"intent":{"type":"string"},"options":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/guard/unlock":{"properties":{"all":{"type":["integer","boolean","null"]},"gk":{"maxLength":300,"type":["string","null"]},"gks":{"items":{"maxLength":300,"type":"string"},"maxItems":1000,"type":["array","null"]}},"type":"object"},"/api/irshad/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"epoch":{"minimum":0,"type":"integer"},"languages":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","languages","locations","retro"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"id":{"type":"string"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"},"values":{"type":"array"},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/login":{"properties":{"p":{"maxLength":1000,"type":["string","null"]},"u":{"maxLength":200,"type":"string"}},"type":"object"},"/api/logout":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill":{"additionalProperties":false,"type":"object"},"/api/me/tasks/act":{"additionalProperties":false,"properties":{"act":{"maxLength":8,"type":"string"},"i":{"minimum":0,"type":["integer","null"]},"id":{"maxLength":40,"type":["number","string"]},"idem":{"maxLength":40,"type":["string","null"]},"imgs":{"items":{"maxLength":80,"type":"string"},"maxItems":4,"type":["array","null"]},"k":{"maxLength":10,"type":"string"},"meta":{"items":{"additionalProperties":false,"properties":{"acc":{"minimum":0,"type":["number","null"]},"at":{"minimum":1,"type":"number"},"img":{"maxLength":80,"type":["string","null"]},"lat":{"type":["number","null"]},"lng":{"type":["number","null"]}},"required":["at"],"type":"object"},"maxItems":4,"type":["array","null"]},"note":{"maxLength":1000,"type":["string","null"]},"rm":{"items":{"maxLength":80,"type":"string"},"maxItems":12,"type":["array","null"]},"steps":{"additionalProperties":{"type":"boolean"},"type":["object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","act"],"type":"object"},"/api/notifications/act":{"additionalProperties":false,"properties":{"action":{"maxLength":40,"type":"string"},"all":{"type":"boolean"},"at":{"minimum":0,"type":"integer"},"b":{"type":"object"},"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":180,"type":"string"},"events":{"items":{"type":"object"},"maxItems":200,"type":"array"},"id":{"maxLength":800,"type":"string"},"link":{"maxLength":500,"type":"string"},"once":{"maxLength":500,"type":"string"},"onlyRead":{"type":"boolean"},"op":{"maxLength":40,"type":"string"},"own":{"items":{"maxLength":200,"type":"string"},"maxItems":20000,"type":"array"},"patch":{"type":"object"},"preview":{"type":"boolean"},"reset":{"type":"boolean"},"target":{"type":"object"},"title":{"maxLength":400,"type":"string"},"type":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"vars":{"type":"object"}},"required":["op"],"type":"object"},"/api/policy":{"properties":{"idleH":{"maxLength":16,"type":["number","string","null"]},"lockMin":{"maxLength":16,"type":["number","string","null"]},"lockN":{"maxLength":16,"type":["number","string","null"]},"pwMin":{"maxLength":16,"type":["number","string","null"]},"sessH":{"maxLength":16,"type":["number","string","null"]},"wrMin":{"maxLength":16,"type":["number","string","null"]}},"type":"object"},"/api/recover":{"properties":{"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/recovery/new":{"properties":{"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/reset":{"properties":{"admin":{"properties":{"name":{"maxLength":120,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]},"un":{"maxLength":64,"type":["string","null"]}},"type":["object","null"]},"confirm":{"maxLength":50,"type":["string","null"]},"keepBrand":{"type":["boolean","integer","null"]},"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/retro":{"properties":{"act":{"maxLength":16,"type":["string","null"]},"dept":{"maxLength":200,"type":["string","null"]},"hours":{"maxLength":16,"type":["number","string","null"]},"id":{"maxLength":100,"type":["string","null"]},"reason":{"maxLength":4000,"type":["string","null"]},"res":{"maxLength":64,"type":["string","null"]},"scope":{"properties":{"d":{"maxLength":8,"type":["integer","string","null"]},"m":{"maxLength":8,"type":["integer","string","null"]},"y":{"maxLength":8,"type":["integer","string","null"]}},"type":["object","null"]}},"type":"object"},"/api/save":{"properties":{"aud":{"type":["array","object","null"]},"base":{"additionalProperties":{"minimum":0,"type":"integer"},"type":"object"},"cur":{"maxLength":1000,"type":["string","null"]},"del":{"items":{"maxLength":300,"type":"string"},"maxItems":5000,"type":"array"},"epoch":{"minimum":0,"type":"integer"},"ops":{"type":["object","array","null"]},"requestId":{"maxLength":100,"type":"string"},"set":{"additionalProperties":{"type":"string"},"type":"object"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"type":["object","null"]}},"type":"object"},"/api/seized/act":{"additionalProperties":false,"properties":{"act":{"type":"string"},"base":{"additionalProperties":false,"properties":{"actions":{"minimum":0,"type":"integer"},"catalog":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"jew":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","catalog","actions","locations","jew","retro"],"type":"object"},"data":{"type":"object"},"day":{"minimum":1,"type":"integer"},"dept":{"type":"string"},"from":{"type":"string"},"id":{"type":"string"},"image":{"type":"string"},"index":{"type":"integer"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"to":{"type":"string"},"uid":{"type":"string"},"value":{"type":["object","array"]},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/sess/kill":{"properties":{"all":{"type":["boolean","integer","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/cancel":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":"string"}},"required":["k","id","why"],"type":"object"},"/api/tasks/create":{"additionalProperties":false,"properties":{"asg":{"items":{"maxLength":80,"type":"string"},"maxItems":50,"type":["array","null"]},"base":{"minimum":0,"type":"integer"},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"desc":{"maxLength":4000,"type":["string","null"]},"e":{"type":"number"},"epoch":{"minimum":0,"type":"integer"},"force":{"type":["boolean","null"]},"grpL":{"maxLength":120,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"needs":{"items":{"maxLength":80,"type":"string"},"maxItems":8,"type":["array","null"]},"pol":{"type":["object","null"]},"prio":{"maxLength":10,"type":["string","null"]},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"rv":{"maxLength":10,"type":["string","object","null"]},"s":{"type":"number"},"shift":{"additionalProperties":false,"properties":{"name":{"maxLength":80,"type":"string"}},"type":["object","null"]},"t":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","s","e","requestId","epoch"],"type":"object"},"/api/tasks/extend":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","e"],"type":"object"},"/api/tasks/reassign":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":["number","null"]},"force":{"type":["boolean","null"]},"from":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/recur":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":80,"type":["string","null"]},"epoch":{"minimum":0,"type":"integer"},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":["string","null"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"row":{"maxLength":40,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"required":["op","requestId","epoch","base"],"type":"object"},"/api/tasks/recur/run":{"additionalProperties":false,"properties":{"day":{"maxLength":10,"type":["string","null"]},"dept":{"maxLength":80,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/relink":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"from":{"maxLength":160,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/reopen":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id"],"type":"object"},"/api/tasks/review":{"additionalProperties":false,"properties":{"decision":{"maxLength":8,"type":"string"},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","ekey","decision"],"type":"object"},"/api/tasks/settings":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"edit":{"additionalProperties":false,"properties":{"desc":{"maxLength":4000,"type":"string"},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"prio":{"type":["string","null"]},"s":{"type":"number"},"t":{"maxLength":300,"type":"string"},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","desc","prio","s","e"],"type":"object"},"ekey":{"maxLength":80,"type":["string","null"]},"epoch":{"minimum":0,"type":"integer"},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string","null"]},"k":{"maxLength":10,"type":"string"},"pol":{"type":["object","null"]},"recur":{"additionalProperties":false,"properties":{"id":{"maxLength":40,"type":["number","string"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"row":{"maxLength":40,"type":["string","null"]}},"required":["op"],"type":"object"},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"rv":{"maxLength":10,"type":["string","object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]}},"required":["k","requestId","epoch","base"],"type":"object"}};
 function bodyTypeOk(t, v) {
   var ts = Array.isArray(t) ? t : [t], i;
   for (i = 0; i < ts.length; i++) {
@@ -19518,9 +21256,10 @@ var rsPermSlice = function(pm, id, PP, mode, pageKeys, lensKeys){
       if (PP.capSet === false || PP.cap == null || legacyNoCap) delete pm.caps[id];
       else pm.caps[id] = (Array.isArray(PP.cap) ? PP.cap : []).filter(function(k){ return KP.indexOf(k) !== -1; });
       pm.emps[id] = (PP.emps && typeof PP.emps === 'object' && !Array.isArray(PP.emps)) ? PP.emps : {};
-      pm.lenses = pm.lenses || {};
-      if (Array.isArray(PP.lenses)) pm.lenses[id] = PP.lenses.filter(function(k){ return KL.indexOf(k) !== -1; });
-      else delete pm.lenses[id];
+      if (Array.isArray(PP.lenses)) {
+        pm.lenses = pm.lenses || {};
+        pm.lenses[id] = PP.lenses.filter(function(k){ return KL.indexOf(k) !== -1; });
+      } else if (pm.lenses && typeof pm.lenses === 'object' && !Array.isArray(pm.lenses)) delete pm.lenses[id];
       return pm;
     };
 /* ═══ R169: أحداثُ سجل الأنشطة (aud) ═══
@@ -19737,7 +21476,7 @@ async function migrateDb(env) {
   }
   for (i = 0; i < pending.length; i++) {
     var dataPlan = pending[i].name === '0004_daily_stats' ? await dsLegacyPrepare(env) :
-      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : null;
+      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : null;
     var st = [dbMigrationFence(env, state, permit)];
     if (dataPlan) st = st.concat(dataPlan.before);
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));
@@ -20112,9 +21851,13 @@ async function imgOwnOf(env, ik) { return await env.DB.prepare('SELECT img, st, 
    رموزُ GLOB إلى النمط)، فيبقى غيرَ محسوم. */
 async function imgKeysMentioning(env, ik, lim) {
   if (!/^[a-z0-9_]+$/.test(ik)) return [];
+  // Operational image references are maintained with the typed row mutation
+  // (and at cutover) in the existing canonical D1 relation, never in R2 here.
+  var typed = (await env.DB.prepare('SELECT k FROM imgref WHERE img=?1').bind(ik).all()).results || [];
+  var typedKeys = typed.map(function(row){return row.k;}).filter(opIsResource);
   var r = await env.DB.prepare('SELECT k FROM kv WHERE instr(v, ?1) > 0 AND (v GLOB ?2 OR v GLOB ?3) LIMIT ' + lim)
     .bind(ik, '*' + ik + '[^a-z0-9]*', '*' + ik).all();
-  return ((r && r.results) || []).map(function (x) { return x.k; });
+  return Array.from(new Set(typedKeys.concat(((r && r.results) || []).map(function (x) { return x.k; })))).slice(0,lim);
 }
 /* مَن يملك هذه الصورة؟ — سؤالٌ عن صورةٍ واحدة، لا مسحٌ للقاعدة كلها.
    كان البناءُ الأول يقرأ جدول kv كاملاً داخل طلب المستخدم ويمسحه بتعبيرٍ
@@ -20885,7 +22628,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (!CTX_RES[rnW]) continue;
     var dW = parseKey(k).dept; if (!dW || wipeCtx[dW] !== undefined) continue;
     var ekW = 'bsdept:' + dW + ':bassam_employees_v1';
-    var evW = Object.prototype.hasOwnProperty.call(set, ekW) ? String(set[ekW]) : await kvGet(env, 'kv', ekW);
+    var evW = Object.prototype.hasOwnProperty.call(set, ekW) ? String(set[ekW]) : await opResourceGet(env, ekW);
     empRaw9[dW] = evW;
     var elW = parseJson(evW, null);
     wipeCtx[dW] = Array.isArray(elW) ? !elW.length : false;
@@ -20911,7 +22654,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     /* الفحصُ العميق (R4): الحفظةُ تحمل القائمةَ كما رآها الفاعل — فتُكمَّل بما حُجب عنه (usersNoIn · usersScopeIn) كما ستُكتب */
     /* مراجعةُ التكامل W1-R1: قائمةٌ من إسقاطٍ قديم لا تُكتب (تعارض) ⇒ الحساباتُ بعد الدفعة هي الحالية */
     if (tkUs9b === null) { if (Object.prototype.hasOwnProperty.call(set, K_USERS) && !usStale9) { var tkUc9 = await kvGet(env, 'kv', K_USERS); tkUs9b = parseJson(usersScopeIn(usersNoIn(String(set[K_USERS]), tkUc9, A), tkUc9, A), []); } else tkUs9b = false; if (tkUs9b !== false && !Array.isArray(tkUs9b)) tkUs9b = []; }
-    tkCtx9[dT9] = { users: tkUs9, users2: tkUs9b || null, emps: tkEmps(Object.prototype.hasOwnProperty.call(empRaw9, dT9) ? empRaw9[dT9] : await kvGet(env, 'kv', 'bsdept:' + dT9 + ':bassam_employees_v1')) };
+    tkCtx9[dT9] = { users: tkUs9, users2: tkUs9b || null, emps: tkEmps(Object.prototype.hasOwnProperty.call(empRaw9, dT9) ? empRaw9[dT9] : await opResourceGet(env, 'bsdept:' + dT9 + ':bassam_employees_v1')) };
   }
   /* KIVO_265 · ملاحظةُ المالك (أمن): سياقُ تفرّد الهوية/الجوال/الرقم الوظيفي (018 empDupWhy) — قوائمُ موظفي الإدارات الأخرى
      بقيمتها الحالية (من سجلّ الإدارات) وحساباتُ الدخول من الفاعل نفسه؛ تُقرأ مرةً واحدة للدفعة ولمفاتيح الموظفين وحدها */
@@ -20920,12 +22663,12 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (resName(k) !== 'bassam_employees_v1' || !parseKey(k).dept || edCtx9) continue;
     /* لا قراءةَ لبقية الإدارات إلا إذا حملت الدفعةُ هويةً أو جوالاً أو رقماً وظيفياً ليس في القيمة الحالية (تعديلُ اسمٍ أو حالة لا يقرأ شيئاً) */
     /* القيمةُ الحالية من المخزن لا من empRaw9 (يحمل قيمةَ الدفعة نفسِها لمفاتيحها — فكان القديمُ = الجديد والقاعدةُ لا تعمل: فحصُ Test 2026-10-19) */
-    var oldE9 = empIdents(parseJson(await kvGet(env, 'kv', k), [])), newE9 = empIdents(parseJson(String(set[k]), [])), chg9 = false, q9;
+    var oldE9 = empIdents(parseJson(await opResourceGet(env, k), [])), newE9 = empIdents(parseJson(String(set[k]), [])), chg9 = false, q9;
     for (q9 in newE9.n) if (!oldE9.n[q9]) chg9 = true; for (q9 in newE9.p) if (!oldE9.p[q9]) chg9 = true; for (q9 in newE9.o) if (!oldE9.o[q9]) chg9 = true;
     if (!chg9) continue;
     var dl9 = parseJson(await kvGet(env, 'kv', 'bassam_depts_v1'), null), ids9 = [];
     (Array.isArray(dl9) ? dl9 : (dl9 && Array.isArray(dl9.list) ? dl9.list : [])).forEach(function (x) { if (x && x.id) ids9.push(String(x.id)); });
-    var em9 = ids9.length ? await kvMany(env, 'kv', ids9.map(function (id) { return 'bsdept:' + id + ':bassam_employees_v1'; })) : {};
+    var em9 = ids9.length ? await opResourceMany(env, ids9.map(function (id) { return 'bsdept:' + id + ':bassam_employees_v1'; })) : {};
     edCtx9 = { others: {}, users: Array.isArray(A.users) ? A.users : parseJson(await kvGet(env, 'kv', K_USERS), []) };
     for (var ei9 = 0; ei9 < ids9.length; ei9++) { var ek9 = 'bsdept:' + ids9[ei9] + ':bassam_employees_v1'; edCtx9.others[ids9[ei9]] = parseJson(em9[ek9] == null ? '[]' : String(em9[ek9]), []); }
   }
@@ -20935,7 +22678,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   for (k in set) {
     if (resName(k) !== 'bassam_shift_options_v1') continue;
     var dS = parseKey(k).dept; if (!dS) continue;
-    var oldS = parseJson(await kvGet(env, 'kv', k), null), newS = parseJson(String(set[k]), null);
+    var oldS = parseJson(await opResourceGet(env, k), null), newS = parseJson(String(set[k]), null);
     if (!Array.isArray(oldS) || !Array.isArray(newS) || oldS.length !== newS.length) continue;
     var inO = {}, inN = {}, goneS = [], bornS = [], qS;
     for (qS = 0; qS < oldS.length; qS++) if (isObj(oldS[qS]) && oldS[qS].name != null) inO[String(oldS[qS].name)] = 1;
@@ -20962,7 +22705,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var rnQ = resName(k);
     if (rnQ !== 'bassam_custody_v1' && rnQ !== 'bassam_employees_v1') continue;
     var EQ = entOf(k); if (!EQ || (!EQ.rename && !EQ.adopt)) continue;
-    var aQ = parseJson(await kvGet(env, 'kv', k), null), bQ = parseJson(String(set[k]), null);
+    var aQ = parseJson(await opResourceGet(env, k), null), bQ = parseJson(String(set[k]), null);
     if (aQ == null || bQ == null) continue;
     var infQ = {}; alignOld(EQ, aQ, bQ, infQ);
     if (infQ.ren) { protOp = 'custodyRename'; break; }
@@ -20980,7 +22723,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var it0 = todo[i], k0 = it0.k;
     if (isDeviceKey(k0)) { evald.push(null); continue; }
     if (it0.act === 'del' && k0 === K_USERS) { evald.push({ deny: 'users' }); continue; }
-    var cur0 = await kvGet(env, 'kv', k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
+    var cur0 = await opResourceGet(env, k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
     if (it0.act === 'set' && k0 === K_USERS && A.u.role !== 'super') {
       /* مراجعةُ التكامل W1-R1: قائمةٌ بُنيت على عدسةٍ غير عدسته الآن (usStale9) ⇒ تعارضٌ قبل usersNoIn/usersScopeIn/canWrite — فلا يُحكم على إسقاطٍ قديم
          ولا يُكتب منه شيء (ما صار يراه ولم يصله لا يُحسب حذفاً). ورفضُ الدفعة كلِّها في الإنفاذ (batchDeny) يبقى رفضاً
@@ -21062,7 +22805,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       var uI9 = parseJson(it0.v, []), uC9 = parseJson(cur0, []), uB9 = nmap(), uE9 = nmap(), uq9;
       (Array.isArray(uC9) ? uC9 : []).forEach(function (x) { if (x && x.id) uB9[String(x.id)] = x; });
       (Array.isArray(uI9) ? uI9 : []).forEach(function (x) { var w = x && x.id ? uB9[String(x.id)] : null; if (x && x.deptId && (!w || ['ekey', 'dis', 'deptId', 'role'].some(function (f) { return String(w[f] == null ? '' : w[f]) !== String(x[f] == null ? '' : x[f]); }))) uE9[String(x.deptId)] = 1; });
-      for (uq9 in uE9) { var uk9 = 'bsdept:' + uq9 + ':bassam_employees_v1'; uE9[uq9] = tkEmps(Object.prototype.hasOwnProperty.call(set, uk9) ? String(set[uk9]) : await kvGet(env, 'kv', uk9)); }
+      for (uq9 in uE9) { var uk9 = 'bsdept:' + uq9 + ':bassam_employees_v1'; uE9[uq9] = tkEmps(Object.prototype.hasOwnProperty.call(set, uk9) ? String(set[uk9]) : await opResourceGet(env, uk9)); }
       if (usersDupEkey(uI9, uC9, uE9)) { evald.push({ deny: 'users', cur: cur0, x: null }); continue; }
     }
     /* KIVO_261 (AUD-056 — كشفه المراجعُ الأمنيّ المستقل): بادئةُ المعرّف tst_ محجوزةٌ لحسابات عُدّة الاختبار (إشعاراتُ النظام تتجاهلها · SOT-183) —
@@ -21129,7 +22872,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (ev && ev.noop) { out.revs[k] = revs[k] || 0; continue; }
     if (it.act === 'del' && k === K_USERS) { out.denied[k] = usOut9(k, { why: 'users', rev: revs[k] || 0 }); continue; }
     /* حكمُ المرحلة الأولى وقيمتُها هما المعتمدان — فلا تُعاد قراءةٌ ولا حساب */
-    var cur = ev ? ev.cur : await kvGet(env, 'kv', k);
+    var cur = ev ? ev.cur : await opResourceGet(env, k);
     var P0 = parseKey(k);
     var have = revs[k] || 0;
     /* التعارض: قيمةٌ بُنيت على نسخةٍ تجاوزها الخادم — وقد حُكم عليها سلفاً */
@@ -21205,7 +22948,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       /* F-10 · F-2 (من SR-2.3): النسخةُ أوّلاً ثم القيمة — فإن كُتب بينهما فالقيمةُ أحدثُ من النسخة والحفظُ التالي يتعارض مرةً أخرى (آمن)؛
          والعكسُ (قيمةٌ قديمة بنسخةٍ أحدث) يجعل الحفظَ التالي يمرّ فيمحو ما كُتب بينهما ولم يره العميل */
       var rvQ = null; try { rvQ = await env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(kq9).first(); } catch (eRq) { rvQ = null; }
-      var curQ = await kvGet(env, 'kv', kq9);
+      var curQ = await opResourceGet(env, kq9);
       var lwQ = null; try { lwQ = await env.DB.prepare('SELECT ts, uid, un FROM aud WHERE k = ?1 ORDER BY ts DESC LIMIT 1').bind(kq9).first(); } catch (eLq) { lwQ = null; }
       var lwNameQ = ''; if (lwQ && lwQ.uid) { if (curUsers === null) curUsers = await usersList(env); var lwUQ = (curUsers || []).filter(function (x) { return x && x.id === lwQ.uid; })[0]; lwNameQ = (lwUQ && (lwUQ.name || lwUQ.un)) || lwQ.un || ''; }
       out.conflicts[kq9] = usOut9(kq9, { cur: curSafe(kq9, curQ), rev: (rvQ && rvQ.rev) || 0, by: lwNameQ, at: lwQ ? (lwQ.ts || 0) : 0, self: !!(lwQ && lwQ.uid === A.u.id) });
@@ -22311,7 +24054,7 @@ ENF_PROJ['bassam_staffing_v2'] = ENF_PROJ['bassam_staffing_v3'];
 async function enfRefsFor(env, depts, keys) {
   var out = { recs: {}, staffing: {} }, i, d;
   out.recs = await enfScopeRecs(env, depts, keys);
-  for (i = 0; i < depts.length; i++) { d = depts[i]; if (!d || out.staffing[d] !== undefined) continue; var sk = 'bsdept:' + d + ':bassam_staffing_v3'; var raw = keys && Object.prototype.hasOwnProperty.call(keys, sk) ? keys[sk] : (keys ? null : await kvGet(env, 'kv', sk)); out.staffing[d] = parseJson(raw, null); }
+  for (i = 0; i < depts.length; i++) { d = depts[i]; if (!d || out.staffing[d] !== undefined) continue; var sk = 'bsdept:' + d + ':bassam_staffing_v3'; var raw = keys && Object.prototype.hasOwnProperty.call(keys, sk) ? keys[sk] : (keys ? null : await opResourceGet(env, sk)); out.staffing[d] = parseJson(raw, null); }
   return out;
 }
 /* الإسقاطُ على نصّ قيمةٍ كما ستُرسل — يرمي عند الخطأ (fail-closed: المستدعي يرفض القراءة) */
@@ -22908,12 +24651,12 @@ function meRec(rec) {
 }
 async function meDeptData(env, deptId, extra) {
   var ks = ME_KEYS.map(function (n) { return 'bsdept:' + deptId + ':' + n; });
-  var sQ = env.DB.prepare('SELECT k, seq, v FROM kv WHERE k IN (' + ks.map(function (_, n) { return '?' + (n + 1); }).join(',') + ') ORDER BY k, seq');
-  var rs = await env.DB.batch([sQ.bind.apply(sQ, ks)].concat(extra || []));
-  var kj = kvJoin((rs[0] && rs[0].results) || []), P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
+  var capture = await opCaptureReferences(env, Object.create(null), ks),
+    rs = await env.DB.batch(capture.guards.concat(extra || [])),
+    kj = capture.keys, P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
   return { emps: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_employees_v1'], []); return Array.isArray(a) ? a : []; })(),
     staffing: P('bassam_staffing_v3', {}), locks: P('bassam_staffing_locks_v1', {}), dreport: P('bassam_dreport_v1', {}), plan: P('bassam_plan_v1', {}),
-    rounds: P('bassam_rounds_v1', {}), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(1) };
+    rounds: P('bassam_rounds_v1', {}), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
 }
 function meIdent(u, D, users) {
   var L = pfLink(u, D ? D.emps : []);
@@ -23052,7 +24795,7 @@ async function meTkIdent(env, A) {
   /* KIVO_265 · M-2 (المراجعةُ المستقلة لدمج 265): التفرّدُ في الحقلين معاً (070 tkTokRec — eid ∪ nid): مفتاحُ الحساب يحمله سجلٌّ واحدٌ بالضبط
      معرّفاً ثابتاً أو رقمَ هوية · ورمزا السجلّ (eid · nid) لا يُضافان إلا إن لم يحملهما سجلٌّ آخر في أيٍّ من الحقلين — كان رقمُ هويةِ سجلّي المساوي
      لمعرّف زميلٍ ثابت يُعطيني صفوفَه وصورَ توثيقه (القراءةُ وحدها: الكتابةُ تشترط العمود 14 = مفتاحي حرفاً). والمعرّفُ المشترك «غيرُ مرتبط» للطرفين */
-  var emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), rec = tkTokRec(emps, ek);
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), rec = tkTokRec(emps, ek);
   if (!rec) return out;
   /* KIVO_265 · F-1/R-24 (المراجعةُ المستقلة · fail-closed): سجلٌّ يحلّ إليه حسابٌ نشطٌ آخر في الإدارة (رقمُ هويته مفتاحُ حسابٍ ثانٍ مثلاً) ⇒ غيرُ مرتبطٍ لكليهما (070 tkRecShared) */
   if (tkRecShared(Array.isArray(A.users) ? A.users : parseJson(await kvGet(env, 'kv', K_USERS), []), emps, d, rec, u.id)) return out;
@@ -23115,7 +24858,7 @@ async function meTkList(env, A, url, request) {
   var rev = await tkRev(env, K);
   if (since && since === rev) return json({ ok: 1, now: now, me: me, rev: rev, same: 1 });   /* لا تغيّر في المخزن منذ آخر قراءة — ردٌّ رخيص للاستطلاع الدوري */
   var ym = String(url.searchParams.get('ym') || ''); if (ym && !METK_YM_RX.test(ym)) return json({ ok: 0, err: 'bad-ym' }, 400);
-  var S = parseJson(await kvGet(env, 'kv', K), {}); if (!isObj(S)) S = {};
+  var S = parseJson(await opResourceGet(env, K), {}); if (!isObj(S)) S = {};
   var all = [], months = {}, dk;
   for (dk in S) {
     if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk])) continue;
@@ -23302,7 +25045,7 @@ async function meTkImg(env, A, id) {
   if (!meTkPageOn(A)) return json({ ok: 0, err: 'off' }, 403);   /* SR-2.2 · F-7 */
   if (!METK_IMG_RX.test(id)) return json({ ok: 0, err: 'bad-id' }, 400);
   var I = await meTkIdent(env, A); if (!I.linked) return json({ ok: 0, err: 'forbidden' }, 403);
-  var K = meTkKey(I), S = parseJson(await kvGet(env, 'kv', K), {}), found = false, dk, i;
+  var K = meTkKey(I), S = parseJson(await opResourceGet(env, K), {}), found = false, dk, i;
   if (isObj(S)) for (dk in S) { if (found || !METK_DAY_RX.test(dk) || !Array.isArray(S[dk])) continue;
     for (i = 0; i < S[dk].length && !found; i++) { var r = S[dk][i]; if (meTkMine(r, I) && isObj(r[21]) && Array.isArray(r[21].imgs) && r[21].imgs.indexOf(id) !== -1) found = true; } }
   if (!found) return json({ ok: 0, err: 'forbidden' }, 403);
@@ -23323,7 +25066,7 @@ async function meTkLog(env, A, url) {
   var dk = String(url.searchParams.get('k') || ''), id = String(url.searchParams.get('id') || '');
   if (!METK_DAY_RX.test(dk) || !id || id.length > 40) return json({ ok: 0, err: 'bad-query' }, 400);
   var I = await meTkIdent(env, A); if (!I.linked) return json({ ok: 0, err: 'not-linked' }, 403);
-  var K = meTkKey(I), S = parseJson(await kvGet(env, 'kv', K), {}), L = isObj(S) && Array.isArray(S[dk]) ? S[dk] : [], r = null;
+  var K = meTkKey(I), S = parseJson(await opResourceGet(env, K), {}), L = isObj(S) && Array.isArray(S[dk]) ? S[dk] : [], r = null;
   for (var j = 0; j < L.length && !r; j++) if (meTkMine(L[j], I) && String(L[j][13]) === id) r = L[j];
   if (!r) return json({ ok: 0, err: 'not-found' }, 404);
   var e1 = tkEntId(r), e2 = (String(r[13]) + '_' + String(r[14])).slice(0, 80);
@@ -23618,13 +25361,13 @@ function tkK(d) { return 'bsdept:' + d + ':bassam_tasks_v1'; }
 async function tkRev(env, k) { var r = await env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(k).first(); return (r && r.rev) || 0; }
 /* قفلُ الشهر في الخادم = الاعتمادُ الصريح وحده (true) — {mo:1} شهرٌ منقضٍ فُتح فهو مفتوح (lockState في 010) */
 async function tkLocked(env, d, ym) {
-  var L = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
+  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
   var v = isObj(L) ? L[ym] : undefined; return v === true || v === 1;
 }
 function tkYm(k) { var p = String(k).split('-'); return (+p[0]) + '-' + (+p[1]); }
 /* KIVO_265 · قفلُ اليوم: اليومُ المُغلق بيده (true على مفتاح «y-m-d» في مخزن الأقفال) لا تُضاف إليه مهامٌ جديدة — الإنشاءُ يُرفض والتكرارُ يتخطّاه */
 async function tkDayShut(env, d, k) {
-  var p = String(k).split('-'), L = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
+  var p = String(k).split('-'), L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
   return isObj(L) && L[(+p[0]) + '-' + (+p[1]) + '-' + (+p[2])] === true;
 }
 /* ── حدثُ تدقيقٍ للمهمة (etype=task · eid = هويةُ الكيان) ── */
@@ -23642,20 +25385,41 @@ function tkAud(K, r, act, ctx, bef, aft) {
    opt.srv: مسارُ مهامٍ في الخادم يبني من القيمة الحالية — فلا يمسّه حفظُ أفعال الموظف (tkKeepSelf) المخصّصُ للحفظ الخامّ من الواجهة. */
 var TK_TRIES = 8;
 function tkPause(n, ms) { return Math.min(1500, Math.max(5, ms || 0) * (0.5 + Math.random()) + 15 * n); }
-async function tkSave(env, request, A, K, fn, meta) {
+async function tkSave(env, request, A, K, fn, meta, command) {
   var mq = meta || (request ? reqMeta(request) : {}), last = 0;
-  for (var attempt = 0; attempt < TK_TRIES; attempt++) {
+  for (var attempt = 0; attempt < (command ? 1 : TK_TRIES); attempt++) {
     if (attempt) await new Promise(function (r) { setTimeout(r, tkPause(attempt, last)); });
     var t0 = Date.now();
-    var rev = await tkRev(env, K), S = parseJson(await kvGet(env, 'kv', K), {}); if (!isObj(S)) S = {};
+    var rev = await tkRev(env, K), S = parseJson(await opResourceGet(env, K), {}); if (!isObj(S)) S = {};
     var R = await fn(S, rev, attempt);
     if (!R || R.err) return R || { err: json({ ok: 0, err: 'state' }, 409) };
     if (R.noop) return R;
     var B = { set: {}, base: {}, aud: R.aud || [] }; B.set[K] = JSON.stringify(R.S2); B.base[K] = rev;
     if (R.why) { B.why = {}; B.why[K] = String(R.why).slice(0, 300); }               /* KIVO_265: سببُ الفعل للإنفاذ حين يلزمه سجلُّه (task.reopen — §12 audit.reason) */
-    var res = await applySave(env, B, A, mq, { srv: 1, quiet: 1 });
+    if (command) { B.requestId = command.body.requestId; B.epoch = command.body.epoch; }
+    var options = { srv: 1, quiet: 1 };
+    if (command) {
+      var classification = KIVO_GUARDS.classify('bassam_tasks_v1', S, R.S2, {});
+      R.result = Object.assign({}, R.result || {}, { commandActions: Array.from(new Set(command.actions.concat(classification ? classification.keys() : []))) });
+    }
+    if (command) Object.assign(options, { __reference: command.reference, __operationRequestId: command.body.requestId,
+      __operationFingerprint: command.fingerprint, __operationResult: R.result || {} });
+    var res;
+    try { res = await applySave(env, B, A, mq, options); }
+    catch (error) {
+      var epochChanged = /KIVO_RESTORE_EPOCH/.test(String(error));
+      if (!epochChanged && !/KIVO_REV_CONFLICT|KIVO_RESTORE_TARGET/.test(String(error)) && !(error.rs === 'conflict' && error.status === 409)) throw error;
+      last = Date.now() - t0;
+      // Interactive commands retain their original base/ticket. Existing
+      // server/self intents may retry against current data, never across restore.
+      if (command) return { err: json({ ok: 0, err: 'conflict' }, 409) };
+      if (epochChanged) return { err: json({ ok: 0, err: 'busy', msg: 'تغيّرت نسخة البيانات — راجع المهمة وأعد المحاولة' }, 409) };
+      continue;
+    }
     last = Date.now() - t0;
-    if (res.revs && res.revs[K]) { R.rev = res.revs[K]; return R; }
+    if ((!command || res.ok === 1) && res.revs && Object.prototype.hasOwnProperty.call(res.revs, K) && Number.isSafeInteger(res.revs[K]) && res.revs[K] >= 0) {
+      R.rev = res.revs[K]; if (command) R.receipt = res; return R;
+    }
     if (res.denied && res.denied[K]) {
       if ((await tkRev(env, K)) !== rev) continue;                                 /* رفضٌ على نسخةٍ تجاوزها حفظٌ متزامن ⇒ قراءةٌ جديدة */
       await secLog(env, { ts: Date.now(), uid: A.u.id, un: String(A.u.un || ''), act: 'denied', target: K, detail: String(res.denied[K].why || ''), ip: mq.ip, city: mq.city, dev: mq.dev });
@@ -23767,6 +25531,54 @@ function tkFind(L, id, ekey, hint) {
   for (var j = 0; j < L.length; j++) if (ok(L[j])) return j;
   return -1;
 }
+
+/* Interactive commands carry the original request fingerprint into the existing
+   operational receipt. The fresh reference also fences every derived input. */
+async function tkCommandContext(env, A, body, command, actions) {
+  var append = command === 'tasks.create';
+  if (!Number.isSafeInteger(body.epoch) || body.epoch < 0 ||
+      ((!append || body.base !== undefined) && (!Number.isSafeInteger(body.base) || body.base < 0)))
+    return tkNo(400, 'bad-body', '', { at: 'base' });
+  var reference = await rsReferenceSnapshot(env, A.u.id), actor = reference.A;
+  if (!actor || !actor.u) return tkNo(401, 'session');
+  ['tok', 'sessTs', '__tkSrv', '__tkSelf'].forEach(function (key) { if (A[key] !== undefined) actor[key] = A[key]; });
+  env = reference.env; A = actor;
+  var D = tkDeptOf(A, body.dept); if (D.err) return D;
+  if (!(A.depts || []).some(function (row) { return row && row.id === D.d; })) return tkNo(403, 'forbidden');
+  if (!(actions || []).every(function (action) { return tkHeld(A, D.d, action); })) return tkNo(403, 'denied');
+  if (body.epoch !== Number(reference.inputMeta.restore_epoch || 0)) return tkNo(409, 'restore-epoch-changed');
+  var receipt = await opCommandReceipt(env, A, command, body.requestId, body), key = tkK(D.d);
+  if (receipt.receipt && (!Array.isArray(receipt.receipt.commandActions) || !receipt.receipt.commandActions.every(function (action) { return tkHeld(A, D.d, action); }))) return tkNo(403, 'denied');
+  if (receipt.receipt) {
+    try { await env.DB.batch(rsReferenceGuards(env, reference)); }
+    catch (error) {
+      if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) throw rsError('conflict', 409);
+      throw error;
+    }
+  }
+  // Create appends to this freshly captured source; it never replaces a client
+  // document. Its server-side CAS remains in tkSave/the atomic compiler.
+  if (!append && !receipt.receipt && body.base !== Number(reference.inputRevs[key] || 0)) return tkNo(409, 'busy');
+  return { actions: actions || [], env: env, A: A, d: D.d, key: key, reference: reference, fingerprint: receipt.fingerprint, receipt: receipt.receipt, body: body };
+}
+function tkCommandReply(command, receipt) {
+  var reply = Object.assign({}, receipt, { rev: receipt.revs && receipt.revs[command.key] || receipt.v || 0 });
+  delete reply.commandActions;
+  return reply;
+}
+async function tkPreparedCommand(env, request, A, body, name, prepare, recurrence) {
+  var actions = recurrence && body.op === 'start' ? ['task.edit', 'task.create', 'task.assign'] : ['task.edit'];
+  var command = await tkCommandContext(env, A, body, name, actions);
+  if (command.err) return command.err;
+  if (command.receipt) return json(tkCommandReply(command, command.receipt));
+  var R = await tkSave(command.env, request, command.A, command.key, async function (S) {
+    var plan = await prepare(command.env, command.A, body, command.d, command.key, S);
+    return plan instanceof Response ? { err: plan } : plan;
+  }, null, command);
+  if (R.err) return R.err;
+  if (recurrence && !R.receipt.duplicate && typeof tkGateReset === 'function') await tkGateReset(command.env, 'rec', command.d);
+  return json(tkCommandReply(command, R.receipt));
+}
 /* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول: الإنشاء · المراجعة · التمديد · إعادةُ الإسناد · الإلغاء · الربط · المجموعة ═══
    كلُّ مسارٍ يبني القيمةَ الجديدة في الخادم ثم يمرّ بالحفظ المركزي applySave نفسِه بهوية الفاعل — فالصلاحيةُ يحكم بها النظامُ القائم
    (canWrite/selfTaskOnly · enfDecide بالتصنيف 006) لا هذا الملف؛ وما هنا قواعدُ سيرِ العمل فوقها (المراجِعُ المسمّى · سببُ الإعادة · حالةُ الصفّ).
@@ -23833,7 +25645,10 @@ function tkNeedsIn(v) {
 }
 /* ── POST /api/tasks/create ── */
 async function tkCreate(env, request, A, b) {
-  var D0 = tkDeptOf(A, b.dept); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
+  var command = await tkCommandContext(env, A, b, 'tasks.create', (b.shift || (Array.isArray(b.asg) && b.asg.length)) ? ['task.create', 'task.assign'] : ['task.create']);
+  if (command.err) return command.err;
+  if (command.receipt) return json(tkCommandReply(command, command.receipt));
+  env = command.env; A = command.A; var d = command.d, K = command.key;
   var asg = Array.isArray(b.asg) ? b.asg : null, SH = b.shift != null ? b.shift : null, shName = '';
   if (!METK_DAY_RX.test(String(b.k || ''))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (!tkStrOk(b.t, 300, true)) return tkNo(400, 'bad-body', 'اكتب عنوان المهمة', { at: 't' }).err;
@@ -23863,7 +25678,7 @@ async function tkCreate(env, request, A, b) {
   if (await tkDayShut(env, d, b.k)) return tkNo(409, 'locked', 'اليومُ مُغلق — افتحه من صفحة المهام أولاً').err;
   var RV = await tkRvIn(env, A, d, b.rv); if (RV.bad) return tkNo(400, 'bad-body', RV.msg || '', { at: RV.bad }).err;
   if (RV.rv && RV.rv.e && asg.indexOf(RV.rv.e) !== -1) return tkNo(400, 'bad-body', 'المراجِعُ لا يكون المكلَّفَ نفسَه', { at: 'rv' }).err;
-  var emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), byE = nmap(), EL = [], skipped = [], i;
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), byE = nmap(), EL = [], skipped = [], i;
   if (SH) {
     /* KIVO_265 · البند 12: مكلَّفو الوردية يومَها بسياق الأهلية (072 tkShiftAsg) — بلا حسابٍ نشط (hard) أو بلا معرّفٍ فريد أو المراجِعُ نفسُه ⇒ يُتخطّى بسببه
        (لا 409 كالقائمة: الورديةُ كيانٌ والقائمةُ تُطهَّر هنا) · وما بعد سقف 500 يُقطع ويُبلَّغ · ثم «غير متاح» بقاعدة القائمة نفسِها (409 elig إلا بـforce) */
@@ -23910,12 +25725,12 @@ async function tkCreate(env, request, A, b) {
     rows.forEach(function (r) { var xr = tkX(r) || {}, cx = RC.rec ? { day: b.k, via: 'srv', rec: recId, idem: xr.idem || undefined } : { day: b.k, via: 'srv' }; if (SH) cx.shift = shName; aud.push(tkAud(K, r, 'created', cx, null, { asg: r[8] || '', s: r[15], e: r[16], pol: tkPolTxt(tkPolOf(r)), rv: RV.rv ? RV.rv.n : '', rec: RC.rec ? RC.rec.t : '', win: tkWinTxt(tkWinOf(r)) })); });
     var S2 = Object.assign({}, S); S2[b.k] = (Array.isArray(S[b.k]) ? S[b.k] : []).concat(rows);
     created = rows;
-    return { S2: S2, aud: aud };
-  });
+    return { S2: S2, aud: aud, result: { rows: rows.map(function (r) { return { k: b.k, id: r[13], ekey: r[14] }; }), elig: EL, skipped: skipped } };
+  }, null, command);
   if (R.err) return R.err;
-  await tkNotify(env, request, A, d, created.filter(function (r) { return r[14]; }).map(function (r) { return { type: 'task_new', own: [String(r[14])], vars: { 'المهمة': r[0], 'الوقت': tkClock(r[16]) } }; }));
-  if (RC.rec && typeof tkGateReset === 'function') await tkGateReset(env, 'rec', d);   /* الفحصُ العميق · R8: سلسلةٌ جديدة ⇒ القراءةُ التالية في «ملفي» تولّد نسخَها (074) */
-  return json({ ok: 1, rev: R.rev, rows: created.map(function (r) { return { k: b.k, id: r[13], ekey: r[14] }; }), elig: EL, skipped: skipped });
+  if (!R.receipt.duplicate) await tkNotify(env, request, A, d, created.filter(function (r) { return r[14]; }).map(function (r) { return { type: 'task_new', own: [String(r[14])], vars: { 'المهمة': r[0], 'الوقت': tkClock(r[16]) } }; }));
+  if (!R.receipt.duplicate && RC.rec && typeof tkGateReset === 'function') await tkGateReset(env, 'rec', d);   /* الفحصُ العميق · R8: سلسلةٌ جديدة ⇒ القراءةُ التالية في «ملفي» تولّد نسخَها (074) */
+  return json(tkCommandReply(command, R.receipt));
 }
 /* صفٌّ بعينه للمسؤول: هويتُه (13) ومكلَّفُه (14) في يومه */
 function tkPick(S, k, id, ekey) {
@@ -23990,9 +25805,9 @@ async function tkReassign(env, request, A, b) {
   if (String(b.from) === String(b.to)) return tkNo(400, 'bad-body', 'المكلَّفُ الجديد هو نفسُه', { at: 'to' }).err;
   if (!tkHeld(A, d, 'task.assign')) return tkNo(403, 'denied', 'إعادةُ الإسناد للمديرين والمخوَّلين').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
-  var emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
   if (!em) return tkNo(400, 'asg', tkEidShared(emps, b.to) ? TK_EID_DUP : 'موظفٌ غير معروف بمعرّفه الثابت في سجل الإدارة', { at: 'to' }).err;
-  var S00 = parseJson(await kvGet(env, 'kv', K), {}), P00 = isObj(S00) ? tkPick(S00, b.k, b.id, b.from) : null; if (!P00) return tkNo(404, 'not-found').err;
+  var S00 = parseJson(await opResourceGet(env, K), {}), P00 = isObj(S00) ? tkPick(S00, b.k, b.id, b.from) : null; if (!P00) return tkNo(404, 'not-found').err;
   /* KIVO_265 · المراجعةُ الموحّدة (R-7): المراجِعُ المسمّى لا يكون المكلَّفَ — كالإنشاء (:86) والإعدادات — وإلا سلّم ثم اعتمد تسليمَه بنفسه (ق3) */
   var RV_TO = function (r) { var x = tkX(r) || {}; return isObj(x.rv) && x.rv.e != null && String(x.rv.e) === String(b.to); };
   if (RV_TO(P00.r0)) return tkNo(400, 'bad-body', 'المراجِعُ لا يكون المكلَّفَ نفسَه — غيّر المراجِعَ من إعدادات المهمة أولاً', { at: 'to' }).err;
@@ -24052,7 +25867,7 @@ async function tkRelink(env, request, A, b) {
   if (!METK_DAY_RX.test(String(b.k || '')) || !tkIdOk(b.id) || !tkStrOk(b.from, 160, true) || !tkStrOk(b.to, 80, true)) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (!tkHeld(A, d, 'task.assign')) return tkNo(403, 'denied', 'ربطُ الإسناد للمديرين والمخوَّلين').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
-  var emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
   if (!em) return tkNo(400, 'asg', tkEidShared(emps, b.to) ? TK_EID_DUP : 'موظفٌ غير معروف بمعرّفه الثابت', { at: 'to' }).err;
   /* KIVO_265 · المراجعةُ الموحّدة (R-6 — منخفض): الربطُ تصحيحُ هويةٍ لا إسنادٌ لغير صاحب الصفّ — كان يقبل صفّاً «مرتبطاً برقم الهوية» وصفّاً منجزاً
      أو ملغى وموظفاً بلا حساب، فينقل عملاً منجزاً وإثباتَه إلى غير صاحبه (P0) ويربط مهمةً مفتوحة بمن لن يراها:
@@ -24082,8 +25897,7 @@ async function tkRelink(env, request, A, b) {
 }
 /* ── POST /api/tasks/settings {k, id, ekey?, grp?, pol?, rv?, dec?} — KIVO_265 · H-1: إعداداتُ المهمة في العمود 23 (سياسةُ الإثبات ق2 · المراجِع ق3 ·
    الاعتذار) من الخادم وحده — كانت صفحةُ المهام تكتبها في x بحفظٍ خامّ عند التعديل (_tkXEdit). grp: صفوفُ المهمة الجماعية في يومها كلُّها ── */
-async function tkSettings(env, request, A, b) {
-  var D0 = tkDeptOf(A, b.dept); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
+async function tkSettingsPrepare(env, A, b, d, K, S) {
   if (!METK_DAY_RX.test(String(b.k || '')) || !(b.grp != null ? tkStrOk(b.grp, 60, true) : tkIdOk(b.id)) || !(b.ekey == null || tkStrOk(b.ekey, 80))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (b.pol === undefined && b.rv === undefined && b.dec === undefined && b.win === undefined) return tkNo(400, 'bad-body', 'لا إعداداتَ للتعديل', { at: 'pol' }).err;
   var WI = b.win === undefined ? null : tkWinIn(b.win); if (WI && WI.bad) return tkNo(400, 'bad-body', 'نافذةُ التنفيذ: الدقائقُ قبل الموعد 0–240 والساعاتُ بعد المهلة 0–24', { at: WI.bad }).err;   /* KIVO_265 · نافذةُ التنفيذ (null = الافتراضي) */
@@ -24092,7 +25906,7 @@ async function tkSettings(env, request, A, b) {
   if (!tkHeld(A, d, 'task.edit')) return tkNo(403, 'denied', 'تعديلُ إعدادات المهمة يحتاج صلاحية تعديل المهام').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
   /* المراجِع: «المنشئ» = منشئُ المهمة المسجَّل (x.by) إن ملك الاعتماد — وإلا أنت (كما في الإنشاء) · «بلا» · أو حسابٌ مسمّى يملك الاعتماد */
-  var S00 = parseJson(await kvGet(env, 'kv', K), {}), L00 = isObj(S00) && Array.isArray(S00[b.k]) ? S00[b.k] : [];
+  var S00 = S, L00 = isObj(S00) && Array.isArray(S00[b.k]) ? S00[b.k] : [];
   var pick = function (L) {
     if (b.grp != null) { var o = []; for (var q = 0; q < L.length; q++) if (Array.isArray(L[q]) && String(L[q][17] || '') === String(b.grp)) o.push(q); return o; }
     var P0 = tkPick({ x: L }, 'x', b.id, b.ekey == null ? null : b.ekey); return P0 ? [P0.idx] : [];
@@ -24107,7 +25921,7 @@ async function tkSettings(env, request, A, b) {
     if (RV.bad) return tkNo(400, 'bad-body', RV.msg || '', { at: RV.bad }).err;
   }
   var out = { n: 0 };
-  var R = await tkSave(env, request, A, K, function (S) {
+  var R = (function (S) {
     var L = Array.isArray(S[b.k]) ? S[b.k] : [], ix = pick(L), now = Date.now(), aud = [], L2 = L.slice(); out = { n: 0 };
     if (!ix.length) return tkNo(404, 'not-found');
     for (var q = 0; q < ix.length; q++) {
@@ -24128,9 +25942,104 @@ async function tkSettings(env, request, A, b) {
     if (!out.n) return tkNo(409, 'state', 'المهمة ملغاةٌ أو أُعيد إسنادُها', {});
     var S2 = Object.assign({}, S); S2[b.k] = L2;
     return { S2: S2, aud: aud };
-  });
+  })(S);
+  if (!R.err) R.result = { n: out.n };
+  return R;
+}
+async function tkSettings(env, request, A, b) {
+  return await tkEditSettingsCommand(env, request, A, b);
+}
+/* Editing, settings and an optional recurrence change are planned against one
+   fresh source and committed once. The existing raw policy judges the edit
+   before the server-owned settings/recurrence planners add their columns. */
+async function tkEditPrepare(env, A, b, d, K, S, rev) {
+  var edit = b.edit;
+  if (!isObj(edit) || Object.keys(edit).some(function (key) { return ['k', 't', 'desc', 'prio', 's', 'e', 'ekey', 'wt'].indexOf(key) < 0; }) ||
+      !METK_DAY_RX.test(String(b.k || '')) || !METK_DAY_RX.test(String(edit.k || '')) ||
+      !(b.grp != null ? tkStrOk(b.grp, 60, true) : tkIdOk(b.id)) ||
+      !tkStrOk(edit.t, 300, true) || !tkStrOk(edit.desc, 4000) || !(edit.prio === null || typeof edit.prio === 'string') ||
+      !Number.isFinite(edit.s) || !Number.isFinite(edit.e) || edit.e <= edit.s ||
+      !(edit.ekey == null || tkStrOk(edit.ekey, 80)) || !tkStrOk(edit.wt, 80)) return tkNo(400, 'bad-body', '', { at: 'edit' });
+  if (await tkLocked(env, d, tkYm(b.k)) || await tkLocked(env, d, tkYm(edit.k)) ||
+      await tkDayShut(env, d, b.k) || await tkDayShut(env, d, edit.k)) return tkNo(409, 'locked');
+  var L = Array.isArray(S[b.k]) ? S[b.k] : [], ix = [];
+  if (b.grp != null) L.forEach(function (row, index) { if (Array.isArray(row) && String(row[17] || '') === String(b.grp)) ix.push(index); });
+  else { var picked = tkPick(S, b.k, b.id, b.ekey == null ? null : b.ekey); if (picked) ix.push(picked.idx); }
+  if (!ix.length) return tkNo(404, 'not-found');
+  if (b.grp != null && edit.ekey != null) return tkNo(400, 'bad-body', '', { at: 'edit.ekey' });
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), rows = [];
+  for (var q = 0; q < ix.length; q++) {
+    var old = L[ix[q]], row = old.slice(), changedAssignee = b.grp == null && String(edit.ekey || '') !== String(old[14] || ''),
+      orphan = !String(old[14] || ''), oldManagement = tkX(old), orphanProtected = old[3] === 'done' || old[12] || old[21] || (oldManagement && (oldManagement.asg === 'cancelled' || oldManagement.asg === 'reassigned'));
+    if (!TK_PRIO[edit.prio] && edit.prio !== old[2]) return tkNo(400, 'bad-body', '', { at: 'edit.prio' });
+    if (changedAssignee && ((!orphan && tkRowActive(old)) || (orphan && orphanProtected))) return tkNo(409, 'state', 'استعمل إعادة الإسناد لمهمة بدأ عليها نشاط أو لها توثيق');
+    row[0] = edit.t.trim(); row[1] = String(edit.desc || '').trim(); row[2] = edit.prio;
+    row[10] = Math.round((edit.e - edit.s) / 60000) || null; row[15] = edit.s; row[16] = edit.e;
+    if (b.grp == null) {
+      var token = edit.ekey == null || edit.ekey === '' ? null : String(edit.ekey), employee = token ? tkTokRec(emps, token) : null;
+      if (changedAssignee && token && !employee) return tkNo(400, 'asg');
+      if (changedAssignee) {
+        row[14] = token; row[7] = employee ? [String(employee.name || '').charAt(0)] : []; row[8] = employee ? String(employee.name || '') : '';
+        // HEAD9 V1/V5: an unassigned orphan must not lend the former holder's
+        // start/ACK/decline state to a new assignee. Proof/history stay intact.
+        if (orphan && token) { row[3] = 'pending'; row[6] = null; row[11] = null; row[12] = null; row[20] = null; }
+      }
+      row[17] = null; row[18] = null; row[19] = token ? null : String(edit.wt || '') || null;
+    }
+    if (row[3] === 'done' && row[11] && row[12]) row[6] = tkPerfOf(row, row[12]);
+    rows.push(row);
+  }
+  var S2 = Object.assign({}, S); S2[b.k] = L.filter(function (_, index) { return ix.indexOf(index) < 0; });
+  if (!S2[b.k].length) delete S2[b.k];
+  S2[edit.k] = (Array.isArray(S2[edit.k]) ? S2[edit.k] : []).concat(rows);
+  var body = { set: {}, base: {} }; body.set[K] = JSON.stringify(S2); body.base[K] = rev;
+  var rawActor = Object.assign({}, A); delete rawActor.__tkSrv; delete rawActor.__tkSelf;
+  var permission = await applySave(env, body, rawActor, {}, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN });
+  if (!permission.ok) {
+    var deniedMap = permission.denied || (permission.out && permission.out.denied), denied = deniedMap && deniedMap[K];
+    return tkNo(denied ? 403 : 409, denied ? 'denied' : 'busy', '', denied ? { why: denied.why, reasonKeys: denied.reasonKeys } : {});
+  }
+  var written = permission.pend && permission.pend.find(function (entry) { return entry.k === K; });
+  if (written) S2 = parseJson(written.v, null);
+  if (!isObj(S2)) return tkNo(409, 'state');
+  return { S2: S2, aud: rows.map(function (row) { return tkAud(K, row, 'edited', { day: edit.k, via: 'srv' }, null, { t: row[0], s: row[15], e: row[16] }); }),
+    result: { n: rows.length }, target: { k: edit.k, id: rows[0][13], ekey: rows[0][14], grp: b.grp } };
+}
+async function tkEditSettingsCommand(env, request, A, b) {
+  var command = await tkCommandContext(env, A, b, 'tasks.settings', ['task.edit']);
+  if (command.err) return command.err;
+  if (command.receipt) return json(tkCommandReply(command, command.receipt));
+  var R = await tkSave(command.env, request, command.A, command.key, async function (S, rev) {
+    var plan = { S2: S, aud: [], result: {} }, target = { k: b.k, id: b.id, ekey: b.ekey, grp: b.grp };
+    if (b.edit !== undefined) {
+      plan = await tkEditPrepare(command.env, command.A, b, command.d, command.key, S, rev);
+      if (plan.err) return plan;
+      target = plan.target;
+    }
+    var settings = ['pol', 'rv', 'dec', 'win'].some(function (key) { return b[key] !== undefined; });
+    if (!settings && b.edit === undefined && b.recur === undefined) return tkNo(400, 'bad-body', '', { at: 'pol' });
+    if (settings) {
+      var next = await tkSettingsPrepare(command.env, command.A, Object.assign({}, b, target), command.d, command.key, plan.S2);
+      if (next instanceof Response) return { err: next };
+      if (next.err) return next;
+      plan.S2 = next.S2; plan.aud = plan.aud.concat(next.aud); plan.result.settings = next.result;
+      if (!plan.result.n) plan.result.n = next.result.n;
+    }
+    if (b.recur !== undefined) {
+      if (!isObj(b.recur) || Object.keys(b.recur).some(function (key) { return ['op', 'id', 'rec', 'row'].indexOf(key) < 0; })) return tkNo(400, 'bad-body', '', { at: 'recur' });
+      var recBody = Object.assign({}, b.recur, { dept: command.d, k: target.k });
+      if (recBody.op === 'start') Object.assign(recBody, target);
+      var recPlan = await tkRecurPrepare(command.env, command.A, recBody, command.d, command.key, plan.S2);
+      if (recPlan instanceof Response) return { err: recPlan };
+      if (recPlan.err) return recPlan;
+      plan.S2 = recPlan.S2; plan.aud = plan.aud.concat(recPlan.aud); plan.result.recurrence = recPlan.result;
+      if (!plan.result.n) plan.result.n = recPlan.result.n;
+    }
+    return plan;
+  }, null, command);
   if (R.err) return R.err;
-  return json({ ok: 1, rev: R.rev, n: out.n });
+  if (b.recur && !R.receipt.duplicate && typeof tkGateReset === 'function') await tkGateReset(command.env, 'rec', command.d);
+  return json(tkCommandReply(command, R.receipt));
 }
 /* ── POST /api/tasks/reopen {k, id, ekey?, why?} — KIVO_265 · H-1: إعادةُ فتح مهمةٍ منجزة (منجزة ⇒ جارية) من الخادم، ومعها قرارُ المراجعة «أُعيدت»
    في العمود 23 حين كان لها تسليمٌ ومراجِع — كانت صفحةُ المهام تكتبه بحفظٍ خامّ (_tkReopenX). الحفظُ المركزي يحكم الفعل (task.reopen في الإنفاذ) ── */
@@ -24166,7 +26075,7 @@ async function tkGroup(env, A, url) {
   var gid = String(url.searchParams.get('id') || ''), k = String(url.searchParams.get('k') || '');
   if (!gid || gid.length > 60 || (k && !METK_DAY_RX.test(k))) return tkNo(400, 'bad-query').err;
   if (!canRead(A, K)) return tkNo(403, 'forbidden').err;
-  var S = parseJson(await kvGet(env, 'kv', K), {}), now = Date.now(), mem = [], dk;
+  var S = parseJson(await opResourceGet(env, K), {}), now = Date.now(), mem = [], dk;
   var sm = { n: 0, ack: 0, running: 0, stalled: 0, review: 0, returned: 0, done: 0, declined: 0, cancelled: 0, reassigned: 0, pending: 0, late: 0 };
   if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (k && dk !== k)) continue;
     S[dk].forEach(function (r, i) {
@@ -24189,7 +26098,7 @@ async function tkLinkage(env, A, url) {
   var D0 = tkDeptOf(A, url.searchParams.get('dept')); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
   var ym = String(url.searchParams.get('ym') || ''); if (ym && !METK_YM_RX.test(ym)) return tkNo(400, 'bad-ym').err;
   if (!canRead(A, K)) return tkNo(403, 'forbidden').err;
-  var S = parseJson(await kvGet(env, 'kv', K), {}), emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1'));
+  var S = parseJson(await opResourceGet(env, K), {}), emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'));
   var cnt = { eid: 0, nid: 0, name: 0, unknown: 0, ambiguous: 0, none: 0 }, rows = [], dk;
   if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (ym && tkYm(dk) !== ym.replace(/-0(\d)$/, '-$1'))) continue;
     S[dk].forEach(function (r, i) {
@@ -24228,9 +26137,14 @@ async function tasksMgmtRoutes(request, env, path, ss) {
   var rl = await rlHit(env, 'sv', A.u.id, RL_SAVE); if (rl) return tooMany(rl);
   var B0 = await tkBody(request, path, path === '/api/tasks/create' ? 32768 : 8192); if (B0.err) return B0.err;
   var sxB = tkSessBody(env, B0.b, ss, path); if (sxB) return sxB;   /* KIVO_264 · C1: uid في الجسم = هويةُ التبويب — قبل أيّ قراءةٍ أو كتابة */
-  if (path === '/api/tasks/recur/run') return await tkRecurRoute(env, request, A, url, B0.b);
-  if (path === '/api/tasks/recur') return await tkRecurOp(env, request, A, B0.b);
-  return await POSTS[path](env, request, A, B0.b);
+  try {
+    if (path === '/api/tasks/recur/run') return await tkRecurRoute(env, request, A, url, B0.b);
+    if (path === '/api/tasks/recur') return await tkRecurOp(env, request, A, B0.b);
+    return await POSTS[path](env, request, A, B0.b);
+  } catch (error) {
+    if (error && error.rs) return json({ ok: 0, err: error.rs }, error.status || 400);
+    throw error;
+  }
 }
 /* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══
    المصدرُ المعتمد: الخطةُ التشغيلية ← الجدولُ الشهري (bassam_staffing_v3[Y-M][مفتاح الموظف]: shift · rest[] · perm[] · leaves[] · muk)
@@ -24243,8 +26157,8 @@ async function tasksMgmtRoutes(request, env, path, ss) {
      GET /api/tasks/eligibility?ekeys=a,b&s=<ms>[&e=<ms>][&needs=plan.edit,…][&dept=]   (task.assign أو task.create في الإدارة) */
 var TK_EL_OK = 'متاح', TK_EL_NO = 'غير متاح', TK_EL_WAIT = 'بانتظار التحقق';
 async function tkEligCtx(env, A, d) {
-  var g = async function (n) { return parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':' + n), null); };
-  var C = { d: d, emps: tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), staff: await g('bassam_staffing_v3'), locks: await g('bassam_staffing_locks_v1'),
+  var g = async function (n) { return parseJson(await opResourceGet(env, 'bsdept:' + d + ':' + n), null); };
+  var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), staff: await g('bassam_staffing_v3'), locks: await g('bassam_staffing_locks_v1'),
     shifts: await g('bassam_shift_options_v1'), rep: await g('bassam_dreport_v1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
   C.detail = A && A.u ? (A.u.role === 'super' || canRead(A, 'bsdept:' + d + ':bassam_staffing_v3')) : false;
   /* KIVO_265 · F-3 (RBAC_AUDIT_265): عناوينُ المهام المتعارضة (conf[].t) لمن يقرأ مخزنَ المهام (task.view) وحده — كان حاملُ task.create/assign بلا task.view يقرؤها */
@@ -24510,14 +26424,14 @@ async function tkRecurTombs(env, K, now) {
 }
 async function tkRecurRun(env, request, d, opts) {
   var K = tkK(d), now = Date.now(), rep = { created: 0, skipped: [], denied: [], series: 0 };
-  var S = parseJson(await kvGet(env, 'kv', K), {}); if (!isObj(S)) return rep;
+  var S = parseJson(await opResourceGet(env, K), {}); if (!isObj(S)) return rep;
   var Z = tkSeries(S), ids = Object.keys(Z.ser); rep.series = ids.length; if (!ids.length) return rep;
   /* KIVO_265 · M-1: لا تفصيلَ دائماً (كان C.detail = true) — التفصيلُ بقاعدة الأهلية نفسِها (072 tkEligCtx): لفاعلِ الطلب الصريح إن قرأ الجدولَ الشهري
      (tkRecurRoute يمرّره في opts.A) · والتوليدُ الكسول من «ملفي» بلا فاعل ⇒ مجرّد. والتنبيهُ المخزَّن (يقرؤه أعضاءُ الإدارة كلُّهم) بالحكم المجرّد (gen) دائماً */
   var C = await tkEligCtx(env, opts && opts.A ? opts.A : null, d);
   var tomb = await tkRecurTombs(env, K, now), tq; for (tq in tomb) Z.idem[tq] = 1;
   var mid0 = tkRiyMid(now - 3 * 36e5), plan = nmap(), n = 0, lockC = nmap();         /* plan[authorUid] = [{k, row, idem, author}] */
-  var LK = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(LK)) LK = {};
+  var LK = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(LK)) LK = {};
   for (var q = 0; q < ids.length && n < TK_REC_MAX; q++) {
     var s0 = Z.ser[ids[q]], rec = s0.rec, P = s0.proto, x0 = tkX(P) || {};
     if (!rec || rec.paused || rec.stop || !Array.isArray(rec.asg) || !rec.asg.length || !P[15] || !P[16]) continue;   /* srvrec: المنتهيةُ (stop) لا تُولَّد */
@@ -24634,10 +26548,9 @@ async function tkRecStopEv(env, K, id) {
   return !!r;
 }
 var TK_REC_LKMSG = 'كلُّ مواعيد هذه السلسلة في شهرٍ معتمد مقفل — يمكن إيقافها أو تعديلها عند ظهور موعدها القادم (قبل استحقاقه بشهر)، أو بعد فتح الشهر';   /* البند 15: الأفقُ 30 يوماً */
-async function tkRecurOp(env, request, A, b) {
-  var D0 = tkDeptOf(A, b.dept); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
+async function tkRecurPrepare(env, A, b, d, K, S) {
   if (TK_REC_OPS.indexOf(b.op) === -1) return tkNo(400, 'bad-body', '', { at: 'op' }).err;
-  if (b.op === 'start') return await tkRecurStart(env, request, A, b, d, K);
+  if (b.op === 'start') return await tkRecurStartPrepare(env, A, b, d, K, S);
   if (!tkStrOk(b.id, 40, true)) return tkNo(400, 'bad-body', '', { at: 'id' }).err;
   /* KIVO_265 · U1: stop {k, row} — نسخةُ هذا اليوم من السلسلة (العمود 13) تبقى آخرَ موعدٍ لها فلا تُلغى بالإنهاء (نموذجُ «المهام»: «لمرة واحدة» لنسخةٍ قادمة) */
   if (b.row != null) {
@@ -24650,10 +26563,10 @@ async function tkRecurOp(env, request, A, b) {
     var RC0 = tkRecIn(b.rec, T.k, {}); if (RC0.bad) return tkNo(400, 'bad-body', RC0.msg || '', { at: RC0.bad }).err;
   } else if (b.rec != null) return tkNo(400, 'bad-body', '', { at: 'rec' }).err;
   if (!tkHeld(A, d, 'task.edit')) return tkNo(403, 'denied', 'إدارةُ التكرار تحتاج صلاحية تعديل المهام').err;
-  var LK = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(LK)) LK = {};
+  var LK = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(LK)) LK = {};
   var out = { n: 0, cancelled: 0, ver: 0, restored: 0, kept: 0 }, id = String(b.id), n0 = tkDayNum(T.k), stopEv = await tkRecStopEv(env, K, id);
   var keepK = b.row != null ? String(b.k).replace(/-0(\d)/g, '-$1') : '', keepR = b.row != null ? String(b.row) : '';
-  var R = await tkSave(env, request, A, K, function (S) {
+  var R = (function (S) {
     var Z = tkSeries(S), s0 = Z.ser[id]; out = { n: 0, cancelled: 0, ver: 0, restored: 0, kept: 0 };
     if (!s0) return tkNo(404, 'not-found');
     var rec0 = isObj(s0.rec) ? s0.rec : {}, now = Date.now(), ver = Math.max(+s0.av || 0, +rec0.ver || 0) + 1, stp = !!rec0.stop || stopEv;
@@ -24723,29 +26636,31 @@ async function tkRecurOp(env, request, A, b) {
     var agg = Object.assign(b.op === 'edit' ? tkRecSum(nr) : {}, { n: out.n, cancelled: out.cancelled }); if (out.restored) agg.restored = out.restored;
     aud.unshift(tkAud(K, hit, 'rec_' + b.op, ctx, b.op === 'edit' ? tkRecSum(rec0) : null, agg));   /* الحدثُ المجمَّع أولاً (سقفُ 052 audClean) */
     return { S2: S2, aud: aud };
-  });
-  if (R.err) return R.err;
-  if (typeof tkGateReset === 'function') await tkGateReset(env, 'rec', d);   /* الفحصُ العميق · R8: تغيّرت السلسلة ⇒ القراءةُ التالية في «ملفي» تولّد (لا تنتظر مهلة الحارس) */
-  return json({ ok: 1, rev: R.rev, n: out.n, cancelled: out.cancelled, ver: out.ver, restored: out.restored, kept: out.kept });
+  })(S);
+  if (!R.err) R.result = { n: out.n, cancelled: out.cancelled, ver: out.ver, restored: out.restored, kept: out.kept };
+  return R;
+}
+async function tkRecurOp(env, request, A, b) {
+  return await tkPreparedCommand(env, request, A, b, "tasks.recur", tkRecurPrepare, true);
 }
 /* ── KIVO_265 · srvrec: POST /api/tasks/recur {op:'start', k, id | grp, rec} — مهمةٌ مسندةٌ لمرةٍ واحدة (أو مهمةٌ جماعية بصفوفها في يومها) تصير
    نسخةَ يوم البدء الحقيقية لسلسلة: x.rec (معرّفٌ جديد · ver 1 · from = k · asg = مكلَّفوها · by = من حوّلها) وx.idem لكل صفّ بصيغة الإنشاء نفسِها ·
    وحدثُ rec_start لكل صفّ (rec · idem — يثبت به صاحبَها tkRecurAuthorOk ولا يُعيد tkRecurTombs نسخةً حُذفت). الصلاحيات: إنشاءُ المهام وتعديلُها وإسنادُها ·
    لا لملغاةٍ ولا لمُعاد إسنادها ولا لنسخةٍ منفصلة ولا لما في سلسلةٍ أصلاً ولا في شهرٍ معتمد — وما سواها من الصفّ (الحالة · 20 · 21) كما هو */
-async function tkRecurStart(env, request, A, b, d, K) {
+async function tkRecurStartPrepare(env, A, b, d, K, S) {
   if (!METK_DAY_RX.test(String(b.k || ''))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (b.grp != null ? !tkStrOk(b.grp, 60, true) : !tkIdOk(b.id)) return tkNo(400, 'bad-body', '', { at: b.grp != null ? 'grp' : 'id' }).err;
   if (!isObj(b.rec)) return tkNo(400, 'bad-body', 'حدّد قاعدةَ التكرار', { at: 'rec' }).err;
   var RC = tkRecIn(b.rec, b.k); if (RC.bad) return tkNo(400, 'bad-body', RC.msg || '', { at: RC.bad }).err;
   if (!(tkHeld(A, d, 'task.create') && tkHeld(A, d, 'task.edit') && tkHeld(A, d, 'task.assign'))) return tkNo(403, 'denied', 'تحويلُ المهمة إلى متكررة يحتاج صلاحياتِ إنشاء المهام وتعديلها وإسنادها').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
-  var emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), kN = String(b.k).replace(/-0(\d)/g, '-$1');
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), kN = String(b.k).replace(/-0(\d)/g, '-$1');
   var pick = function (L) {
     if (b.grp != null) { var o = []; for (var q = 0; q < L.length; q++) if (Array.isArray(L[q]) && String(L[q][17] || '') === String(b.grp)) o.push(q); return o; }
     var P0 = tkPick({ x: L }, 'x', b.id, null); return P0 ? [P0.idx] : [];
   };
   var out = null;
-  var R = await tkSave(env, request, A, K, function (S) {
+  var R = (function (S) {
     var L = Array.isArray(S[b.k]) ? S[b.k] : [], ix = pick(L), now = Date.now(), rows = [], asg = [], q;
     if (!ix.length) return tkNo(404, 'not-found');
     for (q = 0; q < ix.length; q++) {
@@ -24773,12 +26688,12 @@ async function tkRecurStart(env, request, A, b, d, K) {
     var S2 = Object.assign({}, S); S2[b.k] = L2;
     out = { rec: rec, n: rows.length };
     return { S2: S2, aud: aud };
-  });
-  if (R.err) return R.err;
-  if (typeof tkGateReset === 'function') await tkGateReset(env, 'rec', d);   /* الفحصُ العميق · R8: سلسلةٌ جديدة ⇒ القراءةُ التالية تولّد */
+  })(S);
+  if (R.err) return R;
   var rc = out.rec, o = { id: rc.id, ver: rc.ver, t: rc.t, from: rc.from, paused: 0, asg: rc.asg };
   if (rc.wd) o.wd = rc.wd; if (rc.md) o.md = rc.md; if (rc.n) o.n = rc.n; if (rc.to) o.to = rc.to;
-  return json({ ok: 1, rev: R.rev, n: out.n, rec: o });
+  R.result = { n: out.n, rec: o };
+  return R;
 }
 /* ═══ KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (البند 10 — قرارُ المالك 2026-10-19) ═══
    كانا من متصفّح المسؤول وحده (442). الآن مسحٌ كسولٌ بلا Cron (كـ073) لصفوف اليوم وأمسِ وقبله كلَّ TK_DUE_GAP لكل إدارة — يحرّكه «مهامي» (062c) وفتحُ صفحة المهام
@@ -24805,7 +26720,7 @@ async function tkDueActor(env, d, uid, cache) {
 }
 async function tkDueRun(env, request, d) {
   var K = tkK(d), now = Date.now(), rep = { soon: 0, late: 0, exp: 0, skipped: 0, sent: 0 };
-  var S = parseJson(await kvGet(env, 'kv', K), {}); if (!isObj(S)) return rep;
+  var S = parseJson(await opResourceGet(env, K), {}); if (!isObj(S)) return rep;
   var days = []; [0, 1, 2].forEach(function (b) { var H = tkHij(now - b * 864e5); if (H && days.indexOf(H.k) === -1) days.push(H.k); });   /* مفاتيحُ الصفوف أيامٌ مدنية (هجريُّ الرياض لبدايتها) لا تشغيلية: اليوم وأمس وقبله */
   var plan = nmap(), n = 0;
   for (var q = 0; q < days.length; q++) {
@@ -24981,7 +26896,11 @@ function enfSeed() { var b = new Uint8Array(32), s = '', i; crypto.getRandomValu
 async function enfMigPlan(env, seed, opts) {
   opts = opts || {};
   /* الخطةُ دالّةٌ حتمية في (البذرة · لحظةِ التوليد · البيانات): التطبيقُ يعيد بناءها بلحظة الخطة نفسِها فتتطابق البصمةُ ما لم تتغيّر البيانات */
-  var now = opts.now || Date.now(), T = dsToday(now), keys = await kvAll(env, 'kv'), revs = await revsAll(env), i, d, ek, dm;
+  var now = opts.now || Date.now(), T = dsToday(now), reference = opts.reference,
+    capture = reference ? reference.operational : await opCaptureReferences(env, await kvAll(env, 'kv')),
+    keys = reference ? reference.inputKeys : capture.keys,
+    revs = reference ? reference.inputRevs : Object.assign({},await revsAll(env),capture.revs), i, d, ek, dm;
+  if (capture.guards.length) await env.DB.batch(capture.guards);
   var depts = parseJson(keys[K_DEPTS], []), users = parseJson(keys[K_USERS], []), perms = parseJson(keys[K_PERM], {}), gd = parseJson(keys[K_GDEPTS], []);
   if (!Array.isArray(depts)) depts = []; if (!Array.isArray(users)) users = []; if (!isObj(perms)) perms = {}; if (!Array.isArray(gd)) gd = [];
   var byDept = {}, raw = {};
@@ -25063,7 +26982,37 @@ async function enfMigPlan(env, seed, opts) {
   plan.hash = await enfSha(sig.join('\u0002'));
   plan.parts = parts; plan.inferableOptIn = !!opts.inferable;
   plan.counts = { writes: plan.writes.length, identityKeys: plan.writes.filter(function (w) { return w.kind === 'identity'; }).length, scopeKeys: plan.writes.filter(function (w) { return w.kind === 'scope'; }).length, ceilings: plan.scope.ceilings.length, employeeValues: plan.scope.employees.length, kept: plan.scope.kept.length, decisions: plan.scope.decisions.length, inferable: plan.scope.inferable.length, grants: plan.perm.grants.length, permDecisions: plan.perm.decisions.length };
-  return { plan: plan, W: W, keys: keys, revs: revs };
+  return { plan: plan, W: W, keys: keys, revs: revs, guards:capture.guards, snapshots:capture.snapshots };
+}
+/* Pure revision preparation: allocation is written only after every source
+   witness, inside the same batch as migration/snapshot/audit or rollback. */
+async function enfMigCounterPlan(env) {
+  var out = await env.DB.batch([
+      env.DB.prepare("SELECT k,v FROM meta WHERE k='rev'"),
+      env.DB.prepare('SELECT COALESCE(MAX(rev),0)n FROM revs')
+    ]), rows = out[0].results || [], highest = (out[1].results || [])[0],
+    current = rows.length ? Number(rows[0].v) : 0, max = highest && Number(highest.n);
+  if (!Number.isSafeInteger(current) || current < 0 || !Number.isSafeInteger(max) || max < 0 || !Number.isSafeInteger(Math.max(current,max)+1))
+    throw rsError('domain-revision',503);
+  var rev = Math.max(current,max)+1;
+  return {
+    rev:rev,
+    guards:rsWitness(env,'meta',['k','v'],rows,"k='rev'").concat([
+      env.DB.prepare("SELECT CASE WHEN COALESCE((SELECT MAX(rev)FROM revs),0) IS NOT ?1 THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(max)
+    ]),
+    statement:env.DB.prepare("INSERT INTO meta(k,v)VALUES('rev',?1)ON CONFLICT(k)DO UPDATE SET v=excluded.v").bind(String(rev))
+  };
+}
+function enfMigReferenceGuards(env, reference) {
+  return rsReferenceGuards(env, reference, true);
+}
+async function enfMigBatch(env, statements) {
+  try { await env.DB.batch(statements); return null; }
+  catch(error) {
+    if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error)))
+      return json({ok:0,err:'conflict'},409);
+    throw error;
+  }
 }
 async function enfMigrateApi(env, request, A, url, meta) {
   if (A.u.role !== 'super') return json({ ok: 0, err: 'forbidden' }, 403);
@@ -25088,27 +27037,41 @@ async function enfMigrateApi(env, request, A, url, meta) {
     if (!/^[0-9a-f]{64}$/i.test(String(b.seed || '')) || !/^[0-9a-f]{64}$/.test(String(b.hash || ''))) return json({ ok: 0, err: 'seed-hash' }, 400);
     var gen = +b.generated; if (!(gen > 0) || gen > now || now - gen > 24 * 3600 * 1000) return json({ ok: 0, err: 'generated' }, 400);   /* لحظةُ الخطة: خلال 24 ساعة */
     var parts2 = Array.isArray(b.parts) ? b.parts.filter(function (x) { return x === 'identity' || x === 'scope' || x === 'perm'; }) : ['identity', 'scope', 'perm'];
-    var R2 = await enfMigPlan(env, String(b.seed).toLowerCase(), { inferable: !!b.inferable, parts: parts2, now: gen });
+    var reference2 = await rsReferenceSnapshot(env,A.u.id);
+    env = reference2.env; A = reference2.A;
+    if(A.u.role !== 'super')return json({ok:0,err:'forbidden'},403);
+    var R2 = await enfMigPlan(env, String(b.seed).toLowerCase(), { inferable: !!b.inferable, parts: parts2, now: gen, reference:reference2 });
     if (R2.plan.hash !== b.hash) return json({ ok: 0, err: 'plan-changed', hash: R2.plan.hash }, 409);
     if (!R2.plan.writes.length) return json({ ok: 1, applied: 0, plan: R2.plan.counts });
-    var rev = await nextRev(env), st2 = [], i;
+    var counter2 = await enfMigCounterPlan(env), rev = counter2.rev,
+      guards2 = enfMigReferenceGuards(env,reference2).concat(counter2.guards), st2 = [], i;
     var snap = enfSnapId('migration'), items = R2.plan.writes.map(function (w) { return { k: w.k, cur: R2.keys[w.k] == null ? null : R2.keys[w.k] }; });
     var st = enfSnapStmts(env, snap, 'migration', A, items, R2.revs, { hash: b.hash, parts: parts2, inferable: !!b.inferable, counts: R2.plan.counts, rev: rev, generated: gen });
-    for (var j0 = 0; j0 < st.length; j0 += 90) await env.DB.batch(st.slice(j0, j0 + 90));
     for (i = 0; i < R2.plan.writes.length; i++) {
       var w = R2.plan.writes[i];
-      st2 = st2.concat(kvPutStmts(env, 'kv', w.k, R2.W[w.k].v));
+      if(opIsResource(w.k)){
+        var add2=await opChangeStatements(env,w.k,R2.W[w.k].v,{base:w.rev});
+        guards2.push.apply(guards2,add2.guards);st2.push.apply(st2,add2.statements);
+      }else{
+        guards2.push(revGuard(env,w.k,w.rev));
+        st2 = st2.concat(kvPutStmts(env, 'kv', w.k, R2.W[w.k].v));
+      }
       st2.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(w.k, rev));
       st2.push(audEvStmt(env, { cid: 'mig_' + snap.slice(-12) + '_' + i, ts: now, uid: ident.uid, un: ident.un, dept: parseKey(w.k).dept || '', k: w.k, rev: rev, etype: 'dataset', eid: resName(w.k), ename: resName(w.k), act: 'migrated', ctx: JSON.stringify({ kind: w.kind, snap: snap }), bef: '', aft: '', ip: ident.ip, dev: ident.dev, city: ident.city }));
     }
     var flag = JSON.stringify({ applied: true, at: now, by: ident.uid, snap: snap, hash: b.hash, inferable: !!b.inferable });   /* المعرّفُ لا اسمُ المستخدم */
     parts2.forEach(function (p0) { var mk = p0 === 'identity' ? 'authz_id_mig' : (p0 === 'scope' ? 'authz_scope_mig' : 'authz_perm_mig'); st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(mk, flag)); });
     st2.push(enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: 'migration', keys: parts2.join(','), scope: 'writes=' + R2.plan.writes.length, decision: 'allow', why: 'apply', reason: snap, path: '/api/authz-migrate', ip: ident.ip }));
-    for (var j1 = 0; j1 < st2.length; j1 += 90) await env.DB.batch(st2.slice(j1, j1 + 90));
+    var conflict2=await enfMigBatch(env,guards2.concat([counter2.statement],st,st2));
+    if(conflict2)return conflict2;
+    preOff(env);
     return json({ ok: 1, applied: R2.plan.writes.length, snap: snap, rev: rev, counts: R2.plan.counts });
   }
   if (act === 'rollback') {
     var sid = String(b.snap || ''); if (!/^[a-z]+_[a-z0-9]+_[a-z0-9]+$/.test(sid)) return json({ ok: 0, err: 'snap' }, 400);
+    var reference3=await rsReferenceSnapshot(env,A.u.id);
+    env=reference3.env;A=reference3.A;
+    if(A.u.role!=='super')return json({ok:0,err:'forbidden'},403);
     var sm = await env.DB.prepare('SELECT snap, kind, restored, meta FROM authz_snaps WHERE snap = ?1').bind(sid).first();
     if (!sm) return json({ ok: 0, err: 'not-found' }, 404);
     /* This rollback only understands the existing KV snapshot kinds. Typed or
@@ -25122,13 +27085,22 @@ async function enfMigrateApi(env, request, A, url, meta) {
     var byK = {}; ((rows && rows.results) || []).forEach(function (r0) { var o = byK[r0.k] = byK[r0.k] || { existed: r0.existed, v: '' }; if (r0.existed) o.v += r0.v; });
     /* الانجراف: مفتاحٌ تغيّر بعد العملية (رقمُ مراجعته ≠ رقمِ العملية) — الرجوعُ يمحو ما بعدها، فلا يُنفَّذ إلا بتأكيدٍ صريح (force) */
     var smMeta = parseJson(sm.meta, {}) || {}, opRev = +smMeta.rev || 0, drift = [], kk0;
-    var revNow = await revsAll(env);
+    var revNow = reference3.inputRevs;
     for (kk0 in byK) if (!opRev || (revNow[kk0] || 0) !== opRev) drift.push({ k: kk0, rev: revNow[kk0] || 0 });
     if ((drift.length || sm.restored) && b.force !== true) return json({ ok: 0, err: sm.restored ? 'already-restored' : 'drift', opRev: opRev, drift: drift.slice(0, 50) }, 409);
-    var rev2 = await nextRev(env), st3 = [], n = 0, kk;
+    var counter3=await enfMigCounterPlan(env),rev2=counter3.rev,st3=[],n=0,kk,
+      guards3=enfMigReferenceGuards(env,reference3).concat(counter3.guards)
+        .concat(rsWitness(env,'authz_snaps',['snap','kind','restored','meta'],[sm],'snap=?1',[sid]))
+        .concat(rsWitness(env,'authz_snap',['k','seq','existed','rev','v'],rows.results||[],'snap=?1',[sid]));
     for (kk in byK) {
       n++;
-      if (byK[kk].existed) st3 = st3.concat(kvPutStmts(env, 'kv', kk, byK[kk].v)); else st3.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(kk));
+      if(opIsResource(kk)){
+        var add3=await opChangeStatements(env,kk,byK[kk].existed?byK[kk].v:null,{base:revNow[kk]||0});
+        guards3.push.apply(guards3,add3.guards);st3.push.apply(st3,add3.statements);
+      }else{
+        guards3.push(revGuard(env,kk,revNow[kk]||0));
+        if (byK[kk].existed) st3 = st3.concat(kvPutStmts(env, 'kv', kk, byK[kk].v)); else st3.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(kk));
+      }
       st3.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(kk, rev2));
       st3.push(audEvStmt(env, { cid: 'rb_' + sid.slice(-12) + '_' + n + '_' + rev2, ts: now, uid: ident.uid, un: ident.un, dept: parseKey(kk).dept || '', k: kk, rev: rev2, etype: 'dataset', eid: resName(kk), ename: resName(kk), act: 'rolled_back', ctx: JSON.stringify({ snap: sid }), bef: '', aft: '', ip: ident.ip, dev: ident.dev, city: ident.city }));
     }
@@ -25138,7 +27110,9 @@ async function enfMigrateApi(env, request, A, url, meta) {
     }
     st3.push(env.DB.prepare('UPDATE authz_snaps SET restored = restored + 1, rts = ?2, ruid = ?3 WHERE snap = ?1').bind(sid, now, ident.uid));
     st3.push(enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: sm.kind, keys: 'rollback', scope: 'keys=' + n, decision: 'allow', why: 'rollback', reason: sid, path: '/api/authz-migrate', ip: ident.ip }));
-    for (var j2 = 0; j2 < st3.length; j2 += 90) await env.DB.batch(st3.slice(j2, j2 + 90));
+    var conflict3=await enfMigBatch(env,guards3.concat([counter3.statement],st3));
+    if(conflict3)return conflict3;
+    preOff(env);
     return json({ ok: 1, restored: n, snap: sid, rev: rev2 });
   }
   return json({ ok: 0, err: 'act' }, 400);
@@ -25260,12 +27234,16 @@ async function saveRoute(env, request, path, ss) {
     A1.sessTs = ss.ts;   /* KIVO_264 · D14: لحظةُ الدخول — «الدخولُ الأوّل الإجباري» بجلسةٍ حديثة وحدها (selfCurState) */
     var rlS = await rlHit(env, 'sv', A1.u.id, RL_SAVE);
     if (rlS) return tooMany(rlS);
+    var operationKeys=Object.keys(bs.set||{}).concat(bs.del||[]), operationalSave=operationKeys.some(opIsResource);
+    if(operationalSave && (typeof bs.requestId!=='string'||!/^[-A-Za-z0-9_]{8,100}$/.test(bs.requestId)||!Number.isSafeInteger(bs.epoch)||bs.epoch<0||operationKeys.some(function(k){return !bs.base||!Number.isSafeInteger(bs.base[k])||bs.base[k]<0;})))
+      return json({ok:0,err:'operations-request-envelope'},400);
     var r2 = await applySave(env, bs, A1, reqMeta(request));
+    if(operationalSave) return json(Object.assign({},r2,{ok:r2.ok===1?1:0,requestId:bs.requestId,epoch:bs.epoch,atomic:1}),r2.ok===1?200:Object.keys(r2.conflicts||{}).length?409:403);
     return json({ ok: 1, v: r2.v, revs: r2.revs, denied: r2.denied, conflicts: r2.conflicts, atomic: r2.atomic || '' });
   } catch (eS) {
     var guardSave=dbGuardFailure(eS);if(guardSave)return json({ok:0,err:guardSave.err},guardSave.status);
     /* فشل الحفظ يظهر باسمه في سجلات المشروع وفي فاحص الشبكة — لا صمت */
-    if(eS.rs||eS.cuCode||eS.nf)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
+    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
   }
 }
 /* KIVO_264 · C1 للقراءة (اختياري — العقدُ نفسُه لـ/api/save): ?uid= على /api/changes و/api/get = هويةُ الجلسة التي بُني لها التبويب (BOOT.uid)؛
@@ -25318,7 +27296,7 @@ async function getRoute(env, url, ss) {
   var moreG = wantAll.length > GET_MAX && wantAll.slice(GET_MAX).some(function (k8) { return want.indexOf(k8) === -1; });
   var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
-  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && !bdLegacyKey(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
+  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && !bdLegacyKey(k9) && !opIsResource(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
   for (var gi = 0; gi < want.length; gi++) {
     var gk = want[gi];
     if (isDeviceKey(gk)) continue;
@@ -25328,6 +27306,7 @@ async function getRoute(env, url, ss) {
     if (cuLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/custody' }; continue; }
     if (irLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/irshad' }; continue; }
     if (bdLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: szLegacyKey(gk) ? '/api/seized' : '/api/award' }; continue; }
+    if (opIsResource(gk)) { got[gk] = { v:null, rev:rvG[gk]||0, moved:'/api/operations/read' }; continue; }
     if (resName(gk) === K_DSTATS) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/dstats' }; continue; }
     var gv = rdG ? valsG[gk] : null;      /* لا قيمةَ لمن لا يقرأ — الرقمُ وحدَه */
     if (rdG && gk === K_USERS && gv != null) gv = usersScopeOut(usersNoOut(stripPh(gv), AG), AG);   /* KIVO_259 · SR-1: ولا رقمَ وظيفيَّ لحساب غيره · الفحصُ العميق (R4): ولا حسابَ خارج نطاقه (054) */
@@ -25452,6 +27431,8 @@ export default {
       if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');
       if (path === '/api/award' || path === '/api/award/act' || path === '/api/award/export') return await bdRoute(env, request, url, ss, 'awards');
       if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);
+      if (path === '/api/operations/read') return await opReadRoute(env,request,url,ss);
+      if (path === '/api/operations/export') return await opExport(env,request,url,ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);
 
       /* ── ماذا تغيّر منذ نسختي؟ — تستعمله لافتة «تحديثات جديدة» ── */
@@ -25500,7 +27481,7 @@ export default {
           if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
           if (request.method !== 'GET') return json({ ok: 0, err: 'dry-run is read-only (GET)' }, 405);
           try {
-            var keysM = await kvAll(env, 'kv'), byDeptM = {}, deptsM = parseJson(keysM[K_DEPTS], []), usersM = parseJson(keysM[K_USERS], []), permsM = parseJson(keysM[K_PERM], {}), gdM = parseJson(keysM[K_GDEPTS], []), dmi;
+            var captureM = await opCaptureReferences(env, await kvAll(env, 'kv')), keysM = captureM.keys, byDeptM = {}, deptsM = parseJson(keysM[K_DEPTS], []), usersM = parseJson(keysM[K_USERS], []), permsM = parseJson(keysM[K_PERM], {}), gdM = parseJson(keysM[K_GDEPTS], []), dmi;
             if (!Array.isArray(deptsM)) deptsM = []; if (!Array.isArray(usersM)) usersM = []; if (!Array.isArray(gdM)) gdM = [];
             for (dmi = 0; dmi < deptsM.length; dmi++) { var dIdM = deptsM[dmi] && deptsM[dmi].id; if (!dIdM) continue; var preM = 'bsdept:' + dIdM + ':';
               byDeptM[dIdM] = { plan: parseJson(keysM[preM + 'bassam_plan_v1'], null), rounds: parseJson(keysM[preM + 'bassam_rounds_v1'], null), staffing: parseJson(keysM[preM + 'bassam_staffing_v3'], null), dreport: parseJson(keysM[preM + 'bassam_dreport_v1'], null), employees: parseJson(keysM[preM + 'bassam_employees_v1'], []) }; }
@@ -25511,6 +27492,7 @@ export default {
               pv4Ctx: function (A, d, kn, okMap, data) { var cM = permv4Ctx(A, d, kn, okMap, { pv4: { staffing: data && data.staffing } }); cM.read = true; cM.readMaxItems = PV4_READ_MAX; return cM; },
               telemetry: PERMV4 };
             var rpM = KIVO_SCOPE_MIGRATION.dryRun({ depts: deptsM, gdepts: gdM, users: usersM, perms: isObj(permsM) ? permsM : {}, byDept: byDeptM }, hooksM);
+            if (captureM.guards.length) await env.DB.batch(captureM.guards);
             return json({ ok: 1, worker: WORKER_VER, dryRun: rpM });
           } catch (eDR) { return json({ ok: 0, err: String(eDR && eDR.message || eDR) }, 500); }
         }
@@ -25520,7 +27502,7 @@ export default {
           if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
           if (request.method !== 'GET') return json({ ok: 0, err: 'rehearsal is read-only (GET)' }, 405);
           try {
-            var keysR = await kvAll(env, 'kv'), revsR = await revsAll(env), byDeptR = {}, deptsR = parseJson(keysR[K_DEPTS], []), usersR = parseJson(keysR[K_USERS], []), dri;
+            var captureR = await opCaptureReferences(env, await kvAll(env, 'kv')), keysR = captureR.keys, revsR = Object.assign({},await revsAll(env),captureR.revs), byDeptR = {}, deptsR = parseJson(keysR[K_DEPTS], []), usersR = parseJson(keysR[K_USERS], []), dri;
             if (!Array.isArray(deptsR)) deptsR = []; if (!Array.isArray(usersR)) usersR = [];
             for (dri = 0; dri < deptsR.length; dri++) { var dIdR = deptsR[dri] && deptsR[dri].id; if (!dIdR) continue; var preR = 'bsdept:' + dIdR + ':';
               byDeptR[dIdR] = { plan: parseJson(keysR[preR + 'bassam_plan_v1'], null), rounds: parseJson(keysR[preR + 'bassam_rounds_v1'], null), employees: parseJson(keysR[preR + 'bassam_employees_v1'], []) }; }
@@ -25529,6 +27511,7 @@ export default {
             else { var sbR = new Uint8Array(32), sbi; crypto.getRandomValues(sbR); for (sbi = 0; sbi < 32; sbi++) seedR += (sbR[sbi] < 16 ? '0' : '') + sbR[sbi].toString(16); }
             var rawR = {}; Object.keys(keysR).forEach(function (kk) { if (/^bsdept:[^:]+:bassam_(plan|rounds)_v1$/.test(kk)) rawR[kk] = keysR[kk]; });
             var rpR = KIVO_IDENTITY_MIGRATION.rehearse({ depts: deptsR, users: usersR, byDept: byDeptR }, { seed: seedR, seedSource: seedSrcR, now: nowX, today: dsToday(nowX), raw: rawR, revs: revsR });
+            if (captureR.guards.length) await env.DB.batch(captureR.guards);
             return json({ ok: 1, worker: WORKER_VER, rehearsal: rpR });
           } catch (eIR) { return json({ ok: 0, err: String(eIR && eIR.message || eIR) }, 500); }
         }
@@ -25538,7 +27521,7 @@ export default {
           if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
           if (request.method !== 'GET') return json({ ok: 0, err: 'preflight is read-only (GET)' }, 405);
           try {
-            var keysP = await kvAll(env, 'kv'), revsP = await revsAll(env), byDeptP = {}, deptsP = parseJson(keysP[K_DEPTS], []), usersP = parseJson(keysP[K_USERS], []), permsP = parseJson(keysP[K_PERM], {}), gdP = parseJson(keysP[K_GDEPTS], []), dpi;
+            var captureP = await opCaptureReferences(env, await kvAll(env, 'kv')), keysP = captureP.keys, revsP = Object.assign({},await revsAll(env),captureP.revs), byDeptP = {}, deptsP = parseJson(keysP[K_DEPTS], []), usersP = parseJson(keysP[K_USERS], []), permsP = parseJson(keysP[K_PERM], {}), gdP = parseJson(keysP[K_GDEPTS], []), dpi;
             if (!Array.isArray(deptsP)) deptsP = []; if (!Array.isArray(usersP)) usersP = []; if (!Array.isArray(gdP)) gdP = [];
             for (dpi = 0; dpi < deptsP.length; dpi++) { var dIdP = deptsP[dpi] && deptsP[dpi].id; if (!dIdP) continue; var preP = 'bsdept:' + dIdP + ':';
               byDeptP[dIdP] = { plan: parseJson(keysP[preP + 'bassam_plan_v1'], null), rounds: parseJson(keysP[preP + 'bassam_rounds_v1'], null), staffing: parseJson(keysP[preP + 'bassam_staffing_v3'], null), dreport: parseJson(keysP[preP + 'bassam_dreport_v1'], null), employees: parseJson(keysP[preP + 'bassam_employees_v1'], []) }; }
@@ -25556,6 +27539,7 @@ export default {
             var drPre = KIVO_SCOPE_MIGRATION.dryRun({ depts: deptsP, gdepts: gdP, users: usersP, perms: isObj(permsP) ? permsP : {}, byDept: byDeptP }, hooksP);
             var drPost = KIVO_SCOPE_MIGRATION.dryRun({ depts: deptsP, gdepts: gdP, users: usersP, perms: isObj(permsP) ? permsP : {}, byDept: apP.byDept }, hooksP);
             var cmpP = KIVO_IDENTITY_PREFLIGHT.compare(drPre, drPost, { legacy: KIVO_IDENTITY_PREFLIGHT.legacyIdMap(byDeptP, rhP), unlinked: KIVO_IDENTITY_PREFLIGHT.unlinkedReachability(apP.byDept, drPost), tierB: apP.tierB, tierBExpected: rhP.pending.length, applied: apP.applied });
+            if (captureP.guards.length) await env.DB.batch(captureP.guards);
             return json({ ok: 1, worker: WORKER_VER, preflight: { version: KIVO_IDENTITY_PREFLIGHT.version, docSha256: KIVO_IDENTITY_PREFLIGHT.docSha256, phase: 4.5, mode: KIVO_IDENTITY_PREFLIGHT.mode, writes: 0, seed: seedP, seedSource: seedSrcP, today: hooksP.today,
               rehearsal: { version: rhP.version, phase: rhP.phase, summary: rhP.summary, counts: { depts: rhP.counts.depts, plan: rhP.counts.plan, planFloors: rhP.counts.planFloors, sidClosure: rhP.counts.sidClosure, mirror: rhP.counts.mirror, emp: rhP.counts.emp }, gates: rhP.gates, writeSet: { keys: rhP.writeSet.keys.length, ops: rhP.writeSet.ops, tierA: rhP.writeSet.tierA, tierB: rhP.writeSet.tierB, byOp: rhP.writeSet.byOp, byKind: rhP.writeSet.byKind, hash: rhP.writeSet.hash, tierAHash: rhP.writeSet.tierAHash, tierBHash: rhP.writeSet.tierBHash }, pending: rhP.pending.length, rollback: rhP.rollback },
               applied: apP.applied, tierB: apP.tierB, pre: KIVO_IDENTITY_PREFLIGHT.compact(drPre), post: KIVO_IDENTITY_PREFLIGHT.compact(drPost), comparison: cmpP } });
@@ -25653,50 +27637,7 @@ export default {
           return json({ ok: 1, key: keyN, uid: mainSu.id, un: mainSu.un });
         }
         /* ── تهيئة منصة جديدة: مسح كامل بتأكيد مزدوج ── */
-        if (path === '/api/reset' && request.method === 'POST') {
-          if (!superX) return json({ ok: 0, err: 'forbidden' }, 403);
-          var rbz = await bodyRead(request, path); if (rbz.res) return rbz.res; var bz = rbz.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
-          var gkZ = 'pw:' + AX.u.id;
-          if (await guardLeft(env, gkZ) > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر قليلاً' });
-          var okZ = await verifyPw(String(bz.pw == null ? '' : bz.pw), AX.u.ph);
-          if (okZ === 'unsupported') return json({ ok: 0, err: ERR_ITER });
-          if (okZ !== true) { await guardFail(env, gkZ); return json({ ok: 0, err: 'كلمة المرور غير صحيحة' }); }
-          var rkZ = await metaGet(env, 'rk');
-          if (!rkZ) return json({ ok: 0, err: 'أنشئ مفتاح استعادة أولاً — التهيئة لا تُنفَّذ بدونه' });
-          if ((await verifyPw('rk:' + normKey(bz.key), rkZ)) !== true) { await guardFail(env, gkZ); return json({ ok: 0, err: 'مفتاح الاستعادة غير صحيح' }); }
-          if (String(bz.confirm || '') !== 'تهيئة') return json({ ok: 0, err: 'اكتب كلمة «تهيئة» للتأكيد' });
-          var adZ = isObj(bz.admin) ? bz.admin : {};
-          var unZ = String(adZ.un || '').trim(), nmZ = String(adZ.name || '').trim() || 'مدير النظام', pwZ = String(adZ.pw || '');
-          if (!unCheck(unZ)) return json({ ok: 0, err: 'اسم مستخدم مدير النظام: رقم جوال أو هوية من 10 أرقام' });
-          if (!pwCheck(pwZ, 'super')) return json({ ok: 0, err: 'كلمة مرور مدير النظام الجديد ضعيفة — 6 أرقام' });
-          await guardReset(env, gkZ);
-          var rmZ = reqMeta(request);
-          var keepBrand = !!bz.keepBrand, platZ = keepBrand ? await kvGet(env, 'kv', K_PLAT) : null;
-          var phZ = await hashPw(pwZ);
-          var usersZ = [{ id: 'su', un: unZ, ph: phZ, name: nmZ, role: 'super', mc: 1 }];
-          var stZ = [
-            env.DB.prepare('DELETE FROM notification_user_state'), env.DB.prepare('DELETE FROM notification_targets'), env.DB.prepare('DELETE FROM notification_messages'),
-            env.DB.prepare('DELETE FROM notification_dedup'), env.DB.prepare('DELETE FROM notification_type_overrides'), env.DB.prepare('DELETE FROM notification_checkpoints'),
-            env.DB.prepare('DELETE FROM irshad_requests'), env.DB.prepare('DELETE FROM irshad_report_languages'), env.DB.prepare('DELETE FROM irshad_reports'), env.DB.prepare('DELETE FROM irshad_catalog_entries'), env.DB.prepare('DELETE FROM irshad_retro_windows'),
-            env.DB.prepare("DELETE FROM meta WHERE k GLOB 'irshad:*:presence*'"),
-            env.DB.prepare('DELETE FROM custody_request_outputs'), env.DB.prepare('DELETE FROM custody_requests'), env.DB.prepare('DELETE FROM custody_movements'), env.DB.prepare('DELETE FROM custody_issues'), env.DB.prepare('DELETE FROM custody_items'),
-            env.DB.prepare('DELETE FROM restore_operations'), env.DB.prepare('DELETE FROM restore_preimage'), env.DB.prepare('DELETE FROM restore_snapshot_manifest'),
-            env.DB.prepare('DELETE FROM daily_stats_day_locks'), env.DB.prepare('DELETE FROM daily_stats_month_locks'), env.DB.prepare('DELETE FROM daily_stats_days'),
-            env.DB.prepare('DELETE FROM kv'), env.DB.prepare('DELETE FROM imgs'), env.DB.prepare('DELETE FROM revs'),
-            env.DB.prepare('DELETE FROM imgown'), env.DB.prepare('DELETE FROM imgref'), env.DB.prepare("DELETE FROM meta WHERE k = 'imgown'"),
-            env.DB.prepare('DELETE FROM audit'), env.DB.prepare('DELETE FROM sess'), env.DB.prepare('DELETE FROM guard'),
-            env.DB.prepare('DELETE FROM meta WHERE k IN (?1, ?2, ?3, ?4, ?5)').bind('rev', 'rk', 'rk_uid', 'rk_meta', 'rk_used')
-          ];
-          stZ = bdResetStatements(env).concat(stZ);
-          stZ = stZ.concat(kvPutStmts(env, 'kv', K_USERS, JSON.stringify(usersZ)));
-          stZ.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2)').bind(K_USERS, 1));
-          if (platZ) { stZ = stZ.concat(kvPutStmts(env, 'kv', K_PLAT, platZ)); stZ.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2)').bind(K_PLAT, 1)); }
-          stZ.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rev', '1'));
-          if(!Number.isSafeInteger(env.__restoreEpoch)||env.__restoreEpoch>=Number.MAX_SAFE_INTEGER)throw dbGuardError('db-restore-epoch-invalid');
-          stZ.push(env.DB.prepare("INSERT INTO meta(k,v) VALUES('restore_epoch',?1) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(String(env.__restoreEpoch+1)),env.DB.prepare('DELETE FROM sec'),audEvStmt(env, { cid: 'reset_' + Date.now().toString(36), ts: Date.now(), uid: AX.u.id, un: AX.u.un, dept: '', k: 'system', rev: 1, etype: 'system', eid: 'platform', ename: 'المنصة', act: 'reset', ctx: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ }), bef: '', aft: '' }),secStmt(env, { uid: AX.u.id, un: AX.u.un, act: 'reset', detail: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ, byName: AX.u.name || '' }), ip: rmZ.ip, city: rmZ.city, dev: rmZ.dev }));
-          await env.DB.batch(stZ);
-          return json({ ok: 1 }, 200, clearCookie(url));
-        }
+        if (path === '/api/reset' && request.method === 'POST') return await rsResetRoute(env,request,path,url,AX,superX);
         if (path === '/api/policy') {
           if (request.method === 'POST') {
             var rbp = await bodyRead(request, path); if (rbp.res) return rbp.res; var bp = rbp.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
@@ -25939,6 +27880,7 @@ export default {
       for (var retiredCu in keys) if (cuLegacyKey(retiredCu)) delete keys[retiredCu];
       for (var retiredIr in keys) if (irLegacyKey(retiredIr)) delete keys[retiredIr];
       for (var retiredBusiness in keys) if (bdLegacyKey(retiredBusiness)) delete keys[retiredBusiness];
+      for (var retiredOperational in keys) if (opIsResource(retiredOperational)) delete keys[retiredOperational];
       for (var retiredDs in keys) if (resName(retiredDs) === K_DSTATS) delete keys[retiredDs];
       for (var dk in keys) if (isDeviceKey(dk)) delete keys[dk];
       if (keys[K_USERS] != null) keys[K_USERS] = stripPh(keys[K_USERS]);

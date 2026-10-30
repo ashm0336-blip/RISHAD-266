@@ -19,8 +19,8 @@ for (const mode of ['legacy', 'enforce']) {
     const W = await world({ worker: WU.file, mode });
     const P = stored(W.env, 'bassam_perms_v1'); P.emps = P.emps || {}; P.emps[D] = P.emps[D] || {}; P.emps[D][MATE.eid] = { tasks: ['add'] }; putKV(W.env, 'bassam_perms_v1', P);
     const mate = await W.login(MATE.un, MATE.pw);
-    const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT), { cookie: mate.ck });
-    assert.ok(!(g.j.keys && g.j.keys[KT] && g.j.keys[KT].v), 'لا يقرأ مخزنَ المهام');
+    const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT), { cookie: mate.ck });
+    assert.ok(g.j.denied.includes(KT) && !Object.hasOwn(g.j.resources,KT) && !Object.hasOwn(g.j.base,KT), 'لا يقرأ مخزنَ المهام أو رقم نسخته');
     const r = await elig(W, mate.ck); assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 300));
     const it = r.j.items[0];
     assert.ok(Array.isArray(it.conf) && it.conf.length > 0, 'التعارضُ محسوب: ' + JSON.stringify(it).slice(0, 300));

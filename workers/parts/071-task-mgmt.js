@@ -64,7 +64,10 @@ function tkNeedsIn(v) {
 }
 /* ── POST /api/tasks/create ── */
 async function tkCreate(env, request, A, b) {
-  var D0 = tkDeptOf(A, b.dept); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
+  var command = await tkCommandContext(env, A, b, 'tasks.create', (b.shift || (Array.isArray(b.asg) && b.asg.length)) ? ['task.create', 'task.assign'] : ['task.create']);
+  if (command.err) return command.err;
+  if (command.receipt) return json(tkCommandReply(command, command.receipt));
+  env = command.env; A = command.A; var d = command.d, K = command.key;
   var asg = Array.isArray(b.asg) ? b.asg : null, SH = b.shift != null ? b.shift : null, shName = '';
   if (!METK_DAY_RX.test(String(b.k || ''))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (!tkStrOk(b.t, 300, true)) return tkNo(400, 'bad-body', 'اكتب عنوان المهمة', { at: 't' }).err;
@@ -94,7 +97,7 @@ async function tkCreate(env, request, A, b) {
   if (await tkDayShut(env, d, b.k)) return tkNo(409, 'locked', 'اليومُ مُغلق — افتحه من صفحة المهام أولاً').err;
   var RV = await tkRvIn(env, A, d, b.rv); if (RV.bad) return tkNo(400, 'bad-body', RV.msg || '', { at: RV.bad }).err;
   if (RV.rv && RV.rv.e && asg.indexOf(RV.rv.e) !== -1) return tkNo(400, 'bad-body', 'المراجِعُ لا يكون المكلَّفَ نفسَه', { at: 'rv' }).err;
-  var emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), byE = nmap(), EL = [], skipped = [], i;
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), byE = nmap(), EL = [], skipped = [], i;
   if (SH) {
     /* KIVO_265 · البند 12: مكلَّفو الوردية يومَها بسياق الأهلية (072 tkShiftAsg) — بلا حسابٍ نشط (hard) أو بلا معرّفٍ فريد أو المراجِعُ نفسُه ⇒ يُتخطّى بسببه
        (لا 409 كالقائمة: الورديةُ كيانٌ والقائمةُ تُطهَّر هنا) · وما بعد سقف 500 يُقطع ويُبلَّغ · ثم «غير متاح» بقاعدة القائمة نفسِها (409 elig إلا بـforce) */
@@ -141,12 +144,12 @@ async function tkCreate(env, request, A, b) {
     rows.forEach(function (r) { var xr = tkX(r) || {}, cx = RC.rec ? { day: b.k, via: 'srv', rec: recId, idem: xr.idem || undefined } : { day: b.k, via: 'srv' }; if (SH) cx.shift = shName; aud.push(tkAud(K, r, 'created', cx, null, { asg: r[8] || '', s: r[15], e: r[16], pol: tkPolTxt(tkPolOf(r)), rv: RV.rv ? RV.rv.n : '', rec: RC.rec ? RC.rec.t : '', win: tkWinTxt(tkWinOf(r)) })); });
     var S2 = Object.assign({}, S); S2[b.k] = (Array.isArray(S[b.k]) ? S[b.k] : []).concat(rows);
     created = rows;
-    return { S2: S2, aud: aud };
-  });
+    return { S2: S2, aud: aud, result: { rows: rows.map(function (r) { return { k: b.k, id: r[13], ekey: r[14] }; }), elig: EL, skipped: skipped } };
+  }, null, command);
   if (R.err) return R.err;
-  await tkNotify(env, request, A, d, created.filter(function (r) { return r[14]; }).map(function (r) { return { type: 'task_new', own: [String(r[14])], vars: { 'المهمة': r[0], 'الوقت': tkClock(r[16]) } }; }));
-  if (RC.rec && typeof tkGateReset === 'function') await tkGateReset(env, 'rec', d);   /* الفحصُ العميق · R8: سلسلةٌ جديدة ⇒ القراءةُ التالية في «ملفي» تولّد نسخَها (074) */
-  return json({ ok: 1, rev: R.rev, rows: created.map(function (r) { return { k: b.k, id: r[13], ekey: r[14] }; }), elig: EL, skipped: skipped });
+  if (!R.receipt.duplicate) await tkNotify(env, request, A, d, created.filter(function (r) { return r[14]; }).map(function (r) { return { type: 'task_new', own: [String(r[14])], vars: { 'المهمة': r[0], 'الوقت': tkClock(r[16]) } }; }));
+  if (!R.receipt.duplicate && RC.rec && typeof tkGateReset === 'function') await tkGateReset(env, 'rec', d);   /* الفحصُ العميق · R8: سلسلةٌ جديدة ⇒ القراءةُ التالية في «ملفي» تولّد نسخَها (074) */
+  return json(tkCommandReply(command, R.receipt));
 }
 /* صفٌّ بعينه للمسؤول: هويتُه (13) ومكلَّفُه (14) في يومه */
 function tkPick(S, k, id, ekey) {
@@ -221,9 +224,9 @@ async function tkReassign(env, request, A, b) {
   if (String(b.from) === String(b.to)) return tkNo(400, 'bad-body', 'المكلَّفُ الجديد هو نفسُه', { at: 'to' }).err;
   if (!tkHeld(A, d, 'task.assign')) return tkNo(403, 'denied', 'إعادةُ الإسناد للمديرين والمخوَّلين').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
-  var emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
   if (!em) return tkNo(400, 'asg', tkEidShared(emps, b.to) ? TK_EID_DUP : 'موظفٌ غير معروف بمعرّفه الثابت في سجل الإدارة', { at: 'to' }).err;
-  var S00 = parseJson(await kvGet(env, 'kv', K), {}), P00 = isObj(S00) ? tkPick(S00, b.k, b.id, b.from) : null; if (!P00) return tkNo(404, 'not-found').err;
+  var S00 = parseJson(await opResourceGet(env, K), {}), P00 = isObj(S00) ? tkPick(S00, b.k, b.id, b.from) : null; if (!P00) return tkNo(404, 'not-found').err;
   /* KIVO_265 · المراجعةُ الموحّدة (R-7): المراجِعُ المسمّى لا يكون المكلَّفَ — كالإنشاء (:86) والإعدادات — وإلا سلّم ثم اعتمد تسليمَه بنفسه (ق3) */
   var RV_TO = function (r) { var x = tkX(r) || {}; return isObj(x.rv) && x.rv.e != null && String(x.rv.e) === String(b.to); };
   if (RV_TO(P00.r0)) return tkNo(400, 'bad-body', 'المراجِعُ لا يكون المكلَّفَ نفسَه — غيّر المراجِعَ من إعدادات المهمة أولاً', { at: 'to' }).err;
@@ -283,7 +286,7 @@ async function tkRelink(env, request, A, b) {
   if (!METK_DAY_RX.test(String(b.k || '')) || !tkIdOk(b.id) || !tkStrOk(b.from, 160, true) || !tkStrOk(b.to, 80, true)) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (!tkHeld(A, d, 'task.assign')) return tkNo(403, 'denied', 'ربطُ الإسناد للمديرين والمخوَّلين').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
-  var emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
   if (!em) return tkNo(400, 'asg', tkEidShared(emps, b.to) ? TK_EID_DUP : 'موظفٌ غير معروف بمعرّفه الثابت', { at: 'to' }).err;
   /* KIVO_265 · المراجعةُ الموحّدة (R-6 — منخفض): الربطُ تصحيحُ هويةٍ لا إسنادٌ لغير صاحب الصفّ — كان يقبل صفّاً «مرتبطاً برقم الهوية» وصفّاً منجزاً
      أو ملغى وموظفاً بلا حساب، فينقل عملاً منجزاً وإثباتَه إلى غير صاحبه (P0) ويربط مهمةً مفتوحة بمن لن يراها:
@@ -313,8 +316,7 @@ async function tkRelink(env, request, A, b) {
 }
 /* ── POST /api/tasks/settings {k, id, ekey?, grp?, pol?, rv?, dec?} — KIVO_265 · H-1: إعداداتُ المهمة في العمود 23 (سياسةُ الإثبات ق2 · المراجِع ق3 ·
    الاعتذار) من الخادم وحده — كانت صفحةُ المهام تكتبها في x بحفظٍ خامّ عند التعديل (_tkXEdit). grp: صفوفُ المهمة الجماعية في يومها كلُّها ── */
-async function tkSettings(env, request, A, b) {
-  var D0 = tkDeptOf(A, b.dept); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
+async function tkSettingsPrepare(env, A, b, d, K, S) {
   if (!METK_DAY_RX.test(String(b.k || '')) || !(b.grp != null ? tkStrOk(b.grp, 60, true) : tkIdOk(b.id)) || !(b.ekey == null || tkStrOk(b.ekey, 80))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (b.pol === undefined && b.rv === undefined && b.dec === undefined && b.win === undefined) return tkNo(400, 'bad-body', 'لا إعداداتَ للتعديل', { at: 'pol' }).err;
   var WI = b.win === undefined ? null : tkWinIn(b.win); if (WI && WI.bad) return tkNo(400, 'bad-body', 'نافذةُ التنفيذ: الدقائقُ قبل الموعد 0–240 والساعاتُ بعد المهلة 0–24', { at: WI.bad }).err;   /* KIVO_265 · نافذةُ التنفيذ (null = الافتراضي) */
@@ -323,7 +325,7 @@ async function tkSettings(env, request, A, b) {
   if (!tkHeld(A, d, 'task.edit')) return tkNo(403, 'denied', 'تعديلُ إعدادات المهمة يحتاج صلاحية تعديل المهام').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
   /* المراجِع: «المنشئ» = منشئُ المهمة المسجَّل (x.by) إن ملك الاعتماد — وإلا أنت (كما في الإنشاء) · «بلا» · أو حسابٌ مسمّى يملك الاعتماد */
-  var S00 = parseJson(await kvGet(env, 'kv', K), {}), L00 = isObj(S00) && Array.isArray(S00[b.k]) ? S00[b.k] : [];
+  var S00 = S, L00 = isObj(S00) && Array.isArray(S00[b.k]) ? S00[b.k] : [];
   var pick = function (L) {
     if (b.grp != null) { var o = []; for (var q = 0; q < L.length; q++) if (Array.isArray(L[q]) && String(L[q][17] || '') === String(b.grp)) o.push(q); return o; }
     var P0 = tkPick({ x: L }, 'x', b.id, b.ekey == null ? null : b.ekey); return P0 ? [P0.idx] : [];
@@ -338,7 +340,7 @@ async function tkSettings(env, request, A, b) {
     if (RV.bad) return tkNo(400, 'bad-body', RV.msg || '', { at: RV.bad }).err;
   }
   var out = { n: 0 };
-  var R = await tkSave(env, request, A, K, function (S) {
+  var R = (function (S) {
     var L = Array.isArray(S[b.k]) ? S[b.k] : [], ix = pick(L), now = Date.now(), aud = [], L2 = L.slice(); out = { n: 0 };
     if (!ix.length) return tkNo(404, 'not-found');
     for (var q = 0; q < ix.length; q++) {
@@ -359,9 +361,104 @@ async function tkSettings(env, request, A, b) {
     if (!out.n) return tkNo(409, 'state', 'المهمة ملغاةٌ أو أُعيد إسنادُها', {});
     var S2 = Object.assign({}, S); S2[b.k] = L2;
     return { S2: S2, aud: aud };
-  });
+  })(S);
+  if (!R.err) R.result = { n: out.n };
+  return R;
+}
+async function tkSettings(env, request, A, b) {
+  return await tkEditSettingsCommand(env, request, A, b);
+}
+/* Editing, settings and an optional recurrence change are planned against one
+   fresh source and committed once. The existing raw policy judges the edit
+   before the server-owned settings/recurrence planners add their columns. */
+async function tkEditPrepare(env, A, b, d, K, S, rev) {
+  var edit = b.edit;
+  if (!isObj(edit) || Object.keys(edit).some(function (key) { return ['k', 't', 'desc', 'prio', 's', 'e', 'ekey', 'wt'].indexOf(key) < 0; }) ||
+      !METK_DAY_RX.test(String(b.k || '')) || !METK_DAY_RX.test(String(edit.k || '')) ||
+      !(b.grp != null ? tkStrOk(b.grp, 60, true) : tkIdOk(b.id)) ||
+      !tkStrOk(edit.t, 300, true) || !tkStrOk(edit.desc, 4000) || !(edit.prio === null || typeof edit.prio === 'string') ||
+      !Number.isFinite(edit.s) || !Number.isFinite(edit.e) || edit.e <= edit.s ||
+      !(edit.ekey == null || tkStrOk(edit.ekey, 80)) || !tkStrOk(edit.wt, 80)) return tkNo(400, 'bad-body', '', { at: 'edit' });
+  if (await tkLocked(env, d, tkYm(b.k)) || await tkLocked(env, d, tkYm(edit.k)) ||
+      await tkDayShut(env, d, b.k) || await tkDayShut(env, d, edit.k)) return tkNo(409, 'locked');
+  var L = Array.isArray(S[b.k]) ? S[b.k] : [], ix = [];
+  if (b.grp != null) L.forEach(function (row, index) { if (Array.isArray(row) && String(row[17] || '') === String(b.grp)) ix.push(index); });
+  else { var picked = tkPick(S, b.k, b.id, b.ekey == null ? null : b.ekey); if (picked) ix.push(picked.idx); }
+  if (!ix.length) return tkNo(404, 'not-found');
+  if (b.grp != null && edit.ekey != null) return tkNo(400, 'bad-body', '', { at: 'edit.ekey' });
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), rows = [];
+  for (var q = 0; q < ix.length; q++) {
+    var old = L[ix[q]], row = old.slice(), changedAssignee = b.grp == null && String(edit.ekey || '') !== String(old[14] || ''),
+      orphan = !String(old[14] || ''), oldManagement = tkX(old), orphanProtected = old[3] === 'done' || old[12] || old[21] || (oldManagement && (oldManagement.asg === 'cancelled' || oldManagement.asg === 'reassigned'));
+    if (!TK_PRIO[edit.prio] && edit.prio !== old[2]) return tkNo(400, 'bad-body', '', { at: 'edit.prio' });
+    if (changedAssignee && ((!orphan && tkRowActive(old)) || (orphan && orphanProtected))) return tkNo(409, 'state', 'استعمل إعادة الإسناد لمهمة بدأ عليها نشاط أو لها توثيق');
+    row[0] = edit.t.trim(); row[1] = String(edit.desc || '').trim(); row[2] = edit.prio;
+    row[10] = Math.round((edit.e - edit.s) / 60000) || null; row[15] = edit.s; row[16] = edit.e;
+    if (b.grp == null) {
+      var token = edit.ekey == null || edit.ekey === '' ? null : String(edit.ekey), employee = token ? tkTokRec(emps, token) : null;
+      if (changedAssignee && token && !employee) return tkNo(400, 'asg');
+      if (changedAssignee) {
+        row[14] = token; row[7] = employee ? [String(employee.name || '').charAt(0)] : []; row[8] = employee ? String(employee.name || '') : '';
+        // HEAD9 V1/V5: an unassigned orphan must not lend the former holder's
+        // start/ACK/decline state to a new assignee. Proof/history stay intact.
+        if (orphan && token) { row[3] = 'pending'; row[6] = null; row[11] = null; row[12] = null; row[20] = null; }
+      }
+      row[17] = null; row[18] = null; row[19] = token ? null : String(edit.wt || '') || null;
+    }
+    if (row[3] === 'done' && row[11] && row[12]) row[6] = tkPerfOf(row, row[12]);
+    rows.push(row);
+  }
+  var S2 = Object.assign({}, S); S2[b.k] = L.filter(function (_, index) { return ix.indexOf(index) < 0; });
+  if (!S2[b.k].length) delete S2[b.k];
+  S2[edit.k] = (Array.isArray(S2[edit.k]) ? S2[edit.k] : []).concat(rows);
+  var body = { set: {}, base: {} }; body.set[K] = JSON.stringify(S2); body.base[K] = rev;
+  var rawActor = Object.assign({}, A); delete rawActor.__tkSrv; delete rawActor.__tkSelf;
+  var permission = await applySave(env, body, rawActor, {}, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN });
+  if (!permission.ok) {
+    var deniedMap = permission.denied || (permission.out && permission.out.denied), denied = deniedMap && deniedMap[K];
+    return tkNo(denied ? 403 : 409, denied ? 'denied' : 'busy', '', denied ? { why: denied.why, reasonKeys: denied.reasonKeys } : {});
+  }
+  var written = permission.pend && permission.pend.find(function (entry) { return entry.k === K; });
+  if (written) S2 = parseJson(written.v, null);
+  if (!isObj(S2)) return tkNo(409, 'state');
+  return { S2: S2, aud: rows.map(function (row) { return tkAud(K, row, 'edited', { day: edit.k, via: 'srv' }, null, { t: row[0], s: row[15], e: row[16] }); }),
+    result: { n: rows.length }, target: { k: edit.k, id: rows[0][13], ekey: rows[0][14], grp: b.grp } };
+}
+async function tkEditSettingsCommand(env, request, A, b) {
+  var command = await tkCommandContext(env, A, b, 'tasks.settings', ['task.edit']);
+  if (command.err) return command.err;
+  if (command.receipt) return json(tkCommandReply(command, command.receipt));
+  var R = await tkSave(command.env, request, command.A, command.key, async function (S, rev) {
+    var plan = { S2: S, aud: [], result: {} }, target = { k: b.k, id: b.id, ekey: b.ekey, grp: b.grp };
+    if (b.edit !== undefined) {
+      plan = await tkEditPrepare(command.env, command.A, b, command.d, command.key, S, rev);
+      if (plan.err) return plan;
+      target = plan.target;
+    }
+    var settings = ['pol', 'rv', 'dec', 'win'].some(function (key) { return b[key] !== undefined; });
+    if (!settings && b.edit === undefined && b.recur === undefined) return tkNo(400, 'bad-body', '', { at: 'pol' });
+    if (settings) {
+      var next = await tkSettingsPrepare(command.env, command.A, Object.assign({}, b, target), command.d, command.key, plan.S2);
+      if (next instanceof Response) return { err: next };
+      if (next.err) return next;
+      plan.S2 = next.S2; plan.aud = plan.aud.concat(next.aud); plan.result.settings = next.result;
+      if (!plan.result.n) plan.result.n = next.result.n;
+    }
+    if (b.recur !== undefined) {
+      if (!isObj(b.recur) || Object.keys(b.recur).some(function (key) { return ['op', 'id', 'rec', 'row'].indexOf(key) < 0; })) return tkNo(400, 'bad-body', '', { at: 'recur' });
+      var recBody = Object.assign({}, b.recur, { dept: command.d, k: target.k });
+      if (recBody.op === 'start') Object.assign(recBody, target);
+      var recPlan = await tkRecurPrepare(command.env, command.A, recBody, command.d, command.key, plan.S2);
+      if (recPlan instanceof Response) return { err: recPlan };
+      if (recPlan.err) return recPlan;
+      plan.S2 = recPlan.S2; plan.aud = plan.aud.concat(recPlan.aud); plan.result.recurrence = recPlan.result;
+      if (!plan.result.n) plan.result.n = recPlan.result.n;
+    }
+    return plan;
+  }, null, command);
   if (R.err) return R.err;
-  return json({ ok: 1, rev: R.rev, n: out.n });
+  if (b.recur && !R.receipt.duplicate && typeof tkGateReset === 'function') await tkGateReset(command.env, 'rec', command.d);
+  return json(tkCommandReply(command, R.receipt));
 }
 /* ── POST /api/tasks/reopen {k, id, ekey?, why?} — KIVO_265 · H-1: إعادةُ فتح مهمةٍ منجزة (منجزة ⇒ جارية) من الخادم، ومعها قرارُ المراجعة «أُعيدت»
    في العمود 23 حين كان لها تسليمٌ ومراجِع — كانت صفحةُ المهام تكتبه بحفظٍ خامّ (_tkReopenX). الحفظُ المركزي يحكم الفعل (task.reopen في الإنفاذ) ── */
@@ -397,7 +494,7 @@ async function tkGroup(env, A, url) {
   var gid = String(url.searchParams.get('id') || ''), k = String(url.searchParams.get('k') || '');
   if (!gid || gid.length > 60 || (k && !METK_DAY_RX.test(k))) return tkNo(400, 'bad-query').err;
   if (!canRead(A, K)) return tkNo(403, 'forbidden').err;
-  var S = parseJson(await kvGet(env, 'kv', K), {}), now = Date.now(), mem = [], dk;
+  var S = parseJson(await opResourceGet(env, K), {}), now = Date.now(), mem = [], dk;
   var sm = { n: 0, ack: 0, running: 0, stalled: 0, review: 0, returned: 0, done: 0, declined: 0, cancelled: 0, reassigned: 0, pending: 0, late: 0 };
   if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (k && dk !== k)) continue;
     S[dk].forEach(function (r, i) {
@@ -420,7 +517,7 @@ async function tkLinkage(env, A, url) {
   var D0 = tkDeptOf(A, url.searchParams.get('dept')); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
   var ym = String(url.searchParams.get('ym') || ''); if (ym && !METK_YM_RX.test(ym)) return tkNo(400, 'bad-ym').err;
   if (!canRead(A, K)) return tkNo(403, 'forbidden').err;
-  var S = parseJson(await kvGet(env, 'kv', K), {}), emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1'));
+  var S = parseJson(await opResourceGet(env, K), {}), emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'));
   var cnt = { eid: 0, nid: 0, name: 0, unknown: 0, ambiguous: 0, none: 0 }, rows = [], dk;
   if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (ym && tkYm(dk) !== ym.replace(/-0(\d)$/, '-$1'))) continue;
     S[dk].forEach(function (r, i) {
@@ -459,7 +556,12 @@ async function tasksMgmtRoutes(request, env, path, ss) {
   var rl = await rlHit(env, 'sv', A.u.id, RL_SAVE); if (rl) return tooMany(rl);
   var B0 = await tkBody(request, path, path === '/api/tasks/create' ? 32768 : 8192); if (B0.err) return B0.err;
   var sxB = tkSessBody(env, B0.b, ss, path); if (sxB) return sxB;   /* KIVO_264 · C1: uid في الجسم = هويةُ التبويب — قبل أيّ قراءةٍ أو كتابة */
-  if (path === '/api/tasks/recur/run') return await tkRecurRoute(env, request, A, url, B0.b);
-  if (path === '/api/tasks/recur') return await tkRecurOp(env, request, A, B0.b);
-  return await POSTS[path](env, request, A, B0.b);
+  try {
+    if (path === '/api/tasks/recur/run') return await tkRecurRoute(env, request, A, url, B0.b);
+    if (path === '/api/tasks/recur') return await tkRecurOp(env, request, A, B0.b);
+    return await POSTS[path](env, request, A, B0.b);
+  } catch (error) {
+    if (error && error.rs) return json({ ok: 0, err: error.rs }, error.status || 400);
+    throw error;
+  }
 }

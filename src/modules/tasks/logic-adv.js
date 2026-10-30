@@ -77,15 +77,6 @@ Object.assign(Component.prototype, {
       advWinHint: "القبول متاح في أي وقت بعد الإسناد · الأداء يُقاس من المهلة · الافتراضي: لا بدء قبل الموعد والتسليم حتى ساعتين بعد المهلة",
     };
   },
-  /* تعديلُ صفٍّ: طابعُ الكيان (22) وحقولُ الإدارة (23) تُنقل كما هي حرفاً — KIVO_265 · H-1: العمودُ 23 يكتبه الخادمُ وحده (الحفظُ الخامّ الذي يغيّره
-     يُرفض 'task-x')، فالإعداداتُ المتقدمة إن مُسَّت تُرسل إلى /api/tasks/settings بعد وصول التعديل نفسِه (_tkSettingsSrv) — فلا يسبقه فيُرفض تعديلُك
-     لأنه يحمل x قديمة. بلا خادم (المسارُ المحلي) لم تكن الإعداداتُ تُكتب أصلاً */
-  _tkXEdit(row, prev) {
-    const e = this.state;
-    if (prev && prev.length > 22) for (let q = 22; q < prev.length; q++) row[q] = prev[q];
-    this._tkSetPend = e.newAdvTouched && this._tkSrv() ? this._tkAdvBody() : null;
-    return row;
-  },
   _tkAdvFrom(r) {
     const x = r && r[23] && "object" === typeof r[23] ? r[23] : null,
       p = x && x.pol && "object" === typeof x.pol ? x.pol : null;
@@ -104,38 +95,6 @@ Object.assign(Component.prototype, {
       ...this._tkRecFrom(r),
       tkElig: null,
     };
-  },
-  /* KIVO_265 · H-1: إعداداتُ المهمة (سياسةُ الإثبات · المراجِع · الاعتذار) من الخادم — بعد وصول التعديل نفسِه (flushAsync لطبقة التخزين).
-     وقرارُ المالك (التكرار): فعلُ التكرار المعلَّق (تعديلُ القاعدة · الإنهاء · التحويلُ إلى متكررة) بعده بالتسلسل نفسِه — فلا يسبق الحفظَ الخامّ فيُرفض */
-  _tkSettingsSrv(ref) {
-    const B = this._tkSetPend,
-      RB = this._tkRecPend;
-    this._tkSetPend = this._tkRecPend = null;
-    if ((!B && !RB) || !ref || !this._tkSrv()) return;
-    const set = () =>
-        !B
-          ? Promise.resolve()
-          : this._tkApi("/api/tasks/settings", Object.assign({ k: ref.k }, ref.grp ? { grp: ref.grp } : { id: ref.id, ekey: null == ref.ekey ? void 0 : String(ref.ekey) }, { pol: B.pol, rv: B.rv, dec: B.dec, win: B.win })).then((x) =>
-              x.j && 1 === x.j.ok ? this.bsToast("حُفظت إعداداتُ المهمة", "ok") : this.bsToast(this._tkErr(x, "لم تُحفظ إعداداتُ المهمة — أعد المحاولة")),
-            ),
-      go = () => set().then(() => RB && this._tkRecGo(RB, ref)),
-      what = [B && "إعداداتُ المهمة", RB && "تعديلاتُ التكرار"].filter(Boolean).join(" و"),   /* مراجعة U3: ما لم يُرسل كلُّه */
-      S = KIVO.__BS_SRV;
-    if (!S || !S.flushAsync) return void go();
-    /* KIVO_265 · مراجعة U2 (280): التعارضُ يُرجع false ثم تعيد الطبقةُ إرسالَ المدموج ⇒ يُنتظر حتى مرتين أخريين · والرفضُ يُرجع true بعد أن يعيد
-       المخزنَ كما في الخادم ⇒ لا يُرسل شيءٌ ما لم يثبت التعديلُ نفسُه في المخزن (بصمةُ أعمدة النموذج — ref.fp) */
-    const fl = (n) => Promise.resolve(S.flushAsync()).catch(() => !1).then((ok) => (ok || n > 1 ? ok : fl(n + 1)));
-    fl(0).then((ok) =>
-      !ok
-        ? this.bsToast("لم يصل التعديلُ إلى الخادم بعد — لم تُرسل " + what + "؛ أعد المحاولة")
-        : !ref.fp || this._tkFp((this.loadAllTasks()[ref.k] || []).filter((t) => Array.isArray(t) && (ref.grp ? t[17] === ref.grp : String(t[13]) === String(ref.id)))) === ref.fp
-          ? go()
-          : this.bsToast("لم يثبت تعديلُك في الخادم (رُفض أو سبقه تعديلٌ آخر) — لم تُرسل " + what, "warn"),
-    );
-  },
-  /* بصمةُ ما يكتبه نموذجُ التعديل في الصفوف (العنوان · الوصف · الأولوية · المكلَّف · الوقت) — بها يُعرف أن الحفظَ الخامّ ثبت */
-  _tkFp(L) {
-    return L.map((t) => JSON.stringify([t[0], t[1], t[2], t[14], t[15], t[16]])).sort().join("|");
   },
   /* يومُ المهمة في النموذج (Y-M-D) — «يبدأ من» للإنشاء والتحويل */
   _tkFormK() {

@@ -192,7 +192,7 @@ async function cuPlanCleanup(env, A, opt) {
   if (await cuLegacyPresent(env)) throw cuError('custody-legacy-source-present', 503);
   if ((await cuRev(env, dept)) !== base) throw cuError('custody-conflict', 409);
   var employeeKey = 'bsdept:' + dept + ':bassam_employees_v1',
-    actual = parseJson(await kvGet(env, 'kv', employeeKey), []);
+    actual = parseJson(await opResourceGet(env, employeeKey), []);
   if (!deq(actual, opt.oldEmployees)) throw cuError('custody-employee-source-mismatch', 409);
   var all = intent !== 'employee-delete',
     holderKeys = all ? [] : cuRemovedHolderKeys(opt.oldEmployees, opt.newEmployees),
@@ -497,7 +497,7 @@ async function cuPlanSaveTransition(env, A, body, kvPlan) {
     var dept = parseKey(key).dept;
     if (!dept) continue;
     var pd = byKey.get(key),
-      before = pd ? parseJson(pd.cur, []) : parseJson(await kvGet(env, 'kv', key), []),
+      before = pd ? parseJson(pd.cur, []) : parseJson(await opResourceGet(env, key), []),
       after = pd
         ? pd.act === 'del'
           ? []
@@ -579,7 +579,7 @@ async function cuPlanSaveTransition(env, A, body, kvPlan) {
     if (blocked) continue;
     var key = 'bsdept:' + dept + ':bassam_employees_v1',
       pd = byKey.get(key),
-      before = pd ? parseJson(pd.cur, []) : parseJson(await kvGet(env, 'kv', key), []),
+      before = pd ? parseJson(pd.cur, []) : parseJson(await opResourceGet(env, key), []),
       after = pd ? (pd.act === 'del' ? [] : parseJson(pd.v, null)) : before;
     if (!Array.isArray(before) || !Array.isArray(after)) throw cuError('custody-transition-employees');
     if (after.length) throw cuError('custody-transition-wipe-employee-plan');

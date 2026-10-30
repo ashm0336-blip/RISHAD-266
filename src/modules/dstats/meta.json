@@ -22,7 +22,13 @@
   ],
   "domain": "src/modules/dstats/logic.js",
   "data": [
-   "bassam_dstats_v1"
+   "bassam_dayshift_v1",
+   "bassam_dreport_v1",
+   "bassam_dstats_v1",
+   "bassam_employees_v1",
+   "bassam_mark_kinds_v1",
+   "bassam_shift_options_v1",
+   "bassam_staffing_v3"
   ],
   "permissions": [
    "dstats/anCmp",

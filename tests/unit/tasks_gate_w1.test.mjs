@@ -11,7 +11,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
-import { world, workerUnderTest, ME, KT, notificationMessages, D, TAG, stored, putKV, hij, HR, MID } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, KT, notificationMessages, D, TAG, stored, putKV, hij, HR, MID, taskCommandBody, replaceOperationalFixture } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
@@ -30,7 +30,7 @@ const rowsOf = (c) => (c.r.j.rows || []).map((x) => JSON.stringify(x)).sort();
 async function setup(mode) {
   const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM), me = await W.login(ME.un, ME.pw);
   const T0 = MID(Date.now()) + 864e5, s = T0 + 8 * HR;
-  const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: { k: hij(T0 + 12 * HR), t: TAG + ' سلسلة R8', s, e: s + HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'daily' } } });
+  const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: taskCommandBody(W.env, '/api/tasks/create', { k: hij(T0 + 12 * HR), t: TAG + ' سلسلة R8', s, e: s + HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'daily' } }) });
   assert.equal(c.status, 200, JSON.stringify(c.j).slice(0, 300));
   const recId = (() => { const q = c.j.rows[0]; return stored(W.env, KT)[q.k].find((r) => r[13] === q.id)[23].rec.id; })();
   return { W, dm, me, recId };
@@ -54,8 +54,11 @@ for (const mode of ['legacy', 'enforce']) {
       assert.ok(!recurRan(b), 'عزلةٌ جديدة في المهلة: لا توليد');
       const schemaChecks = b.sql.filter(s => s === "SELECT v FROM meta WHERE k = 'schema_version'").length;
       assert.equal(schemaChecks, 1, 'التحقق من ختم المخطط مرة واحدة في العزلة الجديدة');
-      const businessTrips = b.trips - schemaChecks;
-      assert.ok((mode === 'enforce' ? businessTrips : b.trips) <= 8 && b.trips * 3 < a.trips, 'الجولات: ' + b.trips + ' (منها ' + schemaChecks + ' فحص مخطط) بدل ' + a.trips);
+      // The schema10 relational projection and coherent authority capture add
+      // two round trips to the historical KV-only reference (10/11 observed).
+      // Keep both a finite mode-specific budget and the original >3x saving.
+      assert.ok(b.trips <= (mode === 'enforce' ? 11 : 10) && b.trips * 3 < a.trips, 'الجولات: ' + b.trips + ' (منها ' + schemaChecks + ' فحص مخطط) بدل ' + a.trips);
+      console.log('# schema10-task-read-budget '+JSON.stringify({mode,trips:b.trips,schemaChecks,firstTrips:a.trips,sqlStatements:b.sql.length}));
       assert.deepEqual(rowsOf(b), rowsOf(a), 'الصفوفُ نفسُها');
     }
   });
@@ -94,22 +97,22 @@ for (const mode of ['legacy', 'enforce']) {
     const r = await W.C.api('/api/tasks/recur/run?dept=' + D, { method: 'POST', cookie: W.su.ck, body: {} }); assert.equal(r.status, 200);
     assert.ok(gate(W, 'rec') > 0, 'مختوم بالتشغيل الصريح');
     const T0 = MID(Date.now()) + 864e5, s = T0 + 15 * HR;
-    const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: { k: hij(T0 + 12 * HR), t: TAG + ' سلسلة R8 ثانية', s, e: s + HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'daily' } } });
+    const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: taskCommandBody(W.env, '/api/tasks/create', { k: hij(T0 + 12 * HR), t: TAG + ' سلسلة R8 ثانية', s, e: s + HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'daily' } }) });
     assert.equal(c.status, 200); assert.equal(gate(W, 'rec'), 0, 'السلسلةُ الجديدة محت الطابع');
     const id2 = (() => { const q = c.j.rows[0]; return stored(W.env, KT)[q.k].find((x) => x[13] === q.id)[23].rec.id; })();
     await fresh(W); const b = await call(W, me.ck);
     assert.ok(recurRan(b) && nSeries(W, id2) > 20, 'القراءةُ التالية ولّدت نسخَ السلسلة الجديدة: ' + nSeries(W, id2));
     assert.ok(b.r.j.rows.filter((x) => x.rid === id2).length > 20, 'وهي في الردّ نفسِه');
-    const p = await W.C.api('/api/tasks/recur', { method: 'POST', cookie: dm.ck, body: { id: id2, op: 'pause' } }); assert.equal(p.status, 200, JSON.stringify(p.j).slice(0, 200));
+    const p = await W.C.api('/api/tasks/recur', { method: 'POST', cookie: dm.ck, body: taskCommandBody(W.env, '/api/tasks/recur', { id: id2, op: 'pause' }) }); assert.equal(p.status, 200, JSON.stringify(p.j).slice(0, 200));
     assert.equal(gate(W, 'rec'), 0, 'الإيقافُ محا الطابع');
   });
 
   test(M + '(هـ) التذكيرُ قبل المهلة يصل مرةً واحدة من القراءة الأولى ولا يتكرر عبر العزلات · وبعد المهلة يُمسح من جديد بلا تكرار', async () => {
     const { W, dm, me } = await setup(mode);
     const now = Date.now(), s0 = now + 3 * HR;
-    const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: { k: hij(s0), t: TAG + ' قريبة R8', s: s0, e: s0 + HR, asg: [ME.eid], rv: 'none' } }); assert.equal(c.status, 200);
+    const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: taskCommandBody(W.env, '/api/tasks/create', { k: hij(s0), t: TAG + ' قريبة R8', s: s0, e: s0 + HR, asg: [ME.eid], rv: 'none' }) }); assert.equal(c.status, 200);
     const S = stored(W.env, KT), k0 = c.j.rows[0].k, id = c.j.rows[0].id, r = S[k0].find((q) => q[13] === id);
-    S[k0] = S[k0].filter((q) => q[13] !== id); r[15] = now - 30 * 60e3; r[16] = now + 30 * 60e3; (S[hij(now)] = S[hij(now)] || []).push(r); putKV(W.env, KT, S);
+    S[k0] = S[k0].filter((q) => q[13] !== id); r[15] = now - 30 * 60e3; r[16] = now + 30 * 60e3; (S[hij(now)] = S[hij(now)] || []).push(r); await replaceOperationalFixture(W.env, KT, S);
     const soon = () => notificationMessages(W.env).filter((x) => x.type === 'task_soon' && /قريبة R8/.test(x.body)).length;
     await fresh(W); assert.equal((await call(W, me.ck)).r.status, 200); assert.equal(soon(), 1, 'تذكيرٌ واحد من القراءة الأولى');
     for (let i = 0; i < 2; i++) { await fresh(W); await call(W, me.ck); }

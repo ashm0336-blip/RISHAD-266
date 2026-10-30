@@ -1,3 +1,6 @@
+import { attachTaskOperations, taskText } from './tasks_vm_operations_fx.mjs';
+import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { taskCommandBody } from './tasks_fx.mjs';
 /* KIVO_265 · البند 8 — صفحةُ المهام (src/modules/tasks/logic.js في vm + KIVO.BassamPageKit الحقيقي) على العامل الحقيقي: تقريرُ إنتاجية المهام للشهر المختار
    لكل موظف (وورديتُه من الجدول الشهري كما يراها المنتقي) ولكل وردية: المسندة · المنجزة · في الوقت/متأخرة · متوسطُ الفعلي/المخطط · معدّلُ التوثيق بالصور —
    من المخزن الشهري المحلي، قابلٌ للتصدير Excel/الطباعة بالآلية القائمة. بياناتٌ اصطناعية (tasks_fx). */
@@ -12,7 +15,7 @@ import { world, workerUnderTest, ME, MATE, KT, KE, D, stored, putKV, row, hij } 
 const WU = workerUnderTest();
 const LOGIC = moduleLogic('tasks');
 const KS = 'bsdept:' + D + ':bassam_staffing_v3';
-function page(W, ck, storeJson, emps, extra) {
+async function page(W, ck, storeJson, emps, extra) {
   const store = new Map([['bassam_tasks_v1', storeJson], ['bassam_employees_v1', JSON.stringify(emps)]].concat(Object.entries(extra || {})));
   const KIVO = {}, toasts = [], xlsx = [], prints = [];
   const ctx = { KIVO, console, Intl, Date, Math, JSON, Promise, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, setTimeout: (f) => { f(); return 0; }, clearTimeout, setInterval: () => 0, clearInterval: () => 0,
@@ -32,9 +35,10 @@ function page(W, ck, storeJson, emps, extra) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
+  const opsFixture = await attachTaskOperations(ctx, { store, W, ck });
   const c = new ctx.__C(); c._tkDayDef = () => 0;   /* اختباراتُ الشهر كاملاً (KIVO_265 · كروتُ الأيام: الافتراضي يومُ اليوم) */ c.state = Object.assign({}, c.state || {}, { locked: {} });
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);
-  return { c, store, toasts, xlsx, prints };
+  return { c, opsFixture, store, toasts, xlsx, prints };
 }
 /* شهرٌ خالٍ من بذور tasks_fx: بعد شهرين من اليوم */
 const FUT = Date.now() + 62 * 864e5, [Y, M] = hij(FUT).split('-').map(Number), YM = Y + '-' + M, K1 = YM + '-5', K2 = YM + '-6';
@@ -42,7 +46,7 @@ const FUT = Date.now() + 62 * 864e5, [Y, M] = hij(FUT).split('-').map(Number), Y
 test('البند 8 · الإنتاجية للشهر المختار: لكل موظف (بورديته من الجدول) ولكل وردية — المسندة · المنجزة · في الوقت/متأخرة · متوسط الفعلي/المخطط · التوثيق بالصور · تصدير وطباعة', async () => {
   const W = await world({ worker: WU.file }); const dm = await W.login('0000000101', '70101');
   const MIN = 6e4, S = stored(W.env, KT), t0 = FUT;
-  const Sf = stored(W.env, KS) || {}; Sf[YM] = { [ME.eid]: { shift: 'TST-A', rest: [] }, [MATE.eid]: { shift: 'TST-B', rest: [] }, tst_e_emp1: { shift: 'TST-A', rest: [] } }; putKV(W.env, KS, Sf);
+  const Sf = stored(W.env, KS) || {}; Sf[YM] = { [ME.eid]: { shift: 'TST-A', rest: [] }, [MATE.eid]: { shift: 'TST-B', rest: [] }, tst_e_emp1: { shift: 'TST-A', rest: [] } }; await replaceOperationalFixture(W.env, KS, Sf);
   S[K1] = [
     /* موظفُنا (TST-A): 4 مسندة — منجزتان (واحدةٌ في الوقت بصورة 45/60 · واحدةٌ متأخرة بلا صورة 90/60) · معلّقة · ملغاة */
     row({ id: 1760000055001, title: 'إنتاجية · أ١', eid: ME.eid, st: 'done', dur: 60, acc: t0, fin: t0 + 45 * MIN, perf: ['on_time', 'في الوقت'], s: t0, e: t0 + 60 * MIN, r21: { imgs: ['img_tskprod_a1'], note: '', sub: 1, at: t0 + 45 * MIN } }),
@@ -57,9 +61,9 @@ test('البند 8 · الإنتاجية للشهر المختار: لكل مو�
   ];
   /* tst_e_emp1 (TST-A أيضاً) في يومٍ آخر: منجزةٌ 130/60 (تحذيرية) بلا صورة */
   S[K2] = [row({ id: 1760000055008, title: 'إنتاجية · ج١', eid: 'tst_e_emp1', st: 'done', dur: 60, acc: t0 + 864e5, fin: t0 + 864e5 + 130 * MIN, perf: ['late', 'متأخر 70 د'], s: t0 + 864e5, e: t0 + 864e5 + 60 * MIN })];
-  putKV(W.env, KT, S);
-  const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT + ',' + KE + ',' + KS), { cookie: dm.ck });
-  const P = page(W, dm.ck, g.j.keys[KT].v, JSON.parse(g.j.keys[KE].v), { bassam_staffing_v3: g.j.keys[KS].v });
+  await replaceOperationalFixture(W.env, KT, S);
+  const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT + ',' + KE + ',' + KS), { cookie: dm.ck });
+  const P = await page(W, dm.ck, taskText(g.j, KT), JSON.parse(taskText(g.j, KE)), { bassam_staffing_v3: taskText(g.j, KS) });
   P.c.setState({ year: Y, month: M, perPage: 0 });
   let V = P.c.renderVals();
   assert.equal(V.showProd, false); assert.equal(V.showList, true);

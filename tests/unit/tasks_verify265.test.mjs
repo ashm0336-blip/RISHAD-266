@@ -8,18 +8,18 @@
            (الإصلاحُ في الواجهة — tasks_page_verify265 (V-5) يُخفق على b7538e2) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, MATE, KT, KE, TAG, DAY, PDAY, stored, putKV, row, hij, HR } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, KT, KE, TAG, DAY, PDAY, stored, putKV, row, hij, HR, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 import { upImg, act } from './tasks_conc_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body:operationSaveBody(W.env,p,taskCommandBody(W.env, p, body)) });
 const get = (W, ck, p) => W.C.api(p, { cookie: ck });
 const allRows = (W) => Object.values(stored(W.env, KT) || {}).flat().filter(Array.isArray);
 const saved = (r) => !!(r.j && r.j.revs && r.j.revs[KT]);
 const deniedWhy = (r) => (r.j && r.j.denied && r.j.denied[KT] ? r.j.denied[KT].why : '');
 const show = (r) => JSON.stringify(r.j || r).slice(0, 260);
-async function raw(W, ck, mut, extra) { const g = await get(W, ck, '/api/get?keys=' + encodeURIComponent(KT)); const S = JSON.parse(g.j.keys[KT].v); mut(S); return post(W, ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g.j.keys[KT].rev } }, extra || {})); }
+async function raw(W, ck, mut, extra) { const g = await get(W, ck, "/api/operations/read?keys=" + encodeURIComponent(KT)); const S = g.j.resources[KT]; mut(S); return post(W, ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g.j.base[KT] } }, extra || {})); }
 
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
@@ -29,7 +29,7 @@ for (const mode of ['legacy', 'enforce']) {
     for (const r20 of [{ ack: Date.now() - 600e3 }, { at: Date.now() - 600e3, why: 'TEST_ONLY ظرف' }, { exp: Date.now() - 600e3 }]) {
       const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM);
       const s = Date.now() + 2 * HR, id = 1760000700001;
-      const S0 = stored(W.env, KT); S0[DAY].push(row({ id, title: 'يتيمة', s, e: s + HR, st: r20.why ? 'declined' : 'pending', r20 })); putKV(W.env, KT, S0);   /* بعد تنظيف حذف صاحبها: بلا مكلَّف */
+      const S0 = stored(W.env, KT); S0[DAY].push(row({ id, title: 'يتيمة', s, e: s + HR, st: r20.why ? 'declined' : 'pending', r20 })); await replaceOperationalFixture(W.env, KT, S0);   /* بعد تنظيف حذف صاحبها: بلا مكلَّف */
       const assign = (clear) => raw(W, dm.ck, (S) => { const i = S[DAY].findIndex((q) => q[13] === id); const q = S[DAY][i].slice(); q[11] = Date.now(); q[12] = null; q[3] = 'in_progress'; q[7] = ['T']; q[8] = MATE.name; q[14] = MATE.eid; if (clear) q[20] = null; S[DAY][i] = q; }, WHY([KT]));
       const keep = await assign(false);
       assert.equal(deniedWhy(keep), 'task-asg', 'بالعمود 20 ⇒ لا ينتقل استلامُ المحذوف أو اعتذارُه: ' + show(keep));
@@ -43,7 +43,7 @@ for (const mode of ['legacy', 'enforce']) {
   test(M + '(V-5) مهمةٌ صارت عامةً بحذف من بدأها: إسنادُها بالتعديل كما تكتبه صفحةُ 265 («بانتظار الاستلام» كاملةً) يمضي — والمكلَّفُ الجديد يراها غيرَ مقبولة', async () => {
     const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM), mate = await W.login(MATE.un, MATE.pw);
     const s = Date.now() + 2 * HR, id = 1760000700002, t0 = Date.now() - 900e3;
-    const S0 = stored(W.env, KT), r0 = row({ id, title: 'بدأها المحذوف', s, e: s + HR, st: 'in_progress', acc: t0, r20: { ack: t0 } }); S0[DAY].push(r0); putKV(W.env, KT, S0);
+    const S0 = stored(W.env, KT), r0 = row({ id, title: 'بدأها المحذوف', s, e: s + HR, st: 'in_progress', acc: t0, r20: { ack: t0 } }); S0[DAY].push(r0); await replaceOperationalFixture(W.env, KT, S0);
     const b = await raw(W, dm.ck, (S) => { const i = S[DAY].findIndex((q) => q[13] === id); const q = S[DAY][i].slice(); q[3] = 'pending'; q[11] = null; q[12] = null; q[6] = null; q[20] = null; q[7] = ['T']; q[8] = MATE.name; q[14] = MATE.eid; S[DAY][i] = q; }, WHY([KT]));
     assert.ok(saved(b), show(b));
     const l = await get(W, mate.ck, '/api/me/tasks');
@@ -64,7 +64,7 @@ for (const mode of ['legacy', 'enforce']) {
       /* صفٌّ قديمٌ بلا هوية (13) للزميل منجزٌ بتوثيقٍ نصّيّ — في يوم المهمة (يراه مديرُ الإدارة بالوضعين) أو في شهرٍ ماضٍ (مقفلٌ في الإنفاذ) */
       const day = where === 'today' ? k : PDAY, t0 = where === 'today' ? Date.now() - 3 * HR : Date.now() - 51 * HR;
       const S0 = stored(W.env, KT), r0 = row({ title: 'قديمٌ بلا هوية', eid: MATE.eid, st: 'done', acc: t0 + HR, fin: t0 + 2 * HR, s: t0, e: t0 + 3 * HR, r21: { imgs: [], note: TAG + ' قديم', at: t0 + 2 * HR } });
-      r0[13] = null; S0[day] = (S0[day] || []).concat([r0]); putKV(W.env, KT, S0);
+      r0[13] = null; S0[day] = (S0[day] || []).concat([r0]); await replaceOperationalFixture(W.env, KT, S0);
       const pick = (L) => L.findIndex((q) => q && q[13] == null && q[14] === MATE.eid);
       const b = await raw(W, dm.ck, (S) => { const L = S[day]; const i = pick(L); L[i] = L[i].slice(); L[i][21] = Object.assign({}, L[i][21], { imgs: [img] }); }, WHY([KT]));
       assert.ok(!saved(b), where + ': لا يُكتب: ' + show(b));
@@ -78,7 +78,7 @@ for (const mode of ['legacy', 'enforce']) {
       if (where === 'past') continue;
       /* ولا تراجع (F-10): صفُّ هويةٍ مطابَق — tkKeepSelf يعيد عمودَه 21 من الخادم قبل الحكم فلا تُضاف إليه صورة */
       const S1 = stored(W.env, KT), r1 = row({ id: 1760000700777, title: 'بهوية', eid: MATE.eid, st: 'done', acc: t0 + HR, fin: t0 + 2 * HR, s: t0, e: t0 + 3 * HR, r21: { imgs: [], note: TAG + ' بهوية', at: t0 + 2 * HR } });
-      S1[day] = S1[day].concat([r1]); putKV(W.env, KT, S1);
+      S1[day] = S1[day].concat([r1]); await replaceOperationalFixture(W.env, KT, S1);
       await raw(W, dm.ck, (S) => { const L = S[day]; const i = L.findIndex((q) => q && q[13] === 1760000700777); L[i] = L[i].slice(); L[i][21] = Object.assign({}, L[i][21], { imgs: [img] }); }, WHY([KT]));
       const r2 = stored(W.env, KT)[day].find((q) => q && q[13] === 1760000700777);
       assert.deepEqual(r2[21].imgs, [], 'بهويةٍ مطابَقة: كما في الخادم');

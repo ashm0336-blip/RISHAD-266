@@ -22,7 +22,10 @@
   ],
   "domain": "src/modules/irshad/logic.js",
   "data": [
+   "bassam_employees_v1",
    "bassam_irshad_v1",
+   "bassam_mark_kinds_v1",
+   "bassam_shift_options_v1",
    "bassam_staffing_v3"
   ],
   "permissions": [

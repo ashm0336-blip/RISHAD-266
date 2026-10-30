@@ -302,12 +302,12 @@ function meRec(rec) {
 }
 async function meDeptData(env, deptId, extra) {
   var ks = ME_KEYS.map(function (n) { return 'bsdept:' + deptId + ':' + n; });
-  var sQ = env.DB.prepare('SELECT k, seq, v FROM kv WHERE k IN (' + ks.map(function (_, n) { return '?' + (n + 1); }).join(',') + ') ORDER BY k, seq');
-  var rs = await env.DB.batch([sQ.bind.apply(sQ, ks)].concat(extra || []));
-  var kj = kvJoin((rs[0] && rs[0].results) || []), P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
+  var capture = await opCaptureReferences(env, Object.create(null), ks),
+    rs = await env.DB.batch(capture.guards.concat(extra || [])),
+    kj = capture.keys, P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
   return { emps: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_employees_v1'], []); return Array.isArray(a) ? a : []; })(),
     staffing: P('bassam_staffing_v3', {}), locks: P('bassam_staffing_locks_v1', {}), dreport: P('bassam_dreport_v1', {}), plan: P('bassam_plan_v1', {}),
-    rounds: P('bassam_rounds_v1', {}), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(1) };
+    rounds: P('bassam_rounds_v1', {}), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
 }
 function meIdent(u, D, users) {
   var L = pfLink(u, D ? D.emps : []);

@@ -14,10 +14,10 @@
   if (typeof ofetch !== "function") return;
   function entry(name) {
     var r = window.__dcRegistry && window.__dcRegistry[name];
-    return r && !r.html && !r.Logic ? r : null;
+    return r && ((!r.html && !r.Logic) || r.dataError) ? r : null;
   }
   function wake(name) {
-    try { var r = entry(name); if (r) { r.fetched = false; r.ver++; r.subs.forEach(function (fn) { fn(); }); } } catch (e) {}
+    try { var r = entry(name); if (r) { r.dataError = null; r.fetched = false; r.ver++; r.subs.forEach(function (fn) { fn(); }); } } catch (e) {}
   }
   function sweep() {
     var names = Object.keys(gaveUp);
@@ -49,6 +49,8 @@
     } catch (e) { /* البطاقةُ عرضٌ فقط */ }
   }
   function hideCard(name) { try { if (cards[name]) { cards[name].remove(); delete cards[name]; } } catch (e) { /* عرضٌ فقط */ } }
+  window.addEventListener('dc:page-load-failed', function (event) { var name = event.detail && event.detail.name; if (name) showCard(name); });
+  window.addEventListener('dc:page-load-ready', function (event) { var name = event.detail && event.detail.name; if (name) hideCard(name); });
   function again(name) {
     var n = tries[name] = (tries[name] || 0) + 1;
     if (n > 3) { gaveUp[name] = 1; showCard(name); if (!sweeper) sweeper = setInterval(sweep, 30000); return; }

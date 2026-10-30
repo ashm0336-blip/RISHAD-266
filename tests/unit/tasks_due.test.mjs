@@ -9,11 +9,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { world, workerUnderTest, ME, KT, notificationMessages, notificationDedup, TAG, stored, putKV, hij, HR, row } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, KT, notificationMessages, notificationDedup, TAG, stored, putKV, hij, HR, row, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: operationSaveBody(W.env, p, taskCommandBody(W.env, p, body)) });
 const get = (W, ck, p) => W.C.api(p, { cookie: ck });
 const MIN = 60e3;
 const notifs = (W) => notificationMessages(W.env);
@@ -26,7 +26,7 @@ async function mk(W, ck, o) {                                                   
   const id = c.j.rows[0].id, k0 = c.j.rows[0].k, S = stored(W.env, KT), k1 = hij(o.s);
   const r = S[k0].find((q) => q[13] === id); S[k0] = S[k0].filter((q) => q[13] !== id); r[15] = o.s; r[16] = o.e;
   if (o.acc) r[11] = o.acc; if (o.st) r[3] = o.st; if (o.r21) r[21] = o.r21;
-  (S[k1] = S[k1] || []).push(r); putKV(W.env, KT, S);
+  (S[k1] = S[k1] || []).push(r); await replaceOperationalFixture(W.env, KT, S);
   return { k: k1, id };
 }
 
@@ -102,7 +102,7 @@ for (const mode of ['legacy', 'enforce']) {
   test(M + '(هـ) صفٌّ قديمٌ بلا صاحب ⇒ يكتب باسم مدير الإدارة ويُنبَّه mgr:<الإدارة> · والمصدرُ srv:due', async () => {
     const W = await world({ worker: WU.file, mode });
     const now = Date.now(), k = hij(now - 4 * HR), S = stored(W.env, KT);
-    const r = row({ title: 'قديمة بلا صاحب', eid: ME.eid, s: now - 4 * HR, e: now - 3 * HR }); (S[k] = S[k] || []).push(r); putKV(W.env, KT, S);
+    const r = row({ title: 'قديمة بلا صاحب', eid: ME.eid, s: now - 4 * HR, e: now - 3 * HR }); (S[k] = S[k] || []).push(r); await replaceOperationalFixture(W.env, KT, S);
     const r1 = await run(W); assert.equal(r1.status, 200, JSON.stringify(r1.j)); assert.ok(r1.j.due.exp >= 1 && r1.j.due.skipped === 0, JSON.stringify(r1.j.due));
     assert.ok((rowOf(W, r[13])[20] || {}).exp > 0, 'وُسمت منقضية');
     const ln = notifs(W).find((n) => n.type === 'task_late' && /قديمة بلا صاحب/.test(n.body)); assert.ok(ln, 'late'); assert.ok(ln.employee_targets.includes('mgr:tst_d1'), JSON.stringify(ln.to));

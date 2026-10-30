@@ -18,20 +18,20 @@
 ## لكل وحدة
 | الوحدة | فارغ | تحميل | خطأ | بلا اتصال | أعد المحاولة |
 |---|---|---|---|---|---|
-| admin (Admin) | 48 | 21 | 285 | 2 | 18 |
+| admin (Admin) | 49 | 22 | 267 | 2 | 19 |
 | award (Award) | 8 | 2 | 32 | 0 | 0 |
-| daily (Daily Sessions) | 60 | 9 | 193 | 0 | 3 |
-| dreport (Daily Report) | 19 | 0 | 103 | 0 | 1 |
+| daily (Daily Sessions) | 60 | 9 | 178 | 0 | 3 |
+| dreport (Daily Report) | 19 | 0 | 90 | 0 | 1 |
 | dstats (Daily Stats) | 14 | 1 | 38 | 0 | 0 |
-| employees (Employees) | 49 | 9 | 103 | 0 | 7 |
+| employees (Employees) | 49 | 9 | 98 | 0 | 7 |
 | irshad (Irshad) | 17 | 1 | 21 | 0 | 6 |
 | kpis (KPIs) | 7 | 0 | 3 | 0 | 0 |
-| plan (Operational Plan) | 57 | 8 | 113 | 0 | 1 |
+| plan (Operational Plan) | 57 | 8 | 98 | 0 | 1 |
 | planning (Planning) | 0 | 0 | 6 | 0 | 0 |
-| profile (Profile) | 31 | 18 | 112 | 0 | 13 |
+| profile (Profile) | 31 | 18 | 103 | 0 | 11 |
 | seized (Seized) | 19 | 2 | 30 | 0 | 4 |
-| staff (Staffing) | 15 | 0 | 75 | 0 | 1 |
-| tasks (Tasks) | 33 | 11 | 93 | 0 | 9 |
+| staff (Staffing) | 14 | 0 | 61 | 0 | 1 |
+| tasks (Tasks) | 32 | 11 | 89 | 0 | 7 |
 
 ## القراءة
 - **بلا اتصال وأعد المحاولة** آليتان عامتان: المؤشر واللافتة يعلنان الانقطاع. الموارد القديمة تتزامن عبر `/api/changes`، والمجالات العلائقية تستعمل واجهاتها الخادمية وتبقي المسودة عند الفشل حتى تأكيد الحفظ؛ صفر الوحدة وحده لا يثبت غياب المعالجة.

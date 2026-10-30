@@ -1,3 +1,6 @@
+import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { taskText, saveTaskDocuments } from './tasks_vm_operations_fx.mjs';
+import { taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
 /* KIVO_264 · KIVO-Tasks — رقعةُ «ملفي ← مهامي» (reports/k264/tasks/patches/03-profile-mytasks.patch · يملك الملفَّ وكيلُ «ملفي»):
    منطقُ الصفحة الحقيقي (src/modules/profile/logic.js بعد الرقعة) + طبقةُ البيانات الذاتية (src/services/545-task-self.js) في vm واحد،
    و fetch بجلسة الموظف إلى العامل الحقيقي (tests/unit/tasks_fx.mjs). ما دامت الرقعةُ لم تُدمج تُطبَّق هنا على نسخةٍ مؤقتة (git apply) —
@@ -55,7 +58,7 @@ for (const mode of ['legacy', 'enforce']) {
     const S = stored(W.env, KT);
     S[DAY].push(row({ id: 1760000055501, title: 'P0 اليوم من المدير', eid: ME.eid, s: Date.now() - 60e3, e: Date.now() + 3600e3 }));
     (S[TOMORROW] = S[TOMORROW] || []).push(row({ id: 1760000055502, title: 'P0 غداً من المدير', eid: ME.eid, s: Date.now() + 24 * 3600e3, e: Date.now() + 26 * 3600e3 }));
-    assert.ok((await W.C.save(dm.ck, { [KT]: JSON.stringify(S) })).j.revs[KT], 'المدير يحفظ');
+    assert.ok((await saveTaskDocuments(W, dm.ck, { [KT]: JSON.stringify(S) })).j.revs[KT], 'المدير يحفظ بطلب Operations موثق');
     const P = page(W, me.ck, patchedLogic());
     await P.MT.load(true);
     const t = P.c._tkVals({}, E, P.c.state);
@@ -92,7 +95,7 @@ for (const mode of ['legacy', 'enforce']) {
 }
 
 /* ── المرحلة الثانية ── */
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: operationSaveBody(W.env, p, taskCommandBody(W.env, p, body)) });
 const V = (P) => P.c._tkVals({}, E, P.c.state);
 const refOf = (P, id) => P.c._tkMine(E).find((x) => x.r.__x && String(x.r.__x.id) === String(id));
 const srvRow = (W, id) => (rowsOf(stored(W.env, KT), ME.eid).find((x) => x.r[13] === id) || {}).r || [];
@@ -225,8 +228,8 @@ for (const mode of ['legacy', 'enforce']) {
   test('[' + mode + '] SR-2.2 · F-3 + F-7 في «ملفي»: الانقضاءُ التلقائيّ للحديث (≤ 48 ساعة) وحده — بلا موجةٍ للمتأخرات القديمة ولا تكرار · وصفحةُ المهام المطفأة لا بطاقةَ لها', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), OLD = 1760000000778, t0 = Date.now() - 20 * 864e5;
-    const S = stored(W.env, KT); S[PDAY].push(row({ id: OLD, title: 'منقضيةٌ قديمة بلا ردّ', eid: ME.eid, s: t0, e: t0 + 3600e3 })); putKV(W.env, KT, S);
-    putKV(W.env, 'bsdept:tst_d1:bassam_tasks_locks_v1', {});   /* الشهرُ الماضي غيرُ معتمدٍ صراحةً (المُثبِّت يعتمده) — كما أغلبُ الأشهر في Production (F-9) */
+    const S = stored(W.env, KT); S[PDAY].push(row({ id: OLD, title: 'منقضيةٌ قديمة بلا ردّ', eid: ME.eid, s: t0, e: t0 + 3600e3 })); await replaceOperationalFixture(W.env, KT, S);
+    await replaceOperationalFixture(W.env, 'bsdept:tst_d1:bassam_tasks_locks_v1', {});   /* الشهرُ الماضي غيرُ معتمدٍ صراحةً (المُثبِّت يعتمده) — كما أغلبُ الأشهر في Production (F-9) */
     const timers = [], calls = [];
     const P = page(W, me.ck, patchedLogic(), { timers, calls }); await P.MT.load(true);
     for (let n = 0; n < 4; n++) { P.c._tkVals({}, E, P.c.state); timers.splice(0).forEach((f) => f()); await new Promise((r) => setTimeout(r, 40)); }

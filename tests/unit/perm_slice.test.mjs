@@ -34,6 +34,17 @@ const PL = path.join(SRC, 'plugins', 'lenses');
 const lenses = fs.readdirSync(PL).map(k => JSON.parse(fs.readFileSync(path.join(PL, k, 'manifest.json'), 'utf8'))).sort((a, b) => a.order - b.order).map(m => m.key);
 const J = (x) => JSON.parse(JSON.stringify(x));
 
+test('استعادة شريحة بلا عدسات تحفظ غياب الفرع أو null وبايتات الفروع الأجنبية', () => {
+  for (const branch of [undefined, null, {}, { d2: ['zones'] }]) {
+    const current = { caps: { d1: ['emps'] }, emps: { d1: {} }, ...(branch === undefined ? {} : { lenses: branch }) };
+    const before = JSON.stringify(current);
+    const restored = D.permSlice(J(current), 'd1', { capSet: true, cap: ['emps'], emps: {} }, 'replace', pages, lenses);
+    assert.equal(JSON.stringify(restored), before, 'لا يُنشأ فرع عدسات فارغ لاستعادة بلا عدسات');
+  }
+  const restored = D.permSlice({ caps: {}, emps: {}, lenses: { d1: ['paths'], d2: ['zones'] } }, 'd1', { capSet: false, emps: {} }, 'replace', pages, lenses);
+  assert.deepEqual(J(restored.lenses), { d2: ['zones'] }, 'يزال قيد الإدارة وحده من الفرع الموجود');
+});
+
 test('permSlice الأصلية نفسها مولدة للخادم؛ الاستعادة تمرر مفاتيح المنصة والعدسات القائمة', () => {
   assert.equal(typeof D.permSlice, 'function');
   const context = vm.createContext({});

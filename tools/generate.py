@@ -81,6 +81,16 @@ def main():
 def gen_manifest(S):
     M = json.load(open(os.path.join(S, layout(S)['pagesManifest']), encoding='utf-8'))
     data = {k: (M[k] if k != 'lenses' else lenses_of(S, M)) for k in ('version', 'pages', 'containers', 'lenses', 'tabAddr', 'navOrder', 'navNames', 'routeNames')}
+    # The module charter is already the data-ownership source of truth. Export
+    # its read sets for the existing page-loader's acknowledged cloud prefetch.
+    data['operationsReadSets'] = {}
+    modules = os.path.join(S, layout(S)['modules'])
+    for slug in sorted(os.listdir(modules)):
+        meta_path = os.path.join(modules, slug, 'meta.json')
+        if not os.path.isfile(meta_path): continue
+        module = json.load(open(meta_path, encoding='utf-8'))
+        keys = [k for k in module.get('charter', {}).get('data', []) if re.fullmatch(r'bassam_[a-z0-9_]+', k)]
+        data['operationsReadSets'][module['name']] = sorted(set(keys))
     js = ('/* ═══ KIVO_247 · AUD-015 — manifest الصفحات: المصدرُ الواحد لسجل الصفحات (PAGE_REG) والحاويات (NAV_REG) والعدسات (LENS_REG) وعناوين التبويبات\n'
           '   (TAB_ADDR) وترتيب القائمة وأسمائها (NAVKEYS · NAVNAMES) وأسماء المسارات (_pageNames) — مولَّدٌ من manifests/pages.json بأداة tools/generate.py؛ لا يُحرَّر يدوياً.\n'
           '   المستهلكون (330-auth-perm · 260-bassam-plat · root-logic) يأخذون نسخاً عميقة clone(key) فتبقى مستقلةً كما كانت أدبياتُهم. الخادم يُولَّد منه PG_REG (البنية وحدها). ═══ */\n'

@@ -8,40 +8,8 @@
       gmDepts = I.gmDepts, gmEnsureActive = I.gmEnsureActive, hashPw = I.hashPw, isMgrKey = I.isMgrKey, login = I.login,
       needsPwChange = I.needsPwChange, permSave = I.permSave, permStore = I.permStore, pwCheck = I.pwCheck, pwRuleText = I.pwRuleText, rawUsers = I.rawUsers, taken = I.taken,
       touch = I.touch, u0 = I.u0, unCheck = I.unCheck, writeUsers = I.writeUsers;
-  /* ═══ توحيد مفتاح الموظف في حسابات الدخول والصلاحيات ═══
-     الجدول الشهري رُحّل إلى المعرّف الموحّد (eid)، لكن حساباً قديماً قد يحمل ekey بالهوية أو الاسم،
-     وصلاحياتٍ محفوظة تحته — فيفترق الحساب عن صف الموظف: التقرير يكتب على eid وصفحة الموظف تقرأ من
-     مفتاحها القديم فلا ينعكس شيء. هنا تمريرة واحدة عند التحميل (في متصفح المدير/مدير النظام):
-     كل حساب موظف مفتاحه ليس eid لأي موظف لكنه يطابق هويةً أو اسماً لموظف له eid → يُنقل إلى eid،
-     وتُنقل صلاحياته وقالبه وعدساته معه إن لم يكن للمفتاح الجديد شيء. */
-  function normalizeStaffKeys(){
-    try {
-      var u = cur(); if (!u || (u.role !== 'super' && u.role !== 'dept' && !(u.role === 'staff' && u.mgr))) return;
-      var E = KIVO.BassamEmp; if (!E) return;
-      var did = curDept(); if (!did) return;
-      var emps = []; try { emps = JSON.parse(localStorage.getItem('bassam_employees_v1')) || []; } catch (e0) {}
-      var byEid = {}, tok2eid = {};
-      emps.forEach(function(e){ var id = e && e.eid; if (!id) return; byEid[id] = e; [e.nid, e.name, e.phone].forEach(function(t){ if (t) tok2eid[String(t)] = id; }); });
-      var moved = {};
-      var list = rawUsers() || [], changed = false;
-      list = list.map(function(x){
-        if (!x || x.role !== 'staff' || x.deptId !== did || !x.ekey || byEid[x.ekey] || isMgrKey(x.ekey)) return x;
-        var nk = tok2eid[String(x.ekey)]; if (!nk) return x;
-        /* لا نزاحم حساباً قائماً على المفتاح الجديد */
-        if (list.some(function(y){ return y !== x && y.role === 'staff' && y.deptId === did && y.ekey === nk; })) return x;
-        moved[x.ekey] = nk; changed = true; return Object.assign({}, x, { ekey: nk });
-      });
-      if (changed) writeUsers(list);
-      if (Object.keys(moved).length) {
-        var o = permStore(), em = o.emps[did] || {}, tp = o.tplOf[did] || {}, el = o.empLens[did] || {}, pc = false;
-        Object.keys(moved).forEach(function(ok){ var nk = moved[ok];
-          if (em[ok] && !em[nk]) { em[nk] = em[ok]; delete em[ok]; pc = true; }
-          if (tp[ok] && !tp[nk]) { tp[nk] = tp[ok]; delete tp[ok]; pc = true; }
-          if (el[ok] && !el[nk]) { el[nk] = el[ok]; delete el[ok]; pc = true; } });
-        if (pc) { o.emps[did] = em; o.tplOf[did] = tp; o.empLens[did] = el; permSave(o); }
-      }
-    } catch (e9) {}
-  }
+  /* Account identifiers and their permission links are never rewritten on boot.
+     Only the explicit canonical server identity migration may change them. */
   D.setScopeGuard(function(id){
     var u = cur(); if (!u || u.role === 'super') return id;
     if (u.role === 'dept' || u.role === 'staff') return u.deptId || id;
@@ -50,7 +18,6 @@
   });
   if (u0 && (u0.role === 'dept' || u0.role === 'staff') && u0.deptId && D.active() !== u0.deptId) D.setActive(u0.deptId);
   if (u0 && u0.role === 'gm') gmEnsureActive(u0);
-  try { setTimeout(normalizeStaffKeys, 1500); } catch (e0) {}
   if (u0 && !needsPwChange()) {
     ['click','keydown','mousemove'].forEach(function(ev){ try { window.addEventListener(ev, touch, { passive:true }); } catch(e){} });
     /* R9 (W1): اللمسُ والقلمُ نشاطٌ أيضاً — كان مستخدمُ اللوحي الذي يمرّر أو يسحب أو يرسم على الخريطة ساعتين بلا نقرة

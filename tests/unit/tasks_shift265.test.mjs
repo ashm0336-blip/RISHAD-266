@@ -8,13 +8,13 @@
      (د) متكررةٌ بالوردية: rec.asg مكلَّفو الوردية والتوليدُ ينسخها لهم */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, KT, notificationMessages, KE, D, TAG, stored, putKV, hij, MID, HR, ymOf } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, KT, notificationMessages, KE, D, TAG, stored, putKV, hij, MID, HR, ymOf, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'], EMP1 = ['0000000113', '70113'];
 const KS = 'bsdept:' + D + ':bassam_staffing_v3', KO = 'bsdept:' + D + ':bassam_shift_options_v1', KR = 'bsdept:' + D + ':bassam_dreport_v1', PK = 'bassam_perms_v1';
 const SHN = 'TST-SH265', OTHER = 'TST-A';                                          /* الورديةُ الأخرى بوقتٍ يشمل الموعد — فالمحوَّلُ متاحٌ بجدوله */
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body:operationSaveBody(W.env,p,taskCommandBody(W.env, p, body)) });
 const show = (r) => JSON.stringify({ st: r.status, j: r.j }).slice(0, 600);
 const N0 = Date.now(), TM = MID(N0) + 864e5, S0 = TM + 8 * HR, K0 = hij(S0 + 4 * HR), YM = ymOf(K0);   /* غداً 08:00 — داخل وردية 06:00–14:00 */
 const run = (W) => post(W, W.su.ck, '/api/tasks/recur/run?dept=' + D, {});
@@ -22,7 +22,7 @@ const notifs = (W) => notificationMessages(W.env);
 const setPerm = (W, eid, acts) => { const P = stored(W.env, PK); P.emps = P.emps || {}; P.emps[D] = P.emps[D] || {}; P.emps[D][eid] = { tasks: acts }; putKV(W.env, PK, P); };
 const eidOf = (n) => 'tst_e_sh' + n;
 /* n موظفاً اصطناعياً في سجل الإدارة ولكلٍّ حسابُ دخولٍ نشط (بلا بصمةِ كلمة مرور — لا يدخلون) وصفٌّ في الجدول الشهري لشهر المهمة بالوردية sh */
-function seed(W, n, o = {}) {
+async function seed(W, n, o = {}) {
   const E = stored(W.env, KE) || [], U = stored(W.env, 'bassam_auth_users_v1') || [], S = stored(W.env, KS) || {}; S[YM] = S[YM] || {};
   for (let i = 1; i <= n; i++) {
     const eid = eidOf(i), nm = TAG + ' · وردية ' + i;
@@ -30,8 +30,8 @@ function seed(W, n, o = {}) {
     if (!(o.noAcct || []).includes(i)) U.push({ id: 'tst_sh_u' + i, un: String(2000000400 + i), ph: 'x', name: nm, role: 'staff', deptId: D, ekey: eid, dis: 0, test: TAG });
     S[YM][eid] = { shift: (o.other || []).includes(i) ? OTHER : SHN, rest: [], leaves: {}, perm: {}, cs: '', muk: false };
   }
-  putKV(W.env, KE, E); putKV(W.env, 'bassam_auth_users_v1', U); putKV(W.env, KS, S);
-  const O = stored(W.env, KO) || []; if (!O.some((q) => q && q.name === SHN)) O.push({ name: SHN, color: '#000', tStart: '06:00', tEnd: '14:00' }); putKV(W.env, KO, O);
+  await replaceOperationalFixture(W.env, KE, E); putKV(W.env, 'bassam_auth_users_v1', U); await replaceOperationalFixture(W.env, KS, S);
+  const O = stored(W.env, KO) || []; if (!O.some((q) => q && q.name === SHN)) O.push({ name: SHN, color: '#000', tStart: '06:00', tEnd: '14:00' }); await replaceOperationalFixture(W.env, KO, O);
 }
 const mk = (W, ck, body) => post(W, ck, '/api/tasks/create', Object.assign({ k: K0, t: TAG + ' للوردية', s: S0, e: S0 + 2 * HR, rv: 'none' }, body || {}));
 const rowsK = (W) => (stored(W.env, KT)[K0] || []).filter((r) => Array.isArray(r) && String(r[0]).indexOf('للوردية') !== -1);
@@ -41,8 +41,8 @@ for (const mode of ['legacy', 'enforce']) {
 
   test(M + '(أ) 60 موظفاً: بالقائمة 400 at:asg كما كان — وبالوردية صفٌّ لكل واحدٍ ومعهم المحوَّلُ إليها من تقرير اليوم · مجموعةٌ واحدة · تنبيهٌ لكلٍّ · حدثُ تدقيقٍ يذكر الوردية', async () => {
     const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM);
-    seed(W, 61, { other: [61] });                                                    /* الموظفُ 61 في ورديةٍ أخرى بالجدول — ومحوَّلٌ إلى الوردية في تقرير اليوم */
-    putKV(W.env, KR, { [K0]: { created: N0, shifts: { [SHN]: { pulled: true, roster: [{ ekey: eidOf(61), st: 'pr', shift: SHN }] } } } });
+    await seed(W, 61, { other: [61] });                                                    /* الموظفُ 61 في ورديةٍ أخرى بالجدول — ومحوَّلٌ إلى الوردية في تقرير اليوم */
+    await replaceOperationalFixture(W.env, KR, { [K0]: { created: N0, shifts: { [SHN]: { pulled: true, roster: [{ ekey: eidOf(61), st: 'pr', shift: SHN }] } } } });
     const L = Array.from({ length: 60 }, (q, i) => eidOf(i + 1));
     const byList = await mk(W, dm.ck, { asg: L }); assert.equal(byList.status, 400, show(byList)); assert.equal(byList.j.at, 'asg', 'سقفُ القائمة 50 كما كان');
     const c = await mk(W, dm.ck, { shift: { name: SHN } }); assert.equal(c.status, 200, show(c));
@@ -63,11 +63,11 @@ for (const mode of ['legacy', 'enforce']) {
 
   test(M + '(ب) التخطّي بأسبابه (بلا حساب · بلا معرّف · المراجِع) · الغائبُ 409 elig حتى force · والرفض: shift مع asg · بلا اسم · ورديةٌ خالية · بلا task.assign', async () => {
     const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM);
-    seed(W, 12, { noAcct: [3] });
+    await seed(W, 12, { noAcct: [3] });
     /* صفٌّ بالاسم وحده في الجدول (صيغةُ 242 القديمة) لموظفٍ بلا معرّفٍ ثابت */
-    const E = stored(W.env, KE); E.push({ name: TAG + ' · بلا معرّف', empno: '89999', type: TAG + ' رسمي', work: TAG + ' مراقب' }); putKV(W.env, KE, E);
-    const S = stored(W.env, KS); S[YM][TAG + ' · بلا معرّف'] = { shift: SHN, rest: [] }; S[YM].tst_e_emp1 = { shift: SHN, rest: [] }; putKV(W.env, KS, S);
-    putKV(W.env, KR, { [K0]: { created: N0, shifts: { [SHN]: { pulled: true, roster: [{ ekey: eidOf(5), st: 'ab', shift: SHN }] } } } });   /* الموظفُ 5 غائبٌ بتقرير اليوم */
+    const E = stored(W.env, KE); E.push({ name: TAG + ' · بلا معرّف', empno: '89999', type: TAG + ' رسمي', work: TAG + ' مراقب' }); await replaceOperationalFixture(W.env, KE, E);
+    const S = stored(W.env, KS); S[YM][TAG + ' · بلا معرّف'] = { shift: SHN, rest: [] }; S[YM].tst_e_emp1 = { shift: SHN, rest: [] }; await replaceOperationalFixture(W.env, KS, S);
+    await replaceOperationalFixture(W.env, KR, { [K0]: { created: N0, shifts: { [SHN]: { pulled: true, roster: [{ ekey: eidOf(5), st: 'ab', shift: SHN }] } } } });   /* الموظفُ 5 غائبٌ بتقرير اليوم */
     const bad = await mk(W, dm.ck, { shift: { name: SHN }, rv: { u: 'tst_sh_u7' } }); assert.equal(bad.status, 400, show(bad)); assert.equal(bad.j.at, 'rv', 'مراجِعٌ بلا صلاحية الاعتماد يُرفض كالقائمة');
     setPerm(W, 'tst_e_emp1', ['view', 'edit']); const rv = { u: 'tst_emp1' };        /* المراجِعُ موظفٌ من الوردية يملك الاعتماد — يُتخطّى من الإسناد لا 400 كالقائمة */
     const e1 = await mk(W, dm.ck, { shift: { name: SHN }, rv }); assert.equal(e1.status, 409, show(e1)); assert.equal(e1.j.err, 'elig', 'الغائبُ «غير متاح» يحتاج force');
@@ -95,7 +95,7 @@ for (const mode of ['legacy', 'enforce']) {
 
   test(M + '(ج) السقف: 520 موظفاً في الوردية ⇒ 500 صفّ و20 متخطًّى بسبب السقف', async () => {
     const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM);
-    seed(W, 520);
+    await seed(W, 520);
     const c = await mk(W, dm.ck, { shift: { name: SHN } }); assert.equal(c.status, 200, show(c));
     assert.equal(c.j.rows.length, 500); assert.equal(c.j.skipped.length, 20); assert.ok(c.j.skipped.every((q) => q.code === 'cap' && /500/.test(q.why)), JSON.stringify(c.j.skipped[0]));
     assert.equal(rowsK(W).length, 500); assert.equal(new Set(rowsK(W).map((r) => r[14])).size, 500, 'بلا تكرار');
@@ -103,7 +103,7 @@ for (const mode of ['legacy', 'enforce']) {
 
   test(M + '(د) متكررةٌ بالوردية: rec.asg مكلَّفو الوردية — والتوليدُ ينسخها لهم يومَ الغد+1', async () => {
     const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM);
-    seed(W, 8);
+    await seed(W, 8);
     const c = await mk(W, dm.ck, { shift: { name: SHN }, rec: { t: 'daily', open: 1 } }); assert.equal(c.status, 200, show(c));
     const r0 = rowsK(W)[0], rec = r0[23].rec; assert.equal(rec.t, 'daily'); assert.deepEqual(rec.asg.slice().sort(), Array.from({ length: 8 }, (q, i) => eidOf(i + 1)).sort());
     assert.ok(rowsK(W).every((r) => r[23].idem === 'r:' + rec.id + ':' + K0.replace(/-0(\d)/g, '-$1') + ':' + r[14]), 'مفتاحُ عدم التكرار لكل صفّ');

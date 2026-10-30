@@ -23,8 +23,8 @@
    KIVO_K265F10_ROUNDS عددُ جولات (أ) لكل وضع. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, P0, ME, MATE, KT, DAY, YESTERDAY, TOMORROW, row, stored, putKV, hij } from './tasks_fx.mjs';
-import { MgrClient, upImg, act, findRow, sleep } from './tasks_conc_fx.mjs';
+import { world, workerUnderTest, P0, ME, MATE, KT, DAY, YESTERDAY, TOMORROW, row, stored, putKV, hij, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
+import { MgrClient, upImg, act, findRow, sleep, reviewAndApply } from './tasks_conc_fx.mjs';
 import { instrument } from './tasks_k265_f10_fx.mjs';
 import { loadClient } from './k264_vm.mjs';
 
@@ -32,13 +32,13 @@ const WU = workerUnderTest();
 const H = 3600e3, MGR = { un: '0000000101', pw: '70101' };
 const ROUNDS = +(process.env.KIVO_K265F10_ROUNDS || 2);
 const MODES = (process.env.KIVO_K265F10_MODES || 'legacy,enforce').split(',');
-const get = async (Wd, ck) => { const r = await Wd.C.api('/api/get?keys=' + encodeURIComponent(KT), { cookie: ck }); const it = r.j.keys[KT]; return { v: it.v, rev: it.rev }; };
+const get = async (Wd, ck) => { const r = await Wd.C.api("/api/operations/read?keys=" + encodeURIComponent(KT), { cookie: ck }); const it = r.j; return { v: JSON.stringify(it.resources[KT]), rev: it.base[KT] }; };
 const at = (S, id, eid) => { const f = findRow(S, id, eid); return f ? f.r : null; };
 const idx = (S, d, id, eid) => (S[d] || []).findIndex((r) => Array.isArray(r) && r[13] === id && r[14] === eid);
 const audN = (Wd, a) => Wd.env.DB.q('SELECT COUNT(*) AS n FROM aud WHERE k = ? AND act = ?', KT, a)[0].n;
 const imgN = (Wd, id) => Wd.env.DB.q('SELECT COUNT(*) AS n FROM imgs WHERE k = ?', id)[0].n;
 const okAct = (r) => r && r.status === 200 && r.j && r.j.ok === 1;
-const post = (Wd, ck, p, body) => Wd.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (Wd, ck, p, body) => Wd.C.api(p, { method: 'POST', cookie: ck, body:operationSaveBody(Wd.env,p,taskCommandBody(Wd.env, p, body)) });
 const raw = (Wd, ck, v, rev) => post(Wd, ck, '/api/save', { set: { [KT]: typeof v === 'string' ? v : JSON.stringify(v) }, del: [], base: { [KT]: rev } });
 /* دمجُ واجهة 264 (280 · merge3 بهوية الصفّ — المفتاحُ يُمرَّر كما تمرّره settle) */
 function mergeOf264() {
@@ -62,7 +62,7 @@ for (const mode of MODES) {
         const FIN = [0, 1, 2].map((i) => ({ p: P0[i], id: 1760000099100 + i }));
         FIN.forEach(({ p, id }, i) => S[DAY].push(row({ id, title: 'F10 جاريةٌ للإنهاء ' + i, eid: p.eid, st: 'in_progress', acc: now - H, s: now - 2 * H, e: now + 2 * H })));
         const EXP = []; P0.forEach((p, i) => [0, 1].forEach((q) => { const id = 1760000099200 + i * 10 + q; EXP.push({ p, id }); S[DAY].push(row({ id, title: 'F10 منقضية ' + i + '.' + q, eid: p.eid, s: now - (5 + q) * H, e: now - (2 + q) * H })); }));
-        putKV(Wd.env, KT, S);
+        await replaceOperationalFixture(Wd.env, KT, S);
         const imgs = await Promise.all(FIN.slice(0, 2).map(({ p }, i) => upImg(Wd, emps.find((e) => e.p === p).s.ck, 'ka' + round + i)));
         const Mc = new MgrClient(Wd, dm.ck, MG.merge3, KT, 'M'); await Mc.load();                    /* المديرُ فتح الصفحةَ قبل أفعالهم */
         const DB = instrument(Wd.env, { jitter: 4 }); const ev0 = audN(Wd, 'expired');
@@ -74,12 +74,19 @@ for (const mode of MODES) {
         for (const { p, id } of EXP) plan.push(mk('expire', p, id, { k: DAY, id, act: 'expire' }));
         for (const o of plan) ops.push(spread(() => act(Wd, emps.find((e) => e.p === o.p).s.ck, o.body, o.tag).then((r) => Object.assign(o, { r }))));
         const NEW = 1760000099999 - round;
-        const mgr = spread(() => Mc.edit((T) => {
+        const managerIntent = (T) => {
           T[DAY].push(row({ id: NEW, title: 'F10 مهمةٌ جديدة من المدير', eid: MATE.eid, s: now + H, e: now + 3 * H }));
           const gi = T[DAY].findIndex((r) => r[13] === 1760000000901); T[DAY][gi] = T[DAY][gi].slice(); T[DAY][gi][0] = 'TEST_ONLY عامة ١ — عدّلها المدير';
           for (const r of T[DAY]) if (r[13] === G) r[1] = 'TEST_ONLY وصفٌ عدّله المدير';
-        }));
-        await Promise.all(ops); const mr = await mgr; const lost = DB.lost(); lostAll += lost;
+        };
+        const mgr = spread(() => Mc.edit(managerIntent));
+        await Promise.all(ops); let mr = await mgr; const lost = DB.lost(); lostAll += lost;
+        if (!mr.ok) {
+          assert.equal(mr.status,409);assert.equal(mr.retainedDraft,true);
+          const draft=Mc.mem,ticket=Mc.ticket.body,beforeReview=stored(Wd.env,KT),same=await Mc.retry();
+          assert.equal(same.status,409);assert.equal(Mc.mem,draft);assert.equal(Mc.ticket.body,ticket);assert.deepEqual(stored(Wd.env,KT),beforeReview);
+          await Mc.load();mr=await Mc.edit(managerIntent); // Explicit review after concurrent operations settled.
+        }
         assert.ok(mr.ok, 'حفظُ المدير: ' + JSON.stringify(mr).slice(0, 300));
         let F = stored(Wd.env, KT); const bad = [], fails = {};
         for (const o of plan) {
@@ -128,7 +135,7 @@ for (const mode of MODES) {
         const Mv = JSON.parse(old.v), ix = idx(Mv, DAY, 1760000000101, ME.eid); Mv[DAY][ix] = Mv[DAY][ix].slice(); Mv[DAY][ix][0] = 'TEST_ONLY عنوانٌ عدّله المدير';
         let ok;
         if (via === 'direct') { const cur = await get(Wd, dm.ck); const r = await raw(Wd, dm.ck, Mv, cur.rev); ok = !!(r.j.revs && r.j.revs[KT]); }
-        else { const C = new MgrClient(Wd, dm.ck, MG.merge3, KT, 'M'); C.mem = old.v; C.baseVal = old.v; C.krev = old.rev; ok = (await C.edit((T) => { const q = idx(T, DAY, 1760000000101, ME.eid); T[DAY][q] = T[DAY][q].slice(); T[DAY][q][0] = 'TEST_ONLY عنوانٌ عدّله المدير'; })).ok; }
+        else { const C = new MgrClient(Wd, dm.ck, MG.merge3, KT, 'M'); C.mem = old.v; C.baseVal = old.v; C.krev = old.rev; ok = (await reviewAndApply(C, (T) => { const q = idx(T, DAY, 1760000000101, ME.eid); T[DAY][q] = T[DAY][q].slice(); T[DAY][q][0] = 'TEST_ONLY عنوانٌ عدّله المدير'; })).ok; }
         assert.ok(ok, via + ': حفظُ المدير');
         const F = stored(Wd.env, KT), a = at(F, 1760000000101, ME.eid), f = at(F, 1760000000103, ME.eid), d = at(F, 1760000000102, ME.eid), x = at(F, 1760000000105, ME.eid);
         assert.equal(a[0], 'TEST_ONLY عنوانٌ عدّله المدير', via + ': تعديلُ المدير باقٍ'); assert.ok(a[11] && a[3] === 'in_progress', via + ': القبولُ باقٍ');
@@ -233,13 +240,12 @@ for (const mode of MODES) {
         assert.equal((await act(Wd, me.ck, { k: DAY, id: 1760000000103, i: idx(S, DAY, 1760000000103, ME.eid), act: 'finish', imgs: [p1], note: 'TEST_ONLY الأول' })).j.ok, 1);
         const A = new MgrClient(Wd, dm.ck, MG.merge3, KT, 'A'); await A.load();
         if (via === 'route') assert.equal((await post(Wd, dm.ck, '/api/tasks/reopen', Object.assign({ k: DAY, id: 1760000000103, ekey: ME.eid }, mode === 'enforce' ? { why: 'TEST_ONLY سببُ الإعادة' } : {}))).status, 200, via + ': إعادةُ المهمة للموظف');
-        else assert.ok((await A.edit((T) => { const q = idx(T, DAY, 1760000000103, ME.eid); T[DAY][q] = T[DAY][q].slice(); T[DAY][q][3] = 'in_progress'; T[DAY][q][12] = null; T[DAY][q][6] = null; },
-          mode === 'enforce' ? { why: { [KT]: 'TEST_ONLY سببُ الإعادة' } } : {})).ok, via + ': إعادةُ المهمة للموظف');
+        else assert.ok((await reviewAndApply(A, (T) => { const q = idx(T, DAY, 1760000000103, ME.eid); T[DAY][q] = T[DAY][q].slice(); T[DAY][q][3] = 'in_progress'; T[DAY][q][12] = null; T[DAY][q][6] = null; }, mode === 'enforce' ? { why: { [KT]: 'TEST_ONLY سببُ الإعادة' } } : {})).ok, via + ': إعادةُ المهمة للموظف');
         await sleep(5);
         S = stored(Wd.env, KT);
         const f2 = await act(Wd, me.ck, { k: DAY, id: 1760000000103, i: idx(S, DAY, 1760000000103, ME.eid), act: 'finish', imgs: [p2], note: 'TEST_ONLY الثاني' });
         assert.equal(f2.j.ok, 1, via + ': الإنهاءُ الثاني «تم» — ' + JSON.stringify(f2.j).slice(0, 200));
-        assert.ok((await A.edit((T) => { const q = T[DAY].findIndex((r) => r[13] === 1760000000901); T[DAY][q] = T[DAY][q].slice(); T[DAY][q][0] = 'TEST_ONLY عدّلها المديرُ بعد الإعادة'; })).ok, via + ': حفظُ المدير');
+        assert.ok((await reviewAndApply(A, (T) => { const q = T[DAY].findIndex((r) => r[13] === 1760000000901); T[DAY][q] = T[DAY][q].slice(); T[DAY][q][0] = 'TEST_ONLY عدّلها المديرُ بعد الإعادة'; })).ok, via + ': حفظُ المدير');
         const F = stored(Wd.env, KT), x = at(F, 1760000000103, ME.eid);
         assert.ok(x[3] === 'done' && x[12] && x[21] && x[21].imgs.includes(p2) && x[21].note === 'TEST_ONLY الثاني', via + ': الإنهاءُ الثاني بتوثيقه باقٍ: ' + JSON.stringify([x[3], x[12], x[21]]));
         assert.equal(F[DAY].find((r) => r[13] === 1760000000901)[0], 'TEST_ONLY عدّلها المديرُ بعد الإعادة', via + ': وتعديلُ المدير باقٍ');
@@ -255,13 +261,13 @@ for (const mode of MODES) {
       const Wd = await world({ worker: WU.file, mode }), me = await Wd.login(ME.un, ME.pw), dm = await Wd.login(MGR.un, MGR.pw);
       const DB = instrument(Wd.env, { jitter: 0 });
       const B = new MgrClient(Wd, Wd.su.ck, MG.merge3, KT, 'B'); await B.load();
-      let eRes = null, aRes = null, reads = 0;
-      DB.hook({ who: 'B', kind: 'stmt', phase: 'after', match: (sql) => /^INSERT INTO meta \(k, v\) VALUES \('rev', '1'\)/.test(sql), run: async () => { eRes = await act(Wd, me.ck, { k: DAY, id: 1760000000101, act: 'accept' }, 'E'); } });
-      DB.hook({ who: 'B', kind: 'stmt', phase: 'after', match: (sql) => (DB.trace.B || '').includes('L') && (/^SELECT v FROM kv WHERE k = \?1 ORDER BY seq$/.test(sql) || /^SELECT rev FROM revs WHERE k = \?1$/.test(sql)) && ++reads === 1, run: async () => {
+      let eRes = null, aRes = null;
+      DB.hook({ who: 'B', kind: 'batch', phase: 'before', match: (sql) => /KIVO_REV_CONFLICT/.test(sql) && /(?:INSERT INTO|DELETE FROM) ops_/.test(sql), run: async () => {
+        eRes = await act(Wd, me.ck, { k: DAY, id: 1760000000101, act: 'accept' }, 'E');
         const A = new MgrClient(Wd, dm.ck, MG.merge3, KT, 'A'); await A.load();
-        aRes = await A.edit((T) => { const q = T[YESTERDAY].findIndex((r) => r[13] === 1760000000201 && r[14] === MATE.eid); T[YESTERDAY][q] = T[YESTERDAY][q].slice(); T[YESTERDAY][q][0] = 'TEST_ONLY عدّلها A'; });
+        aRes = await reviewAndApply(A, (T) => { const q = T[YESTERDAY].findIndex((r) => r[13] === 1760000000201 && r[14] === MATE.eid); T[YESTERDAY][q] = T[YESTERDAY][q].slice(); T[YESTERDAY][q][0] = 'TEST_ONLY عدّلها A'; });
       } });
-      const bRes = await B.edit((T) => { const q = T[TOMORROW].findIndex((r) => r[13] === 1760000000902); T[TOMORROW][q] = T[TOMORROW][q].slice(); T[TOMORROW][q][0] = 'TEST_ONLY عدّلها B'; });
+      const bRes = await reviewAndApply(B, (T) => { const q = T[TOMORROW].findIndex((r) => r[13] === 1760000000902); T[TOMORROW][q] = T[TOMORROW][q].slice(); T[TOMORROW][q][0] = 'TEST_ONLY عدّلها B'; });
       const F = stored(Wd.env, KT);
       assert.ok(okAct(eRes), 'قبولُ E «تم»'); assert.ok((DB.trace.B || '').includes('L'), 'حارسُ B سُبق (' + DB.trace.B + ')');
       assert.ok(aRes && aRes.ok, 'حفظُ A في النافذة «تم»'); assert.ok(bRes.ok, 'حفظُ B «تم» في النهاية');
@@ -275,7 +281,7 @@ for (const mode of MODES) {
     const Wd = await world({ worker: WU.file, mode }), me = await Wd.login(ME.un, ME.pw), mate = await Wd.login(MATE.un, MATE.pw);
     const p1 = await upImg(Wd, me.ck, 'khone'), p2 = await upImg(Wd, mate.ck, 'khtwo');
     const DB = instrument(Wd.env, { jitter: 0 }); let r2 = null;
-    DB.hook({ who: 'E1', kind: 'stmt', match: (sql) => /^SELECT img FROM imgref WHERE k = \?1$/.test(sql), run: async () => { r2 = await act(Wd, mate.ck, { k: DAY, id: 1760000000202, act: 'finish', imgs: [p2], note: 'TEST_ONLY E2' }, 'E2'); } });
+    DB.hook({ who: 'E1', kind: 'stmt', phase:'after', match: (sql) => /^SELECT img,k FROM imgref WHERE /.test(sql), run: async () => { r2 = await act(Wd, mate.ck, { k: DAY, id: 1760000000202, act: 'finish', imgs: [p2], note: 'TEST_ONLY E2' }, 'E2'); } });
     const r1 = await act(Wd, me.ck, { k: DAY, id: 1760000000103, act: 'finish', imgs: [p1], note: 'TEST_ONLY E1' }, 'E1');
     assert.ok(okAct(r1) && okAct(r2), 'الإنهاءان «تم»: ' + JSON.stringify([r1.status, r1.j, r2 && r2.status]).slice(0, 300));
     const f2 = at(stored(Wd.env, KT), 1760000000202, MATE.eid);
@@ -290,7 +296,7 @@ for (const mode of MODES) {
       const Wd = await world({ worker: WU.file, mode }), me = await Wd.login(ME.un, ME.pw), dm = await Wd.login(MGR.un, MGR.pw);
       const DB = instrument(Wd.env, { jitter: 0 }); let n = 0;
       const Mc = new MgrClient(Wd, dm.ck, MG.merge3, KT, 'M');
-      DB.hook({ who: 'E', kind: 'stmt', phase: 'after', repeat: true, match: (sql) => /^SELECT k, rev FROM revs$/.test(sql), run: async () => { await Mc.load(); await Mc.edit((T) => { T[DAY].push(row({ id: 1760000088000 + (++n), title: 'TEST_ONLY صفُّ المدير ' + n, eid: MATE.eid, s: Date.now() + H, e: Date.now() + 2 * H })); }); } });
+      DB.hook({ who: 'E', kind: 'batch', phase: 'before', repeat: true, match: (sql) => /KIVO_REV_CONFLICT/.test(sql) && /(?:INSERT INTO|DELETE FROM) ops_/.test(sql), run: async () => { await Mc.load(); await reviewAndApply(Mc, (T) => { T[DAY].push(row({ id: 1760000088000 + (++n), title: 'TEST_ONLY صفُّ المدير ' + n, eid: MATE.eid, s: Date.now() + H, e: Date.now() + 2 * H })); }); } });
       const r = await act(Wd, me.ck, { k: DAY, id: 1760000000101, act: 'accept' }, 'E');
       assert.equal(r.status, 409, 'نفدت المحاولات ⇒ 409: ' + JSON.stringify(r.j)); assert.equal(r.j.err, 'busy');
       assert.ok(n >= 2, 'المحاولاتُ أُعيدت (' + n + ')');
@@ -371,7 +377,7 @@ for (const mode of MODES) {
           const r = await raw(Wd, dm.ck, Mv, cur.rev); assert.ok(r.j.revs && r.j.revs[KT], via + ': حفظُ المدير: ' + JSON.stringify(r.j).slice(0, 200));
         } else {
           /* الواجهةُ الحقيقية (280 · merge3 بالهوية): نسخةٌ قبل التمديد ⇒ تعارض ⇒ دمجٌ خانةً خانة ⇒ إعادةُ الإرسال */
-          const mr = await Mc.edit((T) => { const q = idx(T, YESTERDAY, 1760000000105, ME.eid); T[YESTERDAY][q] = T[YESTERDAY][q].slice(); T[YESTERDAY][q][1] = 'TEST_ONLY وصفٌ من نسخةٍ قبل التمديد'; });
+          const mr = await reviewAndApply(Mc, (T) => { const q = idx(T, YESTERDAY, 1760000000105, ME.eid); T[YESTERDAY][q] = T[YESTERDAY][q].slice(); T[YESTERDAY][q][1] = 'TEST_ONLY وصفٌ من نسخةٍ قبل التمديد'; });
           assert.ok(mr.ok && mr.tries >= 2, via + ': حفظُ المدير بعد الدمج: ' + JSON.stringify(mr).slice(0, 200));
         }
         x = at(stored(Wd.env, KT), 1760000000105, ME.eid);

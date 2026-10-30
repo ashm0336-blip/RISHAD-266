@@ -1,4 +1,4 @@
-async function rsReferenceSnapshot(env, uid) {
+async function rsReferenceSnapshot(env, uid, options) {
   /* One coherent reference snapshot feeds actor construction and applySave. Its
      complete row witness is rechecked INSIDE the eventual write transaction. */
   var inputs = await env.DB.batch([
@@ -16,7 +16,9 @@ async function rsReferenceSnapshot(env, uid) {
   (inputs[2].results || []).forEach(function (r) {
     inputRevs[r.k] = r.rev;
   });
-  env = Object.assign({}, env, { __pre: { live: true, kv: inputKeys, meta: inputMeta, revs: inputRevs } });
+  var operational = await opCaptureReferences(env, inputKeys, options && options.operationalKeys);
+  inputKeys = operational.keys; Object.assign(inputRevs, operational.revs);
+  env = Object.assign({}, env, { __pre: { live: true, kv: inputKeys, meta: inputMeta, revs: inputRevs }, __opCapture: operational });
   var currentActor = actorFromKeys(inputKeys, uid);
   if (!currentActor) throw rsError('session', 401);
   var currentMode = await enfModeOf(env);
@@ -32,13 +34,37 @@ async function rsReferenceSnapshot(env, uid) {
     inputKeys: inputKeys,
     inputMeta: inputMeta,
     inputRevs: inputRevs,
+    inputRevRows: inputs[2].results || [],
+    operational: operational,
     metaRows: inputs[1].results || [],
   };
 }
+function rsReferenceGuards(env, reference, allRevisions) {
+  if (!reference || !reference.operational) throw rsError('reference-unavailable', 503);
+  var guards = rsWitness(env, 'kv', ['k', 'seq', 'v'], reference.inputRows)
+    .concat(rsWitness(env, 'meta', ['k', 'v'], reference.metaRows, "k<>'rev'"))
+    .concat(reference.operational.guards);
+  if (allRevisions) {
+    if (!Array.isArray(reference.inputRevRows)) throw rsError('reference-revisions', 503);
+    guards.push.apply(guards, rsWitness(env, 'revs', ['k', 'rev'], reference.inputRevRows));
+  }
+  return guards;
+}
 async function rsCompileKV(env, A, kv, plan, inputRows) {
+  var operational = kv.pend.filter(function (pd) { return opIsResource(pd.k); });
+  if (operational.length) {
+    plan.counts.operations = operational.length;
+    // The save/restore caller fences its complete operational reference once.
+    await opCompilePending(env, plan, operational, env.__opCapture);
+  }
   var put = [],
     remove = [];
   for (var pd of kv.pend) {
+    if (opIsResource(pd.k)) {
+      if ((imgLike(pd.cur || '') || imgLike(pd.v || '')) && pd.cur !== pd.v)
+        (plan.imgTouch || (plan.imgTouch = [])).push({k: pd.k, v: pd.act === 'set' ? pd.v : ''});
+      continue;
+    }
     plan.guards.push(revGuard(env, pd.k, pd.have));
     var rows = inputRows.filter(function (row) {
       return row.k === pd.k;
@@ -215,7 +241,7 @@ function rsWitness(env, table, cols, rows, where, args) {
         env.DB.prepare(
           'SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1) j WHERE NOT EXISTS(SELECT 1 FROM ' +
             table +
-            " t WHERE t.k=json_extract(j.value,'$.k') AND t.seq=json_extract(j.value,'$.seq') AND length(CAST(t.v AS BLOB))=json_extract(j.value,'$.total') AND substr(CAST(t.v AS BLOB),json_extract(j.value,'$.offset'),json_extract(j.value,'$.bytes'))=CAST(json_extract(j.value,'$.text') AS BLOB))) THEN json_extract('{}','KIVO_RESTORE_TARGET') END",
+            " t WHERE t.k=json_extract(j.value,'$.k') AND t.seq=json_extract(j.value,'$.seq') AND length(CAST(t.v AS BLOB))=json_extract(j.value,'$.total') AND (json_extract(j.value,'$.bytes')=0 OR substr(CAST(t.v AS BLOB),json_extract(j.value,'$.offset'),json_extract(j.value,'$.bytes'))=CAST(json_extract(j.value,'$.text') AS BLOB)))) THEN json_extract('{}','KIVO_RESTORE_TARGET') END",
         ).bind(JSON.stringify(part)),
       );
     });
@@ -309,6 +335,7 @@ function rsPhysicalDeletes(kv, reference, keys) {
   keys.forEach(function (k) {
     if (!parseKey(k).dept) throw rsError('atomic-delete-scope');
     if (!Object.prototype.hasOwnProperty.call(reference.inputKeys, k)) return;
+    if (opIsResource(k) && reference.inputKeys[k] == null) return;
     var pd = by.get(k);
     if (!pd) {
       var e = ENT[resName(k)];
@@ -393,7 +420,7 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
     ['seized','awards'].forEach(function(name){if(domains[name])domains[name]=domains[name].filter(function(domain){return allowed.has(bdScope(domain));});});
   } else {
     Object.keys(keys).forEach(function (k) {
-      if (Object.prototype.hasOwnProperty.call(inputKeys, k) && k !== K_PERM) {
+      if ((opIsResource(k) ? inputKeys[k]!=null : Object.prototype.hasOwnProperty.call(inputKeys, k)) && k !== K_PERM) {
         delete keys[k];
         kept++;
       }
@@ -710,11 +737,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
+    rsShape(manifest.domains, ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards','operations']);
     if (
-      manifest.version !== 3 ||
+      manifest.version !== 4 ||
       manifest.scope !== 'full' ||
-      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards'].some(function (k) {
+      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards','operations'].some(function (k) {
         return manifest.domains[k] !== 1;
       })
     )
@@ -751,11 +778,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
+    rsShape(manifest.domains, ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards','operations']);
     if (
-      manifest.version !== 3 ||
+      manifest.version !== 4 ||
       manifest.scope !== 'dept' ||
-      ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards'].some(function (k) {
+      ['kv', 'notifications', 'custody', 'irshad', 'seized', 'awards','operations'].some(function (k) {
         return manifest.domains[k] !== 1;
       }) ||
       !deq(manifest.departments, [body.scope.departmentId]) ||
@@ -803,7 +830,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     if(!Array.isArray((body.domains||{})[def.name])||!deq(body.domains[def.name].map(bdScope).sort(),expected))throw rsError('restore-incomplete-'+def.name);
   }
   rsNat(body.base.epoch);
-  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
+  rsShape(body.domains || {}, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards','operations']);
   var fingerprint =
       (internal && internal.fingerprint) ||
       hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(cuCanonical(body))))),
@@ -812,6 +839,7 @@ async function rsPrepare(env, A, body, meta, internal) {
       .first();
   if (oldReceipt) {
     if (oldReceipt.fingerprint !== fingerprint) throw rsError('restore-request-reused', 409);
+    await env.DB.batch(rsReferenceGuards(env,reference));
     return { receipt: oldReceipt };
   }
   if (body.base.epoch !== (await rsEpoch(env))) throw rsError('restore-epoch-changed', 409);
@@ -836,9 +864,11 @@ async function rsPrepare(env, A, body, meta, internal) {
   Object.keys(keys)
     .concat(del)
     .forEach(function (k) {
-      if (nfLegacyKey(k) || cuLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k)) || resName(k) === K_DSTATS) throw rsError('domain-moved');
+      if (nfLegacyKey(k) || cuLegacyKey(k) || (irLegacyKey(k) || bdLegacyKey(k)) || opIsResource(k) || resName(k) === K_DSTATS) throw rsError('domain-moved');
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
+  var operationalInput=opRestoreDocuments(body,reference,A);
+  Object.assign(keys,operationalInput.keys);
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
   keys = selection.keys;
   del = selection.del;
@@ -846,9 +876,10 @@ async function rsPrepare(env, A, body, meta, internal) {
   var physicalDeletes =
     body.scope.kind === 'full' && body.mode === 'replace'
       ? Object.keys(inputKeys).filter(function (k) {
-          return !!parseKey(k).dept && !Object.prototype.hasOwnProperty.call(keys, k);
+          return !!parseKey(k).dept && !opIsResource(k) && !Object.prototype.hasOwnProperty.call(keys, k);
         })
       : [];
+  physicalDeletes.push.apply(physicalDeletes,operationalInput.physicalDeletes);
   if (body.scope.kind === 'dept' && (body.permissionSlice !== undefined || Object.prototype.hasOwnProperty.call(keys, K_PERM))) {
     var requestedPerms = body.permissionSlice;
     if (requestedPerms === undefined) {
@@ -904,6 +935,13 @@ async function rsPrepare(env, A, body, meta, internal) {
     }
     Object.keys(inputKeys).forEach(function (k) {
       if (removedDepartments.indexOf(parseKey(k).dept) >= 0) {
+        if(opIsResource(k)){
+          if(inputKeys[k]==null)return;
+          var operationalEmpty=ENT[resName(k)]&&ENT[resName(k)].empty;
+          if(typeof operationalEmpty!=='string')throw rsError('restore-operations-empty');
+          keys[k]=operationalEmpty;physicalDeletes.push(k);
+          if(base[k]===undefined)base[k]=inputRevs[k]||0;return;
+        }
         if (Object.prototype.hasOwnProperty.call(keys, k)) throw rsError('restore-removed-department-payload');
         var empty = ENT[resName(k)] && ENT[resName(k)].empty;
         if (typeof empty === 'string') {
@@ -925,7 +963,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     throw rsError('restore-keys');
   if (body.scope.kind === 'full' && body.mode === 'replace')
     Object.keys(inputKeys).forEach(function (k) {
-      if (!parseKey(k).dept || Object.prototype.hasOwnProperty.call(keys, k)) return;
+      if (!parseKey(k).dept || opIsResource(k) || Object.prototype.hasOwnProperty.call(keys, k)) return;
       var empty = ENT[resName(k)] && ENT[resName(k)].empty;
       if (typeof empty === 'string') {
         keys[k] = empty;
@@ -1011,7 +1049,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { kv: kv.pend.length, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept },
+    counts: { kv: kv.pend.filter(function(pd){return !opIsResource(pd.k);}).length, operations:0, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept },
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
@@ -1020,6 +1058,7 @@ async function rsPrepare(env, A, body, meta, internal) {
      a permission edit between actor construction and commit cannot grant a stale request. */
   plan.guards.push.apply(plan.guards, rsWitness(env, 'kv', ['k', 'seq', 'v'], inputRows));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'meta', ['k', 'v'], reference.metaRows, "k<>'rev'"));
+  plan.guards.push.apply(plan.guards, reference.operational.guards);
   await rsCompileKV(env, A, kv, plan, inputRows);
   var domains = selection.domains;
   if (domains.notifications) {
@@ -1212,6 +1251,7 @@ async function rsPrepare(env, A, body, meta, internal) {
 async function rsCommit(env, A, plan, meta) {
   await irGuardRetired(env);
   await bdGuardRetired(env);
+  await opGuardRetired(env);
   if (plan.receipt && plan.receipt.result_json) {
     var replay = JSON.parse(plan.receipt.result_json);
     replay.reauthRequired = !!replay.reauthRequired;
@@ -1232,7 +1272,7 @@ async function rsCommit(env, A, plan, meta) {
     };
   A = plan.author || A;
   var sid = enfSnapId('atomic'),
-    st = [rsEpochGuard(env.DB, plan.epoch), bdCommitRetiredGuard(env)].concat(plan.guards),
+    st = [rsEpochGuard(env.DB, plan.epoch), bdCommitRetiredGuard(env), opRetiredGuard(env)].concat(plan.guards),
     keys = Array.from(new Set(plan.revisionKeys)),
     now = Date.now(),
     changed = keys.length > 0 || !!plan.forceFence;
@@ -1307,6 +1347,9 @@ async function rsCommit(env, A, plan, meta) {
         plan.imagesReused || 0,
       ),
     );
+  if (plan.intent === 'operations') st.push(env.DB.prepare(
+    "UPDATE restore_operations SET result_json=json_set(json_patch(json(?5),result_json),'$.atomic',1,'$.epoch',?3,'$.v',revision,'$.revs',json(COALESCE((SELECT json_group_object(j.value,COALESCE(r.rev,0))FROM json_each(?4)j LEFT JOIN revs r ON r.k=j.value),'{}'))) WHERE account_uid=?1 AND request_id=?2"
+  ).bind(A.u.id,plan.body.requestId,plan.epoch,JSON.stringify(plan.operationKeys),JSON.stringify(plan.operationResult||{})));
   var receiptExpected = plan.operation !== 'save' || plan.receiptRequired;
   st.push(
     receiptExpected
@@ -1377,6 +1420,7 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
   for (var d of depts) {
     if (typeof d !== 'string' || !d || d.length > 200 || BAD_ID_RX.test(d) || d.includes(':')) throw rsError('restore-departments');
     custody[d] = r[cuKey(d)] || 0;
+    opDefinitions().forEach(function(def){var k='bsdept:'+d+':'+def.resource;kv[k]=r[k]||0;});
     irshad[d] = await irRevs(env, d);
   }
   var businessBase=await bdRestoreRevisions(env,depts,scope.kind==='full');
@@ -1454,6 +1498,7 @@ async function rsRoute(env, request, url, ss) {
           .first();
       if (existing) {
         if (existing.fingerprint !== rawFingerprint) throw rsError('restore-request-reused', 409);
+        await env.DB.batch(rsReferenceGuards(env,reference));
         return json(await rsCommit(env, A, { receipt: existing }, reqMeta(request)));
       }
       var converted = await rsConvertBackup(env, A, body.backup, {
@@ -1495,6 +1540,7 @@ async function rsRoute(env, request, url, ss) {
     }
     return json(await rsCommit(env, A, await rsPrepare(env, A, body, reqMeta(request)), reqMeta(request)));
   } catch (e) {
+    if (e.ocCode) return json({ok:0,err:e.ocCode},e.status||400);
     if (e.rs) return json({ ok: 0, err: e.rs, details: e.details }, e.status);
     if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);

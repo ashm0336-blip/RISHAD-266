@@ -52,6 +52,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (e) {}
   }
   setState(t, e) {
+    if (t && typeof t === "object" && this.state) {
+      const employeeEditor = (t.addOpen === true && !this.state.addOpen) || (t.inlineEdit != null && t.inlineEdit !== this.state.inlineEdit);
+      const optionEditor = t.ddEdit && t.ddEdit !== this.state.ddEdit;
+      if (employeeEditor || optionEditor) {
+        const begun = KIVO.__BS_SRV.operations.begin(this, employeeEditor ? "employee-editor" : "employee-options");
+        if (!begun.ok) { this.bsToast("يوجد طلب حفظ لم يُحسم — عد إلى المسودة وأعد الطلب نفسه قبل فتح محرر آخر."); return; }
+      }
+    }
     const r = super.setState(t, e);
     try {
       t &&
@@ -128,35 +136,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return !0;
   }
   loadEmp() {
-    try {
-      const t = localStorage.getItem("bassam_employees_v1");
-      if (t) {
-        const e = JSON.parse(t);
-        if (Array.isArray(e)) {
-          let t = !1;
-          const r = e.map((e) => {
-            if (!e) return e;
-            let r = e;
-            return (
-              "job" in r && ((t = !0), (r = { ...r }), delete r.job),
-              r.eid || ((t = !0), (r = { ...r, eid: "e" + Date.now().toString(36) + Math.floor(1e9 * Math.random()).toString(36) })),
-              r
-            );
-          });
-          if (t)
-            try {
-              localStorage.setItem("bassam_employees_v1", JSON.stringify(r));
-            } catch (t) {}
-          return r;
-        }
-      }
-    } catch (t) {}
-    return [];
+    const rows = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
+    // Identity and legacy-field migration belong to the canonical server migration.
+    return Array.isArray(rows) ? rows : [];
   }
-  persist(t) {
-    try {
-      localStorage.setItem("bassam_employees_v1", JSON.stringify(t));
-    } catch (t) {}
+  async persist(t, action = "employee-editor", intent = t) {
+    const result = await KIVO.__BS_SRV.operations.commit(this, action, intent, (draft) => draft.set("bassam_employees_v1", t));
+    if (!result || result.ok !== 1) this.bsToast(result && result.committed
+      ? "ثبّت الخادم الحفظ، وتعذّرت قراءة البيانات الحالية — احتُفظ بالطلب؛ أعد التحقق بالمحتوى نفسه."
+      : result && result.uncertain
+      ? "لم يصل تأكيد الحفظ — المسودة محفوظة في هذه الجلسة. أعد الحفظ بالمحتوى نفسه للتحقق من الطلب."
+      : "لم يُحفظ التغيير — راجع البيانات والصلاحية ثم أعد فتح المحرر.");
+    return !!result && result.ok === 1;
   }
   EMP_COLS = ["اسم الموظف", "الجنس", "رقم الهوية", "الرقم الوظيفي", "رقم الجوال", "البريد الإلكتروني", "نوع التوظيف", "حساب الدخول"];
   normAr(t) {
@@ -548,7 +539,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   cuShiftOpts() {
     try {
-      const t = localStorage.getItem("bassam_shift_options_v1");
+      const t = KIVO.__BS_SRV.operations.text("bassam_shift_options_v1");
       if (t) {
         const e = JSON.parse(t);
         if (Array.isArray(e) && e.length && e.every((t) => t && t.name && t.color)) return e;
@@ -571,7 +562,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       r = e.map((t) => t.name);
     let n = {};
     try {
-      n = JSON.parse(localStorage.getItem("bassam_staffing_v3")) || {};
+      n = KIVO.__BS_SRV.operations.get("bassam_staffing_v3") || {};
     } catch (t) {}
     const a = n[KIVO.BassamEmpImp ? KIVO.BassamEmpImp.curHijriKey() : ""] || {},
       i = {};
@@ -1910,23 +1901,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       this.bsToast("صلاحيتك على صفحة الموظفين لا تشمل هذا الإجراء — راجع مدير الإدارة");
     } catch (t) {}
   }
-  setEmp(t) {
+  async setEmp(t, intent = t) {
     if (this.PC("add") || this.PC("edit") || this.PC("del")) {
-      try {
-        const e = KIVO.BassamAuth;
-        if (e && e.removeStaffAccount && e.staffMap) {
-          const r = (t) => (KIVO.BassamEmp && KIVO.BassamEmp.key ? KIVO.BassamEmp.key(t) : t.eid || t.nid || t.name || ""),
-            n = {};
-          ((t || []).forEach((t) => {
-            n[r(t)] = 1;
-          }),
-            Object.keys(e.staffMap() || {}).forEach((t) => {
-              "mgr:" === String(t).slice(0, 4) || n[t] || e.removeStaffAccount(t);
-            }));
-        }
-      } catch (t) {}
-      (this.persist(t), this.setState({ employees: t, selected: {} }), this.autoActivate(t));
-    } else this.permDeny();
+      // Account removal is performed only by the explicit employee transition API.
+      if (!await this.persist(t, "employee-editor", intent)) return false;
+      this.setState({ employees: this.loadEmp(), selected: {} });
+      this.autoActivate(this.loadEmp());
+      return true;
+    }
+    this.permDeny(); return false;
   }
   autoActivate(t) {
     try {
@@ -2014,48 +1997,42 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     page: 1,
     perPage: 10,
   };
-  iddAdd(t) {
+  async iddAdd(t) {
     if (!t) return;
     const e = (this.state.iddNew || "").trim();
     if (!e) return;
     const r = { ...this.state.options };
-    (r[t].includes(e) || (r[t] = [...r[t], e]),
-      this.saveOptions(r),
-      this.setState((r) => ({ inlineForm: { ...r.inlineForm, [t]: e }, iddNew: "", iddOpen: null })));
+    r[t].includes(e) || (r[t] = [...r[t], e]);
+    if (await this.saveOptions(r)) this.setState((r) => ({ inlineForm: { ...r.inlineForm, [t]: e }, iddNew: "", iddOpen: null }));
   }
   loadOptions() {
-    try {
-      const t = localStorage.getItem("bassam_options_v1");
-      if (t) {
-        const e = JSON.parse(t);
-        if (e && Array.isArray(e.type) && Array.isArray(e.work)) return (delete e.job, e);
-      }
-    } catch (t) {}
+    const e = KIVO.__BS_SRV.operations.get("bassam_options_v1");
+    if (e && Array.isArray(e.type) && Array.isArray(e.work)) return e;
     return { type: ["دائم", "موسمي", "متعاون"], work: ["ميداني", "إداري"] };
   }
-  saveOptions(t) {
+  async saveOptions(t) {
     if (this.PC("add") || this.PC("edit") || this.PC("del")) {
-      try {
-        localStorage.setItem("bassam_options_v1", JSON.stringify(t));
-      } catch (t) {}
-      this.setState({ options: t });
-    } else this.permDeny();
+      const result = await KIVO.__BS_SRV.operations.commit(this, "employee-options", t, (draft) => draft.set("bassam_options_v1", t));
+      if (!result || result.ok !== 1) { this.bsToast("لم يصل تأكيد حفظ القائمة — احتُفظ بالمسودة؛ أعد الحفظ نفسه للتحقق."); return false; }
+      this.setState({ options: this.loadOptions() }); return true;
+    }
+    this.permDeny(); return false;
   }
-  ddAdd(t) {
+  async ddAdd(t) {
     if (!t) return;
     const e = (this.state.ddNew || "").trim();
     if (!e) return;
     const r = { ...this.state.options };
-    (r[t].includes(e) || (r[t] = [...r[t], e]),
-      this.saveOptions(r),
-      this.setState((r) => ({ form: { ...r.form, [t]: e }, ddNew: "", ddOpen: null })));
+    r[t].includes(e) || (r[t] = [...r[t], e]);
+    if (await this.saveOptions(r)) this.setState((r) => ({ form: { ...r.form, [t]: e }, ddNew: "", ddOpen: null }));
   }
   ddDel(t, e, r) {
     const n = { ...this.state.options };
     if (n[t].length <= 1) return;
     const a = (this.state.employees || []).filter((r) => r && r[t] === e).length,
-      go = () => {
-        ((n[t] = n[t].filter((t) => t !== e)), this.saveOptions(n));
+      go = async () => {
+        n[t] = n[t].filter((t) => t !== e);
+        if (!await this.saveOptions(n)) return;
         const i = "inline" === r ? "inlineForm" : "form";
         this.state[i] && this.state[i][t] === e && this.setState((e) => ({ [i]: { ...e[i], [t]: "" } }));
       };
@@ -2085,7 +2062,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   ddEditCancel() {
     this.setState({ ddEdit: null, ddEditVal: "" });
   }
-  ddEditSave() {
+  async ddEditSave() {
     const t = this.state.ddEdit;
     if (!t) return;
     const e = (this.state.ddEditVal || "").trim();
@@ -2093,11 +2070,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if ((this.state.options[t.key] || []).includes(e)) return void this.bsToast("«" + e + "» موجود في القائمة أصلاً", "warn");
     if (!this.PC("edit")) return void this.permDeny();
     const r = { ...this.state.options };
-    ((r[t.key] = (r[t.key] || []).map((r) => (r === t.name ? e : r))), this.saveOptions(r));
+    r[t.key] = (r[t.key] || []).map((r) => (r === t.name ? e : r));
     let n = 0;
     const a = (this.state.employees || []).map((r) => (r && r[t.key] === t.name ? (n++, { ...r, [t.key]: e }) : r));
-    n && this.persist(a);
-    const i = { ddEdit: null, ddEditVal: "" };
+    const result = await KIVO.__BS_SRV.operations.commit(this, "employee-options", { edit: t, value: e }, (draft) => {
+      draft.set("bassam_options_v1", r);
+      if (n) draft.set("bassam_employees_v1", a);
+    });
+    if (!result || result.ok !== 1) { this.bsToast("لم يصل تأكيد إعادة التسمية — احتُفظ بالمسودة؛ أعد الحفظ نفسه للتحقق."); return; }
+    const i = { ddEdit: null, ddEditVal: "", options: this.loadOptions() };
     (n && (i.employees = a),
       (this.state.form || {})[t.key] === t.name && (i.form = { ...this.state.form, [t.key]: e }),
       (this.state.inlineForm || {})[t.key] === t.name && (i.inlineForm = { ...this.state.inlineForm, [t.key]: e }));
@@ -2223,7 +2204,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       r = e.getHours(),
       n = (() => {
         try {
-          const t = localStorage.getItem("bassam_employees_v1");
+          const t = KIVO.__BS_SRV.operations.text("bassam_employees_v1");
           if (t) {
             const e = JSON.parse(t);
             if (Array.isArray(e)) return e;
@@ -2233,7 +2214,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })(),
       a = (() => {
         try {
-          const t = localStorage.getItem("bassam_staffing_v3");
+          const t = KIVO.__BS_SRV.operations.text("bassam_staffing_v3");
           if (t) {
             const e = JSON.parse(t);
             if (e && "object" == typeof e) {
@@ -2252,7 +2233,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })(),
       i = (() => {
         try {
-          const t = localStorage.getItem("bassam_shift_options_v1");
+          const t = KIVO.__BS_SRV.operations.text("bassam_shift_options_v1");
           if (t) {
             const e = JSON.parse(t);
             if (Array.isArray(e) && e.length && e.every((t) => t && t.name && t.color)) return e;
@@ -2267,7 +2248,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })(),
       o = (() => {
         try {
-          const t = localStorage.getItem("bassam_staffing_locks_v1");
+          const t = KIVO.__BS_SRV.operations.text("bassam_staffing_locks_v1");
           if (t) {
             const e = JSON.parse(t);
             if (e && "object" == typeof e) return e;
@@ -2278,7 +2259,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       s = i.map((t) => t.name),
       l = (function () {
         try {
-          const t = JSON.parse(localStorage.getItem("bassam_dreport_v1") || "{}") || {},
+          const t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
             e = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
               year: "numeric",
               month: "numeric",
@@ -2363,7 +2344,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       j = Object.keys(o).filter((t) => o[t] && 0 === t.indexOf(P + "-")).length;
     let N = {};
     try {
-      const t = localStorage.getItem("bassam_staffing_v3");
+      const t = KIVO.__BS_SRV.operations.text("bassam_staffing_v3");
       if (t) {
         const e = JSON.parse(t);
         e && "object" == typeof e && (N = e);
@@ -2422,7 +2403,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           placedBy: {},
         };
         try {
-          const e = ((JSON.parse(localStorage.getItem("bassam_plan_v1") || "{}") || {}).months || {})[P + "-" + T],
+          const e = ((KIVO.__BS_SRV.operations.get("bassam_plan_v1") || {}).months || {})[P + "-" + T],
             r = e ? (Array.isArray(e) ? e : e.d) : null;
           if (!Array.isArray(r) || !r.length) return t;
           ((t.has = !0),
@@ -2431,7 +2412,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             (t.apPct = t.floors ? Math.round((100 * t.apFloors) / t.floors) : 0));
           let n = i;
           try {
-            const t = JSON.parse(localStorage.getItem("bassam_shift_options_v1") || "[]");
+            const t = KIVO.__BS_SRV.operations.get("bassam_shift_options_v1") || [];
             Array.isArray(t) && t.length && (n = t);
           } catch (t) {}
           t.shifts = n.map((t) => t.name);
@@ -2494,7 +2475,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       et = (() => {
         const t = { rate: {}, days: 0 };
         try {
-          const e = JSON.parse(localStorage.getItem("bassam_dreport_v1") || "{}") || {},
+          const e = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
             r = Object.keys(e).filter((t) => 0 !== t.indexOf("m:") && 0 !== t.indexOf("__") && e[t] && e[t].shifts);
           r.sort((t, e) => {
             const r = t.split("-").map(Number),
@@ -2539,7 +2520,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       nt = (() => {
         const t = [];
         try {
-          const e = ((JSON.parse(localStorage.getItem("bassam_plan_v1") || "{}") || {}).months || {})[P + "-" + T];
+          const e = ((KIVO.__BS_SRV.operations.get("bassam_plan_v1") || {}).months || {})[P + "-" + T];
           ((e ? (Array.isArray(e) ? e : e.d) : null) || []).forEach((e) => {
             const r = {};
             ((e.gates || []).forEach((t) => {
@@ -3420,7 +3401,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const e = t || new Date(),
       r = (t, e) => {
         try {
-          const e = localStorage.getItem(t);
+          const e = KIVO.__BS_SRV.operations.text(t);
           if (null != e) {
             const t = JSON.parse(e);
             if (null != t) return t;
@@ -4580,7 +4561,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })),
       Te = (function () {
         try {
-          const t = JSON.parse(localStorage.getItem("bassam_dreport_v1") || "{}") || {},
+          const t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
             e = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
               year: "numeric",
               month: "numeric",
@@ -5260,7 +5241,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               shift: t.shift,
             },
           }),
-        saveInline: () => {
+        saveInline: async () => {
           if (!this.PC("edit")) return void this.permDeny();
           const e = this.state.inlineForm;
           if (!e.name || !e.name.trim()) return void this.bsToast("اسم الموظف حقل إلزامي");
@@ -5286,7 +5267,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 }
               : r,
           );
-          (this.setEmp(n), this.setState({ inlineEdit: null, inlineForm: {}, iddOpen: null, iddNew: "" }));
+          if (await this.setEmp(n, { index: t.i, form: e })) this.setState({ inlineEdit: null, inlineForm: {}, iddOpen: null, iddNew: "" });
         },
         cancelInline: () => this.setState({ inlineEdit: null, inlineForm: {}, iddOpen: null, iddNew: "" }),
         remove: () => this._empDeleteOpen([t.i], false),
@@ -5909,7 +5890,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       onDdKey: (t) => {
         "Enter" === t.key && (t.preventDefault(), this.ddAdd(this.state.ddOpen));
       },
-      saveEmp: () => {
+      saveEmp: async () => {
         if (!(null === this.state.editIdx ? this.PC("add") : this.PC("edit"))) return void this.permDeny();
         const t = this.state.form,
           e = (t, e) => {
@@ -5945,7 +5926,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               contact: "غير متوفر",
             })
           : (n[this.state.editIdx] = { ...n[this.state.editIdx], ...t }),
-          this.setEmp(n),
+          await this.setEmp(n, { index: this.state.editIdx, form: t }) &&
           this.setState({ addOpen: !1 }));
       },
       bulkClear: () => this.setState({ selected: {} }),

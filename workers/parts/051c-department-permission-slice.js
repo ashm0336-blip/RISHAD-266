@@ -11,8 +11,9 @@ var rsPermSlice = function(pm, id, PP, mode, pageKeys, lensKeys){
       if (PP.capSet === false || PP.cap == null || legacyNoCap) delete pm.caps[id];
       else pm.caps[id] = (Array.isArray(PP.cap) ? PP.cap : []).filter(function(k){ return KP.indexOf(k) !== -1; });
       pm.emps[id] = (PP.emps && typeof PP.emps === 'object' && !Array.isArray(PP.emps)) ? PP.emps : {};
-      pm.lenses = pm.lenses || {};
-      if (Array.isArray(PP.lenses)) pm.lenses[id] = PP.lenses.filter(function(k){ return KL.indexOf(k) !== -1; });
-      else delete pm.lenses[id];
+      if (Array.isArray(PP.lenses)) {
+        pm.lenses = pm.lenses || {};
+        pm.lenses[id] = PP.lenses.filter(function(k){ return KL.indexOf(k) !== -1; });
+      } else if (pm.lenses && typeof pm.lenses === 'object' && !Array.isArray(pm.lenses)) delete pm.lenses[id];
       return pm;
     };

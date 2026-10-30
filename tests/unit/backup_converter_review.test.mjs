@@ -166,8 +166,11 @@ test('modern manifest requires its exact declared key/dept/domain coverage and p
   const out = await t.convert(file);
   assert.equal(out.keys.bassam_auth_users_v1, raw);
   assert.equal(out.summary.legacy, false);
-  assert.deepEqual(out.summary.emptyDomains, ['seized:'+D1,'seized:'+D2,'awards:'+D1,'awards:'+D2,'awards:']);
-  assert.equal(out.manifest.version,3,'Historical manifest2 is upgraded at the import boundary');
+  assert.deepEqual(out.summary.emptyDomains.filter(name=>!name.startsWith('operations:')), ['seized:'+D1,'seized:'+D2,'awards:'+D1,'awards:'+D2,'awards:']);
+  assert.equal(out.summary.emptyDomains.filter(name=>name.startsWith('operations:')).length,42,'Both declared departments explicitly account for all21 missing operational resources');
+  assert.equal(out.domains.operations.length,42);
+  assert.ok(out.domains.operations.every(domain=>domain.rows.ops_nodes.length===0));
+  assert.equal(out.manifest.version,4,'Historical manifest2 is upgraded once at the import boundary');
   for (const mutate of [
     (f) => f.manifest.keys.pop(),
     (f) => f.manifest.departments.pop(),
@@ -193,8 +196,11 @@ test('legacy full flat requires an explicit department scope and never guesses a
   await assert.rejects(t.convert(file), (e) => e.rs === 'backup-flat-requires-explicit-department');
   const out = await t.convert(file, { scope: { kind: 'dept', departmentId: D2 } });
   assert.equal(out.domains.custody[0].scope.departmentId, D2);
-  assert.ok(Object.hasOwn(out.keys, 'bsdept:' + D2 + ':bassam_employees_v1'));
-  assert.deepEqual(out.manifest.keys, ['bassam_employees_v1']);
+  assert.equal(Object.hasOwn(out.keys, 'bsdept:' + D2 + ':bassam_employees_v1'),false);
+  const employees=out.domains.operations.find(domain=>domain.scope.departmentId===D2&&domain.resource==='bassam_employees_v1'),
+    prepared=t.W.opPrepared('bassam_employees_v1');
+  assert.deepEqual(t.W.ocInflate(prepared,t.W.ocFromPhysical(prepared,D2,employees.resource,employees.rows)),{present:true,value:[]});
+  assert.deepEqual(out.manifest.keys, []);
   assert.equal(out.summary.remapped, false);
 });
 test('explicit scoped backup remap changes only department columns and retains historical account/holder identities', async () => {

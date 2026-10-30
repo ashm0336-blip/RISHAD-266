@@ -13,11 +13,12 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { ROOT, moduleLogic } from './harness.mjs';
-import { world, workerUnderTest, ME, KT, KE, D, DAY, TAG, stored } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, KT, KE, D, DAY, TAG, stored, taskCommandBody } from './tasks_fx.mjs';
+import { attachTaskOperations, taskText } from './tasks_vm_operations_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'], ID = 1760000000103;                       /* مهمةُ ME اليوم — جارية، يُنهيها ثم يعيد المديرُ فتحَها */
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: taskCommandBody(W.env, p, body) });
 const row = (W) => stored(W.env, KT)[DAY].find((r) => Array.isArray(r) && r[13] === ID && r[14] === ME.eid);
 const reopened = (W) => W.env.DB.q("SELECT aft FROM aud WHERE k = ? AND act = 'reopened'", KT);
 async function done(mode) {
@@ -54,8 +55,8 @@ const LOGIC = moduleLogic('tasks');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function until(fn, ms = 5000) { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await fn()) return true; await sleep(25); } return false; }
 async function page(W, ck, answer) {
-  const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT + ',' + KE), { cookie: ck });
-  const store = new Map([['bassam_tasks_v1', g.j.keys[KT].v], ['bassam_employees_v1', g.j.keys[KE].v]]), KIVO = {}, toasts = [], asked = [];
+  const g = await W.C.api('/api/operations/read?keys=' + encodeURIComponent(KT + ',' + KE), { cookie: ck });
+  const store = new Map([['bassam_tasks_v1', taskText(g.j, KT)], ['bassam_employees_v1', taskText(g.j, KE)]]), KIVO = {}, toasts = [], asked = [];
   const ctx = { KIVO, console, Intl, Date, Math, JSON, Promise, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, setTimeout, clearTimeout, setInterval: () => 0, clearInterval: () => 0,
     localStorage: { getItem: (k) => store.has(k) ? store.get(k) : null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
     document: { hidden: false, querySelector: () => null, addEventListener: () => {}, removeEventListener: () => {} }, navigator: { userAgent: 'node' }, addEventListener: () => {}, removeEventListener: () => {},
@@ -68,12 +69,12 @@ async function page(W, ck, answer) {
   KIVO.BassamAuth = { user: () => ({ id: 'tst_dm1', role: 'staff', mgr: true, ekey: 'mgr:' + D, deptId: D, name: 'TEST_ONLY مدير' }), display: () => ({ name: 'TEST_ONLY مدير' }), users: () => [] };
   KIVO.BassamDepts = { active: () => D };
   KIVO.BassamSup = { isSup: () => false };
-  KIVO.__BS_SRV = { flushAsync: async () => true, askReason: (k, keys, cb) => { asked.push({ k, keys }); setTimeout(() => cb(answer), 0); } };
   class DCLogic { constructor() { this.state = {}; } setState(p, cb) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); cb && cb(); } }
   ctx.DCLogic = DCLogic;
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
+  await attachTaskOperations(ctx, { store, W, ck, askReason: (k, keys, cb) => { asked.push({ k, keys }); setTimeout(() => cb(answer), 0); } });
   const c = new ctx.__C(); c.state = Object.assign({}, c.state || {}, { locked: {} });
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);
   const [y, m, d] = DAY.split('-').map(Number); c.setState({ year: y, month: m, tasksAll: JSON.parse(store.get('bassam_tasks_v1')) });

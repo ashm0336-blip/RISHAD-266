@@ -141,28 +141,6 @@ Object.assign(Component.prototype, {
       tkRecOk: !1,
     };
   },
-  /* POST /api/tasks/recur — edit {id, rec} · stop {id, k, row} · start {k, id|grp, rec} (الخادمُ يحكم: task.edit · وللتحويل task.create + task.edit + task.assign) */
-  _tkRecGo(B, ref) {
-    const b =
-      "start" === B.op
-        ? Object.assign({ op: "start", k: ref.k, rec: B.rec }, ref.grp ? { grp: String(ref.grp) } : { id: String(ref.id) })
-        : Object.assign({ id: String(B.id), op: B.op }, B.rec ? { rec: B.rec } : {}, B.row ? { k: ref.k, row: B.row } : {});
-    return this._tkApi("/api/tasks/recur", b).then((x) => {
-      if (!(x.j && 1 === x.j.ok)) return void this.bsToast(this._tkErr(x, "لم يُحفظ التكرار — أعد المحاولة"), "warn");
-      const n = +x.j.cancelled || 0,
-        N = n ? KIVO.BassamCount(n, "مهمة") + " من المواعيد القادمة التي " : "";   /* مراجعة U7: صيغةُ العدد (R183) */
-      this.bsAck(
-        "start" === B.op
-          ? "حُوّلت المهمة إلى متكررة — تُولَّد مواعيدها تلقائياً"
-          : "stop" === B.op
-            ? "أُنهي التكرار" + (B.row ? " — تبقى هذه المهمة" : "") + (n ? (B.row ? "، " : " — ") + "وأُلغيت " + N + "لم تبدأ" : "") + " · تبقى المواعيدُ السابقة بسجلّها وإثباتها"
-            : n
-              ? "عُدّل التكرار — أُلغيت " + N + "لم تعد ضمنه"
-              : "عُدّل التكرار — تُولَّد المواعيدُ القادمة بالقاعدة الجديدة",
-        "ok",
-      );
-    });
-  },
   /* سياقُ التكرار في النموذج: new (إنشاء) · ser (صفٌّ من سلسلة) · one (لمرةٍ واحدة يُحوَّل) · none — والصلاحيةُ انعكاسٌ للخادم:
      الإنشاءُ task.create (+ task.assign بمكلَّفين) · تعديلُ السلسلة وإيقافُها task.edit · التحويلُ task.create + task.edit + task.assign */
   _tkRecCtx(r) {
@@ -227,6 +205,18 @@ Object.assign(Component.prototype, {
       tkActLog: null,
       tkActHint: "",
     });
+  },
+  /* Display the committed atomic settings receipt; never issue a second
+     recurrence command after the editor has already saved its changes. */
+  _tkRecAck(op, result) {
+    const n = result && +result.cancelled || 0,
+      count = n ? KIVO.BassamCount(n, "مهمة") : "",
+      text = "start" === op
+        ? "حُوّلت المهمة إلى متكررة — تُولَّد مواعيدها تلقائياً"
+        : "edit" === op
+          ? "عُدّل التكرار" + (n ? " — أُلغيت " + count + " من المواعيد القادمة التي لم تعد ضمنه" : "")
+          : "أُنهي التكرار — تبقى هذه المهمة" + (n ? "، وأُلغيت " + count + " من المواعيد القادمة التي لم تبدأ" : "") + " · تبقى المواعيدُ السابقة بسجلّها وإثباتها";
+    this.bsToast(text, "ok");
   },
   /* KIVO_265 · قرارُ المالك (تكرارُ المهام ظاهرٌ في النموذج): «نوع المهمة: لمرة واحدة | متكررة» بعد وقت المهمة مباشرةً — يومي · أسبوعي (أيامٌ عدّة) ·
      شهري (يومُ الشهر الهجري) · يبدأ من يوم المهمة · ينتهي حتى الإيقاف أو في تاريخ. وللسلسلة القائمة: حالتُها وإيقافُها مؤقتاً واستئنافُها وإنهاؤها */

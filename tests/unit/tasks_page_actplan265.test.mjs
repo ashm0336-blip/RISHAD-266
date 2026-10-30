@@ -1,3 +1,6 @@
+import { attachTaskOperations, taskText } from './tasks_vm_operations_fx.mjs';
+import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { taskCommandBody } from './tasks_fx.mjs';
 /* KIVO_265 · البند 7 — صفحةُ المهام (src/modules/tasks/logic.js في vm + KIVO.BassamPageKit الحقيقي) على العامل الحقيقي: الوقتُ الفعلي مقابل المخطط
    لكل صفٍّ منجز: الفعلي = العمود 12 − العمود 11 (دقائق) · المخطط = العمود 10 — شارةُ «45/60 د» في الجدول واللوحة والتصدير، تحذيريةٌ إن جاوز 120% من المخطط،
    ولا تمسّ العمودَ 6 (الأداءُ من المهلة). بياناتٌ اصطناعية (tasks_fx). */
@@ -11,7 +14,7 @@ import { world, workerUnderTest, ME, MATE, KT, KE, D, DAY, stored, putKV, row } 
 
 const WU = workerUnderTest();
 const LOGIC = moduleLogic('tasks');
-function page(W, ck, storeJson, emps) {
+async function page(W, ck, storeJson, emps) {
   const store = new Map([['bassam_tasks_v1', storeJson], ['bassam_employees_v1', JSON.stringify(emps)]]);
   const KIVO = {}, toasts = [], xlsx = [];
   const ctx = { KIVO, console, Intl, Date, Math, JSON, Promise, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, setTimeout, clearTimeout, setInterval: () => 0, clearInterval: () => 0,
@@ -31,9 +34,10 @@ function page(W, ck, storeJson, emps) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
+  const opsFixture = await attachTaskOperations(ctx, { store, W, ck });
   const c = new ctx.__C(); c._tkDayDef = () => 0;   /* اختباراتُ الشهر كاملاً (KIVO_265 · كروتُ الأيام: الافتراضي يومُ اليوم) */ c.state = Object.assign({}, c.state || {}, { locked: {} });
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);
-  return { c, store, toasts, xlsx };
+  return { c, opsFixture, store, toasts, xlsx };
 }
 function allRows(V) { const out = []; const seen = new Set(); const walk = (o, d) => { if (!o || typeof o !== 'object' || d > 4 || seen.has(o)) return; seen.add(o); if (o.tkcT && Array.isArray(o.tkcT)) out.push(o); for (const k of Object.keys(o)) { const v = o[k]; if (Array.isArray(v)) v.forEach(x => walk(x, d + 1)); else if (v && typeof v === 'object' && k !== 'tkcT') walk(v, d + 1); } }; walk(V, 0); return out; }
 const [Y, M] = DAY.split('-').map(Number);
@@ -49,9 +53,9 @@ test('البند 7 · الفعلي/المخطط: شارةٌ للمنجزة وح�
     row({ id: RUN, title: 'فعلي · جارية', eid: ME.eid, st: 'in_progress', dur: 60, acc: now - 30 * MIN, s: now - 40 * MIN, e: now + 30 * MIN }),
     row({ id: EDGE, title: 'فعلي · 120% بالضبط', eid: ME.eid, st: 'done', dur: 50, acc: now - 100 * MIN, fin: now - 40 * MIN, s: now - 120 * MIN, e: now - 30 * MIN }),
   );
-  putKV(W.env, KT, S);
-  const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT + ',' + KE), { cookie: dm.ck });
-  const P = page(W, dm.ck, g.j.keys[KT].v, JSON.parse(g.j.keys[KE].v));
+  await replaceOperationalFixture(W.env, KT, S);
+  const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT + ',' + KE), { cookie: dm.ck });
+  const P = await page(W, dm.ck, taskText(g.j, KT), JSON.parse(taskText(g.j, KE)));
   P.c.setState({ year: Y, month: M, perPage: 0 });
   const V = P.c.renderVals(), R = allRows(V), by = (id) => R.find((t) => t.tkcT[13] === id);
   const ok = by(OK); assert.equal(ok.apOn, true); assert.equal(ok.apTxt, '45/60 د'); assert.equal(ok.apWarn, false); assert.equal(ok.apAct, 45); assert.equal(ok.apPlan, 60); assert.match(ok.apStyle, /success/); assert.match(ok.apTip, /75%/);

@@ -71,7 +71,11 @@ function enfSeed() { var b = new Uint8Array(32), s = '', i; crypto.getRandomValu
 async function enfMigPlan(env, seed, opts) {
   opts = opts || {};
   /* الخطةُ دالّةٌ حتمية في (البذرة · لحظةِ التوليد · البيانات): التطبيقُ يعيد بناءها بلحظة الخطة نفسِها فتتطابق البصمةُ ما لم تتغيّر البيانات */
-  var now = opts.now || Date.now(), T = dsToday(now), keys = await kvAll(env, 'kv'), revs = await revsAll(env), i, d, ek, dm;
+  var now = opts.now || Date.now(), T = dsToday(now), reference = opts.reference,
+    capture = reference ? reference.operational : await opCaptureReferences(env, await kvAll(env, 'kv')),
+    keys = reference ? reference.inputKeys : capture.keys,
+    revs = reference ? reference.inputRevs : Object.assign({},await revsAll(env),capture.revs), i, d, ek, dm;
+  if (capture.guards.length) await env.DB.batch(capture.guards);
   var depts = parseJson(keys[K_DEPTS], []), users = parseJson(keys[K_USERS], []), perms = parseJson(keys[K_PERM], {}), gd = parseJson(keys[K_GDEPTS], []);
   if (!Array.isArray(depts)) depts = []; if (!Array.isArray(users)) users = []; if (!isObj(perms)) perms = {}; if (!Array.isArray(gd)) gd = [];
   var byDept = {}, raw = {};
@@ -153,7 +157,37 @@ async function enfMigPlan(env, seed, opts) {
   plan.hash = await enfSha(sig.join('\u0002'));
   plan.parts = parts; plan.inferableOptIn = !!opts.inferable;
   plan.counts = { writes: plan.writes.length, identityKeys: plan.writes.filter(function (w) { return w.kind === 'identity'; }).length, scopeKeys: plan.writes.filter(function (w) { return w.kind === 'scope'; }).length, ceilings: plan.scope.ceilings.length, employeeValues: plan.scope.employees.length, kept: plan.scope.kept.length, decisions: plan.scope.decisions.length, inferable: plan.scope.inferable.length, grants: plan.perm.grants.length, permDecisions: plan.perm.decisions.length };
-  return { plan: plan, W: W, keys: keys, revs: revs };
+  return { plan: plan, W: W, keys: keys, revs: revs, guards:capture.guards, snapshots:capture.snapshots };
+}
+/* Pure revision preparation: allocation is written only after every source
+   witness, inside the same batch as migration/snapshot/audit or rollback. */
+async function enfMigCounterPlan(env) {
+  var out = await env.DB.batch([
+      env.DB.prepare("SELECT k,v FROM meta WHERE k='rev'"),
+      env.DB.prepare('SELECT COALESCE(MAX(rev),0)n FROM revs')
+    ]), rows = out[0].results || [], highest = (out[1].results || [])[0],
+    current = rows.length ? Number(rows[0].v) : 0, max = highest && Number(highest.n);
+  if (!Number.isSafeInteger(current) || current < 0 || !Number.isSafeInteger(max) || max < 0 || !Number.isSafeInteger(Math.max(current,max)+1))
+    throw rsError('domain-revision',503);
+  var rev = Math.max(current,max)+1;
+  return {
+    rev:rev,
+    guards:rsWitness(env,'meta',['k','v'],rows,"k='rev'").concat([
+      env.DB.prepare("SELECT CASE WHEN COALESCE((SELECT MAX(rev)FROM revs),0) IS NOT ?1 THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(max)
+    ]),
+    statement:env.DB.prepare("INSERT INTO meta(k,v)VALUES('rev',?1)ON CONFLICT(k)DO UPDATE SET v=excluded.v").bind(String(rev))
+  };
+}
+function enfMigReferenceGuards(env, reference) {
+  return rsReferenceGuards(env, reference, true);
+}
+async function enfMigBatch(env, statements) {
+  try { await env.DB.batch(statements); return null; }
+  catch(error) {
+    if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error)))
+      return json({ok:0,err:'conflict'},409);
+    throw error;
+  }
 }
 async function enfMigrateApi(env, request, A, url, meta) {
   if (A.u.role !== 'super') return json({ ok: 0, err: 'forbidden' }, 403);
@@ -178,27 +212,41 @@ async function enfMigrateApi(env, request, A, url, meta) {
     if (!/^[0-9a-f]{64}$/i.test(String(b.seed || '')) || !/^[0-9a-f]{64}$/.test(String(b.hash || ''))) return json({ ok: 0, err: 'seed-hash' }, 400);
     var gen = +b.generated; if (!(gen > 0) || gen > now || now - gen > 24 * 3600 * 1000) return json({ ok: 0, err: 'generated' }, 400);   /* لحظةُ الخطة: خلال 24 ساعة */
     var parts2 = Array.isArray(b.parts) ? b.parts.filter(function (x) { return x === 'identity' || x === 'scope' || x === 'perm'; }) : ['identity', 'scope', 'perm'];
-    var R2 = await enfMigPlan(env, String(b.seed).toLowerCase(), { inferable: !!b.inferable, parts: parts2, now: gen });
+    var reference2 = await rsReferenceSnapshot(env,A.u.id);
+    env = reference2.env; A = reference2.A;
+    if(A.u.role !== 'super')return json({ok:0,err:'forbidden'},403);
+    var R2 = await enfMigPlan(env, String(b.seed).toLowerCase(), { inferable: !!b.inferable, parts: parts2, now: gen, reference:reference2 });
     if (R2.plan.hash !== b.hash) return json({ ok: 0, err: 'plan-changed', hash: R2.plan.hash }, 409);
     if (!R2.plan.writes.length) return json({ ok: 1, applied: 0, plan: R2.plan.counts });
-    var rev = await nextRev(env), st2 = [], i;
+    var counter2 = await enfMigCounterPlan(env), rev = counter2.rev,
+      guards2 = enfMigReferenceGuards(env,reference2).concat(counter2.guards), st2 = [], i;
     var snap = enfSnapId('migration'), items = R2.plan.writes.map(function (w) { return { k: w.k, cur: R2.keys[w.k] == null ? null : R2.keys[w.k] }; });
     var st = enfSnapStmts(env, snap, 'migration', A, items, R2.revs, { hash: b.hash, parts: parts2, inferable: !!b.inferable, counts: R2.plan.counts, rev: rev, generated: gen });
-    for (var j0 = 0; j0 < st.length; j0 += 90) await env.DB.batch(st.slice(j0, j0 + 90));
     for (i = 0; i < R2.plan.writes.length; i++) {
       var w = R2.plan.writes[i];
-      st2 = st2.concat(kvPutStmts(env, 'kv', w.k, R2.W[w.k].v));
+      if(opIsResource(w.k)){
+        var add2=await opChangeStatements(env,w.k,R2.W[w.k].v,{base:w.rev});
+        guards2.push.apply(guards2,add2.guards);st2.push.apply(st2,add2.statements);
+      }else{
+        guards2.push(revGuard(env,w.k,w.rev));
+        st2 = st2.concat(kvPutStmts(env, 'kv', w.k, R2.W[w.k].v));
+      }
       st2.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(w.k, rev));
       st2.push(audEvStmt(env, { cid: 'mig_' + snap.slice(-12) + '_' + i, ts: now, uid: ident.uid, un: ident.un, dept: parseKey(w.k).dept || '', k: w.k, rev: rev, etype: 'dataset', eid: resName(w.k), ename: resName(w.k), act: 'migrated', ctx: JSON.stringify({ kind: w.kind, snap: snap }), bef: '', aft: '', ip: ident.ip, dev: ident.dev, city: ident.city }));
     }
     var flag = JSON.stringify({ applied: true, at: now, by: ident.uid, snap: snap, hash: b.hash, inferable: !!b.inferable });   /* المعرّفُ لا اسمُ المستخدم */
     parts2.forEach(function (p0) { var mk = p0 === 'identity' ? 'authz_id_mig' : (p0 === 'scope' ? 'authz_scope_mig' : 'authz_perm_mig'); st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(mk, flag)); });
     st2.push(enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: 'migration', keys: parts2.join(','), scope: 'writes=' + R2.plan.writes.length, decision: 'allow', why: 'apply', reason: snap, path: '/api/authz-migrate', ip: ident.ip }));
-    for (var j1 = 0; j1 < st2.length; j1 += 90) await env.DB.batch(st2.slice(j1, j1 + 90));
+    var conflict2=await enfMigBatch(env,guards2.concat([counter2.statement],st,st2));
+    if(conflict2)return conflict2;
+    preOff(env);
     return json({ ok: 1, applied: R2.plan.writes.length, snap: snap, rev: rev, counts: R2.plan.counts });
   }
   if (act === 'rollback') {
     var sid = String(b.snap || ''); if (!/^[a-z]+_[a-z0-9]+_[a-z0-9]+$/.test(sid)) return json({ ok: 0, err: 'snap' }, 400);
+    var reference3=await rsReferenceSnapshot(env,A.u.id);
+    env=reference3.env;A=reference3.A;
+    if(A.u.role!=='super')return json({ok:0,err:'forbidden'},403);
     var sm = await env.DB.prepare('SELECT snap, kind, restored, meta FROM authz_snaps WHERE snap = ?1').bind(sid).first();
     if (!sm) return json({ ok: 0, err: 'not-found' }, 404);
     /* This rollback only understands the existing KV snapshot kinds. Typed or
@@ -212,13 +260,22 @@ async function enfMigrateApi(env, request, A, url, meta) {
     var byK = {}; ((rows && rows.results) || []).forEach(function (r0) { var o = byK[r0.k] = byK[r0.k] || { existed: r0.existed, v: '' }; if (r0.existed) o.v += r0.v; });
     /* الانجراف: مفتاحٌ تغيّر بعد العملية (رقمُ مراجعته ≠ رقمِ العملية) — الرجوعُ يمحو ما بعدها، فلا يُنفَّذ إلا بتأكيدٍ صريح (force) */
     var smMeta = parseJson(sm.meta, {}) || {}, opRev = +smMeta.rev || 0, drift = [], kk0;
-    var revNow = await revsAll(env);
+    var revNow = reference3.inputRevs;
     for (kk0 in byK) if (!opRev || (revNow[kk0] || 0) !== opRev) drift.push({ k: kk0, rev: revNow[kk0] || 0 });
     if ((drift.length || sm.restored) && b.force !== true) return json({ ok: 0, err: sm.restored ? 'already-restored' : 'drift', opRev: opRev, drift: drift.slice(0, 50) }, 409);
-    var rev2 = await nextRev(env), st3 = [], n = 0, kk;
+    var counter3=await enfMigCounterPlan(env),rev2=counter3.rev,st3=[],n=0,kk,
+      guards3=enfMigReferenceGuards(env,reference3).concat(counter3.guards)
+        .concat(rsWitness(env,'authz_snaps',['snap','kind','restored','meta'],[sm],'snap=?1',[sid]))
+        .concat(rsWitness(env,'authz_snap',['k','seq','existed','rev','v'],rows.results||[],'snap=?1',[sid]));
     for (kk in byK) {
       n++;
-      if (byK[kk].existed) st3 = st3.concat(kvPutStmts(env, 'kv', kk, byK[kk].v)); else st3.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(kk));
+      if(opIsResource(kk)){
+        var add3=await opChangeStatements(env,kk,byK[kk].existed?byK[kk].v:null,{base:revNow[kk]||0});
+        guards3.push.apply(guards3,add3.guards);st3.push.apply(st3,add3.statements);
+      }else{
+        guards3.push(revGuard(env,kk,revNow[kk]||0));
+        if (byK[kk].existed) st3 = st3.concat(kvPutStmts(env, 'kv', kk, byK[kk].v)); else st3.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(kk));
+      }
       st3.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(kk, rev2));
       st3.push(audEvStmt(env, { cid: 'rb_' + sid.slice(-12) + '_' + n + '_' + rev2, ts: now, uid: ident.uid, un: ident.un, dept: parseKey(kk).dept || '', k: kk, rev: rev2, etype: 'dataset', eid: resName(kk), ename: resName(kk), act: 'rolled_back', ctx: JSON.stringify({ snap: sid }), bef: '', aft: '', ip: ident.ip, dev: ident.dev, city: ident.city }));
     }
@@ -228,7 +285,9 @@ async function enfMigrateApi(env, request, A, url, meta) {
     }
     st3.push(env.DB.prepare('UPDATE authz_snaps SET restored = restored + 1, rts = ?2, ruid = ?3 WHERE snap = ?1').bind(sid, now, ident.uid));
     st3.push(enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: sm.kind, keys: 'rollback', scope: 'keys=' + n, decision: 'allow', why: 'rollback', reason: sid, path: '/api/authz-migrate', ip: ident.ip }));
-    for (var j2 = 0; j2 < st3.length; j2 += 90) await env.DB.batch(st3.slice(j2, j2 + 90));
+    var conflict3=await enfMigBatch(env,guards3.concat([counter3.statement],st3));
+    if(conflict3)return conflict3;
+    preOff(env);
     return json({ ok: 1, restored: n, snap: sid, rev: rev2 });
   }
   return json({ ok: 0, err: 'act' }, 400);
@@ -350,12 +409,16 @@ async function saveRoute(env, request, path, ss) {
     A1.sessTs = ss.ts;   /* KIVO_264 · D14: لحظةُ الدخول — «الدخولُ الأوّل الإجباري» بجلسةٍ حديثة وحدها (selfCurState) */
     var rlS = await rlHit(env, 'sv', A1.u.id, RL_SAVE);
     if (rlS) return tooMany(rlS);
+    var operationKeys=Object.keys(bs.set||{}).concat(bs.del||[]), operationalSave=operationKeys.some(opIsResource);
+    if(operationalSave && (typeof bs.requestId!=='string'||!/^[-A-Za-z0-9_]{8,100}$/.test(bs.requestId)||!Number.isSafeInteger(bs.epoch)||bs.epoch<0||operationKeys.some(function(k){return !bs.base||!Number.isSafeInteger(bs.base[k])||bs.base[k]<0;})))
+      return json({ok:0,err:'operations-request-envelope'},400);
     var r2 = await applySave(env, bs, A1, reqMeta(request));
+    if(operationalSave) return json(Object.assign({},r2,{ok:r2.ok===1?1:0,requestId:bs.requestId,epoch:bs.epoch,atomic:1}),r2.ok===1?200:Object.keys(r2.conflicts||{}).length?409:403);
     return json({ ok: 1, v: r2.v, revs: r2.revs, denied: r2.denied, conflicts: r2.conflicts, atomic: r2.atomic || '' });
   } catch (eS) {
     var guardSave=dbGuardFailure(eS);if(guardSave)return json({ok:0,err:guardSave.err},guardSave.status);
     /* فشل الحفظ يظهر باسمه في سجلات المشروع وفي فاحص الشبكة — لا صمت */
-    if(eS.rs||eS.cuCode||eS.nf)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
+    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
   }
 }
 /* KIVO_264 · C1 للقراءة (اختياري — العقدُ نفسُه لـ/api/save): ?uid= على /api/changes و/api/get = هويةُ الجلسة التي بُني لها التبويب (BOOT.uid)؛
@@ -408,7 +471,7 @@ async function getRoute(env, url, ss) {
   var moreG = wantAll.length > GET_MAX && wantAll.slice(GET_MAX).some(function (k8) { return want.indexOf(k8) === -1; });
   var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
-  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && !bdLegacyKey(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
+  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && !bdLegacyKey(k9) && !opIsResource(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
   for (var gi = 0; gi < want.length; gi++) {
     var gk = want[gi];
     if (isDeviceKey(gk)) continue;
@@ -418,6 +481,7 @@ async function getRoute(env, url, ss) {
     if (cuLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/custody' }; continue; }
     if (irLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/irshad' }; continue; }
     if (bdLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: szLegacyKey(gk) ? '/api/seized' : '/api/award' }; continue; }
+    if (opIsResource(gk)) { got[gk] = { v:null, rev:rvG[gk]||0, moved:'/api/operations/read' }; continue; }
     if (resName(gk) === K_DSTATS) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/dstats' }; continue; }
     var gv = rdG ? valsG[gk] : null;      /* لا قيمةَ لمن لا يقرأ — الرقمُ وحدَه */
     if (rdG && gk === K_USERS && gv != null) gv = usersScopeOut(usersNoOut(stripPh(gv), AG), AG);   /* KIVO_259 · SR-1: ولا رقمَ وظيفيَّ لحساب غيره · الفحصُ العميق (R4): ولا حسابَ خارج نطاقه (054) */
@@ -542,6 +606,8 @@ export default {
       if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');
       if (path === '/api/award' || path === '/api/award/act' || path === '/api/award/export') return await bdRoute(env, request, url, ss, 'awards');
       if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);
+      if (path === '/api/operations/read') return await opReadRoute(env,request,url,ss);
+      if (path === '/api/operations/export') return await opExport(env,request,url,ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);
 
       /* ── ماذا تغيّر منذ نسختي؟ — تستعمله لافتة «تحديثات جديدة» ── */
@@ -590,7 +656,7 @@ export default {
           if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
           if (request.method !== 'GET') return json({ ok: 0, err: 'dry-run is read-only (GET)' }, 405);
           try {
-            var keysM = await kvAll(env, 'kv'), byDeptM = {}, deptsM = parseJson(keysM[K_DEPTS], []), usersM = parseJson(keysM[K_USERS], []), permsM = parseJson(keysM[K_PERM], {}), gdM = parseJson(keysM[K_GDEPTS], []), dmi;
+            var captureM = await opCaptureReferences(env, await kvAll(env, 'kv')), keysM = captureM.keys, byDeptM = {}, deptsM = parseJson(keysM[K_DEPTS], []), usersM = parseJson(keysM[K_USERS], []), permsM = parseJson(keysM[K_PERM], {}), gdM = parseJson(keysM[K_GDEPTS], []), dmi;
             if (!Array.isArray(deptsM)) deptsM = []; if (!Array.isArray(usersM)) usersM = []; if (!Array.isArray(gdM)) gdM = [];
             for (dmi = 0; dmi < deptsM.length; dmi++) { var dIdM = deptsM[dmi] && deptsM[dmi].id; if (!dIdM) continue; var preM = 'bsdept:' + dIdM + ':';
               byDeptM[dIdM] = { plan: parseJson(keysM[preM + 'bassam_plan_v1'], null), rounds: parseJson(keysM[preM + 'bassam_rounds_v1'], null), staffing: parseJson(keysM[preM + 'bassam_staffing_v3'], null), dreport: parseJson(keysM[preM + 'bassam_dreport_v1'], null), employees: parseJson(keysM[preM + 'bassam_employees_v1'], []) }; }
@@ -601,6 +667,7 @@ export default {
               pv4Ctx: function (A, d, kn, okMap, data) { var cM = permv4Ctx(A, d, kn, okMap, { pv4: { staffing: data && data.staffing } }); cM.read = true; cM.readMaxItems = PV4_READ_MAX; return cM; },
               telemetry: PERMV4 };
             var rpM = KIVO_SCOPE_MIGRATION.dryRun({ depts: deptsM, gdepts: gdM, users: usersM, perms: isObj(permsM) ? permsM : {}, byDept: byDeptM }, hooksM);
+            if (captureM.guards.length) await env.DB.batch(captureM.guards);
             return json({ ok: 1, worker: WORKER_VER, dryRun: rpM });
           } catch (eDR) { return json({ ok: 0, err: String(eDR && eDR.message || eDR) }, 500); }
         }
@@ -610,7 +677,7 @@ export default {
           if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
           if (request.method !== 'GET') return json({ ok: 0, err: 'rehearsal is read-only (GET)' }, 405);
           try {
-            var keysR = await kvAll(env, 'kv'), revsR = await revsAll(env), byDeptR = {}, deptsR = parseJson(keysR[K_DEPTS], []), usersR = parseJson(keysR[K_USERS], []), dri;
+            var captureR = await opCaptureReferences(env, await kvAll(env, 'kv')), keysR = captureR.keys, revsR = Object.assign({},await revsAll(env),captureR.revs), byDeptR = {}, deptsR = parseJson(keysR[K_DEPTS], []), usersR = parseJson(keysR[K_USERS], []), dri;
             if (!Array.isArray(deptsR)) deptsR = []; if (!Array.isArray(usersR)) usersR = [];
             for (dri = 0; dri < deptsR.length; dri++) { var dIdR = deptsR[dri] && deptsR[dri].id; if (!dIdR) continue; var preR = 'bsdept:' + dIdR + ':';
               byDeptR[dIdR] = { plan: parseJson(keysR[preR + 'bassam_plan_v1'], null), rounds: parseJson(keysR[preR + 'bassam_rounds_v1'], null), employees: parseJson(keysR[preR + 'bassam_employees_v1'], []) }; }
@@ -619,6 +686,7 @@ export default {
             else { var sbR = new Uint8Array(32), sbi; crypto.getRandomValues(sbR); for (sbi = 0; sbi < 32; sbi++) seedR += (sbR[sbi] < 16 ? '0' : '') + sbR[sbi].toString(16); }
             var rawR = {}; Object.keys(keysR).forEach(function (kk) { if (/^bsdept:[^:]+:bassam_(plan|rounds)_v1$/.test(kk)) rawR[kk] = keysR[kk]; });
             var rpR = KIVO_IDENTITY_MIGRATION.rehearse({ depts: deptsR, users: usersR, byDept: byDeptR }, { seed: seedR, seedSource: seedSrcR, now: nowX, today: dsToday(nowX), raw: rawR, revs: revsR });
+            if (captureR.guards.length) await env.DB.batch(captureR.guards);
             return json({ ok: 1, worker: WORKER_VER, rehearsal: rpR });
           } catch (eIR) { return json({ ok: 0, err: String(eIR && eIR.message || eIR) }, 500); }
         }
@@ -628,7 +696,7 @@ export default {
           if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
           if (request.method !== 'GET') return json({ ok: 0, err: 'preflight is read-only (GET)' }, 405);
           try {
-            var keysP = await kvAll(env, 'kv'), revsP = await revsAll(env), byDeptP = {}, deptsP = parseJson(keysP[K_DEPTS], []), usersP = parseJson(keysP[K_USERS], []), permsP = parseJson(keysP[K_PERM], {}), gdP = parseJson(keysP[K_GDEPTS], []), dpi;
+            var captureP = await opCaptureReferences(env, await kvAll(env, 'kv')), keysP = captureP.keys, revsP = Object.assign({},await revsAll(env),captureP.revs), byDeptP = {}, deptsP = parseJson(keysP[K_DEPTS], []), usersP = parseJson(keysP[K_USERS], []), permsP = parseJson(keysP[K_PERM], {}), gdP = parseJson(keysP[K_GDEPTS], []), dpi;
             if (!Array.isArray(deptsP)) deptsP = []; if (!Array.isArray(usersP)) usersP = []; if (!Array.isArray(gdP)) gdP = [];
             for (dpi = 0; dpi < deptsP.length; dpi++) { var dIdP = deptsP[dpi] && deptsP[dpi].id; if (!dIdP) continue; var preP = 'bsdept:' + dIdP + ':';
               byDeptP[dIdP] = { plan: parseJson(keysP[preP + 'bassam_plan_v1'], null), rounds: parseJson(keysP[preP + 'bassam_rounds_v1'], null), staffing: parseJson(keysP[preP + 'bassam_staffing_v3'], null), dreport: parseJson(keysP[preP + 'bassam_dreport_v1'], null), employees: parseJson(keysP[preP + 'bassam_employees_v1'], []) }; }
@@ -646,6 +714,7 @@ export default {
             var drPre = KIVO_SCOPE_MIGRATION.dryRun({ depts: deptsP, gdepts: gdP, users: usersP, perms: isObj(permsP) ? permsP : {}, byDept: byDeptP }, hooksP);
             var drPost = KIVO_SCOPE_MIGRATION.dryRun({ depts: deptsP, gdepts: gdP, users: usersP, perms: isObj(permsP) ? permsP : {}, byDept: apP.byDept }, hooksP);
             var cmpP = KIVO_IDENTITY_PREFLIGHT.compare(drPre, drPost, { legacy: KIVO_IDENTITY_PREFLIGHT.legacyIdMap(byDeptP, rhP), unlinked: KIVO_IDENTITY_PREFLIGHT.unlinkedReachability(apP.byDept, drPost), tierB: apP.tierB, tierBExpected: rhP.pending.length, applied: apP.applied });
+            if (captureP.guards.length) await env.DB.batch(captureP.guards);
             return json({ ok: 1, worker: WORKER_VER, preflight: { version: KIVO_IDENTITY_PREFLIGHT.version, docSha256: KIVO_IDENTITY_PREFLIGHT.docSha256, phase: 4.5, mode: KIVO_IDENTITY_PREFLIGHT.mode, writes: 0, seed: seedP, seedSource: seedSrcP, today: hooksP.today,
               rehearsal: { version: rhP.version, phase: rhP.phase, summary: rhP.summary, counts: { depts: rhP.counts.depts, plan: rhP.counts.plan, planFloors: rhP.counts.planFloors, sidClosure: rhP.counts.sidClosure, mirror: rhP.counts.mirror, emp: rhP.counts.emp }, gates: rhP.gates, writeSet: { keys: rhP.writeSet.keys.length, ops: rhP.writeSet.ops, tierA: rhP.writeSet.tierA, tierB: rhP.writeSet.tierB, byOp: rhP.writeSet.byOp, byKind: rhP.writeSet.byKind, hash: rhP.writeSet.hash, tierAHash: rhP.writeSet.tierAHash, tierBHash: rhP.writeSet.tierBHash }, pending: rhP.pending.length, rollback: rhP.rollback },
               applied: apP.applied, tierB: apP.tierB, pre: KIVO_IDENTITY_PREFLIGHT.compact(drPre), post: KIVO_IDENTITY_PREFLIGHT.compact(drPost), comparison: cmpP } });
@@ -743,50 +812,7 @@ export default {
           return json({ ok: 1, key: keyN, uid: mainSu.id, un: mainSu.un });
         }
         /* ── تهيئة منصة جديدة: مسح كامل بتأكيد مزدوج ── */
-        if (path === '/api/reset' && request.method === 'POST') {
-          if (!superX) return json({ ok: 0, err: 'forbidden' }, 403);
-          var rbz = await bodyRead(request, path); if (rbz.res) return rbz.res; var bz = rbz.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
-          var gkZ = 'pw:' + AX.u.id;
-          if (await guardLeft(env, gkZ) > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر قليلاً' });
-          var okZ = await verifyPw(String(bz.pw == null ? '' : bz.pw), AX.u.ph);
-          if (okZ === 'unsupported') return json({ ok: 0, err: ERR_ITER });
-          if (okZ !== true) { await guardFail(env, gkZ); return json({ ok: 0, err: 'كلمة المرور غير صحيحة' }); }
-          var rkZ = await metaGet(env, 'rk');
-          if (!rkZ) return json({ ok: 0, err: 'أنشئ مفتاح استعادة أولاً — التهيئة لا تُنفَّذ بدونه' });
-          if ((await verifyPw('rk:' + normKey(bz.key), rkZ)) !== true) { await guardFail(env, gkZ); return json({ ok: 0, err: 'مفتاح الاستعادة غير صحيح' }); }
-          if (String(bz.confirm || '') !== 'تهيئة') return json({ ok: 0, err: 'اكتب كلمة «تهيئة» للتأكيد' });
-          var adZ = isObj(bz.admin) ? bz.admin : {};
-          var unZ = String(adZ.un || '').trim(), nmZ = String(adZ.name || '').trim() || 'مدير النظام', pwZ = String(adZ.pw || '');
-          if (!unCheck(unZ)) return json({ ok: 0, err: 'اسم مستخدم مدير النظام: رقم جوال أو هوية من 10 أرقام' });
-          if (!pwCheck(pwZ, 'super')) return json({ ok: 0, err: 'كلمة مرور مدير النظام الجديد ضعيفة — 6 أرقام' });
-          await guardReset(env, gkZ);
-          var rmZ = reqMeta(request);
-          var keepBrand = !!bz.keepBrand, platZ = keepBrand ? await kvGet(env, 'kv', K_PLAT) : null;
-          var phZ = await hashPw(pwZ);
-          var usersZ = [{ id: 'su', un: unZ, ph: phZ, name: nmZ, role: 'super', mc: 1 }];
-          var stZ = [
-            env.DB.prepare('DELETE FROM notification_user_state'), env.DB.prepare('DELETE FROM notification_targets'), env.DB.prepare('DELETE FROM notification_messages'),
-            env.DB.prepare('DELETE FROM notification_dedup'), env.DB.prepare('DELETE FROM notification_type_overrides'), env.DB.prepare('DELETE FROM notification_checkpoints'),
-            env.DB.prepare('DELETE FROM irshad_requests'), env.DB.prepare('DELETE FROM irshad_report_languages'), env.DB.prepare('DELETE FROM irshad_reports'), env.DB.prepare('DELETE FROM irshad_catalog_entries'), env.DB.prepare('DELETE FROM irshad_retro_windows'),
-            env.DB.prepare("DELETE FROM meta WHERE k GLOB 'irshad:*:presence*'"),
-            env.DB.prepare('DELETE FROM custody_request_outputs'), env.DB.prepare('DELETE FROM custody_requests'), env.DB.prepare('DELETE FROM custody_movements'), env.DB.prepare('DELETE FROM custody_issues'), env.DB.prepare('DELETE FROM custody_items'),
-            env.DB.prepare('DELETE FROM restore_operations'), env.DB.prepare('DELETE FROM restore_preimage'), env.DB.prepare('DELETE FROM restore_snapshot_manifest'),
-            env.DB.prepare('DELETE FROM daily_stats_day_locks'), env.DB.prepare('DELETE FROM daily_stats_month_locks'), env.DB.prepare('DELETE FROM daily_stats_days'),
-            env.DB.prepare('DELETE FROM kv'), env.DB.prepare('DELETE FROM imgs'), env.DB.prepare('DELETE FROM revs'),
-            env.DB.prepare('DELETE FROM imgown'), env.DB.prepare('DELETE FROM imgref'), env.DB.prepare("DELETE FROM meta WHERE k = 'imgown'"),
-            env.DB.prepare('DELETE FROM audit'), env.DB.prepare('DELETE FROM sess'), env.DB.prepare('DELETE FROM guard'),
-            env.DB.prepare('DELETE FROM meta WHERE k IN (?1, ?2, ?3, ?4, ?5)').bind('rev', 'rk', 'rk_uid', 'rk_meta', 'rk_used')
-          ];
-          stZ = bdResetStatements(env).concat(stZ);
-          stZ = stZ.concat(kvPutStmts(env, 'kv', K_USERS, JSON.stringify(usersZ)));
-          stZ.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2)').bind(K_USERS, 1));
-          if (platZ) { stZ = stZ.concat(kvPutStmts(env, 'kv', K_PLAT, platZ)); stZ.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2)').bind(K_PLAT, 1)); }
-          stZ.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rev', '1'));
-          if(!Number.isSafeInteger(env.__restoreEpoch)||env.__restoreEpoch>=Number.MAX_SAFE_INTEGER)throw dbGuardError('db-restore-epoch-invalid');
-          stZ.push(env.DB.prepare("INSERT INTO meta(k,v) VALUES('restore_epoch',?1) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(String(env.__restoreEpoch+1)),env.DB.prepare('DELETE FROM sec'),audEvStmt(env, { cid: 'reset_' + Date.now().toString(36), ts: Date.now(), uid: AX.u.id, un: AX.u.un, dept: '', k: 'system', rev: 1, etype: 'system', eid: 'platform', ename: 'المنصة', act: 'reset', ctx: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ }), bef: '', aft: '' }),secStmt(env, { uid: AX.u.id, un: AX.u.un, act: 'reset', detail: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ, byName: AX.u.name || '' }), ip: rmZ.ip, city: rmZ.city, dev: rmZ.dev }));
-          await env.DB.batch(stZ);
-          return json({ ok: 1 }, 200, clearCookie(url));
-        }
+        if (path === '/api/reset' && request.method === 'POST') return await rsResetRoute(env,request,path,url,AX,superX);
         if (path === '/api/policy') {
           if (request.method === 'POST') {
             var rbp = await bodyRead(request, path); if (rbp.res) return rbp.res; var bp = rbp.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
@@ -1029,6 +1055,7 @@ export default {
       for (var retiredCu in keys) if (cuLegacyKey(retiredCu)) delete keys[retiredCu];
       for (var retiredIr in keys) if (irLegacyKey(retiredIr)) delete keys[retiredIr];
       for (var retiredBusiness in keys) if (bdLegacyKey(retiredBusiness)) delete keys[retiredBusiness];
+      for (var retiredOperational in keys) if (opIsResource(retiredOperational)) delete keys[retiredOperational];
       for (var retiredDs in keys) if (resName(retiredDs) === K_DSTATS) delete keys[retiredDs];
       for (var dk in keys) if (isDeviceKey(dk)) delete keys[dk];
       if (keys[K_USERS] != null) keys[K_USERS] = stripPh(keys[K_USERS]);

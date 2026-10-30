@@ -721,10 +721,10 @@ class Component extends DCLogic {
             if (!notifications || notifications.ok !== 1) throw new Error("تعذّر تصدير تنبيهات الإدارة");
             if(!Array.isArray(custody.domains)||custody.domains.length!==1||custody.domains[0].scope.departmentId!==id)throw new Error("نطاق العهد لا يطابق الإدارة");
             const business = await KIVO.BackupRestore.exportDomains({departments:[id],full:false,v:snapshot.v,images:imgs||{}});
-            Object.keys(data).forEach(key => { if (/(?:^|:)bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(key)) delete data[key]; });
+            Object.keys(data).forEach(key => { if (/(?:^|:)bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(key)||KIVO.__BS_SRV.operations.resources.includes(key.replace(/^bsdept:[^:]+:/,''))) delete data[key]; });
             await fence();
-            const manifest={version:3,scope:"dept",domains:{kv:1,notifications:1,custody:1,irshad:1,seized:1,awards:1},departments:[id],keys:Object.keys(data)};
-            const payload = {app:"bassam-crowd",version:3,kind:"dept",dept:nm,exportedAt:dt.toISOString(),data,domains:{notifications:notifications.domain,custody:custody.domains,...business.domains},manifest,perms:permSlice,idbImages:business.images,preImport:_pre};
+            const manifest={version:4,scope:"dept",domains:{kv:1,notifications:1,custody:1,irshad:1,seized:1,awards:1,operations:1},departments:[id],keys:Object.keys(data)};
+            const payload = {app:"bassam-crowd",version:4,kind:"dept",dept:nm,exportedAt:dt.toISOString(),data,domains:{notifications:notifications.domain,custody:custody.domains,...business.domains},manifest,perms:permSlice,idbImages:business.images,preImport:_pre};
             const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a2 = document.createElement("a"); a2.href = url;

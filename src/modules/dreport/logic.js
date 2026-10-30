@@ -1,4 +1,36 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","daily+dreport+plan","dreport+staff"]) {
+  setState(update, done) {
+    const capture = (patch, state) => {
+      const editors = ["drMkOpen", "drRestOpen", "drLocOpen", "drLdOpen", "drCsOpen", "drTrConfirm", "drRs", "drLk", "drRt"];
+      if (patch && state && !editors.some(key => state[key] != null && state[key] !== false) && editors.some(key => patch[key] != null && patch[key] !== false)) {
+        if (!KIVO.__BS_SRV.operations.begin(this, "report-editor").ok) {
+          this.bsToast("يوجد طلب حفظ لم يُحسم — أعد حفظ المسودة نفسها قبل تغيير المحرر."); return {};
+        }
+      }
+      return patch;
+    };
+    return super.setState(typeof update === "function" ? (state, props) => capture(update(state, props), state) : capture(update, this.state), done);
+  }
+  async _drCommit(intent, edit) {
+    if (!["drMkOpen", "drRestOpen", "drLocOpen", "drLdOpen", "drCsOpen", "drTrConfirm", "drRs", "drLk", "drRt"].some(key => this.state[key] != null && this.state[key] !== false) && KIVO.__BS_SRV.operations.status().state === "idle") KIVO.__BS_SRV.operations.begin(this, "report-editor");
+    const result = await KIVO.__BS_SRV.operations.commit(this, "report-editor", intent, edit);
+    if (!result || result.ok !== 1) {
+      this.bsToast(result && result.committed ? "ثبّت الخادم الحفظ، وتعذّرت قراءة البيانات الحالية — أعد التحقق من الطلب نفسه." : result && result.uncertain ? "لم يصل تأكيد الحفظ — المسودة باقية؛ أعد الإجراء نفسه للتحقق." : "لم يُحفظ التغيير — راجع البيانات والصلاحية ثم أعد فتح المحرر.");
+      return false;
+    }
+    return true;
+  }
+  _drPrepareDefaultShift(draft, shift) {
+    const selected = draft.get("bassam_dayshift_v1") || {};
+    this._drShiftEvent = false;
+    if (!selected[this.DK()] && KIVO.BassamDayShift) {
+      const result = KIVO.BassamDayShift.prepareSet(draft, this.state.rpY, this.state.rpM, this.state.rpD, shift);
+      this._drShiftEvent = result.status === "shared";
+    }
+  }
+  _drNotifyDefaultShift(shift) {
+    if (this._drShiftEvent && KIVO.BassamDayShift) KIVO.BassamDayShift.changed(this.state.rpY, this.state.rpM, this.state.rpD, shift);
+  }
   bsToast(t, r) {
     try {
       var e = document.getElementById("bs-toast");
@@ -263,7 +295,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   rpLoad() {
     var t;
     try {
-      t = JSON.parse(localStorage.getItem("bassam_dreport_v1"));
+      t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1");
     } catch (r) {
       t = null;
     }
@@ -296,20 +328,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           }
         }
       }),
-      r && this.rpSave(t),
       t
     );
   }
-  rpSave(t) {
-    try {
-      localStorage.setItem("bassam_dreport_v1", JSON.stringify(t));
-    } catch (t) {
-      this.bsToast("تعذّر الحفظ — المساحة ممتلئة على الأرجح");
-    }
+  async rpSave(t, intent = t, extra) {
+    return await this._drCommit(intent, draft => {
+      draft.set("bassam_dreport_v1", t);
+      if (extra) extra(draft);
+    });
   }
   rpEmps() {
     try {
-      var t = JSON.parse(localStorage.getItem("bassam_employees_v1"));
+      var t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
       return Array.isArray(t) ? t : [];
     } catch (t) {
       return [];
@@ -320,7 +350,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   rpStaffLive() {
     try {
-      var t = JSON.parse(localStorage.getItem("bassam_staffing_v3"));
+      var t = KIVO.__BS_SRV.operations.get("bassam_staffing_v3");
       return t && "object" == typeof t ? t : {};
     } catch (t) {
       return {};
@@ -333,14 +363,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
     return t;
   }
-  drCsPersist(t, r) {
+  async drCsPersist(t, r) {
     var e = this.state.rpY + "-" + this.state.rpM,
       n = Object.assign({}, this.rpStaffLive()),
       a = Object.assign({}, n[e] || {});
     ((a[t] = Object.assign({}, a[t] || {}, { cs: r })), (n[e] = a));
-    try {
-      localStorage.setItem("bassam_staffing_v3", JSON.stringify(n));
-    } catch (t) {}
+    return await this._drCommit({ op: "callsign", month: e, employee: t, value: r }, draft => draft.set("bassam_staffing_v3", n));
   }
   drBucketFor(t, r) {
     return this.rpStaff()[t + "-" + r] || {};
@@ -354,7 +382,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (Array.isArray(r) && r.length) return r;
     } catch (t) {}
     try {
-      var e = JSON.parse(localStorage.getItem("bassam_shift_options_v1"));
+      var e = KIVO.__BS_SRV.operations.get("bassam_shift_options_v1");
       if (Array.isArray(e) && e.length) return e;
     } catch (t) {}
     return [];
@@ -498,13 +526,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       s + d > 0 ? s + d : 0
     );
   }
-  drSetShift(t, r) {
+  async drSetShift(t, r) {
     var e = this.DK();
     if (this.drMyShift()) this.setState({ drShOpen: !1 }, r);
     else {
       try {
-        KIVO.BassamDayShift && KIVO.BassamDayShift.set(this.state.rpY, this.state.rpM, this.state.rpD, t);
-      } catch (t) {}
+        const result = KIVO.BassamDayShift && await KIVO.BassamDayShift.set(this.state.rpY, this.state.rpM, this.state.rpD, t);
+        if (!result || result.ok !== 1) { this.bsToast("لم يصل تأكيد اختيار الوردية — أعد الاختيار نفسه للتحقق."); return false; }
+      } catch (t) { this.bsToast("لم يُحفظ اختيار الوردية"); return false; }
       this.setState(function (r) {
         var n = Object.assign({}, r.rpShiftBy || {});
         return ((n[e] = t), { rpShiftBy: n, rpShift: t, drShOpen: !1 });
@@ -513,7 +542,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   drRounds() {
     try {
-      const t = JSON.parse(localStorage.getItem("bassam_rounds_v1"));
+      const t = KIVO.__BS_SRV.operations.get("bassam_rounds_v1");
       return t && "object" == typeof t ? t : {};
     } catch (t) {
       return {};
@@ -540,12 +569,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     var r = this.drGrpPref();
     ((r.on = !!t), this.drGrpSave(r));
   }
-  drRoundsSave(t) {
-    try {
-      localStorage.setItem("bassam_rounds_v1", JSON.stringify(t));
-    } catch (t) {
-      this.bsToast("تعذّر الحفظ — المساحة ممتلئة على الأرجح");
-    }
+  async drRoundsSave(t, intent = t) {
+    return await this._drCommit(intent, draft => draft.set("bassam_rounds_v1", t));
   }
   drRoundKey() {
     return this.state.rpY + "-" + this.state.rpM + "-" + this.state.rpD;
@@ -611,7 +636,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       e
     );
   }
-  drToggleSpot(t, r, e) {
+  async drToggleSpot(t, r, e) {
     const n = this.drRounds(),
       a = n[this.drRoundKey()];
     if (!a || !Array.isArray(a.d)) return void this.bsToast("لا توجد جولة لهذا اليوم — ابدأها من «الجولات اليومية» أولاً", "warn");
@@ -668,14 +693,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     ])),
       (this._drWriting = !0));
     try {
-      this.drRoundsSave(n);
+      if (!await this.drRoundsSave(n, { op: "spot-toggle", day: this.drRoundKey(), employee: t, spot: r })) return false;
     } finally {
       this._drWriting = !1;
     }
     (this.bsAck(f ? "رُفع من " + u : "سُكِّن على " + u + " — انعكس على خريطة الجولات", "ok"),
       this.setState({ rpTick: (this.state.rpTick || 0) + 1 }));
   }
-  drSetSpot(t, r, e) {
+  async drSetSpot(t, r, e) {
     const n = this.drRounds(),
       a = n[this.drRoundKey()];
     if (!a || !Array.isArray(a.d)) return void this.bsToast("لا توجد جولة لهذا اليوم — ابدأها من «الجولات اليومية» أولاً", "warn");
@@ -752,7 +777,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     this._drWriting = !0;
     try {
-      this.drRoundsSave(n);
+      if (!await this.drRoundsSave(n, { op: "spot-set", day: this.drRoundKey(), employee: t, spot: r })) return false;
     } finally {
       this._drWriting = !1;
     }
@@ -765,7 +790,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     var n = this.drRestMap(t)[r];
     return Array.isArray(n) ? n : Array.isArray(e) ? e : [];
   }
-  drToggleRest(t, r, e) {
+  async drToggleRest(t, r, e) {
     var n = this.rpLoad(),
       a = this.drCurShift();
     if (this.drLockedDay(n, this.state.rpY, this.state.rpM, this.state.rpD)) this.bsToast("التقرير مقفل — لا تعديل بعد القفل", "warn");
@@ -784,7 +809,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             (i.rest[t] = s),
             (i.restSrc = i.restSrc && "object" == typeof i.restSrc ? i.restSrc : {}),
             (i.restSrc[t] = "day"),
-            this.rpSave(n),
+            await this.rpSave(n, { op: "rest-toggle", day: this.DK(), shift: a, employee: t, rest: r }) &&
             this.setState({ rpTick: (this.state.rpTick || 0) + 1 }));
         }
     }
@@ -837,7 +862,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     var a = t["m:" + r + "-" + e];
     return !!(a && a.dshut && a.dshut[n]);
   }
-  drSetDClosed(t, r, e, n) {
+  async drSetDClosed(t, r, e, n) {
     var a = this.rpLoad(),
       i = "m:" + t + "-" + r,
       s = Object.assign({}, a[i] || {}),
@@ -845,17 +870,22 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     (n ? (o[e] = 1) : delete o[e],
       Object.keys(o).length ? (s.dshut = o) : delete s.dshut,
       Object.keys(s).length ? (a[i] = s) : delete a[i],
-      this.rpSave(a),
+      await this.rpSave(a, { op: "day-closed", y: t, m: r, d: e, value: n }) &&
       this.setState({ rpTick: (this.state.rpTick || 0) + 1 }));
   }
-  drToggleDayLock(t, r, e, n) {
-    n
-      ? this.dayPastDS(t, r, e)
-        ? this.drSetDOpen(t, r, e, !1)
-        : this.drSetDClosed(t, r, e, !0)
-      : (this.drSetDClosed(t, r, e, !1), this.dayPastDS(t, r, e) && this.drSetDOpen(t, r, e, !0));
+  async drToggleDayLock(t, r, e, n) {
+    const report = this.rpLoad(), key = "m:" + t + "-" + r, month = { ...(report[key] || {}) };
+    const open = { ...(month.dopen || {}) }, closed = { ...(month.dshut || {}) };
+    if (n) { if (this.dayPastDS(t, r, e)) delete open[e]; else closed[e] = 1; }
+    else { delete closed[e]; if (this.dayPastDS(t, r, e)) open[e] = 1; }
+    Object.keys(open).length ? month.dopen = open : delete month.dopen;
+    Object.keys(closed).length ? month.dshut = closed : delete month.dshut;
+    Object.keys(month).length ? report[key] = month : delete report[key];
+    const ok = await this.rpSave(report, { op: "day-lock", y: t, m: r, d: e, value: n });
+    if (ok) this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
+    return ok;
   }
-  drSetDOpen(t, r, e, n) {
+  async drSetDOpen(t, r, e, n) {
     var a = this.rpLoad(),
       i = "m:" + t + "-" + r,
       s = Object.assign({}, a[i] || {}),
@@ -863,7 +893,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     (n ? (o[e] = 1) : delete o[e],
       Object.keys(o).length ? (s.dopen = o) : delete s.dopen,
       Object.keys(s).length ? (a[i] = s) : delete a[i],
-      this.rpSave(a),
+      await this.rpSave(a, { op: "day-open", y: t, m: r, d: e, value: n }) &&
       this.setState({ rpTick: (this.state.rpTick || 0) + 1 }));
   }
   drLockedDay(t, r, e, n) {
@@ -902,7 +932,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     for (var r = Object.keys(t.shifts), e = 0; e < r.length; e++) if (t.shifts[r[e]] && t.shifts[r[e]].ap) return !0;
     return !1;
   }
-  rpCreate() {
+  async rpCreate() {
     if (!this.PC("add")) return void this.permDeny();
     var t = this.rpLoad();
     if (this.drLockedDay(t, this.state.rpY, this.state.rpM, this.state.rpD))
@@ -911,9 +941,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       var r = t[this.DK()];
       (r && r.created) ||
         ((t[this.DK()] = { created: 1, shifts: {} }),
-        this.rpSave(t),
+        await this.rpSave(t, { op: "create", day: this.DK() }) &&
+        (
         this.setState({ rpTick: (this.state.rpTick || 0) + 1 }),
-        this.bsAck("أُنشئ تقرير اليوم — اختر ورديتك وعيّن قيادتها ثم اسحب جدولها", "ok"));
+        this.bsAck("أُنشئ تقرير اليوم — اختر ورديتك وعيّن قيادتها ثم اسحب جدولها", "ok")));
     } else this.bsToast("لا يوجد تسكينٌ لهذا الشهر — أنشئ الجدول الشهري أولاً", "warn");
   }
   drEnsureShift(t, r) {
@@ -935,19 +966,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   drStaffApproved(t, r) {
     try {
-      var e = JSON.parse(localStorage.getItem("bassam_staffing_locks_v1"));
+      var e = KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1");
       return !(!e || !0 !== e[t + "-" + r]);
     } catch (t) {
       return !1;
     }
   }
-  drAutoRound() {
+  drRoundNotice(n) {
     try {
-      if (!KIVO.BassamRound || !this.bsOn("daily/rounds")) return;
-      var t = this.state.rpY,
-        r = this.state.rpM,
-        e = this.state.rpD,
-        n = KIVO.BassamRound.ensure(t, r, e);
+      if (!n) return;
       "created" === n.status
         ? this.bsAck(
             "plan" === n.src
@@ -963,7 +990,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           : "noplan" === n.status && this.bsToast("التقرير جاهز — ولا يوجد تشغيل ميداني لهذا الشهر لتُنشأ منه جولة اليوم", "warn");
     } catch (t) {}
   }
-  rpPull() {
+  async rpPull() {
     var t = this.rpLoad(),
       r = this.drCurShift();
     if (r) {
@@ -1022,18 +1049,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         (c.muk[t.ekey] = !0 === r.muk));
                     }));
                 } catch (t) {}
-                (this.rpSave(t),
-                  this.setState({ rpTick: (this.state.rpTick || 0) + 1 }),
-                  this.bsAck("سُحب جدول " + r + " — " + KIVO.BassamCount(a.length, "موظف") + "", "ok"));
-                try {
-                  KIVO.BassamDayShift &&
-                    !KIVO.BassamDayShift.get(this.state.rpY, this.state.rpM, this.state.rpD) &&
-                    KIVO.BassamDayShift.set(this.state.rpY, this.state.rpM, this.state.rpD, r);
-                } catch (t) {}
-                var h = this;
-                setTimeout(function () {
-                  h.drAutoRound();
-                }, 700);
+                if (!await this.rpSave(t, { op: "pull", day: this.DK(), shift: r }, draft => {
+                  ["bassam_staffing_locks_v1", "bassam_staffing_v3", "bassam_employees_v1", "bassam_shift_options_v1"].forEach(name => draft.get(name));
+                  this._drPrepareDefaultShift(draft, r);
+                  this._drRoundResult = KIVO.BassamRound && this.bsOn("daily/rounds")
+                    ? KIVO.BassamRound.prepareEnsure(draft, this.state.rpY, this.state.rpM, this.state.rpD) : null;
+                })) return;
+                this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
+                this.bsAck("سُحب جدول " + r + " — " + KIVO.BassamCount(a.length, "موظف") + "", "ok");
+                this._drNotifyDefaultShift(r);
+                this.drRoundNotice(this._drRoundResult);
               }
             } else this.bsToast("لا موظفين لهذه الوردية في الجدول الشهري", "warn");
           }
@@ -1047,32 +1072,28 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         );
     }
   }
-  drAddLeaveKind(t) {
+  async drAddLeaveKind(t) {
     if (this.PC("edit")) {
       var r = (t || "").trim();
       if (r) {
         var e = this.drLeaveKinds();
-        if (-1 === e.indexOf(r))
-          try {
-            localStorage.setItem("bassam_leave_kinds_v1", JSON.stringify(e.concat([r])));
-          } catch (t) {}
+        if (!e.includes(r)) return await this._drCommit({ op: "leave-kind-add", value: r }, draft => draft.set("bassam_leave_kinds_v1", e.concat([r])));
+        return true;
       }
     } else this.permDeny();
   }
-  drDelLeaveKind(t) {
+  async drDelLeaveKind(t) {
     if (this.PC("edit")) {
       var r = this.drLeaveKinds().filter(function (r) {
         return r !== t;
       });
-      try {
-        localStorage.setItem("bassam_leave_kinds_v1", JSON.stringify(r));
-      } catch (t) {}
+      return await this._drCommit({ op: "leave-kind-delete", value: t }, draft => draft.set("bassam_leave_kinds_v1", r));
     } else this.permDeny();
   }
   drRepPerm(t) {
     var r = "m:" + this.state.rpY + "-" + this.state.rpM,
       e = (t[r] = t[r] || {});
-    return (e.perm || ((e.perm = {}), this.rpSave(t)), e.perm);
+    return e.perm || (e.perm = {});
   }
   drPopReflow() {
     setTimeout(function () {
@@ -1081,7 +1102,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       } catch (t) {}
     }, 60);
   }
-  rpTransfer() {
+  async rpTransfer() {
     var t = this.state.drTrConfirm;
     if (t) {
       var r = this.rpLoad();
@@ -1122,19 +1143,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       tfrom: t.from,
                       treason: t.why,
                     }));
-                  try {
-                    var s = KIVO.BassamNotif;
-                    if (s && s.emit) {
-                      var o = "";
-                      try {
-                        var d = KIVO.BassamAuth && KIVO.BassamAuth.display ? KIVO.BassamAuth.display() : "";
-                        o = d && "object" == typeof d ? d.name || "" : String(d || "");
-                      } catch (t) {}
-                      s.emit("rep_mv", { own: [t.ekey], vars: { الوردية: t.to, الموقع: t.why || t.from || "—", المُعدّل: o } });
-                    }
-                  } catch (t) {}
-                  (this.rpSave(r),
-                    this.setState({
+                  if (!await this.rpSave(r, { op: "transfer", day: this.DK(), transfer: t })) return;
+                  (this.setState({
                       drTrConfirm: null,
                       drMkOpen: null,
                       drMkTr: null,
@@ -1159,7 +1169,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     return null;
   }
-  drContinuePull() {
+  async drContinuePull() {
     var t = this.rpLoad(),
       r = this.drCurShift();
     if (r)
@@ -1204,18 +1214,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     }),
                       p && (o.def = { color: p.color || "#b99751", tStart: p.tStart || "", tEnd: p.tEnd || "" }));
                   }
-                  (this.rpSave(t),
-                    this.setState({ rpTick: (this.state.rpTick || 0) + 1 }),
-                    this.bsAck("تُوبع من تقرير يوم " + n.d + " — " + KIVO.BassamCount(a.length, "موظف") + "", "ok"));
-                  try {
-                    KIVO.BassamDayShift &&
-                      !KIVO.BassamDayShift.get(this.state.rpY, this.state.rpM, this.state.rpD) &&
-                      KIVO.BassamDayShift.set(this.state.rpY, this.state.rpM, this.state.rpD, r);
-                  } catch (t) {}
-                  var c = this;
-                  setTimeout(function () {
-                    c.drAutoRound();
-                  }, 700);
+                  if (!await this.rpSave(t, { op: "continue", day: this.DK(), shift: r, from: n.d }, draft => {
+                    ["bassam_staffing_locks_v1", "bassam_staffing_v3", "bassam_shift_options_v1"].forEach(name => draft.get(name));
+                    this._drPrepareDefaultShift(draft, r);
+                    this._drRoundResult = KIVO.BassamRound && this.bsOn("daily/rounds")
+                      ? KIVO.BassamRound.prepareEnsure(draft, this.state.rpY, this.state.rpM, this.state.rpD) : null;
+                  })) return;
+                  this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
+                  this.bsAck("تُوبع من تقرير يوم " + n.d + " — " + KIVO.BassamCount(a.length, "موظف") + "", "ok");
+                  this._drNotifyDefaultShift(r);
+                  this.drRoundNotice(this._drRoundResult);
                 }
               } else this.bsToast("التقرير السابق بلا موظفين", "warn");
             } else this.bsToast("تقرير يوم " + n.d + " لهذه الوردية ما زال مسودة — اعتمِده أولاً ليصلح أساساً لليوم الجديد", "warn");
@@ -1223,7 +1231,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }
       }
   }
-  rpMark(t, r, e, n) {
+  async rpMark(t, r, e, n) {
     var a = this.rpLoad(),
       i = this.drCurShift();
     if (this.drLockedDay(a, this.state.rpY, this.state.rpM, this.state.rpD)) this.bsToast("التقرير مقفل — لا تأشير بعد القفل", "warn");
@@ -1250,7 +1258,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 ? Object.assign({}, a, { st: r, pmk: "pm" === r ? n || a.pmk || "out" : "", lvk: ("lv" === r && (e || a.lvk)) || "" })
                 : a;
             })),
-            this.rpSave(a),
+            await this.rpSave(a, { op: "mark", day: this.DK(), shift: i, employee: t, status: r, leave: e || "", permission: n || "" }) &&
             this.setState({ drMkOpen: null, drMkLv: null, drMkTr: null, drMkPm: null, drLvNew: "", rpTick: (this.state.rpTick || 0) + 1 }));
         }
     }
@@ -1357,7 +1365,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
     }
   }
-  rpSetLeader(t, r) {
+  async rpSetLeader(t, r) {
     var e = this.rpLoad(),
       n = this.drCurShift();
     if (n)
@@ -1374,11 +1382,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               var d = e.__ldcs && "object" == typeof e.__ldcs ? e.__ldcs : {};
               void 0 === d[t] && ((d[t] = o), (e.__ldcs = d));
             }
-            if (((i.leaders = i.leaders || {}), (i.leaders[t] = r), this.rpSave(e), o)) {
-              var p = this.rpMonthBucket();
-              (s && s !== r && p[s] && p[s].cs === o && this.drCsWrite(s, ""), r && r !== s && this.drCsWrite(r, o));
-            }
+            i.leaders = i.leaders || {}; i.leaders[t] = r;
+            if (!await this.rpSave(e, { op: "leader", day: this.DK(), shift: n, role: t, employee: r }, draft => {
+              if (!o) return;
+              const staffing = draft.get("bassam_staffing_v3") || {}, month = this.state.rpY + "-" + this.state.rpM, bucket = { ...(staffing[month] || {}) };
+              let changed = false;
+              if (s && s !== r && bucket[s] && bucket[s].cs === o) { bucket[s] = { ...bucket[s], cs: "" }; changed = true; }
+              if (r && r !== s) { bucket[r] = { ...(bucket[r] || {}), cs: o }; changed = true; }
+              if (changed) { staffing[month] = bucket; draft.set("bassam_staffing_v3", staffing); }
+            })) return false;
             this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
+            return true;
           }
         }
       }
@@ -1400,23 +1414,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       return "";
     }
   }
-  drCsWrite(t, r) {
-    this.drCsPersist(t, r);
-  }
-  drLdCsSet(t, r) {
+  async drLdCsSet(t, r) {
     var e = this.rpLoad(),
       n = e.__ldcs && "object" == typeof e.__ldcs ? e.__ldcs : {};
-    ((n[t] = r || ""), (e.__ldcs = n), this.rpSave(e));
-    try {
+    n[t] = r || ""; e.__ldcs = n;
+    if (!await this.rpSave(e, { op: "leader-callsign", day: this.DK(), role: t, value: r || "" }, draft => {
       var a = this.drShiftRec(e, this.drCurShift()),
         i = (a && a.leaders && a.leaders[t]) || "";
-      i && this.drCsWrite(i, r || "");
-    } catch (t) {}
+      if (i) { const staffing = draft.get("bassam_staffing_v3") || {}, month = this.state.rpY + "-" + this.state.rpM, bucket = { ...(staffing[month] || {}) };
+        bucket[i] = { ...(bucket[i] || {}), cs: r || "" }; staffing[month] = bucket; draft.set("bassam_staffing_v3", staffing); }
+    })) return false;
     this.setState({ drCsOpen: null, rpTick: (this.state.rpTick || 0) + 1 });
   }
   drCsList() {
     try {
-      var t = JSON.parse(localStorage.getItem("bassam_callsigns_v1"));
+      var t = KIVO.__BS_SRV.operations.get("bassam_callsigns_v1");
       if (Array.isArray(t))
         return t.filter(function (t) {
           return "string" == typeof t && t.trim();
@@ -1424,7 +1436,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
     return [];
   }
-  drCsSet(t, r) {
+  async drCsSet(t, r) {
     var e = this.rpLoad();
     if (this.drLockedDay(e, this.state.rpY, this.state.rpM, this.state.rpD)) this.bsToast("التقرير مقفل — لا تعديل بعد القفل", "warn");
     else {
@@ -1433,11 +1445,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       a && a.ap
         ? this.bsToast("تقرير الوردية معتمد — لا تعديل بعد الاعتماد", "warn")
         : this.PC("edit")
-          ? (this.drCsPersist(t, r), this.setState({ drCsOpen: null, rpTick: (this.state.rpTick || 0) + 1 }))
+          ? (await this.drCsPersist(t, r) && this.setState({ drCsOpen: null, rpTick: (this.state.rpTick || 0) + 1 }))
           : this.permDeny();
     }
   }
-  drSetAp(t) {
+  async drSetAp(t) {
     var r = this.rpLoad(),
       e = this.drCurShift(),
       n = this.drShiftRec(r, e);
@@ -1451,28 +1463,33 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           n.apBy = "—";
         }
         n.apAt = new Date().toISOString();
-        try {
-          KIVO.BassamDayShift &&
-            !KIVO.BassamDayShift.get(this.state.rpY, this.state.rpM, this.state.rpD) &&
-            KIVO.BassamDayShift.set(this.state.rpY, this.state.rpM, this.state.rpD, e);
-        } catch (t) {}
       } else (delete n.ap, delete n.apBy, delete n.apAt);
-      (this.rpSave(r), this.setState({ rpTick: (this.state.rpTick || 0) + 1 }));
-      try {
+      if (t && this.dayPastDS(this.state.rpY, this.state.rpM, this.state.rpD) && this.drDayAllAp(r, this.state.rpY, this.state.rpM, this.state.rpD, this.drDistShifts())) {
+        const month = r["m:" + this.state.rpY + "-" + this.state.rpM];
+        if (month && month.dopen) {
+          delete month.dopen[this.state.rpD]; if (!Object.keys(month.dopen).length) delete month.dopen;
+          if (!Object.keys(month).length) delete r["m:" + this.state.rpY + "-" + this.state.rpM];
+        }
+      }
+      if (!await this.rpSave(r, { op: "shift-approval", day: this.DK(), shift: e, value: !!t }, draft => {
+        if (t) this._drPrepareDefaultShift(draft, e);
+        this._drRoundApproval = null;
         if (KIVO.BassamRound && this.bsOn("daily/rounds")) {
-          t && KIVO.BassamRound.ensure && KIVO.BassamRound.ensure(this.state.rpY, this.state.rpM, this.state.rpD);
-          var i = KIVO.BassamRound.setShiftAp(this.state.rpY, this.state.rpM, this.state.rpD, e, t ? 1 : 0);
+          if (t) KIVO.BassamRound.prepareEnsure(draft, this.state.rpY, this.state.rpM, this.state.rpD);
+          this._drRoundApproval = KIVO.BassamRound.prepareShiftAp(draft, this.state.rpY, this.state.rpM, this.state.rpD, e, t ? 1 : 0);
+        }
+      })) return false;
+      this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
+      if (t) this._drNotifyDefaultShift(e);
+      const i = this._drRoundApproval;
+      if (i) {
           "approved" === i.status
             ? this.bsAck("اعتُمدت جولة «" + e + "» في الجولات اليومية مع التقرير — لقطة الميدان محفوظة", "ok")
             : "opened" === i.status && this.bsAck("فُتحت جولة «" + e + "» في الجولات اليومية مع فتح التقرير", "ok");
-        }
-      } catch (t) {}
-      if (t && this.dayPastDS(this.state.rpY, this.state.rpM, this.state.rpD)) {
-        var s = this.rpLoad();
-        this.drDayAllAp(s, this.state.rpY, this.state.rpM, this.state.rpD, this.drDistShifts()) &&
-          this.drSetDOpen(this.state.rpY, this.state.rpM, this.state.rpD, !1);
       }
+      return true;
     }
+    return false;
   }
   drFilterDD(t, r, e, n) {
     var a = this.state,
@@ -1553,7 +1570,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   drLeaveKinds() {
     var t = ["إجازة سنوية", "إجازة مرضية", "إجازة اضطرارية", "إجازة بدون راتب"];
     try {
-      var r = localStorage.getItem("bassam_leave_kinds_v1");
+      var r = KIVO.__BS_SRV.operations.text("bassam_leave_kinds_v1");
       if (r) {
         var e = JSON.parse(r);
         Array.isArray(e) && e.length && (t = e);
@@ -2276,7 +2293,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     var rr = (function () {
         var r = { gates: {}, zones: {}, marks: {} };
         try {
-          var e = ((JSON.parse(localStorage.getItem("bassam_plan_v1") || "{}") || {}).months || {})[t.rpY + "-" + t.rpM];
+          var e = ((KIVO.__BS_SRV.operations.get("bassam_plan_v1") || {}).months || {})[t.rpY + "-" + t.rpM];
           ((e && (Array.isArray(e) ? e : e.d)) || []).forEach(function (t) {
             ((t.gates || []).forEach(function (t) {
               var e = String(null == t.num ? "" : t.num).trim();
@@ -3124,9 +3141,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   : "#E1E1E1;background:var(--bg-xffffff);color:var(--fg-x53565a)"),
               del:
                 ((n = t),
-                function (t) {
-                  (t && t.stopPropagation && t.stopPropagation(),
-                    r.drDelLeaveKind(n),
+                async function (t) {
+                  t && t.stopPropagation && t.stopPropagation();
+                  if (await r.drDelLeaveKind(n)) (
                     r.setState({ rpTick: (r.state.rpTick || 0) + 1 }),
                     r.drPopReflow());
                 }),
@@ -3135,10 +3152,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             };
             var n;
           }),
-          mkLvAddKind: function () {
+          mkLvAddKind: async function () {
             var t = (r.state.drLvNew || "").trim();
             t
-              ? (r.drAddLeaveKind(t), r.setState({ drLvNew: "", rpTick: (r.state.rpTick || 0) + 1 }), r.drPopReflow())
+              ? (await r.drAddLeaveKind(t) && (r.setState({ drLvNew: "", rpTick: (r.state.rpTick || 0) + 1 }), r.drPopReflow()))
               : r.bsToast("اكتب اسم النوع أولاً", "warn");
           },
           mkPmShow: (function () {
@@ -3469,10 +3486,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 "flex-shrink:0;font-size:9px;font-weight:600;color:var(--fg-x8a6f35);background:var(--bg-a185151810p09);border:1px solid var(--bd-a185151810p25);border-radius:100px;padding:1px 7px;white-space:nowrap" +
                 (t.sub ? "" : ";display:none"),
               pick: (function (t, e) {
-                return function () {
-                  r.setState({ drLdOpen: null }, function () {
-                    r.rpSetLeader(t, e);
-                  });
+                return async function () {
+                  if (await r.rpSetLeader(t, e)) r.setState({ drLdOpen: null });
                 };
               })(e[1], t.v),
               style:
@@ -4240,7 +4255,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           t.stopPropagation();
         } catch (t) {}
       },
-      drRsDo: function () {
+      drRsDo: async function () {
         if (r.state.drRsAck) {
           var e = r.state.drRs;
           if (e) {
@@ -4250,9 +4265,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             (i && r.drAnyShiftAp(i)) || r.drLockedDay(n, t.rpY, t.rpM, e.d)
               ? r.setState({ drRs: null, drRsAck: !1 })
               : (delete n[a],
-                r.rpSave(n),
-                r.setState({ drRs: null, drRsAck: !1, rpTick: (r.state.rpTick || 0) + 1 }),
-                r.bsAck("أُعيد تهيئة " + e.label + " — حُذف تقريره بالكامل", "ok"));
+                await r.rpSave(n, { op: "delete-day", day: a }) && (
+                  r.setState({ drRs: null, drRsAck: !1, rpTick: (r.state.rpTick || 0) + 1 }),
+                  r.bsAck("أُعيد تهيئة " + e.label + " — حُذف تقريره بالكامل", "ok")));
           }
         }
       },
@@ -4273,7 +4288,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;border:0;cursor:pointer;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;background:" +
         (D ? "var(--bg-xb45309)" : "var(--bg-x008450)"),
       drLkBtnLabel: D ? "فتح للتعديل" : "اعتماد وإغلاق",
-      drLkDo: function () {
+      drLkDo: async function () {
         if (
           r.PC("approve") &&
           (function () {
@@ -4282,7 +4297,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           })()
         ) {
           var t = D;
-          (r.drSetAp(t ? 0 : 1),
+          if (await r.drSetAp(t ? 0 : 1)) (
             r.setState({ drLk: null }),
             r.bsAck(t ? "فُتح تقرير " + o + " للتعديل" : "اعتُمد تقرير " + o + " وأُقفل", "ok"));
         } else r.permDeny();
@@ -4320,14 +4335,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           drRtBtnStyle:
             "height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;border:0;cursor:pointer;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;background:" +
             (e.open ? "var(--bg-xb45309)" : "var(--bg-x64748b)"),
-          drRtDo: function () {
+          drRtDo: async function () {
             r.PC("approve")
-              ? (r.drToggleDayLock(t.rpY, t.rpM, e.d, !e.open),
+              ? (await r.drToggleDayLock(t.rpY, t.rpM, e.d, !e.open) && (
                 r.setState({ drRt: null }),
                 r.bsAck(
                   e.open ? "فُتح اليوم — أنشئ تقريره وسجّل ورديّاته واعتمد كلَّ وردية من زرّها" : "أُغلق اليوم — صار عرضاً فقط",
                   "ok",
-                ))
+                )))
               : r.permDeny();
           },
           drRtCancel: function () {

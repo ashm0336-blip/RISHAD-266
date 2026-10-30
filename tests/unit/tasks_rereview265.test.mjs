@@ -9,19 +9,19 @@
      (N-6) علامةُ الاستعادة تُستثنى بها مخزنُ المهام إن كانت على مفتاحه نفسِه — لا علامةُ مفتاحٍ آخر في الحفظة */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, MATE, P0, KT, KE, TAG, DAY, stored, putKV, row, hij, HR } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, P0, KT, KE, TAG, DAY, stored, putKV, row, hij, HR, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 import { upImg, act } from './tasks_conc_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body:operationSaveBody(W.env,p,taskCommandBody(W.env, p, body)) });
 const get = (W, ck, p) => W.C.api(p, { cookie: ck });
 const allRows = (W) => Object.values(stored(W.env, KT) || {}).flat().filter(Array.isArray);
 const find = (W, id, ek) => allRows(W).find((r) => r[13] === id && (ek === undefined || r[14] === ek)) || null;
 const saved = (r, k) => !!(r.j && r.j.revs && r.j.revs[k || KT]);
 const deniedWhy = (r, k) => (r.j && r.j.denied && r.j.denied[k || KT] ? r.j.denied[k || KT].why : '');
 const show = (r) => JSON.stringify(r.j || r).slice(0, 260);
-async function cur(W, ck) { const g = await get(W, ck, '/api/get?keys=' + encodeURIComponent(KT)); return { S: JSON.parse(g.j.keys[KT].v), rev: g.j.keys[KT].rev }; }
+async function cur(W, ck) { const g = await get(W, ck, "/api/operations/read?keys=" + encodeURIComponent(KT)); return { S: g.j.resources[KT], rev: g.j.base[KT] }; }
 async function raw(W, ck, mut, extra) { const c = await cur(W, ck); mut(c.S); return post(W, ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(c.S) }, del: [], base: { [KT]: c.rev } }, extra || {})); }
 const G = 1760000000110;                                                               /* مجموعةُ العُدّة القديمة: صفّان (ME · MATE) يتشاركان 13 */
 /* تنظيفُ حذف الموظف كما تكتبه الواجهة (590 cleanupAssignments): خاناتُ الإسناد 7 · 8 · 14 تُفرَّغ لصفوف المحذوف */
@@ -36,22 +36,25 @@ for (const mode of ['legacy', 'enforce']) {
       const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM);
       assert.equal((await post(W, dm.ck, '/api/tasks/settings', { k: DAY, grp: 'gTST1', pol: { m: 'note' } })).status, 200, 'إعداداتُ المجموعة (x على صفّيها)');
       assert.ok(stored(W.env, KT)[DAY].filter((r) => r[13] === G).every((r) => r[23]), 'صفّا المجموعة بعمودهما 23');
-      const g = await get(W, dm.ck, '/api/get?keys=' + encodeURIComponent(KT + ',' + KE));
-      const E = JSON.parse(g.j.keys[KE].v).filter((e) => e.eid !== MATE.eid), S = JSON.parse(g.j.keys[KT].v);
+      const g = await get(W, dm.ck, "/api/operations/read?keys=" + encodeURIComponent(KT + ',' + KE));
+      const E = g.j.resources[KE].filter((e) => e.eid !== MATE.eid), S = g.j.resources[KT];
       assert.ok(cleanup(S, MATE.eid, MATE.name) >= 2, 'للزميل صفوف');
       if (!twoBatches) {
-        const r = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KE]: JSON.stringify(E), [KT]: JSON.stringify(S) }, del: [], base: { [KE]: g.j.keys[KE].rev, [KT]: g.j.keys[KT].rev } }, WHY([KE, KT])));
+        const r = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KE]: JSON.stringify(E), [KT]: JSON.stringify(S) }, del: [], base: { [KE]: g.j.base[KE], [KT]: g.j.base[KT] } }, WHY([KE, KT])));
         assert.equal(r.status, 200, show(r));
         assert.ok(saved(r, KE) && saved(r, KT), 'ذرّياً: الموظفون والمهامُ معاً — ' + show(r));
-        assert.equal(r.j.atomic, 'empDelete', 'حذف الموظف وتنظيف المهام في المعاملة المحمية');
+        assert.equal(r.j.atomic, 1, 'حذف الموظف وتنظيف المهام في المعاملة المحمية');
         assert.equal(r.j.revs[KE], r.j.revs[KT], 'مراجعة واحدة للمفتاحين');
         assert.deepEqual(r.j.denied, {}, 'لا رفض جزئي');
         assert.deepEqual(r.j.conflicts, {}, 'لا تعارض جزئي');
       } else {
-        const r1 = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KE]: JSON.stringify(E) }, del: [], base: { [KE]: g.j.keys[KE].rev } }, WHY([KE])));
+        const r1 = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KE]: JSON.stringify(E) }, del: [], base: { [KE]: g.j.base[KE] } }, WHY([KE])));
         assert.ok(saved(r1, KE), 'الدفعةُ الأولى (الموظفون): ' + show(r1));
-        const r2 = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g.j.keys[KT].rev } }, WHY([KT])));
-        assert.ok(saved(r2), 'الدفعةُ الثانية (تنظيفُ المهام وحده): ' + show(r2));
+        const cleaned=stored(W.env,KT),cleanedRev=W.env.DB.q('SELECT rev FROM revs WHERE k=?',KT)[0].rev;
+        assert.equal(cleanedRev,g.j.base[KT],'Generic employee-only save does not claim the separate server employee-transition intent');
+        const r2 = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g.j.base[KT] } }, WHY([KT])));
+        assert.ok(saved(r2),'حفظ التنظيف الصريح بالنسخة الحالية يمضي: '+show(r2));
+        assert.ok(cleaned[DAY].some(r=>r[14]===MATE.eid),'قبل التنظيف الصريح بقي الإسناد التاريخي');
       }
       assert.ok(!stored(W.env, KE).some((e) => e.eid === MATE.eid), 'حُذف من السجل');
       assert.equal(allRows(W).filter((r) => r[14] === MATE.eid).length, 0, 'ولا صفَّ بمعرّفه');
@@ -65,10 +68,10 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal((await post(W, dm.ck, '/api/tasks/settings', { k: DAY, grp: 'gTST1', pol: { m: 'note' } })).status, 200);
     const a = await raw(W, dm.ck, (S) => { S[DAY] = S[DAY].map((r) => (r[13] === G && r[14] === MATE.eid ? Object.assign(r.slice(), { 7: [], 8: '', 14: '' }) : r)); }, WHY([KT]));
     assert.equal(deniedWhy(a), 'task-x', 'موظفٌ حيّ — لا يُفرَّغ صفُّه في هويةٍ مشتركة بعمودها 23: ' + show(a));
-    const g = await get(W, dm.ck, '/api/get?keys=' + encodeURIComponent(KT + ',' + KE));
-    const E = JSON.parse(g.j.keys[KE].v).filter((e) => e.eid !== MATE.eid), S = JSON.parse(g.j.keys[KT].v);
+    const g = await get(W, dm.ck, "/api/operations/read?keys=" + encodeURIComponent(KT + ',' + KE));
+    const E = g.j.resources[KE].filter((e) => e.eid !== MATE.eid), S = g.j.resources[KT];
     S[DAY] = S[DAY].map((r) => (r[13] === G && r[14] === MATE.eid ? r.slice(0, 23).map((v, j) => (j === 7 ? [] : j === 8 || j === 14 ? '' : v)) : r));
-    const b = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KE]: JSON.stringify(E), [KT]: JSON.stringify(S) }, del: [], base: { [KE]: g.j.keys[KE].rev, [KT]: g.j.keys[KT].rev } }, WHY([KE, KT])));
+    const b = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KE]: JSON.stringify(E), [KT]: JSON.stringify(S) }, del: [], base: { [KE]: g.j.base[KE], [KT]: g.j.base[KT] } }, WHY([KE, KT])));
     assert.equal(deniedWhy(b), 'task-x', 'تنظيفٌ ينزع 23: ' + show(b));
     assert.ok(stored(W.env, KE).some((e) => e.eid === MATE.eid), 'ذرّياً: الموظفُ باقٍ');
   });
@@ -81,7 +84,7 @@ for (const mode of ['legacy', 'enforce']) {
       E.push(Object.assign({}, base, { eid, name: TAG + ' · جماعي ' + i, empno: '', nid: String(1990000000 + i) }));
       U.push({ id: 'tst_bulk_' + i, un: String(2100000000 + i), ph: 'p2$100000$00$00', name: TAG + ' · جماعي ' + i, role: 'staff', deptId: 'tst_d1', ekey: eid, dis: 0, test: TAG });
     }
-    putKV(W.env, KE, E); putKV(W.env, 'bassam_auth_users_v1', U);
+    await replaceOperationalFixture(W.env, KE, E); putKV(W.env, 'bassam_auth_users_v1', U);
     const s = Date.now() + 2 * HR, ids = Array.from({ length: N }, (_, i) => 1760000300000 + i);
     /* خطُّ الأساس: الحفظةُ نفسُها حجماً — 600 صفٍّ عامّ بلا مكلَّف (لا حكمَ حساب) */
     let t0 = Date.now();
@@ -102,7 +105,7 @@ for (const mode of ['legacy', 'enforce']) {
     const c = await post(W, dm.ck, '/api/tasks/create', { k: hij(s), t: TAG + ' بمراجِع', s, e: s + HR, asg: [ME.eid], rv: { u: 'tst_sup1' }, force: true });
     assert.equal(c.status, 200, show(c)); const k = c.j.rows[0].k, id = c.j.rows[0].id;
     /* صارت «غيرَ مرتبطة» (مكلَّفُها برمزٍ لا يطابق سجلّاً — كأن حُذف سجلُّه) */
-    const S = stored(W.env, KT); const i = S[k].findIndex((r) => r[13] === id); S[k][i][14] = TAG + ' رمزٌ قديم'; putKV(W.env, KT, S);
+    const S = stored(W.env, KT); const i = S[k].findIndex((r) => r[13] === id); S[k][i][14] = TAG + ' رمزٌ قديم'; await replaceOperationalFixture(W.env, KT, S);
     const a = await post(W, dm.ck, '/api/tasks/relink', { k, id, from: TAG + ' رمزٌ قديم', to: 'tst_e_sup1' });
     assert.equal(a.status, 400, 'إلى المراجِع: ' + show(a)); assert.ok(/المراجِعُ لا يكون المكلَّفَ/.test(a.j.msg || ''), a.j.msg);
     assert.equal(find(W, id)[14], TAG + ' رمزٌ قديم', 'لم يُربط');
@@ -130,20 +133,20 @@ for (const mode of ['legacy', 'enforce']) {
     const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM), s = Date.now() + 2 * HR;
     const c = await post(W, dm.ck, '/api/tasks/create', { k: hij(s), t: TAG + ' للعلامة', s, e: s + HR, asg: [ME.eid], rv: 'none' }); const k = c.j.rows[0].k, id = c.j.rows[0].id;
     const op = { op: 'backup.restore', scope: 'dept', mode: 'replace', reason: TAG + ' استعادة' };
-    const g = await get(W, dm.ck, '/api/get?keys=' + encodeURIComponent(KT + ',' + KE));
-    const S = JSON.parse(g.j.keys[KT].v), i = S[k].findIndex((r) => r[13] === id); S[k][i] = S[k][i].slice(); S[k][i][23] = Object.assign({}, S[k][i][23], { by: { u: 'admin', n: 'TEST_ONLY مزوَّر' } });
-    const E = JSON.parse(g.j.keys[KE].v); E.push({ eid: 'tst_e_marker', name: TAG + ' · للعلامة' });
+    const g = await get(W, dm.ck, "/api/operations/read?keys=" + encodeURIComponent(KT + ',' + KE));
+    const S = g.j.resources[KT], i = S[k].findIndex((r) => r[13] === id); S[k][i] = S[k][i].slice(); S[k][i][23] = Object.assign({}, S[k][i][23], { by: { u: 'admin', n: 'TEST_ONLY مزوَّر' } });
+    const E = g.j.resources[KE]; E.push({ eid: 'tst_e_marker', name: TAG + ' · للعلامة' });
     const why = { why: { [KT]: TAG + ' استعادة', [KE]: TAG + ' استعادة' } };
-    const a = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S), [KE]: JSON.stringify(E) }, del: [], base: { [KT]: g.j.keys[KT].rev, [KE]: g.j.keys[KE].rev }, ops: { [KE]: op } }, why));
+    const a = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S), [KE]: JSON.stringify(E) }, del: [], base: { [KT]: g.j.base[KT], [KE]: g.j.base[KE] }, ops: { [KE]: op } }, why));
     assert.ok(!saved(a), 'علامةُ مفتاح الموظفين وحده لا تفتح المهام: ' + show(a));
     if (mode === 'legacy') assert.equal(deniedWhy(a), 'task-x', show(a));
     assert.ok(!(find(W, id)[23].by && find(W, id)[23].by.u === 'admin'), 'x كما هي');
     if (mode === 'legacy') {                                                           /* على مفتاح المهام نفسِه: لمدير النظام وحده في القديم (F-2/R-21 — كانت لمدير الإدارة كما في 264) */
-      const g2 = await get(W, dm.ck, '/api/get?keys=' + encodeURIComponent(KT));
-      const b0 = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g2.j.keys[KT].rev }, ops: { [KT]: op } }, why));
+      const g2 = await get(W, dm.ck, "/api/operations/read?keys=" + encodeURIComponent(KT));
+      const b0 = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g2.j.base[KT] }, ops: { [KT]: op } }, why));
       assert.equal(deniedWhy(b0), 'task-x', 'علامةُ مفتاح المهام من مدير الإدارة (F-2): ' + show(b0));
-      const g3 = await get(W, W.su.ck, '/api/get?keys=' + encodeURIComponent(KT));
-      const b = await post(W, W.su.ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g3.j.keys[KT].rev }, ops: { [KT]: op } }, why));
+      const g3 = await get(W, W.su.ck, "/api/operations/read?keys=" + encodeURIComponent(KT));
+      const b = await post(W, W.su.ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g3.j.base[KT] }, ops: { [KT]: op } }, why));
       assert.ok(saved(b), 'علامةُ مفتاح المهام من مدير النظام: ' + show(b));
     }
   });

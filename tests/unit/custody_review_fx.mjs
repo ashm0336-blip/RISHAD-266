@@ -41,6 +41,10 @@ const NAMED = [
   'dsDomainRead',
   'nfRead',
   'hashPw',
+  'opLegacyPrepare', 'opLegacyPredicate', 'opGuardRetired', 'opPrepared',
+  'opDefinitions', 'opInfo', 'opResourceGet', 'opResourceMany', 'opLoadMany',
+  'opChangeStatements', 'opCommandReceipt', 'ocConvert', 'ocInflate',
+  'ocPhysicalRows', 'ocFromPhysical', 'ocPhysicalTables', 'opBackupDomain',
 ];
 function canonicalInput() {
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'workers/parts.json'), 'utf8'));

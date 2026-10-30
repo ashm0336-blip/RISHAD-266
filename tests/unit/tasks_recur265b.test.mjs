@@ -12,12 +12,12 @@
      U1  stop {k, row}: نسخةُ هذه السلسلة المحدَّدة تبقى آخرَ موعدٍ لها */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, MATE, KT, D, DAY, PDAY, TAG, stored, putKV, hij, MID, HR, wdOf, ymOf } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, KT, D, DAY, PDAY, TAG, stored, putKV, hij, MID, HR, wdOf, ymOf, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'], EMP1 = ['0000000113', '70113'], DM_UID = 'tst_dm1';
 const KL = 'bsdept:' + D + ':bassam_tasks_locks_v1', PK = 'bassam_perms_v1', PMK = ymOf(PDAY);
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body:operationSaveBody(W.env,p,taskCommandBody(W.env, p, body)) });
 const get = (W, ck, p) => W.C.api(p, { cookie: ck });
 const op = (W, ck, body) => post(W, ck, '/api/tasks/recur', body);
 const run = (W) => post(W, W.su.ck, '/api/tasks/recur/run?dept=' + D, {});
@@ -128,12 +128,12 @@ for (const mode of ['legacy', 'enforce']) {
     const T = DAY.split('-').map(Number), d0 = T[2] > 1 ? T[2] - 1 : 15;          /* يومٌ من الشهر الماضي — KIVO_265 · البند 15: الأفقُ 30 يوماً يشمل موعدَ الشهر الجاري/القادم فتُوقف السلسلةُ مؤقتاً قبل القفل لتبقى بنسخة الشهر المقفل وحدها */
     let i0 = -1; while (i0 > -70 && hij(MID(N0) + i0 * 864e5 + 12 * HR) !== PMK + '-' + d0) i0--;
     const sP = MID(N0) + i0 * 864e5 + 8 * HR, kP = hij(sP); assert.equal(kP, PMK + '-' + d0);
-    putKV(W.env, KL, {});
+    await replaceOperationalFixture(W.env, KL, {});
     const c = await post(W, dm.ck, '/api/tasks/create', { k: kP, t: TAG + ' شهرية', s: sP, e: sP + HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'monthly', md: d0, open: 1 } });
     assert.equal(c.status, 200, show(c)); const id = recIdOf(W, c);
     const pz = await op(W, dm.ck, { id, op: 'pause' }); assert.equal(pz.status, 200, show(pz));
     assert.equal((await run(W)).status, 200); assert.equal(ser(W, id).length, 1, 'موقوفةٌ مؤقتاً — لا نسخةَ في الأفق');
-    putKV(W.env, KL, { [PMK]: true });                                              /* اعتُمد الشهرُ الماضي */
+    await replaceOperationalFixture(W.env, KL, { [PMK]: true });                                              /* اعتُمد الشهرُ الماضي */
     const L0 = JSON.stringify(ser(W, id).map((q) => q.r));
     for (const b of [{ id, op: 'stop' }, { id, op: 'resume' }, { id, op: 'edit', rec: { t: 'monthly', md: 1, open: 1 } }]) {
       const r = await op(W, dm.ck, b); assert.equal(r.status, 409, b.op + ': ' + show(r)); assert.equal(r.j.err, 'month-locked'); assert.equal(r.j.msg, LKMSG, b.op);
@@ -165,9 +165,9 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal((await op(W, e1.ck, { id, op: 'stop' })).status, 403, 'لا يملك الإنهاء');
     let n = 0;
     for (const [cid, i] of [['tkforge' + Date.now().toString(36), 2], ['cforge' + Date.now().toString(36), 3]]) {
-      const g = await get(W, e1.ck, '/api/get?keys=' + encodeURIComponent(KT)), kv = g.j.keys[KT], S = JSON.parse(kv.v), s = at(i, 14);
+      const g = await get(W, e1.ck, "/api/operations/read?keys=" + encodeURIComponent(KT)), kv = g.j, S = kv.resources[KT], s = at(i, 14);
       S[kOf(i)] = (S[kOf(i)] || []).concat([[TAG + ' طُعم', '', 'normal', 'pending', 'normal', 'مضافة', null, [], '', TAG, 60, null, null, 1790000000555 + (n++), null, s, s + HR, null, null, null, null, null]]);
-      const sv = await post(W, e1.ck, '/api/save', { set: { [KT]: JSON.stringify(S) }, base: { [KT]: kv.rev },
+      const sv = await post(W, e1.ck, '/api/save', { set: { [KT]: JSON.stringify(S) }, base: { [KT]: kv.base[KT] },
         aud: [{ cid, k: KT, etype: 'task', act: 'created', eid: 'Tdecoy' + i, ename: 'x', ctx: JSON.stringify({ idem: 'r:' + id + ':' + kOf(i) + ':' + ME.eid }) }] });
       assert.ok(sv.j && sv.j.revs && sv.j.revs[KT], 'الحفظُ الخامّ نفسُه يمضي: ' + show(sv));
     }
@@ -178,10 +178,10 @@ for (const mode of ['legacy', 'enforce']) {
     /* حدثُ «حُوِّلت إلى متكررة» مزوَّرٌ بهوية المزوِّر نفسِه (مديرُ النظام يستعيد نموذجاً صاحبُه هو) لا يُثبت صاحباً — بمعرّف العميل ولا بمعرّف الخادم */
     const su = (await get(W, W.su.ck, '/api/whoami')).j.uid; assert.ok(su);
     for (const [rid, cid] of [['rforgeA', 'rforgeev' + Date.now().toString(36)], ['rforgeB', 'tkforgeev' + Date.now().toString(36)]]) {
-      const g2 = await get(W, W.su.ck, '/api/get?keys=' + encodeURIComponent(KT)), S2 = JSON.parse(g2.j.keys[KT].v), s2 = at(0, 10), who = { u: su, e: '', n: TAG + ' مدير' };
+      const g2 = await get(W, W.su.ck, "/api/operations/read?keys=" + encodeURIComponent(KT)), S2 = g2.j.resources[KT], s2 = at(0, 10), who = { u: su, e: '', n: TAG + ' مدير' };
       const x = { v: 2, by: who, pol: { m: 'none' }, rv: null, dec: 1, idem: 'r:' + rid + ':' + kOf(0) + ':' + MATE.eid, rec: { t: 'daily', id: rid, ver: 1, from: kOf(0), paused: 0, asg: [MATE.eid], by: who } };
       S2[kOf(0)] = (S2[kOf(0)] || []).concat([[TAG + ' ' + rid, '', 'normal', 'pending', 'normal', 'مضافة', null, ['T'], MATE.name, TAG, 60, null, null, 1790000000700 + (n++), MATE.eid, s2, s2 + HR, null, null, null, null, null, 'T' + rid, x]]);
-      const w = await post(W, W.su.ck, '/api/save', { set: { [KT]: JSON.stringify(S2) }, del: [], base: { [KT]: g2.j.keys[KT].rev },
+      const w = await post(W, W.su.ck, '/api/save', { set: { [KT]: JSON.stringify(S2) }, del: [], base: { [KT]: g2.j.base[KT] },
         aud: [{ cid: 'rforge' + rid + Date.now().toString(36), k: KT, etype: 'dataset', act: 'restore', eid: 'bassam_tasks_v1', ename: 'bassam_tasks_v1' },
           { cid, k: KT, etype: 'task', act: 'rec_start', eid: 'T' + rid, ename: 'x', ctx: JSON.stringify({ rec: rid, idem: x.idem }) }],
         ops: { [KT]: { op: 'backup.restore', scope: 'dept', mode: 'replace', reason: TAG } }, why: { [KT]: TAG } });
@@ -233,7 +233,7 @@ for (const mode of ['legacy', 'enforce']) {
     const ctl = await mk(W, dm.ck, { title: 'نهايتُها اليوم', body: { rec: { t: 'daily', to: kOf(10) } } }); assert.equal(ctl.status, 200, show(ctl));
     const ido = recIdOf(W, o), idc = recIdOf(W, ctl);
     const S = stored(W.env, KT); for (const dk in S) for (const r of S[dk]) if (r && r[23] && r[23].rec && (r[23].rec.id === ido || r[23].rec.id === idc)) r[23].rec = Object.assign({}, r[23].rec, { to: DAY });
-    putKV(W.env, KT, S);
+    await replaceOperationalFixture(W.env, KT, S);
     const ins = (cid, rid) => W.env.DB.db.prepare('INSERT INTO aud (cid, ts, uid, un, dept, k, rev, etype, eid, ename, act, ctx, bef, aft, ip, dev, city) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .run(cid, Date.now() - 6e4, DM_UID, '', D, KT, 'task', 'Told', 'x', 'rec_stop', JSON.stringify({ via: 'srv', rec: rid }), '', JSON.stringify({ n: 2, cancelled: 1 }), '', '', '');   /* صيغةُ الإصدار السابق (896573c) */
     ins('tk' + Date.now().toString(36) + '_old', ido);

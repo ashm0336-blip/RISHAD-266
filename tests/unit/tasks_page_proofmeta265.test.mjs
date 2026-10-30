@@ -1,3 +1,4 @@
+import { attachTaskOperations } from './tasks_vm_operations_fx.mjs';
 /* KIVO_265 · البند 18 (المسار D) — عرضُ بيانات ختم الإثبات للمسؤول في نافذة «عرض توثيق المهمة» بصفحة المهام (src/modules/tasks في vm + 565 الحقيقي):
    r21.meta = [{img, at, lat, lng, acc}] بترتيب الصور (يحفظها 062c كما ختمتها واجهةُ «ملفي») ⇒ تحت كل صورة سطرٌ: الوقتُ بتوقيت الرياض (لا بتوقيت
    جهاز المسؤول) والإحداثياتُ رابطَ خرائط https://maps.google.com/?q=lat,lng أو «بلا موقع»؛ وصورةٌ بلا بيانات بلا سطر. بياناتٌ اصطناعية (tasks_fx row). */
@@ -11,7 +12,7 @@ import { ME, D, DAY, row, PNG } from './tasks_fx.mjs';
 
 const LOGIC = moduleLogic('tasks');
 const IMG1 = 'img_tskpm1_a1', IMG2 = 'img_tskpm1_b2', IMG3 = 'img_tskpm1_c3';
-function page(storeJson) {
+async function page(storeJson) {
   const store = new Map([['bassam_tasks_v1', storeJson], ['bassam_employees_v1', JSON.stringify([{ eid: ME.eid, name: ME.name }])]]);
   const KIVO = {}, toasts = [];
   const ctx = { KIVO, console, Intl, Date, Math, JSON, Promise, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, isFinite, setTimeout, clearTimeout, setInterval: () => 0, clearInterval: () => 0,
@@ -31,8 +32,9 @@ function page(storeJson) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic(+parts).js' });
+  const opsFixture = await attachTaskOperations(ctx, { store });
   const c = new ctx.__C(); c._tkDayDef = () => 0;   /* اختباراتُ الشهر كاملاً (KIVO_265 · كروتُ الأيام: الافتراضي يومُ اليوم) */ c.state = Object.assign({}, c.state || {}, { locked: {} });
-  return { c, toasts };
+  return { c, opsFixture, toasts };
 }
 function allRows(V) { const out = [], seen = new Set(); const walk = (o, d) => { if (!o || typeof o !== 'object' || d > 4 || seen.has(o)) return; seen.add(o); if (o.tkcT && Array.isArray(o.tkcT)) out.push(o); for (const k of Object.keys(o)) { const v = o[k]; if (Array.isArray(v)) v.forEach((x) => walk(x, d + 1)); else if (v && typeof v === 'object' && k !== 'tkcT') walk(v, d + 1); } }; walk(V, 0); return out; }
 const flush = async () => { for (let i = 0; i < 4; i++) await new Promise((r) => setImmediate(r)); };
@@ -50,7 +52,7 @@ test('البند 18 · نافذةُ التوثيق: تحت كل صورة وقت�
     row({ id: WITH, title: 'بختم', eid: ME.eid, st: 'done', dur: 60, acc: now - 2 * HR, fin: now - HR, s: now - 3 * HR, e: now, r21: { imgs: [IMG1, IMG2, IMG3], note: 'تم', at: now - HR, sub: now - HR, meta } }),
     row({ id: NONE, title: 'بلا ختم', eid: ME.eid, st: 'done', dur: 60, acc: now - 2 * HR, fin: now - HR, s: now - 3 * HR, e: now, r21: { imgs: [IMG3], note: '', at: now - HR, sub: now - HR } }),
   ] };
-  const P = page(JSON.stringify(S));
+  const P = await page(JSON.stringify(S));
   P.c.setState({ year: Y, month: M, perPage: 0 });
   let V = P.c.renderVals(); const by = (id) => allRows(V).find((t) => t.tkcT[13] === id);
   assert.equal(V.tkProofOn, false);
@@ -79,7 +81,7 @@ test('البند 18 · نافذةُ التوثيق: تحت كل صورة وقت�
   else assert.ok(P.c.state.tkProof === null || P.c.state.tkProof === undefined, 'لا قائمةَ توثيق في الصف لهذه الصلاحيات');
 });
 
-test('القالب: سطرُ الختم داخل عنصر الصورة في نافذة التوثيق (وقتٌ · رابطٌ أو «بلا موقع») — بالرموز الدلالية', () => {
+test('القالب: سطرُ الختم داخل عنصر الصورة في نافذة التوثيق (وقتٌ · رابطٌ أو «بلا موقع») — بالرموز الدلالية', async () => {
   const v = fs.readFileSync(path.join(ROOT, 'src/modules/tasks/view.html'), 'utf8');
   const i0 = v.indexOf('<sc-for list="{{tkProofImgs}}"'), i1 = v.indexOf('</sc-for>', i0); assert.ok(i0 > 0 && i1 > i0);
   const s = v.slice(i0, i1);

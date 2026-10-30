@@ -266,7 +266,7 @@
       try {
         var u = cur(); if (!u || u.role !== 'staff') return null;
         if (isMgrKey(u.ekey)) return null;
-        var J9 = function(k, dv){ try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? dv : v; } catch(e){ return dv; } };
+        var J9 = function(k, dv){ var v = KIVO.__BS_SRV.operations.get(k); return v == null ? dv : v; };
         var emps = J9('bassam_employees_v1', []); if (!Array.isArray(emps)) emps = [];
         var E = KIVO.BassamEmp;
         var keyOf = function(e){ return (E && E.key) ? E.key(e) : ((e.eid || e.nid || e.name) || ''); };
@@ -288,26 +288,43 @@
         return { shift: found || '', key: myKey };
       } catch(e){ return null; }
     }
-    var _mem = null;
+    var _mem = null, _memScope = '', owner = {};
+    function scope(){ var c = KIVO.__BS_SRV.operations.context(); return c ? c.uid + ':' + c.dept : ''; }
     function all(){
-      /* تُقرأ بالتخزين الموسوم بالإدارة كبقية بيانات المتابعة — لا بالخام */
-      if (_mem) return _mem;
-      try { var o = JSON.parse(localStorage.getItem(K)); return (o && typeof o === 'object') ? o : {}; }
-      catch(e){ return {}; }
+      if (_mem && _memScope === scope()) return _mem;
+      var o = KIVO.__BS_SRV.operations.get(K);
+      return o && typeof o === 'object' ? o : {};
     }
     function key(y, m, d){ return y + '-' + m + '-' + d; }
     function get(y, m, d){ var mine = myShiftOf(y, m, d); if (mine) return mine.shift; var v = all()[key(y, m, d)]; return typeof v === 'string' ? v : ''; }
-    function set(y, m, d, name){
-      if (myShiftOf(y, m, d)) return get(y, m, d);      /* الموظف مثبَّت على ورديته — لا يكتب قرار اليوم المشترك */
-      var o = all();
+    function prepareSet(draft, y, m, d, name){
+      var mine = myShiftOf(y, m, d);
+      if (mine) return { status: 'personal', value: mine.shift };
+      if (!bsDailyPersistOk()) return { status: 'local', value: name || '' };
+      var o = draft.get(K) || {};
       if (name) o[key(y, m, d)] = name; else delete o[key(y, m, d)];
-      if (bsDailyPersistOk()) { _mem = null; try { localStorage.setItem(K, JSON.stringify(o)); } catch(e){} } else _mem = o;
+      draft.set(K, o);
+      return { status: 'shared', value: name || '' };
+    }
+    function changed(y, m, d, name){
       /* الشاشتان مركّبتان معاً والتبويب يُخفي إحداهما — يُبثّ التبديل
          فتلتقطه المخفيّة حالاً، كحدث اليوم المفعّل المشترك سواء */
       try { window.dispatchEvent(new CustomEvent('bs-dayshift', { detail: { y: +y, m: +m, d: +d, name: name || '' } })); } catch(e){}
-      return name || '';
     }
-    KIVO.BassamDayShift = { get: get, set: set, all: all, mine: myShiftOf };
+    async function set(y, m, d, name){
+      var mine = myShiftOf(y, m, d);
+      if (mine) return { ok: 1, value: mine.shift };
+      if (!bsDailyPersistOk()) {
+        var o = all(); if (name) o[key(y, m, d)] = name; else delete o[key(y, m, d)];
+        _mem = o; _memScope = scope(); changed(y, m, d, name);
+        return { ok: 1, local: 1, value: name || '' };
+      }
+      var result = await KIVO.__BS_SRV.operations.commit(owner, 'day-shift', { y: y, m: m, d: d, name: name || '' }, function(draft){ prepareSet(draft, y, m, d, name); });
+      if (!result || result.ok !== 1) return result;
+      _mem = null; _memScope = ''; changed(y, m, d, name);
+      return { ok: 1, value: name || '' };
+    }
+    KIVO.BassamDayShift = { get: get, set: set, all: all, mine: myShiftOf, prepareSet: prepareSet, changed: changed };
     KIVO.BassamMyShift = { of: myShiftOf };
   })();
 

@@ -1,4 +1,28 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+plan+seized+staff","dreport+staff","employees+staff","plan+staff"]) {
+  setState(update, done) {
+    const capture = (patch, state) => {
+      const editors = ["sdOpen", "restOpen", "permOpen", "csOpen", "csEdit", "wkOpen", "mkNew", "lockConfirm", "delMonth", "retroAsk"];
+      if (patch && state && !editors.some(key => state[key] != null && state[key] !== false) && editors.some(key => patch[key] != null && patch[key] !== false)) {
+        if (!KIVO.__BS_SRV.operations.begin(this, "staff-editor").ok) {
+          this.bsToast("يوجد طلب حفظ لم يُحسم — أعد حفظ المسودة نفسها قبل تغيير المحرر."); return {};
+        }
+      }
+      return patch;
+    };
+    return super.setState(typeof update === "function" ? (state, props) => capture(update(state, props), state) : capture(update, this.state), done);
+  }
+  async _opsSave(intent, edit) {
+    if (!["sdOpen", "restOpen", "permOpen", "csOpen", "csEdit", "wkOpen", "mkNew", "lockConfirm", "delMonth", "retroAsk"].some(key => this.state[key] != null && this.state[key] !== false) && KIVO.__BS_SRV.operations.status().state === "idle") KIVO.__BS_SRV.operations.begin(this, "staff-editor");
+    const result = await KIVO.__BS_SRV.operations.commit(this, "staff-editor", intent, draft => {
+      if (["entry", "staffing", "callsign-rename", "callsign-delete", "delete-month", "month-approval"].includes(intent.op)) draft.get("bassam_staffing_locks_v1");
+      edit(draft);
+    });
+    if (!result || result.ok !== 1) {
+      this.bsToast(result && result.committed ? "ثبّت الخادم الحفظ، وتعذّرت قراءة البيانات الحالية — أعد التحقق من الطلب نفسه." : result && result.uncertain ? "لم يصل تأكيد الحفظ — المسودة باقية؛ أعد الإجراء نفسه للتحقق." : "لم يُحفظ التغيير — راجع البيانات والصلاحية ثم أعد فتح المحرر.");
+      return false;
+    }
+    return true;
+  }
   bsToast(t, e) {
     try {
       const s = e || "err";
@@ -96,10 +120,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   monthLockedS(t, e) {
     return this.monthApprovedS(t, e) || this.monthAutoLockedS(t, e);
   }
-  _setMonthOpenS(t, e, s) {
+  async _setMonthOpenS(t, e, s) {
     const r = t + "-" + e,
       n = { ...(this.state.locked || {}) };
-    (s ? (n[r] = { mo: 1 }) : delete n[r], this.saveLocks(n));
+    s ? (n[r] = { mo: 1 }) : delete n[r];
+    return await this.saveLocks(n);
   }
   hasLiveSched(t) {
     try {
@@ -130,34 +155,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return this.state.shiftOpts || [];
   }
   loadEmp() {
-    try {
-      const t = localStorage.getItem("bassam_employees_v1");
-      if (t) {
-        const e = JSON.parse(t);
-        if (Array.isArray(e)) {
-          let t = !1;
-          const s = e.map((e) =>
-            e && !e.eid ? ((t = !0), { ...e, eid: "e" + Date.now().toString(36) + Math.floor(1e9 * Math.random()).toString(36) }) : e,
-          );
-          if (t)
-            try {
-              localStorage.setItem("bassam_employees_v1", JSON.stringify(s));
-            } catch (t) {}
-          return s;
-        }
-      }
-    } catch (t) {}
-    return [];
+    const rows = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
+    return Array.isArray(rows) ? rows : [];
   }
   loadLocks() {
-    try {
-      const t = localStorage.getItem("bassam_staffing_locks_v1");
-      if (t) {
-        const e = JSON.parse(t);
-        if (e && "object" == typeof e) return e;
-      }
-    } catch (t) {}
-    return {};
+    const value = KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1");
+    return value && typeof value === "object" ? value : {};
   }
   /* KIVO_265 · أداء (ملاحظةُ المالك 2026-10-19): فحوصُ الصلاحية تُنادى لكل صفٍّ وخليةٍ في الجدول الشهري (آلافُ المرّات في الرسم الواحد
      مع 1000 موظف) — تُحسب مرةً لكل (نسخة العالم · الكتابة · الإدارة النشطة · الثانية) */
@@ -292,46 +295,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       this.bsToast("صلاحيتك على الجدول الشهري لا تشمل هذا الإجراء — راجع مدير الإدارة");
     } catch (t) {}
   }
-  saveLocks(t) {
+  async saveLocks(t) {
     if (this.PC("approve")) {
-      try {
-        localStorage.setItem("bassam_staffing_locks_v1", JSON.stringify(t));
-      } catch (t) {}
-      this.setState({ locked: t });
-    } else this.permDeny();
-  }
-  migrateStaffing(t) {
-    const e = this.__shiftRename || null,
-      s = this.loadEmp(),
-      r = {},
-      n = {};
-    (s.forEach((t) => {
-      const e = (t && t.eid) || "";
-      e && ((r[e] = !0), t.name && (n[t.name] = e));
-    }),
-      s.forEach((t) => {
-        const e = (t && t.eid) || "";
-        e && t.nid && (n[t.nid] = e);
-      }));
-    let i = !1;
-    return (
-      Object.keys(t).forEach((s) => {
-        const a = t[s];
-        if (!a || "object" != typeof a) return;
-        let o = !1;
-        const l = {};
-        (Object.keys(a).forEach((t) => {
-          if (t === this.snapKey()) return void (l[t] = a[t]);
-          let s = a[t];
-          const i = r[t] ? t : n[t] || t;
-          (i !== t && (o = !0),
-            e && s && e[s.shift] && ((s = { ...s, shift: e[s.shift] }), (o = !0)),
-            (l[i] = l[i] ? { ...l[i], ...s } : s));
-        }),
-          o && ((t[s] = l), (i = !0)));
-      }),
-      i
-    );
+      if (!await this._opsSave({ op: "locks", value: t }, draft => draft.set("bassam_staffing_locks_v1", t))) return false;
+      this.setState({ locked: this.loadLocks() }); return true;
+    }
+    this.permDeny(); return false;
   }
   _bsLiveReload(K) {
     const h = (t) =>
@@ -350,40 +319,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return !0;
   }
   loadStaffing() {
-    let t = null,
-      e = !1;
-    try {
-      const e = localStorage.getItem("bassam_staffing_v3");
-      if (e) {
-        const s = JSON.parse(e);
-        s && "object" == typeof s && (t = s);
-      }
-    } catch (t) {}
-    if (!t)
-      try {
-        const s = localStorage.getItem("bassam_staffing_v2");
-        if (s) {
-          const r = JSON.parse(s);
-          if (r && "object" == typeof r && Object.keys(r).length) {
-            const s = this.curHijri();
-            ((t = {}), (t[s.y + "-" + s.m] = r), (e = !0));
-          }
-        }
-      } catch (t) {}
-    if (!t) return {};
-    if ((this.migrateStaffing(t) && (e = !0), e))
-      try {
-        localStorage.setItem("bassam_staffing_v3", JSON.stringify(t));
-      } catch (t) {}
-    return t;
+    const s = KIVO.__BS_SRV.operations.get("bassam_staffing_v3");
+    if (s && "object" == typeof s) return s;
+    // Legacy V2 and identity conversion run once in the canonical migration.
+    return {};
   }
-  saveStaffing(t) {
+  async saveStaffing(t) {
     if (this.PC("edit")) {
-      try {
-        localStorage.setItem("bassam_staffing_v3", JSON.stringify(t));
-      } catch (t) {}
-      this.setState({ staffing: t });
-    } else this.permDeny();
+      if (!await this._opsSave({ op: "staffing", value: t }, draft => draft.set("bassam_staffing_v3", t))) return false;
+      this.setState({ staffing: this.loadStaffing() }); return true;
+    }
+    this.permDeny(); return false;
   }
   stGrpPref() {
     try {
@@ -423,12 +369,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       perm: this.permDaysOf(s, this.state.year, this.state.month),
     };
   }
-  savePermLimit(t) {
+  async savePermLimit(t) {
     if (!this.PC("approve")) return void this.permDeny();
     const e = Math.min(31, Math.max(0, parseInt(t, 10) || 0));
-    try {
-      localStorage.setItem("bassam_perm_limit_v1", String(e));
-    } catch (t) {}
+    if (!await this._opsSave({ op: "permission-limit", value: e }, draft => draft.set("bassam_perm_limit_v1", String(e)))) return false;
     this.setState({ permLimit: e });
   }
   permDaysOf(t, e, s) {
@@ -462,7 +406,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   drpLoad() {
     try {
-      const t = JSON.parse(localStorage.getItem("bassam_dreport_v1"));
+      const t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1");
       return t && "object" == typeof t ? t : {};
     } catch (t) {
       return {};
@@ -500,7 +444,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       r
     );
   }
-  doCreateSchedule(t) {
+  async doCreateSchedule(t) {
     if (!this.loadEmp().length) return;
     const e = { ...this.state.staffing },
       s = this.monthKey(),
@@ -527,40 +471,37 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       } else r[e] = { shift: "", rest: [], muk: !1 };
     }),
       (e[s] = r),
-      this.saveStaffing(e),
-      this.setState({ mkNew: null }));
+      await this.saveStaffing(e) && this.setState({ mkNew: null }));
   }
   loadCsList() {
     try {
-      const t = JSON.parse(localStorage.getItem("bassam_callsigns_v1"));
+      const t = KIVO.__BS_SRV.operations.get("bassam_callsigns_v1");
       if (Array.isArray(t)) return t.filter((t) => "string" == typeof t && t.trim());
     } catch (t) {}
     return [];
   }
-  saveCsList(t) {
+  async saveCsList(t) {
     const e = [];
     (t || []).forEach((t) => {
       const s = String(t || "").trim();
       s && -1 === e.indexOf(s) && e.push(s);
     });
-    try {
-      localStorage.setItem("bassam_callsigns_v1", JSON.stringify(e));
-    } catch (t) {}
+    if (!await this._opsSave({ op: "callsigns", value: e }, draft => draft.set("bassam_callsigns_v1", e))) return false;
     this.setState({ csTick: (this.state.csTick || 0) + 1 });
+    return true;
   }
-  csAdd() {
+  async csAdd() {
     const t = String(this.state.csNew || "").trim();
     if (!t) return;
     const e = this.loadCsList();
     if (-1 !== e.indexOf(t)) return (this.bsToast("الرمز موجود مسبقاً", "warn"), void this.setState({ csNew: "" }));
-    (this.saveCsList(e.concat([t])), this.setState({ csNew: "" }));
+    if (await this.saveCsList(e.concat([t]))) this.setState({ csNew: "" });
   }
-  csRename(t, e) {
+  async csRename(t, e) {
     const s = String(e || "").trim();
     if (!s || s === t) return void this.setState({ csEdit: null });
     const r = this.loadCsList();
     if (-1 !== r.indexOf(s)) return void this.bsToast("الرمز موجود مسبقاً", "warn");
-    this.saveCsList(r.map((e) => (e === t ? s : e)));
     const n = { ...this.state.staffing };
     (Object.keys(n).forEach((e) => {
       const r = { ...(n[e] || {}) };
@@ -570,11 +511,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }),
         i && (n[e] = r));
     }),
-      this.saveStaffing(n),
-      this.setState({ csEdit: null }));
+      await this._opsSave({ op: "callsign-rename", from: t, to: s }, draft => {
+        draft.set("bassam_callsigns_v1", r.map((e) => (e === t ? s : e)));
+        draft.set("bassam_staffing_v3", n);
+      }) && this.setState({ csEdit: null, staffing: this.loadStaffing(), csTick: (this.state.csTick || 0) + 1 }));
   }
-  csDel(t) {
-    this.saveCsList(this.loadCsList().filter((e) => e !== t));
+  async csDel(t) {
+    const callsigns = this.loadCsList().filter((e) => e !== t);
     const e = { ...this.state.staffing };
     (Object.keys(e).forEach((s) => {
       const r = { ...(e[s] || {}) };
@@ -584,8 +527,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }),
         n && (e[s] = r));
     }),
-      this.saveStaffing(e),
-      this.setState({ csEdit: null }));
+      await this._opsSave({ op: "callsign-delete", value: t }, draft => {
+        draft.set("bassam_callsigns_v1", callsigns);
+        draft.set("bassam_staffing_v3", e);
+      }) && this.setState({ csEdit: null, staffing: this.loadStaffing(), csTick: (this.state.csTick || 0) + 1 }));
   }
   /* KIVO_265 · قرارُ المالك (2026-10-19): نوعُ العمل قائمةٌ مغلقة — «إداري» و«ميداني» فقط. كانت تُقرأ من bassam_options_v1 → options.work[] وتُضاف
      إليها قيمٌ حرّة وتُعاد تسميتُها وتُحذف؛ ومؤشّراتُ الإدارة والمهامُ والتقريرُ اليومي تطابق «ميداني» حرفياً فيخرج أيُّ نوعٍ آخر من الحساب بصمت. */
@@ -605,91 +550,36 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   wkFixedMsg() {
     this.bsToast("نوعُ العمل قائمةٌ ثابتة: ميدانيـ / ـة أو إداريـ / ـة — لا يُضاف ولا يُعدَّل ولا يُحذف", "warn");
   }
-  saveWkOpts(t) {
-    try {
-      const e = localStorage.getItem("bassam_options_v1"),
-        s = (e && JSON.parse(e)) || {},
-        r = { type: Array.isArray(s.type) ? s.type : ["دائم", "موسمي", "متعاون"], work: t };
-      localStorage.setItem("bassam_options_v1", JSON.stringify(r));
-    } catch (t) {}
-    this.setState({ wkTick: (this.state.wkTick || 0) + 1 });
-  }
-  wkSetEmp(t, e) {
+  async wkSetEmp(t, e) {
     if (e && !this.wkCanon(e)) return void this.wkFixedMsg();   /* KIVO_265: لا قيمةَ خارج القائمة المغلقة */
     if (e) e = this.wkCanon(e);
     if (t) {
-      try {
-        const s = localStorage.getItem("bassam_employees_v1"),
-          r = s ? JSON.parse(s) : [];
-        if (Array.isArray(r)) {
-          const s = r.map((s) => (s && s.eid === t ? { ...s, work: e } : s));
-          localStorage.setItem("bassam_employees_v1", JSON.stringify(s));
-        }
-      } catch (t) {}
+      if (!await this._opsSave({ op: "employee-work", employee: t, value: e }, draft => {
+        const employees = draft.get("bassam_employees_v1") || [];
+        draft.set("bassam_employees_v1", employees.map(row => row && row.eid === t ? { ...row, work: e } : row));
+      })) return false;
       this.setState({ wkOpen: null });
+      return true;
     }
   }
   wkAdd() {
-    if (this.wkFixed()) return void this.wkFixedMsg();   /* KIVO_265: القائمةُ مغلقة */
-    const t = String(this.state.wkNew || "").trim();
-    if (!t) return;
-    const e = this.loadWkOpts();
-    if (-1 !== e.indexOf(t)) return (this.bsToast("الخيار موجود مسبقاً"), void this.setState({ wkNew: "" }));
-    (this.saveWkOpts(e.concat([t])), this.setState({ wkNew: "" }));
+    this.wkFixedMsg();
   }
   wkRename(t, e) {
-    if (this.wkFixed()) return void this.wkFixedMsg();   /* KIVO_265: القائمةُ مغلقة */
-    const s = String(e || "").trim();
-    if (!s || s === t) return void this.setState({ wkEdit: null });
-    const r = this.loadWkOpts();
-    if (-1 !== r.indexOf(s)) return void this.bsToast("الاسم الجديد مستخدم مسبقاً");
-    this.saveWkOpts(r.map((e) => (e === t ? s : e)));
-    let n = 0;
-    try {
-      const e = localStorage.getItem("bassam_employees_v1"),
-        r = e ? JSON.parse(e) : [];
-      if (Array.isArray(r)) {
-        const e = r.map((e) => (e && e.work === t ? (n++, { ...e, work: s }) : e));
-        localStorage.setItem("bassam_employees_v1", JSON.stringify(e));
-      }
-    } catch (t) {}
-    (this.state.fWork === t && this.setState({ fWork: s }),
-      this.setState({ wkEdit: null }),
-      n && this.bsToast("رُحِّل الاسم الجديد إلى " + KIVO.BassamCount(n, "موظف", "g") + ""));
+    this.wkFixedMsg();
   }
   wkDel(t) {
-    if (this.wkFixed()) return void this.wkFixedMsg();   /* KIVO_265: القائمةُ مغلقة */
-    const e = this.loadWkOpts();
-    if (e.length <= 1) return void this.bsToast("لا يُحذف آخر خيار — عدّله بدلاً من ذلك");
-    const s = this.loadEmp().filter((e) => e && e.work === t).length;
-    const go = () => {
-      (this.saveWkOpts(e.filter((e) => e !== t)), this.state.fWork === t && this.setState({ fWork: "all" }));
-    };
-    s
-      ? KIVO
-          .bsConfirm({
-            title: "حذف خيار مستعمل",
-            msg:
-              "يستخدم هذا الخيار " +
-              KIVO.BassamCount(s, "موظف") +
-              " — ستبقى القيمة مسجّلة " +
-              KIVO.BassamCount.agr(s, "لديه", "لديهما", "لديهم") +
-              " بعد الحذف. هل تريد حذف «" +
-              t +
-              "»؟",
-            ok: "حذف الخيار",
-            danger: !0,
-          })
-          .then((y) => {
-            y && go();
-          })
-      : go();
+    this.wkFixedMsg();
   }
-  setEntry(t, e) {
-    const s = { ...this.state.staffing },
-      r = this.monthKey(),
-      n = { ...(s[r] || {}) };
-    ((n[t] = { ...(n[t] || {}), ...e }), (s[r] = n), this.saveStaffing(s));
+  async setEntry(t, e) {
+    if (!this.PC("edit")) { this.permDeny(); return false; }
+    const month = this.monthKey();
+    if (!await this._opsSave({ op: "entry", month, employee: t, patch: e }, draft => {
+      const staffing = draft.get("bassam_staffing_v3") || {}, bucket = { ...(staffing[month] || {}) };
+      bucket[t] = { ...(bucket[t] || {}), ...e }; staffing[month] = bucket;
+      draft.set("bassam_staffing_v3", staffing);
+    })) return false;
+    this.setState({ staffing: this.loadStaffing() }); return true;
   }
   fmtClock(t) {
     const e = /^(\d{2}):(\d{2})$/.exec(t || "");
@@ -829,17 +719,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return ((this.__hg[s] = r), r);
   }
   healOrphanShifts(t) {
+    t = t.slice();
     try {
       const e = {};
       t.forEach((t) => {
         t && t.name && (e[t.name] = 1);
       });
-      const s = JSON.parse(localStorage.getItem("bassam_staffing_locks_v1") || "{}") || {},
-        r = JSON.parse(localStorage.getItem("bassam_staffing_v3") || "{}") || {},
+      const s = KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1") || {},
+        r = KIVO.__BS_SRV.operations.get("bassam_staffing_v3") || {},
         n = this.curHijri();
-      let i = !1;
-      if (
-        (Object.keys(r).forEach((a) => {
+      Object.keys(r).forEach((a) => {
           if (!0 === s[a]) return;
           const o = String(a).split("-"),
             l = +o[0],
@@ -852,31 +741,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             Object.keys(p).forEach((s) => {
               if (s === this.snapKey()) return;
               const r = p[s] && p[s].shift;
-              r && !e[r] && ((e[r] = 1), t.push({ name: r, color: "#b99751" }), (i = !0));
+              r && !e[r] && ((e[r] = 1), t.push({ name: r, color: "#b99751" }));
             });
-        }),
-        i)
-      )
-        try {
-          localStorage.setItem("bassam_shift_options_v1", JSON.stringify(t));
-        } catch (t) {}
+        });
     } catch (t) {}
     return t;
   }
   loadShiftOpts() {
-    this.__shiftRename = null;
     try {
-      const t = localStorage.getItem("bassam_shift_options_v1");
+      const t = KIVO.__BS_SRV.operations.text("bassam_shift_options_v1");
       if (t) {
-        let e = JSON.parse(t);
+        const e = JSON.parse(t);
         if (Array.isArray(e) && e.length && e.every((t) => t && t.name && t.color)) {
-          const t = ["الصباحية", "المسائية", "الليلية"];
-          if (3 === e.length && e.every((e, s) => e.name === t[s])) {
-            const t = { الصباحية: "الوردية الأولى", المسائية: "الوردية الثانية", الليلية: "الوردية الثالثة" };
-            ((e = e.map((e) => ({ ...e, name: t[e.name] })).concat([{ name: "الوردية الرابعة", color: "#1e9a66" }])),
-              localStorage.setItem("bassam_shift_options_v1", JSON.stringify(e)),
-              (this.__shiftRename = t));
-          }
           return this.healOrphanShifts(e);
         }
       }
@@ -981,7 +857,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ];
       let o = "";
       for (const k of K) {
-        const v = localStorage.getItem(k) || "";
+        const ops = KIVO.__BS_SRV.operations;
+        const v = (ops.resources.includes(k) ? ops.text(k) : localStorage.getItem(k)) || "";
         let h = 5381;
         for (let i = 0; i < v.length; i++) h = (h * 33 + v.charCodeAt(i)) | 0;
         o += v.length + ":" + h + ";";
@@ -1388,8 +1265,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             name: t.name,
             color: t.color,
             selected: e.shift === t.name,
-            pick: () => {
-              (this.setEntry(this.empKey(e), { shift: t.name }), this.setState({ sdOpen: null }));
+            pick: async () => {
+              if (await this.setEntry(this.empKey(e), { shift: t.name })) this.setState({ sdOpen: null });
             },
             style:
               "display:flex;align-items:center;gap:9px;height:32px;padding:0 9px;border-radius:8px;font-size:11px;cursor:pointer;transition:background .12s;" +
@@ -1755,8 +1632,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     },
                   ));
               },
-          sdClear: () => {
-            (this.setEntry(this.empKey(e), { shift: "" }), this.setState({ sdOpen: null }));
+          sdClear: async () => {
+            if (await this.setEntry(this.empKey(e), { shift: "" })) this.setState({ sdOpen: null });
           },
           sdClearStyle:
             "display:flex;align-items:center;gap:9px;height:32px;padding:0 9px;border-radius:8px;font-size:11px;cursor:pointer;transition:background .12s;" +
@@ -1809,8 +1686,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   sdOpen: null,
                   restOpen: null,
                 })),
-          csClear: () => {
-            (this.setEntry(this.empKey(e), { cs: "" }), this.setState({ csOpen: null }));
+          csClear: async () => {
+            if (await this.setEntry(this.empKey(e), { cs: "" })) this.setState({ csOpen: null });
           },
           csClearStyle:
             "display:flex;align-items:center;gap:9px;height:32px;padding:0 9px;border-radius:8px;font-size:11px;cursor:pointer;transition:background .12s;" +
@@ -1830,8 +1707,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               (e.stopPropagation(), this.csRename(t, (this.state.csEdit || {}).val));
             },
             stop: (e) => e.stopPropagation(),
-            pick: () => {
-              (s.csEdit && s.csEdit.old === t) || (this.setEntry(this.empKey(e), { cs: t }), this.setState({ csOpen: null }));
+            pick: async () => {
+              if (!(s.csEdit && s.csEdit.old === t) && await this.setEntry(this.empKey(e), { cs: t })) this.setState({ csOpen: null });
             },
             edit: (e) => {
               (e.stopPropagation(), this.setState({ csEdit: { old: t, val: t } }));
@@ -2257,7 +2134,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               "warn",
             ),
             !1),
-          y = (t) => {
+          y = async (t) => {
             const e = u();
             if (!e.length) return 0;
             const s = { ...this.state.staffing },
@@ -2268,11 +2145,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 n[e] = { ...(n[e] || {}), ...t };
               }),
               (s[r] = n),
-              this.saveStaffing(s),
-              e.length
+              await this.saveStaffing(s) ? e.length : 0
             );
           },
-          b = (t, e) => {
+          b = async (t, e) => {
             const s = u();
             if (!s.length) return 0;
             const r = {};
@@ -2281,7 +2157,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             });
             let n = 0;
             try {
-              const s = localStorage.getItem("bassam_employees_v1"),
+              const s = KIVO.__BS_SRV.operations.text("bassam_employees_v1"),
                 i = s ? JSON.parse(s) : [];
               if (!Array.isArray(i)) return 0;
               const a = i.map((s) => {
@@ -2292,7 +2168,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 }
                 return s;
               });
-              localStorage.setItem("bassam_employees_v1", JSON.stringify(a));
+              if (!await this._opsSave({ op: "employees-bulk", field: t, value: e, employees: s }, draft => draft.set("bassam_employees_v1", a))) return 0;
             } catch (t) {
               return 0;
             }
@@ -2316,11 +2192,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           bulkTplOpts: this.PERM_TPLS()
             .map((t) => ({ v: t.id, name: t.name }))
             .concat([{ v: "__none", name: "بدون صلاحية — إزالة" }]),
-          onBulkShift: (t) => {
+          onBulkShift: async (t) => {
             const e = t.target.value;
             if (((t.target.value = ""), !e || !g())) return;
             const s = "__none" === e ? "" : e.slice(3),
-              r = y({ shift: s });
+              r = await y({ shift: s });
             r &&
               this.bsAck(
                 s
@@ -2329,10 +2205,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 "ok",
               );
           },
-          onBulkMuk: (t) => {
+          onBulkMuk: async (t) => {
             const e = t.target.value;
             if (((t.target.value = ""), !e || !g())) return;
-            const s = y({ muk: "on" === e });
+            const s = await y({ muk: "on" === e });
             s &&
               this.bsAck(
                 "on" === e ? "كُلِّف " + KIVO.BassamCount(s, "موظف") + "" : "أُلغي تكليف " + KIVO.BassamCount(s, "موظف", "g") + "",
@@ -2398,7 +2274,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             return (
               (() => {
                 try {
-                  const t = localStorage.getItem("bassam_options_v1"),
+                  const t = KIVO.__BS_SRV.operations.text("bassam_options_v1"),
                     e = t ? JSON.parse(t) : null;
                   return e && Array.isArray(e.type) ? e.type : ["دائم", "موسمي", "متعاون"];
                 } catch (t) {
@@ -2414,16 +2290,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               Object.keys(t).map((t) => ({ v: t }))
             );
           })(),
-          onBulkWork: (t) => {
+          onBulkWork: async (t) => {
             const e = t.target.value;
             if (((t.target.value = ""), !e || !g())) return;
-            const s = b("work", e);
+            const s = await b("work", e);
             s && this.bsAck("عُيِّن نوع العمل «" + e + "» لـ" + KIVO.BassamCount(s, "موظف", "g") + "", "ok");
           },
-          onBulkType: (t) => {
+          onBulkType: async (t) => {
             const e = t.target.value;
             if (((t.target.value = ""), !e || !g())) return;
-            const s = b("type", e);
+            const s = await b("type", e);
             s && this.bsAck("عُيِّن نوع التوظيف «" + e + "» لـ" + KIVO.BassamCount(s, "موظف", "g") + "", "ok");
           },
           rows: P.slice(c, c + n).map((t, e, r) => ({ ...t, sn: String(c + e + 1), ...St9H(t, e > 0 ? r[e - 1] : null) })),
@@ -2531,24 +2407,28 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           " هـ بكل تسكيناته وراحاته وتكاليفه نهائياً وسيعود الكرت فارغاً — لا يمكن التراجع."
         : "",
       delMonthCancel: () => this.setState({ delMonth: null }),
-      delMonthDo: () => {
+      delMonthDo: async () => {
         const t = this.state.delMonth;
         if (!t) return;
         const e = { ...this.state.staffing };
-        (delete e[this.state.year + "-" + t.n], this.saveStaffing(e));
+        delete e[this.state.year + "-" + t.n];
         const s = { ...this.state.locked };
-        (delete s[this.state.year + "-" + t.n], this.saveLocks(s), this.setState({ delMonth: null }));
+        delete s[this.state.year + "-" + t.n];
+        if (await this._opsSave({ op: "delete-month", year: this.state.year, month: t.n }, draft => {
+          draft.set("bassam_staffing_v3", e); draft.set("bassam_staffing_locks_v1", s);
+        })) this.setState({ delMonth: null, staffing: this.loadStaffing(), locked: this.loadLocks() });
       },
       lockConfirmOpen: !!s.lockConfirm,
       lcStop: (t) => t.stopPropagation(),
       lockCancel: () => this.setState({ lockConfirm: null }),
-      lockDo: () => {
+      lockDo: async () => {
         const t = this.state.lockConfirm;
         if (!t) return;
         const e = this.state.year + "-" + t.n;
         const s = { ...this.state.locked };
         t.locked ? (this.monthPastS(this.state.year, t.n) ? (s[e] = { mo: 1 }) : delete s[e]) : (s[e] = !0);
         const r = { ...(this.state.staffing || {}) };
+        let restoredShifts = null;
         if (r[e] && "object" == typeof r[e]) {
           const s = { ...r[e] };
           if (t.locked) {
@@ -2575,10 +2455,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               }),
               i)
             ) {
-              try {
-                localStorage.setItem("bassam_shift_options_v1", JSON.stringify(e));
-              } catch (t) {}
-              this.setState({ shiftOpts: e });
+              restoredShifts = e;
             }
             delete s[this.snapKey()];
           } else
@@ -2588,9 +2465,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               tStart: t.tStart || "",
               tEnd: t.tEnd || "",
             }));
-          ((r[e] = s), this.saveStaffing(r));
+          r[e] = s;
         }
-        (this.saveLocks(s), this.setState({ lockConfirm: null }));
+        if (await this._opsSave({ op: "month-approval", year: this.state.year, month: t.n, reopen: !!t.locked }, draft => {
+          draft.set("bassam_staffing_locks_v1", s);
+          if (r[e] && typeof r[e] === "object") draft.set("bassam_staffing_v3", r);
+          if (restoredShifts) draft.set("bassam_shift_options_v1", restoredShifts);
+        })) this.setState({ lockConfirm: null, locked: this.loadLocks(), staffing: this.loadStaffing(), ...(restoredShifts ? { shiftOpts: this.loadShiftOpts() } : {}) });
       },
       lcTitle: s.lockConfirm && s.lockConfirm.locked ? "فتح الجدول للتعديل" : "اعتماد وإغلاق الجدول",
       lcMsg: s.lockConfirm
@@ -2784,8 +2665,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           retroBtnStyle:
             "height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;border:0;cursor:pointer;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;background:" +
             (t.open ? "var(--bg-xb45309)" : "var(--bg-x64748b)"),
-          retroDo: () => {
-            (this._setMonthOpenS(s.year, t.m, !!t.open), this.setState({ retroAsk: null }));
+          retroDo: async () => {
+            if (await this._setMonthOpenS(s.year, t.m, !!t.open)) this.setState({ retroAsk: null });
           },
           retroCancel: () => this.setState({ retroAsk: null }),
           retroStop: (t) => t.stopPropagation(),

@@ -180,7 +180,8 @@
   var snCache = { s: null, names: [] };
   function planSiteNames(dept) {
     try {
-      var sv = W.localStorage.getItem('bsdept:' + dept + ':bassam_plan_v1'); if (!sv) return [];
+      var plan = KIVO.__BS_SRV.operations.reference('bsdept:' + dept + ':bassam_plan_v1'); if (!plan) return [];
+      var sv = JSON.stringify(plan);
       if (snCache.s !== sv) { var pv = JSON.parse(sv); snCache = { s: sv, names: (pv && Array.isArray(pv.floors) ? pv.floors : []).map(function (f, i) { return siteName(f, i); }) }; }
       return snCache.names;
     } catch (e) { return []; }

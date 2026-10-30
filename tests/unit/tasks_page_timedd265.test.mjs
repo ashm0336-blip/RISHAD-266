@@ -1,3 +1,4 @@
+import { attachTaskOperations } from './tasks_vm_operations_fx.mjs';
 /* KIVO_265 · طلبُ المالك 2026-10-20 («قوائم منسدلة احترافية»): منتقي الوقت في نافذة «مهمة جديدة» قائمةٌ منسدلة — منطقُ الصفحة في vm بلا خادم:
      · حقلٌ لكل وقت يفتح أوقاتَ اليوم كلَّ ربع ساعة (96) والمختارُ معلَّم · وقتٌ خارج الشبكة (8:10) يُدرج في موضعه
      · قائمةُ النهاية تُظهر مدةَ كلِّ خيار من البداية و«قبل البداية» لما سبقها
@@ -16,7 +17,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const LOGIC = moduleLogic('tasks');
-function page() {
+async function page() {
   const store = new Map([['bassam_tasks_v1', '{}'], ['bassam_employees_v1', '[]']]);
   const KIVO = {}, toasts = [];
   const ctx = { KIVO, console, Intl, Date, Math, JSON, Promise, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, setTimeout, clearTimeout, setInterval: () => 0, clearInterval: () => 0,
@@ -34,15 +35,16 @@ function page() {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
+  const opsFixture = await attachTaskOperations(ctx, { store });
   const c = new ctx.__C(); c.state = Object.assign({}, c.state || {}, { locked: {} });
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);
-  return { c, toasts, ctx, V: () => c.renderVals() };
+  return { c, opsFixture, toasts, ctx, V: () => c.renderVals() };
 }
 const open = (P, o) => P.c.setState(Object.assign({ year: 1448, month: 5, newTaskOpen: true, editRef: null, newDay: 9, newEDay: 9, newSh: 8, newSm: 0, newSap: 'ص', newEh: 10, newEm: 0, newEap: 'ص', tkTp: null, tkTpQ: '' }, o || {}));
 const st = (P) => { const s = P.c.state; return [s.newDay, s.newSh, s.newSm, s.newSap, s.newEDay, s.newEh, s.newEm, s.newEap].join(' '); };
 
-test('الحقلُ والقائمة: مغلقةٌ بلا خيارات · مفتوحةٌ بـ96 وقتاً كلَّ ربع ساعة والمختارُ معلَّم · فتحُ الأخرى يغلقها · النقرُ خارجها يغلقها', () => {
-  const P = page(); open(P);
+test('الحقلُ والقائمة: مغلقةٌ بلا خيارات · مفتوحةٌ بـ96 وقتاً كلَّ ربع ساعة والمختارُ معلَّم · فتحُ الأخرى يغلقها · النقرُ خارجها يغلقها', async () => {
+  const P = await page(); open(P);
   let V = P.V(); assert.equal(V.tkTpSV, '08:00'); assert.equal(V.tkTpSAp, 'ص'); assert.equal(V.tkTpEV, '10:00'); assert.equal(V.tkTpSOpen, false); assert.equal(V.tkTpSOpts.length, 0, 'لا تُبنى القائمة وهي مغلقة');
   V.tkTpSToggle(); V = P.V();
   assert.equal(V.tkTpSOpen, true); assert.equal(V.tkTpSOpenA, 'true'); assert.equal(V.tkTpSOpts.length, 96);
@@ -53,8 +55,8 @@ test('الحقلُ والقائمة: مغلقةٌ بلا خيارات · مفت�
   V.tkTpEToggle(); assert.equal(P.c.state.tkTp, null, 'النقرُ على الحقل نفسه يغلقها');
 });
 
-test('النهاية: مدةُ كلِّ خيارٍ من البداية · «قبل البداية» لما سبقها · والاختيارُ يحفظ ويغلق', () => {
-  const P = page(); open(P);
+test('النهاية: مدةُ كلِّ خيارٍ من البداية · «قبل البداية» لما سبقها · والاختيارُ يحفظ ويغلق', async () => {
+  const P = await page(); open(P);
   P.V().tkTpEToggle(); let V = P.V();
   const by = (t) => V.tkTpEOpts.find((o) => o.t === t);
   assert.equal(by('10:00 ص').sub, '2 س'); assert.equal(by('08:15 ص').sub, '15 د'); assert.equal(by('11:30 ص').sub, '3 س 30 د');
@@ -63,22 +65,22 @@ test('النهاية: مدةُ كلِّ خيارٍ من البداية · «قب
   assert.equal(st(P), '9 8 0 ص 9 5 0 م'); assert.equal(P.c.state.tkTp, null); assert.equal(P.V().tkDurTxt, '9 س');
 });
 
-test('تغييرُ البداية يُبقي المدة — وتعبر النهايةُ منتصفَ الليل إلى اليوم التالي — ولا تخرج عن الشهر', () => {
-  const P = page(); open(P);
+test('تغييرُ البداية يُبقي المدة — وتعبر النهايةُ منتصفَ الليل إلى اليوم التالي — ولا تخرج عن الشهر', async () => {
+  const P = await page(); open(P);
   P.V().tkTpSToggle(); P.V().tkTpSOpts.find((o) => o.t === '02:00 م').click();
   assert.equal(st(P), '9 2 0 م 9 4 0 م', 'المدةُ ساعتان كما كانت');
   P.V().tkTpSToggle(); P.V().tkTpSOpts.find((o) => o.t === '11:00 م').click();
   assert.equal(st(P), '9 11 0 م 10 1 0 ص', 'النهايةُ في اليوم التالي'); assert.equal(P.V().tkDurTxt, '2 س');
-  const P2 = page(); open(P2); const last = P2.c.hMonthDays(1448, 5);
+  const P2 = await page(); open(P2); const last = P2.c.hMonthDays(1448, 5);
   open(P2, { newDay: last, newEDay: last, newSh: 8, newSap: 'م', newEh: 10, newEap: 'م' });
   P2.V().tkTpSToggle(); P2.V().tkTpSOpts.find((o) => o.t === '11:30 م').click();
   assert.equal(st(P2), [last, 11, 30, 'م', last, 10, 0, 'م'].join(' '), 'آخرُ يومٍ في الشهر: البدايةُ تتغيّر والنهايةُ لا تخرج عن الشهر');
-  const P3 = page(); open(P3, { newEh: 8, newEm: 0, newEap: 'ص' });   /* مدةٌ صفرية: لا تحريك */
+  const P3 = await page(); open(P3, { newEh: 8, newEm: 0, newEap: 'ص' });   /* مدةٌ صفرية: لا تحريك */
   P3.V().tkTpSToggle(); P3.V().tkTpSOpts.find((o) => o.t === '09:00 ص').click(); assert.equal(st(P3), '9 9 0 ص 9 8 0 ص');
 });
 
-test('الوقتُ المكتوب: 8:10 م · 20:10 · ٨:١٠ص · 12:30 = الظهر · وغيرُ المفهوم ينبّه ولا يغيّر · Enter يطبّق · Esc يغلق · والوقتُ الحرّ يظهر في القائمة', () => {
-  const P = page(); open(P);
+test('الوقتُ المكتوب: 8:10 م · 20:10 · ٨:١٠ص · 12:30 = الظهر · وغيرُ المفهوم ينبّه ولا يغيّر · Enter يطبّق · Esc يغلق · والوقتُ الحرّ يظهر في القائمة', async () => {
+  const P = await page(); open(P);
   const type = (w, q) => { P.c.setState({ tkTp: w, tkTpQ: q }); P.V().tkTpApply(); };
   type('e', '8:10 م'); assert.equal(st(P), '9 8 0 ص 9 8 10 م');
   type('e', '20:40'); assert.equal(st(P), '9 8 0 ص 9 8 40 م');
@@ -93,8 +95,8 @@ test('الوقتُ المكتوب: 8:10 م · 20:10 · ٨:١٠ص · 12:30 = ال
   assert.equal(V.tkTpSOpts.findIndex((o) => o.t === '08:10 ص'), 33, 'في موضعه بين 08:00 و08:15');
 });
 
-test('النهايةُ قبل البداية تُعلَّم في الحقل · وقائمةُ الأيام تحمل اسمَ اليوم', () => {
-  const P = page(); open(P, { newEh: 7, newEap: 'ص' });
+test('النهايةُ قبل البداية تُعلَّم في الحقل · وقائمةُ الأيام تحمل اسمَ اليوم', async () => {
+  const P = await page(); open(P, { newEh: 7, newEap: 'ص' });
   const V = P.V(); assert.match(V.tkTpEBtn, /danger-border/); assert.doesNotMatch(V.tkTpSBtn, /danger-border/); assert.equal(V.tkDurTxt, 'النهاية قبل البداية');
   const WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   const g = P.c.hGreg(1448, 5, 9), lbl = V.tkStartDays.find((d) => d.v === '9').label;
@@ -102,8 +104,8 @@ test('النهايةُ قبل البداية تُعلَّم في الحقل · �
   const L = V.tkStartDays.map((d) => WD.indexOf(d.label.split(' ')[0])); assert.ok(L.every((w, i) => i === 0 || w === (L[i - 1] + 1) % 7), 'أيامٌ متتالية');
 });
 
-test('Escape وقائمةُ الوقت مفتوحة: يُلتقط على window قبل الغلاف فيغلقها وحدها (لا النافذةَ كلَّها) · ومغلقةً لا يمسّه', () => {
-  const P = page();
+test('Escape وقائمةُ الوقت مفتوحة: يُلتقط على window قبل الغلاف فيغلقها وحدها (لا النافذةَ كلَّها) · ومغلقةً لا يمسّه', async () => {
+  const P = await page();
   const src = fs.readFileSync(path.join(ROOT, 'src/modules/tasks/logic.js'), 'utf8');
   assert.match(src, /window\.addEventListener\("keydown", this\._tkTpEsc, !0\)/, 'على window · capture');
   assert.match(src, /window\.removeEventListener\("keydown", this\._tkTpEsc, !0\)/, 'ويُزال عند الخروج');
@@ -115,8 +117,8 @@ test('Escape وقائمةُ الوقت مفتوحة: يُلتقط على window 
   P.c.setState({ tkTp: 'e' }); P.c._tkTpEsc(ev('Enter')); assert.equal(P.c.state.tkTp, 'e', 'غيرُ Escape لا يغلق');
 });
 
-test('الوقتُ المكتوب كلمات: مساءً · صباحاً · ظهراً · عصراً · p.m. · «الساعة» — وكلمةٌ أخرى أو علامتان متعارضتان أو 20:10 ص ⇒ null', () => {
-  const P = page(), p = (q, ap0) => P.c._tkParseTime(q, ap0 || 'ص');
+test('الوقتُ المكتوب كلمات: مساءً · صباحاً · ظهراً · عصراً · p.m. · «الساعة» — وكلمةٌ أخرى أو علامتان متعارضتان أو 20:10 ص ⇒ null', async () => {
+  const P = await page(), p = (q, ap0) => P.c._tkParseTime(q, ap0 || 'ص');
   const hm = (v) => (v == null ? null : Math.floor(v / 60) + ':' + String(v % 60).padStart(2, '0'));
   const ok = { '8 مساءً': '20:00', '8:10 صباحاً': '8:10', '٣ عصراً': '15:00', '12 ظهراً': '12:00', '8:10 pm': '20:10', '8.10 p.m.': '20:10', '8:10م': '20:10',
     '8 10 م': '20:10', 'الساعة 9 م': '21:00', '7 المغرب': '19:00', '9 العشاء': '21:00', '5 فجراً': '5:00', '12 ص': '0:00', '0:30': '0:30', '20:10': '20:10', '2010': '20:10', '830': '8:30', '8:10 مـساءً': '20:10' };
@@ -134,7 +136,7 @@ test('الوقتُ المكتوب كلمات: مساءً · صباحاً · ظه
   assert.equal(st(P), before, 'لا تغيير'); assert.match(P.toasts.at(-1)[0], /اكتب الوقت/);
 });
 
-test('التوقيت الصيفي: المدةُ بالساعة الفعلية (ms) — خياراتُ النهاية وتحريكُ النهاية مع البداية في جهازٍ خارج المملكة', () => {
+test('التوقيت الصيفي: المدةُ بالساعة الفعلية (ms) — خياراتُ النهاية وتحريكُ النهاية مع البداية في جهازٍ خارج المملكة', async () => {
   if (!process.env.TK_TP_DST) {
     const env = Object.assign({}, process.env, { TZ: 'America/New_York', TK_TP_DST: '1' });
     delete env.NODE_TEST_CONTEXT;                                              /* عمليةٌ مستقلة تكتب TAP لا رسائلَ المشغّل الأب */
@@ -143,14 +145,14 @@ test('التوقيت الصيفي: المدةُ بالساعة الفعلية (m
     return;
   }
   /* 2027-03-14 = 6 شوال 1448: في نيويورك تقفز الساعة من 2:00 إلى 3:00 ص ⇒ من 1:00 إلى 4:00 ص ساعتان فعليتان لا ثلاث */
-  const P = page(); open(P, { year: 1448, month: 10, newDay: 6, newEDay: 6, newSh: 1, newSm: 0, newSap: 'ص', newEh: 4, newEm: 0, newEap: 'ص' });
+  const P = await page(); open(P, { year: 1448, month: 10, newDay: 6, newEDay: 6, newSh: 1, newSm: 0, newSap: 'ص', newEh: 4, newEm: 0, newEap: 'ص' });
   const g = P.c.hGreg(1448, 10, 6); assert.equal([g.getFullYear(), g.getMonth() + 1, g.getDate()].join('-'), '2027-3-14');
   assert.equal(P.V().tkDurTxt, '2 س');
   P.V().tkTpEToggle(); assert.equal(P.V().tkTpEOpts.find((o) => o.t === '04:00 ص').sub, '2 س', 'مدةُ الخيار كما يحسبها الخادم');
   P.c.setState({ tkTp: null }); P.V().tkTpSToggle(); P.V().tkTpSOpts.find((o) => o.t === '05:00 ص').click();
   assert.equal(st(P), '6 5 0 ص 6 7 0 ص', 'تبقى المدةُ ساعتين فعليتين'); assert.equal(P.V().tkDurTxt, '2 س');
   /* 2026-11-01 = 21 جمادى الأولى 1448: تتكرّر 1:00–1:59 ص — وقتُها الثاني يُختم كأوّلها فتُقدَّم النهايةُ إلى أقرب وقتٍ يُختم كما هو (لا تسبق البداية ولا تقصر المدة) */
-  const Q = page(); open(Q, { year: 1448, month: 5, newDay: 21, newEDay: 21, newSh: 12, newSm: 30, newSap: 'ص', newEh: 1, newEm: 30, newEap: 'ص' });
+  const Q = await page(); open(Q, { year: 1448, month: 5, newDay: 21, newEDay: 21, newSh: 12, newSm: 30, newSap: 'ص', newEh: 1, newEm: 30, newEap: 'ص' });
   const g2 = Q.c.hGreg(1448, 5, 21); assert.equal([g2.getFullYear(), g2.getMonth() + 1, g2.getDate()].join('-'), '2026-11-1');
   assert.equal(Q.V().tkDurTxt, '1 س');
   Q.V().tkTpSToggle(); Q.V().tkTpSOpts.find((o) => o.t === '01:00 ص').click();
@@ -188,8 +190,8 @@ function dom(P) {
   return { D, L, pop, trig, opts, other, body };
 }
 
-test('البؤرةُ ولوحةُ المفاتيح: الفتحُ يضبط العرضَ ويُبئّر المختار ويمرّر إليه قبل الرسم · الأسهم وHome/End بـtabindex متنقّل · الاختيار وEscape يعيدانها إلى الزرّ', () => {
-  const P = page(); open(P); const X = dom(P);
+test('البؤرةُ ولوحةُ المفاتيح: الفتحُ يضبط العرضَ ويُبئّر المختار ويمرّر إليه قبل الرسم · الأسهم وHome/End بـtabindex متنقّل · الاختيار وEscape يعيدانها إلى الزرّ', async () => {
+  const P = await page(); open(P); const X = dom(P);
   let V = P.V(); assert.doesNotMatch(V.tkTpSBtn, /z-index/);
   V.tkTpSToggle(); V = P.V();
   assert.equal(X.pop.style.p.width, '300px', 'عرضُ القائمة = عرضُ الحقل'); assert.equal(X.D.activeElement, X.opts[2], 'البؤرةُ على المختار');
@@ -211,7 +213,7 @@ test('البؤرةُ ولوحةُ المفاتيح: الفتحُ يضبط الع
 });
 
 test('خروجُ البؤرة إلى عنصرٍ آخر يغلقها (لا إلى body ولا داخلها) · وتمريرُ النافذة حتى يختفي نصفُ الزرّ يغلقها', async () => {
-  const P = page(); open(P); const X = dom(P), wait = () => new Promise((r) => setTimeout(r, 5));
+  const P = await page(); open(P); const X = dom(P), wait = () => new Promise((r) => setTimeout(r, 5));
   P.c.setState({ tkTp: 's' });
   X.D.activeElement = X.opts[1]; P.V().tkTpSBlur(); await wait(); assert.equal(P.c.state.tkTp, 's', 'داخلها: تبقى');
   X.D.activeElement = X.body; P.V().tkTpSBlur(); await wait(); assert.equal(P.c.state.tkTp, 's', 'body (نقرُ Safari): تبقى');
@@ -225,7 +227,7 @@ test('خروجُ البؤرة إلى عنصرٍ آخر يغلقها (لا إلى
   P.V().tkBdScroll({ currentTarget: bd }); assert.equal(P.c.state.tkTp, null, 'مغلقةً: لا شيء');
 });
 
-test('القالبُ والأنماط: data-tp-trig/root · onBlur · onKeyDown للقائمة · tabIndex · onScroll لجسم النافذة · قائمةٌ موضعُها relative وارتفاعُها يتبع الشاشة', () => {
+test('القالبُ والأنماط: data-tp-trig/root · onBlur · onKeyDown للقائمة · tabIndex · onScroll لجسم النافذة · قائمةٌ موضعُها relative وارتفاعُها يتبع الشاشة', async () => {
   const V = fs.readFileSync(path.join(ROOT, 'src/modules/tasks/view.html'), 'utf8'), C = fs.readFileSync(path.join(ROOT, 'src/modules/tasks/helmet.css'), 'utf8');
   assert.match(V, /<div class="tkf-bd" onScroll="\{\{tkBdScroll\}\}">/);
   for (const [w, P] of [['s', 'S'], ['e', 'E']]) {
@@ -237,7 +239,7 @@ test('القالبُ والأنماط: data-tp-trig/root · onBlur · onKeyDown 
 });
 
 test('الضغطُ داخل القائمة والإفلاتُ خارجها (سحبُ تحديد النص) لا يغلقها · ونقرُ لوحة المفاتيح بعدها لا يرث الضغطة', async () => {
-  const P = page(); open(P, { tkTp: 's', tkTpQ: '8:10 م' });
+  const P = await page(); open(P, { tkTp: 's', tkTpQ: '8:10 م' });
   const body = { tag: 'body' }; P.ctx.document = Object.assign({}, P.ctx.document, { body, addEventListener() {}, removeEventListener() {} });
   const bd = { style: {}, parentElement: body }, pop = { style: { position: 'absolute' }, parentElement: bd }, input = { style: {}, parentElement: pop };
   P.c.componentDidMount.call(Object.assign(P.c, { _tkSrv: () => false }));

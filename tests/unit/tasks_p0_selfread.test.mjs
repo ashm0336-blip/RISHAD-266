@@ -16,7 +16,7 @@ import vm from 'node:vm';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { ROOT } from './harness.mjs';
-import { world, workerUnderTest, ME, MATE, KT, notificationMessages, assertNotificationKVRetired, KE, D, DAY, TOMORROW, YESTERDAY, PDAY, ODAY, row, stored, rowsOf, count, putKV, addAccount, IMG_ME, IMG_MATE, PNG, P0 } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, KT, notificationMessages, assertNotificationKVRetired, KE, D, DAY, TOMORROW, YESTERDAY, PDAY, ODAY, row, stored, rowsOf, count, putKV, addAccount, IMG_ME, IMG_MATE, PNG, P0, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 /* منطقُ «ملفي» كما شُحن في KIVO_263 (الوسم) — لتوصيف الواجهة القديمة بعد دمج رقعة «ملفي» (k265-tasks: الملفُّ الحاليّ يقرأ KIVO.BassamMyTasks) */
@@ -27,9 +27,10 @@ const listOf = async (W, ck, q = '') => W.C.api('/api/me/tasks' + q, { cookie: c
 const actOf = (W, ck, body) => W.C.api('/api/me/tasks/act', { method: 'POST', cookie: ck, body });
 /* ما يفعله المدير: حفظُ صفٍّ جديدٍ مسنَدٍ للموظف ثم أمر emit المعتمد من 442؛ لا snapshot KV متقاعد. */
 async function managerAssigns(W, dm, title = 'P0 — مهمة جديدة من المدير') {
-  const S = stored(W.env, KT); const r = row({ id: NEW_ID, title, eid: ME.eid, s: Date.now() - 60e3, e: Date.now() + 3 * 3600e3 });   /* KIVO_265 · نافذةُ التنفيذ: بدأ موعدُها (لا بدءَ قبل الموعد بلا سماح) */
+  const current = await W.C.api('/api/operations/read?keys='+encodeURIComponent(KT),{cookie:dm.ck});
+  assert.equal(current.status,200);const S = current.j.resources[KT]; const r = row({ id: NEW_ID, title, eid: ME.eid, s: Date.now() - 60e3, e: Date.now() + 3 * 3600e3 });   /* KIVO_265 · نافذةُ التنفيذ: بدأ موعدُها (لا بدءَ قبل الموعد بلا سماح) */
   S[DAY] = (S[DAY] || []).concat([r]);
-  const sv = await W.C.save(dm.ck, { [KT]: JSON.stringify(S) });
+  const sv = await W.C.api('/api/save',{method:'POST',cookie:dm.ck,body:operationSaveBody(W.env,'/api/save',{set:{ [KT]: JSON.stringify(S) },del:[],base:{[KT]:current.j.base[KT]}})});
   assert.ok(sv.j.revs && sv.j.revs[KT], 'المدير يحفظ المهمة: ' + JSON.stringify(sv.j).slice(0, 200));
   assert.ok(rowsOf(stored(W.env, KT), ME.eid).some(x => x.r[13] === NEW_ID), 'المهمةُ في المخزن بالعمود 14 = eid الموظف');
   const sn = await W.C.api('/api/notifications/act', { method: 'POST', cookie: dm.ck, body: { op: 'emit', type: 'task_new', dept: D, own: [ME.eid], vars: { 'المهمة': title, 'الوقت': 'TEST_ONLY' } } });
@@ -65,13 +66,13 @@ for (const mode of ['legacy', 'enforce']) {
     const me = await W.login(ME.un, ME.pw);
     const b = (await W.C.boot(me.ck)).boot;
     assert.ok(b && b.keys, 'إقلاع'); assert.ok(!(KT in b.keys), 'لا مخزنَ مهامٍ في إقلاع الموظف');
-    const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT), { cookie: me.ck });
-    assert.ok(!(g.j.keys && g.j.keys[KT]), '/api/get لا يعطيه المخزنَ ولا رقمَه');
+    const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT), { cookie: me.ck });
+    assert.ok(g.j.denied.includes(KT) && !Object.hasOwn(g.j.resources,KT) && !Object.hasOwn(g.j.base,KT), 'operations/read لا يعطيه المخزنَ ولا رقمَه');
     const perms = JSON.parse(b.keys.bassam_perms_v1 || '{}');
     assert.equal(((perms.emps || {})[D] || {})[ME.eid], undefined, 'لا ورقةَ صلاحياتٍ للموظف (موظفٌ عادي)');
     /* ولا يكتب المخزنَ كلَّه بحفظٍ مصنوع: إضافةُ صفٍّ ⇒ رفض */
     const S = stored(W.env, KT); S[DAY].push(row({ id: 1760000088888, title: 'صفٌّ مصنوع', eid: ME.eid }));
-    const sv = await W.C.save(me.ck, { [KT]: JSON.stringify(S) }, [], { [KT]: 0 });
+    const sv = await W.C.api('/api/save',{method:'POST',cookie:me.ck,body:operationSaveBody(W.env,'/api/save',Object.assign({set:{ [KT]: JSON.stringify(S) },del:[],base:{ [KT]: 0 }},{}))});
     assert.ok(!(sv.j.revs && sv.j.revs[KT]), 'الموظف لا ينشئ مهمة: ' + JSON.stringify(sv.j).slice(0, 160));
   });
 
@@ -142,8 +143,8 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal((await W.C.api('/api/me/tasks/img?id=' + id, { cookie: me.ck })).status, 200, 'أقرأ صورتي بعد الربط (من جهازٍ آخر/بعد إعادة الدخول)');
     const me2 = await W.login(ME.un, ME.pw); assert.equal((await W.C.api('/api/me/tasks/img?id=' + id, { cookie: me2.ck })).status, 200, 'جلسةٌ ثانية');
     /* المديرُ من جلسته: الحالةُ والتوثيقُ والصورة */
-    const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT), { cookie: dm.ck });
-    const dr = Object.values(JSON.parse(g.j.keys[KT].v)).flat().find(r => r[13] === 1760000000101 && r[14] === ME.eid);
+    const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT), { cookie: dm.ck });
+    const dr = Object.values(g.j.resources[KT]).flat().find(r => r[13] === 1760000000101 && r[14] === ME.eid);
     assert.equal(dr[3], 'done'); assert.deepEqual(dr[21].imgs, [id]);
     assert.equal((await W.C.api('/api/img/' + id, { cookie: dm.ck })).status, 200, 'المديرُ يقرأ صورةَ التوثيق');
     /* الاعتذارُ بسببٍ إلزامي · والانقضاء */
@@ -170,17 +171,18 @@ for (const mode of ['legacy', 'enforce']) {
     const x = await W.C.api('/api/me/tasks/act', { method: 'POST', cookie: me.ck, headers: { origin: 'http://evil.example' }, body: { k: DAY, id: 1760000000101, act: 'accept' } });
     assert.equal(x.status, 403, 'CSRF: مصدرٌ أجنبيّ ⇒ 403 (الحارسُ العامّ قبل الموزِّع)');
     assert.equal(rowsOf(stored(W.env, KT), ME.eid).find(r => r.r[13] === 1760000000101).r[11], null, 'ولم يُكتب شيء');
-    W.env.DB.exec("UPDATE kv SET v = json_set(v, '$.\"" + PDAY.split('-').slice(0, 2).join('-') + "\"', json('true')) WHERE k = 'bsdept:tst_d1:bassam_tasks_locks_v1'");
+    const lockKey='bsdept:tst_d1:bassam_tasks_locks_v1',locks=stored(W.env,lockKey),previousMonth=PDAY.split('-').slice(0,2).join('-');
+    locks[previousMonth]=true;await replaceOperationalFixture(W.env,lockKey,locks);
     const r = await actOf(W, me.ck, { k: PDAY, id: 1760000000107, act: 'expire' });
     assert.ok(r.status === 409 && r.j.err === 'locked', 'الشهرُ المعتمد (true) مقفل: ' + JSON.stringify(r.j));
     /* SR-2.1 · المرحلة الثانية: {mo:1} شهرٌ منقضٍ فتحه المدير — ليس قفلاً (lockState في 010: true|1 وحدهما) — فيُحكم بحالة الصفّ لا بالقفل */
-    W.env.DB.exec("UPDATE kv SET v = json_set(v, '$.\"" + PDAY.split('-').slice(0, 2).join('-') + "\"', json('{\"mo\":1}')) WHERE k = 'bsdept:tst_d1:bassam_tasks_locks_v1'");
+    locks[previousMonth]={mo:1};await replaceOperationalFixture(W.env,lockKey,locks);
     const r2 = await actOf(W, me.ck, { k: PDAY, id: 1760000000108, act: 'accept' });
     assert.ok(r2.status === 409 && r2.j.err === 'state', 'الشهرُ المفتوح ({mo:1}) لا يُعدّ مقفلاً — الرفضُ لحالة الصفّ (معتذَرٌ عنها): ' + JSON.stringify(r2.j));
     /* صفٌّ مسنَدٌ برقم الهوية (حسابٌ قديم) — يُقرأ بالمعرّف الثابت nid ولا يُكتب من المسار الذاتي (selfTaskOnly حرفي) */
-    W.env.DB.exec("UPDATE kv SET v = json_set(v, '$[#]', json('{\"eid\":\"tst_e_nidonly\",\"nid\":\"1099999999\",\"name\":\"TEST_ONLY · صاحب رقم الهوية\"}')) WHERE k = 'bsdept:tst_d1:bassam_employees_v1'");
+    const employees=stored(W.env,KE);employees.push({eid:'tst_e_nidonly',nid:'1099999999',name:'TEST_ONLY · صاحب رقم الهوية'});await replaceOperationalFixture(W.env,KE,employees);
     const S = stored(W.env, KT); S[DAY].push(row({ id: 1760000066666, title: 'مسندةٌ بالهوية', eid: '1099999999' }));
-    W.env.DB.exec("UPDATE kv SET v = " + "'" + JSON.stringify(S).replace(/'/g, "''") + "' WHERE k = '" + KT + "'");
+    await replaceOperationalFixture(W.env,KT,S);
     W.env.DB.exec("UPDATE kv SET v = json_insert(v, '$[#]', json('{\"id\":\"tst_nidacct\",\"un\":\"2000000299\",\"ph\":\"x\",\"name\":\"TEST_ONLY nid\",\"role\":\"staff\",\"deptId\":\"tst_d1\",\"ekey\":\"tst_e_nidonly\",\"dis\":0,\"test\":\"TEST_ONLY\"}')) WHERE k = 'bassam_auth_users_v1'");
     /* (الحسابُ أعلاه لا يدخل — كلمةُ مروره غيرُ صالحة؛ يكفي أن صفَّه لا يظهر لغيره) */
     const l = await listOf(W, me.ck); assert.ok(!l.j.rows.some(x => x.id === 1760000066666), 'صفُّ غيري المسنَدُ بالهوية لا يظهر لي');
@@ -193,9 +195,9 @@ for (const mode of ['legacy', 'enforce']) {
     const DUP = '1777777771', E = stored(W.env, KE);
     E.find(x => x.eid === MATE.eid).nid = DUP;                                                   /* سجلُّ الزميل أوّلاً … */
     E.push({ eid: 'tst_e_dupB', name: 'TEST_ONLY · صاحبُ الرقم المكرَّر', nid: DUP });            /* … ثم سجلٌّ آخر بالرقم نفسِه */
-    putKV(W.env, KE, E);
+    await replaceOperationalFixture(W.env, KE, E);
     addAccount(W.env, { uid: 'tst_dupB', un: '2000000298', pw: '70298', ekey: DUP });           /* حسابٌ قديمٌ مفتاحُه رقمُ الهوية المكرَّر */
-    const S = stored(W.env, KT); S[DAY].push(row({ id: 1760000000777, title: 'مسنَدةٌ برقم الهوية المكرَّر', eid: DUP, s: Date.now() - 60e3, e: Date.now() + 3 * 3600e3 })); putKV(W.env, KT, S);
+    const S = stored(W.env, KT); S[DAY].push(row({ id: 1760000000777, title: 'مسنَدةٌ برقم الهوية المكرَّر', eid: DUP, s: Date.now() - 60e3, e: Date.now() + 3 * 3600e3 })); await replaceOperationalFixture(W.env, KT, S);
     const b = await W.login('2000000298', '70298'), lb = await listOf(W, b.ck);
     assert.equal(lb.status, 200, JSON.stringify(lb.j).slice(0, 160));
     assert.equal(lb.j.me.linked, false, 'رقمُ هويةٍ مكرَّر ⇒ غيرُ مرتبط: ' + JSON.stringify(lb.j.me) + ' · صفوف ' + (lb.j.rows || []).length);
@@ -210,7 +212,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(lm.j.rows.length > 0 && lm.j.rows.every(r => mateIds.has(r.id)), 'صفوفُه بمعرّفه وحده');
     assert.ok(!lm.j.rows.some(r => r.id === 1760000000777), 'لا الصفَّ المسنَدَ بالرقم المكرَّر (ملتبس)');
     /* معرّفٌ ثابتٌ مكرَّر (سجلٌّ آخر بمعرّفي — خطأُ استيراد) ⇒ لا ربطَ بأوّل مطابِق */
-    const E2 = stored(W.env, KE); E2.push({ eid: ME.eid, name: 'TEST_ONLY · سجلٌّ بمعرّفٍ مكرَّر' }); putKV(W.env, KE, E2);
+    const E2 = stored(W.env, KE); E2.push({ eid: ME.eid, name: 'TEST_ONLY · سجلٌّ بمعرّفٍ مكرَّر' }); await replaceOperationalFixture(W.env, KE, E2);
     const me = await W.login(ME.un, ME.pw), l2 = await listOf(W, me.ck);
     assert.equal(l2.j.me.linked, false, 'eid مكرَّر ⇒ غيرُ مرتبط'); assert.deepEqual(l2.j.rows, []);
   });
@@ -220,8 +222,8 @@ for (const mode of ['legacy', 'enforce']) {
   test(M + 'F-3 — «انقضاء» صفٍّ انتهت مهلتُه قبل أكثر من 48 ساعة ⇒ noop بلا كتابة ولا تنبيه · والحديثُ (24 ساعة) يُسجَّل', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), OLD = 1760000000778, t0 = Date.now() - 20 * 864e5;
-    const S = stored(W.env, KT); S[PDAY].push(row({ id: OLD, title: 'منقضيةٌ قديمة بلا ردّ', eid: ME.eid, s: t0, e: t0 + 3600e3 })); putKV(W.env, KT, S);
-    putKV(W.env, 'bsdept:tst_d1:bassam_tasks_locks_v1', {});   /* الشهرُ الماضي غيرُ معتمدٍ صراحةً (المُثبِّت يعتمده) — كما أغلبُ الأشهر في Production (F-9) */
+    const S = stored(W.env, KT); S[PDAY].push(row({ id: OLD, title: 'منقضيةٌ قديمة بلا ردّ', eid: ME.eid, s: t0, e: t0 + 3600e3 })); await replaceOperationalFixture(W.env, KT, S);
+    await replaceOperationalFixture(W.env, 'bsdept:tst_d1:bassam_tasks_locks_v1', {});   /* الشهرُ الماضي غيرُ معتمدٍ صراحةً (المُثبِّت يعتمده) — كما أغلبُ الأشهر في Production (F-9) */
     const rev = () => W.env.DB.q('SELECT rev FROM revs WHERE k = ?', KT)[0].rev, nN = () => notificationMessages(W.env).length;
     const rev0 = rev(), n0 = nN();
     const x = await actOf(W, me.ck, { k: PDAY, id: OLD, act: 'expire' });
@@ -292,7 +294,10 @@ for (const mode of ['legacy', 'enforce']) {
     const me = await W.login(ME.un, ME.pw), mate = await W.login(MATE.un, MATE.pw);
     const OLD = 'img_tsklegacy_zz9';
     const S = stored(W.env, KT); const r = S[YESTERDAY].find(x => x[13] === 1760000000106); r[21].imgs.push(OLD);
-    W.env.DB.exec("UPDATE kv SET v = '" + JSON.stringify(S).replace(/'/g, "''") + "' WHERE k = '" + KT + "'");
+    await replaceOperationalFixture(W.env,KT,S);
+    // A migrated historical image has the canonical relational reference even
+    // when its ownership row is absent; no retired document is recreated.
+    W.env.DB.db.prepare('INSERT INTO imgref(img,k)VALUES(?,?)').run(OLD,KT);
     W.env.DB.exec("INSERT INTO imgs (k, seq, v) VALUES ('" + OLD + "', 0, '" + PNG + "')");
     assert.equal(W.env.DB.q('SELECT * FROM imgown WHERE img = ?', OLD).length, 0, 'بلا سجلّ ملكية');
     assert.equal((await W.C.api('/api/me/tasks/img?id=' + OLD, { cookie: mate.ck })).status, 403, 'الزميل ⇒ 403');
@@ -305,8 +310,10 @@ for (const mode of ['legacy', 'enforce']) {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), e1 = await W.login('0000000113', '70113');   /* tst_emp1: ورقتُه tasks:view (المُثبِّت) */
     assert.equal((await W.C.api('/api/img/' + IMG_ME, { cookie: me.ck })).status, 403, 'RC-3: صاحبُ الصورة لا يقرؤها من المسار العامّ (canRead المخزن)');
-    const b = (await W.C.boot(e1.ck)).boot, S = JSON.parse(b.keys[KT]);
-    assert.ok(rowsOf(S, MATE.eid).length >= 3 && rowsOf(S, ME.eid).length === 10, 'RC-4: حاملُ task.view يحمل في إقلاعه مهامَ الزملاء كلَّها');
+    const b = (await W.C.boot(e1.ck)).boot;
+    assert.ok(!Object.hasOwn(b.keys,KT),'الإقلاع لا يحمل وثيقة أعمال متقاعدة حتى لحامل view');
+    const read=await W.C.api('/api/operations/read?keys='+encodeURIComponent(KT),{cookie:e1.ck}),S=read.j.resources[KT];
+    assert.ok(rowsOf(S, MATE.eid).length >= 3 && rowsOf(S, ME.eid).length === 10, 'RC-4: حاملُ task.view ما زال يقرأ الصفوف المخوّل بها عبر SQL');
     assert.equal((await W.C.api('/api/img/' + IMG_MATE, { cookie: e1.ck })).status, 200, 'RC-4: ويقرأ صورةَ توثيق زميل');
   });
 
@@ -316,7 +323,7 @@ for (const mode of ['legacy', 'enforce']) {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw);
     const boot = (await W.C.boot(me.ck)).boot;
-    const P = profileLogic((k) => k === 'bassam_tasks_v1' ? (boot.keys[KT] == null ? null : boot.keys[KT]) : null, PF263);
+    const P = profileLogic((k) => k === 'bassam_tasks_v1' ? (boot.resources[KT] == null ? null : boot.resources[KT]) : null, PF263);
     const T = { y: +DAY.split('-')[0], m: +DAY.split('-')[1], d: +DAY.split('-')[2] };
     const e = { isStaff: true, T, myKey: ME.eid, keyOfTok: (x) => x, myRec: { name: ME.name } };
     const t = P._tkVals({}, e, P.state);

@@ -5,11 +5,12 @@ import { TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
      orphan    الصورةُ التي زال مرجعُها لا تُكنس فوراً: تُوسم «يتيمة» وتبقى في المخزن مدةَ السماح (30 يوماً) ثم تُكنس — ولا يقرؤها غيرُ مدير النظام */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, KT, TAG, stored, putKV, hij, HR, PNG } from './tasks_fx.mjs';
+import { candidateWorker } from './irshad_domain_fx.mjs';
+import { world, workerUnderTest, ME, KT, TAG, stored, putKV, hij, HR, PNG, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body:operationSaveBody(W.env,p,taskCommandBody(W.env, p, body)) });
 const get = (W, ck, p) => W.C.api(p, { cookie: ck });
 async function upImg(W, ck, id) { const r = await W.C.api('/api/img/' + id, { method: 'PUT', cookie: ck, body: PNG, headers: { 'Content-Type': 'text/plain' } }); assert.equal(r.status, 200, 'رفعُ ' + id); return id; }
 async function mk(W, ck, o = {}) {
@@ -18,9 +19,9 @@ async function mk(W, ck, o = {}) {
   assert.equal(c.status, 200, JSON.stringify(c.j)); return { k: c.j.rows[0].k, id: c.j.rows[0].id };
 }
 async function raw(W, ck, mut) {
-  const g = await get(W, ck, '/api/get?keys=' + encodeURIComponent(KT)), S = JSON.parse(g.j.keys[KT].v);
+  const g = await get(W, ck, "/api/operations/read?keys=" + encodeURIComponent(KT)), S = g.j.resources[KT];
   const r = mut(S); if (r === false) return null;
-  return post(W, ck, '/api/save', { set: { [KT]: JSON.stringify(S) }, base: { [KT]: g.j.keys[KT].rev } });
+  return post(W, ck, '/api/save', { set: { [KT]: JSON.stringify(S) }, base: { [KT]: g.j.base[KT] } });
 }
 const denied = (sv) => (sv.j && sv.j.denied && sv.j.denied[KT] ? String(sv.j.denied[KT].why || '?') : '');
 const saved = (sv) => !!(sv.j && sv.j.revs && sv.j.revs[KT]);
@@ -68,7 +69,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(rowOf(stored(W.env, KT), a.id), 'الصفُّ باقٍ في يومه الجديد');
   });
 
-  test(M + 'orphan: صورةُ مسودّةٍ حذفها الموظف لا تُكنس فوراً — تُوسم يتيمةً وتبقى في المخزن · الموظفُ والمدير لا يقرآنها ومديرُ النظام يقرؤها · وتُكنس بعد مهلة السماح', async () => {
+  test(M + 'orphan: الحفظ الذري يبقي الصورة اليتيمة وجسمها بعد مهلة السماح؛ الصلاحيات تحجبها عن الموظف والمدير وتسمح لمدير النظام', async () => {
     const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM), me = await W.login(ME.un, ME.pw), su = await W.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN);
     const a = await mk(W, dm.ck, { t: 'orphan' });
     assert.equal((await post(W, me.ck, '/api/me/tasks/act', { k: a.k, id: a.id, act: 'start' })).status, 200);
@@ -81,10 +82,32 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal((await get(W, dm.ck, '/api/img/' + A)).status, 403, 'المديرُ لا يقرؤها');
     assert.equal((await get(W, su.ck, '/api/img/' + A)).status, 200, 'مديرُ النظام يقرؤها (استرجاع)');
     assert.equal(own(W, B).st, 'bound', 'الأخرى كما هي');
-    /* مهلةُ السماح انقضت: المزامنةُ التالية تكنسها */
+    /* D1 business save commits SQL metadata only. It must not delete image
+       bodies/R2 outside that transaction, including after the legacy grace. */
     W.env.DB.exec("UPDATE imgown SET ts = ts - 31 * 86400000 WHERE img = '" + A + "'");
+    const oldOwner=own(W,A),removed=[],drop=W.env.IMG_R2.delete.bind(W.env.IMG_R2);
+    W.env.IMG_R2.delete=async key=>{removed.push(key);return drop(key);};
     assert.equal((await post(W, me.ck, '/api/me/tasks/act', { k: a.k, id: a.id, act: 'doc', note: 'مسودّة ٢' })).status, 200);
-    assert.equal(own(W, A), null, 'كُنست بعد السماح'); assert.ok(!inStore(W, A), 'والجسمُ معها');
+    assert.deepEqual(own(W,A),oldOwner,'الحفظ الذري لا ينفذ كنسًا مستقلًا');assert.ok(inStore(W,A),'الجسم باقٍ');assert.deepEqual(removed,[],'لاحذفR2ضمنالحفظ');
     assert.ok(inStore(W, B) && own(W, B).st === 'bound', 'ولم تُمسّ الأخرى');
   });
 }
+
+test('The existing orphan sweeper is explicit maintenance: grace and bound references protect images; only a stale unreferenced in-memory image is removed',async()=>{
+  const B=await world({worker:WU.file,mode:'enforce'}),W=await candidateWorker(['imgSweepOrphans','IMG_ORPHAN_GRACE']);
+  try{
+    const now=Date.now(),ids=['img_tskgc_grace','img_tskgc_bound','img_tskgc_stale'],removed=[],drop=B.env.IMG_R2.delete.bind(B.env.IMG_R2);
+    B.env.IMG_R2.delete=async key=>{removed.push(key);return drop(key);};
+    for(const [i,id]of ids.entries()){
+      B.env.DB.db.prepare('INSERT INTO imgs(k,seq,v)VALUES(?,0,?)').run(id,PNG);
+      B.env.DB.db.prepare('INSERT INTO imgown(img,st,k,uid,dept,ts)VALUES(?,?,?,?,?,?)').run(id,'orphan','','TEST_ONLY', 'tst_d1',now-(i?W.IMG_ORPHAN_GRACE+1:W.IMG_ORPHAN_GRACE-1));
+    }
+    B.env.DB.db.prepare('INSERT INTO imgref(img,k)VALUES(?,?)').run(ids[1],KT);
+    await W.imgSweepOrphans(B.env,now);
+    assert.ok(inStore(B,ids[0])&&own(B,ids[0]).st==='orphan','Grace protects the recent orphan');
+    assert.ok(inStore(B,ids[1])&&own(B,ids[1]).st==='amb','A live bound reference prevents deletion');
+    assert.equal(own(B,ids[2]),null);assert.equal(inStore(B,ids[2]),false);
+    assert.equal(removed.length,1);assert.ok(removed[0].includes(ids[2]));
+    assert.deepEqual(JSON.parse(JSON.stringify(B.env.DB.q('SELECT img,k FROM imgref WHERE img=?',ids[1]))),[{img:ids[1],k:KT}]);
+  }finally{B.env.DB.db.close();}
+});

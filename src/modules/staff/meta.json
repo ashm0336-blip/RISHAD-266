@@ -23,8 +23,10 @@
   "domain": "src/modules/staff/logic.js",
   "data": [
    "bassam_callsigns_v1",
+   "bassam_dayshift_v1",
    "bassam_dreport_v1",
    "bassam_employees_v1",
+   "bassam_mark_kinds_v1",
    "bassam_options_v1",
    "bassam_perm_limit_v1",
    "bassam_perm_tpls_v1",
@@ -32,7 +34,6 @@
    "bassam_shift_options_v1",
    "bassam_st_grp_v1",
    "bassam_staffing_locks_v1",
-   "bassam_staffing_v2",
    "bassam_staffing_v3"
   ],
   "permissions": [

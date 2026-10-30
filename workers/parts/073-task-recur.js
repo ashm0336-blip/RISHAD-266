@@ -130,14 +130,14 @@ async function tkRecurTombs(env, K, now) {
 }
 async function tkRecurRun(env, request, d, opts) {
   var K = tkK(d), now = Date.now(), rep = { created: 0, skipped: [], denied: [], series: 0 };
-  var S = parseJson(await kvGet(env, 'kv', K), {}); if (!isObj(S)) return rep;
+  var S = parseJson(await opResourceGet(env, K), {}); if (!isObj(S)) return rep;
   var Z = tkSeries(S), ids = Object.keys(Z.ser); rep.series = ids.length; if (!ids.length) return rep;
   /* KIVO_265 · M-1: لا تفصيلَ دائماً (كان C.detail = true) — التفصيلُ بقاعدة الأهلية نفسِها (072 tkEligCtx): لفاعلِ الطلب الصريح إن قرأ الجدولَ الشهري
      (tkRecurRoute يمرّره في opts.A) · والتوليدُ الكسول من «ملفي» بلا فاعل ⇒ مجرّد. والتنبيهُ المخزَّن (يقرؤه أعضاءُ الإدارة كلُّهم) بالحكم المجرّد (gen) دائماً */
   var C = await tkEligCtx(env, opts && opts.A ? opts.A : null, d);
   var tomb = await tkRecurTombs(env, K, now), tq; for (tq in tomb) Z.idem[tq] = 1;
   var mid0 = tkRiyMid(now - 3 * 36e5), plan = nmap(), n = 0, lockC = nmap();         /* plan[authorUid] = [{k, row, idem, author}] */
-  var LK = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(LK)) LK = {};
+  var LK = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(LK)) LK = {};
   for (var q = 0; q < ids.length && n < TK_REC_MAX; q++) {
     var s0 = Z.ser[ids[q]], rec = s0.rec, P = s0.proto, x0 = tkX(P) || {};
     if (!rec || rec.paused || rec.stop || !Array.isArray(rec.asg) || !rec.asg.length || !P[15] || !P[16]) continue;   /* srvrec: المنتهيةُ (stop) لا تُولَّد */
@@ -254,10 +254,9 @@ async function tkRecStopEv(env, K, id) {
   return !!r;
 }
 var TK_REC_LKMSG = 'كلُّ مواعيد هذه السلسلة في شهرٍ معتمد مقفل — يمكن إيقافها أو تعديلها عند ظهور موعدها القادم (قبل استحقاقه بشهر)، أو بعد فتح الشهر';   /* البند 15: الأفقُ 30 يوماً */
-async function tkRecurOp(env, request, A, b) {
-  var D0 = tkDeptOf(A, b.dept); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
+async function tkRecurPrepare(env, A, b, d, K, S) {
   if (TK_REC_OPS.indexOf(b.op) === -1) return tkNo(400, 'bad-body', '', { at: 'op' }).err;
-  if (b.op === 'start') return await tkRecurStart(env, request, A, b, d, K);
+  if (b.op === 'start') return await tkRecurStartPrepare(env, A, b, d, K, S);
   if (!tkStrOk(b.id, 40, true)) return tkNo(400, 'bad-body', '', { at: 'id' }).err;
   /* KIVO_265 · U1: stop {k, row} — نسخةُ هذا اليوم من السلسلة (العمود 13) تبقى آخرَ موعدٍ لها فلا تُلغى بالإنهاء (نموذجُ «المهام»: «لمرة واحدة» لنسخةٍ قادمة) */
   if (b.row != null) {
@@ -270,10 +269,10 @@ async function tkRecurOp(env, request, A, b) {
     var RC0 = tkRecIn(b.rec, T.k, {}); if (RC0.bad) return tkNo(400, 'bad-body', RC0.msg || '', { at: RC0.bad }).err;
   } else if (b.rec != null) return tkNo(400, 'bad-body', '', { at: 'rec' }).err;
   if (!tkHeld(A, d, 'task.edit')) return tkNo(403, 'denied', 'إدارةُ التكرار تحتاج صلاحية تعديل المهام').err;
-  var LK = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(LK)) LK = {};
+  var LK = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(LK)) LK = {};
   var out = { n: 0, cancelled: 0, ver: 0, restored: 0, kept: 0 }, id = String(b.id), n0 = tkDayNum(T.k), stopEv = await tkRecStopEv(env, K, id);
   var keepK = b.row != null ? String(b.k).replace(/-0(\d)/g, '-$1') : '', keepR = b.row != null ? String(b.row) : '';
-  var R = await tkSave(env, request, A, K, function (S) {
+  var R = (function (S) {
     var Z = tkSeries(S), s0 = Z.ser[id]; out = { n: 0, cancelled: 0, ver: 0, restored: 0, kept: 0 };
     if (!s0) return tkNo(404, 'not-found');
     var rec0 = isObj(s0.rec) ? s0.rec : {}, now = Date.now(), ver = Math.max(+s0.av || 0, +rec0.ver || 0) + 1, stp = !!rec0.stop || stopEv;
@@ -343,29 +342,31 @@ async function tkRecurOp(env, request, A, b) {
     var agg = Object.assign(b.op === 'edit' ? tkRecSum(nr) : {}, { n: out.n, cancelled: out.cancelled }); if (out.restored) agg.restored = out.restored;
     aud.unshift(tkAud(K, hit, 'rec_' + b.op, ctx, b.op === 'edit' ? tkRecSum(rec0) : null, agg));   /* الحدثُ المجمَّع أولاً (سقفُ 052 audClean) */
     return { S2: S2, aud: aud };
-  });
-  if (R.err) return R.err;
-  if (typeof tkGateReset === 'function') await tkGateReset(env, 'rec', d);   /* الفحصُ العميق · R8: تغيّرت السلسلة ⇒ القراءةُ التالية في «ملفي» تولّد (لا تنتظر مهلة الحارس) */
-  return json({ ok: 1, rev: R.rev, n: out.n, cancelled: out.cancelled, ver: out.ver, restored: out.restored, kept: out.kept });
+  })(S);
+  if (!R.err) R.result = { n: out.n, cancelled: out.cancelled, ver: out.ver, restored: out.restored, kept: out.kept };
+  return R;
+}
+async function tkRecurOp(env, request, A, b) {
+  return await tkPreparedCommand(env, request, A, b, "tasks.recur", tkRecurPrepare, true);
 }
 /* ── KIVO_265 · srvrec: POST /api/tasks/recur {op:'start', k, id | grp, rec} — مهمةٌ مسندةٌ لمرةٍ واحدة (أو مهمةٌ جماعية بصفوفها في يومها) تصير
    نسخةَ يوم البدء الحقيقية لسلسلة: x.rec (معرّفٌ جديد · ver 1 · from = k · asg = مكلَّفوها · by = من حوّلها) وx.idem لكل صفّ بصيغة الإنشاء نفسِها ·
    وحدثُ rec_start لكل صفّ (rec · idem — يثبت به صاحبَها tkRecurAuthorOk ولا يُعيد tkRecurTombs نسخةً حُذفت). الصلاحيات: إنشاءُ المهام وتعديلُها وإسنادُها ·
    لا لملغاةٍ ولا لمُعاد إسنادها ولا لنسخةٍ منفصلة ولا لما في سلسلةٍ أصلاً ولا في شهرٍ معتمد — وما سواها من الصفّ (الحالة · 20 · 21) كما هو */
-async function tkRecurStart(env, request, A, b, d, K) {
+async function tkRecurStartPrepare(env, A, b, d, K, S) {
   if (!METK_DAY_RX.test(String(b.k || ''))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (b.grp != null ? !tkStrOk(b.grp, 60, true) : !tkIdOk(b.id)) return tkNo(400, 'bad-body', '', { at: b.grp != null ? 'grp' : 'id' }).err;
   if (!isObj(b.rec)) return tkNo(400, 'bad-body', 'حدّد قاعدةَ التكرار', { at: 'rec' }).err;
   var RC = tkRecIn(b.rec, b.k); if (RC.bad) return tkNo(400, 'bad-body', RC.msg || '', { at: RC.bad }).err;
   if (!(tkHeld(A, d, 'task.create') && tkHeld(A, d, 'task.edit') && tkHeld(A, d, 'task.assign'))) return tkNo(403, 'denied', 'تحويلُ المهمة إلى متكررة يحتاج صلاحياتِ إنشاء المهام وتعديلها وإسنادها').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
-  var emps = tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), kN = String(b.k).replace(/-0(\d)/g, '-$1');
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), kN = String(b.k).replace(/-0(\d)/g, '-$1');
   var pick = function (L) {
     if (b.grp != null) { var o = []; for (var q = 0; q < L.length; q++) if (Array.isArray(L[q]) && String(L[q][17] || '') === String(b.grp)) o.push(q); return o; }
     var P0 = tkPick({ x: L }, 'x', b.id, null); return P0 ? [P0.idx] : [];
   };
   var out = null;
-  var R = await tkSave(env, request, A, K, function (S) {
+  var R = (function (S) {
     var L = Array.isArray(S[b.k]) ? S[b.k] : [], ix = pick(L), now = Date.now(), rows = [], asg = [], q;
     if (!ix.length) return tkNo(404, 'not-found');
     for (q = 0; q < ix.length; q++) {
@@ -393,10 +394,10 @@ async function tkRecurStart(env, request, A, b, d, K) {
     var S2 = Object.assign({}, S); S2[b.k] = L2;
     out = { rec: rec, n: rows.length };
     return { S2: S2, aud: aud };
-  });
-  if (R.err) return R.err;
-  if (typeof tkGateReset === 'function') await tkGateReset(env, 'rec', d);   /* الفحصُ العميق · R8: سلسلةٌ جديدة ⇒ القراءةُ التالية تولّد */
+  })(S);
+  if (R.err) return R;
   var rc = out.rec, o = { id: rc.id, ver: rc.ver, t: rc.t, from: rc.from, paused: 0, asg: rc.asg };
   if (rc.wd) o.wd = rc.wd; if (rc.md) o.md = rc.md; if (rc.n) o.n = rc.n; if (rc.to) o.to = rc.to;
-  return json({ ok: 1, rev: R.rev, n: out.n, rec: o });
+  R.result = { n: out.n, rec: o };
+  return R;
 }

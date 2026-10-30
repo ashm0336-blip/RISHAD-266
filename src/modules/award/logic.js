@@ -841,7 +841,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
 
   awEmpList() {
     try {
-      const t = JSON.parse(localStorage.getItem("bassam_employees_v1"));
+      const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
       return Array.isArray(t) ? t : [];
     } catch (t) {
       return [];

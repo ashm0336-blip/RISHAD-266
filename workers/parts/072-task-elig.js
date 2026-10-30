@@ -9,8 +9,8 @@
      GET /api/tasks/eligibility?ekeys=a,b&s=<ms>[&e=<ms>][&needs=plan.edit,…][&dept=]   (task.assign أو task.create في الإدارة) */
 var TK_EL_OK = 'متاح', TK_EL_NO = 'غير متاح', TK_EL_WAIT = 'بانتظار التحقق';
 async function tkEligCtx(env, A, d) {
-  var g = async function (n) { return parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':' + n), null); };
-  var C = { d: d, emps: tkEmps(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1')), staff: await g('bassam_staffing_v3'), locks: await g('bassam_staffing_locks_v1'),
+  var g = async function (n) { return parseJson(await opResourceGet(env, 'bsdept:' + d + ':' + n), null); };
+  var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), staff: await g('bassam_staffing_v3'), locks: await g('bassam_staffing_locks_v1'),
     shifts: await g('bassam_shift_options_v1'), rep: await g('bassam_dreport_v1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
   C.detail = A && A.u ? (A.u.role === 'super' || canRead(A, 'bsdept:' + d + ':bassam_staffing_v3')) : false;
   /* KIVO_265 · F-3 (RBAC_AUDIT_265): عناوينُ المهام المتعارضة (conf[].t) لمن يقرأ مخزنَ المهام (task.view) وحده — كان حاملُ task.create/assign بلا task.view يقرؤها */

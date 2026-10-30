@@ -27,10 +27,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return ["#b99751", "#2f8f86", "#2f5f8a", "#1e9a66", "#b45309", "#9c3d6b", "#8b1a3a", "#2f8f86"];
   }
   sfRead() {
-    try {
-      const t = JSON.parse(localStorage.getItem("bassam_shift_options_v1"));
-      if (Array.isArray(t)) return t.filter((t) => t && t.name);
-    } catch (t) {}
+    return this.sfItems(KIVO.__BS_SRV.operations.get("bassam_shift_options_v1")).filter(t => t && t.name);
+  }
+  sfItems(value) {
+    if (Array.isArray(value)) return value;
     return [
       { name: "الوردية الأولى", color: "#b99751" },
       { name: "الوردية الثانية", color: "#2f8f86" },
@@ -38,11 +38,31 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       { name: "الوردية الرابعة", color: "#1e9a66" },
     ];
   }
-  sfWrite(t) {
-    try {
-      localStorage.setItem("bassam_shift_options_v1", JSON.stringify(t));
-    } catch (t) {}
-    this.setState({ shTick: (this.state.shTick || 0) + 1 });
+  sfOpen(patch) {
+    if (!KIVO.__BS_SRV.operations.begin(this, "admin-shifts").ok) {
+      this.bsToast("يوجد طلب حفظ لم يُحسم — أعد الإجراء نفسه للتحقق."); return false;
+    }
+    this._sfIntent = null;
+    this.setState(Object.assign({ shPatch: null }, patch)); return true;
+  }
+  sfNewField(name, value) {
+    const prior = this.state.shNew;
+    if ((!prior || !Object.values(prior).some(Boolean)) && !this.sfOpen({ shNew: { name: "", tStart: "", tEnd: "" } })) return;
+    this.setState({ shNew: Object.assign({}, this.state.shNew, { [name]: value }) });
+  }
+  async sfCommit(intent, edit) {
+    const signature = JSON.stringify(intent);
+    if (this._sfIntent && this._sfIntent !== signature) {
+      this.bsToast("يوجد طلب حفظ لم يُحسم — أعد الإجراء نفسه للتحقق."); return false;
+    }
+    this._sfIntent = signature;
+    const result = await KIVO.__BS_SRV.operations.commit(this, "admin-shifts", intent, edit);
+    if (!result || result.ok !== 1) {
+      this.bsToast(result && result.uncertain ? "لم يصل تأكيد الحفظ — المسودة باقية؛ أعد الإجراء نفسه للتحقق." : "لم يُحفظ التغيير — راجع البيانات والصلاحية ثم أعد فتح المحرر.");
+      return false;
+    }
+    this._sfIntent = null;
+    this.setState({ shTick: (this.state.shTick || 0) + 1 }); return true;
   }
   sfMin(t) {
     const e = /^(\d{1,2}):(\d{2})$/.exec(String(t || "").trim());
@@ -110,12 +130,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return (this.SF_MONTHS()[s - 1] || "الشهر " + s) + " " + e[0];
   }
   sfLocks() {
-    try {
-      const t = JSON.parse(localStorage.getItem("bassam_staffing_locks_v1"));
-      return t && "object" == typeof t ? t : {};
-    } catch (t) {
-      return {};
-    }
+    return KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1") || {};
   }
   sfUsage(t) {
     let e = 0,
@@ -124,7 +139,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const r = this.sfLocks();
     if (this.bsOn("staff"))
       try {
-        const i = JSON.parse(localStorage.getItem("bassam_staffing_v3")) || {};
+        const i = KIVO.__BS_SRV.operations.get("bassam_staffing_v3") || {};
         Object.keys(i).forEach((n) => {
           const o = i[n];
           if (!o || "object" != typeof o) return;
@@ -137,60 +152,69 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       } catch (t) {}
     return { records: e, months: Object.keys(s).length, locked: a };
   }
-  sfRenameEverywhere(t, e) {
+  sfRenameEverywhere(draft, t, e, deleting) {
     if (!this.bsOn("staff")) return !1;
-    try {
-      const s = this.sfLocks(),
-        a = JSON.parse(localStorage.getItem("bassam_staffing_v3")) || {};
+      const locks = draft.get("bassam_staffing_locks_v1") || {},
+        a = draft.get("bassam_staffing_v3") || {};
       let r = !1;
       return (
         Object.keys(a).forEach((i) => {
-          if (s[i]) return;
           const n = a[i];
           n &&
             "object" == typeof n &&
             Object.keys(n).forEach((s) => {
-              "__shifts" !== s && n[s] && n[s].shift === t && ((n[s] = Object.assign({}, n[s], { shift: e })), (r = !0));
+              if ("__shifts" === s || !n[s] || n[s].shift !== t) return;
+              if (locks[i]) {
+                if (deleting) throw Error("locked-month");
+                return;
+              }
+              n[s] = Object.assign({}, n[s], { shift: e }); r = true;
             });
         }),
-        r && localStorage.setItem("bassam_staffing_v3", JSON.stringify(a)),
+        r && draft.set("bassam_staffing_v3", a),
         r
       );
-    } catch (t) {
-      return !1;
-    }
   }
-  sfRename(t, e) {
-    if (!this.PC("edit")) return void this.bsToast("صلاحيتك على الإعدادات عرضٌ فقط", "warn");
+  async sfRename(t, e) {
+    if (!this.PC("edit")) { this.bsToast("صلاحيتك على الإعدادات عرضٌ فقط", "warn"); return false; }
     const s = String(e || "").trim();
-    if (!s || s === t) return void this.setState({ shRen: null });
-    const a = this.sfRead();
-    a.some((t) => t.name === s)
-      ? this.bsToast("وردية أخرى بهذا الاسم موجودة — اختر اسماً مختلفاً حتى لا تُدمج ورديتان بالخطأ", "warn")
-      : (this.sfRenameEverywhere(t, s),
-        this.sfWrite(a.map((e) => (e.name === t ? Object.assign({}, e, { name: s }) : e))),
-        this.setState({ shRen: null }),
-        this.bsAck("صارت وردية «" + t + "» باسم «" + s + "»" + (this.bsOn("staff") ? " — وأُعيدت تسميتها في كل شهرٍ مفتوح" : ""), "ok"));
+    if (!s || s === t) { this.setState({ shRen: null }); return false; }
+    if (!await this.sfCommit({ op: "rename", from: t, to: s }, draft => {
+      const a = this.sfItems(draft.get("bassam_shift_options_v1"));
+      if (!a.some(e => e && e.name === t) || a.some(e => e && e.name === s)) throw Error("shift-name");
+      this.sfRenameEverywhere(draft, t, s, false);
+      draft.set("bassam_shift_options_v1", a.map(e => e && e.name === t ? Object.assign({}, e, { name: s }) : e));
+    })) return false;
+    this.setState({ shRen: null });
+    this.bsAck("صارت وردية «" + t + "» باسم «" + s + "»" + (this.bsOn("staff") ? " — وأُعيدت تسميتها في كل شهرٍ مفتوح" : ""), "ok"); return true;
   }
-  sfAdd() {
+  async sfAdd() {
     if (!this.PC("add")) return void this.bsToast("صلاحيتك على الإعدادات لا تسمح بالإضافة", "warn");
     const t = this.state.shNew || {},
       e = String(t.name || "").trim();
     if (!e) return void this.bsToast("اكتب اسم الوردية أولاً", "warn");
-    const s = this.sfRead();
-    if (s.some((t) => t.name === e)) return void this.bsToast("وردية بهذا الاسم موجودة — عدّل وقتها من صفّها", "warn");
     if ((t.tStart && this.sfMin(t.tStart) < 0) || (t.tEnd && this.sfMin(t.tEnd) < 0)) return void this.bsToast("صيغة الوقت ٠٨:٠٠", "warn");
-    const a = s.map((t) => t.color),
-      r = this.SH_PAL(),
-      i = r.filter((t) => -1 === a.indexOf(t))[0] || r[s.length % r.length];
-    (this.sfWrite(s.concat([{ name: e, color: i, tStart: t.tStart || "", tEnd: t.tEnd || "" }])),
-      this.setState({ shNew: { name: "", tStart: "", tEnd: "" } }),
-      this.bsAck("أُضيفت وردية «" + e + "» — تظهر الآن في قائمة الجدول الشهري", "ok"));
+    if (!await this.sfCommit({ op: "add", form: t }, draft => {
+      const s = this.sfItems(draft.get("bassam_shift_options_v1"));
+      if (s.some(t => t && t.name === e)) throw Error("shift-name");
+      const a = s.filter(Boolean).map(t => t.color), r = this.SH_PAL(), i = r.find(t => !a.includes(t)) || r[s.length % r.length];
+      draft.set("bassam_shift_options_v1", s.concat([{ name: e, color: i, tStart: t.tStart || "", tEnd: t.tEnd || "" }]));
+    })) return false;
+    this.setState({ shNew: { name: "", tStart: "", tEnd: "" } });
+    this.bsAck("أُضيفت وردية «" + e + "» — تظهر الآن في قائمة الجدول الشهري", "ok"); return true;
   }
-  sfSet(t, e) {
-    this.PC("edit")
-      ? this.sfWrite(this.sfRead().map((s) => (s.name === t ? Object.assign({}, s, e) : s)))
-      : this.bsToast("صلاحيتك على الإعدادات عرضٌ فقط", "warn");
+  async sfSet(t, e, original) {
+    if (!this.PC("edit")) { this.bsToast("صلاحيتك على الإعدادات عرضٌ فقط", "warn"); return false; }
+    if (this._sfIntent && this._sfIntent !== JSON.stringify({ op: "set", name: t, value: e })) {
+      this.bsToast("يوجد طلب حفظ لم يُحسم — أعد الإجراء نفسه للتحقق."); return false;
+    }
+    this.setState({ shPatch: { name: t, value: e } });
+    if (!await this.sfCommit({ op: "set", name: t, value: e }, draft => {
+      const a = this.sfItems(draft.get("bassam_shift_options_v1")), found = a.find(s => s && s.name === t);
+      if (!found || (original && JSON.stringify(found) !== JSON.stringify(original))) throw Error("shift-changed");
+      draft.set("bassam_shift_options_v1", a.map(s => s && s.name === t ? Object.assign({}, s, e) : s));
+    })) return false;
+    this.setState({ shPatch: null }); return true;
   }
   sfAskDel(t) {
     if (!this.PC("del")) return void this.bsToast("صلاحيتك على الإعدادات لا تسمح بالحذف", "warn");
@@ -204,34 +228,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ". افتح تلك الجداول للتعديل أولاً إن كنت مصرّاً.",
           "warn",
         )
-      : this.setState({ shDel: { name: t, records: e.records, months: e.months } });
+      : this.sfOpen({ shDel: { name: t, records: e.records, months: e.months } });
   }
-  sfDelDo() {
+  async sfDelDo() {
     const t = this.state.shDel;
-    if (t) {
-      if (this.bsOn("staff"))
-        try {
-          const e = JSON.parse(localStorage.getItem("bassam_staffing_v3")) || {};
-          let s = !1;
-          const a = this.sfLocks();
-          (Object.keys(e).forEach((r) => {
-            if (a[r]) return;
-            const i = e[r];
-            i &&
-              "object" == typeof i &&
-              Object.keys(i).forEach((e) => {
-                "__shifts" !== e && i[e] && i[e].shift === t.name && ((i[e] = Object.assign({}, i[e], { shift: "" })), (s = !0));
-              });
-          }),
-            s && localStorage.setItem("bassam_staffing_v3", JSON.stringify(e)));
-        } catch (t) {}
-      (this.sfWrite(this.sfRead().filter((e) => e.name !== t.name)),
-        this.setState({ shDel: null }),
-        this.bsAck(
+    if (!t || !this.PC("del")) return false;
+    if (!await this.sfCommit({ op: "delete", name: t.name }, draft => {
+      this.sfRenameEverywhere(draft, t.name, "", true);
+      draft.set("bassam_shift_options_v1", this.sfItems(draft.get("bassam_shift_options_v1")).filter(e => !e || e.name !== t.name));
+    })) return false;
+    this.setState({ shDel: null });
+    this.bsAck(
           "حُذفت وردية «" + t.name + "»" + (t.records ? " وفُرّغت خانتها عن " + KIVO.BassamCount(t.records, "تسكين", "g") + "" : ""),
           "ok",
-        ));
-    }
+        ); return true;
   }
   sfVals() {
     const t = this.state,
@@ -255,6 +265,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }),
       {
         sfRows: e.map((e) => {
+          const original = e;
+          if (t.shPatch && t.shPatch.name === e.name) e = Object.assign({}, e, t.shPatch.value);
           const a = this.sfUsage(e.name),
             r = this.sfDur(e.tStart, e.tEnd);
           return {
@@ -270,7 +282,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             nameTip: s ? "اضغط لإعادة التسمية" + (this.bsOn("staff") ? " — تُطبَّق على كل شهرٍ مفتوح" : "") : e.name,
             nameStyle: "font-size:12.5px;font-weight:800;color:var(--fg-x141414);min-width:120px" + (s ? ";cursor:pointer" : ""),
             renOpen: () => {
-              s && this.setState({ shRen: { of: e.name, v: e.name } });
+              s && this.sfOpen({ shRen: { of: e.name, v: e.name } });
             },
             onRen: (t) => this.setState({ shRen: { of: e.name, v: t.target.value } }),
             renKey: (t) => {
@@ -296,9 +308,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 : "الجدول الشهري غير مفعّل في هذه الإدارة",
             useStyle:
               "font-size:10.5px;font-weight:600;white-space:nowrap;color:" + (a.records ? "var(--fg-x0f7a4a)" : "var(--fg-x94a3b8)"),
-            onStart: (t) => this.sfSet(e.name, { tStart: t.target.value }),
-            onEnd: (t) => this.sfSet(e.name, { tEnd: t.target.value }),
-            onColor: (t) => this.sfSet(e.name, { color: t.target.value }),
+            onStart: (t) => this.sfSet(e.name, { tStart: t.target.value }, original),
+            onEnd: (t) => this.sfSet(e.name, { tEnd: t.target.value }, original),
+            onColor: (t) => this.sfSet(e.name, { color: t.target.value }, original),
             color: e.color || "#b99751",
             del: () => this.sfAskDel(e.name),
           };
@@ -311,9 +323,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         sfNewName: a.name,
         sfNewStart: a.tStart,
         sfNewEnd: a.tEnd,
-        onSfName: (t) => this.setState({ shNew: Object.assign({}, a, { name: t.target.value }) }),
-        onSfStart: (t) => this.setState({ shNew: Object.assign({}, a, { tStart: t.target.value }) }),
-        onSfEnd: (t) => this.setState({ shNew: Object.assign({}, a, { tEnd: t.target.value }) }),
+        onSfName: (t) => this.sfNewField("name", t.target.value),
+        onSfStart: (t) => this.sfNewField("tStart", t.target.value),
+        onSfEnd: (t) => this.sfNewField("tEnd", t.target.value),
         sfAddDo: () => this.sfAdd(),
         sfDelOn: !!t.shDel,
         sfDelName: t.shDel ? t.shDel.name : "",
@@ -364,7 +376,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       a = s.some((t) => t.key === e.impKind) ? e.impKind : s[0].key,
       r = (() => {
         try {
-          const t = JSON.parse(localStorage.getItem("bassam_employees_v1"));
+          const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
           return Array.isArray(t) ? t.length : 0;
         } catch (t) {
           return 0;
@@ -455,7 +467,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           p = !!(o.shift || o.rest || o.cs || o.muk);
         let l = !1;
         try {
-          l = !!(JSON.parse(localStorage.getItem("bassam_staffing_locks_v1")) || {})[r + "-" + i];
+          l = !!(KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1") || {})[r + "-" + i];
         } catch (t) {}
         const d = [o.shift ? "الوردية" : "", o.rest ? "أيام الراحة" : "", o.cs ? "رمز النداء" : "", o.muk ? "التكليف" : ""].filter(Boolean);
         return {
@@ -1067,15 +1079,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     plRs: { step: 0, keepBrand: !0, un: "", name: "", pw: "", pw2: "", curPw: "", key: "", confirm: "" },
     plRsMsg: "",
     plBusy: !1,
-    lgRows: null,
-    lgKind: "all",
-    lgPeriod: "today",
-    lgQ: "",
-    lgSel: null,
-    lgLim: 100,
-    lgNewN: 0,
-    lgPending: null,
-    lgErr: "",
     usQ: "",
     usF: "all",
     usMenu: null,
@@ -1450,1088 +1453,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       this.bsToast("تعذّر التصدير", "warn");
     }
   }
-  /* R169-CC: lgLoad/lgTimerOn/lgTimerOff صارت بلا عمل — لا استطلاعَ كلَّ ٢٥ ثانية ولا نداءَ للنقطة القديمة (أُزيلت من الخادم). */ lgLoad() {}
-  lgTimerOn() {}
-  lgTimerOff() {
-    this._lgT && (clearInterval(this._lgT), (this._lgT = null));
-  }
-  lgHMonth(t) {
-    return (
-      ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"][
-        (+t || 1) - 1
-      ] || t
-    );
-  }
-  lgDay(t) {
-    const e = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(t || ""));
-    return e ? e[3] + " " + this.lgHMonth(e[2]) + " " + e[1] : String(t || "");
-  }
-  lgMonth(t) {
-    const e = /^(?:m:)?(\d{4})-(\d{1,2})$/.exec(String(t || ""));
-    return e ? this.lgHMonth(e[2]) + " " + e[1] : String(t || "");
-  }
-  lgEmpName(t) {
-    try {
-      const e = KIVO.BassamEmp,
-        s = JSON.parse(localStorage.getItem("bassam_employees_v1") || "[]"),
-        a = e && e.resolve ? e.resolve(s, t) : null;
-      return a ? a.name : "string" == typeof t && t.length < 40 && /[\u0600-\u06FF]/.test(t) ? t : "موظف";
-    } catch (t) {
-      return "موظف";
-    }
-  }
-  lgNames(t) {
-    return (Array.isArray(t) ? t : [t]).filter((t) => null != t && "" !== t).map((t) => this.lgEmpName(t));
-  }
-  lgSpotName(t, e, s, a) {
-    try {
-      const r = JSON.parse(localStorage.getItem("bassam_rounds_v1") || "{}")[t],
-        i = r && r.d && r.d[e],
-        n = i && i[s] && i[s][a];
-      return "gates" === s
-        ? "باب " + (n && null != n.num ? n.num : "رقم " + (a + 1))
-        : "marks" === s
-          ? "معلم " + ((n && (n.label || n.kind)) || a + 1)
-          : "مصلى " + ((n && n.code) || a + 1);
-    } catch (t) {
-      return ("gates" === s ? "باب " : "marks" === s ? "معلم " : "مصلى ") + (a + 1);
-    }
-  }
-  lgDictF() {
-    if (this._lgDF) return this._lgDF;
-    return (this._lgDF = {
-      /* حقول عامة */
-      name: "الاسم",
-      title: "العنوان",
-      desc: "الوصف",
-      notes: "الملاحظات",
-      reason: "السبب",
-      why: "السبب",
-      status: "الحالة",
-      st: "الحالة",
-      prio: "الأولوية",
-      pri: "الأولوية",
-      color: "اللون",
-      code: "الرمز",
-      num: "الرقم",
-      label: "التسمية",
-      kind: "النوع",
-      type: "النوع",
-      work: "نوع العمل",
-      gender: "الجنس",
-      nid: "رقم الهوية",
-      empno: "الرقم الوظيفي",
-      phone: "الجوال",
-      email: "البريد",
-      shift: "الوردية",
-      rest: "أيام الراحة",
-      cs: "رمز النداء",
-      muk: "التكليف",
-      emp: "التسكين",
-      eid: "الموظف",
-      ekey: "الموظف",
-      ap: "الاعتماد",
-      shAp: "اعتماد الوردية",
-      approved: "الاعتماد",
-      locked: "القفل",
-      lock: "القفل",
-      closed: "الإغلاق",
-      cWhy: "سبب الإغلاق",
-      off: "التعطيل",
-      dis: "التجميد",
-      on: "التفعيل",
-      active: "التفعيل",
-      enabled: "التفعيل",
-      hidden: "الإخفاء",
-      order: "الترتيب",
-      seq: "الترتيب",
-      day: "اليوم",
-      date: "التاريخ",
-      ts: "الوقت",
-      time: "الوقت",
-      tin: "وقت الدخول",
-      tout: "وقت الخروج",
-      tStart: "بداية الوردية",
-      tEnd: "نهاية الوردية",
-      start: "البداية",
-      end: "النهاية",
-      dur: "المدة",
-      due: "الاستحقاق",
-      year: "السنة",
-      month: "الشهر",
-      months: "الأشهر",
-      days: "الأيام",
-      wd: "يوم الأسبوع",
-      hij: "التاريخ الهجري",
-      greg: "التاريخ الميلادي",
-      floors: "الأدوار",
-      floor: "الدور",
-      zones: "المصليات",
-      gates: "الأبواب",
-      marks: "المعالم",
-      paths: "المسارات",
-      sectors: "النطاقات",
-      sec: "النطاق",
-      hideSectors: "إخفاء النطاقات",
-      lead: "مسؤول النطاق",
-      note: "الوصف",
-      dist: "التوزيع",
-      dens: "الكثافة",
-      pts: "حدود الرسم",
-      x: "الموقع على الخريطة",
-      y: "الموقع على الخريطة",
-      cap: "السعة",
-      need: "الاحتياج",
-      needN: "الاحتياج",
-      needS: "الاحتياج",
-      img: "الصورة",
-      image: "الصورة",
-      logo: "الشعار",
-      w: "العرض",
-      h: "الارتفاع",
-      sites: "المواقع",
-      site: "الموقع",
-      maps: "الخرائط",
-      map: "الخريطة",
-      level: "المستوى",
-      region: "المنطقة",
-      area: "المنطقة",
-      zcat: "فئة المصلى",
-      ztype: "نوع المصلى",
-      gtype: "نوع الباب",
-      dir: "الاتجاه",
-      route: "المسار",
-      track: "المسار",
-      unit: "الوحدة",
-      hideLabel: "إخفاء التسمية",
-      hideNum: "إخفاء الرقم",
-      spots: "المواقع",
-      d: "أيام الجولة",
-      plc: "التسكين",
-      asn: "التسكين",
-      placed: "التسكين",
-      deficit: "العجز",
-      surplus: "الفائض",
-      qty: "الكمية",
-      items: "العناصر",
-      item: "العنصر",
-      moves: "حركات العهد",
-      cat: "الفئة",
-      cats: "الفئات",
-      act: "الإجراء",
-      acts: "الإجراءات",
-      loc: "الموقع",
-      locs: "المواقع",
-      langs: "اللغات",
-      lang: "اللغة",
-      reports: "التقارير",
-      recs: "السجلات",
-      rec: "السجل",
-      score: "الدرجة",
-      scores: "الدرجات",
-      stage: "المرحلة",
-      cases: "الحالات",
-      ans: "الإجابات",
-      comp: "المحور",
-      field: "الحقل",
-      docs: "المستندات",
-      files: "الملفات",
-      photos: "الصور",
-      url: "الرابط",
-      by: "بواسطة",
-      actor: "المُنفّذ",
-      recBy: "المُسجّل",
-      recShift: "وردية التسجيل",
-      editedBy: "آخر من عدّل",
-      editedTs: "وقت التعديل",
-      hist: "السجل",
-      cond: "الحالة",
-      dmg: "تالف",
-      lost: "مفقود",
-      net: "الصافي",
-      ser: "الرقم التسلسلي",
-      sn: "الرقم التسلسلي",
-      sign: "التوقيع",
-      sigEmp: "توقيع الموظف",
-      sigBy: "توقيع المعتمد",
-      pic: "الصورة",
-      decl: "الإقرار",
-      ben: "المستفيدون",
-      bro: "المطويات",
-      pros: "المطويات",
-      pol: "الشرطة",
-      trans: "الترجمة",
-      share: "الحصة",
-      tasks: "المهام",
-      task: "المهمة",
-      done: "الإنجاز",
-      accepted: "القبول",
-      pending: "معلّق",
-      finish: "الإنهاء",
-      created: "الإنشاء",
-      createdAt: "وقت الإنشاء",
-      creator: "المُنشئ",
-      assign: "الإسناد",
-      caps: "سقف الصفحات",
-      subs: "أوراق السقف",
-      tabs: "تبويبات السقف",
-      lenses: "عدسات الإدارة",
-      emps: "صلاحيات الموظفين",
-      tplOf: "القالب الممنوح",
-      empLens: "عدسات الموظفين",
-      patterns: "أنماط السقف",
-      lensZ: "ترقية العدسات",
-      perms: "الصلاحيات",
-      lens: "العدسات",
-      sup: "طاقم إشرافي",
-      tpl: "قالب الصلاحيات",
-      pm: "الصلاحية",
-      perm: "الصلاحية",
-      gid: "الفرع",
-      pid: "العقدة الأم",
-      deptId: "الإدارة",
-      role: "الدور",
-      un: "اسم المستخدم",
-      ph: "كلمة المرور",
-      mgr: "مدير الإدارة",
-      uid: "الحساب",
-      id: "المعرّف",
-      key: "المفتاح",
-      mode: "الوضع",
-      theme: "المظهر",
-      themeDef: "المظهر الافتراضي",
-      org: "الجهة",
-      short: "الاسم المختصر",
-      login: "شاشة الدخول",
-      app: "التطبيق",
-      notif: "التنبيهات",
-      mute: "الكتم",
-      push: "الإشعارات",
-      sound: "الصوت",
-      text: "النص",
-      body: "النص",
-      subject: "الموضوع",
-      msg: "الرسالة",
-      message: "الرسالة",
-      read: "مقروء",
-      seen: "مقروء",
-      target: "الهدف",
-      to: "إلى",
-      from: "من",
-      trTo: "محوّل إلى",
-      trShift: "وردية التحويل",
-      tr: "التحويل",
-      leaves: "الإجازات",
-      leave: "إجازة",
-      lv: "إجازة",
-      ex: "مستثنى",
-      shifts: "الورديات",
-      roster: "قائمة الوردية",
-      leaders: "القادة",
-      chief: "رئيس الوردية",
-      deputy: "نائب رئيس الوردية",
-      pulled: "سحب الجدول",
-      dopen: "فتح الاستدراك",
-      mvLog: "سجل الحركات",
-      sh: "الوردية",
-      rs: "أيام الراحة",
-      weight: "الوزن",
-      pct: "النسبة",
-      tot: "الإجمالي",
-      avg: "المتوسط",
-      count: "العدد",
-      n: "العدد",
-      lim: "الحد",
-      limit: "الحد",
-      meta: "البيانات الوصفية",
-      opts: "الخيارات",
-      options: "الخيارات",
-      list: "القائمة",
-      group: "المجموعة",
-      groups: "المجموعات",
-      grp: "المجموعة",
-      ver: "الإصدار",
-      v: "الإصدار",
-      city: "المدينة",
-      dev: "الجهاز",
-      ip: "العنوان",
-      sys: "النوع",
-      data: "البيانات",
-      custody: "العهد",
-      readiness: "مؤشرات الجاهزية",
-      backup: "النسخة الاحتياطية",
-      oplog: "سجل الحركة",
-      ptpls: "قوالب الصلاحيات",
-      import: "استيراد البيانات",
-      links: "الروابط",
-      help: "المساعدة",
-      admin: "الإعدادات",
-      daily: "المتابعة اليومية",
-      dreport: "التقرير اليومي",
-      plan: "التشغيل الميداني",
-      planning: "الخطة التشغيلية",
-      staff: "الجدول الشهري",
-      irshad: "نظام الاسترشاد",
-      seized: "نظام المضبوطات",
-      award: "جائزة التميز",
-      kpis: "مؤشرات الإدارة",
-      rounds: "الجولات",
-      dash: "اللوحة",
-      kpiDaily: "المؤشرات اليومية",
-      kpiOcc: "مؤشرات الإشغال",
-      kpiZones: "مؤشرات المصليات",
-    });
-  }
-  lgDictV() {
-    if (this._lgDV) return this._lgDV;
-    const t = {
-      view: "عرض",
-      add: "إضافة",
-      edit: "تعديل",
-      del: "حذف",
-      approve: "اعتماد",
-      export: "تصدير",
-      pr: "حاضر",
-      ab: "غائب",
-      pm: "مستأذن",
-      lv: "إجازة",
-      rs: "راحة",
-      tr: "محوَّل",
-      ex: "مستثنى",
-      low: "منخفضة",
-      normal: "عادية",
-      high: "عالية",
-      urgent: "عاجلة",
-      pending: "معلّقة",
-      done: "منجزة",
-      overdue: "متأخرة",
-      early: "مبكرة",
-      late: "متأخرة",
-      run: "جارية",
-      open: "مفتوحة",
-      closed: "مغلقة",
-      super: "مدير النظام",
-      dept: "مدير إدارة",
-      gm: "مدير عقدة",
-      staff: "موظف",
-      m: "جوال",
-      basic: "أساسي",
-      office: "مكتبي",
-      field: "ميداني",
-      set: "تعيين",
-      true: "نعم",
-      false: "لا",
-    };
-    try {
-      const e = KIVO.BassamPerm;
-      (e && e.ACT_NAMES && Object.assign(t, e.ACT_NAMES),
-        e && e.LENS_REG && e.LENS_REG.forEach((e) => (t[e.key] = e.name)),
-        e &&
-          e.PAGE_KEYS &&
-          e.PAGE_KEYS.forEach((s) => {
-            try {
-              t[s] = e.nameOf(s);
-            } catch (a) {}
-          }),
-        e && e.patternMeta && e.patternMeta().forEach((e) => (t[e.key] = e.name)));
-    } catch (e) {}
-    return (this._lgDV = t);
-  }
-  lgFld(t) {
-    t = String(null == t ? "" : t);
-    const e = this.lgDictF();
-    if (e[t]) return e[t];
-    try {
-      const e = KIVO.BassamPerm;
-      if (e && e.PAGE_OF && e.PAGE_OF[t.split("/")[0]]) {
-        const s = e.nameOf(t);
-        if (s && s !== t) return s;
-      }
-    } catch (e) {}
-    return "";
-  }
-  lgV(t) {
-    if ("string" != typeof t) return this.lgVal(t);
-    const e = this.lgDictV();
-    if (e[t]) return e[t];
-    if (/^[dnsg]\d+$/.test(t)) {
-      const e = this.lgDeptName(t);
-      if (e) return e;
-    }
-    if (/^\s*$/.test(t)) return "فارغ";
-    if (/^[A-Za-z_][A-Za-z0-9_\/:.-]*$/.test(t)) {
-      const e = this.lgTplName(t) || this.lgDeptName(t);
-      if (e) return e;
-      if (/^[a-z]{1,3}\d+$/i.test(t) && !/^[A-Z]\d{1,3}$/.test(t)) return "قيمة";
-    }
-    return t.length > 60 ? t.slice(0, 57) + "…" : t;
-  }
-  lgDeptName(t) {
-    try {
-      const e = JSON.parse(localStorage.getItem("bassam_depts_v1") || "[]")
-        .concat(JSON.parse(localStorage.getItem("bassam_gdepts_v1") || "[]"))
-        .filter((e) => e && e.id === t)[0];
-      return e ? e.name : "";
-    } catch (e) {
-      return "";
-    }
-  }
-  lgTplName(t) {
-    try {
-      const e = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1") || "[]").filter((e) => e && e.id === t)[0];
-      return e ? e.name : "";
-    } catch (e) {
-      return "";
-    }
-  }
-  lgUserName(t, e) {
-    try {
-      const s = JSON.parse(localStorage.getItem("bassam_auth_users_v1") || "[]").filter((e) => e && e.id === t)[0];
-      if (s) return s.name || s.un || "";
-    } catch (s) {}
-    const s = e && "object" == typeof e ? e.name || e.un : "";
-    return s || "";
-  }
-  lgEnt(t) {
-    if (!t || "object" != typeof t || Array.isArray(t)) return "";
-    const e = t.name || t.title || t.label || t.subject || t.un || (null != t.num ? "رقم " + t.num : "") || t.code || "";
-    return "string" == typeof e || "number" == typeof e ? String(e) : "";
-  }
-  lgSeg(t) {
-    t = String(null == t ? "" : t);
-    if (!t || /^__/.test(t)) return "";
-    if (/^\[.*\]$/.test(t) || /^\d+$/.test(t)) return "";
-    if (/^m:\d{4}-\d{1,2}$/.test(t) || /^\d{4}-\d{1,2}$/.test(t)) return "شهر " + this.lgMonth(t);
-    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(t)) return "يوم " + this.lgDay(t);
-    if (/^[dnsg]\d+$/.test(t)) {
-      const e = this.lgDeptName(t);
-      if (e) return e;
-    }
-    return this.lgFld(t);
-  }
-  lgPath(t) {
-    const e = String(t || "")
-        .split(".")
-        .filter(Boolean)
-        .map((t) => this.lgSeg(t))
-        .filter(Boolean),
-      s = [];
-    return (
-      e.forEach((t) => {
-        s[s.length - 1] !== t && s.push(t);
-      }),
-      s.join(" › ")
-    );
-  }
-  lgVal(t) {
-    if (void 0 === t) return "—";
-    if (null === t) return "فارغ";
-    if ("boolean" == typeof t) return t ? "نعم" : "لا";
-    if ("number" == typeof t) return String(t);
-    if ("string" == typeof t) return this.lgV(t);
-    if (Array.isArray(t)) {
-      if (!t.length) return "لا شيء";
-      if (t.length > 4) return KIVO.BassamCount(t.length, "عنصر") + "";
-      return t.map((t) => ("object" == typeof t && null !== t ? this.lgEnt(t) || "عنصر" : this.lgV(String(t)))).join("، ");
-    }
-    if ("object" == typeof t) {
-      const e = this.lgEnt(t);
-      if (e) return e;
-      const s = Object.keys(t);
-      if (!s.length) return "فارغ";
-      const a = s.map((t) => this.lgFld(t)).filter(Boolean);
-      return a.length ? a.slice(0, 4).join("، ") + (a.length > 4 ? "…" : "") : KIVO.BassamCount(s.length, "حقل") + "";
-    }
-    return "قيمة";
-  }
-  lgKeyLabel(t) {
-    const e = {
-      bassam_employees_v1: ["قائمة الموظفين"],
-      bassam_staffing_v3: ["الجدول الشهري"],
-      bassam_staffing_v2: ["الجدول الشهري (صيغة قديمة)"],
-      bassam_staffing_snap_v1: ["بيان الشهر"],
-      bassam_staffing_locks_v1: ["أقفال الجدول الشهري"],
-      bassam_rounds_v1: ["الجولات اليومية"],
-      bassam_dreport_v1: ["التقرير اليومي"],
-      bassam_dr_grp_v1: ["مجموعات التقرير اليومي"],
-      bassam_plan_v1: ["الخطة التشغيلية"],
-      bassam_zone_opts_v1: ["خيارات المصليات"],
-      bassam_gate_opts_v1: ["خيارات الأبواب"],
-      bassam_mark_kinds_v1: ["أنواع المعالم"],
-      bassam_tasks_v1: ["مهام الموظفين"],
-      bassam_tasks_locks_v1: ["أقفال المهام"],
-      bassam_custody_v1: ["عهد الموظفين"],
-      bassam_irshad_v1: ["نظام الاسترشاد"],
-      bassam_irshad_langs_v1: ["لغات الاسترشاد"],
-      bassam_irshad_locs_v1: ["مواقع الاسترشاد"],
-      bassam_seized_v1: ["نظام المضبوطات"],
-      bassam_seized_cat_v1: ["قائمة ممنوعات المضبوطات"],
-      bassam_seized_acts_v1: ["إجراءات المضبوطات"],
-      bassam_seized_locs_v1: ["مواقع المضبوطات"],
-      bassam_seized_jew_v1: ["أنواع قطع المجوهرات"],
-      bassam_award_v1: ["جائزة التميز"],
-      bassam_award_docs_v1: ["المراجع المعتمدة للجائزة (قديم)"],
-      bassam_award_docs_v2: ["المراجع المعتمدة للجائزة"],
-      bassam_options_v1: ["خيارات الموظفين"],
-      bassam_shift_options_v1: ["الورديات"],
-      bassam_leave_kinds_v1: ["أنواع الإجازات"],
-      bassam_callsigns_v1: ["رموز النداء"],
-      bassam_auth_users_v1: ["حسابات الدخول"],
-      bassam_perms_v1: ["الصلاحيات"],
-      bassam_perm_tpls_v1: ["قوالب الصلاحيات"],
-      bassam_depts_v1: ["الإدارات"],
-      bassam_gdepts_v1: ["الهيكل التنظيمي"],
-      bassam_platform_v1: ["إعدادات المنصة"],
-      bassam_profile_v1: ["الملف الشخصي"],
-      bassam_notif_v1: ["التنبيهات"],
-      bassam_notif_cfg_v1: ["إعدادات التنبيهات"],
-      bassam_notif_sys_v1: ["تنبيهات مدير النظام"],
-      bassam_bc_v1: ["التعاميم"],
-      bassam_media: ["الصور والملفات"],
-      bassam_last_export_v1: ["آخر تصدير"],
-      bassam_last_full_export_v1: ["آخر نسخة شاملة"],
-      bassam_session_v1: ["الجلسة", 1],
-      bassam_active_dept_v1: ["الإدارة النشطة", 1],
-      bassam_page_v1: ["الصفحة المحفوظة", 1],
-      bassam_theme: ["المظهر", 1],
-      bassam_dayfocus_v1: ["اليوم المختار", 1],
-      bassam_dayshift_v1: ["الوردية المختارة", 1],
-      bassam_notif_dev_v1: ["جهاز التنبيهات", 1],
-      bassam_notif_mute_v1: ["كتم التنبيهات", 1],
-      bassam_fresh_login_v1: ["راية أول دخول", 1],
-      bassam_first_boot_v1: ["أول تشغيل", 1],
-      bassam_demo_purged_v1: ["تنظيف البيانات التجريبية", 1],
-      bassam_struct_seed_v1: ["تهيئة الهيكل التنظيمي", 1],
-    }[t];
-    if (e) return [e[0], !!e[1]];
-    if (/^bassam_perm_[a-z_]+_v\d+$/.test(t)) return ["ترقية الصلاحيات", !0];
-    try {
-      const e = KIVO.BassamKeyLabels;
-      if (e) return [e.label(t), !!(e.isTech && e.isTech(t))];
-    } catch (e) {}
-    return ["بيانات المنصة", !1];
-  }
-  lgTxt(t) {
-    const e = /^bsdept:([^:]+):(.+)$/.exec(String(t.k || "")),
-      s = (e ? e[2] : String(t.k || "")).replace(/:.*$/, "");
-    let a = [];
-    try {
-      a = JSON.parse(t.diff || "[]") || [];
-    } catch (t) {
-      a = [];
-    }
-    (() => {
-      const t = {},
-        e = [];
-      (a.forEach((s) => {
-        const a = /^(.*)\.(\d{1,3})$/.exec(s.p || ""),
-          r = (t) => null == t || "object" != typeof t;
-        a && r(s.f) && r(s.t)
-          ? (t[a[1]] || ((t[a[1]] = { p: a[1], f: [], t: [] }), e.push(t[a[1]])),
-            void 0 !== s.f && t[a[1]].f.push(s.f),
-            void 0 !== s.t && t[a[1]].t.push(s.t))
-          : e.push(s);
-      }),
-        (a = e));
-    })();
-    const r = this.lgDictV(),
-      KL = this.lgKeyLabel(s),
-      n = KL[0],
-      tech = KL[1],
-      o = (t) => String(t).replace(/^\[|\]$/g, ""),
-      p = (t) => this.lgFld(t),
-      F = (t, e) => p(t) || e || "",
-      l = [],
-      d = [],
-      c = (t, e) => {
-        l.length < 3 && !l.some((e) => e.t === t) && l.push({ t: t, k: e || "data" });
-      },
-      g = (t, e, s) => {
-        const r = /^(emp|eid|ekey|chief|deputy|leaders)$/.test(String(t).split(".").pop()),
-          i = (t) =>
-            r && (Array.isArray(t) ? t.length : "string" == typeof t)
-              ? Array.isArray(t)
-                ? t.length > 4
-                  ? KIVO.BassamCount(t.length, "موظف") + ""
-                  : this.lgNames(t).join("، ")
-                : this.lgEmpName(t)
-              : this.lgVal(t);
-        d.length < 12 && d.push({ p: t, f: this.lgPath(t) || n, a: i(e), b: i(s) });
-      },
-      V = (t) => this.lgVal(t),
-      /* فرق قائمة بسيطة: ما أُضيف وما أُزيل بأسمائه */
-      AR = (t, e) => {
-        const s = Array.isArray(t) ? t : [],
-          a = Array.isArray(e) ? e : [],
-          r = a.filter((t) => s.indexOf(t) < 0).map((t) => this.lgV(String(t))),
-          i = s.filter((t) => a.indexOf(t) < 0).map((t) => this.lgV(String(t)));
-        return (r.length ? "فعّل: " + r.join("، ") : "") + (r.length && i.length ? " · " : "") + (i.length ? "أوقف: " + i.join("، ") : "");
-      },
-      ARn = (t, e) => {
-        const s = Array.isArray(t) ? t : [],
-          a = Array.isArray(e) ? e : [],
-          r = a.filter((t) => s.indexOf(t) < 0).map((t) => this.lgV(String(t))),
-          i = s.filter((t) => a.indexOf(t) < 0).map((t) => this.lgV(String(t)));
-        return (r.length ? "أضاف " + r.join("، ") : "") + (r.length && i.length ? " · " : "") + (i.length ? "أزال " + i.join("، ") : "");
-      },
-      EN = (t, e) => this.lgEnt(t) || this.lgEnt(e) || "",
-      /* حدث عام على عنصر داخل قائمة: أضاف/حذف/عدّل «الاسم» */
-      GEN = (t, e, s) => {
-        const a = EN(t.t, t.f);
-        return void 0 === t.f
-          ? "أضاف " + e + (a ? " «" + a + "»" : "")
-          : void 0 === t.t
-            ? "حذف " + e + (a ? " «" + a + "»" : "")
-            : "عدّل " + e + (a ? " «" + a + "»" : "") + (s ? " (" + s + ")" : "");
-      };
-    if ("del" === t.act) return (c("حذف «" + n + "» بالكامل", "warn"), { t: l, rows: d, label: n, kind: "warn" });
-    if (!a.length) return (c("حفظ «" + n + "» بلا تغيير مرئي"), { t: l, rows: d, label: n, kind: "data" });
-    let h = "data";
-    return (
-      a.forEach((t) => {
-        const e = t.p || "",
-          a = ((t) =>
-            String(t || "")
-              .split(".")
-              .filter(Boolean))(e);
-        if ((g(e, t.f, t.t), tech)) return void c("تحديث تقني · " + n);
-        if (!a.length) {
-          if (Array.isArray(t.f) && Array.isArray(t.t) && ARn(t.f, t.t)) return void c("عدّل «" + n + "»: " + ARn(t.f, t.t));
-          return (
-            c(void 0 === t.f ? "أنشأ «" + n + "»" : void 0 === t.t ? "حذف «" + n + "»" : "استبدل «" + n + "» بالكامل"),
-            void (void 0 !== t.f && (h = "warn"))
-          );
-        }
-        /* ═══ التقرير اليومي ═══ */
-        if ("bassam_dreport_v1" === s) {
-          const e = a[0] || "",
-            s = this.lgDay(e);
-          if (/^m:/.test(e))
-            return void ("dopen" === a[1]
-              ? c((t.t ? "فتح" : "أغلق") + " يوم " + a[2] + " " + this.lgMonth(e) + " للاستدراك")
-              : c("عدّل إعدادات شهر " + this.lgMonth(e)));
-          if (!/^\d{4}-\d{1,2}-\d{1,2}$/.test(e)) return void c("عدّل إعدادات التقرير اليومي");
-          const i = "shifts" === a[1] ? a[2] : "";
-          if ("roster" === a[3]) {
-            const n = a[4],
-              l = a[5];
-            let d = "موظف";
-            try {
-              const t = JSON.parse(localStorage.getItem("bassam_dreport_v1") || "{}")[e],
-                s = t && t.shifts && t.shifts[i] && t.shifts[i].roster;
-              if (void 0 !== n) {
-                const t = Array.isArray(s) ? (/^\[/.test(n) ? s.filter((t) => String(t.ekey) === o(n))[0] : s[+n]) : null;
-                d = t ? t.name || this.lgEmpName(t.ekey) : /^\[/.test(n) ? this.lgEmpName(o(n)) : "موظف";
-              }
-            } catch (t) {}
-            return void 0 === n
-              ? void c(
-                  (void 0 === t.f ? "سحب" : "حدّث") +
-                    " قائمة الوردية " +
-                    i +
-                    " · " +
-                    s +
-                    (Array.isArray(t.t) ? " (" + KIVO.BassamCount(t.t.length, "موظف") + ")" : ""),
-                )
-              : "st" === l
-                ? (c("أشّر «" + (r[t.t] || V(t.t)) + "» لـ " + d + " في التقرير اليومي · " + s + " · " + i),
-                  void ("ab" === t.t && (h = "warn")))
-                : "tr" === l || "trTo" === l || "trShift" === l
-                  ? void c(
-                      "حوّل " + d + " إلى " + (t.t && "object" == typeof t.t ? t.t.to || t.t.shift || "وردية أخرى" : V(t.t)) + " · " + s,
-                    )
-                  : "note" === l || "reason" === l || "why" === l
-                    ? void c("كتب سبباً/ملاحظة لـ " + d + " · " + s + ": " + V(t.t))
-                    : "cs" === l
-                      ? void c("أسند رمز النداء " + V(t.t) + " لـ " + d)
-                      : "tpl" === l || "pm" === l
-                        ? (c("عدّل صلاحية " + d + " من التقرير اليومي"), void (h = "perm"))
-                        : void 0 === l && void 0 === t.f
-                          ? void c("أضاف " + d + " إلى قائمة الوردية " + i + " · " + s)
-                          : void 0 === l && void 0 === t.t
-                            ? void c("أزال " + d + " من قائمة الوردية " + i + " · " + s)
-                            : void c("عدّل " + F(l, "بيانات") + " لـ " + d + " في التقرير اليومي · " + s);
-          }
-          return "ap" === a[3] || "shAp" === a[3]
-            ? (c((t.t ? "اعتمد" : "فتح اعتماد") + " تقرير الوردية " + i + " · " + s), void (h = "perm"))
-            : "leaders" === a[3]
-              ? void c("عيّن " + F(a[4], "قائداً") + " للوردية " + i + " · " + s + ": " + this.lgEmpName(t.t))
-              : "pulled" === a[3]
-                ? void c("سحب جدول الوردية " + i + " إلى تقرير " + s)
-                : "shifts" === a[1] && 3 === a.length
-                  ? void c((void 0 === t.f ? "أنشأ" : "عدّل") + " تقرير الوردية " + i + " · " + s)
-                  : "__ldcs" === a[1]
-                    ? void c("عدّل رموز نداء المناصب")
-                    : void c("عدّل التقرير اليومي · " + s + (p(a[a.length - 1]) ? " (" + p(a[a.length - 1]) + ")" : ""));
-        }
-        /* ═══ الجولات ═══ */
-        if ("bassam_rounds_v1" === s) {
-          const e = a[0] || "",
-            s = this.lgDay(e);
-          if (/^m:/.test(e)) return void c("عدّل إعدادات جولات شهر " + this.lgMonth(e));
-          if (!/^\d{4}-\d{1,2}-\d{1,2}$/.test(e)) return void c("عدّل إعدادات الجولات");
-          if ("mvLog" === a[1]) return;
-          if ("ap" === a[1] || "shAp" === a[1]) return (c((t.t ? "اعتمد" : "فتح اعتماد") + " جولة " + s), void (h = "perm"));
-          if ("d" === a[1] && a[3]) {
-            const r = +a[2] || 0,
-              i = a[3],
-              n = +a[4],
-              o = this.lgSpotName(e, r, i, n),
-              l = a[5];
-            if ("emp" === l) {
-              const e = Array.isArray(t.f) ? t.f : [],
-                a = Array.isArray(t.t) ? t.t : [],
-                r = a.filter((t) => e.indexOf(t) < 0),
-                i = e.filter((t) => a.indexOf(t) < 0);
-              return (
-                r.length && c("سكّن " + this.lgNames(r).join("، ") + " على " + o + " · " + s),
-                i.length && c("رفع " + this.lgNames(i).join("، ") + " من " + o + " · " + s),
-                void (r.length || i.length || c("عدّل تسكين " + o + " · " + s))
-              );
-            }
-            return "closed" === l || "off" === l
-              ? (c((t.t ? ("closed" === l ? "أغلق " : "عطّل ") : "closed" === l ? "فتح " : "فعّل ") + o + " · " + s),
-                void (t.t && (h = "warn")))
-              : "cWhy" === l
-                ? void c("سبب إغلاق " + o + ": " + V(t.t))
-                : "needN" === l
-                  ? void c("غيّر احتياج " + o + " من " + V(t.f) + " إلى " + V(t.t) + " · " + s)
-                  : void 0 === l
-                    ? void c((void 0 === t.f ? "أضاف " : void 0 === t.t ? "حذف " : "عدّل ") + o + " في جولة " + s)
-                    : void c("عدّل " + F(l, "بيانات") + " لـ " + o + " · " + s);
-          }
-          return 1 === a.length
-            ? void c((void 0 === t.f ? "بدأ" : void 0 === t.t ? "حذف" : "عدّل") + " جولة " + s)
-            : void c("عدّل جولة " + s + (p(a[a.length - 1]) ? " (" + p(a[a.length - 1]) + ")" : ""));
-        }
-        /* ═══ الجدول الشهري ═══ */
-        if ("bassam_staffing_v3" === s) {
-          const e = a[0] || "",
-            s = this.lgMonth(e),
-            r = a[1] ? o(a[1]) : "",
-            i = r ? this.lgEmpName(r) : "";
-          if (1 === a.length) return void c((void 0 === t.f ? "أنشأ" : "عدّل") + " الجدول الشهري لشهر " + s);
-          if ("ap" === a[1] || "__ap" === a[1]) return (c((t.t ? "اعتمد" : "فتح اعتماد") + " الجدول الشهري لشهر " + s), void (h = "perm"));
-          if (/^__/.test(a[1])) return void c("عدّل إعدادات جدول " + s);
-          const n = a[2];
-          return void 0 === n
-            ? void c(
-                (void 0 === t.f ? "أضاف " : void 0 === t.t ? "أزال " : "عدّل صف ") + i + (void 0 === t.t ? " من" : " إلى") + " جدول " + s,
-              )
-            : "shift" === n
-              ? void c("أسند " + i + " إلى " + (t.t ? "«" + V(t.t) + "»" : "بلا وردية") + " · " + s)
-              : "rest" === n
-                ? void c("عدّل أيام راحة " + i + ": " + V(t.f) + " ← " + V(t.t) + " · " + s)
-                : "cs" === n
-                  ? void c("أسند رمز النداء " + (t.t ? "«" + V(t.t) + "»" : "بدون رمز") + " لـ " + i)
-                  : "muk" === n
-                    ? void c((t.t ? "كلّف " : "ألغى تكليف ") + i + " · " + s)
-                    : "work" === n || "type" === n
-                      ? void c("عدّل " + ("type" === n ? "نوع التوظيف" : "نوع العمل") + " لـ " + i + ": " + V(t.f) + " ← " + V(t.t))
-                      : "tpl" === n || "pm" === n || "perm" === n
-                        ? (c("عدّل صلاحية " + i + " في الجدول الشهري"), void (h = "perm"))
-                        : void c("عدّل " + F(n, "بيانات") + " لـ " + i + " · " + s);
-        }
-        /* ═══ الموظفون ═══ */
-        if ("bassam_employees_v1" === s) {
-          const e = a[0],
-            s = a[1];
-          let r = "موظف";
-          try {
-            const s = JSON.parse(localStorage.getItem("bassam_employees_v1") || "[]"),
-              a = /^\[/.test(e) ? s.filter((t) => String(t.eid || t.nid || t.name) === o(e))[0] : s[+e];
-            r = a ? a.name : (t.t && t.t.name) || (t.f && t.f.name) || "موظف";
-          } catch (t) {}
-          return void 0 === s
-            ? void 0 === t.f
-              ? void c("أضاف موظفاً جديداً: " + ((t.t && t.t.name) || r))
-              : void 0 === t.t
-                ? (c("حذف الموظف " + ((t.f && t.f.name) || r)), void (h = "warn"))
-                : void c("عدّل بيانات " + r)
-            : void c("عدّل " + ("type" === s ? "نوع التوظيف" : F(s, "بيانات")) + " لـ " + r + ": " + V(t.f) + " ← " + V(t.t));
-        }
-        /* ═══ الخطة التشغيلية ═══ */
-        if ("bassam_plan_v1" === s) {
-          if ("ap" === a[0] || "ap" === a[a.length - 1] || "approved" === a[a.length - 1] || "locked" === a[a.length - 1])
-            return (c((t.t ? "قفل" : "فتح") + " شهر الخطة التشغيلية"), void (h = "perm"));
-          const e = a.map((t, e) => ("floors" === a[e - 1] && /^\d+$/.test(t) ? "الدور " + (+t + 1) : "")).filter(Boolean)[0] || "",
-            s = ["gates", "marks", "zones", "paths", "sectors"].filter((t) => a.indexOf(t) >= 0)[0],
-            r = s ? { gates: "الأبواب", marks: "المعالم", zones: "المصليات", paths: "المسارات", sectors: "النطاقات" }[s] : "",
-            i = EN(t.t, t.f),
-            n = a[a.length - 1],
-            o = /^\[.*\]$/.test(n) || /^\d+$/.test(n);
-          return void c(
-            (void 0 === t.f && o ? "أضاف " : void 0 === t.t && o ? "حذف " : "عدّل ") +
-              (r ? { gates: "باباً", marks: "معلماً", zones: "مصلى", paths: "مساراً", sectors: "نطاقاً" }[s] : "الخطة التشغيلية") +
-              (i ? " «" + i + "»" : "") +
-              (e ? " · " + e : "") +
-              (!o && p(n) ? " (" + p(n) + ")" : ""),
-          );
-        }
-        /* ═══ الصلاحيات ═══ */
-        if ("bassam_perms_v1" === s) {
-          h = "perm";
-          const e = a[0],
-            s = a[1] ? this.lgDeptName(a[1]) || "الإدارة" : "الإدارة";
-          if ("caps" === e) return void c("عدّل سقف صفحات «" + s + "»" + (AR(t.f, t.t) ? ": " + AR(t.f, t.t) : ""));
-          if ("lenses" === e) return void c("عدّل عدسات «" + s + "»" + (AR(t.f, t.t) ? ": " + AR(t.f, t.t) : ""));
-          if ("subs" === e || "tabs" === e)
-            return void c(
-              "عدّل " +
-                ("subs" === e ? "أوراق" : "تبويبات") +
-                " «" +
-                F(a[2], "صفحة") +
-                "» في سقف «" +
-                s +
-                "»" +
-                (AR(t.f, t.t) ? ": " + AR(t.f, t.t) : ""),
-            );
-          if ("emps" === e) {
-            const e = a[2] ? this.lgEmpName(a[2]) : "موظف",
-              s = a.slice(3).join(".");
-            return void (s
-              ? c("عدّل صلاحية «" + F(s, "ورقة") + "» لـ " + e + (Array.isArray(t.t) ? ": " + V(t.t) : void 0 === t.t ? " (أزالها)" : ""))
-              : c(void 0 === t.f ? "منح صلاحيات لـ " + e : void 0 === t.t ? "أزال صلاحيات " + e : "عدّل صلاحيات " + e));
-          }
-          if ("tplOf" === e) {
-            const e = a[2] ? this.lgEmpName(a[2]) : "موظف",
-              s = this.lgTplName(t.t);
-            return void c(void 0 === t.t || !t.t ? "أزال قالب الصلاحيات عن " + e : "منح " + e + " قالب «" + (s || "صلاحيات") + "»");
-          }
-          if ("empLens" === e) {
-            const e = a[2] ? this.lgEmpName(a[2]) : "موظف";
-            return void c("عدّل عدسات " + e + (AR(t.f, t.t) ? ": " + AR(t.f, t.t) : ""));
-          }
-          if ("patterns" === e) return void c("عدّل نمط «" + (r[a[1]] || "السقف") + "»");
-          return void c("عدّل الصلاحيات");
-        }
-        /* ═══ حسابات الدخول ═══ */
-        if ("bassam_auth_users_v1" === s) {
-          h = "perm";
-          const e = /^\[/.test(a[0] || "") ? o(a[0]) : "",
-            s0 = this.lgUserName(e, t.t || t.f),
-            s = s0 ? "حساب " + s0 : "حساب دخول",
-            r = a[1];
-          return void 0 === r
-            ? void (void 0 === t.f ? c("أنشأ " + s) : void 0 === t.t ? (c("حذف " + s), (h = "warn")) : c("عدّل " + s))
-            : "dis" === r
-              ? void (c((t.t ? "جمّد " : "أعاد تفعيل ") + s), t.t && (h = "warn"))
-              : "ph" === r
-                ? void c("غيّر كلمة مرور " + s)
-                : "mgr" === r
-                  ? void c((t.t ? "عيّن " : "ألغى تعيين ") + s + (t.t ? " مديراً للإدارة" : " من إدارة الإدارة"))
-                  : "role" === r
-                    ? void c(
-                        "غيّر دور " +
-                          s +
-                          " إلى " +
-                          ({ super: "مدير النظام", dept: "مدير إدارة", gm: "مدير عقدة", staff: "موظف" }[t.t] || "دور آخر"),
-                      )
-                    : "deptId" === r || "gid" === r
-                      ? void c("نقل " + s + " إلى " + (this.lgDeptName(t.t) || "إدارة أخرى"))
-                      : void c("عدّل " + F(r, "بيانات") + " لـ" + s);
-        }
-        /* ═══ الإدارات والهيكل ═══ */
-        if ("bassam_depts_v1" === s || "bassam_gdepts_v1" === s) {
-          const e = /^\[/.test(a[0] || "") ? o(a[0]) : "",
-            n = "bassam_gdepts_v1" === s ? "عقدة" : "إدارة",
-            r0 = this.lgEnt(t.t) || this.lgEnt(t.f) || this.lgDeptName(e),
-            r = r0 ? n + " «" + r0 + "»" : n,
-            i = a[1];
-          return void 0 === i
-            ? void (void 0 === t.f ? c("أنشأ " + r) : void 0 === t.t ? (c("حذف " + r), (h = "warn")) : c("عدّل " + r))
-            : "name" === i
-              ? void c("غيّر اسم " + n + " «" + V(t.f) + "» إلى «" + V(t.t) + "»")
-              : "gid" === i || "pid" === i
-                ? void c("نقل " + r + " إلى " + (this.lgDeptName(t.t) || "فرع آخر"))
-                : "kind" === i
-                  ? void c("غيّر نوع " + r + " إلى " + V(t.t))
-                  : void c("عدّل " + F(i, "بيانات") + " لـ" + r);
-        }
-        /* ═══ قوالب الصلاحيات ═══ */
-        if ("bassam_perm_tpls_v1" === s) {
-          h = "perm";
-          const e = /^\[/.test(a[0] || "") ? o(a[0]) : "",
-            s = this.lgEnt(t.t) || this.lgEnt(t.f) || this.lgTplName(e) || "الصلاحيات",
-            r = a[1];
-          return void 0 === r
-            ? void (void 0 === t.f ? c("أنشأ قالب «" + s + "»") : void 0 === t.t ? c("حذف قالب «" + s + "»") : c("عدّل قالب «" + s + "»"))
-            : "name" === r
-              ? void c("غيّر اسم القالب «" + V(t.f) + "» إلى «" + V(t.t) + "»")
-              : void c("عدّل " + F(r, "محتوى") + " لقالب «" + s + "»");
-        }
-        /* ═══ الأقفال ═══ */
-        if ("bassam_staffing_locks_v1" === s || "bassam_tasks_locks_v1" === s) {
-          const e = "bassam_tasks_locks_v1" === s ? "مهام شهر " : "جدول شهر ";
-          return void c((t.t ? "قفل " : "فتح ") + e + this.lgMonth(a[0] || ""));
-        }
-        if ("bassam_staffing_snap_v1" === s) return void c("حدّث بيان شهر " + this.lgMonth(a[0] || ""));
-        /* ═══ المهام ═══ */
-        if ("bassam_tasks_v1" === s) {
-          const e = a[0] || "",
-            s = /^\d{4}-\d{1,2}$/.test(e) ? " · " + this.lgMonth(e) : "",
-            r = EN(t.t, t.f),
-            i = a[a.length - 1],
-            n = /^\[.*\]$/.test(i) || /^\d+$/.test(i) || 1 === a.length;
-          if (n) return void c((void 0 === t.f ? "أضاف مهمة" : void 0 === t.t ? "حذف مهمة" : "عدّل مهمة") + (r ? " «" + r + "»" : "") + s);
-          let l = "";
-          try {
-            const t = JSON.parse(localStorage.getItem("bassam_tasks_v1") || "{}")[e],
-              s = Array.isArray(t) ? (/^\[/.test(a[1]) ? t.filter((t) => String(t.id) === o(a[1]))[0] : t[+a[1]]) : null;
-            l = (s && (s.title || s.name)) || "";
-          } catch (t) {}
-          return "status" === i || "st" === i
-            ? void c("غيّر حالة المهمة" + (l ? " «" + l + "»" : "") + " إلى " + V(t.t) + s)
-            : "emp" === i || "eid" === i || "ekey" === i
-              ? void c("أسند المهمة" + (l ? " «" + l + "»" : "") + " إلى " + this.lgEmpName(t.t) + s)
-              : void c("عدّل " + F(i, "بيانات") + " للمهمة" + (l ? " «" + l + "»" : "") + s);
-        }
-        /* ═══ العهد ═══ */
-        if ("bassam_custody_v1" === s) {
-          const e = a[0],
-            s = EN(t.t, t.f),
-            r = a[a.length - 1],
-            i = /^\[.*\]$/.test(r) || /^\d+$/.test(r);
-          return "moves" === e
-            ? void c(void 0 === t.f ? "سجّل حركة عهدة" + (s ? " «" + s + "»" : "") : void 0 === t.t ? "حذف حركة عهدة" : "عدّل حركة عهدة")
-            : "items" === e
-              ? void c(
-                  (void 0 === t.f ? "أضاف عهدة" : void 0 === t.t ? "حذف عهدة" : "عدّل عهدة") +
-                    (s ? " «" + s + "»" : "") +
-                    (!i && p(r) ? " (" + p(r) + ")" : ""),
-                )
-              : void c("عدّل " + F(e, "بيانات") + " في عهد الموظفين");
-        }
-        /* ═══ الاسترشاد والمضبوطات ═══ */
-        if ("bassam_irshad_v1" === s || "bassam_seized_v1" === s) {
-          const e = "bassam_irshad_v1" === s ? "الاسترشاد" : "المضبوطات",
-            r = a.filter((t) => /^\d{4}-\d{1,2}-\d{1,2}$/.test(t))[0],
-            i = r ? " · " + this.lgDay(r) : "",
-            n = EN(t.t, t.f),
-            l = a[a.length - 1],
-            d = /^\[.*\]$/.test(l) || /^\d+$/.test(l);
-          return void c(
-            (void 0 === t.f ? "سجّل " : void 0 === t.t ? "حذف " : "عدّل ") +
-              ("bassam_seized_v1" === s ? "سجل مضبوطات" : "تقرير استرشاد") +
-              (n ? " «" + n + "»" : "") +
-              i +
-              (!d && p(l) ? " (" + p(l) + ")" : ""),
-          );
-        }
-        /* ═══ جائزة التميز ═══ */
-        if ("bassam_award_v1" === s || "bassam_award_docs_v2" === s || "bassam_award_docs_v1" === s) {
-          const e = EN(t.t, t.f),
-            r = a[a.length - 1],
-            i = /^\[.*\]$/.test(r) || /^\d+$/.test(r);
-          let n = "";
-          try {
-            if ("recs" === a[0] && a[1]) {
-              const t = JSON.parse(localStorage.getItem("bassam_award_v1") || "{}").recs || [],
-                e = /^\[/.test(a[1]) ? t.filter((t) => String(t.id) === o(a[1]))[0] : t[+a[1]];
-              n = (e && (e.name || this.lgEmpName(e.ekey || e.eid))) || "";
-            }
-          } catch (t) {}
-          const l = e || n;
-          return "bassam_award_v1" !== s
-            ? void c("عدّل المراجع المعتمدة للجائزة")
-            : "recs" === a[0]
-              ? void c(
-                  (void 0 === t.f ? "أضاف ترشيحاً" : void 0 === t.t ? "حذف ترشيح" : "عدّل ترشيح") +
-                    (l ? " «" + l + "»" : "") +
-                    (!i && p(r) ? " (" + p(r) + ")" : ""),
-                )
-              : void c("عدّل " + F(a[0], "إعدادات") + " في جائزة التميز");
-        }
-        /* ═══ التعاميم والتنبيهات والمنصة ═══ */
-        if ("bassam_bc_v1" === s) {
-          const e = EN(t.t, t.f);
-          return void c((void 0 === t.f ? "أضاف تعميماً" : void 0 === t.t ? "حذف تعميماً" : "عدّل تعميماً") + (e ? " «" + e + "»" : ""));
-        }
-        if ("bassam_notif_cfg_v1" === s)
-          return void c("عدّل إعدادات التنبيهات" + (p(a[a.length - 1]) ? " (" + p(a[a.length - 1]) + ")" : ""));
-        if ("bassam_notif_v1" === s || "bassam_notif_sys_v1" === s)
-          return void c(void 0 === t.f ? "تنبيه جديد" : void 0 === t.t ? "حذف تنبيه" : "حدّث التنبيهات");
-        if ("bassam_platform_v1" === s) return void c("عدّل إعدادات المنصة" + (this.lgPath(e) ? " · " + this.lgPath(e) : ""));
-        if ("bassam_profile_v1" === s) return void c("عدّل الملف الشخصي" + (p(a[a.length - 1]) ? " (" + p(a[a.length - 1]) + ")" : ""));
-        if ("bassam_last_export_v1" === s || "bassam_last_full_export_v1" === s)
-          return void c("bassam_last_full_export_v1" === s ? "أخذ نسخة شاملة" : "صدّر بيانات الإدارة");
-        if ("bassam_media" === s)
-          return void c(void 0 === t.f ? "رفع صورة/ملفاً" : void 0 === t.t ? "حذف صورة/ملفاً" : "حدّث الصور والملفات");
-        /* ═══ القوائم والخيارات ═══ */
-        if (
-          /^bassam_(shift_options|leave_kinds|callsigns|zone_opts|gate_opts|mark_kinds|seized_cat|seized_acts|seized_locs|seized_jew|irshad_langs|irshad_locs|options|dr_grp)_v\d+$/.test(
-            s,
-          )
-        ) {
-          const e = Array.isArray(t.f) || Array.isArray(t.t) ? ARn(t.f, t.t) : "",
-            r = EN(t.t, t.f),
-            i = a[a.length - 1],
-            o = /^\[.*\]$/.test(i) || /^\d+$/.test(i);
-          return void c(
-            e
-              ? "عدّل «" + n + "»: " + e
-              : (void 0 === t.f && o ? "أضاف" : void 0 === t.t && o ? "حذف" : "عدّل") +
-                  " " +
-                  (r ? "«" + r + "»" : "عنصراً") +
-                  " في «" +
-                  n +
-                  "»" +
-                  (!o && p(i) ? " (" + p(i) + ")" : ""),
-          );
-        }
-        /* ═══ الافتراضي: بلا أكواد أبداً ═══ */
-        {
-          const en = EN(t.t, t.f),
-            ls = a[a.length - 1],
-            isId = /^\[.*\]$/.test(ls) || /^\d+$/.test(ls),
-            pth = this.lgPath(e);
-          c(
-            (void 0 === t.f && isId ? "أضاف" : void 0 === t.t && isId ? "حذف" : "عدّل") +
-              (en ? " «" + en + "»" : "") +
-              " في «" +
-              n +
-              "»" +
-              (!isId && pth ? " · " + pth : ""),
-          );
-        }
-      }),
-      l.length || c("حفظ «" + n + "»"),
-      { t: l, rows: d, label: n, kind: h, extra: a.length > 3 ? a.length - Math.min(3, l.length) : 0, total: a.length }
-    );
-  }
-  lgExport() {
-    const t = this.state.lgRows || [],
-      e = (t) => '"' + String(null == t ? "" : t).replace(/"/g, '""') + '"',
-      s = [["الوقت", "العملية", "المستخدم", "السجل", "المدينة", "الجهاز"].map(e).join(",")];
-    t.forEach((t) => {
-      const a = this.lgTxt(t);
-      s.push(
-        [
-          new Date(t.ts).toISOString(),
-          a.t.map((t) => t.t).join(" · "),
-          t.name || t.un || "",
-          a.label,
-          t.city || "",
-          "m" === t.dev ? "جوال" : "حاسوب",
-        ]
-          .map(e)
-          .join(","),
-      );
-    });
-    try {
-      const t = new Blob(["\ufeff" + s.join("\n")], { type: "text/csv;charset=utf-8" }),
-        e = document.createElement("a");
-      ((e.href = URL.createObjectURL(t)),
-        (e.download = "سجل-الحركة-" + new Date().toISOString().slice(0, 10) + ".csv"),
-        document.body.appendChild(e),
-        e.click(),
-        setTimeout(() => {
-          (URL.revokeObjectURL(e.href), e.remove());
-        }, 800));
-    } catch (t) {
-      this.bsToast("تعذّر التصدير", "warn");
-    }
-  }
+
   plP() {
     return KIVO.BassamPlat;
   }
@@ -4418,7 +3340,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       let a = JSON.parse(s);
       if ((Array.isArray(a) || (a = []), e === r.active()))
         try {
-          const t = JSON.parse(localStorage.getItem("bassam_employees_v1"));
+          const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
           Array.isArray(t) && t.length > a.length && (a = t);
         } catch (t) {}
       n = a.filter((e) => (e.eid || e.name) === t.ekey)[0] || null;
@@ -5218,7 +4140,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     });
   }
   sysPick(t) {
-    const go = () => {
+    const selection = (this._referenceSelection || 0) + 1;
+    this._referenceSelection = selection;
+    const go = async () => {
+      const isDepartment = KIVO.BassamDepts.list().some(d => d.id === t);
+      if (isDepartment && !await this.scLoadReferences(t, true)) return;
+      if (selection !== this._referenceSelection) return;
       const e = this._loadDraft(t);
       this.setState({ sysSel: t, dhMenu: !1, capDraft: e, capBase: JSON.parse(JSON.stringify(e)), capOpenRows: {}, empQ: "" });
     };
@@ -5815,8 +4742,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   /* خطةُ الإدارة كما يراها المحرّك: المواقعُ وعناصرُ كل موقع (بلا هويةٍ ثابتة ⇒ تُعرض ولا تُختار) */
   scPlan(d) {
-    let pl = null;
-    try { pl = JSON.parse(localStorage.getItem("bsdept:" + d + ":bassam_plan_v1") || "null"); } catch (e) { pl = null; }
+    const pl = KIVO.__BS_SRV.operations.reference("bsdept:" + d + ":bassam_plan_v1");
     const fl = pl && Array.isArray(pl.floors) ? pl.floors : [];
     return fl.map((f, i) => {
       const els = [];
@@ -5825,6 +4751,30 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }));
       return { id: this.scIdOf("floor", f), idx: i, name: String((f && (f.name || (f.num != null ? "موقع " + f.num : ""))) || "موقع " + (i + 1)), els: els };
     });
+  }
+  async scLoadReferences(d, retry) {
+    const ops = KIVO.__BS_SRV.operations, context = ops.context();
+    if (!context) return false;
+    const keys = ["bassam_plan_v1", "bassam_employees_v1"].map(name => "bsdept:" + d + ":" + name),
+      stamp = JSON.stringify([context, d]), entries = this._scopeReads || (this._scopeReads = new Map());
+    if (ops.ready(keys)) {
+      try { keys.forEach(k => ops.reference(k)); return true; } catch (error) {}
+    }
+    const prior = entries.get(stamp);
+    if (prior && (prior.promise || !retry)) return prior.promise || false;
+    const entry = {};
+    entries.set(stamp, entry);
+    entry.promise = Promise.resolve().then(async () => {
+      const result = await ops.read(keys), same = JSON.stringify(ops.context()) === JSON.stringify(context);
+      if (!same || this._nfDisposed) return false;
+      let ok = result && result.ok === 1;
+      try { if (ok) keys.forEach(k => ops.reference(k)); } catch (error) { ok = false; }
+      entry.error = ok ? "" : "تعذّر تأكيد بيانات الإدارة أو لا تملك صلاحية قراءتها — أعد المحاولة";
+      this.setState({ scReadFor: d, scReadError: entry.error, shTick: (this.state.shTick || 0) + 1 });
+      if (!ok && retry) this.bsToast(entry.error);
+      return !!ok;
+    }).finally(() => { entry.promise = null; });
+    return entry.promise;
   }
   scRec(d) {
     let r = null;
@@ -5844,9 +4794,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* نموذجُ التبويب لمدير النظام: السقفُ لكل بُعد + نطاقُ موظفي الإدارة — المسودةُ في الحالة حتى «حفظ» */
   scopeVals(d, isNode, tab) {
     const on = !isNode && this.t24On() && !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper());
-    const base = { tabScopeShow: on, onTabScope: on && tab === "scope", goTabScope: () => this.setState({ sysTab: "scope", scFor: d, scDraft: null, scEmpDraft: null, scOpen: {} }) };
+    const base = { tabScopeShow: on, onTabScope: on && tab === "scope", goTabScope: async () => {
+      if (await this.scLoadReferences(d, true)) this.setState({ sysTab: "scope", scFor: d, scDraft: null, scEmpDraft: null, scOpen: {} });
+    } };
     if (!on || tab !== "scope") return base;
-    const st = this.state, plan = this.scPlan(d), rec = this.scRec(d), cur = rec.ceiling && typeof rec.ceiling === "object" ? rec.ceiling : {};
+    let plan;
+    try { plan = this.scPlan(d); } catch (error) {
+      this.scLoadReferences(d, false);
+      return Object.assign(base, { scNoPlan: false, scDims: [], scDirty: false, scEmpRows: [], scEmpNone: false,
+        scReadPending: true, scReadRetry: () => this.scLoadReferences(d, true), scSave: () => {},
+        scSaveStyle: "opacity:.4;cursor:default", scDirtyTxt: this.state.scReadFor === d && this.state.scReadError || "جارٍ تأكيد بيانات الإدارة…" });
+    }
+    const st = this.state, rec = this.scRec(d), cur = rec.ceiling && typeof rec.ceiling === "object" ? rec.ceiling : {};
     const dr = st.scFor === d && st.scDraft ? st.scDraft : null, eff = (k) => (dr && dr[k] ? dr[k] : cur[k]);
     const allIds = { "Site": plan.map((f) => f.id).filter(Boolean), "Zone/Element": [].concat(...plan.map((f) => f.els.map((x) => x.id))).filter(Boolean) };
     const setDim = (k, v) => this.setState((pr) => ({ scFor: d, scDraft: Object.assign({}, (pr.scFor === d && pr.scDraft) || {}, { [k]: v }) }));
@@ -5871,6 +4830,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     });
     const dirty = !!(dr && Object.keys(dr).length);
     return Object.assign(base, {
+      scReadPending: false,
       scNoPlan: !plan.length, scDims: dims, scDirty: dirty, scDirtyTxt: dirty ? "● تغييرات غير محفوظة في سقف النطاق" : "✓ محفوظ ومطابق لما يطبّقه الخادم",
       scSaveStyle: "height:34px;border:0;border-radius:10px;padding:0 18px;font-size:12px;font-weight:700;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;" + (dirty ? "cursor:pointer;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751))" : "cursor:default;opacity:.4;background:var(--bg-x94a3b8)"),
       scSave: () => dirty && this.scSave(d, dr), scUndo: () => this.setState({ scDraft: null }),
@@ -6471,8 +5431,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     (this._audRm && window.removeEventListener("bassam:remote", this._audRm),
       this._bsOutM && document.removeEventListener("click", this._bsOutM, !0),
       this._pvMsg && window.removeEventListener("message", this._pvMsg),
-      this.adTimerOff(),
-      this.lgTimerOff());
+      this.adTimerOff());
   }
   audScope() {
     try {
@@ -8650,15 +7609,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               h = e.capOpenRows || {};
             let m = [];
             try {
-              const e = t.raw && t.raw.getItem ? t.raw.getItem.call(localStorage, "bsdept:" + o + ":bassam_employees_v1") : null,
-                a = JSON.parse(e);
-              if ((Array.isArray(a) && (m = a), o === s))
-                try {
-                  const t = JSON.parse(localStorage.getItem("bassam_employees_v1"));
-                  Array.isArray(t) && t.length > m.length && (m = t);
-                } catch (t) {}
+              const rows = n ? null : KIVO.__BS_SRV.operations.reference("bsdept:" + o + ":bassam_employees_v1");
+              if (Array.isArray(rows)) m = rows;
             } catch (t) {
-              m = [];
+              if (!n) this.scLoadReferences(o, false);
             }
             const f = KIVO.BassamAuth || null,
               u = (t) => !!(f && f.isMgrKey && f.isMgrKey(t)),
@@ -9687,7 +8641,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   let a = JSON.parse(e);
                   if ((Array.isArray(a) || (a = []), o === s))
                     try {
-                      const t = JSON.parse(localStorage.getItem("bassam_employees_v1"));
+                      const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
                       Array.isArray(t) && t.length > a.length && (a = t);
                     } catch (t) {}
                   return a.filter((t) => (t.eid || t.name) === n.ekey)[0] || null;
@@ -10072,7 +9026,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       const i = JSON.parse(e);
                       if ((Array.isArray(i) && (a = i.length), r.id === s))
                         try {
-                          const t = JSON.parse(localStorage.getItem("bassam_employees_v1"));
+                          const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
                           Array.isArray(t) && t.length > a && (a = t.length);
                         } catch (t) {}
                       return a;
@@ -10364,11 +9318,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             const declaredDepts=JSON.parse(s.bassam_depts_v1||"[]").map(d=>d.id);
             if(!Array.isArray(custodyExport.domains)||JSON.stringify(custodyExport.domains.map(d=>d.scope.departmentId).sort())!==JSON.stringify(declaredDepts.slice().sort()))throw new Error("نطاق العهد لا يطابق إدارات النسخة");
             const business = await KIVO.BackupRestore.exportDomains({departments:declaredDepts,full:true,v:snapshot.v,images:e||{}});
-            Object.keys(s).forEach(key => { if (/(?:^|:)bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(key)) delete s[key]; });
+            Object.keys(s).forEach(key => { if (/(?:^|:)bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(key)||KIVO.__BS_SRV.operations.resources.includes(key.replace(/^bsdept:[^:]+:/,''))) delete s[key]; });
             await this._irBackupFence(snapshot);
-            const manifest={version:3,scope:"full",domains:{kv:1,dailyStats:1,notifications:1,custody:1,irshad:1,seized:1,awards:1},departments:declaredDepts,keys:Object.keys(s).filter(k=>typeof s[k]==="string"&&k!=="bassam_active_dept_v1")};
+            const manifest={version:4,scope:"full",domains:{kv:1,dailyStats:1,notifications:1,custody:1,irshad:1,seized:1,awards:1,operations:1},departments:declaredDepts,keys:Object.keys(s).filter(k=>typeof s[k]==="string"&&k!=="bassam_active_dept_v1")};
             const a = new Date(),
-              r = { app: "bassam-crowd", version: 3, kind: "full", exportedAt: a.toISOString(), data: s, domains: {dailyStats:{version:1,rev:KIVO.DailyStats.revision(),data:dailyStats},notifications:notificationExport.domain,custody:custodyExport.domains,...business.domains}, manifest, idbImages: business.images },
+              r = { app: "bassam-crowd", version: 4, kind: "full", exportedAt: a.toISOString(), data: s, domains: {dailyStats:{version:1,rev:KIVO.DailyStats.revision(),data:dailyStats},notifications:notificationExport.domain,custody:custodyExport.domains,...business.domains}, manifest, idbImages: business.images },
               i = KIVO.BassamCrypt;
             if (!i || !i.ok()) return void this.setState({ backupMsg: "تعذّر التصدير — التشفير غير متاح على هذا المتصفح" });
             ((this._encPend = {

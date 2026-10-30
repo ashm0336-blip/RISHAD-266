@@ -109,9 +109,9 @@ async function permv4RefsLoad(env, set, del) {
   for (i = 0; i < ks.length; i++) {
     k = ks[i]; var rn = resName(k), d = parseKey(k).dept; if (!d) continue;
     var o = out[d] = out[d] || {};
-    if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && o.staffingLocks === undefined) o.staffingLocks = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_staffing_locks_v1'), {}) || {};
-    if (rn === 'bassam_tasks_v1' && o.tasksLocks === undefined) o.tasksLocks = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}) || {};
-    if ((rn === 'bassam_dreport_v1' || rn === 'bassam_rounds_v1' || rn === 'bassam_irshad_v1' || rn === 'bassam_staffing_v3') && o.staffing === undefined) o.staffing = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_staffing_v3'), null);
+    if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && o.staffingLocks === undefined) o.staffingLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_locks_v1'), {}) || {};
+    if (rn === 'bassam_tasks_v1' && o.tasksLocks === undefined) o.tasksLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}) || {};
+    if ((rn === 'bassam_dreport_v1' || rn === 'bassam_rounds_v1' || rn === 'bassam_irshad_v1' || rn === 'bassam_staffing_v3') && o.staffing === undefined) o.staffing = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_v3'), null);
   }
   return out;
 }

@@ -3,11 +3,11 @@ import { TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
    الرفوعُ غيرُ المربوطة بأصحابها · اليتيماتُ ومهلةُ السماح · الرفوعُ غيرُ المكتملة (أجزاءٌ مرحَّلة) — على العامل الحقيقي */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, KT, TAG, hij, HR, PNG } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, KT, TAG, hij, HR, PNG, taskCommandBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: taskCommandBody(W.env, p, body) });
 const get = (W, ck, p) => W.C.api(p, { cookie: ck });
 const up = async (W, ck, id, q) => { const r = await W.C.api('/api/img/' + id + (q || ''), { method: 'PUT', cookie: ck, body: PNG, headers: { 'Content-Type': 'text/plain' } }); assert.equal(r.status, 200, 'رفعُ ' + id); return id; };
 

@@ -572,7 +572,7 @@ async function cuRead(env, A, q) {
   var token = q.cursor ? cuUncursor(q.cursor) : null,
     cutoff = y * 12 + m,
     currentCutoff = clock.y * 12 + clock.m,
-    employeeDoc = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1'), []);
+    employeeDoc = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'), []);
   if (!Array.isArray(employeeDoc)) throw cuError('custody-employees-shape');
   var employeeJson = JSON.stringify(employeeDoc),
     cte = cuResolvedCte(view === 'moves'),
@@ -870,7 +870,7 @@ async function cuAct(env, A, b, meta) {
       if (!Array.isArray(lines) || !lines.length || lines.length > 100) throw cuError('custody-lines');
       n = lines.length;
       // Existing employee documents are references only. The retired custody document is never read.
-      employees = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1'), []);
+      employees = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'), []);
       if (!Array.isArray(employees)) throw cuError('custody-employees-shape');
       for (var line of lines) {
         cuShape(line, ['itemId', 'holderKey', 'condition', 'color']);

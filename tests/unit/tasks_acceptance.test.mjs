@@ -5,19 +5,19 @@
    بياناتٌ اصطناعيةٌ وحدها (tests/unit/tasks_fx.mjs). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, MATE, KT, notificationMessages, KE, D, DAY, TOMORROW, YESTERDAY, PDAY, row, stored, rowsOf, putKV, hij, MID, HR, WD_AR, wdOf, ymOf, PNG, IMG_MATE } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, KT, notificationMessages, KE, D, DAY, TOMORROW, YESTERDAY, PDAY, row, stored, rowsOf, putKV, hij, MID, HR, WD_AR, wdOf, ymOf, PNG, IMG_MATE, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const KS = 'bsdept:' + D + ':bassam_staffing_v3', KR = 'bsdept:' + D + ':bassam_dreport_v1', KL = 'bsdept:' + D + ':bassam_tasks_locks_v1';
 const DM = ['0000000101', '70101'], SUP = ['0000000111', '70111'], EMP1 = ['0000000113', '70113'], DM2 = ['0000000102', '70102'];
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: operationSaveBody(W.env, p, taskCommandBody(W.env, p, body)) });
 const get = (W, ck, p) => W.C.api(p, { cookie: ck });
 const act = (W, ck, body) => post(W, ck, '/api/me/tasks/act', body);
 const mine = async (W, ck, id) => (await get(W, ck, '/api/me/tasks')).j.rows.find(r => String(r.id) === String(id));
 const notifs = (W) => notificationMessages(W.env);
 const N0 = Date.now(), TM = MID(N0) + 864e5;                      /* منتصفُ ليل الغد (الرياض) — مواعيدُ حتميةُ الساعة لاختبارات الوردية */
 const mk = (W, ck, o = {}) => { const s = o.s || (Date.now() + HR), e = o.e || (s + 2 * HR); return post(W, ck, '/api/tasks/create', Object.assign({ k: hij(s), t: 'TEST_ONLY ' + (o.title || 'مهمة المرحلة الثانية'), s, e, asg: o.asg || [ME.eid], win: { early: 240 } }, o.body || {})); };   /* KIVO_265 · نافذةُ التنفيذ: المهامُ هنا تبدأ بعد ساعة وتُبدأ فوراً ⇒ سماحُ بدءٍ مبكر (tests/unit/tasks_win.test.mjs يفحص القاعدة نفسَها) */
-const staff = (W, k, ek, entry) => { const S = stored(W.env, KS) || {}; const ym = ymOf(k); S[ym] = S[ym] || {}; S[ym][ek] = Object.assign({ shift: 'TST-A', rest: [], cs: '', muk: false }, entry || {}); putKV(W.env, KS, S); };
+const staff = async (W, k, ek, entry) => { const S = stored(W.env, KS) || {}; const ym = ymOf(k); S[ym] = S[ym] || {}; S[ym][ek] = Object.assign({ shift: 'TST-A', rest: [], cs: '', muk: false }, entry || {}); await replaceOperationalFixture(W.env, KS, S); };
 async function upImg(W, ck, id) { const r = await W.C.api('/api/img/' + id, { method: 'PUT', cookie: ck, body: PNG, headers: { 'Content-Type': 'text/plain' } }); assert.equal(r.status, 200, 'رفعُ ' + id); return id; }
 
 for (const mode of ['legacy', 'enforce']) {
@@ -126,7 +126,7 @@ test('AT-04 التكرار (ق5): قالبٌ + توليدٌ خادميّ متس�
   const s = TM + 8 * HR, k1 = hij(s + 12 * HR);
   /* راحتُه الأسبوعية يومُ (الغد+2) — تُكتب في كل شهرٍ يمرّ به الأفق (الأسبوعُ الواحد لا يتكرر فيه اليومُ نفسُه) */
   const restDay = hij(TM + 2 * 864e5 + 12 * HR), restWd = WD_AR[wdOf(TM + 2 * 864e5 + 12 * HR)];
-  for (const ym of new Set([0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => hij(TM + i * 864e5 + 12 * HR)))) staff(W, ym, 'tst_e_emp1', { rest: [restWd] });
+  for (const ym of new Set([0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => hij(TM + i * 864e5 + 12 * HR)))) await staff(W, ym, 'tst_e_emp1', { rest: [restWd] });
   const c = await mk(W, dm.ck, { s, e: s + HR, asg: ['tst_e_emp1', ME.eid], body: { rec: { t: 'daily' }, rv: 'none' } });
   assert.equal(c.status, 200, JSON.stringify(c.j)); const recId = stored(W.env, KT)[k1].find(r => r[13] === c.j.rows[0].id)[23].rec.id;
   const a = await post(W, W.su.ck, '/api/tasks/recur/run?dept=' + D + '&day=' + DAY, {}), b = await post(W, W.su.ck, '/api/tasks/recur/run?dept=' + D + '&day=' + DAY, {});
@@ -147,18 +147,18 @@ test('AT-04 التكرار (ق5): قالبٌ + توليدٌ خادميّ متس�
 
 test('AT-05 الأهلية وقتَ التنفيذ من الجدول الشهري: ضمن الوردية · خارجها · تتجاوزها · راحةٌ أسبوعية · إجازةٌ بتقرير اليوم · بلا صفّ · تعارضُ المهام', async () => {
   const W = await world({ worker: WU.file }); const dm = await W.login(...DM), sup = await W.login(...SUP);
-  const kT = hij(TM + 12 * HR); staff(W, kT, 'tst_e_emp1', {}); staff(W, kT, 'tst_e_supB', { shift: 'TST-B' });
+  const kT = hij(TM + 12 * HR); await staff(W, kT, 'tst_e_emp1', {}); await staff(W, kT, 'tst_e_supB', { shift: 'TST-B' });
   const el = async (ek, s, e, ck = dm.ck) => (await get(W, ck, '/api/tasks/eligibility?ekeys=' + ek + '&s=' + s + '&e=' + e)).j.items[0];
   let x = await el('tst_e_emp1', TM + 8 * HR, TM + 9 * HR); assert.equal(x.result, 'متاح', JSON.stringify(x)); assert.equal(x.shift.name, 'TST-A');
   x = await el('tst_e_emp1', TM + 15 * HR, TM + 16 * HR); assert.equal(x.result, 'غير متاح'); assert.equal(x.code, 'off_shift');
   x = await el('tst_e_emp1', TM + 13.5 * HR, TM + 14.5 * HR); assert.equal(x.result, 'بانتظار التحقق'); assert.equal(x.code, 'beyond_shift'); assert.match(x.why, /تكليف/);
   x = await el('tst_e_supB', TM + 15 * HR, TM + 16 * HR); assert.equal(x.result, 'متاح', 'ورديةُ ب (14–22)');
-  staff(W, kT, 'tst_e_emp1', { rest: [WD_AR[wdOf(TM + 12 * HR)]] });
+  await staff(W, kT, 'tst_e_emp1', { rest: [WD_AR[wdOf(TM + 12 * HR)]] });
   x = await el('tst_e_emp1', TM + 8 * HR, TM + 9 * HR); assert.equal(x.result, 'غير متاح'); assert.equal(x.code, 'rest');
-  staff(W, kT, 'tst_e_emp1', {});
-  const R = stored(W.env, KR) || {}; R[kT] = { shifts: { 'TST-A': { pulled: true, roster: [{ ekey: 'tst_e_emp1', st: 'lv' }] } } }; putKV(W.env, KR, R);
+  await staff(W, kT, 'tst_e_emp1', {});
+  const R = stored(W.env, KR) || {}; R[kT] = { shifts: { 'TST-A': { pulled: true, roster: [{ ekey: 'tst_e_emp1', st: 'lv' }] } } }; await replaceOperationalFixture(W.env, KR, R);
   x = await el('tst_e_emp1', TM + 8 * HR, TM + 9 * HR); assert.equal(x.result, 'غير متاح'); assert.equal(x.code, 'leave');
-  putKV(W.env, KR, {});
+  await replaceOperationalFixture(W.env, KR, {});
   x = await el(ME.eid, Date.now() + 864e5, Date.now() + 864e5 + HR); assert.equal(x.result, 'بانتظار التحقق', 'بلا صفٍّ في الجدول'); assert.ok(['no_row', 'no_month'].includes(x.code));
   x = await el(ME.eid, Date.now(), Date.now() + HR); assert.ok(x.conf.some(c => c.id === 1760000000103), 'تعارضٌ مع مهمته الجارية'); assert.ok(x.warn.some(w => /تتعارض/.test(w)));
   x = await el('tst_e_emp1', TM + 15 * HR, TM + 16 * HR, sup.ck); assert.equal(x.result, 'غير متاح', 'المشرفُ (task.create) يفحص'); assert.ok(x.why);
@@ -192,8 +192,8 @@ test('AT-08 المهمةُ المسندة لا تمنح الموظف صلاحي�
   assert.equal(r.status, 200, JSON.stringify(r.j)); assert.equal(r.j.items[0].perm, 'missing:site.edit'); assert.equal(r.j.items[1].perm, 'ok', 'حاملُ «تعديل الخطة» يملكها');
   assert.equal((await get(W, dm.ck, '/api/tasks/eligibility?ekeys=' + ME.eid + '&s=' + (Date.now() + HR) + '&needs=plan.edit')).status, 400, 'مفتاحٌ غيرُ موجودٍ في السجل ⇒ 400');
   const c = await mk(W, dm.ck, { body: { needs: ['site.edit'] } }); assert.equal(c.status, 200); assert.equal(c.j.elig[0].perm, 'missing:site.edit');
-  const me = await W.login(ME.un, ME.pw); const g = await W.C.api('/api/get?keys=' + encodeURIComponent('bsdept:tst_d1:bassam_plan_v1'), { cookie: me.ck });
-  assert.ok(!(g.j.keys && g.j.keys['bsdept:tst_d1:bassam_plan_v1'] && g.j.keys['bsdept:tst_d1:bassam_plan_v1'].v), 'والإسنادُ لم يمنحه قراءةَ الخطة');
+  const me = await W.login(ME.un, ME.pw); const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent('bsdept:tst_d1:bassam_plan_v1'), { cookie: me.ck });
+  assert.ok(g.j.denied.includes('bsdept:tst_d1:bassam_plan_v1') && !Object.hasOwn(g.j.resources,'bsdept:tst_d1:bassam_plan_v1') && !Object.hasOwn(g.j.base,'bsdept:tst_d1:bassam_plan_v1'), 'والإسنادُ لم يمنحه قراءةَ الخطة أو رقم نسختها');
 });
 
 test('AT-09 ق6 لا بدءَ بعد انقضاء المهلة — المسؤولُ يمدّدها فيُقبل (والانقضاءُ السابق يُرفع)', async () => {
@@ -241,17 +241,17 @@ test('AT-11 الإلغاءُ منطقيّ (يبقى الصفُّ وسجلُّه)
   assert.equal((await act(W, me.ck, { k: DAY, id: 1760000000102, act: 'start' })).status, 409);
   assert.equal((await post(W, dm.ck, '/api/tasks/cancel', { k: DAY, id: 1760000000110, why: 'x' })).status, 404, 'مجموعةٌ قديمةٌ تتشارك الهوية بلا مكلَّف ⇒ ملتبسة');
   /* قفلُ الشهر: {mo:1} شهرٌ منقضٍ فُتح — لا يمنع · true اعتمادٌ — يمنع (كان الخادمُ يعدّ {mo:1} قفلاً — عيبٌ في المرحلة الأولى أُصلح) */
-  const ym = ymOf(PDAY); putKV(W.env, KL, { [ym]: { mo: 1 } });
+  const ym = ymOf(PDAY); await replaceOperationalFixture(W.env, KL, { [ym]: { mo: 1 } });
   assert.equal((await act(W, me.ck, { k: PDAY, id: 1760000000107, act: 'ack' })).j.err, 'state', 'مفتوح ⇒ يُحكم بالحالة لا بالقفل');
-  putKV(W.env, KL, { [ym]: true });
+  await replaceOperationalFixture(W.env, KL, { [ym]: true });
   assert.equal((await act(W, me.ck, { k: PDAY, id: 1760000000107, act: 'ack' })).j.err, 'locked');
   assert.equal((await post(W, dm.ck, '/api/tasks/extend', { k: PDAY, id: 1760000000108, ekey: ME.eid, e: Date.now() + HR })).j.err, 'locked', 'ومساراتُ المسؤول كذلك');
 });
 
 test('AT-12 ق4 لا إعادةَ كتابةٍ تلقائية: الصفُّ المسنَد بالاسم «غير مرتبطة» للمسؤول ويُربط يدوياً · المسنَدُ برقم الهوية مرتبطٌ وقتَ القراءة', async () => {
   const W = await world({ worker: WU.file }); const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);
-  const E = stored(W.env, KE); E.find(e => e.eid === ME.eid).nid = '1088888888'; putKV(W.env, KE, E);
-  const S = stored(W.env, KT); S[DAY].push(row({ id: 1760000055501, title: 'مسندةٌ بالاسم', eid: ME.name }), row({ id: 1760000055502, title: 'مسندةٌ برقم الهوية', eid: '1088888888' })); putKV(W.env, KT, S);
+  const E = stored(W.env, KE); E.find(e => e.eid === ME.eid).nid = '1088888888'; await replaceOperationalFixture(W.env, KE, E);
+  const S = stored(W.env, KT); S[DAY].push(row({ id: 1760000055501, title: 'مسندةٌ بالاسم', eid: ME.name }), row({ id: 1760000055502, title: 'مسندةٌ برقم الهوية', eid: '1088888888' })); await replaceOperationalFixture(W.env, KT, S);
   const L = await get(W, dm.ck, '/api/tasks/linkage'); assert.equal(L.status, 200);
   const byName = L.j.rows.find(r => r.id === 1760000055501), byNid = L.j.rows.find(r => r.id === 1760000055502);
   assert.equal(byName.by, 'name'); assert.equal(byName.label, 'غير مرتبطة'); assert.equal(byName.cand.eid, ME.eid, 'مرشَّحٌ للربط اليدوي — لا ربط');
@@ -269,8 +269,8 @@ test('AT-12b SR-2.2 · F-1 في جهة المسؤول: معرّفٌ يحمله �
   const W = await world({ worker: WU.file }); const me = await W.login(ME.un, ME.pw), mate = await W.login(MATE.un, MATE.pw), dm = await W.login(...DM);
   const DUP_N = '1088888877', TWIN = 'TEST_ONLY twin eid (خطأُ إدخال)', E = stored(W.env, KE);
   E.find(e => e.eid === ME.eid).nid = DUP_N;
-  E.push({ eid: 'tst_e_twinN', name: 'TEST_ONLY twin nid', nid: DUP_N }, { eid: MATE.eid, name: TWIN }); putKV(W.env, KE, E);
-  const S = stored(W.env, KT); S[DAY].push(row({ id: 1760000055511, title: 'مسندةٌ برقم هويةٍ مكرَّر', eid: DUP_N }), row({ id: 1760000055512, title: 'مسندةٌ بالاسم', eid: ME.name })); putKV(W.env, KT, S);
+  E.push({ eid: 'tst_e_twinN', name: 'TEST_ONLY twin nid', nid: DUP_N }, { eid: MATE.eid, name: TWIN }); await replaceOperationalFixture(W.env, KE, E);
+  const S = stored(W.env, KT); S[DAY].push(row({ id: 1760000055511, title: 'مسندةٌ برقم هويةٍ مكرَّر', eid: DUP_N }), row({ id: 1760000055512, title: 'مسندةٌ بالاسم', eid: ME.name })); await replaceOperationalFixture(W.env, KT, S);
   const L = await get(W, dm.ck, '/api/tasks/linkage'); assert.equal(L.status, 200, JSON.stringify(L.j));
   const dN = L.j.rows.find(r => r.id === 1760000055511), dE = L.j.rows.filter(r => r.tok === MATE.eid);
   assert.ok(dN && dN.by === 'ambiguous' && dN.label === 'غير مرتبطة' && !dN.emp, 'رقمُ هويةٍ مكرَّر ⇒ غيرُ مرتبطة: ' + JSON.stringify(dN));
@@ -286,7 +286,7 @@ test('AT-12b SR-2.2 · F-1 في جهة المسؤول: معرّفٌ يحمله �
   const el = (await get(W, dm.ck, '/api/tasks/eligibility?ekeys=' + MATE.eid + '&s=' + (Date.now() + HR) + '&e=' + (Date.now() + 2 * HR))).j.items[0];
   assert.equal(el.result, 'غير متاح', JSON.stringify(el)); assert.equal(el.code, 'unknown_emp'); assert.match(el.why, /أكثرُ من سجلٍّ/);
   /* وبعد تصحيح السجل يعود كلُّ شيء */
-  putKV(W.env, KE, stored(W.env, KE).filter(e => e.name !== TWIN));
+  await replaceOperationalFixture(W.env, KE, stored(W.env, KE).filter(e => e.name !== TWIN));
   assert.equal((await mk(W, dm.ck, { asg: [MATE.eid] })).status, 200, 'الإسنادُ بعد التصحيح');
   assert.ok((await get(W, mate.ck, '/api/me/tasks')).j.me.linked, 'والزميلُ مرتبطٌ من جديد');
 });

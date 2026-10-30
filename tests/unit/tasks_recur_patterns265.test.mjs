@@ -10,11 +10,11 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { ROOT } from './harness.mjs';
-import { world, workerUnderTest, ME, KT, D, TAG, stored, hij, MID, HR, wdOf } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, KT, D, TAG, stored, hij, MID, HR, wdOf, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body:operationSaveBody(W.env,p,taskCommandBody(W.env, p, body)) });
 const op = (W, ck, body) => post(W, ck, '/api/tasks/recur', body);
 const run = (W) => post(W, W.su.ck, '/api/tasks/recur/run?dept=' + D, {});
 const show = (r) => JSON.stringify({ st: r.status, j: r.j }).slice(0, 500);

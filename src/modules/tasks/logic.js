@@ -109,29 +109,82 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return { wd: n, date: a + "/" + r + "/" + s + " هـ", time: o(e.getHours()) + ":" + o(e.getMinutes()), k: a + "-" + r + "-" + s };
   }
   loadAllTasks() {
-    try {
-      const t = JSON.parse(localStorage.getItem("bassam_tasks_v1"));
-      if (t && "object" == typeof t) return t;
-    } catch (t) {}
-    return {};
+    return this._tkLS("bassam_tasks_v1") || {};
   }
-  saveAllTasks(t) {
-    if (!this._tkCanWrite()) {
+  _tkOps() {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (!S) throw Error("operations-read-required");
+    return S;
+  }
+  _tkOpen(patch, done) {
+    const slots = ["newTaskOpen", "confirmDel", "confirmFinish", "acceptRef", "delMonth", "lockConfirm", "retroAsk", "tkAct"];
+    const slot = slots.find((key) => patch && patch[key]);
+    if (slot) {
+      const drafts = this._tkDrafts || (this._tkDrafts = {}), old = drafts[slot];
+      if ((old && old.ticket) || (this._tkCommands && this._tkCommands[slot] && this._tkCommands[slot].state !== "blocked")) return this.bsToast("طلب سابق لم يُحسم — أعد محاولة الإجراء نفسه قبل فتح مسودة أخرى", "warn");
       try {
-        this.bsToast("صلاحيتك على المهام لا تشمل الحفظ");
-      } catch (t) {}
-      return !1;
+        const S = this._tkOps(), draft = S.draft();
+        drafts[slot] = { draft: draft, base: KIVO.__BS_SRV.rev(S.key("bassam_tasks_v1")) };
+        if (slot !== "newTaskOpen") { const begun = S.begin(this, slot); if (!begun.ok) throw Error("operations-read-required"); }
+      }
+      catch (error) { return this.bsToast("تعذّر تثبيت بيانات المسودة — حدّث البيانات قبل المحاولة", "warn"); }
     }
-    try {
-      localStorage.setItem("bassam_tasks_v1", JSON.stringify(t));
-    } catch (t) {
-      return (this.bsToast("تعذّر حفظ المهام — مساحة التخزين ممتلئة أو غير متاحة. لم يُحفظ التغيير."), !1);
-    }
-    return (this.setState({ tasksAll: t }), !0);
+    this.setState(patch, done);
   }
-  mutateStore(t) {
-    const e = { ...this.loadAllTasks() };
-    return !1 !== t(e) && this.saveAllTasks(e);
+  async _tkClose(slot, patch) {
+    const saved = this._tkDrafts && this._tkDrafts[slot], command = this._tkCommands && this._tkCommands[slot], S = this._tkOps();
+    const status = saved && saved.ticket ? S.status(saved.ticket).state : "idle";
+    if ((saved && saved.ticket && !["denied", "conflict", "released", "confirmed"].includes(status)) || (command && command.state !== "blocked"))
+      return this.bsToast("لم يُؤكَّد الطلب بعد — المسودة باقية؛ أعد محاولة الحفظ نفسه", "warn");
+    if (saved && saved.ticket || command) {
+      const refreshed = await S.read([S.key("bassam_tasks_v1"), S.key("bassam_tasks_locks_v1")]);
+      if (!refreshed || refreshed.ok !== 1) return this.bsToast("تعذّر تحديث البيانات للمراجعة — المسودة باقية", "warn");
+    }
+    if (saved) delete this._tkDrafts[slot];
+    if (command) delete this._tkCommands[slot];
+    this.setState(patch);
+  }
+  async _tkChange(slot, change, intent) {
+    const drafts = this._tkDrafts || (this._tkDrafts = {}), saved = drafts[slot] || (drafts[slot] = {}), S = this._tkOps();
+    const action = intent || { year: this.state.year, month: this.state.month, ref: this.state[slot] || null };
+    try {
+      const result = await S.commit(this, slot, action, change);
+      if (result && result.ticket) saved.ticket = result.ticket;
+      if (!result || result.ok !== 1) {
+        const reason = S.explain ? S.explain(result) : "";
+        this.bsToast(reason || "لم يُؤكَّد الحفظ — المسودة باقية. أعد المحاولة بنفس الإجراء؛ عند تعارض الصلاحيات أو البيانات راجعها أولاً", "warn");
+        return false;
+      }
+      delete drafts[slot];
+      this._tkLSBust();
+      this.setState({ tasksAll: this.loadAllTasks(), locked: this.loadLocks() });
+      return true;
+    } catch (error) {
+      this.bsToast("تغيّرت البيانات أو الجلسة — لم يُعتمد الحفظ؛ المسودة باقية للمراجعة", "warn");
+      return false;
+    }
+  }
+  mutateStore(change, slot, intent) {
+    if (!this._tkCanWrite()) { this.bsToast("صلاحيتك على المهام لا تشمل الحفظ"); return Promise.resolve(false); }
+    return this._tkChange(slot || "inline", (draft) => {
+      const value = draft.get("bassam_tasks_v1") || {};
+      if (change(value) === false) return false;
+      draft.set("bassam_tasks_v1", value);
+    }, intent);
+  }
+  _tkDeleteMonth(year, month) {
+    if (!this._tkCanWrite()) return Promise.resolve(false);
+    return this._tkChange("delMonth", (draft) => {
+      const tasks = draft.get("bassam_tasks_v1") || {};
+      Object.keys(tasks).forEach((key) => { const p = key.split("-"); if (+p[0] === year && +p[1] === month) delete tasks[key]; });
+      draft.set("bassam_tasks_v1", tasks);
+      if (this.PC("approve")) {
+        const locks = draft.get("bassam_tasks_locks_v1") || {}, prefix = year + "-" + month + "-";
+        delete locks[year + "-" + month];
+        Object.keys(locks).forEach((key) => { if (key.indexOf(prefix) === 0) delete locks[key]; });
+        draft.set("bassam_tasks_locks_v1", locks);
+      }
+    }, { year: year, month: month });
   }
   tkHParts(t) {
     try {
@@ -440,19 +493,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const t = this._tkLS("bassam_employees_v1");
     return Array.isArray(t) ? t : [];
   }
-  loadProfileName() {
-    try {
-      if (KIVO.BassamAuth && KIVO.BassamAuth.display) {
-        const t = KIVO.BassamAuth.display();
-        if (t && t.name) return t.name;
-      }
-    } catch (t) {}
-    try {
-      const t = JSON.parse(localStorage.getItem("bassam_profile_v1"));
-      if (t && t.name) return t.name;
-    } catch (t) {}
-    return "مدير النظام";
-  }
   onDutyToday() {
     const t = this.loadEmps();
     if (!this.bsOn("staff"))
@@ -464,7 +504,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }));
     let e = {};
     try {
-      const t = JSON.parse(localStorage.getItem("bassam_staffing_v3"));
+      const t = this._tkLS("bassam_staffing_v3");
       t && "object" == typeof t && (e = KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(t) : t);
     } catch (t) {}
     const n = this.hToday(),
@@ -482,14 +522,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }));
   }
   loadLocks() {
-    try {
-      const t = localStorage.getItem("bassam_tasks_locks_v1");
-      if (t) {
-        const e = JSON.parse(t);
-        if (e && "object" == typeof e) return e;
-      }
-    } catch (t) {}
-    return {};
+    return this._tkLS("bassam_tasks_locks_v1") || {};
   }
   PC(t) {
     try {
@@ -554,25 +587,24 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return this.PC("approve") ? how : "فتحُه يحتاج صلاحية الاعتماد — راجع مدير الإدارة.";
   }
   _setDayLockT(y, m, d, op) {
-    const k = y + "-" + m + "-" + d,
-      r = { ...(this.state.locked || {}) };
-    ("open" === op ? (r[k] = { mo: 1 }) : "close" === op ? (r[k] = !0) : delete r[k], this.saveLocks(r));
+    return this.mutateLocks((r) => {
+      const k = y + "-" + m + "-" + d;
+      "open" === op ? (r[k] = { mo: 1 }) : "close" === op ? (r[k] = !0) : delete r[k];
+    }, "retroAsk");
   }
   _setMonthOpenT(t, e, n) {
-    const a = t + "-" + e,
-      r = { ...(this.state.locked || {}) };
-    (n ? (r[a] = { mo: 1 }) : delete r[a], this.saveLocks(r));
+    return this.mutateLocks((r) => {
+      const a = t + "-" + e;
+      n ? (r[a] = { mo: 1 }) : delete r[a];
+    }, "retroAsk");
   }
-  saveLocks(t) {
-    if (this.PC("approve")) {
-      try {
-        localStorage.setItem("bassam_tasks_locks_v1", JSON.stringify(t));
-      } catch (t) {}
-      this.setState({ locked: t });
-    } else
-      try {
-        this.bsToast("الاعتماد والقفل يحتاج صلاحية الاعتماد");
-      } catch (t) {}
+  mutateLocks(change, slot) {
+    if (!this.PC("approve")) { this.bsToast("الاعتماد والقفل يحتاج صلاحية الاعتماد"); return Promise.resolve(false); }
+    return this._tkChange(slot, (draft) => {
+      const locks = draft.get("bassam_tasks_locks_v1") || {};
+      change(locks);
+      draft.set("bassam_tasks_locks_v1", locks);
+    });
   }
   state = (() => {
     const t = this.hToday();
@@ -901,12 +933,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       q = r && r[23] && "object" === typeof r[23] ? r[23] : null;
     return !!x && ("cancelled" === x.status || !!(q && "cancelled" === q.asg));
   }
-  _doAccept(t, e) {
+  async _doAccept(t, e) {
     const n = this.state,
       a = n.acceptRef;
     if (!a) return;
     const r = n.year + "-" + n.month + "-" + a.d;
-    (this.mutateStore((n) => {
+    (await this.mutateStore((n) => {
       const s = (n[r] || []).map((t) => t.slice()),
         q = this._tkIdx(s, a.i, a.k);
       if (q < 0) return (this._tkGone(), !1);
@@ -921,13 +953,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         t && ((s[q][7] = [t.charAt(0)]), (s[q][8] = t), (s[q][14] = e || null)),
         g && s[q][14] && s[q][20] && (s[q][20] = null),
         (n[r] = s));
-    }),
-      this.setState({ acceptRef: null }));
+    }, "acceptRef", { ref: a, name: t, ekey: e })) && this.setState({ acceptRef: null });
   }
-  _doFinish(t, e, k) {
+  async _doFinish(t, e, k) {
     const n = this.state,
       a = n.year + "-" + n.month + "-" + t;
-    this.mutateStore((t) => {
+    return this.mutateStore((t) => {
       const n = (t[a] || []).map((t) => t.slice());
       e = this._tkIdx(n, e, k);
       if (e < 0) return (this._tkGone(), !1);
@@ -935,7 +966,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       for (; n[e].length < 15; ) n[e].push(null);
       const r = Date.now();
       ((n[e][12] = r), (n[e][3] = "done"), (n[e][6] = this.perfRow(n[e], r)), (t[a] = n));
-    });
+    }, "confirmFinish");
   }
   _doReopen(t, e, k) {
     const n = this.state,
@@ -958,13 +989,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           why ? this._tkApi("/api/tasks/reopen", Object.assign({}, b, { why: why })).then(fin) : this.bsToast("أُلغيت إعادةُ الفتح لعدم كتابة سبب", "warn"));
       });
     }
-    this.mutateStore((t) => {
-      const n = (t[a] || []).map((t) => t.slice());
-      e = this._tkIdx(n, e, k);
-      if (e < 0) return (this._tkGone(), !1);
-      for (; n[e].length < 15; ) n[e].push(null);
-      ((n[e][3] = "in_progress"), (n[e][12] = null), (n[e][6] = null), this._tkReopenX(n[e]), (t[a] = n));
-    });
+    this.bsToast("تحتاج المهمة إلى اتصال الخادم — لم يُحفظ تغيير محلي", "warn");
   }
   _tkClock(t, n) {
     const r = t[10] || null,
@@ -1167,12 +1192,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
      الإنشاءُ بإعداداتٍ متقدمة مطويّة (سياسةُ الإثبات ق2 · المراجِع ق3 · الاعتذار · التكرار ق5) وملخّصٍ قبل الاعتماد، وفحصُ أهليةٍ يُكشف قبل الإسناد ·
      مراجعةُ التسليم (اعتمادٌ أو إعادةٌ بسبب) · تمديدُ المهلة (ق6) · إعادةُ الإسناد بنسخةٍ جديدة (RC-13) · إلغاءٌ منطقيّ · ربطٌ يدويٌّ لـ«غير مرتبطة» (ق4) ·
      سجلُّ المهمة. الصفحةُ تقرأ ما يكتبه الخادم من /api/changes كعادتها (bassam:remote). بلا خادم (لا __BS_BOOT.srv): المسارُ المحلي القديم كما هو. */
-  /* KIVO_265 · البند 19 (الدَّين التقني — توثيقُ المسار المحلي بجانب مسارات الخادم): __BS_BOOT.srv يحقنه العاملُ عند تقديم الصفحة (054 · 063)؛
-     بلا عامل (الحزمةُ الساكنة مفتوحةً مباشرة · المعاينةُ المحلية · tests/unit/tasks_edit_integrity بلا __BS_BOOT) يبقى الوضعُ المحلي القديم حياً
-     بمخزن localStorage وحده: الإنشاءُ (submitTask: الصفوفُ ثم mutateStore) · إعادةُ الفتح (_doReopen: الفرعُ بعد فرع الخادم) · ولا إعداداتٍ متقدمة
-     ولا تكرارَ ولا قائمةَ صفٍّ خادمية ولا إجراءاتٍ جماعية (advOn · _tkRecVals · _tkP2Menu · _tkBulkVals · الوردية ككيان فوق 50). أما القبولُ والإنهاءُ
-     والتعديلُ والحذفُ فمسارٌ واحد في الوضعين (mutateStore ⇒ طبقةُ التخزين 280 تحفظه خاماً في الخادم بحراسة 018) — فليس في الصفحة فرعٌ محليٌّ مكرَّرٌ
-     ميّت يُحذف وحده؛ إزالةُ الفرعين المحليين تعني إنهاءَ الوضع المحلي كلِّه (قرارٌ للمالك · gate تعمل على الحزمة بالعامل). */
+  /* Task workflows use the existing server commands. Operational edits use sealed SQL-backed tickets. */
   _tkSrv() {
     return !!(window.__BS_BOOT && window.__BS_BOOT.srv);
   }
@@ -1210,10 +1230,84 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           } catch (e) {
             j = null;   /* ردٌّ غيرُ JSON ⇒ فشلٌ صريح */
           }
-          return { status: r.status, j: j };
+          if (!(r.status >= 200 && r.status < 300) && j && j.ok === 1) j = { ok: 0, err: "invalid" };
+          const answer = { status: r.status, j: j };
+          if (b !== undefined && !["/api/tasks/create", "/api/tasks/settings", "/api/tasks/recur"].includes(p) && r.status >= 200 && r.status < 300 && j && j.ok === 1) {
+            const S = this._tkOps();
+            return S.read([S.key("bassam_tasks_v1")]).then((result) => {
+              if (result && result.ok === 1) this.setState({ tasksAll: this.loadAllTasks() });
+              return answer;
+            });
+          }
+          return answer;
         }),
       () => ({ status: 0, j: null }),
     );
+  }
+  async _tkCommandApi(path, intent, slot) {
+    slot = slot || "newTaskOpen";
+    const S = this._tkOps(), pending = this._tkCommands || (this._tkCommands = {}), signature = JSON.stringify({ path: path, intent: intent });
+    let request = pending[slot];
+    if (request && request.signature !== signature) {
+      if (request.state !== "blocked") return { status: 409, j: { ok: 0, err: "uncertain", msg: "الطلب السابق لم يُحسم — أعد حفظ المسودة نفسها أولاً" } };
+      delete pending[slot]; request = null;
+    }
+    try {
+      if (!request) {
+        const opened = this._tkDrafts && this._tkDrafts[slot], draft = opened && opened.draft || S.draft();
+        if (path !== "/api/tasks/create") draft.get("bassam_tasks_v1");
+        const context = draft.context, body = Object.assign({}, intent, { dept: context.dept, uid: context.uid, epoch: context.epoch,
+          requestId: window.crypto.randomUUID() });
+        if (path !== "/api/tasks/create") body.base = opened ? opened.base : KIVO.__BS_SRV.rev(S.key("bassam_tasks_v1"));
+        request = pending[slot] = { signature: signature, body: body, context: context, path: path, intent: JSON.parse(JSON.stringify(intent)),
+          formSignature: slot === "newTaskOpen" ? this._tkFormSignature() : null, state: "staged" };
+      }
+      if (request.sending) return request.sending;
+      const now = S.context();
+      if (!now || now.uid !== request.context.uid || now.dept !== request.context.dept || S.status().epoch !== request.context.epoch)
+        return { status: 409, j: { ok: 0, err: "session-changed" } };
+      request.sending = this._tkApi(path, request.body).then(async (answer) => {
+        const current = S.context(), j = answer.j, key = "bsdept:" + request.context.dept + ":bassam_tasks_v1";
+        const ack = current && current.uid === request.context.uid && current.dept === request.context.dept && S.status().epoch === request.context.epoch &&
+          answer.status >= 200 && answer.status < 300 && j && j.ok === 1 && j.requestId === request.body.requestId && j.epoch === request.body.epoch && j.atomic === 1 &&
+          j.revs && Object.keys(j.revs).length === 1 && Number.isSafeInteger(j.revs[key]) && j.revs[key] >= 0 && j.rev === j.revs[key] &&
+          (path === "/api/tasks/create" ? Array.isArray(j.rows) && j.rows.length > 0 && j.rows.every((row) => row && row.k === request.body.k && row.id != null) : Number.isSafeInteger(j.n) && j.n > 0);
+        if (!ack) {
+          request.state = answer.status >= 400 && answer.status < 500 && j && j.ok === 0 && j.err !== "session-changed" ? "blocked" : "uncertain";
+          return request.state === "blocked" ? answer : { status: answer.status, j: { ok: 0, err: "uncertain", msg: "لم يصل إقرار كامل — المسودة باقية؛ أعد الحفظ بنفس الطلب" } };
+        }
+        delete pending[slot];
+        if (this._tkDrafts) delete this._tkDrafts[slot];
+        const refreshed = await S.read([key]);
+        if (refreshed && refreshed.ok === 1) { this._tkLSBust(); this.setState({ tasksAll: this.loadAllTasks() }); }
+        return answer;
+      }).finally(() => { request.sending = null; });
+      return await request.sending;
+    } catch (error) {
+      if (request) request.state = "uncertain";
+      return { status: 409, j: { ok: 0, err: request ? "uncertain" : "review-required", msg: "لم يُؤكَّد الحفظ — المسودة باقية؛ راجع الجلسة وأعد الطلب نفسه" } };
+    }
+  }
+  _tkFormSignature() {
+    const keys = ["editRef", "year", "month", "newTitle", "newDesc", "newPrio", "newDay", "newEDay", "newSh", "newSm", "newSap", "newEh", "newEm", "newEap",
+      "newAsg", "newPick", "pickWt", "newAdvTouched", "newPol", "newPolN", "newSteps", "newRv", "newDecOk", "newWinEarlyOn", "newWinEarly", "newWinLateOn", "newWinLate",
+      "newRec", "newRecWd", "newRecMd", "newRecN", "newRecEnd", "newRecTo", "newRecFor", "newRecSig"];
+    return JSON.stringify(keys.map((key) => this.state[key]));
+  }
+  async _tkPendingEditor() {
+    const pending = this._tkCommands && this._tkCommands.newTaskOpen;
+    if (!pending || pending.state === "blocked") return false;
+    if (pending.formSignature !== this._tkFormSignature()) {
+      this.bsToast("الطلب السابق لم يُحسم — أعد المسودة السابقة قبل تكرار الحفظ", "warn");
+      return true;
+    }
+    if (pending.path === "/api/tasks/create") await this._tkCreateSrv(pending.intent);
+    else {
+      const answer = await this._tkCommandApi(pending.path, pending.intent, "newTaskOpen");
+      if (answer.j && answer.j.ok === 1) this.setState({ newTaskOpen: false, editRef: null });
+      else this.bsToast(this._tkErr(answer), "warn");
+    }
+    return true;
   }
   _tkErr(x, d) {
     const M = { denied: "رفض الخادم — صلاحيتك لا تشمل هذا الفعل", locked: "شهرُ المهمة معتمدٌ ومقفل", "not-found": "لم تعد المهمة كما كانت — حدّث الصفحة",
@@ -1340,7 +1434,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           AP
             ? D.approved
               ? this.bsToast("الشهر معتمد ومقفل — افتحه أولاً بنقرة مزدوجة على كرت الشهر.")
-              : this.setState({ retroAsk: { m: e.month, day: a, op: op } })
+              : this._tkOpen({ retroAsk: { m: e.month, day: a, op: op } })
             : this.bsToast("فتحُ اليوم وإغلاقُه يحتاج صلاحية الاعتماد");
         },
         style:
@@ -1424,13 +1518,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       retroBtnStyle:
         "height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;border:0;cursor:pointer;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;background:" +
         (openish ? "var(--bg-xb45309)" : "var(--bg-x64748b)"),
-      retroDo: () => {
+      retroDo: async () => {
         /* المغلقُ بيده يومٌ منقضٍ الآن ⇒ «فتح» يفتحه بأثر رجعي ({mo:1}) لا يمحو الإغلاق فيعود مقفلاً بانقضائه (كالتقرير اليومي: drToggleDayLock) */
         const D0 = this._tkDayLockOf(e.year, t.m, t.day),
           w = "open" === op || ("unshut" === op && D0.past && !D0.viaMonth) ? "open" : "close" === op ? "close" : "clear";
-        (this._setDayLockT(e.year, t.m, t.day, w), this.setState({ retroAsk: null }), this.PC("approve") && this.bsToast(T[6], "ok"));
+        (await this._setDayLockT(e.year, t.m, t.day, w)) && (this.setState({ retroAsk: null }), this.bsToast(T[6], "ok"));
       },
-      retroCancel: () => this.setState({ retroAsk: null }),
+      retroCancel: () => this._tkClose("retroAsk", { retroAsk: null }),
       retroStop: (x) => x.stopPropagation(),
     };
   }
@@ -1654,15 +1748,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (dis ? ";opacity:.55" : "")
     );
   }
-  _tkReopenX(row) {
-    const x = row && row[23] && "object" === typeof row[23] ? row[23] : null,
-      sub = row && row[21] && "object" === typeof row[21] ? row[21].sub : 0;
-    if (!x || !sub || !x.rv) return row;
-    const me = this._tkMe(),
-      d = { st: "returned", at: Date.now(), by: { u: me ? String(me.id || "") : "", n: this.loadProfileName() || "" }, why: "أعاد المسؤولُ فتحَ المهمة", sub: sub },
-      y = Object.assign({}, x, { rev: d, revh: (Array.isArray(x.revh) ? x.revh : []).concat([d]).slice(-10) });
-    return ((row[23] = y), row);
-  }
   renderVals() {
     const t = this._tkPermVals(),
       e = this.state,
@@ -1810,7 +1895,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     run: () => {
                       o
                         ? this.bsToast(oT)
-                        : this.setState(
+                        : this._tkOpen(
                             Object.assign(
                               {
                                 newTaskOpen: !0,
@@ -1874,7 +1959,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     p1: "M3 6h18",
                     p2: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2",
                     run: () => {
-                      o ? this.bsToast(oT) : this.setState({ confirmDel: { d: t, i: s, k: this._tkKey(r, t), title: r[0] } });
+                      o ? this.bsToast(oT) : this._tkOpen({ confirmDel: { d: t, i: s, k: this._tkKey(r, t), title: r[0] } });
                     },
                   }
                 : null,
@@ -1883,14 +1968,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               this.PC("del")
                 ? o
                   ? this.bsToast(oT)
-                  : this.setState({ confirmDel: { d: t, i: s, k: this._tkKey(r, t), title: r[0] } })
+                  : this._tkOpen({ confirmDel: { d: t, i: s, k: this._tkKey(r, t), title: r[0] } })
                 : this.bsToast("صلاحيتك على صفحة المهام لا تشمل الحذف — راجع مدير الإدارة");
             },
             edit: () => {
               this.PC("edit")
                 ? o
                   ? this.bsToast(oT)
-                  : this.setState(
+                  : this._tkOpen(
                       Object.assign(
                         {
                           newTaskOpen: !0,
@@ -1920,15 +2005,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 ? o
                   ? this.bsToast(oT)
                   : r[14]
-                    ? this.setState({ acceptRef: { d: t, i: s, k: this._tkKey(r, t), title: r[0] } }, () => this._doAccept(r[8] || "", r[14]))
-                    : this.setState({ acceptRef: { d: t, i: s, k: this._tkKey(r, t), title: r[0], wt: r[19] || "" } })
+                    ? this._tkOpen({ acceptRef: { d: t, i: s, k: this._tkKey(r, t), title: r[0] } }, () => this._doAccept(r[8] || "", r[14]))
+                    : this._tkOpen({ acceptRef: { d: t, i: s, k: this._tkKey(r, t), title: r[0], wt: r[19] || "" } })
                 : this.bsToast("صلاحيتك لا تشمل تغيير حالة المهمة");
             },
             finish: () => {
               this.PC("edit")
                 ? o
                   ? this.bsToast(oT)
-                  : this.setState({ confirmFinish: { d: t, i: s, k: this._tkKey(r, t), title: r[0] } })
+                  : this._tkOpen({ confirmFinish: { d: t, i: s, k: this._tkKey(r, t), title: r[0] } })
                 : this.bsToast("صلاحيتك لا تشمل تغيير حالة المهمة");
             },
             reopen: () => {
@@ -2039,7 +2124,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   (t.stopPropagation(), this.setState((t) => ({ mMenu: t.mMenu === a ? null : a })));
                 },
                 delAll: (t) => {
-                  (t.stopPropagation(), this.PC("del") && this.setState({ mMenu: null, delMonth: { n: a } }));
+                  (t.stopPropagation(), this.PC("del") && this._tkOpen({ mMenu: null, delMonth: { n: a } }));
                 },
                 tip: this.PC("approve")
                   ? d
@@ -2055,11 +2140,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       ? this.setState({ month: a, page: 1 }, () => {
                           if (!this.monthOpenFlagT(e.year, a))
                             return d
-                              ? void this.setState({ lockConfirm: { n: a, locked: !0 } })
-                              : void this.setState({ retroAsk: { m: a, open: !0 } });
-                          !d && l ? this.setState({ lockConfirm: { n: a, locked: !1 } }) : this.setState({ retroAsk: { m: a, open: !1 } });
+                              ? void this._tkOpen({ lockConfirm: { n: a, locked: !0 } })
+                              : void this._tkOpen({ retroAsk: { m: a, open: !0 } });
+                          !d && l ? this._tkOpen({ lockConfirm: { n: a, locked: !1 } }) : this._tkOpen({ retroAsk: { m: a, open: !1 } });
                         })
-                      : this.setState({ month: a, page: 1, lockConfirm: { n: a, locked: !0 } }));
+                      : this._tkOpen({ month: a, page: 1, lockConfirm: { n: a, locked: !0 } }));
                 },
                 style: c,
               })
@@ -2094,7 +2179,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   (t.stopPropagation(), this.setState((t) => ({ mMenu: t.mMenu === a ? null : a })));
                 },
                 delAll: (t) => {
-                  (t.stopPropagation(), this.PC("del") && this.setState({ mMenu: null, delMonth: { n: a } }));
+                  (t.stopPropagation(), this.PC("del") && this._tkOpen({ mMenu: null, delMonth: { n: a } }));
                 },
                 tip: l ? (this.PC("approve") ? "نقرة مزدوجة لاعتماد وإغلاق الشهر" : KIVO.BassamCount(l, "مهمة") + " · اعتمادُ الشهر يحتاج صلاحية الاعتماد") : "لا مهام لهذا الشهر — الاعتماد يتطلب بيانات",
                 click: () => this.setState({ month: a, page: 1 }),
@@ -2106,11 +2191,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       ? this.setState({ month: a, page: 1 }, () => {
                           this.monthOpenFlagT(e.year, a)
                             ? l
-                              ? this.setState({ lockConfirm: { n: a, locked: !1 } })
-                              : this.setState({ retroAsk: { m: a, open: !1 } })
-                            : this.setState({ retroAsk: { m: a, open: !0 } });
+                              ? this._tkOpen({ lockConfirm: { n: a, locked: !1 } })
+                              : this._tkOpen({ retroAsk: { m: a, open: !1 } })
+                            : this._tkOpen({ retroAsk: { m: a, open: !0 } });
                         })
-                      : l && this.setState({ month: a, page: 1, lockConfirm: { n: a, locked: !1 } }));
+                      : l && this._tkOpen({ month: a, page: 1, lockConfirm: { n: a, locked: !1 } }));
                 },
                 style: c,
               })
@@ -2564,10 +2649,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           retroBtnStyle:
             "height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;border:0;cursor:pointer;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;background:" +
             (t.open ? "var(--bg-xb45309)" : "var(--bg-x64748b)"),
-          retroDo: () => {
-            (this._setMonthOpenT(e.year, t.m, !!t.open), this.setState({ retroAsk: null }));
+          retroDo: async () => {
+            (await this._setMonthOpenT(e.year, t.m, !!t.open)) && this.setState({ retroAsk: null });
           },
-          retroCancel: () => this.setState({ retroAsk: null }),
+          retroCancel: () => this._tkClose("retroAsk", { retroAsk: null }),
           retroStop: (t) => t.stopPropagation(),
         };
       })(),
@@ -2587,30 +2672,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       delMonthMsg: e.delMonth
         ? "سيتم حذف جميع مهام شهر " + this.MONTHS[e.delMonth.n - 1] + " " + e.year + " هـ نهائياً وسيعود الكرت فارغاً — لا يمكن التراجع."
         : "",
-      delMonthCancel: () => this.setState({ delMonth: null }),
-      delMonthDo: () => {
-        const t = this.state.delMonth;
-        if (!t) return;
-        this.mutateStore((e) => {
-          Object.keys(e).forEach((n) => {
-            const a = n.split("-");
-            +a[0] === this.state.year && +a[1] === t.n && delete e[n];
-          });
-        });
-        const e = { ...this.state.locked },
-          pre = this.state.year + "-" + t.n + "-";
-        (delete e[this.state.year + "-" + t.n], Object.keys(e).forEach((k) => 0 === k.indexOf(pre) && delete e[k]), this.saveLocks(e), this.setState({ delMonth: null, page: 1 }));
+      delMonthCancel: () => this._tkClose("delMonth", { delMonth: null }),
+      delMonthDo: async () => {
+        const value = this.state.delMonth;
+        if (value && await this._tkDeleteMonth(this.state.year, value.n)) this.setState({ delMonth: null, page: 1 });
       },
       lockConfirmOpen: !!e.lockConfirm,
-      lockCancel: () => this.setState({ lockConfirm: null }),
-      lockDo: () => {
-        const t = this.state.lockConfirm;
+      lockCancel: () => this._tkClose("lockConfirm", { lockConfirm: null }),
+      lockDo: async () => {
+        const t = this.state.lockConfirm, year = this.state.year;
         if (!t) return;
-        const e = this.state.year + "-" + t.n,
-          n = { ...this.state.locked };
-        (t.locked ? (this.monthPastT(this.state.year, t.n) ? (n[e] = { mo: 1 }) : delete n[e]) : (n[e] = !0),
-          this.saveLocks(n),
-          this.setState({ lockConfirm: null }));
+        const ok = await this.mutateLocks((locks) => {
+          const key = year + "-" + t.n;
+          t.locked ? (this.monthPastT(year, t.n) ? (locks[key] = { mo: 1 }) : delete locks[key]) : (locks[key] = true);
+        }, "lockConfirm");
+        if (ok) this.setState({ lockConfirm: null });
       },
       lcTitle: e.lockConfirm && e.lockConfirm.locked ? "فتح الشهر للتعديل" : "اعتماد وإغلاق الشهر",
       lcMsg: e.lockConfirm
@@ -2649,8 +2725,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           this.MONTHS[e.month - 1] +
           " نهائياً."
         : "",
-      confirmDelCancel: () => this.setState({ confirmDel: null }),
-      confirmDelDo: () => {
+      confirmDelCancel: () => this._tkClose("confirmDel", { confirmDel: null }),
+      confirmDelDo: async () => {
         const t = e.confirmDel;
         if (!t) return;
         const n = e.year + "-" + e.month + "-" + t.d;
@@ -2661,24 +2737,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           if (hit.some((r) => this._tkHasActivity(r)))
             return (this.bsToast("لا تُحذف مهمةٌ بدأ عليها نشاطٌ (قبول · توثيق · تسليم · إنجاز) — استعمل «إلغاء» من قائمة المهمة ليبقى سجلُّها", "warn"), void this.setState({ confirmDel: null }));
         }
-        (this.mutateStore((e) => {
+        (await this.mutateStore((e) => {
           const q = t.grp ? -1 : this._tkIdx(e[n], t.i, t.k);   /* تحقّقُ fa5a5bf (V-7): بهوية الصفّ لا بموضعه */
           if (!t.grp && q < 0) return (this._tkGone(), !1);
           ((e[n] = t.grp ? (e[n] || []).filter((e) => !(e && e[17] === t.grp)) : (e[n] || []).filter((e, n) => n !== q)),
             e[n].length || delete e[n]);
-        }),
-          this.setState({ confirmDel: null, page: 1 }));
+        }, "confirmDel")) && this.setState({ confirmDel: null, page: 1 });
       },
       confirmFinishOn: !!e.confirmFinish,
       confirmFinishMsg: e.confirmFinish
         ? "سيتم إنهاء المهمة «" + e.confirmFinish.title + "» وتثبيت وقت الإنجاز واحتساب نتيجة الأداء. يمكنك التراجع لاحقاً عبر «إعادة فتح»."
         : "",
-      confirmFinishCancel: () => this.setState({ confirmFinish: null }),
-      confirmFinishDo: () => {
+      confirmFinishCancel: () => this._tkClose("confirmFinish", { confirmFinish: null }),
+      confirmFinishDo: async () => {
         const t = this.state.confirmFinish;
         if (t) {
           if (this.tkLockedAt(e.year, e.month, t.d)) return (this.bsToast(this._tkLockTxt(e.year, e.month, t.d)), void this.setState({ confirmFinish: null }));
-          (this._doFinish(t.d, t.i, t.k), this.setState({ confirmFinish: null }));
+          (await this._doFinish(t.d, t.i, t.k)) && this.setState({ confirmFinish: null });
         }
       },
       newTaskOpen: e.newTaskOpen,
@@ -2688,7 +2763,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ? this.bsToast("الشهر معتمد ومقفل — " + this._tkHowOpen("افتحه أولاً بنقرة مزدوجة على كرت الشهر."))
             : SD0 && this.tkLockedAt(e.year, e.month, SD0)
               ? this.bsToast(this._tkLockTxt(e.year, e.month, SD0))
-              : this.setState({
+              : this._tkOpen({
                 newTaskOpen: !0,
                 editRef: null,
                 newTitle: "",
@@ -2747,7 +2822,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           sel: a === r,
         };
       }),
-      closeNewTask: () => this.setState({ newTaskOpen: !1, editRef: null, tkRecOk: !1 }),
+      closeNewTask: () => this._tkClose("newTaskOpen", { newTaskOpen: !1, editRef: null, tkRecOk: !1 }),
       newTitle: e.newTitle,
       onNewTitle: (t) => this.setState({ newTitle: t.target.value }),
       newDesc: e.newDesc,
@@ -2921,10 +2996,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })(),
       acceptOpen: !!e.acceptRef,
       acceptTitle: e.acceptRef ? e.acceptRef.title : "",
-      closeAccept: () => this.setState({ acceptRef: null }),
+      closeAccept: () => this._tkClose("acceptRef", { acceptRef: null }),
       acceptNoAssign: () => this._doAccept("", null),
       ...this._tkDutyVals(),
-      submitTask: () => {
+      submitTask: async () => {
+        if (await this._tkPendingEditor()) return;
         const t = e.newTitle.trim();
         if (!t) return void this.bsToast("اكتب عنوان المهمة أولاً");
         const a = Math.min(Math.max(1, +(e.newDay || 1) || 1), i),
@@ -2934,7 +3010,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         if (!o || !l) return void this.bsToast("تعذّر حساب وقت المهمة — أعد اختيار البداية والنهاية");
         if (l <= o) return void this.bsToast("نهاية المهمة يجب أن تكون بعد بدايتها");
         const h = Math.round((l - o) / 6e4) || null,
-          c = this.loadProfileName(),
           m = Math.min(Math.max(1, +(e.newDay || (d ? s.d : 1)) || 1), i),
           p = e.year + "-" + e.month + "-" + m,
           D = "direct" === e.newAsg,
@@ -2961,94 +3036,41 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         if (RP.err) return void this.bsToast(RP.err, "warn");
         if (RP.ask) return void this._tkRecAsk(RP.id);
         e.tkRecOk && this.setState({ tkRecOk: !1 });
-        if (e.editRef && e.editRef.grp) {
-          /* تعديل مجموعة: الحقول المشتركة تسري على كل الأفراد، والإسناد كما هو */ const n = e.editRef.grp,
-            a = e.year + "-" + e.month + "-" + e.editRef.d;
-          let fp = "";
-          return void (
-            this.mutateStore((e) => {
-              const r = (e[a] || []).filter((t) => t && t[17] === n);
-              if (!r.length) return !1;
-              ((e[a] = (e[a] || []).filter((t) => !(t && t[17] === n))), e[a].length || delete e[a]);
-              const s = r.map((e) => {
-                const n = e.slice();
-                for (; n.length < 19; ) n.push(null);
-                return (
-                  (n[0] = t),
-                  (n[1] = this.state.newDesc.trim()),
-                  (n[2] = this.state.newPrio),
-                  (n[10] = h),
-                  (n[15] = o),
-                  (n[16] = l),
-                  "done" === n[3] && n[11] && n[12] && (n[6] = this.perfRow(n, n[12])),
-                  this._tkXEdit(n, null)
-                );
-              });
-              ((fp = this._tkFp(s)), (e[p] = [...(e[p] || []), ...s]));
-            }) && (this.setState({ newTaskOpen: !1, editRef: null }), (this._tkRecPend = RP.op ? RP : null), this._tkSettingsSrv({ k: p, grp: n, fp: fp }))
-          );
-        }
         if (e.editRef) {
-          const n = D ? P[K[0]] || "" : "",
-            a = D ? K[0] : null;
-          let refX = null;
-          return void (
-            this.mutateStore((r) => {
-              const s = e.year + "-" + e.month + "-" + e.editRef.d,
-                q = this._tkIdx(r[s], e.editRef.i, e.editRef.k),   /* تحقّقُ fa5a5bf (V-7): بهوية الصفّ لا بموضعه */
-                i = q >= 0 ? (r[s] || [])[q] : null;
-              if (q < 0) return (this._tkGone(), !1);
-              /* KIVO_264 · RC-13: تغييرُ المكلَّف بعد استلامه/تنفيذه/اعتذاره كان يورث الجديدَ حالتَه — يُعاد الإسنادُ من قائمة المهمة (نسخةٌ جديدة بسجلّ الأول) */
-              if (i && i[14] && String(a || "") !== String(i[14]) && this._tkHasActivity(i))
-                return (this.bsToast("لا يُغيَّر المكلَّفُ هنا بعد استلامه أو تنفيذه — استعمل «إعادة إسناد» من قائمة المهمة فيبقى سجلُّ الأول وإثباتُه", "warn"), !1);
-              /* KIVO_265 · تحقّقُ 648242f (V-1) وb7538e2 (V-5): مهمةٌ عامةٌ تُسند الآن (g) تبدأ للمكلَّف الجديد «بانتظار الاستلام» كاملةً — لا يرث استلامَ
-                 من حُذف ولا اعتذارَه ولا انقضاءَ مهلته (20 — الخادمُ يرفضه task-asg) ولا وقتَ بدئه وحالتَه (11 · 3 — قبولٌ مستعار) ولا قبولاً دون إسناد
-                 (يقبله المكلَّفُ أو يقبل المديرُ نيابةً عنه). وما أُنجز أو سُلِّم أو أغلقه الخادم أو فيه توثيقُ غيره (21) لا يُسند بالتعديل (كـRC-13) */
-              const x9 = i && i[23] && "object" === typeof i[23] ? i[23] : null;
-              if (i && !i[14] && a && (i[12] || "done" === i[3] || i[21] || (x9 && ("cancelled" === x9.asg || "reassigned" === x9.asg))))
-                return (this.bsToast("لا تُسند بالتعديل مهمةٌ عامةٌ أُنجزت أو سُلِّمت أو أُغلقت أو فيها توثيقُ موظفٍ آخر — أنشئ مهمةً جديدة للموظف", "warn"), !1);
-              const g = !!(i && !i[14] && a),
-                d = g ? null : i && "done" === i[3] && i[11] && i[12] ? this.perfRow(Object.assign(i.slice(), { 10: h, 15: o, 16: l }), i[12]) : i ? i[6] : null,
-                m = [
-                  t,
-                  e.newDesc.trim(),
-                  e.newPrio,
-                  i ? (g ? "pending" : i[3]) : "pending",
-                  i ? i[4] : "normal",
-                  i ? i[5] : "مضافة",
-                  d,
-                  n ? [n.charAt(0)] : D ? [] : i && !i[14] ? i[7] : [],
-                  n || (D || !i || i[14] ? "" : i[8]),
-                  i ? i[9] : c,
-                  h,
-                  (!g && i && i[11]) || null,
-                  (!g && i && i[12]) || null,
-                  (i && i[13]) || null,
-                  a,
-                  o,
-                  l,
-                  null,
-                  null,
-                  D ? null : String(e.pickWt || "") || null,
-                  /* KIVO_264 · KIVO-Tasks: الاعتذارُ/الانقضاء (20) والتوثيقُ (21) يُنقلان مع الصفّ — كان الصفُّ المعدَّل 20 عموداً فيسقط إثباتُ الإنجاز
-                     ثم تُكنس صورُه من المخزن (imgSync) بمجرد تعديل العنوان أو الوقت (tests/unit/tasks_edit_integrity.test.mjs) */
-                  (!g && i && i[20]) || null,
-                  (i && i[21]) || null,
-                ];
-              /* KIVO_264 · المرحلة الثانية: طابعُ هوية الكيان (22) وحقولُ الإدارة (23) تُنقلان مع الصفّ — وتُحدَّث x بالإعدادات المتقدمة إن مُسَّت */
-              this._tkXEdit(m, i);
-              refX = { k: p, id: m[13], ekey: m[14], fp: this._tkFp([m]) };
-              ((r[s] = (r[s] || []).filter((t, n) => n !== q)), r[s].length || delete r[s], (r[p] = [...(r[p] || []), m]));
-            }) && (this.setState({ newTaskOpen: !1, editRef: null }), (this._tkRecPend = RP.op ? RP : null), this._tkSettingsSrv(refX))
-          );
+          const opened = this._tkDrafts && this._tkDrafts.newTaskOpen;
+          if (!opened) return this.bsToast("أعد فتح المهمة لتثبيت نسخة المسودة", "warn");
+          let original;
+          try { original = this._tkEditRow(opened.draft.get("bassam_tasks_v1") || {}); }
+          catch (error) { if (!(this._tkCommands && this._tkCommands.newTaskOpen)) return this.bsToast("تغيّرت المهمة — راجع المسودة قبل الحفظ", "warn"); }
+          if (original && !e.editRef.grp && String(original[14] || "") !== String(D ? K[0] : "")) {
+            const orphan = !String(original[14] || ""), management = original[23], protectedOrphan = original[3] === "done" || original[12] || original[21] || (management && (management.asg === "cancelled" || management.asg === "reassigned"));
+            if ((!orphan && this._tkHasActivity(original)) || (orphan && protectedOrphan))
+              return this.bsToast("لا يُغيَّر المكلَّفُ هنا بعد نشاط الموظف أو إغلاق المهمة — استخدم إعادة إسناد", "warn");
+          }
+          const previous = this._tkCommands && this._tkCommands.newTaskOpen;
+          if (!original && previous) {
+            const edit = previous.body.edit;
+            if (!edit || edit.k !== p || edit.t !== t || edit.desc !== e.newDesc.trim() || edit.prio !== e.newPrio || edit.s !== o || edit.e !== l ||
+                (!e.editRef.grp && String(edit.ekey || "") !== String(D ? K[0] : ""))) return this.bsToast("الطلب السابق لم يُحسم — احتفظ بالمسودة السابقة وأعد الطلب نفسه", "warn");
+          }
+          const body = previous && !original ? Object.assign({}, previous.body) : Object.assign({ k: e.year + "-" + e.month + "-" + e.editRef.d },
+            e.editRef.grp ? { grp: e.editRef.grp } : { id: original[13], ekey: original[14] == null ? null : String(original[14]) },
+            { edit: Object.assign({ k: p, t: t, desc: e.newDesc.trim(), prio: e.newPrio, s: o, e: l }, e.editRef.grp ? {} : { ekey: D ? K[0] : null, wt: D ? null : String(e.pickWt || "") || null }) },
+            e.newAdvTouched ? this._tkAdvBody() : {}, RP.op ? { recur: Object.assign({}, RP) } : {});
+          if (body.recur) { delete body.recur.ask; delete body.recur.err; }
+          ["uid", "dept", "epoch", "base", "requestId"].forEach((key) => delete body[key]);
+          const response = await this._tkCommandApi("/api/tasks/settings", body, "newTaskOpen");
+          if (response.j && response.j.ok === 1) {
+            this.setState({ newTaskOpen: false, editRef: null });
+            if (body.recur) this._tkRecAck(body.recur.op, response.j.recurrence);
+          }
+          else this.bsToast(this._tkErr(response, "لم تُحفظ تعديلات المهمة — المسودة باقية"), "warn");
+          return;
         }
         if (D && !K.length) return void this.bsToast("اختر وردية أو موظفاً واحداً على الأقل — أو اجعل المهمة عامة", "warn");
-        const g = e.newCreatedAt || Date.now();
-        let b = null,
-          y = null,
+        let y = null,
           SHB = null;   /* KIVO_265 · البند 12: الورديةُ كيانًا (shift {name}) حين يتجاوز الاختيارُ سقفَ القائمة */
         if (D && K.length > 1) {
-          b = "g" + g + Math.floor(1e3 * Math.random());
           const t = this.tkPickModel(m),
             n = [],
             W = String(e.pickWt || "");
@@ -3080,63 +3102,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ),
           );
         }
-        const k = D
-          ? K.map((n, gi) => [
-              t,
-              e.newDesc.trim(),
-              e.newPrio,
-              "pending",
-              "normal",
-              "مضافة",
-              null,
-              [String(P[n] || "؟").charAt(0)],
-              P[n] || "",
-              c,
-              h,
-              null,
-              null,
-              g + gi,
-              n,
-              o,
-              l,
-              b,
-              y,
-            ])
-          : [
-              [
-                t,
-                e.newDesc.trim(),
-                e.newPrio,
-                "pending",
-                "normal",
-                "مضافة",
-                null,
-                [],
-                "",
-                c,
-                h,
-                null,
-                null,
-                g,
-                null,
-                o,
-                l,
-                null,
-                null,
-                String(e.pickWt || "") || null,
-              ],
-            ];
-        this.mutateStore((t) => {
-          t[p] = [...(t[p] || []), ...k];
-        }) &&
-          (this.setState({ newTaskOpen: !1, editRef: null }),
-          D &&
-            this.bsAck(
-              K.length > 1
-                ? "أُسندت المهمة إلى " + this.tkN(K.length, 1) + " — وصلهم التنبيه"
-                : "أُسندت المهمة إلى " + (P[K[0]] || "الموظف"),
-              "ok",
-            ));
+        this.bsToast("تحتاج المهمة إلى اتصال الخادم — المسودة باقية ولم يُحفظ تغيير محلي", "warn");
       },
       ...this.tkAsgVals(Math.min(Math.max(1, +(e.newDay || (d ? s.d : 1)) || 1), i)),
       ...this._tkActVals(),

@@ -6,11 +6,11 @@
      · الأداءُ (العمود 6) من المهلة: قبلها «في الوقت/مبكر» · بعدها «متأخر» · وإعادةُ الإسناد تنقل win */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, MATE, KT, TAG, stored, putKV, hij, HR } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, KT, TAG, stored, putKV, hij, HR, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body:operationSaveBody(W.env,p,taskCommandBody(W.env, p, body)) });
 const get = (W, ck, p) => W.C.api(p, { cookie: ck });
 const MIN = 60e3;
 async function mk(W, ck, o) {
@@ -79,7 +79,7 @@ for (const mode of ['legacy', 'enforce']) {
     /* بدأ في وقته ثم انقضى سماحُ التسليم: التسليمُ 409 late · المسودّةُ doc تُقبل */
     const d = await mk(W, dm.ck, { t: 'late1', s: now - 4 * HR, e: now - 2 * HR, win: { late: 1 } });
     const S = stored(W.env, KT); const rd = Object.values(S).flat().find((r) => Array.isArray(r) && r[13] === d.id); rd[11] = now - 3 * HR; rd[3] = 'in_progress';
-    putKV(W.env, KT, S);
+    await replaceOperationalFixture(W.env, KT, S);
     assert.equal((await post(W, me.ck, '/api/me/tasks/act', { k: d.k, id: d.id, act: 'doc', note: TAG + ' مسودّة' })).status, 200, 'المسودّةُ تبقى');
     const l = await post(W, me.ck, '/api/me/tasks/act', { k: d.k, id: d.id, act: 'submit', note: TAG + ' تم' });
     assert.equal(l.status, 409); assert.equal(l.j.err, 'late'); assert.match(l.j.msg, /1 س بعد المهلة/);

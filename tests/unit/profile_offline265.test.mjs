@@ -1,3 +1,6 @@
+import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { taskText } from './tasks_vm_operations_fx.mjs';
+import { taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
 /* Cloud-only replacement of the former device task queue acceptance suite.
    Real profile logic and Worker HTTP, both permission modes. Device bytes stay
    untouched; drafts stay open and only an explicit retry can mutate a task. */
@@ -45,19 +48,19 @@ const T = { y: +DAY.split('-')[0], m: +DAY.split('-')[1], d: +DAY.split('-')[2] 
 const E = { isStaff: true, T, myKey: ME.eid, keyOfTok: (x) => x, myRec: { name: TAG + ' موظف' } };
 const V = (P) => JSON.parse(JSON.stringify(P.c._tkVals({}, E, P.c.state), (k, v) => (typeof v === 'function' ? undefined : v)));
 const Vf = (P) => P.c._tkVals({}, E, P.c.state);
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: operationSaveBody(W.env, p, taskCommandBody(W.env, p, body)) });
 const refOf = (P, id) => P.c._tkMine(E).find((x) => x.r.__x && String(x.r.__x.id) === String(id));
 const srvRow = (W, id) => (rowsOf(stored(W.env, KT), ME.eid).find((x) => x.r[13] === id) || {}).r || [];
 const own = (W, img) => W.env.DB.q('SELECT st FROM imgown WHERE img = ?', img)[0] || null;
 async function until(f, ms = 5000) { const t0 = Date.now(); for (;;) { let v = false; try { v = f(); } catch (e) { v = false; } if (v || Date.now() - t0 > ms) return v; await new Promise((r) => setTimeout(r, 10)); } }
 const mkTask = (W, ck, t, extra) => post(W, ck, '/api/tasks/create', Object.assign({ k: DAY, t: TAG + ' ' + t, s: Date.now() - 60e3, e: Date.now() + 2 * HR, asg: [ME.eid], rv: 'none' }, extra || {}));
-function wipe(W, eid) { const S = stored(W.env, KT); for (const d in S) S[d] = S[d].filter((r) => !(Array.isArray(r) && r[14] === eid)); putKV(W.env, KT, S); }
+async function wipe(W, eid) { const S = stored(W.env, KT); for (const d in S) S[d] = S[d].filter((r) => !(Array.isArray(r) && r[14] === eid)); await replaceOperationalFixture(W.env, KT, S); }
 const toasts = (P) => P.c.__toasts || [];
 
 for (const mode of ['legacy', 'enforce']) {
   test('[' + mode + '] offline proof keeps the profile fields and image metadata; reconnection and reopening do not submit; explicit retry saves', async () => {
     const W = await world({ worker: WU.file, mode });
-    const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM); wipe(W, ME.eid);
+    const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM); await wipe(W, ME.eid);
     const legacyKey = 'bassam_tkq_v1:me', legacyBytes = JSON.stringify([{ id: 'TEST_ONLY_old', body: { act: 'start' } }]);
     const ls = new Map([[legacyKey, legacyBytes]]), net = { down: false, lossy: false };
     const P = page(W, me.ck, { ls, net }); await P.MT.queue.init();
@@ -92,7 +95,7 @@ for (const mode of ['legacy', 'enforce']) {
 
   test('[' + mode + '] a cancelled task is refused on explicit retry; reconnect and reads never retry it; another task remains independent', async () => {
     const W = await world({ worker: WU.file, mode });
-    const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM); wipe(W, ME.eid);
+    const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM); await wipe(W, ME.eid);
     const P = page(W, me.ck), a = await mkTask(W, dm.ck, 'cancelled'), b = await mkTask(W, dm.ck, 'independent');
     const idA = a.j.rows[0].id, idB = b.j.rows[0].id; await P.MT.load(true);
     const R = refOf(P, idA); P.setNet(false); P.c.tkAccept(R.day, R.i); assert.ok(await until(() => toasts(P).length === 1));
@@ -107,7 +110,7 @@ for (const mode of ['legacy', 'enforce']) {
 
   test('[' + mode + '] a lost response retries with the same idem only explicitly; duplicate noop and invalid idem still obey the real server', async () => {
     const W = await world({ worker: WU.file, mode });
-    const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM); wipe(W, ME.eid);
+    const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM); await wipe(W, ME.eid);
     const net = { down: false, lossy: false }, P = page(W, me.ck, { net });
     const c = await mkTask(W, dm.ck, 'lost response'), id = c.j.rows[0].id; await P.MT.load(true);
     net.lossy = true; const R = refOf(P, id); P.c.tkAccept(R.day, R.i);
@@ -115,7 +118,8 @@ for (const mode of ['legacy', 'enforce']) {
     const t0 = srvRow(W, id)[11]; assert.ok(t0); assert.equal(P.acts.length, 1);
     const idem = P.acts[0].idem; assert.match(idem, /^q[a-z0-9]+_[a-z0-9]+$/);
     net.lossy = false; P.setNet(true); await P.MT.load(true); await P.MT.queue.flush(); assert.equal(P.acts.length, 1);
-    const retried = await P.MT.act(R.r.__x, 'start'); assert.equal(retried.ok, true); assert.equal(retried.noop, true);
+    await P.c.tkAccept(R.day, R.i);
+    assert.equal((P.c.__acks || []).length, 1, 'The explicit UI retry clears its own uncertain draft only after the validated ACK');
     assert.equal(P.acts.length, 2); assert.equal(P.acts[1].idem, idem); assert.equal(srvRow(W, id)[11], t0); assert.deepEqual(srvRow(W, id)[20].q, [idem]);
     let x = await post(W, me.ck, '/api/me/tasks/act', { k: DAY, id, act: 'start', idem });
     assert.equal(x.status, 200); assert.equal(x.j.noop, 1); assert.equal(srvRow(W, id)[11], t0);

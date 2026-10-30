@@ -22,7 +22,9 @@
   ],
   "domain": "src/modules/planning/logic.js",
   "data": [
-   "none — حاويةٌ لا تكتب ولا تقرأ مفتاحاً بنفسها (التبويباتُ في وحداتها)"
+   "bassam_employees_v1",
+   "bassam_mark_kinds_v1",
+   "bassam_shift_options_v1"
   ],
   "permissions": [
    "planning/readiness"

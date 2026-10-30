@@ -1553,7 +1553,7 @@ async function nfRefs(env, A, only) {
     }
   });
   for (var i = 0; i < keys.length; i += 80) {
-    var vals = await kvMany(env, "kv", keys.slice(i, i + 80));
+    var vals = await opResourceMany(env, keys.slice(i, i + 80));
     Object.keys(vals).forEach(function (k) {
       var m = /^bsdept:([^:]+):bassam_(.*)$/.exec(k);
       if (m) refs[m[1]][m[2]] = parseJson(vals[k], null);

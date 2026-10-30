@@ -207,14 +207,14 @@
         ["الساحة الشرقية", "#BF9958"],
         ["الساحة الغربية", "#750E1F"],
       ];
-      _addMarkKind(t) {
+      async _addMarkKind(t) {
         const e = (t || "").trim();
-        if (!e) return;
+        if (!e) return false;
         const s = this._markKinds();
-        if (-1 === s.indexOf(e))
-          try {
-            localStorage.setItem("bassam_mark_kinds_v1", JSON.stringify([...s, e]));
-          } catch (t) {}
+        if (s.includes(e)) return true;
+        const result = await KIVO.__BS_SRV.operations.commit(this, "mark-kind", { kind: e }, draft => draft.set("bassam_mark_kinds_v1", [...s, e]));
+        if (!result || result.ok !== 1) { this.bsToast("لم يصل تأكيد حفظ النوع — أعد الإجراء نفسه للتحقق من المسودة."); return false; }
+        return true;
       }
       _ck(t) {
         if (null == t) return t;
@@ -230,7 +230,7 @@
       _empIdx() {
         let t = null;
         try {
-          t = localStorage.getItem("bassam_employees_v1");
+          t = KIVO.__BS_SRV.operations.text("bassam_employees_v1");
         } catch (e) {}
         if (this.__eiSrc === t && this.__ei) return this.__ei;
         let e = [];
@@ -262,7 +262,7 @@
       _markKinds() {
         let t = ["دورات مياه", "سلالم", "مصاعد", "سبيل", "نقطة إسعاف", "مخرج طوارئ", "نقطة تجمّع"];
         try {
-          const e = localStorage.getItem("bassam_mark_kinds_v1");
+          const e = KIVO.__BS_SRV.operations.text("bassam_mark_kinds_v1");
           if (e) {
             const s = JSON.parse(e);
             Array.isArray(s) && s.length && (t = s);
@@ -480,7 +480,7 @@
       }
       loadEmployeesIr() {
         try {
-          const t = localStorage.getItem("bassam_employees_v1"),
+          const t = KIVO.__BS_SRV.operations.text("bassam_employees_v1"),
             e = t ? JSON.parse(t) : [];
           return Array.isArray(e) ? e : [];
         } catch (t) {
@@ -489,7 +489,7 @@
       }
       loadShiftOptsIr() {
         try {
-          const t = localStorage.getItem("bassam_shift_options_v1");
+          const t = KIVO.__BS_SRV.operations.text("bassam_shift_options_v1");
           if (t) {
             const e = JSON.parse(t);
             if (Array.isArray(e) && e.length && e.every((t) => t && t.name)) return e;

@@ -7,6 +7,14 @@
     "/api/save": {
       "type": "object",
       "properties": {
+        "requestId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
         "set": {
           "type": "object",
           "additionalProperties": {
@@ -243,7 +251,9 @@
         "k",
         "t",
         "s",
-        "e"
+        "e",
+        "requestId",
+        "epoch"
       ],
       "additionalProperties": false,
       "properties": {
@@ -444,6 +454,19 @@
             "null"
           ],
           "maxLength": 200
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "base": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },
@@ -711,7 +734,10 @@
     "/api/tasks/settings": {
       "type": "object",
       "required": [
-        "k"
+        "k",
+        "requestId",
+        "epoch",
+        "base"
       ],
       "additionalProperties": false,
       "properties": {
@@ -800,6 +826,153 @@
             "null"
           ],
           "maxLength": 200
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "base": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "edit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "k": {
+              "type": "string",
+              "maxLength": 10
+            },
+            "t": {
+              "type": "string",
+              "maxLength": 300
+            },
+            "desc": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "prio": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "s": {
+              "type": "number"
+            },
+            "e": {
+              "type": "number"
+            },
+            "ekey": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80
+            },
+            "wt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80
+            }
+          },
+          "required": [
+            "k",
+            "t",
+            "desc",
+            "prio",
+            "s",
+            "e"
+          ]
+        },
+        "recur": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "type": "string",
+              "maxLength": 8
+            },
+            "id": {
+              "type": [
+                "number",
+                "string"
+              ],
+              "maxLength": 40
+            },
+            "rec": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "t": {
+                  "type": "string",
+                  "maxLength": 8
+                },
+                "wd": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "maxItems": 7,
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "md": {
+                  "type": [
+                    "integer",
+                    "string",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maxLength": 4
+                },
+                "n": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1
+                },
+                "to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 10
+                },
+                "open": {
+                  "type": [
+                    "integer",
+                    "boolean",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              }
+            },
+            "row": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 40
+            }
+          },
+          "required": [
+            "op"
+          ]
         }
       }
     },
@@ -855,7 +1028,10 @@
     "/api/tasks/recur": {
       "type": "object",
       "required": [
-        "op"
+        "op",
+        "requestId",
+        "epoch",
+        "base"
       ],
       "additionalProperties": false,
       "properties": {
@@ -959,6 +1135,19 @@
             "null"
           ],
           "maxLength": 200
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "base": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },

@@ -78,9 +78,10 @@ function rsBCManifest(manifest, scope, keys, domains, departments) {
   var required = scope.kind === 'full' ? ['kv', 'dailyStats', 'notifications', 'custody'] : ['kv', 'notifications', 'custody'];
   if (manifest.version >= 2) required.push('irshad');
   if (manifest.version >= 3) required.push('seized','awards');
+  if (manifest.version >= 4) required.push('operations');
   rsShape(manifest.domains, required);
   if (
-    ![1, 2, 3].includes(manifest.version) ||
+    ![1, 2, 3, 4].includes(manifest.version) ||
     manifest.scope !== scope.kind ||
     required.some(function (k) {
       return manifest.domains[k] !== 1;
@@ -117,6 +118,8 @@ function rsBCManifest(manifest, scope, keys, domains, departments) {
       if(!Array.isArray(domains[def.name])||!deq(domains[def.name].map(bdScope).sort(),expected))rsBCFail('incomplete-'+def.name);
     } else if(domains[def.name]!==undefined)rsBCFail(def.name+'-manifest-version');
   }
+  if(manifest.version>=4)opValidateBackupDomains(domains.operations,departments);
+  else if(domains.operations!==undefined)rsBCFail('operations-manifest-version');
 }
 async function rsConvertBackup(env, A, file, opt) {
   opt = opt || {};
@@ -139,7 +142,7 @@ async function rsConvertBackup(env, A, file, opt) {
     kind = file.kind || scope.kind,
     summary = { legacy: legacy, emptyDomains: [], preservedGlobals: [], ignoredDevicePreferences: [], remapped: false },
     readGuards = [];
-  if (modern && (file.app !== 'bassam-crowd' || ![1, 2, 3].includes(file.version) || file.kind !== scope.kind)) rsBCFail('identity');
+  if (modern && (file.app !== 'bassam-crowd' || ![1, 2, 3, 4].includes(file.version) || file.kind !== scope.kind)) rsBCFail('identity');
   if (
     legacy &&
     (opt.legacyConsent !== true ||
@@ -157,7 +160,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var input = Object.create(null),
     keys = Object.create(null),
     domains = file.domains === undefined ? {} : rsBCClone(file.domains);
-  rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards']);
+  rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards', 'operations']);
   Object.keys(file.data).forEach(function (k) {
     if (k === 'bassam_active_dept_v1') {
       summary.ignoredDevicePreferences.push(k);
@@ -248,6 +251,7 @@ async function rsConvertBackup(env, A, file, opt) {
   for(var def of bdDefinitions()) if(businessKeys.some(function(k){return def.resources.includes(resName(k));})&&rsBCOwn(domains,def.name))rsBCFail('duplicate-domain-source');
   if (modern && (cuKeys.length || nfKeys.length || dsKeys.length || (file.manifest && file.manifest.version >= 2 && irKeys.length))) rsBCFail('retired-key-in-modern-file');
   if(modern&&file.manifest.version>=3&&businessKeys.length)rsBCFail('retired-key-in-modern-file');
+  if(modern&&file.manifest.version>=4&&Object.keys(keys).some(opIsResource))rsBCFail('retired-key-in-modern-file');
   if (scope.kind === 'dept' && (dsKeys.length || domains.dailyStats !== undefined)) rsBCFail('global-domain-in-department');
   if (modern) {
     // Validate the source declaration before an explicit scoped remap. Missing
@@ -444,6 +448,7 @@ async function rsConvertBackup(env, A, file, opt) {
   cuKeys.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
     delete keys[k];
   });
+  opConvertBackupBoundary(keys,domains,deptIds,scope,source,modern?file.manifest.version:0,summary);
   // Conversion preserves credentials byte-for-byte; applySave/restore retains
   // its existing hash, final-owner and session policy for the eventual commit.
   Object.keys(keys).forEach(function (k) {
@@ -467,10 +472,11 @@ async function rsConvertBackup(env, A, file, opt) {
   }
   // A v1 source is validated before conversion. The compiled destination always
   // declares the complete typed Irshad domain; v2 never receives empty fallbacks.
-  manifest.version = 3;
+  manifest.version = 4;
   manifest.domains.irshad = 1;
   manifest.domains.seized = 1;
   manifest.domains.awards = 1;
+  manifest.domains.operations = 1;
   manifest.keys = Object.keys(keys).map(function (k) { return scope.kind === 'dept' ? resName(k) : k; });
   rsBCManifest(manifest, scope, keys, domains, deptIds);
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };

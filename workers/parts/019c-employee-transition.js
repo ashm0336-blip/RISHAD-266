@@ -59,9 +59,14 @@ function empActionAllowed(A, d, intent) {
   if (!ok) throw cuError('employee-transition-forbidden', 403);
 }
 async function empTransitionSource(env) {
-  var known = env.__employeeReference;
-  if (known && isObj(known.keys) && isObj(known.revs)) return { keys: known.keys, revs: known.revs };
-  return { keys: await kvAll(env, 'kv'), revs: await revsAll(env) };
+  var known = env.__employeeReference,
+    raw = known && isObj(known.keys) ? known.keys : await kvAll(env, 'kv'),
+    capture = await opCaptureReferences(env, raw),
+    revs = Object.assign({},known && isObj(known.revs) ? known.revs : await revsAll(env),capture.revs);
+  // Validate the read context after the revision header. A changed source
+  // must fail rather than pair an old employee/schedule with a newer base.
+  if (capture.guards.length) await env.DB.batch(capture.guards);
+  return { keys:capture.keys,revs:revs,guards:capture.guards,snapshots:capture.snapshots };
 }
 function empTransitionContextOf(A, d, intent, source, cuRevision) {
   empActionAllowed(A, d, intent);
@@ -701,6 +706,7 @@ async function empPrepareTransition(env, A, input) {
         requestId: input.requestId,
       },
       allRequestedKeysRequired: true,
+      sourceGuards: source.guards,
     },
     result: result,
   };

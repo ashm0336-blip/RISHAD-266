@@ -27,3 +27,29 @@ window.__resourceBlobs = {};
     }
   }
 })();
+
+/* A page's existing charter declares its data. Await the acknowledged SQL
+   projection before any Component field initializer reads its business state. */
+(function () {
+  function pageData(name) {
+    var manifest = KIVO.KIVO_MANIFEST;
+    if (!manifest || manifest.keys.indexOf('operationsReadSets') === -1) throw Error('operations-readset-required');
+    var declared = manifest.clone('operationsReadSets')[name] || [];
+    var service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    var names = service ? declared.filter(function (key) { return service.resources.indexOf(key) !== -1 && !/^bassam_(?:st|dr)_grp_v1$|^bassam_dayfocus_v1$/.test(key); }) : declared;
+    if (!names.length) return { keys: [], service: service };
+    var stamp = service && service.context();
+    if (!stamp) throw Error('operations-session-required');
+    return { service: service, keys: names.map(function (key) { return 'bsdept:' + stamp.dept + ':' + key; }) };
+  }
+  KIVO.__dcPageReady = function (name) {
+    try { var data = pageData(name); return !data.keys.length || data.service.ready(data.keys); } catch (error) { return false; }
+  };
+  KIVO.__dcBeforePage = async function (name) {
+    var data = pageData(name);
+    if (data.keys.length && !data.service.ready(data.keys)) {
+      var result = await data.service.read(data.keys);
+      if (!result || result.ok !== 1 || !KIVO.__dcPageReady(name)) throw Error('operations-page-read-failed');
+    }
+  };
+})();

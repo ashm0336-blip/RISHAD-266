@@ -1,3 +1,6 @@
+import { attachTaskOperations, taskText } from './tasks_vm_operations_fx.mjs';
+import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { taskCommandBody } from './tasks_fx.mjs';
 /* KIVO_265 · البند 14 — صفحةُ المهام (src/modules/tasks/logic.js في vm + KIVO.BassamPageKit الحقيقي) على العامل الحقيقي: الفلاتر الإضافية
    المكلَّف · الوردية (من الجدول الشهري كما يقرؤها المنتقي) · نوع العمل (العمود 19 أو نوعُ عمل المكلَّف) · المتكررة فقط · المراجِع · «بانتظاري أنا» · «بلا توثيق»
    — تتراكب مع البحث والحالة والأولوية، والمصدَّرُ = المرئي، والشريطُ مطويٌّ بعدّادٍ و«مسح»، والاختياراتُ تُحفظ للمسؤول (bassam_tasks_filters_v1:<uid>).
@@ -14,7 +17,7 @@ const WU = workerUnderTest();
 const LOGIC = moduleLogic('tasks');
 const KS = 'bsdept:' + D + ':bassam_staffing_v3';
 /* الصفحةُ لمدير الإدارة (كما في tasks_page_review265) + مخازنُ الجدول الشهري والخيارات + التقاطُ التصدير */
-function page(W, ck, storeJson, emps, extra) {
+async function page(W, ck, storeJson, emps, extra) {
   const store = new Map([['bassam_tasks_v1', storeJson], ['bassam_employees_v1', JSON.stringify(emps)]].concat(Object.entries(extra || {})));
   const KIVO = {}, toasts = [], xlsx = [];
   const ctx = { KIVO, console, Intl, Date, Math, JSON, Promise, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, setTimeout, clearTimeout, setInterval: () => 0, clearInterval: () => 0,
@@ -38,9 +41,10 @@ function page(W, ck, storeJson, emps, extra) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
+  const opsFixture = await attachTaskOperations(ctx, { store, W, ck });
   const c = new ctx.__C(); c._tkDayDef = () => 0;   /* اختباراتُ الشهر كاملاً (KIVO_265 · كروتُ الأيام: الافتراضي يومُ اليوم) */ c.state = Object.assign({}, c.state || {}, { locked: {} });
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);
-  return { c, store, toasts, xlsx };
+  return { c, opsFixture, store, toasts, xlsx };
 }
 /* صفوفُ الجدول في القيم: كلُّ قائمةٍ تحمل tkcT (كما في tasks_page_p2) */
 function allRows(V) { const out = []; const seen = new Set(); const walk = (o, d) => { if (!o || typeof o !== 'object' || d > 4 || seen.has(o)) return; seen.add(o); if (o.tkcT && Array.isArray(o.tkcT)) out.push(o); for (const k of Object.keys(o)) { const v = o[k]; if (Array.isArray(v)) v.forEach(x => walk(x, d + 1)); else if (v && typeof v === 'object' && k !== 'tkcT') walk(v, d + 1); } }; walk(V, 0); return out; }
@@ -52,8 +56,8 @@ async function setup() {
   const W = await world({ worker: WU.file }); const dm = await W.login('0000000101', '70101');
   const now = Date.now();
   /* الموظفُ الثاني بنوع عملٍ مختلف · الجدولُ الشهري: موظفُنا TST-A وزميلُه TST-B */
-  const E = stored(W.env, KE); E.find((e) => e.eid === MATE.eid).work = 'TEST_ONLY إداري'; putKV(W.env, KE, E);
-  const Sf = stored(W.env, KS) || {}; Sf[YM] = Object.assign({}, Sf[YM] || {}, { [ME.eid]: { shift: 'TST-A', rest: [] }, [MATE.eid]: { shift: 'TST-B', rest: [] } }); putKV(W.env, KS, Sf);
+  const E = stored(W.env, KE); E.find((e) => e.eid === MATE.eid).work = 'TEST_ONLY إداري'; await replaceOperationalFixture(W.env, KE, E);
+  const Sf = stored(W.env, KS) || {}; Sf[YM] = Object.assign({}, Sf[YM] || {}, { [ME.eid]: { shift: 'TST-A', rest: [] }, [MATE.eid]: { shift: 'TST-B', rest: [] } }); await replaceOperationalFixture(W.env, KS, Sf);
   const S = stored(W.env, KT);
   S[DAY].push(
     row({ id: A, title: 'فلتر · لي بلا توثيق', eid: ME.eid, s: now - 36e5, e: now + 36e5 }),
@@ -63,10 +67,10 @@ async function setup() {
     row({ id: E1, title: 'فلتر · عامة مراقب', wt: 'TEST_ONLY مراقب', s: now - 36e5, e: now + 36e5 }),
     row({ id: E2, title: 'فلتر · عامة إداري', wt: 'TEST_ONLY إداري', s: now - 36e5, e: now + 36e5 }),
   );
-  putKV(W.env, KT, S);
-  const g = await W.C.api('/api/get?keys=' + encodeURIComponent(KT + ',' + KE + ',' + KS), { cookie: dm.ck });
-  const extra = { bassam_staffing_v3: g.j.keys[KS].v, bassam_options_v1: JSON.stringify({ work: ['TEST_ONLY مراقب', 'TEST_ONLY إداري'] }) };
-  const P = page(W, dm.ck, g.j.keys[KT].v, JSON.parse(g.j.keys[KE].v), extra);
+  await replaceOperationalFixture(W.env, KT, S);
+  const g = await W.C.api("/api/operations/read?keys=" + encodeURIComponent(KT + ',' + KE + ',' + KS), { cookie: dm.ck });
+  const extra = { bassam_staffing_v3: taskText(g.j, KS), bassam_options_v1: JSON.stringify({ work: ['TEST_ONLY مراقب', 'TEST_ONLY إداري'] }) };
+  const P = await page(W, dm.ck, taskText(g.j, KT), JSON.parse(taskText(g.j, KE)), extra);
   P.c.setState({ year: Y, month: M, perPage: 0 });
   return { W, dm, P, extra, g };
 }
@@ -125,14 +129,14 @@ test('البند 14 · الاختياراتُ تُحفظ للمسؤول (bassam_
   P.c._tkFltSet({ fAsg: ME.eid, fRec: true }); P.c._tkFltSet({ fShift: 'TST-A' });
   const saved = JSON.parse(P.store.get(K)); assert.equal(saved.fAsg, ME.eid); assert.equal(saved.fRec, true); assert.equal(saved.fShift, 'TST-A'); assert.equal(saved.fStatus, 'all');
   /* صفحةٌ جديدة بالمخزن نفسِه ⇒ الفلاترُ كما تُركت — والصفوفُ مرشَّحة */
-  const P2 = page(W, dm.ck, g.j.keys[KT].v, JSON.parse(g.j.keys[KE].v), Object.assign({ [K]: P.store.get(K) }, extra));
+  const P2 = await page(W, dm.ck, taskText(g.j, KT), JSON.parse(taskText(g.j, KE)), Object.assign({ [K]: P.store.get(K) }, extra));
   P2.c.setState({ year: Y, month: M, perPage: 0 });
   assert.equal(P2.c.state.fAsg, ME.eid); assert.equal(P2.c.state.fRec, true); assert.equal(P2.c.state.fShift, 'TST-A');
   const V2 = P2.c.renderVals(); assert.equal(V2.tfxCount, '3'); assert.equal(V2.tfxHas, true); assert.equal(allRows(V2).length, 0, 'لي + متكررة + TST-A ⇒ لا صف');
   P2.c.renderVals().tfxClear(); assert.equal(JSON.parse(P2.store.get(K)).fAsg, 'all'); assert.ok(ids(P2.c.renderVals()).has(A));
   /* نصٌّ تالف أو أنواعٌ خاطئة ⇒ الافتراضيات */
-  const P3 = page(W, dm.ck, g.j.keys[KT].v, JSON.parse(g.j.keys[KE].v), Object.assign({ [K]: '{bad' }, extra));
+  const P3 = await page(W, dm.ck, taskText(g.j, KT), JSON.parse(taskText(g.j, KE)), Object.assign({ [K]: '{bad' }, extra));
   assert.equal(P3.c.state.fAsg, 'all'); assert.equal(P3.c.state.fRec, false);
-  const P4 = page(W, dm.ck, g.j.keys[KT].v, JSON.parse(g.j.keys[KE].v), Object.assign({ [K]: JSON.stringify({ fAsg: 7, fRec: 'yes', fWt: 'TEST_ONLY إداري' }) }, extra));
+  const P4 = await page(W, dm.ck, taskText(g.j, KT), JSON.parse(taskText(g.j, KE)), Object.assign({ [K]: JSON.stringify({ fAsg: 7, fRec: 'yes', fWt: 'TEST_ONLY إداري' }) }, extra));
   assert.equal(P4.c.state.fAsg, 'all'); assert.equal(P4.c.state.fRec, false); assert.equal(P4.c.state.fWt, 'TEST_ONLY إداري');
 });

@@ -1,5 +1,98 @@
 /* global gkZone, gkMark -- سجلّا الأبواب/المعالم الاختياريان يُجَسّان بـtypeof قبل الاستعمال (سطرا 16569/16571)؛ الإعلانُ هنا للتحليل الساكن وحده (ESLint no-undef) — لا أثرَ على التنفيذ (KIVO_249) */
-class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","daily+plan+seized+staff","daily+dreport+plan","daily+plan","plan+staff"]) {
+class Component extends KIVO.BassamPageKit.base(DCLogic, [
+  "admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks",
+  "daily+dreport+dstats+irshad+plan+seized+staff+tasks",
+  "daily+dreport+irshad+plan+seized+staff+tasks",
+  "daily+dreport+irshad+plan+profile+seized",
+  "daily+plan+seized+staff",
+  "daily+dreport+plan",
+  "daily+plan",
+  "plan+staff",
+]) {
+  _opService() {
+    const service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (!service) throw Error("operations-read-required");
+    return service;
+  }
+  _opRead(name) {
+    const service = this._opService();
+    this._opDrafts || (this._opDrafts = Object.create(null));
+    if (!this._opDrafts[name]) this._opDrafts[name] = service.draft();
+    return this._opDrafts[name].get(name);
+  }
+  async _opCommit(changes) {
+    try {
+      const service = this._opService(),
+        names = Object.keys(changes).sort(),
+        action = "plan:" + names.join("|");
+      // These drafts were captured when the displayed source was loaded. Verify
+      // every original scope/revision synchronously before staging one batch.
+      this._opActions || (this._opActions = Object.create(null));
+      if (!this._opActions[action]) {
+        names.forEach((name) => {
+          if (!this._opDrafts || !this._opDrafts[name])
+            throw Error("operations-review-required");
+          this._opDrafts[name].get(name);
+        });
+        const begun = service.begin(this, action);
+        if (!begun || begun.ok !== 1) throw Error("operations-review-required");
+        this._opActions[action] = true;
+      }
+      let result;
+      this._opBusy = (this._opBusy || 0) + 1;
+      try {
+        result = await service.commit(this, action, changes, (draft) => {
+          names.forEach((name) => draft.set(name, changes[name]));
+        });
+      } finally {
+        this._opBusy--;
+      }
+      this._opTicket = result && result.ticket;
+      if (!result || result.ok !== 1) {
+        this.bsToast(
+          result && result.uncertain
+            ? "لم يصل تأكيد الحفظ — بقيت المسودة؛ أعد المحاولة بنفس البيانات لحسم الطلب"
+            : "لم يُحفظ التعديل — راجع التغييرات والصلاحيات ثم أعد تحميل البيانات",
+          "warn",
+        );
+        return result || { ok: 0, err: "save" };
+      }
+      delete this._opActions[action];
+      this._opTicket = null;
+      names.forEach((name) => {
+        // Advance only our acknowledged source, never another editor's draft.
+        if (JSON.stringify(service.get(name)) === JSON.stringify(changes[name]))
+          this._opDrafts[name] = service.draft();
+      });
+      return result;
+    } catch (error) {
+      this.bsToast(
+        "لم يُحفظ التعديل — تغيّرت نسخة البيانات أو سياق الحساب؛ بقي عملك في الصفحة للمراجعة",
+        "warn",
+      );
+      return { ok: 0, err: "review-required" };
+    }
+  }
+  _opWrite(name, value) {
+    this._opLastSave = this._opCommit({ [name]: value });
+    return this._opLastSave;
+  }
+  async _opGc() {
+    const result = this._opLastSave && (await this._opLastSave);
+    if (!result || result.ok !== 1) return false;
+    (this._opKeptImages || []).forEach(
+      (id) =>
+        KIVO.BassamPurge &&
+        KIVO.BassamPurge.unkeep &&
+        KIVO.BassamPurge.unkeep(id),
+    );
+    this._opKeptImages = [];
+    return this._gcImages();
+  }
+  async _opAck(message, tone) {
+    const result = this._opLastSave && (await this._opLastSave);
+    if (result && result.ok === 1) this.bsAck(message, tone);
+  }
   /* ══ R190: سجلُّ التشغيل الميداني بعرض الصفحة — مكوّنُ «سجل الشهر» في الإحصائيات اليومية (DailyStats) حرفاً ══
    يتبع تبويبَ القائمة الجانبية كسجلّها المختصر تماماً: المصليات · الأبواب · المعالم · المسارات · التسكين (وتسكينُ كلِّ نوع).
    الصفوفُ هي صفوفُ ذلك السجلّ نفسُها (Ps · Fs · Ls · Ds · صفوفُ الموظفين) — أفعالُها (إظهار المكان · التعديل · الإطفاء ·
@@ -1807,7 +1900,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       parts.push(
         C(noEd, unit) + " " + C.agr(noEd, "موجودٌ سيُترك", "موجودان سيُتركان", "موجودةٌ ستُترك") + " — التعديلُ يحتاج صلاحية التعديل",
       );
-    const nm = "zones" === V ? "المصليات" : "gates" === V ? "الأبواب" : "المعالم";
+    const nm =
+      "zones" === V ? "المصليات" : "gates" === V ? "الأبواب" : "المعالم";
     const ask = KIVO.bsConfirm
       ? KIVO.bsConfirm({
           title: "استيراد " + nm + " من Excel",
@@ -1830,7 +1924,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         now[j] = Object.assign({}, now[j], u.patch);
         nU++;
       });
-      const all = now.concat(built);
+      const all = now.concat(built),
+        related = {};
       if (nO.length) {
         if ("zones" === V) {
           const zo = Object.assign({}, this.state.zoneOpts || {});
@@ -1840,20 +1935,31 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               "level" === o.f ? Object.assign({ n: o.v, c: "" }, o.r ? { r: o.r } : {}) : "zcat" === o.f ? { n: o.v } : { n: o.v, c: "" },
             ]);
           });
-          this.saveZoneOpts(zo);
+          this.saveZoneOpts(zo, true);
+          related.bassam_zone_opts_v1 = zo;
         } else if ("gates" === V) {
           const go = Object.assign({}, this.state.gateOpts || {});
           nO.forEach((o) => {
             const l = Array.isArray(go[o.f]) ? go[o.f].slice() : [];
             (l.indexOf(o.v) < 0 && l.push(o.v), (go[o.f] = l));
           });
-          this.saveGateOpts(go);
-        } else nO.forEach((o) => this._addMarkKind(o.v));
+          this.saveGateOpts(go, true);
+          related.bassam_gate_opts_v1 = go;
+        } else {
+          const kinds = this._opRead("bassam_mark_kinds_v1");
+          const values = Array.isArray(kinds) ? kinds.slice() : [];
+          nO.forEach((o) => {
+            if (!values.includes(o.v)) values.push(o.v);
+          });
+          related.bassam_mark_kinds_v1 = values;
+        }
       }
       const pt = { [key]: all };
-      built.length && ((pt.olFs = V + "|unp"), (pt.olPg = V + "|1"), (pt.olQ = ""));
-      this.setState(pt, () => {
-        this.savePlan();
+      built.length &&
+        ((pt.olFs = V + "|unp"), (pt.olPg = V + "|1"), (pt.olQ = ""));
+      this.setState(pt, async () => {
+        const ack = await this.savePlan(related);
+        if (!ack || ack.ok !== 1) return;
         this.bsToast(
           "استُورد إلى «" +
             site +
@@ -1978,6 +2084,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       e.readAsDataURL(t));
   }
   _bsLiveReload(K) {
+    if (this._opBusy || this._opTicket) return false;
     const h = (t) =>
       (K || []).some((k) => {
         k = String(k);
@@ -2004,6 +2111,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       s.retroAsk
     )
       return !1;
+    if (this._opDrafts)
+      Object.keys(this._opDrafts).forEach((name) => {
+        if (h(name)) delete this._opDrafts[name];
+      });
     const p = {};
     if (h("bassam_plan_v1")) {
       const b = this.initState(),
@@ -2039,58 +2150,30 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   loadPlan() {
     try {
-      const t = localStorage.getItem("bassam_plan_v1");
-      if (t) return JSON.parse(t);
+      const t = this._opRead("bassam_plan_v1");
+      if (t) return t;
     } catch (t) {}
     return null;
   }
-  _putImg(t, o) {
-    const e = "img_" + Date.now().toString(36) + "_" + Math.floor(1e9 * Math.random()).toString(36);
-    try {
-      o && o.iid && KIVO.BassamPurge && KIVO.BassamPurge.keep(o.iid);
-      const s = KIVO.BassamIDB && t && KIVO.BassamIDB.set(e, t);
-      (s &&
-        s.then &&
-        s.then(
-          () => {
-            o && o.iid && KIVO.BassamPurge && KIVO.BassamPurge.unkeep && KIVO.BassamPurge.unkeep(o.iid);
-          },
-          () => {},
-        ),
-        s &&
-          s.then &&
-          s.catch((t) => {
-            const s = /413/.test(String((t && t.message) || t));
-            /* استعادة الصورة السابقة كما كانت — لا تضيع صورة بسبب رفعٍ فاشل */ (this.setState(
-              (t) => ({
-                floors: (t.floors || []).map((t) =>
-                  t && t.iid === e
-                    ? {
-                        ...t,
-                        iid: (o && o.iid) || null,
-                        img: (o && o.img) || null,
-                        imgW: (o && o.imgW) || 0,
-                        imgH: (o && o.imgH) || 0,
-                        chipTone: (o && o.chipTone) || t.chipTone,
-                      }
-                    : t,
-                ),
-              }),
-              () => {
-                (this.savePlan(), this._loadFloorImages());
-              },
-            ),
-              this.bsToast(
-                s
-                  ? "لم تُحفظ الصورة الجديدة — حجمها أكبر من الحد المسموح (20MB للخريطة الواحدة). أُبقيت الصورة السابقة كما هي؛ صدّرها بدقّةٍ أقلّ، أو اطلبها متّجهةً (SVG) فهي أصغرُ وأحدّ"
-                  : "لم تُحفظ الصورة الجديدة — " +
-                      String((t && t.message) || "تعذّر الرفع") +
-                      " · أُبقيت الصورة السابقة كما هي، أعد المحاولة",
-                "warn",
-              ));
-          }));
-    } catch (t) {}
-    return e;
+  async _putImg(value, previous) {
+    const service = this._opService(),
+      context = JSON.stringify(service.context()),
+      id =
+        "img_" +
+        Date.now().toString(36) +
+        "_" +
+        Math.floor(1e9 * Math.random()).toString(36);
+    if (!KIVO.BassamIDB || typeof KIVO.BassamIDB.set !== "function" || !value)
+      throw Error("image-upload-required");
+    if (previous && previous.iid && KIVO.BassamPurge) {
+      KIVO.BassamPurge.keep(previous.iid);
+      (this._opKeptImages || (this._opKeptImages = [])).push(previous.iid);
+    }
+    if ((await KIVO.BassamIDB.set(id, value)) !== true)
+      throw Error("image-ack-required");
+    if (context !== JSON.stringify(service.context()))
+      throw Error("image-context-changed");
+    return id;
   }
   _mKey(t, e) {
     return t + "-" + e;
@@ -2113,6 +2196,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       hideSectors: !0 === t.hideSectors,
       approved: !!t.approved,
       iid: t.iid || null,
+      ...(!t.iid && t.img ? { img: t.img } : {}),
     }));
   }
   _mData(t, e) {
@@ -2213,8 +2297,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!this._hasPlanFor(i, n)) return !1;
     let S = null;
     try {
-      S = JSON.parse(localStorage.getItem("bassam_plan_v1"));
-    } catch(t) { /* لا يمنع العرض — يُتجاوز بصمت */ }
+      S = this._opRead("bassam_plan_v1");
+    } catch (t) {
+      /* لا يمنع العرض — يُتجاوز بصمت */
+    }
     const m = S && S.months && "object" === typeof S.months ? S.months[n] : null,
       d = Array.isArray(m) ? m : m && m.d;
     if (!Array.isArray(d)) return !0;
@@ -2701,167 +2787,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       return String(Math.round(100 * a) / 100);
     });
   }
-  _migrateLevelBinds() {
-    try {
-      const t = localStorage.getItem("bassam_zone_opts_v1");
-      if (!t) return;
-      const e = JSON.parse(t);
-      if (!e || "string" == typeof e || (e.lvV || 0) >= 2) return;
-      const s = Array.isArray(e.level)
-          ? e.level
-              .map((t) =>
-                "string" == typeof t
-                  ? { n: t, c: "" }
-                  : t && t.n
-                    ? { n: t.n, c: null == t.c ? "" : String(t.c), ...(t.r ? { r: t.r } : {}) }
-                    : null,
-              )
-              .filter(Boolean)
-          : [],
-        n = {},
-        a = (t) => {
-          t && t.region && t.level && ((n[t.level] = n[t.level] || {})[t.region] = 1);
-        };
-      try {
-        const t = JSON.parse(localStorage.getItem("bassam_plan_v1")) || {};
-        ((t.floors || []).forEach((t) => ((t && t.zones) || []).forEach(a)),
-          t.months &&
-            "object" == typeof t.months &&
-            Object.keys(t.months).forEach((e) => {
-              const s = t.months[e],
-                n = Array.isArray(s) ? s : s && Array.isArray(s.d) ? s.d : null;
-              n && n.forEach((t) => ((t && t.zones) || []).forEach(a));
-            }));
-      } catch (t) {}
-      try {
-        const t = JSON.parse(localStorage.getItem("bassam_rounds_v1")) || {};
-        Object.keys(t).forEach((e) => {
-          const s = t[e];
-          s && Array.isArray(s.d) && s.d.forEach((t) => ((t && t.zones) || []).forEach(a));
-        });
-      } catch (t) {}
-      const i = [],
-        r = {},
-        l = (t, e, s) => {
-          const n = t + "" + (s || "");
-          r[n] || ((r[n] = 1), i.push(s ? { n: t, c: e, r: s } : { n: t, c: e }));
-        };
-      (s.forEach((t) => {
-        if (t.r) return void l(t.n, t.c, t.r);
-        const e = Object.keys(n[t.n] || {});
-        e.length ? e.forEach((e) => l(t.n, t.c, e)) : l(t.n, t.c, "");
-      }),
-        Object.keys(n).forEach((t) => {
-          s.some((e) => e.n === t) || Object.keys(n[t]).forEach((e) => l(t, "", e));
-        }),
-        (e.level = i),
-        (e.lvV = 2),
-        this._mgW("bassam_zone_opts_v1") && localStorage.setItem("bassam_zone_opts_v1", JSON.stringify(e)));
-    } catch (t) {}
-  }
-  _fixZoneLabels() {
-    try {
-      const t = localStorage.getItem("bassam_plan_v1");
-      if (!t) return;
-      const e = JSON.parse(t);
-      if (!e || "object" != typeof e) return;
-      if (+e.pMig >= 3) return;
-      let s = 0;
-      const n = (t) => {
-          t && t.hideLabel && ((t.hideLabel = !1), s++);
-        },
-        a = (t) => {
-          t && (Array.isArray(t.zones) ? t.zones : []).forEach(n);
-        };
-      (a(e),
-        (e.floors || []).forEach(a),
-        e.months &&
-          "object" == typeof e.months &&
-          Object.keys(e.months).forEach((t) => {
-            const s = e.months[t],
-              n = Array.isArray(s) ? s : s && Array.isArray(s.d) ? s.d : null;
-            n && n.forEach(a);
-          }),
-        (e.floors || []).forEach((t) => {
-          t && void 0 === t.showCodes && ((t.showCodes = !0), s++);
-        }),
-        (e.pMig = 3),
-        this._mgW("bassam_plan_v1") && localStorage.setItem("bassam_plan_v1", JSON.stringify(e)));
-    } catch (t) {}
-  }
-  _fixPathDefaults() {
-    try {
-      const t = localStorage.getItem("bassam_plan_v1");
-      if (!t) return;
-      const e = JSON.parse(t);
-      if (!e || "object" != typeof e) return;
-      if (+e.pMig >= 2) return;
-      let s = 0;
-      const n = (t) => {
-          t &&
-            (void 0 === t.line && ((t.line = "dash"), s++),
-            void 0 === t.w && ((t.w = "thin"), s++),
-            void 0 === t.hideLabel && ((t.hideLabel = !0), s++));
-        },
-        a = (t) => {
-          t && void 0 === t.hideLabel && ((t.hideLabel = !1), s++);
-        },
-        g = (t) => {
-          t && void 0 === t.hideLabel && ((t.hideLabel = !0), s++);
-        },
-        i = (t) => {
-          t &&
-            ((Array.isArray(t.paths) ? t.paths : []).forEach(n),
-            (Array.isArray(t.zones) ? t.zones : []).forEach(a),
-            (Array.isArray(t.gates) ? t.gates : []).forEach(g));
-        };
-      (i(e),
-        (e.floors || []).forEach(i),
-        (e.floors || []).forEach((t) => {
-          t && void 0 === t.showCodes && ((t.showCodes = !0), s++);
-        }),
-        e.months &&
-          "object" == typeof e.months &&
-          Object.keys(e.months).forEach((t) => {
-            const s = e.months[t],
-              n = Array.isArray(s) ? s : s && Array.isArray(s.d) ? s.d : null;
-            n && n.forEach(i);
-          }),
-        (e.pMig = 3),
-        this._mgW("bassam_plan_v1") && localStorage.setItem("bassam_plan_v1", JSON.stringify(e)));
-    } catch (t) {}
-  }
-  _fixPlanAnchors() {
-    try {
-      const t = localStorage.getItem("bassam_plan_v1");
-      if (!t) return;
-      const e = JSON.parse(t);
-      if (!e || "object" != typeof e) return;
-      let s = 0;
-      const n = (t) => {
-        if (!t || !t.d) return;
-        const e = this._zPathPts(t.d);
-        if (e.length < 3) return;
-        if (this._zInside(+t.cx, +t.cy, e)) return;
-        const n = this._zAnchor(e);
-        n && ((t.cx = Math.round(n.x)), (t.cy = Math.round(n.y)), s++);
-      };
-      ((e.floors || []).forEach((t) => (t && Array.isArray(t.zones) ? t.zones : []).forEach(n)),
-        e.months &&
-          "object" == typeof e.months &&
-          Object.keys(e.months).forEach((t) => {
-            const s = e.months[t],
-              a = Array.isArray(s) ? s : s && Array.isArray(s.d) ? s.d : null;
-            a && a.forEach((t) => (t && Array.isArray(t.zones) ? t.zones : []).forEach(n));
-          }),
-        s && this._mgW("bassam_plan_v1") && localStorage.setItem("bassam_plan_v1", JSON.stringify(e)));
-    } catch (t) {}
-  }
+
   loadGateOpts() {
     try {
-      const t = localStorage.getItem("bassam_gate_opts_v1");
+      const t = this._opRead("bassam_gate_opts_v1");
       if (t) {
-        const e = JSON.parse(t);
+        const e = t;
         if (e && "object" == typeof e)
           return {
             loc: Array.isArray(e.loc) ? e.loc : [],
@@ -2875,13 +2806,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
     return { loc: [], gtype: [], kind: [], route: [], cls: [], cat: [] };
   }
-  saveGateOpts(t) {
-    if (this.PC("add") || this.PC("edit") || this.PC("del")) {
-      try {
-        localStorage.setItem("bassam_gate_opts_v1", JSON.stringify(t));
-      } catch (t) {}
-      this.setState({ gateOpts: t });
-    } else this.permDeny();
+  saveGateOpts(value, defer = false) {
+    if (!this.PC("add") && !this.PC("edit") && !this.PC("del")) {
+      this.permDeny();
+      return Promise.resolve({ ok: 0, err: "denied" });
+    }
+    this.setState({ gateOpts: value });
+    return defer ? null : this._opWrite("bassam_gate_opts_v1", value);
   }
   gateOptList(t) {
     const e = (this.state.gateOpts || {})[t];
@@ -2897,9 +2828,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   delGateOpt(t, e) {
     const s = this.gateOptList(t),
-      n = s[e] && "object" == typeof s[e] ? s[e].n || "" : String(s[e] || "");
-    (this.saveGateOpts({ ...(this.state.gateOpts || {}), [t]: s.filter((t, s) => s !== e) }),
-      this._purgeOptEverywhere(t, n, { gates: !0 }));
+      n = s[e] && "object" == typeof s[e] ? s[e].n || "" : String(s[e] || ""),
+      value = {
+        ...(this.state.gateOpts || {}),
+        [t]: s.filter((t, s) => s !== e),
+      };
+    this.saveGateOpts(value, true);
+    this._purgeOptEverywhere(
+      [{ key: t, name: n }],
+      { gates: true },
+      { bassam_gate_opts_v1: value },
+    );
   }
   saveGateOptEdit() {
     const t = this.state.gDdEdit;
@@ -2909,7 +2848,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const s = this.gateOptList(t.key),
       n = s[t.idx];
     if (null != n)
-      if (s.some((s, n) => n !== t.idx && s === e)) this.bsToast("يوجد خيار بهذا الاسم");
+      if (s.some((s, n) => n !== t.idx && s === e))
+        this.bsToast("يوجد خيار بهذا الاسم");
       else {
         if (e !== n) {
           const s = (s) => {
@@ -2920,26 +2860,33 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             }
             return s[t.key] === n ? { ...s, [t.key]: e } : s;
           };
-          this.setState(
-            {
+          this.setState({
               gates: (this.state.gates || []).map(s),
               floors: (this.state.floors || []).map((t) => ({ ...t, gates: (t.gates || []).map(s) })),
               gEdit: this.state.gEdit ? s(this.state.gEdit) : this.state.gEdit,
-            },
-            () => this.savePlan(),
-          );
+            });
         }
-        const ix = t.idx;   /* KIVO_247 (ESLint no-undef): كان `ix` غيرَ معرَّف في الأصل ⇒ ReferenceError عند إعادة تسمية خيار باب — الفهرسُ المقصود فهرسُ الخيار المحرَّر (t.idx)؛ المعاملان داخل map يظلّلان t وs */
-        (this.setState({ gDdEdit: null }),
-          this.saveGateOpts({ ...(this.state.gateOpts || {}), [t.key]: s.map((t, s) => (s === ix ? e : t)) }));
+        const ix =
+          t.idx; /* KIVO_247 (ESLint no-undef): كان `ix` غيرَ معرَّف في الأصل ⇒ ReferenceError عند إعادة تسمية خيار باب — الفهرسُ المقصود فهرسُ الخيار المحرَّر (t.idx)؛ المعاملان داخل map يظلّلان t وs */
+        const value = {
+          ...(this.state.gateOpts || {}),
+          [t.key]: s.map((t, s) => (s === ix ? e : t)),
+        };
+        this.saveGateOpts(value, e !== n);
+        this.setState(
+          { gDdEdit: null },
+          e !== n
+            ? () => this.savePlan({ bassam_gate_opts_v1: value })
+            : undefined,
+        );
       }
     else this.setState({ gDdEdit: null });
   }
   loadZoneOpts() {
     try {
-      const t = localStorage.getItem("bassam_zone_opts_v1");
+      const t = this._opRead("bassam_zone_opts_v1");
       if (t) {
-        const e = JSON.parse(t);
+        const e = t;
         if (e && "object" == typeof e) {
           const t = (t) =>
             Array.isArray(t)
@@ -2966,8 +2913,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               (s = t),
               (n = 3));
             try {
-              this._mgW("bassam_zone_opts_v1") &&
-                localStorage.setItem("bassam_zone_opts_v1", JSON.stringify({ ...e, zcatStyle: s, hMig: 3 }));
+              // Legacy display defaults are derived in memory; opening this
+              // page never rewrites historical business documents.
             } catch (t) {}
           }
           return {
@@ -2981,20 +2928,22 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }
       }
     } catch (t) {}
-    return { region: [], level: [], ztype: [], zcat: [], zcatStyle: {}, hMig: 3 };
+    return {
+      region: [],
+      level: [],
+      ztype: [],
+      zcat: [],
+      zcatStyle: {},
+      hMig: 3,
+    };
   }
-  saveZoneOpts(t) {
-    if (this.PC("add") || this.PC("edit") || this.PC("del")) {
-      try {
-        const e = JSON.parse(localStorage.getItem("bassam_zone_opts_v1") || "{}");
-        localStorage.setItem("bassam_zone_opts_v1", JSON.stringify(e && "object" == typeof e ? { ...e, ...t } : t));
-      } catch (e) {
-        try {
-          localStorage.setItem("bassam_zone_opts_v1", JSON.stringify(t));
-        } catch (t) {}
-      }
-      this.setState({ zoneOpts: t });
-    } else this.permDeny();
+  saveZoneOpts(value, defer = false) {
+    if (!this.PC("add") && !this.PC("edit") && !this.PC("del")) {
+      this.permDeny();
+      return Promise.resolve({ ok: 0, err: "denied" });
+    }
+    this.setState({ zoneOpts: value });
+    return defer ? null : this._opWrite("bassam_zone_opts_v1", value);
   }
   _catFitsType(t, e) {
     if (!e) return !0;
@@ -3039,7 +2988,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       : "";
     return (r && i.push(r), l && i.push(l), y && i.push(y), i.push(s || "00"), i.join("-"));
   }
-  _recomposeZoneCodes(t) {
+  _recomposeZoneCodes(t, related = {}) {
     const e = (e) => {
       if (!e || null == e.ser) return e;
       const s = this._composeZoneCode(e.region, e.level, e.ser, t, e.ztype);
@@ -3047,7 +2996,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     };
     this.setState(
       { zones: (this.state.zones || []).map(e), floors: (this.state.floors || []).map((t) => ({ ...t, zones: (t.zones || []).map(e) })) },
-      () => this.savePlan(),
+      () => this.savePlan(related),
     );
   }
   addZoneOpt(t) {
@@ -3107,10 +3056,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ((i = t.filter((t) => t && "object" == typeof t && t.r === n).map((t) => t.n)),
         (a.level = t.filter((t) => !(t && "object" == typeof t && t.r === n))));
     }
-    (this.saveZoneOpts(a),
-      this._purgeOptEverywhere(t, n),
-      i.forEach((t) => this._purgeOptEverywhere("level", t)),
-      ("region" !== t && "level" !== t && "ztype" !== t) || this._recomposeZoneCodes(a));
+    this.saveZoneOpts(a, true);
+    this._purgeOptEverywhere(
+      [{ key: t, name: n }, ...i.map((name) => ({ key: "level", name }))],
+      {},
+      { bassam_zone_opts_v1: a },
+      ["region", "level", "ztype"].includes(t) ? a : null,
+    );
   }
   _darken(t, e) {
     try {
@@ -3186,14 +3138,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     if (s !== r) {
       const e = (e) => (!e || e[t.key] !== r || ("level" === t.key && l && e.region !== l) ? e : { ...e, [t.key]: s });
-      this.setState(
-        {
+      this.setState({
           zones: (this.state.zones || []).map(e),
           floors: (this.state.floors || []).map((t) => ({ ...t, zones: (t.zones || []).map(e) })),
           zEdit: this.state.zEdit ? e(this.state.zEdit) : this.state.zEdit,
-        },
-        () => this.savePlan(),
-      );
+        });
     }
     const h = "ztype" === t.key && Array.isArray(this.state.zDdEditT) ? this.state.zDdEditT.filter(Boolean) : null;
     this.setState({ zDdEdit: null, zDdEditT: null });
@@ -3225,9 +3174,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         const e = this._optCats(t);
         return !e || e.indexOf(r) < 0 ? t : { ...t, n: this._optName(t), c: e.map((t) => (t === r ? s : t)) };
       })),
-      t.key,
-      this.saveZoneOpts(p),
-      e && this._recomposeZoneCodes(p));
+      this.saveZoneOpts(p, e || s !== r));
+    if (e) this._recomposeZoneCodes(p, { bassam_zone_opts_v1: p });
+    else if (s !== r)
+      this.setState({ zDdEdit: null }, () =>
+        this.savePlan({ bassam_zone_opts_v1: p }),
+      );
   }
   areaOfZone(t, e) {
     if (t && null != t.area && "" !== t.area && +t.area > 0) return +t.area;
@@ -3313,7 +3265,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       this.bsToast("صلاحيتك على الخطة التشغيلية لا تشمل هذا الإجراء — راجع مدير الإدارة");
     } catch (t) {}
   }
-  savePlan() {
+  async savePlan(related = {}) {
     if (!this.PC("edit") && !this.PC("approve")) return void (this._permWarned1 || ((this._permWarned1 = 1), this.permDeny()));
     this._histPush();
     const t = this.state;
@@ -3362,43 +3314,32 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this._hasPlanFor(s, n) && (s[n] = { ...(s[n] && !Array.isArray(s[n]) ? s[n] : {}), c: 1, d: this._snapshot(e) });
     const a = e.map((t) => {
       const e = { ...t };
-      return (delete e.img, e);
+      if (e.iid) delete e.img;
+      return e;
     });
-    let i = !1;
-    try {
-      (localStorage.setItem(
-        "bassam_plan_v1",
-        JSON.stringify({
-          pMig: 3,
-          zones: (e[t.floor] || {}).zones || t.zones,
-          gates: t.gates,
-          marks: t.marks || [],
-          paths: t.paths || [],
-          floors: a,
-          months: s,
-          cfg: t.cfg || {},
-          delMonths: t.delMonths && "object" == typeof t.delMonths ? t.delMonths : {},
-        }),
-      ),
-        (i = !0));
-    } catch (t) {
-      this._quotaWarned ||
-        ((this._quotaWarned = !0),
-        setTimeout(() =>
-          this.bsToast(
-            "مساحة التخزين في المتصفح ممتلئة. تم الاحتفاظ بعملك في هذه الجلسة، لكن قد لا تُحفظ بعض التغييرات بعد إغلاق الصفحة. جرّب حذف بيانات قديمة أو صدّر نسخة احتياطية.",
-            0,
-          ),
-        ));
-    }
-    if (i && !this._pmSyncing) {
-      this._pmSyncing = !0;
+    const payload = {
+      pMig: 3,
+      zones: (e[t.floor] || {}).zones || t.zones,
+      gates: t.gates,
+      marks: t.marks || [],
+      paths: t.paths || [],
+      floors: a,
+      months: s,
+      cfg: t.cfg || {},
+      delMonths:
+        t.delMonths && typeof t.delMonths === "object" ? t.delMonths : {},
+    };
+    this._opLastSave = this._opCommit({ ...related, bassam_plan_v1: payload });
+    const ack = await this._opLastSave;
+    if (ack && ack.ok === 1 && !this._pmSyncing) {
+      this._pmSyncing = true;
       try {
         this.setState({ planMonths: s });
       } finally {
-        this._pmSyncing = !1;
+        this._pmSyncing = false;
       }
     }
+    return ack;
   }
   curApproved() {
     const t = this.state.floors && this.state.floors[this.state.floor];
@@ -3430,74 +3371,71 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       a = void 0 === e ? this.state.month : e;
     return n < s.y || (n === s.y && a < s.m);
   }
-  _purgeOptEverywhere(t, e, s) {
-    const n = String(e || "");
-    if (!n) return;
-    const a = s || {},
-      i = (e) => {
-        e &&
-          (Array.isArray(e.zones) &&
-            e.zones.forEach((e) => {
-              e && e[t] === n && (e[t] = "");
-            }),
-          a.gates &&
-            Array.isArray(e.gates) &&
-            e.gates.forEach((e) => {
-              e && (e[t] === n && (e[t] = ""), Array.isArray(e.cats) && (e.cats = e.cats.filter((t) => t !== n)));
-            }));
-      };
-    try {
-      const t = JSON.parse(localStorage.getItem("bassam_plan_v1"));
-      t &&
-        (i(t),
-        Array.isArray(t.floors) && t.floors.forEach(i),
-        t.months &&
-          Object.keys(t.months).forEach((e) => {
-            const s = t.months[e],
-              n = s ? (Array.isArray(s) ? s : s.d) : null;
-            Array.isArray(n) && n.forEach(i);
-          }),
-        localStorage.setItem("bassam_plan_v1", JSON.stringify(t)));
-    } catch (t) {}
-    try {
-      const t = JSON.parse(localStorage.getItem("bassam_rounds_v1"));
-      if (t && "object" == typeof t) {
-        let e = !1;
-        (Object.keys(t).forEach((s) => {
-          const n = t[s];
-          n &&
-            Array.isArray(n.d) &&
-            !n.ap &&
-            n.d.forEach((t) => {
-              t && !t.ap && (i(t), (e = !0));
-            });
-        }),
-          e && localStorage.setItem("bassam_rounds_v1", JSON.stringify(t)));
-      }
-    } catch (t) {}
-    const r = (e) => (e || []).map((e) => (e && e[t] === n ? { ...e, [t]: "" } : e)),
-      l = (e) =>
-        (e || []).map((e) => {
-          if (!e) return e;
-          let s = e;
-          return (
-            e[t] === n && (s = { ...s, [t]: "" }),
-            a.gates && Array.isArray(e.cats) && e.cats.indexOf(n) >= 0 && (s = { ...s, cats: e.cats.filter((t) => t !== n) }),
-            s
-          );
-        }),
-      o = (t) => ({ ...t, zones: r(t.zones), gates: a.gates ? l(t.gates) : t.gates }),
-      d = this.state.planMonths || {},
-      h = {};
-    (Object.keys(d).forEach((t) => {
-      const e = d[t],
-        s = e ? (Array.isArray(e) ? e : e.d) : null;
-      h[t] = Array.isArray(s) ? { c: (e && e.c) || s.length, d: s.map(o) } : e;
-    }),
-      this.setState(
-        { zones: r(this.state.zones), gates: l(this.state.gates), floors: (this.state.floors || []).map(o), planMonths: h },
-        () => this.savePlan(),
-      ));
+  _purgeOptEverywhere(fields, options = {}, related = {}, zoneOptions = null) {
+    const entries = Array.isArray(fields) ? fields : [];
+    const update = (element, kind) => {
+      if (!element) return element;
+      const next = { ...element };
+      entries.forEach(({ key, name }) => {
+        if (next[key] === name) next[key] = "";
+        if (options.gates && Array.isArray(next.cats))
+          next.cats = next.cats.filter((value) => value !== name);
+      });
+      if (kind === "zones" && zoneOptions && next.ser != null)
+        next.code = this._composeZoneCode(
+          next.region,
+          next.level,
+          next.ser,
+          zoneOptions,
+          next.ztype,
+        );
+      return next;
+    };
+    const site = (floor) => ({
+      ...floor,
+      zones: (floor.zones || []).map((value) => update(value, "zones")),
+      gates: options.gates
+        ? (floor.gates || []).map((value) => update(value, "gates"))
+        : floor.gates,
+    });
+    const rounds = this._opRead("bassam_rounds_v1");
+    if (rounds && typeof rounds === "object") {
+      let changed = false;
+      Object.keys(rounds).forEach((key) => {
+        const rec = rounds[key];
+        if (rec && Array.isArray(rec.d) && !rec.ap) {
+          rec.d = rec.d.map((floor) => {
+            if (!floor || floor.ap) return floor;
+            changed = true;
+            return site(floor);
+          });
+        }
+      });
+      if (changed) related = { ...related, bassam_rounds_v1: rounds };
+    }
+    const months = {};
+    Object.keys(this.state.planMonths || {}).forEach((key) => {
+      const entry = this.state.planMonths[key],
+        rows = Array.isArray(entry) ? entry : entry && entry.d;
+      months[key] = Array.isArray(rows)
+        ? {
+            ...(Array.isArray(entry) ? {} : entry),
+            c: (entry && entry.c) || rows.length,
+            d: rows.map(site),
+          }
+        : entry;
+    });
+    this.setState(
+      {
+        zones: (this.state.zones || []).map((value) => update(value, "zones")),
+        gates: options.gates
+          ? (this.state.gates || []).map((value) => update(value, "gates"))
+          : this.state.gates,
+        floors: (this.state.floors || []).map(site),
+        planMonths: months,
+      },
+      () => this.savePlan(related),
+    );
   }
   _setZoneCap(t) {
     const e = this.state.sel;
@@ -3522,7 +3460,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     );
   }
   initState() {
-    (this._fixPathDefaults(), this._fixZoneLabels(), this._fixPlanAnchors(), this._migrateLevelBinds());
     const t = {
         view: { x: 0, y: 0, w: 1e3, h: 600 },
         year: this.curHijri().y,
@@ -3893,39 +3830,33 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       this._loadFloorImages());
   }
   _loadFloorImages() {
-    try {
-      const t = this.state.floors || [];
-      let e = !1;
-      const s = t.map((t) => {
-        if (t && t.img && !t.iid && KIVO.BassamIDB) {
-          const s = "img_" + Date.now().toString(36) + "_" + Math.floor(1e9 * Math.random()).toString(36);
-          try {
-            KIVO.BassamIDB.set(s, t.img);
-          } catch (t) {}
-          return ((e = !0), { ...t, iid: s });
-        }
-        return t;
-      });
-      (e && this.setState({ floors: s }, () => this.savePlan()),
-        KIVO.BassamIDB &&
-          s.forEach((t, e) => {
-            t &&
-              t.iid &&
-              !t.img &&
-              KIVO.BassamIDB.get(t.iid)
-                .then((t) => {
-                  t && this.setState((s) => ({ floors: s.floors.map((s, n) => (n === e ? { ...s, img: t } : s)) }));
-                })
-                .catch(() => {});
-          }));
-    } catch (t) {}
+    if (!KIVO.BassamIDB) return;
+    (this.state.floors || []).forEach((floor, index) => {
+      if (!floor || !floor.iid || floor.img) return;
+      const iid = floor.iid;
+      KIVO.BassamIDB.get(iid)
+        .then((image) => {
+          if (image)
+            this.setState((state) => ({
+              floors: (state.floors || []).map((current, i) =>
+                i === index && current && current.iid === iid
+                  ? { ...current, img: image }
+                  : current,
+              ),
+            }));
+        })
+        .catch(() => {});
+    });
   }
   _bsSig() {
     try {
       const K = ["bassam_staffing_v3", "bassam_employees_v1", "bassam_staffing_locks_v1", "bassam_shift_options_v1", "bassam_perms_v1"];
       let o = "";
       for (const k of K) {
-        const v = localStorage.getItem(k) || "";
+        const v =
+          this._opService().resources.indexOf(k) >= 0
+            ? JSON.stringify(this._opRead(k))
+            : localStorage.getItem(k) || "";
         let h = 5381;
         for (let i = 0; i < v.length; i++) h = (h * 33 + v.charCodeAt(i)) | 0;
         o += v.length + ":" + h + ";";
@@ -4047,10 +3978,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       { name: "الوردية الرابعة", color: "#1e9a66" },
     ];
     try {
-      const t = localStorage.getItem("bassam_shift_options_v1");
+      const t = this._opRead("bassam_shift_options_v1");
       if (t) {
-        const s = JSON.parse(t);
-        Array.isArray(s) && s.length && s.every((t) => t && t.name && t.color) && (e = s);
+        const s = t;
+        Array.isArray(s) &&
+          s.length &&
+          s.every((t) => t && t.name && t.color) &&
+          (e = s);
       }
     } catch (t) {}
     const s = this.state[t],
@@ -5567,7 +5501,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ...e,
                   label: (t.label || "").trim() || e.label,
                   kind: t.kind || "",
-                  pri: "أ" === t.pri || "ب" === t.pri || "ج" === t.pri ? t.pri : "",
+                  pri:
+                    "أ" === t.pri || "ب" === t.pri || "ج" === t.pri
+                      ? t.pri
+                      : "",
                   hideLabel: !!t.hideLabel,
                   off: !!t.off,
                   needN: (() => {
@@ -5585,9 +5522,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         { name: "الوردية الرابعة" },
                       ];
                       try {
-                        const e = localStorage.getItem("bassam_shift_options_v1");
+                        const e = this._opRead("bassam_shift_options_v1");
                         if (e) {
-                          const s = JSON.parse(e);
+                          const s = e;
                           Array.isArray(s) && s.length && (t = s);
                         }
                       } catch (t) {}
@@ -5766,7 +5703,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 level: t.level || "",
                 ztype: t.ztype || "",
                 zcat: t.zcat || "",
-                pri: "أ" === t.pri || "ب" === t.pri || "ج" === t.pri ? t.pri : "",
+                pri:
+                  "أ" === t.pri || "ب" === t.pri || "ج" === t.pri ? t.pri : "",
                 off: !!t.off,
                 lang: null == n ? void 0 : n,
                 lsz: null == a ? void 0 : a,
@@ -5785,9 +5723,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       { name: "الوردية الرابعة" },
                     ];
                     try {
-                      const e = localStorage.getItem("bassam_shift_options_v1");
+                      const e = this._opRead("bassam_shift_options_v1");
                       if (e) {
-                        const s = JSON.parse(e);
+                        const s = e;
                         Array.isArray(s) && s.length && (t = s);
                       }
                     } catch (t) {}
@@ -5836,9 +5774,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               (() => {
                 let t = [{ name: "الوردية الأولى" }, { name: "الوردية الثانية" }, { name: "الوردية الثالثة" }, { name: "الوردية الرابعة" }];
                 try {
-                  const e = localStorage.getItem("bassam_shift_options_v1");
+                  const e = this._opRead("bassam_shift_options_v1");
                   if (e) {
-                    const s = JSON.parse(e);
+                    const s = e;
                     Array.isArray(s) && s.length && (t = s);
                   }
                 } catch (t) {}
@@ -5900,7 +5838,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         );
       }
     }
-    this.setState({ gates: s, gEdit: null, gDd: null, gDdEdit: null }, () => this.savePlan());
+    this.setState({ gates: s, gEdit: null, gDd: null, gDdEdit: null }, () =>
+      this.savePlan(),
+    );
   }
   savePathEdit() {
     const t = this.state.pEdit;
@@ -6224,7 +6164,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     );
     (this.setState({ sEdit: null }),
       this._secWrite(a),
-      this.bsAck(t.isNew ? "أُضيف النطاق «" + e + " · " + s + "»" : "حُفظت بيانات النطاق", "ok"));
+      this._opAck(
+        t.isNew
+          ? "أُضيف النطاق «" + e + " · " + s + "»"
+          : "حُفظت بيانات النطاق",
+        "ok",
+      ));
   }
   removeSector(t) {
     if (!this.PC("del")) return void this.permDeny();
@@ -6243,7 +6188,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       marks: a(this.state.marks),
     }),
       this._secWrite(n),
-      this.bsAck("حُذف النطاق «" + this._secLabel(s) + "» — بقيت مصلياته وأبوابه ومعالمه في مكانها", "ok"));
+      this._opAck(
+        "حُذف النطاق «" +
+          this._secLabel(s) +
+          "» — بقيت مصلياته وأبوابه ومعالمه في مكانها",
+        "ok",
+      ));
   }
   _secSetEl(t, e, s) {
     try {
@@ -6409,8 +6359,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       g = { men: "#22c55e", women: "#93c5fd", service: "#374151" };
     let f = [];
     try {
-      const t = localStorage.getItem("bassam_employees_v1");
-      t && (f = JSON.parse(t));
+      const t = this._opRead("bassam_employees_v1");
+      t && (f = t);
     } catch (t) {}
     const TK = (t) => (KIVO.BassamEmp ? KIVO.BassamEmp.tokens(t) : [t && t.eid, t && t.nid, t && t.name]).filter(Boolean).map(String),
       u = {};
@@ -6423,10 +6373,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     });
     let m = {};
     try {
-      const t = localStorage.getItem("bassam_staffing_v3");
+      const t = this._opRead("bassam_staffing_v3");
       if (t) {
-        const e = JSON.parse(t);
-        e && "object" == typeof e && (m = KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(e) : e);
+        const e = t;
+        e &&
+          "object" == typeof e &&
+          (m = KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(e) : e);
       }
     } catch (t) {}
     let y = [
@@ -6436,10 +6388,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       { name: "الوردية الرابعة", color: "#1e9a66" },
     ];
     try {
-      const t = localStorage.getItem("bassam_shift_options_v1");
+      const t = this._opRead("bassam_shift_options_v1");
       if (t) {
-        const e = JSON.parse(t);
-        Array.isArray(e) && e.length && e.every((t) => t && t.name && t.color) && (y = e);
+        const e = t;
+        Array.isArray(e) &&
+          e.length &&
+          e.every((t) => t && t.name && t.color) &&
+          (y = e);
       }
     } catch (t) {}
     const b = y.map((t) => t.name),
@@ -10389,9 +10344,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       zeSub: e.zEdit && e.zEdit.isNew ? "سمِّها واختر فئتها · «إلغاء» يلغي الرسمة" : "نقرة مزدوجة على أي مصلى تفتح هذه النافذة",
       pEditOn: !!e.pEdit,
       peName: e.pEdit ? e.pEdit.name : "",
-      onPeName: (t) => this.setState({ pEdit: { ...this.state.pEdit, name: t.target.value } }),
+      onPeName: (t) =>
+        this.setState({ pEdit: { ...this.state.pEdit, name: t.target.value } }),
       peCode: (e.pEdit && e.pEdit.code) || "",
-      onPeCode: (t) => this.setState({ pEdit: { ...this.state.pEdit, code: t.target.value } }),
+      onPeCode: (t) =>
+        this.setState({ pEdit: { ...this.state.pEdit, code: t.target.value } }),
       peTypeLabel: e.pEdit ? (mt[e.pEdit.type || "in"] || mt.in).label : "",
       peHeadStyle: (() => {
         const t = e.pEdit ? (!1 === e.pEdit.active ? "#94a3b8" : (mt[e.pEdit.type || "in"] || mt.in).c) : "#b99751";
@@ -10490,7 +10447,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               : "#E1E1E1;background:var(--bg-xffffff);color:var(--fg-x64748b)"),
         };
       }),
-      peDirText: e.pEdit && "two" === e.pEdit.dir ? "اتجاهان ⇄" : "اتجاه واحد →",
+      peDirText:
+        e.pEdit && "two" === e.pEdit.dir ? "اتجاهان ⇄" : "اتجاه واحد →",
       peDirColor: e.pEdit && "two" === e.pEdit.dir ? "#047857" : "#94a3b8",
       peToggleDir: () =>
         this.setState({ pEdit: { ...this.state.pEdit, dir: this.state.pEdit && "two" === this.state.pEdit.dir ? "fwd" : "two" } }),
@@ -10567,9 +10525,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       peSubTail: e.pEdit && e.pEdit.isNew ? "سمِّه واختر نوعه · «إلغاء» يلغي الرسمة" : "نقرة مزدوجة على أي مسار تفتح هذه النافذة",
       gEditOn: !!e.gEdit,
       geName: e.gEdit ? e.gEdit.label : "",
-      onGeName: (t) => this.setState({ gEdit: { ...this.state.gEdit, label: t.target.value } }),
+      onGeName: (t) =>
+        this.setState({
+          gEdit: { ...this.state.gEdit, label: t.target.value },
+        }),
       geNum: (e.gEdit && e.gEdit.num) || "",
-      onGeNum: (t) => this.setState({ gEdit: { ...this.state.gEdit, num: t.target.value } }),
+      onGeNum: (t) =>
+        this.setState({ gEdit: { ...this.state.gEdit, num: t.target.value } }),
       geNumText: e.gEdit && e.gEdit.hideNum ? "مخفي" : "ظاهر",
       geNumColor: e.gEdit && e.gEdit.hideNum ? "#94a3b8" : "#047857",
       geToggleNum: () => this.setState({ gEdit: { ...this.state.gEdit, hideNum: !(this.state.gEdit && this.state.gEdit.hideNum) } }),
@@ -12006,7 +11968,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       canDrawPaths: !1,
       noSites: 0 === (e.floors || []).length,
       hasSites: (e.floors || []).length > 0,
-      toolSelect: () => this.setState({ tool: "select", polyPts: [], polyCursor: null, draft: null }),
+      toolSelect: () =>
+        this.setState({
+          tool: "select",
+          polyPts: [],
+          polyCursor: null,
+          draft: null,
+        }),
       toolGate: () => {
         this.bsLensOn("gates") && (et("gates"), this.setState({ tool: "gate", sel: null, selMulti: [] }));
       },
@@ -12026,7 +11994,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       toolsOpen: !1 !== e.toolsOpen,
       toolsToggle: () => this.setState({ toolsOpen: !1 === e.toolsOpen }),
       toolsChevron: "transition:transform .2s;transform:" + (!1 === e.toolsOpen ? "rotate(0deg)" : "rotate(180deg)"),
-      toolsToggleTitle: !1 === e.toolsOpen ? "إظهار شريط الأدوات" : "طيّ شريط الأدوات",
+      toolsToggleTitle:
+        !1 === e.toolsOpen ? "إظهار شريط الأدوات" : "طيّ شريط الأدوات",
       ...(() => {
         const t = { poly: "مصلى حر", rect: "مصلى مستطيل", square: "مصلى مربع", circle: "مصلى دائري" },
           s = !!t[e.tool],
@@ -12216,7 +12185,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         (l
           ? ";position:fixed;top:0;right:0;bottom:0;left:0;z-index:9000;background:var(--bg-xfafafa);padding:10px;box-sizing:border-box;animation:fsIn .2s ease"
           : ""),
-      zoomIn: () => Tt(e.view.x + e.view.w / 2, e.view.y + e.view.h / 2, 1 / 1.3),
+      zoomIn: () =>
+        Tt(e.view.x + e.view.w / 2, e.view.y + e.view.h / 2, 1 / 1.3),
       zoomOut: () => Tt(e.view.x + e.view.w / 2, e.view.y + e.view.h / 2, 1.3),
       zoomFit: () => this.setState({ view: { x: 0, y: 0, w: 1e3, h: 600 } }),
       ...(() => {
@@ -12238,9 +12208,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           l = {};
         if (r)
           try {
-            const t = localStorage.getItem("bassam_rounds_v1");
+            const t = this._opRead("bassam_rounds_v1");
             if (t) {
-              const e = JSON.parse(t);
+              const e = t;
               e &&
                 "object" == typeof e &&
                 Object.keys(e).forEach((t) => {
@@ -12405,7 +12375,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   .sort((t, e) => e - t)
                   .map((t) => ({ v: String(t), sel: r.day === t }))
               : [],
-          planDaysNone: !(!r || "day" !== r.mode || (r.src && l[r.src] && l[r.src].length)),
+          planDaysNone: !(
+            !r ||
+            "day" !== r.mode ||
+            (r.src && l[r.src] && l[r.src].length)
+          ),
           planDaysNote: (function () {
             if (!r || "day" !== r.mode) return "";
             if (!r.src) return "اختر الشهر المصدر أولاً";
@@ -12414,7 +12388,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             var e = r.day || t[t.length - 1];
             return t.length + " " + (t.length, "جولة معتمدة في هذا الشهر — المختار: يوم ") + e;
           })(),
-          onPlanDay: (t) => this.setState((e) => ({ planAdd: { ...e.planAdd, day: +t.target.value || 1 } })),
+          onPlanDay: (t) =>
+            this.setState((e) => ({
+              planAdd: { ...e.planAdd, day: +t.target.value || 1 },
+            })),
           planCreateStyle:
             "height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;border:0;font-family:'Cairo',sans-serif;" +
             (p
@@ -12470,9 +12447,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 a = t.day || 1;
               let i = {};
               try {
-                const t = localStorage.getItem("bassam_rounds_v1");
+                const t = this._opRead("bassam_rounds_v1");
                 if (t) {
-                  const e = JSON.parse(t);
+                  const e = t;
                   e && "object" == typeof e && (i = e);
                 }
               } catch (t) {}
@@ -12492,14 +12469,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? this.loadEmpList()
                   : (() => {
                       try {
-                        const t = JSON.parse(localStorage.getItem("bassam_employees_v1"));
+                        const t = this._opRead("bassam_employees_v1");
                         return Array.isArray(t) ? t : [];
                       } catch (t) {
                         return [];
                       }
                     })(),
                 d = (t) => (t || []).map((t) => this._ck(t)).filter(Boolean),
-                h = this._mData(this.state.planMonths, s + "-" + n) || this.state.floors || [];
+                h =
+                  this._mData(this.state.planMonths, s + "-" + n) ||
+                  this.state.floors ||
+                  [];
               e = JSON.parse(JSON.stringify(l)).map((t, e) => {
                 const s = h[e] || {},
                   n = (this.state.floors || [])[e] || {};
@@ -12532,7 +12512,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               KIVO.BassamRound && KIVO.BassamRound.lensFilter && (e = KIVO.BassamRound.lensFilter(e));
             } catch (t) {}
             const n = { ...(this.state.planMonths || {}) };
-            n[s] = { ...(n[s] && !Array.isArray(n[s]) ? n[s] : {}), c: 1, d: e };
+            n[s] = {
+              ...(n[s] && !Array.isArray(n[s]) ? n[s] : {}),
+              c: 1,
+              d: e,
+            };
             const DM = { ...(this.state.delMonths || {}) },
               TB2 = !!DM[s];
             delete DM[s];
@@ -12565,7 +12549,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 tool: "select",
               },
               () => {
-                (this.savePlan(), this._loadFloorImages(), (TB2 || BL9) && this._gcImages());
+                (this.savePlan(),
+                  this._loadFloorImages(),
+                  (TB2 || BL9) && this._opGc());
               },
             );
           },
@@ -12704,11 +12690,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             : "",
           planDelCancel: () => this.setState({ planDelMonth: null }),
           planDelDo: () => {
+            const _opRelated = {};
+
             const t = this.state.planDelMonth;
             if (!t) return;
             const e = this._mKey(t.y, t.m),
               s = { ...(this.state.planMonths || {}) };
-            /* صورُ الشهر المحذوف — ثم ما بقي مملوكاً لشهرٍ آخر */ const DI = {};
+            /* صورُ الشهر المحذوف — ثم ما بقي مملوكاً لشهرٍ آخر */ const DI =
+              {};
             (this._mData(s, e) || []).forEach((f) => {
               f && f.iid && (DI[f.iid] = 1);
             });
@@ -12723,6 +12712,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             dm[e] = Date.now();
             const n = { planMonths: s, planDelMonth: null, delMonths: dm };
             const ID = (f) => ({
+              sid: f.sid,
               name: f.name,
               num: f.num,
               create: !!f.create,
@@ -12758,18 +12748,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 f && f.iid && DI[f.iid] && !ST[f.iid] ? { ...f, iid: null, img: null, imgW: 0, imgH: 0, mpu: null } : f,
               );
             try {
-              const e = JSON.parse(localStorage.getItem("bassam_rounds_v1"));
+              const e = this._opRead("bassam_rounds_v1");
               if (e && "object" == typeof e) {
                 const s = t.y + "-" + t.m + "-";
                 let n = !1;
                 (Object.keys(e).forEach((a) => {
                   (0 !== a.indexOf(s) && a !== "m:" + t.y + "-" + t.m) || (delete e[a], (n = !0));
                 }),
-                  n && localStorage.setItem("bassam_rounds_v1", JSON.stringify(e)));
+                  n && (_opRelated.bassam_rounds_v1 = e));
               }
             } catch (t) {}
             this.setState(n, () => {
-              (this.savePlan(), this._loadFloorImages(), this._gcImages());
+              (this.savePlan(_opRelated),
+                this._loadFloorImages(),
+                this._opGc());
             });
           },
         };
@@ -12829,8 +12821,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ["service", "خدمات", "#374151"],
           ],
           D = r.filter((t) => !T.some((e) => e[0] === t.cat)).length;
-        let B = T.map((t) => ({ label: t[1], color: t[2], n: r.filter((e) => e.cat === t[0]).length }));
-        (D && B.push({ label: "أخرى", color: "#b99751", n: D }), (B = B.filter((t) => t.n > 0)));
+        let B = T.map((t) => ({
+          label: t[1],
+          color: t[2],
+          n: r.filter((e) => e.cat === t[0]).length,
+        }));
+        (D && B.push({ label: "أخرى", color: "#b99751", n: D }),
+          (B = B.filter((t) => t.n > 0)));
         const W = B.reduce((t, e) => t + e.n, 0),
           I = B.map((t) => (W ? (t.n / W) * 100 : 0)),
           G = I.map((t) => Math.floor(t));
@@ -15672,7 +15669,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         } else Bs = "gates" === Y ? Fs : "marks" === Y ? Ls : "paths" === Y ? Ds : Ps;
         const olB = Bs,
           Ws = (e.regQ || "").trim().toLowerCase();
-        Ws && (Bs = KIVO.BassamFind.filter(Ws, Bs, (t) => [t.name, t.meta, t.code, t.type]));
+        Ws &&
+          (Bs = KIVO.BassamFind.filter(Ws, Bs, (t) => [
+            t.name,
+            t.meta,
+            t.code,
+            t.type,
+          ]));
         const Is = e.regOpen || {},
           js = [],
           Rs = {};
@@ -15945,7 +15948,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               return "";
             }
           })(),
-          repPage: "الموقع " + ((e.floor || 0) + 1) + " من " + ((e.floors || []).length || 1),
+          repPage:
+            "الموقع " +
+            ((e.floor || 0) + 1) +
+            " من " +
+            ((e.floors || []).length || 1),
           showDonut:
             !Ye &&
             !zs &&
@@ -15981,7 +15988,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           panelKpis: Ms || "zones" === Y ? [] : P,
           catRows: B,
           registryRows: Ms ? [] : Bs,
-          ...this._olVals({ Y: Y, i: i, Ns: Ns, B: olB, l: l, y: y, A: A, M: M, mt: mt, kt: kt, xt: xt }),
+          ...this._olVals({
+            Y: Y,
+            i: i,
+            Ns: Ns,
+            B: olB,
+            l: l,
+            y: y,
+            A: A,
+            M: M,
+            mt: mt,
+            kt: kt,
+            xt: xt,
+          }),
           regGroups: Ms ? [] : Gs,
           regEmpty: Ms || Zs,
           covOn: "dist" === Y && !Ms && Ut > 0,
@@ -15990,7 +16009,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "height:100%;border-radius:9999px;background:linear-gradient(to left,var(--bg-xb99751),var(--bg-x9a7e40));width:" +
             Math.min(100, Vt) +
             "%",
-          covSiteColor: Vt >= 100 ? "#008450" : Vt >= 60 ? "#9A7E40" : "#dc2626",
+          covSiteColor:
+            Vt >= 100 ? "#008450" : Vt >= 60 ? "#9A7E40" : "#dc2626",
           covShiftRows: Jt,
           covNeedTotal: String(Ut),
           selCovOn: ee,
@@ -16019,21 +16039,31 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               mkPriMeanSt: "font-size:9.5px;font-weight:400;color:" + (s ? n[s] : "var(--fg-x94a3b8)"),
             };
           })(),
-          onMkLabel: (t) => this.setState({ mkEdit: { ...this.state.mkEdit, label: t.target.value } }),
+          onMkLabel: (t) =>
+            this.setState({
+              mkEdit: { ...this.state.mkEdit, label: t.target.value },
+            }),
           mkKinds: (() => {
             const t = this._markKinds(),
               s = (e.mkEdit && e.mkEdit.kind) || "",
               n = t.map((t) => ({ v: t, sel: t === s }));
             return (n.unshift({ v: "", sel: !s, none: !0 }), n.map((t) => ({ val: t.v, txt: t.none ? "— بلا نوع —" : t.v, sel: t.sel })));
           })(),
-          onMkKind: (t) => this.setState({ mkEdit: { ...this.state.mkEdit, kind: t.target.value } }),
+          onMkKind: (t) =>
+            this.setState({
+              mkEdit: { ...this.state.mkEdit, kind: t.target.value },
+            }),
           mkNewKind: (e.mkEdit && e.mkEdit.newKind) || "",
-          onMkNewKind: (t) => this.setState({ mkEdit: { ...this.state.mkEdit, newKind: t.target.value } }),
-          mkAddKind: () => {
+          onMkNewKind: (t) =>
+            this.setState({
+              mkEdit: { ...this.state.mkEdit, newKind: t.target.value },
+            }),
+          mkAddKind: async () => {
             const t = this.state.mkEdit;
             if (!t || !(t.newKind || "").trim()) return;
             const e = t.newKind.trim();
-            (this._addMarkKind(e), this.setState({ mkEdit: { ...t, kind: e, newKind: "" } }));
+            if (await this._addMarkKind(e))
+              this.setState({ mkEdit: { ...t, kind: e, newKind: "" } });
           },
           mkNeed: (e.mkEdit && e.mkEdit.needN) || "",
           mkNeedShOn: !!e.mkEdit,
@@ -16043,12 +16073,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           onMkNeed: (t) => this.setState({ mkEdit: { ...this.state.mkEdit, needN: t.target.value.replace(/[^0-9]/g, "").slice(0, 4) } }),
           mkHideLabel: !!e.mkEdit && !!e.mkEdit.hideLabel,
           mkToggleLabel: () => this.setState({ mkEdit: { ...this.state.mkEdit, hideLabel: !this.state.mkEdit.hideLabel } }),
-          mkOffTxt: e.mkEdit && e.mkEdit.off ? "معطّل — اضغط للتفعيل" : "مفعّل — اضغط للتعطيل",
+          mkOffTxt:
+            e.mkEdit && e.mkEdit.off
+              ? "معطّل — اضغط للتفعيل"
+              : "مفعّل — اضغط للتعطيل",
           mkOffStyle:
             e.mkEdit && e.mkEdit.off
               ? "height:30px;padding:0 12px;border-radius:8px;border:1px solid var(--bd-a22038380p4);background:var(--bg-a22038380p07);color:var(--fg-xb91c1c);font-size:10px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif"
               : "height:30px;padding:0 12px;border-radius:8px;border:1px solid var(--bd-a0163870p35);background:var(--bg-a0163870p06);color:var(--fg-x047857);font-size:10px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif",
-          mkToggleOff: () => this.setState({ mkEdit: { ...this.state.mkEdit, off: !this.state.mkEdit.off } }),
+          mkToggleOff: () =>
+            this.setState({
+              mkEdit: { ...this.state.mkEdit, off: !this.state.mkEdit.off },
+            }),
           mkSave: () => this.saveMarkEdit(),
           mkCancel: () => this.setState({ mkEdit: null }),
           mkDelete: () => {
@@ -16079,7 +16115,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           showKpis: !Ms && "zones" !== Y && P.length > 0,
           heroTiles: K,
           showHeroTiles: K.length > 0,
-          kpiGridStyle: "display:grid;gap:8px;grid-template-columns:repeat(" + (K.length ? 2 : 3) + ",1fr)",
+          kpiGridStyle:
+            "display:grid;gap:8px;grid-template-columns:repeat(" +
+            (K.length ? 2 : 3) +
+            ",1fr)",
           mixTabs: Rt ? gt : ye ? ce : Ke ? Re : Ue ? Pe : gt,
           showSplitHdr: !(Rt || ye || Ue || ds || "zstate" === lt),
           mixRows: Rt ? Nt : ye ? ue : Ke ? Ze : Ue ? Fe : ds ? ls : St,
@@ -16099,7 +16138,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             (Ue && 0 === Fe.length) ||
             (ds && 0 === ls.length),
           mixEmptyText: ye ? "لا بيانات لهذا البُعد — جرّب بُعداً آخر أو أكمل جدول الشهر" : "لا بيانات لهذا البُعد — جرّب بُعداً آخر",
-          mixNoteOn: (Ue && Ae && Fe.length > 0) || (ye && ue.length > 0 && ("place" === Zt || "cat" === Zt)),
+          mixNoteOn:
+            (Ue && Ae && Fe.length > 0) ||
+            (ye && ue.length > 0 && ("place" === Zt || "cat" === Zt)),
           mixNote: ye
             ? "الموظف قد يُسكَّن على أكثر من عنصر — والنسبة من مجموع التسكينات"
             : "الباب قد يحمل أكثر من تخصيص — والنسبة من مجموع الانتماءات",
@@ -16416,55 +16457,64 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               ),
             );
           })(),
-          bOffKeep: () => this.setState((t) => ({ bEdit: { ...t.bEdit, off: "" } })),
+          bOffKeep: () =>
+            this.setState((t) => ({ bEdit: { ...t.bEdit, off: "" } })),
           bOffKeepS:
             "font-family:'Cairo',sans-serif;font-size:10px;font-weight:600;padding:5px 0;flex:1;border-radius:9999px;cursor:pointer;border:0;background:" +
             (e.bEdit && "" === (e.bEdit.off || "")
               ? "#fff;color:var(--fg-x9a7e40);box-shadow:var(--shadow-card)"
               : "transparent;color:var(--fg-x64748b)"),
-          bOffYes: () => this.setState((t) => ({ bEdit: { ...t.bEdit, off: "yes" } })),
+          bOffYes: () =>
+            this.setState((t) => ({ bEdit: { ...t.bEdit, off: "yes" } })),
           bOffYesS:
             "font-family:'Cairo',sans-serif;font-size:10px;font-weight:600;padding:5px 0;flex:1;border-radius:9999px;cursor:pointer;border:0;background:" +
             (e.bEdit && "yes" === (e.bEdit.off || "")
               ? "#fff;color:var(--fg-x9a7e40);box-shadow:var(--shadow-card)"
               : "transparent;color:var(--fg-x64748b)"),
-          bOffNo: () => this.setState((t) => ({ bEdit: { ...t.bEdit, off: "no" } })),
+          bOffNo: () =>
+            this.setState((t) => ({ bEdit: { ...t.bEdit, off: "no" } })),
           bOffNoS:
             "font-family:'Cairo',sans-serif;font-size:10px;font-weight:600;padding:5px 0;flex:1;border-radius:9999px;cursor:pointer;border:0;background:" +
             (e.bEdit && "no" === (e.bEdit.off || "")
               ? "#fff;color:var(--fg-x9a7e40);box-shadow:var(--shadow-card)"
               : "transparent;color:var(--fg-x64748b)"),
-          bClosedKeep: () => this.setState((t) => ({ bEdit: { ...t.bEdit, closed: "" } })),
+          bClosedKeep: () =>
+            this.setState((t) => ({ bEdit: { ...t.bEdit, closed: "" } })),
           bClosedKeepS:
             "font-family:'Cairo',sans-serif;font-size:10px;font-weight:600;padding:5px 0;flex:1;border-radius:9999px;cursor:pointer;border:0;background:" +
             (e.bEdit && "" === (e.bEdit.closed || "")
               ? "#fff;color:var(--fg-x9a7e40);box-shadow:var(--shadow-card)"
               : "transparent;color:var(--fg-x64748b)"),
-          bClosedYes: () => this.setState((t) => ({ bEdit: { ...t.bEdit, closed: "yes" } })),
+          bClosedYes: () =>
+            this.setState((t) => ({ bEdit: { ...t.bEdit, closed: "yes" } })),
           bClosedYesS:
             "font-family:'Cairo',sans-serif;font-size:10px;font-weight:600;padding:5px 0;flex:1;border-radius:9999px;cursor:pointer;border:0;background:" +
             (e.bEdit && "yes" === (e.bEdit.closed || "")
               ? "#fff;color:var(--fg-x9a7e40);box-shadow:var(--shadow-card)"
               : "transparent;color:var(--fg-x64748b)"),
-          bClosedNo: () => this.setState((t) => ({ bEdit: { ...t.bEdit, closed: "no" } })),
+          bClosedNo: () =>
+            this.setState((t) => ({ bEdit: { ...t.bEdit, closed: "no" } })),
           bClosedNoS:
             "font-family:'Cairo',sans-serif;font-size:10px;font-weight:600;padding:5px 0;flex:1;border-radius:9999px;cursor:pointer;border:0;background:" +
             (e.bEdit && "no" === (e.bEdit.closed || "")
               ? "#fff;color:var(--fg-x9a7e40);box-shadow:var(--shadow-card)"
               : "transparent;color:var(--fg-x64748b)"),
-          bActiveKeep: () => this.setState((t) => ({ bEdit: { ...t.bEdit, active: "" } })),
+          bActiveKeep: () =>
+            this.setState((t) => ({ bEdit: { ...t.bEdit, active: "" } })),
           bActiveKeepS:
             "font-family:'Cairo',sans-serif;font-size:10px;font-weight:600;padding:5px 0;flex:1;border-radius:9999px;cursor:pointer;border:0;background:" +
             (e.bEdit && "" === (e.bEdit.active || "")
               ? "#fff;color:var(--fg-x9a7e40);box-shadow:var(--shadow-card)"
               : "transparent;color:var(--fg-x64748b)"),
-          bActiveYes: () => this.setState((t) => ({ bEdit: { ...t.bEdit, active: "yes" } })),
+          bActiveYes: () =>
+            this.setState((t) => ({ bEdit: { ...t.bEdit, active: "yes" } })),
           bActiveYesS:
             "font-family:'Cairo',sans-serif;font-size:10px;font-weight:600;padding:5px 0;flex:1;border-radius:9999px;cursor:pointer;border:0;background:" +
             (e.bEdit && "yes" === (e.bEdit.active || "")
               ? "#fff;color:var(--fg-x9a7e40);box-shadow:var(--shadow-card)"
               : "transparent;color:var(--fg-x64748b)"),
-          bActiveNo: () => this.setState((t) => ({ bEdit: { ...t.bEdit, active: "no" } })),
+          bActiveNo: () =>
+            this.setState((t) => ({ bEdit: { ...t.bEdit, active: "no" } })),
           bActiveNoS:
             "font-family:'Cairo',sans-serif;font-size:10px;font-weight:600;padding:5px 0;flex:1;border-radius:9999px;cursor:pointer;border:0;background:" +
             (e.bEdit && "no" === (e.bEdit.active || "")
@@ -16649,7 +16699,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? "توزيع المسارات"
                   : "توزيع المصليات",
           donutStyle: Rt ? Bt : ye ? me : Ke ? Xe : Ue ? Le : ds ? os : hs,
-          donutTotal: Rt ? j(Tt) : String(ye ? de : Ke ? We : Ue ? we : ds ? ts : ht),
+          donutTotal: Rt
+            ? j(Tt)
+            : String(ye ? de : Ke ? We : Ue ? we : ds ? ts : ht),
           donutTitle: Rt
             ? "مؤشرات الكثافة"
             : ye
@@ -16661,7 +16713,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   : ds
                     ? "مؤشرات المسارات"
                     : "مؤشرات المصليات",
-          donutUnit: Rt ? Ft : ye ? he : Ke ? "معلم" : Ue ? (Ae ? "انتماء" : "باب") : ds ? "مسار" : "مصلى",
+          donutUnit: Rt
+            ? Ft
+            : ye
+              ? he
+              : Ke
+                ? "معلم"
+                : Ue
+                  ? Ae
+                    ? "انتماء"
+                    : "باب"
+                  : ds
+                    ? "مسار"
+                    : "مصلى",
           registryOpen: !!e.registryOpen,
           ...(() => {
             const t = e.opGateFly,
@@ -16695,8 +16759,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           })(),
           regQ: e.regQ || "",
           onRegQ: (t) => this.setState({ regQ: t.target.value }),
-          toggleRegistry: () => this.setState((t) => ({ registryOpen: !t.registryOpen })),
-          registryChev: "transition:transform .2s;" + (e.registryOpen ? "transform:rotate(180deg)" : ""),
+          toggleRegistry: () =>
+            this.setState((t) => ({ registryOpen: !t.registryOpen })),
+          registryChev:
+            "transition:transform .2s;" +
+            (e.registryOpen ? "transform:rotate(180deg)" : ""),
         };
       })(),
       months: c,
@@ -16710,7 +16777,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       hoverTipNode: KIVO.BassamTip && (ot || this._secTipObj) ? KIVO.BassamTip.card(ot || this._secTipObj) : null,
       floorName: e.floors && e.floors.length ? (e.floors[e.floor] || e.floors[0] || {}).name || "موقع بلا اسم" : "لا يوجد موقع نشط",
       floorNum: String((e.floors[e.floor] || e.floors[0] || {}).num || 0),
-      ...KIVO.BassamCount.pair("floorCount", String(e.floors.length), "موقع|متاح"),
+      ...KIVO.BassamCount.pair(
+        "floorCount",
+        String(e.floors.length),
+        "موقع|متاح",
+      ),
       gateCount: String(e.gates.length),
       fldOpen: !!e.fldOpen,
       fldToggle: (t) => {
@@ -16736,7 +16807,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           "px;z-index:2147483000;min-width:190px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right"
         );
       })(),
-      fldChev: "opacity:.5;transition:transform .2s;" + (e.fldOpen ? "transform:rotate(180deg)" : ""),
+      fldChev:
+        "opacity:.5;transition:transform .2s;" +
+        (e.fldOpen ? "transform:rotate(180deg)" : ""),
       fldBtnStyle:
         "height:32px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:400;border-radius:10px;padding:0 12px;cursor:pointer;font-family:'Cairo',sans-serif;transition:all .2s;border:1px solid " +
         (e.fldOpen
@@ -16862,10 +16935,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       delFloorMsg: e.delFloor ? "سيتم حذف موقع «" + e.delFloor.name + "» نهائياً بكل خطته ومصلياته — لا يمكن التراجع." : "",
       delFloorCancel: () => this.setState({ delFloor: null }),
       delFloorDo: () => {
+        const _opRelated = {};
+
         if (!this.PC("del")) return void this.permDeny();
         const t = this.state.delFloor;
         if (!t) return;
-        if (this.state.floors.length <= 1) return void this.setState({ delFloor: null });
+        if (this.state.floors.length <= 1)
+          return void this.setState({ delFloor: null });
         const e = this.state.floors
             .map((t, e) =>
               e === this.state.floor
@@ -16880,14 +16956,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           n[e] = { c: 1, d: a.filter((e, s) => s !== t.i) };
         });
         try {
-          const e = JSON.parse(localStorage.getItem("bassam_rounds_v1"));
+          const e = this._opRead("bassam_rounds_v1");
           e &&
             "object" == typeof e &&
             (Object.keys(e).forEach((s) => {
               const n = e[s];
               n && Array.isArray(n.d) && n.d.length > t.i && n.d.splice(t.i, 1);
             }),
-            localStorage.setItem("bassam_rounds_v1", JSON.stringify(e)));
+            (_opRelated.bassam_rounds_v1 = e));
         } catch (t) {}
         let a = this.state.floor;
         a === t.i ? (a = 0) : a > t.i && a--;
@@ -16912,7 +16988,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             delFloor: null,
           },
           () => {
-            (this.savePlan(), this._gcImages());
+            (this.savePlan(_opRelated), this._opGc());
           },
         );
       },
@@ -16921,9 +16997,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
       siteModalOn: !!e.siteModal,
       siteModalTitle: e.siteModal ? ("edit" === e.siteModal.mode ? "تعديل الموقع" : "إضافة موقع جديد") : "",
-      siteModalBtn: e.siteModal ? ("edit" === e.siteModal.mode ? "حفظ التعديلات" : "إضافة الموقع") : "",
+      siteModalBtn: e.siteModal
+        ? "edit" === e.siteModal.mode
+          ? "حفظ التعديلات"
+          : "إضافة الموقع"
+        : "",
       siteName2: e.siteModal ? e.siteModal.name : "",
-      onSiteName2: (t) => this.setState({ siteModal: { ...this.state.siteModal, name: t.target.value } }),
+      onSiteName2: (t) =>
+        this.setState({
+          siteModal: { ...this.state.siteModal, name: t.target.value },
+        }),
       siteImg: e.siteModal ? e.siteModal.img : "",
       siteImgKey: KIVO.BassamMapNight ? KIVO.BassamMapNight.key((e.siteModal && e.siteModal.img) || "") : "",
       siteImgNight:
@@ -16933,7 +17016,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       siteLowResOn: !!(e.siteModal && e.siteModal.img && e.siteLowRes),
       siteLowRes: e.siteLowRes || "",
       noSiteImg: !(e.siteModal && e.siteModal.img),
-      siteClearImg: () => this.setState({ siteModal: { ...this.state.siteModal, img: "" } }),
+      siteClearImg: () =>
+        this.setState({ siteModal: { ...this.state.siteModal, img: "" } }),
       siteDropStyle:
         "position:relative;border:2px dashed " +
         (e.siteDragOver ? "#b99751;background:var(--bg-a185151810p08)" : "rgba(185,151,81,0.4);background:var(--bg-a2482502520p6)") +
@@ -16959,19 +17043,32 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           }),
           t.click());
       },
-      siteModalCancel: () => this.setState({ siteModal: null, siteDragOver: !1 }),
-      siteModalSave: () => {
-        const t = this.state.siteModal;
-        if (!t) return;
-        const e = (t.name || "").trim();
-        if (e)
-          if (this.state.floors.some((s, n) => s.name === e && n !== ("edit" === t.mode ? t.i : -1))) this.bsToast("يوجد موقع بنفس الاسم");
-          else if ("edit" === t.mode) {
-            const s = this.state.floors[t.i] || {},
-              n = t.img ? (t.img !== s.img ? this._putImg(t.img, s) : s.iid || this._putImg(t.img, s)) : null,
-              a = !(!s.iid || s.iid === n);
-            this.setState(
-              {
+      siteModalCancel: () =>
+        this.setState({ siteModal: null, siteDragOver: !1 }),
+      siteModalSave: async () => {
+        try {
+          const _opRelated = {};
+
+          const t = this.state.siteModal;
+          if (!t) return;
+          const e = (t.name || "").trim();
+          if (e)
+            if (
+              this.state.floors.some(
+                (s, n) => s.name === e && n !== ("edit" === t.mode ? t.i : -1),
+              )
+            )
+              this.bsToast("يوجد موقع بنفس الاسم");
+            else if ("edit" === t.mode) {
+              const s = this.state.floors[t.i] || {},
+                n = t.img
+                  ? t.img !== s.img
+                    ? await this._putImg(t.img, s)
+                    : s.iid || (await this._putImg(t.img, s))
+                  : null,
+                a = !(!s.iid || s.iid === n);
+              this.setState(
+                {
                 floors: this.state.floors.map((s, a) =>
                   a === t.i
                     ? {
@@ -16988,18 +17085,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 siteModal: null,
                 siteLowRes: null,
               },
-              () => {
-                (this.savePlan(), a && this._gcImages());
-              },
-            );
-          } else {
-            const s = this.state.floors.map((t, e) =>
+                () => {
+                  (this.savePlan(_opRelated), a && this._opGc());
+                },
+              );
+            } else {
+              const s = this.state.floors.map((t, e) =>
                 e === this.state.floor
                   ? { ...t, zones: this.state.zones, gates: this.state.gates, marks: this.state.marks || [], paths: this.state.paths || [] }
                   : t,
               ),
-              n = t.img ? this._putImg(t.img) : null,
-              a = [
+                n = t.img ? await this._putImg(t.img) : null,
+                a = [
                 ...s,
                 {
                   num: this.state.floors.length,
@@ -17019,21 +17116,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   sid: KIVO.BassamAudit ? KIVO.BassamAudit.newId("s_") : void 0,
                 },
               ];
-            try {
-              const t = JSON.parse(localStorage.getItem("bassam_rounds_v1"));
-              if (t && "object" == typeof t) {
-                let e = !1;
-                (Object.keys(t).forEach((s) => {
+              try {
+                const t = this._opRead("bassam_rounds_v1");
+                if (t && "object" == typeof t) {
+                  let e = !1;
+                  (Object.keys(t).forEach((s) => {
                   const n = t[s];
                   if (n && Array.isArray(n.d))
                     for (; n.d.length < a.length; )
                       (n.d.push({ zones: [], gates: [], marks: [], paths: [], sid: (a[n.d.length] || {}).sid }), (e = !0));
                 }),
-                  e && localStorage.setItem("bassam_rounds_v1", JSON.stringify(t)));
-              }
-            } catch (t) {}
-            this.setState(
-              {
+                    e && (_opRelated.bassam_rounds_v1 = t));
+                }
+              } catch (t) {}
+              this.setState(
+                {
                 floors: a,
                 floor: a.length - 1,
                 zones: [],
@@ -17051,10 +17148,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 siteModal: null,
                 siteLowRes: null,
               },
-              () => this.savePlan(),
-            );
-          }
-        else this.bsToast("اكتب اسم الموقع أولاً");
+                () => this.savePlan(_opRelated),
+              );
+            }
+          else this.bsToast("اكتب اسم الموقع أولاً");
+        } catch (error) {
+          this.bsToast(
+            "لم يتم تأكيد رفع الصورة — بقي الموقع والصورة السابقة دون تغيير",
+            "warn",
+          );
+        }
       },
       clearSel: () => this.setState({ sel: null, selMulti: [] }),
       showSelPanel: !(
@@ -17080,7 +17183,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ("plan" === e.lens && e.zAsn && !!Wt) ||
           ("marks" === e.lens && e.mAsn && !!jt)) &&
         !d,
-      selDensityPanel: "density" === e.lens && this.bsLensOn("dens") && !!Wt && !d,
+      selDensityPanel:
+        "density" === e.lens && this.bsLensOn("dens") && !!Wt && !d,
       selZoneOffWarn: !!Wt && !!Wt.off && ("dist" === e.lens || "density" === e.lens || ("plan" === e.lens && e.zAsn)),
       selMeta: SS
         ? "نطاق" + (SS.lead ? " · المسؤول: " + SS.lead : "")
@@ -17171,7 +17275,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       assignRestOpen: xe,
       assignRestShow: ke,
       assignRestHead: Ae,
-      assignRestToggle: () => this.setState({ assignRestOpen: !this.state.assignRestOpen }),
+      assignRestToggle: () =>
+        this.setState({ assignRestOpen: !this.state.assignRestOpen }),
       assignRestChev: ve,
       otherShiftCounts: Fe,
       otherShiftCountsPresent: Fe.length > 0,
@@ -17182,7 +17287,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       assignQHas: !!he,
       onAssignQ: (t) => this.setState({ assignQ: t.target.value }),
       assignQClear: () => this.setState({ assignQ: "" }),
-      assignSearchNote: pe ? ge.length + " من " + KIVO.BassamCount(de.length, "اسم", "g") + "" : "",
+      assignSearchNote: pe
+        ? ge.length + " من " + KIVO.BassamCount(de.length, "اسم", "g") + ""
+        : "",
       assignShiftHas: Ee > 0,
       assignShiftDone: String(Me),
       assignShiftTotal: String(Ee),
@@ -17662,7 +17769,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         de.length > 0 &&
         0 === ge.length,
       assignMonthLabel: (this.MONTHS[e.month - 1] || "") + " " + e.year,
-      capAreaVal: Wt && null != Wt.area && "" !== Wt.area ? String(Wt.area) : "",
+      capAreaVal:
+        Wt && null != Wt.area && "" !== Wt.area ? String(Wt.area) : "",
       capAreaPh: Re ? R(Ie) : "أدخل المساحة",
       onCapArea: (t) => {
         const e = t.target.value.replace(/[^0-9.]/g, "");
@@ -17704,7 +17812,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       calOpen: !1 !== e.calOpen,
       calToggle: () => this.setState({ calOpen: !1 === e.calOpen }),
       calChevron: "transition:transform .2s;transform:" + (!1 === e.calOpen ? "rotate(0deg)" : "rotate(180deg)"),
-      calToggleTitle: !1 === e.calOpen ? "إظهار أدوات الكثافة" : "طيّ أدوات الكثافة",
+      calToggleTitle:
+        !1 === e.calOpen ? "إظهار أدوات الكثافة" : "طيّ أدوات الكثافة",
       calBtnTitle:
         (e.calMode ? (e.calMode.a ? "انقر الطرف الآخر للخط" : "انقر الطرف الأول للخط") : "معايرة مقياس الخريطة") +
         (F > 0 ? " · المقياس الحالي: 1 وحدة رسم = " + R(F) + " م" : " · غير معايَرة"),
@@ -17728,7 +17837,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ((e.floors[e.floor] || {}).dens
           ? "transparent;background:transparent;color:var(--fg-x475569)"
           : "#b99751;background:var(--bg-a185151810p1);color:var(--fg-x9a7e40)"),
-      distSelClick: () => this.setState({ sel: null, selMulti: [], distFilterShift: null }),
+      distSelClick: () =>
+        this.setState({ sel: null, selMulti: [], distFilterShift: null }),
       distSelStyle:
         "width:32px;height:32px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;box-sizing:border-box;border:2px solid " +
         (null == ne
@@ -17747,7 +17857,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       calAskLen: e.calAsk ? e.calAsk.len : "",
       onCalAskLen: (t) => this.setState({ calAsk: { ...this.state.calAsk, len: t.target.value.replace(/[^0-9.]/g, "") } }),
       calAskDist: e.calAsk ? R(e.calAsk.d) : "0",
-      calAskCancel: () => this.setState({ calAsk: null, calMode: null, polyCursor: null }),
+      calAskCancel: () =>
+        this.setState({ calAsk: null, calMode: null, polyCursor: null }),
       onCalKey: (t) => {
         "Enter" === t.key && (t.preventDefault(), this.saveCalibration());
       },
@@ -18330,7 +18441,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         };
       })(),
       approveBadgeText: d ? "الموقع معتمد ومقفل" : "الموقع مسودة مفتوحة",
-      approveBadgeIcon: d ? "M7 11V7a5 5 0 0 1 10 0v4" : "M7 11V7a5 5 0 0 1 9.9-1",
+      approveBadgeIcon: d
+        ? "M7 11V7a5 5 0 0 1 10 0v4"
+        : "M7 11V7a5 5 0 0 1 9.9-1",
       approveBadgeTip: d
         ? "حالة الموقع: معتمد ومقفل — لفتحه للتعديل اضغط القفل بجانب اسمه في قائمة «الموقع النشط»"
         : "حالة الموقع: مسودة مفتوحة — لاعتماده وقفله اضغط القفل بجانب اسمه في قائمة «الموقع النشط»",
@@ -18371,7 +18484,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             calAsk: null,
           });
       },
-      mAsnTogOn: "marks" === e.lens && this.bsLensOn("marks") && this.bsLensOn("dist"),
+      mAsnTogOn:
+        "marks" === e.lens && this.bsLensOn("marks") && this.bsLensOn("dist"),
       mAsnAddGo: () =>
         this.setState({
           asnFly: null,
@@ -18437,7 +18551,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       zAsnAddStyle: Nt(!e.zAsn && "density" !== e.lens),
       zAsnAsnStyle: Nt(!!e.zAsn && "density" !== e.lens),
       zDensModeStyle: Nt("density" === e.lens),
-      gAsnTogOn: "gates" === e.lens && this.bsLensOn("gates") && this.bsLensOn("dist"),
+      gAsnTogOn:
+        "gates" === e.lens && this.bsLensOn("gates") && this.bsLensOn("dist"),
       gAsnAddGo: () =>
         this.setState({
           asnFly: null,
@@ -18521,7 +18636,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             calAsk: null,
           });
       },
-      lensPlanStyle: Nt("plan" === e.lens || "paths" === e.lens || "density" === e.lens),
+      lensPlanStyle: Nt(
+        "plan" === e.lens || "paths" === e.lens || "density" === e.lens,
+      ),
       lensMarksStyle: Nt("marks" === e.lens),
       lensGatesStyle: Nt("gates" === e.lens),
       lensDistStyle: Nt("dist" === e.lens),

@@ -57,7 +57,7 @@ export function instrument(env, opt = {}) {
     try {
       result = await batch(stmts);
     } catch (error) {
-      if (guarded && /KIVO_REV_CONFLICT/.test(String(error))) trace('L');
+      if (guarded && /KIVO_(?:REV_CONFLICT|RESTORE_TARGET|RESTORE_EPOCH)/.test(String(error))) trace('L');
       throw error;
     }
     if (guarded) trace('G');

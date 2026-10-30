@@ -4,7 +4,7 @@
    بياناتٌ اصطناعية وحدها (tasks_fx · TEST_ONLY). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, MATE, KT, DAY, stored, rowsOf } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, KT, DAY, stored, rowsOf, taskCommandBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
@@ -32,11 +32,11 @@ for (const mode of ['legacy', 'enforce']) {
     const l0 = await W.C.api('/api/me/tasks', { cookie: me.ck }); assert.equal(l0.status, 200);
     /* المسؤول: إنشاءٌ ومراجعةٌ ومرشّحاتُ القراءة من صفحةٍ بُنيت لغيره ⇒ 409 قبل الصلاحية والكتابة */
     const S1 = JSON.stringify(stored(W.env, KT));
-    const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: { k: DAY, t: 'TEST_ONLY C1', s: Date.now(), e: Date.now() + 3600e3, asg: [ME.eid], force: true, uid: 'tst_emp1' } });
+    const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: taskCommandBody(W.env, '/api/tasks/create', { k: DAY, t: 'TEST_ONLY C1', s: Date.now(), e: Date.now() + 3600e3, asg: [ME.eid], force: true, uid: 'tst_emp1' }) });
     assert.equal(c.status, 409, JSON.stringify(c.j)); assert.equal(c.j.err, 'session-changed');
     const lk = await W.C.api('/api/tasks/linkage?dept=tst_d1&uid=tst_emp1', { cookie: dm.ck }); assert.equal(lk.status, 409);
     assert.equal(JSON.stringify(stored(W.env, KT)), S1, 'لا أثر في المخزن');
-    const c2 = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: { k: DAY, t: 'TEST_ONLY C1', s: Date.now(), e: Date.now() + 3600e3, asg: [ME.eid], force: true, uid: dm.j.uid } });
+    const c2 = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: taskCommandBody(W.env, '/api/tasks/create', { k: DAY, t: 'TEST_ONLY C1', s: Date.now(), e: Date.now() + 3600e3, asg: [ME.eid], force: true, uid: dm.j.uid }) });
     assert.equal(c2.status, 200, JSON.stringify(c2.j)); assert.equal(c2.j.ok, 1);
     /* uid بنوعٍ خاطئ ⇒ مخطّطُ الجسم (SOT-101) قبل كلّ شيء · وJSON غيرُ مفهوم ⇒ bad-body $ كسائر المسارات المغيِّرة */
     const bt = await W.C.api('/api/me/tasks/act', { method: 'POST', cookie: me.ck, body: Object.assign(body(), { uid: 7 }) });

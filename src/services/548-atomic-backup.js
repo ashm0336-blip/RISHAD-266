@@ -15,7 +15,7 @@
   function counts(value) {
     return (
       record(value) &&
-      ['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards', 'kept'].every(function (k) {
+      ['kv', 'operations', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards', 'kept'].every(function (k) {
         return integer(value[k]);
       })
     );
@@ -96,9 +96,17 @@
       if(JSON.stringify(value.domains.map(scope).sort())!==JSON.stringify(expected)||value.domains.some(function(d){return d.version!==1||!record(d.resources)||!record(d.rows)||spec[1].some(function(k){return typeof d.resources[k]!=='boolean';})||JSON.stringify(Object.keys(d.rows).sort())!==JSON.stringify(spec[2].slice().sort())||spec[2].some(function(k){return !Array.isArray(d.rows[k])||d.rows[k].some(function(row){return !record(row)||row.department_id!==scope(d);});});}))throw Error('مجال النسخة ناقص أو خارج نطاقها');
       domains[spec[0]==='award'?'awards':spec[0]]=value.domains;
     }
+    if(!current()||!srv.operations||!Array.isArray(srv.operations.resources))throw Error('خدمة البيانات التشغيلية غير جاهزة');
+    var operationExport=await request('/api/operations/export?uid='+encodeURIComponent(stamp.uid)+(options.full?'':'&dept='+encodeURIComponent(departments[0])),{},stamp),operationData=operationExport.data;
+    var expectedOperations=departments.flatMap(function(d){return srv.operations.resources.map(function(r){return d+'\0'+r;});}).sort();
+    if(!operationExport.ok||!current()||operationData.globalRev!==options.v||!Array.isArray(operationData.domains)||
+      JSON.stringify(operationData.domains.map(function(d){return d&&d.scope&&d.scope.departmentId+'\0'+d.resource;}).sort())!==JSON.stringify(expectedOperations)||
+      operationData.domains.some(function(d){return d.version!==1||!record(d.rows)||!Array.isArray(d.rows.ops_nodes)||Object.keys(d.rows).some(function(table){return !/^[a-z][a-z0-9_]*$/.test(table)||!Array.isArray(d.rows[table])||d.rows[table].some(function(row){return !record(row)||row.department_id!==d.scope.departmentId||row.resource!==d.resource;});});}))throw Error('تعذّر تصدير البيانات التشغيلية كاملةً');
+    domains.operations=operationData.domains;
     var ids=new Set();
     domains.seized.forEach(function(d){d.rows.photos.forEach(function(row){if(typeof row.image_id==='string')ids.add(row.image_id);});});
     domains.awards.forEach(function(d){d.rows.records.forEach(function(row){['picture','employee_signature','approver_signature'].forEach(function(k){if(typeof row[k]==='string'&&/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(row[k]))ids.add(row[k]);});});});
+    domains.operations.forEach(function(d){Object.values(d.rows).forEach(function(rows){rows.forEach(function(row){Object.values(row).forEach(function(value){if(typeof value==='string')(value.match(/(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g)||[]).forEach(function(id){ids.add(id);});});});});});
     for(var id of ids){
       if(!current())throw Error('تغيّرت الجلسة أثناء تجميع النسخة');
       if(!images[id]){if(!KIVO.BassamIDB||!KIVO.BassamIDB.get)throw Error('خدمة الصور غير متاحة');images[id]=await KIVO.BassamIDB.get(id);}
@@ -237,15 +245,15 @@
       text =
         'سيُعتمد ' +
         (c.kv || 0) +
-        ' مجموعة بيانات و' +
+        ' مجموعة بيانات و' + (c.operations||0) + ' موردًا تشغيليًا و' +
         (c.custody || 0) +
         ' نطاق عهد و' + (c.irshad || 0) + ' سجل استرشاد و'+(c.seized||0)+' من بيانات المضبوطات و'+(c.awards||0)+' من بيانات التكريم. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
         (legacy ? ' ستُحوَّل النسخة القديمة إلى المخطط الحالي قبل الكتابة.' : '') +
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'
           : '') +
-        (legacy && i.summary.emptyDomains.length
-          ? ' النسخة القديمة لا تحمل ' + i.summary.emptyDomains.length + ' نطاق عهد أو تنبيهات أو استرشاد؛ ستُستعاد فارغة وفق معنى النسخة القديمة.'
+        (i.summary.emptyDomains.length
+          ? ' لا تتضمن النسخة ' + i.summary.emptyDomains.length + ' مجموعة بيانات؛ في وضع الاستبدال تُستعاد المجموعات المفقودة فارغة.'
           : '') +
         (i.summary.preservedGlobals.length ? ' سيُحافظ على ' + i.summary.preservedGlobals.length + ' مورد عام غير مشمول بالنسخة.' : '');
     return KIVO.bsConfirm

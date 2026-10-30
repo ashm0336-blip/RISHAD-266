@@ -4,7 +4,7 @@ function rsSaveNeedsAtomic(body) {
   return Object.keys((body && body.set) || {})
     .concat((body && body.del) || [])
     .some(function (k) {
-      return k === K_DEPTS || resName(k) === 'bassam_employees_v1';
+      return k === K_DEPTS || k === K_USERS || k === K_PERM || opIsResource(k);
     });
 }
 function rsImageIn(column, values, args) {
@@ -237,7 +237,7 @@ function rsSaveAudit(env, plan, A, meta, sid) {
   var supplied = audClean(plan.sourceBody.aud, allowed),
     rows = [],
     now = Date.now();
-  if (!A.__tkSrv)
+  if (!A.__tkSrv && !plan.serverTrusted)
     supplied = supplied.filter(function (e) {
       return !/^tk/i.test(e.cid);
     });
@@ -304,13 +304,46 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   });
   env = reference.env;
   A = actor;
+  var operationKeys = Object.keys(body.set || {}).concat(body.del || []),
+    operationalSave = operationKeys.some(opIsResource), referenceDependentSave = operationKeys.includes(K_USERS) || operationKeys.includes(K_PERM), operationFingerprint, operationRequestId, operationReadGuards=[];
+  if (operationalSave && !opt.__employeeRequestId && !opt.__wipeRequestId) {
+    operationRequestId = opt.__operationRequestId || body.requestId || (opt.srv ? enfSnapId('ops') : '');
+    if (typeof operationRequestId !== 'string' || !/^[-A-Za-z0-9_]{8,100}$/.test(operationRequestId)) throw rsError('operations-request-id');
+    if (!opt.srv && (!Number.isSafeInteger(body.epoch) || body.epoch < 0)) throw rsError('operations-epoch');
+    operationFingerprint = opt.__operationFingerprint || await cuFingerprint({uid:A.u.id,body:body});
+    var oldOperation = await env.DB.prepare('SELECT * FROM restore_operations WHERE account_uid=?1 AND request_id=?2').bind(A.u.id,operationRequestId).first();
+    if (oldOperation) {
+      if (oldOperation.fingerprint !== operationFingerprint || oldOperation.mode !== 'operations') throw rsError('operations-request-reused',409);
+      if (!opt.srv&&operationKeys.some(function(k){return !canRead(A,k);})) throw rsError('operations-denied',403);
+      await env.DB.batch(rsReferenceGuards(env, reference));
+      return Object.assign(JSON.parse(oldOperation.result_json),{duplicate:1,v:oldOperation.revision});
+    }
+    if (!opt.srv && body.epoch !== Number(reference.inputMeta.restore_epoch || 0)) throw rsError('restore-epoch-changed',409);
+    opt = Object.assign({},opt,{__allRequestedKeysRequired:true});
+  }
+  if(operationalSave){
+    for(var readKey of Object.keys(body.base||{}).filter(opIsResource)){
+      var readBase=body.base[readKey],writeKey=operationKeys.find(opIsResource),denied={},conflicts={};
+      opInfo(readKey);
+      if(!Number.isSafeInteger(readBase)||readBase<0)throw rsError('operations-base');
+      if(!opt.srv&&!canRead(A,readKey)){
+        denied[writeKey]={why:'read-reference-denied'};
+        return {ok:0,requestId:operationRequestId,epoch:body.epoch,revs:{},denied:denied,conflicts:{},atomic:1};
+      }
+      if(readBase!==(reference.inputRevs[readKey]||0)){
+        conflicts[writeKey]={why:'read-reference-changed'};
+        return {ok:0,requestId:operationRequestId,epoch:body.epoch,revs:{},denied:{},conflicts:conflicts,atomic:1};
+      }
+      operationReadGuards.push(revGuard(env,readKey,readBase));
+    }
+  }
   var kv = await applySave(env, body, A, meta, Object.assign({}, opt, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN }));
   kv.revs = kv.revs || reference.inputRevs;
   if (opt.__serverDepartmentWipes) kv.serverDepartmentWipes = opt.__serverDepartmentWipes;
   if (opt.__serverEmployeeIntent) kv.serverEmployeeIntent = opt.__serverEmployeeIntent;
   var transition = await cuPlanSaveTransition(env, A, body, kv);
   if (transition.blocked || !kv.ok) {
-    if (transition.coupled || opt.__allRequestedKeysRequired) {
+    if (transition.coupled || opt.__allRequestedKeysRequired || operationalSave) {
       var denied = Object.assign({}, kv.denied || (kv.out && kv.out.denied) || {}),
         conflicts = kv.conflicts || (kv.out && kv.out.conflicts) || {};
       var logs = Object.keys(denied).map(function (k) {
@@ -320,11 +353,11 @@ async function rsSaveCommit(env, A, body, meta, opt) {
         logs.push(enfLogStmt(env, r));
       });
       if (logs.length) await env.DB.batch(logs);
-      return { v: await curRev(env), revs: {}, denied: denied, conflicts: conflicts, atomic: kv.protectedOp || 'custody-transition' };
+      return { ok:0, requestId:operationRequestId, epoch:body.epoch, v: await curRev(env), revs: {}, denied: denied, conflicts: conflicts, atomic: operationalSave ? 1 : kv.protectedOp || 'custody-transition' };
     }
     return await applySave(env, body, A, meta, Object.assign({}, opt, { __cuPass: RESTORE_INTERNAL_TOKEN }));
   }
-  if (!transition.transitions.length && !opt.__serverDepartmentWipes && !opt.__employeeRequestId)
+  if (!transition.transitions.length && !opt.__serverDepartmentWipes && !opt.__employeeRequestId && !operationalSave && !referenceDependentSave)
     return await applySave(env, body, A, meta, Object.assign({}, opt, { __cuPass: RESTORE_INTERNAL_TOKEN }));
   kv.pend = kv.pend.filter(function (pd) {
     return pd.act === 'del' ? pd.cur != null : pd.v !== pd.cur;
@@ -336,7 +369,8 @@ async function rsSaveCommit(env, A, body, meta, opt) {
           .map(function (t) {
             return t.departmentId;
           })
-          .concat(opt.__employeeDept ? [opt.__employeeDept] : []),
+          .concat(opt.__employeeDept ? [opt.__employeeDept] : [])
+          .concat(operationalSave ? operationKeys.filter(opIsResource).map(function(k){return opInfo(k).dept;}) : []),
       ),
     ),
     scope = { kind: departments.length === 1 ? 'dept' : 'full' };
@@ -344,12 +378,13 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   var plan = {
     operation: 'save',
     body: {
-      requestId: opt.__wipeRequestId || opt.__employeeRequestId,
+      requestId: opt.__wipeRequestId || opt.__employeeRequestId || operationRequestId,
       scope: scope,
-      mode: opt.__employeeIntent || (opt.__serverDepartmentWipes ? 'dept-' + (opt.__wipeKind || 'wipe') : 'save'),
+      mode: opt.__employeeIntent || (opt.__serverDepartmentWipes ? 'dept-' + (opt.__wipeKind || 'wipe') : operationalSave ? 'operations' : 'save'),
       reason: String(body.reason || ''),
     },
     sourceBody: body,
+    serverTrusted: !!opt.srv,
     author: A,
     epoch: env.__restoreEpoch === undefined ? await rsEpoch(env) : env.__restoreEpoch,
     guards: [],
@@ -360,13 +395,17 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     authz: kv.authzRows || [],
     kv: kv,
     reauth: false,
-    bumpEpoch: true,
-    receiptRequired: !!(opt.__wipeRequestId || opt.__employeeRequestId),
+    bumpEpoch: !!(opt.__wipeRequestId || opt.__employeeRequestId || transition.transitions.length),
+    receiptRequired: !!(opt.__wipeRequestId || opt.__employeeRequestId || operationRequestId),
     forceFence: !!opt.__wipeRequestId,
     snapshotRequired: transition.transitions.some(function (t) {
       return /wipe|replace/.test(t.intent);
     }),
   };
+  if (operationRequestId) { plan.fingerprint=operationFingerprint; plan.intent='operations'; plan.operationKeys=Array.from(new Set(operationKeys)); plan.operationResult=opt.__operationResult||{}; }
+  plan.guards.push.apply(plan.guards,operationReadGuards);
+  if (referenceDependentSave || operationalSave) plan.guards.push.apply(plan.guards, reference.operational.guards);
+  if (opt.__operationSourceGuards) plan.guards.push.apply(plan.guards,opt.__operationSourceGuards);
   plan.guards.push.apply(plan.guards, rsWitness(env, 'kv', ['k', 'seq', 'v'], reference.inputRows));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'meta', ['k', 'v'], reference.metaRows, "k<>'rev'"));
   await rsCompileKV(env, A, kv, plan, reference.inputRows);
@@ -432,6 +471,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   }
   await rsImageMetadataPlan(env, A, plan, reference);
   var ack = await rsCommit(env, A, plan, meta);
+  if (operationRequestId) return Object.assign(ack,{v:ack.rev,denied:{},conflicts:{},atomic:1});
   if (opt.__employeeRequestId) return ack;
   if (opt.__serverDepartmentWipes) return Object.assign(ack, { dept: departments[0], requestId: opt.__wipeRequestId });
   var out = kv.out || { revs: {}, denied: {}, conflicts: {} };
@@ -457,7 +497,7 @@ async function rsWipeInventory(env, A, dept, kind) {
     throw rsError('forbidden', 403);
   var kv = Object.create(null);
   Object.keys(reference.inputKeys).forEach(function (k) {
-    if (parseKey(k).dept === dept) kv[k] = reference.inputRevs[k] || 0;
+    if (parseKey(k).dept === dept && (!opIsResource(k) || reference.inputKeys[k] != null)) kv[k] = reference.inputRevs[k] || 0;
   });
   var scopedCount = Object.keys(kv).length;
   var businessBase=await bdRestoreRevisions(env,[dept],false), businessCounts={};
@@ -679,6 +719,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
         __employeeDept: input.dept,
         __employeeIntent: input.intent,
         __employeeResult: prepared.result,
+        __operationSourceGuards: prepared.context.sourceGuards,
         __awardsBase: input.base.awards,
       });
     if (outcome.ok !== 1)
@@ -703,4 +744,50 @@ async function rsEmployeeRoute(env, request, url, ss) {
       return json({ ok: 0, err: 'conflict' }, 409);
     throw e;
   }
+}
+
+/* Existing reset transaction, delegated from the authenticated admin router. */
+async function rsResetRoute(env, request, path, url, AX, superX) {
+  if (!superX) return json({ ok: 0, err: 'forbidden' }, 403);
+  var rbz = await bodyRead(request, path); if (rbz.res) return rbz.res; var bz = rbz.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
+  var gkZ = 'pw:' + AX.u.id;
+  if (await guardLeft(env, gkZ) > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر قليلاً' });
+  var okZ = await verifyPw(String(bz.pw == null ? '' : bz.pw), AX.u.ph);
+  if (okZ === 'unsupported') return json({ ok: 0, err: ERR_ITER });
+  if (okZ !== true) { await guardFail(env, gkZ); return json({ ok: 0, err: 'كلمة المرور غير صحيحة' }); }
+  var rkZ = await metaGet(env, 'rk');
+  if (!rkZ) return json({ ok: 0, err: 'أنشئ مفتاح استعادة أولاً — التهيئة لا تُنفَّذ بدونه' });
+  if ((await verifyPw('rk:' + normKey(bz.key), rkZ)) !== true) { await guardFail(env, gkZ); return json({ ok: 0, err: 'مفتاح الاستعادة غير صحيح' }); }
+  if (String(bz.confirm || '') !== 'تهيئة') return json({ ok: 0, err: 'اكتب كلمة «تهيئة» للتأكيد' });
+  var adZ = isObj(bz.admin) ? bz.admin : {};
+  var unZ = String(adZ.un || '').trim(), nmZ = String(adZ.name || '').trim() || 'مدير النظام', pwZ = String(adZ.pw || '');
+  if (!unCheck(unZ)) return json({ ok: 0, err: 'اسم مستخدم مدير النظام: رقم جوال أو هوية من 10 أرقام' });
+  if (!pwCheck(pwZ, 'super')) return json({ ok: 0, err: 'كلمة مرور مدير النظام الجديد ضعيفة — 6 أرقام' });
+  await guardReset(env, gkZ);
+  var rmZ = reqMeta(request);
+  var keepBrand = !!bz.keepBrand, platZ = keepBrand ? await kvGet(env, 'kv', K_PLAT) : null;
+  var phZ = await hashPw(pwZ);
+  var usersZ = [{ id: 'su', un: unZ, ph: phZ, name: nmZ, role: 'super', mc: 1 }];
+  var stZ = [
+    env.DB.prepare('DELETE FROM notification_user_state'), env.DB.prepare('DELETE FROM notification_targets'), env.DB.prepare('DELETE FROM notification_messages'),
+    env.DB.prepare('DELETE FROM notification_dedup'), env.DB.prepare('DELETE FROM notification_type_overrides'), env.DB.prepare('DELETE FROM notification_checkpoints'),
+    env.DB.prepare('DELETE FROM irshad_requests'), env.DB.prepare('DELETE FROM irshad_report_languages'), env.DB.prepare('DELETE FROM irshad_reports'), env.DB.prepare('DELETE FROM irshad_catalog_entries'), env.DB.prepare('DELETE FROM irshad_retro_windows'),
+    env.DB.prepare("DELETE FROM meta WHERE k GLOB 'irshad:*:presence*'"),
+    env.DB.prepare('DELETE FROM custody_request_outputs'), env.DB.prepare('DELETE FROM custody_requests'), env.DB.prepare('DELETE FROM custody_movements'), env.DB.prepare('DELETE FROM custody_issues'), env.DB.prepare('DELETE FROM custody_items'),
+    env.DB.prepare('DELETE FROM restore_operations'), env.DB.prepare('DELETE FROM restore_preimage'), env.DB.prepare('DELETE FROM restore_snapshot_manifest'),
+    env.DB.prepare('DELETE FROM daily_stats_day_locks'), env.DB.prepare('DELETE FROM daily_stats_month_locks'), env.DB.prepare('DELETE FROM daily_stats_days'),
+    env.DB.prepare('DELETE FROM kv'), env.DB.prepare('DELETE FROM imgs'), env.DB.prepare('DELETE FROM revs'),
+    env.DB.prepare('DELETE FROM imgown'), env.DB.prepare('DELETE FROM imgref'), env.DB.prepare("DELETE FROM meta WHERE k = 'imgown'"),
+    env.DB.prepare('DELETE FROM audit'), env.DB.prepare('DELETE FROM sess'), env.DB.prepare('DELETE FROM guard'),
+    env.DB.prepare('DELETE FROM meta WHERE k IN (?1, ?2, ?3, ?4, ?5)').bind('rev', 'rk', 'rk_uid', 'rk_meta', 'rk_used')
+  ];
+  stZ = opResetStatements(env).concat(bdResetStatements(env),stZ);
+  stZ = stZ.concat(kvPutStmts(env, 'kv', K_USERS, JSON.stringify(usersZ)));
+  stZ.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2)').bind(K_USERS, 1));
+  if (platZ) { stZ = stZ.concat(kvPutStmts(env, 'kv', K_PLAT, platZ)); stZ.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2)').bind(K_PLAT, 1)); }
+  stZ.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rev', '1'));
+  if(!Number.isSafeInteger(env.__restoreEpoch)||env.__restoreEpoch>=Number.MAX_SAFE_INTEGER)throw dbGuardError('db-restore-epoch-invalid');
+  stZ.push(env.DB.prepare("INSERT INTO meta(k,v) VALUES('restore_epoch',?1) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(String(env.__restoreEpoch+1)),env.DB.prepare('DELETE FROM sec'),audEvStmt(env, { cid: 'reset_' + Date.now().toString(36), ts: Date.now(), uid: AX.u.id, un: AX.u.un, dept: '', k: 'system', rev: 1, etype: 'system', eid: 'platform', ename: 'المنصة', act: 'reset', ctx: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ }), bef: '', aft: '' }),secStmt(env, { uid: AX.u.id, un: AX.u.un, act: 'reset', detail: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ, byName: AX.u.name || '' }), ip: rmZ.ip, city: rmZ.city, dev: rmZ.dev }));
+  await env.DB.batch(stZ);
+  return json({ ok: 1 }, 200, clearCookie(url));
 }

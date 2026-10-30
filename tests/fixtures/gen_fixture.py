@@ -122,7 +122,7 @@ def floor(sid, nm, num, k):
             'zones': [zone('tstz%da' % k, 'TZ%dA' % k, 'مصلى %d-أ' % k, ['tst_e_field', 'tst_e_lens_on'], 0), zone('tstz%db' % k, 'TZ%dB' % k, 'مصلى %d-ب' % k, [], 20)],
             'gates': [{'uid': 'tstg%d' % k, 'id': 'TG%d' % k, 'num': str(k), 'x': 10 * k, 'y': 10, 'emp': ['tst_e_field']}],
             'marks': [{'uid': 'tstm%d' % k, 'id': 'TM%d' % k, 'label': TAG + ' معلم %d' % k, 'x': 3, 'y': 4 * k, 'emp': []}],
-            'paths': [{'uid': 'tstp%d' % k, 'id': 'TP%d' % k, 'pts': [[0, 0], [5, 5 * k]], 'active': True}]}
+            'paths': [{'uid': 'tstp%d' % k, 'id': 'TP%d' % k, 'pts': [{'x': 0, 'y': 0}, {'x': 5, 'y': 5 * k}], 'active': True}]}
 F1, F2 = floor('tsts1', 'موقع ١', 1, 1), floor('tsts2', 'موقع ٢', 2, 2)
 def cp(o): return json.loads(json.dumps(o))
 PLAN = {'floors': [cp(F1), cp(F2)], 'months': {MK: {'c': 1, 'd': [cp(F1), cp(F2)]}}, 'zones': cp(F1['zones']), 'gates': cp(F1['gates']), 'marks': cp(F1['marks']), 'paths': cp(F1['paths'])}

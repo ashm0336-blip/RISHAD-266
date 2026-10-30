@@ -18,6 +18,9 @@ import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { PYTHON, makeTestEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, applySql, ROOT, DIST } from './harness.mjs';
 import {installIrshadFixture} from './irshad_legacy_seed_fx.mjs';
+import {installBusinessFixture} from './business_legacy_seed_fx.mjs';
+import {installOperationalFixture,inspectOperationalFixture,isOperationalFixtureKey,replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
+export {replaceOperationalFixture};
 
 export const TAG = 'TEST_ONLY';
 export const D = 'tst_d1';
@@ -183,14 +186,43 @@ export async function world({ worker, mode = 'legacy' } = {}) {
   await applySql(env.DB, stdSeed());
   // The historical SQL seed must not recreate a retired business document in a
   // current database. Its actual canonical cutover preserves task/identity data.
-  if (env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '8') await installIrshadFixture(env);
+  const schema = env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v;
+  if (['8','9','10'].includes(schema)) await installIrshadFixture(env);
+  if (['9','10'].includes(schema)) await installBusinessFixture(env);
   const store = tasksStore();
   await applySql(env.DB, p0Sql(store));
+  if (env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '10') await installOperationalFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const login = async (un, pw) => { const r = await C.login(un, pw); if (!r.ok) throw new Error('login ' + un + ' ' + JSON.stringify(r.j)); return r; };
   return { env, C, su, login, store, mode };
 }
-export const stored = (env, k) => { const r = env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', k); return r.length ? JSON.parse(r.map(x => x.v).join('')) : null; };
+export const stored = (env, k) => { if (isOperationalFixtureKey(env,k)) return inspectOperationalFixture(env,k); const r = env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', k); return r.length ? JSON.parse(r.map(x => x.v).join('')) : null; };
+let taskRequestSequence = 0;
+/* Explicit request construction, never an api/save wrapper. Metadata inspection
+   gives ACL-negative tests a valid protocol envelope without granting data read.
+   Provided malformed fields and non-object bodies are deliberately unchanged. */
+export function taskCommandBody(env, path, body) {
+  const route = String(path).split('?')[0];
+  if (!['/api/tasks/create','/api/tasks/settings','/api/tasks/recur'].includes(route) || !body || typeof body !== 'object' || Array.isArray(body) ||
+      env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v !== '10') return body;
+  const next = { ...body }, own = key => Object.prototype.hasOwnProperty.call(body, key);
+  if (!own('requestId')) next.requestId = 'TEST_ONLY_task_fixture_' + ++taskRequestSequence;
+  if (!own('epoch')) next.epoch = Number(env.DB.q("SELECT v FROM meta WHERE k='restore_epoch'")[0]?.v || 0);
+  if (route !== '/api/tasks/create' && !own('base')) next.base = env.DB.q('SELECT rev FROM revs WHERE k=?', 'bsdept:' + (body.dept || D) + ':bassam_tasks_v1')[0]?.rev ?? 0;
+  return next;
+}
+/* Explicit /api/save envelope for typed resources. Preserve every supplied
+   value (including malformed metadata) so protocol/ACL negatives stay real. */
+export function operationSaveBody(env, path, body) {
+  if (String(path).split('?')[0] !== '/api/save' || !body || typeof body !== 'object' || Array.isArray(body) ||
+      env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v !== '10') return body;
+  const keys = Object.keys(body.set && typeof body.set === 'object' && !Array.isArray(body.set) ? body.set : {}).concat(Array.isArray(body.del) ? body.del : []);
+  if (!keys.some(key => isOperationalFixtureKey(env,key))) return body;
+  const next = { ...body }, own = key => Object.prototype.hasOwnProperty.call(body,key);
+  if (!own('requestId')) next.requestId = 'TEST_ONLY_operations_fixture_' + ++taskRequestSequence;
+  if (!own('epoch')) next.epoch = Number(env.DB.q("SELECT v FROM meta WHERE k='restore_epoch'")[0]?.v || 0);
+  return next;
+}
 /* Server-side inspection of the actual typed notification rows. This does not
    reconstruct a retired KV document or its user-state maps. Public recipient
    visibility is tested separately through /api/notifications. */
@@ -213,6 +245,7 @@ export function notificationDedup(env, department = D) {
 export const rowsOf = (S, eid) => { const o = []; for (const d in S) (S[d] || []).forEach((r, i) => { if (Array.isArray(r) && r[14] === eid) o.push({ day: d, i, r }); }); return o; };
 /* ── المرحلة الثانية: كتابةُ مفتاحٍ كاملٍ في D1 البديل (بنسخةٍ جديدة — كما يفعل الحفظ) · منتصفُ ليل الرياض · أسماءُ أيام الأسبوع ── */
 export function putKV(env, k, v) {
+  assert.equal(isOperationalFixtureKey(env,k),false,'Retired resource: use await replaceOperationalFixture for an explicit typed test mutation');
   env.DB.exec('DELETE FROM kv WHERE k = ' + q(k) + ';');
   env.DB.exec('INSERT INTO kv (k, seq, v) VALUES (' + q(k) + ', 0, ' + q(JSON.stringify(v)) + ');');
   for (const s of BUMP(k)) env.DB.exec(s);

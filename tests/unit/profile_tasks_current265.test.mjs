@@ -1,3 +1,7 @@
+import './clock.mjs'; // Initialize the fixture clock before every other import.
+import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { taskText } from './tasks_vm_operations_fx.mjs';
+import { taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
 /* KIVO_265 · «ملفي ← مهامك» — قرارُ المالك (2026-10-16): «مهامك الحالية» ما يحتاج متابعةَ الموظف وحده.
    العطلُ المرصود: مهمةٌ أُنجزت تبقى في «الحالية» — _tkVals كان يقبل صفوفَ «اليوم» بأيّ حالة، و_tkPick يرتدّ إلى «بانتظار المراجعة» ثم
    «آخرُ ما أنجزت اليوم»، وtkFocus (يُضبط بعد التسليم) يُبقي المنجزةَ والمسلَّمةَ «الأهم الآن». المطلوب:
@@ -47,7 +51,7 @@ const envOf = (eid) => ({ isStaff: true, T, myKey: eid, keyOfTok: (x) => x, myRe
 const E = envOf(ME.eid);
 const V = (P, e = E) => JSON.parse(JSON.stringify(P.c._tkVals({}, e, P.c.state), (k, v) => (typeof v === 'function' ? undefined : v)));
 const Vf = (P, e = E) => P.c._tkVals({}, e, P.c.state);   /* بالدوالّ (للنقر) */
-const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body });
+const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: operationSaveBody(W.env, p, taskCommandBody(W.env, p, body)) });
 const refOf = (P, id, e = E) => P.c._tkMine(e).find((x) => x.r.__x && String(x.r.__x.id) === String(id));
 const srvRow = (W, id, eid = ME.eid) => (rowsOf(stored(W.env, KT), eid).find((x) => x.r[13] === id) || {}).r || [];
 async function until(f, ms = 5000) { const t0 = Date.now(); for (;;) { let v = false; try { v = f(); } catch (e) { v = false; } if (v || Date.now() - t0 > ms) return v; await new Promise((r) => setTimeout(r, 10)); } }
@@ -60,7 +64,7 @@ const logRows = (t) => (t.tkLogDays || []).flatMap((d) => d.rows);
 const curOf = (P, e = E) => P.c._tkCur(P.c._tkMine(e).map((t) => Object.assign({}, t, { st: P.c._tkState(t, Date.now()) }))).map((t) => t.r[0]);
 const cmpT = (r) => (r.y - T.y) || (r.m - T.m) || (r.d - T.d);
 /* لوحٌ نظيف: صفوفُ الموظف من المُثبِّت تُزال (لا تمسّ غيرَه) — فيُقرأ ما يُختبر وحده */
-function wipe(W, eid) { const S = stored(W.env, KT); for (const d in S) S[d] = S[d].filter((r) => !(Array.isArray(r) && r[14] === eid)); putKV(W.env, KT, S); }
+async function wipe(W, eid) { const S = stored(W.env, KT); for (const d in S) S[d] = S[d].filter((r) => !(Array.isArray(r) && r[14] === eid)); await replaceOperationalFixture(W.env, KT, S); }
 async function startAndSubmit(P, W, id, x) {
   let R = refOf(P, id); P.c.tkAccept(R.day, R.i); await until(() => srvRow(W, id)[11]);
   R = refOf(P, id); P.c.tkFinishOpen(R.day, R.i); P.c.setState(Object.assign({ tkNote: TAG + ' تم' }, x || {}));
@@ -72,7 +76,7 @@ for (const mode of ['legacy', 'enforce']) {
   test('[' + mode + '] (1·2·3) التسليمُ بلا مراجِع ⇒ منجزةٌ تخرج من «الحالية» (بـ tkFocus وبدونه) · «لا توجد لديك مهام حالية» بعد التحميل وحده · والسجلُّ بإثباتها وسجلِّها', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);
-    wipe(W, ME.eid);
+    await wipe(W, ME.eid);
     const P = page(W, me.ck);
     let t = V(P);
     assert.equal(t.tkOn, true); assert.equal(t.tkEmpty, true); assert.equal(t.tkLoad, true, 'قبل أوّل قراءة');
@@ -109,7 +113,7 @@ for (const mode of ['legacy', 'enforce']) {
   test('[' + mode + '] (4) المسلَّمةُ للمراجِع في «بانتظار اعتماد المسؤول (N)» — لا «الأهم الآن» ولا منجزة · وهي في السجل · المُعادةُ تعود «الأهم الآن» · والمعتمَدةُ تخرج إلى السجل بقرارها وإثباتها', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);
-    wipe(W, ME.eid);
+    await wipe(W, ME.eid);
     const P = page(W, me.ck); await P.MT.load(true);
     const c = await mkTask(W, dm.ck, 'تُراجَع'); assert.equal(c.status, 200, JSON.stringify(c.j));
     const id = c.j.rows[0].id, TT = TAG + ' تُراجَع';
@@ -201,7 +205,7 @@ for (const mode of ['legacy', 'enforce']) {
   test('[' + mode + '] سلسلةُ التكرار: أقربُ نسخةٍ قادمةٍ وحدها في «الحالية» (rid في /api/me/tasks) — والبقيةُ في السجل · والقادمةُ غيرُ المتكررة كما هي', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);
-    wipe(W, ME.eid);
+    await wipe(W, ME.eid);
     const s = Date.now() + 30 * 60e3;
     const c = await post(W, dm.ck, '/api/tasks/create', { k: hij(s), t: TAG + ' سلسلةٌ يومية', s, e: s + HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'daily' } });
     assert.equal(c.status, 200, JSON.stringify(c.j));
@@ -231,7 +235,7 @@ for (const mode of ['legacy', 'enforce']) {
   test('[' + mode + '] P1 · tkFocus يُمسح بعد التسليم (منجزةً أو للمراجعة) فلا يُثبِّت انزياحُ الفهارس صفّاً آخر — ويبقى بعد البدء والمسودّة والتعثّر والاستئناف والاستلام', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);
-    wipe(W, ME.eid);
+    await wipe(W, ME.eid);
     const mk = async (t, x) => { const c = await mkTask(W, dm.ck, t, x); assert.equal(c.status, 200, JSON.stringify(c.j)); return c.j.rows[0].id; };
     const R1 = await mk('الأقربُ مهلةً', { rv: 'none', e: Date.now() + HR });
     const Dn = await mk('تُنجز', { rv: 'none', e: Date.now() + 3 * HR });
@@ -253,7 +257,7 @@ for (const mode of ['legacy', 'enforce']) {
     /* المدير يحذف صفّاً لغيري قبل صفوفي في اليوم نفسِه ⇒ تنزاح فهارسُ صفوفي (كان المفتاحُ القديم يصير مفتاحَ «قادمة») */
     const S = stored(W.env, KT), j = S[DAY].findIndex((r) => Array.isArray(r) && r[14] !== ME.eid), iD = S[DAY].findIndex((r) => Array.isArray(r) && r[13] === Dn);
     assert.ok(j >= 0 && j < iD, 'صفٌّ لغيري قبل صفوفي: ' + j + ' < ' + iD);
-    const old = DAY + '#' + iD; S[DAY].splice(j, 1); putKV(W.env, KT, S);
+    const old = DAY + '#' + iD; S[DAY].splice(j, 1); await replaceOperationalFixture(W.env, KT, S);
     await P.MT.load(true);
     assert.equal(key(U), old, 'المفتاحُ القديم صار مفتاحَ «قادمة»');
     let t = V(P); assert.equal(t.tkFTitle, TAG + ' الأقربُ مهلةً', 'لا تُثبَّت «قادمة» قبل جديدةٍ تنتظر الاستلام'); assert.equal(t.tkFState, 'new');
@@ -272,7 +276,7 @@ for (const mode of ['legacy', 'enforce']) {
   test('[' + mode + '] P4 · «سجل مهامك» بلا نُسخ تكرارٍ لم يرها الموظف — والمنجزةُ والمعتذَرُ عنها والمُلغاةُ يدوياً والمستلَمةُ باقية', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);
-    wipe(W, ME.eid);
+    await wipe(W, ME.eid);
     const s = Date.now() - 30 * 60e3, NM = TAG + ' سلسلةُ السجل';
     const c = await post(W, dm.ck, '/api/tasks/create', { k: hij(s), t: NM, s, e: s + 3 * HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'daily', open: 1 } });
     assert.equal(c.status, 200, JSON.stringify(c.j));
@@ -308,8 +312,8 @@ for (const mode of ['legacy', 'enforce']) {
   });
 }
 
-/* ── المسارُ المحلي (لا __BS_BOOT.srv · المخزنُ المحلي القديم) — _tkVals نفسُه ونصُّ الفراغ من renderVals ── */
-test('المسارُ المحلي: المنجزةُ والمعتذَرُ عنها اليوم ليستا «حالية» ولو ثبت عليهما tkFocus — والفراغُ «لا توجد لديك مهام حالية»', async () => {
+/* Confirmed projection presentation without a cloud command transport. */
+test('العرض من projection مؤكدة: المنجزة والمعتذَر عنها خارج الحالية؛ وغياب الخادم يمنع الحفظ المحلي ويبقي طلب البدء غير المحسوم', async () => {
   const D = riyadhDay(), now = Date.now();
   const row = (t, st, o) => Object.assign(['مهمة ' + t, '', 'normal', st, 'normal', 'مضافة', null, ['أ'], 'أنا', 'المدير', 60, null, null, now - 3 * HR, 'e_me', now - HR, now + 3 * HR, null, null, null, null, null], o || {});
   const done = row('منجزة', 'done', { 11: now - 2 * HR, 12: now - HR, 6: ['on_time', 'في الوقت'], 21: { imgs: [], note: 'تم', at: now - HR } }), dec = row('معتذرٌ عنها', 'declined', { 20: { at: now - HR, why: 'ظرف طارئ' } });
@@ -322,11 +326,13 @@ test('المسارُ المحلي: المنجزةُ والمعتذَرُ عنه�
   const W2 = pfWorld({ user: staff, emps: [{ eid: 'e_me', name: 'أنا' }], tasks: { [D.DK]: [done, row('جديدة', 'pending'), dec] }, state: { tkFocus: D.DK + '#0' } });
   v = W2.v();
   assert.equal(v.tkHas, true); assert.equal(v.tkFTitle, 'مهمة جديدة'); assert.equal(v.tkFState, 'new'); assert.equal(v.tkRest.length, 0);
-  /* الإنهاءُ المحلي يمسح tkFocus — ولا تبقى المنجزةُ «الأهم الآن» */
-  W2.c.tkAccept(D.DK, 1); assert.equal(W2.c.state.tkFocus, D.DK + '#1', 'القبولُ المحلي يثبّتها');
-  W2.c.tkFinishOpen(D.DK, 1); W2.c.setState({ tkImgs: [PNG] }); W2.c.tkFinish(); await W2.flush(); await W2.flush();
-  assert.equal(JSON.parse(W2.ctx.localStorage.getItem('bassam_tasks_v1'))[D.DK][1][3], 'done', 'أُنجزت محلياً'); assert.equal(W2.c.state.tkFocus, null, 'P1: الإنهاءُ المحلي يمسح tkFocus');
-  v = W2.v(); assert.equal(v.tkFocusOn, false); assert.equal(v.tkEmptyT, EMPTY); assert.equal(v.tkDoneN, '2');
+  /* Cloud commands have no local writer; the confirmed row remains pending. */
+  const before = JSON.stringify(W2.confirmed('bassam_tasks_v1'));
+  await W2.c.tkAccept(D.DK, 1);
+  assert.equal(W2.c._pfCanLeaveDraft(), false, 'لا تُسقط مسودة طلب بدء لم يُحسم');
+  assert.equal(JSON.stringify(W2.confirmed('bassam_tasks_v1')), before, 'لا نجاح أو كتابة أعمال محلية عند غياب الخادم');
+  v = W2.v(); assert.equal(v.tkFTitle, 'مهمة جديدة'); assert.equal(v.tkDoneN, '1');
+  assert.throws(() => W2.ctx.localStorage.getItem('bassam_tasks_v1'), /retired business Storage/);
 });
 
 /* ── القالب: قسمُ «بانتظار اعتماد المسؤول» في الحالتين (فارغةٍ وممتلئة) ورابطُ «سجل مهامك ←» فيهما ── */
