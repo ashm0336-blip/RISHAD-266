@@ -120,8 +120,8 @@ async function bdExport(env,actor,url,name) {
       await ctx.env.DB.batch(ctx.guards.concat([rsEpochGuard(ctx.env.DB,epoch),bdRetiredGuard(ctx.env)]));
     }
     var base=await bdRestoreRevisions(env,depts.filter(Boolean),!requested);
-    var orphan=Object.keys(def.tables).map(function(kind){return 'SELECT department_id d FROM '+def.tables[kind][0];}).join(' UNION '),allowed=departments.concat(name==='awards'?['']:[]);
-    await env.DB.batch([env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM ("+orphan+") o WHERE o.d IS NULL OR o.d NOT IN(SELECT value FROM json_each(?1)))THEN json_extract('{}','KIVO_BUSINESS_ORPHAN_SCOPE')END").bind(JSON.stringify(allowed))]);
+    var allowed=departments.concat(name==='awards'?['']:[]),orphan=Object.keys(def.tables).map(function(kind){return 'EXISTS(SELECT 1 FROM '+def.tables[kind][0]+' o WHERE o.department_id IS NULL OR o.department_id NOT IN(SELECT value FROM json_each(?1)))';}).join(' OR ');
+    await env.DB.batch([env.DB.prepare("SELECT CASE WHEN "+orphan+" THEN json_extract('{}','KIVO_BUSINESS_ORPHAN_SCOPE')END").bind(JSON.stringify(allowed))]);
     await env.DB.batch(rsWitness(env,'kv',['k','seq','v'],authority,'k IN(SELECT value FROM json_each(?1))',[JSON.stringify(globals)]));
     if(firstRev!==await bdGlobalRevision(env)||epoch!==await rsEpoch(env)) continue;
     return {ok:1,domains:domains,globalRev:firstRev,epoch:epoch,departments:depts,base:base};

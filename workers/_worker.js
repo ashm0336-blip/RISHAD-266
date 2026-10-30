@@ -13723,13 +13723,13 @@ async function szDomainPlan(env, domain, d, options) {
         szRevisionGuards(env, d, options.base),
         [
           env.DB.prepare(
-            "SELECT CASE WHEN EXISTS(" +
+            "SELECT CASE WHEN " +
               names
                 .map(function (n) {
-                  return "SELECT 1 FROM " + n + " WHERE department_id=?1";
+                  return "EXISTS(SELECT 1 FROM " + n + " WHERE department_id=?1)";
                 })
-                .join(" UNION ALL ") +
-              " LIMIT 1)THEN json_extract('{}','KIVO_RESTORE_TARGET')END",
+                .join(" OR ") +
+              " THEN json_extract('{}','KIVO_RESTORE_TARGET')END",
           ).bind(d),
         ],
       );
@@ -13907,13 +13907,13 @@ async function szLegacyPrepare(env) {
   );
   var after = [
     env.DB.prepare(
-      "SELECT CASE WHEN EXISTS(" +
+      "SELECT CASE WHEN " +
         tables
           .map(function (n) {
-            return "SELECT 1 FROM " + n;
+            return "EXISTS(SELECT 1 FROM " + n + ")";
           })
-          .join(" UNION ALL ") +
-        " LIMIT 1)THEN json_extract('{}','KIVO_SEIZED_TARGET_CHANGED')END",
+          .join(" OR ") +
+        " THEN json_extract('{}','KIVO_SEIZED_TARGET_CHANGED')END",
     ),
   ];
   domains.forEach(function (domain) {
@@ -16191,14 +16191,17 @@ function awPhysicalTables(){var out={};Object.keys(AW_TABLES).forEach(function(k
    unchanged empty restore adds no DELETEs and only one guard, not11 guards. */
 function awStateGuard(env,d,snapshot,base){
   var args=[d],checks=[],tables=awPhysicalTables();
+  // D1 caps expression depth at100; balance the same predicates instead of
+  // growing a left-deep chain across every table and every record column.
+  function booleanSql(parts,operator){var middle=Math.floor(parts.length/2);return parts.length===1?parts[0]:'('+booleanSql(parts.slice(0,middle),operator)+' '+operator+' '+booleanSql(parts.slice(middle),operator)+')';}
   Object.keys(tables).forEach(function(kind){var table=tables[kind][0],cols=tables[kind][1],rows=snapshot[kind]||[],slot='?'+(args.push(JSON.stringify(rows)));
     checks.push('(SELECT COUNT(*) FROM '+table+' WHERE department_id=?1)<>json_array_length('+slot+')');
-    if(rows.length)checks.push('EXISTS(SELECT 1 FROM '+table+' t WHERE t.department_id=?1 AND NOT EXISTS(SELECT 1 FROM json_each('+slot+') e WHERE '+cols.map(function(c){return 't."'+c+'" IS json_extract(e.value,\'$."'+c+'"\')';}).join(' AND ')+'))');
+    if(rows.length)checks.push('EXISTS(SELECT 1 FROM '+table+' t WHERE t.department_id=?1 AND NOT EXISTS(SELECT 1 FROM json_each('+slot+') e WHERE '+booleanSql(cols.map(function(c){return 't."'+c+'" IS json_extract(e.value,\'$."'+c+'"\')';}),'AND')+'))');
   });
   if(base){AW_NAMES.forEach(function(n){awNatural(base[n]);});var revSlot='?'+args.push(JSON.stringify(AW_NAMES.map(function(n,i){return {k:awKey(d,i),rev:base[n]};})));
     checks.push("EXISTS(SELECT 1 FROM json_each("+revSlot+") e WHERE COALESCE((SELECT rev FROM revs WHERE k=json_extract(e.value,'$.k')),0) IS NOT json_extract(e.value,'$.rev'))");}
   var retiredSlot='?'+args.push(JSON.stringify(AW_RES));checks.push('EXISTS(SELECT 1 FROM kv WHERE '+awLegacyPredicate().replace(/\?1/g,retiredSlot)+')');
-  return rsBound(env.DB.prepare("SELECT CASE WHEN "+checks.join(' OR ')+" THEN json_extract('{}','KIVO_AWARD_TARGET_CHANGED')END"),args);
+  return rsBound(env.DB.prepare("SELECT CASE WHEN "+booleanSql(checks,'OR')+" THEN json_extract('{}','KIVO_AWARD_TARGET_CHANGED')END"),args);
 }
 async function awDomainPlan(env,domain,d,opt){
   opt=opt||{};awValidateDomain(domain,d);await awGuardRetired(env);var state=await awDomainState(env,d),base=opt.base||state.revs;
@@ -16242,7 +16245,7 @@ async function awLegacyPrepare(env){
   for(var table of existing)if(await env.DB.prepare('SELECT 1 FROM '+table.name+' LIMIT 1').first())throw awError('cutover-target-not-empty');
   var before=rsWitness(env,'kv',['k','seq','v'],rows,predicate,args).concat(rsWitness(env,'kv',['k','seq','v'],deptRows,'k=?1',[K_DEPTS]));
   before.push(env.DB.prepare("INSERT INTO meta(k,v)VALUES('aw_cutover_ready','validated')ON CONFLICT(k)DO UPDATE SET v=excluded.v"));
-  var after=[env.DB.prepare("SELECT CASE WHEN EXISTS("+names.map(function(n){return 'SELECT 1 FROM '+n;}).join(' UNION ALL ')+" LIMIT 1)THEN json_extract('{}','KIVO_AWARD_TARGET_CHANGED')END")];
+  var after=[env.DB.prepare("SELECT CASE WHEN "+names.map(function(n){return 'EXISTS(SELECT 1 FROM '+n+')';}).join(' OR ')+" THEN json_extract('{}','KIVO_AWARD_TARGET_CHANGED')END")];
   domains.forEach(function(domain){after.push.apply(after,awInstallStatements(env,domain));});after.push(env.DB.prepare('DELETE FROM kv WHERE '+predicate).bind(args[0]),env.DB.prepare("DELETE FROM meta WHERE k='aw_cutover_ready'"));
   if(rows.length)after.push(env.DB.prepare("INSERT INTO meta(k,v)VALUES('rev',CAST((SELECT MAX(n)+1 FROM(SELECT COALESCE(MAX(rev),0)n FROM revs UNION ALL SELECT COALESCE(CAST(v AS INTEGER),0)FROM meta WHERE k='rev'))AS TEXT))ON CONFLICT(k)DO UPDATE SET v=excluded.v"));
   return {before:before,after:after,domains:domains,n:domains.reduce(function(n,d){return n+d.rows.records.length+d.rows.documents.length;},0)};
@@ -16562,8 +16565,8 @@ async function bdExport(env,actor,url,name) {
       await ctx.env.DB.batch(ctx.guards.concat([rsEpochGuard(ctx.env.DB,epoch),bdRetiredGuard(ctx.env)]));
     }
     var base=await bdRestoreRevisions(env,depts.filter(Boolean),!requested);
-    var orphan=Object.keys(def.tables).map(function(kind){return 'SELECT department_id d FROM '+def.tables[kind][0];}).join(' UNION '),allowed=departments.concat(name==='awards'?['']:[]);
-    await env.DB.batch([env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM ("+orphan+") o WHERE o.d IS NULL OR o.d NOT IN(SELECT value FROM json_each(?1)))THEN json_extract('{}','KIVO_BUSINESS_ORPHAN_SCOPE')END").bind(JSON.stringify(allowed))]);
+    var allowed=departments.concat(name==='awards'?['']:[]),orphan=Object.keys(def.tables).map(function(kind){return 'EXISTS(SELECT 1 FROM '+def.tables[kind][0]+' o WHERE o.department_id IS NULL OR o.department_id NOT IN(SELECT value FROM json_each(?1)))';}).join(' OR ');
+    await env.DB.batch([env.DB.prepare("SELECT CASE WHEN "+orphan+" THEN json_extract('{}','KIVO_BUSINESS_ORPHAN_SCOPE')END").bind(JSON.stringify(allowed))]);
     await env.DB.batch(rsWitness(env,'kv',['k','seq','v'],authority,'k IN(SELECT value FROM json_each(?1))',[JSON.stringify(globals)]));
     if(firstRev!==await bdGlobalRevision(env)||epoch!==await rsEpoch(env)) continue;
     return {ok:1,domains:domains,globalRev:firstRev,epoch:epoch,departments:depts,base:base};

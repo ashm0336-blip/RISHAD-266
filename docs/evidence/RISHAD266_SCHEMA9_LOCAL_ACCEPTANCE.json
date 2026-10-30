@@ -2,22 +2,15 @@
   "schema": 9,
   "accepted": true,
   "evidenceKind": "targeted-composite",
-  "method": "Distinct named completed targeted cases plus explicit affected-case reruns; not a new full platform suite. Python rollback31 and internal SQL fault positions are recorded separately.",
+  "method": "Targeted composite325 unique cases for the original code, with unchanged areas retained and7 new D1-limit regressions for the provider fix; changed SQL additionally validated by18 atomic cases and native workerd85 checks. Not a full platform suite rerun.",
   "acceptedCounts": {
-    "tests": 325,
-    "pass": 325,
+    "tests": 332,
+    "pass": 332,
     "skipped": 0,
     "fail": 0,
     "cancelled": 0
   },
   "applicationArtifactsUnchanged": true,
-  "testedArtifacts": {
-    "workers/_worker.js": "86d4e3c1189c74ef0fcf90fdc48591a7d1b01b06e98440f085ea120b610f2bf4",
-    "workers/parts.json": "863bbf8c4a88669eae300965744fea1a6c39a166fad34a5a55bf2c86ce8a44cc",
-    "migrations/0009_seized_awards.sql": "61bf7db7deefbc43c529c58841718cd9da52cd8736dd604d8e1465477574c8fb",
-    "pk265/_worker.js": "7e12ecca270df5d1a366fbd55c696f802a10afbada7866025549c9cc6fa8ed9c",
-    "pk265.build.json": "58d4b109114eac6e44fb393710782839d4aeaa529814d24c7140043e626d3a7a"
-  },
   "groups": [
     {
       "name": "seized",
@@ -202,15 +195,22 @@
           "sha256": "279d95fe7241e9e525e6a71c89170231c9d305366b667c5b77fff5114d484e98"
         }
       ]
+    },
+    {
+      "name": "D1 compound5/expression100 regression",
+      "method": "completed changed-source targeted run",
+      "tests": 7,
+      "pass": 7,
+      "skipped": 0,
+      "initialFailures": 0,
+      "logs": [
+        {
+          "path": ".cache/preview9/business-sqlite-limits-balanced-first.tap",
+          "sha256": "c4bdd9dd368a681c8c13468d6007f6157f802dd92733bf3347fc0d71ccef5cf4"
+        }
+      ]
     }
   ],
-  "workerTokenEquivalence": {
-    "testedSourceWorker": "b14c6e07702f8bf484c32dff452ad952745655d1903f4a72a46f68543ee497bc",
-    "finalWorker": "86d4e3c1189c74ef0fcf90fdc48591a7d1b01b06e98440f085ea120b610f2bf4",
-    "tokens": 463533,
-    "proof": ".cache/preview9/worker-final-token-proof.log",
-    "reason": "Only preserved line endings and a generated comment changed backend bytes; defaults JSON exactly unchanged."
-  },
   "rollbackPythonTests": 31,
   "restoreFaultPositions": 105,
   "resetFaultPositions": 67,
@@ -223,6 +223,60 @@
     "Legacy Award approval with absent business ID remains denied by the existing classifier",
     "Global legacy Award references remain read-only"
   ],
-  "status": "Local code accepted; cloud schema9 acceptance pending",
-  "baselineCommit": "4d8ab1e81cc5dd3fadad3acaf4963a76ba206f6e"
+  "status": "Local code acceptance extended after native D1 revealed provider parser limits; Preview reactivation pending",
+  "baselineCommit": "4d8ab1e81cc5dd3fadad3acaf4963a76ba206f6e",
+  "firstCandidateCommit": "05ca1972bb9a03c69f50a89dab58645f68d469a0",
+  "firstCloudAttempt": {
+    "deployment": "d7fa5202-f169-4b26-b0e5-facfbc446bfe",
+    "activationHTTP": 500,
+    "activationRequests": 1,
+    "schemaAfterFailure": 8,
+    "newBusinessTablesAfterFailure": 0,
+    "protectedIdentitiesUnchanged": true
+  },
+  "providerFix": {
+    "workerSha256": "0de7dfadb691195517552610d9befd97bdc986ab9ad3bcb3c9fd9fb6b33aa10e",
+    "scope": [
+      "Four wide UNION guards rewritten as equivalent OR EXISTS",
+      "Award state witness AND/OR tree balanced; all39column checks and raw/revision/source guards retained"
+    ],
+    "regressionCases": 7,
+    "regressionLog": ".cache/preview9/business-sqlite-limits-balanced-first.tap",
+    "freshBusinessCases": 18,
+    "restoreFaultPositions": 105,
+    "resetFaultPositions": 67,
+    "nativeD1": {
+      "checks": 85,
+      "httpRequests": 112,
+      "cleanup": true,
+      "schema": 9,
+      "foreignKeyViolations": 0,
+      "protectedIdentitiesUnchanged": true,
+      "externalNetworkCalls": 0,
+      "r2Calls": 0,
+      "proof": ".cache/preview9/qa9-native-final.json",
+      "proofSha256": "36611d3ac3453b6641e18aa7ba06f6f2340ac8f464a548bf03e7d9e0986b0123"
+    },
+    "note": "The existing325-case targeted composite is historical evidence for unchanged code. The changed SQL guards additionally passed7 limited-SQLite cases,18 shared atomic cases and native workerd85 checks. No full platform suite rerun."
+  },
+  "firstCandidateTestedArtifacts": {
+    "workers/_worker.js": "86d4e3c1189c74ef0fcf90fdc48591a7d1b01b06e98440f085ea120b610f2bf4",
+    "workers/parts.json": "863bbf8c4a88669eae300965744fea1a6c39a166fad34a5a55bf2c86ce8a44cc",
+    "migrations/0009_seized_awards.sql": "61bf7db7deefbc43c529c58841718cd9da52cd8736dd604d8e1465477574c8fb",
+    "pk265/_worker.js": "7e12ecca270df5d1a366fbd55c696f802a10afbada7866025549c9cc6fa8ed9c",
+    "pk265.build.json": "58d4b109114eac6e44fb393710782839d4aeaa529814d24c7140043e626d3a7a"
+  },
+  "testedArtifacts": {
+    "workers/_worker.js": "0de7dfadb691195517552610d9befd97bdc986ab9ad3bcb3c9fd9fb6b33aa10e",
+    "workers/parts.json": "354c14dcfa4d818c263ae05de90420e5154d41d29c69e8d8fe941f05fa309f55",
+    "pk265/_worker.js": "663fca50ff5a5e23b797408e045e3b7b28cd4710542bda60533f581e54033593",
+    "pk265.build.json": "3974abfb6bc89dbb41df1fd7f65260cbc4e7145b6ef9d8d53368c6c6b6626ee8"
+  },
+  "initialCandidateTokenEquivalence": {
+    "testedSourceWorker": "b14c6e07702f8bf484c32dff452ad952745655d1903f4a72a46f68543ee497bc",
+    "finalWorker": "86d4e3c1189c74ef0fcf90fdc48591a7d1b01b06e98440f085ea120b610f2bf4",
+    "tokens": 463533,
+    "proof": ".cache/preview9/worker-final-token-proof.log",
+    "reason": "Only preserved line endings and a generated comment changed backend bytes; defaults JSON exactly unchanged."
+  }
 }

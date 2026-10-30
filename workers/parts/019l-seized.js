@@ -970,13 +970,13 @@ async function szDomainPlan(env, domain, d, options) {
         szRevisionGuards(env, d, options.base),
         [
           env.DB.prepare(
-            "SELECT CASE WHEN EXISTS(" +
+            "SELECT CASE WHEN " +
               names
                 .map(function (n) {
-                  return "SELECT 1 FROM " + n + " WHERE department_id=?1";
+                  return "EXISTS(SELECT 1 FROM " + n + " WHERE department_id=?1)";
                 })
-                .join(" UNION ALL ") +
-              " LIMIT 1)THEN json_extract('{}','KIVO_RESTORE_TARGET')END",
+                .join(" OR ") +
+              " THEN json_extract('{}','KIVO_RESTORE_TARGET')END",
           ).bind(d),
         ],
       );
@@ -1154,13 +1154,13 @@ async function szLegacyPrepare(env) {
   );
   var after = [
     env.DB.prepare(
-      "SELECT CASE WHEN EXISTS(" +
+      "SELECT CASE WHEN " +
         tables
           .map(function (n) {
-            return "SELECT 1 FROM " + n;
+            return "EXISTS(SELECT 1 FROM " + n + ")";
           })
-          .join(" UNION ALL ") +
-        " LIMIT 1)THEN json_extract('{}','KIVO_SEIZED_TARGET_CHANGED')END",
+          .join(" OR ") +
+        " THEN json_extract('{}','KIVO_SEIZED_TARGET_CHANGED')END",
     ),
   ];
   domains.forEach(function (domain) {
