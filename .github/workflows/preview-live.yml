@@ -1,0 +1,50 @@
+# KIVO — التحقّقُ الحيّ من Preview بعد رفعه (قراءةٌ فقط · متصفحٌ حقيقي بلا جلسة · لا كتابةَ ولا نشر · لا يلمس Production أبداً):
+# Chromium نظيف يفتح https://test.kivo-d81.pages.dev (المضيفُ ثابتٌ في المشغّل · أيُّ طلبٍ إلى غيره يُقطع)، يلتقط صفحةَ الدخول، ثم يشغّل مقتطفَ
+# التحقّق القرائيَّ للمرشّح الجاري (reports/k<N>/preview/verify_<N>_snippet.js · الرقمُ من tools/release_n.sh) بخياراته الافتراضية —
+# أقسامُ الجلسة تُتخطّى بنفسها (لا كلمةَ مرورٍ ولا سرَّ هنا). يُشغَّل يدوياً، أو بدفعٍ يغيّر reports/k*/preview/live_request.txt
+# (السطر mode=verify بعد الرفع · mode=baseline تقريرٌ بلا حكم).
+name: kivo-preview-live
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'verify | baseline'
+        default: verify
+  push:
+    paths: ['reports/k*/preview/live_request.txt']
+permissions:
+  contents: read
+concurrency: { group: kivo-preview-live, cancel-in-progress: false }
+jobs:
+  live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.22.0' }
+      - name: deps (pinned) + Chromium
+        run: npm ci --ignore-scripts && npx playwright install --with-deps chromium
+      - id: ver
+        run: echo "n=$(bash tools/release_n.sh)" >> "$GITHUB_OUTPUT"
+      - id: mode
+        env: { MODE_IN: '${{ github.event.inputs.mode }}' }
+        run: |
+          M="$MODE_IN"
+          REQ="reports/k${{ steps.ver.outputs.n }}/preview/live_request.txt"
+          if [ -z "$M" ] && [ -f "$REQ" ]; then M=$(sed -n 's/^mode=\([a-z]*\).*/\1/p' "$REQ" | head -1); fi
+          case "$M" in verify|baseline) ;; *) M=verify ;; esac
+          echo "m=$M" >> "$GITHUB_OUTPUT"
+      - name: live check — Preview only · read-only
+        run: |
+          N=${{ steps.ver.outputs.n }}
+          node "reports/k$N/preview/verify_live_runner.mjs" --snippet "reports/k$N/preview/verify_${N}_snippet.js" --mode ${{ steps.mode.outputs.m }} --out "$RUNNER_TEMP/live"
+      - name: results (JSON · login screenshot as base64 JPEG)
+        if: always()
+        run: |
+          echo '=== summary.json ==='; cat "$RUNNER_TEMP/live/summary.json" 2>/dev/null || true
+          echo; echo '=== live.json ==='; cat "$RUNNER_TEMP/live/live.json" 2>/dev/null || true
+          echo; echo '=== login.jpg base64 BEGIN ==='; base64 -w 120 "$RUNNER_TEMP/live/login.jpg" 2>/dev/null || true; echo '=== login.jpg base64 END ==='
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: preview-live, path: '${{ runner.temp }}/live', if-no-files-found: ignore, retention-days: 30 }

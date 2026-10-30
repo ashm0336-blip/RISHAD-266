@@ -1,0 +1,74 @@
+{
+ "name": "Daily Report",
+ "slug": "dreport",
+ "pre": "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<script src=\"./support.js\"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n",
+ "mid": "\n</helmet>\n",
+ "mid2": "\n</x-dc>\n",
+ "scriptTag": "<script data-dc-script>",
+ "post": "</script>\n</body>\n</html>\n",
+ "minifiedSource": true,
+ "prettified": true,
+ "originalSha256": "d0a0a0dd86a0be2bf2459e945d62bfab2a084f7dc1856e0da5ed102f6022c893",
+ "charter": {
+  "owner": "مدير الإدارة · المشرفون",
+  "purpose": "التقريرُ اليومي: الحضور واعتماد الوردية",
+  "page": "dreport",
+  "routes": [
+   "#/dreport"
+  ],
+  "ui": [
+   "src/modules/dreport/view.html",
+   "src/modules/dreport/helmet.css"
+  ],
+  "domain": "src/modules/dreport/logic.js",
+  "data": [
+   "bassam_callsigns_v1",
+   "bassam_dr_grp_v1",
+   "bassam_dreport_v1",
+   "bassam_employees_v1",
+   "bassam_leave_kinds_v1",
+   "bassam_perm_tpls_v1",
+   "bassam_plan_v1",
+   "bassam_rounds_v1",
+   "bassam_shift_options_v1",
+   "bassam_staffing_locks_v1",
+   "bassam_staffing_v3"
+  ],
+  "permissions": [
+   "dreport"
+  ],
+  "tests": [
+   "gate:action.mjs",
+   "gate:adv.mjs",
+   "gate:audunify.mjs",
+   "gate:authz.mjs",
+   "gate:break.mjs",
+   "gate:core.mjs",
+   "gate:disc.mjs",
+   "gate:entity.mjs",
+   "gate:fix.mjs",
+   "gate:flag.mjs",
+   "gate:hard.mjs",
+   "gate:img.mjs",
+   "gate:imgcap.mjs",
+   "gate:imgls.mjs",
+   "gate:k259journeys.mjs",
+   "gate:k260journeys.mjs",
+   "gate:own.mjs",
+   "gate:prot.mjs",
+   "gate:r182pos.mjs",
+   "gate:r187.mjs",
+   "gate:r188.mjs",
+   "gate:r189.mjs",
+   "gate:read01.mjs",
+   "gate:rel.mjs",
+   "gate:res.mjs",
+   "gate:restoreimg.mjs",
+   "gate:rev4.mjs",
+   "gate:sec.mjs",
+   "gate:sec163.mjs",
+   "gate:theme248.mjs",
+   "gate:visual.mjs"
+  ]
+ }
+}

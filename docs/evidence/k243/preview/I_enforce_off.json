@@ -1,0 +1,49 @@
+{
+ "step": "I — إيقافُ الإنفاذ بلا نشر (مفتاحُ الطوارئ)",
+ "db": "bassam-db-preview",
+ "sql": "UPDATE meta SET v = 'legacy' WHERE k = 'authz_mode';",
+ "console": "This query successfully executed · authz_mode = legacy",
+ "at": "2026-10-09T10:50:47Z",
+ "seconds_after_update": 18,
+ "authz": {
+  "status": 200,
+  "mode": "legacy",
+  "env": true,
+  "d1": "legacy",
+  "fixture": true
+ },
+ "mode": "legacy",
+ "bootAuthz": null,
+ "bootKeys": 42,
+ "changes": {
+  "am": "legacy",
+  "az": 1,
+  "v": 268
+ },
+ "probe_equal_C": true,
+ "probe_note": "لحظةَ الإيقاف: 9/14 مفتاحاً حقيقياً بالبصمة نفسِها التي في C؛ 4 مختلفة عمداً (دمجُ الزرع لسجلات TEST_ONLY في الحسابات والإدارات والهيكل والصلاحيات — تعود بسكربت reset_test_fixture)؛ و1 (إشعاراتُ النظام) غيّرته أداةُ المراقبة المؤقتة لا الإنفاذُ — أُعيد إلى أصله في J ببصمته نفسِها (cca043ac…). الفحصُ النهائي 11:02Z: 10/14 مطابقة + 4 دمجُ الزرع = لا فرقَ غيرَ المقصود",
+ "values_now": {
+  "bassam_auth_users_v1": "b76f5f75eb47f0c0bb5a11bbd80721e9d58510216fc8133f832a22b9ad830ad6",
+  "bassam_depts_v1": "1ec0eaf57bde5da60ab8649e5a3ef533e4d9ed891ba91aa52af57d558501b62e",
+  "bassam_gdepts_v1": "0c5b41ec47fbf9aa01728614fb344cd1f767e4482e67340f8cae6904646db6a2",
+  "bassam_notif_sys_v1": "66419040a33c54ab2ecfd091f6ef6b5d1307c1017094fe8039c3d99cc3595c74",
+  "bassam_perm_admsubs_v2": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+  "bassam_perm_help_v1": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+  "bassam_perm_irshad_cap_v1": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+  "bassam_perm_leaf_v1": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+  "bassam_perm_mgr_explicit_v1": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+  "bassam_perm_seized_cap_v1": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+  "bassam_perms_v1": "61ed11fc8ecf3a8b48d154779ad4710be095c3e44f8c0726d0c77e0a81d8c6ae",
+  "bsdept:d1:bassam_dayfocus_v1": "0726c55c32aa561855670f33e5bac84502b7c6daa5a3a4df5011718dceadb6a8",
+  "bsdept:d1:bassam_plan_v1": "c53a28d698ee80552bcd2c14ca3dabf14cff573b0ad3a3fe999f44e6dd93ce51",
+  "bsdept:dmuzwbup7fuxl:bassam_first_boot_v1": "f10a948f1b627468cb855235d0d17d49a4b983af8071e71716a6781de02cd194"
+ },
+ "final_check_at": "2026-10-09T11:02:22Z",
+ "final_values_equal_C": 10,
+ "fixture_merged_globals": [
+  "bassam_auth_users_v1",
+  "bassam_depts_v1",
+  "bassam_gdepts_v1",
+  "bassam_perms_v1"
+ ]
+}

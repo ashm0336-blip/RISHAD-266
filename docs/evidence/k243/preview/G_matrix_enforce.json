@@ -1,0 +1,993 @@
+{
+ "env": "Preview (test.kivo-d81.pages.dev · bassam-db-preview)",
+ "mode": "enforce",
+ "transport": "/api/authz-test (tst_* via internal test session)",
+ "today": "1448-4-28",
+ "seed": "7dc13ce103c623b8abeffcdd7216e8f7f5f410e6f74b29b8da5d585a33f1518f",
+ "authz": {
+  "ver": "KIVO_243 · enforce 1",
+  "mode": "enforce",
+  "env": true,
+  "d1": "enforce",
+  "fixture": true
+ },
+ "requests": 413,
+ "sec": 1761,
+ "started": 1791541045018,
+ "ended": 1791542806150,
+ "rows_sha256_page": "2d035a615d2e53a2ca4a9359c20fe3e61c4e3b578f643e0f6cf67c4c8d3d8c20",
+ "rows_sha256_file": "2d035a615d2e53a2ca4a9359c20fe3e61c4e3b578f643e0f6cf67c4c8d3d8c20",
+ "summary": {
+  "n": 82,
+  "pass": 82,
+  "fail": 0
+ },
+ "equal_local_enforce_decision": 82,
+ "detail_differs_from_local": [
+  "W06"
+ ],
+ "rows": [
+  {
+   "id": "R01",
+   "grp": "read · Shift",
+   "who": "tst_emp1",
+   "desc": "موظف الوردية أ: سجلاتُ الاسترشاد المرئية (داخل الوردية فقط)",
+   "mode": "enforce",
+   "exp": [
+    "tstir1",
+    "tstir3",
+    "tstir4"
+   ],
+   "got": "[\"tstir1\",\"tstir3\",\"tstir4\"]",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R02",
+   "grp": "read · Shift",
+   "who": "tst_supB",
+   "desc": "مشرف الوردية ب: يرى سجلات ورديته وحدها (خارج الوردية أ محجوب)",
+   "mode": "enforce",
+   "exp": [
+    "tstir2"
+   ],
+   "got": "[\"tstir2\"]",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R03",
+   "grp": "read · ceiling actor",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة: كلُّ السجلات (فاعلُ سقفٍ بلا قيد وردية R4)",
+   "mode": "enforce",
+   "exp": [
+    "tstir1",
+    "tstir2",
+    "tstir3",
+    "tstir4"
+   ],
+   "got": "[\"tstir1\",\"tstir2\",\"tstir3\",\"tstir4\"]",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R04",
+   "grp": "read · Branch (multi-dept)",
+   "who": "tst_gm1",
+   "desc": "مدير الفرع g1: إدارتا الفرع d1+d2 مقروءتان · d3 خارج الفرع",
+   "mode": "enforce",
+   "exp": "d1:1 d2:1 d3:0",
+   "got": "d1:1 d2:1 d3:0",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R05",
+   "grp": "read · Department",
+   "who": "tst_emp2",
+   "desc": "موظف d2: لا شيء من d1 · لا مضبوطات d2 (خارج سقف إدارته)",
+   "mode": "enforce",
+   "exp": "d1:0 sz2:0",
+   "got": "d1:0 sz2:0",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R06",
+   "grp": "read · Source",
+   "who": "tst_ds",
+   "desc": "مدخل إحصائيات الحرم: المسجد النبوي محجوب (Source)",
+   "mode": "enforce",
+   "exp": "haram:1 nabawi:0",
+   "got": "haram:1 nabawi:0",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R07",
+   "grp": "read · Default Deny",
+   "who": "tst_emp1",
+   "desc": "بلا ورقة إحصائيات: لا يصل السجلُّ أصلاً",
+   "mode": "enforce",
+   "exp": 0,
+   "got": "0",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R08",
+   "grp": "read · Assigned + Site",
+   "who": "tst_fld",
+   "desc": "راصد الميدان: حالةُ المسنَد إليه في موقعه فقط (المسنَد خارج موقعه والمجاورُ غيرُ المسنَد محجوبان)",
+   "mode": "enforce",
+   "exp": "F1a:open F1b:- F2a:-",
+   "got": "F1a:open F1b:- F2a:-",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R09",
+   "grp": "read · lens off",
+   "who": "tst_loff",
+   "desc": "العدسةُ نفسُها معطّلة للموظف: المصليات لا تصل (الخطة)",
+   "mode": "enforce",
+   "exp": "0,0",
+   "got": "0,0",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R10",
+   "grp": "read · lens on",
+   "who": "tst_lon",
+   "desc": "العدسةُ مفعّلة: المصليات تصل",
+   "mode": "enforce",
+   "exp": "2,2",
+   "got": "2,2",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R11",
+   "grp": "read · perm without scope",
+   "who": "tst_pnos",
+   "desc": "صلاحيةٌ بلا نطاق: العناصرُ هياكلُ بلا حالة (Default Deny للقيم)",
+   "mode": "enforce",
+   "exp": "F1a:- F2a:-",
+   "got": "F1a:- F2a:-",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R12",
+   "grp": "read · Site scope",
+   "who": "tst_snop",
+   "desc": "نطاقُ موقعٍ واحد (tsts1): حالةُ الموقع الآخر محجوبة",
+   "mode": "enforce",
+   "exp": "F1a:open F2a:-",
+   "got": "F1a:open F2a:-",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R13",
+   "grp": "read · Shift (dreport + staffing)",
+   "who": "tst_supB",
+   "desc": "مشرف ب (أوراقُه كلُّها بوردية): أقسامُ التقرير وصفوفُ الجدول لورديته وحدها",
+   "mode": "enforce",
+   "exp": "dr:TST-B st:3",
+   "got": "dr:TST-B st:3",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R13b",
+   "grp": "read · any read key lifts (v24.9 readBindings)",
+   "who": "tst_sup1",
+   "desc": "مشرف أ يحمل «بيانات الموظفين» (emp.view بلا Shift): يرى التقريرَ والجدولَ كاملين",
+   "mode": "enforce",
+   "exp": "dr:TST-A+TST-B st:10",
+   "got": "dr:TST-A+TST-B st:10",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R14",
+   "grp": "read · API bypass",
+   "who": "tst_emp1",
+   "desc": "/api/get مباشرةً: إدارةٌ أخرى · الإحصائيات · سجلّا النطاق والمنح — لا قيمة",
+   "mode": "enforce",
+   "exp": "ir2:0 ds:0 sc:0 gr:0",
+   "got": "ir2:0 ds:0 sc:0 gr:0",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R15",
+   "grp": "read · scope/grant records",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يقرأ سجلَّي النطاق والمنح لإدارته (الإنفاذ) — مجهولان للنظام القديم",
+   "mode": "enforce",
+   "exp": "sc:1 gr:1",
+   "got": "sc:1 gr:1",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R16",
+   "grp": "read · held keys (grants)",
+   "who": "tst_sup1",
+   "desc": "المفاتيحُ المحمولة في الإقلاع: + ir.rec.retro.open (منحٌ صريح) · − report.reopen (إسقاط)",
+   "mode": "enforce",
+   "exp": "retro:1 reopen:0 approve:1",
+   "got": "retro:1 reopen:0 approve:1",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W01",
+   "grp": "create · Shift (inside)",
+   "who": "tst_emp1",
+   "desc": "إضافةُ محضر استرشاد اليوم في ورديته (أ)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W02",
+   "grp": "create · Shift (outside)",
+   "who": "tst_emp1",
+   "desc": "إضافةُ محضرٍ في الوردية ب (خارج ورديته)",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W03",
+   "grp": "edit · Shift (inside)",
+   "who": "tst_emp1",
+   "desc": "تعديلُ محضرٍ في ورديته (tstir4)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W04",
+   "grp": "delete · no permission",
+   "who": "tst_emp1",
+   "desc": "حذفُ محضر بلا صلاحية حذف",
+   "mode": "enforce",
+   "exp": "deny:perm",
+   "got": "deny:perm",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W05",
+   "grp": "edit · hidden row (API bypass)",
+   "who": "tst_supB",
+   "desc": "مشرف ب يرسل محضرَ الوردية أ معدَّلاً (محجوبٌ عنه) مباشرةً عبر API",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W06",
+   "grp": "create · closed period (DateRange)",
+   "who": "tst_emp1",
+   "desc": "إضافةُ محضرٍ في الشهر السابق (فترةٌ مغلقة بلا نافذة استدراك)",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (ir.rec.create:DateRange=retro-window-expired (new:1448-3-10))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W07",
+   "grp": "bulk delete · reason",
+   "who": "tst_sup1",
+   "desc": "حذفٌ جماعي لمحضرين في ورديته بلا سبب",
+   "mode": "enforce",
+   "exp": "deny:reason",
+   "got": "deny:reason",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W08",
+   "grp": "bulk delete · reason",
+   "who": "tst_sup1",
+   "desc": "الحذفُ الجماعي نفسُه بسبب",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W09",
+   "grp": "bulk delete · hidden item",
+   "who": "tst_supB",
+   "desc": "مشرف ب يحذف جماعياً ما يراه — المحجوبُ عنه (الوردية أ) لا يُعدّ محذوفاً ويُحفظ كما هو",
+   "mode": "enforce",
+   "exp": "allow ir2:gone ir1:kept",
+   "got": "allow ir2:gone ir1:kept",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W10",
+   "grp": "retro.open · reason",
+   "who": "tst_sup1",
+   "desc": "فتحُ نافذة استدراكٍ للشهر السابق بلا سبب",
+   "mode": "enforce",
+   "exp": "deny:reason",
+   "got": "deny:reason",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W11",
+   "grp": "retro.open · explicit grant + window covers",
+   "who": "tst_sup1",
+   "desc": "فتحُ النافذة بسبب (منحٌ صريح) ثم إضافةُ موظفٍ محضراً في الشهر المغلق تحت النافذة",
+   "mode": "enforce",
+   "exp": "allow allow",
+   "got": "allow allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W12",
+   "grp": "retro.open · compat (approve)",
+   "who": "tst_supB",
+   "desc": "مشرف ب (اعتمادٌ بلا منحٍ صريح): التوافقُ المؤقّت قائمٌ قبل ترحيل الصلاحيات",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W13",
+   "grp": "retro.open · no permission",
+   "who": "tst_emp1",
+   "desc": "موظفٌ بلا اعتماد ولا منح",
+   "mode": "enforce",
+   "exp": "deny:perm",
+   "got": "deny:perm",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W14",
+   "grp": "approve · Shift (inside)",
+   "who": "tst_sup1",
+   "desc": "اعتمادُ قسم ورديته (أ) في تقرير اليوم",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_dreport_v1=allow"
+   ]
+  },
+  {
+   "id": "W15",
+   "grp": "edit · Shift (outside, API bypass)",
+   "who": "tst_supB",
+   "desc": "مشرف ب يعتمد قسمَ الوردية أ (محجوبٌ عنه) مباشرةً عبر API",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W15b",
+   "grp": "create · past day (DateRange)",
+   "who": "tst_sup1",
+   "desc": "إنشاءُ تقريرٍ ليومٍ منقضٍ في الشهر الجاري (مقفلٌ بلا فتح)",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (report.create:DateRange=locked-period: period-locked (m:y-m/dsLockedIn))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W16",
+   "grp": "reopen · grant minus",
+   "who": "tst_sup1",
+   "desc": "إعادةُ فتح قسمٍ معتمد (الشهر السابق) — report.reopen مُسقَطٌ عنه صراحةً",
+   "mode": "enforce",
+   "exp": "deny:perm",
+   "got": "deny:perm",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W17",
+   "grp": "reopen · reason",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يعيد فتح القسم المعتمد بلا سبب",
+   "mode": "enforce",
+   "exp": "deny:reason",
+   "got": "deny:reason",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W18",
+   "grp": "reopen · reason",
+   "who": "tst_dm1",
+   "desc": "إعادةُ الفتح نفسُها بسبب",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_dreport_v1=allow"
+   ]
+  },
+  {
+   "id": "W19",
+   "grp": "lens on · data edit",
+   "who": "tst_lon",
+   "desc": "تعديلُ اسم مصلى في الخطة (العدسة مفعّلة)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W20",
+   "grp": "lens off · data edit (API bypass)",
+   "who": "tst_loff",
+   "desc": "العدسةُ معطّلة: إرسالُ مصلى معدَّل مباشرةً عبر API",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W21",
+   "grp": "lens enable ≠ CRUD",
+   "who": "tst_snop",
+   "desc": "العدسةُ مفعّلة (عرضٌ فقط) بلا صلاحية حذف: حذفُ مصلى من الجولة",
+   "mode": "enforce",
+   "exp": "deny:perm",
+   "got": "deny:perm",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W21b",
+   "grp": "v24.9 mapping · lens.zones.delete",
+   "who": "tst_lon",
+   "desc": "حذفُ مصلى من الخطة بصلاحية «تعديل الخطة» + «حذف الجولات» — مقبولٌ في النظامين (القديم يعدّه تعديلاً للخطة · v24.9: lens.zones.delete)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W22",
+   "grp": "status.change · reason",
+   "who": "tst_lon",
+   "desc": "تغييرُ حالة مصلى في جولة اليوم بلا سبب",
+   "mode": "enforce",
+   "exp": "deny:reason",
+   "got": "deny:reason",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W23",
+   "grp": "status.change · reason",
+   "who": "tst_lon",
+   "desc": "التغييرُ نفسُه بسبب",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_rounds_v1=allow"
+   ]
+  },
+  {
+   "id": "W24",
+   "grp": "status.change · Assigned (field)",
+   "who": "tst_fld",
+   "desc": "راصد الميدان: حالةُ المصلى المسنَد إليه في موقعه (بسبب)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_rounds_v1=allow"
+   ]
+  },
+  {
+   "id": "W25",
+   "grp": "status.change · not assigned (API bypass)",
+   "who": "tst_fld",
+   "desc": "راصد الميدان: حالةُ مصلى غيرِ مسنَدٍ إليه",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W26",
+   "grp": "status.change · Site out of scope",
+   "who": "tst_fld",
+   "desc": "راصد الميدان: مصلى مسنَدٌ إليه لكن في موقعٍ خارج نطاقه (tsts2)",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W27",
+   "grp": "scope without permission",
+   "who": "tst_snop",
+   "desc": "نطاقٌ بلا صلاحية: تعديلُ الجولة",
+   "mode": "enforce",
+   "exp": "deny:perm",
+   "got": "deny:perm",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W28",
+   "grp": "permission without scope",
+   "who": "tst_pnos",
+   "desc": "صلاحيةٌ بلا نطاق: تعديلُ اسم مصلى في الخطة",
+   "mode": "enforce",
+   "exp": "deny:scope-unknown",
+   "got": "deny:scope-unknown (lens.zones.data.edit:Site=unmigrated-site-scope · lens.zones.data.edit:Zone/Element=unmigrated-element-scope)",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W29",
+   "grp": "Department ceiling unmigrated",
+   "who": "tst_dm3",
+   "desc": "مدير إدارةٍ بلا سقف نطاقٍ مُرحَّل: تعديلُ خطتها",
+   "mode": "enforce",
+   "exp": "deny:scope-unknown",
+   "got": "deny:scope-unknown (lens.zones.data.edit:Site=unmigrated-department-ceiling · lens.zones.data.edit:Zone/Element=unmigrated-department-ceilin)",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W30",
+   "grp": "Site within ceiling",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة: تعديلُ مصلى في الموقع الثاني (داخل السقف)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W31",
+   "grp": "Site outside ceiling",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة: إضافةُ موقعٍ جديد خارج سقف الإدارة (tsts9)",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (site.create:Site=Site-outside-department-ceiling (new:f:tsts9))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W32",
+   "grp": "edit · Shift (inside)",
+   "who": "tst_sup1",
+   "desc": "تعديلُ صفّ موظفٍ من ورديته في الشهر الجاري",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_staffing_v3=allow"
+   ]
+  },
+  {
+   "id": "W33",
+   "grp": "edit · locked month (DateRange)",
+   "who": "tst_sup1",
+   "desc": "تعديلُ الشهر السابق المقفل",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (staff.rest:DateRange=locked-period: month-locked)",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W34",
+   "grp": "edit · Shift transition",
+   "who": "tst_sup1",
+   "desc": "نقلُ موظفٍ من ورديته (أ) إلى الوردية ب",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (staff.shift.assign:Shift=shift-out-of-scope (new:TST-B ≠ TST-A))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W35",
+   "grp": "Own · self task",
+   "who": "tst_emp1",
+   "desc": "الموظف يقبل مهمّته (المسنَدة إليه)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_tasks_v1=allow"
+   ]
+  },
+  {
+   "id": "W36",
+   "grp": "Own · other task",
+   "who": "tst_emp1",
+   "desc": "الموظف يقبل مهمّةً ليست له",
+   "mode": "enforce",
+   "exp": "deny",
+   "got": "deny:perm",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W37",
+   "grp": "create · task",
+   "who": "tst_sup1",
+   "desc": "المشرف ينشئ مهمّة",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_tasks_v1=allow"
+   ]
+  },
+  {
+   "id": "W38",
+   "grp": "Source · open day",
+   "who": "tst_ds",
+   "desc": "إدخالُ رقمٍ للحرم في يومٍ مفتوح",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "bassam_dstats_v1=allow"
+   ]
+  },
+  {
+   "id": "W39",
+   "grp": "DateRange · locked day",
+   "who": "tst_ds",
+   "desc": "إدخالٌ في يومٍ مقفل",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (dstats.haram.entry:DateRange=locked-period: dslock (locked before and after))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W40",
+   "grp": "Source · other source (API bypass)",
+   "who": "tst_ds",
+   "desc": "إدخالٌ للمسجد النبوي (مصدرٌ لا يملكه ولا يراه)",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W41",
+   "grp": "DateRange · super included (D4-02)",
+   "who": "SU",
+   "desc": "مدير النظام: إدخالٌ في يومٍ مقفل — D4-02: لا استثناءَ له في الإنفاذ (القديم يتجاوز القفل)",
+   "mode": "enforce",
+   "exp": "deny:scope",
+   "got": "deny:scope (dstats.haram.entry:DateRange=locked-period: dslock (locked before and after))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W42",
+   "grp": "approve · Source",
+   "who": "tst_ds",
+   "desc": "اعتمادُ شهر الحرم (قفلٌ)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "bassam_dstats_v1=allow"
+   ]
+  },
+  {
+   "id": "W43",
+   "grp": "import.run",
+   "who": "tst_imp",
+   "desc": "استيرادُ موظف (علامة import.run)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_employees_v1=allow"
+   ]
+  },
+  {
+   "id": "W44",
+   "grp": "import.run · no permission",
+   "who": "tst_emp1",
+   "desc": "الاستيرادُ نفسُه من موظفٍ بلا صلاحية",
+   "mode": "enforce",
+   "exp": "deny:perm",
+   "got": "deny:perm",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W45",
+   "grp": "import.run · allowlist",
+   "who": "tst_imp",
+   "desc": "علامةُ استيرادٍ على موردٍ خارج القائمة المسموحة (الاسترشاد)",
+   "mode": "enforce",
+   "exp": "deny:import-allowlist",
+   "got": "deny:import-allowlist (bassam_irshad_v1)",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W46",
+   "grp": "backup.restore · mgr + key + reason",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة (منحٌ صريح backup.restore) يستعيد خطة إدارته بسبب",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W47",
+   "grp": "backup.restore · reason",
+   "who": "tst_dm1",
+   "desc": "الاستعادةُ نفسُها بلا سبب",
+   "mode": "enforce",
+   "exp": "deny:reason",
+   "got": "deny:reason",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W48",
+   "grp": "backup.restore · mgr without key",
+   "who": "tst_dm2",
+   "desc": "مدير إدارةٍ بلا مفتاح الاستعادة",
+   "mode": "enforce",
+   "exp": "deny:restore-policy",
+   "got": "deny:restore-policy (mgr-no-key)",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W49",
+   "grp": "backup.restore · not mgr",
+   "who": "tst_lon",
+   "desc": "موظفٌ (يملك تعديل الخطة) يحاول الاستعادة",
+   "mode": "enforce",
+   "exp": "deny:restore-policy",
+   "got": "deny:restore-policy (not-mgr)",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W50",
+   "grp": "account freeze · mgr",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يجمّد حسابَ موظفٍ من إدارته",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "bassam_auth_users_v1=allow"
+   ]
+  },
+  {
+   "id": "W51",
+   "grp": "account freeze · not mgr",
+   "who": "tst_sup1",
+   "desc": "مشرفٌ يحاول تجميدَ حساب",
+   "mode": "enforce",
+   "exp": "deny",
+   "got": "deny:mgr",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W52",
+   "grp": "account freeze · other dept",
+   "who": "tst_dm2",
+   "desc": "مديرُ إدارةٍ أخرى يحاول تجميدَ حسابٍ في d1",
+   "mode": "enforce",
+   "exp": "deny",
+   "got": "deny:mgr",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W53",
+   "grp": "scope record · mgr (employee scope)",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يحدّد نطاقَ موظفٍ (tst_e_pnos)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_scope_v1=allow"
+   ]
+  },
+  {
+   "id": "W54",
+   "grp": "scope record · ceiling",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يحاول تغيير سقف إدارته (لمدير النظام وحده)",
+   "mode": "enforce",
+   "exp": "deny:super",
+   "got": "deny:super (ceiling)",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W55",
+   "grp": "scope record · not mgr",
+   "who": "tst_sup1",
+   "desc": "مشرفٌ يحاول تعديلَ سجلّ النطاق",
+   "mode": "enforce",
+   "exp": "deny",
+   "got": "deny:mgr",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W56",
+   "grp": "grant · mgr",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يمنح موظفاً مفتاحاً يملكه (ir.rec.delete)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_grants_v1=allow"
+   ]
+  },
+  {
+   "id": "W57",
+   "grp": "grant → effect",
+   "who": "tst_emp1",
+   "desc": "بعد المنح: الموظف يحذف محضراً في ورديته",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_grants_v1=allow",
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W58",
+   "grp": "grant · self",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يمنح نفسه",
+   "mode": "enforce",
+   "exp": "deny:self",
+   "got": "deny:self (mgr:tst_d1)",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W59",
+   "grp": "grant · not assignable",
+   "who": "tst_dm1",
+   "desc": "منحُ مفتاحٍ غير قابلٍ للمنح (sys.users.manage)",
+   "mode": "enforce",
+   "exp": "deny:grant",
+   "got": "deny:grant (sys.users.manage (not assignable))",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W60",
+   "grp": "grant · other dept",
+   "who": "tst_dm2",
+   "desc": "مديرُ إدارةٍ أخرى يمنح في d1",
+   "mode": "enforce",
+   "exp": "deny:dept",
+   "got": "deny:dept",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W61",
+   "grp": "Department",
+   "who": "tst_dm1",
+   "desc": "مدير d1 يكتب في استرشاد d2",
+   "mode": "enforce",
+   "exp": "deny:dept",
+   "got": "deny:dept",
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W62",
+   "grp": "Branch (inside)",
+   "who": "tst_gm1",
+   "desc": "مدير الفرع يضيف محضراً في d2 (داخل فرعه)",
+   "mode": "enforce",
+   "exp": "allow",
+   "got": "allow",
+   "pass": true,
+   "restored": [
+    "tst_d2:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W63",
+   "grp": "Branch (outside)",
+   "who": "tst_gm1",
+   "desc": "مدير الفرع يكتب في d3 (خارج فرعه)",
+   "mode": "enforce",
+   "exp": "deny:dept",
+   "got": "deny:dept",
+   "pass": true,
+   "restored": []
+  }
+ ]
+}

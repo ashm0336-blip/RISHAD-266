@@ -1,0 +1,100 @@
+{
+  "recordVersion": 1,
+  "verifiedDate": "2026-10-30",
+  "project": "RISHAD-266",
+  "scope": "Schema7 Preview acceptance and subsequent source-tool/documentation checkpoint; not Production acceptance or completion of all business migrations",
+  "allBusinessDomainsMigrated": false,
+  "preview": {
+    "deployment": "f12dc3ce-eb2b-4768-8db2-020bf81f489b",
+    "url": "https://f12dc3ce.kivo-d81.pages.dev",
+    "branch": "test",
+    "environment": "preview",
+    "schema": 7,
+    "migrationLedger": "Exact numbered migrations1 through7",
+    "authzMode": "enforce",
+    "upgradePermitConsumed": true,
+    "liveHttpChecks": 30,
+    "temporaryResidue": 0,
+    "foreignKeyViolations": 0,
+    "existingIdentitiesAndPermissionsPreserved": true,
+    "productionModified": false,
+    "r2Modified": false
+  },
+  "runtime": {
+    "canonicalAndBuildSha256": {
+      "workers/_worker.js": "424ef82a613473cb987c878c71fb63fd0419e19b4de9b1582cf86d0b1c9cd081",
+      "workers/parts/052-aud-events.js": "0d95ecd0db177620d8baa6fc38b5eb142f3b4b1f5a474fa906be63bf06faa653",
+      "workers/parts.json": "e351df3ae2bc56d96e520ec15b536f5062233d3f80d2694aeab2102739ed33be",
+      "pk265/_worker.js": "3bf479f9f5c3636feba90d9f83b818d56f1f428b76aa9af8878c33a8cc0cbb7d",
+      "pk265.build.json": "860c1b514e0323371282066abee89e5274a4c956de752ce3d8534824e175008c"
+    },
+    "distributionFiles": 131,
+    "distributionBytesUnchangedAfterToolAndDocWork": true,
+    "distributionFileManifestSha256": "e294a74597ca6f5f7ef43f698e456ccd3eac63ade7d459a0820d1ecbcd406bb4",
+    "previewCodeArchiveSha256": "306f3c9602295eb6524c99ab4af912e088e93ed506b20fced03f354c6e04ad5b"
+  },
+  "applicationTests": {
+    "originalFullRun": {
+      "files": 225,
+      "tests": 1522,
+      "pass": 1483,
+      "fail": 29,
+      "skipped": 10,
+      "preservedAsFailedResult": true,
+      "failureScope": "Synthetic fixture permit expiry under fake JavaScript clocks; not relabeled PASS"
+    },
+    "targetedFixtureRerun": {
+      "tests": 41,
+      "pass": 41,
+      "fail": 0,
+      "skipped": 0,
+      "coveredOriginalFailures": 29,
+      "newRegressionCases": 2,
+      "productionGuardUnchanged": true
+    },
+    "compositeAcceptance": {
+      "tests": 1524,
+      "pass": 1514,
+      "remainingFailures": 0,
+      "historicalSkipped": 10,
+      "method": "Completed original full run plus explicit affected-file rerun; not a second full-suite run"
+    }
+  },
+  "postDeploymentSourceTools": {
+    "affectedNodeFiles": 3,
+    "nodeTests": 11,
+    "nodePass": 11,
+    "nodeFail": 0,
+    "nodeSkipped": 0,
+    "includedPythonMockCases": 22,
+    "pythonCasesAreNestedNotAdditionalNodeCases": true,
+    "canonicalSourceSha256": {
+      "tools/d1/restore.sh": "9483c07b98c5f14838555cccec52d51a367113f31d86b801ff20f906c4347bda",
+      "tools/d1/restore_bookmark.py": "31a6827740066e346379824288d37dd85766ba0e6759edede430db24f49cff90",
+      "tests/unit/d1_restore_bookmark_test.py": "3f975a9c957fe6fe2db5f8b68f191b321c6aa90abc81eab6e42285ff1026f4d5",
+      "tests/source/docs_check.py": "9a0af393dae99f9221d8ba69c22e6c47bf327aa5b1d2bdb9f9dc67755135c422"
+    },
+    "checkCurrentExitCode": 0,
+    "documentationChecks": 17,
+    "documentationPass": 17,
+    "documentationFail": 0,
+    "priorSourceAndDistributionSecretFindings": 0
+  },
+  "isolatedIrshadStage": {
+    "localOnly": true,
+    "includedInCanonicalSource": false,
+    "schema8Activated": false,
+    "acceptedForCutover": false
+  },
+  "knownLimits": [
+    "Other business domains and account storage still use KV/JSON; migration of the full platform is incomplete.",
+    "Ten historical release cases remain skipped; the original failed full run and targeted repair remain distinct.",
+    "No live Time Travel restore drill or complete local D1 data export was performed.",
+    "Time Travel overwrites all D1 content including accounts, permissions, password policy and sessions and loses later writes; compatible Worker and database rollback must be coordinated.",
+    "Restore verification checks schema/ledger/permit/tables/authz metadata, not full business content or provider bookmark availability/equality.",
+    "The evidence-directory claim is not a global database lock; all other writers/restores must be quiesced.",
+    "An isolated historical mocked local I/O failure has no established original cause; fault tests now verify fail-closed behavior without repeating POST.",
+    "Large enterprise UI/load simulation and comprehensive manuals remain deferred.",
+    "Private local evidence and isolated preparation code remain excluded from the published Git source; this record contains no database payload or operational recovery point."
+  ]
+}

@@ -1,0 +1,72 @@
+{
+ "config/wrangler.toml": {
+  "sha256": "755b6b162280e2782b0f8ec5cd72d06ee91e8dde25da17e008691a9c33936f5b",
+  "lines": 13,
+  "why": "مجلدُ البناء pk262 (كان pk261)"
+ },
+ "src/api/280-server-storage.js": {
+  "sha256": "74bd60fbd689a2c8dd4b1f3f1d018b06f818580fc5944f7caaeca125e0f47304",
+  "lines": 20,
+  "why": "KIVO_262: رسالةُ سبب الرفض ph بالعربية (الوضعان)"
+ },
+ "src/assets/icons/catalog.json": {
+  "sha256": "88e1cb360f38da8e5e8950f2e12c561abaa3036023c7a65fdb61e09f501e3db7",
+  "lines": 40,
+  "why": "KIVO_262: عددُ مواضع أربع أيقوناتٍ قائمة +1 (tools/icons.py extract) — لا أيقونةَ جديدة"
+ },
+ "src/modules/admin/logic.js": {
+  "sha256": "3d8ce5b611c5e0f5eb182a2d6958bf90077a27c3dc4962e8242eb88e79d2b087",
+  "lines": 199,
+  "why": "KIVO_262 (SOT-014/015/188): سقفُ النطاق — scIdOf (= KIVO_SCOPE.ID) · scPlan · scRec · scopeVals · scSave · scEmpVals · scMgrVals · tabScopeStyle · sysTab \"scope\""
+ },
+ "src/modules/admin/view.html": {
+  "sha256": "9ee72513c3106c105be814b9b128c320d3c84d6380dbdf86d3326e69e8b7e408",
+  "lines": 151,
+  "why": "KIVO_262: زرُّ «سقف النطاق» · محتوى التبويب (البعدان · المصدر · الحفظ · نطاقُ موظفي الإدارة) · لوحةُ مدير الإدارة في «قوالب الصلاحيات» — برموز السمة القائمة"
+ },
+ "tools/onboard_check.sh": {
+  "sha256": "771a13f1c91cfc0596f896952f0077d0973054032181c46c34ec01fa215e71d6",
+  "lines": 13,
+  "why": "الافتراضيُّ 262 (كان 261)"
+ },
+ "tools/sec/audit.py": {
+  "sha256": "4ca9157a11d2a1a3aefc2a204012706496ae4a1fab88b77751d61d73af9b4ea7",
+  "lines": 22,
+  "why": "الافتراضيُّ pk262 (كان pk261)"
+ },
+ "workers/parts/002-seclog.js": {
+  "sha256": "5e63a5f8d8a720fed4c659f84f571b7a9ed45341a6314146474dd3076f368741",
+  "lines": 13,
+  "why": "الإصدار 2026.10.12-162"
+ },
+ "workers/parts/018-ancestry.js": {
+  "sha256": "1ac881093b920ccb3261b0dd477668ca40c5f8ed525a3c21ca3f4c9100722df3",
+  "lines": 37,
+  "why": "KIVO_262 (تصليب · المراجعة المعمارية): PH_NEW_RX · phNewOk — في usersRule (الذات والمدير)"
+ },
+ "workers/parts/021-authz-core-intro.js": {
+  "sha256": "4752bb70778bab61715b4cf9e46ae05d8364a07e665e2905e0fd5226ced15ed5",
+  "lines": 10,
+  "why": "KIVO_262 (المراجعة المعمارية): حذفُ empPagePermsOf — بلا مستدعٍ"
+ },
+ "workers/parts/056-enforce.js": {
+  "sha256": "be2a355e193d4ae216cbbe1deb32815c847723180839d24c042749d4de31c6f8",
+  "lines": 13,
+  "why": "ENF_VER KIVO_262 (· ph-new)"
+ },
+ "workers/parts/057-enf-index.js": {
+  "sha256": "169f5413a3deb273c6a8f592a69fadad46c2c956c9942b59001eeb7fa62151cd",
+  "lines": 17,
+  "why": "KIVO_262 (المراجعة المعمارية): حذفُ enfHeldList — حلّ محلَّها البتماب في 063"
+ },
+ "workers/parts/059-protected-ops-2.js": {
+  "sha256": "eea5ccf15187c2ddc0601cb7bb463673a002e5f8845ab6fff561bc722b41707e",
+  "lines": 21,
+  "why": "KIVO_262: phNewOk في enfUsersWrite (الذات والمدير)"
+ },
+ "workers/parts/061-enf-read.js": {
+  "sha256": "e6162bbbc15e0fedcf2fcc722edc276083b29cc0ac4379812be36e3bc08118d0",
+  "lines": 22,
+  "why": "KIVO_262 (المراجعة المعمارية): حذفُ enfMergeStr — حلّ محلَّها enfMergeChk"
+ }
+}

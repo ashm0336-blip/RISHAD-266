@@ -1,0 +1,39 @@
+{
+ "source": "git:KIVO_256:src/auth/330-auth-perm.js",
+ "sourceLabel": "src/auth/330-auth-perm.js",
+ "ns": "auth",
+ "deadAt": "fatalScreen(window.__BS_STORAGE_FAIL || 'storage unavailable'); return;",
+ "parts": [
+  {
+   "out": "src/auth/330-auth.js",
+   "from": null,
+   "title": "المصادقة: التجزئة · سياسةُ الدخول · الحساباتُ والجلسات · مديرو الإدارات · التفعيل"
+  },
+  {
+   "out": "src/permissions/331-perm-model.js",
+   "from": "  /* ═══ نظام الصلاحيات — مستويان",
+   "title": "نموذجُ الصلاحيات: سجلُّ الصفحات · الأوراق · السقف · الأنماط · الترحيلات · الإنفاذ · مفاتيحُ v24.9"
+  },
+  {
+   "out": "src/services/332-find-day.js",
+   "from": "  /* ═══ محرّك البحث الموحّد",
+   "title": "خدماتُ المنصة: محرّكُ البحث الموحّد · اليومُ والورديةُ المشتركان"
+  },
+  {
+   "out": "src/manifests/333-platform-map.js",
+   "from": "  /* ═══ الترتيب الفعّال للمنصة",
+   "title": "خريطةُ المنصة: الترتيبُ الفعّال · الخريطةُ المولَّدة من السجلات"
+  },
+  {
+   "out": "src/permissions/334-perm-tree-tpl.js",
+   "from": "  /* ═══ شجرة صلاحيات الموظف — نموذج عرضٍ واحد",
+   "title": "شجرةُ صلاحيات الموظف · القوالب · الواجهتان العامتان BassamPerm وBassamAuth"
+  },
+  {
+   "out": "src/auth/335-identity-gate.js",
+   "from": "  /* ═══ توحيد مفتاح الموظف في حسابات الدخول",
+   "title": "الهويةُ وشاشةُ الدخول: توحيدُ مفتاح الموظف · قفلُ التطبيق · البوابة · الاستيراد · حوارُ كلمة المرور"
+  }
+ ],
+ "wrap": true
+}

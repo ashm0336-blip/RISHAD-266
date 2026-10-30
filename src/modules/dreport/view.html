@@ -1,0 +1,970 @@
+<div dir="rtl" data-screen-label="التقرير اليومي" class="drp" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414);margin:0 auto">
+
+  <!-- KIVO_261 (SOT-010 · كشفه k261tree): صلاحية «عرض فقط» — سطرٌ واحد يقول السبب كسائر الصفحات (الأزرارُ تختفي لا تُعطَّل) -->
+  <sc-if value="{{drPmReadOnly}}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;margin-bottom:12px;border-radius:12px;background:var(--bg-a1001161390p06);border:1px solid var(--bd-a1001161390p22);font-size:11.5px;font-weight:600;color:var(--fg-x475569)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-ec9ec7cc"></svg>
+    <span>صلاحيتك على هذه الصفحة: <b style="font-weight:800">عرض فقط</b> — أدوات الإضافة والتعديل والحذف مخفيّة. راجع مدير النظام إن احتجت تعديلاً.</span>
+  </div>
+  </sc-if>
+
+  <!-- ══ شريط التقويم — منقول حرفياً من بطاقة الجولات اليومية ══ -->
+  <div style="border-radius:16px;border:1px solid var(--bd-a185151810p2);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+    <div class="bs-hbar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--bd-a185151810p1);background:linear-gradient(to left,var(--bg-a185151810p05),transparent,var(--bg-a185151810p05));flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:4px">
+        <button onClick="{{prevYear}}" title="السنة السابقة" style="width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--bg-xf5f5f5)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
+        <div style="display:flex;flex-direction:column;align-items:center;min-width:110px">
+          <span style="font-weight:400;font-size:14px;color:var(--fg-xb99751);line-height:1.3">{{dYearLabel}}</span>
+          <span style="font-size:10px;color:var(--fg-x53565a);line-height:1.3;font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{dGregRange}}</span>
+        </div>
+        <button onClick="{{nextYear}}" title="السنة التالية" style="width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--bg-xf5f5f5)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></button>
+        <button onClick="{{goCurrent}}" style="height:28px;padding:0 8px;font-size:11px;color:var(--fg-x53565a);background:transparent;border:0;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif" style-hover="color:var(--fg-xb99751);background:var(--bg-a185151810p05)">الحالية</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;border-radius:9999px;padding:4px 10px;font-weight:400;border:1px solid var(--bd-a185151810p25);color:var(--fg-xb99751);background:var(--bg-a185151810p08)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5693e495"></svg>
+        <span dir="rtl"><span dir="ltr">{{roundDaysCount}} / {{dimTotal}}</span> {{dimTotalW}}</span>
+      </div>
+    </div>
+    <div class="bs-hscroll" style="overflow-x:auto">
+      <div style="display:flex;gap:12px;padding:16px 12px;min-width:100%;box-sizing:border-box">
+        <sc-for list="{{months}}" as="m" hint-placeholder-count="12">
+        <div style="position:relative;flex:1 1 auto;min-width:100px">
+          <div onClick="{{m.click}}" onDoubleClick="{{m.dbl}}" title="{{m.tip}}" style="{{m.style}}" style-hover="box-shadow:var(--shadow-soft)">
+            <sc-if value="{{m.isCurrent}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-x3b82f6)" title="الشهر الحالي"></span></sc-if>
+            <sc-if value="{{m.showBadge}}" hint-placeholder-val="{{ false }}">
+              <span style="position:absolute;top:-6px;left:-6px;width:20px;height:20px;border-radius:9999px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card),0 0 0 2px var(--bg-card);background:var(--bg-xf59e0b)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xffffff)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-i="i-37ad70cd"></svg>
+              </span>
+            </sc-if>
+            <p style="font-size:11px;font-weight:400;line-height:1.3;margin:0;color:{{m.nameColor}}">{{m.name}}</p>
+            <p style="font-size:9px;color:var(--fg-x53565a);margin:2px 0 0;line-height:1.3">{{m.greg}}</p>
+            <div style="margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-size:8px;font-weight:400;color:{{m.footColor}}">
+              <sc-if value="{{m.footIcon}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-81de76b2"></svg></sc-if>
+              <span>{{m.footLabel}}</span>
+            </div>
+          </div>
+        </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DAY STRIP (مطابق للجولات اليومية) ══ -->
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:10px;color:var(--fg-x53565a)">تقدم الأيام:</span>
+        <span style="font-size:10px;font-weight:400;color:var(--fg-xb99751)">{{roundDaysCount}} فيها تقرير</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xb99751)"></span><span style="font-size:8px;color:var(--fg-x53565a)">فيه تقرير</span></div>
+        <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-x047857)"></span><span style="font-size:8px;color:var(--fg-x53565a)">معتمد</span></div>
+        <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);box-sizing:border-box"></span><span style="font-size:8px;color:var(--fg-x53565a)">فارغ</span></div>
+      </div>
+    </div>
+    <div class="bs-daystrip" style="display:flex;align-items:center;gap:3px;flex-wrap:nowrap;padding:4px 0 6px">
+      <sc-for list="{{days}}" as="d" hint-placeholder-count="30">
+      <div onClick="{{d.click}}" onDoubleClick="{{d.dbl}}" title="{{d.tip}}" style="{{d.style}}" style-hover="transform:scale(1.05)">
+        <span style="line-height:1;display:block">{{d.num}}</span>
+        <span style="{{d.sepStyle}}"></span>
+        <span style="line-height:1;display:block;font-weight:400">{{d.gnum}}</span>
+        <sc-if value="{{d.isToday}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-xb99751);box-shadow:0 0 0 1px var(--bg-card)"></span></sc-if>
+        <sc-if value="{{d.lockClosed}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-xcbd5e1);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x475569)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg></span></sc-if>
+        <sc-if value="{{d.lockOpen}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p6);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-b64167e0"></svg></span></sc-if>
+        <sc-if value="{{d.canReset}}" hint-placeholder-val="{{ false }}"><span onClick="{{d.reset}}" title="{{d.resetTip}}" style="position:absolute;top:-4px;right:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-a22038380p45);color:var(--fg-xdc2626);cursor:pointer;z-index:12;box-shadow:var(--shadow-card)" style-hover="background:var(--bg-xdc2626);color:var(--fg-xffffff);border-color:var(--bd-xdc2626)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-0732b330"></svg></span></sc-if>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- ══ DAY CONTENT ══ -->
+  <div class="drcard">
+    <div style="display:flex;align-items:center;gap:11px;padding:14px 18px;border-bottom:1px solid var(--bd-xe6e8eb);background:linear-gradient(180deg,var(--bg-xffffff),var(--bg-xf7f9fa))">
+      <span style="width:32px;height:32px;border-radius:9px;background:var(--bg-a185151810p1);color:var(--fg-x8a6f35);display:flex;align-items:center;justify-content:center">◷</span>
+      <div style="font-size:15px;font-weight:800">تقرير يوم {{rpDayLabel}}</div>
+      <sc-if value="{{drBannerOn}}" hint-placeholder-val="{{ false }}">
+      <span style="{{drBannerStyle}}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-4f43699e"></svg>
+        {{drBannerTxt}}
+      </span>
+      </sc-if>
+      <sc-if value="{{drSubOn}}" hint-placeholder-val="{{ true }}">
+      <span style="margin-inline-start:auto;font-size:11px;color:var(--fg-x94a3b8);font-weight:600">{{rpDaySub}}</span>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{shApBannerOn}}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:10px;margin:12px 18px 0;padding:10px 14px;border-radius:12px;font-size:12px;font-weight:700;background:var(--bg-a4120870p07);border:1px solid var(--bd-a4120870p28);color:var(--fg-x0b5c38)">
+        <span style="display:inline-flex;width:26px;height:26px;border-radius:8px;align-items:center;justify-content:center;background:var(--bg-a2552552550p55);flex-shrink:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-b9106568"></svg></span>
+        <span style="flex:1;line-height:1.7">{{shApBannerTxt}}</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{rpEmpty}}">
+      <div style="padding:44px 24px;text-align:center">
+        <div style="{{drEmptyIconBox}}"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-83b246b7"></svg></div>
+        <div style="font-size:15px;font-weight:700">{{drEmptyTitle}}</div>
+        <div style="font-size:12.5px;color:var(--fg-x94a3b8);margin:6px 0 18px">{{drEmptySub}}</div>
+        <sc-if value="{{drEmptyPullOn}}" hint-placeholder-val="{{ true }}"><button onClick="{{rpCreate}}" style="border:0;border-radius:10px;padding:11px 26px;font-family:'Cairo';font-size:13px;font-weight:700;color:var(--text-on-brand);cursor:pointer;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));box-shadow:0 6px 16px -6px rgba(138,111,53,.7)">＋ إنشاء تقرير</button></sc-if>
+        <sc-if value="{{rpNoStaff}}"><div style="font-size:11.5px;color:var(--fg-xc9702a);margin-top:14px">{{rpNoStaffMsg}}</div></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{rpHasReport}}">
+      <!-- ═══ صف واحد: الوردية (بحالتها داخل القائمة) · وقتها المنعكس · قيادتها · عدّاد الاعتماد ═══ -->
+      <div style="padding:14px 18px;border-bottom:1px solid var(--bd-xf1f3f5)">
+        <!-- overflow ظاهر عمداً: صفّ bs-hbar يقصّ القوائم المنسدلة النازلة تحته،
+             والصفّ يلتفّ (wrap) فلا يحتاج تمريراً أفقياً أصلاً -->
+        <sc-if value="{{shNoShift}}" hint-placeholder-val="{{ false }}">
+        <div data-sh-noshift="1" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 12px;border-radius:10px;font-size:11.5px;font-weight:700;color:var(--fg-xb45309);background:var(--bg-a245158110p09);border:1px solid var(--bd-a245158110p3)">{{shNoShiftTxt}}</div>
+        </sc-if>
+        <div class="bs-hbar" style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;overflow:visible">
+          <div style="display:flex;flex-direction:column;gap:6px;flex:1 1 190px;min-width:180px">
+            <span style="font-size:10.5px;color:var(--fg-x94a3b8);font-weight:700;text-align:center">{{shListLabel}}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <sc-if value="{{shApBtnOn}}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{shApBtnGo}}" title="{{shApBtnTip}}" style="{{shApBtnStyle}}">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-43ca6054"></svg>
+              </button>
+              </sc-if>
+              <div style="{{shRelStyle}}">
+                <div style="{{shWrapStyle}}" style-hover="border-color:var(--bd-a187150970p7)">
+                <span style="{{shIcoStyle}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e0caafa8"></svg></span>
+                <button onClick="{{shDdToggle}}" title="{{shPinTip}}" style="{{shSelStyle}}" data-sh-pinned="{{shPinned}}">
+                  <span style="{{shDot}}"></span>
+                  <span style="{{shCurStyle}}">{{shCurTxt}}</span>
+                </button>
+                <sc-if value="{{shPinRf.on}}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{shPinRf.go}}" title="{{shPinRf.tip}}" style="{{shPinRf.style}}" style-hover="background:var(--bg-a1808390p1)" data-sh-pin-rf="1">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-0732b330"></svg>
+                </button>
+                </sc-if>
+                </div>
+                <sc-if value="{{shDdOpen}}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;top:100%;right:0;left:0;z-index:46;margin-top:6px;background:var(--bg-xffffff);border:1px solid var(--bd-xe6e8eb);border-radius:12px;box-shadow:var(--shadow-elevated);overflow:hidden;text-align:right;padding:5px">
+                  <sc-for list="{{shOpts}}" as="o" hint-placeholder-count="3">
+                  <div onClick="{{o.pick}}" style="{{o.rowStyle}}" style-hover="background:var(--bg-a185151810p06)">
+                    <span style="width:8px;height:8px;border-radius:9999px;flex-shrink:0;background:{{o.color}}"></span>
+                    <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{o.name}}<span style="font-size:9.5px;font-weight:400;color:var(--fg-x94a3b8)">{{o.note}}</span></span>
+                    <sc-if value="{{o.rfOn}}" hint-placeholder-val="{{ true }}">
+                    <button onClick="{{o.refresh}}" title="{{o.rfTip}}" style="{{o.rfStyle}}" style-hover="background:var(--bg-a1808390p1)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-0732b330"></svg>
+                    </button>
+                    </sc-if>
+                  </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:10.5px;color:var(--fg-x94a3b8);font-weight:700;text-align:center">وقت الوردية</span>
+            <span style="{{shTimeWrapStyle}}">
+              <span style="{{shTimeIcoStyle}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fab3c0b3"></svg></span>
+              <span style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:0 12px;font-size:12px;font-weight:700;color:var(--fg-x141414);font-feature-settings:'tnum';white-space:nowrap">{{shTime}}</span>
+            </span>
+          </div>
+          <sc-for list="{{rpLeaders}}" as="L" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:6px;flex:1 1 150px;min-width:140px">
+              <span title="{{L.roleTip}}" style="font-size:10.5px;color:var(--fg-x94a3b8);font-weight:700;text-align:center">{{L.role}}</span>
+              <sc-if value="{{rpCanEdit}}" hint-placeholder-val="{{ true }}">
+              <div style="{{L.relStyle}}">
+                <div style="{{L.wrapStyle}}" style-hover="border-color:var(--bd-a187150970p7)">
+                <sc-if value="{{L.csOn}}" hint-placeholder-val="{{ false }}"><sc-if value="{{L.csLockedView}}" hint-placeholder-val="{{ false }}"><div style="{{L.csReadStyle}}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{L.csLabel}}</span></div></sc-if><sc-if value="{{L.csCanEdit}}" hint-placeholder-val="{{ true }}"><button onClick="{{L.csToggle}}" title="رمز نداء المنصب — ثابتٌ للمنصب: يُسجَّل تلقائياً لمن يشغله ويُمحى عمّن تركه" style="{{L.csBtnStyle}}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:86px">{{L.csLabel}}</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{L.csChev}}" data-i="i-c92915c6"></svg></button></sc-if></sc-if><sc-if value="{{L.icoOn}}" hint-placeholder-val="{{ true }}"><span style="{{L.icoStyle}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0e9d72bd"></svg></span></sc-if>
+                <button onClick="{{L.ddToggle}}" title="{{L.ddTip}}" style="{{L.ddStyle}}">
+                  <span style="{{L.ddTxtStyle}}">{{L.ddTxt}}</span>
+                </button>
+                </div>
+                <sc-if value="{{L.ddOpen}}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;top:100%;right:0;left:0;z-index:46;margin-top:6px;background:var(--bg-xffffff);border:1px solid var(--bd-xe6e8eb);border-radius:12px;box-shadow:var(--shadow-elevated);text-align:right;padding:5px;max-height:190px;overflow-y:auto">
+                  <sc-if value="{{L.altShow}}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{L.altToggle}}" title="{{L.altTip}}" style="{{L.altStyle}}" style-hover="border-color:var(--bd-xb99751);background:var(--bg-a185151810p07)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5411fa4a"></svg>
+                    <span>{{L.altLabel}}</span>
+                  </button>
+                  </sc-if>
+                  <sc-for list="{{L.opts}}" as="o" hint-placeholder-count="3">
+                  <div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
+                    <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{o.t}}</span>
+                    <span style="{{o.subStyle}}">{{o.sub}}</span>
+                    <sc-if value="{{o.sel}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if>
+                  </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+                <sc-if value="{{L.csShowList}}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:100%;right:0;z-index:47;width:252px;margin-top:6px;background:var(--bg-xffffff);border:1px solid var(--bd-xe6e8eb);border-radius:12px;box-shadow:var(--shadow-elevated);overflow:hidden;text-align:right"><div style="max-height:180px;overflow-y:auto;padding:5px"><div onClick="{{L.csClear}}" style="{{L.csClearStyle}}" style-hover="background:var(--bg-a2452452450p8)"><span style="flex:1">بدون رمز</span><sc-if value="{{L.csNoneSel}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if></div><sc-if value="{{L.csEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:8px 10px;font-size:10px;font-weight:400;color:var(--fg-x94a3b8);text-align:center">لا رموز بعد — تُضاف من الجدول الشهري</div></sc-if><sc-for list="{{L.csOpts}}" as="o" hint-placeholder-count="3"><div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)"><sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round"
+                    stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{o.name}}</span></div></sc-for></div><div style="padding:7px 10px;border-top:1px solid var(--bd-xf1f5f9);background:var(--bg-xfafafa);font-size:9.5px;font-weight:400;color:var(--fg-x94a3b8);text-align:center" title="القائمة انعكاس مباشر لرموز النداء المعرَّفة في الجدول الشهري — الإضافة والتعديل والحذف من هناك وحده">الرموز تُدار من الجدول الشهري</div></div></sc-if>
+              </div>
+              </sc-if>
+              <sc-if value="{{rpLockedCell}}" hint-placeholder-val="{{ false }}">
+              <div style="{{L.wrapStyle}}">
+                <sc-if value="{{L.csOn}}" hint-placeholder-val="{{ false }}"><div style="{{L.csReadStyle}}"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{L.csLabel}}</span></div></sc-if><sc-if value="{{L.icoOn}}" hint-placeholder-val="{{ true }}"><span style="{{L.icoStyle}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0e9d72bd"></svg></span></sc-if>
+                <span style="flex:1;min-width:0;padding:0 12px;font-size:12.5px;font-weight:700;color:var(--fg-x141414);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{L.curName}}</span>
+              </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- جدول الوردية لم يُسحب بعد -->
+      <sc-if value="{{shPullOn}}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px">
+        <div style="border:1.5px dashed var(--bd-a185151810p45);border-radius:12px;padding:22px;text-align:center">
+          <div style="font-size:12.5px;color:var(--fg-x94a3b8);margin-bottom:12px">{{shPullHint}}</div>
+          <sc-if value="{{shPullDraft}}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;font-weight:700;color:var(--fg-x7c4a03);background:var(--bg-xfff7e6);border:1px solid var(--bd-xf1d9a8);border-radius:10px;padding:8px 12px;margin:-4px auto 12px;max-width:560px">{{shPullDraftMsg}}</div></sc-if>
+          <sc-if value="{{rpCanEdit}}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap">
+              <button onClick="{{rpPull}}" title="{{shPullTip}}" style="border:0;border-radius:10px;padding:10px 22px;font-family:'Cairo';font-size:12.5px;font-weight:700;color:var(--text-on-brand);cursor:pointer;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));box-shadow:0 6px 16px -6px rgba(138,111,53,.7)">＋ سحب جدول الوردية</button>
+              <button onClick="{{shContGo}}" title="{{shContTip}}" style="{{shContStyle}}">{{shContTxt}}</button>
+            </div>
+            </sc-if>
+          <sc-if value="{{rpLockedCell}}" hint-placeholder-val="{{ false }}"><div style="font-size:11px;color:var(--fg-x94a3b8);font-weight:700">اليوم مقفل — لا سحب بعد القفل</div></sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- جدول الوردية المسحوب + إحصاءاتها -->
+      <sc-if value="{{shTableOn}}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px">
+        <div class="rp-kpis bs-statscroll">
+        <div style="display:flex;align-items:stretch;gap:10px;border:1px solid var(--bd-xeef0f2);border-radius:12px;padding:10px;background:linear-gradient(180deg,var(--bg-xffffff),var(--bg-xfcfcfd));box-shadow:var(--shadow-card);flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 6px;min-width:110px">
+            <div style="position:relative;width:96px;height:96px;display:grid;place-items:center;flex-shrink:0">
+              <svg width="96" height="96" viewBox="0 0 96 96" style="position:absolute;top:0;right:0;transform:rotate(-90deg)" data-i="i-399b4b7b"></svg>
+              <b dir="ltr" style="position:relative;z-index:2;font-size:30px;font-weight:700;line-height:1;color:{{rpBigColor}};font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{rpBigVal}}</b>
+              <span dir="ltr" style="position:absolute;bottom:-7px;z-index:3;font-size:9.5px;font-weight:700;color:{{rpBigColor}};font-family:'Cairo',sans-serif;font-feature-settings:'tnum';background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p28);box-shadow:var(--shadow-card);border-radius:9999px;padding:1.5px 10px;white-space:nowrap">{{rpBigPct}}</span>
+            </div>
+            <span class="bs-tip-host" style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--fg-x53565a);margin-top:16px;white-space:nowrap">{{rpBigLbl}}<span class="bs-tip">الحضور الفعلي للوردية: عدد الوردية بعد خصم الراحة والغياب والاستئذان والإجازة والتحويل — التفاصيل إلى الجانب، ومجموعها مع هذا الرقم يساوي عدد الوردية بالضبط.</span></span>
+            <i style="display:block;width:82px;height:1px;margin:6px 0 5px;background:linear-gradient(90deg,var(--bg-a185151810),var(--bg-a185151810p42),var(--bg-a185151810))"></i>
+            <span style="font-size:9px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{rpBigSub}}</span>
+          </div>
+          <div style="width:1px;background:linear-gradient(180deg,transparent,var(--bg-xe6e8eb),transparent);flex-shrink:0"></div>
+          <div style="flex:1;min-width:140px;display:flex;flex-direction:column;justify-content:center;gap:3px">
+            <sc-for list="{{rpSumRows}}" as="r" hint-placeholder-count="6">
+            <div title="{{r.tip}}" style="display:flex;align-items:center;gap:7px">
+              <i style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:{{r.color}};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06)"></i>
+              <span style="font-size:10.5px;font-weight:400;color:var(--fg-x53565a);white-space:nowrap;flex-shrink:0">{{r.label}}</span>
+              <i style="flex:1;min-width:12px;height:1px;background:linear-gradient(90deg,var(--bg-a185151810p28),var(--bg-a185151810))"></i>
+              <span dir="ltr" style="flex-shrink:0;font-size:11.5px;font-weight:700;color:{{r.color}};font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{r.n}}<em style="font-style:normal;font-size:9.5px;font-weight:600;color:var(--fg-x53565a);margin-left:6px">{{r.pct}}</em></span>
+            </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- ═══ كرت الإجازات — خطّي بحسب النوع ═══ -->
+        <div style="display:flex;align-items:stretch;gap:10px;border:1px solid var(--bd-xeef0f2);border-radius:12px;padding:10px;background:linear-gradient(180deg,var(--bg-xffffff),var(--bg-xfcfcfd));box-shadow:var(--shadow-card);flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 6px;min-width:110px">
+            <div style="position:relative;width:96px;height:96px;display:grid;place-items:center;flex-shrink:0">
+              <svg width="96" height="96" viewBox="0 0 96 96" style="position:absolute;top:0;right:0;transform:rotate(-90deg)" data-i="i-3d5da928"></svg>
+              <b dir="ltr" style="position:relative;z-index:2;font-size:30px;font-weight:700;line-height:1;color:var(--fg-x0e7490);font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{rpLvTot}}</b>
+              <span dir="ltr" style="position:absolute;bottom:-7px;z-index:3;font-size:9.5px;font-weight:700;color:var(--fg-x0e7490);font-family:'Cairo',sans-serif;font-feature-settings:'tnum';background:var(--bg-xffffff);border:1px solid var(--bd-a141161440p28);box-shadow:var(--shadow-card);border-radius:9999px;padding:1.5px 10px;white-space:nowrap">{{rpLvPct}}</span>
+            </div>
+            <span class="bs-tip-host" style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--fg-x53565a);margin-top:16px;white-space:nowrap">الإجازات<span class="bs-tip">الإجازات المؤشَّرة في تقرير هذا اليوم موزّعةً على أنواعها. الإجازة تأشيرةُ يومٍ واحد تُسجَّل بنوعها من عمود «التأشير» — لا تمتد ولا تُرحَّل ولا سجلّ لها.</span></span>
+            <i style="display:block;width:82px;height:1px;margin:6px 0 5px;background:linear-gradient(90deg,var(--bg-a141161440),var(--bg-a141161440p4),var(--bg-a141161440))"></i>
+            <span style="font-size:9px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{rpLvSub}}</span>
+          </div>
+          <div style="width:1px;background:linear-gradient(180deg,transparent,var(--bg-xe6e8eb),transparent);flex-shrink:0"></div>
+          <div style="flex:1;min-width:140px;display:flex;flex-direction:column;justify-content:center;gap:7px">
+            <sc-if value="{{rpLvEmpty}}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px 8px;border-radius:10px;border:1px dashed var(--bd-xe6e8eb);background:var(--bg-xfcfcfd)">
+              <span style="font-size:9.5px;font-weight:400;color:var(--fg-x8b9099)">لا يوجد مُجازون في هذا اليوم</span>
+            </div>
+            </sc-if>
+            <sc-for list="{{rpLvBar}}" as="v" hint-placeholder-count="3">
+            <div title="{{v.tip}}" style="display:flex;align-items:center;gap:7px">
+              <i style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:{{v.color}};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06)"></i>
+              <span style="font-size:10.5px;font-weight:400;color:var(--fg-x53565a);white-space:nowrap;flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;max-width:132px">{{v.label}}</span>
+              <i style="flex:1;min-width:12px;height:1px;background:linear-gradient(90deg,var(--bg-a185151810p28),var(--bg-a185151810))"></i>
+              <span dir="ltr" style="flex-shrink:0;font-size:11.5px;font-weight:700;color:{{v.color}};font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{v.n}}<em style="font-style:normal;font-size:9.5px;font-weight:600;color:var(--fg-x53565a);margin-left:6px">{{v.pct}}</em></span>
+            </div>
+            </sc-for>
+          </div>
+        </div>
+        <!-- ═══ كرت الراحات الأسبوعية — حلقةُ اليوم وأعمدةُ الأسبوع ═══ -->
+          <div style="display:flex;align-items:stretch;gap:10px;border:1px solid var(--bd-xeef0f2);border-radius:12px;padding:10px;background:linear-gradient(180deg,var(--bg-xffffff),var(--bg-xfcfcfd));box-shadow:var(--shadow-card);flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 6px;min-width:110px">
+              <div style="position:relative;width:96px;height:96px;display:grid;place-items:center;flex-shrink:0">
+                <svg width="96" height="96" viewBox="0 0 96 96" style="position:absolute;top:0;right:0;transform:rotate(-90deg)" data-i="i-d2214157"></svg>
+                <b dir="ltr" style="position:relative;z-index:2;font-size:30px;font-weight:700;line-height:1;color:var(--fg-xb45309);font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{rpRstTot}}</b>
+                <span dir="ltr" style="position:absolute;bottom:-7px;z-index:3;font-size:9.5px;font-weight:700;color:var(--fg-xb45309);font-family:'Cairo',sans-serif;font-feature-settings:'tnum';background:var(--bg-xffffff);border:1px solid var(--bd-a245158110p35);box-shadow:var(--shadow-card);border-radius:9999px;padding:1.5px 10px;white-space:nowrap">{{rpRstPct}}</span>
+              </div>
+              <span class="bs-tip-host" style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--fg-x53565a);margin-top:16px;white-space:nowrap">الراحات الأسبوعية<span class="bs-tip">الحلقة: من هم في راحةٍ في يوم هذا التقرير من عدد الوردية. والأعمدة: توزيع راحات موظفي هذه الوردية على أيام الأسبوع — تكشف اليوم المتكدّس واليوم الخالي، ويوم التقرير مميَّز فيها. وكلاهما يتغيّر فور تعديلك للراحات من الجدول أدناه.</span></span>
+              <i style="display:block;width:82px;height:1px;margin:6px 0 5px;background:linear-gradient(90deg,var(--bg-a245158110),var(--bg-a245158110p45),var(--bg-a245158110))"></i>
+              <span style="font-size:9px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{rpRstSub}}</span>
+            </div>
+            <div style="width:1px;background:linear-gradient(180deg,transparent,var(--bg-xe6e8eb),transparent);flex-shrink:0"></div>
+            <div style="flex:1;min-width:145px;display:flex;flex-direction:column;justify-content:center">
+              <sc-if value="{{rpRstEmpty}}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px 8px;border-radius:10px;border:1px dashed var(--bd-xe6e8eb);background:var(--bg-xfcfcfd)">
+                <span style="font-size:9.5px;font-weight:400;color:var(--fg-x8b9099)">لا راحات مسجّلة لهذه الوردية</span>
+              </div>
+              </sc-if>
+              <div style="display:flex;align-items:flex-end;gap:5px">
+                <sc-for list="{{rpRstDays}}" as="d" hint-placeholder-count="7">
+                <div title="{{d.tip}}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+                  <span dir="ltr" style="font-size:8.5px;font-weight:700;color:{{d.numColor}};font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{d.count}}</span>
+                  <div style="width:100%;max-width:18px;height:46px;display:flex;align-items:flex-end;background:var(--bg-a2452452450p7);border-radius:4px 4px 2px 2px;overflow:hidden">
+                    <div style="width:100%;height:{{d.hpct}}%;border-radius:4px 4px 0 0;background:{{d.barColor}}"></div>
+                  </div>
+                  <span style="font-size:7.5px;font-weight:{{d.lblWeight}};color:{{d.lblColor}};white-space:nowrap;border-bottom:{{d.lblUnder}};padding-bottom:1px">{{d.name}}</span>
+                  <span dir="ltr" style="font-size:7px;font-weight:400;color:{{d.pctColor}};font-family:'Cairo',sans-serif;font-feature-settings:'tnum';white-space:nowrap">{{d.pctTxt}}</span>
+                </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+        <sc-if value="{{drPmOn}}" hint-placeholder-val="{{ true }}"><!-- ═══ كرت الصلاحيات — من في الوردية من كل قالب صلاحيات ═══ -->
+        <div style="display:flex;align-items:stretch;gap:10px;border:1px solid var(--bd-xeef0f2);border-radius:12px;padding:10px;background:linear-gradient(180deg,var(--bg-xffffff),var(--bg-xfcfcfd));box-shadow:var(--shadow-card);flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 6px;min-width:110px">
+            <div style="position:relative;width:96px;height:96px;display:grid;place-items:center;flex-shrink:0">
+              <svg width="96" height="96" viewBox="0 0 96 96" style="position:absolute;top:0;right:0;transform:rotate(-90deg)" data-i="i-848b9967"></svg>
+              <b dir="ltr" style="position:relative;z-index:2;font-size:30px;font-weight:700;line-height:1;color:var(--fg-x8a6f35);font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{rpPmTot}}</b>
+              <span dir="ltr" style="position:absolute;bottom:-7px;z-index:3;font-size:9.5px;font-weight:700;color:var(--fg-x8a6f35);font-family:'Cairo',sans-serif;font-feature-settings:'tnum';background:var(--bg-xffffff);border:1px solid var(--bd-a138111530p28);box-shadow:var(--shadow-card);border-radius:9999px;padding:1.5px 10px;white-space:nowrap">{{rpPmPct}}</span>
+            </div>
+            <span class="bs-tip-host" style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--fg-x53565a);margin-top:16px;white-space:nowrap">الصلاحيات<span class="bs-tip">غطاء القيادة والرقابة في الوردية بنظرة: الرئيس والنائب يُحتسبان من القائمتين المنسدلتين أعلى التقرير (المختار يُعدّ ولو بلا صلاحيات، والفارغة صفر)، والبقية بحسب قوالب الصلاحيات بمسمّياتها وترتيبها.</span></span>
+            <i style="display:block;width:82px;height:1px;margin:6px 0 5px;background:linear-gradient(90deg,var(--bg-a138111530),var(--bg-a138111530p4),var(--bg-a138111530))"></i>
+            <span style="font-size:9px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{rpPmSub}}</span>
+          </div>
+          <div style="width:1px;background:linear-gradient(180deg,transparent,var(--bg-xe6e8eb),transparent);flex-shrink:0"></div>
+          <div style="flex:1;min-width:140px;display:flex;flex-direction:column;justify-content:center;gap:3px">
+            <sc-if value="{{rpPmEmpty}}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px 8px;border-radius:10px;border:1px dashed var(--bd-xe6e8eb);background:var(--bg-xfcfcfd)">
+              <span style="font-size:9.5px;font-weight:400;color:var(--fg-x8b9099)">لا أصحاب صلاحيات في هذه الوردية</span>
+            </div>
+            </sc-if>
+            <sc-for list="{{rpPmRows}}" as="r" hint-placeholder-count="4">
+            <div title="{{r.tip}}" style="display:flex;align-items:center;gap:7px">
+              <i style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:{{r.color}};box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06)"></i>
+              <span style="font-size:10.5px;font-weight:400;color:var(--fg-x53565a);white-space:nowrap;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;max-width:150px">{{r.label}}</span>
+              <i style="flex:1;min-width:12px;height:1px;background:linear-gradient(90deg,var(--bg-a185151810p28),var(--bg-a185151810))"></i>
+              <span dir="ltr" style="flex-shrink:0;font-size:11.5px;font-weight:700;color:{{r.color}};font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{r.n}}<em style="font-style:normal;font-size:9.5px;font-weight:600;color:var(--fg-x53565a);margin-left:6px">{{r.pct}}</em></span>
+            </div>
+            </sc-for>
+          </div>
+        </div></sc-if>
+        </div>
+        <!-- ═══ جدول «الجدول الشهري» حرفياً — بياناته للعرض، وعمود «التأشير» للتقرير ═══ -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card)">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:2px solid var(--bd-a185151810p25);background:linear-gradient(to left,var(--bg-a2482502520p8),var(--bg-xffffff));border-radius:16px 16px 0 0">
+    <div style="position:relative;flex:1;min-width:200px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:12px;top:50%;transform:translateY(-50%)" data-i="i-7133b944"></svg>
+      <input value="{{search}}" onChange="{{onSearch}}" placeholder="بحث بالاسم أو الرقم..." style="width:100%;height:40px;padding:0 40px 0 12px;font-size:13px;background:var(--bg-a2482502520p8);border:1px solid var(--bd-xe2e8f0);border-radius:12px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;color:var(--fg-x141414)" style-focus="background:var(--bg-xffffff);border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px rgba(185,151,81,0.2)">
+    </div>
+    <div style="height:24px;width:1px;background:var(--bg-xe2e8f0);margin:0 4px"></div>
+<sc-if value="{{stPmExport}}" hint-placeholder-val="{{ true }}">
+    <div style="position:relative">
+      <button onClick="{{filesToggle}}" style="{{filesBtnStyle}}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg>
+        ملفات
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{filesChev}}" data-i="i-c92915c6"></svg>
+      </button>
+      <sc-if value="{{filesOpen}}" hint-placeholder-val="{{ false }}">
+      <div data-bs-dd="1" style="position:absolute;top:100%;left:0;z-index:55;min-width:190px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right">
+        <div onClick="{{exportCsv}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
+          <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a0132800p08);color:var(--fg-x008450);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-336c1c51"></svg></span>
+          <div style="flex:1"><div>تصدير Excel</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">جدول {{selMonthName}} — حسب الفلاتر الحالية</div></div>
+        </div>
+        <div onClick="{{printTable}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
+          <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a141652330p08);color:var(--fg-x0369a1);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9662a985"></svg></span>
+          <div style="flex:1"><div>طباعة / حفظ PDF</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">نافذة الطباعة مباشرة</div></div>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+</sc-if>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-0b453296"></svg>
+    <span style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8)">فلترة:</span>
+    <div style="position:relative">
+      <button onClick="{{fstToggle}}" style="{{fstBtnStyle}}">
+        <span style="white-space:nowrap">{{fstLabel}}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{fstChev}}" data-i="i-c92915c6"></svg>
+      </button>
+      <sc-if value="{{fstOpen}}" hint-placeholder-val="{{ false }}">
+      <div data-bs-dd="1" style="position:absolute;top:100%;right:0;z-index:50;min-width:150px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right">
+        <sc-for list="{{fstOpts}}" as="o" hint-placeholder-count="4">
+        <div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
+          <span style="flex:1;white-space:nowrap">{{o.name}}</span>
+          <sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if>
+        </div>
+        </sc-for>
+      </div>
+      </sc-if>
+    </div>
+    <div style="position:relative">
+      <button onClick="{{fmkToggle}}" style="{{fmkBtnStyle}}">
+        <span style="white-space:nowrap">{{fmkLabel}}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{fmkChev}}" data-i="i-c92915c6"></svg>
+      </button>
+      <sc-if value="{{fmkOpen}}" hint-placeholder-val="{{ false }}">
+      <div data-bs-dd="1" style="position:absolute;top:100%;right:0;z-index:50;min-width:150px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right">
+        <sc-for list="{{fmkOpts}}" as="o" hint-placeholder-count="3">
+        <div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
+          <span style="flex:1;white-space:nowrap">{{o.name}}</span>
+          <sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if>
+        </div>
+        </sc-for>
+      </div>
+      </sc-if>
+    </div>
+    <sc-if value="{{drPmOn}}" hint-placeholder-val="{{ true }}"><div style="position:relative">
+      <button onClick="{{fpmToggle}}" style="{{fpmBtnStyle}}">
+        <span style="white-space:nowrap">{{fpmLabel}}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{fpmChev}}" data-i="i-c92915c6"></svg>
+      </button>
+      <sc-if value="{{fpmOpen}}" hint-placeholder-val="{{ false }}">
+      <div data-bs-dd="1" style="position:absolute;top:100%;right:0;z-index:50;min-width:150px;max-height:260px;overflow-y:auto;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:4px;text-align:right">
+        <sc-for list="{{fpmOpts}}" as="o" hint-placeholder-count="4">
+        <div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
+          <span style="flex:1;white-space:nowrap">{{o.name}}</span>
+          <sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if>
+        </div>
+        </sc-for>
+      </div>
+      </sc-if>
+    </div></sc-if>
+    <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);font-feature-settings:'tnum'">
+      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{shownCount}}</span><span style="opacity:.6"> / {{totalCount}}</span>
+    </div>
+    <!-- مجموعات / قائمة: تقسيم الجدول بحالة الموظف — عرضٌ فقط -->
+    <div title="{{grpModeTip}}" style="display:inline-flex;border:1px solid var(--bd-a185151810p2);border-radius:9px;overflow:hidden;flex-shrink:0;margin-left:6px">
+      <button onClick="{{grpSetOn}}" style="{{grpOnStyle}}">مجموعات</button>
+      <button onClick="{{grpSetOff}}" style="{{grpOffStyle}}">قائمة</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:2px;background:var(--bg-xffffff);border-radius:12px;padding:2px;border:1px solid var(--bd-a185151810p2);flex-shrink:0">
+      <button onClick="{{subList}}" title="عرض جدول" style="{{subListStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d9ba0eac"></svg></button>
+      <button onClick="{{subKanban}}" title="عرض بطاقات" style="{{subKanbanStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-1b59ac83"></svg></button>
+    </div>
+  </div>
+  <sc-if value="{{isListView}}" hint-placeholder-val="{{ true }}">
+  <div class="bs-hscroll bs-sthead" style="overflow-x:auto">
+    <table class="bs-rtable" style="width:100%;border-collapse:collapse;min-width:900px">
+      <thead>
+        <tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
+          <th style="padding:10px 8px;width:46px;border-left:1px solid var(--bd-a185151810p1)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fc24ba3c"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">م</span></div>
+            </div>
+          </th>
+          <th style="padding:10px 8px;width:210px;border-left:1px solid var(--bd-a185151810p1)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-78302479"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">اسم الموظف</span></div>
+            </div>
+          </th>
+          <th data-col="empno" style="display:none;padding:10px 8px;width:100px;border-left:1px solid var(--bd-a185151810p1)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d0d04915"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">الرقم الوظيفي</span></div>
+            </div>
+          </th>
+          <th data-col="phone" style="display:none;padding:10px 8px;width:120px;border-left:1px solid var(--bd-a185151810p1)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f6485bbe"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">رقم الجوال</span></div>
+            </div>
+          </th>
+          <sc-if value="{{drPmOn}}" hint-placeholder-val="{{ true }}"><th style="padding:10px 8px;width:150px;border-left:1px solid var(--bd-a185151810p1)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-ee70c548"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">الصلاحية</span></div>
+            </div>
+          </th></sc-if>
+          <th style="padding:10px 8px;width:150px;border-left:1px solid var(--bd-a185151810p1)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-30b07fb9"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">رمز النداء</span></div>
+            </div>
+          </th>
+          <sc-if value="{{drLocColOn}}" hint-placeholder-val="{{ true }}"><th style="padding:10px 8px;width:150px;border-left:1px solid var(--bd-a185151810p1)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-550a316b"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">الموقع</span></div>
+            </div>
+          </th></sc-if>
+          <!-- عمودا «الوردية المسندة» و«وقت الوردية» حُذفا: الوردية ووقتها معلنان في صفّ الاختيار أعلى الجدول — لا تكرار -->
+          <th style="padding:10px 8px;width:158px;border-left:1px solid var(--bd-a185151810p1)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-14d20e05"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">أيام الراحة</span></div>
+            </div>
+          </th>
+          <th style="padding:10px 8px;width:165px;border-left:1px solid var(--bd-a185151810p1)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-760e0d9f"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">الاستئذانات</span></div>
+            </div>
+          </th>
+          <!-- عمود «التكليف» حُذف — «مكلف» تظهر تحت اسم الموظف مباشرة -->
+          <th style="padding:10px 8px;width:80px;border-left:1px solid var(--bd-a185151810p1)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-707176b1"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">الحالة</span></div>
+            </div>
+          </th>
+        <th style="padding:10px 8px;width:150px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-8bade8ae"></svg></div>
+              <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">التأشير</span></div>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <sc-for list="{{rows}}" as="e" hint-placeholder-count="8">
+        <sc-if value="{{e.grpHeadOn}}" hint-placeholder-val="{{ false }}">
+        <tr class="dr-grp" onClick="{{e.grpToggle}}" title="{{e.grpTip}}"><td colSpan="{{e.grpCols}}" style="background:var(--bg-xf7f5f0);border-top:1px solid var(--bd-xe6e8eb);border-bottom:1px solid var(--bd-xe6e8eb);padding:7px 12px;cursor:pointer">
+          <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:800;color:var(--fg-x141414);font-family:'Cairo',sans-serif"><i style="width:10px;height:10px;border-radius:50%;display:inline-block;background:{{e.grpColor}}"></i>{{e.grpTitle}}<b style="font-size:11px;font-weight:800;border-radius:999px;padding:1px 9px;background:var(--bg-xffffff);border:1px solid var(--bd-xe6e8eb);font-feature-settings:'tnum'">{{e.grpN}}</b><small style="color:var(--fg-x94a3b8);font-weight:400;font-size:10.5px">{{e.grpSub}}</small><span style="{{e.grpChev}}">▼</span></div>
+        </td></tr>
+        </sc-if>
+        <tr style="border-bottom:1px solid var(--bd-xf1f5f9);transition:background .15s;{{e.rowBg}}" style-hover="background:var(--bg-a2452452450p5)">
+          <td data-label="م" style="padding:8px 6px;text-align:center"><span style="font-size:13px;font-weight:400;color:var(--fg-x53565a);font-family:'Cairo',sans-serif">{{e.sn}}</span></td>
+          <td data-label="اسم الموظف" style="padding:6px 12px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="position:relative;flex-shrink:0">
+                <div style="width:32px;height:32px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:var(--fg-xffffff);font-weight:400;font-size:13px;background:{{e.avatarBg}}">{{e.initial}}</div>
+                <span style="position:absolute;bottom:0;left:0;width:9px;height:9px;border-radius:9999px;border:2px solid var(--bd-xffffff);background:{{e.dot}}"></span>
+              </div>
+              <div style="min-width:0;text-align:right">
+                <div style="font-size:13px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{e.name}}</div>
+                <div style="font-size:10px;color:var(--fg-x94a3b8);font-family:'Cairo',sans-serif;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{e.idLine}}"><span dir="ltr" style="font-feature-settings:'tnum';flex-shrink:0">{{e.empnoDisp}}</span><span style="opacity:.45;flex-shrink:0">·</span><span dir="ltr" style="font-feature-settings:'tnum';flex-shrink:0">{{e.phoneD}}</span><span style="opacity:.45;flex-shrink:0">·</span><span style="flex-shrink:0">{{e.typeD}}</span><span style="opacity:.45;flex-shrink:0">·</span><span style="flex-shrink:0">{{e.genderD}}</span><sc-if value="{{e.mukOn9}}" hint-placeholder-val="{{ false }}"><span style="opacity:.45;flex-shrink:0">·</span><span style="flex-shrink:0;color:var(--fg-x9a7e40);font-weight:600">مكلف</span></sc-if></div>
+                
+                <sc-if value="{{e.trOn}}" hint-placeholder-val="{{ false }}"><div title="{{e.trTip}}" style="margin-top:2px;display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:600;color:var(--fg-x4f46e5);background:var(--bg-a79702290p07);border:1px solid var(--bd-a79702290p25);border-radius:6px;padding:1px 6px;white-space:nowrap">⇄ محوَّل من {{e.trFrom}}</div></sc-if>
+              </div>
+            </div>
+          </td>
+          <td data-label="الرقم الوظيفي" style="display:none;padding:6px 8px;text-align:center"><span dir="ltr" style="font-size:12px;font-family:'Cairo',sans-serif;font-feature-settings:'tnum';font-weight:400;color:var(--fg-x141414)">{{e.empnoDisp}}</span></td>
+          <td data-label="رقم الجوال" style="display:none;padding:6px 8px;text-align:center"><span dir="ltr" style="font-size:12px;font-family:'Cairo',sans-serif;font-feature-settings:'tnum';color:var(--fg-x475569)">{{e.phone}}</span></td>
+          <!-- ═══ الصلاحية: منحُ قالبٍ من التقرير مباشرة — نفس مخزن الجدول الشهري ═══ -->
+          <sc-if value="{{drPmOn}}" hint-placeholder-val="{{ true }}"><td data-label="الصلاحية" style="padding:6px 8px;text-align:center">
+            <div style="{{e.tpRel}}">
+              <div style="display:flex;justify-content:center;align-items:center;min-height:24px">
+              <sc-if value="{{e.tpHas}}" hint-placeholder-val="{{ true }}"><span onClick="{{e.tpToggle}}" title="{{e.tpTip}}" style="{{e.tpTxtStyle}}">{{e.tpLabel}}</span></sc-if>
+              <sc-if value="{{e.tpNo}}" hint-placeholder-val="{{ false }}"><button onClick="{{e.tpToggle}}" title="{{e.tpTip}}" style="{{e.tpPlusStyle}}">+</button></sc-if>
+              </div>
+              <sc-if value="{{e.tpOpen}}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:100%;right:0;left:0;width:210px;max-width:calc(100vw - 40px);box-sizing:border-box;z-index:46;margin-top:6px;max-height:230px;overflow:auto;background:var(--bg-xffffff);border:1px solid var(--bd-xe6e8eb);border-radius:12px;box-shadow:var(--shadow-elevated);padding:5px;text-align:right">
+                <sc-if value="{{e.tpEmpty}}" hint-placeholder-val="{{ false }}">
+                <div style="padding:8px 10px;font-size:10px;font-weight:400;color:var(--fg-x94a3b8);text-align:center">لا قوالب صلاحيات بعد — تُنشأ من «الجدول الشهري»</div>
+                </sc-if>
+                <sc-for list="{{e.tpOpts}}" as="to" hint-placeholder-count="4">
+                <div onClick="{{to.pick}}" style="{{to.style}}" style-hover="background:var(--bg-a185151810p06)">
+                  <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{to.txt}}</span>
+                  <sc-if value="{{to.tick}}" hint-placeholder-val="{{ false }}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg>
+                  </sc-if>
+                </div>
+                </sc-for>
+              </div>
+              </sc-if>
+            </div>
+          </td></sc-if>
+          <td data-label="رمز النداء" style="padding:6px 8px;text-align:center"><div style="position:relative;display:block;width:100%;max-width:150px;margin:0 auto;text-align:right"><div style="display:flex;justify-content:center;align-items:center;min-height:24px"><sc-if value="{{e.csHas}}" hint-placeholder-val="{{ true }}"><span onClick="{{e.csGo}}" title="{{e.csTipU}}" style="{{e.csTxtStyle}}">{{e.csLabel}}</span></sc-if><sc-if value="{{e.csNo}}" hint-placeholder-val="{{ false }}"><button onClick="{{e.csGo}}" title="{{e.csTipU}}" style="{{e.csPlusStyle}}">+</button></sc-if></div><sc-if value="{{e.csShowList}}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:100%;right:0;left:0;z-index:45;margin-top:6px;background:var(--bg-xffffff);border:1px solid var(--bd-xe6e8eb);border-radius:12px;box-shadow:var(--shadow-elevated);overflow:hidden;text-align:right"><div style="max-height:180px;overflow-y:auto;padding:5px"><div onClick="{{e.csClear}}" style="{{e.csClearStyle}}" style-hover="background:var(--bg-a2452452450p8)"><span style="flex:1">بدون رمز</span><sc-if value="{{e.csNoneSel}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if></div><sc-if
+              value="{{e.csEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:8px 10px;font-size:10px;font-weight:400;color:var(--fg-x94a3b8);text-align:center">لا رموز بعد — تُضاف من الجدول الشهري</div></sc-if><sc-for list="{{e.csOpts}}" as="o" hint-placeholder-count="3"><div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)"><sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{o.name}}</span></div></sc-for></div><div style="padding:7px 10px;border-top:1px solid var(--bd-xf1f5f9);background:var(--bg-xfafafa);font-size:9.5px;font-weight:400;color:var(--fg-x94a3b8);text-align:center" title="القائمة انعكاس مباشر لرموز النداء المعرَّفة في الجدول الشهري — الإضافة والتعديل والحذف من هناك وحده">الرموز تُدار من الجدول الشهري</div></div></sc-if></div></td>
+          <sc-if value="{{drLocColOn}}" hint-placeholder-val="{{ true }}"><td data-label="الموقع" style="padding:6px 8px;text-align:center">
+            <div style="{{e.locRel}}">
+              <div title="{{e.locTip}}" style="display:flex;flex-wrap:wrap;gap:3px;justify-content:center;align-items:center;min-height:24px">
+                <sc-if value="{{e.locWarn}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xdc2626)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-26301867"></svg></sc-if>
+                <sc-if value="{{e.locChipsOn}}" hint-placeholder-val="{{ false }}"><sc-for list="{{e.locChips}}" as="c" hint-placeholder-count="1"><span onClick="{{e.locToggle}}" title="{{c.tip}}" style="{{c.style}}">{{c.code}}</span></sc-for></sc-if>
+                <sc-if value="{{e.locPlusOn}}" hint-placeholder-val="{{ true }}"><button onClick="{{e.locToggle}}" title="{{e.locTip}}" style="{{e.locPlusStyle}}">+</button></sc-if>
+                <sc-if value="{{e.locNoteOn}}" hint-placeholder-val="{{ false }}"><span style="font-size:9.5px;color:var(--fg-x94a3b8);white-space:nowrap">{{e.locNote}}</span></sc-if>
+              </div>
+              <sc-if value="{{e.locOpen}}" hint-placeholder-val="{{ false }}">
+              <div dir="rtl" onClick="{{e.locKeep}}" style="position:absolute;top:100%;right:50%;transform:translateX(50%);width:330px;max-width:calc(100vw - 40px);box-sizing:border-box;z-index:44;margin-top:6px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p4);border-radius:12px;box-shadow:var(--shadow-elevated);padding:8px;text-align:right">
+                <div style="display:flex;align-items:center;gap:8px;padding:2px 2px 6px;border-bottom:1px solid var(--bd-xf1f5f9)">
+                  <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{e.locHdName}}</div><div style="font-size:9.5px;color:var(--fg-x64748b)">{{e.locHdSub}}</div></div>
+                  <span style="{{e.locHdStStyle}}">{{e.locHdSt}}</span>
+                  <button onClick="{{e.locClose}}" title="إغلاق" style="width:20px;height:20px;border-radius:6px;border:0;background:var(--bg-xf5f5f5);color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1">×</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:6px 0 4px">
+                  <input value="{{e.locQ}}" onChange="{{e.onLocQ}}" placeholder="ابحث برقم الباب أو الاسم…" style="flex:1;min-width:0;height:28px;border:1px solid var(--bd-xe1e1e1);border-radius:8px;padding:0 9px;font-size:11px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box" style-focus="border-color:var(--bd-xb99751)">
+                </div>
+                <div style="display:flex;gap:4px;padding:0 0 6px;flex-wrap:wrap">
+                  <sc-for list="{{e.locKinds}}" as="k" hint-placeholder-count="4"><button onClick="{{k.pick}}" style="{{k.style}}">{{k.txt}}</button></sc-for>
+                  <sc-if value="{{e.locClearOn}}" hint-placeholder-val="{{ false }}"><button onClick="{{e.locClear}}" title="رفعه من كل مواقع جولة اليوم" style="margin-right:auto;height:22px;padding:0 8px;border-radius:9999px;border:1px solid var(--bd-a22038380p35);background:var(--bg-xffffff);color:var(--fg-xdc2626);font-family:'Cairo',sans-serif;font-size:9.5px;font-weight:700;cursor:pointer">رفع من الكل</button></sc-if>
+                </div>
+                <div style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:1px">
+                  <sc-if value="{{e.locEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:14px;text-align:center;font-size:11px;color:var(--fg-x94a3b8)">لا مواقع مطابقة</div></sc-if>
+                  <sc-for list="{{e.locGroups}}" as="g" hint-placeholder-count="3">
+                  <div style="border-top:1px dashed var(--bd-a2032132250p7);margin-top:2px;padding-top:2px">
+                    <button onClick="{{g.tog}}" style="{{g.hdStyle}}" style-hover="background:var(--bg-a185151810p06)">
+                      <span>{{g.title}} <span style="font-feature-settings:'tnum';background:var(--bg-xf1f5f9);color:var(--fg-x141414);border-radius:9999px;padding:0 7px;font-size:9.5px">{{g.n}}</span></span>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{g.chev}}" data-i="i-c92915c6"></svg>
+                    </button>
+                    <sc-if value="{{g.open}}" hint-placeholder-val="{{ true }}">
+                    <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+                    <div onClick="{{r.pick}}" title="{{r.tipo}}" style="{{r.style}}" style-hover="background:var(--bg-a185151810p06)">
+                      <sc-if value="{{g.act}}" hint-placeholder-val="{{ true }}"><input type="checkbox" checked="{{r.on}}" readOnly="true" style="accent-color:var(--fg-xb99751);width:14px;height:14px;pointer-events:none;flex-shrink:0"></sc-if>
+                      <sc-if value="{{g.view}}" hint-placeholder-val="{{ false }}"><span style="width:14px;height:14px;border-radius:4px;border:1px dashed var(--bd-xcbd5e1);flex-shrink:0"></span></sc-if>
+                      <span style="{{r.dot}}"></span>
+                      <span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">{{r.txt}}</span><span style="font-size:9px;color:var(--fg-x64748b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.sub}}</span></span>
+                      <span style="{{r.kcStyle}}">{{r.kw}}</span>
+                      <span style="{{r.numStyle}}">{{r.num}}</span>
+                    </div>
+                    </sc-for>
+                    </sc-if>
+                  </div>
+                  </sc-for>
+                </div>
+              </div>
+              </sc-if>
+            </div>
+          </td></sc-if>
+          <td data-label="أيام الراحة" style="padding:6px 8px;text-align:center">
+            <div style="position:relative;display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap;justify-content:center;white-space:nowrap">
+              <sc-for list="{{e.restChips}}" as="r" hint-placeholder-count="2">
+              <span onClick="{{r.remove}}" title="{{r.tip}}" style="{{r.style}}" style-hover="border-color:var(--bd-xef4444);color:var(--fg-xef4444)">☕ {{r.name}}</span>
+              </sc-for>
+              <sc-if value="{{e.restCanEdit}}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{e.restToggle}}" title="تعديل أيام الراحة" style="{{e.restBtnStyle}}">+</button>
+              <sc-if value="{{e.restOpen}}" hint-placeholder-val="{{ false }}">
+              <div data-bs-dd="1" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);z-index:40;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:8px;display:flex;gap:4px;white-space:nowrap">
+                <sc-for list="{{e.weekDays}}" as="w" hint-placeholder-count="7">
+                <button onClick="{{w.toggle}}" title="{{w.tip}}" style="{{w.style}}">{{w.name}}</button>
+                </sc-for>
+              </div>
+              </sc-if>
+              </sc-if>
+            </div>
+          </td>
+          <!-- ═══ الاستئذانات: يومٌ واحد بشارة، ونصابٌ شهريّ، ومنتقٍ ينسدل مكانه ═══ -->
+          <td data-label="الاستئذانات" style="padding:6px 8px;text-align:center">
+            <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap">
+              <span title="{{e.permQuotaTip}}" style="{{e.permQuotaStyle}}">{{e.permQuotaTxt}}</span>
+              <sc-if value="{{e.permCanEdit}}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{e.permToggle}}" title="تسجيل استئذان" style="{{e.permBtnStyle}}">+</button>
+              <sc-if value="{{e.permOpen}}" hint-placeholder-val="{{ false }}">
+              <div data-bs-dd="1" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);z-index:40;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:9px;width:320px;max-width:82vw">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:7px;margin-bottom:7px;border-bottom:1px dashed var(--bd-a185151810p3)">
+                  <span style="font-size:10px;font-weight:700;color:var(--fg-x8a6f35);white-space:nowrap">{{e.permMonthLbl}}</span>
+                  <sc-if value="{{e.permLimCanEdit}}" hint-placeholder-val="{{ true }}">
+                  <span title="الحدّ الشهري للاستئذانات" style="display:inline-flex;align-items:center;border:1px solid var(--bd-xe1e1e1);border-radius:8px;overflow:hidden;flex-shrink:0">
+                    <button onClick="{{e.permLimDown}}" title="إنقاص الحدّ" style="width:20px;height:22px;border:0;background:var(--bg-a185151810p08);color:var(--fg-x8a6f35);cursor:pointer;font-size:12px;line-height:1;font-family:'Cairo',sans-serif">−</button>
+                    <b style="padding:0 9px;font-size:10.5px;font-weight:700;font-feature-settings:'tnum';color:var(--fg-x141414)">{{e.permLimitTxt}}</b>
+                    <button onClick="{{e.permLimUp}}" title="زيادة الحدّ" style="width:20px;height:22px;border:0;background:var(--bg-a185151810p08);color:var(--fg-x8a6f35);cursor:pointer;font-size:12px;line-height:1;font-family:'Cairo',sans-serif">+</button>
+                  </span>
+                  </sc-if>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px">
+                  <sc-for list="{{e.permDayBtns}}" as="pd" hint-placeholder-count="30">
+                  <button onClick="{{pd.toggle}}" title="{{pd.tip}}" style="{{pd.style}}">{{pd.n}}</button>
+                  </sc-for>
+                </div>
+              </div>
+              </sc-if>
+              </sc-if>
+            </div>
+          </td>
+          <td data-label="الحالة" style="padding:6px 8px;text-align:center"><span title="{{e.statusTip}}" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:400;color:{{e.statusColor}}"><span style="width:8px;height:8px;border-radius:9999px;background:{{e.statusColor}}"></span>{{e.status}}</span></td>
+        <td data-label="التأشير" style="padding:6px 8px;text-align:center">
+            <sc-if value="{{rpCanEdit}}" hint-placeholder-val="{{ true }}">
+            <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap">
+              <sc-if value="{{e.mkShow}}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{e.mkToggle}}" title="تأشير غياب أو استئذان أو إجازة أو تحويل — الحالة تنعكس في عمود الحالة" style="{{e.mkBtnStyle}}">+</button>
+              </sc-if>
+              <sc-if value="{{e.mkRestOn}}" hint-placeholder-val="{{ false }}">
+              <span title="في راحته اليوم — لا تأشير عليه" style="font-size:9.5px;font-weight:400;color:var(--fg-xcbd5e1)">—</span>
+              </sc-if>
+              <sc-if value="{{e.mkOpen}}" hint-placeholder-val="{{ false }}">
+              <div data-bs-dd="1" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);z-index:40;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:9px;width:230px;max-width:82vw">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:7px;margin-bottom:7px;border-bottom:1px dashed var(--bd-a185151810p3)">
+                  <span style="font-size:10px;font-weight:700;color:var(--fg-x8a6f35);white-space:nowrap">{{e.mkDayLbl}}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                  <button onClick="{{e.mkPickAb}}" title="{{e.mkAbTip}}" style="{{e.mkAbStyle}}">غياب</button>
+                  <sc-if value="{{e.mkPmShow}}" hint-placeholder-val="{{ true }}"><button onClick="{{e.mkPickPm}}" title="{{e.mkPmTip}}" style="{{e.mkPmStyle}}">استئذان</button></sc-if>
+                  <button onClick="{{e.mkPickLv}}" title="{{e.mkLvTip}}" style="{{e.mkLvStyle}}">إجازة</button>
+                  <button onClick="{{e.mkPickTr}}" title="{{e.mkTrTip}}" style="{{e.mkTrStyle}}">تحويل</button>
+                </div>
+                <sc-if value="{{e.mkPmOpen}}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bd-a185151810p35);display:flex;flex-direction:column;gap:5px">
+                  <span style="font-size:9.5px;font-weight:700;color:var(--fg-x8a6f35)">نوع الاستئذان</span>
+                  <div style="display:flex;gap:6px">
+                    <button onClick="{{e.mkPmIn}}" title="تأخّر عن بداية الوردية" style="flex:1;{{e.mkPmInStyle}}">دخول</button>
+                    <button onClick="{{e.mkPmOut}}" title="انصراف قبل نهاية الوردية" style="flex:1;{{e.mkPmOutStyle}}">خروج</button>
+                  </div>
+                </div>
+                </sc-if>
+                <sc-if value="{{e.mkLvOpen}}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bd-a141161440p3);display:flex;flex-direction:column;gap:5px">
+                  <span style="font-size:9.5px;font-weight:700;color:var(--fg-x0e7490)">نوع الإجازة</span>
+                  <div style="display:flex;flex-direction:column;gap:4px;max-height:150px;overflow:auto">
+                    <sc-for list="{{e.mkLvKinds}}" as="lk" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:5px">
+                      <button onClick="{{lk.pick}}" title="{{lk.tip}}" style="{{lk.style}}"><span style="flex:1;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{lk.name}}</span><sc-if value="{{lk.tick}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if></button>
+                      <button onClick="{{lk.del}}" title="حذف هذا النوع من قائمة الأنواع" style="{{lk.delStyle}}" style-hover="background:var(--bg-a22038380p1)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-eec31fe3"></svg></button>
+                    </div>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;gap:5px">
+                    <input value="{{drLvNewVal}}" onInput="{{onDrLvNew}}" placeholder="إضافة نوع جديد..." style="{{drLvNewStyle}}">
+                    <button onClick="{{e.mkLvAddKind}}" title="إضافة النوع إلى قائمة الأنواع" style="height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--bd-a141161440p35);background:var(--bg-a141161440p07);color:var(--fg-x0e7490);font-size:10px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;flex-shrink:0">إضافة</button>
+                  </div>
+                </div>
+                </sc-if>
+                <sc-if value="{{e.mkTrOpen}}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bd-a79702290p3);display:flex;flex-direction:column;gap:5px">
+                  <sc-for list="{{e.mkTrShifts}}" as="ts" hint-placeholder-count="2">
+                  <button onClick="{{ts.pick}}" style="{{ts.style}}"><span style="width:8px;height:8px;border-radius:9999px;flex-shrink:0;background:{{ts.color}}"></span><span style="flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ts.name}}</span></button>
+                  </sc-for>
+                  <input value="{{drTrWhyVal}}" onInput="{{onDrTrWhy}}" placeholder="سبب التحويل * (مطلوب)" style="{{drTrWhyStyle}}">
+                  <button onClick="{{e.mkTrGo}}" style="{{e.mkTrGoStyle}}">موافق</button>
+                </div>
+                </sc-if>
+              </div>
+              </sc-if>
+            </div>
+            </sc-if>
+            <sc-if value="{{rpLockedCell}}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--fg-x94a3b8);font-weight:700"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg>مقفل</span></sc-if>
+          </td>
+        </tr>
+        </sc-for>
+      </tbody>
+    </table>
+  </div>
+  </sc-if>
+  <sc-if value="{{isGridView}}" hint-placeholder-val="{{ false }}">
+  <div class="bs-cardgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:14px">
+    <sc-for list="{{rows}}" as="e" hint-placeholder-count="8">
+    <div style="border:1px solid var(--bd-a185151810p25);border-radius:14px;background:var(--bg-xffffff);box-shadow:var(--shadow-soft);padding:0;display:flex;flex-direction:column;transition:all .2s" style-hover="box-shadow:var(--shadow-soft)">
+      <div style="background:linear-gradient(135deg,var(--bg-x303d48) 0%,var(--bg-x3d4c59) 60%,var(--bg-x303d48) 100%);border-radius:13px 13px 0 0;height:14px;display:flex;align-items:center;justify-content:center">
+        <div style="width:56px;height:3px;border-radius:9999px;background:linear-gradient(90deg,var(--bg-xe6d29d),var(--bg-xb99751),var(--bg-x9a7e40))"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 12px 0">
+        <div style="width:44px;height:44px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:var(--fg-x303d48);font-weight:600;font-size:17px;background:linear-gradient(135deg,var(--bg-xe6d29d),var(--bg-xb99751));box-shadow:0 3px 8px rgba(154,126,64,0.35);border:2px solid var(--bd-a2552552550p9)">{{e.initial}}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--fg-x141414);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{e.name}}</div>
+        <div style="font-size:10px;color:var(--fg-x94a3b8);font-family:'Cairo',sans-serif;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;justify-content:center;margin-top:1px;max-width:100%" title="{{e.idLine}}"><span dir="ltr" style="font-feature-settings:'tnum';flex-shrink:0">{{e.empnoDisp}}</span><span style="opacity:.45;flex-shrink:0">·</span><span dir="ltr" style="font-feature-settings:'tnum';flex-shrink:0">{{e.phoneD}}</span><span style="opacity:.45;flex-shrink:0">·</span><span style="flex-shrink:0">{{e.typeD}}</span><span style="opacity:.45;flex-shrink:0">·</span><span style="flex-shrink:0">{{e.genderD}}</span><sc-if value="{{e.mukOn9}}" hint-placeholder-val="{{ false }}"><span style="opacity:.45;flex-shrink:0">·</span><span style="flex-shrink:0;color:var(--fg-x9a7e40);font-weight:600">مكلف</span></sc-if></div>
+        
+        <sc-if value="{{e.trOn}}" hint-placeholder-val="{{ false }}"><div title="{{e.trTip}}" style="margin-top:3px;display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:600;color:var(--fg-x4f46e5);background:var(--bg-a79702290p07);border:1px solid var(--bd-a79702290p25);border-radius:6px;padding:1px 6px;white-space:nowrap">⇄ محوَّل من {{e.trFrom}}</div></sc-if>
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:400;margin-top:4px;color:{{e.statusColor}}"><span style="width:7px;height:7px;border-radius:9999px;background:{{e.statusColor}}"></span>{{e.status}}</span>
+      </div>
+      <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <span style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);flex-shrink:0;margin-top:4px">الراحات</span>
+        <div style="position:relative;display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+          <sc-for list="{{e.restChips}}" as="r" hint-placeholder-count="2">
+          <span onClick="{{r.remove}}" title="{{r.tip}}" style="{{r.style}}" style-hover="border-color:var(--bd-xef4444);color:var(--fg-xef4444)">☕ {{r.name}}</span>
+          </sc-for>
+          <sc-if value="{{e.restCanEdit}}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{e.restToggle}}" title="تعديل أيام الراحة" style="{{e.restBtnStyle}}">+</button>
+          <sc-if value="{{e.restOpen}}" hint-placeholder-val="{{ false }}">
+          <div data-bs-dd="1" style="position:absolute;top:100%;left:0;z-index:40;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:8px;display:flex;gap:4px;white-space:nowrap">
+            <sc-for list="{{e.weekDays}}" as="w" hint-placeholder-count="7">
+            <button onClick="{{w.toggle}}" title="{{w.tip}}" style="{{w.style}}">{{w.name}}</button>
+            </sc-for>
+          </div>
+          </sc-if>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <span style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);flex-shrink:0;margin-top:4px">الاستئذانات</span>
+        <div style="position:relative;display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+          <span title="{{e.permQuotaTip}}" style="{{e.permQuotaStyle}}">{{e.permQuotaTxt}}</span>
+          <sc-if value="{{e.permCanEdit}}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{e.permToggle}}" title="تسجيل استئذان" style="{{e.permBtnStyle}}">+</button>
+          <sc-if value="{{e.permOpen}}" hint-placeholder-val="{{ false }}">
+          <div data-bs-dd="1" style="position:absolute;top:100%;left:0;z-index:40;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:9px;width:300px;max-width:80vw">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:7px;margin-bottom:7px;border-bottom:1px dashed var(--bd-a185151810p3)">
+              <span style="font-size:10px;font-weight:700;color:var(--fg-x8a6f35);white-space:nowrap">{{e.permMonthLbl}}</span>
+              <sc-if value="{{e.permLimCanEdit}}" hint-placeholder-val="{{ true }}">
+              <span title="الحدّ الشهري للاستئذانات" style="display:inline-flex;align-items:center;border:1px solid var(--bd-xe1e1e1);border-radius:8px;overflow:hidden;flex-shrink:0">
+                <button onClick="{{e.permLimDown}}" title="إنقاص الحدّ" style="width:20px;height:22px;border:0;background:var(--bg-a185151810p08);color:var(--fg-x8a6f35);cursor:pointer;font-size:12px;line-height:1;font-family:'Cairo',sans-serif">−</button>
+                <b style="padding:0 9px;font-size:10.5px;font-weight:700;font-feature-settings:'tnum';color:var(--fg-x141414)">{{e.permLimitTxt}}</b>
+                <button onClick="{{e.permLimUp}}" title="زيادة الحدّ" style="width:20px;height:22px;border:0;background:var(--bg-a185151810p08);color:var(--fg-x8a6f35);cursor:pointer;font-size:12px;line-height:1;font-family:'Cairo',sans-serif">+</button>
+              </span>
+              </sc-if>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px">
+              <sc-for list="{{e.permDayBtns}}" as="pd" hint-placeholder-count="30">
+              <button onClick="{{pd.toggle}}" title="{{pd.tip}}" style="{{pd.style}}">{{pd.n}}</button>
+              </sc-for>
+            </div>
+          </div>
+          </sc-if>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);flex-shrink:0">التأشير</span>
+        <sc-if value="{{rpCanEdit}}" hint-placeholder-val="{{ true }}">
+        <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap">
+          <sc-if value="{{e.mkShow}}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{e.mkToggle}}" title="تأشير غياب أو استئذان أو إجازة أو تحويل — الحالة تنعكس في عمود الحالة" style="{{e.mkBtnStyle}}">+</button>
+          </sc-if>
+          <sc-if value="{{e.mkRestOn}}" hint-placeholder-val="{{ false }}">
+          <span title="في راحته اليوم — لا تأشير عليه" style="font-size:9.5px;font-weight:400;color:var(--fg-xcbd5e1)">—</span>
+          </sc-if>
+          <sc-if value="{{e.mkOpen}}" hint-placeholder-val="{{ false }}">
+          <div data-bs-dd="1" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);z-index:40;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:9px;width:230px;max-width:82vw">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:7px;margin-bottom:7px;border-bottom:1px dashed var(--bd-a185151810p3)">
+              <span style="font-size:10px;font-weight:700;color:var(--fg-x8a6f35);white-space:nowrap">{{e.mkDayLbl}}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <button onClick="{{e.mkPickAb}}" title="{{e.mkAbTip}}" style="{{e.mkAbStyle}}">غياب</button>
+              <sc-if value="{{e.mkPmShow}}" hint-placeholder-val="{{ true }}"><button onClick="{{e.mkPickPm}}" title="{{e.mkPmTip}}" style="{{e.mkPmStyle}}">استئذان</button></sc-if>
+              <button onClick="{{e.mkPickLv}}" title="{{e.mkLvTip}}" style="{{e.mkLvStyle}}">إجازة</button>
+              <button onClick="{{e.mkPickTr}}" title="{{e.mkTrTip}}" style="{{e.mkTrStyle}}">تحويل</button>
+            </div>
+            <sc-if value="{{e.mkPmOpen}}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bd-a185151810p35);display:flex;flex-direction:column;gap:5px">
+              <span style="font-size:9.5px;font-weight:700;color:var(--fg-x8a6f35)">نوع الاستئذان</span>
+              <div style="display:flex;gap:6px">
+                <button onClick="{{e.mkPmIn}}" title="تأخّر عن بداية الوردية" style="flex:1;{{e.mkPmInStyle}}">دخول</button>
+                <button onClick="{{e.mkPmOut}}" title="انصراف قبل نهاية الوردية" style="flex:1;{{e.mkPmOutStyle}}">خروج</button>
+              </div>
+            </div>
+            </sc-if>
+            <sc-if value="{{e.mkLvOpen}}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bd-a141161440p3);display:flex;flex-direction:column;gap:5px">
+              <span style="font-size:9.5px;font-weight:700;color:var(--fg-x0e7490)">نوع الإجازة</span>
+              <div style="display:flex;flex-direction:column;gap:4px;max-height:150px;overflow:auto">
+                <sc-for list="{{e.mkLvKinds}}" as="lk" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:5px">
+                  <button onClick="{{lk.pick}}" title="{{lk.tip}}" style="{{lk.style}}"><span style="flex:1;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{lk.name}}</span><sc-if value="{{lk.tick}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if></button>
+                  <button onClick="{{lk.del}}" title="حذف هذا النوع من قائمة الأنواع" style="{{lk.delStyle}}" style-hover="background:var(--bg-a22038380p1)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-eec31fe3"></svg></button>
+                </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;gap:5px">
+                <input value="{{drLvNewVal}}" onInput="{{onDrLvNew}}" placeholder="إضافة نوع جديد..." style="{{drLvNewStyle}}">
+                <button onClick="{{e.mkLvAddKind}}" title="إضافة النوع إلى قائمة الأنواع" style="height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--bd-a141161440p35);background:var(--bg-a141161440p07);color:var(--fg-x0e7490);font-size:10px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;flex-shrink:0">إضافة</button>
+              </div>
+            </div>
+            </sc-if>
+            <sc-if value="{{e.mkTrOpen}}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bd-a79702290p3);display:flex;flex-direction:column;gap:5px">
+              <sc-for list="{{e.mkTrShifts}}" as="ts" hint-placeholder-count="2">
+              <button onClick="{{ts.pick}}" style="{{ts.style}}"><span style="width:8px;height:8px;border-radius:9999px;flex-shrink:0;background:{{ts.color}}"></span><span style="flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ts.name}}</span></button>
+              </sc-for>
+              <input value="{{drTrWhyVal}}" onInput="{{onDrTrWhy}}" placeholder="سبب التحويل * (مطلوب)" style="{{drTrWhyStyle}}">
+              <button onClick="{{e.mkTrGo}}" style="{{e.mkTrGoStyle}}">موافق</button>
+            </div>
+            </sc-if>
+          </div>
+          </sc-if>
+        </div>
+        </sc-if>
+        <sc-if value="{{rpLockedCell}}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--fg-x94a3b8);font-weight:700"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg>مقفل</span></sc-if>
+      </div>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+  </sc-if>
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-a2452452450p2);font-size:12px">
+    <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgTotal}}</span> {{pgTotalW}}</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>
+      <select value="{{perPage}}" onChange="{{onPerPage}}" style="height:28px;width:78px;font-size:10px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;outline:none;cursor:pointer"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="0">الكل</option></select>
+      <div style="display:flex;align-items:center;border:1px solid var(--bd-xe1e1e1);border-radius:8px;overflow:hidden">
+        <button onClick="{{pgFirst}}" style="{{pgFirstStyle}}" aria-label="الصفحة الأولى"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-ec58a044"></svg></button>
+        <button onClick="{{pgPrev}}" style="{{pgPrevStyle}}" aria-label="الصفحة السابقة"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
+        <sc-for list="{{pgNums}}" as="n" hint-placeholder-count="5">
+          <sc-if value="{{n.dots}}"><span style="height:28px;width:20px;display:flex;align-items:center;justify-content:center;color:var(--fg-x94a3b8);font-size:10px;border-right:1px solid var(--bd-xe1e1e1)">…</span></sc-if>
+          <sc-if value="{{n.cur}}"><button style="{{n.style}}">{{n.label}}</button></sc-if>
+          <sc-if value="{{n.plain}}"><button onClick="{{n.click}}" style="{{n.style}}" style-hover="background:var(--bg-xf5f5f5)">{{n.label}}</button></sc-if>
+        </sc-for>
+        <button onClick="{{pgNext}}" style="{{pgNextStyle}}" aria-label="الصفحة التالية"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></button>
+        <button onClick="{{pgLast}}" style="{{pgLastStyle}}" aria-label="الصفحة الأخيرة"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9e7cf3ce"></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+        <sc-if value="{{rpCanEdit}}" hint-placeholder-val="{{ true }}"><div style="font-size:11.5px;color:var(--fg-x94a3b8);font-weight:600;padding-top:12px">يُحفظ تلقائياً عند كل تأشير — وعند الانتهاء: زرّ الاعتماد بجانب قائمة الورديات يعتمد ورديّتك، ونقرة مزدوجة على خانة اليوم تفتح اليوم أو تُغلقه</div></sc-if>
+      </div>
+      </sc-if>
+    </sc-if>
+  </div>
+
+  <!-- ═══ نافذة إعادة تهيئة اليوم — نفس نافذة الجولات اليومية ═══ -->
+  <sc-if value="{{drRsOn}}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{drRsCancel}}" style="position:fixed;inset:0;z-index:9220;background:var(--bg-a0000p55);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div onClick="{{drRsStop}}" style="background:var(--bg-xffffff);border-radius:16px;box-shadow:var(--shadow-elevated);width:100%;max-width:460px;padding:24px;display:flex;flex-direction:column;gap:14px;text-align:center;font-family:'Cairo',sans-serif">
+      <div style="width:52px;height:52px;border-radius:16px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);color:var(--fg-xdc2626)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0732b330"></svg>
+      </div>
+      <h2 style="font-size:16px;font-weight:600;margin:0">تأكيد إعادة تهيئة تقرير اليوم</h2>
+      <p style="font-size:12px;color:var(--fg-x53565a);margin:0;line-height:1.9">{{drRsMsg}}</p>
+      <div style="border-radius:10px;background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);padding:10px 12px;text-align:right">
+        <div style="font-size:10.5px;line-height:1.9;color:var(--fg-x991b1b)">{{drRsScope}}</div>
+      </div>
+      <div onClick="{{drRsAckTog}}" style="display:flex;align-items:center;gap:8px;cursor:pointer;text-align:right;padding:2px">
+        <span style="{{drRsAckBox}}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></span>
+        <span style="font-size:11px;font-weight:400;color:var(--fg-x374151);line-height:1.7">أفهم أن هذا الإجراء نهائي ولا يمكن التراجع عنه</span>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button onClick="{{drRsDo}}" style="{{drRsDoStyle}}">إعادة تهيئة اليوم</button>
+        <button onClick="{{drRsCancel}}" style="height:38px;padding:0 16px;border-radius:10px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">إلغاء</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ═══ نافذة تأكيد تحويل موظف — بياناته ووجهته قبل النقل ═══ -->
+  <sc-if value="{{drTrOn}}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{drTrCancel}}" style="position:fixed;inset:0;z-index:9220;background:var(--bg-a0000p55);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div onClick="{{drTrStop}}" style="background:var(--bg-xffffff);border-radius:16px;box-shadow:var(--shadow-elevated);width:100%;max-width:460px;padding:24px;display:flex;flex-direction:column;gap:14px;text-align:center;font-family:'Cairo',sans-serif">
+      <div style="width:52px;height:52px;border-radius:16px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:var(--bg-a79702290p08);border:1px solid var(--bd-a79702290p3);color:var(--fg-x4f46e5)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e43c0137"></svg>
+      </div>
+      <h2 style="font-size:16px;font-weight:600;margin:0">هل أنت متأكد من تحويل الموظف؟</h2>
+      <div style="border-radius:10px;background:var(--bg-xf7f9fa);border:1px solid var(--bd-xe1e1e1);padding:10px 12px;text-align:right">
+        <div style="font-size:11.5px;line-height:2.1;color:var(--fg-x374151)">{{drTrInfo}}</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button onClick="{{drTrDo}}" style="height:38px;padding:0 22px;border-radius:10px;font-size:13px;font-weight:600;background:linear-gradient(135deg,var(--bg-x4f46e5),var(--bg-x6366f1));color:var(--fg-xffffff);border:0;cursor:pointer;font-family:'Cairo',sans-serif">نعم، حوّل</button>
+        <button onClick="{{drTrCancel}}" style="height:38px;padding:0 16px;border-radius:10px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">إلغاء</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ═══ نافذة الاعتماد / فتح التقرير — نفس نافذة اعتماد الجولة ═══ -->
+  <sc-if value="{{drLkOn}}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{drLkClose}}" style="position:fixed;inset:0;z-index:9210;background:var(--bg-a0000p5);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div onClick="{{drLkStop}}" style="background:var(--bg-xffffff);border-radius:16px;box-shadow:var(--shadow-elevated);width:100%;max-width:400px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--bg-a0132800p08);border:1px solid var(--bd-a0132800p25);color:var(--fg-x047857)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fd2c82c2"></svg>
+        </div>
+        <h2 style="font-size:17px;font-weight:600;margin:0;flex:1">{{drLkTitle}}</h2>
+        <button onClick="{{drLkClose}}" style="width:32px;height:32px;border-radius:8px;border:0;background:var(--bg-xf5f5f5);color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--bg-xe1e1e1)" aria-label="إغلاق"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-26175592"></svg></button>
+      </div>
+      <p style="font-size:12px;color:var(--fg-x53565a);margin:0;line-height:1.8">{{drLkMsg}}</p>
+      <div style="display:flex;gap:8px;justify-content:flex-start">
+        <button onClick="{{drLkDo}}" style="{{drLkBtnStyle}}">{{drLkBtnLabel}}</button>
+        <button onClick="{{drLkClose}}" style="height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;cursor:pointer;color:var(--fg-x53565a);background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">إلغاء</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ═══ نافذة الاستدراك — نفس نافذة الجولات اليومية ═══ -->
+  <sc-if value="{{drRtOn}}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{drRtCancel}}" style="position:fixed;inset:0;z-index:9310;background:var(--bg-a1523420p55);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div onClick="{{drRtStop}}" style="background:var(--bg-xffffff);border-radius:18px;box-shadow:var(--shadow-elevated);width:100%;max-width:420px;padding:22px;display:flex;flex-direction:column;gap:13px;font-family:'Cairo',sans-serif" dir="rtl">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--bg-a1808390p08);border:1px solid var(--bd-a1808390p25);color:var(--fg-xb45309)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f0a1d121"></svg>
+        </div>
+        <h2 style="font-size:16px;font-weight:600;margin:0;flex:1">{{drRtTitle}}</h2>
+      </div>
+      <p style="font-size:12.5px;color:var(--fg-x53565a);margin:0;line-height:1.9">{{drRtMsg}}</p>
+      <div style="display:flex;flex-direction:column;gap:7px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:11px 13px">
+        <span style="display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--fg-x475569);font-weight:400;line-height:1.6"><span style="color:var(--fg-xb45309);font-weight:700">•</span>{{drRtB1}}</span>
+        <span style="display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--fg-x475569);font-weight:400;line-height:1.6"><span style="color:var(--fg-xb45309);font-weight:700">•</span>{{drRtB2}}</span>
+        <span style="display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--fg-x475569);font-weight:400;line-height:1.6"><span style="color:var(--fg-xb45309);font-weight:700">•</span>{{drRtB3}}</span>
+      </div>
+      <div style="display:flex;gap:8px;border-top:1px solid var(--bd-xf1f5f9);padding-top:13px">
+        <button onClick="{{drRtDo}}" style="{{drRtBtnStyle}}">{{drRtBtn}}</button>
+        <button onClick="{{drRtCancel}}" style="height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;cursor:pointer;color:var(--fg-x53565a);background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">إلغاء</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>

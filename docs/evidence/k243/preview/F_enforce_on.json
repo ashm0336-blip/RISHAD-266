@@ -1,0 +1,26 @@
+{
+ "step": "F — تفعيلُ الإنفاذ من D1 على Preview وحدها",
+ "db": "bassam-db-preview",
+ "sql": "INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v = 'enforce';",
+ "console": "This query successfully executed · SELECT k, v FROM meta WHERE k LIKE 'authz%' → authz_mode = enforce",
+ "at": "2026-10-09T10:14:18Z",
+ "authz": {
+  "status": 200,
+  "ver": "KIVO_243 · enforce 1",
+  "mode": "enforce",
+  "env": true,
+  "d1": "enforce",
+  "fixture": true
+ },
+ "mode": "enforce",
+ "bootAuthz": "present (17 إدارة في إقلاع مدير النظام)",
+ "changes": {
+  "am": "enforce",
+  "az": 1
+ },
+ "before": {
+  "authz_tables": "authz authz_snap authz_snaps",
+  "authz_meta_rows": 0,
+  "authz_rows": 0
+ }
+}

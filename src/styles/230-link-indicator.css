@@ -1,0 +1,16 @@
+
+/* ═══ مؤشر الاتصال — أعلى القائمة الجانبية قبل زر الطيّ ═══ */
+.bs-link{display:flex;align-items:center;gap:8px;margin:10px 14px 2px;padding:7px 11px;border-radius:9px;font-family:'Cairo',sans-serif;cursor:default;transition:background .2s;user-select:none}
+.bs-link[data-go="1"]{cursor:pointer}
+.bs-link .d{width:8px;height:8px;border-radius:9999px;flex-shrink:0}
+.bs-link .l{font-size:11.5px;font-weight:700;white-space:nowrap}
+.bs-link .x{font-size:10.5px;color:var(--text-muted);margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bs-link[data-st="on"]{background:var(--bg-green-25-a8)}.bs-link[data-st="on"] .d{background:var(--success);box-shadow:0 0 0 3px rgba(5,150,105,.18)}.bs-link[data-st="on"] .l{color:var(--success-text)}
+.bs-link[data-st="off"]{background:var(--bg-pink-30-a8)}.bs-link[data-st="off"] .d{background:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,.16);animation:bsLinkPulse 1.4s infinite}.bs-link[data-st="off"] .l{color:var(--danger-text)}
+.bs-link[data-st="local"]{background:var(--bg-surface-3)}.bs-link[data-st="local"] .d{background:var(--neutral-fill);box-shadow:0 0 0 3px rgba(148,163,184,.2)}.bs-link[data-st="local"] .l{color:var(--text-secondary)}
+@keyframes bsLinkPulse{0%,100%{opacity:1}50%{opacity:.35}}
+aside.bsb.cx .bs-link{margin:10px auto 2px;padding:7px;justify-content:center;width:auto}
+aside.bsb.cx .bs-link .l,aside.bsb.cx .bs-link .x{display:none}
+/* شبكات شاشة مدير النظام تنزل عموداً واحداً على الشاشات الضيقة */
+@media (max-width:1100px){ .bs-ovgrid{grid-template-columns:1fr!important} .bs-secgrid{grid-template-columns:1fr!important} }
+@media (max-width:900px){ aside.bsb .bs-link{margin:10px 14px 2px} }

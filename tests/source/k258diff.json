@@ -1,0 +1,50 @@
+{
+ "src/blocks.json": {
+  "sha256": "c8ca2d13803189c2bc6fe5097868118e06fb0e663c6d268854e0ca3f4507d2e4",
+  "lines": 47,
+  "kind": "git",
+  "why": "AUD-016: 005-kivo-ns أوّلاً · AUD-013: 566-print-core بعد 565"
+ },
+ "src/core/270-bs-ver.js": {
+  "sha256": "c26f1aff83499c4675890b1558b8e1ec6171e10d005532c9f646928109285fa5",
+  "lines": 3,
+  "kind": "canonical",
+  "why": "الإصدار 258 (spec.after: حُرّر بعد التحويل بالوصول KIVO)"
+ },
+ "src/layouts/index.template.html": {
+  "sha256": "b36b90af0e6d00c02c2b4700034b1aec704f967248c5bdc3c6f3ad608503564d",
+  "lines": 20,
+  "kind": "git",
+  "why": "AUD-013/016: علامتا الكتلتين الجديدتين"
+ },
+ "src/modules/daily/logic.js": {
+  "sha256": "a72661e45ceb1fd6595dd985e2c66b739097bed5dd0e91c9cb11fc73e3c3870c",
+  "lines": 656,
+  "kind": "canonical",
+  "why": "AUD-013: _buildPrintDoc/_capturePrintPage → تفويضٌ إلى BassamPrintCore (date round · kpi · v1.0.577 · svg[data-ds-zoom])"
+ },
+ "src/modules/plan/logic.js": {
+  "sha256": "979086df36ec39692b5e85e572ac0cb762caffdc613561556aa74e18b446015a",
+  "lines": 600,
+  "kind": "canonical",
+  "why": "AUD-013: _buildPrintDoc/_capturePrintPage → تفويضٌ إلى BassamPrintCore (date today · بلا مؤشرات · v1.0.457 · svg[data-map-zoom])"
+ },
+ "workers/parts/002-seclog.js": {
+  "sha256": "eb7b2120d15217b3500209018af4356e22df1553fcbe3c336af41f4d61370cd3",
+  "lines": 13,
+  "kind": "git",
+  "why": "WORKER_VER 158"
+ },
+ "workers/parts/056-enforce.js": {
+  "sha256": "009c4ff800c96bee28a4bd8cbf84c7ffc7bd0abbddf76e8d0f4e9c4ef86777b2",
+  "lines": 13,
+  "kind": "git",
+  "why": "ENF_VER KIVO_258"
+ },
+ "src/services/566-print-core.js": {
+  "sha256": "756a8cd390f5683fb0ad5cfa8edeb6a728f2c66f9541d231987cb7f2b8b2311b",
+  "lines": 660,
+  "kind": "canonical",
+  "why": "AUD-013: النواةُ المشتركة (اتحادُ البانيين بخياراتٍ أربعة) — المحتوى كاملاً مراجَع · البرهانُ السلوكي k258print"
+ }
+}

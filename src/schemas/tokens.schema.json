@@ -1,0 +1,148 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "KIVO · styles/tokens/tokens.json — طبقاتُ رموز التصميم (AUD-017 · KIVO_248 · طبقتان منذ KIVO_259)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "version",
+  "note",
+  "primitives",
+  "semantic",
+  "literal",
+  "dark"
+ ],
+ "properties": {
+  "version": {
+   "type": [
+    "integer",
+    "string"
+   ]
+  },
+  "note": {
+   "type": "string"
+  },
+  "primitives": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "type": "object",
+    "required": [
+     "name",
+     "value"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "type": "string",
+      "pattern": "^p-[a-z0-9-]+$"
+     },
+     "value": {
+      "type": "string",
+      "pattern": "^(#[0-9A-Fa-f]{3,8}|rgba?\\([^)]*\\)|hsla?\\([^)]*\\)|transparent|[a-z]+)$"
+     }
+    }
+   }
+  },
+  "semantic": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "$ref": "#/$defs/semanticRef"
+   }
+  },
+  "literal": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/ref"
+   }
+  },
+  "dark": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "$ref": "#/$defs/ref"
+   }
+  },
+  "breakpoints": {
+   "type": "object",
+   "required": [
+    "sm",
+    "md",
+    "lg",
+    "xl"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "note": {
+     "type": "string"
+    },
+    "xs": {
+     "type": "integer"
+    },
+    "sm": {
+     "type": "integer"
+    },
+    "md": {
+     "type": "integer"
+    },
+    "lg": {
+     "type": "integer"
+    },
+    "xl": {
+     "type": "integer"
+    }
+   }
+  },
+  "layers": {
+   "const": 2,
+   "description": "KIVO_259 · AUD-017: طبقتان (primitives → semantic) والحرفيةُ أسماءٌ مستعارة على الدلالية"
+  }
+ },
+ "$defs": {
+  "ref": {
+   "type": "object",
+   "required": [
+    "name",
+    "value"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "name": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "value": {
+     "type": "string"
+    },
+    "was": {
+     "type": "string"
+    }
+   }
+  },
+  "semanticRef": {
+   "type": "object",
+   "required": [
+    "name",
+    "value"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "name": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "value": {
+     "type": "string"
+    },
+    "was": {
+     "type": "string"
+    },
+    "from": {
+     "type": "string",
+     "pattern": "^(bg|fg|bd)-[a-z0-9]+$",
+     "description": "الحرفيُّ الذي أُنشئ له هذا الدلاليّ في 259 (زوجُ قيمٍ بلا مطابق)"
+    }
+   }
+  }
+ }
+}

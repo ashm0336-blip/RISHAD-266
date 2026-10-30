@@ -1,0 +1,138 @@
+{
+ "checks": [
+  {
+   "name": "① المعرّفاتُ فريدة (275)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "① SOT-001…192 بالترتيب ثم AUD-001…083 متتالية",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "① العدُّ في META = عددُ البنود",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "① أبناءُ كلّ بندٍ موجودون",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "① n متسلسل 1…275",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "② حقولُ v5 الإحدى عشرة + status_v5 مطابقةٌ حرفياً في البنود الـ192",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "② PHASES بمفاتيح v5 وحالاتها السابقة",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "② TREE بمسارات v5 ووصفها",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "③ كلُّ بندٍ يحمل سجلَّ التدقيق بحقوله",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "③ حالةُ التدقيق وفرقُه للبنود الـ224 = سجلُّ التدقيق 2026-10-09 (التحديثاتُ تحقّقاتٌ مضافة لا محوٌ)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "③ تعارضُ CSP في سجلّ التدقيق محفوظ (SOT-048: v5 مكتمل → التدقيق جزئي · متعارض مع المرجع)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "④ كلُّ حالةٍ من الحالات الست",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "④ الحالةُ = آخرُ تحقّق (أو حالةُ التدقيق بلا تحقّق)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "④ آخرُ سطرٍ في history = الحالة",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "④ كلُّ تحقّقٍ بمستوى وحالةٍ معروفين",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "⑤ لا ترقيةَ بلا دليل: كلُّ «مكتمل» (180) له دليلٌ واحد على الأقل",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "⑥ CSV: رأسُ الأعمدة (31)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "⑥ CSV: صفٌّ لكلّ بند (275)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "⑥ CSV = JSON خليةً خلية",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "⑦ HTML يضمّن JSON حرفياً (بايتاً ببايت)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "⑦ HTML يعرض بصمةَ JSON الحالية وبادئةَ بصمة CSV",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "ok": true,
+ "hashes": {
+  "KIVO_MASTER_REQUIREMENTS_v6.json": {
+   "bytes": 897908,
+   "sha256": "9f36aebb0e1ce6dc682115e29af5bc31e5274d816f7f39010200dc8e1f56faba"
+  },
+  "KIVO_MASTER_REQUIREMENTS_v6.csv": {
+   "bytes": 283465,
+   "sha256": "69d0cc1fd09325a8e48493df66460a789791efcde8abebb35d914afcb3020589"
+  },
+  "KIVO_MASTER_SOURCE_OF_TRUTH_v6.html": {
+   "bytes": 1023865,
+   "sha256": "f8b25c2dc93be37d6f454480dcaf548d72703bcebda44e6a7dc90344807180b0"
+  }
+ },
+ "counts": {
+  "total": 275,
+  "sot": 192,
+  "aud": 83,
+  "byStatus": {
+   "مكتمل": 180,
+   "جزئي": 79,
+   "غير منفذ": 3,
+   "يحتاج إثبات": 4,
+   "معلّق بقرار": 9,
+   "متعارض": 0
+  },
+  "verified": 195
+ }
+}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script src="./support.js"></script></head>
+<body>
+<x-dc>
+<helmet><style>body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;color:var(--text-primary)}</style><style>
+#bsPtRoot .pt-tab{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;border-radius:12px;transition:color .3s,background-color .3s,box-shadow .3s,border-color .3s;flex-shrink:0;min-width:170px;cursor:pointer;font-family:'Cairo',sans-serif;border:1px solid transparent;background:transparent}
+#bsPtRoot .pt-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background-color .3s,color .3s;background:var(--tone-neutral-100-a90);color:var(--text-faint)}
+#bsPtRoot .pt-lbl{font-size:12px;transition:color .3s;font-weight:400;color:var(--text-secondary)}
+#bsPtRoot .pt-ul{display:none;position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--border-brand)}
+#bsPtRoot[data-ptab="sched"] .pt-tab.pt-sched,#bsPtRoot[data-ptab="plan"] .pt-tab.pt-plan{border-color:var(--tone-gold-50-a45);background:var(--bg-surface);box-shadow:0 3px 10px -4px rgba(138,111,53,0.45)}
+#bsPtRoot[data-ptab="sched"] .pt-sched .pt-ico,#bsPtRoot[data-ptab="plan"] .pt-plan .pt-ico{background:var(--tone-gold-50-a10);color:var(--brand-fg)}
+#bsPtRoot[data-ptab="sched"] .pt-sched .pt-lbl,#bsPtRoot[data-ptab="plan"] .pt-plan .pt-lbl{font-weight:600;color:var(--brand-fg)}
+#bsPtRoot[data-ptab="sched"] .pt-sched .pt-ul,#bsPtRoot[data-ptab="plan"] .pt-plan .pt-ul{display:block}
+#bsPtRoot[data-ptab="plan"] #bsPtSched,#bsPtRoot[data-ptab="sched"] #bsPtPlan{display:none}
+#bsPtRoot[data-pton="sched"] .pt-strip,#bsPtRoot[data-pton="plan"] .pt-strip,#bsPtRoot[data-pton=""] .pt-strip{display:none}
+#bsPtRoot:not([data-pton~="sched"]) .pt-sched,#bsPtRoot:not([data-pton~="plan"]) .pt-plan,#bsPtRoot[data-ptab="none"] #bsPtSched,#bsPtRoot[data-ptab="none"] #bsPtPlan{display:none}
+</style></helmet>
+<div id="bsPtRoot" data-ptab="{{ptab}}" data-pton="{{ptOn}}" dir="rtl" data-screen-label="الخطة التشغيلية" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414)">
+  <div class="pt-strip" style="border-radius:16px;border:2px solid var(--bd-a185151810p1);background:linear-gradient(90deg,var(--bg-a185151810p03),transparent,var(--bg-a185151810p03));padding:12px;margin-bottom:14px">
+    <div class="bs-hbar bs-tabstrip" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;flex-wrap:wrap">
+      <sc-if value="{{readAllowed}}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{goRead}}" style="{{readStyle}}">
+        <div style="{{readIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"></path><path d="m19 9-5 5-4-4-3 3"></path></svg></div>
+        <span style="{{readLbl}}">مؤشرات الجاهزية</span>
+        <sc-if value="{{onRead}}" hint-placeholder-val="{{ true }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <div onClick="{{goSched}}" class="pt-tab pt-sched">
+        <div class="pt-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect></svg></div>
+        <span class="pt-lbl">الجدول الشهري</span>
+        <span class="pt-ul"></span>
+      </div>
+      <div onClick="{{goPlan}}" class="pt-tab pt-plan">
+        <div class="pt-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20 3 17V4l6 3 6-3 6 3v13l-6-3-6 3Z"></path><path d="M9 7v13M15 4v13"></path></svg></div>
+        <span class="pt-lbl">التشغيل الميداني</span>
+        <span class="pt-ul"></span>
+      </div>
+    </div>
+  </div>
+  <sc-if value="{{onRead}}" hint-placeholder-val="{{ false }}"><dc-import name="Employees" solo="readiness" hint-size="100%,1100px"></dc-import></sc-if>
+  <sc-if value="{{schedOn}}" hint-placeholder-val="{{ true }}"><div id="bsPtSched"><dc-import name="Staffing" hint-size="100%,1100px"></dc-import></div></sc-if>
+  <sc-if value="{{planSeen}}" hint-placeholder-val="{{ false }}"><div id="bsPtPlan"><dc-import name="Operational Plan" hint-size="100%,1100px"></dc-import></div></sc-if>
+</div>
+</x-dc>
+<script data-dc-script>var __defProp=Object.defineProperty;var __defNormalProp=(obj,key,value)=>key in obj?__defProp(obj,key,{enumerable:!0,configurable:!0,writable:!0,value}):obj[key]=value;var __publicField=(obj,key,value)=>__defNormalProp(obj,typeof key!="symbol"?key+"":key,value);class Component extends KIVO.BassamPageKit.base(DCLogic,["dreport+irshad+planning+profile+seized+staff+tasks"]){constructor(){super(...arguments);__publicField(this,"state",{ptab:null,planSeen:!1})}_ptOk(k){if(!this.bsOn(k))return!1;try{const P=KIVO.BassamPerm;return!P||!P.can||!!P.can(k,"view")}catch{return!0}}_bsGo(t){if(t==="read"&&(t="sched"),!this._ptOk(t==="sched"?"staff":"plan"))return;const e=()=>{try{window.dispatchEvent(new CustomEvent("bs:ptab-shown",{detail:t}))}catch{}};if(t==="plan"&&!this.state.planSeen)return void this.setState({ptab:t,planSeen:!0},e);this.state.ptab=t;try{const s=document.getElementById("bsPtRoot");s&&s.setAttribute("data-ptab",t)}catch{}e()}componentDidMount(){try{this._pt=t=>{try{const e=t&&t.detail;e!=="read"&&e!=="sched"&&e!=="plan"||this._bsGo(e)}catch{}},window.addEventListener("bs:ptab",this._pt)}catch{}}componentWillUnmount(){try{window.removeEventListener("bs:ptab",this._pt)}catch{}}renderVals(){var t=this,e=this.state.ptab||"sched";e==="read"&&(e="sched");var S=this._ptOk("staff"),P=this._ptOk("plan");e!=="sched"||S||(e=P?"plan":"none"),e!=="plan"||P||(e=S?"sched":"none");var n=function(t2){return"position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;border-radius:12px;transition:all .3s;flex-shrink:0;min-width:170px;cursor:pointer;font-family:'Cairo',sans-serif;border:1px solid "+(t2?"rgba(185,151,81,0.45);background:var(--bg-xffffff);box-shadow:0 3px 10px -4px rgba(138,111,53,0.45)":"transparent;background:transparent")},a=function(t2){return"width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .3s;"+(t2?"background:var(--bg-a185151810p1);color:var(--fg-xb99751)":"background:var(--bg-a2452452450p9);color:var(--fg-x94a3b8)")},r=function(t2){return"font-size:12px;transition:color .3s;"+(t2?"font-weight:600;color:var(--fg-xb99751)":"font-weight:400;color:var(--fg-x53565a)")};return{ptab:e,ptOn:(S?"sched":"")+(S&&P?" ":"")+(P?"plan":""),schedOn:S,onRead:e==="read",onSched:e==="sched",onPlan:e==="plan",planSeen:P&&(!!this.state.planSeen||e==="plan"),readAllowed:!1,readStyle:n(e==="read"),readIcon:a(e==="read"),readLbl:r(e==="read"),goRead:function(){t._bsGo("read")},schedStyle:n(e==="sched"),schedIcon:a(e==="sched"),schedLbl:r(e==="sched"),planStyle:n(e==="plan"),planIcon:a(e==="plan"),planLbl:r(e==="plan"),goSched:function(){t._bsGo("sched")},goPlan:function(){t._bsGo("plan")}}}}</script>
+</body></html>

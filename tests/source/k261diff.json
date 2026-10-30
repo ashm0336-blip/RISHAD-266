@@ -1,0 +1,157 @@
+{
+ "config/wrangler.toml": {
+  "sha256": "34ef2d4a800a8499699b4fe48d5a6cef6f4d6a668f9a9566c5eb7a65cadbf817",
+  "lines": 13,
+  "why": "مجلدُ البناء pk261 (كان pk260)"
+ },
+ "src/api/280-server-storage.js": {
+  "sha256": "4ab350f665e30aa3111935adb525b2b5309909dba97132616e86cfbe453858e0",
+  "lines": 13,
+  "why": "KIVO_261 (AUD-057): رسالةُ سبب الرفض shape بالعربية"
+ },
+ "src/api/contracts.json": {
+  "sha256": "7b01acfbe0b17fcc04dac885421c8183a21c6e03a8585418c4fe57f5b5a114de",
+  "lines": 28,
+  "why": "KIVO_261: ping super_extra (schemaOk · ready) · protect_extra (ready · mode) · unlock gks/all/400 · img 409/415/429 (base64 · الجزءُ الأوّل · الحصّة)"
+ },
+ "src/assets/icons/catalog.json": {
+  "sha256": "89492204af3c510d13d6a94c2ae33384474ba6c929a10525208525b99a968b63",
+  "lines": 12,
+  "why": "KIVO_261: عددُ مواضع i-ec9ec7cc (أيقونةُ اللافتة) 10 → 11 (tools/icons.py extract)"
+ },
+ "src/layouts/root-logic.js": {
+  "sha256": "bd271febbbe0a40de89603c2397caea987391034d8da4befd7c2f8e4bed76cf1",
+  "lines": 31,
+  "why": "KIVO_261: رابطُ «مؤشرات الإدارة» يظهر بـkpiPanelOk (3 مواضع) — كان يظهر للوحةٍ لا تُعرض"
+ },
+ "src/manifests/pages.json": {
+  "sha256": "8b189f58351d27a02174a3c38dc9fd7e300878ff6f870115dcc85f9322b596f8",
+  "lines": 66,
+  "why": "KIVO_261 (SOT-003 · ADR-024): لوحاتُ «مؤشرات الإدارة» الستّ offPage — لا تفتح صفحتَها (تُعرض في المؤشرات وحدها) · ملاحظةُ الملف"
+ },
+ "src/modules/admin/logic.js": {
+  "sha256": "64a99ae2ddf93b030448760139f11798917e2404aa49d75e37700b7614dee66a",
+  "lines": 22,
+  "why": "KIVO_261 (AUD-052 · كشفه k261sys): «فكّ القفل» يرسل gks — أقفالُ الاسم الفعلية من /api/overview"
+ },
+ "src/modules/admin/view.html": {
+  "sha256": "b4d8b64e1f0c160b7b6ec3512fcc297840469a539e39a9ec5b2fffc06f162417",
+  "lines": 32,
+  "why": "KIVO_261 (كشفه k261tree): شريطُ «الإعدادات» بترتيب pages.json — «قوالب الصلاحيات» قبل «استيراد بيانات»"
+ },
+ "src/modules/award/logic.js": {
+  "sha256": "98f033f79ace25baefe60e85dc9f283408f3b2e4fe7804b587dafd59161c66f1",
+  "lines": 13,
+  "why": "KIVO_261 (كشفه k261tree): «ترشيح جديد» يُرى بالعرض وحده (لافتةُ «عرضٌ فقط») — كان يشترط add فيخفي ورقةً ممنوحة"
+ },
+ "src/modules/dreport/logic.js": {
+  "sha256": "aac84e0932a9c7433951b25e71efbe7a0604b269c094606ac6821c9a54d5fab8",
+  "lines": 12,
+  "why": "KIVO_261 (SOT-010 · كشفه k261tree): drPmReadOnly — لا إضافةَ ولا تعديلَ ولا اعتمادَ ولا حذف"
+ },
+ "src/modules/dreport/view.html": {
+  "sha256": "67ddb69b37e99aafe750f96a3f726b78dc135203adc5805bd5f84fb63a561bb5",
+  "lines": 18,
+  "why": "KIVO_261 (SOT-010 · كشفه k261tree): لافتةُ «عرض فقط» بنصّ سائر الصفحات وبرموز السمة القائمة (لا رمزَ جديد)"
+ },
+ "src/modules/kpis/logic.js": {
+  "sha256": "18f1e2a2b859b406246d8ce8d8cfd2ff2a298a8449b7e9063849f4e391916d80",
+  "lines": 12,
+  "why": "KIVO_261: _okOf يستعمل kpiPanelOk"
+ },
+ "src/modules/planning/logic.js": {
+  "sha256": "0e7a5f3c866529baf73a4a303f5e4e1261e90734d120fce5d446bda96b20cfe4",
+  "lines": 45,
+  "why": "KIVO_261 (كشفه k261tree): تبويبا «الجدول الشهري» و«التشغيل الميداني» بصلاحية المستخدم (_ptOk = on ∧ can view) لا بسقف الإدارة وحده · ptOn بلا فراغٍ أوّل"
+ },
+ "src/permissions/334-perm-tree-tpl.js": {
+  "sha256": "e1eb60687570a7ffda09541b32d75b2690059a593f12a8048a4a589328769bff",
+  "lines": 31,
+  "why": "KIVO_261: kpiPanelOk — حكمُ لوحات المؤشرات مصدراً واحداً (canSub view · kpiOcc ⇐ zones∧dens · kpiZones ⇐ zones · kpiDaily ⇐ dreport) · العطلُ يُخفي (catch ⇒ false)"
+ },
+ "src/schemas/pages.schema.json": {
+  "sha256": "9c508c9d598cc5237e772b32f242c8035c3abca32ded79685501dee289459b06",
+  "lines": 13,
+  "why": "KIVO_261: offPage منطقيٌّ في subs/tabs"
+ },
+ "src/services/441-notif-core.js": {
+  "sha256": "1aca7ae9a5afca9394b45f7688b5798519be8960d3f53c282aa853c5283a5f2f",
+  "lines": 25,
+  "why": "KIVO_261 (المراجعةُ المستقلة · الشجرةُ = المنصة): «افتح» للوحات المؤشرات (الجاهزية · المؤشرات · الإشغال · لوحة المؤشرات) يذهب إلى kpis ويُحكم بـkpiPanelOk (GO_KPI)"
+ },
+ "src/services/442-notif-observer.js": {
+  "sha256": "7681121319e022e0283a8d980f29e95dbecfe9b4ac1ede98648ed91d3d9c0f6c",
+  "lines": 14,
+  "why": "KIVO_261 (SOT-183): pollSec يتخطّى صفوفَ حسابات العُدّة بالمعرّف tst_ وحده (لا بالاسم الذي يحرّره المدير)"
+ },
+ "tools/generate.py": {
+  "sha256": "46f6e8d18829727cc4c6b50eb22e66f9e8f49a10e32c1f2499703e5496be5fef",
+  "lines": 19,
+  "why": "KIVO_261: PG_REG في الخادم يُولِّد off من offPage (لا تُحتسب صفحةً)"
+ },
+ "tools/kivo_ns.json": {
+  "sha256": "cafb8c40b7960a9375c166a399523be00b137bba15fcf6fbd8ebb719b6487555",
+  "lines": 28,
+  "why": "AUD-016: after += 442 · planning/logic · 334 · kpis/logic · award/logic · 441 · dreport/logic (261) — والملاحظة"
+ },
+ "tools/onboard_check.sh": {
+  "sha256": "ffc5e52e28127f3ec7abeccde6541fc40adbbcf9aab41ff7e4e4e14135634f53",
+  "lines": 13,
+  "why": "الافتراضيُّ 261 (كان 260)"
+ },
+ "tools/perm_tree.py": {
+  "sha256": "94d018496f8262f917ffb8bdbb486333b0765e5eeaa3dcb588468d32b85f944f",
+  "lines": 21,
+  "why": "KIVO_261: أوراقُ offPage في refs الحاوية kpis — kind offpage وroute #/kpis مع حفظ docKind/docRoute من الوثيقة (الشجرةُ = المنصة)"
+ },
+ "tools/sbom.py": {
+  "sha256": "4917b420c79d0ca4d02050d92adde28d9c497cc0df1949be58dbc28ac99b3521",
+  "lines": 38,
+  "why": "KIVO_261 (SOT-141): fflate 0.8.3 (مطابقٌ بايتاً لحزمة npm · لا يُشحن) · Cairo 3.130 · Almarai 1.10 · رمزُ KIVO مستقلّ · فحصُ THIRD-PARTY-NOTICES (وغيابُه خطأ) · نصُّ LICENSES المصحَّح"
+ },
+ "tools/sec/audit.py": {
+  "sha256": "b1c5933eb340c13ba972e5487c29094425532a6cfefe26678b5e298bf19c5f44",
+  "lines": 22,
+  "why": "الافتراضيُّ pk261 (كان pk260)"
+ },
+ "workers/parts/002-seclog.js": {
+  "sha256": "6800e5c4399d6ecdf41cbaaa893a2ced1e826596eae3a0cb90f52e0582ae40e6",
+  "lines": 13,
+  "why": "الإصدار 2026.10.11-161"
+ },
+ "workers/parts/017-authorize-core.js": {
+  "sha256": "f40a0f226de1e582d415b201971511f347f135182d69beeccf748e6e06b01ed6",
+  "lines": 19,
+  "why": "KIVO_261 (المراجعةُ المستقلة · الجولة الثانية): eqExcept بكائناتٍ null-prototype · nmap() · badAcctId — تمتينٌ ضدّ مفاتيح __proto__/constructor/prototype في معرّفات الحسابات وحقولها"
+ },
+ "workers/parts/018-ancestry.js": {
+  "sha256": "e598dbcfa1fdb7305523672fcac3a09fa8225a5138e9d3ec40c26218dd59626f",
+  "lines": 87,
+  "why": "KIVO_261 (AUD-054 · كشفه k261tamper): lensZ في permsRule كما هي أو 1 من غياب — كانت تُتخطّى كلياً · AUD-057 (المراجعةُ المستقلة): userRecOk · deptPermShapeOk · sheetShapeOk في usersRule وpermsRule · الجولة الثانية: رفضُ معرّفٍ خبيث (badAcctId) وخرائطُ null-prototype"
+ },
+ "workers/parts/020-dstats.js": {
+  "sha256": "405b94f47075d8571d561c0974f1bbe5063065cde20831c77cf0bac6cdbfca59",
+  "lines": 14,
+  "why": "KIVO_261 (AUD-055 · المراجعةُ المستقلة): lensesUpgradeOnly يرفض غيرَ الكائن (كان يُعدّ {} فيمرّ نصٌّ أو مصفوفةٌ بأيّ حجم)"
+ },
+ "workers/parts/054-image-contract.js": {
+  "sha256": "1584c33686de55c7ff74b0101b3f64e1f7f93e8a4fa496cc836572b82c126232",
+  "lines": 96,
+  "why": "KIVO_261: AUD-050 (LP_MAX_UID 3 · LP_MAX_ALL 400 · LP_TTL 35 ث · Map · lpPrune) · SOT-068 (IMG_TYPE_RX بـ;base64 · B64_RX · imgTypeOk · imgPartOk · IMG_TYPE_ERR · تعليقُ الاستعادتين) · AUD-056 (usersTstNew وحجزُ tst_ في applySave) · حصّةُ الرفع اليومية (IMG_DAY_MAX · imgQuotaHit · IMG_QUOTA_ERR)"
+ },
+ "workers/parts/056-enforce.js": {
+  "sha256": "5dd9318932bf7ab40b2c951c351a5e1e97922788d7a7de2da9add01140827548",
+  "lines": 13,
+  "why": "ENF_VER KIVO_261"
+ },
+ "workers/parts/059-protected-ops-2.js": {
+  "sha256": "576ec48296a56f00a715eb87a13a1c92be996e7a5edc6d7532c9a3cbebcacdc9",
+  "lines": 29,
+  "why": "KIVO_261 (AUD-057 · المراجعةُ المستقلة): enfUsersWrite — سجلُّ الحساب الذاتيّ وسجلُّ الموظف في نطاق المدير بحدود userRecOk · الجولة الثانية: رفضُ معرّفٍ خبيث وخرائطُ null-prototype"
+ },
+ "workers/parts/063-enf-api-and-handler.js": {
+  "sha256": "d2f0e9ea395114409c9ed052f9076e19cb40a125f006a74475a4e2e807fa6d45",
+  "lines": 133,
+  "why": "KIVO_261: AUD-050 (lpEnter/lpLeave(uid, t) حول انتظار /api/changes) · SOT-145 (ping: ready · schemaOk · mode protect) · AUD-052 (fails.until/gks من الزوج والمصدر غير المشترك · unlock: gks مقيَّدة · gk ببادئة · {all:1} صريحاً · null 400) · SOT-068 (415 أربع مرات · الجزءُ التالي base64 وبعد أوّلٍ مرحَّل 409 · المجمَّعُ المرفوض يكنس المرحَّل) · حصّةُ الرفع اليومية قبل الكتابة (429)"
+ }
+}

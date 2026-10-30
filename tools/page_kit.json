@@ -1,0 +1,5 @@
+{
+ "ref": "KIVO_256",
+ "note": "AUD-012/AUD-014 — المرجع: المصدرُ قبل الاستخراج؛ dead: أعضاءٌ لا يُرجَع إليها (ENG-06 في تدقيق 2026-10-09 — 12 عضواً) تُحذف بعد إثبات أنّ أسماءها لا ترد في src إلا موضعَ تعريفها",
+ "dead": { "tasks": ["fmtStamp"], "daily": ["DAYSTAT", "KON", "KOFF"], "plan": ["_secToggleEmp"], "staff": ["_leaveKinds", "lvDays", "pad2", "SHIFT_PALETTE"], "admin": ["tpSeed", "lgVals"], "dreport": ["drStaffLocks"] }
+}

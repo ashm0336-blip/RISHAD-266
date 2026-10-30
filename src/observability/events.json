@@ -1,0 +1,41 @@
+{
+ "version": 1,
+ "note": "KIVO_258 · SOT-124 — التعريفُ المركزي للأحداث والمقاييس والتنبيهات. السطرُ: JSON واحد لكل حدث عبر console — {v:1, t, lvl, ev, ver, …الحقول} — بلا بياناتٍ شخصية (لا اسمَ مستخدم ولا معرّفَ حساب ولا قيمةَ مفتاح). الاتساقُ مع العامل (كلُّ logEv معرَّفٌ هنا بمستواه وحقوله وكلُّ تعريفٍ مستعمَل) يفحصه tests/source/obs_check.py؛ والمقاييسُ تُحسب من السجل بـtools/obs/metrics_report.py.",
+ "events": {
+  "req": { "lvl": "info", "fields": ["rid", "m", "p", "st", "dur"], "desc": "كلُّ طلب /api/* وكلُّ غلاف HTML — سطرٌ واحد بعد الردّ (dur: ms داخل العامل، D1 ضمناً)" },
+  "schema-migrate": { "lvl": "info", "fields": ["ran", "applied", "fresh"], "desc": "تطبيقُ ترحيلٍ مرقَّم عند أوّل طلب لعاملٍ جديد" },
+  "worker-error": { "lvl": "error", "fields": ["rid", "m", "p", "st", "err", "stack"], "desc": "استثناءٌ غيرُ متوقَّع في المعالج — الردُّ 500 بالمعرّف نفسِه" },
+  "save-failed": { "lvl": "error", "fields": ["rid", "p", "st", "err"], "desc": "تعذّرُ الحفظ الذري /api/save" },
+  "img-failed": { "lvl": "error", "fields": ["rid", "p", "st", "err"], "desc": "تعذّرُ مسار الصور /api/img" },
+  "assets-error": { "lvl": "error", "fields": ["rid", "p", "err"], "desc": "تعذّرُ خدمة الأصول الثابتة" },
+  "authz-unavailable": { "lvl": "warn", "fields": ["rid", "m", "p", "st"], "desc": "وضعُ الحماية: تعذّرُ قراءة وضع الإنفاذ (fail-closed · 503)" },
+  "origin-reject": { "lvl": "warn", "fields": ["rid", "m", "p", "st"], "desc": "طلبٌ مغيِّر من مصدرٍ مختلف (CSRF · 403)" },
+  "body-too-large": { "lvl": "warn", "fields": ["rid", "m", "p", "st", "cl"], "desc": "جسمُ الطلب فوق الحدّ (413)" },
+  "ph-redacted": { "lvl": "warn", "fields": ["where", "n"], "desc": "حارسُ AUD-033: بصماتُ كلمات المرور أُزيلت من ردٍّ قبل مغادرته" },
+  "users-unparseable": { "lvl": "warn", "fields": ["kind"], "desc": "سجلُّ الحسابات غيرُ مقروء (not-array · parse)" },
+  "users-stale-ph": { "lvl": "warn", "fields": ["rid", "n"], "desc": "AUD-036: حفظُ حساباتٍ ببصمةٍ قديمة مرفوض" },
+  "swallowed": { "lvl": "warn", "fields": ["op", "err", "rid"], "desc": "استثناءٌ مبتلَع عمداً في أثرٍ جانبي best-effort (لا يغيّر الردّ)" },
+  "session-changed": { "lvl": "warn", "fields": ["rid", "p", "st"], "desc": "KIVO_264 · C1: طلبٌ مغيِّر بُني لتبويب حسابٍ آخر (uid في الجسم أو ?uid= ≠ صاحبِ الجلسة) ⇒ 409 قبل أيّ قراءةٍ أو كتابة" },
+  "shell-no-db": { "lvl": "error", "fields": ["rid", "p", "st"], "desc": "KIVO_264 · E2: غلافُ HTML طُلب وقاعدةُ D1 غيرُ مربوطةٍ أو لا تجيب ⇒ صفحةُ تعطّلٍ 503 بلا بيانات" },
+  "tk-kept": { "lvl": "warn", "fields": ["n", "rid"], "desc": "F-10: حفظٌ خامٌّ لمخزن المهام من نسخةٍ قديمة أُعيدت إليه أفعالُ الموظف التي لم يرها (n صفوف) — طبيعيٌّ تحت التزامن" },
+  "tk-recur-author": { "lvl": "warn", "fields": ["rid", "d", "rec"], "desc": "KIVO_265 · H-1: سلسلةُ تكرارٍ صاحبُها المخزَّن (x.by) لا يطابق سجلَّ إنشائها في الخادم ⇒ لا تُولَّد نسخُها (d الإدارة · rec هويةُ السلسلة)" }
+ },
+ "metrics": [
+  { "id": "req_rate", "from": "req", "def": "عددُ req في الدقيقة — كلّياً ولكل مسار", "target": "" },
+  { "id": "error_ratio", "from": "req", "def": "نسبةُ st ≥ 500 من كل req (401/403 تُرصد منفصلةً — ليست أخطاء)", "target": "≤ 0.1٪ شهرياً" },
+  { "id": "denied_ratio", "from": "req", "def": "نسبةُ st ∈ {401, 403} من كل req", "target": "" },
+  { "id": "latency_p50", "from": "req", "def": "الوسيطُ لـdur لكل مسار", "target": "≤ 150 ms" },
+  { "id": "latency_p95", "from": "req", "def": "المئينُ 95 لـdur لكل مسار", "target": "≤ 500 ms" },
+  { "id": "server_errors", "from": ["worker-error", "save-failed", "img-failed", "assets-error"], "def": "عددُ أحداث الخطأ", "target": "0" },
+  { "id": "protect_mode", "from": "authz-unavailable", "def": "عددُ مرّات وضع الحماية", "target": "0 خارج الحوادث" },
+  { "id": "security_guards", "from": ["ph-redacted", "users-unparseable", "users-stale-ph", "origin-reject"], "def": "عددُ ظهور الحرّاس الأمنية", "target": "0 طبيعياً" },
+  { "id": "swallowed_errors", "from": "swallowed", "def": "عددُ الاستثناءات المبتلَعة (لكل op)", "target": "للرصد" }
+ ],
+ "alerts": [
+  { "id": "A1", "severity": "P1", "metric": "error_ratio", "when": "> 0.01", "window": "5m", "runbook": "docs/runbooks/incident-rollback.md", "desc": "أخطاءُ الخادم فوق 1٪ في 5 دقائق" },
+  { "id": "A2", "severity": "P1", "metric": "protect_mode", "when": ">= 1", "window": "5m", "runbook": "docs/runbooks/incident-rollback.md", "desc": "وضعُ الحماية (fail-closed) — الحفظُ متوقّف" },
+  { "id": "A3", "severity": "P0", "metric": "security_guards", "when": ">= 1", "window": "1h", "runbook": "docs/runbooks/incident-rollback.md", "desc": "حارسٌ أمني ظهر (بصمات · حسابات · مصدرٌ مختلف) — يُحقَّق فوراً" },
+  { "id": "A4", "severity": "P2", "metric": "latency_p95", "when": "> 1000", "window": "15m", "runbook": "docs/runbooks/health.md", "desc": "الكمونُ p95 فوق ثانية لربع ساعة (بلا /api/changes — قناةُ انتظارٍ طويلٍ بالتصميم حتى 25 ث · KIVO_260)" },
+  { "id": "A5", "severity": "P1", "metric": "server_errors", "when": ">= 5", "window": "5m", "runbook": "docs/runbooks/health.md", "desc": "خمسةُ أخطاء خادمٍ فأكثر في 5 دقائق" }
+ ]
+}

@@ -1,0 +1,90 @@
+# KIVO — البوابة الآلية (RM-0 · AUD-029 · رقمُ الإصدار يُقرأ من المصدر — tools/release_n.sh — فلا أوامرَ مثبّتةٌ على إصدارٍ قديم). تعمل عند كل دفع/طلب دمج على المستودع الرسمي وحده — متى رُفع إلى GitHub (لم يُرفع بعد: قرارُ المالك؛ لم تعمل هذه البوابةُ على GitHub قط):
+# المولِّد والفحوصُ المعمارية والبناءُ واختباراتُ الوحدة كلُّها داخل نسخةٍ مصدَّرة لا تحوي شيئاً من المختبر (tools/export_official.py --check)،
+# ثم سقّاطةُ ESLint وSBOM ومسحُ الأسرار والبناءُ الحتمي للمرشّح بسلسلته (الإصداران السابقان من وسمَي git).
+# البوابة الكاملة (حزمُ cfbench · متصفح حقيقي · ساعات) في المختبر الانتقالي — تُشغَّل يدوياً حيث وُجد (workflow_dispatch → gate=full).
+name: kivo-ci
+on:
+  push:
+    branches: [main, 'candidate/**']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      gate:
+        description: 'quick | full'
+        default: quick
+jobs:
+  official:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }          # الوسوم KIVO_2NN: build_chain يبني الإصدارين السابقين منها · tokens verify · k2NNsrc
+      - name: KIVO tags — restored locally from branch archive/tags when the remote has none (read-only · nothing is pushed)
+        run: |
+          if [ -z "$(git tag -l 'KIVO_*')" ] && git rev-parse -q --verify refs/remotes/origin/archive/tags >/dev/null; then
+            git show origin/archive/tags:kivo-tags.bundle > "$RUNNER_TEMP/kivo-tags.bundle"
+            git fetch -q "$RUNNER_TEMP/kivo-tags.bundle" 'refs/tags/*:refs/tags/*'
+            git show origin/archive/tags:restore-tags.sh | grep -E '^git tag -f ' | sh
+          fi
+          echo "KIVO tags: $(git tag -l 'KIVO_*' | wc -l)"
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.22.0' }   # مثبَّت: npm المرفق (10.9.4) يدخل في tooling-root.cdx.json — Node 22 العائم يغيّره فيُخفق «SBOM = التوليد»
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: deps (pinned)
+        run: npm ci --ignore-scripts && pip install jsonschema==4.26.0
+      - name: current release number (from src/core/270-bs-ver.js)
+        id: ver
+        run: echo "n=$(bash tools/release_n.sh)" >> "$GITHUB_OUTPUT"
+      - name: the official repository alone suffices (generate · icons · plugins · tokens · deps R1–R4 · KIVO namespace · types · structure · SOT · env · ratchets · build split+mono · all unit tests · page/lens add · docs · observability)
+        run: python3 tools/export_official.py --check
+      - name: ESLint ratchet
+        run: npm run lint
+      - name: dependency rules R1–R4 (SOT-129 · explicit step)
+        run: npm run lint:deps
+      - name: SBOM = generated (CycloneDX · licenses)
+        run: python3 tools/sbom.py --src src --check
+      - name: deterministic build from clean source → retained versions (from git tags) · pk<N> (+ hash manifest)
+        run: bash tools/build_chain.sh ${{ steps.ver.outputs.n }}
+      - name: secrets scan (official tree + built package)
+        run: python3 tools/sec/secrets_scan.py pk${{ steps.ver.outputs.n }}
+      - name: unit tests on the built candidate
+        run: KIVO_WORKER=$PWD/workers/_worker.js KIVO_DIST=$PWD/pk${{ steps.ver.outputs.n }} KIVO_SRC=$PWD/src node --no-warnings --test tests/unit/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        with: { name: 'pk${{ steps.ver.outputs.n }}-dist', path: 'pk${{ steps.ver.outputs.n }}', retention-days: 30 }
+      - uses: actions/upload-artifact@v4
+        with: { name: 'pk${{ steps.ver.outputs.n }}-manifest', path: 'pk${{ steps.ver.outputs.n }}.MANIFEST.sha256' }
+  full-gate:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.gate == 'full'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: KIVO tags — restored locally from branch archive/tags when the remote has none (read-only · nothing is pushed)
+        run: |
+          if [ -z "$(git tag -l 'KIVO_*')" ] && git rev-parse -q --verify refs/remotes/origin/archive/tags >/dev/null; then
+            git show origin/archive/tags:kivo-tags.bundle > "$RUNNER_TEMP/kivo-tags.bundle"
+            git fetch -q "$RUNNER_TEMP/kivo-tags.bundle" 'refs/tags/*:refs/tags/*'
+            git show origin/archive/tags:restore-tags.sh | grep -E '^git tag -f ' | sh
+          fi
+          echo "KIVO tags: $(git tag -l 'KIVO_*' | wc -l)"
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.22.0' }   # مثبَّت: npm المرفق (10.9.4) يدخل في tooling-root.cdx.json — Node 22 العائم يغيّره فيُخفق «SBOM = التوليد»
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: npm ci --ignore-scripts && (cd cfbench && npm ci --ignore-scripts) && npx playwright install --with-deps chromium && pip install jsonschema==4.26.0
+      - id: ver
+        run: echo "n=$(bash tools/release_n.sh)" >> "$GITHUB_OUTPUT"
+      - run: bash tools/build_chain.sh ${{ steps.ver.outputs.n }}
+      - name: full gate (lab suites — the transitional repository only) — a missing gate script, a missing mandatory suite or a mandatory list out of sync is a FAILURE, never a skip
+        shell: bash   # bash -eo pipefail: يمرّر رمزَ خروج البوابة عبر tee (كان الافتراضيُّ bash -e فيبتلع tee الإخفاق)
+        run: |
+          N=${{ steps.ver.outputs.n }}
+          if [ ! -f "gateall$N.sh" ]; then echo "::error::gateall$N.sh غائب — البوابةُ الكاملة لم تُشغَّل (إخفاق لا تخطٍّ)"; exit 1; fi
+          if [ ! -f "tests/gate/mandatory_$N.txt" ]; then echo "::error::tests/gate/mandatory_$N.txt غائب"; exit 1; fi
+          python3 tools/gate_manifest.py "gateall$N.sh" --check "tests/gate/mandatory_$N.txt"
+          bash "gateall$N.sh" "pk$N" 2>&1 | tee "gate_$N.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: 'gate-${{ steps.ver.outputs.n }}', path: 'gate_*.txt', if-no-files-found: ignore }

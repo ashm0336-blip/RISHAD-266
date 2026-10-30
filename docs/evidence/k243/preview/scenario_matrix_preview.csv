@@ -1,0 +1,83 @@
+﻿id,group,user,description,expected_legacy,preview_legacy,pass_legacy,expected_enforce,preview_enforce,pass_enforce,local_enforce,decision_changed_by_enforcement,api_bypass
+R01,read · Shift,tst_emp1,موظف الوردية أ: سجلاتُ الاسترشاد المرئية (داخل الوردية فقط),"[""tstir1"", ""tstir2"", ""tstir3"", ""tstir4""]","[""tstir1"",""tstir2"",""tstir3"",""tstir4""]",True,"[""tstir1"", ""tstir3"", ""tstir4""]","[""tstir1"",""tstir3"",""tstir4""]",True,"[""tstir1"",""tstir3"",""tstir4""]",yes,no
+R02,read · Shift,tst_supB,مشرف الوردية ب: يرى سجلات ورديته وحدها (خارج الوردية أ محجوب),"[""tstir1"", ""tstir2"", ""tstir3"", ""tstir4""]","[""tstir1"",""tstir2"",""tstir3"",""tstir4""]",True,"[""tstir2""]","[""tstir2""]",True,"[""tstir2""]",yes,no
+R03,read · ceiling actor,tst_dm1,مدير الإدارة: كلُّ السجلات (فاعلُ سقفٍ بلا قيد وردية R4),"[""tstir1"", ""tstir2"", ""tstir3"", ""tstir4""]","[""tstir1"",""tstir2"",""tstir3"",""tstir4""]",True,"[""tstir1"", ""tstir2"", ""tstir3"", ""tstir4""]","[""tstir1"",""tstir2"",""tstir3"",""tstir4""]",True,"[""tstir1"",""tstir2"",""tstir3"",""tstir4""]",no,no
+R04,read · Branch (multi-dept),tst_gm1,مدير الفرع g1: إدارتا الفرع d1+d2 مقروءتان · d3 خارج الفرع,d1:1 d2:1 d3:0,d1:1 d2:1 d3:0,True,d1:1 d2:1 d3:0,d1:1 d2:1 d3:0,True,d1:1 d2:1 d3:0,no,no
+R05,read · Department,tst_emp2,موظف d2: لا شيء من d1 · لا مضبوطات d2 (خارج سقف إدارته),d1:0 sz2:0,d1:0 sz2:0,True,d1:0 sz2:0,d1:0 sz2:0,True,d1:0 sz2:0,no,no
+R06,read · Source,tst_ds,مدخل إحصائيات الحرم: المسجد النبوي محجوب (Source),haram:1 nabawi:1,haram:1 nabawi:1,True,haram:1 nabawi:0,haram:1 nabawi:0,True,haram:1 nabawi:0,yes,no
+R07,read · Default Deny,tst_emp1,بلا ورقة إحصائيات: لا يصل السجلُّ أصلاً,0,0,True,0,0,True,0,no,no
+R08,read · Assigned + Site,tst_fld,راصد الميدان: حالةُ المسنَد إليه في موقعه فقط (المسنَد خارج موقعه والمجاورُ غيرُ المسنَد محجوبان),F1a:open F1b:closed F2a:open,F1a:open F1b:closed F2a:open,True,F1a:open F1b:- F2a:-,F1a:open F1b:- F2a:-,True,F1a:open F1b:- F2a:-,yes,no
+R09,read · lens off,tst_loff,العدسةُ نفسُها معطّلة للموظف: المصليات لا تصل (الخطة),"2,2","2,2",True,"0,0","0,0",True,"0,0",yes,no
+R10,read · lens on,tst_lon,العدسةُ مفعّلة: المصليات تصل,"2,2","2,2",True,"2,2","2,2",True,"2,2",no,no
+R11,read · perm without scope,tst_pnos,صلاحيةٌ بلا نطاق: العناصرُ هياكلُ بلا حالة (Default Deny للقيم),F1a:open F2a:open,F1a:open F2a:open,True,F1a:- F2a:-,F1a:- F2a:-,True,F1a:- F2a:-,yes,no
+R12,read · Site scope,tst_snop,نطاقُ موقعٍ واحد (tsts1): حالةُ الموقع الآخر محجوبة,F1a:open F2a:open,F1a:open F2a:open,True,F1a:open F2a:-,F1a:open F2a:-,True,F1a:open F2a:-,yes,no
+R13,read · Shift (dreport + staffing),tst_supB,مشرف ب (أوراقُه كلُّها بوردية): أقسامُ التقرير وصفوفُ الجدول لورديته وحدها,dr:TST-A+TST-B st:10,dr:TST-A+TST-B st:10,True,dr:TST-B st:3,dr:TST-B st:3,True,dr:TST-B st:3,yes,no
+R13b,read · any read key lifts (v24.9 readBindings),tst_sup1,مشرف أ يحمل «بيانات الموظفين» (emp.view بلا Shift): يرى التقريرَ والجدولَ كاملين,dr:TST-A+TST-B st:10,dr:TST-A+TST-B st:10,True,dr:TST-A+TST-B st:10,dr:TST-A+TST-B st:10,True,dr:TST-A+TST-B st:10,no,no
+R14,read · API bypass,tst_emp1,/api/get مباشرةً: إدارةٌ أخرى · الإحصائيات · سجلّا النطاق والمنح — لا قيمة,ir2:0 ds:0 sc:0 gr:0,ir2:0 ds:0 sc:0 gr:0,True,ir2:0 ds:0 sc:0 gr:0,ir2:0 ds:0 sc:0 gr:0,True,ir2:0 ds:0 sc:0 gr:0,no,yes
+R15,read · scope/grant records,tst_dm1,مدير الإدارة يقرأ سجلَّي النطاق والمنح لإدارته (الإنفاذ) — مجهولان للنظام القديم,sc:0 gr:0,sc:0 gr:0,True,sc:1 gr:1,sc:1 gr:1,True,sc:1 gr:1,yes,no
+R16,read · held keys (grants),tst_sup1,المفاتيحُ المحمولة في الإقلاع: + ir.rec.retro.open (منحٌ صريح) · − report.reopen (إسقاط),no-authz,no-authz,True,retro:1 reopen:0 approve:1,retro:1 reopen:0 approve:1,True,retro:1 reopen:0 approve:1,yes,no
+W01,create · Shift (inside),tst_emp1,إضافةُ محضر استرشاد اليوم في ورديته (أ),allow,allow,True,allow,allow,True,allow,no,no
+W02,create · Shift (outside),tst_emp1,إضافةُ محضرٍ في الوردية ب (خارج ورديته),allow,allow,True,deny:scope,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),True,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),yes,no
+W03,edit · Shift (inside),tst_emp1,تعديلُ محضرٍ في ورديته (tstir4),allow,allow,True,allow,allow,True,allow,no,no
+W04,delete · no permission,tst_emp1,حذفُ محضر بلا صلاحية حذف,deny,deny:act,True,deny:perm,deny:perm,True,deny:perm,yes,no
+W05,edit · hidden row (API bypass),tst_supB,مشرف ب يرسل محضرَ الوردية أ معدَّلاً (محجوبٌ عنه) مباشرةً عبر API,allow,allow,True,deny:scope,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),True,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),yes,yes
+W06,create · closed period (DateRange),tst_emp1,إضافةُ محضرٍ في الشهر السابق (فترةٌ مغلقة بلا نافذة استدراك),allow,allow,True,deny:scope,deny:scope (ir.rec.create:DateRange=retro-window-expired (new:1448-3-10)),True,deny:scope (ir.rec.create:DateRange=closed-period: no-window (new:1448-3-10)),yes,no
+W07,bulk delete · reason,tst_sup1,حذفٌ جماعي لمحضرين في ورديته بلا سبب,allow,allow,True,deny:reason,deny:reason,True,deny:reason,yes,no
+W08,bulk delete · reason,tst_sup1,الحذفُ الجماعي نفسُه بسبب,allow,allow,True,allow,allow,True,allow,no,no
+W09,bulk delete · hidden item,tst_supB,مشرف ب يحذف جماعياً ما يراه — المحجوبُ عنه (الوردية أ) لا يُعدّ محذوفاً ويُحفظ كما هو,allow ir2:gone ir1:gone,allow ir2:gone ir1:gone,True,allow ir2:gone ir1:kept,allow ir2:gone ir1:kept,True,allow ir2:gone ir1:kept,yes,yes
+W10,retro.open · reason,tst_sup1,فتحُ نافذة استدراكٍ للشهر السابق بلا سبب,allow,allow,True,deny:reason,deny:reason,True,deny:reason,yes,no
+W11,retro.open · explicit grant + window covers,tst_sup1,فتحُ النافذة بسبب (منحٌ صريح) ثم إضافةُ موظفٍ محضراً في الشهر المغلق تحت النافذة,allow allow,allow allow,True,allow allow,allow allow,True,allow allow,no,no
+W12,retro.open · compat (approve),tst_supB,مشرف ب (اعتمادٌ بلا منحٍ صريح): التوافقُ المؤقّت قائمٌ قبل ترحيل الصلاحيات,allow,allow,True,allow,allow,True,allow,no,no
+W13,retro.open · no permission,tst_emp1,موظفٌ بلا اعتماد ولا منح,deny:perm,deny:perm,True,deny:perm,deny:perm,True,deny:perm,no,no
+W14,approve · Shift (inside),tst_sup1,اعتمادُ قسم ورديته (أ) في تقرير اليوم,allow,allow,True,allow,allow,True,allow,no,no
+W15,"edit · Shift (outside, API bypass)",tst_supB,مشرف ب يعتمد قسمَ الوردية أ (محجوبٌ عنه) مباشرةً عبر API,allow,allow,True,deny:scope,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),True,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),yes,yes
+W15b,create · past day (DateRange),tst_sup1,إنشاءُ تقريرٍ ليومٍ منقضٍ في الشهر الجاري (مقفلٌ بلا فتح),allow,allow,True,deny:scope,deny:scope (report.create:DateRange=locked-period: period-locked (m:y-m/dsLockedIn)),True,deny:scope (report.create:DateRange=locked-period: period-locked (m:y-m/dsLockedIn)),yes,no
+W16,reopen · grant minus,tst_sup1,إعادةُ فتح قسمٍ معتمد (الشهر السابق) — report.reopen مُسقَطٌ عنه صراحةً,allow,allow,True,deny:perm,deny:perm,True,deny:perm,yes,no
+W17,reopen · reason,tst_dm1,مدير الإدارة يعيد فتح القسم المعتمد بلا سبب,allow,allow,True,deny:reason,deny:reason,True,deny:reason,yes,no
+W18,reopen · reason,tst_dm1,إعادةُ الفتح نفسُها بسبب,allow,allow,True,allow,allow,True,allow,no,no
+W19,lens on · data edit,tst_lon,تعديلُ اسم مصلى في الخطة (العدسة مفعّلة),allow,allow,True,allow,allow,True,allow,no,no
+W20,lens off · data edit (API bypass),tst_loff,العدسةُ معطّلة: إرسالُ مصلى معدَّل مباشرةً عبر API,allow,allow,True,deny:scope,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),True,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),yes,yes
+W21,lens enable ≠ CRUD,tst_snop,العدسةُ مفعّلة (عرضٌ فقط) بلا صلاحية حذف: حذفُ مصلى من الجولة,deny,deny:act,True,deny:perm,deny:perm,True,deny:perm,yes,no
+W21b,v24.9 mapping · lens.zones.delete,tst_lon,حذفُ مصلى من الخطة بصلاحية «تعديل الخطة» + «حذف الجولات» — مقبولٌ في النظامين (القديم يعدّه تعديلاً للخطة · v24.9: lens.zones.delete),allow,allow,True,allow,allow,True,allow,no,no
+W22,status.change · reason,tst_lon,تغييرُ حالة مصلى في جولة اليوم بلا سبب,allow,allow,True,deny:reason,deny:reason,True,deny:reason,yes,no
+W23,status.change · reason,tst_lon,التغييرُ نفسُه بسبب,allow,allow,True,allow,allow,True,allow,no,no
+W24,status.change · Assigned (field),tst_fld,راصد الميدان: حالةُ المصلى المسنَد إليه في موقعه (بسبب),allow,allow,True,allow,allow,True,allow,no,no
+W25,status.change · not assigned (API bypass),tst_fld,راصد الميدان: حالةُ مصلى غيرِ مسنَدٍ إليه,deny,deny:page,True,deny:scope,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),True,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),yes,yes
+W26,status.change · Site out of scope,tst_fld,راصد الميدان: مصلى مسنَدٌ إليه لكن في موقعٍ خارج نطاقه (tsts2),allow,allow,True,deny:scope,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),True,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),yes,no
+W27,scope without permission,tst_snop,نطاقٌ بلا صلاحية: تعديلُ الجولة,deny,deny:act,True,deny:perm,deny:perm,True,deny:perm,yes,no
+W28,permission without scope,tst_pnos,صلاحيةٌ بلا نطاق: تعديلُ اسم مصلى في الخطة,allow,allow,True,deny:scope-unknown,deny:scope-unknown (lens.zones.data.edit:Site=unmigrated-site-scope · lens.zones.data.edit:Zone/Element=unmigrated-element-scope),True,deny:scope-unknown (lens.zones.data.edit:Site=unmigrated-site-scope · lens.zones.data.edit:Zone/Element=unmigrated-element-scope),yes,no
+W29,Department ceiling unmigrated,tst_dm3,مدير إدارةٍ بلا سقف نطاقٍ مُرحَّل: تعديلُ خطتها,allow,allow,True,deny:scope-unknown,deny:scope-unknown (lens.zones.data.edit:Site=unmigrated-department-ceiling · lens.zones.data.edit:Zone/Element=unmigrated-department-ceilin),True,deny:scope-unknown (lens.zones.data.edit:Site=unmigrated-department-ceiling · lens.zones.data.edit:Zone/Element=unmigrated-department-ceilin),yes,no
+W30,Site within ceiling,tst_dm1,مدير الإدارة: تعديلُ مصلى في الموقع الثاني (داخل السقف),allow,allow,True,allow,allow,True,allow,no,no
+W31,Site outside ceiling,tst_dm1,مدير الإدارة: إضافةُ موقعٍ جديد خارج سقف الإدارة (tsts9),allow,allow,True,deny:scope,deny:scope (site.create:Site=Site-outside-department-ceiling (new:f:tsts9)),True,deny:scope (site.create:Site=Site-outside-department-ceiling (new:f:tsts9)),yes,no
+W32,edit · Shift (inside),tst_sup1,تعديلُ صفّ موظفٍ من ورديته في الشهر الجاري,allow,allow,True,allow,allow,True,allow,no,no
+W33,edit · locked month (DateRange),tst_sup1,تعديلُ الشهر السابق المقفل,allow,allow,True,deny:scope,deny:scope (staff.rest:DateRange=locked-period: month-locked),True,deny:scope (staff.rest:DateRange=locked-period: month-locked),yes,no
+W34,edit · Shift transition,tst_sup1,نقلُ موظفٍ من ورديته (أ) إلى الوردية ب,allow,allow,True,deny:scope,deny:scope (staff.shift.assign:Shift=shift-out-of-scope (new:TST-B ≠ TST-A)),True,deny:scope (staff.shift.assign:Shift=shift-out-of-scope (new:TST-B ≠ TST-A)),yes,no
+W35,Own · self task,tst_emp1,الموظف يقبل مهمّته (المسنَدة إليه),allow,allow,True,allow,allow,True,allow,no,no
+W36,Own · other task,tst_emp1,الموظف يقبل مهمّةً ليست له,deny,deny:act,True,deny,deny:perm,True,deny:perm,yes,no
+W37,create · task,tst_sup1,المشرف ينشئ مهمّة,allow,allow,True,allow,allow,True,allow,no,no
+W38,Source · open day,tst_ds,إدخالُ رقمٍ للحرم في يومٍ مفتوح,allow,allow,True,allow,allow,True,allow,no,no
+W39,DateRange · locked day,tst_ds,إدخالٌ في يومٍ مقفل,deny,deny:dslock,True,deny:scope,deny:scope (dstats.haram.entry:DateRange=locked-period: dslock (locked before and after)),True,deny:scope (dstats.haram.entry:DateRange=locked-period: dslock (locked before and after)),yes,no
+W40,Source · other source (API bypass),tst_ds,إدخالٌ للمسجد النبوي (مصدرٌ لا يملكه ولا يراه),deny,deny:act,True,deny:scope,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),True,deny:scope (hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)),yes,yes
+W41,DateRange · super included (D4-02),SU,مدير النظام: إدخالٌ في يومٍ مقفل — D4-02: لا استثناءَ له في الإنفاذ (القديم يتجاوز القفل),allow,allow,True,deny:scope,deny:scope (dstats.haram.entry:DateRange=locked-period: dslock (locked before and after)),True,deny:scope (dstats.haram.entry:DateRange=locked-period: dslock (locked before and after)),yes,no
+W42,approve · Source,tst_ds,اعتمادُ شهر الحرم (قفلٌ),allow,allow,True,allow,allow,True,allow,no,no
+W43,import.run,tst_imp,استيرادُ موظف (علامة import.run),allow,allow,True,allow,allow,True,allow,no,no
+W44,import.run · no permission,tst_emp1,الاستيرادُ نفسُه من موظفٍ بلا صلاحية,deny,deny:page,True,deny:perm,deny:perm,True,deny:perm,yes,no
+W45,import.run · allowlist,tst_imp,علامةُ استيرادٍ على موردٍ خارج القائمة المسموحة (الاسترشاد),deny,deny:page,True,deny:import-allowlist,deny:import-allowlist (bassam_irshad_v1),True,deny:import-allowlist (bassam_irshad_v1),yes,no
+W46,backup.restore · mgr + key + reason,tst_dm1,مدير الإدارة (منحٌ صريح backup.restore) يستعيد خطة إدارته بسبب,allow,allow,True,allow,allow,True,allow,no,no
+W47,backup.restore · reason,tst_dm1,الاستعادةُ نفسُها بلا سبب,allow,allow,True,deny:reason,deny:reason,True,deny:reason,yes,no
+W48,backup.restore · mgr without key,tst_dm2,مدير إدارةٍ بلا مفتاح الاستعادة,allow,allow,True,deny:restore-policy,deny:restore-policy (mgr-no-key),True,deny:restore-policy (mgr-no-key),yes,no
+W49,backup.restore · not mgr,tst_lon,موظفٌ (يملك تعديل الخطة) يحاول الاستعادة,allow,allow,True,deny:restore-policy,deny:restore-policy (not-mgr),True,deny:restore-policy (not-mgr),yes,no
+W50,account freeze · mgr,tst_dm1,مدير الإدارة يجمّد حسابَ موظفٍ من إدارته,allow,allow,True,allow,allow,True,allow,no,no
+W51,account freeze · not mgr,tst_sup1,مشرفٌ يحاول تجميدَ حساب,deny,deny:mgr,True,deny,deny:mgr,True,deny:mgr,no,no
+W52,account freeze · other dept,tst_dm2,مديرُ إدارةٍ أخرى يحاول تجميدَ حسابٍ في d1,deny,deny:mgr,True,deny,deny:mgr,True,deny:mgr,no,no
+W53,scope record · mgr (employee scope),tst_dm1,مدير الإدارة يحدّد نطاقَ موظفٍ (tst_e_pnos),deny,deny:unknown,True,allow,allow,True,allow,yes,no
+W54,scope record · ceiling,tst_dm1,مدير الإدارة يحاول تغيير سقف إدارته (لمدير النظام وحده),deny,deny:unknown,True,deny:super,deny:super (ceiling),True,deny:super (ceiling),yes,no
+W55,scope record · not mgr,tst_sup1,مشرفٌ يحاول تعديلَ سجلّ النطاق,deny,deny:unknown,True,deny,deny:mgr,True,deny:mgr,yes,no
+W56,grant · mgr,tst_dm1,مدير الإدارة يمنح موظفاً مفتاحاً يملكه (ir.rec.delete),deny,deny:unknown,True,allow,allow,True,allow,yes,no
+W57,grant → effect,tst_emp1,بعد المنح: الموظف يحذف محضراً في ورديته,deny,deny:act,True,allow,allow,True,allow,yes,no
+W58,grant · self,tst_dm1,مدير الإدارة يمنح نفسه,deny,deny:unknown,True,deny:self,deny:self (mgr:tst_d1),True,deny:self (mgr:tst_d1),yes,no
+W59,grant · not assignable,tst_dm1,منحُ مفتاحٍ غير قابلٍ للمنح (sys.users.manage),deny,deny:unknown,True,deny:grant,deny:grant (sys.users.manage (not assignable)),True,deny:grant (sys.users.manage (not assignable)),yes,no
+W60,grant · other dept,tst_dm2,مديرُ إدارةٍ أخرى يمنح في d1,deny,deny:unknown,True,deny:dept,deny:dept,True,deny:dept,yes,no
+W61,Department,tst_dm1,مدير d1 يكتب في استرشاد d2,deny,deny:dept,True,deny:dept,deny:dept,True,deny:dept,no,yes
+W62,Branch (inside),tst_gm1,مدير الفرع يضيف محضراً في d2 (داخل فرعه),allow,allow,True,allow,allow,True,allow,no,no
+W63,Branch (outside),tst_gm1,مدير الفرع يكتب في d3 (خارج فرعه),deny,deny:dept,True,deny:dept,deny:dept,True,deny:dept,no,yes

@@ -1,0 +1,97 @@
+{
+ "config/wrangler.toml": {
+  "sha256": "00bf1f60d4fe7323ceec8fcfa7b876b84d678c0aea7ac451e58b3a62b1cdc937",
+  "lines": 13,
+  "why": "مجلدُ البناء pk260 (كان pk259)"
+ },
+ "src/api/280-server-storage.js": {
+  "sha256": "eb93d8e5fa17a3e362c098f228d9aa81e14b9969792be548f17629b300e8373e",
+  "lines": 13,
+  "why": "KIVO_260: «طلباتٌ كثيرة — إعادةٌ بعد …» بصيغة العدد (KIVO.BassamCount)"
+ },
+ "src/auth/330-auth.js": {
+  "sha256": "b0fef7ad5bba4f3332862aa53247bc8f8807087909c8016af80eebadcd823f5c",
+  "lines": 29,
+  "why": "KIVO_260: secWord (KIVO.BassamCount وإلا القاعدةُ نفسُها) · wait من الخادم يُمرَّر · القفلُ المحلي بصيغة العدد"
+ },
+ "src/auth/335-identity-gate.js": {
+  "sha256": "8d4bf73434c276ec2902af6e881df8d5781c5df03b4e7a1b5edbfc1b8a5217d8",
+  "lines": 27,
+  "why": "KIVO_260: العدُّ التنازلي بصيغة العدد · يقرأ wait رقماً (والنصُّ احتياطاً: «ثانية واحدة» · «ثانيتين» · «N ثوانٍ» · «N ثانية»)"
+ },
+ "src/observability/events.json": {
+  "sha256": "b1e5eb3b8949548c40b3c6e57a90306895169f149f099ae35176c8a6fb088db1",
+  "lines": 13,
+  "why": "KIVO_260 (scorecard_final): وصفُ A4 — الكمونُ p95 بلا /api/changes (انتظارٌ طويلٌ بالتصميم حتى 25 ث)"
+ },
+ "src/services/440-count.js": {
+  "sha256": "0895b16a3d4d2c6f6e3d88e74f1472cb2afbce6911ca859314ea967ae5b441b5",
+  "lines": 12,
+  "why": "KIVO_260: «ثانية» في BassamCount بصيغها الست (R183)"
+ },
+ "tools/hotfix242.py": {
+  "sha256": "c6c4f75c5876c1a36e2aa8f9ccaec460a65a2116972b2f0fd9e0c9fdccf7d7a8",
+  "lines": 98,
+  "why": "KIVO_260: --sr1 — رقعةُ 242 تحمل SR-1 مع AUD-033 (usersNoOut/usersNoIn في curSafe و/api/get والإقلاع والحفظ) · KIVO_242_HOTFIX_AUD033_SR1"
+ },
+ "tools/kivo_ns.json": {
+  "sha256": "be9041ff8af9de2ed87da1645e542f3c538516c6f14a985ece4b4f9a62e5c900",
+  "lines": 25,
+  "why": "AUD-016: after += 280 · 330 · 335 · 440 (260: صيغةُ الثواني) — والملاحظة"
+ },
+ "tools/obs/metrics_report.py": {
+  "sha256": "fa56aa0e093f1eba42fad4eb03bf18f061a119929ac64795550dd2c12ecff371",
+  "lines": 25,
+  "why": "KIVO_260 (scorecard_final): p95 بلا /api/changes (LONGPOLL) · latency_excl_longpoll"
+ },
+ "tools/onboard_check.sh": {
+  "sha256": "11e891589a681b3bb1a3d248193ef5ce23ea60547577f26617b3641c6003db89",
+  "lines": 13,
+  "why": "الافتراضيُّ 260 (كان 259)"
+ },
+ "tools/release_check.py": {
+  "sha256": "0060f223456a199420126492363a4ab1e5b5c4cff45af7c09a401f9838e226ae",
+  "lines": 29,
+  "why": "KIVO_260: سجلُّ الفحص يُحفظ تلقائياً reports/k<N>/release_check_<N>.txt (كان يُكتب يدوياً)"
+ },
+ "tools/sec/audit.py": {
+  "sha256": "ce558234401400574dd4d4df2dd24cb5277290616465a5f941e2981c69420f4a",
+  "lines": 31,
+  "why": "KIVO_260: يقرأ الصيغتين «نجح N | أخفق M» و«N نجاح · M إخفاق» · الافتراضيُّ pk260"
+ },
+ "tools/sot.py": {
+  "sha256": "719b681a585d414ff2d5c92bcef68d74c50180a123dde3041c3ef018aa4372ae",
+  "lines": 41,
+  "why": "KIVO_260 (scorecard_final): recount — أعدادُ META تُحسب من البنود عند كل حفظ (لقطةُ الإنشاء تُحفظ مرّةً في counts_v6_creation) — كانت p0_open/security_open ثابتةً منذ الإنشاء"
+ },
+ "tools/test_catalog.py": {
+  "sha256": "4c300569349ff6bb2f8ff302f612939ba97564147ff9a177b3f68fa2e0290d23",
+  "lines": 84,
+  "why": "KIVO_260 (scorecard_final): الأعدادُ من أحدث جولةٍ وأجزائها (runK + b/c) بالصيغتين · حالةُ P0 من SOT JSON"
+ },
+ "tools/trace.py": {
+  "sha256": "d6c4f2a37971b17bd9aa707704100dd4e4227215836e892c41f75d9f5ff92d9c",
+  "lines": 28,
+  "why": "KIVO_260: أدلةُ بنود التدقيق المنجزة تُعرض (k243/evidence → docs/evidence/k243 في المستودع الرسمي) · docs/evidence تُعدّ تقارير"
+ },
+ "workers/parts/002-seclog.js": {
+  "sha256": "0f1b30e57e7c2804eea886363216ff724099f2300dc9b277b4c182f7cb48d46d",
+  "lines": 13,
+  "why": "الإصدار 2026.10.11-160"
+ },
+ "workers/parts/054-image-contract.js": {
+  "sha256": "2771753c37e8fe8805e2137d092b345d0855f5af67b9eb5beec2dcb5e519c49b",
+  "lines": 54,
+  "why": "KIVO_260 (scorecard_final §٤ بند 10): قفلُ الحجز مؤقّت LOCK_PROV_MS (1.5 ث) والقفلُ الكامل المتضاعف يضعه guardFail عند الإخفاق المؤكَّد ذرّياً (MAX · RETURNING) — حدُّ الدفع المتزامن كما هو والسلوكُ المتتابع كما هو؛ مكتبٌ خلف عنوانٍ واحد لا يُعطَّل زرُّه 5 ث لدخولاتٍ صحيحة · (بند 12) secAr: الثواني بالعدد والمعدود (R183) · tooMany بها"
+ },
+ "workers/parts/056-enforce.js": {
+  "sha256": "1e65dd7c087b3b15ddc886cf2ef98006cec364053e608f6f96f7d979b331d486",
+  "lines": 13,
+  "why": "ENF_VER KIVO_260"
+ },
+ "workers/parts/063-enf-api-and-handler.js": {
+  "sha256": "33421fe7ed83bbe70bb13ac26a6b5d71ef2ff7a1c3398e7006dfa6de3912f9bd",
+  "lines": 22,
+  "why": "KIVO_260: ردّا القفل (الدخول · مفتاحُ الاستعادة) بـsecAr ويحملان wait (الثواني رقماً — عدّادُ الواجهة يقرؤه بدل تحليل النص)"
+ }
+}

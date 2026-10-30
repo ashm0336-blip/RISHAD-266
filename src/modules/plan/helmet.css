@@ -1,0 +1,20 @@
+<style>
+/* قائمة «النوع» في صف الاسم: بارتفاع حقلي الرقم والاسم (38px) لتستوي حوافها */
+#bsGeType > div > button { height: 38px !important; }
+
+body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
+a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
+@keyframes gatePulse{0%{transform:scale(1);opacity:.55}70%{transform:scale(2.4);opacity:0}100%{transform:scale(2.4);opacity:0}}
+
+/* الطباعة تُبنى الآن في مستند مستقل (_buildPrintDoc) لا بقواعد @media print
+   على تخطيط التطبيق — تلك المحاولة سبّبت فيضاً لصفحتين وخريطة لا تملأ. */
+.bs-rep-head, .bs-rep-foot, .bs-rep-gap { display: none !important; }
+/* R190: سجلُّ القائمة الجانبية المختصر يُخفى في الحاسوب (فأرة: تمريرٌ ومؤشّرٌ دقيق) ويبقى في الجوال واللوحي (لمس) —
+   والتمييزُ بنوع الإدخال لا بالعرض: اللوحيُّ بالعرض يقارب عرضَ الحاسوب. والسجلُّ بعرض الصفحة يحلّ محلّه في الحاسوب. */
+@media (hover:hover) and (pointer:fine){ .bs-oreg{ display:none !important; } }
+/* R190: «طباعة / حفظ PDF» من سجل التشغيل الميداني: السجلُّ وحده — والصنفُ على body طوال نافذة الطباعة فقط */
+@media print{
+  body.bs-print-oplog [data-screen-label="الخطة التشغيلية"] > :not([data-op-log]){ display:none !important; }
+  body.bs-print-oplog [data-op-log] .bs-hbar:not(:last-child){ display:none !important; }
+}
+</style>

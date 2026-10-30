@@ -1,0 +1,2969 @@
+{
+  "$schema_note": "KIVO_255 · SOT-127/SOT-100/AUD-026 — عقودُ الواجهة البرمجية /api/* (52 مساراً — KIVO_264: +/api/me/today · /api/me/history · +4 «مهامي» · +11 «المهام» للمسؤول) مقروءةً آلياً: لكل مسارٍ طرائقُه ومستوى وصوله والجسمُ المطلوب ومفاتيحُ الردّ لكل حالة. tests/unit/api_contracts.test.mjs يثبت (أ) أن قائمةَ المسارات هنا = ما في workers/_worker.js حرفاً (لا مسارَ بلا عقد ولا عقدَ بلا مسار) و(ب) أن الردودَ الفعلية تحمل مفاتيحَ عقدها. المستوياتُ: public · session · actor (جلسة + حساب قائم) · super · enforce (بيئةُ الإنفاذ وحدها؛ 404 بدونها بجلسة — وبلا جلسة 401 كسائر المسارات: بوابةُ الجلسة أولاً). الوثيقةُ المقروءة: docs/api.md.",
+  "version": 1,
+  "common": {
+    "errors": {
+      "401": {
+        "keys": [
+          "ok",
+          "err"
+        ],
+        "err": "session"
+      },
+      "403": {
+        "keys": [
+          "ok",
+          "err"
+        ]
+      },
+      "404": {
+        "keys": [
+          "ok",
+          "err"
+        ],
+        "err": "not-found"
+      },
+      "413": {
+        "keys": [
+          "ok",
+          "err",
+          "rid"
+        ]
+      },
+      "500": {
+        "keys": [
+          "ok",
+          "err",
+          "rid"
+        ],
+        "err": "worker-error"
+      },
+      "503": {
+        "keys": [
+          "ok",
+          "err"
+        ]
+      }
+    },
+    "headers": {
+      "X-Kivo-Rid": "معرّفُ الطلب (12 hex) على كل ردّ",
+      "Server-Timing": "app;dur=<ms> على /api/* والغلاف (KIVO_255)"
+    },
+    "csrf": "POST/PUT/DELETE: Origin ≠ الموقع أو Sec-Fetch-Site: cross-site ⇒ 403 {ok:0, err:'origin', rid}"
+  },
+  "routes": [
+    {
+      "path": "/api/brand",
+      "methods": [
+        "GET"
+      ],
+      "access": "public",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "brand",
+            "ver",
+            "rk"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/ping",
+      "methods": [
+        "GET"
+      ],
+      "access": "public",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "cf",
+            "ver",
+            "fresh"
+          ],
+          "super_extra": [
+            "users",
+            "rev",
+            "sess",
+            "schema",
+            "schemaDb",
+            "schemaOk",
+            "ready"
+          ],
+          "protect_extra": [
+            "ready",
+            "mode"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/recover",
+      "methods": [
+        "POST"
+      ],
+      "access": "public",
+      "request": {
+        "key": "string(20)",
+        "pw": "string"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ],
+          "note": "ok:0 + err عند مفتاحٍ غير صحيح/محاولاتٍ كثيرة · ok:1 + un عند النجاح"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/recover"
+        }
+      }
+    },
+    {
+      "path": "/api/login",
+      "methods": [
+        "POST"
+      ],
+      "access": "public",
+      "request": {
+        "u": "string",
+        "p": "string"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ],
+          "ok1": [
+            "uid",
+            "role",
+            "deptId",
+            "mustChange"
+          ],
+          "cookie": "bs_tok HttpOnly SameSite=Lax (Secure خارج localhost)"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/login"
+        }
+      }
+    },
+    {
+      "path": "/api/logout",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "access": "public",
+      "request": {
+        "POST": "بلا جسم — الفارغُ أو {} وحدهما (KIVO_264 · SOT-101)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "303": {
+          "note": "GET: توجيهٌ إلى / مع مسح الكوكي"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/logout"
+        }
+      }
+    },
+    {
+      "path": "/api/whoami",
+      "methods": [
+        "GET"
+      ],
+      "access": "session",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "uid"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/me",
+      "methods": [
+        "GET"
+      ],
+      "access": "session",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "now",
+            "sess",
+            "events",
+            "lastLogin",
+            "thisLogin"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/me/sess/kill",
+      "methods": [
+        "POST"
+      ],
+      "access": "session",
+      "request": {
+        "body": "بلا جسم — الفارغُ أو {} (العميلُ يرسل {}) · KIVO_264: كان معقوداً {tok} والمعالجُ لا يقرأ جسماً"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/me/sess/kill"
+        }
+      }
+    },
+    {
+      "path": "/api/me/today",
+      "methods": [
+        "GET"
+      ],
+      "access": "session",
+      "note": "KIVO_264 · OD-3 — حقائقُ يوم صاحب الجلسة وحده (الهويةُ من الخادم: ekey = eid ثم nid · لا اسم) · الزملاء بالاسم وحده (OD-4)",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "v",
+            "day",
+            "account",
+            "identity",
+            "facts",
+            "site",
+            "mates",
+            "matesN",
+            "week",
+            "mon"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "read-only"
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/me/history",
+      "methods": [
+        "GET"
+      ],
+      "access": "session",
+      "note": "KIVO_264 · OD-3 — «السجل»: شهرٌ هجريٌّ من صفوف صاحب الجلسة وحدها، وكلُّ عنصرٍ بفئة دليله · ≤ 60 KB",
+      "query": {
+        "ym?": "YYYY-M (1400-1 … الشهرُ الجاري + 1؛ غيابُه = الشهرُ الجاري)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "v",
+            "ym",
+            "today",
+            "account",
+            "identity",
+            "range",
+            "month",
+            "days",
+            "sites",
+            "changes",
+            "evidence",
+            "moves"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "bad-ym"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "read-only"
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/me/tasks",
+      "methods": [
+        "GET"
+      ],
+      "access": "session",
+      "query": {
+        "ym": "Y-M (اختياري — شهرُ «سجل مهامك»)",
+        "since": "rev (اختياري — ردٌّ رخيص {same:1} إن لم يتغيّر مخزنُ المهام)",
+        "uid?": "string — KIVO_264 · C1 للقراءة: هويةُ التبويب (BOOT.uid)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "now",
+            "me",
+            "rev"
+          ],
+          "full_keys": [
+            "n",
+            "more",
+            "months",
+            "rows"
+          ],
+          "note": "KIVO_264 · KIVO-Tasks P0: صفوفُ المتصل وحده (العمود 14 = مفتاحُه الثابت eid، ورقمُ الهوية nid للحسابات القديمة قراءةً — والمعرّفُ يحمله سجلٌّ واحدٌ وحده في الإدارة: SR-2.2 · F-1) في إدارته — بلا task.view ولا صفوفِ زملاء؛ me.linked=false لحسابٍ بلا سجلّ موظف (أو بمعرّفٍ مكرَّر)؛ me.off=1 وrows فارغة حين لا تكون صفحةُ المهام مفعّلةً لإدارته أو تُطفأ للمنصة (F-7)"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "bad-ym"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "session-changed",
+          "note": "KIVO_264 · C1: uid يخالف صاحبَ الجلسة"
+        }
+      }
+    },
+    {
+      "path": "/api/me/tasks/act",
+      "methods": [
+        "POST"
+      ],
+      "access": "session",
+      "request": {
+        "k": "Y-M-D (يومُ الصفّ)",
+        "id": "number | string ≤ 40 (العمود 13 — هويةُ الصفّ)",
+        "i": "int ≥ 0 (تلميحُ الموضع — اختياري)",
+        "act": "ack (تأكيدُ الاستلام) | start (البدء — accept اسمُه القديم) | decline (اعتذار) | stall (تعثّر) | resume (استئناف) | doc (توثيقٌ مسودّة) | submit (تسليم — finish اسمُه القديم) | expire",
+        "why": "string ≤ 200 (إلزاميٌّ للاعتذار والتعثّر)",
+        "note": "string ≤ 1000 (doc · submit)",
+        "imgs": "≤ 4 معرّفات img_tsk… مرفوعةٌ لي — تُضاف إلى المحفوظ (≤ 12 للمهمة)",
+        "steps": "{خطوة: true|false} — من خطوات سياسة المهمة وحدها (≤ 12)",
+        "rm": "[img_tsk…] تُحذف من المسودّة — صورُ التسليم السابق لا تُحذف (img-locked)",
+        "meta?": "[{img?, at, lat?, lng?, acc?}] ≤ 4 — KIVO_265 · البند 18: البياناتُ الوصفية لختم الصورة (وقتُ الالتقاط · الإحداثيات أو null «بلا موقع») لكل صورةٍ جديدة بترتيبها — تُحفظ في r21.meta ويعيدها GET /api/me/tasks في proof.meta",
+        "idem?": "string 6–40 [A-Za-z0-9_-] — مفتاح عدم التكرار لطلب الصفحة؛ تبقى المسودة والمفتاح في ذاكرة الصفحة عند غموض الإقرار لإعادة المحاولة الصريحة، دون طابور جهاز أو إرسال عند عودة الاتصال؛ فعل كُتب بالمفتاح نفسه ⇒ 200 noop:1 (لا كتابة ولا تنبيه) بدل 409 state — آخر 8 مفاتيح في r20.q",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "row"
+          ],
+          "note": "يمرّ بالحفظ المركزي applySave: selfTaskOnly (legacy) · self.task.respond بنطاق Own (enforce) — أعمدةُ الذات وحدها (3·6·11·12·20·21) + حدثُ تدقيق etype=task؛ noop:1 لتأكيدٍ مكرَّر ولانقضاءٍ مضى على نهايته أكثرُ من 48 ساعة (F-3 — بلا كتابة). التسليمُ بلا مراجِع ⇒ done، ومع مراجِعٍ ⇒ بانتظار المراجعة (ق3)"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/me/tasks/act",
+          "note": "bad-body (at) · proof (msg — سياسةُ الإثبات ق2 · خطواتُ العمل) · imgs"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-linked · denied (why) · origin · off (F-7: صفحةُ المهام غيرُ مفعّلةٍ لإدارته)"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found — ليس صفّاً مسنَداً إليك (لا كشفَ لوجوده)"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "state (ph) · locked · identity · img · img-locked · expired (ق6 — يمدّدها المسؤول) · policy (لا اعتذار) · busy · session-changed (C1)"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/me/tasks/img",
+      "methods": [
+        "GET"
+      ],
+      "access": "session",
+      "query": {
+        "id": "img_tsk… مذكورٌ في صفٍّ مسنَدٍ إليك",
+        "uid?": "string — KIVO_264 · C1 للقراءة: هويةُ التبويب (BOOT.uid)"
+      },
+      "responses": {
+        "200": {
+          "GET": "جسمُ الصورة (data:image/…;base64) — claim لك أو bound لمخزن مهام إدارتك"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "bad-id"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "forbidden · off (F-7)"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "session-changed",
+          "note": "KIVO_264 · C1: uid يخالف صاحبَ الجلسة"
+        }
+      }
+    },
+    {
+      "path": "/api/me/tasks/log",
+      "methods": [
+        "GET"
+      ],
+      "access": "session",
+      "query": {
+        "k": "Y-M-D (يومُ الصفّ)",
+        "id": "هويةُ الصفّ (العمود 13)",
+        "uid?": "string — KIVO_264 · C1 للقراءة: هويةُ التبويب (BOOT.uid)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "k",
+            "id",
+            "events"
+          ],
+          "note": "KIVO_264 · المرحلة الثانية: سجلُّ مهمتي — أحداثُ تدقيق etype=task لصفّي وحده (هويةُ الكيان في العمود 22) {at, act, txt, by (أنت | اسمُ المسؤول — بلا معرّفات), why}؛ وطوابعُ الصفّ القديم موسومةٌ src:row"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "bad-query"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-linked · off (F-7)"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found — ليس صفّاً مسنَداً إليك"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "session-changed",
+          "note": "KIVO_264 · C1: uid يخالف صاحبَ الجلسة"
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/create",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "dept": "معرّفُ الإدارة (اختياري — الافتراضيّ إدارتُك؛ ضمن نطاقك)",
+        "k": "Y-M-D يومُ المهمة (= يومُ بدايتها ±1)",
+        "t": "string ≤ 300",
+        "desc": "string ≤ 4000",
+        "prio": "low | normal | high | urgent",
+        "s": "ms بدايةُ التنفيذ",
+        "e": "ms المهلة (> s · ≤ 14 يوماً)",
+        "asg": "[eid] ≤ 50 — المعرّفُ الثابت وحده (لا اسم) · أو shift بدله (KIVO_265 · البند 12)",
+        "shift": "KIVO_265 · البند 12: {name: اسمُ الوردية ≤ 80} بدل asg (لا كليهما ⇒ 400 at:asg) — الورديةُ كيانٌ: مكلَّفوها يومَ k من الجدول الشهري لشهره (صفُّ الموظف shift) ∪ كشفُ الوردية في تقرير اليوم المسحوب، بسياق الأهلية نفسِه (072 tkShiftAsg)؛ صفٌّ لكل مكلَّف بالقواعد نفسِها (الأهلية · force لغير المتاح · grp واحد بوسم «<الوردية> كاملة» · تنبيه task_new) بسقف 500 صفّ — والمتخطَّون بأسبابهم في skipped (بلا حسابٍ نشط · بلا معرّفٍ فريد · المراجِعُ نفسُه · ما بعد السقف) لا 409 كالقائمة",
+        "grpL": "string ≤ 120 (جماعية)",
+        "wt": "string ≤ 80 (بلا مكلَّف)",
+        "dec": "0 | 1 (السماحُ بالاعتذار — 1 افتراضاً)",
+        "pol": "{m: any | img | note | both | none, n: 1…4, steps: [≤ 12]} — ق2: الافتراضيّ any «صورة أو ملاحظة»",
+        "win": "KIVO_265 · نافذةُ التنفيذ (قرارُ المالك 2026-10-19): {early: دقائقُ البدء قبل الموعد 0–240 (0 = لا بدءَ قبل الموعد) · late: ساعاتُ التسليم بعد المهلة 0–24 (0 = لا تسليمَ بعدها)} — الافتراضيُّ بلا win: early 0 · late 2 · القبولُ (ack) حرٌّ · الأداءُ من المهلة",
+        "rv": "creator | none | {u} — ق3: الافتراضيّ منشئُ المهمة",
+        "needs": "[مفتاحُ صلاحيةٍ من سجلّ v24.9] ≤ 8 (أهليةُ «الصلاحية»)",
+        "rec": "{t: daily | weekly | monthly | every (days اسمٌ قديمٌ لـweekly), wd: [0…6] (للأسبوعي — الأحد 0 · 1…7 أيام), md: 1…30 | 'last' (للشهري — يومُ الشهر الهجري؛ شهرٌ بلا يومِه لا نسخةَ فيه · 'last' آخرُ يومٍ في الشهر 29 أو 30 لا يُتخطّى — KIVO_265 · البند 16), n: 2…30 (لـevery — كل n يوماً من يوم البدء بعدّ الأيام المدنية · خارج المدى 400 at:rec.n — البند 16), to?: Y-M-D (≥ k · ≤ ثلاث سنواتٍ هجرية), open?: 1 («حتى الإيقاف» — لا to مخزَّنة؛ لا تُجمع مع to)} — بلا to ولا open ⇒ سنةٌ هجرية · ق5: يُولَّد في الخادم بلا Cron · KIVO_265 · srvrec: المتكررةُ تحتاج مكلَّفاً (400 rec-asg)",
+        "force": "true — إنشاءٌ رغم «غير متاح» بعد كشفه (409 elig) — لا يتجاوز «بلا حسابِ مستخدمٍ نشط» (409 acct · KIVO_265 البند 4)",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "rows",
+            "elig",
+            "skipped"
+          ],
+          "note": "task.create (+ task.assign مع مكلَّفين) — tkHeld: enforce ⇒ enfHeld · legacy ⇒ السجل v24.9؛ صفوفٌ بهويةٍ فريدة في 13 وطابعٍ في 22 وx في 23 عبر applySave (CAS · تدقيق created) + تنبيهُ task_new من الخادم · skipped (KIVO_265 · البند 12): [{ekey, name, why, code}] من تخطّاه الإسنادُ بالوردية (فارغةٌ للقائمة)"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/tasks/create",
+          "note": "bad-body (at — ومنه rec.t · rec.n · rec.wd · rec.md · rec.to · rec.open ومفتاحٌ زائد في rec: مخطّطُ rec نفسُه في /api/tasks/recur — S7 · shift بلا اسم · asg مع shift) · asg (معرّفٌ مجهول) · shift at:shift (لا موظفَ في الوردية يومَها — البند 12) · rec-asg at:rec (متكررةٌ بلا مكلَّف — KIVO_265 · srvrec · S10)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "denied (صلاحيةُ المهام) · forbidden (إدارةٌ خارج نطاقك)"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "acct (items — مكلَّفٌ بلا حسابِ مستخدمٍ نشط: بلا حساب أو معطَّل — قاطعٌ ولو بـforce · KIVO_265 البند 4؛ وبالوردية: لا مكلَّفَ يمكن إسنادُه بعد التخطّي — items · skipped) · elig (items — «غير متاح» يحتاج force؛ وبالوردية skipped معها) · locked (شهرٌ معتمد) · busy · session-changed (C1)"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/review",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "dept": "معرّفُ الإدارة (اختياري — الافتراضيّ إدارتُك؛ ضمن نطاقك)",
+        "k": "Y-M-D",
+        "id": "العمود 13",
+        "ekey": "eid المكلَّف",
+        "decision": "approve | return",
+        "why": "string ≤ 200 (إلزاميٌّ للإعادة — يصل الموظفَ نصُّه)",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "st"
+          ],
+          "note": "ق3: المراجِعُ المسمّى في المهمة أو مديرُ إدارتها أو مديرُ النظام — للتسليم الحاليّ وحده (x.rev.sub = r21.sub)؛ الاعتمادُ ⇒ done · الإعادةُ ⇒ «أُعيدت للاستكمال» + تنبيه"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/tasks/review",
+          "note": "bad-body (at)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-reviewer · forbidden"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "state (لا تسليمَ بانتظار المراجعة) · locked · busy · session-changed (C1)"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/extend",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "dept": "معرّفُ الإدارة (اختياري — الافتراضيّ إدارتُك؛ ضمن نطاقك)",
+        "k": "Y-M-D",
+        "id": "العمود 13",
+        "ekey": "eid (اختياري)",
+        "e": "ms المهلةُ الجديدة (مستقبلٌ · بعد البداية · ≤ 30 يوماً)",
+        "why": "string ≤ 200",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "e"
+          ],
+          "note": "ق6: task.edit — لا بدءَ بعد المهلة إلا بتمديدٍ من المسؤول؛ يُمسح علَمُ «انقضت» ويُسجَّل x.ext"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/tasks/extend",
+          "note": "bad-body (at)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "denied (صلاحيةُ المهام) · forbidden (إدارةٌ خارج نطاقك)"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "state · locked (شهرٌ معتمد) · busy · session-changed (C1)"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/reassign",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "dept": "معرّفُ الإدارة (اختياري — الافتراضيّ إدارتُك؛ ضمن نطاقك)",
+        "k": "Y-M-D",
+        "id": "العمود 13",
+        "from": "eid المكلَّف الحاليّ",
+        "to": "eid الجديد",
+        "why": "string ≤ 200",
+        "e": "ms مهلةٌ جديدة (اختياري)",
+        "force": "true رغم «غير متاح» — لا يتجاوز «بلا حسابِ مستخدمٍ نشط» (409 acct)",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "row",
+            "elig"
+          ],
+          "note": "task.assign — صفٌّ جديد للمكلَّف الجديد (x.from) والقديمُ «أُعيد إسنادها» يبقى في سجلّه"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/tasks/reassign",
+          "note": "bad-body (at) · to: المراجِعُ المسمّى لا يكون المكلَّفَ (KIVO_265 · R-7)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "denied (صلاحيةُ المهام) · forbidden (إدارةٌ خارج نطاقك)"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "acct (المكلَّفُ الجديد بلا حسابِ مستخدمٍ نشط — قاطعٌ ولو بـforce · KIVO_265 البند 4) · state · dup · elig · locked · busy · session-changed (C1)"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/cancel",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "dept": "معرّفُ الإدارة (اختياري — الافتراضيّ إدارتُك؛ ضمن نطاقك)",
+        "k": "Y-M-D",
+        "id": "العمود 13",
+        "ekey": "eid (اختياري — يلزم لمجموعةٍ تتشارك الهوية)",
+        "why": "string ≤ 200 (إلزامي)",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev"
+          ],
+          "note": "task.delete أو task.edit — إلغاءٌ بسببٍ يبقى في السجل (لا حذف)"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/tasks/cancel",
+          "note": "bad-body (at)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "denied (صلاحيةُ المهام) · forbidden (إدارةٌ خارج نطاقك)"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "state · locked (شهرٌ معتمد) · busy · session-changed (C1)"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/relink",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "dept": "معرّفُ الإدارة (اختياري — الافتراضيّ إدارتُك؛ ضمن نطاقك)",
+        "k": "Y-M-D",
+        "id": "العمود 13",
+        "from": "قيمةُ العمود 14 الحالية (اسمٌ/رقمُ هوية — ≤ 160)",
+        "to": "eid من سجلّ الإدارة",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "row"
+          ],
+          "note": "ق4: ربطٌ يدويّ لصفٍّ قديمٍ «غير مرتبط» (لا إعادةَ كتابةٍ تلقائية) — x.relink يحفظ القيمةَ السابقة"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/tasks/relink",
+          "note": "bad-body (at)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "denied (صلاحيةُ المهام) · forbidden (إدارةٌ خارج نطاقك)"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "linked (مرتبطٌ بمعرّفٍ ثابت · برقم هويةِ غيره · فيه نشاطٌ أو أُغلق ويُربط بغير صاحب رمزه — KIVO_265 · R-6) · acct (مفتوحةٌ لمن بلا حسابِ مستخدمٍ نشط — البند 4) · state · locked (شهرٌ معتمد) · busy · session-changed (C1)"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/settings",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "dept": "معرّفُ الإدارة (اختياري — الافتراضيّ إدارتُك؛ ضمن نطاقك)",
+        "k": "Y-M-D",
+        "id": "العمود 13 (أو grp)",
+        "grp": "العمود 17 — صفوفُ المهمة الجماعية في يومها كلُّها (بدل id)",
+        "ekey": "eid (اختياري)",
+        "pol": "{m: any|img|note|both|none, n?, steps?[]} (اختياري)",
+        "rv": "creator | none | {u} (اختياري)",
+        "dec": "0|1 (اختياري)",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "n"
+          ],
+          "note": "KIVO_265 · H-1: إعداداتُ المهمة في العمود 23 من الخادم وحده (task.edit) — والحفظُ الخامّ الذي يغيّر العمودَ 23 يُرفض task-x"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/tasks/settings",
+          "note": "bad-body (at) · rv (لا يملك الاعتماد · المكلَّفُ نفسُه)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "denied (صلاحيةُ المهام) · forbidden (إدارةٌ خارج نطاقك)"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "state (ملغاة · أُعيد إسنادها) · locked · busy · session-changed (C1)"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/reopen",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "dept": "معرّفُ الإدارة (اختياري — الافتراضيّ إدارتُك؛ ضمن نطاقك)",
+        "k": "Y-M-D",
+        "id": "العمود 13",
+        "ekey": "eid (اختياري — يلزم لمجموعةٍ تتشارك الهوية)",
+        "why": "string ≤ 200 (اختياري — يصل الموظفَ)",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "st"
+          ],
+          "note": "KIVO_265 · H-1: منجزة ⇒ جارية (الحفظُ المركزي يحكم: task.reopen في الإنفاذ) وقرارُ المراجعة «أُعيدت» في العمود 23 إن كان لها تسليمٌ ومراجِع — من الخادم وحده"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/tasks/reopen",
+          "note": "bad-body (at)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "denied (صلاحيةُ المهام) · forbidden (إدارةٌ خارج نطاقك)"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "state (ليست منجزة · ملغاة · أُعيد إسنادها) · locked · busy · session-changed (C1)"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/recur",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "dept": "معرّفُ الإدارة (اختياري — الافتراضيّ إدارتُك؛ ضمن نطاقك)",
+        "op": "pause | resume | stop | edit | start",
+        "id": "pause · resume · stop · edit: معرّفُ سلسلة التكرار (x.rec.id) — start: العمود 13 لمهمةٍ مسندةٍ لمرةٍ واحدة (number | string)",
+        "k": "start: Y-M-D يومُ المهمة — stop (مع row): يومُ النسخة التي تبقى",
+        "row?": "stop وحده: string ≤ 40 — العمود 13 لنسخةٍ من هذه السلسلة في اليوم k تبقى آخرَ موعدٍ لها فلا يُلغيها الإنهاء (KIVO_265 · U1 — نموذجُ «المهام»)؛ لغير stop ⇒ 400 at:row · بلا k صالح ⇒ 400 at:k",
+        "grp": "start: العمود 17 — المهمةُ الجماعية بصفوفها في يومها (بدل id)",
+        "rec": "edit · start (إلزامي): {t: daily | weekly | monthly | every (days = weekly), wd?: [0…6], md?: 1…30 | 'last', n?: 2…30, to?: Y-M-D, open?: 1} — قواعدُ الإنشاء نفسُها (KIVO_265 · البند 16: every بـn · md 'last')؛ edit: البدايةُ والمكلَّفون كما هم و«لا to ولا open» = النهايةُ كما هي · start: بلا to ولا open ⇒ سنةٌ هجرية كالإنشاء",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "n"
+          ],
+          "ops_keys": [
+            "ok",
+            "rev",
+            "n",
+            "cancelled",
+            "ver",
+            "restored",
+            "kept"
+          ],
+          "start_keys": [
+            "ok",
+            "rev",
+            "n",
+            "rec"
+          ],
+          "note": "KIVO_265 · srvrec — pause · resume · stop · edit (task.edit): القاعدةُ بإصدارٍ أعلى (ver = إصدارُ النموذج + 1) على نُسخ اليوم وما بعده في الأشهر المفتوحة وحدها، والنموذجُ يحملها دائماً — والسابقةُ وما في شهرٍ معتمدٍ وإثباتُها وسجلُّها لا تُمسّ · stop: rec.stop=1 والنهايةُ أقربُهما من نهايتها واليوم (لا تتقدّم) وتُلغى القادمةُ المعلّقة غيرُ المبدوءة («أُنهي التكرار») · edit: تُلغى القادمةُ المعلّقة غيرُ المبدوءة التي لم تعد موعداً أو بعد النهاية الجديدة («عُدّل التكرار») وحدثُ تدقيقٍ واحد rec_edit {rec, before, after}؛ والتوليدُ التالي يضيف الناقصَ وحده (idem) · start (task.create + task.edit + task.assign): x.rec {id, ver:1, from:k, asg: مكلَّفوها, by: أنت} وx.idem لكل صفّ وحدثُ rec_start — ثم يولِّدها الخادمُ كالمنشأة؛ rec في الردّ {id, ver, t, wd?, md?, n?, from, to?, paused, asg}",
+          "srv2_note": "مراجعةُ الخادم (srv2): كلُّ نسخةٍ يلغيها stop أو edit لها حدثُ «أُلغيت» {day, via:srv, rec, why} على هويتها (S9 — بلا تنبيه) والحدثُ المجمَّع rec_<op> باقٍ · edit يعيد النسخةَ القادمة المعلّقة غيرَ المبدوءة التي ألغاها تعديلٌ سابق (x.can.rec) إن صارت موعداً — restored عددُها والإلغاءُ السابق في x.canh (S2؛ لا يعود إلغاءُ stop ولا المسؤول) · kept = 1 إن حدّد {k, row} نسخةً من السلسلة (U1) · سلسلةٌ لها حدثُ rec_stop من الخادم منتهية (S8) · التوليدُ يعيد الحكمَ على السلسلة الطازجة قبل الكتابة (S1)"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/tasks/recur",
+          "note": "bad-body (at: op · id · k · row · grp · rec · rec.t · rec.n · rec.wd · rec.md · rec.to · rec.open) · asg (start: مكلَّفٌ بلا معرّفٍ ثابتٍ فريد)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "denied (صلاحيةُ المهام: task.edit · وللتحويل task.create وtask.edit وtask.assign) · forbidden (إدارةٌ خارج نطاقك)"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "not-found (السلسلة · المهمة)"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "rec-ended (السلسلةُ أُنهيت أو مضت نهايتُها: لا استئنافَ ولا إيقافَ ولا تعديلَ ولا إنهاءَ ثانٍ) · month-locked (نُسخُ السلسلة كلُّها في أشهرٍ معتمدة — لا نموذجَ يحمل القاعدة؛ لا تجاوزَ للقفل والرسالة: «كلُّ مواعيد هذه السلسلة في شهرٍ معتمد مقفل — يمكن إيقافها أو تعديلها عند ظهور موعدها القادم (قبل استحقاقه بشهر)، أو بعد فتح الشهر» — S3 · KIVO_265 · البند 15: الأفقُ 30 يوماً) · locked (start: شهرُ المهمة معتمد) · state (start: ملغاة · أُعيد إسنادُها · منفصلة · في سلسلةٍ أصلاً · صفٌّ من مجموعة بلا grp · غيرُ مسندة · بلا وقت) · dup · busy · session-changed (C1)"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/recur/run",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "query": {
+        "dept": "اختياري",
+        "day": "Y-M-D — اليومُ الجاري وحده (اختياري)"
+      },
+      "request": {
+        "dept": "معرّفُ الإدارة (اختياري — الافتراضيّ إدارتُك؛ ضمن نطاقك)",
+        "uid?": "string — KIVO_264 · C1: هويةُ التبويب (BOOT.uid) — يخالف صاحبَ الجلسة ⇒ 409 session-changed قبل أيّ قراءةٍ أو كتابة"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "created",
+            "skipped",
+            "denied",
+            "series",
+            "due"
+          ],
+          "note": "due (KIVO_265 · البند 10): تقريرُ مسح التذكير والتصعيد {soon, late, exp, skipped, sent} (074 tkDueRun). ق5: توليدٌ متساوي القوى (مفتاحُ idem لكل يومٍ ومكلَّف — ولا تعود نسخةٌ حُذفت) · KIVO_265 · البند 15: الأفقُ 30 يوماً قادمة (كان 7 — Pages بلا Cron فالتوليدُ كسولٌ بأفقٍ أطول) بسقف 600 صفّ للتشغيل الواحد والباقي في التالي باسم صاحب القالب لا المستدعي (صاحبُ المحوَّلة من حوّلها: rec.by بحدث rec_start)؛ الموقوفةُ والمنتهية (stop) لا تُولَّد · وrec.to الغائبُ «حتى الإيقاف»؛ يُستدعى كسولاً من GET /api/me/tasks أيضاً · srv2: صاحبُ القالب بلا task.create وtask.assign معاً ⇒ denied (S4) · صاحبُه ونُسخُه المحذوفة من سجل الخادم وحده: cid tk… (S5) · الحكمُ على السلسلة الطازجة قبل الكتابة (S1) · الوردية الليلية في يومها التالي (S6)"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/tasks/recur/run",
+          "note": "bad-query (day)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "forbidden"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "session-changed",
+          "note": "KIVO_264 · C1: uid يخالف صاحبَ الجلسة"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/group",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "dept": "اختياري",
+        "id": "معرّفُ المجموعة (العمود 17)",
+        "k": "Y-M-D (اختياري)",
+        "uid?": "string — KIVO_264 · C1 للقراءة: هويةُ التبويب (BOOT.uid)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "id",
+            "title",
+            "label",
+            "summary",
+            "members"
+          ],
+          "note": "المهمةُ الجماعية: حالةُ كلِّ مكلَّف (asg · exe · rev) ونسبةُ الإنجاز — لقارئ مخزن المهام"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "bad-query"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "forbidden"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "session-changed",
+          "note": "KIVO_264 · C1: uid يخالف صاحبَ الجلسة"
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/linkage",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "dept": "اختياري",
+        "ym": "Y-M (اختياري)",
+        "uid?": "string — KIVO_264 · C1 للقراءة: هويةُ التبويب (BOOT.uid)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "counts",
+            "rows",
+            "more"
+          ],
+          "note": "ق4: ربطُ الصفوف بسجلّ الموظفين وقتَ القراءة (eid · nid · ملتبس · اسمٌ «غير مرتبطة» · مجهول) — بلا كتابة"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "bad-ym"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "forbidden"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "session-changed",
+          "note": "KIVO_264 · C1: uid يخالف صاحبَ الجلسة"
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/tasks/eligibility",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "dept": "اختياري",
+        "ekeys": "eid,eid,… ≤ 50",
+        "s": "ms",
+        "e": "ms (اختياري)",
+        "needs": "مفاتيحُ صلاحيات مفصولةٌ بفواصل (اختياري)",
+        "uid?": "string — KIVO_264 · C1 للقراءة: هويةُ التبويب (BOOT.uid)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "s",
+            "e",
+            "items"
+          ],
+          "note": "الأهليةُ وقتَ التنفيذ من الجدول الشهري (الوردية · الراحة · الإجازة · الغياب · التعارض · الصلاحية): متاح | بانتظار التحقق | غير متاح — والتفصيلُ لقارئ الجدول وحده · KIVO_265 البند 4: بلا حسابِ مستخدمٍ نشط (بقاعدة «ملفي») ⇒ «غير متاح» قاطع: code no_acct | acct_disabled | acct_nid (حسابُه برقم الهوية — يرى ولا ينفّذ · R-3) · hard:1 · acct:0 — والسببُ لكل مَن يفحص الأهلية"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "bad-query (at)"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "denied · forbidden"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "session-changed",
+          "note": "KIVO_264 · C1: uid يخالف صاحبَ الجلسة"
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/checkpw",
+      "methods": [
+        "POST"
+      ],
+      "access": "session",
+      "request": {
+        "p": "string"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/checkpw"
+        }
+      }
+    },
+    {
+      "path": "/api/save",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "set": "{key: value}",
+        "del": "[key]",
+        "base": "{key: rev}",
+        "aud?": "object",
+        "ops?": "array",
+        "uid?": "string — KIVO_264 · C1: هويةُ الجلسة التي بُني لها الطابور (BOOT.uid)",
+        "cur?": "string — KIVO_264 · D14: كلمةُ المرور الحالية لتغيير اسم دخول صاحب الحساب (لا تُخزَّن)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "v",
+            "revs",
+            "denied",
+            "conflicts",
+            "atomic"
+          ],
+          "note": "denied[k].why لمخزن المهام (KIVO_265 · 018 taskRawWhy): task-x (العمود 23 للخادم — H-1) · task-asg (المكلَّفُ بعد نشاط الموظف — RC-13: إعادةُ الإسناد بمسارها /api/tasks/reassign) · task-rv (المراجِعُ مكلَّفاً) · task-acct (مكلَّفٌ جديد بلا حسابِ مستخدمٍ نشط — البند 4) — وعلى base قديمٍ تعارضٌ (conflicts) لا رفض"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/save"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "session-changed",
+          "note": "KIVO_264 · C1: uid يخالف صاحبَ الجلسة — قبل أيّ قراءةٍ أو كتابة"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err",
+            "rid"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err",
+            "msg"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/get",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "keys": "k1,k2,… (≤ 80)",
+        "uid?": "string — KIVO_264 · C1 للقراءة: هويةُ التبويب (BOOT.uid)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "v",
+            "keys"
+          ],
+          "more_extra": [
+            "more"
+          ],
+          "note": "KIVO_264 · C2: أكثرُ من 80 مفتاحاً ⇒ أوّلُ 80 + more:1"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "session-changed",
+          "note": "KIVO_264 · C1: uid يخالف صاحبَ الجلسة — قبل أيّ قراءة"
+        }
+      }
+    },
+    {
+      "path": "/api/changes",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "since": "rev",
+        "wait?": "1 (انتظارٌ حتى 25 ثانية)",
+        "uid?": "string — KIVO_264 · C1 للقراءة (409 قبل الانتظار)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "v",
+            "keys"
+          ],
+          "enforce_extra": [
+            "am",
+            "az"
+          ],
+          "more_extra": [
+            "more"
+          ],
+          "note": "KIVO_264 · C2: مرتّبةٌ بالمراجعة؛ تُقطع بعد 80 مفتاحاً مرئياً على حدود مراجعةٍ كاملة ⇒ more:1 و v = آخرُ مراجعةٍ مضمَّنة (يُطلب الباقي بـ since=v فوراً)؛ بلا قطع v = المراجعةُ الحالية كما كان"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "session-changed",
+          "note": "KIVO_264 · C1: uid يخالف صاحبَ الجلسة — قبل أيّ قراءةٍ أو انتظار"
+        }
+      }
+    },
+    {
+      "path": "/api/retro",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "access": "actor",
+      "query": {
+        "dept": "id"
+      },
+      "request": {
+        "POST": "{res, dept?, act: open|close, scope?:{y,m,d?}, hours?, reason?, id?}"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "bad-body",
+          "note": "bad-body (+ at) لمخالفة المخطّط؛ وres · dept · scope · not-closed · reason للدلالة",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/retro"
+        }
+      }
+    },
+    {
+      "path": "/api/aud",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "limit?": "1..200",
+        "cursor?": "",
+        "key?": "",
+        "uid?": ""
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rows",
+            "next"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "غيرُ GET: read-only"
+        }
+      }
+    },
+    {
+      "path": "/api/imgs",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "responses": {
+        "200": {
+          "keys": [],
+          "note": "{id: meta} — قد يكون فارغاً"
+        }
+      }
+    },
+    {
+      "path": "/api/img/",
+      "prefix": true,
+      "methods": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ],
+      "access": "actor",
+      "request": {
+        "PUT": "جسمُ الصورة ≤ 512 KB — data:image/…;base64, وحدها (KIVO_261 · SOT-068) · المقطَّع: الجزءُ الأوّل بالترويسة والتالي base64 · Content-Type: text/plain أو غائب (KIVO_264) — العقدُ الخامّ: src/schemas/api/bodies.schema.json#/raw//api/img/"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ],
+          "PUT_keys": [
+            "ok",
+            "n"
+          ],
+          "GET": "جسمُ الصورة"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "part0-missing — جزءٌ تالٍ بلا جزءٍ أوّل مرحَّل"
+        },
+        "415": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "ليس data:image/…;base64 (أو جزءٌ تالٍ ليس base64) · أو Content-Type غيرُ text/plain (KIVO_264 — قبل قراءة الجسم)"
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ],
+          "note": "حدُّ المعدّل (دقيقة) أو حصّةُ الرفع اليومية 256 MB لغير مدير النظام — KIVO_261"
+        }
+      }
+    },
+    {
+      "path": "/api/presence",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "now",
+            "active",
+            "list"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/sec",
+      "methods": [
+        "GET"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rows"
+          ]
+        }
+      },
+      "note": "KIVO_264: لمدير النظام وحده في الوضعين (كان معقوداً actor والكودُ يردّ 403 لغير مدير النظام في القديم أيضاً)"
+    },
+    {
+      "path": "/api/sess/kill",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "uid": "string",
+        "all?": "1"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/sess/kill"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/guard",
+      "methods": [
+        "GET"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "now",
+            "rows"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/guard/unlock",
+      "methods": [
+        "POST"
+      ],
+      "access": "super",
+      "request": {
+        "gk": "string (u:/ip:/p: — وإلا 400)",
+        "gks": "string[] (KIVO_261 · ≤ 20 · u:/ip:/p:)",
+        "all": "1 — فكُّ الكلّ صريحاً (KIVO_261)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "bad-body",
+          "note": "bad-body (+ at) لمخالفة المخطّط (KIVO_264 — null كان {} منذ 261)؛ و gk ببادئةٍ مجهولة · أو جسمٌ بلا gk/gks/all",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/guard/unlock"
+        }
+      }
+    },
+    {
+      "path": "/api/policy",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "access": "super",
+      "request": {
+        "sessH": "1..",
+        "idleH": "0.25..",
+        "lockN": "3..",
+        "lockMin": "1..",
+        "pwMin": "6..",
+        "wrMin": "30..5000",
+        "types": "أرقامٌ أو نصوصٌ رقمية (حقولُ النموذج)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "policy"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "note": "KIVO_264 · E5: null كان 500",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/policy"
+        }
+      }
+    },
+    {
+      "path": "/api/overview",
+      "methods": [
+        "GET"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "now",
+            "policy",
+            "oldHash",
+            "imgs",
+            "failsToday",
+            "deniedToday",
+            "lockedNow",
+            "activeNow",
+            "sessions",
+            "lastLogin",
+            "fails",
+            "added"
+          ],
+          "note": "KIVO_265 · imgs: تشخيصُ مخزن الصور (r2 · stored · staged · counts{bound,claim,orphan,amb} · claims[] · orphans[] · grace) — البند 6 بعد حادثة الصور"
+        }
+      }
+    },
+    {
+      "path": "/api/recovery",
+      "methods": [
+        "GET"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "key",
+            "used",
+            "backups",
+            "backupLastLogin"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/recovery/new",
+      "methods": [
+        "POST"
+      ],
+      "access": "super",
+      "request": {
+        "pw": "string — كلمةُ مرور مدير النظام الحالية"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ],
+          "note": "ok:1 + key مرةً واحدة · ok:0 + err"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "note": "KIVO_264 · E5: null كان 500",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/recovery/new"
+        }
+      }
+    },
+    {
+      "path": "/api/reset",
+      "methods": [
+        "POST"
+      ],
+      "access": "super",
+      "request": {
+        "pw": "string",
+        "key": "string(20)",
+        "confirm": "تهيئة",
+        "keepBrand?": "boolean",
+        "admin": "{un, name, pw}"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "note": "KIVO_264 · E5: null كان 500",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/reset"
+        }
+      },
+      "note": "محروسة — لا تُنفَّذ في اختبار العقد"
+    },
+    {
+      "path": "/api/permv2",
+      "methods": [
+        "GET"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "version",
+            "docSha256",
+            "status",
+            "phase",
+            "mode",
+            "worker",
+            "counts",
+            "validation",
+            "stats",
+            "scope",
+            "guards"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/scope-dryrun",
+      "methods": [
+        "GET"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "worker",
+            "dryRun"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/identity-rehearsal",
+      "methods": [
+        "GET"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "worker",
+            "rehearsal"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/identity-preflight",
+      "methods": [
+        "GET"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "worker",
+            "preflight"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/authz",
+      "methods": [
+        "GET"
+      ],
+      "access": "enforce",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "ver",
+            "mode",
+            "env",
+            "d1",
+            "perm",
+            "scope",
+            "ident",
+            "fixture",
+            "me"
+          ]
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "بلا ENV"
+        }
+      }
+    },
+    {
+      "path": "/api/authz/log",
+      "methods": [
+        "GET"
+      ],
+      "access": "enforce",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rows",
+            "totals"
+          ]
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/authz/snaps",
+      "methods": [
+        "GET"
+      ],
+      "access": "enforce",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rows"
+          ]
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/authz-migrate",
+      "methods": [
+        "POST"
+      ],
+      "access": "enforce",
+      "request": {
+        "act": "apply | rollback (POST) · status | plan (GET ?act=)",
+        "seed": "hex64",
+        "hash": "hex64 — بصمةُ الخطة",
+        "generated": "لحظةُ الخطة",
+        "parts?": "[identity|scope|perm]",
+        "inferable?": "boolean",
+        "snap": "معرّفُ اللقطة (rollback)",
+        "force?": "boolean"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "bad-body",
+          "note": "bad-body (+ at) لمخالفة المخطّط؛ و act · seed-hash · generated · snap للدلالة",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/authz-migrate"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/authz-test",
+      "methods": [
+        "POST"
+      ],
+      "access": "enforce",
+      "request": {
+        "uid": "tst_*",
+        "path": "/…",
+        "method": "GET|POST|PUT|DELETE",
+        "body?": "أيّ شكل — يفحصه المسارُ المستهدف",
+        "vals?": "[مفاتيح]"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "bad-body",
+          "note": "بعد حرّاس الأداة (البيئة · المضيف · مدير النظام)",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/authz-test"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "بلا KIVO_TEST_FIXTURE=allow أو مضيفٍ غير مسموح"
+        }
+      }
+    },
+    {
+      "path": "/api/dstats",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "base": "integer revision (required POST)",
+        "data": "daily statistics snapshot in actor scope",
+        "uid?": "session uid",
+        "operation?": "historical-import: super-only, reason required",
+        "reason?": "operation reason"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "data"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/dstats",
+          "err": "bad-body",
+          "note": "bad-body يحمل at عند مخالفة مخطط الجسم؛ operation وdstats-shape وfull-restore-unsupported أخطاء تحقق مستقلة بحالة 400"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "conflict carries rev + scoped data; session-changed carries no data"
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/notifications",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "uid?": "captured session owner",
+        "dept?": "active department in actor scope",
+        "all?": "1 permits super to include all permitted scopes",
+        "cursor?": "opaque revision-bound keyset cursor",
+        "limit?": "1..200",
+        "summary?": "1 reads aggregate counters only",
+        "filter?": "all | act | un; counters stay unfiltered",
+        "kinds?": "comma-separated known category keys",
+        "manage?": "1 adds super-only broadcast management page",
+        "bcCursor?": "broadcast resource revision-bound keyset cursor"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "items",
+            "total",
+            "unread",
+            "actionable",
+            "urgentUnread",
+            "unreadAll",
+            "byKind",
+            "next",
+            "cfg",
+            "configRev",
+            "broadcastRev",
+            "counters",
+            "pendingAck"
+          ],
+          "manage_extra": [
+            "broadcasts",
+            "stats",
+            "bcTotal",
+            "bcNext"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "notification-legacy-source-present"
+        }
+      }
+    },
+    {
+      "path": "/api/notifications/act",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "request": {
+        "op": "emit | emit-batch | state | config | broadcast | dept-broadcast | withdraw | remind | targets | security-poll",
+        "uid?": "captured session owner",
+        "base?": "required CAS for config and global broadcast management; state belongs to session only"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/notifications/act",
+          "note": "Semantic operation/target errors also use 400 with their explicit code"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "429": {
+          "keys": [
+            "ok",
+            "err",
+            "retry"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "notification-legacy-source-present"
+        }
+      }
+    },
+    {
+      "path": "/api/notifications/export",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "dept?": "department backup.view; absent means full domain, super only"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev",
+            "domain"
+          ]
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "notification-legacy-source-present"
+        }
+      }
+    },
+    {
+      "path": "/api/custody",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "401": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      },
+      "note": "Server-owned operations. Existing resource authority, session identity, revision/epoch checks and operation-specific closed validation apply. GET inspects; POST commits atomically where supported."
+    },
+    {
+      "path": "/api/custody/act",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rev"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/custody/act",
+          "note": "الجلسة وهوية الفاعل قبل فحص الشكل؛ تظل حراسة العملية والنطاق كما هي بعده."
+        },
+        "401": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      },
+      "note": "Server-owned operations. Existing resource authority, session identity, revision/epoch checks and operation-specific closed validation apply. GET inspects; POST commits atomically where supported."
+    },
+    {
+      "path": "/api/custody/export",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "domains"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "401": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      },
+      "note": "Server-owned operations. Existing resource authority, session identity, revision/epoch checks and operation-specific closed validation apply. GET inspects; POST commits atomically where supported."
+    },
+    {
+      "path": "/api/employees/transition",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "access": "actor",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/employees/transition",
+          "note": "الجلسة وهوية الفاعل قبل فحص الشكل؛ تظل حراسة العملية والنطاق كما هي بعده."
+        },
+        "401": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      },
+      "note": "Server-owned operations. Existing resource authority, session identity, revision/epoch checks and operation-specific closed validation apply. GET inspects; POST commits atomically where supported."
+    },
+    {
+      "path": "/api/admin/dept-wipe",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/admin/dept-wipe",
+          "note": "الجلسة ودور مدير المنصة قبل فحص الشكل؛ الصلاحية تظل403 لغيره."
+        },
+        "401": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      },
+      "note": "Server-owned operations. Existing resource authority, session identity, revision/epoch checks and operation-specific closed validation apply. GET inspects; POST commits atomically where supported."
+    },
+    {
+      "path": "/api/admin/dept-delete",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/admin/dept-delete",
+          "note": "الجلسة ودور مدير المنصة قبل فحص الشكل؛ الصلاحية تظل403 لغيره."
+        },
+        "401": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      },
+      "note": "Server-owned operations. Existing resource authority, session identity, revision/epoch checks and operation-specific closed validation apply. GET inspects; POST commits atomically where supported."
+    },
+    {
+      "path": "/api/backup/restore",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "access": "actor",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/backup/restore",
+          "note": "الجلسة وهوية الفاعل قبل فحص الشكل؛ تظل حراسة العملية والنطاق كما هي بعده."
+        },
+        "401": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      },
+      "note": "Server-owned operations. Existing resource authority, session identity, revision/epoch checks and operation-specific closed validation apply. GET inspects; POST commits atomically where supported."
+    }
+  ]
+}

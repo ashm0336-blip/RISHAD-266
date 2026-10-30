@@ -1,0 +1,26 @@
+<style>
+body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
+a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
+@keyframes coverageGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+/* صف مؤشرات الجدول الشهري — بنية شبكة التقرير اليومي نفسها مكيَّفة لخمسة كروت (التوحيد بطلب المستخدم) */
+.st-kpis{gap:12px}
+
+/* ═══ الوضع المدمج — يعمل فقط حين تكون الستة في صفٍّ واحد (≥1800):
+   حلقة أصغر وحشوات أضيق فيبقى محتوى الكرت قطعة واحدة أفقية مرنة
+   كمرونة كروت «موظفي الإدارة» — لا انقسام ولا فراغات ميتة ═══ */
+
+/* R188: شريطُ الأدوات على اللوحي (١٠٢٤–١٣٠٠): صفٌّ واحد كما هو، بفراغاتٍ أضيق وخانةِ بحثٍ أقصر —
+   فيظهر مفتاحُ «مجموعات | قائمة» ومبدّلُ العرض بلا سحب على ١١٨٠. الحاسوبُ والجوال كما هما */
+@media (min-width:1024px) and (max-width:1300px){
+  .bs-sttb{gap:4px!important}
+  .bs-sttb>.bs-sttq{min-width:130px!important}
+}
+/* وما دون ١١٨٠ إلى ١٠٢٤: يُخفى الفاصلُ الزخرفيّ، وأدنى عرضِ المرشّحات ٩٠ (والورديات ١٠٠) بلا قصٍّ لنصوصها، والبحثُ ١١٠ */
+@media (min-width:1024px) and (max-width:1179px){
+  .bs-sttb>.bs-sttdv{display:none!important}
+  .bs-sttb .bs-sttf{min-width:90px!important}
+  .bs-sttb .bs-sttf.w{min-width:100px!important}
+  .bs-sttb>.bs-sttq{min-width:110px!important}
+}
+
+</style>

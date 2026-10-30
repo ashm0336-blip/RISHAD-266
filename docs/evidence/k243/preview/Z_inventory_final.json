@@ -1,0 +1,132 @@
+{
+ "accounts": {
+  "byRole": {
+   "gm": 1,
+   "staff": 14,
+   "super": 2
+  },
+  "testOnly": 16
+ },
+ "at": "2026-10-09T11:02:45Z",
+ "aud": {
+  "maxId": 287,
+  "rows": 287
+ },
+ "authz": {
+  "allow": 35,
+  "deny": 402,
+  "denyByWhy": {
+   "dept": 3,
+   "grant": 1,
+   "import-allowlist": 1,
+   "mgr": 3,
+   "perm": 7,
+   "reason": 4,
+   "restore-policy": 2,
+   "scope": 14,
+   "scope-unknown": 2,
+   "self": 1,
+   "super": 1,
+   "unknown": 363
+  },
+  "rows": 437
+ },
+ "e": "KIVO_243 Preview inventory (read-only)",
+ "fixture": {
+  "testKeys": 27,
+  "testSessions": 0
+ },
+ "grantRecords": [
+  "bsdept:tst_d1:bassam_grants_v1"
+ ],
+ "kv": {
+  "bytes": 34355,
+  "chunked": 0,
+  "depts": [
+   [
+    "d1",
+    2
+   ],
+   [
+    "dmuzwbup7fuxl",
+    1
+   ],
+   [
+    "tst_d1",
+    19
+   ],
+   [
+    "tst_d2",
+    5
+   ],
+   [
+    "tst_d3",
+    3
+   ]
+  ],
+  "globals": [
+   "bassam_auth_users_v1",
+   "bassam_depts_v1",
+   "bassam_dstats_v1",
+   "bassam_gdepts_v1",
+   "bassam_notif_sys_v1",
+   "bassam_perm_admsubs_v2",
+   "bassam_perm_help_v1",
+   "bassam_perm_irshad_cap_v1",
+   "bassam_perm_leaf_v1",
+   "bassam_perm_mgr_explicit_v1",
+   "bassam_perm_seized_cap_v1",
+   "bassam_perms_v1"
+  ],
+  "keys": 42,
+  "rows": 42
+ },
+ "meta": {
+  "aud_mig": "1",
+  "authz_mode": "legacy",
+  "rev": "271",
+  "tst_fixture_created": "[\"key:bassam_dstats_v1\",\"sec:bassam_dstats_v1:haram\",\"sec:bassam_dstats_v1:nabawi\",\"sec:bassam_dstats_v1:locks\"]"
+ },
+ "retroStates": [
+  "bsdept:tst_d1:bassam_irshad_retro_v1"
+ ],
+ "scopeRecords": [
+  "bsdept:tst_d1:bassam_scope_v1",
+  "bsdept:tst_d2:bassam_scope_v1"
+ ],
+ "sec": 636,
+ "sess": {
+  "rows": 2,
+  "users": 1
+ },
+ "snaps": [
+  {
+   "kind": "restore",
+   "n": 1,
+   "restored": 0,
+   "snap": "restore_mv0u16zb_9a3l6z"
+  },
+  {
+   "kind": "migration",
+   "n": 5,
+   "restored": 1,
+   "snap": "migration_mv0uno4j_7wooxw"
+  }
+ ],
+ "tables": [
+  "aud",
+  "audit",
+  "authz",
+  "authz_snap",
+  "authz_snaps",
+  "guard",
+  "imgown",
+  "imgref",
+  "imgs",
+  "kv",
+  "meta",
+  "revs",
+  "sec",
+  "sess"
+ ]
+}

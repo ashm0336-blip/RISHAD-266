@@ -1,0 +1,212 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "KIVO — شجرةُ صلاحيات v24.9 (src/manifests/perm-tree24.json · SOT-123)",
+ "type": "object",
+ "required": [
+  "version",
+  "docSha256",
+  "containers",
+  "counts"
+ ],
+ "properties": {
+  "version": {
+   "const": "v24.9"
+  },
+  "doc": {
+   "type": "string"
+  },
+  "docSha256": {
+   "type": "string",
+   "pattern": "^[0-9a-f]{64}$"
+  },
+  "generatedBy": {
+   "type": "string"
+  },
+  "note": {
+   "type": "string"
+  },
+  "containers": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "label",
+     "kind",
+     "leaves"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "label": {
+      "type": "string"
+     },
+     "kind": {
+      "enum": [
+       "page",
+       "reference",
+       "platform",
+       "plugins"
+      ]
+     },
+     "page": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "nav": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "leaves": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "owner",
+        "label",
+        "kind",
+        "ownerKind",
+        "keys"
+       ],
+       "additionalProperties": false,
+       "properties": {
+        "owner": {
+         "type": "string",
+         "minLength": 1
+        },
+        "label": {
+         "type": "string",
+         "minLength": 1
+        },
+        "kind": {
+         "enum": [
+          "offpage",
+          "page",
+          "plugin",
+          "reference",
+          "page_under",
+          "platform",
+          "tab"
+         ]
+        },
+        "ownerKind": {
+         "enum": [
+          "page",
+          "reference",
+          "platform",
+          "lens"
+         ]
+        },
+        "route": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "keys": {
+         "type": "array",
+         "items": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+$"
+         },
+         "uniqueItems": true
+        },
+        "reserved": {
+         "type": "array",
+         "items": {
+          "type": "string"
+         }
+        },
+        "page": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "sub": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "docKind": {
+         "type": "string"
+        },
+        "docRoute": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "managedIn": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "managedRefs": {
+         "type": "array"
+        },
+        "platform": {
+         "type": [
+          "boolean",
+          "string",
+          "null"
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "shownIn": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "container",
+     "panel"
+    ],
+    "properties": {
+     "container": {
+      "type": "string"
+     },
+     "panel": {
+      "type": "string"
+     },
+     "asis": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "counts": {
+   "type": "object",
+   "required": [
+    "containers",
+    "leaves",
+    "keys"
+   ],
+   "properties": {
+    "containers": {
+     "type": "integer"
+    },
+    "leaves": {
+     "type": "integer"
+    },
+    "keys": {
+     "type": "integer"
+    }
+   }
+  }
+ },
+ "additionalProperties": false
+}

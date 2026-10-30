@@ -1,0 +1,441 @@
+{
+ "note": "KIVO_258 · SOT-133 — خطُّ أساس القصّ/التداخل/التخطيط المكسور لكل (جهاز × شاشة) بعد المراجعة؛ القبولُ النهائي 0 ولا زيادةَ أبداً · KIVO_259: أوّلُ خطِّ أساس بعد إصلاحين كشفتهما الحزمةُ (شريطُ التلميح safe center · الحاشيةُ اللمسية لا تسرق نقرةَ الجار) وتصحيحِ قياسها (الظهورُ عبر الأسلاف · القصُّ بالأسلاف في التداخل · الطبقةُ داخل كتلتها · ما تحت الطيّة) — 70 شاشة: 0 في كل شيء",
+ "totals": {
+  "broken": 0,
+  "clipped": 0,
+  "overlap": 0,
+  "docOver": 0
+ },
+ "byDevice": {
+  "phone-portrait": {
+   "kpis": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "employees": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "staffing": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "plan": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "planning": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "daily": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "dreport": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "tasks": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "irshad": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "seized": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "award": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "admin": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "profile": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "dstats": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   }
+  },
+  "phone-landscape": {
+   "kpis": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "employees": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "staffing": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "plan": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "planning": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "daily": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "dreport": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "tasks": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "irshad": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "seized": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "award": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "admin": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "profile": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "dstats": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   }
+  },
+  "tablet-portrait": {
+   "kpis": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "employees": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "staffing": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "plan": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "planning": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "daily": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "dreport": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "tasks": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "irshad": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "seized": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "award": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "admin": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "profile": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "dstats": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   }
+  },
+  "tablet-landscape": {
+   "kpis": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "employees": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "staffing": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "plan": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "planning": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "daily": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "dreport": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "tasks": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "irshad": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "seized": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "award": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "admin": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "profile": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "dstats": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   }
+  },
+  "desktop": {
+   "kpis": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "employees": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "staffing": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "plan": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "planning": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "daily": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "dreport": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "tasks": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "irshad": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "seized": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "award": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "admin": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "profile": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   },
+   "dstats": {
+    "docOver": 0,
+    "broken": 0,
+    "clipped": 0,
+    "overlap": 0
+   }
+  }
+ }
+}

@@ -1,0 +1,53 @@
+{
+ "name": "Daily Stats",
+ "slug": "dstats",
+ "pre": "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<script src=\"./support.js\"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n",
+ "mid": "\n</helmet>\n",
+ "mid2": "\n</x-dc>\n",
+ "scriptTag": "<script data-dc-script>",
+ "post": "</script>\n</body></html>\n",
+ "minifiedSource": false,
+ "prettified": false,
+ "originalSha256": "07c4807e8fdfab2386f43410010bd0475f8b919836a7ff3246cbf66a60eeed8a",
+ "charter": {
+  "owner": "مدير النظام · مدخلو الإحصاءات",
+  "purpose": "الإحصائياتُ اليومية: أرقام الحرمين (سجلٌّ عام)",
+  "page": "dstats",
+  "routes": [
+   "#/dstats"
+  ],
+  "ui": [
+   "src/modules/dstats/view.html",
+   "src/modules/dstats/helmet.css"
+  ],
+  "domain": "src/modules/dstats/logic.js",
+  "data": [
+   "bassam_dstats_v1"
+  ],
+  "permissions": [
+   "dstats/anCmp",
+   "dstats/anHaram",
+   "dstats/anNabawi",
+   "dstats/anTime",
+   "dstats/haram",
+   "dstats/nabawi"
+  ],
+  "tests": [
+   "gate:dsperm.mjs",
+   "gate:dstats.mjs",
+   "gate:k259journeys.mjs",
+   "gate:p1cmp.mjs",
+   "gate:p45reg.mjs",
+   "gate:r181.mjs",
+   "gate:r182.mjs",
+   "gate:r182pos.mjs",
+   "gate:r183ui.mjs",
+   "gate:r185hist.mjs",
+   "gate:r187.mjs",
+   "gate:r188.mjs",
+   "gate:r189.mjs",
+   "gate:r190.mjs",
+   "gate:r191.mjs"
+  ]
+ }
+}

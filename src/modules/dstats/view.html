@@ -1,0 +1,887 @@
+<div dir="rtl" data-screen-label="الإحصائيات اليومية" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414);margin:0 auto;display:flex;flex-direction:column;gap:16px">
+<svg width="0" height="0" style="position:absolute" data-i="i-4ab1171c"></svg>
+
+<sc-if value="{{readOnly}}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:9px;border-radius:12px;padding:9px 14px;font-size:11.5px;font-weight:600;background:var(--bg-a1481631840p1);border:1px solid var(--bd-a1481631840p25);color:var(--fg-x64748b)">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-ec9ec7cc"></svg>
+  <span>صلاحيتك على {{roSite}}: <b style="font-weight:800">عرض فقط</b> — الإدخالُ والاستيرادُ مخفيّان. راجع مدير النظام إن احتجت تعديلاً.</span>
+</div>
+</sc-if>
+
+<!-- ═══════════ صفحةُ «الإحصائيات اليومية»: إدخالٌ وسجلٌّ لا غير ═══════════ -->
+<!-- R180: مستعملٌ بلا مسجدٍ ممنوح — نصُّ «مؤشرات الإدارة» المعتمد نفسُه -->
+<sc-if value="{{noSite}}" hint-placeholder-val="{{ false }}">
+<div style="border-radius:16px;border:1px dashed var(--bd-xe1e1e1);background:var(--bg-xffffff);padding:26px;text-align:center;color:var(--fg-x94a3b8);font-size:12.5px">لا مسجدَ ممنوحٌ لك في هذه الإدارة</div>
+</sc-if>
+<sc-if value="{{viewEntry}}" hint-placeholder-val="{{ true }}">
+<!-- تبويبا المسجدين — وهما تبويبا الصفحة كلِّها؛ ولكلٍّ ورقتُه في الصلاحيات (R180)، فتبويبٌ واحدٌ لا يُعرض شريطاً -->
+<sc-if value="{{siteTabsOn}}" hint-placeholder-val="{{ true }}">
+<div style="border-radius:16px;border:2px solid var(--bd-a185151810p1);background:linear-gradient(90deg,var(--bg-a185151810p03),transparent,var(--bg-a185151810p03));padding:12px">
+  <div class="bs-hbar bs-tabstrip" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;flex-wrap:wrap">
+    <sc-for list="{{siteTabs}}" as="s" hint-placeholder-count="2">
+    <div onClick="{{s.click}}" style="{{s.style}}">
+      <div style="{{s.icon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-7eb43ea6"></svg></div>
+      <span style="{{s.lbl}}">{{s.name}}</span>
+      <sc-if value="{{s.on}}" hint-placeholder-val="{{ true }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+    </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- شريطُ السنة والأشهر — نفسُ كروت «المتابعة اليومية» حرفاً بحرف -->
+<div style="border-radius:16px;border:1px solid var(--bd-a185151810p2);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+  <div class="bs-hbar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--bd-a185151810p1);background:linear-gradient(to left,var(--bg-a185151810p05),transparent,var(--bg-a185151810p05));flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:4px">
+      <button onClick="{{prevYear}}" title="السنة السابقة" style="width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--bg-xf5f5f5)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:110px">
+        <span style="font-weight:400;font-size:14px;color:var(--fg-xb99751);line-height:1.3">{{yearLabel}}</span>
+        <span style="font-size:10px;color:var(--fg-x53565a);line-height:1.3;font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{gregRange}}</span>
+      </div>
+      <button onClick="{{nextYear}}" title="السنة التالية" style="width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--bg-xf5f5f5)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></button>
+      <button onClick="{{goToday}}" style="height:28px;padding:0 8px;font-size:11px;color:var(--fg-x53565a);background:transparent;border:0;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif" style-hover="color:var(--fg-xb99751);background:var(--bg-a185151810p05)">الحالية</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;border-radius:9999px;padding:4px 10px;font-weight:400;border:1px solid var(--bd-a185151810p25);color:var(--fg-xb99751);background:var(--bg-a185151810p08)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5693e495"></svg>
+        <span dir="rtl"><span dir="ltr">{{filledDays}} / {{monthDays}}</span> {{monthDaysW}}</span>
+      </div>
+    </div>
+  </div>
+  <div class="bs-hscroll" style="overflow-x:auto">
+    <div style="display:flex;gap:12px;padding:16px 12px;min-width:100%;box-sizing:border-box">
+      <sc-for list="{{mcards}}" as="m" hint-placeholder-count="12">
+      <div style="position:relative;flex:1 1 auto;min-width:100px">
+        <div onClick="{{m.click}}" onDoubleClick="{{m.dbl}}" title="{{m.tip}}" style="{{m.style}}" style-hover="box-shadow:var(--shadow-soft)">
+          <sc-if value="{{m.isCurrent}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-x3b82f6)" title="الشهر الحالي"></span></sc-if>
+          <p style="font-size:11px;font-weight:400;line-height:1.3;margin:0;color:{{m.nameColor}}">{{m.name}}</p>
+          <p style="font-size:9px;color:var(--fg-x53565a);margin:2px 0 0;line-height:1.3">{{m.greg}}</p>
+          <div style="margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-size:8px;font-weight:400;color:{{m.footColor}}">
+            <sc-if value="{{m.footIcon}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-81de76b2"></svg></sc-if>
+            <span>{{m.footLabel}}</span>
+          </div>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<!-- شريطُ الأيام — نفسُ خانات «المتابعة اليومية» -->
+<div style="display:flex;flex-direction:column;gap:6px">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:10px;color:var(--fg-x53565a)">تقدم الأيام:</span>
+      <span style="font-size:10px;font-weight:400;color:var(--fg-xb99751)">{{dayProg}}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-x047857)"></span><span style="font-size:8px;color:var(--fg-x53565a)">معتمد</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xb99751)"></span><span style="font-size:8px;color:var(--fg-x53565a)">مفتوح — فيه أرقام</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-x64748b)"></span><span style="font-size:8px;color:var(--fg-x53565a)">مقفل</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);box-sizing:border-box"></span><span style="font-size:8px;color:var(--fg-x53565a)">فارغ</span></div>
+    </div>
+  </div>
+  <div class="bs-daystrip" style="display:flex;align-items:center;gap:3px;flex-wrap:nowrap;padding:4px 0 6px">
+    <sc-for list="{{dcards}}" as="d" hint-placeholder-count="30">
+    <div onClick="{{d.click}}" onDoubleClick="{{d.dbl}}" title="{{d.tip}}" style="{{d.style}}" style-hover="transform:scale(1.05)">
+      <span style="line-height:1;display:block">{{d.num}}</span>
+      <span style="{{d.sepStyle}}"></span>
+      <span style="line-height:1;display:block;font-weight:400">{{d.gnum}}</span>
+      <sc-if value="{{d.isToday}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-xb99751);box-shadow:0 0 0 1px var(--bg-card)"></span></sc-if>
+      <!-- قفلٌ صغيرٌ يحكي حالةَ اليوم: مغلقٌ رماديّ = مقفل · مفتوحٌ ذهبيّ = فُتح بأثر رجعي -->
+      <sc-if value="{{d.lockClosed}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-xcbd5e1);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x475569)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg></span></sc-if>
+      <sc-if value="{{d.lockOpen}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p6);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-b64167e0"></svg></span></sc-if>
+    </div>
+    </sc-for>
+  </div>
+</div>
+
+<!-- بطاقةُ الإدخال -->
+<div class="rz-card" data-ds-entry="1" style="padding:16px 18px">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:13px">
+    <div style="display:flex;align-items:center;gap:11px">
+      <div style="width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751);flex-shrink:0">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-099046fc"></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0">
+        <span style="font-size:14px;font-weight:600;white-space:nowrap">أرقام {{entTitle}}</span>
+        <span style="width:1px;height:16px;background:var(--bg-xe6e9ed);flex-shrink:0"></span>
+        <span class="rz-sub" style="white-space:nowrap">الموافق {{entGreg}}</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="{{entBadgeStyle}}">{{entBadge}}</span>
+      <sc-if value="{{canSaveDay}}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{clearDraft}}" title="تفريغ الحقول" style="width:34px;height:34px;border-radius:10px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" style-hover="border-color:var(--bd-xdc2626);color:var(--fg-xdc2626);background:var(--bg-a22038380p04)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0732b330"></svg></button>
+      <button onClick="{{saveDay}}" title="حفظ أرقام اليوم" style="width:34px;height:34px;border-radius:10px;border:0;cursor:pointer;color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(135deg,var(--bg-xb99751),var(--bg-a185151810p85));box-shadow:0 4px 12px -2px rgba(185,151,81,0.4)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-4aeb31cd"></svg></button>
+      </sc-if>
+    </div>
+  </div>
+  <sc-if value="{{lockOn}}" hint-placeholder-val="{{ false }}">
+  <div style="{{lockHintStyle}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-9d264a7e"></svg><span>{{lockHint}}</span></div>
+  </sc-if>
+  <sc-if value="{{isHaram}}" hint-placeholder-val="{{ true }}">
+  <div class="ds-g4">
+    <sc-for list="{{fields}}" as="f" hint-placeholder-count="4">
+    <div class="ds-fld"><label title="{{f.tip}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e1a8a50e"></svg><span>{{f.label}}</span></label><input type="number" dir="ltr" inputmode="numeric" placeholder="—" value="{{f.value}}" disabled="{{f.locked}}" onInput="{{f.set}}"></div>
+    </sc-for>
+  </div>
+  </sc-if>
+  <sc-if value="{{isNabawi}}" hint-placeholder-val="{{ false }}">
+  <div class="ds-g4" style="margin-bottom:11px">
+    <sc-for list="{{fieldsMain}}" as="f" hint-placeholder-count="2">
+    <div class="ds-fld"><label title="{{f.tip}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e1a8a50e"></svg><span>{{f.label}}</span></label><input type="number" dir="ltr" inputmode="numeric" placeholder="—" value="{{f.value}}" disabled="{{f.locked}}" onInput="{{f.set}}"></div>
+    </sc-for>
+  </div>
+  <div class="rz-trio2" style="margin-top:0">
+    <div class="rz-lsc" style="box-shadow:none;border-color:var(--bd-xf2eee4)"><div class="t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-28cfb7f7"></svg><span>الروضة الشريفة — رجال</span></div><div class="ds-g4">
+      <sc-for list="{{fieldsMen}}" as="f" hint-placeholder-count="3">
+      <div class="ds-fld"><label title="{{f.tip}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e1a8a50e"></svg><span>{{f.label}}</span></label><input type="number" dir="ltr" inputmode="numeric" placeholder="—" value="{{f.value}}" disabled="{{f.locked}}" onInput="{{f.set}}"></div>
+      </sc-for></div></div>
+    <div class="rz-lsc" style="box-shadow:none;border-color:var(--bd-xf2eee4)"><div class="t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-28cfb7f7"></svg><span>الروضة الشريفة — نساء</span></div><div class="ds-g4">
+      <sc-for list="{{fieldsWomen}}" as="f" hint-placeholder-count="3">
+      <div class="ds-fld"><label title="{{f.tip}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e1a8a50e"></svg><span>{{f.label}}</span></label><input type="number" dir="ltr" inputmode="numeric" placeholder="—" value="{{f.value}}" disabled="{{f.locked}}" onInput="{{f.set}}"></div>
+      </sc-for></div></div>
+  </div>
+  </sc-if>
+  </div>
+
+<!-- سجلُّ الشهر — مكوّنُ السجل المعتمد: قائمةٌ مطوية + شريطُ أدوات + جدولُ المنصّة + فوترُ ترقيم -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+  <div onClick="{{lgToggle}}" style="display:flex;align-items:center;gap:11px;padding:13px 16px;cursor:pointer" style-hover="background:var(--bg-a2482502520p7)">
+    <span style="width:34px;height:34px;border-radius:12px;background:var(--bg-a185151810p12);color:var(--fg-xb99751);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-card)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-68b04ea2"></svg></span>
+    <span style="flex:1;min-width:0">
+      <span style="font-size:13.5px;font-weight:600;color:var(--fg-x141414)">سجل {{monthName}}</span>
+      <span style="display:inline-flex;align-items:center;margin-right:8px;border-radius:9999px;padding:3px 11px;font-size:10.5px;font-weight:600;font-family:'Cairo',sans-serif;background:var(--bg-a185151810p12);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p3)">{{logCount}}</span>
+    </span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb0b6bd)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{lgChev}}" data-i="i-c92915c6"></svg>
+  </div>
+  <sc-if value="{{lgOpen}}" hint-placeholder-val="{{ true }}">
+  <div style="border-top:2px solid var(--bd-a185151810p25)">
+  <!-- شريطُ أدوات السجل — بحثٌ + ملفات (تصدير/استيراد/طباعة/حذف) + فلترة -->
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd-xe1e1e1);background:var(--bg-a2482502520p5)">
+    <div style="position:relative;flex:1;min-width:180px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:50%;transform:translateY(-50%)" data-i="i-7133b944"></svg>
+      <input value="{{lgSearch}}" onChange="{{lgSetSearch}}" placeholder="بحث باليوم أو بالتاريخ أو باسم المُدخِل..." style="width:100%;height:34px;padding:0 34px 0 10px;font-size:12px;background:var(--bg-xffffff);border:1px solid var(--bd-xe2e8f0);border-radius:10px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;color:var(--fg-x141414)" style-focus="background:var(--bg-xffffff);border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px rgba(185,151,81,0.2)">
+    </div>
+    <!-- R190: «ملفات» وفاصلُه يظهران لمن عنده بندٌ واحدٌ فيها على الأقل — كانت قائمةً فارغةً لصاحب «عرضٍ فقط» -->
+    <sc-if value="{{lgFilesOn}}" hint-placeholder-val="{{ true }}">
+    <div data-ds-menu="1" style="position:relative">
+      <button onClick="{{lgFilesToggle}}" style="{{lgFilesBtnStyle}}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg>
+        ملفات
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{lgFilesChev}}" data-i="i-c92915c6"></svg>
+      </button>
+      <sc-if value="{{lgFilesOpen}}" hint-placeholder-val="{{ false }}">
+      <div data-bs-dd="1" style="position:absolute;top:100%;left:0;z-index:55;min-width:210px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right">
+        <sc-if value="{{lgCanExport}}" hint-placeholder-val="{{ true }}">
+        <div onClick="{{lgExport}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
+          <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a0132800p08);color:var(--fg-x008450);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-336c1c51"></svg></span>
+          <div style="flex:1"><div>تصدير Excel</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">أرقام {{monthName}} — الملفُ نفسُه يصلح للاستيراد</div></div>
+        </div>
+        </sc-if>
+        <sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}">
+        <div onClick="{{lgImport}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
+          <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg></span>
+          <div style="flex:1"><div>استيراد Excel</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">الأعمدةُ تُطابَق بالاسم لا بالترتيب</div></div>
+        </div>
+        </sc-if>
+        <sc-if value="{{lgCanExport}}" hint-placeholder-val="{{ true }}">
+        <div onClick="{{lgPrint}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
+          <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a141652330p08);color:var(--fg-x0369a1);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9662a985"></svg></span>
+          <div style="flex:1"><div>طباعة / حفظ PDF</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">نافذة الطباعة مباشرة</div></div>
+        </div>
+        </sc-if>
+        <sc-if value="{{lgCanClear}}" hint-placeholder-val="{{ true }}">
+        <div style="height:1px;background:var(--bg-xf1f5f9);margin:4px 2px"></div>
+        <div onClick="{{lgClearAsk}}" style="{{lgClearItemStyle}}" style-hover="background:var(--bg-a22038380p06)">
+          <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a22038380p08);color:var(--fg-xdc2626);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a7f69cb8"></svg></span>
+          <div style="flex:1"><div style="color:var(--fg-xdc2626)">حذف الكل</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">مسح أرقام {{monthName}} لهذا المسجد نهائياً</div></div>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+    </div>
+    <div style="height:20px;width:1px;background:var(--bg-xe2e8f0)"></div>
+    </sc-if>
+    <span style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8)">فلترة:</span>
+    <div data-ds-menu="1" style="position:relative">
+      <button onClick="{{lgFsToggle}}" style="{{lgFsBtnStyle}}">
+        <span style="white-space:nowrap">{{lgFsLabel}}</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{lgFsChev}}" data-i="i-c92915c6"></svg>
+      </button>
+      <sc-if value="{{lgFsOpen}}" hint-placeholder-val="{{ false }}">
+      <div data-bs-dd="1" style="position:absolute;top:100%;left:0;z-index:55;min-width:170px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right">
+        <sc-for list="{{lgFsOpts}}" as="o" hint-placeholder-count="3">
+        <div onClick="{{o.click}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">{{o.label}}</div>
+        </sc-for>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+  <sc-if value="{{hasRows}}" hint-placeholder-val="{{ true }}">
+  <div class="bs-hscroll bs-sthead" style="overflow-x:auto">
+    <table class="bs-rtable" style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
+          <sc-for list="{{cols}}" as="c" hint-placeholder-count="6">
+          <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9dba425d"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">{{c.n}}</span></div></th>
+          </sc-for>
+          <sc-if value="{{lgActOn}}" hint-placeholder-val="{{ true }}">
+          <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-bfbe856f"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">إجراءات</span></div></th>
+          </sc-if>
+        </tr>
+      </thead>
+      <tbody>
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+        <tr style="border-bottom:1px solid var(--bd-xf1f1f1)" style-hover="background:var(--bg-a2482502520p7)">
+          <!-- التاريخ: هجريٌّ فوق ميلاديّ بالأرقام — خليّةُ «التاريخ والوقت» في سجلّ الاسترشاد -->
+          <td style="padding:8px 6px;text-align:center;vertical-align:top">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+              <span dir="ltr" style="font-size:12px;font-weight:400;color:var(--fg-x25343f);white-space:nowrap">{{r.hd}}</span>
+              <span dir="ltr" style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{r.gd}}</span>
+            </div>
+          </td>
+          <!-- كلُّ رقمٍ وتحته بصمتُه: مَن أدخله · يومُ الإدخال بالهجري · الميلاديُّ والساعة -->
+          <sc-for list="{{r.vals}}" as="c" hint-placeholder-count="4">
+          <td style="padding:8px 6px;text-align:center;vertical-align:top">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+              <span dir="ltr" style="{{c.vst}}">{{c.v}}</span>
+              <sc-if value="{{c.has}}" hint-placeholder-val="{{ false }}">
+              <div title="{{c.tip}}" style="display:flex;flex-direction:column;align-items:center;gap:1px;padding-top:4px;border-top:1px dashed var(--bd-xe6e9ed);min-width:86px;cursor:default">
+                <span style="display:inline-flex;align-items:center;gap:3px;max-width:132px;font-size:9.5px;font-weight:600;color:var(--fg-x8a6f35);white-space:nowrap"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-f038c28f"></svg><span style="overflow:hidden;text-overflow:ellipsis">{{c.sn}}</span></span>
+                <span style="font-size:9px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{c.s1}}</span>
+                <span dir="ltr" style="font-size:9px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{c.s2}}</span>
+              </div>
+              </sc-if>
+            </div>
+          </td>
+          </sc-for>
+          <td dir="ltr" style="padding:8px 6px;text-align:center;vertical-align:top;font-size:12.5px;font-weight:700;color:var(--fg-x8a6f35)">{{r.tot}}</td>
+          <!-- «إجراءات»: مكوّنُ المنصّة — زرٌّ بثلاث نقاط يفتح تعديل · حذف -->
+          <sc-if value="{{lgActOn}}" hint-placeholder-val="{{ true }}">
+          <td data-label="إجراءات" style="padding:8px 6px;text-align:center;vertical-align:top">
+            <sc-if value="{{r.rmHas}}" hint-placeholder-val="{{ true }}">
+            <span style="position:relative;display:inline-block">
+              <button onClick="{{r.rmToggle}}" title="إجراءات هذا اليوم" style="{{r.rmBtnStyle}}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" data-i="i-0dbad243"></svg>
+              </button>
+              <sc-if value="{{r.rmOpen}}" hint-placeholder-val="{{ false }}">
+              <div data-bs-dd="1" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);z-index:60;margin-top:5px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p28);border-radius:11px;box-shadow:var(--shadow-elevated);padding:5px;display:flex;align-items:center;gap:4px;width:max-content">
+                <sc-for list="{{r.rmItems}}" as="a" hint-placeholder-count="2">
+                <button onClick="{{a.run}}" title="{{a.name}}" style="{{a.style}}" style-hover="border-color:var(--bd-xb99751);background:var(--bg-a185151810p08)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9621a719"></svg>
+                </button>
+                </sc-for>
+              </div>
+              </sc-if>
+            </span>
+            </sc-if>
+          </td>
+          </sc-if>
+        </tr>
+        </sc-for>
+        <tr style="border-top:2px solid var(--bd-a185151810p3);background:var(--bg-a185151810p05)">
+          <sc-for list="{{totRow}}" as="c"><td dir="{{c.dir}}" style="{{c.style}}">{{c.v}}</td></sc-for>
+          <sc-if value="{{lgActOn}}" hint-placeholder-val="{{ true }}"><td></td></sc-if>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  </sc-if>
+  <sc-if value="{{noRows}}" hint-placeholder-val="{{ false }}">
+  <div style="text-align:center;padding:40px 16px">
+    <div style="width:84px;height:84px;border-radius:22px;background:var(--brand-tint);border:1px solid var(--bd-xe6dcc2);display:grid;place-items:center;margin:0 auto 14px;color:var(--fg-xb99751)">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" data-i="i-68b04ea2"></svg></div>
+    <div style="font-size:14px;font-weight:600">لا توجد أرقام لشهر {{monthName}} {{yearLabel}}</div>
+    <div class="rz-sub" style="margin-top:4px">اختر يوماً من الشريط أعلاه وأدخل أرقامه</div>
+  </div>
+  </sc-if>
+  <!-- فوترُ الترقيم — مطابقٌ لتذييل الجدول المعتمد -->
+  <sc-if value="{{lgFootOn}}" hint-placeholder-val="{{ true }}">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-a2452452450p2);font-size:12px">
+    <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{lgPgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{lgPgTotal}}</span> {{lgPgTotalW}}</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>
+      <select value="{{lgPerPage}}" onChange="{{lgOnPerPage}}" style="height:28px;width:78px;font-size:10px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;outline:none;cursor:pointer"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="0">الكل</option></select>
+      <div style="display:flex;align-items:center;border:1px solid var(--bd-xe1e1e1);border-radius:8px;overflow:hidden">
+        <button onClick="{{lgPgFirst}}" title="الصفحة الأولى" style="{{lgPgFirstStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-ec58a044"></svg></button>
+        <button onClick="{{lgPgPrev}}" title="السابق" style="{{lgPgPrevStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
+        <sc-for list="{{lgPgNums}}" as="n" hint-placeholder-count="5">
+        <sc-if value="{{n.dots}}" hint-placeholder-val="{{ false }}"><span style="height:28px;width:20px;display:flex;align-items:center;justify-content:center;color:var(--fg-x94a3b8);font-size:10px;border-right:1px solid var(--bd-xe1e1e1)">…</span></sc-if>
+        <sc-if value="{{n.plain}}" hint-placeholder-val="{{ true }}"><button onClick="{{n.click}}" style="{{n.style}}" style-hover="background:var(--bg-xf5f5f5)">{{n.label}}</button></sc-if>
+        </sc-for>
+        <button onClick="{{lgPgNext}}" title="التالي" style="{{lgPgNextStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></button>
+        <button onClick="{{lgPgLast}}" title="الصفحة الأخيرة" style="{{lgPgLastStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9e7cf3ce"></svg></button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+  </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ═══════════ شاشةُ تحليلٍ واحدة — تبويبٌ داخل «مؤشرات الإدارة» ═══════════ -->
+<sc-if value="{{viewAn}}" hint-placeholder-val="{{ false }}">
+<!-- ═══ شريط التقويم المعتمد — نفس شريط «مؤشرات المتابعة» ولوحة مؤشرات الاسترشاد ═══ -->
+<sc-if value="{{anBarOn}}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--bg-xffffff);border:1px solid var(--bd-xe6e9ed);border-radius:14px;box-shadow:var(--shadow-card);padding:8px 12px;display:flex;align-items:center;gap:10px;overflow:hidden;flex-wrap:wrap">
+  <div style="{{anYmBoxStyle}}">
+    <span style="color:var(--fg-x8a6f35);display:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" data-i="i-2d1e2ff8"></svg></span>
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">السنة</span>
+    <select value="{{anYear}}" onChange="{{anSetYear}}" style="appearance:none;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x25343f);padding:5px 4px;cursor:pointer;outline:none">
+      <sc-for list="{{anYearOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.lbl}}</option></sc-for>
+    </select>
+    <span style="width:1px;height:22px;background:var(--bg-xe6e9ed);flex-shrink:0"></span>
+    <span style="color:var(--fg-x8a6f35);display:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9fceace0"></svg></span>
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">الشهر</span>
+    <select value="{{anMonth}}" onChange="{{anSetMonth}}" style="appearance:none;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x25343f);padding:5px 4px;cursor:pointer;outline:none">
+      <sc-for list="{{anMonthOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.lbl}}</option></sc-for>
+    </select>
+  </div>
+  <div style="display:flex;background:var(--bg-xf8f9fb);border:1px solid var(--bd-xe6e9ed);border-radius:11px;padding:3px;gap:2px;flex-shrink:0">
+    <sc-for list="{{anModeOpts}}" as="mo" hint-placeholder-count="1"><button onClick="{{mo.click}}" style="{{mo.style}}">{{mo.lbl}}</button></sc-for>
+  </div>
+  <sc-if value="{{anCustomOn}}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd-a185151810p4);background:var(--bg-a185151810p07);border-radius:12px;padding:4px 9px;flex-shrink:0">
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x8a6f35)">من</span>
+    <input type="date" value="{{anFrom}}" onChange="{{anSetFrom}}" style="height:28px;border:1px solid var(--bd-xe6e9ed);border-radius:9px;padding:0 7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;color:var(--fg-x25343f);background:var(--bg-xffffff)">
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x8a6f35)">إلى</span>
+    <input type="date" value="{{anTo}}" onChange="{{anSetTo}}" style="height:28px;border:1px solid var(--bd-xe6e9ed);border-radius:9px;padding:0 7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;color:var(--fg-x25343f);background:var(--bg-xffffff)">
+    <span style="font-size:9.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">{{anRangeHint}}</span>
+  </div>
+  </sc-if>
+  <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);border-radius:9999px;padding:4px 10px;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);flex-shrink:0">
+    <span class="ir-pulse" style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd03b3b);display:inline-block"></span>LIVE
+  </span>
+  <span style="font-size:11.5px;font-weight:700;color:var(--fg-x8a6f35);white-space:nowrap;flex-shrink:0">{{anPerLbl}}</span>
+  <div class="ir-tkw" style="flex:1 1 240px;min-width:240px;overflow:hidden">
+    <div class="ir-tk">
+      <sc-for list="{{anTicker}}" as="t" hint-placeholder-count="8">
+      <span title="{{t.tip}}" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap;cursor:help">
+        <i style="{{t.dot}}"></i>{{t.n}} <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{t.v}}</b><em style="font-style:normal;color:var(--fg-x94a3b8);font-weight:600;font-size:10px">{{t.p}}</em>
+      </span>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--fg-x94a3b8);font-weight:400">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" data-i="i-2d1e2ff8"></svg>
+  {{anPeriodTxt}}
+</div>
+</sc-if>
+
+<!-- ضوابطُ المقارنة الزمنية — نوعُ المقارنة والنطاقُ والمؤشر وفترتان، كما في موقع الإحصائيات -->
+<sc-if value="{{anIsTime}}" hint-placeholder-val="{{ false }}">
+<div style="background:var(--bg-xffffff);border:1px solid var(--bd-xe6e9ed);border-radius:14px;box-shadow:var(--shadow-card);padding:8px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  <div style="display:flex;background:var(--bg-xf8f9fb);border:1px solid var(--bd-xe6e9ed);border-radius:11px;padding:3px;gap:2px;flex-shrink:0">
+    <sc-for list="{{tcTypes}}" as="o" hint-placeholder-count="3"><button onClick="{{o.click}}" style="{{o.style}}">{{o.lbl}}</button></sc-for>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;border:1px solid rgba(185,151,81,.45);background:rgba(185,151,81,.07);border-radius:12px;padding:4px 11px;flex-shrink:0">
+    <span style="color:var(--fg-x8a6f35);display:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-620f0be3"></svg></span>
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">النطاق</span>
+    <select value="{{tcScope}}" onChange="{{tcSetScope}}" style="appearance:none;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x25343f);padding:5px 4px;cursor:pointer;outline:none">
+      <sc-for list="{{tcScopeOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.lbl}}</option></sc-for>
+    </select>
+    <span style="width:1px;height:22px;background:var(--bg-xe6e9ed);flex-shrink:0"></span>
+    <span style="color:var(--fg-x8a6f35);display:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d0c971d4"></svg></span>
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">المؤشر</span>
+    <select value="{{tcMetric}}" onChange="{{tcSetMetric}}" style="appearance:none;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x25343f);padding:5px 4px;cursor:pointer;outline:none">
+      <sc-for list="{{tcMetricOpts}}" as="o" hint-placeholder-count="5"><option value="{{o.v}}">{{o.lbl}}</option></sc-for>
+    </select>
+  </div>
+  <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);border-radius:9999px;padding:4px 10px;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);flex-shrink:0">
+    <span class="ir-pulse" style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd03b3b);display:inline-block"></span>LIVE
+  </span>
+  <span style="font-size:11.5px;font-weight:700;color:var(--fg-x8a6f35);white-space:nowrap;flex-shrink:0">{{anPerLbl}}</span>
+</div>
+<div class="rz-trio2" style="margin-top:0;grid-template-columns:1fr 1fr">
+  <sc-for list="{{tcPickers}}" as="pk" hint-placeholder-count="2">
+  <div class="rz-card" style="padding:12px 14px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+      <div style="width:30px;height:30px;border-radius:9999px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751);font-size:12px;font-weight:900;flex-shrink:0">{{pk.badge}}</div>
+      <div><div style="font-size:12.5px;font-weight:600">{{pk.title}}</div><div class="rz-sub">{{pk.sub}}</div></div>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <sc-for list="{{pk.sels}}" as="sl" hint-placeholder-count="3">
+      <div style="display:flex;align-items:center;gap:7px;border:1px solid rgba(185,151,81,.45);background:rgba(185,151,81,.07);border-radius:12px;padding:4px 11px;flex-shrink:0">
+        <span style="font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">{{sl.lbl}}</span>
+        <select value="{{sl.v}}" onChange="{{sl.set}}" style="appearance:none;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x25343f);padding:5px 4px;cursor:pointer;outline:none">
+          <sc-for list="{{sl.opts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.lbl}}</option></sc-for>
+        </select>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-for>
+</div>
+</sc-if>
+
+<!-- ═══ R176 — «المؤشر القيادي» بتصميم «مؤشرات المصليات» نفسِه: اللوحةُ المزخرفة، والرقمُ الكبير، وبطاقاتُ الحالة،
+     وكبسولاتُ «المجموع بحسب…»، وحلقةُ التركيب وجدولُه، وعدّاداتُ نصف القوس — مفعّلة/معطّلة هناك = مسجّل/فارغ هنا ═══ -->
+<sc-if value="{{anZn}}" hint-placeholder-val="{{ false }}">
+<div class="dz-hero" style="position:relative;border-radius:24px;padding:22px;overflow:hidden;background:var(--brand-pattern) center/96px 96px,linear-gradient(125deg,var(--hero-1) 0%,var(--hero-2) 38%,var(--hero-3) 72%,var(--hero-4) 100%);border:1px solid var(--bd-a185151810p34);box-shadow:0 24px 60px -34px rgba(138,111,53,.75),0 2px 10px -6px rgba(138,111,53,.35);font-family:'Cairo',sans-serif">
+  <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:24px">
+    <div class="dz-glow" style="position:absolute;width:560px;height:560px;border-radius:50%;top:-260px;right:-190px;background:radial-gradient(circle closest-side,var(--bg-a2552552550p75) 0%,var(--bg-a2552552550p3) 45%,transparent 100%)"></div>
+    <div class="dz-glow" style="position:absolute;width:500px;height:500px;border-radius:50%;bottom:-250px;left:-170px;background:radial-gradient(circle closest-side,var(--bg-a138111530p28) 0%,var(--bg-a138111530p1) 45%,transparent 100%)"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 42%,var(--bg-a2552552550p32) 50%,transparent 58%)"></div>
+  </div>
+  <div style="position:relative;display:flex;gap:26px;align-items:stretch;flex-wrap:wrap">
+    <div class="dz-hr" style="flex:1.35;min-width:440px;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px">
+        <span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:5px 12px;font-size:10.5px;font-weight:700;border:1px solid var(--bd-a138111530p42);color:#8A6F35;background:var(--bg-a2552552550p62)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-f9dcb9b8"></svg>المؤشر القيادي</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:5px 12px;font-size:10.5px;font-weight:700;border:1px solid var(--bd-a09900p3);color:var(--fg-x006300);background:var(--bg-a12163120p1)"><span style="width:6px;height:6px;border-radius:9999px;background:var(--bg-x006300);display:inline-block"></span>محسوب من الإحصائيات اليومية</span>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:#8A6F35;opacity:.92">{{zhSub}}</div>
+      <div style="display:flex;align-items:flex-end;gap:15px;margin:4px 0 2px;flex-wrap:wrap">
+        <div class="dz-bign" dir="ltr" style="font-size:78px;font-weight:800;line-height:.95;letter-spacing:-3px;background:linear-gradient(165deg,#8A6F35 0%,#6B5527 55%,#4A3B1C 100%);-webkit-background-clip:text;background-clip:text;color:transparent">{{zhNum}}</div>
+        <div title="التغطية: الأيامُ التي فيها أرقامٌ من أيّام الفترة المنقضية" style="padding-bottom:13px;display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:400;color:var(--fg-x6f5a2e);cursor:help"><span style="width:16px;height:1px;background:var(--bg-a138111530p45);display:inline-block"></span>الأيام المسجّلة <b dir="ltr" style="font-weight:800;color:#8A6F35">{{zhDays}}</b> {{zhDaysW}}<span dir="ltr" style="font-size:10px;font-weight:700;color:var(--fg-x15803d);background:var(--bg-a21128610p1);border:1px solid var(--bd-a21128610p24);border-radius:9999px;padding:2px 8px">{{zhCov}}</span></div>
+        <div style="display:flex;gap:9px;margin-right:auto;padding-bottom:5px;flex-wrap:wrap">
+          <sc-for list="{{zhStats}}" as="x" hint-placeholder-count="3">
+          <div title="{{x.tip}}" style="display:flex;align-items:center;gap:11px;min-width:152px;background:var(--bg-a2552552550p8);border:1px solid var(--bd-a138111530p2);border-radius:14px;padding:10px 11px;box-shadow:0 4px 14px -10px rgba(138,111,53,.65);cursor:help">
+            <span style="{{x.icBox}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{x.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-3fd084df"></svg></span>
+            <div style="min-width:0"><div style="font-size:9.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">{{x.lbl}}</div><div dir="ltr" style="{{x.vSt}}">{{x.v}}</div><div style="font-size:9.5px;font-weight:400;color:var(--fg-x6f5a2e);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{x.sub}}</div></div>
+          </div>
+          </sc-for>
+        </div>
+      </div>
+      <!-- مجموعُ الفترة بحسب المكوّن — كبسولاتُ «مجموع المصليات بحسب النوع» -->
+      <div style="background:var(--bg-a2552552550p66);border:1px solid var(--bd-a138111530p24);border-radius:16px;overflow:hidden;box-shadow:0 6px 18px -14px rgba(138,111,53,.8);margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 13px;background:var(--bg-a138111530p075);border-bottom:1px solid var(--bd-a138111530p22)">
+          <span style="display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--text-secondary)"><i style="width:3px;height:13px;border-radius:2px;background:#8A6F35;display:inline-block;flex-shrink:0"></i>مجموع الفترة بحسب المكوّن</span>
+          <span style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:400;color:var(--fg-x6f5a2e)"><i style="width:9px;height:9px;border-radius:3px;background:#8A6F35;display:inline-block"></i>مسجّل</span><span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:400;color:var(--fg-x6f5a2e)"><i style="width:9px;height:9px;border-radius:3px;background:#8A6F35;opacity:.22;display:inline-block"></i>فارغ</span></span>
+        </div>
+        <div style="padding:11px 13px 10px">
+          <sc-if value="{{zjHas}}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:stretch;gap:13px">
+            <sc-for list="{{zjCaps}}" as="c" hint-placeholder-count="4">
+            <sc-if value="{{c.dv}}" hint-placeholder-val="{{ false }}"><i style="width:1px;align-self:stretch;flex-shrink:0;background:linear-gradient(180deg,transparent 0%,var(--bg-a138111530p24) 14%,var(--bg-a138111530p24) 86%,transparent 100%)"></i></sc-if>
+            <div title="{{c.tip}}" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;cursor:help">
+              <div style="height:138px;width:100%;max-width:74px;box-sizing:border-box;border-radius:14px;padding:4px;background:var(--bg-a138111530p055);border:1px solid var(--bd-a138111530p17);box-shadow:inset 0 1px 4px rgba(0,0,0,.05);display:flex;align-items:flex-end;justify-content:center">
+                <div style="{{c.barSt}}"><div style="{{c.offSt}}"></div><div style="{{c.onSt}}"></div><b dir="ltr" class="dz-u2 l" style="position:absolute;left:50%;bottom:7px;transform:translateX(-50%);pointer-events:none;color:var(--text-secondary);background:var(--bg-a2552552550p94);border-radius:9999px;padding:2px 10px;box-shadow:0 2px 7px -3px rgba(74,59,28,.85),inset 0 0 0 1px rgba(185,151,81,.35)">{{c.tot}}</b></div>
+              </div>
+              <span style="font-size:12px;font-weight:700;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{c.nm}}</span>
+              <div style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap">
+                <div style="position:relative;width:42px;height:42px;flex-shrink:0"><svg viewBox="0 0 42 42" style="width:42px;height:42px;display:block" data-i="i-4dfe73bc"></svg><span dir="ltr" style="{{c.rtSt}}">{{c.rtxt}}</span></div>
+                <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+                  <span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:400;white-space:nowrap;color:#15803d"><i style="width:5px;height:5px;border-radius:9999px;background:#15803d;display:inline-block;flex-shrink:0"></i><b dir="ltr" style="font-size:10.5px;font-weight:800">{{c.on}}</b>مسجّل</span>
+                  <span style="{{c.offLine}}"><i style="{{c.offDot}}"></i><b dir="ltr" style="font-size:10.5px;font-weight:800">{{c.off}}</b>فارغ</span>
+                </div>
+              </div>
+            </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd-a138111530p32)">
+            <sc-for list="{{zjTop}}" as="o" hint-placeholder-count="2">
+            <div title="{{o.tip}}" style="{{o.box}}"><i style="{{o.bar}}"></i><span style="{{o.icB}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f947e3e6"></svg></span><div style="min-width:0"><div style="{{o.lblSt}}">{{o.lbl}}</div><div style="font-size:12px;font-weight:700;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{o.nm}}</div></div><b dir="ltr" style="{{o.totSt}}">{{o.tot}}</b><span dir="ltr" style="{{o.pSt}}">{{o.p}}</span></div>
+            </sc-for>
+          </div>
+          </sc-if>
+          <sc-if value="{{zjNone}}" hint-placeholder-val="{{ false }}"><div style="padding:18px 10px;text-align:center;font-size:10.5px;font-weight:400;color:var(--fg-xa79878);line-height:1.9">لا أرقامَ مسجّلةٌ في هذه الفترة — المؤشّرُ يبقى ظاهراً بصفره</div></sc-if>
+        </div>
+      </div>
+      <!-- متوسّطُ اليوم بحسب أيّام الأسبوع — صفوفُ «مجموع المصليات بحسب المنطقة» -->
+      <div style="background:var(--bg-a2552552550p66);border:1px solid var(--bd-a138111530p24);border-radius:16px;overflow:hidden;box-shadow:0 6px 18px -14px rgba(138,111,53,.8);margin-top:11px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 13px;background:var(--bg-a138111530p075);border-bottom:1px solid var(--bd-a138111530p22)">
+          <span style="display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--text-secondary)"><i style="width:3px;height:13px;border-radius:2px;background:#8A6F35;display:inline-block;flex-shrink:0"></i>متوسط اليوم بحسب أيام الأسبوع</span>
+          <span style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:400;color:var(--fg-x6f5a2e)"><i style="width:9px;height:9px;border-radius:3px;background:#8A6F35;display:inline-block"></i>مسجّل</span><span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:400;color:var(--fg-x6f5a2e)"><i style="width:9px;height:9px;border-radius:3px;background:#8A6F35;opacity:.22;display:inline-block"></i>فارغ</span><span style="font-size:9px;font-weight:400;color:var(--fg-x94a3b8)">7 أيام · طولُ الشريط = المتوسط</span></span>
+        </div>
+        <div style="padding:11px 13px 10px">
+          <sc-if value="{{zjHas}}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{zwRows}}" as="r" hint-placeholder-count="7">
+            <div class="dz-wr" title="{{r.tip}}" style="display:flex;align-items:center;gap:9px;padding:5px 0;cursor:help">
+              <span class="n" style="flex:0 0 118px;font-size:11px;font-weight:600;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right">{{r.nm}}</span>
+              <span style="flex:1;height:13px;border-radius:7px;background:var(--bg-a138111530p1);overflow:hidden;display:block;position:relative"><i style="{{r.barSt}}"><i style="{{r.onSt}}"></i><i style="flex:1;background:#8A6F35;opacity:.22;display:block"></i></i></span>
+              <b dir="ltr" class="dz-u2" style="flex:0 0 40px;text-align:center;color:var(--text-secondary)">{{r.tot}}</b>
+              <span style="flex:0 0 62px;text-align:center;font-size:9px;font-weight:400;color:var(--fg-x15803d);white-space:nowrap"><b dir="ltr" style="font-size:10.5px;font-weight:800">{{r.on}}</b> مسجّل</span>
+              <span class="off" style="{{r.offSt}}"><b dir="ltr" style="font-size:10.5px;font-weight:800">{{r.off}}</b> فارغ</span>
+              <b dir="ltr" style="{{r.pSt}}">{{r.p}}</b>
+            </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd-a138111530p32)">
+            <sc-for list="{{zwTop}}" as="o" hint-placeholder-count="2">
+            <div title="{{o.tip}}" style="{{o.box}}"><i style="{{o.bar}}"></i><span style="{{o.icB}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f947e3e6"></svg></span><div style="min-width:0"><div style="{{o.lblSt}}">{{o.lbl}}</div><div style="font-size:12px;font-weight:700;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{o.nm}}</div></div><b dir="ltr" style="{{o.totSt}}">{{o.tot}}</b><span dir="ltr" style="{{o.pSt}}">{{o.p}}</span></div>
+            </sc-for>
+          </div>
+          </sc-if>
+          <sc-if value="{{zjNone}}" hint-placeholder-val="{{ false }}"><div style="padding:18px 10px;text-align:center;font-size:10.5px;font-weight:400;color:var(--fg-xa79878);line-height:1.9">لا أرقامَ مسجّلةٌ في هذه الفترة — المؤشّرُ يبقى ظاهراً بصفره</div></sc-if>
+        </div>
+      </div>
+    </div>
+    <!-- اللوحةُ البيضاء: جدولُ التركيب ثمّ عدّاداتُ التغطية (R189: حُذفت الحلقة بطلب المستخدم) -->
+    <div class="dz-hl" style="flex:1;min-width:400px;background:var(--bg-a2552552550p74);border:1px solid var(--bd-a138111530p2);border-radius:18px;padding:15px 16px;box-shadow:0 8px 24px -18px rgba(138,111,53,.7);display:flex;flex-direction:column">
+      <div style="display:flex;flex-direction:column">
+        <div class="dz-tb" style="display:flex;align-items:flex-end;gap:6px;padding:0 4px 7px;border-bottom:1px solid var(--bd-a138111530p22);font-size:8.5px;font-weight:700;letter-spacing:.2px;color:var(--fg-xa79878);white-space:nowrap">
+          <span style="flex:0 0 17px"></span><span style="flex:0 0 10px"></span>
+          <span style="flex:1;min-width:0;text-align:right">المكوّن</span>
+          <span style="flex:0 0 62px;text-align:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xa79878)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 2px" data-i="i-822ab11b"></svg>الحصة</span>
+          <span style="flex:0 0 36px;text-align:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xa79878)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 2px" data-i="i-e90cbf21"></svg>الإجمالي</span>
+          <span class="on" style="flex:0 0 28px;text-align:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xa79878)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 2px" data-i="i-9e0eb000"></svg>مسجّل</span>
+          <span class="off" style="flex:0 0 28px;text-align:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xa79878)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 2px" data-i="i-6afc61fe"></svg>فارغ</span>
+          <span style="flex:0 0 42px;text-align:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xa79878)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 2px" data-i="i-145db1c8"></svg>التغطية</span>
+        </div>
+        <sc-for list="{{ztRows}}" as="r" hint-placeholder-count="4">
+        <div class="dz-tb" title="{{r.tip}}" style="{{r.rowSt}}">
+          <span dir="ltr" style="{{r.rkSt}}">{{r.rk}}</span><i style="{{r.swSt}}"></i>
+          <span style="flex:1;min-width:0;font-size:10.5px;font-weight:400;color:var(--fg-x4a4033);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right">{{r.nm}}</span>
+          <span style="flex:0 0 62px;display:flex;align-items:center;gap:5px"><i class="bar" style="flex:1;height:6px;border-radius:4px;background:var(--bg-a138111530p13);overflow:hidden;display:flex"><i style="{{r.barSt}}"></i></i><em dir="ltr" style="font-style:normal;flex-shrink:0;font-size:8.5px;font-weight:700;color:var(--fg-xa79878)">{{r.share}}</em></span>
+          <b dir="ltr" class="dz-u2" style="flex:0 0 36px;text-align:center;color:var(--text-secondary)">{{r.tot}}</b>
+          <b class="on" dir="ltr" style="{{r.onSt}}">{{r.on}}</b><b class="off" dir="ltr" style="{{r.offSt}}">{{r.off}}</b>
+          <span dir="ltr" style="{{r.pSt}}">{{r.p}}</span>
+        </div>
+        </sc-for>
+        <div class="dz-tb" style="display:flex;align-items:center;gap:6px;padding:7px 4px 6px;margin-top:4px;border-radius:9px;border-top:2px solid var(--bd-a185151810p42);background:linear-gradient(90deg,var(--bg-a185151810p14),var(--bg-a185151810p05))">
+          <span style="flex:0 0 17px"></span><i style="flex:0 0 10px;height:10px;border-radius:3px;background:#8A6F35"></i>
+          <span style="flex:1;min-width:0;font-size:11px;font-weight:800;color:var(--text-secondary);text-align:right">الإجمالي</span>
+          <span dir="ltr" style="flex:0 0 62px;text-align:center;font-size:8.5px;font-weight:800;color:var(--fg-xa79878)">100٪</span>
+          <b dir="ltr" class="dz-u2 m" style="flex:0 0 36px;text-align:center;color:#8A6F35">{{ztTot}}</b>
+          <b class="on" dir="ltr" style="flex:0 0 28px;text-align:center;font-size:11.5px;font-weight:800;color:var(--fg-x16a34a)">{{ztOn}}</b>
+          <b class="off" dir="ltr" style="flex:0 0 28px;text-align:center;font-size:11.5px;font-weight:800;color:var(--fg-x6b7280)">{{ztOff}}</b>
+          <span dir="ltr" style="{{ztPSt}}">{{ztP}}</span>
+        </div>
+      </div>
+      <!-- مؤشراتُ التغطية بحسب الأسبوع (أو الشهر أو السنة) — عدّاداتُ «مؤشرات التفعيل بحسب الساحة» -->
+      <div style="background:var(--bg-a2552552550p66);border:1px solid var(--bd-a138111530p24);border-radius:16px;overflow:hidden;box-shadow:0 6px 18px -14px rgba(138,111,53,.8);margin-top:13px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 13px;background:var(--bg-a138111530p075);border-bottom:1px solid var(--bd-a138111530p22)">
+          <span style="display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--text-secondary)"><i style="width:3px;height:13px;border-radius:2px;background:#8A6F35;display:inline-block;flex-shrink:0"></i>{{zgTitle}}</span>
+          <span style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:9px;font-weight:400;color:var(--fg-x94a3b8)">{{zgNote}}</span></span>
+        </div>
+        <div style="padding:11px 13px 10px">
+          <sc-if value="{{zgHas}}" hint-placeholder-val="{{ true }}">
+          <div class="dz-gg" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(124px,1fr));gap:9px">
+            <sc-for list="{{zgList}}" as="g" hint-placeholder-count="4">
+            <div title="{{g.tip}}" style="min-width:0;background:var(--bg-a2552552550p92);border:1px solid var(--bd-a138111530p18);border-radius:14px;padding:10px 9px 9px;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:0 3px 12px -9px rgba(138,111,53,.7);cursor:help">
+              <span style="display:flex;align-items:center;justify-content:center;gap:5px;width:100%;min-width:0"><span style="font-size:11px;font-weight:700;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{g.nm}}</span><b dir="ltr" style="flex-shrink:0;font-size:9px;font-weight:800;color:#8A6F35;background:var(--bg-a138111530p1);border:1px solid var(--bd-a138111530p22);border-radius:9999px;padding:1px 6px">{{g.n}}</b></span>
+              <div style="width:100%;max-width:118px"><svg viewBox="0 0 120 82" style="width:100%;height:auto;display:block;overflow:visible" data-i="i-c15e0dd2"></svg></div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;width:100%"><span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:400;color:var(--fg-x15803d)"><i style="width:5px;height:5px;border-radius:9999px;background:var(--bg-x15803d);display:inline-block"></i><b dir="ltr" style="font-size:10.5px;font-weight:800">{{g.on}}</b>مسجّل</span><i style="width:1px;height:9px;background:var(--bg-a138111530p3);display:inline-block"></i><span style="{{g.offSt}}"><i style="{{g.offDot}}"></i><b dir="ltr" style="font-size:10.5px;font-weight:800">{{g.off}}</b>فارغ</span></div>
+            </div>
+            </sc-for>
+          </div>
+          </sc-if>
+          <sc-if value="{{zgNone}}" hint-placeholder-val="{{ false }}"><div style="padding:18px 10px;text-align:center;font-size:10.5px;font-weight:400;color:var(--fg-xa79878);line-height:1.9">لم ينقضِ يومٌ من هذه الفترة بعد</div></sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- لوحةُ البطل — مقارنةُ الحرمين والمقارنةُ الزمنية -->
+<sc-if value="{{anOld}}" hint-placeholder-val="{{ true }}">
+<div class="rz-lead" data-anim>
+  <div class="rz-lmain">
+    <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
+      <span class="rz-wpill">{{anHeroTitle}}</span>
+      <span class="rz-wpill"><span style="width:7px;height:7px;border-radius:50%;background:var(--bg-x1e9e5a);box-shadow:0 0 0 3px rgba(30,158,90,0.18)"></span>محسوب من بيانات المنصة مباشرة</span>
+      <span style="margin-right:auto;font-size:11px;font-weight:700;color:var(--fg-a9070250p8)">{{anPeriod}}</span>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--fg-a9070250p85);margin-top:11px">{{anHeroEq}}</div>
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <span style="font-size:62px;font-weight:900;line-height:1.05;color:var(--fg-x6e5626);text-shadow:0 1px 0 rgba(255,255,255,0.35)">{{anHeroTotal}}</span>
+      <span style="font-size:14px;font-weight:800;color:var(--fg-a9070250p75)">{{anHeroUnit}}</span>
+    </div>
+    <div class="rz-lcols">
+      <sc-for list="{{anBars}}" as="c" hint-placeholder-count="4">
+      <div title="{{c.tip}}" style="flex:1;text-align:center;min-width:0;cursor:help"><span style="{{c.vSt}}">{{c.pct}}</span><span style="{{c.b}}"></span></div>
+      </sc-for>
+    </div>
+    <div class="rz-lnm">
+      <sc-for list="{{anBars}}" as="c" hint-placeholder-count="4"><span>{{c.label}}<i>{{c.value}}</i></span></sc-for>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <sc-for list="{{anChips}}" as="c" hint-placeholder-count="4">
+      <span class="rz-bchip" title="{{c.tip}}" style="cursor:help">{{c.label}} <b>{{c.value}}</b></span>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position:relative;display:flex;flex-direction:column;gap:11px;justify-content:center">
+    <div class="rz-lsc">
+      <div class="t">{{anSegTitle}}</div>
+      <div style="display:flex;height:13px;border-radius:99px;overflow:hidden;gap:2px">
+        <sc-for list="{{anSeg}}" as="g" hint-placeholder-count="4"><i title="{{g.tip}}" style="display:block;height:100%;cursor:help;{{g.w}}"></i></sc-for>
+      </div>
+      <div class="rz-leg" style="margin-top:7px">
+        <sc-for list="{{anSeg}}" as="g" hint-placeholder-count="4">
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;margin-left:5px;background:{{g.c}}"></span>{{g.n}} <b>{{g.v}}</b> <small>· {{g.p}}</small></span>
+        </sc-for>
+      </div>
+    </div>
+    <div class="rz-lsc">
+      <div class="t">كيف تُقرأ هذه الشاشة؟ <span style="color:var(--fg-xb0aa9a);font-weight:700;font-size:9.5px">{{anCalcSub}}</span></div>
+      <sc-for list="{{anCalc}}" as="p" hint-placeholder-count="4">
+      <div class="rz-crow" title="{{p.tip}}" style="cursor:help"><span class="wch">{{p.chip}}</span><span class="nm">{{p.nm}}</span><span class="cb"><i style="{{p.bar}}"></i></span><span style="{{p.valSt}}">{{p.val}}</span></div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- بطاقاتُ المؤشر — R189: تحت «أدنى» و«ذروة» تاريخُ وحدتهما بسطر التاريخ في عدّادات لوحتَي الاسترشاد والمضبوطات حرفاً -->
+<div class="rz-kpis">
+  <sc-for list="{{anKpis}}" as="k" hint-placeholder-count="4">
+  <div class="rz-card rz-kpi">
+    <div class="kt"><span class="kd"></span>{{k.title}}</div>
+    <div class="ks">{{k.sub}}</div>
+    <div title="{{k.vTip}}" style="cursor:help;{{k.vSt}}">{{k.value}}</div>
+    <div class="kgz"><div class="rz-gz"><svg viewBox="0 0 200 118" data-i="i-77d52f63"></svg></div></div>
+    <div class="kf">
+      <div title="{{k.f1t}}" style="cursor:help"><b>{{k.low}}</b><span class="s">أدنى</span><span style="display:block;font-size:8.5px;font-weight:400;color:var(--fg-xb0b6bd);white-space:nowrap" dir="ltr">{{k.lowD}}</span></div><span class="dv"></span>
+      <div title="{{k.f2t}}" style="cursor:help"><b>{{k.avg}}</b><span class="s">متوسط</span></div><span class="dv"></span>
+      <div title="{{k.f3t}}" style="cursor:help"><b>{{k.peak}}</b><span class="s">ذروة</span><span style="display:block;font-size:8.5px;font-weight:400;color:var(--fg-xb0b6bd);white-space:nowrap" dir="ltr">{{k.peakD}}</span></div>
+    </div>
+  </div>
+  </sc-for>
+</div>
+
+<!-- الروضة الشريفة — في تحليل المسجد النبوي وحدَه -->
+<sc-if value="{{anRawdah}}" hint-placeholder-val="{{ false }}">
+<div class="rz-trio2">
+  <sc-for list="{{rawdahBoxes}}" as="r" hint-placeholder-count="2">
+  <div class="rz-card" style="padding:14px 16px">
+    <div class="rz-zt">{{r.title}}</div>
+    <div class="rz-mr3">
+      <sc-for list="{{r.trio}}" as="x" hint-placeholder-count="3">
+      <div style="{{x.st}}"><div style="font-size:9.5px;color:var(--fg-x8b8676);font-weight:700">{{x.k}}</div><div style="font-size:16px;font-weight:900;color:{{x.c}}">{{x.v}}</div></div>
+      </sc-for>
+    </div>
+    <div class="rz-mr3" style="margin-top:7px">
+      <sc-for list="{{r.rates}}" as="x" hint-placeholder-count="3">
+      <div style="{{x.st}}"><div style="font-size:9.5px;color:var(--fg-x8b8676);font-weight:700">{{x.k}}</div><div style="font-size:13px;font-weight:800;color:{{x.c}}">{{x.v}}</div></div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-for>
+</div>
+<div class="rz-z4">حين تتجاوز النسبةُ 100٪ يُعرض تحذيرٌ لا رقم: <b>«المنشور»</b> سعةٌ يوميةٌ معلنة، و<b>«الفعلي»</b> قد يكون تراكمياً — فنسبتُهما لا تُقرأ كنسبةِ إشغال.</div>
+</sc-if>
+
+<!-- حلقةُ التغيّر — المقارنة الزمنية وحدَها -->
+<sc-if value="{{anIsTime}}" hint-placeholder-val="{{ false }}">
+<div class="rz-lead" style="grid-template-columns:1fr auto 1fr;align-items:center;margin-top:14px">
+  <div style="text-align:center"><span class="rz-wpill">الفترة الأولى — خطُّ الأساس</span>
+    <div style="font-size:15px;font-weight:600;margin-top:9px;color:var(--fg-a9070250p85)">{{tcL1}}</div>
+    <div class="rz-big" style="font-size:34px;color:var(--fg-x6e5626)">{{tcV1}}</div>
+    <div style="font-size:11px;color:var(--fg-a9070250p8);font-weight:700">متوسط يوميّ {{tcA1}} · {{tcQ1}}</div></div>
+  <div style="text-align:center">
+    <div style="position:relative;width:158px;height:158px;margin:0 auto">
+      <svg width="158" height="158" viewBox="0 0 158 158" style="display:block" data-i="i-f36b2125"></svg>
+      <div class="ds-dnc">
+        <div style="font-size:26px;font-weight:900;line-height:1.2;font-family:'Cairo',sans-serif;color:{{tcColor}}">{{tcPct}}</div>
+        <div style="font-size:10px;font-weight:700;color:var(--fg-a9070250p8);font-family:'Cairo',sans-serif">نسبةُ التغيّر</div>
+      </div>
+    </div>
+    <div><span style="{{tcNoteStyle}}">{{tcNote}}</span></div>
+    <div style="font-size:11px;color:var(--fg-a9070250p8);font-weight:700;margin-top:5px">الفرق {{tcDiff}}</div></div>
+  <div style="text-align:center"><span class="rz-wpill">الفترة الثانية</span>
+    <div style="font-size:15px;font-weight:600;margin-top:9px;color:var(--fg-a9070250p85)">{{tcL2}}</div>
+    <div class="rz-big" style="font-size:34px;color:var(--fg-x6e5626)">{{tcV2}}</div>
+    <div style="font-size:11px;color:var(--fg-a9070250p8);font-weight:700">متوسط يوميّ {{tcA2}} · {{tcQ2}}</div></div>
+</div>
+</sc-if>
+
+<!-- ═══ R176 — «مراقبة الاتجاه» و«توزيع العناصر» في صفٍّ واحد، ثمّ «خرائط الكثافة» — مكوّناتُ موقع الإحصائيات حرفاً بحرف ═══ -->
+<sc-if value="{{anZn}}" hint-placeholder-val="{{ false }}">
+<div class="dz-row">
+  <div class="dz-card dz-c2">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+      <div class="dz-hd">
+        <div class="dz-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5b91aeaa"></svg></div>
+        <div><h3 class="dz-t">{{trTitle}}</h3><p class="dz-st">{{trSub}}</p></div>
+      </div>
+      <div class="dz-pills">
+        <sc-for list="{{trPills}}" as="p" hint-placeholder-count="5">
+        <button type="button" class="dz-pill" data-active="{{p.on}}" onClick="{{p.click}}" style="{{p.st}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-846018f6"></svg><span>{{p.lbl}}</span></button>
+        </sc-for>
+      </div>
+    </div>
+    <div class="dz-g12">
+      <div class="dz-sc">
+        <sc-for list="{{trTiles}}" as="t" hint-placeholder-count="4">
+        <div class="dz-tile">
+          <div style="display:flex;align-items:center;justify-content:space-between"><p class="dz-tl">{{t.lbl}}</p><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{t.icSt}}" data-i="i-0d94c63f"></svg></div>
+          <p class="dz-tv" style="{{t.vSt}}"><span class="dz-vl">{{t.vl}}</span><span class="dz-vs">{{t.vs}}</span></p>
+          <sc-if value="{{t.hasSub}}" hint-placeholder-val="{{ false }}"><p class="dz-tsub">{{t.sub}}</p></sc-if>
+        </div>
+        </sc-for>
+      </div>
+      <div class="dz-ch">
+        <sc-if value="{{trEmpty}}" hint-placeholder-val="{{ false }}"><div class="dz-empty">لا توجد بيانات لهذه الفترة.</div></sc-if>
+        <sc-if value="{{trHas}}" hint-placeholder-val="{{ true }}">
+        <div class="dz-tc" dir="ltr" data-dz-tc="1">
+          <svg viewBox="{{trVB}}" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;display:block" data-i="i-c6c21538"></svg>
+          <sc-for list="{{trYT}}" as="t" hint-placeholder-count="5"><span class="dz-yt" style="{{t.st}}">{{t.t}}</span></sc-for>
+          <sc-for list="{{trXT}}" as="t" hint-placeholder-count="12"><span class="dz-xt" style="{{t.st}}">{{t.t}}</span></sc-for>
+          <sc-for list="{{trHov}}" as="h" hint-placeholder-count="12">
+          <div class="{{h.cls}}" style="{{h.st}}">
+            <i class="dz-cur" style="{{h.cur}}"></i>
+            <sc-if value="{{h.dot}}" hint-placeholder-val="{{ false }}"><i class="dz-ad" style="{{h.ad}}"></i></sc-if>
+            <div class="dz-tip" dir="rtl" style="{{h.tip}}"><p class="t">{{h.full}}</p><div class="r"><span>{{h.nm}}</span><b>{{h.v}}</b></div></div>
+          </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+  <div class="dz-card dz-dcard" style="display:flex;flex-direction:column">
+    <div class="dz-hd" style="margin-bottom:12px">
+      <div class="dz-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-35cecd00"></svg></div>
+      <div style="min-width:0"><h3 class="dz-t dz-tr">{{dnTitle}}</h3><p class="dz-st dz-tr">{{dnSub}}</p></div>
+    </div>
+    <div class="dz-dn" dir="ltr">
+      <sc-if value="{{dnEmpty}}" hint-placeholder-val="{{ false }}"><div class="dz-dne">لا توجد بيانات لهذه الفترة</div></sc-if>
+      <sc-if value="{{dnHas}}" hint-placeholder-val="{{ true }}">
+      <svg viewBox="0 0 240 240" data-i="i-00c15185"></svg>
+      <div class="dz-dnc" dir="rtl"><p class="dz-dnl">{{dnTotLbl}}</p><p class="dz-dnv" style="{{dnTotSt}}">{{dnTot}}</p></div>
+      </sc-if>
+    </div>
+    <div class="dz-lgd">
+      <sc-for list="{{dnLeg}}" as="l" hint-placeholder-count="4">
+      <div class="dz-lr" data-k="{{l.k}}"><span class="n"><span class="d" style="{{l.dot}}"></span><span class="l">{{l.l}}</span></span><span class="v"><b>{{l.v}}</b><i style="{{l.pSt}}">{{l.p}}</i></span></div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<div class="dz-card">
+  <div class="dz-hd" style="margin-bottom:16px">
+    <div class="dz-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-c497ac68"></svg></div>
+    <div><h3 class="dz-t">{{hmTitle}}</h3><p class="dz-st">{{hmSub}}</p></div>
+  </div>
+  <div class="dz-hm {{hmCls}}">
+    <sc-for list="{{hmList}}" as="m" hint-placeholder-count="4">
+    <div class="dz-hmi">
+      <p class="dz-hml">{{m.lbl}}</p>
+      <div class="{{m.gcls}}" dir="ltr">
+        <sc-for list="{{m.cells}}" as="c" hint-placeholder-count="30"><div class="dz-hc" title="{{c.tip}}" style="{{c.st}}"><span>{{c.t}}</span><sc-if value="{{c.hv}}" hint-placeholder-val="{{ false }}"><span class="v7">{{c.v}}</span></sc-if></div></sc-for>
+      </div>
+      <div class="dz-hleg">
+        <span><span class="dz-sw" style="background-color:color-mix(in srgb,var(--text-primary) 4%,var(--bg-card))"></span><span class="dz-mut">لا بيانات</span></span>
+        <span><span class="dz-mut">منخفض</span><span style="display:inline-flex;align-items:center;gap:2px"><sc-for list="{{m.sw}}" as="w" hint-placeholder-count="5"><span class="dz-sw" style="{{w.st}}"></span></sc-for></span><span class="dz-mut">مرتفع</span></span>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- الرسمُ وحلقةُ التوزيع — مقارنةُ الحرمين والمقارنةُ الزمنية -->
+<sc-if value="{{anOld}}" hint-placeholder-val="{{ true }}">
+<div class="rz-duo">
+  <div class="rz-card" style="padding:16px 18px">
+    <div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+      <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751);flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f9dcb9b8"></svg></div>
+      <div><div style="font-size:14px;font-weight:600">{{anChartTitle}}</div><div class="rz-sub">{{anChartSub}}</div></div>
+    </div>
+    <div class="ds-cw">
+    <svg viewBox="0 0 700 230" style="width:100%;height:auto;display:block" data-i="i-f8e3fb8f"></svg>
+    <sc-for list="{{anGrid}}" as="g" hint-placeholder-count="5"><span class="ds-ay" style="{{g.lp}}">{{g.label}}</span></sc-for>
+    </div>
+    <div class="ds-cx"><sc-for list="{{anXLabels}}" as="l" hint-placeholder-count="12"><span class="ds-ax" style="{{l.lp}}">{{l.t}}</span></sc-for></div>
+    <div class="rz-leg" style="margin-top:8px">
+      <sc-for list="{{anLegend}}" as="g" hint-placeholder-count="2">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;margin-left:5px;background:{{g.c}}"></span>{{g.t}}</span>
+      </sc-for>
+    </div>
+  </div>
+  <div class="rz-card" style="padding:16px 18px">
+    <div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+      <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751);flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d642cc5b"></svg></div>
+      <div><div style="font-size:14px;font-weight:600">{{anDonutTitle}}</div><div class="rz-sub">{{anDonutSub}}</div></div>
+    </div>
+    <div class="ds-dn">
+      <svg viewBox="0 0 200 200" style="width:100%;height:auto;display:block" data-i="i-914c3fac"></svg>
+      <div class="ds-dnc">
+        <div style="font-size:20px;font-weight:900;line-height:1.2;color:var(--fg-x141414);font-family:'Cairo',sans-serif">{{anDonutMid}}</div>
+        <div style="font-size:9.5px;font-weight:700;color:var(--fg-x8b8676);font-family:'Cairo',sans-serif">{{anDonutCap}}</div>
+      </div>
+    </div>
+    <div class="rz-leg" style="margin-top:12px;flex-direction:column;gap:6px">
+      <sc-for list="{{anDonut}}" as="d" hint-placeholder-count="4">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;margin-left:5px;background:{{d.c}}"></span>{{d.n}} <b>{{d.v}}</b> <small>· {{d.p}}</small></span>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+</sc-if>
+
+<!-- جدولُ التحليل — R188: مكوّنُ السجل المعتمد (سجلُّ الشهر) حرفاً بحرف: قائمةٌ منسدلة، مطويّةٌ افتراضاً -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden;margin-top:14px" data-an-log="1">
+  <div onClick="{{anTblToggle}}" style="display:flex;align-items:center;gap:11px;padding:13px 16px;cursor:pointer" style-hover="background:var(--bg-a2482502520p7)">
+    <span style="width:34px;height:34px;border-radius:12px;background:var(--bg-a185151810p12);color:var(--fg-xb99751);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-card)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-1ca76bde"></svg></span>
+    <span style="flex:1;min-width:0">
+      <span style="font-size:13.5px;font-weight:600;color:var(--fg-x141414)">{{anTblTitle}}</span>
+      <span style="display:inline-flex;align-items:center;margin-right:8px;border-radius:9999px;padding:3px 11px;font-size:10.5px;font-weight:600;font-family:'Cairo',sans-serif;background:var(--bg-a185151810p12);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p3)">{{anTblCount}}</span>
+    </span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb0b6bd)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{anTblChev}}" data-i="i-c92915c6"></svg>
+  </div>
+  <sc-if value="{{anTblOpen}}" hint-placeholder-val="{{ false }}">
+  <div style="border-top:2px solid var(--bd-a185151810p25)">
+  <div class="bs-hscroll bs-sthead" style="overflow-x:auto">
+    <table class="bs-rtable" style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
+          <sc-for list="{{anCols}}" as="c" hint-placeholder-count="6">
+          <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9dba425d"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">{{c.n}}</span></div></th>
+          </sc-for>
+        </tr>
+      </thead>
+      <tbody>
+        <sc-for list="{{anRows}}" as="r" hint-placeholder-count="10">
+        <tr style="{{r.trStyle}}" style-hover="background:var(--bg-a2482502520p7)">
+          <sc-for list="{{r.cells}}" as="c"><td dir="{{c.dir}}" style="{{c.style}}">{{c.v}}</td></sc-for>
+        </tr>
+        </sc-for>
+      </tbody>
+    </table>
+  </div>
+  <div class="rz-z4" style="margin:0;border-radius:0;border-right:0;border-top:1px solid var(--bd-xf2eee4)">{{anNote}}</div>
+  </div>
+  </sc-if>
+</div>
+</sc-if>
+
+</div>
+
+<!-- ═══ نافذةُ «فتح بأثر رجعي / إعادة القفل» — معيارُ كروت المنصة ═══ -->
+<sc-if value="{{retroOn}}" hint-placeholder-val="{{ false }}">
+<div onClick="{{retroCancel}}" style="position:fixed;inset:0;z-index:9310;background:var(--bg-a1523420p55);display:flex;align-items:center;justify-content:center;padding:24px">
+  <div onClick="{{retroStop}}" style="background:var(--bg-xffffff);border-radius:18px;box-shadow:var(--shadow-elevated);width:100%;max-width:420px;padding:22px;display:flex;flex-direction:column;gap:13px;font-family:'Cairo',sans-serif" dir="rtl">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--bg-a1808390p08);border:1px solid var(--bd-a1808390p25);color:var(--fg-xb45309)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f0a1d121"></svg></div>
+      <h2 style="font-size:16px;font-weight:600;margin:0;flex:1">{{retroTitle}}</h2>
+    </div>
+    <p style="font-size:12.5px;color:var(--fg-x53565a);margin:0;line-height:1.9">{{retroMsg}}</p>
+    <div style="display:flex;flex-direction:column;gap:7px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:11px 13px">
+      <span style="display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--fg-x475569);font-weight:400;line-height:1.6"><span style="color:var(--fg-xb45309);font-weight:700">•</span>{{retroB1}}</span>
+      <span style="display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--fg-x475569);font-weight:400;line-height:1.6"><span style="color:var(--fg-xb45309);font-weight:700">•</span>{{retroB2}}</span>
+      <span style="display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--fg-x475569);font-weight:400;line-height:1.6"><span style="color:var(--fg-xb45309);font-weight:700">•</span>{{retroB3}}</span>
+    </div>
+    <div style="display:flex;gap:8px;border-top:1px solid var(--bd-xf1f5f9);padding-top:13px">
+      <button onClick="{{retroDo}}" style="{{retroBtnStyle}}">{{retroBtn}}</button>
+      <button onClick="{{retroCancel}}" style="height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;cursor:pointer;color:var(--fg-x53565a);background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">إلغاء</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══ نافذةُ «اعتماد وإغلاق / فكّ الاعتماد» ═══ -->
+<sc-if value="{{lockOn2}}" hint-placeholder-val="{{ false }}">
+<div onClick="{{lockCancel}}" style="position:fixed;inset:0;z-index:9310;background:var(--bg-a0000p5);display:flex;align-items:center;justify-content:center;padding:24px">
+  <div onClick="{{retroStop}}" style="background:var(--bg-xffffff);border-radius:16px;box-shadow:var(--shadow-elevated);width:100%;max-width:420px;padding:24px;text-align:center;font-family:'Cairo',sans-serif" dir="rtl">
+    <div style="{{lcIconBox}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d0476c40"></svg></div>
+    <h3 style="font-size:17px;font-weight:600;margin:0 0 6px">{{lcTitle}}</h3>
+    <p style="font-size:13px;color:var(--fg-x53565a);line-height:1.8;margin:0 0 4px">{{lcMsg}}</p>
+    <p style="font-size:11px;color:{{lcNoteColor}};margin:0 0 18px">{{lcNote}}</p>
+    <div style="display:flex;justify-content:center;gap:8px">
+      <button onClick="{{lockDo}}" style="{{lcDoStyle}}">{{lcDoLabel}}</button>
+      <button onClick="{{lockCancel}}" style="height:38px;padding:0 16px;border-radius:10px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">إلغاء</button>
+    </div>
+  </div>
+</div>
+</sc-if>

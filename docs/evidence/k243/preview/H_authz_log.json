@@ -1,0 +1,141 @@
+{
+ "step": "H — سجلُّ قرارات الصلاحية (authz) بعد مصفوفة الإنفاذ على Preview",
+ "endpoint": "/api/authz/log?limit=500 (بجلسة مدير النظام)",
+ "totals": {
+  "allow": 33,
+  "deny": 402,
+  "all": 435
+ },
+ "columns": [
+  "id",
+  "ts",
+  "uid",
+  "role",
+  "dept",
+  "k",
+  "res",
+  "keys",
+  "scope",
+  "decision",
+  "why",
+  "reason",
+  "path",
+  "mode"
+ ],
+ "pii": "لا اسمَ مستخدم ولا رقمَ هوية/جوال ولا عنوانَ IP ولا قيمَ سجلات في أي حقل (فحصٌ آلي على 435 صفاً: 0 إصابة) — الفاعلُ معرّفُ الحساب فقط · السببُ نصُّ المستخدم (TEST_ONLY) · النطاقُ وصفُ القرار",
+ "matrix_rows": {
+  "n": 72,
+  "byDecision": {
+   "allow": 33,
+   "deny": 39
+  },
+  "byPath": {
+   "/api/save": 67,
+   "/api/retro": 5
+  },
+  "byWhy": {
+   "keys": 29,
+   "scope": 14,
+   "perm": 7,
+   "reason": 4,
+   "dept": 3,
+   "mgr": 3,
+   "close": 2,
+   "open": 2,
+   "restore-policy": 2,
+   "scope-unknown": 2,
+   "grant": 1,
+   "import-allowlist": 1,
+   "self": 1,
+   "super": 1
+  },
+  "byRole": {
+   "staff": 37,
+   "super": 18,
+   "staff/mgr": 16,
+   "gm": 1
+  },
+  "byRes": {
+   "bassam_irshad_v1": 13,
+   "bassam_plan_v1": 10,
+   "bassam_rounds_v1": 9,
+   "bassam_dreport_v1": 8,
+   "bassam_grants_v1": 7,
+   "bassam_dstats_v1": 5,
+   "bassam_irshad_retro_v1": 5,
+   "bassam_auth_users_v1": 4,
+   "bassam_scope_v1": 4,
+   "bassam_employees_v1": 3,
+   "bassam_staffing_v3": 2,
+   "bassam_tasks_v1": 2
+  },
+  "reasons": {
+   "TEST_ONLY سببُ الاختبار": 7,
+   "TEST_ONLY إعادةُ الحالة": 4
+  }
+ },
+ "noise_rows": {
+  "n": 363,
+  "k": "k243_rows_enforce",
+  "uid": "su (حساب مدير النظام الحقيقي)",
+  "decision": "deny",
+  "why": "unknown",
+  "explanation": "أثرُ أداةِ مراقبةٍ أضفتُها احتياطاً ضدّ انغلاق لوحة المتصفح: تكتب تقدّمَ المصفوفة في localStorage كل 5 ثوانٍ تحت مفتاح k243_rows_<mode>؛ واجهةُ المنصة تزامن مفاتيحَ localStorage إلى /api/save، فرفضها الخادمُ كلَّها كمفتاحٍ مجهول (Default Deny حتى لمدير النظام) وسجّلها. لم يصل منها شيءٌ إلى kv ولا revs ولا aud (تحقّقٌ بالاستعلام: 0 · 0 · 0). في وضع Legacy رُفضت كذلك (قائمةُ مفاتيح KIVO_242) بلا تسجيل. أُوقفت الأداةُ قبل I. تُترك الصفوفُ في السجل لأنه سجلُّ تدقيق لا يُحذف منه."
+ },
+ "samples": {
+  "deny_scope": [
+   {
+    "uid": "tst_sa",
+    "role": "super",
+    "k": "bassam_dstats_v1",
+    "keys": "dstats.haram.entry",
+    "scope": "DateRange · dstats.haram.entry:DateRange=locked-period: dslock (locked before and after)",
+    "why": "scope",
+    "path": "/api/save"
+   },
+   {
+    "uid": "tst_ds",
+    "role": "staff",
+    "k": "bassam_dstats_v1",
+    "scope": "hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)",
+    "why": "scope",
+    "path": "/api/save"
+   }
+  ],
+  "allow": [
+   {
+    "uid": "tst_sa",
+    "role": "super",
+    "k": "bsdept:tst_d2:bassam_irshad_v1",
+    "keys": "ir.rec.delete",
+    "scope": "items=1",
+    "why": "keys",
+    "path": "/api/save"
+   }
+  ]
+ },
+ "tsRange": [
+  1791540845185,
+  1791542837707
+ ],
+ "integrity_after_enforce_run": {
+  "testKeys": 26,
+  "equalSeed": 26,
+  "diff": [],
+  "globals": {
+   "bassam_auth_users_v1": "b76f5f75eb47f0c0 rev255",
+   "bassam_depts_v1": "1ec0eaf57bde5da6 rev47",
+   "bassam_dstats_v1": "70b9c12abda68836 rev248",
+   "bassam_gdepts_v1": "0c5b41ec47fbf9aa rev47",
+   "bassam_perms_v1": "61ed11fc8ecf3a8b rev47"
+  }
+ },
+ "d1_check": {
+  "k243_kv": null,
+  "k243_revs": 0,
+  "k243_aud": 0,
+  "k243_authz": 363,
+  "authz_total": 435,
+  "rev": 268
+ }
+}

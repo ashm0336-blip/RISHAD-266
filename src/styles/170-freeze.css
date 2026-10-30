@@ -1,0 +1,17 @@
+
+/* ═ تثبيت عمود الهوية + منع انكماش الجداول — يُعمَّم آلياً على كل .bs-rtable في المنصة ═
+   الغلاف .bs-hscroll يمرّر أفقياً، ومحرّك bsTables أدناه يضبط الأعمدة المثبّتة وأدنى العرض. */
+.bs-rtable.bs-fitcols td.bs-fz{position:sticky;z-index:3;background:var(--bs-surface,var(--bg-surface))}
+.bs-rtable.bs-fitcols thead th.bs-fz{position:sticky;z-index:7;background:var(--bg-surface-2)}
+.bs-sthead .bs-rtable.bs-fitcols thead th.bs-fz{z-index:8}
+.bs-rtable.bs-fitcols .bs-fz1{right:0}
+.bs-rtable.bs-fitcols .bs-fz2{right:var(--fz2,52px)}
+.bs-rtable.bs-fitcols .bs-fz3{right:var(--fz3,110px)}
+/* آخر عمود مثبَّت (عمود الهوية) يحمل ظلّاً على حافته يدلّ أن ثمّة أعمدة تنزلق وراءه */
+.bs-rtable.bs-fitcols .bs-fzkeep{box-shadow:-11px 0 13px -11px rgba(15,23,42,0.16)}
+/* الجوال الضيّق (≤640): يبقى عمود الهوية وحده مثبّتاً وتُطلق ما قبله ليتّسع الانزلاق؛
+   right:auto يُبقي تثبيت الرأس رأسياً (top:0) ويلغي الأفقي فقط */
+@media (max-width:640px){
+  .bs-rtable.bs-fitcols .bs-fz{right:auto !important}
+  .bs-rtable.bs-fitcols .bs-fzkeep{right:0 !important}
+}

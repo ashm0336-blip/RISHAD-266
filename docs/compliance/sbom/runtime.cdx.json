@@ -1,0 +1,294 @@
+{
+ "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+ "bomFormat": "CycloneDX",
+ "specVersion": "1.5",
+ "version": 1,
+ "metadata": {
+  "component": {
+   "type": "application",
+   "name": "KIVO — المنصة التشغيلية (runtime)",
+   "version": "2026.10.14-265"
+  },
+  "tools": [
+   {
+    "name": "tools/sbom.py",
+    "vendor": "KIVO"
+   }
+  ],
+  "properties": [
+   {
+    "name": "kivo:source",
+    "value": "src"
+   },
+   {
+    "name": "kivo:no-runtime-npm-deps",
+    "value": "true"
+   }
+  ]
+ },
+ "components": [
+  {
+   "type": "library",
+   "name": "react",
+   "version": "18.3.1",
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-256",
+     "content": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd"
+    }
+   ],
+   "properties": [
+    {
+     "name": "kivo:files",
+     "value": "core/010-react.js"
+    },
+    {
+     "name": "kivo:note",
+     "value": "react.production.min.js مضمَّن (UMD) — بلا تعديل"
+    }
+   ],
+   "supplier": {
+    "name": "Meta Platforms, Inc."
+   },
+   "purl": "pkg:npm/react@18.3.1"
+  },
+  {
+   "type": "library",
+   "name": "react-dom",
+   "version": "18.3.1",
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-256",
+     "content": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d"
+    }
+   ],
+   "properties": [
+    {
+     "name": "kivo:files",
+     "value": "core/020-react-dom.js"
+    },
+    {
+     "name": "kivo:note",
+     "value": "react-dom.production.min.js مضمَّن؛ يحمل مقطع Modernizr 3.0.0pre (MIT)"
+    }
+   ],
+   "supplier": {
+    "name": "Meta Platforms, Inc."
+   },
+   "purl": "pkg:npm/react-dom@18.3.1"
+  },
+  {
+   "type": "library",
+   "name": "fflate",
+   "version": "0.8.3",
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-256",
+     "content": "c03b359f9b0b50cbfa8e0f857c1a2cc8bff9aef229400f27390288de1b504bc6"
+    }
+   ],
+   "properties": [
+    {
+     "name": "kivo:files",
+     "value": "core/030-pages-loader.js"
+    },
+    {
+     "name": "kivo:note",
+     "value": "KIVO_261: السطرُ 5 من محمِّل الصفحات = umd/index.js من fflate@0.8.3 بايتاً (SHA-256 462ef8041fc970e3…؛ قورن بحزم npm ‏0.7.4–0.8.3) · في المصدر ووضع المونوليث وحدهما — البناءُ المنشور (الكسول) لا يشحنه (tools/build.py lazy_loader)"
+    }
+   ],
+   "supplier": {
+    "name": "Arjun Barrett"
+   },
+   "purl": "pkg:npm/fflate@0.8.3"
+  },
+  {
+   "type": "file",
+   "name": "Cairo (variable font)",
+   "version": "3.130",
+   "licenses": [
+    {
+     "license": {
+      "id": "OFL-1.1"
+     }
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-256",
+     "content": "748022f50c427456ad66031e855349be3448ee1f05a5f1eb59574ebe0c686749"
+    },
+    {
+     "alg": "SHA-256",
+     "content": "82c13cbd1352d76e97c3d335caa912ae68fecdc3949a43cf8d149eb892384c1b"
+    },
+    {
+     "alg": "SHA-256",
+     "content": "da6ada83c3a87c2f0211325dc0a123702e1d4a940958b3e943ac4f37b31d5371"
+    }
+   ],
+   "properties": [
+    {
+     "name": "kivo:files",
+     "value": "assets/fonts/cairo-arabic.woff2 · assets/fonts/cairo-latin.woff2 · assets/fonts/cairo-latin-ext.woff2"
+    },
+    {
+     "name": "kivo:note",
+     "value": "ثلاث شرائح يونيكود؛ مضمَّنةٌ محلياً — لا طلبَ خارجياً · الإصدارُ وحقُّ النسخ من جدول name في الخط · نصُّ الرخصة في THIRD-PARTY-NOTICES.txt"
+    }
+   ],
+   "supplier": {
+    "name": "The Cairo Project Authors (Google Fonts)"
+   }
+  },
+  {
+   "type": "file",
+   "name": "KIVO bullet glyph",
+   "version": "1.000",
+   "licenses": [
+    {
+     "license": {
+      "name": "proprietary"
+     }
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-256",
+     "content": "7e48f168d47ebd9953a7fd553abf7e2fda75469785166e469178f70fa0a5a979"
+    }
+   ],
+   "properties": [
+    {
+     "name": "kivo:files",
+     "value": "assets/fonts/cairo-bullet.woff2"
+    },
+    {
+     "name": "kivo:note",
+     "value": "رمزٌ أصليٌّ رُسم لـKIVO (R188) لـU+2022 وحده — ليس من Cairo وإن حمل اسمَ عائلتها في CSS (جدول name: «Original glyph drawn for KIVO»)"
+    }
+   ],
+   "supplier": {
+    "name": "KIVO"
+   }
+  },
+  {
+   "type": "file",
+   "name": "Almarai",
+   "version": "1.10",
+   "licenses": [
+    {
+     "license": {
+      "id": "OFL-1.1"
+     }
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-256",
+     "content": "7acac6ae3ea4d4eeb7c9b636856c46274f5904e02caff83a545d75ebb9754faf"
+    },
+    {
+     "alg": "SHA-256",
+     "content": "7f9acc49f37d11319a44ecf80edb205f11cffddcb3013a0bbbc6af46dcf12b9c"
+    }
+   ],
+   "properties": [
+    {
+     "name": "kivo:files",
+     "value": "assets/fonts/almarai-800-arabic.woff2 · assets/fonts/almarai-800-latin.woff2"
+    },
+    {
+     "name": "kivo:note",
+     "value": "الوزن 800 للأرقام/التقارير · الإصدارُ وحقُّ النسخ من جدول name · نصُّ الرخصة في THIRD-PARTY-NOTICES.txt"
+    }
+   ],
+   "supplier": {
+    "name": "Boutros Fonts (Google Fonts)"
+   }
+  },
+  {
+   "type": "library",
+   "name": "dc-runtime",
+   "version": "KIVO_246+",
+   "licenses": [
+    {
+     "license": {
+      "name": "proprietary"
+     }
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-256",
+     "content": "7cedd0ee62383b276669d065f0043ea97dc5a0bcb1938c2d81e13859da39a7f1"
+    }
+   ],
+   "properties": [
+    {
+     "name": "kivo:files",
+     "value": "core/050-dc-runtime.js"
+    },
+    {
+     "name": "kivo:note",
+     "value": "مكوّنٌ يُصان في المشروع (ADR-008): المصدرُ المقروء هنا هو المصدر؛ رأسُ الملف يذكر أنه وُلِّد أصلاً من مصادر TypeScript غيرِ موجودة في المستودع — سندُ الملكية/الترخيص يؤكّده المالك (docs/threat-model.md §4 بند 7)"
+    }
+   ],
+   "supplier": {
+    "name": "KIVO"
+   }
+  },
+  {
+   "type": "application",
+   "name": "kivo-worker",
+   "version": "2026.10.14-265",
+   "licenses": [
+    {
+     "license": {
+      "name": "proprietary"
+     }
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-256",
+     "content": "73c1278b95f8abd3b7849c1dea09f3b929157083c9733b0ffeec0a87b4d3f60c"
+    }
+   ],
+   "properties": [
+    {
+     "name": "kivo:files",
+     "value": "../workers/_worker.js"
+    },
+    {
+     "name": "kivo:note",
+     "value": "عاملُ Cloudflare Pages المولَّد من workers/parts (ADR-009)"
+    }
+   ],
+   "supplier": {
+    "name": "KIVO"
+   }
+  }
+ ]
+}

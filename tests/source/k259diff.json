@@ -1,0 +1,182 @@
+{
+ "config/wrangler.toml": {
+  "sha256": "810767d12bc535423a2e9aab955a4af665fd4445e06c8916b41beadee0625936",
+  "lines": 18,
+  "why": "AUD-029: مرجعُ tools/env_check.py · مجلدُ البناء pk259 (كان pk255)"
+ },
+ "src/components/660-a11y-enhancer.js": {
+  "sha256": "9394d2b29fb6901f5b4e94547432baa810fc2d3a29524b8b225df41bfc42f6eb",
+  "lines": 70,
+  "why": "إصلاح (كشفه k258layout): الحاشيةُ اللمسية لكل جهةٍ على حدة لا تتجاوز نصفَ الفجوة إلى الجار — كانت حاشيةُ «إنقاص» تغطي «زيادة» فنقرُ «+» يُنقص على اللمس"
+ },
+ "src/core/050-dc-runtime.js": {
+  "sha256": "bdefc03ae0087f2fd1888cd416b8aa0424fcf7ad25ed2943ce48af0f93f56625",
+  "lines": 14,
+  "why": "SOT-091: وقتُ التشغيل مالكُ إشارات الإبطال (يعرّفها بالصيغة نفسِها)"
+ },
+ "src/layouts/helmet-global.css": {
+  "sha256": "008e8ec90ebe26bef3176f4f84ddf1947265d489597e0d520eb625ac9e5cda3d",
+  "lines": 31,
+  "why": "إصلاحان (كشفهما k258layout): .bs-tap::after بأربع جهات (--bs-tt/tb/tl/tr) · شريطُ التلميح safe center بمحدِّدٍ يطابق سمةَ React المسافيّة (كان لا يطابق قط فبدايةُ التلميح مقصوصةٌ على الجوال) · تصحيحٌ كشفته R191: قاعدةُ safe center تستثني أشرطةَ التبويبات (.bs-tabstrip) فيبقى سلوكُها المصمَّم — على الجوال تبدأ من أوّل تبويب"
+ },
+ "src/layouts/root-logic.js": {
+  "sha256": "932e791f963011604d1c31917c5ca519446c97815c0df8a6b6aee74b78ff09e4",
+  "lines": 33,
+  "why": "إصلاح: الاستعادةُ عبر D.permSlice (كانت قائمتين حرفيّتين أقدم)"
+ },
+ "src/manifests/pages.json": {
+  "sha256": "854689d85a0e57fcc4cf1a839b0bd21ca86f1202a202009934b330da1d312225",
+  "lines": 45,
+  "why": "AUD-030: lenses انتقلت إلى plugins/lenses · AUD-029: generated = tools/generate.py"
+ },
+ "src/modules/admin/helmet.css": {
+  "sha256": "2dde7cfcd4a7ee0d14d8c2ae600f5d1b5e6b1a9a6a251d59b41189c39ccaf8b4",
+  "lines": 12,
+  "why": "شجرةُ v24.9 على الجوال (كشفتها لقطاتُ المراجعة cfbench/k259shots.mjs): المسارُ (#/…) في صفّ الورقة كان يدفع العدَّ وزرَّ الفتح إلى سطرٍ ثانٍ على 390px — يُخفى تحت 640px (نقطةٌ من المقياس) وفي سطح المكتب كما هو"
+ },
+ "src/modules/admin/logic.js": {
+  "sha256": "c613e5e2b4861dee4223cf6727306aa430e439d2d45407947949df7806147b65",
+  "lines": 13,
+  "why": "إصلاح: تسميةُ حقل pwMin «ثابتٌ وفق قاعدة المنصة»"
+ },
+ "src/modules/tasks/logic.js": {
+  "sha256": "acca0522e8081ec25834daf17f6a58e1d5eca2a44a6677809a7745386d558467",
+  "lines": 17,
+  "why": "إصلاحٌ كشفته رحلاتُ k259journeys: سجلُّ مهمةٍ بأولويةٍ أو حالةٍ خارج القائمة (بياناتٌ مستوردة أو قديمة — بذرةُ الاختبار «med») كان يُسقط صفحةَ المهام كلَّها («Cannot read properties of undefined») ⇒ تُعرض «عادي»/«معلّقة» ويبقى الحقلُ كما هو"
+ },
+ "src/permissions/331-perm-model.js": {
+  "sha256": "ba3df6e7e9d528cf1787d8d4c7b1345749404eaf72e7569ff7ddfa2ba4229202",
+  "lines": 30,
+  "why": "AUD-030: P24_LENSES = LENS_KEYS · النمطُ «ميداني» = كلُّ العدسات"
+ },
+ "src/plugins/README.md": {
+  "sha256": "8e381a053a97ebfb30bf77ce4a1e65dd8214037222701d0d0318200c8b7f8f66",
+  "lines": 12,
+  "why": "AUD-030: وصفُ الإضافات"
+ },
+ "src/schemas/pages.schema.json": {
+  "sha256": "43a855c77bb41a4b22b99f24752ebcfeaf08c99fe937b9f10772a1928e947d99",
+  "lines": 19,
+  "why": "AUD-030: lenses خارج pages.json"
+ },
+ "src/schemas/tokens.schema.json": {
+  "sha256": "b2f1ea1b26b070305d530449c44074611ca29589bb6ce8f10fe7191bb3d46e90",
+  "lines": 64,
+  "why": "AUD-017: layers=2 · «from» للدلالية الجديدة"
+ },
+ "src/services/320-dept-storage.js": {
+  "sha256": "03c9403ddb64b22c63f481c96caeaeaa6b723b47376271bcb424a3902f161bbf",
+  "lines": 34,
+  "why": "إصلاح: permSlice — شريحةُ صلاحيات نسخة الإدارة بمفاتيح المنصة الحالية"
+ },
+ "src/styles/tokens/tokens.json": {
+  "sha256": "f915a8b8db35ebb8648a8c328290c88fa7d3c109252527a04ae285cb07496a5f",
+  "lines": 16573,
+  "why": "AUD-017: tokens.py semanticize (الحرفيةُ مستعارة · 290 دلالياً جديداً · الداكنُ على الدلالية)"
+ },
+ "tools/gen_types.mjs": {
+  "sha256": "235cec91ad306db1598a4f551361edd8f53e38ae473b54a1b7fad36700e5c0c3",
+  "lines": 31,
+  "why": "AUD-030: KivoLensKey من الإضافات + KivoLensPlugin"
+ },
+ "tools/generate.py": {
+  "sha256": "bee52d098486f9b33370f7e6ea917881e0a9599ddb8e58f7e32bc10925c47bbc",
+  "lines": 77,
+  "why": "AUD-030: LENS_REG من الإضافات · الجزءُ 006a · فحصُ الإضافات مع --check · AUD-029: رأسُ المولَّد «بأداة tools/generate.py»"
+ },
+ "tools/kivo_ns.json": {
+  "sha256": "d3b165c8466c137bb189a6f02cd847c8b1316ba1c291a7482f5892c29ca64415",
+  "lines": 31,
+  "why": "AUD-016: after += 050 · 320 · 331 · root-logic · admin/logic (259: تسميةُ pwMin) · 660 (الحاشيةُ اللمسية) — والملاحظة"
+ },
+ "tools/kivo_ns.mjs": {
+  "sha256": "5859c9f7fc0794ff602d492d8f5ea37e5cfc62858f198534ed7d821528cd011a",
+  "lines": 65,
+  "why": "AUD-029: المستودعُ الرسمي وحده (بلا تاريخ git) — الأسماءُ من الطبقة والملفاتُ من الشجرة · يُفحص ما لا يحتاج التاريخ (برهانُ المرجع في الانتقالي)"
+ },
+ "tools/perm_tree.py": {
+  "sha256": "48e181a73d05cb83e45acc0b430c88b7f7dd752707f3b99086f9a82c00cf6dfd",
+  "lines": 43,
+  "why": "AUD-030: عدسةُ إضافةٍ خارج الوثيقة تُلحق بحاوية العدسات"
+ },
+ "tools/sec/secrets_scan.py": {
+  "sha256": "02602d27dcb450a7f0ddeb74b610aade9b25600bf4d6395cd98eb633989e956b",
+  "lines": 20,
+  "why": "AUD-029: STRICT += tests/baselines/ (خطوطُ الأساس المنقولة صارمةٌ كما كانت في lint/) — البادئاتُ القديمة باقية · سطرُ النتيجة الموحَّد (تجمعه البوابة)"
+ },
+ "tools/tokens.py": {
+  "sha256": "f1515ad4fe7c78abf037f865a54bb1b8c136975d6689c9b58ffa1f018e70d748",
+  "lines": 103,
+  "why": "AUD-017: semanticize · check · table"
+ },
+ "workers/parts.json": {
+  "sha256": "6fd232cadb9d686db3bd7317ab55a1df370d8a089aeb98c5143a25cd73bdef53",
+  "lines": 25,
+  "why": "AUD-030: الجزءُ المشتقّ 006a-lens-plugins.js بعد 006 · AUD-029: generated = tools/generate.py"
+ },
+ "workers/parts/001-policy.js": {
+  "sha256": "c333a38e6a757a355045715dad3ade09f7be8b0edd43e05316aa32cb4b4b0a0f",
+  "lines": 12,
+  "why": "إصلاح: PW_MIN ثابتٌ 6 حتى لقيمةٍ مخزَّنةٍ أكبر (قفلُ مدير النظام — كشفه التدقيقُ المستقل)"
+ },
+ "workers/parts/002-seclog.js": {
+  "sha256": "bd1df86e2b016cd1254f4fe71551a36eae1c8e9ec75f2f8e4c62d95dc2682f88",
+  "lines": 13,
+  "why": "الإصدار 2026.10.10-159"
+ },
+ "workers/parts/054-image-contract.js": {
+  "sha256": "6f82abbd4a9f666ef991d03a6cfa654928f56913648e65dd1edc1ec0dc0f8619",
+  "lines": 261,
+  "why": "إصلاح (كشفه k258load · SOT-150): مجموعةُ عبارات كلِّ مفتاح في معاملةٍ واحدة يتقدّمها حارسُ النسخة (revGuard — مقارنةٌ ومبادلة) · commitGroups · المسبوقُ بين القراءة والكتابة يُردّ تعارضاً — كان حفظان متزامنان على النسخة نفسِها يُكتبان معاً (تحديثٌ ضائع: 255 = 697 زيادةً «ناجحة» والعدّادُ 327) · إصلاحان كشفهما التقييمُ المستقل: قفلُ الدخول ذرّيٌّ قبل التحقق البطيء (guardLeft/guardFail/guardCount — login_burst) · «مَن سبقك» في التعارض من aud لا من audit المهجور · المراجعةُ الأمنية المستقلة: SR-1 الرقمُ الوظيفي «no» لغير صاحبه ومدير النظام لا يغادر الخادم (usersNoOut في الرفض/التعارض) ويُورَث عند الكتابة (usersNoIn) · SR-8 اسمُ الدخول فريد (usersDupNew) · SR-2 حرّاسُ العملية المحمية كلُّها قبل أوّل دفعة (commitGroups)"
+ },
+ "workers/parts/056-enforce.js": {
+  "sha256": "6e5773ff1275482a91b01e8005f83e1084321b592ceb586f210880aafe79692f",
+  "lines": 13,
+  "why": "ENF_VER KIVO_259"
+ },
+ "workers/parts/057-enf-index.js": {
+  "sha256": "b2138059082c14fcb47f70727009db362affc3d046df1409395b360c89a13095",
+  "lines": 23,
+  "why": "AUD-030: enfPlugLensOf — مفتاحُ عدسة إضافةٍ ⇒ عدستُها (بعد المرجع)"
+ },
+ "workers/parts/059-protected-ops-2.js": {
+  "sha256": "5bd83ca952e3986ed12a2a26e60f58bb9f39980f71dee6990845be3f3c19c798",
+  "lines": 38,
+  "why": "AUD-030: enfPlugOps — حقولُ العدسات الجديدة تُصنَّف بمفاتيحها (جدولٌ فارغٌ للمضمَّنة)"
+ },
+ "workers/parts/061-enf-read.js": {
+  "sha256": "53401fd59833b5741aec3a98d13127b251a134ab18d315c7622e06c48e3fe331",
+  "lines": 94,
+  "why": "AUD-030: أعمدةُ العناصر وأقنعةُ حقول العدسات والإسقاطُ والدمج من KIVO_LENS_PLUGINS (التفاضلُ مع 258 حرفاً)"
+ },
+ "workers/parts/063-enf-api-and-handler.js": {
+  "sha256": "e608e9ab53f30c148b64d88c2b1b3b323a451a5d98bf3b0eae07485360edf37c",
+  "lines": 75,
+  "why": "AUD-030: عدساتُ me من الإضافات (الترتيبُ نفسُه) · إصلاح: pwMin ثابتٌ 6 في حفظ السياسات (قفلُ مدير النظام) · إصلاح: «آخرُ نشاط» في الحضور من aud (كان من audit المهجور فارغاً دائماً) · المراجعةُ الأمنية المستقلة: SR-1 الرقمُ الوظيفي لغير صاحبه ومدير النظام يُنزع في /api/get والإقلاع · SR-6 لا نصَّ خطأٍ داخلي في استجابات 500 (السجلُّ وحده بالمعرّف rid)"
+ },
+ "tools/build_chain.sh": {
+  "sha256": "6a9fae9564128dd212e1625c905d23138d8fc32159fea2f8dfb2d029456a0e8f",
+  "lines": 33,
+  "why": "نافذةُ الإصدارين = المُبقاةُ المعلنة في build:N (259 يُبقي 255 و254 المنشورَين — 256–258 مراحلُ داخلية)"
+ },
+ "tools/env_check.py": {
+  "sha256": "963dc6a7517cbe326489f2e6645579530a5823cb16b22f199bd25a9b5041ab63",
+  "lines": 11,
+  "why": "AUD-029: الافتراضيُّ src (كان k249/src — مسارُ مختبر)"
+ },
+ "tools/onboard_check.sh": {
+  "sha256": "c40891dbd1b4a00386753d20a32a2aecd475bb2b32c8791320e870c07855913a",
+  "lines": 20,
+  "why": "الافتراضيُّ 259 (كان 255) · الفحوصُ الساكنة npm run lab:static (سكربتاتُ المختبر lab:* — AUD-029)"
+ },
+ "tools/sbom.py": {
+  "sha256": "d6e2dae37b2320394e42dda7d0c9c53c20f1c72278f555267f6f190685972882",
+  "lines": 31,
+  "why": "AUD-029: عُدّةُ cfbench (المختبر) إن وُجدت — المستودعُ الرسمي وحده يولّد ويقارن وقتَ التشغيل وأدواتِه"
+ },
+ "tools/sot.py": {
+  "sha256": "c03c73bf23806b330c10a6a46540df7bea0f5e8989366deb8bbb2d47ce3719ed",
+  "lines": 29,
+  "why": "خللٌ أُصلح (259): العرضُ يكتب CSV من JSON ثم اللوحةَ ثم التحقّقَ المستمرّ (tools/sot_verify.py) ويفشل عند أيّ إخفاق — كان محقِّقُ لقطة الإنشاء يُخفق بصمت وCSV ثابتاً منذ RM-0"
+ }
+}

@@ -1,0 +1,25 @@
+
+/* ═ الضوابط الفرعية الموحّدة (bs-subseg): شريطٌ مقسّم بمسارٍ خفيف ═
+   تصميمٌ واحدٌ أخفّ من التبويبات الرئيسية لكل مبدّلات العرض/الفلاتر الفرعية —
+   مسارٌ باهت + أقراص، النشط بملءٍ أبيض وظلٍّ خفيف ولونٍ ذهبي. الحالة النشطة
+   تُقاد بسمة data-on المرتبطة بحالة الصفحة، فلا تنكسر. */
+.bs-subseg{display:inline-flex!important;flex-wrap:nowrap!important;gap:3px!important;padding:3px!important;
+  background:var(--tone-gold-50-a10)!important;border-radius:11px!important;border:0!important;max-width:100%;overflow-x:auto;
+  scrollbar-width:none;vertical-align:middle;box-sizing:border-box}
+.bs-subseg::-webkit-scrollbar{display:none}
+.bs-subseg .bs-subbtn{border:0!important;border-radius:8px!important;padding:7px 14px!important;
+  font-size:12.5px!important;font-weight:600!important;font-family:'Cairo',sans-serif!important;cursor:pointer;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;
+  white-space:nowrap;background:transparent!important;color:var(--text-muted)!important;box-shadow:none!important;
+  transition:background .18s,color .18s,box-shadow .18s!important;flex:0 0 auto;min-width:0!important}   /* لا انتقال على حجم الخط — كي يقيس fitSubseg القيمة النهائية لا لقطةً أثناء الحركة */
+.bs-subseg .bs-subbtn:hover{color:var(--text-secondary)!important}
+.bs-subseg .bs-subbtn[data-on="true"]{background:var(--bg-surface)!important;color:var(--brand-fg)!important;
+  box-shadow:var(--shadow-card)!important}
+.bs-subseg .bs-subbtn svg{width:15px!important;height:15px!important;flex:0 0 auto}
+/* ═ صيغة الامتلاء (bs-fill) — للّوحات الضيّقة كلوحة عناصر الخريطة: الأقراص تتقاسم
+   عرض الصفّ بالتساوي فلا يختفي منها شيء، وحجم الخط يُضبط آلياً (fitSubseg في
+   محرّك الجداول) حتى يتّسع أطول اسم في نصيبه بلا اقتطاع. نفس التصميم، مقاسٌ يتكيّف. */
+.bs-subseg.bs-fill{display:flex!important;overflow:hidden!important}
+.bs-subseg.bs-fill .bs-subbtn{flex:1 1 0!important;min-width:0!important;height:auto!important;
+  padding:7px 5px!important;gap:.4em!important;font-size:var(--bs-fs,12.5px)!important;overflow:hidden}
+.bs-subseg.bs-fill .bs-subbtn svg{width:1.15em!important;height:1.15em!important}

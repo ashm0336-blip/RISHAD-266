@@ -1,0 +1,162 @@
+{
+ "config/wrangler.toml": {
+  "sha256": "f56ca2b198ff80727d8bbc3a44de1568cb6bd63538ac7a7c669af9db42f3c929",
+  "lines": 13,
+  "why": "مجلدُ البناء pk263"
+ },
+ "src/api/contracts.json": {
+  "sha256": "d0f6109faf7fa21b9864e93664b69ecd7b7eecaad2eb55947d8a402f653dfd24",
+  "lines": 32,
+  "why": "SOT-101: ردُّ 400 bad-body للمسارات الخمسة ذات مخطّط الجسم"
+ },
+ "src/components/660-a11y-enhancer.js": {
+  "sha256": "3225b649033d304866fa0ae3a0e52e2178c8d8bb67948f4c1998b8e9635c6410",
+  "lines": 18,
+  "why": "SOT-058: tabindex وaria-label لـ.bs-info و.dz-hz (التركيزُ بديلُ التحويم)"
+ },
+ "src/core/005-kivo-ns.js": {
+  "sha256": "44e61550a14a55e89ba44b429704761db706123c6ac05abb8178255ab5c1d8f1",
+  "lines": 28,
+  "why": "AUD-007: لفُّ سطر N الطويل (8 أسماء في السطر) — المحتوى نفسه"
+ },
+ "src/core/050-dc-runtime.js": {
+  "sha256": "ebb4e39fb31e13249867072db012ecc6a901324d4a800f5ff6a7da1f83680976",
+  "lines": 31,
+  "why": "AUD-012/SOT-051: KIVO.__bsCssObj (الدالةُ المنسوخة 12 مرةً في daily وplan)"
+ },
+ "src/layouts/helmet-global.css": {
+  "sha256": "2d3bc8f74a71f00991e4ac3447bd8f1df8f3f35c7448f69fbc20fcf18bfaf01a",
+  "lines": 295,
+  "why": "SOT-058: :focus/:focus-within للتلميحات · AUD-017 مراجعُ الرموز الدلالية"
+ },
+ "src/layouts/index.template.html": {
+  "sha256": "d2ea3ddbab45faf2ef425b991493c93065c643f4b0913ab95236de1ada8d6c85",
+  "lines": 13,
+  "why": "AUD-020: ترتيبُ العناوين (h3→h2) في عنصر النائب"
+ },
+ "src/layouts/root-logic.js": {
+  "sha256": "7b4d4e32e9b896f46c2622981e4ff166a472ffbf20fb408c392a71839fdbdfed",
+  "lines": 14,
+  "why": "ختمُ «آخر تصدير» رقمُ اللحظة (JSON صالح — كان يرفضه الإنفاذ shape)"
+ },
+ "src/modules/admin/logic.js": {
+  "sha256": "bee46589c4084c0050a009a7dfb539e92a9cd02a5d5c28813c19c71009b54438",
+  "lines": 69,
+  "why": "AUD-020 (h4→h3 · أسماءٌ مقروءة لأدوات تصفية «سجل الحركة»: حقلا التاريخ وقائمتا الإدارة والمستخدم — كشفها axe على 32 شاشة في run3) · _expInfo يقبل رقمَ اللحظة"
+ },
+ "src/modules/admin/view.html": {
+  "sha256": "7b40272d33d2c8075a098ab5bccfa3d2b9451444fd5bb639a4dc0290fee0d203",
+  "lines": 154,
+  "why": "AUD-020/SOT-156: عناوينُ البطاقات والحالات الفارغة h3→h2 (الحجمُ نفسُه بالنمط) · «مديرو الإدارة» aria-level=2 (heading-order — run3)"
+ },
+ "src/modules/daily/logic.js": {
+  "sha256": "2c69da96e90a0cff36e7dfda8f5cad770b8c7e6f0cca2c99a46d95da46a8753e",
+  "lines": 160,
+  "why": "AUD-012: KIVO.__bsCssObj بدل 6 نسخ"
+ },
+ "src/modules/employees/view.html": {
+  "sha256": "ca746d2f2d5c40ee035f541340378faa37b18cf7720b58ff3c030a06f74a343c",
+  "lines": 130,
+  "why": "AUD-020/SOT-156: عناوينُ البطاقات والحالات الفارغة h3→h2 (الحجمُ نفسُه بالنمط) · «مديرو الإدارة» aria-level=2 (heading-order — run3)"
+ },
+ "src/modules/plan/logic.js": {
+  "sha256": "a8f635fbf33fc7986d2701d6d1358dde7099c4060801d21c8c4f6129ed6bde10",
+  "lines": 160,
+  "why": "AUD-012: KIVO.__bsCssObj بدل 6 نسخ"
+ },
+ "src/modules/plan/view.html": {
+  "sha256": "606c9f48f7421441830f26fc0c4c4dfa9925c70122d196f77d87aa1e987b86aa",
+  "lines": 22,
+  "why": "AUD-020/SOT-156: عناوينُ البطاقات والحالات الفارغة h3→h2 (الحجمُ نفسُه بالنمط) · «مديرو الإدارة» aria-level=2 (heading-order — run3)"
+ },
+ "src/modules/staff/view.html": {
+  "sha256": "f7dc5d39a93acd85b8152431af276adbd58735d9fb3173dbd02ec0fb030f419c",
+  "lines": 22,
+  "why": "AUD-020/SOT-156: عناوينُ البطاقات والحالات الفارغة h3→h2 (الحجمُ نفسُه بالنمط) · «مديرو الإدارة» aria-level=2 (heading-order — run3)"
+ },
+ "src/modules/tasks/view.html": {
+  "sha256": "38778b15abae522d731f44f3436eb28b7bd495b57ca0218e7addb07e2690bb60",
+  "lines": 22,
+  "why": "AUD-020/SOT-156: عناوينُ البطاقات والحالات الفارغة h3→h2 (الحجمُ نفسُه بالنمط) · «مديرو الإدارة» aria-level=2 (heading-order — run3)"
+ },
+ "src/permissions/331-perm-model.js": {
+  "sha256": "10fd75798b67fe83a1fafb36bdaa001510a29bea81dcc5a29254558d3c3f2440",
+  "lines": 52,
+  "why": "ترحيلاتُ الصلاحيات القديمة في العميل لمدير النظام وحده (كانت تُرسل من غيره فتُرفض برسالةٍ مضلِّلة)"
+ },
+ "tools/deps_check.py": {
+  "sha256": "573b66f27df94bc1f3aeb8ecc8936239f5393374c4afa0c3029972db8b14478e",
+  "lines": 12,
+  "why": "SOT-129: الإشارةُ إلى خطوة CI الصريحة"
+ },
+ "tools/export_official.py": {
+  "sha256": "45bad660c3b94e49300b62722aeaa95d684d109e30e9dca5fb93a6be00220876",
+  "lines": 23,
+  "why": "المستودعُ الرسمي: فحوصُ 263"
+ },
+ "tools/kivo_ns.mjs": {
+  "sha256": "dde646c671d8a76f9b2f8b962dd7a5e4117a189319815591333b2c1e634ffb6b",
+  "lines": 15,
+  "why": "AUD-007: N بثمانية أسماءٍ في السطر"
+ },
+ "tools/onboard_check.sh": {
+  "sha256": "c58d7914112769815cf173a55a7f8fc45d201628a1d4577198da56b9bd6e49e4",
+  "lines": 13,
+  "why": "الافتراضيُّ 263"
+ },
+ "tools/pack.py": {
+  "sha256": "6b308de259e6df81a1c3b0edd83e992cc2329d567c5d1d60c134797cdbbc56f4",
+  "lines": 57,
+  "why": "SOT-173: Production_upload.zip وdist_Candidate من pk<N>.prod وحده · يرفض إن غاب أو لم يكن مشتقّاً من pk<N> الحالي"
+ },
+ "tools/release_check.py": {
+  "sha256": "24809beb56b46b9e17c0fd5280525e8c29144a0e3479c873aa805ea300578f80",
+  "lines": 24,
+  "why": "N13: يرفض الإصدارَ ووثائقُه (CHANGELOG · STATE · reports/k<N>/decisions.md) فيها عناصرُ نائبةٌ غيرُ مملوءة {{…}}"
+ },
+ "tools/release_n.sh": {
+  "sha256": "258a6dad87d3ff9ebf1ccb928359e6118d05dfa7102c48ac7fbe688a0ac3c52e",
+  "lines": 11,
+  "why": "SOT-119: سطرُ الاستعمال"
+ },
+ "tools/sec/audit.py": {
+  "sha256": "255ab1e847ab5425a87e4546c340d5b2c999cc410df10f2aaf51cb38ad083f6c",
+  "lines": 22,
+  "why": "الافتراضيُّ pk263"
+ },
+ "tools/trace.py": {
+  "sha256": "a265b75cb4fc5d1e908526cd4c2caa9ed181ece0047c73d2d47ea02aadac767f",
+  "lines": 29,
+  "why": "SOT-128: «مفتوح P0/P1 هندسيٌّ بلا أثر» = 0 شرطٌ في --check"
+ },
+ "tools/validate_schemas.py": {
+  "sha256": "58288c650637e0eada1d77e60cf4ee4419e206abcbf9bfc524b7799ec4db8f3d",
+  "lines": 40,
+  "why": "SOT-095/101/123: routeNames خطأ · مخطّطاتُ الأجسام والعقد والشجرة والبيان"
+ },
+ "workers/parts/002-seclog.js": {
+  "sha256": "fef7ad91d06408d8a139c7c9c2d957471f6b02bc6880325227a257d23012306a",
+  "lines": 13,
+  "why": "WORKER_VER 2026.10.12-163"
+ },
+ "workers/parts/056-enforce.js": {
+  "sha256": "c07b93a30d92d60143c306ceb29088043cd14698fd82a620dc31b8bae4c35195",
+  "lines": 13,
+  "why": "ENF_VER KIVO_263 (· first-plan)"
+ },
+ "workers/parts/058-enf-scope.js": {
+  "sha256": "6a6cb40f4ddee348ee5ed8517f12d8dae24973aa3db423e9d7f45e5910edc047",
+  "lines": 119,
+  "why": "SOT-188 · ADR-031: first-plan-bootstrap لمدير النظام وحده · enfPlanEmpty = لا موقعَ ولا عنصر (مستخرِجُ المحرّك) · enfPlanHidden: محتوى الأشهر والطوابق المضافة/المحذوفة يُقيَّم بمقيِّمَي الإنفاذ (مراجعةٌ مستقلة · قرارُ المالك 2026-10-13)"
+ },
+ "workers/parts/062-enf-save.js": {
+  "sha256": "f6b4e0577754d19b7da80c6bc6a7c6dd361ed8951f1ba78dda6ceff95da91311",
+  "lines": 18,
+  "why": "SOT-190 (قرارُ المالك): الاستعادةُ الشاملة scope:full لمدير النظام وحده (full-super-only)"
+ },
+ "workers/parts/063-enf-api-and-handler.js": {
+  "sha256": "0f260a88ac871824cd5f1781ebecc4ec0a33beaa7652ce14b82e0c5182e87c12",
+  "lines": 224,
+  "why": "SOT-096 نقلُ مسارات المصادقة إلى 062a حرفاً · SOT-101 bodyCheck · SOT-173 علامتا أداة الاختبار"
+ }
+}

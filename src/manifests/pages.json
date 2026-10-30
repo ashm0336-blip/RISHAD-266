@@ -1,0 +1,326 @@
+{
+ "version": 1,
+ "generated": "tools/generate.py → manifests/255-page-manifest.js + PG_REG في الخادم",
+ "notes": [
+  "سجل الصفحات — المصدر الوحيد لمنظومة الصلاحيات والتوجيه والقائمة الجانبية: أي صفحة جديدة تُضاف هنا فقط، فتدخل تلقائياً في سقوف الإدارات وحارس التنقّل وإخفاء الرابط (key = مفتاح الصلاحية · nav = مفتاح التنقّل · name = الاسم المعروض).",
+  "subs = التبويبات الداخلية للصفحة (تُعلَن هنا لأن لا سبيل لاكتشافها آلياً) · tabs = أوراق لكل منها أفعالها · offPage = ورقة لا تفتح صفحتها (مكانها في الشجرة فقط) · under = صفحة تسكن حاوية (تبويب فيها) · seq = ترتيب الأوراق في الشجرة · tabLabel = عنوان مجموعة التبويبات · subStore = مخزن الاختيارات (lenses = مخزن العدسات القائم).",
+  "containers (NAV_REG) = روابط قائمة بلا مفتاح صلاحية: أوراقها هي أوراق صفحاتها بمفاتيحها نفسها (refs) — لا مفتاح جديد ولا خطوة ترحيل؛ names = أسماء الأوراق داخل الحاوية.",
+  "lenses = عدسات الخريطة (المناطق ثابتة لا تدخل القائمة) · tabAddr = الصفحات التي لتبويباتها عناوين #/page/tab · navOrder/navNames = ترتيب وأسماء روابط المجموعة الأولى في القالب (nth-of-type) · routeNames = أسماء المسارات للعنوان (ومنها sysadmin/profile خارج السجل).",
+  "الخادم يستهلك البنية وحدها (PG_REG: key · subs · tabs · off · under) ويُولَّد من هذا الملف نفسه؛ الواجهة تأخذ نسخاً عميقة (clone) كما كانت أدبياتها مستقلة.",
+  "KIVO_261 (SOT-003 · 1:1 مع المنصة): كلُّ لوحةٍ يعرضها «مؤشرات الإدارة» وحده (refs الحاوية kpis) ورقةٌ offPage — لا تفتح صفحتَها (لا تظهر هناك أصلاً: الاسترشادُ والمضبوطاتُ ولوحاتُ المتابعة والجاهزيةُ تُستورد solo)، فمنحُها وحدها يُظهر «مؤشرات الإدارة» لا صفحةً فارغة. القاعدةُ يفحصها k261tree."
+ ],
+ "pages": [
+  {
+   "key": "dstats",
+   "nav": "dstats",
+   "name": "الإحصائيات اليومية",
+   "seq": [
+    "sub:haram",
+    "sub:nabawi",
+    "tab:anHaram",
+    "tab:anNabawi",
+    "tab:anCmp",
+    "tab:anTime"
+   ],
+   "subs": [
+    {
+     "key": "haram",
+     "name": "المسجد الحرام"
+    },
+    {
+     "key": "nabawi",
+     "name": "المسجد النبوي"
+    }
+   ],
+   "tabs": [
+    {
+     "key": "anHaram",
+     "name": "تحليل المسجد الحرام",
+     "offPage": true
+    },
+    {
+     "key": "anNabawi",
+     "name": "تحليل المسجد النبوي",
+     "offPage": true
+    },
+    {
+     "key": "anCmp",
+     "name": "مقارنة الحرمين",
+     "offPage": true
+    },
+    {
+     "key": "anTime",
+     "name": "المقارنة الزمنية",
+     "offPage": true
+    }
+   ]
+  },
+  {
+   "key": "emps",
+   "nav": "employees",
+   "name": "موظفو الإدارة",
+   "seq": [
+    "sub:data",
+    "sub:custody"
+   ],
+   "subs": [
+    {
+     "key": "data",
+     "name": "بيانات الموظفين"
+    },
+    {
+     "key": "custody",
+     "name": "عهد الموظفين"
+    }
+   ]
+  },
+  {
+   "key": "planning",
+   "nav": "planning",
+   "name": "الخطة التشغيلية",
+   "seq": [
+    "sub:readiness",
+    "page:staff",
+    "page:plan"
+   ],
+   "subs": [
+    {
+     "key": "readiness",
+     "name": "مؤشرات الجاهزية",
+     "offPage": true
+    }
+   ]
+  },
+  {
+   "key": "staff",
+   "nav": "staffing",
+   "name": "الجدول الشهري",
+   "under": "planning"
+  },
+  {
+   "key": "plan",
+   "nav": "plan",
+   "name": "التشغيل الميداني",
+   "under": "planning"
+  },
+  {
+   "key": "daily",
+   "nav": "daily",
+   "name": "المتابعة اليومية",
+   "seq": [
+    "tab:kpiDaily",
+    "tab:kpiOcc",
+    "tab:kpiZones",
+    "page:dreport",
+    "tab:rounds",
+    "page:tasks",
+    "tab:field"
+   ],
+   "tabLabel": "التبويبات",
+   "tabs": [
+    {
+     "key": "kpiDaily",
+     "name": "مؤشرات المتابعة — التشغيل اليومي",
+     "offPage": true
+    },
+    {
+     "key": "kpiOcc",
+     "name": "مؤشرات المتابعة — الإشغال",
+     "offPage": true
+    },
+    {
+     "key": "kpiZones",
+     "name": "مؤشرات المتابعة — المصليات",
+     "offPage": true
+    },
+    {
+     "key": "rounds",
+     "name": "الجولات اليومية"
+    },
+    {
+     "key": "field",
+     "name": "رصد الميدان — حالة الموقع واتجاه الحركة من صفحة الموظف",
+     "offPage": true
+    }
+   ]
+  },
+  {
+   "key": "dreport",
+   "nav": "dreport",
+   "name": "التقرير اليومي",
+   "under": "daily"
+  },
+  {
+   "key": "tasks",
+   "nav": "tasks",
+   "name": "المهام",
+   "under": "daily"
+  },
+  {
+   "key": "irshad",
+   "nav": "irshad",
+   "name": "نظام الاسترشاد",
+   "subs": [
+    {
+     "key": "dash",
+     "name": "لوحة المؤشرات",
+     "offPage": true
+    },
+    {
+     "key": "records",
+     "name": "السجلات"
+    }
+   ]
+  },
+  {
+   "key": "seized",
+   "nav": "seized",
+   "name": "نظام المضبوطات",
+   "subs": [
+    {
+     "key": "dash",
+     "name": "لوحة المؤشرات",
+     "offPage": true
+    },
+    {
+     "key": "records",
+     "name": "السجلات"
+    }
+   ]
+  },
+  {
+   "key": "award",
+   "nav": "award",
+   "name": "جائزة التميز",
+   "subs": [
+    {
+     "key": "new",
+     "name": "ترشيح جديد"
+    },
+    {
+     "key": "res",
+     "name": "لوحة النتائج"
+    },
+    {
+     "key": "doc",
+     "name": "المراجع المعتمدة"
+    }
+   ]
+  },
+  {
+   "key": "links",
+   "nav": "links",
+   "name": "مواقع ذات صلة"
+  },
+  {
+   "key": "help",
+   "nav": "help",
+   "name": "المساعدة"
+  },
+  {
+   "key": "admin",
+   "nav": "admin",
+   "name": "الإعدادات",
+   "subs": [
+    {
+     "key": "backup",
+     "name": "النسخة الاحتياطية"
+    },
+    {
+     "key": "oplog",
+     "name": "سجل الحركة"
+    },
+    {
+     "key": "shifts",
+     "name": "الورديات"
+    },
+    {
+     "key": "ptpls",
+     "name": "قوالب الصلاحيات"
+    },
+    {
+     "key": "import",
+     "name": "استيراد بيانات"
+    }
+   ]
+  }
+ ],
+ "containers": [
+  {
+   "key": "kpis",
+   "nav": "kpis",
+   "name": "مؤشرات الإدارة",
+   "refs": [
+    "planning/readiness",
+    "daily/kpiDaily",
+    "daily/kpiOcc",
+    "daily/kpiZones",
+    "seized/dash",
+    "irshad/dash",
+    "dstats/anHaram",
+    "dstats/anNabawi",
+    "dstats/anCmp",
+    "dstats/anTime"
+   ],
+   "names": {
+    "planning/readiness": "مؤشرات الجاهزية",
+    "daily/kpiDaily": "مؤشرات التشغيل اليومي",
+    "daily/kpiOcc": "مؤشرات الإشغال",
+    "daily/kpiZones": "مؤشرات المصليات",
+    "seized/dash": "لوحة مؤشرات المضبوطات",
+    "irshad/dash": "لوحة مؤشرات الاسترشاد",
+    "dstats/anHaram": "تحليل المسجد الحرام",
+    "dstats/anNabawi": "تحليل المسجد النبوي",
+    "dstats/anCmp": "مقارنة الحرمين",
+    "dstats/anTime": "المقارنة الزمنية"
+   }
+  }
+ ],
+ "tabAddr": {
+  "emps": 1,
+  "award": 1,
+  "admin": 1,
+  "daily": {
+   "rounds": 1
+  }
+ },
+ "navOrder": [
+  "kpis",
+  "dstats",
+  "emps",
+  "planning",
+  "daily",
+  "irshad",
+  "seized",
+  "award"
+ ],
+ "navNames": {
+  "kpis": "مؤشرات الإدارة",
+  "dstats": "الإحصائيات اليومية",
+  "emps": "موظفو الإدارة",
+  "planning": "الخطة التشغيلية",
+  "daily": "المتابعة اليومية",
+  "irshad": "نظام الاسترشاد",
+  "seized": "نظام المضبوطات",
+  "award": "جائزة التميز"
+ },
+ "routeNames": {
+  "kpis": "مؤشرات الإدارة",
+  "dstats": "الإحصائيات اليومية",
+  "employees": "موظفو الإدارة",
+  "staffing": "الجدول الشهري",
+  "plan": "التشغيل الميداني",
+  "planning": "الخطة التشغيلية",
+  "daily": "المتابعة اليومية",
+  "dreport": "التقرير اليومي",
+  "tasks": "المهام",
+  "irshad": "نظام الاسترشاد",
+  "seized": "نظام المضبوطات",
+  "award": "جائزة التميز",
+  "links": "مواقع ذات صلة",
+  "help": "المساعدة",
+  "admin": "الإعدادات",
+  "sysadmin": "مدير النظام",
+  "profile": "صفحتي"
+ }
+}

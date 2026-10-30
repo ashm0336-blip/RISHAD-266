@@ -1,0 +1,197 @@
+{
+ "src/api/280-server-storage.js": {
+  "sha256": "71cd3922cbf7d71d0c792d0780207e8621c886dc85b16be868a8692079a63d4f",
+  "lines": 15,
+  "why": "البند ١ (تصحيحُ البوابة): لا «متصل» ما دام navigator.onLine = false — ردٌّ كان في الطريق لحظةَ الانقطاع كان يقلب اللافتةَ «عاد الاتصال» والمتصفحُ بلا شبكة"
+ },
+ "src/auth/330-auth-perm.js": {
+  "sha256": "d0b98e925abfc12beb17414e7f6034b5fe132878aaa317b65e5b31be4a838411",
+  "lines": 37,
+  "why": "AUD-033 (ج): مدقّقُ الاستيراد يقبل حساباتٍ بلا ph ودورَ gm · AUD-020: معالمُ شاشة الدخول (complementary/main) · التباين: نصُّ الإصدار بلا opacity"
+ },
+ "src/components/240-bassam-link.js": {
+  "sha256": "f04baf0d0d4bb514babb1c2322753b9ada7684dc95a81c951f4e8c598acf4e08",
+  "lines": 33,
+  "why": "البند ١: لافتةُ الجوال (off/back · 4 ث · role=status)"
+ },
+ "src/components/660-a11y-enhancer.js": {
+  "sha256": "98d74ce0a8a217bd72599f11c2233d26782085977afa34312bfb9840941c96be",
+  "lines": 65,
+  "why": "البند ٧: Enter على <a> بلا href · البند ٤: الحاشيةُ اللمسية (pointer: coarse) · ربطُ tapify بالطفرات · تصحيحُ البوابة: الحاشيةُ تُعاد عند كلّ تغيّرٍ في المقاس (ResizeObserver) لا قياسٌ واحدٌ يسبق الخط"
+ },
+ "src/core/030-pages-loader.lazy-guard.js": {
+  "sha256": "41dc56901801a5a25e205405037ed06de611d0a726751f3275e3ca7fbcb0e988",
+  "lines": 42,
+  "why": "البند ٣أ: بطاقةُ «تعذّر تحميل الشاشة» في sc-host بعد المحاولات التلقائية + زرٌّ يعيد الجلب"
+ },
+ "src/layouts/260-bassam-plat.js": {
+  "sha256": "aaa55551c56b39deee51cdefc7c43026dea1e8a80d64a467cab601d8e3f6f1f0",
+  "lines": 14,
+  "why": "البند ٧ (تصحيحُ البوابة): رابطُ «المساعدة» role=link tabindex=0 كروابط التنقّل — كان خارج ترتيب Tab"
+ },
+ "src/layouts/helmet-global.css": {
+  "sha256": "265863965ee07098008ccbe0dd9fe1ce0624cbaaabc72c733175b6a20898cc3f",
+  "lines": 43,
+  "why": "البند ١ (.bs-netbar) · ٢ (هيكلُ sc-placeholder) · ٣ (.bs-retry) · ٤ (.bs-tap) · AUD-020 (.bs-sr-only · زرُّ الخروج المطويّ visibility:hidden)"
+ },
+ "src/layouts/index.template.html": {
+  "sha256": "0969fe401bdebe5c1192af533922a08995e5e9240f00073695a4e50261a87773",
+  "lines": 87,
+  "why": "AUD-020: h1 لكل شاشة · روابطُ التنقّل role=link tabindex=0 · زرُّ الطيّ وبطاقةُ المستخدم وصفوفُ الشجرة role=button"
+ },
+ "src/layouts/root-logic.js": {
+  "sha256": "891d3e25ffbcb50083704d9b498cd6229edc0330a2b1d4c9505e0d9cf95b3477",
+  "lines": 15,
+  "why": "AUD-020: screenTitle · عنوانُ شاشة الاحتياط غيرُ فارغ"
+ },
+ "src/modules/admin/logic.js": {
+  "sha256": "3b44eb7334f375d811780f3f93058f0ce6073d0e879ed69aacc5284fce6623b3",
+  "lines": 29,
+  "why": "البند ٣ب: adErr/adRetry وبطاقةُ سجلّ التدقيق بزرّ · البند ٦: رقاقاتُ التصفية المختارة بنصٍّ داكن على الذهبي"
+ },
+ "src/modules/admin/view.html": {
+  "sha256": "4b9c02bfb09f53f703aad414f42e81ca75cf5bfc4ddc3f21cabb0547cfe8e501",
+  "lines": 33,
+  "why": "البند ٣ب: بطاقةُ أعد المحاولة في لوحات مدير النظام · AUD-020 (253→254): aria-label للحقول الحرجة"
+ },
+ "src/modules/daily/logic.js": {
+  "sha256": "9a16a770c26f9aeef064825181d0fb04903ab4f39cc6005df2f0dd67b2a15a16",
+  "lines": 13,
+  "why": "البند ٦: بطاقاتُ الأشهر الفارغة opacity .75 → .9"
+ },
+ "src/modules/daily/view.html": {
+  "sha256": "f4a85026005be81840cba7c3e6b943a8a73a5c05fe089c5d6f3a92b8a6f38e76",
+  "lines": 13,
+  "why": "البند ٦: الرقمُ الميلادي في شريط الأيام بلا opacity .72"
+ },
+ "src/modules/dreport/logic.js": {
+  "sha256": "40861fdd850a4d97684956ed82c955f9f53efbf1492ae6fdcd973c5c4df43975",
+  "lines": 13,
+  "why": "البند ٦: بطاقاتُ الأشهر الفارغة opacity .75 → .9"
+ },
+ "src/modules/dreport/view.html": {
+  "sha256": "e52e90522841a398fc3c707baed1197056e1d5ebc40ded45f32523aa53e2ecdd",
+  "lines": 13,
+  "why": "البند ٦: الرقمُ الميلادي في شريط الأيام بلا opacity .72"
+ },
+ "src/modules/dstats/logic.js": {
+  "sha256": "b74598044b7ee17de0a44624f3f4f3b0f676baa6a43a3999480aea9018e6d150",
+  "lines": 13,
+  "why": "البند ٦: بطاقاتُ الأشهر الفارغة opacity .75 → .9"
+ },
+ "src/modules/dstats/view.html": {
+  "sha256": "8c506fa4be25c0659bae0a92dccb5215f09a7cf44092880e3e934631414a5639",
+  "lines": 13,
+  "why": "البند ٦: الرقمُ الميلادي في شريط الأيام بلا opacity .72"
+ },
+ "src/modules/employees/logic.js": {
+  "sha256": "5e52a4b77e297e33907ab5016c7ac18a1cddfc5aa98c46519ce0eef973c67a66",
+  "lines": 13,
+  "why": "البند ٦: بطاقاتُ الأشهر الفارغة opacity .75 → .9"
+ },
+ "src/modules/irshad/logic.js": {
+  "sha256": "105e601af7a355977f7d67f0545a4d127d4a2bd3a547a922e40ada7d7c8d2683",
+  "lines": 13,
+  "why": "البند ٦: بطاقاتُ الأشهر الفارغة opacity .75 → .9"
+ },
+ "src/modules/irshad/view.html": {
+  "sha256": "bc547b00f0c729ab34f6e60d9f2594eaa1bd4fb625152563e5f77ff1e635fbca",
+  "lines": 31,
+  "why": "البند ٦: الرقمُ الميلادي في شريط الأيام بلا opacity .72 · AUD-020: aria-label"
+ },
+ "src/modules/plan/logic.js": {
+  "sha256": "634215ecbb6c47d8dfedc4b900ae71bcb86785052f2e9018b34dce3f5bc32216",
+  "lines": 13,
+  "why": "البند ٦: بطاقاتُ الأشهر الفارغة opacity .75 → .9"
+ },
+ "src/modules/seized/logic.js": {
+  "sha256": "5a056501d97a8ee4e807b7739ed0a369ba0c293672cc1d38a6e9f80c729b0858",
+  "lines": 13,
+  "why": "البند ٦: بطاقاتُ الأشهر الفارغة opacity .75 → .9"
+ },
+ "src/modules/seized/view.html": {
+  "sha256": "a6908c8fef7b2bc0bb17b6ec20ecea4e717eb75502126418b20dc55a3101f1e7",
+  "lines": 13,
+  "why": "البند ٦: الرقمُ الميلادي في شريط الأيام بلا opacity .72"
+ },
+ "src/modules/staff/logic.js": {
+  "sha256": "bbfeb590a72c3f2b034aece23f206ee51d4ab2166e77f999bf1804125764e7d4",
+  "lines": 13,
+  "why": "البند ٦: بطاقاتُ الأشهر الفارغة opacity .75 → .9"
+ },
+ "src/modules/tasks/logic.js": {
+  "sha256": "dbf231e2e7ec6f9774c761f5f7cf56619e3e8e2f48d36d8a35b0c9167de7baca",
+  "lines": 13,
+  "why": "البند ٦: بطاقاتُ الأشهر الفارغة opacity .75 → .9"
+ },
+ "src/pages/Admin.dc.html": {
+  "sha256": "d62b8c7afbfb5509a424bceab305a8f33f8169dcc33f71c5f6ff0f38eeae4b3a",
+  "lines": 61,
+  "why": "مولَّدةٌ من view/logic (البند ٦ · AUD-020)"
+ },
+ "src/pages/Daily Report.dc.html": {
+  "sha256": "1f5d26179b59665d27ee2cf3db872e8728db0d2837faf39e4cc4b346bacbadd7",
+  "lines": 21,
+  "why": "مولَّدةٌ من view/logic (البند ٦ · AUD-020)"
+ },
+ "src/pages/Daily Sessions.dc.html": {
+  "sha256": "305eb559508279d906cb7e6ab2e1d358ce02d47d8781a8c6267ac8829ab90027",
+  "lines": 21,
+  "why": "مولَّدةٌ من view/logic (البند ٦ · AUD-020)"
+ },
+ "src/pages/Daily Stats.dc.html": {
+  "sha256": "12239c8c63f4e906ddd5d7810aebb9f0344c338325ae1cb8c56da988af1cbd83",
+  "lines": 22,
+  "why": "مولَّدةٌ من view/logic (البند ٦ · AUD-020)"
+ },
+ "src/pages/Employees.dc.html": {
+  "sha256": "b2d08dd875f03cefaaa7daa278f4b6ba879b3004acbfacc59ba9bb5d368e2a8b",
+  "lines": 13,
+  "why": "مولَّدةٌ من view/logic (البند ٦ · AUD-020)"
+ },
+ "src/pages/Irshad.dc.html": {
+  "sha256": "c79fb1cc3dc6426134928a26fedb681330df223f419e3e75a50810ec321e0583",
+  "lines": 39,
+  "why": "مولَّدةٌ من view/logic (البند ٦ · AUD-020)"
+ },
+ "src/pages/Operational Plan.dc.html": {
+  "sha256": "812f90c6fd148f8734df774ae763b1137bc6d0bdf8fce7341907d4552836a207",
+  "lines": 12,
+  "why": "مولَّدةٌ من view/logic (البند ٦ · AUD-020)"
+ },
+ "src/pages/Seized.dc.html": {
+  "sha256": "c3e118e505ae1819485bd6ba7dd94a20f48a85ad1b45cbe6bf7d5bea4dda2239",
+  "lines": 21,
+  "why": "مولَّدةٌ من view/logic (البند ٦ · AUD-020)"
+ },
+ "src/pages/Staffing.dc.html": {
+  "sha256": "8e560684380fb62dff9e4932f3415ae94a15c79c90d3963c3d4453911099c00f",
+  "lines": 13,
+  "why": "مولَّدةٌ من view/logic (البند ٦ · AUD-020)"
+ },
+ "src/pages/Tasks.dc.html": {
+  "sha256": "09ee2b1c0c9dea40f5b880183bcead64306cea8ee245135f70579f57d0e7a9d5",
+  "lines": 12,
+  "why": "مولَّدةٌ من view/logic (البند ٦ · AUD-020)"
+ },
+ "src/styles/070-theme-tokens.css": {
+  "sha256": "e0901ad122a9da67f8a37e283f335af7a0e6f85813ea0aff57ef86edb6d5e474",
+  "lines": 9,
+  "why": "مولَّدٌ من tokens.json (البند ٦)"
+ },
+ "src/styles/080-theme-dark.css": {
+  "sha256": "4c14bc3f8a3094ff7b43c1139b539b265f830d9eb217dd12e3e0ff14948df2d4",
+  "lines": 9,
+  "why": "مولَّدٌ من tokens.json (البند ٦)"
+ },
+ "src/styles/tokens/tokens.json": {
+  "sha256": "ec21b45b6fa200b65b20b4342d7bc44272df86a87db024a47d7f7517069472f3",
+  "lines": 264,
+  "why": "البند ٦: بدائياتٌ أغمق/أفتح للنصوص الصغيرة · brand-text/chart-2-text/chart-5-text/plum-strong"
+ },
+ "tools/tokens.py": {
+  "sha256": "027c2ab70c89f7585d68132822ee8a05ccfc71caa660ecbee141bfa3f0e6f747",
+  "lines": 40,
+  "why": "verify --declared: التغييراتُ المقصودة تُعلَن ملفاً ولا تمرّ صامتة"
+ }
+}

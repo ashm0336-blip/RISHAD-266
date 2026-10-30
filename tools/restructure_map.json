@@ -1,0 +1,164 @@
+{
+ "note": "KIVO_251 · ADR-012 — خريطةُ النقل من تخطيط k250/src (الانتقالي) إلى الشجرة المستهدفة (SOT TREE) في جذر المستودع. الأرقامُ على أسماء الكتل تبقى (ترتيبُ التحميل في blocks.json).",
+ "dirs": {
+  "client/js": {
+   "src/core": [
+    "010-react.js",
+    "020-react-dom.js",
+    "030-pages-loader.js",
+    "030-pages-loader.lazy-guard.js",
+    "040-intl-cache.js",
+    "050-dc-runtime.js",
+    "110-theme-prepaint.js",
+    "115-css-text.js",
+    "130-error-bar.js",
+    "140-safety-scheduler.js",
+    "270-bs-ver.js",
+    "300-bassam-ack.js"
+   ],
+   "src/layouts": [
+    "260-bassam-plat.js"
+   ],
+   "src/manifests": [
+    "255-page-manifest.js"
+   ],
+   "src/i18n": [
+    "120-arabic-digits.js",
+    "380-hijri-fallback.js"
+   ],
+   "src/api": [
+    "280-server-storage.js"
+   ],
+   "src/auth": [
+    "330-auth-perm.js",
+    "370-backup-crypto.js"
+   ],
+   "src/permissions": [
+    "340-registry-v24-9.js",
+    "350-perm-v2-shadow.js"
+   ],
+   "src/services": [
+    "060-percent-format.js",
+    "290-activity-log.js",
+    "310-image-refs.js",
+    "320-dept-storage.js",
+    "360-bassam-idb.js",
+    "390-kpi-primitives.js",
+    "400-shift-need.js",
+    "410-gate-units.js",
+    "420-round-factory.js",
+    "430-store-broadcast.js",
+    "440-notifications.js",
+    "480-final-delete.js",
+    "490-emp-key.js",
+    "500-element-uid.js",
+    "510-emp-monthly-source.js",
+    "520-field-monitor.js",
+    "530-emp-day-facts.js",
+    "570-bassam-xlsx.js",
+    "580-historical-import.js",
+    "590-employees-import.js"
+   ],
+   "src/components": [
+    "160-card-fade.js",
+    "180-tables-engine.js",
+    "190-tabstrip-unify.js",
+    "210-mix-on.js",
+    "240-bassam-link.js",
+    "450-pull-refresh.js",
+    "460-hscroll-drag.js",
+    "470-touch-tooltips.js",
+    "550-bassam-busy.js",
+    "560-canvas-input.js",
+    "600-tooltip-portal.js",
+    "610-map-wheel.js",
+    "620-no-select.js",
+    "630-popover-place.js",
+    "640-map-tooltip.js",
+    "650-dropdown-unify.js",
+    "660-a11y-enhancer.js",
+    "670-big-table-lane.js",
+    "680-search-bars.js"
+   ]
+  },
+  "client/css": {
+   "src/styles": "*"
+  },
+  "client/fonts": {
+   "src/assets/fonts": "*"
+  },
+  "client/img": {
+   "src/assets/images": "*"
+  },
+  "client/manifest": {
+   "src/manifests": "*"
+  },
+  "client/pages": {
+   "src/pages": "*"
+  },
+  "shell": {
+   "src/layouts": [
+    "index.template.html"
+   ]
+  },
+  "shell/xdc": {
+   "src/layouts": [
+    "helmet-global.css",
+    "root-logic.js"
+   ]
+  },
+  "modules": {
+   "src/modules": "*"
+  },
+  "registry": {
+   "src/permissions/registry": "*"
+  },
+  "manifests": {
+   "src/manifests": "*"
+  },
+  "design": {
+   "src/styles/tokens": "*"
+  },
+  "root": {
+   "public": "*",
+   "workers": [
+    "_worker.js"
+   ]
+  },
+  "workers": {
+   "workers": "*"
+  },
+  "migrations": {
+   "migrations": "*"
+  },
+  "config": {
+   "config": "*"
+  },
+  ".": {
+   "src": [
+    "blocks.json"
+   ]
+  }
+ },
+ "layout": {
+  "note": "src/layout.json — تقرأه أدواتُ البناء والتوليد؛ غيابُه = التخطيطُ الانتقالي القديم",
+  "assets": {
+   "fonts": "assets/fonts",
+   "img": "assets/images"
+  },
+  "pages": "pages",
+  "shell": "layouts/index.template.html",
+  "rootLogic": "layouts/root-logic.js",
+  "manifest": "manifests/manifest.webmanifest.json",
+  "public": "../public",
+  "workerOut": "../workers/_worker.js",
+  "workersParts": "../workers/parts",
+  "registry": "permissions/registry",
+  "pagesManifest": "manifests/pages.json",
+  "tokens": "styles/tokens/tokens.json",
+  "styles": "styles",
+  "migrations": "../migrations",
+  "modules": "modules",
+  "pageManifestBlock": "manifests/255-page-manifest.js"
+ }
+}

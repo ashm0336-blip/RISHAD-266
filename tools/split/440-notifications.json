@@ -1,0 +1,26 @@
+{
+ "source": "git:KIVO_256:src/services/440-notifications.js",
+ "lines": [
+  221,
+  1007
+ ],
+ "sourceLabel": "src/services/440-notifications.js (الـIIFE الثالثة)",
+ "ns": "notif",
+ "parts": [
+  {
+   "out": "src/services/441-notif-core.js",
+   "from": null,
+   "title": "التنبيهاتُ والتعاميم — النواة: السجلُّ REG · الإعدادات · المخزن · الإطلاق · الاستهداف · التعاميم · قائمتي",
+   "leadLines": [
+    1,
+    9
+   ]
+  },
+  {
+   "out": "src/services/442-notif-observer.js",
+   "from": "  /* ═══ المراقب: استنتاج الأحداث من فروق المخازن",
+   "title": "التنبيهاتُ والتعاميم — المراقب: استنتاجُ الأحداث من فروق المخازن · الفحصُ الدوري · التشغيل"
+  }
+ ],
+ "wrap": true
+}

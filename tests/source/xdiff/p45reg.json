@@ -1,0 +1,18 @@
+{
+ "suite": "p45reg.mjs (R203 سجلُّ v24.9 والطبقةُ الظلّية)",
+ "timeoutSec": 2400,
+ "differ": [
+  {
+   "name": "★ D4‑01: الربطُ في مسارَي القراءة الفعليين (boot · /api/get) بعد canRead وقبل الحذف/الإرجاع — داخل try/catch؛ keys/got لا تُمسّ",
+   "why": "سطرا الظلّ صارا try { if (!AB.enf) permv4Read(…) } و try { if (!AG.enf) permv4Read(…) } — الظلُّ لا يُستدعى في وضع الإنفاذ (القرارُ نافذٌ لا مقيس)؛ وفي النظام القديم A.enf غيرُ موجود فيُستدعى في الموضع نفسِه كما كان، وkeys/got لا تُمسّ (الفحصُ النصّيّ يبحث عن السطر القديم حرفاً)"
+  },
+  {
+   "name": "★ D4‑05: النصُّ الظاهر لورقة رصد الميدان مصحَّح في الواجهة («واتجاه الحركة») ولا أثرَ للنصّ القديم",
+   "why": "التأكيدُ يبحث عن الحرفية JS name:'رصد الميدان — حالة الموقع واتجاه الحركة من صفحة الموظف', offPage:true في كود الواجهة؛ منذ KIVO_247 (AUD-015 · ADR-010) سجلُّ الصفحات يأتي من manifests/pages.json بصيغة JSON (\"name\":\"…\",\"offPage\":true) — النصُّ المصحَّح موجودٌ حرفاً في manifest وفي 255-page-manifest وفي PG_REG للخادم، ولا أثرَ للنصّ القديم «حالة الموقع ومساره» في الغلاف ولا في _worker.js (grep). الفرقُ في شكل الكود لا في النصّ الظاهر"
+  },
+  {
+   "name": "★ (أ) KIVO_SCOPE_MIGRATION (registry9/kivo_migration.js · v24.9 · phase 4.2 · dry-run · + identity) في _worker.js مرّةً واحدة حرفاً بحرف بعد KIVO_SCOPE · بصمتُه المسجَّلة · ليس في الواجهة",
+   "why": "KIVO_253: ملفُّ kivo_migration.js (طبقةُ registry9/10 = الجزءُ workers/parts/054-image-contract.js) عُدِّل في موضعين معلنين فلم يعد حرفياً داخل _worker.js: inject() يحمل nonce ويعيد كتابة <meta> CSP (AUD-005 خطوة ٢) · حارسُ البصمة القديمة في mergeUsers (AUD-036). السببُ نفسُه المعلن في p45bind.json؛ الفرقُ الحقيقي عن KIVO_252 مثبتٌ بالضبط في tests/source/k253src.py (ب) ولا تغييرَ في منطق النطاق/الهوية (SCOPE_MIGRATION · identity-preflight) — تأكيداتُ السلوك في الحزمة نفسِها ناجحة"
+  }
+ ]
+}

@@ -1,0 +1,40 @@
+{
+ "step": "J.3 — Time Travel في سيناريو منفصل آمن (ذهابٌ وإياب)",
+ "probe_row": "meta.tst_tt_probe = 'TEST_ONLY 2026-10-09T10:57:21Z'",
+ "bookmark_before_restore": "0000000a-00001bf2-000050ff-8079a72959ec26b394c656af7912e227 (B_pre — مع صفّ الاختبار)",
+ "restore_target": "D0 = 00000009-0000001e-000050ff-8668fb06212aaf0d3f3bbb693408c34c (نقطةُ ما قبل الزرع — من هذه الجلسة)",
+ "restore_output": "Database restored back to bookmark 00000009-… · undo: 0000000a-ffffffff-000050ff-baa2928dbde9be45bdc6f2a5a9270b92",
+ "state_at_D0": {
+  "tst_tt_probe": null,
+  "test_keys": 0,
+  "kv_keys": 14,
+  "rev": 46,
+  "authz_mode": null,
+  "authz_tables": 0,
+  "notif_len": 696,
+  "notif_rev": 46,
+  "aud": 54,
+  "sess": 2,
+  "users": 1,
+  "note": "= حالةُ ما قبل الزرع حرفاً (جردُ E0)"
+ },
+ "undo_restore": "/restore 0000000a-ffffffff-000050ff-baa2928dbde9be45bdc6f2a5a9270b92 → Database restored back … (undo: 0000000b-ffffffff-000050ff-3dadbe2eee543ab8973fdde1b06e3744)",
+ "state_after_undo": {
+  "tst_tt_probe": "present",
+  "test_keys": 27,
+  "kv_keys": 42,
+  "rev": 270,
+  "authz_mode": "legacy",
+  "authz_tables": 6,
+  "authz_rows": 437,
+  "notif_len": 121273,
+  "aud": 286,
+  "sess": 2,
+  "snaps": 2
+ },
+ "fingerprint": "بصمةُ 75 مفتاحاً (قيمٌ ومراجعات) بعد الإياب = ما قبل الذهاب حرفاً (فروق: 0)",
+ "cleanup": "حُذف صفُّ tst_tt_probe بعدها",
+ "reference_bookmark": "00000004-0000024a-000050fe-2d267caf4a99dfe27260c5284a2ff84d — لم تُستعمل",
+ "ok": true,
+ "brief": "سطرُ اختبارٍ tst_tt_probe ← /restore إلى نقطة D0 (ما قبل الزرع): السطرُ زال وأداةُ الاختبار زالت (test_keys 0 · rev 46 · 14 مفتاحاً) ← /restore إلى نقطة الإياب: كلُّ شيءٍ عاد (السطرُ · 27 مفتاحاً · rev 270 · 437 قرار) وبصمةُ 75 مفتاحاً مطابقةٌ حرفاً · ثم حُذف السطر. النقطةُ المرجعية لم تُستعمل."
+}

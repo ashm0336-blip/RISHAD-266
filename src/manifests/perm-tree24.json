@@ -1,0 +1,931 @@
+{
+ "version": "v24.9",
+ "doc": "KIVO_شجرة_الصلاحيات_TO-BE_v24.9_Authorization_Architecture_FINAL.html",
+ "docSha256": "6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde",
+ "generatedBy": "tools/perm_tree.py",
+ "note": "القسم ٣ من وثيقة الشجرة TO-BE v24.9 بياناتٍ: الحاوياتُ لا تُمنح؛ المفاتيحُ على الأوراق والعدسات؛ المنصةُ والمراجعُ عقدتان مستقلتان. مطابَقٌ للسجلّ ولـpages.json بأداة التوليد.",
+ "containers": [
+  {
+   "id": "dstats",
+   "label": "الإحصائيات اليومية",
+   "kind": "page",
+   "page": "dstats",
+   "nav": "dstats",
+   "leaves": [
+    {
+     "owner": "dstats/haram",
+     "label": "المسجد الحرام",
+     "kind": "tab",
+     "route": "#/dstats",
+     "ownerKind": "page",
+     "keys": [
+      "dstats.haram.view",
+      "dstats.haram.entry",
+      "dstats.haram.approve",
+      "dstats.haram.reopen"
+     ],
+     "reserved": [],
+     "page": "dstats",
+     "sub": "haram"
+    },
+    {
+     "owner": "dstats/nabawi",
+     "label": "المسجد النبوي",
+     "kind": "tab",
+     "route": "#/dstats",
+     "ownerKind": "page",
+     "keys": [
+      "dstats.nabawi.view",
+      "dstats.nabawi.entry",
+      "dstats.nabawi.approve",
+      "dstats.nabawi.reopen"
+     ],
+     "reserved": [],
+     "page": "dstats",
+     "sub": "nabawi"
+    },
+    {
+     "owner": "dstats/anHaram",
+     "label": "تحليل المسجد الحرام",
+     "kind": "offpage",
+     "route": "#/kpis (dc-import solo)",
+     "ownerKind": "page",
+     "keys": [
+      "dstats.anHaram.view"
+     ],
+     "reserved": [],
+     "page": "dstats",
+     "sub": "anHaram"
+    },
+    {
+     "owner": "dstats/anNabawi",
+     "label": "تحليل المسجد النبوي",
+     "kind": "offpage",
+     "route": "#/kpis (dc-import solo)",
+     "ownerKind": "page",
+     "keys": [
+      "dstats.anNabawi.view"
+     ],
+     "reserved": [],
+     "page": "dstats",
+     "sub": "anNabawi"
+    },
+    {
+     "owner": "dstats/anCmp",
+     "label": "مقارنة الحرمين",
+     "kind": "offpage",
+     "route": "#/kpis (dc-import solo)",
+     "ownerKind": "page",
+     "keys": [
+      "dstats.anCmp.view"
+     ],
+     "reserved": [],
+     "page": "dstats",
+     "sub": "anCmp"
+    },
+    {
+     "owner": "dstats/anTime",
+     "label": "المقارنة الزمنية",
+     "kind": "offpage",
+     "route": "#/kpis (dc-import solo)",
+     "ownerKind": "page",
+     "keys": [
+      "dstats.anTime.view"
+     ],
+     "reserved": [],
+     "page": "dstats",
+     "sub": "anTime"
+    }
+   ]
+  },
+  {
+   "id": "emps",
+   "label": "موظفو الإدارة",
+   "kind": "page",
+   "page": "emps",
+   "nav": "employees",
+   "leaves": [
+    {
+     "owner": "emps/data",
+     "label": "بيانات الموظفين",
+     "kind": "tab",
+     "route": "#/employees (ذيل #/employees/data)",
+     "ownerKind": "page",
+     "keys": [
+      "emp.view",
+      "emp.record.create",
+      "emp.record.edit",
+      "emp.record.delete",
+      "emp.record.bulk.delete",
+      "emp.account.bulk.activate",
+      "emp.account.bulk.freeze",
+      "ref.employment_type.view",
+      "ref.employment_type.create",
+      "ref.employment_type.edit",
+      "ref.employment_type.delete",
+      "emp.account.activate",
+      "emp.account.freeze"
+     ],
+     "reserved": [],
+     "page": "emps",
+     "sub": "data"
+    },
+    {
+     "owner": "emps/custody",
+     "label": "عهد الموظفين",
+     "kind": "tab",
+     "route": "#/employees (ذيل #/employees/custody)",
+     "ownerKind": "page",
+     "keys": [
+      "cust.view",
+      "ref.custody_type.create",
+      "ref.custody_type.edit",
+      "cust.move.issue",
+      "cust.move.return",
+      "cust.move.damage",
+      "cust.move.lost",
+      "ref.custody_type.delete",
+      "ref.custody_type.view"
+     ],
+     "reserved": [],
+     "page": "emps",
+     "sub": "custody"
+    }
+   ]
+  },
+  {
+   "id": "planning",
+   "label": "الخطة التشغيلية",
+   "kind": "page",
+   "page": "planning",
+   "nav": "planning",
+   "leaves": [
+    {
+     "owner": "planning/readiness",
+     "label": "مؤشرات الجاهزية",
+     "kind": "offpage",
+     "route": "#/kpis",
+     "ownerKind": "page",
+     "keys": [
+      "ready.view"
+     ],
+     "reserved": [],
+     "page": "planning",
+     "sub": "readiness",
+     "docKind": "sub",
+     "docRoute": "#/planning",
+     "platform": "تُعرض في «مؤشرات الإدارة» وحدها (KIVO_261 · SOT-003 — الوثيقة: sub · #/planning)"
+    },
+    {
+     "owner": "staff",
+     "label": "الجدول الشهري",
+     "kind": "page_under",
+     "route": "#/staffing",
+     "ownerKind": "page",
+     "keys": [
+      "staff.view",
+      "staff.create",
+      "staff.move",
+      "staff.rest",
+      "staff.delete",
+      "staff.lock",
+      "staff.reopen",
+      "staff.shift.assign",
+      "staff.employment_type.assign",
+      "staff.work_type.assign",
+      "staff.callsign.assign",
+      "staff.tasking.assign",
+      "staff.bulk.delete",
+      "ref.work_type.view",
+      "ref.work_type.create",
+      "ref.work_type.edit",
+      "ref.work_type.delete",
+      "ref.callsign.view",
+      "ref.callsign.create",
+      "ref.callsign.edit",
+      "ref.callsign.delete",
+      "staff.permission_limit.set"
+     ],
+     "reserved": [],
+     "page": "staff"
+    },
+    {
+     "owner": "plan",
+     "label": "التشغيل الميداني",
+     "kind": "page_under",
+     "route": "#/plan",
+     "ownerKind": "page",
+     "keys": [
+      "plan.view",
+      "plan.create",
+      "plan.delete",
+      "site.create",
+      "site.edit",
+      "map.replace",
+      "site.delete",
+      "plan.approve",
+      "plan.reopen",
+      "site.approve",
+      "map.calibrate",
+      "sector.create",
+      "sector.edit",
+      "sector.delete"
+     ],
+     "reserved": [],
+     "page": "plan"
+    }
+   ]
+  },
+  {
+   "id": "daily",
+   "label": "المتابعة اليومية",
+   "kind": "page",
+   "page": "daily",
+   "nav": "daily",
+   "leaves": [
+    {
+     "owner": "dreport",
+     "label": "التقرير اليومي",
+     "kind": "page_under",
+     "route": "#/dreport",
+     "ownerKind": "page",
+     "keys": [
+      "report.view",
+      "report.create",
+      "report.edit",
+      "report.approve",
+      "report.reopen",
+      "report.transfer",
+      "report.att.absence",
+      "report.att.leave",
+      "report.att.late_in",
+      "report.att.early_out",
+      "report.callsign.assign",
+      "ref.leave_type.view",
+      "ref.leave_type.create",
+      "ref.leave_type.delete",
+      "report.day.delete",
+      "report.indicators.view",
+      "ref.leave_type.edit"
+     ],
+     "reserved": [],
+     "page": "dreport"
+    },
+    {
+     "owner": "daily/rounds",
+     "label": "الجولات اليومية",
+     "kind": "tab",
+     "route": "#/daily (ذيل #/daily/rounds)",
+     "ownerKind": "page",
+     "keys": [
+      "round.view",
+      "round.create",
+      "round.edit",
+      "round.delete",
+      "round.approve",
+      "round.reopen",
+      "round.sync.plan"
+     ],
+     "reserved": [
+      "round.day.disable"
+     ],
+     "page": "daily",
+     "sub": "rounds"
+    },
+    {
+     "owner": "tasks",
+     "label": "المهام",
+     "kind": "page_under",
+     "route": "#/tasks",
+     "ownerKind": "page",
+     "keys": [
+      "task.view",
+      "task.create",
+      "task.edit",
+      "task.assign",
+      "task.evidence",
+      "task.delete",
+      "task.accept",
+      "task.finish",
+      "task.reopen",
+      "task.month.lock",
+      "task.month.reopen",
+      "task.bulk.delete",
+      "self.task.respond"
+     ],
+     "reserved": [],
+     "page": "tasks"
+    },
+    {
+     "owner": "daily/field",
+     "label": "رصد الميدان — حالة الموقع واتجاه الحركة من صفحة الموظف",
+     "kind": "offpage",
+     "route": "لا Route — لوحة bsMapOn في #/profile",
+     "ownerKind": "page",
+     "keys": [
+      "field.view"
+     ],
+     "reserved": [],
+     "page": "daily",
+     "sub": "field"
+    }
+   ]
+  },
+  {
+   "id": "irshad",
+   "label": "نظام الاسترشاد",
+   "kind": "page",
+   "page": "irshad",
+   "nav": "irshad",
+   "leaves": [
+    {
+     "owner": "irshad/dash",
+     "label": "لوحة المؤشرات",
+     "kind": "offpage",
+     "route": "#/kpis",
+     "ownerKind": "page",
+     "keys": [
+      "ir.dash.view"
+     ],
+     "reserved": [],
+     "page": "irshad",
+     "sub": "dash",
+     "docKind": "sub",
+     "docRoute": "#/irshad (التبويب الأول)",
+     "platform": "تُعرض في «مؤشرات الإدارة» وحدها (KIVO_261 · SOT-003 — الوثيقة: sub · #/irshad (التبويب الأول))"
+    },
+    {
+     "owner": "irshad/records",
+     "label": "السجلات",
+     "kind": "tab",
+     "route": "#/irshad (التبويب الثاني)",
+     "ownerKind": "page",
+     "keys": [
+      "ir.rec.view",
+      "ir.rec.create",
+      "ir.rec.edit",
+      "ir.rec.delete",
+      "ref.irshad.location.view",
+      "ref.irshad.location.create",
+      "ref.irshad.location.edit",
+      "ref.irshad.location.delete",
+      "ref.irshad.language.view",
+      "ref.irshad.language.create",
+      "ref.irshad.language.edit",
+      "ref.irshad.language.delete",
+      "ir.rec.bulk.delete",
+      "ir.rec.retro.open"
+     ],
+     "reserved": [
+      "ir.rec.status"
+     ],
+     "page": "irshad",
+     "sub": "records"
+    }
+   ]
+  },
+  {
+   "id": "seized",
+   "label": "نظام المضبوطات",
+   "kind": "page",
+   "page": "seized",
+   "nav": "seized",
+   "leaves": [
+    {
+     "owner": "seized/dash",
+     "label": "لوحة المؤشرات",
+     "kind": "offpage",
+     "route": "#/kpis",
+     "ownerKind": "page",
+     "keys": [
+      "sz.dash.view"
+     ],
+     "reserved": [],
+     "page": "seized",
+     "sub": "dash",
+     "docKind": "sub",
+     "docRoute": "#/seized (التبويب الأول)",
+     "platform": "تُعرض في «مؤشرات الإدارة» وحدها (KIVO_261 · SOT-003 — الوثيقة: sub · #/seized (التبويب الأول))"
+    },
+    {
+     "owner": "seized/records",
+     "label": "السجلات",
+     "kind": "tab",
+     "route": "#/seized (التبويب الثاني)",
+     "ownerKind": "page",
+     "keys": [
+      "sz.rec.view",
+      "sz.rec.create",
+      "sz.rec.edit",
+      "sz.rec.delete",
+      "ref.seized.location.view",
+      "ref.seized.location.create",
+      "ref.seized.location.edit",
+      "ref.seized.location.delete",
+      "ref.seized.category.view",
+      "ref.seized.category.create",
+      "ref.seized.category.edit",
+      "ref.seized.category.delete",
+      "ref.seized.item.view",
+      "ref.seized.item.create",
+      "ref.seized.item.edit",
+      "ref.seized.item.delete",
+      "ref.seized.kind.view",
+      "ref.seized.kind.create",
+      "ref.seized.kind.edit",
+      "ref.seized.kind.delete",
+      "ref.seized.action.view",
+      "ref.seized.action.create",
+      "ref.seized.action.edit",
+      "ref.seized.action.delete",
+      "sz.rec.bulk.delete",
+      "sz.rec.retro.open"
+     ],
+     "reserved": [],
+     "page": "seized",
+     "sub": "records"
+    }
+   ]
+  },
+  {
+   "id": "award",
+   "label": "جائزة التميز",
+   "kind": "page",
+   "page": "award",
+   "nav": "award",
+   "leaves": [
+    {
+     "owner": "award/new",
+     "label": "ترشيح جديد",
+     "kind": "tab",
+     "route": "#/award/new",
+     "ownerKind": "page",
+     "keys": [
+      "award.new.view",
+      "award.new.create"
+     ],
+     "reserved": [],
+     "page": "award",
+     "sub": "new"
+    },
+    {
+     "owner": "award/res",
+     "label": "لوحة النتائج",
+     "kind": "tab",
+     "route": "#/award/res",
+     "ownerKind": "page",
+     "keys": [
+      "award.res.view",
+      "award.res.edit",
+      "award.res.approve",
+      "award.res.reject",
+      "award.res.delete"
+     ],
+     "reserved": [
+      "award.res.reopen"
+     ],
+     "page": "award",
+     "sub": "res"
+    },
+    {
+     "owner": "award/doc",
+     "label": "المراجع المعتمدة",
+     "kind": "tab",
+     "route": "#/award/doc",
+     "ownerKind": "page",
+     "keys": [
+      "award.doc.view",
+      "award.doc.create",
+      "award.doc.edit",
+      "award.doc.delete",
+      "award.doc.reset"
+     ],
+     "reserved": [],
+     "page": "award",
+     "sub": "doc"
+    }
+   ]
+  },
+  {
+   "id": "links",
+   "label": "مواقع ذات صلة",
+   "kind": "page",
+   "page": "links",
+   "nav": "links",
+   "leaves": [
+    {
+     "owner": "links",
+     "label": "مواقع ذات صلة",
+     "kind": "page",
+     "route": "#/links",
+     "ownerKind": "page",
+     "keys": [
+      "links.view"
+     ],
+     "reserved": [],
+     "page": "links"
+    }
+   ]
+  },
+  {
+   "id": "help",
+   "label": "المساعدة",
+   "kind": "page",
+   "page": "help",
+   "nav": "help",
+   "leaves": [
+    {
+     "owner": "help",
+     "label": "المساعدة",
+     "kind": "page",
+     "route": "#/help",
+     "ownerKind": "page",
+     "keys": [
+      "help.view"
+     ],
+     "reserved": [],
+     "page": "help"
+    }
+   ]
+  },
+  {
+   "id": "admin",
+   "label": "الإعدادات",
+   "kind": "page",
+   "page": "admin",
+   "nav": "admin",
+   "leaves": [
+    {
+     "owner": "admin/backup",
+     "label": "النسخة الاحتياطية",
+     "kind": "tab",
+     "route": "#/admin/backup",
+     "ownerKind": "page",
+     "keys": [
+      "backup.view",
+      "backup.create",
+      "backup.restore"
+     ],
+     "reserved": [],
+     "page": "admin",
+     "sub": "backup"
+    },
+    {
+     "owner": "admin/oplog",
+     "label": "سجل الحركة",
+     "kind": "tab",
+     "route": "#/admin/oplog",
+     "ownerKind": "page",
+     "keys": [
+      "audit.view"
+     ],
+     "reserved": [],
+     "page": "admin",
+     "sub": "oplog"
+    },
+    {
+     "owner": "admin/shifts",
+     "label": "الورديات",
+     "kind": "tab",
+     "route": "#/admin/shifts",
+     "ownerKind": "page",
+     "keys": [],
+     "reserved": [],
+     "managedRefs": [
+      "ref.shift.view",
+      "ref.shift.create",
+      "ref.shift.edit",
+      "ref.shift.delete"
+     ],
+     "page": "admin",
+     "sub": "shifts"
+    },
+    {
+     "owner": "admin/ptpls",
+     "label": "قوالب الصلاحيات",
+     "kind": "tab",
+     "route": "#/admin/ptpls",
+     "ownerKind": "page",
+     "keys": [
+      "tpl.view",
+      "tpl.create",
+      "tpl.edit",
+      "tpl.delete",
+      "tpl.supervisory"
+     ],
+     "reserved": [],
+     "page": "admin",
+     "sub": "ptpls"
+    },
+    {
+     "owner": "admin/import",
+     "label": "استيراد بيانات",
+     "kind": "tab",
+     "route": "#/admin/import",
+     "ownerKind": "page",
+     "keys": [
+      "import.view",
+      "import.run",
+      "import.replace"
+     ],
+     "reserved": [],
+     "page": "admin",
+     "sub": "import"
+    }
+   ]
+  },
+  {
+   "id": "lenses",
+   "label": "العدسات (Plugins)",
+   "kind": "plugins",
+   "page": null,
+   "nav": null,
+   "leaves": [
+    {
+     "owner": "lens.zones",
+     "label": "عدسة المصليات",
+     "kind": "plugin",
+     "route": "Canvas host",
+     "ownerKind": "lens",
+     "keys": [
+      "lens.zones.enable",
+      "lens.zones.view",
+      "lens.zones.create",
+      "lens.zones.data.edit",
+      "lens.zones.geometry.edit",
+      "lens.zones.status.change",
+      "lens.zones.delete",
+      "lens.zones.indicators.view",
+      "ref.zone.type.view",
+      "ref.zone.type.create",
+      "ref.zone.type.edit",
+      "ref.zone.type.delete"
+     ],
+     "reserved": [
+      "lens.zones.report.view"
+     ]
+    },
+    {
+     "owner": "lens.paths",
+     "label": "عدسة المسارات",
+     "kind": "plugin",
+     "route": "Canvas host",
+     "ownerKind": "lens",
+     "keys": [
+      "lens.paths.enable",
+      "lens.paths.view",
+      "lens.paths.create",
+      "lens.paths.edit",
+      "lens.paths.geometry.edit",
+      "lens.paths.status.change",
+      "lens.paths.delete"
+     ],
+     "reserved": [
+      "lens.paths.kpi.view",
+      "lens.paths.report.view"
+     ]
+    },
+    {
+     "owner": "lens.gates",
+     "label": "عدسة البوابات",
+     "kind": "plugin",
+     "route": "Canvas host",
+     "ownerKind": "lens",
+     "keys": [
+      "lens.gates.enable",
+      "lens.gates.view",
+      "lens.gates.create",
+      "lens.gates.edit",
+      "lens.gates.status.change",
+      "lens.gates.delete",
+      "lens.gates.geometry.edit",
+      "ref.gate.type.view",
+      "ref.gate.type.create",
+      "ref.gate.type.edit",
+      "ref.gate.type.delete"
+     ],
+     "reserved": [
+      "lens.gates.kpi.view",
+      "lens.gates.report.view"
+     ]
+    },
+    {
+     "owner": "lens.marks",
+     "label": "عدسة العلامات",
+     "kind": "plugin",
+     "route": "Canvas host",
+     "ownerKind": "lens",
+     "keys": [
+      "lens.marks.enable",
+      "lens.marks.view",
+      "lens.marks.create",
+      "lens.marks.edit",
+      "lens.marks.geometry.edit",
+      "lens.marks.delete",
+      "lens.marks.status.change",
+      "ref.mark.kind.view",
+      "ref.mark.kind.create",
+      "ref.mark.kind.edit",
+      "ref.mark.kind.delete"
+     ],
+     "reserved": [
+      "lens.marks.kpi.view",
+      "lens.marks.report.view"
+     ]
+    },
+    {
+     "owner": "lens.dist",
+     "label": "عدسة التوزيع",
+     "kind": "plugin",
+     "route": "Canvas host",
+     "ownerKind": "lens",
+     "keys": [
+      "lens.dist.enable",
+      "lens.dist.view",
+      "lens.dist.assign.edit",
+      "lens.dist.need.edit"
+     ],
+     "reserved": [
+      "lens.dist.approve",
+      "lens.dist.redistribute",
+      "lens.dist.report.view"
+     ]
+    },
+    {
+     "owner": "lens.dens",
+     "label": "عدسة الكثافة",
+     "kind": "plugin",
+     "route": "Canvas host",
+     "ownerKind": "lens",
+     "keys": [
+      "lens.dens.enable",
+      "lens.dens.view",
+      "lens.dens.threshold.configure",
+      "lens.dens.indicators.view",
+      "lens.dens.reading.record"
+     ],
+     "reserved": [
+      "lens.dens.report.view"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "platform",
+   "label": "المنصة",
+   "kind": "platform",
+   "page": null,
+   "nav": null,
+   "leaves": [
+    {
+     "owner": "perm",
+     "label": "وحدة الصلاحيات",
+     "kind": "platform",
+     "route": "—",
+     "ownerKind": "platform",
+     "keys": [
+      "perm.assign"
+     ],
+     "reserved": []
+    },
+    {
+     "owner": "sysadmin",
+     "label": "مدير النظام",
+     "kind": "platform",
+     "route": "#/sysadmin (ذيل التبويب مثل #/sysadmin/overview)",
+     "ownerKind": "platform",
+     "keys": [
+      "sys.overview.view",
+      "sys.security.view",
+      "sys.sessions.kill",
+      "sys.guard.unlock",
+      "sys.policy.edit",
+      "sys.users.manage",
+      "sys.depts.manage",
+      "sys.ceiling.set",
+      "sys.modules.toggle",
+      "sys.backup.full",
+      "sys.restore.full",
+      "sys.histimp.run",
+      "sys.audit.view"
+     ],
+     "reserved": []
+    },
+    {
+     "owner": "profile",
+     "label": "ملفي",
+     "kind": "platform",
+     "route": "#/profile",
+     "ownerKind": "platform",
+     "keys": [
+      "self.profile.edit",
+      "self.password.change",
+      "self.sessions.kill"
+     ],
+     "reserved": []
+    },
+    {
+     "owner": "notifications",
+     "label": "التنبيهات والتعاميم",
+     "kind": "platform",
+     "route": "لوحة الجرس في القشرة (shell) + «المنصة ← التنبيهات والتعاميم» في مدير النظام",
+     "ownerKind": "platform",
+     "keys": [
+      "sys.notif.config",
+      "sys.broadcast.send",
+      "notif.dept.broadcast",
+      "self.notif.device"
+     ],
+     "reserved": []
+    },
+    {
+     "owner": "images",
+     "label": "الصور والمرفقات",
+     "kind": "platform",
+     "route": "/api/img/* · /api/imgs (خدمة منصة)",
+     "ownerKind": "platform",
+     "keys": [
+      "sys.images.resolve",
+      "self.task.proof.upload"
+     ],
+     "reserved": []
+    },
+    {
+     "owner": "modules",
+     "label": "وحدات المنصة",
+     "kind": "platform",
+     "route": "مدير النظام ← plat (bassam_platform_v1 mods.off)",
+     "ownerKind": "platform",
+     "keys": [],
+     "reserved": []
+    },
+    {
+     "owner": "accounts",
+     "label": "الحسابات والدخول",
+     "kind": "platform",
+     "route": "/api/login · /api/logout · /api/whoami · /api/me · /api/checkpw · /api/recover · جداول sess/guard/sec",
+     "ownerKind": "platform",
+     "keys": [
+      "auth.login"
+     ],
+     "reserved": []
+    },
+    {
+     "owner": "kpis",
+     "label": "مؤشرات الإدارة (Presenter)",
+     "kind": "platform",
+     "route": "#/kpis",
+     "ownerKind": "platform",
+     "keys": [],
+     "reserved": []
+    }
+   ]
+  },
+  {
+   "id": "refs",
+   "label": "المراجع المستقلة (Reference Data)",
+   "kind": "reference",
+   "page": null,
+   "nav": null,
+   "leaves": [
+    {
+     "owner": "ref.shift",
+     "label": "الورديات (مرجع مستقل)",
+     "kind": "reference",
+     "route": "يُدار في admin/shifts",
+     "ownerKind": "reference",
+     "keys": [
+      "ref.shift.view",
+      "ref.shift.create",
+      "ref.shift.edit",
+      "ref.shift.delete"
+     ],
+     "reserved": [],
+     "managedIn": "admin/shifts"
+    }
+   ]
+  }
+ ],
+ "shownIn": {
+  "report.indicators.view": {
+   "container": "مؤشرات الإدارة",
+   "panel": "مؤشرات التشغيل اليومي",
+   "asis": "daily/kpiDaily"
+  },
+  "lens.dens.indicators.view": {
+   "container": "مؤشرات الإدارة",
+   "panel": "مؤشرات الإشغال",
+   "asis": "daily/kpiOcc"
+  },
+  "lens.zones.indicators.view": {
+   "container": "مؤشرات الإدارة",
+   "panel": "مؤشرات المصليات",
+   "asis": "daily/kpiZones"
+  }
+ },
+ "counts": {
+  "containers": 13,
+  "leaves": 44,
+  "keys": 255
+ }
+}

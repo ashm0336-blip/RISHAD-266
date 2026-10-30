@@ -1,0 +1,3 @@
+# Preserve the validated source bytes on every OS: generated manifests hash
+# literal content, including existing line endings. Formatting is explicit.
+* -text

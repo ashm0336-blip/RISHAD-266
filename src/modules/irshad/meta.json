@@ -1,0 +1,67 @@
+{
+ "name": "Irshad",
+ "slug": "irshad",
+ "pre": "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<script src=\"./support.js\"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n",
+ "mid": "\n</helmet>\n",
+ "mid2": "\n</x-dc>\n",
+ "scriptTag": "<script type=\"text/x-dc\" data-dc-script data-props=\"{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}\">",
+ "post": "</script>\n</body>\n</html>\n",
+ "minifiedSource": true,
+ "prettified": true,
+ "originalSha256": "ca8c6ff02e5ea93a15a3d68dbc69d6c9c3353e603a3c7dd58a0c0c03a585c70f",
+ "charter": {
+  "owner": "مدير الإدارة · موظفو الاسترشاد",
+  "purpose": "نظامُ الاسترشاد: سجلٌّ ميداني يومي بالوردية والموظف",
+  "page": "irshad",
+  "routes": [
+   "#/irshad"
+  ],
+  "ui": [
+   "src/modules/irshad/view.html",
+   "src/modules/irshad/helmet.css"
+  ],
+  "domain": "src/modules/irshad/logic.js",
+  "data": [
+   "bassam_irshad_langs_v1",
+   "bassam_irshad_locs_v1",
+   "bassam_irshad_v1",
+   "bassam_staffing_v3"
+  ],
+  "permissions": [
+   "irshad/dash",
+   "irshad/records"
+  ],
+  "tests": [
+   "gate:action.mjs",
+   "gate:adv.mjs",
+   "gate:audunify.mjs",
+   "gate:authz.mjs",
+   "gate:break.mjs",
+   "gate:core.mjs",
+   "gate:disc.mjs",
+   "gate:entity.mjs",
+   "gate:fix.mjs",
+   "gate:flag.mjs",
+   "gate:hard.mjs",
+   "gate:img.mjs",
+   "gate:imgls.mjs",
+   "gate:k259journeys.mjs",
+   "gate:k260journeys.mjs",
+   "gate:own.mjs",
+   "gate:p1cmp.mjs",
+   "gate:p45reg.mjs",
+   "gate:prot.mjs",
+   "gate:r182pos.mjs",
+   "gate:r187.mjs",
+   "gate:r189.mjs",
+   "gate:read01.mjs",
+   "gate:rel.mjs",
+   "gate:res.mjs",
+   "gate:restoreimg.mjs",
+   "gate:rev4.mjs",
+   "gate:sec.mjs",
+   "gate:theme248.mjs",
+   "gate:visual.mjs"
+  ]
+ }
+}

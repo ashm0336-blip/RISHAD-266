@@ -1,0 +1,116 @@
+{
+ "note": "KIVO_258 · AUD-025 — المحرّكاتُ المحضة المقيسة: (الخادم) نطاقُ البيانات KIVO_SCOPE · المصنِّف · التحقق (الشكل والحقول والمقارنة) · التخويل · قرارُ الإنفاذ ونطاقُه — (الواجهة) الهجري · النِسَب · الاحتياج · الهوية · الأبواب. العتبة: 80٪ من العبارات لكل محرّك. الاختبارات: كلُّ اختبارات الوحدة (Node · D1 بديل) — طبقةُ الوحدة كلُّها تقيس المحرّكات.",
+ "threshold": 0.8,
+ "tests": [
+  "tests/unit/*.test.mjs"
+ ],
+ "worker": [
+  {
+   "id": "KIVO_SCOPE",
+   "label": "محرّكُ نطاق البيانات (v24.9)",
+   "names": [
+    "KIVO_SCOPE"
+   ]
+  },
+  {
+   "id": "classify",
+   "label": "المصنِّف — نوعُ التغيير وقدرتُه",
+   "names": [
+    "classifyMutation",
+    "capForAct",
+    "allowKeyDelete"
+   ]
+  },
+  {
+   "id": "validate",
+   "label": "التحقق — الشكلُ والحقولُ والتفرّدُ والمقارنة",
+   "names": [
+    "fieldsOf",
+    "typeOk",
+    "entChanged",
+    "twinOf",
+    "hasF",
+    "specViolation",
+    "uniqViolation",
+    "idfFor",
+    "fieldViolation",
+    "primBad",
+    "shapeViolation",
+    "bodyNoId",
+    "fbChain",
+    "withCol",
+    "adoptOk",
+    "needAdd",
+    "idOf",
+    "colList",
+    "cmpCol",
+    "cmpList",
+    "cmpPrim",
+    "cmpMap",
+    "stripCols"
+   ]
+  },
+  {
+   "id": "authorize",
+   "label": "التخويلُ (النظامُ القائم)",
+   "names": [
+    "authorize0",
+    "authorize",
+    "authorizeActs",
+    "actorOf",
+    "actorFromKeys"
+   ]
+  },
+  {
+   "id": "enforce",
+   "label": "قرارُ الإنفاذ ونطاقُه",
+   "names": [
+    "enfDecide",
+    "enfVia",
+    "enfScopeEval",
+    "enfScopeCtx",
+    "enfValueDim",
+    "enfShiftDim",
+    "enfSources",
+    "enfSides",
+    "enfHas",
+    "enfR",
+    "enfHeldMap",
+    "enfCeilingOf",
+    "enfEmpScopeOf",
+    "enfScopeParse",
+    "enfHeld",
+    "enfHeld0",
+    "enfKeyOnCeiling",
+    "enfTranslated"
+   ]
+  }
+ ],
+ "client": [
+  {
+   "id": "BassamHijri",
+   "file": "380-hijri-fallback.js",
+   "label": "التاريخُ الهجري (أم القرى · الجدوليّ)"
+  },
+  {
+   "id": "bsPct",
+   "file": "060-percent-format.js",
+   "label": "صيغةُ النِسَب"
+  },
+  {
+   "id": "BassamNeed",
+   "file": "400-shift-need.js",
+   "label": "الاحتياجُ لكل وردية"
+  },
+  {
+   "id": "BassamIdent",
+   "file": "500-element-uid.js",
+   "label": "هويةُ العنصر"
+  },
+  {
+   "id": "BassamLeaf",
+   "file": "410-gate-units.js",
+   "label": "الأبوابُ والفتحات"
+  }
+ ]
+}

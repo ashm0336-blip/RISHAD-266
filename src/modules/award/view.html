@@ -1,0 +1,632 @@
+<div dir="rtl" data-screen-label="جائزة التميز" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414);margin:0 auto;display:flex;flex-direction:column;gap:16px">
+<!-- صلاحية «عرض فقط»: سطرٌ واحد يقول السبب — الأزرار تختفي لا تُعطَّل،
+     والزرّ الرمادي يثير سؤال «ليش ما يشتغل؟» بلا جواب -->
+<sc-if value="{{awPmReadOnly}}" hint-placeholder-val="{{ false }}">
+<div style="{{awPmNoteStyle}}">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-ec9ec7cc"></svg>
+  <span>صلاحيتك على هذه الصفحة: <b style="font-weight:800">عرض فقط</b> — أدوات الإضافة والتعديل والحذف مخفيّة. راجع مدير النظام إن احتجت تعديلاً.</span>
+</div>
+</sc-if>
+
+<!-- ═══ تبويبات الصفحة — نفس مكوّن التبويبات المعتمد ═══ -->
+<!-- شريطُ تبويبٍ واحد لا يعرض خياراً: يختفي الإطار كلّه وتُعرض لوحته مباشرةً -->
+<sc-if value="{{awTabBarShow}}" hint-placeholder-val="{{ true }}">
+<div style="border-radius:16px;border:2px solid var(--bd-a185151810p1);background:linear-gradient(90deg,var(--bg-a185151810p03),transparent,var(--bg-a185151810p03));padding:12px">
+  <div class="bs-hbar bs-tabstrip" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;flex-wrap:wrap">
+    <sc-if value="{{awTabNewOk}}" hint-placeholder-val="{{ true }}">
+    <div onClick="{{awGoNew}}" style="{{awTabNewStyle}}">
+      <div style="{{awTabNewIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-63b5adf7"></svg></div>
+      <span style="{{awTabNewLbl}}">ترشيح جديد</span>
+      <sc-if value="{{awOnNew}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+    </div>
+    </sc-if>
+    <sc-if value="{{awTabResOk}}" hint-placeholder-val="{{ true }}">
+    <div onClick="{{awGoRes}}" style="{{awTabResStyle}}">
+      <div style="{{awTabResIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-b15b1bb2"></svg></div>
+      <span style="{{awTabResLbl}}">لوحة النتائج</span>
+      <sc-if value="{{awOnRes}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+    </div>
+    </sc-if>
+    <sc-if value="{{awTabDocOk}}" hint-placeholder-val="{{ true }}">
+    <div onClick="{{awGoDoc}}" style="{{awTabDocStyle}}">
+      <div style="{{awTabDocIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg></div>
+      <span style="{{awTabDocLbl}}">المراجع المعتمدة</span>
+      <sc-if value="{{awOnDoc}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+    </div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══════════════ ترشيح جديد ═══════════════ -->
+<sc-if value="{{awOnNew}}" hint-placeholder-val="{{ true }}">
+<div style="border-radius:16px;border:1px solid var(--bd-a2252252250p6);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:16px">
+
+  <div class="bs-hscroll" style="display:flex;align-items:center;gap:0;margin-bottom:18px;overflow-x:auto;padding-bottom:4px">
+    <!-- التوسيط بغلافٍ بعرض المحتوى لا بـ justify-content: مع التمرير الأفقي
+         يُخفي التوسيطُ أوّلَ الشريط خلف حافة الإطار فلا يُدرَك ولا يُمرَّر إليه -->
+    <div style="display:flex;align-items:center;width:max-content;margin-inline:auto">
+    <sc-for list="{{awSteps}}" as="p" hint-placeholder-count="5">
+    <div style="display:flex;align-items:center;flex-shrink:0">
+      <div style="{{p.box}}">
+        <span style="{{p.dot}}"><sc-if value="{{p.done}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></sc-if><sc-if value="{{p.notDone}}" hint-placeholder-val="{{ true }}">{{p.n}}</sc-if></span>
+        <span style="{{p.lbl}}">{{p.name}}</span>
+      </div>
+      <sc-if value="{{p.line}}" hint-placeholder-val="{{ true }}"><span style="{{p.lineStyle}}"></span></sc-if>
+    </div>
+    </sc-for>
+    </div>
+  </div>
+
+  <!-- ── المرحلة 1: فئة الترشيح ── -->
+  <sc-if value="{{awS1}}" hint-placeholder-val="{{ true }}">
+  <div style="font-size:11.5px;font-weight:400;color:var(--fg-x64748b);line-height:1.9;margin-bottom:13px">اختر الفئة أولاً — الاستمارة والشروط العامة وآلية التقييم تُبنى وفق الفئة المختارة (لا يحق الترشح لأكثر من فئة — البند 12)</div>
+  <div style="display:flex;flex-wrap:wrap;gap:12px">
+    <div onClick="{{awCatPickEmp}}" style="{{awCatEmpBox}}">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+        <span style="{{awCatEmpIc}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" data-i="i-07c54a8a"></svg></span>
+        <span style="flex:1;font-size:13.5px;font-weight:700">فئة الموظف المتميز</span>
+        <span style="{{awCatEmpRadio}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></span>
+      </div>
+      <div style="font-size:11.5px;font-weight:400;color:var(--fg-x64748b);line-height:1.8">ترشيح شهري حسب التقويم الهجري (وأسبوعي في رمضان والحج) — استمارة كاملة بإقرار صحة البيانات، وتقييم بخمسة معايير بمجموع 100 درجة وفق النموذج المعتمد.</div>
+    </div>
+    <div onClick="{{awCatPickWork}}" style="{{awCatWorkBox}}">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+        <span style="{{awCatWorkIc}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" data-i="i-94bf093b"></svg></span>
+        <span style="flex:1;font-size:13.5px;font-weight:700">فئة العمل المتميز</span>
+        <span style="{{awCatWorkRadio}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></span>
+      </div>
+      <div style="font-size:11.5px;font-weight:400;color:var(--fg-x64748b);line-height:1.8">ترشيح حسب الحالة (غير مقيد بالدورة الشهرية) — استمارة مختصرة بوصف العمل المتميز وشواهده، ويشترط تحقق حالة واحدة على الأقل من الحالات الثلاث.</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ── المرحلة 2: استمارة المرشح ── -->
+  <sc-if value="{{awS2}}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;font-size:11px;font-weight:400;color:var(--fg-x94a3b8);margin-bottom:6px">
+    <span>تعبأ البيانات وفق استمارة الترشيح المعتمدة في الضوابط والإجراءات</span>
+    <span><span style="color:var(--fg-xdc2626);font-weight:700">*</span> تشير إلى الحقول الإلزامية</span>
+  </div>
+
+  <div style="{{awSecStyle}}"><span style="{{awSecNum}}">1</span><span style="font-size:13px;font-weight:700">البيانات الأساسية</span><span style="flex:1;height:1px;background:var(--bg-xe1e1e1)"></span></div>
+  <div style="display:flex;flex-wrap:wrap;gap:11px">
+    <div style="width:104px;flex-shrink:0">
+      <label style="{{awLbl}}">الصورة الشخصية</label>
+      <!-- الصورة تُرفع من جهاز المستخدم: <label> يحتضن <input type=file> مخفيّاً —
+           نفس نمط استيراد النسخة في مدير النظام، بلا نافذة ولا خطوة زائدة -->
+      <label style="position:relative;height:104px;border-radius:12px;border:1px dashed var(--bd-xcbd5e1);background:var(--bg-xfafbfc);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--fg-x94a3b8);cursor:pointer;overflow:hidden;transition:border-color .15s" style-hover="border-color:var(--bd-xb99751);color:var(--fg-x8a6f35)">
+        <input type="file" accept="image/*" onChange="{{awPickPic}}" style="display:none">
+        <sc-if value="{{awHasPic}}" hint-placeholder-val="{{ false }}">
+        <img src="{{awPic}}" alt="الصورة الشخصية" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+        <span onClick="{{awClearPic}}" title="إزالة الصورة" style="position:absolute;top:5px;left:5px;z-index:2;width:22px;height:22px;border-radius:7px;background:var(--bg-a1523420p62);color:var(--fg-xffffff);display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;cursor:pointer">×</span>
+        </sc-if>
+        <sc-if value="{{awNoPic}}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{awHasEmp}}" hint-placeholder-val="{{ false }}"><span style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800">{{awInitial}}</span></sc-if>
+        <sc-if value="{{awNoEmp}}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-07c54a8a"></svg></sc-if>
+        <span style="font-size:9px;font-weight:400">اضغط لإرفاق صورة</span>
+        </sc-if>
+      </label>
+    </div>
+    <div style="flex:1;min-width:260px;display:flex;flex-wrap:wrap;gap:11px">
+      <div style="flex:1 1 100%;min-width:0"><label style="{{awLbl}}">اسم المرشح <span style="color:var(--fg-xdc2626)">*</span></label>
+        <select value="{{awEkey}}" onChange="{{awPickEmp}}" style="{{awInpTall}}">
+          <option value="">— اختر من موظفي الإدارة —</option>
+          <sc-for list="{{awEmps}}" as="e" hint-placeholder-count="4"><option value="{{e.id}}">{{e.label}}</option></sc-for>
+        </select><sc-if value="{{awErEkey}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErEkey}}</span></div></sc-if></div>
+      <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">رقم الحاسب <span style="color:var(--fg-xdc2626)">*</span></label>
+        <input value="{{awComp}}" onChange="{{awOnComp}}" placeholder="رقم الحاسب" dir="ltr" style="{{awInp}}"><sc-if value="{{awErComp}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErComp}}</span></div></sc-if></div>
+      <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">الإدارة <span style="color:var(--fg-xdc2626)">*</span></label>
+        <input value="{{awDept}}" readonly="true" style="{{awInpRO}}"></div>
+      <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">مقر العمل <span style="color:var(--fg-xdc2626)">*</span></label>
+        <select value="{{awCity}}" onChange="{{awOnCity}}" style="{{awInp}}"><option>— اختر —</option><option>مكة المكرمة</option><option>المدينة المنورة</option></select><sc-if value="{{awErCity}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErCity}}</span></div></sc-if></div>
+      <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">مجال الترشيح <span style="color:var(--fg-xdc2626)">*</span></label>
+        <select value="{{awField}}" onChange="{{awOnField}}" style="{{awInp}}"><option>— اختر —</option><option>إداري</option><option>ميداني</option></select><sc-if value="{{awErField}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErField}}</span></div></sc-if></div>
+      <div style="flex:1 1 220px;min-width:0"><div style="display:flex;align-items:baseline;gap:8px;margin-bottom:5px"><label style="{{awLblIn}}">رقم الجوال <span style="color:var(--fg-xdc2626)">*</span></label><span dir="ltr" style="{{awPhCntStyle}}">{{awPhCnt}}</span></div>
+        <input value="{{awPhone}}" onChange="{{awOnPhone}}" maxLength="10" inputMode="numeric" placeholder="05XXXXXXXX" dir="ltr" style="{{awInp}}"><sc-if value="{{awErPhone}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErPhone}}</span></div></sc-if></div>
+      <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">البريد الإلكتروني الرسمي <span style="color:var(--fg-xdc2626)">*</span></label>
+        <input value="{{awEmail}}" onChange="{{awOnEmail}}" placeholder="name@example.gov.sa" dir="ltr" style="{{awInp}}"><sc-if value="{{awErEmail}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErEmail}}</span></div></sc-if></div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;border:1px solid var(--bd-a185151810p3);border-radius:13px;overflow:hidden">
+    <div onClick="{{awDeclTog}}" style="{{awDeclBar}}">
+      <span style="{{awDeclBox}}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;margin-bottom:4px">إقرار صحة جميع البيانات في استمارة الترشيح</div>
+        <div style="font-size:11px;font-weight:400;color:var(--fg-x64748b);line-height:1.95">أقر أنا الموظف/ـة بأن جميع المعلومات المسجلة في الاستمارة صحيحة، وأنني مسؤول عنها مسؤولية كاملة، كما أن جميع الوثائق المرفقة هي صورة طبق الأصل، ومستعد لتقديم أصولها عند طلب ذلك، وفي حال تبين غير ذلك يحق للجنة الجائزة اتخاذ ما تراه مناسباً من إجراءات نظامية.</div>
+      </div>
+    </div>
+    <sc-if value="{{awErDecl}}"><div style="padding:0 14px 11px;margin-top:-4px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErDecl}}</span></div></sc-if>
+    <div style="display:flex;flex-wrap:wrap;gap:11px;padding:12px 14px;border-top:1px solid var(--bd-xf1f1f1)">
+      <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">الاسم <span style="color:var(--fg-xdc2626)">*</span></label>
+        <input value="{{awDeclName}}" onChange="{{awOnDeclName}}" placeholder="اسم الموظف المُقِر" style="{{awInp}}"><sc-if value="{{awErDeclName}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErDeclName}}</span></div></sc-if></div>
+      <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">التوقيع الإلكتروني <span style="color:var(--fg-xdc2626)">*</span></label>
+        <label style="position:relative;display:block;height:44px;border-radius:10px;border:1px dashed var(--bd-xcbd5e1);background:var(--bg-xfafbfc);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:400;color:var(--fg-x94a3b8);cursor:pointer;overflow:hidden;transition:border-color .15s" style-hover="border-color:var(--bd-xb99751);color:var(--fg-x8a6f35)"><input type="file" accept="image/*" onChange="{{awPickSigEmp}}" style="display:none"><sc-if value="{{awHasSigEmp}}" hint-placeholder-val="{{ false }}"><img src="{{awSigEmp}}" alt="التوقيع الإلكتروني" style="max-height:38px;max-width:92%;object-fit:contain"><span onClick="{{awClearSigEmp}}" title="إزالة التوقيع" style="position:absolute;top:3px;left:4px;z-index:2;width:19px;height:19px;border-radius:6px;background:var(--bg-a1523420p6);color:var(--fg-xffffff);display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;cursor:pointer">×</span></sc-if><sc-if value="{{awNoSigEmp}}" hint-placeholder-val="{{ true }}">اضغط لرفع صورة التوقيع</sc-if></label><sc-if value="{{awErSigEmp}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+            stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErSigEmp}}</span></div></sc-if></div>
+    </div>
+  </div>
+
+  <sc-if value="{{awIsWork}}" hint-placeholder-val="{{ false }}">
+  <div style="{{awSecStyle}}"><span style="{{awSecNum}}">2</span><span style="font-size:13px;font-weight:700">العمل المتميز</span><span style="flex:1;height:1px;background:var(--bg-xe1e1e1)"></span></div>
+  <div style="display:flex;flex-wrap:wrap;gap:11px">
+    <div style="flex:1 1 100%"><label style="{{awLbl}}">وصف العمل المتميز <span style="color:var(--fg-xdc2626)">*</span></label>
+      <textarea value="{{awWdesc}}" onChange="{{awOnWdesc}}" placeholder="شرح مختصر عن العمل المتميز أو المبادرة (وفق استمارة الترشح لفئة العمل المتميز)" style="{{awTA}}"></textarea><sc-if value="{{awErWdesc}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErWdesc}}</span></div></sc-if></div>
+    <div style="flex:1 1 100%"><label style="{{awLbl}}">الشواهد <span style="color:var(--fg-xdc2626)">*</span></label>
+      <textarea value="{{awWevid}}" onChange="{{awOnWevid}}" placeholder="يذكر الشاهد في هذه الخانة ويرفق الشاهد مع الاستمارة" style="{{awTA2}}"></textarea><sc-if value="{{awErWevid}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErWevid}}</span></div></sc-if></div>
+  </div>
+  </sc-if>
+
+  <div style="{{awSecStyle}}"><span style="{{awSecNum}}">{{awByNum}}</span><span style="font-size:13px;font-weight:700">معتمد الترشيح</span><span style="flex:1;height:1px;background:var(--bg-xe1e1e1)"></span></div>
+  <div style="display:flex;flex-wrap:wrap;gap:11px">
+    <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">الاسم <span style="color:var(--fg-xdc2626)">*</span></label>
+      <input value="{{awBy}}" onChange="{{awOnBy}}" placeholder="اسم معتمد الترشيح" style="{{awInp}}"><sc-if value="{{awErBy}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErBy}}</span></div></sc-if></div>
+    <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">المسمى الإداري <span style="color:var(--fg-xdc2626)">*</span></label>
+      <input value="{{awByTitle}}" onChange="{{awOnByTitle}}" placeholder="مثال: مدير إدارة التشغيل" style="{{awInp}}"><sc-if value="{{awErByTitle}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErByTitle}}</span></div></sc-if></div>
+    <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">التاريخ <span style="color:var(--fg-xdc2626)">*</span></label>
+      <input value="{{awToday}}" readonly="true" style="{{awInpROc}}"></div>
+    <div style="flex:1 1 220px;min-width:0"><label style="{{awLbl}}">التوقيع الإلكتروني <span style="color:var(--fg-xdc2626)">*</span></label>
+        <label style="position:relative;display:block;height:44px;border-radius:10px;border:1px dashed var(--bd-xcbd5e1);background:var(--bg-xfafbfc);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:400;color:var(--fg-x94a3b8);cursor:pointer;overflow:hidden;transition:border-color .15s" style-hover="border-color:var(--bd-xb99751);color:var(--fg-x8a6f35)"><input type="file" accept="image/*" onChange="{{awPickSigBy}}" style="display:none"><sc-if value="{{awHasSigBy}}" hint-placeholder-val="{{ false }}"><img src="{{awSigBy}}" alt="التوقيع الإلكتروني" style="max-height:38px;max-width:92%;object-fit:contain"><span onClick="{{awClearSigBy}}" title="إزالة التوقيع" style="position:absolute;top:3px;left:4px;z-index:2;width:19px;height:19px;border-radius:6px;background:var(--bg-a1523420p6);color:var(--fg-xffffff);display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;cursor:pointer">×</span></sc-if><sc-if value="{{awNoSigBy}}" hint-placeholder-val="{{ true }}">اضغط لرفع صورة التوقيع</sc-if></label><sc-if value="{{awErSigBy}}"><div style="margin-top:5px;display:flex;align-items:flex-start;gap:5px;font-size:10.5px;font-weight:600;color:var(--fg-xb91c1c);line-height:1.7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+            stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" data-i="i-9e57d679"></svg><span>{{awErSigBy}}</span></div></sc-if></div>
+  </div>
+  </sc-if>
+
+  <!-- ── المرحلة 3: الشروط العامة ── -->
+  <sc-if value="{{awS3}}" hint-placeholder-val="{{ false }}">
+  <div style="font-size:11.5px;font-weight:400;color:var(--fg-x64748b);line-height:1.9;margin-bottom:11px">شروط إلزامية من «الشروط العامة والأحكام» — أي إجابة بـ(لا) توقف الترشيح تلقائياً</div>
+  <div style="{{awEligStyle}}"><span>{{awEligMsg}}</span></div>
+  <div style="border:1px solid var(--bd-xe1e1e1);border-radius:13px;overflow:hidden">
+    <sc-for list="{{awQs}}" as="q" hint-placeholder-count="8">
+    <div style="{{q.row}}">
+      <span style="width:22px;height:22px;border-radius:7px;background:var(--bg-xf1f3f6);color:var(--fg-x94a3b8);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">{{q.n}}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;line-height:1.7">{{q.t}}</div>
+        <div style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);margin-top:2px">المرجع: {{q.s}} — الشروط العامة والأحكام</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button onClick="{{q.yes}}" style="{{q.yStyle}}">نعم</button>
+        <button onClick="{{q.no}}" style="{{q.nStyle}}">لا</button>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <!-- ── المرحلة 4: التقييم ── -->
+  <sc-if value="{{awS4emp}}" hint-placeholder-val="{{ false }}">
+  <div style="font-size:11.5px;font-weight:400;color:var(--fg-x64748b);line-height:1.9;margin-bottom:13px">خمسة معايير رئيسية بمجموع 100 درجة — حرّك المؤشرات وفق الشواهد المتوفرة في ملف الترشيح</div>
+  <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-bottom:16px">
+    <div style="flex-shrink:0;position:relative;width:200px;height:200px">
+      <svg width="200" height="200" viewBox="0 0 200 200" data-i="i-9c67b853"></svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">
+        <b dir="ltr" style="font-size:38px;font-weight:800;line-height:1;color:var(--fg-x141414)">{{awTotal}}</b>
+        <small style="font-size:10.5px;font-weight:400;color:var(--fg-x94a3b8)">من 100 درجة</small>
+      </div>
+    </div>
+    <div style="flex:1;min-width:280px;display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:9px">
+      <sc-for list="{{awLegend}}" as="g" hint-placeholder-count="5">
+      <div style="{{g.box}}">
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="flex:1;min-width:0;font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{g.name}}</span>
+          <b dir="ltr" style="{{g.valStyle}}">{{g.val}}<i style="font-size:9.5px;font-style:normal;font-weight:400;color:var(--fg-x94a3b8)">/{{g.max}}</i></b>
+        </div>
+        <div style="height:6px;border-radius:9999px;background:var(--bg-xeff1f4);overflow:hidden;margin-top:7px"><div style="{{g.bar}}"></div></div>
+        <div dir="ltr" style="font-size:9.5px;font-weight:600;color:var(--fg-x94a3b8);margin-top:4px;text-align:left">{{g.pct}}%</div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <sc-for list="{{awCrits}}" as="c" hint-placeholder-count="5">
+    <div style="{{c.box}}">
+      <div onClick="{{c.toggle}}" style="{{c.head}}">
+        <b style="{{c.title}}">{{c.name}}</b>
+        <span dir="ltr" style="{{c.score}}">{{c.got}} / {{c.max}}</span>
+        <span style="{{c.chev}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-c92915c6"></svg></span>
+      </div>
+      <sc-if value="{{c.open}}" hint-placeholder-val="{{ false }}">
+      <div style="border-top:1px solid var(--bd-xf1f1f1);padding:12px 14px 14px">
+        <div style="font-size:11px;font-weight:400;color:var(--fg-x64748b);line-height:2;margin-bottom:11px;padding:10px 12px;background:var(--bg-xfafbfc);border:1px dashed var(--bd-xe1e1e1);border-radius:10px">{{c.desc}}</div>
+        <sc-for list="{{c.subs}}" as="sb" hint-placeholder-count="5">
+        <div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--bd-xf6f6f6)">
+          <div style="flex:1;min-width:0;font-size:11.5px;font-weight:400;line-height:1.8">{{sb.t}}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <button onClick="{{sb.inc}}" style="{{sb.incStyle}}">+</button>
+            <div style="width:74px;text-align:center">
+              <div><b dir="ltr" style="{{sb.valStyle}}">{{sb.v}}</b><small style="font-size:9.5px;font-weight:400;color:var(--fg-x94a3b8)"> / {{sb.max}}</small></div>
+              <span style="display:block;height:5px;border-radius:9999px;background:var(--bg-xeff1f4);overflow:hidden;margin-top:4px"><span style="{{sb.bar}}"></span></span>
+            </div>
+            <button onClick="{{sb.dec}}" style="{{sb.decStyle}}">−</button>
+          </div>
+        </div>
+        </sc-for>
+      </div>
+      </sc-if>
+    </div>
+    </sc-for>
+  </div>
+  <div style="margin-top:12px;border:1px dashed var(--bd-a141161440p35);background:var(--bg-a141161440p03);border-radius:13px;padding:12px 14px">
+    <div style="display:flex;align-items:flex-start;gap:8px;font-size:11px;font-weight:400;color:var(--fg-x0e7490);line-height:1.85;margin-bottom:9px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="flex-shrink:0;margin-top:2px" data-i="i-b8548f13"></svg>
+      <span>معيار «إعداد ملف الترشح» معيار مفاضلة إضافي عند تساوي النتائج <b>ولا يُحتسب في المجموع</b>.</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px">
+        <div style="font-size:12px;font-weight:600">هل التزم الملف بإرشادات الإعداد؟</div>
+        <div style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);margin-top:2px">9 صفحات، خط Readex Pro، فصل المرفقات، ورق A4، تباعد 1.15</div>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button onClick="{{awFileYes}}" style="{{awFileYStyle}}">نعم</button>
+        <button onClick="{{awFileNo}}" style="{{awFileNStyle}}">لا</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{awS4work}}" hint-placeholder-val="{{ false }}">
+  <div style="{{awCaseBar}}"><span>{{awCaseMsg}}</span></div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <sc-for list="{{awCases}}" as="k" hint-placeholder-count="3">
+    <div style="{{k.box}}">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span onClick="{{k.toggle}}" style="{{k.chk}}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12.5px;font-weight:700"><span style="display:inline-flex;width:20px;height:20px;border-radius:6px;background:var(--bg-a185151810p14);color:var(--fg-x8a6f35);align-items:center;justify-content:center;font-size:10px;margin-left:6px">{{k.k}}</span>{{k.t}}</div>
+          <div style="font-size:10.5px;font-weight:400;color:var(--fg-x64748b);line-height:1.85;margin-top:4px">{{k.d}}</div>
+          <sc-if value="{{k.on}}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:9px"><label style="{{awLbl}}">{{k.f}}</label>
+            <textarea value="{{k.txt}}" onChange="{{k.onTxt}}" placeholder="{{k.f}}" style="{{awTA2}}"></textarea></div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <!-- ── المرحلة 5: النتيجة والاعتماد ── -->
+  <sc-if value="{{awS5}}" hint-placeholder-val="{{ false }}">
+  <div style="{{awVerdictBox}}">
+    <span style="{{awVerdictIc}}">
+      <sc-if value="{{awPass}}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></sc-if>
+      <sc-if value="{{awFail}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-26175592"></svg></sc-if>
+    </span>
+    <div style="flex:1">
+      <div style="{{awVerdictTitle}}">{{awVerdictTxt}}</div>
+      <div style="font-size:11px;font-weight:400;color:var(--fg-x64748b);margin-top:3px">{{awVerdictSub}}</div>
+    </div>
+  </div>
+  <sc-if value="{{awHasEmp}}" hint-placeholder-val="{{ false }}">
+  <div style="border:1px solid var(--bd-xe1e1e1);border-radius:14px;overflow:hidden;margin-bottom:14px">
+    <div style="padding:9px 13px;background:var(--bg-xfafbfc);border-bottom:1px solid var(--bd-xe1e1e1);font-size:12px;font-weight:700">بيانات المرشَّح</div>
+    <div style="display:flex;flex-wrap:wrap">
+      <sc-for list="{{awSummary}}" as="f" hint-placeholder-count="4">
+      <div style="flex:1;min-width:150px;padding:11px 15px;border-top:1px solid var(--bd-xf1f1f1)">
+        <div style="font-size:10px;font-weight:600;color:var(--fg-x94a3b8)">{{f.l}}</div>
+        <div dir="{{f.dir}}" style="font-size:12.5px;font-weight:700;text-align:right;margin-top:2px">{{f.v}}</div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{awS5emp}}" hint-placeholder-val="{{ false }}">
+  <div style="border:1px solid var(--bd-xe1e1e1);border-radius:14px;overflow:hidden">
+    <div style="padding:9px 13px;background:var(--bg-xfafbfc);border-bottom:1px solid var(--bd-xe1e1e1);font-size:12px;font-weight:700">توزيع الدرجات على المعايير</div>
+    <div class="bs-hscroll" style="overflow-x:auto">
+      <table class="bs-rtable" style="width:100%;border-collapse:collapse;min-width:520px">
+        <thead><tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
+          <th style="padding:9px 12px;text-align:right;font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">المعيار/الفئة</th>
+          <th style="padding:9px 6px;font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">الدرجة القصوى</th>
+          <th style="padding:9px 6px;font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">تقييم المرشح</th>
+          <th style="padding:9px 6px;font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">نسبة التحقق</th>
+        </tr></thead>
+        <tbody>
+          <sc-for list="{{awScoreRows}}" as="r" hint-placeholder-count="5">
+          <tr style="border-bottom:1px solid var(--bd-xf1f1f1)">
+            <td style="padding:10px 12px;text-align:right;font-size:12px;font-weight:600">{{r.name}}</td>
+            <td dir="ltr" style="padding:10px 6px;text-align:center;font-size:11.5px;font-weight:400;color:var(--fg-x53565a)">{{r.max}}</td>
+            <td dir="ltr" style="padding:10px 6px;text-align:center;font-size:11.5px;font-weight:700;color:var(--fg-x8a6f35)">{{r.got}}</td>
+            <td style="padding:10px 6px;text-align:center"><span dir="ltr" style="{{r.pctStyle}}">{{r.pct}}%</span></td>
+          </tr>
+          </sc-for>
+          <tr style="background:var(--bg-a185151810p06);border-top:2px solid var(--bd-a185151810p25)">
+            <td style="padding:11px 12px;text-align:right;font-size:12.5px;font-weight:700">مجموع التقييم</td>
+            <td dir="ltr" style="padding:11px 6px;text-align:center;font-size:12px;font-weight:700">100</td>
+            <td dir="ltr" style="padding:11px 6px;text-align:center;font-size:13px;font-weight:700;color:{{awGradeCol}}">{{awTotal}}</td>
+            <td dir="ltr" style="padding:11px 6px;text-align:center;font-size:11px;font-weight:900;color:{{awGradeCol}}">{{awTotal}}%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </sc-if>
+  </sc-if>
+
+  <div style="display:flex;gap:9px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--bd-xe1e1e1)">
+    <sc-if value="{{awHasPrev}}" hint-placeholder-val="{{ false }}"><button onClick="{{awPrev}}" style="{{awBtnSec}}">السابق</button></sc-if>
+    <sc-if value="{{awHasNext}}" hint-placeholder-val="{{ true }}"><button onClick="{{awNext}}" style="{{awBtnNext}}">التالي</button></sc-if>
+    <sc-if value="{{awNextBlocked}}" hint-placeholder-val="{{ false }}"><button disabled="true" title="{{awNextBlockedTip}}" style="{{awBtnNextOff}}">التالي</button></sc-if>
+    <sc-if value="{{awCanSave}}" hint-placeholder-val="{{ false }}"><button onClick="{{awSave}}" style="{{awBtnPri}}">حفظ الترشيح في السجل</button></sc-if>
+    <span style="margin-right:auto;font-size:11px;font-weight:400;color:var(--fg-x94a3b8)">المرحلة {{awStage}} من 5</span>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══════════════ لوحة النتائج ═══════════════ -->
+<sc-if value="{{awOnRes}}" hint-placeholder-val="{{ false }}">
+<div style="border-radius:16px;border:1px solid var(--bd-a2252252250p6);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:16px">
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+    <div style="flex:1;min-width:210px;border:1px solid var(--bd-xe1e1e1);border-radius:14px;padding:15px 17px;background:var(--bg-xffffff);display:flex;align-items:center;gap:13px">
+      <span style="width:44px;height:44px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text-on-brand);background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751))"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fc24ba3c"></svg></span>
+      <div style="min-width:0">
+        <div dir="ltr" style="font-size:22px;font-weight:800;line-height:1.2;text-align:right">{{awKpiTotal}}</div>
+        <div style="font-size:11px;font-weight:400;color:var(--fg-x94a3b8);margin-top:2px">إجمالي الترشيحات</div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:210px;border:1px solid var(--bd-xe1e1e1);border-radius:14px;padding:15px 17px;background:var(--bg-xffffff);display:flex;align-items:center;gap:13px">
+      <span style="width:44px;height:44px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--fg-xffffff);background:var(--bg-x047857)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-adb027bc"></svg></span>
+      <div style="min-width:0">
+        <div dir="ltr" style="font-size:22px;font-weight:800;line-height:1.2;text-align:right">{{awKpiOk}}</div>
+        <div style="font-size:11px;font-weight:400;color:var(--fg-x94a3b8);margin-top:2px">ترشيحات مستوفية للشروط</div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:210px;border:1px solid var(--bd-xe1e1e1);border-radius:14px;padding:15px 17px;background:var(--bg-xffffff);display:flex;align-items:center;gap:13px">
+      <span style="width:44px;height:44px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--fg-xffffff);background:var(--bg-x25343f)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9ec47310"></svg></span>
+      <div style="min-width:0">
+        <div dir="ltr" style="font-size:22px;font-weight:800;line-height:1.2;text-align:right">{{awKpiAvg}}</div>
+        <div style="font-size:11px;font-weight:400;color:var(--fg-x94a3b8);margin-top:2px">متوسط درجات الموظف المتميز</div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:210px;border:1px solid var(--bd-xe1e1e1);border-radius:14px;padding:15px 17px;background:var(--bg-xffffff);display:flex;align-items:center;gap:13px">
+      <span style="width:44px;height:44px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--fg-xffffff);background:var(--bg-x8a6f35)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-94bf093b"></svg></span>
+      <div style="min-width:0">
+        <div dir="ltr" style="font-size:22px;font-weight:800;line-height:1.2;text-align:right">{{awKpiTop}}</div>
+        <div style="font-size:11px;font-weight:400;color:var(--fg-x94a3b8);margin-top:2px">أعلى درجة مسجلة</div>
+        <sc-if value="{{awKpiTopHas}}" hint-placeholder-val="{{ false }}"><div style="font-size:10px;font-weight:600;color:var(--fg-x8a6f35);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{awKpiTopSub}}</div></sc-if>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <span style="width:26px;height:26px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-x8a6f35)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fc24ba3c"></svg></span>
+    <span style="font-size:13.5px;font-weight:700">سجل الترشيحات</span>
+    <span style="flex:1;height:1px;background:var(--bg-xe1e1e1)"></span>
+  </div>
+
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--bd-xe1e1e1);border-bottom:0;border-radius:12px 12px 0 0;background:var(--bg-a2482502520p5)">
+    <div style="position:relative;flex:1;min-width:180px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:50%;transform:translateY(-50%)" data-i="i-7133b944"></svg>
+      <input value="{{awQ}}" onChange="{{awOnQ}}" placeholder="بحث بالاسم أو الرقم الوظيفي أو الحالة..." style="width:100%;height:34px;padding:0 34px 0 10px;font-size:12px;background:var(--bg-xffffff);border:1px solid var(--bd-xe2e8f0);border-radius:10px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;color:var(--fg-x141414)" style-focus="border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px rgba(185,151,81,0.2)">
+    </div>
+    <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);padding-left:4px"><span dir="ltr" style="font-weight:600;color:var(--fg-xb99751)">{{awShown}}</span><span style="opacity:.6"> / <span dir="ltr">{{awTotalRecs}}</span></span></div>
+  </div>
+  <sc-if value="{{awHasRows}}" hint-placeholder-val="{{ true }}">
+  <div class="bs-hscroll bs-sthead" style="overflow-x:auto;border:1px solid var(--bd-xe1e1e1);border-top:0;border-bottom:0">
+    <table class="bs-rtable" style="width:100%;border-collapse:collapse;min-width:880px">
+      <thead><tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
+        <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fc24ba3c"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">م</span></div></th>
+        <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-07c54a8a"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">المرشَّح</span></div></th>
+        <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2d1e2ff8"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الرقم الوظيفي</span></div></th>
+        <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-18338479"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الفئة</span></div></th>
+        <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-b15b1bb2"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">النتيجة</span></div></th>
+        <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2d1e2ff8"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">تاريخ الترشيح</span></div></th>
+        <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الحالة</span></div></th>
+        <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-bfbe856f"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">إجراءات</span></div></th>
+      </tr></thead>
+      <tbody>
+        <sc-for list="{{awRows}}" as="r" hint-placeholder-count="5">
+        <tr style="border-bottom:1px solid var(--bd-xf1f1f1)" style-hover="background:var(--bg-a2482502520p7)">
+          <td dir="ltr" style="padding:10px 6px;text-align:center;font-weight:400;color:var(--fg-x53565a);font-size:11.5px">{{r.i}}</td>
+          <td style="padding:10px 6px;text-align:right;padding-right:12px;font-weight:600;color:var(--fg-x141414);font-size:12px">{{r.name}}</td>
+          <td dir="ltr" style="padding:10px 6px;text-align:center;font-weight:400;color:var(--fg-x53565a);font-size:11.5px">{{r.empno}}</td>
+          <td style="padding:10px 6px;text-align:center"><span style="font-size:10px;font-weight:600;padding:3px 10px;border-radius:9999px;background:var(--bg-a2452452450p9);border:1px solid var(--bd-xe2e8f0);color:var(--fg-x53565a)">{{r.cat}}</span></td>
+          <td dir="ltr" style="padding:10px 6px;text-align:center;font-weight:700;font-size:12px;color:{{r.scoreCol}}">{{r.score}}</td>
+          <td dir="ltr" style="padding:10px 6px;text-align:center;font-weight:400;color:var(--fg-x53565a);font-size:11.5px">{{r.date}}</td>
+          <td style="padding:10px 6px;text-align:center"><span style="{{r.stStyle}}">{{r.st}}</span></td>
+          <td data-label="الإجراءات" style="padding:10px 6px;text-align:center">
+            <sc-if value="{{r.rmHas}}" hint-placeholder-val="{{ true }}">
+            <span style="position:relative;display:inline-block">
+              <button onClick="{{r.rmToggle}}" title="إجراءات هذا السجل" style="{{r.rmBtnStyle}}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" data-i="i-0dbad243"></svg>
+              </button>
+              <sc-if value="{{r.rmOpen}}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:100%;left:50%;transform:translateX(-50%);z-index:60;margin-top:5px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p28);border-radius:11px;box-shadow:var(--shadow-elevated);padding:5px;display:flex;align-items:center;gap:4px;width:max-content">
+                <sc-for list="{{r.rmItems}}" as="a" hint-placeholder-count="3">
+                <button onClick="{{a.run}}" title="{{a.name}}" style="{{a.style}}" style-hover="border-color:var(--bd-xb99751);background:var(--bg-a185151810p08)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9621a719"></svg>
+                </button>
+                </sc-for>
+              </div>
+              </sc-if>
+            </span>
+            </sc-if>
+          </td>
+        </tr>
+        </sc-for>
+      </tbody>
+    </table>
+  </div>
+  </sc-if>
+  <sc-if value="{{awNoRows}}" hint-placeholder-val="{{ false }}">
+  <div style="border:1px solid var(--bd-xe1e1e1);border-top:0;border-bottom:0;padding:34px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">{{awEmptyMsg}}</span></div>
+  </sc-if>
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid var(--bd-xe1e1e1);border-radius:0 0 12px 12px;background:var(--bg-a2452452450p2);font-size:12px">
+    <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{awPgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{awPgTotal}}</span> {{awPgTotalW}}</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>
+      <select value="{{awPerPage}}" onChange="{{awOnPerPage}}" style="height:28px;width:78px;font-size:10px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;outline:none;cursor:pointer"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="0">الكل</option></select>
+      <div style="display:flex;align-items:center;border:1px solid var(--bd-xe1e1e1);border-radius:8px;overflow:hidden">
+        <button onClick="{{awPgFirst}}" title="الصفحة الأولى" style="{{awPgFirstStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-ec58a044"></svg></button>
+        <button onClick="{{awPgPrev}}" title="السابق" style="{{awPgPrevStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
+        <sc-for list="{{awPgNums}}" as="n" hint-placeholder-count="3">
+          <sc-if value="{{n.dots}}"><span style="height:28px;width:20px;display:flex;align-items:center;justify-content:center;color:var(--fg-x94a3b8);font-size:10px;border-right:1px solid var(--bd-xe1e1e1)">…</span></sc-if>
+          <sc-if value="{{n.cur}}"><button style="{{n.style}}">{{n.label}}</button></sc-if>
+          <sc-if value="{{n.plain}}"><button onClick="{{n.click}}" style="{{n.style}}" style-hover="background:var(--bg-xf5f5f5)">{{n.label}}</button></sc-if>
+        </sc-for>
+        <button onClick="{{awPgNext}}" title="التالي" style="{{awPgNextStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></button>
+        <button onClick="{{awPgLast}}" title="الصفحة الأخيرة" style="{{awPgLastStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9e7cf3ce"></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;border:1px solid var(--bd-xe1e1e1);border-radius:14px;overflow:hidden">
+    <div style="padding:9px 13px;background:var(--bg-xfafbfc);border-bottom:1px solid var(--bd-xe1e1e1);font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2d1e2ff8"></svg>
+      دورة الجائزة (الجدول الزمني)
+    </div>
+    <div style="display:flex;flex-wrap:wrap">
+      <sc-for list="{{awCycle}}" as="c" hint-placeholder-count="3">
+      <div style="{{c.box}}">
+        <div style="font-size:16px;font-weight:700;color:var(--fg-x8a6f35)">{{c.n}}</div>
+        <div style="font-size:12px;font-weight:600;margin-top:2px">{{c.t}}</div>
+        <div style="font-size:10.5px;font-weight:400;color:var(--fg-x94a3b8);margin-top:3px;line-height:1.7">{{c.s}}</div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══════════════ المراجع المعتمدة ═══════════════ -->
+<sc-if value="{{awOnDoc}}" hint-placeholder-val="{{ false }}">
+<div class="aw-doc" style="border-radius:16px;border:1px solid var(--bd-a2252252250p6);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:16px">
+  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px">
+    <sc-if value="{{awSetOk}}" hint-placeholder-val="{{ true }}">
+    <button onClick="{{awDocGoS}}" style="{{awDocTabS}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" data-i="i-90c33d6c"></svg>إعدادات المراجع</button>
+    </sc-if>
+    <button onClick="{{awDocGoA}}" style="{{awDocTabA}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg>الضوابط والإجراءات</button>
+    <button onClick="{{awDocGoB}}" style="{{awDocTabB}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg>الدليل التنظيمي</button>
+    <button onClick="{{awDocGoC}}" style="{{awDocTabC}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg>دليل الأخطاء الشائعة</button>
+  </div>
+  <sc-if value="{{awOnRead}}" hint-placeholder-val="{{ true }}">
+  <sc-if value="{{awDocHasTitle}}" hint-placeholder-val="{{ true }}"><div style="font-size:14.5px;font-weight:700;margin-bottom:8px">{{awDocTitle}}</div></sc-if>
+  <sc-if value="{{awDocHasLead}}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;font-weight:400;color:var(--fg-x64748b);line-height:2;margin-bottom:13px;padding:11px 13px;background:var(--bg-a185151810p06);border:1px solid var(--bd-a185151810p25);border-radius:12px">{{awDocLead}}</div></sc-if>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <sc-for list="{{awDocSecs}}" as="s" hint-placeholder-count="6">
+    <div style="{{s.box}}">
+      <div onClick="{{s.toggle}}" style="{{s.head}}">
+        <span style="{{s.num}}">{{s.n}}</span>
+        <span style="{{s.title}}">{{s.h}}</span>
+        <span style="{{s.chev}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-c92915c6"></svg></span>
+      </div>
+      <sc-if value="{{s.open}}" hint-placeholder-val="{{ false }}">
+      <div style="padding:13px 16px 15px;border-top:1px solid var(--bd-xf1f1f1)">{{s.node}}</div>
+      </sc-if>
+    </div>
+    </sc-for>
+  </div>
+  <sc-if value="{{awDocHasFoot}}" hint-placeholder-val="{{ false }}"><div style="margin-top:13px;padding:14px 16px;border-radius:13px;background:var(--bg-a185151810p07);border:1px solid var(--bd-a185151810p3);font-size:12px;font-weight:400;line-height:2.2;text-align:center;color:var(--fg-x141414)">{{awDocFoot}}</div></sc-if>
+  </sc-if>
+
+  <!-- ═══ إعدادات المراجع — نقل صفحة «إعدادات محتوى النظام» من الملف الأصلي ═══ -->
+  <sc-if value="{{awOnSet}}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:13px">
+
+    <div style="border:1px solid var(--bd-a185151810p3);background:var(--bg-a185151810p06);border-radius:13px;padding:13px 15px">
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:6px">
+        <span style="font-size:13.5px;font-weight:700;color:var(--fg-x141414)">إعدادات محتوى النظام</span>
+        <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:9999px;background:var(--bg-a138111530p12);border:1px solid var(--bd-a185151810p4);color:var(--fg-x8a6f35)">صلاحية مدير النظام</span>
+      </div>
+      <div style="font-size:11.5px;font-weight:400;color:var(--fg-x64748b);line-height:2">إضافة وتعديل وحذف وترتيب أقسام الضوابط والمعايير ودليل الأخطاء — التعديلات تنعكس فوراً على الصفحات، وتُحفظ نسخةً واحدة موحّدة تظهر لكل الإدارات.</div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:7px">
+      <sc-for list="{{awSetGrps}}" as="g" hint-placeholder-count="3">
+      <button onClick="{{g.click}}" style="{{g.style}}">{{g.lbl}}<span style="{{g.cnt}}">{{g.n}}</span></button>
+      </sc-for>
+    </div>
+
+    <div style="border:1px solid var(--bd-xe1e1e1);border-radius:14px;background:var(--bg-xffffff);overflow:hidden">
+      <sc-if value="{{awSetEmpty}}" hint-placeholder-val="{{ false }}">
+      <div style="padding:38px 20px;text-align:center"><div style="font-size:14px;font-weight:700;color:var(--fg-x141414);margin-bottom:4px">لا توجد أقسام</div><div style="font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">أضف قسماً جديداً بالزر أدناه</div></div>
+      </sc-if>
+      <sc-for list="{{awSetRows}}" as="r" hint-placeholder-count="5">
+      <div style="{{r.box}}">
+<sc-if value="{{awPmDocEdit}}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+          <button onClick="{{r.up}}" title="أعلى" style="{{r.upS}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-e14a4eb8"></svg></button>
+          <button onClick="{{r.dn}}" title="أسفل" style="{{r.dnS}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-c92915c6"></svg></button>
+        </div>
+</sc-if>
+        <div style="{{r.num}}">{{r.n}}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12.5px;font-weight:700;color:var(--fg-x141414);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.h}}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--fg-x94a3b8);margin-top:2px">{{r.sub}}</div>
+        </div>
+<sc-if value="{{awPmDocEdit}}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button onClick="{{r.edit}}" style="{{r.editS}}">تحرير</button>
+          <button onClick="{{r.del}}" style="{{r.delS}}">{{r.delT}}</button>
+        </div>
+</sc-if>
+      </div>
+      </sc-for>
+<sc-if value="{{awPmDocEdit}}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;padding:13px 14px;border-top:1px solid var(--bd-xf1f1f1);background:var(--bg-xfafbfc)">
+        <button onClick="{{awSetAdd}}" style="border:0;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));color:var(--text-on-brand);padding:9px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif">+ إضافة قسم جديد</button>
+        <button onClick="{{awSetReset}}" style="{{awSetResetS}}">{{awSetResetT}}</button>
+      </div>
+</sc-if>
+    </div>
+
+    <sc-if value="{{awSetEditing}}" hint-placeholder-val="{{ false }}">
+    <div style="border:1px solid var(--bd-a185151810p4);border-radius:14px;background:var(--bg-xffffff);padding:15px 16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px">{{awSetEdTitle}}</div>
+      <div style="margin-bottom:13px">
+        <div style="font-size:11.5px;font-weight:600;margin-bottom:5px">عنوان القسم</div>
+        <input value="{{awSetH}}" onChange="{{awSetOnH}}" style="width:100%;box-sizing:border-box;border:1px solid var(--bd-xe1e1e1);border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:400;outline:none;font-family:'Cairo',sans-serif" style-focus="border-color:var(--bd-xb99751)">
+      </div>
+      <div style="font-size:11.5px;font-weight:600;margin-bottom:6px">المحتوى</div>
+      <!-- ═══ شريط أدوات التحرير — منقول من الملف الأصلي بأوامره كما هي ═══ -->
+      <div class="aw-edtb">
+        <div class="aw-tg">
+          <button type="button" title="تراجع" onClick="{{awEdUndo}}">↶</button>
+          <button type="button" title="إعادة" onClick="{{awEdRedo}}">↷</button>
+        </div>
+        <div class="aw-tg">
+          <select onChange="{{awEdBlock}}" title="نمط الفقرة">
+            <option value="" selected disabled>النمط</option>
+            <option value="p">فقرة عادية</option>
+            <option value="h4">عنوان رئيسي</option>
+            <option value="h5">عنوان فرعي</option>
+          </select>
+          <select onChange="{{awEdSize}}" title="حجم الخط">
+            <option value="" selected disabled>الحجم</option>
+            <option value="2">صغير</option>
+            <option value="3">عادي</option>
+            <option value="4">كبير</option>
+            <option value="5">أكبر</option>
+          </select>
+        </div>
+        <div class="aw-tg">
+          <button type="button" title="غامق" style="font-weight:700" onClick="{{awEdBold}}">B</button>
+          <button type="button" title="مائل" style="font-style:italic;font-family:serif" onClick="{{awEdItalic}}">I</button>
+          <button type="button" title="تسطير" style="text-decoration:underline" onClick="{{awEdUnder}}">U</button>
+        </div>
+        <div class="aw-tg" title="لون الخط (ألوان الهوية)">
+          <sc-for list="{{awEdCols}}" as="c" hint-placeholder-count="5">
+          <button type="button" title="{{c.tip}}" style="{{c.style}}" onClick="{{c.click}}"></button>
+          </sc-for>
+        </div>
+        <div class="aw-tg">
+          <button type="button" title="قائمة مرقمة" onClick="{{awEdOl}}">١.٢.٣</button>
+          <button type="button" title="قائمة نقطية" onClick="{{awEdUl}}">•••</button>
+        </div>
+        <div class="aw-tg">
+          <button type="button" title="تمييز كمصطلح (ذهبي غامق)" style="color:var(--fg-x8a6f35);font-weight:700" onClick="{{awEdTerm}}">مصطلح</button>
+          <button type="button" title="مسح التنسيق" onClick="{{awEdClear}}">⌫ تنسيق</button>
+        </div>
+      </div>
+      <div class="aw-edarea" id="awEdBody" contenteditable="true"></div>
+      <div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap">
+        <button onClick="{{awSetSave}}" style="border:0;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));color:var(--text-on-brand);padding:10px 20px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif">حفظ التعديلات</button>
+        <button onClick="{{awSetCancel}}" style="border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x53565a);padding:10px 20px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif">إلغاء</button>
+      </div>
+    </div>
+    </sc-if>
+
+  </div>
+  </sc-if>
+</div>
+</sc-if>
+
+</div>

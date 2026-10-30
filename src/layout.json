@@ -1,0 +1,20 @@
+{
+ "assets": {
+  "fonts": "assets/fonts",
+  "img": "assets/images"
+ },
+ "pages": "pages",
+ "shell": "layouts/index.template.html",
+ "rootLogic": "layouts/root-logic.js",
+ "manifest": "manifests/manifest.webmanifest.json",
+ "public": "../public",
+ "workerOut": "../workers/_worker.js",
+ "workersParts": "../workers/parts",
+ "registry": "permissions/registry",
+ "pagesManifest": "manifests/pages.json",
+ "tokens": "styles/tokens/tokens.json",
+ "styles": "styles",
+ "migrations": "../migrations",
+ "modules": "modules",
+ "pageManifestBlock": "manifests/255-page-manifest.js"
+}

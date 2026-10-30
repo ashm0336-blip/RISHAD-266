@@ -1,0 +1,34 @@
+{
+ "schema": 1,
+ "kind": "lens",
+ "key": "gates",
+ "name": "البوابات",
+ "label": "عدسة البوابات",
+ "order": 3,
+ "owner": "lens.gates",
+ "hosts": ["plan", "daily/rounds"],
+ "keys": {
+  "own": ["lens.gates.enable", "lens.gates.view", "lens.gates.create", "lens.gates.edit", "lens.gates.status.change", "lens.gates.delete", "lens.gates.geometry.edit", "ref.gate.type.view", "ref.gate.type.create", "ref.gate.type.edit", "ref.gate.type.delete"],
+  "managedRefs": [],
+  "reserved": ["lens.gates.kpi.view", "lens.gates.report.view"]
+ },
+ "resources": {
+  "column": {
+   "name": "gates",
+   "seq": 2,
+   "hideFlag": "hideGates",
+   "identity": "builtin:gates",
+   "geometry": ["x", "y", "unp"],
+   "editKey": "lens.gates.edit",
+   "status": {
+    "fields": ["fst", "flow", "fAt", "fBy", "fKind", "fLog", "closed", "off", "cAt", "cAtMs", "cWhy", "cBy"],
+    "op": "lens.gates.status.change"
+   }
+  }
+ },
+ "guards": {
+  "enable": "lens.gates.enable",
+  "resources": ["bassam_plan_v1", "bassam_rounds_v1"]
+ },
+ "tests": ["tests/unit/plugins.test.mjs", "cfbench/k256perm.mjs", "cfbench/p41scope.mjs", "cfbench/p41term.mjs"]
+}

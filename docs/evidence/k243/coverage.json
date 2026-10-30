@@ -1,0 +1,6073 @@
+{
+ "worker": "pk243/_worker.js",
+ "counts": {
+  "keys": 269,
+  "active": 255,
+  "reserved": 14,
+  "guardStatus": {
+   "exists": 174,
+   "to-bind": 71,
+   "to-build": 10
+  },
+  "decisiveNone": 4,
+  "sets": {
+   "classifier": 71,
+   "read": 51,
+   "build": 10,
+   "uncov": 57,
+   "literal": 42,
+   "classifierEmit": 116,
+   "guardsCode": 104
+  },
+  "inCases": 8
+ },
+ "missing": [
+  "staff.move",
+  "import.view",
+  "links.view",
+  "help.view"
+ ],
+ "rows": [
+  {
+   "key": "dstats.haram.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "dstats.haram.entry",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "edit",
+   "paths": [
+    "literal",
+    "classifierEmit",
+    "atoms(3)"
+   ],
+   "atoms": 3,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "dstats.haram.approve",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "literal",
+    "classifierEmit",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "dstats.haram.reopen",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "literal",
+    "classifierEmit",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "dstats.nabawi.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "dstats.nabawi.entry",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "edit",
+   "paths": [
+    "literal",
+    "atoms(3)"
+   ],
+   "atoms": 3,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "dstats.nabawi.approve",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "literal",
+    "classifierEmit",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "dstats.nabawi.reopen",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "literal",
+    "classifierEmit",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "dstats.anHaram.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "dstats.anNabawi.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "dstats.anCmp.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "dstats.anTime.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Source",
+    "DateRange",
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "cust.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.custody_type.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "ref.custody_type.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "cust.move.issue",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "cust.move.return",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "cust.move.damage",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "cust.move.lost",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "ref.custody_type.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "ready.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "staff.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "staff.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "staff.move",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "staff.rest",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "staff.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "staff.lock",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "uncov",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "staff.reopen",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "uncov",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "plan.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "plan.create",
+   "status": "active",
+   "guard": "exists/ops",
+   "type": "create",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "plan.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "site.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "site.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "map.replace",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "site.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "plan.approve",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "plan.reopen",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "report.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "report.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "report.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "report.approve",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)",
+    "k243 المصفوفة"
+   ]
+  },
+  {
+   "key": "report.reopen",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)",
+    "k243 المصفوفة"
+   ]
+  },
+  {
+   "key": "round.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "round.create",
+   "status": "active",
+   "guard": "exists/ops",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "round.edit",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "uncov",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "round.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "round.approve",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "round.reopen",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "task.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "task.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "task.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "task.assign",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "task.evidence",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "task.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "field.view",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "access",
+   "paths": [
+    "read",
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Assigned",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ir.dash.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ir.rec.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ir.rec.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "ir.rec.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "ir.rec.status",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "ir.rec.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)",
+    "k243 المصفوفة"
+   ]
+  },
+  {
+   "key": "sz.dash.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "sz.rec.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "sz.rec.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "sz.rec.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "sz.rec.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "award.new.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "award.new.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "award.res.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "award.res.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "award.res.approve",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "award.res.reject",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Own"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "award.res.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "award.doc.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "award.doc.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "award.doc.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "award.doc.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "backup.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "backup.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "backup.restore",
+   "status": "active",
+   "guard": "to-build/derived",
+   "type": "operation",
+   "paths": [
+    "build",
+    "literal",
+    "classifierEmit",
+    "guardsCode"
+   ],
+   "atoms": 0,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)",
+    "p3build",
+    "k243 المصفوفة"
+   ]
+  },
+  {
+   "key": "audit.view",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "access",
+   "paths": [
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.shift.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.shift.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.shift.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.shift.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "tpl.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "tpl.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "tpl.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "tpl.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "import.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "import.run",
+   "status": "active",
+   "guard": "to-build/derived",
+   "type": "operation",
+   "paths": [
+    "build",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)",
+    "p3build",
+    "k243 المصفوفة"
+   ]
+  },
+  {
+   "key": "lens.zones.enable",
+   "status": "active",
+   "guard": "to-build/capability",
+   "type": "capability",
+   "paths": [
+    "build",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p3build"
+   ]
+  },
+  {
+   "key": "lens.zones.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "lens.zones.create",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "create",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.zones.data.edit",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.zones.geometry.edit",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.zones.status.change",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "literal",
+    "classifierEmit",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.zones.delete",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "delete",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.zones.report.view",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.paths.enable",
+   "status": "active",
+   "guard": "to-build/capability",
+   "type": "capability",
+   "paths": [
+    "build",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p3build"
+   ]
+  },
+  {
+   "key": "lens.paths.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "lens.paths.create",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "create",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.paths.edit",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.paths.geometry.edit",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.paths.status.change",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.paths.delete",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "delete",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.paths.kpi.view",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.paths.report.view",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.gates.enable",
+   "status": "active",
+   "guard": "to-build/capability",
+   "type": "capability",
+   "paths": [
+    "build",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p3build"
+   ]
+  },
+  {
+   "key": "lens.gates.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "lens.gates.create",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "create",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.gates.edit",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.gates.status.change",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "literal",
+    "classifierEmit",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.gates.delete",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "delete",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.gates.kpi.view",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.gates.report.view",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.marks.enable",
+   "status": "active",
+   "guard": "to-build/capability",
+   "type": "capability",
+   "paths": [
+    "build",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p3build"
+   ]
+  },
+  {
+   "key": "lens.marks.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "lens.marks.create",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "create",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.marks.edit",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.marks.geometry.edit",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.marks.delete",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "delete",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.marks.kpi.view",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.marks.report.view",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.dist.enable",
+   "status": "active",
+   "guard": "to-build/capability",
+   "type": "capability",
+   "paths": [
+    "build",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p3build"
+   ]
+  },
+  {
+   "key": "lens.dist.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Shift",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "lens.dist.assign.edit",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Shift",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.dist.redistribute",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Shift",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.dist.approve",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Shift",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.dist.report.view",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Shift",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.dens.enable",
+   "status": "active",
+   "guard": "to-build/capability",
+   "type": "capability",
+   "paths": [
+    "build",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p3build"
+   ]
+  },
+  {
+   "key": "lens.dens.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Shift",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "lens.dens.threshold.configure",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Shift",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.dens.report.view",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Shift",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "lens.zones.indicators.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "lens.dens.indicators.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Shift",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "emp.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "emp.record.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "emp.record.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "emp.record.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "emp.record.bulk.delete",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "emp.account.bulk.activate",
+   "status": "active",
+   "guard": "to-bind/rule",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "emp.account.bulk.freeze",
+   "status": "active",
+   "guard": "to-bind/rule",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "ref.employment_type.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.employment_type.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.employment_type.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.employment_type.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "staff.shift.assign",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "links.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "help.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "staff.employment_type.assign",
+   "status": "active",
+   "guard": "exists/via",
+   "type": "edit",
+   "paths": [
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "staff.work_type.assign",
+   "status": "active",
+   "guard": "exists/via",
+   "type": "edit",
+   "paths": [
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "staff.callsign.assign",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "staff.tasking.assign",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "staff.bulk.delete",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "ref.work_type.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.work_type.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.work_type.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.work_type.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "ref.callsign.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.callsign.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.callsign.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.callsign.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "report.transfer",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "report.att.absence",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "report.att.leave",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "report.att.late_in",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "report.att.early_out",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "report.callsign.assign",
+   "status": "active",
+   "guard": "exists/via",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.leave_type.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.leave_type.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.leave_type.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "site.approve",
+   "status": "active",
+   "guard": "exists/ops",
+   "type": "decision",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "map.calibrate",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "sector.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "sector.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "sector.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "round.sync.plan",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "round.day.disable",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "task.accept",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "task.finish",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "task.reopen",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "task.month.lock",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "task.month.reopen",
+   "status": "active",
+   "guard": "to-bind/ops",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "task.bulk.delete",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Assigned",
+    "Own"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "ref.irshad.location.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.irshad.location.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.irshad.location.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.irshad.location.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "ref.irshad.language.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.irshad.language.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.irshad.language.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.irshad.language.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "ir.rec.bulk.delete",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "ref.seized.location.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.seized.location.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.location.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.location.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.category.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.seized.category.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.category.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.category.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.item.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.seized.item.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.item.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.item.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.kind.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.seized.kind.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.kind.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.kind.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.action.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.seized.action.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.action.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.seized.action.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sz.rec.bulk.delete",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Site"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "award.doc.reset",
+   "status": "active",
+   "guard": "to-bind/cap",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "tpl.supervisory",
+   "status": "active",
+   "guard": "to-bind/field",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.marks.status.change",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "literal",
+    "classifierEmit",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Branch",
+    "Site",
+    "Zone/Element",
+    "Assigned",
+    "DateRange"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "report.day.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "award.res.reopen",
+   "status": "reserved",
+   "guard": "reserved/none",
+   "paths": [
+    "reserved → never held (enfHeld = false)"
+   ],
+   "dims": [
+    "Department",
+    "Branch",
+    "Own"
+   ],
+   "reason": true,
+   "grant": "none",
+   "tested": []
+  },
+  {
+   "key": "ref.custody_type.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "staff.permission_limit.set",
+   "status": "active",
+   "guard": "exists/ops",
+   "type": "decision",
+   "paths": [
+    "uncov",
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "perm.assign",
+   "status": "active",
+   "guard": "to-bind/rule",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Branch"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "report.indicators.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "access",
+   "paths": [
+    "read",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "DateRange",
+    "Shift"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.leave_type.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ir.rec.retro.open",
+   "status": "active",
+   "guard": "to-build/rule-new",
+   "type": "decision",
+   "paths": [
+    "build",
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "DateRange"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p3build",
+    "k243 المصفوفة"
+   ]
+  },
+  {
+   "key": "sz.rec.retro.open",
+   "status": "active",
+   "guard": "to-build/rule-new",
+   "type": "decision",
+   "paths": [
+    "build",
+    "literal",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "DateRange"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p3build"
+   ]
+  },
+  {
+   "key": "import.replace",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "operation",
+   "paths": [
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": true,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)",
+    "k243 المصفوفة"
+   ]
+  },
+  {
+   "key": "emp.account.activate",
+   "status": "active",
+   "guard": "to-bind/rule",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "emp.account.freeze",
+   "status": "active",
+   "guard": "to-bind/rule",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.dist.need.edit",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(2)"
+   ],
+   "atoms": 2,
+   "dims": [
+    "Department",
+    "Site",
+    "Zone/Element"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.dens.reading.record",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "edit",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "guardsCode",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Site",
+    "Zone/Element",
+    "Shift",
+    "DateRange"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "lens.gates.geometry.edit",
+   "status": "active",
+   "guard": "to-bind/collection",
+   "type": "operation",
+   "paths": [
+    "classifier",
+    "classifierEmit",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department",
+    "Site"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "ref.zone.type.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.zone.type.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.zone.type.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.zone.type.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "ref.gate.type.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.gate.type.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.gate.type.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.gate.type.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "ref.mark.kind.view",
+   "status": "active",
+   "guard": "exists/read",
+   "type": "view",
+   "paths": [
+    "read",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "ref.mark.kind.create",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "create",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.mark.kind.edit",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "edit",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "ref.mark.kind.delete",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "delete",
+   "paths": [
+    "uncov",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "assignable",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sys.overview.view",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "access",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "sys.security.view",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "access",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "sys.sessions.kill",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "operation",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sys.guard.unlock",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "operation",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sys.policy.edit",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "operation",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sys.users.manage",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "operation",
+   "paths": [
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)",
+    "k243 المصفوفة"
+   ]
+  },
+  {
+   "key": "sys.depts.manage",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "operation",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sys.ceiling.set",
+   "status": "active",
+   "guard": "to-bind/rule",
+   "type": "decision",
+   "paths": [
+    "classifier",
+    "literal",
+    "classifierEmit",
+    "guardsCode",
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "sys.modules.toggle",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "operation",
+   "paths": [
+    "literal",
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sys.backup.full",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "operation",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sys.restore.full",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "operation",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": true,
+   "grant": "role",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sys.histimp.run",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "operation",
+   "paths": [
+    "literal",
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": true,
+   "grant": "role",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sys.notif.config",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "operation",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "sys.broadcast.send",
+   "status": "active",
+   "guard": "exists/cap",
+   "type": "operation",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": true,
+   "tested": []
+  },
+  {
+   "key": "sys.audit.view",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "access",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "sys.images.resolve",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "operation",
+   "paths": [
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Global"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "notif.dept.broadcast",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "operation",
+   "paths": [
+    "read",
+    "literal",
+    "role",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Department"
+   ],
+   "reason": false,
+   "grant": "role",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "self.profile.edit",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "edit",
+   "paths": [
+    "literal",
+    "guardsCode",
+    "self",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Own"
+   ],
+   "reason": false,
+   "grant": "self",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "self.password.change",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "operation",
+   "paths": [
+    "classifierEmit",
+    "guardsCode",
+    "self",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Own"
+   ],
+   "reason": false,
+   "grant": "self",
+   "sensitive": true,
+   "tested": [
+    "p41bind (متّجهُ المصنِّف)"
+   ]
+  },
+  {
+   "key": "self.sessions.kill",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "operation",
+   "paths": [
+    "self",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Own"
+   ],
+   "reason": false,
+   "grant": "self",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "self.notif.device",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "edit",
+   "paths": [
+    "read",
+    "literal",
+    "self",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Own"
+   ],
+   "reason": false,
+   "grant": "self",
+   "sensitive": false,
+   "tested": [
+    "p411scope (readBindings)"
+   ]
+  },
+  {
+   "key": "self.task.respond",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "operation",
+   "paths": [
+    "guardsCode",
+    "self",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Own"
+   ],
+   "reason": false,
+   "grant": "self",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "self.task.proof.upload",
+   "status": "active",
+   "guard": "exists/rule",
+   "type": "edit",
+   "paths": [
+    "self",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Own"
+   ],
+   "reason": false,
+   "grant": "self",
+   "sensitive": false,
+   "tested": []
+  },
+  {
+   "key": "auth.login",
+   "status": "active",
+   "guard": "exists/endpoint",
+   "type": "access",
+   "paths": [
+    "self",
+    "atoms(1)"
+   ],
+   "atoms": 1,
+   "dims": [
+    "Own"
+   ],
+   "reason": false,
+   "grant": "self",
+   "sensitive": false,
+   "tested": []
+  }
+ ]
+}

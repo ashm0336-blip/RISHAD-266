@@ -1,0 +1,31 @@
+<style>
+body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
+a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
+@keyframes irtk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ir-tk{display:flex;align-items:center;gap:20px;width:max-content;animation:irtk 34s linear infinite}
+.ir-tkw:hover .ir-tk{animation-play-state:paused}
+@keyframes irpulse{0%,100%{opacity:1}50%{opacity:.25}}
+.ir-pulse{animation:irpulse 1.6s infinite}
+
+/* ═══ رصد الميدان: أزرار الحالة/المسار في المنبثق، وشريط الحالة أسفل الكانفس ═══ */
+.fd-opt{border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-primary);border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;transition:all .15s;min-width:0;white-space:nowrap}
+.fd-opt:hover{border-color:var(--border-brand)}.fd-opt.ro{cursor:default;opacity:.85}.fd-opt.ro:hover{border-color:var(--border-subtle)}.fd-opt.on{border-width:2px}
+.fd-opt.ok.on{border-color:var(--success);background:var(--bg-green-25-a10);color:var(--success-text)}.fd-opt.warn.on{border-color:var(--warning);background:var(--bg-orange-40-a10);color:var(--warning-text)}.fd-opt.sev.on{border-color:var(--danger);background:var(--bg-pink-30-a10);color:var(--danger-text)}.fd-opt.bad.on{border-color:var(--danger);background:var(--bg-pink-30-a10);color:var(--danger-text)}.fd-opt.gold.on{border-color:var(--border-brand);background:var(--bg-gold-50-a12);color:var(--brand-text)}
+@keyframes fdrail{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+.fd-bar{flex:1 1 100%;min-width:0;background:var(--tone-neutral-100-a95);border:1px solid var(--border-default);border-radius:12px;box-shadow:var(--shadow-soft);font-family:'Cairo',sans-serif;display:flex;align-items:stretch;overflow:hidden;height:38px}
+.fd-sum{display:flex;align-items:center;gap:8px;padding:0 10px;border-left:1px solid var(--border-subtle);font-size:11px;font-weight:700;white-space:nowrap;background:var(--bg-surface);font-variant-numeric:tabular-nums}
+.fd-sum i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px;vertical-align:middle}
+.fd-lane{flex:1;overflow:hidden;position:relative;display:flex;align-items:center;direction:ltr}
+.fd-rail{display:inline-flex;direction:rtl;gap:8px;padding:0 8px;white-space:nowrap;width:max-content;animation:fdrail 30s linear infinite}
+.fd-rail.still{animation:none;width:100%;overflow-x:auto;scrollbar-width:thin}
+.fd-lane:hover .fd-rail{animation-play-state:paused}
+.fd-ch{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-default);border-radius:999px;padding:3px 10px 3px 8px;font-size:11px;font-weight:700;background:var(--bg-surface);cursor:pointer;color:var(--text-primary)}
+.fd-ch b{font-size:10px;font-weight:800;border-radius:6px;padding:0 5px;color:var(--text-on-fill);background:var(--neutral-fill)}.fd-ch small{font-size:9.5px;color:var(--text-faint);font-weight:400}
+.fd-ch.ok{border-color:var(--bd-green-25-a35)}.fd-ch.ok b{background:var(--success)}.fd-ch.warn{border-color:var(--tone-orange-40-a40)}.fd-ch.warn b{background:var(--warning-strong)}
+.fd-ch.sev{border-color:var(--bd-pink-30-a50);background:var(--bg-pink-30-a6)}.fd-ch.sev b{background:var(--danger)}.fd-ch.bad{border-color:var(--danger);background:var(--bg-pink-30-a8);color:var(--danger-text)}.fd-ch.bad b{background:var(--danger)}
+.fd-ch.quiet{cursor:default;border-style:dashed}
+.fd-live{display:flex;align-items:center;gap:6px;padding:0 10px;font-size:10.5px;color:var(--text-faint);border-right:1px solid var(--border-subtle);white-space:nowrap;font-variant-numeric:tabular-nums}
+.fd-live i{width:7px;height:7px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,.2)}
+.fd-live button{border:1px solid var(--border-default);background:var(--bg-surface);border-radius:6px;font-size:9px;padding:1px 6px;cursor:pointer;color:var(--text-secondary);font-family:inherit}
+@media (prefers-reduced-motion: reduce){.fd-rail{animation:none}}
+</style>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script src="./support.js"></script></head>
+<body>
+<x-dc>
+<helmet><style>body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;color:var(--text-primary)}</style></helmet>
+<div dir="rtl" data-screen-label="مؤشرات الإدارة" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414)">
+  <sc-if value="{{stripOn}}" hint-placeholder-val="{{ true }}">
+  <div style="border-radius:16px;border:2px solid var(--bd-a185151810p1);background:linear-gradient(90deg,var(--bg-a185151810p03),transparent,var(--bg-a185151810p03));padding:12px;margin-bottom:14px">
+    <div class="bs-hbar bs-tabstrip" style="display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:4px 0;flex-wrap:wrap">
+      <sc-if value="{{ok_read}}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{go_read}}" style="{{st_read}}">
+        <div style="{{ic_read}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"></path><path d="m19 9-5 5-4-4-3 3"></path></svg></div>
+        <span style="{{lb_read}}">مؤشرات الجاهزية</span>
+        <sc-if value="{{on_read}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ok_dy}}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{go_dy}}" style="{{st_dy}}">
+        <div style="{{ic_dy}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect></svg></div>
+        <span style="{{lb_dy}}">مؤشرات التشغيل اليومي</span>
+        <sc-if value="{{on_dy}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ok_occ}}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{go_occ}}" style="{{st_occ}}">
+        <div style="{{ic_occ}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M7 20V9M12 20V4M17 20v-7"></path></svg></div>
+        <span style="{{lb_occ}}">مؤشرات الإشغال</span>
+        <sc-if value="{{on_occ}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ok_zn}}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{go_zn}}" style="{{st_zn}}">
+        <div style="{{ic_zn}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg></div>
+        <span style="{{lb_zn}}">مؤشرات المصليات</span>
+        <sc-if value="{{on_zn}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ok_sz}}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{go_sz}}" style="{{st_sz}}">
+        <div style="{{ic_sz}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"></path><path d="M1 3h22v5H1z"></path><path d="M10 12h4"></path></svg></div>
+        <span style="{{lb_sz}}">لوحة مؤشرات المضبوطات</span>
+        <sc-if value="{{on_sz}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ok_ir}}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{go_ir}}" style="{{st_ir}}">
+        <div style="{{ic_ir}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-10.5A7 7 0 0 1 19 10.5C19 15.8 12 21 12 21z"></path><circle cx="12" cy="10.3" r="2.6"></circle></svg></div>
+        <span style="{{lb_ir}}">لوحة مؤشرات الاسترشاد</span>
+        <sc-if value="{{on_ir}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ok_tk}}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{go_tk}}" style="{{st_tk}}">
+        <div style="{{ic_tk}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"></path></svg></div>
+        <span style="{{lb_tk}}">مؤشرات المهام</span>
+        <sc-if value="{{on_tk}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ok_dsh}}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{go_dsh}}" style="{{st_dsh}}">
+        <div style="{{ic_dsh}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M6 21V9l6-5 6 5v12"></path></svg></div>
+        <span style="{{lb_dsh}}">تحليل المسجد الحرام</span>
+        <sc-if value="{{on_dsh}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ok_dsn}}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{go_dsn}}" style="{{st_dsn}}">
+        <div style="{{ic_dsn}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M6 21V9l6-5 6 5v12"></path></svg></div>
+        <span style="{{lb_dsn}}">تحليل المسجد النبوي</span>
+        <sc-if value="{{on_dsn}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ok_dsc}}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{go_dsc}}" style="{{st_dsc}}">
+        <div style="{{ic_dsc}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"></path><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 2v20"></path></svg></div>
+        <span style="{{lb_dsc}}">مقارنة الحرمين</span>
+        <sc-if value="{{on_dsc}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ok_dst}}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{go_dst}}" style="{{st_dst}}">
+        <div style="{{ic_dst}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20"></path><path d="M12 6v6l4 2"></path></svg></div>
+        <span style="{{lb_dst}}">المقارنة الزمنية</span>
+        <sc-if value="{{on_dst}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{noneOn}}" hint-placeholder-val="{{ false }}">
+  <div style="border-radius:16px;border:1px dashed var(--bd-xe1e1e1);background:var(--bg-xffffff);padding:26px;text-align:center;color:var(--fg-x94a3b8);font-size:12.5px">لا مؤشرات ممنوحة لك في هذه الإدارة</div>
+  </sc-if>
+  <sc-if value="{{on_read}}" hint-placeholder-val="{{ true }}"><dc-import name="Employees" solo="readiness" hint-size="100%,1100px"></dc-import></sc-if>
+  <sc-if value="{{on_dy}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Sessions" solo="kpiDaily" hint-size="100%,1100px"></dc-import></sc-if>
+  <sc-if value="{{on_occ}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Sessions" solo="kpiOcc" hint-size="100%,1100px"></dc-import></sc-if>
+  <sc-if value="{{on_zn}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Sessions" solo="kpiZones" hint-size="100%,1100px"></dc-import></sc-if>
+  <sc-if value="{{on_sz}}" hint-placeholder-val="{{ false }}"><dc-import name="Seized" solo="dash" hint-size="100%,1100px"></dc-import></sc-if>
+  <sc-if value="{{on_ir}}" hint-placeholder-val="{{ false }}"><dc-import name="Irshad" solo="dash" hint-size="100%,1100px"></dc-import></sc-if>
+  <!-- ═══ KIVO_265 · البند 17 — مؤشرات المهام للشهر (من مخزن المهام المحلي للإدارة · ألوانٌ دلالية) ═══ -->
+  <sc-if value="{{on_tk}}" hint-placeholder-val="{{ false }}">
+  <div style="border-radius:16px;border:1px solid var(--border-default);background:var(--bg-surface);padding:14px 16px;display:grid;gap:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div style="min-width:0"><div style="font-size:14px;font-weight:700;color:var(--text-primary)">مؤشرات المهام — {{tkKpiTitle}}</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">{{tkKpiSub}}</div></div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onClick="{{tkKpiNext}}" style="border:1px solid var(--border-default);background:var(--bg-surface-2);color:var(--text-primary);border-radius:9px;padding:5px 11px;font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer">الشهر التالي</button>
+        <button onClick="{{tkKpiPrev}}" style="border:1px solid var(--border-default);background:var(--bg-surface-2);color:var(--text-primary);border-radius:9px;padding:5px 11px;font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer">الشهر السابق</button>
+      </div>
+    </div>
+    <sc-if value="{{tkKpiEmpty}}" hint-placeholder-val="{{ false }}"><div style="border:1px dashed var(--border-subtle);border-radius:12px;padding:22px;text-align:center;color:var(--text-muted);font-size:12px">لا مهام في هذا الشهر</div></sc-if>
+    <sc-if value="{{tkKpiNoDone}}" hint-placeholder-val="{{ false }}"><div style="font-size:11px;color:var(--warning-text);font-weight:700">لا مهام منجزة بعد في هذا الشهر — النسبُ تُحسب من المنجزة</div></sc-if>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
+      <sc-for list="{{tkKpiCards}}" as="c" hint-placeholder-count="4">
+      <div style="border:1px solid var(--border-subtle);background:var(--bg-surface-2);border-radius:13px;padding:12px 14px;display:grid;gap:4px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-secondary)">{{c.t}}</div>
+        <div style="font-size:24px;font-weight:700;line-height:1.2;color:{{c.c}}" dir="rtl">{{c.v}}</div>
+        <div style="font-size:10.5px;color:var(--text-muted)">{{c.sub}}</div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{on_dsh}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Stats" solo="haram" hint-size="100%,1600px"></dc-import></sc-if>
+  <sc-if value="{{on_dsn}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Stats" solo="nabawi" hint-size="100%,1700px"></dc-import></sc-if>
+  <sc-if value="{{on_dsc}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Stats" solo="cmp" hint-size="100%,1600px"></dc-import></sc-if>
+  <sc-if value="{{on_dst}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Stats" solo="time" hint-size="100%,1800px"></dc-import></sc-if>
+</div>
+</x-dc>
+<script data-dc-script>var __defProp=Object.defineProperty;var __defNormalProp=(obj,key,value)=>key in obj?__defProp(obj,key,{enumerable:!0,configurable:!0,writable:!0,value}):obj[key]=value;var __publicField=(obj,key,value)=>__defNormalProp(obj,typeof key!="symbol"?key+"":key,value);class Component extends DCLogic{constructor(){super(...arguments);__publicField(this,"state",{ktab:null,tkY:0,tkM:0})}_okOf(n,t){try{const r=KIVO.BassamPerm;if(t==="tkKpi")return!r||!r.can?!0:!!r.can("tasks","view");if(r&&r.kpiPanelOk)return!!r.kpiPanelOk(n,t);if(r&&r.canSub&&!r.canSub(n,t,"view"))return!1;const L=k=>!r||!r.on||!!r.on(k);return t==="kpiOcc"?L("zones")&&L("dens"):t==="kpiZones"?L("zones"):t==="kpiDaily"?!r||!r.can||!!r.can("dreport","view"):!0}catch{return!0}}renderVals(){const n=this,t=[{k:"read",pk:"planning",sk:"readiness"},{k:"dy",pk:"daily",sk:"kpiDaily"},{k:"occ",pk:"daily",sk:"kpiOcc"},{k:"zn",pk:"daily",sk:"kpiZones"},{k:"sz",pk:"seized",sk:"dash"},{k:"ir",pk:"irshad",sk:"dash"},{k:"tk",pk:"tasks",sk:"tkKpi"},{k:"dsh",pk:"dstats",sk:"anHaram"},{k:"dsn",pk:"dstats",sk:"anNabawi"},{k:"dsc",pk:"dstats",sk:"anCmp"},{k:"dst",pk:"dstats",sk:"anTime"}],r={};t.forEach(function(t2){r[t2.k]=n._okOf(t2.pk,t2.sk)});const i=t.filter(function(n2){return r[n2.k]});let o=this.state.ktab;o&&r[o]||(o=i.length?i[0].k:"");const e={noneOn:!i.length,stripOn:i.length>1};return t.forEach(function(t2){const i2=o===t2.k;e["ok_"+t2.k]=r[t2.k],e["on_"+t2.k]=i2&&r[t2.k],e["st_"+t2.k]=(function(n2){return"position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;border-radius:12px;transition:all .3s;flex-shrink:0;min-width:170px;cursor:pointer;font-family:'Cairo',sans-serif;border:1px solid "+(n2?"rgba(185,151,81,0.45);background:var(--bg-xffffff);box-shadow:0 3px 10px -4px rgba(138,111,53,0.45)":"transparent;background:transparent")})(i2),e["ic_"+t2.k]=(function(n2){return"width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .3s;"+(n2?"background:var(--bg-a185151810p1);color:var(--fg-xb99751)":"background:var(--bg-a2452452450p9);color:var(--fg-x94a3b8)")})(i2),e["lb_"+t2.k]=(function(n2){return"font-size:12px;transition:color .3s;"+(n2?"font-weight:600;color:var(--fg-xb99751)":"font-weight:400;color:var(--fg-x53565a)")})(i2),e["go_"+t2.k]=function(){n.setState({ktab:t2.k})}}),e.on_tk&&this._tkKpiVals(e),e}_tkStore(){try{const r=localStorage.getItem("bassam_tasks_v1"),t=r?JSON.parse(r):null;return t&&typeof t=="object"&&!Array.isArray(t)?t:{}}catch{return{}}}_tkKpi(S,Y,M){const o={n:0,done:0,on:0,late:0,doc:0,docImg:0,acc:0,accSum:0,dec:0,open:0,can:0};Object.keys(S||{}).forEach(k=>{const p=k.split("-");p.length!==3||+p[0]!==Y||+p[1]!==M||!Array.isArray(S[k])||S[k].forEach(r=>{if(!Array.isArray(r))return;const x=r[23]&&typeof r[23]=="object"?r[23]:null;if(x&&(x.asg==="cancelled"||x.asg==="reassigned"))return void(x.asg==="cancelled"&&o.can++);o.n++;const st=r[3],pf=Array.isArray(r[6])?r[6][0]:"",pr=r[21]&&typeof r[21]=="object"?r[21]:null,im=pr&&Array.isArray(pr.imgs)?pr.imgs.length:0;st==="done"?(o.done++,(pf==="on_time"||pf==="early")&&o.on++,pf==="late"&&o.late++,pr&&(im||String(pr.note||"").trim())&&o.doc++,im&&o.docImg++):st==="declined"?o.dec++:o.open++,typeof r[11]=="number"&&typeof r[15]=="number"&&r[11]>0&&r[15]>0&&(o.acc++,o.accSum+=r[11]-r[15])})});const pct=(a,b)=>b?Math.round(100*a/b):null;return Object.assign(o,{onPct:pct(o.on,o.done),latePct:pct(o.late,o.done),docPct:pct(o.doc,o.done),accAvg:o.acc?Math.round(o.accSum/o.acc/6e4):null})}_tkNow(){try{const H=KIVO.BassamHijri;if(H&&H.now)return H.now();const q={};return new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn",{timeZone:"Asia/Riyadh",year:"numeric",month:"numeric",day:"numeric"}).formatToParts(new Date).forEach(t=>q[t.type]=+t.value),{y:q.year,m:q.month,d:q.day}}catch{return{y:1447,m:1,d:1}}}_tkDur(m){const a=Math.abs(m),h=Math.floor(a/60),d=a%60;return(h?h+" س":"")+(h&&d?" ":"")+(d||!h?d+" د":"")}_tkTone(v,good,mid,inv){if(v==null)return"var(--text-muted)";const ok=inv?v<=good:v>=good,md=inv?v<=mid:v>=mid;return ok?"var(--success-text)":md?"var(--warning-text)":"var(--danger-text)"}_tkKpiVals(e){const s=this.state,T=this._tkNow(),Y=s.tkY||T.y,M=s.tkM||T.m,HM=["محرم","صفر","ربيع الأول","ربيع الآخر","جمادى الأولى","جمادى الآخرة","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة"],k=this._tkKpi(this._tkStore(),Y,M),P=v=>v==null?"—":v+"٪";e.tkKpiTitle=HM[M-1]+" "+Y+(Y===T.y&&M===T.m?" — الشهر الحالي":""),e.tkKpiSub=k.n?k.n+" مهمة · "+k.done+" منجزة · "+k.open+" مفتوحة · "+k.dec+" معتذَر عنها"+(k.can?" · "+k.can+" ملغاة (خارج الحساب)":""):"",e.tkKpiEmpty=!k.n,e.tkKpiNoDone=!!k.n&&!k.done,e.tkKpiPrev=()=>{let t=M-1,y=Y;t<1&&(t=12,y--),this.setState({tkM:t,tkY:y})},e.tkKpiNext=()=>{let t=M+1,y=Y;t>12&&(t=1,y++),this.setState({tkM:t,tkY:y})},e.tkKpiCards=[{t:"الإنجاز في الوقت",v:P(k.onPct),sub:k.done?k.on+" من "+k.done+" منجزة (في الوقت أو مبكرة)":"لا مهام منجزة",c:this._tkTone(k.onPct,80,60)},{t:"التأخر",v:P(k.latePct),sub:k.done?k.late+" من "+k.done+" منجزة متأخرة":"لا مهام منجزة",c:this._tkTone(k.latePct,10,25,!0)},{t:"الالتزام بالتوثيق",v:P(k.docPct),sub:k.done?k.doc+" من "+k.done+" بإثبات — منها "+k.docImg+" بصورة":"لا مهام منجزة",c:this._tkTone(k.docPct,90,70)},{t:"متوسط زمن القبول",v:k.accAvg==null?"—":k.accAvg<0?"قبل الموعد بـ"+this._tkDur(k.accAvg):this._tkDur(k.accAvg),sub:k.acc?"من موعد البداية إلى البدء · "+k.acc+" مهمة مقبولة":"لا مهام مقبولة",c:this._tkTone(k.accAvg,30,120,!0)}]}}</script>
+</body></html>

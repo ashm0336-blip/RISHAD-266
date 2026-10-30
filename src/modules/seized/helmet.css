@@ -1,0 +1,9 @@
+<style>
+body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
+a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
+@keyframes irtk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ir-tk{display:flex;align-items:center;gap:20px;width:max-content;animation:irtk 34s linear infinite}
+.ir-tkw:hover .ir-tk{animation-play-state:paused}
+@keyframes irpulse{0%,100%{opacity:1}50%{opacity:.25}}
+.ir-pulse{animation:irpulse 1.6s infinite}
+</style>

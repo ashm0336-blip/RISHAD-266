@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KIVO · RM-3 — ما يتغيّر في الواجهة (للرأي قبل التنفيذ)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#0f172a;--mut:#64748b;--line:#e2e8f0;--acc:#0f766e;--acc2:#115e59;--ok:#059669;--okbg:#ecfdf5;--bad:#dc2626;--badbg:#fef2f2;--warn:#b45309;--warnbg:#fffbeb;--side:#0b1b2b;--side2:#13273b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.9 Cairo,Tahoma,Arial,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:23px;margin:0 0 4px}h2{font-size:18px;margin:34px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+.sub{color:var(--mut);font-size:13.5px;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0}
+.row{display:flex;gap:14px;flex-wrap:wrap}.row>.card{flex:1 1 300px;margin:0}
+.lbl{display:inline-block;font-size:11.5px;font-weight:700;color:var(--mut);background:#eef2f7;border-radius:7px;padding:1px 9px;margin-bottom:8px}
+.rec{border-color:var(--acc);box-shadow:0 0 0 3px rgba(15,118,110,.12)}.rec .lbl{background:#d1fae5;color:var(--acc2)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:right;vertical-align:top}th{background:#f1f5f9;font-weight:700}
+.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:left;display:inline-block}
+.q{background:#fff7ed;border:1px solid #fdba74;border-radius:12px;padding:14px 18px;margin-top:30px;font-weight:600}
+/* ─ الشريط الجانبي المصغّر ─ */
+.side{background:var(--side);color:#cbd5e1;border-radius:12px;padding:12px 10px;width:210px;min-height:230px;font-size:13px}
+.side .nav{padding:6px 10px;border-radius:8px;margin:2px 0}.side .nav.on{background:var(--side2);color:#fff}
+.bs-link{display:flex;align-items:center;gap:8px;margin:10px 4px 2px;padding:7px 11px;border-radius:9px;font-size:11.5px;font-weight:700}
+.bs-link .d{width:8px;height:8px;border-radius:99px}.bs-link .x{font-size:10.5px;color:#94a3b8;margin-right:auto;font-weight:400}
+.bs-link.on{background:rgba(5,150,105,.14)}.bs-link.on .d{background:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.25)}.bs-link.on .l{color:#6ee7b7}
+.bs-link.off{background:rgba(220,38,38,.14)}.bs-link.off .d{background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.25);animation:pl 1.4s infinite}.bs-link.off .l{color:#fca5a5}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.35}}
+/* ─ إطار الجوال ─ */
+.phone{width:300px;height:420px;border:10px solid #111827;border-radius:30px;background:#fff;position:relative;overflow:hidden;margin:auto}
+.phone .top{height:46px;background:#0b1b2b;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:13px;font-weight:700}
+.phone .body{padding:12px}.sk{height:12px;border-radius:6px;background:#e5e7eb;margin:8px 0}
+.pill{position:absolute;left:50%;transform:translateX(-50%);top:54px;background:#7f1d1d;color:#fff;font:600 12.5px/1.8 Cairo,Tahoma,Arial;padding:8px 14px;border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:88%;text-align:center}
+.pill.ok{background:#065f46}
+.pill small{display:block;font-weight:400;opacity:.9;font-size:11.5px}
+/* ─ هيكل التحميل ─ */
+.tbl{width:100%;border:1px solid var(--line);border-radius:10px;overflow:hidden}.tbl .h{background:#f1f5f9;height:34px}.tbl .r{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;padding:9px 12px;border-top:1px solid var(--line)}
+.sh{height:12px;border-radius:6px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;animation:sh 1.3s infinite}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.busy{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:13px}.spin{width:16px;height:16px;border:2.5px solid #cbd5e1;border-top-color:var(--acc);border-radius:50%;animation:rot .8s linear infinite}@keyframes rot{to{transform:rotate(360deg)}}
+/* ─ بطاقة الخطأ ─ */
+.kcard{border:1px solid var(--line);border-radius:12px;padding:14px;min-height:120px}.kcard.err{background:var(--badbg);border-color:#fecaca}
+.btn{display:inline-block;background:var(--acc);color:#fff;border-radius:9px;padding:8px 16px;font-weight:700;font-size:13px;min-height:44px;line-height:28px}.btn.ghost{background:#fff;color:var(--acc);border:1.5px solid var(--acc)}
+.btn.sm{min-height:30px;line-height:16px;padding:6px 12px;font-size:12px;background:#94a3b8}
+.ic{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--line);border-radius:9px;color:#0f172a;margin:2px}
+.ok{color:var(--ok);font-weight:700}.bad{color:var(--bad);font-weight:700}.mut{color:var(--mut)}
+</style></head><body>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg"><symbol id="i-0" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></symbol><symbol id="i-1" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></symbol><symbol id="i-2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></symbol><symbol id="i-3" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></symbol><symbol id="i-4" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></symbol><symbol id="i-5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"></path></symbol><symbol id="i-6" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></symbol><symbol id="i-7" viewBox="0 0 24 24"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="10"></circle></symbol></svg>
+<div class="wrap">
+<h1>حزمة RM-3 — ما سيتغيّر في الواجهة (قبل التنفيذ · للرأي)</h1>
+<p class="sub">الألوانُ والخطوطُ والشاشاتُ كما هي. هذه الصفحة تعرض <b>الإضافات الظاهرة للمستخدم</b> فقط؛ ما عداها (الأيقونات كمنظومة، نقاط الكسر، الإتاحة) تغييراتٌ داخلية تُثبَت بالبوابة البصرية (64 شاشة بكسلاً بكسل) ولا تغيّر شكلاً.</p>
+
+<h2>١) حالة «بلا اتصال بالإنترنت»</h2>
+<p class="sub">الموجود اليوم: مؤشرُ الاتصال في القائمة الجانبية يتحوّل إلى الأحمر <b>بعد فشل أول حفظ</b>. المقترح: التحوّل فوراً عند انقطاع الإنترنت (قبل أي محاولة حفظ)، وعلى الجوال — حيث القائمةُ مطوية — تظهر لافتةٌ صغيرة تختفي بعودة الاتصال. لا تُعطَّل الأزرار: التعديلات تُحفظ في الجهاز وتُرسل تلقائياً (السلوك القائم).</p>
+<div class="row">
+ <div class="card"><span class="lbl">الحاسوب — الموجود (يبقى)</span>
+  <div class="side"><div class="nav on">الإحصائيات اليومية</div><div class="nav">موظفو الإدارة</div><div class="nav">الخطة التشغيلية</div>
+   <div class="bs-link on"><span class="d"></span><span class="l">متصل</span><span class="x">٣ متصلين</span></div>
+   <div class="bs-link off"><span class="d"></span><span class="l">انقطع الاتصال</span><span class="x">بلا إنترنت — تُرسل عند العودة</span></div>
+  </div><p class="mut" style="font-size:12.5px;margin:8px 0 0">الجديد: السطرُ الأحمر يظهر لحظةَ الانقطاع مع سببه («بلا إنترنت»)، لا بعد فشل الحفظ.</p></div>
+ <div class="card rec"><span class="lbl">الجوال — المقترح (جديد)</span>
+  <div class="phone"><div class="top"><span>☰ المنصة التشغيلية</span><span>👤</span></div>
+   <div class="pill">⚠ لا اتصال بالإنترنت<small>تعديلاتك محفوظة في هذا الجهاز وتُرسل تلقائياً عند عودة الاتصال</small></div>
+   <div class="body" style="padding-top:70px"><div class="sk" style="width:60%"></div><div class="sk"></div><div class="sk" style="width:80%"></div><div class="sk" style="width:45%"></div></div></div></div>
+ <div class="card"><span class="lbl">الجوال — عند عودة الاتصال (٤ ثوانٍ ثم تختفي)</span>
+  <div class="phone"><div class="top"><span>☰ المنصة التشغيلية</span><span>👤</span></div>
+   <div class="pill ok">✓ عاد الاتصال — يُرسَل ما تأجّل</div>
+   <div class="body" style="padding-top:70px"><div class="sk" style="width:60%"></div><div class="sk"></div><div class="sk" style="width:80%"></div><div class="sk" style="width:45%"></div></div></div></div>
+</div>
+
+<h2>٢) هيكلُ التحميل للجداول الكبيرة</h2>
+<p class="sub">خمس شاشات (جائزة التميز · التقرير اليومي · الاسترشاد · المضبوطات · الجدول الشهري) تظهر فارغةً للحظات حتى تصل بياناتها. المقترح: هيكلٌ رماديٌّ متحرّك مكان الجدول (من مكوّن BassamBusy القائم) — لا دوّارَ دائم ولا صفحة بيضاء.</p>
+<div class="row">
+ <div class="card"><span class="lbl">اليوم</span><div class="tbl"><div class="h"></div><div style="height:120px;display:flex;align-items:center;justify-content:center" class="busy"><span class="spin"></span>جارٍ التحميل…</div></div></div>
+ <div class="card rec"><span class="lbl">المقترح</span><div class="tbl"><div class="h"></div>
+  <div class="r"><div class="sh"></div><div class="sh"></div><div class="sh"></div><div class="sh"></div></div><div class="r"><div class="sh" style="width:70%"></div><div class="sh"></div><div class="sh" style="width:60%"></div><div class="sh"></div></div><div class="r"><div class="sh" style="width:85%"></div><div class="sh"></div><div class="sh"></div><div class="sh" style="width:50%"></div></div></div></div>
+</div>
+
+<h2>٣) بطاقةُ الخطأ مع «أعد المحاولة»</h2>
+<p class="sub">حين يفشل جلبُ مؤشرٍ أو قائمة (شاشات: مؤشرات الإدارة · الإعدادات · جائزة التميز · الإحصائيات · الموظفون · المهام) تُعرض الرسالةُ داخل البطاقة نفسِها مع زر إعادة المحاولة، بدل شريط الخطأ العام أعلى الصفحة.</p>
+<div class="row">
+ <div class="card"><span class="lbl">اليوم</span><div class="kcard"><div style="font-weight:700">مؤشرات الإشغال</div><div class="mut" style="font-size:13px">(فارغ — والخطأ في الشريط العام)</div></div></div>
+ <div class="card rec"><span class="lbl">المقترح</span><div class="kcard err"><div style="font-weight:700">مؤشرات الإشغال</div><div style="font-size:13px;margin:4px 0 10px">تعذّر جلب البيانات — تحقّق من الاتصال ثم أعد المحاولة</div><span class="btn ghost">↻ أعد المحاولة</span></div></div>
+</div>
+
+<h2>٤) اللمس: أهدافٌ لا تقلّ عن ٤٤ بكسل · لا اعتماد على التحويم</h2>
+<p class="sub">قاعدةٌ تُطبَّق على الأزرار والروابط والقوائم في الشاشات كلها (SOT-055/058): مساحةُ النقر ٤٤×٤٤ على الأقل حتى لو بقي الشكلُ صغيراً (بحاشيةٍ شفافة)، وكلُّ ما يظهر بالتحويم بالفأرة يظهر بالنقر على اللمس.</p>
+<div class="card"><span class="btn sm">زرٌّ اليوم (٣٠ بكسل)</span> &nbsp; <span class="btn">الزرُّ نفسُه بهدف ٤٤ بكسل</span> <span class="mut" style="font-size:12.5px">— الشكلُ قد يبقى كما هو؛ ما يكبر هو مساحةُ الاستجابة للإصبع.</span></div>
+
+<h2>٥) تغييراتٌ داخلية لا تُغيّر الشكل (للعلم)</h2>
+<div class="card">
+ <b>الأيقونات (AUD-018):</b> <span class="num">1,325</span> أيقونةً مكرَّرةً داخل القوالب تُجمع في منظومةٍ واحدة (<span class="num">~580</span> شكلاً) بفهرسٍ موثَّق؛ الرسمُ هو نفسُه بكسلاً — عيّنة من أيقونات شاشة الإعدادات: <b>اليوم</b> <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg></span><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg></span><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"></path></svg></span><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg></span><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="10"></circle></svg></span> &nbsp;<b>بعد</b> <span class="ic"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-0"/></svg></span><span class="ic"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-1"/></svg></span><span class="ic"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-2"/></svg></span><span class="ic"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-3"/></svg></span><span class="ic"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-4"/></svg></span><span class="ic"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-5"/></svg></span><span class="ic"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-6"/></svg></span><span class="ic"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-7"/></svg></span><br>
+ <b>نقاط الكسر (AUD-019):</b> اليوم <span class="num">18</span> قيمةً مختلفة (420 · 560 · 600/601 · 640 · 680 · 720 · 760 · 860 · 900 · 980 · 1024/1025 · 1100 · 1150 · 1180) → مقياسٌ من خمس: <span class="num">420 · 640 · 900 · 1024 · 1180</span>. القيمُ القريبة تُوحَّد (مثلاً 560/600/680 → 640)، وتُراجَع كلُّ قاعدة تتحرّك بلقطاتٍ قبل/بعد على عروض الجوال واللوحي قبل الاعتماد.<br>
+ <b>الإتاحة (AUD-020):</b> تسمياتٌ للحقول والأزرار بلا نصّ، ترتيبُ التركيز، التباين — بفحص axe على 32 شاشة؛ لا تغييرَ مرئياً إلا إن كشف الفحصُ تبايناً ضعيفاً (يُعرض عليك حينها).
+</div>
+
+
+<h2>٦) تباينُ النصوص الصغيرة (فحص axe على 28 شاشة: 509 موضعاً)</h2>
+<p class="sub">النصوص الصغيرة بالذهبي الفاتح على الأبيض (مثل تسميات بطاقات المؤشرات ونصّ الإصدار) تبايُنها 1.8:1 والمعيار 4.5:1 — تُقرأ بصعوبة على الجوال وفي الإضاءة القوية. المقترح: درجةُ ذهبيٍّ أغمق للنصوص الصغيرة فقط (الألوانُ الكبيرة والشعار والأزرار كما هي).</p>
+<div class="row">
+ <div class="card"><span class="lbl">اليوم — ذهبي فاتح #D9C08A (1.8:1)</span>
+  <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px">
+   <div style="font:700 10.5px/1.6 Cairo,Tahoma;color:#d9c08a">مؤشرات التشغيل اليومي</div>
+   <div style="font:800 26px/1.2 Cairo,Tahoma;color:#1c1612;margin:4px 0">١٢٬٤٨٠</div>
+   <div style="font:700 10px/1.6 Cairo,Tahoma;color:#d9c08a">إجمالي الحضور · الوردية الصباحية</div>
+   <div style="font:400 10.5px/1.6 Cairo,Tahoma;color:#aaaeb2;margin-top:8px">الإصدار 2026.10.10-253</div>
+  </div></div>
+ <div class="card rec"><span class="lbl">المقترح — ذهبي أغمق #8A6F35 (4.7:1) · رمادي #6B7280 (5.3:1)</span>
+  <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px">
+   <div style="font:700 10.5px/1.6 Cairo,Tahoma;color:#8a6f35">مؤشرات التشغيل اليومي</div>
+   <div style="font:800 26px/1.2 Cairo,Tahoma;color:#1c1612;margin:4px 0">١٢٬٤٨٠</div>
+   <div style="font:700 10px/1.6 Cairo,Tahoma;color:#8a6f35">إجمالي الحضور · الوردية الصباحية</div>
+   <div style="font:400 10.5px/1.6 Cairo,Tahoma;color:#6b7280;margin-top:8px">الإصدار 2026.10.10-253</div>
+  </div></div>
+</div>
+<h2>٧) لوحةُ المفاتيح: الوصولُ إلى القائمة الجانبية بـTab وEnter + حلقةُ تركيزٍ مرئية</h2>
+<p>اكتُشف أن روابطَ القائمة الجانبية الأحد عشر لا يصلها Tab ولا يفتحها Enter (مستخدمُ لوحة المفاتيح وقارئُ الشاشة لا يستطيعان التنقّل). الإصلاح لا يغيّر شكلَ القائمة بالفأرة أو اللمس؛ الفرقُ الوحيد المرئي: عند التنقّل بـTab تظهر حلقةُ تركيزٍ ذهبية (٢ بكسل · اللون الموجود أصلاً في المنصة) حول العنصر المركَّز كما في المثال.</p>
+<div class="row">
+ <div class="card"><span class="lbl">اليوم — Tab يقفز فوق القائمة كلِّها</span>
+  <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px">
+   <div style="font:600 12px/1.8 Cairo,Tahoma;color:#1c1612;padding:6px 10px;border-radius:8px">مؤشرات الإدارة</div>
+   <div style="font:600 12px/1.8 Cairo,Tahoma;color:#1c1612;padding:6px 10px;border-radius:8px;background:#f6f1e7">موظفو الإدارة <span style="font:400 10px Cairo;color:#8a929b">(الشاشة الحالية)</span></div>
+   <div style="font:600 12px/1.8 Cairo,Tahoma;color:#1c1612;padding:6px 10px;border-radius:8px">الجدول الشهري</div>
+  </div></div>
+ <div class="card rec"><span class="lbl">المقترح — Tab يمرّ على الروابط وEnter يفتح · حلقةٌ ذهبية ٢ بكسل عند التركيز فقط</span>
+  <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px">
+   <div style="font:600 12px/1.8 Cairo,Tahoma;color:#1c1612;padding:6px 10px;border-radius:8px">مؤشرات الإدارة</div>
+   <div style="font:600 12px/1.8 Cairo,Tahoma;color:#1c1612;padding:6px 10px;border-radius:8px;background:#f6f1e7">موظفو الإدارة</div>
+   <div style="font:600 12px/1.8 Cairo,Tahoma;color:#1c1612;padding:6px 10px;border-radius:8px;outline:2px solid #7E6530;outline-offset:2px">الجدول الشهري <span style="font:400 10px Cairo;color:#8a929b">(مركَّز بـTab)</span></div>
+  </div></div>
+</div>
+<div class="q">السؤال: هل توافق على لافتة الجوال (١) وهيكل التحميل (٢) وبطاقة «أعد المحاولة» (٣) وأهداف اللمس (٤) والذهبي الأغمق للنصوص الصغيرة (٦) وحلقة التركيز للوحة المفاتيح (٧) كما هي معروضة؟ (نعم للكل / نعم عدا … / تعديل: …) — الباقي ينفَّذ بلا تغييرٍ مرئي.</div>
+</div></body></html>

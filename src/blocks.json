@@ -1,0 +1,1062 @@
+{
+ "assets": {
+  "fonts/almarai-800-arabic.woff2": {
+   "bytes": 33328,
+   "enc": "base64",
+   "lines": [
+    12795
+   ],
+   "mime": "font/woff2",
+   "prefix": "data:font/woff2;base64,",
+   "sha256": "7acac6ae3ea4d4eeb7c9b636856c46274f5904e02caff83a545d75ebb9754faf"
+  },
+  "fonts/almarai-800-latin.woff2": {
+   "bytes": 19280,
+   "enc": "base64",
+   "lines": [
+    12803
+   ],
+   "mime": "font/woff2",
+   "prefix": "data:font/woff2;base64,",
+   "sha256": "7f9acc49f37d11319a44ecf80edb205f11cffddcb3013a0bbbc6af46dcf12b9c"
+  },
+  "fonts/cairo-arabic.woff2": {
+   "bytes": 30896,
+   "enc": "base64",
+   "lines": [
+    3057
+   ],
+   "mime": "font/woff2",
+   "prefix": "data:font/woff2;base64,",
+   "sha256": "748022f50c427456ad66031e855349be3448ee1f05a5f1eb59574ebe0c686749"
+  },
+  "fonts/cairo-bullet.woff2": {
+   "bytes": 540,
+   "enc": "base64",
+   "lines": [
+    3083
+   ],
+   "mime": "font/woff2",
+   "prefix": "data:font/woff2;base64,",
+   "sha256": "7e48f168d47ebd9953a7fd553abf7e2fda75469785166e469178f70fa0a5a979"
+  },
+  "fonts/cairo-latin-ext.woff2": {
+   "bytes": 16648,
+   "enc": "base64",
+   "lines": [
+    3065
+   ],
+   "mime": "font/woff2",
+   "prefix": "data:font/woff2;base64,",
+   "sha256": "da6ada83c3a87c2f0211325dc0a123702e1d4a940958b3e943ac4f37b31d5371"
+  },
+  "fonts/cairo-latin.woff2": {
+   "bytes": 33820,
+   "enc": "base64",
+   "lines": [
+    3073
+   ],
+   "mime": "font/woff2",
+   "prefix": "data:font/woff2;base64,",
+   "sha256": "82c13cbd1352d76e97c3d335caa912ae68fecdc3949a43cf8d149eb892384c1b"
+  },
+  "img/apple-touch-180.png": {
+   "bytes": 3948,
+   "enc": "base64",
+   "lines": [
+    19
+   ],
+   "mime": "image/png",
+   "prefix": "data:image/png;base64,",
+   "sha256": "158af4a1b36a0679ceb2e388b20541d838b0a8544cf434ce25ddca30ff1336df"
+  },
+  "img/favicon.svg": {
+   "bytes": 686,
+   "enc": "urlquote-safe-slash",
+   "lines": [
+    17,
+    12787
+   ],
+   "mime": "image/svg+xml",
+   "prefix": "data:image/svg+xml,",
+   "sha256": "4b7af0e5f7c9f4e8e7246f1dd281eba16a0dadabcb42ccda77225b541f1dc211"
+  },
+  "img/icon-192.png": {
+   "bytes": 4262,
+   "enc": "base64",
+   "lines": [
+    18
+   ],
+   "mime": "image/png",
+   "prefix": "data:image/png;base64,",
+   "sha256": "48fb7c9aa92699ef86ae21d43e531cf30eea01b1d0f2cf684fe43c92dc2cafa1"
+  }
+ },
+ "blocks": [
+  {
+   "closeTag": "</script>",
+   "id": "core/005-kivo-ns.js",
+   "kind": "js",
+   "line": 22,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "new": "KIVO_258 · AUD-016"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/010-react.js",
+   "kind": "js",
+   "line": 22,
+   "openTag": "<script>",
+   "origBytes": 10751,
+   "origSha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/020-react-dom.js",
+   "kind": "js",
+   "line": 54,
+   "openTag": "<script>",
+   "origBytes": 131835,
+   "origSha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/030-pages-loader.js",
+   "kind": "js",
+   "line": 322,
+   "openTag": "<script>",
+   "origBytes": 1537847,
+   "origSha256": "d43685dc5c6569275671f8b4a827c32859402eb107cae7d381f6698d693504fb"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/040-intl-cache.js",
+   "kind": "js",
+   "line": 352,
+   "openTag": "<script>",
+   "origBytes": 5771,
+   "origSha256": "187da9cffcf049ea3507142f1afcdcc3810e7ee4a8c1aef808a5c21fe997ed09"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/050-dc-runtime.js",
+   "kind": "js",
+   "line": 441,
+   "openTag": "<script>",
+   "origBytes": 76965,
+   "origSha256": "2d6fd70e9c3491dae587e74d4d2a658d3a6644b422bc0386da636e5f3cab30da"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/060-percent-format.js",
+   "kind": "js",
+   "line": 2412,
+   "openTag": "<script>",
+   "origBytes": 758,
+   "origSha256": "5c578d559d96eb1d2a18b5fc6c31e37f93226626e0b5262690b89de2ccefe205"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/070-theme-tokens.css",
+   "kind": "css",
+   "line": 2427,
+   "openTag": "<style id=\"bs-theme-tokens\">",
+   "origBytes": 52686,
+   "origSha256": "fe62acc66f6d6de093376c9f7499b3563369c40e2544e87f83de8514795f7ddc"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/080-theme-dark.css",
+   "kind": "css",
+   "line": 2428,
+   "openTag": "<style id=\"bs-theme-dark\">",
+   "origBytes": 26713,
+   "origSha256": "a23ff64f9341f9ff1a2136dae4ae68cef607fc62aedc2d2ca395b06ae01851f7"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/090-map-night.css",
+   "kind": "css",
+   "line": 2428,
+   "openTag": "<style id=\"bs-map-night-css\">",
+   "origBytes": 583,
+   "origSha256": "aa75c8d993411c841ef01d00b396a016b8cb3006926a9d87be2a034eec92a124"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/100-brand-ui.css",
+   "inlineWhy": "KIVO_242: CSSOM يسلسل var() داخل الاختصارات بقيمٍ فارغة (قاعدتان) — تبقى <style> فيُنسخ نصُّها حرفاً في وثائق الطباعة",
+   "kind": "inline-css",
+   "line": 2428,
+   "openTag": "<style id=\"bs-brand-ui\">",
+   "origBytes": 1013,
+   "origSha256": "c3bde252349179772616215b1abfdb4be11ae3c9f69c120877679443089c8a30"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/110-theme-prepaint.js",
+   "kind": "js",
+   "line": 2429,
+   "openTag": "<script>",
+   "origBytes": 50279,
+   "origSha256": "26996f00837cc2a912510d03296d877c1db163435a393d91e7cf63204382c088"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/115-css-text.js",
+   "kind": "js",
+   "line": null,
+   "note": "KIVO_242: added (CSS text for print/export from linked sheets)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "i18n/120-arabic-digits.js",
+   "kind": "js",
+   "line": 2457,
+   "openTag": "<script>",
+   "origBytes": 18977,
+   "origSha256": "ea9ba3d0a00b581d2917bb40759e9d106de060e6c031b9cc9e3116f6dc440c73"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/130-error-bar.js",
+   "kind": "js",
+   "line": 2698,
+   "openTag": "<script>",
+   "origBytes": 1487,
+   "origSha256": "4a92e85f80a74570669a6eab19b7777b6c20aa1fb9fa1235b6b4abbded55b829"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/140-safety-scheduler.js",
+   "kind": "js",
+   "line": 2724,
+   "openTag": "<script>",
+   "origBytes": 3512,
+   "origSha256": "54a2a77baf1a547f9d80431a14a47a0652a981d60fe1b739e56d89a573734493"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/150-statscroll.css",
+   "kind": "css",
+   "line": 2762,
+   "openTag": "<style id=\"bs-statscroll-css\">",
+   "origBytes": 1155,
+   "origSha256": "3a52d55817d6a8b7d94538bac7c47f566c99ba13ad0600bbf252a102ace00fa8"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/160-card-fade.js",
+   "kind": "js",
+   "line": 2774,
+   "openTag": "<script>",
+   "origBytes": 2897,
+   "origSha256": "ec279851274c8ac6af59700481d2f64ff12d88c5ed532b173f79b280f1876367"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/170-freeze.css",
+   "kind": "css",
+   "line": 2818,
+   "openTag": "<style id=\"bs-freeze-css\">",
+   "origBytes": 1339,
+   "origSha256": "a0e3b1e3dc0422a94aeefd121907b0592d3054d5627c451020b840ae345ad81f"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/180-tables-engine.js",
+   "kind": "js",
+   "line": 2836,
+   "openTag": "<script>",
+   "origBytes": 8865,
+   "origSha256": "f660ea3e75081fd82f4daec7b7bccb68385736e66a4ccc8e246d7e559c22c97c"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/190-tabstrip-unify.js",
+   "kind": "js",
+   "line": 2982,
+   "openTag": "<script>",
+   "origBytes": 2377,
+   "origSha256": "51e7064ddd0d1b87bb7462e01ec7e3274e2fe222286cc69b6d4fc7d4563d1193"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/200-subseg.css",
+   "kind": "css",
+   "line": 3014,
+   "openTag": "<style id=\"bs-subseg-css\">",
+   "origBytes": 2605,
+   "origSha256": "d8a5fbea712ab2fcb9d3ade71012b60560562013d036071302612492b9460980"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/210-mix-on.js",
+   "kind": "js",
+   "line": 3040,
+   "openTag": "<script>",
+   "origBytes": 463,
+   "origSha256": "f5454264ff1c0f7d624e8f805a6b19b296ccc956e432a730548df71f2eb800bd"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/220-cairo-font.css",
+   "kind": "css",
+   "line": 3050,
+   "openTag": "<style>",
+   "origBytes": 111727,
+   "origSha256": "bc3f2d77d8242ea7d3c19ee2c557dcfb996a63a55a1286fc529ccd52351bf9c6"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/230-link-indicator.css",
+   "kind": "css",
+   "line": 3087,
+   "openTag": "<style>",
+   "origBytes": 1810,
+   "origSha256": "7cf10baf672c4ea110062941b731f78dd09dba3f34f16397314dbae8185d5844"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/240-bassam-link.js",
+   "kind": "js",
+   "line": 3104,
+   "openTag": "<script>",
+   "origBytes": 2725,
+   "origSha256": "30a9b2973de6e8b2d975f91c725b082d050635a411b1c686b88c294a181d28cb"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/250-plat-control.css",
+   "kind": "css",
+   "line": 3145,
+   "openTag": "<style>",
+   "origBytes": 5689,
+   "origSha256": "658d62edbbc63c6074f974c7d5dfa72674bd93e3befe635a9b1480a9510bb4d3"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "manifests/255-page-manifest.js",
+   "kind": "js",
+   "openTag": "<script>",
+   "added": "KIVO_247 · AUD-015 (مولَّد من manifests/pages.json)"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "layouts/260-bassam-plat.js",
+   "kind": "js",
+   "line": 3199,
+   "openTag": "<script>",
+   "origBytes": 30183,
+   "origSha256": "9711c080f72ad9e5152bbe4b2501304ada333c6c73f9903ebf94904b039b5d14"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/270-bs-ver.js",
+   "kind": "js",
+   "line": 3439,
+   "openTag": "<script>",
+   "origBytes": 35,
+   "origSha256": "0ef55cecf5dd362082506187ddbc232eb55143a5c2d4c16089bcf4325af04b80"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "api/280-server-storage.js",
+   "kind": "js",
+   "line": 3440,
+   "openTag": "<script>",
+   "origBytes": 43937,
+   "origSha256": "a4c752cc5f30a32b8d71530f8394c8bf9382cca2c9be2f98255a8bfb71531bfd"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/290-activity-log.js",
+   "kind": "js",
+   "line": 4049,
+   "openTag": "<script>",
+   "origBytes": 39482,
+   "origSha256": "54c8427ef2592cefe85ae25a54295061ba85ad2ad957fe73634d748952088c69"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/300-bassam-ack.js",
+   "kind": "js",
+   "line": 4433,
+   "openTag": "<script>",
+   "origBytes": 2951,
+   "origSha256": "f17581778906f5af5526fc3c0173116f81bbd382a9b159daedcb264bd44ba475"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/310-image-refs.js",
+   "kind": "js",
+   "line": 4474,
+   "openTag": "<script>",
+   "origBytes": 3648,
+   "origSha256": "8059f0cb8592614505fef886765f9616a8d6794c18f188b08652b08981c1878a"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/320-dept-storage.js",
+   "kind": "js",
+   "line": 4505,
+   "openTag": "<script>",
+   "origBytes": 37412,
+   "origSha256": "273043fc9eddc380e163981903f54f3712384acf13b8c45a23aaca07998084b5"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "auth/330-auth.js",
+   "kind": "js",
+   "line": 5068,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "splitFrom": "auth/330-auth-perm.js"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "permissions/331-perm-model.js",
+   "kind": "js",
+   "line": 5068,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "splitFrom": "auth/330-auth-perm.js"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/332-find-day.js",
+   "kind": "js",
+   "line": 5068,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "splitFrom": "auth/330-auth-perm.js"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "manifests/333-platform-map.js",
+   "kind": "js",
+   "line": 5068,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "splitFrom": "auth/330-auth-perm.js"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "permissions/334-perm-tree-tpl.js",
+   "kind": "js",
+   "line": 5068,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "splitFrom": "auth/330-auth-perm.js"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "auth/335-identity-gate.js",
+   "kind": "js",
+   "line": 5068,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "splitFrom": "auth/330-auth-perm.js"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "permissions/340-registry-v24-9.js",
+   "kind": "js",
+   "line": 7951,
+   "openTag": "<script>",
+   "origBytes": 224137,
+   "origSha256": "3bfd4d8c9c485368847ea91cfbed762b5d7acf064a680873f4d0fef9499c3797"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "permissions/350-perm-v2-shadow.js",
+   "kind": "js",
+   "line": 8047,
+   "openTag": "<script>",
+   "origBytes": 4280,
+   "origSha256": "5ec7e50ecd0eeb2ff4234d85735841bdf310a55073f8f533443108a2bb757222"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/360-bassam-idb.js",
+   "kind": "js",
+   "line": 8101,
+   "openTag": "<script>",
+   "origBytes": 26440,
+   "origSha256": "ae628aceb1fcb8b6b4aaba95f7764870bac2b78b152f723bb79e6545f83dacb2"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "auth/370-backup-crypto.js",
+   "kind": "js",
+   "line": 8454,
+   "openTag": "<script>",
+   "origBytes": 2394,
+   "origSha256": "abe33f53794429247b30dc8a290e6184d2c7ff7ab4a6cde50e861ec9dd663cea"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "i18n/380-hijri-fallback.js",
+   "kind": "js",
+   "line": 8484,
+   "openTag": "<script>",
+   "origBytes": 2996,
+   "origSha256": "f42b685bbeaa1da748221520f8dbf262680dde594e38d09d7aa5042ed35c32c4"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/390-kpi-primitives.js",
+   "kind": "js",
+   "line": 8530,
+   "openTag": "<script>",
+   "origBytes": 19273,
+   "origSha256": "443ae381e50d1696e09e93b7ced7473b6689f6ce1ee652fad220528bcb37b46a"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/400-shift-need.js",
+   "kind": "js",
+   "line": 8765,
+   "openTag": "<script>",
+   "origBytes": 3069,
+   "origSha256": "2fcf419d1eb54232f5d4903be935a913230fb5c5cd6f5bbd6902afd9165cab68"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/410-gate-units.js",
+   "kind": "js",
+   "line": 8819,
+   "openTag": "<script>",
+   "origBytes": 7356,
+   "origSha256": "55eba74a656ef8cdb4af1fa4f24b416361bf96ad55df0d30d4762d769874ef02"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/420-round-factory.js",
+   "kind": "js",
+   "line": 8899,
+   "openTag": "<script>",
+   "origBytes": 5761,
+   "origSha256": "2df31e87dfe46cc6507354527b243a562b368381117b68dcda935951712afe06"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/430-store-broadcast.js",
+   "kind": "js",
+   "line": 8960,
+   "openTag": "<script>",
+   "origBytes": 1325,
+   "origSha256": "2b0db62558a2299e5a73ae59afbf46ee537f14e05963fac5a2f3e21a80fc50d2"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/440-count.js",
+   "kind": "js",
+   "line": 8975,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "splitFrom": "services/440-notifications.js"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/441-notif-core.js",
+   "kind": "js",
+   "line": 8975,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "splitFrom": "services/440-notifications.js"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/442-notif-observer.js",
+   "kind": "js",
+   "line": 8975,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "splitFrom": "services/440-notifications.js"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/450-pull-refresh.js",
+   "kind": "js",
+   "line": 9981,
+   "openTag": "<script>",
+   "origBytes": 3933,
+   "origSha256": "9a2e4f16f8b18c576841f5e2e8bce2434acaabe31075986846474f8a4dd0bd82"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/460-hscroll-drag.js",
+   "kind": "js",
+   "line": 10004,
+   "openTag": "<script>",
+   "origBytes": 4997,
+   "origSha256": "d6c36e5ca400e0c13015d32808ff5f20acc616b6a7da08bb45ea0e91708c8c15"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/470-touch-tooltips.js",
+   "kind": "js",
+   "line": 10092,
+   "openTag": "<script>",
+   "origBytes": 3749,
+   "origSha256": "ac323f4164c713c2e5eecb4431d93a10dd602bd2ae4254a38dd4a719553f9f55"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/480-final-delete.js",
+   "kind": "js",
+   "line": 10159,
+   "openTag": "<script>",
+   "origBytes": 5456,
+   "origSha256": "7b36c2b949af4244658d865c7cccf909c378e52b7d1a3c7596dc4b0ac9ded655"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/490-emp-key.js",
+   "kind": "js",
+   "line": 10247,
+   "openTag": "<script>",
+   "origBytes": 2418,
+   "origSha256": "cb55f6a6bd8e050002628a9b3f9d01dd047d2a0cfe303bf1d215826d0b805f5e"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/500-element-uid.js",
+   "kind": "js",
+   "line": 10288,
+   "openTag": "<script>",
+   "origBytes": 2640,
+   "origSha256": "c27e87ef9c7b90d83763f5f0b4258985ff871338a0cf8f587eead3ff74b9bbf7"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/510-emp-monthly-source.js",
+   "kind": "js",
+   "line": 10304,
+   "openTag": "<script>",
+   "origBytes": 2165,
+   "origSha256": "1fe094e01a9bc3ab6f246baf5e1b6c07cd540f9527d83317c4ee1b78be7e286a"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/520-field-monitor.js",
+   "kind": "js",
+   "line": 10324,
+   "openTag": "<script>",
+   "origBytes": 15231,
+   "origSha256": "9f832adfc8b1074f4de0fa14a2926b0702b581bf22f489a9816bfe681ad343be"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/530-emp-day-facts.js",
+   "kind": "js",
+   "line": 10494,
+   "openTag": "<script>",
+   "origBytes": 10543,
+   "origSha256": "27012b4294aa581a0688c00ff7eb69a863beadab023efdd9c52784982605fa4a"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/535-profile-facts.js",
+   "kind": "js",
+   "line": 10494,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "new": "KIVO_264 · ملفي (OD-3)"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/545-task-self.js",
+   "kind": "js",
+   "line": 10494,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "new": "KIVO_264 · KIVO-Tasks P0 («ملفي ← مهامي» من الخادم)"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/546-task-model.js",
+   "kind": "js",
+   "line": 10494,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "new": "KIVO_264 · KIVO-Tasks المرحلة الثانية (نموذجُ المهمة في الواجهة — مرآةُ 070)"
+  },
+  {
+   "id": "services/547-custody-api.js",
+   "kind": "js",
+   "openTag": "<script>",
+   "closeTag": "</script>",
+   "line": 10494,
+   "origBytes": null,
+   "origSha256": null,
+   "new": "Local custody candidate: typed API transport; not part of accepted release"
+  },
+  {
+   "id": "services/548-atomic-backup.js",
+   "kind": "js",
+   "openTag": "<script>",
+   "closeTag": "</script>",
+   "line": 10494,
+   "origBytes": null,
+   "origSha256": null,
+   "new": "Shared atomic backup transport; handlers replace local restore writers"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/540-busy.css",
+   "inlineWhy": "KIVO_242: CSSOM يسلسل var() داخل الاختصارات بقيمٍ فارغة (قاعدتان) — تبقى <style> فيُنسخ نصُّها حرفاً في وثائق الطباعة",
+   "kind": "inline-css",
+   "line": 10615,
+   "openTag": "<style id=\"bs-busy-css\">",
+   "origBytes": 3144,
+   "origSha256": "9974d61604572f9740f9a067952d2dc739112bfec87dffe8bb390ce6002733ca"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/550-bassam-busy.js",
+   "kind": "js",
+   "line": 10643,
+   "openTag": "<script>",
+   "origBytes": 6960,
+   "origSha256": "b2d01a7f03ebbbb7f07ae3ce12c19568502ed20c86d07a133a566381df88ce6b"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/560-canvas-input.js",
+   "kind": "js",
+   "line": 10752,
+   "openTag": "<script>",
+   "origBytes": 42000,
+   "origSha256": "9949817de1a53ad004add085145296360aeebf3fa7a7f018b018a1b819234a3f"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/565-page-kit.js",
+   "kind": "js",
+   "line": 10752,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "new": "KIVO_257 · AUD-012"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/566-print-core.js",
+   "kind": "js",
+   "line": 10752,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "new": "KIVO_258 · AUD-013"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/570-bassam-xlsx.js",
+   "kind": "js",
+   "line": 11392,
+   "openTag": "<script>",
+   "origBytes": 34538,
+   "origSha256": "f66ea7e8a694698bab596a523ae0a718ae1706480a69a3e21f9f0a91292ea23b"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/580-historical-import.js",
+   "kind": "js",
+   "line": 11826,
+   "openTag": "<script>",
+   "origBytes": 26791,
+   "origSha256": "78c6a715d439ff856f755082d63bc1b4732865ecbbe6f795fe1c3e24d4b81644"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "services/590-employees-import.js",
+   "kind": "js",
+   "line": 12123,
+   "openTag": "<script>",
+   "origBytes": 56055,
+   "origSha256": "822fd68e4b29c7227e4dd31f33b59ca0ee147dd9eb2432fe982545ade0149357"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "styles/595-almarai-font.css",
+   "kind": "css",
+   "line": 12788,
+   "note": "KIVO_242: external (embedded font data) — linked from <helmet>",
+   "openTag": "<style>",
+   "origBytes": 71581,
+   "origSha256": "d17ab76c2204e9fc19822ecfce5b8d289f8e05b38b1151f9e347b131cc55be61"
+  },
+  {
+   "closeTag": "</style>",
+   "id": "layouts/helmet-global.css",
+   "kind": "inline-css",
+   "line": 12809,
+   "openTag": "<style>",
+   "origBytes": 49014,
+   "origSha256": "c5b0907bb8e853f9fa29edac0a91a5a39bb300281c7f5b74340b075ba2248501"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "layouts/root-logic.js",
+   "kind": "inline-js",
+   "line": 13813,
+   "openTag": "<script type=\"text/x-dc\" data-dc-script=\"\">",
+   "origBytes": 106458,
+   "origSha256": "2385a6158620b8aff4e968738370f5fa09c9b1fb8aad77f3221c9694d0c8d54c"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/600-tooltip-portal.js",
+   "kind": "js",
+   "line": 14882,
+   "openTag": "<script>",
+   "origBytes": 4409,
+   "origSha256": "db7047e138d1c4c89f4c43206658cb2ff3954282285f83edff9cc8b37358a3a9"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/610-map-wheel.js",
+   "kind": "js",
+   "line": 14957,
+   "openTag": "<script>",
+   "origBytes": 212,
+   "origSha256": "f9c8580d4cb5f4520bb303e1fcc8f9c7895c0d9f34d6f2aa3f2f09509d349570"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/620-no-select.js",
+   "kind": "js",
+   "line": 14965,
+   "openTag": "<script>",
+   "origBytes": 3128,
+   "origSha256": "435ade0990dd829c8091cb7a410e2785ee8d6a1f6330b880225c9ebf61c1187a"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/630-popover-place.js",
+   "kind": "js",
+   "line": 15013,
+   "openTag": "<script>",
+   "origBytes": 4953,
+   "origSha256": "bb4ff3ddc3a96e0bb4b03df8c8ef4d1f5806cda50e300e37dbcf530301d85480"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/640-map-tooltip.js",
+   "kind": "js",
+   "line": 15119,
+   "openTag": "<script>",
+   "origBytes": 12523,
+   "origSha256": "308bae1243297760bdeaeab216f7057ee98542a90c0f8b95899065d341b1dab7"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/650-dropdown-unify.js",
+   "kind": "js",
+   "line": 15274,
+   "openTag": "<script>",
+   "origBytes": 5749,
+   "origSha256": "a0449e5ded88a898d15dc175c49251128d7417e6eb85d479d9b154d030f08948"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/660-a11y-enhancer.js",
+   "kind": "js",
+   "line": 15367,
+   "openTag": "<script data-a11y-enhancer>",
+   "origBytes": 4815,
+   "origSha256": "dfb7e73c8aaf7ed7329dd688a0d3fa0c6961751ab3208662b679c79674102864"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/670-big-table-lane.js",
+   "kind": "js",
+   "line": 15438,
+   "openTag": "<script>",
+   "origBytes": 3341,
+   "origSha256": "50d7c51194e40f437b058a90d6bd46f873e5d6958e3c9e7771828cc1eb3369ff"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/680-search-bars.js",
+   "kind": "js",
+   "line": 15494,
+   "openTag": "<script>",
+   "origBytes": 10072,
+   "origSha256": "9e5c40a8cb19cd4b10cb5a1d09799026116977c6fafad1794b9e3d116c17b592"
+  }
+ ],
+ "counts": {
+  "assets": 9,
+  "css": 10,
+  "inline": 4,
+  "js": 72,
+  "pages": 14
+ },
+ "legacyManifestIcons": [
+  {
+   "asset": "img/icon-192.png",
+   "bytes": 4262,
+   "purpose": "any",
+   "sha256": "48fb7c9aa92699ef86ae21d43e531cf30eea01b1d0f2cf684fe43c92dc2cafa1",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "asset": "img/icon-512.png",
+   "bytes": 9733,
+   "purpose": "any maskable",
+   "sha256": "d5838548de530487bbff9adac31cb586d03293723e069dd0ba6eef9807cfac4c",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ],
+ "pages": {
+  "items": [
+   {
+    "b64Sha256": "496f61e8121911934817267eac2e3badf932b5356b217944d777b49cf39b8e8b",
+    "bytes": 530519,
+    "file": "client/pages/Employees.dc.html",
+    "name": "Employees",
+    "sha256": "a9c411dfd74600407d2d6de818104d8c9896eb2567b8a8e3fad5183fefa4883b"
+   },
+   {
+    "b64Sha256": "05f0ae7029a3c2dc71031f792c1cb3f8ce7a398b398641a5bc8bf9c866dd6db8",
+    "bytes": 177288,
+    "file": "client/pages/Tasks.dc.html",
+    "name": "Tasks",
+    "sha256": "e40f7c606fbd6917b9b96ba2a115c9f06afa35e53363954cf19a02dce25f57a3"
+   },
+   {
+    "b64Sha256": "18fd106f029402372a63ee7938a81c70cb1e20d3ca365afce5f18642c8e18ed9",
+    "bytes": 818646,
+    "file": "client/pages/Daily Sessions.dc.html",
+    "name": "Daily Sessions",
+    "sha256": "be3abc92554039fbf72e349c34a124f65444de98a30982645147f907212e4e00"
+   },
+   {
+    "b64Sha256": "b4eed90979c0e2fd824b2c1142e54220b2a471bed9aefc9fb2e346ce66f6c0d9",
+    "bytes": 855532,
+    "file": "client/pages/Operational Plan.dc.html",
+    "name": "Operational Plan",
+    "sha256": "8673ea459c3052cf7e1db354e1ddd2a1c50875a97eb39cad0c4fc783a01b11fa"
+   },
+   {
+    "b64Sha256": "7f43ccc5601872757d06f9ef3265255b12925ab8c32794821c839897f8e8a71c",
+    "bytes": 206045,
+    "file": "client/pages/Staffing.dc.html",
+    "name": "Staffing",
+    "sha256": "94add6fc704b7cfaa0a63604bd2a6c31e07ad62e1477889a0fe3bf33216fd7f5"
+   },
+   {
+    "b64Sha256": "52e50939d94f3ab0cfc86f3ceab9c83c6e7183033504f326ca211d4031aa1508",
+    "bytes": 581768,
+    "file": "client/pages/Admin.dc.html",
+    "name": "Admin",
+    "sha256": "3dbb9998ebe38712baf1ac54c26dfa67f8f5841b2f7f77114ba83121a9090311"
+   },
+   {
+    "b64Sha256": "0b1e7af69b7a566a9e44062eb39f49f44385b2713cc9b170fee4926df0bc8ab1",
+    "bytes": 157711,
+    "file": "client/pages/Profile.dc.html",
+    "name": "Profile",
+    "sha256": "af1c2e5dab42352c82d7278623963e26be9600c47fd914780bdc27378ef53151"
+   },
+   {
+    "b64Sha256": "cf2e522092c5dcfac173ca1e501e9cd6eb20336655ac3c27bcb1054723429f09",
+    "bytes": 189622,
+    "file": "client/pages/Irshad.dc.html",
+    "name": "Irshad",
+    "sha256": "ca8c6ff02e5ea93a15a3d68dbc69d6c9c3353e603a3c7dd58a0c0c03a585c70f"
+   },
+   {
+    "b64Sha256": "b6a7f129e906385cddc4bb378bd515f14a024cd052570acb37fbf40107e59ae8",
+    "bytes": 183156,
+    "file": "client/pages/Award.dc.html",
+    "name": "Award",
+    "sha256": "13c3445b595dedf37275418d0b3158752d87a6b77285635917b9f75593dc3dfe"
+   },
+   {
+    "b64Sha256": "fbcf52ef83b260e078027f439a4719465269d467d9a055feb7d40efa064d31bb",
+    "bytes": 242108,
+    "file": "client/pages/Daily Report.dc.html",
+    "name": "Daily Report",
+    "sha256": "fe0b0a7c8bce136028048cd10c43d52f36a836c296b2492dd5d75a84afb9581d"
+   },
+   {
+    "b64Sha256": "6f49a4140896745721e75a008214c0cd360a7536ba4df4db7c410a9813f255f3",
+    "bytes": 7098,
+    "file": "client/pages/Planning.dc.html",
+    "name": "Planning",
+    "sha256": "eef6f48baee317657a7236de7e5eff89fbb89967f0d45ea525e3b0e6a9fd67e2"
+   },
+   {
+    "b64Sha256": "f4a5c001ea4e0aefb555584b88a3e55ec50e656b38b19a66609e2de4051d0f0e",
+    "bytes": 247657,
+    "file": "client/pages/Seized.dc.html",
+    "name": "Seized",
+    "sha256": "2e5b89fe31a2264f1e3c5eb180e475faa949bad2d8228e1972ae5514546d9f9f"
+   },
+   {
+    "b64Sha256": "2e178e8751ad709a95781efc649f0fc78a5c8ca7c8a9c21718d145ea15e5757a",
+    "bytes": 11979,
+    "file": "client/pages/KPIs.dc.html",
+    "name": "KPIs",
+    "sha256": "89639985c42999a5961d01e6920f329c0d633fbae17f286bef867b2b62f48fa0"
+   },
+   {
+    "b64Sha256": "9c800f0a630e608b6253940e21a4ecf729295f81d6a7999a0dd07ecd1e764c82",
+    "bytes": 272908,
+    "file": "client/pages/Daily Stats.dc.html",
+    "name": "Daily Stats",
+    "sha256": "07c4807e8fdfab2386f43410010bd0475f8b919836a7ff3246cbf66a60eeed8a"
+   }
+  ],
+  "order": [
+   "Employees",
+   "Tasks",
+   "Daily Sessions",
+   "Operational Plan",
+   "Staffing",
+   "Admin",
+   "Profile",
+   "Irshad",
+   "Award",
+   "Daily Report",
+   "Planning",
+   "Seized",
+   "KPIs",
+   "Daily Stats"
+  ],
+  "zlibLevel": 9
+ },
+ "source": {
+  "dir": "pk240",
+  "indexBytes": 3482299,
+  "indexSha256": "2371115db904371e540439c13bc49ec5dda85b99ebbc1a6416e1593ef716d0db"
+ },
+ "gateBlock": "auth/335-identity-gate.js",
+ "gateWhy": "KIVO_242 المرحلة ٢: شاشةُ الدخول تُبنى أثناء تنفيذ هذا السكربت (gate() — document.body قائم). السكربتاتُ بعده لا تحتاجها شاشةُ الدخول، فتُحمَّل مسبقاً بأولويةٍ منخفضة (fetchpriority=\"low\") كي يصل ما قبلها أولاً؛ التنفيذُ وترتيبُه لا يتغيّران (كلُّها حاجبةٌ بترتيبها).",
+ "dcLogic": "precompiled",
+ "dcLogicInline": "body-end",
+ "minify": "tokens"
+}

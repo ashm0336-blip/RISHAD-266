@@ -1,0 +1,172 @@
+{
+ "config/wrangler.toml": {
+  "sha256": "bdb5fa475b55008f1fb3e2f96b037574e2e05e390b93ebcf7a5f49c27a77750d",
+  "lines": 13,
+  "why": "مجلدُ البناء pk264"
+ },
+ "src/api/280-server-storage.js": {
+  "sha256": "9571a751d94d054f3edf54a010748bf358b2dd4e1eb6b72b0075887d7a6606ad",
+  "lines": 854,
+  "why": "D-6 دمجُ القوائم بخريطة هويةٍ لكل مورد (لا يضيع تعديل · إشعارُ الطرفين) · D-2 لا نظامَ محلياً على الأصل السحابي · D-3 uid في الحفظ و409 · D-1 تتبّعُ more · D-4 تحديثُ مجموعة القراءة · مراجعةُ A2–A7 · خطّافُ cur (D14) ونصوصُ self-cur/self-un/self-lock (F6)"
+ },
+ "src/api/contracts.json": {
+  "sha256": "e2753bb5d34483d6fc556d8d2961a3d7980acc6829ac9268ab0ae7f621d225ba",
+  "lines": 65,
+  "why": "عقودُ 264: C1/C2/C3 · SOT-101 · /api/me/today و/api/me/history · /api/sec لمدير النظام وحده"
+ },
+ "src/assets/icons/catalog.json": {
+  "sha256": "c8b93800a2c6251bb51aef91c04627fe9aa34edf87dd5e3ab615b3d8c3ac2766",
+  "lines": 21,
+  "why": "أيقوناتُ «السجل» (icons.py extract)"
+ },
+ "src/auth/330-auth.js": {
+  "sha256": "d910be249897697c11d615ff3acaab9528f0e7846db3ac29b1621f17d192493a",
+  "lines": 125,
+  "why": "D13: تغييرُ اسم الدخول يتحقّق من كلمة المرور الحالية (saveCur — تُستهلك مرةً واحدة · F4) · هويةُ الواجهة من BOOT.uid · نصوصُ self/self-cur/self-un/self-lock (F6)"
+ },
+ "src/auth/335-identity-gate.js": {
+  "sha256": "e8d5e4b64dbf9aa73238dae5e4c8bf715b25247a8ac90aa7f314838ebf8a6638",
+  "lines": 31,
+  "why": "D14 · F3: بعد حفظ تغيير الدخول الأول يُقرأ السجلُّ المخزَّن — إن لم يثبت (رُفض أو انقضت المهلة) تبقى علامةُ «يجب التغيير» ويُعاد الدخول"
+ },
+ "src/blocks.json": {
+  "sha256": "5651f1bab7e341d657e5d2fdbc2466a790d4f02f347794b45fbb7d5e97166352",
+  "lines": 30,
+  "why": "تسجيلُ 535-profile-facts في ترتيب التحميل"
+ },
+ "src/layouts/index.template.html": {
+  "sha256": "dddb56a871859c997e47beaeaac51691204e44140404de277da69d190fc69385",
+  "lines": 12,
+  "why": "تسجيلُ 535-profile-facts في الغلاف"
+ },
+ "src/modules/profile/helmet.css": {
+  "sha256": "0c5198124b97835d840d4956b474de924677351d1ae23af98db014d76f0b3bdc",
+  "lines": 175,
+  "why": "التكليف §3: لوحةُ «السجل» ووسومُ الدليل وشبكةُ الشهر وقواعدُ 320–360px"
+ },
+ "src/modules/profile/logic.js": {
+  "sha256": "d86e8a1b47d1ae63cc6c05c8c322028567d4e420c3bfd0caea90ff68b465a654",
+  "lines": 2628,
+  "why": "التكليف §3: الربطُ بالمعرّف الثابت (D1–D4) · الزملاء (D5) · «موقعك المُسنَد» (D6) · التفاصيلُ داخل الصفحة (D7) · لا مسودةَ موقعاً (D8) · «أسبوعك» بلا اختلاق (D9) · بطاقاتُ المدير-الموظف (D10) · «السجل»"
+ },
+ "src/modules/profile/meta.json": {
+  "sha256": "77bf499c7cfcd053264efd61170c71b30db41772f1c32ad8dc0bb333bdcb224c",
+  "lines": 31,
+  "why": "ميثاقُ الوحدة: المساران الذاتيان والاختبارات"
+ },
+ "src/modules/profile/view.html": {
+  "sha256": "78f6b5f549b75335b96b180c35cbf43901f0407975451c943c1605910bef8220",
+  "lines": 431,
+  "why": "التكليف §3: أزرارُ «الإدارة · بياناتي · الأمان · السجل» · «تفاصيل موقعك» · أقسامُ «بياناتي» و«الإدارة» · «السجل» بمرشّحاته ووسومه"
+ },
+ "src/observability/events.json": {
+  "sha256": "c79de9380a07d17dfda3288472f408b4952708b1e83dfd89ea98ff3b69c4c30e",
+  "lines": 15,
+  "why": "السجلُّ المركزي (SOT-124/143 · obs_check — البوابة run2): حدثا 264 session-changed (C1 · 409) وshell-no-db (E2 · 503) بمستواهما وحقولهما"
+ },
+ "src/schemas/api/bodies.schema.json": {
+  "sha256": "f46e95ba8d6610e3f27b2bccafbb72b8e670d39c046c6707094c11294e3e6212",
+  "lines": 121,
+  "why": "SOT-101: مخطّطاتُ الأجسام للمسارات الباقية + uid/cur في /api/save + العقدُ الخامّ للصورة"
+ },
+ "src/services/320-dept-storage.js": {
+  "sha256": "8bdf03e746a6fa44bc4c1d8677ec87c995dbb7b705c7aaea275335535ae4ac5e",
+  "lines": 58,
+  "why": "D-7: الإدارةُ النشطة لكل تبويب (sessionStorage) — الجهازُ افتراضٌ للتبويب الجديد"
+ },
+ "src/services/332-find-day.js": {
+  "sha256": "13e7538cb31c966605ab8f0b6376a6aaa34a37ff6399b7624753b7c70f4d3dea",
+  "lines": 53,
+  "why": "D-5: «اليوم المختار» لكل مستخدمٍ وتبويب (المفتاحُ المشترك يُقرأ افتراضاً ولا يُكتب) · مراجعةُ A6"
+ },
+ "tools/kivo_ns.json": {
+  "sha256": "db851702eb4090c105c15bc7b9d952dc120cdf3a736be45e9f1439aeb0f8a774",
+  "lines": 23,
+  "why": "ترتيبُ الأسماء: 332-find-day (D-5) و535/profile logic"
+ },
+ "tools/onboard_check.sh": {
+  "sha256": "abf9fecf699345992c95c85a73e466a0c5c72f5a55c7d95bb9c5e7be5db4e10e",
+  "lines": 13,
+  "why": "الافتراضيُّ 264"
+ },
+ "tools/perf_budget.json": {
+  "sha256": "099467786da2dd8508796ee1116dbd1b10f7841b3c8d9d45393ac08a1077fb9f",
+  "lines": 26,
+  "why": "ق-264-perf: رفعُ سقفَي page:Profile والعامل وحدهما بقرارٍ مكتوب (reports/k264/decisions.md) — وبقيةُ السقوف كما في 263"
+ },
+ "tools/sec/audit.py": {
+  "sha256": "4184300177237df568949e38ea21af1c70599ee9edfe2f9ec9a89736016a9e76",
+  "lines": 22,
+  "why": "الافتراضيُّ pk264"
+ },
+ "tools/ux_states.py": {
+  "sha256": "ad128e27db018214187eb0c62fb0ed11fc615613a1aab4b4201e6405b90496ee",
+  "lines": 13,
+  "why": "نصُّ docs/ux-states.md المولَّد يشير إلى «npm run check» لا إلى check:263 (لا رقمَ إصدارٍ مثبّت)"
+ },
+ "workers/parts/002-seclog.js": {
+  "sha256": "ed303ee691b3e3d686ed10f1c4a5011c96b45c4ad79b035fa7a00453484aeb45",
+  "lines": 13,
+  "why": "WORKER_VER 2026.10.13-164"
+ },
+ "workers/parts/017-authorize-core.js": {
+  "sha256": "460ef46d18f3f2d61d76215538ed35a1aff7d26852cb04f8400cb71f2ce21d9d",
+  "lines": 23,
+  "why": "D14: الحقولُ الذاتية حسب الدور"
+ },
+ "workers/parts/018-ancestry.js": {
+  "sha256": "eeeed74800150631af5aa7bf325106ed4d355f3326b047df8e22de6fa3a50444",
+  "lines": 56,
+  "why": "D14: الحقولُ الذاتية حسب الدور (القديم) · self-lock حين يُقفل حارسُ كلمة المرور (F6)"
+ },
+ "workers/parts/044-protected-ops.js": {
+  "sha256": "f10ec250e0b26ff668f17c2f27e670c84495d27ca76ab3ec6f27b4bdcee1184d",
+  "lines": 18,
+  "why": "D14: مديرُ النظام في نطاقه العام — تغييرُ اسم دخوله هو يشترط cur وصيغةَ 10 أرقام (superSelfWhy) · usersRule يتسلّم ctx"
+ },
+ "workers/parts/047-retro.js": {
+  "sha256": "176ee6ddc0dc453bc374d54e118f5315cc2a0fb8d190b1b3dfc3f4e679c1c428",
+  "lines": 15,
+  "why": "SOT-101: جسمُ /api/retro بمخطّط"
+ },
+ "workers/parts/050-read-map.js": {
+  "sha256": "aa1bb801ce7f1762307cb7d348b6eb3280b85efedc456c22a5b218e6a9de917b",
+  "lines": 37,
+  "why": "QA-264-D1: resOnCeiling المشتركُ بين canRead0 وcanReadEnf (لا تغيير في القديم)"
+ },
+ "workers/parts/051b-body-schemas.js": {
+  "sha256": "147a06227dc375ff85197e9735e8a09f74b5b36c5290e9a302c63706239c6d67",
+  "lines": 36,
+  "why": "SOT-101: مخطّطاتُ الأجسام للمسارات المغيِّرة الباقية + العقدُ الخامّ للصورة"
+ },
+ "workers/parts/054-image-contract.js": {
+  "sha256": "85012d4d7ab79de7a823c6a1c9f47cee85a80adc21b955c7079f1d8eb61991b9",
+  "lines": 62,
+  "why": "SOT-101: Content-Type للصورة (text/plain أو غائب ⇒ وإلا 415 قبل قراءة الجسم) · D14/OD-7: selfCurState — تحقّقُ cur بحارس pw:<uid> واستثناءُ الدخول الأول (≤ 15 دقيقة) · الحارسُ المقفل ⇒ locked (self-lock · F6) · «يجب التغيير» = قاعدةُ /api/login حرفاً (run1b · bkstamp: الحسابُ القديم dept)"
+ },
+ "workers/parts/056-enforce.js": {
+  "sha256": "9634bc7aa0630fe94e221b1f3fd1ec18d63de046beffff6c34fb2ce119dbb2f8",
+  "lines": 13,
+  "why": "ENF_VER KIVO_264 (+ الرموز read-ceiling · self-fields · az-staffing عند الدمج)"
+ },
+ "workers/parts/059-protected-ops-2.js": {
+  "sha256": "712677cbe3e841bfacb5b6b1af8ee2189f26b1e0ba237525540a78fdfd5c9db9",
+  "lines": 13,
+  "why": "D14 · OD-7: حفظُ الذات في الإنفاذ عبر selfAcctWhy (018) بحالة cur من الحفظ (ctx.selfCur — تُحسب في 054) بدل eqExcept(SELF_FIELDS)"
+ },
+ "workers/parts/061-enf-read.js": {
+  "sha256": "0bf67fa5b93e8c1e6f3c4946da4c7191939d6e8916d95a789e705b2c6e8d967d",
+  "lines": 15,
+  "why": "QA-264-D1: قراءةُ الإنفاذ تتبع سقفَ الإدارة كالقديم حرفاً (resOnCeiling · 050)"
+ },
+ "workers/parts/062a-auth-routes.js": {
+  "sha256": "a5c77334a5fbdca445ca28fb1d2d993b258c44b41e4c46302a4bba32466cab09",
+  "lines": 13,
+  "why": "تيّارُ «ملفي» (OD-3): سطرُ توجيه /api/me/today و/api/me/history إلى meSelfRoutes (062b) وحده — مخطّطاتُ SOT-101 في 051b/063"
+ },
+ "workers/parts/063-enf-api-and-handler.js": {
+  "sha256": "f4674499d62b4ae1d140f6fdfd2173a2f9117fbd824958cf3511aa5d5f77cbd2",
+  "lines": 390,
+  "why": "C1 (save uid ⇒ 409 session-changed) · C2 (changes/get: more و v = آخرُ مراجعةٍ مضمَّنة) · C3 (GET / ⇒ 503 عند تعذّر D1) · SOT-101 bodyCheck للمسارات الباقية · uid للقراءة · az-staffing: enfShiftBound/enfShiftSig/enfStaffAz (ورديةُ الفاعل المربوطة بالجدول الشهري · depts[d].sb)"
+ }
+}

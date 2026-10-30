@@ -1,0 +1,834 @@
+{
+  "worker": "_worker.js",
+  "sha256": "424ef82a613473cb987c878c71fb63fd0419e19b4de9b1582cf86d0b1c9cd081",
+  "parts": [
+    {
+      "file": "000-header-constants.js",
+      "lines": [
+        1,
+        29
+      ],
+      "bytes": 3090,
+      "sha256": "5e7888b4ca6fe79e1edb2afbf9c068b722fcabf0625ed1d4be243649ab67b152",
+      "head": "/* ════════════════════════════════════════════════════════════════════════════"
+    },
+    {
+      "file": "001-policy.js",
+      "lines": [
+        30,
+        38
+      ],
+      "bytes": 1090,
+      "sha256": "b76ad8a9a38cb39ed0d86c13494d3b13d61cc44b57846c44de6634bcd4a17d22",
+      "head": "/* ═══ سياسات الأمن القابلة للضبط من شاشة مدير النظام — تُقرأ مرةً لكل طلب ═══ */"
+    },
+    {
+      "file": "002-seclog.js",
+      "lines": [
+        39,
+        76
+      ],
+      "bytes": 3946,
+      "sha256": "034d062c130d0601b40330284af67770b1cb343c38e1faeba06e3d22cfce70da",
+      "head": "/* ═══ سجل أحداث الأمن — منفصل عن تدقيق البيانات ═══"
+    },
+    {
+      "file": "003-registry.js",
+      "lines": [
+        77,
+        77
+      ],
+      "bytes": 246,
+      "sha256": "028d647a8ac3d58911de8feba91ca841e6d8319970aa4c838539829fa0a045bf",
+      "head": "/* ═══ R203 · Phase 4.5 — سجلُّ الصلاحيات الرئيسي v24.9 (نسخةٌ حرفيةٌ مطابقةٌ لنسخة الواجهة؛ المفاتيحُ كما في v24.3 … v24.8 — docSha256 = SHA-256(v24.9)) ═══ */"
+    },
+    {
+      "file": "004-registry-2.js",
+      "lines": [
+        78,
+        169
+      ],
+      "bytes": 223922,
+      "sha256": "f1409d1a1feec5685070789ddb0b245a9c3f9600ebb745c58c0e4ddb0a1561aa",
+      "head": "/* ═══ KIVO — Master Permission Registry v24.9 (generated R203 · Phase 4.5 — Integrated Identity→Scope Preflight) ═══"
+    },
+    {
+      "file": "005-guard-bindings.js",
+      "lines": [
+        170,
+        170
+      ],
+      "bytes": 279,
+      "sha256": "3e68e7873783d245122b937fdacd9f8850a7720fa40f8a9d47b0ccacddd0ce54",
+      "head": "/* ═══ R203 · Phase 4.5 — وحدةُ ربط الحرّاس الظلّية على v24.9 (جدولُ الـ71 + المصنِّف كما في Phase 3 · هويةُ العنصر uid أولاً — IH‑02) — تُحمَّل بعد السجل ولا تمسّه ═══ */"
+    },
+    {
+      "file": "006-guard-bindings-2.js",
+      "lines": [
+        171,
+        687
+      ],
+      "bytes": 85813,
+      "sha256": "5ef411f2d833557de591ba4334de1dafbccd5ddba5f9031cdc867a897012fd13",
+      "head": "/* ═══ KIVO · R203 · Phase 4.5 — Guard Binding Shadow على v24.9 (مولَّدٌ آلياً من registry10/guard_bindings.py — لا يُحرَّر يدوياً؛ المصنِّفُ كما في Phase 3) ═══"
+    },
+    {
+      "file": "006a-lens-plugins.js",
+      "generated": "plugins/lenses/<key>/manifest.json → KIVO_LENS_PLUGINS (KIVO_259 · AUD-030 · ADR-018 · tools/generate.py)",
+      "head": "/* ═══ KIVO_259 · AUD-030 · SOT-089 — العدساتُ إضافات: مولَّدٌ من plugins/lenses/<key>/manifest.json بأداة tools/generate.py (tools/plugins.py)؛ لا يُحرَّر يدوياً.",
+      "lines": [
+        688,
+        691
+      ],
+      "bytes": 1380,
+      "sha256": "a298310019ac3a7f15ea63fc76acd24ac69b1b90379a19f5a275b348b85552bc"
+    },
+    {
+      "file": "007-kivo-build.js",
+      "lines": [
+        692,
+        692
+      ],
+      "bytes": 184,
+      "sha256": "b3494261791cb2f3f2121426af00fa7d22d16b45ef00e6ee2f12586497bff139",
+      "head": "/* ═══ R203 · Phase 4.5 — KIVO_BUILD: آلياتُ الـ10 to-build (ظلّ · كما في Phase 3) — تُحمَّل بعد الحرّاس ولا تمسّها ═══ */"
+    },
+    {
+      "file": "008-kivo-build-2.js",
+      "lines": [
+        693,
+        773
+      ],
+      "bytes": 27192,
+      "sha256": "256ee5d088a24c5fc9f11d3234a19308f9b6279528aae1709fd2e45c62b29915",
+      "head": "/* ═══ KIVO · R203 · Phase 4.5 — Build Missing Guards (shadow) على v24.9 (مولَّدٌ آلياً من registry10/build_bindings.py — لا يُحرَّر يدوياً؛ الآلياتُ كما في Phase 3) ═══"
+    },
+    {
+      "file": "009-kivo-scope.js",
+      "lines": [
+        774,
+        774
+      ],
+      "bytes": 535,
+      "sha256": "0d17136a90a3c149d04f1926a90880d65c95c67b65500c9fd2b37eb769d175d2",
+      "head": "/* ═══ R203 · Phase 4.5 — KIVO_SCOPE: محرّكُ النطاق المركزي (كتابةً وقراءةً · D4‑01…D4‑04) + جدولُ ربط النطاق + جدولُ ربط القراءة الصريح (readBindings · P4.1.1‑01) + هويةُ الموقع والعنصر الثابتة (IH‑01/02: f:<sid> لطابق الجولة ذي sid · u:<uid>) + قاموسُ المصطلحات (ظلّ) — يُحمَّل بعد KIVO_BUILD ولا يمسّه؛ لا يُستدعى من canWrite ولا canRead0 ═══ */"
+    },
+    {
+      "file": "010-kivo-scope-2.js",
+      "lines": [
+        775,
+        1349
+      ],
+      "bytes": 201089,
+      "sha256": "df7ebde5a5f7ed59da9d695dde044a737fdf50502a6a4d313340065854a76141",
+      "head": "/* ═══ KIVO · R203 · Phase 4.5 — Read Binding Closure + Identity Binding على v24.9 (مولَّدٌ آلياً من registry10/scope_bindings.py + scope_engine.js + read_inventory.json — لا يُحرَّر يدوياً) ═══"
+    },
+    {
+      "file": "011-scope-migration.js",
+      "lines": [
+        1350,
+        1350
+      ],
+      "bytes": 485,
+      "sha256": "4eae0e439d929d04c803d011eb9815facad9b93ea677ecaec0a3be62776124df",
+      "head": "/* ═══ R203 · Phase 4.5 — KIVO_SCOPE_MIGRATION: موديلُ ترحيل Data Scope (v24.6 §١٧) + موديلُ الهوية (v24.7 §١٨) + محرّكُ الجرد والتصنيف والإسقاط وجردُ الهوية (Dry-Run · قراءةٌ فقط · لا يكتب قيمةَ نطاقٍ قط) — يُحمَّل بعد KIVO_SCOPE ولا يمسّه؛ لا يُستدعى إلا من GET /api/scope-dryrun و/api/identity-preflight (مدير النظام) ═══ */"
+    },
+    {
+      "file": "012-scope-migration-2.js",
+      "lines": [
+        1351,
+        1635
+      ],
+      "bytes": 67226,
+      "sha256": "63c3c96937ee588b020e4ccb37ba5af584fafda996e42698d391d4cfe3da6579",
+      "head": "/* ═══ KIVO · R203 · Phase 4.5 — Scope Migration Design & Dry-Run + Identity Hardening على v24.9 (مولَّدٌ آلياً من registry10/gen_migration.py + migration_engine.js — لا يُحرَّر يدوياً) ═══"
+    },
+    {
+      "file": "013-identity-migration.js",
+      "lines": [
+        1636,
+        1636
+      ],
+      "bytes": 971,
+      "sha256": "e3d6e33088e537a56678caf1cbbe9dc800e0f187e6ba1b01e5d8123fccb1aa33",
+      "head": "/* ═══ R203 · Phase 4.5 — KIVO_IDENTITY_MIGRATION v24.9: موديلُ بروفة ترحيل الهوية (v24.8 §١٩ · IM‑01…IM‑07) + إقفالُ هوية الموقع (v24.9 §٢٠ · IP‑01 sid حتميٌّ لطوابق الخطة الحالية بلا sid · IP‑02 نشرُه إلى لقطة الشهر الجاري ببرهانٍ بنيوي) + محرّكُ البروفة (uid/sid حتميّان من بذرةٍ آمنة · تفرّدٌ على مجموعة الترحيل كاملةً · تصنيفُ النسب exact/high/medium/ambiguous/unlinked · ترحيلُ ekey · مجموعةُ كتابةٍ مقترحة ببصمات قبل/بعد · تصميمُ الرجوع والتحقّقُ ذهاباً وإياباً) — قراءةٌ فقط · writes = 0 · يُحمَّل بعد KIVO_SCOPE_MIGRATION ولا يمسّه؛ لا يُستدعى إلا من GET /api/identity-rehearsal و/api/identity-preflight (مدير النظام) ═══ */"
+    },
+    {
+      "file": "014-identity-migration-2.js",
+      "lines": [
+        1637,
+        1901
+      ],
+      "bytes": 70259,
+      "sha256": "bb6f0f088056c911a2a2473d783c005c9eb433126751fec794040436a7e39d74",
+      "head": "/* ═══ KIVO · R203 · Phase 4.5 — Identity Migration Rehearsal + Site Identity Closure على v24.9 (مولَّدٌ آلياً من registry10/gen_identity.py + identity_engine.js — لا يُحرَّر يدوياً) ═══"
+    },
+    {
+      "file": "015-identity-preflight.js",
+      "lines": [
+        1902,
+        1902
+      ],
+      "bytes": 725,
+      "sha256": "09f456a6db2a5e8189192a187894ce8bc40b4623ad1d87d3771e7295f6bb940c",
+      "head": "/* ═══ R203 · Phase 4.5 — KIVO_IDENTITY_PREFLIGHT: محرّكُ التمهيد المُدمَج هوية→نطاق (v24.9 §٢٠ · IP‑01…IP‑07): applyTierA (مجموعةُ الكتابة النهائية على نسخٍ في الذاكرة فقط · tier B كما هو) · legacyIdMap (uid/sid → الهويّاتُ القديمة) · unlinkedReachability (الهويةُ المزدوجة للعناصر التاريخية) · compare (قبل/بعد Dry-Run النطاق بقواعد IP الثماني) — قراءةٌ فقط · writes = 0 · يُحمَّل بعد KIVO_IDENTITY_MIGRATION ولا يمسّه؛ لا يُستدعى إلا من GET /api/identity-preflight (مدير النظام) ═══ */"
+    },
+    {
+      "file": "016-identity-preflight-2.js",
+      "lines": [
+        1903,
+        2089
+      ],
+      "bytes": 44657,
+      "sha256": "66fe47e0522f2b4f404f3b2df141ef737b524a65589ad8d3d4f15e3204c717ed",
+      "head": "/* ═══ KIVO · R203 · Phase 4.5 — Integrated Identity→Scope Preflight على v24.9 (مولَّدٌ آلياً من registry10/gen_preflight.py + preflight_engine.js — لا يُحرَّر يدوياً) ═══"
+    },
+    {
+      "file": "017-authorize-core.js",
+      "lines": [
+        2090,
+        2188
+      ],
+      "bytes": 10537,
+      "sha256": "0b1cd24dc88ab8cb473bbb75195b0805cab3c8e961f2984377be73c4cbdaa1e5",
+      "head": "/* ═══ التفويض في الخادم ═══════════════════════════════════════════════════"
+    },
+    {
+      "file": "018-ancestry.js",
+      "lines": [
+        2189,
+        2740
+      ],
+      "bytes": 47163,
+      "sha256": "6aced27d6cdba737e0e2bed4eebad8da4368292ed1a5fa490b683bda59348df0",
+      "head": "/* ══ سلسلة الأسلاف على الخادم ══════════════════════════════════════════════"
+    },
+    {
+      "file": "019-notifications.js",
+      "lines": [
+        2741,
+        5925
+      ],
+      "bytes": 108407,
+      "sha256": "46bea5e5931766548cd473ef257a10654bf9cbd874d3d9080e38ed9cca5bfefb",
+      "head": "/* ═══ تنبيهات الإدارة: مديرها يكتب كل شيء؛ أي منتسب يضيف عناصر (من أوقع الحدث يكتب تنبيهه) ويحدّث حالة قراءته"
+    },
+    {
+      "file": "019a-custody.js",
+      "head": "/* RISHAD 266 — server-owned relational storage. */",
+      "lines": [
+        5926,
+        6990
+      ],
+      "bytes": 43192,
+      "sha256": "4908d4e1a75eee4cb76be623ba20b9777998cdf0103ca5c09dd75400f23648e8"
+    },
+    {
+      "file": "019b-custody-plans.js",
+      "head": "/* RISHAD 266 — server-owned relational storage. */",
+      "lines": [
+        6991,
+        7621
+      ],
+      "bytes": 27589,
+      "sha256": "aaeaed31bde75ec8ada8dbe61268c5065542b99c45cbc77465b7cf741492a633"
+    },
+    {
+      "file": "019c-employee-transition.js",
+      "head": "/* RISHAD 266 — server-owned relational storage. */",
+      "lines": [
+        7622,
+        8337
+      ],
+      "bytes": 26882,
+      "sha256": "d8920c16dd8b29e2881014a6327993e1129013fd2ec32fdea51ae5b514ae3a0a"
+    },
+    {
+      "file": "019d-atomic-restore.js",
+      "head": "/* RISHAD 266 — server-owned relational storage. */",
+      "lines": [
+        8338,
+        9787
+      ],
+      "bytes": 57293,
+      "sha256": "9c127160afdaad1c74b357801485f9d30c9548b507c712a90dcbcde7048b9d25"
+    },
+    {
+      "file": "019e-atomic-save.js",
+      "head": "/* RISHAD 266 — server-owned relational storage. */",
+      "lines": [
+        9788,
+        10437
+      ],
+      "bytes": 27203,
+      "sha256": "fde0b9373746156b171ad1c9ab28de22554aacec18e998f39a87ef4ced330259"
+    },
+    {
+      "file": "019f-backup-converter.js",
+      "head": "/* RISHAD 266 — server-owned relational storage. */",
+      "lines": [
+        10438,
+        10834
+      ],
+      "bytes": 17196,
+      "sha256": "44207372eed5d95c7f0bd7650afe313ee730e008fe0481aad8705e6aaf625371"
+    },
+    {
+      "file": "020-dstats.js",
+      "lines": [
+        10835,
+        11191
+      ],
+      "bytes": 27304,
+      "sha256": "ec9e8bba24e65bf282a11cbb4480ae83d8b53a7f9d0a03f4cbd5f0da2d8d1e86",
+      "head": "/* ═══ R180: «الإحصائيات اليومية» — مخزنٌ عامٌّ واحد تحكمه أوراقُ الصفحة ═══"
+    },
+    {
+      "file": "021-authz-core-intro.js",
+      "lines": [
+        11192,
+        11336
+      ],
+      "bytes": 7908,
+      "sha256": "6de2b3249119e0429cc0874734d321376486703d7f8ae5dbcfa89b36cf6db3f9",
+      "head": "/* ══════════════════════════════════════════════════════════════════════════"
+    },
+    {
+      "file": "022-myperms.js",
+      "lines": [
+        11337,
+        11366
+      ],
+      "bytes": 1646,
+      "sha256": "f4aa68f357602dba951df28efcf38cda5b0fdd123b025c4e74e73fa4f367d85b",
+      "head": "/* ══ myPerms على الخادم — مطابقةٌ حرفية لنظيرتها في الواجهة ══════════════"
+    },
+    {
+      "file": "023-resources.js",
+      "lines": [
+        11367,
+        11474
+      ],
+      "bytes": 8535,
+      "sha256": "ff499bbe2755b886ed56b1a3c885c3e954af12cd1713c5e5b8352bdb0c0eda95",
+      "head": "/* ══ سجل الموارد: لكل مفتاح تخزينٍ معروف سياسةٌ صريحة ══════════════════════"
+    },
+    {
+      "file": "024-entities.js",
+      "lines": [
+        11475,
+        11483
+      ],
+      "bytes": 1063,
+      "sha256": "972487913e49ff7b202764addc70d9def98653ea9b63d17984d897a44607ac88",
+      "head": "/* ══ سجل الكيانات ENT ══════════════════════════════════════════════════════"
+    },
+    {
+      "file": "025-entities-2.js",
+      "lines": [
+        11484,
+        11561
+      ],
+      "bytes": 5988,
+      "sha256": "9553a05d9f8ffc5d05737ad863b8b2e745a7e0958da7a5192d90ae4a76159105",
+      "head": "/* ══ سجل الكيانات ENT — جردٌ من الواجهة الفعلية لكل مورد ══════════════════════"
+    },
+    {
+      "file": "026-domain-ops.js",
+      "lines": [
+        11562,
+        11630
+      ],
+      "bytes": 4191,
+      "sha256": "cde7e7d9c68551707eed4c401e1362311cf35a16b6073ecbcf6c673816132a87",
+      "head": "/* ══ سجل عمليات الدومين — OPS ══════════════════════════════════════════════"
+    },
+    {
+      "file": "027-approvals.js",
+      "lines": [
+        11631,
+        11662
+      ],
+      "bytes": 2013,
+      "sha256": "2191e9f4968f4c666e7353baa826463735cd3478aa38ecfcfece0d18036e89a4",
+      "head": "/* ══ هل جرت عملية اعتماد؟ ═══════════════════════════════════════════════════"
+    },
+    {
+      "file": "028-approval-shapes.js",
+      "lines": [
+        11663,
+        11771
+      ],
+      "bytes": 5864,
+      "sha256": "306857cec99696999763b6dc10158345506dd9305e3e4441855d584499effc78",
+      "head": "/* ══ مشروعية عمليات الاعتماد — أشكالٌ حرفيةٌ مأخوذةٌ من الواجهة ══════════════ */"
+    },
+    {
+      "file": "029-primitive-lists.js",
+      "lines": [
+        11772,
+        11816
+      ],
+      "bytes": 2434,
+      "sha256": "d1ba4ad78569c272edb5b972cf4e8c2379e365da29b51bb260c18ba323d0a2a7",
+      "head": "/* ══ قائمةٌ من قيمٍ بدائية ═══════════════════════════════════════════════"
+    },
+    {
+      "file": "030-shape-constants.js",
+      "lines": [
+        11817,
+        11820
+      ],
+      "bytes": 524,
+      "sha256": "3a8615147aeb5375a7c7b6def37ea0b15b7ac7882997c7228d2f1debc901845a",
+      "head": "/* ══ ثوابتُ الشكل: الشكل الجذريّ القانونيّ ومجموعاتُه المعلَنة ════════════"
+    },
+    {
+      "file": "031-fields.js",
+      "lines": [
+        11821,
+        11993
+      ],
+      "bytes": 10723,
+      "sha256": "8ee9c5e601bbaf9be61ea494b50f17ef5a979838ac0ef299181119ca013a0d11",
+      "head": "/* ══ سجل عقود الحقول — FIELDS ═══════════════════════════════════════════════"
+    },
+    {
+      "file": "032-legacy-align.js",
+      "lines": [
+        11994,
+        12068
+      ],
+      "bytes": 4190,
+      "sha256": "663ad706f27ef6be0c1e97ae53e18cb2047b6a1ad1882096a67c54fa4e51d3ae",
+      "head": "/* ══ مواءمة الطرف القديم قبل المقارنة ═══════════════════════════════════════"
+    },
+    {
+      "file": "033-entity-identity.js",
+      "lines": [
+        12069,
+        12076
+      ],
+      "bytes": 901,
+      "sha256": "7d4e8a79e63cc4f296238a1250a085da15852933bbd54c30121d96f5727bd194",
+      "head": "/* ══ هوية الكيان: مطابقةٌ بالهوية لا بالموضع ═══════════════════════════════"
+    },
+    {
+      "file": "034-name-swap.js",
+      "lines": [
+        12077,
+        12137
+      ],
+      "bytes": 4189,
+      "sha256": "832cda5b9f9a3696c721b13b16be4f365b0d25dc399c67d425e701c9bfc7ed5e",
+      "head": "/* ══ تبادلُ الأسماء ══════════════════════════════════════════════════════"
+    },
+    {
+      "file": "035-fastpath-constants.js",
+      "lines": [
+        12138,
+        12166
+      ],
+      "bytes": 1992,
+      "sha256": "f6a5cf865e342939884eaf46fdeaff8555fb15116ff3242c417828f2141fbaf1",
+      "head": "/* ══ الثوابت كلُّها قبل المسار السريع ══════════════════════════════════════"
+    },
+    {
+      "file": "036-moves-append.js",
+      "lines": [
+        12167,
+        12180
+      ],
+      "bytes": 1000,
+      "sha256": "588576090fe5b9050321cab90740b91d4e7bfe41a2b4604c3571ee80a6b113f4",
+      "head": "/* ══ moves إلحاقية: سجل الحركات يُضاف إليه في الذيل ولا يُعدَّل ولا يُحذف ══"
+    },
+    {
+      "file": "037-entity-classify.js",
+      "lines": [
+        12181,
+        12265
+      ],
+      "bytes": 5119,
+      "sha256": "5291db026fe4f0cee8fd44723501746d66b9fd8bc3874f9e09af60ef802ff40c",
+      "head": "/* ══ التصنيف: على الكيان بحسب ENT ═══════════════════════════════════════ */"
+    },
+    {
+      "file": "038-domain-cleanups.js",
+      "lines": [
+        12266,
+        12316
+      ],
+      "bytes": 3556,
+      "sha256": "dcd7f32d0b7257212a3d368eb915958f0b9a1f6d3b58c9ddd41e4aacef4ed50e",
+      "head": "/* ══ تنظيفان مجاليّان ضيّقان — مساران مستقلّان لا شرطٌ عامّ ═══════════════"
+    },
+    {
+      "file": "039-custody-moves.js",
+      "lines": [
+        12317,
+        12341
+      ],
+      "bytes": 1646,
+      "sha256": "afbf0f16d844353ded43d811be4acbb3d76c0380911fd3ac0173c07b8bd87d78",
+      "head": "/* ══ حركات العهد: عمليتان مجاليّتان بفعليهما كما في الواجهة ══════════════════"
+    },
+    {
+      "file": "040-employee-delete-cleanup.js",
+      "lines": [
+        12342,
+        12462
+      ],
+      "bytes": 5970,
+      "sha256": "0a070053dcdf3ec86ecd4b5ddbe1edd434350279e6d60ffe0b9c3aeb671efb13",
+      "head": "/* ══ تنظيف أثر موظفٍ حُذف — employeeDeleteCleanup ═══════════════════════════"
+    },
+    {
+      "file": "041-shift-rename.js",
+      "lines": [
+        12463,
+        12507
+      ],
+      "bytes": 2537,
+      "sha256": "0cb71b4bff3a213bb3832063a444fec5968a0465ae164058f90b1a33f93e8d9b",
+      "head": "/* ══ إعادة تسمية الوردية — تبعتُها في الجدول الشهري ═══════════════════════════"
+    },
+    {
+      "file": "042-authorize.js",
+      "lines": [
+        12508,
+        12537
+      ],
+      "bytes": 1889,
+      "sha256": "41cbf0f7b6b6903dadce6eff02eb15c1f92a1f9c53ba664c6e71ae0c28a7802c",
+      "head": "/* ══ authorize — السؤال الواحد الذي يُسأل قبل كل قراءةٍ أو كتابة ══════════"
+    },
+    {
+      "file": "043-myperms-2.js",
+      "lines": [
+        12538,
+        12603
+      ],
+      "bytes": 4772,
+      "sha256": "7d0435379ea7df5e6e9173ead902b8445d38bca7a47d8f79a01f1fa2c480eb08",
+      "head": "/* ═══ R193 · Phase 1 — الظلّ: authorize() يُبقي حكم النظام القديم حرفاً بحرف ويقيس معه حكم السجل الحالي v24.9 (v24.2 → v24.3 → v24.4 → v24.5 → v24.5.1 → v24.6 → v24.7 → v24.8 → v24.9؛ المفاتيحُ نفسُها منذ v24.3) ═══"
+    },
+    {
+      "file": "044-protected-ops.js",
+      "lines": [
+        12604,
+        12724
+      ],
+      "bytes": 9936,
+      "sha256": "cf1d863609e7f6c5e86c4ec56b1fc30cb324fa34f24015ca61faed54b31b6290",
+      "head": "/* ══ العمليات المحمية ══════════════════════════════════════════════════════"
+    },
+    {
+      "file": "045-permv2.js",
+      "lines": [
+        12725,
+        12836
+      ],
+      "bytes": 11879,
+      "sha256": "d171a4807dc36682ee8c56b3267e3b94005e8d8f2978a2656a92259b859310f6",
+      "head": "/* ═══ R194/R195/R196/R197/R198 · Phase 2 → 2.1 → 3 → 4 → 4.1 — Guard Binding (shadow): حكمُ canWrite للنظام القديم كما هو حرفاً بحرف، ويُقاس بجانبه حكمُ السجل الحالي v24.9 المبنيُّ على ربط الحرّاس ═══"
+    },
+    {
+      "file": "046-kivo-build-3.js",
+      "lines": [
+        12837,
+        12933
+      ],
+      "bytes": 10914,
+      "sha256": "8a3d191cb5486d1f9cea8737bb302f25c1377f5220833e117c163c033555ba42",
+      "head": "/* ═══ R196 · Phase 3 — Build Missing Guards (shadow): PERMV3 — أحكامُ TO-BE للـ10 to-build تُحسب وتُقارَن بحكم canWrite ولا تغيّره ═══"
+    },
+    {
+      "file": "047-retro.js",
+      "lines": [
+        12934,
+        12981
+      ],
+      "bytes": 6144,
+      "sha256": "4f7a49d3ec36ef52d898be45740843c529b3a4d5585f8402d8b87fc9f2a9e844",
+      "head": "/* ═══ /api/retro — نافذةُ الاستدراك (ir.rec.retro.open · sz.rec.retro.open): حالةٌ خادمية لكل (إدارة · نظام)، محدودةُ النطاق (شهرٌ أو يومٌ منقضٍ) والزمن (≤ RETRO_MAX_H) والفاعل (من الجلسة)، بسجلّ تدقيقٍ مستقل ═══"
+    },
+    {
+      "file": "048-permv4.js",
+      "lines": [
+        12982,
+        13098
+      ],
+      "bytes": 13926,
+      "sha256": "9063161c587805139b5b62d924d50eb95fcded12313350ebb884340d4b41dc28",
+      "head": "/* ═══ R197/R198 · Phase 4 → 4.1 — Data Scope Shadow Mode: PERMV4 = { write, read } — نطاقُ كلِّ كتابةٍ (evaluateWrite) وكلِّ قراءةٍ فعلية (evaluateRead · D4‑01) يُحسب بـKIVO_SCOPE ويُقارَن بالحكم القديم ولا يغيّره ═══"
+    },
+    {
+      "file": "049-permv4-read.js",
+      "lines": [
+        13099,
+        13212
+      ],
+      "bytes": 13223,
+      "sha256": "118924596dedc995de00b6a5d4a34bdd553cd59b2529c0b4d7a4cd4d3240221e",
+      "head": "/* ═══ D4‑01 (v24.5) — ظلُّ نطاق القراءة: يُستدعى بعد حكم canRead (canRead0 لم تُمسّ) في مسارَي القراءة الفعليين (حقنُ __BS_BOOT · /api/get)."
+    },
+    {
+      "file": "050-read-map.js",
+      "lines": [
+        13213,
+        13327
+      ],
+      "bytes": 9819,
+      "sha256": "76ef11b5ae06500af15b60d0fdf63a7bf5162ea84cf08b7a2bd5dd4c97e7e0eb",
+      "head": "/* ══ R169-CC · READ-01: خريطةُ القراءة المرجعيّة ══════════════════════════"
+    },
+    {
+      "file": "051-audit-diff.js",
+      "lines": [
+        13328,
+        13419
+      ],
+      "bytes": 5963,
+      "sha256": "237338c99044b71a688e6c18a150905a980a875b34990f5eda0ee444cab2f536",
+      "head": "/* ═══ فرق التدقيق: ما الذي تغيّر بالضبط — مضغوطاً ═══ */"
+    },
+    {
+      "file": "051a-schema-migrations.js",
+      "generated": "tools/generate.py ← migrations/*.sql",
+      "head": "/* ═══ KIVO_249 · AUD-022 — الترحيلاتُ المرقَّمة (schema): مولَّدةٌ من migrations/NNNN_<name>.sql بأداة tools/generate.py؛ لا تُحرَّر يدوياً.",
+      "lines": [
+        13420,
+        13529
+      ],
+      "bytes": 15756,
+      "sha256": "234cad9b940f102972898ec81bbe5edf8c19c4268381b25d0b14c3eb7a08b365"
+    },
+    {
+      "file": "051b-body-schemas.js",
+      "lines": [
+        13530,
+        13588
+      ],
+      "bytes": 18420,
+      "sha256": "cb6a3e6b3dcdd9c17f5acb754b5e8f0f1e961193f4c3edd5f80d0e589b892e7b",
+      "head": "/* ═══ KIVO_263 · SOT-101 — مخطّطاتُ أجسام الطلبات المغيِّرة: المصدرُ src/schemas/api/bodies.schema.json (JSON Schema) ═══"
+    },
+    {
+      "file": "051c-department-permission-slice.js",
+      "head": "/* Generated from the existing department permission slice. */",
+      "lines": [
+        13589,
+        13606
+      ],
+      "bytes": 1426,
+      "sha256": "0c16f94355e31beb3e04d054a64e1b38a6a9791f00402bf6d9c1adfe7371a44a"
+    },
+    {
+      "file": "052-aud-events.js",
+      "lines": [
+        13607,
+        14130
+      ],
+      "bytes": 30976,
+      "sha256": "0d95ecd0db177620d8baa6fc38b5eb142f3b4b1f5a474fa906be63bf06faa653",
+      "head": "/* ═══ R169: أحداثُ سجل الأنشطة (aud) ═══"
+    },
+    {
+      "file": "053-images.js",
+      "lines": [
+        14131,
+        14139
+      ],
+      "bytes": 1057,
+      "sha256": "88a42a87c4c59403c1a88c204fe42bf0f854c0bda24a331117ce5525adcd3d67",
+      "head": "/* ═══ ملكيةُ الصور ═══════════════════════════════════════════════════════════"
+    },
+    {
+      "file": "054-image-contract.js",
+      "lines": [
+        14140,
+        15310
+      ],
+      "bytes": 122812,
+      "sha256": "c1a9349bd7e2508ba9a64640d1c2d6a6e59dcf7bd4ad5c3a5f67e10bbfda03d6",
+      "head": "/* ══ R169-CC · عقدُ الصورة الأصلية ══════════════════════════════════════════"
+    },
+    {
+      "file": "055-sec-headers.js",
+      "lines": [
+        15311,
+        15353
+      ],
+      "bytes": 4560,
+      "sha256": "25aaa11a0297110be1040f0b355c8e3ae2d1f88761512ffabe225ff3a4826b98",
+      "head": "/* ═══ درع الطلبات والاستجابات ═══"
+    },
+    {
+      "file": "056-enforce.js",
+      "lines": [
+        15354,
+        15413
+      ],
+      "bytes": 6985,
+      "sha256": "64e4d53a20f25ecb1d57f0c75d03e9b5e00ee0335a1fa0d82a1223e646e229a2",
+      "head": "/* ═════════════════════════════════════════════════════════════════════════════════════════════════════════"
+    },
+    {
+      "file": "057-enf-index.js",
+      "lines": [
+        15414,
+        15581
+      ],
+      "bytes": 12913,
+      "sha256": "1134e0a521e1e439d2e618ecbd14b4d0c8e405efb8ebdf2bc13d925a3157f79d",
+      "head": "/* ══ (1) فهارسُ السجل — تُبنى مرّةً لكل نسخةٍ من الخادم ══ */"
+    },
+    {
+      "file": "058-enf-scope.js",
+      "lines": [
+        15582,
+        15779
+      ],
+      "bytes": 19433,
+      "sha256": "42273b0bc968433cc4e6618ca86c7024e5700876197f5b37e311e50e6e5a5689",
+      "head": "/* ══ (2) النطاق — سجلُّ النطاق المنفصل (bsdept:<d>:bassam_scope_v1 · v24.6 §17.2) وتقييمُ الأبعاد في وضع الإنفاذ ══"
+    },
+    {
+      "file": "059-protected-ops-2.js",
+      "lines": [
+        15780,
+        16056
+      ],
+      "bytes": 24109,
+      "sha256": "a5915d07af35c5e267bf2ffb7201e1d7f06be663043cf878a9a2c332a2c8ed5c",
+      "head": "/* ══ (3) الكتابة — كلُّ كتابةٍ تُصنَّف إلى مفاتيح v24.9 (المصنِّف المربوط · خريطةُ الموارد غير المصنَّفة · بدائلُ via المعلنة)"
+    },
+    {
+      "file": "060-enf-canwrite.js",
+      "lines": [
+        16057,
+        16105
+      ],
+      "bytes": 4003,
+      "sha256": "810c4c3b1e798eeccfe8656df936f240958230b762ffe71f9cef432316a87a79",
+      "head": "/* ══ canWrite في وضع الإنفاذ — البنيةُ نفسُها، والقرارُ من السجل ══ */"
+    },
+    {
+      "file": "061-enf-read.js",
+      "lines": [
+        16106,
+        16425
+      ],
+      "bytes": 23968,
+      "sha256": "793bf22e2975298072009a713579a8a7f8e1f67baee4e66d950fb5882ae4b16b",
+      "head": "/* ══ (4) القراءة — مفاتيحُ القراءة المربوطة صراحةً (readBindings · P4.1.1-01) محمولةٌ في الإدارة ∧ Department/Branch،"
+    },
+    {
+      "file": "062-enf-save.js",
+      "lines": [
+        16426,
+        16510
+      ],
+      "bytes": 8316,
+      "sha256": "3eb460ec0ec37240ef45158a93203be7900b1b6cdb30de90fa6782e8b993082f",
+      "head": "/* ══ (5) الحفظة — سياقُ الإنفاذ لكل طلب حفظ · سياساتُ الدفعة (الاستيراد · الاستعادة) · السبب · سجلُّ قرارات الصلاحية · نسخةُ ما قبل العملية ══ */"
+    },
+    {
+      "file": "062a-auth-routes.js",
+      "lines": [
+        16511,
+        16687
+      ],
+      "bytes": 15654,
+      "sha256": "2846b042e51c1118766140a113a271d76edd9da3a2961515aceec961730cf08a",
+      "head": "/* ═══ KIVO_263 · SOT-096 — مساراتُ المصادقة والجلسة في طبقةٍ واحدةٍ معروفة (كانت أسطراً داخل handle في 063) ═══"
+    },
+    {
+      "file": "062b-me-history.js",
+      "lines": [
+        16688,
+        17091
+      ],
+      "bytes": 31984,
+      "sha256": "862ffa13d8a9e926486f2f118af9129c04c53767d534f0785c40bb1f1fc0637b",
+      "head": "/* ═══ KIVO_264 · «ملفي» — مسارا القراءة الذاتية (OD-3): GET /api/me/today · GET /api/me/history?ym=YYYY-M ═══"
+    },
+    {
+      "file": "062c-me-tasks.js",
+      "new": "KIVO_264 · KIVO-Tasks — «ملفي ← مهامي» (GET /api/me/tasks · POST /api/me/tasks/act · GET /api/me/tasks/img · GET /api/me/tasks/log) — المرحلةُ الثانية: ack/start/decline/stall/resume/doc/submit/expire",
+      "bytes": 40617,
+      "sha256": "ad199db44cc91ee37cfcd015dcca8f6558578b6ac22b81913d64f7f34dc5d676",
+      "head": "/* ═══ KIVO_264 · KIVO-Tasks — «ملفي ← مهامي»: قراءةُ الموظف لمهامه هو وحده، ودورةُ حياتها من جهته، من الخادم ═══",
+      "lines": [
+        17092,
+        17453
+      ]
+    },
+    {
+      "file": "070-task-core.js",
+      "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيهُ من الخادم",
+      "bytes": 41508,
+      "sha256": "e45a30ad5475be9a201625b0b4b34dcdfe3ac494baaf64486f115b9647419147",
+      "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة في الخادم: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيه ═══",
+      "lines": [
+        17454,
+        17850
+      ]
+    },
+    {
+      "file": "071-task-mgmt.js",
+      "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول /api/tasks/* (إنشاء · مراجعة · تمديد · إعادةُ إسناد · إلغاء · ربط · مجموعة)",
+      "bytes": 51851,
+      "sha256": "0b0fc1583e4c79890cc38b37cda663c1e86e852a1a0c0d2502848c8bff3d99cc",
+      "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول: الإنشاء · المراجعة · التمديد · إعادةُ الإسناد · الإلغاء · الربط · المجموعة ═══",
+      "lines": [
+        17851,
+        18315
+      ]
+    },
+    {
+      "file": "072-task-elig.js",
+      "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — الأهليةُ وقتَ التنفيذ من الجدول الشهري (GET /api/tasks/eligibility)",
+      "bytes": 16843,
+      "sha256": "5d5763d70a1450100bf0cc0f58a3a41294d67b27a19ec05b0a178b945cd76171",
+      "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══",
+      "lines": [
+        18316,
+        18461
+      ]
+    },
+    {
+      "file": "073-task-recur.js",
+      "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — التكرارُ: قالبٌ ونُسخُ تنفيذ مولَّدةٌ في الخادم بلا Cron (متساوي القوى)",
+      "bytes": 46828,
+      "sha256": "78fe4e7c4f2daf0617568c08cbcfca809a5fc0505f9232cb89088a82f23eea5d",
+      "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — المهامُ المتكررة: قالبٌ + نسخةُ تنفيذٍ مستقلة لكل موعد، تُولَّد في الخادم بلا Cron (ق5) ═══",
+      "lines": [
+        18462,
+        18863
+      ]
+    },
+    {
+      "file": "074-task-due.js",
+      "new": "KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (مسحٌ كسولٌ بلا Cron — البند 10)",
+      "bytes": 11342,
+      "sha256": "3c5e8e0ce587c78de8b43c60d4856ec2aafb6a0127d61a1603eb6ed42e2dc7e1",
+      "head": "/* ═══ KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (البند 10 — قرارُ المالك 2026-10-19) ═══",
+      "lines": [
+        18864,
+        18991
+      ]
+    },
+    {
+      "file": "063-enf-api-and-handler.js",
+      "lines": [
+        18992,
+        20081
+      ],
+      "bytes": 118518,
+      "sha256": "b089435d197ab430e66fe1ca0a902ee8ba41b3773e8d1c08dd452c95a4b41932",
+      "head": "/* ══ (6) الواجهات: حالةُ الإنفاذ · سجلُّ القرارات · الترحيلُ والرجوع (هوية → نطاق → صلاحيات) · جلسةُ اختبارٍ داخلية (Preview) ══ */"
+    }
+  ]
+}

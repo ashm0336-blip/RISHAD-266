@@ -1,0 +1,144 @@
+{
+ "generated": "2026-10-16T17:10:06.438Z",
+ "axe": "4.10.3",
+ "screens": 32,
+ "totals": {
+  "critical": 0,
+  "serious": 0,
+  "moderate": 0,
+  "minor": 0
+ },
+ "contrastPairs": {},
+ "contrastExamples": {},
+ "rules": {},
+ "perScreen": [
+  {
+   "label": "login",
+   "violations": 0
+  },
+  {
+   "label": "kpis",
+   "violations": 0
+  },
+  {
+   "label": "dstats",
+   "violations": 0
+  },
+  {
+   "label": "employees",
+   "violations": 0
+  },
+  {
+   "label": "staffing",
+   "violations": 0
+  },
+  {
+   "label": "plan",
+   "violations": 0
+  },
+  {
+   "label": "planning",
+   "violations": 0
+  },
+  {
+   "label": "daily",
+   "violations": 0
+  },
+  {
+   "label": "dreport",
+   "violations": 0
+  },
+  {
+   "label": "tasks",
+   "violations": 0
+  },
+  {
+   "label": "irshad",
+   "violations": 0
+  },
+  {
+   "label": "seized",
+   "violations": 0
+  },
+  {
+   "label": "award",
+   "violations": 0
+  },
+  {
+   "label": "links",
+   "violations": 0
+  },
+  {
+   "label": "admin",
+   "violations": 0
+  },
+  {
+   "label": "sysadmin",
+   "violations": 0
+  },
+  {
+   "label": "#/sysadmin/overview",
+   "violations": 0
+  },
+  {
+   "label": "#/sysadmin/sec",
+   "violations": 0
+  },
+  {
+   "label": "#/sysadmin/users",
+   "violations": 0
+  },
+  {
+   "label": "#/sysadmin/perms",
+   "violations": 0
+  },
+  {
+   "label": "#/sysadmin/plat",
+   "violations": 0
+  },
+  {
+   "label": "#/sysadmin/depts",
+   "violations": 0
+  },
+  {
+   "label": "#/sysadmin/oplog",
+   "violations": 0
+  },
+  {
+   "label": "#/sysadmin/backup",
+   "violations": 0
+  },
+  {
+   "label": "#/sysadmin/histimp",
+   "violations": 0
+  },
+  {
+   "label": "#/employees/custody",
+   "violations": 0
+  },
+  {
+   "label": "#/profile",
+   "violations": 0
+  },
+  {
+   "label": "#/help",
+   "violations": 0
+  },
+  {
+   "label": "kpis@dark",
+   "violations": 0
+  },
+  {
+   "label": "employees@dark",
+   "violations": 0
+  },
+  {
+   "label": "daily@dark",
+   "violations": 0
+  },
+  {
+   "label": "admin@dark",
+   "violations": 0
+  }
+ ]
+}

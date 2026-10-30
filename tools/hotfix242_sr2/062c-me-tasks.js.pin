@@ -1,0 +1,209 @@
+/* ═══ KIVO_264 · KIVO-Tasks (P0) — «ملفي ← مهامي»: قراءةُ الموظف لمهامه هو وحده، وأفعالُه الذاتية، من الخادم ═══
+   العطلُ الإنتاجي (مثبتٌ على عامل 242 القديم وعلى 263 بالوضعين — tests/unit/tasks_p0_selfread.test.mjs):
+     مخزنُ المهام bsdept:<d>:bassam_tasks_v1 لا يُقرأ إلا بورقة tasks:view (= task.view) — 050 RD_REG · 061 readBindings — فالموظفُ العاديّ
+     (بلا ورقةٍ أو بورقةٍ لا تحوي المهام) لا يصله المخزنُ في الإقلاع ولا في /api/get، بينما تنبيهُ «أُسندت إليك» يصله لأن مخزن التنبيهات
+     bassam_notif_v1 قاعدةٌ (rule) يقرؤها كلُّ منتسبي الإدارة. فيصل التنبيهُ ولا تظهر المهمة في «ملفي ← مهامي».
+     والالتفافُ الوحيد اليوم («امنحه task.view») يكشف له مهامَ زملائه كلَّها وصورَ توثيقهم — ممنوعٌ بقرار المالك.
+   هنا مسارٌ ذاتيّ لا يمنح أيَّ صلاحيةٍ إدارية ولا يفتح المخزن:
+     GET  /api/me/tasks[?ym=Y-M][&since=<rev>]  صفوفي أنا فقط (العمود 14 = مفتاحي الثابت) في إدارتي — القديمةُ والجديدة، المنقضيةُ والقادمة؛
+                                                ولا شيءَ من صفوف غيري (ولا أسماؤهم ولا مفاتيحُهم ولا صورُهم)
+     POST /api/me/tasks/act {k,id,i?,act,why?,note?,imgs?}   accept · decline · finish · expire على صفّي أنا — تُبنى القيمةُ الجديدة في الخادم
+                                                ثم تمرّ بالحفظ المركزي applySave نفسِه: canWrite ⇒ selfTaskOnly (الوضع القديم) · enfDecide ⇒ self.task.respond
+                                                بنطاق Own (الإنفاذ) — فلا قاعدةَ موازية ولا تجاوزَ لثابتٍ أو تدقيقٍ أو حارسِ نسخة (CAS) أو ربطِ الصور
+     GET  /api/me/tasks/img?id=<id>             صورةُ توثيقٍ مذكورةٌ في صفٍّ مسنَدٍ إليّ، ومالكُها رفعي (claim) أو مخزنُ مهام إدارتي (bound)
+   الهوية: الحساب ⇒ ekey ⇒ سجلُّ موظفٍ في إدارة الحساب (deptId) بالمعرّف الثابت eid (وبرقم الهوية nid للحسابات القديمة — قراءةً فقط · OD-9).
+   لا مطابقةَ بالاسم ولا باسم الدخول أبداً. والكتابةُ على صفٍّ عمودُه 14 = ekey الحساب حرفياً (شرطُ selfTaskOnly ونطاقِ Own). */
+var METK_MAX = 400;                                                   /* سقفُ الصفوف في الردّ الواحد (الأحدث أولاً) — والشهرُ بـ?ym */
+var METK_ACTS = { accept: 'accepted', decline: 'declined', finish: 'finished', expire: 'expired' };
+var METK_IMG_RX = /^img_tsk[a-z0-9]+_[a-z0-9]+$/, METK_DAY_RX = /^\d{4}-\d{1,2}-\d{1,2}$/, METK_YM_RX = /^\d{4}-\d{1,2}$/;
+var METK_WHY_MAX = 200, METK_NOTE_MAX = 1000, METK_IMG_N = 4;
+/* SR-2.2 · F-3 (المراجعةُ المستقلة): «انقضاءُ المهلة» يُسجَّل لما انتهت مهلتُه خلال 48 ساعة وحده — الأقدمُ noop بلا كتابةٍ ولا تدقيقٍ ولا تنبيه، فلا تُغرق
+   أوّلُ زيارةٍ لـ«ملفي» بعد النشر المخزنَ والمديرين بمتأخراتٍ قديمة (دفاعٌ في العمق مع مرشِّح الواجهة) */
+var METK_EXP_WIN = 48 * 3600 * 1000;
+function meTkStr(v, n) { return v == null ? '' : String(v).slice(0, n || 400); }
+function meTkNum(v) { return typeof v === 'number' && isFinite(v) ? v : null; }
+/* حالةُ المهمة من منظور الموظف — القاعدةُ نفسُها في «ملفي» (_tkState): لا إخفاءَ بها، بل وصفٌ للعرض */
+function meTkPhase(r, now) {
+  if (r[3] === 'declined') return 'declined';
+  if (r[3] === 'done') return 'done';
+  if (r[11]) return 'running';
+  if (r[16] && now > r[16]) return 'expired';
+  if (r[15] && now < r[15]) return 'upcoming';
+  return 'new';
+}
+/* الأداءُ عند الإنهاء — حرفياً كـperfOf في صفحة المهام و_tkPerf في «ملفي» */
+function meTkPerf(acc, fin, dur) {
+  if (!acc || !fin || !dur) return null;
+  var a = 6e4 * dur, r = acc + a - fin;
+  var f = function (t) { var e = Math.floor(Math.abs(t) / 6e4), n = Math.floor(e / 60), m = e % 60; return (n ? n + ' س' : '') + (n && m ? ' ' : '') + (m || !n ? m + ' د' : ''); };
+  return r <= -6e4 ? ['late', 'متأخر ' + f(r)] : r >= 0.1 * a ? ['early', 'مبكر بـ ' + f(r)] : ['on_time', 'في الوقت'];
+}
+/* من أنا؟ — حسابٌ ⇒ سجلُّ موظفٍ بمعرّفٍ ثابت في إدارته. مديرُ النظام ومديرُ العقدة ومديرُ الإدارة المعيَّن (mgr:/gm:) بلا سجلّ: غيرُ مرتبط */
+async function meTkIdent(env, A) {
+  var u = A.u, d = String(u.deptId || ''), ek = String(u.ekey || '');
+  var out = { linked: false, by: 'none', dept: d, ekey: ek, toks: nmap() };
+  if (!d || !ek || u.role === 'super' || u.role === 'gm' || isMgrKey(ek) || ek.indexOf('gm:') === 0) return out;
+  var emps = parseJson(await kvGet(env, 'kv', 'bsdept:' + d + ':bassam_employees_v1'), []), rec = null;
+  if (!Array.isArray(emps)) emps = [];
+  /* SR-2.2 · F-1 (المراجعةُ المستقلة — عالٍ): معرّفٌ يربط الحسابَ أو يصير رمزاً له إن حمله سجلٌّ واحدٌ بالضبط في الإدارة. كان الربطُ برقم الهوية بأوّل سجلٍّ
+     مطابِق ويُضاف معرّفُه الثابت بلا فحصِ تفرّد — فحسابٌ مفتاحُه رقمُ هويةٍ مكرَّر (خطأُ إدخال) يقرأ مهامَ زميلٍ وصورَ توثيقه. والمكرَّرُ اليوم «غيرُ مرتبط» */
+  var one = function (f, v) { var n = 0, c = null; for (var j = 0; j < emps.length; j++) if (isObj(emps[j]) && emps[j][f] != null && emps[j][f] !== '' && String(emps[j][f]) === v) { n++; if (!c) c = emps[j]; } return n === 1 ? c : null; };
+  rec = one('eid', ek);
+  if (rec) out.by = 'eid';
+  else { rec = one('nid', ek); if (rec) out.by = 'nid'; }
+  if (!rec) return out;
+  out.linked = true; out.toks[ek] = 1;
+  if (rec.eid != null && rec.eid !== '' && one('eid', String(rec.eid))) out.toks[String(rec.eid)] = 1;
+  /* رقمُ الهوية ثابتٌ للشخص (الاسمُ ليس كذلك ولا يُستعمل) — ويُقبل رمزاً فقط إن تفرّد في سجلّ الإدارة: رقمٌ مكرَّرٌ (خطأُ إدخال) لا يُسند صفوفَ غيره */
+  if (rec.nid != null && rec.nid !== '' && one('nid', String(rec.nid))) out.toks[String(rec.nid)] = 1;
+  return out;
+}
+/* SR-2.2 · F-7 (سياسةُ المالك «الصفحةُ غيرُ المفعّلة لا تُظهر أيَّ بياناتٍ تخصّها»): صفحةُ المهام في سقف إدارة الحساب وغيرُ مطفأةٍ على مستوى المنصة —
+   deptCapOf (سقفُ الإدارة بتقاطع أسلافها · غيابُ السجل = مفتوح · وتسقط منه الوحدةُ المطفأة A.off) كما writePages؛ وإلا فلا قراءةَ ولا فعلَ ذاتيّ */
+function meTkPageOn(A) { var d = String(A.u.deptId || ''); return !!d && deptCapOf(A, d).indexOf('tasks') !== -1; }
+function meTkMine(r, I) { return Array.isArray(r) && r[14] != null && r[14] !== '' && !!I.toks[String(r[14])]; }
+/* الصفُّ كما يراه صاحبُه — حقولُه هو وحده (لا اسمَ ولا مفتاحَ لغيره · المجموعةُ بوسمها لا بأفرادها) */
+function meTkView(day, i, r, I, now) {
+  var p = day.split('-'), r20 = isObj(r[20]) ? r[20] : null, r21 = isObj(r[21]) ? r[21] : null;
+  return { k: day, y: +p[0], m: +p[1], d: +p[2], i: i, id: r[13] == null ? null : r[13],
+    t: meTkStr(r[0], 300), desc: meTkStr(r[1], 4000), prio: meTkStr(r[2], 20) || 'normal', st: meTkStr(r[3], 20) || 'pending', ph: meTkPhase(r, now),
+    s: meTkNum(r[15]), e: meTkNum(r[16]), dur: meTkNum(r[10]), acc: meTkNum(r[11]), fin: meTkNum(r[12]), at: meTkNum(r[13]),
+    by: meTkStr(r[9], 160), grp: r[17] ? { id: meTkStr(r[17], 60), label: meTkStr(r[18], 120) } : null,
+    perf: Array.isArray(r[6]) ? [meTkStr(r[6][0], 20), meTkStr(r[6][1], 60)] : null,
+    dec: r20 ? { at: meTkNum(r20.at), why: meTkStr(r20.why, METK_WHY_MAX), exp: meTkNum(r20.exp) } : null,
+    proof: r21 ? { imgs: (Array.isArray(r21.imgs) ? r21.imgs : []).filter(function (x) { return METK_IMG_RX.test(String(x)); }).slice(0, 8), note: meTkStr(r21.note, METK_NOTE_MAX), at: meTkNum(r21.at) } : null,
+    w: String(r[14]) === I.ekey ? 1 : 0 };
+}
+async function meTkRev(env, k) { var r = await env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(k).first(); return (r && r.rev) || 0; }
+function meTkKey(I) { return 'bsdept:' + I.dept + ':bassam_tasks_v1'; }
+/* ── GET /api/me/tasks ── */
+async function meTkList(env, A, url) {
+  if (!meTkPageOn(A)) return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
+  var I = await meTkIdent(env, A), now = Date.now();
+  var me = { linked: I.linked, by: I.by, dept: I.dept };
+  if (!I.linked) return json({ ok: 1, now: now, me: me, rev: 0, n: 0, more: 0, months: [], rows: [] });
+  var K = meTkKey(I), rev = await meTkRev(env, K);
+  var since = parseInt(url.searchParams.get('since') || '', 10);
+  if (since && since === rev) return json({ ok: 1, now: now, me: me, rev: rev, same: 1 });   /* لا تغيّر في المخزن منذ آخر قراءة — ردٌّ رخيص للاستطلاع الدوري */
+  var ym = String(url.searchParams.get('ym') || ''); if (ym && !METK_YM_RX.test(ym)) return json({ ok: 0, err: 'bad-ym' }, 400);
+  var S = parseJson(await kvGet(env, 'kv', K), {}); if (!isObj(S)) S = {};
+  var all = [], months = {}, dk;
+  for (dk in S) {
+    if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk])) continue;
+    var L = S[dk], p = dk.split('-'), ymk = (+p[0]) + '-' + (+p[1]);
+    for (var i = 0; i < L.length; i++) {
+      if (!meTkMine(L[i], I)) continue;
+      months[ymk] = (months[ymk] || 0) + 1;
+      if (ym && ymk !== ym.replace(/-0(\d)$/, '-$1')) continue;
+      all.push(meTkView(dk, i, L[i], I, now));
+    }
+  }
+  all.sort(function (a, b) { return (b.y - a.y) || (b.m - a.m) || (b.d - a.d) || ((a.s || a.at || 0) - (b.s || b.at || 0)); });
+  var more = all.length > METK_MAX ? 1 : 0;
+  return json({ ok: 1, now: now, me: me, rev: rev, n: all.length, more: more, months: Object.keys(months).map(function (x) { return { ym: x, n: months[x] }; }), rows: more ? all.slice(0, METK_MAX) : all });
+}
+/* ── POST /api/me/tasks/act ── */
+function meTkBad(b) {
+  if (!isObj(b)) return 'body';
+  if (!METK_DAY_RX.test(String(b.k || ''))) return 'k';
+  if (!(typeof b.id === 'number' && isFinite(b.id)) && !(typeof b.id === 'string' && b.id.length > 0 && b.id.length <= 40)) return 'id';
+  if (b.i != null && !(typeof b.i === 'number' && b.i >= 0 && b.i < 5000 && Math.floor(b.i) === b.i)) return 'i';
+  if (!Object.prototype.hasOwnProperty.call(METK_ACTS, String(b.act))) return 'act';
+  if (b.why != null && (typeof b.why !== 'string' || b.why.length > METK_WHY_MAX)) return 'why';
+  if (b.note != null && (typeof b.note !== 'string' || b.note.length > METK_NOTE_MAX)) return 'note';
+  if (b.imgs != null && (!Array.isArray(b.imgs) || b.imgs.length > METK_IMG_N || !b.imgs.every(function (x) { return typeof x === 'string' && METK_IMG_RX.test(x); }))) return 'imgs';
+  return '';
+}
+async function meTkAct(env, request, A, b) {
+  if (!meTkPageOn(A)) return json({ ok: 0, err: 'off', msg: 'صفحةُ المهام غيرُ مفعّلةٍ لإدارتك' }, 403);   /* SR-2.2 · F-7 */
+  var bad = meTkBad(b); if (bad) return json({ ok: 0, err: 'bad-body', at: bad }, 400);
+  var I = await meTkIdent(env, A); if (!I.linked) return json({ ok: 0, err: 'not-linked' }, 403);
+  var K = meTkKey(I), act = String(b.act), dk = String(b.k), p = dk.split('-'), ymk = (+p[0]) + '-' + (+p[1]);
+  for (var attempt = 0; attempt < 2; attempt++) {
+    var rev = await meTkRev(env, K), S = parseJson(await kvGet(env, 'kv', K), null);
+    var L = isObj(S) && Array.isArray(S[dk]) ? S[dk] : null;
+    /* الصفُّ بهويته (العمود 13) ومسنَدٌ إليّ — والموضعُ i تلميحٌ فقط (تُزاح الصفوف بإضافةٍ أو حذف). صفٌّ ليس لي = «غير موجود» (لا كشفَ لوجوده) */
+    var idx = -1, j;
+    if (L) {
+      if (b.i != null && meTkMine(L[b.i], I) && String(L[b.i][13]) === String(b.id)) idx = b.i;
+      for (j = 0; j < L.length && idx < 0; j++) if (meTkMine(L[j], I) && String(L[j][13]) === String(b.id)) idx = j;
+    }
+    if (idx < 0) return json({ ok: 0, err: 'not-found' }, 404);
+    var r0 = L[idx];
+    if (String(r0[14]) !== I.ekey) return json({ ok: 0, err: 'identity', msg: 'المهمة مسندةٌ بمعرّفٍ قديم لا يطابق حسابك — يعيد المدير إسنادها' }, 409);
+    var locks = parseJson(await kvGet(env, 'kv', 'bsdept:' + I.dept + ':bassam_tasks_locks_v1'), {});
+    if (isObj(locks) && (locks[ymk] === true || locks[ymk] === 1)) return json({ ok: 0, err: 'locked', msg: 'شهرُ المهمة معتمدٌ ومقفل' }, 409);   /* SR-2.1: الاعتمادُ الصريح وحده — {mo:1} شهرٌ منقضٍ فتحه المدير (لا قفل) */
+    var now = Date.now(), ph = meTkPhase(r0, now), r1 = r0.slice(); while (r1.length < 22) r1.push(null);
+    var closed = r0[3] === 'done' || r0[3] === 'declined';
+    if (act === 'accept') {
+      if (closed || r0[11] || ph === 'expired') return json({ ok: 0, err: 'state', ph: ph }, 409);
+      r1[11] = now; r1[3] = 'in_progress';
+    } else if (act === 'decline') {
+      var why = String(b.why || '').trim(); if (!why) return json({ ok: 0, err: 'bad-body', at: 'why' }, 400);
+      if (closed || r0[11]) return json({ ok: 0, err: 'state', ph: ph }, 409);
+      r1[3] = 'declined'; r1[20] = Object.assign({}, isObj(r0[20]) ? r0[20] : {}, { at: now, why: why });
+    } else if (act === 'finish') {
+      if (closed || !r0[11]) return json({ ok: 0, err: 'state', ph: ph }, 409);
+      var imgs = Array.isArray(b.imgs) ? b.imgs.slice() : [], note = String(b.note || '').trim(), had = isObj(r0[21]) && Array.isArray(r0[21].imgs) ? r0[21].imgs : [];
+      if (!imgs.length && !note) return json({ ok: 0, err: 'proof', msg: 'أرفق صورة التوثيق أو اكتب ملاحظة الإنجاز' }, 400);
+      for (j = 0; j < imgs.length; j++) {
+        var o = await imgOwnOf(env, imgs[j]);
+        var mine = o && ((o.st === 'claim' && o.uid === A.u.id) || (o.st === 'bound' && o.k === K && had.indexOf(imgs[j]) !== -1));
+        if (!mine) return json({ ok: 0, err: 'img', at: imgs[j], msg: 'صورةُ التوثيق لم تُرفع بعد أو ليست لك — أعد الرفع' }, 409);
+      }
+      r1[12] = now; r1[3] = 'done'; r1[6] = meTkPerf(r0[11], now, r0[10]); r1[21] = { imgs: imgs, note: note, at: now };
+    } else {                                                                      /* expire: انقضاءُ مهلة القبول بلا ردّ — يُسجَّل مرةً واحدة فيصل المديرَ تنبيهُه */
+      if (closed || r0[11] || ph !== 'expired') return json({ ok: 0, err: 'state', ph: ph }, 409);
+      if (isObj(r0[20]) && r0[20].exp) return json({ ok: 1, rev: rev, row: meTkView(dk, idx, r0, I, now), noop: 1 });
+      if (now - r0[16] > METK_EXP_WIN) return json({ ok: 1, rev: rev, row: meTkView(dk, idx, r0, I, now), noop: 1 });   /* SR-2.2 · F-3: قديمٌ ⇒ بلا كتابة */
+      r1[20] = Object.assign({}, isObj(r0[20]) ? r0[20] : {}, { exp: now });
+    }
+    var S2 = Object.assign({}, S); S2[dk] = L.map(function (x, q) { return q === idx ? r1 : x; });
+    var ev = { cid: 'mtk_' + now.toString(36) + '_' + Math.floor(Math.random() * 1e9).toString(36), k: K, etype: 'task', act: METK_ACTS[act],
+      eid: (String(r0[13]) + '_' + I.ekey).slice(0, 80), ename: meTkStr(r0[0], 160), ctx: JSON.stringify({ day: dk, i: idx, via: 'self' }),
+      before: JSON.stringify({ st: r0[3] || null, acc: r0[11] || null }), after: JSON.stringify({ st: r1[3], acc: r1[11] || null, fin: r1[12] || null, imgs: isObj(r1[21]) && Array.isArray(r1[21].imgs) ? r1[21].imgs.length : 0 }) };
+    var B = { set: {}, base: {}, aud: [ev] }; B.set[K] = JSON.stringify(S2); B.base[K] = rev;
+    var res = await applySave(env, B, A, reqMeta(request));
+    if (res.revs && res.revs[K]) return json({ ok: 1, rev: res.revs[K], row: meTkView(dk, idx, r1, I, now) });
+    if (res.denied && res.denied[K]) return json({ ok: 0, err: 'denied', why: String(res.denied[K].why || '') }, 403);
+    if (!(res.conflicts && res.conflicts[K])) break;                              /* تعارض: حفظٌ متزامن سبقنا — تُعاد القراءةُ والتطبيقُ مرةً واحدة */
+  }
+  return json({ ok: 0, err: 'busy', msg: 'تعذّر الحفظ لتعديلٍ متزامن — أعد المحاولة' }, 409);
+}
+/* ── GET /api/me/tasks/img?id=<id> ── */
+async function meTkImg(env, A, id) {
+  if (!meTkPageOn(A)) return json({ ok: 0, err: 'off' }, 403);   /* SR-2.2 · F-7 */
+  if (!METK_IMG_RX.test(id)) return json({ ok: 0, err: 'bad-id' }, 400);
+  var I = await meTkIdent(env, A); if (!I.linked) return json({ ok: 0, err: 'forbidden' }, 403);
+  var K = meTkKey(I), S = parseJson(await kvGet(env, 'kv', K), {}), found = false, dk, i;
+  if (isObj(S)) for (dk in S) { if (found || !METK_DAY_RX.test(dk) || !Array.isArray(S[dk])) continue;
+    for (i = 0; i < S[dk].length && !found; i++) { var r = S[dk][i]; if (meTkMine(r, I) && isObj(r[21]) && Array.isArray(r[21].imgs) && r[21].imgs.indexOf(id) !== -1) found = true; } }
+  if (!found) return json({ ok: 0, err: 'forbidden' }, 403);
+  /* imgResolve لا imgOwnOf: صورةُ توثيقٍ قديمة (قبل سجلّ الملكية) يذكرها مخزنُ المهام وحده تُحسم له هنا مرّةً — كما يفعل /api/img */
+  var o = await imgResolve(env, id);
+  if (!o || !((o.st === 'bound' && o.k === K) || (o.st === 'claim' && o.uid === A.u.id))) return json({ ok: 0, err: 'forbidden' }, 403);
+  var iv = await imgLoad(env, id);
+  if (iv == null) return new Response('', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+  return new Response(iv, { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
+}
+/* ── الموزِّع: يُستدعى من authSessionRoutes (062a) بجلسةٍ صالحة وحسابٍ قائم ── */
+async function meTasksRoutes(request, env, path, ss) {
+  if (path !== '/api/me/tasks' && path !== '/api/me/tasks/act' && path !== '/api/me/tasks/img') return null;
+  var A = await actorOf(env, ss.uid);
+  if (!A) return json({ ok: 0, err: 'session' }, 401);
+  if (path === '/api/me/tasks') {
+    if (request.method !== 'GET') return json({ ok: 0, err: 'method' }, 405);
+    return await meTkList(env, A, new URL(request.url));
+  }
+  if (path === '/api/me/tasks/act') {
+    if (request.method !== 'POST') return json({ ok: 0, err: 'method' }, 405);
+    var rl = await rlHit(env, 'sv', A.u.id, RL_SAVE); if (rl) return tooMany(rl);
+    var raw = await request.arrayBuffer();
+    if (raw.byteLength > 8192) return json({ ok: 0, err: 'too-large' }, 413);
+    var b; try { b = JSON.parse(new TextDecoder().decode(raw)); } catch (e) { return json({ ok: 0, err: 'طلب غير مفهوم' }, 400); }
+    var badB = bodyCheck('/api/me/tasks/act', b); if (badB) return json({ ok: 0, err: 'bad-body', at: badB }, 400);   /* SOT-101: المخطّطُ الموحّد (src/schemas/api) متى سُجّل — ثم الفحصُ الدلاليّ meTkBad */
+    return await meTkAct(env, request, A, b);
+  }
+  if (request.method !== 'GET') return json({ ok: 0, err: 'method' }, 405);
+  return await meTkImg(env, A, String(new URL(request.url).searchParams.get('id') || ''));
+}

@@ -1,0 +1,57 @@
+{
+ "src/modules/admin/logic.js": {
+  "sha256": "f94e9d9463d2da0ee6bec32f6401d067a2e2691d40595bb14bb4c1e4e9c6bd0b",
+  "lines": 13,
+  "why": "SOT-139: حقلُ «سقفُ الحفظ لكل حساب في الدقيقة» في سياسات الأمن"
+ },
+ "src/modules/dstats/logic.js": {
+  "sha256": "b1082662b5ee612b0c6a747243fc431cba7ceb340711a4a713e492ff6b1944d5",
+  "lines": 17,
+  "why": "SOT-130: قيمٌ محايدة للرسمة الأولى (EMPTY) — لا تحذيرَ never resolved"
+ },
+ "src/pages/Admin.dc.html": {
+  "sha256": "7c98e1b3fd5d6fb0331d778a13570bc5a9756453f9f09c8534f449f30146522e",
+  "lines": 13,
+  "why": "مولَّدةٌ من admin/{view,logic}"
+ },
+ "src/pages/Daily Stats.dc.html": {
+  "sha256": "e667409616aac1eaa4618db7c4abcd5294f6717b37eb0dfd4145b4a985fc4078",
+  "lines": 17,
+  "why": "مولَّدةٌ من dstats/{view,logic}"
+ },
+ "tools/tokens.py": {
+  "sha256": "8cfb9de06177b07096f89828550fe46f5e3fceba1d4310ab997de8ba448876d2",
+  "lines": 16,
+  "why": "verify يقبل مرجعاً git:<وسم>"
+ },
+ "workers/parts/001-policy.js": {
+  "sha256": "00386f1e152bb142d081ec540be09e337be5cd9f0a124850bddfd34ea400d465",
+  "lines": 16,
+  "why": "SOT-139: wrMin في السياسة (30–5000 · الافتراضي 1200) يضبط RL_SAVE"
+ },
+ "workers/parts/002-seclog.js": {
+  "sha256": "56fa905e901ea359570382d30336c423c3a3e9821bfa3e2274bbd87faebedc46",
+  "lines": 13,
+  "why": "الإصدار 2026.10.10-155"
+ },
+ "workers/parts/052-aud-events.js": {
+  "sha256": "de928d5e873f1260a61c9e8812435c5c4db56b30cb87c46a5e50cf807b353c2e",
+  "lines": 97,
+  "why": "AUD-037: لقطةُ المقدّمة (preload · preAttach · dbGuard · kvJoin · kvMany) · kvGet من اللقطة · dbGuard يعرض withSession/dump حين يملكهما الارتباطُ وحده (تصحيح: الطلبُ المتداخل /api/authz-test فوق جلسة D1 — tests/unit/d1_session_shape)"
+ },
+ "workers/parts/054-image-contract.js": {
+  "sha256": "3338ab99c65299d6dfe705b052c95c6408094b9927a09b9b4a8cfe183ba0c1ce",
+  "lines": 57,
+  "why": "AUD-037: metaGet/revsAll/session من اللقطة · لمسُ الجلسة بـwaitUntil على القاعدة الخام · RL_SAVE من السياسة (تعليق)"
+ },
+ "workers/parts/056-enforce.js": {
+  "sha256": "7d296a0afdc8fca844998f616c7418d50f56c7582ea8719e3968b1fa1d28b356",
+  "lines": 25,
+  "why": "AUD-037: enfModeOf من اللقطة · ENF_VER KIVO_255"
+ },
+ "workers/parts/063-enf-api-and-handler.js": {
+  "sha256": "ef3dd35648f91eb12274501c032145a123d090a2c0a1dcd0d28a115f6536ea02",
+  "lines": 131,
+  "why": "AUD-037: preAttach في /api/* والغلاف · ctx · /api/get بجولةٍ واحدة · /api/me دفعة · preOff عند الانتظار — SOT-143/149: ev=req + Server-Timing — SOT-139: الصور بربع السقف · نوافذُ rl: خارج قائمة الأقفال وlockedNow · wrMin في حفظ السياسة"
+ }
+}

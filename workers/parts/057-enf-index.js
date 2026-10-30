@@ -1,0 +1,168 @@
+/* ══ (1) فهارسُ السجل — تُبنى مرّةً لكل نسخةٍ من الخادم ══ */
+var ENF_IX = null;
+var ENF_LEAF_RE = /^([A-Za-z]+(?:\/[A-Za-z]+)?):(view|add|edit|del|approve|export)$/;
+/* D-19 (v24.3 F-14): كاتبُ رصد الميدان يستهلك status.change على العناصر المسنَدة إليه فقط — بنطاق Assigned الذي يفرضه المحرّك (fieldOnly) */
+var ENF_DERIVE = { 'field.view': ['lens.zones.status.change', 'lens.gates.status.change', 'lens.marks.status.change'] };
+/* D3-01 / §14.2: ربطُ approve → retro.open توافقٌ مؤقّت ينتهي عند ترحيل الصلاحيات (المنحُ الصريح وحده بعده) */
+var ENF_COMPAT = { 'ir.rec.retro.open': 'irshad/records:approve', 'sz.rec.retro.open': 'seized/records:approve' };
+/* KIVO_265 · قرارُ المالك 2026-10-20 («هذا الإجراء يتطلب سبباً … لا أرغب بها، أزلها»): تغييرُ حالة عناصر الخطة التشغيلية من «التشغيل الميداني»
+   (المصلى · البوابة · المعلم · المسار — حقولُ الحالة: fst · flow · closed · off …) لم يعد يطلب سبباً إلزامياً. الصلاحيةُ والنطاقُ يُحكمان كما كانا،
+   والفعلُ يُسجَّل في سجل التدقيق كما كان؛ السببُ وحده لم يعد شرطاً للحفظ. المرجعُ v24.9 (audit.reason في السجلّ) لا يُمسّ — الاستثناءُ هنا في فهرس الإنفاذ.
+   باقيةٌ بسببها: رفعُ الخريطة واستبدالُها (map.replace) · إعادةُ فتح الخطة المعتمدة (plan.reopen) · وسائرُ مفاتيح السبب */
+var ENF_REASON_OFF = { 'lens.zones.status.change': 1, 'lens.gates.status.change': 1, 'lens.marks.status.change': 1, 'lens.paths.status.change': 1 };
+/* KIVO_259 · AUD-030 (ADR-018): عدسةُ مفتاحٍ من الإضافات (KIVO_LENS_PLUGINS) — للعدسات الجديدة خارج المرجع v24.9 (KIVO_BUILD.LENSES)؛
+   المضمَّنةُ يعيدها المرجعُ نفسُه أولاً فلا يتغيّر شيءٌ لها. بوابةُ عدسة الإضافة = بوابةُ المرجع (KIVO_BUILD.lensGate عامّةٌ لأيّ عدسة). */
+function enfPlugLensOf(key) { var m = /^lens\.([a-z]+)\./.exec(String(key || '')); return m && KIVO_LENS_PLUGINS.keys.indexOf(m[1]) !== -1 ? m[1] : null; }
+function enfIx() {
+  if (ENF_IX) return ENF_IX;
+  var R = KIVO_REGISTRY, ix = { lens: {}, reason: {}, sens: {}, leaf: {}, hosts: {}, superOnly: {}, needMgr: {}, atomless: {}, selfK: {}, roleK: {}, byRes: {}, write: {}, order: [], pos: {} }, i, j;
+  var atomT = {}, a;
+  for (a in R.atoms) { var at = R.atoms[a]; for (j = 0; j < at.targets.length; j++) atomT[at.targets[j]] = 1; }
+  for (i = 0; i < R.keys.length; i++) {
+    var key = R.keys[i], e = R.byKey[key];
+    ix.pos[key] = ix.order.length; ix.order.push(key);
+    if (e.status !== 'active') continue;
+    var L = KIVO_BUILD.lensOf(key) || enfPlugLensOf(key); if (L) ix.lens[key] = L;
+    if (e.audit && e.audit.reason && !ENF_REASON_OFF[key]) ix.reason[key] = 1;
+    if (e.sensitive) ix.sens[key] = 1;
+    if (e.grant === 'self') ix.selfK[key] = 1;
+    if (e.grant === 'role') ix.roleK[key] = 1;
+    if (e.type !== 'view' && e.type !== 'access') ix.write[key] = 1;
+    var am = e.asisMap || [], leaves = [];
+    for (j = 0; j < am.length; j++) {
+      var s = String(am[j]);
+      if (s === 'role:super') ix.superOnly[key] = 1;
+      else if (s === 'role:mgr') ix.needMgr[key] = 1;
+      else { var m = ENF_LEAF_RE.exec(s); if (m && leaves.indexOf(m[1]) === -1) leaves.push(m[1]); }
+    }
+    if (!atomT[key]) ix.atomless[key] = 1;
+    var o = R.owners[e.owner];
+    if (e.ownerKind === 'page') ix.leaf[key] = e.owner;
+    else if (e.ownerKind === 'reference') ix.leaf[key] = (o && o.managedIn) || leaves[0] || '';
+    else if (e.ownerKind === 'lens') ix.hosts[key] = leaves.length ? leaves : ['plan', 'daily/rounds'];
+    var rs = (e.guard && e.guard.resources) || [];
+    for (j = 0; j < rs.length; j++) (ix.byRes[rs[j]] = ix.byRes[rs[j]] || []).push(key);
+  }
+  ENF_IX = ix; return ix;
+}
+/* سقفُ العدسة للإدارة: perms.lenses[d] (غيابُه = كلُّ العدسات — نصُّ الواجهة نفسُه) */
+function enfLensDeptOn(A, d, L) { var dl = ((A.perms && A.perms.lenses) || {})[d]; return Array.isArray(dl) ? dl.indexOf(L) !== -1 : true; }
+/* Department Ceiling: المفتاحُ داخل سقف الإدارة؟ (صفحتُه/ورقتُه على السقف · مضيفُ العدسة على السقف ∧ العدسةُ في سقف الإدارة)
+   — لا يتجاوزه أحدٌ ولو مُنح صراحةً؛ والإعداداتُ لمدير النظام دائماً (admFree كما في AS‑IS) */
+function enfKeyOnCeiling(A, d, key) {
+  var ix = enfIx(), e = KIVO_REGISTRY.byKey[key];
+  if (!e || e.status !== 'active') return false;
+  if (e.ownerKind === 'platform') return true;
+  if (ix.hosts[key]) {
+    var L = ix.lens[key]; if (L && !enfLensDeptOn(A, d, L)) return false;
+    var hs = ix.hosts[key]; for (var i = 0; i < hs.length; i++) if (capOnDept(A, d, hs[i])) return true;
+    return false;
+  }
+  var leaf = ix.leaf[key]; if (!leaf) return true;
+  if (A.u.role === 'super' && leaf.indexOf('admin') === 0) return true;
+  return capOnDept(A, d, leaf);
+}
+/* ترجمةُ الورقة الحالية (ذرّاتُ AS‑IS المقصوصة بسقف الإدارة) إلى مفاتيح v24.9 — طبقةُ التوافق نفسُها التي قاسها الظلّ (permv2Ctx) */
+function enfTranslated(A, d) {
+  var c = A.__enfT || (A.__enfT = {}); if (c[d]) return c[d];
+  var sheet = myPermsOf(A, d), cut = {}, admFree = A.u.role === 'super', leaf;
+  for (leaf in sheet) if ((admFree && leaf.indexOf('admin') === 0) || capOnDept(A, d, leaf)) cut[leaf] = sheet[leaf];
+  var T = KIVO_REGISTRY.translate(cut), src;
+  for (src in ENF_DERIVE) if (T.keys[src]) for (var i = 0; i < ENF_DERIVE[src].length; i++) T.keys[ENF_DERIVE[src][i]] = true;
+  return (c[d] = T);
+}
+/* المنحُ الصريح (Permission Migration · perm.assign) — سجلٌّ مستقلٌّ لكل إدارة: bsdept:<d>:bassam_grants_v1 = { v: 1, emp: { <ekey>: { plus: [مفاتيح], minus: [مفاتيح] } } }
+   plus يضيف مفتاحاً لا ذرّةَ له في الورقة (to-build: backup.restore · retro.open …) · minus يُسقط مفتاحاً ترجمته الورقة (تضييقٌ دقيق).
+   خارجَ bassam_perms_v1 عمداً: الواجهةُ القديمة تعيد كتابة الصلاحيات بأقسامها المعروفة فقط — فلو سكن المنحُ فيها لمحاه حفظُ مدير النظام
+   ولرفض النظامُ القديم حفظَ مدير الإدارة بعد الرجوع (Kill Switch)؛ ومستقلاً يبقى الرجوعُ عن ترحيله لا يمسّ أوراقَ الصلاحيات. والمفتاحُ مجهولٌ
+   للنظام القديم (RES_REG) فلا يقرؤه ولا يكتبه أحدٌ فيه — عدا قراءة مدير النظام الشاملة كما لكل مفتاح. */
+var ENF_GRANTS_RES = 'bassam_grants_v1';
+function enfGrantsKey(d) { return 'bsdept:' + d + ':' + ENF_GRANTS_RES; }
+function enfGrantRec(raw) { var v = typeof raw === 'string' ? parseJson(raw, null) : raw; return isObj(v) && isObj(v.emp) ? v : null; }
+/* يُرفق المنحُ بالفاعل عند إنشائه في وضع الإنفاذ: قراءةٌ واحدة لسجلات إداراته (مديرُ النظام لا يحتاجها) — وغيابُ الإرفاق ⇒ رفض (fail-closed) */
+async function enfAttachGrants(env, A) {
+  var out = {}, ds = A.u.role === 'super' ? [] : enfDeptsOf(A), i, j;
+  for (i = 0; i < ds.length; i += 80) {
+    var part = ds.slice(i, i + 80), ph = part.map(function (x, n) { return '?' + (n + 1); }).join(', ');
+    var stmt = env.DB.prepare('SELECT k, v FROM kv WHERE k IN (' + ph + ') ORDER BY k, seq');
+    var r = await stmt.bind.apply(stmt, part.map(enfGrantsKey)).all();
+    var acc = {}; ((r && r.results) || []).forEach(function (row) { acc[row.k] = (acc[row.k] || '') + row.v; });
+    for (j = 0; j < part.length; j++) out[part[j]] = enfGrantRec(acc[enfGrantsKey(part[j])] == null ? null : acc[enfGrantsKey(part[j])]);
+  }
+  A.__grants = out; return A;
+}
+function enfAttachGrantsKeys(A, keys) {
+  var out = {}, ds = A.u.role === 'super' ? [] : enfDeptsOf(A), i;
+  for (i = 0; i < ds.length; i++) out[ds[i]] = enfGrantRec(keys ? keys[enfGrantsKey(ds[i])] : null);
+  A.__grants = out; return A;
+}
+function enfGrantOf(A, d) {
+  var c = A.__enfG || (A.__enfG = {}); if (c[d]) return c[d];
+  if (!A.__grants) throw new Error('enf-grants-not-attached');
+  var ek = A.u.ekey ? String(A.u.ekey) : '', rec = A.__grants[d], g = ek && rec ? rec.emp[ek] : null, out = { plus: {}, minus: {}, has: false }, i;
+  if (isObj(g)) {
+    out.has = true;
+    if (Array.isArray(g.plus)) for (i = 0; i < g.plus.length; i++) out.plus[String(g.plus[i])] = 1;
+    if (Array.isArray(g.minus)) for (i = 0; i < g.minus.length; i++) out.minus[String(g.minus[i])] = 1;
+  }
+  return (c[d] = out);
+}
+function enfPermMigrated(A) { return !!(A && A.enf && A.enf.perm && A.enf.perm.applied); }
+/* هل يحمل الفاعلُ المفتاحَ في الإدارة d؟ (سقف الإدارة ∧ بوابة العدسة ∧ الدور ∧ الترجمة/المنح الصريح − الإسقاط) */
+function enfHeld(A, d, key) {
+  if (!A || !A.u) return false;
+  var c = A.__enfH || (A.__enfH = {}), dk = d || '', m = c[dk] || (c[dk] = {});
+  if (m[key] !== undefined) return m[key];
+  var v = false; try { v = enfHeld0(A, dk, key); } catch (e) { v = false; }
+  return (m[key] = v);
+}
+function enfHeld0(A, d, key) {
+  var R = KIVO_REGISTRY, e = R.byKey[key], ix = enfIx(), u = A.u;
+  if (!e || e.status !== 'active') return false;                         /* محجوزٌ أو مجهول: Default Deny */
+  if (e.grant === 'self') return true;                                    /* قواعدُ الذات تُطبَّق تلقائياً — بنطاق Own في المحرّك */
+  var sup = u.role === 'super';
+  if (ix.superOnly[key]) return sup;
+  if (e.grant === 'role') return ix.needMgr[key] ? (!!d && isMgrOf(A, d)) : sup;
+  if (!d) return false;
+  if (!sup && !deptInScope(A, d)) return false;
+  if (!enfKeyOnCeiling(A, d, key)) return false;
+  var L = ix.lens[key];
+  if (L) {                                                               /* D3-04: Ceiling ∧ Employee Lens Assignment — enable بوابةٌ لا تمنح العملية */
+    var g = KIVO_BUILD.lensGate(A.perms, u, d, L);
+    if (!g.on) return false;
+    if (key === 'lens.' + L + '.enable') return true;
+  }
+  if (sup) return true;
+  if (ix.needMgr[key] && !isMgrOf(A, d)) return false;
+  if (ix.needMgr[key] && ix.atomless[key]) return true;                   /* perm.assign: الدورُ (مدير الإدارة) — الوسمُ النصّي في asisMap ليس ذرّة */
+  var G = enfGrantOf(A, d);
+  if (G.minus[key]) return false;
+  if (G.plus[key]) return e.grant === 'assignable';
+  var T = enfTranslated(A, d);
+  if (!T.keys[key]) return false;
+  if (ENF_COMPAT[key] && enfPermMigrated(A)) return false;              /* انتهى التوافقُ المؤقّت: المفتاحُ الصريحُ وحده */
+  return true;
+}
+/* هل يحمل الفاعلُ أيَّ مفتاحٍ كتابيٍّ في الإدارة؟ (الراياتُ التقنية rule:'tech' · رفعُ صورةٍ جديدة) */
+function enfAnyWriterDept(A, d) {
+  if (A.u.role === 'super') return true;
+  var ix = enfIx(), k; for (k in ix.write) if (!ix.selfK[k] && enfHeld(A, d, k)) return true;
+  return false;
+}
+function enfAnyWriter(A) {
+  var u = A.u; if (u.role === 'super') return true;
+  if (u.role === 'gm') { for (var i = 0; i < (A.depts || []).length; i++) { var dd = A.depts[i]; if (dd && deptInScope(A, dd.id) && enfAnyWriterDept(A, dd.id)) return true; } return false; }
+  return !!u.deptId && enfAnyWriterDept(A, u.deptId);
+}
+/* مفاتيحُ كتابةِ موردٍ بعينه (لصاحب الصورة · رقمُ المراجعة بلا قيمة) */
+function enfResWriter(A, d, rn) {
+  var ks = enfIx().byRes[rn] || [], i;
+  for (i = 0; i < ks.length; i++) if (enfIx().write[ks[i]] && !enfIx().selfK[ks[i]] && enfHeld(A, d, ks[i])) return true;
+  return false;
+}
+/* إدارات الفاعل التي يُحكم فيها على الموارد المنصّية (الإحصائيات): إداراتُه في نطاقه — كما dsDepts في AS‑IS */
+function enfHeldAnyDept(A, key) {
+  if (A.u.role === 'super') return true;
+  var ds = dsDepts(A), i; for (i = 0; i < ds.length; i++) if (enfHeld(A, ds[i], key)) return true;
+  return false;
+}

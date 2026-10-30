@@ -1,0 +1,84 @@
+{
+ "step": "J.2 — الترحيلُ (هوية ← نطاق ← صلاحيات) ثم الرجوعُ الحرفي — على Preview بـENV enforce وD1 legacy",
+ "J_bookmark": "0000000a-00001be0-000050ff-0aee0374e20a6b82f1f0010982e57fb4",
+ "state_keys_probed": 75,
+ "present_before": 42,
+ "plan": {
+  "hash": "d24cf799b837cd698e2aaebe65c44f62e6f8e349e6ce110f265be6f35ddb0ec5",
+  "counts": {
+   "writes": 5,
+   "identityKeys": 0,
+   "scopeKeys": 2,
+   "ceilings": 2,
+   "employeeValues": 1,
+   "kept": 25,
+   "decisions": 28,
+   "inferable": 2,
+   "grants": 9,
+   "permDecisions": 4
+  },
+  "writes": [
+   "bsdept:tst_d1:bassam_grants_v1 (existed r263)",
+   "bsdept:tst_d1:bassam_scope_v1 (existed r258)",
+   "bsdept:tst_d2:bassam_grants_v1 (new)",
+   "bsdept:tst_d3:bassam_grants_v1 (new)",
+   "bsdept:tst_d3:bassam_scope_v1 (new)"
+  ],
+  "note": "البصمةُ تختلف عن خطة E لأن البذرةَ عشوائية لكل خطة ومراجعاتُ المفاتيح تغيّرت بعد المصفوفة — والمحتوى (العدّادات والمفاتيح) هو نفسُه"
+ },
+ "apply": {
+  "ok": 1,
+  "applied": 5,
+  "rev": 269,
+  "snap": "migration_mv0uno4j_7wooxw",
+  "flags_after": {
+   "perm": "applied",
+   "scope": "applied",
+   "ident": "applied (0 writes)"
+  },
+  "diff_vs_before": [
+   "bsdept:tst_d1:bassam_grants_v1",
+   "bsdept:tst_d1:bassam_scope_v1",
+   "bsdept:tst_d2:bassam_grants_v1 (new)",
+   "bsdept:tst_d3:bassam_grants_v1 (new)",
+   "bsdept:tst_d3:bassam_scope_v1 (new)"
+  ],
+  "only_planned_keys_changed": true
+ },
+ "rollback": {
+  "ok": 1,
+  "restored": 5,
+  "rev": 270,
+  "snap": "migration_mv0uno4j_7wooxw",
+  "flags_after": {
+   "perm": null,
+   "scope": null,
+   "ident": null
+  },
+  "snap_marked_restored": true,
+  "diff_vs_before": [],
+  "rev_changed_only": [
+   "bsdept:tst_d1:bassam_grants_v1 r263→r270",
+   "bsdept:tst_d1:bassam_scope_v1 r258→r270",
+   "3 مفاتيح جديدة حُذفت (revs r270 لتبليغ الجلسات المفتوحة)"
+  ]
+ },
+ "ok": true,
+ "brief": "خطةٌ بـ5 كتابات (مفاتيح tst_* فقط) → تطبيقٌ بالبصمة بعد نسخةٍ كاملة (snap) → الراياتُ الثلاث applied → رجوعٌ من النسخة: 5/5 أُعيدت، الراياتُ صُفّرت، وبصمةُ 75 مفتاحاً (42 موجوداً) = ما قبل الترحيل حرفاً (المراجعاتُ وحدها تقدّمت)",
+ "snaps_in_db": [
+  {
+   "snap": "migration_mv0uno4j_7wooxw",
+   "kind": "migration",
+   "n": 5,
+   "restored": 1
+  },
+  {
+   "snap": "restore_mv0u16zb_9a3l6z",
+   "kind": "restore",
+   "n": 1,
+   "restored": 0,
+   "origin": "W46 backup.restore (نسخةُ ما قبل الاستعادة)"
+  }
+ ],
+ "at": "2026-10-09T10:56:22Z"
+}

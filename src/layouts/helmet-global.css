@@ -1,0 +1,647 @@
+
+body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
+/* ═══ توحيد الخط على كل جهاز ═══
+   عناصر النماذج (زر/حقل/قائمة) لا ترث خط الصفحة في أي متصفح — المواصفة تُسند
+   إليها خطَّ واجهة نظام التشغيل، فيظهر البرنامج بخط Segoe على ويندوز وSan
+   Francisco على ماك وRoboto على أندرويد بينما بقيّة النصوص Cairo. التوريث
+   الصريح يُلغي هذا الاختلاف فيخرج البرنامج بخط واحد على كل جهاز. */
+button,input,select,textarea,optgroup{font-family:inherit;font-feature-settings:inherit}
+.bs-info{position:relative;display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:9999px;background:var(--tone-neutral-55-a15);color:var(--text-faint);font-size:9px;font-weight:600;cursor:help;flex-shrink:0;vertical-align:middle;margin-right:5px;transition:all .15s}
+.bs-info:hover{background:var(--tone-gold-50-a18);color:var(--brand-fg)}
+.bs-tip{position:absolute;top:calc(100% + 9px);right:50%;transform:translateX(50%) translateY(4px);z-index:120;width:235px;background:var(--bg-tooltip);color:var(--text-tooltip);border:1px solid var(--border-tooltip);border-radius:11px;padding:10px 13px;font-size:10px;font-weight:400;line-height:1.9;text-align:right;box-shadow:var(--shadow-tooltip);opacity:0;visibility:hidden;transition:all .18s ease;pointer-events:none;font-family:'Cairo',sans-serif;white-space:normal}
+.bs-tip::before{content:"";position:absolute;bottom:100%;right:50%;transform:translateX(50%);border:6px solid transparent;border-bottom-color:var(--bg-tooltip)}
+.bs-info:hover .bs-tip,.bs-info:focus .bs-tip,.bs-info:focus-within .bs-tip{opacity:1;visibility:visible;transform:translateX(50%) translateY(0)}
+.bs-tip b{color:var(--brand-tooltip);font-weight:600}
+.bs-tip-host{cursor:help}
+a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
+@keyframes ping{75%,100%{transform:scale(2);opacity:0}}
+
+/* ═══ القائمة الجانبية الموحدة ═══ */
+/* ══════════════ نظام الاستجابة: من الجوّال إلى الشاشة العريضة ══════════════
+   ثلاث قواعد تحكم كل شيء:
+   ١) عرض المحتوى يتنفّس مع الشاشة بلا فراغ جانبي مهدور ولا سطر طويل مُتعب.
+   ٢) كل شريط أفقي لا ينزل صفّاً ثانياً أبداً — يُمرَّر يميناً ويساراً بلا شريط مرئي.
+   ٣) القائمة الجانبية للتطبيق ولوحة الكانفس تتقلّصان بالترتيب قبل أن يتأثّر المحتوى.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root{--bs-topbar-h:81px;--bs-side:260px;--bs-panel-w:clamp(440px,32vw,560px);--bs-map-h:clamp(360px,54vh,620px);--bs-surface:var(--bg-surface)}
+/* ══ شريط نسخة العرض ══════════════════════════════════════════════════════
+   يظهر وحده حين لا يوجد خادم على الجهاز — أي في نسخة الرابط على الإنترنت أو
+   عند فتح الملف مباشرةً بنقرة مزدوجة. غرضه أن تُعرف بنظرة واحدة وجهةُ ما
+   يُكتب: هنا ذاكرةُ هذا المتصفّح وحده، لا الملفُّ على القرص. ونسخة الجهاز
+   بلا شريط أصلاً، ولها تنبيهها الأزرق عند الفتح.
+
+   والشريط يزيح المثبَّتَين بأعلى الصفحة — الترويسة والشريط الجانبي — بقدر
+   ارتفاعه، فلا يغطّي منهما شيئاً. الإزاحة بـ!important لأن موضع الترويسة
+   مكتوب في نمطها المباشر، والنمط المباشر يغلب CSS إلا بها. */
+.bs-demobar{display:none}
+html.bs-demo{--bs-demo-h:28px}
+html.bs-demo .bs-demobar{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  position:fixed;top:0;inset-inline:0;height:var(--bs-demo-h);z-index:60;
+  background:linear-gradient(90deg,var(--brand-deep),var(--border-brand),var(--brand-deep));color:var(--text-on-brand);
+  font:600 11.5px/1 'Cairo',Tahoma,sans-serif;padding:0 12px;text-align:center;
+  box-shadow:var(--shadow-soft);pointer-events:none;
+}
+html.bs-demo .bs-demobar b{font-weight:800}
+html.bs-demo header.bs-topbar{ top:var(--bs-demo-h)!important }
+html.bs-demo .bsb{ top:var(--bs-demo-h)!important }
+html.bs-demo .bs-main{ padding-top:calc(82px + var(--bs-demo-h))!important }
+@media (max-width:1024px){
+  html.bs-demo aside.bsb{ top:calc(var(--bs-topbar-h) + var(--bs-demo-h))!important }
+  html.bs-demo .bs-scrim{ top:calc(var(--bs-topbar-h) + var(--bs-demo-h))!important }
+}
+@media (max-width:640px){
+  html.bs-demo{--bs-demo-h:26px}
+  html.bs-demo .bs-main{ padding-top:calc(66px + var(--bs-demo-h))!important }
+  html.bs-demo .bs-demobar{ font-size:10px;gap:5px }
+}
+/* الورق لا يحمل شرائط الشاشة */
+@media print{ .bs-demobar{ display:none!important } }
+/* ═══ طبقة الاستجابة المشتركة ═══
+   ١) إشارة التمرير الأفقي: ظِلّان على الحافتين يظهران فقط حين يبقى خلف الحافة
+      محتوى. الحيلة أن طبقتَي القناع مثبّتتان بالمحتوى (local) فتنزلقان معه
+      وتغطّيان الظلّ عند بلوغ الطرف — بلا جافاسكربت ولا قياس.
+   ٢) عمود الهوية يثبت عند الحافة أثناء التمرير، فلا يضيع «من هذا الصف؟».
+   ٣) حدّ أدنى لمساحة اللمس على الشاشات اللمسية. */
+@media (max-width:1024px){
+  .bs-hscroll,.bs-tabstrip,.bs-grid{
+    background-image:
+      linear-gradient(to left, var(--bs-surface) 42%, var(--tone-neutral-100-a0)),
+      linear-gradient(to right, var(--bs-surface) 42%, var(--tone-neutral-100-a0)),
+      linear-gradient(to left, var(--bg-neutral-10-a16), var(--bg-neutral-10-a0)),
+      linear-gradient(to right, var(--bg-neutral-10-a16), var(--bg-neutral-10-a0));
+    background-position:right center,left center,right center,left center;
+    background-size:34px 100%,34px 100%,15px 100%,15px 100%;
+    background-repeat:no-repeat;
+    background-attachment:local,local,scroll,scroll;
+  }
+}
+@media (max-width:900px){
+  .bs-rtable th.bs-stick,.bs-rtable td.bs-stick{position:sticky;right:0;z-index:2;background:var(--bs-surface);box-shadow:-9px 0 10px -10px rgba(15,23,42,.5)}
+  .bs-rtable thead th.bs-stick{z-index:3;background:var(--bg-surface-2)}
+}
+@media (pointer:coarse){
+  .bs-rtable td button,.bs-rtable th button{min-width:38px;min-height:38px}
+}
+/* شريط التبويبات على الشاشات الضيّقة: يمرّ أفقياً بلا التفاف، وبطاقاته أضيق
+   ليظهر منها أكثر من واحدة ونصف — فيُعرف أن خلفها غيرها. */
+.bs-tabstrip{display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x proximity}
+.bs-tabstrip::-webkit-scrollbar{display:none}
+.bs-tabstrip > *{scroll-snap-align:center}
+/* تطبيع التبويبات الرئيسية: تصميمٌ موحّد 100% في كل الصفحات (ديسكتوب/تابلت) */
+@media (min-width:601px){
+  .bs-hbar.bs-tabstrip > *{min-width:158px!important;border-width:2px!important;border-radius:12px!important;box-sizing:border-box!important}
+}
+/* R191: التوسيطُ الآمن — الشريطُ في الوسط ما دام يسع تبويباتِه (كما في كل الصفحات)، فإن فاضت عن عرضه
+   بدأ من أوّل تبويب فلا يُقصّ أوّلُها. الهامشان التلقائيّان يقتسمان الفراغ، ويصيران صفراً عند الفيض. */
+@media (min-width:601px){
+  .bs-tabstrip{justify-content:flex-start!important}
+  .bs-tabstrip > :first-child{margin-inline-start:auto!important}
+  .bs-tabstrip > :last-child{margin-inline-end:auto!important}
+}
+@media (max-width:600px){
+  /* التوسيط داخل حاوية تمرير يقصّ أولها — فيبدأ الشريط من أوّل تبويب لا من وسطه */
+  .bs-tabstrip{justify-content:flex-start!important}
+  .bs-tabstrip > *{min-width:118px!important;padding:9px 10px!important;gap:4px!important}
+  .bs-tabstrip > * > div:first-child{width:28px!important;height:28px!important}
+}
+/* ═══ كروت الإحصائيات: تصفير المحتوى بعرض الكرت لا بعرض الشاشة ═══
+   الكرت قد يضيق وحده داخل شبكة عريضة، فقياسه بعرض الشاشة يخطئ. استعلام
+   الحاوية يجعل الصفّ (رسم + دلالات) ينقلب إلى عمودين فوق بعض حين يضيق الكرت،
+   وأسماء الدلالات تلتفّ بدل أن تُقصّ إلى حرف واحد. */
+.bs-grid > *,.bs-cardgrid > *,.bs-cardrow > *{container-type:inline-size}
+.bs-statrow{display:flex;align-items:center;gap:14px;min-width:0}
+.bs-statrow > .bs-statfig{flex-shrink:0}
+.bs-statrow > .bs-statlist{flex:1;min-width:0}
+@container (max-width:270px){
+  .bs-statrow{flex-direction:column;align-items:center;gap:10px}
+  .bs-statrow > .bs-statlist{width:100%}
+  .bs-statrow .bs-statlbl{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.5}
+}
+/* كروت المحتوى (رسوم وقوائم وتوصيات) تتراصّ رأسياً على الشاشات الضيّقة بدل أن
+   تنقلب صفّاً يمرّ يميناً ويساراً — التمرير الأفقي يليق ببلاطات الأرقام
+   المدمجة لا ببطاقة فيها رسم وقائمة، فهي تنسحق ويتداخل محتواها. */
+@media (max-width:1100px){
+  .bs-grid.bs-stackcards{grid-auto-flow:row!important;grid-template-columns:1fr 1fr!important;grid-auto-columns:auto!important;overflow-x:visible!important;background-image:none!important}
+}
+@media (max-width:680px){
+  .bs-grid.bs-stackcards{grid-template-columns:1fr!important}
+}
+/* R183 (الملاحظة ١٣): «مواقع ذات صلة» على الجوال — النطاقُ يُخفى تحت 600px فيأخذ اسمُ الموقع مكانه */
+@media (max-width:600px){
+  .bs-lk-host{display:none!important}
+}
+
+/* ١) جسم الصفحة: أعرض مما كان (١٥٠٠ ← ١٨٠٠) وحشوة تتدرّج مع العرض */
+/* عرض الصفحات — موضع واحد لا موضعان. كانت كل صفحة تكتب max-width وحشواً في
+   سطرها (1500 · 1200 · 896) وهذه القاعدة تتجاوزهما بـ!important، فالأرقام
+   المكتوبة في الصفحات لا أثر لها ومن يقرأها يبني على رقم كاذب. حُذفت من
+   الصفحات الثماني وبقي العرض هنا وحده.
+   وكان للملف الشخصي (1120) وإدارة الموقع (1460) استثناءان — أُلغيا بطلبك.
+
+   ثم أُلغي السقف نفسه: سقف العرض نمطُ مقالات لا لوحات تحكّم. المقال يُقيَّد ليبقى
+   السطر مقروءاً، أما لوحة فيها خريطة وجداول فتملأ المتاح. وعلى شاشة 2560 كان
+   السقف 1800 يترك 500 بكسل تُقسَم مناصفةً، فـ250 منها تلتصق بالقائمة الجانبية
+   وتبدو فجوة. الآن المحتوى يملأ ما بعد القائمة، والحشو المتدرّج هو الهامش. */
+[data-screen-label]{max-width:none!important;padding:clamp(10px,1.35vw,26px)!important;box-sizing:border-box}
+/* صفحة مُركَّبة داخل تبويب (المهام داخل صفحة الموظفين): الهوامش لجذر الصفحة
+   الحاضنة وحده وإلا تضاعفت الحواف. القاعدة مقيَّدة بالصفحة الحاضنة تحديداً —
+   تعميمها على كل جذر يُلغي هوامش صفحات البرنامج كلها لأنها جميعاً تسكن
+   داخل جذر «إطار التطبيق». */
+[data-screen-label="إدارة الكوادر — الموظفون"] [data-screen-label]{padding:0!important}
+/* على سنّة السابقة أعلاه حرفياً: الصفحات المستوردة داخل حاويتي «المتابعة اليومية»
+   (التقرير اليومي) و«الخطة التشغيلية» (الجدول الشهري والتشغيل الميداني) يسقط
+   حشوها الجانبي — حشو الحاوية قائم أصلاً، وتكراره يضغط المحتوى ~40px عن أشقّائه */
+[data-screen-label="المتابعة اليومية"] [data-screen-label],
+[data-screen-label="الخطة التشغيلية"] [data-screen-label]{padding:0!important}
+
+/* ٢) الشريط الأفقي: صفٌّ واحد دائماً، ويُمرَّر عند الضيق */
+.bs-hbar{flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain}
+.bs-hbar::-webkit-scrollbar{display:none}
+.bs-hbar>*{flex-shrink:0}
+/* شريط داخل شريط: القاعدة أعلاه تمنع الداخلي من الانكماش، فلا يبلغ العرض الذي
+   يشغّل تمريره ويفيض من الخارجي بدل أن يمرّ في نفسه. يُستثنى ليتقلّص ويمرّ. */
+.bs-hbar>.bs-hbar{flex-shrink:1;min-width:0}
+/* justify-content:center مع overflow يقصّ البداية قصّاً لا يبلغه التمرير — وهي حالة شريط التلميح السفلي على الجوال.
+   KIVO_259 (إصلاح — كشفه k258layout): المحدِّدُ السابق [style*="justify-content:center"] (بهوامش تلقائية) لم يطابق قط —
+   React يعيد كتابةَ سمة النمط بمسافةٍ بعد النقطتين (justify-content: center) كما في ملاحظة الحلقة 118 أدناه — فبقيت بدايةُ
+   التلميح مقصوصةً على الجوال. «safe center» يوسّط عند السعة (لا تغييرَ على الشاشة الواسعة) ويحاذي البدايةَ عند الفيض
+   فيبلغها التمرير؛ والمتصفحُ الذي لا يعرف safe يُسقط الإعلانَ فيبقى السلوكُ السابق كما هو. */
+/* KIVO_259 (تصحيحٌ كشفته R191 في البوابة): القاعدةُ أعلاه كانت تطابق أشرطةَ التبويبات أيضاً (.bs-hbar.bs-tabstrip) فتغلب قاعدتَها على الجوال
+   (flex-start — «يبدأ الشريطُ من أوّل تبويب») فيتوسّط شريطٌ يسع تبويباتِه (الموظفون: تبويبان). أشرطةُ التبويبات لها سلوكُها المصمَّم (R191) فتُستثنى. */
+.bs-hbar:not(.bs-tabstrip)[style*="justify-content: center"],.bs-hbar:not(.bs-tabstrip)[style*="justify-content:center"]{justify-content:safe center!important}
+/* شبكة بطاقات: تتحوّل إلى شريط ممرَّر عند الضيق بدل أن تُسحق أعمدتها */
+@media (max-width:720px){
+  .bs-cardrow{display:flex!important;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+  .bs-cardrow::-webkit-scrollbar{display:none}
+  .bs-cardrow>*{flex:0 0 46%;min-width:132px}
+}
+
+/* كان min-width:0 على أبناء الشبكة داخل الاستعلام وحده — فوق 1100 تعود القيمة
+   الافتراضية auto فتأبى البطاقة الانكماش دون عرض محتواها، ويفيض ما بداخلها
+   خارج حدودها. القاعدة تسري عند كل عرض الآن. */
+.bs-grid>*{min-width:0}
+.bs-grid{min-width:0}
+/* الفيض سببه عناصر ثابتة المقاس داخل البطاقة — الحلقة 118×118 وأخواتها مع
+   flex-shrink:0 — تأبى الانكماش فتدفع ما بجانبها خارج الحدود.
+
+   ملاحظة مهمّة: محاولة سابقة استعملت [style*="width:118px"] ولم تطابق شيئاً —
+   منظومة DC تحوّل نصّ النمط إلى كائن عبر cssToObj، وReact يعيد كتابته بمسافة
+   بعد النقطتين (width: 118px). فالمحدِّدات هنا بنيوية لا نصّية. */
+
+/* الحلقة: الـsvg نفسه يتقلّص — لا يحتاج :has() ولا معرفة غلافه. عرضه في
+   السمات (width="118") لا في النمط، فقاعدة CSS تتجاوزه، و viewBox يتكفّل
+   بتقليص الرسم بلا تشويه. والغلاف يتبعه لأنه يقيس على محتواه. */
+/* الأيقونات كلها viewBox="0 0 24 24" والحلقات "0 0 120 120" و"0 0 132 76" —
+   فالقاعدة على الأخيرتين بالاسم. محدِّد svg[viewBox] وحده كان يصيد الأيقونات
+   معها فتضخّمت. */
+.bs-grid svg[viewBox="0 0 120 120"]{
+  width:clamp(64px,9vw,118px)!important; height:auto!important;
+  aspect-ratio:1/1; max-width:100%; display:block; flex-shrink:1;
+}
+.bs-grid svg[viewBox="0 0 132 76"]{
+  width:clamp(88px,11vw,132px)!important; height:auto!important;
+  aspect-ratio:132/76; max-width:100%; display:block; flex-shrink:1;
+}
+@supports selector(:has(*)){
+  .bs-grid div:has(> svg[viewBox="0 0 120 120"]),
+  .bs-grid div:has(> svg[viewBox="0 0 132 76"]){
+    width:auto!important; height:auto!important; flex-shrink:1!important;
+  }
+}
+
+.bs-grid>* span,.bs-grid>* div{min-width:0}
+
+/* ═══ تحسين توافق الجوال (مُضاف) — إصلاح جذري ═══
+   المشكلة: قاعدة .bs-grid العامة تحوّل كل شبكة إلى شريط أفقي تحت 1100px
+   (grid-auto-flow:column)، وهي مقصودة لبطاقات المؤشرات — لكنها تصطاد شبكات
+   النماذج أيضاً فتتدفّق حقولها أفقياً وتتراكب. الحل: التعرّف على شبكات النماذج
+   بأنها تحوي عناصر إدخال (:has) وإعادتها للتدفّق الرأسي (كما يفعل bs-stackcards).
+   النطاق داخل صفحات البرنامج فقط، فلا يمسّ الغلاف ولا الدخول. */
+@supports selector(:has(*)){
+  @media (max-width:1100px){
+    [data-screen-label] .bs-grid:has(input),
+    [data-screen-label] .bs-grid:has(select),
+    [data-screen-label] .bs-grid:has(textarea),
+    [data-screen-label] .bs-grid:has(label){
+      grid-auto-flow:row!important; grid-auto-columns:auto!important;
+      grid-template-columns:1fr 1fr!important; overflow-x:visible!important; background-image:none!important;
+    }
+  }
+  @media (max-width:560px){
+    [data-screen-label] .bs-grid:has(input),
+    [data-screen-label] .bs-grid:has(select),
+    [data-screen-label] .bs-grid:has(textarea),
+    [data-screen-label] .bs-grid:has(label){
+      grid-template-columns:1fr!important;
+    }
+  }
+}
+/* شبكات النماذج الخام (بلا bs-grid) — تدفّق رأسي عادي، تنهار لعمود على الهاتف.
+   صفوف الجداول (تبدأ بعمود غير متساوٍ مثل 1.6fr) مستثناة فتبقى تُمرَّر أفقياً. */
+@media (max-width:560px){
+  [data-screen-label] [style*="grid-template-columns: 1fr 1fr"],
+  [data-screen-label] [style*="grid-template-columns: 1fr 1."],
+  [data-screen-label] [style*="grid-template-columns: 1fr auto"],
+  [data-screen-label] [style*="grid-template-columns: 1fr 0.8fr"],
+  [data-screen-label] [style*="px 1fr"]{
+    grid-template-columns:1fr!important; grid-auto-flow:row!important; grid-auto-columns:auto!important; overflow-x:visible!important;
+  }
+  /* عناصر الإدخال لا تفيض أبداً */
+  [data-screen-label] input,
+  [data-screen-label] select,
+  [data-screen-label] textarea{ max-width:100%!important; box-sizing:border-box!important; }
+  /* صفوف الأزرار تلتفّ بدل أن تُقصّ */
+  [data-screen-label] .bs-hbar[style*="justify-content:flex-end"],
+  [data-screen-label] .bs-actions{ flex-wrap:wrap!important; }
+}
+.bs-cardrow>*{min-width:0}
+
+/* شبكة مؤشّرات ثابتة الأعمدة: تحت ١١٠٠ تصير شريطاً ممرَّراً بعرض عمود مريح
+   بدل أن تُسحق أعمدتها فيخرج محتواها عن الشاشة */
+@media (max-width:1100px){
+  .bs-grid{grid-template-columns:none!important;grid-auto-flow:column!important;
+    /* كان ٢٠٦px — عرضٌ لا يسع كرت إحصاء فيه رسم دائري وقائمة، فيخرج محتواه عن
+       إطاره وتُقصّ عناوينه. صار ٨٦٪ من الشاشة بسقف ٣٤٠px، ومعه التقاطٌ يستقرّ
+       الكرت به في مكانه بعد كل سحبة. */
+    grid-auto-columns:minmax(min(86vw,340px),1fr)!important;overflow-x:auto;overscroll-behavior-x:contain;
+    scroll-snap-type:x proximity;scrollbar-width:none;-ms-overflow-style:none}
+  .bs-grid > *{scroll-snap-align:center}
+  .bs-grid::-webkit-scrollbar{display:none}
+}
+
+/* ٣) القائمة الجانبية للتطبيق:
+   كان بين ١٠٢٥ و١١٨٠ بكسل حزامُ «طيّ قسري» بقواعد !important تسمّر الشريط
+   على 66px مهما ضغطتَ زرّ الفتح — فيبدو الزرّ معطّلاً والسلوك مكسوراً في
+   هذا النطاق تحديداً. حُذف الحزام: فوق ١٠٢٤ الشريط بيد المستخدم دائماً
+   (يفتح 260 وينطوي 66 بزرّه)، ودونها درجٌ منزلق — بلا منطقة ميتة بينهما. */
+/* ══ الطباعة وحفظ PDF ══════════════════════════════════════════════════════════
+   القواعد مبنيّة على @media print وحدها بلا سمة على الجذر: المحاولة السابقة
+   وضعت data-bs-print قبل النداء ورفعتها بعده، فلو تعثّر الرفع (متصفّح لا
+   يطلق afterprint، أو خطأ بين السطرين) بقيت السمة والزرّ مخفيّاً على الشاشة.
+   هنا لا سمة تُوضع ولا تُرفع — فلا حالة عالقة ممكنة أصلاً.
+   ويُطبع: الخريطة ولوحة المؤشرات. ويُخفى: الترويسة والقائمة والأزرار. */
+@media print{
+  @page{ size:A4 landscape; margin:10mm; }
+  body{ background:var(--bg-surface)!important; }
+  header, aside.bsb{ display:none!important; }
+  .bs-main{ margin:0!important; padding:0!important; max-width:none!important; width:100%!important; }
+  /* الأزرار والتلميحات لا تُطبع — وهذا يسري على الورق وحده */
+  button, .bs-tip, [data-noprint]{ display:none!important; }
+  svg[data-map-zoom]{ width:100%!important; height:auto!important; max-height:58vh; }
+  .bs-mixlegend, .bs-grid{ page-break-inside:avoid; break-inside:avoid; }
+  /* ترويسة الطباعة: مخفيّة على الشاشة بقاعدة عامّة، تظهر هنا */
+  .bs-printhdr{ display:flex!important; }
+  *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
+.bs-printhdr{ display:none; }
+
+/* ── الشاشات الضيّقة: تمرير أفقي لا تكديس رأسي ────────────────────────────────
+   التكديس يحوّل صفّ الجدول إلى بطاقة طويلة فتصير الصفحة أمتاراً من التمرير،
+   والمقارنة بين صفّين تضيع. التمرير الأفقي يحفظ شكل الجدول ويُبقي الصفوف
+   متجاورة قابلة للمقارنة — ومعه دفعٌ لَمسي سلس وحدٌّ أدنى لعرض العمود. */
+@media (max-width:760px){
+  .bs-rtable { min-width:760px !important; }
+  .bs-rtable td, .bs-rtable th { white-space:nowrap; }
+}
+/* بطلب المستخدم: جداولٌ لا تنضغط أعمدتها — تبقى بعرضها المريح وتنزلق يمين/يسار
+   على أي شاشة بدل كسر المحتوى سطرين وثلاثة (يُطبَّق بصنف bs-fitcols) */
+.bs-rtable.bs-fitcols td, .bs-rtable.bs-fitcols th { white-space:nowrap; }
+@media (max-width:760px){ .bs-rtable.bs-fitcols { min-width:1300px !important; } }
+/* كانت هنا قاعدة .bs-rtable{-webkit-overflow-scrolling:touch} تعليقها يقول
+   «حاوية الجدول» — وهي على الجدول نفسه لا على حاويته، فلا أثر لها إطلاقاً.
+   الزخم اللمسي وإخفاء الشريط يسكنان على .bs-hscroll حيث ينفعان فعلاً، وكل
+   جدول في المنصّة صار داخل .bs-hscroll فلا حاجة إلى بديل. حُذفت. */
+
+/* طبقة الجوال — الطبقات القائمة تتوقّف عند 980، وتحتها لا شيء.
+   على 390 بكسل: حشو الصفحة 24px يلتهم 48 من العرض، واللوحة بعرض 86% تغطّي
+   الخريطة كاملةً بلا مخرج بصري، والخريطة تنكمش تحت الحدّ المفيد. */
+@media (max-width:640px){
+  :root{ --bs-panel-w:100%; --bs-map-h:clamp(300px,54vh,460px); }
+  [data-screen-label]{ padding:12px !important; gap:12px !important; }
+  .bs-ws-row{ gap:8px !important; }
+}
+@media (max-width:420px){
+  [data-screen-label]{ padding:8px !important; }
+  :root{ --bs-map-h:clamp(280px,52vh,420px); }
+}
+/* ══ إطار التطبيق بلا حشو ══
+   قاعدة الحشو العامة [data-screen-label] تصيب إطار التطبيق نفسه وتصيب جذر كل
+   صفحة داخله معاً — فيتراكم حشوان (≈15px + 15px لكل جهة) ويظهر فراغ عريض بين
+   القائمة الجانبية والمحتوى، ويشتدّ وضوحاً كلما صغرت الشاشة. حشو الصفحات
+   الداخلية هو هامش التصميم المقصود ويبقى؛ والإطار نفسه صفر. القاعدة هنا بعد
+   قواعد الجوال (12px/8px) عمداً لتغلبها عليه بترتيب الورود. */
+[data-screen-label="إطار التطبيق"]{ padding:0 !important; }
+
+/* الأشرطة ذات الأقران المتناظرة — تبويبات اللوحة وغيرها.
+   المبدأ واحد: العنصر ينمو ليملأ العرض، ويقف عند حدٍّ أدنى مكتوب في مصدره،
+   والشريط يمرّ حين لا يتّسع. القاعدة هنا للتمرير فقط حتى لا تناقض المصدر. */
+/* ── مصيدة flex ──────────────────────────────────────────────────────────────
+   أبناء حاوية flex قيمتهم min-width:auto — أي لا ينكمشون دون عرض محتواهم.
+   فالشريط يتمدّد ليسع كل خاناته ويفيض من أبيه بدل أن يمرّ في نفسه:
+   scrollWidth == clientWidth فلا شيء ليُمرَّر، ولا تظهر الأسهم، ولا تعمل العجلة.
+   min-width:0 هي ما يجعل التمرير ممكناً أصلاً. */
+.bs-daystrip,.bs-mixtabs,.bs-tabstrip,.bs-mixlegend,.bs-hscroll,.bs-cardgrid{ min-width:0; max-width:100%; }
+/* ── إصلاح توافق الجوال: لوحة عناصر «الخطة التشغيلية» كان صفّ تبويباتها ذو عرضٍ
+   ثابت يتجاوز جسم الصفحة ~٣٢px على الشاشات الضيّقة. الشريط يمرّر داخلياً أصلاً،
+   فنقصر أي فيضٍ أفقي على اللوحة نفسها دون كسر سطح المكتب. ── */
+@media (max-width:900px){
+  .bs-panel-shell{ overflow-x:hidden; max-width:100%; }
+  .bs-panel-shell > *{ min-width:0; max-width:100%; }
+}
+/* مؤشّر يدلّ على أن الشريط يُسحب — الحاسوب وحده (اللمس لا مؤشّر له) */
+@media (pointer: fine){
+  .bs-daystrip,.bs-mixtabs,.bs-tabstrip,.bs-mixlegend,.bs-cardgrid,.bs-hbar{ cursor:grab; }
+}
+/* هاتان لا تصيران شريطاً إلا تحت عرض معيّن — فمؤشّر السحب يظهر هناك وحده،
+   وإلا دلّ على سحب لا يقع فوقه. */
+@media (pointer: fine) and (max-width:1100px){ .bs-grid{ cursor:grab; } }
+@media (pointer: fine) and (max-width:720px){ .bs-cardrow{ cursor:grab; }
+}
+.bs-hscroll{ -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+@media (pointer:fine){ .bs-hscroll.bs-xgrab{ cursor:grab; } }
+
+/* ═══ شريط البحث: زرّ المسح ورسالة لا نتائج ═══ */
+.bs-qclear{
+  position:absolute; left:8px; top:50%; transform:translateY(-50%);
+  width:22px; height:22px; display:none; align-items:center; justify-content:center;
+  border:0; border-radius:9999px; background:var(--tone-neutral-55-a12); color:var(--text-muted);
+  font-family:'Cairo',sans-serif; font-size:13px; line-height:1; cursor:pointer;
+  padding:0; transition:background .15s,color .15s; z-index:3;
+}
+.bs-qclear:hover{ background:var(--bg-pink-30-a12); color:var(--danger-text); }
+.bs-qclear.on{ display:flex; }
+.bs-noqres{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px;
+  padding:34px 18px; font-family:'Cairo',sans-serif; text-align:center;
+}
+.bs-noqres b{ font-size:12.5px; font-weight:600; color:var(--text-secondary); }
+.bs-noqres span{ font-size:11px; font-weight:400; color:var(--text-faint); }
+.bs-noqres button{
+  height:30px; padding:0 14px; border-radius:9px; cursor:pointer;
+  border:1px solid var(--tone-gold-50-a40); background:var(--bg-gold-50-a8-v2); color:var(--brand-text);
+  font-family:'Cairo',sans-serif; font-size:11px; font-weight:600;
+}
+.bs-noqres button:hover{ background:var(--tone-gold-50-a16); }
+
+
+/* ═══ رؤوس الجداول الكبيرة ثابتة عند التمرير ═══
+   الحاوية .bs-hscroll تقصّ (overflow-x:auto) فلا يلتصق الرأس بنافذة المتصفح،
+   فيصير التمرير الرأسيّ داخلها هو المرجع: سقفٌ للارتفاع ثم رأسٌ لاصق فوقه. */
+.bs-sthead{
+  max-height:max(340px, calc(100vh - 290px));
+  overflow:auto;
+  scrollbar-width:thin; scrollbar-color:var(--fg-neutral-10-a22) transparent;
+}
+.bs-sthead::-webkit-scrollbar{ display:block; width:10px; height:10px; }
+.bs-sthead::-webkit-scrollbar-thumb{ background:var(--bg-neutral-10-a20); border-radius:10px; border:2px solid transparent; background-clip:content-box; }
+.bs-sthead::-webkit-scrollbar-thumb:hover{ background:var(--bg-neutral-10-a34); background-clip:content-box; }
+.bs-sthead::-webkit-scrollbar-track{ background:transparent; }
+.bs-sthead table.bs-rtable thead th{
+  position:sticky; top:0; z-index:6; background:var(--bg-surface-2);
+  box-shadow:0 2px 0 rgba(185,151,81,0.25);
+}
+@media print{
+  /* R190: !important — سقفُ الممرّ يُكتب في سمة style فيغلب الورقةَ بدونه، فيُقصّ الجدولُ على الورق */
+  .bs-sthead{ max-height:none !important; overflow:visible !important; }
+  .bs-sthead table.bs-rtable thead th{ position:static; box-shadow:none; }
+}
+
+.bs-hscroll::-webkit-scrollbar{ display:none; }
+/* شبكة سيّد–تفصيل: كان عمود القائمة رقماً ثابتاً بلا أي قاعدة CSS — لا يكبر مع
+   الشاشة العريضة ولا ينهار على الضيقة. العرض الآن نسبةٌ من الشاشة بحدّين،
+   وتحت 900px تُكدَّس القائمة فوق اللوحة بدل أن تخنقها. */
+@media (max-width:900px){
+  .bs-mdgrid{ grid-template-columns:1fr !important; }
+  .bs-mdgrid > *:first-child{ max-height:none !important; }
+}
+
+/* شريط أيام الشهر: ثلاثون خانة في صفّ واحد. الخانة ثابتة العرض في مصدرها،
+   والشريط يمرّ أفقياً عند أي عرض شاشة لا عند حدٍّ بعينه — فالانضغاط لا يقع أصلاً.
+   والالتقاط بالمحاذاة يوقف التمرير على يوم كامل. */
+.bs-daystrip{
+  /* overflow-y:visible مع overflow-x:auto يتحوّل قسراً إلى auto بحكم المواصفة،
+     فتُقصّ شارة «معتمد» المعلّقة أسفل الخانة (bottom:-3px). حشوٌ سفلي يسعها
+     داخل الصندوق بدل الاعتماد على تجاوز لا يقع. */
+  overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;
+  scrollbar-width:none; scroll-snap-type:x proximity;
+  padding-bottom:11px !important;
+}
+.bs-daystrip::-webkit-scrollbar{ display:none; }
+/* لا نفرض flex هنا — النمو والحدّ الأدنى مكتوبان في مصدر الخانة، والقاعدة
+   تكتفي بالتمرير والالتقاط حتى لا يتعارض الاثنان */
+.bs-daystrip > *{ scroll-snap-align:center; }
+
+/* عرض البطاقات في الجداول: صفّ واحد يمرّ يميناً ويساراً بدل عمود يطول.
+   البطاقة تحتفظ بعرضها فلا تنضغط، والالتقاط بالمحاذاة يجعل التمرير يقف
+   على بطاقة كاملة لا في منتصفها. */
+@media (max-width:760px){
+  .bs-cardgrid {
+    display:flex !important; flex-wrap:nowrap !important;
+    overflow-x:auto; overflow-y:hidden;
+    scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .bs-cardgrid > * { flex:0 0 auto; width:min(78vw,300px); scroll-snap-align:start; }
+}
+
+/* قائمة المؤشر وشارات الأبعاد: نفس المبدأ — تسير يميناً ويساراً بدل أن تطول */
+@media (max-width:760px){
+  .bs-mixlegend {
+    flex-direction:row !important; overflow-x:auto; overflow-y:hidden;
+    gap:10px !important; padding-bottom:4px;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .bs-mixlegend > * { flex:0 0 auto; min-width:112px; }
+  .bs-mixtabs { overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .bs-mixtabs button { flex:0 0 auto !important; padding:0 10px !important; }
+}
+
+/* ── شاشات اللمس ───────────────────────────────────────────────────────────────
+   pointer:coarse تعني إصبعاً لا فأرة — فالقواعد هنا لا تمسّ الحاسوب إطلاقاً.
+   المعيار المتعارف عليه لهدف اللمس ٤٤ بكسل، وأزرار الأدوات ٣٢. نستعمل
+   min-width/min-height لأنها تتجاوز width/height المكتوبة في السطر مباشرةً
+   بلا حاجة إلى !important. */
+@media (pointer: coarse){
+  .bs-tbar button, .bs-fly button { min-width:44px; min-height:44px; }
+  .bs-tbar, .bs-fly { gap:6px !important; padding:6px !important; }
+  .bs-fly { border-radius:14px !important; }
+  /* شارات الأبعاد: ٢٢ بكسل بالكاد تُصاب بالإبهام */
+  .bs-mixtabs button { min-height:34px; font-size:10px !important; }
+  /* صفوف المؤشر تصير قابلة للّمس دون أن يتغيّر شكلها على الحاسوب */
+  .bs-mixrow { padding:3px 0; }
+}
+
+@media (max-width:640px){
+  :root{--bs-topbar-h:64px}
+  .bs-topbar{padding:0 12px!important;height:64px!important}
+  .bs-main{padding-top:66px!important}
+}
+
+/* ══ الشريط الجانبي على الجوال: درج ينزلق من اليمين فوق المحتوى ══
+   دون 780 بكسل لا يبقى شريط مصغَّر يقضم العرض — يختفي تماماً ويُفتح بزرّ
+   القائمة فينزلق بعرض مريح، وتحته طبقة معتمة، والنصوص كاملة داخله. */
+@media (max-width:1024px){
+  /* أولوية أعلى من .bsb: كل محدِّد يبدأ بـaside.bsb فيغلب قواعد الطيّ */
+  aside.bsb{ width:min(300px,86vw)!important;top:var(--bs-topbar-h)!important;
+    transition:transform .28s cubic-bezier(.22,1,.36,1)!important;
+    box-shadow:-8px 0 32px rgba(15,23,42,.22)!important; }
+  aside.bsb.cx{ transform:translateX(100%)!important; }
+  aside.bsb:not(.cx){ transform:translateX(0)!important; }
+  /* الطبقة المعتمة: عنصر مستقل قابل للنقر يُغلق الدرج */
+  .bs-scrim{ display:block!important;position:fixed;top:var(--bs-topbar-h);inset-inline:0;bottom:0;
+    background:var(--bg-overlay);z-index:35;border:0;padding:0;cursor:pointer;
+    animation:bsScrimIn .2s ease both; }
+  @keyframes bsScrimIn{ from{opacity:0} to{opacity:1} }
+  /* النصوص كاملة داخل الدرج مهما كانت حالة الطيّ */
+  aside.bsb .s-txt, aside.bsb .nlbl, aside.bsb .g-lbl, aside.bsb .s-uinfo{
+    max-width:210px!important;opacity:1!important;padding-bottom:6px!important; }
+  aside.bsb .s-brand{ padding:0 14px!important;gap:10px!important;justify-content:flex-start!important; }
+  /* نفس التباعد المعتمد على الحاسوب — ٧px رأسياً */
+  aside.bsb .n, aside.bsb .s-togbtn{ gap:10px!important;padding:7px 14px!important;justify-content:flex-start!important; }
+  aside.bsb .s-user{ gap:10px!important;justify-content:flex-start!important; }
+  /* شريط زرّ الطيّ يختفي في وضع الدرج — زرّ القائمة (البرجر) في الهيدر
+     يقوم بدوره، فوجود زرٍّ ثانٍ تحت الفاصل تكرارٌ لا داعي له */
+  aside.bsb .s-togbar{ display:none!important; }
+  /* المبدّل داخل الدرج بعرضه الكامل ولوحته ظاهرة — قواعد الطيّ لا تسري هنا */
+  aside.bsb .s-dept{ flex:1!important;width:auto!important;padding:0 9px!important;justify-content:flex-start!important;gap:8px!important; }
+  aside.bsb .s-deptc{ display:block!important; }
+  aside.bsb .s-deptdd{ display:flex!important; }
+  /* المحتوى لا يُزاح — الدرج يطفو فوقه */
+  .bs-main{ margin-right:0!important; }
+  .bs-topbar{ right:0!important; }
+  /* زر القائمة يظهر هنا وحده */
+  .bs-burger{ display:inline-flex!important; }
+}
+
+/* ٤) لوحة الكانفس: أعرض على الشاشات الكبيرة فتظهر النصوص كاملة،
+      وتطفو فوق الخريطة على الشاشات الضيّقة بدل أن تزاحمها */
+@media (max-width:1180px){:root{--bs-panel-w:380px}}
+@media (max-width:980px){
+  :root{--bs-panel-w:min(440px,90%);--bs-map-h:clamp(320px,48vh,520px)}
+  .bs-ws-row{position:relative}
+  .bs-panel-shell{position:absolute!important;top:0;bottom:0;right:0;z-index:30;margin-left:0!important;
+    filter:drop-shadow(0 10px 30px rgba(15,23,42,.18))}
+}
+/* انزلاقُ المحتوى مع الشريط: transform على المُركِّب — الهامشُ يثبت فوراً فيقع تخطيطٌ واحد */
+@keyframes bsSlideOpen{from{transform:translateX(194px)}to{transform:none}}
+@keyframes bsSlideClose{from{transform:translateX(-194px)}to{transform:none}}
+.bsb{position:fixed;top:0;bottom:0;right:0;z-index:55;width:260px;background:var(--bg-sidebar);border-left:1px solid var(--border-subtle);box-shadow:var(--shadow-soft);display:flex;flex-direction:column;overflow:hidden;transition:width .25s ease;font-family:'Cairo',sans-serif}
+.bsb.cx{width:66px}
+/* ارتفاع رأس الشريط = ارتفاع الهيدر بالضبط، فيصير خطّه امتداداً لخطّ الهيدر */
+.bsb .s-brand{display:flex;align-items:center;gap:12px;height:var(--bs-topbar-h);box-sizing:border-box;padding:0 18px;border-bottom:1px solid var(--tone-neutral-10-a8);flex-shrink:0;transition:padding .25s ease,gap .25s ease}
+.bsb .s-mark{width:40px;height:40px;border-radius:12px;flex-shrink:0;background:linear-gradient(140deg,var(--brand-deep),var(--brand-muted) 50%,var(--brand-deep));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:var(--text-primary);box-shadow:0 4px 16px rgba(187,150,97,.38);cursor:pointer;transition:transform .15s;user-select:none}
+.bsb .s-mark:hover{transform:scale(1.07)}
+.bsb .s-txt{overflow:hidden;max-width:220px;opacity:1;white-space:nowrap;transition:max-width .25s ease,opacity .2s ease}
+.bsb.cx .s-txt{max-width:0;opacity:0}
+.bsb .s-co{font-size:13.5px;font-weight:800;color:var(--text-secondary);letter-spacing:-0.01em;line-height:1.35}
+.bsb .s-mod{font-size:10px;color:var(--brand-fg);font-weight:600;letter-spacing:.5px}
+.bsb .s-nav{flex:1;padding:8px 10px;overflow-y:auto;overflow-x:hidden}
+.s-nav a.gone{display:none !important}
+.bsb .s-nav::-webkit-scrollbar{display:none}
+/* بعد أن صار ارتفاع اللوحة محدوداً، كانت أقسامها (حلقة الألوان والسجل) تنكمش حتى تختفي:
+   عنصر flex ذو overflow:hidden قيمة min-height الضمنية له صفر فينضغط بلا حدّ. الحلّ منعه
+   من الانكماش أصلاً — يبقى بطوله الطبيعي ويُمرَّر إليه. */
+.bs-panel-scroll > *{flex-shrink:0}
+/* شريط تمرير لوحة الكانفس: رفيع، لا يحجز عرضاً، ولا يظهر إلا عند التحويم */
+.bs-panel-scroll{scrollbar-width:thin;scrollbar-color:var(--tone-neutral-100-a0) transparent}
+.bs-panel-scroll:hover{scrollbar-color:var(--fg-neutral-100-a45) transparent}
+.bs-panel-scroll::-webkit-scrollbar{width:7px}
+.bs-panel-scroll::-webkit-scrollbar-track{background:transparent}
+.bs-panel-scroll::-webkit-scrollbar-thumb{background:transparent;border-radius:9999px;border:2px solid transparent;background-clip:content-box}
+.bs-panel-scroll:hover::-webkit-scrollbar-thumb{background:var(--tone-neutral-55-a42);background-clip:content-box}
+.bs-panel-scroll::-webkit-scrollbar-thumb:hover{background:var(--tone-neutral-55-a60);background-clip:content-box}
+.bsb .grp{margin-top:7px}
+.bsb .g-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-faint);padding:0 10px 5px;white-space:nowrap;overflow:hidden;max-height:36px;opacity:1;transition:max-height .25s ease,opacity .18s ease,padding .25s ease}
+.bsb.cx .g-lbl{max-height:0;opacity:0;padding-bottom:0}
+/* حشوة أقلّ وفجوة أدقّ — كانت الروابط متباعدة فتبدو القائمة مفكّكة */
+.bsb .n{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:9px;color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;margin-bottom:1px;position:relative;white-space:nowrap;transition:background .15s,color .15s,gap .25s,padding .25s;border:1px solid transparent}
+.bsb .n:hover{background:var(--bg-gold-50-a8-v2);color:var(--text-secondary)}
+/* بند «خارج سقف الإدارة النشطة»: يظهر لمدير النظام وحده — باهت مع نقطة تنبيه،
+   ويبقى قابلاً للفتح (لا يُخفى) حتى لا يُحبس المشرف داخل إدارة سقفها فارغ. */
+.bsb .n.out{opacity:.45}
+.bsb .n.out .ni{filter:grayscale(1)}
+.bsb .n.out:hover{opacity:.85}
+.bsb .n.out::after{content:"";position:absolute;left:8px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:var(--warning-strong);box-shadow:0 0 0 2px rgba(201,112,42,.18)}
+.bsb.cx .n.out::after{left:3px;top:8px;transform:none}
+/* البند النشط: خطّ جانبيّ ذهبيّ وتظليل متدرّج ينساب منه — نمط شارتَي «أعلى/أدنى»
+   في لوحة الكانفس، بدل الإطار المحيط. اللون الذهبي كما هو. */
+.bsb .n.on{background:linear-gradient(to left,var(--tone-gold-50-a16),var(--bg-gold-50-a0));color:var(--brand-text);border:1px solid transparent;border-right:3px solid var(--border-brand);border-radius:0 9px 9px 0;font-weight:700}
+.bsb.cx .n.on{border-radius:0 9px 9px 0}
+.bsb.cx .n{gap:0;padding:10px 0;justify-content:center}
+.bsb .ni{width:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bsb .n.on .ni{color:var(--brand-fg)}
+.bsb .nlbl{overflow:hidden;max-width:160px;opacity:1;white-space:nowrap;transition:max-width .25s ease,opacity .18s ease}
+.bsb.cx .nlbl{max-width:0;opacity:0}
+/* ═══ رأس القائمة ومبدّل الإدارة ═══ */
+.bsb .s-ghead{display:flex;align-items:center;gap:8px;padding:4px 6px 10px 6px;border-bottom:1px solid var(--tone-neutral-10-a7);margin-bottom:8px}
+.bsb.cx .s-ghead{padding:2px 0 10px;justify-content:center}
+.bsb .s-dept{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:38px;padding:0 9px;border-radius:11px;border:1px solid var(--tone-gold-50-a30);background:var(--bg-gold-50-a7);cursor:pointer;font-family:'Cairo',sans-serif;transition:all .15s}
+.bsb .s-dept:hover{background:var(--bg-gold-50-a14)}
+.bsb .s-depti{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--brand-muted),var(--border-brand));color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bsb .s-deptn{flex:1;min-width:0;text-align:right;font-size:12.5px;font-weight:800;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bsb .s-deptc{flex-shrink:0;color:var(--brand-text)}
+/* مطويّة: المبدّل شارة مربّعة بأيقونة الإدارة وحدها — والنقر يفتح القائمة ثم اللوحة */
+.bsb.cx .s-dept{flex:none;width:38px;padding:0;justify-content:center;gap:0}
+.bsb.cx .s-deptc{display:none}
+.bsb .s-deptdd{margin:2px 6px 6px;padding:5px;border:1px solid var(--tone-gold-50-a30);border-radius:12px;background:var(--bg-surface);box-shadow:var(--shadow-soft);display:flex;flex-direction:column;gap:2px;max-height:250px;overflow-y:auto}
+.bsb .s-deptddh{padding:4px 10px 5px;font-size:9px;font-weight:800;color:var(--text-faint);letter-spacing:.05em}
+.bsb.cx .s-deptdd{display:none}
+/* زر الطيّ في صف الهوية: آخر الصف (يسار RTL) فوق مبدّل الإدارات مباشرة */
+/* شريط زرّ الطيّ: أسفل الخطّ الفاصل مباشرة — الهيدر للاسم والإصدار وحدهما */.bsb .s-togbar{display:flex;justify-content:flex-end;align-items:center;padding:8px 14px;border-bottom:1px solid var(--tone-neutral-10-a6);flex-shrink:0}.bsb.cx .s-togbar{justify-content:center;padding:8px 0}.bsb .s-tog2{width:28px;height:28px;border-radius:9px;border:1px solid var(--tone-gold-50-a30);background:var(--bg-gold-50-a7);color:var(--brand-text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s}
+.bsb .s-tog2:hover{background:var(--tone-gold-50-a15)}
+.bsb.cx .s-brand{padding:0!important;gap:0;justify-content:center}
+.bsb .s-togmini{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-faint);cursor:pointer;transition:background .15s,color .15s}
+.bsb .s-togmini:hover{background:var(--tone-gold-50-a10);color:var(--brand-fg)}
+.bsb /* الحشوة موحّدة مع .s-foot (كانت 8px مقابل 10px فاختلف موضع الخطّين) */
+.s-togwrap{padding:8px 10px;border-top:1px solid var(--tone-neutral-10-a8);flex-shrink:0;transition:padding .25s ease}
+.bsb.cx .s-togwrap{padding:8px 5px}
+.bsb .s-togbtn{display:flex;align-items:center;gap:11px;padding:10px;border-radius:10px;color:var(--text-faint);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,gap .25s,padding .25s}
+.bsb .s-togbtn:hover{background:var(--bg-gold-50-a8-v2);color:var(--brand-fg)}
+.bsb.cx .s-togbtn{gap:0;padding:10px 0;justify-content:center}
+.bsb /* الحشوة الرأسية ٨px مطابقة لشريط المحتوى السفلي فيستوي الخطّان */
+.s-foot{padding:8px 10px;border-top:1px solid var(--tone-neutral-10-a8);flex-shrink:0;transition:padding .25s ease}
+.bsb.cx .s-foot{padding:8px 5px}
+.bsb .s-user{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;transition:gap .25s,padding .25s}
+.bsb.cx .s-user{gap:0;padding:10px 0;justify-content:center}
+.bsb .s-av{width:38px;height:38px;border-radius:9999px;flex-shrink:0;background:linear-gradient(135deg,var(--border-brand),var(--bg-inverse));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--text-on-brand)}
+.bsb .s-uinfo{overflow:hidden;max-width:150px;opacity:1;min-width:0;transition:max-width .25s ease,opacity .18s ease}
+.bsb.cx .s-uinfo{max-width:0;opacity:0}
+.bsb .s-un{font-size:13px;font-weight:700;color:var(--text-secondary);white-space:nowrap}
+.bsb .s-ur{font-size:11px;color:var(--text-secondary);white-space:nowrap}
+.bsb .s-logout{margin-right:auto;flex-shrink:0;width:32px;height:32px;border-radius:9px;border:none;cursor:pointer;background:var(--bg-pink-30-a12);color:var(--toast-err);display:flex;align-items:center;justify-content:center;transition:all .2s;overflow:hidden}
+.bsb .s-logout:hover{background:var(--bg-pink-30-a24)}
+.bsb.cx .s-logout{max-width:0;width:0;opacity:0;padding:0;visibility:hidden}
+
+/* KIVO_254 · AUD-020: نصٌّ لقارئ الشاشة فقط (العنوانُ الأول لكل شاشة) */
+.bs-sr-only{position:absolute!important;top:0;left:0;width:1px;height:1px;padding:0;margin:0;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}/* KIVO_265 · فحص القبول: كان margin:-1px بلا موضعٍ صريح فيجاوز الحافةَ اليمنى بكسلاً واحداً على الجوال (تمريرٌ أفقي) */
+
+/* KIVO_254 · SOT-157 (البند ١): لافتةُ الاتصال على الجوال واللوحي (القائمةُ درج) — تحت الرأس · لا تحجب المحتوى · تختفي على الحاسوب */
+.bs-netbar{display:none;position:fixed;top:calc(56px + env(safe-area-inset-top,0px));right:12px;left:12px;z-index:60;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:12px;font-family:'Cairo',Tahoma,sans-serif;font-size:12.5px;line-height:1.5;box-shadow:var(--shadow-elevated);border:1px solid transparent}
+.bs-netbar[hidden]{display:none!important}
+.bs-netbar .i{flex-shrink:0;font-size:15px;line-height:1.3}
+.bs-netbar .t{font-weight:700}
+.bs-netbar .s{display:block;font-weight:400;opacity:.95}
+.bs-netbar[data-k="off"]{background:var(--danger-bg);border-color:var(--danger-border);color:var(--danger-text)}
+.bs-netbar[data-k="back"]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}
+@media (max-width:1024px){.bs-netbar:not([hidden]){display:flex}.bs-netbar .t,.bs-netbar .s{display:block}}
+
+/* KIVO_254 · SOT-157 (البند ٢): هيكلُ تحميلٍ مكانَ الشاشة الكسولة — صفوفٌ رماديةٌ متحرّكة (عنوانٌ + ٨ صفوف) بدل الدوّار والصفحة البيضاء؛ الحركةُ تتوقف مع prefers-reduced-motion */
+.bs-main > .sc-host > .sc-placeholder{min-height:420px;padding:22px 20px 0;background:var(--bg-card);border-radius:16px;margin:0 0 12px}
+.bs-main > .sc-host > .sc-placeholder::after{content:none}
+.bs-main > .sc-host > .sc-placeholder::before{content:'';position:absolute;inset:22px 20px auto 20px;height:372px;pointer-events:none;border-radius:8px;
+  background-image:linear-gradient(90deg,var(--bg-pink-30-a0) 25%,var(--bg-orange-40-a95) 37%,var(--bg-pink-30-a0) 63%);
+  background-size:400% 100%;animation:sc-shine 1.4s ease infinite;
+  -webkit-mask:linear-gradient(#000 0 0) 0 0/36% 22px no-repeat,repeating-linear-gradient(#000 0 14px,transparent 14px 36px) 0 44px/100% 328px no-repeat;
+  mask:linear-gradient(#000 0 0) 0 0/36% 22px no-repeat,repeating-linear-gradient(#000 0 14px,transparent 14px 36px) 0 44px/100% 328px no-repeat}
+@media (prefers-reduced-motion:reduce){.bs-main > .sc-host > .sc-placeholder::before{animation:none}}
+
+/* KIVO_254 · البند ٣ من RM-3: بطاقةُ «أعد المحاولة» الموحَّدة — الرسالةُ داخل البطاقة/اللوحة نفسِها مع زرّ، لا شريطَ عام */
+.bs-retry{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;border:1px solid var(--danger-border);background:var(--danger-bg);color:var(--danger-text);font-family:'Cairo',Tahoma,sans-serif;font-size:12.5px;line-height:1.6}
+.bs-retry .m{flex:1;min-width:0;font-weight:600}
+.bs-retry .b{flex-shrink:0;min-height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--danger-border);background:var(--bg-card);color:var(--danger-text);font:700 12.5px/1 'Cairo',Tahoma,sans-serif;cursor:pointer}
+.bs-retry .b:hover{background:var(--danger-bg)}
+
+/* KIVO_254 · SOT-055/058 (البند ٤): الحاشيةُ اللمسية الشفافة — تكمّل مساحةَ الاستجابة إلى 44×44 على أجهزة اللمس دون تغيير الشكل */
+.bs-tap{position:relative}
+.bs-tap::after{content:'';position:absolute;top:var(--bs-tt,0);bottom:var(--bs-tb,0);left:var(--bs-tl,0);right:var(--bs-tr,0);border-radius:inherit}   /* KIVO_259: لكل جهةٍ حاشيتُها (660 — لا تتجاوز نصفَ الفجوة إلى الجار) */

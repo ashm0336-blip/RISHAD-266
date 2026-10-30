@@ -1,0 +1,983 @@
+<div dir="rtl" data-screen-label="نظام الاسترشاد" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414);margin:0 auto;display:flex;flex-direction:column;gap:16px">
+<!-- صلاحية «عرض فقط»: سطرٌ واحد يقول السبب — الأزرار تختفي لا تُعطَّل،
+     والزرّ الرمادي يثير سؤال «ليش ما يشتغل؟» بلا جواب -->
+<sc-if value="{{irPmReadOnly}}" hint-placeholder-val="{{ false }}">
+<div style="{{irPmNoteStyle}}">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-ec9ec7cc"></svg>
+  <span>صلاحيتك على هذه الصفحة: <b style="font-weight:800">عرض فقط</b> — أدوات الإضافة والتعديل والحذف مخفيّة. راجع مدير النظام إن احتجت تعديلاً.</span>
+</div>
+</sc-if>
+
+<!-- ═══ تبويبا صفحة الاسترشاد — نفس التصميم المعتمد في صفحة موظفي الإدارة ═══ -->
+<!-- شريطُ تبويبٍ واحد لا يعرض خياراً: يختفي الإطار كلّه وتُعرض لوحته مباشرةً -->
+<sc-if value="{{irTabBarShow}}" hint-placeholder-val="{{ true }}">
+<div style="border-radius:16px;border:2px solid var(--bd-a185151810p1);background:linear-gradient(90deg,var(--bg-a185151810p03),transparent,var(--bg-a185151810p03));padding:12px">
+  <div class="bs-hbar bs-tabstrip" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;flex-wrap:wrap">
+    <sc-if value="{{irDashTabOk}}" hint-placeholder-val="{{ true }}">
+    <div onClick="{{irGoDash}}" style="{{irDashTabStyle}}">
+      <div style="{{irDashTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f9dcb9b8"></svg></div>
+      <span style="{{irDashTabLbl}}">لوحة المؤشرات</span>
+      <sc-if value="{{irOnDash}}" hint-placeholder-val="{{ true }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+    </div>
+    </sc-if>
+    <sc-if value="{{irRecordsTabOk}}" hint-placeholder-val="{{ true }}">
+    <div onClick="{{irGoRecords}}" style="{{irRecordsTabStyle}}">
+      <div style="{{irRecordsTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg></div>
+      <span style="{{irRecordsTabLbl}}">السجلات</span>
+      <sc-if value="{{irOnRecords}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
+    </div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══ تبويب لوحة المؤشرات — تحليلات مجمّعة عبر نطاق تاريخ قابل للاختيار ═══ -->
+<sc-if value="{{irOnDash}}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:13px">
+
+<sc-if value="{{irEmptyShow}}" hint-placeholder-val="{{ false }}">
+<div style="border-radius:14px;border:1px dashed var(--bd-a185151810p45);background:var(--bg-a185151810p06);padding:14px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <span style="width:36px;height:36px;border-radius:12px;background:var(--bg-a185151810p16);color:var(--fg-x8a6f35);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f9dcb9b8"></svg></span>
+  <span style="flex:1;min-width:200px">
+    <b style="display:block;font-size:13px;font-weight:700;color:var(--fg-x8a6f35)">لا توجد أي تقارير مسجّلة بعد</b>
+    <span style="font-size:11.5px;font-weight:400;color:var(--fg-x94a3b8)">ابدأ بتسجيل تقارير الاسترشاد من تبويب «السجلات» لتظهر المؤشرات هنا.</span>
+  </span>
+</div>
+</sc-if>
+
+<svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true" data-i="i-c878e748"></svg>
+
+<!-- ═══════════ الشريط العلوي: السنة · الشهر · مباشر · الشريط المتحرك ═══════════ -->
+<div style="background:var(--bg-xffffff);border:1px solid var(--bd-xe6e9ed);border-radius:14px;box-shadow:var(--shadow-card);padding:8px 12px;display:flex;align-items:center;gap:10px;overflow:hidden;flex-wrap:wrap">
+  <div style="{{irDashYmBoxStyle}}">
+    <span style="color:var(--fg-x8a6f35);display:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" data-i="i-2d1e2ff8"></svg></span>
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">السنة</span>
+    <select value="{{irDashYear}}" onChange="{{irDashSetYear}}" style="appearance:none;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x25343f);padding:5px 4px;cursor:pointer;outline:none">
+      <sc-for list="{{irDashYearOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.lbl}}</option></sc-for>
+    </select>
+    <span style="width:1px;height:22px;background:var(--bg-xe6e9ed);flex-shrink:0"></span>
+    <span style="color:var(--fg-x8a6f35);display:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9fceace0"></svg></span>
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">الشهر</span>
+    <select value="{{irDashMonth}}" onChange="{{irDashSetMonth}}" style="appearance:none;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x25343f);padding:5px 4px;cursor:pointer;outline:none">
+      <sc-for list="{{irDashMonthOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.lbl}}</option></sc-for>
+    </select>
+  </div>
+  <div style="display:flex;background:var(--bg-xf8f9fb);border:1px solid var(--bd-xe6e9ed);border-radius:11px;padding:3px;gap:2px;flex-shrink:0">
+    <sc-for list="{{irDashModeOpts}}" as="mo" hint-placeholder-count="2"><button onClick="{{mo.click}}" style="{{mo.style}}">{{mo.lbl}}</button></sc-for>
+  </div>
+  <sc-if value="{{irDashCustomOn}}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd-a185151810p4);background:var(--bg-a185151810p07);border-radius:12px;padding:4px 9px;flex-shrink:0">
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x8a6f35)">من</span>
+    <input type="date" value="{{irDashFrom}}" onChange="{{irDashSetFrom}}" style="height:28px;border:1px solid var(--bd-xe6e9ed);border-radius:9px;padding:0 7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;color:var(--fg-x25343f);background:var(--bg-xffffff)">
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x8a6f35)">إلى</span>
+    <input type="date" value="{{irDashTo}}" onChange="{{irDashSetTo}}" style="height:28px;border:1px solid var(--bd-xe6e9ed);border-radius:9px;padding:0 7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;color:var(--fg-x25343f);background:var(--bg-xffffff)">
+    <span style="font-size:9.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">{{irDashRangeHint}}</span>
+  </div>
+  </sc-if>
+  <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);border-radius:9999px;padding:4px 10px;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);flex-shrink:0">
+    <span class="ir-pulse" style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd03b3b);display:inline-block"></span>LIVE
+  </span>
+  <span style="font-size:11.5px;font-weight:700;color:var(--fg-x8a6f35);white-space:nowrap;flex-shrink:0">{{irDashPerLbl}}</span>
+  <div class="ir-tkw" style="flex:1 1 240px;min-width:240px;overflow:hidden">
+    <div class="ir-tk">
+      <sc-for list="{{irDashTicker}}" as="t" hint-placeholder-count="8">
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">
+        <i style="{{t.dot}}"></i>{{t.n}} <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{t.v}}</b><em style="font-style:normal;color:var(--fg-x94a3b8);font-weight:600;font-size:10px">{{t.p}}</em>
+      </span>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--fg-x94a3b8);font-weight:400">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" data-i="i-2d1e2ff8"></svg>
+  {{irDashPeriodTxt}}
+</div>
+
+<!-- ═══════════ البطاقة القيادية ═══════════ -->
+<div style="position:relative;border-radius:22px;padding:18px;display:flex;gap:18px;align-items:stretch;overflow:hidden;background:var(--brand-pattern) center/96px 96px,linear-gradient(125deg,var(--hero-1) 0%,var(--hero-2) 38%,var(--hero-3) 72%,var(--hero-4) 100%);border:1px solid var(--bd-a185151810p3);box-shadow:0 10px 30px -20px rgba(138,111,53,.55);flex-wrap:wrap">
+  <div style="flex:1.42;min-width:290px;display:flex;flex-direction:column;position:relative;z-index:1;padding:4px 6px 0">
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:4px 10px;font-size:10.5px;font-weight:700;border:1px solid var(--bd-a138111530p4);color:var(--fg-x8a6f35);background:var(--bg-a2552552550p5)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-f9dcb9b8"></svg>المؤشر القيادي</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:4px 10px;font-size:10.5px;font-weight:700;border:1px solid var(--bd-a09900p28);color:var(--fg-x006300);background:var(--bg-a12163120p09)"><span style="width:6px;height:6px;border-radius:9999px;background:var(--bg-x006300);display:inline-block"></span>محسوب من التقارير</span>
+    </div>
+    <div style="font-size:12.5px;font-weight:600;color:var(--fg-x8a6f35);opacity:.9">{{irDashHeroLbl}}</div>
+    <div style="font-size:52px;font-weight:800;color:var(--fg-x8a6f35);line-height:1.02;letter-spacing:-1px;margin:6px 0 4px;text-shadow:0 2px 0 rgba(255,255,255,.5)">{{irDashHeroNum}}</div>
+    <div style="font-size:12.5px;font-weight:600;color:var(--fg-x6f5a2e);opacity:.85">الاسترشاد + المطويات + النيابة + الشرطة</div>
+    <sc-if value="{{irDashSparkHas}}" hint-placeholder-val="{{ true }}">
+    <div style="margin-top:auto;padding-top:10px;height:62px">
+      <svg width="100%" height="62" viewBox="0 0 1000 100" preserveAspectRatio="none" style="display:block" data-i="i-b0eec808"></svg>
+    </div>
+    </sc-if>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px">
+      <sc-if value="{{irDashCmpChipOn}}" hint-placeholder-val="{{ true }}">
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-a2552552550p72);border:1px solid var(--bd-a138111530p22);border-radius:11px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">مقابل السابق<span style="{{irDashCmpChipStyle}}">{{irDashCmpChipTxt}}</span><em style="font-style:normal;color:var(--fg-x94a3b8);font-size:9.5px;font-weight:600" dir="ltr">{{irDashCmpChipPrev}}</em></span>
+      </sc-if>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-a2552552550p72);border:1px solid var(--bd-a138111530p22);border-radius:11px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x006300)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-b83df1ee"></svg>أعلى <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{irDashHiVal}}</b><em style="font-style:normal;color:var(--fg-x94a3b8);font-size:9.5px;font-weight:600">{{irDashHiSub}}</em></span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-a2552552550p72);border:1px solid var(--bd-a138111530p22);border-radius:11px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xd03b3b)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c62ed980"></svg>أدنى <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{irDashLoVal}}</b><em style="font-style:normal;color:var(--fg-x94a3b8);font-size:9.5px;font-weight:600" dir="ltr">{{irDashLoSub}}</em></span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-a2552552550p72);border:1px solid var(--bd-a138111530p22);border-radius:11px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x8a6f35)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-0c371db7"></svg>متوسط <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{irDashAvgVal}}</b><em style="font-style:normal;color:var(--fg-x94a3b8);font-size:9.5px;font-weight:600">{{irDashAvgSub}}</em></span>
+      <sc-if value="{{irDashGapOn}}" hint-placeholder-val="{{ false }}">
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-a2552552550p72);border:1px solid var(--bd-a138111530p22);border-radius:11px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">بلا نشاط <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{irDashGapVal}}</b></span>
+      </sc-if>
+    </div>
+  </div>
+  <div style="flex:1;min-width:280px;display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative;z-index:1">
+    <sc-for list="{{irDashMets}}" as="m" hint-placeholder-count="4">
+    <div style="background:var(--bg-a2552552550p82);border:1px solid var(--bd-a138111530p16);border-radius:15px;padding:11px 12px;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--bd-a138111530p13)">
+        <span style="font-size:12px;font-weight:700;color:var(--fg-x25343f)">{{m.name}}</span>
+        <span title="{{m.desc}}" style="width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p16);color:var(--fg-x8a6f35);flex-shrink:0">
+          <sc-if value="{{m.i1}}" hint-placeholder-val="{{ true }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0350cb00"></svg></sc-if>
+          <sc-if value="{{m.i2}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg></sc-if>
+          <sc-if value="{{m.i3}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-03df5fdf"></svg></sc-if>
+          <sc-if value="{{m.i4}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg></sc-if>
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="font-size:22px;font-weight:800;color:var(--fg-x8a6f35);line-height:1;letter-spacing:-.5px;overflow:hidden;text-overflow:ellipsis">{{m.num}}</div>
+        <div style="{{m.ring}}">
+          <div style="position:absolute;inset:6px;background:var(--bg-xfcfaf6);border-radius:9999px"></div>
+          <div style="position:relative;text-align:center;line-height:1.15">
+            <b style="display:block;font-size:10.5px;font-weight:700;color:var(--fg-x8a6f35)">{{m.pct}}</b>
+            <span style="font-size:7.5px;font-weight:600;color:var(--fg-x94a3b8)">حصة</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+</div>
+
+<!-- ═══════════ عدادات الأداء ═══════════ -->
+<div class="bs-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:13px">
+  <sc-for list="{{irDashGauges}}" as="g" hint-placeholder-count="4">
+  <div style="position:relative;background:var(--bg-xffffff);border:1px solid var(--bd-xe6e9ed);border-radius:16px;box-shadow:var(--shadow-card);padding:12px 13px 11px;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--bd-xeff1f4)">
+      <span style="font-size:12px;font-weight:700;color:var(--fg-x25343f);display:inline-flex;align-items:center;gap:7px"><span title="مصدر البيانات: التقارير المسجّلة" style="width:7px;height:7px;border-radius:9999px;background:var(--bg-x0ca30c);box-shadow:0 0 0 3px rgba(12,163,12,.14);flex-shrink:0"></span>{{g.name}}</span>
+      <span style="width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p16);color:var(--fg-x8a6f35);flex-shrink:0">
+        <sc-if value="{{g.i1}}" hint-placeholder-val="{{ true }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0350cb00"></svg></sc-if>
+        <sc-if value="{{g.i2}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg></sc-if>
+        <sc-if value="{{g.i3}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-03df5fdf"></svg></sc-if>
+        <sc-if value="{{g.i4}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg></sc-if>
+      </span>
+    </div>
+    <div style="font-size:22px;font-weight:800;color:var(--fg-x8a6f35);line-height:1;margin-top:10px;letter-spacing:-.5px">{{g.num}}</div>
+    <div style="font-size:10.5px;font-weight:400;color:var(--fg-x94a3b8);margin-top:5px;min-height:28px">{{g.desc}}</div>
+    <div style="position:relative;margin-top:4px">
+      <svg width="100%" height="34" viewBox="0 0 200 40" preserveAspectRatio="none" style="position:absolute;left:0;right:0;bottom:0;opacity:.45;display:block" data-i="i-87aad1c6"></svg>
+      <svg width="100%" height="104" viewBox="0 0 200 104" style="display:block;position:relative" data-i="i-1a19420a"></svg>
+    </div>
+    <div style="display:flex;align-items:stretch;justify-content:space-between;gap:3px;margin-top:5px">
+      <div title="{{g.minTip}}" style="text-align:center;flex:1;min-width:0">
+        <div style="font-size:9px;font-weight:600;color:var(--fg-x94a3b8)">أدنى</div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--fg-x53565a);line-height:1.25" dir="ltr">{{g.min}}</div>
+        <div style="font-size:8.5px;font-weight:400;color:var(--fg-xb0b6bd);white-space:nowrap" dir="ltr">{{g.minDate}}</div>
+      </div>
+      <span style="width:1px;background:var(--bg-xeff1f4);flex-shrink:0"></span>
+      <div style="text-align:center;flex:1;min-width:0">
+        <div style="font-size:9px;font-weight:600;color:var(--fg-x8a6f35)">متوسط</div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--fg-x8a6f35);line-height:1.25" dir="ltr">{{g.avg}}</div>
+        <div style="font-size:8.5px;font-weight:400;color:var(--fg-xb0b6bd);white-space:nowrap">{{g.avgSub}}</div>
+      </div>
+      <span style="width:1px;background:var(--bg-xeff1f4);flex-shrink:0"></span>
+      <div title="{{g.maxTip}}" style="text-align:center;flex:1;min-width:0">
+        <div style="font-size:9px;font-weight:600;color:var(--fg-x94a3b8)">أعلى</div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--fg-x53565a);line-height:1.25" dir="ltr">{{g.max}}</div>
+        <div style="font-size:8.5px;font-weight:400;color:var(--fg-xb0b6bd);white-space:nowrap" dir="ltr">{{g.maxDate}}</div>
+      </div>
+    </div>
+    <div style="margin-top:9px;padding-top:8px;border-top:1px solid var(--bd-xeff1f4);display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:9.5px;font-weight:600;color:var(--fg-x94a3b8)">
+      <span>{{g.share}} من الإجمالي</span><span title="{{g.dTip}}" style="{{g.dStyle}}">{{g.dTxt}}</span>
+    </div>
+  </div>
+  </sc-for>
+</div>
+
+<!-- ═══════════ اتجاه المستفيدين عبر الزمن ═══════════ -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+    <div>
+      <h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">اتجاه المستفيدين عبر الزمن</h3>
+      <p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">{{irDashTrendDesc}}</p>
+    </div>
+    <div class="bs-subseg" style="display:flex;background:var(--bg-xf8f9fb);border:1px solid var(--bd-xe6e9ed);border-radius:9px;padding:2px;gap:1px">
+      <sc-for list="{{irDashBrkOpts}}" as="b" hint-placeholder-count="3"><button onClick="{{b.click}}" class="bs-subbtn" data-on="{{b.on}}" style="{{b.style}}">{{b.lbl}}</button></sc-for>
+    </div>
+  </div>
+  <sc-if value="{{irDashHasData}}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;gap:6px">
+    <div style="width:46px;position:relative;height:210px;flex-shrink:0">
+      <sc-for list="{{irDashTrendGrid}}" as="g" hint-placeholder-count="5"><div style="{{g.labStyle}}" dir="ltr">{{g.lab}}</div></sc-for>
+    </div>
+    <div style="flex:1;min-width:0;position:relative;height:210px">
+      <sc-for list="{{irDashTrendGrid}}" as="g" hint-placeholder-count="5"><div style="{{g.lineStyle}}"></div></sc-for>
+      <svg width="100%" height="100%" viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;display:block" data-i="i-cb506d18"></svg>
+      <div style="position:absolute;inset:0;display:flex">
+        <sc-for list="{{irDashHits}}" as="h" hint-placeholder-count="10"><div title="{{h.tip}}" style="flex:1;height:100%;cursor:crosshair"></div></sc-for>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin-top:5px">
+    <div style="width:46px;flex-shrink:0"></div>
+    <div style="flex:1;min-width:0;display:flex">
+      <sc-for list="{{irDashXLabels}}" as="x" hint-placeholder-count="10"><div style="flex:1;text-align:center;font-size:9px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap;overflow:hidden"><sc-if value="{{x.show}}" hint-placeholder-val="{{ true }}">{{x.lab}}</sc-if></div></sc-for>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11px;font-weight:600;color:var(--fg-x53565a);margin-top:10px">
+    <sc-for list="{{irDashLegend}}" as="l" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:6px"><i style="{{l.dot}}"></i>{{l.name}}</span></sc-for>
+    <sc-if value="{{irDashGhostOn}}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:14px;height:0;border-top:2px dashed var(--bd-xb6bec7);display:inline-block"></i>{{irDashGhostLbl}}</span></sc-if>
+  </div>
+  </sc-if>
+  <sc-if value="{{irDashNoData}}" hint-placeholder-val="{{ false }}"><div style="padding:40px;text-align:center;font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">لا توجد تقارير مسجّلة ضمن هذه الفترة والفلاتر</div></sc-if>
+</div>
+
+<!-- ═══════════ خريطة النشاط اليومي ═══════════ -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+    <div>
+      <h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">خريطة النشاط اليومي <span style="font-size:11px;font-weight:600;color:var(--fg-x94a3b8)">— {{irDashHeatYear}}</span></h3>
+      <p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">{{irDashHeatDesc}}</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:var(--fg-x94a3b8)">
+      <span>أقل</span><sc-for list="{{irDashHeatScale}}" as="h" hint-placeholder-count="6"><i style="{{h.style}}"></i></sc-for><span>أكثر</span>
+    </div>
+  </div>
+  <sc-if value="{{irDashHeatOn}}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;align-items:flex-start;gap:8px;overflow-x:auto;padding-bottom:4px">
+    <div style="display:flex;flex-direction:column;gap:3px;margin-top:19px;flex-shrink:0">
+      <span style="height:15px;line-height:15px;font-size:9px;color:var(--fg-x94a3b8);font-weight:600;white-space:nowrap">السبت</span>
+      <span style="height:15px"></span>
+      <span style="height:15px;line-height:15px;font-size:9px;color:var(--fg-x94a3b8);font-weight:600;white-space:nowrap">الاثنين</span>
+      <span style="height:15px"></span>
+      <span style="height:15px;line-height:15px;font-size:9px;color:var(--fg-x94a3b8);font-weight:600;white-space:nowrap">الأربعاء</span>
+      <span style="height:15px"></span>
+      <span style="height:15px;line-height:15px;font-size:9px;color:var(--fg-x94a3b8);font-weight:600;white-space:nowrap">الجمعة</span>
+    </div>
+    <div style="min-width:max-content">
+      <div style="display:flex;gap:3px;height:14px;margin-bottom:5px">
+        <sc-for list="{{irDashHeatMonths}}" as="mo" hint-placeholder-count="20"><div style="width:15px;position:relative;flex-shrink:0"><sc-if value="{{mo.show}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:0;top:0;font-size:9.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">{{mo.lab}}</span></sc-if></div></sc-for>
+      </div>
+      <div style="display:flex;gap:3px">
+        <sc-for list="{{irDashHeatCols}}" as="col" hint-placeholder-count="20">
+        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+          <sc-for list="{{col.cells}}" as="c" hint-placeholder-count="7"><div title="{{c.tip}}" style="{{c.style}}"></div></sc-for>
+        </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{irDashHeatOff}}" hint-placeholder-val="{{ false }}"><div style="padding:34px;text-align:center;font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">لا توجد بيانات لهذه السنة</div></sc-if>
+</div>
+
+<!-- ═══════════ اللغات + المواقع ═══════════ -->
+<div class="bs-grid bs-stackcards" style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+  <div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+    <div style="margin-bottom:10px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">المستفيدون من الاسترشاد حسب اللغة</h3><p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">إجمالي <span dir="ltr">{{irDashLangTot}}</span> {{irDashLangTotW}}</p></div>
+    <sc-if value="{{irDashLangOn}}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{irDashLangRows}}" as="r" hint-placeholder-count="6">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:7px 8px;border-radius:10px" style-hover="background:var(--bg-xf8f9fb)">
+        <span style="font-size:12px;font-weight:600;color:var(--fg-x25343f);display:flex;align-items:center;gap:7px;min-width:0"><i style="{{r.dot}}"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.name}}</span></span>
+        <span style="display:flex;align-items:baseline;gap:8px;white-space:nowrap"><em style="font-style:normal;font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8)" dir="ltr">{{r.pct}}</em><b style="font-size:13px;font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{r.val}}</b></span>
+        <div style="grid-column:1/-1;height:7px;border-radius:9999px;background:var(--bg-xeff1f4);overflow:hidden"><div style="{{r.bar}}"></div></div>
+      </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{irDashLangOff}}" hint-placeholder-val="{{ false }}"><div style="padding:30px;text-align:center;font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">لا توجد بيانات ضمن هذه الفترة والفلاتر</div></sc-if>
+  </div>
+  <div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+    <div style="margin-bottom:10px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">المستفيدون حسب الموقع</h3><p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">إجمالي <span dir="ltr">{{irDashLocTot}}</span> {{irDashLocTotW}}</p></div>
+    <sc-if value="{{irDashLocOn}}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{irDashLocRows}}" as="r" hint-placeholder-count="6">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:7px 8px;border-radius:10px" style-hover="background:var(--bg-xf8f9fb)">
+        <span style="font-size:12px;font-weight:600;color:var(--fg-x25343f);display:flex;align-items:center;gap:7px;min-width:0"><i style="{{r.dot}}"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.name}}</span></span>
+        <span style="display:flex;align-items:center;gap:8px;white-space:nowrap"><span style="{{r.dStyle}}">{{r.dTxt}}</span><em style="font-style:normal;font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8)" dir="ltr">{{r.pct}}</em><b style="font-size:13px;font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{r.val}}</b></span>
+        <div style="grid-column:1/-1;height:7px;border-radius:9999px;background:var(--bg-xeff1f4);overflow:hidden"><div style="{{r.bar}}"></div></div>
+      </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{irDashLocOff}}" hint-placeholder-val="{{ false }}"><div style="padding:30px;text-align:center;font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">لا توجد بيانات ضمن هذه الفترة والفلاتر</div></sc-if>
+  </div>
+</div>
+
+<!-- ═══════════ الورديات + الموظفون ═══════════ -->
+<div class="bs-grid bs-stackcards" style="display:grid;grid-template-columns:1fr 1.15fr;gap:13px">
+  <div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+    <div style="margin-bottom:12px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">توزيع الورديات</h3><p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">حصة كل وردية من إجمالي المستفيدين خلال الفترة</p></div>
+    <div style="display:flex;height:16px;border-radius:8px;overflow:hidden;gap:2px">
+      <sc-for list="{{irDashShareSegs}}" as="sg" hint-placeholder-count="4"><div style="{{sg.style}}"></div></sc-for>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;font-weight:600;color:var(--fg-x53565a);margin-top:12px">
+      <sc-for list="{{irDashShiftLegend}}" as="l" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:6px"><i style="{{l.dot}}"></i>{{l.name}} <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{l.pct}}</b></span></sc-for>
+    </div>
+    <div style="margin-top:12px;border-top:1px solid var(--bd-xeff1f4);padding-top:6px">
+      <sc-for list="{{irDashShiftRows}}" as="r" hint-placeholder-count="4">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 8px;border-radius:10px" style-hover="background:var(--bg-xf8f9fb)">
+        <span style="font-size:12px;font-weight:600;color:var(--fg-x25343f);display:flex;align-items:center;gap:7px;min-width:0"><i style="{{r.dot}}"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.name}}</span></span>
+        <span style="display:flex;align-items:baseline;gap:8px;white-space:nowrap"><em style="font-style:normal;font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8)">{{r.sub}}</em><b style="font-size:13px;font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{r.val}}</b></span>
+      </div>
+      </sc-for>
+    </div>
+    <div style="border-top:1px solid var(--bd-xeff1f4);margin-top:10px;padding-top:11px">
+      <div style="font-size:12.5px;font-weight:700;color:var(--fg-x25343f);margin-bottom:8px">مقارنة بـ {{irDashPrevLbl}}</div>
+      <sc-if value="{{irDashCmpOn}}" hint-placeholder-val="{{ true }}">
+      <sc-for list="{{irDashCmpRows}}" as="c" hint-placeholder-count="4">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:9px;font-size:12px" style-hover="background:var(--bg-xf8f9fb)">
+        <span style="font-weight:600;color:var(--fg-x53565a)">{{c.label}}</span>
+        <span style="display:flex;align-items:center;gap:9px"><span style="font-size:10.5px;color:var(--fg-x94a3b8);font-weight:600" dir="ltr">{{c.nums}}</span><span style="{{c.style}}">{{c.txt}}</span></span>
+      </div>
+      </sc-for>
+      </sc-if>
+      <sc-if value="{{irDashCmpOff}}" hint-placeholder-val="{{ false }}"><div style="padding:11px;border-radius:10px;background:var(--bg-xf8f9fb);font-size:11.5px;font-weight:400;color:var(--fg-x94a3b8);text-align:center">لا توجد فترة سابقة مسجّلة للمقارنة</div></sc-if>
+    </div>
+  </div>
+  <div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+    <div style="margin-bottom:10px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">أكثر الموظفين نشاطاً</h3><p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">مرتّبون حسب عدد المستفيدين، مع التغيّر مقابل الفترة السابقة</p></div>
+    <sc-if value="{{irDashEmpOn}}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:3px">
+      <sc-for list="{{irDashTopEmployees}}" as="e" hint-placeholder-count="6">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:11px" style-hover="background:var(--bg-xf8f9fb)">
+        <span style="{{e.numStyle}}">{{e.rank}}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12.5px;font-weight:600;color:var(--fg-x25343f);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{e.name}}</div>
+          <div style="font-size:10.5px;color:var(--fg-x94a3b8);font-weight:400;margin-top:1px">{{e.sub}}</div>
+        </div>
+        <div style="width:84px;height:6px;border-radius:9999px;background:var(--bg-xeff1f4);overflow:hidden;flex-shrink:0"><div style="{{e.bar}}"></div></div>
+        <span style="{{e.dStyle}}">{{e.dTxt}}</span>
+        <span style="width:56px;text-align:left;font-size:13.5px;font-weight:700;color:var(--fg-x8a6f35);flex-shrink:0" dir="ltr">{{e.ben}}</span>
+      </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{irDashEmpOff}}" hint-placeholder-val="{{ false }}"><div style="padding:30px;text-align:center;font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">لا توجد تقارير ضمن هذه الفترة والفلاتر</div></sc-if>
+  </div>
+</div>
+
+<!-- ═══════════ الملخص التفصيلي — بالتصميم المعتمد: قائمة منسدلة + شريط بحث + جدول + فوتر ترقيم ═══════════ -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+  <div onClick="{{irDashSumToggle}}" style="display:flex;align-items:center;gap:11px;padding:13px 16px;cursor:pointer" style-hover="background:var(--bg-a2482502520p7)">
+    <span style="width:34px;height:34px;border-radius:12px;background:var(--bg-a185151810p12);color:var(--fg-xb99751);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-card)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-b49783cf"></svg></span>
+    <span style="flex:1;min-width:0">
+      <span style="font-size:13.5px;font-weight:600;color:var(--fg-x141414)">الملخص التفصيلي حسب الوردية</span>
+      <span style="display:inline-flex;align-items:center;margin-right:8px;border-radius:9999px;padding:3px 11px;font-size:10.5px;font-weight:600;font-family:'Cairo',sans-serif;background:var(--bg-a185151810p12);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p3)">{{irDashSumBadge}}</span>
+    </span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb0b6bd)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{irDashSumChev}}" data-i="i-c92915c6"></svg>
+  </div>
+  <sc-if value="{{irDashSumOpen}}" hint-placeholder-val="{{ false }}">
+  <div style="border-top:2px solid var(--bd-a185151810p25)">
+
+    <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd-xe1e1e1);background:var(--bg-a2482502520p5)">
+      <div style="position:relative;flex:1;min-width:180px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:50%;transform:translateY(-50%)" data-i="i-7133b944"></svg>
+        <input value="{{irDashSumQ}}" onChange="{{irDashSumSetQ}}" placeholder="بحث باسم الوردية..." style="width:100%;height:34px;padding:0 34px 0 10px;font-size:12px;background:var(--bg-xffffff);border:1px solid var(--bd-xe2e8f0);border-radius:10px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;color:var(--fg-x141414)" style-focus="background:var(--bg-xffffff);border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px rgba(185,151,81,0.2)">
+      </div>
+      <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);font-feature-settings:'tnum';flex-shrink:0;padding-left:4px">
+        <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{irDashSumShown}}</span>
+        <span style="opacity:.6"> / {{irDashSumAll}}</span>
+      </div>
+    </div>
+
+    <sc-if value="{{irDashSumHas}}" hint-placeholder-val="{{ true }}">
+    <div class="bs-hscroll bs-sthead" style="overflow-x:auto">
+      <table class="bs-rtable" style="width:100%;border-collapse:collapse;min-width:980px">
+        <thead>
+          <tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fab3c0b3"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الوردية</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">التقارير</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2f5bf57f"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الموظفون</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-07c54a8a"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">إجمالي المستفيدين</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0c371db7"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">متوسط/تقرير</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a37992350p1);color:var(--fg-x2a78d6)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0350cb00"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الاسترشاد</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a271751220p12);color:var(--fg-x0f7a4a)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-7b39b172"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">المطويات</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a235104520p12);color:var(--fg-xc2410c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الإحالات</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-822ab11b"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الحصة</span></div></th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{irDashSumRows}}" as="row" hint-placeholder-count="4">
+          <tr style="border-bottom:1px solid var(--bd-xf1f1f1)" style-hover="background:var(--bg-a2482502520p7)">
+            <td style="padding:11px 8px;text-align:center;font-weight:600;color:var(--fg-x141414);font-size:12px;white-space:nowrap"><span style="{{row.dot}}"></span>{{row.name}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.reports}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.emps}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12.5px">{{row.ben}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.avg}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.trans}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.bro}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.ref}}</td>
+            <td style="padding:11px 8px;text-align:center">
+              <span style="display:inline-flex;align-items:center;gap:6px;justify-content:center">
+                <span style="width:66px;height:7px;border-radius:9999px;background:var(--bg-xeff1f4);overflow:hidden;display:inline-block"><span style="{{row.shareBar}}"></span></span>
+                <b dir="ltr" style="font-size:11.5px;font-weight:600;color:var(--fg-x53565a);min-width:38px;text-align:left">{{row.share}}</b>
+              </span>
+            </td>
+          </tr>
+          </sc-for>
+          <tr style="border-top:2px solid var(--bd-a185151810p3);background:var(--bg-a185151810p05)">
+            <td style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px;white-space:nowrap">{{irDashSumTotal.label}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.reports}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.emps}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12.5px">{{irDashSumTotal.ben}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.avg}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.trans}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.bro}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.ref}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.share}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-a2452452450p2);font-size:12px">
+      <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{irDashSumPgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{irDashSumPgTotal}}</span> {{irDashSumPgTotalW}}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>
+        <select value="{{irDashSumPerPage}}" onChange="{{irDashSumOnPerPage}}" style="height:28px;width:78px;font-size:10px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;outline:none;cursor:pointer"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="0">الكل</option></select>
+        <div style="display:flex;align-items:center;border:1px solid var(--bd-xe1e1e1);border-radius:8px;overflow:hidden">
+          <button onClick="{{irDashSumPgFirst}}" title="الصفحة الأولى" style="{{irDashSumPgFirstStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-ec58a044"></svg></button>
+          <button onClick="{{irDashSumPgPrev}}" title="السابق" style="{{irDashSumPgPrevStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
+          <sc-for list="{{irDashSumPgNums}}" as="n" hint-placeholder-count="3">
+            <sc-if value="{{n.dots}}"><span style="height:28px;width:20px;display:flex;align-items:center;justify-content:center;color:var(--fg-x94a3b8);font-size:10px;border-right:1px solid var(--bd-xe1e1e1)">…</span></sc-if>
+            <sc-if value="{{n.cur}}"><button style="{{n.style}}">{{n.label}}</button></sc-if>
+            <sc-if value="{{n.plain}}"><button onClick="{{n.click}}" style="{{n.style}}" style-hover="background:var(--bg-xf5f5f5)">{{n.label}}</button></sc-if>
+          </sc-for>
+          <button onClick="{{irDashSumPgNext}}" title="التالي" style="{{irDashSumPgNextStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></button>
+          <button onClick="{{irDashSumPgLast}}" title="الصفحة الأخيرة" style="{{irDashSumPgLastStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9e7cf3ce"></svg></button>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{irDashSumEmpty}}" hint-placeholder-val="{{ false }}">
+    <div style="padding:28px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">{{irDashSumEmptyMsg}}</span></div>
+    </sc-if>
+  </div>
+  </sc-if>
+</div>
+
+<div style="text-align:center;font-size:11px;color:var(--fg-x94a3b8);padding-top:2px">جميع المؤشرات محسوبة مباشرة من بيانات التقارير المسجّلة — وتتحدّث تلقائياً عند إضافة أو تعديل أي تقرير.</div>
+</div>
+</sc-if>
+
+<!-- ═══ تبويب السجلات ═══ -->
+<sc-if value="{{irOnRecords}}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+
+<!-- ═══ شريط التقويم المعتمد — نسخة طبق الأصل من شريط الجدول الشهري (سنة · شهر · يوم) ═══ -->
+<div style="border-radius:16px;border:1px solid var(--bd-a185151810p2);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+  <div class="bs-hbar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--bd-a185151810p1);background:linear-gradient(to left,var(--bg-a185151810p05),transparent,var(--bg-a185151810p05));flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:4px">
+      <button onClick="{{irPrevYear}}" title="السنة السابقة" style="width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--bg-xf5f5f5)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:110px">
+        <span style="font-weight:400;font-size:14px;color:var(--fg-xb99751);line-height:1.3">{{irYearLabel}}</span>
+        <span style="font-size:10px;color:var(--fg-x53565a);line-height:1.3;font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{irGregRange}}</span>
+      </div>
+      <button onClick="{{irNextYear}}" title="السنة التالية" style="width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--bg-xf5f5f5)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></button>
+      <button onClick="{{irGoCurrent}}" style="height:28px;padding:0 8px;font-size:11px;color:var(--fg-x53565a);background:transparent;border:0;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif" style-hover="color:var(--fg-xb99751)">الحالية</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="{{irBadgeStyle}}">{{irBadgeLabel}}</span>
+    </div>
+  </div>
+  <div class="bs-hscroll" style="overflow-x:auto">
+    <div style="display:flex;gap:12px;padding:16px 12px;min-width:100%;box-sizing:border-box">
+      <sc-for list="{{irMonths}}" as="m" hint-placeholder-count="12">
+      <div style="position:relative;flex:1 1 auto;min-width:100px">
+        <div onClick="{{m.click}}" onDoubleClick="{{m.dbl}}" title="{{m.tip}}" style="{{m.style}}" style-hover="box-shadow:var(--shadow-soft)">
+          <sc-if value="{{m.isCurrent}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-x3b82f6)"></span></sc-if>
+          <p style="font-size:11px;font-weight:400;line-height:1.3;margin:0;color:{{m.nameColor}}">{{m.name}}</p>
+          <p style="font-size:9px;color:var(--fg-x53565a);margin:2px 0 0;line-height:1.3">{{m.greg}}</p>
+          <div style="margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-size:8px;font-weight:400;color:{{m.cntColor}}">
+            <sc-if value="{{m.cntIcon}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-81de76b2"></svg></sc-if>
+            <span>{{m.cntLabel}}</span>
+          </div>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ شريط أيام الشهر — نفس تصميم شريط أيام المتابعة اليومية ═══ -->
+<div style="display:flex;flex-direction:column;gap:6px">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:10px;color:var(--fg-x53565a)">اليوم المحدد:</span>
+      <span style="font-size:10px;font-weight:400;color:var(--fg-xb99751)">{{irSelDateLabel}}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xb99751)"></span><span style="font-size:8px;color:var(--fg-x53565a)">فيه تقارير</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);box-sizing:border-box"></span><span style="font-size:8px;color:var(--fg-x53565a)">فارغ</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-x64748b)"></span><span style="font-size:8px;color:var(--fg-x53565a)">{{irLegendLockTxt}}</span></div>
+    </div>
+  </div>
+  <div class="bs-daystrip" style="display:flex;align-items:center;gap:3px;flex-wrap:nowrap;padding:4px 0 6px">
+    <sc-for list="{{irDays}}" as="d" hint-placeholder-count="30">
+    <div onClick="{{d.click}}" onDoubleClick="{{d.dbl}}" title="{{d.tip}}" style="{{d.style}}" style-hover="transform:scale(1.05)">
+      <span style="line-height:1;display:block">{{d.num}}</span>
+      <span style="{{d.sepStyle}}"></span>
+      <span style="line-height:1;display:block;font-weight:400">{{d.gnum}}</span>
+      <sc-if value="{{d.isToday}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-xb99751);box-shadow:0 0 0 1px var(--bg-card)"></span></sc-if>
+      <sc-if value="{{d.lockClosed}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-xcbd5e1);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x475569)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg></span></sc-if>
+      <sc-if value="{{d.lockOpen}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p6);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-b64167e0"></svg></span></sc-if>
+    </div>
+    </sc-for>
+  </div>
+</div>
+
+<!-- ═══ مؤشرات سريعة للشهر المحدد ═══ -->
+<div class="bs-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+  <div style="flex:1;min-width:120px;border-radius:14px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:13px 14px">
+    <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);margin-bottom:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg></div>
+    <div dir="ltr" style="font-size:20px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum';text-align:right">{{irKpiCount}}</div>
+    <div style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">{{irKpiCountW}} هذا الشهر</div>
+  </div>
+  <div style="flex:1;min-width:120px;border-radius:14px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:13px 14px">
+    <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);margin-bottom:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-cb5c501e"></svg></div>
+    <div dir="ltr" style="font-size:20px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum';text-align:right">{{irKpiBen}}</div>
+    <div style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">إجمالي المستفيدين</div>
+  </div>
+  <div style="flex:1;min-width:120px;border-radius:14px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:13px 14px">
+    <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);margin-bottom:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-aa214fa8"></svg></div>
+    <div dir="ltr" style="font-size:20px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum';text-align:right">{{irKpiTrans}}</div>
+    <div style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">مستفيدو الترجمة</div>
+  </div>
+  <div style="flex:1;min-width:120px;border-radius:14px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:13px 14px">
+    <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);margin-bottom:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg></div>
+    <div dir="ltr" style="font-size:20px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum';text-align:right">{{irKpiBro}}</div>
+    <div style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">مطويات موزّعة</div>
+  </div>
+  <div style="flex:1;min-width:120px;border-radius:14px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:13px 14px">
+    <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);margin-bottom:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg></div>
+    <div dir="ltr" style="font-size:20px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum';text-align:right">{{irKpiRef}}</div>
+    <div style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">إجمالي الإحالات</div>
+    <div style="display:flex;align-items:center;gap:5px;margin-top:4px;font-size:9.5px;font-weight:400;color:var(--fg-x94a3b8)">
+      <span>نيابة <b dir="ltr" style="color:var(--fg-x53565a);font-weight:600">{{irKpiPros}}</b></span>
+      <span style="width:3px;height:3px;border-radius:9999px;background:var(--bg-xcbd5e1);display:inline-block;flex-shrink:0"></span>
+      <span>شرطة <b dir="ltr" style="color:var(--fg-x53565a);font-weight:600">{{irKpiPol}}</b></span>
+    </div>
+  </div>
+</div>
+
+<sc-if value="{{irPmWrite}}" hint-placeholder-val="{{ true }}">
+<!-- ═══ بطاقة اليوم — تسجيل تقرير مباشرة (بدون زر/نافذة) أو رسالة القفل المعتمدة ═══ -->
+<div style="border-radius:16px;border:1px solid var(--bd-a185151810p2);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:2px solid var(--bd-a185151810p25);background:linear-gradient(to left,var(--bg-a2482502520p8),var(--bg-xffffff))">
+    <span style="width:30px;height:30px;border-radius:9px;background:var(--bg-a185151810p12);color:var(--fg-xb99751);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg></span>
+    <b style="font-size:13px;flex:1">{{irEntryTitle}}</b>
+    <sc-if value="{{irCanEnter}}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;gap:8px">
+      <button onClick="{{irClearDraft}}" title="تفريغ الحقول" style="width:34px;height:34px;border-radius:10px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" style-hover="border-color:var(--bd-xdc2626);color:var(--fg-xdc2626);background:var(--bg-a22038380p04)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0732b330"></svg></button>
+      <button onClick="{{irSaveReport}}" title="{{irSaveBtnTitle}}" style="width:34px;height:34px;border-radius:10px;border:0;cursor:pointer;color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(135deg,var(--bg-xb99751),var(--bg-a185151810p85));box-shadow:0 4px 12px -2px rgba(185,151,81,0.4)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-4aeb31cd"></svg></button>
+    </div>
+    </sc-if>
+  </div>
+  <div style="padding:16px">
+
+  <sc-if value="{{irDayLockedHint}}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;background:var(--bg-a1001161390p08);border:1px solid var(--bd-a1001161390p35);color:var(--fg-x475569);font-size:12px;font-weight:400">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg>
+    {{irDayLockedTxt}}
+  </div>
+  </sc-if>
+  <sc-if value="{{irMonthAutoHint}}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;background:var(--bg-a1001161390p08);border:1px solid var(--bd-a1001161390p35);color:var(--fg-x475569);font-size:12px;font-weight:400">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg>
+    {{irMonthAutoTxt}}
+  </div>
+  </sc-if>
+
+  <sc-if value="{{irCanEnter}}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <div class="bs-grid bs-stackcards" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="min-width:78px;font-size:11px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap;flex-shrink:0">الوردية <span style="color:var(--fg-xdc2626)">*</span></div>
+        <div style="position:relative;flex:1;min-width:0">
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-xb99751);display:flex;pointer-events:none;z-index:2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fab3c0b3"></svg></span>
+          <select value="{{irDraftShift}}" onChange="{{irSetShift}}" aria-label="الوردية" style="width:100%;height:40px;padding:0 38px 0 12px;border-radius:11px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-a2482502520p8);font-family:'Cairo',sans-serif;font-size:12.5px;color:var(--fg-x141414);outline:none;box-sizing:border-box;cursor:pointer;appearance:none;-webkit-appearance:none" style-focus="{{irInputFocusStyle}}">
+            <option value="">— اختر الوردية —</option>
+            <sc-for list="{{irShiftOpts}}" as="so" hint-placeholder-count="4"><option value="{{so.name}}">{{so.name}}</option></sc-for>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="min-width:78px;font-size:11px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap;flex-shrink:0">الموظف <span style="color:var(--fg-xdc2626)">*</span></div>
+        <div style="position:relative;flex:1;min-width:0">
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-xb99751);display:flex;pointer-events:none;z-index:2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-07c54a8a"></svg></span>
+          <select value="{{irDraftEid}}" onChange="{{irSetEid}}" aria-label="الموظف" style="width:100%;height:40px;padding:0 38px 0 12px;border-radius:11px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-a2482502520p8);font-family:'Cairo',sans-serif;font-size:12.5px;color:var(--fg-x141414);outline:none;box-sizing:border-box;cursor:pointer;appearance:none;-webkit-appearance:none" disabled="{{irEmpDisabled}}">
+            <sc-if value="{{irNoShiftPicked}}" hint-placeholder-val="{{ true }}"><option value="">اختر الوردية أولاً</option></sc-if>
+            <sc-if value="{{irNoEmpForShift}}" hint-placeholder-val="{{ false }}"><option value="">{{irNoEmpMsg}}</option></sc-if>
+            <sc-if value="{{irHasEmpOpts}}" hint-placeholder-val="{{ false }}">
+            <option value="">— اختر موظف —</option>
+            <sc-for list="{{irEmpOpts}}" as="eo" hint-placeholder-count="4"><option value="{{eo.eid}}">{{eo.name}}</option></sc-for>
+            </sc-if>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;position:relative">
+        <div style="min-width:78px;font-size:11px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap;flex-shrink:0">الموقع</div>
+        <div style="position:relative;flex:1;min-width:0">
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-xb99751);display:flex;pointer-events:none;z-index:2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-591f015b"></svg></span>
+          <button type="button" onClick="{{irLocBtnToggle}}" style="width:100%;height:40px;padding:0 34px 0 12px;border-radius:11px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-a2482502520p8);display:flex;align-items:center;font-family:'Cairo',sans-serif;font-size:12.5px;font-weight:400;color:var(--fg-x141414);cursor:pointer;box-sizing:border-box;gap:6px" style-hover="border-color:var(--bd-a185151810p4)">
+            <span style="flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{irLocBtnLabel}}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c92915c6"></svg>
+          </button>
+          <sc-if value="{{irLocPopOpen}}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{irLocClose}}" style="position:fixed;inset:0;z-index:40"></div>
+          <div data-bs-dd="1" style="position:absolute;top:calc(100% + 6px);right:0;left:0;z-index:50;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:12px;box-shadow:var(--shadow-elevated);overflow:hidden">
+            <div style="max-height:200px;overflow-y:auto;padding:4px">
+              <sc-if value="{{irLocEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:14px 10px;font-size:11px;color:var(--fg-x94a3b8);font-weight:400;text-align:center">لا مواقع مضافة بعد — أضف موقعاً أدناه</div></sc-if>
+              <sc-for list="{{irLocRows}}" as="lr" hint-placeholder-count="4">
+                <sc-if value="{{lr.normal}}" hint-placeholder-val="{{ true }}">
+                <div onClick="{{lr.selectClick}}" style="{{lr.rowStyle}}" style-hover="background:var(--bg-a2452452450p7)">
+                  <span style="flex:1">{{lr.name}}</span>
+                  <sc-if value="{{lr.sel}}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></sc-if>
+                  <button onClick="{{lr.startEdit}}" title="تعديل اسم الموقع" style="width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" style-hover="background:var(--bg-a0000p06);color:var(--fg-x475569)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-37ad70cd"></svg></button>
+                  <button onClick="{{lr.delClick}}" title="حذف الموقع" style="width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" style-hover="background:var(--bg-a22038380p1);color:var(--fg-xdc2626)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a7f69cb8"></svg></button>
+                </div>
+                </sc-if>
+                <sc-if value="{{lr.editing}}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:6px;padding:8px 10px">
+                  <input value="{{lr.editVal}}" onChange="{{lr.setEditVal}}" style="flex:1;height:28px;border:1px solid var(--bd-a185151810p4);border-radius:7px;padding:0 8px;font-family:'Cairo',sans-serif;font-size:12px;outline:none">
+                  <button onClick="{{lr.saveEdit}}" title="حفظ" style="width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" style-hover="background:var(--bg-a0000p06);color:var(--fg-x475569)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></button>
+                  <button onClick="{{lr.cancelEdit}}" title="إلغاء" style="width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--fg-x94a3b8);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" style-hover="background:var(--bg-a22038380p1);color:var(--fg-xdc2626)">×</button>
+                </div>
+                </sc-if>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:6px;padding:6px;border-top:1px solid var(--bd-xf1f5f9);background:var(--bg-xfafafa)">
+              <input value="{{irLocNewVal}}" onChange="{{irLocNewSet}}" placeholder="إضافة موقع جديد..." style="flex:1;height:32px;border:1px solid var(--bd-xe2e8f0);border-radius:8px;padding:0 10px;font-family:'Cairo',sans-serif;font-size:12px;outline:none">
+              <button onClick="{{irLocAddNew}}" title="إضافة" style="width:32px;height:32px;border-radius:8px;border:0;color:var(--text-on-brand);background:linear-gradient(135deg,var(--bg-xb99751),var(--bg-a185151810p85));display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-5132a761"></svg></button>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:12px;font-weight:600">خدمة الترجمة وإحصاءات إضافية</span><span style="flex:1;height:1px;background:linear-gradient(to left,var(--bg-a185151810p35),transparent)"></span></div>
+      <div class="bs-grid bs-stackcards" style="display:grid;grid-template-columns:1.3fr 1.05fr 0.85fr 0.9fr 0.85fr;gap:10px;align-items:start">
+        <div style="position:relative">
+          <div style="font-size:11px;font-weight:600;color:var(--fg-x53565a);margin-bottom:5px;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0350cb00"></svg> اللغة</div>
+          <button type="button" onClick="{{irLangBtnToggle}}" style="width:100%;height:38px;padding:0 12px;border-radius:11px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-a2482502520p8);display:flex;align-items:center;font-family:'Cairo',sans-serif;font-size:12.5px;font-weight:400;color:var(--fg-x141414);cursor:pointer;box-sizing:border-box;gap:6px" style-hover="border-color:var(--bd-a185151810p4)">
+            <span style="flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{irLangBtnLabel}}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c92915c6"></svg>
+          </button>
+          <sc-if value="{{irLangPopOpen}}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{irLangClose}}" style="position:fixed;inset:0;z-index:40"></div>
+          <div data-bs-dd="1" style="position:absolute;top:calc(100% + 6px);right:0;left:0;z-index:50;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:12px;box-shadow:var(--shadow-elevated);overflow:hidden">
+            <div style="max-height:220px;overflow-y:auto;padding:4px">
+              <sc-if value="{{irLangEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:14px 10px;font-size:11px;color:var(--fg-x94a3b8);font-weight:400;text-align:center">لا لغات مضافة</div></sc-if>
+              <sc-for list="{{irLangRows}}" as="lr" hint-placeholder-count="8">
+                <sc-if value="{{lr.normal}}" hint-placeholder-val="{{ true }}">
+                <div onClick="{{lr.selectClick}}" style="{{lr.rowStyle}}" style-hover="background:var(--bg-a2452452450p7)">
+                  <span style="flex:1">{{lr.name}}</span>
+                  <sc-if value="{{lr.sel}}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></sc-if>
+                  <button onClick="{{lr.startEdit}}" title="تعديل اسم اللغة" style="width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" style-hover="background:var(--bg-a0000p06);color:var(--fg-x475569)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-37ad70cd"></svg></button>
+                  <button onClick="{{lr.delClick}}" title="حذف اللغة" style="width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" style-hover="background:var(--bg-a22038380p1);color:var(--fg-xdc2626)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a7f69cb8"></svg></button>
+                </div>
+                </sc-if>
+                <sc-if value="{{lr.editing}}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:6px;padding:8px 10px">
+                  <input value="{{lr.editVal}}" onChange="{{lr.setEditVal}}" style="flex:1;height:28px;border:1px solid var(--bd-a185151810p4);border-radius:7px;padding:0 8px;font-family:'Cairo',sans-serif;font-size:12px;outline:none">
+                  <button onClick="{{lr.saveEdit}}" title="حفظ" style="width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" style-hover="background:var(--bg-a0000p06);color:var(--fg-x475569)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></button>
+                  <button onClick="{{lr.cancelEdit}}" title="إلغاء" style="width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--fg-x94a3b8);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" style-hover="background:var(--bg-a22038380p1);color:var(--fg-xdc2626)">×</button>
+                </div>
+                </sc-if>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:6px;padding:6px;border-top:1px solid var(--bd-xf1f5f9);background:var(--bg-xfafafa)">
+              <input value="{{irLangNewVal}}" onChange="{{irLangNewSet}}" placeholder="إضافة لغة جديدة..." style="flex:1;height:32px;border:1px solid var(--bd-xe2e8f0);border-radius:8px;padding:0 10px;font-family:'Cairo',sans-serif;font-size:12px;outline:none">
+              <button onClick="{{irLangAddNew}}" title="إضافة" style="width:32px;height:32px;border-radius:8px;border:0;color:var(--text-on-brand);background:linear-gradient(135deg,var(--bg-xb99751),var(--bg-a185151810p85));display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-5132a761"></svg></button>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--fg-x53565a);margin-bottom:5px;display:flex;align-items:center;gap:4px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-cb5c501e"></svg> عدد المستفيدين</div>
+          <div style="display:flex;align-items:stretch;border-radius:11px;border:1px solid var(--bd-xe2e8f0);overflow:hidden;background:var(--bg-a2482502520p8)">
+            <div style="position:relative;flex:1">
+              <input value="{{irDraftLangN}}" onChange="{{irSetLangN}}" dir="ltr" inputmode="numeric" placeholder="0" style="width:100%;height:38px;padding:0 34px 0 8px;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:13.5px;font-weight:400;color:var(--fg-x141414);outline:none;text-align:center;box-sizing:border-box">
+              <div style="position:absolute;right:4px;top:4px;bottom:4px;width:26px;display:flex;flex-direction:column;border-radius:8px;overflow:hidden;border:1px solid var(--bd-xe2e8f0)">
+                <button onClick="{{irLangNUp}}" title="زيادة" style="flex:1;border:0;border-bottom:1px solid var(--bd-xe2e8f0);box-sizing:border-box;background:var(--bg-xffffff);color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:var(--bg-a185151810p08);color:var(--fg-xb99751)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-f2d2d0f8"></svg></button>
+                <button onClick="{{irLangNDown}}" title="إنقاص" style="flex:1;border:0;box-sizing:border-box;background:var(--bg-xffffff);color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:var(--bg-a185151810p08);color:var(--fg-xb99751)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c92915c6"></svg></button>
+              </div>
+            </div>
+            <button onClick="{{irAddLang}}" title="إضافة اللغة للتقرير" style="border:0;width:38px;flex-shrink:0;color:var(--text-on-brand);background:linear-gradient(135deg,var(--bg-xb99751),var(--bg-a185151810p85));display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-5132a761"></svg></button>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--fg-x53565a);margin-bottom:5px;display:flex;align-items:center;gap:4px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg> مطويات</div>
+          <div style="position:relative">
+            <input value="{{irDraftBro}}" onChange="{{irSetBro}}" dir="ltr" inputmode="numeric" placeholder="0" style="width:100%;height:38px;padding:0 34px 0 8px;border-radius:12px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-a2482502520p8);font-family:'Cairo',sans-serif;font-size:13.5px;font-weight:400;color:var(--fg-x141414);outline:none;text-align:center;box-sizing:border-box" style-focus="{{irInputFocusStyle}}">
+            <div style="position:absolute;right:4px;top:4px;bottom:4px;width:26px;display:flex;flex-direction:column;border-radius:8px;overflow:hidden;border:1px solid var(--bd-xe2e8f0)">
+              <button onClick="{{irBroUp}}" title="زيادة" style="flex:1;border:0;border-bottom:1px solid var(--bd-xe2e8f0);box-sizing:border-box;background:var(--bg-xffffff);color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:var(--bg-a185151810p08);color:var(--fg-xb99751)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-f2d2d0f8"></svg></button>
+              <button onClick="{{irBroDown}}" title="إنقاص" style="flex:1;border:0;box-sizing:border-box;background:var(--bg-xffffff);color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:var(--bg-a185151810p08);color:var(--fg-xb99751)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c92915c6"></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--fg-x53565a);margin-bottom:5px;display:flex;align-items:center;gap:4px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-37d56418"></svg> إحالات النيابة</div>
+          <div style="position:relative">
+            <input value="{{irDraftPros}}" onChange="{{irSetPros}}" dir="ltr" inputmode="numeric" placeholder="0" style="width:100%;height:38px;padding:0 34px 0 8px;border-radius:12px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-a2482502520p8);font-family:'Cairo',sans-serif;font-size:13.5px;font-weight:400;color:var(--fg-x141414);outline:none;text-align:center;box-sizing:border-box" style-focus="{{irInputFocusStyle}}">
+            <div style="position:absolute;right:4px;top:4px;bottom:4px;width:26px;display:flex;flex-direction:column;border-radius:8px;overflow:hidden;border:1px solid var(--bd-xe2e8f0)">
+              <button onClick="{{irProsUp}}" title="زيادة" style="flex:1;border:0;border-bottom:1px solid var(--bd-xe2e8f0);box-sizing:border-box;background:var(--bg-xffffff);color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:var(--bg-a185151810p08);color:var(--fg-xb99751)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-f2d2d0f8"></svg></button>
+              <button onClick="{{irProsDown}}" title="إنقاص" style="flex:1;border:0;box-sizing:border-box;background:var(--bg-xffffff);color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:var(--bg-a185151810p08);color:var(--fg-xb99751)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c92915c6"></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--fg-x53565a);margin-bottom:5px;display:flex;align-items:center;gap:4px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-094845fa"></svg> إحالات الشرطة</div>
+          <div style="position:relative">
+            <input value="{{irDraftPol}}" onChange="{{irSetPol}}" dir="ltr" inputmode="numeric" placeholder="0" style="width:100%;height:38px;padding:0 34px 0 8px;border-radius:12px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-a2482502520p8);font-family:'Cairo',sans-serif;font-size:13.5px;font-weight:400;color:var(--fg-x141414);outline:none;text-align:center;box-sizing:border-box" style-focus="{{irInputFocusStyle}}">
+              <div style="position:absolute;right:4px;top:4px;bottom:4px;width:26px;display:flex;flex-direction:column;border-radius:8px;overflow:hidden;border:1px solid var(--bd-xe2e8f0)">
+                <button onClick="{{irPolUp}}" title="زيادة" style="flex:1;border:0;border-bottom:1px solid var(--bd-xe2e8f0);box-sizing:border-box;background:var(--bg-xffffff);color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:var(--bg-a185151810p08);color:var(--fg-xb99751)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-f2d2d0f8"></svg></button>
+                <button onClick="{{irPolDown}}" title="إنقاص" style="flex:1;border:0;box-sizing:border-box;background:var(--bg-xffffff);color:var(--fg-x94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" style-hover="background:var(--bg-a185151810p08);color:var(--fg-xb99751)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c92915c6"></svg></button>
+              </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;min-height:20px;margin-top:10px">
+        <sc-if value="{{irNoDraftLangs}}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;color:var(--fg-x94a3b8);font-weight:400">لم تُضف أي لغة بعد</span></sc-if>
+        <sc-for list="{{irDraftLangs}}" as="c" hint-placeholder-count="3">
+        <span style="display:inline-flex;align-items:center;gap:6px;border-radius:9999px;padding:5px 6px 5px 12px;background:var(--bg-a185151810p08);border:1px solid var(--bd-a185151810p25);font-size:11px;font-weight:600;color:var(--fg-x8a6f35)">{{c.label}} <button onClick="{{c.remove}}" style="width:18px;height:18px;border-radius:9999px;border:0;background:var(--bg-a185151810p2);color:var(--fg-x8a6f35);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;font-family:'Cairo',sans-serif">×</button></span>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{irSaveErr}}" hint-placeholder-val="{{ false }}">
+    <div style="font-size:11.5px;font-weight:400;color:var(--fg-xdc2626)">{{irSaveErrMsg}}</div>
+    </sc-if>
+
+  </div>
+  </sc-if>
+
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══ سجل الحركة الشهري — قائمة منسدلة مطوية، وفوتر ترقيم مطابق للجدول المعتمد حرفاً بحرف ═══ -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+  <div onClick="{{irLedgerToggle}}" style="display:flex;align-items:center;gap:11px;padding:13px 16px;cursor:pointer" style-hover="background:var(--bg-a2482502520p7)">
+    <span style="width:34px;height:34px;border-radius:12px;background:var(--bg-a185151810p12);color:var(--fg-xb99751);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-card)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-6746ac48"></svg></span>
+    <span style="flex:1;min-width:0">
+      <span style="font-size:13.5px;font-weight:600;color:var(--fg-x141414)">سجل الحركة الشهري</span>
+      <span style="display:inline-flex;align-items:center;margin-right:8px;border-radius:9999px;padding:3px 11px;font-size:10.5px;font-weight:600;font-family:'Cairo',sans-serif;background:var(--bg-a185151810p12);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p3)">{{irLedgerCount}}</span>
+    </span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb0b6bd)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{irLedgerChev}}" data-i="i-c92915c6"></svg>
+  </div>
+  <sc-if value="{{irLedgerOpen}}" hint-placeholder-val="{{ false }}">
+  <div style="border-top:2px solid var(--bd-a185151810p25)">
+
+    <!-- ═══ شريط أدوات السجل — بحث + ملفات (تصدير/طباعة) + فلترة بالوردية والموقع، بنفس فكرة
+         الشريط المعتمد فوق الجدول الشهري للموظفين، بلا مبدّل عرض بطاقات/جدول ═══ -->
+    <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd-xe1e1e1);background:var(--bg-a2482502520p5)">
+      <div style="position:relative;flex:1;min-width:180px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:50%;transform:translateY(-50%)" data-i="i-7133b944"></svg>
+        <input value="{{irLgSearch}}" onChange="{{irLgSetSearch}}" placeholder="بحث بالموظف أو الموقع..." style="width:100%;height:34px;padding:0 34px 0 10px;font-size:12px;background:var(--bg-xffffff);border:1px solid var(--bd-xe2e8f0);border-radius:10px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;color:var(--fg-x141414)" style-focus="background:var(--bg-xffffff);border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px rgba(185,151,81,0.2)">
+      </div>
+      <div style="position:relative">
+        <button onClick="{{irLgFilesToggle}}" style="{{irLgFilesBtnStyle}}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg>
+          ملفات
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{irLgFilesChev}}" data-i="i-c92915c6"></svg>
+        </button>
+        <sc-if value="{{irLgFilesOpen}}" hint-placeholder-val="{{ false }}">
+        <div data-bs-dd="1" style="position:absolute;top:100%;left:0;z-index:55;min-width:190px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right">
+<sc-if value="{{irPmExport}}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{irLgExportCsv}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
+            <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a0132800p08);color:var(--fg-x008450);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-336c1c51"></svg></span>
+            <div style="flex:1"><div>تصدير Excel</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">سجل {{irYearLabel}} — حسب الفلاتر الحالية</div></div>
+          </div>
+          <div onClick="{{irLgPrintTable}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
+            <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a141652330p08);color:var(--fg-x0369a1);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9662a985"></svg></span>
+            <div style="flex:1"><div>طباعة / حفظ PDF</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">نافذة الطباعة مباشرة</div></div>
+          </div>
+</sc-if>
+          <div style="height:1px;background:var(--bg-xf1f5f9);margin:4px 2px"></div>
+<sc-if value="{{irPmDel}}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{irLgClearAllAsk}}" style="{{irLgClearAllItemStyle}}" style-hover="background:var(--bg-a22038380p06)">
+            <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a22038380p08);color:var(--fg-xdc2626);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a7f69cb8"></svg></span>
+            <div style="flex:1"><div style="color:var(--fg-xdc2626)">حذف الكل</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">مسح جميع تقارير {{irLgMonthLabel}} نهائياً</div></div>
+          </div>
+</sc-if>
+        </div>
+        </sc-if>
+      </div>
+      <div style="height:20px;width:1px;background:var(--bg-xe2e8f0)"></div>
+      <span style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8)">فلترة:</span>
+      <div style="position:relative">
+        <button onClick="{{irLgFsToggle}}" style="{{irLgFsBtnStyle}}">
+          <span style="white-space:nowrap">{{irLgFsLabel}}</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{irLgFsChev}}" data-i="i-c92915c6"></svg>
+        </button>
+        <sc-if value="{{irLgFsOpen}}" hint-placeholder-val="{{ false }}">
+        <div data-bs-dd="1" style="position:absolute;top:100%;right:0;z-index:50;min-width:140px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right">
+          <sc-for list="{{irLgFsOpts}}" as="o" hint-placeholder-count="4">
+          <div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
+            <span style="flex:1;white-space:nowrap">{{o.name}}</span>
+            <sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if>
+          </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+      <div style="position:relative">
+        <button onClick="{{irLgFlToggle}}" style="{{irLgFlBtnStyle}}">
+          <span style="white-space:nowrap">{{irLgFlLabel}}</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{irLgFlChev}}" data-i="i-c92915c6"></svg>
+        </button>
+        <sc-if value="{{irLgFlOpen}}" hint-placeholder-val="{{ false }}">
+        <div data-bs-dd="1" style="position:absolute;top:100%;right:0;z-index:50;min-width:150px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right">
+          <sc-for list="{{irLgFlOpts}}" as="o" hint-placeholder-count="4">
+          <div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
+            <span style="flex:1;white-space:nowrap">{{o.name}}</span>
+            <sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if>
+          </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+      <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);font-feature-settings:'tnum'">
+        <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{irLgShownCount}}</span><span style="opacity:.6"> / {{irLgTotalCount}}</span>
+      </div>
+    </div>
+
+    <sc-if value="{{irLedgerHas}}" hint-placeholder-val="{{ true }}">
+    <div class="bs-hscroll bs-sthead" style="overflow-x:auto">
+      <table class="bs-rtable" style="width:100%;border-collapse:collapse;min-width:1320px">
+        <thead>
+          <tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2d1e2ff8"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">التاريخ والوقت</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5edd7f95"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">المستخدم</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fab3c0b3"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الوردية</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-07c54a8a"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الموظف</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fd713264"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الموقع</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0350cb00"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">اللغات</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-ae37db77"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الاسترشاد</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">مطويات</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-37d56418"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">النيابة</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-094845fa"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الشرطة</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-cb5c501e"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الإجمالي</span></div></th>
+
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{irLedgerRows}}" as="v" hint-placeholder-count="6">
+          <tr style="border-bottom:1px solid var(--bd-xf1f5f9);transition:background .15s" style-hover="background:var(--bg-a2452452450p5)">
+            <td style="padding:8px 6px;text-align:center">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                <span dir="ltr" style="font-size:12px;font-weight:400;color:var(--fg-x25343f);white-space:nowrap">{{v.dayLabel}}</span>
+                <span dir="ltr" style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{v.gregLabel}} · {{v.timeLabel}}</span>
+              </div>
+            </td>
+            <td style="padding:8px 6px;text-align:center"><span style="font-size:11.5px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{v.actor}}</span></td>
+            <td style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x25343f)">{{v.shift}}</span></td>
+            <td style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x141414);white-space:nowrap">{{v.name}}</span></td>
+            <td style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x53565a)">{{v.loc}}</span></td>
+            <td style="padding:8px 6px">
+              <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center">
+                <sc-if value="{{v.noLangs}}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--fg-x94a3b8)">—</span></sc-if>
+                <sc-for list="{{v.langs}}" as="lg" hint-placeholder-count="2">
+                <span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:2px 3px 2px 9px;background:var(--bg-a185151810p08);border:1px solid var(--bd-a185151810p22);font-size:10.5px;font-weight:400;color:var(--fg-x8a6f35);white-space:nowrap">
+                  {{lg.name}}
+                  <span style="display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:9999px;background:var(--bg-xb99751);color:var(--text-on-brand);font-size:9px;font-weight:600;padding:0 3px;font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{lg.count}}</span>
+                </span>
+                </sc-for>
+              </div>
+            </td>
+            <td style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x25343f)">{{v.trans}}</span></td>
+            <td style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x25343f)">{{v.bro}}</span></td>
+            <td style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x25343f)">{{v.pros}}</span></td>
+            <td style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x25343f)">{{v.pol}}</span></td>
+            <td style="padding:8px 6px;text-align:center"><span style="font-size:12.5px;font-weight:700;color:var(--fg-xb99751)">{{v.ben}}</span></td>
+          <td data-label="الإجراءات" style="padding:8px 6px;text-align:center">
+            <sc-if value="{{v.rmHas}}" hint-placeholder-val="{{ true }}">
+            <span style="position:relative;display:inline-block">
+              <button onClick="{{v.rmToggle}}" title="إجراءات هذا السجل" style="{{v.rmBtnStyle}}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" data-i="i-0dbad243"></svg>
+              </button>
+              <sc-if value="{{v.rmOpen}}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:100%;left:50%;transform:translateX(-50%);z-index:60;margin-top:5px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p28);border-radius:11px;box-shadow:var(--shadow-elevated);padding:5px;display:flex;align-items:center;gap:4px;width:max-content">
+                <sc-for list="{{v.rmItems}}" as="a" hint-placeholder-count="3">
+                <button onClick="{{a.run}}" title="{{a.name}}" style="{{a.style}}" style-hover="border-color:var(--bd-xb99751);background:var(--bg-a185151810p08)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9621a719"></svg>
+                </button>
+                </sc-for>
+              </div>
+              </sc-if>
+            </span>
+            </sc-if>
+          </td>
+          </tr>
+          </sc-for>
+        </tbody>
+        <tfoot>
+          <tr style="background:var(--bg-a185151810p04);border-top:2px solid var(--bd-a185151810p2)">
+            <td colspan="6" style="padding:10px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--fg-x8a6f35)">الإجمالي الشهري</td>
+            <td style="padding:10px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--fg-x8a6f35)">{{irKpiTrans}}</td>
+            <td style="padding:10px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--fg-x8a6f35)">{{irKpiBro}}</td>
+            <td style="padding:10px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--fg-x8a6f35)">{{irKpiPros}}</td>
+            <td style="padding:10px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--fg-x8a6f35)">{{irKpiPol}}</td>
+            <td style="padding:10px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--fg-x8a6f35)">{{irKpiBen}}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <!-- ═══ فوتر الترقيم — مطابق حرفاً بحرف لتذييل الجدول المعتمد في عهد الموظفين ═══ -->
+    <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-a2452452450p2);font-size:12px">
+      <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{irLedgerPgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{irLedgerPgTotal}}</span> {{irLedgerPgTotalW}}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>
+        <select value="{{irLedgerPerPage}}" onChange="{{irLedgerOnPerPage}}" style="height:28px;width:78px;font-size:10px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;outline:none;cursor:pointer"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="0">الكل</option></select>
+        <div style="display:flex;align-items:center;border:1px solid var(--bd-xe1e1e1);border-radius:8px;overflow:hidden">
+          <button onClick="{{irLedgerPgFirst}}" title="الصفحة الأولى" style="{{irLedgerPgFirstStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-ec58a044"></svg></button>
+          <button onClick="{{irLedgerPgPrev}}" title="السابق" style="{{irLedgerPgPrevStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
+          <sc-for list="{{irLedgerPgNums}}" as="n" hint-placeholder-count="5">
+            <sc-if value="{{n.dots}}"><span style="height:28px;width:20px;display:flex;align-items:center;justify-content:center;color:var(--fg-x94a3b8);font-size:10px;border-right:1px solid var(--bd-xe1e1e1)">…</span></sc-if>
+            <sc-if value="{{n.cur}}"><button style="{{n.style}}">{{n.label}}</button></sc-if>
+            <sc-if value="{{n.plain}}"><button onClick="{{n.click}}" style="{{n.style}}" style-hover="background:var(--bg-xf5f5f5)">{{n.label}}</button></sc-if>
+          </sc-for>
+          <button onClick="{{irLedgerPgNext}}" title="التالي" style="{{irLedgerPgNextStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></button>
+          <button onClick="{{irLedgerPgLast}}" title="الصفحة الأخيرة" style="{{irLedgerPgLastStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9e7cf3ce"></svg></button>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{irLedgerEmpty}}" hint-placeholder-val="{{ false }}">
+    <div style="padding:28px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">{{irLedgerEmptyMsg}}</span></div>
+    </sc-if>
+  </div>
+  </sc-if>
+</div>
+
+<!-- ═══ تأكيد حذف كل تقارير الشهر — إجراء نهائي لا يمكن التراجع عنه ═══ -->
+<sc-if value="{{irLgClearAllOpen}}" hint-placeholder-val="{{ false }}">
+<div onClick="{{irLgClearAllCancel}}" style="position:fixed;inset:0;z-index:70;background:var(--bg-a0000p5);display:flex;align-items:center;justify-content:center;padding:24px">
+  <div onClick="{{irLgClearAllStop}}" style="background:var(--bg-xffffff);border-radius:16px;box-shadow:var(--shadow-elevated);width:100%;max-width:420px;padding:24px;text-align:center;font-family:'Cairo',sans-serif">
+    <div style="width:56px;height:56px;border-radius:16px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;background:var(--bg-a22038380p08);border:1px solid var(--bd-a22038380p3);color:var(--fg-xdc2626)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a7f69cb8"></svg>
+    </div>
+    <h3 style="font-size:17px;font-weight:600;margin:0 0 6px">حذف كل تقارير الشهر</h3>
+    <p style="font-size:13px;color:var(--fg-x53565a);line-height:1.8;margin:0 0 4px">{{irLgClearAllMsg}}</p>
+    <p style="font-size:11px;color:var(--fg-xb45309);margin:0 0 18px">هذا الإجراء نهائي ولا يمكن التراجع عنه.</p>
+    <div style="display:flex;justify-content:center;gap:8px">
+      <button onClick="{{irLgClearAllDo}}" style="height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;color:var(--fg-xffffff);border:0;cursor:pointer;font-family:'Cairo',sans-serif;background:var(--bg-xdc2626)" style-hover="background:var(--bg-xb91c1c)">حذف الكل نهائياً</button>
+      <button onClick="{{irLgClearAllCancel}}" style="height:38px;padding:0 16px;border-radius:10px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">إلغاء</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+</div>
+</sc-if>
+
+</div>

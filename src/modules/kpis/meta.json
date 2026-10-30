@@ -1,0 +1,48 @@
+{
+ "name": "KPIs",
+ "slug": "kpis",
+ "pre": "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><script src=\"./support.js\"></script></head>\n<body>\n<x-dc>\n<helmet>",
+ "mid": "</helmet>\n",
+ "mid2": "\n</x-dc>\n",
+ "scriptTag": "<script data-dc-script>",
+ "post": "</script>\n</body></html>",
+ "minifiedSource": true,
+ "prettified": true,
+ "originalSha256": "89639985c42999a5961d01e6920f329c0d633fbae17f286bef867b2b62f48fa0",
+ "charter": {
+  "owner": "مدير الإدارة (عارض — المالكُ هو الصفحةُ الأصلية)",
+  "purpose": "مؤشراتُ الإدارة: عارضٌ لا مالك (SOT-012)",
+  "page": "kpis",
+  "routes": [
+   "#/kpis"
+  ],
+  "ui": [
+   "src/modules/kpis/view.html",
+   "src/modules/kpis/helmet.css"
+  ],
+  "domain": "src/modules/kpis/logic.js",
+  "data": [
+   "bassam_tasks_v1"
+  ],
+  "permissions": [
+   "shownIn:lens.dens.indicators.view",
+   "shownIn:lens.zones.indicators.view",
+   "shownIn:report.indicators.view"
+  ],
+  "tests": [
+   "gate:dsperm.mjs",
+   "gate:dstats.mjs",
+   "gate:k254focus.mjs",
+   "gate:p1cmp.mjs",
+   "gate:p45reg.mjs",
+   "gate:r181.mjs",
+   "gate:r182pos.mjs",
+   "gate:r183pct.mjs",
+   "gate:r187.mjs",
+   "gate:r188.mjs",
+   "gate:r189.mjs",
+   "gate:theme248.mjs",
+   "gate:visual.mjs"
+  ]
+ }
+}

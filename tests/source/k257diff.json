@@ -1,0 +1,32 @@
+{
+ "build/build.py": {
+  "sha256": "6aeaaeb74316efed6ee8a08fa9669a467dbe46266708dfd4abd9b603e3258c53",
+  "lines": 40,
+  "why": "AUD-024: تصغيرٌ حافظٌ للرموز لكتل js (tools/jsmin_tokens.mjs --serve · برهانٌ داخل البناء لكل كتلة) بعلَم blocks.json"
+ },
+ "src/blocks.json": {
+  "sha256": "f49a871c0da9905ed1c8d2974981deff638cd74c4917a5a2284a7398c16f03a6",
+  "lines": 146,
+  "why": "AUD-010: 6 كتلٍ مكانَ 330 و3 مكانَ 440 (splitFrom) · AUD-012: 565-page-kit · gateBlock = 335 · minify = tokens · counts.js"
+ },
+ "src/core/270-bs-ver.js": {
+  "sha256": "46e824133b70d4d79c201036bc01a3321accdd8244a5854d6c5eb0baf954e38a",
+  "lines": 9,
+  "why": "الإصدار 257"
+ },
+ "src/layouts/index.template.html": {
+  "sha256": "5dd677baa38d39287344e3687b251208d5f6bd435890bcff8381aaaf307e109d",
+  "lines": 37,
+  "why": "AUD-010/012: علاماتُ الكتل الجديدة بترتيب الأقسام"
+ },
+ "workers/parts/002-seclog.js": {
+  "sha256": "8444d2ad6125d1487b13eb29a1b80faa56c8e80d65705fa003abb5a624a41d29",
+  "lines": 13,
+  "why": "WORKER_VER 157"
+ },
+ "workers/parts/056-enforce.js": {
+  "sha256": "02be637ef67b3b340c866a31f84cef40d43fa08b711e315364fe74937d00f56b",
+  "lines": 13,
+  "why": "ENF_VER KIVO_257"
+ }
+}

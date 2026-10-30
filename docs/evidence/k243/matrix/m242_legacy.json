@@ -1,0 +1,1378 @@
+{
+ "worker": "../k242/src/root/_worker.js",
+ "mode": "legacy",
+ "transport": "login",
+ "envOff": false,
+ "today": "1448-4-27",
+ "authz": {
+  "status": 404
+ },
+ "authzTable": 0,
+ "authzKeys": null,
+ "rows": [
+  {
+   "id": "R01",
+   "grp": "read · Shift",
+   "who": "tst_emp1",
+   "desc": "موظف الوردية أ: سجلاتُ الاسترشاد المرئية (داخل الوردية فقط)",
+   "mode": "legacy",
+   "exp": [
+    "tstir1",
+    "tstir2",
+    "tstir3",
+    "tstir4"
+   ],
+   "got": "[\"tstir1\",\"tstir2\",\"tstir3\",\"tstir4\"]",
+   "r": {
+    "o": "see",
+    "v": [
+     "tstir1",
+     "tstir2",
+     "tstir3",
+     "tstir4"
+    ]
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R02",
+   "grp": "read · Shift",
+   "who": "tst_supB",
+   "desc": "مشرف الوردية ب: يرى سجلات ورديته وحدها (خارج الوردية أ محجوب)",
+   "mode": "legacy",
+   "exp": [
+    "tstir1",
+    "tstir2",
+    "tstir3",
+    "tstir4"
+   ],
+   "got": "[\"tstir1\",\"tstir2\",\"tstir3\",\"tstir4\"]",
+   "r": {
+    "o": "see",
+    "v": [
+     "tstir1",
+     "tstir2",
+     "tstir3",
+     "tstir4"
+    ]
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R03",
+   "grp": "read · ceiling actor",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة: كلُّ السجلات (فاعلُ سقفٍ بلا قيد وردية R4)",
+   "mode": "legacy",
+   "exp": [
+    "tstir1",
+    "tstir2",
+    "tstir3",
+    "tstir4"
+   ],
+   "got": "[\"tstir1\",\"tstir2\",\"tstir3\",\"tstir4\"]",
+   "r": {
+    "o": "see",
+    "v": [
+     "tstir1",
+     "tstir2",
+     "tstir3",
+     "tstir4"
+    ]
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R04",
+   "grp": "read · Branch (multi-dept)",
+   "who": "tst_gm1",
+   "desc": "مدير الفرع g1: إدارتا الفرع d1+d2 مقروءتان · d3 خارج الفرع",
+   "mode": "legacy",
+   "exp": "d1:1 d2:1 d3:0",
+   "got": "d1:1 d2:1 d3:0",
+   "r": {
+    "o": "see",
+    "v": "d1:1 d2:1 d3:0"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R05",
+   "grp": "read · Department",
+   "who": "tst_emp2",
+   "desc": "موظف d2: لا شيء من d1 · لا مضبوطات d2 (خارج سقف إدارته)",
+   "mode": "legacy",
+   "exp": "d1:0 sz2:0",
+   "got": "d1:0 sz2:0",
+   "r": {
+    "o": "see",
+    "v": "d1:0 sz2:0"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R06",
+   "grp": "read · Source",
+   "who": "tst_ds",
+   "desc": "مدخل إحصائيات الحرم: المسجد النبوي محجوب (Source)",
+   "mode": "legacy",
+   "exp": "haram:1 nabawi:1",
+   "got": "haram:1 nabawi:1",
+   "r": {
+    "o": "see",
+    "v": "haram:1 nabawi:1"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R07",
+   "grp": "read · Default Deny",
+   "who": "tst_emp1",
+   "desc": "بلا ورقة إحصائيات: لا يصل السجلُّ أصلاً",
+   "mode": "legacy",
+   "exp": 0,
+   "got": "0",
+   "r": {
+    "o": "see",
+    "v": 0
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R08",
+   "grp": "read · Assigned + Site",
+   "who": "tst_fld",
+   "desc": "راصد الميدان: حالةُ المسنَد إليه في موقعه فقط (المسنَد خارج موقعه والمجاورُ غيرُ المسنَد محجوبان)",
+   "mode": "legacy",
+   "exp": "F1a:open F1b:closed F2a:open",
+   "got": "F1a:open F1b:closed F2a:open",
+   "r": {
+    "o": "see",
+    "v": "F1a:open F1b:closed F2a:open"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R09",
+   "grp": "read · lens off",
+   "who": "tst_loff",
+   "desc": "العدسةُ نفسُها معطّلة للموظف: المصليات لا تصل (الخطة)",
+   "mode": "legacy",
+   "exp": "2,2",
+   "got": "2,2",
+   "r": {
+    "o": "see",
+    "v": "2,2"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R10",
+   "grp": "read · lens on",
+   "who": "tst_lon",
+   "desc": "العدسةُ مفعّلة: المصليات تصل",
+   "mode": "legacy",
+   "exp": "2,2",
+   "got": "2,2",
+   "r": {
+    "o": "see",
+    "v": "2,2"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R11",
+   "grp": "read · perm without scope",
+   "who": "tst_pnos",
+   "desc": "صلاحيةٌ بلا نطاق: العناصرُ هياكلُ بلا حالة (Default Deny للقيم)",
+   "mode": "legacy",
+   "exp": "F1a:open F2a:open",
+   "got": "F1a:open F2a:open",
+   "r": {
+    "o": "see",
+    "v": "F1a:open F2a:open"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R12",
+   "grp": "read · Site scope",
+   "who": "tst_snop",
+   "desc": "نطاقُ موقعٍ واحد (tsts1): حالةُ الموقع الآخر محجوبة",
+   "mode": "legacy",
+   "exp": "F1a:open F2a:open",
+   "got": "F1a:open F2a:open",
+   "r": {
+    "o": "see",
+    "v": "F1a:open F2a:open"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R13",
+   "grp": "read · Shift (dreport + staffing)",
+   "who": "tst_supB",
+   "desc": "مشرف ب (أوراقُه كلُّها بوردية): أقسامُ التقرير وصفوفُ الجدول لورديته وحدها",
+   "mode": "legacy",
+   "exp": "dr:TST-A+TST-B st:10",
+   "got": "dr:TST-A+TST-B st:10",
+   "r": {
+    "o": "see",
+    "v": "dr:TST-A+TST-B st:10"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R13b",
+   "grp": "read · any read key lifts (v24.9 readBindings)",
+   "who": "tst_sup1",
+   "desc": "مشرف أ يحمل «بيانات الموظفين» (emp.view بلا Shift): يرى التقريرَ والجدولَ كاملين",
+   "mode": "legacy",
+   "exp": "dr:TST-A+TST-B st:10",
+   "got": "dr:TST-A+TST-B st:10",
+   "r": {
+    "o": "see",
+    "v": "dr:TST-A+TST-B st:10"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R14",
+   "grp": "read · API bypass",
+   "who": "tst_emp1",
+   "desc": "/api/get مباشرةً: إدارةٌ أخرى · الإحصائيات · سجلّا النطاق والمنح — لا قيمة",
+   "mode": "legacy",
+   "exp": "ir2:0 ds:0 sc:0 gr:0",
+   "got": "ir2:0 ds:0 sc:0 gr:0",
+   "r": {
+    "o": "see",
+    "v": "ir2:0 ds:0 sc:0 gr:0"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R15",
+   "grp": "read · scope/grant records",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يقرأ سجلَّي النطاق والمنح لإدارته (الإنفاذ) — مجهولان للنظام القديم",
+   "mode": "legacy",
+   "exp": "sc:0 gr:0",
+   "got": "sc:0 gr:0",
+   "r": {
+    "o": "see",
+    "v": "sc:0 gr:0"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "R16",
+   "grp": "read · held keys (grants)",
+   "who": "tst_sup1",
+   "desc": "المفاتيحُ المحمولة في الإقلاع: + ir.rec.retro.open (منحٌ صريح) · − report.reopen (إسقاط)",
+   "mode": "legacy",
+   "exp": "no-authz",
+   "got": "no-authz",
+   "r": {
+    "o": "see",
+    "v": "no-authz"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W01",
+   "grp": "create · Shift (inside)",
+   "who": "tst_emp1",
+   "desc": "إضافةُ محضر استرشاد اليوم في ورديته (أ)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W02",
+   "grp": "create · Shift (outside)",
+   "who": "tst_emp1",
+   "desc": "إضافةُ محضرٍ في الوردية ب (خارج ورديته)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W03",
+   "grp": "edit · Shift (inside)",
+   "who": "tst_emp1",
+   "desc": "تعديلُ محضرٍ في ورديته (tstir4)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W04",
+   "grp": "delete · no permission",
+   "who": "tst_emp1",
+   "desc": "حذفُ محضر بلا صلاحية حذف",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:act",
+   "r": {
+    "o": "deny",
+    "why": "act",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W05",
+   "grp": "edit · hidden row (API bypass)",
+   "who": "tst_supB",
+   "desc": "مشرف ب يرسل محضرَ الوردية أ معدَّلاً (محجوبٌ عنه) مباشرةً عبر API",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W06",
+   "grp": "create · closed period (DateRange)",
+   "who": "tst_emp1",
+   "desc": "إضافةُ محضرٍ في الشهر السابق (فترةٌ مغلقة بلا نافذة استدراك)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W07",
+   "grp": "bulk delete · reason",
+   "who": "tst_sup1",
+   "desc": "حذفٌ جماعي لمحضرين في ورديته بلا سبب",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W08",
+   "grp": "bulk delete · reason",
+   "who": "tst_sup1",
+   "desc": "الحذفُ الجماعي نفسُه بسبب",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W09",
+   "grp": "bulk delete · hidden item",
+   "who": "tst_supB",
+   "desc": "مشرف ب يحذف جماعياً ما يراه — المحجوبُ عنه (الوردية أ) لا يُعدّ محذوفاً ويُحفظ كما هو",
+   "mode": "legacy",
+   "exp": "allow ir2:gone ir1:gone",
+   "got": "allow ir2:gone ir1:gone",
+   "r": {
+    "o": "see",
+    "v": "allow ir2:gone ir1:gone"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W10",
+   "grp": "retro.open · reason",
+   "who": "tst_sup1",
+   "desc": "فتحُ نافذة استدراكٍ للشهر السابق بلا سبب",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow",
+    "id": "rwmv04dj5pk995"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W11",
+   "grp": "retro.open · explicit grant + window covers",
+   "who": "tst_sup1",
+   "desc": "فتحُ النافذة بسبب (منحٌ صريح) ثم إضافةُ موظفٍ محضراً في الشهر المغلق تحت النافذة",
+   "mode": "legacy",
+   "exp": "allow allow",
+   "got": "allow allow",
+   "r": {
+    "o": "see",
+    "v": "allow allow"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W12",
+   "grp": "retro.open · compat (approve)",
+   "who": "tst_supB",
+   "desc": "مشرف ب (اعتمادٌ بلا منحٍ صريح): التوافقُ المؤقّت قائمٌ قبل ترحيل الصلاحيات",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow",
+    "id": "rwmv04djdk6x61"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W13",
+   "grp": "retro.open · no permission",
+   "who": "tst_emp1",
+   "desc": "موظفٌ بلا اعتماد ولا منح",
+   "mode": "legacy",
+   "exp": "deny:perm",
+   "got": "deny:perm",
+   "r": {
+    "o": "deny",
+    "why": "perm"
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W14",
+   "grp": "approve · Shift (inside)",
+   "who": "tst_sup1",
+   "desc": "اعتمادُ قسم ورديته (أ) في تقرير اليوم",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_dreport_v1=allow"
+   ]
+  },
+  {
+   "id": "W15",
+   "grp": "edit · Shift (outside, API bypass)",
+   "who": "tst_supB",
+   "desc": "مشرف ب يعتمد قسمَ الوردية أ (محجوبٌ عنه) مباشرةً عبر API",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_dreport_v1=allow"
+   ]
+  },
+  {
+   "id": "W15b",
+   "grp": "create · past day (DateRange)",
+   "who": "tst_sup1",
+   "desc": "إنشاءُ تقريرٍ ليومٍ منقضٍ في الشهر الجاري (مقفلٌ بلا فتح)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_dreport_v1=allow"
+   ]
+  },
+  {
+   "id": "W16",
+   "grp": "reopen · grant minus",
+   "who": "tst_sup1",
+   "desc": "إعادةُ فتح قسمٍ معتمد (الشهر السابق) — report.reopen مُسقَطٌ عنه صراحةً",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_dreport_v1=allow"
+   ]
+  },
+  {
+   "id": "W17",
+   "grp": "reopen · reason",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يعيد فتح القسم المعتمد بلا سبب",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_dreport_v1=allow"
+   ]
+  },
+  {
+   "id": "W18",
+   "grp": "reopen · reason",
+   "who": "tst_dm1",
+   "desc": "إعادةُ الفتح نفسُها بسبب",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_dreport_v1=allow"
+   ]
+  },
+  {
+   "id": "W19",
+   "grp": "lens on · data edit",
+   "who": "tst_lon",
+   "desc": "تعديلُ اسم مصلى في الخطة (العدسة مفعّلة)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W20",
+   "grp": "lens off · data edit (API bypass)",
+   "who": "tst_loff",
+   "desc": "العدسةُ معطّلة: إرسالُ مصلى معدَّل مباشرةً عبر API",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W21",
+   "grp": "lens enable ≠ CRUD",
+   "who": "tst_snop",
+   "desc": "العدسةُ مفعّلة (عرضٌ فقط) بلا صلاحية حذف: حذفُ مصلى من الجولة",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:act",
+   "r": {
+    "o": "deny",
+    "why": "act",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W21b",
+   "grp": "v24.9 mapping · lens.zones.delete",
+   "who": "tst_lon",
+   "desc": "حذفُ مصلى من الخطة بصلاحية «تعديل الخطة» + «حذف الجولات» — مقبولٌ في النظامين (القديم يعدّه تعديلاً للخطة · v24.9: lens.zones.delete)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W22",
+   "grp": "status.change · reason",
+   "who": "tst_lon",
+   "desc": "تغييرُ حالة مصلى في جولة اليوم بلا سبب",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_rounds_v1=allow"
+   ]
+  },
+  {
+   "id": "W23",
+   "grp": "status.change · reason",
+   "who": "tst_lon",
+   "desc": "التغييرُ نفسُه بسبب",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_rounds_v1=allow"
+   ]
+  },
+  {
+   "id": "W24",
+   "grp": "status.change · Assigned (field)",
+   "who": "tst_fld",
+   "desc": "راصد الميدان: حالةُ المصلى المسنَد إليه في موقعه (بسبب)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_rounds_v1=allow"
+   ]
+  },
+  {
+   "id": "W25",
+   "grp": "status.change · not assigned (API bypass)",
+   "who": "tst_fld",
+   "desc": "راصد الميدان: حالةُ مصلى غيرِ مسنَدٍ إليه",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:page",
+   "r": {
+    "o": "deny",
+    "why": "page",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W26",
+   "grp": "status.change · Site out of scope",
+   "who": "tst_fld",
+   "desc": "راصد الميدان: مصلى مسنَدٌ إليه لكن في موقعٍ خارج نطاقه (tsts2)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_rounds_v1=allow"
+   ]
+  },
+  {
+   "id": "W27",
+   "grp": "scope without permission",
+   "who": "tst_snop",
+   "desc": "نطاقٌ بلا صلاحية: تعديلُ الجولة",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:act",
+   "r": {
+    "o": "deny",
+    "why": "act",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W28",
+   "grp": "permission without scope",
+   "who": "tst_pnos",
+   "desc": "صلاحيةٌ بلا نطاق: تعديلُ اسم مصلى في الخطة",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W29",
+   "grp": "Department ceiling unmigrated",
+   "who": "tst_dm3",
+   "desc": "مدير إدارةٍ بلا سقف نطاقٍ مُرحَّل: تعديلُ خطتها",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d3:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W30",
+   "grp": "Site within ceiling",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة: تعديلُ مصلى في الموقع الثاني (داخل السقف)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W31",
+   "grp": "Site outside ceiling",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة: إضافةُ موقعٍ جديد خارج سقف الإدارة (tsts9)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W32",
+   "grp": "edit · Shift (inside)",
+   "who": "tst_sup1",
+   "desc": "تعديلُ صفّ موظفٍ من ورديته في الشهر الجاري",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_staffing_v3=allow"
+   ]
+  },
+  {
+   "id": "W33",
+   "grp": "edit · locked month (DateRange)",
+   "who": "tst_sup1",
+   "desc": "تعديلُ الشهر السابق المقفل",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_staffing_v3=allow"
+   ]
+  },
+  {
+   "id": "W34",
+   "grp": "edit · Shift transition",
+   "who": "tst_sup1",
+   "desc": "نقلُ موظفٍ من ورديته (أ) إلى الوردية ب",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_staffing_v3=allow"
+   ]
+  },
+  {
+   "id": "W35",
+   "grp": "Own · self task",
+   "who": "tst_emp1",
+   "desc": "الموظف يقبل مهمّته (المسنَدة إليه)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_tasks_v1=allow"
+   ]
+  },
+  {
+   "id": "W36",
+   "grp": "Own · other task",
+   "who": "tst_emp1",
+   "desc": "الموظف يقبل مهمّةً ليست له",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:act",
+   "r": {
+    "o": "deny",
+    "why": "act",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W37",
+   "grp": "create · task",
+   "who": "tst_sup1",
+   "desc": "المشرف ينشئ مهمّة",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_tasks_v1=allow"
+   ]
+  },
+  {
+   "id": "W38",
+   "grp": "Source · open day",
+   "who": "tst_ds",
+   "desc": "إدخالُ رقمٍ للحرم في يومٍ مفتوح",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "bassam_dstats_v1=allow"
+   ]
+  },
+  {
+   "id": "W39",
+   "grp": "DateRange · locked day",
+   "who": "tst_ds",
+   "desc": "إدخالٌ في يومٍ مقفل",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:dslock",
+   "r": {
+    "o": "deny",
+    "why": "dslock",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W40",
+   "grp": "Source · other source (API bypass)",
+   "who": "tst_ds",
+   "desc": "إدخالٌ للمسجد النبوي (مصدرٌ لا يملكه ولا يراه)",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:act",
+   "r": {
+    "o": "deny",
+    "why": "act",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W41",
+   "grp": "DateRange · super included (D4-02)",
+   "who": "SU",
+   "desc": "مدير النظام: إدخالٌ في يومٍ مقفل — D4-02: لا استثناءَ له في الإنفاذ (القديم يتجاوز القفل)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "bassam_dstats_v1=allow"
+   ]
+  },
+  {
+   "id": "W42",
+   "grp": "approve · Source",
+   "who": "tst_ds",
+   "desc": "اعتمادُ شهر الحرم (قفلٌ)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "bassam_dstats_v1=allow"
+   ]
+  },
+  {
+   "id": "W43",
+   "grp": "import.run",
+   "who": "tst_imp",
+   "desc": "استيرادُ موظف (علامة import.run)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_employees_v1=allow"
+   ]
+  },
+  {
+   "id": "W44",
+   "grp": "import.run · no permission",
+   "who": "tst_emp1",
+   "desc": "الاستيرادُ نفسُه من موظفٍ بلا صلاحية",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:page",
+   "r": {
+    "o": "deny",
+    "why": "page",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W45",
+   "grp": "import.run · allowlist",
+   "who": "tst_imp",
+   "desc": "علامةُ استيرادٍ على موردٍ خارج القائمة المسموحة (الاسترشاد)",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:page",
+   "r": {
+    "o": "deny",
+    "why": "page",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W46",
+   "grp": "backup.restore · mgr + key + reason",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة (منحٌ صريح backup.restore) يستعيد خطة إدارته بسبب",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W47",
+   "grp": "backup.restore · reason",
+   "who": "tst_dm1",
+   "desc": "الاستعادةُ نفسُها بلا سبب",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W48",
+   "grp": "backup.restore · mgr without key",
+   "who": "tst_dm2",
+   "desc": "مدير إدارةٍ بلا مفتاح الاستعادة",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d2:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W49",
+   "grp": "backup.restore · not mgr",
+   "who": "tst_lon",
+   "desc": "موظفٌ (يملك تعديل الخطة) يحاول الاستعادة",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d1:bassam_plan_v1=allow"
+   ]
+  },
+  {
+   "id": "W50",
+   "grp": "account freeze · mgr",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يجمّد حسابَ موظفٍ من إدارته",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "bassam_auth_users_v1=allow"
+   ]
+  },
+  {
+   "id": "W51",
+   "grp": "account freeze · not mgr",
+   "who": "tst_sup1",
+   "desc": "مشرفٌ يحاول تجميدَ حساب",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:mgr",
+   "r": {
+    "o": "deny",
+    "why": "mgr",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W52",
+   "grp": "account freeze · other dept",
+   "who": "tst_dm2",
+   "desc": "مديرُ إدارةٍ أخرى يحاول تجميدَ حسابٍ في d1",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:mgr",
+   "r": {
+    "o": "deny",
+    "why": "mgr",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W53",
+   "grp": "scope record · mgr (employee scope)",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يحدّد نطاقَ موظفٍ (tst_e_pnos)",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:unknown",
+   "r": {
+    "o": "deny",
+    "why": "unknown",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W54",
+   "grp": "scope record · ceiling",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يحاول تغيير سقف إدارته (لمدير النظام وحده)",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:unknown",
+   "r": {
+    "o": "deny",
+    "why": "unknown",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W55",
+   "grp": "scope record · not mgr",
+   "who": "tst_sup1",
+   "desc": "مشرفٌ يحاول تعديلَ سجلّ النطاق",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:unknown",
+   "r": {
+    "o": "deny",
+    "why": "unknown",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W56",
+   "grp": "grant · mgr",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يمنح موظفاً مفتاحاً يملكه (ir.rec.delete)",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:unknown",
+   "r": {
+    "o": "deny",
+    "why": "unknown",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W57",
+   "grp": "grant → effect",
+   "who": "tst_emp1",
+   "desc": "بعد المنح: الموظف يحذف محضراً في ورديته",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:act",
+   "r": {
+    "o": "deny",
+    "why": "act",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W58",
+   "grp": "grant · self",
+   "who": "tst_dm1",
+   "desc": "مدير الإدارة يمنح نفسه",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:unknown",
+   "r": {
+    "o": "deny",
+    "why": "unknown",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W59",
+   "grp": "grant · not assignable",
+   "who": "tst_dm1",
+   "desc": "منحُ مفتاحٍ غير قابلٍ للمنح (sys.users.manage)",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:unknown",
+   "r": {
+    "o": "deny",
+    "why": "unknown",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W60",
+   "grp": "grant · other dept",
+   "who": "tst_dm2",
+   "desc": "مديرُ إدارةٍ أخرى يمنح في d1",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:unknown",
+   "r": {
+    "o": "deny",
+    "why": "unknown",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W61",
+   "grp": "Department",
+   "who": "tst_dm1",
+   "desc": "مدير d1 يكتب في استرشاد d2",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:dept",
+   "r": {
+    "o": "deny",
+    "why": "dept",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  },
+  {
+   "id": "W62",
+   "grp": "Branch (inside)",
+   "who": "tst_gm1",
+   "desc": "مدير الفرع يضيف محضراً في d2 (داخل فرعه)",
+   "mode": "legacy",
+   "exp": "allow",
+   "got": "allow",
+   "r": {
+    "o": "allow"
+   },
+   "pass": true,
+   "restored": [
+    "tst_d2:bassam_irshad_v1=allow"
+   ]
+  },
+  {
+   "id": "W63",
+   "grp": "Branch (outside)",
+   "who": "tst_gm1",
+   "desc": "مدير الفرع يكتب في d3 (خارج فرعه)",
+   "mode": "legacy",
+   "exp": "deny",
+   "got": "deny:dept",
+   "r": {
+    "o": "deny",
+    "why": "dept",
+    "detail": "",
+    "missing": null,
+    "dims": null
+   },
+   "pass": true,
+   "restored": []
+  }
+ ]
+}

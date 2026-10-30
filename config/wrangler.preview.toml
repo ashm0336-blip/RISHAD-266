@@ -1,0 +1,10 @@
+# Verified in Cloudflare on 2026-10-29. No Production, R2, or credentials.
+name = "rishad-266-preview-tools"
+account_id = "74d8c1d049621ecdda47d3cd74306703"
+compatibility_date = "2024-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bassam-db-preview"
+database_id = "9b671cce-2bf3-46e9-84b5-23645227f0e0"
+migrations_dir = "../migrations"

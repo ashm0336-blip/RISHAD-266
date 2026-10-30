@@ -1,0 +1,1169 @@
+{
+ "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+ "bomFormat": "CycloneDX",
+ "specVersion": "1.5",
+ "version": 1,
+ "metadata": {
+  "lifecycles": [
+   {
+    "phase": "pre-build"
+   }
+  ],
+  "tools": [
+   {
+    "vendor": "npm",
+    "name": "cli",
+    "version": "10.9.4"
+   }
+  ],
+  "component": {
+   "bom-ref": "cfbench@1.0.0",
+   "type": "library",
+   "name": "cfbench",
+   "version": "1.0.0",
+   "scope": "required",
+   "description": "KIVO test bench — Miniflare + Playwright suites",
+   "purl": "pkg:npm/cfbench@1.0.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": ""
+    },
+    {
+     "name": "cdx:npm:package:private",
+     "value": "true"
+    }
+   ],
+   "externalReferences": [],
+   "licenses": [
+    {
+     "license": {
+      "id": "ISC"
+     }
+    }
+   ]
+  }
+ },
+ "components": [
+  {
+   "bom-ref": "@cloudflare/workerd-darwin-64@1.20250718.0",
+   "type": "library",
+   "name": "@cloudflare/workerd-darwin-64",
+   "version": "1.20250718.0",
+   "scope": "optional",
+   "purl": "pkg:npm/%40cloudflare/workerd-darwin-64@1.20250718.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/@cloudflare/workerd-darwin-64"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/@cloudflare/workerd-darwin-64/-/workerd-darwin-64-1.20250718.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "1477f8b7bcdb54df32c97810febfc6a8b3da619486515cde47b4672f6f0cc23d9d8f2c3665eae0bf2b5573b7dd19c73397a3d087e54a19f6427d4aa92656e2f6"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "Apache-2.0"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "@cloudflare/workerd-darwin-arm64@1.20250718.0",
+   "type": "library",
+   "name": "@cloudflare/workerd-darwin-arm64",
+   "version": "1.20250718.0",
+   "scope": "optional",
+   "purl": "pkg:npm/%40cloudflare/workerd-darwin-arm64@1.20250718.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/@cloudflare/workerd-darwin-arm64"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/@cloudflare/workerd-darwin-arm64/-/workerd-darwin-arm64-1.20250718.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "7d48b2509632aaaa7836a2746201ada7858987f208fd866c52711beaf572e4e79ab3c9543b19cdf99389f0dffaff92d009502d6020a146222b05b7e14e7e59f1"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "Apache-2.0"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "@cloudflare/workerd-linux-64@1.20250718.0",
+   "type": "library",
+   "name": "@cloudflare/workerd-linux-64",
+   "version": "1.20250718.0",
+   "scope": "optional",
+   "purl": "pkg:npm/%40cloudflare/workerd-linux-64@1.20250718.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/@cloudflare/workerd-linux-64"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/@cloudflare/workerd-linux-64/-/workerd-linux-64-1.20250718.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "e7e79bdebb49322130a74f0aaf2ab3ceef1dd6b51c2be81d138e366aea397a788ca53d7bd03cf443106baa4836678f121543d86e3fbaba49ee039b737514944a"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "Apache-2.0"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "@cloudflare/workerd-linux-arm64@1.20250718.0",
+   "type": "library",
+   "name": "@cloudflare/workerd-linux-arm64",
+   "version": "1.20250718.0",
+   "scope": "optional",
+   "purl": "pkg:npm/%40cloudflare/workerd-linux-arm64@1.20250718.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/@cloudflare/workerd-linux-arm64"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/@cloudflare/workerd-linux-arm64/-/workerd-linux-arm64-1.20250718.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "01ad8cfc35411014037404cc6e7db5ef309214a13eb9dfed792f9f152f8e42a28004b9f46b33b6aaae803401d838813a4374aae02c43210afc94675a247c14a2"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "Apache-2.0"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "@cloudflare/workerd-windows-64@1.20250718.0",
+   "type": "library",
+   "name": "@cloudflare/workerd-windows-64",
+   "version": "1.20250718.0",
+   "scope": "optional",
+   "purl": "pkg:npm/%40cloudflare/workerd-windows-64@1.20250718.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/@cloudflare/workerd-windows-64"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/@cloudflare/workerd-windows-64/-/workerd-windows-64-1.20250718.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "758d7a45729f7e6ba09dcebb2d36f28dd0c7667e4da13175c8711fd9f378f8e68e9e8192a77375c7bed0b9b4c3c2a67dcc4096c6041f0cb8dd75c1fc75678586"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "Apache-2.0"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "@cspotcode/source-map-support@0.8.1",
+   "type": "library",
+   "name": "@cspotcode/source-map-support",
+   "version": "0.8.1",
+   "scope": "required",
+   "purl": "pkg:npm/%40cspotcode/source-map-support@0.8.1",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/@cspotcode/source-map-support"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "21c84d7fa74de2d1e8305227ffb384f0b599d7d63aabfebb0667fabe719112ff1149b0556fd2cf27111c9f0adcc17ea2c52bda886a2898052fbb8612c57ad583"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "@fastify/busboy@2.1.1",
+   "type": "library",
+   "name": "@fastify/busboy",
+   "version": "2.1.1",
+   "scope": "required",
+   "purl": "pkg:npm/%40fastify/busboy@2.1.1",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/@fastify/busboy"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/@fastify/busboy/-/busboy-2.1.1.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "bc164fe0d9737ce95ead04e76dae1aa99a0c844fdaf4763b1d1aa838f6844d071242e58423264c1c67d5bbac3dc06b462b97c40f9a91b360ed7950a3387eb4b0"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "@jridgewell/resolve-uri@3.1.2",
+   "type": "library",
+   "name": "@jridgewell/resolve-uri",
+   "version": "3.1.2",
+   "scope": "required",
+   "purl": "pkg:npm/%40jridgewell/resolve-uri@3.1.2",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/@jridgewell/resolve-uri"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "6d12128022233f6d3fb5b5923d63048b9e1054f45913192e0fd9492fe508c542adc15240f305b54eb6f58ccb354455e8d42053359ff98690bd42f98a59da292b"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "@jridgewell/sourcemap-codec@1.6.0",
+   "type": "library",
+   "name": "@jridgewell/sourcemap-codec",
+   "version": "1.6.0",
+   "scope": "required",
+   "purl": "pkg:npm/%40jridgewell/sourcemap-codec@1.6.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/@jridgewell/sourcemap-codec"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.6.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "4fb8dffb9ce0b191f0349e25bd0eff69ecdbca4d27357fb32555a998703b558b04c7b6bbaabe5183921bb4916a920cdee58dacaeeab545463c43cdfb39dee217"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "@jridgewell/trace-mapping@0.3.9",
+   "type": "library",
+   "name": "@jridgewell/trace-mapping",
+   "version": "0.3.9",
+   "scope": "required",
+   "purl": "pkg:npm/%40jridgewell/trace-mapping@0.3.9",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/@jridgewell/trace-mapping"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.9.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "dc17a5b7ab5d73c6cf800b5b72676d349962ad5a139846f97b6802f783e7930116f6323a0801d47a81bce6d8d63f95aabaa7dabe832d330886e0ff76e9928ab9"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "acorn@8.14.0",
+   "type": "library",
+   "name": "acorn",
+   "version": "8.14.0",
+   "scope": "required",
+   "purl": "pkg:npm/acorn@8.14.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/acorn"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/acorn/-/acorn-8.14.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "725ebaf670894d906c2fdece178914426e60e610b6ba2864d0dc58dd610d002d1361d20b5640321f29809ed8311a497b2beb7471722b1f9b22cb94b85e417270"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "acorn-walk@8.3.2",
+   "type": "library",
+   "name": "acorn-walk",
+   "version": "8.3.2",
+   "scope": "required",
+   "purl": "pkg:npm/acorn-walk@8.3.2",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/acorn-walk"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/acorn-walk/-/acorn-walk-8.3.2.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "723932bf83ad34221eaa11eb7d2f354165e80813c4c51fc9eb6a3212a7a9570f16690792aa95b6ba1b8b3e1d66f5e5a10ee3a8fe35175539627ef7ac396a7fe0"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "as-table@1.0.55",
+   "type": "library",
+   "name": "as-table",
+   "version": "1.0.55",
+   "scope": "required",
+   "purl": "pkg:npm/as-table@1.0.55",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/as-table"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/as-table/-/as-table-1.0.55.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "c6fb161125099f424de36d576fd310c3a02c3074425249c27b45a3971be3b9df34994e04ea141fd40e8dcd029c60d998c3ad8c7f312d5dcf9b69db2d64fdc9a5"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "cookie@0.7.2",
+   "type": "library",
+   "name": "cookie",
+   "version": "0.7.2",
+   "scope": "required",
+   "purl": "pkg:npm/cookie@0.7.2",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/cookie"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/cookie/-/cookie-0.7.2.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "ca48b95e72ae7fbe74979d2e193965b7a90a20b6389d0d5e34841ab685c40726797568272aa6e7aa64eb044e41e0dee5acc24a436cad58c8933b6a34bfa130ff"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "data-uri-to-buffer@2.0.2",
+   "type": "library",
+   "name": "data-uri-to-buffer",
+   "version": "2.0.2",
+   "scope": "required",
+   "purl": "pkg:npm/data-uri-to-buffer@2.0.2",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/data-uri-to-buffer"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/data-uri-to-buffer/-/data-uri-to-buffer-2.0.2.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "343f6a0d32dce9d8b08fe5dee5c7408154db2d57576edc532515d18658bc328c2e69a9fed0424eb5da89d1008735248fca85c6c7d1d7dbf54c9ca782df800284"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "exit-hook@2.2.1",
+   "type": "library",
+   "name": "exit-hook",
+   "version": "2.2.1",
+   "scope": "required",
+   "purl": "pkg:npm/exit-hook@2.2.1",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/exit-hook"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/exit-hook/-/exit-hook-2.2.1.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "78d4cf9400faec198fdf52c320d67753b1d217c979ed3c4e6363e6049d6c8690afa67c4117dde658213c6070675ecf2a89464973d58371621e0b76b61c800c7f"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "get-source@2.0.12",
+   "type": "library",
+   "name": "get-source",
+   "version": "2.0.12",
+   "scope": "required",
+   "purl": "pkg:npm/get-source@2.0.12",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/get-source"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/get-source/-/get-source-2.0.12.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "5f9fb8fa20fe1e849e1040febb0ad0d3b04e42bd2410314c56aaa906e23e45a641a41a470ae5f1a3bd1b8daafa7f46f4bbf0d026c27bb2cbaba4fd15eb4033fb"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "Unlicense"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "glob-to-regexp@0.4.1",
+   "type": "library",
+   "name": "glob-to-regexp",
+   "version": "0.4.1",
+   "scope": "required",
+   "purl": "pkg:npm/glob-to-regexp@0.4.1",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/glob-to-regexp"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/glob-to-regexp/-/glob-to-regexp-0.4.1.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "9645f51c95f0c8c729af0ff961465cdacec3ae90221c1db5fd5f84d6b1d4ad5368924bc1e9ba8ccd3d157d5ebff3a64d69bb75935e18388693ee70ef397dc88b"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "BSD-2-Clause"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "miniflare@3.20250718.3",
+   "type": "library",
+   "name": "miniflare",
+   "version": "3.20250718.3",
+   "scope": "required",
+   "purl": "pkg:npm/miniflare@3.20250718.3",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/miniflare"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/miniflare/-/miniflare-3.20250718.3.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "26e3eb0c98702eb34b10988d2d63bb67326bbff56ff6466ec0c6027efd0bb2440333a1289f0e0ebf2c0edc21ffc021a3807ce16bfab28d487c250d3af138c381"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "mustache@4.2.0",
+   "type": "library",
+   "name": "mustache",
+   "version": "4.2.0",
+   "scope": "required",
+   "purl": "pkg:npm/mustache@4.2.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/mustache"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/mustache/-/mustache-4.2.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "ef58a9a52cb0ab961beffb5563219b9018206d4f07deee51cf9e9f1fad2318582bf2e1f0c6cf9a48a7aa9a5b885733349b4901ef1423292eaa3df7746f6668a9"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "printable-characters@1.0.42",
+   "type": "library",
+   "name": "printable-characters",
+   "version": "1.0.42",
+   "scope": "required",
+   "purl": "pkg:npm/printable-characters@1.0.42",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/printable-characters"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/printable-characters/-/printable-characters-1.0.42.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "74aa7e0b889758ae2f5586666127742811f917f8751e8651b1b27cd8054a44edcf128f0be25052fef2f0855b69c30b9872822c558fb5258291dbaf329f8f34b9"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "Unlicense"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "source-map@0.6.1",
+   "type": "library",
+   "name": "source-map",
+   "version": "0.6.1",
+   "scope": "required",
+   "purl": "pkg:npm/source-map@0.6.1",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/source-map"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/source-map/-/source-map-0.6.1.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "52381aa6e99695b3219018334fb624739617513e3a17488abbc4865ead1b7303f9773fe1d0f963e9e9c9aa3cf565bab697959aa989eb55bc16396332177178ee"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "BSD-3-Clause"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "stacktracey@2.2.0",
+   "type": "library",
+   "name": "stacktracey",
+   "version": "2.2.0",
+   "scope": "required",
+   "purl": "pkg:npm/stacktracey@2.2.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/stacktracey"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/stacktracey/-/stacktracey-2.2.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "113c90133f82cd788b8c46f226aa5ba7efd3efd4500ffeb0a85b9c44122554d65f62ad80cbbc1badeb43e1cc696f299995a3d6c79f1a2213c46350abf03955be"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "Unlicense"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "stoppable@1.1.0",
+   "type": "library",
+   "name": "stoppable",
+   "version": "1.1.0",
+   "scope": "required",
+   "purl": "pkg:npm/stoppable@1.1.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/stoppable"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/stoppable/-/stoppable-1.1.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "2970d867d76cce3e9bcef9c431162fc607931d4ef840114be785cab4fde7c8cb89f3508562d0016776c0ccbd8474551a13024e04e804372163dd1ee84f30f2cb"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "undici@5.29.0",
+   "type": "library",
+   "name": "undici",
+   "version": "5.29.0",
+   "scope": "required",
+   "purl": "pkg:npm/undici@5.29.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/undici"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/undici/-/undici-5.29.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "adaa9e043e8d40ae12916850cde60a7752a6206e9d96504e4ede7946692de07b48f66c1d5ad2658e7ad78c015404b4d237aec75ab38867710f178923530f3406"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "workerd@1.20250718.0",
+   "type": "library",
+   "name": "workerd",
+   "version": "1.20250718.0",
+   "scope": "required",
+   "purl": "pkg:npm/workerd@1.20250718.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/workerd"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/workerd/-/workerd-1.20250718.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "92a90824ffde39f0e553207353b8e8060fad97c681db9804006a836a9fa71566fe587867a28c631878313c1cb78a9c368674a13c534e42de65151c5bc002e2ae"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "Apache-2.0"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "ws@8.18.0",
+   "type": "library",
+   "name": "ws",
+   "version": "8.18.0",
+   "scope": "required",
+   "purl": "pkg:npm/ws@8.18.0",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/ws"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/ws/-/ws-8.18.0.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "f156df59f1cb6dbc2edfe37a38ab0e32905d4f89173c30c1f5c264d9b27a9a1f6e7317659cdbc7d5efaba1890a98df4dc70db28f3ed5cde3bda0ecf6cc9d383f"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "youch@3.3.4",
+   "type": "library",
+   "name": "youch",
+   "version": "3.3.4",
+   "scope": "required",
+   "purl": "pkg:npm/youch@3.3.4",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/youch"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/youch/-/youch-3.3.4.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "51e5415e27bc700df90d2ebe9c1925b3af316810570b27b408dce7ae1b336634db4559c9290b8db322ca0534cbe259f5a35ae1d8f2adbf7e6dc15ee2ae3e5212"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  },
+  {
+   "bom-ref": "zod@3.22.3",
+   "type": "library",
+   "name": "zod",
+   "version": "3.22.3",
+   "scope": "required",
+   "purl": "pkg:npm/zod@3.22.3",
+   "properties": [
+    {
+     "name": "cdx:npm:package:path",
+     "value": "node_modules/zod"
+    }
+   ],
+   "externalReferences": [
+    {
+     "type": "distribution",
+     "url": "https://registry.npmjs.org/zod/-/zod-3.22.3.tgz"
+    }
+   ],
+   "hashes": [
+    {
+     "alg": "SHA-512",
+     "content": "12321ebf3b8946244f6d51f898673c9c0a5bfe554b295a6652101a4794797682867c09c627a1abdc25620158cffb81564b10acc9b79641d7200ad6d7fbba19ba"
+    }
+   ],
+   "licenses": [
+    {
+     "license": {
+      "id": "MIT"
+     }
+    }
+   ]
+  }
+ ],
+ "dependencies": [
+  {
+   "ref": "cfbench@1.0.0",
+   "dependsOn": [
+    "miniflare@3.20250718.3",
+    "acorn@8.14.0",
+    "acorn-walk@8.3.2"
+   ]
+  },
+  {
+   "ref": "@cloudflare/workerd-darwin-64@1.20250718.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "@cloudflare/workerd-darwin-arm64@1.20250718.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "@cloudflare/workerd-linux-64@1.20250718.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "@cloudflare/workerd-linux-arm64@1.20250718.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "@cloudflare/workerd-windows-64@1.20250718.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "@cspotcode/source-map-support@0.8.1",
+   "dependsOn": [
+    "@jridgewell/trace-mapping@0.3.9"
+   ]
+  },
+  {
+   "ref": "@fastify/busboy@2.1.1",
+   "dependsOn": []
+  },
+  {
+   "ref": "@jridgewell/resolve-uri@3.1.2",
+   "dependsOn": []
+  },
+  {
+   "ref": "@jridgewell/sourcemap-codec@1.6.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "@jridgewell/trace-mapping@0.3.9",
+   "dependsOn": [
+    "@jridgewell/resolve-uri@3.1.2",
+    "@jridgewell/sourcemap-codec@1.6.0"
+   ]
+  },
+  {
+   "ref": "acorn@8.14.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "acorn-walk@8.3.2",
+   "dependsOn": []
+  },
+  {
+   "ref": "as-table@1.0.55",
+   "dependsOn": [
+    "printable-characters@1.0.42"
+   ]
+  },
+  {
+   "ref": "cookie@0.7.2",
+   "dependsOn": []
+  },
+  {
+   "ref": "data-uri-to-buffer@2.0.2",
+   "dependsOn": []
+  },
+  {
+   "ref": "exit-hook@2.2.1",
+   "dependsOn": []
+  },
+  {
+   "ref": "get-source@2.0.12",
+   "dependsOn": [
+    "data-uri-to-buffer@2.0.2",
+    "source-map@0.6.1"
+   ]
+  },
+  {
+   "ref": "glob-to-regexp@0.4.1",
+   "dependsOn": []
+  },
+  {
+   "ref": "miniflare@3.20250718.3",
+   "dependsOn": [
+    "@cspotcode/source-map-support@0.8.1",
+    "acorn@8.14.0",
+    "acorn-walk@8.3.2",
+    "exit-hook@2.2.1",
+    "glob-to-regexp@0.4.1",
+    "stoppable@1.1.0",
+    "undici@5.29.0",
+    "workerd@1.20250718.0",
+    "ws@8.18.0",
+    "youch@3.3.4",
+    "zod@3.22.3"
+   ]
+  },
+  {
+   "ref": "mustache@4.2.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "printable-characters@1.0.42",
+   "dependsOn": []
+  },
+  {
+   "ref": "source-map@0.6.1",
+   "dependsOn": []
+  },
+  {
+   "ref": "stacktracey@2.2.0",
+   "dependsOn": [
+    "as-table@1.0.55",
+    "get-source@2.0.12"
+   ]
+  },
+  {
+   "ref": "stoppable@1.1.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "undici@5.29.0",
+   "dependsOn": [
+    "@fastify/busboy@2.1.1"
+   ]
+  },
+  {
+   "ref": "workerd@1.20250718.0",
+   "dependsOn": [
+    "@cloudflare/workerd-darwin-64@1.20250718.0",
+    "@cloudflare/workerd-darwin-arm64@1.20250718.0",
+    "@cloudflare/workerd-linux-64@1.20250718.0",
+    "@cloudflare/workerd-linux-arm64@1.20250718.0",
+    "@cloudflare/workerd-windows-64@1.20250718.0"
+   ]
+  },
+  {
+   "ref": "ws@8.18.0",
+   "dependsOn": []
+  },
+  {
+   "ref": "youch@3.3.4",
+   "dependsOn": [
+    "cookie@0.7.2",
+    "mustache@4.2.0",
+    "stacktracey@2.2.0"
+   ]
+  },
+  {
+   "ref": "zod@3.22.3",
+   "dependsOn": []
+  }
+ ]
+}

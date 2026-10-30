@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "reviewed": false,
+  "account_id": "74d8c1d049621ecdda47d3cd74306703",
+  "database_id": "9b671cce-2bf3-46e9-84b5-23645227f0e0",
+  "database_name": "bassam-db-preview",
+  "bookmark": "REPLACE_WITH_REVIEWED_BOOKMARK",
+  "bookmark_captured_at": "REPLACE_WITH_ACTUAL_UTC_CAPTURE_TIME",
+  "source_schema": 7,
+  "expected_schema": 5,
+  "expected_migrations": [
+    "0001_baseline",
+    "0002_enforcement_tables",
+    "0003_aud_legacy_import",
+    "0004_daily_stats",
+    "0005_notifications"
+  ],
+  "expected_permit_absent": true,
+  "operation_id": "REPLACE_WITH_NEW_LOWERCASE_UUID_V4"
+}

@@ -1,0 +1,36 @@
+{
+ "step": "D — تحميل Test Fixture على bassam-db-preview",
+ "db": "bassam-db-preview (9b671cce-2bf3-46e9-84b5-23645227f0e0)",
+ "seed_file": "test_seed_1448-4-28.sql (60 statements, sha256 7dc13ce1…)",
+ "applied_in_chunks": 5,
+ "chunk_results": [
+  "no data, no error",
+  "no data, no error",
+  "no data, no error",
+  "no data, no error",
+  "no data, no error"
+ ],
+ "verification": {
+  "test_keys": 26,
+  "test_users": 16,
+  "test_depts": 3,
+  "test_nodes": 2,
+  "test_sessions": 0,
+  "chunked_globals": 0,
+  "authz_mode": null,
+  "seed_marker": 1,
+  "rev": 47
+ },
+ "expected": {
+  "test_keys": 26,
+  "test_users": 16,
+  "test_depts": 3,
+  "test_nodes": 2,
+  "test_sessions": 0,
+  "chunked_globals": 0,
+  "authz_mode": null
+ },
+ "match": true,
+ "note": "rev 46→47 بخطوة واحدة من البذرة · authz_mode ما زال NULL (= Legacy) · لم تُمسّ نقطة Time Travel المرجعية",
+ "at": "2026-10-09T09:19:55Z"
+}

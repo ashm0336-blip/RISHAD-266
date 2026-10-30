@@ -1,0 +1,27 @@
+{
+ "after_legacy_run": {
+  "testKeys": 26,
+  "equalSeed": 26,
+  "diff": [],
+  "missing": [],
+  "globals": {
+   "bassam_auth_users_v1": "b76f5f75eb47f0c0 rev196",
+   "bassam_depts_v1": "1ec0eaf57bde5da6 rev47",
+   "bassam_dstats_v1": "70b9c12abda68836 rev183",
+   "bassam_gdepts_v1": "0c5b41ec47fbf9aa rev47",
+   "bassam_perms_v1": "61ed11fc8ecf3a8b rev47"
+  }
+ },
+ "before_legacy_run_after_repair": {
+  "testKeys": 26,
+  "equalSeed": 26,
+  "globals": {
+   "bassam_auth_users_v1": "b76f5f75eb47f0c0 rev47",
+   "bassam_depts_v1": "1ec0eaf57bde5da6 rev47",
+   "bassam_dstats_v1": "70b9c12abda68836 rev47",
+   "bassam_gdepts_v1": "0c5b41ec47fbf9aa rev47",
+   "bassam_perms_v1": "61ed11fc8ecf3a8b rev47"
+  }
+ },
+ "note": "كلُّ مفتاحٍ كتبته المصفوفة أُعيد حرفاً: بصمةُ SHA-256 لمفاتيح الاختبار الـ26 = البذرة · والسجلاتُ العامة التي مسّتها الحالات (الحسابات W50 · الإحصائيات W38–W42) بالبصمة نفسِها قبل التشغيل وبعده (تغيّرت المراجعةُ فقط)"
+}

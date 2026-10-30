@@ -1,0 +1,102 @@
+{
+ "pages": [
+  {
+   "name": "Employees",
+   "slug": "employees",
+   "minifiedSource": true,
+   "bytes": 530622,
+   "logicLines": 6201
+  },
+  {
+   "name": "Tasks",
+   "slug": "tasks",
+   "minifiedSource": true,
+   "bytes": 177288,
+   "logicLines": 2497
+  },
+  {
+   "name": "Daily Sessions",
+   "slug": "daily",
+   "minifiedSource": true,
+   "bytes": 818608,
+   "logicLines": 20267
+  },
+  {
+   "name": "Operational Plan",
+   "slug": "plan",
+   "minifiedSource": true,
+   "bytes": 855494,
+   "logicLines": 19783
+  },
+  {
+   "name": "Staffing",
+   "slug": "staff",
+   "minifiedSource": true,
+   "bytes": 206045,
+   "logicLines": 3013
+  },
+  {
+   "name": "Admin",
+   "slug": "admin",
+   "minifiedSource": true,
+   "bytes": 581748,
+   "logicLines": 10385
+  },
+  {
+   "name": "Profile",
+   "slug": "profile",
+   "minifiedSource": true,
+   "bytes": 157711,
+   "logicLines": 2736
+  },
+  {
+   "name": "Irshad",
+   "slug": "irshad",
+   "minifiedSource": true,
+   "bytes": 189622,
+   "logicLines": 2036
+  },
+  {
+   "name": "Award",
+   "slug": "award",
+   "minifiedSource": true,
+   "bytes": 183156,
+   "logicLines": 2406
+  },
+  {
+   "name": "Daily Report",
+   "slug": "dreport",
+   "minifiedSource": true,
+   "bytes": 242223,
+   "logicLines": 4400
+  },
+  {
+   "name": "Planning",
+   "slug": "planning",
+   "minifiedSource": true,
+   "bytes": 7098,
+   "logicLines": 100
+  },
+  {
+   "name": "Seized",
+   "slug": "seized",
+   "minifiedSource": true,
+   "bytes": 247657,
+   "logicLines": 3113
+  },
+  {
+   "name": "KPIs",
+   "slug": "kpis",
+   "minifiedSource": true,
+   "bytes": 11979,
+   "logicLines": 75
+  },
+  {
+   "name": "Daily Stats",
+   "slug": "dstats",
+   "minifiedSource": false,
+   "bytes": 272908,
+   "logicLines": 1688
+  }
+ ]
+}

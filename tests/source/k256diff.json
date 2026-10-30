@@ -1,0 +1,77 @@
+{
+ "src/assets/icons/catalog.json": {
+  "sha256": "3be14578ae153feebe555a449d68adf140c62581d514e8853bd7152eb4f3f3c1",
+  "lines": 40,
+  "why": "مواضعُ الاستعمال (القفل · المجلد · السهم · الصحّ) في كتل الشجرة الثلاث"
+ },
+ "src/auth/330-auth-perm.js": {
+  "sha256": "d202e919bbf4a0db2f2af738e9c5dfef4296799f02892a62f98d62c15343011c",
+  "lines": 234,
+  "why": "SOT-003/010/015: p24 — حسابُ المفاتيح الفعلية = الخادم (السقف · بوابةُ العدسة · الترجمة · plus/minus) · المنحُ الصريح (setGrant) · القوالب (afterTpl في setEmpTpl) · قصُّ المنح عند تضييق السقف"
+ },
+ "src/modules/admin/helmet.css": {
+  "sha256": "55dea1c770915a627caeb2f914b15640cee9d9cd1ab604123875c8df9d045175",
+  "lines": 116,
+  "why": "AUD-007: سطرُ CSS المضغوط (10 KB) مفصولٌ بين القواعد"
+ },
+ "src/modules/admin/logic.js": {
+  "sha256": "6c3d967ec1b990afb4495abd7fa44a9df7468292022ed957c79ca1daa6afa2d8",
+  "lines": 11537,
+  "why": "AUD-007 مقروء (prettier · AST متطابق) + الشجرة v24.9: t24Struct/Shown/Rows · نافذةُ المستخدم (up24) · القوالب (keys24) · السقف (cap24 · مزامنةُ لوحات المؤشرات) · فتحُ النافذة مطويّة"
+ },
+ "src/modules/admin/meta.json": {
+  "sha256": "223b7d243a48f8418dad6c47ea02dcdc48407f4071225b82059f53f8b0826809",
+  "lines": 17,
+  "why": "AUD-007: prettified · minifiedSource"
+ },
+ "src/modules/admin/view.html": {
+  "sha256": "1ac7a2de8739570b778a4b5da0bd6aa68d70cc05379333caf18d2874c902a537",
+  "lines": 233,
+  "why": "الشجرة v24.9 في السقف ونافذة المستخدم والقوالب (وضعُ الإنفاذ) — القديمةُ كما هي تحت *Legacy"
+ },
+ "src/modules/daily/logic.js": {
+  "sha256": "bc3b287daddc082badc05f339c0cfc8cc41d2ec33bd49e30b65765adffdb5bbf",
+  "lines": 13,
+  "why": "AUD-007/AUD-012: شعارُ الطباعة → @@KIVO_INLINE@@"
+ },
+ "src/modules/employees/logic.js": {
+  "sha256": "3781dbb4c332b58e5b68668b1f893d2f3b176667d88797ee34a41f18432609dc",
+  "lines": 13,
+  "why": "AUD-007/AUD-012: شعارُ الطباعة → @@KIVO_INLINE@@"
+ },
+ "src/modules/modules.json": {
+  "sha256": "f655e5acc95b381ad9b4e64291d3509a9f24a1ff6133cec4e239bef7732361f1",
+  "lines": 16,
+  "why": "AUD-007: الإعدادات minifiedSource"
+ },
+ "src/modules/plan/logic.js": {
+  "sha256": "435bc61ee84bb6577b0f1dcecaab8ac3d03fb1874eca6d99f9d27a4824e9f55d",
+  "lines": 13,
+  "why": "AUD-007/AUD-012: شعارُ الطباعة → @@KIVO_INLINE:img/haramain-print.png@@"
+ },
+ "src/pages/Admin.dc.html": {
+  "sha256": "ac9137e0a99fcc408be2f25f9e861de827c33742b3c5a8158054b6a49ef73e5b",
+  "lines": 660,
+  "why": "مولَّدةٌ من admin/{helmet,view,logic}"
+ },
+ "src/services/440-notifications.js": {
+  "sha256": "802f42b5a5df4040bb466db47d9caf92937e994a9146daf667e5a497922f280f",
+  "lines": 13,
+  "why": "قاموسُ العدد والمعدود: «صلاحية» و«مفتاح»"
+ },
+ "tools/page_modules.py": {
+  "sha256": "5237f3e7f766fcde83e8de89f84316e175dddaadcd5235602aacabf8502939e1",
+  "lines": 40,
+  "why": "inline_assets: @@KIVO_INLINE:<img|fonts>/<ملف>@@ يُضمَّن data: عند التركيب قبل الضغط"
+ },
+ "workers/parts/002-seclog.js": {
+  "sha256": "ef9cd5d81916e97ad87c5a780b2dff49eb45411bf3132fcf759b957e6003a822",
+  "lines": 13,
+  "why": "الإصدار 2026.10.10-156"
+ },
+ "workers/parts/056-enforce.js": {
+  "sha256": "2751f273afc069fb5be4e5c2e6ad169d6e3e9aafa8d1c970e01aea9bedb148b6",
+  "lines": 13,
+  "why": "ENF_VER KIVO_256"
+ }
+}

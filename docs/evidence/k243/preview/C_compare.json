@@ -1,0 +1,45 @@
+{
+ "C_keys_equal": true,
+ "n": 14,
+ "values_diff": [],
+ "boot_diff": [],
+ "v": [
+  46,
+  46
+ ],
+ "changes": [
+  {
+   "am": "(absent)",
+   "az": "(absent)",
+   "nkeys": 16,
+   "v": 46
+  },
+  {
+   "v": 46,
+   "nkeys": 16,
+   "am": "legacy",
+   "az": 1
+  }
+ ],
+ "authz": [
+  {
+   "status": 404
+  },
+  {
+   "status": 200,
+   "ver": "KIVO_243 · enforce 1",
+   "mode": "legacy",
+   "env": true,
+   "d1": null,
+   "fixture": true
+  }
+ ],
+ "ver": [
+  "2026.10.07-241",
+  "2026.10.08-242"
+ ],
+ "bootAuthz": [
+  null,
+  null
+ ]
+}

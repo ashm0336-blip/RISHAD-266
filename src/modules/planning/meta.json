@@ -1,0 +1,55 @@
+{
+ "name": "Planning",
+ "slug": "planning",
+ "pre": "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><script src=\"./support.js\"></script></head>\n<body>\n<x-dc>\n<helmet>",
+ "mid": "</helmet>\n",
+ "mid2": "\n</x-dc>\n",
+ "scriptTag": "<script data-dc-script>",
+ "post": "</script>\n</body></html>",
+ "minifiedSource": true,
+ "prettified": true,
+ "originalSha256": "eef6f48baee317657a7236de7e5eff89fbb89967f0d45ea525e3b0e6a9fd67e2",
+ "charter": {
+  "owner": "مدير الإدارة",
+  "purpose": "حاويةُ الخطة التشغيلية (الحلقات ٤–٦)",
+  "page": "planning",
+  "routes": [
+   "#/planning"
+  ],
+  "ui": [
+   "src/modules/planning/view.html",
+   "src/modules/planning/helmet.css"
+  ],
+  "domain": "src/modules/planning/logic.js",
+  "data": [
+   "none — حاويةٌ لا تكتب ولا تقرأ مفتاحاً بنفسها (التبويباتُ في وحداتها)"
+  ],
+  "permissions": [
+   "planning/readiness"
+  ],
+  "tests": [
+   "gate:action.mjs",
+   "gate:adv.mjs",
+   "gate:audunify.mjs",
+   "gate:authz.mjs",
+   "gate:break.mjs",
+   "gate:core.mjs",
+   "gate:disc.mjs",
+   "gate:entity.mjs",
+   "gate:fix.mjs",
+   "gate:flag.mjs",
+   "gate:hard.mjs",
+   "gate:img.mjs",
+   "gate:k259journeys.mjs",
+   "gate:own.mjs",
+   "gate:prot.mjs",
+   "gate:read01.mjs",
+   "gate:rel.mjs",
+   "gate:res.mjs",
+   "gate:restoreimg.mjs",
+   "gate:sec.mjs",
+   "gate:theme248.mjs",
+   "gate:visual.mjs"
+  ]
+ }
+}

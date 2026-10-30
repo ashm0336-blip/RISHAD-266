@@ -1,0 +1,12 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "KIVO · src/layout.json — تخطيطُ المصدر الذي تقرؤه الأدوات (ADR-012)",
+ "type": "object", "additionalProperties": false,
+ "required": ["assets", "pages", "shell", "rootLogic", "manifest", "public", "workerOut", "workersParts", "registry", "pagesManifest", "pageManifestBlock", "tokens", "styles", "migrations", "modules"],
+ "properties": {
+  "assets": {"type": "object", "required": ["fonts", "img"], "additionalProperties": false, "properties": {"fonts": {"$ref": "#/$defs/rel"}, "img": {"$ref": "#/$defs/rel"}}},
+  "pages": {"$ref": "#/$defs/rel"}, "shell": {"$ref": "#/$defs/rel"}, "rootLogic": {"$ref": "#/$defs/rel"}, "manifest": {"$ref": "#/$defs/rel"}, "public": {"$ref": "#/$defs/rel"}, "workerOut": {"$ref": "#/$defs/rel"},
+  "workersParts": {"$ref": "#/$defs/rel"}, "registry": {"$ref": "#/$defs/rel"}, "pagesManifest": {"$ref": "#/$defs/rel"}, "pageManifestBlock": {"$ref": "#/$defs/rel"}, "tokens": {"$ref": "#/$defs/rel"}, "styles": {"$ref": "#/$defs/rel"}, "migrations": {"$ref": "#/$defs/rel"}, "modules": {"$ref": "#/$defs/rel"}
+ },
+ "$defs": {"rel": {"type": "string", "pattern": "^(\\.\\./)?[A-Za-z0-9_./-]+$"}}
+}

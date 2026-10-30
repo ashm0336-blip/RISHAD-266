@@ -1,0 +1,362 @@
+<style>
+body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
+a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
+.pf-top{display:grid;grid-template-columns:1.4fr 1fr;grid-template-rows:auto auto;gap:14px;align-items:start}.pf-id{grid-column:1;grid-row:1}.pf-wk{grid-column:1;grid-row:2}.pf-mapcard{grid-column:2;grid-row:1 / span 2;align-self:stretch}.pf-mapcard .pf-map{aspect-ratio:auto;flex:1;min-height:220px}
+.pf-body{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;align-items:start}
+.pf-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.pf-card{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:16px;box-shadow:var(--shadow-card);overflow:hidden;min-width:0}
+.pf-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border-subtle)}
+.pf-head b{display:block;font-size:13.5px;font-weight:800;color:var(--text-primary)}
+.pf-head small{display:block;font-size:10.5px;color:var(--text-faint);font-weight:400}
+.pf-btn{height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--border-default);background:var(--bg-surface);color:var(--text-secondary);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pf-btn:hover{background:var(--bg-surface-2)}
+.pf-btn.pri{border-color:var(--border-brand);background:linear-gradient(180deg,var(--border-brand),var(--border-brand));color:var(--text-on-brand);font-weight:700}
+.pf-btn.pri:hover{opacity:.92}
+.pf-btn:disabled{opacity:.5;cursor:default}
+.pf-pill{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:9999px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.pf-week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.pf-stats{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary);align-items:center}
+.pf-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-subtle);border-radius:9999px;padding:3px 10px 3px 4px;font-size:11px;color:var(--text-primary)}
+.pf-chip.dashed{border:1px dashed var(--border-brand);color:var(--brand-fg);padding:3px 10px}
+.pf-chip i{width:20px;height:20px;border-radius:9999px;color:var(--text-on-brand);background:var(--brand-primary);display:flex;align-items:center;justify-content:center;font-size:10px;font-style:normal;font-weight:700}
+.fd{margin:10px 14px 4px;border:1px solid var(--border-brand);border-radius:14px;background:linear-gradient(180deg,var(--bg-gold-50-a7),transparent 60%)}
+.fd-ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px dashed var(--border-subtle)}.fd-ph b{font-size:12px;font-weight:800;color:var(--brand-text)}
+.fd-note{border-style:dashed;border-color:var(--border-brand);background:var(--bg-gold-50-a4-v2)}.fd-note-t{padding:8px 12px 10px;font-size:11px;line-height:1.7;color:var(--text-muted)}
+.fd-pill{font-size:9.5px;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--bg-gold-50-a12);color:var(--brand-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+.fd-sec{padding:8px 12px}.fd-t{font-size:10.5px;color:var(--text-secondary);font-weight:700;margin-bottom:5px;display:flex;justify-content:space-between;gap:6px}.fd-t small{color:var(--text-faint);font-weight:400}
+.fd-opts{display:grid;gap:5px}.fd-opts.four{grid-template-columns:repeat(4,1fr)}.fd-opts.three{grid-template-columns:repeat(3,1fr)}
+.fd-opt{border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-primary);border-radius:10px;padding:7px 4px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;min-width:0}
+.fd-opt:hover{border-color:var(--border-brand)}.fd-opt:focus-visible{outline:2px solid var(--border-brand);outline-offset:2px}.fd-opt.on{border-width:2px}
+.fd-opt.ok.on{border-color:var(--success);background:var(--bg-green-25-a10);color:var(--success-text)}.fd-opt.warn.on{border-color:var(--warning);background:var(--bg-orange-40-a10);color:var(--warning-text)}.fd-opt.sev.on{border-color:var(--danger);background:var(--bg-pink-30-a10);color:var(--danger-text)}.fd-opt.bad.on{border-color:var(--danger);background:var(--bg-pink-30-a10);color:var(--danger-text)}.fd-opt.gold.on{border-color:var(--border-brand);background:var(--bg-gold-50-a12);color:var(--brand-text)}
+/* ── صفّ الموقع في رصد الميدان: زرّ حالة واحد وثلاث أيقونات مسار (بطلب المستخدم) ── */
+.fd-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;border:1px solid var(--border-subtle);background:var(--bg-surface);transition:all .15s}
+.fd-row:hover{border-color:var(--tone-gold-50-a30)}
+.fd-row .fd-chip{width:28px;height:28px;border-radius:8px;flex-shrink:0;opacity:.75;border:0;padding:0}
+.fd-nm{flex:1;min-width:0}.fd-nm p{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fd-nm .fd-n1{font-size:12px;font-weight:700}.fd-nm .fd-n2{font-size:9.5px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.fd-fl{display:inline-flex;gap:2px;flex-shrink:0;padding:2px;border-radius:8px;background:var(--tone-neutral-100-a90);border:1px solid var(--border-subtle)}
+.fd-fb{width:26px;height:26px;border:0;border-radius:6px;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;font-size:14px;line-height:1;opacity:.4;padding:0}
+.fd-fb:hover{background:var(--bg-gold-50-a8-v2);opacity:.85}
+.fd-fb.on{opacity:1;background:var(--bg-surface);box-shadow:inset 0 0 0 1px rgba(185,151,81,.55)}
+.fd-fb .fd-ar{color:var(--success-text)}.fd-fb .fd-ar.r{color:var(--danger-text)}
+.fd-fb .fd-stk{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:.72;font-size:11px}
+.fd-fl.dis{opacity:.3;pointer-events:none}
+.fd-tg{width:26px;height:26px;border-radius:6px;border:0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0}
+.fd-tg.on{color:var(--success-text)}.fd-tg.off{color:var(--danger-text)}
+.fd-tg:hover{background:var(--bg-gold-50-a8-v2)}
+.fd-last{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;border-top:1px dashed var(--border-subtle);font-size:10.5px;color:var(--text-secondary);flex-wrap:wrap}.fd-last b{color:var(--text-primary)}.fd-age{color:var(--text-faint);font-variant-numeric:tabular-nums}
+.fd-ov{position:fixed;inset:0;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;padding:16px;z-index:2147480000}
+.fd-dlg{width:min(460px,100%);background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:18px;box-shadow:var(--shadow-elevated);direction:rtl;font-family:'Cairo',sans-serif}
+.fd-dh{padding:14px 18px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:10px}.fd-dh b{display:block;font-size:14px}.fd-dh small{display:block;font-size:11px;color:var(--text-faint)}
+.fd-ic{width:38px;height:38px;border-radius:12px;background:var(--bg-pink-30-a10);color:var(--danger-text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fd-db{padding:14px 18px;display:grid;gap:12px}.fd-lbl{font-size:11.5px;font-weight:700;margin-bottom:6px}.fd-chips{display:flex;flex-wrap:wrap;gap:6px}
+.fd-chip{border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-primary);border-radius:999px;padding:5px 12px;font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer}.fd-chip.on{border-color:var(--border-brand);background:var(--bg-gold-50-a12);color:var(--brand-text);font-weight:700}
+.fd-ta{width:100%;min-height:74px;border:1px solid var(--border-subtle);border-radius:10px;padding:9px 12px;font-family:'Cairo',sans-serif;font-size:12.5px;background:var(--bg-surface);color:var(--text-primary);resize:vertical;box-sizing:border-box}.fd-ta:focus{outline:none;border-color:var(--border-brand);box-shadow:0 0 0 2px rgba(185,151,81,.15)}
+.fd-auto{font-size:11px;color:var(--text-faint)}.fd-auto b{color:var(--text-primary);font-variant-numeric:tabular-nums}
+.fd-df{padding:12px 18px;border-top:1px solid var(--border-subtle);display:flex;gap:8px}.fd-ok{background:var(--danger)!important;border-color:var(--danger)!important;color:var(--text-on-fill)!important}.fd-ok[disabled]{opacity:.45;cursor:not-allowed}
+.pf-sec{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;padding:14px 16px 16px}.pf-sub{border:1px solid var(--border-subtle);border-radius:14px;background:var(--bg-surface);min-width:0}.pf-sub-hd{padding:10px 14px;border-bottom:1px solid var(--border-subtle)}.pf-sub-hd b{display:block;font-size:12.5px;font-weight:800;color:var(--text-primary)}.pf-sub-hd small{display:block;font-size:10.5px;color:var(--text-faint);font-weight:400}@media (max-width:900px){.pf-sec{grid-template-columns:1fr}}.pf-form{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* بياناتي — عرض فقط: شبكة حقائق ثلاثية الأعمدة، عمودان على الجوال */
+.pf-info{padding:14px 16px 6px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.pf-info-it{grid-column:span 2}
+.pf-info-it[data-half="1"]{grid-column:span 3}
+.pf-info-hd{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:11px;font-weight:800;color:var(--brand-text);margin-top:4px}
+.pf-info-hd::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--tone-gold-50-a45),transparent)}
+.pf-info-hd:first-child{margin-top:0}
+.pf-info-it{border:1px solid var(--border-subtle);border-radius:14px;padding:10px 12px;background:var(--bg-surface);min-width:0;display:flex;align-items:center;gap:10px;transition:border-color .15s,box-shadow .15s}
+.pf-info-it:hover{border-color:var(--tone-gold-50-a45);box-shadow:0 6px 18px -12px rgba(154,126,64,.45)}
+.pf-info-ic{width:34px;height:34px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,var(--tone-gold-50-a16),var(--bg-gold-50-a6-v2));color:var(--brand-text);border:1px solid var(--tone-gold-50-a22)}
+.pf-info-tx{flex:1;min-width:0}
+.pf-info-it small{display:block;font-size:10px;color:var(--text-faint);font-weight:700;margin-bottom:1px}
+.pf-info-it b{display:block;font-size:12.5px;font-weight:800;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-feature-settings:'tnum'}
+.pf-info-it b[dir="ltr"]{text-align:right}
+.pf-info-it b.na{color:var(--text-faint);font-weight:600}
+.pf-info-it b.ok{color:var(--success-text)}
+.pf-info-it[data-pf-info="acct"] .pf-info-ic{background:linear-gradient(145deg,var(--bg-green-25-a14),var(--bg-green-25-a5));color:var(--success-text);border-color:var(--bd-green-25-a20)}
+.pf-info-it[data-pf-info="perms"] .pf-info-ic{background:linear-gradient(145deg,var(--bg-blue-50-a14),var(--bg-blue-50-a5));color:var(--info-text);border-color:var(--bd-blue-50-a20)}
+.pf-info-it i{display:block;font-style:normal;font-size:10px;color:var(--text-faint);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-info-it[data-pf-info="name"]{grid-column:1/-1}
+.pf-info-it[data-wide="1"]{grid-column:1/-1}
+.pf-info-it[data-pf-info="name"] b{white-space:normal;line-height:1.5;font-size:14px}
+.pf-info-note{margin:6px 16px 14px;padding:8px 12px;border-radius:10px;background:var(--bg-surface-3);color:var(--text-muted);font-size:10.5px;display:flex;align-items:center;gap:7px}
+@media (max-width:640px){.pf-info{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 12px 4px}.pf-info-it{grid-column:span 1}.pf-info-it[data-half="1"]{grid-column:span 1}.pf-info-it[data-wide="1"],.pf-info-it[data-pf-info="name"]{grid-column:1/-1}}
+
+.pf-form label{font-size:11px;font-weight:400;color:var(--text-secondary);display:block;margin-bottom:5px}
+.pf-form input{width:100%;height:38px;border:1px solid var(--border-default);border-radius:8px;padding:0 12px;font-size:13px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box}
+.pf-form input:focus{border-color:var(--border-brand);box-shadow:0 0 0 2px rgba(185,151,81,0.15)}
+.pf-map{position:relative;background:var(--bg-surface-2);aspect-ratio:1000/600;width:100%}
+.pf-map svg{position:absolute;inset:0;width:100%;height:100%}
+@media (max-width:1024px){.pf-top,.pf-body{grid-template-columns:1fr}.pf-top{grid-template-rows:auto}.pf-id,.pf-wk,.pf-mapcard{grid-column:1;grid-row:auto}.pf-form{grid-template-columns:1fr}}
+/* ── «بياناتي» و«الأمان» منبثقان — بنفس غشاء ونافذة حوار رصد الميدان ──
+   كانت اللوحة تُفتح أسفل الصفحة خارج الشاشة على الجوال فلا يرى الموظف شيئاً. */
+.pf-ov{position:fixed;inset:0;z-index:70;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;padding:20px;animation:pfFade .16s ease}
+@keyframes pfFade{from{opacity:0}to{opacity:1}}
+.pf-modal{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:18px;box-shadow:var(--shadow-elevated);width:100%;max-width:860px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;animation:pfUp .18s ease}
+@keyframes pfUp{from{transform:translateY(10px);opacity:.6}to{transform:none;opacity:1}}
+.pf-modal .pf-mhd{flex-shrink:0;background:var(--bg-surface)}
+.pf-modal .pf-mbd{overflow:auto;-webkit-overflow-scrolling:touch;min-height:0}
+@media (max-width:640px){
+  /* على الجوال ورقةٌ تصعد من الأسفل — أقرب لإبهام المستخدم وأوسع للمحتوى */
+  .pf-ov{align-items:flex-end;padding:0}
+  .pf-modal{max-width:none;max-height:92vh;border-radius:20px 20px 0 0;animation:pfSheet .22s ease}
+  @keyframes pfSheet{from{transform:translateY(100%)}to{transform:none}}
+}
+/* ★ الخطّ الفاصل بين الهويّة واليوم — بعرض البطاقة كاملاً */
+.pf-hr{height:1px;background:var(--bg-surface-3);margin:16px -24px 14px}
+@media (max-width:640px){.pf-hr{margin:16px -16px 14px}}
+/* ★ صندوق اليوم — حالة الوردية وزمنها ومصدر بياناتها في إطارٍ واحد متمركز */
+.pf-note{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;border:1px solid var(--border-subtle);border-radius:14px;background:var(--bg-surface);padding:10px 12px}
+.pf-note-ic{width:28px;height:28px;border-radius:9999px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-gold-50-a12);color:var(--brand-text);border:1px solid var(--tone-gold-50-a28)}
+.pf-note-tx{min-width:0}
+.pf-nb1{font-size:12px;font-weight:800}
+.pf-nb2{font-size:10.5px;color:var(--text-muted);margin-top:1px}
+.pf-nb3{font-size:10px;color:var(--text-faint);line-height:1.85;margin-top:3px}
+/* ── خطّ سير الوردية: قضيبٌ بارتفاع ٢٢ (بطلب المستخدم) ──
+   كان شريطاً بارتفاع ٥٦ تُحشر داخله سبعةُ أرقامٍ وشارةُ «الآن». صار القضيبُ
+   بارتفاع ٢٥ والأرقام في منتصفه رأسياً، والشارةُ فوقه لا داخله. ورُفع
+   التباين بين «ما مضى» و«ما بقي» فلا يلتبس أيُّ النصفين هو المُنجَز. */
+.pf-tlw{position:relative;padding-top:20px}
+.pf-tl{position:relative;height:25px;border-radius:8px;background:var(--bg-surface-3);overflow:hidden}
+.pf-tl .pf-tk{position:absolute;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;color:var(--text-faint);white-space:nowrap;font-variant-numeric:tabular-nums;pointer-events:none;z-index:1}
+.pf-tl-fill{position:absolute;top:0;bottom:0;right:0;background:var(--tone-gold-50-a42)}
+.pf-tl-tk{position:absolute;top:0;bottom:0;width:1px;background:var(--tone-neutral-10-a7)}
+.pf-tl-edge{position:absolute;top:0;bottom:0;width:2px;background:var(--brand-deep)}
+.pf-tl .pf-tk.off{display:none}
+@media (max-width:640px){.pf-tl .pf-tk.odd{display:none}}
+.pf-tlchip{position:absolute;top:0;transform:translateX(50%);font-size:9px;font-weight:800;background:var(--bg-inverse);color:var(--text-on-fill);border-radius:6px;padding:1px 7px;white-space:nowrap;z-index:2;font-variant-numeric:tabular-nums}
+.pf-tlchip::after{content:"";position:absolute;bottom:-4px;right:50%;transform:translateX(50%);border:4px solid transparent;border-top-color:var(--border-inverse);border-bottom:0}
+/* أيقونة بطاقة اليوم — دائرةٌ بلون الحالة، أوضح من نقطةٍ صمّاء */
+.pf-fico{width:26px;height:26px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--bg-surface-3);color:var(--text-faint)}
+/* بطاقة اليوم: الأيقونة فوق في المنتصف، وتحتها العنوان والقيمة في المنتصف */
+.pf-fact{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;border:1px solid var(--border-subtle);border-radius:12px;padding:11px 10px;background:var(--bg-surface);min-width:0;position:relative}
+/* بطاقات اليوم القابلة للفتح: تفتح منبثقة «يومك» و«أسبوعك» و«موقعك اليوم» (بطلب المستخدم) */
+.pf-fact.go{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.pf-fact.go:hover{border-color:var(--tone-gold-50-a50)!important;box-shadow:0 8px 20px -14px rgba(154,126,64,.6);transform:translateY(-1px)}
+.pf-fact-go{position:absolute;top:6px;left:8px;color:var(--brand-text);display:inline-flex}
+.pf-fact.go:hover .pf-fact-go{color:var(--brand-text)}
+/* أسبوعك داخل المنبثقة: خلية الراحة مميّزة بإطارٍ متقطّع ووسمٍ صريح، وصفّ أيام الراحة من الجدول */
+.pf-week .pf-wk-rest{border:1.5px dashed var(--tone-neutral-55-a55)!important;background:repeating-linear-gradient(135deg,var(--bg-surface-3) 0 6px,var(--bg-surface-4) 6px 12px)!important;color:var(--text-secondary)!important;font-size:10.5px!important;letter-spacing:0}
+.pf-restdays{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--bg-surface);font-size:11px;color:var(--text-secondary)}
+.pf-restdays b{color:var(--text-primary)}
+.pf-restday{display:inline-flex;align-items:center;gap:5px;border:1px dashed var(--tone-neutral-55-a50);border-radius:9999px;padding:2px 10px;font-weight:700;color:var(--text-secondary);background:var(--bg-surface)}
+.pf-restday.today{border-style:solid;border-color:var(--border-brand);color:var(--brand-text);background:var(--tone-gold-50-a10)}
+.pf-restday i{width:6px;height:6px;border-radius:50%;background:var(--neutral-fill);font-style:normal}
+.pf-restday.today i{background:var(--border-brand)}
+/* بلا بطاقة «أسبوعك» تحت الهوية: بطاقة الهوية والخريطة صفٌّ واحد */
+@media (min-width:1025px){.pf-top{grid-template-rows:auto}.pf-mapcard{grid-row:1}}
+/* منبثقة الشرح (التكليف · الحالة): أيقونة كبيرة بلون الحالة، عنوان، ثم أسباب الحالة سطراً سطراً */
+.pf-why{padding:22px 22px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+.pf-why-ic{width:56px;height:56px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:4px}
+.pf-why-t{font-size:16px;font-weight:800;color:var(--text-primary)}
+.pf-why-s{font-size:11.5px;color:var(--text-muted)}
+.pf-why-ls{width:100%;margin-top:12px;display:flex;flex-direction:column;gap:6px;text-align:right}
+.pf-why-l{display:flex;align-items:flex-start;gap:9px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--bg-surface);padding:9px 12px;font-size:11.5px;color:var(--text-secondary);line-height:1.7}
+.pf-why-l i{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:8px;font-style:normal}
+.pf-why-l b{color:var(--text-primary)}
+.pf-why-src{margin-top:10px;font-size:10px;color:var(--text-faint);line-height:1.8}
+.pf-fact .pf-fval{width:100%}.pf-fact .pf-fsub{width:100%}
+/* ── الجوال: بطاقة الهوية متمركزة، وبطاقات اليوم في صفٍّ واحد يُسحب أفقياً ──
+   الصورة فوق في المنتصف، ثم التحية والتاريخ، ثم الاسم، ثم البيانات، ثم زرّا
+   «بياناتي» و«الأمان» — كلها في المنتصف (بطلب المستخدم، على الجوال وحده). */
+@media (max-width:640px){
+  .pf-id{padding:20px 16px!important}
+  .pf-idrow{flex-direction:column;align-items:center;text-align:center;gap:12px}
+  .pf-idinfo{min-width:0!important;width:100%}
+  .pf-idinfo .pf-greet{justify-content:center;flex-wrap:wrap}
+  .pf-idbtns{width:100%;justify-content:center}
+  /* عناوين البطاقات وعناوينها الفرعية ومفاتيح الرموز في المنتصف على الجوال */
+  .pf-wk .pf-head,.pf-mapcard .pf-head{justify-content:center;text-align:center}
+  .pf-wk .pf-head > div,.pf-mapcard .pf-head > div{flex:0 1 auto!important}
+  .pf-wk .pf-legend,.pf-wk .pf-stats{justify-content:center;text-align:center}
+  .pf-wk .pf-stats span[style*="margin-right:auto"]{margin-right:0!important}
+  .pf-mapcard .pf-maplg{justify-content:center;text-align:center}
+  .pf-facts{display:flex!important;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+  .pf-facts::-webkit-scrollbar{display:none}
+  /* ثلاثُ بطاقاتٍ في المشهد بخطٍّ أصغر — والنصّ يلتفّ فلا تُقصّ كلمة */
+  .pf-facts .pf-fact{box-sizing:border-box;flex:0 0 calc((100% - 16px)/3);scroll-snap-align:start;padding:8px 9px!important}
+  .pf-facts .pf-flbl{font-size:9px!important}
+  .pf-facts .pf-fact{gap:3px;padding:9px 6px!important}
+  .pf-facts .pf-fico{width:22px;height:22px}
+  .pf-facts .pf-fico svg{width:12px;height:12px}
+  .pf-facts .pf-fval{font-size:10.5px!important;line-height:1.6;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+  .pf-facts .pf-fsub{font-size:8.5px!important;line-height:1.6;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+}
+
+/* ═══ مهامك — بطاقة الموظف: ملخّص · الأهم الآن · بقية اليوم · السجل (بطلب المستخدم) ═══ */
+.tk-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:12px 16px 0}
+.tk-m{border:1px solid var(--border-subtle);border-radius:11px;background:var(--bg-surface);padding:8px 10px;text-align:center;min-width:0}
+.tk-m small{display:block;font-size:9.5px;color:var(--text-faint);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-m b{display:block;font-size:12.5px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-m.hot{border-color:var(--bd-orange-40-a35);background:var(--bg-orange-40-a6)}
+.tk-f{padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px}
+.tk-flbl{font-size:10px;font-weight:800;display:flex;align-items:center;gap:6px}.tk-flbl i{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;font-style:normal}
+.tk-top{display:flex;align-items:flex-start;gap:10px}
+.tk-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:900;font-size:14px}
+.tk-t{font-size:13px;font-weight:800;line-height:1.5}.tk-s{font-size:10.5px;color:var(--text-muted);margin-top:2px}
+.tk-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tk-timer{border:1px solid var(--brand-glow);border-radius:14px;background:linear-gradient(180deg,var(--bg-gold-50-a8-v2),var(--bg-surface));padding:12px 14px;display:flex;align-items:center;gap:12px}
+.tk-big{font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;direction:ltr;letter-spacing:.3px}
+.tk-tl{font-size:10.5px;color:var(--text-muted);min-width:0}.tk-tl b{display:block;font-size:12px;color:var(--text-primary)}
+.tk-bar{height:6px;border-radius:9999px;background:var(--bg-surface-4);overflow:hidden;position:relative}.tk-bar i{position:absolute;top:0;bottom:0;right:0;border-radius:9999px;transition:width .6s}
+.tk-btns{display:flex;gap:8px}
+.tk-btn{flex:1;height:40px;border-radius:11px;border:1px solid var(--border-default);background:var(--bg-surface);font-family:'Cairo',sans-serif;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;color:var(--text-secondary);cursor:pointer}
+.tk-btn.pri{background:linear-gradient(180deg,var(--border-brand),var(--border-brand));border-color:var(--border-brand);color:var(--text-on-brand)}
+.tk-btn.ok{background:linear-gradient(180deg,var(--success),var(--success));border-color:var(--success);color:var(--text-on-fill)}
+.tk-btn.ghost{color:var(--danger-text)}.tk-btn:disabled{opacity:.5;cursor:not-allowed}
+.tk-steps{display:flex;font-size:9.5px;color:var(--text-faint);margin-top:2px}
+.pf-st{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}.pf-st i{width:10px;height:10px;border-radius:50%;background:var(--bg-surface-4);display:block;font-style:normal}
+.pf-st.on i{background:var(--border-brand);box-shadow:0 0 0 3px rgba(185,151,81,.2)}.pf-st.done i{background:var(--success)}.pf-st.done,.pf-st.on{color:var(--text-primary);font-weight:700}
+.tk-proof{display:flex;gap:10px;align-items:center;border:1px solid var(--border-subtle);border-radius:12px;padding:8px 10px;background:var(--bg-surface)}
+.tk-th{width:64px;height:50px;border-radius:10px;background:var(--bg-surface-4);border:1px solid var(--border-default);object-fit:cover;flex-shrink:0;display:block}
+.tk-rows{padding:2px 16px 12px;display:flex;flex-direction:column;gap:6px}
+.tk-rowh{font-size:10.5px;font-weight:800;color:var(--text-muted);margin:4px 0 2px}
+.tk-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--bg-surface);cursor:pointer;transition:border-color .15s}.tk-row:hover{border-color:var(--tone-gold-50-a50)}
+.tk-row .tk-ic{width:28px;height:28px;border-radius:8px;font-size:12px}
+.tk-foot{display:flex;align-items:center;justify-content:space-between;font-size:11px;padding:4px 2px;gap:8px}
+.tk-empty{padding:26px 16px;text-align:center;color:var(--text-muted);font-size:12px;background:var(--brand-pattern) center/96px 96px}
+.tk-empty .tk-eic{width:44px;height:44px;border-radius:9999px;background:var(--bg-gold-50-a12);color:var(--brand-text);display:flex;align-items:center;justify-content:center;margin:0 auto 8px}
+.tk-drop{border:1.5px dashed var(--border-brand);border-radius:14px;background:var(--bg-gold-50-a5);padding:16px;text-align:center;font-size:11.5px;color:var(--text-muted);cursor:pointer}.tk-drop b{display:block;color:var(--brand-text);font-size:12.5px;margin-bottom:2px}
+.tk-thumbs{display:flex;gap:8px;flex-wrap:wrap}.tk-thw{position:relative}.tk-thw img{width:84px;height:64px;border-radius:10px;object-fit:cover;border:1px solid var(--border-default);display:block}
+.tk-thx{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--danger);color:var(--text-on-fill);border:2px solid var(--bg-surface);font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:900}
+.tk-thadd{width:84px;height:64px;border-radius:10px;border:1.5px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:22px;cursor:pointer;background:var(--bg-surface)}
+.tk-ta{width:100%;min-height:64px;border:1px solid var(--border-subtle);border-radius:10px;padding:9px 12px;font-family:'Cairo',sans-serif;font-size:12px;background:var(--bg-surface);color:var(--text-primary);resize:vertical;box-sizing:border-box}.tk-ta:focus{outline:none;border-color:var(--border-brand);box-shadow:0 0 0 2px rgba(185,151,81,.15)}
+.tk-req{font-size:10px;color:var(--warning-text);display:flex;align-items:center;gap:5px}
+.pf-whychip{border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-primary);border-radius:999px;padding:5px 12px;font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer}.pf-whychip.on{border-color:var(--border-brand);background:var(--bg-gold-50-a12);color:var(--brand-text);font-weight:700}
+.tk-log-day{font-size:10px;font-weight:800;color:var(--text-faint);margin-top:6px}
+@media (max-width:640px){.tk-sum{grid-template-columns:repeat(2,1fr)}.tk-big{font-size:22px}}
+/* ═══ KIVO_264 · «ملفي» — الأزرار الأربعة · بطاقات اليوم بنبراتها · ملاحظةُ الحالة · تفاصيلُ الموقع · أسبوعُك بطبقتين · السجلّ بوسوم الدليل ═══ */
+.pf-root{font-family:'Cairo',sans-serif;color:var(--text-primary);margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.pf-glow{position:absolute;inset:auto -60px -80px auto;width:260px;height:260px;border-radius:9999px;background:radial-gradient(circle,var(--tone-gold-50-a18),transparent 70%);pointer-events:none}
+.pf-ava{position:relative;width:70px;height:70px;border-radius:9999px;background:linear-gradient(145deg,var(--border-brand),var(--brand-deep));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:var(--text-on-brand);flex-shrink:0;box-shadow:0 10px 24px -12px color-mix(in srgb,var(--brand-deep) 90%,transparent)}
+.pf-ava-dot{position:absolute;bottom:2px;left:2px;width:14px;height:14px;border-radius:9999px;border:2px solid var(--bg-surface)}
+.pf-name{font-size:22px;font-weight:800;color:var(--text-primary);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-role{font-size:12px;color:var(--text-muted)}
+.pf-idbtns{display:flex;flex-direction:row;gap:6px;flex-wrap:nowrap}
+.pf-flbl{font-size:10px;color:var(--text-faint);font-weight:600}
+.pf-fval{font-size:12.5px;font-weight:700;color:var(--text-primary);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-fsub{font-size:10px;color:var(--text-faint);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-fact.v-na .pf-fval{color:var(--text-faint)}
+.pf-fact.go:focus-visible{border-color:var(--border-brand)}
+.pf-fact.t-gold .pf-fico{background:var(--bg-gold-50-a12);color:var(--brand-text)}
+.pf-fact.t-rest .pf-fico{background:var(--neutral-soft);color:var(--text-secondary)}
+.pf-fact.t-teal .pf-fico{background:var(--info-bg);color:var(--info-text)}
+.pf-fact.t-red .pf-fico{background:var(--danger-bg);color:var(--danger-text)}
+.pf-fact.t-plum .pf-fico{background:var(--plum-bg);color:var(--plum-text)}
+.pf-fact.t-ok .pf-fico{background:var(--success-bg);color:var(--success-text)}
+.pf-fact.t-warn .pf-fico{background:var(--warning-bg);color:var(--warning-text)}
+.pf-fnote{margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--bg-surface-3);color:var(--text-muted);font-size:11px;line-height:1.75;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pf-fnote.warn{background:var(--warning-bg);color:var(--warning-text)}
+.pf-fnote.bad{background:var(--danger-bg);color:var(--danger-text)}
+.pf-linkbtn{margin-right:auto;border:0;background:transparent;color:var(--brand-fg);font-family:'Cairo',sans-serif;font-size:11px;font-weight:800;cursor:pointer;padding:2px 4px;border-radius:6px}
+.pf-linkbtn:hover{text-decoration:underline}
+.pf-faint{color:var(--text-faint)}
+.pf-muted{color:var(--text-muted)}
+.pf-legend{font-size:9.5px;color:var(--text-faint);margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;line-height:1.7}
+.pf-mine{position:absolute;transform:translate(-50%,0);white-space:nowrap;font-size:11px;font-weight:800;background:var(--bg-inverse);color:var(--text-on-fill);padding:2px 10px;border-radius:7px;pointer-events:none;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.pf-mapmsg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-faint);font-size:12px;padding:16px;text-align:center}
+.pf-mapmsg span{font-size:10.5px}
+.pf-maplg{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border-subtle);flex-wrap:wrap;font-size:10px;color:var(--text-faint);line-height:1.7}
+.pf-map-in{border-radius:12px;overflow:hidden;border:1px solid var(--border-subtle)}
+.pf-maplg-in{border-top:0;padding:4px 2px 0}
+.pf-spot{padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.pf-srow{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--border-subtle);border-radius:12px;padding:10px 12px;background:var(--bg-surface)}
+.pf-srow-tx{flex:1;min-width:0}
+.pf-srow-tx small{display:block;font-size:10px;color:var(--text-faint);font-weight:700}
+.pf-srow-tx b{display:block;font-size:13px;font-weight:800;color:var(--text-primary)}
+.pf-srow-tx i,.pf-srow-tx em{display:block;font-style:normal;font-size:10.5px;color:var(--text-muted);line-height:1.7}
+.pf-srow-tx em{color:var(--text-faint)}
+.pf-smates{border:1px solid var(--border-subtle);border-radius:12px;padding:10px 12px;background:var(--bg-surface)}
+.pf-smh b{display:block;font-size:12px;font-weight:800;color:var(--text-primary)}
+.pf-smh small{display:block;font-size:10px;color:var(--text-faint);line-height:1.7}
+.pf-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.pf-more{height:26px;padding:0 10px}
+.pf-snote{font-size:10.5px;color:var(--text-faint);line-height:1.8}
+.pf-sacts{display:flex}
+.pf-ev{flex-shrink:0;font-size:9.5px;font-weight:800;border-radius:9999px;padding:1px 8px;white-space:nowrap;border:1px solid transparent;line-height:1.7;background:var(--bg-surface-3);color:var(--text-muted)}
+.pf-ev.ev-saved_approved{background:var(--success-bg);color:var(--success-text);border-color:var(--success-border)}
+.pf-ev.ev-saved_open{background:var(--warning-bg);color:var(--warning-text);border-color:var(--warning-border)}
+.pf-ev.ev-logged_change{background:var(--info-bg);color:var(--info-text);border-color:var(--info-border)}
+.pf-ev.ev-derived{background:transparent;color:var(--text-muted);border:1px dashed var(--border-strong)}
+.pf-ev.ev-current{background:var(--plum-bg);color:var(--plum-text)}
+.pf-ev.ev-none{background:transparent;color:var(--text-faint);border:1px dashed var(--border-default)}
+.pf-ev.ev-future{background:transparent;color:var(--text-faint)}
+.pf-week{grid-template-columns:repeat(7,minmax(0,1fr))}
+.pf-wd{font-family:'Cairo',sans-serif;border:1.5px solid transparent;border-radius:10px;min-height:58px;padding:6px 2px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:var(--bg-surface-3);color:var(--text-faint);cursor:pointer;min-width:0}
+.pf-wd b{font-size:13px;font-weight:800;line-height:1.2}
+.pf-wd small{font-size:8.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.pf-wd .pf-wd-n{font-size:9.5px;color:var(--text-faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.pf-wd:disabled{cursor:default}
+.pf-wd.s-rest,.pf-hd.s-rest{border:1.5px dashed var(--tone-neutral-55-a55)}
+.pf-wd.a-pr,.pf-hd.a-pr,.pf-wd.m-ap{background:var(--success-bg);color:var(--success-text)}
+.pf-wd.a-ab,.pf-hd.a-ab{background:var(--danger-bg);color:var(--danger-text)}
+.pf-wd.a-pm,.pf-hd.a-pm,.pf-wd.m-open{background:var(--warning-bg);color:var(--warning-text)}
+.pf-wd.a-lv,.pf-hd.a-lv{background:var(--info-bg);color:var(--info-text)}
+.pf-wd.a-tout,.pf-hd.a-tout{background:var(--plum-bg);color:var(--plum-text)}
+.pf-wd.a-rest,.pf-hd.a-rest{background:repeating-linear-gradient(135deg,var(--bg-surface-3) 0 6px,var(--bg-surface-4) 6px 12px);color:var(--text-secondary)}
+.pf-wd.ap,.pf-hd.ap{box-shadow:inset 0 -2px 0 var(--success)}
+.pf-wd.is-today{outline:2px solid var(--border-brand);outline-offset:1px}
+.pf-monst{margin-top:10px;border-top:1px solid var(--border-subtle);padding-top:10px}
+.pf-ms b{font-weight:800}.pf-ms.ok b{color:var(--success-text)}.pf-ms.bad b{color:var(--danger-text)}.pf-ms.warn b{color:var(--warning-text)}.pf-ms.info b{color:var(--info-text)}.pf-ms.muted b{color:var(--text-muted)}
+.pf-modal.pf-histm{max-width:820px}
+.pf-hnav{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px 4px}
+.pf-hmon{font-size:14px;font-weight:800;color:var(--text-primary)}
+.pf-hfs{display:flex;flex-wrap:wrap;gap:6px;padding:8px 16px}
+.pf-hf{height:28px;padding:0 11px;border-radius:9999px;border:1px solid var(--border-default);background:var(--bg-surface);color:var(--text-secondary);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.pf-hf:hover{border-color:var(--border-brand)}
+.pf-hf.on{background:var(--bg-inverse);color:var(--text-on-inverse);border-color:var(--border-inverse)}
+.pf-hf.go{border-style:dashed;color:var(--brand-text)}
+.pf-hstate{margin:8px 16px;padding:12px;border-radius:10px;background:var(--bg-surface-3);color:var(--text-muted);font-size:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pf-hstate.bad{background:var(--danger-bg);color:var(--danger-text)}
+.pf-hnote{margin:4px 16px;padding:9px 12px;border-radius:10px;border:1px dashed var(--border-default);color:var(--text-muted);font-size:11.5px;line-height:1.8}
+.pf-hgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding:8px 16px 0}
+.pf-hgrid + .pf-legend{padding:0 16px}
+.pf-hd{border:1.5px solid transparent;border-radius:9px;min-height:46px;padding:3px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-surface-3);color:var(--text-faint);min-width:0}
+.pf-hd b{font-size:10px;font-weight:700;color:var(--text-muted);line-height:1.2}
+.pf-hd span{font-size:12.5px;font-weight:800;line-height:1.3}
+.pf-hd i{font-style:normal;font-size:8.5px;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.pf-hd.fut{opacity:.55}
+.pf-hsec{margin:10px 16px 0;border:1px solid var(--border-subtle);border-radius:12px;padding:10px 12px;background:var(--bg-surface)}
+.pf-hsec-t{display:block;font-size:12px;font-weight:800;color:var(--brand-text);margin-bottom:4px}
+.pf-hit{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-top:1px dashed var(--border-subtle)}
+.pf-hit:first-of-type{border-top:0}
+.pf-hit-tx{flex:1;min-width:0}
+.pf-hit-tx p{margin:0;font-size:12px;color:var(--text-primary);line-height:1.7}
+.pf-hit-tx small{display:block;font-size:10px;color:var(--text-faint);line-height:1.6}
+.pf-hsrc{margin:10px 16px 0;font-size:10px;color:var(--text-faint);line-height:1.8}
+.pf-hlegend{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 16px 16px;font-size:10px;color:var(--text-faint)}
+.pf-info-miss{margin:6px 16px 0;padding:8px 12px;border-radius:10px;border:1px dashed var(--warning-border);color:var(--warning-text);background:var(--warning-bg);font-size:10.5px;line-height:1.7}
+.pf-tlhint{font-size:10.5px;color:var(--text-faint);background:var(--bg-surface-3);border-radius:10px;padding:8px 12px}
+.pf-fixed{height:38px;border:1px solid var(--border-subtle);border-radius:8px;padding:0 12px;font-size:13px;display:flex;align-items:center;background:var(--tone-neutral-100-a50);color:var(--brand-text);box-sizing:border-box}
+.pf-fixed-un{color:var(--text-muted);font-feature-settings:'tnum'}
+.pf-msg{font-size:11px}.pf-msg.ok{color:var(--success-text)}.pf-msg.bad{color:var(--danger-text)}
+.pf-hint{color:var(--text-faint)}.pf-hint.ok{color:var(--success-text)}.pf-hint.bad{color:var(--danger-text)}
+.pf-btn.pf-dark{background:var(--bg-inverse);color:var(--text-on-fill);border-color:var(--border-inverse)}
+.pf-btn.pf-danger{color:var(--danger-text)}
+.pf-sess-x{border-top:1px solid var(--border-subtle);padding-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.pf-sev{display:flex;align-items:center;gap:8px;color:var(--text-secondary)}.pf-sev.warn{color:var(--warning-text)}.pf-sev.faint{color:var(--text-faint)}
+.pf-pill-ok{background:var(--bg-green-25-a10);color:var(--success-text)}
+@media (max-width:640px){
+  /* الورقةُ بملء الارتفاع للسجلّ وتفاصيل الموقع على الجوال */
+  .pf-modal.pf-histm{height:92vh}
+  .pf-hgrid{gap:4px;padding:8px 10px 0}
+  .pf-hsec,.pf-hnote,.pf-hstate,.pf-hsrc{margin-left:10px;margin-right:10px}
+  .pf-hfs,.pf-hnav{padding-left:10px;padding-right:10px}
+  .pf-week{gap:4px}
+  .pf-wd{min-height:54px}
+}
+@media (max-width:420px){
+  .pf-hf{height:26px;padding:0 9px;font-size:11px}
+  .pf-wd small{display:none}
+}
+/* KIVO_265 · أزرارُ «ملفي» الأربعة على الجوال بالشكل المعتمد قبل 264 (KIVO_263 · الإنتاج 242): صفٌّ واحدٌ في المنتصف
+   بأزرارٍ أفقية (الأيقونةُ بجانب الاسم · ارتفاع 30 · الخطّ 11.5) — يضيق الحشوُ والفواصلُ وحدها على الشاشات الأضيق
+   فيبقى الصفُّ واحداً حتى 320 بكسل؛ وما دون ذلك يلتفّ بدل أن يفيض */
+@media (max-width:379px){.pf-hbtn{padding:0 10px}}
+@media (max-width:359px){.pf-idbtns{gap:4px;flex-wrap:wrap}.pf-hbtn{padding:0 6px;gap:4px}}
+/* الموجة 1 · AUX-01: لا قفزةَ عند وصول حقائق اليوم — السطرُ الثاني (نوعُ التوظيف · رمزُ النداء) سطرٌ واحدٌ محجوز من أول رسم،
+   وبطاقاتُ الانتظار «…» بارتفاع البطاقات النهائية */
+.pf-role2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:23px;min-height:1lh}
+.pf-fact.sk{cursor:default!important}
+.pf-fact.sk .pf-fval,.pf-fact.sk .pf-fsub{color:var(--text-faint)}
+/* الجوال: النصُّ يلتفّ فالبطاقةُ النهائية سطرَين (118px) وبطاقةُ «…» سطراً واحداً (104px) — يُحجز ارتفاعُ النهائية */
+@media (max-width:640px){.pf-facts-on{min-height:118px}}
+</style>

@@ -1,0 +1,109 @@
+/* ── KIVO_264 · KIVO-Tasks (P0) — «مهامي»: طبقةُ بيانات الموظف لمهامه هو وحده ──────────────────────────────
+   كانت «ملفي ← مهامي» تقرأ مخزنَ المهام كاملاً من التخزين المحلي (localStorage → bsdept:<d>:bassam_tasks_v1)، والخادمُ لا يحقنه
+   إلا لحامل task.view — فالموظفُ العاديّ يصله تنبيهُ «أُسندت إليك» ولا يجد المهمة (العطلُ الإنتاجي P0). وكانت تكتب المخزنَ كلَّه
+   لتغيّر صفّاً واحداً. هنا مصدرٌ واحدٌ من الخادم بنطاق «صفوفي أنا» — بلا task.view ولا أيِّ مفتاحٍ إداري:
+     load()            GET /api/me/tasks (?since=rev: ردٌّ رخيص إن لم يتغيّر شيء) — القديمةُ والجديدة، ولا إخفاءَ لانقضاء الموعد
+     view(now, T)      تصنيفٌ نقيّ لكل صفّ في قسمٍ واحد بالضبط (اليوم · قادمة · منقضية بلا قبول · سجلّ) — لا صفَّ يسقط
+     act(row, a, x)    POST /api/me/tasks/act — قبول · اعتذار (بسبب) · إنهاء (صور/ملاحظة) · انقضاء؛ الحكمُ للخادم، والفشلُ لا يُعلَن نجاحاً
+     uploadProof(d)    رفعُ صورة التوثيق بالمسار القائم (KIVO.BassamIDB.set ⇒ PUT /api/img/img_tsk… مقطَّعاً بتحقّق الطول) قبل الإنهاء
+     img(id)           صورةُ توثيقٍ من صفوفي — GET /api/me/tasks/img?id=<id> (لا /api/img العامّ: يتطلّب قراءةَ المخزن كلِّه)
+   الحالاتُ الصريحة للواجهة: linked=false «حسابك غير مرتبط بسجل موظف بمعرّف ثابت» ≠ «لا مهام مسندة إليك» ≠ err «تعذّر التحميل». */
+(function () {
+  /* وضعُ المتصفح/المعاينة بلا خادم (لا __BS_BOOT.srv): لا مسارَ ذاتياً — «ملفي» تبقى على مصدرها المحلي القديم */
+  if (!(window.__BS_BOOT && window.__BS_BOOT.srv)) return;
+  /* مساحةُ الأسماء: KIVO (≥ 258 · AUD-016) وإلا window (242 — حزمةُ الإصلاح SR-2 تحمل الملفَّ نفسَه بايتاً) */
+  var NS = window.KIVO || window;
+  var API = '/api/me/tasks';
+  var S = { rev: 0, me: null, rows: null, months: [], at: 0, err: '', loading: null, imgs: {} };
+  var subs = [];
+  function emit() { for (var i = 0; i < subs.length; i++) { try { subs[i](S); } catch (e) {} } try { window.dispatchEvent(new CustomEvent('bassam:mytasks', { detail: { rev: S.rev } })); } catch (e) {} }
+  function req(url, opt) {
+    return fetch(url, Object.assign({ credentials: 'same-origin', cache: 'no-store' }, opt || {}))
+      .then(function (r) { return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (e) {} return { status: r.status, j: j, t: t }; }); });
+  }
+  /* حالةُ المهمة من منظور الموظف (مطابقةٌ لـmeTkPhase في الخادم و_tkState القديمة) */
+  function phase(r, now) {
+    if (r.st === 'declined') return 'declined';
+    if (r.st === 'done') return 'done';
+    if (r.acc) return 'running';
+    if (r.e && now > r.e) return 'expired';
+    if (r.s && now < r.s) return 'upcoming';
+    return 'new';
+  }
+  function load(force) {
+    if (S.loading) return S.loading;
+    var url = API + (!force && S.rev ? '?since=' + S.rev : '');
+    S.loading = req(url).then(function (x) {
+      S.loading = null;
+      if (x.status === 401) { S.err = 'session'; emit(); return S; }
+      if (!x.j || x.j.ok !== 1) { S.err = 'load'; emit(); return S; }
+      S.err = ''; S.at = Date.now(); S.me = x.j.me || S.me;
+      if (!x.j.same) { S.rev = x.j.rev || 0; S.rows = x.j.rows || []; S.months = x.j.months || []; S.more = !!x.j.more; }
+      emit(); return S;
+    }, function () { S.loading = null; S.err = 'offline'; emit(); return S; });
+    return S.loading;
+  }
+  function dayKey(T) { return T.y + '-' + T.m + '-' + T.d; }
+  function cmpDay(a, b) { return (a.y - b.y) || (a.m - b.m) || (a.d - b.d); }
+  /* كلُّ صفٍّ في قسمٍ واحد: today (يومُه اليوم ولم يُغلق) · running (جاريةٌ من يومٍ سابق) · upcoming (يومٌ قادم) ·
+     overdue (منقضيةُ المهلة بلا قبول — تبقى ظاهرةً للموظف وللمدير) · history (منجزة/معتذَر عنها) — لا إخفاءَ لصفّ */
+  function view(now, T) {
+    now = now || Date.now();
+    var out = { linked: !!(S.me && S.me.linked), err: S.err, loaded: S.rows !== null, today: [], running: [], upcoming: [], overdue: [], history: [], n: 0 };
+    if (!S.rows) return out;
+    var tk = T ? { y: T.y, m: T.m, d: T.d } : null;
+    for (var i = 0; i < S.rows.length; i++) {
+      var r = S.rows[i], ph = phase(r, now), x = Object.assign({}, r, { ph: ph });
+      out.n++;
+      if (ph === 'done' || ph === 'declined') out.history.push(x);
+      else if (ph === 'expired') out.overdue.push(x);
+      else if (ph === 'running' && (!tk || cmpDay(r, tk) !== 0)) out.running.push(x);
+      else if (tk && cmpDay(r, tk) > 0) out.upcoming.push(x);
+      else if (tk && cmpDay(r, tk) < 0) out.running.push(x);            /* يومٌ مضى والمهمة لم تُغلق ولم تنقضِ مهلتُها (مهلةٌ ممتدّة) */
+      else out.today.push(x);
+    }
+    var byStart = function (a, b) { return (a.s || a.at || 0) - (b.s || b.at || 0); };
+    out.today.sort(byStart); out.running.sort(byStart); out.upcoming.sort(byStart); out.overdue.sort(function (a, b) { return (b.e || 0) - (a.e || 0); });
+    out.history.sort(function (a, b) { return (b.fin || (b.dec && b.dec.at) || b.at || 0) - (a.fin || (a.dec && a.dec.at) || a.at || 0); });
+    out.empty = out.n === 0;
+    return out;
+  }
+  function patchRow(row) {
+    if (!S.rows || !row) return;
+    for (var i = 0; i < S.rows.length; i++) if (S.rows[i].k === row.k && String(S.rows[i].id) === String(row.id)) { S.rows[i] = row; return; }
+    S.rows.push(row);
+  }
+  var MSG = { 'not-found': 'لم تعد هذه المهمة مسندةً إليك — حدّث الصفحة', state: 'تغيّرت حالة المهمة — حدّث الصفحة', locked: 'شهرُ المهمة معتمدٌ ومقفل',
+    identity: 'المهمة مسندةٌ بمعرّفٍ قديم — يعيد المدير إسنادها', proof: 'أرفق صورة التوثيق أو اكتب ملاحظة الإنجاز', img: 'لم تُرفع صورة التوثيق — أعد الرفع',
+    busy: 'تعذّر الحفظ لتعديلٍ متزامن — أعد المحاولة', denied: 'رفض الخادم الحفظ', 'not-linked': 'حسابك غير مرتبط بسجل موظف', session: 'انتهت الجلسة — سجّل الدخول' };
+  /* الفعل: النتيجةُ من الخادم وحده — لا تحديثَ متفائل ولا «حُفظ» قبل ردّه */
+  function act(row, a, extra) {
+    var body = Object.assign({ k: row.k, id: row.id, i: row.i, act: a }, extra || {});
+    return req(API + '/act', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (x) {
+      if (x.j && x.j.ok === 1) { if (x.j.rev) S.rev = x.j.rev; patchRow(x.j.row); emit(); return { ok: true, row: x.j.row }; }
+      var err = (x.j && x.j.err) || (x.status === 401 ? 'session' : 'http-' + x.status);
+      if (err === 'not-found' || err === 'state' || err === 'busy') load(true);
+      return { ok: false, err: err, msg: (x.j && x.j.msg) || MSG[err] || 'لم يُحفظ — أعد المحاولة' };
+    }, function () { return { ok: false, err: 'offline', msg: 'لم يُحفظ — لا اتصال بالخادم. أعد المحاولة عند عودة الاتصال' }; });
+  }
+  function newImgId() { return 'img_tsk' + Date.now().toString(36) + '_' + Math.floor(1e9 * Math.random()).toString(36); }
+  /* رفعُ صورة التوثيق: مسارُ الصور القائم (claim لي حتى يربطها الإنهاء) — ويُعاد المعرّفُ بعد ثبوت الرفع وحده */
+  function uploadProof(dataUrl) {
+    var id = newImgId(), I = NS.BassamIDB;
+    var p = I && I.set ? I.set(id, dataUrl) : req('/api/img/' + encodeURIComponent(id), { method: 'PUT', headers: { 'Content-Type': 'text/plain; charset=utf-8' }, body: dataUrl })
+      .then(function (x) { if (!(x.j && x.j.ok === 1)) throw new Error((x.j && x.j.err) || ('HTTP ' + x.status)); return true; });
+    return Promise.resolve(p).then(function () { S.imgs[id] = dataUrl; return id; });
+  }
+  function img(id) {
+    if (S.imgs[id]) return Promise.resolve(S.imgs[id]);
+    return fetch(API + '/img?id=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.text() : null; }).then(function (t) { if (t) S.imgs[id] = t; return t; }, function () { return null; });
+  }
+  function subscribe(fn) { subs.push(fn); return function () { subs = subs.filter(function (x) { return x !== fn; }); }; }
+  function reset() { S = { rev: 0, me: null, rows: null, months: [], at: 0, err: '', loading: null, imgs: {} }; }
+  /* تنبيهُ مهمةٍ جديد أو تغيّرُها: تُعاد القراءة فوراً (لا انتظارَ لدورة الدقيقة). تنبيهُ المدير يصل الموظفَ عبر /api/changes كتغيّرٍ في مخزن التنبيهات
+     (bassam:remote · المفتاحُ …:bassam_notif_v1) — لا bassam:notif (ذاك لما يُطلقه المتصفحُ نفسُه). القراءةُ بـ?since=rev فإن لم يتغيّر مخزنُ المهام فالردُّ {same:1} */
+  try { window.addEventListener('bassam:notif', function (e) { var it = e && e.detail && e.detail.item; if (it && it.k === 'task') load(); }); } catch (e) {}
+  try { window.addEventListener('bassam:remote', function (e) { var ks = (e && e.detail && e.detail.keys) || []; for (var i = 0; i < ks.length; i++) if (/(^|:)bassam_notif_v1$/.test(String(ks[i]))) { if (S.rows !== null) load(); return; } }); } catch (e) {}
+  NS.BassamMyTasks = { load: load, view: view, act: act, uploadProof: uploadProof, img: img, phase: phase, subscribe: subscribe, state: function () { return S; }, reset: reset, dayKey: dayKey, MSG: MSG };
+})();

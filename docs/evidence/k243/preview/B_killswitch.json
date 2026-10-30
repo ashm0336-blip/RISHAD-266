@@ -1,0 +1,1 @@
+{"B":"SELECT k, v FROM meta WHERE k LIKE authz% OR tst% → no rows (kill switch absent ⇒ legacy) · 2026-10-09T09:08Z"}

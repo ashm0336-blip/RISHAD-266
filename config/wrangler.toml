@@ -1,0 +1,32 @@
+# KIVO — تهيئةُ Cloudflare Pages غيرُ السرّية (AUD-023 · SOT-114) — KIVO_255
+# مصدرُ الحقيقة للقيم الفعلية هو لوحةُ Cloudflare (المشروع "0": Settings → Bindings / Environment variables)؛ هذا الملفُ يصفها بصيغة wrangler
+# ليعمل `wrangler pages dev pk2NN --d1 DB=…` و`wrangler pages deploy pk2NN --branch test` محلياً على جهازٍ مسجَّلِ الدخول، ولتكون التهيئةُ
+# جزءاً من المستودع (لا أسرارَ هنا — لا رموزَ API؛ معرّفاتُ القواعد تُقرأ من اللوحة وتُستكمل عند أوّل استعمال). tools/env_check.py
+# يفحص أن أسماءَ المتغيّرات/الروابط هنا = config/env.schema.json = ما يقرؤه العامل.
+
+name = "kivo"                       # اسمُ مشروع Pages في اللوحة: "0" (الحسابُ 74d8c1d049621ecdda47d3cd74306703)
+pages_build_output_dir = "pk265"    # مجلدُ البناء المُسلَّم (dist: _worker.js + _headers + _routes.json + assets/)
+compatibility_date = "2024-11-01"   # = ما تستعمله حزمُ الاختبار (Miniflare) — يُرفع مع اختبارٍ كامل
+
+# ── Production: https://kivo-d81.pages.dev (الفرع main) — لا نشرَ ولا تعديلَ خارج التفويض ──
+[[d1_databases]]
+binding = "DB"
+database_name = "bassam-db"
+database_id = "<يُقرأ من اللوحة: D1 → bassam-db → UUID>"
+
+# ── Preview: https://test.kivo-d81.pages.dev (الفرع test) ──
+[env.preview]
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "bassam-db-preview"
+database_id = "<يُقرأ من اللوحة: D1 → bassam-db-preview → UUID>"
+
+[env.preview.vars]
+KIVO_AUTHZ_MODE = "enforce"         # ADR-002: الإنفاذُ = ENV ∧ meta.authz_mode
+# KIVO_TEST_FIXTURE = "allow"       # أداةُ الاختبار (ADR-004) — تُزال بعد الاختبارات (SOT-173 · قرارُ المالك)
+# KIVO_TEST_HOST = "test.kivo-d81.pages.dev"
+
+# R2 (اختياري): دلوُ الصور الكبيرة — إن غاب تُحفظ الصورُ في D1 (imgs)
+# [[r2_buckets]]
+# binding = "IMG_R2"
+# bucket_name = "kivo-maps"

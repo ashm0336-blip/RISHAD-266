@@ -1,0 +1,53 @@
+diff --git a/workers/parts/018-ancestry.js b/workers/parts/018-ancestry.js
+index 806f751..5bcc179 100644
+--- a/workers/parts/018-ancestry.js
++++ b/workers/parts/018-ancestry.js
+@@ -99,7 +99,10 @@ var TASK_SELF = { 3: 1, 6: 1, 11: 1, 12: 1, 20: 1, 21: 1 };
+ var TASK_ST = { pending: 1, in_progress: 1, done: 1, declined: 1 };
+ function selfTaskOnly(A, newJson, curJson) {
+   var a = parseJson(curJson, null), b = parseJson(newJson, null);
+-  if (!isObj(a) || !isObj(b) || !A.u.ekey) return false;
++  /* KIVO_264 · KIVO-Tasks (الرقعة 06): كتابةُ الذات على مخزن المهام من المسار الذاتي وحده (POST /api/me/tasks/act — 062c يسِم الفاعلَ في الخادم
++     A.__tkSelf ولا يصل إليه مدخلٌ من الطلب). الحفظُ الخامّ /api/save ممّن يقرأ المخزن (task.view) كان يصنع «منجزة» وأداءً وطوابعَ بلا سياسة إثبات
++     ولا مراجِع (ق2 · ق3) — يُرفض الآن ما لم يملك صاحبُه مفاتيحَ الفعل نفسَها */
++  if (!isObj(a) || !isObj(b) || !A.u.ekey || !A.__tkSelf) return false;
+   var ks = {}, k, hits = 0;
+   Object.keys(a).forEach(function (x) { ks[x] = 1; }); Object.keys(b).forEach(function (x) { ks[x] = 1; });
+   for (k in ks) {
+diff --git a/workers/parts/045-permv2.js b/workers/parts/045-permv2.js
+index 8e4dd3d..4853a77 100644
+--- a/workers/parts/045-permv2.js
++++ b/workers/parts/045-permv2.js
+@@ -78,7 +78,8 @@ function permv2Bind(A, k, newVal, curVal, ctx, v) {
+   var P = parseKey(k), E = entOf(k);
+   var a = curVal == null ? parseJson((E && E.empty) || 'null', null) : parseJson(curVal, null), b = parseJson(newVal, null);
+   if (b === null) { ST.skipped.shape++; return; }
+-  var cx = { dept: P.dept, actor: { id: A.u.id, ekey: A.u.ekey, role: A.u.role }, imp: !!(ctx && ctx.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(ctx && ctx.restore),
++  /* KIVO_264 · KIVO-Tasks (الرقعة 06): التصنيفُ الظلّي يرى ما يراه الإنفاذ — هويةُ الذات على مخزن المهام من المسار الذاتي وحده (059 enfTaskSelfEkey) */
++  var cx = { dept: P.dept, actor: { id: A.u.id, ekey: rn === 'bassam_tasks_v1' && !A.__tkSelf ? null : A.u.ekey, role: A.u.role }, imp: !!(ctx && ctx.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(ctx && ctx.restore),
+              op: (ctx && ctx.op && ctx.op.op) || '' };   /* Phase 3: علامةُ العملية الصريحة (للتصنيف الظلّي فقط) */
+   var res = KIVO_GUARDS.classify(rn, a, b, cx); if (!res) { ST.uncovered++; return; }
+   if (cx.restore) ST.flags.restoreBatches++;
+diff --git a/workers/parts/059-protected-ops-2.js b/workers/parts/059-protected-ops-2.js
+index 97bd4ed..f5360a9 100644
+--- a/workers/parts/059-protected-ops-2.js
++++ b/workers/parts/059-protected-ops-2.js
+@@ -78,11 +78,17 @@ function enfPlugOps(res) {
+   }
+   return res;
+ }
++/* KIVO_264 · KIVO-Tasks (الرقعة 06): هويةُ الذات التي يراها مصنِّفُ الحرّاس — على مخزن المهام من المسار الذاتي وحده (وفي غيره كما كانت) */
++function enfTaskSelfEkey(A, rn) { return rn === 'bassam_tasks_v1' && !A.__tkSelf ? null : A.u.ekey; }
+ /* القرارُ الكامل لكتابةٍ واحدة على موردٍ إداريّ (أو منصّيّ بسياق) — heldFn(key) يُعطى للموارد المنصّية */
+ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
+   opts = opts || {};
+   var ix = enfIx(), held = opts.held || function (key) { return enfHeld(A, d, key); };
+-  var cx = { dept: d, actor: { id: A.u.id, ekey: A.u.ekey, role: A.u.role }, imp: !!(X && X.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(X && X.restore), op: (X && X.op && X.op.op) || '' };
++  /* KIVO_264 · KIVO-Tasks (الرقعة 06): «self.task.respond» للمسار الذاتي وحده (POST /api/me/tasks/act — 062c يسِم الفاعلَ في الخادم A.__tkSelf
++     ولا يصل إليه مدخلٌ من الطلب). مصنِّفُ المهام في الوحدة المرجعية 006 (classifyTaskRow — لا تُمسّ: 004–016 = v24.9 بايتاً) يعدّ الصفَّ
++     «ذاتياً» حين actor.ekey = العمود 14؛ فلا يُعطى هويةَ الذات على مخزن المهام إلا من ذلك المسار — والحفظُ الخامّ /api/save يُصنَّف بمفاتيح
++     الفعل نفسِها (task.accept · task.finish · task.evidence …) بلا بديل «الذات» — كان يصنع «منجزة» بأداءٍ وطوابعَ بلا سياسة إثبات ولا مراجِع */
++  var cx = { dept: d, actor: { id: A.u.id, ekey: enfTaskSelfEkey(A, rn), role: A.u.role }, imp: !!(X && X.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(X && X.restore), op: (X && X.op && X.op.op) || '' };
+   var res = KIVO_GUARDS.covers.indexOf(rn) !== -1 ? enfPlugOps(KIVO_GUARDS.classify(rn, a, b, cx)) : null;
+   var real = [], anyG = [], alt = [], i, j, key;
+   if (res) {

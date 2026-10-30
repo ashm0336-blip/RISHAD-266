@@ -1,0 +1,10 @@
+
+/* صف كروت إحصائيات ينزلق أفقياً في سطر واحد — بطلب المستخدم */
+.bs-statscroll{display:flex;flex-wrap:nowrap;gap:12px;overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-behavior:smooth;padding-bottom:2px}
+.bs-statscroll::-webkit-scrollbar{height:0;display:none}
+.bs-statscroll>*{flex:1 0 auto;min-width:248px;box-sizing:border-box}
+/* التلاشي الذكي: قناعٌ يخفت على الجهة التي وراءها كروت — يُضبط بـ data-ov من JS */
+.bs-statscroll[data-ov="r"]{ -webkit-mask-image:linear-gradient(to left,#000 calc(100% - 42px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 42px),transparent)}
+.bs-statscroll[data-ov="l"]{ -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 42px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 42px),transparent)}
+.bs-statscroll[data-ov="lr"]{ -webkit-mask-image:linear-gradient(to right,transparent,#000 42px,#000 calc(100% - 42px),transparent);mask-image:linear-gradient(to right,transparent,#000 42px,#000 calc(100% - 42px),transparent)}

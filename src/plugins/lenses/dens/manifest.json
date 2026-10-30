@@ -1,0 +1,36 @@
+{
+ "schema": 1,
+ "kind": "lens",
+ "key": "dens",
+ "name": "الكثافة",
+ "label": "عدسة الكثافة",
+ "order": 6,
+ "owner": "lens.dens",
+ "hosts": ["plan", "daily/rounds"],
+ "keys": {
+  "own": ["lens.dens.enable", "lens.dens.view", "lens.dens.threshold.configure", "lens.dens.indicators.view", "lens.dens.reading.record"],
+  "managedRefs": [],
+  "reserved": ["lens.dens.report.view"]
+ },
+ "resources": {
+  "elementFields": [
+   {
+    "cols": ["zones"],
+    "fields": ["count", "pc"],
+    "op": "lens.dens.reading.record"
+   }
+  ],
+  "floorFields": [
+   {
+    "field": "dens",
+    "op": "lens.dens.threshold.configure"
+   }
+  ],
+  "indicators": ["daily/kpiOcc"]
+ },
+ "guards": {
+  "enable": "lens.dens.enable",
+  "resources": ["bassam_plan_v1", "bassam_rounds_v1"]
+ },
+ "tests": ["tests/unit/plugins.test.mjs", "cfbench/k256perm.mjs", "cfbench/p411scope.mjs", "cfbench/p41term.mjs"]
+}
