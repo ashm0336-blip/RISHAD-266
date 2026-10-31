@@ -55,6 +55,7 @@
       <svg sc-camel-view-box="0 0 1000 600" sc-camel-preserve-aspect-ratio="xMidYMid meet" data-i="i-b9c83585"></svg>
       <sc-if value="{{mapHasMine}}" hint-placeholder-val="{{ false }}"><div class="pf-mine" style="left:{{mapMine.lx}}%;top:{{mapMine.ty}}%">{{mapMine.label}}</div></sc-if>
       </sc-if>
+      <sc-if value="{{mapUnavailable}}" hint-placeholder-val="{{ false }}"><div class="pf-mapmsg">الخريطة غير متاحة بصلاحياتك الحالية<span>تُعرض بيانات إسنادك المتاحة في بطاقة موقعك اليوم</span></div></sc-if>
       <sc-if value="{{mapNoRound}}" hint-placeholder-val="{{ false }}"><div class="pf-mapmsg">لا جولة لليوم بعد<span>تُنشأ جولة اليوم من المتابعة اليومية أو عند سحب التقرير اليومي</span></div></sc-if>
       <sc-if value="{{mapEmpty}}" hint-placeholder-val="{{ false }}"><div class="pf-mapmsg">جولة اليوم بلا أبواب أو معالم مرسومة</div></sc-if>
     </div>
@@ -164,6 +165,7 @@
       <svg sc-camel-view-box="0 0 1000 600" sc-camel-preserve-aspect-ratio="xMidYMid meet" data-i="i-b9c83585"></svg>
       <sc-if value="{{mapHasMine}}" hint-placeholder-val="{{ false }}"><div class="pf-mine" style="left:{{mapMine.lx}}%;top:{{mapMine.ty}}%">{{mapMine.label}}</div></sc-if>
       </sc-if>
+      <sc-if value="{{mapUnavailable}}" hint-placeholder-val="{{ false }}"><div class="pf-mapmsg">الخريطة غير متاحة بصلاحياتك الحالية<span>تُعرض بيانات إسنادك المتاحة في بطاقة موقعك اليوم</span></div></sc-if>
       <sc-if value="{{mapNoRound}}" hint-placeholder-val="{{ false }}"><div class="pf-mapmsg">لا جولة لليوم بعد</div></sc-if>
       <sc-if value="{{mapEmpty}}" hint-placeholder-val="{{ false }}"><div class="pf-mapmsg">جولة اليوم بلا أبواب أو معالم مرسومة</div></sc-if>
     </div>

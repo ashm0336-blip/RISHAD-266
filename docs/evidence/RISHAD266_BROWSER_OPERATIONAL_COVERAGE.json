@@ -1,8 +1,8 @@
 {
   "recordType": "real-browser-operational-coverage",
   "schemaVersion": 1,
-  "updatedAtRiyadh": "2026-10-31T18:20:18.587067+03:00",
-  "status": "387d_private_profile_gui_accepted_task_live_and_known_denial_fix_local_accepted_preview_pending",
+  "updatedAtRiyadh": "2026-10-31T19:51:46.962276+03:00",
+  "status": "aad5_private_tasks_known_denial_gui_accepted_scope_saved_map_message_local_accepted_density_400_under_repair",
   "target": "https://test.kivo-d81.pages.dev",
   "sourceCommitAtAttempt": "5a017a0722595eadf9efaac4af63eabddeb2e025",
   "browserContext": {
@@ -15,7 +15,7 @@
     "visibleOwnerRole": "مدير النظام",
     "registeredDepartmentsVisible": 2,
     "controlMode": "Installed Chrome, ephemeral headed context, browser sandbox enabled; user completed login manually",
-    "currentPreviewVerification": "CF metadata and strict read-only checks confirm current cc0ad3db/c21. All four original c21 GUI targets passed. Source940c691 is pushed; the private-profile fix is not yet published.",
+    "currentPreviewVerification": "CF strict read-only before/predeploy/after confirms aad5e07e/89478237 schema10; subsequent GUI writes are separately recorded.",
     "registeredDepartmentsAtEmptyContextRetest": 0,
     "registeredDepartmentsVisibleMeaning": "Two synthetic departments now exist. A separate no-grant staff session exposes only its own department in the header; no forced selector click was used.",
     "contextResumeReport": {
@@ -37,13 +37,13 @@
     "apiTestsSubstituted": 0,
     "newTestDataCreated": true,
     "cloudWrites": null,
-    "newDeployments": 3,
+    "newDeployments": 4,
     "counterPolicy": "No unified GUI page/action or business-write count is claimed. Historical5 writes remain labeled history. Source44 includes11 poll cases; emitted11 repeats those11. Later targeted groups are separate reruns/added coverage, never a claimed full suite.",
     "confirmedEmptyContextScenarios": 5,
     "emptyContextScopedRequests": 0,
     "confirmedBusinessWriteActions": null,
-    "bugCounterMeaning": "Historical nine retained in earlier snapshots. Additional private-task lag and known-denial feedback are tracked separately here; no new unified total or full-page acceptance is claimed.",
-    "currentReleaseGuiRetestsAccepted": 4
+    "bugCounterMeaning": "Historical counts stay historical; separate findings have no unified total or full-page acceptance.",
+    "currentReleaseGuiRetestsAccepted": null
   },
   "blocker": {
     "status": "bypassed_with_real_browser_control",
@@ -1075,113 +1075,105 @@
         }
       ],
       "meaning": "Historical observations and then-current private file pins. Mutable journals now have newer hashes; the old pins are not claims about their current bytes."
+    },
+    {
+      "at": "2026-10-31T18:20:18.587067+03:00",
+      "status": "387d_private_profile_gui_accepted_task_live_and_known_denial_fix_local_accepted_preview_pending",
+      "currentRelease": {
+        "deployment": "387d8055-e570-4d7c-b817-f663740a6f58",
+        "commit": "cffa284abaac076e0f6daeb6e4f74dbfd5ad445f",
+        "schema": 10,
+        "alias": "https://test.kivo-d81.pages.dev",
+        "guiStatus": "private-profile live retest passed; newer local task/feedback candidate not yet deployed",
+        "proof": {
+          "path": ".cache/ui-live-audit/profile-live-release/deployment-confirmed.json",
+          "sha256": "be7fcafdba41e7e267e545bb0d0fbe6dceadb2b74407f2d458cc13dbbe32d537"
+        }
+      },
+      "linkedOperationalBatch": {
+        "proof": {
+          "path": ".cache/ui-live-audit/profile-live-release/linked-operational-ui.json",
+          "sha256": "d5d4d5c54a2183ba12b8a4220c98e0cfb3192f33f86d9df2be0ec413eba5e0e4"
+        },
+        "taskLag": {
+          "path": ".cache/ui-live-audit/profile-live-release/task-private-live-lag.json",
+          "sha256": "a51c28bb35db5d6bb0ce5a6458622808a39f44998e34439c47029e4561562f61"
+        },
+        "scopeDenial": {
+          "path": ".cache/ui-live-audit/profile-live-release/round-zone-scope-denial.json",
+          "sha256": "d97558f69827068324c2ebee049e18e2f47bbc20cee530d3fcc422004c3cf3e8"
+        },
+        "scopeProposal": {
+          "path": ".cache/ui-live-audit/profile-live-release/synthetic-site-scope-proposal.json",
+          "sha256": "7139396b517a0fd992ec381b1f6891706fad4e843789360264d46a65855848d6"
+        },
+        "scopeSaveApprovedByUser": true,
+        "scopeSaved": true,
+        "ownerAccountGrantsChanged": false,
+        "taskCompletionReviewPending": false,
+        "cleanupPending": true,
+        "scopeSavedProof": {
+          "path": ".cache/ui-live-audit/private-tasks-live-release/approved-scope-saved.json",
+          "sha256": "a06aad0be030861d8e3ad0f33c2aae87f3e71a990cc701fc7d43f58aeb07be8b"
+        },
+        "taskCompletionProof": {
+          "path": ".cache/ui-live-audit/private-tasks-live-release/browser-task-lifecycle.json",
+          "sha256": "8c8e5876fedd69325e0c2e68ef6dace64ae33066253c6c2fb9f9d90b8a637f80"
+        },
+        "roundGeometryAssignmentReloadConfirmed": true,
+        "densitySaveAccepted": false
+      },
+      "newLocalFixAcceptance": {
+        "taskCommitPushed": "2f7d09156c04923b85417a8355e1fb1098f8bd8c",
+        "taskPhaseUniqueComposite": 15,
+        "knownDenialIntegratedCases": 17,
+        "overlap": 5,
+        "scopeGuardCase": 1,
+        "fullSuiteRun": false,
+        "previewRetestPending": false,
+        "evidence": [
+          {
+            "path": ".cache/ui-live-audit/private-tasks-live-fix/local-freeze.json",
+            "sha256": "9ff0db5a8c22fc96e22f2b197b141c6ec258dfce9df5908dbd9cc29e05cfe840"
+          },
+          {
+            "path": ".cache/ui-live-audit/known-denial-fix/local-freeze.json",
+            "sha256": "2bde3560cf6e8e38af725b3fbe2f1c3bf88db58adb03ae85c651e74289620cf8"
+          },
+          {
+            "path": ".cache/ui-live-audit/round-department-scope-first.tap",
+            "sha256": "dc4558cba219048a9efea45a9cf11f35aeda672dc1d590624e777e1d5476d8b7"
+          }
+        ],
+        "build": {
+          "files": 133,
+          "budgetsPass": 16,
+          "workerGzip": 440598,
+          "workerCap": 441000,
+          "manifest": {
+            "path": ".cache/ui-live-audit/private-tasks-live-fix/build-final.build.json",
+            "sha256": "80b5c07fbda107a6388fc1af089a9d0177dca34be3f4c66588b562903ad4279c"
+          }
+        },
+        "check": {
+          "pass": 19,
+          "fail": 0,
+          "sourceSecretFiles": 992,
+          "buildSecretTextFiles": 122,
+          "secretFindings": 0,
+          "eslintErrors": 0,
+          "eslintWarnings": 260
+        }
+      }
     }
   ],
   "latestLocalCandidate": {
-    "name": "batch3-accepted",
-    "status": "deployed_four_targeted_gui_passes_new_profile_sync_issue_pending",
-    "commit": "c21ad68789c36f261f80959f625a43e6b06ce07b",
-    "deploymentId": "cc0ad3db-cb47-4106-8777-fee5734cd22d",
-    "schema": 10,
-    "buildManifest": ".cache/ui-live-audit/batch3-accepted/build.build.json",
-    "buildManifestSha256": "fd6d3300a055475103ae5f8d6d4e57e80d223469996522ced4bb4f8c10f44d6b",
-    "testedArtifacts": {
-      "src/api/280-server-storage.js": "05fa32f0de7c8ff04b05b9ff855e1237f6083c16ab9c7a67030615deed7d2f21",
-      "src/modules/admin/logic.js": "499570308f75b419d0a6a450d3679d7756f757ab6528ddfc35cac39e50c00fea",
-      "workers/parts/063-enf-api-and-handler.js": "d5e9c2e112ff664426292c1b4954316f23a20c076c2bf13b02ca9688ff6cd37c",
-      "workers/_worker.js": "34aa595e392cb729634e32990e0c7c4ded0cdcb60a8e18300ce56792dbd8a215",
-      "workers/parts.json": "5b253b52973d68e08987c8c07a87b3a4b47e3cbf95df8e5231138c4a74bf805f",
-      "tests/unit/admin_employee_overview.test.mjs": "c376964e1e33c4981c6f5a60170226a72f5a38770fe209c2804551ec40df5158",
-      "tests/unit/staff_weekly_rest_ui.test.mjs": "849b07279b9a44b42fe371820db0b77d070ef7e36ad4b0269fc4e58e5ccba896"
-    },
-    "groups": {
-      "poll_queue_source": {
-        "cases": 44,
-        "pass": 44,
-        "fail": 0,
-        "newCases": 11
-      },
-      "emitted_staff_poll": {
-        "cases": 11,
-        "pass": 11,
-        "fail": 0,
-        "overlapWithPollQueueSource": 11,
-        "durationMs": 16678.6155,
-        "artifact": "batch3-accepted final emitted bytes;11 repeats existing source44 cases",
-        "tap": ".cache/ui-live-audit/batch3-accepted/emitted-staff11.tap"
-      },
-      "account_atomic_ACK": {
-        "cases": 5,
-        "pass": 5,
-        "fail": 0,
-        "newCases": 4,
-        "existingMetadataCases": 1
-      },
-      "seized_category": {
-        "cases": 2,
-        "pass": 2,
-        "fail": 0,
-        "scope": "Existing category/dashboard targeted cases, not a full62 rerun"
-      },
-      "ack_foreign_final": {
-        "cases": 7,
-        "pass": 7,
-        "fail": 0,
-        "overlap": "Includes all5 ACK cases above plus two foreign-poll cases, one new and one existing. Not7 wholly additional cases."
-      },
-      "domain_remote_hooks": {
-        "cases": 3,
-        "pass": 3,
-        "fail": 0,
-        "scope": "Existing IR/SZ/AW module-host hooks, not new actual280 integration cases."
-      },
-      "employee_overview": {
-        "cases": 12,
-        "pass": 12,
-        "fail": 0,
-        "newCases": 8,
-        "existingBatchCases": 4,
-        "durationMs": 1286.1898,
-        "legacyGuard": "PriorHEAD actual Worker same fixture403; corrected only the false200 test expectation. Final403/noaggregate, no ACL change. Failed11/12 trace retained."
-      },
-      "emitted_prerequisites_export": {
-        "cases": 7,
-        "pass": 7,
-        "fail": 0,
-        "scope": "Actual final build transport/export/prerequisite integration, existing cases repeated on final artifacts."
-      }
-    },
-    "aggregateUniqueAcrossAllHistoricalAndCurrentGroups": null,
-    "counterMethod": "Source44 includes11 new poll cases. Final emitted11 repeats those11. Final ACK/foreign7 includes the earlierACK5. Other existing cases are identified per group; no total unique count across historical and current groups and no full-suite claim.",
-    "knownBaselineFailures": {
-      "cases": 6,
-      "files": [
-        "tests/unit/k264_changes.test.mjs",
-        "tests/unit/k264_readset.test.mjs"
-      ],
-      "sameTitlesAndErrorsBeforePatch": true,
-      "repairedHere": false,
-      "evidence": ".cache/ui-live-audit/staff-weekly-rest-poll-result.json"
-    },
-    "quality": {
-      "buildFiles": 133,
-      "budgetsPassed": 16,
-      "budgetChanges": 1,
-      "workerGzip": 440364,
-      "workerBudget": 441000,
-      "workerBudgetBefore": 440000,
-      "firstMeasuredBeforeBudgetChange": 440149,
-      "checkCurrentPass": 19,
-      "checkCurrentFail": 0,
-      "secretFindings": 0,
-      "sourceCandidatesScanned": 988,
-      "buildCandidatesScanned": 122,
-      "limits": "Byte-size and source gates only, not enterprise load/latency acceptance."
-    },
-    "publicationBlocker": "Owner serialization-order mismatch resolved; final code commit/Preview deployment and actual GUI correction retests remain pending.",
-    "publishedGuiRetest": false,
-    "fullSuiteClaimed": false,
-    "fullOperationalAcceptance": false
+    "area": "Private Profile map feedback",
+    "status": "local_accepted_not_published",
+    "evidence": {
+      "path": ".cache/ui-live-audit/profile-map-fix/local-freeze.json",
+      "sha256": "202edca83c82c90917f8afd7cbcea6ab56661963a0fdf20139c0e7074769fc95"
+    }
   },
   "localCandidateHistory": [
     {
@@ -1435,32 +1427,28 @@
     "limit": "Current synthetic setup deliberately changes auth-users/depts; no claim that every global document is byte-identical to the pre-setup state.",
     "strictCurrentBaselineGlobalRevision": 209
   },
-  "currentSourceCommit": "2f7d09156c04923b85417a8355e1fb1098f8bd8c",
+  "currentSourceCommit": "89478237d014f5b8baf07362c827ff213f17aa5d",
   "currentRelease": {
-    "deployment": "387d8055-e570-4d7c-b817-f663740a6f58",
-    "commit": "cffa284abaac076e0f6daeb6e4f74dbfd5ad445f",
+    "deployment": "aad5e07e-5eed-477d-a504-c25255095cbb",
+    "commit": "89478237d014f5b8baf07362c827ff213f17aa5d",
     "schema": 10,
     "alias": "https://test.kivo-d81.pages.dev",
-    "guiStatus": "private-profile live retest passed; newer local task/feedback candidate not yet deployed",
+    "guiStatus": "Known-denial and private-task live retests passed; full task workflow completed; private map feedback accepted locally but not published; density save rejected400.",
     "proof": {
-      "path": ".cache/ui-live-audit/profile-live-release/deployment-confirmed.json",
-      "sha256": "be7fcafdba41e7e267e545bb0d0fbe6dceadb2b74407f2d458cc13dbbe32d537"
+      "path": ".cache/ui-live-audit/private-tasks-live-release/deployment-confirmed.json",
+      "sha256": "fdea65df21d985f5da88f1d1cf1eb30aedda3c16b346f46b2464e1383d8acaf1"
     }
   },
   "strictCloudCheckpoint": {
-    "meaning": "Strict code-upload window only; later intentional UI writes are separate",
-    "revision": "235",
+    "meaning": "Strict code-upload window only; later intentional UI writes are separate. Counts/revisions do not compare every business row.",
+    "revision": "265",
     "unchangedBeforePredeployAfter": true,
-    "previewRetained": 11,
+    "previewRetained": 12,
     "productionRetained": 204,
     "schema": 10,
     "proof": {
-      "path": ".cache/ui-live-audit/profile-live-release/cloud-after.json",
-      "sha256": "48066c8cde240f6061a7722e7113d4db69d259573a82a0b21abfd7cf81a0d461"
-    },
-    "nextReleaseBaseline": {
-      "path": ".cache/ui-live-audit/private-tasks-live-release/cloud-before.json",
-      "sha256": "3faa7f60e8bcec6663071830ff6ca1bcb0572435012788a96c0eb9d4d90ba8de"
+      "path": ".cache/ui-live-audit/private-tasks-live-release/cloud-after.json",
+      "sha256": "2016b6d34e077ecd3138f24f4f6fa784182f8d5e96f8d3b640a7b0ddb607488a"
     }
   },
   "postDeployGuiRetests": {
@@ -1732,10 +1720,20 @@
       "sha256": "7139396b517a0fd992ec381b1f6891706fad4e843789360264d46a65855848d6"
     },
     "scopeSaveApprovedByUser": true,
-    "scopeSaved": false,
+    "scopeSaved": true,
     "ownerAccountGrantsChanged": false,
-    "taskCompletionReviewPending": true,
-    "cleanupPending": true
+    "taskCompletionReviewPending": false,
+    "cleanupPending": true,
+    "scopeSavedProof": {
+      "path": ".cache/ui-live-audit/private-tasks-live-release/approved-scope-saved.json",
+      "sha256": "a06aad0be030861d8e3ad0f33c2aae87f3e71a990cc701fc7d43f58aeb07be8b"
+    },
+    "taskCompletionProof": {
+      "path": ".cache/ui-live-audit/private-tasks-live-release/browser-task-lifecycle.json",
+      "sha256": "8c8e5876fedd69325e0c2e68ef6dace64ae33066253c6c2fb9f9d90b8a637f80"
+    },
+    "roundGeometryAssignmentReloadConfirmed": true,
+    "densitySaveAccepted": false
   },
   "newLocalFixAcceptance": {
     "taskCommitPushed": "2f7d09156c04923b85417a8355e1fb1098f8bd8c",
@@ -1744,7 +1742,7 @@
     "overlap": 5,
     "scopeGuardCase": 1,
     "fullSuiteRun": false,
-    "previewRetestPending": true,
+    "previewRetestPending": false,
     "evidence": [
       {
         "path": ".cache/ui-live-audit/private-tasks-live-fix/local-freeze.json",
@@ -1778,5 +1776,52 @@
       "eslintErrors": 0,
       "eslintWarnings": 260
     }
+  },
+  "postDeployGuiRetestsAAD5": {
+    "knownDenial": {
+      "path": ".cache/ui-live-audit/private-tasks-live-release/browser-known-denial-retest.json",
+      "sha256": "5578628c08dbf3a2f8bc67e307453e870be4ac2b4a83ed3a7e4b8192cffabdac"
+    },
+    "privateTaskIsolated": {
+      "path": ".cache/ui-live-audit/private-tasks-live-release/browser-private-task-isolated-retest.json",
+      "sha256": "89b226c1ef71f31f03d44b02ec7677f2ea56c404ca2cc0dbe96b19a55fc862c9"
+    },
+    "taskLifecycle": {
+      "path": ".cache/ui-live-audit/private-tasks-live-release/browser-task-lifecycle.json",
+      "sha256": "8c8e5876fedd69325e0c2e68ef6dace64ae33066253c6c2fb9f9d90b8a637f80"
+    }
+  },
+  "privateMapFeedbackFix": {
+    "state": "local_accepted_not_published",
+    "finding": {
+      "path": ".cache/ui-live-audit/private-tasks-live-release/private-map-access-observation.json",
+      "sha256": "e52aaaae27b95e410186b9110d821b21eceb912bd7812c6615939a17c9912874"
+    },
+    "local": {
+      "path": ".cache/ui-live-audit/profile-map-fix/local-freeze.json",
+      "sha256": "202edca83c82c90917f8afd7cbcea6ab56661963a0fdf20139c0e7074769fc95"
+    },
+    "newSourceAndEmittedCases": 2,
+    "existingOD5Cases": 1,
+    "backendGeometryOrAclChanged": false
+  },
+  "densitySaveFinding": {
+    "state": "reproduced_actual_ui_not_fixed",
+    "http": 400,
+    "err": "operations-scalar-type",
+    "draftPercent": 10,
+    "reloadConfirmedNoReading": true,
+    "evidence": {
+      "path": ".cache/ui-live-audit/private-tasks-live-release/browser-density-rejection.json",
+      "sha256": "819a5baf85935facc4118d87360495d2d30aa07b1e364a18b610de6b7ab87648"
+    },
+    "scope": "Owned synthetic zone only; no capacity or headcount invented.",
+    "rootCauseUnderReview": "Existing UI emits a prayer reading object while relational descriptor only accepts scalar."
+  },
+  "diagnosticLimits": {
+    "taskProofTooltip": "Missing native title after tooltip enhancement did not prove stale proof; actual viewer showed final note. Healthy source unchanged.",
+    "transientProfileBanner": "Did not reproduce after fresh reload; causal error not captured.",
+    "fullSuiteRerun": false,
+    "allPagesAccepted": false
   }
 }

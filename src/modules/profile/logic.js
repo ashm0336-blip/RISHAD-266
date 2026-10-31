@@ -2910,6 +2910,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
      ومفتاحُ الألوان يذكر ما يُرسم فعلاً (ألوانُ التغطية حين تُعرض) وأن الذهبيّ إسنادٌ لا تحديدٌ جغرافي ═══ */
   pfMapVals(i, bsDi, tdDiff) {
     const r = {},
+      ops = KIVO.__BS_SRV && KIVO.__BS_SRV.operations,
+      unavailable = !!(ops && ops.state("bassam_rounds_v1") === "denied" && !i.fromPlan),
       bsEls = i.mapEls.filter((t) => this.bsLensOn(t.kind));
     let _ = i.mySpot ? i.mySpot.fi : 0;
     if (!i.mySpot && bsEls.length) {
@@ -2924,10 +2926,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       me = i.mySpot,
       td = tdDiff ? i.myTodayEl : null,
       srcTxt = i.rnd ? "من جولة اليوم" : i.fromPlan ? "من التشغيل الميداني" + (i.planDraft ? " (مسودة — لم يُعتمد)" : "") : "";
-    ((r.mapHas = i.floors.length > 0 && bsEls.some((t) => t.fi === _)),
-      (r.mapNoRound = !i.rnd && !i.fromPlan),
+    ((r.mapUnavailable = unavailable),
+      (r.mapHas = !unavailable && i.floors.length > 0 && bsEls.some((t) => t.fi === _)),
+      (r.mapNoRound = !unavailable && !i.rnd && !i.fromPlan),
       (r.mapFromPlan = !!i.fromPlan),
-      (r.mapEmpty = !((!i.rnd && !i.fromPlan) || r.mapHas)),
+      (r.mapEmpty = !unavailable && !((!i.rnd && !i.fromPlan) || r.mapHas)),
       (r.mapFloor = A ? A.name || "الموقع " + (_ + 1) : i.floors.length ? "الموقع " + (_ + 1) : ""),
       (r.mapSub = [me ? me.loc || "" : i.floors.length > 1 ? KIVO.BassamCount(i.floors.length, "موقع") + (bsDi ? " · يُعرض الأكثر عجزاً" : "") : "", srcTxt].filter(Boolean).join(" · ")),
       (r.mapImg = A && A.iid ? this.pfImg(A.iid) : ""),
