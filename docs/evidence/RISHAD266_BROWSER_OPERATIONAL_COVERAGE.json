@@ -1,8 +1,8 @@
 {
   "recordType": "real-browser-operational-coverage",
   "schemaVersion": 1,
-  "updatedAtRiyadh": "2026-10-31T13:58:51.755058+03:00",
-  "status": "loader_pipeline_fix_locally_accepted_pending_second_preview_browser_retest",
+  "updatedAtRiyadh": "2026-10-31T15:55:39.591242+03:00",
+  "status": "partial_live_business_coverage_batch3_final_locally_accepted_unpublished",
   "target": "https://test.kivo-d81.pages.dev",
   "sourceCommitAtAttempt": "5a017a0722595eadf9efaac4af63eabddeb2e025",
   "browserContext": {
@@ -13,22 +13,28 @@
     "actualOwnerSessionInspected": true,
     "actualDepartmentContextInspected": true,
     "visibleOwnerRole": "مدير النظام",
-    "registeredDepartmentsVisible": 0,
+    "registeredDepartmentsVisible": 2,
     "controlMode": "Installed Chrome, ephemeral headed context, browser sandbox enabled; user completed login manually",
-    "currentPreviewVerification": "Fresh CF read verifies ebdf166c/b2f07fe/test with isolated bassam-db-preview schema10; actual owner page uses accepted hashed bundle assets."
+    "currentPreviewVerification": "Actual live actions concern published0a78cf47/code46d8faa. The final batch3-accepted candidate is locally tested, not committed or deployed at this update. Exact historical owner-row reconstruction established unchanged owner values; the baseline SHA difference was serialization order only.",
+    "registeredDepartmentsAtEmptyContextRetest": 0,
+    "registeredDepartmentsVisibleMeaning": "Two synthetic departments now exist. A separate no-grant staff session exposes only its own department in the header; no forced selector click was used."
   },
   "coverage": {
-    "pagesActuallyRead": 6,
+    "pagesActuallyRead": null,
     "uiActionsExecuted": null,
-    "applicationBugsReproduced": 4,
-    "sourceFixes": 4,
-    "uiRetestsExecuted": 4,
-    "regressionTestsRun": 101,
+    "applicationBugsReproduced": 8,
+    "sourceFixes": 8,
+    "uiRetestsExecuted": null,
+    "regressionTestsRun": null,
     "apiTestsSubstituted": 0,
-    "newTestDataCreated": false,
-    "cloudWrites": 0,
-    "newDeployments": 1,
-    "counterPolicy": "No exact total UI action/test count is claimed during execution; acceptance is recorded per scenario."
+    "newTestDataCreated": true,
+    "cloudWrites": null,
+    "newDeployments": 2,
+    "counterPolicy": "No unified GUI page/action or business-write count is claimed. Historical5 writes remain labeled history. Source44 includes11 poll cases; emitted11 repeats those11. Later targeted groups are separate reruns/added coverage, never a claimed full suite.",
+    "confirmedEmptyContextScenarios": 5,
+    "emptyContextScopedRequests": 0,
+    "confirmedBusinessWriteActions": null,
+    "bugCounterMeaning": "Eight named findings only. Last four fixes are local/unpublished; owner serialization-order difference is resolved evidence, not a credential-change defect."
   },
   "blocker": {
     "status": "bypassed_with_real_browser_control",
@@ -44,7 +50,9 @@
     "ownerEnteredCredentialsManually": true,
     "passwordFieldsRead": false,
     "authRequestsCaptured": false,
-    "sessionStateExported": false
+    "sessionStateExported": false,
+    "syntheticCredentialsInMemoryOnly": true,
+    "realOwnerCredentialReadingOrExportClaimed": false
   },
   "reportedPriorityProblem": {
     "message": "صلاحياتك لا تشمل هذا الإجراء",
@@ -58,13 +66,13 @@
     "requestAndServerReasonCaptured": true,
     "verifiedRootCause": "Actual registered department list is empty; active() invents d1; the UI sends d1; canonical server rejects unregistered departments correctly. Fix the context prerequisite, preserve real 403.",
     "fixApplied": true,
-    "fixState": "source edits under local validation; no deployed GUI retest yet"
+    "fixState": "Published loader correction passed five actual empty-context GUI scenarios; linked business audit remains partial."
   },
   "rows": [
     {
       "id": "UI-CTX-01",
       "area": "owner/session/scope",
-      "status": "reproduced",
+      "status": "empty_context_retest_passed",
       "actions": [
         "open Preview alias",
         "authenticate using existing owner",
@@ -72,12 +80,13 @@
         "navigate to each priority module and record exact message"
       ],
       "expectedEvidence": "Actual page capture plus method/route/status/error code where available, with credentials redacted.",
-      "observed": "Owner visible; actual departments panel shows zero registered departments; empty selector still called the context إدارة."
+      "initialObserved": "Owner visible; actual departments panel shows zero registered departments; empty selector still called the context إدارة.",
+      "observed": "Five real GUI routes show the registered-department prerequisite with zero new scoped requests before test setup."
     },
     {
       "id": "UI-IR-01",
       "area": "irshad",
-      "status": "pending_after_context_fix",
+      "status": "create_edit_reload_search_filter_excel_main_kpi_passed_cleanup_pending",
       "actions": [
         "open records",
         "create one current-day synthetic report if existing form prerequisites permit",
@@ -88,12 +97,53 @@
         "export filtered Excel",
         "view IR indicator with matching scope/range"
       ],
-      "observed": "Actual UI denied with HTTP403 under invented d1. Business create/edit/save/export remain untested."
+      "initialObserved": "Actual UI denied with HTTP403 under invented d1. Business create/edit/save/export remain untested.",
+      "observed": "Actual owner UI created a report for the scheduled employee with Arabic translation1, edited the same report to brochures2, and retained it after full reload. Positive/negative search, shift-filter negative/clear and filtered Excel passed. Main KPI shows1 report, translation1, brochures2,total3 with HTTP200.",
+      "pendingActions": [
+        "cleanup",
+        "remaining controls, detailed chart combinations and broader data/role cases"
+      ],
+      "confirmedReads": {
+        "count": 3,
+        "views": [
+          "catalogs",
+          "calendar",
+          "records"
+        ],
+        "http": 200,
+        "origin": "Actual owner GUI navigation; not a substituted API acceptance run."
+      },
+      "passedActions": [
+        "create with existing current-month/shift prerequisites",
+        "edit same confirmed report",
+        "full reload retains edit",
+        "positive and negative search HTTP200",
+        "negative shift filter and clear",
+        "filtered XLSX ZIP/CRC and matching own row",
+        "main KPI reports1/translation1/brochures2/total3"
+      ],
+      "exportProof": {
+        "validXlsxZip": true,
+        "crcValid": true,
+        "worksheetRows": 2,
+        "matchingSyntheticEmployeeRows": 1,
+        "translation": 1,
+        "brochures": 2,
+        "total": 3
+      },
+      "indicatorProof": {
+        "reports": 1,
+        "translation": 1,
+        "brochures": 2,
+        "total": 3,
+        "dashboardHTTP": 200,
+        "scope": "Observed main counters, not every detailed chart."
+      }
     },
     {
       "id": "UI-SZ-01",
       "area": "seized",
-      "status": "pending_after_context_fix",
+      "status": "create_edit_reload_search_export_main_kpi_passed_cleanup_pending",
       "actions": [
         "open records",
         "create one synthetic no-photo report with one item",
@@ -104,47 +154,213 @@
         "export filtered Excel",
         "view SZ indicator with matching scope/range"
       ],
-      "observed": "Actual UI denied with HTTP403 under invented d1. Business create/edit/save/export remain untested."
+      "initialObserved": "Actual UI denied with HTTP403 under invented d1. Business create/edit/save/export remain untested.",
+      "observed": "The same no-photo record persisted after edit/reload; server-backed positive/negative search and action filter/clear passed. Filtered XLSX ZIP/CRC contains one matching own record with the edited note. Main KPI counters show one report and two pieces with dashboard HTTP200.",
+      "passedActions": [
+        "create one no-photo record",
+        "edit same confirmed record",
+        "quantity one to two",
+        "edit note",
+        "full reload and reopen ledger",
+        "positive and negative server-backed search",
+        "action filter yields zero then clear restores one own row",
+        "filtered XLSX ZIP/CRC and one matching own row",
+        "edited note present in Excel",
+        "main KPI one report/two pieces with dashboard HTTP200",
+        "two owner pages: confirmed writer200/ok1; stale writer409 seized-conflict preserves draft",
+        "repeat stale action makes0 POST; explicit reviewed confirmed version loads"
+      ],
+      "pendingActions": [
+        "cleanup",
+        "remaining controls and detailed chart review"
+      ],
+      "exportProof": {
+        "validXlsxZip": true,
+        "crcValid": true,
+        "worksheetRows": 2,
+        "matchingOwnRows": 1,
+        "editedNotePresent": true
+      },
+      "indicatorProof": {
+        "reports": 1,
+        "quantity": 2,
+        "dashboardHTTP": 200,
+        "scope": "Main counters only; detailed charts are not fully accepted."
+      },
+      "casProof": {
+        "twoOwnerPages": true,
+        "confirmedWriterHTTP": 200,
+        "staleWriterHTTP": 409,
+        "staleError": "seized-conflict",
+        "draftPreserved": true,
+        "repeatedStalePosts": 0,
+        "explicitReviewedCurrentLoaded": true
+      }
     },
     {
       "id": "UI-AW-01",
       "area": "award",
-      "status": "pending_after_context_fix",
+      "status": "wizard_create_status_approve_reload_search_passed_cleanup_pending",
       "actions": [
         "open nomination/results/documents tabs",
         "inspect real required fields",
-        "create one synthetic nomination only if no image/storage action is required",
+        "create one synthetic nomination only after verifying the existing form prerequisites and storage path, without R2 activity",
         "wait for confirmed save",
         "reload and open details",
         "filter results",
         "change status only if the current policy allows"
       ],
-      "stopCondition": "If pictures/signatures are mandatory, record the requirement and stop that create path; do not upload or bypass.",
-      "observed": "Actual UI denied with HTTP403 under invented d1. Business create/edit/save/export remain untested."
+      "stopCondition": "Stop on an actual prohibited R2 upload/mutation/deletion. This run observed0 R2 requests; existing inline data URLs use D1. Do not generalize that observation to other image paths.",
+      "initialObserved": "Actual UI denied with HTTP403 under invented d1. Business create/edit/save/export remain untested.",
+      "observed": "The actual five-stage nomination wizard, required declaration validation and ineligibility stopping Next without POST were exercised. Synthetic inline signatures were transported to D1; create200/ok1 persisted after reload, positive/negative search passed, approved status200/ok1 persisted after reload. Observed R2 requests0.",
+      "sourceInspection": {
+        "frontend": "src/modules/award/logic.js FileReader/readAsDataURL and canvas toDataURL",
+        "backend": "workers/parts/019m-award.js AW_FIELDS maps pic/sigEmp/sigBy to typed text columns",
+        "runtimeAcceptanceClaimed": true,
+        "runtimeAcceptanceScope": "Only the explicit wizard/create/approve/reload/search actions above."
+      },
+      "passedActions": [
+        "five-stage existing wizard",
+        "required declaration validation",
+        "ineligible No prevents next/POST",
+        "synthetic inline signatures to existing D1 fields",
+        "score+0.5 twice",
+        "create200/ok1",
+        "reload persisted nomination",
+        "positive and negative search",
+        "approve200/ok1 under existing policy",
+        "reload approved status"
+      ],
+      "pendingActions": [
+        "cleanup",
+        "remaining editable fields, controls and role cases",
+        "export not tested: no export control observed"
+      ],
+      "r2RequestsObserved": 0
     },
     {
       "id": "UI-ACL-01",
       "area": "separate limited-role sessions",
-      "status": "pending_after_context_fix",
+      "status": "isolated_no_grant_routes_scope_header_and_cross_department_server_denial_passed_positive_grants_pending",
       "actions": [
         "use isolated manager and staff sessions scoped to the synthetic department",
         "verify actual allowed reads and denied writes",
         "check off-department data is not exposed",
         "confirm visible controls match granted actions"
       ],
-      "guard": "No existing owner account/permission change, silent grant or automatic default account."
+      "guard": "Existing guards and grants remain. No owner-value change was found; exact accepted-row reconstruction identifies serialization order only.",
+      "observed": "One authorized synthetic staff account logged in in a separate context with no page grants. Irshad, Seized, Award and sysadmin/overview each redirected to profile with0 business requests. With two registered synthetic departments, only the accessible own department is exposed in the header. A natural isolated-staff Operations read with only the scope changed to the other synthetic department reached the real server: HTTP200/ok1, resources0, denied11; credentials and response were not substituted.",
+      "passedActions": [
+        "separate-context synthetic staff login",
+        "no grants visible",
+        "four denied routes redirect to profile",
+        "zero business fetches for those four routes",
+        "other registered synthetic department absent from visible scope header",
+        "other-department natural read: real HTTP200 with0 resources and11 denials"
+      ],
+      "pendingActions": [
+        "authorized positive page grants and reads",
+        "manager role and write-control matrix",
+        "broader off-department resource and write matrix under explicitly granted own-department actions"
+      ],
+      "deniedRouteCases": 4,
+      "businessRequestsInDeniedRouteCases": 0,
+      "positiveRoleGrantsTested": false,
+      "crossDepartmentProof": {
+        "http": 200,
+        "ok": 1,
+        "resourcesReturned": 0,
+        "deniedCount": 11,
+        "responseNotMocked": true,
+        "credentialsUnchanged": true,
+        "limit": "One real request scope tamper; not a complete ACL matrix. Earlier403-wait probe was incomplete and is not acceptance."
+      }
     },
     {
       "id": "UI-SYNC-01",
       "area": "reload/navigation/synchronization",
-      "status": "pending_after_context_fix",
+      "status": "reload_passed_weekly_rest_live_poll_failed_local_fix_unpublished",
       "actions": [
         "navigate away/back after confirmed save",
         "reload",
         "verify saved row and filters",
         "check another authorized session reflects confirmed changes",
         "verify existing draft behavior when leaving an unfinished form"
+      ],
+      "observed": "Owner reloads retained employee, edited Seized/Irshad records and Award approved state. Sunday rest saved, but Monday after its ACK failed before POST with review-required. That visible-poll path was reproduced on source and actual old emitted assets, fixed locally and tested; corrected live synchronization remains pending publication. Separately, actual Seized two-owner-page CAS rejection/draft preservation and explicit review succeeded; that does not accept the unpublished weekly-rest correction."
+    },
+    {
+      "id": "UI-DEPT-01",
+      "area": "synthetic department setup",
+      "status": "create_passed_cleanup_pending",
+      "passedActions": [
+        "create two synthetic departments through actual owner UI; private journal retains their identities"
+      ],
+      "cleanupPending": true
+    },
+    {
+      "id": "UI-EMP-01",
+      "area": "employees",
+      "status": "create_edit_search_excel_passed_cleanup_pending",
+      "passedActions": [
+        "create name-only synthetic employee with HTTP200/ok1",
+        "full reload retains created row and department",
+        "edit name with HTTP200/ok1",
+        "positive and negative search",
+        "download filtered Excel and verify XLSX ZIP/CRC with one matching own row"
+      ],
+      "businessWriteActionsConfirmed": 2,
+      "exportProof": {
+        "validXlsxZip": true,
+        "crcValid": true,
+        "worksheetRows": 2,
+        "matchingOwnRows": 1
+      },
+      "cleanupPending": true,
+      "accountActivation": "Synthetic staff account exists and isolated login succeeded. Repeated legacy ACK requests were observed; page was closed to stop the loop. The local fix is not yet published or retested live."
+    },
+    {
+      "id": "UI-STAFF-01",
+      "area": "current-month staffing/weekly rest",
+      "status": "month_shift_sunday_saved_monday_live_failure_local_fix_unpublished",
+      "passedActions": [
+        "create current-month empty schedule",
+        "assign existing employee to first shift",
+        "Sunday rest POST200, chip and persisted own-profile display"
+      ],
+      "observed": "The popup intentionally offers weekly days, not a day-date grid. Counts represent scheduled employees. Monday after Sunday ACK produced no POST and a failed-save toast; no page error was recorded.",
+      "pendingActions": [
+        "published fixed poll path recheck",
+        "sequential second rest day and maximum2 through GUI",
+        "cleanup"
       ]
+    },
+    {
+      "id": "UI-ACCOUNT-01",
+      "area": "synthetic staff activation",
+      "status": "account_created_login_passed_legacy_ack_loop_local_fix_unpublished",
+      "observed": "Staff account creation was confirmed in Admin and by separate login. Repeated legacy account-save requests continued despite HTTP200. Closing the page stopped the repeated requests. Source no-op revision/ACK remainder fixes pass locally; live corrected activation is pending.",
+      "pendingActions": [
+        "published ACK fix recheck with no repeated save loop",
+        "review synthetic-scope cleanup"
+      ]
+    },
+    {
+      "id": "UI-ADMIN-METRIC-01",
+      "area": "Admin overview employee count",
+      "status": "live_observed_zero_defect_local_fixed_gui_retest_pending",
+      "observed": "Root observed0 employees in the global overview while the selected synthetic department had1 employee. Source used retired per-department localStorage employee values. The canonical D1 aggregate and actual Admin adVals regression now pass locally.",
+      "fix": "One scoped aggregate in the existing overview batch counts accepted object/string employee entries and matches staff accounts by department+canonical identity. Unknown/loading/error shows no invented zero; failed refresh invalidates memo. Existing super-only guard is unchanged.",
+      "localProof": ".cache/ui-live-audit/admin-employee-overview-freeze.json",
+      "pendingActions": [
+        "publish candidate and retest actual overview count, loading/error and retained account totals",
+        "broader data-volume/performance testing not claimed"
+      ],
+      "actualGuiBeforeProof": {
+        "path": ".cache/ui-live-audit/admin-employee-count-before.json",
+        "screenshotPath": ".cache/ui-live-audit/admin-employee-count-before.png",
+        "scope": "Old published GUI count0 with one known synthetic employee; not corrected-candidate GUI acceptance."
+      }
     }
   ],
   "otherPages": {
@@ -152,9 +368,10 @@
     "observed": [
       "Global admin overview and departments",
       "KPIs readiness, embedded IR and SZ indicators",
-      "Daily statistics actual form and calendar read only"
+      "Daily statistics actual form and calendar read only",
+      "Current-month schedule, first shift and Sunday rest; isolated staff profile/no-grant route denial"
     ],
-    "reason": "Page opening and control inspection are not functional acceptance. Current batch fixes reproduced context and false-empty failures first."
+    "reason": "Explicit partial IR/SZ/Award/employee actions are recorded above. No-grant role denial is partial ACL coverage; broader permissions, synchronization, remaining controls and cleanup are pending."
   },
   "coverageRecordDiscovery": {
     "currentBrowserLedgerFoundBeforeThisRun": false,
@@ -177,10 +394,11 @@
     "hypothesesAreNotReproducedBugs": true
   },
   "resumeOrder": [
-    "Complete targeted source regressions and quality gates",
-    "Verify schema10 Preview isolation and unchanged owner/production/R2; seal and publish tested develop commit to test only",
-    "Repeat actual zero-department owner scenarios in deployed browser",
-    "Create small isolated synthetic department and exercise linked records from UI; limited role sessions and remaining pages follow"
+    "Root records final code commit and Preview deployment only after current gates; no publication is claimed here.",
+    "Retest published sequential weekly rest through visible polling and account activation without a repeated save loop.",
+    "Retest the published Admin employee count and Seized category heading; prior CRUD/export/main counters remain scoped evidence.",
+    "Continue explicitly authorized positive-role/read/write and off-department matrix; preserve real no-grant and single cross-department denial results.",
+    "Review owned synthetic cleanup and remaining controls; local VM/HTTP tests are not GUI acceptance."
   ],
   "boundaries": {
     "productionModified": false,
@@ -190,7 +408,10 @@
     "ownerOrGrantsModified": false,
     "resetOrFullRestoreExecuted": false,
     "bulkDeleteExecuted": false,
-    "externalNotificationsSent": false
+    "externalNotificationsSent": false,
+    "protectedStateVerifiedUnchangedAt": "Owner values matched accepted historical state by exact reconstruction at12:22:17UTC; grants/perms/platform/gdepts and Prod/R2 configuration match historical evidence in the12:39:49UTC predeploy snapshot. Auth-users/departments include the explicitly authorized synthetic setup.",
+    "syntheticDataCleanupPending": true,
+    "currentOwnerAndPasswordIntegrity": "verified_values_same_sha_difference_due_only_to_serialization_order; no credential value or individual hash published"
   },
   "documentationReference": "https://learn.chatgpt.com/docs/windows/windows-sandbox",
   "referenceLimit": "General MXC documentation; no specific repair for this exact observed error was established.",
@@ -243,7 +464,12 @@
       ],
       "observed": "403 domain-denied for d1; source active() fallback invents an unregistered scope",
       "fix": "Explicit registered-department context and declared prerequisite before preload/component; defensive transport guards; no server guard or owner grant change",
-      "publishedRetest": "b07 blocks invalid requests but failed prerequisite presentation because emitted loader omitted hooks; second candidate pending"
+      "publishedRetest": {
+        "deployment": "0a78cf47",
+        "passed": true,
+        "scope": "Five empty-context scenarios; zero scoped requests. Linked record and role audit remains partial."
+      },
+      "publishedRetestBeforeLoaderCorrection": "b07 blocks invalid requests but failed prerequisite presentation because emitted loader omitted hooks; second candidate pending"
     },
     {
       "id": "GUI-EMPTY-02",
@@ -254,7 +480,12 @@
       ],
       "observed": "Read failure displays empty/zero business panels or an unready wizard",
       "fix": "Require complete confirmed scope-bound read data before presenting business panels; preserve denial message and draft",
-      "publishedRetest": "b07 blocks invalid requests but failed prerequisite presentation because emitted loader omitted hooks; second candidate pending"
+      "publishedRetest": {
+        "deployment": "0a78cf47",
+        "passed": true,
+        "scope": "Five empty-context scenarios; zero scoped requests. Linked record and role audit remains partial."
+      },
+      "publishedRetestBeforeLoaderCorrection": "b07 blocks invalid requests but failed prerequisite presentation because emitted loader omitted hooks; second candidate pending"
     },
     {
       "id": "GUI-ADMIN-03",
@@ -285,7 +516,63 @@
       "observed": "After published reload: visible scope says no department, Irshad wrongly says session changed. Public loaded030 has no __dcPageContext or __dcBeforePage at all.",
       "verifiedRootCause": "tools/build.py lazy_loader reconstructs the loader from fixed header/maps and lazy guard, dropping actual source tail that defines prerequisites and operations preload. Source-only VM tests missed emitted integration.",
       "fix": "Official lazy build preserves the actual source tail exactly once; equality gate requires the emitted tail before reconstructing source. No copied hooks or runtime compatibility layer.",
-      "publishedRetest": "pending second Preview"
+      "publishedRetest": {
+        "deployment": "0a78cf47",
+        "passed": true,
+        "scope": "Five empty-context scenarios; zero scoped requests. Linked record and role audit remains partial."
+      },
+      "publishedRetestBeforeLoaderCorrection": "pending second Preview"
+    },
+    {
+      "id": "GUI-SZ-CATEGORY-05",
+      "areas": [
+        "Seized indicator category heading"
+      ],
+      "observed": "Wrong category heading total with canonical action ordering; existing row/known-location totals differ.",
+      "fixState": "local2/2_passed_not_published",
+      "publishedRetest": {
+        "passed": false,
+        "meaning": "Pending; no new GUI acceptance claimed."
+      }
+    },
+    {
+      "id": "GUI-STAFF-POLL-06",
+      "areas": [
+        "weekly rest",
+        "Operations live polling"
+      ],
+      "observed": "Sunday ACK followed by visible own-change polling invalidated typed state; second Monday command failed before POST.",
+      "fixState": "local_source44_and_emitted11_passed_not_published",
+      "publishedRetest": {
+        "passed": false,
+        "meaning": "Pending; no new GUI acceptance claimed."
+      }
+    },
+    {
+      "id": "GUI-ACCOUNT-ACK-07",
+      "areas": [
+        "synthetic staff account activation",
+        "legacy atomic ACK"
+      ],
+      "observed": "Created account and HTTP200 did not terminate repeated legacy save requests. Closing the page stopped the loop.",
+      "fixState": "local5/5_passed_not_published",
+      "publishedRetest": {
+        "passed": false,
+        "meaning": "Pending; no new GUI acceptance claimed."
+      }
+    },
+    {
+      "id": "GUI-ADMIN-COUNT-08",
+      "areas": [
+        "Admin overview employee count"
+      ],
+      "observed": "Root actual GUI observation: global0 versus one confirmed department employee; local source regression reproduces the retired Storage count.",
+      "fix": "Use canonical registered typed employee-array entries, object and string branches, one uncorrelated membership aggregate in the existing batch; preserve super-only guard and unknown/error presentation.",
+      "publishedRetest": {
+        "passed": false,
+        "status": "pending_not_published"
+      },
+      "localProof": ".cache/ui-live-audit/admin-employee-overview-freeze.json"
     }
   ],
   "privateActualBrowserEvidence": {
@@ -301,7 +588,48 @@
     ".cache/ui-live-audit/irshad-owner-after-context.png": "8bfa4258a767016d39bdd86cc868658b9318e95bf8997c505a720f24508aa60a",
     ".cache/ui-live-audit/seized-b07-retest-unready.png": "c382075f549eed2c57782dbe85548a30256f31a32cbce523ecef6760199f747d",
     ".cache/ui-live-audit/award-b07-retest-unready.png": "e92887478616ea9e3d617966588a125ec01848bc0ec636b4e0cd6018d0609fb3",
-    ".cache/ui-live-audit/admin-empty-after-b07.png": "7136e8fe58a87230cd1b7c6ce3ddd1bd473d090c43b4052d404b0f8738236fa8"
+    ".cache/ui-live-audit/admin-empty-after-b07.png": "7136e8fe58a87230cd1b7c6ce3ddd1bd473d090c43b4052d404b0f8738236fa8",
+    ".cache/ui-live-audit/loader-fix/cloud-after.json": "933c60dd859463b547be7250607abeed3e71dc69f7d3d042222aa8b7f7ec208e",
+    ".cache/ui-live-audit/loader-fix/browser-empty-context-results.json": "58159e6fea0423e1b59df5bfb508b1567ea459b0119c6af4732c7d811422c83e",
+    ".cache/ui-live-audit/operational-ui-progress.json": "796140d3dc83c2f4cea7cf305a4e513c43e9111625abb39c6413ee0c9430474d",
+    ".cache/ui-live-audit/test-data-journal.json": "44b09dc765297f9e8a0ab5127991a61afc58ac3f8575db618c7529f3a66019dd",
+    ".cache/ui-live-audit/employees-export-proof.json": "ef0c405ac4a571e6c53388cd73ec057ed5ffc44482b12f16c64bd690a72b48d6",
+    ".cache/ui-live-audit/seized-export-proof.json": "9342ec53844c5f14c883d691cda0a0d0cdd048cf24988526b2d68b09c14f6fb9",
+    ".cache/ui-live-audit/seized-kpi-proof.json": "bfdd009ceb1a5b4336a8391829f4b9bf9cfc59f683964a6be85c07045f03ba48",
+    ".cache/ui-live-audit/seized-kpi-two-items.png": "9b59455a651ae72360c0bccaad6ab548cb9b64c12fbc88cb4033d3a267024b41",
+    ".cache/ui-live-audit/owner-natural-ui-requests.json": "88b0c948922ae9067ac7bea6936e792bcaa8b3b8e6cea2e930f041f7539c769a",
+    ".cache/ui-live-audit/irshad-export-proof.json": "bede3bd63774c9d479bf7df1d18cfb20cb969175cb6d3c4012b6c3a33d277237",
+    ".cache/ui-live-audit/irshad-kpi-proof.json": "d3bde37575bfd0b167847aa9ce7d93d77c929eeaff913139114e54cffabca02b",
+    ".cache/ui-live-audit/staff-rest-browser-failure.json": "288e588392c1ac3cdf370aed3a4b9359d457a712ce8fecda1257a41da7145ba5",
+    ".cache/ui-live-audit/staff-weekly-rest-poll-result.json": "316777fb1b3caf35388ab5446f62e282bba99d8cd43f2c5632bd292ec49127a8",
+    ".cache/ui-live-audit/employee-account-save-loop.json": "07888f68b93ab7342cbd3c237240a0082a1c808cdb0dbc2d2e8ad3743bfd25ee",
+    ".cache/ui-live-audit/employee-account-save-request-shape.json": "c0c8147e29541eac67fb0765b93e3d782ffc0910dcb09cdf2bd724a10ad3e36f",
+    ".cache/ui-live-audit/account-atomic-ack-freeze.json": "0fb0ce9b20acb576ed5cde207bc22e502f37a33ff665cd7c438d31fea6419391",
+    ".cache/ui-live-audit/account-atomic-ack-final.tap": "1f9d4386aa881a4c59886ad4cf20fe0a51ef7122d1492ff1fc144387135b60d2",
+    ".cache/ui-live-audit/limited-no-grants-ui.json": "3562b2a04a0c25cb3bc37f32df321a11cf3a67bdda80b8df5c36ef7fa1559c7f",
+    ".cache/ui-live-audit/limited-scope-selector-proof.json": "18c084f7f4cf126fbd90abc98ad6404d5c8a15bb6246ebd173cbb8fc08c23946",
+    ".cache/ui-live-audit/seized-category-freeze.json": "1cf440e35ac66601e6320d2b2a3bacd8895c4784c5fc8455324f2dfd0df1555f",
+    ".cache/ui-live-audit/seized-category-targeted.tap": "222693f971daee274b0bd3934c5cca954babeb2286546b32fbf3c4f7eb4ce2ac",
+    ".cache/ui-live-audit/batch3/build.build.json": "530c7c74d6dc4e5de939dca25dbd32c5b5927f0196e48e28ccffa6c0a4e9a374",
+    ".cache/ui-live-audit/batch3/build.log": "584f580b08ff0ac7687d386b2c8a97fffa204588ab03780c28f4c18abeac0363",
+    ".cache/ui-live-audit/batch3/check.log": "f0b7678465bcbb91fe4ae7f5d3e350dd36fcfc5ad908ac220cd71f2917db13f8",
+    ".cache/ui-live-audit/seized-browser-conflict-proof.json": "01033832360adb3fe46b27c4115346c69e04d643b245db68852697514c014090",
+    ".cache/ui-live-audit/limited-cross-department-request-proof-complete.json": "08895042d5acc091914c8188382fd1e9936f65a07fe411079599e17ddf565716",
+    ".cache/ui-live-audit/batch3/owner-order-diagnostic.json": "1c28dfadd375e1f7418d55304d5036ddc76780e02822d914b64ea1aec7639715",
+    ".cache/ui-live-audit/batch3/cloud-before.json": "1f23fecfb5025aee533461ec166235deb6e3cb48ca820672b83205b0c4a14997",
+    ".cache/ui-live-audit/batch3-final/poll-ack-review.json": "094ffbf8fa8f249b499df0568a00d1fe78ae06f11d3ec83c1fd37e217a8bcdba",
+    ".cache/ui-live-audit/batch3-final/ack-foreign-targeted.tap": "60898766acf32cdea3ff6fcc2ceb2a20296bcc5d3ac01aed0bb8ddb4194e7fe5",
+    ".cache/ui-live-audit/batch3-domain-remote-hooks.tap": "e2fd9077fad33f8f82f2313c482fa28d73674ca589bebe988f3f0dac7bd54946",
+    ".cache/ui-live-audit/admin-employee-overview-freeze.json": "21b1000912bd58cdf508beeec3a175af3a689a499c670ad499771914ae5bf57f",
+    ".cache/ui-live-audit/admin-employee-overview-final-corrected.tap": "5952e790e3a8713b29789a39b8f05bacf76d9823290389ee635baeaa5e55af55",
+    ".cache/ui-live-audit/admin-employee-overview-legacy-counterfactual.json": "fdf198995a8a557def17c06ae60acf0e0b9afb3e839720aaca5f44dd0d928ecc",
+    ".cache/ui-live-audit/batch3-accepted/build.build.json": "fd6d3300a055475103ae5f8d6d4e57e80d223469996522ced4bb4f8c10f44d6b",
+    ".cache/ui-live-audit/batch3-accepted/build.log": "15fec051483890151a52d7d6bb3b4b35cccca4498a2800f169d4162c89b22336",
+    ".cache/ui-live-audit/batch3-accepted/check-final.log": "9076e1ee9eeceec6c2f57f52509501c2ccca3fbd23cc9bb6fd0ab473426607dc",
+    ".cache/ui-live-audit/batch3-accepted/emitted7-freeze.json": "b9ebb140ce0b7d70df8a493dbedbf7aff7fba81ae75f953f294abb290481b366",
+    ".cache/ui-live-audit/batch3-accepted/emitted-staff11.tap": "adb320425a87c7fa5bcce3ce1da2d26bc292e28be807922e789f87e6d17ff020",
+    ".cache/ui-live-audit/admin-employee-count-before.json": "2c62172b346b144abdcd3e093b4a286ea263454b3a78db08dc06339f6bcd7ead",
+    ".cache/ui-live-audit/admin-employee-count-before.png": "fabc403fd4f874cf5b49c3aacb0558c1c8acd3a5d9a29b77e05cb9a831f82208"
   },
   "localAcceptance": {
     "uniqueTargetedTests": 101,
@@ -323,7 +651,7 @@
     "budgetPass": 16,
     "workerSourceUnchanged": true,
     "schemaUnchanged": 10,
-    "publishedGuiRetest": "pending",
+    "publishedGuiRetest": "Five actual empty-context scenarios passed on 0a78cf47; the 101 local source regressions remain separate evidence.",
     "qualityEvidence": {
       ".cache/ui-live-audit/client-cloud-final.tap": "864f0d9a5f620b4c87407662111f160ec5b554fbb4ce5384e7bc11e63b230e02",
       ".cache/ui-live-audit/department-prerequisite-targeted.tap": "d447493fa3e679a9edee1b15a102c28954168c52ee205e948bbbf814683ad2d7",
@@ -341,22 +669,40 @@
       ".cache/ui-live-audit/loader-fix/build.log": "8e2ec68332e40f34b8a744f38fa80d0485d446a2a49bbafb6d2e20aa00b5a335",
       ".cache/ui-live-audit/loader-fix/check.log": "9569b84c550c7e5665ca3819d95771736daeba41e8b2910faaf9d18dbbbedb2d",
       ".cache/ui-live-audit/loader-fix/build-delta.json": "5b2db919fcd54656c492f5bec415bcc56cc0a75bf4fb57181d87fe329f9aeaec"
-    }
+    },
+    "meaning": "Historical101-case prerequisite/context acceptance for earlier publications. Current batch3 local groups are separate below; do not sum without deduplicating titles."
   },
   "perfDecision": {
     "authority": "Prior explicit owner delegation for necessary professional cap adjustments",
     "awardMeasuredGzipBytes": 47818,
     "awardBudgetBefore": 47800,
     "awardBudgetAfter": 47900,
-    "otherBudgetsUnchanged": true
+    "otherBudgetsUnchanged": false,
+    "historicalAwardDecision": "Earlier award cap adjustment remains historical; a later Worker-only decision is recorded below.",
+    "workerDecision": {
+      "authority": "Prior explicit owner delegation; tools/perf_budget.json ownerOperationalAuditDecision",
+      "budgetBefore": 440000,
+      "budgetAfter": 441000,
+      "increasePercentRounded": 0.23,
+      "firstMeasured": 440149,
+      "finalMeasured": 440364,
+      "otherCurrentCapsUnchanged": true,
+      "scope": "Fixes to save acknowledgment and authoritative employee count; no load/latency claim."
+    }
   },
   "deployment": {
-    "id": "b07fd275-6590-468b-afe3-e81366defd8a",
-    "commit": "df49cd9f3ef0679addf73a5080cb69ad42b40bef",
-    "url": "https://b07fd275.kivo-d81.pages.dev",
+    "id": "0a78cf47-416e-4170-afff-c0a71320ef3a",
+    "commit": "46d8faa9386347d0e6a10fd5edee648de5083c00",
+    "url": "https://0a78cf47.kivo-d81.pages.dev",
     "schema": 10,
-    "acceptedByBrowser": false,
-    "protectedDocumentsUnchanged": true
+    "acceptedByBrowser": true,
+    "browserAcceptanceScope": "Five empty-context prerequisite scenarios only; full operational acceptance is pending.",
+    "fullOperationalAcceptance": false,
+    "protectedDocumentsUnchangedBeforeTestData": true,
+    "previewDeploymentCount": 9,
+    "productionDeploymentCount": 204,
+    "oldDeploymentsPreserved": true,
+    "migrationExecutedForThisFix": false
   },
   "pipelineCorrection": {
     "oldDeployment": "b07fd275",
@@ -369,6 +715,446 @@
     "changedFiles": "030 loader and index reference only",
     "loaderGzipBefore": 3271,
     "loaderGzipAfter": 4099,
-    "workerAndSchemaUnchanged": true
+    "workerAndSchemaUnchanged": true,
+    "publishedDeployment": "0a78cf47",
+    "publishedEmptyContextRetestPassed": true
+  },
+  "evidenceCutoffUtc": "2026-10-31T12:56:42.830Z",
+  "deploymentHistory": [
+    {
+      "id": "b07fd275-6590-468b-afe3-e81366defd8a",
+      "commit": "df49cd9f3ef0679addf73a5080cb69ad42b40bef",
+      "url": "https://b07fd275.kivo-d81.pages.dev",
+      "schema": 10,
+      "acceptedByBrowser": false,
+      "protectedDocumentsUnchanged": true,
+      "historicalResult": "Published GUI prerequisite failed because the emitted loader omitted the actual tail. Preserved, not accepted retroactively."
+    }
+  ],
+  "operationalProgress": {
+    "confirmedBusinessWriteActions": null,
+    "confirmedWriteTypes": [
+      "department.create",
+      "employee.create",
+      "employee.edit",
+      "seized.create",
+      "seized.edit",
+      "staff.month.create",
+      "staff.shift.assign",
+      "staff.rest.sunday",
+      "irshad.create",
+      "irshad.edit",
+      "award.create",
+      "award.approve",
+      "synthetic.staff.account.activation.observed"
+    ],
+    "counterMeaning": "Types of observed actions, not a reconciled number of unique writes or SQL/HTTP requests. Department creation occurred twice. Account-save retry requests must not be counted as successful repeated actions.",
+    "syntheticDataCounts": {
+      "departments": 2,
+      "employees": 1,
+      "seizedRecords": 1,
+      "irshadRecords": 1,
+      "awardRecords": 1,
+      "testAccounts": 1,
+      "currentMonthSchedules": 1
+    },
+    "cleanupStatus": "pending",
+    "rawSyntheticIdentifiersPublished": false,
+    "evidenceSnapshot": {
+      "cutoffUtc": "2026-10-31T12:56:42.830Z",
+      "filesSha256": {
+        ".cache/ui-live-audit/operational-ui-progress.json": "796140d3dc83c2f4cea7cf305a4e513c43e9111625abb39c6413ee0c9430474d",
+        ".cache/ui-live-audit/test-data-journal.json": "44b09dc765297f9e8a0ab5127991a61afc58ac3f8575db618c7529f3a66019dd",
+        ".cache/ui-live-audit/seized-browser-conflict-proof.json": "01033832360adb3fe46b27c4115346c69e04d643b245db68852697514c014090",
+        ".cache/ui-live-audit/limited-cross-department-request-proof-complete.json": "08895042d5acc091914c8188382fd1e9936f65a07fe411079599e17ddf565716",
+        ".cache/ui-live-audit/limited-scope-selector-proof.json": "18c084f7f4cf126fbd90abc98ad6404d5c8a15bb6246ebd173cbb8fc08c23946",
+        ".cache/ui-live-audit/batch3/owner-order-diagnostic.json": "1c28dfadd375e1f7418d55304d5036ddc76780e02822d914b64ea1aec7639715",
+        ".cache/ui-live-audit/batch3/cloud-before.json": "1f23fecfb5025aee533461ec166235deb6e3cb48ca820672b83205b0c4a14997",
+        ".cache/ui-live-audit/batch3-final/poll-ack-review.json": "094ffbf8fa8f249b499df0568a00d1fe78ae06f11d3ec83c1fd37e217a8bcdba",
+        ".cache/ui-live-audit/batch3-final/ack-foreign-targeted.tap": "60898766acf32cdea3ff6fcc2ceb2a20296bcc5d3ac01aed0bb8ddb4194e7fe5",
+        ".cache/ui-live-audit/batch3-domain-remote-hooks.tap": "e2fd9077fad33f8f82f2313c482fa28d73674ca589bebe988f3f0dac7bd54946",
+        ".cache/ui-live-audit/admin-employee-overview-freeze.json": "21b1000912bd58cdf508beeec3a175af3a689a499c670ad499771914ae5bf57f",
+        ".cache/ui-live-audit/admin-employee-overview-final-corrected.tap": "5952e790e3a8713b29789a39b8f05bacf76d9823290389ee635baeaa5e55af55",
+        ".cache/ui-live-audit/admin-employee-overview-legacy-counterfactual.json": "fdf198995a8a557def17c06ae60acf0e0b9afb3e839720aaca5f44dd0d928ecc",
+        ".cache/ui-live-audit/batch3-accepted/build.build.json": "fd6d3300a055475103ae5f8d6d4e57e80d223469996522ced4bb4f8c10f44d6b",
+        ".cache/ui-live-audit/batch3-accepted/build.log": "15fec051483890151a52d7d6bb3b4b35cccca4498a2800f169d4162c89b22336",
+        ".cache/ui-live-audit/batch3-accepted/check-final.log": "9076e1ee9eeceec6c2f57f52509501c2ccca3fbd23cc9bb6fd0ab473426607dc",
+        ".cache/ui-live-audit/batch3-accepted/emitted7-freeze.json": "b9ebb140ce0b7d70df8a493dbedbf7aff7fba81ae75f953f294abb290481b366",
+        ".cache/ui-live-audit/batch3-accepted/emitted-staff11.tap": "adb320425a87c7fa5bcce3ce1da2d26bc292e28be807922e789f87e6d17ff020",
+        ".cache/ui-live-audit/admin-employee-count-before.json": "2c62172b346b144abdcd3e093b4a286ea263454b3a78db08dc06339f6bcd7ead",
+        ".cache/ui-live-audit/admin-employee-count-before.png": "fabc403fd4f874cf5b49c3aacb0558c1c8acd3a5d9a29b77e05cb9a831f82208"
+      },
+      "history": "Prior mutable progress/journal pins remain in operationalEvidenceSnapshots and operationalProgressHistory."
+    },
+    "seizedAcceptanceScope": "Previously proven CRUD/search/filter/Excel/main counters remain. Category heading defect has a local-only fix; detailed charts and cleanup are not fully accepted.",
+    "irshadAcceptanceScope": "Explicit create/edit/reload/search/filter/Excel/main-KPI actions only.",
+    "awardAcceptanceScope": "Explicit existing wizard/create/approve/reload/search with0 observed R2 requests; no export acceptance."
+  },
+  "pendingFindings": [
+    {
+      "severity": "low",
+      "area": "empty-context prerequisite UX",
+      "finding": "Technical Irshad/Seized/Award component prefixes are visible in the prerequisite message.",
+      "status": "pending",
+      "evidencePrivatePath": ".cache/ui-live-audit/loader-fix/browser-empty-context-results.json"
+    },
+    {
+      "severity": "medium",
+      "area": "weekly rest after live polling",
+      "finding": "Second rest-day command failed before POST after first ACK. Local source/emitted regressions pass; the fix is not published.",
+      "status": "local_fixed_live_retest_pending",
+      "evidencePrivatePath": ".cache/ui-live-audit/staff-weekly-rest-poll-result.json"
+    },
+    {
+      "severity": "medium",
+      "area": "account activation legacy ACK",
+      "finding": "Account exists, but a legacy ACK/no-op/remainder defect caused repeated save requests. The page was closed; local5/5 passes, not live acceptance.",
+      "status": "local_fixed_live_retest_pending",
+      "evidencePrivatePath": ".cache/ui-live-audit/account-atomic-ack-freeze.json"
+    },
+    {
+      "severity": "medium",
+      "area": "Seized category heading",
+      "finding": "Category heading used the first configured action total instead of its category sum. Local2/2 passes; actual published recheck remains pending.",
+      "status": "local_fixed_live_retest_pending",
+      "evidencePrivatePath": ".cache/ui-live-audit/seized-category-freeze.json"
+    },
+    {
+      "severity": "medium",
+      "area": "Admin overview employee count",
+      "finding": "Real owner overview showed0 because it read retired local employee storage. Typed D1 aggregate, string-union coverage and failure-state memo fix pass locally; published GUI recheck pending.",
+      "status": "local_fixed_live_retest_pending",
+      "evidencePrivatePath": ".cache/ui-live-audit/admin-employee-overview-freeze.json"
+    }
+  ],
+  "operationalProgressHistory": [
+    {
+      "cutoffUtc": "2026-10-31T11:27:23.209Z",
+      "status": "empty_context_gui_passed_linked_business_audit_in_progress",
+      "coverage": {
+        "pagesActuallyRead": null,
+        "uiActionsExecuted": null,
+        "applicationBugsReproduced": 4,
+        "sourceFixes": 4,
+        "uiRetestsExecuted": null,
+        "regressionTestsRun": 101,
+        "apiTestsSubstituted": 0,
+        "newTestDataCreated": true,
+        "cloudWrites": null,
+        "newDeployments": 2,
+        "counterPolicy": "No overall GUI page/action/test count is claimed. Five empty-context scenarios and five confirmed business-write actions are separate from the 101 local regression cases; session and background SQL writes are not counted.",
+        "confirmedEmptyContextScenarios": 5,
+        "emptyContextScopedRequests": 0,
+        "confirmedBusinessWriteActions": 5
+      },
+      "operationalProgress": {
+        "confirmedBusinessWriteActions": 5,
+        "confirmedWriteTypes": [
+          "department.create",
+          "employee.create",
+          "employee.edit",
+          "seized.create",
+          "seized.edit"
+        ],
+        "counterMeaning": "Confirmed business actions, not a count of SQL statements or every cloud write.",
+        "syntheticDataCounts": {
+          "departments": 1,
+          "employees": 1,
+          "seizedRecords": 1,
+          "testAccounts": 0
+        },
+        "cleanupStatus": "pending",
+        "rawSyntheticIdentifiersPublished": false,
+        "evidenceSnapshot": {
+          "cutoffUtc": "2026-10-31T11:27:23.209Z",
+          "filesSha256": {
+            ".cache/ui-live-audit/loader-fix/cloud-after.json": "933c60dd859463b547be7250607abeed3e71dc69f7d3d042222aa8b7f7ec208e",
+            ".cache/ui-live-audit/loader-fix/browser-empty-context-results.json": "58159e6fea0423e1b59df5bfb508b1567ea459b0119c6af4732c7d811422c83e",
+            ".cache/ui-live-audit/operational-ui-progress.json": "df4da7baf95e041ba3eda671871d6193aa8685421e776723db9e02b975855494",
+            ".cache/ui-live-audit/test-data-journal.json": "5d626b3003da162f457109b81562150e783e51ccecbc7fc2293324f5e510af00",
+            ".cache/ui-live-audit/employees-export-proof.json": "ef0c405ac4a571e6c53388cd73ec057ed5ffc44482b12f16c64bd690a72b48d6",
+            ".cache/ui-live-audit/seized-export-proof.json": "9342ec53844c5f14c883d691cda0a0d0cdd048cf24988526b2d68b09c14f6fb9",
+            ".cache/ui-live-audit/seized-kpi-proof.json": "bfdd009ceb1a5b4336a8391829f4b9bf9cfc59f683964a6be85c07045f03ba48",
+            ".cache/ui-live-audit/seized-kpi-two-items.png": "9b59455a651ae72360c0bccaad6ab548cb9b64c12fbc88cb4033d3a267024b41",
+            ".cache/ui-live-audit/owner-natural-ui-requests.json": "88b0c948922ae9067ac7bea6936e792bcaa8b3b8e6cea2e930f041f7539c769a"
+          }
+        },
+        "seizedAcceptanceScope": "Create/edit/reload, positive/negative search, filter/clear, filtered Excel content and main KPI counters; no cleanup or full detailed-chart acceptance."
+      },
+      "rowStatuses": [
+        {
+          "id": "UI-CTX-01",
+          "status": "empty_context_retest_passed"
+        },
+        {
+          "id": "UI-IR-01",
+          "status": "crud_pending_current_month_schedule"
+        },
+        {
+          "id": "UI-SZ-01",
+          "status": "create_edit_reload_search_export_main_kpi_passed_cleanup_pending"
+        },
+        {
+          "id": "UI-AW-01",
+          "status": "nomination_crud_pending"
+        },
+        {
+          "id": "UI-ACL-01",
+          "status": "pending_no_test_accounts_created"
+        },
+        {
+          "id": "UI-SYNC-01",
+          "status": "partial_owner_reload_passed"
+        },
+        {
+          "id": "UI-DEPT-01",
+          "status": "create_passed_cleanup_pending"
+        },
+        {
+          "id": "UI-EMP-01",
+          "status": "create_edit_search_excel_passed_cleanup_pending"
+        }
+      ],
+      "meaning": "Historical observations and then-current private file pins. Mutable journals now have newer hashes; the old pins are not claims about their current bytes."
+    }
+  ],
+  "latestLocalCandidate": {
+    "name": "batch3-accepted",
+    "status": "final_local_acceptance_not_committed_or_deployed",
+    "commit": null,
+    "deploymentId": null,
+    "schema": 10,
+    "buildManifest": ".cache/ui-live-audit/batch3-accepted/build.build.json",
+    "buildManifestSha256": "fd6d3300a055475103ae5f8d6d4e57e80d223469996522ced4bb4f8c10f44d6b",
+    "testedArtifacts": {
+      "src/api/280-server-storage.js": "05fa32f0de7c8ff04b05b9ff855e1237f6083c16ab9c7a67030615deed7d2f21",
+      "src/modules/admin/logic.js": "499570308f75b419d0a6a450d3679d7756f757ab6528ddfc35cac39e50c00fea",
+      "workers/parts/063-enf-api-and-handler.js": "d5e9c2e112ff664426292c1b4954316f23a20c076c2bf13b02ca9688ff6cd37c",
+      "workers/_worker.js": "34aa595e392cb729634e32990e0c7c4ded0cdcb60a8e18300ce56792dbd8a215",
+      "workers/parts.json": "5b253b52973d68e08987c8c07a87b3a4b47e3cbf95df8e5231138c4a74bf805f",
+      "tests/unit/admin_employee_overview.test.mjs": "c376964e1e33c4981c6f5a60170226a72f5a38770fe209c2804551ec40df5158",
+      "tests/unit/staff_weekly_rest_ui.test.mjs": "849b07279b9a44b42fe371820db0b77d070ef7e36ad4b0269fc4e58e5ccba896"
+    },
+    "groups": {
+      "poll_queue_source": {
+        "cases": 44,
+        "pass": 44,
+        "fail": 0,
+        "newCases": 11
+      },
+      "emitted_staff_poll": {
+        "cases": 11,
+        "pass": 11,
+        "fail": 0,
+        "overlapWithPollQueueSource": 11,
+        "durationMs": 16678.6155,
+        "artifact": "batch3-accepted final emitted bytes;11 repeats existing source44 cases",
+        "tap": ".cache/ui-live-audit/batch3-accepted/emitted-staff11.tap"
+      },
+      "account_atomic_ACK": {
+        "cases": 5,
+        "pass": 5,
+        "fail": 0,
+        "newCases": 4,
+        "existingMetadataCases": 1
+      },
+      "seized_category": {
+        "cases": 2,
+        "pass": 2,
+        "fail": 0,
+        "scope": "Existing category/dashboard targeted cases, not a full62 rerun"
+      },
+      "ack_foreign_final": {
+        "cases": 7,
+        "pass": 7,
+        "fail": 0,
+        "overlap": "Includes all5 ACK cases above plus two foreign-poll cases, one new and one existing. Not7 wholly additional cases."
+      },
+      "domain_remote_hooks": {
+        "cases": 3,
+        "pass": 3,
+        "fail": 0,
+        "scope": "Existing IR/SZ/AW module-host hooks, not new actual280 integration cases."
+      },
+      "employee_overview": {
+        "cases": 12,
+        "pass": 12,
+        "fail": 0,
+        "newCases": 8,
+        "existingBatchCases": 4,
+        "durationMs": 1286.1898,
+        "legacyGuard": "PriorHEAD actual Worker same fixture403; corrected only the false200 test expectation. Final403/noaggregate, no ACL change. Failed11/12 trace retained."
+      },
+      "emitted_prerequisites_export": {
+        "cases": 7,
+        "pass": 7,
+        "fail": 0,
+        "scope": "Actual final build transport/export/prerequisite integration, existing cases repeated on final artifacts."
+      }
+    },
+    "aggregateUniqueAcrossAllHistoricalAndCurrentGroups": null,
+    "counterMethod": "Source44 includes11 new poll cases. Final emitted11 repeats those11. Final ACK/foreign7 includes the earlierACK5. Other existing cases are identified per group; no total unique count across historical and current groups and no full-suite claim.",
+    "knownBaselineFailures": {
+      "cases": 6,
+      "files": [
+        "tests/unit/k264_changes.test.mjs",
+        "tests/unit/k264_readset.test.mjs"
+      ],
+      "sameTitlesAndErrorsBeforePatch": true,
+      "repairedHere": false,
+      "evidence": ".cache/ui-live-audit/staff-weekly-rest-poll-result.json"
+    },
+    "quality": {
+      "buildFiles": 133,
+      "budgetsPassed": 16,
+      "budgetChanges": 1,
+      "workerGzip": 440364,
+      "workerBudget": 441000,
+      "workerBudgetBefore": 440000,
+      "firstMeasuredBeforeBudgetChange": 440149,
+      "checkCurrentPass": 19,
+      "checkCurrentFail": 0,
+      "secretFindings": 0,
+      "sourceCandidatesScanned": 988,
+      "buildCandidatesScanned": 122,
+      "limits": "Byte-size and source gates only, not enterprise load/latency acceptance."
+    },
+    "publicationBlocker": "Owner serialization-order mismatch resolved; final code commit/Preview deployment and actual GUI correction retests remain pending.",
+    "publishedGuiRetest": false,
+    "fullSuiteClaimed": false
+  },
+  "localCandidateHistory": [
+    {
+      "label": "batch3 earlier local acceptance before metric/foreign-reference final candidate; preserved history",
+      "candidate": {
+        "name": "batch3",
+        "status": "local_passed_not_committed_or_deployed",
+        "commit": null,
+        "deploymentId": null,
+        "schema": 10,
+        "buildManifest": ".cache/ui-live-audit/batch3/build.build.json",
+        "buildManifestSha256": "530c7c74d6dc4e5de939dca25dbd32c5b5927f0196e48e28ccffa6c0a4e9a374",
+        "testedArtifacts": {
+          "src/api/280-server-storage.js": "04813a55ff2aa8376f0fd44e77ac6fff56d2c8d42ebbc3b88c96a40da1fd2732",
+          "workers/_worker.js": "1b12e7356439c132df9024633e3c45ed21e7be68bab03d878e7930168d9092f6",
+          "workers/parts.json": "bdf5f3035a115cad549044c632a0804c15498cb6a120c24aecf1c80b40499ea3",
+          "tests/unit/staff_weekly_rest_ui.test.mjs": "849b07279b9a44b42fe371820db0b77d070ef7e36ad4b0269fc4e58e5ccba896"
+        },
+        "groups": {
+          "poll_queue_source": {
+            "cases": 44,
+            "pass": 44,
+            "fail": 0,
+            "newCases": 11
+          },
+          "emitted_staff_poll": {
+            "cases": 11,
+            "pass": 11,
+            "fail": 0,
+            "overlapWithPollQueueSource": 11
+          },
+          "account_atomic_ACK": {
+            "cases": 5,
+            "pass": 5,
+            "fail": 0,
+            "newCases": 4,
+            "existingMetadataCases": 1
+          },
+          "seized_category": {
+            "cases": 2,
+            "pass": 2,
+            "fail": 0,
+            "scope": "Existing category/dashboard targeted cases, not a full62 rerun"
+          }
+        },
+        "aggregateUniqueAcrossAllHistoricalAndCurrentGroups": null,
+        "counterMethod": "Source44 includes11 new poll cases. Emitted11 repeats those11; do not count55 unique. Historical101 and ACK/category groups are not globally summed.",
+        "knownBaselineFailures": {
+          "cases": 6,
+          "files": [
+            "tests/unit/k264_changes.test.mjs",
+            "tests/unit/k264_readset.test.mjs"
+          ],
+          "sameTitlesAndErrorsBeforePatch": true,
+          "repairedHere": false,
+          "evidence": ".cache/ui-live-audit/staff-weekly-rest-poll-result.json"
+        },
+        "quality": {
+          "buildFiles": 133,
+          "budgetsPassed": 16,
+          "budgetChanges": 0,
+          "workerGzip": 439824,
+          "workerBudget": 440000,
+          "checkCurrentPass": 19,
+          "checkCurrentFail": 0,
+          "secretFindings": 0,
+          "sourceCandidatesScanned": 986,
+          "buildCandidatesScanned": 122
+        },
+        "publicationBlocker": "Owner-row baseline SHA mismatch remains under forensics. Current live owner/password integrity is not established by this record.",
+        "publishedGuiRetest": false,
+        "fullSuiteClaimed": false
+      }
+    }
+  ],
+  "operationalEvidenceSnapshots": [
+    {
+      "cutoffUtc": "2026-10-31T12:17:38.848Z",
+      "filesSha256": {
+        ".cache/ui-live-audit/loader-fix/cloud-after.json": "933c60dd859463b547be7250607abeed3e71dc69f7d3d042222aa8b7f7ec208e",
+        ".cache/ui-live-audit/loader-fix/browser-empty-context-results.json": "58159e6fea0423e1b59df5bfb508b1567ea459b0119c6af4732c7d811422c83e",
+        ".cache/ui-live-audit/operational-ui-progress.json": "2d35a4e5958ed4922e46302aac0c89a99592e3b538828901d4de73d7f59e1479",
+        ".cache/ui-live-audit/test-data-journal.json": "44b09dc765297f9e8a0ab5127991a61afc58ac3f8575db618c7529f3a66019dd",
+        ".cache/ui-live-audit/employees-export-proof.json": "ef0c405ac4a571e6c53388cd73ec057ed5ffc44482b12f16c64bd690a72b48d6",
+        ".cache/ui-live-audit/seized-export-proof.json": "9342ec53844c5f14c883d691cda0a0d0cdd048cf24988526b2d68b09c14f6fb9",
+        ".cache/ui-live-audit/seized-kpi-proof.json": "bfdd009ceb1a5b4336a8391829f4b9bf9cfc59f683964a6be85c07045f03ba48",
+        ".cache/ui-live-audit/seized-kpi-two-items.png": "9b59455a651ae72360c0bccaad6ab548cb9b64c12fbc88cb4033d3a267024b41",
+        ".cache/ui-live-audit/owner-natural-ui-requests.json": "88b0c948922ae9067ac7bea6936e792bcaa8b3b8e6cea2e930f041f7539c769a",
+        ".cache/ui-live-audit/irshad-export-proof.json": "bede3bd63774c9d479bf7df1d18cfb20cb969175cb6d3c4012b6c3a33d277237",
+        ".cache/ui-live-audit/irshad-kpi-proof.json": "d3bde37575bfd0b167847aa9ce7d93d77c929eeaff913139114e54cffabca02b",
+        ".cache/ui-live-audit/staff-rest-browser-failure.json": "288e588392c1ac3cdf370aed3a4b9359d457a712ce8fecda1257a41da7145ba5",
+        ".cache/ui-live-audit/staff-weekly-rest-poll-result.json": "316777fb1b3caf35388ab5446f62e282bba99d8cd43f2c5632bd292ec49127a8",
+        ".cache/ui-live-audit/employee-account-save-loop.json": "07888f68b93ab7342cbd3c237240a0082a1c808cdb0dbc2d2e8ad3743bfd25ee",
+        ".cache/ui-live-audit/employee-account-save-request-shape.json": "c0c8147e29541eac67fb0765b93e3d782ffc0910dcb09cdf2bd724a10ad3e36f",
+        ".cache/ui-live-audit/account-atomic-ack-freeze.json": "0fb0ce9b20acb576ed5cde207bc22e502f37a33ff665cd7c438d31fea6419391",
+        ".cache/ui-live-audit/account-atomic-ack-final.tap": "1f9d4386aa881a4c59886ad4cf20fe0a51ef7122d1492ff1fc144387135b60d2",
+        ".cache/ui-live-audit/limited-no-grants-ui.json": "3562b2a04a0c25cb3bc37f32df321a11cf3a67bdda80b8df5c36ef7fa1559c7f",
+        ".cache/ui-live-audit/limited-scope-selector-proof.json": "18c084f7f4cf126fbd90abc98ad6404d5c8a15bb6246ebd173cbb8fc08c23946",
+        ".cache/ui-live-audit/seized-category-freeze.json": "1cf440e35ac66601e6320d2b2a3bacd8895c4784c5fc8455324f2dfd0df1555f",
+        ".cache/ui-live-audit/seized-category-targeted.tap": "222693f971daee274b0bd3934c5cca954babeb2286546b32fbf3c4f7eb4ce2ac",
+        ".cache/ui-live-audit/batch3/build.build.json": "530c7c74d6dc4e5de939dca25dbd32c5b5927f0196e48e28ccffa6c0a4e9a374",
+        ".cache/ui-live-audit/batch3/build.log": "584f580b08ff0ac7687d386b2c8a97fffa204588ab03780c28f4c18abeac0363",
+        ".cache/ui-live-audit/batch3/check.log": "f0b7678465bcbb91fe4ae7f5d3e350dd36fcfc5ad908ac220cd71f2917db13f8"
+      }
+    }
+  ],
+  "verificationHistory": [
+    {
+      "label": "Superseded owner baseline uncertainty before exact serialization-order diagnostic",
+      "status": "pending_forensics_no_unchanged_claim",
+      "finding": [
+        {
+          "severity": "publication_blocker",
+          "area": "current live owner integrity verification",
+          "finding": "Owner-row baseline SHA mismatch observed by the publication gate; cause and current owner/password integrity remain under forensics.",
+          "status": "pending_forensics",
+          "ownerHashPublished": false
+        }
+      ]
+    }
+  ],
+  "ownerVerification": {
+    "diagnosticAtUtc": "2026-10-31T12:22:17.963Z",
+    "exactAcceptedOwnerValuesMatched": true,
+    "serializationOrderOnly": true,
+    "grantsAndUnrelatedGlobalConfigMatchedHistorical": true,
+    "currentAccountCount": 2,
+    "registeredDepartmentCount": 2,
+    "previewCount": 9,
+    "productionCount": 204,
+    "readOnlySnapshotAtUtc": "2026-10-31T12:39:49.400Z",
+    "noCloudWritesByVerification": true,
+    "rawOwnerValuesOrProtectedHashesPublished": false,
+    "limit": "Current synthetic setup deliberately changes auth-users/depts; no claim that every global document is byte-identical to the pre-setup state."
   }
 }

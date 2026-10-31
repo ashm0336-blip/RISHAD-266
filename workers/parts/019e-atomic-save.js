@@ -383,7 +383,12 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   if (!transition.transitions.length && !opt.__serverDepartmentWipes && !opt.__employeeRequestId && !operationalSave && !referenceDependentSave)
     return await applySave(env, body, A, meta, Object.assign({}, opt, { __cuPass: RESTORE_INTERNAL_TOKEN }));
   kv.pend = kv.pend.filter(function (pd) {
-    return pd.act === 'del' ? pd.cur != null : pd.v !== pd.cur;
+    var changed = pd.act === 'del' ? pd.cur != null : pd.v !== pd.cur;
+    // Canonical merges can turn an authorized write into a no-op (notably a
+    // credential-redacted account list). Its current revision still settles
+    // the requested key; the reference guards below fence that exact value.
+    if (!changed) kv.out.revs[pd.k] = pd.have;
+    return changed;
   });
   if (opt.__physicalDeleteKeys) rsPhysicalDeletes(kv, reference, opt.__physicalDeleteKeys);
   var departments = Array.from(

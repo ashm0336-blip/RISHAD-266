@@ -1219,7 +1219,7 @@
           );
         }
         if (scope && scope.state !== "ready") {
-          return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: scope.message }));
+          return h("div", hostBase, h(Placeholder, { name: "", hintSize: this.props.__hintSize, error: scope.message }));
         }
         if (!dataReady(this.__name)) {
           if (!r.dataError) { ensureFetched(this.__name); ensureData(this.__name).catch(() => {}); }

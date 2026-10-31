@@ -1232,7 +1232,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irDashLangRows: Mt,
       irDashLangOn: Mt.length > 0,
       irDashLangOff: 0 === Mt.length,
-      ...KIVO.BassamCount.pair("irDashLangTot", n(X[0]?.st.tot || 0), "قطعة", "g"),
+      ...KIVO.BassamCount.pair("irDashLangTot", n(It), "قطعة", "g"),
       irDashLocRows: Nt,
       irDashLocOn: Nt.length > 0,
       irDashLocOff: 0 === Nt.length,

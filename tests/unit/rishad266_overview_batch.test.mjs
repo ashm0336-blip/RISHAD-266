@@ -39,9 +39,9 @@ test('overview preserves dashboard aggregates and security locks in two read bat
   assert.deepEqual(j.imgs.counts, { bound: 1, claim: 1, orphan: 1, amb: 1 });
   assert.equal(j.imgs.stored, 1); assert.equal(j.imgs.staged, 0); assert.equal(j.imgs.r2, false);
   assert.equal(j.imgs.claims[0].uid, IDS.super); assert.equal(j.imgs.orphans.length, 1);
-  const overview = batches.filter(sql => (sql.length === 12 || sql.length === 6) && /KIVO_DB_SCHEMA/.test(sql[0]));
+  const overview = batches.filter(sql => (sql.length === 13 || sql.length === 6) && /KIVO_DB_SCHEMA/.test(sql[0]));
   assert.equal(overview.length, 2);
-  assert.equal(overview.reduce((n, sql) => n + sql.length - 1, 0), 16, 'sixteen aggregates plus one in-transaction schema guard per batch; still only two trips');
+  assert.equal(overview.reduce((n, sql) => n + sql.length - 1, 0), 17, 'seventeen aggregates including typed employees plus one in-transaction schema guard per batch; still only two trips');
   assert.ok(overview.flat().every(sql => /^SELECT/i.test(sql)), 'dashboard batching must remain read-only');
 });
 

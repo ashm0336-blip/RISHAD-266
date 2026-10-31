@@ -243,6 +243,27 @@ test('seized dashboard consumes typed aggregates with the existing SVG presentat
   assert.match(view.irDashHeroLine, /^M/); assert.equal(B.calls.length, 0); assert.deepEqual(B.storage, []);
 });
 
+test('seized dashboard category total includes every action and matches category and known-location rows', t => {
+  const B = browser('seized', async () => { throw Error('TEST_ONLY no fetch'); }); t.after(B.cleanup); seedForm(B, 'seized');
+  const catalog = catalogDto();
+  catalog.catalogs.actions.value = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/modules/seized/defaults.json'), 'utf8')).actions;
+  B.seed('catalogs', catalog);
+  B.page._bcEnsure = () => {};
+  const metrics = { reports: 1, qty: 2, sar: 0, employees: 1, actions: { sec: 0, des: 0, sto: 2 } };
+  B.seed('dashboard', { dashboard: { available: { total: 1, years: [clock.y], months: [{ y: clock.y, m: clock.m }], first: clock },
+    totals: metrics, previous: { ...metrics, reports: 0, qty: 0, actions: {} }, series: [{ ...clock, ...metrics }], previousSeries: [], heat: [{ ...clock, qty: 2 }],
+    categories: [{ name: 'TEST_ONLY_category', value: 2, color: '#000' }], locations: [{ name: 'TEST_ONLY_location', value: 2, previous: 0 }],
+    shifts: [], employees: [], shiftSeries: [], locationSeries: [], summary: { rows: [], totals: metrics, all: 1, matched: 1 } } });
+  Object.assign(B.page.state, { irDashYear: clock.y, irDashMonth: String(clock.m), irDashMode: 'month' });
+  const view = B.page._dashVals();
+  assert.equal(view.irDashLangTot, '2', 'Category heading must sum categories rather than the zero-valued first action');
+  assert.equal(view.irDashLangRows[0].name, 'TEST_ONLY_category');
+  assert.equal(view.irDashLangRows[0].val, '2'); assert.equal(view.irDashLangRows[0].pct, '100%');
+  assert.equal(view.irDashLocTot, '2'); assert.equal(view.irDashLocRows[0].name, 'TEST_ONLY_location');
+  assert.equal(view.irDashLocRows[0].val, '2'); assert.equal(view.irDashLocRows[0].pct, '100%');
+  assert.equal(B.calls.length, 0); assert.deepEqual(B.storage, []);
+});
+
 test('award references use the confirmed department document, preserve HTML bytes, and never write through a raw global store', async t => {
   const B = browser('award', async (_, options) => ack('award', JSON.parse(options.body))); t.after(B.cleanup);
   const document = Object.fromEntries(['A', 'B', 'C'].map(key => [key, { title: 'TEST_ONLY_' + key, lead: '', foot: '', secs: [{ title: 'TEST_ONLY_section', body: '<h4>TEST_ONLY</h4><ul><li>Arabic العربية</li></ul>' }] }]));

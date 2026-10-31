@@ -1258,7 +1258,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       d = KIVO.BassamDepts.active();
     } catch (t) {}
-    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.rowMenu, t.admTab, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|");
+    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|");
   }
   _adMemo(n, f) {
     const k = this._adKey(),
@@ -2734,15 +2734,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       g = KIVO.BassamLink ? KIVO.BassamLink.get() : "local",
       h = n.filter((t) => !t.dis).length,
       m = n.filter((t) => t.dis).length;
-    let f = 0;
-    try {
-      const t = KIVO.BassamDepts;
-      (t.list() || []).forEach((e) => {
-        const s = t.raw.getItem.call(localStorage, "bsdept:" + e.id + ":bassam_employees_v1"),
-          a = s ? JSON.parse(s) : [];
-        Array.isArray(a) && (f += a.length);
-      });
-    } catch (t) {}
+    const employeeCountsReady = s && !t.adErr && o.ok === 1 && Number.isSafeInteger(o.employeeCount) && o.employeeCount >= 0 &&
+      Number.isSafeInteger(o.employeeNoAccountCount) && o.employeeNoAccountCount >= 0 && o.employeeNoAccountCount <= o.employeeCount,
+      f = employeeCountsReady ? o.employeeCount : null,
+      missingAccounts = employeeCountsReady ? o.employeeNoAccountCount : null;
     let u = this._fullStamp();
     const b = this._expInfo(u, "full"),
       w = u ? Math.floor((e - new Date(u).getTime()) / 864e5) : 999,
@@ -2755,9 +2750,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           tip: "حالة الاتصال بالخادم كما في مؤشر القائمة الجانبية",
         },
         {
-          v: h + " / " + m + " / " + Math.max(0, f - n.filter((t) => "staff" === t.role || "gm" === t.role).length),
+          v: h + " / " + m + " / " + (missingAccounts === null ? "—" : missingAccounts),
           l: "الحسابات: نشط / مجمّد / بلا حساب",
-          sub: KIVO.BassamCount(f, "موظف") + " في كل الإدارات",
+          sub: f === null ? (t.adErr || o.ok === 1 ? "تعذّر تأكيد عدد الموظفين — أعد المحاولة" : "جارٍ تأكيد عدد الموظفين…") : KIVO.BassamCount(f, "موظف") + " في كل الإدارات",
           vStyle: "font-size:20px;font-weight:800;line-height:1.3;color:var(--fg-x141414);font-feature-settings:'tnum'",
           tip: "حسابات الدخول عبر كل الإدارات",
         },

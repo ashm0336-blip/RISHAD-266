@@ -611,8 +611,8 @@
        فلا تبقى الذاكرةُ «محفوظةً» وهماً بينما الخادمُ على القديم */
     if (j.atomic) {
       var rest = { set: Object.create(null), del: Object.create(null) }, nRest = 0;
-      for (k in snap.set) if (!(k in dn) && !(k in cf)) { rest.set[k] = snap.set[k]; nRest++; }
-      for (k in snap.del) if (!(k in dn) && !(k in cf)) { rest.del[k] = 1; nRest++; }
+      for (k in snap.set) if (!(k in ap) && !(k in dn) && !(k in cf)) { rest.set[k] = snap.set[k]; nRest++; }
+      for (k in snap.del) if (!(k in ap) && !(k in dn) && !(k in cf)) { rest.del[k] = 1; nRest++; }
       if (nRest) { requeue(rest); again = true; }
     }
     recount();
@@ -642,17 +642,17 @@
     return !!now && now.uid === stamp.uid && now.dept === stamp.dept && now.generation === stamp.generation;
   }
   function operationFailure9(err, status, uncertain) { return { ok: 0, err: err, status: status || 0, uncertain: !!uncertain }; }
-  function operationForget9(key, state) {
+  function operationForget9(key, state, quiet) {
     delete mem[key]; delete baseVal[key]; delete krev[key];
     operationKnown9[key] = { state: state || 'unloaded' };
-    notify(key);
+    if (!quiet) notify(key);
   }
-  function operationInvalidate9(keys) {
+  function operationInvalidate9(keys, quiet) {
     if (!Array.isArray(keys) || operationSnapshot9 && operationSnapshot9.keys.some(function (key) { return keys.indexOf(key) !== -1 || keys.indexOf(unscoped(key)) !== -1; })) operationSnapshot9 = null;
     var selected = Array.isArray(keys) ? Array.from(new Set(Object.keys(operationKnown9).concat(Object.keys(operationReads9), keys.filter(operationKey9))))
       .filter(function (key) { return keys.indexOf(key) !== -1 || keys.indexOf(unscoped(key)) !== -1; }) : Object.keys(operationKnown9);
     if (!Array.isArray(keys)) operationGeneration9++;
-    selected.forEach(function (key) { delete operationReads9[key]; operationForget9(key); });
+    selected.forEach(function (key) { delete operationReads9[key]; operationForget9(key, undefined, quiet); });
   }
   async function operationRead9(keys) {
     var stamp = operationContext9();
@@ -910,7 +910,18 @@
     });
   }
   window.addEventListener('bassam:authz', function () { operationInvalidate9(); });
-  window.addEventListener('bassam:remote', function (event) { operationInvalidate9((event.detail && event.detail.keys) || []); });
+  // Only this closure can prove that a dispatched change event already has a
+  // confirmed typed read. Arbitrary/custom remote events still invalidate.
+  var operationRemoteProof9 = new WeakMap();
+  function operationDispatchRemote9(keys, v, confirmed) {
+    var event = new CustomEvent('bassam:remote', { detail: { keys: keys, v: v } });
+    operationRemoteProof9.set(event, new Set(confirmed || []));
+    try { window.dispatchEvent(event); } finally { operationRemoteProof9.delete(event); }
+  }
+  window.addEventListener('bassam:remote', function (event) {
+    var confirmed = operationRemoteProof9.get(event), keys = (event.detail && event.detail.keys) || [];
+    operationInvalidate9(Array.isArray(keys) ? keys.filter(function (key) { return !confirmed || !confirmed.has(key); }) : undefined);
+  });
   /* KIVO_243 · نافذةُ السبب: تُعلَّق المفاتيحُ (hold9) فلا تُرسل ولا تُعدّ محفوظة؛ «تأكيد» يُرسلها · «إلغاء» يعيدها إلى قيمة الخادم.
      «تذكّر للجلسة» يحفظ السببَ لمجموعة مفاتيح السبب نفسِها (مثل تغيير حالات الرصد) فلا يُسأل عنها ثانيةً في هذه الجلسة. */
   function holdKeys9(items) { for (var i = 0; i < items.length; i++) { var it = items[i]; if (!(it.k in pSet) && !(it.k in pDel)) { if (it.v != null) pSet[it.k] = it.v; else pDel[it.k] = 1; } hold9[it.k] = 1; } recount(); }
@@ -1385,7 +1396,25 @@
       };
       return Promise.resolve(0).then(function () { return step(0); });
     }
-    function pull9(keys, v) { var irKeys = keys.filter(function (k) { return operationResource9(k) || /^(?:bsdept:[^:]+:)?bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(k); }); return getAll9(keys, null).then(function (changed) { BOOT.v = v; irKeys.forEach(notify); return Array.from(new Set(changed.concat(irKeys))); }); }
+    function pull9(keys, v) {
+      var stamp = operationContext9(), logicalOperationKeys = keys.filter(operationKey9), operationKeys = logicalOperationKeys.filter(function (key) {
+        return stamp && key.split(':')[1] === stamp.dept;
+      }), irKeys = keys.filter(function (key) {
+        return /^(?:bsdept:[^:]+:)?bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(key);
+      });
+      // Keep the cursor behind a queued/uncertain command. The normal polling
+      // backoff retries after that exact ticket is settled; never rebase it.
+      if (operationKeys.some(function (key) { return busyKey9(key) || !!(operationActive9 && operationActive9.keys.indexOf(key) !== -1); }))
+        return Promise.reject(Error('operations-sync-pending'));
+      // Do not render a transient empty value between invalidation and ACK.
+      // A failed read still publishes its normal fail-closed error state.
+      if (operationKeys.length) operationInvalidate9(operationKeys, true);
+      return Promise.all([getAll9(keys, null), operationKeys.length ? operationRead9(operationKeys) : { ok: 1 }]).then(function (result) {
+        if (!result[1] || result[1].ok !== 1) throw Error('operations-sync-read');
+        BOOT.v = v; irKeys.forEach(notify);
+        return { changed: Array.from(new Set(result[0].concat(irKeys, logicalOperationKeys))), confirmed: operationKeys };
+      });
+    }
 
     /* ═══ KIVO_264 · D-4: مجموعةُ القراءة تتبع الصلاحيات بلا إعادة تحميل ═══
        /api/changes لا يبلّغ إلا عمّا تغيّرت مراجعتُه: منحُ صفحةٍ لا يغيّر مراجعةَ بياناتها فلا تصل (صفحةٌ فارغة حتى التحديث اليدوي)،
@@ -1511,8 +1540,8 @@
             try { if (j.am !== undefined || j.az) authzSync9(j); } catch (eA9) {}   /* KIVO_243: الخادمُ في بيئة الإنفاذ وحده يرسل am/az */
             if (!(j.v != null && j.v > since)) return;
             var ks = j.keys || [];
-            return pull9(ks, j.v).then(function (changed) {
-              if (changed.length) { try { window.dispatchEvent(new CustomEvent("bassam:remote", { detail: { keys: ks, v: j.v } })); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
+            return pull9(ks, j.v).then(function (result) {
+              if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
               if (ks.some(function (k) { return SLICEK9.test(k); })) { var s9 = slice9(); if (s9 !== slice0) { slice0 = s9; readSet9(false); } }
               if (j.more && BOOT.v === j.v && ++pages < MORE_MAX9 && !sx9) return ask(false);   /* C2: البقيةُ فوراً من آخر مراجعةٍ وصلت */
             });

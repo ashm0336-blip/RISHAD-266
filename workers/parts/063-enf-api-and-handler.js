@@ -829,8 +829,14 @@ export default {
         /* ملخّص نظرة عامة */
         if (path === '/api/overview') {
           var day0 = new Date(nowX); day0.setHours(0, 0, 0, 0); var dayTs = day0.getTime();
-          /* Read independent dashboard aggregates in two batches, not sixteen
-             sequential edge-to-D1 round trips. Image diagnostics stay optional. */
+          var overviewDepartments = superX ? AX.depts.filter(function (d) { return d && typeof d.id === 'string' && d.id; }).map(function (d) { return d.id; }) : [];
+          var overviewAccounts = superX ? AX.users.filter(function (u) { return u && u.role === 'staff' && typeof u.deptId === 'string' && typeof u.ekey === 'string' && u.ekey; })
+            .map(function (u) { return [u.deptId, u.ekey]; }) : [];
+          var overviewEmployeeSpec = opPrepared('bassam_employees_v1').resources.bassam_employees_v1.spec;
+          /* Registered employee-array entries include the accepted string
+             union branch. Names/IDs stay in typed columns. A manager without an
+             employee row cannot reduce the number of employees without accounts.
+             Keep independent aggregates in the existing two read batches. */
           var overviewReads = await Promise.allSettled([
             env.DB.batch([
               env.DB.prepare('SELECT COUNT(*) AS n FROM sec WHERE act = ?1 AND ts >= ?2').bind('login_fail', dayTs),
@@ -843,7 +849,15 @@ export default {
               env.DB.prepare('SELECT ts, uid, un, target FROM sec WHERE act = ?1 AND ts >= ?2 ORDER BY ts DESC LIMIT 200').bind('acct_add', nowX - 30 * 86400000),
               env.DB.prepare('SELECT ts, uid, un, target FROM sec WHERE act = ?1 ORDER BY ts DESC LIMIT 100').bind('acct_freeze'),
               env.DB.prepare('SELECT uid, COUNT(*) AS n, MAX(ts) AS t FROM sec WHERE act = ?1 AND ts >= ?2 GROUP BY uid ORDER BY n DESC LIMIT 10').bind('denied', dayTs),
-              env.DB.prepare('SELECT gk, n, until FROM guard WHERE until > ?1').bind(nowX)
+              env.DB.prepare('SELECT gk, n, until FROM guard WHERE until > ?1').bind(nowX),
+              env.DB.prepare('SELECT COUNT(*) AS n,COALESCE(SUM(CASE WHEN json_array(i.department_id,' +
+                "COALESCE(s.value_text,NULLIF(e.f_eid_text,''),NULLIF(e.f_nid_text,''),e.f_name_text,'')) NOT IN " +
+                '(SELECT json(a.value) FROM json_each(?2) a) THEN 1 ELSE 0 END),0) AS noAccount ' +
+                'FROM ops_nodes i JOIN ops_nodes r ON r.department_id=i.department_id AND r.resource=i.resource AND r.row_key=i.parent_key AND r.parent_key IS NULL AND r.node_kind=4 ' +
+                "LEFT JOIN ops_employee_record e ON e.department_id=i.department_id AND e.resource=i.resource AND e.row_key=i.row_key||'/v:'||i.variant " +
+                'LEFT JOIN ' + overviewEmployeeSpec.entry.choices[0].entityTable + " s ON s.department_id=i.department_id AND s.resource=i.resource AND s.row_key=i.row_key||'/v:'||i.variant " +
+                "WHERE i.resource='bassam_employees_v1' AND i.schema_id=?3 AND r.schema_id=?4 AND i.department_id IN(SELECT d.value FROM json_each(?1) d)")
+                .bind(JSON.stringify(overviewDepartments), JSON.stringify(overviewAccounts), overviewEmployeeSpec.entry.table, overviewEmployeeSpec.table)
             ]),
             env.DB.batch([
               env.DB.prepare('SELECT st, COUNT(*) AS n FROM imgown GROUP BY st'),
@@ -860,7 +874,7 @@ export default {
           var lastLogin = {}; ((ll && ll.results) || []).forEach(function (r) { lastLogin[r.uid] = r.t; });
           var fails = ov[6], added = ov[7];
           var oldHash = AX.users.filter(function (u) { var p = String(u.ph || '').split('$'); return p[0] === 'p2' && (parseInt(p[1], 10) || 0) > PBKDF2_MAX; }).map(function (u) { return u.id; });
-          var frozen = ov[8], deniedBy = ov[9], guards = ov[10];
+          var frozen = ov[8], deniedBy = ov[9], guards = ov[10], employeeOverview = firstOv(11);
           var nameOf = function (uid) { var u = byId[uid]; return u ? (u.name || u.un) : ''; };
           /* KIVO_265 · حادثةُ الصور (البند 6 من قائمة صفحة المهام): تشخيصُ مخزن الصور لمدير النظام — ربطُ R2 · عدُّ الصور بحالاتها (مربوطة · رفعٌ لم يُربط claim ·
              يتيمةٌ في مهلة السماح · غيرُ محسومة) · رفوعٌ لم تكتمل (أجزاءٌ مرحَّلة) · قائمةُ غير المربوطة بأصحابها وإداراتهم · واليتيماتُ بما بقي لكنسها — قراءةٌ خفيفة */
@@ -877,6 +891,7 @@ export default {
           } catch (eI9) { imgDiag = { err: errMsg(eI9) }; }
           return json({ ok: 1, now: nowX, policy: POL, oldHash: oldHash, imgs: imgDiag,
             failsToday: f1 ? f1.n : 0, deniedToday: d1 ? d1.n : 0, lockedNow: l1 ? l1.n : 0, activeNow: s1 ? s1.n : 0, sessions: sN ? sN.n : 0,
+            employeeCount: superX ? employeeOverview.n : null, employeeNoAccountCount: superX ? employeeOverview.noAccount : null,
             lastLogin: lastLogin,
             /* KIVO_261 (إصلاح — كشفه k261sys · AUD-052): القفلُ على المصدر والزوج (ip: · p:<un>|<ip>) لا على الحساب (u: عدّادُ إنذارٍ لا يُقفل) —
                فكان القفلُ هنا يُقرأ من u: وحده فلا يظهر «فكّ القفل» أبداً (ولا يفكّ شيئاً لو ظهر). الآن: أقفالُ الاسم الفعلية (أزواجُه ومصادرُها) ومفاتيحُها */
