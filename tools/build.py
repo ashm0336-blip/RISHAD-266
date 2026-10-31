@@ -121,12 +121,14 @@ FFLATE_HEAD = '/* fflate — inflate for compressed pages (sync, no worker) */\n
 def lazy_loader(body):
     a = '\nwindow.__resources = {};\n'                  # the block's text starts with a newline (as extracted from KIVO_240)
     i0 = body.index('\n(function () {\n  var pages = @@KIVO_PAGES@@;')
-    assert body.startswith(a) and body.rstrip().endswith('})();'), 'pages-loader anchors'
+    i1 = body.index('\n})();', i0) + len('\n})();')
+    assert body.startswith(a) and body.count('var pages = @@KIVO_PAGES@@;') == 1, 'pages-loader anchors'
+    tail = body[i1:]                                  # Runtime hooks after the bundled-only inflater stay authoritative source.
     mid = body[len(a):i0]                               # = LAZY_KEEP + fflate (comment line, library line, empty line) — nothing else
     assert mid.startswith(LAZY_KEEP + FFLATE_HEAD) and mid.count('\n') == 3 and '.fflate=f()' in mid, 'pages-loader middle: blobs + fflate only'
     mp = {'./' + urllib.parse.quote(n, safe='') + '.dc.html': page_url(n) for n in META['pages']['order']}
     lg = ('window.__dcLogic = ' + json.dumps({n: logic_url(n) for n in META['pages']['order']}, ensure_ascii=False, separators=(',', ':')) + ';\n') if PRECOMPILED else ''
-    return '\n' + LAZY_HEAD + 'window.__resources = ' + json.dumps(mp, ensure_ascii=False, separators=(',', ':')) + ';\n' + lg + LAZY_KEEP + '\n' + rd(os.path.dirname(PAGES_LOADER) + '/030-pages-loader.lazy-guard.js')
+    return '\n' + LAZY_HEAD + 'window.__resources = ' + json.dumps(mp, ensure_ascii=False, separators=(',', ':')) + ';\n' + lg + LAZY_KEEP + tail + '\n' + rd(os.path.dirname(PAGES_LOADER) + '/030-pages-loader.lazy-guard.js')
 
 ASSET_REF = re.compile(r'/assets/(?:js|css|fonts|img|pages)/[A-Za-z0-9._-]+')
 def own_assets(d):

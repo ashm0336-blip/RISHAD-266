@@ -126,16 +126,17 @@ LOADER_DIR = os.path.dirname([b['id'] for b in META['blocks'] if b['id'].endswit
 
 def lazy_back(body):
     """المرحلة ٢: محمِّلُ الصفحات الكسول يعود محمِّلَ الحزمة كما في البناء الأحادي — والملفُّ نفسُه يجب أن يكون بالضبط:
-       الرأسُ + خريطةُ العناوين + window.__resourceBlobs = {} (من الأصل) + حارسُ الجلب (من src) — وfflate الذي كان لفكّ الحزمة وحده لا يُشحن."""
+       الرأسُ + خريطةُ العناوين + window.__resourceBlobs = {} + ذيلُ المصدر التنفيذي + حارسُ الجلب — وfflate الخاص بفكّ الحزمة وحده لا يُشحن."""
     m = re.match(r'\n(/\* ═══ KIVO_242 · المرحلة ٢[\s\S]*?\*/\n)window\.__resources = (\{[^\n]*\});\nwindow\.__dcLogic = (\{[^\n]*\});\n', body)
     if not m: return body
     mp = json.loads(m.group(2)); lmap = json.loads(m.group(3)); rest = body[m.end():]
     guard = open(os.path.join(SRC, LOADER_DIR, '030-pages-loader.lazy-guard.js'), encoding='utf-8').read()
     orig = open(os.path.join(SRC, LOADER_DIR, '030-pages-loader.js'), encoding='utf-8').read()
     a = '\nwindow.__resources = {};\n'; i0 = orig.index('\n(function () {\n  var pages = @@KIVO_PAGES@@;')
+    i1 = orig.index('\n})();', i0) + len('\n})();'); tail = orig[i1:]
     keep = 'window.__resourceBlobs = {};\n'; mid = orig[len(a):i0]
     # الجزءُ الأوسط في الأصل = keep + fflate (سطرُ تعليق · المكتبة · سطرٌ فارغ) وحده؛ والكسولُ يُبقي keep ويُسقط fflate (كان لفكّ الحزمة وحده)
-    LAZY_OK.append(rest == keep + '\n' + guard and mid.startswith(keep + '/* fflate') and mid.count('\n') == 3)
+    LAZY_OK.append(rest == keep + tail + '\n' + guard and mid.startswith(keep + '/* fflate') and mid.count('\n') == 3)
     pages = []
     for k, u in mp.items():
         name = urllib.parse.unquote(k[2:-len('.dc.html')])
@@ -165,7 +166,7 @@ rec = as_data(rec).encode('utf-8')
 ok(rec == mono, '★ إعادةُ تركيب dist/ = pk203.mono/index.html بايتاً ببايت (' + str(len(rec)) + ' B)', sha(rec)[:16] + ' / ' + sha(mono)[:16])
 if info.get('pages') == 'lazy':
     pfiles = sorted(u for u in files if u.startswith('/assets/pages/'))
-    ok(LAZY_OK == [True, True], '★ المرحلة ٢: محمِّلُ الصفحات = الرأس + خريطةُ ١٤ عنواناً + خريطةُ منطق ١٤ ملفاً (موجودةٌ كلُّها) + __resourceBlobs الفارغ + حارسُ الجلب — لا شيءَ غيرُها (fflate لا يُشحن)', LAZY_OK)
+    ok(LAZY_OK == [True, True], '★ المرحلة ٢: محمِّلُ الصفحات = الرأس + خرائط الصفحات والمنطق + __resourceBlobs الفارغ + ذيل المصدر التنفيذي كاملًا + حارس الجلب — دون حذف أو إضافة (fflate لا يُشحن)', LAZY_OK)
     ok(len(pfiles) >= 28 and all(re.fullmatch(r'/assets/pages/[A-Za-z-]+(\.logic)?\.[0-9a-f]{10}\.(dc\.txt|js)', u) for u in pfiles) and sum(1 for u in pfiles if '.logic.' in u) >= 14, '   ملفاتُ الصفحات في /assets/pages بأسماءٍ ذات بصمة: نصٌّ ومنطقٌ لكل صفحة (' + str(len(pfiles)) + ')')
     ok(os.path.exists(os.path.join(DIR, '404.html')) and '<script' not in rdb('404.html').decode('utf-8'), '★ 404.html في الجذر (بلا سكربت) — الملفُّ المفقود يُجاب 404 لا بالغلاف (تراجعُ SPA)')
 if rec != mono:

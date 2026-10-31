@@ -1,8 +1,8 @@
 {
   "recordType": "real-browser-operational-coverage",
   "schemaVersion": 1,
-  "updatedAtRiyadh": "2026-10-31T13:43:22.224130+03:00",
-  "status": "local_fix_accepted_pending_preview_browser_retest",
+  "updatedAtRiyadh": "2026-10-31T13:58:51.755058+03:00",
+  "status": "loader_pipeline_fix_locally_accepted_pending_second_preview_browser_retest",
   "target": "https://test.kivo-d81.pages.dev",
   "sourceCommitAtAttempt": "5a017a0722595eadf9efaac4af63eabddeb2e025",
   "browserContext": {
@@ -20,14 +20,14 @@
   "coverage": {
     "pagesActuallyRead": 6,
     "uiActionsExecuted": null,
-    "applicationBugsReproduced": 3,
-    "sourceFixes": 3,
-    "uiRetestsExecuted": 0,
-    "regressionTestsRun": 98,
+    "applicationBugsReproduced": 4,
+    "sourceFixes": 4,
+    "uiRetestsExecuted": 4,
+    "regressionTestsRun": 101,
     "apiTestsSubstituted": 0,
     "newTestDataCreated": false,
     "cloudWrites": 0,
-    "newDeployments": 0,
+    "newDeployments": 1,
     "counterPolicy": "No exact total UI action/test count is claimed during execution; acceptance is recorded per scenario."
   },
   "blocker": {
@@ -243,7 +243,7 @@
       ],
       "observed": "403 domain-denied for d1; source active() fallback invents an unregistered scope",
       "fix": "Explicit registered-department context and declared prerequisite before preload/component; defensive transport guards; no server guard or owner grant change",
-      "publishedRetest": "pending"
+      "publishedRetest": "b07 blocks invalid requests but failed prerequisite presentation because emitted loader omitted hooks; second candidate pending"
     },
     {
       "id": "GUI-EMPTY-02",
@@ -254,7 +254,7 @@
       ],
       "observed": "Read failure displays empty/zero business panels or an unready wizard",
       "fix": "Require complete confirmed scope-bound read data before presenting business panels; preserve denial message and draft",
-      "publishedRetest": "pending"
+      "publishedRetest": "b07 blocks invalid requests but failed prerequisite presentation because emitted loader omitted hooks; second candidate pending"
     },
     {
       "id": "GUI-ADMIN-03",
@@ -263,7 +263,29 @@
       ],
       "observed": "Zero departments still renders a phantom detail with — and account/cap/switch/delete controls",
       "fix": "Only real selected departments or hierarchy nodes expose details. Empty/stale scopes cannot preload references; global hierarchy creation remains available.",
-      "publishedRetest": "pending"
+      "publishedRetest": {
+        "passed": true,
+        "deployment": "b07fd275",
+        "actions": [
+          "zero departments shows honest prerequisite",
+          "phantom account/cap/switch/delete details absent",
+          "empty-tree search/clear",
+          "open add form and inspect real kind choices",
+          "blank submit rejected with اكتب الاسم"
+        ],
+        "businessWrites": 0
+      }
+    },
+    {
+      "id": "GUI-BUILD-04",
+      "areas": [
+        "lazy loader",
+        "all scoped preloads"
+      ],
+      "observed": "After published reload: visible scope says no department, Irshad wrongly says session changed. Public loaded030 has no __dcPageContext or __dcBeforePage at all.",
+      "verifiedRootCause": "tools/build.py lazy_loader reconstructs the loader from fixed header/maps and lazy guard, dropping actual source tail that defines prerequisites and operations preload. Source-only VM tests missed emitted integration.",
+      "fix": "Official lazy build preserves the actual source tail exactly once; equality gate requires the emitted tail before reconstructing source. No copied hooks or runtime compatibility layer.",
+      "publishedRetest": "pending second Preview"
     }
   ],
   "privateActualBrowserEvidence": {
@@ -274,11 +296,16 @@
     ".cache/ui-live-audit/departments-empty-before.png": "19ec0479f1350a3d831c7688daceb6c25d38a1de28700ed81e6ec731517678d5",
     ".cache/ui-live-audit/irshad-kpi-denied-before.png": "717e31e06a02f52e8c06e130a7fc2c04a097fbc5db96d5a13d50c9e1961d242f",
     ".cache/ui-live-audit/seized-kpi-denied-before.png": "e3229b92ab5fc7f43a299cd263c3de0b2f26a4132d07fdc4df481a191311146b",
-    ".cache/ui-live-audit/owner-ui-before-assets.json": "9b671635d3faa332c8d3bd5d6fb0de5bf6affc363629ec30e759a75d3951a573"
+    ".cache/ui-live-audit/owner-ui-before-assets.json": "9b671635d3faa332c8d3bd5d6fb0de5bf6affc363629ec30e759a75d3951a573",
+    ".cache/ui-live-audit/b07-browser-retests.json": "8f98eb49a7264af575686773d3ab1591dec21a783e9496b21c6e796dd3a0350d",
+    ".cache/ui-live-audit/irshad-owner-after-context.png": "8bfa4258a767016d39bdd86cc868658b9318e95bf8997c505a720f24508aa60a",
+    ".cache/ui-live-audit/seized-b07-retest-unready.png": "c382075f549eed2c57782dbe85548a30256f31a32cbce523ecef6760199f747d",
+    ".cache/ui-live-audit/award-b07-retest-unready.png": "e92887478616ea9e3d617966588a125ec01848bc0ec636b4e0cd6018d0609fb3",
+    ".cache/ui-live-audit/admin-empty-after-b07.png": "7136e8fe58a87230cd1b7c6ce3ddd1bd473d090c43b4052d404b0f8738236fa8"
   },
   "localAcceptance": {
-    "uniqueTargetedTests": 98,
-    "pass": 98,
+    "uniqueTargetedTests": 101,
+    "pass": 101,
     "fail": 0,
     "skipped": 0,
     "groups": {
@@ -289,7 +316,8 @@
       "irshad_http": 1,
       "seized_award_http": 3,
       "emitted_current_bundles": 4,
-      "IR_SZ_lock_hints": 2
+      "IR_SZ_lock_hints": 2,
+      "emitted_page_prerequisite": 3
     },
     "buildFiles": 133,
     "budgetPass": 16,
@@ -306,7 +334,13 @@
       ".cache/ui-live-audit/build-final.log": "17f259103a0ac748fd8a760403527cb5726bad73c5c37b1a0039562b28cac447",
       ".cache/ui-live-audit/check-final.log": "da092c6a8553d84048b388bdb52e30f934a63eff991dd3d0a25c33b45cb2c5ce",
       ".cache/ui-live-audit/final-eslint.json": "21726203699ee0212fabd371a3e5217a3e78218cfcac9c1c180f60bf9404431d",
-      ".cache/ui-live-audit/cloud-before.json": "0e457b0a84554c29883c18914b8b2b55b31b35c4da1522c396e0cc39dd949081"
+      ".cache/ui-live-audit/cloud-before.json": "0e457b0a84554c29883c18914b8b2b55b31b35c4da1522c396e0cc39dd949081",
+      ".cache/ui-live-audit/loader-fix/emitted-freeze.json": "6ab656c1b22dd9d7530fedf7adad310e86e21167aeef30cd0fd3dd8f0daf39ef",
+      ".cache/ui-live-audit/loader-fix/emitted-final.tap": "f6d4a00ce94954e4de62886a4d0d8f3331b398cac437c7c24d4a34036c10bef2",
+      ".cache/ui-live-audit/loader-fix/old-build-strict-check.log": "810ad1542431d8812c90dac87761239578463da865d21ebd5bf8af8303fccc15",
+      ".cache/ui-live-audit/loader-fix/build.log": "8e2ec68332e40f34b8a744f38fa80d0485d446a2a49bbafb6d2e20aa00b5a335",
+      ".cache/ui-live-audit/loader-fix/check.log": "9569b84c550c7e5665ca3819d95771736daeba41e8b2910faaf9d18dbbbedb2d",
+      ".cache/ui-live-audit/loader-fix/build-delta.json": "5b2db919fcd54656c492f5bec415bcc56cc0a75bf4fb57181d87fe329f9aeaec"
     }
   },
   "perfDecision": {
@@ -315,5 +349,26 @@
     "awardBudgetBefore": 47800,
     "awardBudgetAfter": 47900,
     "otherBudgetsUnchanged": true
+  },
+  "deployment": {
+    "id": "b07fd275-6590-468b-afe3-e81366defd8a",
+    "commit": "df49cd9f3ef0679addf73a5080cb69ad42b40bef",
+    "url": "https://b07fd275.kivo-d81.pages.dev",
+    "schema": 10,
+    "acceptedByBrowser": false,
+    "protectedDocumentsUnchanged": true
+  },
+  "pipelineCorrection": {
+    "oldDeployment": "b07fd275",
+    "oldManifestSHA": "57b5abc6c4389a1d0fcda5ca75f39d1daf4d1d08226488f1e87ce62f61ad1ba3",
+    "newManifestSHA": "a1d7652b5f6825d9b2dd9ce3b5bbf2852d226900a90e83169d23f75f367b56e6",
+    "newCases": 3,
+    "emittedTestsPassed": 7,
+    "negativeOldBuild": "3/3 failed as expected; strict equality gate rejects omitted tail",
+    "unchangedCommonFiles": 131,
+    "changedFiles": "030 loader and index reference only",
+    "loaderGzipBefore": 3271,
+    "loaderGzipAfter": 4099,
+    "workerAndSchemaUnchanged": true
   }
 }
