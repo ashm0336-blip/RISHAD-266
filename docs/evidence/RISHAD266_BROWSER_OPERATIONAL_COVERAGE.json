@@ -1,0 +1,186 @@
+{
+  "recordType": "real-browser-operational-coverage",
+  "schemaVersion": 1,
+  "updatedAtRiyadh": "2026-10-31T12:49:14.847394+03:00",
+  "status": "blocked_before_browser_initialization",
+  "target": "https://test.kivo-d81.pages.dev",
+  "sourceCommitAtAttempt": "4426ac8783854bc4cbd90dc4e2225bc0c6941da3",
+  "browserContext": {
+    "reportedOpenByUser": true,
+    "ambientUrl": "https://test.kivo-d81.pages.dev/#/sysadmin/overview",
+    "ambientUrlIsNotDomEvidence": true,
+    "currentPreviewVerifiedInBrowser": false,
+    "actualOwnerSessionInspected": false,
+    "actualDepartmentContextInspected": false
+  },
+  "coverage": {
+    "pagesActuallyRead": 0,
+    "uiActionsExecuted": 0,
+    "applicationBugsReproduced": 0,
+    "sourceFixes": 0,
+    "uiRetestsExecuted": 0,
+    "regressionTestsRun": 0,
+    "apiTestsSubstituted": 0,
+    "newTestDataCreated": false,
+    "cloudWrites": 0,
+    "newDeployments": 0
+  },
+  "blocker": {
+    "layer": "browser/computer-control process initialization",
+    "message": "MXC launcher: failed to create the process security environment: CreateProcessSecurityEnvironment failed (HRESULT = 0x80070002)",
+    "recoveryAttempted": [
+      "cua.getState initial attempt and retry",
+      "cua_repl reset and getState retry",
+      "native node_repl @oai/sky initialization",
+      "native node_repl reset and initialization retry",
+      "direct getTab for the existing in-app sysadmin/overview URL"
+    ],
+    "result": "No browser inventory, DOM, screenshot, session, page request or actual UI action was obtained. The user confirms the platform is open.",
+    "causeBeyondLauncherMessage": "Not established; no Windows security setting was modified."
+  },
+  "credentialHandling": {
+    "passwordRequestedInChat": false,
+    "credentialsReadOrSaved": false,
+    "loginFormReached": false,
+    "userWillEnterCredentialsInBrowserIfRequired": true
+  },
+  "reportedPriorityProblem": {
+    "message": "صلاحياتك لا تشمل هذا الإجراء",
+    "areas": [
+      "irshad",
+      "seized",
+      "award",
+      "related indicators"
+    ],
+    "reproduced": false,
+    "requestAndServerReasonCaptured": false,
+    "verifiedRootCause": null,
+    "fixApplied": false
+  },
+  "rows": [
+    {
+      "id": "UI-CTX-01",
+      "area": "owner/session/scope",
+      "status": "blocked_before_browser_initialization",
+      "actions": [
+        "open Preview alias",
+        "authenticate using existing owner",
+        "record visible role and registered/active department",
+        "navigate to each priority module and record exact message"
+      ],
+      "expectedEvidence": "Actual page capture plus method/route/status/error code where available, with credentials redacted."
+    },
+    {
+      "id": "UI-IR-01",
+      "area": "irshad",
+      "status": "blocked_before_browser_initialization",
+      "actions": [
+        "open records",
+        "create one current-day synthetic report if existing form prerequisites permit",
+        "wait for confirmed save",
+        "reload and find row",
+        "edit same row and reload",
+        "filter/search",
+        "export filtered Excel",
+        "view IR indicator with matching scope/range"
+      ]
+    },
+    {
+      "id": "UI-SZ-01",
+      "area": "seized",
+      "status": "blocked_before_browser_initialization",
+      "actions": [
+        "open records",
+        "create one synthetic no-photo report with one item",
+        "wait for confirmed save",
+        "reload and filter",
+        "edit note/quantity on same item",
+        "reload",
+        "export filtered Excel",
+        "view SZ indicator with matching scope/range"
+      ]
+    },
+    {
+      "id": "UI-AW-01",
+      "area": "award",
+      "status": "blocked_before_browser_initialization",
+      "actions": [
+        "open nomination/results/documents tabs",
+        "inspect real required fields",
+        "create one synthetic nomination only if no image/storage action is required",
+        "wait for confirmed save",
+        "reload and open details",
+        "filter results",
+        "change status only if the current policy allows"
+      ],
+      "stopCondition": "If pictures/signatures are mandatory, record the requirement and stop that create path; do not upload or bypass."
+    },
+    {
+      "id": "UI-ACL-01",
+      "area": "separate limited-role sessions",
+      "status": "blocked_before_browser_initialization",
+      "actions": [
+        "use isolated manager and staff sessions scoped to the synthetic department",
+        "verify actual allowed reads and denied writes",
+        "check off-department data is not exposed",
+        "confirm visible controls match granted actions"
+      ],
+      "guard": "No existing owner account/permission change, silent grant or automatic default account."
+    },
+    {
+      "id": "UI-SYNC-01",
+      "area": "reload/navigation/synchronization",
+      "status": "blocked_before_browser_initialization",
+      "actions": [
+        "navigate away/back after confirmed save",
+        "reload",
+        "verify saved row and filters",
+        "check another authorized session reflects confirmed changes",
+        "verify existing draft behavior when leaving an unfinished form"
+      ]
+    }
+  ],
+  "otherPages": {
+    "status": "not_executed",
+    "reason": "Browser process initialization failed before any page could be read; no page/action acceptance can be assigned."
+  },
+  "coverageRecordDiscovery": {
+    "currentBrowserLedgerFoundBeforeThisRun": false,
+    "existingReferences": [
+      "reports/key_coverage.json",
+      "docs/evidence/k243/coverage.json",
+      "docs/evidence/RISHAD266_SCHEMA10_PREVIEW_ACCEPTANCE.json"
+    ],
+    "classification": "Permission-key coverage and historical coverage remain unchanged. The schema10 acceptance records targeted API/assets/VM evidence; it is not real-owner GUI coverage."
+  },
+  "sourceInventoryOnly": {
+    "frontend": {
+      "privatePath": ".cache/ui-live-audit/client-inventory.json",
+      "sha256": "ff7deab6ad5a7f028d378a538aa7a6105f368a044fd9055d5ecf84e3e10315fd"
+    },
+    "backend": {
+      "privatePath": ".cache/ui-live-audit/server-inventory.json",
+      "sha256": "9c31abf066962db475d70cb12c29fdafb1e55127c55911352ad97982fd315922"
+    },
+    "hypothesesAreNotReproducedBugs": true
+  },
+  "resumeOrder": [
+    "Restore browser tool initialization and connect to the already-open Preview tab.",
+    "Inspect actual visible owner/department context; hand login back to the user if necessary.",
+    "Reproduce the three priority permission messages through ordinary UI actions and capture sanitized route/status/reason/correlation evidence.",
+    "Apply a source fix only after establishing the actual common cause, then regression-test, deploy test and repeat the same UI scenario.",
+    "Continue the existing pages with bounded linked synthetic data and separate limited-role sessions."
+  ],
+  "boundaries": {
+    "productionModified": false,
+    "r2Modified": false,
+    "mainModified": false,
+    "oldRepositoryModified": false,
+    "ownerOrGrantsModified": false,
+    "resetOrFullRestoreExecuted": false,
+    "bulkDeleteExecuted": false,
+    "externalNotificationsSent": false
+  },
+  "documentationReference": "https://learn.chatgpt.com/docs/windows/windows-sandbox",
+  "referenceLimit": "General MXC documentation; no specific repair for this exact observed error was established."
+}
