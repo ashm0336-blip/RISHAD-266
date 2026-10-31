@@ -139,7 +139,8 @@
               "task-x": "إعداداتُ المهمة (المراجِعُ · سياسةُ الإثبات · الإلغاءُ وإعادةُ الإسناد) يكتبها الخادمُ وحده — استعمل أزرارَ المهمة" };
   /* KIVO_243: أسبابُ رفض الإنفاذ (تُستعمل حين __BS_AUTHZ وحده — رسائلُ النظام القديم كما هي) */
   var WHY_ENF = { perm: "صلاحيتك لا تشمل هذا الإجراء", scope: "خارج نطاقك (الموقع · العنصر · الوردية · المصدر · الفترة)",
-              "scope-unknown": "نطاقك على هذا العنصر غيرُ محدَّدٍ بعد — يحدّده مدير الإدارة", reason: "هذا الإجراء يتطلب سبباً",
+              "scope-unknown": "نطاقك على هذا العنصر غيرُ محدَّدٍ بعد — يحدّده مدير الإدارة",
+              "unmigrated-department-ceiling": "نطاق الإدارة الميداني غير محدد — يحدده مدير النظام قبل حفظ هذا التعديل", reason: "هذا الإجراء يتطلب سبباً",
               "restore-policy": "الاستعادةُ لمدير النظام أو لمدير الإدارة الممنوح مفتاحها", "import-allowlist": "هذا السجلّ خارج قائمة الاستيراد المسموحة",
               grant: "لا تملك منح هذا المفتاح", unmapped: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً", residual: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً",
               unbound: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً", keydel: "حذفُ السجل كاملاً غيرُ مسموح", shape: "صيغةُ البيانات لم تُقبل", ph: "كلمةُ المرور لم تُحفظ: صيغةُ تشفيرها قديمة — حدّث الصفحة ثم أعد المحاولة" };   /* KIVO_262 */
@@ -759,9 +760,12 @@
       entry = editors[action];
     }
     if (entry.ticket) {
-      if (entry.intent !== signature) return Object.assign(operationFailure9('review-required', 409, true), { ticket: entry.ticket });
-      if (entry.promise) return entry.promise;
       var state = operationStatus9(entry.ticket).state;
+      if (entry.intent !== signature) {
+        if ((state === 'denied' || state === 'conflict') && entry.result) return entry.result;
+        return Object.assign(operationFailure9('review-required', 409, true), { ticket: entry.ticket });
+      }
+      if (entry.promise) return entry.promise;
       if (state !== 'uncertain') return entry.result || Object.assign(operationFailure9('pending', 409), { ticket: entry.ticket });
     } else {
       if (entry.prepared && entry.intent !== signature) return operationFailure9('review-required', 409);
@@ -1637,7 +1641,7 @@
         if (!operationObject9(denied)) return '';
         return Array.from(new Set(Object.keys(denied).map(function (key) {
           var value = denied[key];
-          return operationObject9(value) && typeof value.why === 'string' ? whyText9(value.why) : '';
+          return operationObject9(value) && typeof value.why === 'string' ? whyText9(value.why === 'scope-unknown' && typeof value.detail === 'string' && /(?:^|=)unmigrated-department-ceiling(?:$| · )/.test(value.detail) ? 'unmigrated-department-ceiling' : value.why) : '';
         }).filter(Boolean))).join(' · ');
       },
       ready: operationReady9,

@@ -1,8 +1,8 @@
 {
   "recordType": "real-browser-operational-coverage",
   "schemaVersion": 1,
-  "updatedAtRiyadh": "2026-10-31T17:24:50.698661+03:00",
-  "status": "c21_four_gui_fixes_accepted_profile_fix_940c691_local_accepted_preview_retest_pending",
+  "updatedAtRiyadh": "2026-10-31T18:20:18.587067+03:00",
+  "status": "387d_private_profile_gui_accepted_task_live_and_known_denial_fix_local_accepted_preview_pending",
   "target": "https://test.kivo-d81.pages.dev",
   "sourceCommitAtAttempt": "5a017a0722595eadf9efaac4af63eabddeb2e025",
   "browserContext": {
@@ -30,8 +30,8 @@
   "coverage": {
     "pagesActuallyRead": null,
     "uiActionsExecuted": null,
-    "applicationBugsReproduced": 9,
-    "sourceFixes": 9,
+    "applicationBugsReproduced": null,
+    "sourceFixes": null,
     "uiRetestsExecuted": null,
     "regressionTestsRun": null,
     "apiTestsSubstituted": 0,
@@ -42,7 +42,7 @@
     "confirmedEmptyContextScenarios": 5,
     "emptyContextScopedRequests": 0,
     "confirmedBusinessWriteActions": null,
-    "bugCounterMeaning": "Nine named findings have source fixes. Original four c21 targets passed actual GUI. The ninth private-profile synchronization fix passed targeted local acceptance and is committed; deployed browser retest remains pending. No full platform acceptance.",
+    "bugCounterMeaning": "Historical nine retained in earlier snapshots. Additional private-task lag and known-denial feedback are tracked separately here; no new unified total or full-page acceptance is claimed.",
     "currentReleaseGuiRetestsAccepted": 4
   },
   "blocker": {
@@ -53,15 +53,23 @@
   },
   "credentialHandling": {
     "passwordRequestedInChat": false,
-    "credentialsReadOrSaved": false,
+    "credentialsReadOrSaved": true,
     "loginFormReached": true,
     "userWillEnterCredentialsInBrowserIfRequired": true,
     "ownerEnteredCredentialsManually": true,
     "passwordFieldsRead": false,
     "authRequestsCaptured": false,
     "sessionStateExported": false,
-    "syntheticCredentialsInMemoryOnly": true,
-    "realOwnerCredentialReadingOrExportClaimed": false
+    "syntheticCredentialsInMemoryOnly": false,
+    "realOwnerCredentialReadingOrExportClaimed": false,
+    "credentialIncidentScope": "Old initial synthetic PIN appeared once in tool output; invalidated by self-service rotation. Real owner credentials were never read or exported.",
+    "activeSyntheticPlainCredentialInMemoryOnly": true,
+    "syntheticLoginResponseStatusAndOkObserved": true,
+    "ownerCredentialsReadOrSaved": false,
+    "incidentProof": {
+      "path": ".cache/ui-live-audit/profile-live-release/credential-test-rotation.json",
+      "sha256": "9c64c9ca442dad3543b249b05ed2ec9bbd89644631f3d8e3cc075fe7c04b4d10"
+    }
   },
   "reportedPriorityProblem": {
     "message": "صلاحياتك لا تشمل هذا الإجراء",
@@ -421,6 +429,24 @@
         ".cache/ui-live-audit/batch3-accepted/profile-rest-request-timeline.json",
         ".cache/ui-live-audit/batch3-accepted/profile-rest-sync-observation.json"
       ]
+    },
+    {
+      "id": "UI-LINKED-REPORT-01",
+      "area": "monthly schedule / daily report",
+      "status": "approve_month_create_pull_absence_reload_clear_passed_further_controls_pending",
+      "proofPrivatePath": ".cache/ui-live-audit/profile-live-release/linked-operational-ui.json"
+    },
+    {
+      "id": "UI-ROUND-SCOPE-01",
+      "area": "daily round / geometry / scope",
+      "status": "auto_round_and_site_read_passed_correct_missing_ceiling_denial_reproduced_positive_drawing_pending_approved_scope_save",
+      "proofPrivatePath": ".cache/ui-live-audit/profile-live-release/round-zone-scope-denial.json"
+    },
+    {
+      "id": "UI-TASK-LINKED-01",
+      "area": "tasks / staff private profile",
+      "status": "required_title_create_edit_directed_self_accept_start_passed_live_fix_local_accepted_delivery_review_pending",
+      "proofPrivatePath": ".cache/ui-live-audit/profile-live-release/linked-operational-ui.json"
     }
   ],
   "otherPages": {
@@ -950,8 +976,8 @@
     {
       "severity": "medium",
       "area": "staff own-profile synchronization after rest updates",
-      "finding": "Natural owner save200 advances staff changes230 to232 with empty keys and no private hint while own card stays stale. Source940c691 adds bounded private hint/coalesced refresh, preserving whole-department denial.",
-      "status": "source_fixed_local_accepted_preview_gui_pending",
+      "finding": "Private card updates without reload after scoped meChanged; whole-department staffing remains denied.",
+      "status": "resolved_actual_published_ui_387d",
       "evidencePrivatePaths": [
         ".cache/ui-live-audit/batch3-accepted/profile-rest-request-timeline.json",
         ".cache/ui-live-audit/batch3-accepted/profile-rest-sync-observation.json",
@@ -1409,83 +1435,33 @@
     "limit": "Current synthetic setup deliberately changes auth-users/depts; no claim that every global document is byte-identical to the pre-setup state.",
     "strictCurrentBaselineGlobalRevision": 209
   },
-  "currentSourceCommit": "940c691f19d2d38206d123beefdc1283d85a03e6",
+  "currentSourceCommit": "2f7d09156c04923b85417a8355e1fb1098f8bd8c",
   "currentRelease": {
-    "codeCommit": "c21ad68789c36f261f80959f625a43e6b06ce07b",
-    "pushedDevelopCommit": "c21ad68789c36f261f80959f625a43e6b06ce07b",
-    "deploymentId": "cc0ad3db-cb47-4106-8777-fee5734cd22d",
-    "releaseSeal": {
-      "path": ".cache/ui-live-audit/batch3-accepted/release-sealed.json",
-      "sha256": "ad6ed946d4addc3ead1ff7aca08f45c14a31b5c8e879f430544e5d7977a70a2b"
-    },
-    "archives": {
-      "source": {
-        "path": ".cache/ui-live-audit/batch3-accepted/RISHAD266_source_c21ad68.zip",
-        "sha256": "e7534e57db0f24bcace7b56f707de6ce98747da42b28bf3920a097a8cda53d87",
-        "files": 1000,
-        "crcVerified": true,
-        "matchesCommittedWorkingTreeBytes": true
-      },
-      "preview": {
-        "path": ".cache/ui-live-audit/batch3-accepted/RISHAD266_preview_c21ad68.zip",
-        "sha256": "1c635a6a4492180a558cac68711808423a10182b80b39ed11304049c8302d271",
-        "files": 133,
-        "crcVerified": true
-      }
-    },
-    "previewFiles": 133,
-    "sourceFiles": 1000,
-    "sourceDirectoryEntries": 81,
-    "archiveHashesAndCRCVerifiedLocally": true,
-    "sameSchemaCodeRollbackAvailable": true,
-    "rollbackCommit": "46d8faa9386347d0e6a10fd5edee648de5083c00",
-    "databaseRestoreRequiredForCodeRollback": false,
-    "rollbackExercisePerformed": false,
-    "evidenceFilesSha256": {
-      ".cache/ui-live-audit/batch3-accepted/release-sealed.json": "ad6ed946d4addc3ead1ff7aca08f45c14a31b5c8e879f430544e5d7977a70a2b",
-      ".cache/ui-live-audit/batch3-accepted/deployment-confirmed.json": "b7af89d4674f635e2800caeb6a11bd7a2d42283fed91906aae89929e518db62c",
-      ".cache/ui-live-audit/batch3-quiescent/cloud-before.json": "ce9620e828e7b7d58e690b0c8dbb4111cf219d71a927218d1ca181e0c60e18fd",
-      ".cache/ui-live-audit/batch3-quiescent/cloud-predeploy.json": "b47f2ddb083d9df88e29c7e2850c03228dd74782f82e970b06a07c2ce437e656",
-      ".cache/ui-live-audit/batch3-quiescent/cloud-after.json": "06219f1444c6d6bff0e9190286533ae58d75f83afea3361eaa81f57cfe2e10f1",
-      ".cache/ui-live-audit/batch3/predeploy-activity-proof.json": "e0dcb170f98c1460fa4bfeb813685122910830bb6d8c66f419d667e75ab6ba16",
-      ".cache/ui-live-audit/batch3-accepted/predeploy-ready.json": "9a8909d65168fae1aa92407dda75df394b82ab450d5eede3bdd1001a0387a57c",
-      ".cache/ui-live-audit/batch3-accepted/browser-retests.json": "9208c9cedad7c2bbdb050224b43f8cde2c338851617e434f6c6898bba8469dc7",
-      ".cache/ui-live-audit/batch3-accepted/admin-employee-count-after.png": "45131554a32fbea437aaf007aceb48a02c5a30e1cc428e975108f3c192c60139",
-      ".cache/ui-live-audit/batch3-accepted/seized-category-total-after.png": "4fbbbb90616a7a58c517a43b9e37cabb4307e7d7987152622cc29abbc5bb3c60",
-      ".cache/ui-live-audit/batch3-accepted/profile-rest-request-timeline.json": "f2a1d5e4d3227949d00dc411cf8680aad08739d79f33b96e3139a3e98abbfd72",
-      ".cache/ui-live-audit/batch3-accepted/profile-rest-sync-observation.json": "ed8b696eb4f5bb19d3e6039c7ae30a55fb8de1f9cbe26761cc80efaec442bb9b",
-      ".cache/ui-live-audit/batch3-accepted/staff-rest-two-days-after.png": "48048bbe3f08fd5f3c10405086a22d491da4d8a084d2e48179db12917d895d57"
-    },
-    "originalTargetGuiRetestsAccepted": 4
+    "deployment": "387d8055-e570-4d7c-b817-f663740a6f58",
+    "commit": "cffa284abaac076e0f6daeb6e4f74dbfd5ad445f",
+    "schema": 10,
+    "alias": "https://test.kivo-d81.pages.dev",
+    "guiStatus": "private-profile live retest passed; newer local task/feedback candidate not yet deployed",
+    "proof": {
+      "path": ".cache/ui-live-audit/profile-live-release/deployment-confirmed.json",
+      "sha256": "be7fcafdba41e7e267e545bb0d0fbe6dceadb2b74407f2d458cc13dbbe32d537"
+    }
   },
   "strictCloudCheckpoint": {
-    "atUtc": "2026-10-31T13:16:32.340Z",
+    "meaning": "Strict code-upload window only; later intentional UI writes are separate",
+    "revision": "235",
+    "unchangedBeforePredeployAfter": true,
+    "previewRetained": 11,
+    "productionRetained": 204,
     "schema": 10,
-    "authzMode": "enforce",
-    "permitPresent": false,
-    "targetTableCount": 93,
-    "totalDatabaseTableCountNotClaimed": true,
-    "accountCount": 2,
-    "registeredDepartmentCount": 2,
-    "previewDeploymentCount": 10,
-    "productionDeploymentCount": 204,
-    "globalRevisionBeforePredeployAfter": [
-      "209",
-      "209",
-      "209"
-    ],
-    "protectedDocumentsUnchanged": true,
-    "resourceRevisionsAndTableCountsUnchanged": true,
-    "productionConfigurationUnchanged": true,
-    "previewR2ConfigurationUnchanged": true,
-    "priorDeploymentIdsRetained": true,
-    "foreignKeyViolations": 0,
-    "retiredBusinessKvRows": 0,
-    "cloudMutationsByReadOnlyChecks": 0,
-    "productionD1Calls": 0,
-    "r2Calls": 0,
-    "rawOwnerValuesOrProtectedHashesPublished": false,
-    "scopeLimit": "Counts/revision witnesses and protected-document hashes; no full business-row byte comparison or database export."
+    "proof": {
+      "path": ".cache/ui-live-audit/profile-live-release/cloud-after.json",
+      "sha256": "48066c8cde240f6061a7722e7113d4db69d259573a82a0b21abfd7cf81a0d461"
+    },
+    "nextReleaseBaseline": {
+      "path": ".cache/ui-live-audit/private-tasks-live-release/cloud-before.json",
+      "sha256": "3faa7f60e8bcec6663071830ff6ca1bcb0572435012788a96c0eb9d4d90ba8de"
+    }
   },
   "postDeployGuiRetests": {
     "deployment": "cc0ad3db-cb47-4106-8777-fee5734cd22d",
@@ -1681,7 +1657,7 @@
     "localUniqueCases": 12,
     "newCases": 9,
     "selectedExistingCases": 3,
-    "browserRetest": "pending_after_preview_publish",
+    "browserRetest": "passed_actual_separate_owner_staff_ui_on387d_without_reload",
     "schema": 10,
     "migrationRequired": false,
     "newPermissions": false,
@@ -1731,6 +1707,76 @@
         "path": ".cache/ui-live-audit/profile-live-release/cloud-predeploy.json",
         "sha256": "e8be67ac1c994f6bc0a7349c01f05bdf760af26e7e05818cb8880316b77fad13"
       }
-    ]
+    ],
+    "elapsedMsSingleObservation": 2078,
+    "browserEvidence": {
+      "path": ".cache/ui-live-audit/profile-live-release/browser-profile-retest.json",
+      "sha256": "3aebd16b3a694628fa4dfa86e4154a252afc43dbbf5315356130584a44e6ad12"
+    }
+  },
+  "linkedOperationalBatch": {
+    "proof": {
+      "path": ".cache/ui-live-audit/profile-live-release/linked-operational-ui.json",
+      "sha256": "d5d4d5c54a2183ba12b8a4220c98e0cfb3192f33f86d9df2be0ec413eba5e0e4"
+    },
+    "taskLag": {
+      "path": ".cache/ui-live-audit/profile-live-release/task-private-live-lag.json",
+      "sha256": "a51c28bb35db5d6bb0ce5a6458622808a39f44998e34439c47029e4561562f61"
+    },
+    "scopeDenial": {
+      "path": ".cache/ui-live-audit/profile-live-release/round-zone-scope-denial.json",
+      "sha256": "d97558f69827068324c2ebee049e18e2f47bbc20cee530d3fcc422004c3cf3e8"
+    },
+    "scopeProposal": {
+      "path": ".cache/ui-live-audit/profile-live-release/synthetic-site-scope-proposal.json",
+      "sha256": "7139396b517a0fd992ec381b1f6891706fad4e843789360264d46a65855848d6"
+    },
+    "scopeSaveApprovedByUser": true,
+    "scopeSaved": false,
+    "ownerAccountGrantsChanged": false,
+    "taskCompletionReviewPending": true,
+    "cleanupPending": true
+  },
+  "newLocalFixAcceptance": {
+    "taskCommitPushed": "2f7d09156c04923b85417a8355e1fb1098f8bd8c",
+    "taskPhaseUniqueComposite": 15,
+    "knownDenialIntegratedCases": 17,
+    "overlap": 5,
+    "scopeGuardCase": 1,
+    "fullSuiteRun": false,
+    "previewRetestPending": true,
+    "evidence": [
+      {
+        "path": ".cache/ui-live-audit/private-tasks-live-fix/local-freeze.json",
+        "sha256": "9ff0db5a8c22fc96e22f2b197b141c6ec258dfce9df5908dbd9cc29e05cfe840"
+      },
+      {
+        "path": ".cache/ui-live-audit/known-denial-fix/local-freeze.json",
+        "sha256": "2bde3560cf6e8e38af725b3fbe2f1c3bf88db58adb03ae85c651e74289620cf8"
+      },
+      {
+        "path": ".cache/ui-live-audit/round-department-scope-first.tap",
+        "sha256": "dc4558cba219048a9efea45a9cf11f35aeda672dc1d590624e777e1d5476d8b7"
+      }
+    ],
+    "build": {
+      "files": 133,
+      "budgetsPass": 16,
+      "workerGzip": 440598,
+      "workerCap": 441000,
+      "manifest": {
+        "path": ".cache/ui-live-audit/private-tasks-live-fix/build-final.build.json",
+        "sha256": "80b5c07fbda107a6388fc1af089a9d0177dca34be3f4c66588b562903ad4279c"
+      }
+    },
+    "check": {
+      "pass": 19,
+      "fail": 0,
+      "sourceSecretFiles": 992,
+      "buildSecretTextFiles": 122,
+      "secretFindings": 0,
+      "eslintErrors": 0,
+      "eslintWarnings": 260
+    }
   }
 }

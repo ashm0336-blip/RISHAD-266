@@ -48,9 +48,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       this._opTicket = result && result.ticket;
       if (!result || result.ok !== 1) {
         this.bsToast(
-          result && result.uncertain
+          (service.explain && service.explain(result)) || (result && result.uncertain
             ? "لم يصل تأكيد الحفظ — بقيت المسودة؛ أعد المحاولة بنفس البيانات لحسم الطلب"
-            : "لم يُحفظ التعديل — راجع التغييرات والصلاحيات ثم أعد تحميل البيانات",
+            : "لم يُحفظ التعديل — راجع التغييرات والصلاحيات ثم أعد تحميل البيانات"),
           "warn",
         );
         return result || { ok: 0, err: "save" };
