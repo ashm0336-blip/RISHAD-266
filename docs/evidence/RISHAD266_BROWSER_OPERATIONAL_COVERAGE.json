@@ -1,8 +1,8 @@
 {
   "recordType": "real-browser-operational-coverage",
   "schemaVersion": 1,
-  "updatedAtRiyadh": "2026-10-31T19:51:46.962276+03:00",
-  "status": "aad5_private_tasks_known_denial_gui_accepted_scope_saved_map_message_local_accepted_density_400_under_repair",
+  "updatedAtRiyadh": "2026-10-31T20:44:47.949235+03:00",
+  "status": "188ea835_private_map_gui_accepted_density_schema11_local_implementation_pending",
   "target": "https://test.kivo-d81.pages.dev",
   "sourceCommitAtAttempt": "5a017a0722595eadf9efaac4af63eabddeb2e025",
   "browserContext": {
@@ -15,7 +15,7 @@
     "visibleOwnerRole": "مدير النظام",
     "registeredDepartmentsVisible": 2,
     "controlMode": "Installed Chrome, ephemeral headed context, browser sandbox enabled; user completed login manually",
-    "currentPreviewVerification": "CF strict read-only before/predeploy/after confirms aad5e07e/89478237 schema10; subsequent GUI writes are separately recorded.",
+    "currentPreviewVerification": "CF strict window307 schema10 confirmed188ea835/cd80cf22; post-deploy owner/staff GUI acceptance is separate from the code-upload window.",
     "registeredDepartmentsAtEmptyContextRetest": 0,
     "registeredDepartmentsVisibleMeaning": "Two synthetic departments now exist. A separate no-grant staff session exposes only its own department in the header; no forced selector click was used.",
     "contextResumeReport": {
@@ -37,7 +37,7 @@
     "apiTestsSubstituted": 0,
     "newTestDataCreated": true,
     "cloudWrites": null,
-    "newDeployments": 4,
+    "newDeployments": 5,
     "counterPolicy": "No unified GUI page/action or business-write count is claimed. Historical5 writes remain labeled history. Source44 includes11 poll cases; emitted11 repeats those11. Later targeted groups are separate reruns/added coverage, never a claimed full suite.",
     "confirmedEmptyContextScenarios": 5,
     "emptyContextScopedRequests": 0,
@@ -1165,15 +1165,38 @@
           "eslintWarnings": 260
         }
       }
+    },
+    {
+      "at": "2026-10-31T19:51:46.962276+03:00",
+      "status": "aad5_private_tasks_known_denial_gui_accepted_scope_saved_map_message_local_accepted_density_400_under_repair",
+      "currentRelease": {
+        "deployment": "aad5e07e-5eed-477d-a504-c25255095cbb",
+        "commit": "89478237d014f5b8baf07362c827ff213f17aa5d",
+        "schema": 10,
+        "alias": "https://test.kivo-d81.pages.dev",
+        "guiStatus": "Known-denial and private-task live retests passed; full task workflow completed; private map feedback accepted locally but not published; density save rejected400.",
+        "proof": {
+          "path": ".cache/ui-live-audit/private-tasks-live-release/deployment-confirmed.json",
+          "sha256": "fdea65df21d985f5da88f1d1cf1eb30aedda3c16b346f46b2464e1383d8acaf1"
+        }
+      },
+      "strictCloudCheckpoint": {
+        "meaning": "Strict code-upload window only; later intentional UI writes are separate. Counts/revisions do not compare every business row.",
+        "revision": "265",
+        "unchangedBeforePredeployAfter": true,
+        "previewRetained": 12,
+        "productionRetained": 204,
+        "schema": 10,
+        "proof": {
+          "path": ".cache/ui-live-audit/private-tasks-live-release/cloud-after.json",
+          "sha256": "2016b6d34e077ecd3138f24f4f6fa784182f8d5e96f8d3b640a7b0ddb607488a"
+        }
+      }
     }
   ],
   "latestLocalCandidate": {
-    "area": "Private Profile map feedback",
-    "status": "local_accepted_not_published",
-    "evidence": {
-      "path": ".cache/ui-live-audit/profile-map-fix/local-freeze.json",
-      "sha256": "202edca83c82c90917f8afd7cbcea6ab56661963a0fdf20139c0e7074769fc95"
-    }
+    "area": "Density schema11 typed prayer readings and versioned backup conversion",
+    "status": "implementation_in_progress_not_accepted_or_published"
   },
   "localCandidateHistory": [
     {
@@ -1427,29 +1450,34 @@
     "limit": "Current synthetic setup deliberately changes auth-users/depts; no claim that every global document is byte-identical to the pre-setup state.",
     "strictCurrentBaselineGlobalRevision": 209
   },
-  "currentSourceCommit": "89478237d014f5b8baf07362c827ff213f17aa5d",
+  "currentSourceCommit": "cd80cf2285ae01fb5bb448c225a7f1625e1d3ec2",
   "currentRelease": {
-    "deployment": "aad5e07e-5eed-477d-a504-c25255095cbb",
-    "commit": "89478237d014f5b8baf07362c827ff213f17aa5d",
+    "deployment": "188ea835-bbe5-412f-95c2-fbf0feb3147c",
+    "commit": "cd80cf2285ae01fb5bb448c225a7f1625e1d3ec2",
     "schema": 10,
     "alias": "https://test.kivo-d81.pages.dev",
-    "guiStatus": "Known-denial and private-task live retests passed; full task workflow completed; private map feedback accepted locally but not published; density save rejected400.",
+    "guiStatus": "Private assignment99 and correct unavailable-map feedback accepted in actual separate no-page-grant staff UI; density11 remains local work only.",
     "proof": {
-      "path": ".cache/ui-live-audit/private-tasks-live-release/deployment-confirmed.json",
-      "sha256": "fdea65df21d985f5da88f1d1cf1eb30aedda3c16b346f46b2464e1383d8acaf1"
+      "path": ".cache/ui-live-audit/profile-map-release/deployment-confirmed.json",
+      "sha256": "6680ecaede3e1ee7f41901e1703e6c93ebec5e7a902549d48375c15fa1a9ca7b"
+    },
+    "seal": {
+      "path": ".cache/ui-live-audit/profile-map-release/release-sealed.json",
+      "sha256": "ee470b4ab4263df58538ab1346fa390e8fae49446639f548898f3088017033a4"
     }
   },
   "strictCloudCheckpoint": {
-    "meaning": "Strict code-upload window only; later intentional UI writes are separate. Counts/revisions do not compare every business row.",
-    "revision": "265",
+    "meaning": "Strict code-upload window only, before subsequent GUI writes; counts/revisions are not every business-row byte proof.",
+    "revision": "307",
     "unchangedBeforePredeployAfter": true,
-    "previewRetained": 12,
+    "previewRetained": 13,
     "productionRetained": 204,
     "schema": 10,
     "proof": {
-      "path": ".cache/ui-live-audit/private-tasks-live-release/cloud-after.json",
-      "sha256": "2016b6d34e077ecd3138f24f4f6fa784182f8d5e96f8d3b640a7b0ddb607488a"
-    }
+      "path": ".cache/ui-live-audit/profile-map-release/cloud-after.json",
+      "sha256": "10d3b4c77d7b2756e1ddd068dbbd66cf68b6f3ed5b44392a8b661d7c794e6b9d"
+    },
+    "approvedScopeAlsoCompared": true
   },
   "postDeployGuiRetests": {
     "deployment": "cc0ad3db-cb47-4106-8777-fee5734cd22d",
@@ -1792,7 +1820,7 @@
     }
   },
   "privateMapFeedbackFix": {
-    "state": "local_accepted_not_published",
+    "state": "published_actual_gui_accepted_188ea835",
     "finding": {
       "path": ".cache/ui-live-audit/private-tasks-live-release/private-map-access-observation.json",
       "sha256": "e52aaaae27b95e410186b9110d821b21eceb912bd7812c6615939a17c9912874"
@@ -1803,10 +1831,15 @@
     },
     "newSourceAndEmittedCases": 2,
     "existingOD5Cases": 1,
-    "backendGeometryOrAclChanged": false
+    "backendGeometryOrAclChanged": false,
+    "publishedGui": {
+      "path": ".cache/ui-live-audit/profile-map-release/browser-map-retest.json",
+      "sha256": "35c2a77f80b46115215dfc418307865a95eeb77d8ca3a3b57415ced18d57b268"
+    },
+    "detailDialogLimit": "No authorized floors => detail map is not rendered; only the main-card unavailable message is claimed visible."
   },
   "densitySaveFinding": {
-    "state": "reproduced_actual_ui_not_fixed",
+    "state": "reproduced_actual_ui_schema11_fix_local_in_progress_not_published",
     "http": 400,
     "err": "operations-scalar-type",
     "draftPercent": 10,
@@ -1823,5 +1856,27 @@
     "transientProfileBanner": "Did not reproduce after fresh reload; causal error not captured.",
     "fullSuiteRerun": false,
     "allPagesAccepted": false
+  },
+  "dailyStatsUiAcceptance": {
+    "state": "save_reload_and_exact_owned_day_cleanup_pass",
+    "proof": {
+      "path": ".cache/ui-live-audit/private-tasks-live-release/browser-daily-stats.json",
+      "sha256": "9674c160abb388c791030f39a8487260e017659b262563ecaa279fc8d7b27ccc"
+    },
+    "exportOrLockOrNabawiNotTested": true
+  },
+  "densitySchema11Prototype": {
+    "state": "prototype_only_not_final_migration_acceptance",
+    "proposal": {
+      "path": ".cache/ui-live-audit/round-density-fix/density-schema11-proposal.json",
+      "sha256": "7204a4e41e7110a624634efc7f470004f1ea0a0a657c54ce58aa7451a5c8d704"
+    },
+    "proof": {
+      "path": ".cache/ui-live-audit/round-density-fix/schema11-conversion-proof.json",
+      "sha256": "8680e49874e1912a876c6e20dd8703e9fd74e8eaac355d3136c08d3fed145966"
+    },
+    "canonicalSourceImplementationInProgress": true,
+    "cloudUpgradePerformed": false,
+    "noFullDatabaseRestoreAuthorized": true
   }
 }
