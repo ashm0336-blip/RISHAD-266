@@ -1,0 +1,324 @@
+{
+  "status": "preview-schema10-accepted",
+  "schema": 10,
+  "acceptedAtUtc": "2026-10-31T09:01:47.175000Z",
+  "acceptedAtRiyadh": "2026-10-31T12:01:47.175000+03:00",
+  "allBusinessMigrated": false,
+  "git": {
+    "repository": "https://github.com/ashm0336-blip/RISHAD-266",
+    "branch": "develop",
+    "deployedCodeCommit": "b2f07fe56af1db477c6c4c4eb55136d82069968b",
+    "productionOrMainDeploymentPerformed": false
+  },
+  "deployment": {
+    "id": "ebdf166c-1d81-4a68-a59b-34e4df33d654",
+    "url": "https://ebdf166c.kivo-d81.pages.dev",
+    "alias": "https://test.kivo-d81.pages.dev",
+    "branch": "test",
+    "environment": "preview",
+    "database": "bassam-db-preview",
+    "buildManifestSha256": "51ef5c12050dd74ad1ec01e673464ae688af8ca7dcc1acbbc3bf553ba1678f6a",
+    "workerSourceSha256": "29708ae9a24c672d149f4ca4fc709c8930399cab682512c4e7035959c6fd6662",
+    "productionDeploymentUnchanged": true,
+    "productionConfigUnchanged": true,
+    "previewR2ConfigUnchanged": true
+  },
+  "migration": {
+    "schema": 10,
+    "ledger": [
+      "0001_baseline",
+      "0002_enforcement_tables",
+      "0003_aud_legacy_import",
+      "0004_daily_stats",
+      "0005_notifications",
+      "0006_custody",
+      "0007_atomic_restore",
+      "0008_irshad",
+      "0009_seized_awards",
+      "0010_operational_domains"
+    ],
+    "newOperationalResources": 21,
+    "newPhysicalTables": 58,
+    "totalMigrationDomainTables": 93,
+    "maxColumnsPerTable": 92,
+    "permitAbsent": true,
+    "retiredBusinessKvRows": 0,
+    "revisionTombstonesPreserved": true,
+    "atomicSharedRestoreManifest": 4,
+    "previousBackupManifestImportAtBoundary": [
+      1,
+      2,
+      3
+    ],
+    "dualRuntimeStores": false
+  },
+  "activation": {
+    "http": 200,
+    "atUtc": "2026-10-31T08:47:54.419Z",
+    "requestCount": 1,
+    "automaticRetry": false
+  },
+  "liveQa": {
+    "httpChecks": 106,
+    "startedUtc": "2026-10-31T08:48:50.821Z",
+    "completedUtc": "2026-10-31T08:51:08.154Z",
+    "cleanupComplete": true,
+    "existingOwnerAndProtectedDocumentsPreserved": true,
+    "ownerAccountCount": 1,
+    "auditHistoryRetained": true,
+    "restoreHistoryRetained": true,
+    "revisionTombstonesRetained": true,
+    "r2Calls": 0,
+    "productionD1Calls": 0
+  },
+  "independentPostflight": {
+    "completedUtc": "2026-10-31T09:01:47.175Z",
+    "readOnly": true,
+    "authenticatedReadRequests": 3,
+    "readStatements": 114,
+    "schema": 10,
+    "migrationDomainTables": 93,
+    "ownerAccountCount": 1,
+    "protectedDocumentsMatchPreupgrade": true,
+    "temporaryResidueTotal": 0,
+    "foreignKeyViolations": 0,
+    "retainedRestoreHistory": {
+      "receipts": 1,
+      "preimages": 66,
+      "manifests": 35
+    },
+    "retainedAuditCounts": {
+      "businessAudit": 34,
+      "seedAudit": 1,
+      "cleanupAudit": 1,
+      "authorizationAudit": 1
+    },
+    "globalRevisionStableAcrossReads": true,
+    "verifierSourceSha256": "a1df9c3d16b0c773f05dfcb813213ed95867a8488b5926e1faff94c3a34d48dc"
+  },
+  "publicVerification": {
+    "checks": 55,
+    "passed": 55,
+    "failed": 0,
+    "targetedAssetsPerCurrentOrigin": 23,
+    "scope": "Immutable deployment and test alias roots/pings and23actual assets each; five retained schema5.2/7/8/9 URLs reject schema10 with503. The retained failed schema10 candidate is not expected to reject schema10.",
+    "assetBytesMatchedBuild": true
+  },
+  "firstAttempt": {
+    "deployment": "34821a8d-175c-4c0d-9d0f-da2b33602720",
+    "url": "https://34821a8d.kivo-d81.pages.dev",
+    "http": 500,
+    "requestCount": 1,
+    "automaticRetry": false,
+    "schemaAfterFailure": 9,
+    "operationalTablesAfterFailure": 0,
+    "ownerAndPermissionDocumentsUnchanged": true,
+    "retained": true,
+    "rootCause": "The migration applied live-department membership to canonical revision-only tombstones from deleted departments. Cold native source and built Worker reproduce failure beforeDDL. Cloud stack details were not obtained.",
+    "fix": "Canonical revision metadata is validated independently and preserved; live payloads still require registered department membership. All witnesses and revision values remain.",
+    "currentNativeMigrationCases": 10,
+    "permanentMigrationRegressionCases": 5,
+    "runtimeOutsideMigrationByteIdentical": true,
+    "sqlAndArgsUnchangedFor42Documents": true,
+    "expiredPermitCancellation": {
+      "identifiedOperationPrefix": "31765d52",
+      "userExplicitlyApproved": true,
+      "cancelled": true,
+      "atUtc": "2026-10-31T08:45:28.145Z",
+      "exactCompareAndSwap": true,
+      "schemaRemained9": true,
+      "canonicalRevisionRowsPreserved": 16,
+      "protectedDocumentsUnchanged": true,
+      "businessDataWrites": 0,
+      "deploymentDeletes": 0
+    }
+  },
+  "localAcceptance": {
+    "record": "docs/evidence/RISHAD266_SCHEMA10_LOCAL_ACCEPTANCE.json",
+    "testGroupCountsMustNotBeSummed": true,
+    "fullPlatformSuiteRerun": false,
+    "qaPlannerCases": 40,
+    "nativeQaChecks": 106,
+    "nativeQaHttpRequests": 140,
+    "nativeQaBaselineWorkerSha256": "5d037629c5b483f15ab88bb9beb7d4179caf500a0f918815cb4e2862079ad225",
+    "migrationOnlyCurrentNativeCases": 10,
+    "migrationOnlyCurrentUnitCases": 5,
+    "build": {
+      "files": 133,
+      "sizeGatesPassed": 16,
+      "workerGzipBytes": 439802,
+      "workerLimit": 440000,
+      "adminGzipBytes": 147836,
+      "adminLimit": 156600,
+      "shellGzipBytes": 29655,
+      "shellLimit": 29778,
+      "workerTokenEquivalence": true
+    },
+    "static": {
+      "eslintErrors": 0,
+      "eslintWarnings": 260,
+      "warningBaseline": 325,
+      "secretFindings": 0,
+      "documentationChecksPassed": 17,
+      "apiRoutes": 76,
+      "handleLimitUnchanged": 635
+    }
+  },
+  "rollback": {
+    "preupgradeBookmarkCaptured": true,
+    "bookmarkStoredPrivately": true,
+    "schema9CodeAndSourceArchivesRetained": true,
+    "previewCodeArchive": {
+      "schema": 9,
+      "codeCommit": "eb45569ae52de112ff7a0eafaa99972ff95be534",
+      "sha256": "dee95e8b1a185382a11293b21d5f8309308e9c7249501f4c2a1eeab3c548e65d",
+      "files": 133,
+      "crcVerified": true
+    },
+    "sourceCodeArchive": {
+      "schema": 9,
+      "codeCommit": "eb45569ae52de112ff7a0eafaa99972ff95be534",
+      "sha256": "ec58ab8f47bea60f37e2df061dcc3dcc692d6030a8410715f4ed38b0cbb2c710",
+      "files": 949,
+      "crcVerified": true
+    },
+    "priorDeploymentsAndJournalsPreserved": true,
+    "databaseExportCreated": false,
+    "liveTimeTravelDrillPerformed": false,
+    "boundary": "Rollback requires the matching schema9 package and pre-permit TimeTravel state. It overwrites the entire Preview D1 database including accounts, policies, permissions and sessions; later writes are lost. R2 is outside the rollback, bookmark retention is limited, and no complete local DB export exists.",
+    "schema": 9,
+    "codeCommit": "eb45569ae52de112ff7a0eafaa99972ff95be534"
+  },
+  "protectedBoundaries": {
+    "previewOnly": true,
+    "productionDeployment": "7a126243-046f-4ff3-8ff6-2b5ce7280c29",
+    "productionD1Calls": 0,
+    "r2Calls": 0,
+    "deploymentDeletes": 0,
+    "cloudDepartmentWipes": 0,
+    "cloudPlatformResets": 0,
+    "defaultAdminAdminAutoCreation": false
+  },
+  "remaining": {
+    "knownKvResources": [
+      "bassam_last_export_v1",
+      "bassam_last_full_export_v1"
+    ],
+    "knownKvResourceCount": 2,
+    "accountsPoliciesGrantsAndModuleMetadataOutsideBusinessMigration": true,
+    "broadPageButtonAuditLargeEnterpriseSimulationAndUserGuideDeferred": true,
+    "futureIndependentCorePrivatePluginsStarted": false
+  },
+  "limitations": [
+    "Targeted local/composite and live acceptance; no exhaustive page/browser or enterprise-load audit.",
+    "Native QA106 evidence remains attributed to the5d baseline; current migration-only fix is separately proven by exact byte identity outside019s plus10native and5unit cases.",
+    "Preview fixtures are synthetic; this does not prove Production data migration.",
+    "CU/NF/session cleanup uses an exclusive random QA scope and snapshot CAS, not a general foreign-data ownership system.",
+    "Only the identified expired permit was deleted with explicit user approval; no deployment, business data outsideQA, R2 or Production modification is included."
+  ],
+  "privateEvidence": [
+    {
+      "path": ".cache/preview10-attempt2/release-ready.json",
+      "sha256": "6f5c83dcee5fbaed39a69a1cd48fb3732c1a9f564cc663b6d006c66c0f5bac8a"
+    },
+    {
+      "path": ".cache/preview10-attempt2/cancel-expired-result.json",
+      "sha256": "6af412b8a8e36fbdee3a4addae2ed2b042c51bf5ef69f9bda356e33f40cc8bbe"
+    },
+    {
+      "path": ".cache/preview10-attempt2/deployment-expected.json",
+      "sha256": "2d7d443f38767c161cacd11cf33163180b4649e67ec3c0b5ec73749ce99dc7f4"
+    },
+    {
+      "path": ".cache/preview10-attempt2/activation-started.json",
+      "sha256": "7dd99f485b06fbe3536be75d7b9a01d74174dccb5562d9baf33d12864be5843f"
+    },
+    {
+      "path": ".cache/preview10-attempt2/activation-result.json",
+      "sha256": "58ba3ac61a1a38245e76354fb37e09cec41f30a47e735a62800fc8573a456ef0"
+    },
+    {
+      "path": ".cache/preview10-attempt2/deployment-schema10-verified.json",
+      "sha256": "f6291e9916974daf94f73fa0579a2e4018dfad74e1d6e8f9b2e2393ed4470320"
+    },
+    {
+      "path": ".cache/preview10-attempt2/qa-live-progress.json",
+      "sha256": "53bfb143ad075e5a255cd1bcb0eff34a040cc0f44b1a799878743a3ea993e3a7"
+    },
+    {
+      "path": ".cache/preview10-attempt2/qa-live-result.json",
+      "sha256": "667294dc57ac01adaaf98d1d62350868dab613358762a829f888c8b92847578d"
+    },
+    {
+      "path": ".cache/preview10-attempt2/qa-independent-review.json",
+      "sha256": "89cd4e76669020d38ac70169c012f8a5735e2c4a2d339c25c23c03f66d9290a6"
+    },
+    {
+      "path": ".cache/preview10-attempt2/final-independent-readonly.json",
+      "sha256": "f761ea6e8e39c9dc27817c149aee15f1976df3e9f9eb80aaaea7e3aac04104cf"
+    },
+    {
+      "path": ".cache/preview10-attempt2/public-schema10-proof.json",
+      "sha256": "d63991aa63ecc4328d4ec672c9cd60fb7f0dd7029440fcd3aec5b742fbab6993"
+    },
+    {
+      "path": ".cache/preview10-attempt2/final-capped-review.json",
+      "sha256": "6907c66345a12a856f83534687ee3d13b89779a7c5b28f936b53e0697aefa3ec"
+    },
+    {
+      "path": ".cache/preview10-attempt2/final-independent-stopped-1793436751714.json",
+      "sha256": "79ad50bd895eada99a094be88150f28274a25d1e321cb94fd195451440f6b92e"
+    },
+    {
+      "path": ".cache/preview10-attempt2/retained-deployments-final.json",
+      "sha256": "c3832f2f97f1fad0cf9fa558589bd0ca381fa602f448d3e89eb894bc1d6d6cec"
+    }
+  ],
+  "redaction": "No credentials, user documents, password/account/permission hashes, raw database content or TimeTravel bookmark value is included.",
+  "releaseArtifacts": {
+    "schema": 10,
+    "codeCommit": "b2f07fe56af1db477c6c4c4eb55136d82069968b",
+    "previewCodeArchive": {
+      "schema": 10,
+      "sha256": "d80c1a032d5ba42d2179fc2da0dd38123a6d3e21f3a5643409a5581c74825622",
+      "files": 133
+    },
+    "sourceCodeArchive": {
+      "schema": 10,
+      "sha256": "68581c9679ffd1736b6bbd08a28b97f357778807a07f06e7c5f171d7de5f9338",
+      "files": 990
+    }
+  },
+  "postflightVerifierCorrection": {
+    "firstReadOnlyAttempt": {
+      "http": 400,
+      "requests": 2,
+      "cloudMutations": 0,
+      "stoppedJournalPreserved": true
+    },
+    "cause": "The verifier expanded39retired resources into a flat117OR chain beyond the provider expression-depth100 limit. The application and its successful QA were unaffected.",
+    "fix": "A new read-only verifier uses one JSON resource-table EXISTS with the same4match predicates. The sealed original is unchanged.",
+    "tests": {
+      "cases": 3,
+      "pass": 3,
+      "fail": 0,
+      "aliasAndNearMissParityCases": 432,
+      "actualReadStatements": 114,
+      "strictExpressionDepth": 100,
+      "writes": 0
+    },
+    "verifierSourceSha256": "a1df9c3d16b0c773f05dfcb813213ed95867a8488b5926e1faff94c3a34d48dc",
+    "applicationSourceChanges": 0,
+    "qaReplayed": false
+  },
+  "retainedDeployments": {
+    "total": 211,
+    "preview": 7,
+    "production": 204,
+    "retainedPrevious": 6,
+    "allPreviousRetained": true,
+    "productionHistoryUnchanged": true,
+    "configurationsUnchanged": true,
+    "deletedDeployments": 0
+  }
+}
