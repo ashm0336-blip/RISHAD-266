@@ -46,18 +46,57 @@
     if (r.s && now < r.s) return 'upcoming';
     return 'new';
   }
+  var readScope = null, readToken = 0, refreshTimer = null, dirty = false, startedAt = 0;
+  function readContext() {
+    if (sessionChanged()) return null;
+    var user = NS.BassamAuth && NS.BassamAuth.user && NS.BassamAuth.user();
+    if (user && String(user.id) !== UID) return null;
+    return [UID, user && user.role || '', user && user.deptId || '', user && user.ekey || ''];
+  }
+  function sameContext(a, b) { return !!a && !!b && JSON.stringify(a) === JSON.stringify(b); }
+  function readState() {
+    if (readScope && !sameContext(readScope, readContext())) { reset(); if (sessionChanged()) S.err = 'session'; }
+    return S;
+  }
+  function scheduleRefresh() {
+    if (S.loading || refreshTimer || !dirty) return;
+    var context = readContext();
+    refreshTimer = setTimeout(function () {
+      refreshTimer = null;
+      if (!sameContext(context, readContext())) return;
+      if (dirty) load();
+    }, Math.max(0, 1000 - (Date.now() - startedAt)));
+  }
+  function invalidate(allowInitial) {
+    readState();
+    if (!readContext() || (!allowInitial && S.rows === null && !S.loading)) return;
+    dirty = true;
+    scheduleRefresh();
+  }
   function load(force) {
-    if (S.loading) return S.loading;
-    var url = withUid(API + (!force && S.rev ? '?since=' + S.rev : ''));
-    S.loading = req(url).then(function (x) {
-      S.loading = null;
-      if (x.status === 401 || (x.status === 409 && x.j && x.j.err === 'session-changed')) { S.err = 'session'; emit(); return S; }
-      if (!x.j || x.j.ok !== 1) { S.err = 'load'; emit(); return S; }
-      S.err = ''; S.at = Date.now(); S.me = x.j.me || S.me;
-      if (!x.j.same) { S.rev = x.j.rev || 0; S.rows = x.j.rows || []; S.months = x.j.months || []; S.more = !!x.j.more; }
-      emit(); return S;
-    }, function () { S.loading = null; S.err = 'offline'; emit(); return S; });
-    return S.loading;
+    var context = readContext(), state = readState();
+    if (!context) return Promise.resolve(state);
+    if (state.loading) return state.loading;
+    if (refreshTimer) clearTimeout(refreshTimer); refreshTimer = null;
+    readScope = context; dirty = false; startedAt = Date.now();
+    var token = ++readToken, url = withUid(API + (!force && state.rev ? '?since=' + state.rev : ''));
+    state.loading = req(url).then(function (x) {
+      if (token !== readToken || state !== S || !sameContext(context, readContext())) return readState();
+      state.loading = null;
+      if (x.status === 401 || (x.status === 409 && x.j && x.j.err === 'session-changed')) {
+        expired = true; dirty = false; if (refreshTimer) clearTimeout(refreshTimer); refreshTimer = null; readScope = null;
+        state.err = 'session'; state.rows = null; state.me = null; state.rev = 0; emit(); return state;
+      }
+      if (dirty) { scheduleRefresh(); return state; }
+      if (!x.j || x.j.ok !== 1) { state.err = 'load'; emit(); return state; }
+      state.err = ''; state.at = Date.now(); state.me = x.j.me || state.me;
+      if (!x.j.same) { state.rev = x.j.rev || 0; state.rows = x.j.rows || []; state.months = x.j.months || []; state.more = !!x.j.more; }
+      emit(); return state;
+    }, function () {
+      if (token !== readToken || state !== S || !sameContext(context, readContext())) return readState();
+      state.loading = null; state.err = 'offline'; emit(); if (dirty) scheduleRefresh(); return state;
+    });
+    return state.loading;
   }
   function dayKey(T) { return T.y + '-' + T.m + '-' + T.d; }
   function cmpDay(a, b) { return (a.y - b.y) || (a.m - b.m) || (a.d - b.d); }
@@ -65,6 +104,7 @@
      review (سُلّمت وتنتظر قرار المراجِع) · upcoming (يومٌ قادم) · overdue (منقضيةُ المهلة بلا بدء — تبقى ظاهرةً حتى يمدّدها المسؤول أو يعيد إسنادها) ·
      history (منجزة · معتذَر عنها · ملغاة · أُعيد إسنادُها) — لا إخفاءَ لصفّ */
   function view(now, T) {
+    readState();
     now = now || Date.now();
     var out = { linked: !!(S.me && S.me.linked), err: S.err, loaded: S.rows !== null, n: 0, sections: SECTIONS.slice() };
     SECTIONS.forEach(function (k) { out[k] = []; });
@@ -236,12 +276,17 @@
       .then(function (r) { return r.ok ? r.text() : null; }).then(function (t) { if (t) S.imgs[id] = t; return t; }, function () { return null; });
   }
   function subscribe(fn) { subs.push(fn); return function () { subs = subs.filter(function (x) { return x !== fn; }); }; }
-  function reset() { S = { rev: 0, me: null, rows: null, months: [], at: 0, err: '', loading: null, imgs: {} }; }
+  function reset() { ++readToken; if (refreshTimer) clearTimeout(refreshTimer); refreshTimer = null; dirty = false; readScope = null; S = { rev: 0, me: null, rows: null, months: [], at: 0, err: '', loading: null, imgs: {} }; }
   /* تنبيهُ مهمةٍ جديد أو تغيّرُها: تُعاد القراءة فوراً (لا انتظارَ لدورة الدقيقة). التنبيهُ يصل الموظفَ عبر /api/changes كتغيّرٍ في مخزن التنبيهات
      (bassam:notif بعد readmodel خادمي أحدث) — لا يعتمد على مخزن تنبيهات KV متقاعد. القراءةُ بـ?since=rev فإن لم يتغيّر مخزنُ المهام فالردُّ {same:1} */
-  try { window.addEventListener('bassam:notif', function (e) { var it = e && e.detail && e.detail.item; if (it && it.k === 'task') load(); }); } catch (e) { /* بلا مستمع: القراءةُ الدورية من «ملفي» تكفي */ }
-  try { window.addEventListener('bassam:notif',function(e){if(e && e.detail && e.detail.changed && S.rows !== null)load();}); } catch(e) { /* Periodic profile reads remain available. */ }
+  try { window.addEventListener('bassam:notif', function (e) { var it = e && e.detail && e.detail.item; if (it && it.k === 'task') invalidate(true); }); } catch (e) { /* بلا مستمع: القراءةُ الدورية من «ملفي» تكفي */ }
+  try { window.addEventListener('bassam:notif',function(e){if(e && e.detail && e.detail.changed && S.rows !== null)invalidate(false);}); } catch(e) { /* Periodic profile reads remain available. */ }
+  try { window.addEventListener('bassam:tasks', function (event) {
+    var context = readContext(), detail = event && event.detail;
+    if (!context || !detail || detail.uid !== context[0] || detail.dept !== context[2] || detail.ekey !== context[3] || !Number.isSafeInteger(detail.v)) return;
+    invalidate(false);
+  }); } catch (e) { /* The existing periodic profile read remains available. */ }
   NS.BassamMyTasks = { load: load, view: view, act: act, can: can, need: need, log: log, uploadProof: uploadProof, submitProof: submitProof, img: img, phase: phase, subscribe: subscribe,
     queue: { state: Q.state, flush: Q.flush, drop: Q.drop, forRow: Q.forRow, init: Q.init, ACT: QACT }, online: online,
-    state: function () { return S; }, reset: reset, dayKey: dayKey, MSG: MSG, SECTIONS: SECTIONS };
+    state: readState, reset: reset, dayKey: dayKey, MSG: MSG, SECTIONS: SECTIONS };
 })();

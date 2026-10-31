@@ -1550,9 +1550,11 @@
             var ks = j.keys || [];
             return pull9(ks, j.v).then(function (result) {
               var meNow = KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user(), meContext = operationContext9();
-              if (j.meChanged === 1 && meStamp && meContext && meContext.uid === meStamp.uid && meContext.dept === meStamp.dept && meNow && meIdentity &&
+              if ((j.meChanged === 1 || j.tasksChanged === 1) && meStamp && meContext && meContext.uid === meStamp.uid && meContext.dept === meStamp.dept && meNow && meIdentity &&
                   JSON.stringify([meNow.id, meNow.role, meNow.deptId || '', meNow.ekey || '']) === JSON.stringify(meIdentity)) {
-                try { window.dispatchEvent(new CustomEvent('bassam:me', { detail: { uid: UID9, dept: meIdentity[2], ekey: meIdentity[3], v: j.v } })); } catch (eM) {}
+                var privateDetail = { uid: UID9, dept: meIdentity[2], ekey: meIdentity[3], v: j.v };
+                if (j.meChanged === 1) try { window.dispatchEvent(new CustomEvent('bassam:me', { detail: privateDetail })); } catch (eM) {}
+                if (j.tasksChanged === 1) try { window.dispatchEvent(new CustomEvent('bassam:tasks', { detail: privateDetail })); } catch (eT) {}
               }
               if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
               if (ks.some(function (k) { return SLICEK9.test(k); })) { var s9 = slice9(); if (s9 !== slice0) { slice0 = s9; readSet9(false); } }

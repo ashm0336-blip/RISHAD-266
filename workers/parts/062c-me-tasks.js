@@ -33,10 +33,21 @@ function meTkNum(v) { return typeof v === 'number' && isFinite(v) ? v : null; }
 /* KIVO_265 · نافذةُ التنفيذ: الأداءُ من المهلة — tkPerfOf في 070 (كان meTkPerf من القبول + المدة) */
 /* من أنا؟ — حسابٌ ⇒ سجلُّ موظفٍ بمعرّفٍ ثابت في إدارته. مديرُ النظام ومديرُ العقدة ومديرُ الإدارة المعيَّن (mgr:/gm:) بلا سجلّ: غيرُ مرتبط.
    (ق7: الموظفُ بصفة مدير — حسابُ staff بـmgr ومفتاحُه eid سجلّه — مرتبطٌ فيرى «مهامك») */
+function meTkCandidate(u) {
+  var ek = String(u && u.ekey || '');
+  return !!(u && u.deptId && ek && u.role !== 'super' && u.role !== 'gm' && !isMgrKey(ek) && ek.indexOf('gm:') !== 0);
+}
+/* A candidate-only invalidation hint. Identity uniqueness and owned rows remain
+   guarded by the existing private GET, with no extra /changes SQL. */
+function meTasksChanged(A, rows, through) {
+  if (!meTkCandidate(A && A.u) || !meTkPageOn(A)) return false;
+  var key = tkK(String(A.u.deptId));
+  return rows.some(function (row) { return row.k === key && row.rev <= through; });
+}
 async function meTkIdent(env, A) {
   var u = A.u, d = String(u.deptId || ''), ek = String(u.ekey || '');
   var out = { linked: false, by: 'none', dept: d, ekey: ek, toks: nmap() };
-  if (!d || !ek || u.role === 'super' || u.role === 'gm' || isMgrKey(ek) || ek.indexOf('gm:') === 0) return out;
+  if (!meTkCandidate(u)) return out;
   /* SR-2.2 · F-1 (المراجعةُ المستقلة — عالٍ): معرّفٌ يربط الحسابَ أو يصير رمزاً له إن حمله سجلٌّ واحدٌ بالضبط في الإدارة (tkEmpOne). كان الربطُ برقم الهوية
      بأوّل سجلٍّ مطابِق ويُضاف معرّفُه الثابت بلا فحصِ تفرّد — فحسابٌ مفتاحُه رقمُ هويةٍ مكرَّر يقرأ مهامَ زميلٍ وصورَ توثيقه. والمكرَّرُ اليوم «غيرُ مرتبط» */
   /* KIVO_265 · M-2 (المراجعةُ المستقلة لدمج 265): التفرّدُ في الحقلين معاً (070 tkTokRec — eid ∪ nid): مفتاحُ الحساب يحمله سجلٌّ واحدٌ بالضبط
