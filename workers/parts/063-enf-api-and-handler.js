@@ -458,6 +458,7 @@ async function changesRoute(env, url, ss) {
   var cutC = changesCut(rowsC, CHANGES_MAX), ksC = cutC.keys, vC = cutC.more ? cutC.v : rv2, allC = ((ch && ch.results) || []).map(function (r) { return r.k; });
   var outC = enfEnvOn(env) ? enfChangesOut(env, AC, vC, ksC, allC) : { v: vC, keys: ksC };
   if (enfEnvOn(env) && !outC.az && await enfStaffAz(env, AC, allC)) outC.az = 1;   /* KIVO_264: الورديةُ المربوطةُ بالجدول الشهري */
+  if (meSnapshotChanged(AC, (ch && ch.results) || [], vC)) outC.meChanged = 1;
   if (cutC.more) outC.more = 1;
   return json(outC);
 }

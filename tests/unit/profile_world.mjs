@@ -40,7 +40,7 @@ export function world(o) {
   };
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
-  ctx.__BS_BOOT = o.cf ? { cf: 1 } : null;
+  ctx.__BS_BOOT = o.cf ? { srv: 1, cf: 1, uid: o.user?.id || '' } : null;
   KIVO.BassamHijri = { now: (dt) => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(dt || new Date()); const g = (t) => +f.find((x) => x.type === t).value; return { y: g('year'), m: g('month'), d: g('day') }; } };
   for (const f of SERVICES) vm.runInContext(rd(blockFile(f)), ctx, { filename: f });
   const user = o.user, users = o.users || (user ? [user] : []);
@@ -74,7 +74,7 @@ export function world(o) {
       return projection(key);
     },
     context: () => ({ uid: user?.id || '', dept: KIVO.BassamDepts.active(), generation: 1 }),
-    state: name => ({ state: unreadable.has(name) ? 'denied' : store.has(name) ? 'ready' : 'absent' }),
+    state: name => unreadable.has(name) ? 'denied' : store.has(name) ? 'ready' : 'absent',
     draft: () => { throw Error('TEST_ONLY presentation fixture cannot write business data'); },
   }) };
   if (o.tasks) {

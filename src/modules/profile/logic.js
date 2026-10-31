@@ -3,6 +3,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
      histYm/histType = مرشّحا «السجل» · spotAll = «+N» الزملاء داخل الصفحة نفسِها (لا تنقّل) */
   state = { pfPanel: "", pfTick: 0, pfSrv: null, pfSrvBusy: !1, pfImgs: {}, pfNow: Date.now(), pfMe: null, pfMeAt: 0, pfMeErr: "", pfHist: {}, histYm: "", histType: "all", histErr: "", spotAll: !1 };
   componentDidMount() {
+    this._pfMeRequest = null;
+    this._pfMeScope = null;
+    this._pfMeDirty = false;
+    this._pfMeBusy = false;
     ((this._pfAlive = !0),
       this.pfSrvLoad(),
       this.pfMeLoad(!0),
@@ -14,20 +18,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         this._pfAlive && this.setState({ pfTick: (this.state.pfTick || 0) + 1 });
         /* KIVO_264: تغيّرٌ وصل من الخادم في مفتاحٍ يبني يومي ⇒ يُعاد جلبُ حقائقي (وشهرِ «السجل» المعروض إن كان مفتوحاً) — طلبٌ واحدٌ
            على الأكثر كلَّ ١٠ ثوانٍ مهما تتابعت الأحداث (كلُّ جلبٍ يقرأ مفاتيحَ الإدارة في الخادم)، ومفاتيحُ لا تمسّ يومي (المهام · التنبيهات …) لا تجلب */
-        const ks = ((ev && ev.detail && ev.detail.keys) || []).map(String),
+        const keys = ev && ev.detail && ev.detail.keys,
+          ks = Array.isArray(keys) ? keys.map(String) : [],
           REL = ["bassam_employees_v1", "bassam_staffing_v3", "bassam_staffing_locks_v1", "bassam_dreport_v1", "bassam_plan_v1", "bassam_rounds_v1", "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
         if (ks.length && !ks.some((k) => REL.some((r) => k === r || k.slice(-r.length - 1) === ":" + r))) return;
-        if (this._pfMeT) return;
-        this._pfMeT = setTimeout(
-          () => {
-            this._pfMeT = null;
-            if (!this._pfAlive) return;
-            this.pfMeLoad(!0);
-            "hist" === this.state.pfPanel && this.pfHistReload();
-          },
-          Math.max(1500, 1e4 - (Date.now() - (this.state.pfMeAt || 0))),
-        );
+        this.pfMeInvalidate();
       }));
+    this._pfOnMe = (event) => {
+      const context = this.pfMeContext(), detail = event && event.detail;
+      if (!context || !detail || detail.uid !== context.uid || detail.dept !== context.dept || detail.ekey !== context.ekey || !Number.isSafeInteger(detail.v)) return;
+      this.pfMeInvalidate();
+    };
+    window.addEventListener("bassam:me", this._pfOnMe);
     try {
       window.addEventListener("bassam:remote", this._pfOnRemote);
     } catch (t) {}
@@ -69,6 +71,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   componentWillUnmount() {
     ((this._pfAlive = !1), clearInterval(this._pfT), clearInterval(this._tkT), clearTimeout(this._pfStoreT), clearTimeout(this._pfMeT), clearTimeout(this._tkRetryT));
+    this._pfMeT = null;
+    this._pfMeRequest = null;
+    this._pfMeBusy = false;
+    this._pfMeDirty = false;
+    window.removeEventListener("bassam:me", this._pfOnMe);
     try {
       this._tkOnNet && window.removeEventListener("online", this._tkOnNet);
     } catch (t) {}
@@ -104,18 +111,60 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         .catch(() => {});
   }
   /* KIVO_264 · OD-3: حقائقُ يومي من الخادم — صفوفي وحدي مهما كانت أوراقي (الموظفُ بلا ورقةٍ تشغيلية كان يرى «لم يتم الإسناد» — D15) */
+  pfMeContext() {
+    const user = this.me(), boot = window.__BS_BOOT, service = KIVO.__BS_SRV;
+    if (!user || !boot || boot.uid !== user.id || (service && service.sesChanged && service.sesChanged())) return null;
+    return { uid: user.id, role: user.role, dept: String(user.deptId || ""), ekey: String(user.ekey || "") };
+  }
+  pfMeSame(context) {
+    const now = this.pfMeContext();
+    return !!context && !!now && context.uid === now.uid && context.role === now.role && context.dept === now.dept && context.ekey === now.ekey;
+  }
+  pfMeInvalidate() {
+    const context = this.pfMeContext();
+    if (!this._pfAlive || !context) return;
+    if (this._pfMeScope && !this.pfMeSame(this._pfMeScope)) { this.pfMeLoad(true); return; }
+    this._pfMeDirty = true;
+    if (this._pfMeBusy || this._pfMeT) return;
+    this._pfMeT = setTimeout(() => {
+      this._pfMeT = null;
+      if (!this._pfAlive || !this.pfMeSame(context)) return;
+      this.pfMeLoad(true);
+      if (this.state.pfPanel === "hist") this.pfHistReload();
+    }, Math.max(0, 1e4 - (Date.now() - (this._pfMeStarted || 0))));
+  }
   pfMeLoad(force) {
-    if (!this.isCF() || this._pfMeBusy) return;
-    if (!force && Date.now() - (this.state.pfMeAt || 0) < 2e4) return;
+    if (!this.isCF()) return;
+    const context = this.pfMeContext();
+    if (!this._pfAlive || !context) return;
+    if (!this.pfMeSame(this._pfMeScope)) {
+      this._pfMeRequest = null;
+      this._pfMeBusy = false;
+      this._pfMeScope = context;
+      this.setState({ pfMe: null, pfMeAt: 0, pfMeErr: "" });
+    }
+    if (this._pfMeBusy || (!force && Date.now() - (this.state.pfMeAt || 0) < 2e4)) return;
+    clearTimeout(this._pfMeT);
+    this._pfMeT = null;
+    this._pfMeDirty = false;
     this._pfMeBusy = !0;
-    fetch("/api/me/today", { cache: "no-store" })
+    this._pfMeStarted = Date.now();
+    const request = this._pfMeRequest = {};
+    const finish = (data, error) => {
+      if (this._pfMeRequest !== request) return;
+      this._pfMeRequest = null;
+      this._pfMeBusy = false;
+      if (!this._pfAlive) return;
+      if (!this.pfMeSame(context)) { if (this._pfMeDirty) this.pfMeInvalidate(); return; }
+      if (this._pfMeDirty) { this.pfMeInvalidate(); return; }
+      const valid = data && data.ok === 1 && data.account && data.account.id === context.uid &&
+        data.account.role === context.role && data.account.deptId === context.dept;
+      this.setState(valid ? { pfMe: data, pfMeAt: Date.now(), pfMeErr: "" } : { pfMeAt: Date.now(), pfMeErr: error || "fail" });
+    };
+    return fetch("/api/me/today", { cache: "no-store" })
       .then((t) => (t.ok ? t.json() : null))
-      .then((t) => {
-        ((this._pfMeBusy = !1), this._pfAlive && this.setState(t && t.ok ? { pfMe: t, pfMeAt: Date.now(), pfMeErr: "" } : { pfMeAt: Date.now(), pfMeErr: "fail" }));
-      })
-      .catch(() => {
-        ((this._pfMeBusy = !1), this._pfAlive && this.setState({ pfMeAt: Date.now(), pfMeErr: "net" }));
-      });
+      .then((data) => finish(data))
+      .catch(() => finish(null, "net"));
   }
   /* KIVO_264 · «السجل»: شهرٌ هجريٌّ واحد من /api/me/history — يُحفظ لكل شهر في الحالة فلا يُعاد جلبُه عند التنقّل بين المرشّحات */
   pfHistLoad(ym, force) {
@@ -1827,7 +1876,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   pfMine(o) {
     const PF = KIVO.BassamProfileFacts,
       S = this.state,
-      srv = S.pfMe && S.pfMe.ok ? S.pfMe : null;
+      srv = S.pfMe && S.pfMe.ok && this.pfMeSame(this._pfMeScope) ? S.pfMe : null;
     let loc = null;
     try {
       loc = PF && o.user ? PF.today({ user: o.user, emps: o.emps, staffing: o.staffing, locks: o.locks, dreport: o.dreport, plan: o.plan, rounds: o.rounds, opts: o.opts, now: Date.now() }) : null;

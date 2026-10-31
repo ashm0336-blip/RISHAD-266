@@ -1531,9 +1531,17 @@
       busy9 = true;
       var t0 = Date.now(), pages = 0;
       var ask = function (wait) {
-        var since = BOOT.v || 0;
-        return fetch("/api/changes?since=" + since + (wait ? "&wait=1" : ""))
-          .then(function (r) { if (r.status === 401) { sessGone9(); return null; } return r.ok ? r.json() : null; })
+        var since = BOOT.v || 0, meStamp = operationContext9(), meUser = KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user();
+        var meIdentity = meUser ? [meUser.id, meUser.role, meUser.deptId || '', meUser.ekey || ''] : null;
+        return fetch("/api/changes?since=" + since + (wait ? "&wait=1" : "") + "&uid=" + encodeURIComponent(UID9))
+          .then(function (r) {
+            if (r.status === 401) { sessGone9(); return null; }
+            if (r.status === 409) return r.json().catch(function () { return null; }).then(function (data) {
+              if (data && data.err === 'session-changed') sesChanged9(null, '409');
+              return null;
+            });
+            return r.ok ? r.json() : null;
+          })
           .then(function (j) {
             if (!j) throw new Error("no");
             backoff9 = 0; warn(false);
@@ -1541,6 +1549,11 @@
             if (!(j.v != null && j.v > since)) return;
             var ks = j.keys || [];
             return pull9(ks, j.v).then(function (result) {
+              var meNow = KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user(), meContext = operationContext9();
+              if (j.meChanged === 1 && meStamp && meContext && meContext.uid === meStamp.uid && meContext.dept === meStamp.dept && meNow && meIdentity &&
+                  JSON.stringify([meNow.id, meNow.role, meNow.deptId || '', meNow.ekey || '']) === JSON.stringify(meIdentity)) {
+                try { window.dispatchEvent(new CustomEvent('bassam:me', { detail: { uid: UID9, dept: meIdentity[2], ekey: meIdentity[3], v: j.v } })); } catch (eM) {}
+              }
               if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
               if (ks.some(function (k) { return SLICEK9.test(k); })) { var s9 = slice9(); if (s9 !== slice0) { slice0 = s9; readSet9(false); } }
               if (j.more && BOOT.v === j.v && ++pages < MORE_MAX9 && !sx9) return ask(false);   /* C2: البقيةُ فوراً من آخر مراجعةٍ وصلت */

@@ -272,6 +272,18 @@ function pfHist(o) {
 var ME_RL = 120;                 /* طلباتٌ في الدقيقة لكل حساب (المساران معاً) — قراءةٌ ذاتيةٌ لا كتابة */
 var ME_HIST_MAX = 60000;         /* سقفُ حجم ردّ «السجل» بالبايت — ما زاد يُقصّ من التغييرات المسجّلة أولاً */
 var ME_KEYS = ['bassam_employees_v1', 'bassam_staffing_v3', 'bassam_staffing_locks_v1', 'bassam_dreport_v1', 'bassam_plan_v1', 'bassam_rounds_v1', 'bassam_shift_options_v1'];
+function meStaffEligible(u) { return !!(u && u.role === 'staff' && u.deptId && !pfIsMgrKey(u.ekey)); }
+/* A private snapshot is readable independently of operational-page grants.
+   Signal only its existing dependencies, never their names or business data. */
+function meSnapshotChanged(A, rows, through) {
+  var u = A && A.u;
+  if (!meStaffEligible(u)) return false;
+  return rows.some(function (row) {
+    return row.rev <= through && (row.k === K_USERS || row.k === K_DEPTS || ME_KEYS.some(function (name) {
+      return row.k === 'bsdept:' + u.deptId + ':' + name;
+    }));
+  });
+}
 var ME_SEC = ['acct_add', 'acct_del', 'acct_freeze', 'acct_unfreeze', 'admin', 'pw_change'];
 /* قرارُ المالك (KIVO_264): لا نقلَ بين الإدارات الآن — «السجل» يصرّح بأن لا تاريخَ تنقّلات (لا «لا أدلة» كأن شيئاً فُقد) */
 var ME_NO_MOVES = 'لا يوجد تاريخُ تنقّلٍ بين الإدارات — النقلُ بين الإدارات غيرُ مدعومٍ في النظام حالياً، فلا تنقّلاتٍ مسجّلةً لك';
@@ -354,7 +366,7 @@ async function meSelfRoutes(request, env, path, ss) {
   if (hist && url.searchParams.has('ym')) { ymQ = meYm(url.searchParams.get('ym'), C); if (!ymQ) return json({ ok: 0, err: 'bad-ym' }, 400); }
   var rl = await rlHit(env, 'me', u.id, ME_RL);
   if (rl) return tooMany(rl);
-  var acct = meAccount(u, depts), staff = u.role === 'staff' && !!u.deptId && !pfIsMgrKey(u.ekey);
+  var acct = meAccount(u, depts), staff = meStaffEligible(u);
   var secQ = hist ? env.DB.prepare("SELECT ts, act, detail, target FROM sec WHERE act IN ('" + ME_SEC.join("','") + "') AND target LIKE ?1 ESCAPE '\\' ORDER BY ts DESC, id DESC LIMIT 60")
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
   var minQ = hist && staff ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
