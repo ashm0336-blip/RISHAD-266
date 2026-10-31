@@ -10,10 +10,11 @@ import {parse} from 'acorn';
 import {ROOT} from './harness.mjs';
 import {world, D1, D2, IDS, identitySnapshot} from './business_atomic_fx.mjs';
 
-const DIST=path.join(ROOT,'pk265'),sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+assert.ok(process.env.KIVO_DIST,'Set KIVO_DIST to the current tested build; do not inspect an older default bundle');
+const DIST=path.resolve(ROOT,process.env.KIVO_DIST),sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 function visit(node,fn){if(!node||typeof node!=='object')return;fn(node);for(const value of Object.values(node))if(Array.isArray(value))value.forEach(child=>visit(child,fn));else if(value&&typeof value==='object')visit(value,fn);}
 function built(){
- const manifest=JSON.parse(fs.readFileSync(path.join(ROOT,'pk265.build.json'),'utf8')),retained=new Set(manifest.retainedFiles||[]);
+ const manifest=JSON.parse(fs.readFileSync(DIST+'.build.json','utf8')),retained=new Set(manifest.retainedFiles||[]);
  function file(relative){assert.ok(manifest.files[relative],relative+' is registered by the actual build');const bytes=fs.readFileSync(path.join(DIST,relative));assert.equal(bytes.length,manifest.files[relative].bytes);assert.equal(sha(bytes),manifest.files[relative].sha256);return{path:'/'+relative,source:bytes.toString('utf8')};}
  function asset(stem){const matches=Object.keys(manifest.files).filter(file=>new RegExp('^assets/js/'+stem+'\\.[a-f0-9]{10}\\.js$').test(file)&&!retained.has(file));assert.equal(matches.length,1,stem+' has one current emitted asset');return file(matches[0]);}
  const index=file('index.html'),scripts=[...index.source.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>/g)].map(match=>match[1]),loader=asset('030-pages-loader'),maps={};
@@ -58,21 +59,23 @@ for(const name of ['Seized','Award'])test('actual emitted '+name+' factory inclu
  assert.deepEqual(forbidden,[]);assert.equal(C.KIVO.BusinessCloud,undefined);
 });
 
-test('actual emitted 548 exports all three canonical HTTP business domains with every declared department and one explicit read-only global Award scope',async t=>{
- const B=await world();t.after(()=>B.DB.db.close());
+test('actual emitted 548 exports all four canonical HTTP business domains with every declared department and one explicit read-only global Award scope',async t=>{
+ const B=await world({schema:10});t.after(()=>B.DB.db.close());
  const perms=JSON.parse(JSON.stringify(B.keys.bassam_perms_v1));Object.values(perms.caps).forEach(caps=>caps.push('irshad','seized','award'));await B.put('bassam_perms_v1',perms,true);
  const revision=(await B.api('super','/api/get?keys=&uid='+IDS.super)).json.v,protectedBefore=identitySnapshot(B.DB),calls=[],assets=built(),{C,forbidden}=environment();
  for(const stem of ['005-kivo-ns','548-atomic-backup']){const asset=assets.asset(stem);vm.runInContext(asset.source,C,{filename:asset.path});}
  C.__BS_BOOT={srv:1,cf:1,uid:IDS.super,v:revision};C.KIVO.BassamAuth={user:()=>B.users.find(user=>user.id===IDS.super)};
- C.KIVO.__BS_SRV={dirty:()=>false,inflight:()=>false,sesChanged:()=>false};
+ const resources=B.canonicalW.opDefinitions().map(definition=>definition.resource);
+ C.KIVO.__BS_SRV={dirty:()=>false,inflight:()=>false,sesChanged:()=>false,operations:{resources}};
  let objects=0;B.env.IMG_R2=new Proxy({},{get(){objects++;throw Error('Empty typed export cannot call R2');}});
  C.setTimeout=()=>1;
  C.fetch=async(url,options)=>{const headers=new Headers(options.headers);headers.set('Cookie','bs_tok=TEST_ONLY_session_super');const response=await B.W.default.fetch(new Request('http://x'+url,{...options,headers}),B.env);calls.push({url:new URL('http://x'+url),status:response.status});return response;};
  const result=await C.KIVO.BackupRestore.exportDomains({departments:[D1,D2],full:true,v:revision,images:{}});
- assert.deepEqual(Array.from(Object.keys(result.domains)).sort(),['awards','irshad','seized']);assert.deepEqual(Array.from(Object.keys(result.images)),[]);
- assert.deepEqual(calls.map(call=>call.url.pathname),['/api/irshad/export','/api/seized/export','/api/award/export']);
+ assert.deepEqual(Array.from(Object.keys(result.domains)).sort(),['awards','irshad','operations','seized']);assert.deepEqual(Array.from(Object.keys(result.images)),[]);
+ assert.deepEqual(calls.map(call=>call.url.pathname),['/api/irshad/export','/api/seized/export','/api/award/export','/api/operations/export']);
  assert.ok(calls.every(call=>call.status===200&&call.url.searchParams.get('uid')===IDS.super));
  for(const name of ['irshad','seized'])assert.deepEqual(Array.from(result.domains[name],domain=>domain.scope.departmentId),[D1,D2]);
  assert.deepEqual(Array.from(result.domains.awards,domain=>domain.scope.kind==='global'?'':domain.scope.departmentId),[D1,D2,'']);
+ assert.deepEqual(Array.from(result.domains.operations,domain=>domain.scope.departmentId+'\0'+domain.resource).sort(),[D1,D2].flatMap(dept=>resources.map(resource=>dept+'\0'+resource)).sort());
  assert.deepEqual(identitySnapshot(B.DB),protectedBefore);assert.equal(objects,0);assert.deepEqual(forbidden,[]);assert.deepEqual(B.DB.q('PRAGMA foreign_key_check'),[]);
 });

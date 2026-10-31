@@ -4753,6 +4753,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     });
   }
   async scLoadReferences(d, retry) {
+    const registry = KIVO.BassamDepts;
+    if (typeof d !== "string" || !d || !registry || !registry.treeFlat().some(dept => dept.id === d)) return false;
     const ops = KIVO.__BS_SRV.operations, context = ops.context();
     if (!context) return false;
     const keys = ["bassam_plan_v1", "bassam_employees_v1"].map(name => "bsdept:" + d + ":" + name),
@@ -7573,8 +7575,30 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               i = (r && r.PAGE_REG) || [],
               n = !(!e.sysSel || a.some((t) => t.id === e.sysSel) || !t.nodes().some((t) => t.id === e.sysSel)),
               o = n || a.some((t) => t.id === e.sysSel) ? e.sysSel : a.some((t) => t.id === s) ? s : a[0] ? a[0].id : "",
-              p = n ? t.nodeOf(o) || { id: o, name: "—" } : a.filter((t) => t.id === o)[0] || { id: "", name: "—" },
-              l = "cap" === e.sysTab ? "cap" : "scope" === e.sysTab ? "scope" : "emps",   /* KIVO_262: تبويبُ سقف النطاق */
+              p = n ? t.nodeOf(o) : a.filter((t) => t.id === o)[0];
+            const tree = {
+              deptCount: String(a.length),
+              dlOpen: !!p && !e.dlShut,
+              dlShut: !!p && !!e.dlShut,
+              dlToggle: () => this.setState({ dlShut: !this.state.dlShut }),
+              mdGridStyle: "display:grid;align-items:start;gap:13px;grid-template-columns:" + (p && e.dlShut ? "56px 1fr" : "minmax(380px,42%) 1fr"),
+              trQ: e.trQ || "",
+              trOnQ: (t) => this.setState({ trQ: t.target.value }),
+              trClear: () => this.setState({ trQ: "" }),
+              trHasQ: !!(e.trQ && String(e.trQ).trim()),
+              trExpandAll: () => this._trSetAll(t, !0),
+              trCollapseAll: () => this._trSetAll(t, !1),
+            };
+            if (!p) {
+              let context = null;
+              try { context = t.context && t.context(); } catch (error) {}
+              const message = context && ["error", "unavailable"].includes(context.state) && context.message
+                ? context.message : a.length || t.nodes().length
+                  ? "اختر إدارة أو عقدة من الهيكل لعرض تفاصيلها"
+                  : "لا توجد إدارة — أضف إدارة من الهيكل";
+              return { ...tree, deptDetailReady: false, deptDetailEmpty: true, deptDetailMessage: message, _sel: "" };
+            }
+            const l = "cap" === e.sysTab ? "cap" : "scope" === e.sysTab ? "scope" : "emps",   /* KIVO_262: تبويبُ سقف النطاق */
               d =
                 e.capDraft && e.sysSel === o
                   ? e.capDraft
@@ -7676,21 +7700,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 (t ? "var(--fg-x8a6f35)" : "var(--fg-x94a3b8)") +
                 (t ? ";box-shadow:inset 0 -2.5px 0 var(--brand-primary)" : "");
             return {
-              deptCount: String(a.length),
-              dlOpen: !e.dlShut,
-              dlShut: !!e.dlShut,
-              dlToggle: () => this.setState({ dlShut: !this.state.dlShut }),
-              mdGridStyle:
-                "display:grid;align-items:start;gap:13px;grid-template-columns:" + (e.dlShut ? "56px 1fr" : "minmax(380px,42%) 1fr"),
+              ...tree,
+              deptDetailReady: true,
+              deptDetailEmpty: false,
               selName: void 0 !== e["dnm_" + o] ? e["dnm_" + o] : p.name,
               selIsNode: n,
               selIsDept: !n,
-              trQ: e.trQ || "",
-              trOnQ: (t) => this.setState({ trQ: t.target.value }),
-              trClear: () => this.setState({ trQ: "" }),
-              trHasQ: !!(e.trQ && String(e.trQ).trim()),
-              trExpandAll: () => this._trSetAll(t, !0),
-              trCollapseAll: () => this._trSetAll(t, !1),
               ...(() => {
                 const A = KIVO.BassamAuth || null,
                   P = KIVO.BassamPerm || null,

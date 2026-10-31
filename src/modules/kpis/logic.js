@@ -72,7 +72,13 @@ class Component extends DCLogic {
             n.setState({ ktab: t.k });
           }));
       }),
-      e.on_tk && this._tkKpiVals(e),
+      e.on_tk && (() => {
+        const scope = KIVO.BassamDepts?.context?.();
+        if (!scope || scope.state !== "ready") {
+          e.tkScopeNotice = scope?.message || "تعذّر قراءة سجل الإدارات — أعد المحاولة";
+          e.on_tk = false;
+        } else this._tkKpiVals(e);
+      })(),
       e
     );
   }

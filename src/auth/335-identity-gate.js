@@ -11,10 +11,10 @@
   /* Account identifiers and their permission links are never rewritten on boot.
      Only the explicit canonical server identity migration may change them. */
   D.setScopeGuard(function(id){
-    var u = cur(); if (!u || u.role === 'super') return id;
-    if (u.role === 'dept' || u.role === 'staff') return u.deptId || id;
-    if (u.role === 'gm') { var gd = gmDepts(u.gid); return gd.some(function(d){ return d.id === id; }) ? id : ((gd[0] || {}).id || id); }
-    return id;
+    var u = cur(); if (!u) return null; if (u.role === 'super') return id;
+    if (u.role === 'dept' || u.role === 'staff') return u.deptId || null;
+    if (u.role === 'gm') { var gd = gmDepts(u.gid); return gd.some(function(d){ return d.id === id; }) ? id : ((gd[0] || {}).id || null); }
+    return null;
   });
   if (u0 && (u0.role === 'dept' || u0.role === 'staff') && u0.deptId && D.active() !== u0.deptId) D.setActive(u0.deptId);
   if (u0 && u0.role === 'gm') gmEnsureActive(u0);

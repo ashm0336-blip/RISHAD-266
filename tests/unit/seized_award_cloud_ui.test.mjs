@@ -9,6 +9,68 @@ import { execFileSync } from 'node:child_process';
 import { parse } from 'acorn';
 import { json, clock, bases, item, catalogDto, ack, waitFor, browser, seedForm, save, ROOT } from './business_cloud_ui_fx.mjs';
 
+for (const module of ['seized', 'award']) {
+  test(module + ' actual tab presentation hides unread panels and keeps a real denial visible', async t => {
+    const B = browser(module, async () => json({ ok: 0, err: module + '-denied' }, 403)); t.after(B.cleanup);
+    if (module === 'seized') B.page.props = { solo: 'dash' };
+    const flags = module === 'seized' ? ['irOnDash', 'irOnRecords'] : ['awOnNew', 'awOnRes', 'awOnDoc'];
+    for (const flag of flags) assert.equal(!!B.page.renderVals()[flag], false, flag + ' unread');
+    await waitFor(() => B.page._bcReads?.get(module === 'seized' ? 'dashboard' : 'records')?.failed);
+    const values = B.page.renderVals();
+    for (const flag of flags) assert.equal(!!values[flag], false, flag + ' denied');
+    assert.equal(values.bcNotice, true); assert.match(values.bcMessage, /صلاحيتك/);
+  });
+
+  test(module + ' a removed department blocks direct reads and saves while retaining the draft', async t => {
+    const B = browser(module, async () => { throw Error('must not send an invalid scope'); }); t.after(B.cleanup);
+    seedForm(B, module);
+    const draft = JSON.stringify(B.page.state);
+    B.KIVO.BassamDepts.has = () => false;
+    assert.equal(B.page._bcContext(), null);
+    assert.equal((await B.page._bcRead('records')).ok, 0);
+    assert.equal((await B.page._bcMutate('create', {})).ok, 0);
+    assert.equal(B.calls.length, 0);
+    assert.equal(JSON.stringify(B.page.state), draft);
+    assert.equal(B.page._bcData('records'), null);
+  });
+
+  test(module + ' unread, denied, failed, or inconsistent reads cannot render an empty success', async t => {
+    const B = browser(module, async () => json({ ok: 0, err: module + '-denied' }, 403)); t.after(B.cleanup);
+    const required = module === 'seized' ? ['catalogs', 'dashboard'] : ['records'];
+    assert.equal(B.page._bcStatusVals(required).bcReady, false, 'unread is not empty');
+    B.page._bcEnsure(required[0]);
+    await waitFor(() => B.page._bcReads.get(required[0])?.done);
+    const denied = B.page._bcStatusVals(required);
+    assert.equal(denied.bcReady, false); assert.equal(denied.bcNotice, true);
+    assert.match(denied.bcMessage, /صلاحيتك/);
+    for (const view of required) B.seed(view);
+    assert.equal(B.page._bcStatusVals(required).bcReady, true, 'confirmed empty reads are available');
+    if (module === 'seized') {
+      B.page.state.szDashboard.base.reports++;
+      const mixed = B.page._bcStatusVals(required);
+      assert.equal(mixed.bcReady, false); assert.equal(mixed.bcNotice, true);
+    }
+    B.page._bcInvalidate();
+    assert.equal(B.page._bcStatusVals(required).bcReady, false, 'refresh cannot retain false empty success');
+  });
+}
+
+test('award permitted references stay available independently of a denied records tab', async t => {
+  const B = browser('award', async url => {
+    const view = new URL(url, 'https://example.invalid').searchParams.get('view');
+    return view === 'records' ? json({ ok: 0, err: 'award-denied' }, 403) : json({ ok: 1, dept: B.context().dept, view,
+      base: B.base, scope: 'dept', references: { docsV1: { present: false }, docsV2: { present: false }, document: null } });
+  }); t.after(B.cleanup);
+  B.page.renderVals(); await waitFor(() => B.page._bcReads?.get('records')?.failed);
+  assert.match(B.page.renderVals().bcMessage, /صلاحيتك/);
+  B.page.state.awTab = 'doc'; B.page.renderVals();
+  await waitFor(() => B.page._bcReads?.get('references')?.done);
+  const doc = B.page.renderVals();
+  assert.equal(doc.awOnDoc, true); assert.equal(doc.bcReady, true);
+  assert.equal(doc.bcNotice, false, 'an unrelated read denial is not a document error');
+  assert.equal(B.calls.filter(call => new URL(call.url, 'https://example.invalid').searchParams.get('view') === 'records').length, 1);
+});
+
 test('Seized build-only defaults exactly preserve the established pre-migration literals and the generated Worker defaults', () => {
   const old = execFileSync('git', ['show', '4d8ab1e:src/modules/seized/logic.js'], { cwd: ROOT, encoding: 'utf8' }),
     klass = parse(old, { ecmaVersion: 'latest' }).body.find(node => node.type === 'ClassDeclaration'),

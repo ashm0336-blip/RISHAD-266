@@ -9,6 +9,7 @@ Object.assign(Component.prototype, {
     try {
     const boot = window.__BS_BOOT || {}, user = KIVO.BassamAuth?.user?.();
     const dept = KIVO.BassamDepts?.active?.();
+    if (!dept || !KIVO.BassamDepts?.has?.(dept) || (KIVO.BassamDepts.context && KIVO.BassamDepts.context().state !== "ready")) return null;
     if (this._bcGone || this._bcStopped || boot.srv !== 1 || boot.cf !== 1 || !boot.uid || !dept || !user ||
       String(user.id) !== String(boot.uid) || KIVO.__BS_SRV?.sesChanged?.()) return null;
     return { uid: String(boot.uid), dept: String(dept), key: String(boot.uid) + "\0" + String(dept) };
@@ -91,9 +92,9 @@ Object.assign(Component.prototype, {
       const result = all ? await this._bcCollect(options, context) : await this._bcRead(view, options, context);
       if (this._bcReads.get(view) !== token || !this._bcSame(context)) return;
       token.done = true; token.failed = !result.ok;
-      if (!result.ok) { this.setState({ [this._bcStateKey(view)]: null, bcMessage: result.message }); return; }
+      if (!result.ok) { token.message = result.message; this.setState({ [this._bcStateKey(view)]: null }); return; }
       const data = { ...result.data, _contextKey: context.key };
-      this.setState({ [this._bcStateKey(view)]: data, bcMessage: [...this._bcReads.values()].some(read => read.failed) ? this.state.bcMessage : "" });
+      this.setState({ [this._bcStateKey(view)]: data });
     }, 0);
   },
   _bcStamp(base) {
@@ -177,9 +178,13 @@ Object.assign(Component.prototype, {
     this._bcGone = true; this._bcReads = new Map();
     if (this._bcOnRemote) { window.removeEventListener("bassam:remote", this._bcOnRemote); window.removeEventListener("bassam:authz", this._bcOnRemote); }
   },
-  _bcStatusVals() {
-    const loading = !!this._bcReads && [...this._bcReads.values()].some(value => !value.done);
-    return { bcNotice: loading || !!this.state.bcMessage || !!this.state.bcPending, bcMessage: this.state.bcMessage || (this.state.bcPending ? "جارٍ تأكيد العملية — مسودتك باقية حتى يصل التأكيد" : "جارٍ قراءة البيانات من الخادم"), bcCanRefresh: !this.state.bcPending,
+  _bcStatusVals(required = []) {
+    const data = required.map(view => this._bcData(view)), complete = data.every(Boolean);
+    const mixed = complete && data.some(value => !this._bcBaseSame(data[0].base, value.base));
+    const loading = !complete || !!this._bcReads && [...this._bcReads.values()].some(value => !value.done);
+    const readError = required.map(view => this._bcReads?.get(view)).find(read => read?.failed)?.message;
+    const message = this.state.bcMessage || readError || (mixed ? "تغيّرت البيانات أثناء القراءة؛ حدّث النتائج للحصول على نسخة متسقة" : "");
+    return { bcReady: complete && !mixed, bcNotice: loading || !!message || !!this.state.bcPending, bcMessage: message || (this.state.bcPending ? "جارٍ تأكيد العملية — مسودتك باقية حتى يصل التأكيد" : "جارٍ قراءة البيانات من الخادم"), bcCanRefresh: !this.state.bcPending,
       bcRefresh: () => this._bcInvalidate() };
   },
 });

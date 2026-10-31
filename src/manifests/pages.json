@@ -57,6 +57,7 @@
   },
   {
    "key": "emps",
+   "departmentComponents": ["Employees"],
    "nav": "employees",
    "name": "موظفو الإدارة",
    "seq": [
@@ -76,6 +77,7 @@
   },
   {
    "key": "planning",
+   "departmentComponents": ["Planning"],
    "nav": "planning",
    "name": "الخطة التشغيلية",
    "seq": [
@@ -93,18 +95,21 @@
   },
   {
    "key": "staff",
+   "departmentComponents": ["Staffing"],
    "nav": "staffing",
    "name": "الجدول الشهري",
    "under": "planning"
   },
   {
    "key": "plan",
+   "departmentComponents": ["Operational Plan"],
    "nav": "plan",
    "name": "التشغيل الميداني",
    "under": "planning"
   },
   {
    "key": "daily",
+   "departmentComponents": ["Daily Sessions"],
    "nav": "daily",
    "name": "المتابعة اليومية",
    "seq": [
@@ -146,18 +151,21 @@
   },
   {
    "key": "dreport",
+   "departmentComponents": ["Daily Report"],
    "nav": "dreport",
    "name": "التقرير اليومي",
    "under": "daily"
   },
   {
    "key": "tasks",
+   "departmentComponents": ["Tasks"],
    "nav": "tasks",
    "name": "المهام",
    "under": "daily"
   },
   {
    "key": "irshad",
+   "departmentComponents": ["Irshad"],
    "nav": "irshad",
    "name": "نظام الاسترشاد",
    "subs": [
@@ -174,6 +182,7 @@
   },
   {
    "key": "seized",
+   "departmentComponents": ["Seized"],
    "nav": "seized",
    "name": "نظام المضبوطات",
    "subs": [
@@ -190,6 +199,7 @@
   },
   {
    "key": "award",
+   "departmentComponents": ["Award"],
    "nav": "award",
    "name": "جائزة التميز",
    "subs": [

@@ -14,6 +14,18 @@ const json = (value, status = 200) => ({ ok: status >= 200 && status < 300, stat
 const ack = (body, extra = {}) => json({ ok: 1, requestId: body.requestId, op: body.op, rev: 8, n: 1, id: 'TEST_ONLY_report', base: { ...base, reports: 8 }, ...extra });
 const draft = () => ({ shift: 'TEST_ONLY_shift', eid: 'TEST_ONLY_employee', loc: 'TEST_ONLY_location', langs: [{ lang: 'العربية', count: 9 }], bro: '2', pros: '1', pol: '0', langSel: '', langN: '' });
 
+test('Irshad rejects a stale registered scope before direct cloud reads and preserves the draft', async t => {
+  const B = browser(async () => { throw Error('must not request a removed department'); }); t.after(B.cleanup);
+  B.page.state.irDraft = draft();
+  const before = JSON.stringify(B.page.state.irDraft);
+  B.W.KIVO.BassamDepts.has = () => false;
+  assert.equal(B.page._irContext(), null);
+  B.page._irEnsure('catalogs', {});
+  await new Promise(resolve => setTimeout(resolve, 10));
+  assert.equal(B.calls.length, 0);
+  assert.equal(JSON.stringify(B.page.state.irDraft), before);
+});
+
 test('Irshad uses the existing page-kit toast with the same warning/success presentation and hide lifecycle', () => {
   const attributes = {}, timers = [], node = { style: {}, setAttribute(key, value) { attributes[key] = value; } };
   const W = { KIVO: {}, DCLogic: class {}, Intl, Date,
@@ -49,7 +61,7 @@ function browser(handler = async () => json({ ok: 0 }, 500)) {
     loadShiftOptsIr() { return [{ name: 'TEST_ONLY_shift' }]; }
   }
   const KIVO = { BassamPageKit: { base: () => Base }, BassamCount: Count, BassamAuth: { user: () => ({ id: user }) },
-    BassamDepts: { active: () => dept }, BassamPerm: { can: () => true, subOn: () => true }, __BS_SRV: { sesChanged: () => false }, bsPct: Math.round };
+    BassamDepts: { active: () => dept, has: value => value === dept && !!dept }, BassamPerm: { can: () => true, subOn: () => true }, __BS_SRV: { sesChanged: () => false }, bsPct: Math.round };
   const W = { KIVO, DCLogic: Base, URLSearchParams, AbortController, Uint8Array, crypto: webcrypto, Intl, Date, console,
     __BS_BOOT: { srv: 1, cf: 1, uid: user },
     localStorage: { getItem(k) { storage.push(['get', k]); throw Error('Device storage forbidden'); }, setItem(k) { storage.push(['set', k]); throw Error('Device storage forbidden'); } },

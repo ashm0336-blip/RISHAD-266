@@ -73,6 +73,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   _irContext() {
     const boot = window.__BS_BOOT || {}, auth = KIVO.BassamAuth, user = auth && auth.user && auth.user();
     const dept = KIVO.BassamDepts && KIVO.BassamDepts.active && KIVO.BassamDepts.active();
+    if (!dept || !KIVO.BassamDepts?.has?.(dept) || (KIVO.BassamDepts.context && KIVO.BassamDepts.context().state !== "ready")) return null;
     if (this._irGone || this._irSessionStopped || boot.srv !== 1 || boot.cf !== 1 || !boot.uid || !user || String(user.id) !== String(boot.uid) ||
       (KIVO.__BS_SRV && KIVO.__BS_SRV.sesChanged && KIVO.__BS_SRV.sesChanged())) return null;
     return { uid: String(boot.uid), dept: String(dept || ""), key: String(boot.uid) + "\0" + String(dept || "") };

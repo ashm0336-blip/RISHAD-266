@@ -972,6 +972,7 @@ class Component extends DCLogic {
         if (!D) return { deptName: "إدارة", deptGroupName: "", deptOpen: false, deptList: [], deptTree: [], deptGrpShow: false, deptGrpName: "", deptGrpStyle: "", deptToggle: () => {}, deptChev: "", deptBtnStyle: "display:none" };
         const open = !!this.state.deptOpen;
         const act = D.active();
+        const scope = D.context?.(), deptLabel = D.activeName() || (scope?.state === "empty" ? "لا توجد إدارة" : scope?.state === "error" ? "تعذّر قراءة الإدارات" : "اختر إدارة");
         const isSuper0 = !(KIVO.BassamAuth && KIVO.BassamAuth.user()) || KIVO.BassamAuth.isSuper();
         const gmU = (KIVO.BassamAuth && KIVO.BassamAuth.user() && KIVO.BassamAuth.user().role === "gm") ? KIVO.BassamAuth.user() : null;
         /* مدير الإدارة العامة يبدّل بين إدارات مجموعته فقط — كالمشرف داخل نطاقه */
@@ -980,8 +981,8 @@ class Component extends DCLogic {
           authName: (KIVO.BassamAuth && KIVO.BassamAuth.user() && KIVO.BassamAuth.user().name) || "",
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
           doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) KIVO.BassamAuth.logout(); },
-          deptName: D.activeName() || "إدارة",
-          deptGroupName: D.activeName() || "إدارة الأبواب",
+          deptName: deptLabel,
+          deptGroupName: D.activeName() || "",
           deptOpen: open,
           deptToggle: () => this.setState(st => ({ deptOpen: !st.deptOpen })),
           /* مبدّل القائمة الجانبية: المطويّة تنفتح أولاً ثم تنفتح اللوحة —
@@ -994,7 +995,7 @@ class Component extends DCLogic {
           /* R191 (أخٌ): تلميحُ زرّ الإدارة بمسارها في الشجرة كلِّه (الإدارة العليا ← القطاع ← الإدارة العامة ← الإدارة) — كان المجموعةَ المباشرة وحدها */
           sbDeptTitle: (() => { let pa = []; try { pa = (D.ancestorsOf(act) || []).slice().reverse().map(x => { const n = D.nodeOf(x); return n && n.name; }).filter(Boolean); } catch (e) { pa = []; }
             if (!pa.length && D.activeGroupName()) pa = [D.activeGroupName()];
-            return pa.concat([D.activeName() || "إدارتك"]).join(" ← ") + (isSuper ? "  ·  انقر لتبديل الإدارة" : ""); })(),
+            return pa.concat([deptLabel]).join(" ← ") + (isSuper && act ? "  ·  انقر لتبديل الإدارة" : ""); })(),
           sbDeptBtnStyle: isSuper ? "" : "pointer-events:none",
           deptBtnStyle: (isSuper ? "" : "pointer-events:none;") + "height:34px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border-radius:10px;font-size:12px;font-weight:600;font-family:'Cairo',sans-serif;cursor:pointer;background:var(--bg-a185151810p08);color:var(--fg-x9a7e40);border:1px solid " + (open ? "#b99751;box-shadow:0 0 0 2px rgba(185,151,81,0.15)" : "rgba(185,151,81,0.35)"),
           deptChev: (isSuper ? "" : "display:none;") + "transition:transform .2s;flex-shrink:0;opacity:.6;" + (open ? "transform:rotate(180deg)" : ""),

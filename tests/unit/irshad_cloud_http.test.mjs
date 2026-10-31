@@ -8,11 +8,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
-import { world, seed, D1, D2, IDS, identitySnapshot, ROOT } from './irshad_domain_fx.mjs';
+import { candidateWorker, seed, D1, D2, IDS, identitySnapshot, ROOT } from './irshad_domain_fx.mjs';
+import { world } from './custody_review_fx.mjs';
+import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { EKEYS } from './notifications_review_fx.mjs';
 
 test('real module saves with a lost committed ACK, retries once, edits, aggregates and exports every filtered page without duplicate effects', async t => {
-  const B = await world(), { W, DB, env } = B;
+  const B = await world(); B.W = await candidateWorker();
+  await installOperationalFixture(B.env);
+  const { W, DB, env } = B;
   const perms = structuredClone(B.keys.bassam_perms_v1);
   Object.values(perms.caps).forEach(cap => { if (!cap.includes('irshad')) cap.push('irshad'); });
   perms.emps[D1][EKEYS.employee1]['irshad/records'] = ['view'];
@@ -47,7 +51,7 @@ test('real module saves with a lost committed ACK, retries once, edits, aggregat
     loadShiftOptsIr() { return [{ name: shift }]; }
   }
   const C = { DCLogic: Base, KIVO: { BassamPageKit: { base: () => Base }, BassamCount: Count, BassamAuth: { user: () => B.users.find(u => u.id === IDS.super) },
-    BassamDepts: { active: () => D1 }, BassamPerm: { can: () => true }, __BS_SRV: { sesChanged: () => false, askReason: (key, keys, done) => done('TEST_ONLY explicit operator reason') } },
+    BassamDepts: { active: () => D1, has: value => value === D1 }, BassamPerm: { can: () => true }, __BS_SRV: { sesChanged: () => false, askReason: (key, keys, done) => done('TEST_ONLY explicit operator reason') } },
     __BS_BOOT: { srv: 1, cf: 1, uid: IDS.super }, URLSearchParams, AbortController, Uint8Array, Intl, Date, crypto: webcrypto,
     setTimeout(fn, ms) { const timer = setTimeout(fn, ms); timers.push(timer); return timer; }, clearTimeout,
     localStorage: { getItem(key) { storage.push(key); throw Error('No device data'); }, setItem(key) { storage.push(key); throw Error('No device writes'); } },

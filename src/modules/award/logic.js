@@ -1501,7 +1501,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   renderVals() {
     this._bsHR();
-    this._awEnsureRecords();
     const t = this._awPermVals(),
       e = this.state,
       a = (t) =>
@@ -1554,8 +1553,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ...t,
       };
     if (h) this._bcEnsure("references");
-    Object.assign(g, this._bcStatusVals());
-    return (p && Object.assign(g, this._awWizard()), w && Object.assign(g, this._awResults()), h && Object.assign(g, this._awDocs()), g);
+    else this._awEnsureRecords();
+    if (p) Object.assign(g, this._awWizard());
+    if (w) Object.assign(g, this._awResults());
+    if (h) Object.assign(g, this._awDocs());
+    Object.assign(g, this._bcStatusVals(h ? ["references"] : ["records"]));
+    g.awOnNew = p && g.bcReady; g.awOnRes = w && g.bcReady; g.awOnDoc = h && g.bcReady;
+    return g;
   }
   _awWizard() {
     const t = this.state,

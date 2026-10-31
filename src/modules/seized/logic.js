@@ -528,8 +528,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ...t,
       };
     this._bcEnsure("catalogs");
-    Object.assign(p, this._bcStatusVals());
-    return (d && Object.assign(p, this._recordsCalVals()), c && Object.assign(p, this._dashVals()), p);
+    if (d) Object.assign(p, this._recordsCalVals());
+    if (c) Object.assign(p, this._dashVals());
+    Object.assign(p, this._bcStatusVals(d ? ["catalogs", "calendar", "records", "context"] : ["catalogs", "dashboard"]));
+    p.irOnRecords = d && p.bcReady; p.irOnDash = c && p.bcReady;
+    return p;
   }
   _dashVals() {
     this._bcEnsure("dashboard", this._szDashboardQuery());

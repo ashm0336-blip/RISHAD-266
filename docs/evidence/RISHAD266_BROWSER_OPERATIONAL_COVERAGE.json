@@ -1,48 +1,50 @@
 {
   "recordType": "real-browser-operational-coverage",
   "schemaVersion": 1,
-  "updatedAtRiyadh": "2026-10-31T12:49:14.847394+03:00",
-  "status": "blocked_before_browser_initialization",
+  "updatedAtRiyadh": "2026-10-31T13:43:22.224130+03:00",
+  "status": "local_fix_accepted_pending_preview_browser_retest",
   "target": "https://test.kivo-d81.pages.dev",
-  "sourceCommitAtAttempt": "4426ac8783854bc4cbd90dc4e2225bc0c6941da3",
+  "sourceCommitAtAttempt": "5a017a0722595eadf9efaac4af63eabddeb2e025",
   "browserContext": {
     "reportedOpenByUser": true,
     "ambientUrl": "https://test.kivo-d81.pages.dev/#/sysadmin/overview",
     "ambientUrlIsNotDomEvidence": true,
-    "currentPreviewVerifiedInBrowser": false,
-    "actualOwnerSessionInspected": false,
-    "actualDepartmentContextInspected": false
+    "currentPreviewVerifiedInBrowser": true,
+    "actualOwnerSessionInspected": true,
+    "actualDepartmentContextInspected": true,
+    "visibleOwnerRole": "مدير النظام",
+    "registeredDepartmentsVisible": 0,
+    "controlMode": "Installed Chrome, ephemeral headed context, browser sandbox enabled; user completed login manually",
+    "currentPreviewVerification": "Fresh CF read verifies ebdf166c/b2f07fe/test with isolated bassam-db-preview schema10; actual owner page uses accepted hashed bundle assets."
   },
   "coverage": {
-    "pagesActuallyRead": 0,
-    "uiActionsExecuted": 0,
-    "applicationBugsReproduced": 0,
-    "sourceFixes": 0,
+    "pagesActuallyRead": 6,
+    "uiActionsExecuted": null,
+    "applicationBugsReproduced": 3,
+    "sourceFixes": 3,
     "uiRetestsExecuted": 0,
-    "regressionTestsRun": 0,
+    "regressionTestsRun": 98,
     "apiTestsSubstituted": 0,
     "newTestDataCreated": false,
     "cloudWrites": 0,
-    "newDeployments": 0
+    "newDeployments": 0,
+    "counterPolicy": "No exact total UI action/test count is claimed during execution; acceptance is recorded per scenario."
   },
   "blocker": {
-    "layer": "browser/computer-control process initialization",
-    "message": "MXC launcher: failed to create the process security environment: CreateProcessSecurityEnvironment failed (HRESULT = 0x80070002)",
-    "recoveryAttempted": [
-      "cua.getState initial attempt and retry",
-      "cua_repl reset and getState retry",
-      "native node_repl @oai/sky initialization",
-      "native node_repl reset and initialization retry",
-      "direct getTab for the existing in-app sysadmin/overview URL"
-    ],
-    "result": "No browser inventory, DOM, screenshot, session, page request or actual UI action was obtained. The user confirms the platform is open.",
-    "causeBeyondLauncherMessage": "Not established; no Windows security setting was modified."
+    "status": "bypassed_with_real_browser_control",
+    "historicalMcpLauncherFailurePersists": true,
+    "securitySettingsChanged": false,
+    "profileOrSessionCopied": false
   },
   "credentialHandling": {
     "passwordRequestedInChat": false,
     "credentialsReadOrSaved": false,
-    "loginFormReached": false,
-    "userWillEnterCredentialsInBrowserIfRequired": true
+    "loginFormReached": true,
+    "userWillEnterCredentialsInBrowserIfRequired": true,
+    "ownerEnteredCredentialsManually": true,
+    "passwordFieldsRead": false,
+    "authRequestsCaptured": false,
+    "sessionStateExported": false
   },
   "reportedPriorityProblem": {
     "message": "صلاحياتك لا تشمل هذا الإجراء",
@@ -52,28 +54,30 @@
       "award",
       "related indicators"
     ],
-    "reproduced": false,
-    "requestAndServerReasonCaptured": false,
-    "verifiedRootCause": null,
-    "fixApplied": false
+    "reproduced": true,
+    "requestAndServerReasonCaptured": true,
+    "verifiedRootCause": "Actual registered department list is empty; active() invents d1; the UI sends d1; canonical server rejects unregistered departments correctly. Fix the context prerequisite, preserve real 403.",
+    "fixApplied": true,
+    "fixState": "source edits under local validation; no deployed GUI retest yet"
   },
   "rows": [
     {
       "id": "UI-CTX-01",
       "area": "owner/session/scope",
-      "status": "blocked_before_browser_initialization",
+      "status": "reproduced",
       "actions": [
         "open Preview alias",
         "authenticate using existing owner",
         "record visible role and registered/active department",
         "navigate to each priority module and record exact message"
       ],
-      "expectedEvidence": "Actual page capture plus method/route/status/error code where available, with credentials redacted."
+      "expectedEvidence": "Actual page capture plus method/route/status/error code where available, with credentials redacted.",
+      "observed": "Owner visible; actual departments panel shows zero registered departments; empty selector still called the context إدارة."
     },
     {
       "id": "UI-IR-01",
       "area": "irshad",
-      "status": "blocked_before_browser_initialization",
+      "status": "pending_after_context_fix",
       "actions": [
         "open records",
         "create one current-day synthetic report if existing form prerequisites permit",
@@ -83,12 +87,13 @@
         "filter/search",
         "export filtered Excel",
         "view IR indicator with matching scope/range"
-      ]
+      ],
+      "observed": "Actual UI denied with HTTP403 under invented d1. Business create/edit/save/export remain untested."
     },
     {
       "id": "UI-SZ-01",
       "area": "seized",
-      "status": "blocked_before_browser_initialization",
+      "status": "pending_after_context_fix",
       "actions": [
         "open records",
         "create one synthetic no-photo report with one item",
@@ -98,12 +103,13 @@
         "reload",
         "export filtered Excel",
         "view SZ indicator with matching scope/range"
-      ]
+      ],
+      "observed": "Actual UI denied with HTTP403 under invented d1. Business create/edit/save/export remain untested."
     },
     {
       "id": "UI-AW-01",
       "area": "award",
-      "status": "blocked_before_browser_initialization",
+      "status": "pending_after_context_fix",
       "actions": [
         "open nomination/results/documents tabs",
         "inspect real required fields",
@@ -113,12 +119,13 @@
         "filter results",
         "change status only if the current policy allows"
       ],
-      "stopCondition": "If pictures/signatures are mandatory, record the requirement and stop that create path; do not upload or bypass."
+      "stopCondition": "If pictures/signatures are mandatory, record the requirement and stop that create path; do not upload or bypass.",
+      "observed": "Actual UI denied with HTTP403 under invented d1. Business create/edit/save/export remain untested."
     },
     {
       "id": "UI-ACL-01",
       "area": "separate limited-role sessions",
-      "status": "blocked_before_browser_initialization",
+      "status": "pending_after_context_fix",
       "actions": [
         "use isolated manager and staff sessions scoped to the synthetic department",
         "verify actual allowed reads and denied writes",
@@ -130,7 +137,7 @@
     {
       "id": "UI-SYNC-01",
       "area": "reload/navigation/synchronization",
-      "status": "blocked_before_browser_initialization",
+      "status": "pending_after_context_fix",
       "actions": [
         "navigate away/back after confirmed save",
         "reload",
@@ -141,8 +148,13 @@
     }
   ],
   "otherPages": {
-    "status": "not_executed",
-    "reason": "Browser process initialization failed before any page could be read; no page/action acceptance can be assigned."
+    "status": "partially_inspected_not_accepted",
+    "observed": [
+      "Global admin overview and departments",
+      "KPIs readiness, embedded IR and SZ indicators",
+      "Daily statistics actual form and calendar read only"
+    ],
+    "reason": "Page opening and control inspection are not functional acceptance. Current batch fixes reproduced context and false-empty failures first."
   },
   "coverageRecordDiscovery": {
     "currentBrowserLedgerFoundBeforeThisRun": false,
@@ -165,11 +177,10 @@
     "hypothesesAreNotReproducedBugs": true
   },
   "resumeOrder": [
-    "Restore browser tool initialization and connect to the already-open Preview tab.",
-    "Inspect actual visible owner/department context; hand login back to the user if necessary.",
-    "Reproduce the three priority permission messages through ordinary UI actions and capture sanitized route/status/reason/correlation evidence.",
-    "Apply a source fix only after establishing the actual common cause, then regression-test, deploy test and repeat the same UI scenario.",
-    "Continue the existing pages with bounded linked synthetic data and separate limited-role sessions."
+    "Complete targeted source regressions and quality gates",
+    "Verify schema10 Preview isolation and unchanged owner/production/R2; seal and publish tested develop commit to test only",
+    "Repeat actual zero-department owner scenarios in deployed browser",
+    "Create small isolated synthetic department and exercise linked records from UI; limited role sessions and remaining pages follow"
   ],
   "boundaries": {
     "productionModified": false,
@@ -182,5 +193,127 @@
     "externalNotificationsSent": false
   },
   "documentationReference": "https://learn.chatgpt.com/docs/windows/windows-sandbox",
-  "referenceLimit": "General MXC documentation; no specific repair for this exact observed error was established."
+  "referenceLimit": "General MXC documentation; no specific repair for this exact observed error was established.",
+  "attemptHistory": [
+    {
+      "status": "blocked_before_browser_initialization",
+      "updatedAtRiyadh": "2026-10-31T12:49:14.847394+03:00",
+      "coverage": {
+        "pagesActuallyRead": 6,
+        "uiActionsExecuted": null,
+        "applicationBugsReproduced": 3,
+        "sourceFixes": null,
+        "uiRetestsExecuted": 0,
+        "regressionTestsRun": null,
+        "apiTestsSubstituted": 0,
+        "newTestDataCreated": false,
+        "cloudWrites": 0,
+        "newDeployments": 0,
+        "counterPolicy": "No exact total UI action/test count is claimed during execution; acceptance is recorded per scenario."
+      },
+      "blocker": {
+        "layer": "browser/computer-control process initialization",
+        "message": "MXC launcher: failed to create the process security environment: CreateProcessSecurityEnvironment failed (HRESULT = 0x80070002)",
+        "recoveryAttempted": [
+          "cua.getState initial attempt and retry",
+          "cua_repl reset and getState retry",
+          "native node_repl @oai/sky initialization",
+          "native node_repl reset and initialization retry",
+          "direct getTab for the existing in-app sysadmin/overview URL"
+        ],
+        "result": "No browser inventory, DOM, screenshot, session, page request or actual UI action was obtained. The user confirms the platform is open.",
+        "causeBeyondLauncherMessage": "Not established; no Windows security setting was modified."
+      }
+    }
+  ],
+  "reproducedBugs": [
+    {
+      "id": "GUI-SCOPE-01",
+      "areas": [
+        "irshad",
+        "seized",
+        "award",
+        "KPIs/irshad",
+        "KPIs/seized"
+      ],
+      "steps": [
+        "Log in as current owner",
+        "Keep actual empty registered-department state",
+        "Open each real navigation entry and the two embedded KPIs"
+      ],
+      "observed": "403 domain-denied for d1; source active() fallback invents an unregistered scope",
+      "fix": "Explicit registered-department context and declared prerequisite before preload/component; defensive transport guards; no server guard or owner grant change",
+      "publishedRetest": "pending"
+    },
+    {
+      "id": "GUI-EMPTY-02",
+      "areas": [
+        "seized records",
+        "seized KPI",
+        "award form"
+      ],
+      "observed": "Read failure displays empty/zero business panels or an unready wizard",
+      "fix": "Require complete confirmed scope-bound read data before presenting business panels; preserve denial message and draft",
+      "publishedRetest": "pending"
+    },
+    {
+      "id": "GUI-ADMIN-03",
+      "areas": [
+        "sysadmin/depts"
+      ],
+      "observed": "Zero departments still renders a phantom detail with — and account/cap/switch/delete controls",
+      "fix": "Only real selected departments or hierarchy nodes expose details. Empty/stale scopes cannot preload references; global hierarchy creation remains available.",
+      "publishedRetest": "pending"
+    }
+  ],
+  "privateActualBrowserEvidence": {
+    ".cache/ui-live-audit/owner-ui-before.json": "8551db07ff60c9f7e5d101a51a217f29e98397e7a3011dd67047634bba369c81",
+    ".cache/ui-live-audit/irshad-owner-denied-before.png": "c19546b3e6d434a5ddbe0991ccea073ea7b6a2d30425019f1c323f8d075b6cc9",
+    ".cache/ui-live-audit/seized-owner-denied-before.png": "dca93a38da754e0fd4ed80a3ed30c1e68896309bddcab654d04fb30e8e0f0968",
+    ".cache/ui-live-audit/award-owner-denied-before.png": "7e913bff2413a368052de5503487178af1a34fe315a37d689f417331b3cd5c05",
+    ".cache/ui-live-audit/departments-empty-before.png": "19ec0479f1350a3d831c7688daceb6c25d38a1de28700ed81e6ec731517678d5",
+    ".cache/ui-live-audit/irshad-kpi-denied-before.png": "717e31e06a02f52e8c06e130a7fc2c04a097fbc5db96d5a13d50c9e1961d242f",
+    ".cache/ui-live-audit/seized-kpi-denied-before.png": "e3229b92ab5fc7f43a299cd263c3de0b2f26a4132d07fdc4df481a191311146b",
+    ".cache/ui-live-audit/owner-ui-before-assets.json": "9b671635d3faa332c8d3bd5d6fb0de5bf6affc363629ec30e759a75d3951a573"
+  },
+  "localAcceptance": {
+    "uniqueTargetedTests": 98,
+    "pass": 98,
+    "fail": 0,
+    "skipped": 0,
+    "groups": {
+      "IR_SZ_AW_UI": 62,
+      "department_prerequisite_and_preload": 15,
+      "backend_department_scope": 6,
+      "admin_empty_detail": 5,
+      "irshad_http": 1,
+      "seized_award_http": 3,
+      "emitted_current_bundles": 4,
+      "IR_SZ_lock_hints": 2
+    },
+    "buildFiles": 133,
+    "budgetPass": 16,
+    "workerSourceUnchanged": true,
+    "schemaUnchanged": 10,
+    "publishedGuiRetest": "pending",
+    "qualityEvidence": {
+      ".cache/ui-live-audit/client-cloud-final.tap": "864f0d9a5f620b4c87407662111f160ec5b554fbb4ce5384e7bc11e63b230e02",
+      ".cache/ui-live-audit/department-prerequisite-targeted.tap": "d447493fa3e679a9edee1b15a102c28954168c52ee205e948bbbf814683ad2d7",
+      ".cache/ui-live-audit/backend-context-final.tap": "0e82dbcda0ffd039908e9047552b55f2051fcc48185a554471375caf8d2fa40b",
+      ".cache/ui-live-audit/admin-context-result.json": "5d7ea463d2765bdceb35e267ce719e64c32064662967ab33fcd105ce11f39fe7",
+      ".cache/ui-live-audit/irshad-http-schema10.tap": "ca119c7f46728cae706c2a331a8fb89e18630e5c48b066fd0389e78f903d7edf",
+      ".cache/ui-live-audit/business-test-freeze.json": "e4782d99f9a0b259a81e13be15bf1b3a6f21c144e3d1724d7c420963d2ba14d4",
+      ".cache/ui-live-audit/build-final.log": "17f259103a0ac748fd8a760403527cb5726bad73c5c37b1a0039562b28cac447",
+      ".cache/ui-live-audit/check-final.log": "da092c6a8553d84048b388bdb52e30f934a63eff991dd3d0a25c33b45cb2c5ce",
+      ".cache/ui-live-audit/final-eslint.json": "21726203699ee0212fabd371a3e5217a3e78218cfcac9c1c180f60bf9404431d",
+      ".cache/ui-live-audit/cloud-before.json": "0e457b0a84554c29883c18914b8b2b55b31b35c4da1522c396e0cc39dd949081"
+    }
+  },
+  "perfDecision": {
+    "authority": "Prior explicit owner delegation for necessary professional cap adjustments",
+    "awardMeasuredGzipBytes": 47818,
+    "awardBudgetBefore": 47800,
+    "awardBudgetAfter": 47900,
+    "otherBudgetsUnchanged": true
+  }
 }

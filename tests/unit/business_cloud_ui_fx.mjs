@@ -49,7 +49,7 @@ function browser(module, handler, currentClock = clock) {
   }
   const KIVO = { BassamPageKit: { base: () => Base }, BassamCount: Count,
     BassamAuth: { user: () => ({ id: uid, role: 'super' }), display: () => ({ name: 'TEST_ONLY_actor' }), isSuper: () => true },
-    BassamDepts: { active: () => dept, activeName: () => 'TEST_ONLY_department' },
+    BassamDepts: { active: () => dept, has: value => value === dept && !!dept, activeName: () => 'TEST_ONLY_department' },
     BassamPerm: { can: () => true, subOn: () => true, key: () => true },
     __BS_SRV: { sesChanged: () => false }, BassamFind: { filter: (_, rows) => rows, match: () => true } };
   const W = { KIVO, DCLogic: Base, URLSearchParams, AbortController, Uint8Array, crypto: webcrypto, Intl, Date, console,

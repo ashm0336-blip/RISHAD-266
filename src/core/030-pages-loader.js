@@ -31,6 +31,18 @@ window.__resourceBlobs = {};
 /* A page's existing charter declares its data. Await the acknowledged SQL
    projection before any Component field initializer reads its business state. */
 (function () {
+  var contextManifest, departmentComponents = new Set();
+  function pageContext(name) {
+    var manifest = KIVO.KIVO_MANIFEST;
+    if (manifest !== contextManifest) {
+      contextManifest = manifest; departmentComponents = new Set();
+      var pages = manifest && manifest.keys.indexOf('pages') !== -1 ? manifest.clone('pages') : [];
+      pages.forEach(function (page) { (page.departmentComponents || []).forEach(function (component) { departmentComponents.add(component); }); });
+    }
+    if (!departmentComponents.has(name)) return null;
+    var service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    return service && typeof service.departmentContext === 'function' ? service.departmentContext() : { state: 'error', dept: null, message: 'تعذّر قراءة سجل الإدارات — أعد المحاولة' };
+  }
   function pageData(name) {
     var manifest = KIVO.KIVO_MANIFEST;
     if (!manifest || manifest.keys.indexOf('operationsReadSets') === -1) throw Error('operations-readset-required');
@@ -39,13 +51,19 @@ window.__resourceBlobs = {};
     var names = service ? declared.filter(function (key) { return service.resources.indexOf(key) !== -1 && !/^bassam_(?:st|dr)_grp_v1$|^bassam_dayfocus_v1$/.test(key); }) : declared;
     if (!names.length) return { keys: [], service: service };
     var stamp = service && service.context();
-    if (!stamp) throw Error('operations-session-required');
+    if (!stamp) {
+      var scope = service && service.departmentContext && service.departmentContext();
+      if (scope && scope.state !== 'ready' && !pageContext(name)) return { keys: [], service: service };
+      throw Error('operations-session-required');
+    }
     return { service: service, keys: names.map(function (key) { return 'bsdept:' + stamp.dept + ':' + key; }) };
   }
+  KIVO.__dcPageContext = pageContext;
   KIVO.__dcPageReady = function (name) {
-    try { var data = pageData(name); return !data.keys.length || data.service.ready(data.keys); } catch (error) { return false; }
+    try { var scope = pageContext(name); if (scope && scope.state !== 'ready') return false; var data = pageData(name); return !data.keys.length || data.service.ready(data.keys); } catch (error) { return false; }
   };
   KIVO.__dcBeforePage = async function (name) {
+    var scope = pageContext(name); if (scope && scope.state !== 'ready') return;
     var data = pageData(name);
     if (data.keys.length && !data.service.ready(data.keys)) {
       var result = await data.service.read(data.keys);

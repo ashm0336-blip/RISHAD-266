@@ -627,6 +627,10 @@
   function operationObject9(value) { return !!value && typeof value === 'object' && !Array.isArray(value); }
   function operationInteger9(value) { return Number.isSafeInteger(value) && value >= 0; }
   function operationClone9(value) { return JSON.parse(JSON.stringify(value)); }
+  function operationDepartmentContext9() {
+    var depts = KIVO.BassamDepts;
+    return depts && typeof depts.context === 'function' ? depts.context() : { state: 'error', dept: null, message: 'تعذّر قراءة سجل الإدارات — أعد المحاولة' };
+  }
   function operationContext9() {
     var user = KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user();
     var dept = KIVO.BassamDepts && KIVO.BassamDepts.active && KIVO.BassamDepts.active();
@@ -1567,6 +1571,7 @@
     operations: Object.freeze({
       resources: operationResources9,
       context: operationContext9,
+      departmentContext: operationDepartmentContext9,
       snapshot: function () { return operationSnapshot9 && operationSame9(operationSnapshot9) ? operationClone9(operationSnapshot9) : null; },
       read: operationRead9,
       value: operationValue9,

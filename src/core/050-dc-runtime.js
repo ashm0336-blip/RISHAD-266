@@ -968,6 +968,13 @@
     const [w, hgt] = hint.split(",");
     return { minWidth: w.trim(), minHeight: hgt && hgt.trim() };
   }
+  function pageContext(name) {
+    return typeof KIVO.__dcPageContext === "function" ? KIVO.__dcPageContext(name) : null;
+  }
+  function pageContextKey(name) {
+    const context = pageContext(name);
+    return context ? JSON.stringify([context.state, context.dept]) : "";
+  }
   function createComponentFactory(registry, ensureFetched, ensureData, dataReady) {
     const React = getReact();
     const AncestorContext = React.createContext([]);
@@ -1082,6 +1089,7 @@
         const r = registry.get(this.__name);
         if (r.ver !== this.__rVer) return true;
         if ((KIVO.__dcWorld || 0) !== this.__rWorld) return true;
+        if (pageContextKey(this.__name) !== this.__rDeptContext) return true;
         /* أجيالُ المفاتيح: يُعاد الرسمُ فقط إن كُتب — منذ آخر رسمٍ — مفتاحٌ قرأه هذا
            المكوّنُ فعلاً أثناء رسمه (تنبيهٌ أو مفتاحُ صفحةٍ أخرى لا يمسّه) */
         if (this.__reads && (KIVO.__dcWrite || 0) !== (this.__rWrite || 0)) {
@@ -1166,6 +1174,9 @@
       }
       render() {
         const r = registry.get(this.__name);
+        const scope = pageContext(this.__name);
+        this.__rDeptContext = pageContextKey(this.__name);
+        if (r.dataContext !== this.__rDeptContext) { r.dataError = null; r.dataContext = this.__rDeptContext; }
         const cls = "sc-host" + (r.htmlStreaming ? " sc-streaming-html" : "") + (r.jsStreaming ? " sc-streaming-js" : "");
         const hintStyle = r.htmlStreaming ? hintToMin(this.props.__hintSize) : void 0;
         const hostStyle = this.props.__hostStyle || hintStyle ? { ...hintStyle || {}, ...this.props.__hostStyle || {} } : void 0;
@@ -1207,8 +1218,11 @@
             })
           );
         }
+        if (scope && scope.state !== "ready") {
+          return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: scope.message }));
+        }
         if (!dataReady(this.__name)) {
-          if (!r.dataError) ensureData(this.__name).catch(() => {});
+          if (!r.dataError) { ensureFetched(this.__name); ensureData(this.__name).catch(() => {}); }
           return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: r.dataError || undefined }));
         }
         this.__reconcileLogic();
@@ -1807,21 +1821,28 @@
     }
     function ensureData(name) {
       const r = registry.get(name);
+      const scope = pageContext(name), key = pageContextKey(name);
+      if (scope && scope.state !== "ready") return Promise.resolve();
+      if (r.dataContext !== key) { r.dataError = null; r.dataContext = key; }
       if (dataReady(name) || typeof KIVO.__dcBeforePage !== "function") return Promise.resolve();
-      if (r.dataPromise) return r.dataPromise;
+      if (r.dataPromise && r.dataPromiseContext === key) return r.dataPromise;
       r.dataError = null;
-      r.dataPromise = Promise.resolve().then(() => KIVO.__dcBeforePage(name)).then(() => {
+      r.dataPromiseContext = key;
+      const promise = Promise.resolve().then(() => KIVO.__dcBeforePage(name)).then(() => {
+        if (pageContextKey(name) !== key) return;
         if (!dataReady(name)) throw Error("operations-page-read-failed");
         r.dataError = null;
         try { window.dispatchEvent(new CustomEvent("dc:page-load-ready", { detail: { name } })); } catch (e) {}
         registry.bump(name);
       }).catch((error) => {
+        if (pageContextKey(name) !== key) return;
         r.dataError = "تعذّر تأكيد بيانات الشاشة — أعد المحاولة";
         try { window.dispatchEvent(new CustomEvent("dc:page-load-failed", { detail: { name } })); } catch (eventError) {}
         registry.bump(name);
         throw error;
-      }).finally(() => { r.dataPromise = null; });
-      return r.dataPromise;
+      }).finally(() => { if (r.dataPromise === promise) r.dataPromise = null; });
+      r.dataPromise = promise;
+      return promise;
     }
     function ensureFetched(name) {
       const r = registry.get(name);

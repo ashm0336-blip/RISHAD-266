@@ -57,25 +57,33 @@
      الحارس تضبطه طبقة الحسابات: يأخذ المعرّف المطلوب ويعيد المسموح به لهذا
      المستخدم — فلا يُفعَّل ولا يُقرأ نطاقٌ خارج صلاحيته أبداً، مهما كان المخزون. */
   var _guard = null;
-  function guarded(a){ if (!_guard) return a; try { var g = _guard(a); return g || a; } catch(e){ return a; } }
+  function guarded(a){ if (!_guard) return a; try { var g = _guard(a); return g == null || g === '' ? null : g; } catch(e){ return null; } }
   function active(){
     if (_act) { if (KIVO.__bsReadHook) KIVO.__bsReadHook('bassam_active_dept_v1'); return _act; }
     var a, rr = reg();
     try { a = RAW.getItem.call(localStorage,'bassam_active_dept_v1'); } catch(e){ a = null; }   /* إدارةُ التبويب، وإلا اختيارُ الجهاز الأخير (KIVO_264 · D-7) */
     if (!a || !rr.some(function(d){return d.id===a;})) {
-      a = rr.length ? rr[0].id : 'd1';
+      a = rr.length ? rr[0].id : null;
     }
     var g = guarded(a);
     if (g !== a) a = g;
+    if (!a || !rr.some(function(d){ return d.id === a; })) return null;
     try { if (RAW.getItem.call(localStorage,'bassam_active_dept_v1') !== a) RAW.setItem.call(localStorage,'bassam_active_dept_v1', a); } catch(e){}
     if (tabAct() !== a) tabActSet(a);              /* يُثبَّت للتبويب: تبديلٌ في تبويبٍ آخر لا يحوّله بعد الآن */
     _act = a;
     return a;
   }
-  function scoped(k){ return PREFIX + active() + ':' + k; }
+  function scoped(k){ var a = active(); if (!a) throw Error('department-required'); return PREFIX + a + ':' + k; }
   function isScopable(k){ return typeof k==='string' && k.indexOf('bassam_')===0 && !GLOBAL[k]; }
   function map(k){ return isScopable(k) ? scoped(k) : k; }
-  function mine(){ return PREFIX + active() + ':'; }
+  function mine(){ var a = active(); return a ? PREFIX + a + ':' : null; }
+  function context(){
+    var r = readReg(), a = active();
+    if (r.state === 'error' || r.state === 'corrupt') return { state:'error', dept:null, message:'تعذّر قراءة سجل الإدارات — أعد المحاولة' };
+    if (a) return { state:'ready', dept:a, message:'' };
+    if (!r.list || !r.list.length) return { state:'empty', dept:null, message:'لا توجد إدارة — أضف إدارة من إعدادات المنصة' };
+    return { state:'unavailable', dept:null, message:'اختر إدارة متاحة لحسابك' };
+  }
 
   /* ── إنذار امتلاء المساحة ────────────────────────────────────────────────────
      أغلب مسارات الحفظ (الموظفون، الجدول الشهري، الجولات، أقفال المهام) كانت
@@ -161,7 +169,7 @@
 
   /* ── clear/key/length كانت غير مرقّعة: clear() واحدة كانت تمحو كل الإدارات
      والحسابات والجلسة دفعة واحدة وتعيد النظام لإعدادات المصنع بلا تأكيد. ─────── */
-  function myKeys(){ var p = mine(); return RAW.allKeys().filter(function(k){ return k.indexOf(p)===0; }); }
+  function myKeys(){ var p = mine(); return p ? RAW.allKeys().filter(function(k){ return k.indexOf(p)===0; }) : []; }
   Storage.prototype.clear = function(){
     if (this !== window.localStorage) return RAW.clear.call(this);
     myKeys().forEach(function(k){ RAW.removeItem.call(localStorage, k); });
@@ -193,6 +201,7 @@
     list: function(){ return reg().slice(); },
     has: function(id){ return reg().some(function(d){ return d.id===id; }); },
     active: active,
+    context: context,
     activeName: function(){ var a=active(); var d=reg().filter(function(x){return x.id===a;})[0]; return d?d.name:''; },
     activeSys: function(){ var a=active(); var d=reg().filter(function(x){return x.id===a;})[0]; return (d&&d.sys)||''; },
     /* كانت تقبل أي معرّف؛ والمعرّف المعلّق كان يسقط صامتاً على أول إدارة
