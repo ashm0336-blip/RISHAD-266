@@ -56,6 +56,41 @@ function capOwnWhy(nv, cv) {
   var m = isObj(n) ? n.capMode : undefined;
   return (m !== undefined && m !== 'own') || (isObj(o) && o.capMode === 'own' && m !== 'own') ? 'capmode' : '';
 }
+/* caps-own · stale clients: a page built before read-time narrowing narrows a ceiling AND, in the same save, deletes what the narrowing put
+   outside it (trimEmps · pruneEmpLeaves · the empLens filter · p24TrimGrants). The current client writes the ceiling alone, so a request
+   that removes an item which was inside the ceiling before this save and is outside it after (a leaf or action of a sheet that stays, a lens
+   of a list that stays, a plus/minus key of an explicit grant) is that old page: the whole request is refused and nothing is written (054).
+   Deliberate removals are untouched: anything inside the new ceiling, anything already outside the old one, a whole sheet or lens list. */
+var CAP_STALE_MSG = 'هذه الصفحة نسخةٌ أقدم من النظام — لم يُحفظ شيء. أعد تحميل الصفحة ثم كرّر التعديل';
+function capLeafKnown(k) { var sp = pgSplit(k); return sp.sub ? pgLeaves(sp.page).indexOf(k) !== -1 : !!PG_OF[k] && !pgIsContainer(k); }
+function capStaleBatch(A, todo, evald) {
+  var i, k, O = A.perms || {}, N = O, G = [], at = function (P) { var B = {}, q; for (q in A) if (q.slice(0, 2) !== '__') B[q] = A[q]; B.perms = P; B.off = []; return B; };
+  for (i = 0; i < todo.length; i++) {
+    if (!evald[i] || todo[i].act !== 'set') continue;
+    if (todo[i].k === K_PERM) { if (evald[i].conflict) return false; O = parseJson(evald[i].cur, {}); N = parseJson(todo[i].v, null); if (!isObj(O)) O = {}; if (!isObj(N)) return false; }
+    else if (resName(todo[i].k) === ENF_GRANTS_RES && parseKey(todo[i].k).dept) G.push(i);
+  }
+  if (O === N) return false;
+  var Bo = at(O), Bn = at(N), gone = function (d, f, x) { return !f(Bn, d, x) && f(Bo, d, x); };
+  var lens = function (B, d, L) { var dl = (B.perms.lenses || {})[d]; return !Array.isArray(dl) || dl.indexOf(L) !== -1; };
+  for (var d in (O.emps || {})) for (var ek in O.emps[d]) {
+    var s0 = O.emps[d][ek], s1 = ((N.emps || {})[d] || {})[ek];
+    if (isObj(s0) && isObj(s1)) for (k in s0) if (capLeafKnown(k) && Array.isArray(s0[k]) && s0[k].some(function (a) { return !(Array.isArray(s1[k]) && s1[k].indexOf(a) !== -1); }) && gone(d, capOnDept, k)) return true;
+  }
+  for (d in (O.empLens || {})) for (ek in O.empLens[d]) {
+    var l0 = O.empLens[d][ek], l1 = ((N.empLens || {})[d] || {})[ek];
+    if (Array.isArray(l0) && Array.isArray(l1)) for (k = 0; k < l0.length; k++) if (l1.indexOf(l0[k]) === -1 && gone(d, lens, l0[k])) return true;
+  }
+  for (i = 0; i < G.length; i++) {
+    var g0 = parseJson(evald[G[i]].cur, {}), g1 = parseJson(todo[G[i]].v, {}); d = parseKey(todo[G[i]].k).dept;
+    g0 = isObj(g0) && isObj(g0.emp) ? g0.emp : {}; g1 = isObj(g1) && isObj(g1.emp) ? g1.emp : {};
+    for (ek in g0) for (var f in { plus: 1, minus: 1 }) {
+      var a0 = isObj(g0[ek]) && Array.isArray(g0[ek][f]) ? g0[ek][f] : [], a1 = isObj(g1[ek]) && Array.isArray(g1[ek][f]) ? g1[ek][f] : [];
+      for (k = 0; k < a0.length; k++) if (a1.indexOf(a0[k]) === -1 && gone(d, enfKeyOnCeiling, String(a0[k]))) return true;
+    }
+  }
+  return false;
+}
 function effCapOf(A, d) {
   if (hasCapOf(A, d) && capOwnOf(A, d)) return rawCapOf(A, d);
   var own = rawCapOf(A, d) || [], anc = ancChain(A, d).filter(function (a) { return hasCapOf(A, a); });

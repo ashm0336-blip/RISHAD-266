@@ -1078,6 +1078,12 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
     evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
+  /* caps-own (021 capStaleBatch): an older page that narrows a ceiling and deletes what fell outside it in the same request ⇒ the whole request
+     is refused, nothing written (why 'perms' — the text an older page already shows: «الصلاحيات لم تُقبل … أُعيدت القيمة كما في الخادم») */
+  if (capStaleBatch(A, todo, evald)) {
+    protOp = protOp || 'capStale';
+    for (i = 0; i < todo.length; i++) if (evald[i] && !evald[i].conflict && !evald[i].deny) evald[i] = { deny: 'perms', cur: evald[i].cur, x: { detail: 'stale-client: ' + CAP_STALE_MSG }, sd: 'perms · stale-client' };
+  }
   /* R196 · Phase 3 — حسابُ الحفظة ظلّياً (العلامات · سياسةُ الاستعادة) بعد تقييم كلِّ المفاتيح وقبل أي كتابة */
   try { if (!PERMV2.mute && !ENFX) permv3Batch(A, set, del, evald, todo, pv3M, pv3Restore, pv2Restore); } catch (e3c) { swallow('permv3-batch', e3c, env.__rid); }
   if (protOp || planOnly) {
