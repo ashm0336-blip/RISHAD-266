@@ -6851,7 +6851,7 @@ function cuResolvedCte(allMoves) {
   return (
     "WITH employees AS (SELECT COALESCE(NULLIF(json_extract(value,'$.eid'),''),json_extract(value,'$.name')) AS ek,json_extract(value,'$.nid') AS nid,json_extract(value,'$.empno') AS empno,json_extract(value,'$.name') AS name FROM json_each(?3)), base AS (SELECT m.*,s.serial,i.name AS item_name FROM custody_movements m JOIN custody_issues s ON s.department_id=m.department_id AND s.issue_id=m.issue_id JOIN custody_items i ON i.department_id=m.department_id AND i.item_id=m.item_id WHERE " +
     where +
-    "), matches AS (SELECT b.*,(SELECT MIN(ek) FROM employees e WHERE e.ek=b.holder_key) AS exact_key,(SELECT COUNT(DISTINCT ek) FROM employees e WHERE (b.holder_nid_snapshot!='' AND e.nid=b.holder_nid_snapshot) OR (b.holder_empno_snapshot!='' AND e.empno=b.holder_empno_snapshot)) AS alias_n,(SELECT MIN(ek) FROM employees e WHERE (b.holder_nid_snapshot!='' AND e.nid=b.holder_nid_snapshot) OR (b.holder_empno_snapshot!='' AND e.empno=b.holder_empno_snapshot)) AS alias_key FROM base b), resolved AS (SELECT *,COALESCE(exact_key,CASE WHEN alias_n=1 THEN alias_key END,holder_key) AS hkey FROM matches) "
+    "), matches AS (SELECT b.*,(SELECT MIN(ek) FROM employees e WHERE e.ek=b.holder_key) AS exact_key,(SELECT COUNT(DISTINCT ek) FROM employees e WHERE (b.holder_nid_snapshot!='' AND e.nid=b.holder_nid_snapshot) OR (b.holder_empno_snapshot!='' AND e.empno=b.holder_empno_snapshot) OR (b.holder_key!='' AND e.nid=b.holder_key)) AS alias_n,(SELECT MIN(ek) FROM employees e WHERE (b.holder_nid_snapshot!='' AND e.nid=b.holder_nid_snapshot) OR (b.holder_empno_snapshot!='' AND e.empno=b.holder_empno_snapshot) OR (b.holder_key!='' AND e.nid=b.holder_key)) AS alias_key FROM base b), resolved AS (SELECT *,COALESCE(exact_key,CASE WHEN alias_n=1 THEN alias_key END,holder_key) AS hkey FROM matches) "
   );
 }
 function cuBind(env, sql, args) {
@@ -6968,7 +6968,7 @@ async function cuRead(env, A, q) {
         token.clock !== currentCutoff)
     )
       throw cuError('custody-cursor-stale', 409);
-    if (token && (!Array.isArray(token.key) || token.key.length !== (['month', 'catalog'].includes(view) ? 1 : 5)))
+    if (token && (!Array.isArray(token.key) || token.key.length !== (['month', 'catalog'].includes(view) ? 1 : 5) || (view === 'month' && !(Number.isSafeInteger(token.key[0]) && token.key[0] > 0))))
       throw cuError('custody-cursor');
     var from = ' FROM resolved r WHERE ' + filters + ' AND ' + search;
     if (view === 'month')
@@ -6982,10 +6982,10 @@ async function cuRead(env, A, q) {
         cte +
         "SELECT r.hkey AS holderKey,COUNT(*) AS heldCount,MAX(r.hijri_year*10000+r.hijri_month*100+r.hijri_day) AS last_day,MAX(COALESCE((SELECT MIN(name) FROM employees e WHERE e.ek=r.hkey),r.holder_name_snapshot,'')) AS name,MAX(COALESCE(r.holder_nid_snapshot,'')) AS nid,MAX(COALESCE(r.holder_empno_snapshot,'')) AS empno,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n!=1 THEN 1 ELSE 0 END) AS orphan,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n>1 THEN 1 ELSE 0 END) AS ambiguous" +
         from +
-        (token ? ' AND r.hkey>?7' : '') +
         ' GROUP BY r.hkey ORDER BY r.hkey LIMIT ' +
-        (limit + 1);
-      if (token) pageArgs.push(token.key[0]);
+        (limit + 1) +
+        // PRIVACY (019u): month pages by position — the cursor is bound to rev/uid/filters (stale ⇒ 409), so no holder key (a nid in old data) is encoded
+        (token ? ' OFFSET ' + token.key[0] : '');
     } else {
       pageSql =
         cte +
@@ -7103,7 +7103,7 @@ async function cuRead(env, A, q) {
         ? cursor(
             view,
             view === 'month'
-              ? [last.holderKey]
+              ? [(token ? token.key[0] : 0) + rows.length]
               : view === 'catalog'
                 ? [last.item_id]
                 : [last.hijri_year, last.hijri_month, last.hijri_day, last.sequence, last.move_id],
@@ -11077,6 +11077,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
       var context = await empTransitionContext(env, A, url.searchParams.get('dept') || '', url.searchParams.get('intent') || '');
       context.base.epoch = env.__restoreEpoch === undefined ? await rsEpoch(env) : env.__restoreEpoch;
       context.employees = privEmpOut(A, context.dept, context.employees);   // PRIVACY (019u): personal fields by purpose (a delete-only holder)
+      await privPrepDepts(env, A, [context.dept]); context.staffAccountKeys = context.staffAccountKeys.map(function (k) { return privKeyOut(A, context.dept, k); });   // 019u (9)
       return json(context);
     }
     if (request.method !== 'POST') throw rsError('method', 405);
@@ -16751,7 +16752,7 @@ async function awReferences(ctx){
 async function hAwardGet(env,A,url){
   var q=url&&url.searchParams?Object.fromEntries(url.searchParams):url||{},view=q.view||'records',global=q.scope==='global',d=global?'':String(q.dept||A.u.deptId||'');
   if(['records','record','references','context'].indexOf(view)<0||global&&['references','context'].indexOf(view)<0)throw awError('view');
-  await awGuardRetired(env);var ctx=await awQueryContext(env,A,d,{write:true}),value;
+  await awGuardRetired(env);var ctx=await awQueryContext(env,A,d,{write:true}),value;if(d)await privPrepDepts(ctx.env,ctx.A,[d]);   // PRIVACY (019u (9)): a record's ekey that is a hidden nid
   if(view==='references'){
     if(!canRead(ctx.A,awKey(d,1))||!canRead(ctx.A,awKey(d,2)))throw awError('denied',403);value=await awReferences(ctx);
   }else if(view==='context'){
@@ -18959,12 +18960,25 @@ function privTokIn(n, c, T, st) {
   if (cO) for (k in cO) if (privOwn(cO, k) && M[k] !== undefined && privOwn(cO, M[k]) && !privOwn(o, k)) { privPut(o, k, cO[k]); ch++; }   /* hidden behind the eid entry: kept */
   return ch ? o : n;
 }
+/* (9) login/permission keys (ekey) as identities: the stored key never changes; where another person's ekey reaches a reader who does
+   not receive that colleague's nid (accounts list rows · staffAccountKeys · award record ekey · task group rows), an ekey equal to a
+   hidden nid is sent as the token of (4) (eid · 'nx:') and mapped back by account id on save (054 usersScopeIn). privPrepDepts loads the
+   registers once per request (privTok cache); privKeyOut is then synchronous. Not projected: the permissions registry keys
+   (emps/tplOf/empLens — another person's entry reaches only a manager of the unit, who receives nids: (3) privPermEntryOk) and the
+   grants register (read by the managers' permission page only). */
+async function privPrepDepts(env, A, ds) {
+  if (!A || !A.u || A.u.role === 'super') return;
+  await privPrep(env, A, (ds || []).filter(function (d) { return d && deptInScope(A, d) && !privPersonalOk(A, d); }).map(function (d) { return 'bsdept:' + d + ':bassam_tasks_v1'; }));
+}
+function privKeyOut(A, d, k) { var T = A && A.__privTok && A.__privTok[d]; return T && k != null && T.M[String(k)] !== undefined ? T.M[String(k)] : k; }
+/* an account row as a reader sees it (054 usersLens): its ekey projected */
+function privUserRow(A, d, u) { var k = privKeyOut(A, d, u.ekey); if (k === u.ekey) return u; u = privCopy(u); u.ekey = k; return u; }
 /* (5) award records */
 var PRIV_AW_F = ['phone', 'email', 'comp'];
 function privAwardOk(A, d) {
   return privPersonalOk(A, d) || privMemo(A, '__privAw', d, function () { return privHeld(A, d, ['award.res.edit', 'award.res.approve', 'award.res.reject', 'award.res.delete', 'award.res.status'], ['award/res:edit', 'award/res:approve', 'award/res:del']); });
 }
-function privAwardRec(A, d, r) { return !isObj(r) || privAwardOk(A, d) || (r.ekey != null && String(r.ekey) === String(A.u.ekey || '\u0000')) ? r : privStrip(r, PRIV_AW_F); }
+function privAwardRec(A, d, r) { return !isObj(r) || privAwardOk(A, d) || (r.ekey != null && String(r.ekey) === String(A.u.ekey || '\u0000')) ? r : privUserRow(A, d, privStrip(r, PRIV_AW_F)); }   /* (9) a plain reader: ekey too */
 /* export domain rows dom.rows[kind]: personal columns blanked (presence kept, so the copy stays valid) unless the row is the actor's own
    (keyCol); a domain so changed is marked redacted — no restore accepts it (privRedacted) */
 function privRowsBlank(A, dom, kind, cols, keyCol) {
@@ -18989,8 +19003,11 @@ function privRedacted(b) {
    (019c empRecordKey) — fields PRIV_EMP_F + gender · report roster day/shift/ekey — empno · custody movement move_id — holder
    nid/empno snapshot · award record record_id — phone/email/employee_number (the fields (2)/(1)/privRowsBlank remove).
    Limits: a copy that CHANGES such a value (non-empty) restores normally; a record absent from the copy (deleted since, added after the
-   export, a roster day/shift the copy lacks) is not judged; clearing a field is done by editing, not by a restore — to restore an older
-   full copy taken before a field was filled, clear that field by editing first (or re-enter it after). Merge: the documents applied. */
+   export, a roster day/shift the copy lacks) is not judged. EXPLICIT LIMIT (owner decision): a copy older than the entry of a personal
+   field (the field was empty when it was exported, filled since) cannot be restored through this path — it is indistinguishable from a
+   stripped copy — until a separate review of legacy-copy transfer (not built). No override, super included; the remedy is a full copy
+   exported by the unit manager or the system administrator after that data was entered (never blanking stored fields). Merge: the
+   documents applied. */
 function privFull(x) { return x != null && x !== '' && !(typeof x === 'string' && PRIV_NX.test(x)); }
 function privLoses(c, n, kf, F, out, tag) {
   if (!Array.isArray(c) || !Array.isArray(n)) return;
@@ -19035,11 +19052,14 @@ function privCustodyRows(A, d, rows, empRaw) {
     return deq(o, r) ? r : o;
   });
 }
-/* the holder filter of the custody read: a token back to the stored key (only 'nx:' — an eid is itself a holder key) */
+/* the holder filter of the custody read → the resolved holder key (019a hkey = register eid, else name — old rows stored under a nid
+   resolve to it through the alias): an 'nx:' token the reader got → its record; a raw nid → its record only for a reader who sees nids
+   (else a filter by nid would be an oracle) */
 function privCustodyHolder(A, d, h, empRaw) {
-  var H = {}; H['bsdept:' + d + ':' + PRIV_EMP_RES] = empRaw;
-  var T = PRIV_NX.test(h) && A && A.u && A.u.role !== 'super' ? privTok(A, d, H) : null;
-  return T && T.R[h] !== undefined ? T.R[h] : h;
+  var L = parseJson(empRaw, []), X = privNx(d, L), ok = A && A.u && privPersonalOk(A, d), hit = [];
+  if (!Array.isArray(L) || !h) return h;
+  L.forEach(function (e, i) { if (isObj(e) && ((PRIV_NX.test(h) && X[i] === h) || (ok && e.nid != null && e.nid !== '' && String(e.nid) === h && String(e.eid || e.name || '') !== h))) hit.push(e); });
+  return hit.length === 1 ? String(hit[0].eid || hit[0].name || '') : h;
 }
 /* ── entry points: raw JSON text in, raw JSON text out (unchanged text when nothing is hidden) ── */
 function privOut(A, k, raw, have) {
@@ -22923,7 +22943,7 @@ function usersLens(A) {
     var d = u.deptId == null ? '' : String(u.deptId), m = null;
     if (d) { m = memo[d]; if (!m) m = memo[d] = { mgr: isMgrOf(A, d), sc: deptInScope(A, d), rd: null }; }
     if (m && m.mgr) return u;
-    if (m && m.sc) { if (m.rd === null) m.rd = usersReadsEmps(A, d); return m.rd ? usersPick(u, true) : (usersDirRow(u) ? usersPick(u, false) : null); }
+    if (m && m.sc) { if (m.rd === null) m.rd = usersReadsEmps(A, d); return m.rd ? privUserRow(A, d, usersPick(u, true)) : (usersDirRow(u) ? usersPick(u, false) : null); }   /* 019u (9): an ekey that is a hidden nid ⇒ its token */
     return (u.role === 'super' || u.role === 'gm') ? usersPick(u, false) : null;   /* خارج نطاقه: مديرو المنصة والعقد وحدهم (أسماءٌ بلا أرقام) */
   };
 }
@@ -22998,6 +23018,9 @@ function usersScopeIn(incJson, curJson, A) {
   if (!Array.isArray(inc) || !Array.isArray(cur)) return incJson;
   var L = usersLens(A), ixI = nmap(), ixC = nmap(), hid = [], put = 0, i, u, c, id;
   var idOf = function (x) { return x && typeof x === 'object' && !Array.isArray(x) && x.id != null ? String(x.id) : null; };
+  /* 019u (9): an ekey received as its token (the row as this reader saw it) goes back to the stored key of that account */
+  var byI = nmap(); cur.forEach(function (x) { var k = idOf(x); if (k !== null && !(k in byI)) byI[k] = x; });
+  inc = inc.map(function (x) { var k = idOf(x), s = k !== null ? byI[k] : null, v = s && L(s); if (!v || !isObj(x) || x.ekey === s.ekey || v.ekey !== x.ekey) return x; x = Object.assign({}, x); x.ekey = s.ekey; put++; return x; });
   for (i = 0; i < inc.length; i++) { id = idOf(inc[i]); if (id !== null && !(id in ixI)) ixI[id] = i; }
   for (i = 0; i < cur.length; i++) {
     c = cur[i]; id = idOf(c);
@@ -23349,6 +23372,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      judges the value as it will be written; a registry built on another projection (body.pscope) and a changed hidden reference stop here (pvNo9). */
   var pvNo9 = nmap();
   if (A.u.role !== 'super') await privPrep(env, A, Object.keys(set).concat(del.map(String)));
+  if (A.u.role !== 'super' && Object.prototype.hasOwnProperty.call(set, K_USERS)) await privPrepDepts(env, A, (A.depts || []).map(function (x) { return x && x.id; }));   /* 019u (9): the accounts lens */
   for (k in set) {
     if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || A.u.role === 'super') continue;
     var rnPv = resName(k), dPv = parseKey(k).dept;
@@ -26989,6 +27013,7 @@ async function tkGroup(env, A, url) {
   if (!gid || gid.length > 60 || (k && !METK_DAY_RX.test(k))) return tkNo(400, 'bad-query').err;
   if (!canRead(A, K)) return tkNo(403, 'forbidden').err;
   var S = parseJson(await opResourceGet(env, K), {}), now = Date.now(), mem = [], dk;
+  await privPrepDepts(env, A, [d]);   /* 019u (9): a member assigned by a hidden nid is sent with the token */
   var sm = { n: 0, ack: 0, running: 0, stalled: 0, review: 0, returned: 0, done: 0, declined: 0, cancelled: 0, reassigned: 0, pending: 0, late: 0 };
   if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (k && dk !== k)) continue;
     S[dk].forEach(function (r, i) {
@@ -26999,7 +27024,7 @@ async function tkGroup(env, A, url) {
       else if (ph === 'review') sm.review++; else if (ph === 'returned') sm.returned++; else if (ph === 'stalled') sm.stalled++; else if (ph === 'running') sm.running++; else sm.pending++;
       if (st.asg === 'acknowledged' && !r[11]) sm.ack++;
       if (st.tim === 'late' || st.tim === 'overdue_ack' || st.tim === 'overdue_exec') sm.late++;
-      mem.push({ k: dk, i: i, id: r[13], ekey: r[14] == null ? null : String(r[14]), name: String(r[8] || ''), ph: ph, asg: st.asg, exe: st.exe, rev: st.rev, tim: st.tim, acc: r[11] || null, fin: r[12] || null,
+      mem.push({ k: dk, i: i, id: r[13], ekey: r[14] == null ? null : String(privKeyOut(A, d, r[14])), name: String(r[8] || ''), ph: ph, asg: st.asg, exe: st.exe, rev: st.rev, tim: st.tim, acc: r[11] || null, fin: r[12] || null,
         imgs: isObj(r[21]) && Array.isArray(r[21].imgs) ? r[21].imgs.length : 0 });
     }); }
   if (!mem.length) return tkNo(404, 'not-found').err;
@@ -28232,6 +28257,7 @@ async function getRoute(env, url, ss) {
   var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
   var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && !bdLegacyKey(k9) && !opIsResource(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
+  if (want.indexOf(K_USERS) >= 0) await privPrepDepts(env, AG, (AG.depts || []).map(function (x) { return x && x.id; }));   /* 019u (9): the accounts lens maps an ekey that is a hidden nid */
   for (var gi = 0; gi < want.length; gi++) {
     var gk = want[gi];
     if (isDeviceKey(gk)) continue;
@@ -28848,7 +28874,7 @@ export default {
       } else {
       if (keys[K_USERS] != null) keys[K_USERS] = usersNoOut(keys[K_USERS], AB);   /* KIVO_259 · SR-1: الرقمُ الوظيفي (كلمةُ المرور الأولى للمديرين) لصاحبه ولمدير النظام وحدهما */
       /* الفحصُ العميق 2026-10-21 (R4 · IRSZ-3 · DG-07 · AUX-14): والقائمةُ نفسُها بأقلّ امتياز — لا هويةَ ولا جوالَ ولا حسابَ لموظفي غير نطاقه (054 usersScopeOut) */
-      if (keys[K_USERS] != null) keys[K_USERS] = usersScopeOut(keys[K_USERS], AB);
+      if (keys[K_USERS] != null) { await privPrepDepts(env, AB, (AB.depts || []).map(function (x) { return x && x.id; })); keys[K_USERS] = usersScopeOut(keys[K_USERS], AB); }   /* 019u (9) */
       var rvB = await revsAll(env), revsOut = {}, pv4rb = pv4ReadBudget();
       var enfRB = AB.enf ? await enfRefsFor(env, enfDeptsOf(AB), keys) : null;
       for (var bk in keys) {

@@ -486,7 +486,7 @@ function cuResolvedCte(allMoves) {
   return (
     "WITH employees AS (SELECT COALESCE(NULLIF(json_extract(value,'$.eid'),''),json_extract(value,'$.name')) AS ek,json_extract(value,'$.nid') AS nid,json_extract(value,'$.empno') AS empno,json_extract(value,'$.name') AS name FROM json_each(?3)), base AS (SELECT m.*,s.serial,i.name AS item_name FROM custody_movements m JOIN custody_issues s ON s.department_id=m.department_id AND s.issue_id=m.issue_id JOIN custody_items i ON i.department_id=m.department_id AND i.item_id=m.item_id WHERE " +
     where +
-    "), matches AS (SELECT b.*,(SELECT MIN(ek) FROM employees e WHERE e.ek=b.holder_key) AS exact_key,(SELECT COUNT(DISTINCT ek) FROM employees e WHERE (b.holder_nid_snapshot!='' AND e.nid=b.holder_nid_snapshot) OR (b.holder_empno_snapshot!='' AND e.empno=b.holder_empno_snapshot)) AS alias_n,(SELECT MIN(ek) FROM employees e WHERE (b.holder_nid_snapshot!='' AND e.nid=b.holder_nid_snapshot) OR (b.holder_empno_snapshot!='' AND e.empno=b.holder_empno_snapshot)) AS alias_key FROM base b), resolved AS (SELECT *,COALESCE(exact_key,CASE WHEN alias_n=1 THEN alias_key END,holder_key) AS hkey FROM matches) "
+    "), matches AS (SELECT b.*,(SELECT MIN(ek) FROM employees e WHERE e.ek=b.holder_key) AS exact_key,(SELECT COUNT(DISTINCT ek) FROM employees e WHERE (b.holder_nid_snapshot!='' AND e.nid=b.holder_nid_snapshot) OR (b.holder_empno_snapshot!='' AND e.empno=b.holder_empno_snapshot) OR (b.holder_key!='' AND e.nid=b.holder_key)) AS alias_n,(SELECT MIN(ek) FROM employees e WHERE (b.holder_nid_snapshot!='' AND e.nid=b.holder_nid_snapshot) OR (b.holder_empno_snapshot!='' AND e.empno=b.holder_empno_snapshot) OR (b.holder_key!='' AND e.nid=b.holder_key)) AS alias_key FROM base b), resolved AS (SELECT *,COALESCE(exact_key,CASE WHEN alias_n=1 THEN alias_key END,holder_key) AS hkey FROM matches) "
   );
 }
 function cuBind(env, sql, args) {
@@ -603,7 +603,7 @@ async function cuRead(env, A, q) {
         token.clock !== currentCutoff)
     )
       throw cuError('custody-cursor-stale', 409);
-    if (token && (!Array.isArray(token.key) || token.key.length !== (['month', 'catalog'].includes(view) ? 1 : 5)))
+    if (token && (!Array.isArray(token.key) || token.key.length !== (['month', 'catalog'].includes(view) ? 1 : 5) || (view === 'month' && !(Number.isSafeInteger(token.key[0]) && token.key[0] > 0))))
       throw cuError('custody-cursor');
     var from = ' FROM resolved r WHERE ' + filters + ' AND ' + search;
     if (view === 'month')
@@ -617,10 +617,10 @@ async function cuRead(env, A, q) {
         cte +
         "SELECT r.hkey AS holderKey,COUNT(*) AS heldCount,MAX(r.hijri_year*10000+r.hijri_month*100+r.hijri_day) AS last_day,MAX(COALESCE((SELECT MIN(name) FROM employees e WHERE e.ek=r.hkey),r.holder_name_snapshot,'')) AS name,MAX(COALESCE(r.holder_nid_snapshot,'')) AS nid,MAX(COALESCE(r.holder_empno_snapshot,'')) AS empno,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n!=1 THEN 1 ELSE 0 END) AS orphan,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n>1 THEN 1 ELSE 0 END) AS ambiguous" +
         from +
-        (token ? ' AND r.hkey>?7' : '') +
         ' GROUP BY r.hkey ORDER BY r.hkey LIMIT ' +
-        (limit + 1);
-      if (token) pageArgs.push(token.key[0]);
+        (limit + 1) +
+        // PRIVACY (019u): month pages by position — the cursor is bound to rev/uid/filters (stale ⇒ 409), so no holder key (a nid in old data) is encoded
+        (token ? ' OFFSET ' + token.key[0] : '');
     } else {
       pageSql =
         cte +
@@ -738,7 +738,7 @@ async function cuRead(env, A, q) {
         ? cursor(
             view,
             view === 'month'
-              ? [last.holderKey]
+              ? [(token ? token.key[0] : 0) + rows.length]
               : view === 'catalog'
                 ? [last.item_id]
                 : [last.hijri_year, last.hijri_month, last.hijri_day, last.sequence, last.move_id],

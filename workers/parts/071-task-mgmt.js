@@ -495,6 +495,7 @@ async function tkGroup(env, A, url) {
   if (!gid || gid.length > 60 || (k && !METK_DAY_RX.test(k))) return tkNo(400, 'bad-query').err;
   if (!canRead(A, K)) return tkNo(403, 'forbidden').err;
   var S = parseJson(await opResourceGet(env, K), {}), now = Date.now(), mem = [], dk;
+  await privPrepDepts(env, A, [d]);   /* 019u (9): a member assigned by a hidden nid is sent with the token */
   var sm = { n: 0, ack: 0, running: 0, stalled: 0, review: 0, returned: 0, done: 0, declined: 0, cancelled: 0, reassigned: 0, pending: 0, late: 0 };
   if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (k && dk !== k)) continue;
     S[dk].forEach(function (r, i) {
@@ -505,7 +506,7 @@ async function tkGroup(env, A, url) {
       else if (ph === 'review') sm.review++; else if (ph === 'returned') sm.returned++; else if (ph === 'stalled') sm.stalled++; else if (ph === 'running') sm.running++; else sm.pending++;
       if (st.asg === 'acknowledged' && !r[11]) sm.ack++;
       if (st.tim === 'late' || st.tim === 'overdue_ack' || st.tim === 'overdue_exec') sm.late++;
-      mem.push({ k: dk, i: i, id: r[13], ekey: r[14] == null ? null : String(r[14]), name: String(r[8] || ''), ph: ph, asg: st.asg, exe: st.exe, rev: st.rev, tim: st.tim, acc: r[11] || null, fin: r[12] || null,
+      mem.push({ k: dk, i: i, id: r[13], ekey: r[14] == null ? null : String(privKeyOut(A, d, r[14])), name: String(r[8] || ''), ph: ph, asg: st.asg, exe: st.exe, rev: st.rev, tim: st.tim, acc: r[11] || null, fin: r[12] || null,
         imgs: isObj(r[21]) && Array.isArray(r[21].imgs) ? r[21].imgs.length : 0 });
     }); }
   if (!mem.length) return tkNo(404, 'not-found').err;

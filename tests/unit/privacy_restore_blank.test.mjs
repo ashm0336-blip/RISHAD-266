@@ -5,8 +5,9 @@
    Rule (019u privRestoreBlanks · 019d rsPrepare, also reached by the 019f conversion path): before any plan or write, a record present
    both in the copy and in the store whose stored personal field is non-empty and is empty/missing (or an 'nx:' token) in the copy ⇒
    restore-personal-blank (409) for every actor, super included (no override). Limits (documented in 019u): a different non-empty value
-   restores normally; a record absent from the copy is not judged; a field filled after the export cannot be blanked by a restore (clear it
-   by editing first). Both authorization modes. TEST_ONLY synthetic data. */
+   restores normally; a record absent from the copy is not judged; a copy older than the entry of a personal field cannot be restored
+   through this path (owner decision: no manual blanking, no override — a full copy exported after the data was entered is the remedy;
+   legacy-copy transfer is a separate review). Both authorization modes. TEST_ONLY synthetic data. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { privWorld, setSheet, login, suCk, stored, put, KE, KDR, D, MODES, drRow } from './privacy_fx.mjs';
@@ -110,15 +111,26 @@ for (const mode of MODES) {
     }
   });
 
-  test('PRIVACY 7 [' + mode + ']: limit — a field filled after a full export is not blanked by restoring that copy (clear it by editing first)', async () => {
+  test('PRIVACY 7 [' + mode + ']: explicit limit — a full copy older than the entry of a personal field is refused (super and manager), nothing written', async () => {
     const w = await blankWorld(mode);
     const E2 = stored(w.env, KE); E2.find(e => e.eid === 'tst_e_p0_2').phone = '0599999202'; await put(w, KE, E2);
-    const r = await restore(w, await suCk(w), w.fullCopy, 'commit');
-    assert.equal(r.status, 409); assert.equal(r.j.err, 'restore-personal-blank');
-    assert.ok(r.j.details.at.some(x => /:tst_e_p0_2:phone$/.test(x)), JSON.stringify(r.j.details));
+    const cks = {}; for (const who of restorers(mode)) cks[who] = await ckOf(w, who);
+    const before = dump(w.env);
+    for (const who of restorers(mode)) for (const phase of ['inspect', 'commit-direct']) {
+      const r = await restore(w, cks[who], w.fullCopy, phase);
+      assert.equal(r.status, 409, who + ' ' + phase); assert.equal(r.j.err, 'restore-personal-blank');
+      assert.ok(r.j.details.at.some(x => /:tst_e_p0_2:phone$/.test(x)), JSON.stringify(r.j.details));
+    }
+    assert.deepEqual(diffTables(before, dump(w.env)), [], 'nothing written');
     assert.equal(stored(w.env, KE).find(e => e.eid === 'tst_e_p0_2').phone, '0599999202');
-    /* the documented way: clear the field by editing, then the copy restores */
-    const E3 = stored(w.env, KE); delete E3.find(e => e.eid === 'tst_e_p0_2').phone; await put(w, KE, E3);
-    assert.equal((await restore(w, await suCk(w), w.fullCopy, 'commit')).status, 200);
+  });
+
+  test('PRIVACY 7 [' + mode + ']: the refusal message says nothing was written and asks for a full copy exported after the data was entered — never to clear fields', async () => {
+    const fs = await import('node:fs');
+    const src = fs.readFileSync(new URL('../../src/services/548-atomic-backup.js', import.meta.url), 'utf8');
+    const m = /'restore-personal-blank':\s*'([^']*)'/.exec(src);
+    assert.ok(m, 'client message present');
+    for (const p of ['لم يُكتب شيء', 'فلا يمكن التحقق', 'نسخةً كاملة صدّرها مدير الوحدة أو مدير النظام بعد إدخال']) assert.ok(m[1].includes(p), p);
+    for (const p of ['عدّل', 'يدوي', 'إفراغ', 'امسح']) assert.ok(!m[1].includes(p), 'no clearing advice: ' + p);
   });
 }

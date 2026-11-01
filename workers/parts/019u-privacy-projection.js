@@ -335,12 +335,25 @@ function privTokIn(n, c, T, st) {
   if (cO) for (k in cO) if (privOwn(cO, k) && M[k] !== undefined && privOwn(cO, M[k]) && !privOwn(o, k)) { privPut(o, k, cO[k]); ch++; }   /* hidden behind the eid entry: kept */
   return ch ? o : n;
 }
+/* (9) login/permission keys (ekey) as identities: the stored key never changes; where another person's ekey reaches a reader who does
+   not receive that colleague's nid (accounts list rows · staffAccountKeys · award record ekey · task group rows), an ekey equal to a
+   hidden nid is sent as the token of (4) (eid · 'nx:') and mapped back by account id on save (054 usersScopeIn). privPrepDepts loads the
+   registers once per request (privTok cache); privKeyOut is then synchronous. Not projected: the permissions registry keys
+   (emps/tplOf/empLens — another person's entry reaches only a manager of the unit, who receives nids: (3) privPermEntryOk) and the
+   grants register (read by the managers' permission page only). */
+async function privPrepDepts(env, A, ds) {
+  if (!A || !A.u || A.u.role === 'super') return;
+  await privPrep(env, A, (ds || []).filter(function (d) { return d && deptInScope(A, d) && !privPersonalOk(A, d); }).map(function (d) { return 'bsdept:' + d + ':bassam_tasks_v1'; }));
+}
+function privKeyOut(A, d, k) { var T = A && A.__privTok && A.__privTok[d]; return T && k != null && T.M[String(k)] !== undefined ? T.M[String(k)] : k; }
+/* an account row as a reader sees it (054 usersLens): its ekey projected */
+function privUserRow(A, d, u) { var k = privKeyOut(A, d, u.ekey); if (k === u.ekey) return u; u = privCopy(u); u.ekey = k; return u; }
 /* (5) award records */
 var PRIV_AW_F = ['phone', 'email', 'comp'];
 function privAwardOk(A, d) {
   return privPersonalOk(A, d) || privMemo(A, '__privAw', d, function () { return privHeld(A, d, ['award.res.edit', 'award.res.approve', 'award.res.reject', 'award.res.delete', 'award.res.status'], ['award/res:edit', 'award/res:approve', 'award/res:del']); });
 }
-function privAwardRec(A, d, r) { return !isObj(r) || privAwardOk(A, d) || (r.ekey != null && String(r.ekey) === String(A.u.ekey || '\u0000')) ? r : privStrip(r, PRIV_AW_F); }
+function privAwardRec(A, d, r) { return !isObj(r) || privAwardOk(A, d) || (r.ekey != null && String(r.ekey) === String(A.u.ekey || '\u0000')) ? r : privUserRow(A, d, privStrip(r, PRIV_AW_F)); }   /* (9) a plain reader: ekey too */
 /* export domain rows dom.rows[kind]: personal columns blanked (presence kept, so the copy stays valid) unless the row is the actor's own
    (keyCol); a domain so changed is marked redacted — no restore accepts it (privRedacted) */
 function privRowsBlank(A, dom, kind, cols, keyCol) {
@@ -365,8 +378,11 @@ function privRedacted(b) {
    (019c empRecordKey) — fields PRIV_EMP_F + gender · report roster day/shift/ekey — empno · custody movement move_id — holder
    nid/empno snapshot · award record record_id — phone/email/employee_number (the fields (2)/(1)/privRowsBlank remove).
    Limits: a copy that CHANGES such a value (non-empty) restores normally; a record absent from the copy (deleted since, added after the
-   export, a roster day/shift the copy lacks) is not judged; clearing a field is done by editing, not by a restore — to restore an older
-   full copy taken before a field was filled, clear that field by editing first (or re-enter it after). Merge: the documents applied. */
+   export, a roster day/shift the copy lacks) is not judged. EXPLICIT LIMIT (owner decision): a copy older than the entry of a personal
+   field (the field was empty when it was exported, filled since) cannot be restored through this path — it is indistinguishable from a
+   stripped copy — until a separate review of legacy-copy transfer (not built). No override, super included; the remedy is a full copy
+   exported by the unit manager or the system administrator after that data was entered (never blanking stored fields). Merge: the
+   documents applied. */
 function privFull(x) { return x != null && x !== '' && !(typeof x === 'string' && PRIV_NX.test(x)); }
 function privLoses(c, n, kf, F, out, tag) {
   if (!Array.isArray(c) || !Array.isArray(n)) return;
@@ -411,11 +427,14 @@ function privCustodyRows(A, d, rows, empRaw) {
     return deq(o, r) ? r : o;
   });
 }
-/* the holder filter of the custody read: a token back to the stored key (only 'nx:' — an eid is itself a holder key) */
+/* the holder filter of the custody read → the resolved holder key (019a hkey = register eid, else name — old rows stored under a nid
+   resolve to it through the alias): an 'nx:' token the reader got → its record; a raw nid → its record only for a reader who sees nids
+   (else a filter by nid would be an oracle) */
 function privCustodyHolder(A, d, h, empRaw) {
-  var H = {}; H['bsdept:' + d + ':' + PRIV_EMP_RES] = empRaw;
-  var T = PRIV_NX.test(h) && A && A.u && A.u.role !== 'super' ? privTok(A, d, H) : null;
-  return T && T.R[h] !== undefined ? T.R[h] : h;
+  var L = parseJson(empRaw, []), X = privNx(d, L), ok = A && A.u && privPersonalOk(A, d), hit = [];
+  if (!Array.isArray(L) || !h) return h;
+  L.forEach(function (e, i) { if (isObj(e) && ((PRIV_NX.test(h) && X[i] === h) || (ok && e.nid != null && e.nid !== '' && String(e.nid) === h && String(e.eid || e.name || '') !== h))) hit.push(e); });
+  return hit.length === 1 ? String(hit[0].eid || hit[0].name || '') : h;
 }
 /* ── entry points: raw JSON text in, raw JSON text out (unchanged text when nothing is hidden) ── */
 function privOut(A, k, raw, have) {

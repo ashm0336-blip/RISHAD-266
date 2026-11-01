@@ -474,6 +474,7 @@ async function getRoute(env, url, ss) {
   var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
   var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && !bdLegacyKey(k9) && !opIsResource(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
+  if (want.indexOf(K_USERS) >= 0) await privPrepDepts(env, AG, (AG.depts || []).map(function (x) { return x && x.id; }));   /* 019u (9): the accounts lens maps an ekey that is a hidden nid */
   for (var gi = 0; gi < want.length; gi++) {
     var gk = want[gi];
     if (isDeviceKey(gk)) continue;
@@ -1090,7 +1091,7 @@ export default {
       } else {
       if (keys[K_USERS] != null) keys[K_USERS] = usersNoOut(keys[K_USERS], AB);   /* KIVO_259 · SR-1: الرقمُ الوظيفي (كلمةُ المرور الأولى للمديرين) لصاحبه ولمدير النظام وحدهما */
       /* الفحصُ العميق 2026-10-21 (R4 · IRSZ-3 · DG-07 · AUX-14): والقائمةُ نفسُها بأقلّ امتياز — لا هويةَ ولا جوالَ ولا حسابَ لموظفي غير نطاقه (054 usersScopeOut) */
-      if (keys[K_USERS] != null) keys[K_USERS] = usersScopeOut(keys[K_USERS], AB);
+      if (keys[K_USERS] != null) { await privPrepDepts(env, AB, (AB.depts || []).map(function (x) { return x && x.id; })); keys[K_USERS] = usersScopeOut(keys[K_USERS], AB); }   /* 019u (9) */
       var rvB = await revsAll(env), revsOut = {}, pv4rb = pv4ReadBudget();
       var enfRB = AB.enf ? await enfRefsFor(env, enfDeptsOf(AB), keys) : null;
       for (var bk in keys) {

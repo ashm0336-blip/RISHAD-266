@@ -278,7 +278,7 @@ async function awReferences(ctx){
 async function hAwardGet(env,A,url){
   var q=url&&url.searchParams?Object.fromEntries(url.searchParams):url||{},view=q.view||'records',global=q.scope==='global',d=global?'':String(q.dept||A.u.deptId||'');
   if(['records','record','references','context'].indexOf(view)<0||global&&['references','context'].indexOf(view)<0)throw awError('view');
-  await awGuardRetired(env);var ctx=await awQueryContext(env,A,d,{write:true}),value;
+  await awGuardRetired(env);var ctx=await awQueryContext(env,A,d,{write:true}),value;if(d)await privPrepDepts(ctx.env,ctx.A,[d]);   // PRIVACY (019u (9)): a record's ekey that is a hidden nid
   if(view==='references'){
     if(!canRead(ctx.A,awKey(d,1))||!canRead(ctx.A,awKey(d,2)))throw awError('denied',403);value=await awReferences(ctx);
   }else if(view==='context'){

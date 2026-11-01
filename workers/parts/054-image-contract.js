@@ -368,7 +368,7 @@ function usersLens(A) {
     var d = u.deptId == null ? '' : String(u.deptId), m = null;
     if (d) { m = memo[d]; if (!m) m = memo[d] = { mgr: isMgrOf(A, d), sc: deptInScope(A, d), rd: null }; }
     if (m && m.mgr) return u;
-    if (m && m.sc) { if (m.rd === null) m.rd = usersReadsEmps(A, d); return m.rd ? usersPick(u, true) : (usersDirRow(u) ? usersPick(u, false) : null); }
+    if (m && m.sc) { if (m.rd === null) m.rd = usersReadsEmps(A, d); return m.rd ? privUserRow(A, d, usersPick(u, true)) : (usersDirRow(u) ? usersPick(u, false) : null); }   /* 019u (9): an ekey that is a hidden nid ⇒ its token */
     return (u.role === 'super' || u.role === 'gm') ? usersPick(u, false) : null;   /* خارج نطاقه: مديرو المنصة والعقد وحدهم (أسماءٌ بلا أرقام) */
   };
 }
@@ -443,6 +443,9 @@ function usersScopeIn(incJson, curJson, A) {
   if (!Array.isArray(inc) || !Array.isArray(cur)) return incJson;
   var L = usersLens(A), ixI = nmap(), ixC = nmap(), hid = [], put = 0, i, u, c, id;
   var idOf = function (x) { return x && typeof x === 'object' && !Array.isArray(x) && x.id != null ? String(x.id) : null; };
+  /* 019u (9): an ekey received as its token (the row as this reader saw it) goes back to the stored key of that account */
+  var byI = nmap(); cur.forEach(function (x) { var k = idOf(x); if (k !== null && !(k in byI)) byI[k] = x; });
+  inc = inc.map(function (x) { var k = idOf(x), s = k !== null ? byI[k] : null, v = s && L(s); if (!v || !isObj(x) || x.ekey === s.ekey || v.ekey !== x.ekey) return x; x = Object.assign({}, x); x.ekey = s.ekey; put++; return x; });
   for (i = 0; i < inc.length; i++) { id = idOf(inc[i]); if (id !== null && !(id in ixI)) ixI[id] = i; }
   for (i = 0; i < cur.length; i++) {
     c = cur[i]; id = idOf(c);
@@ -794,6 +797,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      judges the value as it will be written; a registry built on another projection (body.pscope) and a changed hidden reference stop here (pvNo9). */
   var pvNo9 = nmap();
   if (A.u.role !== 'super') await privPrep(env, A, Object.keys(set).concat(del.map(String)));
+  if (A.u.role !== 'super' && Object.prototype.hasOwnProperty.call(set, K_USERS)) await privPrepDepts(env, A, (A.depts || []).map(function (x) { return x && x.id; }));   /* 019u (9): the accounts lens */
   for (k in set) {
     if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || A.u.role === 'super') continue;
     var rnPv = resName(k), dPv = parseKey(k).dept;

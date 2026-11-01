@@ -722,6 +722,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
       var context = await empTransitionContext(env, A, url.searchParams.get('dept') || '', url.searchParams.get('intent') || '');
       context.base.epoch = env.__restoreEpoch === undefined ? await rsEpoch(env) : env.__restoreEpoch;
       context.employees = privEmpOut(A, context.dept, context.employees);   // PRIVACY (019u): personal fields by purpose (a delete-only holder)
+      await privPrepDepts(env, A, [context.dept]); context.staffAccountKeys = context.staffAccountKeys.map(function (k) { return privKeyOut(A, context.dept, k); });   // 019u (9)
       return json(context);
     }
     if (request.method !== 'POST') throw rsError('method', 405);
