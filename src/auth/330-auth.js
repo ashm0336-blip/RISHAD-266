@@ -223,22 +223,11 @@
     return pw ? hashPw(pw).then(done) : Promise.resolve(done(null));
   }
 
+  /* RISHAD-266 · unify (batch 2): «حسابات الإدارة» (role 'dept') أُلغيت — الخادمُ يرفض إنشاءها وتعديلها لكل أحد (dept-role).
+     فلا يُرسل العميلُ حفظاً سيُرفض: يعيد السببَ نفسه وما يفعله المستخدم. (لا مسارَ في الواجهة الحالية يستدعيه؛ يبقى جواباً صادقاً لأي مستدعٍ.) */
   function upsertDeptAccount(o){
-    var g = requireSuper(); if (g) return Promise.resolve(g);
-    var did = (o&&o.deptId)||'', un = String((o&&o.un)||'').trim(), nm = String((o&&o.name)||'').trim(), pw = (o&&o.pw)||'';
-    if (!D.has(did)) return Promise.resolve({ ok:false, err:'الإدارة غير موجودة' });
-    if (!un) return Promise.resolve({ ok:false, err:'اسم المستخدم مطلوب' });
-    var uc1 = unCheck(un); if (!uc1.ok) return Promise.resolve({ ok:false, err:uc1.msg });
-    var list = rawUsers()||[], acc = list.filter(function(x){ return x.role==='dept' && x.deptId===did; })[0];
-    if (taken(un, acc ? acc.id : '')) return Promise.resolve({ ok:false, err:'اسم المستخدم مستخدم لحساب آخر' });
-    if (!acc && !pw) return Promise.resolve({ ok:false, err:'كلمة المرور مطلوبة لحساب جديد' });
-    if (pw) { var c = pwCheck(pw, 'dept'); if (!c.ok) return Promise.resolve({ ok:false, err:c.msg }); }
-    var done = function(ph){
-      if (acc) writeUsers(list.map(function(x){ return (x.role==='dept'&&x.deptId===did) ? Object.assign({}, x, { un:un, name:nm||x.name, ph: ph||x.ph }) : x; }));
-      else     writeUsers(list.concat([{ id:newId('u'), un:un, ph:ph, role:'dept', deptId:did, name:nm||('مدير الإدارة') }]));
-      return { ok:true };
-    };
-    return pw ? hashPw(pw).then(done) : Promise.resolve(done(null));
+    void o;
+    return Promise.resolve({ ok:false, err:'«حسابات الإدارة» أُلغيت: لا يُنشأ حسابٌ بهذا النوع ولا يُعدَّل — للدخول باسم الإدارة أنشئ حسابَ موظفٍ بشارة «مدير» في الإدارة، ويمكن حذفُ الحساب القديم' });
   }
 
   /* ── مدير نظام احتياطي: حساب ثانٍ بكامل الصلاحية لا يُستخدم إلا عند تعذّر الرئيسي ── */

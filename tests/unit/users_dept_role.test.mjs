@@ -26,9 +26,9 @@ for (const mode of ['legacy', 'enforce']) {
   test('[' + mode + '] F19 · حسابُ «الإدارة» (dept) لا يُنشأ ولا يُغيَّر إليه ولا يُعدَّل — لأحدٍ ولو مدير النظام · والقائمُ كما خُزِّن يُحفظ ويُحذف', async () => {
     const w = await world({ mode }), su = w.su.ck;
     let r = await put(w, su, (await listOf(w, su)).concat([dep('x_dep1', '1888888891')]));
-    assert.ok(!r.ok, 'مديرُ النظام يُنشئ حسابَ إدارة — قُبل'); assert.equal(r.why, 'shape', r.show);
+    assert.ok(!r.ok, 'مديرُ النظام يُنشئ حسابَ إدارة — قُبل'); assert.equal(r.why, 'dept-role', r.show);
     const L = await listOf(w, su); L.find((x) => x.id === 'tst_snop').role = 'dept';
-    r = await put(w, su, L); assert.ok(!r.ok, 'مديرُ النظام يحوّل حساباً إلى dept — قُبل'); assert.equal(r.why, 'shape', r.show);
+    r = await put(w, su, L); assert.ok(!r.ok, 'مديرُ النظام يحوّل حساباً إلى dept — قُبل'); assert.equal(r.why, 'dept-role', r.show);
     const dm = (await w.login('0000000101', '70101')).ck;
     r = await put(w, dm, (await listOf(w, dm)).concat([dep('x_dep2', '1888888892')]));
     assert.ok(!r.ok, 'مديرُ الإدارة يُنشئ حسابَ إدارة — قُبل');
@@ -38,7 +38,7 @@ for (const mode of ['legacy', 'enforce']) {
     const cur = (stored(w.env, KU) || []).concat([dep('x_old', '1888888893')]);
     await applySql(w.env.DB, ['DELETE FROM kv WHERE k = ' + q(KU) + ';', 'INSERT INTO kv (k, seq, v) VALUES (' + q(KU) + ', 0, ' + q(JSON.stringify(cur)) + ');'].join('\n'));
     r = await put(w, su, (await listOf(w, su)).map((u) => (u.id === 'x_old' ? { ...u, name: 'TEST_ONLY · اسمٌ آخر' } : u)));
-    assert.ok(!r.ok, 'تعديلُ صفّ dept قائم — قُبل'); assert.equal(r.why, 'shape', r.show);
+    assert.ok(!r.ok, 'تعديلُ صفّ dept قائم — قُبل'); assert.equal(r.why, 'dept-role', r.show);
     r = await put(w, su, (await listOf(w, su)).map((u) => (u.id === 'tst_snop' ? { ...u, name: 'TEST_ONLY · اسمٌ جديد' } : u)));
     assert.ok(r.ok, 'القائمةُ بالصفّ القديم كما هو تُحفظ: ' + r.show);
     r = await put(w, su, (await listOf(w, su)).filter((u) => u.id !== 'x_old'));

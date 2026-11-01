@@ -507,7 +507,7 @@ function usersA1Why(inc, cur) {
     var b = inc[i], dep = isObj(b) && b.role === 'dept'; if (!dep && !usersA1(b)) continue;
     var cs = byA[String(b.id)] || [];
     if (cs.some(function (a) { return eqExcept(a, b, ['ph']) && (!b.ph || b.ph === a.ph); })) continue;   /* كما خُزِّن */
-    if (dep) return 'shape';                                                                                  /* التنظيف L-05 (أ): حسابُ «الإدارة» أُلغي — لا يُنشأ ولا يُعدَّل */
+    if (dep) return 'dept-role';                                                                                  /* التنظيف L-05 (أ): حسابُ «الإدارة» أُلغي — لا يُنشأ ولا يُعدَّل */
     if (cs.some(function (a) { return usersA1(a) && usersFreezeOnly(a, b); })) continue;                     /* تجميدُه */
     return 'mgr-key';
   }

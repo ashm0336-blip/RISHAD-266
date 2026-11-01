@@ -121,6 +121,6 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(dbUsers(env).some((u) => u.id === 'tst_mzz' && u.role === 'dept'), 'زُرع الحسابُ القديم');
     const m1 = await C.login('mgrzz264', 'Mgr#Zz2026'); assert.ok(m1.ok && m1.j.mustChange === 1, 'الاسمُ غيرُ الصالح ⇒ يجب التغيير: ' + JSON.stringify(m1.j).slice(0, 160));
     const g0 = await self(m1.ck, 'tst_mzz', { un: '0590000264' }); assert.ok(g0.denied && !g0.changed, 'بلا كلمةٍ جديدة ⇒ مرفوض');
-    const g1 = await self(m1.ck, 'tst_mzz', { un: '0590000264', ph: ph('771144') }); assert.ok(g1.denied && !g1.changed, 'صفُّ الدور الملغى لا يُعدَّل'); assert.equal(g1.denied.why, 'shape');
+    const g1 = await self(m1.ck, 'tst_mzz', { un: '0590000264', ph: ph('771144') }); assert.ok(g1.denied && !g1.changed, 'صفُّ الدور الملغى لا يُعدَّل'); assert.equal(g1.denied.why, 'dept-role');
   });
 }

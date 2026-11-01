@@ -2695,7 +2695,7 @@ function usersA1Why(inc, cur) {
     var b = inc[i], dep = isObj(b) && b.role === 'dept'; if (!dep && !usersA1(b)) continue;
     var cs = byA[String(b.id)] || [];
     if (cs.some(function (a) { return eqExcept(a, b, ['ph']) && (!b.ph || b.ph === a.ph); })) continue;   /* كما خُزِّن */
-    if (dep) return 'shape';                                                                                  /* التنظيف L-05 (أ): حسابُ «الإدارة» أُلغي — لا يُنشأ ولا يُعدَّل */
+    if (dep) return 'dept-role';                                                                                  /* التنظيف L-05 (أ): حسابُ «الإدارة» أُلغي — لا يُنشأ ولا يُعدَّل */
     if (cs.some(function (a) { return usersA1(a) && usersFreezeOnly(a, b); })) continue;                     /* تجميدُه */
     return 'mgr-key';
   }
@@ -8889,6 +8889,20 @@ async function rsCompileKV(env, A, kv, plan, inputRows) {
             sessionIds.push(u.id);
         });
       sessionIds = Array.from(new Set(sessionIds));
+      /* RISHAD-266 · unify (batch 2): AUD-035 — a self password change keeps the requester's own session and ends
+         only his other sessions (usersSessStmts above already says so, but the stub prepare dropped the token here,
+         so the bulk delete below ended the requester's session too and the next request failed with 'session'). */
+      var keepTok = plan.operation === 'save' && A.tok ? A.tok : '',
+        actorRow = b.filter(function (u) {
+          return u && u.id === A.u.id;
+        })[0],
+        actorOld = old.get(A.u.id);
+      if (keepTok && sessionIds.indexOf(A.u.id) >= 0 && actorRow && actorOld && !actorRow.dis && actorRow.ph !== actorOld.ph) {
+        sessionIds = sessionIds.filter(function (id) {
+          return id !== A.u.id;
+        });
+        plan.statements.push(env.DB.prepare('DELETE FROM sess WHERE uid = ?1 AND tok <> ?2').bind(A.u.id, keepTok));
+      }
       plan.reauth = sessionIds.indexOf(A.u.id) >= 0;
       rsChunks(
         sessionIds.map(function (id) {
