@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, WORKER, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import {installIrshadFixture} from './irshad_legacy_seed_fx.mjs';
 const FIX = fs.readFileSync(WORKER, 'utf8').includes('sessUidMismatch') || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264 (uid على مسارَي القراءة)' };
 function seedSql() {
@@ -23,6 +24,7 @@ for (const mode of ['legacy', 'enforce']) test('(C1 · القراءة) [' + mode
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   await installIrshadFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok, 'tst_emp1');

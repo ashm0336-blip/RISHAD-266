@@ -12,6 +12,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, ROOT, WORKER } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 const K264 = fs.readFileSync(WORKER, 'utf8').includes('SELF_FIELDS_BY_ROLE') || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264' };
 const K = 'bassam_auth_users_v1';
 function seedSql() {
@@ -27,6 +28,7 @@ async function world(mode) {
   const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {}); const C = client(env);
   const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage (current_schema_fx) */
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   /* حفظُ سجلّي أنا بتعديلٍ — عبر /api/get (ما يراه الفاعل فعلاً) ثم /api/save كما يفعل العميل */
   const self = async (ck, uid, patch, extra) => {

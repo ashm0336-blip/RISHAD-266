@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, ROOT } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { internals } from './internals.mjs';
 function seedSql() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; });
@@ -20,6 +21,7 @@ async function world(mode) {
   const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, seedSql());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const emp = await C.login('0000000113', '70113'); const mgr = await C.login('0000000101', '70101'); assert.ok(emp.ok && mgr.ok);
   const val = (k) => { const r = env.DB.q('SELECT v FROM kv WHERE k = ?1', k)[0]; return r ? r.v : null; };

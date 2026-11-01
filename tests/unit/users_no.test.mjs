@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 
 const K = 'bassam_auth_users_v1';
 function seedSql() {
@@ -28,6 +29,7 @@ async function world(EX) {
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, seedSql());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   if (EX.KIVO_AUTHZ_MODE === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const S = { super: Object.assign(su, { id: 'su' }) };
   for (const [name, id, un, pw] of ROLES) { const l = await C.login(un, pw); assert.ok(l.ok, 'دخول ' + name); S[name] = Object.assign(l, { id }); }

@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, ROOT, WORKER_N } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 const FIXED = !WORKER_N || WORKER_N >= 152;   /* AUD-034/035 أُصلحا في KIVO_252؛ على العوامل الأقدم يُوثَّق السلوكُ القديم */
 import { internals } from './internals.mjs';
 function seedSql() {
@@ -20,6 +21,7 @@ async function world() {
   const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, seedSql());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok, 'tst_emp1');
   return { env, C, su, emp };
 }

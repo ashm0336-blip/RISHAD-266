@@ -16,6 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, WORKER, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 
 const HAS = (() => { try { return fs.readFileSync(WORKER, 'utf8').includes('function meSelfRoutes('); } catch (e) { return false; } })();
 const G = HAS ? {} : { skip: 'العاملُ المختبَر بلا مساري /api/me/today · /api/me/history (أقدمُ من KIVO_264)' };
@@ -47,6 +48,7 @@ async function world(mode) {
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok, 'admin');
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, seedSql());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const login = async (u, p) => { const r = await C.login(u, p); assert.ok(r.ok, 'دخول ' + u + ': ' + JSON.stringify(r.j).slice(0, 120)); return r.ck; };
   const get = (p, ck) => C.api(p, { cookie: ck });

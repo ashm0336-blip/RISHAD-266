@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, ROOT, WORKER } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 const K = 'bassam_auth_users_v1';
 const SRC = fs.readFileSync(WORKER, 'utf8');
 const ENDPOINTS = [...new Set([...SRC.matchAll(/path === '(\/api\/[a-z-]+)'/g)].map(m => m[1]))].sort();
@@ -37,6 +38,7 @@ async function world(extra = {}) {
   const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, seedSql());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   if (extra.KIVO_AUTHZ_MODE === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const S = { super: su };
   for (const [name, un, pw] of [['gm', '0000000103', '70103'], ['dm', '0000000101', '70101'], ['sup', '0000000111', '70111'], ['emp', '0000000113', '70113'], ['ds', '0000000120', '70120']]) {

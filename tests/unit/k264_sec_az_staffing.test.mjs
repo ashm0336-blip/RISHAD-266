@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, WORKER, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
 const FIX = fs.readFileSync(WORKER, 'utf8').includes('enfShiftBound') || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264 (az للوردية المربوطة بالجدول)' };
 const T = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return o; })();
@@ -29,6 +30,7 @@ test('[enforce] الجدولُ الشهري يغيّر ورديةَ موظفٍ �
   const env = makeTestEnv({ KIVO_AUTHZ_MODE: 'enforce' }); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   await installIrshadFixture(env);
   env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const L = {}; for (const [w, u, p] of [['supB', '0000000112', '70112'], ['emp1', '0000000113', '70113'], ['imp', '0000000119', '70119'], ['dm1', '0000000101', '70101']]) { const l = await C.login(u, p); assert.ok(l.ok, w); L[w] = l.ck; }

@@ -11,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, worker, ROOT, WORKER } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
 /* العاملُ المختبَر قبل KIVO_264 (حزمةٌ أقدم عبر KIVO_WORKER) ⇒ تخطٍّ معلن — KIVO_K264_STRICT=1 يفرض التشغيل */
 const K264 = fs.readFileSync(WORKER, 'utf8').includes("'session-changed'") || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264' };
@@ -24,6 +25,7 @@ async function world(mode) {
   const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   await installIrshadFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   return { env, C, su };

@@ -15,6 +15,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {PYTHON,makeTestEnv,client,applySql,ROOT,TEST_SUPER_USERNAME,TEST_SUPER_PIN} from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import {installIrshadFixture} from './irshad_legacy_seed_fx.mjs';
 const TODAY=(()=>{const f=new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn',{timeZone:'Asia/Riyadh',year:'numeric',month:'numeric',day:'numeric'}),o={};f.formatToParts(new Date()).forEach(p=>{o[p.type]=+p.value;});return {y:o.year,m:o.month,d:o.day};})();
 function seedSql(){
@@ -32,6 +33,7 @@ for(const mode of ['legacy','enforce']){
     const su=await C.login(TEST_SUPER_USERNAME,TEST_SUPER_PIN);assert.ok(su.ok,'synthetic super login');
     const initial=await C.save(su.ck,{bassam_depts_v1:JSON.stringify([{id:'dR',name:'إدارة',gid:''}])});assert.equal(initial.status,200);
     await applySql(env.DB,seedSql());
+    await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
     const sourceRows=env.DB.q('SELECT k,seq,v FROM kv WHERE k IN(?1,?2)ORDER BY k,seq',K1,K2);
     assert.equal(sourceRows.length,2,'Both legacy fixture sources exist before explicit installation');
     // Reuse the actual atomic cutover plan in this isolated test DB only.

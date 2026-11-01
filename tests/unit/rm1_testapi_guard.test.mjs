@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, makeEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, applySql, ROOT } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 const TMP = process.env.TMPDIR || os.tmpdir();
 function fixture() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; });
@@ -17,6 +18,7 @@ async function setup(extraEnv = {}) {
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارةٌ قائمة', gid: '' }]) });
   await applySql(env.DB, fixture().seed);
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   return { env, C, su };
 }

@@ -9,6 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, SRC, since, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 const CT = JSON.parse(fs.readFileSync(path.join(SRC, 'api', 'contracts.json'), 'utf8'));
 function seed() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; });
@@ -21,6 +22,7 @@ async function world() {
   const env = makeTestEnv(); const C = client(env);
   assert.ok((await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN)).ok);
   await applySql(env.DB, seed());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   const emp = await C.login('0000000113', '70113'), dm = await C.login('0000000101', '70101'); assert.ok(emp.ok && dm.ok);
   return { env, C, emp, dm };
 }

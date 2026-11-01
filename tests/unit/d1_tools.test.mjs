@@ -10,6 +10,7 @@ import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { BASH, PYTHON, makeEnv, makeTestEnv, client, applySql, ROOT, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 const T = path.join(ROOT, 'tools', 'd1');
 function seedSql() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; });
@@ -28,6 +29,7 @@ test('نسخةٌ احتياطية → تحقّق → استعادة → العا
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   const rk = await C.api('/api/recovery/new', { method: 'POST', cookie: su.ck, body: { pw: TEST_SUPER_PIN } }); assert.equal(rk.j.ok, 1, 'مفتاحُ استعادة جديد (ليُختبر حجبُه في manifest)');
   await applySql(env.DB, seedSql());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok);
   env.DB.exec("INSERT INTO daily_stats_days(site,hijri_date,field_mask,worshippers,umrah) VALUES('haram','1499-01-01',3,0,NULL); INSERT INTO daily_stats_month_locks(site,hijri_year,hijri_month,approved,reopened,legacy_boolean) VALUES('haram',1499,1,1,0,0); INSERT INTO daily_stats_day_locks(site,hijri_year,hijri_month,hijri_day,is_open,is_shut) VALUES('haram',1499,1,1,0,1)");
   const notice = await C.api('/api/notifications/act', { method: 'POST', cookie: su.ck, body: { op: 'emit', type: 'task_new', dept: 'tst_d1', own: ['tst_e_emp1'], vars: { 'المهمة': 'TEST_ONLY backup relationships', 'الوقت': 'TEST_ONLY' } } });

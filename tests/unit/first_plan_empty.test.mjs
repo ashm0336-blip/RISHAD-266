@@ -17,6 +17,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, since, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { internals } from './internals.mjs';
 
 /* اليومُ الهجري للخادم (أم القرى · الرياض · مهلةُ 3 ساعات) — كما restore_full_super */
@@ -38,12 +39,14 @@ async function putPlan(env, v) {
   s.push("INSERT INTO meta (k, v) VALUES ('rev', '1') ON CONFLICT(k) DO UPDATE SET v = CAST(CAST(meta.v AS INTEGER) + 1 AS TEXT);");
   s.push('INSERT INTO revs (k, rev) VALUES (' + q(K) + ", (SELECT CAST(v AS INTEGER) FROM meta WHERE k = 'rev')) ON CONFLICT(k) DO UPDATE SET rev = excluded.rev;");
   await applySql(env.DB, s.join('\n'));
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   assert.deepEqual(stored(env, K), v, 'الزرع');
 }
 async function world() {
   const env = makeTestEnv({ KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' }); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok, 'admin');
   await applySql(env.DB, seed());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const dm = await C.login('0000000104', '70104'); assert.ok(dm.ok, 'tst_dm3');
   await putPlan(env, null);                                                    /* إدارةٌ «بلا خطة» كالإدارات الأربع عشرة */

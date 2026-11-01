@@ -20,6 +20,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, since, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { internals } from './internals.mjs';
 
 const T = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return o; })();
@@ -39,6 +40,7 @@ async function putKey(env, k, v) {
   const s = ['DELETE FROM kv WHERE k = ' + q(k) + ';'];
   if (v !== null) s.push('INSERT INTO kv (k, seq, v) VALUES (' + q(k) + ', 0, ' + q(JSON.stringify(v)) + ');');
   await applySql(env.DB, s.concat(BUMP(k)).join('\n'));
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   assert.deepEqual(stored(env, k), v, 'الزرع: ' + k);
 }
 /* تعديلُ جزءٍ من قيمةٍ مزروعة (json_set) — كما يدمج المُثبِّتُ السجلاتِ دمجاً */
@@ -49,6 +51,7 @@ async function world(mode = 'enforce') {
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : { KIVO_TEST_FIXTURE: 'allow' }); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok, 'admin');
   await applySql(env.DB, seed());
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const login = async (u, p) => { const r = await C.login(u, p); assert.ok(r.ok, 'دخول ' + u); return r; };
   return { env, C, su, login };

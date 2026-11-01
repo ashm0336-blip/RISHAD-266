@@ -16,6 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, ROOT, since } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 
 const MODES = ['legacy', 'enforce'];
 const ACC = { gm: ['0000000103', '70103', 'tst_gm1'], dm1: ['0000000101', '70101', 'tst_dm1'], dm2: ['0000000102', '70102', 'tst_dm2'], dm3: ['0000000104', '70104', 'tst_dm3'],
@@ -59,7 +60,7 @@ function world(mode) { if (!WORLDS.has(mode)) WORLDS.set(mode, build(mode)); ret
 async function build(mode) {
   const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login('admin', 'admin'); assert.ok(su.ok, 'admin');
-  const { sql, fx } = seed(); await applySql(env.DB, sql); await installIrshadFixture(env);
+  const { sql, fx } = seed(); await applySql(env.DB, sql); await installCurrentSchemaFixture(env);
   /* The fixture now seeds typed daily-statistics rows and never recreates retired KV. */
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   // Typed create validates a real employee/shift reference. Department two's
@@ -379,7 +380,7 @@ for (const mode of MODES) {
 test('QA-264-D1 · الوحدةُ المطفأة وصفحةُ خارج السقف — القديمُ: لا قيمةَ لأحدٍ في الإدارة · الإنفاذُ: عيبٌ مثبَّت (المديرُ ومديرُ الفرع يقرآنها عبر backup.view)', since(163), async (t) => {
   for (const mode of MODES) {
     const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
-    const su = await C.login('admin', 'admin'); assert.ok(su.ok); const { sql } = seed(); await applySql(env.DB, sql); await installIrshadFixture(env);
+    const su = await C.login('admin', 'admin'); assert.ok(su.ok); const { sql } = seed(); await applySql(env.DB, sql); await installCurrentSchemaFixture(env);
     if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
     env.DB.exec(`INSERT INTO kv (k, seq, v) VALUES ('${PK['d2.seized']}', 0, '{"reports":[{"id":"tstsz2","loc":"TEST_ONLY","test":"TEST_ONLY"}]}')`);   /* بياناتٌ من قبل إطفاء الصفحة لـd2 */
     env.DB.exec(`INSERT OR REPLACE INTO revs (k, rev) VALUES ('${PK['d2.seized']}', 1)`);
