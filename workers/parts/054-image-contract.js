@@ -791,6 +791,14 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* R169: أحداثُ السجل المرافقة — تُقبل فقط لمفاتيح هذا الطلب، وتُكتب مع القيمة في الدفعة نفسِها */
   var audKeysOk = {}; for (var ka9 in set) audKeysOk[String(ka9)] = 1; for (var da9 = 0; da9 < del.length; da9++) audKeysOk[String(del[da9])] = 1;
   var audIn = audClean(body && body.aud, audKeysOk);
+  /* PRIVACY batch (019u privIn): what the actor received projected (personal fields of the register · empno of roster rows · permission
+     entries outside his units) comes back from the stored value BEFORE any context or rule — so a save never erases it, and every
+     rule (and the duplicate/emptiness contexts below) judges the value as it will be written. Present hidden parts stay as sent and are judged. */
+  for (k in set) {
+    if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || A.u.role === 'super') continue;
+    var rnPv = resName(k); if (k !== K_PERM && rnPv !== 'bassam_employees_v1' && rnPv !== 'bassam_dreport_v1') continue;
+    var curPv = await opResourceGet(env, k); if (curPv != null) set[k] = privIn(A, k, String(set[k]), curPv);
+  }
   /* KIVO_265 · S5 (مراجعةُ الخادم): معرّفُ الحدث 'tk…' لأحداث مسارات المهام في الخادم وحدها (070 tkAud — ومنها يُثبت التكرارُ صاحبَ السلسلة ونُسخَها
      المحذوفة: 073) — والحفظُ الخامّ من العميل معرّفاتُه 'c…' (290). حدثٌ بمعرّف الخادم في حفظةٍ من العميل يُسقط ولا يُكتب (كان مستخدمٌ يملك الإضافةَ وحدها
      يُلغي موعدَ سلسلةِ غيره بحدث «أُنشئت» مزوَّر) — ومساراتُ الخادم (A.__tkSrv · tkSave: opt.srv — والمسارُ الذاتي منها) كما هي */
@@ -824,7 +832,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var revs = await revsAll(env);
   var out = { revs: {}, denied: {}, conflicts: {} };
   /* READ-01: لا تُسلَّم قيمةٌ حاليةٌ إلا لمن يقرأ المفتاح — الرفضُ لا يكون قناةَ تسريب */
-  var curSafe = function (kq, cq) { if (!canRead(A, kq)) return null; if (ENFX && cq != null) { try { cq = enfProjectStr(A, kq, cq, ENFX.refs); } catch (eP9) { return null; } } if (kq === K_USERS && cq != null) cq = usersScopeOut(usersNoOut(stripPh(cq), A), A); return cq; };   /* KIVO_248 · AUD-033: القيمةُ الحالية في denied/conflicts كانت تحمل بصمات كلمات المرور — تُنزع كما في /api/get والإقلاع · KIVO_254 (ج): لكل الأدوار بلا استثناء (كان مدير النظام يُستثنى) */
+  var curSafe = function (kq, cq) { if (!canRead(A, kq)) return null; if (ENFX && cq != null) { try { cq = enfProjectStr(A, kq, cq, ENFX.refs); } catch (eP9) { return null; } } if (kq === K_USERS && cq != null) cq = usersScopeOut(usersNoOut(stripPh(cq), A), A); return privOut(A, kq, cq); };   /* KIVO_248 · AUD-033: القيمةُ الحالية في denied/conflicts كانت تحمل بصمات كلمات المرور — تُنزع كما في /api/get والإقلاع · KIVO_254 (ج): لكل الأدوار بلا استثناء (كان مدير النظام يُستثنى) */
   var curUsers = null, now = Date.now();
   var ident = { uid: A.u.id, un: String(A.u.un || ''), ip: (ip && ip.ip) || '', city: (ip && ip.city) || '', dev: (ip && ip.dev) || '' };
   /* KIVO_264 · D14 · OD-7: حفظةٌ تغيّر اسمَ دخول صاحبها (un/alt) ⇒ كلمةُ المرور الحالية «cur» في جسمها تُفحص هنا مرّةً (PBKDF2 غيرُ متزامن) — والحكمُ في selfAcctWhy (018) */

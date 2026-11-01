@@ -113,7 +113,7 @@ async function bdExport(env,actor,url,name) {
     if(!requested&&name==='awards') depts.push('');
     for(var dept of depts) {
       var ctx=await def.context(env,fresh,dept,{write:true,global:dept===''}), k=dept===''?AW_RES[1]:def.key(dept,0);
-      if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&ctx.A.u.role!=='super'&&(ctx.A.enf?!enfHeld(ctx.A,dept,'backup.view'):!actsHeldOn(ctx.A,dept,'admin/backup',['view'])))) throw rsError('domain-export-permission',403);
+      if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
       var readResources=(name==='seized'?def.resources.slice(0,5):def.resources).filter(function(_,i){return dept!==''||i>0;});
       if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
       domains.push(await def.exportDomain(ctx.env,dept));

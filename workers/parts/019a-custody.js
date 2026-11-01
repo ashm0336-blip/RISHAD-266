@@ -728,7 +728,7 @@ async function cuRead(env, A, q) {
       month: m,
       view: view,
       items: catalog.map(cuCatalogDto),
-      rows: view === 'catalog' ? [] : mapped,
+      rows: view === 'catalog' ? [] : privCustodyRows(A, d, mapped),   // PRIVACY batch (019u): holder nid/empno snapshots by purpose
       total: batch[2].results[0].n,
       summary: summary,
       next: more

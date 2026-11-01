@@ -400,7 +400,7 @@ async function cuExport(env, A, url) {
   var dept = url.searchParams.get('dept') || '';
   if (
     (!dept && A.u.role !== 'super') ||
-    (dept && (!deptInScope(A, dept) || (A.enf ? !enfHeld(A, dept, 'backup.view') : !actsHeldOn(A, dept, 'admin/backup', ['view']))))
+    (dept && !bkExportOk(A, dept))   /* IP39 (019u): backup.view alone does not export */
   )
     throw cuError('custody-export-permission', 403);
   if (await cuLegacyPresent(env)) throw cuError('custody-legacy-source-present', 503);

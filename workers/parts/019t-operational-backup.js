@@ -70,11 +70,12 @@ async function opExport(env,request,url,session) {
       if(requested)departments=[requested];
       var refs=await enfRefsFor(reference.env,departments,reference.inputKeys);
       for(var d of departments){
-        if(A.u.role!=='super'&&(A.enf?!enfHeld(A,d,'backup.view'):!actsHeldOn(A,d,'admin/backup',['view'])))throw rsError('operations-export-permission',403);
+        if(!bkExportOk(A,d))throw rsError('operations-export-permission',403);   // IP39 (019u): backup.view alone does not export
         for(var def of opDefinitions()){
           var k='bsdept:'+d+':'+def.resource,raw=reference.inputKeys[k];
           if(!canRead(A,k))throw rsError('operations-export-permission',403);
           if(A.enf&&raw!=null)raw=enfProjectStr(A,k,raw,refs);
+          raw=privOut(A,k,raw);   // PRIVACY batch (019u): exports follow the read rule
           var prepared=opPrepared(def.resource),domain=ocConvert(prepared,d,def.resource,raw==null?undefined:JSON.parse(raw),raw!=null);
           domains.push(opBackupDomain(prepared,domain));
         }

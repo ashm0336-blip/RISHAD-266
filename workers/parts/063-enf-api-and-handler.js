@@ -489,6 +489,7 @@ async function getRoute(env, url, ss) {
     if (rdG && gk === K_USERS && gv != null) gv = usersScopeOut(usersNoOut(stripPh(gv), AG), AG);   /* KIVO_259 · SR-1: ولا رقمَ وظيفيَّ لحساب غيره · الفحصُ العميق (R4): ولا حسابَ خارج نطاقه (054) */
     /* D4‑01 (v24.5): ظلُّ نطاق القراءة على ما سيُرجَع (أو على المورد وحده حين لا قيمة) — لا يمسّ got ولا الحكم */
     if (AG.enf && rdG && gv != null) { try { if (!refsG) refsG = await enfRefsFor(env, enfDeptsOf(AG), null); gv = enfProjectStr(AG, gk, gv, refsG); } catch (eGP) { continue; } }   /* fail-closed: لا قيمةَ ولا رقم — كمن لا يقرأ */
+    if (rdG && gv != null) gv = privOut(AG, gk, gv);   /* PRIVACY batch (019u): bassam_perms_v1 by units/targets · personal fields by purpose */
     try { if (!AG.enf) permv4Read(AG, gk, gv, rdG, 'get', pv4rg, null); } catch (e4rg) { swallow('permv4-read-get', e4rg, env.__rid); }
     got[gk] = { v: gv, rev: rvG[gk] || 0 };
   }
@@ -1097,6 +1098,7 @@ export default {
         try { if (!AB.enf) permv4Read(AB, bk, keys[bk], okB, 'boot', pv4rb, keys); } catch (e4rb) { swallow('permv4-read-boot', e4rb, env.__rid); }
         if (!okB) { delete keys[bk]; continue; }
         if (AB.enf) { try { keys[bk] = enfProjectStr(AB, bk, keys[bk], enfRB); } catch (eBP) { delete keys[bk]; continue; } }
+        keys[bk] = privOut(AB, bk, keys[bk]);   /* PRIVACY batch (019u): SV01 — the permissions registry by units/targets */
         revsOut[bk] = rvB[bk] || 0;
       }
       boot = { srv: 1, cf: 1, v: await curRev(env), uid: s3.uid, keys: keys, revs: revsOut, rk: (await metaGet(env, 'rk')) ? 1 : 0 };

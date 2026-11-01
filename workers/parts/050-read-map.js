@@ -108,6 +108,7 @@ function canRead0(A, k) {
   for (var i = 0; i < caps.length; i++) {
     var c = caps[i];
     if (!capOnDept(A, P.dept, c)) continue;                  /* خارجَ سقف الإدارة أو وحدةٌ مطفأة */
+    if (RD_ANY.indexOf(c) !== -1 && !bkReadAnyOk(A, P.dept, P.name)) continue;   /* IP39 (019u): «النسخ الاحتياطية» عرضاً وحده لا يفتح مجموعات الإدارة — لمن يصدّرها */
     if ((perms[c] || []).indexOf('view') !== -1) return true;
   }
   return false;

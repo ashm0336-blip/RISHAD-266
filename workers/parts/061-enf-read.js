@@ -27,7 +27,7 @@ function canReadEnf(A, k) {
   if (!resOnCeiling(A, P.dept, R2)) return false;
   var RK = KIVO_SCOPE.readKeysFor(rn);
   if (!RK.known || !RK.keys.length) return false;
-  for (i = 0; i < RK.keys.length; i++) if (enfHeld(A, P.dept, RK.keys[i])) return true;
+  for (i = 0; i < RK.keys.length; i++) if (enfHeld(A, P.dept, RK.keys[i]) && (RK.keys[i] !== 'backup.view' || bkReadAnyOk(A, P.dept, rn))) return true;   /* IP39 (019u) */
   return false;
 }
 /* رقمُ المراجعة بلا قيمة: لمن يقرأ أو يكتب المورد أو يملك تبعةً تكتب فيه (الاستبدال · حذفُ الموظف · إعادةُ تسمية الوردية) */
@@ -45,7 +45,7 @@ function enfViewCtx(A, d, rn, refs) {
   var cache = A.__enfV || (A.__enfV = {}), ck = d + '|' + rn;
   if (cache[ck]) return cache[ck];
   var RK = KIVO_SCOPE.readKeysFor(rn), held = [], i;
-  for (i = 0; i < RK.keys.length; i++) if (enfHeld(A, d, RK.keys[i])) held.push(RK.keys[i]);
+  for (i = 0; i < RK.keys.length; i++) if (enfHeld(A, d, RK.keys[i]) && (RK.keys[i] !== 'backup.view' || bkReadAnyOk(A, d, rn))) held.push(RK.keys[i]);   /* IP39 (019u): لا يرفع قيدَ نطاقٍ مفتاحٌ لا يفتح القراءة */
   var dims = ['Shift', 'Site', 'Zone/Element', 'Assigned', 'Source'], rs = {}, j;
   for (j = 0; j < dims.length; j++) { var all = held.length > 0; for (i = 0; i < held.length && all; i++) if (enfDimsOf(held[i]).indexOf(dims[j]) === -1) all = false; rs[dims[j]] = all; }
   var act = permv4Actor(A).actor, ceilActor = KIVO_SCOPE.isCeiling(act), E = { recs: (refs && refs.recs) || {} }, staffing = refs && refs.staffing ? refs.staffing[d] : null;
