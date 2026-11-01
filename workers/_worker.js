@@ -7879,6 +7879,7 @@ async function cuExport(env, A, url) {
         rows[k] = (snapshot[i + 1].results || []).filter(function (r) {
           return r.department_id === d;
         });
+        if (k === 'moves' && !privPersonalOk(A, d)) rows[k] = privRowsBlank(A, rows[k], ['holder_nid_snapshot', 'holder_empno_snapshot'], 'holder_key');   // PRIVACY batch (019u)
       });
       return { version: 1, scope: { departmentId: d }, rows: rows };
     });
@@ -8758,6 +8759,7 @@ async function empPrepareTransition(env, A, input) {
     });
   }
   if (set[K_USERS]) body.uscope = usersLensFp(A);
+  if (set[K_PERM]) body.pscope = privPermsFp(A);   // PRIVACY batch (019u): built from the stored registry, on the current projection
   return {
     body: body,
     context: {
@@ -16680,7 +16682,8 @@ async function awPlanEmployeeCleanup(env,A,d,opt){
 function awNumber(value,min,max,fallback){if(value===undefined||value===null||value==='')return fallback;var n=Number(value);if(!Number.isSafeInteger(n)||n<min||n>max)throw awError('query');return n;}
 function awText(value,max){if(typeof value!=='string'||value.length>max)throw awError('query');return value;}
 function awEmployees(ctx){var list=parseJson(ctx.rawKeys['bsdept:'+ctx.d+':bassam_employees_v1']||'[]',null);if(!Array.isArray(list))throw awError('employees-unavailable',503);var map=new Map();list.forEach(function(e){var key=empStableKey(e);if(key&&!map.has(key))map.set(key,e);});return map;}
-function awDisplay(row,employees){var e=employees.get(row.employee_key),name=e&&e.name||row.declarer_name||'—',number=e&&e.empno||row.employee_number||'—';return {name:name,number:number};}
+// PRIVACY batch (019u): the register empno (initial password) only for privPersonalOk, the record's number for award managers (privAwardOk)
+function awDisplay(row,employees,A,d){var e=employees.get(row.employee_key),name=e&&e.name||row.declarer_name||'—',number=(A&&privPersonalOk(A,d)&&e&&e.empno)||(A&&privAwardOk(A,d)&&row.employee_number)||'—';return {name:name,number:number};}
 function awListRecord(row){var rec={};AW_FIELDS.forEach(function(f,i){if(awHas(row.presence_mask,i)&&awOwn(row,f[1]))rec[f[0]]=row[f[1]]===null?null:f[2]==='boolean'?row[f[1]]===1:row[f[1]];});rec.recordKey=row.record_id;if(typeof rec.id!=='string'||!rec.id)rec.id=row.record_id;return rec;}
 function awListColumns(){return ['record_id','sequence','presence_mask'].concat(AW_FIELDS.filter(function(f){return ['pic','sigEmp','sigBy'].indexOf(f[0])<0;}).map(function(f){return f[1];})).join(',');}
 async function awRecordFragment(env,d,ids){
@@ -16708,15 +16711,15 @@ async function awRecords(ctx,q){
     results=await env.DB.batch(ctx.guards.concat([awRetiredGuard(env)],summarySt,[dataSt]));
   }
   var tail=results.length-3,summary=Object.assign({},results[tail].results[0]),top=results[tail+1].results||[],rows=results[tail+2].results||[],employees=awEmployees(ctx),total=summary.total,filtered;
-  summary.topRecord=top.length?Object.assign(awListRecord(top[0]),{employeeName:awDisplay(top[0],employees).name}):null;
+  summary.topRecord=top.length?Object.assign(privAwardRec(ctx.A,d,awListRecord(top[0])),{employeeName:awDisplay(top[0],employees).name}):null;
   if(query.trim()){
-    rows=KIVO_FIND.filter(query,rows,function(row){var display=awDisplay(row,employees);return [display.name,display.number,row.status,row.employee_number,row.declarer_name];});filtered=rows.length;
+    rows=KIVO_FIND.filter(query,rows,function(row){var display=awDisplay(row,employees,ctx.A,d);return [display.name,display.number,row.status,privAwardOk(ctx.A,d)?row.employee_number:'',row.declarer_name];});filtered=rows.length;
     page=Math.min(page,Math.max(1,Math.ceil(filtered/limit)));rows=rows.slice((page-1)*limit,page*limit);
   }else filtered=total;
   var pages=Math.max(1,Math.ceil(filtered/limit));
   page=Math.min(page,pages);
   function cursor(p){return cuCursor({kind:'award-records-v1',witness:ctx.witness,dept:d,limit:limit,q:query,page:p});}
-  return {recs:rows.map(awListRecord),total:total,filteredTotal:filtered,page:page,pageSize:limit,pages:pages,next:page<pages?cursor(page+1):null,prev:page>1?cursor(page-1):null,summary:summary};
+  return {recs:rows.map(function(row){return privAwardRec(ctx.A,d,awListRecord(row));}),total:total,filteredTotal:filtered,page:page,pageSize:limit,pages:pages,next:page<pages?cursor(page+1):null,prev:page>1?cursor(page-1):null,summary:summary};
 }
 function awLegacySectionHtml(section){
   // The client formatter is canonical; this worker function is generated from it.
@@ -16747,7 +16750,7 @@ async function hAwardGet(env,A,url){
     else{
       var id=awText(q.id,12000),out=await env.DB.batch(ctx.guards.concat([awRetiredGuard(env),env.DB.prepare('SELECT record_id FROM award_records WHERE department_id=?1 AND(record_id=?2 OR business_id=?2)').bind(d,id)])),ids=(out[out.length-1].results||[]).map(function(r){return r.record_id;});
       if(ids.length!==1)throw awError(ids.length?'record-ambiguous':'record-missing',ids.length?409:404);
-      var fragment=await awRecordFragment(ctx.env,d,ids);await ctx.env.DB.batch(ctx.guards.concat([awRetiredGuard(ctx.env)]));value={record:awInflate(fragment).records.recs[0],recordKey:ids[0]};
+      var fragment=await awRecordFragment(ctx.env,d,ids);await ctx.env.DB.batch(ctx.guards.concat([awRetiredGuard(ctx.env)]));value={record:privAwardRec(ctx.A,d,awInflate(fragment).records.recs[0]),recordKey:ids[0]};
     }
   }
   return Object.assign({ok:1,dept:d,scope:global?'global':'dept',view:view,base:Object.assign({},ctx.base)},value);
@@ -16971,7 +16974,9 @@ async function bdExport(env,actor,url,name) {
       if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
       var readResources=(name==='seized'?def.resources.slice(0,5):def.resources).filter(function(_,i){return dept!==''||i>0;});
       if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
-      domains.push(await def.exportDomain(ctx.env,dept));
+      var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose
+      if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept))exported.rows.records=privRowsBlank(ctx.A,exported.rows.records,['phone','email','employee_number'],'employee_key');
+      domains.push(exported);
       await ctx.env.DB.batch(ctx.guards.concat([rsEpochGuard(ctx.env.DB,epoch),bdRetiredGuard(ctx.env)]));
     }
     var base=await bdRestoreRevisions(env,depts.filter(Boolean),!requested);
@@ -18217,7 +18222,7 @@ async function opReadRoute(env, request, url, session) {
       if (!eligible.has(key)||!canRead(A, key)) { denied.push(key); return; }
       var raw = reference.inputKeys[key];
       if (A.enf && raw != null) raw = enfProjectStr(A, key, raw, enfRefs);
-      raw = privOut(A, key, raw);   // PRIVACY batch (019u): personal fields by purpose
+      raw = privOut(A, key, raw, reference.inputKeys);   // PRIVACY batch (019u): personal fields by purpose · old nid references as eid
       if (raw == null) absent.push(key); else resources[key] = JSON.parse(raw);
       base[key] = reference.inputRevs[key] || 0;
     });
@@ -18586,7 +18591,7 @@ async function opExport(env,request,url,session) {
           var k='bsdept:'+d+':'+def.resource,raw=reference.inputKeys[k];
           if(!canRead(A,k))throw rsError('operations-export-permission',403);
           if(A.enf&&raw!=null)raw=enfProjectStr(A,k,raw,refs);
-          raw=privOut(A,k,raw);   // PRIVACY batch (019u): exports follow the read rule
+          raw=privOut(A,k,raw,reference.inputKeys);   // PRIVACY batch (019u): exports follow the read rule
           var prepared=opPrepared(def.resource),domain=ocConvert(prepared,d,def.resource,raw==null?undefined:JSON.parse(raw),raw!=null);
           domains.push(opBackupDomain(prepared,domain));
         }
@@ -18621,6 +18626,18 @@ async function opExport(env,request,url,session) {
    (3) Permissions registry bassam_perms_v1 — a non-super actor receives: caps/subs/lenses of the units in his scope and their
        ancestor nodes; emps/tplOf/empLens of a unit he manages for himself and for every employee he may administer (permTargetOk ·
        018); of any other unit in scope, his own entries only. Other top-level keys (lensZ, patterns) unchanged.
+       Race (privPermsFp · 054): the projection depends on the actor's rights at read time. /api/get and boot return its fingerprint
+       (pscope, like uscope for the accounts list) and the client echoes it on save; a save built on another projection is a conflict
+       (why perms-scope-changed) carrying the current projection — an entry that became visible after the read is never taken as deleted,
+       one that left his scope is never deleted by him. A save without pscope that omits a hidden entry (a projection) AND a visible one
+       is refused (perms-stale-client): it cannot be told whether the visible one was deleted or never received.
+   (4) Old references by nid (staffing buckets, plan/rounds emp lists, report rows, tasks): for a reader who does not receive the
+       colleague's nid, every exact occurrence of that nid (object key or scalar) is sent as the record's eid (the client resolves eid
+       first, BassamEmp.entry); on save it is mapped back where the stored value held the nid, and a nid-keyed entry hidden by an eid
+       entry of the same person is kept. A hidden nid sent with a value other than the stored one is refused (privacy-hidden).
+   (5) Award records (019m): contact fields phone/email/comp and the search by employee number reach (1)'s audience, the person
+       himself and the award-results managers (award.res.edit|approve|reject|delete|status · legacy award/res edit|approve|del).
+       Exports (custody holder snapshots, award records) follow the same rules.
    Write (privIn): a hidden part ABSENT from the incoming value is restored from the current value (field order of the stored record
    kept: a record equal to the stored one is the stored object); a hidden part PRESENT in the incoming value is left as sent, so the
    existing rules judge it (an unauthorised change is denied, never silently applied). Super: unchanged both ways. */
@@ -18630,25 +18647,21 @@ var PRIV_PERM_EMPK = { emps: 1, tplOf: 1, empLens: 1 }, PRIV_PERM_UNITK = { caps
 function privOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 function privPut(o, k, v) { Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true }); }   /* «__proto__» stays data */
 function privCopy(o) { var r = {}, k; for (k in o) if (privOwn(o, k)) privPut(r, k, o[k]); return r; }
+/* per-actor, per-unit decision cache · one of the enforcement keys ek (or legacy 'page:act' lk) held in unit d */
+function privMemo(A, slot, d, fn) { var c = A[slot] || (A[slot] = nmap()); return c[d] !== undefined ? c[d] : (c[d] = !!fn()); }
+function privHeld(A, d, ek, lk) { return A.enf ? ek.some(function (k) { return enfHeld(A, d, k); }) : lk.some(function (k) { var i = k.lastIndexOf(':'); return actsHeldOn(A, d, k.slice(0, i), [k.slice(i + 1)]); }); }
+/* arr.map(fn), the same array when no element changed */
+function privMap(arr, fn) { var ch = 0, o = arr.map(function (x, i) { var y = fn(x, i); if (y !== x) ch++; return y; }); return ch ? o : arr; }
 /* holder of the employees-data write actions, or manager of the unit */
 function privPersonalOk(A, d) {
   if (!A || !A.u) return false;
   if (A.u.role === 'super') return true;
   if (!d || !deptInScope(A, d)) return false;
-  var c = A.__privP || (A.__privP = nmap());
-  if (c[d] !== undefined) return c[d];
-  var v = isMgrOf(A, d) || (A.enf ? (enfHeld(A, d, 'emp.record.create') || enfHeld(A, d, 'emp.record.edit'))
-                                  : (actsHeldOn(A, d, 'emps/data', ['add']) || actsHeldOn(A, d, 'emps/data', ['edit'])));
-  return (c[d] = !!v);
+  return privMemo(A, '__privP', d, function () { return isMgrOf(A, d) || privHeld(A, d, ['emp.record.create', 'emp.record.edit'], ['emps/data:add', 'emps/data:edit']); });
 }
 /* readers of the two pages that use gender operationally (distribution of the shift) */
 function privGenderOk(A, d) {
-  if (privPersonalOk(A, d)) return true;
-  var c = A.__privG || (A.__privG = nmap());
-  if (c[d] !== undefined) return c[d];
-  var v = A.enf ? (enfHeld(A, d, 'staff.view') || enfHeld(A, d, 'report.view'))
-                : (actsHeldOn(A, d, 'staff', ['view']) || actsHeldOn(A, d, 'dreport', ['view']));
-  return (c[d] = !!v);
+  return privPersonalOk(A, d) || privMemo(A, '__privG', d, function () { return privHeld(A, d, ['staff.view', 'report.view'], ['staff:view', 'dreport:view']); });
 }
 function privSelfRec(A, e) {
   var ek = String((A && A.u && A.u.ekey) || '');
@@ -18678,20 +18691,16 @@ function privRestore(n, c, hid) {
   return deq(o, c) ? c : o;
 }
 function privEmpOut(A, d, v) {
-  if (!Array.isArray(v)) return v;
-  var cut = 0, o = v.map(function (e) { var w = privStrip(e, privEmpHidden(A, d, e)); if (w !== e) cut++; return w; });
-  return cut ? o : v;
+  return Array.isArray(v) ? privMap(v, function (e) { return privStrip(e, privEmpHidden(A, d, e)); }) : v;
 }
 function privEmpIn(A, d, n, c) {
   if (!Array.isArray(n) || !Array.isArray(c)) return n;
-  var by = nmap(), put = 0, i;
+  var by = nmap(), i;
   for (i = 0; i < c.length; i++) if (isObj(c[i]) && c[i].eid != null && c[i].eid !== '' && by[String(c[i].eid)] === undefined) by[String(c[i].eid)] = c[i];
-  var o = n.map(function (e) {
-    if (!isObj(e) || e.eid == null || e.eid === '') return e;
-    var s = by[String(e.eid)]; if (!s) return e;
-    var w = privRestore(e, s, privEmpHidden(A, d, s)); if (w !== e) put++; return w;
+  return privMap(n, function (e) {
+    var s = isObj(e) && e.eid != null && e.eid !== '' ? by[String(e.eid)] : null;
+    return s ? privRestore(e, s, privEmpHidden(A, d, s)) : e;
   });
-  return put ? o : n;
 }
 /* daily report: roster rows (days → shifts → roster[]) carry empno */
 function privDrRoster(v, fn) {
@@ -18716,17 +18725,16 @@ function privDrRoster(v, fn) {
 function privDrHidden(A, d, r) { return isObj(r) && !privPersonalOk(A, d) && String(r.ekey == null ? '' : r.ekey) !== String(A.u.ekey || '\u0000') ? ['empno'] : []; }
 function privDrOut(A, d, v) {
   if (privPersonalOk(A, d)) return v;
-  return privDrRoster(v, function (R) { var cut = 0, o = R.map(function (r) { var w = privStrip(r, privDrHidden(A, d, r)); if (w !== r) cut++; return w; }); return cut ? o : R; });
+  return privDrRoster(v, function (R) { return privMap(R, function (r) { return privStrip(r, privDrHidden(A, d, r)); }); });
 }
 function privDrIn(A, d, n, c) {
   if (privPersonalOk(A, d) || !isObj(c)) return n;
   return privDrRoster(n, function (R, dk, sh) {
     var cx = isObj(c[dk]) && isObj(c[dk].shifts) && isObj(c[dk].shifts[sh]) && Array.isArray(c[dk].shifts[sh].roster) ? c[dk].shifts[sh].roster : null;
     if (!cx) return R;
-    var by = nmap(), i, put = 0;
+    var by = nmap(), i;
     for (i = 0; i < cx.length; i++) if (isObj(cx[i]) && cx[i].ekey != null && by[String(cx[i].ekey)] === undefined) by[String(cx[i].ekey)] = cx[i];
-    var o = R.map(function (r) { if (!isObj(r) || r.ekey == null) return r; var s = by[String(r.ekey)]; if (!s) return r; var w = privRestore(r, s, privDrHidden(A, d, s)); if (w !== r) put++; return w; });
-    return put ? o : R;
+    return privMap(R, function (r) { var s = isObj(r) && r.ekey != null ? by[String(r.ekey)] : null; return s ? privRestore(r, s, privDrHidden(A, d, s)) : r; });
   });
 }
 /* permissions registry */
@@ -18763,37 +18771,153 @@ function privPermsOut(A, v) {
   }
   return o;
 }
+/* copy-on-write container o[K] (o is a copy of n) */
+function privCow(o, n, K) { if (!isObj(o[K])) privPut(o, K, {}); else if (o[K] === n[K]) privPut(o, K, privCopy(n[K])); return o[K]; }
 function privPermsIn(A, n, c) {
   if (!isObj(n) || !isObj(c)) return n;
-  var o = privCopy(n), U = privUnits(A), K, u, ek, put = 0;
+  var o = privCopy(n), U = privUnits(A), K, u, ek, put = 0, m;
   for (K in c) {
     if (!privOwn(c, K) || !isObj(c[K])) continue;
     if (PRIV_PERM_UNITK[K]) {
       for (u in c[K]) {
         if (!privOwn(c[K], u) || U[u] || (isObj(o[K]) && privOwn(o[K], u))) continue;
-        if (!isObj(o[K])) privPut(o, K, {}); else if (o[K] === n[K]) privPut(o, K, privCopy(n[K]));
-        privPut(o[K], u, c[K][u]); put++;
+        privPut(privCow(o, n, K), u, c[K][u]); put++;
       }
     } else if (PRIV_PERM_EMPK[K]) {
       for (u in c[K]) {
         if (!privOwn(c[K], u)) continue;
         if (!deptInScope(A, u)) {
           if (isObj(o[K]) && privOwn(o[K], u)) continue;
-          if (!isObj(o[K])) privPut(o, K, {}); else if (o[K] === n[K]) privPut(o, K, privCopy(n[K]));
-          privPut(o[K], u, c[K][u]); put++; continue;
+          privPut(privCow(o, n, K), u, c[K][u]); put++; continue;
         }
         if (!isObj(c[K][u])) continue;
         for (ek in c[K][u]) {
           if (!privOwn(c[K][u], ek) || privPermEntryOk(A, u, ek)) continue;
           if (isObj(o[K]) && isObj(o[K][u]) && privOwn(o[K][u], ek)) continue;
-          if (!isObj(o[K])) privPut(o, K, {}); else if (o[K] === n[K]) privPut(o, K, privCopy(n[K]));
-          if (!isObj(o[K][u])) privPut(o[K], u, {}); else if (!isObj(n[K]) || o[K][u] === n[K][u]) privPut(o[K], u, privCopy(o[K][u]));
-          privPut(o[K][u], ek, c[K][u][ek]); put++;
+          m = privCow(o, n, K);
+          if (!isObj(m[u])) privPut(m, u, {}); else if (!isObj(n[K]) || m[u] === n[K][u]) privPut(m, u, privCopy(m[u]));
+          privPut(m[u], ek, c[K][u][ek]); put++;
         }
       }
     }
   }
   return put ? o : n;
+}
+/* FNV-1a 32-bit, base 36 (usersLensFp · privPermsFp) */
+function fpHash(s) { var h = 0x811c9dc5, i; for (i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(36); }
+/* (3) race: fingerprint of the decisions privPermsOut takes — units (scope · managed), targets he may not administer, nodes below a gm */
+function privPermsFp(A) {
+  if (!A || !A.u || A.u.role === 'super') return '';
+  var U = privUnits(A), u = A.u, mg = false, s = [u.id, u.role, u.deptId, u.gid, u.ekey].map(function (x) { return x == null ? '' : String(x); }).join('\u0001');
+  Object.keys(U).sort().forEach(function (d) { var m = isMgrOf(A, d); if (m) mg = true; s += '\u0002' + d + ':' + (deptInScope(A, d) ? 1 : 0) + (m ? 1 : 0); });
+  if (mg) Object.keys(permEkIx(A)).sort().forEach(function (ek) { if (!permTargetOk(A, ek)) s += '\u0003' + ek; });
+  if (u.role === 'gm') (A.nodes || []).map(function (x) { return x && x.id != null ? String(x.id) : ''; }).sort().forEach(function (g) { if (g && permGidBelow(A, g, u.gid)) s += '\u0004' + g; });
+  return fpHash(s);
+}
+/* does n omit a stored entry he sees now AND one hidden from him (a projection of unknown age)? */
+function privPermsOmits(A, n, c) {
+  if (!isObj(n) || !isObj(c)) return false;
+  var U = privUnits(A), vis = 0, hid = 0, K, u, ek, has = function (o, a, b) { return isObj(o) && privOwn(o, a) && (b === undefined || (isObj(o[a]) && privOwn(o[a], b))); };
+  for (K in c) {
+    if (!privOwn(c, K) || !isObj(c[K]) || !(PRIV_PERM_UNITK[K] || PRIV_PERM_EMPK[K])) continue;
+    for (u in c[K]) {
+      if (!privOwn(c[K], u)) continue;
+      if (PRIV_PERM_UNITK[K] || !deptInScope(A, u) || !isObj(c[K][u])) { if (!has(n[K], u)) { if (PRIV_PERM_UNITK[K] ? U[u] : deptInScope(A, u)) vis++; else hid++; } continue; }
+      for (ek in c[K][u]) if (privOwn(c[K][u], ek) && !has(n[K], u, ek)) { if (privPermEntryOk(A, u, ek)) vis++; else hid++; }
+    }
+  }
+  return vis > 0 && hid > 0;
+}
+/* 054: '' (go on) · 'scope' (built on another projection ⇒ conflict) · 'perms-stale-client' (refused) */
+function privPermsStale(A, ps, nRaw, cRaw) {
+  if (!A || !A.u || A.u.role === 'super') return '';
+  if (typeof ps === 'string' && ps !== '') return ps === privPermsFp(A) ? '' : 'scope';
+  return privPermsOmits(A, parseJson(String(nRaw), null), parseJson(String(cRaw), null)) ? 'perms-stale-client' : '';
+}
+/* (4) references by nid */
+var PRIV_TOK_RES = { bassam_staffing_v3: 1, bassam_staffing_v2: 1, bassam_staffing_snap_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1, bassam_dreport_v1: 1, bassam_tasks_v1: 1 };
+var PRIV_NO = { privacy: 'hidden' };   /* privIn: the incoming value changes a hidden reference ⇒ refused (054) */
+/* { M: nid→eid, R: eid→nid } of the records of unit d whose nid the actor does not receive, or null; have: raw values by key */
+function privTok(A, d, have) {
+  var c = A.__privTok || (A.__privTok = nmap()), rk = 'bsdept:' + d + ':' + PRIV_EMP_RES;
+  if (c[d] !== undefined) return c[d];
+  if (privPersonalOk(A, d)) return (c[d] = null);
+  if (!have || !privOwn(have, rk)) return null;
+  var L = parseJson(have[rk], null), M = null, R = null;
+  if (Array.isArray(L)) L.forEach(function (e) {
+    if (!isObj(e) || e.nid == null || e.nid === '' || privEmpHidden(A, d, e).indexOf('nid') < 0) return;
+    var n = String(e.nid), x = String(e.eid);
+    if (n === x) return;
+    if (!M) { M = nmap(); R = nmap(); }
+    if (M[n] === undefined) M[n] = x;
+    if (R[x] === undefined) R[x] = n;
+  });
+  return (c[d] = M ? { M: M, R: R } : null);
+}
+/* loads the registers the projections of these keys need (save path · denied/conflict values) */
+async function privPrep(env, A, keys) {
+  if (!A || !A.u || A.u.role === 'super') return;
+  for (var i = 0; i < keys.length; i++) {
+    var P = parseKey(keys[i]), d = P.dept, h = {};
+    if (!d || !PRIV_TOK_RES[resName(keys[i])] || (A.__privTok && A.__privTok[d] !== undefined)) continue;
+    h['bsdept:' + d + ':' + PRIV_EMP_RES] = await opResourceGet(env, 'bsdept:' + d + ':' + PRIV_EMP_RES);
+    privTok(A, d, h);
+  }
+}
+function privScalar(x) { return typeof x === 'string' || typeof x === 'number'; }
+function privTokOut(v, M) {
+  var ch = 0, o, k, y, f = function (x) { return privScalar(x) ? (M[String(x)] !== undefined ? M[String(x)] : x) : privTokOut(x, M); };
+  if (Array.isArray(v)) return privMap(v, f);
+  if (!isObj(v)) return v;
+  o = {};
+  for (k in v) {
+    if (!privOwn(v, k)) continue;
+    y = f(v[k]);
+    if (M[k] !== undefined) { ch++; if (!privOwn(v, M[k])) privPut(o, M[k], y); continue; }   /* an eid entry of the same person wins, as on the client */
+    if (y !== v[k]) ch++;
+    privPut(o, k, y);
+  }
+  return ch ? o : v;
+}
+function privTokIn(n, c, T, st) {
+  var M = T.M, R = T.R, ch = 0, o, k, kk, y;
+  var f = function (x, cx, cA) {
+    if (!privScalar(x)) return privTokIn(x, cx, T, st);
+    var s = String(x), N = R[s], h = function (t) { for (var j = 0; cA && j < cA.length; j++) if (privScalar(cA[j]) && String(cA[j]) === t) return cA[j]; };
+    if (M[s] !== undefined) { if (!((privScalar(cx) && String(cx) === s) || h(s) !== undefined)) st.bad = 1; return x; }
+    if (N === undefined) return x;
+    if (privScalar(cx) && String(cx) === N) return cx;
+    return cA && h(s) === undefined && h(N) !== undefined ? h(N) : x;
+  };
+  if (Array.isArray(n)) { var cA = Array.isArray(c) ? c : []; return privMap(n, function (x, i) { return f(x, cA[i], cA); }); }
+  if (!isObj(n)) return n;
+  var cO = isObj(c) ? c : null; o = {};
+  for (k in n) {
+    if (!privOwn(n, k)) continue;
+    kk = k;
+    if (M[k] !== undefined) { if (!cO || !privOwn(cO, k) || !deq(cO[k], n[k])) st.bad = 1; }
+    else if (R[k] !== undefined && cO && privOwn(cO, R[k]) && !privOwn(cO, k)) kk = R[k];
+    y = f(n[k], cO && privOwn(cO, kk) ? cO[kk] : undefined, null);
+    if (kk !== k || y !== n[k]) ch++;
+    privPut(o, kk, y);
+  }
+  if (cO) for (k in cO) if (privOwn(cO, k) && M[k] !== undefined && privOwn(cO, M[k]) && !privOwn(o, k)) { privPut(o, k, cO[k]); ch++; }   /* hidden behind the eid entry: kept */
+  return ch ? o : n;
+}
+/* (5) award records */
+var PRIV_AW_F = ['phone', 'email', 'comp'];
+function privAwardOk(A, d) {
+  return privPersonalOk(A, d) || privMemo(A, '__privAw', d, function () { return privHeld(A, d, ['award.res.edit', 'award.res.approve', 'award.res.reject', 'award.res.delete', 'award.res.status'], ['award/res:edit', 'award/res:approve', 'award/res:del']); });
+}
+function privAwardRec(A, d, r) { return !isObj(r) || privAwardOk(A, d) || (r.ekey != null && String(r.ekey) === String(A.u.ekey || '\u0000')) ? r : privStrip(r, PRIV_AW_F); }
+/* export rows: personal columns blanked (presence kept, so the copy stays valid) unless ok or the row is the actor's own (keyCol) */
+function privRowsBlank(A, rows, cols, keyCol) {
+  var me = String(A.u.ekey || '\u0000');
+  return (rows || []).map(function (r) {
+    if (!isObj(r) || String(r[keyCol]) === me) return r;
+    var o = null; cols.forEach(function (x) { if (r[x] != null && r[x] !== '') { o = o || privCopy(r); o[x] = ''; } });
+    return o || r;
+  });
 }
 /* custody read (019a cuRead): each row carries the holder's nid/empno snapshot — same rule (unit managers · employees-data writers · himself) */
 function privCustodyRows(A, d, rows) {
@@ -18808,22 +18932,31 @@ function privCustodyRows(A, d, rows) {
   });
 }
 /* ── entry points: raw JSON text in, raw JSON text out (unchanged text when nothing is hidden) ── */
-function privOut(A, k, raw) {
+function privOut(A, k, raw, have) {
   if (raw == null || !A || !A.u || A.u.role === 'super') return raw;
-  var P = parseKey(k), rn = resName(k), v, p;
+  var P = parseKey(k), rn = resName(k), v, p, T;
   if (!P.dept && P.name === PRIV_PERM_KEY) { v = parseJson(raw, undefined); if (v === undefined) return raw; p = privPermsOut(A, v); }
-  else if (P.dept && rn === PRIV_EMP_RES) { v = parseJson(raw, undefined); if (v === undefined) return raw; p = privEmpOut(A, P.dept, v); }
-  else if (P.dept && rn === PRIV_DR_RES) { v = parseJson(raw, undefined); if (v === undefined) return raw; p = privDrOut(A, P.dept, v); }
+  else if (P.dept && (rn === PRIV_EMP_RES || rn === PRIV_DR_RES || PRIV_TOK_RES[rn])) {
+    T = PRIV_TOK_RES[rn] ? privTok(A, P.dept, have) : null;
+    if (!T && rn !== PRIV_EMP_RES && (rn !== PRIV_DR_RES || privPersonalOk(A, P.dept))) return raw;
+    v = parseJson(raw, undefined); if (v === undefined) return raw;
+    p = rn === PRIV_EMP_RES ? privEmpOut(A, P.dept, v) : v;
+    if (T) p = privTokOut(p, T.M);
+    if (rn === PRIV_DR_RES) p = privDrOut(A, P.dept, p);
+  }
   else return raw;
   return p === v ? raw : JSON.stringify(p);
 }
+/* nextRaw as it will be judged and written · PRIV_NO (a hidden reference changed). Old nid references need privPrep first. */
 function privIn(A, k, nextRaw, curRaw) {
   if (nextRaw == null || curRaw == null || !A || !A.u || A.u.role === 'super') return nextRaw;
-  var P = parseKey(k), rn = resName(k), n, c, m;
-  if (!(!P.dept && P.name === PRIV_PERM_KEY) && !(P.dept && (rn === PRIV_EMP_RES || rn === PRIV_DR_RES))) return nextRaw;
+  var P = parseKey(k), rn = resName(k), T = P.dept && PRIV_TOK_RES[rn] && A.__privTok ? A.__privTok[P.dept] : null, n, c, m, st = {};
+  if (!T && !(!P.dept && P.name === PRIV_PERM_KEY) && !(P.dept && (rn === PRIV_EMP_RES || rn === PRIV_DR_RES))) return nextRaw;
   n = parseJson(String(nextRaw), undefined); c = parseJson(String(curRaw), undefined);
   if (n === undefined || c === undefined) return nextRaw;
-  m = !P.dept ? privPermsIn(A, n, c) : rn === PRIV_EMP_RES ? privEmpIn(A, P.dept, n, c) : privDrIn(A, P.dept, n, c);
+  m = T ? privTokIn(n, c, T, st) : n;
+  if (st.bad) return PRIV_NO;
+  m = !P.dept ? privPermsIn(A, m, c) : rn === PRIV_EMP_RES ? privEmpIn(A, P.dept, m, c) : rn === PRIV_DR_RES ? privDrIn(A, P.dept, m, c) : m;
   if (m === n) return nextRaw;
   return deq(m, c) ? String(curRaw) : JSON.stringify(m);
 }
@@ -18835,14 +18968,12 @@ function bkExportOk(A, d) {
   if (!A || !A.u) return false;
   if (A.u.role === 'super') return true;
   if (!d || !deptInScope(A, d)) return false;
-  var c = A.__bkX || (A.__bkX = nmap());
-  if (c[d] !== undefined) return c[d];
-  var v;
-  if (A.enf) v = enfHeld(A, d, 'backup.view') && (isMgrOf(A, d) || enfHeld(A, d, 'backup.create') || enfHeld(A, d, 'backup.restore'));
-  else if (!actsHeldOn(A, d, 'admin/backup', ['view'])) v = false;
-  else if (isMgrOf(A, d) || actsHeldOn(A, d, 'admin/backup', ['add']) || actsHeldOn(A, d, 'admin/backup', ['edit'])) v = true;
-  else { try { v = !!KIVO_GUARDS.decide('backup.restore', permv2Ctx(A, d)).ok; } catch (e) { v = false; } }
-  return (c[d] = !!v);
+  return privMemo(A, '__bkX', d, function () {
+    if (!privHeld(A, d, ['backup.view'], ['admin/backup:view'])) return false;
+    if (isMgrOf(A, d) || privHeld(A, d, ['backup.create', 'backup.restore'], ['admin/backup:add', 'admin/backup:edit'])) return true;
+    if (A.enf) return false;
+    try { return KIVO_GUARDS.decide('backup.restore', permv2Ctx(A, d)).ok; } catch (e) { return false; }
+  });
 }
 /* backup.view as a read key of every department collection (RD_ANY · readKeysFor): only for its own stamp, or for an exporter */
 function bkReadAnyOk(A, d, rn) { return rn === 'bassam_last_export_v1' || bkExportOk(A, d); }
@@ -22700,7 +22831,7 @@ function usersScopeOut(json, A) {
    إسقاطُ عدسةٍ سابقة (نُقلت إدارةٌ إلى عقدته · تغيّرت صلاحياتُه) وما صار يراه ولم يصله كان سيُحسب حذفاً ⇒ تعارضٌ بالإسقاط الحالي (applySave) */
 function usersLensFp(A) {
   if (!A || !A.u || A.u.role === 'super') return '';
-  var u = A.u, ds = nmap(), ks, s, i, d, mg, sc, h = 0x811c9dc5;
+  var u = A.u, ds = nmap(), ks, s, i, d, mg, sc;
   (Array.isArray(A.depts) ? A.depts : []).forEach(function (x) { if (x && x.id != null && x.id !== '') ds[String(x.id)] = 1; });
   if (u.deptId != null && u.deptId !== '') ds[String(u.deptId)] = 1;
   ks = Object.keys(ds).sort();
@@ -22708,8 +22839,7 @@ function usersLensFp(A) {
   /* مراجعةُ التكامل R2-FPCHURN: إدارةٌ قراراتُها كلُّها صفر (لا يديرها ولا في نطاقه) تُسقط حساباتِها كأيّ إدارةٍ لا يعرفها — فلا تدخل البصمة،
      وإلا غيّر إنشاءُ أيّ إدارةٍ أو حذفُها بصمةَ كلّ فاعلٍ فدار تعارضٌ زائدٌ عند كلّ حفظٍ لقائمة الحسابات */
   for (i = 0; i < ks.length; i++) { d = ks[i]; mg = isMgrOf(A, d); sc = deptInScope(A, d); if (!mg && !sc) continue; s += '\u0002' + d + ':' + (mg ? 1 : 0) + (sc ? 1 : 0) + (sc && !mg && usersReadsEmps(A, d) ? 1 : 0); }
-  for (i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-  return h.toString(36);
+  return fpHash(s);
 }
 /* ما رآه الفاعلُ من السجل المخزَّن c (نزعُ البصمة ثم رقمِ غيره ثم العدسة — كما أرسلته إليه usersScopeOut): { s: ما رآه · full: رآه كاملاً } أو null (محجوب) */
 function usersSeen(L, A, c) {
@@ -23105,13 +23235,17 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* R169: أحداثُ السجل المرافقة — تُقبل فقط لمفاتيح هذا الطلب، وتُكتب مع القيمة في الدفعة نفسِها */
   var audKeysOk = {}; for (var ka9 in set) audKeysOk[String(ka9)] = 1; for (var da9 = 0; da9 < del.length; da9++) audKeysOk[String(del[da9])] = 1;
   var audIn = audClean(body && body.aud, audKeysOk);
-  /* PRIVACY batch (019u privIn): what the actor received projected (personal fields of the register · empno of roster rows · permission
-     entries outside his units) comes back from the stored value BEFORE any context or rule — so a save never erases it, and every
-     rule (and the duplicate/emptiness contexts below) judges the value as it will be written. Present hidden parts stay as sent and are judged. */
+  /* PRIVACY batch (019u header · privIn/privPermsStale): hidden parts come back from the stored value BEFORE any context or rule, so every rule
+     judges the value as it will be written; a registry built on another projection (body.pscope) and a changed hidden reference stop here (pvNo9). */
+  var pvNo9 = nmap();
+  if (A.u.role !== 'super') await privPrep(env, A, Object.keys(set).concat(del.map(String)));
   for (k in set) {
     if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || A.u.role === 'super') continue;
-    var rnPv = resName(k); if (k !== K_PERM && rnPv !== 'bassam_employees_v1' && rnPv !== 'bassam_dreport_v1') continue;
-    var curPv = await opResourceGet(env, k); if (curPv != null) set[k] = privIn(A, k, String(set[k]), curPv);
+    var rnPv = resName(k), dPv = parseKey(k).dept;
+    if (k !== K_PERM && rnPv !== 'bassam_employees_v1' && rnPv !== 'bassam_dreport_v1' && !(dPv && A.__privTok && A.__privTok[dPv])) continue;
+    var curPv = await opResourceGet(env, k); if (curPv == null) continue;
+    if (k === K_PERM && (pvNo9[k] = privPermsStale(A, body && body.pscope, set[k], curPv))) continue;
+    var pv9 = privIn(A, k, String(set[k]), curPv); if (pv9 === PRIV_NO) pvNo9[k] = 'privacy-hidden'; else set[k] = pv9;
   }
   /* KIVO_265 · S5 (مراجعةُ الخادم): معرّفُ الحدث 'tk…' لأحداث مسارات المهام في الخادم وحدها (070 tkAud — ومنها يُثبت التكرارُ صاحبَ السلسلة ونُسخَها
      المحذوفة: 073) — والحفظُ الخامّ من العميل معرّفاتُه 'c…' (290). حدثٌ بمعرّف الخادم في حفظةٍ من العميل يُسقط ولا يُكتب (كان مستخدمٌ يملك الإضافةَ وحدها
@@ -23156,7 +23290,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      الإصدار يحمل القائمةَ الكاملةَ قبل الإسقاط) يبقى على السلوك السابق حرفاً */
   var usFp9 = null, usFp = function () { if (usFp9 === null) usFp9 = usersLensFp(A); return usFp9; };
   var usStale9 = Object.prototype.hasOwnProperty.call(set, K_USERS) && A.u.role !== 'super' && typeof (body && body.uscope) === 'string' && body.uscope !== '' && body.uscope !== usFp();
-  var usOut9 = function (k, o, ev) { if (k === K_USERS && usFp()) o.uscope = usFp(); if (k === K_USERS && ev && ev.dup) o.dup = ev.dup; return o; };
+  var usOut9 = function (k, o, ev) { if (k === K_USERS && usFp()) o.uscope = usFp(); if (k === K_USERS && ev && ev.dup) o.dup = ev.dup; if (k === K_PERM && A.u.role !== 'super') { o.pscope = privPermsFp(A); if (pvNo9[k] === 'scope') o.why = 'perms-scope-changed'; } return o; };
   /* سياق الطلب: هل صار سجل موظفي الإدارة فارغاً في هذه الحفظة نفسها؟
      يُحسب مرّةً لكل إدارةٍ يمسّ الطلبُ تقريرَها اليومي — ولا يُحسب بلا حاجة. */
   /* سياق الطلب لكل إدارةٍ يمسّها: سجل الموظفين كما سيصير بعد هذا الطلب —
@@ -23276,6 +23410,9 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (isDeviceKey(k0)) { evald.push(null); continue; }
     if (it0.act === 'del' && k0 === K_USERS) { evald.push({ deny: 'users' }); continue; }
     var cur0 = await opResourceGet(env, k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
+    /* PRIVACY batch (019u): registry built on another projection ⇒ conflict with the current one (usOut9: pscope · why) · projection without
+       pscope omitting a visible entry, or a changed hidden reference ⇒ refused — nothing of it is judged or written */
+    if (it0.act === 'set' && pvNo9[k0] && !(ENFX && ENFX.batchDeny)) { evald.push(pvNo9[k0] === 'scope' ? { conflict: 1, cur: cur0 } : { deny: pvNo9[k0], cur: cur0, sd: pvNo9[k0] }); continue; }
     if (it0.act === 'set' && k0 === K_USERS && A.u.role !== 'super') {
       /* مراجعةُ التكامل W1-R1: قائمةٌ بُنيت على عدسةٍ غير عدسته الآن (usStale9) ⇒ تعارضٌ قبل usersNoIn/usersScopeIn/canWrite — فلا يُحكم على إسقاطٍ قديم
          ولا يُكتب منه شيء (ما صار يراه ولم يصله لا يُحسب حذفاً). ورفضُ الدفعة كلِّها في الإنفاذ (batchDeny) يبقى رفضاً
@@ -27987,6 +28124,7 @@ async function getRoute(env, url, ss) {
   var outG = { ok: 1, v: await curRev(env), keys: got }; if (moreG) outG.more = 1;
   /* مراجعةُ التكامل W1-R1: بصمةُ العدسة التي أُسقطت بها قائمةُ الحسابات المُرجَعة (054 usersLensFp) — يعيدها العميلُ مع حفظها · لا شيءَ لمدير النظام */
   if (got[K_USERS] && got[K_USERS].v != null) { var usG = usersLensFp(AG); if (usG) outG.uscope = usG; }
+  if (got[K_PERM] && got[K_PERM].v != null) { var psG = privPermsFp(AG); if (psG) outG.pscope = psG; }   /* PRIVACY batch (019u): the registry projection's fingerprint, echoed on save */
   return json(outG);
 }
 export default {
@@ -28594,7 +28732,8 @@ export default {
       }
       boot = { srv: 1, cf: 1, v: await curRev(env), uid: s3.uid, keys: keys, revs: revsOut, rk: (await metaGet(env, 'rk')) ? 1 : 0 };
       if (AB.enf) boot.authz = enfMe(AB, enfRB);                                     /* KIVO_243: المفاتيحُ المحمولة لكل إدارة · العدسات · النطاق */
-      if (keys[K_USERS] != null) { var usB = usersLensFp(AB); if (usB) boot.uscope = usB; }   /* مراجعةُ التكامل W1-R1: بصمةُ عدسة القائمة المحقونة (054 usersLensFp) */
+      if (keys[K_USERS] != null) { var usB = usersLensFp(AB); if (usB) boot.uscope = usB; }
+      if (keys[K_PERM] != null) { var psB = privPermsFp(AB); if (psB) boot.pscope = psB; }   /* PRIVACY batch (019u) */   /* مراجعةُ التكامل W1-R1: بصمةُ عدسة القائمة المحقونة (054 usersLensFp) */
       }
     } else {
       /* زائر بلا جلسة: لا بيانات — شاشة الدخول تعمل في رملٍ مؤقت */

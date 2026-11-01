@@ -496,6 +496,7 @@ async function getRoute(env, url, ss) {
   var outG = { ok: 1, v: await curRev(env), keys: got }; if (moreG) outG.more = 1;
   /* مراجعةُ التكامل W1-R1: بصمةُ العدسة التي أُسقطت بها قائمةُ الحسابات المُرجَعة (054 usersLensFp) — يعيدها العميلُ مع حفظها · لا شيءَ لمدير النظام */
   if (got[K_USERS] && got[K_USERS].v != null) { var usG = usersLensFp(AG); if (usG) outG.uscope = usG; }
+  if (got[K_PERM] && got[K_PERM].v != null) { var psG = privPermsFp(AG); if (psG) outG.pscope = psG; }   /* PRIVACY batch (019u): the registry projection's fingerprint, echoed on save */
   return json(outG);
 }
 export default {
@@ -1103,7 +1104,8 @@ export default {
       }
       boot = { srv: 1, cf: 1, v: await curRev(env), uid: s3.uid, keys: keys, revs: revsOut, rk: (await metaGet(env, 'rk')) ? 1 : 0 };
       if (AB.enf) boot.authz = enfMe(AB, enfRB);                                     /* KIVO_243: المفاتيحُ المحمولة لكل إدارة · العدسات · النطاق */
-      if (keys[K_USERS] != null) { var usB = usersLensFp(AB); if (usB) boot.uscope = usB; }   /* مراجعةُ التكامل W1-R1: بصمةُ عدسة القائمة المحقونة (054 usersLensFp) */
+      if (keys[K_USERS] != null) { var usB = usersLensFp(AB); if (usB) boot.uscope = usB; }
+      if (keys[K_PERM] != null) { var psB = privPermsFp(AB); if (psB) boot.pscope = psB; }   /* PRIVACY batch (019u) */   /* مراجعةُ التكامل W1-R1: بصمةُ عدسة القائمة المحقونة (054 usersLensFp) */
       }
     } else {
       /* زائر بلا جلسة: لا بيانات — شاشة الدخول تعمل في رملٍ مؤقت */

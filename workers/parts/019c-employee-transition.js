@@ -697,6 +697,7 @@ async function empPrepareTransition(env, A, input) {
     });
   }
   if (set[K_USERS]) body.uscope = usersLensFp(A);
+  if (set[K_PERM]) body.pscope = privPermsFp(A);   // PRIVACY batch (019u): built from the stored registry, on the current projection
   return {
     body: body,
     context: {

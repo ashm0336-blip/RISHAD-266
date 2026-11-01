@@ -222,7 +222,8 @@ async function awPlanEmployeeCleanup(env,A,d,opt){
 function awNumber(value,min,max,fallback){if(value===undefined||value===null||value==='')return fallback;var n=Number(value);if(!Number.isSafeInteger(n)||n<min||n>max)throw awError('query');return n;}
 function awText(value,max){if(typeof value!=='string'||value.length>max)throw awError('query');return value;}
 function awEmployees(ctx){var list=parseJson(ctx.rawKeys['bsdept:'+ctx.d+':bassam_employees_v1']||'[]',null);if(!Array.isArray(list))throw awError('employees-unavailable',503);var map=new Map();list.forEach(function(e){var key=empStableKey(e);if(key&&!map.has(key))map.set(key,e);});return map;}
-function awDisplay(row,employees){var e=employees.get(row.employee_key),name=e&&e.name||row.declarer_name||'—',number=e&&e.empno||row.employee_number||'—';return {name:name,number:number};}
+// PRIVACY batch (019u): the register empno (initial password) only for privPersonalOk, the record's number for award managers (privAwardOk)
+function awDisplay(row,employees,A,d){var e=employees.get(row.employee_key),name=e&&e.name||row.declarer_name||'—',number=(A&&privPersonalOk(A,d)&&e&&e.empno)||(A&&privAwardOk(A,d)&&row.employee_number)||'—';return {name:name,number:number};}
 function awListRecord(row){var rec={};AW_FIELDS.forEach(function(f,i){if(awHas(row.presence_mask,i)&&awOwn(row,f[1]))rec[f[0]]=row[f[1]]===null?null:f[2]==='boolean'?row[f[1]]===1:row[f[1]];});rec.recordKey=row.record_id;if(typeof rec.id!=='string'||!rec.id)rec.id=row.record_id;return rec;}
 function awListColumns(){return ['record_id','sequence','presence_mask'].concat(AW_FIELDS.filter(function(f){return ['pic','sigEmp','sigBy'].indexOf(f[0])<0;}).map(function(f){return f[1];})).join(',');}
 async function awRecordFragment(env,d,ids){
@@ -250,15 +251,15 @@ async function awRecords(ctx,q){
     results=await env.DB.batch(ctx.guards.concat([awRetiredGuard(env)],summarySt,[dataSt]));
   }
   var tail=results.length-3,summary=Object.assign({},results[tail].results[0]),top=results[tail+1].results||[],rows=results[tail+2].results||[],employees=awEmployees(ctx),total=summary.total,filtered;
-  summary.topRecord=top.length?Object.assign(awListRecord(top[0]),{employeeName:awDisplay(top[0],employees).name}):null;
+  summary.topRecord=top.length?Object.assign(privAwardRec(ctx.A,d,awListRecord(top[0])),{employeeName:awDisplay(top[0],employees).name}):null;
   if(query.trim()){
-    rows=KIVO_FIND.filter(query,rows,function(row){var display=awDisplay(row,employees);return [display.name,display.number,row.status,row.employee_number,row.declarer_name];});filtered=rows.length;
+    rows=KIVO_FIND.filter(query,rows,function(row){var display=awDisplay(row,employees,ctx.A,d);return [display.name,display.number,row.status,privAwardOk(ctx.A,d)?row.employee_number:'',row.declarer_name];});filtered=rows.length;
     page=Math.min(page,Math.max(1,Math.ceil(filtered/limit)));rows=rows.slice((page-1)*limit,page*limit);
   }else filtered=total;
   var pages=Math.max(1,Math.ceil(filtered/limit));
   page=Math.min(page,pages);
   function cursor(p){return cuCursor({kind:'award-records-v1',witness:ctx.witness,dept:d,limit:limit,q:query,page:p});}
-  return {recs:rows.map(awListRecord),total:total,filteredTotal:filtered,page:page,pageSize:limit,pages:pages,next:page<pages?cursor(page+1):null,prev:page>1?cursor(page-1):null,summary:summary};
+  return {recs:rows.map(function(row){return privAwardRec(ctx.A,d,awListRecord(row));}),total:total,filteredTotal:filtered,page:page,pageSize:limit,pages:pages,next:page<pages?cursor(page+1):null,prev:page>1?cursor(page-1):null,summary:summary};
 }
 function awLegacySectionHtml(section){
   // The client formatter is canonical; this worker function is generated from it.
@@ -289,7 +290,7 @@ async function hAwardGet(env,A,url){
     else{
       var id=awText(q.id,12000),out=await env.DB.batch(ctx.guards.concat([awRetiredGuard(env),env.DB.prepare('SELECT record_id FROM award_records WHERE department_id=?1 AND(record_id=?2 OR business_id=?2)').bind(d,id)])),ids=(out[out.length-1].results||[]).map(function(r){return r.record_id;});
       if(ids.length!==1)throw awError(ids.length?'record-ambiguous':'record-missing',ids.length?409:404);
-      var fragment=await awRecordFragment(ctx.env,d,ids);await ctx.env.DB.batch(ctx.guards.concat([awRetiredGuard(ctx.env)]));value={record:awInflate(fragment).records.recs[0],recordKey:ids[0]};
+      var fragment=await awRecordFragment(ctx.env,d,ids);await ctx.env.DB.batch(ctx.guards.concat([awRetiredGuard(ctx.env)]));value={record:privAwardRec(ctx.A,d,awInflate(fragment).records.recs[0]),recordKey:ids[0]};
     }
   }
   return Object.assign({ok:1,dept:d,scope:global?'global':'dept',view:view,base:Object.assign({},ctx.base)},value);

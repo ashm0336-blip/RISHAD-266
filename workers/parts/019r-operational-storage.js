@@ -190,7 +190,7 @@ async function opReadRoute(env, request, url, session) {
       if (!eligible.has(key)||!canRead(A, key)) { denied.push(key); return; }
       var raw = reference.inputKeys[key];
       if (A.enf && raw != null) raw = enfProjectStr(A, key, raw, enfRefs);
-      raw = privOut(A, key, raw);   // PRIVACY batch (019u): personal fields by purpose
+      raw = privOut(A, key, raw, reference.inputKeys);   // PRIVACY batch (019u): personal fields by purpose · old nid references as eid
       if (raw == null) absent.push(key); else resources[key] = JSON.parse(raw);
       base[key] = reference.inputRevs[key] || 0;
     });

@@ -116,7 +116,9 @@ async function bdExport(env,actor,url,name) {
       if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
       var readResources=(name==='seized'?def.resources.slice(0,5):def.resources).filter(function(_,i){return dept!==''||i>0;});
       if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
-      domains.push(await def.exportDomain(ctx.env,dept));
+      var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose
+      if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept))exported.rows.records=privRowsBlank(ctx.A,exported.rows.records,['phone','email','employee_number'],'employee_key');
+      domains.push(exported);
       await ctx.env.DB.batch(ctx.guards.concat([rsEpochGuard(ctx.env.DB,epoch),bdRetiredGuard(ctx.env)]));
     }
     var base=await bdRestoreRevisions(env,depts.filter(Boolean),!requested);

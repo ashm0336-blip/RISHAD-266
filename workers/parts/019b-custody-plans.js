@@ -449,6 +449,7 @@ async function cuExport(env, A, url) {
         rows[k] = (snapshot[i + 1].results || []).filter(function (r) {
           return r.department_id === d;
         });
+        if (k === 'moves' && !privPersonalOk(A, d)) rows[k] = privRowsBlank(A, rows[k], ['holder_nid_snapshot', 'holder_empno_snapshot'], 'holder_key');   // PRIVACY batch (019u)
       });
       return { version: 1, scope: { departmentId: d }, rows: rows };
     });

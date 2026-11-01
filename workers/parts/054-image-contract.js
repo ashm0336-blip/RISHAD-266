@@ -386,7 +386,7 @@ function usersScopeOut(json, A) {
    إسقاطُ عدسةٍ سابقة (نُقلت إدارةٌ إلى عقدته · تغيّرت صلاحياتُه) وما صار يراه ولم يصله كان سيُحسب حذفاً ⇒ تعارضٌ بالإسقاط الحالي (applySave) */
 function usersLensFp(A) {
   if (!A || !A.u || A.u.role === 'super') return '';
-  var u = A.u, ds = nmap(), ks, s, i, d, mg, sc, h = 0x811c9dc5;
+  var u = A.u, ds = nmap(), ks, s, i, d, mg, sc;
   (Array.isArray(A.depts) ? A.depts : []).forEach(function (x) { if (x && x.id != null && x.id !== '') ds[String(x.id)] = 1; });
   if (u.deptId != null && u.deptId !== '') ds[String(u.deptId)] = 1;
   ks = Object.keys(ds).sort();
@@ -394,8 +394,7 @@ function usersLensFp(A) {
   /* مراجعةُ التكامل R2-FPCHURN: إدارةٌ قراراتُها كلُّها صفر (لا يديرها ولا في نطاقه) تُسقط حساباتِها كأيّ إدارةٍ لا يعرفها — فلا تدخل البصمة،
      وإلا غيّر إنشاءُ أيّ إدارةٍ أو حذفُها بصمةَ كلّ فاعلٍ فدار تعارضٌ زائدٌ عند كلّ حفظٍ لقائمة الحسابات */
   for (i = 0; i < ks.length; i++) { d = ks[i]; mg = isMgrOf(A, d); sc = deptInScope(A, d); if (!mg && !sc) continue; s += '\u0002' + d + ':' + (mg ? 1 : 0) + (sc ? 1 : 0) + (sc && !mg && usersReadsEmps(A, d) ? 1 : 0); }
-  for (i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-  return h.toString(36);
+  return fpHash(s);
 }
 /* ما رآه الفاعلُ من السجل المخزَّن c (نزعُ البصمة ثم رقمِ غيره ثم العدسة — كما أرسلته إليه usersScopeOut): { s: ما رآه · full: رآه كاملاً } أو null (محجوب) */
 function usersSeen(L, A, c) {
@@ -791,13 +790,17 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* R169: أحداثُ السجل المرافقة — تُقبل فقط لمفاتيح هذا الطلب، وتُكتب مع القيمة في الدفعة نفسِها */
   var audKeysOk = {}; for (var ka9 in set) audKeysOk[String(ka9)] = 1; for (var da9 = 0; da9 < del.length; da9++) audKeysOk[String(del[da9])] = 1;
   var audIn = audClean(body && body.aud, audKeysOk);
-  /* PRIVACY batch (019u privIn): what the actor received projected (personal fields of the register · empno of roster rows · permission
-     entries outside his units) comes back from the stored value BEFORE any context or rule — so a save never erases it, and every
-     rule (and the duplicate/emptiness contexts below) judges the value as it will be written. Present hidden parts stay as sent and are judged. */
+  /* PRIVACY batch (019u header · privIn/privPermsStale): hidden parts come back from the stored value BEFORE any context or rule, so every rule
+     judges the value as it will be written; a registry built on another projection (body.pscope) and a changed hidden reference stop here (pvNo9). */
+  var pvNo9 = nmap();
+  if (A.u.role !== 'super') await privPrep(env, A, Object.keys(set).concat(del.map(String)));
   for (k in set) {
     if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || A.u.role === 'super') continue;
-    var rnPv = resName(k); if (k !== K_PERM && rnPv !== 'bassam_employees_v1' && rnPv !== 'bassam_dreport_v1') continue;
-    var curPv = await opResourceGet(env, k); if (curPv != null) set[k] = privIn(A, k, String(set[k]), curPv);
+    var rnPv = resName(k), dPv = parseKey(k).dept;
+    if (k !== K_PERM && rnPv !== 'bassam_employees_v1' && rnPv !== 'bassam_dreport_v1' && !(dPv && A.__privTok && A.__privTok[dPv])) continue;
+    var curPv = await opResourceGet(env, k); if (curPv == null) continue;
+    if (k === K_PERM && (pvNo9[k] = privPermsStale(A, body && body.pscope, set[k], curPv))) continue;
+    var pv9 = privIn(A, k, String(set[k]), curPv); if (pv9 === PRIV_NO) pvNo9[k] = 'privacy-hidden'; else set[k] = pv9;
   }
   /* KIVO_265 · S5 (مراجعةُ الخادم): معرّفُ الحدث 'tk…' لأحداث مسارات المهام في الخادم وحدها (070 tkAud — ومنها يُثبت التكرارُ صاحبَ السلسلة ونُسخَها
      المحذوفة: 073) — والحفظُ الخامّ من العميل معرّفاتُه 'c…' (290). حدثٌ بمعرّف الخادم في حفظةٍ من العميل يُسقط ولا يُكتب (كان مستخدمٌ يملك الإضافةَ وحدها
@@ -842,7 +845,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      الإصدار يحمل القائمةَ الكاملةَ قبل الإسقاط) يبقى على السلوك السابق حرفاً */
   var usFp9 = null, usFp = function () { if (usFp9 === null) usFp9 = usersLensFp(A); return usFp9; };
   var usStale9 = Object.prototype.hasOwnProperty.call(set, K_USERS) && A.u.role !== 'super' && typeof (body && body.uscope) === 'string' && body.uscope !== '' && body.uscope !== usFp();
-  var usOut9 = function (k, o, ev) { if (k === K_USERS && usFp()) o.uscope = usFp(); if (k === K_USERS && ev && ev.dup) o.dup = ev.dup; return o; };
+  var usOut9 = function (k, o, ev) { if (k === K_USERS && usFp()) o.uscope = usFp(); if (k === K_USERS && ev && ev.dup) o.dup = ev.dup; if (k === K_PERM && A.u.role !== 'super') { o.pscope = privPermsFp(A); if (pvNo9[k] === 'scope') o.why = 'perms-scope-changed'; } return o; };
   /* سياق الطلب: هل صار سجل موظفي الإدارة فارغاً في هذه الحفظة نفسها؟
      يُحسب مرّةً لكل إدارةٍ يمسّ الطلبُ تقريرَها اليومي — ولا يُحسب بلا حاجة. */
   /* سياق الطلب لكل إدارةٍ يمسّها: سجل الموظفين كما سيصير بعد هذا الطلب —
@@ -962,6 +965,9 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (isDeviceKey(k0)) { evald.push(null); continue; }
     if (it0.act === 'del' && k0 === K_USERS) { evald.push({ deny: 'users' }); continue; }
     var cur0 = await opResourceGet(env, k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
+    /* PRIVACY batch (019u): registry built on another projection ⇒ conflict with the current one (usOut9: pscope · why) · projection without
+       pscope omitting a visible entry, or a changed hidden reference ⇒ refused — nothing of it is judged or written */
+    if (it0.act === 'set' && pvNo9[k0] && !(ENFX && ENFX.batchDeny)) { evald.push(pvNo9[k0] === 'scope' ? { conflict: 1, cur: cur0 } : { deny: pvNo9[k0], cur: cur0, sd: pvNo9[k0] }); continue; }
     if (it0.act === 'set' && k0 === K_USERS && A.u.role !== 'super') {
       /* مراجعةُ التكامل W1-R1: قائمةٌ بُنيت على عدسةٍ غير عدسته الآن (usStale9) ⇒ تعارضٌ قبل usersNoIn/usersScopeIn/canWrite — فلا يُحكم على إسقاطٍ قديم
          ولا يُكتب منه شيء (ما صار يراه ولم يصله لا يُحسب حذفاً). ورفضُ الدفعة كلِّها في الإنفاذ (batchDeny) يبقى رفضاً

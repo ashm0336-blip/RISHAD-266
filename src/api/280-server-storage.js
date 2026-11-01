@@ -58,6 +58,8 @@
      عدستي بعدها (نُقلت إدارةٌ إلى عقدتي · تغيّرت صلاحياتي) ردّ الخادمُ تعارضاً بالإسقاط الحالي بدل أن يُحسب ما لم يصلني حذفاً، فيُدمج تعديلي عليه ويُعاد.
      تتجدّد مع كلّ قائمةٍ تصل من الخادم (/api/get · قيمةُ الرفض والتعارض) — ومديرُ النظام بلا إسقاطٍ ولا بصمة */
   var KU9 = "bassam_auth_users_v1", uscope9 = (typeof BOOT.uscope === "string") ? BOOT.uscope : "";
+  /* PRIVACY batch (019u): the same for the permissions registry projected by units/targets (pscope) — a save on an older projection is a conflict */
+  var KP9 = "bassam_perms_v1", pscope9 = (typeof BOOT.pscope === "string") ? BOOT.pscope : "";
   var dupR9 = Object.create(null), DUPMAX9 = 3;       /* مراجعةُ التكامل R2-LOOP: دوراتُ إسقاط الصفوف المخالفة المتتالية لكل مفتاح (usersDupFix9) وسقفُها */
   var sx9 = false, orphan9 = null;
   var readSetHook9 = null;                           /* KIVO_264 · D-4: إعادةُ مزامنة مجموعة القراءة (تُضبط مع المستمع الدائم) */
@@ -502,7 +504,8 @@
     if (UID9) o9.uid = UID9;                         /* KIVO_264 · D-3 (C1): الخادمُ يردّ 409 session-changed إن لم تعد هويةَ الكوكي */
     var A9 = KIVO.__BS_I && KIVO.__BS_I.auth, c9 = (A9 && typeof A9.saveCur === "function" && ("bassam_auth_users_v1" in pSet)) ? A9.saveCur("bassam_auth_users_v1") : null;
     if (c9) o9.cur = c9;                             /* KIVO_264 · D14: كلمةُ المرور الحالية لتغيير اسم دخول صاحب الحساب (330 saveCur — في الذاكرة ≤ 120 ث · لا تُخزَّن) */
-    if (uscope9 && (KU9 in pSet)) o9.uscope = uscope9;   /* مراجعةُ التكامل W1-R1: عدسةُ القائمة التي بُني عليها التعديل */
+    if (uscope9 && (KU9 in pSet)) o9.uscope = uscope9;
+    if (pscope9 && (KP9 in pSet)) o9.pscope = pscope9;   /* مراجعةُ التكامل W1-R1: عدسةُ القائمة التي بُني عليها التعديل */
     for (k in pSet) if (why9[k]) (w9 = w9 || {})[k] = why9[k];
     for (k = 0; k < dl.length; k++) if (why9[dl[k]]) (w9 = w9 || {})[dl[k]] = why9[dl[k]];
     if (w9) o9.why = w9;
@@ -581,7 +584,8 @@
         overCheck9(k, d.cur == null ? null : String(d.cur));
         if (d.cur != null) { mem[k] = String(d.cur); baseVal[k] = mem[k]; krev[k] = d.rev || krev[k] || 0; }
         else { delete mem[k]; delete baseVal[k]; }
-        if (k === KU9 && d.cur != null && typeof d.uscope === "string") uscope9 = d.uscope;   /* مراجعةُ التكامل W1-R1: القيمةُ المُعادة إسقاطُ هذه العدسة */
+        if (k === KU9 && d.cur != null && typeof d.uscope === "string") uscope9 = d.uscope;
+        if (k === KP9 && d.cur != null && typeof d.pscope === "string") pscope9 = d.pscope;   /* مراجعةُ التكامل W1-R1: القيمةُ المُعادة إسقاطُ هذه العدسة */
         delete pSet[k]; delete pDel[k]; unmark9(k); notify(k);    /* الممنوعُ ممنوعٌ ولو كُتب بعده */
       }
       if (d.why !== "flag") note(fx9 ? usersDupMsg9(fx9) : "لم يُحفظ تعديلك على «" + lbl(k) + "» — " + whyText9(d.why) + ". أُعيدت القيمة كما في الخادم", "#7f1d1d");
@@ -589,7 +593,8 @@
     var cf = j.conflicts || {}, banners = [];
     for (k in cf) {
       var c = cf[k], theirs = c.cur == null ? null : String(c.cur);
-      if (k === KU9 && typeof c.uscope === "string") uscope9 = c.uscope;   /* مراجعةُ التكامل W1-R1: يُدمج تعديلي على إسقاط العدسة الحالية ويُعاد ببصمتها */
+      if (k === KU9 && typeof c.uscope === "string") uscope9 = c.uscope;
+      if (k === KP9 && typeof c.pscope === "string") pscope9 = c.pscope;   /* مراجعةُ التكامل W1-R1: يُدمج تعديلي على إسقاط العدسة الحالية ويُعاد ببصمتها */
       /* «نسختي» هي الأحدث: ما في الطابور إن وُجد، وإلا ما أُرسل في اللقطة */
       var mineS = (k in pSet) ? pSet[k] : snap.set[k];
       overCheck9(k, theirs);                          /* KIVO_264 · المراجعة (A3a): هل بقي فيها ما حفظتُه قبل هذه اللقطة؟ */
@@ -943,7 +948,8 @@
       deniedN9++; deniedK9[x.k] = (deniedK9[x.k] || 0) + 1;
       overCheck9(x.k, x.d.cur == null ? null : String(x.d.cur));
       if (x.d.cur != null) { mem[x.k] = String(x.d.cur); baseVal[x.k] = mem[x.k]; krev[x.k] = x.d.rev || krev[x.k] || 0; } else { delete mem[x.k]; delete baseVal[x.k]; }
-      if (x.k === KU9 && x.d.cur != null && typeof x.d.uscope === "string") uscope9 = x.d.uscope;   /* مراجعةُ التكامل W1-R1 */
+      if (x.k === KU9 && x.d.cur != null && typeof x.d.uscope === "string") uscope9 = x.d.uscope;
+      if (x.k === KP9 && x.d.cur != null && typeof x.d.pscope === "string") pscope9 = x.d.pscope;   /* مراجعةُ التكامل W1-R1 */
       delete pSet[x.k]; delete pDel[x.k]; unmark9(x.k); notify(x.k);   /* KIVO_264 · المراجعة (A2): أُلغي ⇒ لا علامةَ تبقى للكتابة التالية */
     }
     if (!ok) overFlush9(null);
@@ -1373,7 +1379,7 @@
        والمؤشّر لا يتقدّم إلا بعد آخر دفعة؛ وجوابُ /api/changes المبتور عند سقف الخادم (more: 1 · العقد C2) يُتبَع فوراً من آخر مراجعةٍ
        وصلت حتى يكتمل (بسقف 50 دورة). */
     var GET_MAX9 = 80, MORE_MAX9 = 50;
-    function apply9(want, got, evict, changed, us) {
+    function apply9(want, got, evict, changed, us, ps) {
       for (var i = 0; i < want.length; i++) {
         var k = want[i], it = got[k];   /* evict: ما لا يراه الخادمُ لهذا المستخدم أصلاً (ليس في /api/changes?since=0) — غيابُه في الجواب يعني سحبَه */
         if (relationalKey9(k) || invalidScope9(k)) continue;
@@ -1388,7 +1394,8 @@
         if (it.v == null) { if (k in mem) { overCheck9(k, null); delete mem[k]; delete baseVal[k]; changed.push(k); notify(k); } }
         else if (mem[k] !== String(it.v)) { overCheck9(k, String(it.v)); mem[k] = String(it.v); baseVal[k] = mem[k]; changed.push(k); notify(k); }
         if (rv >= (krev[k] || 0)) krev[k] = rv;
-        if (k === KU9 && it.v != null && typeof us === "string") uscope9 = us;   /* مراجعةُ التكامل W1-R1: القائمةُ في الذاكرة الآن إسقاطُ هذه العدسة (والمشغولُ لا يصل هنا) */
+        if (k === KU9 && it.v != null && typeof us === "string") uscope9 = us;
+        if (k === KP9 && it.v != null && typeof ps === "string") pscope9 = ps;   /* مراجعةُ التكامل W1-R1: القائمةُ في الذاكرة الآن إسقاطُ هذه العدسة (والمشغولُ لا يصل هنا) */
       }
     }
     /* جلبُ قائمة مفاتيح بدفعاتٍ ≤ 80 — يعيد ما تغيّر فعلاً؛ وأيُّ دفعةٍ تخفق ترفض الكلّ (فلا يتقدّم مؤشّرٌ على نقص) */
@@ -1401,7 +1408,7 @@
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (j) {
             if (!j || !j.keys || sx9) throw new Error("get");
-            apply9(part, j.keys, evict, changed, j.uscope);
+            apply9(part, j.keys, evict, changed, j.uscope, j.pscope);
             return step(i + GET_MAX9);
           });
       };
