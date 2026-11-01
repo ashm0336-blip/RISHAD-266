@@ -577,10 +577,13 @@ async function cuRead(env, A, q) {
   var employeeJson = JSON.stringify(employeeDoc),
     cte = cuResolvedCte(view === 'moves'),
     latestCte = cuResolvedCte(false),
-    args = [d, cutoff, employeeJson, query, holder, kind];
+    args = [d, cutoff, employeeJson, query, privCustodyHolder(A, d, holder, employeeJson), kind];   // PRIVACY (019u): a holder token the reader got (the cursor keeps the token)
   var label = "COALESCE((SELECT MIN(name) FROM employees e WHERE e.ek=r.hkey),r.holder_name_snapshot,'')";
   var search =
-    "(?4='' OR instr(lower(r.item_name),lower(?4))>0 OR instr(lower(r.serial),lower(?4))>0 OR instr(lower(COALESCE(r.holder_nid_snapshot,'')),lower(?4))>0 OR instr(lower(COALESCE(r.holder_empno_snapshot,'')),lower(?4))>0 OR instr(lower(" +
+    "(?4='' OR instr(lower(r.item_name),lower(?4))>0 OR instr(lower(r.serial),lower(?4))>0 OR " +
+    // PRIVACY (019u): the holder nid/empno snapshots are searched only for a reader who receives them — else the match is an oracle
+    (privPersonalOk(A, d) ? "instr(lower(COALESCE(r.holder_nid_snapshot,'')),lower(?4))>0 OR instr(lower(COALESCE(r.holder_empno_snapshot,'')),lower(?4))>0 OR " : '') +
+    "instr(lower(" +
     label +
     '),lower(?4))>0)';
   var filters = "(?5='' OR r.hkey=?5) AND (?6='' OR r.kind=?6)";
@@ -682,7 +685,7 @@ async function cuRead(env, A, q) {
         in: 0,
         monthlyDmg: 0,
         monthlyLost: 0,
-        topHolders: batch[6].results || [],
+        topHolders: privCustodyRows(A, d, batch[6].results || [], employeeJson),   // PRIVACY (019u): a holder key that is a hidden nid
         maxHeld: 0,
       };
     (batch[5].results || []).forEach(function (r) {
@@ -728,7 +731,7 @@ async function cuRead(env, A, q) {
       month: m,
       view: view,
       items: catalog.map(cuCatalogDto),
-      rows: view === 'catalog' ? [] : privCustodyRows(A, d, mapped),   // PRIVACY batch (019u): holder nid/empno snapshots by purpose
+      rows: view === 'catalog' ? [] : privCustodyRows(A, d, mapped, employeeJson),   // PRIVACY batch (019u): holder nid/empno snapshots by purpose
       total: batch[2].results[0].n,
       summary: summary,
       next: more

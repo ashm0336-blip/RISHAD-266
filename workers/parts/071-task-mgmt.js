@@ -534,6 +534,23 @@ async function tkLinkage(env, A, url) {
     }); }
   return json({ ok: 1, counts: cnt, rows: rows.slice(0, 500), more: rows.length > 500 ? 1 : 0 });
 }
+/* PRIVACY (019u (1b)/(4)): a viewer without the colleague's nid got a row assigned by nid with the token (eid · 'nx:') — the command's
+   ekey/from is resolved to the stored assignee key of that row (b.k · b.id); an 'nx:' token of no stored record is refused */
+async function tkTokBack(env, A, b) {
+  if (!isObj(b) || A.u.role === 'super') return;
+  var D0 = tkDeptOf(A, b.dept), d = D0.d, H = {}, T, S = null, L, f, v, N;
+  if (D0.err) return;
+  H['bsdept:' + d + ':bassam_employees_v1'] = await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1');
+  T = privTok(A, d, H);
+  for (f of ['ekey', 'from']) {
+    v = b[f]; if (typeof v !== 'string') continue;
+    N = T ? T.R[v] : undefined;
+    if (N === undefined) { if (PRIV_NX.test(v)) throw rsError('privacy-hidden', 409); continue; }
+    if (!S) S = parseJson(await opResourceGet(env, tkK(d)), {});
+    L = isObj(S) && Array.isArray(S[b.k]) ? S[b.k] : [];
+    if (tkFind(L, b.id, v) < 0 && tkFind(L, b.id, N) >= 0) b[f] = N;
+  }
+}
 /* ── الموزِّع: من meTasksRoutes (062c) لكل /api/tasks/* ── */
 async function tasksMgmtRoutes(request, env, path, ss) {
   var POSTS = { '/api/tasks/create': tkCreate, '/api/tasks/review': tkReview, '/api/tasks/extend': tkExtend, '/api/tasks/reassign': tkReassign, '/api/tasks/cancel': tkCancel, '/api/tasks/relink': tkRelink,
@@ -561,6 +578,7 @@ async function tasksMgmtRoutes(request, env, path, ss) {
   try {
     if (path === '/api/tasks/recur/run') return await tkRecurRoute(env, request, A, url, B0.b);
     if (path === '/api/tasks/recur') return await tkRecurOp(env, request, A, B0.b);
+    if (path !== '/api/tasks/create') await tkTokBack(env, A, B0.b);
     return await POSTS[path](env, request, A, B0.b);
   } catch (error) {
     if (error && error.rs) return json({ ok: 0, err: error.rs }, error.status || 400);

@@ -6942,10 +6942,13 @@ async function cuRead(env, A, q) {
   var employeeJson = JSON.stringify(employeeDoc),
     cte = cuResolvedCte(view === 'moves'),
     latestCte = cuResolvedCte(false),
-    args = [d, cutoff, employeeJson, query, holder, kind];
+    args = [d, cutoff, employeeJson, query, privCustodyHolder(A, d, holder, employeeJson), kind];   // PRIVACY (019u): a holder token the reader got (the cursor keeps the token)
   var label = "COALESCE((SELECT MIN(name) FROM employees e WHERE e.ek=r.hkey),r.holder_name_snapshot,'')";
   var search =
-    "(?4='' OR instr(lower(r.item_name),lower(?4))>0 OR instr(lower(r.serial),lower(?4))>0 OR instr(lower(COALESCE(r.holder_nid_snapshot,'')),lower(?4))>0 OR instr(lower(COALESCE(r.holder_empno_snapshot,'')),lower(?4))>0 OR instr(lower(" +
+    "(?4='' OR instr(lower(r.item_name),lower(?4))>0 OR instr(lower(r.serial),lower(?4))>0 OR " +
+    // PRIVACY (019u): the holder nid/empno snapshots are searched only for a reader who receives them — else the match is an oracle
+    (privPersonalOk(A, d) ? "instr(lower(COALESCE(r.holder_nid_snapshot,'')),lower(?4))>0 OR instr(lower(COALESCE(r.holder_empno_snapshot,'')),lower(?4))>0 OR " : '') +
+    "instr(lower(" +
     label +
     '),lower(?4))>0)';
   var filters = "(?5='' OR r.hkey=?5) AND (?6='' OR r.kind=?6)";
@@ -7047,7 +7050,7 @@ async function cuRead(env, A, q) {
         in: 0,
         monthlyDmg: 0,
         monthlyLost: 0,
-        topHolders: batch[6].results || [],
+        topHolders: privCustodyRows(A, d, batch[6].results || [], employeeJson),   // PRIVACY (019u): a holder key that is a hidden nid
         maxHeld: 0,
       };
     (batch[5].results || []).forEach(function (r) {
@@ -7093,7 +7096,7 @@ async function cuRead(env, A, q) {
       month: m,
       view: view,
       items: catalog.map(cuCatalogDto),
-      rows: view === 'catalog' ? [] : privCustodyRows(A, d, mapped),   // PRIVACY batch (019u): holder nid/empno snapshots by purpose
+      rows: view === 'catalog' ? [] : privCustodyRows(A, d, mapped, employeeJson),   // PRIVACY batch (019u): holder nid/empno snapshots by purpose
       total: batch[2].results[0].n,
       summary: summary,
       next: more
@@ -8608,7 +8611,11 @@ async function empPrepareTransition(env, A, input) {
     if (replace && !(A.enf ? enfHeld(A, d, 'import.replace') : actsHeldOn(A, d, 'admin/import', ['del'])))
       throw cuError('employee-transition-forbidden', 403);
   }
-  var after = empClone(input.finalRows),
+  /* PRIVACY (019u): the context reached a delete-only holder projected (019e GET) — hidden fields come back from storage before any
+     rule; one sent with another value, or an unknown 'nx:' token, is refused (lossless, never silently applied) */
+  var stP = {}, rows0 = privPersonalOk(A, d) ? input.finalRows : privEmpIn(A, d, input.finalRows, context.employees, stP, 1);
+  if (stP.bad) throw cuError('privacy-hidden', 409);
+  var after = empClone(rows0),
     before = context.employees,
     removed = empTransitionValidateRows(before, after, input.intent, mode),
     values = {},
@@ -11069,6 +11076,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
     if (request.method === 'GET') {
       var context = await empTransitionContext(env, A, url.searchParams.get('dept') || '', url.searchParams.get('intent') || '');
       context.base.epoch = env.__restoreEpoch === undefined ? await rsEpoch(env) : env.__restoreEpoch;
+      context.employees = privEmpOut(A, context.dept, context.employees);   // PRIVACY (019u): personal fields by purpose (a delete-only holder)
       return json(context);
     }
     if (request.method !== 'POST') throw rsError('method', 405);
@@ -18652,6 +18660,11 @@ async function opExport(env,request,url,session) {
    (5) Award records (019m): contact fields phone/email/comp and the search by employee number reach (1)'s audience, the person
        himself and the award-results managers (award.res.edit|approve|reject|delete|status · legacy award/res edit|approve|del).
        Exports (custody holder snapshots, award records) follow the same rules.
+   (8) Closure (after 2cf985f): the employee delete context (019e GET /api/employees/transition) is projected like (1) and its commit
+       (019c) restores hidden fields from storage, refusing a changed one (privEmpIn strict); the custody search (019a) matches the holder
+       nid/empno snapshots only for (1)'s audience; custody holder keys that are a hidden nid (old data) are sent as the (4) token
+       (privCustodyRows · privCustodyHolder maps an 'nx:' filter back); task commands resolve the token the reader got to the row's stored
+       assignee key (071 tkTokBack). NOT changed: the accounts list ekey (the session/authz/permission-registry binding key) — see report.
    Write (privIn): a hidden part ABSENT from the incoming value is restored from the current value (field order of the stored record
    kept: a record equal to the stored one is the stored object); a hidden part PRESENT in the incoming value is left as sent, so the
    existing rules judge it (an unauthorised change is denied, never silently applied). Super: unchanged both ways. */
@@ -18723,21 +18736,25 @@ function privEmpOut(A, d, v) {
     return o;
   });
 }
-function privEmpIn(A, d, n, c, st) {
+/* strict (employee transition 019c): a hidden field sent with a value other than the stored one ⇒ st.bad (not judged by rules there) */
+function privEmpIn(A, d, n, c, st, strict) {
   if (!Array.isArray(n) || !Array.isArray(c)) return n;
-  var by = nmap(), X = privNx(d, c), R = nmap(), i;
+  var by = nmap(), X = privNx(d, c), R = nmap(), i, ck = function (e) { return e.eid != null && e.eid !== '' ? String(e.eid) : e.nid == null || e.nid === '' ? '\u0001' + String(e.name == null ? '' : e.name) : ''; };
   for (i = 0; i < c.length; i++) {
-    if (isObj(c[i]) && c[i].eid != null && c[i].eid !== '' && by[String(c[i].eid)] === undefined) by[String(c[i].eid)] = c[i];
+    if (isObj(c[i]) && ck(c[i]) && by[ck(c[i])] === undefined) by[ck(c[i])] = c[i];   /* eid · else (no nid either) the name, as 019c */
     if (X[i]) R[X[i]] = c[i];
   }
   return privMap(n, function (e) {
-    var s = isObj(e) && e.eid != null && e.eid !== '' ? by[String(e.eid)] : null;
+    var s = isObj(e) && ck(e) ? by[ck(e)] : null, h;
     if (isObj(e) && typeof e.nid === 'string' && PRIV_NX.test(e.nid)) {   /* (1b) the token back to the stored nid of that record */
       var t = R[e.nid];
       if (!t || (s && s !== t)) { st.bad = 1; return e; }
       s = t; e = privCopy(e); e.nid = s.nid;
     }
-    return s ? privRestore(e, s, privEmpHidden(A, d, s)) : e;
+    if (!s) return e;
+    h = privEmpHidden(A, d, s);
+    if (strict && h.some(function (f) { return privOwn(e, f) && !deq(e[f], s[f]); })) st.bad = 1;
+    return privRestore(e, s, h);
   });
 }
 /* daily report: roster rows (days → shifts → roster[]) carry empno */
@@ -19003,16 +19020,26 @@ async function privRestoreBlanks(env, cur, keys, domains) {
   return out;
 }
 /* custody read (019a cuRead): each row carries the holder's nid/empno snapshot — same rule (unit managers · employees-data writers · himself) */
-function privCustodyRows(A, d, rows) {
+/* empRaw: the register as read (019a) — a holder key that is a hidden nid (old data) is sent as the token of (1b)/(4) (eid · 'nx:') */
+function privCustodyRows(A, d, rows, empRaw) {
   if (!Array.isArray(rows) || !A || !A.u || privPersonalOk(A, d)) return rows;
-  var me = String(A.u.ekey || '');
+  var me = String(A.u.ekey || ''), H = {}; H['bsdept:' + d + ':' + PRIV_EMP_RES] = empRaw;
+  var T = empRaw == null ? null : privTok(A, d, H), tk = function (o, k) { if (T && o[k] != null && T.M[String(o[k])] !== undefined) o[k] = T.M[String(o[k])]; };
   return rows.map(function (r) {
+    if (isObj(r) && !isObj(r.snapshot) && T && T.M[String(r.holderKey)] !== undefined) { r = privCopy(r); tk(r, 'holderKey'); return r; }   /* summary.topHolders */
     if (!isObj(r) || !isObj(r.snapshot)) return r;
     var hk = String(r.holderKey != null ? r.holderKey : (r.eid != null ? r.eid : ''));
     if (me && (hk === me || String(r.snapshot.eid || '') === me)) return r;
-    if (!r.snapshot.nid && !r.snapshot.empno) return r;
-    var o = privCopy(r), s = privCopy(r.snapshot); if (privOwn(s, 'nid')) s.nid = ''; if (privOwn(s, 'empno')) s.empno = ''; o.snapshot = s; return o;
+    var o = privCopy(r), s = privCopy(r.snapshot); if (privOwn(s, 'nid')) s.nid = ''; if (privOwn(s, 'empno')) s.empno = ''; o.snapshot = s;
+    ['holderKey', 'eid', 'hid'].forEach(function (k) { tk(o, k); }); tk(s, 'eid');
+    return deq(o, r) ? r : o;
   });
+}
+/* the holder filter of the custody read: a token back to the stored key (only 'nx:' — an eid is itself a holder key) */
+function privCustodyHolder(A, d, h, empRaw) {
+  var H = {}; H['bsdept:' + d + ':' + PRIV_EMP_RES] = empRaw;
+  var T = PRIV_NX.test(h) && A && A.u && A.u.role !== 'super' ? privTok(A, d, H) : null;
+  return T && T.R[h] !== undefined ? T.R[h] : h;
 }
 /* ── entry points: raw JSON text in, raw JSON text out (unchanged text when nothing is hidden) ── */
 function privOut(A, k, raw, have) {
@@ -27001,6 +27028,23 @@ async function tkLinkage(env, A, url) {
     }); }
   return json({ ok: 1, counts: cnt, rows: rows.slice(0, 500), more: rows.length > 500 ? 1 : 0 });
 }
+/* PRIVACY (019u (1b)/(4)): a viewer without the colleague's nid got a row assigned by nid with the token (eid · 'nx:') — the command's
+   ekey/from is resolved to the stored assignee key of that row (b.k · b.id); an 'nx:' token of no stored record is refused */
+async function tkTokBack(env, A, b) {
+  if (!isObj(b) || A.u.role === 'super') return;
+  var D0 = tkDeptOf(A, b.dept), d = D0.d, H = {}, T, S = null, L, f, v, N;
+  if (D0.err) return;
+  H['bsdept:' + d + ':bassam_employees_v1'] = await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1');
+  T = privTok(A, d, H);
+  for (f of ['ekey', 'from']) {
+    v = b[f]; if (typeof v !== 'string') continue;
+    N = T ? T.R[v] : undefined;
+    if (N === undefined) { if (PRIV_NX.test(v)) throw rsError('privacy-hidden', 409); continue; }
+    if (!S) S = parseJson(await opResourceGet(env, tkK(d)), {});
+    L = isObj(S) && Array.isArray(S[b.k]) ? S[b.k] : [];
+    if (tkFind(L, b.id, v) < 0 && tkFind(L, b.id, N) >= 0) b[f] = N;
+  }
+}
 /* ── الموزِّع: من meTasksRoutes (062c) لكل /api/tasks/* ── */
 async function tasksMgmtRoutes(request, env, path, ss) {
   var POSTS = { '/api/tasks/create': tkCreate, '/api/tasks/review': tkReview, '/api/tasks/extend': tkExtend, '/api/tasks/reassign': tkReassign, '/api/tasks/cancel': tkCancel, '/api/tasks/relink': tkRelink,
@@ -27028,6 +27072,7 @@ async function tasksMgmtRoutes(request, env, path, ss) {
   try {
     if (path === '/api/tasks/recur/run') return await tkRecurRoute(env, request, A, url, B0.b);
     if (path === '/api/tasks/recur') return await tkRecurOp(env, request, A, B0.b);
+    if (path !== '/api/tasks/create') await tkTokBack(env, A, B0.b);
     return await POSTS[path](env, request, A, B0.b);
   } catch (error) {
     if (error && error.rs) return json({ ok: 0, err: error.rs }, error.status || 400);

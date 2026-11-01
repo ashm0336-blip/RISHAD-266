@@ -545,7 +545,11 @@ async function empPrepareTransition(env, A, input) {
     if (replace && !(A.enf ? enfHeld(A, d, 'import.replace') : actsHeldOn(A, d, 'admin/import', ['del'])))
       throw cuError('employee-transition-forbidden', 403);
   }
-  var after = empClone(input.finalRows),
+  /* PRIVACY (019u): the context reached a delete-only holder projected (019e GET) — hidden fields come back from storage before any
+     rule; one sent with another value, or an unknown 'nx:' token, is refused (lossless, never silently applied) */
+  var stP = {}, rows0 = privPersonalOk(A, d) ? input.finalRows : privEmpIn(A, d, input.finalRows, context.employees, stP, 1);
+  if (stP.bad) throw cuError('privacy-hidden', 409);
+  var after = empClone(rows0),
     before = context.employees,
     removed = empTransitionValidateRows(before, after, input.intent, mode),
     values = {},

@@ -721,6 +721,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
     if (request.method === 'GET') {
       var context = await empTransitionContext(env, A, url.searchParams.get('dept') || '', url.searchParams.get('intent') || '');
       context.base.epoch = env.__restoreEpoch === undefined ? await rsEpoch(env) : env.__restoreEpoch;
+      context.employees = privEmpOut(A, context.dept, context.employees);   // PRIVACY (019u): personal fields by purpose (a delete-only holder)
       return json(context);
     }
     if (request.method !== 'POST') throw rsError('method', 405);
