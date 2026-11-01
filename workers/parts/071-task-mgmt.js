@@ -517,7 +517,9 @@ async function tkLinkage(env, A, url) {
   var D0 = tkDeptOf(A, url.searchParams.get('dept')); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
   var ym = String(url.searchParams.get('ym') || ''); if (ym && !METK_YM_RX.test(ym)) return tkNo(400, 'bad-ym').err;
   if (!canRead(A, K)) return tkNo(403, 'forbidden').err;
-  var S = parseJson(await opResourceGet(env, K), {}), emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'));
+  var KE0 = 'bsdept:' + d + ':bassam_employees_v1', S = parseJson(await opResourceGet(env, K), {}), H0 = {}; H0[KE0] = await opResourceGet(env, KE0);
+  /* PRIVACY (019u (1b)/(4)): a row linked by nid shows the token the reader got in the register (eid · 'nx:'), never a nid he may not see */
+  var emps = tkEmps(H0[KE0]), PT = privTok(A, d, H0), pt = function (t) { return PT && PT.M[t] !== undefined ? PT.M[t] : t; };
   var cnt = { eid: 0, nid: 0, name: 0, unknown: 0, ambiguous: 0, none: 0 }, rows = [], dk;
   if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (ym && tkYm(dk) !== ym.replace(/-0(\d)$/, '-$1'))) continue;
     S[dk].forEach(function (r, i) {
@@ -525,7 +527,7 @@ async function tkLinkage(env, A, url) {
       var lk = tkLink(emps, r[14]); cnt[lk.by]++;
       if (lk.by === 'eid' || lk.by === 'none') return;
       var x = tkX(r) || {};
-      rows.push({ k: dk, i: i, id: r[13], t: String(r[0] || '').slice(0, 300), tok: String(r[14]).slice(0, 160), by: lk.by, st: String(r[3] || ''), asg: x.asg || '',
+      rows.push({ k: dk, i: i, id: r[13], t: String(r[0] || '').slice(0, 300), tok: pt(String(r[14])).slice(0, 160), by: lk.by, st: String(r[3] || ''), asg: x.asg || '',
         emp: lk.emp ? { eid: String(lk.emp.eid || ''), name: String(lk.emp.name || '') } : null,
         cand: lk.cand && lk.cand.eid ? { eid: String(lk.cand.eid), name: String(lk.cand.name || '') } : null,
         label: lk.by === 'nid' ? 'مرتبطةٌ برقم الهوية (وقتَ القراءة)' : 'غير مرتبطة' });

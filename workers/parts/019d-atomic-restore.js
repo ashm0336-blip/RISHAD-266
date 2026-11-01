@@ -888,6 +888,8 @@ async function rsPrepare(env, A, body, meta, internal) {
   keys = selection.keys;
   del = selection.del;
   base = selection.base;
+  var blanks = await privRestoreBlanks(env, inputKeys, keys, selection.domains);   // PRIVACY (019u (7)): a copy that would blank stored personal data — before any write
+  if (blanks.length) throw Object.assign(rsError('restore-personal-blank', 409), { details: { n: blanks.length, at: blanks.slice(0, 20) } });
   var physicalDeletes =
     body.scope.kind === 'full' && body.mode === 'replace'
       ? Object.keys(inputKeys).filter(function (k) {

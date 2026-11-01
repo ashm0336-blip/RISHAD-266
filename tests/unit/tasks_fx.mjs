@@ -173,7 +173,7 @@ export function withPatch(w, patchFile) {
    فتسقط اختباراتُ المهام كلُّها (160) في المستودع الرسمي المصدَّر حيث لا pk263 */
 const SHELL = (w) => { const d = path.join(path.dirname(w), 'index.html'); return fs.existsSync(d) ? d : path.join(DIST, 'index.html'); };
 let inst = 0;
-export async function world({ worker, mode = 'legacy' } = {}) {
+export async function world({ worker, mode = 'legacy', beforeCutover } = {}) {
   const EX = mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {};
   const env = makeTestEnv(EX);
   if (worker) {
@@ -191,6 +191,7 @@ export async function world({ worker, mode = 'legacy' } = {}) {
   if (['9','10'].includes(schema)) await installBusinessFixture(env);
   const store = tasksStore();
   await applySql(env.DB, p0Sql(store));
+  if (beforeCutover) await beforeCutover(env);   /* optional: shape the legacy KV seed before the real cutover (privacy_noeid) */
   if (env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '10') await installOperationalFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const login = async (un, pw) => { const r = await C.login(un, pw); if (!r.ok) throw new Error('login ' + un + ' ' + JSON.stringify(r.j)); return r; };

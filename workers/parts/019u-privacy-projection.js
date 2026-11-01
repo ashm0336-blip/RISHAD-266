@@ -7,8 +7,16 @@
          gm of a branch above) · holders of a write action on the employees-data page (emp.record.create|edit · legacy emps/data add|edit).
        Everyone else who reads the register for an operational page (schedule, daily report, rounds, plan, tasks, irshad, seized,
        award, readiness, emps/data view) gets the working fields: eid, name, type, work, shift, group, job, account.
-         PRIV_EMP_F: nid (only when the record has an eid — a legacy record without eid is identified by nid on every page),
-                     phone, email, empno (initial password), contact.
+         PRIV_EMP_F: nid, phone, email, empno (initial password), contact.
+       (1b) A historical record WITHOUT eid (reachable: the client gives every new record an eid, but older records were kept as they
+            were — the typed codec stores eid as optional (019q ops_employee_record), the cutover 019s copies records verbatim and assigns
+            none, 019c keys such a record by name) used to keep its nid, its only identity. For these readers its nid is sent as an
+            opaque token 'nx:'+20 hex of SHA-256('nx|'+unit+'|'+name+'|'+ordinal among the eid-less records of that name) (privNx): it
+            is derived from the name the reader already sees, never from the nid, so it cannot be reversed to the nid; it is stable
+            across reads while the name is unchanged. Every exact occurrence of that nid in the references of (4) is sent as the same
+            token; on save the token is mapped back to the stored nid (the record by its token in the stored register; references as
+            in (4)). A token that names no stored record (stale after a rename, forged) is refused (privacy-hidden); exports carry the
+            token too and are marked redacted.
          gender: kept also for readers of the monthly schedule (staff) and the daily report (dreport): both pages count and show the
                  male/female distribution of the shift (modules/staff/logic.js · modules/dreport/logic.js). Removed elsewhere.
    (2) Daily report bsdept:<d>:bassam_dreport_v1 — roster rows carry a copy of empno (pulled from the register): same rule as (1).
@@ -61,8 +69,7 @@ function privSelfRec(A, e) {
 /* hidden fields of record e for the actor in unit d ([] = sees all) */
 function privEmpHidden(A, d, e) {
   if (!isObj(e) || privPersonalOk(A, d) || privSelfRec(A, e)) return [];
-  var out = [], i, f;
-  for (i = 0; i < PRIV_EMP_F.length; i++) { f = PRIV_EMP_F[i]; if (f === 'nid' && (e.eid == null || e.eid === '')) continue; out.push(f); }
+  var out = PRIV_EMP_F.slice();
   if (!privGenderOk(A, d)) out.push('gender');
   return out;
 }
@@ -80,15 +87,40 @@ function privRestore(n, c, hid) {
   if (!o) return n;
   return deq(o, c) ? c : o;
 }
-function privEmpOut(A, d, v) {
-  return Array.isArray(v) ? privMap(v, function (e) { return privStrip(e, privEmpHidden(A, d, e)); }) : v;
+/* (1b) tokens of the eid-less records of list L that carry a nid: [i] = 'nx:…' (else undefined) */
+var PRIV_NX = /^nx:[0-9a-f]{20}$/;
+function privNoEid(e) { return isObj(e) && (e.eid == null || e.eid === '') && e.nid != null && e.nid !== ''; }
+function privNx(d, L) {
+  var seen = nmap();
+  return (Array.isArray(L) ? L : []).map(function (e) {
+    if (!privNoEid(e)) return;
+    var nm = String(e.name == null ? '' : e.name), k = seen[nm] = (seen[nm] || 0) + 1;
+    return 'nx:' + KIVO_IDENTITY_MIGRATION.sha256Hex('nx|' + d + '|' + nm + '|' + k).slice(0, 20);
+  });
 }
-function privEmpIn(A, d, n, c) {
+function privEmpOut(A, d, v) {
+  if (!Array.isArray(v)) return v;
+  var X = privNx(d, v);
+  return privMap(v, function (e, i) {
+    var h = privEmpHidden(A, d, e), o = privStrip(e, h);
+    if (X[i] && h.indexOf('nid') >= 0) privPut(o, 'nid', X[i]);   /* o is a copy: nid was stripped */
+    return o;
+  });
+}
+function privEmpIn(A, d, n, c, st) {
   if (!Array.isArray(n) || !Array.isArray(c)) return n;
-  var by = nmap(), i;
-  for (i = 0; i < c.length; i++) if (isObj(c[i]) && c[i].eid != null && c[i].eid !== '' && by[String(c[i].eid)] === undefined) by[String(c[i].eid)] = c[i];
+  var by = nmap(), X = privNx(d, c), R = nmap(), i;
+  for (i = 0; i < c.length; i++) {
+    if (isObj(c[i]) && c[i].eid != null && c[i].eid !== '' && by[String(c[i].eid)] === undefined) by[String(c[i].eid)] = c[i];
+    if (X[i]) R[X[i]] = c[i];
+  }
   return privMap(n, function (e) {
     var s = isObj(e) && e.eid != null && e.eid !== '' ? by[String(e.eid)] : null;
+    if (isObj(e) && typeof e.nid === 'string' && PRIV_NX.test(e.nid)) {   /* (1b) the token back to the stored nid of that record */
+      var t = R[e.nid];
+      if (!t || (s && s !== t)) { st.bad = 1; return e; }
+      s = t; e = privCopy(e); e.nid = s.nid;
+    }
     return s ? privRestore(e, s, privEmpHidden(A, d, s)) : e;
   });
 }
@@ -233,10 +265,10 @@ function privTok(A, d, have) {
   if (c[d] !== undefined) return c[d];
   if (privPersonalOk(A, d)) return (c[d] = null);
   if (!have || !privOwn(have, rk)) return null;
-  var L = parseJson(have[rk], null), M = null, R = null;
-  if (Array.isArray(L)) L.forEach(function (e) {
+  var L = parseJson(have[rk], null), M = null, R = null, X = privNx(d, L);
+  if (Array.isArray(L)) L.forEach(function (e, i) {
     if (!isObj(e) || e.nid == null || e.nid === '' || privEmpHidden(A, d, e).indexOf('nid') < 0) return;
-    var n = String(e.nid), x = String(e.eid);
+    var n = String(e.nid), x = X[i] || String(e.eid);   /* (1b) an eid-less record: its token */
     if (n === x) return;
     if (!M) { M = nmap(); R = nmap(); }
     if (M[n] === undefined) M[n] = x;
@@ -275,9 +307,9 @@ function privTokIn(n, c, T, st) {
     if (!privScalar(x)) return privTokIn(x, cx, T, st);
     var s = String(x), N = R[s], h = function (t) { for (var j = 0; cA && j < cA.length; j++) if (privScalar(cA[j]) && String(cA[j]) === t) return cA[j]; };
     if (M[s] !== undefined) { if (!((privScalar(cx) && String(cx) === s) || h(s) !== undefined)) st.bad = 1; return x; }
-    if (N === undefined) return x;
+    if (N === undefined) { if (PRIV_NX.test(s) && !(privScalar(cx) && String(cx) === s)) st.bad = 1; return x; }   /* (1b) a token of no record */
     if (privScalar(cx) && String(cx) === N) return cx;
-    return cA && h(s) === undefined && h(N) !== undefined ? h(N) : x;
+    return cA && h(s) === undefined && h(N) !== undefined ? h(N) : PRIV_NX.test(s) ? N : x;   /* (1b) a token is never stored */
   };
   if (Array.isArray(n)) { var cA = Array.isArray(c) ? c : []; return privMap(n, function (x, i) { return f(x, cA[i], cA); }); }
   if (!isObj(n)) return n;
@@ -286,7 +318,7 @@ function privTokIn(n, c, T, st) {
     if (!privOwn(n, k)) continue;
     kk = k;
     if (M[k] !== undefined) { if (!cO || !privOwn(cO, k) || !deq(cO[k], n[k])) st.bad = 1; }
-    else if (R[k] !== undefined && cO && privOwn(cO, R[k]) && !privOwn(cO, k)) kk = R[k];
+    else if (R[k] !== undefined ? PRIV_NX.test(k) || (cO && privOwn(cO, R[k]) && !privOwn(cO, k)) : PRIV_NX.test(k) && !(cO && privOwn(cO, k))) { if (R[k] === undefined) st.bad = 1; else kk = R[k]; }
     y = f(n[k], cO && privOwn(cO, kk) ? cO[kk] : undefined, null);
     if (kk !== k || y !== n[k]) ch++;
     privPut(o, kk, y);
@@ -316,6 +348,43 @@ function privRowsBlank(A, dom, kind, cols, keyCol) {
 function privRedacted(b) {
   var D = isObj(b) && isObj(b.domains) ? b.domains : {};
   return !!(isObj(b) && isObj(b.manifest) && b.manifest.redacted) || Object.keys(D).some(function (k) { return [].concat(D[k]).some(function (x) { return isObj(x) && !!x.redacted; }); });
+}
+/* (7) restore guard. The marker of (6) can be removed by hand, so a restore (019d rsPrepare — the 019f conversion path ends there too)
+   also compares the copy with what is stored, before any plan or write, for every actor (super included — no override): a record
+   present in both whose stored personal field is non-empty and is empty, missing or an 'nx:' token (1b) in the copy ⇒ restore-personal-blank
+   (409, details: count and the first places as key:record:field — never a value). Records are matched by: register eid, else name
+   (019c empRecordKey) — fields PRIV_EMP_F + gender · report roster day/shift/ekey — empno · custody movement move_id — holder
+   nid/empno snapshot · award record record_id — phone/email/employee_number (the fields (2)/(1)/privRowsBlank remove).
+   Limits: a copy that CHANGES such a value (non-empty) restores normally; a record absent from the copy (deleted since, added after the
+   export, a roster day/shift the copy lacks) is not judged; clearing a field is done by editing, not by a restore — to restore an older
+   full copy taken before a field was filled, clear that field by editing first (or re-enter it after). Merge: the documents applied. */
+function privFull(x) { return x != null && x !== '' && !(typeof x === 'string' && PRIV_NX.test(x)); }
+function privLoses(c, n, kf, F, out, tag) {
+  if (!Array.isArray(c) || !Array.isArray(n)) return;
+  var by = nmap();
+  n.forEach(function (r) { var k = isObj(r) && kf(r); if (k && by[k] === undefined) by[k] = r; });
+  c.forEach(function (s) { var k = isObj(s) && kf(s), r = k && by[k]; if (isObj(r)) F.forEach(function (f) { if (privFull(s[f]) && !privFull(r[f])) out.push(tag + ':' + k + ':' + f); }); });
+}
+async function privRestoreBlanks(env, cur, keys, domains) {
+  var out = [], k, rn, c, n, i, D, x, q = function (sql, d) { return env.DB.prepare(sql).bind(d).all().then(function (r) { return r.results || []; }); };
+  for (k in keys) {
+    rn = resName(k);
+    if (!parseKey(k).dept || cur[k] == null || (rn !== PRIV_EMP_RES && rn !== PRIV_DR_RES)) continue;
+    c = parseJson(cur[k], null); n = parseJson(keys[k], null);
+    if (rn === PRIV_EMP_RES) privLoses(c, n, function (e) { return String(e.eid || e.name || ''); }, PRIV_EMP_F.concat('gender'), out, k);
+    else privDrRoster(c, function (R, dk, sh) {
+      var y = isObj(n) && isObj(n[dk]) && isObj(n[dk].shifts) && isObj(n[dk].shifts[sh]) ? n[dk].shifts[sh].roster : [];
+      privLoses(R, y, function (r) { return r.ekey == null ? '' : String(r.ekey); }, ['empno'], out, k + ':' + dk + ':' + sh);
+      return R;
+    });
+  }
+  D = [].concat(domains.custody || []);
+  for (i = 0; i < D.length; i++) if (isObj(D[i]) && isObj(D[i].rows) && (x = bdScope(D[i])))
+    privLoses(await q('SELECT move_id,holder_nid_snapshot,holder_empno_snapshot FROM custody_movements WHERE department_id=?1', x), D[i].rows.moves, function (r) { return String(r.move_id); }, ['holder_nid_snapshot', 'holder_empno_snapshot'], out, 'custody:' + x);
+  D = [].concat(domains.awards || []);
+  for (i = 0; i < D.length; i++) if (isObj(D[i]) && isObj(D[i].rows) && (x = bdScope(D[i])))
+    privLoses(await q('SELECT record_id,phone,email,employee_number FROM award_records WHERE department_id=?1', x), D[i].rows.records, function (r) { return String(r.record_id); }, ['phone', 'email', 'employee_number'], out, 'awards:' + x);
+  return out;
 }
 /* custody read (019a cuRead): each row carries the holder's nid/empno snapshot — same rule (unit managers · employees-data writers · himself) */
 function privCustodyRows(A, d, rows) {
@@ -353,8 +422,8 @@ function privIn(A, k, nextRaw, curRaw) {
   n = parseJson(String(nextRaw), undefined); c = parseJson(String(curRaw), undefined);
   if (n === undefined || c === undefined) return nextRaw;
   m = T ? privTokIn(n, c, T, st) : n;
+  m = !P.dept ? privPermsIn(A, m, c) : rn === PRIV_EMP_RES ? privEmpIn(A, P.dept, m, c, st) : rn === PRIV_DR_RES ? privDrIn(A, P.dept, m, c) : m;
   if (st.bad) return PRIV_NO;
-  m = !P.dept ? privPermsIn(A, m, c) : rn === PRIV_EMP_RES ? privEmpIn(A, P.dept, m, c) : rn === PRIV_DR_RES ? privDrIn(A, P.dept, m, c) : m;
   if (m === n) return nextRaw;
   return deq(m, c) ? String(curRaw) : JSON.stringify(m);
 }
