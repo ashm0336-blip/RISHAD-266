@@ -64,7 +64,7 @@ async function opExport(env,request,url,session) {
   try {
     for(var attempt=0;attempt<3;attempt++){
       var firstRev=await bdGlobalRevision(env),reference=await rsReferenceSnapshot(env,session.uid),A=reference.A,
-        requested=url.searchParams.get('dept')||'',departments=(A.depts||[]).map(function(d){return d.id;}),domains=[];
+        requested=url.searchParams.get('dept')||'',departments=(A.depts||[]).map(function(d){return d.id;}),domains=[],redacted=[];
       if(!requested&&A.u.role!=='super')throw rsError('operations-export-permission',403);
       if(requested&&!departments.includes(requested))throw rsError('operations-export-scope',403);
       if(requested)departments=[requested];
@@ -75,14 +75,15 @@ async function opExport(env,request,url,session) {
           var k='bsdept:'+d+':'+def.resource,raw=reference.inputKeys[k];
           if(!canRead(A,k))throw rsError('operations-export-permission',403);
           if(A.enf&&raw!=null)raw=enfProjectStr(A,k,raw,refs);
-          raw=privOut(A,k,raw,reference.inputKeys);   // PRIVACY batch (019u): exports follow the read rule
-          var prepared=opPrepared(def.resource),domain=ocConvert(prepared,d,def.resource,raw==null?undefined:JSON.parse(raw),raw!=null);
-          domains.push(opBackupDomain(prepared,domain));
+          var raw0=raw;raw=privOut(A,k,raw,reference.inputKeys);   // PRIVACY batch (019u): exports follow the read rule · the copy marked redacted
+          var prepared=opPrepared(def.resource),domain=ocConvert(prepared,d,def.resource,raw==null?undefined:JSON.parse(raw),raw!=null),dom=opBackupDomain(prepared,domain);
+          if(raw!==raw0){dom.redacted=true;redacted.push(d+':'+def.resource);}
+          domains.push(dom);
         }
       }
       await reference.env.DB.batch(rsReferenceGuards(reference.env,reference));
       var lastRev=await bdGlobalRevision(reference.env);if(firstRev!==lastRev)continue;
-      return json({ok:1,version:1,globalRev:lastRev,epoch:Number(reference.inputMeta.restore_epoch||0),domains:domains});
+      return json(Object.assign({ok:1,version:1,globalRev:lastRev,epoch:Number(reference.inputMeta.restore_epoch||0),domains:domains},redacted.length?{redacted:redacted}:{}));
     }
     throw rsError('operations-export-conflict',409);
   }catch(error){

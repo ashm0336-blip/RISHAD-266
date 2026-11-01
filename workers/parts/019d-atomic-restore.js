@@ -737,6 +737,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   ]);
   if (body.version !== 1 || typeof body.requestId !== 'string' || !/^[-A-Za-z0-9_]{8,100}$/.test(body.requestId))
     throw rsError('restore-shape');
+  if (privRedacted(body)) throw rsError('restore-redacted', 409);   // PRIVACY batch (019u): before any shape, plan or write
   rsShape(body.scope, ['kind', 'departmentId']);
   if (
     !['full', 'dept'].includes(body.scope.kind) ||

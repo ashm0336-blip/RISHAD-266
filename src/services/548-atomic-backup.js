@@ -42,6 +42,7 @@
       'restore-image-body-missing': 'النسخة تشير إلى صورة غير موجودة؛ أُوقفت الاستعادة كاملةً',
       'restore-credential-change': 'النسخة تغيّر بيانات دخول حساب قائم؛ أُوقفت لحماية كلمات المرور الحالية',
       'restore-self-identity-change': 'النسخة تغيّر اسم دخول صاحب الجلسة؛ غيّره من إعدادات الحساب بالمصادقة الحالية',
+      'restore-redacted': 'هذه النسخة صُدّرت دون البيانات الشخصية فلا تصلح للاستعادة — استعِد نسخةً كاملة صدّرها مدير الوحدة أو مدير النظام',
     };
     return {
       ok: 0,
@@ -147,6 +148,10 @@
     if (!stamp) return failure('session', 401);
     if (!id || !file || typeof file !== 'object' || !['replace', 'merge'].includes(opt.mode) || !['full', 'dept'].includes(scope.kind))
       return failure('invalid');
+    /* PRIVACY batch (019u privRedacted): a copy exported without personal data is refused before any request (the server refuses it too) */
+    var fd = file.domains && typeof file.domains === 'object' ? file.domains : {};
+    if ((file.manifest && file.manifest.redacted) || Object.keys(fd).some(function (k) { return [].concat(fd[k]).some(function (x) { return !!(x && x.redacted); }); }))
+      return failure('restore-redacted', 409);
     var reason = typeof opt.reason === 'string' ? opt.reason.trim() : await askReason(scope);
     if (!reason) return failure('reason', 403);
     if (!same(stamp)) return failure('session', 401);

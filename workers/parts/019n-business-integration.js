@@ -109,15 +109,15 @@ async function bdExport(env,actor,url,name) {
     var departments=(fresh.depts||[]).map(function(d){return d.id;});
     if(departments.some(function(d){return typeof d!=='string'||!d||d.includes(':');})||new Set(departments).size!==departments.length)throw rsError('domain-export-departments');
     if(requested&&!departments.includes(requested)) throw rsError('domain-export-scope',403);
-    var depts=requested?[requested]:departments.slice().sort(), domains=[], epoch=await rsEpoch(env);
+    var depts=requested?[requested]:departments.slice().sort(), domains=[], epoch=await rsEpoch(env), redacted=[];
     if(!requested&&name==='awards') depts.push('');
     for(var dept of depts) {
       var ctx=await def.context(env,fresh,dept,{write:true,global:dept===''}), k=dept===''?AW_RES[1]:def.key(dept,0);
       if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
       var readResources=(name==='seized'?def.resources.slice(0,5):def.resources).filter(function(_,i){return dept!==''||i>0;});
       if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
-      var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose
-      if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept))exported.rows.records=privRowsBlank(ctx.A,exported.rows.records,['phone','email','employee_number'],'employee_key');
+      var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose; the copy marked redacted
+      if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept)&&privRowsBlank(ctx.A,exported,'records',['phone','email','employee_number'],'employee_key'))redacted.push('awards:'+dept);
       domains.push(exported);
       await ctx.env.DB.batch(ctx.guards.concat([rsEpochGuard(ctx.env.DB,epoch),bdRetiredGuard(ctx.env)]));
     }
@@ -126,7 +126,7 @@ async function bdExport(env,actor,url,name) {
     await env.DB.batch([env.DB.prepare("SELECT CASE WHEN "+orphan+" THEN json_extract('{}','KIVO_BUSINESS_ORPHAN_SCOPE')END").bind(JSON.stringify(allowed))]);
     await env.DB.batch(rsWitness(env,'kv',['k','seq','v'],authority,'k IN(SELECT value FROM json_each(?1))',[JSON.stringify(globals)]));
     if(firstRev!==await bdGlobalRevision(env)||epoch!==await rsEpoch(env)) continue;
-    return {ok:1,domains:domains,globalRev:firstRev,epoch:epoch,departments:depts,base:base};
+    return Object.assign({ok:1,domains:domains,globalRev:firstRev,epoch:epoch,departments:depts,base:base},redacted.length?{redacted:redacted}:{});
   }
   throw rsError('domain-export-conflict',409);
 }

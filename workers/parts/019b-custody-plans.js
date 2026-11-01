@@ -443,17 +443,18 @@ async function cuExport(env, A, url) {
     var snapshot = await env.DB.batch(st),
       actual = Number((snapshot[0].results[0] || {}).v) || 0;
     if (actual !== rev0) continue;
-    var domains = depts.map(function (d) {
+    var redacted = [], domains = depts.map(function (d) {
       var rows = {};
       Object.keys(CU_TABLES).forEach(function (k, i) {
         rows[k] = (snapshot[i + 1].results || []).filter(function (r) {
           return r.department_id === d;
         });
-        if (k === 'moves' && !privPersonalOk(A, d)) rows[k] = privRowsBlank(A, rows[k], ['holder_nid_snapshot', 'holder_empno_snapshot'], 'holder_key');   // PRIVACY batch (019u)
       });
-      return { version: 1, scope: { departmentId: d }, rows: rows };
+      var dom = { version: 1, scope: { departmentId: d }, rows: rows };   // PRIVACY batch (019u): holder snapshots by purpose · the copy marked redacted
+      if (!privPersonalOk(A, d) && privRowsBlank(A, dom, 'moves', ['holder_nid_snapshot', 'holder_empno_snapshot'], 'holder_key')) redacted.push('custody:' + d);
+      return dom;
     });
-    return { ok: 1, domains: domains, globalRev: actual };
+    return Object.assign({ ok: 1, domains: domains, globalRev: actual }, redacted.length ? { redacted: redacted } : {});
   }
   throw cuError('custody-export-race', 409);
 }

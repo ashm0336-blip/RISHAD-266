@@ -7873,17 +7873,18 @@ async function cuExport(env, A, url) {
     var snapshot = await env.DB.batch(st),
       actual = Number((snapshot[0].results[0] || {}).v) || 0;
     if (actual !== rev0) continue;
-    var domains = depts.map(function (d) {
+    var redacted = [], domains = depts.map(function (d) {
       var rows = {};
       Object.keys(CU_TABLES).forEach(function (k, i) {
         rows[k] = (snapshot[i + 1].results || []).filter(function (r) {
           return r.department_id === d;
         });
-        if (k === 'moves' && !privPersonalOk(A, d)) rows[k] = privRowsBlank(A, rows[k], ['holder_nid_snapshot', 'holder_empno_snapshot'], 'holder_key');   // PRIVACY batch (019u)
       });
-      return { version: 1, scope: { departmentId: d }, rows: rows };
+      var dom = { version: 1, scope: { departmentId: d }, rows: rows };   // PRIVACY batch (019u): holder snapshots by purpose · the copy marked redacted
+      if (!privPersonalOk(A, d) && privRowsBlank(A, dom, 'moves', ['holder_nid_snapshot', 'holder_empno_snapshot'], 'holder_key')) redacted.push('custody:' + d);
+      return dom;
     });
-    return { ok: 1, domains: domains, globalRev: actual };
+    return Object.assign({ ok: 1, domains: domains, globalRev: actual }, redacted.length ? { redacted: redacted } : {});
   }
   throw cuError('custody-export-race', 409);
 }
@@ -9513,6 +9514,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   ]);
   if (body.version !== 1 || typeof body.requestId !== 'string' || !/^[-A-Za-z0-9_]{8,100}$/.test(body.requestId))
     throw rsError('restore-shape');
+  if (privRedacted(body)) throw rsError('restore-redacted', 409);   // PRIVACY batch (019u): before any shape, plan or write
   rsShape(body.scope, ['kind', 'departmentId']);
   if (
     !['full', 'dept'].includes(body.scope.kind) ||
@@ -11306,6 +11308,7 @@ async function rsConvertBackup(env, A, file, opt) {
   )
     rsBCFail('scope');
   if (!isObj(file) || !isObj(file.data)) rsBCFail('file-shape');
+  if (privRedacted(file)) throw rsError('restore-redacted', 409);   // PRIVACY batch (019u): a copy exported without personal data restores nothing
   rsShape(file, ['app', 'version', 'kind', 'data', 'domains', 'manifest', 'perms', 'idbImages', 'dept', 'exportedAt', 'preImport']);
   var modern = rsBCOwn(file, 'manifest'),
     legacy = !modern,
@@ -16967,15 +16970,15 @@ async function bdExport(env,actor,url,name) {
     var departments=(fresh.depts||[]).map(function(d){return d.id;});
     if(departments.some(function(d){return typeof d!=='string'||!d||d.includes(':');})||new Set(departments).size!==departments.length)throw rsError('domain-export-departments');
     if(requested&&!departments.includes(requested)) throw rsError('domain-export-scope',403);
-    var depts=requested?[requested]:departments.slice().sort(), domains=[], epoch=await rsEpoch(env);
+    var depts=requested?[requested]:departments.slice().sort(), domains=[], epoch=await rsEpoch(env), redacted=[];
     if(!requested&&name==='awards') depts.push('');
     for(var dept of depts) {
       var ctx=await def.context(env,fresh,dept,{write:true,global:dept===''}), k=dept===''?AW_RES[1]:def.key(dept,0);
       if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
       var readResources=(name==='seized'?def.resources.slice(0,5):def.resources).filter(function(_,i){return dept!==''||i>0;});
       if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
-      var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose
-      if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept))exported.rows.records=privRowsBlank(ctx.A,exported.rows.records,['phone','email','employee_number'],'employee_key');
+      var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose; the copy marked redacted
+      if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept)&&privRowsBlank(ctx.A,exported,'records',['phone','email','employee_number'],'employee_key'))redacted.push('awards:'+dept);
       domains.push(exported);
       await ctx.env.DB.batch(ctx.guards.concat([rsEpochGuard(ctx.env.DB,epoch),bdRetiredGuard(ctx.env)]));
     }
@@ -16984,7 +16987,7 @@ async function bdExport(env,actor,url,name) {
     await env.DB.batch([env.DB.prepare("SELECT CASE WHEN "+orphan+" THEN json_extract('{}','KIVO_BUSINESS_ORPHAN_SCOPE')END").bind(JSON.stringify(allowed))]);
     await env.DB.batch(rsWitness(env,'kv',['k','seq','v'],authority,'k IN(SELECT value FROM json_each(?1))',[JSON.stringify(globals)]));
     if(firstRev!==await bdGlobalRevision(env)||epoch!==await rsEpoch(env)) continue;
-    return {ok:1,domains:domains,globalRev:firstRev,epoch:epoch,departments:depts,base:base};
+    return Object.assign({ok:1,domains:domains,globalRev:firstRev,epoch:epoch,departments:depts,base:base},redacted.length?{redacted:redacted}:{});
   }
   throw rsError('domain-export-conflict',409);
 }
@@ -18580,7 +18583,7 @@ async function opExport(env,request,url,session) {
   try {
     for(var attempt=0;attempt<3;attempt++){
       var firstRev=await bdGlobalRevision(env),reference=await rsReferenceSnapshot(env,session.uid),A=reference.A,
-        requested=url.searchParams.get('dept')||'',departments=(A.depts||[]).map(function(d){return d.id;}),domains=[];
+        requested=url.searchParams.get('dept')||'',departments=(A.depts||[]).map(function(d){return d.id;}),domains=[],redacted=[];
       if(!requested&&A.u.role!=='super')throw rsError('operations-export-permission',403);
       if(requested&&!departments.includes(requested))throw rsError('operations-export-scope',403);
       if(requested)departments=[requested];
@@ -18591,14 +18594,15 @@ async function opExport(env,request,url,session) {
           var k='bsdept:'+d+':'+def.resource,raw=reference.inputKeys[k];
           if(!canRead(A,k))throw rsError('operations-export-permission',403);
           if(A.enf&&raw!=null)raw=enfProjectStr(A,k,raw,refs);
-          raw=privOut(A,k,raw,reference.inputKeys);   // PRIVACY batch (019u): exports follow the read rule
-          var prepared=opPrepared(def.resource),domain=ocConvert(prepared,d,def.resource,raw==null?undefined:JSON.parse(raw),raw!=null);
-          domains.push(opBackupDomain(prepared,domain));
+          var raw0=raw;raw=privOut(A,k,raw,reference.inputKeys);   // PRIVACY batch (019u): exports follow the read rule · the copy marked redacted
+          var prepared=opPrepared(def.resource),domain=ocConvert(prepared,d,def.resource,raw==null?undefined:JSON.parse(raw),raw!=null),dom=opBackupDomain(prepared,domain);
+          if(raw!==raw0){dom.redacted=true;redacted.push(d+':'+def.resource);}
+          domains.push(dom);
         }
       }
       await reference.env.DB.batch(rsReferenceGuards(reference.env,reference));
       var lastRev=await bdGlobalRevision(reference.env);if(firstRev!==lastRev)continue;
-      return json({ok:1,version:1,globalRev:lastRev,epoch:Number(reference.inputMeta.restore_epoch||0),domains:domains});
+      return json(Object.assign({ok:1,version:1,globalRev:lastRev,epoch:Number(reference.inputMeta.restore_epoch||0),domains:domains},redacted.length?{redacted:redacted}:{}));
     }
     throw rsError('operations-export-conflict',409);
   }catch(error){
@@ -18910,14 +18914,22 @@ function privAwardOk(A, d) {
   return privPersonalOk(A, d) || privMemo(A, '__privAw', d, function () { return privHeld(A, d, ['award.res.edit', 'award.res.approve', 'award.res.reject', 'award.res.delete', 'award.res.status'], ['award/res:edit', 'award/res:approve', 'award/res:del']); });
 }
 function privAwardRec(A, d, r) { return !isObj(r) || privAwardOk(A, d) || (r.ekey != null && String(r.ekey) === String(A.u.ekey || '\u0000')) ? r : privStrip(r, PRIV_AW_F); }
-/* export rows: personal columns blanked (presence kept, so the copy stays valid) unless ok or the row is the actor's own (keyCol) */
-function privRowsBlank(A, rows, cols, keyCol) {
-  var me = String(A.u.ekey || '\u0000');
-  return (rows || []).map(function (r) {
+/* export domain rows dom.rows[kind]: personal columns blanked (presence kept, so the copy stays valid) unless the row is the actor's own
+   (keyCol); a domain so changed is marked redacted — no restore accepts it (privRedacted) */
+function privRowsBlank(A, dom, kind, cols, keyCol) {
+  var me = String(A.u.ekey || '\u0000'), R = dom.rows[kind] || [];
+  dom.rows[kind] = privMap(R, function (r) {
     if (!isObj(r) || String(r[keyCol]) === me) return r;
     var o = null; cols.forEach(function (x) { if (r[x] != null && r[x] !== '') { o = o || privCopy(r); o[x] = ''; } });
     return o || r;
   });
+  if (dom.rows[kind] !== R) dom.redacted = true;
+  return !!dom.redacted;
+}
+/* (6) a copy exported without personal data (domain.redacted · envelope redacted[] · manifest.redacted) is refused by every restore before any write */
+function privRedacted(b) {
+  var D = isObj(b) && isObj(b.domains) ? b.domains : {};
+  return !!(isObj(b) && isObj(b.manifest) && b.manifest.redacted) || Object.keys(D).some(function (k) { return [].concat(D[k]).some(function (x) { return isObj(x) && !!x.redacted; }); });
 }
 /* custody read (019a cuRead): each row carries the holder's nid/empno snapshot — same rule (unit managers · employees-data writers · himself) */
 function privCustodyRows(A, d, rows) {

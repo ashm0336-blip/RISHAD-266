@@ -134,6 +134,7 @@ async function rsConvertBackup(env, A, file, opt) {
   )
     rsBCFail('scope');
   if (!isObj(file) || !isObj(file.data)) rsBCFail('file-shape');
+  if (privRedacted(file)) throw rsError('restore-redacted', 409);   // PRIVACY batch (019u): a copy exported without personal data restores nothing
   rsShape(file, ['app', 'version', 'kind', 'data', 'domains', 'manifest', 'perms', 'idbImages', 'dept', 'exportedAt', 'preImport']);
   var modern = rsBCOwn(file, 'manifest'),
     legacy = !modern,

@@ -300,14 +300,22 @@ function privAwardOk(A, d) {
   return privPersonalOk(A, d) || privMemo(A, '__privAw', d, function () { return privHeld(A, d, ['award.res.edit', 'award.res.approve', 'award.res.reject', 'award.res.delete', 'award.res.status'], ['award/res:edit', 'award/res:approve', 'award/res:del']); });
 }
 function privAwardRec(A, d, r) { return !isObj(r) || privAwardOk(A, d) || (r.ekey != null && String(r.ekey) === String(A.u.ekey || '\u0000')) ? r : privStrip(r, PRIV_AW_F); }
-/* export rows: personal columns blanked (presence kept, so the copy stays valid) unless ok or the row is the actor's own (keyCol) */
-function privRowsBlank(A, rows, cols, keyCol) {
-  var me = String(A.u.ekey || '\u0000');
-  return (rows || []).map(function (r) {
+/* export domain rows dom.rows[kind]: personal columns blanked (presence kept, so the copy stays valid) unless the row is the actor's own
+   (keyCol); a domain so changed is marked redacted — no restore accepts it (privRedacted) */
+function privRowsBlank(A, dom, kind, cols, keyCol) {
+  var me = String(A.u.ekey || '\u0000'), R = dom.rows[kind] || [];
+  dom.rows[kind] = privMap(R, function (r) {
     if (!isObj(r) || String(r[keyCol]) === me) return r;
     var o = null; cols.forEach(function (x) { if (r[x] != null && r[x] !== '') { o = o || privCopy(r); o[x] = ''; } });
     return o || r;
   });
+  if (dom.rows[kind] !== R) dom.redacted = true;
+  return !!dom.redacted;
+}
+/* (6) a copy exported without personal data (domain.redacted · envelope redacted[] · manifest.redacted) is refused by every restore before any write */
+function privRedacted(b) {
+  var D = isObj(b) && isObj(b.domains) ? b.domains : {};
+  return !!(isObj(b) && isObj(b.manifest) && b.manifest.redacted) || Object.keys(D).some(function (k) { return [].concat(D[k]).some(function (x) { return isObj(x) && !!x.redacted; }); });
 }
 /* custody read (019a cuRead): each row carries the holder's nid/empno snapshot — same rule (unit managers · employees-data writers · himself) */
 function privCustodyRows(A, d, rows) {
