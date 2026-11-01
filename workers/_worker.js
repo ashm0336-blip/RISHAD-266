@@ -2220,9 +2220,10 @@ function isMgrOf(A, d) {
 }
 /* الصفحات التي يملك فيها فعل كتابة داخل إدارة d */
 function writePages(A, d) {
-  var u = A.u, caps = (A.perms.caps || {})[d]; caps = Array.isArray(caps) ? caps : [];
-  /* وحدة مطفأة على مستوى المنصة: لا تُكتب صفحاتها من أحد — حتى لو بقيت في سقف الإدارة */
-  if (A.off && A.off.length) caps = caps.filter(function (k) { return A.off.indexOf(k) === -1; });
+  var u = A.u, caps = (A.perms.caps || {})[d], dc = deptCapOf(A, d); caps = Array.isArray(caps) ? caps : [];
+  /* وحدة مطفأة على مستوى المنصة: لا تُكتب صفحاتها من أحد — حتى لو بقيت في سقف الإدارة
+     (caps-own · read-time narrowing: and only within the unit's effective ceiling — deptCapOf drops platform-off units too) */
+  caps = caps.filter(function (k) { return dc.indexOf(k) !== -1; });
   if (u.role === 'super') return null;                       /* بلا حدود */
   if (u.role === 'dept') return caps.slice();
   /* مدير الإدارة (مفتاحه mgr:<did>) يرث سقف إدارته ما لم تُخزَّن له ورقةُ
@@ -2234,7 +2235,7 @@ function writePages(A, d) {
   var ep = sheet0 || {};
   /* مفاتيح الأوراق «pk/sk» تُنسب إلى صفحتها الحاوية */
   var out = {};
-  Object.keys(ep).forEach(function (k) { var pk = String(k).split('/')[0]; if (caps.indexOf(pk) !== -1 && (ep[k] || []).some(function (a) { return WRITE_ACTS[a]; })) out[pk] = 1; });
+  Object.keys(ep).forEach(function (k) { var pk = String(k).split('/')[0]; if (caps.indexOf(pk) !== -1 && capOnDept(A, d, k) && (ep[k] || []).some(function (a) { return WRITE_ACTS[a]; })) out[pk] = 1; });
   return Object.keys(out);
 }
 /* رصد الميدان: موظف صلاحيته على المتابعة اليومية هي ورقة «رصد الميدان» وحدها (بلا كتابة على الجولات) —
@@ -2245,7 +2246,7 @@ var FIELD_KINDS = { gates: 1, zones: 1, marks: 1 };
 function dailyFieldOnly(A, d) {
   var u = A.u; if (u.role === 'super' || u.role === 'dept') return false;
   var ep = ((A.perms.emps || {})[d] || {})[u.ekey] || {}; var writes = [], field = false;
-  Object.keys(ep).forEach(function (k) { if (String(k).split('/')[0] !== 'daily') return; var acts = ep[k] || []; if (k === 'daily/field' && acts.length) field = true; if (k !== 'daily/field' && acts.some(function (a) { return WRITE_ACTS[a]; })) writes.push(k); });
+  Object.keys(ep).forEach(function (k) { if (String(k).split('/')[0] !== 'daily' || !capOnDept(A, d, k)) return; var acts = ep[k] || []; if (k === 'daily/field' && acts.length) field = true; if (k !== 'daily/field' && acts.some(function (a) { return WRITE_ACTS[a]; })) writes.push(k); });
   return field && !writes.length;
 }
 function pickIdx(arr, seg) { if (!Array.isArray(arr)) return null; if (/^\d+$/.test(seg)) return arr[+seg] || null; var id = seg.slice(1, -1); return arr.filter(function (x) { return isObj(x) && (String(x.id) === id || String(x.eid) === id || String(x.key) === id || String(x.k) === id); })[0] || null; }
@@ -2835,7 +2836,23 @@ function permsRule(A, newJson, curJson) {
        يُرفض «خارج السقف». والأوراقُ التي تغيّرت في هذا الحفظ وحدها: ورقةٌ قديمةٌ لموظفٍ آخر لا تُسقط حفظاً لا شأن له بها.
        مفتاح الورقة «pk/sk» يُحكم بصفحته الحاوية */
     var cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : PG_KEYS.slice();
-    var bad = Object.keys(en || {}).some(function (ek) { if (deq((eo || {})[ek], en[ek])) return false; return Object.keys(en[ek] || {}).some(function (pk) { return cap.indexOf(String(pk).split('/')[0]) === -1; }); });
+    /* caps-own · latent grants: a leaf outside the ceiling stays stored (read-time narrowing), so only what the save ADDS outside it is
+       refused — a leaf or action the owner did not hold in his stored sheet before (the same key); kept or narrowed latent leaves pass.
+       The same for lenses switched off for the unit: kept in an explicit list, never added to one */
+    var bad = Object.keys(en || {}).some(function (ek) {
+      var s0 = isObj(eo) && isObj(eo[ek]) ? eo[ek] : null, x0 = null; if (s0 && deq(s0, en[ek])) return false;
+      return Object.keys(en[ek] || {}).some(function (pk) {
+        if (cap.indexOf(String(pk).split('/')[0]) !== -1) return false;
+        if (s0 && !x0) x0 = expandPermsOf(A, d, s0);
+        var h = s0 ? [].concat(s0[pk] || [], x0[pk] || []) : [];
+        return (Array.isArray(en[ek][pk]) ? en[ek][pk] : []).some(function (a) { return h.indexOf(a) === -1; });
+      });
+    });
+    var dl = isObj(o.lenses) ? o.lenses[d] : null;
+    if (!bad && Array.isArray(dl) && isObj(ln)) bad = Object.keys(ln).some(function (ek) {
+      var L0 = isObj(lo) ? lo[ek] : undefined, L1 = ln[ek];
+      return Array.isArray(L0) && Array.isArray(L1) && L1.some(function (L) { return dl.indexOf(L) === -1 && L0.indexOf(L) === -1; });
+    });
     if (bad) return { ok: false, why: 'cap' };
     if (A.u.role !== 'super') { var gw = permsGrantWhy(A, d, eo, en, to, tn, lo, ln); if (gw) return { ok: false, why: gw }; }
   }
@@ -18671,7 +18688,7 @@ async function opExport(env,request,url,session) {
    existing rules judge it (an unauthorised change is denied, never silently applied). Super: unchanged both ways. */
 var PRIV_EMP_F = ['nid', 'phone', 'email', 'empno', 'contact'];
 var PRIV_EMP_RES = 'bassam_employees_v1', PRIV_DR_RES = 'bassam_dreport_v1', PRIV_PERM_KEY = 'bassam_perms_v1';
-var PRIV_PERM_EMPK = { emps: 1, tplOf: 1, empLens: 1 }, PRIV_PERM_UNITK = { caps: 1, subs: 1, lenses: 1 };
+var PRIV_PERM_EMPK = { emps: 1, tplOf: 1, empLens: 1 }, PRIV_PERM_UNITK = { caps: 1, subs: 1, lenses: 1, capOwn: 1 };   /* capOwn: caps-own per-unit mode (021) */
 function privOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 function privPut(o, k, v) { Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true }); }   /* «__proto__» stays data */
 function privCopy(o) { var r = {}, k; for (k in o) if (privOwn(o, k)) privPut(r, k, o[k]); return r; }
@@ -19509,7 +19526,21 @@ function pgOffPage(pk, sk) { var p = PG_OF[pk]; return !!(p && p.off && p.off.in
 /* ── سقف الإدارة: نفس effCap/capSetAnywhere في الواجهة، بتقاطع الأسلاف ── */
 function rawCapOf(A, d) { var c = (A.perms.caps || {})[d]; return Array.isArray(c) ? c.filter(function (k) { return PG_KEYS.indexOf(k) !== -1; }) : null; }
 function hasCapOf(A, d) { return rawCapOf(A, d) !== null; }
+/* Independent unit ceilings (caps-own): a unit whose own-mode flag is set (bassam_perms_v1.capOwn[d] === true — written by the system
+   administrator through the normal protected save; or capMode 'own' for every unit) reads its ceiling from its own record alone,
+   without the ancestors' intersection. Without a record of its own it keeps the old reading (never wider than before). */
+function capOwnOf(A, d) { var P = A.perms || {}; return P.capMode === 'own' || (isObj(P.capOwn) && P.capOwn[d] === true); }
+/* the mode is the system administrator's: a value other than 'own' / true, or dropping a stored mode (an older client rebuilds the
+   registry without it), is refused for every role — a narrowing never silently returns to the old reading */
+function capOwnWhy(nv, cv) {
+  var n = parseJson(nv, null), o = cv == null ? null : parseJson(cv, null), a = isObj(o) ? o.capOwn : undefined, b = isObj(n) ? n.capOwn : undefined;
+  if (b !== undefined && !(isObj(b) && Object.keys(b).every(function (k) { return b[k] === true; }))) return 'capmode';
+  if (isObj(a) && Object.keys(a).length && b === undefined) return 'capmode';
+  var m = isObj(n) ? n.capMode : undefined;
+  return (m !== undefined && m !== 'own') || (isObj(o) && o.capMode === 'own' && m !== 'own') ? 'capmode' : '';
+}
 function effCapOf(A, d) {
+  if (hasCapOf(A, d) && capOwnOf(A, d)) return rawCapOf(A, d);
   var own = rawCapOf(A, d) || [], anc = ancChain(A, d).filter(function (a) { return hasCapOf(A, a); });
   var out = own;
   for (var i = 0; i < anc.length; i++) {
@@ -19602,11 +19633,15 @@ function hasOwnSheetOf(A, ekey, d) {
   var p = ((A.perms.emps || {})[d] || {})[ekey];
   return !!(p && typeof p === 'object');
 }
+/* Read-time narrowing: narrowing a ceiling (pages, tabs, lenses) no longer deletes anything stored; a stored sheet is read cut to its
+   unit's ceiling (capOnDept), so an out-of-ceiling ("latent") leaf grants nothing and is not held by a grantor, and comes back exactly
+   when the ceiling is widened again. */
 function empPermsOf(A, ekey, d) {
   var p = ((A.perms.emps || {})[d] || {})[ekey];
   if (!(p && typeof p === 'object')) return {};
-  var hasOld = Object.keys(p).some(function (k) { return pgIsContainer(k); });
-  return hasOld ? expandPermsOf(A, d, p) : p;
+  var hasOld = Object.keys(p).some(function (k) { return pgIsContainer(k); }), s = hasOld ? expandPermsOf(A, d, p) : p, out = {}, k;
+  for (k in s) if (capOnDept(A, d, k)) out[k] = s[k];
+  return out;
 }
 function isMgrKey(k) { return String(k || '').slice(0, 4) === 'mgr:'; }
 /* ══ myPerms على الخادم — مطابقةٌ حرفية لنظيرتها في الواجهة ══════════════
@@ -20903,6 +20938,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
      عليها كغيره عبر سجل الموارد وسقف الإدارة والوحدة المطفأة. */
   /* KIVO_264 · D14: عدا اسمَ دخوله هو — كلمةُ المرور الحالية (cur) وصيغةُ 10 أرقام كغيره (superSelfWhy) */
   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · I4w: ولمدير النظام كذلك — لا يُكتب حسابٌ «staff» بمفتاح mgr: بلا الشارة (018 usersA1Of) */
+  if (k === K_PERM && newVal != null) { var cow = capOwnWhy(newVal, curVal); if (cow) return { ok: false, why: cow }; }   /* caps-own: the mode, any role (021) */
   if (u.role === 'super' && R0.scope === 'global') { var ssw = k === K_USERS && newVal != null ? (superSelfWhy(A, newVal, curVal, ctx) || usersA1Of(newVal, curVal) || null) : null; return ssw ? { ok: false, why: ssw } : { ok: true }; }
   var P = parseKey(k);
   if (!P.dept) {
@@ -22071,9 +22107,10 @@ function audCanDept(AA, d, entMode) {
   if (isMgrOf(AA, d)) return true;
   if (entMode) return deptInScope(AA, d);
   /* سقفُ الإدارة الفعليّ (deptCapOf: «لا سقفَ مضبوطاً» = كلُّ الصفحات، والوحدةُ المطفأة تُستبعد) لا السقفُ الخام */
-  var caps = deptCapOf(AA, d), ep = ((AA.perms.emps || {})[d] || {})[AA.u.ekey] || {};
-  /* الورقةُ نفسُها التي تفتح «سجل الحركة» داخل الإعدادات: admin/oplog (والشكلُ القديم admin) */
-  return deptInScope(AA, d) && caps.indexOf('admin') !== -1 && ((ep['admin/oplog'] || ep.admin || []).indexOf('view') !== -1);
+  var ep = ((AA.perms.emps || {})[d] || {})[AA.u.ekey] || {};
+  /* الورقةُ نفسُها التي تفتح «سجل الحركة» داخل الإعدادات: admin/oplog (والشكلُ القديم admin)
+     — caps-own · read-time narrowing: only while admin/oplog is inside the unit ceiling (a switched-off tab is no longer deleted from sheets) */
+  return deptInScope(AA, d) && capOnDept(AA, d, 'admin/oplog') && ((ep['admin/oplog'] || ep.admin || []).indexOf('view') !== -1);
 }
 /* نصُّ البحث حرفيٌّ: رموزُ LIKE (% _ \) تُهرَّب بشرطةٍ خلفيّة — فالمعرّفاتُ التي تحوي «_» تُبحث كما هي */
 function audLike(v) { return String(v || '').replace(/[%_\\]/g, function (m) { return '\\' + m; }).trim(); }
@@ -24440,7 +24477,8 @@ function enfPermsWrite(A, k, newVal, curVal, ctx, X) {
   var n = parseJson(newVal, null), o = curVal == null ? {} : parseJson(curVal, {});
   if (!isObj(n)) return enfNo('perms');
   if (!isObj(o)) o = {};
-  var sup = A.u.role === 'super';
+  var sup = A.u.role === 'super', cow = capOwnWhy(newVal, curVal);
+  if (cow) return enfNo(cow);   /* caps-own: the mode, any role (021) */
   /* غيرُ مدير النظام: permsRule هو حكمُ perm.assign نفسُه (أوراقُ موظفي إدارته · عدساتُهم · قوالبُهم — لا سقوف ولا توسيعَ ذاتيّ ولا منحَ ما ليس في يده) */
   if (!sup) {
     /* حزمةُ الدمج · الجولة 5: رفضُ «grant» بقاعدة المانح (018 permsGrantWhy) يُسمّي المفتاحَ إن وجده حكمُ الإنفاذ نفسُه (enfPermsHeldWhy) — كان إسقاطُ ورقةِ

@@ -46,7 +46,7 @@
    existing rules judge it (an unauthorised change is denied, never silently applied). Super: unchanged both ways. */
 var PRIV_EMP_F = ['nid', 'phone', 'email', 'empno', 'contact'];
 var PRIV_EMP_RES = 'bassam_employees_v1', PRIV_DR_RES = 'bassam_dreport_v1', PRIV_PERM_KEY = 'bassam_perms_v1';
-var PRIV_PERM_EMPK = { emps: 1, tplOf: 1, empLens: 1 }, PRIV_PERM_UNITK = { caps: 1, subs: 1, lenses: 1 };
+var PRIV_PERM_EMPK = { emps: 1, tplOf: 1, empLens: 1 }, PRIV_PERM_UNITK = { caps: 1, subs: 1, lenses: 1, capOwn: 1 };   /* capOwn: caps-own per-unit mode (021) */
 function privOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 function privPut(o, k, v) { Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true }); }   /* «__proto__» stays data */
 function privCopy(o) { var r = {}, k; for (k in o) if (privOwn(o, k)) privPut(r, k, o[k]); return r; }

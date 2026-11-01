@@ -173,7 +173,8 @@ function enfPermsWrite(A, k, newVal, curVal, ctx, X) {
   var n = parseJson(newVal, null), o = curVal == null ? {} : parseJson(curVal, {});
   if (!isObj(n)) return enfNo('perms');
   if (!isObj(o)) o = {};
-  var sup = A.u.role === 'super';
+  var sup = A.u.role === 'super', cow = capOwnWhy(newVal, curVal);
+  if (cow) return enfNo(cow);   /* caps-own: the mode, any role (021) */
   /* غيرُ مدير النظام: permsRule هو حكمُ perm.assign نفسُه (أوراقُ موظفي إدارته · عدساتُهم · قوالبُهم — لا سقوف ولا توسيعَ ذاتيّ ولا منحَ ما ليس في يده) */
   if (!sup) {
     /* حزمةُ الدمج · الجولة 5: رفضُ «grant» بقاعدة المانح (018 permsGrantWhy) يُسمّي المفتاحَ إن وجده حكمُ الإنفاذ نفسُه (enfPermsHeldWhy) — كان إسقاطُ ورقةِ

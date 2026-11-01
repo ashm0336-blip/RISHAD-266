@@ -105,6 +105,8 @@
     if (_pmMemo) { if (KIVO.__bsReadHook) KIVO.__bsReadHook(K_PERM); return _pmMemo; }
     try { var o = JSON.parse(RAW.getItem.call(localStorage, K_PERM)); if (o && typeof o === 'object') {
       var r = { caps: o.caps || {}, emps: o.emps || {}, tplOf: o.tplOf || {}, lenses: o.lenses || {}, subs: o.subs || {}, empLens: o.empLens || {}, lensZ: o.lensZ, patterns: o.patterns || {} };
+      /* caps-own: the ceiling mode travels with the registry (the server refuses a save that drops it — 021 capOwnWhy) */
+      if (o.capOwn !== undefined) r.capOwn = o.capOwn; if (o.capMode !== undefined) r.capMode = o.capMode;
       /* تسامح: مفتاح الورقة القديم emps/tasks (من عهد «التوأم») يُقرأ tasks */
       try { var mv = false; Object.keys(r.emps).forEach(function(d9){ Object.keys(r.emps[d9] || {}).forEach(function(ek){ var pm9 = r.emps[d9][ek] || {}; if (pm9['emps/tasks']) { if (!pm9.tasks) pm9.tasks = pm9['emps/tasks']; delete pm9['emps/tasks']; mv = true; } }); }); if (mv) permSave(r); } catch (e9) {}
       /* ترقية: «المناطق» انضمّت لسقف العدسات — المصفوفات المخزونة قبلها تعدّها مفعّلة */
@@ -150,6 +152,7 @@
        الفعليُّ فارغاً وتبدو «مفتوحة» في اللوحة بينما صفحةُ الإعدادات بلا تبويبات — 9 إدارات على Test. المقصودُ المكتوب أعلاه:
        سقفُ القطاع يُضبط مرةً فيصير حدّاً لما تحته — أي أن غيرَ المضبوط يرث سقف أصله لا الفراغ. */
     var d = id || curDept(), own = hasCap(d) ? rawCap(d) : PAGE_KEYS.slice(), D = KIVO.BassamDepts;
+    var o9 = permStore(); if (hasCap(d) && (o9.capMode === 'own' || (o9.capOwn && o9.capOwn[d] === true))) return own;   /* caps-own: an own-mode unit with its own record = that record alone (= 021 effCapOf) */
     if (!D || !D.ancestorsOf) return own;
     var anc = [];
     try { anc = (D.ancestorsOf(d) || []).filter(function(a){ return hasCap(a); }); } catch(e){ return own; }
@@ -189,27 +192,52 @@
     } catch (e) { return true; }
   }
   function onAny(keys, did){ return (keys || []).some(function(k){ return onCap(k, did); }); }
-  /* قصُّ صلاحيات موظفي إدارةٍ بما لم يبقَ في سقفها الفعليّ */
-  function trimEmps(o, d, cap){
-    var em = o.emps[d] || {};
-    Object.keys(em).forEach(function(ek){
-      Object.keys(em[ek] || {}).forEach(function(pk){ if (cap.indexOf(splitLeaf(pk).page) === -1) delete em[ek][pk]; });
-    });
-    o.emps[d] = em;
-  }
+  /* caps-own · read-time narrowing: narrowing a ceiling (pages here, tabs in setDeptSubs/setDeptTabs, lenses in setDeptLenses) writes the
+     ceiling record alone. Employees' sheets, lens lists and explicit grants stay stored as they are and are read cut to their unit's
+     effective ceiling (ceilSheet in empPerms · empLens ∩ unit lenses · p24KeyOn; the server the same — 021 empPermsOf · capOnDept ·
+     lensGate · enfKeyOnCeiling), so widening it again restores exactly what each one had. (Was: trimEmps · pruneEmpLeaves · the empLens
+     filter · p24TrimGrants deleted them, for a node's whole branch.) */
   function setDeptCap(did, arr){
     if (!isSuper()) return { ok:false, err:'سقف الإدارة للمشرف العام وحده' };
     var o = permStore(), d = did || curDept();
     o.caps[d] = (arr || []).filter(function(k){ return PAGE_KEYS.indexOf(k) !== -1; });
-    permSave(o);
-    /* كان القصّ يمسّ موظفي هذه الإدارة وحدها — وهو كافٍ يوم كانت الإدارات
-       مسطّحة. وقد صارت شجرةً: تضييقُ سقف قطاعٍ يُنقص السقف الفعليّ لكل إدارةٍ
-       تحته، فلو لم تُقصّ صلاحياتُ موظفيها بقيت لهم أوراقٌ خارج الحدّ الجديد —
-       سقفٌ يقول «مُنع» وصلاحيةٌ تقول «مسموح». فيُقصّ الفرع كله بسقفه الفعليّ. */
-    var D = KIVO.BassamDepts, scope = [d];
-    try { if (D && D.deptsUnder) { var u = D.deptsUnder(d) || []; if (u.length) scope = u.slice(); } } catch(e){}
-    scope.forEach(function(x){ trimEmps(o, x, effCap(x)); });
-    permSave(o); p24TrimGrants(scope); return { ok:true };
+    permSave(o); return { ok:true };
+  }
+  /* caps-own: is unit d's ceiling independent of its ancestors? (bassam_perms_v1.capOwn[d] · or capMode 'own' for every unit = 021 capOwnOf) */
+  function capOwnOf(did){ var o = permStore(), d = did || curDept(); return o.capMode === 'own' || !!(o.capOwn && o.capOwn[d] === true); }
+  /* The explicit switch, system administrator only, one ordinary save of the registry. Switching on writes the unit's current effective
+     ceiling as its own record (so nobody gains or loses a page at that moment; widening it is a later explicit edit). Switching off
+     returns the unit to the ancestors' intersection (never wider). Nothing else is touched. */
+  function setCapOwn(did, on){
+    if (!isSuper()) return { ok:false, err:'سقف الإدارة للمشرف العام وحده' };
+    var o = permStore(), d = did || curDept();
+    if (o.capMode === 'own') return { ok:false, err:'السقوف كلها مستقلة' };
+    if (!!on === capOwnOf(d)) return { ok:true, same:true };
+    var c = deptCap(d), m = {}; Object.keys(o.capOwn || {}).forEach(function(k){ if (k !== d) m[k] = true; });
+    if (on) { m[d] = true; o.caps[d] = c; }
+    o.capOwn = m; permSave(o); return { ok:true };
+  }
+  /* read-time narrowing: the part of a sheet inside unit d's ceiling — its page in the effective ceiling and a sub-leaf in its page's live
+     tabs (what the old trim kept); latentLeaves = the rest, stored and not read */
+  function ceilSheet(sheet, did){
+    var d = did || curDept(), cap = deptCap(d), live = {}, out = {};
+    Object.keys(sheet || {}).forEach(function(k){
+      var sp = splitLeaf(k); if (cap.indexOf(sp.page) === -1) return;
+      if (sp.sub && (live[sp.page] || (live[sp.page] = deptSubs(d, sp.page).concat(deptTabs(d, sp.page)))).indexOf(sp.sub) === -1) return;
+      out[k] = sheet[k];
+    });
+    return out;
+  }
+  function latentLeaves(p, d){
+    if (!(p && typeof p === 'object')) return {};
+    var full = Object.keys(p).some(function(k){ return isContainer(k); }) ? expandPerms(p, d) : p, on = ceilSheet(full, d), out = {};
+    Object.keys(full).forEach(function(k){
+      if (Object.prototype.hasOwnProperty.call(on, k)) return;
+      var sp = splitLeaf(k); if (!PAGE_OF[sp.page] || (!sp.sub && isContainer(sp.page))) return;
+      var acts = (full[k] || []).filter(function(a){ return ALL_ACTS.indexOf(a) !== -1; });
+      if (acts.length) out[k] = acts;
+    });
+    return out;
   }
   /* وراثةُ السقف عند إنشاء عقدة: لقطةٌ من سقف الأب الفعليّ لا رابطٌ حيّ.
      لقطةً لأن التوسيع قرارٌ صريح: لو وسّعتَ سقف الأب لاحقاً لم يتوسّع الأبناء
@@ -270,13 +298,6 @@
     o.caps[id] = inh;
     permSave(o);
     return { ok:true, n: o.caps[id].length };
-  }
-  /* تضييق تبويبات/عدسات الإدارة يقصّ ما مُنح للموظفين خارجها */
-  function pruneEmpLeaves(o, d, pk, keep){
-    var em = o.emps[d] || {};
-    Object.keys(em).forEach(function(ek){
-      Object.keys(em[ek] || {}).forEach(function(k){ var sp = splitLeaf(k); if (sp.sub && sp.page === pk && keep.indexOf(sp.sub) === -1) delete em[ek][k]; });
-    });
   }
 
   /* Irshad uses its typed API. Existing capability and grant values are preserved; no legacy JSON probe or automatic grant. */
@@ -372,8 +393,7 @@
     var o = permStore(), d = did || curDept();
     o.subs = o.subs || {}; o.subs[d] = o.subs[d] || {};
     o.subs[d][pk] = (Array.isArray(arr) ? arr : []).filter(function(k){ return all.indexOf(k) !== -1; });
-    pruneEmpLeaves(o, d, pk, o.subs[d][pk].concat(deptTabs(d, pk)));
-    permSave(o); p24TrimGrants([d]); return { ok:true };
+    permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
   }
   /* ── مجموعة السقف الثانية: التبويبات ──────────────────────────────────────
      تسكن في مخزن subs نفسه لكن تحت مفتاح «الصفحة:tabs» — فلا تصطدم بمجموعة
@@ -393,8 +413,7 @@
     var o = permStore(), d = did || curDept();
     o.subs = o.subs || {}; o.subs[d] = o.subs[d] || {};
     o.subs[d][tabSlot(pk)] = (Array.isArray(arr) ? arr : []).filter(function(k){ return all.indexOf(k) !== -1; });
-    pruneEmpLeaves(o, d, pk, o.subs[d][tabSlot(pk)].concat(deptSubs(d, pk)));
-    permSave(o); p24TrimGrants([d]); return { ok:true };
+    permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
   }
   function tabOn(pk, tk){
     try {
@@ -429,9 +448,7 @@
     var o = permStore(), d = did || curDept();
     o.lenses = o.lenses || {};
     o.lenses[d] = (arr || []).filter(function(k){ return LENS_KEYS.indexOf(k) !== -1; });
-    var el = (o.empLens || {})[d] || {};
-    Object.keys(el).forEach(function(ek){ if (Array.isArray(el[ek])) el[ek] = el[ek].filter(function(k){ return o.lenses[d].indexOf(k) !== -1; }); });
-    permSave(o); p24TrimGrants([d]); return { ok:true };
+    permSave(o); return { ok:true };   /* caps-own: employees' lens lists stay — read ∩ unit lenses (empLens · server lensGate) */
   }
   /* عدسات الموظف: غياب السجل = كل عدسات الإدارة (توافق رجعي) */
   function empLens(ekey, did){
@@ -445,7 +462,12 @@
     var g = requireMgr(); if (g) return g;
     var o = permStore(), d = isSuper() ? (did || curDept()) : curDept(), dl = deptLenses(d);
     o.empLens = o.empLens || {}; o.empLens[d] = o.empLens[d] || {};
-    o.empLens[d][ekey] = (Array.isArray(arr) ? arr : []).filter(function(k){ return dl.indexOf(k) !== -1; });
+    /* caps-own: lenses switched off for the unit stay latent — an explicit list keeps its own; an absent list (= all lenses) keeps those the
+       grantor holds (system administrator / inheriting: all; a grantor with an explicit list: his list). The server refuses adding an off lens
+       to an explicit list that lacked it (018 permsRule «cap») */
+    var prev = o.empLens[d][ekey], u = cur(), mine = isSuper() || !u || (u.role !== 'staff' && u.role !== 'gm') ? null : o.empLens[d][u.ekey];
+    var lat = LENS_KEYS.filter(function(k){ return dl.indexOf(k) === -1 && (Array.isArray(prev) ? prev.indexOf(k) !== -1 : (!Array.isArray(mine) || mine.indexOf(k) !== -1)); });
+    o.empLens[d][ekey] = (Array.isArray(arr) ? arr : []).filter(function(k){ return dl.indexOf(k) !== -1; }).concat(lat);
     permSave(o); return { ok:true };
   }
   function lensOn(key, did){
@@ -461,7 +483,7 @@
     var p = (permStore().emps[d] || {})[ekey];
     if (!(p && typeof p === 'object')) return {};
     var hasOld = Object.keys(p).some(function(k){ return isContainer(k); });
-    return hasOld ? expandPerms(p, d) : JSON.parse(JSON.stringify(p));
+    return ceilSheet(hasOld ? expandPerms(p, d) : JSON.parse(JSON.stringify(p)), d);   /* caps-own: read-time narrowing */
   }
   /* الشكل المشتق على مستوى الصفحات (الحاوية = اتحاد أوراقها) — للمصفوفات والقائمة */
   function empPagePerms(ekey, did){ return derivePages(empPerms(ekey, did)); }
@@ -484,6 +506,11 @@
     var g = requireMgr(); if (g) return g;
     var o = permStore(), d = isSuper() ? (did || curDept()) : curDept();
     var clean = cleanLeafPerms(obj, d);
+    /* caps-own: what lies outside the ceiling in his stored sheet (the editors do not show it — empPerms is cut) stays as it is; the system
+       administrator's own out-of-ceiling leaves (a template under a narrowed ceiling) are added. Others' new ones would be refused («cap») */
+    var lat = latentLeaves((o.emps[d] || {})[ekey], d), lx = isSuper() ? latentLeaves(obj, d) : {};
+    Object.keys(lx).forEach(function(k){ lat[k] = lx[k]; });
+    Object.keys(lat).forEach(function(k){ if (!Object.prototype.hasOwnProperty.call(clean, k)) clean[k] = lat[k]; });
     o.emps[d] = o.emps[d] || {}; o.emps[d][ekey] = clean; permSave(o);
     return { ok:true };
   }
@@ -859,6 +886,9 @@
     var rec = p24GrantsRec(d), prev = rec.emp[ekey] && Array.isArray(rec.emp[ekey].plus) ? rec.emp[ekey].plus : [];
     var pl = ((delta && delta.plus) || []).slice(), mi = ((delta && delta.minus) || []).slice(), dropped = [];
     if (!sup) pl = pl.filter(function(k){ if (prev.indexOf(k) !== -1 || azKey(k, d) === true) return true; dropped.push(k); return false; });
+    /* caps-own: explicit grants outside the ceiling stay stored (the delta covers in-ceiling keys only) and bite again when it is widened */
+    var C0 = p24Ceil(d), g0 = rec.emp[ekey] || {}, keepL = function(a, b){ (Array.isArray(b) ? b : []).forEach(function(k){ if (!p24KeyOn(k, C0) && a.indexOf(k) === -1) a.push(k); }); };
+    keepL(pl, g0.plus); keepL(mi, g0.minus);
     var old = JSON.stringify(rec.emp[ekey] || null);
     if (!pl.length && !mi.length) delete rec.emp[ekey];
     else { rec.emp[ekey] = { plus: pl.sort(), minus: mi.sort(), at: Date.now(), by: u ? u.id : '' }; if (src) rec.emp[ekey].src = String(src); }
@@ -913,7 +943,7 @@
   I.p24AfterTpl = p24AfterTpl; I.p24Apply = p24Apply; I.p24Assignable = p24Assignable; I.p24Ceil = p24Ceil; I.p24Cover = p24Cover;
   I.p24Delta = p24Delta; I.p24Effective = p24Effective; I.p24GrantOf = p24GrantOf; I.p24Grantable = p24Grantable; I.p24Ix = p24Ix;
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
-  I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.p24TrimGrants = p24TrimGrants; I.patternApply = patternApply;
+  I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.p24TrimGrants = p24TrimGrants; I.patternApply = patternApply; I.capOwnOf = capOwnOf; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
   I.patternMeta = patternMeta; I.patternSeed = patternSeed; I.patternSet = patternSet; I.patterns = patterns; I.permSave = permSave;
   I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;

@@ -43,7 +43,21 @@ function pgOffPage(pk, sk) { var p = PG_OF[pk]; return !!(p && p.off && p.off.in
 /* ── سقف الإدارة: نفس effCap/capSetAnywhere في الواجهة، بتقاطع الأسلاف ── */
 function rawCapOf(A, d) { var c = (A.perms.caps || {})[d]; return Array.isArray(c) ? c.filter(function (k) { return PG_KEYS.indexOf(k) !== -1; }) : null; }
 function hasCapOf(A, d) { return rawCapOf(A, d) !== null; }
+/* Independent unit ceilings (caps-own): a unit whose own-mode flag is set (bassam_perms_v1.capOwn[d] === true — written by the system
+   administrator through the normal protected save; or capMode 'own' for every unit) reads its ceiling from its own record alone,
+   without the ancestors' intersection. Without a record of its own it keeps the old reading (never wider than before). */
+function capOwnOf(A, d) { var P = A.perms || {}; return P.capMode === 'own' || (isObj(P.capOwn) && P.capOwn[d] === true); }
+/* the mode is the system administrator's: a value other than 'own' / true, or dropping a stored mode (an older client rebuilds the
+   registry without it), is refused for every role — a narrowing never silently returns to the old reading */
+function capOwnWhy(nv, cv) {
+  var n = parseJson(nv, null), o = cv == null ? null : parseJson(cv, null), a = isObj(o) ? o.capOwn : undefined, b = isObj(n) ? n.capOwn : undefined;
+  if (b !== undefined && !(isObj(b) && Object.keys(b).every(function (k) { return b[k] === true; }))) return 'capmode';
+  if (isObj(a) && Object.keys(a).length && b === undefined) return 'capmode';
+  var m = isObj(n) ? n.capMode : undefined;
+  return (m !== undefined && m !== 'own') || (isObj(o) && o.capMode === 'own' && m !== 'own') ? 'capmode' : '';
+}
 function effCapOf(A, d) {
+  if (hasCapOf(A, d) && capOwnOf(A, d)) return rawCapOf(A, d);
   var own = rawCapOf(A, d) || [], anc = ancChain(A, d).filter(function (a) { return hasCapOf(A, a); });
   var out = own;
   for (var i = 0; i < anc.length; i++) {
@@ -136,10 +150,14 @@ function hasOwnSheetOf(A, ekey, d) {
   var p = ((A.perms.emps || {})[d] || {})[ekey];
   return !!(p && typeof p === 'object');
 }
+/* Read-time narrowing: narrowing a ceiling (pages, tabs, lenses) no longer deletes anything stored; a stored sheet is read cut to its
+   unit's ceiling (capOnDept), so an out-of-ceiling ("latent") leaf grants nothing and is not held by a grantor, and comes back exactly
+   when the ceiling is widened again. */
 function empPermsOf(A, ekey, d) {
   var p = ((A.perms.emps || {})[d] || {})[ekey];
   if (!(p && typeof p === 'object')) return {};
-  var hasOld = Object.keys(p).some(function (k) { return pgIsContainer(k); });
-  return hasOld ? expandPermsOf(A, d, p) : p;
+  var hasOld = Object.keys(p).some(function (k) { return pgIsContainer(k); }), s = hasOld ? expandPermsOf(A, d, p) : p, out = {}, k;
+  for (k in s) if (capOnDept(A, d, k)) out[k] = s[k];
+  return out;
 }
 function isMgrKey(k) { return String(k || '').slice(0, 4) === 'mgr:'; }

@@ -966,7 +966,7 @@
       <div style="padding:14px 16px 16px;border-top:1px solid var(--bd-xe1e1e1)">
         <div style="display:flex;align-items:flex-start;gap:9px;background:var(--bg-a185151810p1);border:1px solid var(--bd-a185151810p25);border-radius:12px;padding:11px 13px;font-size:11.5px;font-weight:400;color:var(--fg-x8a6f35);margin-bottom:12px">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px" data-i="i-b8548f13"></svg>
-          <span>هذا سقف الإدارة: مديرها لا يستطيع منح موظفيه صفحة خارجه، وتضييقه يقصّ صلاحياتهم تلقائياً. <b>الحاوية بلا تأشير — تدخل السقف تلقائياً متى فُعّل تحتها تبويب أو صفحة واحدة، وتخرج إن أُفرغت.</b></span>
+          <span>هذا سقف الإدارة: مديرها لا يستطيع منح موظفيه صفحة خارجه، وتضييقه يُخفي ما خرج منه من صلاحياتهم ولا يحذفه — يعود كما كان متى وُسِّع. <b>الحاوية بلا تأشير — تدخل السقف تلقائياً متى فُعّل تحتها تبويب أو صفحة واحدة، وتخرج إن أُفرغت.</b></span>
         </div>
 
         <!-- KIVO_265 · ملاحظةُ المالك: سقفٌ فارغ = لا صفحة للمدير والموظفين — تنبيهٌ صريح -->
@@ -981,6 +981,9 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xc9702a)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:3px" data-i="i-a61be56e"></svg>
           <div style="flex:1;min-width:0"><b>{{capLimHead}}</b><div style="margin-top:2px">{{capLimTxt}}</div><div style="margin-top:4px;font-size:10.5px;color:var(--fg-x9a3412)">{{capLimNote}}</div></div>
         </div>
+        </sc-if>
+        <sc-if value="{{capOwnShow}}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:9px;padding:7px 12px;margin-bottom:12px;border-radius:12px;border:1px solid var(--bd-xe1e1e1);font-size:11px;color:var(--fg-x53565a)"><span style="flex:1;min-width:0">{{capOwnTxt}}</span><button onClick="{{capOwnDo}}" style="border:0;background:transparent;font-size:10.5px;font-weight:600;color:var(--fg-x0e7490);padding:3px 6px;border-radius:7px;cursor:pointer;font-family:'Cairo',sans-serif">{{capOwnBtn}}</button></div>
         </sc-if>
 <sc-if value="{{capLegacy}}" hint-placeholder-val="{{ true }}">
         <div style="border:1px solid var(--bd-xe1e1e1);border-radius:13px;overflow:hidden">

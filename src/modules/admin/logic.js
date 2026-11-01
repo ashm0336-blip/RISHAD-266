@@ -708,6 +708,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const s = this.tpRead();
     if (s.some((s) => s.id !== t && (s.name || "") === e)) return void this.bsToast("قالب آخر يحمل هذا الاسم", "warn");
     const r = Array.isArray(this.state.tpLens) ? this.state.tpLens.slice() : this.tpLensOf(s.filter((e) => e.id === t)[0]);
+    /* caps-own (F07): a save under a narrowed ceiling keeps the template's out-of-ceiling items — its switched-off lenses, its latent leaves
+       and (enforce) its latent keys — so widening the ceiling restores it exactly */
+    const P0 = KIVO.BassamPerm,
+      d0 = KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : "",
+      c0 = s.filter((e) => e.id === t)[0] || {},
+      dl0 = (P0 && P0.deptLenses && P0.deptLenses(d0)) || [];
+    (Array.isArray(c0.lens) ? c0.lens : []).forEach((k) => -1 === dl0.indexOf(k) && -1 === r.indexOf(k) && r.push(k));
     /* KIVO_256 · وضعُ الإنفاذ: القالبُ مفاتيحُ v24.9 (keys24) — وورقتُه القديمة (perms) أوسعُ تغطيةٍ لا تتجاوزها (النظامُ القديم بعد Kill Switch لا يمنح أكثر) */
     let k24 = null,
       a = this.state.tpDraft || {};
@@ -720,10 +727,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         tg = { role: "staff", mgr: !1 };
       k24 = Object.keys(dr)
         .filter((k) => dr[k] && P.p24.grantable(k, C, tg))
+        .concat(((cur && cur.keys24) || []).filter((k) => !P.p24.keyOn(k, C)))
         .sort();
       const E = {};
       k24.forEach((k) => (E[k] = !0));
       a = P.p24.cover(E);
+    }
+    if (P0 && P0.latentLeaves) {
+      const lt = P0.latentLeaves(c0.perms, d0);
+      a = Object.assign({}, a);
+      Object.keys(lt).forEach((k) => a[k] || (a[k] = lt[k]));
     }
     const i = this.tpHolders(t),
       tid = t;
@@ -3175,6 +3188,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const t = this.state;
     return !(!t.capDraft || !t.capBase) && JSON.stringify(t.capDraft) !== JSON.stringify(t.capBase);
   }
+  /* caps-own: the explicit per-unit switch (system administrator · one ordinary protected save of the registry — 331 setCapOwn) */
+  capOwnTog(o) {
+    const P = KIVO.BassamPerm;
+    if (!P || !P.setCapOwn || !o) return;
+    if (this._dirty()) return void this.bsToast("احفظ السقف أو تراجع عنه أولاً", "warn");
+    const on = !(P.capOwnOf && P.capOwnOf(o)),
+      r = P.setCapOwn(o, on);
+    if (r && !1 === r.ok) return void this.bsToast(r.err || "تعذّر الحفظ", "err");
+    const e = this._loadDraft(o);
+    this.setState({ capDraft: e, capBase: JSON.parse(JSON.stringify(e)) });
+    this.bsToast(on ? "صار سقف هذه الوحدة مستقلاً عن سقف الأصل — بسقفها الفعليّ الحاليّ" : "صار سقف هذه الوحدة تابعاً: الفعليّ = تقاطعُه مع سقوف الأصول", "ok");
+  }
   mgrOpen(t, e) {
     this.setState({
       mgrDid: t,
@@ -5198,7 +5223,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       try {
         const s = KIVO.BassamDepts,
           a = (s.ancestorsOf(e.sysSel) || []).filter((e) => t.hasCap(e));
-        if (!a.length) return 0;
+        if (!a.length || (t.capOwnOf && t.capOwnOf(e.sysSel))) return 0; /* caps-own: an independent ceiling is not cut by its ancestors */
         let r = null;
         return (
           a.forEach((e) => {
@@ -7600,7 +7625,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   : { cap: r ? (r.rawCap && r.hasCap && r.hasCap(o) ? r.rawCap(o) : r.deptCap(o)) : [], subs: {}, tabs: {} },
               LIM = (() => {
                 try {
-                  if (!r || !r.hasCap || !r.rawCap || !t.ancestorsOf) return null;
+                  if (!r || !r.hasCap || !r.rawCap || !t.ancestorsOf || (r.capOwnOf && r.capOwnOf(o))) return null; /* caps-own: independent */
                   const e = (t.ancestorsOf(o) || []).filter((t) => r.hasCap(t));
                   if (!e.length) return null;
                   let s = null;
@@ -8128,6 +8153,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? "سقف الصفحات فارغ — لا صفحة مفعّلة لهذه الإدارة، فالمدير والموظفون لن يروا أي صفحة. أشّر الصفحات المطلوبة في الشجرة أدناه (أو «تحديد الكل») ثم اضغط «حفظ السقف»."
                   : "السقف الفعلي لهذه الإدارة فارغ لأن سقف أصلٍ فوقها (الإدارة العامة أو القطاع) فارغ — لا صفحة مفعّلة للمدير والموظفين. افتح الصفحات في سقف الأصل أولاً ثم أشّرها هنا.",
               capLimOn: BLK.length > 0,
+              capOwnShow: !!(r && r.setCapOwn && r.capOwnOf),
+              capOwnTxt:
+                r && r.capOwnOf && r.capOwnOf(o)
+                  ? "سقفٌ مستقلّ: لا يتقيّد بسقف الأصل فوقه"
+                  : "سقفٌ تابع: الفعليّ = تقاطعُه مع سقوف الأصول فوقه",
+              capOwnBtn: r && r.capOwnOf && r.capOwnOf(o) ? "اجعله تابعاً" : "اجعله مستقلاً",
+              capOwnDo: () => this.capOwnTog(o),
               capLimTxt: BLK.length
                 ? (() => {
                     const t = BLK.map((t) => ({ n: (i.filter((e) => e.key === t)[0] || {}).name || t, a: blkName(t) })),

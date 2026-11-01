@@ -32,9 +32,10 @@ function isMgrOf(A, d) {
 }
 /* الصفحات التي يملك فيها فعل كتابة داخل إدارة d */
 function writePages(A, d) {
-  var u = A.u, caps = (A.perms.caps || {})[d]; caps = Array.isArray(caps) ? caps : [];
-  /* وحدة مطفأة على مستوى المنصة: لا تُكتب صفحاتها من أحد — حتى لو بقيت في سقف الإدارة */
-  if (A.off && A.off.length) caps = caps.filter(function (k) { return A.off.indexOf(k) === -1; });
+  var u = A.u, caps = (A.perms.caps || {})[d], dc = deptCapOf(A, d); caps = Array.isArray(caps) ? caps : [];
+  /* وحدة مطفأة على مستوى المنصة: لا تُكتب صفحاتها من أحد — حتى لو بقيت في سقف الإدارة
+     (caps-own · read-time narrowing: and only within the unit's effective ceiling — deptCapOf drops platform-off units too) */
+  caps = caps.filter(function (k) { return dc.indexOf(k) !== -1; });
   if (u.role === 'super') return null;                       /* بلا حدود */
   if (u.role === 'dept') return caps.slice();
   /* مدير الإدارة (مفتاحه mgr:<did>) يرث سقف إدارته ما لم تُخزَّن له ورقةُ
@@ -46,7 +47,7 @@ function writePages(A, d) {
   var ep = sheet0 || {};
   /* مفاتيح الأوراق «pk/sk» تُنسب إلى صفحتها الحاوية */
   var out = {};
-  Object.keys(ep).forEach(function (k) { var pk = String(k).split('/')[0]; if (caps.indexOf(pk) !== -1 && (ep[k] || []).some(function (a) { return WRITE_ACTS[a]; })) out[pk] = 1; });
+  Object.keys(ep).forEach(function (k) { var pk = String(k).split('/')[0]; if (caps.indexOf(pk) !== -1 && capOnDept(A, d, k) && (ep[k] || []).some(function (a) { return WRITE_ACTS[a]; })) out[pk] = 1; });
   return Object.keys(out);
 }
 /* رصد الميدان: موظف صلاحيته على المتابعة اليومية هي ورقة «رصد الميدان» وحدها (بلا كتابة على الجولات) —
@@ -57,7 +58,7 @@ var FIELD_KINDS = { gates: 1, zones: 1, marks: 1 };
 function dailyFieldOnly(A, d) {
   var u = A.u; if (u.role === 'super' || u.role === 'dept') return false;
   var ep = ((A.perms.emps || {})[d] || {})[u.ekey] || {}; var writes = [], field = false;
-  Object.keys(ep).forEach(function (k) { if (String(k).split('/')[0] !== 'daily') return; var acts = ep[k] || []; if (k === 'daily/field' && acts.length) field = true; if (k !== 'daily/field' && acts.some(function (a) { return WRITE_ACTS[a]; })) writes.push(k); });
+  Object.keys(ep).forEach(function (k) { if (String(k).split('/')[0] !== 'daily' || !capOnDept(A, d, k)) return; var acts = ep[k] || []; if (k === 'daily/field' && acts.length) field = true; if (k !== 'daily/field' && acts.some(function (a) { return WRITE_ACTS[a]; })) writes.push(k); });
   return field && !writes.length;
 }
 function pickIdx(arr, seg) { if (!Array.isArray(arr)) return null; if (/^\d+$/.test(seg)) return arr[+seg] || null; var id = seg.slice(1, -1); return arr.filter(function (x) { return isObj(x) && (String(x.id) === id || String(x.eid) === id || String(x.key) === id || String(x.k) === id); })[0] || null; }
@@ -647,7 +648,23 @@ function permsRule(A, newJson, curJson) {
        يُرفض «خارج السقف». والأوراقُ التي تغيّرت في هذا الحفظ وحدها: ورقةٌ قديمةٌ لموظفٍ آخر لا تُسقط حفظاً لا شأن له بها.
        مفتاح الورقة «pk/sk» يُحكم بصفحته الحاوية */
     var cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : PG_KEYS.slice();
-    var bad = Object.keys(en || {}).some(function (ek) { if (deq((eo || {})[ek], en[ek])) return false; return Object.keys(en[ek] || {}).some(function (pk) { return cap.indexOf(String(pk).split('/')[0]) === -1; }); });
+    /* caps-own · latent grants: a leaf outside the ceiling stays stored (read-time narrowing), so only what the save ADDS outside it is
+       refused — a leaf or action the owner did not hold in his stored sheet before (the same key); kept or narrowed latent leaves pass.
+       The same for lenses switched off for the unit: kept in an explicit list, never added to one */
+    var bad = Object.keys(en || {}).some(function (ek) {
+      var s0 = isObj(eo) && isObj(eo[ek]) ? eo[ek] : null, x0 = null; if (s0 && deq(s0, en[ek])) return false;
+      return Object.keys(en[ek] || {}).some(function (pk) {
+        if (cap.indexOf(String(pk).split('/')[0]) !== -1) return false;
+        if (s0 && !x0) x0 = expandPermsOf(A, d, s0);
+        var h = s0 ? [].concat(s0[pk] || [], x0[pk] || []) : [];
+        return (Array.isArray(en[ek][pk]) ? en[ek][pk] : []).some(function (a) { return h.indexOf(a) === -1; });
+      });
+    });
+    var dl = isObj(o.lenses) ? o.lenses[d] : null;
+    if (!bad && Array.isArray(dl) && isObj(ln)) bad = Object.keys(ln).some(function (ek) {
+      var L0 = isObj(lo) ? lo[ek] : undefined, L1 = ln[ek];
+      return Array.isArray(L0) && Array.isArray(L1) && L1.some(function (L) { return dl.indexOf(L) === -1 && L0.indexOf(L) === -1; });
+    });
     if (bad) return { ok: false, why: 'cap' };
     if (A.u.role !== 'super') { var gw = permsGrantWhy(A, d, eo, en, to, tn, lo, ln); if (gw) return { ok: false, why: gw }; }
   }

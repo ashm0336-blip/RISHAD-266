@@ -29,9 +29,10 @@ function audCanDept(AA, d, entMode) {
   if (isMgrOf(AA, d)) return true;
   if (entMode) return deptInScope(AA, d);
   /* سقفُ الإدارة الفعليّ (deptCapOf: «لا سقفَ مضبوطاً» = كلُّ الصفحات، والوحدةُ المطفأة تُستبعد) لا السقفُ الخام */
-  var caps = deptCapOf(AA, d), ep = ((AA.perms.emps || {})[d] || {})[AA.u.ekey] || {};
-  /* الورقةُ نفسُها التي تفتح «سجل الحركة» داخل الإعدادات: admin/oplog (والشكلُ القديم admin) */
-  return deptInScope(AA, d) && caps.indexOf('admin') !== -1 && ((ep['admin/oplog'] || ep.admin || []).indexOf('view') !== -1);
+  var ep = ((AA.perms.emps || {})[d] || {})[AA.u.ekey] || {};
+  /* الورقةُ نفسُها التي تفتح «سجل الحركة» داخل الإعدادات: admin/oplog (والشكلُ القديم admin)
+     — caps-own · read-time narrowing: only while admin/oplog is inside the unit ceiling (a switched-off tab is no longer deleted from sheets) */
+  return deptInScope(AA, d) && capOnDept(AA, d, 'admin/oplog') && ((ep['admin/oplog'] || ep.admin || []).indexOf('view') !== -1);
 }
 /* نصُّ البحث حرفيٌّ: رموزُ LIKE (% _ \) تُهرَّب بشرطةٍ خلفيّة — فالمعرّفاتُ التي تحوي «_» تُبحث كما هي */
 function audLike(v) { return String(v || '').replace(/[%_\\]/g, function (m) { return '\\' + m; }).trim(); }
