@@ -24,7 +24,8 @@ function canWrite(A, k, newVal, curVal, ctx) {
   /* مدير النظام: مطلقٌ في السجلات العامة وحدها. أمّا موارد الإدارات فيمرّ
      عليها كغيره عبر سجل الموارد وسقف الإدارة والوحدة المطفأة. */
   /* KIVO_264 · D14: عدا اسمَ دخوله هو — كلمةُ المرور الحالية (cur) وصيغةُ 10 أرقام كغيره (superSelfWhy) */
-  if (u.role === 'super' && R0.scope === 'global') { var ssw = k === K_USERS && newVal != null ? superSelfWhy(A, newVal, curVal, ctx) : null; return ssw ? { ok: false, why: ssw } : { ok: true }; }
+  /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · I4w: ولمدير النظام كذلك — لا يُكتب حسابٌ «staff» بمفتاح mgr: بلا الشارة (018 usersA1Of) */
+  if (u.role === 'super' && R0.scope === 'global') { var ssw = k === K_USERS && newVal != null ? (superSelfWhy(A, newVal, curVal, ctx) || usersA1Of(newVal, curVal) || null) : null; return ssw ? { ok: false, why: ssw } : { ok: true }; }
   var P = parseKey(k);
   if (!P.dept) {
     if (P.name === K_USERS) return newVal == null ? { ok: false, why: 'users' } : usersRule(A, newVal, curVal, ctx);

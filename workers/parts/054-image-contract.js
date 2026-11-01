@@ -526,6 +526,23 @@ function usersDupIdIn(incJson, curJson, A) {
   for (i = 0; i < inc.length; i++) { if (sub[i]) Array.prototype.push.apply(out, sub[i]); else out.push(inc[i]); }
   return { v: JSON.stringify(out) };
 }
+/* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2: سجلاتُ المنح الصريح لكلّ وحدةٍ في قائمة الإدارات (A.depts) — بالمفتاح المفهرس كما enfAttachGrants
+   (057) لا بمسحٍ للجدول — { recs: {وحدة: سجل}, byEk: {مفتاح: [وحداتٌ له فيها مدخل]} } يحكم بها usersGrantWhy (018) ربطَ حسابٍ بمفتاحٍ له منحٌ باقٍ */
+async function usersGrantsLoad(env, A) {
+  var recs = nmap(), byEk = nmap(), ds = [], seen = nmap(), i, j;
+  (Array.isArray(A.depts) ? A.depts : []).forEach(function (x) { var d = x && x.id != null ? String(x.id) : ''; if (d && !seen[d]) { seen[d] = 1; ds.push(d); } });
+  for (i = 0; i < ds.length; i += 80) {
+    var part = ds.slice(i, i + 80), ph = part.map(function (x, n) { return '?' + (n + 1); }).join(', ');
+    var stmt = env.DB.prepare('SELECT k, v FROM kv WHERE k IN (' + ph + ') ORDER BY k, seq');
+    var r = await stmt.bind.apply(stmt, part.map(enfGrantsKey)).all();
+    var acc = {}; ((r && r.results) || []).forEach(function (row) { acc[row.k] = (acc[row.k] || '') + row.v; });
+    for (j = 0; j < part.length; j++) {
+      var g = enfGrantRec(acc[enfGrantsKey(part[j])] == null ? null : acc[enfGrantsKey(part[j])]); if (!g) continue;
+      recs[part[j]] = g; for (var e in g.emp) (byEk[e] = byEk[e] || []).push(part[j]);
+    }
+  }
+  return { recs: recs, byEk: byEk };
+}
 /* KIVO_264 · D14 · OD-7: حالةُ «cur» لحفظةٍ تمسّ اسمَ دخول صاحبها (un/alt) — null حين لا يتغيّر؛ وإلا { ok, forced } يقرؤها selfAcctWhy (018):
    ok: كلمةُ المرور الحالية «cur» (حقلٌ في جسم /api/save) صحيحة — تُفحص بحارس pw:<uid> نفسِه (كـ /api/checkpw · /api/recovery/new):
        الخاطئةُ محاولةٌ محسوبة والصحيحةُ تصفّره، والحارسُ المقفل يُسقطها؛ لا تُخزَّن ولا تُسجَّل في أيّ جدول.
@@ -917,6 +934,15 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var todo = [];
   for (k in set) todo.push({ k: k, v: String(set[k]), act: 'set' });
   for (i = 0; i < del.length; i++) todo.push({ k: String(del[i]), v: null, act: 'del' });
+  /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: إسنادُ القالب يكتب الورقةَ (bassam_perms_v1) والمنحَ الصريح (bsdept:<d>:bassam_grants_v1)
+     في حفظةٍ واحدة، ورفعُ الإسقاط يُحكم بما سيحمله الموظفُ بعد الحفظ (059 enfMinusLiftWhy) — فتُقيَّم الصلاحياتُ أوّلاً، وتُعطى سجلاتُ المنح صلاحياتِ ما بعد
+     الحفظ إن قُبلت (pa9) وإلا المخزَّنة؛ ومنحٌ حُكم بها لا يُكتب إلا إن كُتبت هي في الحفظة نفسها (حارسُ نسختها في مجموعته: dep9) */
+  var pa9 = null, paOn9 = false;
+  if (A.enf && A.u.role !== 'super' && Object.prototype.hasOwnProperty.call(set, K_PERM) && todo.some(function (t) { return resName(t.k) === ENF_GRANTS_RES; })) {
+    paOn9 = true; todo.sort(function (x, y) { return (y.k === K_PERM && y.act === 'set' ? 1 : 0) - (x.k === K_PERM && x.act === 'set' ? 1 : 0); });
+  }
+  /* «… (الجولة 2)» · R3-2: ربطُ حسابٍ بمفتاحٍ يحمل منحاً صريحاً باقياً يُحكم كمنح (018 usersGrantWhy) — سجلاتُ المنح لكلّ الوحدات تُقرأ مرّةً لحفظ الحسابات */
+  var gx9 = Object.prototype.hasOwnProperty.call(set, K_USERS) && A.u.role !== 'super' ? await usersGrantsLoad(env, A) : null;
   /* ══ المرحلة الأولى: تقييمٌ كامل بلا كتابة ══════════════════════════════
      يُقاس كلُّ مفتاحٍ أولاً، ويُعرف هل في الطلب عمليةٌ محمية. فإن كانت ومعها
      رفضٌ واحد، رجع الطلب كلُّه بلا كتابةٍ ولا rev — ولا تبعةَ جزئية. وما خلا
@@ -924,6 +950,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var evald = [];
   for (i = 0; i < todo.length; i++) {
     var it0 = todo[i], k0 = it0.k;
+    if (paOn9 && i === 1 && todo[0].k === K_PERM) pa9 = evald[0] && evald[0].ok ? parseJson(todo[0].v, null) : null;   /* R3-4: الصلاحياتُ قُيّمت أوّلاً */
     if (isDeviceKey(k0)) { evald.push(null); continue; }
     if (it0.act === 'del' && k0 === K_USERS) { evald.push({ deny: 'users' }); continue; }
     var cur0 = await opResourceGet(env, k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
@@ -963,6 +990,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       empsEmpty: wipeCtx[d00] === true, emps: empCtx[d00] || null, shRen: shRenCtx[d00] || null,
       imp: !!d00 && actsHeldOn(A, d00, 'admin/import', ['del']),
       selfCur: k0 === K_USERS ? selfCurSt : null,                                 /* KIVO_264 · D14 */
+      gx: k0 === K_USERS ? gx9 : null,                                            /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2 */
+      pa: pa9 && resName(k0) === ENF_GRANTS_RES ? pa9 : null,                     /* «… (الجولة 2)» · R3-4 */
       rst: !!rstK9[k0],                                                           /* KIVO_265 · H-1: علامةُ الاستعادة على هذا المفتاح (الوضع القديم · N-6) — ولمن تُقبل: 018 taskSrvExempt (R-5) */
       tk: tkCtx9[d00] || null,                                                    /* KIVO_265 · R-2: سياقُ الحساب النشط (018 taskAcctWhy) */
       ed: edCtx9 && d00 && resName(k0) === 'bassam_employees_v1' ? edCtx9 : null   /* KIVO_265 · أمن: تفرّدُ الهوية عبر الإدارات (018 empDupWhy) */
@@ -1029,7 +1058,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       if (await imgForeignIn(env, A, k0, it0.v, cur0)) { evald.push({ deny: 'imgown', cur: cur0 }); continue; }
     }
     if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
-    evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null });
+    evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
   /* R196 · Phase 3 — حسابُ الحفظة ظلّياً (العلامات · سياسةُ الاستعادة) بعد تقييم كلِّ المفاتيح وقبل أي كتابة */
   try { if (!PERMV2.mute && !ENFX) permv3Batch(A, set, del, evald, todo, pv3M, pv3Restore, pv2Restore); } catch (e3c) { swallow('permv3-batch', e3c, env.__rid); }
@@ -1107,7 +1136,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (imgLike(String(cur == null ? '' : cur)) || (it.act === 'set' && imgLike(String(v == null ? '' : v))))
       imgTouch.push({ k: k, v: it.act === 'set' ? v : '' });
     /* سجلُّ المراجعة والتدقيق يحملان الرقم، فيُؤجَّلان إلى ما بعد تخصيصه */
-    pend.push({ k: k, act: it.act, cur: cur, v: v, have: have, kvS: kvS, secS: secS });
+    pend.push({ k: k, act: it.act, cur: cur, v: v, have: have, kvS: kvS, secS: secS, dep9: !!(ev && ev.dep9) });
     if (k === K_USERS) { usersSecEvents(parseJson(cur, []), parseJson(v, []), ident, now).forEach(function (e) { secS.push(secStmt(env, e)); }); secS.push.apply(secS, usersSessStmts(env, parseJson(cur, []), parseJson(v, []), A.u.id, A.tok || '')); }   /* KIVO_252 · AUD-034/035 */
     if (k === K_PERM) secS.push(secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'perm_change', target: '', detail: permChangeDetail(parseJson(cur, {}), parseJson(v, {})), ip: ident.ip, city: ident.city, dev: ident.dev }));
     changed++;
@@ -1119,7 +1148,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (ENFX && out.snap) st.push(env.DB.prepare("UPDATE authz_snaps SET meta = json_set(COALESCE(meta, '{}'), '$.rev', ?2) WHERE snap = ?1").bind(out.snap, rev));   /* KIVO_243: رقمُ العملية — لكشف الانجراف عند الرجوع */
     for (var p9 = 0; p9 < pend.length; p9++) {
       var pd = pend[p9];
-      pd.g = [revGuard(env, pd.k, pd.have)].concat(pd.kvS, [env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(pd.k, rev)], pd.secS);
+      /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ (dep9) يُكتب بعد أن كُتبت هي بنسخة هذه الحفظة — وإلا تعارض */
+      pd.g = [revGuard(env, pd.k, pd.have)].concat(pd.dep9 ? [revGuard(env, K_PERM, rev)] : [], pd.kvS, [env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(pd.k, rev)], pd.secS);
       out.revs[pd.k] = rev;
       /* ══ R169-CC: مخزنٌ واحد، وتسجيلٌ واحدٌ للفعل الواحد ══
          للمفتاح الذي له مخطّطُ كيانات: أحداثُ كيانِه هي السجل. ولمن لا مخطّطَ له (الصلاحيات، الحسابات،

@@ -2,7 +2,7 @@
 function canWriteEnf(A, k, newVal, curVal, ctx) {
   var u = A.u, P = parseKey(k), rn = resName(k), X = (ctx && ctx.enf) || {};
   if (P.dept && rn === ENF_SCOPE_RES) return enfScopeWrite(A, k, newVal, curVal);
-  if (P.dept && rn === ENF_GRANTS_RES) return enfGrantsWrite(A, k, newVal, curVal);
+  if (P.dept && rn === ENF_GRANTS_RES) return enfGrantsWrite(A, k, newVal, curVal, ctx);   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: ctx.pa */
   var R0 = resOf(k);
   if (!R0) return enfNo('unknown');
   if (R0.scope === 'device') return enfNo('device');

@@ -2623,7 +2623,7 @@ function usersRule(A, newJson, curJson, ctx) {
   if (!Array.isArray(inc)) return { ok: false, why: 'users' };
   if (inc.some(function (x) { return !x || !x.id || badAcctId(x.id); })) return { ok: false, why: 'users' };   /* KIVO_261: معرّفٌ خبيثٌ (__proto__…) أو بلا معرّف */
   var dcw = usersDupCopyWhy(inc, cur); if (dcw) return { ok: false, why: dcw };                                /* مراجعةُ التكامل W1-CRIT */
-  var byA = nmap(), byB = nmap(), ids = nmap(), k;                                                             /* null-prototype: «__proto__» خاصيّةٌ عادية تُفحص */
+  var byA = nmap(), byB = nmap(), ids = nmap(), k, mgrEk = null;                                               /* null-prototype: «__proto__» خاصيّةٌ عادية تُفحص */
   (Array.isArray(cur) ? cur : []).forEach(function (x) { if (x && x.id) { byA[x.id] = x; ids[x.id] = 1; } });
   inc.forEach(function (x) { if (x && x.id) { byB[x.id] = x; ids[x.id] = 1; } else return; });
   for (k in ids) {
@@ -2643,10 +2643,129 @@ function usersRule(A, newJson, curJson, ctx) {
     if (!actsHeldOn(A, d, 'emps/data', [act0])) return { ok: false, why: 'act' };
     if (a && (a.role !== 'staff' || a.mgr || a.deptId !== d)) return { ok: false, why: 'mgr' };
     if (b && (b.role !== 'staff' || b.mgr || b.deptId !== d)) return { ok: false, why: 'mgr' };
+    /* «فحص الصلاحيات العميق (2026-10-21)» · D1: مفتاحُ الحساب mgr:/gm: صفةُ منصبٍ — به يرث الحسابُ سقفَ الوحدة كلَّه (022 myPermsOf) ويُعامَل
+       ممثّلاً لسقف النطاق (010) — فكان مديرٌ ضيّق عليه مديرُ النظام يُنشئ حساباً «staff» مفتاحُه mgr:<d>:N فيرث ما سُحب منه.
+       فلا يُنشئه غيرُ مدير النظام، ولا يغيّر إليه مفتاحاً، ولا يعدّل حساباً يحمله (والحذفُ يبقى كما كان)
+       «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · M-B · L3: ومفتاحٌ يحمله حسابُ مديرٍ قائم (رقمُ هوية مديرِ عقدةٍ قديم · مفتاحُ حامل الشارة —
+       نشطاً أو مجمَّداً) مفتاحُ مديرٍ كذلك؛ والحسابُ القائمُ بمفتاح مديرٍ يجمّده المديرُ ويحذفه (والجولة 3 · R3-1: لا يفكّ تجميدَه) — usersEkeyWhy */
+    if (!mgrEk) mgrEk = usersMgrEkSet(cur);
+    var ekw = usersEkeyWhy(a, b, mgrEk); if (ekw) return { ok: false, why: ekw };
+    if (usersGrantWhy(A, a, b, ctx && ctx.gx)) return { ok: false, why: 'grant' };   /* «… المرحلة 0 (الجولة 2)» · R3-2: منحٌ صريحٌ باقٍ على المفتاح */
+    if (usersSheetWhy(A, a, b, ctx && ctx.gx, false)) return { ok: false, why: 'grant' };   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2: وورقةٌ باقية */
     if (b && !userRecOk(b)) return { ok: false, why: 'shape' };                     /* KIVO_261 · AUD-057 */
     if (!phNewOk(a, b)) return { ok: false, why: 'ph' };                              /* KIVO_262: بصمةٌ حديثة وحدها */
   }
+  var a1w = usersA1Why(inc, cur); if (a1w) return { ok: false, why: a1w };   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · I4w — بعد أحكام الصفوف (D1 «ekey» أوّلاً) */
   return { ok: true };
+}
+/* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · M-B: مفاتيحُ المديرين في قائمة الحسابات المخزَّنة — كلُّ مفتاحٍ يحمله حسابٌ مدير (دورُه غيرُ staff:
+   gm · dept · super — أو يحمل الشارة mgr) نشطاً كان أو مجمَّداً. مفتاحُ mgr:/gm: صفةُ منصبٍ بنفسه (usersSynKey) ولا يحتاج حساباً */
+function usersMgrEkSet(list) {
+  var s = nmap();
+  (Array.isArray(list) ? list : []).forEach(function (x) { if (x && x.ekey != null && x.ekey !== '' && (x.role !== 'staff' || x.mgr)) s[String(x.ekey)] = 1; });
+  return s;
+}
+function usersMgrEk(ek, S) { return usersSynKey(ek) || (ek != null && ek !== '' && !!S[String(ek)]); }
+/* D1 · M-B · L3 — لغير مدير النظام، حسابٌ مفتاحُه مفتاحُ مدير (usersMgrEk): لا يُنشأ، ولا يُغيَّر إليه مفتاحٌ ولا منه؛ والقائمُ منه يُجمَّد
+   (dis وحده) ويُحذف — ولا تعديلَ سواه (اسمٌ · كلمةُ مرور · إدارة · فكُّ التجميد: R3-1). كان مديرُ الإدارة يُنشئ حساباً «staff» نشطاً بمفتاح مدير عقدةٍ قديم (رقمِ
+   هويته — usersDupEkey يتخطّى حساباتِ gm) فيدخل به ويحمل ورقتَه ومنحَه في الوحدة؛ أو مجمَّداً بمفتاح زميله حامل الشارة (usersDupEkey يتخطّى
+   المجمَّد) فيُحكم على الزميل «موظفاً عادياً». والإصلاحُ الأوّل (D1) كان يمنع تجميدَ حسابٍ بمفتاح mgr: فيبقى ما خلّفته الدُّمى نشطاً — L3
+   «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-1: والاستثناءُ اتجاهٌ واحد — التجميدُ (dis من 0 إلى 1) والحذفُ وحدهما. كان فكُّ التجميد مقبولاً
+   فيعيد مديرُ الإدارة الدميةَ أو الحسابَ البديل الذي جمّده مديرُ النظام إلى العمل بكلمة المرور التي اختارها هو — فكُّه لمدير النظام وحده */
+function usersEkeyWhy(a, b, S) {
+  if (!b) return '';
+  var mb = usersMgrEk(b.ekey, S);
+  if (!a) return mb ? 'ekey' : '';
+  if (!mb && !usersMgrEk(a.ekey, S)) return '';
+  if (String(a.ekey == null ? '' : a.ekey) !== String(b.ekey == null ? '' : b.ekey)) return 'ekey';
+  return usersFreezeOnly(a, b) ? '' : 'ekey';
+}
+/* التجميدُ وحده: dis من غير مجمَّدٍ إلى مجمَّد، وما سواه كما خُزِّن (ph الغائبُ يُورَث) */
+function usersFreezeOnly(a, b) { return !!a && !!b && !a.dis && !!b.dis && eqExcept(a, b, ['dis', 'ph']) && (!b.ph || b.ph === a.ph); }
+/* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · I4w (المواصفة §0.4): حسابٌ «staff» مفتاحُه mgr: بلا الشارة (mgr:true) ليس مديراً عند isMgrOf
+   ويرث سقفَ الوحدة كلَّه عند myPermsOf (022) — شكلٌ لا يصنعه إلا نزعُ الشارة عن حساب مدير الإدارة. فلا يُكتب لأحدٍ ولو مدير النظام:
+   الصفُّ القائمُ بهذا الشكل كما خُزِّن يمرّ (فلا يتعطّل حفظُ القائمة كلِّها) ولا يُعدَّل إلا تجميداً أو حذفاً — وتنزيلُ المدير حذفُ حسابه.
+   يُفحص كلُّ صفٍّ واردٍ بنسخه (المكرَّرُ القديم يُطابَق بأيّ نسخةٍ مخزَّنة له) · السبب 'mgr-key'
+   والتنظيف L-05 (أ): حسابُ «الإدارة» (role dept) أُلغي — صفٌّ جديدٌ أو متغيّرٌ به يُرفض 'shape' كذلك، والقائمُ كما خُزِّن يمرّ حتى يحذفه المالك. */
+function usersA1(x) { return isObj(x) && x.role === 'staff' && isMgrKey(x.ekey) && !x.mgr; }
+function usersA1Why(inc, cur) {
+  var byA = nmap(), i;
+  (Array.isArray(cur) ? cur : []).forEach(function (x) { if (x && x.id != null) (byA[String(x.id)] = byA[String(x.id)] || []).push(x); });
+  for (i = 0; i < (Array.isArray(inc) ? inc.length : 0); i++) {
+    var b = inc[i], dep = isObj(b) && b.role === 'dept'; if (!dep && !usersA1(b)) continue;
+    var cs = byA[String(b.id)] || [];
+    if (cs.some(function (a) { return eqExcept(a, b, ['ph']) && (!b.ph || b.ph === a.ph); })) continue;   /* كما خُزِّن */
+    if (dep) return 'shape';                                                                                  /* التنظيف L-05 (أ): حسابُ «الإدارة» أُلغي — لا يُنشأ ولا يُعدَّل */
+    if (cs.some(function (a) { return usersA1(a) && usersFreezeOnly(a, b); })) continue;                     /* تجميدُه */
+    return 'mgr-key';
+  }
+  return '';
+}
+function usersA1Of(newJson, curJson) { var inc = parseJson(newJson, null); return Array.isArray(inc) ? usersA1Why(inc, parseJson(curJson, [])) : ''; }
+/* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2: مفاتيحُ المديرين تُعرف من الحسابات المخزَّنة — فإذا حذف مديرُ النظام مديرَ عقدةٍ قديماً أو مديراً
+   بدوره (مفتاحُه بلا بادئة) بقي مدخلُه في سجلّ المنح الصريح (bsdept:<d>:bassam_grants_v1) فيُنشئ مديرُ الإدارة حساباً بذلك المفتاح فيرث منحَه.
+   الآن: ربطُ حسابٍ بمفتاحٍ لغير مدير النظام (إنشاؤه أو تغييرُ مفتاحه) يُحكم كمنح — كلُّ مفتاح plus نشطٍ قابلٍ للمنح في مدخلٍ باقٍ لذلك المفتاح يحمله الكاتبُ
+   في وحدته (enfHeld كأنّ الوحدات كلَّها مشغَّلة) · ومدخلٌ باقٍ فيه plus في وحدةٍ لا يديرها الكاتبُ يرفض الربط. بالوضعين (السجلُّ يُقرأ في الإنفاذ،
+   ويبقى لمن يعود إليه). GX = { recs: {وحدة: سجل}, byEk: {مفتاح: [وحدات]} } يحمّله applySave (054 usersGrantsLoad) — وغيابُه رفضٌ (fail-closed).
+   تجميدُ حسابٍ قائمٍ أو فكُّه أو تعديلُه بمفتاحه نفسِه ليس ربطاً. يعيد التفصيل ('' = لا شيء) */
+function usersGrantWhy(A, a, b, GX) {
+  if (!b) return '';
+  var ek = b.ekey == null ? '' : String(b.ekey);
+  if (!ek || (a && String(a.ekey == null ? '' : a.ekey) === ek)) return '';
+  if (!GX || !GX.byEk || !GX.recs) return 'grants (not loaded)';
+  var ds = GX.byEk[ek] || [], B = null, i, j;
+  for (i = 0; i < ds.length; i++) {
+    var g = (GX.recs[ds[i]] && GX.recs[ds[i]].emp) ? GX.recs[ds[i]].emp[ek] : null, act = [];
+    (isObj(g) && Array.isArray(g.plus) ? g.plus : []).forEach(function (x) { var re = KIVO_REGISTRY.byKey[String(x)]; if (re && re.status === 'active' && re.grant === 'assignable') act.push(String(x)); });
+    if (!act.length) continue;
+    if (!isMgrOf(A, ds[i])) return ds[i] + ' (leftover grants in a unit outside your management)';
+    if (!B) B = usersGrantorOf(A, GX);
+    for (j = 0; j < act.length; j++) if (!enfHeld(B, ds[i], act[j])) return act[j] + ' (grantor does not hold it)';
+  }
+  return '';
+}
+/* المانحُ كأنّ الوحدات كلَّها مشغَّلة (M-C) ومعه سجلاتُ المنح لكلّ الوحدات — نسخةٌ سطحيةٌ بلا مخابئ الحكم، مرّةً لكلّ حفظةٍ (A.__usB) */
+function usersGrantorOf(A, GX) {
+  if (A.__usB && A.__usB.__gx === GX) return A.__usB;
+  var B = {}, q;
+  for (q in A) if (q.slice(0, 2) !== '__' || q === '__ekIx') B[q] = A[q];
+  B.off = []; B.__grants = GX.recs; B.__gx = GX;
+  return (A.__usB = B);
+}
+/* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2 (التتمّة): والورقةُ الباقيةُ كالمنح الباقي — حسابُ «staff» يقرأ ورقةَ مفتاحه في إدارته وعدساتِه
+   (022 myPermsOf ← empPermsOf: perms.emps[وحدتُه][مفتاحُه])، فكان مديرُ الإدارة المضيَّقُ عليه يُنشئ حساباً بمفتاحٍ له في إدارته ورقةٌ باقيةٌ من حسابٍ
+   حُذف (مديرُ عقدةٍ قديمٌ برقم هويته نُقلت الإدارةُ من فرعه قبل حذفه — 330 removeGroupManager كان يحذف أوراقَه في وحدات فرعه وقتَ الحذف وحدها)
+   فيحمل الحسابُ ما لا يحمله مديرُه. الآن: ربطُ حسابٍ بمفتاحٍ (إنشاؤه أو تغييرُ مفتاحه) لغير مدير النظام يُحكم كإنشاء تلك الورقة بعدساتها لموظفٍ
+   عاديٍّ لا ورقةَ له — قاعدةُ المانح نفسُها (permsGrantWhy: الصفحاتُ والأفعالُ والعدساتُ كأنّ الوحدات كلَّها مشغَّلة) بالوضعين، وفي الإنفاذ مفاتيحُها
+   كذلك (enfSheetKeys بلا ما يُسقطه المنحُ الصريح في الوحدة — يحملها المانح: enfHeld). والقالبُ (tplOf) هويةٌ لا تمنح بنفسها، والورقةُ في وحدةٍ أخرى
+   لا يقرؤها حسابُ هذه الوحدة. تجميدُ القائم وفكُّه وتعديلُه بمفتاحه نفسِه ليس ربطاً. keys: الإنفاذ. يعيد التفصيل ('' = لا شيء) */
+function usersSheetWhy(A, a, b, GX, keys) {
+  if (!b) return '';
+  var ek = b.ekey == null ? '' : String(b.ekey), d = b.deptId == null ? '' : String(b.deptId);
+  if (!ek || !d || (a && String(a.ekey == null ? '' : a.ekey) === ek)) return '';
+  var P = A.perms || {}, own = function (m) { return isObj(m) && Object.prototype.hasOwnProperty.call(m, ek) ? m[ek] : undefined; };
+  var sh = own((P.emps || {})[d]), el = own((P.empLens || {})[d]), one = nmap(), ln = null, mi = [];
+  if (!isObj(sh)) return '';
+  if (keys) {
+    if (!GX || !GX.recs) return 'grants (not loaded)';
+    var g = own(GX.recs[d] && GX.recs[d].emp); mi = isObj(g) && Array.isArray(g.minus) ? g.minus.map(String) : [];
+  }
+  /* الحكمُ بمحتوى الورقة لا بصاحبها (المفتاحُ هنا موظفٌ عاديّ — مفتاحُ المدير رُفض قبله «ekey» · usersEkeyWhy) — فالدفعةُ بقالبٍ واحد تُحكم مرّةً */
+  var memo = A.__usSv || (A.__usSv = nmap()), mk = (keys ? 'k|' : 'l|') + d + '|' + JSON.stringify(sh) + '|' + JSON.stringify(el === undefined ? null : el) + '|' + mi.join(',');
+  if (mk in memo) return memo[mk];
+  var out = '';
+  if (keys) {
+    var B = usersGrantorOf(A, GX), ks = enfSheetKeys(B, d, { kind: 'staff', inh: false }, sh, el);
+    for (var key in ks) if (mi.indexOf(key) === -1 && !enfHeld(B, d, key)) { out = key + ' (grantor does not hold it)'; break; }
+  }
+  if (!out) {
+    /* ما في الورقة خارجَ سقف الوحدة لا يمنح شيئاً (يُقصّ عند القراءة — authorize0) فلا يُحكم */
+    var C = permOnAll(A), src = expandPermsOf(C, d, sh), cut = nmap(), leaf;
+    for (leaf in src) if (capOnDept(C, d, leaf)) cut[leaf] = src[leaf];
+    one[ek] = cut; if (el !== undefined) { ln = nmap(); ln[ek] = el; }
+    if (permsGrantWhy(A, d, null, one, null, null, null, ln)) out = 'sheet (leftover permissions the grantor does not hold)';
+  }
+  return (memo[mk] = out);
 }
 /* KIVO_261 (إصلاح · AUD-055/AUD-057 — كشفهما المراجعُ الأمنيّ المستقل): ما يكتبه غيرُ مدير النظام في المفاتيح العامّة كان بلا شكلٍ ولا حدّ —
    اسمٌ بستة ميغابايت في سجلّ الحساب، أو نصٌّ ضخم في أشجار الإدارة داخل bassam_perms_v1 — يُحقن في صفحة كلّ مستخدم. الآن حدودٌ سخيّةٌ لا تمسّ الاستعمال:
@@ -2705,38 +2824,132 @@ function permsRule(A, newJson, curJson) {
     var ov = o[k] === undefined ? {} : o[k], nv = n[k] === undefined ? {} : n[k];   /* الغائب والفارغ سواء */
     if (!deq(ov, nv)) return { ok: false, why: 'super' };
   }
-  var caps = o.caps || {};
   var ds = {}; Object.keys(n.emps || {}).concat(Object.keys(o.emps || {}), Object.keys(n.tplOf || {}), Object.keys(o.tplOf || {}), Object.keys(n.empLens || {}), Object.keys(o.empLens || {})).forEach(function (d) { ds[d] = 1; });
   for (var d in ds) {
     var eo = (o.emps || {})[d], en = (n.emps || {})[d], to = (o.tplOf || {})[d], tn = (n.tplOf || {})[d], lo = (o.empLens || {})[d], ln = (n.empLens || {})[d];
     if (deq(eo, en) && deq(to, tn) && deq(lo, ln)) continue;
     if (!isMgrOf(A, d)) return { ok: false, why: 'mgr' };
     if (!deptPermShapeOk(eo, en, to, tn, lo, ln)) return { ok: false, why: 'shape' };   /* KIVO_261 · AUD-057 */
-    var cap = Array.isArray(caps[d]) ? caps[d] : [];
-    /* مفتاح الورقة «pk/sk» يُحكم بصفحته الحاوية */
-    var bad = Object.keys(en || {}).some(function (ek) { return Object.keys(en[ek] || {}).some(function (pk) { return cap.indexOf(String(pk).split('/')[0]) === -1; }); });
+    /* «فحص الصلاحيات العميق (2026-10-21)» · PAR-1/DX-04: السقفُ الفعليّ للوحدة (capSetAnywhereOf/effCapOf — حكمُ deptCapOf نفسُه؛ والوحدةُ المطفأة
+       على مستوى المنصة مفتاحُ تشغيلٍ لا سقف) لا السجلُّ الخامّ caps[d] الذي يقرأ الغائبَ «لا شيء» — فكان كلُّ قالبٍ يعطيه المديرُ في وحدةٍ مفتوحة
+       يُرفض «خارج السقف». والأوراقُ التي تغيّرت في هذا الحفظ وحدها: ورقةٌ قديمةٌ لموظفٍ آخر لا تُسقط حفظاً لا شأن له بها.
+       مفتاح الورقة «pk/sk» يُحكم بصفحته الحاوية */
+    var cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : PG_KEYS.slice();
+    var bad = Object.keys(en || {}).some(function (ek) { if (deq((eo || {})[ek], en[ek])) return false; return Object.keys(en[ek] || {}).some(function (pk) { return cap.indexOf(String(pk).split('/')[0]) === -1; }); });
     if (bad) return { ok: false, why: 'cap' };
-    /* ورقةُ التضييق الصريحة قيدٌ حقيقيّ: صاحبُها لا يوسّعها لنفسه ولا يحذفها
-       هرباً منها، ولا يمنح موظفاً ما ليس في يده — ورقةً بورقة وفعلاً بفعل. */
-    if (hasOwnSheetOf(A, A.u.ekey, d)) {
-      var mine = myPermsOf(A, d);
-      if (!deq((eo || {})[A.u.ekey], (en || {})[A.u.ekey])) return { ok: false, why: 'self' };
-      /* لا تُفحص إلا الأوراق التي تغيّرت فعلاً في هذا الحفظ، وتُفرد كلُّ ورقةٍ
-         إلى أوراقها الصريحة قبل المقارنة — ورقةً بورقة وفعلاً بفعل، فلا يمرّ
-         منحُ صفحةٍ حاويةٍ ما لا يملكه الفاعل في أوراقها. */
-      var over = Object.keys(en || {}).some(function (ek) {
-        if (deq((eo || {})[ek], en[ek])) return false;
-        var sheet = expandPermsOf(A, d, en[ek] || {});
-        return Object.keys(sheet).some(function (pk) {
-          var acts = sheet[pk] || [], have = mine[pk] || [];
-          return acts.some(function (ac) { return have.indexOf(ac) === -1; });
-        });
-      });
-      if (over) return { ok: false, why: 'grant' };
-      if (!deq(to, tn) || !deq(lo, ln)) return { ok: false, why: 'grant' };
-    }
+    if (A.u.role !== 'super') { var gw = permsGrantWhy(A, d, eo, en, to, tn, lo, ln); if (gw) return { ok: false, why: gw }; }
   }
   return { ok: true };
+}
+/* «فحص الصلاحيات العميق (2026-10-21)» — صاحبُ الورقة: موظفٌ عاديّ أو مدير. المديرُ مفتاحُه mgr:/gm: أو حسابُه دورُه غيرُ staff أو يحمل الشارة؛
+   والحسابُ يُعرف بمفتاحه في قائمة الحسابات الكاملة (A.users) — فحسابُ gm قديمٌ مفتاحُه رقمُ هوية مديرٌ كذلك. inh: يرث سقف الوحدة حين لا ورقةَ له */
+/* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · M-A: يُحكم على المفتاح بكلّ الحسابات التي تحمله (نشطةً ومجمَّدة) لا بأوّلها — كان حسابٌ «staff»
+   مجمَّدٌ بمفتاح حامل الشارة (أو نشطٌ بمفتاح مديرِ عقدةٍ قديم) يوضع قبله في القائمة فيُحكم على المدير «موظفاً عادياً» فيضيّق عليه مديرُ الإدارة
+   ولا يُرجعها. المفتاحُ مديرٌ إن حمله حسابٌ مديرٌ واحد · inh: يرث سقفَ الوحدة بلا ورقةٍ إن ورثه حسابٌ واحدٌ منها (الأشدُّ لما يصير إليه الحفظ)
+   · inhAll: إن ورثه كلُّها (الأشدُّ لما كان قبله) — كما myPermsOf في 022: gm · dept · super يرثون، والموظفُ بمفتاح mgr: */
+function permEkIx(A) {
+  if (A.__ekIx) return A.__ekIx;
+  var ix = A.__ekIx = nmap();
+  (A.users || []).forEach(function (x) {
+    if (!x || x.ekey == null || x.ekey === '') return;
+    var k = String(x.ekey), e = ix[k] || (ix[k] = { n: 0, inh: 0, mgr: false, gids: [] });
+    e.n++;
+    if (x.role === 'gm') e.gids.push(String(x.gid || ''));
+    else if (x.role !== 'staff' || x.mgr) e.mgr = true;
+    if (x.role === 'gm' || x.role === 'dept' || x.role === 'super' || (x.role === 'staff' && isMgrKey(k))) e.inh++;
+  });
+  return ix;
+}
+function permTargetOf(A, ek) {
+  ek = String(ek == null ? '' : ek);
+  var e = permEkIx(A)[ek] || null, gids = e ? e.gids.slice() : [], syn = ek.slice(0, 4) === 'mgr:';
+  if (ek.slice(0, 3) === 'gm:') gids.push(ek.split(':')[1] || '');
+  var inh = syn || !!(e && e.inh), inhAll = syn || !!(e && e.inh === e.n);
+  if (gids.length) return { kind: 'gm', gid: gids[0], gids: gids, inh: inh, inhAll: inhAll };
+  if (syn || (e && e.mgr)) return { kind: 'mgr', inh: inh, inhAll: inhAll };
+  return { kind: 'staff', inh: false, inhAll: false };
+}
+/* M5/PAR-4: غيرُ مدير النظام يكتب أوراقَ الموظفين العاديين وحدهم (وقوالبَهم وعدساتِهم ومنحَهم) — أوراقُ المديرين يكتبها مديرُ النظام أو مديرُ فرعٍ
+   فوقهم (gm في نطاقه)، وورقةُ مدير عقدةٍ يكتبها مديرُ عقدةٍ أعلى منه وحده. كان مديرُ الإدارة يضيّق على مديره العام وزميله فلا يُرجعانها.
+   (الجولة 2 · M-A: مفتاحٌ يحمله أكثرُ من مدير عقدة يكتبه من هو فوقهم جميعاً) */
+function permTargetOk(A, ek) {
+  var u = A.u; if (u.role === 'super') return true;
+  var t = permTargetOf(A, ek);
+  if (t.kind === 'staff') return true;
+  if (u.role !== 'gm') return false;
+  if (t.kind === 'mgr') return true;
+  for (var i = 0; i < t.gids.length; i++) if (!permGidBelow(A, t.gids[i], u.gid)) return false;
+  return true;
+}
+/* العقدةُ c تحت العقدة top تماماً (سلسلةُ الآباء في A.nodes · محدودةٌ ضدّ الدورات) */
+function permGidBelow(A, c, top) {
+  var seen = nmap(), n = 0;
+  c = String(c == null ? '' : c); top = String(top == null ? '' : top);
+  if (!c || !top || c === top) return false;
+  while (c && !seen[c] && n++ < 64) {
+    seen[c] = 1;
+    var nd = (A.nodes || []).filter(function (x) { return x && x.id === c; })[0];
+    c = nd ? String(nd.pid || '') : '';
+    if (c && c === top) return true;
+  }
+  return false;
+}
+/* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · M-C: إطفاءُ الوحدة على مستوى المنصة (A.off) مفتاحُ تشغيلٍ لا صلاحية — يُحكم المانحُ كأنّ الوحدات
+   كلَّها مشغَّلة، وإلا جهّز لموظفه وهي مطفأة ورقةً أو منحاً لا يملكه هو فيحمله الموظفُ يوم يعيد مديرُ النظام تشغيلها (والسقفُ في permsRule بلا
+   إطفاءٍ أصلاً: effCapOf). نسخةٌ سطحيةٌ من الفاعل بلا الوحدات المطفأة وبلا مخابئ الحكم (__enfH · __enfT …) — ويبقى المنحُ المرفق (__grants) */
+function permOnAll(A) {
+  if (!A || !A.off || !A.off.length) return A;
+  if (A.__onAll) return A.__onAll;
+  var B = {}, k;
+  for (k in A) if (k.slice(0, 2) !== '__' || k === '__grants' || k === '__ekIx') B[k] = A[k];
+  B.off = [];
+  return (A.__onAll = B);
+}
+/* N1 · M4 · M5/PAR-4: قاعدةُ المانح لغير مدير النظام في وحدةٍ يديرها — لكل صاحبِ ورقةٍ تغيّرت ورقتُه أو قالبُه أو عدساتُه:
+     (أ) ليس الفاعلَ نفسَه — كانت الحمايةُ لمن له ورقةٌ مخزَّنة وحده، فحاملُ الشارة بلا ورقةٍ يكتب لنفسه سقفَ الإدارة كلَّه؛
+     (ب) موظفٌ عاديّ أو مديرٌ تحت مدير فرعٍ يكتب له (permTargetOk)؛
+     (ج) لا يضيف ورقةً أو فعلاً أو عدسةً لا يملكها الفاعلُ نفسُه في هذه الوحدة — كان الفحصُ لصاحب الورقة الصريحة وحده، فالمديرُ الذي يرث
+         والمضيَّقُ عليه في الإنفاذ بالإسقاط يمنحان ما ليس في يدهما (ومفاتيحُ v24.9 في الإنفاذ: enfPermsHeldWhy في 059). وما كان قبل الحفظ
+         يبقى بلا حكم: المانحُ يضيّق ويعدّل ما منحه غيرُه ولا يزيد عليه. والقالبُ هويةٌ لا تمنح شيئاً بنفسها — يُحكم بورقته. */
+function permsGrantWhy(A, d, eo, en, to, tn, lo, ln) {
+  var me = String(A.u.ekey || ''), eks = nmap(), ek, mine = null, B = permOnAll(A);
+  [eo, en, to, tn, lo, ln].forEach(function (m) { if (isObj(m)) Object.keys(m).forEach(function (x) { eks[x] = 1; }); });
+  var dl = ((A.perms && A.perms.lenses) || {})[d], allL = KIVO_LENS_PLUGINS.keys;
+  var lensOn = function (arr, L) { return (Array.isArray(dl) ? dl.indexOf(L) !== -1 : true) && (Array.isArray(arr) ? arr.indexOf(L) !== -1 : true); };
+  for (ek in eks) {
+    var s0 = isObj(eo) ? eo[ek] : undefined, s1 = isObj(en) ? en[ek] : undefined, l0 = isObj(lo) ? lo[ek] : undefined, l1 = isObj(ln) ? ln[ek] : undefined;
+    var chS = !deq(s0, s1), chL = !deq(l0, l1);
+    if (!chS && !chL && deq(isObj(to) ? to[ek] : undefined, isObj(tn) ? tn[ek] : undefined)) continue;
+    if (me && ek === me) return 'self';
+    if (!permTargetOk(A, ek)) return 'target';
+    var t = permTargetOf(A, ek);
+    if (chS) {
+      /* الجولة 2: ما كان بأضيق وراثةٍ (inhAll) وما يصير بأوسعها (inh) · والمانحُ وما يرثه الهدفُ كأنّ الوحدات كلَّها مشغَّلة (M-C: B) — كان
+         ما في وحدةٍ مطفأةٍ يُتخطّى فيُجهَّز للموظف ما لا يملكه مانحُه */
+      var was = isObj(s0) ? expandPermsOf(B, d, s0) : (t.inhAll ? capAllPermsOf(B, d) : {}), now = isObj(s1) ? expandPermsOf(B, d, s1) : (t.inh ? capAllPermsOf(B, d) : {});
+      if (!mine) mine = myPermsOf(B, d);
+      for (var pk in now) {
+        var acts = now[pk] || [], had = was[pk] || [], have = mine[pk] || [];
+        for (var i = 0; i < acts.length; i++) if (had.indexOf(acts[i]) === -1 && have.indexOf(acts[i]) === -1) return 'grant';
+      }
+    }
+    /* L1 (الجولة 2): العدساتُ تعمل على ورقة — حذفُ ورقة موظفٍ لا يرث مع عدساته (حذفُ حسابه · clearEmpPerms · dropEmpPerms · pruneOrphanEmpPerms)
+       لا يمنحه عدسة؛ كان غيابُ قائمته يُقرأ «كلَّ العدسات» فيُرفض التنظيفُ «grant» ويبقى السجلُّ اليتيم */
+    if (chL && (isObj(s1) || t.inh)) for (var j = 0; j < allL.length; j++) if (lensOn(l1, allL[j]) && !lensOn(l0, allL[j]) && !KIVO_BUILD.lensGate(A.perms, A.u, d, allL[j]).on) return 'grant';
+    /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-6: ورقةٌ تُنشأ (أو تعود) لصاحبٍ لا يرث — عدساتُه قبلها لم تمنح شيئاً، فكلُّ عدسةٍ تعمل بالورقة
+       الجديدة (على صفحةٍ تحملها: الخطة · الجولات) تُحكم كعدسةٍ مضافة. كان حفظان يتخطّيان الحكم: الأوّلُ يحذف الورقة ويضع العدسات (L1)، والثاني يعيد الورقة */
+    if (isObj(s1) && !isObj(s0) && !t.inhAll) {
+      var nowB = expandPermsOf(B, d, s1);
+      for (var j2 = 0; j2 < allL.length; j2++) if (lensOn(l1, allL[j2]) && permLensHosted(nowB, allL[j2]) && !KIVO_BUILD.lensGate(A.perms, A.u, d, allL[j2]).on) return 'grant';
+    }
+  }
+  return '';
+}
+/* هل تحمل الورقةُ (الموسَّعة) صفحةً تعمل عليها العدسةُ L؟ (مضيفو مفتاح lens.<L>.view في فهرس الإنفاذ — الخطة والجولات افتراضاً) */
+function permLensHosted(sheet, L) {
+  var hs = enfIx().hosts['lens.' + L + '.view'] || ['plan', 'daily/rounds'];
+  for (var i = 0; i < hs.length; i++) for (var pk in sheet) if ((pk === hs[i] || pk.indexOf(hs[i] + '/') === 0) && (sheet[pk] || []).length) return true;
+  return false;
 }
 /* Generated from the marked pure engine in src/services/332-find-day.js. Do not edit. */
 var KIVO_FIND = (function(){
@@ -20169,7 +20382,8 @@ function canWrite(A, k, newVal, curVal, ctx) {
   /* مدير النظام: مطلقٌ في السجلات العامة وحدها. أمّا موارد الإدارات فيمرّ
      عليها كغيره عبر سجل الموارد وسقف الإدارة والوحدة المطفأة. */
   /* KIVO_264 · D14: عدا اسمَ دخوله هو — كلمةُ المرور الحالية (cur) وصيغةُ 10 أرقام كغيره (superSelfWhy) */
-  if (u.role === 'super' && R0.scope === 'global') { var ssw = k === K_USERS && newVal != null ? superSelfWhy(A, newVal, curVal, ctx) : null; return ssw ? { ok: false, why: ssw } : { ok: true }; }
+  /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · I4w: ولمدير النظام كذلك — لا يُكتب حسابٌ «staff» بمفتاح mgr: بلا الشارة (018 usersA1Of) */
+  if (u.role === 'super' && R0.scope === 'global') { var ssw = k === K_USERS && newVal != null ? (superSelfWhy(A, newVal, curVal, ctx) || usersA1Of(newVal, curVal) || null) : null; return ssw ? { ok: false, why: ssw } : { ok: true }; }
   var P = parseKey(k);
   if (!P.dept) {
     if (P.name === K_USERS) return newVal == null ? { ok: false, why: 'users' } : usersRule(A, newVal, curVal, ctx);
@@ -22366,6 +22580,23 @@ function usersDupIdIn(incJson, curJson, A) {
   for (i = 0; i < inc.length; i++) { if (sub[i]) Array.prototype.push.apply(out, sub[i]); else out.push(inc[i]); }
   return { v: JSON.stringify(out) };
 }
+/* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2: سجلاتُ المنح الصريح لكلّ وحدةٍ في قائمة الإدارات (A.depts) — بالمفتاح المفهرس كما enfAttachGrants
+   (057) لا بمسحٍ للجدول — { recs: {وحدة: سجل}, byEk: {مفتاح: [وحداتٌ له فيها مدخل]} } يحكم بها usersGrantWhy (018) ربطَ حسابٍ بمفتاحٍ له منحٌ باقٍ */
+async function usersGrantsLoad(env, A) {
+  var recs = nmap(), byEk = nmap(), ds = [], seen = nmap(), i, j;
+  (Array.isArray(A.depts) ? A.depts : []).forEach(function (x) { var d = x && x.id != null ? String(x.id) : ''; if (d && !seen[d]) { seen[d] = 1; ds.push(d); } });
+  for (i = 0; i < ds.length; i += 80) {
+    var part = ds.slice(i, i + 80), ph = part.map(function (x, n) { return '?' + (n + 1); }).join(', ');
+    var stmt = env.DB.prepare('SELECT k, v FROM kv WHERE k IN (' + ph + ') ORDER BY k, seq');
+    var r = await stmt.bind.apply(stmt, part.map(enfGrantsKey)).all();
+    var acc = {}; ((r && r.results) || []).forEach(function (row) { acc[row.k] = (acc[row.k] || '') + row.v; });
+    for (j = 0; j < part.length; j++) {
+      var g = enfGrantRec(acc[enfGrantsKey(part[j])] == null ? null : acc[enfGrantsKey(part[j])]); if (!g) continue;
+      recs[part[j]] = g; for (var e in g.emp) (byEk[e] = byEk[e] || []).push(part[j]);
+    }
+  }
+  return { recs: recs, byEk: byEk };
+}
 /* KIVO_264 · D14 · OD-7: حالةُ «cur» لحفظةٍ تمسّ اسمَ دخول صاحبها (un/alt) — null حين لا يتغيّر؛ وإلا { ok, forced } يقرؤها selfAcctWhy (018):
    ok: كلمةُ المرور الحالية «cur» (حقلٌ في جسم /api/save) صحيحة — تُفحص بحارس pw:<uid> نفسِه (كـ /api/checkpw · /api/recovery/new):
        الخاطئةُ محاولةٌ محسوبة والصحيحةُ تصفّره، والحارسُ المقفل يُسقطها؛ لا تُخزَّن ولا تُسجَّل في أيّ جدول.
@@ -22757,6 +22988,15 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var todo = [];
   for (k in set) todo.push({ k: k, v: String(set[k]), act: 'set' });
   for (i = 0; i < del.length; i++) todo.push({ k: String(del[i]), v: null, act: 'del' });
+  /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: إسنادُ القالب يكتب الورقةَ (bassam_perms_v1) والمنحَ الصريح (bsdept:<d>:bassam_grants_v1)
+     في حفظةٍ واحدة، ورفعُ الإسقاط يُحكم بما سيحمله الموظفُ بعد الحفظ (059 enfMinusLiftWhy) — فتُقيَّم الصلاحياتُ أوّلاً، وتُعطى سجلاتُ المنح صلاحياتِ ما بعد
+     الحفظ إن قُبلت (pa9) وإلا المخزَّنة؛ ومنحٌ حُكم بها لا يُكتب إلا إن كُتبت هي في الحفظة نفسها (حارسُ نسختها في مجموعته: dep9) */
+  var pa9 = null, paOn9 = false;
+  if (A.enf && A.u.role !== 'super' && Object.prototype.hasOwnProperty.call(set, K_PERM) && todo.some(function (t) { return resName(t.k) === ENF_GRANTS_RES; })) {
+    paOn9 = true; todo.sort(function (x, y) { return (y.k === K_PERM && y.act === 'set' ? 1 : 0) - (x.k === K_PERM && x.act === 'set' ? 1 : 0); });
+  }
+  /* «… (الجولة 2)» · R3-2: ربطُ حسابٍ بمفتاحٍ يحمل منحاً صريحاً باقياً يُحكم كمنح (018 usersGrantWhy) — سجلاتُ المنح لكلّ الوحدات تُقرأ مرّةً لحفظ الحسابات */
+  var gx9 = Object.prototype.hasOwnProperty.call(set, K_USERS) && A.u.role !== 'super' ? await usersGrantsLoad(env, A) : null;
   /* ══ المرحلة الأولى: تقييمٌ كامل بلا كتابة ══════════════════════════════
      يُقاس كلُّ مفتاحٍ أولاً، ويُعرف هل في الطلب عمليةٌ محمية. فإن كانت ومعها
      رفضٌ واحد، رجع الطلب كلُّه بلا كتابةٍ ولا rev — ولا تبعةَ جزئية. وما خلا
@@ -22764,6 +23004,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var evald = [];
   for (i = 0; i < todo.length; i++) {
     var it0 = todo[i], k0 = it0.k;
+    if (paOn9 && i === 1 && todo[0].k === K_PERM) pa9 = evald[0] && evald[0].ok ? parseJson(todo[0].v, null) : null;   /* R3-4: الصلاحياتُ قُيّمت أوّلاً */
     if (isDeviceKey(k0)) { evald.push(null); continue; }
     if (it0.act === 'del' && k0 === K_USERS) { evald.push({ deny: 'users' }); continue; }
     var cur0 = await opResourceGet(env, k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
@@ -22803,6 +23044,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       empsEmpty: wipeCtx[d00] === true, emps: empCtx[d00] || null, shRen: shRenCtx[d00] || null,
       imp: !!d00 && actsHeldOn(A, d00, 'admin/import', ['del']),
       selfCur: k0 === K_USERS ? selfCurSt : null,                                 /* KIVO_264 · D14 */
+      gx: k0 === K_USERS ? gx9 : null,                                            /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2 */
+      pa: pa9 && resName(k0) === ENF_GRANTS_RES ? pa9 : null,                     /* «… (الجولة 2)» · R3-4 */
       rst: !!rstK9[k0],                                                           /* KIVO_265 · H-1: علامةُ الاستعادة على هذا المفتاح (الوضع القديم · N-6) — ولمن تُقبل: 018 taskSrvExempt (R-5) */
       tk: tkCtx9[d00] || null,                                                    /* KIVO_265 · R-2: سياقُ الحساب النشط (018 taskAcctWhy) */
       ed: edCtx9 && d00 && resName(k0) === 'bassam_employees_v1' ? edCtx9 : null   /* KIVO_265 · أمن: تفرّدُ الهوية عبر الإدارات (018 empDupWhy) */
@@ -22869,7 +23112,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       if (await imgForeignIn(env, A, k0, it0.v, cur0)) { evald.push({ deny: 'imgown', cur: cur0 }); continue; }
     }
     if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
-    evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null });
+    evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
   /* R196 · Phase 3 — حسابُ الحفظة ظلّياً (العلامات · سياسةُ الاستعادة) بعد تقييم كلِّ المفاتيح وقبل أي كتابة */
   try { if (!PERMV2.mute && !ENFX) permv3Batch(A, set, del, evald, todo, pv3M, pv3Restore, pv2Restore); } catch (e3c) { swallow('permv3-batch', e3c, env.__rid); }
@@ -22947,7 +23190,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (imgLike(String(cur == null ? '' : cur)) || (it.act === 'set' && imgLike(String(v == null ? '' : v))))
       imgTouch.push({ k: k, v: it.act === 'set' ? v : '' });
     /* سجلُّ المراجعة والتدقيق يحملان الرقم، فيُؤجَّلان إلى ما بعد تخصيصه */
-    pend.push({ k: k, act: it.act, cur: cur, v: v, have: have, kvS: kvS, secS: secS });
+    pend.push({ k: k, act: it.act, cur: cur, v: v, have: have, kvS: kvS, secS: secS, dep9: !!(ev && ev.dep9) });
     if (k === K_USERS) { usersSecEvents(parseJson(cur, []), parseJson(v, []), ident, now).forEach(function (e) { secS.push(secStmt(env, e)); }); secS.push.apply(secS, usersSessStmts(env, parseJson(cur, []), parseJson(v, []), A.u.id, A.tok || '')); }   /* KIVO_252 · AUD-034/035 */
     if (k === K_PERM) secS.push(secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'perm_change', target: '', detail: permChangeDetail(parseJson(cur, {}), parseJson(v, {})), ip: ident.ip, city: ident.city, dev: ident.dev }));
     changed++;
@@ -22959,7 +23202,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (ENFX && out.snap) st.push(env.DB.prepare("UPDATE authz_snaps SET meta = json_set(COALESCE(meta, '{}'), '$.rev', ?2) WHERE snap = ?1").bind(out.snap, rev));   /* KIVO_243: رقمُ العملية — لكشف الانجراف عند الرجوع */
     for (var p9 = 0; p9 < pend.length; p9++) {
       var pd = pend[p9];
-      pd.g = [revGuard(env, pd.k, pd.have)].concat(pd.kvS, [env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(pd.k, rev)], pd.secS);
+      /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ (dep9) يُكتب بعد أن كُتبت هي بنسخة هذه الحفظة — وإلا تعارض */
+      pd.g = [revGuard(env, pd.k, pd.have)].concat(pd.dep9 ? [revGuard(env, K_PERM, rev)] : [], pd.kvS, [env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(pd.k, rev)], pd.secS);
       out.revs[pd.k] = rev;
       /* ══ R169-CC: مخزنٌ واحد، وتسجيلٌ واحدٌ للفعل الواحد ══
          للمفتاح الذي له مخطّطُ كيانات: أحداثُ كيانِه هي السجل. ولمن لا مخطّطَ له (الصلاحيات، الحسابات،
@@ -23616,7 +23860,7 @@ function enfUsersWrite(A, k, newVal, curVal, ctx, X) {
   if (!Array.isArray(inc)) return enfNo('users');
   if (!Array.isArray(cur)) cur = [];
   if (inc.some(function (x) { return !x || !x.id || badAcctId(x.id); })) return enfNo('users');   /* KIVO_261: معرّفٌ خبيثٌ (__proto__…) أو بلا معرّف */
-  var byA = nmap(), byB = nmap(), ids = nmap(), kk, sup = A.u.role === 'super', depts = {}, selfOnly = true;
+  var byA = nmap(), byB = nmap(), ids = nmap(), kk, sup = A.u.role === 'super', depts = {}, selfOnly = true, mgrEk = null;
   if (!sup) { var dcw9 = usersDupCopyWhy(inc, cur); if (dcw9) return enfNo(dcw9); }   /* مراجعةُ التكامل W1-CRIT (دفاعٌ في العمق · 018): كلُّ نسخةٍ من معرّفٍ مكرَّرٍ مخزَّنةٌ كما هي */
   cur.forEach(function (x) { if (x && x.id) { byA[x.id] = x; ids[x.id] = 1; } });
   inc.forEach(function (x) { byB[x.id] = x; ids[x.id] = 1; });
@@ -23630,10 +23874,17 @@ function enfUsersWrite(A, k, newVal, curVal, ctx, X) {
     if (!isMgrOf(A, d)) return enfNo('mgr');
     if (a && (a.role !== 'staff' || a.mgr || a.deptId !== d)) return enfNo('mgr');
     if (b && (b.role !== 'staff' || b.mgr || b.deptId !== d)) return enfNo('mgr');
+    /* «فحص الصلاحيات العميق (2026-10-21)» · D1: مفتاحُ mgr:/gm: لمدير النظام وحده (018 usersRule) — والجولة 2 (M-B · L3): ومفتاحُ حسابِ مديرٍ قائم
+       (رقمُ هوية مديرِ عقدةٍ قديم · حاملُ الشارة · المجمَّدُ منها) كذلك؛ والقائمُ بمفتاح مديرٍ يُجمَّد ويُحذف ولا يُفكّ تجميدُه — R3-1 (018 usersEkeyWhy) */
+    if (!mgrEk) mgrEk = usersMgrEkSet(cur);
+    var ekw9 = usersEkeyWhy(a, b, mgrEk); if (ekw9) return enfNo(ekw9);
+    var grw9 = usersGrantWhy(A, a, b, ctx && ctx.gx); if (grw9) return enfNo('grant', { detail: grw9 });   /* الجولة 2 · R3-2: منحٌ صريحٌ باقٍ على المفتاح (018) */
+    var shw9 = usersSheetWhy(A, a, b, ctx && ctx.gx, true); if (shw9) return enfNo('grant', { detail: shw9 });   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2: وورقةٌ باقية — مفاتيحُها ثم صفحاتُها (018) */
     if (b && !userRecOk(b)) return enfNo('shape');                                    /* KIVO_261 · AUD-057 */
     if (!phNewOk(a, b)) return enfNo('ph');                                            /* KIVO_262: بصمةٌ حديثة وحدها */
     depts[d] = 1;
   }
+  var a19 = usersA1Why(inc, cur); if (a19) return enfNo(a19);   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · I4w: لكلّ فاعلٍ ومنهم مدير النظام — بعد أحكام الصفوف (018) */
   if (sup) return enfOk(['sys.users.manage']);
   if (selfOnly) return enfOk(['self.profile.edit']);
   var used = [], d9;
@@ -23652,15 +23903,60 @@ function enfPermsWrite(A, k, newVal, curVal, ctx, X) {
   if (!isObj(o)) o = {};
   var sup = A.u.role === 'super';
   /* غيرُ مدير النظام: permsRule هو حكمُ perm.assign نفسُه (أوراقُ موظفي إدارته · عدساتُهم · قوالبُهم — لا سقوف ولا توسيعَ ذاتيّ ولا منحَ ما ليس في يده) */
-  if (!sup) { var pr = permsRule(A, newVal, curVal); return pr.ok ? enfOk(['perm.assign']) : enfNo(pr.why); }
+  if (!sup) {
+    /* حزمةُ الدمج · الجولة 5: رفضُ «grant» بقاعدة المانح (018 permsGrantWhy) يُسمّي المفتاحَ إن وجده حكمُ الإنفاذ نفسُه (enfPermsHeldWhy) — كان إسقاطُ ورقةِ
+       مديرٍ يرث (الجولة 4) وصفحةُ العدسة المضافة (L-4) يُرفضان هنا بلا تفصيل فلا يعرف المانحُ أيَّ مفتاحٍ لا يحمله. الحكمُ نفسُه لا يتغيّر */
+    var pr = permsRule(A, newVal, curVal);
+    if (!pr.ok) { var hw0 = pr.why === 'grant' ? enfPermsHeldWhy(A, n, o) : ''; return enfNo(pr.why, hw0 ? { detail: hw0 + ' (grantor does not hold it)' } : null); }
+    var hw = enfPermsHeldWhy(A, n, o); return hw ? enfNo('grant', { detail: hw + ' (grantor does not hold it)' }) : enfOk(['perm.assign']);
+  }
   var res = KIVO_GUARDS.classify('bassam_perms_v1', o, n, { dept: '', actor: { id: A.u.id, ekey: A.u.ekey, role: A.u.role } }), keys = res.keys(), i;
   for (i = 0; i < keys.length; i++) if (keys[i].indexOf('__') === 0) return enfNo('unmapped', { detail: keys[i] });
   return enfOk(keys.length ? keys : ['sys.ceiling.set']);
 }
+/* «فحص الصلاحيات العميق (2026-10-21)» · N1: في الإنفاذ يُحكم المانحُ بمفاتيح v24.9 لا بالورقة — تضييقُ مدير النظام بالإسقاط (minus في سجل المنح)
+   لا يظهر في ورقة المدير، فكان يعطي موظفَه الورقةَ كاملةً من الجدول الشهري أو القالب فيملك الموظفُ ما سُحب من مديره.
+   الآن: كلُّ مفتاحٍ يضيفه الحفظُ لصاحب الورقة (ورقتُه أو عدساتُه الجديدة) يحمله المانحُ نفسُه في الوحدة (enfHeld) — كما enfGrantsWrite للمنح الصريح.
+   يعيد أولَ مفتاحٍ لا يحمله المانح ('' = لا شيء) */
+function enfPermsHeldWhy(A, n, o) {
+  var ds = nmap(), d, ek, key, B = permOnAll(A);   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · M-C: كأنّ الوحدات كلَّها مشغَّلة (018 permOnAll) */
+  ['emps', 'empLens'].forEach(function (s) { [n, o].forEach(function (P) { if (isObj(P) && isObj(P[s])) Object.keys(P[s]).forEach(function (x) { ds[x] = 1; }); }); });
+  for (d in ds) {
+    var eo = (o.emps || {})[d], en = (n.emps || {})[d], lo = (o.empLens || {})[d], ln = (n.empLens || {})[d], eks = nmap();
+    eo = isObj(eo) ? eo : {}; en = isObj(en) ? en : {}; lo = isObj(lo) ? lo : {}; ln = isObj(ln) ? ln : {};
+    [eo, en, lo, ln].forEach(function (m) { Object.keys(m).forEach(function (x) { eks[x] = 1; }); });
+    for (ek in eks) {
+      if (deq(eo[ek], en[ek]) && deq(lo[ek], ln[ek])) continue;
+      /* الجولة 2 · M-A: ما كان بأضيق وراثةٍ للمفتاح (inhAll) وما يصير بأوسعها (inh) — حسابٌ واحدٌ يرث يكفي ليُحكم حذفُ الورقة توسيعاً */
+      var t = permTargetOf(A, ek), t0 = { kind: t.kind, inh: t.inhAll }, was = enfSheetKeys(B, d, t0, eo[ek], lo[ek]), now = enfSheetKeys(B, d, t, en[ek], ln[ek]);
+      for (key in now) if (!was[key] && !enfHeld(B, d, key)) return key;
+    }
+  }
+  return '';
+}
+/* المفاتيحُ التي تعطيها ورقةٌ وعدساتٌ لصاحبها في الوحدة d — مسارُ الترجمة في enfHeld0 نفسُه (ترجمةُ الورقة المقصوصة بالسقف · ENF_DERIVE ·
+   سقفُ المفتاح · بوابةُ العدسة · ENF_COMPAT بعد الترحيل)؛ وما لا تمنحه الورقةُ أصلاً (الذات · الدور · مدير النظام · مفاتيحُ المدير لغير المدير) خارجها */
+function enfSheetKeys(A, d, t, sheet, el) {
+  var ix = enfIx(), R = KIVO_REGISTRY, out = {}, cut = {}, leaf, key, s, i;
+  var src = isObj(sheet) ? (Object.keys(sheet).some(pgIsContainer) ? expandPermsOf(A, d, sheet) : sheet) : (t.inh ? capAllPermsOf(A, d) : {});
+  for (leaf in src) if (capOnDept(A, d, leaf)) cut[leaf] = src[leaf];
+  var T = R.translate(cut);
+  for (s in ENF_DERIVE) if (T.keys[s]) for (i = 0; i < ENF_DERIVE[s].length; i++) T.keys[ENF_DERIVE[s][i]] = true;
+  for (key in T.keys) {
+    var e = R.byKey[key], L = ix.lens[key];
+    if (!T.keys[key] || !e || e.status !== 'active' || e.grant === 'self' || e.grant === 'role' || ix.superOnly[key]) continue;
+    if (ix.needMgr[key] && t.kind === 'staff') continue;
+    if (ENF_COMPAT[key] && enfPermMigrated(A)) continue;
+    if (!enfKeyOnCeiling(A, d, key)) continue;
+    if (L && Array.isArray(el) && el.indexOf(L) === -1) continue;
+    out[key] = 1;
+  }
+  return out;
+}
 /* ── المنحُ الصريح (bsdept:<d>:bassam_grants_v1): مديرُ الإدارة (perm.assign) لموظفي إدارته لا لنفسه — مفتاحٌ قابلٌ للمنح · داخل سقف الإدارة · يملكه المانح؛
    الإسقاطُ (minus) لأيّ مفتاحٍ نشط · مديرُ النظام بلا قيد المانح · حذفُ السجل كلِّه لمدير النظام وحده ── */
 var ENF_GRANT_FIELDS = { plus: 1, minus: 1, at: 1, by: 1, src: 1 };
-function enfGrantsWrite(A, k, newVal, curVal) {
+function enfGrantsWrite(A, k, newVal, curVal, ctx) {
   var P = parseKey(k), d = P.dept, sup = A.u.role === 'super';
   if (!d) return enfNo('scope');
   if (!sup && !deptInScope(A, d)) return enfNo('dept');
@@ -23669,7 +23965,9 @@ function enfGrantsWrite(A, k, newVal, curVal) {
   if (!isObj(n) || !isObj(o)) return enfNo('shape');
   if (n.emp !== undefined && !isObj(n.emp)) return enfNo('shape', { detail: 'emp' });
   var top = {}, q; Object.keys(n).concat(Object.keys(o)).forEach(function (x) { top[x] = 1; });
-  for (q in top) { if (q === 'emp' || deq(o[q], n[q])) continue; if (!sup) return enfNo('super', { detail: q }); }
+  /* «فحص الصلاحيات العميق (2026-10-21)» · DX-05: أولُ سجلٍّ في وحدةٍ لا سجلَّ لها يُنشأ بـ v:1 (شكلُ الواجهة 331) — كان الحقلُ يُقارَن بسجلٍّ غائب
+     فيُرفض منحُ المدير الأولُ «لمدير النظام وحده» ويأخذ الموظفُ أقلَّ من قالبه */
+  for (q in top) { if (q === 'emp' || deq(o[q], n[q]) || (q === 'v' && curVal == null && n.v === 1)) continue; if (!sup) return enfNo('super', { detail: q }); }
   var eo = isObj(o.emp) ? o.emp : {}, en = isObj(n.emp) ? n.emp : {}, all = {}, e, i;
   if (deq(eo, en)) return enfOk(['perm.assign']);
   if (!sup && !isMgrOf(A, d)) return enfNo('mgr');
@@ -23677,10 +23975,15 @@ function enfGrantsWrite(A, k, newVal, curVal) {
   for (e in all) {
     if (deq(eo[e], en[e])) continue;
     if (!sup && e === String(A.u.ekey || '')) return enfNo('self', { detail: e });                                    /* لا يمنح نفسَه ولا يُسقط عنها */
-    var gb = en[e]; if (gb === undefined) continue;                                                                   /* سحبُ المنح كلِّه */
-    if (!isObj(gb)) return enfNo('shape', { detail: e });
-    for (q in gb) if (!ENF_GRANT_FIELDS[q]) return enfNo('shape', { detail: e + '.' + q });
-    if ((gb.plus !== undefined && !Array.isArray(gb.plus)) || (gb.minus !== undefined && !Array.isArray(gb.minus))) return enfNo('shape', { detail: e });
+    if (!sup && !permTargetOk(A, e)) return enfNo('target', { detail: e });                                           /* «فحص الصلاحيات العميق (2026-10-21)» · M5/PAR-4: منحُ المديرين لمدير النظام أو لمدير فرعٍ فوقهم (018) */
+    var gb = en[e];                                                                                                   /* undefined: سحبُ المنح كلِّه */
+    if (gb !== undefined) {
+      if (!isObj(gb)) return enfNo('shape', { detail: e });
+      for (q in gb) if (!ENF_GRANT_FIELDS[q]) return enfNo('shape', { detail: e + '.' + q });
+      if ((gb.plus !== undefined && !Array.isArray(gb.plus)) || (gb.minus !== undefined && !Array.isArray(gb.minus))) return enfNo('shape', { detail: e });
+    }
+    if (!sup) { var lw = enfMinusLiftWhy(A, d, e, eo[e], gb, ctx && ctx.pa); if (lw) return enfNo('grant', { detail: lw + ' (grantor does not hold it)' }); }   /* الجولة 2 · M-D · R3-4 */
+    if (gb === undefined) continue;
     var plus = gb.plus || [], minus = gb.minus || [], prev = isObj(eo[e]) && Array.isArray(eo[e].plus) ? eo[e].plus.map(String) : [];
     for (i = 0; i < plus.length; i++) {
       var key = String(plus[i]), re = KIVO_REGISTRY.byKey[key];
@@ -23692,6 +23995,35 @@ function enfGrantsWrite(A, k, newVal, curVal) {
     for (i = 0; i < minus.length; i++) { var km = KIVO_REGISTRY.byKey[String(minus[i])]; if (!km || km.status !== 'active') return enfNo('grant', { detail: String(minus[i]) + ' (unknown/inactive)' }); }
   }
   return enfOk(['perm.assign']);
+}
+/* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · M-D: رفعُ الإسقاط منح — إزالةُ مفتاحٍ من minus موظفٍ (أو حذفُ مدخله كلِّه وفيه إسقاط) تعيد إليه ما
+   ترجمته ورقتُه، فيحمله المانحُ نفسُه في الوحدة (enfHeld — كأنّ الوحدات كلَّها مشغَّلة: M-C) كما يُحكم plus. كان مديرُ الإدارة المضيَّقُ عليه يمحو
+   إسقاطَ مدير النظام عن موظفه (report.reopen …) فيحمل الموظفُ ما لا يحمله مانحُه. ويرفع المانحُ ما يحمل مفتاحَه — ومنه تضييقُه هو على موظفه؛
+   و«by» في المدخل يكتبه العميل فلا يُنسب به مفتاحٌ إلى أحد. وما لا يعضّ فيه الإسقاطُ أصلاً لا يُحكم: مفتاحٌ مجهولٌ أو غيرُ قابلٍ للمنح (ذاتيٌّ ·
+   بالدور · لمدير النظام وحده · perm.assign — enfHeld0 يحكم فيها قبل الإسقاط) · وخارجُ سقف الوحدة لموظفٍ لا يرث (سقفُ مدير النظام، والأوراقُ
+   تُقصّ معه — setDeptCap؛ وإطفاءُ المنصة ليس سقفاً). يعيد أولَ مفتاحٍ لا يحمله المانح ('' = لا شيء)
+   «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: ورفعُ الإسقاط منحٌ حين يحمل الموظفُ المفتاحَ بعد الحفظ وحده — بورقته وعدساته بعد الحفظ
+   (PA: الصلاحياتُ كما ستُكتب في هذه الحفظة إن قُبلت فيها bassam_perms_v1 — 054 applySave — وإلا المخزَّنة) أو بـplus الجديد. كان القالبُ يُسند بورقةٍ
+   لا تمنح مفتاحاً أسقطه مديرُ النظام فيسقط الإسقاطُ من الفرق (العميلُ يحسب minus = T − E) فيُرفض منحُ القالب كلُّه وهو لا يمنح شيئاً */
+function enfMinusLiftWhy(A, d, e, g0, g1, PA) {
+  var m0 = isObj(g0) && Array.isArray(g0.minus) ? g0.minus.map(String) : [];
+  if (!m0.length) return '';
+  var m1 = isObj(g1) && Array.isArray(g1.minus) ? g1.minus.map(String) : [], B = permOnAll(A), ix = enfIx(), t = null, i, after = null;
+  var p1 = isObj(g1) && Array.isArray(g1.plus) ? g1.plus.map(String) : [];
+  for (i = 0; i < m0.length; i++) {
+    var key = m0[i], re = KIVO_REGISTRY.byKey[key];
+    if (m1.indexOf(key) !== -1) continue;
+    if (!re || re.status !== 'active' || re.grant !== 'assignable' || ix.superOnly[key] || (ix.needMgr[key] && ix.atomless[key])) continue;
+    if (!t) t = permTargetOf(A, e);
+    var on9 = enfKeyOnCeiling(B, d, key);
+    if (!on9 && !t.inh) continue;
+    if (on9 && p1.indexOf(key) === -1) {
+      if (!after) { var P9 = isObj(PA) ? PA : (A.perms || {}); after = enfSheetKeys(B, d, t, ((P9.emps || {})[d] || {})[e], ((P9.empLens || {})[d] || {})[e]); }
+      if (!after[key]) continue;                                                     /* لا يحمله بعد الحفظ: إسقاطٌ زال بزوال ما يمنحه */
+    }
+    if (!enfHeld(B, d, key)) return key;
+  }
+  return '';
 }
 /* ── الإحصائياتُ اليومية (عامّ): الشكلُ والأقفال كما dstatsRule، والقرارُ بمفاتيح الإدخال/الاعتماد/إعادة الفتح بإدارات الفاعل + Source + DateRange (D4-02: لا استثناءَ لمدير النظام) ── */
 function enfDstatsWrite(A, k, newVal, curVal, ctx, X) {
@@ -23763,7 +24095,7 @@ function enfScopeWrite(A, k, newVal, curVal) {
 function canWriteEnf(A, k, newVal, curVal, ctx) {
   var u = A.u, P = parseKey(k), rn = resName(k), X = (ctx && ctx.enf) || {};
   if (P.dept && rn === ENF_SCOPE_RES) return enfScopeWrite(A, k, newVal, curVal);
-  if (P.dept && rn === ENF_GRANTS_RES) return enfGrantsWrite(A, k, newVal, curVal);
+  if (P.dept && rn === ENF_GRANTS_RES) return enfGrantsWrite(A, k, newVal, curVal, ctx);   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: ctx.pa */
   var R0 = resOf(k);
   if (!R0) return enfNo('unknown');
   if (R0.scope === 'device') return enfNo('device');

@@ -109,8 +109,9 @@ for (const mode of ['legacy', 'enforce']) {
     const f3 = await self(e2.ck, 'tst_emp2', { un: '0500000121', ph: ph('13579') }); assert.ok(!f3.denied && f3.changed, 'الإجباريُّ يمرّ: ' + JSON.stringify(f3.r.j).slice(0, 200));
     assert.ok(!f3.after.mc, 'سقط علمُ «يجب التغيير» بتغيير كلمته');
     const f4 = await self(e2.ck, 'tst_emp2', { un: '0500000999' }, { cur: '13579' }); assert.ok(f4.denied && !f4.changed, 'بعدها: الموظفُ لا يغيّر اسمَ دخوله ولو بكلمته'); assert.equal(f4.denied.why, 'self');
-    /* KIVO_264 (البوابة run1b · bkstamp): حسابٌ قديمٌ بدورٍ غيرِ staff/gm (dept) واسمٍ غير صالح وبلا علم mc — قاعدةُ /api/login تطلب تغييرَه،
-       فيمرّ الإجباريُّ بلا cur في جلسةٍ حديثة (كان يُرفض self-cur فلا يكمل الدخولَ الأولَ أبداً) — وفي الجلسة القديمة cur مطلوبة كغيره */
+    /* حسابٌ قديمٌ بالدور dept (أُلغي — التنظيف L-05 أ · F19) واسمٍ غير صالح: يدخل فيُطلب منه التغيير، لكنّ أيَّ تعديلٍ لصفّه يُرفض «shape» —
+       دورٌ لا يُكتب بعد اليوم؛ وصفوفُه القائمة يحذفها المالك. (إفصاح — تعديلُ اختبار: كان هنا أنّ الإجباريَّ للحساب القديم يمرّ ويدخل بالجديدين —
+       وهو تعديلُ صفّ dept نفسُه الذي يغلقه F19، كما في الخطّ القديم 5197c2e) */
     const us2 = dbUsers(env).concat([{ id: 'tst_mzz', un: 'mgrzz264', ph: ph('Mgr#Zz2026'), name: 'TEST_ONLY · مدير قديم', role: 'dept', deptId: 'tst_d2', test: 'TEST_ONLY' }]);
     /* حسابٌ قديمٌ في البيانات (لا يُنشأ اليوم بالحفظ — الدورُ dept لم يعد يُقبل) ⇒ يُزرع في القاعدة مباشرةً كما تركته إصداراتٌ سابقة */
     const q = (x) => "'" + String(x).replace(/'/g, "''") + "'";
@@ -120,7 +121,6 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(dbUsers(env).some((u) => u.id === 'tst_mzz' && u.role === 'dept'), 'زُرع الحسابُ القديم');
     const m1 = await C.login('mgrzz264', 'Mgr#Zz2026'); assert.ok(m1.ok && m1.j.mustChange === 1, 'الاسمُ غيرُ الصالح ⇒ يجب التغيير: ' + JSON.stringify(m1.j).slice(0, 160));
     const g0 = await self(m1.ck, 'tst_mzz', { un: '0590000264' }); assert.ok(g0.denied && !g0.changed, 'بلا كلمةٍ جديدة ⇒ مرفوض');
-    const g1 = await self(m1.ck, 'tst_mzz', { un: '0590000264', ph: ph('771144') }); assert.ok(!g1.denied && g1.changed, 'الإجباريُّ للحساب القديم يمرّ: ' + JSON.stringify(g1.r.j).slice(0, 200));
-    assert.ok((await C.login('0590000264', '771144')).ok, 'يدخل بالاسم والكلمة الجديدين');
+    const g1 = await self(m1.ck, 'tst_mzz', { un: '0590000264', ph: ph('771144') }); assert.ok(g1.denied && !g1.changed, 'صفُّ الدور الملغى لا يُعدَّل'); assert.equal(g1.denied.why, 'shape');
   });
 }
