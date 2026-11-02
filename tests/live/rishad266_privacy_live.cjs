@@ -21,7 +21,7 @@ async function put(s, k, v) { const g = await s.api('/api/get?keys=' + k); const
   try {
     const em = await sess(b, C.EMP.un, C.EMP.pw);
     const r = await em.api('/api/operations/read?keys=' + encodeURIComponent(KE) + ',' + encodeURIComponent('bsdept:' + D + ':bassam_staffing_v3'));
-    const E = ((r.j || {}).resources || {})[KE] || []; const col = E.find((e) => e.eid !== C.eid && e.nid); const me = E.find((e) => e.eid === C.eid);
+    const E = ((r.j || {}).resources || {})[KE] || []; const col = E.find((e) => e.eid === colleague.eid); const me = E.find((e) => e.eid === C.eid);
     const blob = JSON.stringify(r.j || {});
     out('EMP:reads-register', r.s === 200 && E.length >= 2, { status: r.s, n: E.length, denied: (r.j || {}).denied });
     out('EMP:colleague-nid-hidden', col && !col.nid && !blob.includes(colleague.nid), { hasNid: !!(col && col.nid) });
