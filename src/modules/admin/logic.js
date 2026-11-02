@@ -3957,6 +3957,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (data.kind !== "delete" || data.dept !== target.id || !data.department || data.department.id !== target.id || typeof data.department.name !== "string" || !base || !natural(base.epoch) || !natural(base.custody) || !base.kv || typeof base.kv !== "object" || Array.isArray(base.kv) || globalKeys.some(key => !natural(base.kv[key])) || Object.entries(base.kv).some(([key, value]) => (!key.startsWith("bsdept:" + target.id + ":") && !globalKeys.includes(key)) || !natural(value)) || !this._businessBaseValid(base) || !base.notifications || ["rev", "configRev", "broadcastRev"].some(key => !natural(base.notifications[key])) || !data.counts || ["keys", "accounts", "custody", "notifications", "irshad", "seized", "awards"].some(key => !natural(data.counts[key]))) {
         this.bsToast("وصل جرد ناقص من الخادم؛ لم يُسمح بحذف الإدارة", "warn"); return;
       }
+      /* F01: إدارةٌ لها أقسام لا تُحذف — يسمّيها جردُ الخادم ويرفض الحذفَ نفسَه (dept-has-sections) */
+      if (Array.isArray(data.sections) && data.sections.length) { this.bsToast("«" + data.department.name + "» لها أقسام (" + data.sections.map(x => x.name).join("، ") + ") — احذفها أولاً؛ لم تُنفّذ أي كتابة", "warn"); return; }
       const draft = { dept: target.id, actor, data: JSON.parse(JSON.stringify(data)), ticket: null, uncertain: false, needsReview: false, confirmed: false };
       this._deptDeleteDraft = draft;
       const counts = data.counts, populated = counts.keys + counts.accounts + counts.custody + counts.notifications + counts.irshad + counts.seized + counts.awards > 0,
@@ -9039,6 +9041,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             if (t.nodes().some((t) => t.name === e) || t.list().some((t) => t.name === e))
               return void this.setState({ ndMsg: "يوجد في الهيكل ما يحمل هذا الاسم" });
             const r = { ...(this.state.admGrpFlip || {}) };
+            /* F01: النوع «قسم» تحت إدارة ← BassamDepts.sectionAdd (سجلُّ الوحدات + سقفُه لقطةً من سقف الإدارة الأم) */
+            if (s === (t.NODE_KIND_SEC || "قسم") && t.sectionAdd) {
+              if (a) delete r[a];
+              const x = t.sectionAdd({ name: e, deptId: a || "" });
+              if (!x || !x.ok) return void this.setState({ ndMsg: (x && x.err) || "تعذّر إنشاء القسم" });
+              return void this.setState({ admGrpFlip: r, ndName: "", ndNewKind: "", ndMsg: "✓ أُنشئ قسم «" + e + "» — عيّن مدير القسم واضبط سقفه" });
+            }
             if ((a && delete r[a], s === (t.NODE_KIND_DEPT || "إدارة"))) {
               if (a && !t.nodeOf(a)) return void this.setState({ ndMsg: "الأب غير موجود" });
               const s = "d" + Date.now().toString(36) + Math.floor(1e6 * Math.random()).toString(36),

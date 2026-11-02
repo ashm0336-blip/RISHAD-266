@@ -19,7 +19,8 @@ function myPermsOf(A, d) {
     if (!deptInScope(A, d)) return {};
     return hasOwnSheetOf(A, u.ekey, d) ? empPermsOf(A, u.ekey, d) : capAllPermsOf(A, d);
   }
-  if (u.deptId !== d) return {};
+  /* F01: مديرُ الإدارة الأم في قسمها — كمدير العقدة على وحداته: ورقتُه الصريحة فيه إن وُجدت وإلا سقفُ القسم كلُّه */
+  if (u.deptId !== d) return secMgrOf(A, d) ? (hasOwnSheetOf(A, u.ekey, d) ? empPermsOf(A, u.ekey, d) : capAllPermsOf(A, d)) : {};
   if (u.role === 'dept') return (DEPT_SHEET && hasOwnSheetOf(A, u.ekey, d)) ? empPermsOf(A, u.ekey, d) : capAllPermsOf(A, d);
   if (u.role === 'staff') {
     if (isMgrKey(u.ekey) && !hasOwnSheetOf(A, u.ekey, d)) return capAllPermsOf(A, d);

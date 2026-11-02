@@ -248,7 +248,7 @@ function enfGrantsWrite(A, k, newVal, curVal, ctx) {
   for (e in all) {
     if (deq(eo[e], en[e])) continue;
     if (!sup && e === String(A.u.ekey || '')) return enfNo('self', { detail: e });                                    /* لا يمنح نفسَه ولا يُسقط عنها */
-    if (!sup && !permTargetOk(A, e)) return enfNo('target', { detail: e });                                           /* «فحص الصلاحيات العميق (2026-10-21)» · M5/PAR-4: منحُ المديرين لمدير النظام أو لمدير فرعٍ فوقهم (018) */
+    if (!sup && !permTargetOk(A, e, d)) return enfNo('target', { detail: e });                                           /* «فحص الصلاحيات العميق (2026-10-21)» · M5/PAR-4: منحُ المديرين لمدير النظام أو لمدير فرعٍ فوقهم (018) */
     var gb = en[e];                                                                                                   /* undefined: سحبُ المنح كلِّه */
     if (gb !== undefined) {
       if (!isObj(gb)) return enfNo('shape', { detail: e });

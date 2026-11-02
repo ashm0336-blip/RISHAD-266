@@ -9,7 +9,10 @@ function enfBits(A, d) {
 function enfDeptsOf(A) {
   var u = A.u, out = [], i;
   if (u.role === 'super' || u.role === 'gm') { for (i = 0; i < (A.depts || []).length; i++) { var d = A.depts[i] && A.depts[i].id; if (d && deptInScope(A, d)) out.push(d); } }
-  else if (u.deptId) out.push(u.deptId);
+  else {
+    if (u.deptId) out.push(u.deptId);
+    for (i = 0; i < (A.depts || []).length; i++) { var s9 = A.depts[i] && A.depts[i].id; if (s9 && s9 !== u.deptId && secMgrOf(A, s9)) out.push(s9); }   /* F01: أقسامُ إدارته */
+  }
   return out;
 }
 /* KIVO_264 · ورديةُ الفاعل المربوطةُ بالجدول الشهري (Shift: staffing-bound — enfEmpScopeOf · 058): تُقرأ من bsdept:<d>:bassam_staffing_v3 لحظةَ الإسقاط

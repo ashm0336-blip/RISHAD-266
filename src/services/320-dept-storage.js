@@ -264,7 +264,15 @@
     },
     groupIdOf: function(id){
       var d = reg().filter(function(x){ return x.id === id; })[0];
+      /* F01: القسمُ أبوه إدارة، فعقدتُه الفوقية عقدةُ إدارته — لا معرّفُ الإدارة نفسُه */
+      if (d && d.kind === this.NODE_KIND_SEC) { var pd = this.parentDeptOf(id); d = pd ? reg().filter(function(x){ return x.id === pd; })[0] : null; }
       return (d && d.gid) || '';
+    },
+    /* اسمُ الإدارة الأم حين تكون الوحدةُ النشطة قسماً — وإلا فراغ */
+    activeParentDeptName: function(){
+      var pd = this.parentDeptOf(active()); if (!pd) return '';
+      var d = reg().filter(function(x){ return x.id === pd; })[0];
+      return d ? d.name : '';
     },
     activeGroupName: function(){ return this.groupName(this.groupIdOf(active())); },
     /* شجرة العرض: المجموعات بترتيب سجلها ثم دلوُ «بلا إدارة عامة».
@@ -277,14 +285,23 @@
       this.tree().forEach(function(g){ g.depts.forEach(function(d){ out.push(d); }); });
       return out;
     },
+    /* F01: القسمُ يُعرض بعد إدارته مباشرةً في دلوِ مجموعتها؛ وقسمٌ إدارتُه مفقودة يبقى في الدلو الأخير فلا يختفي */
     tree: function(){
-      var ds = reg().slice(), out = [], seen = {};
-      this.groups().forEach(function(g){
-        var kids = ds.filter(function(d){ return d.gid === g.id; });
-        kids.forEach(function(d){ seen[d.id] = 1; });
-        out.push({ gid: g.id, name: g.name, depts: kids });
+      var self = this, ds = reg().slice(), out = [], seen = {}, secOf = {}, plain = [];
+      ds.forEach(function(d){
+        var pd = d.kind === self.NODE_KIND_SEC ? self.parentDeptOf(d.id) : '';
+        if (pd) (secOf[pd] = secOf[pd] || []).push(d); else plain.push(d);
       });
-      var rest = ds.filter(function(d){ return !seen[d.id]; });
+      function withSecs(list){
+        var o = [];
+        list.forEach(function(d){ o.push(d); seen[d.id] = 1; (secOf[d.id] || []).forEach(function(x){ o.push(x); seen[x.id] = 1; }); });
+        return o;
+      }
+      this.groups().forEach(function(g){
+        var kids = plain.filter(function(d){ return d.gid === g.id && !seen[d.id]; });
+        out.push({ gid: g.id, name: g.name, depts: withSecs(kids) });
+      });
+      var rest = withSecs(plain.filter(function(d){ return !seen[d.id]; }));
       if (rest.length) out.push({ gid: '', name: 'إدارات بلا إدارة عامة', depts: rest });
       return out;
     },
@@ -305,6 +322,39 @@
        ولهذا النوع «إدارة» محجوزٌ لا يُسمّى به عقدةٌ فوقية. */
     NODE_KIND_DEPT: 'إدارة',
     NODE_KINDS_BASE: ['إدارة عليا', 'قطاع', 'إدارة عامة', 'إدارة', 'قسم', 'وحدة'],
+    /* ══ F01 · الأقسام (خطة التوحيد) ══════════════════════════════════════════
+       «القسم» وحدةُ بياناتٍ كالإدارة — مديرُه وموظفوه وحساباتُه وسقفُه وبياناتُه (bsdept:<القسم>:* وصفوفٌ بـdepartment_id) — تحت إدارةٍ
+       مباشرةً وحدها: { id, name, gid:<الإدارة>, kind:'قسم' } في bassam_depts_v1. يُنشئه مديرُ النظام أو مديرُ الإدارة الأم، ومديرُ الإدارة
+       الأم يدير أقسامَها؛ وموظفوها العاديون خارجها. والعقدةُ الفوقية القديمة من نوع «قسم» تبقى مقروءةً، ولا تُنشأ جديدةٌ به. */
+    NODE_KIND_SEC: 'قسم',
+    isSection: function(id){
+      if (!id) return false;
+      var d = reg().filter(function(x){ return x.id === id; })[0];
+      return !!(d && d.kind === this.NODE_KIND_SEC);
+    },
+    /* نوعُ وحدة البيانات: «قسم» أو «إدارة» — وفراغٌ لما ليس وحدةَ بيانات */
+    unitKind: function(id){
+      var d = id ? reg().filter(function(x){ return x.id === id; })[0] : null;
+      return d ? (d.kind === this.NODE_KIND_SEC ? this.NODE_KIND_SEC : this.NODE_KIND_DEPT) : '';
+    },
+    /* إدارةُ القسم: أبوه إن كان إدارةً قائمةً ليست قسماً — وإلا فراغ (قسمٌ يتيم) */
+    parentDeptOf: function(id){
+      var self = this, d = id ? reg().filter(function(x){ return x.id === id; })[0] : null;
+      if (!d || d.kind !== this.NODE_KIND_SEC || !d.gid) return '';
+      var p = reg().filter(function(x){ return x.id === d.gid; })[0];
+      return (p && p.kind !== self.NODE_KIND_SEC) ? p.id : '';
+    },
+    sectionsOf: function(deptId){
+      var self = this;
+      if (!deptId || this.isSection(deptId)) return [];
+      return reg().filter(function(d){ return d.kind === self.NODE_KIND_SEC && d.gid === deptId; });
+    },
+    /* إدارةٌ لها أقسام لا تُحذف حتى تُحذف أقسامُها — والخادمُ يرفضها صراحةً (dept-has-sections · /api/admin/dept-delete) */
+    deptDelWhy: function(id){
+      var n = this.sectionsOf(id).length; if (!n) return '';
+      var d = reg().filter(function(x){ return x.id === id; })[0];
+      return '«' + (d ? d.name : id) + '» لها أقسام (' + n + ') — احذفها أولاً';
+    },
     /* العقد الفوقية بحقولها مكتملةً — والافتراض يصف المدخلات القديمة بدقّة */
     nodes: function(){
       return this.groups().map(function(g){
@@ -334,14 +384,18 @@
       var n = this.nodes().filter(function(x){ return x.id === id; })[0];
       if (n) return n;
       var d = reg().filter(function(x){ return x.id === id; })[0];
-      return d ? { id: d.id, name: d.name, pid: (d.gid || null), kind: this.NODE_KIND_DEPT, dept: true } : null;
+      return d ? this._unitNode(d) : null;
     },
-    /* كل العقد معاً — الفوقية ثم الإدارات كأوراق */
+    /* وحدةُ البيانات بصيغة العقدة: نوعُها من سجلّها (قسم) وإلا «إدارة» — والقسمُ يحمل sec */
+    _unitNode: function(d){
+      var o = { id: d.id, name: d.name, pid: (d.gid || null), kind: d.kind === this.NODE_KIND_SEC ? this.NODE_KIND_SEC : this.NODE_KIND_DEPT, dept: true };
+      if (d.kind === this.NODE_KIND_SEC) o.sec = true;
+      return o;
+    },
+    /* كل العقد معاً — الفوقية ثم الإدارات والأقسام كأوراق */
     allNodes: function(){
       var self = this;
-      return this.nodes().concat(reg().map(function(d){
-        return { id: d.id, name: d.name, pid: (d.gid || null), kind: self.NODE_KIND_DEPT, dept: true };
-      }));
+      return this.nodes().concat(reg().map(function(d){ return self._unitNode(d); }));
     },
     parentIdOf: function(id){ var n = this.nodeOf(id); return n ? n.pid : null; },
     childrenOf: function(id){
@@ -368,20 +422,52 @@
     /* حرس الدورة: لا تُنقل عقدةٌ تحت نفسها ولا تحت ذرّيتها — وإلا صارت الشجرة
        حلقةً مفرغة تُعلّق كل مَشْيٍ عليها. ولا يكون أبٌ إدارةً إلا لقسمٍ تحتها:
        الإدارة ورقةٌ في شجرة الإدارات، وما تحتها تفريعٌ داخلها. */
-    canParent: function(id, pid) {
-      if (!pid) return true;                       /* الجذر مسموحٌ دائماً */
-      if (pid === id) return false;
-      if (!this.nodeOf(pid)) return false;
-      return this.descendantsOf(id).indexOf(pid) === -1;
+    /* ══ قاعدةُ الموضع (F01 · مرآةُ الخادم 018 deptShapeWhy/nodeShapeWhy) — واحدةٌ لكل مسار ══
+         · القسم تحت إدارةٍ مباشرةً وحدها — لا في الجذر ولا تحت عقدة ولا تحت قسم؛ ولا شيءَ تحت قسم؛
+         · الإدارة تحت عقدةٍ فوقية أو في الجذر — لا تحت إدارة؛ والعقدةُ الفوقية لا توضع من جديد تحت وحدة بيانات؛
+         · ولا دورة. وإعادةُ الترتيب تحت الأب نفسِه ليست وضعاً جديداً. item: { id, dept, sec } — تعيد نصَّ السبب أو فراغاً. */
+    placeWhy: function(item, pid) {
+      item = item || {}; pid = pid || null;
+      var id = item.id || '', cur = id ? this.nodeOf(id) : null;
+      var isSec = !!item.sec, isDept = !!item.dept && !isSec;
+      if (cur && (cur.pid || null) === pid) return '';
+      if (id && this.idClash(id)) return this.ID_CLASH;
+      if (!pid) return isSec ? 'القسم يكون تحت إدارةٍ مباشرةً — لا في الجذر' : '';
+      if (pid === id) return 'نقلٌ يُنتج دورة — العقدة لا تكون تحت نفسها ولا تحت ذرّيتها';
+      var p = this.nodeOf(pid);
+      if (!p) return 'الأب غير موجود';
+      if (p.sec) return 'لا يوضع شيءٌ تحت قسم — القسم وحدةٌ بلا فروع';
+      if (isSec && !p.dept) return 'القسم يكون تحت إدارةٍ مباشرةً — لا تحت «' + (p.kind || 'عقدة') + '»';
+      if (isDept && p.dept) return 'الإدارة ورقةٌ في الشجرة — لا توضع إدارةٌ تحت إدارة';
+      if (!item.dept && p.dept) return 'لا توضع عقدةٌ تحت إدارة — الإدارة ورقةٌ في الشجرة';
+      if (id && this.descendantsOf(id).indexOf(pid) !== -1) return 'نقلٌ يُنتج دورة — العقدة لا تكون تحت نفسها ولا تحت ذرّيتها';
+      return '';
     },
+    _itemOf: function(id){ var n = this.nodeOf(id); return { id: id, dept: !!(n && n.dept), sec: !!(n && n.sec) }; },
+    /* AD-7: معرّفٌ واحدٌ لا يكون عقدةً فوقيةً ووحدةَ بياناتٍ معاً — الخادمُ يرفض («id-clash») والواجهةُ تولّد معرّفاتٍ لا تتصادم */
+    ID_CLASH: 'المعرّف مستخدم لوحدة أو عقدة أخرى',
+    idClash: function(id){
+      if (!id) return false;
+      return this.groups().some(function(g){ return g && g.id === id; }) && reg().some(function(d){ return d && d.id === id; });
+    },
+    freshId: function(prefix){
+      var used = {}, n = 0, id;
+      this.groups().forEach(function(g){ if (g && g.id) used[g.id] = 1; });
+      reg().forEach(function(d){ if (d && d.id) used[d.id] = 1; });
+      var base = String(prefix || 'u') + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+      id = base; while (used[id]) id = base + (++n).toString(36);
+      return id;
+    },
+    canParent: function(id, pid) { return !this.placeWhy(this._itemOf(id), pid); },
     nodeAdd: function(o) {
       o = o || {};
       var nm = String(o.name || '').trim(); if (!nm) return { ok: false, err: 'الاسم مطلوب' };
       var kind = String(o.kind || 'إدارة عامة').trim() || 'إدارة عامة';
       if (kind === this.NODE_KIND_DEPT) return { ok: false, err: 'النوع «إدارة» يُنشأ من سجل الإدارات — فهو وعاء البيانات' };
+      if (kind === this.NODE_KIND_SEC) return { ok: false, err: 'النوع «قسم» وحدةُ بيانات تحت إدارة — يُنشأ قسماً لا عقدة' };
       var pid = o.pid || null;
-      if (pid && !this.nodeOf(pid)) return { ok: false, err: 'الأب غير موجود' };
-      var id = 'n' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+      var why = this.placeWhy({ id: '', dept: false }, pid); if (why) return { ok: false, err: why };
+      var id = this.freshId('n');
       this.saveNodes(this.nodes().concat([{ id: id, name: nm, pid: pid, kind: kind }]));
       invalidate();
       /* كل عقدةٍ تُنشأ يُفتح لها سقفُها في اللحظة نفسها — لا عقدةَ بلا سقف،
@@ -394,13 +480,15 @@
       var list = this.nodes(), i = -1;
       list.forEach(function(n, j){ if (n.id === id) i = j; });
       if (i === -1) return { ok: false, err: 'العقدة غير موجودة' };
+      if (this.idClash(id)) return { ok: false, err: this.ID_CLASH };
       if (o.name !== undefined) { var nm = String(o.name || '').trim(); if (!nm) return { ok: false, err: 'الاسم مطلوب' }; list[i].name = nm; }
       if (o.kind !== undefined) { var kd = String(o.kind || '').trim();
         if (kd === this.NODE_KIND_DEPT) return { ok: false, err: 'النوع «إدارة» محجوزٌ لوعاء البيانات' };
+        if (kd === this.NODE_KIND_SEC && list[i].kind !== this.NODE_KIND_SEC) return { ok: false, err: 'النوع «قسم» وحدةُ بيانات تحت إدارة — لا يُسنَد لعقدة' };
         if (kd) list[i].kind = kd; }
       if (o.pid !== undefined) {
         var np = o.pid || null;
-        if (!this.canParent(id, np)) return { ok: false, err: 'نقلٌ يُنتج دورة — العقدة لا تكون تحت نفسها ولا تحت ذرّيتها' };
+        var why = this.placeWhy({ id: id, dept: false }, np); if (why) return { ok: false, err: why };
         list[i].pid = np;
       }
       this.saveNodes(list); invalidate();
@@ -419,11 +507,28 @@
     setDeptParent: function(did, pid) {
       if (!this.has(did)) return { ok: false, err: 'الإدارة غير موجودة' };
       if (pid && !this.nodeOf(pid)) return { ok: false, err: 'الأب غير موجود' };
-      if (!this.canParent(did, pid || null)) return { ok: false, err: 'نقلٌ يُنتج دورة' };
+      var why = this.placeWhy(this._itemOf(did), pid || null); if (why) return { ok: false, err: why };
       var l = reg().map(function(d){ return Object.assign({}, d); });
       l.forEach(function(d){ if (d.id === did) { if (pid) d.gid = pid; else delete d.gid; } });
       this.save(l);
       return { ok: true };
+    },
+    /* ══ F01 · إنشاءُ قسم ══ مديرُ النظام أو مديرُ الإدارة الأم (والخادمُ يحكم: 018 deptShapeWhy/deptSecMgrWhy). تحت إدارةٍ مباشرةً، واسمُه فريدٌ في
+       الهيكل كله. والسقف: سجلٌّ صريحٌ caps[<القسم>] لقطةً من سقف الإدارة الأم الفعليّ (seedCapFrom) — في الحفظة نفسِها مع سجلّ الوحدات. */
+    sectionAdd: function(o) {
+      o = o || {};
+      var nm = String(o.name || '').trim(); if (!nm) return { ok: false, err: 'الاسم مطلوب' };
+      var did = String(o.deptId || '').trim(), u = null, BA = KIVO.BassamAuth;
+      try { u = BA && BA.user ? BA.user() : null; } catch(e){ u = null; }
+      var sup = !!(u && u.role === 'super'), mgr = !!(u && did && u.deptId === did && (u.role === 'dept' || (u.role === 'staff' && u.mgr)));
+      if (!sup && !mgr) return { ok: false, err: 'إنشاء القسم لمدير النظام أو لمدير الإدارة الأم' };
+      var why = this.placeWhy({ id: '', dept: true, sec: true }, did || null); if (why) return { ok: false, err: why };
+      if (this.nodes().some(function(n){ return n.name === nm; }) || reg().some(function(d){ return d.name === nm; }))
+        return { ok: false, err: 'يوجد في الهيكل ما يحمل هذا الاسم' };
+      var id = this.freshId('s');
+      this.save(reg().concat([{ id: id, name: nm, gid: did, kind: this.NODE_KIND_SEC }]));
+      try { var P = KIVO.BassamPerm; if (P && P.seedCapFrom) P.seedCapFrom(id, did); } catch(e){}
+      return { ok: true, id: id };
     },
     /* ══ KIVO_265 · طلبُ المالك (2026-10-19): السحبُ والإفلات في الشجرة ═══════════
        نقلُ عقدةٍ (فوقيةٍ أو إدارة) بالنسبة إلى عقدةٍ أخرى: inside = تحتها (تصير أباها) ·
@@ -436,8 +541,7 @@
       if (id === ref) return { ok: false, err: 'العقدة نفسُها' };
       pos = (pos === 'inside' || pos === 'before' || pos === 'after') ? pos : 'inside';
       var pid = pos === 'inside' ? ref : (t.pid || null);
-      if (pos === 'inside' && t.dept && n.dept) return { ok: false, err: 'الإدارة ورقةٌ في الشجرة — لا توضع إدارةٌ تحت إدارة' };
-      if (!this.canParent(id, pid)) return { ok: false, err: 'نقلٌ يُنتج دورة — العقدة لا تكون تحت نفسها ولا تحت ذرّيتها' };
+      var why = this.placeWhy({ id: id, dept: !!n.dept, sec: !!n.sec }, pid); if (why) return { ok: false, err: why };
       var sameList = pos !== 'inside' && !!t.dept === !!n.dept, i, j, item, list;
       if (n.dept) {
         list = reg().map(function(d){ return Object.assign({}, d); });
@@ -486,8 +590,11 @@
       function kidsN(id){ return ((dOf[id] || []).length + (kidsOf[id] || []).length); }
       function walk(o, depth, isDept){
         if (seen[o.id]) return; seen[o.id] = 1;
-        out.push({ t: isDept ? 'dept' : 'node', id: o.id, name: o.name,
-                   kind: isDept ? 'إدارة' : o.kind, depth: depth, kids: kidsN(o.id) });
+        var sec = isDept && o.kind === 'قسم';   /* F01: صفُّ القسم «dept» بنوعه «قسم» وعلامة sec */
+        var row = { t: isDept ? 'dept' : 'node', id: o.id, name: o.name,
+                    kind: isDept ? (sec ? 'قسم' : 'إدارة') : o.kind, depth: depth, kids: kidsN(o.id) };
+        if (sec) row.sec = true;
+        out.push(row);
         (dOf[o.id] || []).forEach(function(d){ walk(d, depth + 1, true); });
         (kidsOf[o.id] || []).forEach(function(k){ walk(k, depth + 1, false); });
       }

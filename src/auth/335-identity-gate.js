@@ -12,6 +12,8 @@
      Only the explicit canonical server identity migration may change them. */
   D.setScopeGuard(function(id){
     var u = cur(); if (!u) return null; if (u.role === 'super') return id;
+    /* F01: مديرُ الإدارة (حسابُها · حاملُ الشارة) يقف في أقسام إدارته كما في إدارته — والخادمُ يحكم (018 secMgrOf) */
+    if ((u.role === 'dept' || (u.role === 'staff' && u.mgr)) && id && D.parentDeptOf && D.parentDeptOf(id) === u.deptId) return id;
     if (u.role === 'dept' || u.role === 'staff') return u.deptId || null;
     if (u.role === 'gm') { var gd = gmDepts(u.gid); return gd.some(function(d){ return d.id === id; }) ? id : ((gd[0] || {}).id || null); }
     return null;

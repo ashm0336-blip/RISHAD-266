@@ -13,7 +13,10 @@ var DS_READ = ['haram', 'nabawi', 'anHaram', 'anNabawi', 'anCmp', 'anTime'];
 function dsDepts(A) {
   var u = A.u;
   if (u.role === 'gm') return (A.depts || []).map(function (x) { return x && x.id; }).filter(function (d) { return !!d && deptInScope(A, d); });
-  return u.deptId ? [u.deptId] : [];
+  /* AD-7 (F01): إدارةُ الحساب وحدةُ بياناتٍ قائمة · ومديرُ الإدارة الأم يحمل أوراقَ أقسامها (deptInScope) */
+  var out = u.deptId && isUnitId(A, String(u.deptId)) ? [u.deptId] : [];
+  (A.depts || []).forEach(function (x) { var d = x && x.id; if (d && d !== u.deptId && secMgrOf(A, d)) out.push(d); });
+  return out;
 }
 function dsHeld(A, sites, acts) {
   var ds = dsDepts(A);

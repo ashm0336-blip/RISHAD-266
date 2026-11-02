@@ -2188,33 +2188,217 @@ async function actorOf(env, uid) {
 }
 /* ══ سلسلة الأسلاف على الخادم ══════════════════════════════════════════════
    أبُ الإدارة حقل gid، وأبُ العقدة الفوقية حقل pid. والمشي صعوداً محدودٌ بـ64
-   خطوة: سجلٌّ تالفٌ يدور على نفسه يجب أن يتوقّف لا أن يعلّق الطلب. */
+   خطوة: سجلٌّ تالفٌ يدور على نفسه يجب أن يتوقّف لا أن يعلّق الطلب.
+   F01 · الأقسام (قرار المالك — خطة التوحيد): القسمُ وحدةُ بياناتٍ أبوها إدارة (gid = معرّفُ الإدارة · kind 'قسم'). كلُّ مرحلةٍ تُحلّ في العقد
+   أولاً (pid) ثم في الوحدات (gid) — فيمرّ المشيُ من القسم بإدارته إلى العقد فوقها، فيصل مديرُ العقدة القسمَ ويُقرأ سقفُ ما فوق الإدارة عليه. */
+function ancParentOf(A, c) {
+  var nd = (A.nodes || []).filter(function (x) { return x && x.id === c; })[0];
+  if (nd) return nd.pid || '';
+  var dd = (A.depts || []).filter(function (x) { return x && x.id === c; })[0];
+  return dd ? (dd.gid || '') : '';
+}
 function ancChain(A, d) {
   var out = [], seen = {}, n = 0;
-  var dd = (A.depts || []).filter(function (x) { return x && x.id === d; })[0];
-  var c = dd ? (dd.gid || '') : '';
+  var c = d ? ancParentOf(A, d) : '';
   while (c && !seen[c] && n++ < 64) {
     seen[c] = 1; out.push(c);
-    var nd = (A.nodes || []).filter(function (x) { return x && x.id === c; })[0];
-    c = nd ? (nd.pid || '') : '';
+    c = ancParentOf(A, c);
   }
   return out;
+}
+/* عقدةٌ فوقيةٌ قائمة (bassam_gdepts_v1) — لا وحدةُ بيانات */
+function isNodeId(A, id) { return !!id && (A.nodes || []).some(function (x) { return x && x.id === id; }); }
+/* ══ وحدةُ البيانات (AD-7) ══
+   وحدةُ البيانات سجلٌّ في bassam_depts_v1 (إدارةٌ أو قسم) — وحدها تحمل بياناتٍ (مفاتيحَ bsdept:<d>:* وصفوفاً بـdepartment_id) وحساباتٍ ومفاتيح.
+   العقدةُ الفوقية والمعرّفُ المجهول ليسا وحدة: لا نطاقَ ولا إدارةَ ولا مفتاحَ عليهما لأحدٍ غير مدير النظام. والوحداتُ التي يُنشئها سجلُّ
+   الوحدات المقبولُ في الحفظة نفسِها (unitBatchAdd) وحداتٌ لبقية مفاتيح تلك الحفظة. */
+function isUnitId(A, id) {
+  if (!A || id == null || id === '') return false;
+  var s = String(id), c = A.__unitIx, L = Array.isArray(A.depts) ? A.depts : [];
+  if (A.__batchUnits && A.__batchUnits[s]) return true;
+  if (!c || c.src !== A.depts || c.n !== L.length) {
+    c = { src: A.depts, n: L.length, m: nmap() };
+    L.forEach(function (x) { if (isObj(x) && x.id != null && x.id !== '') c.m[String(x.id)] = 1; });
+    A.__unitIx = c;
+  }
+  return !!c.m[s];
+}
+/* الوحداتُ الجديدة في سجلّ الوحدات الذي قبلته الحفظة — وحداتٌ لبقية مفاتيحها (تُسقط ذاكرةُ أحكامها)؛ والتي أزالها (A.__batchGone) */
+function unitBatchAdd(A, newJson) {
+  var b = parseJson(newJson, null); if (!Array.isArray(b)) return;
+  var now = nmap();
+  b.forEach(function (x) {
+    if (!isObj(x) || x.id == null || x.id === '') return;
+    now[String(x.id)] = 1;
+    if (isUnitId(A, x.id)) return;
+    (A.__batchUnits || (A.__batchUnits = nmap()))[String(x.id)] = 1;
+    enfMemoDrop(A, String(x.id));
+  });
+  (Array.isArray(A.depts) ? A.depts : []).forEach(function (x) {
+    if (isObj(x) && x.id != null && x.id !== '' && !now[String(x.id)]) (A.__batchGone || (A.__batchGone = nmap()))[String(x.id)] = 1;
+  });
+}
+/* والعقدُ الجديدة في سجلّ الهيكل الذي قبلته الحفظة — لفحص تصادم المعرّفات في بقية الحفظة */
+function nodeBatchAdd(A, newJson) {
+  var b = parseJson(newJson, null); if (!Array.isArray(b)) return;
+  b.forEach(function (x) { if (isObj(x) && x.id != null && x.id !== '' && !isNodeId(A, x.id)) (A.__batchNodes || (A.__batchNodes = nmap()))[String(x.id)] = 1; });
+}
+/* ترتيبُ الحفظة لا يغيّر الحكم: سجلّا الهيكل يُحكم عليهما قبل كلّ مفتاح (054 applySave)؛ وما قُبل حكمُه ثم لم يُكتب تُنقض علاماتُه */
+function batchRegMark(A) {
+  var cp = function (m) { var o = nmap(); for (var q in (m || {})) o[q] = 1; return o; };
+  return { u: cp(A.__batchUnits), n: cp(A.__batchNodes), g: cp(A.__batchGone) };
+}
+function batchRegUndo(A, m) {
+  var q;
+  for (q in (A.__batchUnits || {})) if (!m.u[q]) { delete A.__batchUnits[q]; enfMemoDrop(A, q); }
+  for (q in (A.__batchNodes || {})) if (!m.n[q]) delete A.__batchNodes[q];
+  for (q in (A.__batchGone || {})) if (!m.g[q]) delete A.__batchGone[q];
+}
+/* السجلّان معاً وأحدُهما لم يُكتب ⇒ يُعاد الحكمُ على المكتوب بالمخزَّن من الآخر */
+function regPairWhy(A, k, v, cur, rst, failedK) {
+  if (A.__regNext) delete A.__regNext[failedK];
+  if (k === K_DEPTS) return deptShapeWhy(A, v, cur, rst);
+  return k === K_GDEPTS ? nodeShapeWhy(A, v, cur, rst) : '';
+}
+/* مفاتيحُ وحدةٍ لم تعد وحدة (أزالها السجلُّ المقبولُ في الحفظة نفسِها أو يتيمٌ بعد حذفٍ سابق) — يحذفها مديرُ النظام */
+function unitGoneOf(A, d) { return !!d && (!!(A.__batchGone && A.__batchGone[d]) || !isUnitId(A, d)); }
+var DEPT_SEC_KIND = 'قسم', DEPT_UNIT_KIND = 'إدارة';
+function unitRecOf(A, d) {
+  var s = String(d == null ? '' : d), r = (A.depts || []).filter(function (x) { return isObj(x) && String(x.id) === s; })[0];
+  if (!r && A.__batchUnits && A.__batchUnits[s] && A.__regNext && Array.isArray(A.__regNext[K_DEPTS])) r = A.__regNext[K_DEPTS].filter(function (x) { return isObj(x) && String(x.id) === s; })[0];
+  return isObj(r) ? r : null;
+}
+/* الإدارةُ الأم لقسمٍ قائم ('' لغير القسم) — إدارةٌ قائمةٌ ليست قسماً ولا عقدة */
+function secParentOf(A, d) {
+  if (!d || !isUnitId(A, d)) return '';
+  var r = unitRecOf(A, d); if (!r || r.kind !== DEPT_SEC_KIND || r.gid == null || r.gid === '') return '';
+  var g = String(r.gid), p = unitRecOf(A, g);
+  return p && p.kind !== DEPT_SEC_KIND && isUnitId(A, g) && !isNodeId(A, g) ? g : '';
+}
+/* مديرُ الإدارة الأم يدير أقسامَها (خطة التوحيد): حسابُ الإدارة أو حاملُ الشارة في الإدارة الأم — وموظفوها العاديون خارج القسم */
+function secMgrOf(A, d) {
+  var u = A.u, p = secParentOf(A, d); if (!p || !u) return false;
+  if (u.role === 'dept') return u.deptId === p;
+  return u.role === 'staff' && !!u.mgr && u.deptId === p;
 }
 function deptInScope(A, d) {
   var u = A.u;
   if (u.role === 'super') return true;
-  if (u.role === 'dept' || u.role === 'staff') return !!d && u.deptId === d;
+  /* AD-7: النطاقُ وحداتُ بياناتٍ وحدها — لا عقدةٌ فوقية ولا معرّفٌ مجهول (ولا وحدةٌ حُذفت وبقي حسابُها) لأيّ دورٍ غير مدير النظام */
+  if (!d || !isUnitId(A, d)) return false;
+  if (u.role === 'dept' || u.role === 'staff') return u.deptId === d || secMgrOf(A, d);
   /* كان يشترط أن تكون الإدارة ابناً مباشراً (dd.gid === u.gid) — فمدير القطاع
      يُرفض على كل إدارةٍ تحته، لأن أبناءه المباشرين إداراتٌ عامة لا إدارات.
-     صار النطاق: عقدةُ المستخدم في سلسلة أسلاف الإدارة بأيّ عمق. */
-  if (u.role === 'gm') return !!d && !!u.gid && ancChain(A, d).indexOf(u.gid) !== -1;
+     صار النطاق: عقدةُ المستخدم في سلسلة أسلاف الإدارة بأيّ عمق — وعقدتُه عقدةٌ فوقيةٌ قائمة (حسابُ gm معرّفُ عقدته معرّفُ وحدة لا يرث شيئاً) */
+  if (u.role === 'gm') return !!u.gid && isNodeId(A, u.gid) && ancChain(A, d).indexOf(u.gid) !== -1;
   return false;
+}
+/* ══ شكلُ سجلّي الهيكل (الأقسام · AD-7) — قاعدةُ الموضع على الخادم ══════════
+   مشّاءٌ واحدٌ للسجلّين: أبُ المعرّف بترتيب ancParentOf (العقدُ أولاً ثم الوحدات)، وأولُ سجلٍّ بالمعرّف هو المعتمد.
+   القائمتان: ما تحمله الحفظةُ نفسُها لكلٍّ منهما (A.__regNext — 054) وإلا المخزَّن. يُفحص المضافُ والمتغيّرُ وحدَه. */
+function shapeFirst(L) { var m = nmap(); (Array.isArray(L) ? L : []).forEach(function (x) { if (isObj(x) && x.id != null && x.id !== '' && !m[String(x.id)]) m[String(x.id)] = x; }); return m; }
+function shapeCount(L) { var m = nmap(); (Array.isArray(L) ? L : []).forEach(function (x) { if (isObj(x) && x.id != null && x.id !== '') m[String(x.id)] = (m[String(x.id)] || 0) + 1; }); return m; }
+function shapeList(A, k) { var X = A.__regNext; return X && Array.isArray(X[k]) ? X[k] : (k === K_GDEPTS ? A.nodes : A.depts); }
+function shapeRef(x, f) { return x[f] == null || x[f] === '' ? '' : String(x[f]); }
+function shapeUp(N, U, c) { if (N[c]) return shapeRef(N[c], 'pid'); if (U[c]) return shapeRef(U[c], 'gid'); return ''; }
+function shapeLoop(N, U, id, p) { var seen = nmap(), c = p, n = 0; seen[id] = 1; while (c) { if (seen[c] || ++n > 64) return true; seen[c] = 1; c = shapeUp(N, U, c); } return false; }
+function shapeDiff(b, a) {
+  var old = shapeFirst(a), cb = shapeCount(b), ca = shapeCount(a), ch = [], dup = false, q;
+  for (q in cb) if (cb[q] > 1 && cb[q] > (ca[q] || 0)) dup = true;
+  b.forEach(function (r) { if (!isObj(r)) return; var o = r.id != null ? old[String(r.id)] : null; if (!o || !deq(o, r)) ch.push(r); });
+  return { old: old, ch: ch, dup: dup };
+}
+/* bassam_depts_v1: kind غائبٌ أو «قسم» أو «إدارة» · أبو القسم إدارةٌ قائمة (لا قسمٌ ولا عقدة) · لا شيءَ تحت قسم · لا دورة ·
+   ولا تُحذف إدارةٌ وأقسامُها باقية ⇒ «dept-shape». ووحدةٌ مضافةٌ أو متغيّرةٌ معرّفُها معرّفُ عقدة ⇒ «id-clash» (AD-7). */
+function deptShapeWhy(A, newJson, curJson, rst) {
+  var b = parseJson(newJson, null), a = parseJson(curJson, null), i, r;
+  if (!Array.isArray(b)) return '';
+  var S = shapeDiff(b, a); if (S.dup) return 'dept-shape';
+  var U = shapeFirst(b), N = shapeFirst(shapeList(A, K_GDEPTS));
+  var isSec = function (x) { return isObj(x) && x.kind === DEPT_SEC_KIND; };
+  for (i = 0; i < S.ch.length; i++) {
+    r = S.ch[i];
+    var id = String(r.id == null ? '' : r.id), g = shapeRef(r, 'gid');
+    if (id && (N[id] || (A.__batchNodes && A.__batchNodes[id]))) return 'id-clash';
+    if (Object.prototype.hasOwnProperty.call(r, 'kind') && r.kind !== DEPT_SEC_KIND && r.kind !== DEPT_UNIT_KIND) return 'dept-shape';
+    if (g && isSec(U[g])) return 'dept-shape';
+    if (isSec(r)) {
+      if (!g || !isObj(U[g]) || N[g]) return 'dept-shape';
+      if (b.some(function (x) { return isObj(x) && shapeRef(x, 'gid') === id; })) return 'dept-shape';
+      for (var nq in N) if (shapeRef(N[nq], 'pid') === id) return 'dept-shape';
+    } else if (id && !S.old[id] && !rst) {
+      for (var nq2 in N) if (shapeRef(N[nq2], 'pid') === id) return 'dept-shape';
+    }
+    if (shapeLoop(N, U, id, g)) return 'dept-shape';
+  }
+  for (i = 0; i < b.length; i++) { r = b[i]; if (isSec(r) && shapeRef(r, 'gid') && S.old[shapeRef(r, 'gid')] && !U[shapeRef(r, 'gid')]) return 'dept-shape'; }
+  return '';
+}
+/* bassam_gdepts_v1: عقدةٌ مضافةٌ أو متغيّرةٌ معرّفُها معرّفُ وحدة ⇒ «id-clash»؛ وحين يتغيّر موضعُها: لا تحت وحدة بيانات (إلا عقدةً قديمةً
+   تعيدها استعادة تحت إدارة) ولا أبٌ معلَّق ولا دورة ⇒ «dept-shape». وإعادةُ التسمية في الموضع نفسِه تمرّ. */
+function nodeShapeWhy(A, newJson, curJson, rst) {
+  var b = parseJson(newJson, null), a = parseJson(curJson, null), i, r;
+  if (!Array.isArray(b)) return '';
+  var S = shapeDiff(b, a); if (S.dup) return 'dept-shape';
+  var N = shapeFirst(b), U = shapeFirst(shapeList(A, K_DEPTS)), BU = A.__batchUnits || nmap();
+  for (i = 0; i < S.ch.length; i++) {
+    r = S.ch[i]; if (r.id == null || r.id === '') continue;
+    var id = String(r.id), p = shapeRef(r, 'pid'), o = S.old[id];
+    if (U[id] || BU[id] || isUnitId(A, id)) return 'id-clash';
+    if (o && shapeRef(o, 'pid') === p) continue;
+    if (p && (U[p] || BU[p]) && !(rst && U[p] && U[p].kind !== DEPT_SEC_KIND)) return 'dept-shape';
+    if (p && !N[p] && !U[p] && !BU[p] && !rst) return 'dept-shape';
+    if (shapeLoop(N, U, id, p)) return 'dept-shape';
+  }
+  return '';
+}
+/* ══ مديرُ الإدارة يُنشئ أقسامَ إدارته (F01 · خطة التوحيد) ══
+   غيرُ مدير النظام يكتب سجلَّ الوحدات بشرطٍ واحد: كلُّ ما تغيّر قسمٌ مضافٌ (أو أُعيدت تسميتُه) تحت إدارةٍ يديرها هو (isMgrOf — وليست قسماً)،
+   وما سواه كما خُزِّن حرفاً: لا حذفَ (الحذفُ ذرّيٌّ في الخادم: /api/admin/dept-delete لمدير النظام) ولا نقلَ ولا إدارةٌ جديدة. ثم قاعدةُ الشكل كاملةً. */
+function deptSecMgrWhy(A, newJson, curJson) {
+  var b = parseJson(newJson, null), a = parseJson(curJson, []), i;
+  if (!Array.isArray(b)) return 'super';
+  var B = shapeFirst(b), O = shapeFirst(a), q;
+  for (q in O) if (!B[q]) return 'super';
+  if (b.length < (Array.isArray(a) ? a.length : 0)) return 'super';
+  for (i = 0; i < b.length; i++) {
+    var r = b[i]; if (!isObj(r) || r.id == null || r.id === '') return 'super';
+    var o = O[String(r.id)]; if (o && deq(o, r)) continue;
+    if (r.kind !== DEPT_SEC_KIND) return 'super';
+    var g = shapeRef(r, 'gid'); if (!g || isNodeId(A, g)) return 'dept-shape';
+    var p = (A.depts || []).filter(function (x) { return isObj(x) && String(x.id) === g; })[0];
+    if (!p || p.kind === DEPT_SEC_KIND || !isMgrOf(A, g)) return 'mgr';
+    if (o && (o.kind !== DEPT_SEC_KIND || shapeRef(o, 'gid') !== g || !eqExcept(o, r, ['name']))) return 'super';
+    if (typeof r.name !== 'string' || !r.name.trim() || r.name.length > 120) return 'shape';
+    if (!o && Object.keys(r).some(function (f) { return ['id', 'name', 'gid', 'kind'].indexOf(f) === -1; })) return 'shape';
+  }
+  return deptShapeWhy(A, newJson, curJson, false);
+}
+/* سقفُ القسم الذي ينشئه مديرُ الإدارة: يُبذر مرةً (لا سجلَّ له قبلُ) من سقف الإدارة الأم (لا أوسعَ منه) — caps[قسم] · capOwn[قسم] = true وحدهما.
+   وما بعد البذر (توسيعٌ · تضييقٌ · تغييرُ الوضع) لمدير النظام وحده كسقف كلّ وحدة */
+function permsSecSeedOk(A, o, n, k, d) {
+  if (A.u.role === 'super' || !d) return false;
+  var p = secParentOf(A, d); if (!p || !isMgrOf(A, p)) return false;
+  var ov = isObj(o[k]) ? o[k][d] : undefined, nv = isObj(n[k]) ? n[k][d] : undefined;
+  if (ov !== undefined) return false;
+  if (k === 'capOwn') return nv === true;
+  if (k !== 'caps' || !Array.isArray(nv)) return false;
+  var pc = deptCapOf(permOnAll(A), p);
+  return nv.every(function (x) { return typeof x === 'string' && pc.indexOf(x) !== -1; });
+}
+function permsSecSeedEq(A, o, n, k) {
+  var ov = isObj(o[k]) ? o[k] : {}, nv = isObj(n[k]) ? n[k] : {}, ks = nmap(), q;
+  if ((o[k] !== undefined && !isObj(o[k])) || (n[k] !== undefined && !isObj(n[k]))) return false;
+  for (q in ov) ks[q] = 1; for (q in nv) ks[q] = 1;
+  for (q in ks) if (!deq(ov[q], nv[q]) && !permsSecSeedOk(A, o, n, k, q)) return false;
+  return true;
 }
 function isMgrOf(A, d) {
   var u = A.u;
   if (u.role === 'super') return true;
-  if (u.role === 'dept') return u.deptId === d;
-  if (u.role === 'staff') return !!u.mgr && u.deptId === d;
+  if (!d || !isUnitId(A, d)) return false;                                      /* AD-7: الإدارةُ على وحدة بيانات وحدها */
+  if (u.role === 'dept') return u.deptId === d || secMgrOf(A, d);
+  if (u.role === 'staff') return !!u.mgr && (u.deptId === d || secMgrOf(A, d));
   if (u.role === 'gm') return deptInScope(A, d);
   return false;
 }
@@ -2823,7 +3007,7 @@ function permsRule(A, newJson, curJson) {
     if (k === 'lensZ') { if (deq(o.lensZ, n.lensZ) || (n.lensZ === 1 && !o.lensZ)) continue; return { ok: false, why: 'super' }; }
     if (k === 'lenses' && lensesUpgradeOnly(o.lenses, n.lenses)) continue;
     var ov = o[k] === undefined ? {} : o[k], nv = n[k] === undefined ? {} : n[k];   /* الغائب والفارغ سواء */
-    if (!deq(ov, nv)) return { ok: false, why: 'super' };
+    if (!deq(ov, nv) && !((k === 'caps' || k === 'capOwn') && permsSecSeedEq(A, o, n, k))) return { ok: false, why: 'super' };   /* F01: بذرُ سقف القسم الجديد */
   }
   var ds = {}; Object.keys(n.emps || {}).concat(Object.keys(o.emps || {}), Object.keys(n.tplOf || {}), Object.keys(o.tplOf || {}), Object.keys(n.empLens || {}), Object.keys(o.empLens || {})).forEach(function (d) { ds[d] = 1; });
   for (var d in ds) {
@@ -2889,14 +3073,20 @@ function permTargetOf(A, ek) {
 /* M5/PAR-4: غيرُ مدير النظام يكتب أوراقَ الموظفين العاديين وحدهم (وقوالبَهم وعدساتِهم ومنحَهم) — أوراقُ المديرين يكتبها مديرُ النظام أو مديرُ فرعٍ
    فوقهم (gm في نطاقه)، وورقةُ مدير عقدةٍ يكتبها مديرُ عقدةٍ أعلى منه وحده. كان مديرُ الإدارة يضيّق على مديره العام وزميله فلا يُرجعانها.
    (الجولة 2 · M-A: مفتاحٌ يحمله أكثرُ من مدير عقدة يكتبه من هو فوقهم جميعاً) */
-function permTargetOk(A, ek) {
+function permTargetOk(A, ek, d) {
   var u = A.u; if (u.role === 'super') return true;
   var t = permTargetOf(A, ek);
   if (t.kind === 'staff') return true;
-  if (u.role !== 'gm') return false;
+  /* F01: مديرُ الإدارة الأم يكتب ورقةَ مدير قسمها (مفتاحُه mgr:<القسم> أو حساباتُه كلُّها في القسم) — لا ورقةَ مديرٍ غيرِه */
+  if (u.role !== 'gm') return t.kind === 'mgr' && !!d && secMgrOf(A, d) && permSecMgrEk(A, ek, d);
   if (t.kind === 'mgr') return true;
   for (var i = 0; i < t.gids.length; i++) if (!permGidBelow(A, t.gids[i], u.gid)) return false;
   return true;
+}
+function permSecMgrEk(A, ek, d) {
+  ek = String(ek == null ? '' : ek); if (ek === 'mgr:' + d) return true;
+  var hit = (A.users || []).filter(function (x) { return x && x.ekey != null && String(x.ekey) === ek; });
+  return hit.length > 0 && hit.every(function (x) { return x.role === 'staff' && x.deptId === d; });
 }
 /* العقدةُ c تحت العقدة top تماماً (سلسلةُ الآباء في A.nodes · محدودةٌ ضدّ الدورات) */
 function permGidBelow(A, c, top) {
@@ -2938,7 +3128,7 @@ function permsGrantWhy(A, d, eo, en, to, tn, lo, ln) {
     var chS = !deq(s0, s1), chL = !deq(l0, l1);
     if (!chS && !chL && deq(isObj(to) ? to[ek] : undefined, isObj(tn) ? tn[ek] : undefined)) continue;
     if (me && ek === me) return 'self';
-    if (!permTargetOk(A, ek)) return 'target';
+    if (!permTargetOk(A, ek, d)) return 'target';
     var t = permTargetOf(A, ek);
     if (chS) {
       /* الجولة 2: ما كان بأضيق وراثةٍ (inhAll) وما يصير بأوسعها (inh) · والمانحُ وما يرثه الهدفُ كأنّ الوحدات كلَّها مشغَّلة (M-C: B) — كان
@@ -10899,6 +11089,10 @@ async function rsWipeInventory(env, A, dept, kind) {
     })
   )
     throw rsError('forbidden', 403);
+  /* F01 · الأقسام: أقسامُ الوحدة المحذوفة — الحذفُ يُرفض ما بقي لها قسم («dept-has-sections»)؛ تُحذف الأقسامُ أولاً كلٌّ بحذفه الذرّي */
+  var sections = A.depts.filter(function (d) {
+    return d && d.kind === DEPT_SEC_KIND && String(d.gid || '') === dept;
+  }).map(function (d) { return { id: String(d.id), name: String(d.name || '') }; });
   var kv = Object.create(null);
   Object.keys(reference.inputKeys).forEach(function (k) {
     if (parseKey(k).dept === dept && !opIsResource(k)) kv[k] = reference.inputRevs[k] || 0;
@@ -10929,7 +11123,9 @@ async function rsWipeInventory(env, A, dept, kind) {
       ok: 1,
       kind: kind,
       dept: dept,
+      sections: sections,
       department: {
+        kind: secParentOf(A, dept) ? DEPT_SEC_KIND : DEPT_UNIT_KIND,
         id: dept,
         name: String(
           (
@@ -10999,6 +11195,7 @@ async function rsWipeRoute(env, request, url, ss) {
     }
     var inventory = await rsWipeInventory(env, A, input.dept, kind),
       observed = inventory.public;
+    if (kind === 'delete' && observed.sections.length) throw rsError('dept-has-sections', 409);
     if (!deq(cuCanonical(input.base), cuCanonical(observed.base))) throw rsError('conflict', 409);
     var set = Object.create(null),
       del = [],
@@ -11029,9 +11226,21 @@ async function rsWipeRoute(env, request, url, ss) {
           return !((u.role === 'dept' || u.role === 'staff') && u.deptId === input.dept);
         }),
       );
+      /* F01: وسجلُّ الصلاحيات في الدفعة الذرّية نفسِها — سقفُ الوحدة ووضعُه وتبويباتُها وعدساتُها وأوراقُها وعدساتُ موظفيها وقوالبُهم
+         (caps · capOwn · subs · lenses · emps · empLens · tplOf). كان يبقى يتيماً بعد الحذف (والواجهةُ لا تنظّف شيئاً بنفسها) */
+      var perms0 = isObj(current.perms) ? current.perms : {}, perms1 = Object.assign({}, perms0), permsHit = false;
+      ['caps', 'capOwn', 'subs', 'lenses', 'emps', 'empLens', 'tplOf'].forEach(function (f) {
+        if (!isObj(perms0[f]) || !Object.prototype.hasOwnProperty.call(perms0[f], input.dept)) return;
+        var m = Object.assign({}, perms0[f]);
+        delete m[input.dept];
+        perms1[f] = m;
+        permsHit = true;
+      });
+      if (permsHit) set[K_PERM] = JSON.stringify(perms1);
       if (input.reason) {
         why[K_DEPTS] = input.reason.trim();
         why[K_USERS] = input.reason.trim();
+        if (permsHit) why[K_PERM] = input.reason.trim();
       }
     }
     var outcome = await rsSaveCommit(
@@ -18826,7 +19035,7 @@ function privPermEntryOk(A, d, ek) {
   if (!deptInScope(A, d)) return false;
   var me = String(A.u.ekey || '');
   if (me && String(ek) === me) return true;
-  return isMgrOf(A, d) && permTargetOk(A, ek);
+  return isMgrOf(A, d) && permTargetOk(A, ek, d);
 }
 function privPermsOut(A, v) {
   if (!isObj(v)) return v;
@@ -18887,6 +19096,8 @@ function privPermsFp(A) {
   var U = privUnits(A), u = A.u, mg = false, s = [u.id, u.role, u.deptId, u.gid, u.ekey].map(function (x) { return x == null ? '' : String(x); }).join('\u0001');
   Object.keys(U).sort().forEach(function (d) { var m = isMgrOf(A, d); if (m) mg = true; s += '\u0002' + d + ':' + (deptInScope(A, d) ? 1 : 0) + (m ? 1 : 0); });
   if (mg) Object.keys(permEkIx(A)).sort().forEach(function (ek) { if (!permTargetOk(A, ek)) s += '\u0003' + ek; });
+  /* F01: مديرُ الإدارة الأم يدير مديرَ قسمها (018 permTargetOk بالوحدة) — الأقسامُ التي يديرها بأهدافها المضافة */
+  Object.keys(U).sort().forEach(function (d) { if (!secMgrOf(A, d)) return; Object.keys(permEkIx(A)).sort().forEach(function (ek) { if (!permTargetOk(A, ek) && permTargetOk(A, ek, d)) s += '\u0005' + d + ':' + ek; }); });
   if (u.role === 'gm') (A.nodes || []).map(function (x) { return x && x.id != null ? String(x.id) : ''; }).sort().forEach(function (g) { if (g && permGidBelow(A, g, u.gid)) s += '\u0004' + g; });
   return fpHash(s);
 }
@@ -19167,7 +19378,10 @@ var DS_READ = ['haram', 'nabawi', 'anHaram', 'anNabawi', 'anCmp', 'anTime'];
 function dsDepts(A) {
   var u = A.u;
   if (u.role === 'gm') return (A.depts || []).map(function (x) { return x && x.id; }).filter(function (d) { return !!d && deptInScope(A, d); });
-  return u.deptId ? [u.deptId] : [];
+  /* AD-7 (F01): إدارةُ الحساب وحدةُ بياناتٍ قائمة · ومديرُ الإدارة الأم يحمل أوراقَ أقسامها (deptInScope) */
+  var out = u.deptId && isUnitId(A, String(u.deptId)) ? [u.deptId] : [];
+  (A.depts || []).forEach(function (x) { var d = x && x.id; if (d && d !== u.deptId && secMgrOf(A, d)) out.push(d); });
+  return out;
 }
 function dsHeld(A, sites, acts) {
   var ds = dsDepts(A);
@@ -19780,7 +19994,8 @@ function myPermsOf(A, d) {
     if (!deptInScope(A, d)) return {};
     return hasOwnSheetOf(A, u.ekey, d) ? empPermsOf(A, u.ekey, d) : capAllPermsOf(A, d);
   }
-  if (u.deptId !== d) return {};
+  /* F01: مديرُ الإدارة الأم في قسمها — كمدير العقدة على وحداته: ورقتُه الصريحة فيه إن وُجدت وإلا سقفُ القسم كلُّه */
+  if (u.deptId !== d) return secMgrOf(A, d) ? (hasOwnSheetOf(A, u.ekey, d) ? empPermsOf(A, u.ekey, d) : capAllPermsOf(A, d)) : {};
   if (u.role === 'dept') return (DEPT_SHEET && hasOwnSheetOf(A, u.ekey, d)) ? empPermsOf(A, u.ekey, d) : capAllPermsOf(A, d);
   if (u.role === 'staff') {
     if (isMgrKey(u.ekey) && !hasOwnSheetOf(A, u.ekey, d)) return capAllPermsOf(A, d);
@@ -21056,9 +21271,25 @@ function canWrite(A, k, newVal, curVal, ctx) {
   /* KIVO_264 · D14: عدا اسمَ دخوله هو — كلمةُ المرور الحالية (cur) وصيغةُ 10 أرقام كغيره (superSelfWhy) */
   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · I4w: ولمدير النظام كذلك — لا يُكتب حسابٌ «staff» بمفتاح mgr: بلا الشارة (018 usersA1Of) */
   if (k === K_PERM && newVal != null) { var cow = capOwnWhy(newVal, curVal); if (cow) return { ok: false, why: cow }; }   /* caps-own: the mode, any role (021) */
-  if (u.role === 'super' && R0.scope === 'global') { var ssw = k === K_USERS && newVal != null ? (superSelfWhy(A, newVal, curVal, ctx) || usersA1Of(newVal, curVal) || null) : null; return ssw ? { ok: false, why: ssw } : { ok: true }; }
+  if (u.role === 'super' && R0.scope === 'global') {
+    var ssw = k === K_USERS && newVal != null ? (superSelfWhy(A, newVal, curVal, ctx) || usersA1Of(newVal, curVal) || null) : null;
+    /* F01 · الأقسام وAD-7: شكلُ سجلّي الهيكل (المضافُ والمتغيّرُ وحده — 018 deptShapeWhy/nodeShapeWhy) · والمقبولُ منهما يُعرَّف لبقية الحفظة */
+    if (!ssw && k === K_DEPTS && newVal != null) ssw = deptShapeWhy(A, newVal, curVal, !!(ctx && ctx.rst)) || null;
+    if (!ssw && k === K_GDEPTS && newVal != null) ssw = nodeShapeWhy(A, newVal, curVal, !!(ctx && ctx.rst)) || null;
+    if (!ssw && newVal != null) { if (k === K_DEPTS) unitBatchAdd(A, newVal); else if (k === K_GDEPTS) nodeBatchAdd(A, newVal); }
+    return ssw ? { ok: false, why: ssw } : { ok: true };
+  }
   var P = parseKey(k);
+  /* F01: مديرُ النظام يحذف مفاتيحَ وحدةٍ أزالها سجلُّ الوحدات في الحفظة نفسِها أو لم تعد وحدة (تنظيفُ اليتيم — 018 unitGoneOf) */
+  if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return { ok: true };
+  /* AD-7: ولا يكتب في معرّفٍ ليس وحدةَ بيانات — إلا وحدةً عرّفها سجلُّ الوحدات المقبولُ في الحفظة نفسِها، أو استعادةً لمعرّفٍ ليس عقدة */
+  if (P.dept && newVal != null && u.role === 'super' && !isUnitId(A, P.dept)) {
+    if (!(ctx && ctx.rst && !isNodeId(A, P.dept))) return { ok: false, why: 'unit' };
+    (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1;
+  }
   if (!P.dept) {
+    /* F01: مديرُ الإدارة يُنشئ أقسامَ إدارته ويعيد تسميتها (018 deptSecMgrWhy) — وما سواه في سجلّ الوحدات لمدير النظام */
+    if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (!smw) unitBatchAdd(A, newVal); return smw ? { ok: false, why: smw } : { ok: true }; }
     if (P.name === K_USERS) return newVal == null ? { ok: false, why: 'users' } : usersRule(A, newVal, curVal, ctx);
     if (P.name === K_PERM) return newVal == null ? { ok: false, why: 'super' } : permsRule(A, newVal, curVal);
     /* R180: الإحصائيات اليومية — أوراقُ المسجدين تحكم كتابتَها، وحذفُ المفتاح كلِّه لمدير النظام وحده */
@@ -23676,14 +23907,22 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (infQ.adopt) { protOp = 'adopt'; break; }
   }
   var todo = [];
-  for (k in set) todo.push({ k: k, v: String(set[k]), act: 'set' });
+  /* F01 · الأقسام: سجلّا الهيكل (الوحدات ثم العقد) يُحكم عليهما قبل كلِّ مفتاح — فوحدةٌ جديدةٌ في الحفظة وحدةٌ لمفاتيحها أيّاً كان ترتيبُها؛
+     وكلٌّ منهما يُحكم على الهيكل كما سيصير بالسجلّين معاً (A.__regNext — 018 shapeList) */
+  A.__regNext = nmap();
+  [K_DEPTS, K_GDEPTS].forEach(function (kr) {
+    if (!Object.prototype.hasOwnProperty.call(set, kr)) return;
+    todo.push({ k: kr, v: String(set[kr]), act: 'set' });
+    var pr9 = parseJson(String(set[kr]), null); if (Array.isArray(pr9)) A.__regNext[kr] = pr9;
+  });
+  for (k in set) if (k !== K_DEPTS && k !== K_GDEPTS) todo.push({ k: k, v: String(set[k]), act: 'set' });
   for (i = 0; i < del.length; i++) todo.push({ k: String(del[i]), v: null, act: 'del' });
   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: إسنادُ القالب يكتب الورقةَ (bassam_perms_v1) والمنحَ الصريح (bsdept:<d>:bassam_grants_v1)
      في حفظةٍ واحدة، ورفعُ الإسقاط يُحكم بما سيحمله الموظفُ بعد الحفظ (059 enfMinusLiftWhy) — فتُقيَّم الصلاحياتُ أوّلاً، وتُعطى سجلاتُ المنح صلاحياتِ ما بعد
      الحفظ إن قُبلت (pa9) وإلا المخزَّنة؛ ومنحٌ حُكم بها لا يُكتب إلا إن كُتبت هي في الحفظة نفسها (حارسُ نسختها في مجموعته: dep9) */
   var pa9 = null, paOn9 = false;
   if (A.enf && A.u.role !== 'super' && Object.prototype.hasOwnProperty.call(set, K_PERM) && todo.some(function (t) { return resName(t.k) === ENF_GRANTS_RES; })) {
-    paOn9 = true; todo.sort(function (x, y) { return (y.k === K_PERM && y.act === 'set' ? 1 : 0) - (x.k === K_PERM && x.act === 'set' ? 1 : 0); });
+    paOn9 = true; var rk9 = function (x) { return x.act !== 'set' ? 0 : (x.k === K_DEPTS || x.k === K_GDEPTS) ? 2 : x.k === K_PERM ? 1 : 0; }; todo.sort(function (x, y) { return rk9(y) - rk9(x); });
   }
   /* «… (الجولة 2)» · R3-2: ربطُ حسابٍ بمفتاحٍ يحمل منحاً صريحاً باقياً يُحكم كمنح (018 usersGrantWhy) — سجلاتُ المنح لكلّ الوحدات تُقرأ مرّةً لحفظ الحسابات */
   var gx9 = Object.prototype.hasOwnProperty.call(set, K_USERS) && A.u.role !== 'super' ? await usersGrantsLoad(env, A) : null;
@@ -23691,10 +23930,30 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      يُقاس كلُّ مفتاحٍ أولاً، ويُعرف هل في الطلب عمليةٌ محمية. فإن كانت ومعها
      رفضٌ واحد، رجع الطلب كلُّه بلا كتابةٍ ولا rev — ولا تبعةَ جزئية. وما خلا
      العمليات المحمية يبقى على عقد /api/save القديم: قبولٌ جزئيّ كما كان. */
-  var evald = [];
+  var evald = [], regMk9 = null, regMks9 = [], regRst9 = [], regN9 = 0;
+  while (regN9 < todo.length && todo[regN9].act === 'set' && (todo[regN9].k === K_DEPTS || todo[regN9].k === K_GDEPTS)) regN9++;
+  /* F01: سجلُّ هيكلٍ قُبل حكمُه ثم لم يُكتب (تعارضُ نسخة · رفضٌ بعد الحكم) ⇒ تُنقض وحداتُه وعقدُه الجديدة قبل أيّ مفتاحٍ بعده (018 batchRegUndo) */
+  var regUndo9 = function (q) { if (!regMk9) return; var rv9 = evald[q]; if (!(rv9 && (rv9.ok || rv9.noop))) batchRegUndo(A, regMk9); regMk9 = null; };
+  /* والسجلّان معاً وأحدُهما لم يُكتب ⇒ يُعاد الحكمُ على المكتوب بالمخزَّن من الآخر (018 regPairWhy) قبل أيّ مفتاحٍ بعدهما */
+  var regPair9 = function () {
+    if (regN9 !== 2) return;
+    var g0 = !!(evald[0] && (evald[0].ok || evald[0].noop)), g1 = !!(evald[1] && (evald[1].ok || evald[1].noop));
+    if (g0 === g1) return;
+    var j = g0 ? 0 : 1, e9 = evald[j];
+    if (!e9 || !e9.ok) return;
+    var w9 = regPairWhy(A, todo[j].k, todo[j].v, e9.cur, regRst9[j], todo[1 - j].k);
+    if (!w9) return;
+    batchRegUndo(A, regMks9[j]);
+    var vn9 = ENFX ? enfNo(w9) : null;
+    evald[j] = { deny: w9, cur: e9.cur, x: vn9 };
+    if (ENFX) { var lp9 = enfLogRow(A, todo[j].k, vn9, '/api/save', { ip: ident.ip }); if (lp9) ENFX.log.push(lp9); }
+  };
   for (i = 0; i < todo.length; i++) {
+    regUndo9(i - 1);
+    if (i === regN9) regPair9();
     var it0 = todo[i], k0 = it0.k;
-    if (paOn9 && i === 1 && todo[0].k === K_PERM) pa9 = evald[0] && evald[0].ok ? parseJson(todo[0].v, null) : null;   /* R3-4: الصلاحياتُ قُيّمت أوّلاً */
+    if (paOn9 && i === regN9 + 1 && todo[regN9] && todo[regN9].k === K_PERM) pa9 = evald[regN9] && evald[regN9].ok ? parseJson(todo[regN9].v, null) : null;   /* R3-4: الصلاحياتُ قُيّمت أوّلاً (بعد سجلّي الهيكل) */
+    if (it0.act === 'set' && (k0 === K_DEPTS || k0 === K_GDEPTS)) regMks9[i] = regMk9 = batchRegMark(A);
     if (isDeviceKey(k0)) { evald.push(null); continue; }
     if (it0.act === 'del' && k0 === K_USERS) { evald.push({ deny: 'users' }); continue; }
     var cur0 = await opResourceGet(env, k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
@@ -23751,6 +24010,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       ctx0.imp = !!d00 && enfHeld(A, d00, 'import.replace');
       ctx0.enf = enfCtxFor(ENFX, k0, d00);
     }
+    if (i < regN9) regRst9[i] = ENFX ? !!(ctx0.enf && ctx0.enf.restore) : !!ctx0.rst;   /* F01: علامةُ الاستعادة كما رآها حكمُه (044 · 060) */
     var vd0 = ENFX && ENFX.batchDeny ? enfNo(ENFX.batchDeny.why, ENFX.batchDeny) : (ENFX && ctx0.enfHidden ? enfNo('scope', { detail: ctx0.enfHidden }) : canWrite(A, k0, it0.v, cur0, ctx0));
     /* KIVO_265 · المراجعةُ الموحّدة (R-4): أحكامُ مخزن المهام الخامّ (018 taskRawWhy) تقيس الحفظةَ على القيمة الحالية — فعلى base قديمٍ قد يكون الحكمُ
        أثرَ ما كتبه الخادمُ أو غيرُه بعد قراءتها (تمديدٌ في 23 · حذفُ صفٍّ · إعادةُ إسناد) لا فعلَها هي. ولا كتابةَ على base قديمٍ أصلاً (فحصُ النسخة أدناه)
@@ -23808,6 +24068,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
     evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
+  if (todo.length === regN9) { regUndo9(todo.length - 1); regPair9(); }               /* F01: حفظةٌ فيها السجلّان وحدهما */
   /* caps-own (021 capStaleBatch): an older page that narrows a ceiling and deletes what fell outside it in the same request ⇒ the whole request
      is refused, nothing written (why 'perms' — the text an older page already shows: «الصلاحيات لم تُقبل … أُعيدت القيمة كما في الخادم») */
   if (capStaleBatch(A, todo, evald)) {
@@ -24184,8 +24445,11 @@ function enfHeld0(A, d, key) {
   if (e.grant === 'self') return true;                                    /* قواعدُ الذات تُطبَّق تلقائياً — بنطاق Own في المحرّك */
   var sup = u.role === 'super';
   if (ix.superOnly[key]) return sup;
-  if (e.grant === 'role') return ix.needMgr[key] ? (!!d && isMgrOf(A, d)) : sup;
+  /* AD-7 (F01): مفتاحُ دور الإدارة (role:mgr) على وحدة بيانات وحدها — ومديرُ النظام معهم */
+  if (e.grant === 'role') return ix.needMgr[key] ? (!!d && isUnitId(A, d) && isMgrOf(A, d)) : sup;
   if (!d) return false;
+  /* …وكلُّ مفتاحٍ بعدها: لا مفتاحَ على عقدةٍ فوقية ولا معرّفٍ مجهول لأحد (gm على عقدةٍ كان يحمل على العقدة تحتها مفاتيحَ الوحدة) */
+  if (!isUnitId(A, d)) return false;
   if (!sup && !deptInScope(A, d)) return false;
   if (!enfKeyOnCeiling(A, d, key)) return false;
   var L = ix.lens[key];
@@ -24204,6 +24468,14 @@ function enfHeld0(A, d, key) {
   if (!T.keys[key]) return false;
   if (ENF_COMPAT[key] && enfPermMigrated(A)) return false;              /* انتهى التوافقُ المؤقّت: المفتاحُ الصريحُ وحده */
   return true;
+}
+/* وحدةٌ عُرِّفت أثناء الحفظة (018 unitBatchAdd): تُسقط ذاكرةُ أحكامها — حُكم عليها قبلُ بأنها ليست وحدة */
+function enfMemoDrop(A, d) {
+  if (!A) return;
+  if (A.__enfH) delete A.__enfH[d];
+  if (A.__enfT) delete A.__enfT[d];
+  if (A.__enfG) delete A.__enfG[d];
+  if (A.__enfV) for (var vk in A.__enfV) if (vk.indexOf(d + '|') === 0) delete A.__enfV[vk];
 }
 /* هل يحمل الفاعلُ أيَّ مفتاحٍ كتابيٍّ في الإدارة؟ (الراياتُ التقنية rule:'tech' · رفعُ صورةٍ جديدة) */
 function enfAnyWriterDept(A, d) {
@@ -24676,7 +24948,7 @@ function enfGrantsWrite(A, k, newVal, curVal, ctx) {
   for (e in all) {
     if (deq(eo[e], en[e])) continue;
     if (!sup && e === String(A.u.ekey || '')) return enfNo('self', { detail: e });                                    /* لا يمنح نفسَه ولا يُسقط عنها */
-    if (!sup && !permTargetOk(A, e)) return enfNo('target', { detail: e });                                           /* «فحص الصلاحيات العميق (2026-10-21)» · M5/PAR-4: منحُ المديرين لمدير النظام أو لمدير فرعٍ فوقهم (018) */
+    if (!sup && !permTargetOk(A, e, d)) return enfNo('target', { detail: e });                                           /* «فحص الصلاحيات العميق (2026-10-21)» · M5/PAR-4: منحُ المديرين لمدير النظام أو لمدير فرعٍ فوقهم (018) */
     var gb = en[e];                                                                                                   /* undefined: سحبُ المنح كلِّه */
     if (gb !== undefined) {
       if (!isObj(gb)) return enfNo('shape', { detail: e });
@@ -24792,9 +25064,17 @@ function enfScopeWrite(A, k, newVal, curVal) {
   }
   return enfOk(enfUniq(keys));
 }
+/* مفتاحُ سجلّ الإنفاذ لحذف بقايا وحدةٍ أُزيلت — مفتاحُ كتابة سجلّ الوحدات نفسُه (sys.*) */
+function enfUnitDelKeys() { var gk = enfIx().byRes[K_DEPTS] || [], gs = gk.filter(function (x) { return x.indexOf('sys.') === 0; }); return gs.length ? [gs[0]] : ['sys.modules.toggle']; }
 /* ══ canWrite في وضع الإنفاذ — البنيةُ نفسُها، والقرارُ من السجل ══ */
 function canWriteEnf(A, k, newVal, curVal, ctx) {
   var u = A.u, P = parseKey(k), rn = resName(k), X = (ctx && ctx.enf) || {};
+  /* F01 (مرآةُ 044): حذفُ مفاتيح وحدةٍ لم تعد وحدة لمدير النظام · ولا كتابةَ في معرّفٍ ليس وحدةَ بيانات إلا وحدةً في الحفظة نفسِها أو استعادة */
+  if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return enfOk(enfUnitDelKeys());
+  if (P.dept && newVal != null && u.role === 'super' && !isUnitId(A, P.dept)) {
+    if (!(X.restore && !isNodeId(A, P.dept))) return enfNo('unit', { detail: P.dept });
+    (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1; enfMemoDrop(A, String(P.dept));
+  }
   if (P.dept && rn === ENF_SCOPE_RES) return enfScopeWrite(A, k, newVal, curVal);
   if (P.dept && rn === ENF_GRANTS_RES) return enfGrantsWrite(A, k, newVal, curVal, ctx);   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: ctx.pa */
   var R0 = resOf(k);
@@ -24805,7 +25085,11 @@ function canWriteEnf(A, k, newVal, curVal, ctx) {
     if (P.name === K_USERS) return newVal == null ? enfNo('users') : enfUsersWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_PERM) return newVal == null ? enfNo('super') : enfPermsWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_DSTATS) return newVal == null ? enfNo('keydel') : enfDstatsWrite(A, k, newVal, curVal, ctx, X);
+    /* F01: مديرُ الإدارة يُنشئ أقسامَ إدارته (018 deptSecMgrWhy) — بمفتاح الإدارة perm.assign في الإدارة الأم */
+    if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (smw) return enfNo(smw); unitBatchAdd(A, newVal); return enfOk([]); }
     if (u.role !== 'super') return enfNo('super');
+    if (P.name === K_DEPTS && newVal != null) { var dsE = deptShapeWhy(A, newVal, curVal, !!X.restore); if (dsE) return enfNo(dsE); unitBatchAdd(A, newVal); }
+    if (P.name === K_GDEPTS && newVal != null) { var nsE = nodeShapeWhy(A, newVal, curVal, !!X.restore); if (nsE) return enfNo(nsE); nodeBatchAdd(A, newVal); }
     var gk = enfIx().byRes[P.name] || [], gsys = gk.filter(function (x) { return x.indexOf('sys.') === 0; });
     return enfOk(gsys.length ? [gsys[0]] : ['sys.modules.toggle']);
   }
@@ -27954,7 +28238,10 @@ function enfBits(A, d) {
 function enfDeptsOf(A) {
   var u = A.u, out = [], i;
   if (u.role === 'super' || u.role === 'gm') { for (i = 0; i < (A.depts || []).length; i++) { var d = A.depts[i] && A.depts[i].id; if (d && deptInScope(A, d)) out.push(d); } }
-  else if (u.deptId) out.push(u.deptId);
+  else {
+    if (u.deptId) out.push(u.deptId);
+    for (i = 0; i < (A.depts || []).length; i++) { var s9 = A.depts[i] && A.depts[i].id; if (s9 && s9 !== u.deptId && secMgrOf(A, s9)) out.push(s9); }   /* F01: أقسامُ إدارته */
+  }
   return out;
 }
 /* KIVO_264 · ورديةُ الفاعل المربوطةُ بالجدول الشهري (Shift: staffing-bound — enfEmpScopeOf · 058): تُقرأ من bsdept:<d>:bassam_staffing_v3 لحظةَ الإسقاط

@@ -122,8 +122,11 @@ function enfHeld0(A, d, key) {
   if (e.grant === 'self') return true;                                    /* قواعدُ الذات تُطبَّق تلقائياً — بنطاق Own في المحرّك */
   var sup = u.role === 'super';
   if (ix.superOnly[key]) return sup;
-  if (e.grant === 'role') return ix.needMgr[key] ? (!!d && isMgrOf(A, d)) : sup;
+  /* AD-7 (F01): مفتاحُ دور الإدارة (role:mgr) على وحدة بيانات وحدها — ومديرُ النظام معهم */
+  if (e.grant === 'role') return ix.needMgr[key] ? (!!d && isUnitId(A, d) && isMgrOf(A, d)) : sup;
   if (!d) return false;
+  /* …وكلُّ مفتاحٍ بعدها: لا مفتاحَ على عقدةٍ فوقية ولا معرّفٍ مجهول لأحد (gm على عقدةٍ كان يحمل على العقدة تحتها مفاتيحَ الوحدة) */
+  if (!isUnitId(A, d)) return false;
   if (!sup && !deptInScope(A, d)) return false;
   if (!enfKeyOnCeiling(A, d, key)) return false;
   var L = ix.lens[key];
@@ -142,6 +145,14 @@ function enfHeld0(A, d, key) {
   if (!T.keys[key]) return false;
   if (ENF_COMPAT[key] && enfPermMigrated(A)) return false;              /* انتهى التوافقُ المؤقّت: المفتاحُ الصريحُ وحده */
   return true;
+}
+/* وحدةٌ عُرِّفت أثناء الحفظة (018 unitBatchAdd): تُسقط ذاكرةُ أحكامها — حُكم عليها قبلُ بأنها ليست وحدة */
+function enfMemoDrop(A, d) {
+  if (!A) return;
+  if (A.__enfH) delete A.__enfH[d];
+  if (A.__enfT) delete A.__enfT[d];
+  if (A.__enfG) delete A.__enfG[d];
+  if (A.__enfV) for (var vk in A.__enfV) if (vk.indexOf(d + '|') === 0) delete A.__enfV[vk];
 }
 /* هل يحمل الفاعلُ أيَّ مفتاحٍ كتابيٍّ في الإدارة؟ (الراياتُ التقنية rule:'tech' · رفعُ صورةٍ جديدة) */
 function enfAnyWriterDept(A, d) {

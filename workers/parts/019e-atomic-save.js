@@ -524,6 +524,10 @@ async function rsWipeInventory(env, A, dept, kind) {
     })
   )
     throw rsError('forbidden', 403);
+  /* F01 · الأقسام: أقسامُ الوحدة المحذوفة — الحذفُ يُرفض ما بقي لها قسم («dept-has-sections»)؛ تُحذف الأقسامُ أولاً كلٌّ بحذفه الذرّي */
+  var sections = A.depts.filter(function (d) {
+    return d && d.kind === DEPT_SEC_KIND && String(d.gid || '') === dept;
+  }).map(function (d) { return { id: String(d.id), name: String(d.name || '') }; });
   var kv = Object.create(null);
   Object.keys(reference.inputKeys).forEach(function (k) {
     if (parseKey(k).dept === dept && !opIsResource(k)) kv[k] = reference.inputRevs[k] || 0;
@@ -554,7 +558,9 @@ async function rsWipeInventory(env, A, dept, kind) {
       ok: 1,
       kind: kind,
       dept: dept,
+      sections: sections,
       department: {
+        kind: secParentOf(A, dept) ? DEPT_SEC_KIND : DEPT_UNIT_KIND,
         id: dept,
         name: String(
           (
@@ -624,6 +630,7 @@ async function rsWipeRoute(env, request, url, ss) {
     }
     var inventory = await rsWipeInventory(env, A, input.dept, kind),
       observed = inventory.public;
+    if (kind === 'delete' && observed.sections.length) throw rsError('dept-has-sections', 409);
     if (!deq(cuCanonical(input.base), cuCanonical(observed.base))) throw rsError('conflict', 409);
     var set = Object.create(null),
       del = [],
@@ -654,9 +661,21 @@ async function rsWipeRoute(env, request, url, ss) {
           return !((u.role === 'dept' || u.role === 'staff') && u.deptId === input.dept);
         }),
       );
+      /* F01: وسجلُّ الصلاحيات في الدفعة الذرّية نفسِها — سقفُ الوحدة ووضعُه وتبويباتُها وعدساتُها وأوراقُها وعدساتُ موظفيها وقوالبُهم
+         (caps · capOwn · subs · lenses · emps · empLens · tplOf). كان يبقى يتيماً بعد الحذف (والواجهةُ لا تنظّف شيئاً بنفسها) */
+      var perms0 = isObj(current.perms) ? current.perms : {}, perms1 = Object.assign({}, perms0), permsHit = false;
+      ['caps', 'capOwn', 'subs', 'lenses', 'emps', 'empLens', 'tplOf'].forEach(function (f) {
+        if (!isObj(perms0[f]) || !Object.prototype.hasOwnProperty.call(perms0[f], input.dept)) return;
+        var m = Object.assign({}, perms0[f]);
+        delete m[input.dept];
+        perms1[f] = m;
+        permsHit = true;
+      });
+      if (permsHit) set[K_PERM] = JSON.stringify(perms1);
       if (input.reason) {
         why[K_DEPTS] = input.reason.trim();
         why[K_USERS] = input.reason.trim();
+        if (permsHit) why[K_PERM] = input.reason.trim();
       }
     }
     var outcome = await rsSaveCommit(

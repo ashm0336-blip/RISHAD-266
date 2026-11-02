@@ -1,6 +1,14 @@
+/* مفتاحُ سجلّ الإنفاذ لحذف بقايا وحدةٍ أُزيلت — مفتاحُ كتابة سجلّ الوحدات نفسُه (sys.*) */
+function enfUnitDelKeys() { var gk = enfIx().byRes[K_DEPTS] || [], gs = gk.filter(function (x) { return x.indexOf('sys.') === 0; }); return gs.length ? [gs[0]] : ['sys.modules.toggle']; }
 /* ══ canWrite في وضع الإنفاذ — البنيةُ نفسُها، والقرارُ من السجل ══ */
 function canWriteEnf(A, k, newVal, curVal, ctx) {
   var u = A.u, P = parseKey(k), rn = resName(k), X = (ctx && ctx.enf) || {};
+  /* F01 (مرآةُ 044): حذفُ مفاتيح وحدةٍ لم تعد وحدة لمدير النظام · ولا كتابةَ في معرّفٍ ليس وحدةَ بيانات إلا وحدةً في الحفظة نفسِها أو استعادة */
+  if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return enfOk(enfUnitDelKeys());
+  if (P.dept && newVal != null && u.role === 'super' && !isUnitId(A, P.dept)) {
+    if (!(X.restore && !isNodeId(A, P.dept))) return enfNo('unit', { detail: P.dept });
+    (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1; enfMemoDrop(A, String(P.dept));
+  }
   if (P.dept && rn === ENF_SCOPE_RES) return enfScopeWrite(A, k, newVal, curVal);
   if (P.dept && rn === ENF_GRANTS_RES) return enfGrantsWrite(A, k, newVal, curVal, ctx);   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: ctx.pa */
   var R0 = resOf(k);
@@ -11,7 +19,11 @@ function canWriteEnf(A, k, newVal, curVal, ctx) {
     if (P.name === K_USERS) return newVal == null ? enfNo('users') : enfUsersWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_PERM) return newVal == null ? enfNo('super') : enfPermsWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_DSTATS) return newVal == null ? enfNo('keydel') : enfDstatsWrite(A, k, newVal, curVal, ctx, X);
+    /* F01: مديرُ الإدارة يُنشئ أقسامَ إدارته (018 deptSecMgrWhy) — بمفتاح الإدارة perm.assign في الإدارة الأم */
+    if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (smw) return enfNo(smw); unitBatchAdd(A, newVal); return enfOk([]); }
     if (u.role !== 'super') return enfNo('super');
+    if (P.name === K_DEPTS && newVal != null) { var dsE = deptShapeWhy(A, newVal, curVal, !!X.restore); if (dsE) return enfNo(dsE); unitBatchAdd(A, newVal); }
+    if (P.name === K_GDEPTS && newVal != null) { var nsE = nodeShapeWhy(A, newVal, curVal, !!X.restore); if (nsE) return enfNo(nsE); nodeBatchAdd(A, newVal); }
     var gk = enfIx().byRes[P.name] || [], gsys = gk.filter(function (x) { return x.indexOf('sys.') === 0; });
     return enfOk(gsys.length ? [gsys[0]] : ['sys.modules.toggle']);
   }

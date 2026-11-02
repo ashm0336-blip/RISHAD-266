@@ -28,9 +28,25 @@ function canWrite(A, k, newVal, curVal, ctx) {
   /* KIVO_264 · D14: عدا اسمَ دخوله هو — كلمةُ المرور الحالية (cur) وصيغةُ 10 أرقام كغيره (superSelfWhy) */
   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · I4w: ولمدير النظام كذلك — لا يُكتب حسابٌ «staff» بمفتاح mgr: بلا الشارة (018 usersA1Of) */
   if (k === K_PERM && newVal != null) { var cow = capOwnWhy(newVal, curVal); if (cow) return { ok: false, why: cow }; }   /* caps-own: the mode, any role (021) */
-  if (u.role === 'super' && R0.scope === 'global') { var ssw = k === K_USERS && newVal != null ? (superSelfWhy(A, newVal, curVal, ctx) || usersA1Of(newVal, curVal) || null) : null; return ssw ? { ok: false, why: ssw } : { ok: true }; }
+  if (u.role === 'super' && R0.scope === 'global') {
+    var ssw = k === K_USERS && newVal != null ? (superSelfWhy(A, newVal, curVal, ctx) || usersA1Of(newVal, curVal) || null) : null;
+    /* F01 · الأقسام وAD-7: شكلُ سجلّي الهيكل (المضافُ والمتغيّرُ وحده — 018 deptShapeWhy/nodeShapeWhy) · والمقبولُ منهما يُعرَّف لبقية الحفظة */
+    if (!ssw && k === K_DEPTS && newVal != null) ssw = deptShapeWhy(A, newVal, curVal, !!(ctx && ctx.rst)) || null;
+    if (!ssw && k === K_GDEPTS && newVal != null) ssw = nodeShapeWhy(A, newVal, curVal, !!(ctx && ctx.rst)) || null;
+    if (!ssw && newVal != null) { if (k === K_DEPTS) unitBatchAdd(A, newVal); else if (k === K_GDEPTS) nodeBatchAdd(A, newVal); }
+    return ssw ? { ok: false, why: ssw } : { ok: true };
+  }
   var P = parseKey(k);
+  /* F01: مديرُ النظام يحذف مفاتيحَ وحدةٍ أزالها سجلُّ الوحدات في الحفظة نفسِها أو لم تعد وحدة (تنظيفُ اليتيم — 018 unitGoneOf) */
+  if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return { ok: true };
+  /* AD-7: ولا يكتب في معرّفٍ ليس وحدةَ بيانات — إلا وحدةً عرّفها سجلُّ الوحدات المقبولُ في الحفظة نفسِها، أو استعادةً لمعرّفٍ ليس عقدة */
+  if (P.dept && newVal != null && u.role === 'super' && !isUnitId(A, P.dept)) {
+    if (!(ctx && ctx.rst && !isNodeId(A, P.dept))) return { ok: false, why: 'unit' };
+    (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1;
+  }
   if (!P.dept) {
+    /* F01: مديرُ الإدارة يُنشئ أقسامَ إدارته ويعيد تسميتها (018 deptSecMgrWhy) — وما سواه في سجلّ الوحدات لمدير النظام */
+    if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (!smw) unitBatchAdd(A, newVal); return smw ? { ok: false, why: smw } : { ok: true }; }
     if (P.name === K_USERS) return newVal == null ? { ok: false, why: 'users' } : usersRule(A, newVal, curVal, ctx);
     if (P.name === K_PERM) return newVal == null ? { ok: false, why: 'super' } : permsRule(A, newVal, curVal);
     /* R180: الإحصائيات اليومية — أوراقُ المسجدين تحكم كتابتَها، وحذفُ المفتاح كلِّه لمدير النظام وحده */

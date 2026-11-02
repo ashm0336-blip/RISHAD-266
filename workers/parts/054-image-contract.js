@@ -947,14 +947,22 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (infQ.adopt) { protOp = 'adopt'; break; }
   }
   var todo = [];
-  for (k in set) todo.push({ k: k, v: String(set[k]), act: 'set' });
+  /* F01 · الأقسام: سجلّا الهيكل (الوحدات ثم العقد) يُحكم عليهما قبل كلِّ مفتاح — فوحدةٌ جديدةٌ في الحفظة وحدةٌ لمفاتيحها أيّاً كان ترتيبُها؛
+     وكلٌّ منهما يُحكم على الهيكل كما سيصير بالسجلّين معاً (A.__regNext — 018 shapeList) */
+  A.__regNext = nmap();
+  [K_DEPTS, K_GDEPTS].forEach(function (kr) {
+    if (!Object.prototype.hasOwnProperty.call(set, kr)) return;
+    todo.push({ k: kr, v: String(set[kr]), act: 'set' });
+    var pr9 = parseJson(String(set[kr]), null); if (Array.isArray(pr9)) A.__regNext[kr] = pr9;
+  });
+  for (k in set) if (k !== K_DEPTS && k !== K_GDEPTS) todo.push({ k: k, v: String(set[k]), act: 'set' });
   for (i = 0; i < del.length; i++) todo.push({ k: String(del[i]), v: null, act: 'del' });
   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: إسنادُ القالب يكتب الورقةَ (bassam_perms_v1) والمنحَ الصريح (bsdept:<d>:bassam_grants_v1)
      في حفظةٍ واحدة، ورفعُ الإسقاط يُحكم بما سيحمله الموظفُ بعد الحفظ (059 enfMinusLiftWhy) — فتُقيَّم الصلاحياتُ أوّلاً، وتُعطى سجلاتُ المنح صلاحياتِ ما بعد
      الحفظ إن قُبلت (pa9) وإلا المخزَّنة؛ ومنحٌ حُكم بها لا يُكتب إلا إن كُتبت هي في الحفظة نفسها (حارسُ نسختها في مجموعته: dep9) */
   var pa9 = null, paOn9 = false;
   if (A.enf && A.u.role !== 'super' && Object.prototype.hasOwnProperty.call(set, K_PERM) && todo.some(function (t) { return resName(t.k) === ENF_GRANTS_RES; })) {
-    paOn9 = true; todo.sort(function (x, y) { return (y.k === K_PERM && y.act === 'set' ? 1 : 0) - (x.k === K_PERM && x.act === 'set' ? 1 : 0); });
+    paOn9 = true; var rk9 = function (x) { return x.act !== 'set' ? 0 : (x.k === K_DEPTS || x.k === K_GDEPTS) ? 2 : x.k === K_PERM ? 1 : 0; }; todo.sort(function (x, y) { return rk9(y) - rk9(x); });
   }
   /* «… (الجولة 2)» · R3-2: ربطُ حسابٍ بمفتاحٍ يحمل منحاً صريحاً باقياً يُحكم كمنح (018 usersGrantWhy) — سجلاتُ المنح لكلّ الوحدات تُقرأ مرّةً لحفظ الحسابات */
   var gx9 = Object.prototype.hasOwnProperty.call(set, K_USERS) && A.u.role !== 'super' ? await usersGrantsLoad(env, A) : null;
@@ -962,10 +970,30 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      يُقاس كلُّ مفتاحٍ أولاً، ويُعرف هل في الطلب عمليةٌ محمية. فإن كانت ومعها
      رفضٌ واحد، رجع الطلب كلُّه بلا كتابةٍ ولا rev — ولا تبعةَ جزئية. وما خلا
      العمليات المحمية يبقى على عقد /api/save القديم: قبولٌ جزئيّ كما كان. */
-  var evald = [];
+  var evald = [], regMk9 = null, regMks9 = [], regRst9 = [], regN9 = 0;
+  while (regN9 < todo.length && todo[regN9].act === 'set' && (todo[regN9].k === K_DEPTS || todo[regN9].k === K_GDEPTS)) regN9++;
+  /* F01: سجلُّ هيكلٍ قُبل حكمُه ثم لم يُكتب (تعارضُ نسخة · رفضٌ بعد الحكم) ⇒ تُنقض وحداتُه وعقدُه الجديدة قبل أيّ مفتاحٍ بعده (018 batchRegUndo) */
+  var regUndo9 = function (q) { if (!regMk9) return; var rv9 = evald[q]; if (!(rv9 && (rv9.ok || rv9.noop))) batchRegUndo(A, regMk9); regMk9 = null; };
+  /* والسجلّان معاً وأحدُهما لم يُكتب ⇒ يُعاد الحكمُ على المكتوب بالمخزَّن من الآخر (018 regPairWhy) قبل أيّ مفتاحٍ بعدهما */
+  var regPair9 = function () {
+    if (regN9 !== 2) return;
+    var g0 = !!(evald[0] && (evald[0].ok || evald[0].noop)), g1 = !!(evald[1] && (evald[1].ok || evald[1].noop));
+    if (g0 === g1) return;
+    var j = g0 ? 0 : 1, e9 = evald[j];
+    if (!e9 || !e9.ok) return;
+    var w9 = regPairWhy(A, todo[j].k, todo[j].v, e9.cur, regRst9[j], todo[1 - j].k);
+    if (!w9) return;
+    batchRegUndo(A, regMks9[j]);
+    var vn9 = ENFX ? enfNo(w9) : null;
+    evald[j] = { deny: w9, cur: e9.cur, x: vn9 };
+    if (ENFX) { var lp9 = enfLogRow(A, todo[j].k, vn9, '/api/save', { ip: ident.ip }); if (lp9) ENFX.log.push(lp9); }
+  };
   for (i = 0; i < todo.length; i++) {
+    regUndo9(i - 1);
+    if (i === regN9) regPair9();
     var it0 = todo[i], k0 = it0.k;
-    if (paOn9 && i === 1 && todo[0].k === K_PERM) pa9 = evald[0] && evald[0].ok ? parseJson(todo[0].v, null) : null;   /* R3-4: الصلاحياتُ قُيّمت أوّلاً */
+    if (paOn9 && i === regN9 + 1 && todo[regN9] && todo[regN9].k === K_PERM) pa9 = evald[regN9] && evald[regN9].ok ? parseJson(todo[regN9].v, null) : null;   /* R3-4: الصلاحياتُ قُيّمت أوّلاً (بعد سجلّي الهيكل) */
+    if (it0.act === 'set' && (k0 === K_DEPTS || k0 === K_GDEPTS)) regMks9[i] = regMk9 = batchRegMark(A);
     if (isDeviceKey(k0)) { evald.push(null); continue; }
     if (it0.act === 'del' && k0 === K_USERS) { evald.push({ deny: 'users' }); continue; }
     var cur0 = await opResourceGet(env, k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
@@ -1022,6 +1050,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       ctx0.imp = !!d00 && enfHeld(A, d00, 'import.replace');
       ctx0.enf = enfCtxFor(ENFX, k0, d00);
     }
+    if (i < regN9) regRst9[i] = ENFX ? !!(ctx0.enf && ctx0.enf.restore) : !!ctx0.rst;   /* F01: علامةُ الاستعادة كما رآها حكمُه (044 · 060) */
     var vd0 = ENFX && ENFX.batchDeny ? enfNo(ENFX.batchDeny.why, ENFX.batchDeny) : (ENFX && ctx0.enfHidden ? enfNo('scope', { detail: ctx0.enfHidden }) : canWrite(A, k0, it0.v, cur0, ctx0));
     /* KIVO_265 · المراجعةُ الموحّدة (R-4): أحكامُ مخزن المهام الخامّ (018 taskRawWhy) تقيس الحفظةَ على القيمة الحالية — فعلى base قديمٍ قد يكون الحكمُ
        أثرَ ما كتبه الخادمُ أو غيرُه بعد قراءتها (تمديدٌ في 23 · حذفُ صفٍّ · إعادةُ إسناد) لا فعلَها هي. ولا كتابةَ على base قديمٍ أصلاً (فحصُ النسخة أدناه)
@@ -1079,6 +1108,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
     evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
+  if (todo.length === regN9) { regUndo9(todo.length - 1); regPair9(); }               /* F01: حفظةٌ فيها السجلّان وحدهما */
   /* caps-own (021 capStaleBatch): an older page that narrows a ceiling and deletes what fell outside it in the same request ⇒ the whole request
      is refused, nothing written (why 'perms' — the text an older page already shows: «الصلاحيات لم تُقبل … أُعيدت القيمة كما في الخادم») */
   if (capStaleBatch(A, todo, evald)) {

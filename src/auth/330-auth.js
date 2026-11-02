@@ -442,6 +442,8 @@
   }
   function gmDepts(gid){
     if (!gid) return [];
+    /* AD-7 (F01): عقدةُ مدير العقدة عقدةٌ فوقيةٌ قائمة — حسابُ gm معرّفُ عقدته معرّفُ وحدة لا يرث شيئاً (كالخادم 018 deptInScope) */
+    try { if (D.groups && !D.groups().some(function(x){ return x && x.id === gid; })) return []; } catch(eG){ return []; }
     try {
       if (D.deptsUnder) {
         var ids = D.deptsUnder(gid) || [], m = {};

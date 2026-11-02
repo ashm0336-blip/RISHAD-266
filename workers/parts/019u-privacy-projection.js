@@ -181,7 +181,7 @@ function privPermEntryOk(A, d, ek) {
   if (!deptInScope(A, d)) return false;
   var me = String(A.u.ekey || '');
   if (me && String(ek) === me) return true;
-  return isMgrOf(A, d) && permTargetOk(A, ek);
+  return isMgrOf(A, d) && permTargetOk(A, ek, d);
 }
 function privPermsOut(A, v) {
   if (!isObj(v)) return v;
@@ -242,6 +242,8 @@ function privPermsFp(A) {
   var U = privUnits(A), u = A.u, mg = false, s = [u.id, u.role, u.deptId, u.gid, u.ekey].map(function (x) { return x == null ? '' : String(x); }).join('\u0001');
   Object.keys(U).sort().forEach(function (d) { var m = isMgrOf(A, d); if (m) mg = true; s += '\u0002' + d + ':' + (deptInScope(A, d) ? 1 : 0) + (m ? 1 : 0); });
   if (mg) Object.keys(permEkIx(A)).sort().forEach(function (ek) { if (!permTargetOk(A, ek)) s += '\u0003' + ek; });
+  /* F01: مديرُ الإدارة الأم يدير مديرَ قسمها (018 permTargetOk بالوحدة) — الأقسامُ التي يديرها بأهدافها المضافة */
+  Object.keys(U).sort().forEach(function (d) { if (!secMgrOf(A, d)) return; Object.keys(permEkIx(A)).sort().forEach(function (ek) { if (!permTargetOk(A, ek) && permTargetOk(A, ek, d)) s += '\u0005' + d + ':' + ek; }); });
   if (u.role === 'gm') (A.nodes || []).map(function (x) { return x && x.id != null ? String(x.id) : ''; }).sort().forEach(function (g) { if (g && permGidBelow(A, g, u.gid)) s += '\u0004' + g; });
   return fpHash(s);
 }

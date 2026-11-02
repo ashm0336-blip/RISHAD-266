@@ -66,7 +66,8 @@ test('الحدود: الإدارة ورقةٌ لا تُوضع تحت إدارة 
   r = D.moveNode('a', 'a', 'before'); assert.equal(r.ok, false);
   r = D.moveNode('a', 'zz', 'before'); assert.equal(r.ok, false);
   assert.deepEqual(order(D, 'g1'), ['a', 'b', 'c'], 'لا تغييرَ بعد الرفض');
-  r = D.moveNode('g2', 'a', 'inside'); assert.equal(r.ok, true, 'قسمٌ (عقدة) تحت إدارة مسموح'); assert.equal(D.nodeOf('g2').pid, 'a');
+  /* F01 · الأقسام: القسمُ وحدةُ بيانات (sectionAdd) — لا عقدةَ فوقيةٌ تحت إدارة (الخادمُ يرفضها «dept-shape» · 018 nodeShapeWhy) */
+  r = D.moveNode('g2', 'a', 'inside'); assert.equal(r.ok, false, 'عقدةٌ تحت إدارة مرفوضة'); assert.match(r.err, /لا توضع عقدةٌ تحت إدارة/); assert.notEqual(D.nodeOf('g2').pid, 'a');
 });
 
 test('الربط: ondrop في خريطة أحداث المحرّك · صفوفُ الشجرة قابلةٌ للسحب في القالب · الدرجاتُ في المنطق والنمط', () => {
