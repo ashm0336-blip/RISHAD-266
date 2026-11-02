@@ -220,6 +220,9 @@ function isMgrOf(A, d) {
 }
 /* الصفحات التي يملك فيها فعل كتابة داخل إدارة d */
 function writePages(A, d) {
+  /* RISHAD266 (قرار المالك على aae024c): سقفٌ فعليٌّ واحد (deptCapOf — كالقراءة والواجهة) يحدّ كلَّ كتابة؛ ولا تُمنح كتابةٌ ضمنية لغياب سجلّ السقف:
+     الكتابةُ الضمنية (حسابُ الإدارة · المديرُ بلا ورقة) من سجلّ الوحدة الصريح وحده ∩ السقف الفعلي — ووحدةٌ بلا سجلٍّ لا كتابةَ ضمنيةً فيها.
+     وصاحبُ الورقة يكتب بأفعال ورقته (صلاحيةُ الإجراء) داخل السقف الفعلي — كان يُحدّ بالسجلّ الخام فيُرفض ما تعرضه الواجهة والقراءة */
   var u = A.u, caps = (A.perms.caps || {})[d], dc = deptCapOf(A, d); caps = Array.isArray(caps) ? caps : [];
   /* وحدة مطفأة على مستوى المنصة: لا تُكتب صفحاتها من أحد — حتى لو بقيت في سقف الإدارة
      (caps-own · read-time narrowing: and only within the unit's effective ceiling — deptCapOf drops platform-off units too) */
@@ -235,7 +238,7 @@ function writePages(A, d) {
   var ep = sheet0 || {};
   /* مفاتيح الأوراق «pk/sk» تُنسب إلى صفحتها الحاوية */
   var out = {};
-  Object.keys(ep).forEach(function (k) { var pk = String(k).split('/')[0]; if (caps.indexOf(pk) !== -1 && capOnDept(A, d, k) && (ep[k] || []).some(function (a) { return WRITE_ACTS[a]; })) out[pk] = 1; });
+  Object.keys(ep).forEach(function (k) { var pk = String(k).split('/')[0]; if (dc.indexOf(pk) !== -1 && capOnDept(A, d, k) && (ep[k] || []).some(function (a) { return WRITE_ACTS[a]; })) out[pk] = 1; });
   return Object.keys(out);
 }
 /* رصد الميدان: موظف صلاحيته على المتابعة اليومية هي ورقة «رصد الميدان» وحدها (بلا كتابة على الجولات) —

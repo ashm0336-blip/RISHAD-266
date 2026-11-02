@@ -63,3 +63,25 @@ test('admin editor: an own-flag unit without a record is still limited by its an
   assert.ok(L.includes('t.capOwnOf(e.sysSel) && t.hasCap(e.sysSel))) return 0;') && L.includes('r.capOwnOf(o) && r.hasCap(o))) return null;'));
   assert.ok(L.includes('e.rawCap && e.hasCap && e.hasCap(t) ? e.rawCap(t) : e.deptCap(t)'));
 });
+
+/* RISHAD266 (قرار المالك على aae024c): الكتابة — سقفٌ فعليٌّ واحد ولا كتابةَ ضمنيةً لغياب السجل (018 writePages على دالة الخادم الحقيقية) */
+const { writePages } = await internals(['writePages']);
+const WA = (u, perms) => ({ u, perms, nodes, depts, off: [] });
+test('writePages: صاحبُ الورقة يكتب بأفعالها داخل السقف الفعلي (ولو بلا سجلٍّ للوحدة) · لا كتابةَ ضمنية لحساب الإدارة أو المدير بلا ورقة في وحدةٍ بلا سجل', () => {
+  const sheet = { [a]: ['view', 'edit'], [b]: ['view'], [c]: ['edit'] };
+  const staff = { role: 'staff', deptId: 'd1', ekey: 'tst_e1' }, mgr = { role: 'staff', deptId: 'd1', ekey: 'mgr:d1', mgr: true }, dept = { role: 'dept', deptId: 'd1', ekey: 'x' };
+  /* وحدةٌ بلا سجل تحت سلفٍ مسقوف [a,b]: الفعلي [a,b] */
+  const P0 = { caps: { g1: [a, b] }, emps: { d1: { tst_e1: sheet } } };
+  assert.deepEqual(S(writePages(WA(staff, P0), 'd1')), [a], 'الورقة: a (تعديل · داخل السقف) — لا b (عرضٌ فقط) ولا c (خارج السقف)');
+  assert.deepEqual(S(writePages(WA(mgr, P0), 'd1')), [], 'المديرُ بلا ورقة: لا كتابةَ ضمنية لغياب السجل');
+  assert.deepEqual(S(writePages(WA(dept, P0), 'd1')), [], 'حسابُ الإدارة: لا كتابةَ ضمنية لغياب السجل');
+  /* وحدةٌ بسجلٍّ صريح [a,c] تحت [a,b]: الفعلي [a] — الضمنيةُ من السجل ∩ الفعلي */
+  const P1 = { caps: { g1: [a, b], d1: [a, c] }, emps: { d1: { tst_e1: sheet } } };
+  assert.deepEqual(S(writePages(WA(mgr, P1), 'd1')), [a]); assert.deepEqual(S(writePages(WA(dept, P1), 'd1')), [a]);
+  assert.deepEqual(S(writePages(WA(staff, P1), 'd1')), [a], 'والورقةُ لا تتجاوز الفعلي (c خارجه)');
+  /* سلفٌ فارغ صراحةً يقفل كلَّ كتابة */
+  const P2 = { caps: { g1: [] }, emps: { d1: { tst_e1: sheet } } };
+  assert.deepEqual(S(writePages(WA(staff, P2), 'd1')), []);
+  /* المديرُ بورقةٍ صريحة يُحكم بورقته كغيره */
+  assert.deepEqual(S(writePages(WA(mgr, { caps: { g1: [a, b] }, emps: { d1: { 'mgr:d1': { [b]: ['add'] } } } }), 'd1')), [b]);
+});
