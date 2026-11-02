@@ -130,3 +130,15 @@ test('F01 ui (4) بذرُ سقف القسم من سقف الإدارة الأم 
   assert.equal(r.cap, 'open'); assert.equal(W.store.caps[r.id], undefined);
   assert.equal(W.ctx.seedSectionCap('s2', 'a').ok, false, 'ليس قسماً لهذه الإدارة');
 });
+
+/* RISHAD266 (قرار المالك): «+ قسم» بجوار مبدّل الوحدة — للإدارة الأم النشطة وحدها، لمديرها نفسِه ولمدير المنصة (لا gm ولا مدير قسم)، وبحوار إدخالٍ لا prompt() */
+test('RISHAD266: زرُّ «+ قسم» بجوار المبدّل ومحكومٌ بالإدارة الأم النشطة ومديرها', () => {
+  const tpl = fs.readFileSync(path.join(SRC, 'layouts/index.template.html'), 'utf8'), rl = fs.readFileSync(path.join(SRC, 'layouts/root-logic.js'), 'utf8');
+  const head = tpl.slice(tpl.indexOf('<div class="s-ghead">'), tpl.indexOf('<sc-if value="{{deptOpen}}"'));
+  assert.ok(/<sc-if value="\{\{secAddOn\}\}"[^>]*><button class="s-secadd" sc-camel-on-click="\{\{secAdd\}\}"/.test(head), 'الزرُّ داخل رأس المبدّل');
+  const g = rl.slice(rl.indexOf('const secAddOn'), rl.indexOf('\n', rl.indexOf('const secAddOn')));
+  assert.ok(/!\(D\.isSection && D\.isSection\(act\)\)/.test(g), 'لا يظهر والوحدةُ النشطة قسم');
+  assert.ok(/realSuper \|\|/.test(g) && /meU\.deptId === act && \(meU\.role === "dept" \|\| \(meU\.role === "staff" && meU\.mgr\)\)/.test(g), 'لمدير المنصة ولمدير الإدارة الأم نفسِها');
+  assert.ok(!/gmU|secU\.length/.test(g), 'لا gm ولا «مبدّل الأقسام» يفتحه');
+  assert.ok(/D\.sectionAdd\(\{ name: nm, deptId: act \}\)/.test(rl) && !/prompt\(/.test(rl.slice(rl.indexOf('secAdd: async'), rl.indexOf('secAdd: async') + 1200)), 'يضيف تحت الإدارة النشطة بحوار الإدخال');
+});

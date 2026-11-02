@@ -192,6 +192,7 @@
           <span class="nlbl s-deptn">{{deptName}}</span>
           <svg class="s-deptc" width="12" height="12" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{deptChev}}" data-i="i-820aa71e"></svg>
         </button>
+        <sc-if value="{{secAddOn}}" hint-placeholder-val="{{ false }}"><button class="s-secadd" sc-camel-on-click="{{secAdd}}" title="إضافة قسم تحت هذه الإدارة" aria-label="إضافة قسم تحت هذه الإدارة">+ قسم</button></sc-if>
       </div>
       <sc-if value="{{deptOpen}}" hint-placeholder-val="{{ false }}">
       <div class="s-deptdd">

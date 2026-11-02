@@ -632,14 +632,15 @@ class Component extends DCLogic {
     return new Promise(res => {
       const prev = document.activeElement;
       /* KIVO_265 · typed: نصٌّ يجب كتابتُه حرفاً للتأكيد (حذفُ إدارةٍ فيها مدير أو موظفون) — زرُّ التأكيد معطّل حتى يطابق */
-      this.setState({ cfm: { title: o.title || "تأكيد", msg: o.msg || "", ok: o.ok || "تأكيد", cancel: o.cancel || "إلغاء", danger: !!o.danger, info: !!o.info, typed: o.typed ? String(o.typed) : "", val: "", res, prev } });
-      setTimeout(() => { try { const b = document.getElementById(o.danger ? "bsCfmNo" : "bsCfmOk"); b && b.focus(); } catch (e) {} }, 30);
+      /* RISHAD266 · input: حقلُ إدخالٍ (تسميته o.input) — يُحلّ الوعدُ بالنصّ المكتوب أو null عند الإلغاء */
+      this.setState({ cfm: { title: o.title || "تأكيد", msg: o.msg || "", ok: o.ok || "تأكيد", cancel: o.cancel || "إلغاء", danger: !!o.danger, info: !!o.info, typed: o.typed ? String(o.typed) : "", val: "", input: o.input ? String(o.input) : "", res, prev } });
+      setTimeout(() => { try { const b = document.getElementById(o.input ? "bsCfmTyped" : o.danger ? "bsCfmNo" : "bsCfmOk"); b && b.focus(); } catch (e) {} }, 30);
     });
   }
   cfmClose(v) {
     const c = this.state.cfm; if (!c) return;
     this.setState({ cfm: null });
-    try { c.res(!!v); } catch (e) {}
+    try { c.res(c.input ? (v ? String(c.val || "").trim() : null) : !!v); } catch (e) {}
     try { if (c.prev && c.prev.focus && document.contains(c.prev)) setTimeout(() => { try { c.prev.focus(); } catch (e) {} }, 0); } catch (e) {}
   }
   /* المكوّناتُ الظاهرة (صفحةٌ ومضمَّناتُها) — تُستعمل لخطّاف التحديث الحيّ ولاستعادة الموضع */
@@ -987,7 +988,22 @@ class Component extends DCLogic {
         const meU = KIVO.BassamAuth && KIVO.BassamAuth.user() ? KIVO.BassamAuth.user() : null;
         const secU = !isSuper0 && !gmU && meU && D.switchUnits ? D.switchUnits(meU) : [];
         const isSuper = isSuper0 || !!gmU || secU.length > 1;
+        /* RISHAD266 (قرار المالك): «+ قسم» بجوار المبدّل حين تكون الوحدةُ النشطة إدارةً أمّاً (لا قسماً) — لمديرها نفسِه (حسابُ الإدارة أو مديرٌ بشارة) ولمدير المنصة.
+           يعمل على الإدارة النشطة وحدها، ولا يفتح شجرةَ المنصة لمدير الإدارة؛ والخادمُ يحكم (018 deptSecMgrWhy) */
+        const realSuper = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.user() && KIVO.BassamAuth.isSuper());
+        const secAddOn = !!act && !!D.sectionAdd && !(D.isSection && D.isSection(act)) && (realSuper || !!(meU && meU.deptId === act && (meU.role === "dept" || (meU.role === "staff" && meU.mgr))));
         return {
+          secAddOn,
+          secAdd: async (ev) => {
+            try { ev && ev.stopPropagation && ev.stopPropagation(); } catch (e) {}
+            const nm = await this.cfmAsk({ title: "إضافة قسم", msg: "قسمٌ جديد تحت «" + (D.activeName() || deptLabel) + "». سقفُه يبدأ نسخةً من سقف الإدارة، وتديره من «الصلاحيات».", input: "اسم القسم", ok: "إضافة" });
+            if (!nm) return;
+            const r = D.sectionAdd({ name: nm, deptId: act });
+            if (!r || !r.ok) { this.setState({ toast: "لم يُضف القسم: " + ((r && r.err) || "تعذّر الإنشاء") }); return; }
+            this.setState({ toast: "جارٍ حفظ القسم «" + nm + "»…" });
+            const S = KIVO.__BS_SRV, go = () => { try { location.reload(); } catch (e) {} };
+            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => {}) : Promise.resolve()).then(go, go);
+          },
           authName: (KIVO.BassamAuth && KIVO.BassamAuth.user() && KIVO.BassamAuth.user().name) || "",
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
           doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) KIVO.BassamAuth.logout(); },
@@ -1103,9 +1119,9 @@ class Component extends DCLogic {
       themeTitle: this.state.theme === "dark" ? "الوضع النهاري" : "الوضع الليلي",
       ...(() => { const c = this.state.cfm; if (!c) return { cfmOn: false, cfmNoOn: true, cfmTitle: "", cfmMsg: "", cfmOk: "", cfmCancel: "", cfmOkStyle: "", cfmIconStyle: "", cfmTypedOn: false, cfmTypedLabel: "", cfmTypedVal: "", cfmTypedInput: () => {}, cfmYes: () => {}, cfmNo: () => {} };
         const base = "height:38px;padding:0 18px;border-radius:10px;font-size:13px;font-weight:600;border:0;cursor:pointer;font-family:'Cairo',sans-serif;color:var(--fg-xffffff);background:";
-        const match = !c.typed || String(c.val || "").trim() === c.typed;   /* KIVO_265: التأكيدُ المكتوب */
+        const match = !c.typed || String(c.val || "").trim() === c.typed;   /* KIVO_265: التأكيدُ المكتوب (والإدخالُ الفارغ يُحلّ "" فيُعامَل إلغاءً) */
         return { cfmOn: true, cfmNoOn: !c.info, cfmTitle: c.title, cfmMsg: c.msg, cfmOk: c.ok, cfmCancel: c.cancel, cfmOkStyle: base + (c.danger ? "#dc2626" : "#b99751") + (match ? "" : ";opacity:.45;cursor:not-allowed"),
-          cfmTypedOn: !!c.typed, cfmTypedLabel: "للتأكيد اكتب اسم «" + c.typed + "» كما هو", cfmTypedVal: c.val || "",
+          cfmTypedOn: !!(c.typed || c.input), cfmTypedLabel: c.input || ("للتأكيد اكتب اسم «" + c.typed + "» كما هو"), cfmTypedVal: c.val || "",
           cfmTypedInput: (ev) => this.setState({ cfm: { ...this.state.cfm, val: ev.target.value } }),
           cfmIconStyle: "width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" + (c.danger ? "background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);color:var(--fg-xb91c1c)" : "background:var(--bg-xfffbeb);border:1px solid var(--bd-xfde68a);color:var(--fg-xb45309)"),
           cfmYes: () => { match && this.cfmClose(true); }, cfmNo: () => this.cfmClose(false) }; })(),
