@@ -155,7 +155,7 @@
     var o9 = permStore(); if (hasCap(d) && (o9.capMode === 'own' || (o9.capOwn && o9.capOwn[d] === true))) return own;   /* caps-own: an own-mode unit with its own record = that record alone (= 021 effCapOf) */
     if (!D || !D.ancestorsOf) return own;
     var anc = [];
-    try { anc = (D.ancestorsOf(d) || []).filter(function(a){ return hasCap(a); }); } catch(e){ return own; }
+    try { anc = (D.ancestorsOf(d) || []).filter(function(a){ return hasCap(a); }); } catch(e){ return hasCap(d) ? own : []; }   /* RISHAD266: تعذّرُ قراءة الأسلاف لا يفتح وحدةً بلا سجل (الخادمُ لا يفتحها) */
     if (!anc.length) return own;
     var out = own;
     for (var i = 0; i < anc.length; i++){
@@ -169,7 +169,7 @@
      وما إن يُضبط سجلٌّ في أي طبقة يصير هو الحدّ. */
   function capSetAnywhere(d){
     if (hasCap(d)) return true;
-    try { var D = KIVO.BassamDepts; return !!(D && D.ancestorsOf && (D.ancestorsOf(d) || []).some(function(a){ return hasCap(a); })); } catch(e){ return false; }
+    try { var D = KIVO.BassamDepts; return !!(D && D.ancestorsOf && (D.ancestorsOf(d) || []).some(function(a){ return hasCap(a); })); } catch(e){ return true; }   /* RISHAD266: تعذّرُ القراءة لا يعني «مفتوح» */
   }
   function deptCap(did){ var d = did || curDept(); return capSetAnywhere(d) ? effCap(d) : PAGE_KEYS.slice(); }
   /* ═══ البوابة الموحّدة على مستوى الإدارة ═══

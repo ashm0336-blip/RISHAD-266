@@ -3188,7 +3188,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   _loadDraft(t) {
     const e = KIVO.BassamPerm;
     if (!e || !t) return { cap: [], subs: {}, tabs: {}, lenses: [] };
-    const s = (e.rawCap ? e.rawCap(t) : e.deptCap(t)).slice(),
+    const s = (e.rawCap && e.hasCap && e.hasCap(t) ? e.rawCap(t) : e.deptCap(t)).slice(),   /* RISHAD266: بلا سجلٍّ خاصّ تبدأ المسودةُ من السقف الفعليّ الموروث لا من الفراغ */
       a = {},
       r = {},
       i = e.deptLenses ? e.deptLenses(t).slice() : [];
@@ -5242,7 +5242,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       try {
         const s = KIVO.BassamDepts,
           a = (s.ancestorsOf(e.sysSel) || []).filter((e) => t.hasCap(e));
-        if (!a.length || (t.capOwnOf && t.capOwnOf(e.sysSel))) return 0; /* caps-own: an independent ceiling is not cut by its ancestors */
+        if (!a.length || (t.capOwnOf && t.capOwnOf(e.sysSel) && t.hasCap(e.sysSel))) return 0; /* caps-own: an independent ceiling WITH its own record is not cut by its ancestors (RISHAD266: = 021 effCapOf) */
         let r = null;
         return (
           a.forEach((e) => {
@@ -7644,7 +7644,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   : { cap: r ? (r.rawCap && r.hasCap && r.hasCap(o) ? r.rawCap(o) : r.deptCap(o)) : [], subs: {}, tabs: {} },
               LIM = (() => {
                 try {
-                  if (!r || !r.hasCap || !r.rawCap || !t.ancestorsOf || (r.capOwnOf && r.capOwnOf(o))) return null; /* caps-own: independent */
+                  if (!r || !r.hasCap || !r.rawCap || !t.ancestorsOf || (r.capOwnOf && r.capOwnOf(o) && r.hasCap(o))) return null; /* caps-own: independent with its own record (RISHAD266: = 021 effCapOf) */
                   const e = (t.ancestorsOf(o) || []).filter((t) => r.hasCap(t));
                   if (!e.length) return null;
                   let s = null;

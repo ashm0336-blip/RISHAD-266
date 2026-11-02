@@ -19874,7 +19874,9 @@ function latentLossWhy(A, k, nv, cv, ctx) {
 }
 function effCapOf(A, d) {
   if (hasCapOf(A, d) && capOwnOf(A, d)) return rawCapOf(A, d);
-  var own = rawCapOf(A, d) || [], anc = ancChain(A, d).filter(function (a) { return hasCapOf(A, a); });
+  /* RISHAD266 (موافقة المالك · توحيد التفسير مع 331 effCap): وحدةٌ بلا سجلٍّ خاصّ تبدأ من كل الصفحات ويقطعها كلُّ سلفٍ له سجلّ — كانت تبدأ من الفراغ
+     فتُقفل كلُّها تحت سلفٍ مسقوف بينما الواجهةُ تعرضها وارثة. السجلُّ الفارغ صراحةً [] يبقى فارغاً (يُقرأ بوجود السجل لا بطوله) */
+  var own = hasCapOf(A, d) ? rawCapOf(A, d) : PG_KEYS.slice(), anc = ancChain(A, d).filter(function (a) { return hasCapOf(A, a); });
   var out = own;
   for (var i = 0; i < anc.length; i++) {
     var c = rawCapOf(A, anc[i]) || [];
