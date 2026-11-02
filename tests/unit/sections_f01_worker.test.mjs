@@ -261,3 +261,41 @@ for (const mode of ['legacy', 'enforce']) {
     const d = await add(S.dm1, 'tst_s8'); assert.ok(ok(d, KD), 'مديرُ الإدارة الأم يضيف: ' + show(d));
   });
 }
+
+/* RISHAD266 · مراجعة المالك على aae024c: علامةُ الاستعادة القادمة من العميل في الحفظ العادي (body.ops backup.restore + سبب) لا تمنح استثناءً من سلامة العلاقات —
+   حذفُ وحدةٍ بها مرفوض (unit-delete-route) ولا تبقى حساباتٌ أو مفاتيحُ يتيمة. الاستعادةُ الخادمية المتحقَّقة (019d) تحذف وتنظّف — يغطّيها atomic_restore_review
+   («full replacement derives removed department account/session pruning …») */
+for (const mode of ['legacy', 'enforce']) {
+  test('[' + mode + '] RISHAD266 أقسام: علامةُ استعادةٍ من العميل في حفظٍ عادي لا تحذف وحدة ولا تترك يتيماً', async () => {
+    const { W, S } = await setup(mode);
+    const L0 = stored(W.env, KD), before = JSON.stringify(L0), users0 = JSON.stringify(stored(W.env, K)), keys0 = W.env.DB.q('SELECT COUNT(*) n FROM kv WHERE k LIKE ?', 'bsdept:' + S2 + ':%')[0].n;
+    const why = TAG + ' سبب استعادة', mark = { ops: { [KD]: { op: 'backup.restore', scope: 'full', mode: 'replace', reason: why } }, why: { [KD]: why } };
+    /* كما تطلب خطةُ العهدة لحذف وحدة (019b): قائمةُ موظفيها تُفرَّغ في الحفظة نفسِها — فلا يبقى إلا حكمُ سلامة العلاقات */
+    const r = await save(W, S.super, { [KD]: L0.filter((x) => String(x.id) !== S2), [E(S2)]: [] }, Object.assign({}, mark, { ops: Object.assign({}, mark.ops, { [E(S2)]: mark.ops[KD] }), why: Object.assign({}, mark.why, { [E(S2)]: why }) }));
+    assert.ok(!ok(r, KD), 'مرفوض: ' + show(r));
+    assert.equal(why_(r), 'unit-delete-route', 'سببُ الرفض: ' + show(r));
+    assert.equal(JSON.stringify(stored(W.env, KD)), before, 'سجلُّ الوحدات كما هو');
+    assert.equal(JSON.stringify(stored(W.env, K)), users0, 'الحساباتُ كما هي (لا حسابَ يتيم)');
+    assert.equal(W.env.DB.q('SELECT COUNT(*) n FROM kv WHERE k LIKE ?', 'bsdept:' + S2 + ':%')[0].n, keys0, 'مفاتيحُ القسم كما هي');
+    const base = { [KD]: revOf(W, KD) };
+    const r2 = await W.C.api('/api/save', { method: 'POST', cookie: S.super, body: operationSaveBody(W.env, '/api/save', Object.assign({ set: {}, del: [KD], base }, mark)) });
+    assert.ok(!(r2.j && r2.j.revs && r2.j.revs[KD] != null), 'ولا حذفُ السجل كلِّه بعلامة: ' + JSON.stringify(r2.j).slice(0, 200));
+    assert.equal(JSON.stringify(stored(W.env, KD)), before);
+  });
+}
+const why_ = (s) => (((s.j || {}).denied || {})[KD] || {}).why || (s.j && s.j.err) || '';
+
+/* الحكمُ نفسُه على دالة الخادم الحقيقية (018 deptShapeWhy): العلامةُ وحدها (rst من العميل) لا تفتح استثناءَ حذف الوحدة — الاستعادةُ الخادمية المتحقَّقة
+   (A.__srvRst يضعه 054 لطلبات 019d وحدها) والحذفُ الذرّي (A.__udel) وحدهما */
+test('RISHAD266 deptShapeWhy: علامةُ الاستعادة وحدها لا تستثني حذفَ وحدة · الاستعادةُ الخادمية والحذفُ الذرّي يستثنيان', async () => {
+  const { internals } = await import('./internals.mjs');
+  const { deptShapeWhy } = await internals(['deptShapeWhy']);
+  const old = [{ id: 'd1', name: 'TEST_ONLY d1', gid: 'g1' }, { id: 's1', name: 'TEST_ONLY s1', gid: 'd1', kind: 'قسم' }, { id: 'd2', name: 'TEST_ONLY d2', gid: 'g1' }];
+  const A = () => ({ depts: old, nodes: [{ id: 'g1', name: 'TEST_ONLY g1' }] });
+  const drop = (ids) => JSON.stringify(old.filter((x) => !ids.includes(x.id)));
+  assert.equal(deptShapeWhy(A(), drop(['d2']), JSON.stringify(old), true), 'unit-delete-route', 'علامةُ العميل وحدها ⇒ مرفوض');
+  assert.equal(deptShapeWhy(A(), drop(['d1', 's1']), JSON.stringify(old), true), 'dept-has-sections', 'ولا متتابع بالعلامة');
+  assert.equal(deptShapeWhy(Object.assign(A(), { __srvRst: 1 }), drop(['d2']), JSON.stringify(old), true), '', 'الاستعادةُ الخادمية المتحقَّقة تحذف (وتنظّف في 019d)');
+  assert.equal(deptShapeWhy(Object.assign(A(), { __srvRst: 1 }), drop(['d2']), JSON.stringify(old), false), 'unit-delete-route', 'وبلا علامة استعادة على المفتاح لا تحذف');
+  assert.equal(deptShapeWhy(Object.assign(A(), { __udel: 1 }), drop(['s1']), JSON.stringify(old), false), '', 'الحذفُ الذرّي لمدير المنصة');
+});

@@ -130,7 +130,7 @@ function deptShapeWhy(A, newJson, curJson, rst) {
   var isSec = function (x) { return isObj(x) && x.kind === DEPT_SEC_KIND; };
   /* RISHAD266 (قرار المالك): لا تختفي وحدةٌ بحفظٍ عاديّ — الحذفُ ذرّيٌّ في الخادم (/api/admin/dept-delete لمدير المنصة: ينظّف الحسابات والمفاتيح ويرفض
      إدارةً لها أقسام). وإدارةٌ لها أقسامٌ في السجل المخزَّن لا تُحذف ولو حُذفت أقسامُها معها في الحفظة نفسِها (لا حذفَ متتابع). الاستعادةُ الكاملة لقطةٌ لا حذف */
-  if (!rst && !A.__udel) for (var oq in S.old) if (!U[oq]) return (a || []).some(function (x) { return isSec(x) && shapeRef(x, 'gid') === oq; }) ? 'dept-has-sections' : 'unit-delete-route';
+  if (!(rst && A.__srvRst) && !A.__udel) for (var oq in S.old) if (!U[oq]) return (a || []).some(function (x) { return isSec(x) && shapeRef(x, 'gid') === oq; }) ? 'dept-has-sections' : 'unit-delete-route';
   for (i = 0; i < S.ch.length; i++) {
     r = S.ch[i];
     var id = String(r.id == null ? '' : r.id), g = shapeRef(r, 'gid');

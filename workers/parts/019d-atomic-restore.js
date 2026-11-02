@@ -1041,6 +1041,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   var kv = await applySave(env, { set: keys, del: del, base: base, ops: ops, why: why }, A, meta, {
     quiet: true,
     __restorePlan: RESTORE_INTERNAL_TOKEN,
+    __srvRestore: RESTORE_INTERNAL_TOKEN,   // RISHAD266: the verified server restore route; only it may remove units (018 deptShapeWhy)
   });
   if (!kv.__plan || !kv.ok)
     throw Object.assign(
