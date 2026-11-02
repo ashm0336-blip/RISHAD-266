@@ -263,6 +263,30 @@ function fieldObsOnly(A, newVal, curVal, dp) {
     return !!(g && Array.isArray(g.emp) && g.emp.some(function (x) { return T ? T[String(x)] : x === A.u.ekey; }));
   });
 }
+/* RISHAD266 (بلاغ راصد الميدان · الحالة ١ في الوضع القديم): ما لا يُسنَد إلى الراصد يعود من الخادم قبل الحكم — كدمج الإنفاذ (061 enfFloorMerge):
+   حقولُ الرصد (FIELD_KEYS) على عنصرٍ ليس في تسكينه المخزَّن (بمفتاحه ورموز سجلّه) تُستعاد من القيمة المخزَّنة، فالحالةُ التي نسختها الواجهة من الخطة
+   على بابٍ غيرِ مسنَد لا تُكتب ولا تُسقط حفظَه. للراصد وحده (عرضُ daily/field بلا كتابةٍ على الجولات) — وما سوى حقول الرصد يحكم فيه fieldObsOnly كما هو */
+function obsKeepOthers(A, d, newJson, curJson) {
+  var mp = myPermsOf(A, d) || {}, wr = function (k) { return (mp[k] || []).some(function (a) { return WRITE_ACTS[a]; }); };
+  if (A.u.role === 'super' || (mp['daily/field'] || []).indexOf('view') === -1 || !capOnDept(A, d, 'daily/field') || wr('daily/rounds') || wr('daily')) return newJson;
+  var T = A.__obsToks && A.__obsToks[d], n = parseJson(newJson, null), c = parseJson(curJson, null), ch = 0;
+  if (!isObj(n) || !isObj(c)) return newJson;
+  var pair = function (arr, x, i) { return Array.isArray(arr) ? (x.uid != null ? arr.filter(function (y) { return isObj(y) && y.uid === x.uid; })[0] : arr[i]) || null : null; };
+  Object.keys(n).forEach(function (day) {
+    var nd = n[day], cd = c[day]; if (!isObj(nd) || !Array.isArray(nd.d)) return;
+    nd.d.forEach(function (nf, fi) {
+      if (!isObj(nf)) return; var cf = isObj(cd) ? pair(cd.d, nf, fi) : null;
+      Object.keys(FIELD_KINDS).forEach(function (kd) {
+        (Array.isArray(nf[kd]) ? nf[kd] : []).forEach(function (ne, ei) {
+          if (!isObj(ne)) return; var ce = isObj(cf) ? pair(cf[kd], ne, ei) : null;
+          if (ce && Array.isArray(ce.emp) && ce.emp.some(function (x) { return T ? T[String(x)] : x === A.u.ekey; })) return;
+          Object.keys(FIELD_KEYS).forEach(function (f) { var cv = ce ? ce[f] : undefined; if (!deq(ne[f], cv)) { if (cv === undefined) delete ne[f]; else ne[f] = cv; ch = 1; } });
+        });
+      });
+    });
+  });
+  return ch ? JSON.stringify(n) : newJson;
+}
 function anyWriter(A) {
   if (A && A.enf) return enfAnyWriter(A);                                     /* KIVO_243 */
   var u = A.u;

@@ -1034,6 +1034,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       var st9 = Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0);   /* KIVO_265: base قديم ⇒ x من الخادم (H-1 · تعارضٌ لا رفض) */
       var kp9 = tkKeepSelf(it0.v, cur0, { x: !!st9 }); if (kp9.n) { it0.v = kp9.v; logEv('warn', 'tk-kept', { n: kp9.n, rid: env.__rid }); }
     }
+    if (!ENFX && it0.act === 'set' && it0.v != null && cur0 != null && d00 && resName(k0) === 'bassam_rounds_v1') it0.v = obsKeepOthers(A, d00, it0.v, cur0);   /* RISHAD266: راصد الميدان في الوضع القديم (018) */
     var ctx0 = {
       empsEmpty: wipeCtx[d00] === true, emps: empCtx[d00] || null, shRen: shRenCtx[d00] || null,
       imp: !!d00 && actsHeldOn(A, d00, 'admin/import', ['del']),
