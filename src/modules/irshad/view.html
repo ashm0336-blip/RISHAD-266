@@ -789,7 +789,12 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:50%;transform:translateY(-50%)" data-i="i-7133b944"></svg>
         <input value="{{irLgSearch}}" onChange="{{irLgSetSearch}}" placeholder="بحث بالموظف أو الموقع..." style="width:100%;height:34px;padding:0 34px 0 10px;font-size:12px;background:var(--bg-xffffff);border:1px solid var(--bd-xe2e8f0);border-radius:10px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;color:var(--fg-x141414)" style-focus="background:var(--bg-xffffff);border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px rgba(185,151,81,0.2)">
       </div>
-<sc-if value="{{irLgFilesOn}}" hint-placeholder-val="{{ true }}">
+<sc-if value="{{irLgDelOnly}}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{irLgClearAllAsk}}" title="حذف جميع تقارير {{irLgMonthLabel}} نهائياً — يُطلب التأكيد قبل الحذف" style="{{irLgDelBtnStyle}}">
+        حذف الكل
+      </button>
+</sc-if>
+<sc-if value="{{irPmExport}}" hint-placeholder-val="{{ true }}">
       <div style="position:relative">
         <button onClick="{{irLgFilesToggle}}" style="{{irLgFilesBtnStyle}}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg>

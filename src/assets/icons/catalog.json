@@ -1959,7 +1959,7 @@
    "uses": {
     "modules/dstats/view.html": 1,
     "modules/irshad/view.html": 4,
-    "modules/seized/view.html": 10
+    "modules/seized/view.html": 11
    },
    "viewBox": "0 0 24 24"
   },

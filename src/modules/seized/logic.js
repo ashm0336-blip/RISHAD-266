@@ -274,6 +274,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const e = this.actMap()[t];
     return e ? e.color : "#94a3b8";
   }
+  /* IRSZ-5: العنبرُ (أسماءٌ لـ--warning-strong) فاتحٌ في الداكن فالأبيضُ عليه 1.8:1 — يُكتب عليه بـ--warning-on-strong، والبقيةُ بالأبيض */
+  actFg(t) {
+    const v = KIVO.__bsTokVal ? KIVO.__bsTokVal("background", this.actColor(t)) : "";
+    return /^var\(--bg-x(a67c1e|b45309|c9702a|d97706|f59e0b|fbbf24)\)$/.test(v) ? "var(--warning-on-strong)" : "var(--fg-xffffff)";
+  }
   emptyDraft() {
     return {
       shift: "",
@@ -516,6 +521,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         irOnRecords: d,
         irDashTabOk: o,
         irRecordsTabOk: n,
+        /* IRSZ-11: اللوحةُ الفارغة في «مؤشرات الإدارة» تدلّ على صفحة السجلات (#/seized) — رابطاً لمن يفتحها، ونصّاً لمن لا يفتحها */
+        irRecLinkOn: !!(n && this.PC("view")),
+        irRecLinkOff: !(n && this.PC("view")),
         irTabBarShow: !l && !(!o || !n),
         irDashTabStyle: s(c),
         irDashTabIcon: a(c),
@@ -1520,6 +1528,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           val: _(t.val) + " ريال",
           actName: this.actName(t.act),
           actColor: this.actColor(t.act),
+          actFg: this.actFg(t.act),
           updated: !!o,
           updatedAt: o ? o.at : "",
           photos: (t.photos || []).map((t) => ({ url: this.szImgUrl(t), has: !!this.szImgUrl(t) })),
@@ -2346,8 +2355,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irLgClearAllItemStyle:
         "display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;transition:background .15s;" +
         (monthCount > 0 ? "cursor:pointer;color:var(--fg-x141414)" : "cursor:not-allowed;color:var(--fg-xcbd5e1);opacity:.6"),
+      /* IRSZ-8: الفاصلُ حين يجتمع التصديرُ والحذف وحده · زرُّ «حذف الكل» الصريح لمن يملك الحذف بلا تصدير */
+      irLgSepOn: this.PC("export") && this.PC("del"),
+      irLgDelOnly: !this.PC("export") && this.PC("del"),
+      irLgDelBtnStyle:
+        "height:34px;display:flex;align-items:center;gap:6px;font-size:11.5px;border:1px solid var(--danger-border);border-radius:10px;padding:0 10px;font-family:'Cairo',sans-serif;background:var(--danger-bg);color:var(--danger-text);" +
+        (monthCount > 0 ? "cursor:pointer" : "cursor:not-allowed;opacity:.55"),
       irLgClearAllAsk: () => {
-        this.PC("del") ? 0 !== monthCount && this.setState({ irLgFilesOpen: !1, irLgClearAllConfirm: !0 }) : this.permDeny();
+        this.PC("del")
+          ? 0 !== monthCount
+            ? this.setState({ irLgFilesOpen: !1, irLgClearAllConfirm: !0 })
+            : this.bsToast("لا محاضر في " + O + " " + s + " هـ لحذفها — اختر شهراً فيه محاضر.")
+          : this.permDeny();
       },
       irLgClearAllOpen: !!t.irLgClearAllConfirm,
       irLgClearAllStop: (t) => t.stopPropagation(),

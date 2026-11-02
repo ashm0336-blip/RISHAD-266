@@ -68,18 +68,31 @@ test('DG-02 · «المهام»: الكتلةُ كلُّها تحت tkPmExport (
   assert.match(b, /<sc-if value="\{\{permCanExport\}\}"[^>]*><div onClick="\{\{exportCsv\}\}"[\s\S]*?حسب الفلاتر الحالية<\/div><\/div>\n\s*<\/div><\/sc-if>/);
 });
 
-/* RISHAD-266: صيغةٌ أخفّ لـIRSZ-8 في «الاسترشاد» وحده (ميزانيةُ الصفحة): «ملفات» تُخفى لمن لا يملك تصديراً ولا حذفاً (كانت تُفتح بفاصلٍ وحده)،
-   والفاصلُ حين يجتمعان — و«حذف الكل» يبقى في القائمة لمن يملك الحذف. «المضبوطات» لا تحمله: صفحتُها عند سقفها (perf_budget) */
+/* RISHAD-266 (دفعة الواجهات): IRSZ-8 كاملاً في الصفحتين — رُفع السقفان بقرارٍ موثّق (perf_budget.json · unifyBatch3Decision) */
 const VIEWONLY = { view: true };
-test('IRSZ-8 · «الاسترشاد»: لا «ملفات» بلا بنود (عرضٌ فقط) · والفاصلُ حين يجتمع التصديرُ والحذف وحده — والتداخلُ سليم', () => {
-  const slug = 'irshad';
-  const vo = render(slug, VIEWONLY), dm = render(slug, DM), ex = render(slug, EX), exo = render(slug, EXONLY);
-  assert.deepEqual([vo.irLgFilesOn, vo.irLgSepOn], [false, false], 'عرضٌ فقط: لا قائمة');
-  assert.deepEqual([dm.irLgFilesOn, dm.irLgSepOn], [true, false], 'حذفٌ بلا تصدير: القائمةُ بـ«حذف الكل» وحده بلا فاصل');
-  assert.deepEqual([ex.irLgFilesOn, ex.irLgSepOn], [true, true], 'تصديرٌ وحذف');
-  assert.deepEqual([exo.irLgFilesOn, exo.irLgSepOn], [true, false], 'تصديرٌ بلا حذف — لا فاصلَ تائه');
-  const v = rd('modules/' + slug + '/view.html'), b = block(v, '<sc-if value="{{irLgFilesOn}}"', '<div style="height:20px;width:1px;background:var(--bg-xe2e8f0)"></div>');
-  assert.deepEqual(nest(b.replace(/<!--[\s\S]*?-->/g, '')), { bad: [], open: 0 }, slug);
-  assert.match(b, /^<sc-if value="\{\{irLgFilesOn\}\}" hint-placeholder-val="\{\{ true \}\}">\n\s*<div style="position:relative">\n\s*<button onClick="\{\{irLgFilesToggle\}\}"/);
-  assert.match(b, /<sc-if value="\{\{irLgSepOn\}\}"[^>]*>\n\s*<div style="height:1px;background:var\(--bg-xf1f5f9\);margin:4px 2px"><\/div>\n<\/sc-if>/, 'الفاصلُ مشروط');
+test('IRSZ-8 · «الاسترشاد» و«المضبوطات»: بلا تصدير ⇒ لا «ملفات» ولا فاصل، و«حذف الكل» زرٌّ صريح · بالتصدير والحذف ⇒ القائمةُ كما كانت بفاصلها', () => {
+  for (const slug of ['irshad', 'seized']) {
+    const vo = render(slug, VIEWONLY), dm = render(slug, DM), ex = render(slug, EX), exo = render(slug, EXONLY);
+    assert.deepEqual([vo.irPmExport, vo.irLgSepOn, vo.irLgDelOnly], [false, false, false], slug + ': عرضٌ فقط — لا قائمة ولا زرّ');
+    assert.deepEqual([dm.irPmExport, dm.irLgSepOn, dm.irLgDelOnly], [false, false, true], slug + ': مدير الإدارة');
+    assert.deepEqual([ex.irPmExport, ex.irLgSepOn, ex.irLgDelOnly], [true, true, false], slug + ': تصديرٌ وحذف');
+    assert.deepEqual([exo.irPmExport, exo.irLgSepOn, exo.irLgDelOnly], [true, false, false], slug + ': تصديرٌ بلا حذف — لا فاصلَ تائه');
+    /* الزرُّ الصريح أحمرُ بالرموز الدلالية ومعطَّلُ المظهر حين لا سجلات (والطلبُ نفسُه يُردّ بسببه في irLgClearAllAsk) */
+    assert.match(dm.irLgDelBtnStyle, /border:1px solid var\(--danger-border\);[^"]*background:var\(--danger-bg\);color:var\(--danger-text\);cursor:not-allowed;opacity:\.55$/);
+    const v = rd('modules/' + slug + '/view.html'), b = block(v, '<sc-if value="{{irLgDelOnly}}"', '<div style="height:20px;width:1px;background:var(--bg-xe2e8f0)"></div>');
+    assert.deepEqual(nest(b.replace(/<!--[\s\S]*?-->/g, '')), { bad: [], open: 0 }, slug);
+    assert.match(b, /<sc-if value="\{\{irLgDelOnly\}\}"[^>]*>\n\s*<button onClick="\{\{irLgClearAllAsk\}\}" title="حذف جميع [^"]*يُطلب التأكيد قبل الحذف" style="\{\{irLgDelBtnStyle\}\}">/, slug + ': الزرُّ يمرّ بالتأكيد');
+    assert.match(b, /<sc-if value="\{\{irPmExport\}\}" hint-placeholder-val="\{\{ true \}\}">\n\s*<div style="position:relative">\n\s*<button onClick="\{\{irLgFilesToggle\}\}"/, slug + ': «ملفات» للتصدير');
+    assert.match(b, /<sc-if value="\{\{irLgSepOn\}\}"[^>]*>\n\s*<div style="height:1px;background:var\(--bg-xf1f5f9\);margin:4px 2px"><\/div>\n<\/sc-if>/, slug + ': الفاصلُ مشروط');
+    assert.doesNotMatch(v, /irLgFilesOn/, slug + ': لا صيغةَ مخفَّفة باقية');
+  }
+});
+
+test('IRSZ-8 · «حذف الكل» بلا سجلاتٍ في الشهر لا يصمت: يقول السببَ وما يُفعل · وبلا صلاحية الحذف يمرّ برسالة الصلاحية', () => {
+  for (const [slug, word] of [['irshad', 'تقارير'], ['seized', 'محاضر']]) {
+    const src = moduleLogic(slug);
+    assert.match(src, new RegExp('this\\.bsToast\\("لا ' + word + ' في " \\+ [A-Za-z]+ \\+ " " \\+ [A-Za-z]+ \\+ " هـ لحذفها — اختر شهراً فيه ' + word + '\\."\\)'), slug);
+    const i = src.indexOf('irLgClearAllAsk: () => {'), body = src.slice(i, src.indexOf('},', i));
+    assert.match(body, /this\.PC\("del"\)/); assert.match(body, /this\.permDeny\(\)/); assert.match(body, /irLgClearAllConfirm: !0/);
+  }
 });

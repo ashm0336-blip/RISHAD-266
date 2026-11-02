@@ -306,6 +306,8 @@
   }
   function setStaffMgr(ekey, on, did){
     var g = requireSuper(); if (g) return g;
+    /* دفعة الواجهات (2أ): الخادمُ يرفض حساباً «staff» مفتاحُه mgr: بلا الشارة (018 usersA1Why · mgr-key) — فلا يُرسل نزعُها */
+    if (!on && isMgrKey(ekey)) return { ok:false, err:'حساب مدير الإدارة لا تُنزع عنه الإدارة — احذف الحساب أو أبقه مديراً' };
     var d = did || curDept();
     var found = false;
     var list = (rawUsers()||[]).map(function(x){
@@ -709,6 +711,14 @@
      الدخول صار للموظفين وحدهم (role:'staff' مربوط بصفّه في جدول موظفي إدارته)،
      ومدير الإدارة موظف بشارة دوره لا كيان منفصل. لا بيانات قائمة تحتاج ترحيلاً،
      فالحسابات القديمة تُحذف مباشرة. */
+  /* دفعة الواجهات (2أ): ما يرفضه الخادمُ لكل أحدٍ على صفٍّ قائم (018 usersA1Why) — حسابُ «الإدارة» الملغى لا يُعدَّل ('dept-role')،
+     وحسابٌ «staff» بمفتاح mgr: بلا الشارة لا يُعدَّل إلا تجميداً ('mgr-key'). freeze: التعديلُ تجميدُ حسابٍ نشط وحده. '' = لا مانع */
+  function acctFixedWhy(u, freeze){
+    if (!u) return '';
+    if (u.role === 'dept') return '«حسابات الإدارة» أُلغيت: لا يُنشأ حسابٌ بهذا النوع ولا يُعدَّل — احذفه بزرّ «تنظيف» في تبويب الإدارات، وللدخول باسم الإدارة أنشئ حسابَ موظفٍ بشارة «مدير»';
+    if (u.role === 'staff' && isMgrKey(u.ekey) && !u.mgr && !(freeze && !u.dis)) return 'حسابٌ بمفتاح مدير الإدارة بلا شارة «مدير» — لا يُعاد تفعيله ولا تُغيَّر بياناته (يرفضه الخادم)؛ احذفه ثم عيّن المدير من جديد من صفحة الإدارات';
+    return '';
+  }
   function deptAccountsCount(){
     return (rawUsers() || []).filter(function(x){ return x.role === 'dept'; }).length;
   }
@@ -737,6 +747,6 @@
   I.setDeptManager = setDeptManager; I.setDeptManagerDis = setDeptManagerDis; I.setGroupManager = setGroupManager;
   I.setGroupManagerDis = setGroupManagerDis; I.setStaffMgr = setStaffMgr; I.setSuperAccount = setSuperAccount; I.staffIsMgr = staffIsMgr;
   I.staffMap = staffMap; I.staffStatus = staffStatus; I.taken = taken; I.touch = touch; I.unCheck = unCheck; I.upsertBackupSuper = upsertBackupSuper;
-  I.upsertDeptAccount = upsertDeptAccount; I.writeUsers = writeUsers;
+  I.upsertDeptAccount = upsertDeptAccount; I.writeUsers = writeUsers; I.acctFixedWhy = acctFixedWhy;
   Object.defineProperty(I, "_usersMemo", { get: function () { return _usersMemo; }, set: function (v) { _usersMemo = v; }, configurable: true });
 })();
