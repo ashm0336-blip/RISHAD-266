@@ -33,6 +33,9 @@ const D = 'tst_d1', TAG = 'TEST_ONLY';
 async function page(storeJson, emps, users, ext) {
   const W = await world({ worker: workerUnderTest().file }), dm = await W.login('0000000101', '70101');
   await replaceOperationalFixture(W.env, 'bsdept:' + D + ':bassam_tasks_v1', JSON.parse(storeJson));
+  /* RISHAD266: قراءةُ الصفحة لمخزن المهام تجري مسحَ المواعيد في الخادم (063 ← 074) كما كان طلبُها عند الفتح — وهذه الاختباراتُ لأفعال الصفحة لا للمسح
+     (له اختباراتُه)، وصفوفُها في «ظهر اليوم» فتنقضي بعد الواحدة بتوقيت الرياض. طابعُ «جرى المسحُ للتو» (الحارسُ المشترك نفسُه) يُبقيها حتميةً في كل ساعة */
+  W.env.DB.exec("INSERT INTO meta (k, v) VALUES ('tkg:due:" + D + "', '" + Date.now() + "') ON CONFLICT(k) DO UPDATE SET v = excluded.v");
   await replaceOperationalFixture(W.env, 'bsdept:' + D + ':bassam_employees_v1', emps);
   for (const name of ['bassam_tasks_locks_v1', 'bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_dreport_v1', 'bassam_options_v1'])
     await replaceOperationalFixture(W.env, 'bsdept:' + D + ':' + name, null, { present: false });

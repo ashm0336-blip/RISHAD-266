@@ -25665,7 +25665,7 @@ async function authPublicRoutes(request, env, path, url) {
       /* mc على السجل: كلمة مؤقتة عيّنها مدير النظام — تُفرض على أي دور */
       var mustChange = !!u.mc || ((u.role === 'staff' || u.role === 'gm') ? false : (!pwCheck(pw, u.role) || !unCheck(u.un)));
       var resL = json({ ok: 1, uid: u.id, role: u.role || '', deptId: u.deptId || '', mustChange: mustChange ? 1 : 0 }, 200, setCookie(tok, url));
-      if (dvN) resL.headers.append('Set-Cookie', 'bs_dv=' + dvC + '; Path=/; HttpOnly; ' + (isLocal(url) ? '' : 'Secure; ') + 'SameSite=Lax; Max-Age=63072000');
+      if (dvN) resL.headers.append('Set-Cookie', setCookie(dvC, url)['Set-Cookie'].replace(/^[^=]*/, 'bs_dv').replace(/Max-Age=\d+/, 'Max-Age=63072000'));   /* سماتُ كعكة الجلسة نفسُها (Secure خارج المحلي) باسمها ومدّتها */
       return resL;
     }
     return json({ ok: 0, err: 'تغيّر الحساب أثناء تسجيل الدخول — أعد المحاولة' });

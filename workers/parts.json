@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "24464314730d59caa7750fb99549468ef2a4ce1d417a2b2c9ff7eaf6b1ee2e66",
+  "sha256": "4e9628f732d95bc1306197d6fef315024303c1cd0abafda53f414729efb4927d",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -939,8 +939,8 @@
         25566,
         25750
       ],
-      "bytes": 17310,
-      "sha256": "b661d08b648d69b03631d3f6b73bbca3a3a5bb8cae7a995f0182d6ffb395d041",
+      "bytes": 17417,
+      "sha256": "2e06bb709a04407bf4e78ee027c1fc6ef7aa7ac1ddb6f80b1e74d661cc07ee68",
       "head": "/* ═══ KIVO_263 · SOT-096 — مساراتُ المصادقة والجلسة في طبقةٍ واحدةٍ معروفة (كانت أسطراً داخل handle في 063) ═══"
     },
     {
