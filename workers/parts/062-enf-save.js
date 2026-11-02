@@ -34,6 +34,7 @@ async function enfSavePrep(env, A, body, set, del, keysOk, markers, restoreMarke
   for (i = 0; i < ks.length; i++) { var d0 = parseKey(ks[i]).dept; if (d0) depts[d0] = 1; }
   if (A.u.deptId) depts[A.u.deptId] = 1;
   var refs = await enfRefsFor(env, Object.keys(depts), null);
+  await enfEmpsLoad(env, refs, ks);   /* F24: هويّاتُ الفاعل في تسكين الجولات والخطة (061 enfToksOf) */
   var X = { refs: refs, why: enfReasonMap(body, keysOk), markers: markers, retroWin: retroCtx || {}, pv4: pv4Refs || {}, batchDeny: null, restore: false, snapKind: '', log: [] };
   /* D3-05: علامةُ الاستيراد — موردٌ خارج allowlist ⇒ رفضُ الدفعة · import.run محمولٌ في كل إدارةٍ تمسّها العلامة */
   var impKeys = []; for (k in markers.ops) if (markers.ops[k].op === 'import.run') impKeys.push(k);
@@ -68,7 +69,7 @@ async function enfSavePrep(env, A, body, set, del, keysOk, markers, restoreMarke
 /* سياقُ مفتاحٍ واحد تراه canWriteEnf (ctx.enf) */
 function enfCtxFor(X, k, d) {
   var op = X.markers.ops[k] || null, why = X.why[k] || X.restoreReason || X.histReason || '';
-  return { recs: X.refs.recs, pv4: X.pv4[d] || {}, retroWin: X.retroWin, why: why, op: op, restore: X.restore };
+  return { recs: X.refs.recs, emps: X.refs.emps, pv4: X.pv4[d] || {}, retroWin: X.retroWin, why: why, op: op, restore: X.restore };
 }
 /* نسخةُ ما قبل العملية (§12: «نسخة احتياطية تلقائية قبل التنفيذ» للاستعادة والاستبدال · ولكل ترحيل) */
 function enfSnapId(kind) { return kind + '_' + Date.now().toString(36) + '_' + Math.floor(Math.random() * 1e9).toString(36); }

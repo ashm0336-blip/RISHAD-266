@@ -4,6 +4,8 @@
    ② الحرّاس: الحارسُ المرجعي (KIVO_GUARDS.classify) يصنّف كلَّ موردٍ معلن بمفتاحه المعلن — لكل عدسة (إنشاءٌ · حذفٌ · هندسةٌ · حالةٌ · تعديلٌ عام ·
       حقولُ العناصر · حقولُ الطابق) على الخطة والجولات.
    ③ التفاضل: الإسقاطُ والدمجُ (061) بعد جعلهما من الإضافات = نسختُهما قبل ذلك (tests/unit/fixtures/061-enf-read.k258.js) حرفاً في JSON
+      (F24 · إفصاح — تعديلُ اختبار: دمجُ الجولات تغيّر عمداً — العنصرُ الجديد بلا نظير لا يُكتب فيه المحجوب · والهويّةُ المكرّرة تُطابَق بالموضع ·
+      tests/unit/rounds_field_save — فيُفحص بثابتِه: كلُّ حقلٍ محجوبٍ في الناتج من نظيره في الخادم أو غائب؛ والخطةُ بلا هويّاتٍ مكرّرة حرفاً كما كانت)
       لكل تراكيب العدسات الـ64 × قيودِ النطاق × بياناتٍ عشوائيةٍ حتمية — الخطةُ (الطوابق · الأشهر · الجذر) والجولاتُ وعناصرُها وحقولُ العدسات.
    ④ إعادةُ التصنيف (enfPlugOps) لا تمسّ العدساتِ المضمَّنة: جدولُها فارغ والعملياتُ كما هي. */
 import { test } from 'node:test';
@@ -16,7 +18,7 @@ import { internals } from './internals.mjs';
 
 const PLUG = path.join(SRC, 'plugins', 'lenses');
 const M = fs.readdirSync(PLUG).filter(k => fs.existsSync(path.join(PLUG, k, 'manifest.json'))).map(k => JSON.parse(fs.readFileSync(path.join(PLUG, k, 'manifest.json'), 'utf8'))).sort((a, b) => a.order - b.order || (a.key < b.key ? -1 : 1));
-const NAMES = ['KIVO_LENS_PLUGINS', 'KIVO_GUARDS', 'KIVO_BUILD', 'enfPlugOps', 'enfFloorProj', 'enfFloorMerge', 'enfElemMask', 'ENF_PROJ', 'enfPlugLensOf', 'enfIx'];
+const NAMES = ['KIVO_LENS_PLUGINS', 'KIVO_GUARDS', 'KIVO_BUILD', 'enfPlugOps', 'enfFloorProj', 'enfFloorMerge', 'enfElemMask', 'ENF_PROJ', 'enfPlugLensOf', 'enfIx', 'ENF_ID'];
 const W = await internals(NAMES);
 /* الأساس: العاملُ نفسُه بجزء 061 قبل الإضافات (المثبَّت في fixtures) — كلُّ ما سواه مشترك */
 const wsrc = fs.readFileSync(WORKER, 'utf8'), cur061 = fs.readFileSync(path.join(ROOT, 'workers', 'parts', '061-enf-read.js'), 'utf8'), old061 = fs.readFileSync(path.join(ROOT, 'tests', 'unit', 'fixtures', '061-enf-read.k258.js'), 'utf8');
@@ -94,6 +96,23 @@ function planOf(R) {
   return v;
 }
 function roundsOf(R) { return { '1447-3-5': { d: [floor(R, 'S1'), floor(R, 'S2')], ap: R() < 0.5 }, '1447-3-6': { d: [floor(R, 'S1')] }, meta: { x: 1 } }; }
+/* F24: ثابتُ الدمج على طابق (cf: نظيرُه في الخادم أو null): كلُّ حقلٍ محجوبٍ في العنصر الناتج قيمتُه من نظيره بالـuid نفسِه، أو غائبٌ إن كان جديداً ·
+   والعمودُ المطفأ كلُّه من الخادم (إن وُجد الطابق) */
+const COLS = ['zones', 'gates', 'marks', 'paths'];
+function mergeInv(v, mf, cf, nf, site, rounds, m) {
+  for (const col of COLS) {
+    if (!v.lens[col]) { if (cf) same(mf[col], cf[col], m + ' ' + col + ' (مطفأ)'); continue; }
+    (mf[col] || []).forEach((e) => {
+      if (!e || e.uid == null) return;
+      const cur = cf ? (cf[col] || []).find((x) => x && x.uid === e.uid) : null, src = (nf[col] || []).find((x) => x && x.uid === e.uid);
+      for (const f of W.enfElemMask(v, col, cur || src, site, rounds)) {
+        if (cur) same(e[f], cur[f], m + ' ' + col + '.' + f + ' من الخادم'); else assert.ok(!(f in e), m + ' ' + col + '.' + f + ' لا يُكتب في الجديد');
+      }
+    });
+  }
+}
+const dupFree = (f) => !f || COLS.every((col) => { const ids = (f[col] || []).map((e) => W.ENF_ID[col](e)).filter((x) => x != null); return new Set(ids).size === ids.length; });
+const planDupFree = (p) => [].concat(p.floors || [], ...Object.values(p.months || {}).map((x) => Array.isArray(x) ? x : x.d), [p]).every(dupFree);
 function V(mask, rs, R) {
   const L = {}; ['zones', 'gates', 'marks', 'paths', 'dist', 'dens'].forEach((k, i) => { L[k] = !!(mask & (1 << i)); });
   const outSite = R() < 0.5 ? 'f:S2' : 'f:S1', outZone = 'u' + 'z' + Math.floor(R() * 3);
@@ -114,13 +133,19 @@ test('③ التفاضل: الإسقاطُ والدمجُ من الإضافات 
       same(W.ENF_PROJ[res].on(v), B.ENF_PROJ[res].on(v), res + ' on · ' + mask + '/' + rs);
       if (W.ENF_PROJ[res].on(v)) diffOn++;
       same(W.ENF_PROJ[res].proj(c, v), B.ENF_PROJ[res].proj(c, v), res + ' proj · ' + mask + '/' + rs);
-      same(W.ENF_PROJ[res].merge(c, n, v), B.ENF_PROJ[res].merge(c, n, v), res + ' merge · ' + mask + '/' + rs);
+      const mg = W.ENF_PROJ[res].merge(c, n, v);
+      if (res === 'bassam_plan_v1') { if (planDupFree(c) && planDupFree(n)) same(mg, B.ENF_PROJ[res].merge(c, n, v), res + ' merge · ' + mask + '/' + rs); }
+      else if (W.ENF_PROJ[res].on(v)) for (const dk of Object.keys(n)) {
+        if (!/^\d+-\d+-\d+$/.test(dk)) { same(mg[dk], n[dk], res + ' ' + dk); continue; }
+        mg[dk].d.forEach((fl, i) => { const cf = c[dk] && c[dk].d[i]; mergeInv(v, fl, cf || null, n[dk].d[i], W.ENF_ID.roundsFloor(cf || fl, i), true, res + ' merge · ' + mask + '/' + rs + ' ' + dk + '#' + i); });
+      }
       cases += 3;
     }
     const f1 = floor(R, 'S1'), f2 = floor(R, 'S1');
     for (const site of [undefined, 'f:S1', 'f:S2', '?']) for (const rounds of [false, true]) {
       same(W.enfFloorProj(v, f1, site, rounds), B.enfFloorProj(v, f1, site, rounds), 'enfFloorProj');
-      same(W.enfFloorMerge(v, f2, f1, site, rounds), B.enfFloorMerge(v, f2, f1, site, rounds), 'enfFloorMerge');
+      if (rounds) mergeInv(v, W.enfFloorMerge(v, f2, f1, site, rounds), f1, f2, site, rounds, 'enfFloorMerge');
+      else if (dupFree(f1) && dupFree(f2)) same(W.enfFloorMerge(v, f2, f1, site, rounds), B.enfFloorMerge(v, f2, f1, site, rounds), 'enfFloorMerge');
       for (const col of ['zones', 'gates', 'marks', 'paths']) for (const e of (f1[col] || []).slice(0, 2)) same(W.enfElemMask(v, col, e, site, rounds), B.enfElemMask(v, col, e, site, rounds), 'enfElemMask ' + col);
       cases += 2;
     }

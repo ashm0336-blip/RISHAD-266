@@ -50,7 +50,7 @@ function enfViewCtx(A, d, rn, refs) {
   for (j = 0; j < dims.length; j++) { var all = held.length > 0; for (i = 0; i < held.length && all; i++) if (enfDimsOf(held[i]).indexOf(dims[j]) === -1) all = false; rs[dims[j]] = all; }
   var act = permv4Actor(A).actor, ceilActor = KIVO_SCOPE.isCeiling(act), E = { recs: (refs && refs.recs) || {} }, staffing = refs && refs.staffing ? refs.staffing[d] : null;
   var V = { d: d, rn: rn, held: held, restrict: rs, ceil: ceilActor, E: E, sources: enfSources(A, 'read'), fieldOnly: dailyFieldOnly(A, d), ekey: String(A.u.ekey || ''),
-    lens: {} };
+    lens: {}, toks: rn === 'bassam_rounds_v1' && refs && refs.emps ? enfToksOf(refs.emps[d], String(A.u.ekey || '')) : null };
   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (KIVO_LENS_PLUGINS.keys) — بوابةُ كلٍّ منها بالمرجع نفسِه */
   for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) V.lens[KIVO_LENS_PLUGINS.keys[li]] = KIVO_BUILD.lensGate(A.perms, A.u, d, KIVO_LENS_PLUGINS.keys[li]).on;
   V.shiftOk = function (sh, ym) {
@@ -91,12 +91,24 @@ var ENF_LENS_ELEM = KIVO_LENS_PLUGINS.elem, ENF_LENS_FLOOR = KIVO_LENS_PLUGINS.f
 function enfAnyLensOff(V) { for (var L in V.lens) if (!V.lens[L]) return true; return false; }
 function enfColsOf(v) { var r = {}; for (var i = 0; i < ENF_LENS_COLS.length; i++) r[ENF_LENS_COLS[i]] = v[ENF_LENS_COLS[i]]; return r; }
 function enfShallow(o) { var r = {}, q; for (q in o) r[q] = o[q]; return r; }
+/* F24 (بلاغ راصد الميدان): التسكينُ (emp[]) قد يحمل رقمَ الموظف أو هويتَه أو اسمَه والواجهةُ تقبلها كلَّها — فالخادمُ كذلك:
+   مفتاحُ الحساب ∪ رموزُ سجلّ الموظف الذي يطابقه (employees من enfRefsFor/enfEmpsLoad) */
+function enfToksOf(raw, ek) {
+  var t = nmap(), L = parseJson(raw == null ? '[]' : String(raw), []), i, j, e, ks; if (!ek) return t; t[ek] = 1;
+  for (i = 0; Array.isArray(L) && i < L.length; i++) { e = L[i]; if (!isObj(e)) continue; ks = [e.eid, e.nid, e.name].filter(function (x) { return x != null && x !== ''; }).map(String); if (ks.indexOf(ek) !== -1) for (j = 0; j < ks.length; j++) t[ks[j]] = 1; }
+  return t;
+}
+function enfMine(V, emp) { if (!Array.isArray(emp)) return false; for (var i = 0; i < emp.length; i++) if (V.toks ? V.toks[String(emp[i])] : String(emp[i]) === V.ekey) return true; return false; }
+/* سجلُّ الموظفين لإدارات الجولات والخطة في الحفظ (refs بلا keys) */
+async function enfEmpsLoad(env, refs, ks) {
+  for (var i = 0; i < ks.length; i++) { var rn = resName(ks[i]), d = parseKey(ks[i]).dept; if (d && (rn === 'bassam_rounds_v1' || rn === 'bassam_plan_v1') && !(d in refs.emps)) refs.emps[d] = await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'); }
+}
 /* عنصرٌ كما يراه الفاعل: يُسقَط منه ما لا يراه (حالةُ الرصد خارج النطاق · التسكين بلا عدسة التوزيع · الكثافة بلا عدستها) */
 function enfElemMask(V, col, e, site, rounds) {
   var mask = [], i;
   if (!isObj(e)) return mask;
   var stub = (site !== undefined && !V.siteOk(site)) || (V.restrict['Zone/Element'] && !V.zoneOk(ENF_ID[col](e)));
-  if (!stub && rounds && V.restrict.Assigned && col !== 'paths') stub = !(Array.isArray(e.emp) && e.emp.map(String).indexOf(V.ekey) !== -1);
+  if (!stub && rounds && V.restrict.Assigned && col !== 'paths') stub = !enfMine(V, e.emp);
   if (stub && col !== 'paths') mask = mask.concat(ENF_FIELD_KEYS);
   for (i = 0; i < ENF_LENS_ELEM.length; i++) if (!V.lens[ENF_LENS_ELEM[i].lens] && ENF_LENS_ELEM[i].cols.indexOf(col) !== -1) mask = mask.concat(ENF_LENS_ELEM[i].fields);
   return mask;
@@ -123,18 +135,25 @@ function enfFloorMerge(V, nf, cf, site, rounds) {
   for (c = 0; c < ENF_LENS_COLS.length; c++) {
     col = ENF_LENS_COLS[c];
     if (!V.lens[col]) { if (cf[col] !== undefined) o[col] = cf[col]; else delete o[col]; continue; }
-    if (!Array.isArray(nf[col]) || !Array.isArray(cf[col])) continue;
-    var byId = {}; for (i = 0; i < cf[col].length; i++) { var id0 = ENF_ID[col](cf[col][i]); if (id0 != null && byId[id0] === undefined) byId[id0] = cf[col][i]; }
+    if (!Array.isArray(nf[col]) || !(rounds || Array.isArray(cf[col]))) continue;
+    /* F24: النظيرُ بالهوية؛ وعند تكرّرها (عناصرُ قديمةٌ بلا uid بالرمز نفسِه) فالذي في الموضع نفسِه ثم أولُ غيرِ مستعمل · وفي الجولات:
+       عنصرٌ جديدٌ بلا نظير لا يُكتب فيه ما لا يراه الفاعل (الجولةُ تُنسخ من الخطة فتحمل حالاتِ عناصرِ غيره) */
+    var cc = Array.isArray(cf[col]) ? cf[col] : [], byId = {}, used = {}, L, pick, q;
+    for (i = 0; i < cc.length; i++) { var id0 = ENF_ID[col](cc[i]); if (id0 != null) (byId[id0] = byId[id0] || []).push(i); }
     var out = [];
     for (i = 0; i < nf[col].length; i++) {
-      var e = nf[col][i], id = ENF_ID[col](e), ce = id != null ? byId[id] : undefined;
-      out.push(ce !== undefined ? enfMaskRestore(e, ce, enfElemMask(V, col, ce, site, rounds)) : e);
+      var e = nf[col][i], id = ENF_ID[col](e); L = id != null ? byId[id] : null; pick = -1;
+      if (L) { if (L.indexOf(i) !== -1 && !used[i]) pick = i; else for (q = 0; q < L.length && pick < 0; q++) if (!used[L[q]]) pick = L[q]; }
+      if (pick >= 0) { used[pick] = 1; out.push(enfMaskRestore(e, cc[pick], enfElemMask(V, col, cc[pick], site, rounds))); }
+      else out.push(rounds ? enfMaskApply(e, enfElemMask(V, col, e, site, rounds)) : e);
     }
     o[col] = out;
   }
   for (c = 0; c < ENF_LENS_FLOOR.length; c++) { var ff = ENF_LENS_FLOOR[c].field; if (V.lens[ENF_LENS_FLOOR[c].lens]) continue; if (Object.prototype.hasOwnProperty.call(cf, ff)) o[ff] = cf[ff]; else delete o[ff]; }
   return o;
 }
+/* نظيرٌ فارغ لطابقٍ جديد: أعمدةُ العدسات المفعّلة فارغة · والمطفأةُ وحقولُها كما أُرسلت */
+function enfFloorBlank(V, fl) { var o = {}, c, f; if (!isObj(fl)) return o; for (c = 0; c < ENF_LENS_COLS.length; c++) { f = ENF_LENS_COLS[c]; if (fl[f] !== undefined) o[f] = V.lens[f] ? [] : fl[f]; } for (c = 0; c < ENF_LENS_FLOOR.length; c++) { f = ENF_LENS_FLOOR[c].field; if (fl[f] !== undefined && !V.lens[ENF_LENS_FLOOR[c].lens]) o[f] = fl[f]; } return o; }
 function enfMonthD(v) { return Array.isArray(v) ? { arr: true, d: v } : (isObj(v) && Array.isArray(v.d) ? { arr: false, d: v.d } : null); }
 var ENF_PROJ = {
   /* المصدر: المسجدُ الذي لا يقرؤه الفاعل يُحجب بأيامه وأقفاله */
@@ -262,8 +281,10 @@ var ENF_PROJ = {
       if (!isObj(n) || !isObj(c)) return n; var o = enfShallow(n), dk;
       for (dk in n) {
         var nx = n[dk], cx = c[dk];
-        if (!KIVO_SCOPE._h.parseDay(dk) || !isObj(nx) || !isObj(cx) || !Array.isArray(nx.d) || !Array.isArray(cx.d)) continue;
-        var x2 = enfShallow(nx); x2.d = nx.d.map(function (fl, i) { return i < cx.d.length ? enfFloorMerge(V, fl, cx.d[i], ENF_ID.roundsFloor(cx.d[i], i), true) : fl; }); o[dk] = x2;
+        if (!KIVO_SCOPE._h.parseDay(dk) || !isObj(nx) || !Array.isArray(nx.d)) continue;
+        /* F24: يومٌ أو طابقٌ جديد يُقارن بطابقٍ بلا عناصر — فلا يُكتب فيه ما لا يراه الفاعل */
+        var cd = isObj(cx) && Array.isArray(cx.d) ? cx.d : [];
+        var x2 = enfShallow(nx); x2.d = nx.d.map(function (fl, i) { return i < cd.length && isObj(cd[i]) ? enfFloorMerge(V, fl, cd[i], ENF_ID.roundsFloor(cd[i], i), true) : enfFloorMerge(V, fl, enfFloorBlank(V, fl), ENF_ID.roundsFloor(fl, i), true); }); o[dk] = x2;
       }
       return o;
     }
@@ -285,8 +306,9 @@ ENF_PROJ['bassam_irshad_v1'] = ENF_PROJ['bassam_seized_v1'] = {
 ENF_PROJ['bassam_staffing_v2'] = ENF_PROJ['bassam_staffing_v3'];
 /* مرجعياتُ الإسقاط لطلب: سجلّاتُ النطاق وجداولُ الورديات للإدارات المعنية */
 async function enfRefsFor(env, depts, keys) {
-  var out = { recs: {}, staffing: {} }, i, d;
+  var out = { recs: {}, staffing: {}, emps: {} }, i, d;
   out.recs = await enfScopeRecs(env, depts, keys);
+  for (i = 0; keys && i < depts.length; i++) { d = 'bsdept:' + depts[i] + ':bassam_employees_v1'; if (Object.prototype.hasOwnProperty.call(keys, d)) out.emps[depts[i]] = keys[d]; }   /* F24 (enfToksOf) */
   for (i = 0; i < depts.length; i++) { d = depts[i]; if (!d || out.staffing[d] !== undefined) continue; var sk = 'bsdept:' + d + ':bassam_staffing_v3'; var raw = keys && Object.prototype.hasOwnProperty.call(keys, sk) ? keys[sk] : (keys ? null : await opResourceGet(env, sk)); out.staffing[d] = parseJson(raw, null); }
   return out;
 }
@@ -314,7 +336,8 @@ function enfMergeChk(A, k, nextRaw, curRaw, refs) {
   var n = parseJson(nextRaw, undefined), c = parseJson(curRaw, undefined);
   if (n === undefined || c === undefined) throw new Error('enf-merge-parse');
   var m = PJ.merge(c, n, V);
-  if (!deq(PJ.proj(JSON.parse(JSON.stringify(m)), V), n)) out.hidden = true;
+  /* F24: الجولات — ما لا يراه الفاعل يعود من الخادم أو لا يُكتب (enfFloorMerge) فلا رفضَ لفرقٍ لم يصنعه (حالةٌ منسوخةٌ من الخطة · عنصران بلا uid · تسكينٌ برمزٍ قديم) */
+  if (rn !== 'bassam_rounds_v1' && !deq(PJ.proj(JSON.parse(JSON.stringify(m)), V), n)) out.hidden = true;
   out.v = deq(m, c) ? curRaw : JSON.stringify(m);
   return out;
 }

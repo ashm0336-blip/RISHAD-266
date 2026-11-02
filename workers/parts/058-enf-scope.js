@@ -184,10 +184,19 @@ function enfPlanHiddenEval(cx, keys, a, b) {
   }
   return R;
 }
+function enfEmpCanon(v, tk, ek) {
+  if (Array.isArray(v)) return v.map(function (x) { return enfEmpCanon(x, tk, ek); });
+  if (!isObj(v)) return v;
+  var o = {}, q; for (q in v) o[q] = q === 'emp' && Array.isArray(v[q]) ? v[q].map(function (t) { return tk[String(t)] ? ek : t; }) : enfEmpCanon(v[q], tk, ek);
+  return o;
+}
 /* نطاقُ كتابةٍ واحدة: كلُّ عنصرٍ متأثر (Bulk: all affected items) — deny أو unknown ⇒ رفض (Default Deny) */
 function enfScopeEval(A, d, k, rn, a, b, keys, X) {
   if (!keys.length) return { composite: 'not_applicable', denyDims: [], unknownDims: [], items: 0, why: '' };
   if (rn === 'bassam_plan_v1' && d && enfPlanEmpty(a)) { X = Object.assign({}, X || {}); X.firstPlan = d; }   // SOT-188: الخطةُ الأولى (انظر enfValueDim)
+  /* F24: تسكينٌ برقم الموظف أو هويته أو اسمه يُقرأ مفتاحَ حسابه قبل المقيِّم المرجعي (Assigned يقارن بـekey وحده) — للتقييم وحده */
+  var ek = String(A.u.ekey || ''), tk = ek && X && X.emps && (rn === 'bassam_rounds_v1' || rn === ENF_PLAN_RES) ? enfToksOf(X.emps[d], ek) : null;
+  if (tk && Object.keys(tk).length > 1) { a = enfEmpCanon(a, tk, ek); b = enfEmpCanon(b, tk, ek); }
   var cx = enfScopeCtx(A, d, k, enfHeldMap(A, d, keys), X, 'write');
   var W = KIVO_SCOPE.evaluateWrite(keys, cx.actor, rn, a, b, cx), whys = [], key, r, i;
   for (key in W.perKey) { r = W.perKey[key]; for (i = 0; i < r.denyDims.length; i++) whys.push(key + ':' + r.denyDims[i] + '=' + r.results[r.denyDims[i]].why); for (i = 0; i < r.unknownDims.length; i++) whys.push(key + ':' + r.unknownDims[i] + '=' + r.results[r.unknownDims[i]].why); }
