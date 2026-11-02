@@ -745,9 +745,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
   }
   componentDidMount() {
-    /* KIVO_264 · ق5: فتحُ صفحة المهام يُحرّك توليدَ المواعيد المتكررة لإدارتها مرةً (POST /api/tasks/recur/run — متساوي القوى في الخادم،
-       باسم صاحب كل قالب لا باسمك؛ والمولَّدُ يصل الصفحةَ بمزامنة المخزن المعتادة). الفشلُ لا يمسّ الصفحة */
-    this._tkSrv() && this._tkM() && setTimeout(() => this._tkApi("/api/tasks/recur/run", {}), 1500);
+    /* RISHAD266: لا كتابة عند فتح الصفحة — توليدُ المواعيد المتكررة يجري في الخادم عند قراءة مخزن المهام (063 ← 074 tkLazyJobs) */
     /* KIVO_265 · منتقي الوقت: Escape وقائمةُ الوقت مفتوحةٌ يغلقها وحدها — يُلتقط على window قبل معالج الغلاف (root-logic: document · capture)
        الذي يُغلق أعلى حوار، فكان يُغلق نافذةَ «مهمة جديدة» كلَّها ويضيع ما كُتب فيها */
     this._tkTpEsc = (ev) => {

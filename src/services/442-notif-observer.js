@@ -292,8 +292,7 @@
       /* Due broadcast reminders are evaluated and deduplicated by security-poll
          on the server; the browser never writes remDone or a seen document. */
     }
-    /* دخول من جهاز جديد — الجهاز نفسه يعرف أنه جديد */
-    try { if (u.role !== 'super' && u.ekey) { var fk = 'bassam_notif_dev_v1:' + u.id; if (!rawGet(fk)) { rawSet(fk, String(Date.now())); var dev = /Mobi|Android|iPhone/.test(navigator.userAgent) ? 'هاتف' : 'حاسوب'; var br = /Edg\//.test(navigator.userAgent) ? 'Edge' : /Chrome\//.test(navigator.userAgent) ? 'Chrome' : /Safari\//.test(navigator.userAgent) ? 'Safari' : 'متصفح'; emit('sc_dev', { dept: u.deptId || did, own: [u.ekey], vars: { 'الجهاز': dev + ' · ' + br + ((window.__BS_BOOT && window.__BS_BOOT.city) ? ' · ' + window.__BS_BOOT.city : ''), 'المدينة': (window.__BS_BOOT && window.__BS_BOOT.city) || '' } }); } } } catch(e){}
+    /* دخول من جهاز جديد: يحكم به الخادم عند الدخول (062a) — لا كتابة من الصفحة ولا ذاكرة متصفح */
     /* المزامنة منقطعة */
     try { if (KIVO.__BS_SRV && KIVO.__BS_SRV.dirty && KIVO.__BS_SRV.dirty() && window.__BS_BOOT && window.__BS_BOOT.cf) { KIVO.__bsDirtySince = KIVO.__bsDirtySince || Date.now(); if (Date.now() - KIVO.__bsDirtySince > 5 * 60000) emit('sy_sync', { dept: did, own: u.ekey ? [u.ekey] : [], vars: { 'المدة': KIVO.BassamCount(Math.round((Date.now() - KIVO.__bsDirtySince) / 60000), "دقيقة") }, once: 'sync:' + T.key + ':' + hh }); } else KIVO.__bsDirtySince = 0; } catch(e){}
   }

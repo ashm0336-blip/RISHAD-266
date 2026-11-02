@@ -485,7 +485,8 @@ test('U3 · فقد ACK بعد commit يبقي المسودة ولا يعيد ا�
   assert.equal(P.c.state.newTaskOpen, true);
   assert.equal(srvRow(W, one.k, one.id)[0], TAG + ' إقرار مفقود');
   assert.ok(srvRow(W, one.k, one.id)[23].rec.id);
-  const rev = W.env.DB.q('SELECT rev FROM revs WHERE k=?', KT)[0].rev,
+  /* RISHAD266: قراءةُ الصفحة لمخزن المهام تولّد نسخَ السلسلة في الخادم (063 ← tkRecurLazy) — فالمعيارُ: لا صفَّ قائمٌ تغيّر، وكلُّ مضافٍ نسخةٌ من هذه السلسلة */
+  const before = JSON.stringify(stored(W.env, KT)), seriesId = srvRow(W, one.k, one.id)[23].rec.id,
     first = J(P.calls.find((c) => c.u === '/api/tasks/settings').b);
   P.c.renderVals();
   await sleep(100);
@@ -499,7 +500,11 @@ test('U3 · فقد ACK بعد commit يبقي المسودة ولا يعيد ا�
   const attempts = P.calls.filter((c) => c.u === '/api/tasks/settings');
   assert.equal(attempts.length, 2);
   assert.deepEqual(J(attempts[1].b), first);
-  assert.equal(W.env.DB.q('SELECT rev FROM revs WHERE k=?', KT)[0].rev, rev);
+  { const A0 = JSON.parse(before), A1 = stored(W.env, KT), rows = (S) => Object.keys(S).flatMap((dk) => (S[dk] || []).filter(Array.isArray).map((r) => JSON.stringify([dk, r])));
+    const r0 = rows(A0), r1 = rows(A1);
+    assert.deepEqual(r0.filter((x) => !r1.includes(x)), [], 'لم يتغيّر صفٌّ قائم ولم يُحذف');
+    const added = r1.filter((x) => !r0.includes(x)).map((x) => JSON.parse(x)[1]);
+    assert.ok(added.every((r) => r[23] && r[23].rec && r[23].rec.id === seriesId && r[13] !== one.id), 'المضافُ نسخُ السلسلة وحدها'); }
   assert.equal(P.calls.filter((c) => c.u === '/api/tasks/recur').length, 0);
 });
 
