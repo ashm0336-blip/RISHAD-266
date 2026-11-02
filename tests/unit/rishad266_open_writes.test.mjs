@@ -48,3 +48,31 @@ test('(ج) مصدرُ الصفحة: لا recur/run عند فتح المهام و
   assert.ok(!tasks.includes('/api/tasks/recur/run'), 'لا POST لتوليد التكرار من الصفحة');
   assert.ok(!/emit\(\s*['"]sc_dev/.test(obs) && !obs.includes('bassam_notif_dev_v1'), 'لا إرسالَ sc_dev من الصفحة');
 });
+
+/* (د) مراجعة المالك على 1375a98: الطلبُ المرفوض لا يجري تشغيلَ النظام — التحقّقُ (الطريقة · الجلسة uid · المفاتيح · الصلاحية) قبل أيّ أثر.
+   لقطةُ كلّ الجداول قبل/بعد عدا سجلِّ الأمن (sec: سجلُّ الرفض مسموح) وجدولِ الجلسات (sess: آخرُ نشاطٍ للجلسة). ثم ضابطٌ: قراءةُ المدير المقبولة
+   تجري العملَ نفسَه فعلاً (سلسلةٌ يومية تنتظر التوليد وصفوفٌ فائتة تنتظر الانقضاء) — فالسكونُ في المرفوض ليس لغياب العمل */
+const snap = (W) => Object.fromEntries(W.env.DB.q("SELECT name FROM sqlite_master WHERE type = 'table'").map((t) => t.name)
+  .filter((t) => !['sec', 'sess'].includes(t) && !t.startsWith('sqlite_')).map((t) => [t, JSON.stringify(W.env.DB.q('SELECT * FROM "' + t + '"'))]));
+const changed = (a, b) => Object.keys(b).filter((t) => a[t] !== b[t]);
+
+test('(د) الطلبُ المرفوض لا يغيّر بياناتِ الأعمال ولا مراجعاتِها ولا يولّد تنبيهات مهام — وسجلُّ الرفض الأمني وحده مسموح', async () => {
+  const W = await world({ worker: WU.file, mode: 'enforce' }); const dm = await W.login(...DM), me = await W.login(ME.un, ME.pw);
+  const T0 = MID(Date.now()) + 864e5, k0 = hij(T0 + 12 * HR);
+  const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: operationSaveBody(W.env, '/api/tasks/create', taskCommandBody(W.env, '/api/tasks/create', { k: k0, t: TAG + ' يومية للرفض', s: T0 + 8 * HR, e: T0 + 9 * HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'daily' } })) });
+  assert.equal(c.status, 200, JSON.stringify(c.j).slice(0, 300));
+  const K = encodeURIComponent(KT), s0 = snap(W);
+  const rejected = [
+    ['uid مختلف ⇒ 409', await W.C.api('/api/operations/read?keys=' + K + '&uid=someone_else', { cookie: dm.ck }), 409],
+    ['مفتاحٌ غير صالح ⇒ 400', await W.C.api('/api/operations/read?keys=' + K + ',bsdept:x:not_a_resource', { cookie: dm.ck }), 400],
+    ['طريقةٌ غير GET ⇒ 405', await W.C.api('/api/operations/read?keys=' + K, { method: 'POST', cookie: dm.ck, body: {} }), 405],
+  ];
+  for (const [why, r, st] of rejected) assert.equal(r.status, st, why + ': ' + JSON.stringify(r.j).slice(0, 200));
+  const emp = await W.C.api('/api/operations/read?keys=' + K, { cookie: me.ck });
+  assert.ok(emp.status === 403 || (emp.j.denied || []).includes(KT), 'الموظفُ لا يقرأ مخزن الإدارة: ' + JSON.stringify(emp.j).slice(0, 200));
+  assert.deepEqual(changed(s0, snap(W)), [], 'لا جدولَ تغيّر بطلبٍ مرفوض (أعمال · مراجعات · تدقيق · تنبيهات · طوابع الحارس)');
+  const ok = await W.C.api('/api/operations/read?keys=' + K, { cookie: dm.ck }); assert.equal(ok.status, 200);
+  const ch = changed(s0, snap(W)); assert.ok(ch.length > 0, 'الضابط: القراءةُ المقبولة تجري تشغيلَ النظام فعلاً');
+  const R = ok.j.resources[KT]; let gen = 0; for (const dk in R) (R[dk] || []).forEach((r) => { if (Array.isArray(r) && r[23] && r[23].rec && String(r[0]).includes('يومية للرفض')) gen++; });
+  assert.ok(gen > 1, 'وأثرُه في الردّ نفسِه (أُعيدت القراءة): ' + gen);
+});

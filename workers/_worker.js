@@ -28884,10 +28884,15 @@ export default {
       if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');
       if (path === '/api/award' || path === '/api/award/act' || path === '/api/award/export') return await bdRoute(env, request, url, ss, 'awards');
       if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);
-      /* RISHAD266: توليدُ المواعيد المتكررة يجري في الخادم عند قراءة مخزن مهام الإدارة مع مسح المواعيد (التذكير والتأخر والانقضاء) كما كان طلبُها يفعل — بالحارس المشترك بين العزلات (074 tkLazyJobs) · باسم صاحب كل قالب — كانت صفحةُ المهام ترسل POST عند فتحها */
-      if (path === '/api/operations/read') { var tkRd = /(?:^|,)bsdept:([^,:]+):bassam_tasks_v1(?:,|$)/.exec(url.searchParams.get('keys') || '');
-        if (tkRd && request.method === 'GET' && typeof tkLazyJobs === 'function' && (Date.now() - (TK_REC_LAST[tkRd[1]] || 0) >= TK_REC_GAP || Date.now() - (TK_DUE_LAST[tkRd[1]] || 0) >= TK_DUE_GAP)) try { var Atk = await actorOf(env, ss.uid); if (Atk && canRead(Atk, tkK(tkRd[1]))) await tkLazyJobs(env, request, tkRd[1], true); } catch (eTk) { swallow('tk-lazy-read', eTk, env.__rid); }
-        return await opReadRoute(env,request,url,ss); }
+      /* RISHAD266: توليدُ المواعيد المتكررة ومسحُ المواعيد (التذكير · التأخر · الانقضاء) تشغيلُ نظامٍ يجري عند قراءة مخزن مهام الإدارة — كما كان طلبُ الصفحة المحذوف.
+         يجري بعد أن تقبل القراءةُ نفسُها الطلبَ (الطريقة · الجلسة uid · المفاتيح · الصلاحية: 019r) ولم تحجب مفتاحَ المهام عن القارئ، وبالحارس المشترك 074؛
+         فالطلبُ المرفوض لا يمسّ شيئاً. وإن جرى عملٌ أُعيدت القراءةُ ليصل أثرُه في الردّ نفسِه */
+      if (path === '/api/operations/read') { var rsp = await opReadRoute(env,request,url,ss), tkRd = /(?:^|,)bsdept:([^,:]+):bassam_tasks_v1(?:,|$)/.exec(url.searchParams.get('keys') || ''), d9 = tkRd && tkRd[1];
+        if (d9 && rsp.status === 200 && typeof tkLazyJobs === 'function' && (Date.now() - (TK_REC_LAST[d9] || 0) >= TK_REC_GAP || Date.now() - (TK_DUE_LAST[d9] || 0) >= TK_DUE_GAP)) try {
+          var jr = await rsp.clone().json(), r0 = TK_REC_LAST[d9], u0 = TK_DUE_LAST[d9];
+          if (jr.ok === 1 && (jr.denied || []).indexOf(tkK(d9)) < 0) { await tkLazyJobs(env, request, d9, true); if (TK_REC_LAST[d9] !== r0 || TK_DUE_LAST[d9] !== u0) rsp = await opReadRoute(env,request,url,ss); }
+        } catch (eTk) { swallow('tk-lazy-read', eTk, env.__rid); }
+        return rsp; }
       if (path === '/api/operations/export') return await opExport(env,request,url,ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);
 
