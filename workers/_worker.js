@@ -2316,6 +2316,9 @@ function deptShapeWhy(A, newJson, curJson, rst) {
   var S = shapeDiff(b, a); if (S.dup) return 'dept-shape';
   var U = shapeFirst(b), N = shapeFirst(shapeList(A, K_GDEPTS));
   var isSec = function (x) { return isObj(x) && x.kind === DEPT_SEC_KIND; };
+  /* RISHAD266 (قرار المالك): لا تختفي وحدةٌ بحفظٍ عاديّ — الحذفُ ذرّيٌّ في الخادم (/api/admin/dept-delete لمدير المنصة: ينظّف الحسابات والمفاتيح ويرفض
+     إدارةً لها أقسام). وإدارةٌ لها أقسامٌ في السجل المخزَّن لا تُحذف ولو حُذفت أقسامُها معها في الحفظة نفسِها (لا حذفَ متتابع). الاستعادةُ الكاملة لقطةٌ لا حذف */
+  if (!rst && !A.__udel) for (var oq in S.old) if (!U[oq]) return (a || []).some(function (x) { return isSec(x) && shapeRef(x, 'gid') === oq; }) ? 'dept-has-sections' : 'unit-delete-route';
   for (i = 0; i < S.ch.length; i++) {
     r = S.ch[i];
     var id = String(r.id == null ? '' : r.id), g = shapeRef(r, 'gid');
@@ -2367,7 +2370,8 @@ function deptSecMgrWhy(A, newJson, curJson) {
     if (r.kind !== DEPT_SEC_KIND) return 'super';
     var g = shapeRef(r, 'gid'); if (!g || isNodeId(A, g)) return 'dept-shape';
     var p = (A.depts || []).filter(function (x) { return isObj(x) && String(x.id) === g; })[0];
-    if (!p || p.kind === DEPT_SEC_KIND || !isMgrOf(A, g)) return 'mgr';
+    /* RISHAD266 (قرار المالك): القسمُ يضيفه مديرُ إدارته الأم نفسُها (حسابُ الإدارة أو مديرٌ بشارةٍ فيها) أو مديرُ المنصة — لا مديرُ عقدةٍ أعلى (gm) ولا مديرُ قسم */
+    if (!p || p.kind === DEPT_SEC_KIND || String(A.u.deptId || '') !== g || !(A.u.role === 'dept' || (A.u.role === 'staff' && A.u.mgr))) return 'mgr';
     if (o && (o.kind !== DEPT_SEC_KIND || shapeRef(o, 'gid') !== g || !eqExcept(o, r, ['name']))) return 'super';
     if (typeof r.name !== 'string' || !r.name.trim() || r.name.length > 120) return 'shape';
     if (!o && Object.keys(r).some(function (f) { return ['id', 'name', 'gid', 'kind'].indexOf(f) === -1; })) return 'shape';
@@ -21275,6 +21279,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
     var ssw = k === K_USERS && newVal != null ? (superSelfWhy(A, newVal, curVal, ctx) || usersA1Of(newVal, curVal) || null) : null;
     /* F01 · الأقسام وAD-7: شكلُ سجلّي الهيكل (المضافُ والمتغيّرُ وحده — 018 deptShapeWhy/nodeShapeWhy) · والمقبولُ منهما يُعرَّف لبقية الحفظة */
     if (!ssw && k === K_DEPTS && newVal != null) ssw = deptShapeWhy(A, newVal, curVal, !!(ctx && ctx.rst)) || null;
+    if (!ssw && k === K_DEPTS && newVal == null && !(ctx && ctx.rst)) ssw = 'unit-delete-route';   /* RISHAD266: حذفُ سجلّ الوحدات كلِّه ليس طريقَ حذف وحدات */
     if (!ssw && k === K_GDEPTS && newVal != null) ssw = nodeShapeWhy(A, newVal, curVal, !!(ctx && ctx.rst)) || null;
     if (!ssw && newVal != null) { if (k === K_DEPTS) unitBatchAdd(A, newVal); else if (k === K_GDEPTS) nodeBatchAdd(A, newVal); }
     return ssw ? { ok: false, why: ssw } : { ok: true };
@@ -23744,6 +23749,7 @@ function tkKeepOff(A, k, d, rst, imp, X) {
    نافذة تُسجَّل بفاعلها ووقتها وفرقها. */
 async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ مهامٍ في الخادم يبني من القيمة الحالية · { quiet } الرفضُ لا يُسجَّل هنا (يحكم المستدعي) — F-10 */
   var planOnly=!!(opt && opt.__restorePlan===RESTORE_INTERNAL_TOKEN);
+  if (planOnly && opt.__serverDepartmentWipes) A.__udel = 1;   /* RISHAD266: حفظةُ الحذف الذرّيّ نفسُه (019e rsWipeRoute · رمزٌ داخليّ) — الطريقُ الوحيد لحذف وحدة (018 deptShapeWhy) */
  if(!planOnly&&!(opt&&opt.__cuPass===RESTORE_INTERNAL_TOKEN)&&rsSaveNeedsAtomic(body))return await rsSaveCommit(env,A,body,ip,opt);
   var set = (body && body.set) || {}, del = (body && body.del) || [], base = (body && body.base) || {};
   /* Retired document key: reject the entire mixed batch before any mutation. In
@@ -25098,6 +25104,7 @@ function canWriteEnf(A, k, newVal, curVal, ctx) {
     if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (smw) return enfNo(smw); unitBatchAdd(A, newVal); return enfOk([]); }
     if (u.role !== 'super') return enfNo('super');
     if (P.name === K_DEPTS && newVal != null) { var dsE = deptShapeWhy(A, newVal, curVal, !!X.restore); if (dsE) return enfNo(dsE); unitBatchAdd(A, newVal); }
+    if (P.name === K_DEPTS && newVal == null && !X.restore) return enfNo('unit-delete-route');   /* RISHAD266: حذفُ سجلّ الوحدات كلِّه ليس طريقَ حذف وحدات */
     if (P.name === K_GDEPTS && newVal != null) { var nsE = nodeShapeWhy(A, newVal, curVal, !!X.restore); if (nsE) return enfNo(nsE); nodeBatchAdd(A, newVal); }
     var gk = enfIx().byRes[P.name] || [], gsys = gk.filter(function (x) { return x.indexOf('sys.') === 0; });
     return enfOk(gsys.length ? [gsys[0]] : ['sys.modules.toggle']);

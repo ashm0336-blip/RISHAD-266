@@ -32,6 +32,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
     var ssw = k === K_USERS && newVal != null ? (superSelfWhy(A, newVal, curVal, ctx) || usersA1Of(newVal, curVal) || null) : null;
     /* F01 · الأقسام وAD-7: شكلُ سجلّي الهيكل (المضافُ والمتغيّرُ وحده — 018 deptShapeWhy/nodeShapeWhy) · والمقبولُ منهما يُعرَّف لبقية الحفظة */
     if (!ssw && k === K_DEPTS && newVal != null) ssw = deptShapeWhy(A, newVal, curVal, !!(ctx && ctx.rst)) || null;
+    if (!ssw && k === K_DEPTS && newVal == null && !(ctx && ctx.rst)) ssw = 'unit-delete-route';   /* RISHAD266: حذفُ سجلّ الوحدات كلِّه ليس طريقَ حذف وحدات */
     if (!ssw && k === K_GDEPTS && newVal != null) ssw = nodeShapeWhy(A, newVal, curVal, !!(ctx && ctx.rst)) || null;
     if (!ssw && newVal != null) { if (k === K_DEPTS) unitBatchAdd(A, newVal); else if (k === K_GDEPTS) nodeBatchAdd(A, newVal); }
     return ssw ? { ok: false, why: ssw } : { ok: true };

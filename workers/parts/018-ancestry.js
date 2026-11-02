@@ -128,6 +128,9 @@ function deptShapeWhy(A, newJson, curJson, rst) {
   var S = shapeDiff(b, a); if (S.dup) return 'dept-shape';
   var U = shapeFirst(b), N = shapeFirst(shapeList(A, K_GDEPTS));
   var isSec = function (x) { return isObj(x) && x.kind === DEPT_SEC_KIND; };
+  /* RISHAD266 (قرار المالك): لا تختفي وحدةٌ بحفظٍ عاديّ — الحذفُ ذرّيٌّ في الخادم (/api/admin/dept-delete لمدير المنصة: ينظّف الحسابات والمفاتيح ويرفض
+     إدارةً لها أقسام). وإدارةٌ لها أقسامٌ في السجل المخزَّن لا تُحذف ولو حُذفت أقسامُها معها في الحفظة نفسِها (لا حذفَ متتابع). الاستعادةُ الكاملة لقطةٌ لا حذف */
+  if (!rst && !A.__udel) for (var oq in S.old) if (!U[oq]) return (a || []).some(function (x) { return isSec(x) && shapeRef(x, 'gid') === oq; }) ? 'dept-has-sections' : 'unit-delete-route';
   for (i = 0; i < S.ch.length; i++) {
     r = S.ch[i];
     var id = String(r.id == null ? '' : r.id), g = shapeRef(r, 'gid');
@@ -179,7 +182,8 @@ function deptSecMgrWhy(A, newJson, curJson) {
     if (r.kind !== DEPT_SEC_KIND) return 'super';
     var g = shapeRef(r, 'gid'); if (!g || isNodeId(A, g)) return 'dept-shape';
     var p = (A.depts || []).filter(function (x) { return isObj(x) && String(x.id) === g; })[0];
-    if (!p || p.kind === DEPT_SEC_KIND || !isMgrOf(A, g)) return 'mgr';
+    /* RISHAD266 (قرار المالك): القسمُ يضيفه مديرُ إدارته الأم نفسُها (حسابُ الإدارة أو مديرٌ بشارةٍ فيها) أو مديرُ المنصة — لا مديرُ عقدةٍ أعلى (gm) ولا مديرُ قسم */
+    if (!p || p.kind === DEPT_SEC_KIND || String(A.u.deptId || '') !== g || !(A.u.role === 'dept' || (A.u.role === 'staff' && A.u.mgr))) return 'mgr';
     if (o && (o.kind !== DEPT_SEC_KIND || shapeRef(o, 'gid') !== g || !eqExcept(o, r, ['name']))) return 'super';
     if (typeof r.name !== 'string' || !r.name.trim() || r.name.length > 120) return 'shape';
     if (!o && Object.keys(r).some(function (f) { return ['id', 'name', 'gid', 'kind'].indexOf(f) === -1; })) return 'shape';

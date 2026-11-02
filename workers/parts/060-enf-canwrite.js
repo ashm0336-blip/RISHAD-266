@@ -23,6 +23,7 @@ function canWriteEnf(A, k, newVal, curVal, ctx) {
     if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (smw) return enfNo(smw); unitBatchAdd(A, newVal); return enfOk([]); }
     if (u.role !== 'super') return enfNo('super');
     if (P.name === K_DEPTS && newVal != null) { var dsE = deptShapeWhy(A, newVal, curVal, !!X.restore); if (dsE) return enfNo(dsE); unitBatchAdd(A, newVal); }
+    if (P.name === K_DEPTS && newVal == null && !X.restore) return enfNo('unit-delete-route');   /* RISHAD266: حذفُ سجلّ الوحدات كلِّه ليس طريقَ حذف وحدات */
     if (P.name === K_GDEPTS && newVal != null) { var nsE = nodeShapeWhy(A, newVal, curVal, !!X.restore); if (nsE) return enfNo(nsE); nodeBatchAdd(A, newVal); }
     var gk = enfIx().byRes[P.name] || [], gsys = gk.filter(function (x) { return x.indexOf('sys.') === 0; });
     return enfOk(gsys.length ? [gsys[0]] : ['sys.modules.toggle']);
