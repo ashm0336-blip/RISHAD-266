@@ -294,3 +294,31 @@ test('summary counters preserve audience and read state while management history
   assert.equal(new Set([...page.broadcasts, ...next.broadcasts].map(item => item.id)).size, 31);
   assert.equal(ok(await W.get('employee1', { manage: '1' })).broadcasts, undefined, 'A staff query cannot activate super management');
 });
+
+/* RISHAD-266 (قرار المالك على d7a0cbc): security-poll تشغيلُ نظامٍ محدَّد عند فتح صفحة مدير النظام — لا حفظُ أعمال.
+   الدليلُ هنا: (1) غيرُ مدير النظام يُرفض 403 ولا يتغيّر شيء · (2) تشغيلُه لا يمسّ بياناتِ الأعمال (kv · ops_* · مراجعاتُ غير التنبيهات)،
+   ويقتصر على جداول التنبيهات ونقطة تفتيشها · (3) إعادتُه لا تكرّر التنبيه (والتكرارُ عند التزامن يغطّيه الاختبار أعلاه) */
+test('security-poll: only the system administrator runs it; it touches notification tables and its checkpoint only; a repeat adds nothing', async () => {
+  const W = await world();
+  const all = () => Object.fromEntries(W.DB.q("SELECT name FROM sqlite_master WHERE type='table'").map(t => t.name)
+    .filter(t => !t.startsWith('sqlite_') && !['sec', 'sess', 'guard'].includes(t)).map(t => [t, JSON.stringify(W.DB.q('SELECT * FROM "' + t + '"'))]));
+  await W.DB.prepare('INSERT INTO sec(ts,uid,un,act,target,detail,ip) VALUES(?1,?2,?3,?4,?5,?6,?7)')
+    .bind(Date.now() - 1000, IDS.manager1, 'TEST_ONLY', 'policy_change', 'TEST_ONLY', 'TEST_ONLY poll evidence', 'TEST_ONLY').run();
+  const s0 = all();
+  for (const who of ['employee1', 'manager1', 'gm']) {
+    const r = await W.act(who, { op: 'security-poll' });
+    assert.equal(r.status, 403, who + ' must not run the security poll');
+  }
+  assert.deepEqual(all(), s0, 'refused polls change nothing');
+  ok(await W.act('super', { op: 'security-poll' }));
+  const s1 = all(), changed = Object.keys(s1).filter(t => s1[t] !== s0[t]);
+  assert.ok(changed.length > 0, 'the control poll does work (a new security event is pending)');
+  const allowed = (t) => /^notification_/.test(t) || ['revs', 'meta', 'aud'].includes(t);
+  assert.deepEqual(changed.filter(t => !allowed(t)), [], 'only notification tables and their bookkeeping change: ' + changed.join(','));
+  const added = (t) => { const b = JSON.parse(s0[t]).map(x => JSON.stringify(x)); return JSON.parse(s1[t]).filter(x => !b.includes(JSON.stringify(x))); };
+  assert.ok(added('revs').every(r => r.k === 'bassam_notifications_domain_v1'), 'only the notification-domain revision moves: ' + JSON.stringify(added('revs')));
+  assert.ok(added('meta').every(r => r.k === 'rev'), 'meta: only the global revision counter: ' + JSON.stringify(added('meta')));
+  assert.ok(added('aud').length > 0 && added('aud').every(r => r.k === 'bassam_notifications_domain_v1'), 'audit: only the notification-domain event: ' + JSON.stringify(added('aud')).slice(0, 300));
+  ok(await W.act('super', { op: 'security-poll' }));
+  assert.deepEqual(all(), s1, 'a repeated poll with nothing new changes nothing (no duplicate notification)');
+});
