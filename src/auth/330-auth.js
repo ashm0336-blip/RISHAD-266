@@ -284,9 +284,11 @@
     if (!u) return { ok:false, err:'انتهت الجلسة — سجّل الدخول مجدداً' };
     /* مدير العقدة يفتح حسابات موظفي إداراته وهو واقف فيها — كمدير الإدارة.
        R190: كان «الابنَ المباشر» وحده (groupIdOf === gid)، فيُرفض مدير القطاع في كل إدارات فرعه — صار الفرعَ كلَّه بنطاق الحارس */
-    if (u.role === 'gm') { var cdG = curDept(); return gmDepts(u.gid).some(function(d){ return d.id === cdG; }) ? null : { ok:false, err:'هذه الإدارة خارج نطاقك' }; }
+    if (u.role === 'gm') { var cdG = curDept(); return gmDepts(u.gid).some(function(d){ return d.id === cdG; }) ? null : { ok:false, err:(unitWord(cdG) === 'قسم' ? 'هذا القسم' : 'هذه الإدارة') + ' خارج نطاقك' }; }
     return (u.role === 'super' || u.role === 'dept' || (u.role === 'staff' && u.mgr)) ? null : { ok:false, err:'صلاحية غير كافية — فتح الحسابات لمدير الإدارة' }; }
   function curDept(){ try { return D.active(); } catch(e){ return ''; } }
+  /* F01: كلمةُ الوحدة في رسائل الحسابات — «قسم» للقسم و«إدارة» لغيره */
+  function unitWord(did){ try { return (D.isSection && D.isSection(did)) ? 'قسم' : 'إدارة'; } catch(e){ return 'إدارة'; } }
   function staffRec(did, ekey){
     /* KIVO_265 · أداء: كانت تمسح الجدول لكل صفٍّ في صفحة الموظفين (staffIsMgr/staffStatus) — فهرسٌ (uIx.st) بالإدارة ثم المفتاح */
     var sk = uIx().st[String(did)]; var r = sk ? sk[String(ekey)] : null;
@@ -520,7 +522,7 @@
   function setDeptManagerDis(did, on, uid){
     var g = requireSuper(); if (g) return g;
     var rec = uid ? (deptManagers(did).filter(function(x){ return x.id === uid; })[0] || null) : deptManager(did);
-    if (!rec) return { ok:false, err:'لا يوجد مدير معيَّن لهذه الإدارة' };
+    if (!rec) return { ok:false, err:'لا يوجد مدير معيَّن ' + (unitWord(did) === 'قسم' ? 'لهذا القسم' : 'لهذه الإدارة') };
     writeUsers((rawUsers()||[]).map(function(x){ return x.id === rec.id
       ? Object.assign({}, x, { dis: on ? 1 : 0 }) : x; }));
     return { ok:true };

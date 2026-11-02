@@ -344,6 +344,45 @@
       var p = reg().filter(function(x){ return x.id === d.gid; })[0];
       return (p && p.kind !== self.NODE_KIND_SEC) ? p.id : '';
     },
+    /* «N إدارة · M قسم» لقائمة معرّفاتٍ أو سجلّات وحدات — والأقسامُ تُذكر حين توجد فقط (440 BassamCount) */
+    unitCountTxt: function(L){
+      var self = this, A = Array.isArray(L) ? L : [], C = KIVO.BassamCount;
+      var s = A.filter(function(x){ return x && (typeof x === 'string' ? self.isSection(x) : x.kind === self.NODE_KIND_SEC); }).length;
+      var f = function(n, w){ return C ? C(n, w) : n + ' ' + w; };
+      return f(A.length - s, 'إدارة') + (s ? ' · ' + f(s, 'قسم') : '');
+    },
+    /* أحداثُ سجلّ الوحدات للتنبيهات (442): المضافُ والمحذوفُ بنوعه — القسمُ «أُنشئ قسم … تحت «إدارته»» · وحذفُه «قسم» */
+    unitEvents: function(o, n, by){
+      var self = this; o = Array.isArray(o) ? o : []; n = Array.isArray(n) ? n : [];
+      var io = {}, inn = {}, out = [];
+      o.forEach(function(x){ if (x && x.id) io[x.id] = x; }); n.forEach(function(x){ if (x && x.id) inn[x.id] = x; });
+      var pn = function(x, L){ var p = L.filter(function(y){ return y && y.id === x.gid; })[0]; return p ? p.name : ''; };
+      n.forEach(function(x){ if (!x || !x.id || io[x.id]) return; var s = x.kind === self.NODE_KIND_SEC, p = s ? pn(x, n) : '';
+        out.push({ t: 'sy_dept', vars: { 'الفعل': s ? 'أُنشئ قسم' : 'أُنشئت إدارة', 'الإدارة': x.name, 'التفصيل': p ? 'تحت «' + p + '»' : '' } }); });
+      o.forEach(function(x){ if (!x || !x.id || inn[x.id]) return;
+        out.push({ t: 'sy_ddel', vars: { 'النوع': x.kind === self.NODE_KIND_SEC ? 'قسم' : 'إدارة', 'الإدارة': x.name, 'المُعدّل': by || '' } }); });
+      return out;
+    },
+    /* «قسم» أو «إدارة» بنوع الوحدة · و«القسم»/«الإدارة» معرَّفاً */
+    unitWord: function(id){ return this.isSection(id) ? 'قسم' : 'إدارة'; },
+    unitAl: function(id){ return this.isSection(id) ? 'القسم' : 'الإدارة'; },
+    /* اسمُ الوحدة للترويسة والمبدّل: اسمُها أولاً ثم إدارتُها الأم للقسم («قسم س · إدارة ص») — فيُقصّ من آخره على الجوال لا اسمُ الوحدة */
+    unitLabel: function(id){
+      var d = id ? reg().filter(function(x){ return x.id === id; })[0] : null; if (!d) return '';
+      var pd = this.parentDeptOf(id), p = pd ? reg().filter(function(x){ return x.id === pd; })[0] : null;
+      return p ? d.name + ' · ' + p.name : d.name;
+    },
+    /* الوحداتُ التي يبدّل إليها المستخدم في المبدّل (والخادمُ يحكم — 018 deptInScope):
+       مديرُ النظام كلُّها · مديرُ العقدة ما تحت عقدته · مديرُ الإدارة (حسابُها أو حاملُ الشارة) إدارتُه وأقسامُها · ومديرُ القسم وموظفوه وحدتُهم وحدها */
+    switchUnits: function(u){
+      if (!u) return [];
+      if (u.role === 'super') return reg().map(function(d){ return d.id; });
+      if (u.role === 'gm') { var self = this; return u.gid && this.groups().some(function(g){ return g && g.id === u.gid; }) ? this.deptsUnder(u.gid).filter(function(x){ return self.has(x); }) : []; }
+      if (!u.deptId || !this.has(u.deptId)) return [];
+      var out = [u.deptId];
+      if (u.role === 'dept' || (u.role === 'staff' && u.mgr)) this.sectionsOf(u.deptId).forEach(function(s){ out.push(s.id); });
+      return out;
+    },
     sectionsOf: function(deptId){
       var self = this;
       if (!deptId || this.isSection(deptId)) return [];
@@ -527,8 +566,11 @@
         return { ok: false, err: 'يوجد في الهيكل ما يحمل هذا الاسم' };
       var id = this.freshId('s');
       this.save(reg().concat([{ id: id, name: nm, gid: did, kind: this.NODE_KIND_SEC }]));
-      try { var P = KIVO.BassamPerm; if (P && P.seedCapFrom) P.seedCapFrom(id, did); } catch(e){}
-      return { ok: true, id: id };
+      /* السقف: لقطةٌ من سقف الإدارة الأم الفعليّ (seedSectionCap) — ولو لم يكن لها سجلٌّ خاصّ وكان لأسلافها؛ cap: 'snap' · 'kept' · 'open' · 'none' */
+      var cap = 'none';
+      try { var P = KIVO.BassamPerm, sd = P && P.seedSectionCap ? P.seedSectionCap(id, did) : (P && P.seedCapFrom ? P.seedCapFrom(id, did) : null);
+        cap = !sd || !sd.ok ? 'none' : sd.kept ? 'kept' : sd.open ? 'open' : 'snap'; } catch(e){ cap = 'none'; }
+      return { ok: true, id: id, cap: cap };
     },
     /* ══ KIVO_265 · طلبُ المالك (2026-10-19): السحبُ والإفلات في الشجرة ═══════════
        نقلُ عقدةٍ (فوقيةٍ أو إدارة) بالنسبة إلى عقدةٍ أخرى: inside = تحتها (تصير أباها) ·

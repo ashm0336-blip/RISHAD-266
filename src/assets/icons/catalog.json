@@ -2660,7 +2660,7 @@
   "i-de4e6997": {
    "body": "<path d=\"M5 12h14\"></path><path d=\"M12 5v14\"></path>",
    "uses": {
-    "modules/admin/view.html": 3,
+    "modules/admin/view.html": 4,
     "modules/daily/view.html": 1,
     "modules/employees/view.html": 8,
     "modules/plan/view.html": 3,

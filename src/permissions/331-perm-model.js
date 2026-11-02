@@ -300,6 +300,19 @@
     return { ok:true, n: o.caps[id].length };
   }
 
+  /* F01 · سقفُ القسم الجديد: لقطةٌ من سقف الإدارة الأم الفعليّ (deptCap — سجلُّها إن كان لها، وإلا ما ترثه من أسلافها) مرةً واحدة
+     (لا سجلَّ للقسم قبلُ) — فلا يتجاوز سقفَ إدارته ولا يُبدَّل بنمطٍ آخر. لا سقفَ في السلسلة كلِّها ⇒ لا سجلّ (الغيابُ لا يقيّد).
+     الخادمُ يحكم: مديرُ الإدارة الأم يبذره مرةً جزءاً من سقف إدارته (018 permsSecSeedOk) */
+  function seedSectionCap(id, did){
+    var D = KIVO.BassamDepts;
+    if (!id || !did || !D || !D.parentDeptOf || D.parentDeptOf(id) !== did) return { ok:false, err:'ليس قسماً لهذه الإدارة' };
+    var o = permStore();
+    if (Array.isArray(o.caps[id])) return { ok:true, kept:true };
+    if (!capSetAnywhere(did)) return { ok:true, open:true };
+    o.caps[id] = deptCap(did).slice();
+    permSave(o);
+    return { ok:true, n: o.caps[id].length, own: hasCap(did) };
+  }
   /* Irshad uses its typed API. Existing capability and grant values are preserved; no legacy JSON probe or automatic grant. */
   /* ═══ نظام المضبوطات — يُفعَّل مرة واحدة لكل إدارة تملك نظام الاسترشاد (شقيقه في القائمة) — ومدير النظام يعدّله من الإدارات كالمعتاد ═══ */
   (function migrateSeizedCap(){
@@ -945,7 +958,7 @@
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
   I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.p24TrimGrants = p24TrimGrants; I.patternApply = patternApply; I.capOwnOf = capOwnOf; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
   I.patternMeta = patternMeta; I.patternSeed = patternSeed; I.patternSet = patternSet; I.patterns = patterns; I.permSave = permSave;
-  I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.setDeptCap = setDeptCap;
+  I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.seedSectionCap = seedSectionCap; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;
   I.setEmpTpl = setEmpTpl; I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;
   I.visiblePages = visiblePages;

@@ -798,6 +798,9 @@
           <sc-if value="{{dhIsNode}}" hint-placeholder-val="{{ false }}">
           <button class="p" onClick="{{dhAdd}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-de4e6997"></svg></i>إضافة تحتها</button>
           </sc-if>
+          <sc-if value="{{dhSecAddOn}}" hint-placeholder-val="{{ false }}">
+          <button class="p" onClick="{{dhSecAdd}}" title="قسمٌ تحت هذه الإدارة: له مديره وموظفوه وسقفه وبياناته"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-de4e6997"></svg></i>إضافة قسم</button>
+          </sc-if>
                     <sc-if value="{{dhNever}}" hint-placeholder-val="{{ false }}">
           <button onClick="{{dhMgr}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-dd12348b"></svg></i>تعيين مدير</button>
           </sc-if>

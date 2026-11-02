@@ -196,7 +196,7 @@
       </div>
       <sc-if value="{{deptOpen}}" hint-placeholder-val="{{ false }}">
       <div class="s-deptdd">
-        <div class="s-deptddh">الإدارة النشطة</div>
+        <div class="s-deptddh">{{deptDdHead}}</div>
         <sc-for list="{{deptTree}}" as="g" hint-placeholder-count="2">
         <div style="min-width:0">
           <sc-if value="{{g.headOn}}" hint-placeholder-val="{{ true }}">
@@ -218,9 +218,9 @@
       </div>
       </sc-if>
       <!-- «مؤشرات الإدارة» أول القائمة: تُقرأ المؤشرات كلها من مكانٍ واحد -->
-      <a class="{{nKpis}}" role="link" tabindex="0" sc-camel-on-click="{{goKpis}}" title="{{tKpis}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f1f8422f"></svg></span><span class="nlbl">مؤشرات الإدارة</span></a>
+      <a class="{{nKpis}}" role="link" tabindex="0" sc-camel-on-click="{{goKpis}}" title="{{tKpis}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f1f8422f"></svg></span><span class="nlbl">{{lKpis}}</span></a>
       <a class="{{nDstats}}" role="link" tabindex="0" sc-camel-on-click="{{goDstats}}" title="{{tDstats}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f90250b8"></svg></span><span class="nlbl">الإحصائيات اليومية</span></a>
-      <a class="{{nEmployees}}" role="link" tabindex="0" sc-camel-on-click="{{goEmployees}}" title="{{tEmployees}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-88b8240d"></svg></span><span class="nlbl">موظفو الإدارة</span></a>
+      <a class="{{nEmployees}}" role="link" tabindex="0" sc-camel-on-click="{{goEmployees}}" title="{{tEmployees}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-88b8240d"></svg></span><span class="nlbl">{{lEmployees}}</span></a>
       <a class="{{nPlanning}}" role="link" tabindex="0" sc-camel-on-click="{{goPlanning}}" title="{{tPlanning}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d81dfaae"></svg></span><span class="nlbl">الخطة التشغيلية</span></a>
       <a class="{{nDaily}}" role="link" tabindex="0" sc-camel-on-click="{{goDaily}}" title="{{tDaily}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9a375c7e"></svg></span><span class="nlbl">المتابعة اليومية</span></a>
       <a class="{{nIrshad}}" role="link" tabindex="0" sc-camel-on-click="{{goIrshad}}" title="{{tIrshad}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-8d0f2597"></svg></span><span class="nlbl">نظام الاسترشاد</span></a>

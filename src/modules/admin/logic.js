@@ -7792,7 +7792,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   dhMgrNo: !mg,
                   dhCapLbl: hasCap ? (cap ? "السقف " + cap + " من " + KIVO.BassamCount(capAll, "صفحة", "g") + "" : "السقف فارغ — لا صفحة مفعّلة") : cap ? (cap < capAll ? "يرث سقف الأصل " + cap + " من " + KIVO.BassamCount(capAll, "صفحة", "g") : "السقف مفتوح — لم يُضبط") : "السقف فارغ — بسقف أصلٍ فوقها",
                   dhCapEmpty: !cap,
-                  dhUsersLbl: n ? KIVO.BassamCount(kids, "إدارة") + " تحتها" : KIVO.BassamCount(users, "مستخدم") + "",
+                  dhUsersLbl: n ? (t.unitCountTxt ? t.unitCountTxt(t.deptsUnder(o) || []) : KIVO.BassamCount(kids, "إدارة")) + " تحتها" : KIVO.BassamCount(users, "مستخدم") + "",
+                  /* F01: «إضافة قسم» للإدارة (لا للقسم: لا شيءَ تحت قسم) — نافذةُ الإضافة بنوع «قسم» وأبٍ هو الإدارة (sectionAdd) */
+                  dhSecAddOn: !n && !(t.isSection && t.isSection(o)),
+                  dhSecAdd: () => {
+                    const e = { ...(this.state.admGrpFlip || {}) };
+                    (delete e[o],
+                      this.setState({ admGrpFlip: e, ndOpen: !0, ndPid: o, ndName: "", ndKind: t.NODE_KIND_SEC || "قسم", ndNewKind: "", ndMsg: "", dlShut: !1 }));
+                  },
                   dhAdd: () => {
                     const e = { ...(this.state.admGrpFlip || {}) };
                     (delete e[o],
@@ -7945,14 +7952,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   dhMenuClose: () => this.setState({ dhMenu: !1 }),
                   dhDelTip: (n ? e.admGrpArm === o : !!(e.admArm && "dept" === e.admArm.t && e.admArm.id === o))
                     ? "اضغط مرة أخرى لتأكيد الحذف النهائي"
-                    : "حذف الإدارة — يمسح الإدارة وكل بياناتها وحساباتها نهائياً",
+                    : n ? "حذف العقدة" : t.isSection && t.isSection(o) ? "حذف القسم — يمسح القسم وكل بياناته وحساباته نهائياً" : (t.deptDelWhy && t.deptDelWhy(o)) || "حذف الإدارة — يمسح الإدارة وكل بياناتها وحساباتها نهائياً",
                   dhDelOn: n ? !kids : t.list().length > 1,
                   dhDelCls: (n ? e.admGrpArm === o : !!(e.admArm && "dept" === e.admArm.t && e.admArm.id === o)) ? "arm" : "",
                   dhDelLbl: (n ? e.admGrpArm === o : !!(e.admArm && "dept" === e.admArm.t && e.admArm.id === o))
                     ? "اضغط مرة أخرى للتأكيد"
                     : n
                       ? "حذف العقدة"
-                      : "حذف الإدارة",
+                      : t.isSection && t.isSection(o) ? "حذف القسم" : "حذف الإدارة",
                   dhDelArm: n ? e.admGrpArm === o : !!(e.admArm && "dept" === e.admArm.t && e.admArm.id === o),
                   dhDel: () => {
                     if (n) {
@@ -7974,11 +7981,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       } catch (t) {}
                       const a = t.list()[0];
                       (this.setState({ sysSel: a ? a.id : null, deptMsg: "✓ حُذفت «" + p.name + "»" }), this.bsAck("حُذفت العقدة", "ok"));
-                    } else this.deptDel(p);
+                    } else {
+                      /* F01: إدارةٌ لها أقسام لا تُحذف — والخادمُ يرفضها (dept-has-sections) */
+                      const sw = t.deptDelWhy ? t.deptDelWhy(o) : "";
+                      if (sw) return void this.bsToast(sw, "warn");
+                      this.deptDel(p);
+                    }
                   },
                 };
               })(),
-              selKindLbl: n ? p.kind || "عقدة" : "إدارة",
+              selKindLbl: n ? p.kind || "عقدة" : t.isSection && t.isSection(o) ? "قسم · " + ((t.nodeOf(t.parentDeptOf(o)) || {}).name || "") : "إدارة",
               selGid: n ? t.parentIdOf(o) || "" : t.groupIdOf(o),
               selGidStyle:
                 "height:34px;max-width:230px;padding:0 10px;border-radius:9px;border:1px solid var(--bd-a185151810p34);background:var(--bg-a185151810p06);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;color:" +
@@ -8030,7 +8042,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       : void this.setState({ deptMsg2: (e && e.err) || "تعذّر" });
                   }
                   a.some((t) => t.id !== o && t.name === s)
-                    ? this.setState({ deptMsg2: "الاسم مستخدم لإدارة أخرى" })
+                    ? this.setState({ deptMsg2: "الاسم مستخدم لإدارة أو قسم آخر" })
                     : (t.save(a.map((t) => (t.id === o ? { ...t, name: s } : t))), this.setState({ ["dnm_" + o]: void 0, deptMsg2: "" }));
                 } else this.setState({ ["dnm_" + o]: void 0 });
               },
@@ -8045,7 +8057,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               tabScopeStyle: M("scope" === l),
               ...this.scopeVals(o, n, l),   /* KIVO_262 · سقفُ النطاق */
               tabEmpsShow: !0,
-              tabEmpsLbl: n ? "حسابات " + this._gmKind(o) : "حسابات الإدارة",
+              tabEmpsLbl: n ? "حسابات " + this._gmKind(o) : t.isSection && t.isSection(o) ? "حسابات القسم" : "حسابات الإدارة",
               dhNever: !1,
               empQ: e.empQ || "",
               setEmpQ: (t) => this.setState({ empQ: t.target.value, usrPage: 1 }),

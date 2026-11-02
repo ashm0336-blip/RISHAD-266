@@ -899,9 +899,12 @@ class Component extends DCLogic {
     // إلى وجهتك بنقرتين ويُكتب لك مسارٌ من مستويين لمكانٍ واحد. حُذف الغلاف وصارت
     // الصفحات الثلاث عناصر مستقلة في القائمة الجانبية بترتيب سير العمل نفسه.
     const inPlanning = ["employees","staffing","plan","daily","tasks","irshad","seized","award"].includes(a);
-    const labels = { kpis:"مؤشرات الإدارة", employees:"موظفو الإدارة", staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مدير النظام" };
+    /* F01: اسمُ الصفحة بنوع الوحدة النشطة — «موظفو القسم» · «مؤشرات القسم» حين تكون قسماً */
+    const _ua = (() => { try { const D = KIVO.BassamDepts; return D && D.unitAl ? D.unitAl(D.active()) : "الإدارة"; } catch (e) { return "الإدارة"; } })();
+    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مدير النظام" };
     return {
       sidebarOpen: open, sidebarClosed: !open,
+      lKpis: labels.kpis, lEmployees: labels.employees, deptDdHead: _ua === "القسم" ? "الوحدة النشطة" : "الإدارة النشطة",
       sbClass: "bsb" + (open ? "" : " cx"),
       headerStyle: "position:fixed;top:0;left:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:81px;background:var(--bg-header);color:var(--text-primary);border-bottom:1px solid var(--border-subtle);font-family:'Cairo',sans-serif;transition:right .25s ease;right:" + (this.state.sidebarOpen ? 260 : 66) + "px",
       // كان: غياب المستخدم يجعلها true فيظهر عنصر «مدير النظام» بعد انقضاء الجلسة
@@ -938,7 +941,7 @@ class Component extends DCLogic {
         const _kpiAny = (() => { try { const P = KIVO.BassamPerm; if (!P) return true;
           return _kpiLeaves.some(x => P.kpiPanelOk ? P.kpiPanelOk(x[0], x[1]) : (P.canSub ? P.canSub(x[0], x[1], "view") : true)); } catch (e) { return false; } })();
         return {
-          nKpis: "n" + (a === "kpis" ? " on" : "") + (_kpiAny ? "" : " gone"), tKpis: "مؤشرات الإدارة",
+          nKpis: "n" + (a === "kpis" ? " on" : "") + (_kpiAny ? "" : " gone"), tKpis: labels.kpis,
           nDstats: cls("dstats", "dstats"), tDstats: tip("dstats"),
           nEmployees: cls("employees", "emps"), tEmployees: tip("emps"),
           nStaffing: cls("staffing", "staff"), tStaffing: tip("staff"),
@@ -975,11 +978,15 @@ class Component extends DCLogic {
         if (!D) return { deptName: "إدارة", deptGroupName: "", deptOpen: false, deptList: [], deptTree: [], deptGrpShow: false, deptGrpName: "", deptGrpStyle: "", deptToggle: () => {}, deptChev: "", deptBtnStyle: "display:none" };
         const open = !!this.state.deptOpen;
         const act = D.active();
-        const scope = D.context?.(), deptLabel = D.activeName() || (scope?.state === "empty" ? "لا توجد إدارة" : scope?.state === "error" ? "تعذّر قراءة الإدارات" : "اختر إدارة");
+        /* F01: اسمُ الوحدة النشطة أولاً ثم إدارتُها الأم للقسم («قسم س · إدارة ص» — 320 unitLabel) فيُقصّ من آخره على الجوال لا اسمُ الوحدة */
+        const scope = D.context?.(), deptLabel = (D.unitLabel ? D.unitLabel(act) : "") || D.activeName() || (scope?.state === "empty" ? "لا توجد إدارة" : scope?.state === "error" ? "تعذّر قراءة الإدارات" : "اختر إدارة");
         const isSuper0 = !(KIVO.BassamAuth && KIVO.BassamAuth.user()) || KIVO.BassamAuth.isSuper();
         const gmU = (KIVO.BassamAuth && KIVO.BassamAuth.user() && KIVO.BassamAuth.user().role === "gm") ? KIVO.BassamAuth.user() : null;
-        /* مدير الإدارة العامة يبدّل بين إدارات مجموعته فقط — كالمشرف داخل نطاقه */
-        const isSuper = isSuper0 || !!gmU;
+        /* مدير الإدارة العامة يبدّل بين إدارات مجموعته فقط — كالمشرف داخل نطاقه.
+           F01: ومديرُ الإدارة (حسابُها أو حاملُ الشارة) بين إدارته وأقسامها (320 switchUnits — والخادمُ يحكم 018 secMgrOf) */
+        const meU = KIVO.BassamAuth && KIVO.BassamAuth.user() ? KIVO.BassamAuth.user() : null;
+        const secU = !isSuper0 && !gmU && meU && D.switchUnits ? D.switchUnits(meU) : [];
+        const isSuper = isSuper0 || !!gmU || secU.length > 1;
         return {
           authName: (KIVO.BassamAuth && KIVO.BassamAuth.user() && KIVO.BassamAuth.user().name) || "",
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
@@ -998,7 +1005,7 @@ class Component extends DCLogic {
           /* R191 (أخٌ): تلميحُ زرّ الإدارة بمسارها في الشجرة كلِّه (الإدارة العليا ← القطاع ← الإدارة العامة ← الإدارة) — كان المجموعةَ المباشرة وحدها */
           sbDeptTitle: (() => { let pa = []; try { pa = (D.ancestorsOf(act) || []).slice().reverse().map(x => { const n = D.nodeOf(x); return n && n.name; }).filter(Boolean); } catch (e) { pa = []; }
             if (!pa.length && D.activeGroupName()) pa = [D.activeGroupName()];
-            return pa.concat([deptLabel]).join(" ← ") + (isSuper && act ? "  ·  انقر لتبديل الإدارة" : ""); })(),
+            return pa.concat([deptLabel]).join(" ← ") + (isSuper && act ? "  ·  انقر لتبديل " + (D.unitAl ? D.unitAl(act) : "الإدارة") : ""); })(),
           sbDeptBtnStyle: isSuper ? "" : "pointer-events:none",
           deptBtnStyle: (isSuper ? "" : "pointer-events:none;") + "height:34px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border-radius:10px;font-size:12px;font-weight:600;font-family:'Cairo',sans-serif;cursor:pointer;background:var(--bg-a185151810p08);color:var(--fg-x9a7e40);border:1px solid " + (open ? "#b99751;box-shadow:0 0 0 2px rgba(185,151,81,0.15)" : "rgba(185,151,81,0.35)"),
           deptChev: (isSuper ? "" : "display:none;") + "transition:transform .2s;flex-shrink:0;opacity:.6;" + (open ? "transform:rotate(180deg)" : ""),
@@ -1015,13 +1022,16 @@ class Component extends DCLogic {
              والعقدةُ التي ليس تحتها إدارةٌ لا تُعرض. كان: مستويان (الإدارةُ العامة وإداراتُها) — فلا تظهر الإدارةُ العليا ولا القطاعات. */
           deptTree: (() => {
             let rail = []; try { rail = D.railTree() || []; } catch (e) { rail = []; }
+            /* F01: مديرُ الإدارة — إدارتُه رأساً وأقسامُها تحتها (لا شجرةَ عقدٍ يملكها) */
+            if (secU.length > 1) { const hd = rail.find(r => r.id === secU[0]); rail = hd ? [{ t: "node", id: "_sec", name: hd.name, depth: 0 }].concat(secU.map(x => rail.find(r => r.id === x)).filter(Boolean).map(r => Object.assign({}, r, { depth: 1 }))) : []; }
             if (gmU) { const i0 = rail.findIndex(r => r.t === "node" && r.id === gmU.gid);
               if (i0 < 0) rail = []; else { const d0 = rail[i0].depth, sub = [rail[i0]]; for (let q = i0 + 1; q < rail.length && rail[q].depth > d0; q++) sub.push(rail[q]);
                 rail = sub.map(r => Object.assign({}, r, { depth: r.depth - d0 })); } }
             /* لكلّ عقدة: إداراتُها المباشرة · وعددُ الإدارات في فرعها كلِّه */
             const N = rail.length, direct = {}, inSub = {};
             for (let q = 0; q < N; q++) { const r = rail[q]; if (r.t === "dept") continue; const ds = []; let n = 0;
-              for (let z = q + 1; z < N && rail[z].depth > r.depth; z++) if (rail[z].t === "dept") { n++; if (rail[z].depth === r.depth + 1) ds.push(rail[z]); }
+              /* F01: أقسامُ كلّ إدارةٍ مباشرة بعدها (r.sec — عمقُها تحت إدارتها) */
+              for (let z = q + 1; z < N && rail[z].depth > r.depth; z++) if (rail[z].t === "dept") { n++; if (rail[z].depth === r.depth + 1 || (rail[z].sec && rail[z].depth === r.depth + 2)) ds.push(rail[z]); }
               direct[q] = ds; inSub[q] = n; }
             const OPEN = this.state.deptNodeOpen || {}, out = []; let hide = -1;
             for (let q = 0; q < N; q++) { const r = rail[q];
@@ -1036,9 +1046,9 @@ class Component extends DCLogic {
                   + "font-size:10px;font-weight:800;color:var(--fg-x9a7e40);font-family:'Cairo',sans-serif;user-select:none;"
                   + (r.t === "none" ? "opacity:.72" : ""),
                 chev: "flex-shrink:0;opacity:.7;transition:transform .2s;" + (gOpen ? "" : "transform:rotate(90deg)"),
-                items: direct[q].map(d => ({ name: d.name, on: d.id === act,
+                items: direct[q].map(d => ({ name: d.sec ? "↳ " + d.name + " · قسم" : d.name, on: d.id === act,
                 pick: () => { if (d.id !== act) { D.setActive(d.id); this.setState({ deptOpen: false, toast: "جارٍ التبديل إلى «" + d.name + "»…" }); const S = KIVO.__BS_SRV, go = () => { try { location.reload(); } catch (e) {} }; (S && S.flushAsync ? Promise.resolve(S.flushAsync(4000)).catch(() => {}) : Promise.resolve()).then(go, go); } else this.setState({ deptOpen: false }); },
-                style: "display:flex;align-items:center;gap:8px;padding:8px 10px 8px 10px;margin-right:" + (10 + 12 * r.depth) + "px;border-radius:8px;font-size:12px;cursor:pointer;transition:background .15s;font-family:'Cairo',sans-serif;border-right:1px solid var(--bd-a185151810p2);" + (d.id === act ? "background:var(--bg-a185151810p08);color:var(--fg-x9a7e40);font-weight:600" : "color:var(--fg-x141414);font-weight:400") }))
+                style: "display:flex;align-items:center;gap:8px;padding:8px 10px 8px 10px;margin-right:" + (10 + 12 * r.depth + (d.sec && r.id !== "_sec" ? 12 : 0)) + "px;border-radius:8px;font-size:12px;cursor:pointer;transition:background .15s;font-family:'Cairo',sans-serif;border-right:1px solid var(--bd-a185151810p2);" + (d.id === act ? "background:var(--bg-a185151810p08);color:var(--fg-x9a7e40);font-weight:600" : "color:var(--fg-x141414);font-weight:400") }))
               });
               if (!gOpen) hide = r.depth;
             }

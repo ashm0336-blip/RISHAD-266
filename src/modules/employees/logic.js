@@ -24,6 +24,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   /* الفحص العميق 2026-10-21 (R1 · ES-1): تبويبُ العنوان يُطبَّق متزامناً قبل حساب القيم — كان setTimeout(setState) فيُرسم «بيانات الموظفين»
      بجدولها أولاً ثم يختفي. والتبويبُ المزروع من الحالة المحفوظة (__bsSeeded) يُكتب في العنوان كما كانت الاستعادةُ تفعل */
+  /* F01: عنوانُ الحالة الفارغة بنوع الوحدة النشطة — «القسم» أو «الإدارة» */
+  _emNoneTitle() {
+    let al = "الإدارة";
+    try { const D = KIVO.BassamDepts; if (D && D.unitAl) al = D.unitAl(D.active()); } catch (e) { al = "الإدارة"; }
+    return "لا يوجد موظفون في " + al + " بعد";
+  }
   _bsHR() {
     try {
       if (this.props && this.props.solo) return;
@@ -1832,7 +1838,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ? "لا عهد لمن طابق البحث"
             : "لا نتائج مطابقة للبحث"
           : "لا عهد مسجّلة في هذا الشهر"
-        : "لا يوجد موظفون في الإدارة بعد",
+        : this._emNoneTitle(),
+      empNoneTitle: this._emNoneTitle(),
       cuEmptyDesc: w
         ? u
           ? g.length

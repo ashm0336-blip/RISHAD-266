@@ -2274,6 +2274,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     "hist" === this.state.pfPanel && this._pfHT("");
     this.setState({ pfPanel: this.state.pfPanel === k ? "" : k, pfMsg: "", pfAccMsg: "", spotAll: !1 });
   }
+  /* F01: وحدةُ الحساب قسمٌ؟ — سجلُّه في bassam_depts_v1 بنوع «قسم» */
+  deptIsSec(id) {
+    try {
+      const D = KIVO.BassamDepts;
+      return !!(id && D && D.isSection && D.isSection(id));
+    } catch (t) {
+      return !1;
+    }
+  }
   deptNameOf(id) {
     try {
       const d = (KIVO.BassamDepts.list() || []).filter((x) => x && x.id === id)[0];
@@ -2324,8 +2333,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (i.isAppt) {
       L.push(H("h1", "بيانات الحساب"), F("name", "الاسم", e.name || "مدير الإدارة"));
       has(e.no) && L.push(F("empno", "الرقم الوظيفي", e.no, { dir: "ltr" }));
-      L.push(F("dept", "الإدارة", dn || "—"));
-      mg.length && L.push(F("mgr", "مديرو الإدارة الآخرون", mg.join(" · "), { w: "1" }));
+      const sc = this.deptIsSec(did);   /* F01: مديرُ القسم المعيَّن */
+      L.push(F("dept", sc ? "القسم" : "الإدارة", dn || "—"));
+      mg.length && L.push(F("mgr", sc ? "مديرو القسم الآخرون" : "مديرو الإدارة الآخرون", mg.join(" · "), { w: "1" }));
       out.pfInfo = L;
       out.pfDataSub = "حسابك مُعيَّن من مدير النظام — بلا سجلّ موظف";
       out.pfInfoNote = "مديرُ الإدارة المعيَّن لا يحتاج سجلّاً في «موظفو الإدارة»؛ بياناتُ حسابك تُحدَّث من مدير النظام ← الإدارات.";
@@ -2334,8 +2344,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const rec = i.myRec,
       by = (i.ME && i.ME.M && i.ME.M.identity && i.ME.M.identity.by) || "eid";
     if (!rec) {
-      L.push(H("h1", "بياناتك"), F("name", "الاسم", e.name || "—"), F("dept", "الإدارة", dn || "—"));
-      mg.length && L.push(F("mgr", "مدير الإدارة المعيَّن", mg.join(" · "), { w: "1" }));
+      const sc1 = this.deptIsSec(did);
+      L.push(H("h1", "بياناتك"), F("name", "الاسم", e.name || "—"), F("dept", sc1 ? "القسم" : "الإدارة", dn || "—"));
+      mg.length && L.push(F("mgr", sc1 ? "مدير القسم المعيَّن" : "مدير الإدارة المعيَّن", mg.join(" · "), { w: "1" }));
       out.pfInfo = L;
       out.pfDataSub = i.ME && i.ME.loading ? "جارٍ التحقّق من سجلّك…" : "لا سجلَّ وظيفيّاً مرتبطاً بحسابك";
       out.pfInfoNote = i.ME && i.ME.loading ? "يُقرأ سجلُّك من الخادم الآن." : "لا يوجد سجلٌّ وظيفيّ مرتبطٌ بحسابك بمعرّفٍ ثابت — يربطه مدير الإدارة من «موظفو الإدارة» (لا تُستنتج بياناتُك من اسم الدخول).";
@@ -2353,8 +2364,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     L.push(H("h2", "البيانات الوظيفية"));
     has(rec.type) ? L.push(F("type", "نوع التوظيف", rec.type)) : miss.push("نوع التوظيف");
     has(rec.work) ? L.push(F("work", "نوع العمل", rec.work)) : miss.push("نوع العمل");
-    L.push(F("dept", "الإدارة", dn || "—"));
-    L.push(F("mgr", "مدير الإدارة المعيَّن", mg.length ? mg.join(" · ") : "لا مدير مُعيَّن", { cls: mg.length ? "" : "na", w: "1" }));
+    const sec0 = this.deptIsSec(did);
+    L.push(F("dept", sec0 ? "القسم" : "الإدارة", dn || "—"));
+    L.push(F("mgr", sec0 ? "مدير القسم المعيَّن" : "مدير الإدارة المعيَّن", mg.length ? mg.join(" · ") : "لا مدير مُعيَّن", { cls: mg.length ? "" : "na", w: "1" }));
     out.pfInfo = L;
     out.pfInfoMiss = miss.length ? "غير مسجّل: " + miss.join("، ") + " — يصحّحها مدير الإدارة من «موظفو الإدارة»" : "";
     out.pfInfoMissOn = miss.length > 0;
@@ -2374,7 +2386,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!e) return { pfDeptInfo: o, pfDeptSub: "" };
     const title = (() => {
       try {
-        return i.isSuper ? "مدير النظام" : (AU && AU.myTitle && AU.myTitle()) || ("gm" === e.role ? (AU && AU.gmRoleLabel ? AU.gmRoleLabel() : "مدير إدارة عامة") : i.isAppt ? "مدير الإدارة" : AU && AU.permLabel && e.ekey ? AU.permLabel(e.ekey) || "بلا صلاحيات" : "");
+        return i.isSuper ? "مدير النظام" : (AU && AU.myTitle && AU.myTitle()) || ("gm" === e.role ? (AU && AU.gmRoleLabel ? AU.gmRoleLabel() : "مدير إدارة عامة") : i.isAppt ? (this.deptIsSec(e.deptId) ? "مدير القسم" : "مدير الإدارة") : AU && AU.permLabel && e.ekey ? AU.permLabel(e.ekey) || "بلا صلاحيات" : "");
       } catch (t) {
         return "";
       }
@@ -2391,13 +2403,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
     };
     if (i.isSuper) {
-      let n = 0;
+      let n = 0, ns = 0;
       try {
         n = (DP.list() || []).length;
+        ns = (DP.list() || []).filter((x) => x && "قسم" === x.kind).length;   /* F01: الأقسامُ لا تُعدّ إدارات */
       } catch (t) {
         n = 0;
       }
-      o.push(H("h1", "نطاقك"), R("dept", "الصلاحية", "على كل الإدارات" + (n ? " (" + KIVO.BassamCount(n, "إدارة") + ")" : ""), { w: "1" }), R("mgr", "الدور", title));
+      o.push(H("h1", "نطاقك"), R("dept", "الصلاحية", "على كل الإدارات" + (n ? " (" + KIVO.BassamCount(n - ns, "إدارة") + (ns ? " · " + KIVO.BassamCount(ns, "قسم") : "") + ")" : ""), { w: "1" }), R("mgr", "الدور", title));
       return { pfDeptInfo: o, pfDeptSub: "مدير النظام — لا يتبع إدارةً بعينها" };
     }
     if ("gm" === e.role) {
@@ -2421,7 +2434,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     o.push(R("tree", "التسلسل الإداري", [dn || "—"].concat(ch.map((c) => c.name).filter(Boolean)).join(" ← "), { w: "1" }));
     ch.forEach((c) => o.push(R("mgr", "مدير " + c.kind, c.mgrs.length ? c.mgrs.join(" · ") : "", { s: c.name, w: "1" })));
     o.push(R("mgr", "الصلاحيات", title, { h: "1" }));
-    if (i.isAppt) return { pfDeptInfo: o, pfDeptSub: "إدارتك وما فوقها" };
+    if (i.isAppt) return { pfDeptInfo: o, pfDeptSub: this.deptIsSec(e.deptId) ? "قسمك وما فوقه" : "إدارتك وما فوقها" };
     const cs = (() => {
       try {
         return i.F && i.F.cs ? i.F.cs : i.myKey && i.bucket && i.bucket[i.myKey] && "string" == typeof i.bucket[i.myKey].cs ? i.bucket[i.myKey].cs.trim() : "";
@@ -2466,7 +2479,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         });
         o.push(R("mgr", clean(t.name) || "قالب إشرافي", names.join(" · "), { w: "1" }));
       });
-    return { pfDeptInfo: o, pfDeptSub: dn ? "إدارتك: " + dn : "" };
+    return { pfDeptInfo: o, pfDeptSub: dn ? (this.deptIsSec(e.deptId) ? "قسمك: " : "إدارتك: ") + dn : "" };
   }
   renderVals() {
     this._pfHR();
@@ -2625,7 +2638,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           const T = KIVO.BassamAuth && KIVO.BassamAuth.myTitle ? KIVO.BassamAuth.myTitle() : "";
           if (T) return T;
           if ("gm" === i.role) return KIVO.BassamAuth && KIVO.BassamAuth.gmRoleLabel ? KIVO.BassamAuth.gmRoleLabel() : "مدير إدارة عامة";
-          if (i.isAppt) return "مدير الإدارة";
+          if (i.isAppt) return this.deptIsSec(e && e.deptId) ? "مدير القسم" : "مدير الإدارة";
           const t = KIVO.BassamAuth;
           return (t && t.permLabel && e && e.ekey && t.permLabel(e.ekey)) || "";
         } catch (t) {
