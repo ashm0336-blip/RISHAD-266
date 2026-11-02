@@ -105,6 +105,8 @@ async function meTkList(env, A, url, request) {
   var I = await meTkIdent(env, A), now = Date.now();
   var me = { linked: I.linked, by: I.by, dept: I.dept };
   if (!I.linked) return json({ ok: 1, now: now, me: me, rev: 0, n: 0, more: 0, months: [], rows: [] });
+  /* RISHAD266 (مراجعة المالك على aae024c): مدخلاتُ الطلب تُفحص قبل تشغيل النظام — الطلبُ المرفوض (ym غير صالح) لا يجري التوليدَ ولا المسح */
+  var ym = String(url.searchParams.get('ym') || ''); if (ym && !METK_YM_RX.test(ym)) return json({ ok: 0, err: 'bad-ym' }, 400);
   var K = meTkKey(I), since = parseInt(url.searchParams.get('since') || '', 10);
   /* ق5: التكرارُ يُولَّد في الخادم كسولاً عند القراءة (بلا Cron) — متساوي القوى، باسم صاحب القالب لا باسمي (073) · والمسحُ (074 · البند 10) مع كل قراءةٍ واستطلاع.
      الفحصُ العميق 2026-10-21 · R8: بحارسٍ مشتركٍ بين العزلات (074 tkLazyJobs) — كانا يجريان في كلّ طلبٍ تقريباً (عزلةٌ جديدة ⇒ ذاكرةٌ فارغة) */
@@ -115,7 +117,6 @@ async function meTkList(env, A, url, request) {
   }
   var rev = await tkRev(env, K);
   if (since && since === rev) return json({ ok: 1, now: now, me: me, rev: rev, same: 1 });   /* لا تغيّر في المخزن منذ آخر قراءة — ردٌّ رخيص للاستطلاع الدوري */
-  var ym = String(url.searchParams.get('ym') || ''); if (ym && !METK_YM_RX.test(ym)) return json({ ok: 0, err: 'bad-ym' }, 400);
   var S = parseJson(await opResourceGet(env, K), {}); if (!isObj(S)) S = {};
   var all = [], months = {}, dk;
   for (dk in S) {

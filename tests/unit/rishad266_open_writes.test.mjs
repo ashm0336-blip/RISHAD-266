@@ -78,3 +78,22 @@ test('(د) الطلبُ المرفوض لا يغيّر بياناتِ الأعم
   const R = ok.j.resources[KT]; let gen = 0; for (const dk in R) (R[dk] || []).forEach((r) => { if (Array.isArray(r) && r[23] && r[23].rec && String(r[0]).includes('يومية للرفض')) gen++; });
   assert.ok(gen > 1, 'وأثرُه في الردّ نفسِه (أُعيدت القراءة): ' + gen);
 });
+
+/* (هـ) مراجعة المالك على aae024c: «مهامي» (062c meTkList) بـ ym غير صالح تُرفض 400 bad-ym قبل تشغيل النظام — لا أعمال ولا مراجعات ولا تنبيهات ولا طوابع.
+   يُستثنى: sec (سجلّ الأمن) · sess · guard (عدّادُ حدّ الطلبات rlHit — حارسٌ أمنيّ يُحسب قبل أيّ فحص كما كان). والضابطُ: الطلبُ الصالح نفسُه يجري التوليد والمسح */
+const snap2 = (W) => Object.fromEntries(W.env.DB.q("SELECT name FROM sqlite_master WHERE type = 'table'").map((t) => t.name)
+  .filter((t) => !['sec', 'sess', 'guard'].includes(t) && !t.startsWith('sqlite_')).map((t) => [t, JSON.stringify(W.env.DB.q('SELECT * FROM "' + t + '"'))]));
+test('(هـ) «مهامي» بـ ym غير صالح: 400 bad-ym ولا تشغيلَ للنظام — والصالحُ يجريه', async () => {
+  const W = await world({ worker: WU.file, mode: 'enforce' }); const dm = await W.login(...DM), me = await W.login(ME.un, ME.pw);
+  const T0 = MID(Date.now()) + 864e5, k0 = hij(T0 + 12 * HR);
+  const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: operationSaveBody(W.env, '/api/tasks/create', taskCommandBody(W.env, '/api/tasks/create', { k: k0, t: TAG + ' يومية لمهامي', s: T0 + 8 * HR, e: T0 + 9 * HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'daily' } })) });
+  assert.equal(c.status, 200, JSON.stringify(c.j).slice(0, 300));
+  const s0 = snap2(W);
+  for (const ym of ['2026/1', 'x', '1448-1-1-1', "1448-1' OR 1"]) {
+    const r = await W.C.api('/api/me/tasks?ym=' + encodeURIComponent(ym), { cookie: me.ck });
+    assert.equal(r.status, 400, ym + ': ' + JSON.stringify(r.j).slice(0, 200)); assert.equal(r.j.err, 'bad-ym');
+  }
+  assert.deepEqual(changed(s0, snap2(W)), [], 'لا جدولَ تغيّر بـ ym مرفوض (أعمال · revs · aud · notification_* · meta طوابع tkg)');
+  const ok = await W.C.api('/api/me/tasks', { cookie: me.ck }); assert.equal(ok.status, 200, JSON.stringify(ok.j).slice(0, 200));
+  assert.ok(changed(s0, snap2(W)).length > 0, 'الضابط: الطلبُ الصالح يجري التوليد والمسح');
+});
