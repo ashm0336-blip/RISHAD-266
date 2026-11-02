@@ -1,5 +1,6 @@
 /* ══ (6) الواجهات: حالةُ الإنفاذ · سجلُّ القرارات · الترحيلُ والرجوع (هوية → نطاق → صلاحيات) · جلسةُ اختبارٍ داخلية (Preview) ══ */
-/* ما يُرسل للواجهة عن فاعلٍ: المفاتيحُ المحمولة لكل إدارة (bitset على ترتيب السجل) · العدساتُ المفعّلة · نطاقُه الفعلي */
+/* ما يُرسل للواجهة عن فاعلٍ: المفاتيحُ المحمولة لكل إدارة (bitset على ترتيب السجل) · العدساتُ المفعّلة · مفاتيحُ المنح الصريح
+   (RISHAD-266: ceil · me · sb — سقفُ النطاق القديم ونطاقُ الفاعل فيه وورديتُه المربوطة — أُزيلت مع تقاعده؛ لم تقرأها الواجهة) */
 function enfBits(A, d) {
   var ix = enfIx(), n = ix.order.length, bytes = new Uint8Array(Math.ceil(n / 8)), i, s = '';
   for (i = 0; i < n; i++) if (enfHeld(A, d, ix.order[i])) bytes[i >> 3] |= (1 << (i & 7));
@@ -15,33 +16,15 @@ function enfDeptsOf(A) {
   }
   return out;
 }
-/* KIVO_264 · ورديةُ الفاعل المربوطةُ بالجدول الشهري (Shift: staffing-bound — enfEmpScopeOf · 058): تُقرأ من bsdept:<d>:bassam_staffing_v3 لحظةَ الإسقاط
-   (enfViewCtx.shiftOk · 061)، فالجدولُ جزءٌ مما تُحسب منه مجموعةُ قراءته — بلا قيدِ ورديةٍ لفاعلي السقف (R4) ولا لـn/a ولا للقائمة الصريحة. */
-var ENF_STAFF_RES = 'bassam_staffing_v3';
-function enfShiftBound(A, recs, d) {
-  if (!A || !A.u || !A.u.ekey || A.u.role === 'super' || KIVO_SCOPE.isCeiling(permv4Actor(A).actor)) return false;
-  var es = enfEmpScopeOf({ recs: recs || {} }, d, String(A.u.ekey), 'Shift');
-  return !!es && es.mode === 'staffing-bound';
-}
-/* sb في وصف الفاعل: ورديتُه الفعلية لكل شهرٍ في الجدول { '<y>-<m>': وردية } (صفُّه هو وحده) — فيتغيّر الوصفُ حين تتغيّر ورديتُه وحدها،
-   والعميلُ يجدّد الموارد المُسقَطة حين يتغيّر الوصفُ بعد az (/api/changes · enfStaffAz) */
-function enfShiftSig(A, refs, d) {
-  if (!refs || !enfShiftBound(A, refs.recs, d)) return null;
-  var st = refs.staffing ? refs.staffing[d] : null, ek = String(A.u.ekey), out = {}, mk;
-  if (isObj(st)) for (mk in st) { if (!/^\d{4}-\d{1,2}$/.test(mk) || !isObj(st[mk])) continue; var r = st[mk][ek]; if (isObj(r) && r.shift) out[mk] = String(r.shift); }
-  return out;
-}
 function enfMe(A, refs) {
   var ds = enfDeptsOf(A), out = { ver: ENF_VER, mode: 'enforce', n: enfIx().order.length, perm: enfPermMigrated(A), depts: {} }, i, L;
   for (i = 0; i < ds.length; i++) {
-    var d = ds[i], rec = refs && refs.recs ? refs.recs[d] : null, lens = [];
+    var d = ds[i], lens = [];
     for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) { L = KIVO_LENS_PLUGINS.keys[li]; if (KIVO_BUILD.lensGate(A.perms, A.u, d, L).on) lens.push(L); }   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (الترتيبُ نفسُه) */
-    var me = rec && isObj(rec.emp) && A.u.ekey ? rec.emp[A.u.ekey] || null : null;
     /* p: مفاتيحُ المنح الصريح (plus) المحمولة فعلاً — لتُضاف أفعالُها إلى الواجهة (الورقةُ القديمة لا تعرفها) */
     var gr = A.__grants && A.__grants[d] && A.u.ekey ? A.__grants[d].emp[A.u.ekey] : null, plus = [];
     if (isObj(gr) && Array.isArray(gr.plus)) gr.plus.forEach(function (k) { k = String(k); if (enfHeld(A, d, k) && plus.indexOf(k) === -1) plus.push(k); });
-    out.depts[d] = { h: enfBits(A, d), lens: lens, ceil: rec && isObj(rec.ceiling) ? rec.ceiling : null, me: me, p: plus };
-    var sb = enfShiftSig(A, refs, d); if (sb) out.depts[d].sb = sb;   /* KIVO_264: ورديتُه الفعلية من الجدول (للمربوط به وحده) */
+    out.depts[d] = { h: enfBits(A, d), lens: lens, p: plus };
   }
   return out;
 }
@@ -77,15 +60,16 @@ async function enfMigPlan(env, seed, opts) {
   var now = opts.now || Date.now(), T = dsToday(now), reference = opts.reference,
     capture = reference ? reference.operational : await opCaptureReferences(env, await kvAll(env, 'kv')),
     keys = reference ? reference.inputKeys : capture.keys,
-    revs = reference ? reference.inputRevs : Object.assign({},await revsAll(env),capture.revs), i, d, ek, dm;
+    revs = reference ? reference.inputRevs : Object.assign({},await revsAll(env),capture.revs), i, d;
   if (capture.guards.length) await env.DB.batch(capture.guards);
-  var depts = parseJson(keys[K_DEPTS], []), users = parseJson(keys[K_USERS], []), perms = parseJson(keys[K_PERM], {}), gd = parseJson(keys[K_GDEPTS], []);
-  if (!Array.isArray(depts)) depts = []; if (!Array.isArray(users)) users = []; if (!isObj(perms)) perms = {}; if (!Array.isArray(gd)) gd = [];
+  if (opts.parts && opts.parts.indexOf('scope-retire') !== -1) return await enfRetirePlan(env, seed, now, T, keys, revs, capture, reference);
+  var depts = parseJson(keys[K_DEPTS], []), users = parseJson(keys[K_USERS], []);
+  if (!Array.isArray(depts)) depts = []; if (!Array.isArray(users)) users = [];
   var byDept = {}, raw = {};
   for (i = 0; i < depts.length; i++) { d = depts[i] && depts[i].id; if (!d) continue; var pre = 'bsdept:' + d + ':';
     byDept[d] = { plan: parseJson(keys[pre + 'bassam_plan_v1'], null), rounds: parseJson(keys[pre + 'bassam_rounds_v1'], null), staffing: parseJson(keys[pre + 'bassam_staffing_v3'], null), dreport: parseJson(keys[pre + 'bassam_dreport_v1'], null), employees: parseJson(keys[pre + 'bassam_employees_v1'], []) }; }
   Object.keys(keys).forEach(function (kk) { if (/^bsdept:[^:]+:bassam_(plan|rounds)_v1$/.test(kk)) raw[kk] = keys[kk]; });
-  var plan = { version: ENF_VER, seed: seed, today: T, generated: now, writes: [], identity: null, scope: { ceilings: [], employees: [], kept: [], decisions: [], inferable: [] }, perm: { grants: [], decisions: [] }, warnings: [] };
+  var plan = { version: ENF_VER, seed: seed, today: T, generated: now, writes: [], identity: null, perm: { grants: [], decisions: [] }, warnings: [] };
   var W = {};                                                                  /* k → قيمةٌ جديدة (نصّ) */
   /* (١) الهوية — tier A وحده (tier B يبقى معلّقاً للقرار) */
   var rh = KIVO_IDENTITY_MIGRATION.rehearse({ depts: depts, users: users, byDept: byDept }, { seed: seed, seedSource: 'authz-migrate', now: now, today: T, raw: raw, revs: revs });
@@ -94,42 +78,7 @@ async function enfMigPlan(env, seed, opts) {
   for (d in ap.byDept) {
     ['plan', 'rounds'].forEach(function (res) { var a0 = byDept[d] && byDept[d][res], b0 = ap.byDept[d] && ap.byDept[d][res]; if (b0 == null || deq(a0, b0)) return; W['bsdept:' + d + ':bassam_' + res + '_v1'] = { v: JSON.stringify(b0), kind: 'identity' }; });
   }
-  /* (٢) النطاق — على بيانات ما بعد الهوية؛ المحسومُ (exact) يُكتب، والاستنتاجُ عالي الثقة اختياريٌّ بمفتاح، والباقي قائمةُ قرار */
-  var mkA = function (u) { return actorFromKeys(keys, u.id); };
-  var hooks = { today: T, now: now, maxActors: 0, actorOf: mkA, ctxOf: function (A, dd) { return permv2Ctx(A, dd); }, fieldOnly: function (A, dd) { return dailyFieldOnly(A, dd); } };
-  var dr = KIVO_SCOPE_MIGRATION.dryRun({ depts: depts, gdepts: gd, users: users, perms: perms, byDept: ap.byDept }, hooks);
-  var take = function (cls) { return cls === 'exact' || (cls === 'inferable-high-confidence' && !!opts.inferable); };
-  var recs = {};
-  for (d in dr.departments) {
-    var cur = parseJson(keys[enfScopeKey(d)], null), rec = isObj(cur) ? JSON.parse(JSON.stringify(cur)) : { v: 1 }, changed = false;
-    if (!isObj(rec.ceiling)) rec.ceiling = {}; if (!isObj(rec.emp)) rec.emp = {};
-    ['Site', 'Zone/Element'].forEach(function (dim) {
-      var D = dr.departments[d][dim];
-      if (isObj(rec.ceiling[dim]) && rec.ceiling[dim].mode && rec.ceiling[dim].mode !== 'unknown') { plan.scope.kept.push({ dept: d, dim: dim, mode: rec.ceiling[dim].mode }); return; }
-      if (take(D.cls) && D.proposed.mode === 'ALL') { rec.ceiling[dim] = { mode: 'ALL', basis: String(D.basis || '').slice(0, 300), src: 'migration', cls: D.cls, at: now }; changed = true; plan.scope.ceilings.push({ dept: d, dim: dim, mode: 'ALL', cls: D.cls }); }
-      else if (D.cls === 'inferable-high-confidence') plan.scope.inferable.push({ kind: 'ceiling', dept: d, dim: dim, proposed: D.proposed.mode, basis: D.basis });
-      else plan.scope.decisions.push({ kind: 'ceiling', dept: d, dim: dim, cls: D.cls, basis: D.basis });
-    });
-    var E = dr.employees[d] || {};
-    for (ek in E) {
-      var e = E[ek]; if (!e || e.outOfScope || !e.scope) continue;
-      for (dm in e.scope) {
-        var sc = e.scope[dm]; if (!sc) continue;
-        var have = isObj(rec.emp[ek]) && isObj(rec.emp[ek][dm]) && rec.emp[ek][dm].mode && rec.emp[ek][dm].mode !== 'unknown';
-        if (have) { plan.scope.kept.push({ dept: d, ekey: ek, dim: dm, mode: rec.emp[ek][dm].mode }); continue; }
-        if (!take(sc.cls)) { (sc.cls === 'inferable-high-confidence' ? plan.scope.inferable : plan.scope.decisions).push({ kind: 'employee', dept: d, ekey: ek, dim: dm, cls: sc.cls, proposed: sc.proposed, basis: sc.basis }); continue; }
-        var p = sc.proposed || {}, val;
-        if (dm === 'Shift') val = p.mode === 'staffing-bound' ? { mode: 'staffing-bound' } : null;
-        else if (p.mode === 'inherit') val = { mode: 'inherit' };
-        else if (p.mode === 'single' || p.mode === 'list') val = { mode: 'list', list: (p.engineIds && p.engineIds.length ? p.engineIds : (p.list || [])).map(String) };
-        if (!val) { plan.scope.decisions.push({ kind: 'employee', dept: d, ekey: ek, dim: dm, cls: sc.cls, proposed: p, basis: 'proposed mode not writable' }); continue; }
-        val.src = 'migration'; val.cls = sc.cls; val.at = now;
-        rec.emp[ek] = isObj(rec.emp[ek]) ? rec.emp[ek] : {}; rec.emp[ek][dm] = val; changed = true;
-        plan.scope.employees.push({ dept: d, ekey: ek, dim: dm, mode: val.mode, n: val.list ? val.list.length : 0, cls: sc.cls });
-      }
-    }
-    if (changed) { rec.v = 1; rec.mig = { at: now, seed: seed.slice(0, 12) }; W[enfScopeKey(d)] = { v: JSON.stringify(rec), kind: 'scope' }; recs[d] = rec; }
-  }
+  /* (٢) النطاق — RISHAD-266: بذرُ سقف النطاق القديم (bassam_scope_v1) أُزيل مع تقاعده؛ حذفُ ما بقي منه خطوةُ «scope-retire» (enfRetirePlan) */
   /* (٣) الصلاحيات — D3-01: ينتهي توافقُ approve → retro.open بمنح المفتاح صراحةً لمن يحمله اليوم (يُحفظ السلوك ثم يصير المنحُ الصريحُ وحده)
      يُكتب في سجلّ المنح لكل إدارة (bsdept:<d>:bassam_grants_v1) — لا يُمسّ bassam_perms_v1، فالرجوعُ عنه لا يمسّ أوراقَ الصلاحيات */
   var GW = {};
@@ -154,14 +103,42 @@ async function enfMigPlan(env, seed, opts) {
     }
   }
   for (var gk2 in GW) if (GW[gk2].changed) W[gk2] = { v: JSON.stringify(GW[gk2].rec), kind: 'perm' };
-  var parts = opts.parts || ['identity', 'scope', 'perm'];
+  var parts = opts.parts || ['identity', 'perm'];
   var ks = Object.keys(W).sort(), sig = [];
   for (i = 0; i < ks.length; i++) { if (parts.indexOf(W[ks[i]].kind) === -1) continue; plan.writes.push({ k: ks[i], kind: W[ks[i]].kind, bytes: W[ks[i]].v.length, existed: keys[ks[i]] != null, rev: revs[ks[i]] || 0 }); sig.push(ks[i] + '\u0001' + (revs[ks[i]] || 0) + '\u0001' + W[ks[i]].v); }
   plan.hash = await enfSha(sig.join('\u0002'));
   plan.parts = parts; plan.inferableOptIn = !!opts.inferable;
-  plan.counts = { writes: plan.writes.length, identityKeys: plan.writes.filter(function (w) { return w.kind === 'identity'; }).length, scopeKeys: plan.writes.filter(function (w) { return w.kind === 'scope'; }).length, ceilings: plan.scope.ceilings.length, employeeValues: plan.scope.employees.length, kept: plan.scope.kept.length, decisions: plan.scope.decisions.length, inferable: plan.scope.inferable.length, grants: plan.perm.grants.length, permDecisions: plan.perm.decisions.length };
+  plan.counts = { writes: plan.writes.length, identityKeys: plan.writes.filter(function (w) { return w.kind === 'identity'; }).length, grants: plan.perm.grants.length, permDecisions: plan.perm.decisions.length };
   return { plan: plan, W: W, keys: keys, revs: revs, guards:capture.guards, snapshots:capture.snapshots };
 }
+/* RISHAD-266 · «scope-retire»: تقاعدُ بيانات سقف النطاق القديم — كلُّ مفتاح kv بصيغة bsdept:%:bassam_scope_v1 وعلامةُ meta.authz_scope_mig.
+   الخطةُ حتمية (البذرة · لحظةُ التوليد · القيم ونسخُها) وبصمتُها تشمل القيمَ والعلامة — فأيُّ تغيّرٍ بين الخطة والتطبيق ⇒ plan-changed.
+   التطبيقُ (enfMigrateApi · apply): لقطةٌ كاملة في authz_snaps/authz_snap (والعلامةُ في meta اللقطة) ثم الحذفُ ورفعُ النسخ في دفعةٍ واحدةٍ محروسة؛
+   والرجوعُ بالمسار القائم (rollback) يعيد المفاتيحَ وقيمَها والعلامةَ كما كانت. لا يمسّ مفتاحاً غيرَها. */
+var ENF_RETIRE_PART = 'scope-retire', ENF_RETIRE_META = 'authz_scope_mig', ENF_RETIRE_SUFFIX = ':' + ENF_SCOPE_RES;
+function enfRetireKey(k) { k = String(k); return k.indexOf('bsdept:') === 0 && k.length > 7 + ENF_RETIRE_SUFFIX.length && k.slice(-ENF_RETIRE_SUFFIX.length) === ENF_RETIRE_SUFFIX; }
+async function enfRetirePlan(env, seed, now, T, keys, revs, capture, reference) {
+  var mv = reference ? (Object.prototype.hasOwnProperty.call(reference.inputMeta, ENF_RETIRE_META) ? reference.inputMeta[ENF_RETIRE_META] : null)
+    : await metaGet(env, ENF_RETIRE_META);
+  var ks = Object.keys(keys).filter(enfRetireKey).sort(), W = {}, sig = [ENF_RETIRE_PART, seed], i;
+  var plan = { version: ENF_VER, seed: seed, today: T, generated: now, parts: [ENF_RETIRE_PART], writes: [], retire: { keys: ks.slice(0, 200), meta: mv != null } };
+  for (i = 0; i < ks.length; i++) {
+    W[ks[i]] = { v: null, kind: ENF_RETIRE_PART };
+    plan.writes.push({ k: ks[i], kind: ENF_RETIRE_PART, op: 'delete', bytes: String(keys[ks[i]]).length, existed: true, rev: revs[ks[i]] || 0 });
+    sig.push(ks[i] + '\u0001' + (revs[ks[i]] || 0) + '\u0001' + keys[ks[i]]);
+  }
+  sig.push('meta:' + ENF_RETIRE_META + '\u0001' + (mv == null ? '\u0000' : String(mv)));
+  plan.hash = await enfSha(sig.join('\u0002'));
+  plan.counts = { writes: ks.length, scopeRecords: ks.length, metaFlag: mv != null ? 1 : 0 };
+  return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots, retireMeta: mv };
+}
+/* أجزاءُ الترحيل المقبولة: identity · perm — و«scope-retire» وحدها لا تُخلط بغيرها (scope: بذرُ السقف القديم أُزيل · RISHAD-266) */
+function enfMigParts(raw) {
+  var p = raw.filter(function (x) { return x === 'identity' || x === 'perm' || x === ENF_RETIRE_PART; });
+  if (p.indexOf(ENF_RETIRE_PART) !== -1 && p.length > 1) return null;
+  return p;
+}
+var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطوة تقاعد سقف النطاق القديم (scope-retire) تُطلب وحدها — أعد الطلب بـ parts=scope-retire فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
 /* Pure revision preparation: allocation is written only after every source
    witness, inside the same batch as migration/snapshot/audit or rollback. */
 async function enfMigCounterPlan(env) {
@@ -205,7 +182,8 @@ async function enfMigrateApi(env, request, A, url, meta) {
   }
   if (act === 'plan') {
     var seedQ = String(q.get('seed') || ''), seed = /^[0-9a-f]{64}$/i.test(seedQ) ? seedQ.toLowerCase() : enfSeed();
-    var parts = String(q.get('parts') || 'identity,scope,perm').split(',').filter(function (x) { return x === 'identity' || x === 'scope' || x === 'perm'; });
+    var parts = enfMigParts(String(q.get('parts') || 'identity,perm').split(','));
+    if (!parts) return json(ENF_PARTS_MIXED, 400);
     var r = await enfMigPlan(env, seed, { inferable: q.get('inferable') === '1', parts: parts });
     return json({ ok: 1, plan: r.plan });
   }
@@ -214,20 +192,28 @@ async function enfMigrateApi(env, request, A, url, meta) {
   if (act === 'apply') {
     if (!/^[0-9a-f]{64}$/i.test(String(b.seed || '')) || !/^[0-9a-f]{64}$/.test(String(b.hash || ''))) return json({ ok: 0, err: 'seed-hash' }, 400);
     var gen = +b.generated; if (!(gen > 0) || gen > now || now - gen > 24 * 3600 * 1000) return json({ ok: 0, err: 'generated' }, 400);   /* لحظةُ الخطة: خلال 24 ساعة */
-    var parts2 = Array.isArray(b.parts) ? b.parts.filter(function (x) { return x === 'identity' || x === 'scope' || x === 'perm'; }) : ['identity', 'scope', 'perm'];
+    var parts2 = Array.isArray(b.parts) ? enfMigParts(b.parts) : ['identity', 'perm'];
+    if (!parts2) return json(ENF_PARTS_MIXED, 400);
+    var retire2 = parts2.indexOf(ENF_RETIRE_PART) !== -1;
     var reference2 = await rsReferenceSnapshot(env,A.u.id);
     env = reference2.env; A = reference2.A;
     if(A.u.role !== 'super')return json({ok:0,err:'forbidden'},403);
     var R2 = await enfMigPlan(env, String(b.seed).toLowerCase(), { inferable: !!b.inferable, parts: parts2, now: gen, reference:reference2 });
     if (R2.plan.hash !== b.hash) return json({ ok: 0, err: 'plan-changed', hash: R2.plan.hash }, 409);
-    if (!R2.plan.writes.length) return json({ ok: 1, applied: 0, plan: R2.plan.counts });
+    if (!R2.plan.writes.length && !(retire2 && R2.retireMeta != null)) return json({ ok: 1, applied: 0, plan: R2.plan.counts });
+    if (retire2 && R2.retireMeta != null && String(R2.retireMeta).length > 2000) return json({ ok: 0, err: 'retire-meta-large', msg: 'علامة authz_scope_mig أطول من أن تُحفظ في اللقطة — لم يُحذف شيء؛ راجع قيمتها في جدول meta قبل إعادة المحاولة' }, 409);
     var counter2 = await enfMigCounterPlan(env), rev = counter2.rev,
       guards2 = enfMigReferenceGuards(env,reference2).concat(counter2.guards), st2 = [], i;
     var snap = enfSnapId('migration'), items = R2.plan.writes.map(function (w) { return { k: w.k, cur: R2.keys[w.k] == null ? null : R2.keys[w.k] }; });
-    var st = enfSnapStmts(env, snap, 'migration', A, items, R2.revs, { hash: b.hash, parts: parts2, inferable: !!b.inferable, counts: R2.plan.counts, rev: rev, generated: gen });
+    var snapMeta = { hash: b.hash, parts: parts2, inferable: !!b.inferable, counts: R2.plan.counts, rev: rev, generated: gen };
+    if (retire2) snapMeta.retire = { meta: ENF_RETIRE_META, v: R2.retireMeta == null ? null : String(R2.retireMeta) };   /* تعيدها rollback */
+    var st = enfSnapStmts(env, snap, 'migration', A, items, R2.revs, snapMeta);
     for (i = 0; i < R2.plan.writes.length; i++) {
       var w = R2.plan.writes[i];
-      if(opIsResource(w.k)){
+      if (R2.W[w.k].v === null) {   /* scope-retire: حذفٌ (المفتاحُ ليس مورداً تشغيلياً) */
+        guards2.push(revGuard(env, w.k, w.rev));
+        st2.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(w.k));
+      }else if(opIsResource(w.k)){
         var add2=await opChangeStatements(env,w.k,R2.W[w.k].v,{base:w.rev});
         guards2.push.apply(guards2,add2.guards);st2.push.apply(st2,add2.statements);
       }else{
@@ -238,7 +224,8 @@ async function enfMigrateApi(env, request, A, url, meta) {
       st2.push(audEvStmt(env, { cid: 'mig_' + snap.slice(-12) + '_' + i, ts: now, uid: ident.uid, un: ident.un, dept: parseKey(w.k).dept || '', k: w.k, rev: rev, etype: 'dataset', eid: resName(w.k), ename: resName(w.k), act: 'migrated', ctx: JSON.stringify({ kind: w.kind, snap: snap }), bef: '', aft: '', ip: ident.ip, dev: ident.dev, city: ident.city }));
     }
     var flag = JSON.stringify({ applied: true, at: now, by: ident.uid, snap: snap, hash: b.hash, inferable: !!b.inferable });   /* المعرّفُ لا اسمُ المستخدم */
-    parts2.forEach(function (p0) { var mk = p0 === 'identity' ? 'authz_id_mig' : (p0 === 'scope' ? 'authz_scope_mig' : 'authz_perm_mig'); st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(mk, flag)); });
+    if (retire2 && R2.retireMeta != null) st2.push(env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind(ENF_RETIRE_META));
+    if (!retire2) parts2.forEach(function (p0) { var mk = p0 === 'identity' ? 'authz_id_mig' : 'authz_perm_mig'; st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(mk, flag)); });
     st2.push(enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: 'migration', keys: parts2.join(','), scope: 'writes=' + R2.plan.writes.length, decision: 'allow', why: 'apply', reason: snap, path: '/api/authz-migrate', ip: ident.ip }));
     var conflict2=await enfMigBatch(env,guards2.concat([counter2.statement],st,st2));
     if(conflict2)return conflict2;
@@ -282,6 +269,9 @@ async function enfMigrateApi(env, request, A, url, meta) {
       st3.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(kk, rev2));
       st3.push(audEvStmt(env, { cid: 'rb_' + sid.slice(-12) + '_' + n + '_' + rev2, ts: now, uid: ident.uid, un: ident.un, dept: parseKey(kk).dept || '', k: kk, rev: rev2, etype: 'dataset', eid: resName(kk), ename: resName(kk), act: 'rolled_back', ctx: JSON.stringify({ snap: sid }), bef: '', aft: '', ip: ident.ip, dev: ident.dev, city: ident.city }));
     }
+    /* RISHAD-266: لقطةُ scope-retire تعيد علامةَ authz_scope_mig كما كانت */
+    if (sm.kind === 'migration' && isObj(smMeta.retire) && smMeta.retire.meta === ENF_RETIRE_META && smMeta.retire.v != null)
+      st3.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(ENF_RETIRE_META, String(smMeta.retire.v)));
     if (sm.kind === 'migration') {
       var flags = await env.DB.prepare("SELECT k, v FROM meta WHERE k IN ('authz_perm_mig', 'authz_scope_mig', 'authz_id_mig')").all();
       ((flags && flags.results) || []).forEach(function (f) { var fv = parseJson(f.v, null); if (fv && fv.snap === sid) st3.push(env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind(f.k)); });
@@ -360,27 +350,16 @@ function changesCut(rows, max) {
   }
   return { keys: keys, more: false, v: last };
 }
-/* /api/changes في بيئة الإنفاذ: am = وضعُ الخادم الآن · az = تغيّر ما تُحسب منه مفاتيحُ الفاعل (الصلاحيات · الحسابات · الهيكل · المنصة · منحُ إداراته ونطاقُها) */
+/* /api/changes في بيئة الإنفاذ: am = وضعُ الخادم الآن · az = تغيّر ما تُحسب منه مفاتيحُ الفاعل (الصلاحيات · الحسابات · الهيكل · المنصة · منحُ إداراته) */
 var ENF_AZ_GLOBAL = { bassam_perms_v1: 1, bassam_auth_users_v1: 1, bassam_depts_v1: 1, bassam_gdepts_v1: 1, bassam_platform_v1: 1 };
 function enfChangesOut(env, A, v, keys, all) {
   var out = { v: v, keys: keys, am: env.__enfm ? env.__enfm.mode : 'legacy' }, ds = {}, i;
   enfDeptsOf(A).forEach(function (d) { ds[d] = 1; });
   for (i = 0; i < all.length; i++) {
     var k = String(all[i]), P = parseKey(k);
-    if (!P.dept ? ENF_AZ_GLOBAL[P.name] : (ds[P.dept] && (P.name === ENF_SCOPE_RES || P.name === ENF_GRANTS_RES))) { out.az = 1; break; }
+    if (!P.dept ? ENF_AZ_GLOBAL[P.name] : (ds[P.dept] && P.name === ENF_GRANTS_RES)) { out.az = 1; break; }
   }
   return out;
-}
-/* KIVO_264 · az للوردية المربوطة بالجدول: حفظةٌ تمسّ الجدولَ الشهري لإدارةٍ من إداراته ⇒ az لمن ورديتُه فيها مربوطةٌ به (enfShiftBound) — فمجموعةُ قراءته
-   تُحسب منه (الاسترشاد · التقرير · الجولات · الجدولُ نفسُه بإسقاط الوردية) ومراجعاتُ تلك الموارد لا تتغيّر، فكان تبويبُه يبقى على إسقاطه القديم
-   (وتُرفض كتاباتُه «scope») حتى إعادة التحميل. سجلُّ النطاق يُقرأ للإدارات التي تغيّر جدولُها وحدها — ولا قراءةَ إن لم يتغيّر جدول. */
-async function enfStaffAz(env, A, all) {
-  if (!A || !A.enf || !A.u.ekey || A.u.role === 'super' || KIVO_SCOPE.isCeiling(permv4Actor(A).actor)) return false;
-  var ds = enfDeptsOf(A).filter(function (d) { return all.indexOf('bsdept:' + d + ':' + ENF_STAFF_RES) !== -1; });
-  if (!ds.length) return false;
-  var recs = await enfScopeRecs(env, ds, null), i;
-  for (i = 0; i < ds.length; i++) if (enfShiftBound(A, recs, ds[i])) return true;
-  return false;
 }
 /* أسبابُ الرفض المفصّلة للعميل (بلا قيم): المفاتيحُ المطلوبة · الناقصة · أبعادُ النطاق · مفاتيحُ السبب */
 function enfDenyInfo(o, ev) {
@@ -460,7 +439,6 @@ async function changesRoute(env, url, ss) {
      (حفظةٌ واحدة لا تُشطر — قد تتجاوز الحدَّ وحدها) ⇒ more:1 و v = آخرُ مراجعةٍ مضمَّنة: مؤشّرٌ آمن يُطلب به الباقي فوراً. بلا قطع: الشكلُ كما كان. */
   var cutC = changesCut(rowsC, CHANGES_MAX), ksC = cutC.keys, vC = cutC.more ? cutC.v : rv2, allC = ((ch && ch.results) || []).map(function (r) { return r.k; });
   var outC = enfEnvOn(env) ? enfChangesOut(env, AC, vC, ksC, allC) : { v: vC, keys: ksC };
-  if (enfEnvOn(env) && !outC.az && await enfStaffAz(env, AC, allC)) outC.az = 1;   /* KIVO_264: الورديةُ المربوطةُ بالجدول الشهري */
   if (meSnapshotChanged(AC, (ch && ch.results) || [], vC)) outC.meChanged = 1;
   if (meTasksChanged(AC, (ch && ch.results) || [], vC)) outC.tasksChanged = 1;
   if (cutC.more) outC.more = 1;
@@ -639,7 +617,7 @@ export default {
       }
       /* ═══ شاشة مدير النظام: الحضور · الجلسات · الأمن · السياسات · الملخّص ═══ */
       var isAdminPath = path === '/api/presence' || path === '/api/sec' || path === '/api/sess/kill' || path === '/api/guard' || path === '/api/guard/unlock' || path === '/api/policy' || path === '/api/overview'
-        || path === '/api/recovery' || path === '/api/recovery/new' || path === '/api/reset' || path === '/api/permv2' || path === '/api/scope-dryrun' || path === '/api/identity-rehearsal' || path === '/api/identity-preflight';
+        || path === '/api/recovery' || path === '/api/recovery/new' || path === '/api/reset' || path === '/api/permv2' || path === '/api/identity-rehearsal' || path === '/api/identity-preflight';
       if (isAdminPath) {
         var AX = await actorOf(env, ss.uid);
         if (!AX) return json({ ok: 0, err: 'session' }, 401);
@@ -657,7 +635,7 @@ export default {
           var scopeV = null; try { scopeV = KIVO_SCOPE.validate(); } catch (e4v) { scopeV = { ok: false, err: String(e4v && e4v.message || e4v) }; }
           return json({ ok: 1, version: KIVO_REGISTRY.version, docSha256: KIVO_REGISTRY.docSha256, status: KIVO_REGISTRY.status, phase: 4.1, mode: 'shadow', worker: WORKER_VER, counts: KIVO_REGISTRY.counts, validation: PERMV2.validation, stats: PERMV2.stats,
                         scope: { version: KIVO_SCOPE.version, docSha256: KIVO_SCOPE.docSha256, phase: KIVO_SCOPE.phase, mode: KIVO_SCOPE.mode, dims: KIVO_SCOPE.DIMS, counts: KIVO_SCOPE.counts, validation: scopeV, migration: KIVO_SCOPE.migration, interpretations: KIVO_SCOPE.interpretations, conflicts: KIVO_SCOPE.conflicts, terminology: KIVO_SCOPE.terminology, readPolicy: KIVO_SCOPE.readPolicy, readMaxItems: PV4_READ_MAX, readBudget: PV4_READ_BUDGET, readBudgetPolicy: KIVO_SCOPE.readBudgetPolicy, bindings: KIVO_SCOPE.bindings.length,
-                                 scopeMigration: { version: KIVO_SCOPE_MIGRATION.version, docSha256: KIVO_SCOPE_MIGRATION.docSha256, phase: KIVO_SCOPE_MIGRATION.phase, mode: KIVO_SCOPE_MIGRATION.mode, endpoint: '/api/scope-dryrun', writes: 0, dims: KIVO_SCOPE_MIGRATION.dims, classes: KIVO_SCOPE_MIGRATION.classes, rules: KIVO_SCOPE_MIGRATION.rules.length, readiness: KIVO_SCOPE_MIGRATION.readiness.table.length, nf01: KIVO_SCOPE_MIGRATION.nf01.id, telemetryNote: KIVO_SCOPE_MIGRATION.telemetryNote, identity: KIVO_SCOPE_MIGRATION.identity, identityPhase: 4.3,
+                                 scopeMigration: { version: KIVO_SCOPE_MIGRATION.version, docSha256: KIVO_SCOPE_MIGRATION.docSha256, phase: KIVO_SCOPE_MIGRATION.phase, mode: KIVO_SCOPE_MIGRATION.mode, endpoint: '/api/identity-preflight', writes: 0, dims: KIVO_SCOPE_MIGRATION.dims, classes: KIVO_SCOPE_MIGRATION.classes, rules: KIVO_SCOPE_MIGRATION.rules.length, readiness: KIVO_SCOPE_MIGRATION.readiness.table.length, nf01: KIVO_SCOPE_MIGRATION.nf01.id, telemetryNote: KIVO_SCOPE_MIGRATION.telemetryNote, identity: KIVO_SCOPE_MIGRATION.identity, identityPhase: 4.3,
                                                   identityRehearsal: { endpoint: '/api/identity-rehearsal', version: KIVO_IDENTITY_MIGRATION.version, docSha256: KIVO_IDENTITY_MIGRATION.docSha256, phase: KIVO_IDENTITY_MIGRATION.phase, mode: KIVO_IDENTITY_MIGRATION.mode, writes: 0, classes: KIVO_IDENTITY_MIGRATION.classes, auto: KIVO_IDENTITY_MIGRATION.auto, pending: KIVO_IDENTITY_MIGRATION.pending, thresholds: KIVO_IDENTITY_MIGRATION.model && KIVO_IDENTITY_MIGRATION.model.thresholds || null, sidClosureGates: KIVO_IDENTITY_MIGRATION.sidClosureGates || null, gates: (KIVO_IDENTITY_MIGRATION.gatesSpec || []).length, validation: (function () { try { return KIVO_IDENTITY_MIGRATION.validate(); } catch (eIV) { return { ok: false, err: String(eIV && eIV.message || eIV) }; } })() },
                                                   identityPreflight: { endpoint: '/api/identity-preflight', version: KIVO_IDENTITY_PREFLIGHT.version, docSha256: KIVO_IDENTITY_PREFLIGHT.docSha256, phase: 4.5, mode: KIVO_IDENTITY_PREFLIGHT.mode, writes: 0, rules: (KIVO_IDENTITY_PREFLIGHT.rules || []).length, gates: (KIVO_IDENTITY_PREFLIGHT.gatesSpec || []).length, decisions: (KIVO_IDENTITY_PREFLIGHT.decisions || []).length, rank: KIVO_IDENTITY_PREFLIGHT.rank, validation: (function () { try { return KIVO_IDENTITY_PREFLIGHT.validate(); } catch (eIPV) { return { ok: false, err: String(eIPV && eIPV.message || eIPV) }; } })() } },
                                  readBindings: { meta: KIVO_SCOPE.readBindings.meta, byResource: KIVO_SCOPE.readBindings.byResource, special: KIVO_SCOPE.readBindings.special, noReadKey: KIVO_SCOPE.readBindings.noReadKey, readKindOutsideRoutes: KIVO_SCOPE.readBindings.readKindOutsideRoutes || [] }, readBindingCheck: (function () { try { return permv4ReadBindingCheck(); } catch (e4c) { return { ok: false, err: String(e4c && e4c.message || e4c) }; } })(),
@@ -666,27 +644,7 @@ export default {
                         bind: PERMV2.bind,
                         build: { version: KIVO_BUILD.version, phase: KIVO_BUILD.phase, mode: KIVO_BUILD.mode, counts: KIVO_BUILD.counts, bindings: KIVO_BUILD.bindings.map(function (x) { return { key: x.key, group: x.group, status: x.status, impl: x.impl }; }), lenses: KIVO_BUILD.LENSES, importRes: KIVO_BUILD.IMPORT_RES, retroMaxH: KIVO_BUILD.RETRO_MAX_H, stats: PERMV3 } });
         }
-        /* R200 · Phase 4.2 — Scope Migration Dry-Run (مدير النظام وحده · GET · قراءةٌ فقط · writes = 0): يحمّل بيانات D1 الفعلية (الإدارات · الحسابات · الصلاحيات · الخطة · الجولات · الجدولُ الشهري · التقريرُ اليومي · الموظفون)
-           ويستدعي KIVO_SCOPE_MIGRATION.dryRun بخطّافات AS‑IS الحيّة (actorFromKeys · permv2Ctx · dailyFieldOnly · permv4Ctx) — لا يكتب قيمةَ نطاقٍ ولا يمسّ أي حكم */
-        if (path === '/api/scope-dryrun') {
-          if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
-          if (request.method !== 'GET') return json({ ok: 0, err: 'dry-run is read-only (GET)' }, 405);
-          try {
-            var captureM = await opCaptureReferences(env, await kvAll(env, 'kv')), keysM = captureM.keys, byDeptM = {}, deptsM = parseJson(keysM[K_DEPTS], []), usersM = parseJson(keysM[K_USERS], []), permsM = parseJson(keysM[K_PERM], {}), gdM = parseJson(keysM[K_GDEPTS], []), dmi;
-            if (!Array.isArray(deptsM)) deptsM = []; if (!Array.isArray(usersM)) usersM = []; if (!Array.isArray(gdM)) gdM = [];
-            for (dmi = 0; dmi < deptsM.length; dmi++) { var dIdM = deptsM[dmi] && deptsM[dmi].id; if (!dIdM) continue; var preM = 'bsdept:' + dIdM + ':';
-              byDeptM[dIdM] = { plan: parseJson(keysM[preM + 'bassam_plan_v1'], null), rounds: parseJson(keysM[preM + 'bassam_rounds_v1'], null), staffing: parseJson(keysM[preM + 'bassam_staffing_v3'], null), dreport: parseJson(keysM[preM + 'bassam_dreport_v1'], null), employees: parseJson(keysM[preM + 'bassam_employees_v1'], []) }; }
-            var hooksM = { today: dsToday(nowX), now: nowX, maxActors: 300,
-              actorOf: function (u) { return actorFromKeys(keysM, u.id); },
-              ctxOf: function (A, d) { return permv2Ctx(A, d); },
-              fieldOnly: function (A, d) { return dailyFieldOnly(A, d); },
-              pv4Ctx: function (A, d, kn, okMap, data) { var cM = permv4Ctx(A, d, kn, okMap, { pv4: { staffing: data && data.staffing } }); cM.read = true; cM.readMaxItems = PV4_READ_MAX; return cM; },
-              telemetry: PERMV4 };
-            var rpM = KIVO_SCOPE_MIGRATION.dryRun({ depts: deptsM, gdepts: gdM, users: usersM, perms: isObj(permsM) ? permsM : {}, byDept: byDeptM }, hooksM);
-            if (captureM.guards.length) await env.DB.batch(captureM.guards);
-            return json({ ok: 1, worker: WORKER_VER, dryRun: rpM });
-          } catch (eDR) { return json({ ok: 0, err: String(eDR && eDR.message || eDR) }, 500); }
-        }
+        /* RISHAD-266: /api/scope-dryrun (R200 · جردُ سقف النطاق القديم) أُزيل مع تقاعده — KIVO_SCOPE_MIGRATION.dryRun باقٍ لتمهيد الهوية أدناه */
         /* R202 · Phase 4.4 — Identity Migration Rehearsal (مدير النظام وحده · GET · قراءةٌ فقط · writes = 0): يحمّل بيانات D1 الفعلية (الإدارات · الحسابات · الخطة · الجولات · الموظفون) ونصوصَها الخام وأرقامَ مراجعاتها
            ويستدعي KIVO_IDENTITY_MIGRATION.rehearse ببذرةٍ آمنة (crypto.getRandomValues · 32 بايت؛ أو seed=<64 hex> في الاستعلام لإعادة إنتاج بروفةٍ سابقة حرفاً بحرف) — لا يكتب شيئاً في D1 ولا يمسّ أي حكم؛ الناتجُ مجموعةُ كتابةٍ مقترحة وتصنيفُ نسبٍ وتصميمُ رجوع فحسب */
         if (path === '/api/identity-rehearsal') {
@@ -706,7 +664,7 @@ export default {
             return json({ ok: 1, worker: WORKER_VER, rehearsal: rpR });
           } catch (eIR) { return json({ ok: 0, err: String(eIR && eIR.message || eIR) }, 500); }
         }
-        /* R203 · Phase 4.5 — Integrated Identity→Scope Preflight (مدير النظام وحده · GET · قراءةٌ فقط · writes = 0): يحمّل بيانات D1 الفعلية (كما في /api/scope-dryrun) ونصوصَها الخام وأرقامَ مراجعاتها، ويُجري بروفةَ الهوية v24.9 (uid · sid · ekey + إقفالُ sid للطوابق الحالية ولقطة الشهر الجاري) ببذرةٍ آمنة أو seed=<64 hex>،
+        /* R203 · Phase 4.5 — Integrated Identity→Scope Preflight (مدير النظام وحده · GET · قراءةٌ فقط · writes = 0): يحمّل بيانات D1 الفعلية (الإدارات · الحسابات · الصلاحيات · الخطة · الجولات · الجدول · التقرير · الموظفون) ونصوصَها الخام وأرقامَ مراجعاتها، ويُجري بروفةَ الهوية v24.9 (uid · sid · ekey + إقفالُ sid للطوابق الحالية ولقطة الشهر الجاري) ببذرةٍ آمنة أو seed=<64 hex>،
            ثم يطبّق مجموعةَ الكتابة النهائية (tier A) على نسخٍ في الذاكرة فقط (tier B كما هو)، ويُجري KIVO_SCOPE_MIGRATION.dryRun نفسَه مرتَين (قبل الهوية · بعدها) بالخطّافات AS‑IS نفسِها (actorFromKeys · permv2Ctx · dailyFieldOnly · permv4Ctx) ويقارنهما بقواعد IP الثماني — لا يكتب شيئاً في D1 ولا يمسّ أي حكم؛ الناتجُ تقريرُ تمهيدٍ مضغوط */
         if (path === '/api/identity-preflight') {
           if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);

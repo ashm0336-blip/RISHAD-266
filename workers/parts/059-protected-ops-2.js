@@ -326,41 +326,8 @@ function enfDstatsWrite(A, k, newVal, curVal, ctx, X) {
     techOk: function () { return sup || enfHeldAnyDept(A, 'dstats.haram.entry') || enfHeldAnyDept(A, 'dstats.nabawi.entry'); }, noVia: true });
   return r;
 }
-/* ── سجلُّ النطاق (bsdept:<d>:bassam_scope_v1 — خارج RES_REG: مجهولٌ مرفوضٌ في النظام القديم كما كان) ──
-   السقف (ceiling) لمدير النظام (sys.ceiling.set) · نطاقُ الموظفين (emp) لمدير الإدارة (perm.assign) ضمن السقف · ما سواهما لمدير النظام */
-function enfScopeWrite(A, k, newVal, curVal) {
-  var P = parseKey(k), d = P.dept, sup = A.u.role === 'super';
-  if (!d) return enfNo('scope');
-  if (!sup && !deptInScope(A, d)) return enfNo('dept');
-  if (newVal == null) return sup ? enfOk(['sys.ceiling.set']) : enfNo('super');
-  var n = parseJson(newVal, null), o = curVal == null ? {} : parseJson(curVal, null);
-  if (!isObj(n) || !isObj(o)) return enfNo('shape');
-  var top = {}, q; Object.keys(n).concat(Object.keys(o)).forEach(function (x) { top[x] = 1; });
-  var keys = [];
-  for (q in top) {
-    if (deq(o[q], n[q])) continue;
-    if (q === 'emp') continue;
-    if (!sup) return enfNo('super', { detail: q });
-    if (q === 'ceiling') { if (!isObj(n.ceiling)) return enfNo('shape'); for (var dim in n.ceiling) { var c = n.ceiling[dim]; if (!ENF_SCOPE_MODES[dim] || !isObj(c) || !ENF_SCOPE_MODES[dim][c.mode] || (c.mode === 'list' && !Array.isArray(c.list))) return enfNo('shape', { detail: 'ceiling.' + dim }); } keys.push('sys.ceiling.set'); }
-  }
-  var eo = isObj(o.emp) ? o.emp : {}, en = isObj(n.emp) ? n.emp : {}, ek, E = { recs: {} }; E.recs[d] = n;
-  if (!deq(eo, en)) {
-    if (!sup && !isMgrOf(A, d)) return enfNo('mgr');
-    var all = {}; for (ek in eo) all[ek] = 1; for (ek in en) all[ek] = 1;
-    for (ek in all) {
-      if (deq(eo[ek], en[ek])) continue;
-      if (!sup && ek === String(A.u.ekey || '')) return enfNo('self');
-      var s = en[ek]; if (s === undefined) continue;
-      if (!isObj(s)) return enfNo('shape');
-      for (var dm in s) {
-        var v = s[dm];
-        if (!ENF_EMP_MODES[dm] || !isObj(v) || !ENF_EMP_MODES[dm][v.mode]) return enfNo('shape', { detail: 'emp.' + ek + '.' + dm });
-        var L = v.mode === 'list' ? v.list : (v.mode === 'single' ? [v.value] : null);
-        if (L && !Array.isArray(L)) return enfNo('shape');
-        if (L && dm !== 'Shift') { var ceil = enfCeilingOf(E, d, dm); if (ceil === null) return enfNo('scope-unknown', { detail: 'ceiling ' + dm + ' unmigrated' }); if (ceil !== 'ALL') for (var li = 0; li < L.length; li++) if (!enfHas(ceil, L[li])) return enfNo('scope', { detail: dm + ' ' + L[li] + ' outside ceiling' }); }
-      }
-    }
-    keys.push(sup ? 'sys.ceiling.set' : 'perm.assign');
-  }
-  return enfOk(enfUniq(keys));
-}
+/* ── سجلُّ النطاق القديم (bsdept:<d>:bassam_scope_v1) — RISHAD-266: أُلغي «سقفُ النطاق القديم»؛ لا يُكتب لأيّ دورٍ بالوضعين (scope-retired).
+   الاستثناءان: حذفُ مدير النظام له ضمن مسح الإدارة أو حذفِها في الخادم (ctx.dw · 019e · 054 — لا يكتب قيمةً ولا يمنح وصولاً)، وخطوةُ
+   «scope-retire» في /api/authz-migrate (063) التي تحذفه بلقطةٍ قابلةٍ للرجوع ولا تمرّ بهذا الحكم أصلاً. */
+var SCOPE_RETIRED_DETAIL = 'legacy scope ceiling (bassam_scope_v1) is retired: unit ceilings (Permissions page) control access';
+function scopeRetiredWhy(A, newVal, ctx) { return newVal == null && A && A.u && A.u.role === 'super' && ctx && ctx.dw ? '' : 'scope-retired'; }

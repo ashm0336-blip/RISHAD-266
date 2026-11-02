@@ -2102,22 +2102,6 @@
       }
     },
     {
-      "path": "/api/scope-dryrun",
-      "methods": [
-        "GET"
-      ],
-      "access": "super",
-      "responses": {
-        "200": {
-          "keys": [
-            "ok",
-            "worker",
-            "dryRun"
-          ]
-        }
-      }
-    },
-    {
       "path": "/api/identity-rehearsal",
       "methods": [
         "GET"
@@ -2233,7 +2217,7 @@
         "seed": "hex64",
         "hash": "hex64 — بصمةُ الخطة",
         "generated": "لحظةُ الخطة",
-        "parts?": "[identity|scope|perm]",
+        "parts?": "[identity|perm] أو [scope-retire] وحدها (RISHAD-266: تقاعدُ سقف النطاق القديم — حذفُ bsdept:%:bassam_scope_v1 وmeta.authz_scope_mig بلقطةٍ قابلةٍ للرجوع)",
         "inferable?": "boolean",
         "snap": "معرّفُ اللقطة (rollback)",
         "force?": "boolean"
@@ -2250,7 +2234,7 @@
             "err"
           ],
           "err": "bad-body",
-          "note": "bad-body (+ at) لمخالفة المخطّط؛ و act · seed-hash · generated · snap للدلالة",
+          "note": "bad-body (+ at) لمخالفة المخطّط؛ و act · seed-hash · generated · snap · parts-mixed (scope-retire مع غيرها) للدلالة",
           "schema": "src/schemas/api/bodies.schema.json#/bodies//api/authz-migrate"
         },
         "404": {

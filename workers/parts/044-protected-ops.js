@@ -19,6 +19,8 @@ function canWrite(A, k, newVal, curVal, ctx) {
   if (lw) return A && A.enf ? enfNo('perms', { detail: 'latent: ' + lw + ' | ' + LATENT_MSG }) : { ok: false, why: 'perms', detail: 'latent: ' + lw + ' | ' + LATENT_MSG };
   if (A && A.enf) return canWriteEnf(A, k, newVal, curVal, ctx);              /* KIVO_243: الكتابة من سجل v24.9 */
   var u = A.u;
+  /* RISHAD-266: سقفُ النطاق القديم أُلغي (059 scopeRetiredWhy) — كان «unknown» هنا؛ السببُ الآن باسمه */
+  if (parseKey(k).dept && resName(k) === ENF_SCOPE_RES) { var srw = scopeRetiredWhy(A, newVal, ctx); return srw ? { ok: false, why: srw, detail: SCOPE_RETIRED_DETAIL } : { ok: true }; }
   /* سجل الموارد يسبق كل شيء: ما لا سياسة له لا يُكتب — ولا يُستثنى منه دور */
   var R0 = resOf(k);
   if (!R0) return { ok: false, why: 'unknown' };

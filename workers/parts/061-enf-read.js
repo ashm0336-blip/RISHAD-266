@@ -1,5 +1,6 @@
 /* ══ (4) القراءة — مفاتيحُ القراءة المربوطة صراحةً (readBindings · P4.1.1-01) محمولةٌ في الإدارة ∧ Department/Branch،
-   ثم إسقاطُ السجلات خارج النطاق (D4-01): المصدر · الوردية (D4-09) · الموقع/العنصر · المسنَد (P4.2-05) · العدساتُ المعطّلة.
+   ثم إسقاطُ السجلات خارج النطاق (D4-01): المصدر · المسنَد (P4.2-05) · العدساتُ المعطّلة.
+   RISHAD-266: الوردية (D4-09) والموقع/العنصر كانت تُسقَط بسقف النطاق القديم (bassam_scope_v1) — أُلغي، فلا تقيّد القراءةَ بعده.
    الإسقاطُ لا الحذف حيث يرسم السجلُّ خريطة (الطوابق والعناصر تبقى هياكلَ بلا حقول الحالة)، والأجزاءُ المحجوبة تُعاد
    من الخادم عند الكتابة (merge-on-write) فلا يمحوها من لا يراها، ولا يكتب فيها من لا يملكها.
    fail-closed (P4.1.1-04): لا ميزانيةَ تتخطّى سجلاً — أيُّ خطأٍ في الإسقاط ⇒ القراءةُ مرفوضة. ══ */
@@ -14,7 +15,8 @@ function canReadEnf(A, k) {
     return R.scope === 'global';                                             /* السجلاتُ العامة للجلسة (I-06 · allowlist) */
   }
   if (!deptInScope(A, P.dept)) return false;
-  if (rn === ENF_SCOPE_RES || rn === ENF_GRANTS_RES) return isMgrOf(A, P.dept);  /* سجلّا النطاق والمنح: مديرُ الإدارة (والموظفُ يتسلّم نطاقَه ومفاتيحَه الفعلية في الإقلاع) */
+  if (rn === ENF_SCOPE_RES) return false;                                    /* RISHAD-266: سقفُ النطاق القديم أُلغي — لا يُسلَّم لغير مدير النظام */
+  if (rn === ENF_GRANTS_RES) return isMgrOf(A, P.dept);                      /* سجلُّ المنح: مديرُ الإدارة (والموظفُ يتسلّم مفاتيحَه الفعلية في الإقلاع) */
   var R2 = resOf(k);
   if (!R2 || R2.scope !== 'dept') return false;
   if (R2.rule) {
@@ -46,31 +48,13 @@ function enfViewCtx(A, d, rn, refs) {
   if (cache[ck]) return cache[ck];
   var RK = KIVO_SCOPE.readKeysFor(rn), held = [], i;
   for (i = 0; i < RK.keys.length; i++) if (enfHeld(A, d, RK.keys[i]) && (RK.keys[i] !== 'backup.view' || bkReadAnyOk(A, d, rn))) held.push(RK.keys[i]);   /* IP39 (019u): لا يرفع قيدَ نطاقٍ مفتاحٌ لا يفتح القراءة */
-  var dims = ['Shift', 'Site', 'Zone/Element', 'Assigned', 'Source'], rs = {}, j;
+  /* RISHAD-266: Shift · Site · Zone/Element لا تقيّد (سقفُ النطاق القديم أُلغي) — Assigned · Source كما كانا */
+  var dims = ['Assigned', 'Source'], rs = { 'Shift': false, 'Site': false, 'Zone/Element': false }, j;
   for (j = 0; j < dims.length; j++) { var all = held.length > 0; for (i = 0; i < held.length && all; i++) if (enfDimsOf(held[i]).indexOf(dims[j]) === -1) all = false; rs[dims[j]] = all; }
-  var act = permv4Actor(A).actor, ceilActor = KIVO_SCOPE.isCeiling(act), E = { recs: (refs && refs.recs) || {} }, staffing = refs && refs.staffing ? refs.staffing[d] : null;
-  var V = { d: d, rn: rn, held: held, restrict: rs, ceil: ceilActor, E: E, sources: enfSources(A, 'read'), fieldOnly: dailyFieldOnly(A, d), ekey: String(A.u.ekey || ''),
+  var V = { d: d, rn: rn, held: held, restrict: rs, sources: enfSources(A, 'read'), fieldOnly: dailyFieldOnly(A, d), ekey: String(A.u.ekey || ''),
     lens: {}, toks: rn === 'bassam_rounds_v1' && refs && refs.emps ? enfToksOf(refs.emps[d], String(A.u.ekey || '')) : null };
   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (KIVO_LENS_PLUGINS.keys) — بوابةُ كلٍّ منها بالمرجع نفسِه */
   for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) V.lens[KIVO_LENS_PLUGINS.keys[li]] = KIVO_BUILD.lensGate(A.perms, A.u, d, KIVO_LENS_PLUGINS.keys[li]).on;
-  V.shiftOk = function (sh, ym) {
-    if (!V.restrict.Shift || V.ceil) return true;
-    var es = enfEmpScopeOf(E, d, V.ekey, 'Shift');
-    if (!es || es.mode === 'unknown') return false;
-    if (es.mode === 'n/a') return true;
-    if (es.mode === 'list') return enfHas(es.list || [], sh);
-    var m = isObj(staffing) ? staffing[ym] : null, r = isObj(m) ? m[V.ekey] : null, mine = isObj(r) && r.shift ? String(r.shift) : null;
-    return !!mine && String(sh) === mine;
-  };
-  V.valOk = function (dim, v) {
-    var lst = null;
-    if (!V.ceil) { var es = enfEmpScopeOf(E, d, V.ekey, dim); if (!es || es.mode === 'unknown') return false; if (es.mode === 'list') lst = es.list || []; else if (es.mode === 'single') lst = [es.value]; }
-    if (lst && !enfHas(lst, v)) return false;
-    var ceil = enfCeilingOf(E, d, dim); if (ceil === null) return false;
-    return ceil === 'ALL' || enfHas(ceil, v);
-  };
-  V.siteOk = function (sid) { return !V.restrict.Site || V.valOk('Site', sid); };
-  V.zoneOk = function (eid) { return !V.restrict['Zone/Element'] || V.valOk('Zone/Element', eid); };
   return (cache[ck] = V);
 }
 /* هويّاتُ المحرّك نفسُها (KIVO_238 IH-01/02: uid أولاً · sid للطابق) */
@@ -80,7 +64,6 @@ var ENF_ID = {
   marks: function (e) { if (!isObj(e)) return null; if (e.uid != null && e.uid !== '') return 'u:' + e.uid; if (e.id != null && e.id !== '') return 'm:' + e.id; if (e.label) return 'mL:' + e.label; return null; },
   paths: function (e) { if (!isObj(e)) return null; if (e.uid != null && e.uid !== '') return 'u:' + e.uid; var v = e.id || e.code || e.name; return v == null || v === '' ? null : 'p:' + v; },
   floor: function (e, i) { if (!isObj(e)) return '#' + i; var v = e.sid || e.id; return v == null || v === '' ? '#' + i : 'f:' + v; },
-  roundsFloor: function (fl, i) { fl = isObj(fl) ? fl : {}; if (fl.sid != null && fl.sid !== '') return 'f:' + fl.sid; return 'rounds:' + (fl.name || fl.num || ('#' + i)); }
 };
 /* KIVO_259 · AUD-030 (ADR-018): أعمدةُ عناصر العدسات وحقولُ العدسات فوق العناصر والطابق من الإضافات (KIVO_LENS_PLUGINS — مولَّد) —
    كانت حرفيّة: ENF_LENS_COLS ['zones', 'gates', 'marks', 'paths'] · ENF_DIST_KEYS (emp · needN · needS · uniNeed على كل عمودٍ عدا paths) · ENF_DENS_KEYS (count · pc على zones) · dens على الطابق.
@@ -104,11 +87,10 @@ async function enfEmpsLoad(env, refs, ks) {
   for (var i = 0; i < ks.length; i++) { var rn = resName(ks[i]), d = parseKey(ks[i]).dept; if (d && (rn === 'bassam_rounds_v1' || rn === 'bassam_plan_v1') && !(d in refs.emps)) refs.emps[d] = await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'); }
 }
 /* عنصرٌ كما يراه الفاعل: يُسقَط منه ما لا يراه (حالةُ الرصد خارج النطاق · التسكين بلا عدسة التوزيع · الكثافة بلا عدستها) */
-function enfElemMask(V, col, e, site, rounds) {
+function enfElemMask(V, col, e, rounds) {
   var mask = [], i;
   if (!isObj(e)) return mask;
-  var stub = (site !== undefined && !V.siteOk(site)) || (V.restrict['Zone/Element'] && !V.zoneOk(ENF_ID[col](e)));
-  if (!stub && rounds && V.restrict.Assigned && col !== 'paths') stub = !enfMine(V, e.emp);
+  var stub = !!rounds && V.restrict.Assigned && col !== 'paths' && !enfMine(V, e.emp);
   if (stub && col !== 'paths') mask = mask.concat(ENF_FIELD_KEYS);
   for (i = 0; i < ENF_LENS_ELEM.length; i++) if (!V.lens[ENF_LENS_ELEM[i].lens] && ENF_LENS_ELEM[i].cols.indexOf(col) !== -1) mask = mask.concat(ENF_LENS_ELEM[i].fields);
   return mask;
@@ -116,20 +98,20 @@ function enfElemMask(V, col, e, site, rounds) {
 function enfMaskApply(e, mask) { if (!mask.length || !isObj(e)) return e; var o = enfShallow(e); for (var i = 0; i < mask.length; i++) delete o[mask[i]]; return o; }
 function enfMaskRestore(e, ce, mask) { if (!mask.length || !isObj(e) || !isObj(ce)) return e; var o = enfShallow(e), i, f; for (i = 0; i < mask.length; i++) { f = mask[i]; if (Object.prototype.hasOwnProperty.call(ce, f)) o[f] = ce[f]; else delete o[f]; } return o; }
 /* حاوية عناصر (طابق خطة · طابق جولة · مرآة الجذر): إسقاط */
-function enfFloorProj(V, fl, site, rounds) {
+function enfFloorProj(V, fl, rounds) {
   if (!isObj(fl)) return fl;
   var o = enfShallow(fl), c, col, i;
   for (c = 0; c < ENF_LENS_COLS.length; c++) {
     col = ENF_LENS_COLS[c]; if (!Array.isArray(fl[col])) continue;
     if (!V.lens[col]) { o[col] = []; continue; }
-    var out = []; for (i = 0; i < fl[col].length; i++) out.push(enfMaskApply(fl[col][i], enfElemMask(V, col, fl[col][i], site, rounds)));
+    var out = []; for (i = 0; i < fl[col].length; i++) out.push(enfMaskApply(fl[col][i], enfElemMask(V, col, fl[col][i], rounds)));
     o[col] = out;
   }
   for (c = 0; c < ENF_LENS_FLOOR.length; c++) if (!V.lens[ENF_LENS_FLOOR[c].lens] && Object.prototype.hasOwnProperty.call(o, ENF_LENS_FLOOR[c].field)) delete o[ENF_LENS_FLOOR[c].field];
   return o;
 }
 /* …ودمج: المحجوبُ يعود من القيمة الحالية (الخادمُ مرجعُه) — الجديدُ الذي لا نظيرَ له يبقى كما أرسله العميل فيُصنَّف ويُحكم */
-function enfFloorMerge(V, nf, cf, site, rounds) {
+function enfFloorMerge(V, nf, cf, rounds) {
   if (!isObj(nf) || !isObj(cf)) return nf;
   var o = enfShallow(nf), c, col, i;
   for (c = 0; c < ENF_LENS_COLS.length; c++) {
@@ -144,8 +126,8 @@ function enfFloorMerge(V, nf, cf, site, rounds) {
     for (i = 0; i < nf[col].length; i++) {
       var e = nf[col][i], id = ENF_ID[col](e); L = id != null ? byId[id] : null; pick = -1;
       if (L) { if (L.indexOf(i) !== -1 && !used[i]) pick = i; else for (q = 0; q < L.length && pick < 0; q++) if (!used[L[q]]) pick = L[q]; }
-      if (pick >= 0) { used[pick] = 1; out.push(enfMaskRestore(e, cc[pick], enfElemMask(V, col, cc[pick], site, rounds))); }
-      else out.push(rounds ? enfMaskApply(e, enfElemMask(V, col, e, site, rounds)) : e);
+      if (pick >= 0) { used[pick] = 1; out.push(enfMaskRestore(e, cc[pick], enfElemMask(V, col, cc[pick], rounds))); }
+      else out.push(rounds ? enfMaskApply(e, enfElemMask(V, col, e, rounds)) : e);
     }
     o[col] = out;
   }
@@ -178,68 +160,14 @@ var ENF_PROJ = {
       return o;
     }
   },
-  /* الوردية (D4-09): صفوفُ الجدول الشهري لورديةٍ خارج نطاق الموظف تُحجب */
-  'bassam_staffing_v3': {
-    on: function (V) { return V.restrict.Shift && !V.ceil; },
-    proj: function (v, V) {
-      if (!isObj(v)) return v; var o = {}, mk, e;
-      for (mk in v) {
-        if (!isObj(v[mk]) || !/^\d{4}-\d{1,2}$/.test(mk)) { o[mk] = v[mk]; continue; }
-        var m2 = {};
-        for (e in v[mk]) { var r = v[mk][e]; if (e !== '__shifts' && isObj(r) && r.shift && !V.shiftOk(r.shift, mk)) continue; m2[e] = r; }
-        o[mk] = m2;
-      }
-      return o;
-    },
-    merge: function (c, n, V) {
-      if (!isObj(n) || !isObj(c)) return n; var o = enfShallow(n), mk, e;
-      for (mk in c) {
-        if (!isObj(c[mk]) || !/^\d{4}-\d{1,2}$/.test(mk)) continue;
-        for (e in c[mk]) {
-          var r = c[mk][e]; if (e === '__shifts' || !isObj(r) || !r.shift || V.shiftOk(r.shift, mk)) continue;
-          if (!isObj(o[mk]) || o[mk] === n[mk]) o[mk] = isObj(n[mk]) ? enfShallow(n[mk]) : {};
-          o[mk][e] = r;
-        }
-      }
-      return o;
-    }
-  },
-  /* الوردية: أقسامُ الورديات في التقرير اليومي خارج نطاق الموظف تُحجب */
-  'bassam_dreport_v1': {
-    on: function (V) { return V.restrict.Shift && !V.ceil; },
-    proj: function (v, V) {
-      if (!isObj(v)) return v; var o = {}, dk;
-      for (dk in v) {
-        var day = KIVO_SCOPE._h.parseDay(dk), x = v[dk];
-        if (!day || !isObj(x) || !isObj(x.shifts)) { o[dk] = x; continue; }
-        var s2 = {}, sh; for (sh in x.shifts) if (V.shiftOk(sh, day.y + '-' + day.m)) s2[sh] = x.shifts[sh];
-        var x2 = enfShallow(x); x2.shifts = s2; o[dk] = x2;
-      }
-      return o;
-    },
-    merge: function (c, n, V) {
-      if (!isObj(n) || !isObj(c)) return n; var o = enfShallow(n), dk, sh;
-      for (dk in c) {
-        var day = KIVO_SCOPE._h.parseDay(dk), x = c[dk];
-        if (!day || !isObj(x) || !isObj(x.shifts)) continue;
-        for (sh in x.shifts) {
-          if (V.shiftOk(sh, day.y + '-' + day.m)) continue;
-          if (!isObj(o[dk]) || o[dk] === n[dk]) { o[dk] = isObj(n[dk]) ? enfShallow(n[dk]) : enfShallow(x); o[dk].shifts = isObj(n[dk]) && isObj(n[dk].shifts) ? enfShallow(n[dk].shifts) : {}; }
-          if (!isObj(o[dk].shifts)) o[dk].shifts = {};
-          o[dk].shifts[sh] = x.shifts[sh];
-        }
-      }
-      return o;
-    }
-  },
-  /* الخطة: سياقُ رسم (لا يُحجب طابقٌ ولا عنصر) — يُسقَط ما خارج نطاق Site/Zone من حالة العناصر، وتُحجب العدساتُ المعطّلة وحقولُها */
+  /* الخطة: سياقُ رسم (لا يُحجب طابقٌ ولا عنصر) — تُحجب العدساتُ المعطّلة وحقولُها (RISHAD-266: لا إسقاطَ بالموقع/العنصر بعد تقاعد سقف النطاق القديم) */
   'bassam_plan_v1': {
-    on: function (V) { return V.restrict.Site || V.restrict['Zone/Element'] || enfAnyLensOff(V); },
+    on: function (V) { return enfAnyLensOff(V); },
     proj: function (v, V) {
       if (!isObj(v)) return v; var o = enfShallow(v), i;
-      if (Array.isArray(v.floors)) o.floors = v.floors.map(function (fl, i0) { return enfFloorProj(V, fl, ENF_ID.floor(fl, i0), false); });
-      if (isObj(v.months)) { var mo = {}, k; for (k in v.months) { var md = enfMonthD(v.months[k]); if (!md) { mo[k] = v.months[k]; continue; } var dd = md.d.map(function (fl, i1) { return enfFloorProj(V, fl, ENF_ID.floor(fl, i1), false); }); if (md.arr) mo[k] = dd; else { mo[k] = enfShallow(v.months[k]); mo[k].d = dd; } } o.months = mo; }
-      var root = enfFloorProj(V, enfColsOf(v), V.restrict.Site ? '?' : undefined, false);
+      if (Array.isArray(v.floors)) o.floors = v.floors.map(function (fl, i0) { return enfFloorProj(V, fl, false); });
+      if (isObj(v.months)) { var mo = {}, k; for (k in v.months) { var md = enfMonthD(v.months[k]); if (!md) { mo[k] = v.months[k]; continue; } var dd = md.d.map(function (fl, i1) { return enfFloorProj(V, fl, false); }); if (md.arr) mo[k] = dd; else { mo[k] = enfShallow(v.months[k]); mo[k].d = dd; } } o.months = mo; }
+      var root = enfFloorProj(V, enfColsOf(v), false);
       for (i = 0; i < ENF_LENS_COLS.length; i++) if (v[ENF_LENS_COLS[i]] !== undefined) o[ENF_LENS_COLS[i]] = root[ENF_LENS_COLS[i]];
       return o;
     },
@@ -247,33 +175,33 @@ var ENF_PROJ = {
       if (!isObj(n) || !isObj(c)) return n; var o = enfShallow(n), i, k;
       if (Array.isArray(n.floors) && Array.isArray(c.floors)) {
         var cf = {}; c.floors.forEach(function (fl, i0) { cf[ENF_ID.floor(fl, i0)] = fl; });
-        o.floors = n.floors.map(function (fl, i1) { var id = ENF_ID.floor(fl, i1), x = cf[id]; return x ? enfFloorMerge(V, fl, x, id, false) : fl; });
+        o.floors = n.floors.map(function (fl, i1) { var id = ENF_ID.floor(fl, i1), x = cf[id]; return x ? enfFloorMerge(V, fl, x, false) : fl; });
       }
       if (isObj(n.months) && isObj(c.months)) {
         var mo = enfShallow(n.months);
         for (k in n.months) {
           var mn = enfMonthD(n.months[k]), mc = enfMonthD(c.months[k]); if (!mn || !mc) continue;
           var cm = {}; mc.d.forEach(function (fl, i2) { cm[ENF_ID.floor(fl, i2)] = fl; });
-          var dd = mn.d.map(function (fl, i3) { var id = ENF_ID.floor(fl, i3), x = cm[id]; return x ? enfFloorMerge(V, fl, x, id, false) : fl; });
+          var dd = mn.d.map(function (fl, i3) { var id = ENF_ID.floor(fl, i3), x = cm[id]; return x ? enfFloorMerge(V, fl, x, false) : fl; });
           if (mn.arr) mo[k] = dd; else { mo[k] = enfShallow(n.months[k]); mo[k].d = dd; }
         }
         o.months = mo;
       }
       var rn0 = enfColsOf(n), rc0 = enfColsOf(c);
-      var rm = enfFloorMerge(V, rn0, rc0, V.restrict.Site ? '?' : undefined, false);
+      var rm = enfFloorMerge(V, rn0, rc0, false);
       for (i = 0; i < ENF_LENS_COLS.length; i++) { var col = ENF_LENS_COLS[i]; if (rm[col] !== undefined) o[col] = rm[col]; else delete o[col]; }
       return o;
     }
   },
   /* الجولات: كالخطة + راصدُ الميدان يرى حالةَ العناصر المسنَدة إليه وحدها (P4.2-05) — الحاوياتُ والهندسةُ وemp[] تبقى */
   'bassam_rounds_v1': {
-    on: function (V) { return V.restrict.Site || V.restrict['Zone/Element'] || V.restrict.Assigned || enfAnyLensOff(V); },
+    on: function (V) { return V.restrict.Assigned || enfAnyLensOff(V); },
     proj: function (v, V) {
       if (!isObj(v)) return v; var o = {}, dk;
       for (dk in v) {
         var x = v[dk];
         if (!KIVO_SCOPE._h.parseDay(dk) || !isObj(x) || !Array.isArray(x.d)) { o[dk] = x; continue; }
-        var x2 = enfShallow(x); x2.d = x.d.map(function (fl, i) { return enfFloorProj(V, fl, ENF_ID.roundsFloor(fl, i), true); }); o[dk] = x2;
+        var x2 = enfShallow(x); x2.d = x.d.map(function (fl, i) { return enfFloorProj(V, fl, true); }); o[dk] = x2;
       }
       return o;
     },
@@ -284,30 +212,16 @@ var ENF_PROJ = {
         if (!KIVO_SCOPE._h.parseDay(dk) || !isObj(nx) || !Array.isArray(nx.d)) continue;
         /* F24: يومٌ أو طابقٌ جديد يُقارن بطابقٍ بلا عناصر — فلا يُكتب فيه ما لا يراه الفاعل */
         var cd = isObj(cx) && Array.isArray(cx.d) ? cx.d : [];
-        var x2 = enfShallow(nx); x2.d = nx.d.map(function (fl, i) { return i < cd.length && isObj(cd[i]) ? enfFloorMerge(V, fl, cd[i], ENF_ID.roundsFloor(cd[i], i), true) : enfFloorMerge(V, fl, enfFloorBlank(V, fl), ENF_ID.roundsFloor(fl, i), true); }); o[dk] = x2;
+        var x2 = enfShallow(nx); x2.d = nx.d.map(function (fl, i) { return i < cd.length && isObj(cd[i]) ? enfFloorMerge(V, fl, cd[i], true) : enfFloorMerge(V, fl, enfFloorBlank(V, fl), true); }); o[dk] = x2;
       }
       return o;
     }
   }
 };
-/* الاسترشاد · المضبوطات: محاضرُ ورديةٍ خارج نطاق الموظف تُحجب (Site = loc خارج الترحيل — معلَن) */
-ENF_PROJ['bassam_irshad_v1'] = ENF_PROJ['bassam_seized_v1'] = {
-  on: function (V) { return V.restrict.Shift && !V.ceil; },
-  hid: function (r, V) { return isObj(r) && r.shift && r.y != null && r.m != null && !V.shiftOk(r.shift, (+r.y) + '-' + (+r.m)); },
-  proj: function (v, V) { if (!isObj(v) || !Array.isArray(v.reports)) return v; var self = this, o = enfShallow(v); o.reports = v.reports.filter(function (r) { return !ENF_PROJ['bassam_irshad_v1'].hid(r, V); }); return o; },
-  merge: function (c, n, V) {
-    if (!isObj(n) || !isObj(c) || !Array.isArray(c.reports)) return n;
-    var H = ENF_PROJ['bassam_irshad_v1'].hid, hidden = c.reports.filter(function (r) { return H(r, V); }); if (!hidden.length) return n;
-    var hid = {}; hidden.forEach(function (r) { if (r.id != null) hid[String(r.id)] = 1; });
-    var o = enfShallow(n); o.reports = (Array.isArray(n.reports) ? n.reports : []).filter(function (r) { return !(isObj(r) && r.id != null && hid[String(r.id)]); }).concat(hidden);
-    return o;
-  }
-};
-ENF_PROJ['bassam_staffing_v2'] = ENF_PROJ['bassam_staffing_v3'];
-/* مرجعياتُ الإسقاط لطلب: سجلّاتُ النطاق وجداولُ الورديات للإدارات المعنية */
+/* مرجعياتُ الإسقاط لطلب: جداولُ الورديات وسجلُّ الموظفين للإدارات المعنية — الشكلُ { recs, staffing, emps } ثابتٌ لمستدعيه (019k · 019r · 019t · 020 · 062 · 063)؛
+   RISHAD-266: recs فارغٌ دائماً (سقفُ النطاق القديم أُلغي فلا يُقرأ سجلُّه) */
 async function enfRefsFor(env, depts, keys) {
   var out = { recs: {}, staffing: {}, emps: {} }, i, d;
-  out.recs = await enfScopeRecs(env, depts, keys);
   for (i = 0; keys && i < depts.length; i++) { d = 'bsdept:' + depts[i] + ':bassam_employees_v1'; if (Object.prototype.hasOwnProperty.call(keys, d)) out.emps[depts[i]] = keys[d]; }   /* F24 (enfToksOf) */
   for (i = 0; i < depts.length; i++) { d = depts[i]; if (!d || out.staffing[d] !== undefined) continue; var sk = 'bsdept:' + d + ':bassam_staffing_v3'; var raw = keys && Object.prototype.hasOwnProperty.call(keys, sk) ? keys[sk] : (keys ? null : await opResourceGet(env, sk)); out.staffing[d] = parseJson(raw, null); }
   return out;

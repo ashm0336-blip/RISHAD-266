@@ -1041,7 +1041,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       cl: A.u.role === 'super' && !!body && body.clearLatent === true,           /* caps-own: the system administrator's explicit clearing of latent items (021 latentLossWhy) */
       rst: !!rstK9[k0],                                                           /* KIVO_265 · H-1: علامةُ الاستعادة على هذا المفتاح (الوضع القديم · N-6) — ولمن تُقبل: 018 taskSrvExempt (R-5) */
       tk: tkCtx9[d00] || null,                                                    /* KIVO_265 · R-2: سياقُ الحساب النشط (018 taskAcctWhy) */
-      ed: edCtx9 && d00 && resName(k0) === 'bassam_employees_v1' ? edCtx9 : null   /* KIVO_265 · أمن: تفرّدُ الهوية عبر الإدارات (018 empDupWhy) */
+      ed: edCtx9 && d00 && resName(k0) === 'bassam_employees_v1' ? edCtx9 : null,  /* KIVO_265 · أمن: تفرّدُ الهوية عبر الإدارات (018 empDupWhy) */
+      dw: !!(d00 && opt && Array.isArray(opt.__serverDepartmentWipes) && opt.__serverDepartmentWipes.indexOf(d00) !== -1)   /* RISHAD-266: مسحُ الإدارة أو حذفُها في الخادم (059 scopeRetiredWhy) */
     };
     if (ENFX) {
       /* merge-on-write: ما يُحجب عن الفاعل في القراءة يعود من القيمة الحالية قبل التصنيف — فلا يمحوه ولا يكتب فيه */

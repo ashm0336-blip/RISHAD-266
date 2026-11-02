@@ -61,7 +61,6 @@
 | `/api/reset` | POST | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/retro` | GET / POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
 | `/api/save` | POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `055-sec-headers.js` `bodyLimit` · `063-enf-api-and-handler.js` `handle` |
-| `/api/scope-dryrun` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/sec` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/seized` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
 | `/api/seized/act` | POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
