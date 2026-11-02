@@ -390,7 +390,7 @@
 </sc-if>
     </sc-if>
     <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);font-feature-settings:'tnum'">
-      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{shownCount}}</span><span style="opacity:.6"> / {{totalCount}}</span>
+      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{shownCount}}</span><span style="color:var(--text-muted)"> / {{totalCount}}</span>
     </div>
     <!-- مجموعات / قائمة: تقسيم الجدول بالورديات — عرضٌ فقط (R187 — مفتاحُ التقرير اليومي نفسُه) -->
     <div title="{{grpModeTip}}" style="display:inline-flex;border:1px solid var(--bd-a185151810p2);border-radius:9px;overflow:hidden;flex-shrink:0;margin-left:6px">
@@ -646,13 +646,15 @@
               </sc-for>
               <sc-if value="{{e.restCanEdit}}" hint-placeholder-val="{{ true }}">
               <button onClick="{{e.restToggle}}" title="تعديل أيام الراحة" style="{{e.restBtnStyle}}">+</button>
+              </sc-if>
+              <!-- الموجة 2 · ES-9: المحرِّرُ يُفتح أيضاً من رقاقة الراحة على شاشات اللمس — ولو اكتمل النصاب (يومان) فيُزال اليومُ منه بضغطةٍ مقصودة.
+                 عرضُه لا يتجاوز الشاشة (calc(100vw - 16px)) وأيامُه تلتفّ سطرين على الجوال: كان 452px فيخرج «سبت» عن شاشة 390px -->
               <sc-if value="{{e.restOpen}}" hint-placeholder-val="{{ false }}">
-              <div data-bs-dd="1" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);z-index:40;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:8px;display:flex;gap:4px;white-space:nowrap">
+              <div data-bs-dd="1" class="st-restdd" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);z-index:40;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:8px;display:flex;gap:4px;white-space:nowrap;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 16px);box-sizing:border-box">
                 <sc-for list="{{e.weekDays}}" as="w" hint-placeholder-count="7">
                 <button onClick="{{w.toggle}}" title="{{w.tip}}" style="{{w.style}}">{{w.name}}</button>
                 </sc-for>
               </div>
-              </sc-if>
               </sc-if>
             </div>
           </td>
@@ -735,19 +737,21 @@
       </div>
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <span style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);flex-shrink:0;margin-top:4px">الراحات</span>
-        <div style="position:relative;display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+        <div class="st-restrow" style="position:relative;display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end">
           <sc-for list="{{e.restChips}}" as="r" hint-placeholder-count="2">
           <span onClick="{{r.remove}}" title="{{r.tip}}" style="{{r.style}}" style-hover="border-color:var(--bd-xef4444);color:var(--fg-xef4444)">☕ {{r.name}}</span>
           </sc-for>
           <sc-if value="{{e.restCanEdit}}" hint-placeholder-val="{{ true }}">
           <button onClick="{{e.restToggle}}" title="تعديل أيام الراحة" style="{{e.restBtnStyle}}">+</button>
+          </sc-if>
+          <!-- الموجة 2 · ES-9: المحرِّرُ يُفتح أيضاً من رقاقة الراحة على شاشات اللمس — ولو اكتمل النصاب (يومان) فيُزال اليومُ منه بضغطةٍ مقصودة.
+                 عرضُه لا يتجاوز الشاشة (calc(100vw - 16px)) وأيامُه تلتفّ سطرين على الجوال: كان 452px فيخرج «سبت» عن شاشة 390px -->
           <sc-if value="{{e.restOpen}}" hint-placeholder-val="{{ false }}">
-          <div data-bs-dd="1" style="position:absolute;top:100%;left:0;z-index:40;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:8px;display:flex;gap:4px;white-space:nowrap">
+          <div data-bs-dd="1" class="st-restdd" style="position:absolute;top:100%;left:0;z-index:40;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:8px;display:flex;gap:4px;white-space:nowrap;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 16px);box-sizing:border-box">
             <sc-for list="{{e.weekDays}}" as="w" hint-placeholder-count="7">
             <button onClick="{{w.toggle}}" title="{{w.tip}}" style="{{w.style}}">{{w.name}}</button>
             </sc-for>
           </div>
-          </sc-if>
           </sc-if>
         </div>
       </div>
@@ -762,7 +766,7 @@
     </sc-for>
   </div>
   </sc-if>
-  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-a2452452450p2);font-size:12px">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-surface);font-size:12px">
     <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgTotal}}</span> {{pgTotalW}}</span>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>

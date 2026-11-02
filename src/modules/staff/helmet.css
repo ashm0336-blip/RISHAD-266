@@ -2,6 +2,10 @@
 body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
 a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 @keyframes coverageGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+/* الموجة 2 · ES-9: شارةُ «حذف بيانات الشهر» على بطاقة الشهر (١٤px · وراءها تأكيد) ٢٤ بكسل على الإصبع — وأيامُ محرِّر الراحات (26px) ٣٦،
+   وفي عرض البطاقات رقائقُ الراحة وزرُّ «+» (23px) ٣٢ */
+@media (pointer: coarse){[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}.st-restdd button{min-height:36px}
+.st-restrow>span[style*="cursor: pointer"],.st-restrow>button{min-height:32px}}
 /* صف مؤشرات الجدول الشهري — بنية شبكة التقرير اليومي نفسها مكيَّفة لخمسة كروت (التوحيد بطلب المستخدم) */
 .st-kpis{gap:12px}
 

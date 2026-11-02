@@ -14,7 +14,7 @@
 | شريطُ الخطأ | `src/core/130-error-bar.js` | `#bsErrBar` | ظاهر «bsErrBar» · يُغلق بالنقر «d.remove()» |
 | محرّكُ الجداول | `src/components/180-tables-engine.js` | `.bs-rtable` | ملائمةُ الأعمدة «bs-fitcols» · أعمدةُ الهوية المثبّتة «data-bsfz» · مخفيٌّ يُعاد فحصُه «تعذّر قياسُه» |
 | ممرُّ الجدول الكبير | `src/components/670-big-table-lane.js` | الجدولُ نفسُه حاويةُ التمرير | الرأسُ اللاصق «barBottom» |
-| شريطُ التبويبات | `src/components/190-tabstrip-unify.js` | `.bs-tabstrip` | أفقيٌّ ينزلق على الجوال «bs-tabstrip» |
+| شريطُ التبويبات | `src/layouts/helmet-global.css` | `.bs-tabstrip` (في قالب كل وحدة من أول رسم) | أفقيٌّ ينزلق على الجوال «bs-tabstrip» |
 | القوائمُ المنسدلة | `src/components/650-dropdown-unify.js` | كلُّ قائمةٍ مخصّصة | محبوسةٌ تُحرَّر «clipAncestor» · مثبّتةٌ فوق القصّ «"fixed"» |
 | أشرطةُ البحث | `src/components/680-search-bars.js` | كلُّ حقلٍ «بحث» | فارغٌ بلا نتائج «لا نتائج مطابقة لـ «» · المسحُ بـEsc «Escape» |
 | التلميحات | `src/components/600-tooltip-portal.js` | `.bs-tip` وما يماثله | — (عرضٌ فقط · بديلُ التركيز في `helmet-global.css` — SOT-058) |

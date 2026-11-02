@@ -298,7 +298,8 @@
     var r = staffRec(did || curDept(), ekey);
     return !r ? 'none' : (r.dis ? 'frozen' : 'active');
   }
-  /* ═══ شارة «مدير الإدارة» — تعيينها لمدير النظام وحده، وحاملها يرث سقف إدارته ═══ */
+  /* ═══ شارة «مدير الإدارة» — تعيينها لمدير النظام وحده؛ حاملُها يدير حسابات موظفيه وصلاحياتهم ولا يرث سقف إدارته: صفحاتُه ورقتُه
+     (التوريثُ لمفتاح mgr: وحده — 331 myPerms) ويمنح مما يملك ═══ */
   function staffIsMgr(ekey, did){
     var r = staffRec(did || curDept(), ekey);
     return !!(r && r.mgr);

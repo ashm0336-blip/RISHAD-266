@@ -4,6 +4,10 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 /* صف مؤشرات الموظفين — بنية شبكة التقرير اليومي نفسها مكيَّفة لأربعة كروت
    (كرت «طبيعة العمل» انتقل إلى الجدول الشهري بطلب المستخدم) */
 .emp-kpis{gap:16px}
+/* الموجة 2 · ES-9: «تعديل» و«حذف» في بطاقة الموظف (26px متلاصقان) ٣٦ بكسل بينهما 8px — على الإصبع وحده */
+@media (pointer: coarse){.emp-cardact{gap:8px!important}.emp-cardact>button{min-width:36px;min-height:36px}}
+/* الموجة 2 · ES-7: خطواتُ معالج «سند تسليم عهدة جديد» في سطرها وسطاً على الجوال — هنا لا في <style> «الجاهزية» (sc-if) الغائب والمعالجُ مفتوح */
+@media (max-width:520px){.es-wzhd .es-wzst{flex-basis:100%;justify-content:center}}
 
 
 

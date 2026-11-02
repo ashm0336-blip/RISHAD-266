@@ -37,14 +37,29 @@
     }
     return out;
   }
+  /* الموجة 2 · IRSZ-1: خلايا الصفّ عند مواضع الأعمدة المثبّتة بحسب مجموع colSpan لا عددِ الأبناء — نقصُ <th> واحدةٍ في آخر
+     الترويسة (عمودُ الإجراءات في سجلّ الاسترشاد) كان يُسقط كلَّ صفوف الجسم من التثبيت فتبقى ترويسةُ العمود مثبّتةً فوق غيره.
+     الصفُّ الذي يمرّ فيه عمودٌ مثبّتٌ داخل خليةٍ ممتدّة (صفُّ الحالة الفارغة · صفُّ مجموع) يُتجاوز كلُّه كما كان. */
+  function cellsAt(row,pos){
+    var kids=row.children, out=[], k=0, col=0;
+    for(var g=0;g<pos.length;g++){
+      while(k<kids.length && col+(kids[k].colSpan||1)<=pos[g]){ col+=kids[k].colSpan||1; k++; }
+      if(k>=kids.length || (kids[k].colSpan||1)!==1) return null;
+      out.push(kids[k]);
+    }
+    return out;
+  }
   function applyFrozen(tbl,idxs){
     var hr=colRow(tbl); if(!hr) return;
-    var hc=hr.children.length, last=idxs.length-1;
-    for(var f=0;f<idxs.length;f++){ if(hr.children[idxs[f]]) addCls(hr.children[idxs[f]], clsFor(f,last)); }
-    var rows=tbl.querySelectorAll('tbody tr');
+    var hk=hr.children, last=idxs.length-1, pos=[];
+    for(var f=0;f<idxs.length;f++){ if(hk[idxs[f]]) addCls(hk[idxs[f]], clsFor(f,last)); }
+    for(var i=0,col=0;i<hk.length;i++){ for(var j=0;j<idxs.length;j++){ if(idxs[j]===i) pos[j]=col; } col+=hk[i].colSpan||1; }
+    for(var q=0;q<idxs.length;q++){ if(pos[q]==null) return; }
+    var rows=tbl.querySelectorAll('tbody tr'), multi=tbl.querySelectorAll('thead tr').length>1;   /* ترويسةٌ بصفّين: المطابقةُ بالعدد كما كانت */
     for(var r=0;r<rows.length;r++){
-      var row=rows[r]; if(row.children.length!==hc) continue;   /* تجاوز صفوف الحالة الفارغة (colspan) */
-      for(var g=0;g<idxs.length;g++){ var c=row.children[idxs[g]]; if(c) addCls(c, clsFor(g,last)); }
+      if(multi && rows[r].children.length!==hk.length) continue;
+      var cs=cellsAt(rows[r],pos); if(!cs) continue;
+      for(var g=0;g<cs.length;g++) addCls(cs[g], clsFor(g,last));
     }
   }
   function setFzOn(ts){

@@ -238,6 +238,8 @@
     </div>
     <sc-if value="{{tkKfOn}}" hint-placeholder-val="{{ false }}"><span class="tkk-fact"><button type="button" class="tkk-fchip" onClick="{{tkKfClear}}" aria-label="{{tkKfAria}}">{{tkKfTxt}}<span class="x" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" data-i="i-d92754e4"></svg></span></button><span class="tkk-count">{{tkKfCnt}}</span></span></sc-if>
     <div style="height:24px;width:1px;background:var(--bg-xe2e8f0);margin:0 4px"></div>
+    <!-- الموجة 2 · DG-02: «ملفات» لا تحمل إلا التصدير والطباعة — تُخفى كلُّها لمن لا يملك التصدير (كانت تُفتح شريطاً فارغاً)، كما في التقرير اليومي -->
+<sc-if value="{{tkPmExport}}" hint-placeholder-val="{{ true }}">
     <div style="position:relative">
       <button onClick="{{filesToggle}}" style="{{filesBtnStyle}}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg>
@@ -248,8 +250,8 @@
       <div data-bs-dd="1" style="position:absolute;top:100%;left:0;z-index:55;min-width:190px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right">
         <sc-if value="{{permCanExport}}" hint-placeholder-val="{{ true }}"><div onClick="{{exportCsv}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
           <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a0132800p08);color:var(--fg-x008450);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-336c1c51"></svg></span>
-          <div style="flex:1"><div>تصدير Excel</div></sc-if><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">{{tkExpLbl}} — حسب الفلاتر الحالية</div></div>
-        </div>
+          <div style="flex:1"><div>تصدير Excel</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">{{tkExpLbl}} — حسب الفلاتر الحالية</div></div>
+        </div></sc-if>
 <sc-if value="{{tkPmExport}}" hint-placeholder-val="{{ true }}">
         <div onClick="{{printTable}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
           <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a141652330p08);color:var(--fg-x0369a1);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9662a985"></svg></span>
@@ -259,6 +261,7 @@
       </div>
       </sc-if>
     </div>
+</sc-if>
     <!-- KIVO_265 · البند 14: شريطُ الفلاتر مطويٌّ افتراضياً — زرٌّ بعدّاد الفعّال منها و«مسح» -->
     <button onClick="{{tfxToggle}}" style="{{tfxBtnStyle}}" title="الفلاتر: الحالة · الأولوية · المكلَّف · الوردية · نوع العمل · المراجِع · المتكررة · بانتظاري · بلا توثيق">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-0b453296"></svg>
@@ -267,7 +270,7 @@
     </button>
     <sc-if value="{{tfxHas}}" hint-placeholder-val="{{ false }}"><button onClick="{{tfxClear}}" title="مسح كل الفلاتر" style="height:32px;font-size:11px;border-radius:8px;padding:0 10px;cursor:pointer;font-family:'Cairo',sans-serif;border:1px solid var(--danger-border);background:var(--danger-bg);color:var(--danger-text)">مسح ({{tfxCount}})</button></sc-if>
     <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);font-feature-settings:'tnum';flex-shrink:0">
-      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{shownCount}}</span><span style="opacity:.6"> / {{totalCount}}</span>
+      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{shownCount}}</span><span style="color:var(--text-muted)"> / {{totalCount}}</span>
     </div>
     <div style="display:flex;align-items:center;gap:2px;background:var(--bg-xffffff);border-radius:12px;padding:2px;border:1px solid var(--bd-a185151810p2);flex-shrink:0">
       <button onClick="{{subList}}" title="عرض جدول" style="{{subListStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d9ba0eac"></svg></button>
@@ -391,8 +394,10 @@
 
 <sc-if value="{{isEmptyDay}}" hint-placeholder-val="{{ false }}">
 <div style="text-align:center;padding:40px 0;display:flex;flex-direction:column;align-items:center;gap:16px">
-  <div style="width:96px;height:96px;border-radius:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px -12px rgba(185,151,81,0.4);background:linear-gradient(135deg,var(--bg-a185151810p15),var(--bg-a185151810p05));border:1px solid var(--bd-a185151810p3)">
-    <span style="font-size:40px">{{emptyEmoji}}</span>
+  <div style="width:96px;height:96px;border-radius:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px -12px rgba(185,151,81,0.4);background:linear-gradient(135deg,var(--bg-a185151810p15),var(--bg-a185151810p05));border:1px solid var(--bd-a185151810p3);color:var(--fg-xb99751)">
+    <sc-if value="{{emptyIcQ}}" hint-placeholder-val="{{ false }}"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-7133b944"></svg></sc-if>
+    <sc-if value="{{emptyIcCal}}" hint-placeholder-val="{{ true }}"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-cc4be5d2"></svg></sc-if>
+    <sc-if value="{{emptyIcList}}" hint-placeholder-val="{{ false }}"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-97e013f3"></svg></sc-if>
   </div>
   <div>
     <p style="font-weight:800;font-size:20px;margin:0 0 6px">{{emptyTitle}}</p>
@@ -463,9 +468,14 @@
 </sc-if>
 
 <sc-if value="{{showKanban}}" hint-placeholder-val="{{ true }}">
-<div class="bs-cardrow bs-cardgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;min-height:200px;padding:14px">
-  <sc-for list="{{kanbanCols}}" as="col" hint-placeholder-count="4">
-  <div style="display:flex;flex-direction:column;gap:8px">
+<div class="bs-cardgrid tk-kanban" style="display:grid;grid-template-columns:repeat(6,minmax(180px,1fr));gap:12px;align-items:start;overflow-x:auto;min-height:200px;padding:14px">
+  <sc-for list="{{kanbanCols}}" as="col" hint-placeholder-count="6">
+  <div data-khide="{{col.kHide}}" style="display:flex;flex-direction:column;gap:8px;min-width:0">
+    <div style="display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:10px;background:var(--bg-surface-2);border:1px solid var(--border-subtle)">
+      <span style="width:8px;height:8px;border-radius:9999px;flex-shrink:0;{{col.dot}}"></span>
+      <span style="font-size:12px;font-weight:700;color:var(--text-primary);white-space:nowrap">{{col.label}}</span>
+      <span dir="ltr" style="margin-right:auto;min-width:22px;text-align:center;font-size:11px;font-weight:700;color:var(--text-secondary);background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:9999px;padding:0 7px;font-feature-settings:'tnum'">{{col.count}}</span>
+    </div>
     <sc-if value="{{col.empty}}" hint-placeholder-val="{{ false }}">
       <div style="text-align:center;padding:24px 0;font-size:12px;color:var(--fg-x53565a);border:2px dashed var(--bd-xe1e1e1);border-radius:12px">لا توجد مهام</div>
     </sc-if>
@@ -503,13 +513,14 @@
         <sc-if value="{{t.p2Can}}" hint-placeholder-val="{{ false }}"><span style="font-size:9.5px;font-weight:600;color:var(--text-muted)">{{t.p2CanTxt}}</span></sc-if>
         <sc-if value="{{t.p2Re}}" hint-placeholder-val="{{ false }}"><span style="font-size:9.5px;font-weight:600;color:var(--text-muted)">{{t.p2ReTxt}}</span></sc-if>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px;border-top:1px solid var(--bd-xf1f5f9)">
-        <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+      <!-- الموجة 2 · DG-03: التذييلُ يلتفّ — في العمود الضيّق ينزل «بواسطة …» تحت الأسماء فلا يُحشر سطرُ الشارات كلمةً في كل سطر -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 8px;padding-top:6px;border-top:1px solid var(--bd-xf1f5f9)">
+        <div style="display:flex;flex-direction:column;gap:1px;flex:1 1 auto;min-width:0">
           <sc-if value="{{t.hasEmp}}">
             <span style="font-size:10px;font-weight:400;color:var(--fg-x141414);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.avNames}}</span>
             <sc-if value="{{t.p2Unl}}" hint-placeholder-val="{{ false }}"><span title="مسندةٌ باسمٍ أو رمزٍ لا يطابق معرّفاً ثابتاً — لا تظهر لصاحبها في «ملفي» حتى تُربط يدوياً (قائمة المهمة ← ربط بموظف)" style="font-size:9px;font-weight:700;padding:1px 7px;border-radius:9999px;border:1px solid var(--warning-border);background:var(--warning-bg);color:var(--warning-text);white-space:nowrap">{{t.p2UnlTxt}}</span></sc-if>
             <sc-if value="{{t.p2Nid}}" hint-placeholder-val="{{ false }}"><span title="مسندةٌ برقم الهوية — مرتبطةٌ وقتَ القراءة بلا تعديلٍ للبيانات" style="font-size:9px;padding:1px 7px;border-radius:9999px;border:1px solid var(--border-default);background:var(--bg-surface-2);color:var(--text-muted);white-space:nowrap">مرتبطة بالهوية</span></sc-if>
-            <sc-if value="{{t.p2Chips}}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;color:var(--text-muted);white-space:nowrap">{{t.p2Chips}}</span></sc-if>
+            <sc-if value="{{t.p2Chips}}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;color:var(--text-muted);min-width:0;overflow-wrap:anywhere">{{t.p2Chips}}</span></sc-if>
             <sc-if value="{{t.hasAccepted}}"><span style="font-size:8px;color:var(--fg-x64748b);white-space:nowrap">قُبلت {{t.acceptedWd}} <span dir="ltr" style="font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{t.acceptedDateShort}} {{t.acceptedTime}}</span></span></sc-if>
             <sc-if value="{{t.hasResp}}" hint-placeholder-val="{{ false }}">
             <span title="قياساً بنافذة المهمة" style="font-size:8px;font-weight:600;white-space:nowrap;color:{{t.respColor}}">{{t.respTxt}}</span>
@@ -517,7 +528,7 @@
           </sc-if>
           <sc-if value="{{t.noEmp}}"><span style="font-size:9px;color:var(--fg-x94a3b8)">بدون إسناد</span></sc-if>
         </div>
-        <span style="font-size:9px;color:var(--fg-x53565a);flex-shrink:0" title="مُدخِل المهمة">بواسطة {{t.creator}}</span>
+        <span style="font-size:9px;color:var(--fg-x53565a);flex:0 1 auto;min-width:0" title="مُدخِل المهمة">بواسطة {{t.creator}}</span>
       </div>
     </div>
     </sc-for>
@@ -796,7 +807,7 @@
       </tbody>
     </table>
   </div>
-  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-a2452452450p2);font-size:12px">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-surface);font-size:12px">
     <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgTotal}}</span> {{pgTotalW}}</span>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>

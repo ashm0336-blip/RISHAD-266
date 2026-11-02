@@ -76,6 +76,8 @@ textarea.tkf-in{height:auto;min-height:76px;padding:10px 14px;font-size:13px;lin
 /* كرتُ اليوم: «الشهر كاملاً» ومؤشراتُ اليوم — بطاقاتُ «نموذج صفحة المهام المقترح» برموز السمة */
 .tk-dayall{margin-inline-start:auto;height:30px;padding:0 14px;border-radius:9999px;font-size:11px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;border:1px solid var(--border-brand-soft);background:var(--bg-surface);color:var(--brand-text)}
 .tk-dayall:hover{background:var(--brand-tint)}
+/* الموجة 2 · DG-10: على الإصبع — «الشهر كاملاً» ٣٦ وشارةُ «حذف بيانات الشهر» ٢٤ */
+@media (pointer: coarse){.tk-dayall{min-height:36px}[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}}
 /* KIVO_265 · مؤشراتُ اليوم «أوسمة اليوم» (اختيارُ المالك 2026-10-20) — الحلقاتُ بالرموز الدلالية وحدها، والوسمُ يُرتَّب بعرض الكرت نفسِه (container) */
 .tkk{container-type:inline-size;padding:14px 18px 18px;background:var(--bg-surface-2);border-bottom:1px solid var(--border-subtle);
   --arc-brand:var(--brand-primary);--arc-success:var(--success);--arc-danger:var(--danger);--arc-warning:var(--warning);--arc-info:var(--info-text);--arc-track:var(--bg-surface-4);--arc-split:var(--brand-muted);--tile-bg:var(--bg-surface)}
@@ -171,4 +173,11 @@ html[data-theme="dark"] .tkk{--arc-danger:var(--danger-text);--arc-info:var(--in
 @media (max-width:640px){.tkk{padding:12px 12px 14px}}
 @media (prefers-reduced-motion: reduce){.tkk-k{transition:none}.tkk-k:hover{transform:none}}
 @media (forced-colors: active){.tkk-k[aria-pressed="true"]{outline:3px solid Highlight;outline-offset:2px}.tkk-bz .lit,.tkk-bz .xtra{stroke:CanvasText}}
+/* الموجة 2 · DG-03: لوحةُ البطاقات — ستةُ أعمدةٍ معنونةٍ بعدّها في صفٍّ واحد (تمرّ أفقياً عند الضيق) وكلٌّ بارتفاعه (align-items:start)؛
+   وعلى الجوال تُرصّ الأعمدةُ رأسياً ويُطوى الفارغُ منها ما دام في غيره مهامّ (data-khide) — لا شريطَ يبدأ بعمودٍ فارغ فوق فراغٍ طويل */
+@media (max-width:760px){
+  .bs-cardgrid.tk-kanban{flex-direction:column;align-items:stretch!important;overflow:visible!important;scroll-snap-type:none}
+  .bs-cardgrid.tk-kanban > *{width:auto;flex:0 0 auto;align-self:stretch}
+  .bs-cardgrid.tk-kanban > [data-khide="1"]{display:none!important}
+}
 </style>

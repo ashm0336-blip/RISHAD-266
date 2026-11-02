@@ -2064,10 +2064,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (this._tkClockEls = null));
     /* KIVO_264 · المرحلة الثانية: حالاتُ سير العمل في أعمدة اللوحة القائمة — المراجعةُ والإعادةُ والتعثّرُ «جارية» · الإلغاءُ وإعادةُ الإسناد مع «اعتذار» (لا صفَّ يسقط) */
     const KB = { review: "in_progress", returned: "in_progress", stalled: "in_progress", cancelled: "declined", reassigned: "declined" },
-      f = ["pending", "in_progress", "done", "overdue", "expired", "declined"].map((t) => {
-        const e = U.flat.filter((e) => (KB[e.status] || e.status) === t);
-        return { key: t, tasks: e, empty: 0 === e.length };
-      }),
+      /* الموجة 2 · DG-03: كلُّ عمودٍ يحمل عنوانَ حالته وعدَّه · kHide: العمودُ الفارغ يُطوى على الجوال ما دام في غيره مهامّ */
+      f = ((cols) => {
+        const any = cols.some((c) => c.tasks.length);
+        return cols.map((c) => Object.assign(c, { empty: 0 === c.tasks.length, kHide: any && 0 === c.tasks.length ? "1" : "0" }));
+      })(["pending", "in_progress", "done", "overdue", "expired", "declined"].map((t) => {
+        const e = U.flat.filter((e) => (KB[e.status] || e.status) === t),
+          m = this.ST[t];
+        return { key: t, label: m[0], dot: "background:" + m[1], count: String(e.length), tasks: e };
+      })),
       g = (new Date(), this.MONTHS[e.month - 1] + " " + e.year + " هـ"),
       b = this.MONTHS.map((t, n) => {
         const a = n + 1,
@@ -2409,7 +2414,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       showKanban: !k && "kanban" === e.sub,
       showList: !k && "list" === e.sub,
       ...this._tkProdVals(c),   /* KIVO_265 · البند 8 */
-      emptyEmoji: y ? "🔍" : w || E0 ? "📅" : "📂",
+      /* الموجة 2 · DG-12: أيقونةُ المنصة (SVG) بدل الرموز التعبيرية */
+      emptyIcQ: !!y,
+      emptyIcCal: !y && !!(w || E0),
+      emptyIcList: !y && !(w || E0),
       emptyTitle: y ? "لا نتائج مطابقة للفلاتر" : E0 ? "لا توجد مهام في هذا اليوم" : w ? "لا توجد مهام مخططة لهذا الشهر" : "لا توجد مهام لهذا الشهر",
       emptyHint: y
         ? "لا توجد مهمة تطابق البحث أو الفلاتر الحالية — امسح البحث أو أعد الفلاتر إلى «الكل» لعرض " +

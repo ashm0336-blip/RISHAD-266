@@ -16865,21 +16865,40 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             (t.approved
               ? "rgba(0,132,80,0.4);background:var(--bg-a0132800p12);color:var(--fg-x008450)"
               : "rgba(225,225,225,0.9);background:var(--bg-xffffff);color:var(--fg-x94a3b8)"),
-          approveToggle: (t) => {
-            (t.stopPropagation(),
-              this.PC("approve")
-                ? this.setState(
-                    (t) => ({
-                      floors: t.floors.map((t, e) => (e === s ? { ...t, approved: !t.approved } : t)),
-                      tool: "select",
-                      sel: null,
-                      selMulti: [],
-                      draft: null,
-                      polyPts: [],
-                    }),
-                    () => this.savePlan(),
-                  )
-                : this.permDeny());
+          /* الموجة 2 · PLAN-06: قفلُ الموقع واعتمادُه (أو فتحُه) كان يقع بضغطةٍ واحدة على أيقونةٍ 22px بجوار «تعديل» و«حذف»؛ الآن بعد تأكيدٍ
+             في نافذة المنصة الموحّدة يمكن إلغاؤه (بلا info: النافذةُ الإعلامية تُخفي «إلغاء»)، والحالةُ المؤكَّدة تُكتب صريحةً (لا عكسُ ما صار إليه
+             الموقع)، وتُعاد كما كانت إن لم يُقبل الحفظ (ack.ok !== 1) */
+          approveToggle: (ev) => {
+            if ((ev.stopPropagation(), !this.PC("approve"))) return void this.permDeny();
+            const was = !!t.approved,
+              nm = t.name || "الموقع",
+              setAp = (v) => (st) => ({ floors: st.floors.map((f, e) => (e === s ? { ...f, approved: v } : f)) }),
+              ask = KIVO.bsConfirm
+                ? KIVO.bsConfirm({
+                    title: was ? "فتح الموقع للتعديل" : "قفل الموقع واعتماده",
+                    msg: was
+                      ? "سيُفتح «" + nm + "» للتعديل ويُلغى اعتماده — تعود خريطتُه قابلةً للتعديل والحذف."
+                      : "سيُقفل «" + nm + "» ويُعتمد — تصير خريطتُه للعرض فقط ولا يمكن تعديلُه أو حذفُه حتى يُفتح. لا يتأثر باقي المواقع.",
+                    ok: was ? "افتح الموقع" : "اقفل واعتمد",
+                    cancel: "إلغاء",
+                  })
+                : Promise.resolve(!0);
+            return Promise.resolve(ask).then((ok) => {
+              if (!ok) return !1;
+              return new Promise((done) =>
+                this.setState(
+                  (st) => ({ ...setAp(!was)(st), tool: "select", sel: null, selMulti: [], draft: null, polyPts: [] }),
+                  () =>
+                    Promise.resolve(this.savePlan())
+                      .then((ack) => ack, () => null)
+                      .then((ack) => {
+                        if (ack && ack.ok === 1) return done(!0);
+                        if (!ack) this.bsToast("لم يُحفظ " + (was ? "فتحُ" : "قفلُ") + " الموقع «" + nm + "» — تعذّر الاتصال بالخادم، فأُعيد كما كان. تحقّق من الاتصال ثم أعد المحاولة");
+                        this.setState(setAp(was), () => done(!1));
+                      }),
+                ),
+              );
+            });
           },
           pick: () => {
             n

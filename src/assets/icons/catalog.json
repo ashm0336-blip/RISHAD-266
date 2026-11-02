@@ -1224,7 +1224,7 @@
     "modules/plan/view.html": 3,
     "modules/seized/view.html": 2,
     "modules/staff/view.html": 1,
-    "modules/tasks/view.html": 1
+    "modules/tasks/view.html": 2
    },
    "viewBox": "0 0 24 24"
   },
@@ -1703,7 +1703,7 @@
    "body": "<path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\"></path><path d=\"M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z\"></path>",
    "uses": {
     "modules/kpis/view.html": 1,
-    "modules/tasks/view.html": 4
+    "modules/tasks/view.html": 5
    },
    "viewBox": "0 0 24 24"
   },
@@ -2451,15 +2451,14 @@
    "uses": {
     "modules/daily/view.html": 1,
     "modules/staff/view.html": 1,
-    "modules/tasks/view.html": 2
+    "modules/tasks/view.html": 3
    },
    "viewBox": "0 0 24 24"
   },
   "i-cc942376": {
    "body": "<path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z\"></path><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"></path><path d=\"m9 15 2 2 4-4\"></path>",
    "uses": {
-    "modules/daily/view.html": 1,
-    "modules/employees/view.html": 1
+    "modules/daily/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },

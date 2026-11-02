@@ -194,7 +194,7 @@ class Component extends DCLogic {
       /* القوائمُ المنسدلة بلا طبقةِ التقاط (قوائمُ الصفوف، الفلاتر، الجرس): تُغلق بالنقر خارجَها — فـEscape نقرةٌ صناعيّةٌ على body (خارجَ كلِّ شيء) */
       this._escMenus = () => { try { document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })); return true; } catch (e) { return false; } };
       /* مديرُ تركيز الحوارات: أعلى طبقةٍ ثابتةٍ ملءَ الشاشة الآن (بلا شرطِ معالجِ نقر) */
-      this._ovClassRe = /(^|\s)(pf-ov|fd-ov|mbk|bs-plat-ov)(\s|$)/;
+      this._ovClassRe = /(^|\s)(pf-ov|fd-ov|mbk|bs-plat-ov|tkf-ov)(\s|$)/;   /* الموجة 2 · DG-11: tkf-ov نافذةُ «مهمة جديدة» (موضعُها في CSS) */
       /* مرشَّحُ طبقةٍ (بلا أنماطٍ محسوبة): inline fixed بأطرافٍ أربعةٍ صفرٍ، أو صنفُ طبقةٍ معروف */
       this._ovCand = (el) => { try { const st = el.style; if (st && st.position === 'fixed' && st.top === '0px' && st.left === '0px' && st.right === '0px' && st.bottom === '0px') return true; const cn = el.className; return typeof cn === 'string' && this._ovClassRe.test(cn); } catch (e) { return false; } };
       this._topOverlay = () => {

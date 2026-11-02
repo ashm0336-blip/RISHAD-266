@@ -12,6 +12,12 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 /* R190: سجلُّ القائمة الجانبية المختصر يُخفى في الحاسوب (فأرة: تمريرٌ ومؤشّرٌ دقيق) ويبقى في الجوال واللوحي (لمس) —
    والتمييزُ بنوع الإدخال لا بالعرض: اللوحيُّ بالعرض يقارب عرضَ الحاسوب. والسجلُّ بعرض الصفحة يحلّ محلّه في الحاسوب. */
 @media (hover:hover) and (pointer:fine){ .bs-oreg{ display:none !important; } }
+/* الموجة 2 · PLAN-06: على الإصبع — أزرارُ رأس الخريطة وعدساتُها والتكبيرُ وطيُّ اللوحة وأيقوناتُ صفّ الموقع (٢٢–٣٠px) ٣٦ بكسل، وشارةُ «حذف خطة الشهر» ٢٤ */
+@media (pointer: coarse){ .bs-mapcard button:not([style*="position: absolute"]), .bs-panel-shell button:not([style*="position: absolute"]){ min-width:36px; min-height:36px; } [title^="سيتم حذف"][style*="position: absolute"]{ min-width:24px; min-height:24px; } }
+/* الموجة 2 · PLAN-06: على الجوال واللمس يلتفّ رأسُ الخريطة سطرين حين لا يتّسع — شريطُ «حالة الموقع» والعدساتِ والتكبير كان يُعصَر بجوار
+   منتقي الموقع إلى 0–47px على الجوال (الشارةُ والأزرارُ السبعة خارج الرؤية) و217–429px على اللوحي؛ الآن يأخذ سطراً كاملاً
+   (أساسُه عرضُ محتواه: لا يلتفّ ما دام يتّسع) وينزلق أفقياً وحده. الحاسوبُ (مؤشّرٌ دقيق فوق 640px) كما هو، والطباعةُ لا تُمسّ */
+@media screen and (max-width: 640px), screen and (pointer: coarse){ .bs-mapcard > .bs-hbar{ flex-wrap:wrap !important; row-gap:8px; } .bs-mapcard > .bs-hbar > .bs-hbar{ flex:1 1 auto; } }
 /* R190: «طباعة / حفظ PDF» من سجل التشغيل الميداني: السجلُّ وحده — والصنفُ على body طوال نافذة الطباعة فقط */
 @media print{
   body.bs-print-oplog [data-screen-label="الخطة التشغيلية"] > :not([data-op-log]){ display:none !important; }

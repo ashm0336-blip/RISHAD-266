@@ -426,7 +426,7 @@
       </sc-if>
     </div></sc-if>
     <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);font-feature-settings:'tnum'">
-      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{shownCount}}</span><span style="opacity:.6"> / {{totalCount}}</span>
+      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{shownCount}}</span><span style="color:var(--text-muted)"> / {{totalCount}}</span>
     </div>
     <!-- مجموعات / قائمة: تقسيم الجدول بحالة الموظف — عرضٌ فقط -->
     <div title="{{grpModeTip}}" style="display:inline-flex;border:1px solid var(--bd-a185151810p2);border-radius:9px;overflow:hidden;flex-shrink:0;margin-left:6px">
@@ -706,7 +706,7 @@
                 </div>
                 </sc-if>
                 <sc-if value="{{e.mkTrOpen}}" hint-placeholder-val="{{ false }}">
-                <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bd-a79702290p3);display:flex;flex-direction:column;gap:5px">
+                <div class="dr-trbox" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bd-a79702290p3);display:flex;flex-direction:column;gap:5px">
                   <sc-for list="{{e.mkTrShifts}}" as="ts" hint-placeholder-count="2">
                   <button onClick="{{ts.pick}}" style="{{ts.style}}"><span style="width:8px;height:8px;border-radius:9999px;flex-shrink:0;background:{{ts.color}}"></span><span style="flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ts.name}}</span></button>
                   </sc-for>
@@ -836,7 +836,7 @@
             </div>
             </sc-if>
             <sc-if value="{{e.mkTrOpen}}" hint-placeholder-val="{{ false }}">
-            <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bd-a79702290p3);display:flex;flex-direction:column;gap:5px">
+            <div class="dr-trbox" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bd-a79702290p3);display:flex;flex-direction:column;gap:5px">
               <sc-for list="{{e.mkTrShifts}}" as="ts" hint-placeholder-count="2">
               <button onClick="{{ts.pick}}" style="{{ts.style}}"><span style="width:8px;height:8px;border-radius:9999px;flex-shrink:0;background:{{ts.color}}"></span><span style="flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ts.name}}</span></button>
               </sc-for>
@@ -855,7 +855,7 @@
     </sc-for>
   </div>
   </sc-if>
-  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-a2452452450p2);font-size:12px">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-surface);font-size:12px">
     <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgTotal}}</span> {{pgTotalW}}</span>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>
@@ -916,7 +916,7 @@
         <div style="font-size:11.5px;line-height:2.1;color:var(--fg-x374151)">{{drTrInfo}}</div>
       </div>
       <div style="display:flex;gap:8px;justify-content:center">
-        <button onClick="{{drTrDo}}" style="height:38px;padding:0 22px;border-radius:10px;font-size:13px;font-weight:600;background:linear-gradient(135deg,var(--bg-x4f46e5),var(--bg-x6366f1));color:var(--fg-xffffff);border:0;cursor:pointer;font-family:'Cairo',sans-serif">نعم، حوّل</button>
+        <button onClick="{{drTrDo}}" style="height:38px;padding:0 22px;border-radius:10px;font-size:13px;font-weight:600;background:var(--bg-x4f46e5);color:var(--indigo-on);border:0;cursor:pointer;font-family:'Cairo',sans-serif">نعم، حوّل</button>
         <button onClick="{{drTrCancel}}" style="height:38px;padding:0 16px;border-radius:10px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">إلغاء</button>
       </div>
     </div>

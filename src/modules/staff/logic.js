@@ -640,7 +640,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   _pkListStyle(t) {
     const e =
-      "z-index:60;background:var(--bg-xffffff);border:1px solid var(--bd-xe6e8eb);border-radius:12px;box-shadow:var(--shadow-elevated);overflow:hidden;text-align:right";
+      "z-index:60;background:var(--bg-xffffff);border:1px solid var(--bd-xe6e8eb);border-radius:12px;box-shadow:var(--shadow-elevated);overflow:hidden;text-align:right;white-space:normal";
     return t
       ? "position:fixed;left:" + t.left + "px;top:" + t.top + "px;width:" + t.w + "px;" + e
       : "position:absolute;top:100%;right:0;left:0;margin-top:6px;" + e;
@@ -669,8 +669,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
   }
   _pkScrollClose() {
+    /* تمريرُ الصفحة يُغلق القائمةَ المثبّتة؛ أمّا تمريرُ القائمة نفسِها (قوالب أو ورديّات طويلة) فلا */
     this._sdSc ||
-      ((this._sdSc = () => {
+      ((this._sdSc = (ev) => {
+        const t = ev && ev.target;
+        if (t && t.closest && t.closest('[data-pm="list"],[data-sd="list"]')) return;
         (this.state.sdOpen || this.state.pmOpen) && this.setState({ sdOpen: null, sdPos: null, pmOpen: null, pmPos: null });
       }),
       window.addEventListener("scroll", this._sdSc, !0),
@@ -809,6 +812,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       filesOpen: !1,
       fsOpen: !1,
     };
+  }
+  /* الموجة 2 · ES-9: إصبعٌ لا فأرة (pointer:coarse) — يُقرأ عند الرسم */
+  _bsTouch() {
+    return typeof matchMedia === "function" && !!(matchMedia("(pointer: coarse)") || {}).matches;
   }
   _bsOutsideMenus(t) {
     try {
@@ -1274,10 +1281,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 ? "background:var(--bg-a185151810p09);color:var(--fg-x9a7e40);font-weight:600"
                 : "color:var(--fg-x141414)"),
           })),
+          /* الموجة 2 · ES-9: على شاشات اللمس لا تحذف ضغطةٌ على رقاقة الراحة اليومَ فوراً (رقاقةٌ 23px بجوار منتقي الوردية) —
+             تفتح محرِّرَ الراحات نفسَه، ومنه يُزال اليومُ بضغطةٍ مقصودة. الفأرةُ كما كانت: نقرةٌ تحذف بعد تلميحٍ أحمر عند المرور */
+          tch = this._bsTouch(),
           h = e.rest.map((t) => ({
             name: t,
-            tip: i ? (r ? "الشهر مقفل" : "عرض فقط") : "اضغط للحذف",
-            remove: i ? () => {} : () => this.setEntry(this.empKey(e), { rest: e.rest.filter((e) => e !== t) }),
+            tip: i ? (r ? "الشهر مقفل" : "عرض فقط") : tch ? "اضغط لتعديل أيام الراحة" : "اضغط للحذف",
+            remove: i
+              ? () => {}
+              : tch
+                ? () => this.setState((s0) => ({ restOpen: s0.restOpen === this.empKey(e) ? null : this.empKey(e), sdOpen: null }))
+                : () => this.setEntry(this.empKey(e), { rest: e.rest.filter((e) => e !== t) }),
             style:
               "display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:9px;font-weight:400;background:var(--bg-a245158110p1);color:var(--fg-xb45309);border:1px solid var(--bd-a245158110p25);transition:all .15s" +
               (r ? ";opacity:.55" : ";cursor:pointer"),
@@ -1288,10 +1302,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             return {
               name: t.replace("ال", "") + " (" + r + ")",
               tip: t + ": " + r + " " + (1 === r ? "راحة" : "راحات"),
-              toggle: () => {
-                i ||
-                  (!s && e.rest.length >= 2) ||
-                  this.setEntry(this.empKey(e), { rest: s ? e.rest.filter((e) => e !== t) : [...e.rest, t] });
+              toggle: async () => {
+                if (i || (!s && e.rest.length >= 2)) return;
+                const ok = await this.setEntry(this.empKey(e), { rest: s ? e.rest.filter((e) => e !== t) : [...e.rest, t] });
+                /* اكتمل النصاب (يومان) بهذه الإضافة: يُغلق المحرِّر — بعد قبول الحفظ وحده (رفضُه يُبقيه مفتوحاً والبياناتُ كما هي) */
+                ok && !s && e.rest.length + 1 >= 2 && this.setState({ restOpen: null });
               },
               style:
                 "height:26px;padding:0 9px;border-radius:8px;font-size:10px;font-weight:400;cursor:pointer;font-family:'Cairo',sans-serif;transition:all .15s;border:1px solid " +
@@ -1559,7 +1574,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           avatarBg: b ? "rgba(14,116,144,0.5)" : e.onRest ? "rgba(185,151,81,0.45)" : "#b99751",
           dot: b ? "#22d3ee" : e.onRest ? "#fbbf24" : "#10b981",
           rowBg:
-            (b ? "background:var(--bg-a2362542550p5)" : e.onRest ? "background:var(--bg-a2552512350p4)" : "") +
+            (b ? "--bs-row-tint:var(--info-soft);background:var(--info-soft)" : e.onRest ? "--bs-row-tint:var(--warning-soft);background:var(--warning-soft)" : "") +
             (St9On && St9P.closed && St9P.closed[e.shift || ""] ? ";display:none" : ""),
           grpK: e.shift || "",
           status: b
@@ -1855,8 +1870,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           n.forEach(function (t) {
             var n = (Y * t.n) / r,
               a = i ? Math.min(3, 0.12 * n) : 0;
+            /* الموجة 2 · ES-4: لونُ القطعة عبر رمز السمة نفسِه الذي يلوّن نقطةَ الدليل — سمةُ stroke لا يحوّلها المحوِّل */
             (s.push({
-              color: t.color,
+              color: KIVO.__bsTokVal ? KIVO.__bsTokVal("background", t.color) : t.color,
               dash: Math.round(10 * Math.max(0.5, n - a)) / 10 + " " + Math.round(10 * Y) / 10,
               off: String(-Math.round(10 * e) / 10),
               tip: t.tip,

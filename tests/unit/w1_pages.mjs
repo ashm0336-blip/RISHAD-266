@@ -34,6 +34,7 @@ export function page(slug, o = {}) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base;
   KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsLensOn() { return true; } bsToast(m, k) { toasts.push([m, k || 'err']); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
+  if (o.srv) KIVO.__BS_SRV = o.srv;   /* RISHAD-266: خدمةُ العمليات (اختيارية) — الصفحاتُ التي تقرأ مواردها عبرها */
   vm.runInContext(moduleLogic(slug) + '\n;globalThis.__C = Component;', ctx, { filename: slug + '/logic.js' });
   const c = new ctx.__C();
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);

@@ -1898,7 +1898,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       empPmExport: this.PC("export"),
       empPmWrite: t,
       empPmReadOnly: !t,
-      empPmFiles: this.PC("export") || this.PC("add"),
+      /* الموجة 2 · ES-6: «ملفات» لا تحمل إلا التصدير والطباعة — فلا تظهر لمن لا يملك التصدير (كانت تُفتح فارغةً لمن يملك الإضافة وحدها) */
+      empPmFiles: this.PC("export"),
       empPmNoteStyle:
         "display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:var(--bg-a1001161390p06);border:1px solid var(--bd-a1001161390p22);font-size:11.5px;font-weight:600;color:var(--fg-x475569);line-height:1.8",
     };
@@ -5014,7 +5015,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               "none" === r
                 ? "لا صلاحيات بلا حساب دخول — فعّل الحساب أولاً"
                 : h
-                  ? "مدير الإدارة — يرث كل صفحات إدارته المفعّلة من مدير النظام تلقائياً بكامل الأفعال"
+                  ? "مدير الإدارة — يدير حسابات موظفيها وصلاحياتهم ويمنحهم مما يملكه؛ وصفحاتُه كما في ورقته ما لم يوسّعها مدير النظام"
                   : f && f.deptCap().length
                     ? A
                       ? (x ? x + " — " : "") + "متاح له " + KIVO.BassamCount(A, "صفحة") + " · الضبط من الجدول الشهري"
@@ -5105,8 +5106,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 this.impToast(
                   r && r.ok
                     ? h
-                      ? "أُلغي تعيين " + t.name + " مديراً — رجعت صلاحياته الفردية"
-                      : "عُيِّن " + t.name + " مديراً للإدارة — يرث كل صفحات إدارته المفعّلة تلقائياً"
+                      ? "أُلغي تعيين " + t.name + " مديراً — لم يعد يدير الحسابات والصلاحيات، وبقيت صفحاتُه كما في ورقته"
+                      : "عُيِّن " + t.name + " مديراً للإدارة — يدير حسابات موظفيها وصلاحياتهم ويمنحهم مما يملكه، وتبقى صفحاتُه كما في ورقته الحالية ما لم يوسّعها مدير النظام"
                     : (r && r.err) || "تعذّر التعيين",
                 ));
             },
@@ -5795,12 +5796,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           empDataTabIcon: o("data" === a),
           empDataTabLbl: s("data" === a),
           empOnData: "data" === a,
-          empTasksTabStyle: i("tasks" === a),
-          empTasksTabIcon: o("tasks" === a),
-          empTasksTabLbl: s("tasks" === a),
-          empOnTasks: "tasks" === a,
-          empGoTasks: () => this.setState({ empTab: "tasks" }),
-          empTasksAllowed: !1,
           empDataAllowed: r("data"),
           empCustodyAllowed: r("custody"),
           empTabBarShow: !t && n.length > 1,

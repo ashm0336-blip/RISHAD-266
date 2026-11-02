@@ -1,7 +1,7 @@
 /* الموجة 1 · ES-3 · PLAN-03 · DG-08 — أشرطةُ تبويبات الصفحات كانت تأخذ تخطيطَ الشريط (bs-hbar bs-tabstrip) بعد أول رسم:
-   190-tabstrip-unify.js يضيف الصنفين من MutationObserver ثم setTimeout(80) ثم __bsAfterQuiet، فعلى الجوال يُرسم الشريطُ كومةً عمودية
+   مراقبٌ بعد الرسم كان يضيف الصنفين من MutationObserver ثم setTimeout(80) ثم __bsAfterQuiet، فعلى الجوال يُرسم الشريطُ كومةً عمودية
    (موظفو الإدارة 303px ← 85px) ثم ينطوي فتقفز الصفحةُ 100–200px (CLS 0.12–0.31) — وtransition:all .3s على بطاقة التبويب يُحرّك العرضَ والحشوة.
-   الآن: الصنفان في المصدر من أول رسم لكل شريطٍ يحمل بصمةَ التوحيد (والسكربتُ يبقى احتياطاً لا يجد ما يضيفه) · والانتقالُ للألوان وحدها.
+   الآن: الصنفان في المصدر من أول رسم لكل شريطٍ يحمل بصمةَ التوحيد — وحُذف المراقب (التنظيف L-06): شريطٌ بلا صنفٍ يُفشل الاختبارَ الأول · والانتقالُ للألوان وحدها.
    فحصٌ للمصدر (لا متصفح) — القياسُ الحيّ على TEST في تقرير الموجة. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,7 +10,7 @@ import path from 'node:path';
 import { SRC } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
-/* بصمةُ 190-tabstrip-unify.js: display:flex · align-items:center · justify-content:center · flex-wrap:wrap · gap:8px · padding:4px 0 */
+/* بصمةُ شريط التبويبات: display:flex · align-items:center · justify-content:center · flex-wrap:wrap · gap:8px · padding:4px 0 */
 const SIG = /<div(?: class="([^"]*)")? style="display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;flex-wrap:wrap">/g;
 const EXPECT = { admin: 2, award: 1, daily: 1, dstats: 1, employees: 1, irshad: 1, planning: 1, seized: 1 };
 
@@ -29,13 +29,11 @@ test('ES-3 · PLAN-03 · DG-08: كلُّ شريط تبويباتٍ يحمل بص
   assert.deepEqual(found, EXPECT, 'الأشرطةُ التسعة (والتعدادُ يكشف شريطاً جديداً بلا صنف)');
 });
 
-test('ES-3 · PLAN-03 · DG-08: الصفحاتُ المولَّدة تحمل الصنفين (generate.py) · والسكربتُ باقٍ احتياطاً يتخطّى ما يحمل الصنف', () => {
+test('ES-3 · PLAN-03 · DG-08: الصفحاتُ المولَّدة تحمل الصنفين (generate.py) · وقواعدُ الجوال للصنف', () => {
   for (const p of ['Employees', 'Planning', 'Daily Sessions', 'Irshad', 'Seized', 'Admin', 'Award', 'Daily Stats']) {
     const h = rd('pages/' + p + '.dc.html');
     assert.ok(h.indexOf('class="bs-hbar bs-tabstrip" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;flex-wrap:wrap"') >= 0, p + '.dc.html');
   }
-  const u = rd('components/190-tabstrip-unify.js');
-  assert.match(u, /!el\.classList\.contains\('bs-tabstrip'\)/, 'check() يتخطّى الشريطَ ذا الصنف');
   const g = rd('layouts/helmet-global.css');
   assert.match(g, /@media \(max-width:600px\)\{[^}]*\.bs-tabstrip\{justify-content:flex-start!important\}\s*\.bs-tabstrip > \*\{min-width:118px!important;padding:9px 10px!important;gap:4px!important\}/, 'قواعدُ الجوال التي تنطبق الآن من أول رسم');
 });

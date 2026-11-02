@@ -431,7 +431,7 @@ body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-se
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
       <input value="{{awQ}}" onChange="{{awOnQ}}" placeholder="بحث بالاسم أو الرقم الوظيفي أو الحالة..." style="width:100%;height:34px;padding:0 34px 0 10px;font-size:12px;background:var(--bg-xffffff);border:1px solid var(--bd-xe2e8f0);border-radius:10px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;color:var(--fg-x141414)" style-focus="border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px rgba(185,151,81,0.2)">
     </div>
-    <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);padding-left:4px"><span dir="ltr" style="font-weight:600;color:var(--fg-xb99751)">{{awShown}}</span><span style="opacity:.6"> / <span dir="ltr">{{awTotalRecs}}</span></span></div>
+    <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);padding-left:4px"><span dir="ltr" style="font-weight:600;color:var(--fg-xb99751)">{{awShown}}</span><span style="color:var(--text-muted)"> / <span dir="ltr">{{awTotalRecs}}</span></span></div>
   </div>
   <sc-if value="{{awHasRows}}" hint-placeholder-val="{{ true }}">
   <div class="bs-hscroll bs-sthead" style="overflow-x:auto;border:1px solid var(--bd-xe1e1e1);border-top:0;border-bottom:0">
@@ -483,7 +483,7 @@ body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-se
   <sc-if value="{{awNoRows}}" hint-placeholder-val="{{ false }}">
   <div style="border:1px solid var(--bd-xe1e1e1);border-top:0;border-bottom:0;padding:34px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">{{awEmptyMsg}}</span></div>
   </sc-if>
-  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid var(--bd-xe1e1e1);border-radius:0 0 12px 12px;background:var(--bg-a2452452450p2);font-size:12px">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid var(--bd-xe1e1e1);border-radius:0 0 12px 12px;background:var(--bg-surface);font-size:12px">
     <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{awPgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{awPgTotal}}</span> {{awPgTotalW}}</span>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>

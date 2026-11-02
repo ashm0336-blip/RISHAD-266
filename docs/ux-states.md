@@ -26,7 +26,7 @@
 | employees (Employees) | 48 | 9 | 99 | 0 | 7 |
 | irshad (Irshad) | 17 | 1 | 21 | 0 | 6 |
 | kpis (KPIs) | 7 | 0 | 4 | 0 | 1 |
-| plan (Operational Plan) | 57 | 8 | 98 | 0 | 1 |
+| plan (Operational Plan) | 57 | 8 | 99 | 0 | 2 |
 | planning (Planning) | 0 | 0 | 6 | 0 | 0 |
 | profile (Profile) | 31 | 18 | 104 | 0 | 11 |
 | seized (Seized) | 19 | 2 | 30 | 0 | 4 |

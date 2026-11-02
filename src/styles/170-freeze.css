@@ -1,7 +1,9 @@
 
 /* ═ تثبيت عمود الهوية + منع انكماش الجداول — يُعمَّم آلياً على كل .bs-rtable في المنصة ═
    الغلاف .bs-hscroll يمرّر أفقياً، ومحرّك bsTables أدناه يضبط الأعمدة المثبّتة وأدنى العرض. */
-.bs-rtable.bs-fitcols td.bs-fz{position:sticky;z-index:3;background:var(--bs-surface,var(--bg-surface))}
+/* الموجة 2 · ES-5: الخليةُ المثبّتة معتمةٌ (تحجب ما ينزلق تحتها) فكانت تُخفي تلوينَ الصفّ (راحة · إجازة) — الصفُّ يمرّر لونَه في
+   --bs-row-tint فتُرسم طبقتُه فوق سطح الخلية: الأعمدةُ المثبّتة بلون الصفّ نفسِه */
+.bs-rtable.bs-fitcols td.bs-fz{position:sticky;z-index:3;background:linear-gradient(var(--bs-row-tint,transparent),var(--bs-row-tint,transparent)),var(--bs-surface,var(--bg-surface))}
 .bs-rtable.bs-fitcols thead th.bs-fz{position:sticky;z-index:7;background:var(--bg-surface-2)}
 .bs-sthead .bs-rtable.bs-fitcols thead th.bs-fz{z-index:8}
 .bs-rtable.bs-fitcols .bs-fz1{right:0}
@@ -10,8 +12,12 @@
 /* آخر عمود مثبَّت (عمود الهوية) يحمل ظلّاً على حافته يدلّ أن ثمّة أعمدة تنزلق وراءه */
 .bs-rtable.bs-fitcols .bs-fzkeep{box-shadow:-11px 0 13px -11px rgba(15,23,42,0.16)}
 /* الجوال الضيّق (≤640): يبقى عمود الهوية وحده مثبّتاً وتُطلق ما قبله ليتّسع الانزلاق؛
-   right:auto يُبقي تثبيت الرأس رأسياً (top:0) ويلغي الأفقي فقط */
+   right:auto يُبقي تثبيت الرأس رأسياً (top:0) ويلغي الأفقي فقط.
+   ولا يتجاوز عرضُه نحو 45vw: الجدولُ هنا ≥1300px فيوزّع المتصفّحُ الفائضَ على الأعمدة، فكان عمودُ الهوية يبلغ ثلاثةَ أرباع المساحة
+   الظاهرة ويغطّي ما ينزلق تحته (خليّتا «الصلاحيات» والورديّة في «الجدول الشهري» لا تُلمسان). width:1px يُضيّق العمودَ إلى محتواه،
+   وmax-width يمنع ما يُوزَّع عليه رغم ذلك، والسقفُ على المحتوى مطلقٌ لأن الخليةَ لا تضيق عن أدنى عرض محتواها */
 @media (max-width:640px){
   .bs-rtable.bs-fitcols .bs-fz{right:auto !important}
-  .bs-rtable.bs-fitcols .bs-fzkeep{right:0 !important}
+  .bs-rtable.bs-fitcols .bs-fzkeep{right:0 !important;width:1px;max-width:45vw;box-sizing:border-box}
+  .bs-rtable.bs-fitcols .bs-fzkeep>*{max-width:calc(45vw - 24px)}
 }

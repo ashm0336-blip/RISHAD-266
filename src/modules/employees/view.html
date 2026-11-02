@@ -219,7 +219,7 @@
     </div>
     <div style="display:flex;align-items:center;justify-content:center;gap:6px;border-top:1px solid var(--bd-a185151810p15);padding:5px 8px;background:var(--bg-a185151810p03);border-radius:0 0 13px 13px">
       <sc-if value="{{e.notEditing}}">
-        <span style="display:inline-flex;align-items:center;gap:2px">
+        <span class="emp-cardact" style="display:inline-flex;align-items:center;gap:2px">
 <sc-if value="{{empPmEdit}}" hint-placeholder-val="{{ true }}">
         <button onClick="{{e.edit}}" style="width:26px;height:26px;border-radius:7px;border:0;background:transparent;color:var(--fg-x64748b);cursor:pointer;display:inline-flex;align-items:center;justify-content:center" style-hover="background:var(--bg-a185151810p1);color:var(--fg-xb99751)" aria-label="تعديل"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-37ad70cd"></svg></button>
 </sc-if>
@@ -252,13 +252,6 @@
       <div style="{{empDataTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9e70a218"></svg></div>
       <span style="{{empDataTabLbl}}">بيانات الموظفين</span>
       <sc-if value="{{empOnData}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    </sc-if>
-    <sc-if value="{{empTasksAllowed}}" hint-placeholder-val="{{ true }}">
-    <div onClick="{{empGoTasks}}" style="{{empTasksTabStyle}}">
-      <div style="{{empTasksTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-cc942376"></svg></div>
-      <span style="{{empTasksTabLbl}}">مهام الموظفين</span>
-      <sc-if value="{{empOnTasks}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
     </div>
     </sc-if>
     <sc-if value="{{empCustodyAllowed}}" hint-placeholder-val="{{ true }}">
@@ -345,7 +338,10 @@
 .rz-dots{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .rz-duo{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:14px;margin-top:14px;align-items:stretch}
 .rz-trio2{display:grid;grid-template-columns:1.05fr 1fr;gap:14px;margin-top:14px}
-@media (max-width:1150px){.rz-lead{grid-template-columns:1fr}.rz-kpis{grid-template-columns:repeat(3,1fr)}.rz-trio{grid-template-columns:1fr}.rz-prow{grid-template-columns:1fr;grid-template-areas:"z1" "z2" "z3" "z4"}.rz-z2{border:none;border-top:1px solid var(--bd-xf2eee4);border-bottom:1px solid var(--bd-xf2eee4);padding:16px 0}.rz-duo{grid-template-columns:1fr}.rz-trio2{grid-template-columns:1fr}}
+@media (max-width:1150px){.rz-lead{grid-template-columns:minmax(0,1fr)}.rz-kpis{grid-template-columns:repeat(3,1fr)}.rz-trio{grid-template-columns:1fr}.rz-prow{grid-template-columns:1fr;grid-template-areas:"z1" "z2" "z3" "z4"}.rz-z2{border:none;border-top:1px solid var(--bd-xf2eee4);border-bottom:1px solid var(--bd-xf2eee4);padding:16px 0}.rz-duo{grid-template-columns:1fr}.rz-trio2{grid-template-columns:1fr}}
+/* الموجة 2 · KD-08: عناوينُ بطاقات «مؤشر الجاهزية» على الجوال (ثلاثُ بطاقاتٍ في الصفّ ≈95px) كانت تُقصّ بلا نقاط («مجدولون على الورديات»)
+   — تلتفّ إلى سطرين بدل القصّ */
+@media (max-width:560px){.rz-kpi .kt{white-space:normal;line-height:1.35}}
 </style>
 <svg width="0" height="0" style="position:absolute" data-i="i-4ab1171c"></svg>
 
@@ -700,13 +696,6 @@
   </div></div>
 </sc-if>
 
-<sc-if value="{{empOnTasks}}" hint-placeholder-val="{{ false }}">
-<!-- ═══ صفحة المهام اليومية تُركَّب هنا كما هي ═══
-     لا نسخ للترميز ولا للمنطق: المكوّن نفسه المسجَّل باسم Tasks يُستدعى
-     داخل التبويب، فيبقى مصدره ملفاً واحداً وأي تحسين فيه ينعكس هنا. -->
-<dc-import name="Tasks" hint-size="100%,1200px"></dc-import>
-</sc-if>
-
 <sc-if value="{{empOnCustody}}" hint-placeholder-val="{{ false }}">
 
 <div style="display:flex;flex-direction:column;gap:16px">
@@ -752,17 +741,17 @@
 <sc-if value="{{wzOn}}" hint-placeholder-val="{{ false }}">
 <div onClick="{{wzCancel}}" style="position:fixed;inset:0;z-index:80;background:var(--bg-a0000p5);display:flex;align-items:center;justify-content:center;padding:24px">
   <div onClick="{{stopClick}}" style="background:var(--bg-xffffff);border-radius:16px;box-shadow:var(--shadow-elevated);width:100%;max-width:660px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
-    <div style="display:flex;align-items:center;gap:11px;padding:16px 20px;border-bottom:1px solid var(--bd-xf1f5f9)">
+    <div class="es-wzhd" style="display:flex;align-items:center;flex-wrap:wrap;gap:10px 11px;padding:16px 20px;border-bottom:1px solid var(--bd-xf1f5f9)">
       <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p1);border:1px solid var(--bd-a185151810p25);color:var(--fg-xb99751);flex-shrink:0">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-7ae7d78f"></svg>
       </div>
-      <div style="flex:1;min-width:0">
+      <div style="flex:1 1 150px;min-width:0">
         <div style="font-size:15px;font-weight:600;color:var(--fg-x141414)">سند تسليم عهدة جديد</div>
         <div style="font-size:11px;color:var(--fg-x94a3b8);font-weight:400;margin-top:2px">{{wzHint}}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:7px">
+      <div class="es-wzst" style="display:flex;align-items:center;gap:7px">
         <sc-for list="{{wzSteps}}" as="st" hint-placeholder-count="3">
-        <span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;color:{{st.col}}">
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;white-space:nowrap;color:{{st.col}}">
           <span style="{{st.badge}}">{{st.n}}</span>{{st.name}}
         </span>
         </sc-for>
@@ -1118,7 +1107,7 @@
       <input value="{{cuSearch}}" onChange="{{cuOnSearch}}" placeholder="بحث باسم الموظف أو الرقم الوظيفي..." style="width:100%;height:40px;padding:0 40px 0 12px;font-size:13px;background:var(--bg-a2482502520p8);border:1px solid var(--bd-xe2e8f0);border-radius:12px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;color:var(--fg-x141414)" style-focus="background:var(--bg-xffffff);border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px rgba(185,151,81,0.2)">
     </div>
     <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);font-feature-settings:'tnum'">
-      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{cuShown}}</span><span style="opacity:.6"> / {{cuTotal}}</span>
+      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{cuShown}}</span><span style="color:var(--text-muted)"> / {{cuTotal}}</span>
     </div>
   </div>
 
@@ -1280,7 +1269,7 @@
   </sc-if>
 
   <sc-if value="{{cuHasRows}}" hint-placeholder-val="{{ true }}">
-  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-a2452452450p2);font-size:12px">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-surface);font-size:12px">
     <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{cuPgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{cuPgTotal}}</span> {{cuPgTotalW}}</span>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>
@@ -1637,10 +1626,6 @@
           <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a141652330p08);color:var(--fg-x0369a1);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9662a985"></svg></span>
           <div style="flex:1"><div>طباعة / حفظ PDF</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">نافذة الطباعة مباشرة</div></div>
         </div>
-        <div style="height:1px;background:var(--bg-a2252252250p7);margin:3px 6px"></div>
-</sc-if>
-<sc-if value="{{empPmAdd}}" hint-placeholder-val="{{ true }}">
-        
 </sc-if>
       </div>
       </sc-if>
@@ -1715,7 +1700,7 @@
       </sc-if>
     </div>
     <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);font-feature-settings:'tnum'">
-      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{shownCount}}</span><span style="opacity:.6"> / {{totalCount}}</span>
+      <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{shownCount}}</span><span style="color:var(--text-muted)"> / {{totalCount}}</span>
     </div>
     <div style="display:flex;align-items:center;gap:2px;background:var(--bg-xffffff);border-radius:12px;padding:2px;border:1px solid var(--bd-a185151810p2);flex-shrink:0">
       <button onClick="{{viewList}}" title="عرض جدول" style="{{viewListStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d9ba0eac"></svg></button>
@@ -1899,7 +1884,7 @@
                   <span style="flex:1">تجميد الحساب</span>
                 </div>
                 <sc-if value="{{e.accMgrShow}}" hint-placeholder-val="{{ false }}">
-                <div onClick="{{e.accMgrToggle}}" title="حامل الشارة يرث كل صفحات إدارته المفعّلة من مدير النظام تلقائياً" style="{{e.accMgrStyle}}" style-hover="background:var(--bg-a185151810p1)">
+                <div onClick="{{e.accMgrToggle}}" title="حاملُ الشارة يدير حسابات موظفي إدارته وصلاحياتهم ويمنحهم مما يملكه — وتبقى صفحاتُه كما في ورقته الحالية ما لم يوسّعها مدير النظام" style="{{e.accMgrStyle}}" style-hover="background:var(--bg-a185151810p1)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-a45641fc"></svg>
                   <span style="flex:1">{{e.accMgrText}}</span>
                 </div>
@@ -1941,7 +1926,7 @@
       </tbody>
     </table>
   </div>
-  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-a2452452450p2);font-size:12px">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-surface);font-size:12px">
     <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgTotal}}</span> {{pgTotalW}}</span>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>
@@ -2040,7 +2025,7 @@
     </div>
     <div style="display:flex;align-items:center;justify-content:center;gap:6px;border-top:1px solid var(--bd-a185151810p15);padding:5px 8px;background:var(--bg-a185151810p03);border-radius:0 0 13px 13px">
       <sc-if value="{{e.notEditing}}">
-        <span style="display:inline-flex;align-items:center;gap:2px">
+        <span class="emp-cardact" style="display:inline-flex;align-items:center;gap:2px">
 <sc-if value="{{empPmEdit}}" hint-placeholder-val="{{ true }}">
         <button onClick="{{e.edit}}" style="width:26px;height:26px;border-radius:7px;border:0;background:transparent;color:var(--fg-x64748b);cursor:pointer;display:inline-flex;align-items:center;justify-content:center" style-hover="background:var(--bg-a185151810p1);color:var(--fg-xb99751)" aria-label="تعديل"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-37ad70cd"></svg></button>
 </sc-if>
@@ -2059,7 +2044,7 @@
   </div>
   </sc-for>
 </div>
-  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-a2452452450p2);font-size:12px">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-surface);font-size:12px">
     <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{pgTotal}}</span> {{pgTotalW}}</span>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>

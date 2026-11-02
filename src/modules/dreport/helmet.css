@@ -3,6 +3,8 @@ body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-se
 .drp{display:flex;flex-direction:column;gap:14px}
 .drcard{background:var(--bg-surface);border:1px solid var(--border-default);border-radius:16px;box-shadow:var(--shadow-card)}
 .drmono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+/* الموجة 2 · DG-10: منتقي التحويل (الوردياتُ و«موافق» 26–27px) ٣٦ بكسل على الإصبع */
+@media (pointer: coarse){.dr-trbox button{min-height:36px}}
 /* صف مؤشرات اليوم: 4 متساوية على الكمبيوتر — وتنكسر 2×2 ثم عموداً، بلا 3+1 ولا تمرير */
 .rp-kpis{gap:12px;margin-bottom:14px}
 

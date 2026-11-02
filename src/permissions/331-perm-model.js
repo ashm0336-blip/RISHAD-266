@@ -752,13 +752,17 @@
     var R = KIVO.KIVO_REGISTRY, leaves = {};
     Object.keys(all).forEach(function(k){
       if (isContainer(k)) return;
+      var ff = [];
       var acts = (all[k] || []).filter(function(a){
         var at = R && R.atoms ? R.atoms[k + ':' + a] : null;
         if (!at || !at.targets || !at.targets.length) return true;
+        /* «فحص الصلاحيات العميق» · M3: ذرّةٌ تُرجَمت إلى أعلام ميزات (converted_to_feature — التصدير والطباعة ff.*) لا مفتاحَ لها في السجل
+           فلا تحملها بتّاتُ الخادم أبداً — كانت تسقط هنا فيختفي التصديرُ عن كلِّ مستخدمٍ غيرِ مدير النظام. تبقى كما هي ما بقي للورقة فعلٌ محمول */
+        if (at.disposition === 'converted_to_feature' || !at.targets.some(function(t){ return !!(R.byKey && R.byKey[t]); })) { ff.push(a); return false; }
         for (var i = 0; i < at.targets.length; i++) if (H[at.targets[i]]) return true;
         return false;
       });
-      if (acts.length) leaves[k] = acts;
+      if (acts.length) leaves[k] = acts.concat(ff);
     });
     /* المنحُ الصريح (plus) يضيف أفعالَ ذرّاته — الورقةُ القديمة لا تعرفه (مثل: حذفُ المحاضر لموظفٍ بلا ورقة حذف) */
     var x = azZ().depts[curDept()], plus = x && Array.isArray(x.p) ? x.p : [];

@@ -277,15 +277,6 @@
    "origSha256": "f660ea3e75081fd82f4daec7b7bccb68385736e66a4ccc8e246d7e559c22c97c"
   },
   {
-   "closeTag": "</script>",
-   "id": "components/190-tabstrip-unify.js",
-   "kind": "js",
-   "line": 2982,
-   "openTag": "<script>",
-   "origBytes": 2377,
-   "origSha256": "51e7064ddd0d1b87bb7462e01ec7e3274e2fe222286cc69b6d4fc7d4563d1193"
-  },
-  {
    "closeTag": "</style>",
    "id": "styles/200-subseg.css",
    "kind": "css",

@@ -2651,7 +2651,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           avatarBg: O ? "rgba(14,116,144,0.5)" : e.onRest ? "rgba(185,151,81,0.45)" : "#b99751",
           dot: O ? "#22d3ee" : e.onRest ? "#fbbf24" : "#10b981",
           rowBg:
-            (O ? "background:var(--bg-a2362542550p5)" : e.onRest ? "background:var(--bg-a2552512350p4)" : "") +
+            (O ? "--bs-row-tint:var(--info-soft);background:var(--info-soft)" : e.onRest ? "--bs-row-tint:var(--warning-soft);background:var(--warning-soft)" : "") +
             (Mt && Dt.closed && Dt.closed[e.grp] ? ";display:none" : ""),
           ...(function () {
             var t = n > 0 ? nr[n - 1] : null;
@@ -3204,7 +3204,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           mkTrGoStyle:
             "height:27px;border-radius:8px;font-size:11px;font-weight:700;font-family:'Cairo',sans-serif;border:0;color:var(--fg-xffffff);transition:background .15s;" +
             (t.drTrSel && (t.drTrWhy || "").trim()
-              ? "cursor:pointer;background:linear-gradient(135deg,var(--bg-x4f46e5),var(--bg-x6366f1))"
+              ? /* الموجة 2 · ES-4: ملءُ النيلي ونصُّه بالرمزين */ "cursor:pointer;background:var(--bg-x4f46e5);color:var(--indigo-on)"
               : "cursor:default;background:var(--bg-xcbd5e1)"),
           mkAbTip: "ab" === e.mark ? "غيابٌ مؤشَّر — اضغط لإلغائه وإعادته حاضراً" : "تسجيل غياب اليوم",
           mkAbStyle:

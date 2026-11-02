@@ -505,6 +505,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         irOnRecords: g,
         irDashTabOk: n,
         irRecordsTabOk: o,
+        /* الموجة 2 · IRSZ-11: اللوحةُ الفارغة تدلّ على صفحة السجلات نفسِها — رابطاً لمن يفتحها، ونصّاً لمن لا يفتحها */
+        irRecLinkOn: !!(o && this.PC("view")),
+        irRecLinkOff: !(o && this.PC("view")),
         irTabBarShow: !l && !(!n || !o),
         irDashTabStyle: r(d),
         irDashTabIcon: a(d),
@@ -1654,6 +1657,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irLgClearAllItemStyle:
         "display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;transition:background .15s;" +
         (monthTotal > 0 ? "cursor:pointer;color:var(--fg-x141414)" : "cursor:not-allowed;color:var(--fg-xcbd5e1);opacity:.6"),
+      /* الموجة 2 · IRSZ-8: «ملفات» لا تظهر بلا بنود (لا تصدير ولا حذف) · والفاصلُ حين يجتمع التصديرُ والحذف وحده */
+      irLgFilesOn: this.PC("export") || this.PC("del"),
+      irLgSepOn: this.PC("export") && this.PC("del"),
       irLgClearAllAsk: () => {
         this.PC("del") ? 0 !== monthTotal && this.setState({ irLgFilesOpen: !1, irLgClearAllConfirm: !0 }) : this.permDeny();
       },
