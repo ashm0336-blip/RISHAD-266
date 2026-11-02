@@ -2438,13 +2438,14 @@ function dailyFieldOnly(A, d) {
   return field && !writes.length;
 }
 function pickIdx(arr, seg) { if (!Array.isArray(arr)) return null; if (/^\d+$/.test(seg)) return arr[+seg] || null; var id = seg.slice(1, -1); return arr.filter(function (x) { return isObj(x) && (String(x.id) === id || String(x.eid) === id || String(x.key) === id || String(x.k) === id); })[0] || null; }
-function fieldObsOnly(A, newVal, curVal) {
+function fieldObsOnly(A, newVal, curVal, dp) {
+  var T = dp && A.__obsToks && A.__obsToks[dp];   /* RISHAD266: مفتاحُ الحساب ∪ رقمُه وهويتُه واسمُه في سجلّ الموظفين (061 enfToksOf) — التسكينُ يقبلها كلَّها */
   var diffs = walkDiff(curVal, newVal); if (!diffs.length) return false;
   var NV = parseJson(newVal, null); if (!isObj(NV)) return false;
   return diffs.every(function (d) {
     var m = /^([^.]+)\.d\.(\d+|\[[^\]]*\])\.(gates|zones|marks)\.(\d+|\[[^\]]*\])\.([A-Za-z]+)(?:\..*)?$/.exec(d.p); if (!m || !FIELD_KINDS[m[3]] || !FIELD_KEYS[m[5]]) return false;
     var day = NV[m[1]]; var fl = day ? pickIdx(day.d, m[2]) : null; var g = fl ? pickIdx(fl[m[3]], m[4]) : null;
-    return !!(g && Array.isArray(g.emp) && g.emp.indexOf(A.u.ekey) !== -1);
+    return !!(g && Array.isArray(g.emp) && g.emp.some(function (x) { return T ? T[String(x)] : x === A.u.ekey; }));
   });
 }
 function anyWriter(A) {
@@ -21323,7 +21324,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
   if (R9.field === 'daily' && newVal != null && !need9.keyDelete
       && (myPermsOf(A, P.dept)['daily/field'] || []).indexOf('view') !== -1
       && capOnDept(A, P.dept, 'daily/field')
-      && fieldObsOnly(A, newVal, curVal)) return { ok: true };
+      && fieldObsOnly(A, newVal, curVal, P.dept)) return { ok: true };
   var via9 = R9.via || {}, diffs9 = null;
   for (var vp9 in via9) {
     if (newVal == null || !actsHeldOn(A, P.dept, vp9, acts9)) continue;
@@ -21380,7 +21381,7 @@ function permv2How(A, k, newVal, curVal, ctx) {
     if (holdsAllWrites(A, k, R0)) return 'holdsAll';
     var need = classifyMutation(R0, curVal, newVal, E9, O9, PV), acts = Object.keys(need); if (!acts.length) acts = ['edit'];
     if (authorizeActs(A, k, acts).ok) return 'acts:' + acts.join('+');
-    if (R0.field === 'daily' && !need.keyDelete && (myPermsOf(A, P.dept)['daily/field'] || []).indexOf('view') !== -1 && capOnDept(A, P.dept, 'daily/field') && fieldObsOnly(A, newVal, curVal)) return 'field';
+    if (R0.field === 'daily' && !need.keyDelete && (myPermsOf(A, P.dept)['daily/field'] || []).indexOf('view') !== -1 && capOnDept(A, P.dept, 'daily/field') && fieldObsOnly(A, newVal, curVal, P.dept)) return 'field';
     var via = R0.via || {}, vp, diffs = null;
     for (vp in via) { if (!actsHeldOn(A, P.dept, vp, acts)) continue; var fn = VIA_FN[via[vp]]; if (!fn) continue; if (!diffs) diffs = walkDiff(curVal, newVal); if (diffs.length && diffs.every(fn)) return 'via:' + vp; }
     if (R0.self === 'email' && selfEmailOnly(A, newVal, curVal)) return 'selfEmail';
@@ -23746,7 +23747,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var enfAudRestore = false, enfAudHist = false;
     for (var ah9 = 0; ah9 < audIn.length; ah9++) if (audIn[ah9].etype === 'dataset') { if (audIn[ah9].act === 'restore') enfAudRestore = true; else if (audIn[ah9].act === 'import' && resName(audIn[ah9].k) === K_DSTATS) enfAudHist = true; }
     ENFX = await enfSavePrep(env, A, body, set, del, audKeysOk, pv3M, pv3Restore, enfAudRestore, enfAudHist, pv3RetroCtx, pv4Refs);
-  }
+  } else if (A.u.ekey) for (var ob9 in set) { var od9 = parseKey(ob9).dept; if (od9 && resName(ob9) === 'bassam_rounds_v1') (A.__obsToks = A.__obsToks || nmap())[od9] = enfToksOf(await opResourceGet(env, 'bsdept:' + od9 + ':bassam_employees_v1'), String(A.u.ekey)); }   /* RISHAD266 (F24 في الوضع القديم): هويّاتُ راصد الميدان في التسكين — كالإنفاذ */
   /* الرقمُ يُخصَّص بعد المرور كلِّه، حين يُعرف أن ثمّة ما يُنفَّذ فعلاً */
   var rev = 0, pend = [];
   var st = [], k, changed = 0, i;

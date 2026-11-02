@@ -75,3 +75,13 @@ test('[legacy] تعديلُه على عنصره يُحفظ · وعناصرُ ب�
   const t = await attempt('legacy', () => {}, (v, day) => { own(v[day]); v[day].d[0].zones[1].cWhy = 'TEST_ONLY عبث'; });
   assert.equal(t.r.status, 403, why(t.r)); assert.equal(t.r.j.denied[KR].why, 'page'); assert.deepEqual(t.after, t.before);
 });
+
+/* RISHAD266 (F24 في الوضع القديم · حالةُ البلاغ ٣): تسكينٌ بـname الموظف أو nid — يُعرف في الحفظ القديم أيضاً (054 يحمّل سجلَّ الموظفين · 018 fieldObsOnly)،
+   والكتابةُ في عنصرٍ غيرِ مسنَدٍ إليه بأيٍّ من رموزه ما زالت تُرفض */
+for (const tok of ['name', 'nid']) test('[legacy] (٣) تسكينٌ بـ' + tok + ' الموظف: يُحفظ تعديلُه — وغيرُ المسنَد يُرفض كما كان', async () => {
+  const prep = async (x, day, w) => { const E = stored(w.env, KE), me = E.find((e) => e.eid === 'tst_e_field'); me.nid = me.nid || '1099999999'; await replaceOperationalFixture(w.env, KE, E); x[day].d[0].zones[0].emp = [String(me[tok])]; };
+  const a = await attempt('legacy', prep, (v, day) => own(v[day]));
+  saved(a.r); assert.equal(a.after.d[0].zones[0].fst, 'closed', 'تعديلُه محفوظ');
+  const t = await attempt('legacy', prep, (v, day) => { own(v[day]); v[day].d[0].zones[1].cWhy = 'TEST_ONLY عبث'; });
+  assert.equal(t.r.status, 403, why(t.r)); assert.equal(t.r.j.denied[KR].why, 'page'); assert.deepEqual(t.after, t.before);
+});

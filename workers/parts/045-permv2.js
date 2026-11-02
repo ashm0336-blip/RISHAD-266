@@ -43,7 +43,7 @@ function permv2How(A, k, newVal, curVal, ctx) {
     if (holdsAllWrites(A, k, R0)) return 'holdsAll';
     var need = classifyMutation(R0, curVal, newVal, E9, O9, PV), acts = Object.keys(need); if (!acts.length) acts = ['edit'];
     if (authorizeActs(A, k, acts).ok) return 'acts:' + acts.join('+');
-    if (R0.field === 'daily' && !need.keyDelete && (myPermsOf(A, P.dept)['daily/field'] || []).indexOf('view') !== -1 && capOnDept(A, P.dept, 'daily/field') && fieldObsOnly(A, newVal, curVal)) return 'field';
+    if (R0.field === 'daily' && !need.keyDelete && (myPermsOf(A, P.dept)['daily/field'] || []).indexOf('view') !== -1 && capOnDept(A, P.dept, 'daily/field') && fieldObsOnly(A, newVal, curVal, P.dept)) return 'field';
     var via = R0.via || {}, vp, diffs = null;
     for (vp in via) { if (!actsHeldOn(A, P.dept, vp, acts)) continue; var fn = VIA_FN[via[vp]]; if (!fn) continue; if (!diffs) diffs = walkDiff(curVal, newVal); if (diffs.length && diffs.every(fn)) return 'via:' + vp; }
     if (R0.self === 'email' && selfEmailOnly(A, newVal, curVal)) return 'selfEmail';

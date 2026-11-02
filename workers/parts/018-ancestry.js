@@ -250,13 +250,14 @@ function dailyFieldOnly(A, d) {
   return field && !writes.length;
 }
 function pickIdx(arr, seg) { if (!Array.isArray(arr)) return null; if (/^\d+$/.test(seg)) return arr[+seg] || null; var id = seg.slice(1, -1); return arr.filter(function (x) { return isObj(x) && (String(x.id) === id || String(x.eid) === id || String(x.key) === id || String(x.k) === id); })[0] || null; }
-function fieldObsOnly(A, newVal, curVal) {
+function fieldObsOnly(A, newVal, curVal, dp) {
+  var T = dp && A.__obsToks && A.__obsToks[dp];   /* RISHAD266: مفتاحُ الحساب ∪ رقمُه وهويتُه واسمُه في سجلّ الموظفين (061 enfToksOf) — التسكينُ يقبلها كلَّها */
   var diffs = walkDiff(curVal, newVal); if (!diffs.length) return false;
   var NV = parseJson(newVal, null); if (!isObj(NV)) return false;
   return diffs.every(function (d) {
     var m = /^([^.]+)\.d\.(\d+|\[[^\]]*\])\.(gates|zones|marks)\.(\d+|\[[^\]]*\])\.([A-Za-z]+)(?:\..*)?$/.exec(d.p); if (!m || !FIELD_KINDS[m[3]] || !FIELD_KEYS[m[5]]) return false;
     var day = NV[m[1]]; var fl = day ? pickIdx(day.d, m[2]) : null; var g = fl ? pickIdx(fl[m[3]], m[4]) : null;
-    return !!(g && Array.isArray(g.emp) && g.emp.indexOf(A.u.ekey) !== -1);
+    return !!(g && Array.isArray(g.emp) && g.emp.some(function (x) { return T ? T[String(x)] : x === A.u.ekey; }));
   });
 }
 function anyWriter(A) {

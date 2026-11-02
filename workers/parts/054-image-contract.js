@@ -833,7 +833,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var enfAudRestore = false, enfAudHist = false;
     for (var ah9 = 0; ah9 < audIn.length; ah9++) if (audIn[ah9].etype === 'dataset') { if (audIn[ah9].act === 'restore') enfAudRestore = true; else if (audIn[ah9].act === 'import' && resName(audIn[ah9].k) === K_DSTATS) enfAudHist = true; }
     ENFX = await enfSavePrep(env, A, body, set, del, audKeysOk, pv3M, pv3Restore, enfAudRestore, enfAudHist, pv3RetroCtx, pv4Refs);
-  }
+  } else if (A.u.ekey) for (var ob9 in set) { var od9 = parseKey(ob9).dept; if (od9 && resName(ob9) === 'bassam_rounds_v1') (A.__obsToks = A.__obsToks || nmap())[od9] = enfToksOf(await opResourceGet(env, 'bsdept:' + od9 + ':bassam_employees_v1'), String(A.u.ekey)); }   /* RISHAD266 (F24 في الوضع القديم): هويّاتُ راصد الميدان في التسكين — كالإنفاذ */
   /* الرقمُ يُخصَّص بعد المرور كلِّه، حين يُعرف أن ثمّة ما يُنفَّذ فعلاً */
   var rev = 0, pend = [];
   var st = [], k, changed = 0, i;

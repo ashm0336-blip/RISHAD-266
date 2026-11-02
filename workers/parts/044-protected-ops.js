@@ -130,7 +130,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
   if (R9.field === 'daily' && newVal != null && !need9.keyDelete
       && (myPermsOf(A, P.dept)['daily/field'] || []).indexOf('view') !== -1
       && capOnDept(A, P.dept, 'daily/field')
-      && fieldObsOnly(A, newVal, curVal)) return { ok: true };
+      && fieldObsOnly(A, newVal, curVal, P.dept)) return { ok: true };
   var via9 = R9.via || {}, diffs9 = null;
   for (var vp9 in via9) {
     if (newVal == null || !actsHeldOn(A, P.dept, vp9, acts9)) continue;
