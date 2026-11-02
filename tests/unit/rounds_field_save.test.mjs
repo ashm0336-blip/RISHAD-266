@@ -53,11 +53,13 @@ for (const tok of ['name', 'nid']) test('[enforce] (٣) تسكينٌ بـ' + tok
 });
 
 test('[enforce] الكتابةُ في عنصرٍ غيرِ مسنَد لا تُحفظ: يُحفظ الباقي ويعود المحجوبُ من الخادم', async () => {
-  const { r, after, before } = await attempt('enforce', () => {}, (v, day) => { own(v[day]); Object.assign(v[day].d[0].zones[1], { fst: 'open', cWhy: 'TEST_ONLY عبث' }); Object.assign(v[day].d[1].zones[0], { fst: 'closed', cWhy: 'TEST_ONLY عبث' }); });
+  const { r, after, before } = await attempt('enforce', () => {}, (v, day) => { own(v[day]); Object.assign(v[day].d[0].zones[1], { fst: 'open', cWhy: 'TEST_ONLY عبث' }); Object.assign(v[day].d[1].zones[0], { fst: 'closed', cWhy: 'TEST_ONLY عبث' }); Object.assign(v[day].d[1].zones[1], { fst: 'open', cWhy: 'TEST_ONLY عبث' }); });
   saved(r);
   assert.equal(after.d[0].zones[0].fst, 'closed');
   assert.deepEqual(pick(after.d[0].zones[1]), pick(before.d[0].zones[1]), 'غيرُ المسنَد كما في الخادم');
-  assert.deepEqual(pick(after.d[1].zones[0]), pick(before.d[1].zones[0]), 'وخارجُ موقعه كما في الخادم');
+  /* RISHAD-266: قائمةُ مواقع الراصد (Site من سقف النطاق القديم) تقاعدت — مصلاه المسنَد في الموقع الثاني يُحفظ؛ وغيرُ المسنَد هناك يبقى كما في الخادم (Assigned) */
+  assert.equal(after.d[1].zones[0].fst, 'closed', 'المسنَدُ إليه في الموقع الآخر يُحفظ');
+  assert.deepEqual(pick(after.d[1].zones[1]), pick(before.d[1].zones[1]), 'وغيرُ المسنَد في الموقع الآخر كما في الخادم');
 });
 
 test('[enforce] ولا يُسنِد نفسَه إلى عنصرٍ غيره: الرفضُ باقٍ ولا يُكتب شيء', async () => {
