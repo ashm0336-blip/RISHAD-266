@@ -1,4 +1,107 @@
-# سجل الاختبارات الفاشلة — RISHAD-266 عند develop be4ce02 (شيفرة cd80cf2)
+# سجل الاختبارات الفاشلة المتبقية — RISHAD-266 claude/unify-266
+
+## الحالة الحالية (عند 68893bc · 2026-11-02)
+- الأمر: بعد `npm run -s build`، لكل ملفٍ على حدة `KIVO_WORKER=workers/_worker.js KIVO_DIST=pk265 KIVO_SRC=src node --no-warnings --test tests/unit/<الملف>` (317 ملفاً · 4 بالتوازي · TMPDIR مؤقت لكل ملف).
+- الحصيلة: 1735 نجاح · **471 إخفاق** · 22 ملغى · في 87 ملفاً.
+- المقارنة بأسماء الاختبارات: لا إخفاقَ جديد مقابل حزمة aae024c (1729 نجاحاً · 471 إخفاقاً) ولا مقابل 1375a98 (1690 · 494).
+- **هذه الإخفاقات مفتوحة كلها.** ثباتُ عددها أو نقصُه لا يعني إغلاقها؛ لا يُغلق بندٌ إلا بإصلاحٍ واختبارٍ ينجح، أو بتصنيفٍ مكتوب (انجراف تجهيز / اختلاف إصدار) مع دليله.
+- العمود «عند be4ce02» من السجل الأصلي أدناه (— = لم يكن فيه).
+
+| الملف | نجاح | إخفاق | ملغى | عند be4ce02 | أول رسالة إخفاق | الحالة |
+|---|---|---|---|---|---|---|
+| custody_relational.test.mjs | 8 | 31 | 0 | 31 | Expected values to be strictly equal: | مفتوح |
+| k264_api_authz_matrix.test.mjs | 1 | 24 | 0 | 24 | "Cannot read properties of null (reading '1448-5-22')" | مفتوح |
+| business_atomic.test.mjs | 0 | 18 | 0 | 18 | Expected values to be strictly equal: | مفتوح |
+| irshad_operations.test.mjs | 0 | 18 | 0 | 18 | Actual canonical schema9 includes the unchanged Irshad migration8 and the later business cutover | مفتوح |
+| seized_operations.test.mjs | 0 | 17 | 0 | 17 | Expected values to be strictly equal: 10 !== 9 (schema version) | مفتوح |
+| atomic_restore_review.test.mjs | 3 | 15 | 22 | 37 | {"ok":0,"err":"restore-incomplete-manifest"} | مفتوح |
+| irshad_domain_cutover.test.mjs | 4 | 15 | 0 | 15 | Actual canonical schema9 includes the unchanged Irshad migration8 and the later business cutover | مفتوح |
+| notifications_review_security.test.mjs | 5 | 15 | 0 | 15 | read: status | مفتوح |
+| employee_department_atomic.test.mjs | 1 | 13 | 0 | 13 | {"ok":0,"err":"worker-error","rid":"c4e51f6d63e7"} | مفتوح |
+| employee_transition_server.test.mjs | 0 | 13 | 0 | 13 | 'operations-legacy-source-present' | مفتوح |
+| atomic_restore_client.test.mjs | 0 | 12 | 0 | 12 | '{"backupMsg":"تعذّر التصدير"}' | مفتوح |
+| irshad_atomic_domain.test.mjs | 0 | 12 | 0 | 12 | Actual canonical schema9 includes the unchanged Irshad migration8 and the later business cutover | مفتوح |
+| seized_codec.test.mjs | 0 | 12 | 0 | 12 | "Export 'enfEmpScopeOf' is not defined in module" | مفتوح |
+| award_domain.test.mjs | 4 | 11 | 0 | 11 | Generate and register the actual schema9 before Award integration tests | مفتوح |
+| custody_client_integration.test.mjs | 0 | 11 | 0 | 11 | "Cannot read properties of undefined (reading 'operations')" | مفتوح |
+| atomic_restore_images.test.mjs | 0 | 9 | 0 | 9 | {"ok":0,"err":"operations-legacy-source-present"} | مفتوح |
+| irshad_query.test.mjs | 1 | 9 | 0 | 9 | 'operations-legacy-source-present' | مفتوح |
+| seized_due.test.mjs | 0 | 9 | 0 | 9 | Expected values to be strictly equal: | مفتوح |
+| custody_admin_wipe_ui.test.mjs | 0 | 8 | 0 | 8 | 'this._businessBaseValid is not a function' | مفتوح |
+| irshad_daily.test.mjs | 0 | 8 | 0 | 8 | Actual canonical schema9 includes the unchanged Irshad migration8 and the later business cutover | مفتوح |
+| seized_query.test.mjs | 0 | 8 | 0 | 8 | "Export 'enfEmpScopeOf' is not defined in module" | مفتوح |
+| custody_department_delete_ui.test.mjs | 0 | 7 | 0 | 7 | 'this._businessBaseValid is not a function' | مفتوح |
+| k264_sec_contracts.test.mjs | 1 | 7 | 0 | 2 | 'irshad-cutover-target-not-empty' | مفتوح |
+| rishad266_cloud_storage.test.mjs | 2 | 7 | 0 | 7 | The input did not match the regular expression /department-scope-required/. Input: | مفتوح |
+| canvas_own_w1c2.test.mjs | 7 | 6 | 0 | 6 | الحفظُ يحمل نسخةَ الجهاز الآخر | مفتوح |
+| custody_identity_api.test.mjs | 1 | 6 | 0 | 6 | {"status":500,"err":"worker-error"} | مفتوح |
+| me_history.test.mjs | 3 | 6 | 0 | 9 | "Cannot read properties of null (reading '1448-5-22')" | مفتوح |
+| dstats_relational.test.mjs | 21 | 5 | 0 | 5 | "Cannot read properties of undefined (reading 'v')" | مفتوح |
+| k264_identity.test.mjs | 0 | 5 | 0 | 5 | 'relational-domain-api-required' | مفتوح |
+| k264_merge.test.mjs | 3 | 5 | 0 | 5 | 'relational-domain-api-required' | مفتوح |
+| k264_review.test.mjs | 5 | 5 | 0 | 5 | 'relational-domain-api-required' | مفتوح |
+| migrations.test.mjs | 2 | 5 | 0 | 5 | '0009_seized_awards.sql يختم schema_version' | مفتوح |
+| tasks_kpis_cancel_w1.test.mjs | 1 | 5 | 0 | 5 | 'operations-read-required' | مفتوح |
+| adversarial.test.mjs | 7 | 4 | 0 | 7 | 'المفتاح موجود' | مفتوح |
+| business_sqlite_limits.test.mjs | 3 | 4 | 0 | 4 | Expected values to be strictly equal: | مفتوح |
+| daily_midpoint_w1c1.test.mjs | 2 | 4 | 0 | 4 | touch: الرأسُ المُضاف حيث تُرك | مفتوح |
+| k264_readset.test.mjs | 0 | 4 | 0 | 4 | 'البداية: بلا عرض المهام' | مفتوح |
+| lock_hints_w1.test.mjs | 6 | 4 | 0 | 4 | "Cannot read properties of undefined (reading 'operations')" | مفتوح |
+| notifications_review_backup.test.mjs | 0 | 4 | 0 | 4 | {"ok":0,"err":"worker-error","rid":"9cd4c9bac074"} | مفتوح |
+| refresh_seed_commit_w1fix.test.mjs | 1 | 4 | 0 | 4 | 'dataReady is not defined' | مفتوح |
+| schema_upgrade_permit.test.mjs | 8 | 4 | 0 | 4 | Expected values to be strictly equal: | مفتوح |
+| users_scope_w1.test.mjs | 6 | 4 | 0 | 8 | sup: الإقلاع = المرجع | مفتوح |
+| custody_carry.test.mjs | 0 | 3 | 0 | 3 | {"ok":0,"err":"worker-error","rid":"d9ba168cbdd1"} | مفتوح |
+| custody_mixed_compile_guard.test.mjs | 0 | 3 | 0 | 3 | {"status":500,"err":"worker-error"} | مفتوح |
+| dept_delete_guard.test.mjs | 1 | 3 | 0 | 3 | 'this._businessBaseValid is not a function' | مفتوح |
+| dstats_review_security.test.mjs | 2 | 3 | 0 | 3 | "Cannot read properties of undefined (reading 'v')" | مفتوح |
+| k264_dayfocus.test.mjs | 0 | 3 | 0 | 1 | "Cannot read properties of undefined (reading 'set')" | مفتوح |
+| plan_canvas_w1.test.mjs | 3 | 3 | 0 | 3 | savePlan لم يُستدعَ (كان يُستدعى في كل انتقال) | مفتوح |
+| reset_restore_receipts.test.mjs | 0 | 3 | 0 | 3 | {"ok":0,"err":"restore-incomplete-manifest"} | مفتوح |
+| retired_snapshot_rollback.test.mjs | 0 | 3 | 0 | 3 | bassam_dstats_v1 | مفتوح |
+| save_race.test.mjs | 0 | 3 | 0 | 3 | Expected values to be strictly equal: | مفتوح |
+| backup_numeric_witness.test.mjs | 0 | 2 | 0 | 2 | {"ok":0,"err":"worker-error","rid":"d0f7d88e05da"} | مفتوح |
+| custody_employee_transition_ui.test.mjs | 10 | 2 | 0 | 2 | 'import context did not become ready' | مفتوح |
+| custody_store.test.mjs | 2 | 2 | 0 | 2 | {"status":500,"err":"worker-error"} | مفتوح |
+| d1_fault_sweep.test.mjs | 0 | 2 | 0 | 2 | Both legacy fixture sources exist before explicit installation | مفتوح |
+| d1_tools.test.mjs | 4 | 2 | 0 | 2 | 'حفظُ مفتاح إدارة قبل النسخ' | مفتوح |
+| emp_dup_route.test.mjs | 0 | 2 | 0 | 2 | 'قائمةُ tst_d1 من المِثال' | مفتوح |
+| integrity.test.mjs | 0 | 2 | 0 | 2 | Expected values to be strictly equal: | مفتوح |
+| irshad_backup_ui.test.mjs | 2 | 2 | 0 | 2 | 'تعذّر التصدير' | مفتوح |
+| k264_changes.test.mjs | 3 | 2 | 0 | 2 | Expected values to be strictly equal: | مفتوح |
+| k264_sec_bodies.test.mjs | 2 | 2 | 0 | 2 | 'irshad-cutover-target-not-empty' | مفتوح |
+| k264_sec_read_ceiling.test.mjs | 0 | 2 | 0 | 2 | 'irshad-cutover-target-not-empty' | مفتوح |
+| k264_sec_uid_reads.test.mjs | 0 | 2 | 0 | 2 | 'irshad-cutover-target-not-empty' | مفتوح |
+| plan_status_noreason265.test.mjs | 1 | 2 | 0 | 2 | "Cannot read properties of null (reading 'floors')" | مفتوح |
+| profile_stamp265.test.mjs | 3 | 2 | 0 | 2 | "Cannot read properties of undefined (reading 'day')" | مفتوح |
+| restore_full_super.test.mjs | 0 | 2 | 0 | 2 | 'مرفوضة: 400 {"ok":0,"err":"operations-request-envelope"}' | مفتوح |
+| api_contract_matrix.test.mjs | 1 | 1 | 0 | 2 | 'جسمٌ خاطئٌ للاختبار: /api/seized/act' | مفتوح |
+| api_shapes.test.mjs | 2 | 1 | 0 | 1 | "Cannot read properties of undefined (reading 'bsdept:dR:bassam_options_v1')" | مفتوح |
+| aud_last.test.mjs | 1 | 1 | 0 | 1 | Expected values to be strictly equal: | مفتوح |
+| custody_history_compat.test.mjs | 3 | 1 | 0 | 1 | Expected values to be strictly equal: | مفتوح |
+| emp_dup.test.mjs | 4 | 1 | 0 | 1 | Expected values to be strictly equal: | مفتوح |
+| k264_activedept.test.mjs | 1 | 1 | 0 | 1 | Expected values to be strictly equal: | مفتوح |
+| k264_gate335_e2e.test.mjs | 0 | 1 | 0 | 1 | سطرُ النتيجة: d-266/workers/_worker.js?inst=3:18468:17) ¦     at async opResourceMany (file:///home/user/rishad-266/work | مفتوح |
+| kpis_tasks265.test.mjs | 2 | 1 | 0 | 1 | اللوحةُ الوحيدةُ المتاحة تُفتح تلقائياً | مفتوح |
+| notifications_review_client.test.mjs | 13 | 1 | 0 | 1 | An actual API response satisfies the client contract | مفتوح |
+| notifications_roundtrips.test.mjs | 2 | 1 | 0 | 1 | Expected values to be strictly equal: | مفتوح |
+| page_modules_parts.test.mjs | 1 | 1 | 0 | 1 | saveLocks في الأصل | مفتوح |
+| perf_memo.test.mjs | 2 | 1 | 0 | 1 | 'مدخلاتُ المفتاح كاملة' | مفتوح |
+| profile_tasks_current265.test.mjs | 21 | 1 | 0 | 1 | 'session401: طلباتٌ محدودة في عشر دقائق (كانت آلافاً): 1' | مفتوح |
+| refresh_tabs_w1.test.mjs | 8 | 1 | 0 | 1 | 'operations-read-required' | مفتوح |
+| rishad266_identity_compat.test.mjs | 14 | 1 | 0 | 1 | 'Illegal return statement' | مفتوح |
+| rishad266_preview_reset.test.mjs | 2 | 1 | 0 | 1 | Traceback (most recent call last): | مفتوح |
+| rishad266_recovery_validation.test.mjs | 3 | 1 | 0 | 1 | 'rsResetRoute is not defined' | مفتوح |
+| scope_projection.test.mjs | 0 | 1 | 0 | 1 | "Cannot read properties of null (reading 'floors')" | مفتوح |
+| source_audit_tools.test.mjs | 0 | 1 | 0 | 1 | /home/user/rishad-266/tools/module_charter.py:18: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/user/ris | مفتوح |
+| tasks_hotfix242_sql.test.mjs | 0 | 1 | 0 | 1 | Retired resource: use await replaceOperationalFixture for an explicit typed test mutation | مفتوح |
+| worktype_fixed.test.mjs | 2 | 1 | 0 | 1 | 'wkAdd() { يُرفض برسالة' | مفتوح |
+
+---
+
+## السجل الأصلي (عند develop be4ce02 — للتاريخ)
+
+### سجل الاختبارات الفاشلة — RISHAD-266 عند develop be4ce02 (شيفرة cd80cf2)
 
 - الأمر: `npm ci` (أو node_modules المثبت بالقفل نفسه) ثم `npm run -s build` ثم `npm run -s test:unit:265`
 - البيئة: Node v22.22.0 · Python 3 · TZ=UTC · التشغيل 2026-11-01 11:56–12:11 UTC · بصمة sha256 للعامل workers/_worker.js تبدأ بـ 030e78621fe6e71d
