@@ -58,9 +58,15 @@ for (const mode of ['legacy', 'enforce']) {
     no(await put(W, 'dm1', p), 'cap', 'planting a new out-of-ceiling leaf');
     p = await view(W, 'dm1'); p.empLens[D].tst_e_lens_off = ['paths', 'gates', 'marks', 'dist', 'dens', 'zones'];
     ok(await put(W, 'dm1', p), 'a lens list keeping its switched-off lenses (+ an enabled one)');
-    p = await view(W, 'dm1'); p.empLens[D].tst_e_lens_off = ['paths'];
-    ok(await put(W, 'dm1', p), 'narrowing a lens list');
-    p = await view(W, 'dm1'); p.empLens[D].tst_e_lens_off = ['paths', 'dens'];
+    p = await view(W, 'dm1'); p.empLens[D].tst_e_lens_off = ['gates', 'marks', 'dist', 'dens'];
+    ok(await put(W, 'dm1', p), 'narrowing a lens list inside the unit lenses (its switched-off lenses kept)');
+    p = await view(W, 'dm1'); p.empLens[D].tst_e_lens_off = ['gates', 'marks', 'dist'];
+    no(await put(W, 'dm1', p), 'perms', 'dropping a switched-off lens from a list that stays (latent loss — 60142a9+ rule)');
+    p = await view(W, 'dm1'); p.empLens[D].tst_e_lens_off = ['gates', 'marks', 'dist', 'dens', 'paths'];
+    ok(await put(W, 'dm1', p), 'adding an enabled lens');
+    p = await view(W, 'dm1'); p.empLens[D].tst_e_emp1 = ['zones'];
+    ok(await put(W, 'dm1', p), 'an explicit list for an employee who had none');
+    p = await view(W, 'dm1'); p.empLens[D].tst_e_emp1 = ['zones', 'dens'];
     no(await put(W, 'dm1', p), 'cap', 'adding a switched-off lens to an explicit list that lacked it');
   });
 

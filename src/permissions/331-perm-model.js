@@ -892,7 +892,7 @@
     var old = JSON.stringify(rec.emp[ekey] || null);
     if (!pl.length && !mi.length) delete rec.emp[ekey];
     else { rec.emp[ekey] = { plus: pl.sort(), minus: mi.sort(), at: Date.now(), by: u ? u.id : '' }; if (src) rec.emp[ekey].src = String(src); }
-    var cmp = function(x){ return x ? JSON.stringify({ p: x.plus, m: x.minus, s: x.src || '' }) : 'null'; };
+    var cmp = function(x){ return x ? JSON.stringify({ p: (x.plus || []).slice().sort(), m: (x.minus || []).slice().sort(), s: x.src || '' }) : 'null'; };   /* caps-own: order-insensitive — an equal entry is not rewritten */
     if (cmp(old === 'null' ? null : JSON.parse(old)) === cmp(rec.emp[ekey] || null)) return { ok:true, same:true, dropped: dropped };
     try { RAW.setItem.call(localStorage, 'bsdept:' + d + ':bassam_grants_v1', JSON.stringify(rec)); } catch(e){ return { ok:false, err:'تعذّر الحفظ' }; }
     return { ok:true, dropped: dropped };

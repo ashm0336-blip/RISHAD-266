@@ -1010,6 +1010,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       selfCur: k0 === K_USERS ? selfCurSt : null,                                 /* KIVO_264 · D14 */
       gx: k0 === K_USERS ? gx9 : null,                                            /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2 */
       pa: pa9 && resName(k0) === ENF_GRANTS_RES ? pa9 : null,                     /* «… (الجولة 2)» · R3-4 */
+      cl: A.u.role === 'super' && !!body && body.clearLatent === true,           /* caps-own: the system administrator's explicit clearing of latent items (021 latentLossWhy) */
       rst: !!rstK9[k0],                                                           /* KIVO_265 · H-1: علامةُ الاستعادة على هذا المفتاح (الوضع القديم · N-6) — ولمن تُقبل: 018 taskSrvExempt (R-5) */
       tk: tkCtx9[d00] || null,                                                    /* KIVO_265 · R-2: سياقُ الحساب النشط (018 taskAcctWhy) */
       ed: edCtx9 && d00 && resName(k0) === 'bassam_employees_v1' ? edCtx9 : null   /* KIVO_265 · أمن: تفرّدُ الهوية عبر الإدارات (018 empDupWhy) */
@@ -1033,7 +1034,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     /* R194…R203 — الظلّ: يقيس حكمَ السجل الحالي v24.9 (ربطُ الحرّاس + آلياتُ Phase 3 + نطاقُ Phase 4/4.1/4.1.1 — وPhase 4.2 جردٌ تجريبي لا يمسّ الكتابة — وPhase 4.3 هويةٌ ثابتة يقرؤها المحرّك — وPhase 4.4 بروفةُ ترحيلٍ لا تكتب — وPhase 4.5 تمهيدٌ مُدمَج هوية→نطاق لا يكتب) بجانب حكم canWrite ولا يغيّره؛ canWrite نفسُها لم تُمسّ.
        علاماتُ العمليات (ops) وسياقُ الاستدراك يُضافان إلى ctx0 هنا — بعد صدور الحكم — فلا تراهما canWrite ولا أيُّ قاعدة */
     try { ctx0.restore = !!(pv2Restore || pv3Restore); ctx0.op = pv3M.ops[k0] || null; ctx0.retroWin = pv3RetroCtx; ctx0.pv4 = pv4Refs[d00] || {}; if (!PERMV2.mute && !ENFX) permv2Bind(A, k0, it0.v, cur0, ctx0, vd0); } catch (e9b) { swallow('permv2-batch', e9b, env.__rid); }
-    if (!vd0.ok) { evald.push({ deny: vd0.why, cur: cur0, x: ENFX ? vd0 : null }); continue; }
+    if (!vd0.ok) { evald.push({ deny: vd0.why, cur: cur0, x: ENFX || vd0.detail ? vd0 : null }); continue; }
     /* KIVO_259 · SR-8: اسمُ دخولٍ جديد (أو معدَّل) يصادم حساباً آخر ⇒ رفض — لكل الأدوار ومنها مدير النظام (الواجهةُ تمنعه أصلاً: taken · empHolder) */
     /* مراجعةُ التكامل W1-R2: ولغير مدير النظام يسمّي الرفضُ الصفوفَ المخالفة (dup) — مما أرسله الفاعلُ نفسُه وحده، لا من حسابٍ محجوب */
     if (it0.act === 'set' && k0 === K_USERS) {

@@ -70,8 +70,12 @@ for (const mode of ['legacy', 'enforce']) {
     const gm = await w.as('gm1');
     p = P(w); p.emps.tst_d1['mgr:tst_d1'] = { 'emps/data': ALL.slice(), 'daily/rounds': ['view', 'edit'], help: ['view'] };
     ok(await put(w, gm, KP, p), 'مديرُ الفرع يضيّق على مدير الإدارة بورقة');
+    /* caps-own (latent items are never lost by accident — 021 latentLossWhy): the out-of-ceiling leaf seized/records stays stored; dropping it
+       from a sheet that stays is refused (deleting the whole sheet, or the system administrator's clearLatent, removes it explicitly) */
     p = P(w); p.emps.tst_d2.tst_e_emp2 = { 'irshad/records': ['view', 'add'] };
-    ok(await put(w, gm, KP, p), 'مديرُ الفرع على موظفٍ في tst_d2 (ويمحو الورقة القديمة خارج السقف)');
+    assert.equal((await put(w, gm, KP, p)).why, 'perms', 'مديرُ الفرع لا يمحو ورقةً خاملةً خارج السقف من ورقةٍ باقية');
+    p = P(w); p.emps.tst_d2.tst_e_emp2 = Object.assign({}, p.emps.tst_d2.tst_e_emp2, { 'irshad/records': ['view', 'add'] });
+    ok(await put(w, gm, KP, p), 'مديرُ الفرع على موظفٍ في tst_d2 (والورقةُ الخاملةُ خارج السقف باقية)');
     /* المضيَّقُ عليه بورقةٍ (أعلاه): يمنح مما يملك ولا يمنح ما سُحب منه ولا يوسّع ورقتَه */
     const dmN = await w.as('dm1');
     p = P(w); p.emps.tst_d1.tst_e_snop = { 'daily/rounds': ['view', 'edit'] };
@@ -82,10 +86,10 @@ for (const mode of ['legacy', 'enforce']) {
     no(await put(w, dmN, KP, p), 'self', 'ولا يوسّع ورقتَه');
     /* السقف: ما خارج سقف الوحدة مرفوض · وما داخله يُمنح */
     const dm2 = await w.as('dm2');
-    p = P(w); p.emps.tst_d2.tst_e_emp2 = { seized: ['view'], 'seized/records': ['view'] };
+    p = P(w); p.emps.tst_d2.tst_e_emp2 = Object.assign({}, p.emps.tst_d2.tst_e_emp2, { seized: ['view'] });   /* caps-own: its latent seized/records kept (021 latentLossWhy) */
     no(await put(w, dm2, KP, p), 'cap', 'صفحةٌ خارج سقف tst_d2');
-    p = P(w); p.emps.tst_d2.tst_e_emp2 = { 'irshad/records': ['view'], plan: ['view'] };
-    ok(await put(w, dm2, KP, p), 'صفحاتٌ داخل السقف');
+    p = P(w); p.emps.tst_d2.tst_e_emp2 = { 'irshad/records': ['view'], plan: ['view'], 'seized/records': p.emps.tst_d2.tst_e_emp2['seized/records'] };
+    ok(await put(w, dm2, KP, p), 'صفحاتٌ داخل السقف (والخاملةُ باقية)');
   });
 
   test(mode + ' · D1 · لا يُنشئ مديرُ الإدارة حساباً مفتاحُه mgr:/gm: ولا يغيّر إليه', async () => {

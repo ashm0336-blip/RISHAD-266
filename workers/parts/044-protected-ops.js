@@ -15,6 +15,8 @@ function prot9(E, k, PV, ctx) {
   return '';
 }
 function canWrite(A, k, newVal, curVal, ctx) {
+  var lw = latentLossWhy(A, k, newVal, curVal, ctx);   /* caps-own: latent items are not lost by accident — any role, both modes (021) */
+  if (lw) return A && A.enf ? enfNo('perms', { detail: 'latent: ' + lw + ' | ' + LATENT_MSG }) : { ok: false, why: 'perms', detail: 'latent: ' + lw + ' | ' + LATENT_MSG };
   if (A && A.enf) return canWriteEnf(A, k, newVal, curVal, ctx);              /* KIVO_243: الكتابة من سجل v24.9 */
   var u = A.u;
   /* سجل الموارد يسبق كل شيء: ما لا سياسة له لا يُكتب — ولا يُستثنى منه دور */

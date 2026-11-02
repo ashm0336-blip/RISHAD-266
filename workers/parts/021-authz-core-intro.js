@@ -91,6 +91,58 @@ function capStaleBatch(A, todo, evald) {
   }
   return false;
 }
+/* caps-own · latent items are never lost by accident, whatever the request sequence: a save (any role, both modes) that removes an item
+   which is outside the unit ceiling both in storage and in this save — a leaf or action of a sheet that stays, a lens of an explicit lens list
+   that stays (switched off for the unit), a plus/minus key of an explicit-grant entry that stays, a leaf/action, lens or v24.9 key of a template
+   (same id) that stays — is refused (why 'perms', nothing written). Such items are invisible to every editor, so their disappearance is a stale
+   page (3773e3c trims, in one request or after an accepted narrowing), a filtered or partial view, or a page rebuilt without them — not a
+   decision. A template keyed by a container page (old format) may be rewritten as leaves only if its switched-off tabs keep their actions.
+   Explicit deletions stay allowed: a whole sheet, lens list, grant entry, template or registry key; anything inside the ceiling (a manager
+   removing a leaf); anything the save itself brings back inside the ceiling; a restore; and the system administrator's explicit clearing
+   (/api/save body clearLatent: true — 054). tplOf holds a template id, not a ceiling item: removing it is always an explicit unassignment. */
+var LATENT_MSG = 'لم يُحفظ شيء: الحفظُ يحذف صلاحياتٍ مخفيّةً خارج سقف الوحدة — تعود كما كانت متى وُسِّع السقف. أعد تحميل الصفحة ثم كرّر التعديل';
+function latentLossWhy(A, k, nv, cv, ctx) {
+  var rn = resName(k);
+  if (nv == null || cv == null || (k !== K_PERM && rn !== ENF_GRANTS_RES && rn !== 'bassam_perm_tpls_v1') || (ctx && (ctx.rst || ctx.cl || (ctx.enf && ctx.enf.restore)))) return '';
+  var o = parseJson(cv, null), n = parseJson(nv, null), d, ek, q, i, P = parseKey(k);
+  var at = function (Q) { var B = {}, z; for (z in A) if (z.slice(0, 2) !== '__') B[z] = A[z]; B.perms = isObj(Q) ? Q : {}; B.off = []; return B; };
+  var lost = function (a0, a1) { return Array.isArray(a0) && a0.some(function (x) { return !(Array.isArray(a1) && a1.indexOf(x) !== -1); }); };
+  var lensOff = function (Q, dd, L) { var dl = ((Q && Q.lenses) || {})[dd]; return Array.isArray(dl) && dl.indexOf(L) === -1; };
+  if (k === K_PERM) {
+    if (!isObj(o) || !isObj(n)) return '';
+    var Bo = at(o), Bn = at(n);
+    for (d in (o.emps || {})) for (ek in o.emps[d]) {
+      var s0 = o.emps[d][ek], s1 = ((n.emps || {})[d] || {})[ek];
+      if (isObj(s0) && isObj(s1)) for (q in s0) if (capLeafKnown(q) && lost(s0[q], s1[q]) && !capOnDept(Bo, d, q) && !capOnDept(Bn, d, q)) return 'sheet ' + ek + ' ' + q;
+    }
+    for (d in (o.empLens || {})) for (ek in o.empLens[d]) {
+      var l0 = o.empLens[d][ek], l1 = ((n.empLens || {})[d] || {})[ek];
+      if (Array.isArray(l0) && Array.isArray(l1)) for (i = 0; i < l0.length; i++) if (l1.indexOf(l0[i]) === -1 && lensOff(o, d, l0[i]) && lensOff(n, d, l0[i])) return 'lens ' + ek + ' ' + l0[i];
+    }
+    return '';
+  }
+  d = P && P.dept; if (!d || !isObj(o) && !Array.isArray(o)) return '';
+  var B = at(A.perms), on = function (x) { return capOnDept(B, d, x); }, keyOn = function (x) { return enfKeyOnCeiling(B, d, String(x)); };
+  if (rn === ENF_GRANTS_RES) {
+    var g0 = isObj(o.emp) ? o.emp : {}, g1 = isObj(n) && isObj(n.emp) ? n.emp : {};
+    for (ek in g0) if (isObj(g0[ek]) && isObj(g1[ek])) for (q in { plus: 1, minus: 1 }) if (Array.isArray(g0[ek][q])) for (i = 0; i < g0[ek][q].length; i++) if (!keyOn(g0[ek][q][i]) && lost([g0[ek][q][i]], g1[ek][q])) return 'grant ' + ek + ' ' + g0[ek][q][i];
+    return '';
+  }
+  if (rn !== 'bassam_perm_tpls_v1' || !Array.isArray(o) || !Array.isArray(n)) return '';
+  var byId = nmap(); n.forEach(function (t) { if (isObj(t) && t.id != null) byId['t' + t.id] = t; });
+  for (i = 0; i < o.length; i++) {
+    var t0 = o[i], t1 = isObj(t0) ? byId['t' + t0.id] : null; if (!t1) continue;
+    var p0 = isObj(t0.perms) ? t0.perms : {}, p1 = isObj(t1.perms) ? t1.perms : {};
+    for (q in p0) {
+      if (capLeafKnown(q)) { if (!on(q) && lost(p0[q], p1[q])) return 'template ' + t0.id + ' ' + q; continue; }
+      if (!pgIsContainer(q) || !lost(p0[q], p1[q])) continue;   /* the container key kept (same or wider actions) */
+      for (var j = 0, lv = pgLeaves(q); j < lv.length; j++) if (!on(lv[j]) && lost(p0[q], p1[lv[j]])) return 'template ' + t0.id + ' ' + lv[j];
+    }
+    if (Array.isArray(t0.lens)) for (j = 0; j < t0.lens.length; j++) if (lensOff(A.perms, d, t0.lens[j]) && lost([t0.lens[j]], t1.lens)) return 'template ' + t0.id + ' lens ' + t0.lens[j];
+    if (Array.isArray(t0.keys24)) for (j = 0; j < t0.keys24.length; j++) if (!keyOn(t0.keys24[j]) && lost([t0.keys24[j]], t1.keys24)) return 'template ' + t0.id + ' ' + t0.keys24[j];
+  }
+  return '';
+}
 function effCapOf(A, d) {
   if (hasCapOf(A, d) && capOwnOf(A, d)) return rawCapOf(A, d);
   var own = rawCapOf(A, d) || [], anc = ancChain(A, d).filter(function (a) { return hasCapOf(A, a); });

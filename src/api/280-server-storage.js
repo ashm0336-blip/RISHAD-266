@@ -588,7 +588,9 @@
         if (k === KP9 && d.cur != null && typeof d.pscope === "string") pscope9 = d.pscope;   /* مراجعةُ التكامل W1-R1: القيمةُ المُعادة إسقاطُ هذه العدسة */
         delete pSet[k]; delete pDel[k]; unmark9(k); notify(k);    /* الممنوعُ ممنوعٌ ولو كُتب بعده */
       }
-      if (d.why !== "flag") note(fx9 ? usersDupMsg9(fx9) : "لم يُحفظ تعديلك على «" + lbl(k) + "» — " + whyText9(d.why) + ". أُعيدت القيمة كما في الخادم", "#7f1d1d");
+      /* caps-own: a refusal that protects latent permissions carries its own text (021 latentLossWhy · capStaleBatch) */
+      var lm9 = /^stale-client: (.+)$/.exec(String(d.detail || "")) || /^latent: .*? \| (.+)$/.exec(String(d.detail || ""));
+      if (d.why !== "flag") note(fx9 ? usersDupMsg9(fx9) : "لم يُحفظ تعديلك على «" + lbl(k) + "» — " + (lm9 ? lm9[1] : whyText9(d.why)) + ". أُعيدت القيمة كما في الخادم", "#7f1d1d");
     }
     var cf = j.conflicts || {}, banners = [];
     for (k in cf) {

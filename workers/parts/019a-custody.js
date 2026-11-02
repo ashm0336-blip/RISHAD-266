@@ -574,8 +574,10 @@ async function cuRead(env, A, q) {
     currentCutoff = clock.y * 12 + clock.m,
     employeeDoc = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'), []);
   if (!Array.isArray(employeeDoc)) throw cuError('custody-employees-shape');
-  var employeeJson = JSON.stringify(employeeDoc),
-    cte = cuResolvedCte(view === 'moves'),
+  var employeeJson = JSON.stringify(employeeDoc);
+  // PRIVACY (019u (10)): holders outside the register ⇒ an opaque token for a reader not allowed personal data
+  if (!privPersonalOk(A, d)) privCustodyOrph(A, d, (await env.DB.prepare('SELECT m.holder_key k,m.move_id mv FROM custody_movements m WHERE m.department_id=?1 AND m.sequence=(SELECT MIN(x.sequence) FROM custody_movements x WHERE x.department_id=?1 AND x.holder_key=m.holder_key)').bind(d).all()).results || [], employeeJson);
+  var cte = cuResolvedCte(view === 'moves'),
     latestCte = cuResolvedCte(false),
     args = [d, cutoff, employeeJson, query, privCustodyHolder(A, d, holder, employeeJson), kind];   // PRIVACY (019u): a holder token the reader got (the cursor keeps the token)
   var label = "COALESCE((SELECT MIN(name) FROM employees e WHERE e.ek=r.hkey),r.holder_name_snapshot,'')";
@@ -880,6 +882,7 @@ async function cuAct(env, A, b, meta) {
         var id = cuString(line.itemId, 200, false),
           holder = cuString(line.holderKey, 4096, false),
           item = catalog.get(id);
+        if (PRIV_NX.test(holder)) throw cuError('privacy-hidden', 409);   // 019u (10): a hand-out needs a register record, never a token
         if (!item) {
           item = await env.DB.prepare('SELECT * FROM custody_items WHERE department_id=?1 AND item_id=?2').bind(d, id).first();
           if (!item) throw cuError('custody-item-missing', 404);

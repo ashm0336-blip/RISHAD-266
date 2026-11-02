@@ -6956,8 +6956,10 @@ async function cuRead(env, A, q) {
     currentCutoff = clock.y * 12 + clock.m,
     employeeDoc = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'), []);
   if (!Array.isArray(employeeDoc)) throw cuError('custody-employees-shape');
-  var employeeJson = JSON.stringify(employeeDoc),
-    cte = cuResolvedCte(view === 'moves'),
+  var employeeJson = JSON.stringify(employeeDoc);
+  // PRIVACY (019u (10)): holders outside the register ⇒ an opaque token for a reader not allowed personal data
+  if (!privPersonalOk(A, d)) privCustodyOrph(A, d, (await env.DB.prepare('SELECT m.holder_key k,m.move_id mv FROM custody_movements m WHERE m.department_id=?1 AND m.sequence=(SELECT MIN(x.sequence) FROM custody_movements x WHERE x.department_id=?1 AND x.holder_key=m.holder_key)').bind(d).all()).results || [], employeeJson);
+  var cte = cuResolvedCte(view === 'moves'),
     latestCte = cuResolvedCte(false),
     args = [d, cutoff, employeeJson, query, privCustodyHolder(A, d, holder, employeeJson), kind];   // PRIVACY (019u): a holder token the reader got (the cursor keeps the token)
   var label = "COALESCE((SELECT MIN(name) FROM employees e WHERE e.ek=r.hkey),r.holder_name_snapshot,'')";
@@ -7262,6 +7264,7 @@ async function cuAct(env, A, b, meta) {
         var id = cuString(line.itemId, 200, false),
           holder = cuString(line.holderKey, 4096, false),
           item = catalog.get(id);
+        if (PRIV_NX.test(holder)) throw cuError('privacy-hidden', 409);   // 019u (10): a hand-out needs a register record, never a token
         if (!item) {
           item = await env.DB.prepare('SELECT * FROM custody_items WHERE department_id=?1 AND item_id=?2').bind(d, id).first();
           if (!item) throw cuError('custody-item-missing', 404);
@@ -19054,13 +19057,35 @@ async function privRestoreBlanks(env, cur, keys, domains) {
   return out;
 }
 /* custody read (019a cuRead): each row carries the holder's nid/empno snapshot — same rule (unit managers · employees-data writers · himself) */
-/* empRaw: the register as read (019a) — a holder key that is a hidden nid (old data) is sent as the token of (1b)/(4) (eid · 'nx:') */
+/* (10) custody holders outside the register (a person deleted since; old data may have keyed him by his nid). Whether such a key is a
+   nid cannot be known without the record, so for a reader not allowed personal data EVERY holder key that names no register record
+   (not an eid/name key, not a register nid — those are (4)) is sent as 'nx:'+20 hex of SHA-256('nxc|'+unit+'|'+the earliest move id
+   stored under that key). The move id is random ('move-'+randTok · 'legacy-move-N'), never the key, so the token cannot be reversed to
+   it; it is stable while that movement exists (the earliest by sequence — UNIQUE per unit; later movements get higher sequences; a
+   restore keeps ids and sequences) and unique per key. The name the
+   reader sees comes from the movement's name snapshot as before. The holder filter maps it back; an 'nx:' that names neither a register
+   record nor such a holder is refused (privacy-hidden); issuing to a token is refused (a hand-out needs a register record). Authorised
+   readers: raw keys. privCustodyOrph caches the map per request (A.__privCuO). */
+function privCustodyOrph(A, d, pairs, empRaw) {
+  var c = A.__privCuO || (A.__privCuO = nmap()), L = parseJson(empRaw, []), known = nmap(), M = nmap(), R = nmap();
+  if (!A.u || privPersonalOk(A, d)) return (c[d] = null);
+  (Array.isArray(L) ? L : []).forEach(function (e) { if (isObj(e)) [e.eid || e.name, e.nid].forEach(function (k) { if (k != null && k !== '') known[String(k)] = 1; }); });
+  pairs.forEach(function (p) {
+    var k = p.k == null ? '' : String(p.k), t;
+    if (!k || known[k] || PRIV_NX.test(k)) return;
+    t = 'nx:' + KIVO_IDENTITY_MIGRATION.sha256Hex('nxc|' + d + '|' + p.mv).slice(0, 20); M[k] = t; R[t] = k;
+  });
+  return (c[d] = { M: M, R: R });
+}
+/* empRaw: the register as read (019a) — a holder key that is a hidden nid (old data) is sent as the token of (1b)/(4) (eid · 'nx:');
+   one outside the register as the token of (10) */
 function privCustodyRows(A, d, rows, empRaw) {
   if (!Array.isArray(rows) || !A || !A.u || privPersonalOk(A, d)) return rows;
   var me = String(A.u.ekey || ''), H = {}; H['bsdept:' + d + ':' + PRIV_EMP_RES] = empRaw;
-  var T = empRaw == null ? null : privTok(A, d, H), tk = function (o, k) { if (T && o[k] != null && T.M[String(o[k])] !== undefined) o[k] = T.M[String(o[k])]; };
+  var T = empRaw == null ? null : privTok(A, d, H), O = A.__privCuO && A.__privCuO[d], m = function (v) { v = String(v); return T && T.M[v] !== undefined ? T.M[v] : O && O.M[v] !== undefined ? O.M[v] : undefined; };
+  var tk = function (o, k) { if (o[k] != null && m(o[k]) !== undefined) o[k] = m(o[k]); };
   return rows.map(function (r) {
-    if (isObj(r) && !isObj(r.snapshot) && T && T.M[String(r.holderKey)] !== undefined) { r = privCopy(r); tk(r, 'holderKey'); return r; }   /* summary.topHolders */
+    if (isObj(r) && !isObj(r.snapshot) && m(r.holderKey) !== undefined) { r = privCopy(r); tk(r, 'holderKey'); return r; }   /* summary.topHolders */
     if (!isObj(r) || !isObj(r.snapshot)) return r;
     var hk = String(r.holderKey != null ? r.holderKey : (r.eid != null ? r.eid : ''));
     if (me && (hk === me || String(r.snapshot.eid || '') === me)) return r;
@@ -19073,10 +19098,13 @@ function privCustodyRows(A, d, rows, empRaw) {
    resolve to it through the alias): an 'nx:' token the reader got → its record; a raw nid → its record only for a reader who sees nids
    (else a filter by nid would be an oracle) */
 function privCustodyHolder(A, d, h, empRaw) {
-  var L = parseJson(empRaw, []), X = privNx(d, L), ok = A && A.u && privPersonalOk(A, d), hit = [];
+  var L = parseJson(empRaw, []), X = privNx(d, L), ok = A && A.u && privPersonalOk(A, d), hit = [], O = A.__privCuO && A.__privCuO[d];
   if (!Array.isArray(L) || !h) return h;
+  if (O && O.R[h] !== undefined) return O.R[h];   /* (10) */
   L.forEach(function (e, i) { if (isObj(e) && ((PRIV_NX.test(h) && X[i] === h) || (ok && e.nid != null && e.nid !== '' && String(e.nid) === h && String(e.eid || e.name || '') !== h))) hit.push(e); });
-  return hit.length === 1 ? String(hit[0].eid || hit[0].name || '') : h;
+  if (hit.length === 1) return String(hit[0].eid || hit[0].name || '');
+  if (PRIV_NX.test(h)) throw cuError('privacy-hidden', 409);   /* a token of no record and no holder */
+  return h;
 }
 /* ── entry points: raw JSON text in, raw JSON text out (unchanged text when nothing is hidden) ── */
 function privOut(A, k, raw, have) {
@@ -19573,6 +19601,58 @@ function capStaleBatch(A, todo, evald) {
     }
   }
   return false;
+}
+/* caps-own · latent items are never lost by accident, whatever the request sequence: a save (any role, both modes) that removes an item
+   which is outside the unit ceiling both in storage and in this save — a leaf or action of a sheet that stays, a lens of an explicit lens list
+   that stays (switched off for the unit), a plus/minus key of an explicit-grant entry that stays, a leaf/action, lens or v24.9 key of a template
+   (same id) that stays — is refused (why 'perms', nothing written). Such items are invisible to every editor, so their disappearance is a stale
+   page (3773e3c trims, in one request or after an accepted narrowing), a filtered or partial view, or a page rebuilt without them — not a
+   decision. A template keyed by a container page (old format) may be rewritten as leaves only if its switched-off tabs keep their actions.
+   Explicit deletions stay allowed: a whole sheet, lens list, grant entry, template or registry key; anything inside the ceiling (a manager
+   removing a leaf); anything the save itself brings back inside the ceiling; a restore; and the system administrator's explicit clearing
+   (/api/save body clearLatent: true — 054). tplOf holds a template id, not a ceiling item: removing it is always an explicit unassignment. */
+var LATENT_MSG = 'لم يُحفظ شيء: الحفظُ يحذف صلاحياتٍ مخفيّةً خارج سقف الوحدة — تعود كما كانت متى وُسِّع السقف. أعد تحميل الصفحة ثم كرّر التعديل';
+function latentLossWhy(A, k, nv, cv, ctx) {
+  var rn = resName(k);
+  if (nv == null || cv == null || (k !== K_PERM && rn !== ENF_GRANTS_RES && rn !== 'bassam_perm_tpls_v1') || (ctx && (ctx.rst || ctx.cl || (ctx.enf && ctx.enf.restore)))) return '';
+  var o = parseJson(cv, null), n = parseJson(nv, null), d, ek, q, i, P = parseKey(k);
+  var at = function (Q) { var B = {}, z; for (z in A) if (z.slice(0, 2) !== '__') B[z] = A[z]; B.perms = isObj(Q) ? Q : {}; B.off = []; return B; };
+  var lost = function (a0, a1) { return Array.isArray(a0) && a0.some(function (x) { return !(Array.isArray(a1) && a1.indexOf(x) !== -1); }); };
+  var lensOff = function (Q, dd, L) { var dl = ((Q && Q.lenses) || {})[dd]; return Array.isArray(dl) && dl.indexOf(L) === -1; };
+  if (k === K_PERM) {
+    if (!isObj(o) || !isObj(n)) return '';
+    var Bo = at(o), Bn = at(n);
+    for (d in (o.emps || {})) for (ek in o.emps[d]) {
+      var s0 = o.emps[d][ek], s1 = ((n.emps || {})[d] || {})[ek];
+      if (isObj(s0) && isObj(s1)) for (q in s0) if (capLeafKnown(q) && lost(s0[q], s1[q]) && !capOnDept(Bo, d, q) && !capOnDept(Bn, d, q)) return 'sheet ' + ek + ' ' + q;
+    }
+    for (d in (o.empLens || {})) for (ek in o.empLens[d]) {
+      var l0 = o.empLens[d][ek], l1 = ((n.empLens || {})[d] || {})[ek];
+      if (Array.isArray(l0) && Array.isArray(l1)) for (i = 0; i < l0.length; i++) if (l1.indexOf(l0[i]) === -1 && lensOff(o, d, l0[i]) && lensOff(n, d, l0[i])) return 'lens ' + ek + ' ' + l0[i];
+    }
+    return '';
+  }
+  d = P && P.dept; if (!d || !isObj(o) && !Array.isArray(o)) return '';
+  var B = at(A.perms), on = function (x) { return capOnDept(B, d, x); }, keyOn = function (x) { return enfKeyOnCeiling(B, d, String(x)); };
+  if (rn === ENF_GRANTS_RES) {
+    var g0 = isObj(o.emp) ? o.emp : {}, g1 = isObj(n) && isObj(n.emp) ? n.emp : {};
+    for (ek in g0) if (isObj(g0[ek]) && isObj(g1[ek])) for (q in { plus: 1, minus: 1 }) if (Array.isArray(g0[ek][q])) for (i = 0; i < g0[ek][q].length; i++) if (!keyOn(g0[ek][q][i]) && lost([g0[ek][q][i]], g1[ek][q])) return 'grant ' + ek + ' ' + g0[ek][q][i];
+    return '';
+  }
+  if (rn !== 'bassam_perm_tpls_v1' || !Array.isArray(o) || !Array.isArray(n)) return '';
+  var byId = nmap(); n.forEach(function (t) { if (isObj(t) && t.id != null) byId['t' + t.id] = t; });
+  for (i = 0; i < o.length; i++) {
+    var t0 = o[i], t1 = isObj(t0) ? byId['t' + t0.id] : null; if (!t1) continue;
+    var p0 = isObj(t0.perms) ? t0.perms : {}, p1 = isObj(t1.perms) ? t1.perms : {};
+    for (q in p0) {
+      if (capLeafKnown(q)) { if (!on(q) && lost(p0[q], p1[q])) return 'template ' + t0.id + ' ' + q; continue; }
+      if (!pgIsContainer(q) || !lost(p0[q], p1[q])) continue;   /* the container key kept (same or wider actions) */
+      for (var j = 0, lv = pgLeaves(q); j < lv.length; j++) if (!on(lv[j]) && lost(p0[q], p1[lv[j]])) return 'template ' + t0.id + ' ' + lv[j];
+    }
+    if (Array.isArray(t0.lens)) for (j = 0; j < t0.lens.length; j++) if (lensOff(A.perms, d, t0.lens[j]) && lost([t0.lens[j]], t1.lens)) return 'template ' + t0.id + ' lens ' + t0.lens[j];
+    if (Array.isArray(t0.keys24)) for (j = 0; j < t0.keys24.length; j++) if (!keyOn(t0.keys24[j]) && lost([t0.keys24[j]], t1.keys24)) return 'template ' + t0.id + ' ' + t0.keys24[j];
+  }
+  return '';
 }
 function effCapOf(A, d) {
   if (hasCapOf(A, d) && capOwnOf(A, d)) return rawCapOf(A, d);
@@ -20963,6 +21043,8 @@ function prot9(E, k, PV, ctx) {
   return '';
 }
 function canWrite(A, k, newVal, curVal, ctx) {
+  var lw = latentLossWhy(A, k, newVal, curVal, ctx);   /* caps-own: latent items are not lost by accident — any role, both modes (021) */
+  if (lw) return A && A.enf ? enfNo('perms', { detail: 'latent: ' + lw + ' | ' + LATENT_MSG }) : { ok: false, why: 'perms', detail: 'latent: ' + lw + ' | ' + LATENT_MSG };
   if (A && A.enf) return canWriteEnf(A, k, newVal, curVal, ctx);              /* KIVO_243: الكتابة من سجل v24.9 */
   var u = A.u;
   /* سجل الموارد يسبق كل شيء: ما لا سياسة له لا يُكتب — ولا يُستثنى منه دور */
@@ -23657,6 +23739,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       selfCur: k0 === K_USERS ? selfCurSt : null,                                 /* KIVO_264 · D14 */
       gx: k0 === K_USERS ? gx9 : null,                                            /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2 */
       pa: pa9 && resName(k0) === ENF_GRANTS_RES ? pa9 : null,                     /* «… (الجولة 2)» · R3-4 */
+      cl: A.u.role === 'super' && !!body && body.clearLatent === true,           /* caps-own: the system administrator's explicit clearing of latent items (021 latentLossWhy) */
       rst: !!rstK9[k0],                                                           /* KIVO_265 · H-1: علامةُ الاستعادة على هذا المفتاح (الوضع القديم · N-6) — ولمن تُقبل: 018 taskSrvExempt (R-5) */
       tk: tkCtx9[d00] || null,                                                    /* KIVO_265 · R-2: سياقُ الحساب النشط (018 taskAcctWhy) */
       ed: edCtx9 && d00 && resName(k0) === 'bassam_employees_v1' ? edCtx9 : null   /* KIVO_265 · أمن: تفرّدُ الهوية عبر الإدارات (018 empDupWhy) */
@@ -23680,7 +23763,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     /* R194…R203 — الظلّ: يقيس حكمَ السجل الحالي v24.9 (ربطُ الحرّاس + آلياتُ Phase 3 + نطاقُ Phase 4/4.1/4.1.1 — وPhase 4.2 جردٌ تجريبي لا يمسّ الكتابة — وPhase 4.3 هويةٌ ثابتة يقرؤها المحرّك — وPhase 4.4 بروفةُ ترحيلٍ لا تكتب — وPhase 4.5 تمهيدٌ مُدمَج هوية→نطاق لا يكتب) بجانب حكم canWrite ولا يغيّره؛ canWrite نفسُها لم تُمسّ.
        علاماتُ العمليات (ops) وسياقُ الاستدراك يُضافان إلى ctx0 هنا — بعد صدور الحكم — فلا تراهما canWrite ولا أيُّ قاعدة */
     try { ctx0.restore = !!(pv2Restore || pv3Restore); ctx0.op = pv3M.ops[k0] || null; ctx0.retroWin = pv3RetroCtx; ctx0.pv4 = pv4Refs[d00] || {}; if (!PERMV2.mute && !ENFX) permv2Bind(A, k0, it0.v, cur0, ctx0, vd0); } catch (e9b) { swallow('permv2-batch', e9b, env.__rid); }
-    if (!vd0.ok) { evald.push({ deny: vd0.why, cur: cur0, x: ENFX ? vd0 : null }); continue; }
+    if (!vd0.ok) { evald.push({ deny: vd0.why, cur: cur0, x: ENFX || vd0.detail ? vd0 : null }); continue; }
     /* KIVO_259 · SR-8: اسمُ دخولٍ جديد (أو معدَّل) يصادم حساباً آخر ⇒ رفض — لكل الأدوار ومنها مدير النظام (الواجهةُ تمنعه أصلاً: taken · empHolder) */
     /* مراجعةُ التكامل W1-R2: ولغير مدير النظام يسمّي الرفضُ الصفوفَ المخالفة (dup) — مما أرسله الفاعلُ نفسُه وحده، لا من حسابٍ محجوب */
     if (it0.act === 'set' && k0 === K_USERS) {

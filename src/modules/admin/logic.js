@@ -734,9 +734,26 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       a = P.p24.cover(E);
     }
     if (P0 && P0.latentLeaves) {
-      const lt = P0.latentLeaves(c0.perms, d0);
+      const lt = P0.latentLeaves(c0.perms, d0),
+        un = (x, y) => ["view", "add", "edit", "del", "approve", "export"].filter((q) => (x || []).indexOf(q) !== -1 || (y || []).indexOf(q) !== -1);
       a = Object.assign({}, a);
-      Object.keys(lt).forEach((k) => a[k] || (a[k] = lt[k]));
+      Object.keys(lt).forEach((k) => (a[k] = un(a[k], lt[k])));
+      /* an old-format template keyed by a container page (all its tabs): unchanged ⇒ the container key is kept as it was; edited ⇒ its live
+         leaves from the editor and its switched-off tabs with the container's actions (exactly what it granted — nothing wider) */
+      const cp0 = c0.perms || {};
+      Object.keys(cp0).forEach((K) => {
+        const A0 = cp0[K] || [];
+        if (!P0.isContainer || !P0.isContainer(K) || !A0.length) return;
+        const ex = P0.expandPerms({ [K]: A0 }, d0),
+          srt = (x) => JSON.stringify((x || []).slice().sort());
+        if (Object.keys(ex).every((l) => srt(a[l]) === srt(A0)) && !Object.keys(a).some((l) => 0 === l.indexOf(K + "/") && !ex[l])) {
+          Object.keys(ex).forEach((l) => delete a[l]);
+          a[K] = A0.slice();
+        } else (P0.leafKeysOf(K) || []).forEach((l) => ex[l] || (a[l] = un(a[l], A0)));
+      });
+      const ord = {};
+      Object.keys(cp0).concat(Object.keys(a)).forEach((k) => k in a && (ord[k] = a[k]));
+      a = ord;
     }
     const i = this.tpHolders(t),
       tid = t;
