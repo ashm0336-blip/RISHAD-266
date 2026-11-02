@@ -407,7 +407,7 @@
     <table class="bs-rtable bs-fitcols" style="width:100%;border-collapse:collapse;min-width:1300px">
       <thead>
         <tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
-          <th class="bs-fz bs-fz1" style="padding:10px 8px;width:44px;border-left:1px solid var(--bd-a185151810p1)"><input type="checkbox" checked="{{allSelected}}" onChange="{{toggleAll}}" title="تحديد كل نتائج الفلترة الحالية عبر كل الصفحات — وضغطة ثانية تلغي التحديد" style="accent-color:var(--fg-xb99751);width:16px;height:16px;cursor:pointer"></th>
+          <th class="bs-fz bs-fz1" style="padding:10px 8px;width:44px;border-left:1px solid var(--bd-a185151810p1)"><label class="bs-ckhit"><input type="checkbox" checked="{{allSelected}}" onChange="{{toggleAll}}" title="تحديد كل نتائج الفلترة الحالية عبر كل الصفحات — وضغطة ثانية تلغي التحديد" style="accent-color:var(--fg-xb99751);width:16px;height:16px;cursor:pointer"></label></th>
           <th class="bs-fz bs-fz2" style="padding:10px 8px;width:46px;border-left:1px solid var(--bd-a185151810p1)">
             <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
               <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fc24ba3c"></svg></div>
@@ -483,7 +483,7 @@
         </td></tr>
         </sc-if>
         <tr style="border-bottom:1px solid var(--bd-xf1f5f9);transition:background .15s;{{e.rowBg}}" style-hover="background:var(--bg-a2452452450p5)">
-          <td data-label="تحديد" class="bs-fz bs-fz1" style="padding:8px 6px;text-align:center"><input type="checkbox" checked="{{e.sel}}" onChange="{{e.selTog}}" style="accent-color:var(--fg-xb99751);width:16px;height:16px;cursor:pointer"></td>
+          <td data-label="تحديد" class="bs-fz bs-fz1" style="padding:8px 6px;text-align:center"><label class="bs-ckhit"><input type="checkbox" checked="{{e.sel}}" onChange="{{e.selTog}}" style="accent-color:var(--fg-xb99751);width:16px;height:16px;cursor:pointer"></label></td>
           <td data-label="م" class="bs-fz bs-fz2" style="padding:8px 6px;text-align:center"><span style="font-size:13px;font-weight:400;color:var(--fg-x53565a);font-family:'Cairo',sans-serif">{{e.sn}}</span></td>
           <td data-label="اسم الموظف" class="bs-fz bs-fz3 bs-fzkeep" style="padding:6px 12px">
             <div style="display:flex;align-items:center;gap:10px">

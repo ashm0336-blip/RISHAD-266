@@ -1715,7 +1715,7 @@
       <thead>
         <tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
 <sc-if value="{{empPmWrite}}" hint-placeholder-val="{{ true }}">
-          <th style="padding:10px 8px;width:44px;border-left:1px solid var(--bd-a185151810p1)"><input type="checkbox" checked="{{allSelected}}" onChange="{{toggleAll}}" style="accent-color:var(--fg-xb99751);width:16px;height:16px;cursor:pointer"></th>
+          <th style="padding:10px 8px;width:44px;border-left:1px solid var(--bd-a185151810p1)"><label class="bs-ckhit"><input type="checkbox" checked="{{allSelected}}" onChange="{{toggleAll}}" style="accent-color:var(--fg-xb99751);width:16px;height:16px;cursor:pointer"></label></th>
 </sc-if>
           <th style="padding:10px 8px;width:46px;border-left:1px solid var(--bd-a185151810p1)">
             <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
@@ -1783,7 +1783,7 @@
         <sc-for list="{{rows}}" as="e" hint-placeholder-count="8">
         <tr style="border-bottom:1px solid var(--bd-xf1f5f9);transition:background .15s" style-hover="background:var(--bg-a185151810p05)">
 <sc-if value="{{empPmWrite}}" hint-placeholder-val="{{ true }}">
-          <td style="padding:8px;text-align:center"><input type="checkbox" checked="{{e.sel}}" onChange="{{e.toggle}}" style="accent-color:var(--fg-xb99751);width:16px;height:16px;cursor:pointer"></td>
+          <td style="padding:8px;text-align:center"><label class="bs-ckhit"><input type="checkbox" checked="{{e.sel}}" onChange="{{e.toggle}}" style="accent-color:var(--fg-xb99751);width:16px;height:16px;cursor:pointer"></label></td>
 </sc-if>
           <td data-label="م" style="padding:8px 6px;text-align:center"><span style="font-size:13px;font-weight:400;color:var(--fg-x53565a);font-family:'Cairo',sans-serif">{{e.sn}}</span></td>
           <td data-label="اسم الموظف" class="bs-stick" style="padding:8px">

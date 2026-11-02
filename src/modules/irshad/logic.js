@@ -1657,11 +1657,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irLgClearAllItemStyle:
         "display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;transition:background .15s;" +
         (monthTotal > 0 ? "cursor:pointer;color:var(--fg-x141414)" : "cursor:not-allowed;color:var(--fg-xcbd5e1);opacity:.6"),
-      /* الموجة 2 · IRSZ-8: «ملفات» لا تظهر بلا بنود (لا تصدير ولا حذف) · والفاصلُ حين يجتمع التصديرُ والحذف وحده */
-      irLgFilesOn: this.PC("export") || this.PC("del"),
+      /* IRSZ-8: «ملفات» لمن يملك التصدير وحده · الفاصلُ حين يجتمع التصديرُ والحذف · زرُّ «حذف الكل» الصريح لمن يملك الحذف بلا تصدير */
       irLgSepOn: this.PC("export") && this.PC("del"),
+      irLgDelOnly: !this.PC("export") && this.PC("del"),
+      irLgDelBtnStyle:
+        "height:34px;display:flex;align-items:center;gap:6px;font-size:11.5px;border:1px solid var(--danger-border);border-radius:10px;padding:0 10px;font-family:'Cairo',sans-serif;background:var(--danger-bg);color:var(--danger-text);" +
+        (monthTotal > 0 ? "cursor:pointer" : "cursor:not-allowed;opacity:.55"),
       irLgClearAllAsk: () => {
-        this.PC("del") ? 0 !== monthTotal && this.setState({ irLgFilesOpen: !1, irLgClearAllConfirm: !0 }) : this.permDeny();
+        this.PC("del")
+          ? 0 !== monthTotal
+            ? this.setState({ irLgFilesOpen: !1, irLgClearAllConfirm: !0 })
+            : this.bsToast("لا تقارير في " + L + " " + r + " هـ لحذفها — اختر شهراً فيه تقارير.")
+          : this.permDeny();
       },
       irLgClearAllOpen: !!t.irLgClearAllConfirm,
       irLgClearAllStop: (t) => t.stopPropagation(),

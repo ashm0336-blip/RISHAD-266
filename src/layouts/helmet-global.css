@@ -471,6 +471,17 @@ html.bs-demo .bs-main{ padding-top:calc(82px + var(--bs-demo-h))!important }
   /* صفوف المؤشر تصير قابلة للّمس دون أن يتغيّر شكلها على الحاسوب */
   .bs-mixrow { padding:3px 0; }
 }
+/* الموجة 2 · أهدافُ اللمس */
+.bs-ckhit{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;vertical-align:middle}
+@media (pointer: coarse){
+main .bs-hbar button:not([style*="position: absolute"]),.bs-ckhit,.bsb .s-tog2{min-width:36px;min-height:36px}
+main .bs-hbar button[style*="min-width: 28px"]{min-width:36px!important}
+main .bs-hbar select,.bs-rtable td span[style*="cursor: pointer"]{min-height:36px}
+.bs-daystrip>*{min-height:36px;font-size:10px!important}
+.bs-rtable input[type=checkbox]{min-width:24px;min-height:24px}
+main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{min-height:32px}
+.bsb .s-togbar{padding-top:4px!important;padding-bottom:4px!important}
+}
 
 @media (max-width:640px){
   :root{--bs-topbar-h:64px}

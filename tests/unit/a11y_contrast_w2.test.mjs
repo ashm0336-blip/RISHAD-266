@@ -105,7 +105,22 @@ const sem = (v) => { let m = /^var\(--([a-z0-9-]+)\)$/.exec(v || ''), n = m && m
 
 /* RISHAD-266: KD-09 («الإحصائيات اليومية» و«مؤشرات المصليات» في منطق المتابعة اليومية) لا يُنقل هنا — dstats/daily خارج هذا النقل (عملُ المالك المحلّي) */
 
-/* RISHAD-266: IRSZ-5 (نصُّ رقاقة الإجراء في «المضبوطات») أُسقط — صفحتُها عند سقف perf_budget؛ الرمزُ --warning-on-strong معرَّفٌ ومختبَرٌ أعلاه */
+/* RISHAD-266 (دفعة الواجهات): IRSZ-5 مُعاد — رُفع سقفُ «المضبوطات» بقرارٍ موثّق (perf_budget.json · unifyBatch3Decision) */
+test('IRSZ-5 · «المضبوطات»: نصُّ رقاقة الإجراء — «أُتلف / صودر» (عنبر) بـ--warning-on-strong · «أُحيل للجهة الأمنية» و«محفوظ بالمستودع» بالأبيض', () => {
+  const c = page('seized');
+  /* RISHAD-266: فهرسُ الإجراءات من قراءة الخادم — هنا الإجراءاتُ الافتراضية نفسُها (019k-seized-defaults) */
+  c.loadActs = () => [{ k: 'des', name: 'أُتلف / صودر', color: '#b45309' }, { k: 'sec', name: 'أُحيل للجهة الأمنية', color: '#dc2626' }, { k: 'sto', name: 'محفوظ بالمستودع', color: '#475569' }];
+  assert.equal(c.actFg('des'), 'var(--warning-on-strong)');
+  assert.equal(c.actFg('sec'), 'var(--fg-xffffff)');
+  assert.equal(c.actFg('sto'), 'var(--fg-xffffff)');
+  assert.equal(c.actFg('TEST_ONLY_unknown'), 'var(--fg-xffffff)', 'إجراءٌ مجهول (رماديّ محايد) بالأبيض');
+  const src = moduleLogic('seized');
+  assert.match(src, /actFg\(t\) \{\n\s+const v = KIVO\.__bsTokVal \? KIVO\.__bsTokVal\("background", this\.actColor\(t\)\) : "";\n\s+return \/\^var\\\(--bg-x\(a67c1e\|b45309\|c9702a\|d97706\|f59e0b\|fbbf24\)\\\)\$\/\.test\(v\) \? "var\(--warning-on-strong\)" : "var\(--fg-xffffff\)";/);
+  /* كلُّ لونٍ حرفيٍّ تختاره الدالة للعنبر اسمٌ لـ--warning-strong فعلاً (لا قائمةً تنحرف عن الرموز) */
+  for (const h of ['a67c1e', 'b45309', 'c9702a', 'd97706', 'f59e0b', 'fbbf24']) assert.equal(sem('var(--bg-x' + h + ')'), 'warning-strong', h);
+  assert.match(rd('modules/seized/view.html'), /background:\{\{lg\.actColor\}\};color:\{\{lg\.actFg\}\}/);
+  assert.match(src, /actColor: this\.actColor\(t\.act\),\n\s+actFg: this\.actFg\(t\.act\),/);
+});
 
 test('AUX-13 · عدّادُ النتائج «/ المجموع» بلون --text-muted بلا شفافية (كان 60٪ من لونٍ رماديّ ⇐ 2.47:1)', () => {
   let n = 0;

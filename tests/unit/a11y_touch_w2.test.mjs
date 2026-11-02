@@ -23,8 +23,38 @@ const strip = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
 /* قيمٌ من سياق vm (مصفوفاتُه من عالمٍ آخر) ⇐ نسخةٌ من هذا العالم للمقارنة العميقة */
 const J = (x) => JSON.parse(JSON.stringify(x));
 
-/* RISHAD-266: طبقةُ اللمس المشتركة في helmet-global.css (KD-11 · الغلاف) ومعها أغلفةُ <label class="bs-ckhit"> لمربّعات التحديد أُسقطت —
-   الغلافُ (shell:index.html) يتجاوز سقفه بها (perf_budget) ولم يُرفع السقف. قواعدُ اللمس في رؤوس الوحدات باقية ومختبَرة أدناه. */
+/* RISHAD-266 (دفعة الواجهات): طبقةُ اللمس المشتركة في helmet-global.css (KD-11 · الغلاف) وأغلفةُ <label class="bs-ckhit"> مُعادة —
+   رُفع سقفُ الغلاف بقرارٍ موثّق (perf_budget.json · unifyBatch3Decision). */
+test('KD-11 · ES-9 · DG-10 · AUX-13: الطبقةُ المشتركة (الغلاف) — كلُّ قاعدة حجمٍ داخل @media (pointer: coarse): أشرطةُ الأدوات والصفحات والسنة ٣٦ · خاناتُ الأيام ٣٦ بأرقام 10px · منتقياتُ الصفوف ٣٦ · الحقول ٣٢ — والحاسوبُ لا يُمسّ', () => {
+  const css = rd('layouts/helmet-global.css');
+  const M = mediaAfter(css, 'الموجة 2 · أهدافُ اللمس */');
+  assert.equal(M.head, '@media (pointer: coarse)');
+  const b = strip(M.body).replace(/\s+/g, ' ');
+  for (const rule of [
+    'main .bs-hbar button:not([style*="position: absolute"]),.bs-ckhit,.bsb .s-tog2{min-width:36px;min-height:36px}',
+    'main .bs-hbar button[style*="min-width: 28px"]{min-width:36px!important}',
+    'main .bs-hbar select,.bs-rtable td span[style*="cursor: pointer"]{min-height:36px}',
+    '.bs-daystrip>*{min-height:36px;font-size:10px!important}',
+    'main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{min-height:32px}',
+  ]) assert.ok(b.includes(rule), rule);
+  /* لا شيءَ منها خارج الإصبع (غلافُ مربّع التحديد على الحاسوب بحجم المربّع نفسِه) */
+  const outside = strip(css.replace(M.body, ''));
+  for (const sel of ['.bs-daystrip>*{', '.bs-rtable td span[style*="cursor: pointer"]', 'main .bs-hbar button', '.bsb .s-tog2{min']) assert.ok(!outside.includes(sel), sel);
+  assert.match(outside, /\.bs-ckhit\{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;vertical-align:middle\}/);
+  /* الزرُّ داخل حقلٍ (موضعٌ مطلق) مستثنى — وسمةُ النمط كما يكتبها React (مسافةٌ بعد النقطتين) */
+  assert.equal((b.match(/:not\(\[style\*="position: absolute"\]\)/g) || []).length, 1);
+  /* طبقةُ الغلاف مضغوطة: لا تزيد الكتلةُ على 760 بايتاً خاماً */
+  const i = css.indexOf('/* الموجة 2 · أهدافُ اللمس */'), j = css.indexOf('\n}\n', i) + 3;
+  assert.ok(Buffer.byteLength(css.slice(i, j)) <= 760, 'حجمُ الكتلة ' + Buffer.byteLength(css.slice(i, j)));
+});
+
+test('ES-9 · مربّعاتُ التحديد في جدولَي الموظفين والجدول الشهري داخل <label class="bs-ckhit"> — فالمساحةُ اللمسية ٣٦ والنقرُ على الغلاف يبدّل المربّع', () => {
+  for (const [f, n] of [['modules/employees/view.html', 2], ['modules/staff/view.html', 2]]) {
+    const v = rd(f);
+    assert.equal((v.match(/<label class="bs-ckhit"><input type="checkbox" checked="\{\{(?:allSelected|e\.sel)\}\}"[^>]*><\/label>/g) || []).length, n, f);
+    assert.doesNotMatch(v, /<t[hd][^>]*><input type="checkbox" checked="\{\{(?:allSelected|e\.sel)\}\}"/, f + ': لا مربّعَ عارياً');
+  }
+});
 
 test('PLAN-06 · DG-10 · ES-9 · AUX-13: قواعدُ الوحدات (لا في الغلاف) — التشغيلُ الميداني ٣٦ وشارةُ حذف الشهر ٢٤ · «الشهر كاملاً» ٣٦ · إدارةُ الموقع ٣٢ — كلُّها على الإصبع وحده', () => {
   const M = (f, mark) => { const m = mediaAfter(rd(f), mark); assert.equal(m.head, '@media (pointer: coarse)', f); return strip(m.body).replace(/\s+/g, ' '); };

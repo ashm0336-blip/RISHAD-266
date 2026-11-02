@@ -2361,12 +2361,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       v = b.map((a) => {
         const i = ((t) => (t.dis ? "frozen" : l[t.id] ? "active" : "never"))(a),
           o = g[a.id],
-          p = [];
+          p = [],
+          /* دفعة الواجهات (2أ): حسابُ «الإدارة» الملغى، وحسابٌ بمفتاح mgr: بلا الشارة — يرفض الخادمُ تعديلَهما (dept-role · mgr-key) فيُعرض السببُ لا الفعل */
+          fx = s.acctFixedWhy ? s.acctFixedWhy(a, !a.dis) : "";
         return (
           "super" !== a.role &&
             (p.push({
-              t: a.dis ? "إعادة التفعيل" : "تجميد الحساب",
+              t: (a.dis ? "إعادة التفعيل" : "تجميد الحساب") + (fx ? " — غير متاح" : ""),
               go: () => {
+                if (fx) return void this.bsToast(fx, "warn");
                 const t = s.setDisById(a.id, !a.dis);
                 t && t.ok ? this.bsAck(a.dis ? "أُعيد التفعيل" : "جُمّد الحساب", "ok") : this.bsToast((t && t.err) || "تعذّر", "warn");
               },
@@ -3366,8 +3369,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ? (this.setState({ tick: (this.state.tick || 0) + 1 }), this.bsAck(e, "ok"))
         : this.bsToast((t && t.err) || "تعذّر تنفيذ الإجراء");
     };
+    const fx = a.acctFixedWhy ? a.acctFixedWhy(t, !t.dis) : "";
+    if (fx) return void this.bsToast(fx, "warn");
     if (s) {
-      const s = a.setDeptManagerDis(e, !t.dis);
+      const s = a.setDeptManagerDis(e, !t.dis, t.id);
       return void i(s, t.dis ? "فُعّل حساب مدير الإدارة" : "أُوقف حساب مدير الإدارة");
     }
     if (!t.dis) return void i(a.freezeStaff(t.ekey, e), "أُوقف حساب «" + (t.name || "المستخدم") + "»");

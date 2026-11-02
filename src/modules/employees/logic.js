@@ -4982,6 +4982,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         frozen: ["مجمّد", "#e5b563", "rgba(245,158,11,0.1)", "rgba(245,158,11,0.3)", "#b45309"],
         none: ["بلا حساب", "#cbd5e1", "rgba(245,245,245,0.9)", "#e2e8f0", "#94a3b8"],
       },
+      /* دفعة الواجهات (2أ): مفاتيحُ المديرين كما يحكم بها الخادم (018 usersMgrEk) — mgr:/gm: أو مفتاحُ حسابِ مديرٍ قائم (دورُه غيرُ staff أو بالشارة) */
+      mkS = (() => {
+        const t = {};
+        try {
+          (KIVO.BassamAuth.users() || []).forEach((e) => {
+            e && e.ekey && ("staff" !== e.role || e.mgr) && (t[e.ekey] = 1);
+          });
+        } catch (e) {}
+        return (e) => /^(mgr|gm):/.test(String(e || "")) || !!t[e];
+      })(),
       c = n.map((t) => ({
         ...t,
         initial: t.name.trim().charAt(0),
@@ -4995,6 +5005,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             m = KIVO.BassamAuth || null,
             h = !!(m && m.staffIsMgr && "none" !== r && m.staffIsMgr(a)),
             u = !!(m && m.isSuper && m.isSuper()),
+            /* دفعة الواجهات (2أ): ما يرفضه الخادم لغير مدير النظام لا يُعرض فعلاً — حسابُ المدير لا يُمسّ ('mgr')، وحسابٌ بمفتاح مدير يُجمَّد ويُحذف فقط ('ekey') */
+            lk =
+              u || "none" === r
+                ? ""
+                : h
+                  ? "حساب مدير الإدارة يديره مدير النظام وحده — لا تفعيلَ ولا تجميدَ ولا تحديثَ لبيانات دخوله من هنا؛ اطلب ذلك من مدير النظام"
+                  : mkS(a)
+                    ? "مفتاحُ هذا الحساب مفتاحُ مدير — صلاحيتك تجميدُه أو حذفُه فقط؛ إعادةُ تفعيله وتحديثُ بيانات دخوله لمدير النظام"
+                    : "",
             g = l,
             f = KIVO.BassamPerm || null,
             b = f && "none" !== r ? f.empPerms(a) : {},
@@ -5062,14 +5081,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             accActText: "frozen" === r ? "إعادة التفعيل" : "active" === r ? "تحديث بيانات الدخول" : "تفعيل الحساب",
             accActStyle:
               "display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;font-family:'Cairo',sans-serif;transition:background .15s;color:" +
-              (p ? "var(--fg-x047857)" : "var(--fg-xcbd5e1)"),
+              (p && !lk ? "var(--fg-x047857)" : "var(--fg-xcbd5e1)"),
             accFrzStyle:
               "display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;font-family:'Cairo',sans-serif;transition:background .15s;color:" +
-              ("active" === r ? "#b45309" : "#cbd5e1"),
-            accHint: p
+              ("active" === r && !(lk && h) ? "#b45309" : "#cbd5e1"),
+            accHint: lk
+              ? lk
+              : p
               ? "اسم المستخدم: " + (t.nid || "") + (t.nid && t.phone ? " أو " : "") + (t.phone || "") + " · كلمة المرور: " + c
               : "لتفعيل الحساب يلزم رقم هوية أو جوال (اسم المستخدم) ورقم وظيفي (كلمة المرور).",
             accActivate: () => {
+              if (lk) return void (this.setState({ accOpen: null }), this.impToast(lk));
               if (!p) return void this.bsToast("لتفعيل الحساب يلزم رقم هوية أو رقم جوال (اسم المستخدم) ورقم وظيفي (كلمة المرور).");
               const e = KIVO.BassamAuth;
               e &&
@@ -5085,6 +5107,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             },
             accFreeze: () => {
               if ("active" !== r) return void this.setState({ accOpen: null });
+              if (lk && h) return void (this.setState({ accOpen: null }), this.impToast(lk));
               const e = KIVO.BassamAuth;
               if (!e || !e.freezeStaff) return;
               const n = e.freezeStaff(a);
@@ -5093,7 +5116,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   n && n.ok ? "جُمِّد حساب " + t.name + " — لن يستطيع الدخول حتى تُعيد تفعيله" : (n && n.err) || "تعذّر التجميد",
                 ));
             },
-            accMgrShow: u && "active" === r,
+            /* دفعة الواجهات (2أ): حسابٌ مفتاحُه mgr: لا تُنزع عنه الشارة (الخادم: mgr-key) — يُحذف من صفحة الإدارات أو يبقى مديراً */
+            accMgrShow: u && "active" === r && !(h && /^mgr:/.test(String(a || ""))),
             accMgrText: h ? "إلغاء تعيينه مديراً للإدارة" : "تعيينه مديراً للإدارة",
             accMgrStyle:
               "display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;font-family:'Cairo',sans-serif;transition:background .15s;color:" +
@@ -5947,10 +5971,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               n = 0,
               a = 0,
               i = 0,
-              l = "";
-            const d = [];
+              l = "",
+              k = 0;
+            const d = [],
+              /* دفعة الواجهات (2أ): لغير مدير النظام — حسابُ مديرٍ أو حسابٌ بمفتاح مدير لا يُعاد تفعيله (الخادم يرفض الحفظ كلَّه) فيُتخطّى بسببه */
+              sp = !(r.isSuper && r.isSuper());
             t.forEach((t) => {
               if ("active" === s(t)) return void n++;
+              if (sp && "none" !== s(t) && mkS(o(t))) return void k++;
               const c = String(t.nid || "").trim() || String(t.phone || "").trim(),
                 p = String(t.empno || "").trim();
               c && p
@@ -5973,6 +6001,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     e +
                     (n ? " · نشطة أصلاً " + n : "") +
                     (a ? " · تُخطّي " + a + " (بلا هوية/جوال أو رقم وظيفي)" : "") +
+                    (k ? " · تُخطّي " + k + " (حساب مدير أو بمفتاح مدير — إعادة تفعيله لمدير النظام)" : "") +
                     (i ? " · تعذّر " + i + (l ? " — " + l : "") : "") +
                     " · اسم المستخدم الهوية أو الجوال وكلمة المرور الرقم الوظيفي",
                 ));
@@ -5981,10 +6010,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             if (!r.freezeStaff) return;
             let t = 0,
               e = 0,
-              n = 0;
+              n = 0,
+              k = 0;
+            const sp = !(r.isSuper && r.isSuper());
             (this.state.employees.forEach((a, i) => {
               if (!this.state.selected[i]) return;
               if ("active" !== s(a)) return void e++;
+              if (sp && r.staffIsMgr && r.staffIsMgr(o(a))) return void k++;
               const l = r.freezeStaff(o(a));
               l && l.ok ? t++ : n++;
             }),
@@ -5994,6 +6026,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   t +
                   (e ? " · بلا حساب نشط " + e : "") +
                   (n ? " · تعذّر " + n : "") +
+                  (k ? " · تُخطّي " + k + " (حساب مدير الإدارة — يديره مدير النظام)" : "") +
                   (t ? " — الممنوعون من الدخول تعود حساباتهم بإعادة التفعيل" : ""),
               ));
           }

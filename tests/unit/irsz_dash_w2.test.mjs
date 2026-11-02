@@ -13,8 +13,8 @@ import path from 'node:path';
 import { page } from './w1_pages.mjs';
 import { SRC } from './harness.mjs';
 
-/* RISHAD-266: «المضبوطات» لا تحمل IRSZ-2/7/10/11 هنا — صفحتُها عند سقف perf_budget (هامش 27 بايتاً مضغوطاً) فأُسقطت ولم يُرفع السقف */
-const PAGES = { irshad: ['تقارير الاسترشاد', 'نظام الاسترشاد'] };
+/* RISHAD-266 (دفعة الواجهات): «المضبوطات» تحمل IRSZ-2/7/10/11 من جديد — رُفع سقفُ صفحتها بقرارٍ موثّق في perf_budget.json (unifyBatch3Decision) */
+const PAGES = { irshad: ['تقارير الاسترشاد', 'نظام الاسترشاد'], seized: ['محاضر المضبوطات', 'نظام المضبوطات'] };
 const view = (slug) => fs.readFileSync(path.join(SRC, 'modules', slug, 'view.html'), 'utf8');
 /* RISHAD-266: الصفحتان سحابيّتان — اللوحةُ تنتظر قراءةَ الخادم (irOnDash = d && !pending) والـvm بلا خادم؛ يكفي هنا منطقُ الرابط
    (يُحسب قبل القراءة) · وسجلُّ «المتاح» فارغٌ للمضبوطات (_szAvailable) كما يكون قبل أول قراءة */
@@ -49,3 +49,12 @@ for (const [slug, [what, name]] of Object.entries(PAGES)) {
     for (const [, st, t] of labels) assert.match(st, /white-space:nowrap/, '«' + t + '» لا ينكسر');
   });
 }
+
+test('IRSZ-2 · المضبوطات: شبكةُ بطاقات اللوحة تلتفّ (auto-fit) ولا تُقصّ — والبطاقةُ ورقمُها ينكمشان (min-width:0)', () => {
+  const v = view('seized');
+  assert.ok(v.includes('<div style="flex:1 1 300px;min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,130px),1fr));gap:10px;position:relative;z-index:1">'));
+  assert.doesNotMatch(v, /flex:1;min-width:280px;display:grid;grid-template-columns:repeat\(3,1fr\)/);
+  const i = v.indexOf('repeat(auto-fit,minmax(min(100%,130px),1fr))'), tile = v.slice(i, v.indexOf('</sc-for>', i));
+  assert.match(tile, /border-radius:15px;padding:11px 12px;display:flex;flex-direction:column;gap:8px;min-width:0">/);
+  assert.match(tile, /text-overflow:ellipsis;min-width:0">\{\{m\.num\}\}/);
+});

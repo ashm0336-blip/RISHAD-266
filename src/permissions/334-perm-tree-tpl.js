@@ -352,6 +352,7 @@
       var list = rawUsers() || [], hit = list.filter(function(x){ return x.id === uid; })[0];
       if (!hit) return Promise.resolve({ ok:false, err:'الحساب غير موجود' });
       if (hit.role === 'super' && !hit.bk) return Promise.resolve({ ok:false, err:'كلمة مدير النظام تُغيَّر من صفحة «حسابي»' });   /* الاحتياطي يُعاد تعيينه من هنا */
+      var fw = I.acctFixedWhy(hit, false); if (fw) return Promise.resolve({ ok:false, err:fw });   /* دفعة الواجهات (2أ) */
       var digits = ''; try { var a = new Uint32Array(2); window.crypto.getRandomValues(a); digits = String(a[0] % 900000 + 100000) + String(a[1] % 90 + 10); } catch(e){ digits = String(Math.floor(Math.random()*900000+100000)) + '17'; }
       var tmp = 'Tmp' + digits;
       return hashPw(tmp).then(function(ph){
@@ -365,10 +366,12 @@
       var list = rawUsers() || [], hit = list.filter(function(x){ return x.id === uid; })[0];
       if (!hit) return { ok:false, err:'الحساب غير موجود' };
       if (hit.role === 'super') return { ok:false, err:'حساب مدير النظام لا يُجمَّد' };
+      var fw = I.acctFixedWhy(hit, !!on); if (fw) return { ok:false, err:fw };   /* دفعة الواجهات (2أ): ما يرفضه الخادم لا يُرسل */
       writeUsers(list.map(function(x){ return x.id === uid ? Object.assign({}, x, { dis: on ? 1 : 0 }) : x; }));
       return { ok:true };
     },
     usernameTaken: taken,
+    acctFixedWhy: I.acctFixedWhy,
     user: curPub,
     isSuper: isSuper,
     login: login,
