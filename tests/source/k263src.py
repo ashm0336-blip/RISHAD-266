@@ -107,8 +107,8 @@ ok(ns.returncode == 0, '★ kivo_ns --check (AUD-016)', ns.stdout.strip().split(
 print('\n╔═ (ج) KIVO_263 ساكناً ═╗')
 W = rd(ROOT + '/workers/_worker.js')
 ok("detail: 'full-super-only'" in W and "markers.ops[fk].scope === 'full'" in W, '★ SOT-190: الاستعادةُ الشاملة لمدير النظام وحده في الخادم')
-ok('function enfPlanEmpty(a)' in W and 'first-plan-bootstrap' in W and "KIVO_SCOPE.extract('bassam_plan_v1', undefined, a, { read: true })" in W, '★ SOT-188 · ADR-031: الخطةُ الأولى لمدير النظام وحده · «الفارغة» = لا موقعَ ولا عنصر')
-ok('function enfPlanHidden(a, b)' in W and 'function enfPlanHiddenEval(cx, keys, a, b)' in W and "rn === ENF_PLAN_RES ? enfPlanHiddenEval(cx, keys, a, b)" in W, '★ محتوى الأشهر والطوابق المضافة/المحذوفة يُقيَّم في الإنفاذ (المحرّكُ المثبَّت لا يراه في وضع الكتابة)')
+# RISHAD-266: سقفُ النطاق القديم تقاعد — الخطةُ الأولى (enfPlanEmpty) والمحتوى المخفيّ (enfPlanHidden) كانا لسقفٍ لم يعد يُقرأ؛ يُتحقّق الآن من التقاعد نفسِه
+ok('function enfPlanEmpty(' not in W and 'function enfPlanHidden(' not in W and "return { r: 'not_applicable', why: 'legacy-scope-retired' }" in W and "enfNo('scope-retired'" in W, '★ RISHAD-266: سقفُ النطاق القديم متقاعد — Site/Zone/Shift لا تنطبق في الإنفاذ · كتابةُ السجلّ scope-retired')
 ok('var KIVO_BODY_SCHEMAS = ' in W and W.count("bodyCheck('/api/") >= 5, '★ SOT-101 · ADR-032: مخطّطاتُ الأجسام مفروضةٌ في الخادم (5 مسارات)')
 ok('function authPublicRoutes(' in W and 'function authSessionRoutes(' in W, '★ SOT-096: مساراتُ المصادقة في جزءٍ مستقل')
 ok(W.count('@@KIVO_TEST_TOOL_BEGIN') == 1 and W.count('@@KIVO_TEST_TOOL_END') == 1, '★ SOT-173: أداةُ الاختبار بين علامتين تنزعهما حزمةُ الإنتاج (tools/prod_strip.py)')

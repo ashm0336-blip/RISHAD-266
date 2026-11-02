@@ -60,15 +60,12 @@ ok(ns.returncode == 0, '★ kivo_ns --check (AUD-016)', ns.stdout.strip().split(
 
 print('\n╔═ (ج) KIVO_262 ساكناً ═╗')
 AL = rd(ROOT + '/src/modules/admin/logic.js'); AV = rd(ROOT + '/src/modules/admin/view.html')
-ok(all(x in AL for x in ('  scIdOf(kind, e) {', '  scopeVals(d, isNode, tab) {', '  scSave(d, draft, empDraft) {', '  scEmpVals(d, rec, plan, canEdit) {', '  scMgrVals() {'))
-   and 'l = "cap" === e.sysTab ? "cap" : "scope" === e.sysTab ? "scope" : "emps",' in AL and '...this.scopeVals(o, n, l),' in AL and '...("dept" === i && "ptpls" === h ? this.scMgrVals() : {}),' in AL,
-   '★ سقفُ النطاق: النموذجُ والحفظُ ونطاقُ الموظفين في وحدة الإدارة — تبويبٌ ثالث لمدير النظام ولوحةٌ لمدير الإدارة في «قوالب الصلاحيات»')
-ok('const on = !isNode && this.t24On() && !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper());' in AL and 'P.key("perm.assign", d)' in AL,
-   '★ التبويبُ في وضع الإنفاذ لمدير النظام وحده · نطاقُ الموظفين يعدّله حاملُ perm.assign — والخادمُ حَكَمٌ في الحالين (enfScopeWrite)')
-ok(AV.count('data-bs="tab-scope"') == 1 and AV.count('data-bs="scope-tab"') == 1 and AV.count('data-bs="scope-mgr"') == 1 and 'سقفُ النطاق غيرُ سقف الصفحات.' in AV,
-   '★ الواجهة: زرُّ التبويب · محتواه (يفصل النطاقَ عن الصفحات صراحةً) · لوحةُ مدير الإدارة')
-ok('"bsdept:" + d + ":bassam_scope_v1"' in AL and 'src: "manual", by: u.id || "", byName: u.name || "", at: now' in AL,
-   '   الحفظُ في سجلّ النطاق المنفصل (bsdept:<d>:bassam_scope_v1) مع المصدر والفاعل والوقت — لا في bassam_perms_v1')
+# RISHAD-266: تبويبُ «سقف النطاق» ولوحةُ نطاق الموظفين أُزيلا مع تقاعد سقف النطاق القديم — يُتحقّق من الإزالة ومن بقاء محرّر سقف الوحدة
+ok(all(x not in AL for x in ('  scIdOf(kind, e) {', '  scopeVals(d, isNode, tab) {', '  scSave(d, draft, empDraft) {', '  scEmpVals(d, rec, plan, canEdit) {', '  scMgrVals() {', 'bassam_scope_v1'))
+   and 'l = "cap" === e.sysTab ? "cap" : "emps",' in AL and '  async scLoadReferences(d, retry) {' in AL,
+   '★ RISHAD-266: لا تبويبَ ولا حفظَ لسقف النطاق القديم — ومحرّرُ سقف الوحدة (sysPick · scLoadReferences) باقٍ')
+ok(all(x not in AV for x in ('data-bs="tab-scope"', 'data-bs="scope-tab"', 'data-bs="scope-mgr"')) and 'سقف الصفحات' in AV,
+   '★ RISHAD-266: الواجهة بلا زرّ «سقف النطاق» ولا محتواه ولا لوحةِ مدير الإدارة — و«سقف الصفحات» باقٍ')
 A18 = rd(ROOT + '/workers/parts/018-ancestry.js'); P59 = rd(ROOT + '/workers/parts/059-protected-ops-2.js')
 ok('var PH_NEW_RX = /^p2\\$(\\d{4,7})\\$[0-9a-f]{32}\\$[0-9a-f]{64}$/;' in A18 and 'function phNewOk(a, b) {' in A18
    and "if (!phNewOk(a, b)) return { ok: false, why: 'ph' };" in A18 and 'userRecOk(b) && phNewOk(a, b)) continue;' in A18

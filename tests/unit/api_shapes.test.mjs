@@ -26,11 +26,11 @@ const SPEC = {
   '/api/overview': { ok: 'number', now: 'number', policy: 'object', failsToday: 'number', deniedToday: 'number', lockedNow: 'number', activeNow: 'number', sessions: 'number', lastLogin: 'object', fails: 'array' },
   '/api/recovery': { ok: 'number', key: 'string|null', used: 'object|null', backups: 'array', backupLastLogin: 'number' },
   '/api/permv2': { ok: 'number', version: 'string', docSha256: 'string', status: 'string' },
-  '/api/scope-dryrun': { ok: 'number', worker: 'string', dryRun: 'object' },
+  /* RISHAD-266: /api/scope-dryrun أُزيل مع تقاعد سقف النطاق القديم */
   '/api/identity-rehearsal': { ok: 'number', worker: 'string', rehearsal: 'object' },
   '/api/identity-preflight': { ok: 'number', worker: 'string', preflight: 'object' },
 };
-test('أشكالُ الاستجابة لـ19 مساراً كما في docs/api.md (الحقولُ والأنواع) · الزائرُ لا يرى حقولَ مدير النظام في ping · get يعيد {v, rev} لكل مفتاح (المجهولُ v:null rev:0)', async () => {
+test('أشكالُ الاستجابة لـ18 مساراً كما في docs/api.md (الحقولُ والأنواع) · الزائرُ لا يرى حقولَ مدير النظام في ping · get يعيد {v, rev} لكل مفتاح (المجهولُ v:null rev:0)', async () => {
   const env = makeEnv(); const C = client(env); const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   const bad = [];
@@ -38,7 +38,7 @@ test('أشكالُ الاستجابة لـ19 مساراً كما في docs/api.m
   bad.push(...shape(await get('/api/brand'), SPEC['/api/brand'], 'brand'));
   const pa = await get('/api/ping'); bad.push(...shape(pa, SPEC['/api/ping'], 'ping')); for (const k of Object.keys(SPEC['/api/ping#super'])) if (k in pa) bad.push('ping(anon) يحمل ' + k);
   bad.push(...shape(await get('/api/ping', { cookie: su.ck }), Object.assign({}, SPEC['/api/ping'], SPEC['/api/ping#super']), 'ping(super)'));
-  for (const p of ['/api/whoami', '/api/me', '/api/aud', '/api/presence', '/api/sec', '/api/guard', '/api/policy', '/api/overview', '/api/recovery', '/api/permv2', '/api/scope-dryrun', '/api/identity-rehearsal', '/api/identity-preflight']) bad.push(...shape(await get(p, { cookie: su.ck }), SPEC[p], p));
+  for (const p of ['/api/whoami', '/api/me', '/api/aud', '/api/presence', '/api/sec', '/api/guard', '/api/policy', '/api/overview', '/api/recovery', '/api/permv2', '/api/identity-rehearsal', '/api/identity-preflight']) bad.push(...shape(await get(p, { cookie: su.ck }), SPEC[p], p));
   const g = await get('/api/get?keys=bassam_depts_v1,nope', { cookie: su.ck }); bad.push(...shape(g, SPEC['/api/get'], 'get'));
   if (!(g.keys.bassam_depts_v1 && typeof g.keys.bassam_depts_v1.v === 'string' && g.keys.bassam_depts_v1.rev >= 1)) bad.push('get: مفتاحٌ موجود {v: string, rev ≥ 1}');
   if (!(g.keys.nope && g.keys.nope.v === null && g.keys.nope.rev === 0)) bad.push('get: المفتاحُ المجهول {v:null, rev:0}');

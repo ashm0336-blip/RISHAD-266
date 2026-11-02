@@ -3,7 +3,7 @@
    (ب) المصنِّف classifyMutation: كلُّ أصناف ENT (مجموعاتٌ · خريطة · قوائمُ بدائية · فعلٌ مسمّى · mapAt) + عملياتُ الاعتماد OPS + المواءمة (إعادةُ التسمية · التبنّي)
    (ج) التخويل authorize0/authorizeActs على فاعلين حقيقيّي البنية (actorFromKeys): الجلسة · المجهول · الجهاز · العامّ · الإدارة · القاعدة · الأوراق
    (د) الإنفاذ: enfHeld0 بفروعه على مفاتيح السجلّ الحقيقية · enfDecide بمفاتيح محقونة (الحرّاس · غيرُ المغطّى · البديل · السبب) · enfVia
-       · أبعادُ النطاق Site/Zone/Shift (enfValueDim · enfShiftDim) بسياقاتٍ مركّبة.
+       · أبعادُ النطاق Site/Zone/Shift في الإنفاذ: لا تنطبق بعد تقاعد سقف النطاق القديم (RISHAD-266 · legacy-scope-retired).
    تُقاس تغطيتُها بـtools/engine_coverage.mjs (العتبة 80٪ لكل محرّك). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,8 +13,8 @@ const W = await internals(['FIELDS', 'ENT', 'OPS', 'OP_SHAPE', 'RES_REG', 'K_USE
   'needAdd', 'idOf', 'colList', 'cmpCol', 'cmpList', 'cmpPrim', 'cmpMap', 'isEmptyVal', 'stripCols', 'primDup',
   'classifyMutation', 'capForAct', 'allowKeyDelete', 'entOf', 'opsOf', 'resOf',
   'authorize0', 'authorize', 'authorizeActs', 'actorFromKeys',
-  'enfIx', 'enfHeld', 'enfHeld0', 'enfAttachGrantsKeys', 'enfGrantsKey', 'enfDecide', 'enfVia', 'enfSides', 'enfR', 'enfHas', 'enfCeilingOf', 'enfEmpScopeOf', 'enfScopeParse',
-  'enfValueDim', 'enfShiftDim', 'enfKeyOnCeiling', 'enfTranslated', 'enfScopeEval', 'enfScopeCtx', 'enfSources', 'enfHeldMap', 'enfReasonOf']);
+  'enfIx', 'enfHeld', 'enfHeld0', 'enfAttachGrantsKeys', 'enfGrantsKey', 'enfDecide', 'enfVia',
+  'enfKeyOnCeiling', 'enfTranslated', 'enfScopeEval', 'enfScopeCtx', 'enfSources', 'enfHeldMap', 'enfReasonOf']);
 const J = (x) => JSON.stringify(x);
 const cls = (key, cur, nxt) => W.classifyMutation(W.resOf(key), cur == null ? null : J(cur), nxt == null ? null : J(nxt), W.entOf(key), W.opsOf(key), null);
 const acts = (o) => Object.keys(o).sort().join(',');
@@ -293,49 +293,17 @@ test('enfHeld0: المحجوزُ والمجهول · الذات · مديرُ ا
   const ck = Object.keys(W.ENF_COMPAT)[0]; if (ck && R().byKey[ck]) { const m1 = enfA('su'); m1.enf.perm.applied = true; assert.equal(typeof W.enfHeld0(m1, 'd1', ck), 'boolean'); }
   assert.equal(off.u.id, 'dm1');
 });
-test('enfSides · enfR · enfHas · enfCeilingOf · enfEmpScopeOf · enfScopeParse', () => {
-  assert.deepEqual(W.enfSides({ kind: 'modified', site: { old: 'A', new: 'B' } }, 'site'), [{ side: 'old', v: 'A' }, { side: 'new', v: 'B' }]);
-  assert.deepEqual(W.enfSides({ kind: 'added', site: { old: 'A', new: 'B' } }, 'site'), [{ side: 'new', v: 'B' }]);
-  assert.deepEqual(W.enfSides({ kind: 'removed', site: { old: 'A', new: 'B' } }, 'site'), [{ side: 'old', v: 'A' }]);
-  assert.deepEqual(W.enfSides({ kind: 'added', site: { new: '' } }, 'site'), [{ side: 'new', v: '' }]);
-  assert.deepEqual(W.enfSides({ kind: 'modified' }, 'site'), []);
-  assert.deepEqual(W.enfR('allow', 'w', { a: 1 }), { r: 'allow', why: 'w', a: 1 }); assert.deepEqual(W.enfR('deny'), { r: 'deny', why: '' });
-  assert.equal(W.enfHas([1, '2'], '1'), true); assert.equal(W.enfHas([], 1), false);
-  const E = { recs: { d1: { ceiling: { Site: { mode: 'ALL' }, 'Zone/Element': { mode: 'list', list: ['z1', 2] } }, emp: { e1: { Site: { mode: 'list', list: ['A'] }, Shift: { mode: 'bogus' } } } }, d2: { ceiling: { Site: { mode: 'unknown' } } } } };
-  assert.equal(W.enfCeilingOf(E, 'd1', 'Site'), 'ALL'); assert.deepEqual(W.enfCeilingOf(E, 'd1', 'Zone/Element'), ['z1', '2']); assert.equal(W.enfCeilingOf(E, 'd2', 'Site'), null); assert.equal(W.enfCeilingOf(E, 'd9', 'Site'), null); assert.equal(W.enfCeilingOf(null, 'd1', 'Site'), null);
-  assert.deepEqual(W.enfEmpScopeOf(E, 'd1', 'e1', 'Site'), { mode: 'list', list: ['A'] }); assert.equal(W.enfEmpScopeOf(E, 'd1', 'e1', 'Shift'), null, 'نمطٌ مجهول'); assert.equal(W.enfEmpScopeOf(E, 'd1', '', 'Site'), null); assert.equal(W.enfEmpScopeOf(E, 'd1', 'e2', 'Site'), null);
-  assert.deepEqual(W.enfScopeParse('{"a":1}'), { a: 1 }); assert.equal(W.enfScopeParse('[1]'), null); assert.deepEqual(W.enfScopeParse({ b: 2 }), { b: 2 }); assert.equal(W.enfScopeParse(null), null);
-});
-test('أبعادُ النطاق في الإنفاذ: Site/Zone (قيمةُ الموظف ضمن السقف · فاعلو السقف · غيرُ المهاجر ⇒ unknown) · Shift (R4 · n/a · قائمة · مربوطٌ بالجدول)', () => {
-  const site = W.enfValueDim('Site', 'site'), zone = W.enfValueDim('Zone/Element', 'element');
-  const recs = { d1: { ceiling: { Site: { mode: 'list', list: ['A', 'B'] }, 'Zone/Element': { mode: 'ALL' } }, emp: {
-    e1: { Site: { mode: 'list', list: ['A'] }, 'Zone/Element': { mode: 'single', value: 'z1' }, Shift: { mode: 'list', list: ['ص'] } },
-    e2: { Site: { mode: 'inherit' }, 'Zone/Element': { mode: 'unknown' }, Shift: { mode: 'n/a' } },
-    e3: { Site: { mode: 'single' }, Shift: { mode: 'staffing-bound' } }, e4: { Shift: { mode: 'unknown' } } } }, d2: { emp: { e1: { Site: { mode: 'inherit' } } } } };
-  const cx = (ekey, role = 'staff', extra = {}) => Object.assign({ enf: { recs }, dept: 'd1', actor: { ekey, role, id: 'u' } }, extra);
-  const it = (v, kind = 'modified', extra = {}) => Object.assign({ kind, site: { old: v[0], new: v[1] } }, extra);
-  assert.equal(site({ kind: 'added' }, 'k', cx('e1')).r, 'not_applicable');
-  assert.equal(site(it(['A', 'A']), 'k', cx('e1'), 'bassam_irshad_v1').r, 'not_applicable', 'الاسترشاد خارج نموذج Site (معلن)');
-  assert.equal(site(it(['A', 'A']), 'k', cx('e1')).r, 'allow');
-  assert.equal(site(it(['A', 'B']), 'k', cx('e1')).r, 'deny', 'خارج قائمة الموظف');
-  assert.equal(site(it(['B', 'B']), 'k', cx('e2')).r, 'allow', 'وراثةُ السقف');
-  assert.equal(site(it(['C', 'C']), 'k', cx('e2')).r, 'deny', 'خارج سقف الإدارة');
-  assert.equal(site(it(['A', 'A']), 'k', cx('e3')).r, 'deny', 'single بلا قيمة');
-  assert.equal(site(it(['A', 'A']), 'k', cx('e9')).r, 'unknown', 'موظفٌ غيرُ مهاجر');
-  assert.equal(site(it(['A', 'A']), 'k', cx('mgr:d1', 'super')).r, 'allow', 'فاعلُ السقف بسقف الإدارة');
-  assert.equal(site(it(['C', 'C']), 'k', cx('mgr:d1', 'super')).r, 'deny');
-  assert.equal(site(it(['A', 'A'], 'modified', { dept: { old: 'd2', new: 'd2' } }), 'k', cx('e1')).r, 'unknown', 'الإدارةُ المستهدفة بلا سقف');
-  assert.equal(zone({ kind: 'modified', element: { old: 'z1', new: 'z1' } }, 'k', cx('e1')).r, 'allow');
-  assert.equal(zone({ kind: 'modified', element: { old: 'z1', new: 'z2' } }, 'k', cx('e1')).r, 'deny');
-  assert.equal(zone({ kind: 'modified', element: { old: 'z1', new: 'z1' } }, 'k', cx('e2')).r, 'unknown');
-  const sh = (v, ekey, role, extra) => W.enfShiftDim({ kind: 'modified', shift: { old: v, new: v }, period: { new: { y: 1447, m: 3 } } }, 'k', cx(ekey, role, extra));
-  assert.equal(W.enfShiftDim({ kind: 'modified' }, 'k', cx('e1')).r, 'not_applicable');
-  assert.equal(sh('م', 'mgr:d1', 'super').r, 'allow', 'R4: المديرُ بلا قيد');
-  assert.equal(sh('ص', 'e1').r, 'allow'); assert.equal(sh('م', 'e1').r, 'deny');
-  assert.equal(sh('م', 'e2').r, 'allow', 'n/a'); assert.equal(sh('م', 'e4').r, 'unknown'); assert.equal(sh('م', 'e9').r, 'unknown');
-  assert.equal(sh('ص', 'e3', 'staff', { actorShift: () => null }).r, 'deny', 'بلا صفٍّ في الجدول');
-  assert.equal(sh('ص', 'e3', 'staff', { actorShift: () => 'م' }).r, 'deny', 'ورديةٌ غيرُ ورديته');
-  assert.equal(sh('ص', 'e3', 'staff', { actorShift: (p) => p === '1447-3' ? 'ص' : null }).r, 'allow', 'مربوطٌ بالجدول الحيّ');
+/* RISHAD-266: enfSides · enfR · enfHas · enfCeilingOf · enfEmpScopeOf · enfScopeParse أُزيلت مع سقف النطاق القديم (لا مستدعيَ باقٍ) */
+/* RISHAD-266: كانت هنا جداولُ enfValueDim · enfShiftDim (سقفُ الإدارة ونطاقُ الموظف) — أُزيلتا؛ البديل: الأبعادُ الثلاثة لا تنطبق في الإنفاذ
+   والظلُّ القديم (بلا ctx.enf) يمرّ إلى مقيِّمات المحرّك نفسِها كما كان */
+test('أبعادُ النطاق في الإنفاذ: Site · Zone/Element · Shift لا تنطبق (legacy-scope-retired) — والظلُّ القديم كما كان', () => {
+  const D = W.KIVO_SCOPE._D, it = { kind: 'modified', site: { old: 'A', new: 'B' }, element: { old: 'z1', new: 'z2' }, shift: { old: 'ص', new: 'م' }, period: { new: { y: 1447, m: 3 } } };
+  for (const dim of ['Site', 'Zone/Element', 'Shift']) for (const role of ['staff', 'super']) {
+    const r = D[dim](it, 'k', { enf: { mode: 'write' }, dept: 'd1', actor: { ekey: 'e1', role, id: 'u' } }, 'bassam_plan_v1');
+    assert.deepEqual(r, { r: 'not_applicable', why: 'legacy-scope-retired' }, dim + ' · ' + role);
+  }
+  const sh = D['Shift'](it, 'k', { dept: 'd1', actor: { ekey: 'e1', role: 'staff', id: 'u' } }, 'bassam_plan_v1');
+  assert.equal(sh.r, 'unknown', 'الظلُّ القديم (بلا ctx.enf) كما كان'); assert.equal(sh.why, 'unmigrated-shift-scope');
 });
 test('enfDecide: الحرّاسُ (المفاتيحُ الحقيقية) · غيرُ المغطّى (ENF_UNCOV بالمصنِّف) · البديلُ (self) · السببُ الإلزامي · بلا تغيير', () => {
   const su = enfA('su'), st1 = enfA('st1');
@@ -391,7 +359,7 @@ test('enfScopeEval · enfScopeCtx · enfSources · enfHeldMap: كتابةٌ بل
   const asg = keyWhere((k, e) => e.grant === 'assignable' && !IX().lens[k] && !IX().needMgr[k] && !IX().superOnly[k]);
   const hm = W.enfHeldMap(su, 'd1', [asg, keyWhere((k, e) => e.grant === 'self')].filter(Boolean)); assert.equal(hm[asg], true); assert.equal(Object.keys(hm).length, 1, 'قواعدُ الذات خارج المحمول');
   const cx = W.enfScopeCtx(st1, 'd1', 'bsdept:d1:bassam_tasks_v1', {}, { recs: { d1: { ceiling: { Site: { mode: 'ALL' } } } } }, 'read');
-  assert.equal(cx.enf.mode, 'read'); assert.equal(cx.deptCeiling('Site', 'd1'), 'ALL'); assert.equal(cx.deptCeiling('Site', 'd9'), null);
+  assert.deepEqual(cx.enf, { mode: 'read' }, 'RISHAD-266: لا سجلّاتِ نطاقٍ في السياق (recs يُتجاهل)');
   const ta = { '1447-03-01': [{ id: 't1', title: 'أ', site: 'A' }] }, tb = { '1447-03-01': [{ id: 't1', title: 'ب', site: 'A' }] };
   const ev = W.enfScopeEval(su, 'd1', 'bsdept:d1:bassam_tasks_v1', 'bassam_tasks_v1', ta, tb, [asg], { recs: {} });
   assert.ok(['allow', 'deny', 'unknown', 'not_applicable'].indexOf(ev.composite) !== -1, J(ev));

@@ -240,8 +240,8 @@ ns = run(['node', 'tools/kivo_ns.mjs', 'tools/kivo_ns.json', '--check'])
 ok(ns.returncode == 0, '★ kivo_ns --check (AUD-016)', ns.stdout.strip().split('\n')[-1][:160])
 W = rd(ROOT + '/workers/_worker.js')
 ok("detail: 'full-super-only'" in W and "markers.ops[fk].scope === 'full'" in W, '★ SOT-190: الاستعادةُ الشاملة لمدير النظام وحده في الخادم')
-ok('function enfPlanEmpty(a)' in W and 'first-plan-bootstrap' in W and "KIVO_SCOPE.extract('bassam_plan_v1', undefined, a, { read: true })" in W, '★ SOT-188 · ADR-031: الخطةُ الأولى لمدير النظام وحده · «الفارغة» = لا موقعَ ولا عنصر')
-ok('function enfPlanHidden(a, b)' in W and 'function enfPlanHiddenEval(cx, keys, a, b)' in W and "rn === ENF_PLAN_RES ? enfPlanHiddenEval(cx, keys, a, b)" in W, '★ محتوى الأشهر والطوابق المضافة/المحذوفة يُقيَّم في الإنفاذ')
+# RISHAD-266: سقفُ النطاق القديم تقاعد — الخطةُ الأولى (enfPlanEmpty) والمحتوى المخفيّ (enfPlanHidden) كانا لسقفٍ لم يعد يُقرأ؛ يُتحقّق الآن من التقاعد نفسِه
+ok('function enfPlanEmpty(' not in W and 'function enfPlanHidden(' not in W and "return { r: 'not_applicable', why: 'legacy-scope-retired' }" in W and "enfNo('scope-retired'" in W, '★ RISHAD-266: سقفُ النطاق القديم متقاعد — Site/Zone/Shift لا تنطبق في الإنفاذ · كتابةُ السجلّ scope-retired')
 _bs = re.search(r"var KIVO_BODY_SCHEMAS = (\{.*?\});\n", W, re.S); _bsk = sorted(json.loads(_bs.group(1))) if _bs else []
 _sites = W.count("bodyCheck('/api/") + W.count("bodyRead(request, ")   # KIVO_264 · SOT-101: الفحصُ الحرفيّ (bodyCheck('/api/…') + bodyRead(request, …) + KIVO_BODY_NONE)
 ok(len(_bsk) >= 14 and _sites >= 12 and 'var KIVO_BODY_NONE = ' in W and "'/api/img/'" in W, '★ SOT-101 · ADR-032: مخطّطاتُ الأجسام مفروضةٌ في الخادم (≥ 14 مساراً بمخطّط + الصورةُ الخامّ · ≥ 12 موضعَ فرض — تزيد ولا تنقص؛ كانت 5 في 263)', {'schemas': len(_bsk), 'sites': _sites})

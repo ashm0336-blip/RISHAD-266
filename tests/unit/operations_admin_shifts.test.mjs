@@ -102,25 +102,25 @@ test('An old inline control cannot overwrite a newer server value in the same sh
     assert.equal(f.ops.get('bassam_shift_options_v1')[0].tStart,'07:00');assert.equal(f.instance.state.shPatch.value.color,'#112233');
   }finally{f.T.dispose();}
 });
-test('Foreign department scope data is explicitly loaded before a verified empty plan is available',async()=>{
+/* RISHAD-266: تبويبُ «سقف النطاق» (scopeVals · scPlan) أُزيل مع تقاعد سقف النطاق القديم — العقدُ نفسُه (لا مرجعيّةَ إدارةٍ أجنبية قبل قراءتها صراحةً)
+   يُختبر على المحمِّل المشترك الباقي scLoadReferences الذي يستعمله محرّرُ سقف الوحدة وتبويبُ الحسابات */
+test('Foreign department references are explicitly loaded before they are used',async()=>{
   const f=await page();
   try{
-    const foreign='TEST_ONLY_foreign';f.instance.t24On=()=>true;f.K.BassamAuth.isSuper=()=>true;
-    const before=f.instance.scopeVals(foreign,false,'scope');
-    assert.equal(before.scReadPending,true);assert.equal(before.scNoPlan,false);assert.equal(before.scDirty,false);
-    assert.throws(()=>f.instance.scPlan(foreign),/operations-read-required/);
+    const foreign='TEST_ONLY_foreign',plan=()=>f.ops.reference('bsdept:'+foreign+':bassam_plan_v1');
+    f.K.BassamDepts.treeFlat=()=>[{id:DEPT},{id:foreign}];   /* the loader accepts registered units only (fixture had no treeFlat — failed identically before RISHAD-266) */
+    assert.throws(plan,/operations-read-required/);
     assert.equal(await f.instance.scLoadReferences(foreign,true),true);
-    assert.deepEqual(clone(f.instance.scPlan(foreign)),[]);
+    assert.equal(plan(),null);
     f.scope.uid='TEST_ONLY_other';assert.equal(await f.instance.scLoadReferences(foreign,true),false);
   }finally{f.T.dispose();}
 });
-test('A rejected foreign department read stays unavailable and never presents an empty or editable scope',async()=>{
+test('A rejected foreign department read stays unavailable and is reported to the user',async()=>{
   const f=await page(null,keys=>keys.some(k=>k.includes(':TEST_ONLY_forbidden:'))?new Response(JSON.stringify({ok:0,err:'forbidden'}),{status:403,headers:{'Content-Type':'application/json'}}):null);
   try{
-    f.instance.t24On=()=>true;f.K.BassamAuth.isSuper=()=>true;
+    f.K.BassamDepts.treeFlat=()=>[{id:DEPT},{id:'TEST_ONLY_forbidden'}];
     assert.equal(await f.instance.scLoadReferences('TEST_ONLY_forbidden',true),false);
-    const view=f.instance.scopeVals('TEST_ONLY_forbidden',false,'scope');
-    assert.equal(view.scReadPending,true);assert.equal(view.scNoPlan,false);assert.equal(view.scDirty,false);assert.match(view.scDirtyTxt,/تعذّر/);
-    assert.throws(()=>f.instance.scPlan('TEST_ONLY_forbidden'),/operations-read-required/);assert.equal(f.requests.length,0);
+    assert.throws(()=>f.ops.reference('bsdept:TEST_ONLY_forbidden:bassam_plan_v1'),/operations-read-required/);assert.equal(f.requests.length,0);
+    assert.ok(f.messages.some(m=>/تعذّر/.test(m.text)),'the refusal is shown, not an empty department');
   }finally{f.T.dispose();}
 });
