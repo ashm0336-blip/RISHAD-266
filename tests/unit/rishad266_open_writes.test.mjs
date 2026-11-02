@@ -17,15 +17,18 @@ const dvRows = (W, uid) => W.env.DB.q("SELECT detail FROM sec WHERE act = 'login
 const scDevCount = (W) => W.env.DB.q("SELECT name FROM sqlite_master WHERE type = 'table'").map((t) => t.name)
   .reduce((n, t) => { try { return n + W.env.DB.q('SELECT * FROM "' + t + '"').filter((r) => JSON.stringify(r).includes('sc_dev') && !JSON.stringify(r).includes('"cfg"')).length; } catch (e) { return n; } }, 0);
 
-test('(أ) sc_dev من الخادم عند الدخول: الأولُ صامت · البصمةُ نفسُها لا تنبّه · الجديدةُ تنبّه مرةً', async () => {
+test('(أ) sc_dev من الخادم عند الدخول بمعرّف جهازٍ لكل متصفح (bs_dv): الأولُ صامت · المتصفحُ نفسُه لا ينبّه · متصفحٌ جديد ينبّه مرةً', async () => {
   const W = await world({ worker: WU.file, mode: 'enforce' });
-  const login = (ua) => W.C.login(DM[0], DM[1], { headers: { 'User-Agent': ua } });
-  const a = await login(UA.pc); assert.ok(a.ok, JSON.stringify(a.j));
+  const dvOf = (r) => { const m = /bs_dv=([0-9a-f]{16})/.exec(r.h.get('set-cookie') || ''); return m && m[1]; };
+  const login = async (dv) => { const r = await W.C.req('/api/login', { method: 'POST', body: { u: DM[0], p: DM[1] }, headers: Object.assign({ 'User-Agent': UA.pc }, dv ? { cookie: 'bs_dv=' + dv } : {}) }); const j = await r.json(); return { ok: j.ok === 1, j, h: r.headers }; };
+  const a = await login(null); assert.ok(a.ok, JSON.stringify(a.j));
+  const dvA = dvOf(a); assert.ok(dvA, 'متصفحٌ بلا معرّف ⇒ يُصدَر له معرّف'); assert.match(a.h.get('set-cookie'), /bs_dv=[0-9a-f]{16}; Path=\/; HttpOnly/);
   const uid = a.j.uid, n0 = scDevCount(W);
-  assert.deepEqual(dvRows(W, uid).filter(Boolean).slice(-1), ['dv:d|Chrome'], 'البصمةُ في سجل الأمن');
-  assert.ok((await login(UA.pc)).ok); assert.equal(scDevCount(W), n0, 'البصمةُ نفسُها: لا تنبيه');
-  assert.ok((await login(UA.ph)).ok); const n1 = scDevCount(W); assert.ok(n1 > n0, 'بصمةٌ جديدة (هاتف · Safari): تنبيه');
-  assert.ok((await login(UA.ph)).ok); assert.equal(scDevCount(W), n1, 'الهاتفُ نفسُه ثانيةً: لا تنبيه');
+  assert.deepEqual(dvRows(W, uid).filter(Boolean).slice(-1), ['dv:' + dvA], 'المعرّفُ في سجل الأمن');
+  const b = await login(dvA); assert.ok(b.ok); assert.equal(dvOf(b), null, 'المعرّفُ القائم لا يُعاد إصداره'); assert.equal(scDevCount(W), n0, 'المتصفحُ نفسُه: لا تنبيه');
+  const c = await login(null); assert.ok(c.ok); const dvC = dvOf(c); assert.ok(dvC && dvC !== dvA); const n1 = scDevCount(W); assert.ok(n1 > n0, 'متصفحٌ جديد (ولو بالنوع والمتصفح نفسيهما): تنبيه');
+  assert.ok((await login(dvC)).ok); assert.equal(scDevCount(W), n1, 'المتصفحُ الجديد ثانيةً: لا تنبيه');
+  assert.ok((await login('zz')).ok); assert.ok(scDevCount(W) > n1, 'معرّفٌ مشوَّه يُعامل كمتصفحٍ جديد');
 });
 
 test('(ب) قراءةُ مخزن المهام تولّد المواعيد المتكررة (بلا POST من الصفحة)', async () => {

@@ -106,7 +106,10 @@ for (const mode of MODES) {
         assert.ok(at(F, NEW, MATE.eid), 'مهمةُ المدير الجديدة باقية');
         assert.equal(F[DAY].find((r) => r[13] === 1760000000901)[0], 'TEST_ONLY عامة ١ — عدّلها المدير', 'تعديلُ المدير باقٍ');
         assert.ok(F[DAY].filter((r) => r[13] === G).every((r) => r[1] === 'TEST_ONLY وصفٌ عدّله المدير'), 'وصفُ المدير على صفوف المهمة الجماعية باقٍ (مع قبولاتها)');
-        assert.equal(audN(Wd, 'expired') - ev0, EXP.length, 'حدثُ انقضاءٍ واحدٌ لكل صفّ (لا تكرار)');
+        /* RISHAD266: قراءةُ المدير (Mc.load) تجري مسحَ المواعيد في الخادم كما كان طلبُ صفحة المهام يفعل — فقد يسبق المسحُ الموظفَ إلى الانقضاء.
+           الثابتُ هو هو: حدثُ انقضاءٍ واحدٌ لكل صفّ، أيّاً كان مسجِّلُه */
+        void ev0; const expN = Wd.env.DB.q("SELECT ename, COUNT(*) AS n FROM aud WHERE k = ? AND act = 'expired' AND ename LIKE '%F10 منقضية%' GROUP BY ename", KT);
+        assert.equal(expN.length, EXP.length, 'لكل صفٍّ منقضٍ حدثُه'); assert.ok(expN.every((r) => r.n === 1), 'حدثُ انقضاءٍ واحدٌ لكل صفّ (لا تكرار): ' + JSON.stringify(expN));
         for (const id of imgs) { assert.equal(imgN(Wd, id), 1, 'صورةُ الإثبات مخزّنة ' + id); assert.equal(Wd.env.DB.q('SELECT st FROM imgown WHERE img = ?', id)[0].st, 'bound'); }
         assert.equal(Wd.env.DB.q("SELECT COUNT(*) AS n FROM sec WHERE act = 'denied' AND uid LIKE 'tst_p0e%'")[0].n, 0, 'لا سطرَ «رفض» أمنياً لموظفٍ لم يُرفض (F-5)');
         report.push({ round, ops: plan.length, lost, busy: retry.length, mgrTries: mr.tries });
@@ -143,7 +146,8 @@ for (const mode of MODES) {
         assert.ok(d[3] === 'declined' && d[20] && d[20].at && d[20].why === 'TEST_ONLY ظرف', via + ': الاعتذارُ باقٍ');
         assert.ok(x[20] && x[20].exp, via + ': علامةُ الانقضاء باقية (فلا يتكرّر حدثُها)');
         assert.equal(imgN(Wd, img), 1, via + ': صورةُ الإثبات لم تُكنس'); assert.equal(Wd.env.DB.q('SELECT st FROM imgown WHERE img = ?', img)[0].st, 'bound', via + ': ومربوطة');
-        assert.equal(audN(Wd, 'expired'), 1, via + ': حدثُ انقضاءٍ واحد');
+        /* RISHAD266: قراءةُ المدير تجري مسحَ المواعيد (فتنقضي صفوفُ التجهيزة الفائتة الأخرى أيضاً) — الثابتُ: حدثُ انقضاءٍ واحدٌ لهذا الصف */
+        assert.equal(Wd.env.DB.q("SELECT COUNT(*) AS n FROM aud WHERE k = ? AND act = 'expired' AND ename = ?", KT, String(x[0]).slice(0, 160))[0].n, 1, via + ': حدثُ انقضاءٍ واحد');
       }
     } finally { MG.dispose(); }
   });

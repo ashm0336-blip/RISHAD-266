@@ -614,9 +614,9 @@ export default {
       if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');
       if (path === '/api/award' || path === '/api/award/act' || path === '/api/award/export') return await bdRoute(env, request, url, ss, 'awards');
       if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);
-      /* RISHAD266: توليدُ المواعيد المتكررة يجري في الخادم عند قراءة مخزن مهام الإدارة (التوليدُ وحده بحارسه المشترك 074 — لا مسحَ انقضاءٍ عند القراءة · باسم صاحب كل قالب) — كانت صفحةُ المهام ترسل POST عند فتحها */
+      /* RISHAD266: توليدُ المواعيد المتكررة يجري في الخادم عند قراءة مخزن مهام الإدارة مع مسح المواعيد (التذكير والتأخر والانقضاء) كما كان طلبُها يفعل — بالحارس المشترك بين العزلات (074 tkLazyJobs) · باسم صاحب كل قالب — كانت صفحةُ المهام ترسل POST عند فتحها */
       if (path === '/api/operations/read') { var tkRd = /(?:^|,)bsdept:([^,:]+):bassam_tasks_v1(?:,|$)/.exec(url.searchParams.get('keys') || '');
-        if (tkRd && request.method === 'GET' && typeof tkRecurLazy === 'function' && Date.now() - (TK_REC_LAST[tkRd[1]] || 0) >= TK_REC_GAP) try { var Atk = await actorOf(env, ss.uid); if (Atk && canRead(Atk, tkK(tkRd[1]))) await tkRecurLazy(env, request, tkRd[1], null); } catch (eTk) { swallow('tk-lazy-read', eTk, env.__rid); }
+        if (tkRd && request.method === 'GET' && typeof tkLazyJobs === 'function' && (Date.now() - (TK_REC_LAST[tkRd[1]] || 0) >= TK_REC_GAP || Date.now() - (TK_DUE_LAST[tkRd[1]] || 0) >= TK_DUE_GAP)) try { var Atk = await actorOf(env, ss.uid); if (Atk && canRead(Atk, tkK(tkRd[1]))) await tkLazyJobs(env, request, tkRd[1], true); } catch (eTk) { swallow('tk-lazy-read', eTk, env.__rid); }
         return await opReadRoute(env,request,url,ss); }
       if (path === '/api/operations/export') return await opExport(env,request,url,ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);

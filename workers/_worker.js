@@ -25655,15 +25655,18 @@ async function authPublicRoutes(request, env, path, url) {
       catch (eL) { if (isRevConflict(eL)) continue; throw eL; }
 
       await guardReset(env, gkU); await guardReset(env, gkI); await guardReset(env, gkP);
-      /* RISHAD266 · دخولٌ من جهازٍ جديد يُحكم هنا عند الدخول (كان المتصفحُ يرسله عند فتح الصفحة بذاكرة المتصفح — فتكرّر): بصمةُ الجهاز (النوع|المتصفح)
-         تُقارن بدخولات الحساب السابقة في سجل الأمن؛ أولُ دخولٍ ببصمةٍ يُسجَّل بلا تنبيه، وفشلُ التنبيه لا يُسقط الدخول */
-      var dvB = /Edg\//.test(rm.ua) ? 'Edge' : /Chrome\//.test(rm.ua) ? 'Chrome' : /Safari\//.test(rm.ua) ? 'Safari' : 'متصفح', dvS = 'dv:' + rm.dev + '|' + dvB;
-      try { if (u.role !== 'super' && u.ekey && u.deptId) { var dvR = await env.DB.prepare("SELECT MAX(detail = ?2) n FROM sec WHERE uid = ?1 AND act = 'login_ok' AND detail LIKE 'dv:%'").bind(u.id, dvS).first();
+      /* RISHAD266 · دخولٌ من جهازٍ جديد يُحكم هنا عند الدخول (كان المتصفحُ يرسله عند فتح الصفحة بذاكرة المتصفح — فتكرّر): معرّفُ جهازٍ عشوائيّ لكل متصفح
+         (كعكةُ bs_dv · HttpOnly) يُقارن بدخولات الحساب في 180 يوماً من سجل الأمن؛ أولُ دخولٍ مسجَّل بمعرّفٍ يمرّ بلا تنبيه، وفشلُ التنبيه لا يُسقط الدخول */
+      var dvB = /Edg\//.test(rm.ua) ? 'Edge' : /Chrome\//.test(rm.ua) ? 'Chrome' : /Safari\//.test(rm.ua) ? 'Safari' : 'متصفح', dvC = readCookie(request, 'bs_dv'), dvN = !/^[0-9a-f]{16}$/.test(dvC || '');
+      if (dvN) dvC = crypto.randomUUID().replace(/-/g, '').slice(0, 16); var dvS = 'dv:' + dvC;
+      try { if (u.role !== 'super' && u.ekey && u.deptId) { var dvR = await env.DB.prepare("SELECT MAX(detail = ?2) n FROM sec WHERE act = 'login_ok' AND ts > ?3 AND uid = ?1 AND detail LIKE 'dv:%'").bind(u.id, dvS, now - 15552e6).first();
         if (dvR && dvR.n === 0) { var Adv = await actorOf(env, u.id); if (Adv) await nfEmitEvents(env, Adv, [{ type: 'sc_dev', dept: u.deptId, own: [String(u.ekey)], vars: { 'الجهاز': (rm.dev === 'm' ? 'هاتف' : 'حاسوب') + ' · ' + dvB + (rm.city ? ' · ' + rm.city : ''), 'المدينة': rm.city || '' } }], true); } } } catch (eDv) { swallow('sc-dev', eDv, env.__rid); }
       await secLog(env, { uid: u.id, un: u.un, act: 'login_ok', detail: dvS, ip: rm.ip, city: rm.city, dev: rm.dev });
       /* mc على السجل: كلمة مؤقتة عيّنها مدير النظام — تُفرض على أي دور */
       var mustChange = !!u.mc || ((u.role === 'staff' || u.role === 'gm') ? false : (!pwCheck(pw, u.role) || !unCheck(u.un)));
-      return json({ ok: 1, uid: u.id, role: u.role || '', deptId: u.deptId || '', mustChange: mustChange ? 1 : 0 }, 200, setCookie(tok, url));
+      var resL = json({ ok: 1, uid: u.id, role: u.role || '', deptId: u.deptId || '', mustChange: mustChange ? 1 : 0 }, 200, setCookie(tok, url));
+      if (dvN) resL.headers.append('Set-Cookie', 'bs_dv=' + dvC + '; Path=/; HttpOnly; ' + (isLocal(url) ? '' : 'Secure; ') + 'SameSite=Lax; Max-Age=63072000');
+      return resL;
     }
     return json({ ok: 0, err: 'تغيّر الحساب أثناء تسجيل الدخول — أعد المحاولة' });
   }
@@ -28881,9 +28884,9 @@ export default {
       if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');
       if (path === '/api/award' || path === '/api/award/act' || path === '/api/award/export') return await bdRoute(env, request, url, ss, 'awards');
       if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);
-      /* RISHAD266: توليدُ المواعيد المتكررة يجري في الخادم عند قراءة مخزن مهام الإدارة (التوليدُ وحده بحارسه المشترك 074 — لا مسحَ انقضاءٍ عند القراءة · باسم صاحب كل قالب) — كانت صفحةُ المهام ترسل POST عند فتحها */
+      /* RISHAD266: توليدُ المواعيد المتكررة يجري في الخادم عند قراءة مخزن مهام الإدارة مع مسح المواعيد (التذكير والتأخر والانقضاء) كما كان طلبُها يفعل — بالحارس المشترك بين العزلات (074 tkLazyJobs) · باسم صاحب كل قالب — كانت صفحةُ المهام ترسل POST عند فتحها */
       if (path === '/api/operations/read') { var tkRd = /(?:^|,)bsdept:([^,:]+):bassam_tasks_v1(?:,|$)/.exec(url.searchParams.get('keys') || '');
-        if (tkRd && request.method === 'GET' && typeof tkRecurLazy === 'function' && Date.now() - (TK_REC_LAST[tkRd[1]] || 0) >= TK_REC_GAP) try { var Atk = await actorOf(env, ss.uid); if (Atk && canRead(Atk, tkK(tkRd[1]))) await tkRecurLazy(env, request, tkRd[1], null); } catch (eTk) { swallow('tk-lazy-read', eTk, env.__rid); }
+        if (tkRd && request.method === 'GET' && typeof tkLazyJobs === 'function' && (Date.now() - (TK_REC_LAST[tkRd[1]] || 0) >= TK_REC_GAP || Date.now() - (TK_DUE_LAST[tkRd[1]] || 0) >= TK_DUE_GAP)) try { var Atk = await actorOf(env, ss.uid); if (Atk && canRead(Atk, tkK(tkRd[1]))) await tkLazyJobs(env, request, tkRd[1], true); } catch (eTk) { swallow('tk-lazy-read', eTk, env.__rid); }
         return await opReadRoute(env,request,url,ss); }
       if (path === '/api/operations/export') return await opExport(env,request,url,ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);

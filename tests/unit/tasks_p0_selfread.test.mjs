@@ -156,8 +156,12 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal(ex.status, 200); assert.ok(ex.j.row.dec.exp, 'الانقضاءُ مسجَّل');
     assert.equal((await actOf(W, me.ck, { k: YESTERDAY, id: 1760000000105, act: 'accept' })).status, 409, 'المنقضيةُ لا تُقبل (يعيد المدير إسنادها)');
     /* السجل: أحداثُ كيانٍ بفاعلها الموظف */
-    const ev = W.env.DB.q("SELECT uid, act FROM aud WHERE k = ? AND etype = 'task' ORDER BY id", KT).map(r => r.uid + ':' + r.act);
-    assert.deepEqual(ev, [ME.uid + ':accepted', ME.uid + ':finished', ME.uid + ':declined', ME.uid + ':expired']);
+    /* RISHAD266: قراءةُ المدير لمخزن المهام تجري مسحَ المواعيد (074 · via:'due' · sys) كما كان طلبُ صفحة المهام يفعل — أحداثُه للنظام لا للموظف فتُستثنى هنا */
+    const ev = W.env.DB.q("SELECT uid, act FROM aud WHERE k = ? AND etype = 'task' AND (ctx IS NULL OR ctx NOT LIKE '%\"via\":\"due\"%') ORDER BY id", KT).map(r => r.uid + ':' + r.act);
+    /* الصفُّ الفائت (105) انقضى بمسح الخادم عند قراءة المدير قبل فعل الموظف — ففعلُه يُقبل بلا حدثٍ ثانٍ: حدثُ انقضاءٍ واحدٌ له */
+    assert.deepEqual(ev, [ME.uid + ':accepted', ME.uid + ':finished', ME.uid + ':declined']);
+    const xr = rowsOf(stored(W.env, KT), ME.eid).find(x => x.r[13] === 1760000000105).r;
+    assert.equal(W.env.DB.q("SELECT COUNT(*) AS n FROM aud WHERE k = ? AND act = 'expired' AND ename = ?", KT, String(xr[0]).slice(0, 160))[0].n, 1, 'حدثُ انقضاءٍ واحد للصف الفائت');
   });
 
   test(M + 'P0 — تجاوزُ الواجهة: جسمٌ مصنوع · فعلٌ مجهول · شهرٌ مقفل · صفٌّ بمعرّفٍ قديم · GET على مسار الفعل', async () => {
