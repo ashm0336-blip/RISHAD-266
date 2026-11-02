@@ -24,14 +24,14 @@
       patternMeta = I.patternMeta, patternSeed = I.patternSeed, patternSet = I.patternSet, patterns = I.patterns, pinRole = I.pinRole,
       pruneDeptAccounts = I.pruneDeptAccounts, pruneOrphanEmpPerms = I.pruneOrphanEmpPerms, pubUsers = I.pubUsers,
       purgeDeptAccounts = I.purgeDeptAccounts, pwCheck = I.pwCheck, pwRuleText = I.pwRuleText, rawCap = I.rawCap, rawUsers = I.rawUsers,
-      removeBackupSuper = I.removeBackupSuper, removeDeptAccount = I.removeDeptAccount, removeDeptManager = I.removeDeptManager,
+      removeBackupSuper = I.removeBackupSuper, removeDeptManager = I.removeDeptManager,
       removeGroupManager = I.removeGroupManager, removeStaffAccount = I.removeStaffAccount, roleTitle = I.roleTitle, seedCapFrom = I.seedCapFrom,
       setDeptCap = I.setDeptCap, setDeptLenses = I.setDeptLenses, setDeptManager = I.setDeptManager, setDeptManagerDis = I.setDeptManagerDis,
       setDeptSubs = I.setDeptSubs, setDeptTabs = I.setDeptTabs, setEmpLens = I.setEmpLens, setEmpPerms = I.setEmpPerms, setEmpTpl = I.setEmpTpl,
       setGroupManager = I.setGroupManager, setGroupManagerDis = I.setGroupManagerDis, setStaffMgr = I.setStaffMgr,
       setSuperAccount = I.setSuperAccount, siteMap = I.siteMap, splitLeaf = I.splitLeaf, staffIsMgr = I.staffIsMgr, staffMap = I.staffMap,
       staffStatus = I.staffStatus, subKeysOf = I.subKeysOf, subOn = I.subOn, tabKeysOf = I.tabKeysOf, tabOn = I.tabOn, taken = I.taken,
-      unCheck = I.unCheck, upsertBackupSuper = I.upsertBackupSuper, upsertDeptAccount = I.upsertDeptAccount, visiblePages = I.visiblePages,
+      unCheck = I.unCheck, upsertBackupSuper = I.upsertBackupSuper, visiblePages = I.visiblePages,
       writeUsers = I.writeUsers;
   /* ═══ شجرة صلاحيات الموظف — نموذج عرضٍ واحد للواجهتين (مدير النظام ومدير الإدارة) ═══
      الحاوية بلا تأشير: نقطة خضراء تُشتق من أوراقها. الورقة: مربعٌ ثلاثي الحالة (✓ الستة · – جزئي · فارغ)
@@ -404,8 +404,6 @@
     needsPwChange: needsPwChange,
     setSuperAccount: setSuperAccount,
     upsertBackupSuper: upsertBackupSuper, removeBackupSuper: removeBackupSuper, backupSuper: backupSuper,
-    upsertDeptAccount: upsertDeptAccount,
-    removeDeptAccount: removeDeptAccount,
     /* ── مدير الإدارة كحساب مستقل ── */
     mgrKeyOf: mgrKeyOf,
     isMgrKey: isMgrKey,

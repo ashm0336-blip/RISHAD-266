@@ -225,10 +225,6 @@
 
   /* RISHAD-266 · unify (batch 2): «حسابات الإدارة» (role 'dept') أُلغيت — الخادمُ يرفض إنشاءها وتعديلها لكل أحد (dept-role).
      فلا يُرسل العميلُ حفظاً سيُرفض: يعيد السببَ نفسه وما يفعله المستخدم. (لا مسارَ في الواجهة الحالية يستدعيه؛ يبقى جواباً صادقاً لأي مستدعٍ.) */
-  function upsertDeptAccount(o){
-    void o;
-    return Promise.resolve({ ok:false, err:'«حسابات الإدارة» أُلغيت: لا يُنشأ حسابٌ بهذا النوع ولا يُعدَّل — للدخول باسم الإدارة أنشئ حسابَ موظفٍ بشارة «مدير» في الإدارة، ويمكن حذفُ الحساب القديم' });
-  }
 
   /* ── مدير نظام احتياطي: حساب ثانٍ بكامل الصلاحية لا يُستخدم إلا عند تعذّر الرئيسي ── */
   function upsertBackupSuper(o){
@@ -253,13 +249,6 @@
     return { ok:true };
   }
   function backupSuper(){ var b = (rawUsers()||[]).filter(function(x){ return x.role==='super' && x.bk; })[0]; return b ? { id:b.id, un:b.un, name:b.name, dis:!!b.dis } : null; }
-  function removeDeptAccount(did){
-    var g = requireSuper(); if (g) return g;
-    /* حذف الإدارة يُسقط حساب مديرها وحسابات موظفيها معاً — وإلا بقيت أسماء
-       مستخدمين حيّة (أرقام هويات) تحجز نفسها وتمنع إعادة استعمالها في إدارة أخرى */
-    writeUsers((rawUsers()||[]).filter(function(x){ return !((x.role==='dept' || x.role==='staff') && x.deptId===did); }));
-    return { ok:true };
-  }
   /* تُستدعى بعد استعادة نسخة شاملة: كانت الحسابات تبقى مربوطة بمعرّفات إدارات
      لم تعد موجودة، فيُقفل كل مديري الإدارات خارج النظام بلا وسيلة إصلاح */
   function pruneDeptAccounts(validIds){
@@ -742,11 +731,11 @@
   I.groupManagersPub = groupManagersPub; I.hashPw = hashPw; I.isGmKey = isGmKey; I.isMgrKey = isMgrKey; I.isSuper = isSuper; I.login = login;
   I.mgrKeyOf = mgrKeyOf; I.needsPwChange = needsPwChange; I.pinRole = pinRole; I.pruneDeptAccounts = pruneDeptAccounts; I.pubUsers = pubUsers; I.userById = userById; I.usersVer = usersVer;
   I.purgeDeptAccounts = purgeDeptAccounts; I.pwCheck = pwCheck; I.pwRuleText = pwRuleText; I.rawUsers = rawUsers;
-  I.removeBackupSuper = removeBackupSuper; I.removeDeptAccount = removeDeptAccount; I.removeDeptManager = removeDeptManager;
+  I.removeBackupSuper = removeBackupSuper; I.removeDeptManager = removeDeptManager;
   I.removeGroupManager = removeGroupManager; I.removeStaffAccount = removeStaffAccount; I.requireMgr = requireMgr; I.roleTitle = roleTitle;
   I.setDeptManager = setDeptManager; I.setDeptManagerDis = setDeptManagerDis; I.setGroupManager = setGroupManager;
   I.setGroupManagerDis = setGroupManagerDis; I.setStaffMgr = setStaffMgr; I.setSuperAccount = setSuperAccount; I.staffIsMgr = staffIsMgr;
   I.staffMap = staffMap; I.staffStatus = staffStatus; I.taken = taken; I.touch = touch; I.unCheck = unCheck; I.upsertBackupSuper = upsertBackupSuper;
-  I.upsertDeptAccount = upsertDeptAccount; I.writeUsers = writeUsers; I.acctFixedWhy = acctFixedWhy;
+  I.writeUsers = writeUsers; I.acctFixedWhy = acctFixedWhy;
   Object.defineProperty(I, "_usersMemo", { get: function () { return _usersMemo; }, set: function (v) { _usersMemo = v; }, configurable: true });
 })();

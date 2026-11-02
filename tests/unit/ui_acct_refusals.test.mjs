@@ -107,3 +107,14 @@ test('2أ · مدير النظام: setDisById وresetPwById يردّان الس
   assert.match(ud, /const fx = a\.acctFixedWhy \? a\.acctFixedWhy\(t, !t\.dis\) : "";\r?\n\s+if \(fx\) return void this\.bsToast\(fx, "warn"\);/);
   assert.match(ud, /a\.setDeptManagerDis\(e, !t\.dis, t\.id\)/, 'الصفُّ نفسُه (كان أوّلَ مديرٍ للوحدة)');
 });
+
+/* RISHAD266 (قرار المالك على aae024c): شيفرةُ «حساب الإدارة» الملغى حُذفت بعد إثبات أنها غيرُ مستعملة (لا ربطَ لها في القالب) — وحسابُ مدير الإدارة العادي باقٍ */
+test('حسابُ الإدارة الملغى: لا upsertDeptAccount/removeDeptAccount ولا حقولُ accSave/accDel — ومسارُ مدير الإدارة باقٍ', () => {
+  const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
+  const auth = rd('auth/330-auth.js'), tree = rd('permissions/334-perm-tree-tpl.js'), adm = rd('modules/admin/logic.js'), view = rd('modules/admin/view.html');
+  for (const [n, s] of [['330', auth], ['334', tree], ['admin', adm]]) assert.ok(!/upsertDeptAccount|removeDeptAccount/.test(s), n + ': لا شيفرةَ لحساب الإدارة الملغى');
+  assert.ok(!/\baccSave\b|\baccDel\b|\baccArm\b|"ua_un_"/.test(adm), 'لا حقولَ نموذج حساب الإدارة في صفحة الإدارة');
+  assert.ok(!/\{\{[^}]*\b(accSave|accDel|accUn|accPw)\b/.test(view), 'ولا ربطَ لها في القالب');
+  assert.ok(/function setDeptManager\(/.test(auth) && /function removeDeptManager\(/.test(auth) && /deptManager/.test(adm), 'مسارُ مدير الإدارة العادي باقٍ');
+  assert.ok(/oldAccDo/.test(adm) && /purgeDeptAccounts/.test(auth), 'وتنظيفُ الحسابات القديمة الظاهر في الصفحة باقٍ');
+});

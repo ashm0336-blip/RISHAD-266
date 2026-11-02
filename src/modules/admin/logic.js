@@ -8927,13 +8927,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               const i = r._sel,
                 n = ((KIVO.BassamPerm && KIVO.BassamPerm.PAGE_REG) || []).length;
               return a.map((r) => {
-                const o = (KIVO.BassamAuth && KIVO.BassamAuth.users ? KIVO.BassamAuth.users() : []).find(
-                    (t) => "dept" === t.role && t.deptId === r.id,
-                  ),
-                  p = "ua_un_" + r.id,
-                  l = "ua_pw_" + r.id,
-                  d = "ua_nm_" + r.id,
-                  c = (() => {
+                const c = (() => {
                     try {
                       const e = t.raw && t.raw.getItem ? t.raw.getItem.call(localStorage, "bsdept:" + r.id + ":bassam_employees_v1") : null;
                       let a = 0;
@@ -9112,47 +9106,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         () => location.reload(),
                         () => location.reload(),
                       ));
-                  },
-                  accExists: !!o,
-                  accMissing: !o,
-                  accUn: void 0 !== e["ua_un_" + r.id] ? e["ua_un_" + r.id] : o ? o.un : "",
-                  accPw: e["ua_pw_" + r.id] || "",
-                  accNm: void 0 !== e["ua_nm_" + r.id] ? e["ua_nm_" + r.id] : (o && o.name) || "",
-                  accPwPh: o ? "كلمة مرور جديدة (اختياري)" : "كلمة المرور *",
-                  onAccUn: (t) => this.setState({ [p]: t.target.value }),
-                  onAccPw: (t) => this.setState({ [l]: t.target.value }),
-                  onAccNm: (t) => this.setState({ [d]: t.target.value }),
-                  accSave: () => {
-                    const t = (void 0 !== this.state[p] ? this.state[p] : o ? o.un : "").trim(),
-                      e = this.state[l] || "",
-                      s = (void 0 !== this.state[d] ? this.state[d] : (o && o.name) || "").trim() || "مدير " + r.name;
-                    t
-                      ? KIVO.BassamAuth.upsertDeptAccount({ deptId: r.id, un: t, name: s, pw: e }).then((t) => {
-                          t && t.ok
-                            ? this.setState({ [l]: "", uaMsg: "✓ حُفظ حساب دخول إدارة «" + r.name + "»" })
-                            : this.setState({ uaMsg: "إدارة «" + r.name + "»: " + ((t && t.err) || "تعذّر حفظ الحساب") });
-                        })
-                      : this.setState({ uaMsg: "اكتب اسم المستخدم لإدارة «" + r.name + "»" });
-                  },
-                  accArm: !(!e.admArm || "acc" !== e.admArm.t || e.admArm.id !== r.id),
-                  accNoArm: !(e.admArm && "acc" === e.admArm.t && e.admArm.id === r.id),
-                  accDel: () => {
-                    const t = this.state.admArm;
-                    if (!t || "acc" !== t.t || t.id !== r.id) {
-                      const t = Date.now();
-                      return (
-                        this.setState({ admArm: { t: "acc", id: r.id, ts: t }, uaMsg: "" }),
-                        void setTimeout(() => {
-                          const e = this.state.admArm;
-                          e && e.ts === t && this.setState({ admArm: null });
-                        }, 4e3)
-                      );
-                    }
-                    this.setState({ admArm: null });
-                    const e = KIVO.BassamAuth.removeDeptAccount(r.id);
-                    e && e.ok
-                      ? this.setState({ [p]: void 0, [l]: "", uaMsg: "✓ حُذف حساب إدارة «" + r.name + "»" })
-                      : this.setState({ uaMsg: (e && e.err) || "تعذّر حذف الحساب" });
                   },
                 };
               });
