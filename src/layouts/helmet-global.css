@@ -590,7 +590,7 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
 .bsb .s-dept{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:38px;padding:0 9px;border-radius:11px;border:1px solid var(--tone-gold-50-a30);background:var(--bg-gold-50-a7);cursor:pointer;font-family:'Cairo',sans-serif;transition:all .15s}
 .bsb .s-dept:hover{background:var(--bg-gold-50-a14)}
 /* RISHAD266: «+ قسم» بجوار مبدّل الوحدة — يُخفى في الشريط المطويّ */
-.bsb .s-secadd{flex:none;height:38px;padding:0 10px;border-radius:11px;border:1px dashed var(--tone-gold-50-a30);background:transparent;color:var(--fg-x9a7e40);font:700 11.5px 'Cairo',sans-serif;cursor:pointer;white-space:nowrap}
+.bsb .s-secadd{flex:none;height:38px;padding:0 10px;border-radius:11px;border:1px dashed var(--tone-gold-50-a30);background:transparent;color:var(--brand-text);font:700 11.5px 'Cairo',sans-serif;cursor:pointer;white-space:nowrap}
 .bsb .s-secadd:hover{background:var(--bg-gold-50-a7)}
 .bsb.cx .s-secadd{display:none}
 .bsb .s-depti{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--brand-muted),var(--border-brand));color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;flex-shrink:0}
