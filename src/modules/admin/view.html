@@ -842,11 +842,6 @@
         <button onClick="{{goTabCap}}" class="bs-subbtn" data-on="{{onTabCap}}" style="{{tabCapStyle}}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg>سقف الصفحات
         </button>
-        <sc-if value="{{tabScopeShow}}" hint-placeholder-val="{{ false }}">
-        <button onClick="{{goTabScope}}" class="bs-subbtn" data-bs="tab-scope" data-on="{{onTabScope}}" style="{{tabScopeStyle}}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d16c7afd"></svg>سقف النطاق
-        </button>
-        </sc-if>
       </div>
 
       <!-- ═══ تبويب الموظفين والحسابات ═══ -->
@@ -879,88 +874,6 @@
         <div class="empty"><div>{{mgEmptyT}}</div>{{mgEmptyS}}</div>
         </sc-if>
         <div class="foot"><span>{{mgStaffTxt}}</span><sc-if value="{{dhIsDept}}" hint-placeholder-val="{{ true }}"><i>·</i><span>يُدارون من داخل الإدارة: موظفو الإدارة ← حساب الدخول</span></sc-if><sc-if value="{{dhNotActive}}" hint-placeholder-val="{{ false }}"><a onClick="{{dhSwitch}}">التبديل إلى الإدارة ←</a></sc-if></div>
-      </div>
-      </sc-if>
-
-      <!-- ═══ KIVO_262 · تبويب سقف النطاق (Data Scope) — منفصلٌ عن سقف الصفحات · وضعُ الإنفاذ وحده ═══ -->
-      <sc-if value="{{onTabScope}}" hint-placeholder-val="{{ false }}">
-      <div data-bs="scope-tab" style="padding:14px 16px 16px;border-top:1px solid var(--bd-xe1e1e1)">
-        <div style="display:flex;align-items:flex-start;gap:9px;background:var(--bg-a141161440p035);border:1px solid var(--bd-a141161440p35);border-radius:12px;padding:11px 13px;font-size:11.5px;line-height:1.9;color:var(--fg-x0e7490);margin-bottom:12px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="flex-shrink:0;margin-top:3px" data-i="i-b8548f13"></svg>
-          <span><b>سقفُ النطاق غيرُ سقف الصفحات.</b> سقفُ الصفحات يحدّد ما تفتحه الإدارةُ من صفحاتٍ وأفعال؛ وسقفُ النطاق يحدّد على أيّ <b>مواقع</b> خطتها و<b>عناصرها</b> تعمل بياناتُها. لا يتجاوزه موظفٌ ولا مديرُ الإدارة، والخادمُ يرفض ما خرج عنه. «غير محسوم» لا يُفترض عنه شيء: الأعمالُ المرتبطةُ بموقعٍ أو عنصر تُرفض حتى يُحسم.</span>
-        </div>
-        <sc-if value="{{scNoPlan}}" hint-placeholder-val="{{ false }}">
-        <div data-bs="scope-noplan" style="display:flex;gap:9px;align-items:flex-start;padding:10px 12px;margin-bottom:12px;border-radius:12px;background:var(--bg-a2552472370p9);border:1px solid var(--bd-a201112420p4);font-size:11px;line-height:1.8;color:var(--fg-x7c2d12)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xc9702a)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:3px" data-i="i-a61be56e"></svg>
-          <div><b>لا خطةَ تشغيليةَ لهذه الإدارة بعد</b> — فلا مواقعَ ولا عناصرَ تُختار. «كل مواقع الخطة» يشمل تلقائياً ما يُضاف لاحقاً؛ و«غير محسوم» يُبقيه قراراً معلّقاً. هذا قرارٌ إداريّ لك (SOT-188).</div>
-        </div>
-        </sc-if>
-        <sc-for list="{{scDims}}" as="dm" hint-placeholder-count="2">
-        <div data-bs="scope-dim" data-dim="{{dm.k}}" style="border:1px solid var(--bd-xe1e1e1);border-radius:13px;overflow:hidden;margin-bottom:12px;background:var(--bg-xffffff)">
-          <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--bg-xfafbfc);border-bottom:1px solid var(--bd-xe1e1e1);flex-wrap:wrap">
-            <div style="flex:1;min-width:140px"><div style="font-size:12.5px;font-weight:700;color:var(--fg-x141414)">{{dm.t}}</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">{{dm.sub}}</div></div>
-            <span data-bs="scope-badge" style="{{dm.badgeStyle}}">{{dm.badge}}</span>
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px 6px">
-            <sc-for list="{{dm.segs}}" as="sg" hint-placeholder-count="3">
-            <button type="button" data-bs="scope-seg" data-on="{{sg.on}}" onClick="{{sg.go}}" style="{{sg.style}}">{{sg.lbl}}</button>
-            </sc-for>
-          </div>
-          <div data-bs="scope-src" style="padding:0 12px 9px;font-size:10.5px;color:var(--fg-x64748b);line-height:1.8">المصدر: {{dm.src}}</div>
-          <sc-if value="{{dm.staleOn}}" hint-placeholder-val="{{ false }}"><div style="padding:0 12px 9px;font-size:10.5px;color:var(--fg-xb45309)">{{dm.staleTxt}}</div></sc-if>
-          <sc-if value="{{dm.listOn}}" hint-placeholder-val="{{ false }}">
-          <div style="max-height:320px;overflow:auto">
-            <sc-for list="{{dm.rows}}" as="r" hint-placeholder-count="4">
-            <sc-if value="{{r.head}}" hint-placeholder-val="{{ false }}"><div style="{{r.style}}"><span style="flex:1">{{r.name}}</span><span style="font-weight:400;color:var(--fg-x94a3b8)">{{r.sub}}</span></div></sc-if>
-            <sc-if value="{{r.dis}}" hint-placeholder-val="{{ false }}"><div style="{{r.style}}"><span style="{{r.box}}"></span><span style="flex:1">{{r.name}}</span><span style="font-size:10px;color:var(--fg-x94a3b8)">{{r.sub}}</span></div></sc-if>
-            <sc-if value="{{r.on}}" hint-placeholder-val="{{ false }}"><div data-bs="scope-item" data-on="1" onClick="{{r.toggle}}" style="{{r.style}}"><span style="{{r.box}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></span><span style="flex:1">{{r.name}}</span></div></sc-if>
-            <sc-if value="{{r.offRow}}" hint-placeholder-val="{{ true }}"><div data-bs="scope-item" data-on="0" onClick="{{r.toggle}}" style="{{r.style}}"><span style="{{r.box}}"></span><span style="flex:1">{{r.name}}</span></div></sc-if>
-            </sc-for>
-            <sc-if value="{{dm.rowsNone}}" hint-placeholder-val="{{ false }}"><div style="padding:10px 12px;font-size:11px;color:var(--fg-x94a3b8)">لا شيءَ في خطة الإدارة يُختار هنا بعد.</div></sc-if>
-          </div>
-          </sc-if>
-        </div>
-        </sc-for>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-          <span data-bs="scope-dirty" style="flex:1;min-width:160px;font-size:11px;font-weight:600;color:var(--fg-x94a3b8)">{{scDirtyTxt}}</span>
-          <sc-if value="{{scReadPending}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{scReadRetry}}" style="height:34px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);border-radius:10px;padding:0 14px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif">إعادة تحميل بيانات الإدارة</button></sc-if>
-          <sc-if value="{{scDirty}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{scUndo}}" style="height:34px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);border-radius:10px;padding:0 14px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif">تراجع</button></sc-if>
-          <button type="button" data-bs="scope-save" onClick="{{scSave}}" style="{{scSaveStyle}}">حفظ سقف النطاق</button>
-        </div>
-        <!-- نطاقُ موظفي الإدارة (ضمن السقف) -->
-        <div data-bs="scope-emps" style="border:1px solid var(--bd-xe1e1e1);border-radius:13px;overflow:hidden;background:var(--bg-xffffff)">
-          <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--bg-xfafbfc);border-bottom:1px solid var(--bd-xe1e1e1);flex-wrap:wrap">
-            <div style="flex:1;min-width:160px"><div style="font-size:12.5px;font-weight:700;color:var(--fg-x141414)">نطاقُ موظفي الإدارة</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">داخل سقف الإدارة دائماً — {{scEmpCeilTxt}}</div></div>
-          </div>
-          <sc-if value="{{scEmpNone}}" hint-placeholder-val="{{ false }}"><div style="padding:12px;font-size:11px;color:var(--fg-x94a3b8)">لا حسابَ موظفٍ فعّالٍ في هذه الإدارة.</div></sc-if>
-          <sc-for list="{{scEmpRows}}" as="er" hint-placeholder-count="3">
-          <div data-bs="scope-emp" data-ek="{{er.ek}}" style="padding:9px 12px;border-top:1px solid var(--bd-xf1f3f5)">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span style="flex:1;min-width:140px;font-size:12px;font-weight:700;color:var(--fg-x141414)" title="{{er.selfTip}}">{{er.name}}</span>
-              <sc-for list="{{er.cells}}" as="c" hint-placeholder-count="3">
-              <label style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--fg-x64748b)">{{c.dimName}}
-                <sc-if value="{{er.ed}}" hint-placeholder-val="{{ true }}">
-                <select data-bs="scope-emp-sel" data-dim="{{c.dim}}" value="{{c.mode}}" onChange="{{c.onPick}}" style="height:28px;border:1px solid var(--bd-xe1e1e1);border-radius:8px;font-size:11px;font-family:'Cairo',sans-serif;padding:0 6px;background:var(--bg-xffffff)">
-                  <sc-for list="{{c.opts}}" as="op" hint-placeholder-count="3"><option value="{{op.v}}">{{op.t}}</option></sc-for>
-                </select>
-                </sc-if>
-                <sc-if value="{{er.ro}}" hint-placeholder-val="{{ false }}"><b data-bs="scope-emp-ro" style="font-weight:700;color:var(--fg-x53565a)">{{c.txt}}</b></sc-if>
-              </label>
-              </sc-for>
-              <sc-if value="{{er.hasList}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{er.toggleOpen}}" style="border:0;background:transparent;font-size:10.5px;font-weight:600;color:var(--fg-x0e7490);cursor:pointer;font-family:'Cairo',sans-serif">التحديد</button></sc-if>
-            </div>
-            <sc-for list="{{er.cells}}" as="c" hint-placeholder-count="0">
-            <sc-if value="{{c.picksOn}}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><sc-for list="{{c.picks}}" as="pk" hint-placeholder-count="2"><span data-bs="scope-emp-pick" onClick="{{pk.toggle}}" style="{{pk.style}}">{{pk.name}}</span></sc-for></div></sc-if>
-            <sc-if value="{{c.poolNone}}" hint-placeholder-val="{{ false }}"><div style="margin-top:6px;font-size:10.5px;color:var(--fg-xb45309)">سقفُ الإدارة لهذا البعد غيرُ محسوم أو فارغ — احسمه أولاً.</div></sc-if>
-            </sc-for>
-          </div>
-          </sc-for>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-xfafbfc)">
-            <span style="flex:1;font-size:10.5px;color:var(--fg-x94a3b8)">الوردية «حسب الجدول الشهري» تُقرأ حيّةً من تسكينه الشهري — لا تُنسخ.</span>
-            <sc-if value="{{scEmpDirty}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{scEmpUndo}}" style="height:32px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);border-radius:9px;padding:0 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif">تراجع</button></sc-if>
-            <button type="button" data-bs="scope-emp-save" onClick="{{scEmpSave}}" style="{{scEmpSaveStyle}}">حفظ نطاق الموظفين</button>
-          </div>
-        </div>
       </div>
       </sc-if>
 
@@ -1881,46 +1794,6 @@
       <button data-tp="delgo" onClick="{{tpDelGo}}" style="height:36px;padding:0 18px;border-radius:10px;font-size:12px;font-weight:700;background:var(--bg-xb91c1c);color:var(--fg-xffffff);border:0;cursor:pointer;font-family:'Cairo',sans-serif">احذفه</button>
     </div>
   </div>
-</div>
-</sc-if>
-<!-- ═══ KIVO_262 · نطاقُ بيانات الموظفين (داخل سقف الإدارة) — وضعُ الإنفاذ ═══ -->
-<sc-if value="{{scMgrOn}}" hint-placeholder-val="{{ false }}">
-<div data-bs="scope-mgr" style="margin-top:14px;background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden">
-  <div style="padding:11px 14px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)">
-    <div style="font-size:13px;font-weight:800;color:var(--fg-x141414)">نطاقُ بيانات الموظفين</div>
-    <div style="font-size:10.5px;color:var(--fg-x94a3b8)">على أيّ مواقع الخطة وعناصرها يعمل كلُّ موظف — داخل سقف الإدارة دائماً ({{scEmpCeilTxt}}). الصلاحياتُ تحدّد ماذا يفعل، والنطاقُ أين.</div>
-  </div>
-  <sc-if value="{{scMgrRo}}" hint-placeholder-val="{{ false }}"><div data-bs="scope-mgr-ro" style="padding:9px 14px;font-size:11px;color:var(--fg-xb45309);background:var(--bg-a1808390p07)">{{scMgrRoTxt}}</div></sc-if>
-  <sc-if value="{{scEmpNone}}" hint-placeholder-val="{{ false }}"><div style="padding:12px 14px;font-size:11px;color:var(--fg-x94a3b8)">لا حسابَ موظفٍ فعّالٍ في هذه الإدارة.</div></sc-if>
-  <sc-for list="{{scEmpRows}}" as="er" hint-placeholder-count="2">
-  <div data-bs="scope-emp" data-ek="{{er.ek}}" style="padding:9px 14px;border-top:1px solid var(--bd-xf1f3f5)">
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span style="flex:1;min-width:140px;font-size:12px;font-weight:700;color:var(--fg-x141414)" title="{{er.selfTip}}">{{er.name}}</span>
-      <sc-for list="{{er.cells}}" as="c" hint-placeholder-count="3">
-      <label style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--fg-x64748b)">{{c.dimName}}
-        <sc-if value="{{er.ed}}" hint-placeholder-val="{{ true }}">
-        <select data-bs="scope-emp-sel" data-dim="{{c.dim}}" value="{{c.mode}}" onChange="{{c.onPick}}" style="height:28px;border:1px solid var(--bd-xe1e1e1);border-radius:8px;font-size:11px;font-family:'Cairo',sans-serif;padding:0 6px;background:var(--bg-xffffff)">
-          <sc-for list="{{c.opts}}" as="op" hint-placeholder-count="3"><option value="{{op.v}}">{{op.t}}</option></sc-for>
-        </select>
-        </sc-if>
-        <sc-if value="{{er.ro}}" hint-placeholder-val="{{ false }}"><b data-bs="scope-emp-ro" style="font-weight:700;color:var(--fg-x53565a)">{{c.txt}}</b></sc-if>
-      </label>
-      </sc-for>
-      <sc-if value="{{er.hasList}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{er.toggleOpen}}" style="border:0;background:transparent;font-size:10.5px;font-weight:600;color:var(--fg-x0e7490);cursor:pointer;font-family:'Cairo',sans-serif">التحديد</button></sc-if>
-    </div>
-    <sc-for list="{{er.cells}}" as="c" hint-placeholder-count="0">
-    <sc-if value="{{c.picksOn}}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><sc-for list="{{c.picks}}" as="pk" hint-placeholder-count="2"><span data-bs="scope-emp-pick" onClick="{{pk.toggle}}" style="{{pk.style}}">{{pk.name}}</span></sc-for></div></sc-if>
-    <sc-if value="{{c.poolNone}}" hint-placeholder-val="{{ false }}"><div style="margin-top:6px;font-size:10.5px;color:var(--fg-xb45309)">سقفُ الإدارة لهذا البعد غيرُ محسوم أو فارغ — يحسمه مدير النظام.</div></sc-if>
-    </sc-for>
-  </div>
-  </sc-for>
-  <sc-if value="{{scEmpEdit}}" hint-placeholder-val="{{ true }}">
-  <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-xfafbfc)">
-    <span style="flex:1;font-size:10.5px;color:var(--fg-x94a3b8)">الوردية «حسب الجدول الشهري» تُقرأ حيّةً من تسكينه الشهري — لا تُنسخ.</span>
-    <sc-if value="{{scEmpDirty}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{scEmpUndo}}" style="height:32px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);border-radius:9px;padding:0 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif">تراجع</button></sc-if>
-    <button type="button" data-bs="scope-emp-save" onClick="{{scEmpSave}}" style="{{scEmpSaveStyle}}">حفظ نطاق الموظفين</button>
-  </div>
-  </sc-if>
 </div>
 </sc-if>
 </sc-if>

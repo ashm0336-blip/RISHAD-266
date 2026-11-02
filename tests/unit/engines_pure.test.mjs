@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { internals } from './internals.mjs';
 const W = await internals(['unCheck', 'pwCheck', 'normKey', 'normId', 'isDeviceKey', 'isMgrKey', 'parseKey', 'stripKey', 'isObj', 'isEmptyVal', 'parseJson', 'eq', 'eqExcept',
   'dsDayOk', 'dsStampOk', 'dsToday', 'dsLockOk', 'dsLockRec', 'dsLockedIn', 'opMatch', 'opPrefix', 'splitOps', 'secHeaders', 'bodyLimit', 'isLocal', 'enfTestHostOk', 'enfIsTestUser',
-  'legacyHash', 'hex', 'pbkdf2', 'hashPw', 'verifyPw', 'readCookie', 'enfScopeParse']);
+  'legacyHash', 'hex', 'pbkdf2', 'hashPw', 'verifyPw', 'readCookie']);
 
 test('هويةُ الدخول: 10 أرقام بالضبط (جوال/هوية) — لا فراغات ولا حروف ولا أرقام عربية', () => {
   for (const [v, want] of [['0500000000', true], ['1234567890', true], [' 0500000000 ', true], ['050000000', false], ['05000000001', false], ['05000000a0', false], ['٠٥٠٠٠٠٠٠٠٠', false], ['', false], [null, false], [undefined, false], [500000000, false], [5000000000, true]])
@@ -104,9 +104,8 @@ test('التجزئة: legacyHash حتمية · PBKDF2 (p2$) تتحقق وترف�
   assert.equal(await W.verifyPw('482917', W.legacyHash('482917')), true, 'تجزئةٌ قديمة تُقبل');
   assert.equal(await W.pbkdf2('x', '00'.repeat(16), 1000), await W.pbkdf2('x', '00'.repeat(16), 1000), 'حتمية');
 });
-test('readCookie · enfScopeParse', () => {
+test('readCookie', () => {   /* RISHAD-266: enfScopeParse أُزيلت مع تقاعد سقف النطاق القديم */
   const req = (c) => new Request('http://x/', { headers: c ? { cookie: c } : {} });
   assert.equal(W.readCookie(req('a=1; bs_tok=abc; z=9'), 'bs_tok'), 'abc'); assert.equal(W.readCookie(req('bs_tok=abc'), 'bs_tok'), 'abc'); assert.equal(W.readCookie(req(''), 'bs_tok'), '' || null || undefined ? W.readCookie(req(''), 'bs_tok') : W.readCookie(req(''), 'bs_tok'));
   assert.ok(!W.readCookie(req('xbs_tok=1'), 'bs_tok'), 'لا مطابقةَ جزئية للاسم');
-  assert.deepEqual(W.enfScopeParse('{"d":["d1"]}'), { d: ['d1'] }); assert.equal(W.enfScopeParse('[1]'), null); assert.equal(W.enfScopeParse('bad'), null); assert.deepEqual(W.enfScopeParse({ a: 1 }), { a: 1 });
 });

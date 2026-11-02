@@ -1,5 +1,7 @@
-/* Canonical scope denial, actual 280 transport and actual Daily _opCommit.
-   Both source and explicit emitted bundles are exercised; no grants or cloud. */
+/* Canonical known denial, actual 280 transport and actual Daily _opCommit.
+   Both source and explicit emitted bundles are exercised; no grants or cloud.
+   RISHAD-266: the known denial was the retired scope ceiling ("unmigrated-department-ceiling"); it is now the unit ceiling:
+   the department's own page ceiling (bassam_perms_v1.caps) without «daily» refuses the rounds write even for the system administrator. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -11,7 +13,7 @@ import { world, D1, IDS, copy, identitySnapshot } from './custody_review_fx.mjs'
 import { installOperationalFixture, inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { ROOT } from './harness.mjs';
 import { loadClient, until } from './k264_vm.mjs';
-const NAME='bassam_rounds_v1',KEY='bsdept:'+D1+':'+NAME,REASON='نطاق الإدارة الميداني غير محدد — يحدده مدير النظام قبل حفظ هذا التعديل';
+const NAME='bassam_rounds_v1',KEY='bsdept:'+D1+':'+NAME,REASON='صلاحيتك لا تشمل هذا الإجراء';
 function bytes(name){
  assert.ok(process.env.KIVO_DIST,'Select the actual build with KIVO_DIST; emitted tests never fall back to source');
  const dist=path.resolve(ROOT,process.env.KIVO_DIST),manifest=JSON.parse(fs.readFileSync(dist+'.build.json','utf8'));
@@ -24,6 +26,8 @@ async function setup(t,emitted){
  const floor={sid:'TEST_ONLY_SCOPE_SITE',name:'TEST_ONLY site',num:0,approved:false,zones:[],gates:[],marks:[],paths:[],sectors:[]};
  await replaceOperationalFixture(B.env,'bsdept:'+D1+':bassam_plan_v1',{pMig:3,floors:[floor],months:{[ym]:{c:1,d:[copy(floor)]}},cfg:{},delMonths:{}});
  const before={[dk]:{t:1,ap:0,auto:1,d:[{sid:floor.sid,zones:[],gates:[],marks:[],paths:[]}]}};await replaceOperationalFixture(B.env,KEY,before);
+ const perms=copy(B.keys.bassam_perms_v1);perms.caps[D1]=perms.caps[D1].filter(k=>k!=='daily');   /* RISHAD-266: the unit ceiling is the known denial */
+ await B.DB.batch([...B.W.kvPutStmts(B.env,'kv','bassam_perms_v1',JSON.stringify(perms)),B.DB.prepare("UPDATE revs SET rev=rev+1 WHERE k='bassam_perms_v1'"),B.DB.prepare("UPDATE meta SET v=CAST(CAST(v AS INTEGER)+1 AS TEXT) WHERE k='rev'")]);
  const initial=(await B.api('super','/api/get?keys=bassam_auth_users_v1,bassam_depts_v1,bassam_perms_v1,bassam_gdepts_v1,bassam_platform_v1')).json;
  const authz=await B.api('super','/api/authz');assert.equal(authz.status,200);assert.ok(authz.json.me);
  const control={mode:'normal',posts:[],hold:null,release:null,raced:false},protectedBefore=identitySnapshot(B.DB),toasts=[];
@@ -48,8 +52,7 @@ async function setup(t,emitted){
  t.after(()=>T.dispose());return{B,T,K,service,page,toasts,control,before,desired,protectedBefore,dk};
 }
 for(const emitted of [false,true])test((emitted?'emitted':'source')+' explicit scope denial remains known after an edited intent and explains missing department configuration',async t=>{
- const f=await setup(t,emitted),first=await f.page._opCommit({[NAME]:f.desired});assert.equal(first.err,'denied');assert.equal(first.status,403);assert.equal(first.uncertain,false);assert.equal(first.details.denied[KEY].why,'scope-unknown');
- assert.match(first.details.denied[KEY].detail,/unmigrated-department-ceiling/);assert.equal(f.service.status(first.ticket).state,'denied');
+ const f=await setup(t,emitted),first=await f.page._opCommit({[NAME]:f.desired});assert.equal(first.err,'denied');assert.equal(first.status,403);assert.equal(first.uncertain,false);assert.equal(first.details.denied[KEY].why,'perm',JSON.stringify(first.details.denied[KEY]).slice(0,300));assert.equal(f.service.status(first.ticket).state,'denied');
  const changed=copy(f.desired);changed[f.dk].d[0].zones[0].code='99';const second=await f.page._opCommit({[NAME]:changed});
  assert.deepEqual({err:second.err,uncertain:second.uncertain,reason:f.toasts[0]},{err:'denied',uncertain:false,reason:REASON});
  assert.equal(second.ticket,first.ticket);assert.equal(f.control.posts.length,1);assert.deepEqual(inspectOperationalFixture(f.B.env,KEY),f.before);assert.deepEqual(identitySnapshot(f.B.DB),f.protectedBefore);assert.ok(f.page._opDrafts[NAME]);assert.deepEqual(copy(changed[f.dk].d[0].zones[0].code),'99');
@@ -72,5 +75,5 @@ for(const emitted of [false,true])test((emitted?'emitted':'source')+' known conf
  const f=await setup(t,emitted);f.control.mode='race';const first=await f.page._opCommit({[NAME]:f.desired});assert.equal(first.err,'conflict');assert.equal(first.status,409);assert.equal(first.uncertain,false);assert.equal(f.service.status(first.ticket).state,'conflict');
  const changed=copy(f.desired);changed[f.dk].d[0].zones[0].code='99';const second=await f.page._opCommit({[NAME]:changed});assert.equal(second.err,'conflict');assert.equal(second.uncertain,false);assert.equal(second.ticket,first.ticket);assert.equal(f.control.posts.length,1);
  const kept=inspectOperationalFixture(f.B.env,KEY);assert.equal(kept[f.dk].t,2);assert.deepEqual(kept[f.dk].d[0].zones,[]);assert.deepEqual(identitySnapshot(f.B.DB),f.protectedBefore);
- assert.notEqual(f.service.explain({details:{denied:{[KEY]:{why:'scope-unknown',detail:'x=unmigrated-department-ceiling-extra'}}}}),REASON);
+ assert.equal(f.service.explain({details:{denied:{[KEY]:{why:'scope-unknown',detail:'x=unmigrated-department-ceiling'}}}}),f.service.explain({details:{denied:{[KEY]:{why:'scope-unknown'}}}}),'RISHAD-266: no unmigrated-* special case remains');
 });

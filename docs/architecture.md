@@ -111,7 +111,7 @@ erDiagram
   imgref }o--|| kv : "صورةٌ يشير إليها مفتاح"
   imgown ||--o{ imgref : "مالكُ الصورة"
 ```
-> سجلُّ النطاق `bsdept:<d>:bassam_scope_v1` (سقفُ الإدارة ونطاقُ الموظفين — ADR-029) مفتاحٌ في `kv` كغيره يقرؤه الإنفاذُ في `enfSavePrep` (058)؛
+> سجلُّ النطاق القديم `bsdept:<d>:bassam_scope_v1` تقاعد (RISHAD-266): لا يقرؤه الإنفاذ ولا يُكتب (`scope-retired`)، وتحذفه خطوةُ `scope-retire`؛
 > ولقطاتُ الترحيل/الاستعادة في `authz_snaps`/`authz_snap` (الرجوعُ بـ`/api/authz-migrate?act=rollback`).
 
 ## قواعدُ الاعتماد بين الطبقات (SOT-091 · `tools/deps_check.py` — في `npm run lint:deps` والبوابة)

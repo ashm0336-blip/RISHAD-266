@@ -3,13 +3,14 @@ function enfUnitDelKeys() { var gk = enfIx().byRes[K_DEPTS] || [], gs = gk.filte
 /* ══ canWrite في وضع الإنفاذ — البنيةُ نفسُها، والقرارُ من السجل ══ */
 function canWriteEnf(A, k, newVal, curVal, ctx) {
   var u = A.u, P = parseKey(k), rn = resName(k), X = (ctx && ctx.enf) || {};
+  /* RISHAD-266: سقفُ النطاق القديم أُلغي — قبل كل استثناء (059 scopeRetiredWhy) */
+  if (P.dept && rn === ENF_SCOPE_RES) return scopeRetiredWhy(A, newVal, ctx) ? enfNo('scope-retired', { detail: SCOPE_RETIRED_DETAIL }) : enfOk(enfUnitDelKeys());
   /* F01 (مرآةُ 044): حذفُ مفاتيح وحدةٍ لم تعد وحدة لمدير النظام · ولا كتابةَ في معرّفٍ ليس وحدةَ بيانات إلا وحدةً في الحفظة نفسِها أو استعادة */
   if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return enfOk(enfUnitDelKeys());
   if (P.dept && newVal != null && u.role === 'super' && !isUnitId(A, P.dept)) {
     if (!(X.restore && !isNodeId(A, P.dept))) return enfNo('unit', { detail: P.dept });
     (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1; enfMemoDrop(A, String(P.dept));
   }
-  if (P.dept && rn === ENF_SCOPE_RES) return enfScopeWrite(A, k, newVal, curVal);
   if (P.dept && rn === ENF_GRANTS_RES) return enfGrantsWrite(A, k, newVal, curVal, ctx);   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: ctx.pa */
   var R0 = resOf(k);
   if (!R0) return enfNo('unknown');

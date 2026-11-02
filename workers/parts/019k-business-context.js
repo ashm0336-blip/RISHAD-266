@@ -7,7 +7,7 @@ async function bdQueryContext(env, actor, d, definition, options) {
   var natural = function (value) { if (!Number.isSafeInteger(value) || value < 0) throw fail('revision', 503); return value; };
   if (!actor || !actor.u || typeof actor.u.id !== 'string') throw fail('denied', 403);
   if ((options.global === true && !global) || typeof d !== 'string' || (!global && !d) || (global && d !== '') || d.length > 200 || d.indexOf(':') >= 0) throw fail('scope');
-  var keys = [K_USERS, K_PERM, K_DEPTS, K_GDEPTS, K_PLAT].concat(global ? [] : [enfGrantsKey(d), enfScopeKey(d),
+  var keys = [K_USERS, K_PERM, K_DEPTS, K_GDEPTS, K_PLAT].concat(global ? [] : [enfGrantsKey(d),
       'bsdept:' + d + ':bassam_staffing_v3', 'bsdept:' + d + ':bassam_shift_options_v1',
       'bsdept:' + d + ':bassam_employees_v1']).concat(definition.extraKeys ? definition.extraKeys(d) : []),
     resourceKeys = definition.resourceKeys ? definition.resourceKeys(d) : definition.resources.map(function (name) { return 'bsdept:' + d + ':' + name; }),

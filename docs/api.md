@@ -50,11 +50,10 @@
 | `/api/recovery` · `/api/recovery/new` | GET · POST | مدير النظام | حالة مفتاح الاستعادة · توليد مفتاح جديد | |
 | `/api/reset` | POST | مدير النظام | إعادة ضبط (محروسة) | |
 | `/api/permv2` | GET | مدير النظام | سجل v24.9 وإحصاءات الظل | |
-| `/api/scope-dryrun` | GET | مدير النظام | جرد النطاق وتصنيفه (قراءة فقط · writes=0) | |
 | `/api/identity-rehearsal` · `/api/identity-preflight` | GET | مدير النظام | بروفة ترحيل الهوية · التمهيد المدمج (قراءة فقط) | |
 | `/api/authz` | GET | إنفاذ · جلسة | حالة الإنفاذ `{mode: enforce|legacy|unavailable, env, d1, me}` — `me.depts[d] = {h, lens, ceil, me, p, sb?}` (والوصفُ نفسُه في `__BS_BOOT.authz`) | `unavailable` جديد · **KIVO_264**: `sb = {'<y>-<m>': وردية}` ورديةُ الفاعل الفعلية من الجدول الشهري حين نطاقُه `staffing-bound` (صفُّه وحده) — يتغيّر الوصفُ بتغيّرها فيجدّد العميلُ الموارد المُسقَطة بعد `az` |
 | `/api/authz/log` · `/api/authz/snaps` | GET | إنفاذ · مدير النظام | سجل قرارات الصلاحية · نسخ ما قبل العملية | |
-| `/api/authz-migrate` | POST | إنفاذ · مدير النظام | خطة الترحيل الحتمية · التطبيق بالبصمة · الرجوع | |
+| `/api/authz-migrate` | POST | إنفاذ · مدير النظام | خطة الترحيل الحتمية · التطبيق بالبصمة · الرجوع · `parts=scope-retire` وحدها: حذفُ سقف النطاق القديم بلقطة (RISHAD-266) | |
 | `/api/authz-test` | POST | إنفاذ + `KIVO_TEST_FIXTURE=allow` · مدير النظام | تنفيذ طلب واحد بهوية حساب اختبار `tst_*` عبر المسار الكامل | ADR-004: مضيف Preview فقط · TTL 5 دقائق · كنس دفاعي |
 | `/api/tasks/create` | POST | فاعل | إنشاءُ مهمة (`task.create` · و`task.assign` مع مكلَّفين): هويةٌ فريدة (13) وطابعٌ (22) وإعداداتُ الخادم (23) عبر الحفظ المركزي (CAS · تدقيق) + تنبيه `task_new` من الخادم. `rec` (اختياري): `{t: daily \| weekly \| monthly \| every, wd?, md? (1…30 أو `'last'` آخرُ يومٍ في الشهر الهجري — KIVO_265 البند 16), n? (every: كل n يوماً من البدء · 2…30 — البند 16), to? \| open:1}` — نهايةٌ ≤ ثلاث سنواتٍ هجرية أو «حتى الإيقاف» (بلا `to`)، وبلا أيّهما سنةٌ هجرية؛ ومخطّطُ `rec` نفسُه في `/api/tasks/recur` (لا مفاتيحَ زائدة · `to` نصٌّ — srv2 · S7) | KIVO_265 البند 4: كلُّ مكلَّفٍ بحسابِ مستخدمٍ نشط مربوطٍ بمعرّفه — وإلا 409 `acct` (لا يتجاوزه `force`) · المتكررةُ بلا مكلَّف 400 `rec-asg` (`at: rec`) · KIVO_265 البند 12: `shift: {name}` بدل `asg` — الورديةُ كيانٌ: مكلَّفوها يومَ `k` من الجدول الشهري وتقرير اليوم (072 `tkShiftAsg`) بالقواعد نفسِها وسقف 500 صفّ، والمتخطَّون بأسبابهم في `skipped` (بلا حسابٍ نشط · بلا معرّف · المراجِعُ نفسُه · فوق السقف) |
 | `/api/tasks/review` | POST | فاعل | مراجعةُ التسليم الحاليّ وحده (المراجِعُ المسمّى · مديرُ الإدارة · مديرُ النظام): اعتمادٌ ⇒ منجزة · إعادةٌ ⇒ «أُعيدت للاستكمال» + تنبيه | |
@@ -130,7 +129,7 @@
 | `GET/POST /api/policy` | `{ok:1, policy:{sessH, idleH, lockN, lockMin, pwMin}}` |
 | `GET /api/overview` | `{ok:1, now, policy, oldHash, failsToday, deniedToday, lockedNow, activeNow, sessions, lastLogin, fails:[{un, n, t, city, dev, known, until, gks}]}` |
 | `GET /api/recovery` | `{ok:1, key:string|null, used:object|null, backups:[…], backupLastLogin}` |
-| `GET /api/permv2` · `/api/scope-dryrun` · `/api/identity-rehearsal` · `/api/identity-preflight` | `{ok:1, version, docSha256, status, …}` · `{ok:1, worker, dryRun|rehearsal|preflight:{…}}` (قراءةٌ فقط · لا كتابة) |
+| `GET /api/permv2` · `/api/identity-rehearsal` · `/api/identity-preflight` | `{ok:1, version, docSha256, status, …}` · `{ok:1, worker, rehearsal|preflight:{…}}` (قراءةٌ فقط · لا كتابة) |
 | الأخطاء | `404 {ok:0, err:'not-found'}` · `401 {ok:0, err:'session'}` · `400 {ok:0, err}` · `403 {ok:0, err:'forbidden'|'origin'}` · `413` · `429 {ok:0, err, retry}` · `500 {ok:0, err, detail, rid}` |
 
 ## الاسترشاد العلائقي — مخطط8

@@ -35,32 +35,9 @@ async function irRowRead(env, d, ids) {
 function irQueryScope(ctx, alias) {
   alias = alias || 'r';
   if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(alias)) throw irError('irshad-query');
+  /* RISHAD-266: قيدُ الوردية من سقف النطاق القديم أُلغي — الإدارةُ وحدها تحدّ الصفوف هنا (القراءةُ نفسُها محكومةٌ قبلها بمفاتيحها وسقف الوحدة).
+     Free-text location is deliberately not a Site ACL dimension. */
   var args = [ctx.d], where = 'r.department_id=?1';
-  if (ctx.A.enf && ctx.A.u.role !== 'super') {
-    var V = enfViewCtx(ctx.A, ctx.d, IR_RES[0], ctx.refs);
-    if (ENF_PROJ[IR_RES[0]].on(V)) {
-      var es = enfEmpScopeOf(V.E, ctx.d, V.ekey, 'Shift'), allowed = [], monthly = [];
-      if (es && es.mode === 'n/a') return { args: args, where: where.replace(/\br\./g, alias + '.'), sql: where.replace(/\br\./g, alias + '.') };
-      if (es && es.mode === 'list') {
-        var list = es.list || [];
-        for (var i = 0; i < list.length; i++) if (V.shiftOk(list[i], '')) allowed.push(String(list[i]));
-      }
-      else if (es && es.mode === 'staffing-bound') {
-        var staffing = ctx.refs.staffing[ctx.d];
-        Object.keys(isObj(staffing) ? staffing : {}).forEach(function (ym) {
-          var parts = ym.split('-'), y = Number(parts[0]), m = Number(parts[1]),
-            row = isObj(staffing[ym]) ? staffing[ym][V.ekey] : null,
-            shift = isObj(row) && row.shift ? String(row.shift) : '';
-          if (parts.length === 2 && Number.isFinite(y) && Number.isFinite(m) && y + '-' + m === ym && shift && V.shiftOk(shift, ym))
-            monthly.push({ y: y, m: m, shift: shift });
-        });
-      }
-      args.push(JSON.stringify(allowed), JSON.stringify(monthly));
-      // Exactly ENF_PROJ.hid: a blank shift or null/missing y/m is not hidden.
-      // Free-text location is deliberately not a Site ACL dimension.
-      where += " AND (r.shift IS NULL OR r.shift='' OR r.hijri_year IS NULL OR r.hijri_month IS NULL OR r.shift IN(SELECT value FROM json_each(?2)) OR EXISTS(SELECT 1 FROM json_each(?3) a WHERE r.hijri_year=json_extract(a.value,'$.y') AND r.hijri_month=json_extract(a.value,'$.m') AND r.shift=json_extract(a.value,'$.shift')))";
-    }
-  }
   where = where.replace(/\br\./g, alias + '.');
   return { args: args, where: where, sql: where };
 }

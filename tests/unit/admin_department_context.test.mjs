@@ -144,7 +144,6 @@ function fixture({
     "impVals",
     "sfVals",
     "tpVals",
-    "scMgrVals",
     "_expInfo",
     "_gmRec",
     "_upDeptOf",

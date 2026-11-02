@@ -4757,45 +4757,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const ordered = P.orderRows ? P.orderRows(rows) : rows;
     return { rows: ordered, nOn: nOn, nTot: nTot, allExpanded: S.every((c) => !!exp[c.id]), ok: !0, ids: S.map((c) => c.id) };
   }
-  /* ═══ KIVO_262 · سقفُ النطاق (Data Scope) — منفصلٌ عن سقف الصفحات (SOT-014/015/188) ═══
-     سقفُ الصفحات = ما تفتحه الإدارةُ من صفحاتٍ وأفعال (bassam_perms_v1) · سقفُ النطاق = على أيّ مواقع خطتها وعناصرها تعمل بياناتُها
-     (bsdept:<d>:bassam_scope_v1 — نموذجُ الخادم نفسُه: ceiling[Site|Zone/Element] = ALL | list | unknown ·
-      emp[ekey][Site|Zone/Element] = inherit | list | unknown · emp[ekey].Shift = staffing-bound | n/a | unknown).
-     الهويّاتُ بقاعدة المحرّك (KIVO_SCOPE.ID · R5): الموقع f:<sid> · العنصرُ u:<uid> وإلا المخطّطُ القديم — اختبارُ وحدةٍ يثبت التطابق.
-     الخادمُ هو الحَكَم: السقفُ لمدير النظام وحده (sys.ceiling.set) · نطاقُ الموظفين لحامل perm.assign ضمن السقف · ولا يُفترض شيءٌ: «غير محسوم» يبقى كما هو. */
-  scIdOf(kind, e) {
-    if (!e || typeof e !== "object") return null;
-    if (kind === "floor") { const v = e.sid || e.id; return v == null || v === "" ? null : "f:" + v; }   /* = ID.floors في المحرّك (بلا الموضعي #i) */
-    if (e.uid != null && e.uid !== "") return "u:" + e.uid;
-    if (kind === "zones") { const v = e.code || e.ser || e.name || e.id || e.eid; return v == null || v === "" ? null : "z:" + v; }
-    if (kind === "gates") {
-      if (e.id != null && e.id !== "") return "g:" + e.id;
-      if (e.gid != null && e.leafNo != null) return "gl:" + e.gid + "/" + e.leafNo;
-      if (e.gid != null) return "gg:" + e.gid;
-      if (e.num != null && e.num !== "") return "gn:" + e.num;
-      return e.label ? "gL:" + e.label : null;
-    }
-    if (kind === "marks") { if (e.id != null && e.id !== "") return "m:" + e.id; return e.label ? "mL:" + e.label : null; }
-    if (kind === "paths") { const v = e.id || e.code || e.name; return v == null || v === "" ? null : "p:" + v; }
-    return null;
-  }
-  scKindName(k) { return { zones: "مصلى", gates: "باب", marks: "معلم", paths: "مسار" }[k] || k; }
-  scElName(k, e) {
-    const nm = String((e && (e.name || e.label || e.code || (e.num != null ? "رقم " + e.num : ""))) || "").trim();
-    return this.scKindName(k) + (nm ? " · " + nm : "");
-  }
-  /* خطةُ الإدارة كما يراها المحرّك: المواقعُ وعناصرُ كل موقع (بلا هويةٍ ثابتة ⇒ تُعرض ولا تُختار) */
-  scPlan(d) {
-    const pl = KIVO.__BS_SRV.operations.reference("bsdept:" + d + ":bassam_plan_v1");
-    const fl = pl && Array.isArray(pl.floors) ? pl.floors : [];
-    return fl.map((f, i) => {
-      const els = [];
-      ["zones", "gates", "marks", "paths"].forEach((k) => (Array.isArray(f && f[k]) ? f[k] : []).forEach((e) => {
-        const id = this.scIdOf(k, e); els.push({ id: id, kind: k, name: this.scElName(k, e) });
-      }));
-      return { id: this.scIdOf("floor", f), idx: i, name: String((f && (f.name || (f.num != null ? "موقع " + f.num : ""))) || "موقع " + (i + 1)), els: els };
-    });
-  }
+  /* RISHAD-266: تبويبُ «سقف النطاق» ونطاقُ بيانات الموظفين (سجلُّ النطاق القديم لكل إدارة) أُزيلا مع تقاعد سقف النطاق القديم —
+     الوصولُ يحدّده سقفُ الوحدة (سقف الصفحات) وصلاحياتُ الموظف. يبقى هنا تحميلُ مرجعيّات الإدارة (الخطة · الموظفون) الذي يستعمله
+     محرّرُ سقف الوحدة (sysPick) وتبويبُ الحسابات. */
   async scLoadReferences(d, retry) {
     const registry = KIVO.BassamDepts;
     if (typeof d !== "string" || !d || !registry || !registry.treeFlat().some(dept => dept.id === d)) return false;
@@ -4816,143 +4780,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       let ok = result && result.ok === 1;
       try { if (ok) keys.forEach(k => ops.reference(k)); } catch (error) { ok = false; }
       entry.error = ok ? "" : "تعذّر تأكيد بيانات الإدارة أو لا تملك صلاحية قراءتها — أعد المحاولة";
-      this.setState({ scReadFor: d, scReadError: entry.error, shTick: (this.state.shTick || 0) + 1 });
+      this.setState({ shTick: (this.state.shTick || 0) + 1 });
       if (!ok && retry) this.bsToast(entry.error);
       return !!ok;
     }).finally(() => { entry.promise = null; });
     return entry.promise;
-  }
-  scRec(d) {
-    let r = null;
-    try { r = JSON.parse(localStorage.getItem("bsdept:" + d + ":bassam_scope_v1") || "null"); } catch (e) { r = null; }
-    return r && typeof r === "object" && !Array.isArray(r) ? r : { v: 1 };
-  }
-  scDims() { return [{ k: "Site", t: "المواقع", sub: "مواقعُ خطة الإدارة (الطوابق والساحات)", all: "كل مواقع الخطة", some: "مواقع محددة" },
-                     { k: "Zone/Element", t: "عناصر المواقع", sub: "المصليات · الأبواب · المعالم · المسارات", all: "كل عناصر الخطة", some: "عناصر محددة" }]; }
-  scModeOf(c) { return c && typeof c === "object" && (c.mode === "ALL" || c.mode === "list") ? c.mode : "unknown"; }
-  scSrcTxt(c) {
-    if (!c || typeof c !== "object" || this.scModeOf(c) === "unknown") return "لم يُحسم بعد — لا يُفترض سقفٌ نيابةً عنك";
-    const at = c.at ? new Date(c.at) : null, when = at && !isNaN(at) ? " · " + at.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { year: "numeric", month: "long", day: "numeric" }) : "";
-    if (c.src === "migration") return "حُسم بالترحيل من بيانات الخطة" + when + (c.basis ? " — " + String(c.basis).slice(0, 140) : "");
-    if (c.src === "manual") return "حدّده مدير النظام" + (c.byName ? " (" + c.byName + ")" : "") + when;
-    return "محفوظٌ سابقاً" + when;
-  }
-  /* نموذجُ التبويب لمدير النظام: السقفُ لكل بُعد + نطاقُ موظفي الإدارة — المسودةُ في الحالة حتى «حفظ» */
-  scopeVals(d, isNode, tab) {
-    const on = !isNode && this.t24On() && !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper());
-    const base = { tabScopeShow: on, onTabScope: on && tab === "scope", goTabScope: async () => {
-      if (await this.scLoadReferences(d, true)) this.setState({ sysTab: "scope", scFor: d, scDraft: null, scEmpDraft: null, scOpen: {} });
-    } };
-    if (!on || tab !== "scope") return base;
-    let plan;
-    try { plan = this.scPlan(d); } catch (error) {
-      this.scLoadReferences(d, false);
-      return Object.assign(base, { scNoPlan: false, scDims: [], scDirty: false, scEmpRows: [], scEmpNone: false,
-        scReadPending: true, scReadRetry: () => this.scLoadReferences(d, true), scSave: () => {},
-        scSaveStyle: "opacity:.4;cursor:default", scDirtyTxt: this.state.scReadFor === d && this.state.scReadError || "جارٍ تأكيد بيانات الإدارة…" });
-    }
-    const st = this.state, rec = this.scRec(d), cur = rec.ceiling && typeof rec.ceiling === "object" ? rec.ceiling : {};
-    const dr = st.scFor === d && st.scDraft ? st.scDraft : null, eff = (k) => (dr && dr[k] ? dr[k] : cur[k]);
-    const allIds = { "Site": plan.map((f) => f.id).filter(Boolean), "Zone/Element": [].concat(...plan.map((f) => f.els.map((x) => x.id))).filter(Boolean) };
-    const setDim = (k, v) => this.setState((pr) => ({ scFor: d, scDraft: Object.assign({}, (pr.scFor === d && pr.scDraft) || {}, { [k]: v }) }));
-    const dims = this.scDims().map((D) => {
-      const c = eff(D.k), mode = this.scModeOf(c), list = mode === "list" && Array.isArray(c.list) ? c.list.map(String) : [];
-      const pick = (id) => { const L = list.slice(), i = L.indexOf(id); i >= 0 ? L.splice(i, 1) : L.push(id); setDim(D.k, { mode: "list", list: L }); };
-      const seg = (m, lbl) => ({ lbl: lbl, on: mode === m, style: "border:1px solid " + (mode === m ? "var(--bd-a185151810p55)" : "var(--bd-xe1e1e1)") + ";background:" + (mode === m ? "var(--bg-a185151810p1)" : "var(--bg-xffffff)") + ";color:" + (mode === m ? "var(--fg-x8a6f35)" : "var(--fg-x53565a)") + ";border-radius:9px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif",
-        go: () => setDim(D.k, m === "list" ? { mode: "list", list: mode === "list" ? list : [] } : { mode: m }) });
-      let rows = [];
-      if (mode === "list") {
-        if (D.k === "Site") rows = plan.map((f) => ({ id: f.id || "", name: f.name, sub: f.id ? "" : "بلا هويةٍ ثابتة — لا يُختار حتى تُحفظ الخطة", on: !!f.id && list.indexOf(f.id) >= 0, dis: !f.id, toggle: () => f.id && pick(f.id), head: false }));
-        else plan.forEach((f) => { rows.push({ head: true, name: f.name, sub: KIVO.BassamCount(f.els.length, "عنصر") }); f.els.forEach((x) => rows.push({ id: x.id || "", name: x.name, sub: x.id ? "" : "بلا هويةٍ ثابتة", on: !!x.id && list.indexOf(x.id) >= 0, dis: !x.id, toggle: () => x.id && pick(x.id), head: false })); });
-        rows.forEach((r) => { r.offRow = !r.head && !r.dis && !r.on; r.style = "display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid var(--bd-xf1f3f5);" + (r.head ? "background:var(--bg-xfafbfc);font-weight:700;font-size:11px;color:var(--fg-x53565a)" : "font-size:11.5px;cursor:" + (r.dis ? "default" : "pointer") + ";" + (r.dis ? "opacity:.5" : "")); r.box = "width:16px;height:16px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px solid " + (r.on ? "var(--bd-xb99751)" : "var(--bd-xcbd5e1)") + ";background:" + (r.on ? "var(--bg-xb99751)" : "var(--bg-xffffff)") + ";color:var(--fg-xffffff)"; });
-      }
-      const stale = mode === "list" ? list.filter((id) => allIds[D.k].indexOf(id) < 0).length : 0;
-      const badge = mode === "ALL" ? D.all : mode === "list" ? list.length + " من " + allIds[D.k].length : "غير محسوم";
-      return { k: D.k, t: D.t, sub: D.sub, segs: [seg("ALL", D.all), seg("list", D.some), seg("unknown", "غير محسوم")], badge: badge,
-        badgeStyle: "font-size:10px;font-weight:700;border-radius:9999px;padding:2px 10px;white-space:nowrap;" + (mode === "unknown" ? "color:var(--fg-xb45309);background:var(--bg-a1808390p07);border:1px solid var(--bd-a1808390p25)" : "color:var(--fg-x0e7490);background:var(--bg-a141161440p07);border:1px solid var(--bd-a141161440p35)"),
-        src: this.scSrcTxt(c), dirty: !!(dr && dr[D.k]), listOn: mode === "list", rows: rows, rowsNone: mode === "list" && !rows.length,
-        staleOn: stale > 0, staleTxt: stale ? KIVO.BassamCount(stale, "هوية") + " في السقف لم تعد في الخطة (حُذفت أو تغيّرت) — تبقى حتى تُزيلها" : "",
-        unknownOn: mode === "unknown" };
-    });
-    const dirty = !!(dr && Object.keys(dr).length);
-    return Object.assign(base, {
-      scReadPending: false,
-      scNoPlan: !plan.length, scDims: dims, scDirty: dirty, scDirtyTxt: dirty ? "● تغييرات غير محفوظة في سقف النطاق" : "✓ محفوظ ومطابق لما يطبّقه الخادم",
-      scSaveStyle: "height:34px;border:0;border-radius:10px;padding:0 18px;font-size:12px;font-weight:700;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;" + (dirty ? "cursor:pointer;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751))" : "cursor:default;opacity:.4;background:var(--bg-x94a3b8)"),
-      scSave: () => dirty && this.scSave(d, dr), scUndo: () => this.setState({ scDraft: null }),
-      ...this.scEmpVals(d, rec, plan, true) });
-  }
-  /* مديرُ الإدارة (الإعدادات ← قوالب الصلاحيات): نطاقُ موظفيه داخل سقف إدارته — حاملُ perm.assign يعدّل، وغيرُه يرى؛ والسقفُ نفسُه يُعرض ولا يُعدَّل هنا */
-  scMgrVals() {
-    if (!this.t24On()) return { scMgrOn: !1 };
-    const P = KIVO.BassamPerm, R0 = KIVO.BassamDepts, d = (R0 && R0.active ? R0.active() : "") || "";
-    if (!d) return { scMgrOn: !1 };
-    const u = (KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user()) || {};
-    const held = P && P.key ? P.key("perm.assign", d) : null, mgr = u.role === "dept" || (u.role === "staff" && !!u.mgr) || u.role === "gm" || u.role === "super";
-    const canEdit = mgr && held === true;
-    const plan = this.scPlan(d), rec = this.scRec(d), V = this.scEmpVals(d, rec, plan, canEdit);
-    if (this.state.scFor !== d && this.state.scEmpDraft) this.setState({ scFor: d, scEmpDraft: null });
-    return Object.assign(V, { scMgrOn: !0, scMgrRo: !canEdit, scMgrRoTxt: canEdit ? "" : "عرضٌ فقط — تعديلُ نطاق الموظفين لمن يحمل صلاحية «منح الصلاحيات» في هذه الإدارة" });
-  }
-  scSave(d, draft, empDraft) {
-    const rec = this.scRec(d), u = (KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user()) || {}, now = Date.now();
-    const out = JSON.parse(JSON.stringify(rec)); out.v = out.v || 1;
-    if (draft) {
-      out.ceiling = out.ceiling && typeof out.ceiling === "object" ? out.ceiling : {};
-      Object.keys(draft).forEach((k) => {
-        const c = draft[k];
-        if (c.mode === "unknown") out.ceiling[k] = { mode: "unknown", src: "manual", by: u.id || "", byName: u.name || "", at: now };
-        else out.ceiling[k] = Object.assign({ mode: c.mode }, c.mode === "list" ? { list: (c.list || []).map(String) } : {}, { src: "manual", by: u.id || "", byName: u.name || "", at: now });
-      });
-    }
-    if (empDraft) {
-      out.emp = out.emp && typeof out.emp === "object" ? out.emp : {};
-      Object.keys(empDraft).forEach((ek) => { out.emp[ek] = Object.assign({}, out.emp[ek] || {}, empDraft[ek]); });
-    }
-    try { localStorage.setItem("bsdept:" + d + ":bassam_scope_v1", JSON.stringify(out)); } catch (e) { return void this.bsToast("تعذّر حفظ النطاق", "err"); }
-    this.setState({ scDraft: draft ? null : this.state.scDraft, scEmpDraft: empDraft ? null : this.state.scEmpDraft });
-    this.bsToast("✓ حُفظ النطاق — والخادمُ يتحقّق منه قبل اعتماده", "ok");
-  }
-  /* نطاقُ موظفي الإدارة: لكل حساب موظف (له ekey) — الموقع · العنصر (يرث السقف · محدد · غير محسوم) · الوردية (الجدول الشهري · لا ينطبق · غير محسوم) */
-  scEmpVals(d, rec, plan, canEdit) {
-    const st = this.state, U = (KIVO.BassamAuth && KIVO.BassamAuth.users && KIVO.BassamAuth.users()) || [];
-    const me = (KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user()) || {};
-    const staff = U.filter((u) => u && u.role === "staff" && !u.mgr && u.deptId === d && u.ekey && !u.dis);
-    const cur = rec.emp && typeof rec.emp === "object" ? rec.emp : {}, dr = st.scFor === d && st.scEmpDraft ? st.scEmpDraft : {};
-    const ceil = rec.ceiling && typeof rec.ceiling === "object" ? rec.ceiling : {};
-    const pool = (dim) => {
-      const c = ceil[dim], m = this.scModeOf(c);
-      const all = dim === "Site" ? plan.filter((f) => f.id).map((f) => ({ id: f.id, name: f.name })) : [].concat(...plan.map((f) => f.els.filter((x) => x.id).map((x) => ({ id: x.id, name: f.name + " ← " + x.name }))));
-      return m === "ALL" ? all : m === "list" ? all.filter((x) => (c.list || []).map(String).indexOf(x.id) >= 0) : [];
-    };
-    const setE = (ek, dim, v) => this.setState((pr) => { const D = Object.assign({}, (pr.scFor === d && pr.scEmpDraft) || {}); D[ek] = Object.assign({}, D[ek] || {}, { [dim]: v }); return { scFor: d, scEmpDraft: D }; });
-    const MODES = { "Site": [["inherit", "يرث سقف الإدارة"], ["list", "مواقع محددة"], ["unknown", "غير محسوم"]],
-                    "Zone/Element": [["inherit", "يرث سقف الإدارة"], ["list", "عناصر محددة"], ["unknown", "غير محسوم"]],
-                    "Shift": [["staffing-bound", "حسب الجدول الشهري"], ["n/a", "لا ينطبق"], ["unknown", "غير محسوم"]] };
-    const rows = staff.map((u) => {
-      const ek = String(u.ekey), self = ek === String(me.ekey || ""), ed = canEdit && !self;
-      const val = (dim) => (dr[ek] && dr[ek][dim]) || (cur[ek] && cur[ek][dim]) || { mode: "unknown" };
-      const open = !!(st.scEmpOpen || {})[ek];
-      const cells = ["Site", "Zone/Element", "Shift"].map((dim) => {
-        const v = val(dim), m = MODES[dim].some((x) => x[0] === v.mode) ? v.mode : (v.mode === "single" ? "list" : "unknown");
-        const L = v.mode === "list" ? (v.list || []).map(String) : v.mode === "single" && v.value != null ? [String(v.value)] : [];
-        return { dim: dim, dimName: { "Site": "الموقع", "Zone/Element": "العنصر", "Shift": "الوردية" }[dim], opts: MODES[dim].map((x) => ({ v: x[0], t: x[1], sel: x[0] === m })), mode: m, n: L.length,
-          txt: m === "list" ? KIVO.BassamCount(L.length, dim === "Site" ? "موقع" : "عنصر") : (MODES[dim].find((x) => x[0] === m) || [0, ""])[1],
-          onPick: (e) => { const nv = e && e.target ? e.target.value : e; if (!ed) return; setE(ek, dim, nv === "list" ? { mode: "list", list: L } : { mode: nv }); if (nv === "list") this.setState((pr) => ({ scEmpOpen: Object.assign({}, pr.scEmpOpen || {}, { [ek]: true }) })); },
-          picks: m === "list" && open && dim !== "Shift" ? pool(dim).map((x) => ({ name: x.name, on: L.indexOf(x.id) >= 0, toggle: () => { if (!ed) return; const N = L.slice(), i = N.indexOf(x.id); i >= 0 ? N.splice(i, 1) : N.push(x.id); setE(ek, dim, { mode: "list", list: N }); },
-            style: "display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:3px 9px;font-size:10.5px;font-weight:600;cursor:" + (ed ? "pointer" : "default") + ";border:1px solid " + (L.indexOf(x.id) >= 0 ? "var(--bd-a185151810p55)" : "var(--bd-xe1e1e1)") + ";background:" + (L.indexOf(x.id) >= 0 ? "var(--bg-a185151810p1)" : "var(--bg-xffffff)") })) : [],
-          poolNone: m === "list" && open && dim !== "Shift" && !pool(dim).length };
-      });
-      cells.forEach((c) => { c.picksOn = c.picks.length > 0; });
-      return { ek: ek, name: u.name || ek, self: self, ed: ed, ro: !ed, cells: cells, open: open, hasList: cells.some((c) => c.mode === "list" && c.dim !== "Shift"),
-        toggleOpen: () => this.setState((pr) => ({ scEmpOpen: Object.assign({}, pr.scEmpOpen || {}, { [ek]: !open }) })),
-        selfTip: self ? "نطاقُك يحدّده من فوقك — لا تعدّله لنفسك" : "" };
-    });
-    const dirty = Object.keys(dr).length > 0;
-    return { scEmpRows: rows, scEmpHas: rows.length > 0, scEmpNone: rows.length === 0, scEmpDirty: dirty, scEmpEdit: !!canEdit,
-      scEmpSaveStyle: "height:32px;border:0;border-radius:9px;padding:0 16px;font-size:11.5px;font-weight:700;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;" + (dirty ? "cursor:pointer;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751))" : "cursor:default;opacity:.4;background:var(--bg-x94a3b8)"),
-      scEmpSave: () => dirty && this.scSave(d, null, dr), scEmpUndo: () => this.setState({ scEmpDraft: null }),
-      scEmpCeilTxt: ["Site", "Zone/Element"].map((k) => (k === "Site" ? "المواقع: " : "العناصر: ") + (this.scModeOf(ceil[k]) === "ALL" ? "كل الخطة" : this.scModeOf(ceil[k]) === "list" ? KIVO.BassamCount((ceil[k].list || []).length, "هوية") : "غير محسوم")).join(" · ") };
   }
   /* وضعُ الإنفاذ (الخادمُ يحمل __BS_AUTHZ): المنحُ على مستوى المفتاح — وإلا تبقى الشجرةُ القديمة (الأفعالُ الستة) كما هي */
   t24On() {
@@ -7569,7 +7401,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           dTpTabLbl: r("ptpls" === h),
           ...("dept" === i && "shifts" === h ? this.sfVals() : {}),
           ...("dept" === i && "ptpls" === h ? this.tpVals() : {}),
-          ...("dept" === i && "ptpls" === h ? this.scMgrVals() : {}),   /* KIVO_262: نطاقُ موظفي الإدارة */
           deptIntro:
             "من هنا تأخذ نسخة احتياطية من بيانات هذه الإدارة وتستعيدها. النسخة الشاملة لكل الإدارات ومسح بيانات أي إدارة في صفحة «مدير النظام».",
           dbkExport: () => {
@@ -7642,7 +7473,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   : "لا توجد إدارة — أضف إدارة من الهيكل";
               return { ...tree, deptDetailReady: false, deptDetailEmpty: true, deptDetailMessage: message, _sel: "" };
             }
-            const l = "cap" === e.sysTab ? "cap" : "scope" === e.sysTab ? "scope" : "emps",   /* KIVO_262: تبويبُ سقف النطاق */
+            const l = "cap" === e.sysTab ? "cap" : "emps",
               d =
                 e.capDraft && e.sysSel === o
                   ? e.capDraft
@@ -8059,8 +7890,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               tabCapStyle: M("cap" === l),
               onTabEmps: "emps" === l,
               onTabCap: "cap" === l,
-              tabScopeStyle: M("scope" === l),
-              ...this.scopeVals(o, n, l),   /* KIVO_262 · سقفُ النطاق */
               tabEmpsShow: !0,
               tabEmpsLbl: n ? "حسابات " + this._gmKind(o) : t.isSection && t.isSection(o) ? "حسابات القسم" : "حسابات الإدارة",
               dhNever: !1,

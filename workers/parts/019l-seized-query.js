@@ -3,42 +3,9 @@
 function szQueryScope(ctx, alias) {
   alias = alias || "r";
   if (!/^[a-z][a-z0-9_]*$/i.test(alias)) throw szError("seized-query");
+  /* RISHAD-266: قيدُ الوردية من سقف النطاق القديم أُلغي — الإدارةُ وحدها تحدّ الصفوف هنا. */
   var args = [ctx.d],
     where = "r.department_id=?1";
-  if (ctx.A.enf && ctx.A.u.role !== "super") {
-    var V = enfViewCtx(ctx.A, ctx.d, SZ_RES[0], ctx.refs);
-    if (ENF_PROJ[SZ_RES[0]].on(V)) {
-      var es = enfEmpScopeOf(V.E, ctx.d, V.ekey, "Shift"),
-        allowed = [],
-        monthly = [];
-      if (es && es.mode === "list")
-        (es.list || []).forEach(function (s) {
-          if (V.shiftOk(s, "")) allowed.push(String(s));
-        });
-      else if (es && es.mode === "staffing-bound")
-        Object.keys(ctx.refs.staffing[ctx.d] || {}).forEach(function (ym) {
-          var p = ym.split("-"),
-            row = (ctx.refs.staffing[ctx.d][ym] || {})[V.ekey],
-            shift = row && row.shift;
-          if (
-            p.length === 2 &&
-            Number(p[0]) + "-" + Number(p[1]) === ym &&
-            shift &&
-            V.shiftOk(shift, ym)
-          )
-            monthly.push({
-              y: Number(p[0]),
-              m: Number(p[1]),
-              shift: String(shift),
-            });
-        });
-      if (!(es && es.mode === "n/a")) {
-        args.push(JSON.stringify(allowed), JSON.stringify(monthly));
-        where +=
-          " AND(r.shift IS NULL OR r.shift='' OR r.hijri_year IS NULL OR r.hijri_month IS NULL OR r.shift IN(SELECT value FROM json_each(?2))OR EXISTS(SELECT 1 FROM json_each(?3)a WHERE r.hijri_year=json_extract(a.value,'$.y')AND r.hijri_month=json_extract(a.value,'$.m')AND r.shift=json_extract(a.value,'$.shift')))";
-      }
-    }
-  }
   return { args: args, sql: where.replace(/\br\./g, alias + ".") };
 }
 async function szReadBatch(ctx, statements) {

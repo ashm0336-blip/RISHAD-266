@@ -99,13 +99,13 @@ function roundsOf(R) { return { '1447-3-5': { d: [floor(R, 'S1'), floor(R, 'S2')
 /* F24: ثابتُ الدمج على طابق (cf: نظيرُه في الخادم أو null): كلُّ حقلٍ محجوبٍ في العنصر الناتج قيمتُه من نظيره بالـuid نفسِه، أو غائبٌ إن كان جديداً ·
    والعمودُ المطفأ كلُّه من الخادم (إن وُجد الطابق) */
 const COLS = ['zones', 'gates', 'marks', 'paths'];
-function mergeInv(v, mf, cf, nf, site, rounds, m) {
+function mergeInv(v, mf, cf, nf, rounds, m) {
   for (const col of COLS) {
     if (!v.lens[col]) { if (cf) same(mf[col], cf[col], m + ' ' + col + ' (مطفأ)'); continue; }
     (mf[col] || []).forEach((e) => {
       if (!e || e.uid == null) return;
       const cur = cf ? (cf[col] || []).find((x) => x && x.uid === e.uid) : null, src = (nf[col] || []).find((x) => x && x.uid === e.uid);
-      for (const f of W.enfElemMask(v, col, cur || src, site, rounds)) {
+      for (const f of W.enfElemMask(v, col, cur || src, rounds)) {
         if (cur) same(e[f], cur[f], m + ' ' + col + '.' + f + ' من الخادم'); else assert.ok(!(f in e), m + ' ' + col + '.' + f + ' لا يُكتب في الجديد');
       }
     });
@@ -117,16 +117,17 @@ function V(mask, rs, R) {
   const L = {}; ['zones', 'gates', 'marks', 'paths', 'dist', 'dens'].forEach((k, i) => { L[k] = !!(mask & (1 << i)); });
   const outSite = R() < 0.5 ? 'f:S2' : 'f:S1', outZone = 'u' + 'z' + Math.floor(R() * 3);
   return { lens: L, restrict: { Site: !!(rs & 1), 'Zone/Element': !!(rs & 2), Assigned: !!(rs & 4), Shift: false }, ekey: 'e1', ceil: false,
-           siteOk: (s) => s !== outSite, zoneOk: (id) => id !== outZone };
+           siteOk: (s) => !(rs & 1) || s !== outSite, zoneOk: (id) => !(rs & 2) || id !== outZone };   /* = enfViewCtx القديم: بلا القيد ⇒ true */
 }
-test('③ التفاضل: الإسقاطُ والدمجُ من الإضافات = نسختُهما قبلها (64 تركيبةَ عدسات × 8 قيودِ نطاق × بياناتٍ عشوائية) — JSON حرفاً', async () => {
+test('③ التفاضل: الإسقاطُ والدمجُ من الإضافات = نسختُهما قبلها (64 تركيبةَ عدسات × قيدَي Assigned (RISHAD-266) × بياناتٍ عشوائية) — JSON حرفاً', async () => {
   assert.equal(wsrc.split(cur061).length - 1, 1, 'جزءُ 061 الحالي في العامل مرّةً واحدة');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_plug_')), basePath = path.join(dir, 'w_base.js');
   fs.writeFileSync(basePath, wsrc.replace(cur061, () => old061));
   const B = await internals(['enfFloorProj', 'enfFloorMerge', 'enfElemMask', 'ENF_PROJ'], basePath);
   fs.rmSync(dir, { recursive: true, force: true });
   let cases = 0, diffOn = 0;
-  for (let mask = 0; mask < 64; mask++) for (let rs = 0; rs < 8; rs++) {
+  /* RISHAD-266: قيدا Site · Zone/Element تقاعدا مع سقف النطاق القديم (لا يُضبطان في enfViewCtx ولا يُمرَّر الموقعُ إلى الإسقاط) — التفاضلُ على الباقي: العدساتُ × Assigned */
+  for (let mask = 0; mask < 64; mask++) for (const rs of [0, 4]) {
     const R = rng(mask * 131 + rs * 7 + 1), v = V(mask, rs, R);
     for (const res of ['bassam_plan_v1', 'bassam_rounds_v1']) {
       const mk = res === 'bassam_plan_v1' ? planOf : roundsOf, c = mk(R), n = mk(R);
@@ -137,20 +138,20 @@ test('③ التفاضل: الإسقاطُ والدمجُ من الإضافات 
       if (res === 'bassam_plan_v1') { if (planDupFree(c) && planDupFree(n)) same(mg, B.ENF_PROJ[res].merge(c, n, v), res + ' merge · ' + mask + '/' + rs); }
       else if (W.ENF_PROJ[res].on(v)) for (const dk of Object.keys(n)) {
         if (!/^\d+-\d+-\d+$/.test(dk)) { same(mg[dk], n[dk], res + ' ' + dk); continue; }
-        mg[dk].d.forEach((fl, i) => { const cf = c[dk] && c[dk].d[i]; mergeInv(v, fl, cf || null, n[dk].d[i], W.ENF_ID.roundsFloor(cf || fl, i), true, res + ' merge · ' + mask + '/' + rs + ' ' + dk + '#' + i); });
+        mg[dk].d.forEach((fl, i) => { const cf = c[dk] && c[dk].d[i]; mergeInv(v, fl, cf || null, n[dk].d[i], true, res + ' merge · ' + mask + '/' + rs + ' ' + dk + '#' + i); });
       }
       cases += 3;
     }
     const f1 = floor(R, 'S1'), f2 = floor(R, 'S1');
-    for (const site of [undefined, 'f:S1', 'f:S2', '?']) for (const rounds of [false, true]) {
-      same(W.enfFloorProj(v, f1, site, rounds), B.enfFloorProj(v, f1, site, rounds), 'enfFloorProj');
-      if (rounds) mergeInv(v, W.enfFloorMerge(v, f2, f1, site, rounds), f1, f2, site, rounds, 'enfFloorMerge');
-      else if (dupFree(f1) && dupFree(f2)) same(W.enfFloorMerge(v, f2, f1, site, rounds), B.enfFloorMerge(v, f2, f1, site, rounds), 'enfFloorMerge');
-      for (const col of ['zones', 'gates', 'marks', 'paths']) for (const e of (f1[col] || []).slice(0, 2)) same(W.enfElemMask(v, col, e, site, rounds), B.enfElemMask(v, col, e, site, rounds), 'enfElemMask ' + col);
+    for (const site of [undefined]) for (const rounds of [false, true]) {   /* RISHAD-266: بلا موقع (الحاليُّ بلا وسيطه) */
+      same(W.enfFloorProj(v, f1, rounds), B.enfFloorProj(v, f1, site, rounds), 'enfFloorProj');
+      if (rounds) mergeInv(v, W.enfFloorMerge(v, f2, f1, rounds), f1, f2, rounds, 'enfFloorMerge');
+      else if (dupFree(f1) && dupFree(f2)) same(W.enfFloorMerge(v, f2, f1, rounds), B.enfFloorMerge(v, f2, f1, site, rounds), 'enfFloorMerge');
+      for (const col of ['zones', 'gates', 'marks', 'paths']) for (const e of (f1[col] || []).slice(0, 2)) same(W.enfElemMask(v, col, e, rounds), B.enfElemMask(v, col, e, site, rounds), 'enfElemMask ' + col);
       cases += 2;
     }
   }
-  assert.ok(cases > 5000 && diffOn > 900, 'حالات ' + cases + ' (الإسقاطُ فاعلٌ في ' + diffOn + ')');
+  assert.ok(cases > 1200 && diffOn > 240, 'حالات ' + cases + ' (الإسقاطُ فاعلٌ في ' + diffOn + ')');
 });
 
 test('④ إعادةُ التصنيف لا تمسّ العدساتِ المضمَّنة · ربطُ المفتاح بعدسته = المرجع', () => {
