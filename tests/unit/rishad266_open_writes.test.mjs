@@ -66,6 +66,8 @@ test('(د) الطلبُ المرفوض لا يغيّر بياناتِ الأعم
     ['uid مختلف ⇒ 409', await W.C.api('/api/operations/read?keys=' + K + '&uid=someone_else', { cookie: dm.ck }), 409],
     ['مفتاحٌ غير صالح ⇒ 400', await W.C.api('/api/operations/read?keys=' + K + ',bsdept:x:not_a_resource', { cookie: dm.ck }), 400],
     ['طريقةٌ غير GET ⇒ 405', await W.C.api('/api/operations/read?keys=' + K, { method: 'POST', cookie: dm.ck, body: {} }), 405],
+    ['«مهامي» بـ uid مختلف ⇒ 409', await W.C.api('/api/me/tasks?uid=someone_else', { cookie: me.ck }), 409],
+    ['«مهامي» بغير GET ⇒ 405', await W.C.api('/api/me/tasks', { method: 'POST', cookie: me.ck, body: {} }), 405],
   ];
   for (const [why, r, st] of rejected) assert.equal(r.status, st, why + ': ' + JSON.stringify(r.j).slice(0, 200));
   const emp = await W.C.api('/api/operations/read?keys=' + K, { cookie: me.ck });
