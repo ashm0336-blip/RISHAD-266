@@ -28,6 +28,10 @@ async function session(browser, role) {
   const api = (p, o) => page.evaluate(async ([p, o]) => { const r = await fetch(p, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, o || {})); let j = null; try { j = await r.json(); } catch (e) {} return { status: r.status, j }; }, [p, o || null]);
   const login = (un, pw) => api('/api/login', { method: 'POST', body: JSON.stringify({ u: un, p: pw }) });
   const l = await login(CRED[role].un, CRED[role].pw);
+  /* the page itself signs in through its form (an API cookie alone leaves the shell on the sign-in screen) */
+  await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForTimeout(2000);
+  if (await page.$('input[type=password]')) { await page.fill('input:not([type=password])', CRED[role].un); await page.fill('input[type=password]', CRED[role].pw);
+    await Promise.all([page.waitForTimeout(6000), page.click('button:has-text("تسجيل الدخول")')]); }
   return { ctx, page, api, login, errs, writes, ok: l.j && l.j.ok === 1, me: l.j };
 }
 async function getKey(s, k) { const g = await s.api('/api/get?keys=' + encodeURIComponent(k)); return { g, it: ((g.j || {}).keys || {})[k] || null }; }
@@ -39,8 +43,9 @@ async function save(s, k, v, extra) {
 }
 async function uiOpen(s, role) {
   s.writes.length = 0; s.errs.length = 0;
-  await s.page.goto(BASE + '/', { waitUntil: 'networkidle', timeout: 90000 }); await s.page.waitForTimeout(4000);
+  await s.page.reload({ waitUntil: 'domcontentloaded', timeout: 90000 }); await s.page.waitForTimeout(7000);
   await s.page.screenshot({ path: 'live_' + role + '.png' });
+  check(role + ':ui-signed-in', !(await s.page.$('input[type=password]')), 'the page shows the application, not the sign-in form');
   check(role + ':ui-open-no-error', s.errs.length === 0, s.errs.slice(0, 3));
   check(role + ':ui-open-no-write', s.writes.filter((w) => !/\/api\/(login|changes|ping)/.test(w)).length === 0, s.writes.slice(0, 5));
 }
