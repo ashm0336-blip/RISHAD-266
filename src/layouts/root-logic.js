@@ -1002,7 +1002,8 @@ class Component extends DCLogic {
             if (!r || !r.ok) { this.setState({ toast: "لم يُضف القسم: " + ((r && r.err) || "تعذّر الإنشاء") }); return; }
             this.setState({ toast: "جارٍ حفظ القسم «" + nm + "»…" });
             const S = KIVO.__BS_SRV, go = () => { try { location.reload(); } catch (e) {} };
-            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => {}) : Promise.resolve()).then(go, go);
+            /* المراجعة المستقلة: لا إعادةَ تحميلٍ إن لم يُحفظ — تبقى رسالةُ الرفض أو الانتظار ظاهرة */
+            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => false) : Promise.resolve(true)).then((ok) => { if (ok === false) this.setState({ toast: "لم يُحفظ القسم «" + nm + "» بعد — راجع رسالة الرفض إن ظهرت، أو تحقّق من الاتصال ثم أعد المحاولة" }); else go(); }, () => this.setState({ toast: "تعذّر حفظ القسم «" + nm + "» — تحقّق من الاتصال ثم أعد المحاولة" }));
           },
           authName: (KIVO.BassamAuth && KIVO.BassamAuth.user() && KIVO.BassamAuth.user().name) || "",
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
