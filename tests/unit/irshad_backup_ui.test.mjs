@@ -35,13 +35,13 @@ const businessDomain = (kind, d) => ({ version: 1, scope: d === '' ? { kind: 'gl
 const json = body => ({ ok: true, status: 200, json: async () => body });
 const settle = async () => { for (let i = 0; i < 8; i++) await new Promise(resolve => setImmediate(resolve)); };
 
-function browser(kind, failure = '', { mgr = true, backupGrant = null } = {}) {
+function browser(kind, failure = '', { mgr = true, backupGrant = null, role = null } = {}) {
   const calls = [], files = [], writes = [], messages = [];
   let active = D1, dirty = failure === 'dirty';
   const keys = ['bsdept:' + D1 + ':bassam_options_v1', 'bsdept:' + D1 + ':bassam_irshad_v1'];
   const memory = { [keys[0]]: '{"TEST_ONLY":1}', [keys[1]]: '{"reports":[]}', bassam_depts_v1: JSON.stringify([{ id: D1 }, { id: D2 }]),
     bassam_auth_users_v1: '[]', bassam_perms_v1: '{}', bassam_gdepts_v1: '[]', bassam_platform_v1: '{}', bassam_active_dept_v1: D1 };
-  const KIVO = { BassamAuth: { user: () => ({ id: 'TEST_ONLY_owner', role: kind === 'full' ? 'super' : 'staff', ...(kind === 'full' || !mgr ? {} : { mgr: 1 }) }), isSuper: () => kind === 'full' },
+  const KIVO = { BassamAuth: { user: () => ({ id: 'TEST_ONLY_owner', role: role || (kind === 'full' ? 'super' : 'staff'), ...(kind === 'full' || !mgr ? {} : { mgr: 1 }) }), isSuper: () => kind === 'full' },
     ...(backupGrant ? { BassamPerm: { canSub: (page, sub, act) => page === 'admin' && sub === 'backup' && backupGrant.includes(act) } } : {}),
     BassamDepts: { active: () => active, activeName: () => 'TEST_ONLY Department', allScopedKeys: () => keys, keysOf: () => keys,
       list: () => [{ id: D1 }, { id: D2 }], raw: { getItem: key => memory[key] ?? null, setItem: (key, value) => writes.push([key, value]) } },
@@ -138,4 +138,19 @@ test('department export refuses a plain staff user without the backup grant with
     const B = browser('dept', '', { mgr: false, backupGrant: [grant] }); B.page.exportBackup(); await settle();
     assert.equal(B.files.length, 1, grant + ': ' + B.messages.join(';')); assert.equal(B.writes.length, 1);
   }
+});
+
+test('RISHAD-266 (f): the retired dept role is not offered the department export — even with the inherited backup sheet; the department manager still exports', async () => {
+  /* owner decision (f) 2026-11-03 — root-logic.js bkExportRun canBk no longer lists role 'dept' and refuses it before any read; the server
+     refuses it too (019u bkExportOk · privacy_backup RISHAD-266 (f)). A 'dept' account inherits the whole ceiling sheet (331 capAllPerms),
+     so the grant is modelled as present: the refusal must come from the role itself. */
+  const refused = 'لم تُصدَّر النسخة: نسخةُ الإدارة تحمل كل بياناتها، فتصديرها لمدير الإدارة أو لمن مُنح «إنشاء نسخة احتياطية» — اطلب الصلاحية من مدير الإدارة';
+  for (const backupGrant of [null, ['view', 'add', 'edit']]) for (const mgr of [false, true]) {
+    const B = browser('dept', '', { role: 'dept', mgr, backupGrant }); B.page.exportBackup(); await settle();
+    assert.deepEqual(B.messages, [refused], 'dept role ' + JSON.stringify({ backupGrant, mgr }));
+    assert.equal(B.files.length, 0); assert.deepEqual(B.writes, []); assert.deepEqual(B.calls, [], 'No server read is attempted');
+  }
+  /* the normal department manager (staff + mgr) exports exactly as before */
+  const M = browser('dept', '', { mgr: true }); M.page.exportBackup(); await settle();
+  assert.equal(M.files.length, 1, M.messages.join(';')); assert.equal(M.writes.length, 1);
 });

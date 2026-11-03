@@ -33,6 +33,9 @@ function awardCleanup(A, k, newVal, curVal, ctx) {
   for (q in ov) if (q !== 'recs') a2[q] = ov[q];
   for (q in nv) if (q !== 'recs') b2[q] = nv[q];
   if (!deq(a2, b2)) return false;
+  /* RISHAD-266 · قرار المالك (هـ) 2026-11-03: لا تفريغَ لسجلّات التكريم في إدارةٍ سقفُها بلا صفحة الجائزة — مبدأُ الإنفاذ نفسُه
+     (السقفُ أولاً: resOnCeiling · 050). كان مديرُ إدارةٍ خارجَ سقفها يحذف سجلَّها الوحيد عبر /api/award/act بـ admin/import:del (200). */
+  if (!resOnCeiling(A, parseKey(k).dept, resOf(k))) return false;
   return !!wipeAllowed(A, parseKey(k).dept, ctx);
 }
 /* عهد الموظفين: تفريغ moves وحدها (كما يفعل المساران) دون مساسٍ بالعهد نفسها */

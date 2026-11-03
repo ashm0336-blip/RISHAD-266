@@ -84,8 +84,10 @@ for (const mode of ['legacy', 'enforce']) test('QA-264-D1 [' + mode + '] صفح�
     const g = await C.api('/api/' + res + '?dept=' + dept + '&view=records', { cookie: S.su }); assert.equal(g.status, 200);
     return C.api('/api/' + res + '/act', { method: 'POST', cookie: S[who], body: Object.assign({ dept, requestId: 'TEST_ONLY_k264rc_' + mode + '_' + (++rq), base: g.j.base }, extra) });
   };
-  const SZ = id => ({ op: 'delete', id }), AW = id => ({ op: 'edit', id, data: { name: 'TEST_ONLY_K264' } });
-  for (const [who, res, cmd] of [['dm2', 'seized', SZ('tstsz2')], ['gm', 'seized', SZ('tstsz2')], ['dm2', 'award', AW('tstaw9')], ['gm', 'award', AW('tstaw9')]]) {
+  const SZ = id => ({ op: 'delete', id }), AW = id => ({ op: 'edit', id, data: { name: 'TEST_ONLY_K264' } }), AWD = id => ({ op: 'delete', id });
+  /* RISHAD-266 · قرار المالك (هـ) 2026-11-03: حذفُ التكريم في الوضع القديم يتبع مبدأ الإنفاذ نفسَه — سقفُ الإدارة وصلاحيةُ الحذف معاً.
+     tstaw9 هو السجلُّ الوحيد في tst_d2 (سقفُها بلا «الجائزة») فحذفُه يُصنَّف تفريغاً — وكان القديم يمرّره (200) عبر تنظيف awardCleanup بـ admin/import:del. */
+  for (const [who, res, cmd] of [['dm2', 'seized', SZ('tstsz2')], ['gm', 'seized', SZ('tstsz2')], ['dm2', 'award', AW('tstaw9')], ['gm', 'award', AW('tstaw9')], ['dm2', 'award', AWD('tstaw9')], ['gm', 'award', AWD('tstaw9')]]) {
     const before = typedRows();
     const s = await act(who, res, 'tst_d2', cmd);
     assert.equal(s.status, 403, mode + ' ' + who + ': الكتابةُ مرفوضة ' + res + ' ' + JSON.stringify(s.j));

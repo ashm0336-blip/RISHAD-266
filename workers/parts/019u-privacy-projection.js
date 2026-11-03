@@ -499,6 +499,10 @@ function privIn(A, k, nextRaw, curRaw) {
 function bkExportOk(A, d) {
   if (!A || !A.u) return false;
   if (A.u.role === 'super') return true;
+  /* RISHAD-266 · owner decision (f) 2026-11-03: the retired department account (role 'dept') keeps no backup/export allowance —
+     it used to pass through isMgrOf and the full sheet it inherits from the ceiling (022 myPermsOf). The normal department
+     manager (staff with mgr) and super are unchanged. */
+  if (A.u.role === 'dept') return false;
   if (!d || !deptInScope(A, d)) return false;
   return privMemo(A, '__bkX', d, function () {
     if (!privHeld(A, d, ['backup.view'], ['admin/backup:view'])) return false;

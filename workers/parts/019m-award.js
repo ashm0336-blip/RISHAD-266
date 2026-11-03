@@ -301,7 +301,11 @@ async function awPermission(ctx,index,before,after,reason){
   var decision=X&&X.batchDeny?enfNo(X.batchDeny.why,X.batchDeny):canWrite(ctx.A,k,JSON.stringify(after),before===undefined?null:JSON.stringify(before),c);
   if(!decision.ok){var e=awError('denied',403);e.awDecision=decision;throw e;}
   var checks;if(ctx.A.enf)checks=(decision.keys||[]).map(function(key){return {kind:'enforce',key:key};});
-  else{var acts=Object.keys(classifyMutation(resOf(k),before===undefined?null:JSON.stringify(before),JSON.stringify(after),entOf(k),opsOf(k)));if(!acts.length)acts=['edit'];checks=acts.map(function(act){return {kind:'legacy',key:act};});}
+  else{var acts=Object.keys(classifyMutation(resOf(k),before===undefined?null:JSON.stringify(before),JSON.stringify(after),entOf(k),opsOf(k)));if(!acts.length)acts=['edit'];checks=acts.map(function(act){return {kind:'legacy',key:act};});
+    // RISHAD-266 owner decision (e) 2026-11-03: legacy award writes need the same proof the receipt replay already demands
+    // (awReplay) and enforce applies: the award page on the department ceiling AND every classified act held. No cleanup
+    // exception (038 awardCleanup / admin/import:del) widens a direct /api/award/act command in legacy mode.
+    if(!resOnCeiling(ctx.A,ctx.d,resOf(k))||checks.some(function(c){return !authorize(ctx.A,k,c.key).ok;})){var le=awError('denied',403);le.awDecision={ok:false,why:'perms'};throw le;}}
   return {decision:decision,checks:checks};
 }
 async function awReceiptRows(env,A,b){var result=await env.DB.batch([

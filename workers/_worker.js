@@ -16986,7 +16986,11 @@ async function awPermission(ctx,index,before,after,reason){
   var decision=X&&X.batchDeny?enfNo(X.batchDeny.why,X.batchDeny):canWrite(ctx.A,k,JSON.stringify(after),before===undefined?null:JSON.stringify(before),c);
   if(!decision.ok){var e=awError('denied',403);e.awDecision=decision;throw e;}
   var checks;if(ctx.A.enf)checks=(decision.keys||[]).map(function(key){return {kind:'enforce',key:key};});
-  else{var acts=Object.keys(classifyMutation(resOf(k),before===undefined?null:JSON.stringify(before),JSON.stringify(after),entOf(k),opsOf(k)));if(!acts.length)acts=['edit'];checks=acts.map(function(act){return {kind:'legacy',key:act};});}
+  else{var acts=Object.keys(classifyMutation(resOf(k),before===undefined?null:JSON.stringify(before),JSON.stringify(after),entOf(k),opsOf(k)));if(!acts.length)acts=['edit'];checks=acts.map(function(act){return {kind:'legacy',key:act};});
+    // RISHAD-266 owner decision (e) 2026-11-03: legacy award writes need the same proof the receipt replay already demands
+    // (awReplay) and enforce applies: the award page on the department ceiling AND every classified act held. No cleanup
+    // exception (038 awardCleanup / admin/import:del) widens a direct /api/award/act command in legacy mode.
+    if(!resOnCeiling(ctx.A,ctx.d,resOf(k))||checks.some(function(c){return !authorize(ctx.A,k,c.key).ok;})){var le=awError('denied',403);le.awDecision={ok:false,why:'perms'};throw le;}}
   return {decision:decision,checks:checks};
 }
 async function awReceiptRows(env,A,b){var result=await env.DB.batch([
@@ -19362,6 +19366,10 @@ function privIn(A, k, nextRaw, curRaw) {
 function bkExportOk(A, d) {
   if (!A || !A.u) return false;
   if (A.u.role === 'super') return true;
+  /* RISHAD-266 · owner decision (f) 2026-11-03: the retired department account (role 'dept') keeps no backup/export allowance —
+     it used to pass through isMgrOf and the full sheet it inherits from the ceiling (022 myPermsOf). The normal department
+     manager (staff with mgr) and super are unchanged. */
+  if (A.u.role === 'dept') return false;
   if (!d || !deptInScope(A, d)) return false;
   return privMemo(A, '__bkX', d, function () {
     if (!privHeld(A, d, ['backup.view'], ['admin/backup:view'])) return false;
@@ -20949,6 +20957,9 @@ function awardCleanup(A, k, newVal, curVal, ctx) {
   for (q in ov) if (q !== 'recs') a2[q] = ov[q];
   for (q in nv) if (q !== 'recs') b2[q] = nv[q];
   if (!deq(a2, b2)) return false;
+  /* RISHAD-266 · قرار المالك (هـ) 2026-11-03: لا تفريغَ لسجلّات التكريم في إدارةٍ سقفُها بلا صفحة الجائزة — مبدأُ الإنفاذ نفسُه
+     (السقفُ أولاً: resOnCeiling · 050). كان مديرُ إدارةٍ خارجَ سقفها يحذف سجلَّها الوحيد عبر /api/award/act بـ admin/import:del (200). */
+  if (!resOnCeiling(A, parseKey(k).dept, resOf(k))) return false;
   return !!wipeAllowed(A, parseKey(k).dept, ctx);
 }
 /* عهد الموظفين: تفريغ moves وحدها (كما يفعل المساران) دون مساسٍ بالعهد نفسها */

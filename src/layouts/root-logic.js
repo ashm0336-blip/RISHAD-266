@@ -688,7 +688,8 @@ class Component extends DCLogic {
         const _tk = KIVO.BassamBusy ? KIVO.BassamBusy.start(_pre ? "جارٍ حفظ نسخة ما قبل الاستيراد…" : "جارٍ تجهيز نسخة الإدارة الاحتياطية…") : null;
         const D = KIVO.BassamDepts; if (!D) { if (_tk) _tk.done(); if (_cb) { try { _cb(); } catch (eD) {} } return; }
         /* IP39 (PRIVACY batch · 019u bkExportOk): الخادمُ لا يصدّر نسخةَ الإدارة لمن يملك «عرض حالة النسخ» وحده — رسالةٌ صادقة بدل «تعذّر التصدير» */
-        { const me0 = KIVO.BassamAuth?.user?.(), P0 = KIVO.BassamPerm, canBk = !!me0 && (me0.role === "super" || me0.role === "dept" || me0.role === "gm" || !!me0.mgr || !!(P0 && P0.canSub && (P0.canSub("admin", "backup", "add") || P0.canSub("admin", "backup", "edit"))));
+        /* RISHAD-266 · قرار المالك (و) 2026-11-03: دورُ «الإدارة» (role dept) المتقاعد لا يصدّر نسخةَ الإدارة — ولو ورث ورقةَ النسخ من سقفه؛ مديرُ الإدارة العادي (staff بشارة mgr) ومديرُ النظام كما كانا (الخادم: 019u bkExportOk) */
+        { const me0 = KIVO.BassamAuth?.user?.(), P0 = KIVO.BassamPerm, canBk = !!me0 && me0.role !== "dept" && (me0.role === "super" || me0.role === "gm" || !!me0.mgr || !!(P0 && P0.canSub && (P0.canSub("admin", "backup", "add") || P0.canSub("admin", "backup", "edit"))));
           if (!canBk) { if (_tk) _tk.done(); this.bkToast("لم تُصدَّر النسخة: نسخةُ الإدارة تحمل كل بياناتها، فتصديرها لمدير الإدارة أو لمن مُنح «إنشاء نسخة احتياطية» — اطلب الصلاحية من مدير الإدارة", true); return; } }
         const id = D.active(); const nm = D.activeName();
         const srv = KIVO.__BS_SRV, boot = window.__BS_BOOT || {}, user = KIVO.BassamAuth?.user?.();
