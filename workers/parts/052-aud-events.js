@@ -494,6 +494,7 @@ async function preAttach(env, request, mode) {
 async function kvGet(env, table, k) {
   var P = env.__pre;
   if (P && P.live && table === 'kv' && Object.prototype.hasOwnProperty.call(P.kv, k)) return P.kv[k];
+  if (P && P.live && P.track && table === 'kv') return (await rsScopeKV(env, [k]))[k];   /* RISHAD-266 · s1: a department-scoped reference fences what it reads (019d) */
   var r = await env.DB.prepare('SELECT v FROM ' + table + ' WHERE k = ?1 ORDER BY seq').bind(k).all();
   var rows = (r && r.results) || [];
   if (!rows.length) return null;
@@ -503,6 +504,7 @@ async function kvGet(env, table, k) {
 }
 /* KIVO_255 · AUD-037: مفاتيحُ عدّة في جولةٍ واحدة — {k: القيمة أو null}؛ حدُّ معاملات D1 (100) يُراعى بالتقطيع */
 async function kvMany(env, table, ks) {
+  var P = env.__pre; if (P && P.live && P.track && table === 'kv') return await rsScopeKV(env, ks);   /* RISHAD-266 · s1 (019d) */
   var out = {}, i, j;
   for (i = 0; i < ks.length; i++) out[ks[i]] = null;
   for (i = 0; i < ks.length; i += 90) {

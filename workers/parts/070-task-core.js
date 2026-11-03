@@ -424,7 +424,8 @@ async function tkCommandContext(env, A, body, command, actions) {
   if (!Number.isSafeInteger(body.epoch) || body.epoch < 0 ||
       ((!append || body.base !== undefined) && (!Number.isSafeInteger(body.base) || body.base < 0)))
     return tkNo(400, 'bad-body', '', { at: 'base' });
-  var reference = await rsReferenceSnapshot(env, A.u.id), actor = reference.A;
+  // RISHAD-266 · s1: the command's department (and what it reads beyond it, fenced on first read) — never every department.
+  var reference = await rsReferenceSnapshot(env, A.u.id, { departments: [String(body.dept || A.u.deptId || '')] }), actor = reference.A;
   if (!actor || !actor.u) return tkNo(401, 'session');
   ['tok', 'sessTs', '__tkSrv', '__tkSelf'].forEach(function (key) { if (A[key] !== undefined) actor[key] = A[key]; });
   env = reference.env; A = actor;

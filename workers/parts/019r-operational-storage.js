@@ -126,6 +126,12 @@ async function opResourceMany(env, keys) {
     else sql.push(key);
   });
   if (kv.length) Object.assign(result, await kvMany(env, 'kv', kv));
+  // RISHAD-266 · s1: a department-scoped reference loads what it was not given into its own capture (fenced, 019d).
+  if (sql.length && cached && env.__pre && env.__pre.live && env.__pre.track) {
+    await rsScopeOperational(env, cached, sql);
+    sql.forEach(function (key) { result[key] = cached.keys[key]; });
+    sql = [];
+  }
   if (sql.length) Object.assign(result, (await opLoadMany(env, sql, 1)).values);
   return result;
 }
@@ -205,7 +211,7 @@ async function opReadRoute(env, request, url, session) {
     if (!wanted.length || wanted.length > GET_MAX || wanted.some(function (key) { return !opInfo(key); })) throw ocError('read-keys');
     // Establish authority before loading any business rows, including rows of
     // a foreign department requested by a malicious/obsolete client.
-    var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [] }), A = reference.A,
+    var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: wanted.map(function (key) { return opInfo(key).dept; }) }), A = reference.A,
       eligible=new Set(wanted.filter(function(key){return canRead(A,key);})),refs=Array.from(eligible);
     eligible.forEach(function (key) { var d = opInfo(key).dept; ['bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_employees_v1'].forEach(function (r) { refs.push('bsdept:' + d + ':' + r); }); });
     var operational=await opCaptureReferences(reference.env,reference.inputKeys,refs);

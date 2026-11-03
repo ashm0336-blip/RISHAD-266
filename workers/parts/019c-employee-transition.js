@@ -61,7 +61,8 @@ function empActionAllowed(A, d, intent) {
 async function empTransitionSource(env) {
   var known = env.__employeeReference,
     raw = known && isObj(known.keys) ? known.keys : await kvAll(env, 'kv'),
-    capture = await opCaptureReferences(env, raw),
+    // RISHAD-266 · s1: a department-scoped reference (019e) sources every operational resource of its department(s) only.
+    capture = await opCaptureReferences(env, raw, known && known.scope ? rsScopeOperationalKeys(known.scope.departments) : undefined),
     revs = Object.assign({},known && isObj(known.revs) ? known.revs : await revsAll(env),capture.revs);
   // Validate the read context after the revision header. A changed source
   // must fail rather than pair an old employee/schedule with a newer base.

@@ -126,6 +126,15 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], refs, ownWhere, ownArgs));
   plan.imagesReused = ids.length;
 }
+function rsImageFinalValues(plan, reference) {
+  var values = Object.assign(Object.create(null), reference.inputKeys);
+  plan.kv.pend.forEach(function (pd) {
+    if (pd.act === 'del') delete values[pd.k];
+    else values[pd.k] = pd.v;
+  });
+  (plan.imgTouch || []).forEach(function(t){values[t.k]=t.v;});
+  return values;
+}
 /* Same image ownership/reference semantics as imgSync, prepared before commit.
    Bodies and R2 garbage collection are deliberately never called by this path. */
 async function rsImageMetadataPlan(env, A, plan, reference) {
@@ -136,12 +145,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     }),
     keySet = new Set(keys),
     ids = new Set(),
-    values = Object.assign(Object.create(null), reference.inputKeys);
-  plan.kv.pend.forEach(function (pd) {
-    if (pd.act === 'del') delete values[pd.k];
-    else values[pd.k] = pd.v;
-  });
-  list.forEach(function(t){values[t.k]=t.v;});
+    values = rsImageFinalValues(plan, reference);
   list.forEach(function (v) {
     Object.keys(imgIdsIn((plan.relationalImageBefore||{})[v.k] || reference.inputKeys[v.k] || ''))
       .concat(Object.keys(imgIdsIn(v.v || '')))
@@ -194,11 +198,16 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     plan.snapshots.push({ domain: 'images', table: 'imgref', rows: oldRefs }, { domain: 'images', table: 'imgown', rows: oldOwn });
   }
   var live = new Set();
-  Object.keys(values).forEach(function (k) {
-    Object.keys(imgIdsIn(values[k] || '')).forEach(function (id) {
-      live.add(id);
+  for (;;) {
+    Object.keys(values).forEach(function (k) {
+      Object.keys(imgIdsIn(values[k] || '')).forEach(function (id) {
+        live.add(id);
+      });
     });
-  });
+    // RISHAD-266 · s1: an image the scoped values no longer mention may be mentioned anywhere else — decide on the whole database (fenced).
+    if (Array.from(ids).every(function (id) { return live.has(id); }) || !(await rsReferenceWiden(reference.env, reference))) break;
+    values = rsImageFinalValues(plan, reference);
+  }
   var refs = [],
     updates = new Map(),
     now = Date.now();
@@ -311,9 +320,16 @@ function rsDepartmentOperationalDeletes(env, reference, A, body, departments) {
   });
   return {pending:pending,guards:guards,keys:keys};
 }
+/* RISHAD-266 · s1: a save whose keys all belong to departments references those departments (019d scoped
+   reference); a save of a platform-global key (accounts, permissions, departments) keeps the full reference. */
+function rsSaveScope(body) {
+  var keys = Object.keys((body && body.set) || {}).concat((body && body.del) || []).map(String);
+  if (!keys.length || !keys.every(function (k) { return parseKey(k).dept; })) return undefined;
+  return { departments: keys.map(function (k) { return parseKey(k).dept; }) };
+}
 async function rsSaveCommit(env, A, body, meta, opt) {
   opt = opt || {};
-  var reference = opt.__reference || (await rsReferenceSnapshot(env, A.u.id)),
+  var reference = opt.__reference || (await rsReferenceSnapshot(env, A.u.id, rsSaveScope(body))),
     actor = reference.A;
   ['tok', 'sessTs', '__tkSrv', '__tkSelf'].forEach(function (k) {
     if (A[k] !== undefined) actor[k] = A[k];
@@ -434,10 +450,12 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   };
   if (operationRequestId) { plan.fingerprint=operationFingerprint; plan.intent='operations'; plan.operationKeys=Array.from(new Set(operationKeys)); plan.operationResult=opt.__operationResult||{}; }
   plan.guards.push.apply(plan.guards,operationReadGuards);
-  if (referenceDependentSave || operationalSave) plan.guards.push.apply(plan.guards, reference.operational.guards);
+  var referenceMark = rsReferenceMark(reference), referenceOperational = referenceDependentSave || operationalSave;
+  if (referenceOperational) plan.guards.push.apply(plan.guards, reference.operational.guards);
   if (opt.__operationSourceGuards) plan.guards.push.apply(plan.guards,opt.__operationSourceGuards);
-  plan.guards.push.apply(plan.guards, rsWitness(env, 'kv', ['k', 'seq', 'v'], reference.inputRows));
-  plan.guards.push.apply(plan.guards, rsWitness(env, 'meta', ['k', 'v'], reference.metaRows, "k<>'rev'"));
+  plan.guards.push.apply(plan.guards, rsReferenceBase(env, reference));
+  plan.guards.push.apply(plan.guards, rsReferenceBase(env, reference, 1));
+  if (referenceMark) plan.guards.push.apply(plan.guards, reference.scope.late.slice(0, referenceMark[0]));
   await rsCompileKV(env, A, kv, plan, reference.inputRows);
   plan.guards.push.apply(plan.guards, transition.guards);
   plan.statements.push.apply(plan.statements, transition.statements);
@@ -500,6 +518,8 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     plan.fingerprint = opt.__wipeFingerprint;
   }
   await rsImageMetadataPlan(env, A, plan, reference);
+  // Rows a scoped reference read while the plan was compiled are fenced like the rest (019d).
+  plan.guards.push.apply(plan.guards, rsReferenceSince(reference, referenceMark, referenceOperational));
   var ack = await rsCommit(env, A, plan, meta);
   if (operationRequestId) return Object.assign(ack,{v:ack.rev,denied:{},conflicts:{},atomic:1});
   if (opt.__employeeRequestId) return ack;
@@ -516,7 +536,8 @@ async function rsWipeInventory(env, A, dept, kind) {
   kind = kind || 'wipe';
   if (A.u.role !== 'super') throw rsError('forbidden', 403);
   await irGuardRetired(env);
-  var reference = await rsReferenceSnapshot(env, A.u.id);
+  // RISHAD-266 · s1: the unit's own rows and every operational resource of it, plus the platform-global keys it edits.
+  var reference = await rsReferenceSnapshot(env, A.u.id, { departments: [String(dept || '')], operationalKeys: rsScopeDepartments([String(dept || '')]) ? rsScopeOperationalKeys([dept]) : undefined });
   A = reference.A;
   if (
     A.u.role !== 'super' ||
@@ -736,10 +757,22 @@ async function rsEmployeeRoute(env, request, url, ss) {
   try {
     var caller = await actorOf(env, ss.uid);
     if (!caller) throw rsError('session', 401);
-    var reference = await rsReferenceSnapshot(env, ss.uid),
+    var input = null, bytes;
+    if (request.method === 'POST') {
+      bytes = await request.arrayBuffer();
+      if (bytes.byteLength > 8 * 1024 * 1024) throw rsError('body-large', 413);
+      try {
+        input = JSON.parse(new TextDecoder().decode(bytes));
+      } catch (e) {
+        throw rsError('bad-body');
+      }
+    }
+    // RISHAD-266 · s1: the transition's department; reads beyond it (other units' employees, grants) are fenced on first read (019d).
+    var scopeDept = request.method === 'GET' ? url.searchParams.get('dept') || '' : isObj(input) && typeof input.dept === 'string' ? input.dept : '';
+    var reference = await rsReferenceSnapshot(env, ss.uid, { departments: [scopeDept] }),
       A = reference.A;
     env = reference.env;
-    env.__employeeReference = { keys: reference.inputKeys, revs: reference.inputRevs };
+    env.__employeeReference = { keys: reference.inputKeys, revs: reference.inputRevs, scope: reference.scope };
     if (request.method === 'GET') {
       var context = await empTransitionContext(env, A, url.searchParams.get('dept') || '', url.searchParams.get('intent') || '');
       context.base.epoch = env.__restoreEpoch === undefined ? await rsEpoch(env) : env.__restoreEpoch;
@@ -748,14 +781,6 @@ async function rsEmployeeRoute(env, request, url, ss) {
       return json(context);
     }
     if (request.method !== 'POST') throw rsError('method', 405);
-    var bytes = await request.arrayBuffer();
-    if (bytes.byteLength > 8 * 1024 * 1024) throw rsError('body-large', 413);
-    var input;
-    try {
-      input = JSON.parse(new TextDecoder().decode(bytes));
-    } catch (e) {
-      throw rsError('bad-body');
-    }
     var shapeError = bodyCheck(url.pathname,input); if(shapeError) return json({ok:0,err:'bad-body',at:shapeError},400);
     if (!isObj(input) || (input.uid !== undefined && input.uid !== ss.uid)) throw rsError('session-changed', 409);
     if (typeof input.requestId !== 'string' || !/^[-A-Za-z0-9_]{8,100}$/.test(input.requestId)) throw rsError('employee-request-id');

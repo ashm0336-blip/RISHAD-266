@@ -33,8 +33,9 @@ async function bdQueryContext(env, actor, d, definition, options) {
   var operational = await opCaptureReferences(env,raw,keys.filter(opIsResource));
   raw = operational.keys; Object.assign(revs,operational.revs);
   if (definition.validateMeta) definition.validateMeta(meta, d);
-  var pre = Object.assign({}, env.__pre || {}, { live: true, kv: raw, revs: revs, meta: meta }),
-    captured = Object.assign({}, env, { __pre: pre, __opCapture: operational }),
+  var pre = Object.assign({}, env.__pre || {}, { live: true, kv: raw, revs: revs, meta: meta });
+  delete pre.track;   // RISHAD-266 · s1: this context carries its own exact witness; it never grows a caller's scoped reference (019d)
+  var captured = Object.assign({}, env, { __pre: pre, __opCapture: operational }),
     mode = await enfModeOf(captured),
     A = actorFromKeys(raw, actor.u.id);
   if (!A || (!global && (!deptInScope(A, d) || !(A.depts || []).some(function (department) { return department && String(department.id) === d; }))))

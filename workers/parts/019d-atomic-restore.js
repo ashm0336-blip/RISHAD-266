@@ -1,30 +1,124 @@
+/* Department-scoped reference (RISHAD-266 · s1): a request that reads or writes the
+   data of named departments snapshots only the platform-global kv rows, the kv rows
+   and dept-shaped meta rows (irshad:<d>:… · tkg:…:<d>) of those departments, and the
+   operational resources it names. Any further kv row or operational resource it reads
+   (another unit's roster for a duplicate check, a sector manager's grants, a resource it
+   did not name) is loaded on first read through kvGet/kvMany/opResourceMany, must carry
+   the revision the snapshot read (else the same KIVO_REV_CONFLICT the fence would raise)
+   and is fenced by its own exact witness; a dept-shaped meta row of another department
+   is refused (fail closed). So every row the request depends on is rechecked inside the
+   write transaction exactly as before, and rows it never reads are not loaded at all.
+   Database-wide operations (backup, restore, migrations) keep the full snapshot (no
+   departments option). Dept ids never contain ':' (opInfo/parseKey). */
+var RS_SCOPE_KV = "(substr(k,1,7)<>'bsdept:' OR EXISTS(SELECT 1 FROM json_each(?1) p WHERE substr(k,1,length(p.value)+8)='bsdept:'||p.value||':'))";
+var RS_SCOPE_META = "k<>'rev' AND (substr(k,1,7)<>'irshad:' OR EXISTS(SELECT 1 FROM json_each(?1) p WHERE substr(k,1,length(p.value)+8)='irshad:'||p.value||':'))" +
+  " AND (substr(k,1,4)<>'tkg:' OR EXISTS(SELECT 1 FROM json_each(?1) p WHERE substr(k,-length(p.value)-1)=':'||p.value))";
+var RS_SCOPE_IN = 'k IN (SELECT value FROM json_each(?1))';
+function rsScopeDepartments(list) {
+  var out = [];
+  return Array.isArray(list) && list.every(function (d) {
+    if (out.indexOf(d) < 0) out.push(d);
+    return typeof d === 'string' && d && d.length <= 200 && d.indexOf(':') < 0;
+  }) ? out : null;
+}
+function rsScopeOperationalKeys(departments) {
+  var keys = [];
+  departments.forEach(function (d) { opDefinitions().forEach(function (definition) { keys.push('bsdept:' + d + ':' + definition.resource); }); });
+  return keys;
+}
+/* JS mirror of RS_SCOPE_KV (meta: RS_SCOPE_META): a covered key the snapshot lacks is proven absent by the base witness. */
+function rsScopeHas(scope, k, meta) {
+  var mine = function (prefix, suffix) { return scope.departments.some(function (d) { return suffix ? k.slice(-d.length - 1) === ':' + d : k.slice(0, d.length + 8) === prefix + d + ':'; }); };
+  if (meta) return !(k.slice(0, 7) === 'irshad:' && !mine('irshad:')) && !(k.slice(0, 4) === 'tkg:' && !mine('', 1));
+  return scope.all || !!scope.seen[k] || k.slice(0, 7) !== 'bsdept:' || mine('bsdept:');
+}
+/* A row read after the snapshot belongs to it only if it still carries the revision the snapshot read. */
+function rsScopeCoherent(P, revs, keys) {
+  keys.forEach(function (k) { if ((revs[k] || 0) !== (P.revs[k] || 0)) throw new Error('KIVO_REV_CONFLICT: ' + k); });
+}
+/* kv rows outside the base scope: loaded once into the request snapshot, fenced by an exact witness of exactly these keys. */
+async function rsScopeKV(env, keys) {
+  var P = env.__pre, scope = P.track, out = {}, want = [];
+  keys.forEach(function (k) {
+    k = String(k);
+    if (ocOwn(P.kv, k) || rsScopeHas(scope, k)) out[k] = ocOwn(P.kv, k) ? P.kv[k] : null;
+    else if (want.indexOf(k) < 0) want.push(k);
+  });
+  for (var i = 0; i < want.length; i += 90) {
+    var part = want.slice(i, i + 90), arg = JSON.stringify(part), revs = {},
+      read = await env.DB.batch([env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + RS_SCOPE_IN + ' ORDER BY k,seq').bind(arg),
+        env.DB.prepare('SELECT k,rev FROM revs WHERE ' + RS_SCOPE_IN).bind(arg)]),
+      rows = read[0].results || [], joined = kvJoin(rows);
+    (read[1].results || []).forEach(function (r) { revs[r.k] = r.rev; });
+    rsScopeCoherent(P, revs, part);
+    part.forEach(function (k) { scope.seen[k] = 1; scope.later.push(k); out[k] = ocOwn(joined, k) ? (P.kv[k] = joined[k]) : null; });
+    rows.forEach(function (row) { scope.rows.push(row); });
+    scope.late.push.apply(scope.late, rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, RS_SCOPE_IN, [arg]));
+  }
+  return out;
+}
+/* Operational resources read outside the named set join the request's capture (values, domains, revisions, preimages, witness). */
+async function rsScopeOperational(env, capture, keys) {
+  var want = Array.from(new Set(keys)).filter(function (k) { return !ocOwn(capture.keys, k); });
+  if (!want.length) return;
+  var state = await opLoadMany(env, want);
+  rsScopeCoherent(env.__pre, state.revs, want);
+  ['keys', 'domains', 'revs'].forEach(function (f) { Object.assign(capture[f], state[f === 'keys' ? 'values' : f]); });
+  capture.snapshots.push.apply(capture.snapshots, state.snapshots);
+  capture.guards.push.apply(capture.guards, state.guards);
+}
+/* A decision that depends on every value in the database (an image no longer referenced in
+   scope may be referenced elsewhere) widens the reference to the whole database, fenced alike. */
+async function rsReferenceWiden(env, reference) {
+  var scope = reference.scope;
+  if (!scope || scope.all) return false;
+  var P = env.__pre, later = JSON.stringify(scope.later), where = 'NOT ' + RS_SCOPE_KV + ' AND k NOT IN (SELECT value FROM json_each(?2))',
+    rows = (await env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + where + ' ORDER BY k,seq').bind(scope.arg, later).all()).results || [],
+    joined = kvJoin(rows), departments = parseJson(reference.inputKeys[K_DEPTS] || '[]', null);
+  rows.forEach(function (row) { scope.rows.push(row); });
+  Object.keys(joined).forEach(function (k) { scope.later.push(k); P.kv[k] = joined[k]; });
+  scope.late.push.apply(scope.late, rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, where, [scope.arg, later]));
+  scope.all = true;
+  if (!Array.isArray(departments) || departments.some(function (d) { return !d || !rsScopeDepartments([d.id]); })) throw ocError('departments');
+  await rsScopeOperational(env, reference.operational, rsScopeOperationalKeys(departments.map(function (d) { return d.id; })));
+  return true;
+}
 async function rsReferenceSnapshot(env, uid, options) {
   /* One coherent reference snapshot feeds actor construction and applySave. Its
      complete row witness is rechecked INSIDE the eventual write transaction. */
+  var departments = options && options.departments ? rsScopeDepartments(options.departments) : null,
+    scopeArg = departments && JSON.stringify(departments),
+    bound = function (sql) { return departments ? env.DB.prepare(sql).bind(scopeArg) : env.DB.prepare(sql); };
   var inputs = await env.DB.batch([
-      env.DB.prepare('SELECT k,seq,v FROM kv ORDER BY k,seq'),
-      env.DB.prepare("SELECT k,v FROM meta WHERE k<>'rev' ORDER BY k"),
+      bound('SELECT k,seq,v FROM kv' + (departments ? ' WHERE ' + RS_SCOPE_KV : '') + ' ORDER BY k,seq'),
+      bound('SELECT k,v FROM meta WHERE ' + (departments ? RS_SCOPE_META : "k<>'rev'") + ' ORDER BY k'),
       env.DB.prepare('SELECT k,rev FROM revs'),
     ]),
     inputRows = inputs[0].results || [],
     inputKeys = kvJoin(inputRows),
     inputMeta = {},
-    inputRevs = {};
-  (inputs[1].results || []).forEach(function (r) {
+    inputRevs = {},
+    metaRows = inputs[1].results || [];
+  metaRows.forEach(function (r) {
     inputMeta[r.k] = r.v;
   });
   (inputs[2].results || []).forEach(function (r) {
     inputRevs[r.k] = r.rev;
   });
-  var operational = await opCaptureReferences(env, inputKeys, options && options.operationalKeys);
+  var operational = await opCaptureReferences(env, inputKeys, (options && options.operationalKeys) || (departments ? [] : undefined));
   inputKeys = operational.keys; Object.assign(inputRevs, operational.revs);
-  env = Object.assign({}, env, { __pre: { live: true, kv: inputKeys, meta: inputMeta, revs: inputRevs }, __opCapture: operational });
+  var scope = departments && { departments: departments, arg: scopeArg, rows: inputRows, later: [], seen: Object.create(null), late: [], all: false },
+    pre = { live: true, kv: inputKeys, meta: inputMeta, revs: inputRevs };
+  if (scope) pre.track = scope;
+  env = Object.assign({}, env, { __pre: pre, __opCapture: operational });
   var currentActor = actorFromKeys(inputKeys, uid);
   if (!currentActor) throw rsError('session', 401);
   var currentMode = await enfModeOf(env);
   if (currentMode.mode === 'unavailable') throw rsError('authz-unavailable', 503);
   if (currentMode.mode === 'enforce') {
     currentActor.enf = currentMode;
+    // The actor's explicit grants of every department it reaches (a sector manager's branch) are part of its authority.
+    if (scope) await rsScopeKV(env, (currentActor.u.role === 'super' ? [] : enfDeptsOf(currentActor)).map(enfGrantsKey));
     enfAttachGrantsKeys(currentActor, inputKeys);
   }
   return {
@@ -36,14 +130,31 @@ async function rsReferenceSnapshot(env, uid, options) {
     inputRevs: inputRevs,
     inputRevRows: inputs[2].results || [],
     operational: operational,
-    metaRows: inputs[1].results || [],
+    metaRows: metaRows,
+    scope: scope,
   };
+}
+/* Base witnesses: the full kv/meta tables, or exactly the scoped predicate sets (rows read later carry their own, in scope.late). */
+function rsReferenceBase(env, reference, meta) {
+  var scope = reference.scope, later = new Set(scope ? scope.later : []),
+    rows = (meta ? reference.metaRows : reference.inputRows).filter(function (row) { return !later.has(row.k); });
+  if (meta) return scope ? rsWitness(env, 'meta', ['k', 'v'], rows, RS_SCOPE_META, [scope.arg]) : rsWitness(env, 'meta', ['k', 'v'], rows, "k<>'rev'");
+  return scope ? rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, RS_SCOPE_KV, [scope.arg]) : rsWitness(env, 'kv', ['k', 'seq', 'v'], rows);
+}
+/* Position in a scoped reference's lazily grown witnesses; rsReferenceSince returns what was read after it. */
+function rsReferenceMark(reference) {
+  return reference.scope ? [reference.scope.late.length, reference.operational.guards.length] : null;
+}
+function rsReferenceSince(reference, mark, operational) {
+  return mark ? reference.scope.late.slice(mark[0]).concat(operational ? reference.operational.guards.slice(mark[1]) : []) : [];
 }
 function rsReferenceGuards(env, reference, allRevisions) {
   if (!reference || !reference.operational) throw rsError('reference-unavailable', 503);
-  var guards = rsWitness(env, 'kv', ['k', 'seq', 'v'], reference.inputRows)
-    .concat(rsWitness(env, 'meta', ['k', 'v'], reference.metaRows, "k<>'rev'"))
-    .concat(reference.operational.guards);
+  if (allRevisions && reference.scope) throw rsError('reference-scope', 503);
+  var guards = rsReferenceBase(env, reference)
+    .concat(rsReferenceBase(env, reference, 1))
+    .concat(reference.operational.guards)
+    .concat(reference.scope ? reference.scope.late : []);
   if (allRevisions) {
     if (!Array.isArray(reference.inputRevRows)) throw rsError('reference-revisions', 503);
     guards.push.apply(guards, rsWitness(env, 'revs', ['k', 'rev'], reference.inputRevRows));
@@ -66,6 +177,8 @@ async function rsCompileKV(env, A, kv, plan, inputRows) {
       continue;
     }
     plan.guards.push(revGuard(env, pd.k, pd.have));
+    // A scoped reference must hold the exact preimage of every kv key it writes.
+    if (env.__pre && env.__pre.track && !rsScopeHas(env.__pre.track, pd.k)) throw rsError('reference-scope', 503);
     var rows = inputRows.filter(function (row) {
       return row.k === pd.k;
     });
@@ -1167,8 +1280,8 @@ async function rsPrepare(env, A, body, meta, internal) {
   };
   /* This also covers explicit grants, scoped locks, import references and policy;
      a permission edit between actor construction and commit cannot grant a stale request. */
-  plan.guards.push.apply(plan.guards, rsWitness(env, 'kv', ['k', 'seq', 'v'], inputRows));
-  plan.guards.push.apply(plan.guards, rsWitness(env, 'meta', ['k', 'v'], reference.metaRows, "k<>'rev'"));
+  plan.guards.push.apply(plan.guards, rsReferenceBase(env, reference));
+  plan.guards.push.apply(plan.guards, rsReferenceBase(env, reference, 1));
   plan.guards.push.apply(plan.guards, reference.operational.guards);
   await rsCompileKV(env, A, kv, plan, inputRows);
   var domains = selection.domains;

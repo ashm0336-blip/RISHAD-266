@@ -229,6 +229,7 @@ async function kvAll(env, table) {
 async function metaGet(env, k) {
   var P = env.__pre;   /* KIVO_255 · AUD-037: من اللقطة إن كان المفتاحُ فيها وهي حيّة */
   if (P && P.live && Object.prototype.hasOwnProperty.call(P.meta, k)) return P.meta[k];
+  if (P && P.live && P.track && k !== 'rev' && !rsScopeHas(P.track, k, 1)) throw rsError('reference-scope', 503);   /* RISHAD-266 · s1: another unit's meta row is outside a scoped reference (019d) — refused, never read unfenced */
   var r = await env.DB.prepare('SELECT v FROM meta WHERE k = ?1').bind(k).first();
   return r ? r.v : null;
 }
@@ -535,9 +536,13 @@ async function usersGrantsLoad(env, A) {
   (Array.isArray(A.depts) ? A.depts : []).forEach(function (x) { var d = x && x.id != null ? String(x.id) : ''; if (d && !seen[d]) { seen[d] = 1; ds.push(d); } });
   for (i = 0; i < ds.length; i += 80) {
     var part = ds.slice(i, i + 80), ph = part.map(function (x, n) { return '?' + (n + 1); }).join(', ');
-    var stmt = env.DB.prepare('SELECT k, v FROM kv WHERE k IN (' + ph + ') ORDER BY k, seq');
-    var r = await stmt.bind.apply(stmt, part.map(enfGrantsKey)).all();
-    var acc = {}; ((r && r.results) || []).forEach(function (row) { acc[row.k] = (acc[row.k] || '') + row.v; });
+    var acc = {};
+    if (env.__pre && env.__pre.live && env.__pre.track) acc = await kvMany(env, 'kv', part.map(enfGrantsKey));   /* RISHAD-266 · s1: fenced by the scoped reference (019d) */
+    else {
+      var stmt = env.DB.prepare('SELECT k, v FROM kv WHERE k IN (' + ph + ') ORDER BY k, seq');
+      var r = await stmt.bind.apply(stmt, part.map(enfGrantsKey)).all();
+      ((r && r.results) || []).forEach(function (row) { acc[row.k] = (acc[row.k] || '') + row.v; });
+    }
     for (j = 0; j < part.length; j++) {
       var g = enfGrantRec(acc[enfGrantsKey(part[j])] == null ? null : acc[enfGrantsKey(part[j])]); if (!g) continue;
       recs[part[j]] = g; for (var e in g.emp) (byEk[e] = byEk[e] || []).push(part[j]);
