@@ -4,9 +4,8 @@
    المطلوب: دمجٌ بالهوية الثابتة، وحين تغيب الهويةُ أو تلتبس: تعارضٌ صريحٌ يُبلَّغ (الشريطُ القائم) لا إسقاطٌ صامت. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeTestEnv, client, applySql, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
-import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { loadClient, sleep, fixture, cp, pageText } from './k264_vm.mjs';
+import { world, tab, roundsPage, tasksPage, KR, KT } from './k264_opconflict_fx.mjs';
 
 const offline = { req: async () => { throw new Error('offline'); } };
 function merger() {
@@ -136,40 +135,73 @@ test('D-6 (الشريط): التعارضُ الملتبس يُعلَن لصاح�
   } finally { T.dispose(); }
 });
 
-/* ── من طرفٍ إلى طرف (الخادمُ الحقيقي · مستخدمان · الوضعان): كلا التعديلين على الخادم وعند التبويبين ── */
-const KR = 'bsdept:tst_d1:bassam_rounds_v1', KT = 'bsdept:tst_d1:bassam_tasks_v1';
+/* ── من طرفٍ إلى طرف (الخادمُ الحقيقي · مستخدمان · الوضعان) ──
+   RISHAD-266 · قرارُ المالك (d) 2026-11-03: الجولاتُ والمهامّ مواردُ تشغيلية (Operations) — التحريرُ المتزامن تعارضٌ بلا فقد:
+   الحفظُ الأول من الأساس نفسِه يُعتمد، والثاني يُرفض بحالة تعارضٍ صريحة (409 · conflict) ولا يُدمج منه شيءٌ تلقائياً،
+   ثم يعيد صاحبُه القراءة ويحاول فيثبت تعديلُه أيضاً. كان هذا الاختبارُ يشترط الدمجَ الثلاثيّ المتقاعد (كلا التعديلين بلا إعادة قراءة)؛
+   أُعيدت كتابتُه على العقد الحالي بالصرامة نفسِها: لا يضيع تعديلُ أيٍّ من الطرفين، ولا يُكتم الرفض، ولا تتسرّب قيمةٌ لم تُعتمد. */
 const CASES = [
-  { name: 'rounds (different floors)', k: KR, a: ['0000000111', '70111'], b: ['0000000114', '70114'],
+  { name: 'rounds (different floors)', k: KR, page: roundsPage, a: ['0000000111', '70111'], b: ['0000000114', '70114'],
     editA: (v) => { const d = Object.keys(v)[0]; v[d].d[0].zones[1].fst = 'open'; delete v[d].d[0].zones[1].cWhy; return v; },
     editB: (v) => { const d = Object.keys(v)[0]; v[d].d[1].zones[1].fst = 'open'; delete v[d].d[1].zones[1].cWhy; return v; },
-    hasA: (v) => { const d = Object.keys(v)[0]; return v[d].d[0].zones[1].fst === 'open'; }, hasB: (v) => { const d = Object.keys(v)[0]; return v[d].d[1].zones[1].fst === 'open'; } },
-  { name: 'tasks (two new tasks, same day)', k: KT, a: ['0000000111', '70111'], b: ['0000000101', '70101'],
+    hasA: (v) => { const d = Object.keys(v)[0]; return v[d].d[0].zones[1].fst === 'open'; }, hasB: (v) => { const d = Object.keys(v)[0]; return v[d].d[1].zones[1].fst === 'open'; },
+    /* src/modules/daily/logic.js _opCommit: رسالةُ الرفض العامة (لا تسمّي التعارض — مسجَّلٌ غيرُ محلول في تقرير المجموعة 2) */
+    told: /لم يُحفظ التعديل/ },
+  { name: 'tasks (two new tasks, same day)', k: KT, page: tasksPage, a: ['0000000111', '70111'], b: ['0000000101', '70101'],
     editA: (v) => { const d = Object.keys(v)[0]; const r = cp(v[d][0]); r[0] = 'TEST_ONLY task A'; r[13] = Date.now() + 1; r[22] = null; v[d].push(r); return v; },
     editB: (v) => { const d = Object.keys(v)[0]; const r = cp(v[d][0]); r[0] = 'TEST_ONLY task B'; r[13] = Date.now() + 2; r[22] = null; v[d].push(r); return v; },
-    hasA: (v) => Object.values(v).some(L => Array.isArray(L) && L.some(r => r[0] === 'TEST_ONLY task A')), hasB: (v) => Object.values(v).some(L => Array.isArray(L) && L.some(r => r[0] === 'TEST_ONLY task B')) }
+    hasA: (v) => Object.values(v).some(L => Array.isArray(L) && L.some(r => r[0] === 'TEST_ONLY task A')), hasB: (v) => Object.values(v).some(L => Array.isArray(L) && L.some(r => r[0] === 'TEST_ONLY task B')),
+    /* src/modules/tasks/logic.js _tkChange: «لم يُؤكَّد الحفظ … عند تعارض الصلاحيات أو البيانات راجعها أولاً» */
+    told: /المسودة باقية[\s\S]*تعارض/ }
 ];
-for (const mode of ['legacy', 'enforce']) for (const K of CASES) test('[' + mode + '] D-6 (طرفٌ لطرف): ' + K.name + ' — لا يضيع تعديلُ الحافظ الأول', async () => {
-  const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : { KIVO_TEST_FIXTURE: 'allow' }); const C = client(env);
-  const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
-  await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
-  await applySql(env.DB, fixture().seed);
-  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage (assertions below unchanged: owner decision pending) */
-  if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
-  const LA = await C.login(...K.a), LB = await C.login(...K.b); assert.ok(LA.ok && LB.ok);
-  const bA = (await C.boot(LA.ck)).boot, bB = (await C.boot(LB.ck)).boot; assert.ok(bA.keys[K.k] && bB.keys[K.k], 'التبويبان يقرآن ' + K.k);
-  const A = loadClient({ C, boot: bA, jar: { cookie: LA.ck } }), B = loadClient({ C, boot: bB, jar: { cookie: LB.ck } });
+for (const mode of ['legacy', 'enforce']) for (const K of CASES) test('[' + mode + '] D-6 (طرفٌ لطرف · قرار المالك d): ' + K.name + ' — الحفظُ الثاني تعارضٌ صريح بلا دمج، ثم إعادةُ القراءة والمحاولة تُثبت التعديلين', async () => {
+  const Wd = await world(mode), name = K.k.split(':')[2];
+  const A = await tab(Wd, ...K.a), B = await tab(Wd, ...K.b);
   try {
-    /* الإنفاذ: تغييرُ حالة المصلى يتطلب سبباً (§12) — يُعطى سلفاً كما تعطيه نافذةُ السبب */
-    A.W.KIVO.__BS_SRV.why(K.k, 'TEST_ONLY سبب A'); B.W.KIVO.__BS_SRV.why(K.k, 'TEST_ONLY سبب B');
-    A.set(K.k, JSON.stringify(K.editA(JSON.parse(A.get(K.k)))));
-    await sleep(20);
-    B.set(K.k, JSON.stringify(K.editB(JSON.parse(B.get(K.k)))));
-    await sleep(3200);
-    const srv = JSON.parse(env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', K.k).map(r => r.v).join(''));
-    const st = { A_denied: A.W.KIVO.__BS_SRV.denied(), B_denied: B.W.KIVO.__BS_SRV.denied(), A_onServer: K.hasA(srv), B_onServer: K.hasB(srv),
-      A_tab: K.hasA(JSON.parse(A.get(K.k))) && K.hasB(JSON.parse(A.get(K.k))), B_tab: K.hasA(JSON.parse(B.get(K.k))) && K.hasB(JSON.parse(B.get(K.k))) };
-    assert.equal(st.A_denied + st.B_denied, 0, 'التعديلان مأذونان: ' + JSON.stringify(st));
-    assert.ok(st.A_onServer && st.B_onServer, 'كلا التعديلين على الخادم: ' + JSON.stringify(st));
-    assert.ok(st.A_tab && st.B_tab, 'والتبويبان يلتقيان على القيمة نفسِها: ' + JSON.stringify(st));
+    const why = (T, s) => T.W.KIVO.__BS_SRV.why(K.k, 'TEST_ONLY سبب ' + s);   /* الإنفاذ: تغييرُ حالة المصلى يتطلب سبباً (§12) */
+    /* التبويبان يقرآن الأساسَ نفسَه، وتلتقط كلُّ صفحةٍ مسودتَها منه */
+    const rdA = await A.ops.read([K.k]), rdB = await B.ops.read([K.k]);
+    assert.ok(rdA.ok === 1 && rdB.ok === 1 && !rdA.denied.length && !rdB.denied.length, 'التبويبان يقرآن ' + K.k);
+    assert.equal(rdA.base[K.k], rdB.base[K.k], 'الأساسُ نفسُه');
+    const original = Wd.server(K.k); assert.ok(!K.hasA(original) && !K.hasB(original));
+    const pA = K.page(A), pB = K.page(B);
+
+    /* (1) الأولُ يحفظ فيُعتمد */
+    why(A, 'A'); const rA = await pA.save(K.editA);
+    assert.equal(rA && rA.ok, 1, 'حفظُ الأول يُعتمد: ' + JSON.stringify(rA).slice(0, 300));
+    const afterA = Wd.server(K.k);
+    assert.ok(K.hasA(afterA) && !K.hasB(afterA), 'تعديلُ الأول على الخادم');
+
+    /* (2) الثاني من الأساس القديم: يُرفض بتعارضٍ صريح — لا دمج، لا كتابة جزئية، لا قيمةَ تتسرّب */
+    why(B, 'B'); const rB = await pB.save(K.editB);
+    assert.equal(rB.ok, 0, 'الحفظُ الثاني لا يُعتمد');
+    assert.deepEqual({ err: rB.err, status: rB.status, uncertain: rB.uncertain }, { err: 'conflict', status: 409, uncertain: false }, 'تعارضٌ صريح محسوم (لا «غير مؤكَّد»): ' + JSON.stringify(rB).slice(0, 300));
+    assert.equal(B.ops.status(rB.ticket).state, 'conflict', 'حالةُ الطلب عند صاحبه: conflict');
+    assert.equal(B.posts(), 1, 'طلبٌ واحد — لا إعادةَ إرسالٍ ولا دمجَ آليّ');
+    assert.deepEqual(Wd.server(K.k), afterA, 'الخادمُ لم يتغيّر: لا شيء من تعديل الثاني دُمج');
+    assert.equal(B.ops.state(name), 'unloaded', 'تبويبُ الثاني لا يعرض قيمتَه المرفوضة كأنها محفوظة — يجب أن يعيد القراءة');
+    assert.throws(() => B.ops.get(name), /operations-read-required/, 'ولا تُقرأ قيمةٌ قديمة أو مرفوضة قبل إعادة القراءة');
+    /* ما يراه المستخدم: رسالةُ رفضٍ تحذيرية للثاني وحدَه، لا «حُفظ» */
+    assert.equal(pB.toasts.length, 1, 'رسالةٌ واحدة للثاني: ' + JSON.stringify(pB.toasts));
+    assert.equal(pB.toasts[0].tone, 'warn'); assert.match(pB.toasts[0].m, K.told);
+    assert.deepEqual(pA.toasts, [], 'لا رسالةَ رفضٍ للأول');
+
+    /* (3) إعادةُ القراءة: التبويبان يريان تعديلَ الأول، ولا أثرَ لتعديل الثاني المرفوض */
+    if (pB.reread) await pB.reread(); else assert.equal((await B.ops.read([K.k])).ok, 1);
+    assert.equal((await A.ops.read([K.k])).ok, 1);
+    for (const [who, T] of [['A', A], ['B', B]]) { const v = T.ops.get(name); assert.ok(K.hasA(v) && !K.hasB(v), who + ' بعد إعادة القراءة يرى تعديلَ الأول وحده'); }
+
+    /* (4) الثاني يعيد المحاولة على القيمة الجديدة فيثبت تعديلُه أيضاً — لا ضياعَ صامت */
+    /* إعادةُ المحاولة من صفحةٍ أُعيد تحميلها (مسودةٌ جديدة من القيمة المقروءة). ملاحظة: الصفحةُ نفسُها بلا إعادة تحميل تعيد
+       نتيجةَ التعارض القديمة دون إرسال — مسجَّلٌ غيرُ محلول في تقرير المجموعة 2 (tasks/logic.js _tkChange · daily/logic.js _opCommit) */
+    const pB2 = K.page(B);
+    why(B, 'B'); const rB2 = await pB2.save(K.editB);
+    assert.equal(rB2 && rB2.ok, 1, 'إعادةُ المحاولة بعد القراءة تُعتمد: ' + JSON.stringify(rB2).slice(0, 300));
+    assert.equal(B.posts(), 2, 'طلبٌ ثانٍ واحد: المحاولةُ المقصودة');
+    const final = Wd.server(K.k);
+    assert.ok(K.hasA(final) && K.hasB(final), 'كلا التعديلين على الخادم');
+    assert.equal((await A.ops.read([K.k])).ok, 1);
+    for (const [who, T] of [['A', A], ['B', B]]) { const v = T.ops.get(name); assert.ok(K.hasA(v) && K.hasB(v), who + ' يرى التعديلين'); }
+    assert.equal(A.W.KIVO.__BS_SRV.denied() + B.W.KIVO.__BS_SRV.denied(), 0, 'لا رفضَ صلاحية — الرفضُ الوحيد كان التعارض');
   } finally { A.dispose(); B.dispose(); }
 });

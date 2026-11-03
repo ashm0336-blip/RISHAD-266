@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { makeTestEnv, client, applySql, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { loadClient, sleep, until, fixture, cp, pageText, FakeStorage } from './k264_vm.mjs';
+import { world, tab, roundsPage, KR } from './k264_opconflict_fx.mjs';
 
 const J = (x, st = 200) => new Response(JSON.stringify(x), { status: st, headers: { 'Content-Type': 'application/json' } });
 const offline = { req: async () => { throw new Error('offline'); } };
@@ -89,21 +90,31 @@ test('A3a: مَن كُتب فوق تعديله يُبلَّغ عند السحب 
   } finally { T2.dispose(); }
 });
 
-test('[legacy] A3a (طرفٌ لطرف): سباقٌ على الخانة نفسِها — الحافظُ اللاحق يرى «اعتُمدت قيمتك» والأسبقُ يرى «بعد حفظك»', async () => {
-  const env = makeTestEnv({ KIVO_TEST_FIXTURE: 'allow' }); const C = client(env);
-  const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
-  await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
-  await applySql(env.DB, fixture().seed);
-  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
-  const K = 'bsdept:tst_d1:bassam_rounds_v1';
-  const LA = await C.login('0000000111', '70111'), LB = await C.login('0000000114', '70114'); assert.ok(LA.ok && LB.ok);
-  const A = loadClient({ C, boot: (await C.boot(LA.ck)).boot, jar: { cookie: LA.ck }, blocks: ['280-server-storage.js', '440-count.js'] });
-  const B = loadClient({ C, boot: (await C.boot(LB.ck)).boot, jar: { cookie: LB.ck }, blocks: ['280-server-storage.js', '440-count.js'] });
+/* RISHAD-266 · قرارُ المالك (d) 2026-11-03: الجولاتُ موردٌ تشغيليّ (Operations) — لا دمجَ ثلاثيّاً متقاعداً ولا «اعتُمدت قيمتك»/«بعد حفظك»:
+   السباقُ على الخانة نفسِها يُحسم بتعارضٍ صريح للحافظ اللاحق، وقيمةُ الأسبق باقيةٌ لم يُكتب فوقها شيءٌ بصمت. الكتابةُ فوقها لا تكون
+   إلا بعد أن يقرأ اللاحقُ قيمةَ الأسبق ويعيد المحاولة عن قصد، وعندها يرى الأسبقُ القيمةَ الجديدة بإعادة القراءة. (كان الاختبارُ يشترط الدمجَ المتقاعد.) */
+test('[legacy] A3a (طرفٌ لطرف · قرار المالك d): سباقٌ على الخانة نفسِها — الحافظُ اللاحق يُرفض بتعارضٍ صريح، ولا يُكتب فوق الأسبق إلا بعد إعادة القراءة', async () => {
+  const Wd = await world('legacy'), name = 'bassam_rounds_v1', K = KR;
+  const A = await tab(Wd, '0000000111', '70111'), B = await tab(Wd, '0000000114', '70114');
   try {
-    const ed = (T, why) => { const v = JSON.parse(T.get(K)); const d = Object.keys(v)[0]; v[d].d[0].zones[1].cWhy = why; return JSON.stringify(v); };
-    A.set(K, ed(A, 'TEST_ONLY سبب A')); await sleep(20); B.set(K, ed(B, 'TEST_ONLY سبب B'));
-    assert.ok(await until(() => /اعتُمدت قيمتك/.test(pageText(B.W)), 4000), 'الحافظُ اللاحق: «اعتُمدت قيمتك»');
-    assert.ok(await until(() => /بعد حفظك/.test(pageText(A.W)), 6000), 'والأسبقُ الذي كُتب فوقه يُبلَّغ: ' + pageText(A.W).slice(0, 160));
+    const cell = (v) => { const d = Object.keys(v)[0]; return v[d].d[0].zones[1].cWhy; };
+    const ed = (why) => (v) => { const d = Object.keys(v)[0]; v[d].d[0].zones[1].cWhy = why; return v; };
+    assert.equal((await A.ops.read([K])).ok, 1); assert.equal((await B.ops.read([K])).ok, 1);
+    const pA = roundsPage(A), pB = roundsPage(B);
+    assert.equal((await pA.save(ed('TEST_ONLY سبب A'))).ok, 1, 'الأسبقُ يُعتمد');
+    const rB = await pB.save(ed('TEST_ONLY سبب B'));
+    assert.deepEqual({ ok: rB.ok, err: rB.err, status: rB.status, uncertain: rB.uncertain }, { ok: 0, err: 'conflict', status: 409, uncertain: false }, 'اللاحقُ: تعارضٌ صريح');
+    assert.equal(B.ops.status(rB.ticket).state, 'conflict');
+    assert.equal(cell(Wd.server(K)), 'TEST_ONLY سبب A', 'قيمةُ الأسبق باقية — لم يُكتب فوقها شيء');
+    assert.equal(pB.toasts.length, 1); assert.equal(pB.toasts[0].tone, 'warn'); assert.match(pB.toasts[0].m, /لم يُحفظ التعديل/, 'اللاحقُ يُبلَّغ أن تعديله لم يُحفظ');
+    assert.deepEqual(pA.toasts, [], 'الأسبقُ لم يُكتب فوقه فلا يُبلَّغ بشيء');
+    await sleep(100);
+    for (const T of [A, B]) assert.doesNotMatch(pageText(T.W), /اعتُمدت قيمتك|بعد حفظك/, 'لا شريطَ دمجٍ متقاعد: لم يُدمج شيءٌ ولم يُكتب فوق أحد');
+    /* اللاحقُ يعيد القراءة فيرى قيمةَ الأسبق، ثم يعيد المحاولة عن قصد من صفحةٍ أُعيد تحميلها */
+    assert.equal((await B.ops.read([K])).ok, 1); assert.equal(cell(B.ops.get(name)), 'TEST_ONLY سبب A', 'اللاحقُ يرى قيمةَ الأسبق قبل أن يقرّر');
+    assert.equal((await roundsPage(B).save(ed('TEST_ONLY سبب B'))).ok, 1, 'المحاولةُ بعد القراءة تُعتمد');
+    assert.equal(cell(Wd.server(K)), 'TEST_ONLY سبب B');
+    assert.equal((await A.ops.read([K])).ok, 1); assert.equal(cell(A.ops.get(name)), 'TEST_ONLY سبب B', 'والأسبقُ يرى القيمةَ الجديدة بإعادة القراءة');
   } finally { A.dispose(); B.dispose(); }
 });
 
