@@ -242,7 +242,7 @@ async function nextRev(env) {
 }
 /* KIVO_259 · حارسُ النسخة (مقارنةٌ ومبادلة داخل المعاملة): يُخفق — فتُلغى الدفعةُ كلُّها — إن لم تعد نسخةُ المفتاح ما قُرئ أوّلَ الطلب
    (json_extract بمسارٍ غير صالح يرفع خطأً يحمل العلامة — في D1 وMiniflare وnode:sqlite) */
-function revGuard(env, k, have) { return env.DB.prepare("SELECT CASE WHEN COALESCE((SELECT rev FROM revs WHERE k = ?1), 0) != ?2 THEN json_extract('{}', 'KIVO_REV_CONFLICT') END AS g").bind(k, have || 0); }
+function revGuard(env, k, have) { var s = env.DB.prepare("SELECT CASE WHEN COALESCE((SELECT rev FROM revs WHERE k = ?1), 0) != ?2 THEN json_extract('{}', 'KIVO_REV_CONFLICT') END AS g").bind(k, have || 0); /* RISHAD-266 (g): tagged so an atomic restore may fold adjacent scalar guards in order (019d rsMergeGuards) */ if (s && typeof s === 'object') Object.defineProperty(s, 'kivoGuard', { value: { cond: 'COALESCE((SELECT rev FROM revs WHERE k = ?1), 0) != ?2', args: [k, have || 0], sentinel: 'KIVO_REV_CONFLICT' }, configurable: true }); return s; }
 function isRevConflict(e) { return /KIVO_REV_CONFLICT/.test(String((e && (e.message || e.cause && e.cause.message)) || e)); }
 /* مجموعاتُ المفاتيح في دفعاتٍ لا تشطر مجموعةً (إلا مجموعةً أكبر من دفعةٍ وحدها: حارسُها وقيمتُها ونسختُها في أوّل أجزائها) — دفعةٌ أخفقها حارسٌ
    تُعاد مجموعةً مجموعة فيُكتب ما لم يُسبق ويُردّ المسبوقُ تعارضاً؛ والعمليةُ المحمية (atomic) لا يُكتب منها شيءٌ بعد أوّل تعارض */

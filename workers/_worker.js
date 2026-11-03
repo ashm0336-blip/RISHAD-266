@@ -7720,7 +7720,10 @@ function cuRowsGuard(env, table, columns, rows, selection) {
       expected.join(' UNION ALL ') +
       '))'
     : '';
-  return cuBind(env, 'SELECT CASE WHEN ' + count + diff + " THEN json_extract('{}','KIVO_CUSTODY_TARGET_CHANGED') END", args);
+  var guard = cuBind(env, 'SELECT CASE WHEN ' + count + diff + " THEN json_extract('{}','KIVO_CUSTODY_TARGET_CHANGED') END", args);
+  /* Only the count-only form (no expected rows) is a small scalar guard that the
+     atomic restore may fold with its neighbours (rsMergeGuards, decision g). */
+  return diff ? guard : rsGuardTag(guard, count, args, 'KIVO_CUSTODY_TARGET_CHANGED');
 }
 async function cuSnapshotRows(env, dept) {
   var rows = {};
@@ -9250,6 +9253,99 @@ function rsEpochGuard(db, epoch) {
     )
     .bind(epoch);
 }
+/* RISHAD-266 decision (g): a 13,006-account restore must fit the approved
+   <=100-statement batch without raising the limit or weakening a guard.
+   Small scalar guards ("SELECT CASE WHEN <cond> THEN json_extract('{}','<sentinel>') END")
+   record their condition here; rsMergeGuards folds each ADJACENT run of them into one
+   ordered CASE. CASE tests its WHEN branches in order and stops at the first true one,
+   exactly like the original statements running one after another inside the same
+   transaction before any write: the merged statement fails exactly when any member
+   would, with the same sentinel the first failing member would have raised. A guard
+   that is not tagged (row witnesses, legacy-source and retirement guards, ...) is a
+   barrier and keeps its own position, so the order between differently mapped
+   sentinels never changes. CASE keeps the expression tree flat (D1 depth cap 100);
+   each merged statement stays within D1's 100 bound variables and 100 KB SQL text. */
+var RS_GUARD_MAX_ARGS = 100,
+  RS_GUARD_MAX_SQL = 90000;
+/* The tag travels on the statement itself (a non-enumerable 'kivoGuard' property), so a
+   builder in another part (revGuard in 054) can tag without depending on this part. */
+function rsGuardTag(statement, cond, args, sentinel) {
+  /* A '?' inside a quoted literal would be renumbered by the merge: leave such a
+     guard untouched (it then acts as a barrier) instead of risking a changed literal. */
+  var bare = cond.replace(/'(?:[^']|'')*'/g, "''");
+  if ((cond.match(/\?/g) || []).length !== (bare.match(/\?/g) || []).length) return statement;
+  if (!/^[A-Z_]+$/.test(sentinel) || !statement || typeof statement !== 'object') return statement;
+  Object.defineProperty(statement, 'kivoGuard', { value: { cond: cond, args: args.slice(), sentinel: sentinel }, configurable: true });
+  return statement;
+}
+function rsGuardTagOf(statement) {
+  var tag = statement && statement.kivoGuard;
+  return tag && typeof tag.cond === 'string' && Array.isArray(tag.args) && /^[A-Z_]+$/.test(tag.sentinel) ? tag : null;
+}
+function rsGuardSql(parts) {
+  return (
+    'SELECT CASE' +
+    parts
+      .map(function (p) {
+        return ' WHEN ' + p.cond + " THEN json_extract('{}','" + p.sentinel + "')";
+      })
+      .join('') +
+    ' END'
+  );
+}
+function rsMergeRun(env, run) {
+  if (run.length < 2) return run.map(function (r) { return r.statement; });
+  var out = [],
+    parts = [],
+    args = [],
+    sql = 0;
+  function flush() {
+    if (!parts.length) return;
+    if (parts.length === 1) out.push(parts[0].statement);
+    else out.push(rsBound(env.DB.prepare(rsGuardSql(parts)), args));
+    parts = [];
+    args = [];
+    sql = 0;
+  }
+  run.forEach(function (r) {
+    var tag = r.tag,
+      size = tag.cond.length + tag.sentinel.length + 64;
+    if (tag.args.length > RS_GUARD_MAX_ARGS) {
+      flush();
+      out.push(r.statement);
+      return;
+    }
+    if (parts.length && (args.length + tag.args.length > RS_GUARD_MAX_ARGS || sql + size > RS_GUARD_MAX_SQL)) flush();
+    var offset = args.length;
+    parts.push({
+      statement: r.statement,
+      sentinel: tag.sentinel,
+      cond: tag.cond.replace(/\?([1-9][0-9]*)/g, function (_, n) {
+        return '?' + (+n + offset);
+      }),
+    });
+    args.push.apply(args, tag.args);
+    sql += size;
+  });
+  flush();
+  return out;
+}
+function rsMergeGuards(env, guards) {
+  var out = [],
+    run = [];
+  guards.forEach(function (statement) {
+    var tag = rsGuardTagOf(statement);
+    if (tag) {
+      run.push({ statement: statement, tag: tag });
+      return;
+    }
+    out.push.apply(out, rsMergeRun(env, run));
+    run = [];
+    out.push(statement);
+  });
+  out.push.apply(out, rsMergeRun(env, run));
+  return out;
+}
 /* Exact row witness, including extra/missing rows. Bounded transport chunks are
    each checked as subsets; total cardinality makes the union exact. */
 function rsBound(statement, args) {
@@ -9260,10 +9356,10 @@ function rsWitness(env, table, cols, rows, where, args) {
   var predicate = (where || '1').replace(/\?([1-9][0-9]*)/g, function (_, n) {
       return '?' + (+n + 1);
     }),
-    count = env.DB.prepare(
-      'SELECT CASE WHEN (SELECT COUNT(*) FROM ' + table + ' WHERE ' + predicate + ")<>?1 THEN json_extract('{}','KIVO_RESTORE_TARGET') END",
-    ),
-    st = [rsBound(count, [rows.length].concat(args))],
+    countCond = '(SELECT COUNT(*) FROM ' + table + ' WHERE ' + predicate + ')<>?1',
+    count = env.DB.prepare('SELECT CASE WHEN ' + countCond + " THEN json_extract('{}','KIVO_RESTORE_TARGET') END"),
+    countArgs = [rows.length].concat(args),
+    st = [rsGuardTag(rsBound(count, countArgs), countCond, countArgs, 'KIVO_RESTORE_TARGET')],
     expr = cols.join(',');
   /* Legacy CHUNK is 700,000 characters. Guard it by exact UTF-8 byte slices;
      never send that complete value as a parameter or hash it with weaker SQL. */
@@ -10318,7 +10414,7 @@ async function rsCommit(env, A, plan, meta) {
     };
   A = plan.author || A;
   var sid = enfSnapId('atomic'),
-    st = [rsEpochGuard(env.DB, plan.epoch), bdCommitRetiredGuard(env), opRetiredGuard(env)].concat(plan.guards),
+    st = [rsEpochGuard(env.DB, plan.epoch), bdCommitRetiredGuard(env), opRetiredGuard(env)].concat(rsMergeGuards(env, plan.guards)),
     keys = Array.from(new Set(plan.revisionKeys)),
     now = Date.now(),
     changed = keys.length > 0 || !!plan.forceFence;
@@ -23227,7 +23323,7 @@ async function nextRev(env) {
 }
 /* KIVO_259 · حارسُ النسخة (مقارنةٌ ومبادلة داخل المعاملة): يُخفق — فتُلغى الدفعةُ كلُّها — إن لم تعد نسخةُ المفتاح ما قُرئ أوّلَ الطلب
    (json_extract بمسارٍ غير صالح يرفع خطأً يحمل العلامة — في D1 وMiniflare وnode:sqlite) */
-function revGuard(env, k, have) { return env.DB.prepare("SELECT CASE WHEN COALESCE((SELECT rev FROM revs WHERE k = ?1), 0) != ?2 THEN json_extract('{}', 'KIVO_REV_CONFLICT') END AS g").bind(k, have || 0); }
+function revGuard(env, k, have) { var s = env.DB.prepare("SELECT CASE WHEN COALESCE((SELECT rev FROM revs WHERE k = ?1), 0) != ?2 THEN json_extract('{}', 'KIVO_REV_CONFLICT') END AS g").bind(k, have || 0); /* RISHAD-266 (g): tagged so an atomic restore may fold adjacent scalar guards in order (019d rsMergeGuards) */ if (s && typeof s === 'object') Object.defineProperty(s, 'kivoGuard', { value: { cond: 'COALESCE((SELECT rev FROM revs WHERE k = ?1), 0) != ?2', args: [k, have || 0], sentinel: 'KIVO_REV_CONFLICT' }, configurable: true }); return s; }
 function isRevConflict(e) { return /KIVO_REV_CONFLICT/.test(String((e && (e.message || e.cause && e.cause.message)) || e)); }
 /* مجموعاتُ المفاتيح في دفعاتٍ لا تشطر مجموعةً (إلا مجموعةً أكبر من دفعةٍ وحدها: حارسُها وقيمتُها ونسختُها في أوّل أجزائها) — دفعةٌ أخفقها حارسٌ
    تُعاد مجموعةً مجموعة فيُكتب ما لم يُسبق ويُردّ المسبوقُ تعارضاً؛ والعمليةُ المحمية (atomic) لا يُكتب منها شيءٌ بعد أوّل تعارض */

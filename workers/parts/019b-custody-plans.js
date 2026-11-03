@@ -45,7 +45,10 @@ function cuRowsGuard(env, table, columns, rows, selection) {
       expected.join(' UNION ALL ') +
       '))'
     : '';
-  return cuBind(env, 'SELECT CASE WHEN ' + count + diff + " THEN json_extract('{}','KIVO_CUSTODY_TARGET_CHANGED') END", args);
+  var guard = cuBind(env, 'SELECT CASE WHEN ' + count + diff + " THEN json_extract('{}','KIVO_CUSTODY_TARGET_CHANGED') END", args);
+  /* Only the count-only form (no expected rows) is a small scalar guard that the
+     atomic restore may fold with its neighbours (rsMergeGuards, decision g). */
+  return diff ? guard : rsGuardTag(guard, count, args, 'KIVO_CUSTODY_TARGET_CHANGED');
 }
 async function cuSnapshotRows(env, dept) {
   var rows = {};
