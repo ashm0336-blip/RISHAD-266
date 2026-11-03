@@ -285,7 +285,10 @@ test('malformed or unsafe epochs fail closed without deriving a replacement epoc
 /* RISHAD-266 · owner decision (h) 2026-11-03: the budget holds at ALL hours. The jobs behind the summary (Irshad daily
    23:30-24:00 Riyadh, Seized due 08:00/09:00-24:00 Riyadh) made this wall-clock dependent (11-15 trips from 06:00 to
    21:00 UTC on fa74283). The test now runs at fixed synthetic instants covering every window instead of wall time and
-   measures three repeated reads after the priming read at each, with the seven-trip budget unchanged. */
+   measures every read at each (the first read, which triggers the due job, and three repeated reads), with the seven-trip
+   budget unchanged. Production path: the request carries an execution context (ctx.waitUntil, as on Cloudflare); the due job
+   runs after the feed, off the read's critical path, so the read's cost is measured up to the moment the job is handed to
+   waitUntil (nothing of the read touches D1 after it). The deferred job's trips are reported, and settled before the next read. */
 const SUMMARY_CLOCKS = {
   night: '2026-10-28T00:00:00Z',            /* 03:00 Riyadh: no job window */
   morning: '2026-10-28T06:30:00Z',          /* 09:30 Riyadh: Seized due */
@@ -302,24 +305,36 @@ async function atClock(iso, fn) {
   };
   try { return await fn(); } finally { globalThis.Date = RealDate; }
 }
+const SUMMARY_TOUCH = /^UPDATE sess SET la = \?2 WHERE tok = \?1$/;
+async function summaryRead(W, f, path) {
+  const calls = [], t0 = f.DB.trips, l0 = f.DB.log.length,
+    ctx = { waitUntil(p) { calls.push({ trips: f.DB.trips, log: f.DB.log.length, p }); } };
+  const response = await W.default.fetch(new Request('http://x' + path, { headers: { Cookie: 'bs_tok=TEST_ONLY_session_super' } }), f.env, ctx);
+  assert.equal(response.status, 200);
+  const end = f.DB.trips, endLog = f.DB.log.length;
+  await Promise.all(calls.map((c) => c.p));
+  /* the due job is the waitUntil not issued right after the session heartbeat (054, frozen clock: none here) */
+  const job = calls.filter((c) => !SUMMARY_TOUCH.test(String(f.DB.log[c.log - 1] || '').trim())).at(-1),
+    readLog = f.DB.log.slice(l0, job ? job.log : endLog).map(String);
+  assert.equal(readLog.filter((s) => SUMMARY_TOUCH.test(s.trim())).length, 0, 'no heartbeat hides in the measured read');
+  assert.equal(readLog.some((s) => /seized_items|seized_reports|irshad_reports|FROM notification_dedup WHERE scope=\?1 AND once_key/.test(s)), false, 'the due job is not on the read path');
+  return { trips: (job ? job.trips : end) - t0, deferred: !!job, deferredTrips: f.DB.trips - (job ? job.trips : end) };
+}
 test('Super notification summary retains the canonical D1 trip budget after a successful preload', async (t) => {
   for (const [label, iso] of Object.entries(SUMMARY_CLOCKS))
     await atClock(iso, async () => {
       const before = await fixture(),
         after = await world(),
         path = '/api/notifications?dept=' + D1 + '&summary=1';
-      await before.api('super', path);
-      await after.api(path);
-      for (let read = 1; read <= 3; read++) {
-        const a = before.DB.trips,
-          b = after.DB.trips;
-        await before.api('super', path);
-        await after.api(path);
-        const baseline = before.DB.trips - a,
-          candidate = after.DB.trips - b;
-        t.diagnostic(JSON.stringify({ clock: label, read, baselineD1Trips: baseline, candidateD1Trips: candidate, cloudMeasured: false }));
-        assert.ok(candidate <= 7, label + ' read ' + read + ': the accepted Super summary budget is seven D1 trips: ' + candidate);
-        assert.ok(baseline <= 7, label + ' read ' + read + ': the canonical baseline also stays within seven D1 trips: ' + baseline);
+      for (let read = 0; read <= 3; read++) {
+        const baseline = await summaryRead(before.W, before, path),
+          candidate = await summaryRead(after.W, after, path);
+        t.diagnostic(JSON.stringify({ clock: label, read, baselineD1Trips: baseline.trips, candidateD1Trips: candidate.trips, deferredJob: candidate.deferred, deferredJobD1Trips: candidate.deferredTrips, cloudMeasured: false }));
+        assert.ok(candidate.trips <= 7, label + ' read ' + read + ': the accepted Super summary budget is seven D1 trips: ' + candidate.trips);
+        assert.ok(baseline.trips <= 7, label + ' read ' + read + ': the canonical baseline also stays within seven D1 trips: ' + baseline.trips);
+        /* control: the first read inside a job window does trigger the (deferred) job; the night clock and repeated reads do not */
+        assert.equal(candidate.deferred, read === 0 && label !== 'night', label + ' read ' + read + ': due job triggered');
+        assert.equal(baseline.deferred, candidate.deferred, label + ' read ' + read + ': baseline triggers alike');
       }
     });
 });

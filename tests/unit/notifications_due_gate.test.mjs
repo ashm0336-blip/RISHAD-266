@@ -1,15 +1,22 @@
 /* RISHAD-266 · owner decision (h) 2026-11-03: the notification summary must not run the costly due jobs (nfIrshadDaily ·
    nfSeizedDue) on every GET /api/notifications. A shared, time-bounded gate (019 nfDueRun, tkg:ird|szd:<dept> in meta) runs
    each job at most once per department per bounded interval; due reminders are never lost (a due edge always reopens the gate,
-   late source data is picked up within NF_DUE_GAP) and never duplicated (the jobs' once keys are unchanged).
+   late source data is picked up within NF_DUE_GAP, and data landing in the final NF_DUE_GAP before the window closes at Riyadh
+   midnight is caught up once after the close) and never duplicated (the jobs' once keys are unchanged).
+   Production path: every read passes an execution context (ctx.waitUntil, as Cloudflare does); the due job runs after the feed,
+   off the read's critical path, and the read's own D1 trips are measured up to the moment the job is handed to waitUntil.
    Real canonical Worker + SQLite, fixed synthetic clocks (no wall-clock dependence), TEST_ONLY data only. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, seizedDocs, D1, clone } from './business_atomic_fx.mjs';
 import { canonicalWorker } from './notifications_review_fx.mjs';
+import { candidateWorker } from './irshad_domain_fx.mjs';
 
 const GAP = 5 * 6e4;                                   /* NF_DUE_GAP */
 const COSTLY = /seized_items|seized_reports|irshad_reports|FROM ops_|notification_dedup/;
+/* the due jobs' own statements (019j · 019n): their source tables and their once-key dedup probes */
+const JOB = /seized_items|seized_reports|irshad_reports|FROM notification_dedup WHERE scope=\?1 AND once_key/;
+const TOUCH = /^UPDATE sess SET la = \?2 WHERE tok = \?1$/;
 const at = (iso) => Date.parse(iso);
 async function clock(start, fn) {
   const RealDate = globalThis.Date, box = { now: start };
@@ -30,18 +37,23 @@ async function fixture({ items = true, weekly = true, ageDays = 40, now } = {}) 
     docs.reports.reports[0].items[0].val = 1200;
     await B.install('seized', D1, docs);
   }
-  const read = async (who = 'super', W) => {
-    const t0 = B.DB.trips, l0 = B.DB.log.length;
+  /* one summary read through the canonical Worker. ctx (default) = the production execution context: waitUntil promises are
+     collected and settled before the helper returns, so the next read sees the job's effects. The read's own cost ends where
+     the due job is handed to waitUntil (nothing of the read touches D1 after that); the once-a-minute session heartbeat
+     (054 sessGet: UPDATE sess SET la, also deferred with waitUntil) is session upkeep, counted apart, never hidden. */
+  const read = async (who = 'super', W = B.canonicalW, { ctx = true } = {}) => {
+    const t0 = B.DB.trips, l0 = B.DB.log.length, calls = [];
+    const ec = { waitUntil(p) { calls.push({ trips: B.DB.trips, log: B.DB.log.length, p }); } };
     const headers = new Headers({ Cookie: 'bs_tok=TEST_ONLY_session_' + who });
-    const r = W
-      ? await W.default.fetch(new Request('http://x/api/notifications?dept=' + D1 + '&summary=1', { headers }), B.env)
-      : await B.api(who, '/api/notifications?dept=' + D1 + '&summary=1');
-    const status = r.status;
-    const sql = B.DB.log.slice(l0).map(String),
-      /* the once-a-minute session heartbeat (054 sessGet: UPDATE sess SET la, deferred with waitUntil on Cloudflare) is
-         session upkeep, not the summary; this shim has no waitUntil, so it is counted apart, never hidden */
-      touch = sql.filter((s) => /^UPDATE sess SET la = \?2 WHERE tok = \?1$/.test(s.trim())).length;
-    return { status, trips: B.DB.trips - t0 - touch, touch, costly: sql.filter((s) => COSTLY.test(s)).length };
+    const r = await W.default.fetch(new Request('http://x/api/notifications?dept=' + D1 + '&summary=1', { headers }), B.env, ctx ? ec : undefined);
+    const status = r.status, end = B.DB.trips, endLog = B.DB.log.length;
+    await Promise.all(calls.map((c) => c.p));
+    const job = calls.filter((c) => !TOUCH.test(String(B.DB.log[c.log - 1] || '').trim())).at(-1),
+      readSql = B.DB.log.slice(l0, job ? job.log : endLog).map(String),
+      sql = B.DB.log.slice(l0).map(String),
+      touch = readSql.filter((s) => TOUCH.test(s.trim())).length;
+    if (ctx) assert.equal(readSql.filter((s) => JOB.test(s)).length, 0, 'the due job never runs on the read\'s critical path');
+    return { status, trips: (job ? job.trips : end) - t0 - touch, touch, deferred: !!job, costly: sql.filter((s) => COSTLY.test(s)).length, seized: sql.filter((s) => /seized_items|seized_reports/.test(s)).length };
   };
   return { ...B, read };
 }
@@ -56,7 +68,8 @@ test('repeated reads inside the interval never re-run the costly due work and st
     const first = await B.read();
     assert.equal(first.status, 200);
     assert.ok(first.costly > 0, 'control: the first eligible read runs the due job');
-    assert.match(stamp(B), /^\d+:\d+:0$/, 'the job left a shared stamp (from:until:epoch)');
+    assert.match(stamp(B), /^\d+:\d+:0:0$/, 'the job left a shared stamp (from:until:epoch:settled)');
+    assert.ok(first.deferred && first.trips <= 7, 'the job ran after the read, which itself costs ' + first.trips + ' trips');
     for (let i = 1; i <= 20; i++) {
       set(T + i * 1e4);                                  /* 20 reads over 200 s, all inside NF_DUE_GAP */
       const r = await B.read();
@@ -140,13 +153,119 @@ test('a reader who cannot run the job leaves no stamp, so it never suppresses a 
   });
 });
 
-test('outside the due windows the summary does not touch the gate at all', async () => {
+test('outside the due windows the summary never runs a due job or writes a stamp, and the gate costs no extra trip', async () => {
   const T = at('2026-10-28T00:00:00Z');                 /* Wednesday 03:00 Riyadh */
   await clock(T, async () => {
     const B = await fixture({ now: T });
-    const l0 = B.DB.log.length;
-    for (let i = 0; i < 3; i++) assert.ok((await B.read()).trips <= 7);
-    assert.equal(B.DB.log.slice(l0).some((s) => /tkg:|FROM meta WHERE k IN \(SELECT value/.test(String(s))), false);
+    const l0 = B.DB.log.length, reads = [];
+    for (let i = 0; i < 3; i++) reads.push(await B.read());
+    for (const r of reads) { assert.equal(r.status, 200); assert.ok(r.trips <= 7, String(r.trips)); assert.equal(r.costly, 0); assert.equal(r.deferred, false); }
+    const sql = B.DB.log.slice(l0).map(String);
+    /* the catch-up check only needs yesterday's stamp: read once per isolate, inside the retired-source trip (same trip count) */
+    assert.equal(sql.filter((s) => /FROM meta WHERE k IN \(SELECT value/.test(s)).length, 1, 'the warm isolate remembers the quiet gate');
+    assert.equal(reads[0].trips, reads[1].trips, 'reading the stamps adds no D1 trip');
+    assert.equal(sql.some((s) => /tkg:|INSERT INTO meta/.test(s)), false, 'no stamp write');
     assert.equal(stamp(B), undefined);
+  });
+});
+
+test('without an execution context the job still runs inline (local tools), within the same gate', async () => {
+  const T = at('2026-10-28T07:00:00Z');                 /* Wednesday 10:00 Riyadh */
+  await clock(T, async (set) => {
+    const B = await fixture({ now: T });
+    const r = await B.read('super', undefined, { ctx: false });
+    assert.equal(r.status, 200);
+    assert.equal(r.deferred, false);
+    assert.ok(r.costly > 0);
+    assert.deepEqual(bx(B).map((x) => x.type), ['bx_old'], 'emitted before the response');
+    set(T + 6e4);
+    assert.equal((await B.read('super', undefined, { ctx: false })).costly, 0, 'settled: held');
+  });
+});
+
+/* review finding (A): an empty check in the final NF_DUE_GAP before midnight held the gate up to the close, and the next day
+   uses another once key — late data in 23:55–24:00 Riyadh was never reported. The first eligible run after the close now
+   re-checks the closed window once, at its close instant, under the same once key. */
+const MIDNIGHT = at('2026-10-30T21:00:00Z');            /* Saturday 00:00 Riyadh (Friday's windows close) */
+test('irshad daily: a report landing in the final interval before midnight is caught up once after the close', async () => {
+  await clock(MIDNIGHT - 4 * 6e4, async (set) => {      /* Friday 23:56 Riyadh */
+    const B = await fixture({ items: false, now: MIDNIGHT });
+    const H = await candidateWorker(['pfHijriAt']), day = H.pfHijriAt(MIDNIGHT - 4 * 6e4);
+    const perms = clone(B.keys.bassam_perms_v1);
+    Object.keys(perms.caps).forEach((d) => { if (!perms.caps[d].includes('irshad')) perms.caps[d].push('irshad'); });
+    await B.put('bassam_perms_v1', perms);
+    const ir = () => B.DB.q("SELECT m.type,d.once_key FROM notification_messages m JOIN notification_dedup d ON d.scope=m.scope AND d.message_id=m.id WHERE m.type='ir_day'").map((r) => r.once_key);
+    const first = await B.read();
+    assert.ok(first.deferred && first.costly > 0 && first.trips <= 7, 'control: 23:56 checks Friday (nothing yet)');
+    assert.deepEqual(ir(), []);
+    assert.match(B.DB.q('SELECT v FROM meta WHERE k=?', 'tkg:ird:' + D1)[0].v, new RegExp('^\\d+:' + MIDNIGHT + ':0:0$'), 'unsettled, held up to the close');
+    set(MIDNIGHT - 2 * 6e4);                             /* 23:58: the late report lands */
+    const report = { id: 'TEST_ONLY_late_daily', y: day.y, m: day.m, d: day.d, shift: 'TEST_ONLY_shift', loc: 'TEST_ONLY_late_location', langs: [{ lang: 'TEST_ONLY', count: 1 }] };
+    await B.DB.batch(B.W.irInstallStatements(B.env, B.W.irConvert(D1, { reports: { reports: [report] } })));
+    assert.equal((await B.read()).costly, 0, 'still inside the hold');
+    set(MIDNIGHT - 2e4);                                 /* 23:59:40 */
+    assert.equal((await B.read()).costly, 0);
+    set(MIDNIGHT + 3e4);                                 /* Saturday 00:00:30: first eligible read after the close */
+    const caught = await B.read();
+    assert.equal(caught.status, 200);
+    assert.ok(caught.deferred && caught.trips <= 7, 'the catch-up runs off the read path: ' + caught.trips);
+    assert.deepEqual(ir(), ['ir_day:' + day.dk], 'exactly one reminder, under Friday\'s once key');
+    for (const t of [MIDNIGHT + 6e4, MIDNIGHT + 10 * 6e4, MIDNIGHT + 3600000, MIDNIGHT + 2.5 * 3600000]) {
+      set(t);
+      const r = await B.read();
+      assert.equal(r.status, 200);
+      assert.equal(r.costly, 0, 'the catch-up is done once');
+      assert.ok(r.trips <= 7, String(r.trips));
+    }
+    const W2 = await canonicalWorker();
+    await W2.default.fetch(new Request('http://x/api/ping'), B.env);
+    assert.equal((await B.read('super', W2)).costly, 0, 'a cold isolate does not catch up again');
+    assert.deepEqual(ir(), ['ir_day:' + day.dk], 'never duplicated');
+  });
+});
+
+test('seized due: stock landing in the final interval before midnight is caught up once after the close', async () => {
+  const CLOSE = at('2026-10-28T21:00:00Z');             /* Thursday 00:00 Riyadh (Wednesday's window closes) */
+  await clock(CLOSE - 4 * 6e4, async (set) => {         /* Wednesday 23:56 Riyadh */
+    const B = await fixture({ items: false, now: CLOSE });
+    const H = await candidateWorker(['pfHijriAt']), day = H.pfHijriAt(CLOSE - 4 * 6e4);
+    const first = await B.read();
+    assert.ok(first.deferred && first.costly > 0 && first.trips <= 7, 'control: 23:56 checks Wednesday (nothing old yet)');
+    assert.equal(bx(B).length, 0);
+    assert.match(stamp(B), new RegExp('^\\d+:' + CLOSE + ':0:0$'), 'unsettled, held up to the close');
+    set(CLOSE - 2 * 6e4);                                /* 23:58: old stock is recorded */
+    const docs = seizedDocs('late_close');
+    docs.reports.reports[0].ts = CLOSE - 40 * 864e5;
+    docs.reports.reports[0].items[0].n = 2;
+    await B.install('seized', D1, docs);
+    assert.equal((await B.read()).costly, 0, 'still inside the hold');
+    set(CLOSE + 3e4);                                    /* Thursday 00:00:30 */
+    const caught = await B.read();
+    assert.ok(caught.deferred && caught.trips <= 7, 'the catch-up runs off the read path: ' + caught.trips);
+    assert.deepEqual(bxOnce(B), ['bx_old:' + day.y + '-' + day.m + '-' + day.d], 'exactly one reminder, under Wednesday\'s once key');
+    for (const t of [CLOSE + 6e4, CLOSE + 30 * 6e4, CLOSE + 2 * 3600000, CLOSE + 3.5 * 3600000, CLOSE + 5 * 3600000]) {   /* until 05:00 Riyadh, before Thursday's own window */
+      set(t);
+      const r = await B.read();
+      assert.equal(r.costly, 0, 'the catch-up is done once');
+      assert.ok(r.trips <= 7, String(r.trips));
+    }
+    const W2 = await canonicalWorker();
+    await W2.default.fetch(new Request('http://x/api/ping'), B.env);
+    assert.equal((await B.read('super', W2)).costly, 0, 'a cold isolate does not catch up again');
+    assert.equal(bx(B).length, 1, 'never duplicated');
+  });
+});
+
+test('a window settled through its close is not re-checked after midnight', async () => {
+  const CLOSE = at('2026-10-28T21:00:00Z');
+  await clock(CLOSE - 10 * 6e4, async (set) => {        /* Wednesday 23:50 Riyadh: bx_old due and emitted */
+    const B = await fixture({ now: CLOSE });
+    await B.read();
+    assert.deepEqual(bx(B).map((r) => r.type), ['bx_old']);
+    assert.match(stamp(B), new RegExp('^\\d+:' + CLOSE + ':0:1$'), 'settled through the close');
+    set(CLOSE + 3e4);
+    const r = await B.read();
+    assert.equal(r.seized, 0, 'nothing to catch up for the settled Seized window');
+    assert.equal(bx(B).length, 1);
   });
 });

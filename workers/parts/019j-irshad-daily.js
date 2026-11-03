@@ -13,8 +13,9 @@ function irDailyPlan(ctx, day) {
     top = 'SELECT ' + label + ' FROM irshad_reports r WHERE ' + where + ' GROUP BY ' + label + ' ORDER BY COUNT(*) DESC,MIN(r.sequence) LIMIT 1';
   return { args: p.args, count: count, top: top };
 }
-async function nfIrshadDaily(env, actor, url) {
-  var now = Date.now(), minutes = pfRiyadhMins(now), d = url.searchParams.get('dept') || '';
+/* windowAt (optional): the due gate's catch-up (019 nfDueRun) checks a closed window at its close instant — same day, same once key */
+async function nfIrshadDaily(env, actor, url, windowAt) {
+  var now = Date.now(), when = windowAt == null ? now : windowAt, minutes = pfRiyadhMins(when), d = url.searchParams.get('dept') || '';
   if (minutes < 1410 || !d || !irDailyManager(actor)) return { emitted: 0 };
   var ctx;
   try { ctx = await irQueryContext(env, actor, d); }
@@ -24,7 +25,7 @@ async function nfIrshadDaily(env, actor, url) {
     throw e;
   }
   if (!irDailyManager(ctx.A)) return { emitted: 0 };
-  var day = pfHijriAt(now), once = 'ir_day:' + day.dk, scope = nfScope(d),
+  var day = pfHijriAt(when), once = 'ir_day:' + day.dk, scope = nfScope(d),
     existing = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
   if (existing) return { emitted: 0, checked: 1, settled: 1 };   /* checked/settled: the shared due gate (019 nfDueRun · decision h) */
   var aggregate = irDailyPlan(ctx, day), guards = ctx.guards.concat([rsEpochGuard(ctx.env.DB, ctx.base.epoch), irRetiredGuard(ctx.env)]), result;

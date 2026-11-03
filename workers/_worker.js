@@ -6561,8 +6561,15 @@ async function nfRoute(env, request, url, ss) {
       due = feedGet ? nfDueOpen(env, A, url) : null,
       dueSeen = await nfGuardRetired(env, due ? due.keys : null);
     if (feedGet) {
-      await nfDueRun(env, A, url, due, dueSeen);
-      return json(await nfFeed(env, A, url));
+      var dueJob = nfDueWork(due, dueSeen), ec = env.__ctx;
+      if (!dueJob || !ec || typeof ec.waitUntil !== "function") {
+        await nfDueRun(env, A, url, dueJob);   /* no execution context: inline, as before */
+        return json(await nfFeed(env, A, url));
+      }
+      var feed = await nfFeed(env, A, url);
+      /* decision (h): the due job runs after the feed, off the read's critical path (no D1 trip of the read follows it) */
+      ec.waitUntil(Promise.resolve().then(function () { return nfDueRun(env, A, url, dueJob); }).then(null, function (eJ) { swallow("nf-due-job", eJ, env.__rid); }));
+      return json(feed);
     }
     if (url.pathname === "/api/notifications/export" && request.method === "GET") return json(await nfExport(env, A, url));
     if (url.pathname !== "/api/notifications/act" || request.method !== "POST") return json({ ok: 0, err: "method" }, 405);
@@ -6610,61 +6617,84 @@ async function nfGuardRetired(env, gateKeys) {
    Now one shared gate per job and department, the existing isolate-shared task-gate pattern (074 tkg:<kind>:<dept> rows in meta,
    isolate memory first): ird = Irshad daily, szd = Seized due.
    · cost: isolate memory first (0 trips); otherwise the stamps are read in the same trip as the retired-source check (0 extra
-     trips); the job runs only when no stamp holds, then one stamp write. A repeated read never re-runs the job inside its hold.
-   · never lost: a stamp holds at most NF_DUE_GAP while a job has nothing (yet) to emit, and never across a due edge
-     (Riyadh 00:00 · 08:00 · 09:00 · 23:30 — the windows of the two jobs), nor across a restore epoch; so a reminder that becomes
-     due is emitted on the first eligible read after its due time, or within NF_DUE_GAP when its source data arrives later.
+     trips). When a job is due it runs OFF the read's critical path: after the feed is built, under the runtime's execution
+     context (ctx.waitUntil, as the 054 session heartbeat), so the summary read itself stays within its 7-trip budget at every
+     hour; the reminder is visible from the next read. Without an execution context (local tools) it runs inline as before.
+   · never lost: a stamp holds at most NF_DUE_GAP while a job has nothing (yet) to emit, and never across one of the job's due
+     edges (Irshad daily: Riyadh 00:00 · 23:30; Seized due: 00:00 · 08:00 · 09:00), nor across a restore epoch; so a reminder that
+     becomes due is emitted on the first eligible read after its due time, or within NF_DUE_GAP when its source data arrives
+     later. Catch-up at the window close (Riyadh midnight, where the once key changes): when the previous day's last check inside
+     the window was not settled through its close, the first eligible run after the close re-checks that window once, at its
+     close instant (same once key ⇒ still deduplicated); data landing in the final NF_DUE_GAP before midnight is not lost.
      A job that is settled (every once key of the current window already in notification_dedup) holds until the next edge.
    · stamped after the job, not before: an actor who cannot run the job (no scope/role → no `checked`) or a job that throws
      leaves no stamp, so it cannot suppress another manager's reminder; concurrent runs stay deduplicated by the unchanged
-     once keys and SEEN guards in the jobs (never duplicated).
-   · stamp value "<from>:<until>:<restore epoch>"; written through __rawDB with the task-gate statement shape (cache neutral, 052). */
-var NF_DUE_GAP = 5 * 6e4, NF_DUE_MEM = nmap(), NF_DUE_EDGES = [0, 480, 540, 1410];
-function nfDueSpan(now) {
-  var start = Math.floor((now + 3 * 3600000) / 86400000) * 86400000 - 3 * 3600000,
-    m = (now - start) / 6e4,
-    last = 0,
-    next = 1440;
-  NF_DUE_EDGES.forEach(function (b) {
+     once keys and SEEN guards in the jobs (never duplicated), and every job write keeps its legacy-source/epoch guards.
+   · stamp value "<from>:<until>:<restore epoch>:<settled 0|1>"; written through __rawDB with the task-gate statement shape
+     (cache neutral, 052). Isolate memory {e: epoch, q: quiet-until, v: stamp} only skips the stamp read, never decides a run. */
+var NF_DUE_GAP = 5 * 6e4, NF_DUE_DAY = 864e5, NF_DUE_MEM = nmap(), NF_DUE_EDGES = { ird: [0, 1410], szd: [0, 480, 540] };
+function nfDueDay(now) { return Math.floor((now + 3 * 3600000) / NF_DUE_DAY) * NF_DUE_DAY - 3 * 3600000; }   /* Riyadh 00:00 */
+function nfDueSpan(k, now) {
+  var start = nfDueDay(now), m = (now - start) / 6e4, last = 0, next = 1440;
+  NF_DUE_EDGES[k].forEach(function (b) {
     if (b <= m) last = b;
     else if (b < next) next = b;
   });
   return { last: start + last * 6e4, next: start + next * 6e4 };
 }
-/* the jobs' own time/role windows (019j · 019n) — nothing outside them is gated, read or run */
-function nfDueKinds(now, A, d) {
-  if (!d || !irDailyManager(A)) return [];
-  var m = pfRiyadhMins(now), out = [];
-  if (m >= 1410) out.push("ird");
-  if (m >= 540 || (m >= 480 && new Date(now + 3 * 3600000).getUTCDay() === 6)) out.push("szd");
-  return out;
+/* the jobs' own time windows (019j · 019n) */
+function nfDueIn(k, ts) {
+  var m = pfRiyadhMins(ts);
+  return k === "ird" ? m >= 1410 : m >= 540 || (m >= 480 && new Date(ts + 3 * 3600000).getUTCDay() === 6);
 }
-function nfDueHeld(v, now, epoch) {
-  var p = /^(\d+):(\d+):([^:]*)$/.exec(v == null ? "" : String(v));
-  if (!p) return false;
-  var from = +p[1], until = +p[2];
-  return p[3] === epoch && from <= now + TK_GATE_SKEW && from >= nfDueSpan(now).last && now < until;
+function nfDueStamp(v, now, epoch) {
+  var p = /^(\d+):(\d+):(\d+):([01])$/.exec(v == null ? "" : String(v));
+  if (!p || p[3] !== epoch || +p[1] > now + TK_GATE_SKEW) return null;
+  return { from: +p[1], until: +p[2], settled: p[4] === "1" };
+}
+/* what kind k needs now, given its shared stamp: catchUp = the previous window's close instant (re-check once), run = check now */
+function nfDuePlan(k, s, now) {
+  var close = nfDueDay(now), span = nfDueSpan(k, now),
+    held = !!(s && s.from >= span.last && now < s.until),
+    catchUp = s && s.from < close && s.from >= close - NF_DUE_DAY && nfDueIn(k, s.from) && !(s.settled && s.until >= close) ? close - 1 : 0,
+    run = nfDueIn(k, now) && !held ? 1 : 0;
+  return { k: k, catchUp: catchUp, run: run, quiet: catchUp || run ? 0 : held ? s.until : span.next };
 }
 function nfDueOpen(env, A, url) {
-  var now = Date.now(), d = url.searchParams.get("dept") || "", epoch = String(env.__restoreEpoch || 0),
-    kinds = nfDueKinds(now, A, d).filter(function (k) {
-      return !nfDueHeld(NF_DUE_MEM["tkg:" + k + ":" + d], now, epoch);
-    });
+  var now = Date.now(), d = url.searchParams.get("dept") || "", epoch = String(env.__restoreEpoch || 0);
+  if (!d || !irDailyManager(A)) return null;
+  var kinds = ["ird", "szd"].filter(function (k) {
+    var m = NF_DUE_MEM["tkg:" + k + ":" + d];
+    return !(m && m.e === epoch && now < m.q);
+  });
   return kinds.length ? { d: d, now: now, epoch: epoch, kinds: kinds, keys: kinds.map(function (k) { return "tkg:" + k + ":" + d; }) } : null;
 }
-async function nfDueRun(env, A, url, due, seen) {
-  if (!due) return;
-  for (var i = 0; i < due.kinds.length; i++) {
-    var key = due.keys[i];
-    if (nfDueHeld(seen[key], due.now, due.epoch)) { NF_DUE_MEM[key] = seen[key]; continue; }   /* ran in another isolate within its hold */
-    var r = due.kinds[i] === "ird" ? await nfIrshadDaily(env, A, url) : await nfSeizedDue(env, A, url);
-    if (r.emitted) preOff(env);
-    if (!r.checked) continue;
-    var t = Date.now(), span = nfDueSpan(t),
-      v = t + ":" + (r.settled ? span.next : Math.min(t + NF_DUE_GAP, span.next)) + ":" + due.epoch;
-    NF_DUE_MEM[key] = v;
+/* decide from the shared stamps (no I/O); a kind with nothing to do is remembered as quiet in this isolate */
+function nfDueWork(due, seen) {
+  if (!due) return null;
+  var work = [];
+  due.kinds.forEach(function (k, i) {
+    var key = due.keys[i], m = NF_DUE_MEM[key], v = seen[key] != null ? seen[key] : m && m.e === due.epoch ? m.v : null,
+      p = nfDuePlan(k, nfDueStamp(v, due.now, due.epoch), due.now);
+    if (p.catchUp || p.run) { p.key = key; work.push(p); }
+    else NF_DUE_MEM[key] = { e: due.epoch, q: p.quiet, v: v };
+  });
+  return work.length ? { due: due, work: work } : null;
+}
+async function nfDueRun(env, A, url, job) {
+  if (!job) return;
+  var due = job.due;
+  for (var i = 0; i < job.work.length; i++) {
+    var p = job.work[i], fn = p.k === "ird" ? nfIrshadDaily : nfSeizedDue, rc = null, r = null;
+    if (p.catchUp) { rc = await fn(env, A, url, p.catchUp); if (rc.emitted) preOff(env); }   /* the previous window, at its close */
+    if (p.run) { r = await fn(env, A, url); if (r.emitted) preOff(env); }
+    if ((rc && !rc.checked) || (r && !r.checked)) continue;
+    var span = nfDueSpan(p.k, due.now),
+      until = r && !r.settled ? Math.min(due.now + NF_DUE_GAP, span.next) : span.next,
+      v = due.now + ":" + until + ":" + due.epoch + ":" + (r && !r.settled ? 0 : 1);
+    NF_DUE_MEM[p.key] = { e: due.epoch, q: until, v: v };
     try {
-      await (env.__rawDB || env.DB).prepare("INSERT INTO meta (k, v) VALUES (?2, ?1) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(v, key).run();
+      await (env.__rawDB || env.DB).prepare("INSERT INTO meta (k, v) VALUES (?2, ?1) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(v, p.key).run();
     } catch (e) { swallow("nf-due-stamp", e, env.__rid); }   /* no shared stamp ⇒ other isolates simply run the job (the old behaviour) */
   }
 }
@@ -13429,8 +13459,9 @@ function irDailyPlan(ctx, day) {
     top = 'SELECT ' + label + ' FROM irshad_reports r WHERE ' + where + ' GROUP BY ' + label + ' ORDER BY COUNT(*) DESC,MIN(r.sequence) LIMIT 1';
   return { args: p.args, count: count, top: top };
 }
-async function nfIrshadDaily(env, actor, url) {
-  var now = Date.now(), minutes = pfRiyadhMins(now), d = url.searchParams.get('dept') || '';
+/* windowAt (optional): the due gate's catch-up (019 nfDueRun) checks a closed window at its close instant — same day, same once key */
+async function nfIrshadDaily(env, actor, url, windowAt) {
+  var now = Date.now(), when = windowAt == null ? now : windowAt, minutes = pfRiyadhMins(when), d = url.searchParams.get('dept') || '';
   if (minutes < 1410 || !d || !irDailyManager(actor)) return { emitted: 0 };
   var ctx;
   try { ctx = await irQueryContext(env, actor, d); }
@@ -13440,7 +13471,7 @@ async function nfIrshadDaily(env, actor, url) {
     throw e;
   }
   if (!irDailyManager(ctx.A)) return { emitted: 0 };
-  var day = pfHijriAt(now), once = 'ir_day:' + day.dk, scope = nfScope(d),
+  var day = pfHijriAt(when), once = 'ir_day:' + day.dk, scope = nfScope(d),
     existing = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
   if (existing) return { emitted: 0, checked: 1, settled: 1 };   /* checked/settled: the shared due gate (019 nfDueRun · decision h) */
   var aggregate = irDailyPlan(ctx, day), guards = ctx.guards.concat([rsEpochGuard(ctx.env.DB, ctx.base.epoch), irRetiredGuard(ctx.env)]), result;
@@ -17440,10 +17471,10 @@ async function bdRoute(env,request,url,ss,name) {
   } catch(error) {return bdErrorResponse(error);}
 }
 /* Former Seized browser polls, now scoped SQL facts and one NF transaction. */
-async function nfSeizedDueRun(env,actor,url) {
-  var now=Date.now(),minutes=pfRiyadhMins(now),d=url.searchParams.get('dept')||'';
+async function nfSeizedDueRun(env,actor,url,windowAt) {
+  var now=Date.now(),when=windowAt==null?now:windowAt,minutes=pfRiyadhMins(when),d=url.searchParams.get('dept')||'';   /* windowAt: the due gate's catch-up of a closed window (019 nfDueRun) */
   if(!d||minutes<480||!irDailyManager(actor))return {emitted:0};
-  var saturday=new Date(now+3*3600000).getUTCDay()===6,day=pfHijriAt(now),candidates=[];
+  var saturday=new Date(when+3*3600000).getUTCDay()===6,day=pfHijriAt(when),candidates=[];
   if(minutes>=540)candidates.push({type:'bx_old',once:'bx_old:'+day.y+'-'+day.m+'-'+day.d});
   if(saturday)candidates.push({type:'bx_wk',once:'bx_wk:'+day.y+'-'+day.m+'-'+day.d});
   if(!candidates.length)return {emitted:0};
@@ -17453,7 +17484,7 @@ async function nfSeizedDueRun(env,actor,url) {
   var scope=nfScope(d),once=JSON.stringify(candidates.map(function(e){return e.once;})),seen=(await ctx.env.DB.prepare('SELECT once_key FROM notification_dedup WHERE scope=?1 AND once_key IN(SELECT value FROM json_each(?2))').bind(scope,once).all()).results||[];
   candidates=candidates.filter(function(e){return !seen.some(function(s){return s.once_key===e.once;});});
   if(!candidates.length)return {emitted:0,checked:1,settled:1};   /* checked/settled: the shared due gate (019 nfDueRun · decision h) */
-  var q=szQueryScope(ctx,'r'),args=q.args.slice(),slot='?'+(args.push(now)),age='CAST(('+slot+'-COALESCE(r.created_at,0))/86400000 AS INTEGER)',
+  var q=szQueryScope(ctx,'r'),args=q.args.slice(),slot='?'+(args.push(when)),age='CAST(('+slot+'-COALESCE(r.created_at,0))/86400000 AS INTEGER)',
     sql='SELECT COALESCE(SUM(CASE WHEN '+age+'>=30 THEN CAST(COALESCE(i.quantity,0)AS INTEGER) ELSE 0 END),0) oldCount,COALESCE(SUM(CAST(COALESCE(i.quantity,0)AS INTEGER)),0) total,MAX(0,COALESCE(MAX('+age+'),0)) days,COALESCE(SUM(CAST(COALESCE(i.value,0)AS INTEGER)),0) money FROM seized_items i JOIN seized_reports r ON r.department_id=i.department_id AND r.report_id=i.report_id WHERE '+q.sql+" AND i.action_key='sto'",
     guards=ctx.guards.concat([rsEpochGuard(ctx.env.DB,ctx.base.epoch),szRetiredGuard(ctx.env)]),result=await ctx.env.DB.batch(guards.concat([rsBound(ctx.env.DB.prepare(sql),args)])),summary=result[result.length-1].results[0];
   var events=candidates.filter(function(e){return e.type==='bx_old'?summary.oldCount>0:summary.total>0;}).map(function(e){return {type:e.type,dept:d,once:e.once,vars:e.type==='bx_old'?{'العدد':summary.oldCount,'الأيام':30}:{'العدد':summary.total,'الأيام':summary.days,'المبلغ':Number(summary.money).toLocaleString('en-US')}};});
@@ -17469,8 +17500,8 @@ async function nfSeizedDueRun(env,actor,url) {
   preOff(ctx.env);return {emitted:plan.plans.length,checked:1,settled:candidates.every(function(e){return plan.plans.some(function(p){return p.once===e.once;});})?1:0};
 }
 
-async function nfSeizedDue(env,actor,url) {
-  try{return await nfSeizedDueRun(env,actor,url);}
+async function nfSeizedDue(env,actor,url,windowAt) {
+  try{return await nfSeizedDueRun(env,actor,url,windowAt);}
   catch(error){
     if(error.szCode)throw nfErr(error.szCode,error.szStatus===409?409:503);
     if(/KIVO_SEIZED_LEGACY_SOURCE/.test(String(error)))throw nfErr('seized-legacy-source-present',503);
