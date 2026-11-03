@@ -19,8 +19,12 @@ def ident(name):
 
 def insertion_order(db, tables):
     """D1 enforces FKs: never rely on deferral across separate statements.
-    Cycles, including self references, need a separate restore plan and are
-    rejected before a dump can be produced or replace an existing output."""
+    Cycles between tables need a separate restore plan and are rejected before
+    a dump can be produced or replace an existing output. RISHAD-266 (schema 10):
+    a self reference (the ops_nodes tree) is not a table edge; its rows are
+    emitted parent-first by self_ordered_rows, which still rejects an
+    unsatisfiable in-table cycle. This reverses the earlier rule that rejected
+    every self reference."""
     canonical = {name.casefold(): name for name in tables}
     parents = {name: set() for name in tables}
     children = {name: set() for name in tables}
@@ -29,6 +33,8 @@ def insertion_order(db, tables):
             parent = canonical.get(fk[2].casefold())
             if parent is None:
                 raise ValueError('missing referenced table: ' + fk[2])
+            if parent == name:
+                continue  # self reference: rows are emitted parent-first (self_ordered_rows)
             parents[name].add(parent)
             children[parent].add(name)
     ready = [name for name in tables if not parents[name]]
@@ -43,6 +49,42 @@ def insertion_order(db, tables):
     if len(order) != len(tables):
         raise ValueError('foreign key dependency cycle: ' + ', '.join(sorted(set(tables) - set(order))))
     return order
+
+
+def self_ordered_rows(db, name, columns):
+    """A self-referencing table (schema 10 ops_nodes tree) is written parent-before-child:
+    a row is emitted only after every row it references in the same table. A row whose
+    reference can never be satisfied is a cycle and is still rejected."""
+    fks = {}
+    pk = [r[1] for r in sorted(db.execute('PRAGMA table_info(' + ident(name) + ')'), key=lambda r: r[5]) if r[5]]
+    for fk in db.execute('PRAGMA foreign_key_list(' + ident(name) + ')'):
+        if fk[2].casefold() == name.casefold(): fks.setdefault(fk[0], []).append((fk[3], fk[4]))
+    for g in fks.values():  # an implicit-PK reference (REFERENCES t) has no target column name: resolve to the primary key
+        if any(t is None for _, t in g):
+            if len(pk) != len(g): raise ValueError('self reference without a resolvable primary key: ' + name)
+            g[:] = [(f, pk[i]) for i, (f, _) in enumerate(g)]
+    rows = list(db.execute('SELECT ' + ','.join(ident(c) for c in columns) + ' FROM ' + ident(name)))
+    if not fks: return rows
+    at = {c: i for i, c in enumerate(columns)}
+    groups = list(fks.values())
+    emitted = [set() for _ in groups]
+    pending, out = rows, []
+    while pending:
+        rest = []
+        for row in pending:
+            ok = True
+            for g, pairs in enumerate(groups):
+                ref = tuple(row[at[f]] for f, _ in pairs)
+                if any(v is None for v in ref): continue
+                if ref not in emitted[g]: ok = False; break
+            if ok:
+                out.append(row)
+                for g, pairs in enumerate(groups): emitted[g].add(tuple(row[at[t]] for _, t in pairs))
+            else: rest.append(row)
+        if len(rest) == len(pending):
+            raise ValueError('foreign key dependency cycle inside table: ' + name)
+        pending = rest
+    return out
 
 
 def main(src, out):
@@ -66,8 +108,9 @@ def main(src, out):
                 for sql in list(tables.values()) + indexes:
                     f.write(sql.replace('CREATE TABLE IF NOT EXISTS', 'CREATE TABLE').replace('CREATE INDEX IF NOT EXISTS', 'CREATE INDEX') + ';\n')
                 for name in order:
-                    columns = ','.join(ident(r[1]) for r in db.execute('PRAGMA table_info(' + ident(name) + ')'))
-                    for row in db.execute('SELECT ' + columns + ' FROM ' + ident(name)):
+                    names = [r[1] for r in db.execute('PRAGMA table_info(' + ident(name) + ')')]
+                    columns = ','.join(ident(c) for c in names)
+                    for row in self_ordered_rows(db, name, names):
                         values = []
                         for value in row:
                             if value is None: values.append('NULL')

@@ -8,6 +8,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
+import { operationSaveBody } from './tasks_fx.mjs';
 function seedSql() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; });
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_fx_adv_')); execFileSync(PYTHON, [ROOT + '/tests/fixtures/gen_fixture.py', '--today', o.year + '-' + o.month + '-' + o.day, '--out', out], { stdio: 'pipe' });
@@ -24,6 +25,9 @@ async function world(extra = {}) {
   const emp2 = await C.login('0000000121', '70121'); assert.ok(emp2.ok, 'tst_emp2 (tst_d2)');
   return { env, C, su, emp, emp2 };
 }
+/* RISHAD-266 · schema 10: bassam_options_v1 مورد تشغيلي مُنمَّط — الكتابةُ بغلاف العمليات (requestId/epoch/base) والقراءةُ من /api/operations/read */
+const opSave = async (C, env, ck, set, base) => { const keys = Object.keys(set); let b = base; if (!b) { const g = (await C.api('/api/operations/read?keys=' + encodeURIComponent(keys.filter(k => /^bsdept:/.test(k)).join(',')), { cookie: ck })).j; b = {}; for (const k of keys) b[k] = ((g.base || {})[k]) || 0; } return C.api('/api/save', { method: 'POST', cookie: ck, body: operationSaveBody(env, '/api/save', { set, del: [], base: b }) }); };
+const opGet = async (C, ck, k) => { const j = (await C.api('/api/operations/read?keys=' + encodeURIComponent(k), { cookie: ck })).j; return { v: (j.resources || {})[k] ?? null, rev: (j.base || {})[k] ?? 0, j }; };
 const getv = async (C, ck, k) => ((await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: ck })).j.keys || {})[k];
 for (const mode of ['legacy', 'enforce']) {
   const EX = mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {};
@@ -42,20 +46,25 @@ for (const mode of ['legacy', 'enforce']) {
     const cc = r2.j && ((r2.j.conflicts || {}).bassam_auth_users_v1 || (r2.j.denied || {}).bassam_auth_users_v1); assert.ok(!cc || cc.cur == null || !/"ph":/.test(String(cc.cur)), '★ AUD-033: conflicts/denied.cur بلا ph أيضاً');
   });
   test('[' + mode + '] النطاق: موظف tst_d1 لا يكتب مفاتيح tst_d2 ولا يقرأها عبر /api/get، ولا يكتب مفتاح منصة عاماً', async () => {
-    const { C, su, emp } = await world(EX);
+    const { env, C, su, emp } = await world(EX);
     const k2 = 'bsdept:tst_d2:bassam_options_v1';
-    const w2 = await C.save(su.ck, { [k2]: JSON.stringify({ own: 'd2' }) }); assert.ok(!(w2.j.denied || {})[k2], 'مدير النظام يزرع مفتاح الإدارة الأخرى');
-    const before = await getv(C, su.ck, k2); assert.ok(before && before.v, 'المفتاح موجود');
-    const r = await C.save(emp.ck, { [k2]: JSON.stringify({ hacked: 1 }), bassam_platform_v1: JSON.stringify({ brand: { name: 'x' } }) });
-    const den = (r.j && r.j.denied) || {};
-    assert.ok(r.status === 403 || (den[k2] && den.bassam_platform_v1), 'مرفوضان: ' + JSON.stringify(Object.keys(den)) + ' status=' + r.status);
-    assert.deepEqual(await getv(C, su.ck, k2), before, 'قيمةُ الإدارة الأخرى لم تتغيّر');
-    assert.ok(den[k2] == null || den[k2].cur == null, 'لا تسريبَ لقيمة الإدارة الأخرى عبر denied.cur');
+    const w2 = await opSave(C, env, su.ck, { [k2]: JSON.stringify({ type: ['d2'], work: ['d2'] }) }); assert.equal(w2.status, 200, 'مدير النظام يزرع مفتاح الإدارة الأخرى: ' + JSON.stringify(w2.j).slice(0, 120));
+    const before = await opGet(C, su.ck, k2); assert.ok(before && before.v, 'المفتاح موجود');
+    const r = await opSave(C, env, emp.ck, { [k2]: JSON.stringify({ type: ['hacked'], work: [] }) }, { [k2]: before.rev });
+    assert.equal(r.status, 403, 'كتابةُ الإدارة الأخرى مرفوضة بحارس القراءة: ' + JSON.stringify(r.j).slice(0, 160));
+    assert.ok(r.j.denied && r.j.denied[k2] && r.j.atomic === 1, 'الرفض على مفتاح الإدارة الأخرى وكلّي: ' + JSON.stringify(r.j).slice(0, 160));
+    assert.deepEqual((await opGet(C, su.ck, k2)).v, before.v, 'قيمةُ الإدارة الأخرى لم تتغيّر (المورد المنمَّط)');
+    const er = await opGet(C, emp.ck, k2); assert.ok(er.v == null, 'لا تسريبَ عبر /api/operations/read: ' + JSON.stringify(er.j).slice(0, 120));
+    const r0 = await C.save(emp.ck, { bassam_platform_v1: JSON.stringify({ brand: { name: 'x' } }) });
+    const den = (r0.j && r0.j.denied) || {}, denO = (r.j && r.j.denied) || {};
+    assert.ok(r0.status === 403 || den.bassam_platform_v1, 'مفتاحُ المنصة مرفوض: ' + JSON.stringify(Object.keys(den)) + ' status=' + r0.status);
+    assert.equal(denO[k2].cur, undefined, 'لا تسريبَ لقيمة الإدارة الأخرى عبر denied.cur');
+    assert.ok(!/hacked|"d2"/.test(JSON.stringify(r.j)), 'ردُّ الرفض لا يحمل القيمة');
     const g = (await C.api('/api/get?keys=' + encodeURIComponent(k2), { cookie: emp.ck })).j;
     assert.ok(!(g.keys && g.keys[k2] && g.keys[k2].v != null), 'لا تسريبَ عبر /api/get: ' + JSON.stringify(g.keys).slice(0, 80));
   });
   test('[' + mode + '] الجلسة والحمولة: كوكي مزوَّر/معدَّل 401 · uid في الجسم يُهمَل · base/rev مزيّف لا يتجاوز التعارض', async () => {
-    const { C, su, emp } = await world(EX);
+    const { env, C, su, emp } = await world(EX);
     for (const ck of ['bs_tok=' + 'a'.repeat(40), 'bs_tok=' + emp.ck.split('=')[1].slice(0, -2) + 'zz', 'bs_tok=', 'bs_tok=su', 'bs_tok=' + encodeURIComponent("' OR 1=1 --")])
       assert.equal((await C.api('/api/whoami', { cookie: ck })).status, 401, 'كوكي: ' + ck.slice(0, 30));
     /* KIVO_264 · C1 (إفصاح — تعديلُ اختبار): uid في الجسم لم يعد «يُهمَل» — مخالفتُه صاحبَ الجلسة ⇒ 409 session-changed بلا أيّ كتابة (عقدُ الطابور · D-3)،
@@ -65,12 +74,15 @@ for (const mode of ['legacy', 'enforce']) {
     const r2 = await C.api('/api/save', { method: 'POST', cookie: emp.ck, body: { role: 'super', set: { bassam_depts_v1: '[]' }, del: [], base: {} } });
     assert.ok(r2.status === 200 || r2.status === 403); assert.ok(r2.status === 403 || ((r2.j.denied || {}).bassam_depts_v1), 'role في الجسم لا يرفع الصلاحية');
     assert.ok(((await C.api('/api/get?keys=bassam_depts_v1', { cookie: su.ck })).j.keys.bassam_depts_v1.v || '').indexOf('dR') >= 0, 'الإدارات كما هي');
-    const k = 'bsdept:dR:bassam_options_v1'; await C.save(su.ck, { [k]: JSON.stringify({ v: 1 }) }); await C.save(su.ck, { [k]: JSON.stringify({ v: 2 }) });
-    const cur = await getv(C, su.ck, k);
-    const stale = await C.api('/api/save', { method: 'POST', cookie: su.ck, body: { set: { [k]: JSON.stringify({ v: 'stale' }) }, del: [], base: { [k]: 1 } } });
-    assert.ok(stale.j.conflicts && stale.j.conflicts[k], 'نسخةٌ قديمة ⇒ تعارض لا كتابة: ' + JSON.stringify(stale.j).slice(0, 120));
-    assert.equal(JSON.parse((await getv(C, su.ck, k)).v).v, 2, 'القيمةُ الأحدث باقية');
-    const huge = await C.api('/api/save', { method: 'POST', cookie: su.ck, body: { set: { [k]: JSON.stringify({ v: 9, pad: 'x'.repeat(999999) }) }, del: [], base: { [k]: cur.rev } } });
+    const k = 'bsdept:dR:bassam_options_v1';
+    const w1 = await opSave(C, env, su.ck, { [k]: JSON.stringify({ type: ['v1'], work: [] }) }); assert.equal(w1.status, 200, JSON.stringify(w1.j).slice(0, 160));
+    const first = await opGet(C, su.ck, k);
+    const w2 = await opSave(C, env, su.ck, { [k]: JSON.stringify({ type: ['v2'], work: [] }) }); assert.equal(w2.status, 200, JSON.stringify(w2.j).slice(0, 160));
+    const cur = await opGet(C, su.ck, k);
+    const stale = await opSave(C, env, su.ck, { [k]: JSON.stringify({ type: ['stale'], work: [] }) }, { [k]: first.rev });
+    assert.ok(stale.status === 409 && stale.j.conflicts && stale.j.conflicts[k], 'نسخةٌ قديمة ⇒ تعارض لا كتابة: ' + JSON.stringify(stale.j).slice(0, 160));
+    assert.deepEqual((await opGet(C, su.ck, k)).v.type, ['v2'], 'القيمةُ الأحدث باقية');
+    const huge = await opSave(C, env, su.ck, { [k]: JSON.stringify({ type: ['x'.repeat(999999)], work: [] }) }, { [k]: cur.rev });
     assert.ok(huge.status === 413 || huge.status === 200, 'حمولة < 8MB تُعالج أو تُرفض بوضوح: ' + huge.status);
   });
   test('[' + mode + '] المسار: مفاتيحُ شكلٍ خاطئ (اجتياز · طويلة · فارغة) تُرفض · طرقٌ غيرُ مسموحة · جسمٌ أكبر من الحد 413', async () => {

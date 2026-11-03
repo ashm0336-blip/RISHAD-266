@@ -395,7 +395,7 @@ function adminMethod(B, name) {
 }
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function startFullBackup(C) {
-  for (const name of ['_wpActor', '_irBackupCapture', '_irBackupFence', '_irBackupDomain']) C.page[name] = C.method('src/modules/admin/logic.js', name);
+  for (const name of ['_wpActor', '_irBackupCapture', '_irBackupFence']) C.page[name] = C.method('src/modules/admin/logic.js', name);
   C.property('src/modules/admin/logic.js', 'exportBackup')();
 }
 
@@ -471,8 +471,8 @@ test('full backup waits for actual relational reads, includes every typed domain
       const file = JSON.parse(C.page._encPend.json);
       assert.equal(file.data[KEY], undefined); assert.equal(file.domains.dailyStats.version, 1);
       assert.equal(file.domains.dailyStats.rev, (await B.W.dsDomainRead(B.env)).rev); assert.deepEqual(file.domains.dailyStats.data, populated());
-      assert.equal(file.manifest.version, 2);
-      assert.deepEqual(file.manifest.domains, { kv: 1, dailyStats: 1, notifications: 1, custody: 1, irshad: 1 });
+      assert.equal(file.manifest.version, 4);
+      assert.deepEqual(file.manifest.domains, { kv: 1, dailyStats: 1, notifications: 1, custody: 1, irshad: 1, seized: 1, awards: 1, operations: 1 });
       assert.deepEqual(file.domains.irshad.map(domain => domain.scope.departmentId).sort(), file.manifest.departments.slice().sort());
       assert.ok(file.domains.notifications.messages.length); assert.equal(file.domains.custody.find(d => d.scope.departmentId === file.manifest.departments[0]).rows.items.length, 1);
       assert.ok(C.states.some(state => state.pwDlg?.mode === 'exp'));

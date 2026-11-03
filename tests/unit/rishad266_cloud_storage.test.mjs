@@ -3,7 +3,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FakeStorage, loadClient, sleep } from './k264_vm.mjs';
 
-const PLAN = 'bassam_plan_v1';
+/* schema 10: bassam_plan_v1 is a typed operational resource (KV adapter refuses it: relational-domain-api-required, covered below);
+   the KV adapter contract is exercised on a non-operational department resource */
+const PLAN = 'bassam_perm_tpls_v1';
 const A = 'bsdept:dA:' + PLAN;
 const B = 'bsdept:dB:' + PLAN;
 const DEPTS = JSON.stringify([{ id: 'dA', name: 'TEST_ONLY A' }, { id: 'dB', name: 'TEST_ONLY B' }]);
@@ -48,7 +50,7 @@ test('An absent or malformed department cannot fall through to a browser busines
   const T = loadClient({ C: noNetwork, boot: boot(), blocks: ['280-server-storage.js'] });
   T.W.document.hidden = true;
   try {
-    for (const key of ['bsdept::bassam_employees_v1', 'bsdept:undefined:broken', 'bsdept:bad scope:bassam_tasks_v1']) {
+    for (const key of ['bsdept::bassam_perm_tpls_v1', 'bsdept:undefined:broken', 'bsdept:bad scope:bassam_perm_tpls_v1']) {
       assert.equal(T.get(key), null);
       assert.throws(() => T.set(key, '["TEST_ONLY"]'), /department-scope-required/);
       assert.throws(() => T.W.localStorage.removeItem(key), /department-scope-required/);
@@ -149,7 +151,7 @@ test('A 401 freezes pending writes and pagehide beacons instead of retrying unde
     let orphaned = T.W.KIVO.__BS_SRV.orphaned();
     assert.ok(orphaned.del.includes(A));
     assert.ok(!orphaned.set.includes(A), 'The old snapshot does not overwrite the newer deletion');
-    const another = 'bassam_rounds_v1';
+    const another = 'bassam_perm_tpl_notes_v1';   /* non-operational team key (bassam_rounds_v1 is typed in schema 10) */
     T.set(another, '{"TEST_ONLY":"unsent"}');
     assert.equal(await T.W.KIVO.__BS_SRV.flushAsync(100), false);
     orphaned = T.W.KIVO.__BS_SRV.orphaned();

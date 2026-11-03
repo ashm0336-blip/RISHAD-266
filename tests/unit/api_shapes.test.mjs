@@ -43,7 +43,7 @@ test('أشكالُ الاستجابة لـ18 مساراً كما في docs/api.m
   if (!(g.keys.bassam_depts_v1 && typeof g.keys.bassam_depts_v1.v === 'string' && g.keys.bassam_depts_v1.rev >= 1)) bad.push('get: مفتاحٌ موجود {v: string, rev ≥ 1}');
   if (!(g.keys.nope && g.keys.nope.v === null && g.keys.nope.rev === 0)) bad.push('get: المفتاحُ المجهول {v:null, rev:0}');
   bad.push(...shape(await get('/api/changes?since=0', { cookie: su.ck }), SPEC['/api/changes'], 'changes'));
-  const sv = (await C.save(su.ck, { 'bsdept:dR:bassam_options_v1': '{"a":1}' })).j; bad.push(...shape(sv, SPEC['/api/save'], 'save')); if (sv.revs['bsdept:dR:bassam_options_v1'] !== sv.v) bad.push('save: rev المفتاح = v العامة');
+  const sv = (await C.save(su.ck, { 'bsdept:dR:bassam_last_export_v1': '{"a":1}' })).j; bad.push(...shape(sv, SPEC['/api/save'], 'save')); if (sv.revs['bsdept:dR:bassam_last_export_v1'] !== sv.v) bad.push('save: rev المفتاح = v العامة');
   const dn = (await C.api('/api/save', { method: 'POST', cookie: su.ck, body: { set: { bassam_perms_v1: '{}' }, del: [], base: {} } })).j; bad.push(...shape(dn, SPEC['/api/save'], 'save(denied)'));
   const d = dn.denied.bassam_perms_v1; if (!(d && typeof d.why === 'string' && 'cur' in d && typeof d.rev === 'number')) bad.push('save: شكلُ المرفوض {why, cur, rev}: ' + JSON.stringify(d));
   assert.deepEqual(bad, []);

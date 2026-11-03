@@ -15,7 +15,7 @@ async function put(env, k, v) {
 }
 const server = (env, k) => { const r = env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', k); return r.length ? r.map(x => x.v).join('') : null; };
 // Keep 96 live KV resources; custody and Irshad have typed APIs/invalidation.
-const RES = ['bassam_tasks_v1', 'bassam_dreport_v1', 'bassam_seized_v1', 'bassam_shift_options_v1', 'bassam_award_v1', 'bassam_options_v1', 'bassam_callsigns_v1', 'bassam_leave_kinds_v1'];
+const RES = ['bassam_perm_tpls_v1', 'bassam_perm_tpls_named_v1', 'bassam_last_export_v1', 'bassam_perm_help_v1', 'bassam_perm_leaf_v1', 'bassam_perm_admsubs_v2', 'bassam_perm_mgr_explicit_v1', 'bassam_grants_v1'];   /* schema 10: dept resources still served by the generic KV queue (operations/seized/award moved to typed APIs) */
 
 for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-1: 96 مفتاحاً تغيّرت عند زميل ⇒ كلُّها تصل التبويبَ المفتوح (لا تتوقف عند 80)', async () => {
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);

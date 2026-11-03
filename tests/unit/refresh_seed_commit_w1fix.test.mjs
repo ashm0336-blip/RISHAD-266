@@ -54,6 +54,10 @@ function world(o = {}) {
   const reg = new Map();
   ctx.registry = { get: (n) => reg.get(n) };
   ctx.ensureFetched = () => {};
+  /* d5a08a6 (schema 10): the host also takes ensureData/dataReady from createComponentFactory; with no
+     KIVO.__dcPageReady/__dcBeforePage installed the runtime's own definitions reduce to these (050-dc-runtime.js dataReady/ensureData) */
+  ctx.dataReady = (name) => typeof KIVO.__dcPageReady !== 'function' || KIVO.__dcPageReady(name);
+  ctx.ensureData = () => Promise.resolve();
   ctx.shallowEqual = (a, b) => { const ka = Object.keys(a || {}), kb = Object.keys(b || {}); return ka.length === kb.length && ka.every((k) => a[k] === b[k]); };
   ctx.React = { Component: class { constructor(p) { this.props = p; } setState(u, cb) { const p = typeof u === 'function' ? u(this.state) : u; this.state = Object.assign({}, this.state, p); if (cb) cb(); } forceUpdate() {} } };
   vm.runInContext(block(rt, 'class StreamableComponent extends React.Component {') + '\n;globalThis.__Host = StreamableComponent;', ctx, { filename: '050-dc-runtime.js#host' });

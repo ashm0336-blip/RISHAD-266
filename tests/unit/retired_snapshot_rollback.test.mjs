@@ -1,12 +1,14 @@
 /* Old rollback snapshots cannot bypass domain cutover. Synthetic rows only. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, D1, IDS, notificationSnapshot, copy } from './notifications_review_fx.mjs';
+import { world, D1, D2, IDS, notificationSnapshot, copy } from './notifications_review_fx.mjs';
+import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 
-const ORDINARY = 'bsdept:' + D1 + ':bassam_options_v1';
+const ORDINARY = 'bsdept:' + D2 + ':bassam_perm_tpls_v1';   /* schema 10: bassam_options_v1 is typed (a kv row of it is a retired legacy source); an ordinary key must be a non-operational KV resource */
 const SID = 'migration_test_only';
 async function snapshot({ kind = 'migration', retired, existed = 1 } = {}) {
   const W = await world();
+  await installOperationalFixture(W.env);   /* schema 10: operational KV sources become typed rows before any authz-migrate call */
   await W.DB.batch([
     ...W.W.kvPutStmts(W.env, 'kv', ORDINARY, '{"TEST_ONLY":"current"}'),
     W.DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,17)').bind(ORDINARY),

@@ -17,6 +17,7 @@ import {execFileSync} from 'node:child_process';
 import {PYTHON,makeTestEnv,client,applySql,ROOT,TEST_SUPER_USERNAME,TEST_SUPER_PIN} from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import {installIrshadFixture} from './irshad_legacy_seed_fx.mjs';
+import {inspectOperationalFixture} from './operational_legacy_seed_fx.mjs';
 const TODAY=(()=>{const f=new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn',{timeZone:'Asia/Riyadh',year:'numeric',month:'numeric',day:'numeric'}),o={};f.formatToParts(new Date()).forEach(p=>{o[p.type]=+p.value;});return {y:o.year,m:o.month,d:o.day};})();
 function seedSql(){
   const out=fs.mkdtempSync(path.join(os.tmpdir(),'kivo_fx_flt_'));
@@ -33,13 +34,12 @@ for(const mode of ['legacy','enforce']){
     const su=await C.login(TEST_SUPER_USERNAME,TEST_SUPER_PIN);assert.ok(su.ok,'synthetic super login');
     const initial=await C.save(su.ck,{bassam_depts_v1:JSON.stringify([{id:'dR',name:'إدارة',gid:''}])});assert.equal(initial.status,200);
     await applySql(env.DB,seedSql());
-    await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
     const sourceRows=env.DB.q('SELECT k,seq,v FROM kv WHERE k IN(?1,?2)ORDER BY k,seq',K1,K2);
     assert.equal(sourceRows.length,2,'Both legacy fixture sources exist before explicit installation');
-    // Reuse the actual atomic cutover plan in this isolated test DB only.
-    // Do not reintroduce a runtime KV adapter or change other fixture domains.
-    await installIrshadFixture(env);
-    assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,'8');
+    // Reuse the actual atomic cutover plans (irshad → business → operations) in this isolated test DB only.
+    // Do not reintroduce a runtime KV adapter. RISHAD-266: the worker is schema 10, the cutover includes Irshad.
+    await installCurrentSchemaFixture(env);
+    assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,'10');
     assert.equal(env.DB.q("SELECT name FROM d1_migrations WHERE name='0008_irshad'").length,1);
     assert.equal(env.DB.q("SELECT k FROM meta WHERE k='schema_upgrade_permit_v1'").length,0);
     assert.equal(env.DB.q("SELECT k FROM kv WHERE k GLOB '*bassam_irshad*'").length,0,'No retired IR KV is re-created');
@@ -53,7 +53,7 @@ for(const mode of ['legacy','enforce']){
     const foreignState=()=>copy({data:raw(D2),catalogs:env.DB.q('SELECT * FROM irshad_catalog_entries WHERE department_id=?1 ORDER BY kind,position',D2),windows:env.DB.q('SELECT * FROM irshad_retro_windows WHERE department_id=?1 ORDER BY sequence',D2),requests:env.DB.q('SELECT * FROM irshad_requests WHERE department_id=?1 ORDER BY account_uid,request_id',D2),revs:env.DB.q("SELECT * FROM revs WHERE k GLOB 'bsdept:tst_d2:bassam_irshad*' ORDER BY k")});
     const foreign0=foreignState(),perms0=truth(KP),permsRev0=revOf(KP);
     assert.ok(foreign0.data.reports.some(r=>r.report_id==='tstir21'),'Other-department marker survived actual cutover');
-    const employee=JSON.parse(truth('bsdept:'+D1+':bassam_employees_v1')).find(e=>e.eid===EID);
+    const employee=inspectOperationalFixture(env,'bsdept:'+D1+':bassam_employees_v1').find(e=>e.eid===EID);   /* schema 10: typed roster */
     const actor=JSON.parse(truth('bassam_auth_users_v1')).find(u=>u.id===UID);
     assert.ok(employee&&actor);
     const read=(dept=D1,cookie=emp.ck,extra={})=>C.api('/api/irshad?'+new URLSearchParams({dept,view:'records',year:TODAY.y,month:TODAY.m,limit:200,...extra}),{cookie});

@@ -17,6 +17,7 @@ const WT = process.argv[2] || path.resolve(path.dirname(fileURLToPath(import.met
 const H = await import(pathToFileURL(path.join(WT, 'tests/unit/harness.mjs')).href);
 const V = await import(pathToFileURL(path.join(WT, 'tests/unit/k264_vm.mjs')).href);
 const { makeLegacyTestEnv: makeEnv, client, applySql } = H; const { loadClient, sleep, until, fixture } = V;
+const { installCurrentSchemaFixture } = await import(pathToFileURL(path.join(WT, 'tests/unit/current_schema_fx.mjs')).href);
 const K = 'bassam_auth_users_v1';
 const ph = (pw) => { const s = crypto.randomBytes(16); return 'p2$100000$' + s.toString('hex') + '$' + crypto.pbkdf2Sync(pw, s, 100000, 32, 'sha256').toString('hex'); };
 const dbUsers = (env) => JSON.parse(env.DB.q('SELECT v FROM kv WHERE k = ?1 ORDER BY seq', K).map(r => r.v).join(''));
@@ -26,7 +27,7 @@ const out = []; const ok = (c, m, x) => { out.push((c ? 'PASS ' : 'FAIL ') + m +
 const info = (m) => out.push('INFO ' + m);
 async function world(mode) {
   const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {}); const C = client(env);
-  const su = await C.login('admin', 'admin'); await applySql(env.DB, fixture().seed);
+  const su = await C.login('admin', 'admin'); await applySql(env.DB, fixture().seed); await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   return { env, C, su };
 }

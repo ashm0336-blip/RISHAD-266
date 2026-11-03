@@ -10,9 +10,9 @@ class SourceAudits(unittest.TestCase):
  def put(self,name,value):
   p=self.root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(value)if not isinstance(value,str)else value,encoding='utf-8')
  def test_module_writer_preserves_declared_ownership_without_optional_historical_gate(self):
-  m=load('module_charter');m.ROOT=str(self.root)
+  m=load('module_charter');m.ROOT=str(self.root);m.deps_check.ROOT=str(self.root);m.deps_check.SRC=str(self.root/'src')   # schema10 shared_data: dependency graph from the same synthetic checkout
   self.put('src/modules/modules.json',{'pages':[{'slug':'plan'}]});self.put('src/manifests/perm-tree24.json',{'containers':[{'leaves':[{'owner':'plan','page':'plan'}]}]})
-  self.put('src/modules/plan/logic.js','class Component {}');self.put('src/modules/plan/view.html','<div></div>');self.put('tests/unit/declared.test.mjs','// Explicit ownership fixture')
+  self.put('src/modules/plan/logic.js','class Component {}');self.put('src/modules/plan/view.html','<div></div>');self.put('tests/unit/declared.test.mjs','// Explicit ownership fixture');self.put('src/api/280-server-storage.js',"var operationResources9 = Object.freeze(['bassam_plan_v1']);")
   self.put('src/modules/plan/meta.json',{'charter':{'owner':'TEST_ONLY owner','purpose':'TEST_ONLY purpose','tests':['gate:historical.mjs','tests/unit/declared.test.mjs']}})
   self.assertEqual(m.main(['--write']),0);out=json.loads((self.root/'src/modules/plan/meta.json').read_text());self.assertEqual(out['charter']['tests'],['gate:historical.mjs','tests/unit/declared.test.mjs']);self.assertEqual(out['charter']['owner'],'TEST_ONLY owner');self.assertEqual(m.main(['--check']),0)
   self.put('gateall265.sh','# historical.mjs — inventory survives without its optional cfbench directory')

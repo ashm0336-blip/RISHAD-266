@@ -71,6 +71,12 @@ export function world() {
     KIVO.BassamPerm = { can: () => true, on: () => true, lensOn: () => true };
     KIVO.BassamAuth = { user: () => ({ id: 'TEST_ONLY_dm', role: 'staff', mgr: true, deptId: 'tst_d1' }), isSuper: () => false, display: () => ({ name: 'TEST_ONLY' }), users: () => [] };
     KIVO.BassamDepts = { active: () => 'tst_d1', activeName: () => 'TEST_ONLY', list: () => [] };
+    /* RISHAD-266 · schema 10: operational resources (bassam_plan_v1 · bassam_rounds_v1 · …) are read/written through KIVO.__BS_SRV.operations,
+       not localStorage. Synthetic service over the same local store (as in a11y_touch_w2): commit applies the draft and acknowledges ok:1. */
+    const draftOf = () => { const w = new Map(); return { get: (k) => (w.has(k) ? w.get(k) : (store.has(k) ? JSON.parse(store.get(k)) : null)), set: (k, v) => w.set(k, v), w }; };
+    KIVO.__BS_SRV = Object.assign(KIVO.__BS_SRV || {}, { rev: () => 0, operations: { resources: [], status: () => ({ state: 'idle', epoch: 0 }), begin: () => ({ ok: 1 }), context: () => null, state: () => 'ready', draft: draftOf,
+      get: (k) => (store.has(k) ? JSON.parse(store.get(k)) : null),
+      commit: async (c, slot, intent, edit) => { const d = draftOf(); edit(d); for (const [k, v] of d.w) store.set(k, JSON.stringify(v)); return { ok: 1 }; } } });
     const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsLensOn() { return true; } bsToast() {} };
     vm.runInContext((src || moduleLogic(slug)) + '\n;globalThis.__C = Component;', win, { filename: slug + '/logic.js' });
     return new win.__C();

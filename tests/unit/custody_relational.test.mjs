@@ -1,5 +1,7 @@
 import {cuInflate} from './custody_legacy_oracle.mjs';
 import { test } from 'node:test';
+import { inspectOperationalFixture, replaceOperationalFixture, installOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { operationSaveBody } from './tasks_fx.mjs';
 import assert from 'node:assert/strict';
 import { world as canonicalWorld, legacyWorld, canonicalWorker, canonicalDigest, D1, D2, IDS, EKEYS, identitySnapshot } from './custody_review_fx.mjs';
 
@@ -52,7 +54,7 @@ test('legacy snapshot rollback rejects a mixed custody value or tombstone before
   for (const kind of ['migration', 'restore', 'replace'])
     for (const existed of [0, 1]) {
       const W = await world(),
-        ordinary = 'bsdept:' + D1 + ':bassam_options_v1',
+        ordinary = 'bsdept:' + D1 + ':bassam_last_export_v1',   /* schema 10: options_v1 is typed; keep a plain KV probe */
         retired = 'bsdept:' + D1 + ':bassam_custody_v1',
         sid = 'migration_test_custody';
       await W.DB.batch([
@@ -350,16 +352,21 @@ test('retired generic save/get reject custody recreation and coupled employee wr
   assert.equal(get.json.keys[key].v, null);
   assert.equal(get.json.keys[key].moved, '/api/custody');
   const empKey = 'bsdept:' + D1 + ':bassam_employees_v1',
-    emps = JSON.parse(W.DB.q('SELECT v FROM kv WHERE k=? AND seq=0', empKey)[0].v),
+    emps = inspectOperationalFixture(W.env, empKey),
     before = copy(W.DB.q('SELECT * FROM kv ORDER BY k,seq')), beforeTyped=snapshot(W.DB);
-  const removed = await W.api('super', '/api/save', {
+  const removed = await W.api('super', '/api/save', operationSaveBody(W.env, '/api/save', {
     uid: IDS.super,
     set: { [empKey]: JSON.stringify(emps.filter((e) => e.eid !== EKEYS.employee1)), bassam_platform_v1: '{"TEST_ONLY":"must not write"}' },
     del: [],
-    base: {},
-  });
-  assert.equal(removed.json.atomic, 'custody-transition');
-  assert.ok(Object.keys(removed.json.denied||{}).length+Object.keys(removed.json.conflicts||{}).length>0,'The coupled request was refused before a partial commit');
+    /* correct custody CAS + a stale platform base: the KV side of the coupled save fails, so the whole request is refused */
+    base: { [empKey]: W.DB.q('SELECT rev FROM revs WHERE k=?', empKey)[0]?.rev || 0, [key]: await W.W.cuRev(W.env, D1), bassam_platform_v1: (W.DB.q('SELECT rev FROM revs WHERE k=?', 'bassam_platform_v1')[0]?.rev || 0) + 7 },
+  }));
+  /* schema 10: the typed roster save carries the operations envelope; a coupled save whose KV side fails is refused
+     atomically (409 · atomic · conflict on the KV key) with nothing written */
+  assert.equal(removed.status, 409, JSON.stringify(removed.json));
+  assert.equal(removed.json.ok, 0, JSON.stringify(removed.json));
+  assert.equal(removed.json.atomic, 1, JSON.stringify(removed.json));
+  assert.ok(removed.json.conflicts && removed.json.conflicts.bassam_platform_v1, JSON.stringify(removed.json));
   assert.deepEqual(snapshot(W.DB),beforeTyped);
   assert.deepEqual(copy(W.DB.q('SELECT * FROM kv ORDER BY k,seq')), before);
   assert.ok(out.outputs[0].issueId);
@@ -408,7 +415,9 @@ test('holder resolution follows a unique recreated employee and leaves ambiguous
   assert.equal(linked.rows[0].holderKey, EKEYS.employee1);
   assert.equal(linked.rows[0].orphan, false);
   employees.push({ eid: 'TEST_ONLY_ambiguous_recreated', nid: found.nid, name: 'TEST_ONLY second matching identity' });
-  await B.DB.batch(B.W.kvPutStmts(B.env, 'kv', 'bsdept:' + D1 + ':bassam_employees_v1', JSON.stringify(employees)));
+  { /* schema 10: initDb already cut the roster over to typed rows; mutate it through the canonical typed writer */
+    const ek = 'bsdept:' + D1 + ':bassam_employees_v1', rev = B.DB.q('SELECT rev FROM revs WHERE k=?', ek)[0]?.rev || 0, plan = await W.opChangeStatements(B.env, ek, JSON.stringify(employees), { base: rev });
+    await B.DB.batch(plan.guards.concat(plan.statements)); }
   const ambiguous = await W.cuRead(B.env, A, { dept: D1, year: 1400, month: 1 });
   assert.equal(ambiguous.rows[0].holderKey, 'TEST_ONLY_old_holder');
   assert.equal(ambiguous.rows[0].orphan, true);
@@ -563,7 +572,7 @@ async function planActor(W, who = 'super') {
   return W.W.actorOf({ ...W.env, ...(mode?.mode === 'enforce' ? { __enf: mode } : {}) }, IDS[who]);
 }
 const employeeKey = 'bsdept:' + D1 + ':bassam_employees_v1';
-const employeesOf = (W) => JSON.parse(W.DB.q('SELECT v FROM kv WHERE k=? AND seq=0', employeeKey)[0].v);
+const employeesOf = (W) => inspectOperationalFixture(W.env, employeeKey);   /* RISHAD-266 · schema 10: typed roster */
 async function cleanupPlan(W, intent, newEmployees, who = 'super') {
   return W.W.cuPlanCleanup(W.env, await planActor(W, who), {
     dept: D1,
@@ -577,8 +586,9 @@ async function cleanupPlan(W, intent, newEmployees, who = 'super') {
 async function commitPlanWithEmployees(W, plan, newEmployees, extra = []) {
   assert.equal(plan.checks.employeeGuardRequired, true);
   const employeeRev = W.DB.q('SELECT rev FROM revs WHERE k=?', employeeKey)[0]?.rev || 0;
-  const guards = [W.W.revGuard(W.env, employeeKey, employeeRev), ...plan.guards];
-  const mutation = [...W.W.kvPutStmts(W.env, 'kv', employeeKey, JSON.stringify(newEmployees)), ...plan.statements, ...extra];
+  const op = await W.W.opChangeStatements(W.env, employeeKey, JSON.stringify(newEmployees), { base: employeeRev });   /* schema 10: typed rows */
+  const guards = [W.W.revGuard(W.env, employeeKey, employeeRev), ...op.guards, ...plan.guards];
+  const mutation = [...op.statements, ...plan.statements, ...extra];
   const finish = [W.DB.prepare("UPDATE meta SET v=CAST(CAST(v AS INTEGER)+1 AS TEXT) WHERE k='rev'")];
   for (const key of [employeeKey, ...plan.revisionKeys])
     finish.push(
@@ -755,7 +765,7 @@ test('legacy employee name records retain the original cleanupAssignments name-s
   const W = await world(),
     id = await item(W, 3),
     old = ['TEST_ONLY old employee name', 'TEST_ONLY retained name'];
-  await W.DB.batch(W.W.kvPutStmts(W.env, 'kv', employeeKey, JSON.stringify(old)));
+  await replaceOperationalFixture(W.env, employeeKey, old);
   ok(
     await W.act('super', {
       op: 'issue-batch',
@@ -931,7 +941,7 @@ test('normal save transition keeps name edits and canonical identity adoption se
   assert.equal(result.coupled, false);
   assert.equal(result.statements.length, 0);
   const old = [{ name: 'TEST_ONLY legacy adoption', empno: 'TEST_ONLY old number' }];
-  await W.DB.batch(W.W.kvPutStmts(W.env, 'kv', employeeKey, JSON.stringify(old)));
+  await replaceOperationalFixture(W.env, employeeKey, old);
   fx = await transitionFixture(W, [{ ...old[0], eid: 'TEST_ONLY adopted stable key' }], { cuBase: false });
   result = await W.W.cuPlanSaveTransition(W.env, fx.A, fx.body, fx.plan);
   assert.equal(result.coupled, false);

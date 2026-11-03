@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {legacyWorld,D1,IDS} from './custody_review_fx.mjs';
 import {pageFor} from './custody_scenarios_fx.mjs';
+import {adoptOperationalFixture,replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
 const copy=value=>JSON.parse(JSON.stringify(value));
 
 const EMPS=[{eid:'eNEW',nid:'1234567890',empno:'7001',name:'سعد'},{eid:'eB',nid:'2222222222',empno:'7002',name:'بدر'}];
@@ -14,13 +15,17 @@ async function fixture(moves=[],employees=EMPS){
   const items=[{name:'لاسلكي',qty:10,prefix:'RD',color:'#123456'},{name:'كشاف',qty:10,prefix:'KS',color:'#654321'}];
   await f.DB.batch([...W.kvPutStmts(f.env,'kv',key,JSON.stringify(employees)),...W.kvPutStmts(f.env,'kv',custodyKey,JSON.stringify({items,moves}))]);
   await W.initDb(f.env);
+  /* initDb ran the real schema-10 cutover of the pre-0006 roster: register it (no re-cut) for typed seeding. */
+  await adoptOperationalFixture(f.env,W);
+  assert.equal(f.DB.q('SELECT COUNT(*) AS n FROM kv WHERE k=?',key)[0].n,0,'Roster is typed after the cutover, not retired KV');
   const api=async(route,body)=>{
     const response=await W.default.fetch(new Request('http://x'+route,{method:body===undefined?'GET':'POST',headers:{Cookie:'bs_tok=TEST_ONLY_session_super',...(body===undefined?{}:{Origin:'http://x','Content-Type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)})}),f.env);
     const data=await response.json();assert.equal(response.status,200,JSON.stringify(data));assert.equal(data.ok,1);return data;
   };
   const read=(q={})=>api('/api/custody?'+new URLSearchParams({dept:D1,uid:IDS.super,...q}));
   const act=async body=>api('/api/custody/act',{uid:IDS.super,dept:D1,base:await W.cuRev(f.env,D1),requestId:'TEST_ONLY_carry_'+ ++request,...body});
-  const setEmployees=async rows=>f.DB.batch(W.kvPutStmts(f.env,'kv',key,JSON.stringify(rows)));
+  /* Schema 10 (d5a08a6): roster changes go through the canonical typed writer, never retired KV. */
+  const setEmployees=async rows=>assert.deepEqual(await replaceOperationalFixture(f.env,key,rows),copy(rows),'Typed roster round-trips exactly');
   assert.equal(f.DB.q('SELECT COUNT(*) AS n FROM kv WHERE k=?',custodyKey)[0].n,0);
   return {...f,W,read,act,setEmployees};
 }

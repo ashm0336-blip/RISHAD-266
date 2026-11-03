@@ -26,7 +26,8 @@ assert db.execute("SELECT count(*) FROM kv WHERE k='bassam_auth_users_v1'").fetc
 assert db.execute("SELECT v FROM meta WHERE k='authz_mode'").fetchone()[0]=='enforce'
 assert int(db.execute("SELECT v FROM meta WHERE k='schema_version'").fetchone()[0])==len(list((root/'migrations').glob('*.sql')))
 assert not db.execute('PRAGMA foreign_key_check').fetchall()
-assert 'R2' not in sql.replace('-- All current Preview tables/data are removed; no R2 operations are included.','')
+import re
+assert 'R2' not in re.sub(r'--[^\\n]*','',sql)   # executable SQL only: migration comments (0009 'no R2/image operation') are not operations
 `);
 });
 

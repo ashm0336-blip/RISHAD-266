@@ -21,11 +21,13 @@ async function bounded(promise,label,timeout=5000){
   finally{clearTimeout(timer);}
 }
 function harness(opts={}){
-  const calls={confirm:[],toast:[],post:[],get:[],ack:[],sync:[],state:[]},counts=opts.populated?{keys:7,accounts:104,custody:3,notifications:4,irshad:2}:{keys:0,accounts:0,custody:0,notifications:0,irshad:0};
+  const calls={confirm:[],toast:[],post:[],get:[],ack:[],sync:[],state:[]},counts=opts.populated?{keys:7,accounts:104,custody:3,notifications:4,irshad:2,seized:5,awards:6}:{keys:0,accounts:0,custody:0,notifications:0,irshad:0,seized:0,awards:0};
   let settle,started;const postStarted=new Promise(resolve=>{started=resolve;});
   const uid='TEST_ONLY_guard_super',KIVO={BassamAuth:{user:()=>({id:uid,role:'super'}),isSuper:()=>true},
     __BS_SRV:{resync:value=>calls.sync.push(value)},bsConfirm:async options=>{calls.confirm.push(options);return !!opts.answer;}};
-  const base={epoch:1,kv:{bassam_depts_v1:1,bassam_auth_users_v1:1,bassam_perms_v1:1},custody:1,notifications:{rev:1,configRev:1,broadcastRev:1},irshad:{reports:1,languages:1,locations:1,retro:1}};
+  const base={epoch:1,kv:{bassam_depts_v1:1,bassam_auth_users_v1:1,bassam_perms_v1:1},custody:1,notifications:{rev:1,configRev:1,broadcastRev:1},irshad:{reports:1,languages:1,locations:1,retro:1},
+    /* schema 9 (05ca197): the server inventory also carries the seized/awards business bases (logic.js _businessBaseValid) */
+    seized:{reports:1,catalog:1,actions:1,locations:1,jew:1,retro:1},awards:{records:1,docsV1:1,docsV2:1}};
   if(opts.missingIR){delete base.irshad;delete counts.irshad;}
   const context={KIVO,__BS_BOOT:{srv:1,cf:1,uid},crypto:crypto.webcrypto,AbortController,URLSearchParams,Uint8Array,Date,setTimeout:()=>0,clearTimeout(){},
     localStorage:{getItem(){throw Error('No browser inventory');},setItem(){throw Error('No browser deletion');}},
@@ -36,7 +38,7 @@ function harness(opts={}){
     }};
   context.window=context;vm.createContext(context);
   const self={state:{admArm:opts.arm||null,sysSel:DEPT.id},setState(value){calls.state.push(value);Object.assign(this.state,value);},bsToast:message=>calls.toast.push(message),bsAck:(...args)=>calls.ack.push(args)};
-  for(const name of ['_wpActor','_wpCall','deptDel','_deptDelGo']){
+  for(const name of ['_wpActor','_wpCall','_businessBaseValid','deptDel','_deptDelGo']){
     const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name+' موجودة');
     self[name]=vm.runInContext('({'+L.slice(node.start,node.end)+'}).'+name,context);
   }
@@ -50,7 +52,7 @@ test('إدارة فيها مدير و103 موظفين: تأكيد باسم ال�
   assert.equal(h.calls.confirm.length,1,'نافذة واحدة');const options=h.calls.confirm[0];
   assert.equal(options.typed,DEPT.name,'يُلزم باسم الإدارة الموثوق من الخادم');assert.equal(options.danger,true);
   assert.match(options.msg,/104 حساب إدارة\/موظف/,'حسابات هذه الإدارة: المدير و103 موظفين');
-  assert.match(options.msg,/7 مورد بيانات/);assert.match(options.msg,/3 سجل عهدة/);assert.match(options.msg,/4 تنبيه/);assert.match(options.msg,/2 سجل استرشاد/);
+  assert.match(options.msg,/7 مورد بيانات/);assert.match(options.msg,/3 سجل عهدة/);assert.match(options.msg,/4 تنبيه/);assert.match(options.msg,/2 سجل استرشاد/);assert.match(options.msg,/5 من بيانات المضبوطات/);assert.match(options.msg,/6 من بيانات التكريم/);
   assert.match(options.msg,/نهائياً/);assert.match(options.msg,/حسابات مدير المنصة والإدارات العامة والإدارات الأخرى محفوظة/);
   assert.deepEqual(h.calls.post,[],'رفض النافذة لا يحذف');assert.deepEqual(h.calls.ack,[],'ولا يعرض نجاحاً');
   assert.equal(h.self.state.admArm,null,'ولا يُسلّح');assert.ok(h.calls.state.every(value=>!value.admArm));

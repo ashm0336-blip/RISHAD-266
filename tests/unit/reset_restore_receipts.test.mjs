@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { world, ok, OPTIONS, TABLES } from './atomic_restore_review_fx.mjs';
+import { world, ok, OPTIONS, TABLES } from './atomic_restore_review_fx.mjs';   /* OPTIONS: a plain-KV department key (schema 10: bassam_options_v1 is typed) */
 import { IDS, copy } from './custody_review_fx.mjs';
 const USERS = 'bassam_auth_users_v1',
   PIN = '583927',
@@ -38,6 +38,7 @@ async function setup() {
     B.DB.prepare("INSERT INTO authz_snaps(snap,ts,uid,kind,n,meta)VALUES('TEST_ONLY_retained_snapshot',1,'su','restore',1,'{}')"),
     B.DB.prepare("INSERT INTO authz_snap(snap,k,seq,existed,rev,v)VALUES('TEST_ONLY_retained_snapshot','TEST_ONLY_history',0,1,1,'{}')"),
   ]);
+  assert.equal(B.DB.q('SELECT COUNT(*) n FROM kv WHERE k=?1', OPTIONS)[0].n, 0, 'the restore witness creates a previously absent key');
   const body = await B.body({ keys: { [OPTIONS]: '{"TEST_ONLY":"before reset accepted restore"}' } });
   body.uid = 'su';
   body.base.kv[OPTIONS] = 0;
@@ -45,6 +46,7 @@ async function setup() {
   changed.find((u) => u.id === IDS.employee1).name = 'TEST_ONLY restored display name';
   body.keys[USERS] = JSON.stringify(changed);
   const ack = ok(await B.api('super', '/api/backup/restore', body));
+  assert.equal(B.DB.q('SELECT v FROM kv WHERE k=?1', OPTIONS).map((r) => r.v).join(''), '{"TEST_ONLY":"before reset accepted restore"}', 'the accepted restore created the absent key');
   assert.ok(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n > 0);
   const privateCredentialWitness = B.DB.q("SELECT row_json FROM restore_preimage WHERE domain='kv' AND table_key=?1", USERS).some((row) => {
     const item = JSON.parse(row.row_json);

@@ -7,6 +7,7 @@ import vm from 'node:vm';
 import {D1Shim} from './harness.mjs';
 import {world as baseWorld, ROOT, D1, D2, IDS, EKEYS, identitySnapshot} from './custody_review_fx.mjs';
 import {candidateWorker} from './irshad_domain_fx.mjs';
+import {installOperationalFixture} from './operational_legacy_seed_fx.mjs';
 
 const NAMED=['AW_RES','AW_NAMES','AW_FIELDS','AW_TABLES','awKey','awConvert','awInflate','awValidateDomain','awEmptyDomain',
   'awInstallStatements','awExportDomain','awDomainPlan','awLegacyPrepare','awPlanEmployeeCleanup','awRevs','awQueryContext',
@@ -18,7 +19,7 @@ const sample=(id='TEST_ONLY_award',patch={})=>({id,ekey:EKEYS.employee1,cat:'emp
 const references=mark=>Object.fromEntries(['A','B','C'].map(k=>[k,{title:k+mark,lead:'مقدمة',foot:'خاتمة',secs:[{title:'قسم',body:'<p dir="rtl">'+mark+'&amp; نص</p>'}]}]));
 async function world({mode='enforce',docs={}}={}){
   const B=await baseWorld({mode}),W=await candidateWorker(NAMED);
-  assert.equal(W.KIVO_SCHEMA_VERSION,9,'Generate and register the actual schema9 before Award integration tests');
+  assert.equal(W.KIVO_SCHEMA_VERSION,10,'Generate and register the actual current schema before Award integration tests');await installOperationalFixture(B.env);
   const keys=copy(B.keys),p=keys.bassam_perms_v1;
   Object.keys(p.caps).forEach(d=>{p.caps[d]=[...new Set(p.caps[d].concat('award'))];});
   p.emps[D1][EKEYS.employee1]={'award/new':['view','add'],'award/res':['view','edit','approve','del'],'award/doc':['view','add','edit','del']};

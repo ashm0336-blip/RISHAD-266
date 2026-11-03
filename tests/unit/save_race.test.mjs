@@ -14,7 +14,9 @@ async function setup() {
   const d = await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dA', name: 'إدارة', gid: '' }]) }); assert.equal(d.j.ok, 1);
   return { env, C, ck: su.ck };
 }
-const K = 'bsdept:dA:bassam_options_v1', K2 = 'bsdept:dA:bassam_callsigns_v1';
+/* schema 10: options/callsigns are typed operational resources (their race is covered by the operations envelope tests); the KV compare-and-swap
+   under test applies to the remaining /api/save KV resources */
+const K = 'bassam_platform_v1', K2 = 'bsdept:dA:bassam_perm_tpls_v1';
 const getRev = async (C, ck, k) => { const r = await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: ck }); const it = (r.j.keys || {})[k] || {}; return { v: it.v, rev: it.rev || 0 }; };
 const saveRaw = (C, ck, set, base) => C.api('/api/save', { method: 'POST', cookie: ck, body: { set, del: [], base } });
 
@@ -47,12 +49,12 @@ test('عدّادٌ مشترك: 8 جلساتٍ متزامنة تزيده بقرا
 
 test('حفظٌ بمفتاحين يُسبق أحدُهما: يُكتب غيرُ المسبوق ويُردّ المسبوقُ وحده تعارضاً', async () => {
   const { C, ck } = await setup();
-  await saveRaw(C, ck, { [K]: JSON.stringify({ n: 0 }) }, { [K]: 0 }); await saveRaw(C, ck, { [K2]: JSON.stringify(['x']) }, { [K2]: 0 });
+  await saveRaw(C, ck, { [K]: JSON.stringify({ n: 0 }) }, { [K]: 0 }); await saveRaw(C, ck, { [K2]: JSON.stringify([{ id: 'TEST_ONLY_x', name: 'x' }]) }, { [K2]: 0 });
   const g1 = await getRev(C, ck, K), g2 = await getRev(C, ck, K2);
-  const [m, o] = await Promise.all([saveRaw(C, ck, { [K]: JSON.stringify({ n: 'M' }), [K2]: JSON.stringify(['y']) }, { [K]: g1.rev, [K2]: g2.rev }), saveRaw(C, ck, { [K]: JSON.stringify({ n: 'O' }) }, { [K]: g1.rev })]);
+  const [m, o] = await Promise.all([saveRaw(C, ck, { [K]: JSON.stringify({ n: 'M' }), [K2]: JSON.stringify([{ id: 'TEST_ONLY_y', name: 'y' }]) }, { [K]: g1.rev, [K2]: g2.rev }), saveRaw(C, ck, { [K]: JSON.stringify({ n: 'O' }) }, { [K]: g1.rev })]);
   const multiWonK = !!(m.j.revs && m.j.revs[K]), otherWonK = !!(o.j.revs && o.j.revs[K]);
   assert.ok(multiWonK !== otherWonK, 'المفتاحُ المشترك كتبه أحدُهما فقط: ' + JSON.stringify([m.j, o.j]).slice(0, 400));
   assert.ok(m.j.revs && m.j.revs[K2], 'المفتاحُ غيرُ المسبوق كُتب في الحفظ ذي المفتاحين');
-  assert.equal((await getRev(C, ck, K2)).v, JSON.stringify(['y']));
+  assert.equal((await getRev(C, ck, K2)).v, JSON.stringify([{ id: 'TEST_ONLY_y', name: 'y' }]));
   const fin = (await getRev(C, ck, K)).v; assert.equal(fin, multiWonK ? JSON.stringify({ n: 'M' }) : JSON.stringify({ n: 'O' }), 'القيمةُ النهائية = قيمةُ الفائز وحده');
 });

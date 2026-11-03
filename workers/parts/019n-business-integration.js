@@ -95,7 +95,7 @@ async function bdRestoreRevisions(env,depts,full) {
   if(full) out.awards['']=await awRevs(env,'');
   return out;
 }
-async function bdGlobalRevision(env) { var row=await env.DB.prepare("SELECT v FROM meta WHERE k='rev'").first(),value=row&&Number(row.v);if(!Number.isSafeInteger(value)||value<0)throw rsError('domain-revision',503);return value; }
+async function bdGlobalRevision(env) { var row=await env.DB.prepare("SELECT v FROM meta WHERE k='rev'").first();if(!row)return 0;var value=Number(row.v);if(!Number.isSafeInteger(value)||value<0)throw rsError('domain-revision',503);return value; }   // RISHAD-266: absent row = 0 (as every writer COALESCEs it), same as opGlobalRevOf
 async function bdExport(env,actor,url,name) {
   var def=bdDefinitions().find(function(d){return d.name===name;});
   if(!def) throw rsError('domain-export');

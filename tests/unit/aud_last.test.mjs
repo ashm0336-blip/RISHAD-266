@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTestEnv, client, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 
-const K = 'bsdept:dA:bassam_options_v1';
+const K = 'bsdept:dA:bassam_last_export_v1';
 async function setup() {
   const env = makeTestEnv(); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
@@ -17,7 +17,7 @@ const getRev = async (C, ck, k) => { const r = await C.api('/api/get?keys=' + en
 
 test('التعارض: «مَن سبقك» يحمل اسمَ آخر كاتبٍ للمفتاح ووقتَه من aud — وself حين يكون الحسابَ نفسَه من جهازٍ آخر', async () => {
   const { C, ck } = await setup();
-  const s0 = await C.api('/api/save', { method: 'POST', cookie: ck, body: { set: { [K]: JSON.stringify({ n: 1 }) }, del: [], base: { [K]: 0 } } }); assert.equal(s0.j.ok, 1);
+  const s0 = await C.api('/api/save', { method: 'POST', cookie: ck, body: { set: { [K]: JSON.stringify({ n: 1 }) }, del: [], base: { [K]: 0 } } }); assert.equal(s0.j.ok, 1, JSON.stringify(s0));
   const g = await getRev(C, ck, K);
   const s1 = await C.api('/api/save', { method: 'POST', cookie: ck, body: { set: { [K]: JSON.stringify({ n: 2 }) }, del: [], base: { [K]: g.rev } } }); assert.ok(s1.j.revs[K]);
   /* حفظٌ بنسخةٍ متجاوَزة (g.rev) ⇒ تعارضٌ: السابقُ هو مدير النظام نفسُه (جهازٌ آخر) */

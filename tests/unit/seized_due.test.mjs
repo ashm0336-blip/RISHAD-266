@@ -6,7 +6,7 @@ import {candidateWorker} from './irshad_domain_fx.mjs';
 const DUE=Date.parse('2026-10-31T06:01:00Z'); // Saturday09:01 Riyadh.
 async function clock(fn){const RealDate=globalThis.Date,box={now:DUE};globalThis.Date=class extends RealDate{constructor(...a){super(...(a.length?a:[box.now]));}static now(){return box.now;}};try{await fn(v=>box.now=RealDate.parse(v));}finally{globalThis.Date=RealDate;}}
 async function fixture({empty=false}={}){
- const B=await world(),W=await candidateWorker(['nfSeizedDue','NF_REV','pfHijriAt','szKey','szRevs']);
+ const B=await world({schema:10}),W=await candidateWorker(['nfSeizedDue','NF_REV','pfHijriAt','szKey','szRevs']);
  await B.DB.prepare("INSERT INTO notification_type_overrides(type_id,enabled)VALUES('bx_wk',1)").run();
  const docs=seizedDocs();docs.reports.reports[0].ts=DUE-40*86400000;docs.reports.reports[0].items[0].n=3;docs.reports.reports[0].items[0].val=1200;
  if(empty)docs.reports.reports=[];await B.install('seized',D1,docs);

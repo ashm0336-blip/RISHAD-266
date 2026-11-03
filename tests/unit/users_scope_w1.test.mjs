@@ -11,7 +11,7 @@ import { TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
    البياناتُ اصطناعيةٌ كلُّها (tasks_fx · TEST_ONLY). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, MATE, D, KE, TAG, stored, putKV, addAccount } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, D, KE, TAG, stored, putKV, addAccount, operationSaveBody } from './tasks_fx.mjs';
 
 const WU = workerUnderTest();
 const K = 'bassam_auth_users_v1';
@@ -72,7 +72,9 @@ for (const mode of ['legacy', 'enforce']) {
     for (const role of Object.keys(ROLES)) {
       const { ck, uid } = S[role], b = (await W.C.boot(ck)).boot;
       assert.ok(b && b.keys && b.keys[K], role + ': الإقلاعُ يحمل الحسابات');
-      const reads = (d) => Object.prototype.hasOwnProperty.call(b.keys, 'bsdept:' + d + ':bassam_employees_v1');
+      /* schema 10: the employee register is typed — whether the actor reads it is the Operations read verdict (not a boot KV key) */
+      const rd = {}; for (const d of ['tst_d1', 'tst_d2', 'tst_d3']) { const key = 'bsdept:' + d + ':bassam_employees_v1', r = await W.C.api('/api/operations/read?' + new URLSearchParams({ uid, keys: key }), { cookie: ck }); rd[d] = r.status === 200 && r.j.ok === 1 && !(r.j.denied || []).includes(key); }
+      const reads = (d) => !!rd[d];
       const lb = JSON.parse(b.keys[K]), lg = (await getList(W, ck)).L, exp = expected(all, role, uid, reads);
       assert.deepEqual(byId(lb), byId(exp), role + ': الإقلاع = المرجع');
       assert.deepEqual(byId(lg), byId(lb), role + ': /api/get = الإقلاع');
@@ -190,7 +192,7 @@ for (const mode of ['legacy', 'enforce']) {
     s = await save(W, S.dm.ck, g.L.concat([{ id: 'w1dupb' + mode, un: '0000000778', alt: far.un, ph: P2('f'), role: 'staff', deptId: D, ekey: 'tst_e_w1dupb', name: TAG + ' · تكرار', dis: 0 }]), g.rev);
     assert.ok(!ok(s), 'اسمُه البديل كذلك: ' + show(s));
     const E = stored(W.env, KE), ge = await W.C.api('/api/get?keys=' + encodeURIComponent(KE), { cookie: S.dm.ck });
-    const se = await W.C.api('/api/save', { method: 'POST', cookie: S.dm.ck, body: { set: { [KE]: JSON.stringify(E.concat([{ eid: 'tst_e_w1dupe', name: TAG + ' · تكرار', nid: far.un }])) }, del: [], base: { [KE]: ge.j.keys[KE].rev } } });
+    const se = await W.C.api('/api/save', { method: 'POST', cookie: S.dm.ck, body: operationSaveBody(W.env, '/api/save', { uid: S.dm.uid, set: { [KE]: JSON.stringify(E.concat([{ eid: 'tst_e_w1dupe', name: TAG + ' · تكرار', nid: far.un }])) }, del: [], base: { [KE]: ge.j.keys[KE].rev } }) });
     assert.equal(((se.j.denied || {})[KE] || {}).why, 'emp-dup', 'هويةُ حسابٍ محجوبٍ في سجلّ الموظفين: ' + JSON.stringify(se.j).slice(0, 300));
   });
 }

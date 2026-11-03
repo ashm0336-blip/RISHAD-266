@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { ROOT, moduleLogic } from './harness.mjs';
+import { operations } from './operational_ui_fx.mjs';
 
 const LOGIC = process.env.PLAN_LOGIC ? fs.readFileSync(process.env.PLAN_LOGIC, 'utf8') : moduleLogic('plan');
 const SERVICES = ['src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js', 'src/i18n/380-hijri-fallback.js',
@@ -48,22 +49,23 @@ function seeded(o = {}) {
   const P = page(o), { c, store } = P;
   const m5 = [site(1, [zone(null)]), site(2)], m6 = [site(1, []), site(2)];
   const withCap = (F) => F.map((f) => Object.assign({}, f, { zones: f.zones.map((z) => Object.assign({}, z, { cap: 1234 })) }));
-  store.set(KP, JSON.stringify({ pMig: 3, zones: m5[0].zones, gates: [], marks: [], paths: [], floors: m5, months: { '1448-5': { c: 1, d: withCap(m5) }, '1448-6': { c: 1, d: withCap(m6) } }, cfg: {}, delMonths: {} }));
+  const op = operations({ [KP]: { pMig: 3, zones: m5[0].zones, gates: [], marks: [], paths: [], floors: m5, months: { '1448-5': { c: 1, d: withCap(m5) }, '1448-6': { c: 1, d: withCap(m6) } }, cfg: {}, delMonths: {} } });
+  P.KIVO.__BS_SRV = { operations: op.service };
   c.state = Object.assign({}, c.state, { year: 1448, month: 5, floor: 0, floors: m5.map((f) => Object.assign({}, f)), zones: m5[0].zones.slice(), gates: [], marks: [], paths: [],
     planMonths: { '1448-5': { c: 1, d: m5 }, '1448-6': { c: 1, d: m6 } }, sel: null, selMulti: [], tool: 'select', lens: 'plan', view: { x: 0, y: 0, w: 1000, h: 600 } });
   const S = { saves: 0, denies: 0, images: 0 };
   const save0 = c.savePlan; c.savePlan = function () { S.saves++; return save0.apply(this, arguments); };
   const deny0 = c.permDeny; c.permDeny = function () { S.denies++; return deny0 ? deny0.apply(this, arguments) : undefined; };
   c._loadFloorImages = () => { S.images++; };
-  return Object.assign(P, { S });
+  return Object.assign(P, { S, op });
 }
 
 test('PLAN-01: تصفّحُ الأشهر بلا تعديل (البطاقات · السنة · «الحالية» — كلُّها goTo) لا يحفظ الخطةَ ولا يمسّ المخزَّن', () => {
-  const W = seeded(), { c, S, store } = W;
-  const before = store.get(KP);
+  const W = seeded(), { c, S, op } = W;
+  const before = JSON.stringify(op.data[KP]);
   for (const [y, m] of [[1448, 6], [1448, 5], [1448, 7], [1447, 5], [1448, 5]]) c.goTo(y, m);
   assert.equal(S.saves, 0, 'savePlan لم يُستدعَ (كان يُستدعى في كل انتقال)');
-  assert.equal(store.get(KP), before, 'الخطةُ المخزَّنة لم تتغيّر حرفاً');
+  assert.equal(JSON.stringify(op.data[KP]), before, 'الخطةُ المخزَّنة لم تتغيّر حرفاً'); assert.equal(op.control.stages.length, 0);
   assert.equal(S.images, 5, 'صورُ المواقع تُحمَّل في كل انتقال كما كانت');
   assert.deepEqual([c.state.year, c.state.month], [1448, 5]);
   assert.equal(c.state.zones.length, 1, 'الشهرُ المعروض بمصلّاه');
@@ -71,20 +73,22 @@ test('PLAN-01: تصفّحُ الأشهر بلا تعديل (البطاقات · 
 });
 
 test('PLAN-01: العارضُ بلا صلاحية تحرير يتصفّح الأشهر بلا رسالة «صلاحيتك لا تشمل هذا الإجراء» وبلا كتابة', () => {
-  const W = seeded({ can: (k, a) => !(k === 'plan' && (a === 'edit' || a === 'approve' || a === 'add' || a === 'del')) }), { c, S, toasts, store } = W;
-  const before = store.get(KP);
+  const W = seeded({ can: (k, a) => !(k === 'plan' && (a === 'edit' || a === 'approve' || a === 'add' || a === 'del')) }), { c, S, toasts, op } = W;
+  const before = JSON.stringify(op.data[KP]);
   c.state = Object.assign({}, c.state, { zones: [zone('M120 100 L420 100 L420 300 L120 300 Z')] });   /* ولو اختلف المعروضُ عن المخزَّن */
   c.goTo(1448, 6); c.goTo(1448, 5);
   assert.equal(S.denies, 0, 'لا رسالةَ صلاحية: ' + JSON.stringify(toasts));
-  assert.equal(S.saves, 0); assert.equal(store.get(KP), before);
+  assert.equal(S.saves, 0); assert.equal(JSON.stringify(op.data[KP]), before); assert.equal(op.control.stages.length, 0);
 });
 
-test('PLAN-01: تعديلٌ لم يُحفظ في الشهر المغادَر يُحفظ مرةً واحدة عند الانتقال — ثمّ لا حفظَ في التصفّح بعده', () => {
-  const W = seeded(), { c, S, store } = W;
+test('PLAN-01: تعديلٌ لم يُحفظ في الشهر المغادَر يُحفظ مرةً واحدة عند الانتقال — ثمّ لا حفظَ في التصفّح بعده', async () => {
+  const W = seeded(), { c, S, op } = W;
   c.state = Object.assign({}, c.state, { zones: [zone('M150 100 L450 100 L450 300 L150 300 Z')] });   /* مسارٌ يكتب الحالةَ ويعتمد على goTo للحفظ */
   c.goTo(1448, 6);
   assert.equal(S.saves, 1, 'حُفظ ما لم يُحفظ');
-  const st = JSON.parse(store.get(KP));
+  for (let i = 0; i < 20; i++) await new Promise((r) => setImmediate(r));
+  assert.equal(op.control.stages.length, 1, 'دفعةُ عملياتٍ واحدة');
+  const st = op.data[KP];
   assert.equal(st.months['1448-5'].d[0].zones[0].d, 'M150 100 L450 100 L450 300 L150 300 Z', 'المخزَّنُ يحمل التعديل في شهره');
   c.goTo(1448, 5); c.goTo(1448, 6); c.goTo(1448, 7);
   assert.equal(S.saves, 1, 'ولا حفظَ بعد ذلك ما دام لا تعديل');
@@ -94,7 +98,7 @@ test('PLAN-01: السعةُ المشتقّة (cap) ليست تعديلاً · و
   let W = seeded(); W.c.goTo(1448, 6); assert.equal(W.S.saves, 0, 'المخزَّن بسعةٍ والمعروضُ بلا سعة: لا حفظ');
   W = seeded(); W.c.state = Object.assign({}, W.c.state, { month: 9, planMonths: { '1448-5': W.c.state.planMonths['1448-5'] } }); W.c.goTo(1448, 5);
   assert.equal(W.S.saves, 0, 'مغادرةُ شهرٍ بلا خطة لا تكتب شيئاً');
-  W = seeded(); W.store.set(KP, JSON.stringify({ pMig: 3, months: {} })); W.c.goTo(1448, 6);
+  W = seeded(); W.op.data[KP] = { pMig: 3, months: {} }; W.c.goTo(1448, 6);
   assert.equal(W.S.saves, 1, 'لا نسخةَ مخزَّنة للشهر المغادَر ⇒ يُحفظ (الاحتياطُ كما كان)');
 });
 

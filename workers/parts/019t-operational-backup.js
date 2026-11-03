@@ -27,7 +27,7 @@ function opRestoreDocuments(body,reference,A) {
     var key=decoded.key;
     var projection=ocInflate(decoded.info.prepared,decoded.domain),raw=projection.present?JSON.stringify(projection.value):null;
     if(rsNat(body.base.kv[key])!==(reference.inputRevs[key]||0))throw rsError('conflict',409);
-    if(raw===reference.inputKeys[key])return;
+    if(raw===reference.inputKeys[key]||(raw===null&&reference.inputKeys[key]==null))return;   /* RISHAD-266: a resource absent from both the backup and the target (new department in a merge) is not an empty write */
     if(!canRead(A,key))throw rsError('restore-operations-resource-denied',403);
     if(raw===null){
       var empty=ENT[decoded.info.resource]&&ENT[decoded.info.resource].empty;

@@ -10,7 +10,7 @@ async function restoreBody(B,{scope={kind:'full'},domains:extra={},keys:extraKey
   const A=await B.W.actorOf(B.env,IDS.super), nf=await B.canonicalW.nfRead(B.env), ds=await B.canonicalW.dsDomainRead(B.env),
     url=new URL('http://x/export'+(scope.kind==='dept'?'?dept='+scope.departmentId:'')),
     cu=await B.canonicalW.cuExport(B.env,A,url), ir=await B.W.irExport(B.env,A,url),
-    keys=scope.kind==='full'?Object.fromEntries(Object.entries(B.keys).map(([k,v])=>[k,JSON.stringify(v)])):{};
+    keys=scope.kind==='full'?B.DB.q('SELECT k,seq,v FROM kv ORDER BY k,seq').reduce((o,r)=>(o[r.k]=(o[r.k]||'')+r.v,o),{}):{};
   Object.assign(keys,extraKeys);
   const depts=scope.kind==='full'?JSON.parse(keys.bassam_depts_v1).map(d=>d.id):[scope.departmentId],
     notifications=scope.kind==='full'?nf:Object.fromEntries(Object.entries(nf).map(([name,rows])=>[name,Array.isArray(rows)?
@@ -18,8 +18,9 @@ async function restoreBody(B,{scope={kind:'full'},domains:extra={},keys:extraKey
     business=Object.fromEntries(await Promise.all(B.W.bdDefinitions().map(async def=>[def.name,await Promise.all(depts.concat(def.name==='awards'&&scope.kind==='full'?['']:[]).map(d=>def.exportDomain(B.env,d)))]))),
     domains={...(scope.kind==='full'?{dailyStats:{version:1,data:ds.data}}:{}),notifications,custody:cu.domains,irshad:ir.domains,...business,...extra},
     base=(await B.W.rsRestoreInventory(B.env,A,scope,depts)).base;
+  if(!('operations' in extra)){const exported=await B.api('super','/api/operations/export?uid='+IDS.super+(scope.kind==='full'?'':'&dept='+encodeURIComponent(scope.departmentId)));assert.equal(exported.status,200,JSON.stringify(exported.json));domains.operations=exported.json.domains;}
   return {version:1,requestId:'TEST_ONLY_ir_restore_'+ ++request,scope,mode:'replace',reason:'TEST_ONLY reviewed recovery',base,keys,delete:[],domains,
-    manifest:{version:3,scope:scope.kind,domains:{kv:1,...(scope.kind==='full'?{dailyStats:1}:{}),notifications:1,custody:1,irshad:1,seized:1,awards:1},departments:depts,
+    manifest:{version:4,scope:scope.kind,domains:{kv:1,...(scope.kind==='full'?{dailyStats:1}:{}),notifications:1,custody:1,irshad:1,seized:1,awards:1,operations:1},departments:depts,
       keys:Object.keys(keys).filter(k=>scope.kind==='full'||k!=='bassam_perms_v1').map(k=>scope.kind==='dept'?k.replace('bsdept:'+scope.departmentId+':',''):k)}};
 }
 async function prepare(B,body){return B.W.rsPrepare(B.env,await B.W.actorOf(B.env,IDS.super),body,{});}
@@ -78,11 +79,11 @@ test('baseline manifest v1 Irshad JSON converts losslessly to explicit v3 typed 
   const B=await world(), A=await B.W.actorOf(B.env,IDS.super), original=docs(), body=await restoreBody(B,{scope:{kind:'dept',departmentId:D1}}),
     file={app:'bassam-crowd',version:3,kind:'dept',data:{},domains:clone(body.domains),manifest:clone(body.manifest)};
   delete file.domains.irshad;file.manifest.version=1;delete file.manifest.domains.irshad;
-  for(const name of ['seized','awards']){delete file.domains[name];delete file.manifest.domains[name];}
+  for(const name of ['seized','awards','operations']){delete file.domains[name];delete file.manifest.domains[name];}
   B.W.IR_RES_NAMES.forEach((name,i)=>file.data[B.W.irKey(D1,i)]=JSON.stringify(original[name]));
   file.manifest.keys=B.W.IR_RES.slice();
   const converted=await B.W.rsConvertBackup(B.env,A,file,{scope:{kind:'dept',departmentId:D2},mode:'replace',reference:{inputKeys:Object.fromEntries(Object.entries(B.keys).map(([k,v])=>[k,JSON.stringify(v)]))}});
-  assert.equal(converted.manifest.version,3);assert.equal(converted.manifest.domains.irshad,1);
+  assert.equal(converted.manifest.version,4);assert.equal(converted.manifest.domains.irshad,1);
   assert.deepEqual(converted.manifest.keys,[]);assert.deepEqual(Object.keys(converted.keys),[]);
   assert.equal(converted.domains.irshad[0].scope.departmentId,D2);
   assert.deepEqual(B.W.irInflate(converted.domains.irshad[0]),original);
@@ -93,7 +94,7 @@ test('v2 backup cannot gain legacy empty fallback or duplicate typed/JSON Irshad
   for(const change of [file=>delete file.domains.irshad,file=>{file.data['bsdept:'+D1+':bassam_irshad_v1']='{"reports":[]}';file.manifest.keys.push('bassam_irshad_v1');}]){
     const B=await world(),body=await restoreBody(B,{scope:{kind:'dept',departmentId:D1}}),
       file={app:'bassam-crowd',version:3,kind:'dept',data:{},domains:body.domains,manifest:body.manifest}, before=tableSnapshot(B);
-    file.manifest.version=2;for(const name of ['seized','awards']){delete file.domains[name];delete file.manifest.domains[name];}
+    file.manifest.version=2;for(const name of ['seized','awards','operations']){delete file.domains[name];delete file.manifest.domains[name];}
     change(file);await assert.rejects(B.W.rsConvertBackup(B.env,await B.W.actorOf(B.env,IDS.super),file,{scope:body.scope,mode:'replace',reference:{inputKeys:{}}}));
     assert.deepEqual(tableSnapshot(B),before);
   }

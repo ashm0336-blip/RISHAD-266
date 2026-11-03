@@ -1306,12 +1306,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (t.tkEmptyS =
         MS && MS.me && !lk
           ? "لا تظهر المهام إلا لحسابٍ مرتبطٍ بسجلّه الوظيفي — راجع مدير الإدارة"
-          : MS && MS.err
-            ? "تحقّق من الاتصال — تُعاد المحاولة تلقائياً"
+          : MS && "session" === MS.err
+            ? "انتهت الجلسة — سجّل الدخول مجدداً لعرض مهامك"
+            : MS && MS.err
+              ? "تحقّق من الاتصال — تُعاد المحاولة تلقائياً"
             : t.tkLoad
               ? ""
               : "حين يُسند إليك شيء يظهر هنا فوراً ويصلك تنبيه في الجرس"),
-      (t.tkRetryOn = !!(MS && MS.err && !(MS.me && !lk))),
+      /* RISHAD-266: بعد 401 لا إعادة محاولة (الخدمة لا تعيد) — فلا زر ولا وعدٌ كاذب */
+      (t.tkRetryOn = !!(MS && MS.err && "session" !== MS.err && !(MS.me && !lk))),
       (t.tkRetry = () => ((this._tkRetryAt = 0), MT && !MT.state().loading && !this._tkLoadQ && this._tkLd(MT))),
       (t.tkExpN = o.filter((t) => "expired" === t.st && !(t.r[20] && t.r[20].exp)).length),
       (t.tkSub = w

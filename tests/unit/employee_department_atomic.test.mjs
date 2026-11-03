@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, ok, custody, snap, seedMessage, OPTIONS } from './atomic_restore_review_fx.mjs';
 import { D1, D2, IDS, EKEYS, copy, identitySnapshot } from './notifications_review_fx.mjs';
+import { inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+const KV_PROBE = (dept) => 'bsdept:' + dept + ':bassam_last_export_v1';   /* schema 10: plain-KV department probe (options/employees are typed operational resources) */
 let rid = 0;
 const employeeKey = 'bsdept:' + D1 + ':bassam_employees_v1',
   cuKey = 'bsdept:' + D1 + ':bassam_custody_v1';
@@ -79,7 +81,9 @@ test('closed department wipe inventory and ACK cover KV, custody and notificatio
   await seedMessage(B);
   const beforeIdentity = identitySnapshot(B.DB),
     depts = copy(B.DB.q('SELECT * FROM kv WHERE k=?1', 'bassam_depts_v1')),
+    employeeRev = B.DB.q('SELECT rev FROM revs WHERE k=?1', employeeKey)[0].rev,
     inventory = ok(await B.api('super', '/api/admin/dept-wipe?dept=' + D1));
+  assert.ok(inspectOperationalFixture(B.env, employeeKey).length > 0, 'The wiped department starts with a typed employee list');
   assert.ok(inventory.counts.notifications > 0);
   const ack = ok(
     await B.api('super', '/api/admin/dept-wipe', {
@@ -97,7 +101,13 @@ test('closed department wipe inventory and ACK cover KV, custody and notificatio
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM notification_messages WHERE scope=?1', 'd:' + D1)[0].n, 0);
   assert.deepEqual(identitySnapshot(B.DB), beforeIdentity);
   assert.deepEqual(copy(B.DB.q('SELECT * FROM kv WHERE k=?1', 'bassam_depts_v1')), depts);
-  assert.equal(B.DB.q('SELECT v FROM kv WHERE k=?1', employeeKey)[0].v, '[]');
+  /* schema 10: the employee list is a typed operational resource; the wipe leaves it empty and never recreates a KV document */
+  assert.equal(B.DB.q('SELECT COUNT(*) n FROM kv WHERE k=?1', employeeKey)[0].n, 0);
+  assert.equal(inspectOperationalFixture(B.env, employeeKey), null);
+  const employeesRead = ok(await B.api('super', '/api/operations/read?uid=' + IDS.super + '&keys=' + encodeURIComponent(employeeKey)));
+  assert.deepEqual(employeesRead.resources, {});
+  assert.deepEqual(employeesRead.absent, [employeeKey]);
+  assert.ok(employeesRead.base[employeeKey] > employeeRev, 'The wipe itself advanced the employee resource revision');
 });
 test('department wipe rejects non-super and a newly added scoped key after inventory without writing partial state', async () => {
   const B = await world();
@@ -121,7 +131,7 @@ test('wipe image metadata retires only unreferenced images atomically, keeps sha
   const B = await world(),
     id = 'img_testonly_unique',
     shared = 'img_testonly_shared',
-    other = 'bsdept:' + D2 + ':bassam_options_v1',
+    other = KV_PROBE(D2),
     calls = [];
   B.env.IMG_R2 = Object.fromEntries(
     ['put', 'get', 'delete', 'head', 'list'].map((method) => [
@@ -175,7 +185,7 @@ test('wipe COUNT guard rejects a scoped key inserted after preparation and befor
   await custody(B);
   const inventory = ok(await B.api('super', '/api/admin/dept-wipe?dept=' + D1)),
     batch = B.DB.batch.bind(B.DB),
-    extra = 'bsdept:' + D1 + ':bassam_options_v1';
+    extra = OPTIONS;   /* a plain-KV scoped key absent at inventory time */
   let inserted = false;
   B.DB.batch = async (st) => {
     if (!inserted && st.some((s) => /^INSERT INTO restore_operations/.test(s.sql))) {
@@ -253,7 +263,7 @@ test('server-owned selected-last delete retains orphan history, while explicit a
   for (const deleteMode of ['selected', 'all']) {
     const B = await world();
     await custody(B);
-    await B.DB.batch(B.W.kvPutStmts(B.env, 'kv', employeeKey, JSON.stringify([B.keys[employeeKey][0]])));
+    await replaceOperationalFixture(B.env, employeeKey, [B.keys[employeeKey][0]]);
     const context = ok(await B.api('super', '/api/employees/transition?dept=' + D1 + '&intent=delete'));
     ok(
       await B.api('super', '/api/employees/transition', {

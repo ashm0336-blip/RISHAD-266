@@ -57,6 +57,8 @@ function world() {
   vm.runInContext(read('workers/parts/052-aud-events.js') + '\n' +
     ['metaGet', 'revsAll', 'revGuard', 'isRevConflict', 'nextRev', 'usersList'].map(name => declaration(storage, name)).join('\n') + '\n' +
     declaration(identity, 'normKey') + '\n' + read('workers/parts/062a-auth-routes.js') + '\n' +
+    /* schema 10: the /api/reset branch in 063 delegates to the canonical rsResetRoute (019e) — load it verbatim */
+    declaration(read('workers/parts/019e-atomic-save.js'), 'rsResetRoute') + '\n' +
     resetRoute(read('workers/parts/063-enf-api-and-handler.js')), context);
   return { DB, env: { DB }, context };
 }

@@ -35,8 +35,20 @@ test('نسخةٌ احتياطية → تحقّق → استعادة → العا
   const notice = await C.api('/api/notifications/act', { method: 'POST', cookie: su.ck, body: { op: 'emit', type: 'task_new', dept: 'tst_d1', own: ['tst_e_emp1'], vars: { 'المهمة': 'TEST_ONLY backup relationships', 'الوقت': 'TEST_ONLY' } } });
   assert.equal(notice.status, 200); assert.equal(notice.j.ok, 1); assert.ok(notice.j.id);
   const acknowledged = await C.api('/api/notifications/act', { method: 'POST', cookie: emp.ck, body: { op: 'state', action: 'ack', id: notice.j.id } }); assert.equal(acknowledged.status, 200); assert.equal(acknowledged.j.ok, 1);
-  const sv0 = await C.save(su.ck, { 'bsdept:dR:bassam_options_v1': JSON.stringify({ probe: 'نسخة' }) }); assert.ok(sv0.j.ok === 1 && !Object.keys(sv0.j.denied || {}).length, 'حفظُ مفتاح إدارة قبل النسخ');
-  const ping0 = (await C.api('/api/ping', { cookie: su.ck })).j; const get0 = (await C.api('/api/get?keys=bassam_depts_v1,bsdept:dR:bassam_options_v1', { cookie: su.ck })).j;
+  const sv0 = await C.save(su.ck, { 'bsdept:dR:bassam_last_export_v1': JSON.stringify({ probe: 'نسخة' }) }); assert.ok(sv0.j.ok === 1 && !Object.keys(sv0.j.denied || {}).length, 'حفظُ مفتاح إدارة قبل النسخ');
+  /* RISHAD-266 · schema 10: department options are a typed operational resource (ops_* tables, migrations/0010). Write a
+     typed value through the real operations envelope so snapshot/restore of operational data is verified, not only KV. */
+  const KO = 'bsdept:dR:bassam_options_v1', opsValue = { type: ['TEST_ONLY نسخة'], work: ['TEST_ONLY ميداني'] },
+    opsRead = (CX, ck, uid) => CX.api('/api/operations/read?uid=' + encodeURIComponent(uid) + '&keys=' + encodeURIComponent(KO), { cookie: ck });
+  const or0 = await opsRead(C, su.ck, su.j.uid); assert.equal(or0.status, 200, JSON.stringify(or0.j));
+  const ov0 = await C.api('/api/save', { method: 'POST', cookie: su.ck, body: { uid: su.j.uid, requestId: 'TEST_ONLY_d1_tools_ops_probe', epoch: or0.j.epoch, base: { [KO]: or0.j.base[KO] }, del: [], set: { [KO]: JSON.stringify(opsValue) } } });
+  assert.equal(ov0.status, 200, JSON.stringify(ov0.j)); assert.ok(ov0.j.ok === 1 && ov0.j.revs?.[KO] >= 1 && !Object.keys(ov0.j.denied || {}).length, 'حفظُ قيمةٍ تشغيلية مُنمّطة قبل النسخ: ' + JSON.stringify(ov0.j).slice(0, 200));
+  const opsTables = db => db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name GLOB 'ops_*' ORDER BY name").all().map(r => r.name);
+  const opsRows = db => db.prepare("SELECT COUNT(*) n FROM ops_nodes WHERE department_id='dR' AND resource='bassam_options_v1'").get().n;
+  assert.ok(opsRows(env.DB.db) > 0, 'The typed probe is stored in ops_* rows, not KV');
+  assert.equal(env.DB.db.prepare('SELECT COUNT(*) n FROM kv WHERE k=?').get(KO).n, 0, 'No KV copy of the typed probe');
+  const or1 = await opsRead(C, su.ck, su.j.uid); assert.equal(or1.status, 200, JSON.stringify(or1.j));
+  const ping0 = (await C.api('/api/ping', { cookie: su.ck })).j; const get0 = (await C.api('/api/get?keys=bassam_depts_v1,bsdept:dR:bassam_last_export_v1', { cookie: su.ck })).j;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_d1_')); const sqlite = path.join(dir, 'preview.sqlite'), dump = path.join(dir, 'bassam-db-preview_T0.sql'), man = path.join(dir, 'T0.json');
   toFile(env.DB, sqlite);
   execFileSync(PYTHON, [T + '/snapshot_local.py', sqlite, dump], { stdio: 'pipe' });
@@ -49,24 +61,31 @@ test('نسخةٌ احتياطية → تحقّق → استعادة → العا
   /* الاستعادةُ في قاعدةٍ جديدة فارغة ثم تشغيلُ العامل عليها (بلا initDb مسبق: كما wrangler d1 execute --file) */
   const env2 = makeEnv(); env2.DB.db.exec('PRAGMA foreign_keys=ON'); env2.DB.db.exec(fs.readFileSync(dump, 'utf8'));
   assert.deepEqual(env2.DB.db.prepare('PRAGMA foreign_key_check').all(), []);
-  for (const table of ['daily_stats_days', 'daily_stats_month_locks', 'daily_stats_day_locks', 'notification_messages', 'notification_targets', 'notification_user_state']) {
+  assert.ok(opsTables(env.DB.db).length > 0); assert.deepEqual(opsTables(env2.DB.db), opsTables(env.DB.db), 'every ops_* table is restored');
+  for (const table of ['daily_stats_days', 'daily_stats_month_locks', 'daily_stats_day_locks', 'notification_messages', 'notification_targets', 'notification_user_state', 'revs', ...opsTables(env.DB.db)]) {
     const normalize = db => JSON.parse(JSON.stringify(db.prepare('SELECT * FROM ' + table).all()));
     assert.deepEqual(normalize(env2.DB.db), normalize(env.DB.db), table + ': typed records and foreign-key relationships are restored exactly');
   }
+  const metaRev = db => db.prepare("SELECT v FROM meta WHERE k='rev'").get()?.v;
+  assert.equal(metaRev(env2.DB.db), metaRev(env.DB.db), 'النسخةُ العامة كما كانت (قبل أيّ دخولٍ على المستعاد)');
   const C2 = client(env2);
   const su3 = await C2.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su3.ok, 'حسابُ مدير النظام يدخل على المستعاد بكلمة المرور نفسِها');
   assert.equal((await C2.login(TEST_SUPER_USERNAME, 'wrong')).ok, false, 'وكلمةٌ خاطئة تُرفض (التجزئة مستعادة لا مُعاد ضبطها)');
   const emp2 = await C2.login('0000000113', '70113'); assert.ok(emp2.ok, 'حسابُ الاختبار يدخل');
-  const get1 = (await C2.api('/api/get?keys=bassam_depts_v1,bsdept:dR:bassam_options_v1', { cookie: su3.ck })).j;
-  assert.deepEqual(get1.keys, get0.keys, 'القيمُ والنسخ (rev) كما كانت'); assert.ok(get0.keys['bsdept:dR:bassam_options_v1'] && get0.keys['bsdept:dR:bassam_options_v1'].rev >= 1, 'مفتاحُ الإدارة موجودٌ قبل النسخ');
-  const ping1 = (await C2.api('/api/ping', { cookie: su3.ck })).j;
-  assert.equal(ping1.users, ping0.users, 'عددُ المستخدمين كما كان'); assert.equal(ping1.rev, ping0.rev, 'النسخةُ العامة كما كانت');
+  const get1 = (await C2.api('/api/get?keys=bassam_depts_v1,bsdept:dR:bassam_last_export_v1', { cookie: su3.ck })).j;
+  assert.deepEqual(get1.keys, get0.keys, 'القيمُ والنسخ (rev) كما كانت'); assert.ok(get0.keys['bsdept:dR:bassam_last_export_v1'] && get0.keys['bsdept:dR:bassam_last_export_v1'].rev >= 1, 'مفتاحُ الإدارة موجودٌ قبل النسخ');
+  const or2 = await opsRead(C2, su3.ck, su3.j.uid); assert.equal(or2.status, 200, JSON.stringify(or2.j));
+  assert.deepEqual(or1.j.resources[KO], opsValue, 'القيمةُ التشغيلية المُنمّطة مكتوبةٌ قبل النسخ'); assert.deepEqual(or2.j.resources[KO], or1.j.resources[KO], 'القيمةُ التشغيلية المُنمّطة مستعادةٌ كما هي');
+  assert.equal(or2.j.base[KO], or1.j.base[KO], 'ونسختُها (rev) كما كانت'); assert.equal(or2.j.base[KO], ov0.j.revs[KO]);
+  const ping1 = (await C2.api('/api/ping', { cookie: su3.ck })).j, logins = 2;   /* su3 and emp2 succeed on the restored copy; the wrong-PIN attempt fails */
+  /* RISHAD-266: each successful login on the restored copy may emit at most one sc_dev security notification (062a-auth-routes.js:98, rev+1) */
+  assert.equal(ping1.users, ping0.users, 'عددُ المستخدمين كما كان'); assert.ok(ping0.rev <= ping1.rev && ping1.rev <= ping0.rev + logins, 'النسخةُ العامة لم ترجع ولم تتقدّم بأكثر من تنبيه دخولٍ لكل دخول: ' + ping0.rev + ' → ' + ping1.rev);
   assert.equal(env2.DB.db.prepare("SELECT v FROM meta WHERE k='authz_mode'").get()?.v, env.DB.db.prepare("SELECT v FROM meta WHERE k='authz_mode'").get()?.v, 'meta.authz_mode كما كان');
   /* --diff: حفظٌ لاحق يظهر مفتاحاً واحداً متغيّراً */
-  const sv = await C2.save(su3.ck, { 'bsdept:dR:bassam_options_v1': JSON.stringify({ probe: 'بعد' }) }); assert.ok(sv.j.ok === 1 && !(sv.j.denied || {})['bsdept:dR:bassam_options_v1'], 'حفظٌ على المستعاد يمرّ: ' + JSON.stringify(sv.j).slice(0, 120));
+  const sv = await C2.save(su3.ck, { 'bsdept:dR:bassam_last_export_v1': JSON.stringify({ probe: 'بعد' }) }); assert.ok(sv.j.ok === 1 && !(sv.j.denied || {})['bsdept:dR:bassam_last_export_v1'], 'حفظٌ على المستعاد يمرّ: ' + JSON.stringify(sv.j).slice(0, 120));
   const sqlite2 = path.join(dir, 'after.sqlite'), dump2 = path.join(dir, 'T1.sql'); toFile(env2.DB, sqlite2); execFileSync(PYTHON, [T + '/snapshot_local.py', sqlite2, dump2], { stdio: 'pipe' });
   const D = JSON.parse(execFileSync(PYTHON, [T + '/verify.py', '--diff', dump, dump2], { encoding: 'utf8' }));
-  assert.ok(D.kvChanged.includes('bsdept:dR:bassam_options_v1') && !D.kvChanged.includes('bassam_depts_v1'), JSON.stringify(D.kvChanged));
+  assert.ok(D.kvChanged.includes('bsdept:dR:bassam_last_export_v1') && !D.kvChanged.includes('bassam_depts_v1'), JSON.stringify(D.kvChanged));
   assert.deepEqual(D.tablesOnlyA, []); assert.ok(D.metaChanged.includes('rev'), 'meta.rev تقدّمت بعد الحفظ: ' + JSON.stringify(D.metaChanged));
   fs.rmSync(dir, { recursive: true, force: true });
 });
@@ -135,5 +154,7 @@ test('أدوات D1 ترفض Production دائمًا وواجهة استعادة
   /* KIVO_249 · AUD-022: migrate.sh — Production مرفوضة بلا علم · مجلدٌ مفقود 5 · بلا wrangler 3 */
   assert.equal(r([T + '/migrate.sh', 'bassam-db', ROOT + '/migrations']), 2, 'migrate إلى Production بلا علم: خروج 2');
   assert.equal(r([T + '/migrate.sh', 'bassam-db-preview', '/nonexistent_dir']), 5, 'مجلدُ ترحيلات مفقود: خروج 5');
-  assert.equal(r([T + '/migrate.sh', 'bassam-db-preview', ROOT + '/migrations']), 3, 'بلا wrangler: خروج 3 (لا يحاول شيئاً)');
+  /* RISHAD-266: schema 9+ refuses CLI apply before backup/network (exit 6 — business_migration_cli.test.mjs); the wrangler probe stays on --list */
+  assert.equal(r([T + '/migrate.sh', 'bassam-db-preview', ROOT + '/migrations']), 6, 'apply على schema 9+: خروج 6 قبل أيّ نسخ أو شبكة');
+  assert.equal(r([T + '/migrate.sh', 'bassam-db-preview', ROOT + '/migrations', '--list']), 3, 'بلا wrangler: خروج 3 (لا يحاول شيئاً)');
 });

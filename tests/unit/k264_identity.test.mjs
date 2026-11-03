@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeLegacyTestEnv as makeEnv, client, applySql } from './harness.mjs';
-import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { loadClient, shareNative, asWriter, sleep, until, fixture, pageText, TODAY } from './k264_vm.mjs';
 
 /* خادمٌ وهميٌّ بعقد C1: uid في الجسم ≠ هوية الجلسة ⇒ 409 session-changed */
@@ -26,7 +26,7 @@ function c1Server() {
   } };
   return S;
 }
-const K1 = 'bsdept:d1:bassam_options_v1', K2 = 'bsdept:d1:bassam_tasks_v1', K3 = 'bsdept:d1:bassam_award_v1';
+const K1 = 'bassam_platform_v1', K2 = 'bsdept:d1:bassam_grants_v1', K3 = 'bassam_gdepts_v1';   /* schema 10: generic KV-queue resources (options/tasks/award moved to typed APIs) */
 const bootX = { srv: 1, cf: 1, v: 10, uid: 'u_x', keys: { [K1]: '{}', [K2]: '{}', [K3]: '{}' }, revs: { [K1]: 1, [K2]: 2, [K3]: 3 } };
 
 test('D-3: كلُّ حفظٍ يحمل uid من __BS_BOOT — لا من علامة الجهاز (ولو كانت لحسابٍ آخر)', async () => {
@@ -99,24 +99,26 @@ test('D-3: دخولُ حسابٍ آخر في تبويبٍ آخر (تتبدّل �
 /* عقد C1 على العامل الحقيقي. المورد عام لطابور KV، ومخوّل لكلا الهويتين
    ببيانات صلاحية اصطناعية مع حفظ إيجابي فعلي لكل منهما قبل تبديل الكوكي. */
 for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-3 (طرفٌ لطرف): تعديلُ X المعلَّق لا يُحفظ باسم Y بعد خروجٍ ودخولٍ في المتصفح نفسِه', async (t) => {
-  const K = 'bsdept:tst_d1:bassam_options_v1';
+  /* schema 10: options is a typed Operations resource (no generic queue); the named permission templates are a generic dept KV
+     resource that a synthetic page grant (admin/ptpls) makes writable for both identities — the C1 contract under test is unchanged */
+  const K = 'bsdept:tst_d1:bassam_perm_tpls_named_v1';
   const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : { KIVO_TEST_FIXTURE: 'allow' }); const C = client(env);
   const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, fixture().seed);
-  await installIrshadFixture(env);
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   /* Only synthetic fixture grants. Both users can edit this same live
      reference; denial under Y must come from C1 rather than an own-only key. */
   const permissions = JSON.parse(env.DB.q("SELECT v FROM kv WHERE k='bassam_perms_v1' AND seq=0")[0].v);
-  for (const eid of ['tst_e_emp1', 'tst_e_sup1']) permissions.emps.tst_d1[eid]['emps/data'] = ['view', 'add', 'edit', 'del'];
+  for (const eid of ['tst_e_emp1', 'tst_e_sup1']) permissions.emps.tst_d1[eid]['admin/ptpls'] = ['view', 'add', 'edit', 'del'];
   env.DB.db.prepare("UPDATE kv SET v=? WHERE k='bassam_perms_v1' AND seq=0").run(JSON.stringify(permissions));
   const X = await C.login('0000000113', '70113'); assert.ok(X.ok, 'X = tst_emp1');
   const Y0 = await C.login('0000000111', '70111'); assert.ok(Y0.ok, 'Y = tst_sup1');
   for (const [uid, user] of [['tst_emp1', X], ['tst_sup1', Y0]]) {
     const value = (await C.api('/api/get?keys=' + encodeURIComponent(K), { cookie: user.ck })).j.keys[K];
-    const current = JSON.parse(value.v), tag = 'TEST_ONLY C1 permitted ' + uid;
-    const saved = await C.api('/api/save', { method: 'POST', cookie: user.ck, body: { uid, set: { [K]: JSON.stringify({ ...current, type: (current.type || []).concat(tag) }) }, del: [], base: { [K]: value.rev } } });
+    const current = JSON.parse(value.v) || {}, tag = 'TEST_ONLY C1 permitted ' + uid;
+    const saved = await C.api('/api/save', { method: 'POST', cookie: user.ck, body: { uid, set: { [K]: JSON.stringify({ ...current, [tag]: { name: tag, perms: {} } }) }, del: [], base: { [K]: value.rev } } });
     assert.equal(saved.status, 200); assert.equal(saved.j.ok, 1);
     assert.ok(!(saved.j.denied || {})[K] && !(saved.j.conflicts || {})[K], 'Actual positive write for ' + uid);
     assert.ok(env.DB.q('SELECT v FROM kv WHERE k=? ORDER BY seq', K).map(row => row.v).join('').includes(tag));
@@ -133,7 +135,7 @@ for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-3 (طرفٌ ل�
     await sleep(1500);
     A.net.down = true; A.W.dispatchEvent(new Event('offline'));
     const cur = JSON.parse(A.get(K));
-    A.set(K, JSON.stringify({ ...cur, type: (cur.type || []).concat('TEST_ONLY k264x1') }));
+    A.set(K, JSON.stringify({ ...cur, 'TEST_ONLY k264x1': { name: 'TEST_ONLY k264x1', perms: {} } }));
     await sleep(400);
     assert.equal(A.W.KIVO.__BS_SRV.dirty(), true);
     const lo = await C.api('/api/logout', { method: 'POST', cookie: X.ck }); assert.ok(lo.status < 400);

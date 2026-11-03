@@ -12,7 +12,7 @@ test('D-7: تبديلُ الإدارة في تبويبٍ لا يحوّل كتا�
   const env = makeTestEnv({}); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   assert.equal((await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dA', name: 'TEST_ONLY إدارة أ' }, { id: 'dB', name: 'TEST_ONLY إدارة ب' }]) })).j.ok, 1);
-  const KA = 'bsdept:dA:bassam_options_v1', KB = 'bsdept:dB:bassam_options_v1';
+  const KA = 'bsdept:dA:bassam_perm_help_v1', KB = 'bsdept:dB:bassam_perm_help_v1';
   assert.equal((await C.save(su.ck, { [KA]: JSON.stringify({ type: ['TEST_ONLY A-orig'] }), [KB]: JSON.stringify({ type: ['TEST_ONLY B-orig'] }) })).j.ok, 1);
   const boot = (await C.boot(su.ck)).boot;
   const jar = { cookie: su.ck };
@@ -23,14 +23,14 @@ test('D-7: تبديلُ الإدارة في تبويبٍ لا يحوّل كتا�
   const tabs = [t1, t2];
   try {
     assert.equal(t1.W.KIVO.BassamDepts.active(), 'dA'); assert.equal(t2.W.KIVO.BassamDepts.active(), 'dA');
-    assert.match(t1.get('bassam_options_v1'), /A-orig/, 'التبويب ١ على الإدارة أ');
+    assert.match(t1.get('bassam_perm_help_v1'), /A-orig/, 'التبويب ١ على الإدارة أ');
     /* التبويب ٢: المستخدم يختار الإدارة ب (root-logic pick → D.setActive → إعادةُ تحميل التبويب ٢ وحده) */
     assert.equal(asWriter(shared, t2, () => t2.W.KIVO.BassamDepts.setActive('dB')), true);
     /* التبويب ١: ما زال على شاشة الإدارة أ، والمستخدم يعدّل القائمة التي يراها */
     assert.equal(t1.W.KIVO.BassamDepts.active(), 'dA', 'التبويب ١ لم يُحوَّل إلى الإدارة ب');
-    assert.match(t1.get('bassam_options_v1'), /A-orig/, 'والتبويب ١ ما زال يقرأ الإدارة أ');
-    t1.set('bassam_options_v1', JSON.stringify({ type: ['TEST_ONLY edited in tab 1 while viewing A'] }));
-    t2.set('bassam_options_v1', JSON.stringify({ type: ['TEST_ONLY edited in tab 2 on B'] }));
+    assert.match(t1.get('bassam_perm_help_v1'), /A-orig/, 'والتبويب ١ ما زال يقرأ الإدارة أ');
+    t1.set('bassam_perm_help_v1', JSON.stringify({ type: ['TEST_ONLY edited in tab 1 while viewing A'] }));
+    t2.set('bassam_perm_help_v1', JSON.stringify({ type: ['TEST_ONLY edited in tab 2 on B'] }));
     await sleep(900);
     const srvA = env.DB.q('SELECT v FROM kv WHERE k = ?', KA)[0].v, srvB = env.DB.q('SELECT v FROM kv WHERE k = ?', KB)[0].v;
     assert.match(srvA, /edited in tab 1 while viewing A/, 'تعديلُ شاشة الإدارة أ وصل الإدارةَ أ على الخادم: ' + srvA);

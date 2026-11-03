@@ -5,6 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTestEnv, client, applySql, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { loadClient, sleep, fixture, cp, pageText } from './k264_vm.mjs';
 
 const offline = { req: async () => { throw new Error('offline'); } };
@@ -116,7 +117,7 @@ test('D-6 (وحدة): القوائمُ بلا هوية — مجموعاتٌ وس
 
 test('D-6 (الشريط): التعارضُ الملتبس يُعلَن لصاحبه بنصٍّ صريح، واسمُ الزميل يُهرَّب (لا HTML من الخادم)', async () => {
   /* خادمٌ وهميّ: الحفظُ يعود بتعارضٍ على مفتاحٍ قيمتُه عند الزميل قائمةٌ استُبدل فيها العنصرُ نفسُه */
-  const K = 'bsdept:d1:bassam_options_v1', base = JSON.stringify({ type: ['X', 'k'] }), theirs = JSON.stringify({ type: ['A1', 'A2', 'k'] });
+  const K = 'bsdept:d1:bassam_perm_help_v1', base = JSON.stringify({ type: ['X', 'k'] }), theirs = JSON.stringify({ type: ['A1', 'A2', 'k'] });
   let n = 0; const sent = [];
   const C = { req: async (p, o) => {
     if (p.startsWith('/api/save')) { n++; sent.push(JSON.parse(o.body)); return new Response(JSON.stringify(n === 1 ? { ok: 1, conflicts: { [K]: { cur: theirs, rev: 7, by: '<img src=x onerror=alert(1)>زميل', at: Date.now() } } } : { ok: 1, revs: { [K]: 8 } }), { status: 200 }); }
@@ -152,6 +153,7 @@ for (const mode of ['legacy', 'enforce']) for (const K of CASES) test('[' + mode
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, fixture().seed);
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage (assertions below unchanged: owner decision pending) */
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const LA = await C.login(...K.a), LB = await C.login(...K.b); assert.ok(LA.ok && LB.ok);
   const bA = (await C.boot(LA.ck)).boot, bB = (await C.boot(LB.ck)).boot; assert.ok(bA.keys[K.k] && bB.keys[K.k], 'التبويبان يقرآن ' + K.k);

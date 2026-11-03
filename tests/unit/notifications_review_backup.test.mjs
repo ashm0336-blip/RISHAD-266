@@ -2,7 +2,7 @@
    no local business overlay, downloaded files, Cloudflare or legacy worker. */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {world,ok,snap,copy,D1,D2,OPTIONS,backupBrowser,exportFull,exportDepartment,seedTypedDomains,until,tick} from './backup_review_fx.mjs';
+import {world,ok,snap,copy,D1,D2,OPTIONS,backupBrowser,exportFull,exportDepartment,seedTypedDomains,until,tick,currentOperationResources} from './backup_review_fx.mjs';
 const ds=()=>({haram:{'9999-01-01':{worshippers:0,umrah:null}},nabawi:{},locks:{}});
 const oldKeys=['bassam_notif_v1','bassam_notif_sys_v1','bassam_notif_cfg_v1','bassam_bc_v1'];
 const commitPosts=C=>C.requests.filter(r=>r.method==='POST'&&JSON.parse(r.body).phase==='commit');
@@ -11,15 +11,17 @@ test('full backup awaits the actual normalized notification export and never off
   for(const approved of [false,true]){
     const B=await world();await seedTypedDomains(B,ds());const C=await backupBrowser(B),actualExport=C.KIVO.BassamNotif.exportDomain;let settle;
     C.KIVO.BassamNotif.exportDomain=async()=>await new Promise(resolve=>{settle=async()=>resolve(approved?await actualExport():{ok:0,err:'TEST_ONLY_disconnected'});});
-    for(const helper of ['_wpActor','_irBackupCapture','_irBackupFence','_irBackupDomain'])C.page[helper]=C.method('src/modules/admin/logic.js',helper);
+    /* '_irBackupDomain' was removed by 05ca197 (typed domains now come from KIVO.BackupRestore.exportDomains in 548) */
+    for(const helper of ['_wpActor','_irBackupCapture','_irBackupFence'])C.page[helper]=C.method('src/modules/admin/logic.js',helper);
     C.page._encPend={json:'TEST_ONLY_stale_payload'};C.property('src/modules/admin/logic.js','exportBackup')();await until(()=>!!settle);
     assert.equal(C.page._encPend,null);assert.equal(C.states.some(s=>s.pwDlg),false);assert.equal(C.blobs.length,0);
     await settle();await until(()=>!!C.page._encPend||C.states.some(s=>s.backupMsg));
     if(approved){
       const file=JSON.parse(C.page._encPend.json),actual=await actualExport();assert.deepEqual(file.domains.notifications,actual.domain);assert.deepEqual(file.domains.dailyStats.data,ds());
-      assert.equal(file.manifest.version,2);assert.deepEqual(file.manifest.domains,{kv:1,dailyStats:1,notifications:1,custody:1,irshad:1});assert.equal(file.domains.custody.find(d=>d.scope.departmentId===D1).rows.items.length,1);
+      assert.equal(file.manifest.version,4);assert.deepEqual(file.manifest.domains,{kv:1,dailyStats:1,notifications:1,custody:1,irshad:1,seized:1,awards:1,operations:1});assert.equal(file.domains.custody.find(d=>d.scope.departmentId===D1).rows.items.length,1);
       assert.deepEqual(file.domains.irshad.map(d=>d.scope.departmentId).sort(),[D1,D2].sort());assert.ok(C.requests.some(request=>request.url.startsWith('/api/irshad/export?')&&request.status===200));
       assert.equal(file.domains.custody.length,2);assert.ok(C.states.some(s=>s.pwDlg?.mode==='exp'));
+      assert.deepEqual(file.domains.operations.map(d=>d.scope.departmentId+':'+d.resource).sort(),[D1,D2].flatMap(d=>currentOperationResources().map(r=>d+':'+r)).sort());assert.ok(C.requests.some(request=>request.url.startsWith('/api/operations/export?')&&request.status===200));
     }else{assert.equal(C.page._encPend,null);assert.ok(C.states.at(-1).backupMsg);assert.equal(C.states.some(s=>s.pwDlg),false);}
     assert.deepEqual(C.writes,[]);assert.equal(C.reads.some(k=>oldKeys.some(n=>k.endsWith(n))),false);assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n,0);
   }
@@ -32,7 +34,7 @@ test('department export waits for the server notification domain and aborts the 
     C.method('src/layouts/root-logic.js','bkExportRun').call(C.page,{preImport:true,cb:()=>continued++});await until(()=>!!settle);
     assert.equal(requested,D1);assert.equal(C.blobs.length,0);assert.equal(continued,0);await settle();await until(()=>continued>0||C.toasts.length>0);
     assert.equal(continued,approved?1:0);assert.equal(C.downloads.length,approved?1:0);
-    if(approved){const file=JSON.parse(await C.blobs[0].text());assert.deepEqual(file.domains.notifications,(await actualExport(D1)).domain);assert.equal(file.kind,'dept');assert.equal(file.manifest.version,2);assert.deepEqual(file.manifest.domains,{kv:1,notifications:1,custody:1,irshad:1});assert.equal(file.domains.custody.length,1);assert.equal(file.domains.custody[0].scope.departmentId,D1);assert.equal(file.domains.irshad.length,1);assert.equal(file.domains.irshad[0].scope.departmentId,D1);assert.equal(file.domains.dailyStats,undefined);assert.equal(file.domains.notifications.messages.every(m=>m.scope==='d:'+D1),true);}
+    if(approved){const file=JSON.parse(await C.blobs[0].text());assert.deepEqual(file.domains.notifications,(await actualExport(D1)).domain);assert.equal(file.kind,'dept');assert.equal(file.manifest.version,4);assert.deepEqual(file.manifest.domains,{kv:1,notifications:1,custody:1,irshad:1,seized:1,awards:1,operations:1});assert.deepEqual(file.domains.operations.map(d=>d.scope.departmentId+':'+d.resource).sort(),currentOperationResources().map(r=>D1+':'+r).sort());assert.equal(file.domains.custody.length,1);assert.equal(file.domains.custody[0].scope.departmentId,D1);assert.equal(file.domains.irshad.length,1);assert.equal(file.domains.irshad[0].scope.departmentId,D1);assert.equal(file.domains.dailyStats,undefined);assert.equal(file.domains.notifications.messages.every(m=>m.scope==='d:'+D1),true);}
     else{assert.ok(C.toasts.at(-1)[0]);assert.deepEqual(C.blobs,[]);}
     assert.deepEqual(C.writes,[]);
   }

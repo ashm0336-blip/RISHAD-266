@@ -35,16 +35,17 @@ const businessDomain = (kind, d) => ({ version: 1, scope: d === '' ? { kind: 'gl
 const json = body => ({ ok: true, status: 200, json: async () => body });
 const settle = async () => { for (let i = 0; i < 8; i++) await new Promise(resolve => setImmediate(resolve)); };
 
-function browser(kind, failure = '') {
+function browser(kind, failure = '', { mgr = true, backupGrant = null } = {}) {
   const calls = [], files = [], writes = [], messages = [];
   let active = D1, dirty = failure === 'dirty';
   const keys = ['bsdept:' + D1 + ':bassam_options_v1', 'bsdept:' + D1 + ':bassam_irshad_v1'];
   const memory = { [keys[0]]: '{"TEST_ONLY":1}', [keys[1]]: '{"reports":[]}', bassam_depts_v1: JSON.stringify([{ id: D1 }, { id: D2 }]),
     bassam_auth_users_v1: '[]', bassam_perms_v1: '{}', bassam_gdepts_v1: '[]', bassam_platform_v1: '{}', bassam_active_dept_v1: D1 };
-  const KIVO = { BassamAuth: { user: () => ({ id: 'TEST_ONLY_owner', role: kind === 'full' ? 'super' : 'staff' }), isSuper: () => kind === 'full' },
+  const KIVO = { BassamAuth: { user: () => ({ id: 'TEST_ONLY_owner', role: kind === 'full' ? 'super' : 'staff', ...(kind === 'full' || !mgr ? {} : { mgr: 1 }) }), isSuper: () => kind === 'full' },
+    ...(backupGrant ? { BassamPerm: { canSub: (page, sub, act) => page === 'admin' && sub === 'backup' && backupGrant.includes(act) } } : {}),
     BassamDepts: { active: () => active, activeName: () => 'TEST_ONLY Department', allScopedKeys: () => keys, keysOf: () => keys,
       list: () => [{ id: D1 }, { id: D2 }], raw: { getItem: key => memory[key] ?? null, setItem: (key, value) => writes.push([key, value]) } },
-    __BS_SRV: { dirty: () => dirty, inflight: () => false, sesChanged: () => false, rev: () => 4 },
+    __BS_SRV: { dirty: () => dirty, inflight: () => false, sesChanged: () => false, rev: () => 4, operations: { resources: ['bassam_employees_v1'] } },
     DailyStats: { refresh: async () => ({}), revision: () => 3 },
     BassamNotif: { exportDomain: async () => ({ ok: 1, domain: { version: 1 } }) },
     Custody: { exportDomain: async dept => ({ ok: 1, domains: (dept ? [dept] : [D1, D2]).map(d => ({ version: 1, scope: { departmentId: d }, rows: { items: [], issues: [], moves: [] } })) }) },
@@ -59,6 +60,7 @@ function browser(kind, failure = '') {
     fetch: async (url, options) => {
       calls.push({ url: String(url), options });
       if (String(url).startsWith('/api/get?')) { fences++; return json({ ok: 1, v: failure === 'stale' || failure === 'concurrent' && fences === 2 ? 18 : 17, keys: {} }); }
+      if (String(url).startsWith('/api/operations/export?')) { const ds = kind === 'full' ? [D1, D2] : [D1]; return json({ ok: 1, globalRev: 17, domains: ds.map(d => ({ version: 1, scope: { departmentId: d }, resource: 'bassam_employees_v1', rows: { ops_nodes: [] } })) }); }
       const resource = /^\/api\/(irshad|seized|award)\/export\?/.exec(String(url))?.[1]; assert.ok(resource, String(url));
       if (failure === 'department' && resource === 'irshad') active = D2;
       const departments = kind === 'full' ? [D1, D2] : [D1], scopes = departments.concat(resource === 'award' && kind === 'full' ? [''] : []);
@@ -92,12 +94,12 @@ test('full backup includes manifest v3, explicit typed empty business domains fo
   const B = browser('full'); B.page.exportBackup(); await settle();
   assert.ok(B.page._encPend, B.page.state.backupMsg);
   const file = JSON.parse(B.page._encPend.json);
-  assert.equal(file.manifest.version, 3); assert.equal(file.manifest.domains.irshad, 1); assert.equal(file.manifest.domains.seized, 1); assert.equal(file.manifest.domains.awards, 1);
+  assert.equal(file.manifest.version, 4); assert.equal(file.manifest.domains.operations, 1); assert.equal(file.manifest.domains.irshad, 1); assert.equal(file.manifest.domains.seized, 1); assert.equal(file.manifest.domains.awards, 1);
   assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId), [D1, D2]);
   assert.deepEqual(file.domains.seized.map(d => d.scope.departmentId), [D1, D2]);
   assert.deepEqual(file.domains.awards.map(d => d.scope.kind === 'global' ? '' : d.scope.departmentId), [D1, D2, '']);
   assert.equal(file.data['bsdept:' + D1 + ':bassam_irshad_v1'], undefined);
-  assert.equal(B.calls.filter(c => c.url.startsWith('/api/get?')).length, 2); assert.equal(B.calls.filter(c => /\/export\?/.test(c.url)).length, 3); assert.deepEqual(B.writes, []);
+  assert.equal(B.calls.filter(c => c.url.startsWith('/api/get?')).length, 2); assert.equal(B.calls.filter(c => /\/export\?/.test(c.url)).length, 4); assert.deepEqual(B.writes, []);
 });
 
 test('full backup refuses stale memory, concurrent server writes, pending local writes and incomplete/foreign typed domains', async () => {
@@ -110,7 +112,7 @@ test('full backup refuses stale memory, concurrent server writes, pending local 
 test('department export uses the actual 548 service and captured identity, with explicit empty business domains in manifest v3', async () => {
   const B = browser('dept'); B.page.exportBackup(); await settle();
   assert.equal(B.files.length, 1, B.messages.join(';'));
-  const file = B.files[0]; assert.equal(file.manifest.version, 3); assert.equal(file.manifest.domains.irshad, 1); assert.equal(file.manifest.domains.seized, 1); assert.equal(file.manifest.domains.awards, 1);
+  const file = B.files[0]; assert.equal(file.manifest.version, 4); assert.equal(file.manifest.domains.operations, 1); assert.equal(file.manifest.domains.irshad, 1); assert.equal(file.manifest.domains.seized, 1); assert.equal(file.manifest.domains.awards, 1);
   assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId), [D1]); assert.equal(file.data.bassam_irshad_v1, undefined);
   assert.deepEqual(file.domains.seized.map(d => d.scope.departmentId), [D1]); assert.deepEqual(file.domains.awards.map(d => d.scope.departmentId), [D1]);
   assert.ok(B.calls.find(c => c.url.includes('dept=' + D1))); assert.equal(B.writes.length, 1); assert.ok(B.writes[0][0].endsWith(':bassam_last_export_v1'));
@@ -120,5 +122,20 @@ test('department export never downloads a partial or mismatched snapshot or cont
   for (const failure of ['stale', 'concurrent', 'dirty', 'missing', 'scope', 'rows', 'department', 'seized-missing', 'award-scope', 'award-rows']) {
     const B = browser('dept', failure); B.page.exportBackup(); await settle();
     assert.equal(B.files.length, 0, failure); assert.deepEqual(B.writes, [], failure);
+  }
+});
+
+test('department export refuses a plain staff user without the backup grant with the app message, before any read or download', async () => {
+  /* 019u bkExportOk / root-logic.js bkExportRun: the department copy carries all department data, so only a department manager
+     or a holder of admin/backup add|edit may export it. */
+  const refused = 'لم تُصدَّر النسخة: نسخةُ الإدارة تحمل كل بياناتها، فتصديرها لمدير الإدارة أو لمن مُنح «إنشاء نسخة احتياطية» — اطلب الصلاحية من مدير الإدارة';
+  for (const backupGrant of [null, ['view']]) {
+    const B = browser('dept', '', { mgr: false, backupGrant }); B.page.exportBackup(); await settle();
+    assert.deepEqual(B.messages, [refused], JSON.stringify(backupGrant));
+    assert.equal(B.files.length, 0); assert.deepEqual(B.writes, []); assert.deepEqual(B.calls, [], 'No server read is attempted');
+  }
+  for (const grant of ['add', 'edit']) {
+    const B = browser('dept', '', { mgr: false, backupGrant: [grant] }); B.page.exportBackup(); await settle();
+    assert.equal(B.files.length, 1, grant + ': ' + B.messages.join(';')); assert.equal(B.writes.length, 1);
   }
 });

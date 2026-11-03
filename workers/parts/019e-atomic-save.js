@@ -342,7 +342,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
       var readBase=body.base[readKey],writeKey=operationKeys.find(opIsResource),denied={},conflicts={};
       opInfo(readKey);
       if(!Number.isSafeInteger(readBase)||readBase<0)throw rsError('operations-base');
-      if(!opt.srv&&!canRead(A,readKey)){
+      if(!opt.srv&&!opt.__employeeRequestId&&!canRead(A,readKey)){   // RISHAD-266: employee-route references are the exact server context (019c); revision guard below still applies
         denied[writeKey]={why:'read-reference-denied'};
         return {ok:0,requestId:operationRequestId,epoch:body.epoch,revs:{},denied:denied,conflicts:{},atomic:1};
       }

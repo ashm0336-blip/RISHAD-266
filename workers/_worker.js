@@ -8817,6 +8817,8 @@ async function empPrepareTransition(env, A, input) {
     throw cuError('employee-transition-base');
   for (var key of Object.keys(context.base.kv))
     if (input.base.kv[key] !== context.base.kv[key]) throw cuError('employee-transition-conflict', 409);
+  // RISHAD-266: the reference set is exactly the server context (no client-added keys), so 019e may trust it
+  if (Object.keys(input.base.kv).length !== Object.keys(context.base.kv).length) throw cuError('employee-transition-conflict', 409);
   if (input.base.custody !== context.base.custody) throw cuError('custody-conflict', 409);
   var mode = input.intent === 'import' && input.import && input.import.mode,
     replace = mode === 'replace',
@@ -10940,7 +10942,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
       var readBase=body.base[readKey],writeKey=operationKeys.find(opIsResource),denied={},conflicts={};
       opInfo(readKey);
       if(!Number.isSafeInteger(readBase)||readBase<0)throw rsError('operations-base');
-      if(!opt.srv&&!canRead(A,readKey)){
+      if(!opt.srv&&!opt.__employeeRequestId&&!canRead(A,readKey)){   // RISHAD-266: employee-route references are the exact server context (019c); revision guard below still applies
         denied[writeKey]={why:'read-reference-denied'};
         return {ok:0,requestId:operationRequestId,epoch:body.epoch,revs:{},denied:denied,conflicts:{},atomic:1};
       }
@@ -17173,7 +17175,7 @@ async function bdRestoreRevisions(env,depts,full) {
   if(full) out.awards['']=await awRevs(env,'');
   return out;
 }
-async function bdGlobalRevision(env) { var row=await env.DB.prepare("SELECT v FROM meta WHERE k='rev'").first(),value=row&&Number(row.v);if(!Number.isSafeInteger(value)||value<0)throw rsError('domain-revision',503);return value; }
+async function bdGlobalRevision(env) { var row=await env.DB.prepare("SELECT v FROM meta WHERE k='rev'").first();if(!row)return 0;var value=Number(row.v);if(!Number.isSafeInteger(value)||value<0)throw rsError('domain-revision',503);return value; }   // RISHAD-266: absent row = 0 (as every writer COALESCEs it), same as opGlobalRevOf
 async function bdExport(env,actor,url,name) {
   var def=bdDefinitions().find(function(d){return d.name===name;});
   if(!def) throw rsError('domain-export');
@@ -18290,18 +18292,39 @@ function opUpsertRows(env, spec, rows) {
       ' FROM json_each(?1) j WHERE 1 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET ' + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(JSON.stringify(part));
   });
 }
-function opStateGuards(env, info, domain) {
-  var guards = [], empty = [];
+function opStateGuards(env, info, domain, empty) {
+  var guards = [];
   var tables = ocPhysicalTables(info.prepared), physical = ocPhysicalRows(info.prepared, domain);
   Object.keys(tables).forEach(function (table) {
     var rows = physical[table] || [];
-    if (!rows.length) empty.push(table);
+    if (!rows.length) (empty[table] = empty[table] || []).push([info.dept, info.resource]);
     else guards.push.apply(guards, rsWitness(env, table, tables[table], rows, 'department_id=?1 AND resource=?2', [info.dept, info.resource]));
   });
-  for (var i = 0; i < empty.length; i += 24) guards.push(bdEmptyTableGuard(env, empty.slice(i, i + 24), 'department_id=?1 AND resource=?2', [info.dept, info.resource]));
   return guards;
 }
-async function opLoadMany(env, keys) {
+// Set-based form of the per-resource guards: one EXISTS per physical table over
+// every (department, resource) pair that read empty, and one CAS over all revs.
+function opEmptyGuards(env, empty) {
+  var tables = Object.keys(empty), guards = [];
+  for (var i = 0; i < tables.length; i += 24) {
+    var part = tables.slice(i, i + 24);
+    guards.push(rsBound(env.DB.prepare('SELECT CASE WHEN ' + part.map(function (table, n) {
+      return 'EXISTS(SELECT 1 FROM ' + ocIdentifier(table) + " WHERE (department_id,resource) IN(SELECT json_extract(j.value,'$[0]'),json_extract(j.value,'$[1]')FROM json_each(?" + (n + 1) + ')j))';
+    }).join(' OR ') + " THEN json_extract('{}','KIVO_RESTORE_TARGET') END"), part.map(function (table) { return JSON.stringify(empty[table]); })));
+  }
+  return guards;
+}
+function opRevGuards(env, pairs) {
+  return rsChunks(pairs).map(function (part) {
+    return env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1)j WHERE COALESCE((SELECT rev FROM revs WHERE k=json_extract(j.value,'$[0]')),0)<>json_extract(j.value,'$[1]'))THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(JSON.stringify(part));
+  });
+}
+function opLegacyError(error) {
+  if (!/KIVO_OPERATIONS_LEGACY_SOURCE/.test(String(error && error.message || error))) return error;
+  var e = ocError('legacy-source-present'); e.status = 503; return e;
+}
+// retired: also run opRetiredGuard inside the read batch (replaces a separate opGuardRetired round trip).
+async function opLoadMany(env, keys, retired) {
   var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {};
   wanted.forEach(function (key) {
     var info = opInfo(key); if (!info) throw ocError('resource');
@@ -18317,12 +18340,16 @@ async function opLoadMany(env, keys) {
     var query=tableRequests[table];
     batch.push(env.DB.prepare('SELECT '+query.columns.join(',')+' FROM '+table+" WHERE (department_id,resource) IN(SELECT json_extract(j.value,'$.department_id'),json_extract(j.value,'$.resource')FROM json_each(?1)j)").bind(JSON.stringify(query.pairs)));
   });
-  if (!batch.length) return { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, globalRev:await bdGlobalRevision(env) };
-  var revisionIndex=batch.length;
+  if (!batch.length) { if (retired) await opGuardRetired(env); return { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, globalRev:await bdGlobalRevision(env) }; }
+  if (retired) batch.unshift(opRetiredGuard(env));
+  var offset = retired ? 1 : 0;
+  var revisionIndex=batch.length-offset;
   batch.push(env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(wanted)));
   batch.push(env.DB.prepare("SELECT v FROM meta WHERE k='rev'"));
-  var result = await env.DB.batch(batch), values = {}, domains = {}, guards = [], snapshots = [];
+  var result, values = {}, domains = {}, guards = [], snapshots = [], empty = {}, revPairs = [];
+  try { result = await env.DB.batch(batch); } catch (error) { throw opLegacyError(error); }
   result.forEach(function (entry) { if (!entry || entry.success === false) throw ocError('read'); });
+  result = result.slice(offset);
   tableNames.forEach(function(table,index){(result[index].results||[]).forEach(function(row){
     var key='bsdept:'+row.department_id+':'+row.resource;
     if(!physicalByKey[key]||!physicalByKey[key][table])throw ocError('read-scope');
@@ -18334,13 +18361,15 @@ async function opLoadMany(env, keys) {
     var domain = ocFromPhysical(info.prepared, info.dept, info.resource, physical), projection = ocInflate(info.prepared, domain);
     values[request.key] = projection.present ? JSON.stringify(projection.value) : null;
     domains[request.key] = domain;
-    guards.push.apply(guards, opStateGuards(env, info, domain));
+    guards.push.apply(guards, opStateGuards(env, info, domain, empty));
     Object.keys(request.tables).forEach(function (table) { snapshots.push({ domain: 'operations', table: request.key + ':' + table, rows: physical[table] }); });
     if (!ocOwn(revs, request.key)) revs[request.key] = 0;
-    guards.push(env.DB.prepare("SELECT CASE WHEN COALESCE((SELECT rev FROM revs WHERE k=?1),0)<>?2 THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(request.key, revs[request.key]));
+    revPairs.push([request.key, revs[request.key]]);
   });
-  return { values: values, domains: domains, guards: guards, snapshots: snapshots, revs: revs, globalRev:rsNat(Number((result[revisionIndex+1].results||[])[0].v)) };
+  guards.push.apply(guards, opEmptyGuards(env, empty).concat(opRevGuards(env, revPairs)));
+  return { values: values, domains: domains, guards: guards, snapshots: snapshots, revs: revs, globalRev:opGlobalRevOf(result[revisionIndex+1]) };
 }
+function opGlobalRevOf(r) { var row=(r&&r.results||[])[0];if(!row)return 0;var value=Number(row.v);if(!Number.isSafeInteger(value)||value<0)throw rsError('domain-revision',503);return value; }   // RISHAD-266: an absent global rev row is 0 (as every writer COALESCEs it); a corrupt one is a named 503, not a TypeError 500
 async function opResourceMany(env, keys) {
   var sql = [], kv = [], result = {}, cached = env.__opCapture;
   keys.forEach(function (key) {
@@ -18351,7 +18380,7 @@ async function opResourceMany(env, keys) {
     else sql.push(key);
   });
   if (kv.length) Object.assign(result, await kvMany(env, 'kv', kv));
-  if (sql.length) { await opGuardRetired(env); Object.assign(result, (await opLoadMany(env, sql)).values); }
+  if (sql.length) Object.assign(result, (await opLoadMany(env, sql, 1)).values);
   return result;
 }
 async function opResourceGet(env, key) { return (await opResourceMany(env, [key]))[key]; }
@@ -18371,15 +18400,15 @@ async function opCaptureReferences(env, raw, wanted) {
       opDefinitions().forEach(function (definition) { scoped.push('bsdept:' + department.id + ':' + definition.resource); });
     });
   }
-  scoped = scoped.filter(opIsResource); await opGuardRetired(env);
-  var state = await opLoadMany(env, scoped); Object.assign(keys, state.values);
+  scoped = scoped.filter(opIsResource);
+  var state = await opLoadMany(env, scoped, 1); Object.assign(keys, state.values);
   return { keys: keys, guards: [opRetiredGuard(env)].concat(state.guards), snapshots: state.snapshots, domains: state.domains, revs: state.revs, globalRev:state.globalRev };
 }
 async function opChangeStatements(env, key, nextRaw, options) {
   options = options || {};
   var info = opInfo(key); if (!info) throw ocError('resource');
-  await opGuardRetired(env);
-  var state = options.state || await opLoadMany(env, [key]), before = state.domains[key],
+  if (options.state) await opGuardRetired(env);
+  var state = options.state || await opLoadMany(env, [key], 1), before = state.domains[key],
     base = options.base === undefined ? state.revs[key] : rsNat(options.base);
   if (base !== state.revs[key]) throw rsError('conflict', 409);
   var next;
@@ -18763,7 +18792,7 @@ function opRestoreDocuments(body,reference,A) {
     var key=decoded.key;
     var projection=ocInflate(decoded.info.prepared,decoded.domain),raw=projection.present?JSON.stringify(projection.value):null;
     if(rsNat(body.base.kv[key])!==(reference.inputRevs[key]||0))throw rsError('conflict',409);
-    if(raw===reference.inputKeys[key])return;
+    if(raw===reference.inputKeys[key]||(raw===null&&reference.inputKeys[key]==null))return;   /* RISHAD-266: a resource absent from both the backup and the target (new department in a merge) is not an empty write */
     if(!canRead(A,key))throw rsError('restore-operations-resource-denied',403);
     if(raw===null){
       var empty=ENT[decoded.info.resource]&&ENT[decoded.info.resource].empty;

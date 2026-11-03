@@ -11,8 +11,10 @@ import { internals } from './internals.mjs';
 const WU = workerUnderTest();
 const PK = 'bsdept:' + D + ':bassam_plan_v1';
 const DM = ['0000000101', '70101'];
-async function getPlan(W, ck) { const g = await W.C.api('/api/get?keys=' + encodeURIComponent(PK), { cookie: ck }); return { v: JSON.parse(g.j.keys[PK].v), rev: g.j.keys[PK].rev }; }
-const save = (W, ck, v, rev, why) => W.C.api('/api/save', { method: 'POST', cookie: ck, body: Object.assign({ set: { [PK]: JSON.stringify(v) }, base: { [PK]: rev } }, why ? { why: { [PK]: why } } : {}) });
+/* Schema 10: the plan is an Operations resource — read through /api/operations/read, saved with the operations envelope. */
+let seq = 0;
+async function getPlan(W, ck) { const g = await W.C.api('/api/operations/read?keys=' + encodeURIComponent(PK), { cookie: ck }); assert.equal(g.status, 200, JSON.stringify(g.j)); return { v: g.j.resources[PK], rev: g.j.base[PK], epoch: g.j.epoch }; }
+const save = (W, ck, v, rev, why, epoch = Number(W.env.DB.q("SELECT v FROM meta WHERE k='restore_epoch'")[0]?.v || 0)) => W.C.api('/api/save', { method: 'POST', cookie: ck, body: Object.assign({ requestId: 'TEST_ONLY_plan_status_' + (++seq), epoch, set: { [PK]: JSON.stringify(v) }, base: { [PK]: rev } }, why ? { why: { [PK]: why } } : {}) });
 const deniedWhy = (r) => r.j && r.j.denied && r.j.denied[PK] ? String(r.j.denied[PK].why || '') : '';
 
 test('(أ) مديرُ الإدارة: تغييرُ حالة البوابة والمصلى والمعلم والمسار يُحفظ بلا سبب — ويُسجَّل في التدقيق', async () => {

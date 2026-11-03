@@ -9,7 +9,10 @@ import { parse } from '../../node_modules/acorn/dist/acorn.mjs';
 import { ROOT, SRC } from './harness.mjs';
 import { D1, D2, IDS, EKEYS, copy, identitySnapshot } from './notifications_review_fx.mjs';
 import { canonicalDigest } from './custody_review_fx.mjs';
-const OPTIONS = 'bsdept:' + D1 + ':bassam_options_v1';
+import { currentOperationResources } from './backup_review_fx.mjs';
+import { inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
+const OPTIONS = 'bsdept:' + D1 + ':bassam_last_export_v1';   /* schema 10: a plain-KV department key (options/gate_opts are typed operational resources) */
+const KV_PROBE = (dept) => 'bsdept:' + dept + ':bassam_last_export_v1';   /* plain-KV probe for any department (schema 10) */
 let rid = 0;
 
 test('canonical parts execute their actual migration declarations without rewriting the checkout', async () => {
@@ -87,9 +90,9 @@ test('a late actual NF read-state writer captured before restore cannot commit a
   await seedMessage(B);
   const feed = ok(await B.api('employee1', '/api/notifications?uid=' + IDS.employee1)),
     id = feed.items[0].id,
-    body = await B.body({ keys: { ['bsdept:' + D2 + ':bassam_options_v1']: '{"TEST_ONLY":"epoch change"}' } }),
+    body = await B.body({ keys: { [KV_PROBE(D2)]: '{"TEST_ONLY":"epoch change"}' } }),
     batch = B.DB.batch.bind(B.DB);
-  body.base.kv['bsdept:' + D2 + ':bassam_options_v1'] = 0;
+  body.base.kv[KV_PROBE(D2)] = 0;
   let entered, release;
   const gate = new Promise((r) => (entered = r)),
     resume = new Promise((r) => (release = r));
@@ -241,7 +244,10 @@ test('employee list replacement without a custody domain preserves prior orphan 
     body = await B.body({ keys: { [key]: '[]' } });
   body.base.custody[D1] = await B.W.cuRev(B.env, D1);
   const identity = identitySnapshot(B.DB);
+  const prior = inspectOperationalFixture(B.env, key);
+  assert.ok(Array.isArray(prior) && prior.length > 0, 'the typed employee list is non-empty before the restore');
   ok(await B.restore(body));
+  assert.deepEqual(inspectOperationalFixture(B.env, key), [], 'the typed employee list is replaced by the requested value');
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM custody_movements')[0].n, 1);
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM custody_issues')[0].n, 1);
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM custody_items')[0].n, 1);
@@ -331,7 +337,7 @@ test('actual AppBackup export from redacted GET cache restores existing credenti
       BassamCrypt: { ok: () => true },
       BassamIDB: { allForBackup: async () => ({}) },
       BassamAuth: { user: () => B.users.find(user => user.id === IDS.super), isSuper: () => true },
-      __BS_SRV: { dirty: () => false, inflight: () => false, sesChanged: () => false, rev: key => response.keys[key]?.rev || 0 },
+      __BS_SRV: { dirty: () => false, inflight: () => false, sesChanged: () => false, rev: key => response.keys[key]?.rev || 0, operations: { resources: currentOperationResources() } },
     },
     context = vm.createContext({ KIVO, window: { __BS_BOOT: { srv: 1, cf: 1, uid: IDS.super, v: response.v } }, localStorage: {}, setTimeout: () => 0, clearTimeout() {}, AbortController, URLSearchParams, Date,
       fetch: async url => { const actual = await B.api('super', url); return { ok: actual.status >= 200 && actual.status < 300, status: actual.status, json: async () => actual.json }; } }),
@@ -349,14 +355,16 @@ test('actual AppBackup export from redacted GET cache restores existing credenti
   }
   vm.runInContext(fs.readFileSync(path.join(SRC,'services/548-atomic-backup.js'),'utf8'),context);
   factory.call(page)();
-  for (let i = 0; i < 50 && !page._encPend; i++) await new Promise((r) => setImmediate(r));
+  for (let i = 0, end = Date.now() + 20000; (i < 50 || Date.now() < end) && !page._encPend; i++) await new Promise((r) => setImmediate(r));   /* time-bounded: real WebCrypto work */
   assert.ok(page._encPend, JSON.stringify(page.state));
   const file = JSON.parse(page._encPend.json);
   assert.equal(file.kind, 'full');
-  assert.equal(file.manifest.version, 3);
+  assert.equal(file.manifest.version, 4);   /* schema 10: manifest v4 carries the typed operations domain */
   assert.equal(file.manifest.domains.custody, 1);
   assert.equal(file.manifest.domains.irshad, 1);
+  assert.equal(file.manifest.domains.operations, 1);
   assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId).sort(), [D1, D2].sort());
+  assert.deepEqual(file.domains.operations.map(d => d.scope.departmentId + ':' + d.resource).sort(), [D1, D2].flatMap(d => currentOperationResources().map(r => d + ':' + r)).sort());
   assert.equal(/p[12]\$/.test(file.data.bassam_auth_users_v1), false);
   const body = await B.body({
     keys: Object.fromEntries(Object.entries(file.data).filter(([k, v]) => typeof v === 'string' && k !== 'bassam_active_dept_v1')),
@@ -426,7 +434,7 @@ test('full merge adds only missing departments and their typed custody; existing
   domain.scope.departmentId = D3;
   Object.values(domain.rows).forEach((rows) => rows.forEach((r) => (r.department_id = D3)));
   const existingOptions = OPTIONS,
-    newOptions = 'bsdept:' + D3 + ':bassam_options_v1';
+    newOptions = KV_PROBE(D3);
   await B.DB.batch(B.W.kvPutStmts(B.env, 'kv', existingOptions, '{"TEST_ONLY":"keep"}'));
   await B.DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1)').bind(existingOptions).run();
   const before = copy(B.DB.q('SELECT * FROM custody_movements WHERE department_id=?1', D1)),
@@ -503,9 +511,9 @@ test('R2 is never touched; a new image payload refuses the whole restore before 
 
 test('a late actual generic KV save is fenced after restore and cannot recreate the old value', async () => {
   const B = await world(),
-    body = await B.body({ keys: { ['bsdept:' + D2 + ':bassam_options_v1']: '{"TEST_ONLY":"epoch change"}' } }),
+    body = await B.body({ keys: { [KV_PROBE(D2)]: '{"TEST_ONLY":"epoch change"}' } }),
     batch = B.DB.batch.bind(B.DB);
-  body.base.kv['bsdept:' + D2 + ':bassam_options_v1'] = 0;
+  body.base.kv[KV_PROBE(D2)] = 0;
   let entered, release;
   const gate = new Promise((r) => (entered = r)),
     resume = new Promise((r) => (release = r));
@@ -636,7 +644,7 @@ test('independent scope review regression: unknown final departments are rejecte
       body.base.notifications = { rev: body.domains.notifications.rev, configRev: 0, broadcastRev: 0 };
     }
     if (kind === 'kv') {
-      const k = 'bsdept:' + unknown + ':bassam_options_v1';
+      const k = KV_PROBE(unknown);
       body.keys[k] = '{}';
       body.base.kv[k] = 0;
     }
@@ -800,7 +808,7 @@ test('actual staged department export includes a manifest and normalized domains
       Custody: { exportDomain: async (dept) => ok(await B.api('super', '/api/custody/export?dept=' + dept)) },
       BassamImgRefs: { collect: () => [] },
       BassamAuth: { user: () => B.users.find(user => user.id === IDS.super), isSuper: () => true },
-      __BS_SRV: { dirty: () => false, inflight: () => false, sesChanged: () => false, rev: key => read.keys[key]?.rev || 0 },
+      __BS_SRV: { dirty: () => false, inflight: () => false, sesChanged: () => false, rev: key => read.keys[key]?.rev || 0, operations: { resources: currentOperationResources() } },
     },
     context = vm.createContext({
       KIVO,
@@ -824,15 +832,17 @@ test('actual staged department export includes a manifest and normalized domains
     page = { bkToast: (...v) => messages.push(v) };
   vm.runInContext(fs.readFileSync(path.join(SRC,'services/548-atomic-backup.js'),'utf8'),context);
   vm.runInContext('({' + source.slice(node.start, node.end) + '}).bkExportRun', context).call(page);
-  for (let i = 0; i < 100 && !blobs.length; i++) await new Promise((r) => setImmediate(r));
+  for (let i = 0, end = Date.now() + 20000; (i < 100 || Date.now() < end) && !blobs.length; i++) await new Promise((r) => setImmediate(r));   /* time-bounded: real WebCrypto work */
   assert.equal(blobs.length, 1, JSON.stringify(messages));
   const file = JSON.parse(await blobs[0].text());
-  assert.equal(file.manifest.version, 3);
+  assert.equal(file.manifest.version, 4);   /* schema 10: manifest v4 carries the typed operations domain */
   assert.equal(file.manifest.scope, 'dept');
   assert.deepEqual(file.manifest.departments, [D1]);
   assert.equal(file.manifest.domains.custody, 1);
   assert.equal(file.manifest.domains.irshad, 1);
+  assert.equal(file.manifest.domains.operations, 1);
   assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId), [D1]);
+  assert.deepEqual(file.domains.operations.map(d => d.scope.departmentId + ':' + d.resource).sort(), currentOperationResources().map(r => D1 + ':' + r).sort());
   const input = Object.fromEntries(Object.entries(file.data).map(([k, v]) => ['bsdept:' + D1 + ':' + k, v])),
     body = await B.body({ scope: { kind: 'dept', departmentId: D1 }, keys: input, domains: file.domains, manifest: file.manifest }),
     before = copy(B.DB.q('SELECT * FROM custody_movements'));

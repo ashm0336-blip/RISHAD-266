@@ -9,10 +9,14 @@ import {parse} from 'acorn';
 import {world,ok,snap,seedMessage} from './atomic_restore_review_fx.mjs';
 import {ROOT,D1,D2,IDS,copy} from './custody_review_fx.mjs';
 export {world,ok,snap,seedMessage,ROOT,D1,D2,IDS,copy};
-export const OPTIONS='bsdept:'+D1+':bassam_options_v1';
+export const OPTIONS='bsdept:'+D1+':bassam_last_export_v1';   /* schema 10: a plain-KV department probe (bassam_options_v1 is a typed operational resource) */
 export const tick=()=>new Promise(resolve=>setImmediate(resolve));
-export async function until(predicate){for(let n=0;n<300&&!predicate();n++)await tick();assert.ok(predicate(),'Expected asynchronous backup entry point to settle');}
+/* time-bounded, not tick-bounded: the export path awaits real WebCrypto/threadpool work, so a tick count is load-dependent (schema 10 adds the operations export request).
+   Measured: the 300-tick bound fails intermittently under parallel load ('Expected ... to settle'), and passes every run once crypto.subtle digest/PBKDF2 resolve synchronously. */
+export async function until(predicate,ms=20000){const end=Date.now()+ms;for(let n=0;(n<300||Date.now()<end)&&!predicate();n++)await tick();assert.ok(predicate(),'Expected asynchronous backup entry point to settle');}
 const cache=new Map();
+let operationResources;
+export function currentOperationResources(){if(!operationResources){const tree=parse(fs.readFileSync(path.join(ROOT,'src/api/280-server-storage.js'),'utf8'),{ecmaVersion:'latest'});(function visit(node){if(!node||typeof node!=='object'||operationResources)return;if(node.type==='VariableDeclarator'&&node.id?.name==='operationResources9'){operationResources=node.init.arguments[0].elements.map(item=>item.value);return;}Object.values(node).forEach(value=>Array.isArray(value)?value.forEach(visit):visit(value));})(tree);assert.ok(operationResources,'Actual Operations resource registry');}return operationResources;}
 function part(file,type,name){
   if(!cache.has(file)){const source=fs.readFileSync(path.join(ROOT,file),'utf8');cache.set(file,{source,tree:parse(source,{ecmaVersion:'latest',sourceType:'script'})});}
   const {source,tree}=cache.get(file);let found;
@@ -30,7 +34,7 @@ export async function backupBrowser(B){
     DailyStats:{refresh:async()=>{const j=ok(await B.api('super','/api/dstats?uid='+IDS.super));dsRev=j.rev;return j.data;},revision:()=>dsRev},
     BassamNotif:{exportDomain:async dept=>ok(await B.api('super','/api/notifications/export'+(dept?'?dept='+encodeURIComponent(dept):''))),refresh:async()=>({ok:1})},
     Custody:{exportDomain:async dept=>ok(await B.api('super','/api/custody/export'+(dept?'?dept='+encodeURIComponent(dept):'')))},
-    __BS_SRV:{askReason:(k,keys,done)=>done('TEST_ONLY actual user reason'),resync:async()=>({ok:1}),dirty:()=>false,inflight:()=>false,sesChanged:()=>false,rev:key=>data.keys[key]?.rev||0},bsConfirm:async()=>true,
+    __BS_SRV:{askReason:(k,keys,done)=>done('TEST_ONLY actual user reason'),resync:async()=>({ok:1}),dirty:()=>false,inflight:()=>false,sesChanged:()=>false,rev:key=>data.keys[key]?.rev||0,operations:{resources:currentOperationResources()}},bsConfirm:async()=>true,
   };
   const page={state:{},setState(value){Object.assign(this.state,value);states.push(value);},bkToast:(...args)=>toasts.push(args),bkCapNote:()=>''};
   const fetch=async(url,options={})=>{

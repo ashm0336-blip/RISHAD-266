@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { D1Shim, ROOT } from './harness.mjs';
+import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 
 export const D1 = 'TEST_ONLY_department_1', D2 = 'TEST_ONLY_department_2';
 export const G1 = 'TEST_ONLY_group_1', G2 = 'TEST_ONLY_group_2';
@@ -59,6 +60,8 @@ export async function world({ mode = 'enforce' } = {}) {
   const now = Date.now();
   for (const [kind, uid] of Object.entries(IDS)) statements.push(DB.prepare('INSERT INTO sess(tok,uid,ts,la,dev,city) VALUES(?1,?2,?3,?3,?4,?5)').bind('TEST_ONLY_session_' + kind, uid, now, 'TEST_ONLY', 'TEST_ONLY'));
   await DB.batch(statements);
+  /* schema 10: employees are a typed Operations resource — convert the synthetic seed with the canonical cutover planner */
+  await installOperationalFixture(env);
   const api = async (who, route, { method = 'GET', body } = {}) => {
     const headers = new Headers();
     if (who) headers.set('Cookie', 'bs_tok=TEST_ONLY_session_' + who);

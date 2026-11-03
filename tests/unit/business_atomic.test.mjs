@@ -1,12 +1,12 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {world,clone,awardDocs,seizedDocs,snapshot,fileFrom,seedReceipts,preimageRows,batchBounds,D1,D2,G1,IDS,EKEYS,identitySnapshot} from './business_atomic_fx.mjs';
+import {world,clone,awardDocs,seizedDocs,snapshot,fileFrom,legacyFileFrom,seedReceipts,preimageRows,batchBounds,D1,D2,G1,IDS,EKEYS,identitySnapshot} from './business_atomic_fx.mjs';
 
 test('manifest3 full/dept conversion is lossless for both relational domains and explicit readonly global references',async()=>{
  const B=await world({seed:true}),identity=identitySnapshot(B.DB);
  for(const scope of [{kind:'full'},{kind:'dept',departmentId:D1}]){
-  const body=await B.body({scope}),file=fileFrom(body),converted=await B.W.rsConvertBackup(B.env,await B.A(),file,{scope,mode:'replace',reference:{inputKeys:B.rawKeys()}});
-  assert.equal(converted.manifest.version,3);assert.deepEqual(clone(converted.domains.seized),clone(body.domains.seized));assert.deepEqual(clone(converted.domains.awards),clone(body.domains.awards));
+  const body=await B.body({scope}),file=legacyFileFrom(body,3),converted=await B.W.rsConvertBackup(B.env,await B.A(),file,{scope,mode:'replace',reference:{inputKeys:B.rawKeys()}});
+  assert.equal(converted.manifest.version,4);assert.equal(converted.manifest.domains.operations,1);   /* schema 10: a manifest3 file converts to the current v4 contract */assert.deepEqual(clone(converted.domains.seized),clone(body.domains.seized));assert.deepEqual(clone(converted.domains.awards),clone(body.domains.awards));
   assert.equal(converted.domains.awards.some(d=>d.scope.kind==='global'),scope.kind==='full');assert.ok(Object.keys(converted.keys).every(k=>!B.W.bdDefinitions().some(def=>def.resources.includes(k.split(':').at(-1)))));
  }
  assert.deepEqual(identitySnapshot(B.DB),identity);
@@ -17,12 +17,12 @@ test('manifest3 full/dept conversion is lossless for both relational domains and
 test('manifest1/2 converters preserve both legacy domains, global docs and department remap without a runtime KV write',async()=>{
  const B=await world({seed:true}),before=snapshot(B);
  for(const version of [1,2])for(const full of [true,false]){
-  const scope=full?{kind:'full'}:{kind:'dept',departmentId:D1},body=await B.body({scope}),file=fileFrom(body);file.manifest.version=version;
+  const scope=full?{kind:'full'}:{kind:'dept',departmentId:D1},body=await B.body({scope}),file=legacyFileFrom(body,version);
   for(const def of B.W.bdDefinitions()){delete file.domains[def.name];delete file.manifest.domains[def.name];const ds=def.name==='awards'?body.domains.awards:body.domains.seized;for(const domain of ds){const d=domain.scope.kind==='global'?'':domain.scope.departmentId,docs=def.inflate(domain);for(let i=0;i<def.names.length;i++)if(Object.hasOwn(docs,def.names[i]))file.data[def.key(d,i)]=JSON.stringify(docs[def.names[i]]);}}
   if(version===1){delete file.domains.irshad;delete file.manifest.domains.irshad;}
   file.manifest.keys=Object.keys(file.data).map(k=>full?k:k.replace('bsdept:'+D1+':',''));
   const target=full?scope:{kind:'dept',departmentId:D2},converted=await B.W.rsConvertBackup(B.env,await B.A(),file,{scope:target,mode:'replace',reference:{inputKeys:B.rawKeys()}});
-  assert.equal(converted.manifest.version,3);assert.deepEqual(B.W.szInflate(converted.domains.seized.find(d=>d.scope.departmentId===(full?D1:D2))),seizedDocs());
+  assert.equal(converted.manifest.version,4);assert.equal(converted.manifest.domains.operations,1);assert.deepEqual(B.W.szInflate(converted.domains.seized.find(d=>d.scope.departmentId===(full?D1:D2))),seizedDocs());
   assert.deepEqual(B.W.awInflate(converted.domains.awards.find(d=>d.scope.departmentId===(full?D1:D2))),awardDocs('old'));
   if(full)assert.deepEqual(B.W.awInflate(converted.domains.awards.find(d=>d.scope.kind==='global')),{docsV2:awardDocs('global').docsV2});
  }

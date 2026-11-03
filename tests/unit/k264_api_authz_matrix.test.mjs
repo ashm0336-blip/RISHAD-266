@@ -17,6 +17,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, ROOT, since } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
+import { replaceOperationalFixture, inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
 
 const MODES = ['legacy', 'enforce'];
 const ACC = { gm: ['0000000103', '70103', 'tst_gm1'], dm1: ['0000000101', '70101', 'tst_dm1'], dm2: ['0000000102', '70102', 'tst_dm2'], dm3: ['0000000104', '70104', 'tst_dm3'],
@@ -29,8 +30,10 @@ const PK = { users: 'bassam_auth_users_v1', depts: 'bassam_depts_v1', perms: 'ba
   'd1.employees': dk('tst_d1', 'employees_v1'), 'd1.tasks': dk('tst_d1', 'tasks_v1'), 'd1.irshad': dk('tst_d1', 'irshad_v1'), 'd1.seized': dk('tst_d1', 'seized_v1'), 'd1.custody': dk('tst_d1', 'custody_v1'),
   'd1.award': dk('tst_d1', 'award_v1'), 'd1.plan': dk('tst_d1', 'plan_v1'), 'd1.rounds': dk('tst_d1', 'rounds_v1'), 'd1.dreport': dk('tst_d1', 'dreport_v1'), 'd1.staffing': dk('tst_d1', 'staffing_v3'),
   'd1.scope': dk('tst_d1', 'scope_v1'), 'd1.grants': dk('tst_d1', 'grants_v1'), 'd2.employees': dk('tst_d2', 'employees_v1'), 'd2.irshad': dk('tst_d2', 'irshad_v1'),
-  'd2.seized': dk('tst_d2', 'seized_v1'),   /* صفحةٌ خارج سقف d2 — بياناتٌ قديمة مزروعةٌ في الجدول مباشرةً (الحفظُ يرفضها حتى لمدير النظام) */
+  'd2.seized': dk('tst_d2', 'seized_v1'),   /* صفحةٌ خارج سقف d2 — schema 9/10: an old document is seeded in the legacy source BEFORE installCurrentSchemaFixture, whose real conversion moves it into the typed seized tables (no KV copy remains); read through /api/seized */
   'd2.scope': dk('tst_d2', 'scope_v1'), 'd3.plan': dk('tst_d3', 'plan_v1') };
+const OPS_MOVED = ['d1.employees', 'd1.tasks', 'd1.plan', 'd1.rounds', 'd1.dreport', 'd1.staffing', 'd2.employees', 'd3.plan'], BUS_MOVED = ['d1.seized', 'd2.seized', 'd1.award'];
+const BUS_ROWS = { 'd1.seized': ['tstsz1'], 'd2.seized': ['tstsz2'], 'd1.award': ['tstaw1', 'tstaw2'] };   /* converted fixture rows (gen_fixture.py + the d2.seized seed in build) */
 const G3 = ['users', 'depts', 'perms'], D1_OPS = ['d1.employees', 'd1.tasks', 'd1.irshad', 'd1.seized', 'd1.custody', 'd1.award', 'd1.plan', 'd1.rounds', 'd1.dreport', 'd1.staffing'];
 /* نطاقُ القراءة (المفاتيحُ التي تعود بقيمتها) — الوضعان، وما يزيده الإنفاذ: سجلّا النطاق والمنح لمدير الإدارة (canReadEnf · isMgrOf) */
 const READ = { su: Object.keys(PK), sa: Object.keys(PK),
@@ -38,7 +41,9 @@ const READ = { su: Object.keys(PK), sa: Object.keys(PK),
   sup1: [...G3, 'd1.employees', 'd1.tasks', 'd1.irshad', 'd1.award', 'd1.plan', 'd1.rounds', 'd1.dreport', 'd1.staffing'],
   emp1: [...G3, 'd1.employees', 'd1.tasks', 'd1.irshad', 'd1.plan', 'd1.rounds', 'd1.dreport', 'd1.staffing'],
   fld: [...G3, 'd1.employees', 'd1.plan', 'd1.rounds', 'd1.dreport', 'd1.staffing'], emp2: [...G3, 'd2.employees', 'd2.irshad'] };
-const READ_ENF = { gm: ['d1.scope', 'd1.grants', 'd2.scope'], dm1: ['d1.scope', 'd1.grants'], dm2: ['d2.scope'] };
+/* Retired requirement — the legacy scope ceiling bsdept:<d>:bassam_scope_v1 is no longer an enforce-mode readable record:
+   commit 74554f6 (retire the legacy scope ceiling bassam_scope_v1) · workers/parts/061-enf-read.js:3 (Shift D4-09 / Site / Zone projection no longer restricts reads) · docs/architecture.md:114 (bassam_scope_v1 is neither read by enforcement nor written: 'scope-retired'); 058-enf-scope.js:9-13. */
+const READ_ENF = { gm: ['d1.grants'], dm1: ['d1.grants'], dm2: [] };
 /* KIVO_264-merge — عيبٌ مثبَّتٌ بالدليل QA-264-D1 (انظر الاختبار المخصَّص في آخر الملف): في الإنفاذ يقرأ مديرُ الإدارة ومديرُ الفرع بياناتِ صفحةٍ خارج سقف
    الإدارة (ووحدةٍ مطفأةٍ على مستوى المنصة) عبر backup.view — والقديمُ يمنعها («ولا صاحبُ النسخ الاحتياطية» · canRead0). مثبَّتٌ هنا كما هو (توصيفٌ لا اعتماد)؛
    عند إصلاح canReadEnf (061-enf-read · تيّارُ الخادم أو قرارُ المالك) يُحذف هذا السطرُ ويُعكس الاختبارُ المخصَّص. */
@@ -60,14 +65,19 @@ function world(mode) { if (!WORLDS.has(mode)) WORLDS.set(mode, build(mode)); ret
 async function build(mode) {
   const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login('admin', 'admin'); assert.ok(su.ok, 'admin');
-  const { sql, fx } = seed(); await applySql(env.DB, sql); await installCurrentSchemaFixture(env);
+  const { sql, fx } = seed(); await applySql(env.DB, sql);
+  /* schema 9/10: d2.seized (a page outside tst_d2's ceiling) — an old document from before the page left the ceiling. It is seeded in the
+     legacy source BEFORE the conversion, so the real conversion tool moves it into the typed seized tables (as k264_sec_read_ceiling does). */
+  env.DB.db.prepare('INSERT INTO kv (k, seq, v) VALUES (?1, 0, ?2)').run({ '1': PK['d2.seized'], '2': JSON.stringify({ reports: [{ id: 'tstsz2', y: fx.today.y, m: fx.today.m, d: fx.today.d, loc: 'TEST_ONLY', test: 'TEST_ONLY' }] }) });
+  env.DB.db.prepare('INSERT OR REPLACE INTO revs (k, rev) VALUES (?1, 1)').run({ '1': PK['d2.seized'] });
+  await installCurrentSchemaFixture(env);
   /* The fixture now seeds typed daily-statistics rows and never recreates retired KV. */
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   // Typed create validates a real employee/shift reference. Department two's
   // existing TEST_ONLY employee needs the same current-month assignment as the
   // old matrix's TST-A record; no account, permission or scope changes.
   const staffing2 = { [fx.MK]: { tst_e_emp2: { shift: fx.shifts[0], rest: [] } } };
-  env.DB.db.prepare('INSERT INTO kv(k,seq,v)VALUES(?,0,?)').run(dk('tst_d2','staffing_v3'), JSON.stringify(staffing2));
+  await replaceOperationalFixture(env, dk('tst_d2','staffing_v3'), staffing2);   /* schema 10: typed rows, never a retired KV source */
   const W = { mode, env, C, fx, S: { su: su.ck }, UID: { su: su.j.uid, sa: 'tst_sa' } };
   W.irRecords = (who, dept) => C.api('/api/irshad?' + new URLSearchParams({ uid: W.UID[who], dept, view: 'records', year: fx.today.y, month: fx.today.m, limit: 200 }), { cookie: W.S[who] });
   W.mintSa = (tok) => { const n = Date.now(); env.DB.exec(`INSERT OR REPLACE INTO sess (tok, uid, ts, la, dev, city) VALUES ('${tok}', 'tst_sa', ${n}, ${n}, 'd', 'TEST_ONLY')`); return 'bs_tok=' + tok; };
@@ -80,9 +90,9 @@ async function build(mode) {
   /* KIVO_264 (دمج · SOT-101): عقدُ الصورة الخامّ — Content-Type: text/plain أو غائب (application/json ⇒ 415) */
   for (const id of ['img_k264_t1', 'img_k264_i2', 'img_k264_u4']) assert.equal((await C.api('/api/img/' + id, { method: 'PUT', body: IMG, cookie: W.S.su, headers: { 'Content-Type': 'text/plain' } })).status, 200);
   assert.equal((await C.api('/api/img/img_k264_c3', { method: 'PUT', body: IMG, cookie: W.S.emp1, headers: { 'Content-Type': 'text/plain' } })).status, 200, 'emp1 uploads (claim)');
-  const g = await C.api('/api/get?keys=' + encodeURIComponent(PK['d1.tasks']), { cookie: W.S.su });
-  const t1 = val(g, PK['d1.tasks']); t1[fx.DAY][0][1] = 'img_k264_t1';
-  const sv = await C.save(W.S.su, { [PK['d1.tasks']]: JSON.stringify(t1) });
+  const g = await C.api('/api/operations/read?keys=' + encodeURIComponent(PK['d1.tasks']), { cookie: W.S.su }); assert.equal(g.status, 200, JSON.stringify(g.j));
+  const t1 = g.j.resources[PK['d1.tasks']]; t1[fx.DAY][0][1] = 'img_k264_t1';
+  const sv = await C.api('/api/save', { method: 'POST', cookie: W.S.su, body: { requestId: 'TEST_ONLY_matrix_tasks_' + mode, epoch: g.j.epoch, set: { [PK['d1.tasks']]: JSON.stringify(t1) }, del: [], base: g.j.base } });
   // Isolated image ACL fixture: the migrated Irshad record DTO has no image
   // field. Bind this existing image to its logical resource independently of
   // report data, and leave another stored image without a claim/reference.
@@ -97,8 +107,9 @@ async function build(mode) {
   assert.equal(sv.status, 200); assert.deepEqual(sv.j.denied, {}, 'setup writes');
   const nf = await C.api('/api/notifications/act', { method: 'POST', cookie: W.S.su, body: { uid: W.UID.su, op: 'emit', type: 'sc_deny', title: 'TEST_ONLY k264 system notification' } });
   assert.equal(nf.status, 200); assert.equal(nf.j.ok, 1, 'notification setup uses the typed API');
-  env.DB.exec(`INSERT INTO kv (k, seq, v) VALUES ('${PK['d2.seized']}', 0, '{"reports":[{"id":"tstsz2","loc":"TEST_ONLY","test":"TEST_ONLY"}]}')`);
-  env.DB.exec(`INSERT OR REPLACE INTO revs (k, rev) VALUES ('${PK['d2.seized']}', 1)`);
+  /* schema 9/10: the old d2.seized document was seeded above, before the conversion (a KV copy after it is a retired business-legacy
+     source the Worker refuses: business-legacy-source-present). Per-identity seized/award read authorization is asserted on the typed
+     routes /api/seized and /api/award in the /api/get test below. */
   /* التجميد بمسار مدير النظام (حفظُ الحسابات) — الكوكي القديمة تبقى في يد الاختبار */
   W.frozenOldCk = W.S.frozen;
   const us = val(await C.api('/api/get?keys=' + PK.users, { cookie: W.S.su }), PK.users); us.find(u => u.id === 'tst_supB').dis = 1;
@@ -115,7 +126,27 @@ for (const mode of MODES) {
       const r = await C.api('/api/get?keys=' + encodeURIComponent(keys.join(',')), { cookie: W.S[who] }); assert.equal(r.status, 200, who);
       const exp = readSet(who, mode), got = r.j.keys || {};
       const read = Object.keys(PK).filter(l => got[PK[l]] && got[PK[l]].v != null);
-      assert.deepEqual(sorted(read), sorted([...exp].filter(l => !['dstats', 'nsys', 'd1.custody', 'd1.irshad', 'd2.irshad'].includes(l))), `${who}: المقروء من KV بعد نقل المجالات إلى واجهاتها`);
+      assert.deepEqual(sorted(read), sorted([...exp].filter(l => !['dstats', 'nsys', 'd1.custody', 'd1.irshad', 'd2.irshad', ...OPS_MOVED, ...BUS_MOVED].includes(l))), `${who}: المقروء من KV بعد نقل المجالات إلى واجهاتها`);
+      /* Schema 9/10: business and operational documents are announced as moved from /api/get; their read authorization is asserted on the typed API */
+      for (const label of [...OPS_MOVED, ...BUS_MOVED]) { const entry = got[PK[label]]; if (entry) assert.equal(entry.v, null, `${who}: ${label} لا قيمة من KV`); if (exp.has(label)) assert.ok(entry && entry.moved, `${who}: ${label} يعلن انتقاله: ` + JSON.stringify(entry)); }
+      /* Per-identity read authorization for the business domains moved to typed routes (019n bdRoute → 019l hSeizedGet · 019m hAwardGet):
+         every identity in exp reads the converted rows; every identity outside exp gets 403 with no value in the refusal. */
+      for (const label of BUS_MOVED) {
+        const [dl, res] = label.split('.'), dept = 'tst_' + dl, tr = await C.api('/api/' + res + '?' + new URLSearchParams({ dept, view: 'records' }), { cookie: W.S[who] });
+        assert.equal(tr.status, exp.has(label) ? 200 : 403, `${who}: ${label} صلاحيةُ القراءة في الواجهة المنمّطة ` + JSON.stringify(tr.j).slice(0, 200));
+        if (exp.has(label)) {
+          assert.equal(tr.j.ok, 1); assert.equal(tr.j.dept, dept);
+          const ids = sorted((res === 'seized' ? tr.j.rows : tr.j.recs).map(x => x.id));
+          assert.deepEqual(ids, BUS_ROWS[label], `${who}: ${label} الصفوفُ المحوَّلة نفسُها`);
+        } else {
+          const body = JSON.stringify(tr.j);
+          assert.equal(tr.j.ok, 0, `${who}: ${label}`); assert.equal(tr.j.rows, undefined); assert.equal(tr.j.recs, undefined);
+          assert.ok(!/tstsz|tstaw|TEST_ONLY/.test(body), `${who}: ${label} لا قيمةَ في الرفض ` + body.slice(0, 200));
+        }
+      }
+      const ops = await C.api('/api/operations/read?keys=' + encodeURIComponent(OPS_MOVED.map(l => PK[l]).join(',')), { cookie: W.S[who] });
+      assert.equal(ops.status, 200, `${who}: operations/read ` + JSON.stringify(ops.j).slice(0, 200));
+      assert.deepEqual(sorted(OPS_MOVED.filter(l => Object.hasOwn(ops.j.resources || {}, PK[l]) || (ops.j.absent || []).includes(PK[l]))), sorted(OPS_MOVED.filter(l => exp.has(l))), `${who}: نطاقُ قراءة العمليات = نطاقُ القراءة القديم`);
       for (const label of ['d1.irshad', 'd2.irshad']) {
         const entry = got[PK[label]], dept = 'tst_' + label.split('.')[0];
         if (entry) assert.deepEqual(entry, { v: null, rev: entry.rev, moved: '/api/irshad' }, `${who}: لا IRJSON في المفتاح المتقاعد`);
@@ -124,7 +155,9 @@ for (const mode of MODES) {
         assert.equal(ir.status, exp.has(label) ? 200 : 403, `${who}: صلاحية الاسترشاد نفسها في API العلائقي ${dept}`);
         if (exp.has(label)) {
           assert.equal(ir.j.ok, 1); assert.equal(ir.j.dept, dept);
-          const expected = label === 'd2.irshad' ? ['tstir21'] : mode === 'enforce' && ['sup1','emp1'].includes(who) ? ['tstir1','tstir4'] : ['tstir1','tstir2','tstir4'];
+          /* Retired requirement: the enforce-mode Shift projection (sup1/emp1 saw only TST-A rows tstir1,tstir4) came from the legacy scope
+             ceiling — commit 74554f6 (retire the legacy scope ceiling bassam_scope_v1) · workers/parts/061-enf-read.js:3 (Shift D4-09 / Site / Zone projection no longer restricts reads) · docs/architecture.md:114. Both modes now return the same rows. */
+          const expected = label === 'd2.irshad' ? ['tstir21'] : ['tstir1','tstir2','tstir4'];
           assert.deepEqual(sorted(ir.j.rows.map(row => row.id)), sorted(expected), `${who}: صفوف SQL بنفس إسقاط الوردية`);
         } else assert.equal(ir.j.rows, undefined, `${who}: لا صفوف استرشاد بلا صلاحية`);
       }
@@ -288,12 +321,28 @@ for (const mode of MODES) {
   /* ══ POST /api/save — حكمُ كلّ مفتاح (مكتوبٌ/مرفوض) وأثرُه في المخزن ══ */
   test(`[${mode}] /api/save — الكتابةُ لكل هوية: العامّ · إدارتُه · إدارةٌ أخرى · ورديةٌ أخرى · المهام · الحسابات (نفسُه وغيرُه)`, since(163), async () => {
     const W = await world(mode), { C, fx } = W, enf = mode === 'enforce';
-    /* W مكتوب · D مرفوض. S2b: سجلٌّ في الوردية ب — الإنفاذُ يقيّد المشرفَ والموظفَ بورديتهما (D4-09 staffing-bound) والقديمُ لا يعرف الوردية */
-    const X = { su: 'WWWWW', sa: 'WWWWW', gm: 'DWWWW', dm1: 'DWWDW', dm2: 'DDDWD', dm3: 'DDDDD', sup1: enf ? 'DWDDW' : 'DWWDW', emp1: enf ? 'DWDDD' : 'DWWDD', fld: 'DDDDD', emp2: 'DDDWD' };
+    /* W مكتوب · D مرفوض. S2b: سجلٌّ في الوردية ب. كان الإنفاذُ يقيّد المشرفَ والموظفَ بورديتهما (D4-09 staffing-bound — قرارٌ مقفل في
+       012-scope-migration-2.js) عبر سقف النطاق القديم bassam_scope_v1؛ وقد أُلغي ذلك القرارُ صراحةً بإلغاء السقف نفسِه:
+       commit 74554f6 (retire the legacy scope ceiling bassam_scope_v1) · workers/parts/061-enf-read.js:3 (Shift D4-09 / Site / Zone projection no longer restricts reads) · docs/architecture.md:114; 058-enf-scope.js:9-13 (Site · Zone/Element · Shift not_applicable in enforce).
+       Retired requirement: the Shift restriction no longer exists, so the enforce outcomes for sup1/emp1 equal legacy here (S2b = W). */
+    const X = { su: 'WWWWW', sa: 'WWWWW', gm: 'DWWWW', dm1: 'DWWDW', dm2: 'DDDWD', dm3: 'DDDDD', sup1: 'DWWDW', emp1: 'DWWDD', fld: 'DDDDD', emp2: 'DDDWD' };
     const outcome = (s, k) => (s.j.revs && s.j.revs[k] ? 'W' : 'D');
     /* KIVO_264-merge (تيّارُ الخادم — «save uid 409» · قيودُ الحقول الذاتية): عقدُ 263 = 200 وحكمُ كلّ مفتاحٍ في revs/denied. إن صار جسمُ /api/save
        يحمل uid الجلسة (يُرسَل هنا من W.UID) أو صار بعضُ الرفض 409/4xx، يُعدَّل هذا السطرُ بقرار التيّار — والحكمُ بالأثر أدناه يبقى كما هو */
-    const save = async (who, k, mut) => { const g = await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: W.S[who] }); const cur = val(g, k);
+    let opSeq = 0;
+    const save = async (who, k, mut) => {
+      if (OPS_MOVED.some(l => PK[l] === k)) {   /* schema 10: Operations resource — typed read + operations envelope. A denial is 403 (whole-batch
+           atomic) instead of 200+denied; the verdict is still judged by revs AND by the stored typed value (unchanged on D, changed on W). */
+        const g = await C.api('/api/operations/read?keys=' + encodeURIComponent(k), { cookie: W.S[who] }); assert.equal(g.status, 200, who + ' ' + k + ': ' + JSON.stringify(g.j).slice(0, 120));
+        const cur = Object.hasOwn(g.j.resources || {}, k) ? g.j.resources[k] : null, before = JSON.stringify(inspectOperationalFixture(W.env, k)), next = mut(cur);
+        const s = await C.api('/api/save', { method: 'POST', cookie: W.S[who], body: { requestId: 'TEST_ONLY_matrix_ops_' + mode + '_' + (++opSeq), epoch: g.j.epoch, set: { [k]: JSON.stringify(next) }, del: [], base: { [k]: (g.j.base || {})[k] || 0 } } });
+        assert.ok([200, 403].includes(s.status), who + ' ' + k + ': ' + JSON.stringify(s.j).slice(0, 160));
+        const after = JSON.stringify(inspectOperationalFixture(W.env, k));
+        if (s.j.revs && s.j.revs[k]) { assert.equal(s.status, 200, who + ' ' + k); assert.notEqual(after, before, who + ' ' + k + ': W ⇒ المخزَّن تغيّر'); }
+        else { assert.ok(s.j.denied && s.j.denied[k], who + ' ' + k + ': D ⇒ حكمٌ صريح ' + JSON.stringify(s.j).slice(0, 160)); assert.equal(after, before, who + ' ' + k + ': D ⇒ المخزَّن كما هو'); }
+        return s;
+      }
+      const g = await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: W.S[who] }); const cur = val(g, k);
       const s = await C.save(W.S[who], { [k]: JSON.stringify(mut(cur)) }, [], { [k]: ((g.j.keys || {})[k] || {}).rev || 0 }); assert.equal(s.status, 200, who + ' ' + k + ': ' + JSON.stringify(s.j).slice(0, 120)); return s; };
     const irData = (dept, shift) => ({ y: fx.today.y, m: fx.today.m, d: fx.today.d, shift,
       eid: dept === 'tst_d2' ? 'tst_e_emp2' : shift === 'TST-B' ? 'tst_e_supB' : 'tst_e_emp1',
@@ -376,29 +425,52 @@ for (const mode of MODES) {
 /* ══ QA-264-D1 — بياناتُ صفحةٍ خارج سقف الإدارة/وحدةٍ مطفأةٍ على مستوى المنصة: القديمُ لا يعطي قيمتها لأحدٍ في الإدارة (canRead0: «سقفُ الإدارة أولاً …
    ولا صاحبُ النسخ الاحتياطية»)؛ الإنفاذُ يعطيها لمدير الإدارة ومدير الفرع عبر backup.view (canReadEnf: أيُّ مفتاح قراءةٍ محمول يكفي ولا يُسأل عن صفحة المورد نفسِه)
    — في /api/get وفي حقن الإقلاع. الكتابةُ مرفوضةٌ في الوضعين. عالمٌ مستقلّ (يطفئ وحدةً على مستوى المنصة فلا يمسّ المصفوفة).
-   KIVO_264-merge: عند الإصلاح يُعكس DEF_ENF إلى المتوقَّع الصحيح ({} = لا قيمةَ لأحد) ويُحذف DEFECT_D1_ENF أعلاه. ══ */
+   KIVO_264-merge: عند الإصلاح يُعكس DEF_ENF إلى المتوقَّع الصحيح ({} = لا قيمةَ لأحد) ويُحذف DEFECT_D1_ENF أعلاه.
+   schema 9/10: the value check runs on the typed route /api/seized (records view: 200 with the converted rows, or 403 with no value) and the
+   write check on /api/seized/act (403 seized-denied, typed tables unchanged); a dm1 read of d1.seized before the switch-off is the control. ══ */
 test('QA-264-D1 · الوحدةُ المطفأة وصفحةُ خارج السقف — القديمُ: لا قيمةَ لأحدٍ في الإدارة · الإنفاذُ: عيبٌ مثبَّت (المديرُ ومديرُ الفرع يقرآنها عبر backup.view)', since(163), async (t) => {
   for (const mode of MODES) {
     const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
-    const su = await C.login('admin', 'admin'); assert.ok(su.ok); const { sql } = seed(); await applySql(env.DB, sql); await installCurrentSchemaFixture(env);
-    if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
-    env.DB.exec(`INSERT INTO kv (k, seq, v) VALUES ('${PK['d2.seized']}', 0, '{"reports":[{"id":"tstsz2","loc":"TEST_ONLY","test":"TEST_ONLY"}]}')`);   /* بياناتٌ من قبل إطفاء الصفحة لـd2 */
+    const su = await C.login('admin', 'admin'); assert.ok(su.ok); const { sql, fx } = seed(); await applySql(env.DB, sql);
+    /* بياناتٌ من قبل إطفاء الصفحة لـd2 — schema 9/10: seeded in the legacy source BEFORE the real conversion, which moves them into the typed
+       seized tables (a KV copy after the conversion is a refused business-legacy source). Reads and writes go through /api/seized(/act). */
+    env.DB.db.prepare('INSERT INTO kv (k, seq, v) VALUES (?1, 0, ?2)').run({ '1': PK['d2.seized'], '2': JSON.stringify({ reports: [{ id: 'tstsz2', y: fx.today.y, m: fx.today.m, d: fx.today.d, loc: 'TEST_ONLY', test: 'TEST_ONLY' }] }) });
     env.DB.exec(`INSERT OR REPLACE INTO revs (k, rev) VALUES ('${PK['d2.seized']}', 1)`);
+    await installCurrentSchemaFixture(env);
+    if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
+    const SZ = { 'd1.seized': 'tst_d1', 'd2.seized': 'tst_d2' }, SZ_ROWS = { 'd1.seized': ['tstsz1'], 'd2.seized': ['tstsz2'] };
+    const szRead = (ck, x) => C.api('/api/seized?' + new URLSearchParams({ dept: SZ[x], view: 'records' }), { cookie: ck });
+    const szRows = () => JSON.stringify(env.DB.q("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'seized%' AND name NOT LIKE '%request%' ORDER BY name").map(t => [t.name, env.DB.q('SELECT * FROM ' + t.name)]));
+    /* الضابط قبل الإطفاء: مديرُ tst_d1 يقرأ d1.seized فعلاً (فالرفضُ بعده رفضُ الإطفاء لا غيابُ البيانات) · ومديرُ النظام يقرأ الاثنين */
+    { const l = await C.login(ACC.dm1[0], ACC.dm1[1]); assert.ok(l.ok); const c = await szRead(l.ck, 'd1.seized'); assert.equal(c.status, 200, mode + ' ضابط: ' + JSON.stringify(c.j).slice(0, 200)); assert.deepEqual(c.j.rows.map(r => r.id), SZ_ROWS['d1.seized']); }
+    for (const x of Object.keys(SZ)) { const c = await szRead(su.ck, x); assert.equal(c.status, 200, mode + ' su ' + x); assert.deepEqual(c.j.rows.map(r => r.id), SZ_ROWS[x], mode + ' su ' + x + ': البياناتُ محوَّلةٌ فعلاً'); }
     const pv = val(await C.api('/api/get?keys=bassam_platform_v1', { cookie: su.ck }), 'bassam_platform_v1') || {}; pv.mods = Object.assign({}, pv.mods, { off: ['seized'] });
     assert.deepEqual((await C.save(su.ck, { bassam_platform_v1: JSON.stringify(pv) })).j.denied, {}, 'مديرُ النظام يطفئ «المضبوطات» على مستوى المنصة');
     const DEF_ENF = {};   /* KIVO_264 (دمج): بعد الإصلاح لا قيمةَ لأحدٍ في الإدارة في الوضعين (كان في 263: dm1 [d1] · gm [d1 · d2] · dm2 [d2] — عيب) */
+    let rq = 0;
     for (const who of ['dm1', 'gm', 'dm2', 'sup1', 'emp2']) {
       const l = await C.login(ACC[who][0], ACC[who][1]); assert.ok(l.ok, who);
       const r = await C.api('/api/get?keys=' + encodeURIComponent(PK['d1.seized'] + ',' + PK['d2.seized']), { cookie: l.ck }); assert.equal(r.status, 200);
-      const read = ['d1.seized', 'd2.seized'].filter(x => r.j.keys[PK[x]] && r.j.keys[PK[x]].v != null);
-      const bk = ((await C.boot(l.ck)).boot || {}).keys || {}, inBoot = ['d1.seized', 'd2.seized'].filter(x => bk[PK[x]] != null);
+      for (const x of Object.keys(SZ)) if (r.j.keys[PK[x]]) assert.equal(r.j.keys[PK[x]].v, null, `${mode} ${who}: ${x} لا JSON قديم في /api/get`);
+      const bk = ((await C.boot(l.ck)).boot || {}).keys || {}, inBoot = Object.keys(SZ).filter(x => bk[PK[x]] != null);
+      /* القراءةُ المعتبرة: الواجهةُ المنمّطة — 200 بالصفوف المحوَّلة أو 403 بلا قيمة */
+      const read = [];
+      for (const x of Object.keys(SZ)) {
+        const t2 = await szRead(l.ck, x);
+        assert.ok(t2.status === 200 || t2.status === 403, `${mode} ${who} ${x}: ` + t2.status + ' ' + JSON.stringify(t2.j).slice(0, 200));
+        if (t2.status === 200) { assert.deepEqual(t2.j.rows.map(r => r.id), SZ_ROWS[x]); read.push(x); }
+        else { assert.equal(t2.j.rows, undefined); assert.ok(!/tstsz|TEST_ONLY/.test(JSON.stringify(t2.j)), `${mode} ${who} ${x}: لا قيمةَ في الرفض`); }
+      }
       const exp = mode === 'enforce' ? (DEF_ENF[who] || []) : [];
-      assert.deepEqual(read, exp, `${mode} ${who}: /api/get`); assert.deepEqual(inBoot, exp, `${mode} ${who}: حقنُ الإقلاع`);
+      assert.deepEqual(read, exp, `${mode} ${who}: /api/seized`); assert.deepEqual(inBoot, exp, `${mode} ${who}: حقنُ الإقلاع`);
       if (read.length) t.diagnostic(`QA-264-D1 [${mode}] ${who} يقرأ قيمةَ ${read.join(' · ')} (وحدةٌ مطفأة/خارج سقف الإدارة) — القديمُ يمنعها`);
-      const k = PK[DEPTS_OF[who][0] === 'tst_d2' ? 'd2.seized' : 'd1.seized'], cur = r.j.keys[k] && r.j.keys[k].v ? JSON.parse(r.j.keys[k].v) : { reports: [] };
-      cur.reports.push({ id: 'szk264' + who, ts: Date.now(), loc: 'TEST_ONLY', shift: 'TST-A' });
-      const s = await C.save(l.ck, { [k]: JSON.stringify(cur) }, [], { [k]: (r.j.keys[k] || {}).rev || 0 });
-      assert.equal(s.status, 200); assert.ok(s.j.denied && s.j.denied[k], `${mode} ${who}: الكتابةُ مرفوضة`);
+      /* الكتابة: الأمرُ المنمّط على إدارته مرفوضٌ (seized-denied) ولا يغيّر الجداول */
+      const dept = DEPTS_OF[who][0], x = dept === 'tst_d2' ? 'd2.seized' : 'd1.seized', g = await szRead(su.ck, x); assert.equal(g.status, 200);
+      const before = szRows();
+      const s = await C.api('/api/seized/act', { method: 'POST', cookie: l.ck, body: { dept, requestId: 'TEST_ONLY_k264d1_' + mode + '_' + (++rq), base: g.j.base, op: 'delete', id: SZ_ROWS[x][0] } });
+      assert.equal(s.status, 403, `${mode} ${who}: الكتابةُ مرفوضة ` + JSON.stringify(s.j).slice(0, 200)); assert.equal(s.j.err, 'seized-denied', `${mode} ${who}`);
+      assert.ok(!/tstsz|TEST_ONLY/.test(JSON.stringify(s.j)), `${mode} ${who}: لا قيمةَ في رفض الكتابة`);
+      assert.equal(szRows(), before, `${mode} ${who}: لم يُكتب`);
     }
   }
 });

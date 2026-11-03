@@ -5,6 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTestEnv, client, applySql, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { loadClient, sleep, until, fixture, cp, pageText, FakeStorage } from './k264_vm.mjs';
 
 const J = (x, st = 200) => new Response(JSON.stringify(x), { status: st, headers: { 'Content-Type': 'application/json' } });
@@ -17,7 +18,7 @@ function merger() {
 }
 
 test('A2: حقنُ علامتَي العملية والتدقيق المتقاعدتين لا يؤثر POST، والتعارض وإعادة المحاولة لا يسرّبان backup.restore أو السبب القديم', async () => {
-  const K = 'bsdept:d1:bassam_options_v1', V = JSON.stringify({ type: ['RESTORED'] });
+  const K = 'bsdept:d1:bassam_perm_help_v1', V = JSON.stringify({ type: ['RESTORED'] });
   let n = 0; const bodies = [];
   const C = { req: async (p, o) => {
     if (p.startsWith('/api/save')) { n++; bodies.push(JSON.parse(o.body)); if (n === 2) throw new Error('TEST_ONLY transient save failure'); return J(n === 1 ? { ok: 1, conflicts: { [K]: { cur: V, rev: 9, by: 'زميل', at: Date.now() } } } : { ok: 1, revs: { [K]: 10 + n } }); }
@@ -52,7 +53,7 @@ test('A2: حقنُ علامتَي العملية والتدقيق المتقاع
 });
 
 test('A3a: مَن كُتب فوق تعديله يُبلَّغ عند السحب التالي (لا الحافظُ اللاحق وحده) — ولا تبليغَ إن بقي تعديلُه قائماً', async () => {
-  const K = 'bsdept:d1:bassam_options_v1';
+  const K = 'bsdept:d1:bassam_perm_help_v1';
   const S = { rev: 5, cur: JSON.stringify({ type: ['a', 'b'], work: ['w'] }), pend: null };
   const C = { req: async (p, o) => {
     if (p.startsWith('/api/save')) { const b = JSON.parse(o.body); S.cur = b.set[K]; S.rev++; return J({ ok: 1, revs: { [K]: S.rev } }); }
@@ -93,6 +94,7 @@ test('[legacy] A3a (طرفٌ لطرف): سباقٌ على الخانة نفسِ�
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, fixture().seed);
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   const K = 'bsdept:tst_d1:bassam_rounds_v1';
   const LA = await C.login('0000000111', '70111'), LB = await C.login('0000000114', '70114'); assert.ok(LA.ok && LB.ok);
   const A = loadClient({ C, boot: (await C.boot(LA.ck)).boot, jar: { cookie: LA.ck }, blocks: ['280-server-storage.js', '440-count.js'] });
@@ -106,7 +108,7 @@ test('[legacy] A3a (طرفٌ لطرف): سباقٌ على الخانة نفسِ�
 });
 
 test('A3b: تبويبٌ آخر للحساب نفسِه طرفٌ آخر — تعارضُ الخانة نفسِها يُعلَن ولا يُكتم (c.self)', async () => {
-  const K = 'bsdept:d1:bassam_options_v1';
+  const K = 'bsdept:d1:bassam_perm_help_v1';
   let n = 0;
   const C = { req: async (p) => {
     if (p.startsWith('/api/save')) { n++; return J(n === 1 ? { ok: 1, conflicts: { [K]: { cur: JSON.stringify({ type: ['T-other-tab'] }), rev: 9, by: 'أنا', at: Date.now(), self: 1 } } } : { ok: 1, revs: { [K]: 10 + n } }); }
@@ -247,6 +249,7 @@ test('[legacy] A7: تغييرُ صلاحياتٍ في إدارةٍ أخرى لا
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, fixture().seed);
+  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   const U = await C.login('0000000113', '70113'); assert.ok(U.ok, 'tst_emp1 في tst_d1');
   const A = loadClient({ C, boot: (await C.boot(U.ck)).boot, jar: { cookie: U.ck } });
   const S = loadClient({ C, boot: (await C.boot(su.ck)).boot, jar: { cookie: su.ck } });
@@ -255,8 +258,13 @@ test('[legacy] A7: تغييرُ صلاحياتٍ في إدارةٍ أخرى لا
     await sleep(1500);
     const P = JSON.parse((await C.api('/api/get?keys=bassam_perms_v1', { cookie: su.ck })).j.keys.bassam_perms_v1.v);
     P.emps.tst_d2 = P.emps.tst_d2 || {}; P.emps.tst_d2.tst_e_emp2 = Object.assign({}, P.emps.tst_d2.tst_e_emp2 || {}, { tasks: ['view'] });
-    assert.ok((await C.save(su.ck, { bassam_perms_v1: JSON.stringify(P) })).j.revs, 'صلاحياتُ موظفٍ في tst_d2');
-    assert.ok(await until(() => JSON.parse(A.get('bassam_perms_v1')).emps.tst_d2.tst_e_emp2.tasks, 5000), 'وصلت التبويب');
+    const sv = await C.save(su.ck, { bassam_perms_v1: JSON.stringify(P) }); assert.ok(sv.j.revs, 'صلاحياتُ موظفٍ في tst_d2');
+    /* privacy projection (019u): a tst_d1 employee never receives tst_d2 sheets — the change reaches the tab as a revision, not as foreign data */
+    assert.ok(await until(() => A.W.__BS_BOOT.v >= sv.j.v && S.W.__BS_BOOT.v >= sv.j.v, 5000), 'وصلت التبويب');
+    assert.equal(JSON.parse(A.get('bassam_perms_v1')).emps.tst_d2, undefined, 'ولا تُكشف صلاحياتُ إدارةٍ أخرى للموظف');
+    /* positive delivery: the super tab S receives the tst_d2 sheet itself (content, not only a revision bump) */
+    assert.ok(await until(() => { const sp = JSON.parse(S.get('bassam_perms_v1') || 'null'); return !!(sp && sp.emps && sp.emps.tst_d2 && sp.emps.tst_d2.tst_e_emp2 && sp.emps.tst_d2.tst_e_emp2.tasks); }, 5000), 'وصلت تبويبَ مدير النظام');
+    assert.deepEqual(JSON.parse(S.get('bassam_perms_v1')).emps.tst_d2.tst_e_emp2.tasks, ['view'], 'ورقةُ tst_d2 كما حُفظت');
     await sleep(900);
     assert.equal(listed(A), 0, 'لا إعادةَ سردٍ لموظفٍ في tst_d1');
     assert.equal(listed(S), 0, 'ولا لمدير النظام');

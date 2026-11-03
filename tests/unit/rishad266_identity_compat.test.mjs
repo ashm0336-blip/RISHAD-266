@@ -215,7 +215,7 @@ test('forced password-change screen renders the original role-specific policy', 
   const source = read('src/auth/335-identity-gate.js');
   const client = read('src/auth/330-auth.js');
   const policy = client.slice(client.indexOf('function pinRole('), client.indexOf('/* ── المستخدمون'));
-  const aliases = source.slice(source.indexOf('  var D = I.D'), source.indexOf('  /* ═══ توحيد'));
+  const aliases = source.slice(source.indexOf('  var D = I.D'), source.indexOf('  D.setScopeGuard('));
   const render = source.slice(source.indexOf('  function gate(){'), source.indexOf('    document.body.appendChild(w);')) + '\nreturn w.innerHTML;\n}';
   for (const role of ['staff', 'dept', 'gm', 'super']) {
     const context = vm.createContext({

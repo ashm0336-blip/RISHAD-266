@@ -397,7 +397,19 @@ const FAILS = {
   rate429: async () => ({ ok: false, status: 429, text: async () => '{"ok":0,"err":"rate"}' }),
 };
 const OKR = async () => ({ ok: true, status: 200, text: async () => JSON.stringify({ ok: 1, me: { linked: true, by: 'eid', dept: 'd1' }, rev: 7, rows: [] }) });
-for (const kind of Object.keys(FAILS)) {
+test('P2 · session401 بعد 2f7d091: انتهاءُ الجلسة نهائيّ — طلبٌ واحد ثم لا قراءةَ خاصةً أخرى (لا مهلة ولا إعادة) ورسالةُ الجلسة', async () => {
+  const P = clockPage(); P.fx.impl = FAILS.session401;
+  P.start(); await P.run(10 * 60e3);
+  assert.ok(P.steps <= 2e4, 'لا حلقةَ محمومة');
+  assert.equal(P.hits.length, 1, 'طلبٌ واحد ثم توقّف: ' + P.hits.length);
+  const t = V(P);
+  assert.equal(t.tkEmptyT, 'تعذّر تحميل مهامك'); assert.equal(t.tkLoad, false);
+  assert.equal(t.tkEmptyS, 'انتهت الجلسة — سجّل الدخول مجدداً لعرض مهامك', 'نصُّ انتهاء الجلسة لا وعدُ إعادةٍ تلقائية');
+  assert.equal(t.tkRetryOn, false, 'لا زرَّ «أعد المحاولة» بعد 401 — الخدمة لا تعيد');
+  (P.L.online || []).forEach((f) => f()); await P.run(61e3);
+  assert.equal(P.hits.length, 1, 'ولا عودةُ الاتصال تقرأ بجلسةٍ منتهية');
+});
+for (const kind of Object.keys(FAILS).filter((k) => k !== 'session401')) {
   test('P2 · فشلُ قراءة «مهامي» (' + kind + ') لا يُعاد مع كل رسم: مهلةٌ متضاعفة 5ث ⇒ 60ث · «أعد المحاولة» وعودةُ الاتصال فوراً · وبعد النجاح دورةُ الدقيقة', async () => {
     const P = clockPage(); P.fx.impl = FAILS[kind];
     P.start(); await P.run(10 * 60e3);

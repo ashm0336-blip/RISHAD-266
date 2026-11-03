@@ -509,6 +509,8 @@ async function empPrepareTransition(env, A, input) {
     throw cuError('employee-transition-base');
   for (var key of Object.keys(context.base.kv))
     if (input.base.kv[key] !== context.base.kv[key]) throw cuError('employee-transition-conflict', 409);
+  // RISHAD-266: the reference set is exactly the server context (no client-added keys), so 019e may trust it
+  if (Object.keys(input.base.kv).length !== Object.keys(context.base.kv).length) throw cuError('employee-transition-conflict', 409);
   if (input.base.custody !== context.base.custody) throw cuError('custody-conflict', 409);
   var mode = input.intent === 'import' && input.import && input.import.mode,
     replace = mode === 'replace',

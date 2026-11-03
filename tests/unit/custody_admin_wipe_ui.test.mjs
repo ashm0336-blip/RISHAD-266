@@ -11,16 +11,16 @@ const source=fs.readFileSync(path.join(ROOT,'src/modules/admin/logic.js'),'utf8'
 const klass=parse(source,{ecmaVersion:'latest'}).body.find(node=>node.type==='ClassDeclaration'&&node.id.name==='Component');
 const DEPT=D1;
 const copy=value=>JSON.parse(JSON.stringify(value));
-const inventory=(revision=4)=>({ok:1,dept:DEPT,base:{epoch:1,kv:{['bsdept:'+DEPT+':bassam_employees_v1']:revision},custody:revision,notifications:{rev:revision,configRev:1,broadcastRev:1},irshad:{reports:revision,languages:1,locations:1,retro:1}},counts:{keys:1,custody:2,notifications:3,irshad:4}});
+const inventory=(revision=4)=>({ok:1,dept:DEPT,base:{epoch:1,kv:{['bsdept:'+DEPT+':bassam_employees_v1']:revision},custody:revision,notifications:{rev:revision,configRev:1,broadcastRev:1},irshad:{reports:revision,languages:1,locations:1,retro:1},seized:{reports:revision,catalog:1,actions:1,locations:1,jew:1,retro:1},awards:{records:revision,docsV1:1,docsV2:1}},counts:{keys:1,custody:2,notifications:3,irshad:4,seized:5,awards:6}});
 const response=(body,status=200)=>({ok:status>=200&&status<300,status,json:async()=>copy(body)});
 function world(fetch){
   let uid='TEST_ONLY_super';const calls=[],acks=[],reloads=[],timers=[],prompts=[],syncs=[];let reasonText='';
   const context={KIVO:{BassamAuth:{user:()=>({id:uid,role:'super'}),isSuper:()=>true},BassamDepts:{active:()=>DEPT},__BS_SRV:{resync:value=>syncs.push(value),askReason:(key,keys,done)=>{prompts.push({key,keys});done(reasonText);}}},__BS_BOOT:{srv:1,cf:1,uid},crypto:crypto.webcrypto,AbortController,URLSearchParams,Uint8Array,setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout(){},location:{reload:()=>reloads.push(true)},fetch:async(url,options)=>{calls.push({url,options});return fetch(url,options);},localStorage:{getItem(){throw Error('No local inventory');},setItem(){throw Error('No local wipe');}}};context.window=context;vm.createContext(context);
   const page={state:{wpDid:'',wpTxt:'',tick:0},setState(p){this.state={...this.state,...p};},bsAck:(...args)=>acks.push(args)};
-  for(const name of ['_wpActor','_wpCall','wpOpen','wpReview','wpGo','wpClose']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,context);}
+  for(const name of ['_wpActor','_wpCall','_businessBaseValid','wpOpen','wpReview','wpGo','wpClose']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,context);}
   return {page,calls,acks,reloads,timers,prompts,syncs,setReason(value){reasonText=value;},switchActor(){uid='TEST_ONLY_other_super';context.__BS_BOOT.uid=uid;}};
 }
-function receipt(options,revision=5){const body=JSON.parse(options.body);return {ok:1,dept:body.dept,requestId:body.requestId,rev:revision,counts:{keys:1,custody:2,notifications:3,irshad:4}};}
+function receipt(options,revision=5){const body=JSON.parse(options.body);return {ok:1,dept:body.dept,requestId:body.requestId,rev:revision,counts:{keys:1,custody:2,notifications:3,irshad:4,seized:5,awards:6}};}
 
 test('wipe reads the server inventory and waits for a matching complete receipt before success/reload',async()=>{
   let settle;const B=world(async(url,options)=>options.method==='GET'?response(inventory()):await new Promise(resolve=>{settle=()=>resolve(response(receipt(options)));}));
@@ -57,6 +57,16 @@ test('wipe rejects an inventory or receipt that omits the migrated Irshad domain
   const B=world(async(url,options)=>{if(options.method==='GET')return response(inventory());const ack=receipt(options);delete ack.counts.irshad;return response(ack);});
   await B.page.wpOpen(DEPT);B.page.setState({wpTxt:'TEST_ONLY preserved'});await B.page.wpGo(DEPT);
   assert.equal(B.acks.length,0);assert.equal(B.page.state.wpDid,DEPT);assert.equal(B.page.state.wpTxt,'TEST_ONLY preserved');assert.equal(B.page._wpUncertain,true);
+});
+
+test('wipe rejects an inventory or receipt that omits the seized or awards business domain',async()=>{
+  for(const domain of ['seized','awards']){
+    for(const part of ['base','count']){const missing=inventory();if(part==='base')delete missing.base[domain];else delete missing.counts[domain];
+      const A=world(async()=>response(missing));await A.page.wpOpen(DEPT);assert.equal(A.page.state.wpBase,null,domain+' '+part);assert.equal(A.page.state.wpNeedsReview,true);assert.equal(A.calls.filter(call=>call.options.method==='POST').length,0);}
+    const B=world(async(url,options)=>{if(options.method==='GET')return response(inventory());const ack=receipt(options);delete ack.counts[domain];return response(ack);});
+    await B.page.wpOpen(DEPT);B.page.setState({wpTxt:'TEST_ONLY preserved'});await B.page.wpGo(DEPT);
+    assert.equal(B.acks.length,0,domain);assert.equal(B.page.state.wpDid,DEPT);assert.equal(B.page.state.wpTxt,'TEST_ONLY preserved');assert.equal(B.page._wpUncertain,true);
+  }
 });
 
 test('actual canonical wipe HTTP removes KV/CU/NF in one acknowledged operation and preserves accounts and department definition',async()=>{

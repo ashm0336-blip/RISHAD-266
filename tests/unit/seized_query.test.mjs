@@ -94,6 +94,9 @@ test("seized records retain canonical ACL and existing locked/self view across c
       },
     },
   });
+  /* Negative control: the legacy scope ceiling (bassam_scope_v1 / Shift / Site projection) is retired by
+     commit 74554f6 (workers/parts/061-enf-read.js:3, docs/architecture.md:114), so this plain KV Shift row
+     must not feed any read policy; restrict.Shift below must stay false although the row is present. */
   await put(B, "bsdept:" + DEPT + ":bassam_scope_v1", {
     ceiling: { Site: { mode: "ALL" }, "Zone/Element": { mode: "ALL" } },
     emp: {

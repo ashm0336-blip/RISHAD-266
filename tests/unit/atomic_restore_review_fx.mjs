@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
 import { D1, D2, IDS, EKEYS, copy, identitySnapshot } from './notifications_review_fx.mjs';
 import { world as custodyWorld } from './custody_review_fx.mjs';
-const OPTIONS = 'bsdept:' + D1 + ':bassam_options_v1';
+import { operationSaveBody } from './tasks_fx.mjs';
+const OPTIONS = 'bsdept:' + D1 + ':bassam_last_export_v1';   /* schema 10: a plain-KV department key (options/gate_opts are typed operational resources) */
 let rid = 0;
 async function world() {
   const B = await custodyWorld(),
     W = B.W;
   const api = async (who, url, body) => {
     const headers = { Cookie: 'bs_tok=TEST_ONLY_session_' + who };
+    /* schema 10: a generic /api/save touching a typed operational resource carries the operations envelope (requestId + restore epoch) */
+    if (body !== undefined) body = operationSaveBody(B.env, url, body);
     if (body !== undefined) {
       headers.Origin = 'http://x';
       headers['Content-Type'] = 'application/json';
@@ -64,10 +67,32 @@ async function world() {
       empty=(d,names,rows,global=false)=>({version:1,scope:global?{kind:'global'}:{departmentId:d},resources:Object.fromEntries(names.map(n=>[n,false])),rows:Object.fromEntries(rows.map(n=>[n,[]]))}),
       seized=declared.map(d=>sz.find(x=>x.scope.departmentId===d)||empty(d,['reports','catalog','actions','locations','jew','retro'],['resources','reports','items','photos','history','categories','catalogItems','actions','lists','windows'])),
       awards=declared.concat(scope.kind==='full'?['']:[]).map(d=>aw.find(x=>d===''?x.scope.kind==='global':x.scope.departmentId===d)||empty(d,['records','docsV1','docsV2'],['resources','records','caseTexts','answers','scoreRows','scores','documents','sections','items'],d===''));
+    /* RISHAD-266 · schema 10: typed operational resources travel as the 'operations' domain (manifest v4), never as KV keys */
+    const opsAll = (await api('super', '/api/operations/export')).json.domains || [];
+    /* a department absent from the current export (e.g. a merged-in new department) travels as absent typed resources: same tables, no rows */
+    const operations = declared.flatMap(d => {
+      const own = opsAll.filter(x => x.scope.departmentId === d);
+      if (own.length) return own;
+      return [...new Map(opsAll.map(x => [x.resource, x])).values()].map(x => ({ version: 1, scope: { departmentId: d }, resource: x.resource, rows: Object.fromEntries(Object.keys(x.rows).map(t => [t, []])) }));
+    });
+    /* A typed key is never dropped silently: a caller-provided value replaces that resource inside the operations domain, encoded exactly
+       as the export/v3 conversion encodes it (019t opBackupDomain(ocConvert(...))); anything that cannot be routed fails the fixture. */
+    for (const k of Object.keys(keys)) {
+      const info = W.opInfo(k);   /* null for a non-operational key; throws for a typed resource name with an invalid scope */
+      if (!info) continue;
+      assert.ok(extra.keys && Object.prototype.hasOwnProperty.call(extra.keys, k), 'typed operational key in the KV table (legacy source): ' + k);
+      assert.ok(declared.includes(info.dept), 'typed operational key outside the declared departments: ' + k);
+      const raw = keys[k], present = raw !== null && raw !== undefined,
+        domain = W.opBackupDomain(info.prepared, W.ocConvert(info.prepared, info.dept, info.resource, present ? JSON.parse(raw) : undefined, present)),
+        at = operations.findIndex((x) => x.scope.departmentId === info.dept && x.resource === info.resource);
+      assert.ok(at >= 0, 'typed operational key has no exported resource slot: ' + k);
+      operations[at] = domain;
+      delete keys[k];
+    }
     const domains =
       scope.kind === 'full'
-        ? { dailyStats: { version: 1, data: ds.data }, notifications: nf, irshad: irshadDomains, seized, awards, ...(extra.domains || {}), custody: custodyDomains }
-        : { notifications: deptNF, custody: custodyDomains, irshad: irshadDomains, seized, awards, ...(extra.domains || {}) };
+        ? { dailyStats: { version: 1, data: ds.data }, notifications: nf, irshad: irshadDomains, seized, awards, operations, ...(extra.domains || {}), custody: custodyDomains }
+        : { notifications: deptNF, custody: custodyDomains, irshad: irshadDomains, seized, awards, operations, ...(extra.domains || {}) };
     const request = {
       version: 1,
       requestId: 'TEST_ONLY_restore_' + ++rid,
@@ -94,17 +119,17 @@ async function world() {
     };
     if (scope.kind === 'full')
       request.manifest = extra.manifest || {
-        version: 3,
+        version: 4,
         scope: 'full',
-        domains: { kv: 1, dailyStats: 1, notifications: 1, custody: 1, irshad: 1, seized: 1, awards: 1 },
+        domains: { kv: 1, dailyStats: 1, notifications: 1, custody: 1, irshad: 1, seized: 1, awards: 1, operations: 1 },
         departments: declared,
         keys: Object.keys(keys),
       };
     else
       request.manifest = extra.manifest || {
-        version: 3,
+        version: 4,
         scope: 'dept',
-        domains: { kv: 1, notifications: 1, custody: 1, irshad: 1, seized: 1, awards: 1 },
+        domains: { kv: 1, notifications: 1, custody: 1, irshad: 1, seized: 1, awards: 1, operations: 1 },
         departments: declared,
         keys: Object.keys(keys)
           .filter((k) => k !== 'bassam_perms_v1')

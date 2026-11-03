@@ -123,7 +123,7 @@ test('actual migration8 startup under canonical schema9 backfills four resources
     await f.DB.batch(f.W.kvPutStmts(f.env, 'kv', f.W.irKey(D1, idx), JSON.stringify(value)));
   }
   await f.W.initDb(f.env);
-  assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, '9');
+  assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, String(f.W.KIVO_SCHEMA_VERSION));
   assert.deepEqual(f.W.irInflate(await f.W.irSnapshot(f.env, D1)), legacy);
   assert.deepEqual(identitySnapshot(f.DB), before);
   assert.deepEqual(f.DB.q('SELECT * FROM revs'), revBefore);
@@ -224,8 +224,8 @@ test('canonical 7-to-9 upgrade fences migration8 and consumes one exact explicit
   await assert.rejects(f.W.initDb(f.env), /db-migration-permit-required/); assert.deepEqual(rawSnapshot(f), before);
   assert.equal(f.DB.q("SELECT name FROM sqlite_master WHERE name GLOB 'irshad_*'").length, 0);
   const permit = authorizeCandidateUpgrade(f.DB, f.W), names = f.W.KIVO_MIGRATIONS.map(m => m.name);
-  assert.equal(names.length, 9); assert.deepEqual(permit.migrations, names.slice(7)); assert.equal(permit.from, 7); assert.equal(permit.to, 9);
-  await f.W.initDb(f.env); assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, '9');
+  assert.equal(names.length, f.W.KIVO_SCHEMA_VERSION); assert.deepEqual(permit.migrations, names.slice(7)); assert.equal(permit.from, 7); assert.equal(permit.to, f.W.KIVO_SCHEMA_VERSION);
+  await f.W.initDb(f.env); assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, String(f.W.KIVO_SCHEMA_VERSION));
   assert.deepEqual(f.DB.q('SELECT name FROM d1_migrations ORDER BY name').map(row => row.name), names);
   assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_upgrade_permit_v1'").length, 0);
 });

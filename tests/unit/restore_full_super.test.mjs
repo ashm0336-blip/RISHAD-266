@@ -12,6 +12,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, since, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
+import { operationSaveBody } from './tasks_fx.mjs';
 function seed() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; });
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_fx_rs_')); execFileSync(PYTHON, [ROOT + '/tests/fixtures/gen_fixture.py', '--today', o.year + '-' + o.month + '-' + o.day, '--out', out], { stdio: 'pipe' });
@@ -26,19 +27,19 @@ async function world() {
   const dm = await C.login('0000000101', '70101'); assert.ok(dm.ok, 'tst_dm1');
   return { env, C, su, dm };
 }
-const K = 'bsdept:tst_d1:bassam_options_v1';
+const K = 'bsdept:tst_d1:bassam_perm_tpls_v1';   /* schema 10: bassam_options_v1 is typed operational (/api/save refuses it: operations-request-envelope); the policy under test is on /api/save restore markers */
 const getv = async (C, ck, k) => ((await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: ck })).j.keys || {})[k];
 const restore = async (C, ck, set, scope, su) => { const base = {}; for (const k of Object.keys(set)) { const g = await getv(C, su || ck, k); if (g && g.rev != null) base[k] = g.rev; } return C.api('/api/save', { method: 'POST', cookie: ck, body: { set, del: [], base, ops: Object.fromEntries(Object.keys(set).map(k => [k, { op: 'backup.restore', scope, mode: 'replace', reason: 'اختبار SOT-190' }])) } }); };
 const den = (r, k) => (r.j && r.j.denied || {})[k];
 test('(أ)(ب) الاستعادةُ الشاملة لمدير النظام وحده', since(163), async () => {
   const { C, su, dm } = await world();
-  assert.ok(!den(await C.save(su.ck, { [K]: JSON.stringify({ v: 'orig' }) }), K), 'زرعُ القيمة');
+  assert.ok(!den(await C.save(su.ck, { [K]: JSON.stringify([{ id: 'TEST_ONLY_tpl', name: 'TEST_ONLY orig' }]) }), K), 'زرعُ القيمة');
   const before = await getv(C, su.ck, K);
-  const a = await restore(C, dm.ck, { [K]: JSON.stringify({ v: 'hacked' }) }, 'full', su.ck);
+  const a = await restore(C, dm.ck, { [K]: JSON.stringify([{ id: 'TEST_ONLY_tpl', name: 'TEST_ONLY hacked' }]) }, 'full', su.ck);
   const d = den(a, K); assert.ok(a.status === 403 || d, 'مرفوضة: ' + a.status + ' ' + JSON.stringify(a.j).slice(0, 160));
   if (d) assert.equal(d.detail, 'full-super-only', JSON.stringify(d));
   assert.deepEqual(await getv(C, su.ck, K), before, 'القيمةُ لم تتغيّر');
-  const b = await restore(C, su.ck, { [K]: JSON.stringify({ v: 'restored' }) }, 'full');
+  const b = await restore(C, su.ck, { [K]: JSON.stringify([{ id: 'TEST_ONLY_tpl', name: 'TEST_ONLY restored' }]) }, 'full');
   assert.equal(b.status, 200, JSON.stringify(b.j).slice(0, 160)); assert.ok(!den(b, K), 'مديرُ النظام مقبول: ' + JSON.stringify(b.j.denied || {}).slice(0, 160));
   assert.match(String((await getv(C, su.ck, K)).v), /restored/);
 });
@@ -47,10 +48,43 @@ test('(ج)(د) مفتاحٌ عامّ ⇒ not-mgr · نطاقُ الإدارة: �
   const c = await restore(C, dm.ck, { bassam_platform_v1: JSON.stringify({ brand: { name: 'x' } }) }, 'dept', su.ck);
   const dc = den(c, 'bassam_platform_v1'); assert.ok(c.status === 403 || dc, 'المفتاحُ العامّ مرفوض'); if (dc && dc.detail) assert.equal(dc.detail, 'not-mgr');
   /* المُثبِّت يمنح tst_dm1 المفتاحَ صراحةً (plus: backup.restore على tst_d1) ⇒ استعادةُ إدارته مقبولة؛ tst_dm2 بلا منحٍ ⇒ مرفوضة */
-  const ok = await restore(C, dm.ck, { [K]: JSON.stringify({ v: 'dept-ok' }) }, 'dept', su.ck);
+  const ok = await restore(C, dm.ck, { [K]: JSON.stringify([{ id: 'TEST_ONLY_tpl', name: 'TEST_ONLY dept-ok' }]) }, 'dept', su.ck);
   assert.ok(!den(ok, K), 'بالمفتاح: ' + JSON.stringify(ok.j.denied || {}).slice(0, 160));
   const dm2 = await C.login('0000000102', '70102'); assert.ok(dm2.ok, 'tst_dm2');
-  const K2 = 'bsdept:tst_d2:bassam_options_v1';
-  const d = await restore(C, dm2.ck, { [K2]: JSON.stringify({ v: 'x' }) }, 'dept', su.ck);
+  const K2 = 'bsdept:tst_d2:bassam_perm_tpls_v1';
+  const d = await restore(C, dm2.ck, { [K2]: JSON.stringify([{ id: 'TEST_ONLY_tpl', name: 'TEST_ONLY x' }]) }, 'dept', su.ck);
   const dd = den(d, K2); assert.ok(d.status === 403 || dd, 'بلا مفتاح backup.restore مرفوضة: ' + JSON.stringify(d.j).slice(0, 160)); if (dd) assert.equal(dd.detail, 'mgr-no-key', JSON.stringify(dd));
+});
+
+/* Schema 10: the same restore-marker policy (full-super-only · mgr-no-key) on a typed operational resource,
+   saved through the operations envelope (requestId + epoch + base) and read back from /api/operations/read. */
+const KO = 'bsdept:tst_d1:bassam_options_v1', KO2 = 'bsdept:tst_d2:bassam_options_v1';
+const opGet = async (C, ck, k) => { const j = (await C.api('/api/operations/read?keys=' + encodeURIComponent(k), { cookie: ck })).j || {}; return { v: (j.resources || {})[k] ?? null, rev: (j.base || {})[k] ?? 0 }; };
+const opValue = (mark) => ({ type: ['TEST_ONLY type ' + mark], work: ['TEST_ONLY work ' + mark] });
+const opRestore = async (C, env, ck, set, scope, su) => { const base = {}; for (const k of Object.keys(set)) base[k] = (await opGet(C, su || ck, k)).rev;
+  return C.api('/api/save', { method: 'POST', cookie: ck, body: operationSaveBody(env, '/api/save', { set, del: [], base, ...(scope ? { ops: Object.fromEntries(Object.keys(set).map(k => [k, { op: 'backup.restore', scope, mode: 'replace', reason: 'اختبار SOT-190' }])) } : {}) }) }); };
+test('(أ)(ب) مورد تشغيلي مُنمَّط: الاستعادةُ الشاملة لمدير النظام وحده', since(163), async () => {
+  const { env, C, su, dm } = await world();
+  const seeded = await opRestore(C, env, su.ck, { [KO]: JSON.stringify(opValue('orig')) }, null);
+  assert.equal(seeded.status, 200, 'زرعُ القيمة: ' + JSON.stringify(seeded.j).slice(0, 200)); assert.ok(!den(seeded, KO));
+  const before = await opGet(C, su.ck, KO); assert.deepEqual(before.v, opValue('orig'));
+  const a = await opRestore(C, env, dm.ck, { [KO]: JSON.stringify(opValue('hacked')) }, 'full', su.ck);
+  const d = den(a, KO); assert.equal(a.status, 403, 'مرفوضة: ' + JSON.stringify(a.j).slice(0, 200));
+  assert.equal(d && d.why, 'restore-policy', JSON.stringify(a.j).slice(0, 200)); assert.equal(d.detail, 'full-super-only', JSON.stringify(d));
+  assert.deepEqual(await opGet(C, su.ck, KO), before, 'القيمةُ لم تتغيّر');
+  const b = await opRestore(C, env, su.ck, { [KO]: JSON.stringify(opValue('restored')) }, 'full');
+  assert.equal(b.status, 200, JSON.stringify(b.j).slice(0, 200)); assert.ok(!den(b, KO), 'مديرُ النظام مقبول: ' + JSON.stringify(b.j.denied || {}).slice(0, 160));
+  assert.deepEqual((await opGet(C, su.ck, KO)).v, opValue('restored'));
+});
+test('(د) مورد تشغيلي مُنمَّط: نطاقُ الإدارة بالمفتاح الممنوح مقبولة · بلا المفتاح mgr-no-key', since(163), async () => {
+  const { env, C, su, dm } = await world();
+  const ok = await opRestore(C, env, dm.ck, { [KO]: JSON.stringify(opValue('dept-ok')) }, 'dept', su.ck);
+  assert.equal(ok.status, 200, JSON.stringify(ok.j).slice(0, 200)); assert.ok(!den(ok, KO), 'بالمفتاح: ' + JSON.stringify(ok.j.denied || {}).slice(0, 160));
+  assert.deepEqual((await opGet(C, su.ck, KO)).v, opValue('dept-ok'));
+  const dm2 = await C.login('0000000102', '70102'); assert.ok(dm2.ok, 'tst_dm2');
+  const before = await opGet(C, su.ck, KO2);
+  const d = await opRestore(C, env, dm2.ck, { [KO2]: JSON.stringify(opValue('x')) }, 'dept', su.ck);
+  const dd = den(d, KO2); assert.equal(d.status, 403, 'بلا مفتاح backup.restore مرفوضة: ' + JSON.stringify(d.j).slice(0, 200));
+  assert.equal(dd && dd.why, 'restore-policy', JSON.stringify(d.j).slice(0, 200)); assert.equal(dd.detail, 'mgr-no-key', JSON.stringify(dd));
+  assert.deepEqual(await opGet(C, su.ck, KO2), before, 'القيمةُ لم تتغيّر');
 });

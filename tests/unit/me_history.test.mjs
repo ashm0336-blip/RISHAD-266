@@ -17,6 +17,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, WORKER, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
+import { isOperationalFixtureKey, inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 
 const HAS = (() => { try { return fs.readFileSync(WORKER, 'utf8').includes('function meSelfRoutes('); } catch (e) { return false; } })();
 const G = HAS ? {} : { skip: 'العاملُ المختبَر بلا مساري /api/me/today · /api/me/history (أقدمُ من KIVO_264)' };
@@ -28,10 +29,11 @@ const MK = T.y + '-' + T.m, DAY = MK + '-' + T.d, PM = T.m === 1 ? { y: T.y - 1,
 const TAG = 'TEST_ONLY', SA = 'TST-A', SB = 'TST-B';
 const K = (r) => 'bsdept:tst_d1:' + r;
 const q = (s) => "'" + String(s).replace(/'/g, "''") + "'";
-const stored = (env, k) => { const r = env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', k); return r.length ? JSON.parse(r.map((x) => x.v).join('')) : null; };
+const stored = (env, k) => { if (isOperationalFixtureKey(env, k)) return inspectOperationalFixture(env, k); const r = env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', k); return r.length ? JSON.parse(r.map((x) => x.v).join('')) : null; };
 const BUMP = (k) => ["INSERT INTO meta (k, v) VALUES ('rev', '1') ON CONFLICT(k) DO UPDATE SET v = CAST(CAST(meta.v AS INTEGER) + 1 AS TEXT);",
   'INSERT INTO revs (k, rev) VALUES (' + q(k) + ", (SELECT CAST(v AS INTEGER) FROM meta WHERE k = 'rev')) ON CONFLICT(k) DO UPDATE SET rev = excluded.rev;"];
 async function putKey(env, k, v) {
+  if (isOperationalFixtureKey(env, k)) { assert.deepEqual(await replaceOperationalFixture(env, k, v), v, 'الزرع: ' + k); return; }   /* schema 10: typed rows through the canonical change planner */
   await applySql(env.DB, ['DELETE FROM kv WHERE k = ' + q(k) + ';', 'INSERT INTO kv (k, seq, v) VALUES (' + q(k) + ', 0, ' + q(JSON.stringify(v)) + ');'].concat(BUMP(k)).join('\n'));
   assert.deepEqual(stored(env, k), v, 'الزرع: ' + k);
 }
@@ -178,10 +180,11 @@ test('(٥) «السجل»: دليلُ كل يوم — لا إعادةَ بناء
   /* مديرُ الإدارة يغيّر ورديةَ tst_emp1 وراحةَ مشرف الوردية أ في حفظةٍ واحدة — كما تُرسل الواجهةُ أحداثَ سجل الأنشطة */
   const dm = await W.login('0000000101', '70101'), k = K('bassam_staffing_v3'), v = stored(W.env, k);
   v[MK].tst_e_emp1.shift = SB; v[MK].tst_e_sup1.rest = ['الجمعة'];
-  const base = (await W.C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: dm })).j.keys[k].rev;
+  const read = (await W.C.api('/api/operations/read?keys=' + encodeURIComponent(k), { cookie: dm })).j; assert.equal(read.ok, 1, txt(read));
+  const base = read.base[k];
   const aud = [{ cid: 'tstme264a01', k, etype: 'staffing', act: 'reassigned', eid: 'tst_e_emp1', ename: NM('موظف الوردية أ'), ctx: { plan: MK }, before: { shift: SA }, after: { shift: SB } },
     { cid: 'tstme264a02', k, etype: 'staffing', act: 'edited', eid: 'tst_e_sup1', ename: NM('مشرف الوردية أ'), ctx: { plan: MK }, before: null, after: { f: { rest: [[], ['الجمعة']] } } }];
-  const sv = await W.C.api('/api/save', { method: 'POST', cookie: dm, body: { set: { [k]: JSON.stringify(v) }, del: [], base: { [k]: base }, aud } });
+  const sv = await W.C.api('/api/save', { method: 'POST', cookie: dm, body: { requestId: 'TEST_ONLY_me_history_staffing', epoch: read.epoch, set: { [k]: JSON.stringify(v) }, del: [], base: { [k]: base }, aud } });
   assert.ok(sv.j.revs && sv.j.revs[k], 'الحفظ: ' + txt(sv.j).slice(0, 200));
   const after = (await W.get('/api/me/history', ck)).j;
   assert.equal(after.changes.length, 1, 'تغييرُ صفّه وحده: ' + txt(after.changes));

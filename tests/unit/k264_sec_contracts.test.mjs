@@ -12,7 +12,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, worker, ROOT, WORKER } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
-import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
+import { inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
 /* العاملُ المختبَر قبل KIVO_264 (حزمةٌ أقدم عبر KIVO_WORKER) ⇒ تخطٍّ معلن — KIVO_K264_STRICT=1 يفرض التشغيل */
 const K264 = fs.readFileSync(WORKER, 'utf8').includes("'session-changed'") || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264' };
 const TODAY = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return o; })();
@@ -26,11 +26,10 @@ async function world(mode) {
   const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
   await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
-  await installIrshadFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   return { env, C, su };
 }
-const truth = (env, k) => { const r = env.DB.q('SELECT group_concat(v, \'\') AS v FROM (SELECT v FROM kv WHERE k = ?1 ORDER BY seq)', k)[0]; return r ? r.v : null; };
+const truth = (env, k) => { if (/:bassam_options_v1$/.test(k)) { const o = inspectOperationalFixture(env, k); return o == null ? null : JSON.stringify(o); } const r = env.DB.q('SELECT group_concat(v, \'\') AS v FROM (SELECT v FROM kv WHERE k = ?1 ORDER BY seq)', k)[0]; return r ? r.v : null; };
 const revOf = (env, k) => { const r = env.DB.q('SELECT rev FROM revs WHERE k = ?1', k)[0]; return r ? r.rev : 0; };
 
 /* ══ C1 ══ */
@@ -41,10 +40,14 @@ for (const mode of ['legacy', 'enforce']) test('(C1) [' + mode + '] uid يخال
   permissions.emps.tst_d1.tst_e_emp1['emps/data'] = ['view', 'add', 'edit', 'del'];
   env.DB.db.prepare("UPDATE kv SET v=? WHERE k='bassam_perms_v1' AND seq=0").run(JSON.stringify(permissions));
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok, 'tst_emp1');
-  const g = await C.api('/api/get?keys=' + encodeURIComponent(K), { cookie: emp.ck }); const it = g.j.keys[K]; assert.ok(it && it.v, 'يقرأ مفتاحَ نطاقه');
-  const cur = JSON.parse(it.v);
+  /* schema 10: bassam_options_v1 is a typed Operations resource (read via /api/operations/read, saved with the operations envelope). */
+  const opRead = async () => { const r = await C.api('/api/operations/read?' + new URLSearchParams({ uid: 'tst_emp1', keys: K }), { cookie: emp.ck }); assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 200)); return r.j; };
+  const it = await opRead(); assert.ok(it.resources && Object.hasOwn(it.base, K), 'يقرأ مفتاحَ نطاقه');
+  assert.ok(Object.hasOwn(it.resources, K) && it.resources[K] != null && !(it.absent || []).includes(K), 'يقرأ قيمةً غيرَ فارغة لمفتاح نطاقه ' + JSON.stringify(it).slice(0, 200));
+  const cur = it.resources[K];
+  let seq = 0; const env1 = (r, extra) => Object.assign({ requestId: 'TEST_ONLY_k264c_' + (++seq) + '_' + Date.now(), epoch: r.epoch, del: [], base: { [K]: r.base[K] } }, extra || {});
   const rec = (n) => 'TEST_ONLY k264c' + n;
-  const body = (n, extra) => Object.assign({ set: { [K]: JSON.stringify({ ...cur, type: (cur.type || []).concat(rec(n)) }) }, del: [], base: { [K]: it.rev } }, extra || {});
+  const body = (n, extra) => env1(it, Object.assign({ set: { [K]: JSON.stringify({ ...cur, type: (cur.type || []).concat(rec(n)) }) } }, extra || {}));
   const v0 = truth(env, K), r0 = revOf(env, K), aud0 = env.DB.q('SELECT COUNT(*) AS n FROM aud')[0].n, sec0 = env.DB.q('SELECT COUNT(*) AS n FROM sec')[0].n;
   /* جلسةُ هذا المتصفح الآن tst_emp1 والطابورُ بُني لحسابٍ آخر (tst_sup1 · ثم مدير النظام) */
   for (const other of ['tst_sup1', 'su', '']) {
@@ -63,11 +66,11 @@ for (const mode of ['legacy', 'enforce']) test('(C1) [' + mode + '] uid يخال
   assert.equal(ok1.status, 200, JSON.stringify(ok1.j).slice(0, 300)); assert.equal(ok1.j.ok, 1); assert.ok(!(ok1.j.denied || {})[K] && !(ok1.j.conflicts || {})[K], 'قُبل');
   assert.ok(truth(env, K).includes('k264c1'), 'كُتب');
   /* الغائبُ وnull ⇒ السلوكُ القديم (لا عقدَ جديدٌ على عميلٍ قديم) */
-  const it2 = (await C.api('/api/get?keys=' + encodeURIComponent(K), { cookie: emp.ck })).j.keys[K]; const cur2 = JSON.parse(it2.v);
-  const b2 = { set: { [K]: JSON.stringify({ ...cur2, type: cur2.type.concat(rec(2)) }) }, del: [], base: { [K]: it2.rev } };
+  const it2 = await opRead(); const cur2 = it2.resources[K];
+  const b2 = env1(it2, { set: { [K]: JSON.stringify({ ...cur2, type: cur2.type.concat(rec(2)) }) } });
   const ok2 = await C.api('/api/save', { method: 'POST', cookie: emp.ck, body: b2 }); assert.equal(ok2.status, 200); assert.ok(truth(env, K).includes('k264c2'), 'بلا uid يُكتب كما كان');
-  const it3 = (await C.api('/api/get?keys=' + encodeURIComponent(K), { cookie: emp.ck })).j.keys[K]; const cur3 = JSON.parse(it3.v);
-  const ok3 = await C.api('/api/save', { method: 'POST', cookie: emp.ck, body: { set: { [K]: JSON.stringify({ ...cur3, type: cur3.type.concat(rec(3)) }) }, del: [], base: { [K]: it3.rev }, uid: null } });
+  const it3 = await opRead(); const cur3 = it3.resources[K];
+  const ok3 = await C.api('/api/save', { method: 'POST', cookie: emp.ck, body: env1(it3, { set: { [K]: JSON.stringify({ ...cur3, type: cur3.type.concat(rec(3)) }) }, uid: null }) });
   assert.equal(ok3.status, 200); assert.ok(truth(env, K).includes('k264c3'), 'uid:null = غائب');
   /* مديرُ النظام بجلسته: uid مطابق ⇒ 200 · مخالف ⇒ 409 */
   /* Use a live KV resource; notification configuration now has its own relational API. */

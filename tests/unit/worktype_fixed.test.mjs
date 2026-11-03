@@ -34,9 +34,10 @@ test('المنطق: القائمةُ ثابتة (ميدانيـ / ـة · إدا
   assert.match(load, /wkFixed\(\)\.slice\(\)/, 'loadWkOpts يعيد القائمةَ الثابتة');
   for (const fn of ['wkAdd() {', 'wkRename(t, e) {', 'wkDel(t) {']) {
     const body = l.slice(l.indexOf('  ' + fn), l.indexOf('  ' + fn) + 220);
-    assert.match(body, /wkFixed\(\)\) return void this\.wkFixedMsg\(\)/, fn + ' يُرفض برسالة');
+    /* d5a08a6: the guard became unconditional — the whole body is the refusal message (stricter than the former `if (wkFixed()) return void`) */
+    assert.match(body, /^  [^\n]*\{\n\s*this\.wkFixedMsg\(\);\n\s*\}/, fn + ' يُرفض برسالة');
   }
-  const set = l.slice(l.indexOf('  wkSetEmp(t, e) {'), l.indexOf('  wkSetEmp(t, e) {') + 260);
+  const set = l.slice(l.indexOf('  async wkSetEmp(t, e) {'), l.indexOf('  async wkSetEmp(t, e) {') + 260);   /* d5a08a6: async (Operations save) */
   assert.match(set, /!this\.wkCanon\(e\)\) return void this\.wkFixedMsg\(\)/, 'wkSetEmp لا يكتب قيمةً خارج القائمة');
   assert.match(l, /غير معتمد/, 'القيمةُ القديمة خارج القائمة تُعلَّم «غير معتمد» حتى يُعاد اختيارُها');
 });

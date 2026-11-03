@@ -76,7 +76,7 @@ test('صفحةُ المهام مقسَّمة: الأجزاءُ معلنةٌ وم
   const ctx = { KIVO, DCLogic: class {}, Intl, Date, Math, JSON, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, window: {}, document: {}, localStorage: { getItem: () => null }, setTimeout: () => 0, clearTimeout: () => 0 };
   ctx.window = ctx; vm.createContext(ctx); vm.runInContext(L + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic(+parts).js' });
   for (const f of parts) for (const n of partNames[f]) assert.equal(typeof ctx.__C.prototype[n], 'function', n + ' (' + f + ') على Component');
-  for (const n of ['renderVals', 'componentDidMount', '_doReopen', 'saveLocks']) assert.equal(typeof ctx.__C.prototype[n], 'function', n + ' في الأصل');
+  for (const n of ['renderVals', 'componentDidMount', '_doReopen', 'mutateLocks']) assert.equal(typeof ctx.__C.prototype[n], 'function', n + ' في الأصل');
   /* الحزمةُ المولَّدة: سكربتٌ واحد صارمٌ وفيه الأجزاءُ الثمانية */
   const page = SCRIPT_RX.exec(fs.readFileSync(path.join(SRC, 'pages', meta.name + '.dc.html'), 'utf8'))[1];
   assert.ok(page.startsWith('"use strict";'), 'الحزمة: "use strict" أولاً');

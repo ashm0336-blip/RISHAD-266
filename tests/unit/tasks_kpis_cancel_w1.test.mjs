@@ -27,7 +27,8 @@ function auditMonth() {
   return S;
 }
 function tasksPage(S, can) {
-  const P = page('tasks', { store: { bassam_tasks_v1: S, bassam_employees_v1: EMPS }, can });
+  const OPS = { resources: [], status: () => ({ state: 'idle', epoch: 0 }), context: () => null, state: () => 'ready', begin: () => ({ ok: true }), draft: () => null };
+  const P = page('tasks', { store: { bassam_tasks_v1: S, bassam_employees_v1: EMPS }, can, srv: { operations: OPS, rev: () => 0 } });
   P.c.setState({ perPage: 0, tkDaySel: { k: Y + '-' + M, d: 0 } });   /* الشهر كاملاً */
   return P;
 }

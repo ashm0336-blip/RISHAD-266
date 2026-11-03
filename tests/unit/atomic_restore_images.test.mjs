@@ -1,29 +1,40 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, ok, snap, OPTIONS } from './atomic_restore_review_fx.mjs';
+import { world, ok, snap } from './atomic_restore_review_fx.mjs';
 import { D1, D2, IDS, EKEYS, copy } from './notifications_review_fx.mjs';
+import { replaceOperationalFixture, inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
+/* the image contract is exercised on the typed options resource (schema 10); the shared fixture's OPTIONS is a plain-KV probe */
+const OPTIONS = 'bsdept:' + D1 + ':bassam_options_v1';
 const ID = 'img_testonly_existing',
   BODY = 'data:image/png;base64,VEVTVF9PTkxZ',
   OTHER = 'data:image/png;base64,T1RIRVJfVEVTVA==';
 let rid = 0;
 async function seed(B, { r2 = false, owner = OPTIONS, state = 'bound', text = BODY } = {}) {
+  await replaceOperationalFixture(B.env, OPTIONS, { type: [ID], work: ['TEST_ONLY before'] });
   await B.DB.batch([
-    ...B.W.kvPutStmts(B.env, 'kv', OPTIONS, JSON.stringify({ map: ID, tag: 'TEST_ONLY before' })),
     ...B.W.kvPutStmts(B.env, 'imgs', ID, r2 ? '~r2~' : text),
-    B.DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=1').bind(OPTIONS),
     B.DB.prepare('INSERT INTO imgown(img,st,k,uid,dept,ts) VALUES(?1,?2,?3,?4,?5,1)').bind(ID, state, owner, IDS.super, D1),
     B.DB.prepare('INSERT INTO imgref(img,k) VALUES(?1,?2)').bind(ID, owner),
   ]);
 }
 async function payload(B, images = { [ID]: BODY }, who = 'super', scope = { kind: 'full' }) {
-  const request = await B.body({ scope, keys: { [OPTIONS]: JSON.stringify({ map: ID, tag: 'TEST_ONLY restored' }) } }),
+  /* Schema-10: bassam_options_v1 is typed operational storage. The shared body() never carries typed keys as KV, so the
+     image-bearing options document is placed explicitly in a legacy v3 file's data and goes through the server conversion. */
+  const restored = JSON.stringify({ type: [ID], work: ['TEST_ONLY restored'] }),
+    request = await B.body({ scope }),
+    full = scope.kind === 'full',
     file = {
       app: 'bassam-crowd',
       version: 3,
       kind: scope.kind,
-      data: scope.kind === 'full' ? request.keys : { bassam_options_v1: request.keys[OPTIONS] },
-      domains: request.domains,
-      manifest: request.manifest,
+      data: full ? { ...request.keys, [OPTIONS]: restored } : { bassam_options_v1: restored },
+      domains: Object.fromEntries(Object.entries(request.domains).filter(([name]) => name !== 'operations')),
+      manifest: {
+        ...request.manifest,
+        version: 3,
+        domains: Object.fromEntries(Object.entries(request.manifest.domains).filter(([name]) => name !== 'operations')),
+        keys: request.manifest.keys.concat(full ? [OPTIONS] : ['bassam_options_v1']),
+      },
       idbImages: images,
     };
   return {
@@ -71,7 +82,7 @@ test('actual backup restore accepts an identical existing inline body without re
     images = copy(B.DB.q('SELECT * FROM imgs')),
     ack = ok(await B.api('super', '/api/backup/restore', await payload(B)));
   assert.equal(ack.ok, 1);
-  assert.equal(JSON.parse(B.DB.q('SELECT v FROM kv WHERE k=?1', OPTIONS)[0].v).tag, 'TEST_ONLY restored');
+  assert.deepEqual(inspectOperationalFixture(B.env, OPTIONS), { type: [ID], work: ['TEST_ONLY restored'] });
   assert.deepEqual(copy(B.DB.q('SELECT * FROM imgs')), images);
   assert.deepEqual(calls, []);
 });
@@ -99,7 +110,7 @@ test('unknown, unreferenced, pending, unstable, missing or different image bodie
     if (scenario === 'new') {
       const key = 'img_testonly_new';
       body.backup.idbImages = { [key]: BODY };
-      body.backup.data[OPTIONS] = JSON.stringify({ map: key });
+      body.backup.data[OPTIONS] = JSON.stringify({ type: [key], work: [] });
     }
     if (scenario === 'unreferenced') body.backup.data[OPTIONS] = '{}';
     const before = snap(B.DB),

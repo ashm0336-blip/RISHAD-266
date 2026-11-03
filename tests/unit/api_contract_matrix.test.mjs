@@ -53,7 +53,7 @@ test('(ج) الأخطاءُ المعقودة: 400 bad-body لكل مخطّط · 
     '/api/tasks/settings': { k: 5 }, '/api/tasks/reopen': { k: 5 },
     /* The five domain POST envelopes use an existing actor/session first.
        Dept wipe/delete are super-only before shape; the loop selects su there. */
-    '/api/custody/act': { op: 17 }, '/api/irshad/act': { op: 17 }, '/api/employees/transition': { intent: 17 },
+    '/api/custody/act': { op: 17 }, '/api/irshad/act': { op: 17 }, '/api/seized/act': { op: 17 }, '/api/award/act': { op: 17 }, '/api/employees/transition': { intent: 17 },
     '/api/admin/dept-wipe': { dept: 17 }, '/api/admin/dept-delete': { dept: 17 },
     '/api/backup/restore': { mode: 17 } };
   const ENF_ONLY = ['/api/authz-migrate', '/api/authz-test'];

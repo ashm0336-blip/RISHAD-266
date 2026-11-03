@@ -6,6 +6,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { D1Shim, ROOT } from './harness.mjs';
+import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 
 const D = 'TEST_ONLY_ir_department', OTHER = 'TEST_ONLY_ir_other';
 const names = ['irRead', 'irQueryContext', 'irQueryScope', 'irRowRead', 'irConvert', 'irInstallStatements',
@@ -58,6 +59,7 @@ async function world(reports = []) {
     if (bump) await DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=rev+1').bind(k).run();
   }
   for (const [k, v] of Object.entries(keys)) await put(k, v, true);
+  await installOperationalFixture(env);
   DB.exec("INSERT INTO meta(k,v) VALUES('authz_mode','enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   async function install(d, rows, catalogs = {}) {
     const docs = { reports: { reports: rows }, ...catalogs };
@@ -108,16 +110,18 @@ test('Records preserve lossless rows, canonical match, stable ordering and bound
 });
 
 test('SQL visible scope is differential to actual061 across months, null/blank identity, manager and Site', async () => {
+  /* RISHAD-266 (commit 74554f6; workers/parts/061-enf-read.js:3; docs/architecture.md:114): the legacy scope ceiling (bassam_scope_v1 Shift/Site projection) is retired;
+     staff with irshad/records view see the department month like the manager, and a user without view stays denied. */
   const rows = [report('a'), report('hidden', { shift: 'ب' }), report('later', { m: 2, shift: 'ب' }), report('later-hidden', { m: 2 }), report('blank', { shift: '' }), report('null-month', { m: null, shift: 'ب' })];
-  const X = await world(rows), context = await X.W.irQueryContext(X.env, X.actor('staff'), D), V = X.W.enfViewCtx(context.A, D, 'bassam_irshad_v1', context.refs);
-  const projected = X.W.ENF_PROJ.bassam_irshad_v1.proj({ reports: rows }, V).reports;
+  const X = await world(rows), context = await X.W.irQueryContext(X.env, X.actor('staff'), D);
   const scope = X.W.irQueryScope(context, 'i'), stmt = X.DB.prepare('SELECT i.report_id FROM irshad_reports i WHERE ' + scope.sql + ' ORDER BY i.sequence');
   const actual = (await stmt.bind(...scope.args).all()).results.map(r => r.report_id);
-  assert.deepEqual(actual, projected.map(r => r.id));
-  assert.equal((await X.read('staff', { view: 'calendar', year: 1448, month: 1 })).monthTotals.reports, 2);
-  assert.equal((await X.read('manager', { view: 'calendar', year: 1448, month: 1 })).monthTotals.reports, 3);
+  assert.deepEqual(actual, X.DB.q('SELECT report_id FROM irshad_reports WHERE department_id=? ORDER BY sequence', D).map(r => r.report_id));
+  const staff = (await X.read('staff', { view: 'calendar', year: 1448, month: 1 })).monthTotals.reports, manager = (await X.read('manager', { view: 'calendar', year: 1448, month: 1 })).monthTotals.reports;
+  assert.equal(manager, 3); assert.equal(staff, manager);
   await X.put('bsdept:' + D + ':bassam_scope_v1', { emp: { TEST_ONLY_e1: { Shift: { mode: 'n/a' }, Site: { mode: 'unknown' } } } });
-  assert.equal((await X.read('staff', { view: 'calendar', year: 1448, month: 1 })).monthTotals.reports, 3, 'Free-text locations do not become Site IDs');
+  assert.equal((await X.read('staff', { view: 'calendar', year: 1448, month: 1 })).monthTotals.reports, staff, 'Retired scope documents do not affect reads');
+  await assert.rejects(() => X.read('noview', { view: 'calendar', year: 1448, month: 1 }), /irshad-denied/);
 });
 
 test('Context guards reject raw authority changes without revision and write-only context does not grant reads', async () => {
@@ -142,9 +146,12 @@ test('Cursor witnesses reject cross-principal, scope, raw permission and resourc
   const changed = copy(X.keys.bassam_perms_v1); changed.TEST_ONLY_noop_manual_change = 1;
   await X.put('bassam_perms_v1', changed);
   await assert.rejects(() => X.read('super', { ...q, cursor: page.next }), /irshad-cursor-stale/);
+  /* RISHAD-266 (commit 74554f6; workers/parts/061-enf-read.js:3; docs/architecture.md:114): the legacy scope ceiling bassam_scope_v1 is retired and no longer part of the read witness;
+     a retired scope document neither stales a cursor nor changes the next page. */
   const beforeScope = await X.read('super', q);
   await X.put('bsdept:' + D + ':bassam_scope_v1', { TEST_ONLY_manual_scope_change: true });
-  await assert.rejects(() => X.read('super', { ...q, cursor: beforeScope.next }), /irshad-cursor-stale/);
+  const afterScope = await X.read('super', { ...q, cursor: beforeScope.next }), unchanged = await X.read('super', { ...q, cursor: (await X.read('super', q)).next });
+  assert.equal(afterScope.rows.length, 1); assert.deepEqual(afterScope.rows, unchanged.rows); assert.notDeepEqual(afterScope.rows, beforeScope.rows);
   const beforeRevision = await X.read('super', q);
   await X.DB.prepare('UPDATE revs SET rev=rev+1 WHERE k=?1').bind(X.W.irKey(D)).run();
   await assert.rejects(() => X.read('super', { ...q, cursor: beforeRevision.next }), /irshad-cursor-stale/);

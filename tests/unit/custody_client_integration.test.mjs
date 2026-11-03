@@ -6,10 +6,12 @@ import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import {ROOT,world as canonicalWorld,D1,IDS,EKEYS} from './custody_review_fx.mjs';
+import {attachTaskOperations} from './tasks_vm_operations_fx.mjs';
+import {installOperationalFixture,replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
 const read=file=>fs.readFileSync(path.join(ROOT,file),'utf8');
 const copy=value=>JSON.parse(JSON.stringify(value));
 async function world(){
-  const base=await canonicalWorld(),worker=base.W;
+  const base=await canonicalWorld(),worker=base.W;await installOperationalFixture(base.env,worker);
   const calls=[],acks=[],errors=[],timers=[];let fail='';
   const KIVO={BassamAuth:{user:()=>({id:IDS.super,role:'super',name:'TEST_ONLY super'}),isSuper:()=>true,users:()=>base.keys.bassam_auth_users_v1},BassamDepts:{active:()=>D1},BassamPerm:{can:()=>true,on:()=>true,key:()=>true},BassamFind:{filter:(q,list)=>list},BassamRing:{one:()=>'',segs:()=>'',pct:(a,b)=>b?Math.round(a/b*100)+'%':'0%'}};
   const storage=new Map([['bassam_employees_v1',JSON.stringify(base.keys['bsdept:'+D1+':bassam_employees_v1']||[])],['bassam_options_v1','{}']]);
@@ -18,7 +20,7 @@ async function world(){
   const W={KIVO,DCLogic:Base,console,Intl,Date,Math,JSON,crypto:crypto.webcrypto,URLSearchParams,AbortController,Uint8Array,
     __BS_BOOT:{srv:1,cf:1,uid:IDS.super},setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout(){},setInterval:()=>0,clearInterval(){},
     document:{getElementById:()=>null,querySelector:()=>null,querySelectorAll:()=>[]},navigator:{userAgent:'TEST_ONLY'},
-    localStorage:{getItem:key=>{assert.ok(!key.includes('custody'),'No retired business reads');return storage.get(key)||null;},setItem:(key,value)=>{assert.ok(!key.includes('custody'),'No retired business writes');storage.set(key,value);}},
+    localStorage:{getItem:key=>{assert.ok(!key.includes('custody'),'No retired business reads');return storage.get(key)||null;},setItem:(key,value)=>{assert.ok(!key.includes('custody'),'No retired business writes');storage.set(key,value);},removeItem:key=>{assert.ok(!key.includes('custody'),'No retired business removals');storage.delete(key);}},
     fetch:async(url,options)=>{
       calls.push({url,body:options.body});if(fail==='before')throw Error('TEST_ONLY offline');
       const headers={...options.headers,Cookie:'bs_tok=TEST_ONLY_session_super'};if(options.method==='POST')headers.Origin='http://x';
@@ -26,6 +28,8 @@ async function world(){
       if(fail==='after'&&options.method==='POST')throw Error('TEST_ONLY lost receipt');return response;
     }};
   W.window=W;W.globalThis=W;vm.createContext(W);
+  const transport={C:{req:(route,options={})=>{const headers={};if(options.cookie)headers.Cookie=options.cookie;const method=options.method||'GET';if(method!=='GET'){headers.Origin='http://x';headers['Content-Type']='application/json';}return worker.default.fetch(new Request('http://x'+route,{method,headers,...(options.body!==undefined?{body:typeof options.body==='string'?options.body:JSON.stringify(options.body)}:{})}),base.env);}}};
+  await attachTaskOperations(W,{W:transport,ck:'bs_tok=TEST_ONLY_session_super',uid:IDS.super,dept:D1});
   vm.runInContext(read('src/services/440-count.js'),W);
   vm.runInContext(read('src/services/547-custody-api.js'),W);
   vm.runInContext(read('src/modules/employees/logic.js')+'\nglobalThis.TEST_ONLY_Page=Component;',W);
@@ -83,7 +87,8 @@ test('a pre-existing orphan remains visible and returnable without permitting a 
   // Fixture-only simulation of an orphan that already exists after a prior
   // external change. This does not bypass or replace the cleanup policy in UI.
   const employees=B.keys['bsdept:'+D1+':bassam_employees_v1'].filter(row=>row.eid!==EKEYS.employee1);
-  await B.DB.batch(B.worker.kvPutStmts(B.env,'kv','bsdept:'+D1+':bassam_employees_v1',JSON.stringify(employees)));
+  const stored=await replaceOperationalFixture(B.env,'bsdept:'+D1+':bassam_employees_v1',employees);
+  assert.deepEqual(stored,copy(employees),'Typed roster round-trips exactly');
   B.page.state.employees=copy(employees);B.page.state.empTab='custody';await B.page._cuRefresh();const data=B.page.state.cuData;
   assert.equal(data.rows[0].orphan,true);const table=B.page._custodyTableVals(data.year,data.month,data.clock);assert.match(table.cuRows[0].name,/TEST_ONLY/);
   table.cuRows[0].openCard();await B.page._cuLoadHolder(EKEYS.employee1);const card=B.page._custodyCardVals(data.year,data.month,data.clock);

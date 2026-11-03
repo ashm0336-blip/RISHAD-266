@@ -18,7 +18,7 @@ async function populated() {
   const env = makeTestEnv(); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dA', name: 'إدارة', gid: '' }]), bassam_gdepts_v1: JSON.stringify([{ id: 'g1', name: 'قطاع' }]) });
-  for (let i = 0; i < 30; i++) { const s = await C.save(su.ck, { 'bsdept:dA:bassam_options_v1': JSON.stringify({ i, pad: 'x'.repeat(2000) }) }); assert.equal(s.j.ok, 1); }
+  for (let i = 0; i < 30; i++) { const s = await C.save(su.ck, { 'bsdept:dA:bassam_last_export_v1': JSON.stringify({ i, pad: 'x'.repeat(2000) }) }); assert.equal(s.j.ok, 1); }
   const w = await worker(env);
   /* KIVO_261 (إفصاح — تعديلُ اختبار · SOT-068): الصورةُ بصيغة العميل الحقيقية (data:image/…) — البايتاتُ الخام صارت 415 (لم تكن تُخزَّن سليمةً أصلاً) */
   const pu = await w.fetch(new Request('http://x/api/img/im1', { method: 'PUT', headers: { cookie: su.ck, origin: 'http://x', 'Content-Type': 'text/plain; charset=utf-8' }, body: 'data:image/png;base64,' + 'A'.repeat(64) }), env); assert.equal(pu.status, 200);
@@ -35,7 +35,7 @@ test('(ب) كلُّ تلفٍ محقون يُكتشف باسمه', async () => {
   const { env } = await populated();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_int_'));
   const cases = [
-    ['kv-chunks', "DELETE FROM kv WHERE k = 'bsdept:dA:bassam_options_v1' AND seq = 0; INSERT INTO kv (k, seq, v) VALUES ('bsdept:dA:bassam_options_v1', 5, '{}')"],
+    ['kv-chunks', "DELETE FROM kv WHERE k = 'bsdept:dA:bassam_last_export_v1' AND seq = 0; INSERT INTO kv (k, seq, v) VALUES ('bsdept:dA:bassam_last_export_v1', 5, '{}')"],
     ['sess-orphan', "INSERT INTO sess (tok, uid, ts, la, dev) VALUES ('t_orphan', 'ghost', " + Date.now() + ", " + Date.now() + ", 'd')"],
     ['kv-json', "UPDATE kv SET v = '{broken' WHERE k = 'bassam_depts_v1'"],
     ['users', "UPDATE kv SET v = (SELECT v FROM kv WHERE k = 'bassam_auth_users_v1' AND seq = 0) || '' WHERE k = 'bassam_auth_users_v1' AND seq = 0; UPDATE kv SET v = replace(v, '\"role\":\"super\"', '\"role\":\"king\"') WHERE k = 'bassam_auth_users_v1'"],

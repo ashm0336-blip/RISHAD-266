@@ -45,6 +45,9 @@ function page(o = {}) {
   const can = o.can || (() => true);
   KIVO.BassamPerm = { can: (k, a) => can(k, a), kpiPanelOk: (pk, sk) => !!(o.others && o.others(pk, sk)), canSub: () => true, on: () => true };
   KIVO.BassamHijri = { now: () => ({ y: 1448, m: 4, d: 27 }) };
+  /* schema 10: tasks come from the confirmed Operations projection, and operational pages require a ready registered department context */
+  KIVO.BassamDepts = { context: () => (o.scope || { state: 'ready' }) };
+  KIVO.__BS_SRV = { operations: { get: (k) => { if (k !== 'bassam_tasks_v1' || !LS.has(k)) return null; try { return JSON.parse(LS.get(k)); } catch (e) { return null; } } } };
   ctx.DCLogic = class { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); } };
   vm.runInContext(fs.readFileSync(LOGIC, 'utf8') + '\n;globalThis.__C = Component;', ctx, { filename: 'kpis/logic.js' });
   const c = new ctx.__C();

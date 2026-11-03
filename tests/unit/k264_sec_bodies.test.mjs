@@ -13,7 +13,6 @@ import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, worker, ROOT, SRC, WORKER, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { internals } from './internals.mjs';
-import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
 const SRCW = fs.readFileSync(WORKER, 'utf8');
 const K264 = SRCW.includes('"/api/policy":') || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264' };
 const SCH = JSON.parse(fs.readFileSync(path.join(SRC, 'schemas', 'api', 'bodies.schema.json'), 'utf8'));
@@ -37,7 +36,6 @@ test('(ب) الأجسامُ في مساراتها: السليمُ يمرّ · ا
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
   await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
-  await installIrshadFixture(env);
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok);
   const meta = () => JSON.stringify(env.DB.q("SELECT k, v FROM meta WHERE k IN ('policy','rk','rk_meta')"));
   const post = (p, body, ck) => C.api(p, { method: 'POST', body, cookie: ck });
@@ -81,7 +79,7 @@ test('(ب) الأجسامُ في مساراتها: السليمُ يمرّ · ا
 test('(ب) الإنفاذ: ترحيلُ الإنفاذ وأداةُ الاختبار بمخطّطَيهما (بعد حارسَيهما)', K264, async () => {
   const env = makeTestEnv({ KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' }); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
-  await applySql(env.DB, seedSql()); env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
+  await applySql(env.DB, seedSql()); await installCurrentSchemaFixture(env); env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   for (const [body, at] of [[null, '$'], [{ act: 5 }, 'act'], [{ act: 'apply', parts: 'identity' }, 'parts'], [{ act: 'rollback', force: 'yes' }, 'force'], [{ act: 'apply', generated: { t: 1 } }, 'generated']]) {
     const r = await C.api('/api/authz-migrate', { method: 'POST', cookie: su.ck, body }); assert.equal(r.status, 400, JSON.stringify(body)); assert.equal(r.j.err, 'bad-body'); assert.equal(r.j.at, at);
   }

@@ -1,9 +1,14 @@
-/* Actual canonical schema9 Worker only. Synthetic SQLite; no stage/cache DDL fallback. */
+/* Actual canonical schema10 Worker only. Synthetic SQLite; no stage/cache DDL fallback. */
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { D1Shim, ROOT } from "./harness.mjs";
+import {
+  installOperationalFixture,
+  isOperationalFixtureKey,
+  replaceOperationalFixture,
+} from "./operational_legacy_seed_fx.mjs";
 export { ROOT };
 let canonical;
 export const testedMode = "canonical";
@@ -57,8 +62,8 @@ export async function seizedWorker() {
             "\nexport {SZ_RES,SZ_NAMES,SZ_TABLES,SZ_REQUEST_COLS,szConvert,szInflate,szEmptyDomain,szValidateDomain,szInstallStatements,szDomainPlan,szLegacyPrepare,szExportDomain,szRetroSnapshot,szRetroStatements,szRevs,szRevisionGuards,szRetiredGuard,szQueryContext,szQueryScope,hSeizedGet,hSeizedAct,szPermission,szDayContext,enfViewCtx,ENF_PROJ,actorOf,kvPutStmts,preOff,cuClock,initDb,migrateDb,KIVO_MIGRATIONS,KIVO_SCHEMA_VERSION,MIG_TABLE};\n//# sourceURL=canonical-seized-domain.mjs",
         ).toString("base64")
     ).then((module) => {
-      assert.equal(module.KIVO_SCHEMA_VERSION, 9);
-      assert.equal(module.KIVO_MIGRATIONS.length, 9);
+      assert.equal(module.KIVO_SCHEMA_VERSION, 10);
+      assert.equal(module.KIVO_MIGRATIONS.length, 10);
       // Test-only inspection convenience, not a production Worker export.
       return Object.freeze({
         ...module,
@@ -112,6 +117,16 @@ let serial = 0;
 export const DEPT = "TEST_ONLY_seized_dept",
   OTHER = "TEST_ONLY_seized_other";
 export async function put(B, k, value) {
+  /* Schema 10: operational resources (employees, dreport, shift options, ...) are typed SQL, never KV.
+     Before installOperationalFixture has run its canonical cutover on this env, every key (operational ones
+     included) is seeded as the KV source that cutover converts; once the env is registered, operational
+     resources go only through the canonical typed writer (a later legacy KV row would be refused by
+     opGuardRetired as operations-legacy-source-present). */
+  if (isOperationalFixtureKey(B.env, k)) {
+    await replaceOperationalFixture(B.env, k, value);
+    B.W.preOff(B.env);
+    return;
+  }
   await B.DB.batch(
     B.W.kvPutStmts(B.env, "kv", k, JSON.stringify(value)).concat([
       B.DB.prepare(
@@ -176,6 +191,11 @@ export async function commandWorld({ mode = "enforce" } = {}) {
     ],
   };
   for (const [k, v] of Object.entries(keys)) await put(B, k, v);
+  /* Canonical schema-10 cutover of the KV-seeded operational keys; it must run here (not be skipped as
+     already-registered) so its preservation, retired-source, cutover-ready and foreign-key checks apply. */
+  const cutover = await installOperationalFixture(B.env);
+  assert.equal(cutover.already, undefined, "Operational cutover runs once, after every seed key is written");
+  assert.ok(cutover.documents > 0, "The KV-seeded roster is converted by the canonical cutover");
   if (mode === "enforce")
     B.DB.db
       .prepare(

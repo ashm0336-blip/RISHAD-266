@@ -211,6 +211,7 @@ function tasksPage() {
   ctx.DCLogic = DCLogic;
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast() {} };
+  KIVO.__BS_SRV = { operations: { resources: [], status: () => ({ state: 'idle', epoch: 0 }), context: () => null, state: () => 'ready', begin: () => ({ ok: true }), draft: () => null }, rev: () => 0 };
   vm.runInContext(moduleLogic('tasks') + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
   const c = new ctx.__C(); c.bsToast = () => {}; c.setState({ perPage: 0 });
   return { c, V: () => c.renderVals() };

@@ -4,6 +4,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {world,seed,D1,D2,IDS,identitySnapshot} from './irshad_domain_fx.mjs';
 import {EKEYS} from './custody_review_fx.mjs';
+import {replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
 const copy=x=>JSON.parse(JSON.stringify(x));
 const EXTRA=['irAct','irQueryContext','irRead','cuClock','NF_REV','canRead','retroApi'];
 const SHIFT='TEST_ONLY_shift_A', OTHER_SHIFT='TEST_ONLY_shift_B';
@@ -51,7 +52,8 @@ async function restoreExport(B,domain){
   const custody=(await B.canonicalW.cuExport(B.env,A,new URL('http://x/export?dept='+D1))).domains,
     body={version:1,requestId:'TEST_ONLY_sparse_restore_'+ ++serial,scope,mode:'replace',reason:'TEST_ONLY sparse restore',
       base:(await B.W.rsRestoreInventory(B.env,A,scope)).base,keys:{},delete:[],domains:{notifications,custody,irshad:[domain],...Object.fromEntries(await Promise.all(B.W.bdDefinitions().map(async def=>[def.name,[await def.exportDomain(B.env,D1)]])))},
-      manifest:{version:3,scope:'dept',domains:{kv:1,notifications:1,custody:1,irshad:1,seized:1,awards:1},departments:[D1],keys:[]}};
+      manifest:{version:4,scope:'dept',domains:{kv:1,notifications:1,custody:1,irshad:1,seized:1,awards:1,operations:1},departments:[D1],keys:[]}};
+  const exported=await B.api('super','/api/operations/export?uid='+IDS.super+'&dept='+encodeURIComponent(D1));assert.equal(exported.status,200,JSON.stringify(exported.json));body.domains.operations=exported.json.domains;
   return B.W.rsCommit(B.env,A,await B.W.rsPrepare(B.env,A,body,{}),{});
 }
 
@@ -103,7 +105,7 @@ test('catalog replacement creates, edits and empties ordered choices without cha
 
 test('same employee identity retains its historic name after employee removal',async()=>{
   const B=await fixture(),created=await B.act(await B.body('create',{data:data(B)})),original=(await B.read()).rows[0];
-  await put(B,'bsdept:'+D1+':bassam_employees_v1',B.keys['bsdept:'+D1+':bassam_employees_v1'].filter(row=>row.eid!==EKEYS.employee1));
+  await replaceOperationalFixture(B.env,'bsdept:'+D1+':bassam_employees_v1',B.keys['bsdept:'+D1+':bassam_employees_v1'].filter(row=>row.eid!==EKEYS.employee1));
   await B.act(await B.body('edit',{id:created.id,data:patchData(original,{bro:9})}));
   assert.equal((await B.read()).rows[0].name,original.name);
 });
@@ -179,16 +181,28 @@ test('legacy Irshad KV introduced after planning is fenced before any business s
 
 test('delete-month removes only visible rows and authorizes every affected day before writing',async()=>{
   const B=await fixture();await grant(B,['ir.rec.view','ir.rec.delete']);const month=past(B);
-  await seed(B,{reports:{reports:[stored(B,'TEST_ONLY_day1',{...month,d:1}),stored(B,'TEST_ONLY_hidden',{...month,d:1,shift:OTHER_SHIFT}),stored(B,'TEST_ONLY_day2',{...month,d:2})]}});
+  /* RISHAD-266 (commit 74554f6; workers/parts/061-enf-read.js:3; docs/architecture.md:114): the legacy scope ceiling (bassam_scope_v1 Shift) is retired,
+     so the other-shift row is now visible to employee1 and is deleted with the month. The visibility half stays: a same-month row in another
+     department (outside employee1's department ceiling) and a D1 row of another month must survive, and the D1 survivor keeps its stable sequence on export.
+     No same-department hidden witness is possible: delete-month (019i-irshad-operations.js:176-181) selects rows with irQueryScope
+     (019h-irshad-query.js:35-43, department_id=?1 only) plus hijri_year/hijri_month, after a canRead gate on the department key. The surviving
+     061-enf-read.js:1-2 record projection (source, assignee P4.2-05, disabled lens) applies to projected KV reads and is not part of the
+     Irshad SQL delete predicate, so the department boundary and the month are the only visibility limits this command honours. */
+  const other=month.m>1?{y:month.y,m:month.m-1}:{y:month.y-1,m:12};
+  await seed(B,{reports:{reports:[stored(B,'TEST_ONLY_day1',{...month,d:1}),stored(B,'TEST_ONLY_other_shift',{...month,d:1,shift:OTHER_SHIFT}),stored(B,'TEST_ONLY_other_month',{...other,d:1}),stored(B,'TEST_ONLY_day2',{...month,d:2})]}});
+  await seed(B,{reports:{reports:[stored(B,'TEST_ONLY_hidden_d2',{...month,d:1})]}},D2);
   const first=await retro(B,{...month,d:1});assert.equal(first.status,200,JSON.stringify(first.json));
   const body=await B.body('delete-month',{year:month.y,month:month.m},'employee1'),before=snapshot(B);
   await assert.rejects(B.act(body,'employee1'),e=>e.irStatus===403&&e.irDecision?.missing?.includes('ir.rec.bulk.delete'));assert.deepEqual(snapshot(B),before);
   await grant(B,['ir.rec.view','ir.rec.delete','ir.rec.bulk.delete']);const guarded=snapshot(B);
   await assert.rejects(B.act(await B.body('delete-month',{year:month.y,month:month.m},'employee1'),'employee1'),e=>e.irStatus===403&&e.irDecision?.why==='scope');assert.deepEqual(snapshot(B),guarded);
   const full=await retro(B,{...month,d:null});assert.equal(full.status,200,JSON.stringify(full.json));
-  const ack=await B.act(await B.body('delete-month',{year:month.y,month:month.m},'employee1'),'employee1');assert.equal(ack.n,2);
-  assert.deepEqual(B.DB.q('SELECT report_id FROM irshad_reports ORDER BY sequence').map(row=>row.report_id),['TEST_ONLY_hidden']);
-  const exported=await B.W.irExport(B.env,await B.actor('super'),new URL('http://x/export?dept='+D1));assert.equal(exported.domains[0].rows.reports[0].sequence,1);
+  const ack=await B.act(await B.body('delete-month',{year:month.y,month:month.m},'employee1'),'employee1');assert.equal(ack.n,3);
+  assert.deepEqual(B.DB.q('SELECT department_id,report_id FROM irshad_reports ORDER BY department_id,sequence').map(row=>[row.department_id,row.report_id]).sort(),[[D1,'TEST_ONLY_other_month'],[D2,'TEST_ONLY_hidden_d2']].sort());
+  const exported=await B.W.irExport(B.env,await B.actor('super'),new URL('http://x/export?dept='+D1));
+  assert.deepEqual(exported.domains[0].rows.reports.map(row=>[row.report_id,row.sequence]),[['TEST_ONLY_other_month',2]]);
+  const exportedD2=await B.W.irExport(B.env,await B.actor('super'),new URL('http://x/export?dept='+D2));
+  assert.deepEqual(exportedD2.domains[0].rows.reports.map(row=>[row.report_id,row.sequence]),[['TEST_ONLY_hidden_d2',0]]);
 });
 
 test('actual retro API opens reads and closes typed windows while enforcing closed dates even for super',async()=>{

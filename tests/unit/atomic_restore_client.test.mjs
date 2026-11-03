@@ -8,6 +8,7 @@ import { parse } from '../../node_modules/acorn/dist/acorn.mjs';
 import { world, ok, OPTIONS, snap, phase5AppBackup } from './atomic_restore_review_fx.mjs';
 import { D1, IDS, copy } from './notifications_review_fx.mjs';
 import { SRC } from './harness.mjs';
+import { currentOperationResources } from './backup_review_fx.mjs';
 const CLIENT = SRC;
 function sourcePart(file, type, name, root = CLIENT) {
   const source = fs.readFileSync(path.join(root, file), 'utf8'),
@@ -67,7 +68,8 @@ async function browser(B) {
       },
       Custody: { exportDomain: async (dept) => ok(await B.api('super', '/api/custody/export' + (dept ? '?dept=' + dept : ''))) },
       __BS_SRV: { askReason: (k, keys, cb) => cb('TEST_ONLY actual user reason'), resync: async () => ({ ok: 1 }),
-        dirty: () => false, inflight: () => false, sesChanged: () => false, rev: key => data.keys[key]?.rev || 0 },
+        dirty: () => false, inflight: () => false, sesChanged: () => false, rev: key => data.keys[key]?.rev || 0,
+        operations: { resources: currentOperationResources() } },   /* schema 10: the actual Operations resource registry (280) */
       bsConfirm: async () => true,
     },
     page = {
@@ -136,12 +138,16 @@ async function browser(B) {
 async function exported(B, C) {
   const exportBackup = C.property('modules/admin/logic.js', 'exportBackup');
   exportBackup.call(C.page);
-  for (let n = 0; n < 100 && !C.page._encPend; n++) await new Promise((r) => setImmediate(r));
+  /* time-bounded: the export awaits real WebCrypto work, so a fixed tick count is load-dependent */
+  for (let n = 0, end = Date.now() + 20000; (n < 100 || Date.now() < end) && !C.page._encPend; n++) await new Promise((r) => setImmediate(r));
   assert.ok(C.page._encPend, JSON.stringify(C.page.state));
   const file = JSON.parse(C.page._encPend.json);
-  assert.equal(file.manifest.version, 3);
+  assert.equal(file.manifest.version, 4);   /* schema 10: manifest v4 carries the typed operations domain */
   assert.equal(file.manifest.domains.irshad, 1);
+  assert.equal(file.manifest.domains.operations, 1);
   assert.deepEqual(file.domains.irshad.map(d => d.scope.departmentId).sort(), file.manifest.departments.slice().sort());
+  assert.deepEqual(file.domains.operations.map(d => d.scope.departmentId + ':' + d.resource).sort(), file.manifest.departments.flatMap(d => currentOperationResources().map(r => d + ':' + r)).sort());
+  assert.ok(C.requests.some(request => request.url.startsWith('/api/operations/export?') && request.status === 200), 'Typed operations must come from the actual canonical HTTP export');
   assert.ok(C.requests.some(request => request.url.startsWith('/api/irshad/export?') && request.status === 200), 'Typed Irshad must come from the actual canonical HTTP export');
   assert.equal(/p[12]\$/.test(file.data.bassam_auth_users_v1), false);
   return file;
@@ -261,7 +267,7 @@ test('actual department exporter → bkImportFile/bkCommit replaces only its dec
       done = true;
     },
   });
-  for (let n = 0; n < 100 && !done; n++) await new Promise((r) => setImmediate(r));
+  for (let n = 0, end = Date.now() + 20000; (n < 100 || Date.now() < end) && !done; n++) await new Promise((r) => setImmediate(r));   /* time-bounded: real WebCrypto work */
   assert.equal(done, true);
   const file = JSON.parse(await C.exportedBlob().text());
   assert.equal(file.manifest.scope, 'dept');

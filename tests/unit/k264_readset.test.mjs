@@ -6,16 +6,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTestEnv, client, applySql, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { loadClient, until, sleep, fixture } from './k264_vm.mjs';
-import {installIrshadFixture} from './irshad_legacy_seed_fx.mjs';
+import {installCurrentSchemaFixture} from './current_schema_fx.mjs';
 import {mountIrshadPage} from './irshad_live_page_fx.mjs';
 
-const KT = 'bsdept:tst_d1:bassam_tasks_v1', KI = 'bsdept:tst_d1:bassam_irshad_v1', KS = 'bsdept:tst_d1:bassam_scope_v1';
+const KT = 'bsdept:tst_d1:bassam_tasks_v1', KI = 'bsdept:tst_d1:bassam_irshad_v1';
 async function setup(mode) {
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : { KIVO_TEST_FIXTURE: 'allow' }); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, fixture().seed);
-  await installIrshadFixture(env);
+  await installCurrentSchemaFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const getK = async (k) => JSON.parse((await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: su.ck })).j.keys[k].v);
   return { env, C, su, getK };
@@ -30,15 +30,38 @@ for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-4: منحُ ص�
   const A = loadClient({ C, boot: b.boot, jar: { cookie: U.ck } });
   const ir=mountIrshadPage(A,'tst_emp1');
   const remote = []; A.W.addEventListener('bassam:remote', (e) => { try { remote.push(...(e.detail.keys || [])); } catch (x) {} });
+  /* schema 10: tasks is a typed Operations resource — the tab holds it only through KIVO.__BS_SRV.operations (never the generic
+     KV memory). The grant must reach the open tab through the tab's OWN refresh path: the permission change arrives on the tab's
+     /api/changes poll, readSet9 re-reads every Operations key the tab already knows (280-server-storage.js rsRun9 → operationRead9),
+     and the tab's own state for KT becomes 'ready' holding exactly what the server now serves this user — with no read issued by
+     this test after the grant. The revoked typed Irshad page loses its rows. */
+  const OPS = A.W.KIVO.__BS_SRV.operations, rows = (v) => Object.values(v || {}).flat().filter(r => Array.isArray(r) && /TEST_ONLY/.test(String(r[0]))).length;
   try {
     await sleep(1500);
     assert.ok(ir.page.state.irRecords?.total>0,'The actual module read the typed rows before revocation');
+    /* The one pre-grant read stands in for the tasks page's mount read (this VM loads only the storage block, and rsRun9 refreshes only
+       keys a consumer has already asked for). It establishes the tab's 'denied' baseline; nothing after the grant is read by the test. */
+    const r0 = await OPS.read([KT]);
+    assert.equal(r0.ok, 1); assert.equal(JSON.stringify(r0.denied), JSON.stringify([KT]), 'البداية: المهامُ مرفوضةٌ للتبويب ' + JSON.stringify(r0).slice(0, 300)); assert.equal(OPS.state('bassam_tasks_v1'), 'denied');
     P = await getK('bassam_perms_v1'); P.emps.tst_d1.tst_e_emp1.tasks = ['view']; delete P.emps.tst_d1.tst_e_emp1['irshad/records'];
+    const tabReads0 = A.log.filter(x => x === 'GET /api/operations/read').length;   /* baseline before the grant: a poll during the save cannot hide the tab's own re-read */
     assert.ok((await C.save(su.ck, { bassam_perms_v1: JSON.stringify(P) })).j.revs, 'منحٌ وسحب');
-    const ok = await until(() => A.get(KT) != null && ir.page.state.irRecords == null && !!ir.page.state.irCloudError, 6000);
-    const st = { tabHasTasks: A.get(KT) != null, tabHasIrshad: ir.page.state.irRecords != null };
+    /* The tab's own state only — OPS.state/OPS.get never fetch; no OPS.read here */
+    const tabReady = () => OPS.state('bassam_tasks_v1') === 'ready';
+    const ok = await until(() => tabReady() && ir.page.state.irRecords == null && !!ir.page.state.irCloudError, 6000);
+    const st = { tabTasks: OPS.state('bassam_tasks_v1'), tabHasIrshad: ir.page.state.irRecords != null };
     assert.ok(ok, 'الممنوحُ وصل والمسحوبُ أُزيل بلا إعادة تحميل: ' + JSON.stringify(st));
-    assert.ok(remote.includes(KT) && remote.includes('bassam_perms_v1'), 'The granted KV data and permission invalidation both reach the actual module');
+    assert.ok(A.log.filter(x => x === 'GET /api/operations/read').length > tabReads0, 'The tab itself re-read the granted Operations resource after the grant');
+    /* Server truth for this user, fetched outside the tab (never through OPS, so the tab state is untouched): the tab holds exactly it */
+    const srv = await C.api('/api/operations/read?' + new URLSearchParams({ uid: 'tst_emp1', keys: KT }), { cookie: U.ck });
+    assert.equal(srv.status, 200); assert.deepEqual(srv.j.denied, [], 'The server now serves the granted tasks to tst_emp1');
+    assert.ok(rows(srv.j.resources[KT]) > 0, 'The granted resource carries TEST_ONLY day rows ' + JSON.stringify(srv.j).slice(0, 200));
+    assert.deepEqual(JSON.parse(JSON.stringify(OPS.get('bassam_tasks_v1'))), srv.j.resources[KT],   /* JSON round-trip: the tab value lives in the VM realm */
+      'The tab\'s own Operations state holds the granted rows');
+    /* The granted data reaching the module is proven above on the Operations path (the tab's own refresh turned KT from 'denied'
+       into 'ready' with the served rows, no test read after the grant); the permission change itself arrives as a remote change. */
+    assert.ok(remote.includes('bassam_perms_v1'), 'The permission invalidation reaches the actual module ' + JSON.stringify(remote));
+    assert.ok(!remote.includes(KI), 'No retired Irshad JSON key is announced');
     assert.equal(A.get(KI),null,'The actual module never restores the retired JSON cache');
     assert.ok(!A.log.includes('reload'), 'بلا إعادة تحميل');
   } finally { ir.dispose(); A.dispose(); }
@@ -59,23 +82,9 @@ test('[legacy] D-4: تغييرُ صلاحيات موظفٍ آخر لا يمسّ 
   } finally { A.dispose(); }
 });
 
-test('[enforce] D-4: توسيعُ نطاق الوردية لموظفٍ يجدّد بياناتِه المُسقَطة بالنطاق (الاسترشاد) بلا إعادة تحميل', async () => {
-  const { C, su, getK } = await setup('enforce');
-  const U = await C.login('0000000112', '70112'); assert.ok(U.ok, 'tst_supB · مشرفُ الوردية ب (نطاقُه وردية الجدول)');
-  const b = await C.boot(U.ck); assert.ok(!(KI in b.boot.keys), 'No old Irshad JSON');
-  const A = loadClient({ C, boot: b.boot, jar: { cookie: U.ck } });
-  const ir=mountIrshadPage(A,'tst_supB');
-  try {
-    await sleep(1500);
-    const n0=ir.page.state.irRecords?.total;assert.ok(n0>0,'Actual module initial typed rows');
-    const S = await getK(KS); S.emp.tst_e_supB.Shift = { mode: 'list', list: ['TST-A', 'TST-B'] };
-    const w = await C.save(su.ck, { [KS]: JSON.stringify(S) }); assert.ok(w.j.revs && w.j.revs[KS], 'مديرُ النظام وسّع النطاق: ' + JSON.stringify(w.j.denied || {}));
-    const query=new URLSearchParams({dept:'tst_d1',view:'records',year:String(ir.page.state.irYear),month:String(ir.page.state.irMonth),limit:'200'});
-    const srv = await C.api('/api/irshad?'+query, { cookie: U.ck });assert.equal(srv.status,200);
-    const n1 = srv.j.total;
-    assert.ok(n1 > n0, 'الخادمُ يُسقط له الآن أكثر: ' + n0 + ' → ' + n1);
-    assert.ok(await until(() => ir.page.state.irRecords?.total === n1, 6000), 'التبويبُ صار يرى ما يراه الخادمُ له الآن: ' + JSON.stringify({ n0, n1, tab: ir.page.state.irRecords?.total }));
-    assert.equal(A.get(KI),null,'No legacy JSON cache');
-    assert.ok(!A.log.includes('reload'));
-  } finally { ir.dispose(); A.dispose(); }
-});
+/* Retired requirement (removed test '[enforce] D-4: توسيعُ نطاق الوردية لموظفٍ يجدّد بياناتِه المُسقَطة بالنطاق'):
+   it widened the Shift scope of the legacy scope ceiling bsdept:tst_d1:bassam_scope_v1 and expected more Irshad rows.
+   That ceiling is retired — commit 74554f6 (retire the legacy scope ceiling (bassam_scope_v1)), workers/parts/061-enf-read.js:3
+   (Shift D4-09 / Site / Zone projection no longer restricts reads) and docs/architecture.md:114 (bassam_scope_v1 is neither read
+   by enforcement nor written: 'scope-retired'). The server now refuses the write with why 'scope-retired', so the scenario has no
+   current equivalent; unit-ceiling read changes are covered by the grant/revoke test above. */

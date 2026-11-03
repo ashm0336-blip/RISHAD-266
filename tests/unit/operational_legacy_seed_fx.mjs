@@ -7,6 +7,8 @@ const installed = new WeakMap();
 const clone = value => JSON.parse(JSON.stringify(value));
 export async function installOperationalFixture(env, worker) {
   assert.ok(env.DB instanceof D1Shim, 'Isolated in-memory fixture SQLite only');
+  /* Idempotent per isolated env: a shared world (custody_review_fx) may already have run the canonical cutover. */
+  if (installed.has(env)) return { documents: 0, already: true };
   const DB = env.DB, W = worker || await canonicalWorker();
   assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, '10');
   const protectedState = () => ({
@@ -23,6 +25,17 @@ export async function installOperationalFixture(env, worker) {
   assert.deepEqual(DB.q('PRAGMA foreign_key_check'), []);
   installed.set(env, W);
   return { documents: plan.n };
+}
+/* A database already converted by the real initDb (schema 10 migration + cutover) only needs registering:
+   assert the schema and the retired-legacy guard, never re-run a cutover. */
+export async function adoptOperationalFixture(env, worker) {
+  assert.ok(env.DB instanceof D1Shim, 'Isolated in-memory fixture SQLite only');
+  if (installed.has(env)) return { already: true };
+  const W = worker || await canonicalWorker();
+  assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, '10');
+  await W.opGuardRetired(env);
+  installed.set(env, W);
+  return { adopted: true };
 }
 export function isOperationalFixtureKey(env, key) {
   const W = installed.get(env);

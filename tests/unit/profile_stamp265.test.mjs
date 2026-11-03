@@ -42,14 +42,14 @@ function page(W, ck, o = {}) {
     navigator: { userAgent: 'node', geolocation: geo === undefined ? null : { getCurrentPosition: (ok, bad) => (geo === 'deny' ? bad({ code: 1 }) : ok({ coords: { latitude: geo.lat, longitude: geo.lng, accuracy: geo.acc } })) } } };
   ctx.Image = class { set src(v) { this.width = 1200; this.height = 900; this.onload && this.onload(); } };
   ctx.FileReader = class { readAsDataURL() { this.result = 'data:image/jpeg;base64,xx'; this.onload && this.onload(); } };
-  ctx.window = ctx; ctx.globalThis = ctx; ctx.__BS_BOOT = { srv: 1, cf: 1 };
+  ctx.window = ctx; ctx.globalThis = ctx; ctx.__BS_BOOT = { srv: 1, cf: 1, uid: ME.uid };   /* 545 binds every read to the boot principal (user.id === BOOT.uid) */
   ctx.CustomEvent = class { constructor(t, q) { this.type = t; this.detail = q && q.detail; } };
   ctx.addEventListener = () => {}; ctx.dispatchEvent = () => true;
   ctx.fetch = async (url, opt = {}) => { if (/\/api\/me\/tasks\/act$/.test(String(url)) && opt.body) acts.push(JSON.parse(opt.body)); const r = await W.C.req(url, { method: opt.method || 'GET', cookie: ck, headers: opt.headers, body: opt.body }); return { ok: r.status < 300, status: r.status, text: () => r.text(), json: () => r.json() }; };
   vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/services/545-task-self.js'), 'utf8'), ctx);
   KIVO.BassamCount = (n, w) => n + ' ' + w;
-  KIVO.BassamAuth = { user: () => ({ name: NAME, role: 'staff' }) };
+  KIVO.BassamAuth = { user: () => ({ id: ME.uid, name: NAME, role: 'staff', deptId: 'tst_d1', ekey: ME.eid }) };
   class DCLogic { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); } }
   KIVO.BassamPageKit = { base: (Bc) => class extends Bc { bsOn() { return true; } bsToast(m) { (this.__toasts = this.__toasts || []).push(m); } bsAck() { return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } } };
   ctx.DCLogic = DCLogic;

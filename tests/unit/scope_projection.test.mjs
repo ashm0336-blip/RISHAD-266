@@ -24,22 +24,12 @@ test('النطاقُ في القراءة من الخادم وحده (الإنف�
   await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const as = async (un, pw) => { const s = await C.login(un, pw); assert.ok(s.ok, un); return s.ck; };
-  const read = async (ck, k) => { const r = await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: ck }); const it = (r.j.keys || {})[k]; return it && it.v ? JSON.parse(it.v) : null; };
+  const read = async (ck, k) => { const r = await C.api('/api/operations/read?keys=' + encodeURIComponent(k), { cookie: ck }); assert.equal(r.status, 200, JSON.stringify(r.j)); return Object.hasOwn(r.j.resources, k) ? r.j.resources[k] : null; };
   const fld = await as('0000000118', '70118'), loff = await as('0000000115', '70115'), dm = await as('0000000101', '70101');
   /* (أ) */
   const pf = await read(fld, PL), po = await read(loff, PL);
   assert.deepEqual(pf.floors.map(f => f.sid), ['tsts1', 'tsts2'], 'الطابقان يصلان راصدَ الميدان (سياقُ رسم)');
   assert.ok(pf.floors.every(f => f.zones.length === 2), 'المصلياتُ تصل من عدستُه مفعّلة');
   assert.ok(po.floors.every(f => f.zones.length === 0 && f.gates.length === 1), 'عدسةُ المصليات المطفأة ⇒ لا مصليات (والأبوابُ باقية)');
-  /* (ب) (ج) */
-  const day = (r) => r[Object.keys(r)[0]];
-  const rf = day(await read(fld, RD)), rm = day(await read(dm, RD));
-  const st = (r, sid) => r.d.find(f => f.sid === sid).zones[0].fst;
-  assert.equal(st(rm, 'tsts1'), 'open'); assert.equal(st(rm, 'tsts2'), 'open', 'مديرُ الإدارة يرى حالة الموقعين');
-  assert.equal(st(rf, 'tsts1'), 'open', 'راصدُ الميدان يرى حالة موقعه');
-  assert.notEqual(st(rf, 'tsts2'), 'open', 'وحالةُ الموقع خارج نطاقه أُسقطت في الخادم: ' + st(rf, 'tsts2'));
-  /* (د) الإقلاع */
-  const bt = await C.boot(fld); assert.ok(bt && bt.boot && bt.boot.keys, 'الإقلاعُ محقون');
-  const raw = bt.boot.keys[RD]; assert.equal(typeof raw, 'string', 'جولةُ اليوم في الإقلاع');
-  const bd = day(JSON.parse(raw)); assert.equal(st(bd, 'tsts1'), 'open'); assert.notEqual(st(bd, 'tsts2'), 'open', 'الإقلاعُ يحمل القيمةَ المُسقَطة نفسَها');
+  /* (ب)(ج)(د) removed: Site-scope projection of rounds came from the retired legacy scope ceiling bsdept:<d>:bassam_scope_v1 (RISHAD-266 retirement — workers/parts/058-enf-scope.js) */
 });

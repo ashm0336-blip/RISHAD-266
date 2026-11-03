@@ -8,6 +8,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTestEnv, client, applySql, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { loadClient, shareNative, asWriter, sleep, fixture, TODAY } from './k264_vm.mjs';
+import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
+import { installBusinessFixture } from './business_legacy_seed_fx.mjs';
+import { installOperationalFixture, replaceOperationalFixture, inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
 
 const BLOCKS = ['280-server-storage.js', '310-image-refs.js', '320-dept-storage.js', '330-auth.js', '332-find-day.js'];
 const KF = 'bsdept:tst_d1:bassam_dayfocus_v1';
@@ -25,6 +28,8 @@ async function setup(mode) {
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
   await applySql(env.DB, fixture().seed);
+  /* Schema 10: the historical SQL seed is cut over by the actual canonical planner (as tasks_fx world() does). */
+  await installIrshadFixture(env); await installBusinessFixture(env); await installOperationalFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   return { env, C };
 }
@@ -54,9 +59,8 @@ test('[legacy] D-5: لكل تبويب يومُه · التبويبُ الجدي�
   const A = await C.login('0000000111', '70111'); assert.ok(A.ok);
   /* قيمةٌ مشتركة قديمة في الخادم (كتبتها نسخةٌ سابقة) */
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN);
-  const g = await C.api('/api/get?keys=' + encodeURIComponent(KF), { cookie: su.ck }); const base = {}; base[KF] = ((g.j.keys || {})[KF] || {}).rev || 0;
   const old = { y: TODAY.year, m: TODAY.month, d: 1 };
-  assert.ok((await C.save(su.ck, { [KF]: JSON.stringify(old) }, [], base)).j.revs, 'زُرعت قيمةٌ مشتركة قديمة');
+  assert.deepEqual(await replaceOperationalFixture(env, KF, old), old, 'زُرعت قيمةٌ مشتركة قديمة');
   const boot = (await C.boot(A.ck)).boot;
   const t1 = tab(C, A, boot), t2 = tab(C, A, boot);
   const shared = shareNative([t1, t2]); t1.run(BLOCKS); t2.run(BLOCKS);
@@ -72,8 +76,7 @@ test('[legacy] D-5: لكل تبويب يومُه · التبويبُ الجدي�
     const t1r = tab(C, A, boot, { session: t1.W.sessionStorage }); tabs.push(t1r); shareNative(tabs); t1r.run(BLOCKS);
     assert.deepEqual(plain(t1r.W.KIVO.BassamDayFocus.get()), today, 'إعادةُ التحميل تُبقي يومَ التبويب');
     /* القيمةُ المشتركة القديمة لا تُكتب بعد الآن ولا تحرّك تبويباً له يومُه */
-    const srv = env.DB.q('SELECT v FROM kv WHERE k = ?', KF)[0].v;
-    assert.deepEqual(JSON.parse(srv), old, 'لم تُمسّ في الخادم');
+    assert.deepEqual(inspectOperationalFixture(env, KF), old, 'لم تُمسّ في الخادم');
     assert.ok(!Object.keys(t1.nativeLS()).some(k => k === KF), 'ولا تُنسخ قيمةُ الفريق إلى الجهاز');
   } finally { tabs.forEach(t => t.dispose()); }
 });
