@@ -156,15 +156,25 @@ test('Award stale base/epoch, UID flip, foreign scope and raw authority race rej
   assert.equal(B.DB.q("SELECT * FROM meta WHERE k='TEST_ONLY_forbidden'").length,0);assert.deepEqual(domainSnapshot(B),snapshot);
 });
 
-test('Award bounded deletion preserves actual classifier wipe policy and reserved status',async()=>{
+// RISHAD-266 r3 (owner: an approved delete must be possible): deleting the LAST record is one record delete judged by
+// ceiling + award delete permission (award.res.delete), never the unmapped collection wipe; a non-holder is still refused.
+test('Award bounded deletion judges the last record as a record delete and keeps the reserved status',async()=>{
   const B=await world({docs:{records:{recs:[sample('one'),sample('two')]}}});
-  await B.act(await B.command('delete',{id:'one'},'employee1'),'employee1');assert.equal((await B.read('super',{view:'records'})).total,1);
-  const last=await B.command('delete',{id:'two'},'employee1');await assert.rejects(()=>B.act(last,'employee1'),/award-denied/);
-  const lastSuper=await B.command('delete',{id:'two'});await assert.rejects(()=>B.act(lastSuper),/award-denied/);
+  const checks=body=>B.DB.q('SELECT check_kind,permission_key FROM award_request_checks WHERE request_id=?1 ORDER BY position',body.requestId).map(r=>r.check_kind+':'+r.permission_key);
+  const first=await B.command('delete',{id:'one'},'employee1');await B.act(first,'employee1');assert.equal((await B.read('super',{view:'records'})).total,1);
+  assert.deepEqual(checks(first),['enforce:award.res.delete']);
+  const denied=await B.command('delete',{id:'two'},'leader'),held=domainSnapshot(B);await assert.rejects(()=>B.act(denied,'leader'),/award-denied/);
+  assert.deepEqual(domainSnapshot(B),held,'A refused last-record delete writes nothing');assert.equal((await B.read('super',{view:'records'})).total,1);
   const back=await B.command('status',{id:'two',status:'قيد التحكيم'});await B.act(back);
   const approve=await B.command('status',{id:'two',status:'معتمد'});await B.act(approve);
   const reopen=await B.command('status',{id:'two',status:'قيد التحكيم'});await assert.rejects(()=>B.act(reopen),/award-denied/);
   assert.equal((await B.read('super',{view:'record',id:'two'})).record.st,'معتمد');
+  const last=await B.command('delete',{id:'two'},'employee1'),ack=await B.act(last,'employee1');assert.equal(ack.n,1);assert.equal(ack.id,'two');
+  assert.deepEqual(checks(last),['enforce:award.res.delete']);assert.equal((await B.read('super',{view:'records'})).total,0);
+  assert.equal(B.DB.q('SELECT COUNT(*) n FROM award_records').at(0).n,0);assert.ok(!JSON.stringify(domainSnapshot(B)).includes('kivo:award-delete-anchor'));
+  const S=await world({docs:{records:{recs:[sample('only')]}}}),lastSuper=await S.command('delete',{id:'only'}),superAck=await S.act(lastSuper);
+  assert.equal(superAck.n,1);assert.equal((await S.read('super',{view:'records'})).total,0);
+  assert.deepEqual(S.DB.q('SELECT check_kind,permission_key FROM award_request_checks WHERE request_id=?1',lastSuper.requestId).map(r=>r.check_kind+':'+r.permission_key),['enforce:award.res.delete']);
 });
 
 test('Award per-statement fault sweep rolls back records, arrays, receipts, revisions, notification and audit together',async t=>{

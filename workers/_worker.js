@@ -17274,6 +17274,10 @@ async function hAwardAct(env,A,b,meta){
       statements.push(env.DB.prepare('DELETE FROM award_records WHERE department_id=?1 AND record_id=?2').bind(ctx.d,recordId));
     }
     afterValue={recs:b.op==='create'?[afterRecord]:permissionRecords.filter(function(rec){return awRecordKey(rec)!==recordId;}).concat(afterRecord?[afterRecord]:[])};
+    // RISHAD-266 r3: deleting the department's LAST record is still one record delete (ceiling + award delete permission),
+    // not a collection wipe. With no real neighbour, give the classifier one server-made unchanged anchor in the permission
+    // view only (never written, never shown) so it judges the explicit {op:'delete'} as award.res.delete / emp.record.delete.
+    if(b.op==='delete'&&fragmentIds.length===1){var anchor={id:'kivo:award-delete-anchor'};beforeValue={recs:[anchor].concat(beforeValue.recs)};afterValue={recs:[anchor].concat(afterValue.recs)};}
     if(afterRecord){var typed=awConvert(ctx.d,{records:{recs:[afterRecord]}});typed.rows.records[0].sequence=sequence;if(typed.rows.records[0].record_id!==recordId)throw awError('record-identity');
       ['records','caseTexts','answers','scoreRows','scores'].forEach(function(k){statements.push.apply(statements,rsBulk(env,AW_TABLES[k][0],AW_TABLES[k][1],typed.rows[k]));});}
     if(b.op==='create')statements.push(env.DB.prepare("INSERT INTO award_resources(department_id,resource,root_kind,list_kind)VALUES(?1,'records',2,2)ON CONFLICT(department_id,resource)DO UPDATE SET root_kind=2,list_kind=2").bind(ctx.d));
