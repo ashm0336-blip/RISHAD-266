@@ -106,7 +106,7 @@ test('[legacy] A3a (طرفٌ لطرف · قرار المالك d): سباقٌ ع
     assert.deepEqual({ ok: rB.ok, err: rB.err, status: rB.status, uncertain: rB.uncertain }, { ok: 0, err: 'conflict', status: 409, uncertain: false }, 'اللاحقُ: تعارضٌ صريح');
     assert.equal(B.ops.status(rB.ticket).state, 'conflict');
     assert.equal(cell(Wd.server(K)), 'TEST_ONLY سبب A', 'قيمةُ الأسبق باقية — لم يُكتب فوقها شيء');
-    assert.equal(pB.toasts.length, 1); assert.equal(pB.toasts[0].tone, 'warn'); assert.match(pB.toasts[0].m, /لم يُحفظ التعديل/, 'اللاحقُ يُبلَّغ أن تعديله لم يُحفظ');
+    assert.equal(pB.toasts.length, 1); assert.equal(pB.toasts[0].tone, 'warn'); assert.match(pB.toasts[0].m, /حفظ غيرُك هذا السجلَّ قبلك[\s\S]*لم تُحفظ مسودتك[\s\S]*أعد تحميل الصفحة/, 'اللاحقُ يُبلَّغ أن تعديله لم يُحفظ');
     assert.deepEqual(pA.toasts, [], 'الأسبقُ لم يُكتب فوقه فلا يُبلَّغ بشيء');
     await sleep(100);
     for (const T of [A, B]) assert.doesNotMatch(pageText(T.W), /اعتُمدت قيمتك|بعد حفظك/, 'لا شريطَ دمجٍ متقاعد: لم يُدمج شيءٌ ولم يُكتب فوق أحد');

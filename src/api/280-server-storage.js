@@ -760,6 +760,9 @@
   /* Editor drafts use the same queue and receipt as every Operations write.
      A retry never runs the edit callback again or adopts a newer base. */
   var operationEditors9 = new WeakMap();
+  /* RISHAD-266 · decision (d): a refused concurrent save names the conflict truthfully. The settled refusal stays cached for that
+     page draft (never re-sent blindly), so the way forward is a page reload, then redoing the change on the fresh data. */
+  var OPERATION_CONFLICT9 = 'حفظ غيرُك هذا السجلَّ قبلك فلم تُحفظ مسودتك — أعد تحميل الصفحة ثم أعد تعديلك على البيانات الجديدة';
   function operationEditor9(owner, action) {
     if (!owner || (typeof owner !== 'object' && typeof owner !== 'function') || typeof action !== 'string' || !action) throw Error('operations-editor-required');
     var editors = operationEditors9.get(owner);
@@ -1661,12 +1664,13 @@
       release: operationRelease9,
       status: operationStatus9,
       explain: function (result) {
-        var denied = result && result.details && result.details.denied;
-        if (!operationObject9(denied)) return '';
-        return Array.from(new Set(Object.keys(denied).map(function (key) {
+        var details = result && result.details, denied = details && details.denied, conflicts = details && details.conflicts;
+        var parts = operationObject9(denied) ? Object.keys(denied).map(function (key) {
           var value = denied[key];
           return operationObject9(value) && typeof value.why === 'string' ? whyText9(value.why) : '';
-        }).filter(Boolean))).join(' · ');
+        }) : [];
+        if (operationObject9(conflicts) && Object.keys(conflicts).length) parts.push(OPERATION_CONFLICT9);
+        return Array.from(new Set(parts.filter(Boolean))).join(' · ');
       },
       ready: operationReady9,
       invalidate: operationInvalidate9

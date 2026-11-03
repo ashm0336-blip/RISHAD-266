@@ -9,14 +9,19 @@ const UID = 'TEST_ONLY owner';
 const copy = value => JSON.parse(JSON.stringify(value));
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } });
 const initial = { [E]: [{ eid: 'TEST_ONLY e1', name: 'TEST_ONLY employee' }], [S]: { '1448-5': {} } };
-test('Operations explains only the confirmed structured denial with the existing named reason mapper and no IO', async () => {
+test('Operations explains the confirmed structured denial with the existing named reason mapper, a conflict as a conflict, and no IO', async () => {
   for (const [why, expected] of [['task-asg', /لا يُغيَّر مكلَّفُها بالتعديل؛ استعمل «إعادة إسناد»/], ['task-acct', /حسابُ مستخدمٍ نشطٌ مربوطٌ بالمعرّف الذي يُسند به/], ['task-rv', /المراجِعُ لا يكون المكلَّفَ نفسَه/]]) {
     const f = world({ save: raw => { const body = JSON.parse(raw); return json({ ok: 0, requestId: body.requestId, epoch: body.epoch, atomic: 1, revs: {}, denied: { [E]: { why } }, conflicts: {} }, 403); } });
     try {
       await f.operations.read([E]); const result = await f.operations.flush(f.operations.stage({ set: { [E]: [] } }));
       assert.equal(result.ok, 0); assert.equal(result.uncertain, false); const count = f.T.urls.length;
       assert.match(f.operations.explain(result), expected); assert.equal(f.T.urls.length, count, 'Explanation must not retrieve additional data');
-      assert.equal(f.operations.explain({ details: { conflicts: { [E]: { why: 'task-asg' } } } }), '');
+      /* RISHAD-266 · owner decision (d): a conflict is explained truthfully, never as a denial reason nor as silence */
+      const conflictText = f.operations.explain({ details: { conflicts: { [E]: { why: 'task-asg' } } } });
+      assert.match(conflictText, /حفظ غيرُك هذا السجلَّ قبلك[\s\S]*لم تُحفظ مسودتك[\s\S]*أعد تحميل الصفحة/);
+      assert.doesNotMatch(conflictText, expected, 'a conflict never borrows a denial reason');
+      assert.notEqual(conflictText, f.operations.explain(result));
+      assert.equal(f.operations.explain({ details: { denied: {}, conflicts: {} } }), '');
       assert.equal(f.operations.explain(null), '');
     } finally { f.T.dispose(); }
   }

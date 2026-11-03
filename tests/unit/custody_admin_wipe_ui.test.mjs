@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import {parse} from 'acorn';
 import {ROOT,world as canonicalWorld,D1,IDS,EKEYS} from './custody_review_fx.mjs';
 const source=fs.readFileSync(path.join(ROOT,'src/modules/admin/logic.js'),'utf8');
+const COUNT=(()=>{const c={KIVO:{},window:{},Intl};vm.createContext(c);vm.runInContext(fs.readFileSync(path.join(ROOT,'src/services/440-count.js'),'utf8'),c);return c.KIVO.BassamCount;})();
 const klass=parse(source,{ecmaVersion:'latest'}).body.find(node=>node.type==='ClassDeclaration'&&node.id.name==='Component');
 const DEPT=D1;
 const copy=value=>JSON.parse(JSON.stringify(value));
@@ -17,6 +18,8 @@ function world(fetch){
   let uid='TEST_ONLY_super';const calls=[],acks=[],reloads=[],timers=[],prompts=[],syncs=[];let reasonText='';
   const context={KIVO:{BassamAuth:{user:()=>({id:uid,role:'super'}),isSuper:()=>true},BassamDepts:{active:()=>DEPT},__BS_SRV:{resync:value=>syncs.push(value),askReason:(key,keys,done)=>{prompts.push({key,keys});done(reasonText);}}},__BS_BOOT:{srv:1,cf:1,uid},crypto:crypto.webcrypto,AbortController,URLSearchParams,Uint8Array,setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout(){},location:{reload:()=>reloads.push(true)},fetch:async(url,options)=>{calls.push({url,options});return fetch(url,options);},localStorage:{getItem(){throw Error('No local inventory');},setItem(){throw Error('No local wipe');}}};context.window=context;vm.createContext(context);
   const page={state:{wpDid:'',wpTxt:'',tick:0},setState(p){this.state={...this.state,...p};},bsAck:(...args)=>acks.push(args)};
+  /* the shell always loads the shared Arabic counter (src/services/440-count.js); the page's messages use it */
+  context.KIVO.BassamCount=COUNT;
   for(const name of ['_wpActor','_wpCall','_businessBaseValid','wpOpen','wpReview','wpGo','wpClose']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,context);}
   return {page,calls,acks,reloads,timers,prompts,syncs,setReason(value){reasonText=value;},switchActor(){uid='TEST_ONLY_other_super';context.__BS_BOOT.uid=uid;}};
 }
@@ -85,7 +88,7 @@ test('wipe 403 unit-unknown-data shows the data-integrity refusal; 403 denied ke
   await A.page.wpOpen(DEPT);A.page.setState({wpTxt:'TEST_ONLY confirmation'});await A.page.wpGo(DEPT);
   assert.equal(A.calls.filter(call=>call.options.method==='POST').length,1);assert.equal(A.acks.length,0,'no success');assert.equal(A.prompts.length,0);assert.equal(A.page.state.wpDid,DEPT);assert.deepEqual(A.syncs,[]);
   const message=A.page.state.wpMsg;
-  assert.match(message,/تحتوي الإدارة على 2 مُدخل بيانات لا تتعرّف عليه المنصة/);assert.match(message,/لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات/);assert.match(message,/لم يُحذف أي شيء/);assert.match(message,/تواصل مع مدير المنصة لمراجعة/);
+  assert.match(message,/تحتوي الإدارة على مُدخلَين من البيانات لا تتعرّف عليها المنصة/);assert.match(message,/لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات/);assert.match(message,/لم يُحذف أي شيء/);assert.match(message,/تواصل مع مدير المنصة لمراجعة/);
   assert.doesNotMatch(message,/صلاحيت/,'no permission wording');assert.equal(A.page._wpUncertain,false);
   const P=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,err:'denied',denied:{['bsdept:'+DEPT+':bassam_employees_v1']:{ok:false,why:'deny'}},conflicts:{}},403));
   await P.page.wpOpen(DEPT);P.page.setState({wpTxt:'TEST_ONLY confirmation'});await P.page.wpGo(DEPT);

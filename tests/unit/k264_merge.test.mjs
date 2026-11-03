@@ -145,14 +145,14 @@ const CASES = [
     editA: (v) => { const d = Object.keys(v)[0]; v[d].d[0].zones[1].fst = 'open'; delete v[d].d[0].zones[1].cWhy; return v; },
     editB: (v) => { const d = Object.keys(v)[0]; v[d].d[1].zones[1].fst = 'open'; delete v[d].d[1].zones[1].cWhy; return v; },
     hasA: (v) => { const d = Object.keys(v)[0]; return v[d].d[0].zones[1].fst === 'open'; }, hasB: (v) => { const d = Object.keys(v)[0]; return v[d].d[1].zones[1].fst === 'open'; },
-    /* src/modules/daily/logic.js _opCommit: رسالةُ الرفض العامة (لا تسمّي التعارض — مسجَّلٌ غيرُ محلول في تقرير المجموعة 2) */
-    told: /لم يُحفظ التعديل/ },
+    /* daily/logic.js _opCommit يعرض شرحَ الخدمة (operations.explain): التعارضُ يُسمّى تعارضاً ويقول ما العمل */
+    told: /حفظ غيرُك هذا السجلَّ قبلك[\s\S]*لم تُحفظ مسودتك[\s\S]*أعد تحميل الصفحة/ },
   { name: 'tasks (two new tasks, same day)', k: KT, page: tasksPage, a: ['0000000111', '70111'], b: ['0000000101', '70101'],
     editA: (v) => { const d = Object.keys(v)[0]; const r = cp(v[d][0]); r[0] = 'TEST_ONLY task A'; r[13] = Date.now() + 1; r[22] = null; v[d].push(r); return v; },
     editB: (v) => { const d = Object.keys(v)[0]; const r = cp(v[d][0]); r[0] = 'TEST_ONLY task B'; r[13] = Date.now() + 2; r[22] = null; v[d].push(r); return v; },
     hasA: (v) => Object.values(v).some(L => Array.isArray(L) && L.some(r => r[0] === 'TEST_ONLY task A')), hasB: (v) => Object.values(v).some(L => Array.isArray(L) && L.some(r => r[0] === 'TEST_ONLY task B')),
-    /* src/modules/tasks/logic.js _tkChange: «لم يُؤكَّد الحفظ … عند تعارض الصلاحيات أو البيانات راجعها أولاً» */
-    told: /المسودة باقية[\s\S]*تعارض/ }
+    /* tasks/logic.js _tkChange يعرض شرحَ الخدمة نفسَه */
+    told: /حفظ غيرُك هذا السجلَّ قبلك[\s\S]*لم تُحفظ مسودتك[\s\S]*أعد تحميل الصفحة/ }
 ];
 for (const mode of ['legacy', 'enforce']) for (const K of CASES) test('[' + mode + '] D-6 (طرفٌ لطرف · قرار المالك d): ' + K.name + ' — الحفظُ الثاني تعارضٌ صريح بلا دمج، ثم إعادةُ القراءة والمحاولة تُثبت التعديلين', async () => {
   const Wd = await world(mode), name = K.k.split(':')[2];
@@ -184,6 +184,7 @@ for (const mode of ['legacy', 'enforce']) for (const K of CASES) test('[' + mode
     /* ما يراه المستخدم: رسالةُ رفضٍ تحذيرية للثاني وحدَه، لا «حُفظ» */
     assert.equal(pB.toasts.length, 1, 'رسالةٌ واحدة للثاني: ' + JSON.stringify(pB.toasts));
     assert.equal(pB.toasts[0].tone, 'warn'); assert.match(pB.toasts[0].m, K.told);
+    assert.doesNotMatch(pB.toasts[0].m, /أعد المحاولة بنفس/, 'لا تُدعى إعادةُ المحاولة نفسِها في تعارض');
     assert.deepEqual(pA.toasts, [], 'لا رسالةَ رفضٍ للأول');
 
     /* (3) إعادةُ القراءة: التبويبان يريان تعديلَ الأول، ولا أثرَ لتعديل الثاني المرفوض */
@@ -192,8 +193,12 @@ for (const mode of ['legacy', 'enforce']) for (const K of CASES) test('[' + mode
     for (const [who, T] of [['A', A], ['B', B]]) { const v = T.ops.get(name); assert.ok(K.hasA(v) && !K.hasB(v), who + ' بعد إعادة القراءة يرى تعديلَ الأول وحده'); }
 
     /* (4) الثاني يعيد المحاولة على القيمة الجديدة فيثبت تعديلُه أيضاً — لا ضياعَ صامت */
-    /* إعادةُ المحاولة من صفحةٍ أُعيد تحميلها (مسودةٌ جديدة من القيمة المقروءة). ملاحظة: الصفحةُ نفسُها بلا إعادة تحميل تعيد
-       نتيجةَ التعارض القديمة دون إرسال — مسجَّلٌ غيرُ محلول في تقرير المجموعة 2 (tasks/logic.js _tkChange · daily/logic.js _opCommit) */
+    /* الصفحةُ نفسُها بلا إعادة تحميل لا تعيد إرسال المسودة المرفوضة (لا إرسالَ أعمى ولا تطبيقَ آليّ على القيمة الجديدة) —
+       ولذلك تقول الرسالةُ «أعد تحميل الصفحة». الطريقُ: صفحةٌ أُعيد تحميلها (مسودةٌ جديدة من القيمة المقروءة) */
+    why(B, 'B'); let rSame; try { rSame = await pB.save(K.editB); } catch (e) { assert.match(String(e && e.message), /^operations-draft-review-required$/, 'رفضٌ صريح للمسودة القديمة: ' + e); rSame = { ok: 0 }; }
+    assert.notEqual(rSame && rSame.ok, 1, 'الصفحةُ نفسُها لا تعتمد المسودةَ المرفوضة دون إعادة تحميل');
+    assert.equal(B.posts(), 1, 'ولا ترسل شيئاً');
+    assert.deepEqual(Wd.server(K.k), afterA, 'والخادمُ كما هو');
     const pB2 = K.page(B);
     why(B, 'B'); const rB2 = await pB2.save(K.editB);
     assert.equal(rB2 && rB2.ok, 1, 'إعادةُ المحاولة بعد القراءة تُعتمد: ' + JSON.stringify(rB2).slice(0, 300));

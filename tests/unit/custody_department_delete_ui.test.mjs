@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import {parse} from 'acorn';
 import {ROOT,world as canonicalWorld,D1,D2,IDS} from './custody_review_fx.mjs';
 const source=fs.readFileSync(path.join(ROOT,'src/modules/admin/logic.js'),'utf8'),klass=parse(source,{ecmaVersion:'latest'}).body.find(node=>node.type==='ClassDeclaration'&&node.id.name==='Component');
+const COUNT=(()=>{const c={KIVO:{},window:{},Intl};vm.createContext(c);vm.runInContext(fs.readFileSync(path.join(ROOT,'src/services/440-count.js'),'utf8'),c);return c.KIVO.BassamCount;})();
 const copy=value=>JSON.parse(JSON.stringify(value)),key='bsdept:'+D1+':bassam_employees_v1',target={id:D1,name:'TEST_ONLY stale cached name'};
 const inventory=(rev=4)=>({ok:1,kind:'delete',dept:D1,department:{id:D1,name:'TEST_ONLY authoritative name'},base:{epoch:1,kv:{[key]:rev,bassam_depts_v1:rev,bassam_auth_users_v1:rev,bassam_perms_v1:rev},custody:rev,notifications:{rev,configRev:1,broadcastRev:1},irshad:{reports:rev,languages:1,locations:1,retro:1},seized:{reports:rev,catalog:1,actions:1,locations:1,jew:1,retro:1},awards:{records:rev,docsV1:1,docsV2:1}},counts:{keys:1,accounts:3,custody:2,notifications:1,irshad:4,seized:5,awards:6}});
 const response=(body,status=200)=>({ok:status>=200&&status<300,status,json:async()=>copy(body)});
@@ -16,6 +17,8 @@ function world(fetch){let uid=IDS.super,accept=true,reason='';const calls=[],con
   const KIVO={BassamAuth:{user:()=>({id:uid,role:'super'}),isSuper:()=>true,removeDeptAccount(){writes.push('account');throw Error('No client account deletion');}},BassamDepts:{active:()=>D1,save(){writes.push('definition');throw Error('No client department write');}},__BS_SRV:{resync:value=>syncs.push(value),askReason:(key,keys,done)=>{prompts.push({key,keys});done(reason);}},bsConfirm:async input=>{confirmations.push(input);return accept;}};
   const C={KIVO,__BS_BOOT:{srv:1,cf:1,uid},crypto:crypto.webcrypto,AbortController,URLSearchParams,Uint8Array,Date,setTimeout,clearTimeout,location:{reload:()=>reloads.push(1)},localStorage:{getItem(){throw Error('No local inventory');},setItem(){writes.push('storage');throw Error('No local writes');},removeItem(){writes.push('delete');throw Error('No local deletes');}},fetch:async(url,options)=>{calls.push({url,options});return fetch(url,options);}};C.window=C;vm.createContext(C);
   const page={state:{sysSel:D1,admArm:null},setState(value){this.state={...this.state,...value};},bsAck:(...args)=>acks.push(args),bsToast:(...args)=>toasts.push(args)};
+  /* the shell always loads the shared Arabic counter (src/services/440-count.js); the page's messages use it */
+  C.KIVO.BassamCount=COUNT;
   for(const name of ['_wpActor','_wpCall','_businessBaseValid','deptDel','_deptDelGo']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,C);}
   return {page,calls,confirmations,prompts,acks,toasts,writes,syncs,reloads,setReason(value){reason=value;},setConfirm(value){accept=value;},switchActor(){uid='TEST_ONLY_other_super';C.__BS_BOOT.uid=uid;}};
 }
@@ -56,7 +59,7 @@ test('403 unit-unknown-data shows the data-integrity refusal; 403 denied keeps t
   const A=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,err:'unit-unknown-data',denied:unknown,conflicts:{}},403));await A.page.deptDel(target);
   assert.equal(A.calls.filter(call=>call.options.method==='POST').length,1);assert.equal(A.acks.length,0,'no success');assert.equal(A.prompts.length,0,'not treated as a reason request');assert.equal(A.page.state.sysSel,D1);assert.deepEqual(A.syncs,[]);assert.deepEqual(A.writes,[]);
   const message=A.toasts.at(-1)[0];assert.equal(A.toasts.at(-1)[1],'warn');
-  assert.match(message,/تحتوي الإدارة على 3 مُدخل بيانات لا تتعرّف عليه المنصة/,'names how many entries the platform does not recognise');
+  assert.match(message,/تحتوي الإدارة على 3 مُدخلات من البيانات لا تتعرّف عليها المنصة/,'names how many entries the platform does not recognise');
   assert.match(message,/لم تُحذف الإدارة حمايةً لسلامة البيانات/);assert.match(message,/لم يُحذف أي شيء/);assert.match(message,/تواصل مع مدير المنصة لمراجعة/);
   assert.doesNotMatch(message,/صلاحيت/,'no permission wording');assert.doesNotMatch(message,/نجاح|اعتمد الخادم حذف/);
   assert.equal(A.page._deptDeleteDraft.uncertain,false,'a definitive refusal is not an uncertain receipt');
