@@ -358,7 +358,8 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   if (opt.__serverDepartmentWipes) {
     var wipeOperations = rsDepartmentOperationalDeletes(env, reference, A, body, opt.__serverDepartmentWipes);
     kv.serverDepartmentWipes = opt.__serverDepartmentWipes;
-    kv.pend.push.apply(kv.pend, wipeOperations.pending);
+    /* A refused KV plan carries no pend list: the department delete must still reach the atomic refusal below (never a 500, never a partial save) */
+    kv.pend = (kv.pend || []).concat(wipeOperations.pending);
     operationReadGuards.push.apply(operationReadGuards, wipeOperations.guards);
     operationKeys = operationKeys.concat(wipeOperations.keys);
     operationalSave = true;
@@ -710,7 +711,9 @@ async function rsWipeRoute(env, request, url, ss) {
       return json(
         {
           ok: 0,
-          err: Object.keys(outcome.conflicts || {}).length ? 'conflict' : 'denied',
+          /* Owner decision (b) 2026-11-03: a unit holding keys the platform does not classify (RES_REG: 044/060 'unknown') is a data-integrity
+             problem — the whole delete/wipe is refused and named as such; unknown keys are never deleted silently */
+          err: Object.keys(outcome.conflicts || {}).length ? 'conflict' : Object.keys(outcome.denied || {}).some(function (k) { return parseKey(k).dept === input.dept && outcome.denied[k] && outcome.denied[k].why === 'unknown'; }) ? 'unit-unknown-data' : 'denied',
           denied: outcome.denied,
           conflicts: outcome.conflicts,
         },

@@ -466,6 +466,16 @@ test('closed department payload allows a large server-derived key revision inven
     response = await B.api('super', '/api/admin/dept-delete', body);
   assert.notEqual(response.status, 413);
   assert.equal(response.status, 403, 'Unknown resource permission remains enforced after the larger transport limit');
+  /* Owner decision (b), 2026-11-03: keys a unit holds that are not classified as known unit data are never deleted
+     silently. The whole department delete is refused as a data-integrity problem, every unknown key is named, and the
+     department, its keys and its accounts all stay exactly as they were (no widening of the delete list). */
+  assert.equal(response.json.ok, 0);
+  assert.equal(response.json.err, 'unit-unknown-data');
+  const unknownDenied = Object.keys(response.json.denied || {}).filter((k) => k.startsWith('bsdept:' + D1 + ':TEST_ONLY_'));
+  assert.equal(unknownDenied.length, 800, 'Every unknown key is named in the refusal');
+  assert.ok(unknownDenied.every((k) => response.json.denied[k].why === 'unknown'));
+  assert.equal(B.DB.q("SELECT COUNT(*) n FROM kv WHERE k LIKE ?1", 'bsdept:' + D1 + ':TEST_ONLY_%')[0].n, 800, 'No unknown key is deleted');
+  assert.ok(JSON.parse(B.DB.q('SELECT v FROM kv WHERE k=?1 ORDER BY seq', 'bassam_depts_v1').map((r) => r.v).join('')).some((d) => d.id === D1), 'The department is not removed');
   const deniedState = snap(B.DB);
   assert.ok(deniedState.sec.length > before.sec.length);
   assert.ok(deniedState.authz.length > before.authz.length);
@@ -483,4 +493,23 @@ test('closed department payload allows a large server-derived key revision inven
   );
   assert.equal(r.status, 413);
   assert.deepEqual(snap(B.DB), deniedState);
+});
+
+test('closed department delete with a large server-derived inventory of known unit data still commits atomically', async () => {
+  /* Control for owner decision (b): the refusal above is about unknown keys only. A department whose (large) key
+     inventory is entirely classified unit data (here 800 per-account notification-device marks, RES_REG
+     bassam_notif_dev_v1) is deleted in one atomic batch above the 64KiB transport limit, keys and accounts together. */
+  const B = await world();
+  const rows = [];
+  for (let n = 0; n < 800; n++) rows.push(B.DB.prepare("INSERT INTO kv(k,seq,v) VALUES(?1,0,'1')").bind('bsdept:' + D1 + ':bassam_notif_dev_v1:TEST_ONLY_' + n + '_' + 'x'.repeat(70)));
+  await B.DB.batch(rows);
+  const inventory = ok(await B.api('super', '/api/admin/dept-delete?dept=' + D1)),
+    body = { uid: IDS.super, dept: D1, requestId: 'TEST_ONLY_dept_known_volume_' + ++rid, base: inventory.base, reason: 'TEST_ONLY reason' };
+  assert.ok(Buffer.byteLength(JSON.stringify(body)) > 65536);
+  assert.ok(Object.keys(inventory.base.kv).filter((k) => k.includes(':bassam_notif_dev_v1:TEST_ONLY_')).length === 800, 'The inventory names every known key');
+  const ack = ok(await B.api('super', '/api/admin/dept-delete', body));
+  assert.equal(ack.mode, 'dept-delete');
+  assert.equal(B.DB.q('SELECT COUNT(*) n FROM kv WHERE k LIKE ?1', 'bsdept:' + D1 + ':%')[0].n, 0, 'All known unit data is removed');
+  assert.equal(JSON.parse(B.DB.q('SELECT v FROM kv WHERE k=?1 ORDER BY seq', 'bassam_depts_v1').map((r) => r.v).join('')).some((d) => d.id === D1), false);
+  assert.ok(JSON.parse(B.DB.q('SELECT v FROM kv WHERE k=?1 ORDER BY seq', 'bassam_depts_v1').map((r) => r.v).join('')).some((d) => d.id === D2));
 });

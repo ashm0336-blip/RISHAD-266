@@ -10958,7 +10958,8 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   if (opt.__serverDepartmentWipes) {
     var wipeOperations = rsDepartmentOperationalDeletes(env, reference, A, body, opt.__serverDepartmentWipes);
     kv.serverDepartmentWipes = opt.__serverDepartmentWipes;
-    kv.pend.push.apply(kv.pend, wipeOperations.pending);
+    /* A refused KV plan carries no pend list: the department delete must still reach the atomic refusal below (never a 500, never a partial save) */
+    kv.pend = (kv.pend || []).concat(wipeOperations.pending);
     operationReadGuards.push.apply(operationReadGuards, wipeOperations.guards);
     operationKeys = operationKeys.concat(wipeOperations.keys);
     operationalSave = true;
@@ -11310,7 +11311,9 @@ async function rsWipeRoute(env, request, url, ss) {
       return json(
         {
           ok: 0,
-          err: Object.keys(outcome.conflicts || {}).length ? 'conflict' : 'denied',
+          /* Owner decision (b) 2026-11-03: a unit holding keys the platform does not classify (RES_REG: 044/060 'unknown') is a data-integrity
+             problem — the whole delete/wipe is refused and named as such; unknown keys are never deleted silently */
+          err: Object.keys(outcome.conflicts || {}).length ? 'conflict' : Object.keys(outcome.denied || {}).some(function (k) { return parseKey(k).dept === input.dept && outcome.denied[k] && outcome.denied[k].why === 'unknown'; }) ? 'unit-unknown-data' : 'denied',
           denied: outcome.denied,
           conflicts: outcome.conflicts,
         },
@@ -24908,7 +24911,9 @@ function canWriteEnf(A, k, newVal, curVal, ctx) {
   /* RISHAD-266: سقفُ النطاق القديم أُلغي — قبل كل استثناء (059 scopeRetiredWhy) */
   if (P.dept && rn === ENF_SCOPE_RES) return scopeRetiredWhy(A, newVal, ctx) ? enfNo('scope-retired', { detail: SCOPE_RETIRED_DETAIL }) : enfOk(enfUnitDelKeys());
   /* F01 (مرآةُ 044): حذفُ مفاتيح وحدةٍ لم تعد وحدة لمدير النظام · ولا كتابةَ في معرّفٍ ليس وحدةَ بيانات إلا وحدةً في الحفظة نفسِها أو استعادة */
-  if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return enfOk(enfUnitDelKeys());
+  /* قرار المالك (ب) 2026-11-03: لا يُحذف مفتاحٌ مجهولٌ بصمت — الإذنُ لبيانات الوحدة المعروفة وحدها (سجلّ الموارد RES_REG كما في 044 · سجلُّ المنح ENF_GRANTS_RES · الموارد التشغيلية opIsResource)،
+     وما سواه يُرفض مشكلةَ سلامة بيانات (unknown) فيُرفض حذفُ الوحدة كلُّه ذرّياً */
+  if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return (resOf(k) || rn === ENF_GRANTS_RES || opIsResource(k)) ? enfOk(enfUnitDelKeys()) : enfNo('unknown', { detail: 'unit-unknown-data' });
   if (P.dept && newVal != null && u.role === 'super' && !isUnitId(A, P.dept)) {
     if (!(X.restore && !isNodeId(A, P.dept))) return enfNo('unit', { detail: P.dept });
     (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1; enfMemoDrop(A, String(P.dept));

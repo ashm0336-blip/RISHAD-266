@@ -6,7 +6,9 @@ function canWriteEnf(A, k, newVal, curVal, ctx) {
   /* RISHAD-266: سقفُ النطاق القديم أُلغي — قبل كل استثناء (059 scopeRetiredWhy) */
   if (P.dept && rn === ENF_SCOPE_RES) return scopeRetiredWhy(A, newVal, ctx) ? enfNo('scope-retired', { detail: SCOPE_RETIRED_DETAIL }) : enfOk(enfUnitDelKeys());
   /* F01 (مرآةُ 044): حذفُ مفاتيح وحدةٍ لم تعد وحدة لمدير النظام · ولا كتابةَ في معرّفٍ ليس وحدةَ بيانات إلا وحدةً في الحفظة نفسِها أو استعادة */
-  if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return enfOk(enfUnitDelKeys());
+  /* قرار المالك (ب) 2026-11-03: لا يُحذف مفتاحٌ مجهولٌ بصمت — الإذنُ لبيانات الوحدة المعروفة وحدها (سجلّ الموارد RES_REG كما في 044 · سجلُّ المنح ENF_GRANTS_RES · الموارد التشغيلية opIsResource)،
+     وما سواه يُرفض مشكلةَ سلامة بيانات (unknown) فيُرفض حذفُ الوحدة كلُّه ذرّياً */
+  if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return (resOf(k) || rn === ENF_GRANTS_RES || opIsResource(k)) ? enfOk(enfUnitDelKeys()) : enfNo('unknown', { detail: 'unit-unknown-data' });
   if (P.dept && newVal != null && u.role === 'super' && !isUnitId(A, P.dept)) {
     if (!(X.restore && !isNodeId(A, P.dept))) return enfNo('unit', { detail: P.dept });
     (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1; enfMemoDrop(A, String(P.dept));

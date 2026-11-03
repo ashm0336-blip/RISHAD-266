@@ -6,7 +6,6 @@ import {inspectOperationalFixture} from './operational_legacy_seed_fx.mjs';
 import {operationSaveBody} from './tasks_fx.mjs';
 
 const OPTIONS='bsdept:'+D1+':bassam_options_v1';
-const value=(A,key)=>A.DB.q('SELECT v FROM kv WHERE k=?1 ORDER BY seq',key).map(row=>row.v).join('');
 const ledger=A=>copy(Object.fromEntries(['custody_items','custody_issues','custody_movements','custody_requests'].map(table=>[table,A.DB.q('SELECT * FROM '+table)])));
 async function fixture(held){
   const A=await world();
@@ -19,9 +18,6 @@ const typed=(A,key)=>inspectOperationalFixture(A.env,key);
 const revisionOf=(A,key)=>A.DB.q('SELECT rev FROM revs WHERE k=?1',key)[0]?.rev||0;
 async function operationSave(A,employeeValue){
   return A.api('super','/api/save',{method:'POST',body:operationSaveBody(A.env,'/api/save',{set:{[EMP]:employeeValue,[OPTIONS]:JSON.stringify({type:['TEST_ONLY mixed compile']})},del:[],base:{[EMP]:revisionOf(A,EMP),[OPTIONS]:revisionOf(A,OPTIONS)}})});
-}
-async function save(A,employeeValue){
-  return A.api('super','/api/save',{method:'POST',body:{set:{[EMP]:employeeValue,[OPTIONS]:JSON.stringify({type:['TEST_ONLY mixed compile']})},del:[],base:{[EMP]:1,[OPTIONS]:0}}});
 }
 
 test('malformed employee JSON or legacy null with referenced custody rejects the complete mixed batch',async()=>{
@@ -57,14 +53,34 @@ test('a well-formed roster dropping the custody holder in a mixed operations bat
   assert.deepEqual(typed(A,EMP),remaining);assert.deepEqual(typed(A,OPTIONS),{type:['TEST_ONLY mixed compile']});
 });
 
-test('malformed employee JSON without referenced custody retains ordinary partial-save behavior',async()=>{
-  const A=await fixture(false),employees=value(A,EMP),before=ledger(A),result=await save(A,'TEST_ONLY invalid JSON');
-  assert.equal(result.status,200);assert.ok(result.json.denied[EMP]);assert.equal(result.json.revs[EMP],undefined);assert.ok(result.json.revs[OPTIONS]>0);assert.equal(result.json.atomic,'');
-  assert.equal(value(A,EMP),employees);assert.deepEqual(ledger(A),before);assert.deepEqual(JSON.parse(value(A,OPTIONS)),{type:['TEST_ONLY mixed compile']});
+/* Owner decision (a), 2026-11-03: operational resources use full atomic save; the old partial save
+   (refuse the roster, still commit the options in the same batch) is retired. These two cases now assert the
+   current contract at least as strictly: the whole batch is refused, nothing is written. */
+async function assertWholeBatchRefused(A,employeeValue,label){
+  const before={employees:typed(A,EMP),options:typed(A,OPTIONS),ledger:ledger(A),revisions:copy(A.DB.q('SELECT * FROM revs ORDER BY k'))};
+  assert.ok(Array.isArray(before.employees)&&before.employees.length>0,'Precondition: a typed roster exists');
+  const result=await operationSave(A,employeeValue);
+  assert.equal(result.status,403,label+' '+JSON.stringify(result.json));assert.equal(result.json.ok,0);assert.equal(result.json.atomic,1,'Refused as one atomic batch');
+  assert.deepEqual(result.json.revs,{},'No resource in the batch (roster or options) receives a revision');
+  assert.ok(result.json.denied[EMP],label+': the roster is the denied resource');assert.equal(result.json.denied[EMP].why,'shape');
+  assert.equal(result.json.denied[OPTIONS],undefined,'The valid options value is not itself denied; it is held back by atomicity');
+  assert.equal(A.DB.q('SELECT COUNT(*) n FROM kv WHERE k IN (?1,?2)',EMP,OPTIONS)[0].n,0,'No retired KV copy is written');
+  assert.deepEqual(typed(A,EMP),before.employees);assert.deepEqual(typed(A,OPTIONS),before.options,'Options are not partially committed');
+  assert.deepEqual(ledger(A),before.ledger);assert.deepEqual(copy(A.DB.q('SELECT * FROM revs ORDER BY k')),before.revisions);
+  return result;
+}
+
+test('malformed employee JSON without referenced custody refuses the complete batch atomically (partial save retired)',async()=>{
+  const A=await fixture(false);
+  assert.equal(ledger(A).custody_issues.length,0,'Precondition: no custody is referenced');
+  await assertWholeBatchRefused(A,'TEST_ONLY invalid JSON','invalid JSON');
 });
 
-test('valid nonarray employee JSON is not reclassified as a custody deletion',async()=>{
-  const A=await fixture(true),employees=value(A,EMP),before=ledger(A),result=await save(A,JSON.stringify({TEST_ONLY:'valid nonarray'}));
-  assert.equal(result.status,200);assert.ok(result.json.denied[EMP]);assert.equal(result.json.revs[EMP],undefined);assert.ok(result.json.revs[OPTIONS]>0);assert.equal(result.json.atomic,'');
-  assert.equal(value(A,EMP),employees);assert.deepEqual(ledger(A),before);assert.deepEqual(JSON.parse(value(A,OPTIONS)),{type:['TEST_ONLY mixed compile']});
+test('valid nonarray employee JSON is not reclassified as a custody deletion and refuses the complete batch atomically',async()=>{
+  const A=await fixture(true);
+  assert.ok(ledger(A).custody_issues.length>0,'Precondition: custody is issued to the roster');
+  const result=await assertWholeBatchRefused(A,JSON.stringify({TEST_ONLY:'valid nonarray'}),'valid nonarray');
+  /* The refusal is a shape refusal of the roster, never a custody-transition refusal. */
+  assert.doesNotMatch(String(result.json.err||''),/custody/);assert.doesNotMatch(JSON.stringify(result.json.denied),/custody/);
+  assert.equal(result.json.counts,undefined,'No custody transition is counted');
 });

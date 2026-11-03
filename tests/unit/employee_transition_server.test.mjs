@@ -246,16 +246,37 @@ test('closed input rejects credential injection, invalid survivor edits and stal
   assert.deepEqual(t.DB.q('SELECT * FROM kv'), before);
 });
 
-test('unchanged tolerated legacy employee metadata survives while a new account-role field remains rejected', async () => {
+/* Owner decision (c), 2026-11-03: the legacy 'role' field on the typed employee record is retired. The former
+   "tolerated legacy metadata survives" expectation is superseded: the roster is a closed typed record, so a row
+   carrying 'role' is refused fail-closed (operations-unknown-field-role) at the typed writer and at the real
+   /api/save route, with nothing written. A transition that tries to add an account-role field stays rejected. */
+test('legacy employee role field is refused fail-closed by the closed typed record while a new account-role field remains rejected', async () => {
   const t = await world(),
-    employees = copy(t.keys[key('bassam_employees_v1')]);
-  employees[0].role = 'TEST_ONLY legacy business metadata';
-  await t.put(key('bassam_employees_v1'), employees);
+    K = key('bassam_employees_v1'),
+    roster = copy(inspectOperationalFixture(t.env, K)),
+    snap = () => JSON.stringify(['kv', 'revs', 'meta', 'aud'].map((n) => t.DB.q('SELECT * FROM ' + n)));
+  assert.ok(Array.isArray(roster) && roster.length > 1, 'Precondition: a typed roster exists');
+  assert.equal(roster.some((e) => Object.hasOwn(e, 'role')), false, 'Precondition: the typed roster carries no role field');
+  const before = snap(),
+    legacy = roster.map((e, i) => (i ? e : { ...e, role: 'TEST_ONLY legacy business metadata' }));
+  await assert.rejects(t.put(K, legacy), (e) => e.message === 'operations-unknown-field-role');
+  assert.equal(snap(), before);
+  assert.deepEqual(inspectOperationalFixture(t.env, K), roster);
+  const read = await t.api('super', '/api/operations/read?uid=' + IDS.super + '&keys=' + encodeURIComponent(K));
+  assert.equal(read.status, 200, JSON.stringify(read.json));
+  const saved = await t.api('super', '/api/save', { method: 'POST', body: { uid: IDS.super, requestId: 'TEST_ONLY_legacy_role_save', epoch: read.json.epoch, base: { [K]: read.json.base[K] }, del: [], set: { [K]: JSON.stringify(legacy) } } });
+  assert.notEqual(saved.status, 200, JSON.stringify(saved.json));
+  assert.equal(saved.json?.ok, 0);
+  assert.equal(saved.json?.revs?.[K], undefined);
+  assert.match(JSON.stringify(saved.json), /operations-unknown-field-role/);
+  assert.equal(snap(), before);
+  assert.deepEqual(inspectOperationalFixture(t.env, K), roster);
   const c = await t.context();
-  const kept = await t.prepare(c, { finalRows: c.employees.slice(0, -1) });
-  assert.equal(JSON.parse(kept.body.set[key('bassam_employees_v1')])[0].role, employees[0].role);
+  assert.equal(c.employees.some((e) => Object.hasOwn(e, 'role')), false, 'The context never surfaces a role field');
   await assert.rejects(t.prepare(c, { finalRows: c.employees.map((e, i) => (i ? e : { ...e, role: 'super' })) }), /account-fields/);
+  assert.equal(snap(), before);
 });
+
 test('legacy import schedule mapping and template policy use the server scope and reject foreign employee keys', async () => {
   const t = await world(),
     p = copy(t.keys.bassam_perms_v1);
