@@ -310,12 +310,12 @@ function dbGuardCacheNeutral(sql, args) {
   var q = String(sql).replace(/\s+/g, ' ').trim(),
     a = args || [];
   if (/^UPDATE sess SET la = \?2 WHERE tok = \?1$/i.test(q)) return true;
-  if (/^DELETE FROM meta WHERE k = \?1$/i.test(q)) return typeof a[0] === 'string' && /^tkg:(?:rec|due):[^:]+$/.test(a[0]);
+  if (/^DELETE FROM meta WHERE k = \?1$/i.test(q)) return typeof a[0] === 'string' && /^tkg:(?:rec|due|ird|szd):[^:]+$/.test(a[0]);
   if (/^INSERT INTO meta \(k, v\) VALUES \(\?\d+, \?1\)(?:, \(\?\d+, \?1\))* ON CONFLICT\(k\) DO UPDATE SET v = excluded.v$/i.test(q))
     return (
       a.length > 1 &&
       a.slice(1).every(function (k) {
-        return typeof k === 'string' && /^tkg:(?:rec|due):[^:]+$/.test(k);
+        return typeof k === 'string' && /^tkg:(?:rec|due|ird|szd):[^:]+$/.test(k);
       })
     );
   return false;

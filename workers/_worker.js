@@ -6557,10 +6557,11 @@ async function nfRoute(env, request, url, ss) {
   var A = await actorOf(env, ss.uid);
   if (!A || A.u.dis) return json({ ok: 0, err: "session" }, 401);
   try {
-    await nfGuardRetired(env);
-    if (url.pathname === "/api/notifications" && request.method === "GET") {
-      var dailyIr = await nfIrshadDaily(env, A, url); if (dailyIr.emitted) preOff(env);
-      var seizedDue=await nfSeizedDue(env,A,url);if(seizedDue.emitted)preOff(env);
+    var feedGet = url.pathname === "/api/notifications" && request.method === "GET",
+      due = feedGet ? nfDueOpen(env, A, url) : null,
+      dueSeen = await nfGuardRetired(env, due ? due.keys : null);
+    if (feedGet) {
+      await nfDueRun(env, A, url, due, dueSeen);
       return json(await nfFeed(env, A, url));
     }
     if (url.pathname === "/api/notifications/export" && request.method === "GET") return json(await nfExport(env, A, url));
@@ -6585,11 +6586,87 @@ async function nfRoute(env, request, url, ss) {
     return json({ ok: 0, err: e.nf, rev: e.status === 409 ? await nfRevision(env) : undefined }, e.status || 400);
   }
 }
-async function nfGuardRetired(env) {
-  var row = await env.DB.prepare(
-    "SELECT k FROM kv WHERE k IN ('bassam_notif_sys_v1','bassam_bc_v1','bassam_notif_cfg_v1','bassam_notif_v1') OR k GLOB 'bsdept:*:bassam_notif_v1' LIMIT 1",
-  ).first();
+/* gateKeys (optional): the shared due-reminder gate stamps are read in the same D1 trip as the retired-source check (decision h). */
+async function nfGuardRetired(env, gateKeys) {
+  var sql = "SELECT k FROM kv WHERE k IN ('bassam_notif_sys_v1','bassam_bc_v1','bassam_notif_cfg_v1','bassam_notif_v1') OR k GLOB 'bsdept:*:bassam_notif_v1' LIMIT 1",
+    seen = nmap(),
+    row;
+  if (gateKeys && gateKeys.length) {
+    var r = await env.DB.batch([
+      env.DB.prepare(sql),
+      env.DB.prepare("SELECT k,v FROM meta WHERE k IN (SELECT value FROM json_each(?1))").bind(JSON.stringify(gateKeys)),
+    ]);
+    row = ((r[0] && r[0].results) || [])[0];
+    ((r[1] && r[1].results) || []).forEach(function (x) {
+      seen[x.k] = String(x.v);
+    });
+  } else row = await env.DB.prepare(sql).first();
   if (row) throw nfErr("notification-legacy-source-present", 503);
+  return seen;
+}
+/* ═══ RISHAD-266 · owner decision (h) 2026-11-03: the Super/manager notification summary no longer runs the costly due jobs
+   (nfIrshadDaily · nfSeizedDue) on every GET /api/notifications. Measured on fa74283: 11–15 D1 trips per read from 06:00 to
+   21:00 UTC (the 7-trip budget only held at night) because every open/reload reloaded the scoped resources and re-queried dedup.
+   Now one shared gate per job and department, the existing isolate-shared task-gate pattern (074 tkg:<kind>:<dept> rows in meta,
+   isolate memory first): ird = Irshad daily, szd = Seized due.
+   · cost: isolate memory first (0 trips); otherwise the stamps are read in the same trip as the retired-source check (0 extra
+     trips); the job runs only when no stamp holds, then one stamp write. A repeated read never re-runs the job inside its hold.
+   · never lost: a stamp holds at most NF_DUE_GAP while a job has nothing (yet) to emit, and never across a due edge
+     (Riyadh 00:00 · 08:00 · 09:00 · 23:30 — the windows of the two jobs), nor across a restore epoch; so a reminder that becomes
+     due is emitted on the first eligible read after its due time, or within NF_DUE_GAP when its source data arrives later.
+     A job that is settled (every once key of the current window already in notification_dedup) holds until the next edge.
+   · stamped after the job, not before: an actor who cannot run the job (no scope/role → no `checked`) or a job that throws
+     leaves no stamp, so it cannot suppress another manager's reminder; concurrent runs stay deduplicated by the unchanged
+     once keys and SEEN guards in the jobs (never duplicated).
+   · stamp value "<from>:<until>:<restore epoch>"; written through __rawDB with the task-gate statement shape (cache neutral, 052). */
+var NF_DUE_GAP = 5 * 6e4, NF_DUE_MEM = nmap(), NF_DUE_EDGES = [0, 480, 540, 1410];
+function nfDueSpan(now) {
+  var start = Math.floor((now + 3 * 3600000) / 86400000) * 86400000 - 3 * 3600000,
+    m = (now - start) / 6e4,
+    last = 0,
+    next = 1440;
+  NF_DUE_EDGES.forEach(function (b) {
+    if (b <= m) last = b;
+    else if (b < next) next = b;
+  });
+  return { last: start + last * 6e4, next: start + next * 6e4 };
+}
+/* the jobs' own time/role windows (019j · 019n) — nothing outside them is gated, read or run */
+function nfDueKinds(now, A, d) {
+  if (!d || !irDailyManager(A)) return [];
+  var m = pfRiyadhMins(now), out = [];
+  if (m >= 1410) out.push("ird");
+  if (m >= 540 || (m >= 480 && new Date(now + 3 * 3600000).getUTCDay() === 6)) out.push("szd");
+  return out;
+}
+function nfDueHeld(v, now, epoch) {
+  var p = /^(\d+):(\d+):([^:]*)$/.exec(v == null ? "" : String(v));
+  if (!p) return false;
+  var from = +p[1], until = +p[2];
+  return p[3] === epoch && from <= now + TK_GATE_SKEW && from >= nfDueSpan(now).last && now < until;
+}
+function nfDueOpen(env, A, url) {
+  var now = Date.now(), d = url.searchParams.get("dept") || "", epoch = String(env.__restoreEpoch || 0),
+    kinds = nfDueKinds(now, A, d).filter(function (k) {
+      return !nfDueHeld(NF_DUE_MEM["tkg:" + k + ":" + d], now, epoch);
+    });
+  return kinds.length ? { d: d, now: now, epoch: epoch, kinds: kinds, keys: kinds.map(function (k) { return "tkg:" + k + ":" + d; }) } : null;
+}
+async function nfDueRun(env, A, url, due, seen) {
+  if (!due) return;
+  for (var i = 0; i < due.kinds.length; i++) {
+    var key = due.keys[i];
+    if (nfDueHeld(seen[key], due.now, due.epoch)) { NF_DUE_MEM[key] = seen[key]; continue; }   /* ran in another isolate within its hold */
+    var r = due.kinds[i] === "ird" ? await nfIrshadDaily(env, A, url) : await nfSeizedDue(env, A, url);
+    if (r.emitted) preOff(env);
+    if (!r.checked) continue;
+    var t = Date.now(), span = nfDueSpan(t),
+      v = t + ":" + (r.settled ? span.next : Math.min(t + NF_DUE_GAP, span.next)) + ":" + due.epoch;
+    NF_DUE_MEM[key] = v;
+    try {
+      await (env.__rawDB || env.DB).prepare("INSERT INTO meta (k, v) VALUES (?2, ?1) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(v, key).run();
+    } catch (e) { swallow("nf-due-stamp", e, env.__rid); }   /* no shared stamp ⇒ other isolates simply run the job (the old behaviour) */
+  }
 }
 
 async function nfFeed(env, A, url) {
@@ -13365,7 +13442,7 @@ async function nfIrshadDaily(env, actor, url) {
   if (!irDailyManager(ctx.A)) return { emitted: 0 };
   var day = pfHijriAt(now), once = 'ir_day:' + day.dk, scope = nfScope(d),
     existing = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
-  if (existing) return { emitted: 0 };
+  if (existing) return { emitted: 0, checked: 1, settled: 1 };   /* checked/settled: the shared due gate (019 nfDueRun · decision h) */
   var aggregate = irDailyPlan(ctx, day), guards = ctx.guards.concat([rsEpochGuard(ctx.env.DB, ctx.base.epoch), irRetiredGuard(ctx.env)]), result;
   try {
     result = await ctx.env.DB.batch(guards.concat([
@@ -13378,12 +13455,12 @@ async function nfIrshadDaily(env, actor, url) {
   }
   var summary = (result[guards.length].results || [])[0];
   if (!summary || !Number.isSafeInteger(summary.n) || summary.n < 0) throw nfErr('irshad-daily-summary', 503);
-  if (!summary.n) return { emitted: 0 };
+  if (!summary.n) return { emitted: 0, checked: 1 };
   // The original observer reduced items[].n. Current supported IR reports have
   // no items field, so beneficiaries stays0; langs/count is not substituted.
   var plan = await nfPlanEvents(ctx.env, ctx.A, [{ type: 'ir_day', dept: d,
       vars: { 'المحاضر': summary.n, 'المستفيدون': 0, 'الموقع': String(summary.location).slice(0, 4000) }, once: once, at: now }], true);
-  if (!plan.plans.length) return { emitted: 0 };
+  if (!plan.plans.length) return { emitted: 0, checked: 1 };
   var seenGuard = ctx.env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2) THEN json_extract('{}','KIVO_IRSHAD_DAILY_SEEN') END").bind(scope, once),
     sourceArgs = aggregate.args.slice(), sourcePlan = { args: sourceArgs },
     nSlot = irQueryParam(sourcePlan, summary.n), locationSlot = irQueryParam(sourcePlan, summary.location),
@@ -13397,7 +13474,7 @@ async function nfIrshadDaily(env, actor, url) {
   catch (e) {
     if (/KIVO_IRSHAD_DAILY_SEEN/.test(String(e))) {
       var duplicate = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
-      if (duplicate) return { emitted: 0 };
+      if (duplicate) return { emitted: 0, checked: 1, settled: 1 };
     }
     if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) throw nfErr('irshad-legacy-source-present', 503);
     if (/KIVO_NOTIFICATION_LEGACY_SOURCE/.test(String(e))) throw nfErr('notification-legacy-source-present', 503);
@@ -13406,7 +13483,7 @@ async function nfIrshadDaily(env, actor, url) {
     throw e;
   }
   preOff(ctx.env);
-  return { emitted: plan.plans.length };
+  return { emitted: plan.plans.length, checked: 1, settled: 1 };
 }
 /* Shared capture of current authority, scope and revision witnesses.
    Domain definitions are server constants; no business document or device storage. */
@@ -17375,21 +17452,21 @@ async function nfSeizedDueRun(env,actor,url) {
   if(!irDailyManager(ctx.A))return {emitted:0};
   var scope=nfScope(d),once=JSON.stringify(candidates.map(function(e){return e.once;})),seen=(await ctx.env.DB.prepare('SELECT once_key FROM notification_dedup WHERE scope=?1 AND once_key IN(SELECT value FROM json_each(?2))').bind(scope,once).all()).results||[];
   candidates=candidates.filter(function(e){return !seen.some(function(s){return s.once_key===e.once;});});
-  if(!candidates.length)return {emitted:0};
+  if(!candidates.length)return {emitted:0,checked:1,settled:1};   /* checked/settled: the shared due gate (019 nfDueRun · decision h) */
   var q=szQueryScope(ctx,'r'),args=q.args.slice(),slot='?'+(args.push(now)),age='CAST(('+slot+'-COALESCE(r.created_at,0))/86400000 AS INTEGER)',
     sql='SELECT COALESCE(SUM(CASE WHEN '+age+'>=30 THEN CAST(COALESCE(i.quantity,0)AS INTEGER) ELSE 0 END),0) oldCount,COALESCE(SUM(CAST(COALESCE(i.quantity,0)AS INTEGER)),0) total,MAX(0,COALESCE(MAX('+age+'),0)) days,COALESCE(SUM(CAST(COALESCE(i.value,0)AS INTEGER)),0) money FROM seized_items i JOIN seized_reports r ON r.department_id=i.department_id AND r.report_id=i.report_id WHERE '+q.sql+" AND i.action_key='sto'",
     guards=ctx.guards.concat([rsEpochGuard(ctx.env.DB,ctx.base.epoch),szRetiredGuard(ctx.env)]),result=await ctx.env.DB.batch(guards.concat([rsBound(ctx.env.DB.prepare(sql),args)])),summary=result[result.length-1].results[0];
   var events=candidates.filter(function(e){return e.type==='bx_old'?summary.oldCount>0:summary.total>0;}).map(function(e){return {type:e.type,dept:d,once:e.once,vars:e.type==='bx_old'?{'العدد':summary.oldCount,'الأيام':30}:{'العدد':summary.total,'الأيام':summary.days,'المبلغ':Number(summary.money).toLocaleString('en-US')}};});
-  if(!events.length)return {emitted:0};
-  var plan=await nfPlanEvents(ctx.env,ctx.A,events,true);if(!plan.plans.length)return {emitted:0};
+  if(!events.length)return {emitted:0,checked:1};
+  var plan=await nfPlanEvents(ctx.env,ctx.A,events,true);if(!plan.plans.length)return {emitted:0,checked:1};
   var values=Object.keys(summary),sourceArgs=args.slice(),comparison=values.map(function(k){sourceArgs.push(summary[k]);return 's.'+k+' IS NOT ?'+sourceArgs.length;}).join(' OR '),
     sourceGuard=rsBound(ctx.env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM ("+sql+")s WHERE "+comparison+")THEN json_extract('{}','KIVO_SEIZED_DUE_CHANGED')END"),sourceArgs),
     emittedOnce=JSON.stringify(events.map(function(e){return e.once;})),seenGuard=ctx.env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key IN(SELECT value FROM json_each(?2)))THEN json_extract('{}','KIVO_SEIZED_DUE_SEEN')END").bind(scope,emittedOnce),statements=guards.concat(plan.guards,[sourceGuard,seenGuard],bdBumpStatements(ctx.env,NF_REV,false),plan.statements,nfRetention(ctx.env,now,plan.scopes));
   try{await ctx.env.DB.batch(statements);}catch(error){
-    if(/KIVO_SEIZED_DUE_SEEN/.test(String(error))){var rows=(await ctx.env.DB.prepare('SELECT once_key FROM notification_dedup WHERE scope=?1 AND once_key IN(SELECT value FROM json_each(?2))').bind(scope,emittedOnce).all()).results||[];if(rows.length===events.length)return {emitted:0};}
+    if(/KIVO_SEIZED_DUE_SEEN/.test(String(error))){var rows=(await ctx.env.DB.prepare('SELECT once_key FROM notification_dedup WHERE scope=?1 AND once_key IN(SELECT value FROM json_each(?2))').bind(scope,emittedOnce).all()).results||[];if(rows.length===events.length)return {emitted:0,checked:1,settled:events.length===candidates.length?1:0};}
     if(/KIVO_RESTORE_TARGET|KIVO_RESTORE_EPOCH|KIVO_SEIZED_DUE_(?:SEEN|CHANGED)/.test(String(error)))throw nfErr('conflict',409);throw error;
   }
-  preOff(ctx.env);return {emitted:plan.plans.length};
+  preOff(ctx.env);return {emitted:plan.plans.length,checked:1,settled:candidates.every(function(e){return plan.plans.some(function(p){return p.once===e.once;});})?1:0};
 }
 
 async function nfSeizedDue(env,actor,url) {
@@ -22857,12 +22934,12 @@ function dbGuardCacheNeutral(sql, args) {
   var q = String(sql).replace(/\s+/g, ' ').trim(),
     a = args || [];
   if (/^UPDATE sess SET la = \?2 WHERE tok = \?1$/i.test(q)) return true;
-  if (/^DELETE FROM meta WHERE k = \?1$/i.test(q)) return typeof a[0] === 'string' && /^tkg:(?:rec|due):[^:]+$/.test(a[0]);
+  if (/^DELETE FROM meta WHERE k = \?1$/i.test(q)) return typeof a[0] === 'string' && /^tkg:(?:rec|due|ird|szd):[^:]+$/.test(a[0]);
   if (/^INSERT INTO meta \(k, v\) VALUES \(\?\d+, \?1\)(?:, \(\?\d+, \?1\))* ON CONFLICT\(k\) DO UPDATE SET v = excluded.v$/i.test(q))
     return (
       a.length > 1 &&
       a.slice(1).every(function (k) {
-        return typeof k === 'string' && /^tkg:(?:rec|due):[^:]+$/.test(k);
+        return typeof k === 'string' && /^tkg:(?:rec|due|ird|szd):[^:]+$/.test(k);
       })
     );
   return false;

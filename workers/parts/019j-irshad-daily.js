@@ -26,7 +26,7 @@ async function nfIrshadDaily(env, actor, url) {
   if (!irDailyManager(ctx.A)) return { emitted: 0 };
   var day = pfHijriAt(now), once = 'ir_day:' + day.dk, scope = nfScope(d),
     existing = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
-  if (existing) return { emitted: 0 };
+  if (existing) return { emitted: 0, checked: 1, settled: 1 };   /* checked/settled: the shared due gate (019 nfDueRun · decision h) */
   var aggregate = irDailyPlan(ctx, day), guards = ctx.guards.concat([rsEpochGuard(ctx.env.DB, ctx.base.epoch), irRetiredGuard(ctx.env)]), result;
   try {
     result = await ctx.env.DB.batch(guards.concat([
@@ -39,12 +39,12 @@ async function nfIrshadDaily(env, actor, url) {
   }
   var summary = (result[guards.length].results || [])[0];
   if (!summary || !Number.isSafeInteger(summary.n) || summary.n < 0) throw nfErr('irshad-daily-summary', 503);
-  if (!summary.n) return { emitted: 0 };
+  if (!summary.n) return { emitted: 0, checked: 1 };
   // The original observer reduced items[].n. Current supported IR reports have
   // no items field, so beneficiaries stays0; langs/count is not substituted.
   var plan = await nfPlanEvents(ctx.env, ctx.A, [{ type: 'ir_day', dept: d,
       vars: { 'المحاضر': summary.n, 'المستفيدون': 0, 'الموقع': String(summary.location).slice(0, 4000) }, once: once, at: now }], true);
-  if (!plan.plans.length) return { emitted: 0 };
+  if (!plan.plans.length) return { emitted: 0, checked: 1 };
   var seenGuard = ctx.env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2) THEN json_extract('{}','KIVO_IRSHAD_DAILY_SEEN') END").bind(scope, once),
     sourceArgs = aggregate.args.slice(), sourcePlan = { args: sourceArgs },
     nSlot = irQueryParam(sourcePlan, summary.n), locationSlot = irQueryParam(sourcePlan, summary.location),
@@ -58,7 +58,7 @@ async function nfIrshadDaily(env, actor, url) {
   catch (e) {
     if (/KIVO_IRSHAD_DAILY_SEEN/.test(String(e))) {
       var duplicate = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
-      if (duplicate) return { emitted: 0 };
+      if (duplicate) return { emitted: 0, checked: 1, settled: 1 };
     }
     if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) throw nfErr('irshad-legacy-source-present', 503);
     if (/KIVO_NOTIFICATION_LEGACY_SOURCE/.test(String(e))) throw nfErr('notification-legacy-source-present', 503);
@@ -67,5 +67,5 @@ async function nfIrshadDaily(env, actor, url) {
     throw e;
   }
   preOff(ctx.env);
-  return { emitted: plan.plans.length };
+  return { emitted: plan.plans.length, checked: 1, settled: 1 };
 }

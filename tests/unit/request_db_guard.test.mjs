@@ -282,20 +282,46 @@ test('malformed or unsafe epochs fail closed without deriving a replacement epoc
     assert.deepEqual(business(t), before);
   }
 });
+/* RISHAD-266 · owner decision (h) 2026-11-03: the budget holds at ALL hours. The jobs behind the summary (Irshad daily
+   23:30-24:00 Riyadh, Seized due 08:00/09:00-24:00 Riyadh) made this wall-clock dependent (11-15 trips from 06:00 to
+   21:00 UTC on fa74283). The test now runs at fixed synthetic instants covering every window instead of wall time and
+   measures three repeated reads after the priming read at each, with the seven-trip budget unchanged. */
+const SUMMARY_CLOCKS = {
+  night: '2026-10-28T00:00:00Z',            /* 03:00 Riyadh: no job window */
+  morning: '2026-10-28T06:30:00Z',          /* 09:30 Riyadh: Seized due */
+  saturdayEarly: '2026-10-31T05:30:00Z',    /* Saturday 08:30 Riyadh: weekly Seized summary only */
+  noon: '2026-10-28T09:00:00Z',             /* 12:00 Riyadh */
+  evening: '2026-10-28T17:00:00Z',          /* 20:00 Riyadh */
+  lateEvening: '2026-10-28T20:45:00Z',      /* 23:45 Riyadh: Irshad daily and Seized due */
+};
+async function atClock(iso, fn) {
+  const RealDate = globalThis.Date, now = RealDate.parse(iso);
+  globalThis.Date = class extends RealDate {
+    constructor(...a) { super(...(a.length ? a : [now])); }
+    static now() { return now; }
+  };
+  try { return await fn(); } finally { globalThis.Date = RealDate; }
+}
 test('Super notification summary retains the canonical D1 trip budget after a successful preload', async (t) => {
-  const before = await fixture(),
-    after = await world(),
-    path = '/api/notifications?dept=' + D1 + '&summary=1';
-  await before.api('super', path);
-  await after.api(path);
-  const a = before.DB.trips,
-    b = after.DB.trips;
-  await before.api('super', path);
-  await after.api(path);
-  const baseline = before.DB.trips - a,
-    candidate = after.DB.trips - b;
-  t.diagnostic(JSON.stringify({ baselineD1Trips: baseline, candidateD1Trips: candidate, cloudMeasured: false }));
-  assert.ok(candidate <= 7, 'The accepted Super summary budget is seven D1 trips: ' + candidate);
+  for (const [label, iso] of Object.entries(SUMMARY_CLOCKS))
+    await atClock(iso, async () => {
+      const before = await fixture(),
+        after = await world(),
+        path = '/api/notifications?dept=' + D1 + '&summary=1';
+      await before.api('super', path);
+      await after.api(path);
+      for (let read = 1; read <= 3; read++) {
+        const a = before.DB.trips,
+          b = after.DB.trips;
+        await before.api('super', path);
+        await after.api(path);
+        const baseline = before.DB.trips - a,
+          candidate = after.DB.trips - b;
+        t.diagnostic(JSON.stringify({ clock: label, read, baselineD1Trips: baseline, candidateD1Trips: candidate, cloudMeasured: false }));
+        assert.ok(candidate <= 7, label + ' read ' + read + ': the accepted Super summary budget is seven D1 trips: ' + candidate);
+        assert.ok(baseline <= 7, label + ' read ' + read + ': the canonical baseline also stays within seven D1 trips: ' + baseline);
+      }
+    });
 });
 test('a canceled/hung init does not become a shared promise and the original eight-second deadline remains intact', async () => {
   const part = guardPart(),

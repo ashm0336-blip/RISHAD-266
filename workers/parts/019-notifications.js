@@ -3148,10 +3148,11 @@ async function nfRoute(env, request, url, ss) {
   var A = await actorOf(env, ss.uid);
   if (!A || A.u.dis) return json({ ok: 0, err: "session" }, 401);
   try {
-    await nfGuardRetired(env);
-    if (url.pathname === "/api/notifications" && request.method === "GET") {
-      var dailyIr = await nfIrshadDaily(env, A, url); if (dailyIr.emitted) preOff(env);
-      var seizedDue=await nfSeizedDue(env,A,url);if(seizedDue.emitted)preOff(env);
+    var feedGet = url.pathname === "/api/notifications" && request.method === "GET",
+      due = feedGet ? nfDueOpen(env, A, url) : null,
+      dueSeen = await nfGuardRetired(env, due ? due.keys : null);
+    if (feedGet) {
+      await nfDueRun(env, A, url, due, dueSeen);
       return json(await nfFeed(env, A, url));
     }
     if (url.pathname === "/api/notifications/export" && request.method === "GET") return json(await nfExport(env, A, url));
@@ -3176,11 +3177,87 @@ async function nfRoute(env, request, url, ss) {
     return json({ ok: 0, err: e.nf, rev: e.status === 409 ? await nfRevision(env) : undefined }, e.status || 400);
   }
 }
-async function nfGuardRetired(env) {
-  var row = await env.DB.prepare(
-    "SELECT k FROM kv WHERE k IN ('bassam_notif_sys_v1','bassam_bc_v1','bassam_notif_cfg_v1','bassam_notif_v1') OR k GLOB 'bsdept:*:bassam_notif_v1' LIMIT 1",
-  ).first();
+/* gateKeys (optional): the shared due-reminder gate stamps are read in the same D1 trip as the retired-source check (decision h). */
+async function nfGuardRetired(env, gateKeys) {
+  var sql = "SELECT k FROM kv WHERE k IN ('bassam_notif_sys_v1','bassam_bc_v1','bassam_notif_cfg_v1','bassam_notif_v1') OR k GLOB 'bsdept:*:bassam_notif_v1' LIMIT 1",
+    seen = nmap(),
+    row;
+  if (gateKeys && gateKeys.length) {
+    var r = await env.DB.batch([
+      env.DB.prepare(sql),
+      env.DB.prepare("SELECT k,v FROM meta WHERE k IN (SELECT value FROM json_each(?1))").bind(JSON.stringify(gateKeys)),
+    ]);
+    row = ((r[0] && r[0].results) || [])[0];
+    ((r[1] && r[1].results) || []).forEach(function (x) {
+      seen[x.k] = String(x.v);
+    });
+  } else row = await env.DB.prepare(sql).first();
   if (row) throw nfErr("notification-legacy-source-present", 503);
+  return seen;
+}
+/* ═══ RISHAD-266 · owner decision (h) 2026-11-03: the Super/manager notification summary no longer runs the costly due jobs
+   (nfIrshadDaily · nfSeizedDue) on every GET /api/notifications. Measured on fa74283: 11–15 D1 trips per read from 06:00 to
+   21:00 UTC (the 7-trip budget only held at night) because every open/reload reloaded the scoped resources and re-queried dedup.
+   Now one shared gate per job and department, the existing isolate-shared task-gate pattern (074 tkg:<kind>:<dept> rows in meta,
+   isolate memory first): ird = Irshad daily, szd = Seized due.
+   · cost: isolate memory first (0 trips); otherwise the stamps are read in the same trip as the retired-source check (0 extra
+     trips); the job runs only when no stamp holds, then one stamp write. A repeated read never re-runs the job inside its hold.
+   · never lost: a stamp holds at most NF_DUE_GAP while a job has nothing (yet) to emit, and never across a due edge
+     (Riyadh 00:00 · 08:00 · 09:00 · 23:30 — the windows of the two jobs), nor across a restore epoch; so a reminder that becomes
+     due is emitted on the first eligible read after its due time, or within NF_DUE_GAP when its source data arrives later.
+     A job that is settled (every once key of the current window already in notification_dedup) holds until the next edge.
+   · stamped after the job, not before: an actor who cannot run the job (no scope/role → no `checked`) or a job that throws
+     leaves no stamp, so it cannot suppress another manager's reminder; concurrent runs stay deduplicated by the unchanged
+     once keys and SEEN guards in the jobs (never duplicated).
+   · stamp value "<from>:<until>:<restore epoch>"; written through __rawDB with the task-gate statement shape (cache neutral, 052). */
+var NF_DUE_GAP = 5 * 6e4, NF_DUE_MEM = nmap(), NF_DUE_EDGES = [0, 480, 540, 1410];
+function nfDueSpan(now) {
+  var start = Math.floor((now + 3 * 3600000) / 86400000) * 86400000 - 3 * 3600000,
+    m = (now - start) / 6e4,
+    last = 0,
+    next = 1440;
+  NF_DUE_EDGES.forEach(function (b) {
+    if (b <= m) last = b;
+    else if (b < next) next = b;
+  });
+  return { last: start + last * 6e4, next: start + next * 6e4 };
+}
+/* the jobs' own time/role windows (019j · 019n) — nothing outside them is gated, read or run */
+function nfDueKinds(now, A, d) {
+  if (!d || !irDailyManager(A)) return [];
+  var m = pfRiyadhMins(now), out = [];
+  if (m >= 1410) out.push("ird");
+  if (m >= 540 || (m >= 480 && new Date(now + 3 * 3600000).getUTCDay() === 6)) out.push("szd");
+  return out;
+}
+function nfDueHeld(v, now, epoch) {
+  var p = /^(\d+):(\d+):([^:]*)$/.exec(v == null ? "" : String(v));
+  if (!p) return false;
+  var from = +p[1], until = +p[2];
+  return p[3] === epoch && from <= now + TK_GATE_SKEW && from >= nfDueSpan(now).last && now < until;
+}
+function nfDueOpen(env, A, url) {
+  var now = Date.now(), d = url.searchParams.get("dept") || "", epoch = String(env.__restoreEpoch || 0),
+    kinds = nfDueKinds(now, A, d).filter(function (k) {
+      return !nfDueHeld(NF_DUE_MEM["tkg:" + k + ":" + d], now, epoch);
+    });
+  return kinds.length ? { d: d, now: now, epoch: epoch, kinds: kinds, keys: kinds.map(function (k) { return "tkg:" + k + ":" + d; }) } : null;
+}
+async function nfDueRun(env, A, url, due, seen) {
+  if (!due) return;
+  for (var i = 0; i < due.kinds.length; i++) {
+    var key = due.keys[i];
+    if (nfDueHeld(seen[key], due.now, due.epoch)) { NF_DUE_MEM[key] = seen[key]; continue; }   /* ran in another isolate within its hold */
+    var r = due.kinds[i] === "ird" ? await nfIrshadDaily(env, A, url) : await nfSeizedDue(env, A, url);
+    if (r.emitted) preOff(env);
+    if (!r.checked) continue;
+    var t = Date.now(), span = nfDueSpan(t),
+      v = t + ":" + (r.settled ? span.next : Math.min(t + NF_DUE_GAP, span.next)) + ":" + due.epoch;
+    NF_DUE_MEM[key] = v;
+    try {
+      await (env.__rawDB || env.DB).prepare("INSERT INTO meta (k, v) VALUES (?2, ?1) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(v, key).run();
+    } catch (e) { swallow("nf-due-stamp", e, env.__rid); }   /* no shared stamp ⇒ other isolates simply run the job (the old behaviour) */
+  }
 }
 
 async function nfFeed(env, A, url) {
