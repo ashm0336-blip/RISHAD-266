@@ -34,7 +34,8 @@ function rsScopeHas(scope, k, meta) {
 }
 /* A row read after the snapshot belongs to it only if it still carries the revision the snapshot read. */
 function rsScopeCoherent(P, revs, keys) {
-  keys.forEach(function (k) { if ((revs[k] || 0) !== (P.revs[k] || 0)) throw new Error('KIVO_REV_CONFLICT: ' + k); });
+  /* same sentinel text the full fence raises (regex mappers) AND the structured 409 conflict that command routes map (error.rs) */
+  keys.forEach(function (k) { if ((revs[k] || 0) !== (P.revs[k] || 0)) { var e = new Error('KIVO_REV_CONFLICT: ' + k); e.rs = 'conflict'; e.status = 409; throw e; } });
 }
 /* kv rows outside the base scope: loaded once into the request snapshot, fenced by an exact witness of exactly these keys. */
 async function rsScopeKV(env, keys) {

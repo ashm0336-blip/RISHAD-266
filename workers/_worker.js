@@ -1963,7 +1963,6 @@ var KIVO_IDENTITY_PREFLIGHT = (function (M, S, R, MIG, IDM) {
     return out;
   }
   /* ── ٤) المقارنة ── */
-  function cnt0() { return { exact: 0, 'inferable-high-confidence': 0, ambiguous: 0, missing: 0, conflicting: 0, 'n/a': 0 }; }
   function casesCount(rep) { var o = {}, c = obj(obj(rep).cases); for (var k in c) o[k] = arr(c[k]).length; return o; }
   function rowsEq(a, b) { a = obj(a); b = obj(b); return a.items === b.items && a.allowed === b.allowed && a.denied === b.denied && a.unknown === b.unknown && a.notApplicable === b.notApplicable; }
   function propSig(p) { p = obj(p); var ids = arr(p.engineIds).length ? arr(p.engineIds) : (arr(p.list).length ? arr(p.list) : (p.value != null ? [p.value] : [])); return { mode: str(p.mode), ids: uniq(ids.map(String)).sort() }; }
@@ -9173,7 +9172,8 @@ function rsScopeHas(scope, k, meta) {
 }
 /* A row read after the snapshot belongs to it only if it still carries the revision the snapshot read. */
 function rsScopeCoherent(P, revs, keys) {
-  keys.forEach(function (k) { if ((revs[k] || 0) !== (P.revs[k] || 0)) throw new Error('KIVO_REV_CONFLICT: ' + k); });
+  /* same sentinel text the full fence raises (regex mappers) AND the structured 409 conflict that command routes map (error.rs) */
+  keys.forEach(function (k) { if ((revs[k] || 0) !== (P.revs[k] || 0)) { var e = new Error('KIVO_REV_CONFLICT: ' + k); e.rs = 'conflict'; e.status = 409; throw e; } });
 }
 /* kv rows outside the base scope: loaded once into the request snapshot, fenced by an exact witness of exactly these keys. */
 async function rsScopeKV(env, keys) {
@@ -20306,27 +20306,6 @@ function expandPermsOf(A, d, obj) {
     if (pgIsContainer(k)) {
       deptSubsOf(A, d, k).concat(deptTabsOf(A, d, k)).forEach(function (sk) { out[k + '/' + sk] = acts.slice(); });
     } else out[k] = acts;
-  });
-  return out;
-}
-function derivePagesOf(leaf) {
-  var out = {};
-  Object.keys(leaf || {}).forEach(function (k) {
-    var acts = leaf[k] || []; if (!acts.length) return;
-    var sp = pgSplit(k);
-    out[k] = acts.slice();
-    if (sp.sub && !pgOffPage(sp.page, sp.sub)) {
-      var c = out[sp.page] || [];
-      acts.forEach(function (a) { if (c.indexOf(a) === -1) c.push(a); });
-      out[sp.page] = c;
-    }
-  });
-  PG_REG.forEach(function (p) {
-    if (p.under && out[p.key] && out[p.key].length) {
-      var c = out[p.under] || [];
-      out[p.key].forEach(function (a) { if (c.indexOf(a) === -1) c.push(a); });
-      out[p.under] = c;
-    }
   });
   return out;
 }

@@ -213,27 +213,6 @@ function expandPermsOf(A, d, obj) {
   });
   return out;
 }
-function derivePagesOf(leaf) {
-  var out = {};
-  Object.keys(leaf || {}).forEach(function (k) {
-    var acts = leaf[k] || []; if (!acts.length) return;
-    var sp = pgSplit(k);
-    out[k] = acts.slice();
-    if (sp.sub && !pgOffPage(sp.page, sp.sub)) {
-      var c = out[sp.page] || [];
-      acts.forEach(function (a) { if (c.indexOf(a) === -1) c.push(a); });
-      out[sp.page] = c;
-    }
-  });
-  PG_REG.forEach(function (p) {
-    if (p.under && out[p.key] && out[p.key].length) {
-      var c = out[p.under] || [];
-      out[p.key].forEach(function (a) { if (c.indexOf(a) === -1) c.push(a); });
-      out[p.under] = c;
-    }
-  });
-  return out;
-}
 /* الفرق بين «لا ورقة» و«ورقة خُزِّنت فارغة» — عليه يقوم التوريث */
 function hasOwnSheetOf(A, ekey, d) {
   var p = ((A.perms.emps || {})[d] || {})[ekey];
