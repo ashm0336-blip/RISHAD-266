@@ -1240,6 +1240,7 @@
     sgBar9.textContent = "⚠ انتهت جلستك في الخادم — تعديلاتك الأخيرة لم تُحفظ. اضغط هنا لتسجيل الدخول من جديد";
     sgBar9.addEventListener("click", function () { location.reload(); });
     host.appendChild(sgBar9);
+    try { window.dispatchEvent(new CustomEvent("bs:session-gone")); } catch (e) { /* إعلامٌ فقط */ }   /* RISHAD-266: بطاقاتُ تعذّر الشاشة تقول السببَ الحقيقي */
   }
 
   /* ── تنبيه صريح حين يتعذّر الحفظ ───────────────────────────────────────── */

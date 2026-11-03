@@ -43,11 +43,19 @@
     try {
       var host = cardHost(name); if (!host || cards[name]) return;
       var c = document.createElement("div"); c.className = "bs-retry bs-retry-page"; c.setAttribute("role", "alert"); c.setAttribute("dir", "rtl");
-      c.innerHTML = '<span class="m">⚠ تعذّر تحميل الشاشة — تحقّق من الاتصال ثم أعد المحاولة</span><button type="button" class="b">↻ أعد المحاولة</button>';
-      c.querySelector("button").addEventListener("click", function () { hideCard(name); delete gaveUp[name]; tries[name] = 0; wake(name); });
+      cardFill(c, name);
       host.parentNode.insertBefore(c, host); cards[name] = c;
     } catch (e) { /* البطاقةُ عرضٌ فقط */ }
   }
+  /* RISHAD-266: بعد انتهاء الجلسة السببُ ليس الاتصال — تقول البطاقةُ ذلك وزرُّها يعيد الدخول */
+  function gone() { try { var S = window.KIVO && window.KIVO.__BS_SRV; return !!(S && S.sesChanged && S.sesChanged()); } catch (e) { return false; } }
+  function cardFill(c, name) {
+    var g = gone();
+    c.innerHTML = g ? '<span class="m">⚠ انتهت جلستك — سجّل الدخول من جديد لعرض الشاشة</span><button type="button" class="b">تسجيل الدخول</button>'
+      : '<span class="m">⚠ تعذّر تحميل الشاشة — تحقّق من الاتصال ثم أعد المحاولة</span><button type="button" class="b">↻ أعد المحاولة</button>';
+    c.querySelector("button").addEventListener("click", function () { if (gone()) { location.reload(); return; } hideCard(name); delete gaveUp[name]; tries[name] = 0; wake(name); });
+  }
+  window.addEventListener("bs:session-gone", function () { for (var n in cards) { try { cardFill(cards[n], n); } catch (e) { /* عرضٌ فقط */ } } });
   function hideCard(name) { try { if (cards[name]) { cards[name].remove(); delete cards[name]; } } catch (e) { /* عرضٌ فقط */ } }
   window.addEventListener('dc:page-load-failed', function (event) { var name = event.detail && event.detail.name; if (name) showCard(name); });
   window.addEventListener('dc:page-load-ready', function (event) { var name = event.detail && event.detail.name; if (name) hideCard(name); });

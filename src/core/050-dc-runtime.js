@@ -1223,7 +1223,7 @@
         }
         if (!dataReady(this.__name)) {
           if (!r.dataError) { ensureFetched(this.__name); ensureData(this.__name).catch(() => {}); }
-          return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: r.dataError || undefined }));
+          return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: r.dataError ? (sessionGone() ? "انتهت جلستك — سجّل الدخول من جديد لعرض الشاشة" : r.dataError) : undefined }));
         }
         this.__reconcileLogic();
         if (!r.tpl) {
@@ -1765,6 +1765,9 @@
     };
   }
 
+  /* RISHAD-266: فشلُ بيانات الشاشة بعد انتهاء الجلسة لا يُنسب إلى الاتصال */
+  function sessionGone() { try { const S = typeof KIVO !== "undefined" && KIVO.__BS_SRV; return !!(S && S.sesChanged && S.sesChanged()); } catch (e) { return false; } }
+
   // src/registry.ts
   function createRegistry() {
     const entries = /* @__PURE__ */ Object.create(null);
@@ -1799,6 +1802,7 @@
   var COMPONENT_DIR = ".";
   function createRuntime(doc = document) {
     const registry = createRegistry();
+    try { window.addEventListener("bs:session-gone", () => { for (const n in registry.entries) if (registry.entries[n].dataError) registry.bump(n); }); } catch (e) {}
     const pseudoClass = createPseudoSheet(doc);
     const helmet = createHelmetManager(
       doc,
