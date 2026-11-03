@@ -4006,7 +4006,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
       if (!result.ok) {
         draft.uncertain = ["network", "receipt", "server", "session"].includes(result.err); draft.needsReview = result.err === "conflict";
-        return this.bsToast(draft.needsReview ? "تغيّرت بيانات الإدارة؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "permission" ? "صلاحيتك لا تسمح بحذف الإدارة؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
+        return this.bsToast(draft.needsReview ? "تغيّرت بيانات الإدارة؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? result.unknownCount + " " : "") + "مُدخل بيانات لا تتعرّف عليه المنصة؛ لم تُحذف الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مدير المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تسمح بحذف الإدارة؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
       }
       const receipt = result.body, natural = value => Number.isSafeInteger(value) && value >= 0;
       if (receipt.mode !== "dept-delete" || receipt.dept !== draft.dept || receipt.requestId !== draft.ticket.requestId || !natural(receipt.rev) || !receipt.revs || typeof receipt.revs !== "object" || Array.isArray(receipt.revs) || Object.values(receipt.revs).some(value => !natural(value)) || !receipt.counts || ["keys", "accounts", "custody", "notifications", "irshad", "seized", "awards"].some(key => !natural(receipt.counts[key]))) {
@@ -4055,6 +4055,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (this._wpActor() !== actor) return { ok: 0, err: "session" };
       if (!response.ok || !result || result.ok !== 1) {
         const denied = Object.entries(result && result.denied || {}), reasonOnly = denied.length && denied.every(([, value]) => value && value.why === "reason");
+        /* Owner decision (b): a unit holding keys the platform does not classify is refused as a data-integrity problem, not a permission refusal */
+        if (response.status === 403 && result && result.err === "unit-unknown-data") return { ok: 0, err: "unknown-data", unknownCount: denied.filter(([key, value]) => value && value.why === "unknown" && key.startsWith("bsdept:" + dept + ":")).length };
         if (response.status === 403 && result && (result.why === "reason" || reasonOnly)) return { ok: 0, err: "reason", reasonKey: denied.length ? denied[0][0] : "bsdept:" + dept + ":bassam_employees_v1", reasonKeys: [...new Set([...(Array.isArray(result.reasonKeys) ? result.reasonKeys : []), ...denied.flatMap(([, value]) => Array.isArray(value.reasonKeys) ? value.reasonKeys : [])].filter(key => typeof key === "string"))] };
         return { ok: 0, err: response.status === 409 ? "conflict" : response.status === 401 ? "session" : response.status === 403 ? "permission" : "server" };
       }
@@ -4107,7 +4109,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
       if (!result.ok) {
         this._wpUncertain = ["network", "receipt", "server", "session"].includes(result.err);
-        return void this.setState({ wpNeedsReview: result.err === "conflict", wpMsg: result.err === "conflict" ? "تغيّرت بيانات الإدارة؛ لم يُنفّذ طلب المسح بهذه النسخة. أعد مراجعة الجرد قبل التأكيد." : result.err === "reason" ? "يشترط الخادم سبباً لهذا الإجراء؛ تأكيد المسح محفوظ" : result.err === "permission" ? "صلاحيتك لا تشمل مسح الإدارة" : "لم يصل تأكيد المسح؛ محفوظ طلبك لإعادة المحاولة نفسها دون ادعاء نجاح" });
+        return void this.setState({ wpNeedsReview: result.err === "conflict", wpMsg: result.err === "conflict" ? "تغيّرت بيانات الإدارة؛ لم يُنفّذ طلب المسح بهذه النسخة. أعد مراجعة الجرد قبل التأكيد." : result.err === "reason" ? "يشترط الخادم سبباً لهذا الإجراء؛ تأكيد المسح محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? result.unknownCount + " " : "") + "مُدخل بيانات لا تتعرّف عليه المنصة؛ لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مدير المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تشمل مسح الإدارة" : "لم يصل تأكيد المسح؛ محفوظ طلبك لإعادة المحاولة نفسها دون ادعاء نجاح" });
       }
       const receipt = result.body;
       if (receipt.dept !== dept || receipt.requestId !== ticket.body.requestId || !Number.isSafeInteger(receipt.rev) || receipt.rev < 0 || !receipt.counts || ["keys", "custody", "notifications", "irshad", "seized", "awards"].some(key => !Number.isSafeInteger(receipt.counts[key]) || receipt.counts[key] < 0))

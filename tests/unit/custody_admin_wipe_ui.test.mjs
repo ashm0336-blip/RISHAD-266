@@ -79,3 +79,15 @@ test('actual canonical wipe HTTP removes KV/CU/NF in one acknowledged operation 
   assert.equal(base.DB.q('SELECT COUNT(*) n FROM custody_items WHERE department_id=?1',D1)[0].n,0);assert.equal(base.DB.q('SELECT COUNT(*) n FROM notification_messages WHERE department=?1',D1)[0].n,0);
   assert.ok(base.DB.q("SELECT v FROM kv WHERE k='bassam_auth_users_v1' ORDER BY seq").map(row=>row.v).join('')===owners,'account values changed');assert.ok(base.DB.q("SELECT v FROM kv WHERE k='bassam_depts_v1' ORDER BY seq").map(row=>row.v).join('')===depts,'department definition changed');
 });
+test('wipe 403 unit-unknown-data shows the data-integrity refusal; 403 denied keeps the permission message',async()=>{
+  const unknown={['bsdept:'+DEPT+':TEST_ONLY_unknown_a']:{ok:false,why:'unknown',detail:'unit-unknown-data'},['bsdept:'+DEPT+':TEST_ONLY_unknown_b']:{ok:false,why:'unknown',detail:'unit-unknown-data'}};
+  const A=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,err:'unit-unknown-data',denied:unknown,conflicts:{}},403));
+  await A.page.wpOpen(DEPT);A.page.setState({wpTxt:'TEST_ONLY confirmation'});await A.page.wpGo(DEPT);
+  assert.equal(A.calls.filter(call=>call.options.method==='POST').length,1);assert.equal(A.acks.length,0,'no success');assert.equal(A.prompts.length,0);assert.equal(A.page.state.wpDid,DEPT);assert.deepEqual(A.syncs,[]);
+  const message=A.page.state.wpMsg;
+  assert.match(message,/تحتوي الإدارة على 2 مُدخل بيانات لا تتعرّف عليه المنصة/);assert.match(message,/لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات/);assert.match(message,/لم يُحذف أي شيء/);assert.match(message,/تواصل مع مدير المنصة لمراجعة/);
+  assert.doesNotMatch(message,/صلاحيت/,'no permission wording');assert.equal(A.page._wpUncertain,false);
+  const P=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,err:'denied',denied:{['bsdept:'+DEPT+':bassam_employees_v1']:{ok:false,why:'deny'}},conflicts:{}},403));
+  await P.page.wpOpen(DEPT);P.page.setState({wpTxt:'TEST_ONLY confirmation'});await P.page.wpGo(DEPT);
+  assert.equal(P.acks.length,0);assert.equal(P.page.state.wpMsg,'صلاحيتك لا تشمل مسح الإدارة');
+});

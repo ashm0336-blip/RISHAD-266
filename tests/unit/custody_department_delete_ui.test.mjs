@@ -50,6 +50,20 @@ test('department deletion rejects an inventory or receipt that omits the seized 
   }
 });
 
+test('403 unit-unknown-data shows the data-integrity refusal; 403 denied keeps the permission message',async()=>{
+  /* Owner decision (b): a unit holding unclassified keys is refused as a data-integrity problem — the UI must not call it a permission refusal */
+  const unknown={['bsdept:'+D1+':TEST_ONLY_unknown_a']:{ok:false,why:'unknown',detail:'unit-unknown-data'},['bsdept:'+D1+':TEST_ONLY_unknown_b']:{ok:false,why:'unknown',detail:'unit-unknown-data'},['bsdept:'+D1+':TEST_ONLY_unknown_c']:{ok:false,why:'unknown',detail:'unit-unknown-data'}};
+  const A=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,err:'unit-unknown-data',denied:unknown,conflicts:{}},403));await A.page.deptDel(target);
+  assert.equal(A.calls.filter(call=>call.options.method==='POST').length,1);assert.equal(A.acks.length,0,'no success');assert.equal(A.prompts.length,0,'not treated as a reason request');assert.equal(A.page.state.sysSel,D1);assert.deepEqual(A.syncs,[]);assert.deepEqual(A.writes,[]);
+  const message=A.toasts.at(-1)[0];assert.equal(A.toasts.at(-1)[1],'warn');
+  assert.match(message,/تحتوي الإدارة على 3 مُدخل بيانات لا تتعرّف عليه المنصة/,'names how many entries the platform does not recognise');
+  assert.match(message,/لم تُحذف الإدارة حمايةً لسلامة البيانات/);assert.match(message,/لم يُحذف أي شيء/);assert.match(message,/تواصل مع مدير المنصة لمراجعة/);
+  assert.doesNotMatch(message,/صلاحيت/,'no permission wording');assert.doesNotMatch(message,/نجاح|اعتمد الخادم حذف/);
+  assert.equal(A.page._deptDeleteDraft.uncertain,false,'a definitive refusal is not an uncertain receipt');
+  const P=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,err:'denied',denied:{[key]:{ok:false,why:'deny'}},conflicts:{}},403));await P.page.deptDel(target);
+  assert.equal(P.acks.length,0);assert.equal(P.prompts.length,0);assert.equal(P.toasts.at(-1)[0],'صلاحيتك لا تسمح بحذف الإدارة؛ لم يُعتمد تغيير');assert.deepEqual(P.writes,[]);
+});
+
 test('actual department deletion UI→Worker→SQLite removes only its definition/accounts/KV/CU/NF and never deletes R2 objects',async()=>{
   const A=await canonicalWorld(),W=A.W;let r2Deletes=0;A.env.IMG_R2={delete(){r2Deletes++;throw Error('No R2 object deletion');}};
   const users=()=>JSON.parse(A.DB.q("SELECT v FROM kv WHERE k='bassam_auth_users_v1' ORDER BY seq").map(row=>row.v).join('')),original=users();
