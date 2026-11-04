@@ -19,7 +19,7 @@
 | الوحدة | فارغ | تحميل | خطأ | بلا اتصال | أعد المحاولة |
 |---|---|---|---|---|---|
 | admin (Admin) | 45 | 22 | 266 | 2 | 20 |
-| award (Award) | 8 | 2 | 32 | 0 | 0 |
+| award (Award) | 8 | 2 | 33 | 0 | 0 |
 | daily (Daily Sessions) | 60 | 9 | 178 | 0 | 3 |
 | dreport (Daily Report) | 19 | 0 | 89 | 0 | 1 |
 | dstats (Daily Stats) | 14 | 1 | 38 | 0 | 0 |

@@ -14,7 +14,7 @@ async function narrowWorld() {
   const { env, W } = lab, DB = env.DB;
   const kv = (k) => JSON.parse(DB.q('SELECT v FROM kv WHERE k=?1 ORDER BY seq', k).map((r) => r.v).join(''));
   const pm = kv('bassam_perms_v1');
-  pm.caps.TEST_ONLY_B = ['tasks']; pm.caps.TEST_ONLY_A_S1 = []; pm.capOwn = Object.assign({}, pm.capOwn || {}, { TEST_ONLY_A_S1: true });
+  pm.caps.TEST_ONLY_G = pm.caps.TEST_ONLY_G.concat(['award']); pm.caps.TEST_ONLY_A = pm.caps.TEST_ONLY_A.concat(['award']);   /* the effective ceiling also needs the parent group's */ pm.caps.TEST_ONLY_B = ['tasks']; pm.caps.TEST_ONLY_A_S1 = []; pm.capOwn = Object.assign({}, pm.capOwn || {}, { TEST_ONLY_A_S1: true });
   await DB.batch([DB.prepare('DELETE FROM kv WHERE k=?1').bind('bassam_perms_v1'), ...W.kvPutStmts(env, 'kv', 'bassam_perms_v1', JSON.stringify(pm)), DB.prepare('UPDATE revs SET rev=rev+1 WHERE k=?1').bind('bassam_perms_v1')]);
   return { lab, kv };
 }
@@ -56,6 +56,41 @@ test('super: switching unit changes the data shown, not identity or page access;
     const ev = await s.page.evaluate(() => { const m = document.querySelector('main') || document.body; return { hash: location.hash, text: m.innerText, add: [...m.querySelectorAll('button')].filter((x) => x.getBoundingClientRect().height && /إضافة موظف/.test(x.textContent)).length }; });
     assert.match(ev.text, /TEST_ONLY موظف ب/, 'B employees visible to super');
     assert.equal(ev.add, 0, 'no add-employee control outside the ceiling');
+    /* pages that hang their content on sub-pages/tabs (award · irshad · seized · planning) open with their tabs, view-only, outside the ceiling */
+    const gates = await s.page.evaluate(() => {
+      const P = KIVO.BassamPerm, out = {};
+      for (const pg of P.PAGE_REG) {
+        const leaves = (pg.subs || []).concat(pg.tabs || []).map((x) => x.key);
+        if (!leaves.length) continue;
+        out[pg.key] = { seen: leaves.filter((k) => P.subOn(pg.key, k) || P.tabOn(pg.key, k)).length, n: leaves.length, edit: leaves.filter((k) => P.canSub(pg.key, k, 'edit')).length, inCap: P.deptCap().indexOf(pg.key) !== -1 };
+      }
+      return out;
+    });
+    for (const [pk, g] of Object.entries(gates)) {
+      if (g.inCap) continue;
+      assert.equal(g.seen, g.n, pk + ': every sub-page/tab is viewable outside the ceiling ' + JSON.stringify(g));
+      assert.equal(g.edit, 0, pk + ': no sub-page/tab write outside the ceiling ' + JSON.stringify(g));
+    }
+    for (const [label, re] of [['جائزة', /جائزة/], ['الاسترشاد', /الاسترشاد/], ['المضبوطات', /المضبوطات/]]) {
+      const item = s.page.locator('.bsb .n', { hasText: label }).first();
+      if (!(await item.isVisible().catch(() => false))) continue;
+      await item.click(); await s.page.waitForTimeout(3500);
+      const len = await s.page.evaluate(() => ((document.querySelector('main') || document.body).innerText || '').replace(/\s+/g, ' ').length);
+      assert.ok(len > 120, label + ' page renders its content for super outside the ceiling (text ' + len + ')');
+      assert.ok(re.test(await s.page.evaluate(() => document.title + ' ' + (document.querySelector('main') || document.body).innerText)), label);
+    }
+    /* the award reference editor is a write: offered only inside the ceiling (A has award in this world; B does not) */
+    const awSet = async () => s.page.evaluate(() => {
+      for (const el of document.querySelectorAll('main [data-screen-label]')) {
+        const fk = Object.keys(el).find((k) => k.indexOf('__reactFiber') === 0); let f = fk ? el[fk] : null;
+        while (f && !(f.stateNode && f.stateNode.logic && typeof f.stateNode.logic.awCanSetRef === 'function')) f = f.return;
+        if (f) return f.stateNode.logic.awCanSetRef();
+      }
+      return 'no-award-component';
+    });
+    const openAward = async () => { await s.page.locator('.bsb .n', { hasText: 'جائزة' }).first().click(); await s.page.waitForTimeout(3500); };
+    await openAward(); assert.equal(await awSet(), false, 'award reference editor not offered in B (outside the ceiling)');
+    await switchTo(s, 'TEST_ONLY_A'); await openAward(); assert.equal(await awSet(), true, 'award reference editor offered in A (inside the ceiling)');
     /* server integrity: held action keys still follow each unit's ceiling (decision هـ) */
     const h = await held(s.page);
     assert.ok(h.TEST_ONLY_A > h.TEST_ONLY_B && h.TEST_ONLY_A > h.TEST_ONLY_A_S1, 'server write keys narrowed by ceiling: ' + JSON.stringify(h));

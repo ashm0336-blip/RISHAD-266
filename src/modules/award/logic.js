@@ -933,6 +933,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       return !1;
     }
   }
+  /* تحرير المرجع: لمدير النظام داخل سقف الوحدة وحده — الخادمُ يرفضه خارجه (019m resOnCeiling · قرار هـ) */
+  awCanSetRef() {
+    try {
+      const P = KIVO.BassamPerm;
+      return this.awIsSuper() && !!(P && P.deptCap && P.deptCap().indexOf("award") !== -1);
+    } catch (t) {
+      return !1;
+    }
+  }
   awEsc(t) {
     return String(null == t ? "" : t)
       .replace(/&/g, "&amp;")
@@ -988,7 +997,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   async awDocsPut(document) {
     const source = this._bcData("references");
-    if (!source || source.scope !== "dept" || !this.awIsSuper()) { this.bsToast("انتظر قراءة مرجع الإدارة المسموح قبل الحفظ"); return false; }
+    if (!source || source.scope !== "dept" || !this.awCanSetRef()) { this.bsToast("انتظر قراءة مرجع الإدارة المسموح قبل الحفظ"); return false; }
     this._awReferenceStamp = this._awReferenceStamp || this._bcStamp(source.base);
     const result = await this._bcMutate("reference-replace", { version: 2, document }, { stamp: this._awReferenceStamp, count: 1 });
     if (!result.ok) { this.bsToast(result.message); return false; }
@@ -2131,7 +2140,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   _awDocs() {
     const t = this.state,
       e = this.awDocsGet(),
-      a = "set" === t.awDocTab && this.awIsSuper(),
+      a = "set" === t.awDocTab && this.awCanSetRef(),
       r = -1 !== ["A", "B", "C"].indexOf(t.awDocTab) ? t.awDocTab : "A",
       i = e[r] || e.A,
       s = (t) =>
@@ -2141,7 +2150,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           : "#E1E1E1;background:var(--bg-xffffff);color:var(--fg-x53565a)") +
         ";padding:9px 16px;border-radius:9999px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif;display:inline-flex;align-items:center;gap:7px";
     return {
-      awSetOk: this.awIsSuper(),
+      awSetOk: this.awCanSetRef(),
       awOnSet: a,
       awOnRead: !a,
       awDocTabS: s(a),
