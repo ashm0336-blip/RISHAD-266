@@ -5702,12 +5702,16 @@ async function nfAudience(env, A, opts) {
 async function nfFeedRows(env, A, opts) {
   opts = opts || {};
   if (opts.dept && !deptInScope(A, opts.dept)) throw nfErr("notification-scope", 403);
+  /* RISHAD-266 (2026-11-04): the audience match (?4) is an uncorrelated row-value IN — SQLite builds the audience set once per
+     statement instead of re-scanning json_each(?4) for every candidate message. Same rows: an entry of type '*' matches any type,
+     any other entry must equal m.type (was a correlated EXISTS … JOIN json_each(?4): cost = messages × audience; for the platform
+     admin ≈2,800 entries across all departments, which saturated D1 on Test). */
   var audience = await nfAudience(env, A, opts),
     now = Date.now(),
     rev = opts.feedRevision === undefined ? await nfFeedRevision(env, A) : opts.feedRevision,
     bind = [A.u.id, now, JSON.stringify(audience.scopes), JSON.stringify(audience.aud), JSON.stringify(audience.bc)],
     where =
-      "(m.kind='broadcast' OR m.created_at>=?2-7776000000) AND m.withdrawn_at=0 AND m.created_at<=?2 AND (m.expires_at=0 OR m.expires_at>=?2) AND COALESCE(s.dismissed_at,0)=0 AND ((m.kind='event' AND m.scope IN (SELECT value FROM json_each(?3)) AND EXISTS(SELECT 1 FROM notification_targets t JOIN json_each(?4) a ON json_extract(a.value,'$.scope')=t.scope AND json_extract(a.value,'$.kind')=t.kind AND json_extract(a.value,'$.value')=t.value WHERE t.scope=m.scope AND t.message_id=m.id AND (json_extract(a.value,'$.type')='*' OR json_extract(a.value,'$.type')=m.type))) OR (m.kind='broadcast' AND " +
+      "(m.kind='broadcast' OR m.created_at>=?2-7776000000) AND m.withdrawn_at=0 AND m.created_at<=?2 AND (m.expires_at=0 OR m.expires_at>=?2) AND COALESCE(s.dismissed_at,0)=0 AND ((m.kind='event' AND m.scope IN (SELECT value FROM json_each(?3)) AND EXISTS(SELECT 1 FROM notification_targets t WHERE t.scope=m.scope AND t.message_id=m.id AND ((t.scope,t.kind,t.value,'*') IN (SELECT json_extract(value,'$.scope'),json_extract(value,'$.kind'),json_extract(value,'$.value'),json_extract(value,'$.type') FROM json_each(?4)) OR (t.scope,t.kind,t.value,m.type) IN (SELECT json_extract(value,'$.scope'),json_extract(value,'$.kind'),json_extract(value,'$.value'),json_extract(value,'$.type') FROM json_each(?4))))) OR (m.kind='broadcast' AND " +
       (A.u.role === "super"
         ? "1"
         : "(m.target_mode='all' OR EXISTS(SELECT 1 FROM notification_targets t JOIN json_each(?5) a ON json_extract(a.value,'$.kind')=t.kind AND json_extract(a.value,'$.value')=t.value WHERE t.scope=m.scope AND t.message_id=m.id))") +
