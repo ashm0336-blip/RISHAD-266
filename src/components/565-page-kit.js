@@ -270,14 +270,6 @@
         } catch (t) {}
         return t;
       }
-      _mgW(t) {
-        try {
-          const e = KIVO.BassamPerm;
-          return !e || !e.canW || !!e.canW(t);
-        } catch (t) {
-          return !0;
-        }
-      }
       _nm(t) {
         if (null == t) return "";
         const e = this._empIdx()[String(t)];
@@ -303,21 +295,6 @@
       }
       _uid() {
         return KIVO.BassamIdent ? KIVO.BassamIdent.newUid() : void 0;
-      }
-      _zPathPts(t) {
-        const e = [];
-        try {
-          const s = /([MLCZ])([^MLCZ]*)/gi;
-          let n;
-          for (; null !== (n = s.exec(String(t) || "")); ) {
-            const t = n[1].toUpperCase();
-            if ("Z" === t) continue;
-            const s = (n[2].match(/-?\d*\.?\d+/g) || []).map(Number);
-            if ("C" === t) for (let t = 4; t + 1 < s.length; t += 6) e.push({ x: s[t], y: s[t + 1] });
-            else for (let t = 0; t + 1 < s.length; t += 2) e.push({ x: s[t], y: s[t + 1] });
-          }
-        } catch (t) {}
-        return e;
       }
       _zcatKey(t, e) {
         const s = String(t || "").trim();
@@ -421,21 +398,6 @@
   /* ── employees · staff (2) ── */
   T["employees+staff"] = function (B) {
     return class extends B {
-      PERM_TPL() {
-        return {
-          none: {},
-          view: { staff: ["view"], plan: ["view"], daily: ["view"], tasks: ["view"] },
-          field: { daily: ["view", "add", "edit", "approve"], tasks: ["view", "add", "edit", "approve"], staff: ["view"] },
-          mgr: {
-            emps: ["view", "add", "edit", "del", "export"],
-            staff: ["view", "add", "edit", "del", "approve", "export"],
-            plan: ["view", "add", "edit", "del", "approve", "export"],
-            daily: ["view", "add", "edit", "del", "approve", "export"],
-            tasks: ["view", "add", "edit", "del", "approve", "export"],
-            admin: ["view", "export"],
-          },
-        };
-      }
       PERM_TPLS() {
         /* القوالب ورقةٌ بيضاء يكتبها المستخدم من «قوالب الصلاحيات» — لا قوالب مدمجة تُزرع */ try {
           const t = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
@@ -543,8 +505,5 @@
   }
   KIVO.BassamPageKit = {
     base: base,
-    traits: function () {
-      return Object.keys(T);
-    },
   };
 })();

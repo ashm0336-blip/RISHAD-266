@@ -237,24 +237,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       r = [];
     return (e && r.push(e + " ي"), n && r.push(n + " س"), a && r.push(a + " د"), r.join(" "));
   }
-  tkBumpH(t, e) {
-    this.setState((n) => {
-      const a = {};
-      return ((a[t] = ((n[t] - 1 + e + 1200) % 12) + 1), a);
-    });
-  }
-  tkBumpM(t, e) {
-    this.setState((n) => {
-      const a = {};
-      return ((a[t] = (n[t] + 5 * e + 600) % 60), a);
-    });
-  }
-  tkToggleAp(t) {
-    this.setState((e) => {
-      const n = {};
-      return ((n[t] = "ص" === e[t] ? "م" : "ص"), n);
-    });
-  }
   /* KIVO_265 · طلبُ المالك 2026-10-20 («قوائم منسدلة احترافية»): منتقي الوقت قائمةٌ منسدلة — حقلٌ واحد لكل وقت يفتح أوقاتَ اليوم كلَّ ربع ساعة
      (وفي النهاية مدةُ كلِّ خيارٍ من البداية) أو يُكتب وقتٌ حرّ (8:10 م · 20:10 · ٨:١٠ص) · وتغييرُ البداية يُبقي المدةَ كما هي (تتحرّك النهاية معها)
      ما بقيت داخل الشهر. الحالةُ نفسُها (newSh/newSm/newSap · newEh/newEm/newEap) — والخادمُ لا يتغيّر */
@@ -2853,22 +2835,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           onTkStartDay: (t) => this.setState({ newDay: +t.target.value }),
           tkEndDays: a(n),
           onTkEndDay: (t) => this.setState({ newEDay: +t.target.value }),
-          tkSH: c(e.newSh),
-          tkSM: c(e.newSm),
-          tkSAP: e.newSap,
-          tkEH: c(e.newEh),
-          tkEM: c(e.newEm),
-          tkEAP: e.newEap,
-          tkSHUp: () => this.tkBumpH("newSh", 1),
-          tkSHDn: () => this.tkBumpH("newSh", -1),
-          tkSMUp: () => this.tkBumpM("newSm", 1),
-          tkSMDn: () => this.tkBumpM("newSm", -1),
-          tkSAPTog: () => this.tkToggleAp("newSap"),
-          tkEHUp: () => this.tkBumpH("newEh", 1),
-          tkEHDn: () => this.tkBumpH("newEh", -1),
-          tkEMUp: () => this.tkBumpM("newEm", 1),
-          tkEMDn: () => this.tkBumpM("newEm", -1),
-          tkEAPTog: () => this.tkToggleAp("newEap"),
           ...(() => {
             const sMin = this._tkMinOf(e.newSh, e.newSm, e.newSap),
               eMin = this._tkMinOf(e.newEh, e.newEm, e.newEap),
@@ -2981,12 +2947,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             });
             return out;
           })(),
-          tkNumStyle:
-            "height:40px;min-width:42px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;font-feature-settings:'tnum';color:var(--text-primary)",
-          tkArrowStyle:
-            "width:28px;height:20px;border:0;background:var(--brand-tint);color:var(--brand-text);cursor:pointer;font-size:9px;line-height:1;font-family:'Cairo',sans-serif;display:flex;align-items:center;justify-content:center",
-          tkApStyle:
-            "height:40px;min-width:44px;padding:0 10px;border-radius:10px;border:1px solid var(--border-brand-soft);background:var(--brand-tint);color:var(--brand-text);font-size:13px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif",
           tkDaySelStyle:
             "width:100%;height:40px;border:1px solid var(--border-default);border-radius:10px;padding:0 10px;font-size:12.5px;outline:none;font-family:'Cairo',sans-serif;background:var(--bg-input);color:var(--text-primary);cursor:pointer",
           tkDurTxt: h ? "النهاية قبل البداية" : l ? this.tkDurTxt(l) : "—",

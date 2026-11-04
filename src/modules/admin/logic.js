@@ -7531,45 +7531,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               x = (t) => {
                 const e = w(t.ekey);
                 return (e && e.phone) || t.alt || "";
-              },
-              k = (e.empQ || "").trim(),
-              v = KIVO.BassamFind.filter(k, b, (t) => [y(t), t.un, S(t), x(t)]),
-              _ = (b.filter((t) => !t.dis).length, 0 === e.usrPerPage ? 0 : e.usrPerPage || 10),
-              O = 0 === _ ? Math.max(1, v.length) : _,
-              D = Math.max(1, Math.ceil(v.length / O)),
-              T = Math.min(Math.max(1, e.usrPage || 1), D),
-              A = (T - 1) * O,
-              P = v.slice(A, A + O),
-              B = [];
-            {
-              const t = [],
-                e = (e) => {
-                  t.indexOf(e) < 0 && t.push(e);
-                };
-              e(1);
-              for (let t = T - 1; t <= T + 1; t++) t >= 1 && t <= D && e(t);
-              (e(D), t.sort((t, e) => t - e));
-              for (let e = 0; e < t.length; e++) {
-                e > 0 && t[e] - t[e - 1] > 1 && B.push({ dots: !0, label: "…" });
-                const s = t[e];
-                B.push({
-                  dots: !1,
-                  label: String(s),
-                  cur: s === T,
-                  plain: s !== T,
-                  style:
-                    "height:28px;min-width:28px;padding:0 4px;border:0;border-right:1px solid var(--bd-xe1e1e1);font-size:11px;font-weight:400;cursor:pointer;font-family:'Cairo',sans-serif;font-feature-settings:'tnum';" +
-                    (s === T
-                      ? "background:var(--bg-xb99751);color:var(--text-on-brand)"
-                      : "background:transparent;color:var(--fg-x475569)"),
-                  click: () => this.setState({ usrPage: s }),
-                });
-              }
-            }
-            const E = (t) =>
-                "height:28px;width:28px;border:0;border-right:1px solid var(--bd-xe1e1e1);background:transparent;display:flex;align-items:center;justify-content:center;" +
-                (t ? "color:var(--fg-x475569);cursor:pointer" : "color:var(--fg-xcbd5e1);cursor:default"),
-              M = (t) =>
+              };
+            const M = (t) =>
                 "border:0;background:" +
                 (t ? "var(--bg-a185151810p1)" : "transparent") +
                 ";padding:9px 15px;border-radius:10px 10px 0 0;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Cairo',sans-serif;display:inline-flex;align-items:center;gap:7px;position:relative;color:" +
@@ -7894,95 +7857,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               tabEmpsShow: !0,
               tabEmpsLbl: n ? "حسابات " + this._gmKind(o) : t.isSection && t.isSection(o) ? "حسابات القسم" : "حسابات الإدارة",
               dhNever: !1,
-              empQ: e.empQ || "",
-              setEmpQ: (t) => this.setState({ empQ: t.target.value, usrPage: 1 }),
-              empShown: String(v.length),
-              empTotal: String(b.length),
-              empHas: v.length > 0,
-              empEmpty: 0 === v.length,
-              empEmptyMsg: b.length ? "لا نتائج مطابقة لـ «" + k + "»" : "لم يُنشأ أي حساب مستخدم في هذه الإدارة بعد",
-              empRows: P.map((t, e) => {
-                const s = !!t.mgr,
-                  a = u(t.ekey),
-                  r = (t) =>
-                    "width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Cairo',sans-serif;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x53565a);" +
-                    (t || "");
-                return {
-                  i: String(A + e + 1),
-                  name: y(t) || "—",
-                  un: t.un || "—",
-                  eid: S(t) || "—",
-                  ph: x(t) || "—",
-                  permTip:
-                    KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()
-                      ? "صلاحيات المستخدم — اضبطها من هنا"
-                      : s
-                        ? "صلاحيات مدير الإدارة — موروثة من السقف، عرض فقط"
-                        : "صلاحيات المستخدم — عرض (الضبط من صفحة الموظفين)",
-                  permBtnStyle: r(""),
-                  ...this._rowMenu("us" + t.id, [
-                    {
-                      name: "الصلاحيات",
-                      color: "#0e7490",
-                      p1: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z",
-                      p2: "",
-                      run: () => this.setState({ upUid: t.id, upDraft: null, upLensDraft: null, upFor: "", upExp: {}, up24Draft: null, up24Exp: {}, up24Leaf: {} }),
-                    },
-                    {
-                      name: t.dis ? "تفعيل الحساب" : "إيقاف الحساب",
-                      color: t.dis ? "#047857" : "#b45309",
-                      p1: t.dis ? "M5 3l14 9-14 9V3Z" : "M10 4v16",
-                      p2: t.dis ? "" : "M14 4v16",
-                      run: () => this.userDis(t, o, a),
-                    },
-                    {
-                      name: "حذف الحساب",
-                      color: "#dc2626",
-                      danger: !0,
-                      p1: "M3 6h18",
-                      p2: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2",
-                      run: () => this.userDel(t, o, a),
-                    },
-                  ]),
-                  doPerm: () => this.setState({ upUid: t.id, upDraft: null, upLensDraft: null, upFor: "", upExp: {}, up24Draft: null, up24Exp: {}, up24Leaf: {} }),
-                  isDis: !!t.dis,
-                  notDis: !t.dis,
-                  disTip: t.dis ? "تفعيل الحساب" : "إيقاف الحساب",
-                  disBtnStyle: r(""),
-                  doDis: () => this.userDis(t, o, a),
-                  delTip: s ? "حذف حساب مدير الإدارة" : "حذف حساب الدخول",
-                  delBtnStyle: r(""),
-                  doDel: () => this.userDel(t, o, a),
-                  roleLbl: (s && String(t.title || "").trim()) || (s ? "مدير الإدارة" : "موظف"),
-                  roleStyle:
-                    "display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:3px 10px;border-radius:9999px;white-space:nowrap;" +
-                    (s
-                      ? "background:var(--bg-a185151810p12);border:1px solid var(--bd-a185151810p35);color:var(--fg-x8a6f35)"
-                      : "background:var(--bg-a2452452450p9);border:1px solid var(--bd-xe2e8f0);color:var(--fg-x53565a)"),
-                  accLbl: t.dis ? "مجمّد" : "نشط",
-                  accStyle:
-                    "display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:3px 10px;border-radius:9999px;white-space:nowrap;" +
-                    (t.dis
-                      ? "background:var(--bg-a22038380p07);border:1px solid var(--bd-a22038380p3);color:var(--fg-xb91c1c)"
-                      : "background:var(--bg-a4120870p1);border:1px solid var(--bd-a4120870p3);color:var(--fg-x047857)"),
-                };
-              }),
-              usrPgTotal: String(v.length),
-              usrPgRange: 0 === v.length ? "0" : A + 1 + "–" + Math.min(A + O, v.length),
-              usrPgNums: B,
-              usrPerPage: String(_),
-              usrOnPerPage: (t) => {
-                const e = +t.target.value;
-                this.setState({ usrPerPage: 0 === e ? 0 : e || 10, usrPage: 1 });
-              },
-              usrPgFirst: () => this.setState({ usrPage: 1 }),
-              usrPgPrev: () => this.setState({ usrPage: Math.max(1, (this.state.usrPage || 1) - 1) }),
-              usrPgNext: () => this.setState({ usrPage: Math.min(D, (this.state.usrPage || 1) + 1) }),
-              usrPgLast: () => this.setState({ usrPage: D }),
-              usrPgFirstStyle: E(T > 1),
-              usrPgPrevStyle: E(T > 1),
-              usrPgNextStyle: E(T < D),
-              usrPgLastStyle: E(T < D),
               ...(() => {
                 let t = 0,
                   e = 0;

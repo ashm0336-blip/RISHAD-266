@@ -33,8 +33,6 @@
       for (var i=0;i<arr.length;i++){ var e = arr[i]; if (e && (String(e.eid||'')===t || String(e.nid||'')===t || String(e.name||'')===t)) return e; }
       return null;
     },
-    nameOf: function(list, tok){ var e = this.resolve(list, tok); return e ? (e.name || String(tok)) : String(tok == null ? '' : tok); },
-    /* KIVO_238 · IH‑03: الرمزُ القياسيّ للتسكين = ekey (eid الموظف) — أيُّ رمزٍ قديم (nid · الاسم) يُحوَّل إليه عند الكتابة الجديدة؛ وما لا يُعرَف يبقى كما هو */
-    canon: function(list, tok){ if (tok == null) return tok; var e = this.resolve(list, tok); return e && e.eid ? String(e.eid) : tok; }
+    nameOf: function(list, tok){ var e = this.resolve(list, tok); return e ? (e.name || String(tok)) : String(tok == null ? '' : tok); }
   };
 })();

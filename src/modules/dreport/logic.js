@@ -862,17 +862,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     var a = t["m:" + r + "-" + e];
     return !!(a && a.dshut && a.dshut[n]);
   }
-  async drSetDClosed(t, r, e, n) {
-    var a = this.rpLoad(),
-      i = "m:" + t + "-" + r,
-      s = Object.assign({}, a[i] || {}),
-      o = Object.assign({}, s.dshut || {});
-    (n ? (o[e] = 1) : delete o[e],
-      Object.keys(o).length ? (s.dshut = o) : delete s.dshut,
-      Object.keys(s).length ? (a[i] = s) : delete a[i],
-      await this.rpSave(a, { op: "day-closed", y: t, m: r, d: e, value: n }) &&
-      this.setState({ rpTick: (this.state.rpTick || 0) + 1 }));
-  }
   async drToggleDayLock(t, r, e, n) {
     const report = this.rpLoad(), key = "m:" + t + "-" + r, month = { ...(report[key] || {}) };
     const open = { ...(month.dopen || {}) }, closed = { ...(month.dshut || {}) };
@@ -884,17 +873,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const ok = await this.rpSave(report, { op: "day-lock", y: t, m: r, d: e, value: n });
     if (ok) this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
     return ok;
-  }
-  async drSetDOpen(t, r, e, n) {
-    var a = this.rpLoad(),
-      i = "m:" + t + "-" + r,
-      s = Object.assign({}, a[i] || {}),
-      o = Object.assign({}, s.dopen || {});
-    (n ? (o[e] = 1) : delete o[e],
-      Object.keys(o).length ? (s.dopen = o) : delete s.dopen,
-      Object.keys(s).length ? (a[i] = s) : delete a[i],
-      await this.rpSave(a, { op: "day-open", y: t, m: r, d: e, value: n }) &&
-      this.setState({ rpTick: (this.state.rpTick || 0) + 1 }));
   }
   drLockedDay(t, r, e, n) {
     return (this.dayPastDS(r, e, n) && !this.drDayOpen(t, r, e, n)) || this.drDayClosed(t, r, e, n);

@@ -752,11 +752,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   tkRmImg(t) {
     this.setState((e) => ({ tkImgs: (e.tkImgs || []).filter((e, s) => s !== t), tkMeta: (e.tkMeta || []).filter((e, s) => s !== t), tkImgErr: "" }));
   }
-  /* KIVO_265 · البند 18: البياناتُ الوصفية لصورِ الجولة بترتيب معرّفاتها — صورةٌ بلا بيانات (مسارٌ قديم) تحمل وقتَها وحده */
-  _tkMetaOf(ids, s) {
-    const M = (s && s.tkMeta) || [];
-    return ids.map((id, i) => Object.assign({ img: id }, M[i] && M[i].at ? M[i] : { at: Date.now(), lat: null, lng: null, acc: null }));
-  }
   tkFinish(m) {
     const state = this.state, ref = state.tkRef;
     if (!ref) return;

@@ -424,7 +424,6 @@
     setGroupManager: setGroupManager,
     setGroupManagerDis: setGroupManagerDis,
     removeGroupManager: removeGroupManager,
-    isGroupMgr: function(){ var u = cur(); return !!(u && u.role === 'gm'); },
     /* يستعمله جدول الموظفين ليكشف تصادم الهوية/الجوال مع حساب مدير إدارة */
     mgrNumHolder: function(v){
       v = String(v||'').trim(); if (!v) return '';

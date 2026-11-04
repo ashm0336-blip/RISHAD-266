@@ -671,11 +671,6 @@ class Component extends DCLogic {
     try { const tint = document.getElementById("bs-dark-tint"); if (tint) tint.remove(); } catch (e) {}
     try { window.dispatchEvent(new CustomEvent("bassam:theme", { detail: { theme: v } })); } catch (e) {}
   }
-  toastSoon(name) {
-    clearTimeout(this._toastTimer);
-    this.setState({ toast: name + " — قريباً في النسخة الكاملة" });
-    this._toastTimer = setTimeout(() => this.setState({ toast: "" }), 2400);
-  }
   /* تجميع مفاتيح النسخة حسب سقف الإدارة — للنصّ فقط؛ النسخة نفسها تحمل كل المجموعات */
   bkCapNote(keys, did) {
     try { const P = KIVO.BassamPerm; if (!P || !P.keyOn) return "";
@@ -853,7 +848,6 @@ class Component extends DCLogic {
       this._themeReg = true;
       KIVO.BassamTheme = {
         get: () => this.state.theme,
-        isDark: () => this.state.theme === "dark",
         set: (t) => { const v = t === "dark" ? "dark" : "light"; this.applyTheme(v); this.setState({ theme: v }); return v; },
         toggle: () => KIVO.BassamTheme.set(this.state.theme === "dark" ? "light" : "dark")
       };
@@ -905,7 +899,7 @@ class Component extends DCLogic {
     const _ua = (() => { try { const D = KIVO.BassamDepts; return D && D.unitAl ? D.unitAl(D.active()) : "الإدارة"; } catch (e) { return "الإدارة"; } })();
     const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مدير النظام" };
     return {
-      sidebarOpen: open, sidebarClosed: !open,
+      sidebarOpen: open,
       lKpis: labels.kpis, lEmployees: labels.employees, deptDdHead: _ua === "القسم" ? "الوحدة النشطة" : "الإدارة النشطة",
       sbClass: "bsb" + (open ? "" : " cx"),
       headerStyle: "position:fixed;top:0;left:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:81px;background:var(--bg-header);color:var(--text-primary);border-bottom:1px solid var(--border-subtle);font-family:'Cairo',sans-serif;transition:right .25s ease;right:" + (this.state.sidebarOpen ? 260 : 66) + "px",
@@ -1074,19 +1068,9 @@ class Component extends DCLogic {
           })()
         };
       })()),
-      asideStyle: "display:flex;flex-direction:column;position:fixed;right:0;top:0;bottom:0;z-index:40;width:" + W + "px;background:var(--bg-sidebar);border-left:1px solid var(--border-subtle);box-shadow:var(--shadow-soft);transition:width .3s ease-in-out",
       mainStyle: "flex:1;min-width:0;margin-right:" + W + "px;padding-top:82px;" + slide,
-      collapseBtnStyle: (open ? "" : "margin:0 auto;") + "width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--bg-a185151810p08);color:var(--fg-xb99751);border:1px solid var(--bd-a185151810p2);cursor:pointer",
-      collapseChevron: "transition:transform .3s;" + (open ? "" : "transform:rotate(180deg)"),
-      planningStyle: "display:flex;align-items:center;gap:8px;padding:10px 12px 6px;cursor:pointer;color:var(--fg-x8a99a5);", planningIconBox: "display:none",
       goKpis: go("kpis"),
       goDstats: go("dstats"),
-      employeesStyle: item(a === "employees", true), employeesIconBox: box(a === "employees", "md"), goEmployees: go("employees"),
-      staffingStyle: item(a === "staffing", true), staffingIconBox: box(a === "staffing", "md"), goStaffing: go("staffing"),
-      planStyle: item(a === "plan", true), planIconBox: box(a === "plan", "md"),
-      dailyStyle: item(a === "daily", true), dailyIconBox: box(a === "daily", "md"),
-      tasksStyle: item(a === "tasks", true), tasksIconBox: box(a === "tasks", "md"), goTasks: go("tasks"),
-      adminStyle: item(a === "admin", false), adminIconBox: box(a === "admin", "lg"),
       ...((() => {
         const c = this.state.bkConf;
         const off = { bkcOpen: false, bkcPick: true, bkcConfirm: false, bkcCur: 0, bkcFile: 0, bkcOver: 0, bkcFresh: 0,
@@ -1112,8 +1096,6 @@ class Component extends DCLogic {
         };
       })()),
       /* وضع التطبيق المثبّت: لا شريط متصفح — فيُعرض زر التحديث */
-      isAppMode: (() => { try { return (window.matchMedia && (window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches || window.matchMedia("(display-mode: minimal-ui)").matches)) || window.navigator.standalone === true; } catch (e) { return false; } })(),
-      doRefresh: () => { try { location.reload(); } catch (e) {} },
       notAppMode: !((() => { try { return (window.matchMedia && (window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches || window.matchMedia("(display-mode: minimal-ui)").matches)) || window.navigator.standalone === true; } catch (e) { return false; } })()),
       toastOn: !!this.state.toast, toastMsg: this.state.toast,
       toggleTheme: () => { const t = this.state.theme === "dark" ? "light" : "dark"; this.applyTheme(t); this.setState({ theme: t }); },

@@ -14,8 +14,7 @@
   }
   /* حوارُ التأكيد الموحَّد إن كان الجذرُ مركّباً، وإلا confirm() الأصليّ (شاشةُ الدخول) */
   KIVO.bsConfirm = function (o) { try { if (KIVO.BassamConfirm) return KIVO.BassamConfirm(o); } catch (e) {} return Promise.resolve(!!window.confirm(String((o && o.msg) || ''))); };
-  KIVO.BassamImgRefs = { SRC: SRC, re: function(){ return new RegExp(SRC, 'g'); }, idsIn: function(t){ return Object.keys(idsIn(t)); }, collect: collect,
-    isKey: function(k){ return new RegExp('^' + SRC + '$').test(String(k || '')); } };
+  KIVO.BassamImgRefs = { SRC: SRC, re: function(){ return new RegExp(SRC, 'g'); }, idsIn: function(t){ return Object.keys(idsIn(t)); }, collect: collect };
   /* الأشكالُ الفارغة القانونية لموارد الإدارة — مرآةُ جدول الخادم (RES.empty): الخادمُ لا يحذف مفاتيحَ الموارد (keydel)،
      فـ«مسحُ بياناتِ إدارة» = كتابةُ الشكل الفارغ لكلِّ مورد؛ وما ليس مورداً (تنبيهات، أوّلُ تشغيل…) يُحذف كمفتاح. */
   KIVO.__BS_RES_EMPTY = {

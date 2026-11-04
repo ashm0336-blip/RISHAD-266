@@ -432,14 +432,6 @@
     if (__tokNormCache.size < 3000) __tokNormCache.set(lit, n);
     return n;
   }
-  function __tokNeutral(n) {
-    let r, g, b;
-    if (n[0] === "#") { r = parseInt(n.slice(1, 3), 16); g = parseInt(n.slice(3, 5), 16); b = parseInt(n.slice(5, 7), 16); }
-    else { const m = /rgba\((\d+),(\d+),(\d+)/.exec(n); r = +m[1]; g = +m[2]; b = +m[3]; }
-    const mx = Math.max(r, g, b) / 255, mn = Math.min(r, g, b) / 255, l = (mx + mn) / 2, d = mx - mn;
-    const sat = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
-    return sat < 0.30 || l > 0.985 || l < 0.05;
-  }
   /* لونُ نصٍّ داكنٌ غيرُ مسجَّل (لوحةُ بياناتٍ مختارةٌ للفاتح): يُرفع سطوعُه بصبغته في الداكن عبر light-dark() —
      القيمةُ مستقلّةٌ عن السمة (color-scheme يقرّر)، بلا تسجيلِ رموزٍ ولا إعادةِ حساب؛ قاعدةُ الرفع = قاعدةُ dark_of للنصّ. */
   const __liftCache = /* @__PURE__ */ new Map();

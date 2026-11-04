@@ -203,7 +203,6 @@
     active: active,
     context: context,
     activeName: function(){ var a=active(); var d=reg().filter(function(x){return x.id===a;})[0]; return d?d.name:''; },
-    activeSys: function(){ var a=active(); var d=reg().filter(function(x){return x.id===a;})[0]; return (d&&d.sys)||''; },
     /* كانت تقبل أي معرّف؛ والمعرّف المعلّق كان يسقط صامتاً على أول إدارة
        أي «أعطِه بيانات إدارة أخرى» بدل «امنعه» */
     setActive: function(id){
@@ -657,15 +656,6 @@
       });
       return Object.keys(ids);
     },
-    /* كان يحذف مفاتيح التخزين فقط ويترك صور الخرائط في IndexedDB بلا مرجع
-       — فتُعاد حزمها في كل نسخة احتياطية لاحقة وتضخّمها بلا سبب مرئي */
-    removeDept: function(id){
-      var imgs = this.imageIdsOf(id);
-      this.keysOf(id).forEach(function(k){ RAW.removeItem.call(localStorage, k); });
-      if (imgs.length && KIVO.BassamIDB) imgs.forEach(function(x){ try { KIVO.BassamIDB.del(x); } catch(e){} });
-      invalidate();
-      return imgs.length;
-    },
     /* ── هيكل القطاع الافتراضي — يُزرع مرةً عند أول تثبيت، أو بزر «زرع هيكل القطاع»
        من مدير النظام ← الإدارات ما دامت المنصة على إدارتها الافتراضية وحدها.
        ما وُجد باسمه يُربط ولا يُنشأ من جديد — فلا يُحذف شيءٌ ولا تُمسّ بيانات قائمة. */
@@ -679,7 +669,6 @@
         { name: 'غرفة عمليات المسجد الحرام',             depts: ['مركز الاتصال'] }
       ]
     },
-    isDefaultOnly: function(){ var l = reg(); return this.nodes().length === 0 && l.length === 1 && !l[0].gid; },
     needsStructure: function(){ var S = this.STRUCT_DEFAULT; return !this.nodes().some(function(n){ return n.name === S.sector.name; }); },
     seedStructure: function(){
       var self = this, S = this.STRUCT_DEFAULT, out = { ok: true, nodes: 0, depts: 0, linked: 0 };

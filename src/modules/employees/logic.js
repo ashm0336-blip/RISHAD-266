@@ -407,7 +407,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } finally { this._cuBusy = false; this.setState({ cuSaving: false }); }
   }
   cuOrd(y, m) { return 12 * +y + +m; }
-  cuHolderKey(row) { return row.eid; }
   cuHolderLabel(key) {
     const row = ((this.state.cuData || {}).rows || []).find(row => row.holderKey === key);
     const employee = (this.state.employees || []).find(employee => (employee.eid || employee.name) === key);
@@ -2162,11 +2161,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       "|" +
       ((KIVO.BassamDepts && KIVO.BassamDepts.active && KIVO.BassamDepts.active()) || "")
     );
-  }
-  _bsCuMemo() {
-    const t = this.state.cuData,
-      e = this.state.employees;
-    return ((this._bsCuM && this._bsCuM.s === t && this._bsCuM.e === e) || (this._bsCuM = { s: t, e, m: Object.create(null) }), this._bsCuM.m);
   }
   componentWillUnmount() {
     this._bsOutM && document.removeEventListener("click", this._bsOutM, !0);
