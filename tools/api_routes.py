@@ -15,7 +15,7 @@ GUARD = {
     'session': 'جلسةٌ صالحة (session) وحسابٌ قائمٌ غيرُ مجمَّد',
     'actor':   'جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead)',
     'super':   'مديرُ النظام وحده (isAdminPath ⇒ role super)',
-    'enforce': 'بيئةُ الإنفاذ (enfEnvOn) ∧ مديرُ النظام — Preview فقط',
+    'enforce': 'بيئةُ الإنفاذ (enfEnvOn: المتغيّر KIVO_AUTHZ_MODE = enforce وحده، ومنها Production — config/wrangler.toml) ∧ مديرُ النظام · و/api/authz-test وحده يشترط أداةَ الاختبار (KIVO_TEST_FIXTURE + مضيف Test) ويُنزع من Production',
 }
 FN_RX = re.compile(r'^(?:async\s+)?function\s+(\w+)\s*\(|^\s{2}(?:async\s+)?(?!(?:if|for|while|switch|catch|return)\b)(\w+)\s*\([^)]*\)\s*\{', re.M)
 RT_RX = re.compile(r"path === '(/api/[A-Za-z0-9/_-]+)'|path\.indexOf\('(/api/[A-Za-z0-9/_-]+)'\) === 0")

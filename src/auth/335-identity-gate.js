@@ -18,7 +18,6 @@
     if (u.role === 'gm') { var gd = gmDepts(u.gid); return gd.some(function(d){ return d.id === id; }) ? id : ((gd[0] || {}).id || null); }
     return null;
   });
-  if (u0 && (u0.role === 'dept' || u0.role === 'staff') && u0.deptId && D.active() !== u0.deptId) D.setActive(u0.deptId);
   if (u0 && u0.role === 'gm') gmEnsureActive(u0);
   if (u0 && !needsPwChange()) {
     ['click','keydown','mousemove'].forEach(function(ev){ try { window.addEventListener(ev, touch, { passive:true }); } catch(e){} });

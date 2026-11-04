@@ -5757,7 +5757,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           r = (t) => {
             try {
               const P = KIVO.BassamPerm;
-              return !P || !P.subOn || (!!P.subOn("emps", "store" === t ? "custody" : t) && ("tasks" !== t || !P.can || !!P.can("tasks", "view")));
+              return !P || !P.subOn || !!P.subOn("emps", "store" === t ? "custody" : t);
             } catch (t) {
               return !0;
             }

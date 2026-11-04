@@ -37,7 +37,9 @@ def build():
         else: guard = 'P.can("' + key + '","view")' + (' ⇐ ' + '، '.join(vk[:6]) + (' …' if len(vk) > 6 else '') if vk else '')
         tabs = [t['key'] for t in p.get('tabs', [])] + [s['key'] for s in p.get('subs', [])]
         beh = ('تحت «' + M['routeNames'].get(dict((x['key'], x['nav']) for x in M['pages'])[p['under']], p['under']) + '»' if p.get('under') else ('في القائمة' if key in M['navOrder'] or nav in M['navOrder'] else 'رابطٌ في التذييل/القائمة الثانوية'))
-        if key in M['tabAddr'] or nav in M['tabAddr']: beh += ' · العنوانُ يحمل التبويب #/' + nav + '/<تبويب>'
+        ta = M['tabAddr'].get(key, M['tabAddr'].get(nav))
+        if ta == 1: beh += ' · العنوانُ يحمل التبويب #/' + nav + '/<تبويب>'
+        elif ta: beh += ' · العنوانُ يحمل ' + ' · '.join('#/' + nav + '/' + t for t in ta)
         rows.append((nav, title, key, owner, guard, beh, tabs))
         if not title: bad.append('#/' + nav + ': بلا عنوان في routeNames')
         if not owner: bad.append('#/' + nav + ': بلا وحدةٍ مالكة (ميثاقُ الوحدة لا يذكر المسار)')

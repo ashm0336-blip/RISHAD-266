@@ -897,24 +897,6 @@
     var L = Array.isArray(lens) ? lens : empLens(ekey, d);
     return p24SetGrant(ekey, d, p24Delta(E, p24Translate(sheet || empPerms(ekey, d), C), C, L, tgt), src);
   }
-  /* تضييقُ السقف يقصّ plus خارجَه كما يقصّ الأوراقَ والعدسات (والإسقاطُ يبقى) */
-  function p24TrimGrants(ds){
-    if (!azZ() || !p24R() || !isSuper()) return 0;
-    var n = 0;
-    (ds || []).forEach(function(d){
-      if (p24GrantsRaw(d) == null) return;
-      var rec = p24GrantsRec(d), C = p24Ceil(d), ch = false;
-      Object.keys(rec.emp).forEach(function(ek){
-        var g = rec.emp[ek]; if (!g || typeof g !== 'object' || !Array.isArray(g.plus)) return;
-        var keep = g.plus.filter(function(k){ return p24KeyOn(k, C); });
-        if (keep.length === g.plus.length) return;
-        n += g.plus.length - keep.length; g.plus = keep; ch = true;
-        if (!keep.length && !(Array.isArray(g.minus) && g.minus.length)) delete rec.emp[ek];
-      });
-      if (ch) { try { RAW.setItem.call(localStorage, 'bsdept:' + d + ':bassam_grants_v1', JSON.stringify(rec)); } catch(e){ /* تعذّرُ التخزين: الخادمُ يقصّ بالسقف على كل حال (enfKeyOnCeiling) */ } }
-    });
-    return n;
-  }
   /* بعد منح قالب: keys24 ⇒ فرقُه بالضبط؛ وإلا يُرفع المنحُ السابق */
   function p24AfterTpl(ekey, tplId, d){
     if (!azZ() || !ekey || !p24R()) return null;
@@ -936,7 +918,7 @@
   I.p24AfterTpl = p24AfterTpl; I.p24Apply = p24Apply; I.p24Assignable = p24Assignable; I.p24Ceil = p24Ceil; I.p24Cover = p24Cover;
   I.p24Delta = p24Delta; I.p24Effective = p24Effective; I.p24GrantOf = p24GrantOf; I.p24Grantable = p24Grantable; I.p24Ix = p24Ix;
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
-  I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.p24TrimGrants = p24TrimGrants; I.patternApply = patternApply; I.capOwnOf = capOwnOf; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
+  I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.patternApply = patternApply; I.capOwnOf = capOwnOf; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
   I.patternMeta = patternMeta; I.patternSeed = patternSeed; I.patternSet = patternSet; I.patterns = patterns; I.permSave = permSave;
   I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.seedSectionCap = seedSectionCap; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;

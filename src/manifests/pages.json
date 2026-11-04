@@ -291,7 +291,19 @@
   "award": 1,
   "admin": 1,
   "daily": {
-   "rounds": 1
+   "rounds": 1,
+   "dreport": 1,
+   "tasks": 1
+  },
+  "dstats": {
+   "haram": 1,
+   "nabawi": 1
+  },
+  "irshad": {
+   "records": 1
+  },
+  "seized": {
+   "records": 1
   }
  },
  "navOrder": [

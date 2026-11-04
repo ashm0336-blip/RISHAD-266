@@ -20,7 +20,7 @@
       orderRows = I.orderRows, p24AfterTpl = I.p24AfterTpl, p24Apply = I.p24Apply, p24Assignable = I.p24Assignable, p24Ceil = I.p24Ceil,
       p24Cover = I.p24Cover, p24Delta = I.p24Delta, p24Effective = I.p24Effective, p24GrantOf = I.p24GrantOf, p24Grantable = I.p24Grantable,
       p24Ix = I.p24Ix, p24KeyOn = I.p24KeyOn, p24LeafOn = I.p24LeafOn, p24LensHosted = I.p24LensHosted, p24LensOf = I.p24LensOf, p24R = I.p24R,
-      p24SetGrant = I.p24SetGrant, p24Translate = I.p24Translate, p24TrimGrants = I.p24TrimGrants, patternApply = I.patternApply,
+      p24SetGrant = I.p24SetGrant, p24Translate = I.p24Translate, patternApply = I.patternApply,
       patternMeta = I.patternMeta, patternSeed = I.patternSeed, patternSet = I.patternSet, patterns = I.patterns, pinRole = I.pinRole,
       pruneDeptAccounts = I.pruneDeptAccounts, pruneOrphanEmpPerms = I.pruneOrphanEmpPerms, pubUsers = I.pubUsers,
       purgeDeptAccounts = I.purgeDeptAccounts, pwCheck = I.pwCheck, pwRuleText = I.pwRuleText, rawCap = I.rawCap, rawUsers = I.rawUsers,
@@ -222,7 +222,7 @@
     dropEmpPerms: dropEmpPerms, pruneOrphanEmpPerms: pruneOrphanEmpPerms,
     myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk,
     key: azKey, authz: function(){ return azZ(); },
-    p24: { R: p24R, ix: p24Ix, ceil: p24Ceil, leafOn: p24LeafOn, keyOn: p24KeyOn, lensHosted: p24LensHosted, translate: p24Translate, grantOf: p24GrantOf, grantable: p24Grantable, assignable: p24Assignable, effective: p24Effective, delta: p24Delta, cover: p24Cover, setGrant: p24SetGrant, apply: p24Apply, afterTpl: p24AfterTpl, trimGrants: p24TrimGrants, lensOf: p24LensOf, DERIVE: P24_DERIVE } };
+    p24: { R: p24R, ix: p24Ix, ceil: p24Ceil, leafOn: p24LeafOn, keyOn: p24KeyOn, lensHosted: p24LensHosted, translate: p24Translate, grantOf: p24GrantOf, grantable: p24Grantable, assignable: p24Assignable, effective: p24Effective, delta: p24Delta, cover: p24Cover, setGrant: p24SetGrant, apply: p24Apply, afterTpl: p24AfterTpl, lensOf: p24LensOf, DERIVE: P24_DERIVE } };
 
   /* ═══ الطاقم الإشرافي — من لا يُسكَّن على المواقع ═══
      المعيار قالب الصلاحية الموسوم (سواء مُنح من الجدول الشهري أو التقرير اليومي)،
