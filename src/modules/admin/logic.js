@@ -3375,8 +3375,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!t.dis) return void i(a.freezeStaff(t.ekey, e), "أُوقف حساب «" + (t.name || "المستخدم") + "»");
     let n = null;
     try {
-      const s = r.raw.getItem.call(localStorage, "bsdept:" + e + ":bassam_employees_v1");
-      let a = JSON.parse(s);
+      let a = null;
+      try {
+        a = KIVO.__BS_SRV.operations.reference("bsdept:" + e + ":bassam_employees_v1");
+      } catch (t) {}
       if ((Array.isArray(a) || (a = []), e === r.active()))
         try {
           const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
@@ -8543,8 +8545,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               w = (r && r.PAGE_REG) || [],
               y = (() => {
                 try {
-                  const e = t.raw && t.raw.getItem ? t.raw.getItem.call(localStorage, "bsdept:" + o + ":bassam_employees_v1") : null;
-                  let a = JSON.parse(e);
+                  let a = null;
+                  try {
+                    a = KIVO.__BS_SRV.operations.reference("bsdept:" + o + ":bassam_employees_v1");
+                  } catch (t) {
+                    this.scLoadReferences(o, false);
+                  }
                   if ((Array.isArray(a) || (a = []), o === s))
                     try {
                       const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
@@ -8928,9 +8934,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               return a.map((r) => {
                 const c = (() => {
                     try {
-                      const e = t.raw && t.raw.getItem ? t.raw.getItem.call(localStorage, "bsdept:" + r.id + ":bassam_employees_v1") : null;
-                      let a = 0;
-                      const i = JSON.parse(e);
+                      let a = 0,
+                        i = null;
+                      try {
+                        i = KIVO.__BS_SRV.operations.reference("bsdept:" + r.id + ":bassam_employees_v1");
+                      } catch (t) {}
                       if ((Array.isArray(i) && (a = i.length), r.id === s))
                         try {
                           const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");

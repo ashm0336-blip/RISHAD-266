@@ -203,36 +203,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
     }
     try {
-      const t = KIVO.BassamDepts;
-      if (t && t.list && t.raw) {
-        const e = t.active(),
-          r = t.list().filter((t) => t.id !== e);
-        for (let e = 0; e < r.length; e++) {
-          let n = [];
-          try {
-            n = JSON.parse(t.raw.getItem.call(localStorage, "bsdept:" + r[e].id + ":bassam_employees_v1")) || [];
-          } catch (t) {
-            n = [];
-          }
-          for (let t = 0; t < n.length; t++) {
-            const e = n[t];
-            if (e) {
-              if (o && String(e.nid || "").trim() === o) return "رقم الهوية " + o + " مستخدم بالفعل في إدارة أخرى";
-              if (l && String(e.phone || "").trim() === l) return "رقم الجوال " + l + " مستخدم بالفعل في إدارة أخرى";
-              if (s && String(e.empno || "").trim() === s) return "الرقم الوظيفي " + s + " مستخدم بالفعل في إدارة أخرى";
-              if (
-                d &&
-                String(e.email || "")
-                  .trim()
-                  .toLowerCase() === d
-              )
-                return "البريد الإلكتروني " + d + " مستخدم بالفعل في إدارة أخرى";
-            }
-          }
-        }
-      }
-    } catch (t) {}
-    try {
       const t = KIVO.BassamAuth;
       if (t && t.mgrNumHolder) {
         const e = o ? t.mgrNumHolder(o) : "";
