@@ -19,19 +19,20 @@ async function authPublicRoutes(request, env, path, url) {
     }
     var npw = String(br.pw == null ? '' : br.pw);
     if (!pwCheck(npw, 'super')) return json({ ok: 0, err: 'كلمة المرور الجديدة ضعيفة — 6 أرقام (غير مكررة ولا متتابعة)' });
-    var usR = (await usersList(env)) || [];
+    var usRv = (await revsAll(env))[K_USERS] || 0, usR = (await usersList(env)) || [];   /* the revision read before the list guards the write below */
     var tgt = usR.filter(function (x) { return x.id === rkU && x.role === 'super'; })[0] || usR.filter(function (x) { return x.role === 'super' && !x.bk; })[0] || usR.filter(function (x) { return x.role === 'super'; })[0];
     if (!tgt) return json({ ok: 0, err: 'لا يوجد حساب مدير نظام' });
     var phR = await hashPw(npw);
     var usR2 = usR.map(function (x) { return x.id === tgt.id ? Object.assign({}, x, { ph: phR, dis: 0, mc: 0 }) : x; });
-    var stR = kvPutStmts(env, 'kv', K_USERS, JSON.stringify(usR2));
+    var stR = [revGuard(env, K_USERS, usRv)].concat(kvPutStmts(env, 'kv', K_USERS, JSON.stringify(usR2)));   /* a concurrent account save or recovery since the read ⇒ nothing written, key kept */
     var rvR = await nextRev(env);
     stR.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(K_USERS, rvR));
     stR.push(env.DB.prepare('DELETE FROM meta WHERE k IN (?1, ?2, ?3)').bind('rk', 'rk_uid', 'rk_meta'));   /* يُبطل بعد الاستعمال */
     stR.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rk_used', JSON.stringify({ ts: Date.now(), uid: tgt.id, city: rmR.city, dev: rmR.dev })));
     stR.push(env.DB.prepare('DELETE FROM sess WHERE uid = ?1').bind(tgt.id));
     stR.push(env.DB.prepare('DELETE FROM guard WHERE gk IN (?1, ?2)').bind('u:' + String(tgt.un).toLowerCase(), gkR));
-    await env.DB.batch(stR);
+    try { await env.DB.batch(stR); }
+    catch (eR) { if (isRevConflict(eR)) return json({ ok: 0, err: 'تغيّرت الحسابات أثناء الاستعادة — لم يُحفظ شيء، أعد المحاولة' }, 409); throw eR; }
     await secLog(env, { uid: tgt.id, un: tgt.un, act: 'recover_ok', detail: 'password-reset-by-recovery-key', ip: rmR.ip, city: rmR.city, dev: rmR.dev });
     return json({ ok: 1, un: tgt.un });
   }

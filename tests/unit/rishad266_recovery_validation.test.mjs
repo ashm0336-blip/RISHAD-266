@@ -121,3 +121,52 @@ test('The authenticated reset route cannot accept an unsupported recovery-key ha
   assert.equal(usersText(W), before);
   assert.equal(W.DB.q("SELECT v FROM meta WHERE k='rk'")[0].v, UNSUPPORTED);
 });
+
+/* RISHAD-266 (2026-11-04) · /api/recover writes the account list under the approved revision guard (as login does). */
+test('Recovery racing a concurrent account save writes nothing, keeps the one-time key, and answers 409', async () => {
+  const W = world();
+  await seed(W, await W.context.hashPw('rk:' + RECOVERY_KEY));
+  const other = { id: 'TEST_ONLY_other', un: '0509999999', role: 'staff', name: 'TEST_ONLY saved concurrently', ph: 'x' };
+  /* the competing save lands after the route read the list and before its batch commits */
+  const batch = W.DB.batch.bind(W.DB); let raced = false;
+  W.DB.batch = async (stmts) => {
+    if (!raced && stmts.some(s => /DELETE FROM meta WHERE k IN/.test(s.sql))) {
+      raced = true;
+      const cur = JSON.parse(usersText(W)); cur.push(other);
+      await batch(W.context.kvPutStmts(W.env, 'kv', KEY, JSON.stringify(cur)).concat([W.DB.prepare('UPDATE revs SET rev = rev + 1 WHERE k = ?1').bind(KEY)]));
+    }
+    return batch(stmts);
+  };
+  const R = request('/api/recover', { key: RECOVERY_KEY, pw: NEW_PIN });
+  const result = await W.context.authPublicRoutes(R.request, W.env, R.url.pathname, R.url);
+  assert.equal(result.status, 409);
+  assert.equal((await result.json()).ok, 0);
+  assert.ok(raced, 'the concurrent save was injected');
+  const accounts = JSON.parse(usersText(W));
+  assert.ok(accounts.some(a => a.id === other.id), 'the concurrent save is not lost');
+  assert.equal(await W.context.verifyPw(PIN, accounts.find(a => a.id === 'fixture-super').ph), true, 'the PIN is unchanged');
+  assert.equal(W.DB.q("SELECT COUNT(*) AS n FROM meta WHERE k='rk'")[0].n, 1, 'the one-time key is not consumed');
+  /* the retry succeeds on the fresh list and keeps the concurrent account */
+  W.DB.batch = batch;
+  const R2 = request('/api/recover', { key: RECOVERY_KEY, pw: NEW_PIN });
+  assert.equal((await (await W.context.authPublicRoutes(R2.request, W.env, R2.url.pathname, R2.url)).json()).ok, 1);
+  const after = JSON.parse(usersText(W));
+  assert.ok(after.some(a => a.id === other.id));
+  assert.equal(await W.context.verifyPw(NEW_PIN, after.find(a => a.id === 'fixture-super').ph), true);
+  assert.equal(W.DB.q("SELECT COUNT(*) AS n FROM meta WHERE k='rk'")[0].n, 0);
+});
+
+test('Two concurrent recoveries with the same key: exactly one succeeds and the stored PIN is the winner\'s', async () => {
+  const W = world();
+  await seed(W, await W.context.hashPw('rk:' + RECOVERY_KEY));
+  const PIN_A = String(400000 + 61728), PIN_B = String(700000 + 15926);
+  const A = request('/api/recover', { key: RECOVERY_KEY, pw: PIN_A }), B = request('/api/recover', { key: RECOVERY_KEY, pw: PIN_B });
+  const [ra, rb] = await Promise.all([W.context.authPublicRoutes(A.request, W.env, A.url.pathname, A.url), W.context.authPublicRoutes(B.request, W.env, B.url.pathname, B.url)]);
+  const ja = await ra.json(), jb = await rb.json();
+  assert.equal([ja.ok, jb.ok].filter(x => x === 1).length, 1, 'exactly one recovery succeeds: ' + JSON.stringify([ra.status, ja, rb.status, jb]));
+  const winner = ja.ok === 1 ? PIN_A : PIN_B, loser = ja.ok === 1 ? PIN_B : PIN_A;
+  const ph = JSON.parse(usersText(W)).find(a => a.id === 'fixture-super').ph;
+  assert.equal(await W.context.verifyPw(winner, ph), true);
+  assert.equal(await W.context.verifyPw(loser, ph), false);
+  assert.equal(W.DB.q("SELECT COUNT(*) AS n FROM meta WHERE k='rk'")[0].n, 0);
+});
