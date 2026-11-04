@@ -650,8 +650,10 @@
     var u = cur(); if (!u) return {};
     var all = {};
     if (u.role === 'super') {
-      /* المشرف العام: صلاحياته على الإدارة النشطة بسقفها — والإعدادات له دائماً */
+      /* المشرف العام: الوحدةُ المختارة تغيّر البيانات المعروضة لا هويتَه — كلُّ صفحاتها عرضاً (الخادمُ يقرأ له كلَّ شيء)،
+         وأفعالُ الكتابة بسقفها (قرار هـ: السقفُ يحكم الجميع) — والإعدادات له دائماً */
       all = capAllPerms(curDept());
+      PAGE_KEYS.forEach(function(k){ [k].concat(leafKeysOf(k)).forEach(function(l){ if (!all[l]) all[l] = ['view']; }); });
       all.admin = ALL_ACTS.slice(); leafKeysOf('admin').forEach(function(l){ all[l] = ALL_ACTS.slice(); });
       return all;
     }

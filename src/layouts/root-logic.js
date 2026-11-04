@@ -1063,10 +1063,12 @@ class Component extends DCLogic {
       goKpis: go("kpis"),
       goDstats: go("dstats"),
       goEmployees: go("employees"),
+      /* لوحةُ الحوار تُوقف النقرةَ عن خلفيّتها (التي تُلغي) — لحوار التأكيد وحوار الاستيراد معاً، مفتوحاً كان حوارُ الاستيراد أم لا */
+      bkcStop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       ...((() => {
         const c = this.state.bkConf;
         const off = { bkcOpen: false, bkcPick: true, bkcConfirm: false, bkcCur: 0, bkcFile: 0, bkcOver: 0, bkcFresh: 0,
-          bkcMergeDesc: "", bkcReplaceDesc: "", bkcWarn: "", bkcHead: "", bkcSub: "", bkcStop: () => {},
+          bkcMergeDesc: "", bkcReplaceDesc: "", bkcWarn: "", bkcHead: "", bkcSub: "",
           bkcCancel: () => {}, bkcMerge: () => {}, bkcAskReplace: () => {}, bkcDoReplace: () => {}, bkcBack: () => {} };
         if (!c) return off;
         const D = KIVO.BassamDepts;
@@ -1079,7 +1081,6 @@ class Component extends DCLogic {
           bkcMergeDesc: "تُضاف مجموعات البيانات المفقودة فقط؛ المجموعات والمجالات الموجودة تبقى كما هي، دون دمج السجلات داخلها.",
           bkcReplaceDesc: "يعرض الخادم جرد الإدارة الهدف، ثم يستبدل مواردها المعلنة بالنسخة في معاملة واحدة ويحفظ لقطة ما قبلها.",
           bkcWarn: "الإدارات الأخرى والمجالات العامة لا تتأثر. ستُراجع الصلاحيات والنطاق على الخادم قبل التأكيد النهائي.",
-          bkcStop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
           bkcCancel: () => { if(this._bkSaving||this._bkPend&&this._bkPend.uncertain){this.bkToast("تعذّر تأكيد نتيجة الطلب؛ أعد المحاولة نفسها قبل إغلاق الملف",true);return;}this._bkPend = null; this.setState({ bkConf: null, bkStep: "pick" }); this.bkToast("أُلغي الاستيراد — لم يتغيّر شيء"); },
           bkcMerge: () => this.bkCommit("merge"),
           bkcAskReplace: () => this.setState({ bkStep: "confirm" }),
