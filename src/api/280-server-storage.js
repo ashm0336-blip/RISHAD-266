@@ -30,7 +30,7 @@
   ]);
   function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '')) !== -1; }
   function operationKey9(k) { return typeof k === 'string' && /^bsdept:[^:\s,]+:bassam_[A-Za-z0-9_]+$/.test(k) && operationResource9(k); }
-  var DEVK9 = { bassam_session_v1: 1, bslg_v1: 1, bassam_theme: 1,
+  var DEVK9 = { bassam_session_v1: 1, bassam_theme: 1,
                 bassam_active_dept_v1: 1, bassam_fresh_login_v1: 1, bassam_notif_mute_v1: 1 };
   /* «آخر صفحة مفتوحة» تفضيلُ جهازٍ لا بيانات فريق: كانت تُرسل للخادم — وعند الخروج
      تُرسل بعد إنهاء الجلسة فتُرفض (401) ويومض شريط «انتهت جلستك» قبل إعادة التحميل */
@@ -1282,18 +1282,7 @@
     if (v9 !== null && v9.length >= 1024 && KIVO.__bsFromStore) KIVO.__bsFromStore.note(v9);
     return v9;
   };
-  /* ختمُ معرّفات المهام وتدقيقُ التعديلات العادية فقط؛ العملياتُ المغلقة لا تمرّ بعلامات متصفح عامة. */
-  function audTasks9(k, v) {
-    if (!/bassam_tasks_v1$/.test(k) || !KIVO.BassamAudit) return v;
-    try {
-      var tj = JSON.parse(v); if (!tj || typeof tj !== "object" || Array.isArray(tj)) return v;
-      var old = null; try { old = mem[k] ? JSON.parse(mem[k]) : null; } catch (e0) { old = null; }
-      var need = 0;
-      for (var dk in tj) { var L = tj[dk]; if (!Array.isArray(L)) continue; for (var i = 0; i < L.length; i++) { var t = L[i]; if (!Array.isArray(t) || t[22]) continue; var o = old && Array.isArray(old[dk]) ? old[dk][i] : null; if (o && Array.isArray(o) && o[22] && o[13] === t[13]) t[22] = o[22]; else need++; } }
-      if (need) KIVO.BassamAudit.stampTasks(tj);
-      return JSON.stringify(tj);
-    } catch (e) { return v; }
-  }
+  /* تدقيقُ التعديلات العادية فقط؛ العملياتُ المغلقة لا تمرّ بعلامات متصفح عامة. */
   function audEvents9(setMap) {
     var out = [], A = KIVO.BassamAudit; if (!A || !A.events) return out;
     for (var k in setMap) {
@@ -1308,7 +1297,6 @@
     if (relationalKey9(k) || operationResource9(k)) throw new Error('relational-domain-api-required');
     if (invalidScope9(k)) throw new Error('department-scope-required');
     if (devKey9(k) || !teamKey9(k)) return oSet.call(this, k, v);
-    v = audTasks9(k, v);
     if (mem[k] === v) return;                     /* لا كتابة بلا تغيير */
     mem[k] = v; pSet[k] = v; delete pDel[k]; dirty = true;
     kick();

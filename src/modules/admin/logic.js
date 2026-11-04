@@ -1706,9 +1706,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 try {
                   KIVO.__BS_SRV && KIVO.__BS_SRV.bye && KIVO.__BS_SRV.bye();
                 } catch (t) {}
-                try {
-                  localStorage.clear();
-                } catch (t) {}
                 location.reload();
               };
               KIVO

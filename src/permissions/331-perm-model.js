@@ -566,34 +566,6 @@
       R.setItem.call(localStorage, FLAG, '1');
     } catch(e){}
   })();
-  /* ═══ R180: «الإحصائيات اليومية» مفتاحٌ عامٌّ واحد — جمعُ ما كُتب تحت الإدارات ═══
-     كانت طبقةُ التخزين تكتبه تحت الإدارة النشطة (bsdept:<id>:bassam_dstats_v1) فصار لكلِّ إدارةٍ نسختُها ولا يراها
-     غيرُ مدير النظام. أُدرج في المفاتيح العامة، وتُجمع النسخُ هنا مرّةً واحدة عند أوّل تحميلٍ لمدير النظام:
-     ما في المفتاح العامّ يبقى، ثم أغنى النسخ أيّاماً فما دونها — يُضاف اليومُ أو القفلُ الغائب ولا يُستبدل شيء.
-     والنسخُ القديمة تبقى في أماكنها كما هي (لا يُحذف شيء)، و«mig» في المخزن نفسِه علامةُ تمام الجمع
-     فلا يعود يومٌ حذفه صاحبُه بعد ذلك. */
-  (function migrateDstatsGlobal(){
-    try {
-      if (!isSuper()) return;
-      var K = 'bassam_dstats_v1', gRaw = RAW.getItem.call(localStorage, K), g = null;
-      if (gRaw != null && gRaw.indexOf('"mig":1') !== -1) return;       /* تمّ الجمع — لا يُفكّ المخزنُ كلُّه في كل تحميل */
-      if (gRaw != null) { try { g = JSON.parse(gRaw); } catch(e0){ return; } if (!g || typeof g !== 'object' || Array.isArray(g) || g.mig) return; }
-      var re = /^bsdept:[^:]+:bassam_dstats_v1$/, src = [];
-      RAW.allKeys().forEach(function(k){ if (!re.test(k)) return;
-        try { var o = JSON.parse(RAW.getItem.call(localStorage, k)); if (o && typeof o === 'object' && !Array.isArray(o)) src.push(o); } catch(e1){} });
-      if (!src.length) return;
-      var nDays = function(o){ var n = 0; ['haram','nabawi'].forEach(function(st){ var m = o[st]; if (m && typeof m === 'object') n += Object.keys(m).length; }); return n; };
-      src.sort(function(a, b){ return nDays(b) - nDays(a); });
-      var out = g ? JSON.parse(JSON.stringify(g)) : {};
-      src.forEach(function(o){
-        ['haram','nabawi','locks'].forEach(function(st){ var m = o[st]; if (!m || typeof m !== 'object' || Array.isArray(m)) return;
-          if (!out[st] || typeof out[st] !== 'object' || Array.isArray(out[st])) out[st] = {};
-          Object.keys(m).forEach(function(k){ if (!Object.prototype.hasOwnProperty.call(out[st], k)) out[st][k] = m[k]; }); });
-      });
-      out.mig = 1;
-      RAW.setItem.call(localStorage, K, JSON.stringify(out));
-    } catch(e){}
-  })();
   /* هوية القالب الممنوح — تُحفظ صراحةً لأن استنتاجها من الصفحات يخلط بين
      قالبين يحملان نفس الصفحات فيظهر الأوّل منهما لكل من مُنح أيّاً منهما. */
   function empTpl(ekey, did){

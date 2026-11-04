@@ -364,9 +364,8 @@
     }
     function set(y, m, d){
       if (!(+y > 0 && +m > 0 && +d > 0)) return null;
-      var v = { y: +y, m: +m, d: +d }, s = JSON.stringify(v), u = uidOf();
+      var v = { y: +y, m: +m, d: +d }, s = JSON.stringify(v);
       ssSet(tabKey(), s);
-      if (u) { try { localStorage.setItem(K + ':' + u, s); } catch(e){ /* مخزنٌ ممتلئ أو ممنوع — يبقى يومُ التبويب */ } }
       /* الشاشتان قد تبقيان مركّبتين والتبويب يُظهر إحداهما ويخفي الأخرى،
          فلا يكفي componentDidMount — يُبثّ الحدث فتلتقطه المخفيّة حالاً. */
       try { window.dispatchEvent(new CustomEvent('bs-dayfocus', { detail: v })); } catch(e){}
