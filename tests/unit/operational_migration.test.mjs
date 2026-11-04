@@ -368,7 +368,6 @@ test("global aliases, children, malformed namespaces, orphan departments and unk
     try {
       put(env, C.K_DEPTS, [{ id: "TEST_ONLY_OPERATIONS_D1" }]);
       put(env, key, {});
-      assert.equal(C.opLegacyKey(key), true);
       const before = snapshot(env);
       await assert.rejects(C.opLegacyPrepare(env), /operations-cutover-scope/);
       assert.equal(snapshot(env), before);

@@ -5,15 +5,6 @@ function opLegacyNames() {
     return definition.resource;
   });
 }
-function opLegacyKey(k) {
-  var names = opLegacyNames();
-  return (
-    typeof k === "string" &&
-    k.split(":").some(function (part) {
-      return names.indexOf(part) >= 0;
-    })
-  );
-}
 function opLegacyPredicate() {
   return "EXISTS(SELECT 1 FROM json_each(?1) op_legacy WHERE k=op_legacy.value OR k GLOB op_legacy.value||':*' OR k GLOB '*:'||op_legacy.value OR k GLOB '*:'||op_legacy.value||':*')";
 }

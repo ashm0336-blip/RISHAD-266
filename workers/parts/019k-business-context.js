@@ -14,7 +14,7 @@ async function bdQueryContext(env, actor, d, definition, options) {
     revisionKeys = keys.concat(resourceKeys),
     metaKeys = ['restore_epoch', 'authz_mode', 'authz_perm_mig', 'authz_scope_mig', 'authz_id_mig'].concat(definition.metaKeys ? definition.metaKeys(d) : []),
     result = await env.DB.batch([
-      env.DB.prepare('SELECT k,seq,v FROM kv WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k,seq').bind(JSON.stringify(keys)),
+      env.DB.prepare('SELECT k,seq,v FROM kv WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k,seq').bind(JSON.stringify(keys.filter(function (k) { return !opIsResource(k); }))),
       env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k').bind(JSON.stringify(revisionKeys)),
       env.DB.prepare('SELECT k,v FROM meta WHERE k IN(SELECT value FROM json_each(?1)) ORDER BY k').bind(JSON.stringify(metaKeys)),
     ]),

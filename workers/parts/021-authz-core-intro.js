@@ -38,7 +38,6 @@ function pgLeaves(pk) {
   return (p.subs || []).concat(p.tabs || []).map(function (x) { return pk + '/' + x; });
 }
 function pgSplit(k) { var i = String(k).indexOf('/'); return i === -1 ? { page: k, sub: '' } : { page: k.slice(0, i), sub: k.slice(i + 1) }; }
-function pgOffPage(pk, sk) { var p = PG_OF[pk]; return !!(p && p.off && p.off.indexOf(sk) !== -1); }
 
 /* ── سقف الإدارة: نفس effCap/capSetAnywhere في الواجهة، بتقاطع الأسلاف ── */
 function rawCapOf(A, d) { var c = (A.perms.caps || {})[d]; return Array.isArray(c) ? c.filter(function (k) { return PG_KEYS.indexOf(k) !== -1; }) : null; }
