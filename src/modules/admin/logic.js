@@ -7507,31 +7507,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               c = e.capBase && e.sysSel === o ? e.capBase : d,
               g = JSON.stringify(d) !== JSON.stringify(c),
               h = e.capOpenRows || {};
-            let m = [];
             try {
-              const rows = n ? null : KIVO.__BS_SRV.operations.reference("bsdept:" + o + ":bassam_employees_v1");
-              if (Array.isArray(rows)) m = rows;
+              if (!n) KIVO.__BS_SRV.operations.reference("bsdept:" + o + ":bassam_employees_v1");
             } catch (t) {
               if (!n) this.scLoadReferences(o, false);
             }
-            const f = KIVO.BassamAuth || null,
-              u = (t) => !!(f && f.isMgrKey && f.isMgrKey(t)),
-              b = (f && f.users ? f.users() : [])
-                .filter((t) => "staff" === t.role && t.deptId === o)
-                .sort((t, e) => (u(e.ekey) ? 1 : 0) - (u(t.ekey) ? 1 : 0)),
-              w = (t) => m.filter((e) => (e.eid || e.name) === t)[0] || null,
-              y = (t) => {
-                const e = w(t.ekey);
-                return (e && e.name) || t.name || "";
-              },
-              S = (t) => {
-                const e = w(t.ekey);
-                return (e && e.empno) || t.no || "";
-              },
-              x = (t) => {
-                const e = w(t.ekey);
-                return (e && e.phone) || t.alt || "";
-              };
             const M = (t) =>
                 "border:0;background:" +
                 (t ? "var(--bg-a185151810p1)" : "transparent") +

@@ -2828,8 +2828,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           r = this.tkStamp(e.year, e.month, t, e.newSh, e.newSm, e.newSap),
           o = this.tkStamp(e.year, e.month, n, e.newEh, e.newEm, e.newEap),
           l = r && o ? Math.round((o - r) / 6e4) : null,
-          h = null !== l && l <= 0,
-          c = (t) => (t < 10 ? "0" + t : "" + t);
+          h = null !== l && l <= 0;
         return {
           tkStartDays: a(t),
           onTkStartDay: (t) => this.setState({ newDay: +t.target.value }),

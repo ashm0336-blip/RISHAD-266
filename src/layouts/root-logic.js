@@ -863,15 +863,6 @@ class Component extends DCLogic {
     /* كانت 272 بينما عرض الشريط الفعلي 260 (قاعدة .bsb) — 12px شبحية تُزاح
        بلا مقابل فتُرى فراغاً زائداً بجانب القائمة. الآن الإزاحة = عرض الشريط. */
     const W = open ? 260 : 66;   /* منطقة الذهب للوحات التحكم: 256–280 — توازن بين التنفس والرشاقة */
-    const item = (act, child) => {
-      const pad = child ? "padding:9px 12px;font-size:12.5px;" : "padding:10px 12px;font-size:13px;";
-      const base = "display:flex;align-items:center;gap:11px;" + pad + "border-radius:10px;cursor:pointer;transition:background .15s,color .15s;position:relative;white-space:nowrap;border:1px solid transparent;margin-bottom:2px;";
-      if (act) return base + "background:var(--bg-a187150970p1);color:var(--fg-xa37f4c);font-weight:400;border-color:var(--bd-a187150970p35)";
-      return base + "color:var(--fg-x4a5c68);font-weight:400";
-    };
-    const box = (act, sz) => {
-      return "width:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .15s;color:" + (act ? "var(--fg-xbb9661)" : "var(--fg-x8a99a5)");
-    };
     /* مفتاح الصفحة في منظومة الصلاحيات مقابل مفتاح التنقل */
     const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps", staffing: "staff", plan: "plan", daily: "daily", tasks: "tasks", irshad: "irshad", admin: "admin" };
     const _pOK = (pk) => { try { if (pk === "admin" && KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) return true; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
@@ -1071,6 +1062,7 @@ class Component extends DCLogic {
       mainStyle: "flex:1;min-width:0;margin-right:" + W + "px;padding-top:82px;" + slide,
       goKpis: go("kpis"),
       goDstats: go("dstats"),
+      goEmployees: go("employees"),
       ...((() => {
         const c = this.state.bkConf;
         const off = { bkcOpen: false, bkcPick: true, bkcConfirm: false, bkcCur: 0, bkcFile: 0, bkcOver: 0, bkcFresh: 0,

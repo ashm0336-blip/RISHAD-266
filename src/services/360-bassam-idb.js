@@ -344,7 +344,7 @@
     imcPend.set(k, p);
     return p;
   }, set: function(key, val){
-    var p = base.set(key, val), B = KIVO.BassamBusy, epoch = imcEpoch;
+    var p = base.set(key, val), B = KIVO.BassamBusy;
     if (B) B.wrap(p, 'جارٍ رفع الصورة إلى الخادم…', { sub: B.fmtBytes(String(val == null ? '' : val).length) + ' · لا تغلق الصفحة' }).catch(function(){});
     /* الذاكرةُ تُمحى فور بدء الكتابة، وتُملأ من داخلها بالقيمة المخزَّنة فعلاً */
     imcDrop(String(key));

@@ -17066,8 +17066,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   ? t.img !== s.img
                     ? await this._putImg(t.img, s)
                     : s.iid || (await this._putImg(t.img, s))
-                  : null,
-                a = !(!s.iid || s.iid === n);
+                  : null;
               this.setState(
                 {
                 floors: this.state.floors.map((s, a) =>
