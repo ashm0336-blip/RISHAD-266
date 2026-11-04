@@ -361,7 +361,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       const e = KIVO.__BS_SRV.operations.get("bassam_staffing_v3"),
         r = e && "object" == typeof e ? e : {};
-      return KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(r) : r;
+      return r;
     } catch (t) {
       return {};
     }

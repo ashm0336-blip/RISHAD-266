@@ -348,7 +348,7 @@
     if (B) B.wrap(p, 'جارٍ رفع الصورة إلى الخادم…', { sub: B.fmtBytes(String(val == null ? '' : val).length) + ' · لا تغلق الصفحة' }).catch(function(){});
     /* الذاكرةُ تُمحى فور بدء الكتابة، وتُملأ من داخلها بالقيمة المخزَّنة فعلاً */
     imcDrop(String(key));
-    try { KIVO.__BS_IMG_INFLIGHT = KIVO.__BS_IMG_INFLIGHT || []; KIVO.__BS_IMG_INFLIGHT.push(p); p.then(function(){ try { if (epoch === imcEpoch) KIVO.BassamPurge && KIVO.BassamPurge.seen(key); } catch(e){} }, function(){}).then(function(){ var a = KIVO.__BS_IMG_INFLIGHT, i = a.indexOf(p); i >= 0 && a.splice(i, 1); }); } catch(e){}
+    try { KIVO.__BS_IMG_INFLIGHT = KIVO.__BS_IMG_INFLIGHT || []; KIVO.__BS_IMG_INFLIGHT.push(p); p.then(function(){}, function(){}).then(function(){ var a = KIVO.__BS_IMG_INFLIGHT, i = a.indexOf(p); i >= 0 && a.splice(i, 1); }); } catch(e){}
     return p;
   },
   del: function (key) { imcDrop(String(key)); return base.del(key); },

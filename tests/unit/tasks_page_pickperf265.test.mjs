@@ -40,7 +40,7 @@ async function page(DP) {
     __BS_BOOT: { srv: 1 }, fetch: async () => ({ status: 0, text: async () => '' }) };
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
-  for (const f of ['src/services/490-emp-key.js', 'src/services/440-count.js', 'src/services/510-emp-monthly-source.js', 'src/services/546-task-model.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
+  for (const f of ['src/services/490-emp-key.js', 'src/services/440-count.js', 'src/services/546-task-model.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
   KIVO.BassamPerm = { can: () => true, on: () => true, tplOfEmp: () => '' }; KIVO.bsPct = (a, b) => (b ? Math.round(100 * a / b) : 0) + '٪';
   KIVO.BassamFind = { dig: (v) => String(v == null ? '' : v), filter: (q, list) => list.slice() };
   const me = { id: 'tst_dm1', role: 'staff', mgr: true, ekey: 'mgr:tst_d1', deptId: D, name: TAG + ' مدير' };

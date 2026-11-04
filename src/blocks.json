@@ -609,15 +609,6 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/480-final-delete.js",
-   "kind": "js",
-   "line": 10159,
-   "openTag": "<script>",
-   "origBytes": 5456,
-   "origSha256": "7b36c2b949af4244658d865c7cccf909c378e52b7d1a3c7596dc4b0ac9ded655"
-  },
-  {
-   "closeTag": "</script>",
    "id": "services/490-emp-key.js",
    "kind": "js",
    "line": 10247,
@@ -633,15 +624,6 @@
    "openTag": "<script>",
    "origBytes": 2640,
    "origSha256": "c27e87ef9c7b90d83763f5f0b4258985ff871338a0cf8f587eead3ff74b9bbf7"
-  },
-  {
-   "closeTag": "</script>",
-   "id": "services/510-emp-monthly-source.js",
-   "kind": "js",
-   "line": 10304,
-   "openTag": "<script>",
-   "origBytes": 2165,
-   "origSha256": "1fe094e01a9bc3ab6f246baf5e1b6c07cd540f9527d83317c4ee1b78be7e286a"
   },
   {
    "closeTag": "</script>",

@@ -254,11 +254,6 @@
           s
         );
       }
-      _gcImages() {
-        try {
-          KIVO.BassamPurge && KIVO.BassamPurge.gcImages();
-        } catch (t) {}
-      }
       _markKinds() {
         let t = ["دورات مياه", "سلالم", "مصاعد", "سبيل", "نقطة إسعاف", "مخرج طوارئ", "نقطة تجمّع"];
         try {

@@ -54,10 +54,7 @@ function world(extra = {}) {
     op = operations(initial),
     seen = {
       storage: 0,
-      gc: 0,
       images: [],
-      kept: [],
-      unkept: [],
       toasts: [],
       ack: [],
       ids: 0,
@@ -121,10 +118,6 @@ function world(extra = {}) {
       newId: () => "TEST_ONLY_NEW_SITE_" + ++seen.ids,
       stampRounds: () => {},
     },
-    BassamPurge: {
-      keep: (id) => seen.kept.push(id),
-      unkeep: (id) => seen.unkept.push(id),
-    },
     BassamIDB: {
       set: async (id, value) => {
         seen.images.push({ id, value });
@@ -166,10 +159,6 @@ function world(extra = {}) {
   component.bsToast = (...args) => seen.toasts.push(args);
   component.bsAck = (...args) => seen.ack.push(args);
   component.hMonthDays = () => 30;
-  component._gcImages = () => {
-    seen.gc++;
-    return true;
-  };
   component._opRead("bassam_plan_v1");
   component._opRead("bassam_gate_opts_v1");
   component.state = {
@@ -310,7 +299,6 @@ test("Daily site image failure preserves the previous iid and leaves the editor 
   assert.equal(w.op.control.stages.length, 0);
   assert.equal(w.op.data.bassam_plan_v1.floors[0].iid, "img_test_original");
   assert.ok(w.component.state.siteModal);
-  assert.equal(w.seen.gc, 0);
 });
 test("adding a Daily site writes Plan and round placeholders with one matching new sid in one ticket", async () => {
   const w = world();
@@ -634,5 +622,4 @@ test("known import conflict leaves all confirmed business data and the import ed
   assert.ok(w.component.state.imp);
   assert.equal(w.component.state.imp.busy, false);
   assert.equal(w.op.control.stages.length, 1);
-  assert.equal(w.seen.gc, 0);
 });

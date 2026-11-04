@@ -43,7 +43,7 @@ function world(extra = {}) {
       ...extra,
     };
   const op = operations(initial),
-    seen = { storage: 0, gc: 0, kept: [], unkept: [], images: [], toasts: [] };
+    seen = { storage: 0, images: [], toasts: [] };
   const KIVO = {
     __BS_SRV: { operations: op.service },
     BassamPageKit: {
@@ -62,10 +62,6 @@ function world(extra = {}) {
         ekey: "TEST_ONLY_EMP",
       }),
       display: () => ({ name: "TEST_ONLY actor" }),
-    },
-    BassamPurge: {
-      keep: (id) => seen.kept.push(id),
-      unkeep: (id) => seen.unkept.push(id),
     },
     BassamIDB: {
       set: async (id, value) => {
@@ -103,10 +99,6 @@ function world(extra = {}) {
   const component = new C.TestComponent();
   component.bsToast = (...args) => seen.toasts.push(args);
   component._histPush = () => {};
-  component._gcImages = () => {
-    seen.gc++;
-    return true;
-  };
   component.curHijri = () => ({ y: 1448, m: 1, d: 2 });
   component.setState = (update, callback) => {
     component.state = {
@@ -204,12 +196,8 @@ test("Plan keeps confirmed data and images until ACK and advances the next draft
   await Promise.resolve();
   assert.equal(done, false);
   assert.equal(w.op.data.bassam_plan_v1.floors[0].gates[0].closed, undefined);
-  const gc = w.component._opGc();
-  assert.equal(w.seen.gc, 0);
   release();
   assert.equal((await saving).ok, 1);
-  await gc;
-  assert.equal(w.seen.gc, 1);
   assert.equal(w.op.data.bassam_plan_v1.floors[0].gates[0].closed, true);
   w.op.control.gate = null;
   w.component.state.gates[0].closed = false;
@@ -223,7 +211,6 @@ test("lost Plan ACK retries the exact ticket/body and a changed intent never rep
   const first = await w.component.savePlan(),
     body = w.op.control.stages[0].body;
   assert.equal(first.uncertain, true);
-  assert.equal(w.seen.gc, 0);
   const second = await w.component.savePlan();
   assert.equal(second.ticket, first.ticket);
   assert.equal(w.op.control.stages.length, 1);
@@ -291,7 +278,6 @@ test("site image upload must explicitly ACK before any iid change or business co
   assert.equal(w.op.control.stages.length, 0);
   assert.equal(w.component.state.floors[0].iid, "img_test_original");
   assert.ok(w.component.state.siteModal);
-  assert.equal(w.seen.gc, 0);
 });
 test("acknowledged image retains its old reference when the subsequent Plan ACK is uncertain", async () => {
   const w = world(),
@@ -307,9 +293,6 @@ test("acknowledged image retains its old reference when the subsequent Plan ACK 
   await w.component._opLastSave;
   assert.notEqual(w.component.state.floors[0].iid, "img_test_original");
   assert.equal(w.op.data.bassam_plan_v1.floors[0].iid, "img_test_original");
-  assert.deepEqual(w.seen.kept, ["img_test_original"]);
-  assert.equal(w.seen.unkept.length, 0);
-  assert.equal(w.seen.gc, 0);
 });
 test("round factory waits for ACK and preserves the copied site and shift snapshot identities", async () => {
   const w = world();

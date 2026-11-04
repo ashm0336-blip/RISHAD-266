@@ -114,7 +114,7 @@ Object.assign(Component.prototype, {
       a = (t) => (KIVO.BassamEmp ? KIVO.BassamEmp.key(t) : t.eid || t.nid || t.name),
       dig = (v) => (KIVO.BassamFind && KIVO.BassamFind.dig ? KIVO.BassamFind.dig(String(v || "")) : String(v || ""));
     let s = {};
-    r && ST && "object" == typeof ST && (s = (KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(ST) : ST)[e.year + "-" + e.month] || {});
+    r && ST && "object" == typeof ST && (s = ST[e.year + "-" + e.month] || {});
     let o = "";
     try {
       const n = this.tkStamp(e.year, e.month, t, 12, 0, "م");

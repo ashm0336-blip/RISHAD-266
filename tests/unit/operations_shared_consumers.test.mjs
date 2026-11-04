@@ -6,18 +6,6 @@ import { parse } from 'acorn';
 
 const source = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 
-test('browser image cleanup cannot treat an unloaded but live D1 image reference as an orphan', async () => {
-  const calls = [], localStorage = { length: 0, key() { return null; }, getItem() { return null; } };
-  const context = { KIVO: { __BS_RAWLS: { allKeys: () => [], getItem: () => null },
-    BassamImgRefs: { idsIn: () => [] },
-    BassamIDB: { getAll: async () => { calls.push('image-inventory'); return { img_test_only_live: 'TEST_ONLY bytes' }; }, del: id => calls.push('image-delete:' + id) },
-  }, localStorage, setTimeout, window: { __BS_BOOT: { srv: 1, cf: 1 }, addEventListener() {} } };
-  vm.runInNewContext(source('src/services/480-final-delete.js'), context);
-  context.KIVO.BassamPurge.seen('img_test_only_live');
-  assert.equal(await context.KIVO.BassamPurge.gcImages(), 0);
-  assert.deepEqual(calls, [], 'A browser with no complete SQL reference inventory must issue no image request or delete');
-});
-
 test('the existing identity resolver displays a legacy token from typed employees without moving or granting permissions', () => {
   const user = { id: 'TEST_ONLY staff', role: 'staff', deptId: 'TEST_ONLY dept', ekey: 'TEST_ONLY old nid', name: 'TEST_ONLY account snapshot' };
   let employees = [{ eid: 'TEST_ONLY stable eid', nid: user.ekey, name: 'TEST_ONLY current employee name' }];

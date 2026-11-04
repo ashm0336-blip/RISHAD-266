@@ -1913,7 +1913,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
     };
     const y = this.LS("bassam_employees_v1", []),
-      u = KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(this.LS("bassam_staffing_v3", {})) : this.LS("bassam_staffing_v3", {}),
+      u0 = this.LS("bassam_staffing_v3", {}),
+      u = u0 && "object" == typeof u0 ? u0 : {},
       LK = this.LS("bassam_staffing_locks_v1", {}),
       B = this.LS("bassam_dreport_v1", {}),
       RND = this.LS("bassam_rounds_v1", {}),

@@ -487,7 +487,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     let e = {};
     try {
       const t = this._tkLS("bassam_staffing_v3");
-      t && "object" == typeof t && (e = KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(t) : t);
+      t && "object" == typeof t && (e = t);
     } catch (t) {}
     const n = this.hToday(),
       a = e[n.y + "-" + n.m] || {},

@@ -20,7 +20,9 @@
  ],
  "retired": [
   "__BS_AUD_MODE",
-  "__BS_OP_MODE"
+  "__BS_OP_MODE",
+  "BassamPurge",
+  "BassamStaffSnap"
  ],
  "extra": [
   "__dcLogicDefs",

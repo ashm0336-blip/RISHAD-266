@@ -77,18 +77,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     this._opLastSave = this._opCommit({ [name]: value });
     return this._opLastSave;
   }
-  async _opGc() {
-    const result = this._opLastSave && (await this._opLastSave);
-    if (!result || result.ok !== 1) return false;
-    (this._opKeptImages || []).forEach(
-      (id) =>
-        KIVO.BassamPurge &&
-        KIVO.BassamPurge.unkeep &&
-        KIVO.BassamPurge.unkeep(id),
-    );
-    this._opKeptImages = [];
-    return this._gcImages();
-  }
   async _opAck(message, tone) {
     const result = this._opLastSave && (await this._opLastSave);
     if (result && result.ok === 1) this.bsAck(message, tone);
@@ -2165,10 +2153,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         Math.floor(1e9 * Math.random()).toString(36);
     if (!KIVO.BassamIDB || typeof KIVO.BassamIDB.set !== "function" || !value)
       throw Error("image-upload-required");
-    if (previous && previous.iid && KIVO.BassamPurge) {
-      KIVO.BassamPurge.keep(previous.iid);
-      (this._opKeptImages || (this._opKeptImages = [])).push(previous.iid);
-    }
     if ((await KIVO.BassamIDB.set(id, value)) !== true)
       throw Error("image-ack-required");
     if (context !== JSON.stringify(service.context()))
@@ -6378,7 +6362,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         const e = t;
         e &&
           "object" == typeof e &&
-          (m = KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(e) : e);
+          (m = e);
       }
     } catch (t) {}
     let y = [
@@ -12550,8 +12534,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               },
               () => {
                 (this.savePlan(),
-                  this._loadFloorImages(),
-                  (TB2 || BL9) && this._opGc());
+                  this._loadFloorImages());
               },
             );
           },
@@ -12760,8 +12743,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             } catch (t) {}
             this.setState(n, () => {
               (this.savePlan(_opRelated),
-                this._loadFloorImages(),
-                this._opGc());
+                this._loadFloorImages());
             });
           },
         };
@@ -17007,7 +16989,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             delFloor: null,
           },
           () => {
-            (this.savePlan(_opRelated), this._opGc());
+            this.savePlan(_opRelated);
           },
         );
       },
@@ -17105,7 +17087,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 siteLowRes: null,
               },
                 () => {
-                  (this.savePlan(_opRelated), a && this._opGc());
+                  this.savePlan(_opRelated);
                 },
               );
             } else {

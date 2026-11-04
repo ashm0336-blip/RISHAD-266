@@ -75,18 +75,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     this._opLastSave = this._opCommit({ [name]: value });
     return this._opLastSave;
   }
-  async _opGc() {
-    const result = this._opLastSave && (await this._opLastSave);
-    if (!result || result.ok !== 1) return false;
-    (this._opKeptImages || []).forEach(
-      (id) =>
-        KIVO.BassamPurge &&
-        KIVO.BassamPurge.unkeep &&
-        KIVO.BassamPurge.unkeep(id),
-    );
-    this._opKeptImages = [];
-    return this._gcImages();
-  }
   async _opAck(message, tone) {
     const result = this._opLastSave && (await this._opLastSave);
     if (result && result.ok === 1) this.bsAck(message, tone);
@@ -1563,10 +1551,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         Math.floor(1e9 * Math.random()).toString(36);
     if (!KIVO.BassamIDB || typeof KIVO.BassamIDB.set !== "function" || !value)
       throw Error("image-upload-required");
-    if (previous && previous.iid && KIVO.BassamPurge) {
-      KIVO.BassamPurge.keep(previous.iid);
-      (this._opKeptImages || (this._opKeptImages = [])).push(previous.iid);
-    }
     if ((await KIVO.BassamIDB.set(id, value)) !== true)
       throw Error("image-ack-required");
     if (context !== JSON.stringify(service.context()))
@@ -1688,7 +1672,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         }),
         () => {
           this._loadFloorImgs();
-          this._opGc();
         },
       );
       return true;
@@ -4565,7 +4548,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     try {
       const t = this._opRead("bassam_staffing_v3"),
         e = t && "object" == typeof t ? t : {};
-      return KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(e) : e;
+      return e;
     } catch (t) {
       return {};
     }
@@ -7925,7 +7908,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       const t = this._opRead("bassam_staffing_v3");
       t &&
         "object" == typeof t &&
-        (Ct = KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(t) : t);
+        (Ct = t);
     } catch (t) {}
     const Dt = Ct[s.year + "-" + s.month] || {},
       Tt = (t) => (KIVO.BassamEmp ? KIVO.BassamEmp.entryKey(Dt, t) : (t && (t.eid || t.nid || t.name)) || ""),
@@ -19239,7 +19222,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                       }),
                       () => {
                         this._loadFloorImgs();
-                        if (oldId && oldId !== iid) this._opGc();
                       },
                     ),
                 };

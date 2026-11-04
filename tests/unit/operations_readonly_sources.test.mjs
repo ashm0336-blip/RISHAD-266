@@ -146,21 +146,3 @@ test('report notification fallback uses live rest, while an explicit pulled-repo
     assert.equal(f.reads.some(name => name.endsWith('bassam_staffing_snap_v1')), false);
   }
 });
-
-test('monthly source exposes live V3 and all snapshot mutations remain inert', () => {
-  const live = { '1448-5': { 'TEST_ONLY e1': { shift: 'TEST_ONLY live' } } }, reads = [], writes = [];
-  const context = { KIVO: { __BS_SRV: { operations: { get(key) { reads.push(key); assert.equal(key, 'bassam_staffing_v3'); return plain(live); } } } }, localStorage: {
-    getItem() { throw Error('Monthly business values must not use Storage'); },
-    setItem(...args) { writes.push(args); }, removeItem(...args) { writes.push(args); },
-  } };
-  vm.runInNewContext(source('src/services/510-emp-monthly-source.js'), context);
-  const API = context.KIVO.BassamStaffSnap;
-  assert.deepEqual(plain(API.all()), live);
-  assert.deepEqual(plain(API.bucket('1448-5')), live['1448-5']);
-  for (const name of ['get', 'take', 'ensure', 'meta']) assert.equal(API[name]('1448-5'), null);
-  API.drop('1448-5'); API.release('1448-5');
-  assert.equal(API.has('1448-5'), false);
-  assert.equal(API.consumed('1448-5'), false);
-  assert.deepEqual(writes, []);
-  assert.ok(reads.length > 0);
-});

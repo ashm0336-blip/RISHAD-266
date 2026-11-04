@@ -271,7 +271,6 @@ export interface KivoApi {
   "/api/recovery/new": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
   "/api/reset": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
   "/api/permv2": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; version: unknown; docSha256: unknown; status: unknown; phase: unknown; mode: unknown; worker: unknown; counts: unknown; validation: unknown; stats: unknown; scope: unknown; guards: unknown } } };
-  "/api/scope-dryrun": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; worker: unknown; dryRun: unknown } } };
   "/api/identity-rehearsal": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; worker: unknown; rehearsal: unknown } } };
   "/api/identity-preflight": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; worker: unknown; preflight: unknown } } };
   "/api/authz": { methods: "GET"; access: "enforce"; responses: { "200": { ok: unknown; ver: unknown; mode: unknown; env: unknown; d1: unknown; perm: unknown; scope: unknown; ident: unknown; fixture: unknown; me: unknown }; "404": { ok: unknown; err: unknown } } };
@@ -293,6 +292,14 @@ export interface KivoApi {
   "/api/irshad": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; dept: unknown; base: unknown }; "400": { ok: unknown; err: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
   "/api/irshad/act": { methods: "POST"; access: "actor"; responses: { "200": { ok: unknown; requestId: unknown; op: unknown; rev: unknown; n: unknown; base: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
   "/api/irshad/export": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; domains: unknown }; "400": { ok: unknown; err: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
+  "/api/seized": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; base: unknown }; "400": { ok: unknown; err: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
+  "/api/seized/act": { methods: "POST"; access: "actor"; responses: { "200": { ok: unknown; requestId: unknown; op: unknown; rev: unknown; n: unknown; base: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
+  "/api/seized/export": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; domains: unknown }; "400": { ok: unknown; err: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
+  "/api/award": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; base: unknown }; "400": { ok: unknown; err: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
+  "/api/award/act": { methods: "POST"; access: "actor"; responses: { "200": { ok: unknown; requestId: unknown; op: unknown; rev: unknown; n: unknown; base: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
+  "/api/award/export": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; domains: unknown }; "400": { ok: unknown; err: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
+  "/api/operations/read": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; uid: unknown; v: unknown; epoch: unknown; resources: unknown; absent: unknown; denied: unknown; base: unknown }; "400": { ok: unknown; err: unknown } } };
+  "/api/operations/export": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; version: unknown; globalRev: unknown; epoch: unknown; domains: unknown }; "400": { ok: unknown; err: unknown } } };
 }
 export type KivoApiPath = keyof KivoApi;
 
@@ -308,7 +315,7 @@ export interface KivoLensPlugin { schema: 1; kind: "lens"; key: KivoLensKey; nam
   guards: { enable: string; resources: ("bassam_plan_v1" | "bassam_rounds_v1")[] }; tests: string[] }
 export interface KivoPage { key: KivoPageKey; nav?: string; name: string; under?: string; seq?: string[]; subs?: { key: string; name: string }[]; tabs?: { key: string; name: string; offPage?: boolean }[] }
 
-/* ── (٥) الفضاءُ العام window.KIVO (AUD-016 · ADR-017) — 104 اسماً؛ الأسماءُ نفسُها على window موصِّلاتٌ غيرُ قابلةٍ للعدّ (توافقٌ خلفي) ── */
+/* ── (٥) الفضاءُ العام window.KIVO (AUD-016 · ADR-017) — 102 اسماً؛ الأسماءُ نفسُها على window موصِّلاتٌ غيرُ قابلةٍ للعدّ (توافقٌ خلفي) ── */
 export interface KivoNamespace {
   BassamAck: any;
   BassamAudit: any;
@@ -355,10 +362,8 @@ export interface KivoNamespace {
   BassamPlat: any;
   BassamPointer: any;
   BassamPrintCore: any;
-  BassamPurge: any;
   BassamRing: any;
   BassamRound: any;
-  BassamStaffSnap: any;
   BassamSup: any;
   BassamTheme: any;
   BassamTip: any;

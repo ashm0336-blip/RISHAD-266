@@ -357,11 +357,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
   }
   rpStaff() {
-    var t = this.rpStaffLive();
-    try {
-      if (KIVO.BassamStaffSnap) return KIVO.BassamStaffSnap.all(t);
-    } catch (t) {}
-    return t;
+    return this.rpStaffLive();
   }
   async drCsPersist(t, r) {
     var e = this.state.rpY + "-" + this.state.rpM,

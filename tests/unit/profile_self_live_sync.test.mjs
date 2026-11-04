@@ -178,7 +178,7 @@ async function profile(t, { holdFirst = false, responseChange } = {}) {
     ancestorsOf: () => [], groupName: () => '' };
   K.BassamPerm = { on: () => true, can: () => false };
   W.DCLogic = class { setState(patch) { this.state = { ...this.state, ...(typeof patch === 'function' ? patch(this.state) : patch) }; } };
-  for (const name of ['280-server-storage', '380-hijri-fallback', '490-emp-key', '510-emp-monthly-source', '530-emp-day-facts',
+  for (const name of ['280-server-storage', '380-hijri-fallback', '490-emp-key', '530-emp-day-facts',
     '440-count', '400-shift-need', '410-gate-units', '535-profile-facts', '565-page-kit'])
     vm.runInContext(bundle.asset(name), T.ctx, { filename: 'emitted-' + name });
   W.addEventListener('bassam:me', event => hints.push(copy(event.detail)));

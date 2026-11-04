@@ -8,7 +8,7 @@ import path from 'node:path';
 import { SRC, blockFile } from './harness.mjs';
 const rd = (p) => fs.readFileSync(p, 'utf8');
 export const LOGIC = process.env.PROFILE_LOGIC || path.join(SRC, 'modules', 'profile', 'logic.js');
-const SERVICES = ['490-emp-key.js', '510-emp-monthly-source.js', '530-emp-day-facts.js', '440-count.js', '400-shift-need.js', '410-gate-units.js', '535-profile-facts.js'];
+const SERVICES = ['490-emp-key.js', '530-emp-day-facts.js', '440-count.js', '400-shift-need.js', '410-gate-units.js', '535-profile-facts.js'];
 /* اليومُ كما تحسبه القواعد (أم القرى · الرياض) — منه تُبنى مفاتيحُ البيانات في كل عالَم */
 export function riyadhDay(ts = Date.now()) {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });

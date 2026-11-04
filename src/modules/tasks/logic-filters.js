@@ -49,7 +49,7 @@ Object.assign(Component.prototype, {
   _tkShiftMap(y, m) {
     if (!this.bsOn("staff")) return {};
     const t = this._tkLS("bassam_staffing_v3"),
-      all = t && "object" === typeof t ? (KIVO.BassamStaffSnap ? KIVO.BassamStaffSnap.all(t) : t) : {};
+      all = t && "object" === typeof t ? t : {};
     return (all && all[y + "-" + m]) || {};
   },
   _tkShiftOf(emp, SM) {

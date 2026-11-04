@@ -102,10 +102,9 @@ test('pending image reads cannot expose bytes or refill memory after the session
   }
 });
 
-test('an image upload interrupted by session cache clearing cannot become cached or seen', async () => {
+test('an image upload interrupted by session cache clearing cannot become cached', async () => {
   let resolve;
-  const seen = [], B = browser(() => new Promise(done => { resolve = done; }));
-  B.W.KIVO.BassamPurge = { seen: key => seen.push(key) };
+  const B = browser(() => new Promise(done => { resolve = done; }));
   const uploading = B.api.set('img_testonly_oldsession', image);
   await Promise.resolve(); await Promise.resolve();
   assert.equal(typeof resolve, 'function');
@@ -113,5 +112,4 @@ test('an image upload interrupted by session cache clearing cannot become cached
   resolve(response({ ok: 1, n: image.length }));
   await assert.rejects(uploading);
   assert.equal(B.W.KIVO.BassamImgCache.has('img_testonly_oldsession'), false);
-  assert.deepEqual(seen, []);
 });
