@@ -5,6 +5,19 @@
 > المرجع الرسمي للمتطلبات: `docs/sot/KIVO_MASTER_REQUIREMENTS_v6.json` (SOT v6) — اللوحة `docs/sot/KIVO_MASTER_SOURCE_OF_TRUTH_v6.html` والـCSV مولَّدان منه.
 > نقطة الاستئناف الحالية: [سجل تنفيذ RISHAD 266](RISHAD_266_IMPLEMENTATION.md). ملفات `STATE.md` وتقارير KIVO القديمة أدلة تاريخية؛ لا تُعامل باعتبارها نتيجة فحص النسخة الحالية.
 
+## التوثيق
+| الموضوع | الملف |
+|---|---|
+| دليل المطوّر | [developer.md](developer.md) |
+| المعمارية والوحدات والملكيات | [architecture.md](architecture.md) · [modules.md](modules.md) |
+| مسارات الواجهة والخادم | [routes.md](routes.md) · [api-routes.md](api-routes.md) · [api.md](api.md) |
+| الاختبارات | [testing.md](testing.md) |
+| الأمن | [security.md](security.md) |
+| سجل التنفيذ الحالي | [RISHAD_266_IMPLEMENTATION.md](RISHAD_266_IMPLEMENTATION.md) |
+| سجل التغييرات | [CHANGELOG.md](../CHANGELOG.md) |
+
+**قاعدة النشر:** لا يُنشر شيء من هذا المستودع إلى Production آلياً. يُرفع إلى بيئة Test يدوياً بعد الاعتماد، ولا يُمسّ Production إلا بقرار صاحب المشروع.
+
 ## خريطة المستودع (KIVO_259 · AUD-029 — البنيةُ الرسمية: 15 مدخلاً في الجذر)
 
 **المستودعُ الرسمي** هو هذه المدخلاتُ الخمسة عشر وحدها؛ `python3 tools/export_official.py --check` يصدّرها إلى مجلدٍ منفصل ويُثبت أنها تكفي نفسَها

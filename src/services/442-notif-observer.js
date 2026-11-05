@@ -267,6 +267,13 @@
 
   /* ═══ الفحص الدوري (المهلات والنصاب والمستودع) — في متصفح المدير/مدير النظام، مرة لكل مهلة ═══ */
   function todayKey(){ try { var p = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }).formatToParts(new Date()); var g = function(t){ return (p.filter(function(x){ return x.type === t; })[0] || {}).value; }; return { y:+g('year'), m:+g('month'), d:+g('day'), key: g('year') + '-' + g('month') + '-' + g('day') }; } catch(e){ var d = new Date(); return { y:d.getFullYear(), m:d.getMonth() + 1, d:d.getDate(), key:'g' + d.toISOString().slice(0, 10) }; } }
+  /* بدايةُ تشغيل المنصة من الخادم (لمدير النظام وحده): تُقرأ مرةً وتُحفظ في الذاكرة؛ الفشلُ أو الغيابُ يُعاد في الفحص التالي */
+  var FIRST = 0, FIRST_P = null;
+  function firstAt(){
+    if (FIRST) return Promise.resolve(FIRST);
+    return FIRST_P || (FIRST_P = fetch('/api/aud?first=1', { credentials: 'same-origin', cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){ FIRST = (j && j.ok && +j.first) || 0; return FIRST; }, function(){ return 0; }).then(function(v){ FIRST_P = null; return v; }));
+  }
   function tick(){
     var u = me(); if (!u) return; var did = myDept(); var now = new Date(); var hh = now.getHours(); var T = todayKey();
     if (isMgr() || isSuper()) {
@@ -283,12 +290,12 @@
     }
     if (isSuper()) {
       /* نسخة احتياطية قديمة */
-      /* لا تنبيه على منصة وُلدت للتوّ: تُقاس الأيام من أول تشغيل إن لم تُنشأ نسخة قط، ولا تنبيه ما لم توجد بيانات (موظفون) في إدارة ما */
+      /* لا تنبيه على منصة وُلدت للتوّ: تُقاس الأيام من بداية التشغيل إن لم تُنشأ نسخة قط، ولا تنبيه ما لم توجد بيانات (موظفون) في إدارة ما.
+         بدايةُ التشغيل مرجعٌ سحابيّ يقرؤه الخادم (أقدمُ حدثٍ في سجلّ الأنشطة · /api/aud?first=1) — لا كتابةَ عند فتح المنصة (كان المتصفحُ يكتب «أول تشغيل» لكل إدارةٍ نشطة) */
       if (hh >= 8) try { var last = 0; depts().forEach(function(d){ var v = bkTime(rawGet('bsdept:' + d.id + ':bassam_last_export_v1')); if (v > last) last = v; }); var full = Math.max(bkTime(rawGet('bassam_last_full_export_v1')), bkTime(rawGet('bsdept:' + myDept() + ':bassam_last_full_export_v1'))); last = Math.max(last, full);
-        var fb = +rawGet('bassam_first_boot_v1') || 0; if (!fb) { fb = Date.now(); rawSet('bassam_first_boot_v1', String(fb)); }
         var hasData = depts().some(function(d){ var em = J(rawGet('bsdept:' + d.id + ':bassam_employees_v1'), null); return Array.isArray(em) && em.length > 0; });
-        var days = Math.floor((Date.now() - (last || fb)) / 86400000);
-        if (hasData && days >= 7) emit('sy_nobk', { vars: { 'الأيام': last ? days : ('بداية التشغيل (' + KIVO.BassamCount(days, "يوم") + ')') }, once: 'nobk:' + T.key }); } catch(e){}
+        var nobk = function(since){ var days = Math.floor((Date.now() - since) / 86400000); if (since && days >= 7) emit('sy_nobk', { vars: { 'الأيام': last ? days : ('بداية التشغيل (' + KIVO.BassamCount(days, "يوم") + ')') }, once: 'nobk:' + T.key }); };
+        if (hasData) { if (last) nobk(last); else firstAt().then(nobk); } } catch(e){}
       /* Due broadcast reminders are evaluated and deduplicated by security-poll
          on the server; the browser never writes remDone or a seen document. */
     }

@@ -28794,6 +28794,12 @@ export default {
         var AU = await actorOf(env, ss.uid);
         if (!AU) return json({ ok: 0, err: 'session' }, 401);
         var qA = url.searchParams;
+        /* بدايةُ تشغيل المنصة لتنبيه «لم تُنشأ نسخة احتياطية» (sy_nobk): أقدمُ حدثٍ في السجلّ — مرجعٌ سحابيٌّ للقراءة وحدها، لمدير النظام وحده */
+        if (qA.get('first') === '1') {
+          if (AU.u.role !== 'super') return json({ ok: 0, err: 'forbidden' }, 403);
+          var fA = await env.DB.prepare('SELECT MIN(ts) AS t FROM aud').first();
+          return json({ ok: 1, first: (fA && fA.t) || 0 });
+        }
         var limA = Math.min(200, Math.max(1, parseInt(qA.get('limit') || '60', 10) || 60));
         var deptA = String(qA.get('dept') || ''), etA = String(qA.get('etype') || ''), eidA = String(qA.get('eid') || '').slice(0, 80), actA = String(qA.get('act') || ''), uidA = String(qA.get('uid') || '');
         var qqA = audLike(qA.get('q')).slice(0, 80), siteA = audLike(qA.get('site')).slice(0, 80), planA = audLike(qA.get('plan')).slice(0, 20), dayA = audLike(qA.get('day')).slice(0, 20);
