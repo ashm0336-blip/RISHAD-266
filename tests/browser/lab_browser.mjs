@@ -15,7 +15,8 @@ export async function openAs(browser, lab, un, pw, opts = {}) {
   await page.fill('input:not([type=password]):not([type=hidden])', un);
   await page.fill('input[type=password]', pw);
   await page.keyboard.press('Enter');
-  await page.waitForFunction(() => !document.querySelector('input[type=password]'), null, { timeout: 30000 });
+  try { await page.waitForFunction(() => !document.querySelector('input[type=password]'), null, { timeout: 30000 }); }
+  catch (e) { let seen = ''; try { seen = (await page.evaluate(() => location.href + ' :: ' + document.body.innerText)).replace(/\s+/g, ' ').slice(0, 400); } catch (x) { seen = String(x && x.message || x).slice(0, 200); } throw new Error('sign-in did not complete in 30 s for ' + un + ' — page shows: ' + seen); }   /* say what the page shows */
   await page.waitForTimeout(2500);
   const api = (u, init) => page.evaluate(async ([u, init]) => { const r = await fetch(u, Object.assign({ headers: { 'Content-Type': 'application/json' } }, init || {})); let j = null; try { j = await r.json(); } catch (e) {} return { status: r.status, j }; }, [u, init || null]);
   const go = async (hash, ms) => { await page.evaluate((h) => { location.hash = h; }, hash); await page.waitForTimeout(ms || 3500); };
