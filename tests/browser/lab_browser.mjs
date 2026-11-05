@@ -9,6 +9,7 @@ export async function openAs(browser, lab, un, pw, opts = {}) {
   const page = await ctx.newPage(), errs = [], writes = [];
   page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 300)));
   page.on('request', (r) => { if (!['GET', 'HEAD'].includes(r.method())) writes.push(r.method() + ' ' + new URL(r.url()).pathname); });
+  if (typeof opts.onPage === 'function') opts.onPage(page);   /* lets a test attach its own listeners before sign-in */
   await page.goto(lab.base + '/', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('input[type=password]', { timeout: 30000 });
   await page.fill('input:not([type=password]):not([type=hidden])', un);

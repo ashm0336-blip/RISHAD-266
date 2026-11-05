@@ -314,67 +314,7 @@
     return { ok:true, n: o.caps[id].length, own: hasCap(did) };
   }
   /* Irshad uses its typed API. Existing capability and grant values are preserved; no legacy JSON probe or automatic grant. */
-  /* ═══ نظام المضبوطات — يُفعَّل مرة واحدة لكل إدارة تملك نظام الاسترشاد (شقيقه في القائمة) — ومدير النظام يعدّله من الإدارات كالمعتاد ═══ */
-  (function migrateSeizedCap(){
-    var FLAG = 'bassam_perm_seized_cap_v1';
-    if (!isSuper()) return;   /* KIVO_263: ترحيلٌ عامّ يكتب مفاتيحَ لمدير النظام وحده (bassam_perms_v1 · العلامة) — من غيره كان يُرسَل فيرفضه الخادم برسالةٍ لم يتسبّب بها المستخدم («لم يُحفظ تعديلك على ترقية الصلاحيات»)؛ يجري حين يدخل مديرُ النظام */
-    try {
-      var R = (KIVO.BassamDepts && KIVO.BassamDepts.raw) || null;
-      if (!R) return;
-      if (R.getItem.call(localStorage, FLAG)) return;
-      var o = permStore(), changed = false;
-      Object.keys(o.caps || {}).forEach(function(id){
-        var c = Array.isArray(o.caps[id]) ? o.caps[id].slice() : [];
-        if (c.indexOf('irshad') !== -1 && c.indexOf('seized') === -1) { c.push('seized'); o.caps[id] = c; changed = true; }
-      });
-      if (changed) permSave(o);
-      R.setItem.call(localStorage, FLAG, '1');
-    } catch(e){}
-  })();
-  /* ═══ «المساعدة» انضمّت لسجل الصفحات — تُمنح مرة واحدة لكل إدارة لها سقف ولكل موظف له صلاحيات، فلا يفقدها أحد ═══ */
-  (function migrateHelpCap(){
-    var FLAG = 'bassam_perm_help_v1';
-    if (!isSuper()) return;   /* KIVO_263: ترحيلٌ عامّ يكتب مفاتيحَ لمدير النظام وحده (bassam_perms_v1 · العلامة) — من غيره كان يُرسَل فيرفضه الخادم برسالةٍ لم يتسبّب بها المستخدم («لم يُحفظ تعديلك على ترقية الصلاحيات»)؛ يجري حين يدخل مديرُ النظام */
-    try {
-      var R = (KIVO.BassamDepts && KIVO.BassamDepts.raw) || null; if (!R) return;
-      if (R.getItem.call(localStorage, FLAG)) return;
-      var o = permStore(), changed = false;
-      Object.keys(o.caps || {}).forEach(function(id){ var c = Array.isArray(o.caps[id]) ? o.caps[id] : []; if (c.length && c.indexOf('help') === -1) { c.push('help'); o.caps[id] = c; changed = true; } });
-      Object.keys(o.emps || {}).forEach(function(d){ var em = o.emps[d] || {}; Object.keys(em).forEach(function(ek){ var p = em[ek]; if (p && typeof p === 'object' && Object.keys(p).length && !p.help) { p.help = ['view']; changed = true; } }); });
-      if (changed) permSave(o);
-      R.setItem.call(localStorage, FLAG, '1');
-    } catch(e){}
-  })();
-  /* ═══ إلغاء توريث مدير الإدارة ═══
-     كان حامل الشارة يرث سقف إدارته ضمناً. بعد إلغاء التوريث كان سيصحو المديرون
-     القائمون بلا صفحة واحدة. تُكتب صلاحياتهم الفعلية الحالية صراحةً مرّة واحدة،
-     فيبقى ما كان لهم كما هو — لكن صار مرئياً لمدير النظام وقابلاً للتضييق. */
-  (function migrateMgrPerms(){
-    var FLAG = 'bassam_perm_mgr_explicit_v1';
-    if (!isSuper()) return;   /* KIVO_263: ترحيلٌ عامّ يكتب مفاتيحَ لمدير النظام وحده (bassam_perms_v1 · العلامة) — من غيره كان يُرسَل فيرفضه الخادم برسالةٍ لم يتسبّب بها المستخدم («لم يُحفظ تعديلك على ترقية الصلاحيات»)؛ يجري حين يدخل مديرُ النظام */
-    try {
-      var R = (KIVO.BassamDepts && KIVO.BassamDepts.raw) || null;
-      if (!R) return;
-      if (R.getItem.call(localStorage, FLAG)) return;
-      var users = [];
-      try { users = JSON.parse(R.getItem.call(localStorage, K_USERS)) || []; } catch(e){}
-      var o = permStore(), changed = false;
-      users.forEach(function(u){
-        if (!u || u.role !== 'staff' || !u.mgr || !u.deptId) return;
-        var cap = Array.isArray(o.caps[u.deptId]) ? o.caps[u.deptId] : [];
-        if (!cap.length) return;
-        o.emps[u.deptId] = o.emps[u.deptId] || {};
-        /* لا يُمَس من مُنح صلاحيات صريحة أصلاً */
-        var had = o.emps[u.deptId][u.ekey];
-        if (had && typeof had === 'object' && Object.keys(had).length) return;
-        var obj = {};
-        cap.forEach(function(k){ obj[k] = ALL_ACTS.slice(); });
-        o.emps[u.deptId][u.ekey] = obj; changed = true;
-      });
-      if (changed) permSave(o);
-      R.setItem.call(localStorage, FLAG, '1');
-    } catch(e){}
-  })();
+  /* RISHAD-266 P14: ترحيلاتُ العميل لمرة واحدة (seized/help caps · mgr explicit · leaf perms · admin subs) حُذفت — الخادمُ يحكم بالسقف، والبياناتُ الحالية بالشكل الجديد */
   /* ═══ سقف عدسات الكانفس — لكل إدارة قائمة العدسات المسموح بها في صفحتَي
      «الخطة التشغيلية» و«المتابعة اليومية» معاً (قائمة واحدة تسري عليهما).
      عدسة «المناطق» ثابتة دائماً ولا تُعطَّل — لذا لا تدخل في القائمة أصلاً.
@@ -529,45 +469,6 @@
     o.emps[d] = o.emps[d] || {}; o.emps[d][ekey] = clean; permSave(o);
     return { ok:true };
   }
-  /* ═══ ترحيل لمرة واحدة: صلاحيات الموظفين من مفاتيح الحاويات إلى الأوراق ═══ */
-  (function migrateLeafPerms(){
-    var FLAG = 'bassam_perm_leaf_v1';
-    if (!isSuper()) return;   /* KIVO_263: ترحيلٌ عامّ يكتب مفاتيحَ لمدير النظام وحده (bassam_perms_v1 · العلامة) — من غيره كان يُرسَل فيرفضه الخادم برسالةٍ لم يتسبّب بها المستخدم («لم يُحفظ تعديلك على ترقية الصلاحيات»)؛ يجري حين يدخل مديرُ النظام */
-    try {
-      var R = (KIVO.BassamDepts && KIVO.BassamDepts.raw) || null; if (!R) return;
-      if (R.getItem.call(localStorage, FLAG)) return;
-      var o = permStore(), changed = false;
-      Object.keys(o.emps || {}).forEach(function(d){
-        var em = o.emps[d] || {};
-        Object.keys(em).forEach(function(ek){
-          var p = em[ek]; if (!(p && typeof p === 'object')) return;
-          if (!Object.keys(p).some(function(k){ return isContainer(k); })) return;
-          em[ek] = expandPerms(p, d); changed = true;
-        });
-      });
-      if (changed) permSave(o);
-      R.setItem.call(localStorage, FLAG, '1');
-    } catch(e){}
-  })();
-  /* ═══ ترحيل لمرة واحدة: ورقتا «الورديات» و«قوالب الصلاحيات» ═══
-     القائمة المخزَّنة لأوراق «الإعدادات» تسبق وجودهما، وغيابُ المفتاح من قائمةٍ
-     مخزَّنةٍ يعني «مطفأة» لا «جديدة» — فتُولدان مطفأتين عند كل إدارةٍ سبق ضبطُها.
-     هنا تُلحَقان بكل قائمةٍ مخزَّنة مرةً واحدة، فتبدآن مفعّلتين كما لو وُجدتا معها. */
-  (function migrateAdminSubs(){
-    var FLAG = 'bassam_perm_admsubs_v2';   /* v2: أُلحق بها 'import' */
-    if (!isSuper()) return;   /* KIVO_263: ترحيلٌ عامّ يكتب مفاتيحَ لمدير النظام وحده (bassam_perms_v1 · العلامة) — من غيره كان يُرسَل فيرفضه الخادم برسالةٍ لم يتسبّب بها المستخدم («لم يُحفظ تعديلك على ترقية الصلاحيات»)؛ يجري حين يدخل مديرُ النظام */
-    try {
-      var R = RAW; if (R.getItem.call(localStorage, FLAG)) return;
-      var o = permStore(), changed = false;
-      Object.keys(o.subs || {}).forEach(function(d){
-        var L = (o.subs[d] || {}).admin;
-        if (!Array.isArray(L)) return;
-        ['shifts','ptpls','import'].forEach(function(k){ if (L.indexOf(k) === -1) { L.push(k); changed = true; } });
-      });
-      if (changed) permSave(o);
-      R.setItem.call(localStorage, FLAG, '1');
-    } catch(e){}
-  })();
   /* هوية القالب الممنوح — تُحفظ صراحةً لأن استنتاجها من الصفحات يخلط بين
      قالبين يحملان نفس الصفحات فيظهر الأوّل منهما لكل من مُنح أيّاً منهما. */
   function empTpl(ekey, did){
