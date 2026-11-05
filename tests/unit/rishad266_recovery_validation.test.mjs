@@ -53,7 +53,7 @@ function world() {
     setCookie: () => ({}), clearCookie: () => ({}), redactPh: value => value, swallow: () => {},
   });
   const storage = read('workers/parts/054-image-contract.js');
-  const identity = read('workers/parts/016-identity-preflight-2.js');
+  const identity = read('workers/parts/000-header-constants.js');   /* RISHAD-266 P5: normKey moved from 016 unchanged */
   vm.runInContext(read('workers/parts/052-aud-events.js') + '\n' +
     ['metaGet', 'revsAll', 'revGuard', 'isRevConflict', 'nextRev', 'usersList'].map(name => declaration(storage, name)).join('\n') + '\n' +
     declaration(identity, 'normKey') + '\n' + read('workers/parts/062a-auth-routes.js') + '\n' +

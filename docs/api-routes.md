@@ -28,7 +28,6 @@
 | `/api/get` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
 | `/api/guard` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/guard/unlock` | POST | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
-| `/api/identity-preflight` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/identity-rehearsal` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/img/` | GET / PUT / DELETE | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `055-sec-headers.js` `bodyLimit` · `063-enf-api-and-handler.js` `handle` |
 | `/api/imgs` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |

@@ -115,7 +115,7 @@ test('(ج) بياناتٌ مخزَّنة تالفة: لا تُعاد خاماً 
     const cap = captureLogs();
     try {
       for (const [role, sess] of Object.entries(S)) {
-        for (const p of ['/api/get?keys=' + K, '/api/changes?since=0', '/api/aud?limit=100', '/api/sec', '/api/overview', '/api/me', '/api/ping', '/api/authz?act=status', '/api/identity-preflight']) {
+        for (const p of ['/api/get?keys=' + K, '/api/changes?since=0', '/api/aud?limit=100', '/api/sec', '/api/overview', '/api/me', '/api/ping', '/api/authz?act=status', '/api/identity-rehearsal']) {
           const r = await C.req(p, { cookie: sess.ck }); const l = leaksIn(await r.text(), hashes); if (l.length) leaks.push(name + ' ' + role + ' GET ' + p + ' → ' + r.status + ' ' + l.join(','));
         }
         const b = await C.req('/', { cookie: sess.ck, headers: { accept: 'text/html' } }); const lb = leaksIn(await b.text(), hashes); if (lb.length) leaks.push(name + ' ' + role + ' boot → ' + lb.join(','));

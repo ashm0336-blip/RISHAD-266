@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const src = ['016-identity-preflight-2.js', '018-ancestry.js'].map(f => fs.readFileSync(path.join(ROOT, 'workers', 'parts', f), 'utf8'));
+const src = ['000-header-constants.js', '018-ancestry.js']   /* RISHAD-266 P5: PBKDF2 constants moved from 016 unchanged */.map(f => fs.readFileSync(path.join(ROOT, 'workers', 'parts', f), 'utf8'));
 const ctx = vm.createContext({});
 /* phNewOk وحدها مع ثوابتها — دون تشغيل بقية الجزأين */
 const grab = (s, re) => { const m = re.exec(s); assert.ok(m, 'missing ' + re); return m[0]; };

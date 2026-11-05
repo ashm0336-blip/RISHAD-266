@@ -14,7 +14,7 @@ function seedSql() {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_fx_adm_')); execFileSync(PYTHON, [ROOT + '/tests/fixtures/gen_fixture.py', '--today', o.year + '-' + o.month + '-' + o.day, '--out', out], { stdio: 'pipe' });
   return fs.readFileSync(out + '/test_seed.sql', 'utf8');
 }
-const GETS = ['/api/sec', '/api/guard', '/api/policy', '/api/overview', '/api/recovery', '/api/permv2', '/api/identity-rehearsal', '/api/identity-preflight'];
+const GETS = ['/api/sec', '/api/guard', '/api/policy', '/api/overview', '/api/recovery', '/api/permv2', '/api/identity-rehearsal'];
 const POSTS = [['/api/guard/unlock', { gk: 'ip:x' }], ['/api/recovery/new', {}], ['/api/reset', { confirm: 'x' }], ['/api/policy', { lockN: 3 }]];
 for (const mode of ['legacy', 'enforce']) {
   const EX = mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {};

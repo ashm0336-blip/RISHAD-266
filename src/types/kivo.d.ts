@@ -272,7 +272,6 @@ export interface KivoApi {
   "/api/reset": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
   "/api/permv2": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; version: unknown; docSha256: unknown; status: unknown; phase: unknown; mode: unknown; worker: unknown; counts: unknown; validation: unknown; stats: unknown; scope: unknown; guards: unknown } } };
   "/api/identity-rehearsal": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; worker: unknown; rehearsal: unknown } } };
-  "/api/identity-preflight": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; worker: unknown; preflight: unknown } } };
   "/api/authz": { methods: "GET"; access: "enforce"; responses: { "200": { ok: unknown; ver: unknown; mode: unknown; env: unknown; d1: unknown; perm: unknown; scope: unknown; ident: unknown; fixture: unknown; me: unknown }; "404": { ok: unknown; err: unknown } } };
   "/api/authz/log": { methods: "GET"; access: "enforce"; responses: { "200": { ok: unknown; rows: unknown; totals: unknown }; "404": { ok: unknown; err: unknown } } };
   "/api/authz/snaps": { methods: "GET"; access: "enforce"; responses: { "200": { ok: unknown; rows: unknown }; "404": { ok: unknown; err: unknown } } };

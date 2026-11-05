@@ -2118,22 +2118,6 @@
       }
     },
     {
-      "path": "/api/identity-preflight",
-      "methods": [
-        "GET"
-      ],
-      "access": "super",
-      "responses": {
-        "200": {
-          "keys": [
-            "ok",
-            "worker",
-            "preflight"
-          ]
-        }
-      }
-    },
-    {
       "path": "/api/authz",
       "methods": [
         "GET"

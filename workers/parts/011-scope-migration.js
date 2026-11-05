@@ -1,1 +1,0 @@
-/* ═══ R203 · Phase 4.5 — KIVO_SCOPE_MIGRATION: موديلُ ترحيل Data Scope (v24.6 §١٧) + موديلُ الهوية (v24.7 §١٨) + محرّكُ الجرد والتصنيف والإسقاط وجردُ الهوية (Dry-Run · قراءةٌ فقط · لا يكتب قيمةَ نطاقٍ قط) — يُحمَّل بعد KIVO_SCOPE ولا يمسّه؛ لا يُستدعى إلا من GET /api/scope-dryrun و/api/identity-preflight (مدير النظام) ═══ */
