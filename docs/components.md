@@ -14,9 +14,14 @@
 | شريطُ الخطأ | `src/core/130-error-bar.js` | `#bsErrBar` | ظاهر «bsErrBar» · يُغلق بالنقر «d.remove()» |
 | محرّكُ الجداول | `src/components/180-tables-engine.js` | `.bs-rtable` | ملائمةُ الأعمدة «bs-fitcols» · أعمدةُ الهوية المثبّتة «data-bsfz» · مخفيٌّ يُعاد فحصُه «تعذّر قياسُه» |
 | ممرُّ الجدول الكبير | `src/components/670-big-table-lane.js` | الجدولُ نفسُه حاويةُ التمرير | الرأسُ اللاصق «barBottom» |
-| شريطُ التبويبات | `src/layouts/helmet-global.css` | `.bs-tabstrip` (في قالب كل وحدة من أول رسم) | أفقيٌّ ينزلق على الجوال «bs-tabstrip» |
+| شريطُ التبويبات | `src/layouts/helmet-global.css` | `.bs-tabstrip` (في قالب كل وحدة من أول رسم) | أفقيٌّ ينزلق على الجوال «bs-tabstrip» · تلاشي الحافة التي خلفها تبويبات «animation-timeline:scroll(self inline)» · بلا خطّ زمن التمرير: ظلُّ الخلفية «.bs-hscroll,.bs-tabstrip,.bs-grid{» |
+| الزرّ الموحَّد (CORE-01) | `src/layouts/helmet-global.css` | `.bs-btn` | افتراضي «.bs-btn{» · رئيس «.bs-btn--primary{» · خَطِر «.bs-btn--danger{» · بلا إطار «.bs-btn--ghost{» · أيقونة 38×38 «.bs-btn--icon{width:38px;height:38px» · التركيز «.bs-btn:focus-visible» · معطَّل «.bs-btn:disabled» |
+| البطاقة (CORE-01) | `src/layouts/helmet-global.css` | `.bs-card` · `.bs-card-h` · `.bs-card-b` | سطح «.bs-card{» · رأس «.bs-card-h{» · جسم «.bs-card-b{» |
+| الحوار (CORE-01) | `src/layouts/helmet-global.css` | `.bs-dlg` · `.bs-dlg-box` | الطبقة «.bs-dlg{position:fixed» · الصندوق «.bs-dlg-box{» · لوحٌ سفليٌّ بعرض الشاشة على الجوال «.bs-dlg{align-items:flex-end;padding:0}» |
+| هيكلُ التحميل (CORE-01) | `src/layouts/helmet-global.css` | `.bs-skel` | وميض «animation:sc-shine 1.4s ease infinite» · بلا حركة «prefers-reduced-motion:reduce){.bs-skel» · هيكلُ الشاشة الكسولة نفسُه «.sc-placeholder::before{background-image» |
+| الحالةُ الفارغة (CORE-01) | `src/layouts/helmet-global.css` | `.bs-empty` | فارغ «.bs-empty{» · العنوان «.bs-empty b{» |
 | القوائمُ المنسدلة | `src/components/650-dropdown-unify.js` | كلُّ قائمةٍ مخصّصة | محبوسةٌ تُحرَّر «clipAncestor» · مثبّتةٌ فوق القصّ «"fixed"» |
-| أشرطةُ البحث | `src/components/680-search-bars.js` | كلُّ حقلٍ «بحث» | فارغٌ بلا نتائج «لا نتائج مطابقة لـ «» · المسحُ بـEsc «Escape» |
+| أشرطةُ البحث | `src/components/680-search-bars.js` | كلُّ حقلٍ «بحث» | فارغٌ بلا نتائج «لا نتائج مطابقة لـ «» على الحالة الفارغة الموحَّدة «bs-empty bs-noqres» وزرّها «bs-btn» · المسحُ بـEsc «Escape» |
 | التلميحات | `src/components/600-tooltip-portal.js` | `.bs-tip` وما يماثله | — (عرضٌ فقط · بديلُ التركيز في `helmet-global.css` — SOT-058) |
 | التلميحاتُ على اللمس | `src/components/470-touch-tooltips.js` | — | — |
 | طبقةُ الإتاحة | `src/components/660-a11y-enhancer.js` | تسمياتٌ وأدوار | زرٌّ غيرُ أصلي «role» · قابلٌ للتركيز «tabindex» |
@@ -25,5 +30,6 @@
 ## القواعد
 1. **حالةٌ جديدة لمكوّن** تُضاف صفاً هنا بدليلها في الكود — وإلا أخفق الاختبار؛ والمكوّنُ الجديد المشترك بين وحدتين يُضاف هنا لا داخل وحدة.
 2. **لا مكوّنَ داخل وحدة يكرّر مكوّناً هنا** (مؤشرُ تحميلٍ خاص · شريطُ خطأٍ خاص) — `tools/dup_nested.mjs --check` يمنع زيادةَ التكرار بين الوحدات.
-3. **المتبقّي** (SOT-086/093 — تدريجيّ): مكوّناتُ Table/Dialog/EmptyState الموحَّدة كعناصرَ تُستدعى بدل الأنماط المضمَّنة في قوالب الوحدات.
+3. **المتبقّي** (SOT-086/093 — تدريجيّ): أصنافُ الحوار والحالة الفارغة والزرّ والبطاقة والهيكل موجودةٌ الآن (CORE-01 · `docs/design-system.md` «المكوّنات الأساسية»)؛
+   الباقي نقلُ الأنماط المضمَّنة في الغلاف (CORE-01 · الخطوة 3) ثم في قوالب الوحدات إليها، ومكوّنُ الجدول الموحَّد.
    خطّتها: استخراجُ الدوالّ النقية المكرّرة الـ11 (`tools/dup_nested.json`) أولاً، ثم مكوّنُ الحالة الفارغة لأنّه الأكثرُ تكراراً (`docs/ux-states.md` عمود «فارغ»).

@@ -835,7 +835,7 @@
 | `bg-x4a4033` | `bg-inverse` | `#2c2f34` | `#464b52` | قائم |
 | `bg-x4a5c68` | `bg-inverse` | `#2c2f34` | `#464b52` | قائم |
 | `bg-x4ade80` | `success` | `#008450` | `#2fa372` | قائم |
-| `bg-x4f46e5` | `info` | `#67aee1` | `#67aee1` | قائم |
+| `bg-x4f46e5` | `indigo` | `#4f46e5` | `#818cf8` | قائم |
 | `bg-x53565a` | `bg-inverse` | `#2c2f34` | `#464b52` | قائم |
 | `bg-x5b5546` | `bg-inverse` | `#2c2f34` | `#464b52` | قائم |
 | `bg-x6366f1` | `info` | `#67aee1` | `#67aee1` | قائم |
@@ -1206,7 +1206,7 @@
 | `fg-x4a3a10` | `warning-text` | `#a24e17` | `#ffca79` | قائم |
 | `fg-x4a4033` | `text-secondary` | `#53565a` | `#d7d3cb` | قائم |
 | `fg-x4a5c68` | `text-secondary` | `#53565a` | `#d7d3cb` | قائم |
-| `fg-x4f46e5` | `info-text-inv` | `#8fc5ea` | `#8fc5ea` | قائم |
+| `fg-x4f46e5` | `indigo-text` | `#4338ca` | `#c7d2fe` | قائم |
 | `fg-x53565a` | `text-secondary` | `#53565a` | `#d7d3cb` | قائم |
 | `fg-x5b5546` | `text-secondary` | `#53565a` | `#d7d3cb` | قائم |
 | `fg-x5e491a` | `brand-text-strong` | `#66522a` | `#e6cf9c` | قائم |

@@ -16,7 +16,7 @@ aside.bsb .s-nav .grp:first-of-type > .s-deptdd{order:-19}
 a.n.bs-plat-help .ni{color:var(--brand-fg)}
 #bs-plat-print{display:none}
 @media print{
-  #bs-plat-print{display:block!important;font-family:'Cairo',sans-serif;color:var(--text-primary);margin:0 0 10px}
+  #bs-plat-print{display:block!important;font-family:var(--font-ui);color:var(--text-primary);margin:0 0 10px}
   #bs-plat-print .h{display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--border-inverse);padding-bottom:8px}
   #bs-plat-print .h.c{flex-direction:column;text-align:center;gap:6px}
   #bs-plat-print .h.l{flex-direction:row-reverse}
@@ -25,21 +25,21 @@ a.n.bs-plat-help .ni{color:var(--brand-fg)}
   #bs-plat-print .t2{font-size:12px;color:var(--text-secondary)}
   #bs-plat-print .t3{font-size:11px;color:var(--text-secondary)}
   #bs-plat-print .f{display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);border-top:1px solid var(--border-strong);margin-top:10px;padding-top:5px}
-  #bs-plat-printfoot{display:flex!important;justify-content:space-between;font-size:10px;color:var(--text-secondary);border-top:1px solid var(--border-strong);margin-top:12px;padding-top:5px;font-family:'Cairo',sans-serif}
+  #bs-plat-printfoot{display:flex!important;justify-content:space-between;font-size:10px;color:var(--text-secondary);border-top:1px solid var(--border-strong);margin-top:12px;padding-top:5px;font-family:var(--font-ui)}
 }
 #bs-plat-printfoot{display:none}
-.bs-plat-ov{position:fixed;inset:0;z-index:2147482000;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif}
+.bs-plat-ov{position:fixed;inset:0;z-index:2147482000;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;font-family:var(--font-ui)}
 .bs-plat-card{background:var(--bg-surface);border-radius:18px;padding:22px 24px;width:min(480px,92vw);box-shadow:var(--shadow-elevated);color:var(--text-primary);max-height:88vh;overflow:auto}
 .bs-plat-card h3{margin:0 0 4px;font-size:16px;font-weight:800}
 .bs-plat-card .m{font-size:11.5px;color:var(--text-muted);line-height:1.8}
 .bs-plat-card a.g{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-default);border-radius:11px;padding:9px 12px;font-size:12.5px;color:var(--text-primary);text-decoration:none;margin-top:6px}
 .bs-plat-card a.g:hover{border-color:var(--border-brand);background:var(--bg-gold-50-a5)}
-.bs-plat-btn{height:34px;padding:0 16px;border-radius:9px;border:0;background:var(--border-brand);color:var(--text-on-brand);font-family:'Cairo',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer}
+.bs-plat-btn{height:34px;padding:0 16px;border-radius:9px;border:0;background:var(--border-brand);color:var(--text-on-brand);font-family:var(--font-ui);font-size:12.5px;font-weight:700;cursor:pointer}
 .bs-plat-btn.o{background:var(--bg-surface);color:var(--text-secondary);border:1px solid var(--border-default)}
-#bs-plat-install{position:fixed;left:12px;right:12px;bottom:12px;z-index:2147481000;background:var(--bg-inverse);color:var(--text-on-fill);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;font-family:'Cairo',sans-serif;box-shadow:var(--shadow-elevated)}
+#bs-plat-install{position:fixed;left:12px;right:12px;bottom:12px;z-index:2147481000;background:var(--bg-inverse);color:var(--text-on-fill);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;font-family:var(--font-ui);box-shadow:var(--shadow-elevated)}
 #bs-plat-install img,#bs-plat-install .ic{width:38px;height:38px;border-radius:10px;background:var(--border-brand);flex-shrink:0;display:flex;align-items:center;justify-content:center;object-fit:cover}
 #bs-plat-install b{display:block;font-size:12.5px}#bs-plat-install small{font-size:10.5px;opacity:.8;line-height:1.5;display:block}
-#bs-plat-install button{font-family:'Cairo',sans-serif;border:0;border-radius:8px;height:30px;padding:0 12px;cursor:pointer;font-size:11.5px;font-weight:700}
+#bs-plat-install button{font-family:var(--font-ui);border:0;border-radius:8px;height:30px;padding:0 12px;cursor:pointer;font-size:11.5px;font-weight:700}
 .login-help-link{display:block;text-align:center;margin-top:12px;font-size:12px;color:var(--brand-fg);font-weight:600;cursor:pointer;text-decoration:none}
 .login-help-box{margin-top:10px;border:1px solid var(--brand-glow);border-radius:12px;padding:12px 14px;background:var(--bg-gold-50-a5);font-size:12px;color:var(--text-secondary);line-height:1.9;display:none}
 .login-help-box.on{display:block}
@@ -48,6 +48,6 @@ a.n.bs-plat-help .ni{color:var(--brand-fg)}
 .login-help-box .login-restore-btn{width:36px!important;height:36px!important}
 .login-help-box .login-restore-lbl{font-size:12px;color:var(--brand-text);font-weight:600;cursor:pointer;white-space:nowrap}
 .login-help-box .login-restore-msg{margin-top:0!important;text-align:start!important}
-.login-help-box input{width:100%;box-sizing:border-box;height:36px;border:1px solid var(--border-default);border-radius:9px;padding:0 10px;font-family:'Cairo',sans-serif;font-size:12.5px;margin-top:6px}
+.login-help-box input{width:100%;box-sizing:border-box;height:36px;border:1px solid var(--border-default);border-radius:9px;padding:0 10px;font-family:var(--font-ui);font-size:12.5px;margin-top:6px}
 .login-help-box .k{direction:ltr;text-align:left;font-family:monospace;letter-spacing:.12em;text-transform:uppercase}
 .login-legal{font-size:10.5px;color:var(--text-faint);text-align:center;margin-top:10px;line-height:1.7}

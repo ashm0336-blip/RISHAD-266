@@ -64,10 +64,11 @@
         if (empty && any) {
           if (!note) {
             note = document.createElement("div");
-            note.className = "bs-noqres";
+            note.className = "bs-empty bs-noqres";
             note.innerHTML = '<b></b><span>جرّب اسماً أقصر أو رقماً — البحث يقبل الاسم والرقم معاً</span>';
             var b2 = document.createElement("button");
             b2.type = "button";
+            b2.className = "bs-btn";
             b2.textContent = "مسح البحث";
             b2.addEventListener("click", function(){
               var f = inputsIn(document).filter(function(x){ return String(x.value || "").trim(); })[0];

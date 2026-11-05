@@ -2,7 +2,7 @@
 /* ═ مؤشر التحميل الموحّد (BassamBusy) ═
    شريط تقدّم ذهبي أعلى الصفحة + كبسولة تسمّي العملية وتفصيلها ونسبتها حين تُعرف،
    والزر الذي بدأ العملية يتجمّد مع دوّار صغير حتى تنتهي. لا يظهر في الطباعة. */
-#bs-busy{position:fixed;inset:0 0 auto 0;z-index:100000;pointer-events:none;font-family:'Cairo',Tahoma,sans-serif;direction:rtl}
+#bs-busy{position:fixed;inset:0 0 auto 0;z-index:100000;pointer-events:none;font-family:var(--font-ui);direction:rtl}
 #bs-busy[hidden]{display:none}
 #bs-busy .bsb-bar{position:absolute;top:0;left:0;right:0;height:3px;background:var(--tone-gold-50-a18);overflow:hidden}
 #bs-busy .bsb-bar i{position:absolute;top:0;height:3px;border-radius:2px;background:linear-gradient(90deg,var(--border-brand),var(--brand-muted),var(--border-brand));width:38%;left:-40%;animation:bsb-slide 1.25s cubic-bezier(.4,0,.2,1) infinite}

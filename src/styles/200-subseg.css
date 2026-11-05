@@ -8,7 +8,7 @@
   scrollbar-width:none;vertical-align:middle;box-sizing:border-box}
 .bs-subseg::-webkit-scrollbar{display:none}
 .bs-subseg .bs-subbtn{border:0!important;border-radius:8px!important;padding:7px 14px!important;
-  font-size:12.5px!important;font-weight:600!important;font-family:'Cairo',sans-serif!important;cursor:pointer;
+  font-size:12.5px!important;font-weight:600!important;font-family:var(--font-ui)!important;cursor:pointer;
   display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;
   white-space:nowrap;background:transparent!important;color:var(--text-muted)!important;box-shadow:none!important;
   transition:background .18s,color .18s,box-shadow .18s!important;flex:0 0 auto;min-width:0!important}   /* لا انتقال على حجم الخط — كي يقيس fitSubseg القيمة النهائية لا لقطةً أثناء الحركة */

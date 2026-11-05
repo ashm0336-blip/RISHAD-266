@@ -1,5 +1,5 @@
 
-body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
+body{margin:0;background:var(--bg-app);font-family:var(--font-ui);-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
 /* ═══ توحيد الخط على كل جهاز ═══
    عناصر النماذج (زر/حقل/قائمة) لا ترث خط الصفحة في أي متصفح — المواصفة تُسند
    إليها خطَّ واجهة نظام التشغيل، فيظهر البرنامج بخط Segoe على ويندوز وSan
@@ -8,7 +8,7 @@ body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-se
 button,input,select,textarea,optgroup{font-family:inherit;font-feature-settings:inherit}
 .bs-info{position:relative;display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:9999px;background:var(--tone-neutral-55-a15);color:var(--text-faint);font-size:9px;font-weight:600;cursor:help;flex-shrink:0;vertical-align:middle;margin-right:5px;transition:all .15s}
 .bs-info:hover{background:var(--tone-gold-50-a18);color:var(--brand-fg)}
-.bs-tip{position:absolute;top:calc(100% + 9px);right:50%;transform:translateX(50%) translateY(4px);z-index:120;width:235px;background:var(--bg-tooltip);color:var(--text-tooltip);border:1px solid var(--border-tooltip);border-radius:11px;padding:10px 13px;font-size:10px;font-weight:400;line-height:1.9;text-align:right;box-shadow:var(--shadow-tooltip);opacity:0;visibility:hidden;transition:all .18s ease;pointer-events:none;font-family:'Cairo',sans-serif;white-space:normal}
+.bs-tip{position:absolute;top:calc(100% + 9px);right:50%;transform:translateX(50%) translateY(4px);z-index:var(--z-tip);width:235px;background:var(--bg-tooltip);color:var(--text-tooltip);border:1px solid var(--border-tooltip);border-radius:11px;padding:10px 13px;font-size:10px;font-weight:400;line-height:1.9;text-align:right;box-shadow:var(--shadow-tooltip);opacity:0;visibility:hidden;transition:all .18s ease;pointer-events:none;font-family:var(--font-ui);white-space:normal}
 .bs-tip::before{content:"";position:absolute;bottom:100%;right:50%;transform:translateX(50%);border:6px solid transparent;border-bottom-color:var(--bg-tooltip)}
 .bs-info:hover .bs-tip,.bs-info:focus .bs-tip,.bs-info:focus-within .bs-tip{opacity:1;visibility:visible;transform:translateX(50%) translateY(0)}
 .bs-tip b{color:var(--brand-tooltip);font-weight:600}
@@ -216,6 +216,30 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
    على 66px مهما ضغطتَ زرّ الفتح — فيبدو الزرّ معطّلاً والسلوك مكسوراً في
    هذا النطاق تحديداً. حُذف الحزام: فوق ١٠٢٤ الشريط بيد المستخدم دائماً
    (يفتح 260 وينطوي 66 بزرّه)، ودونها درجٌ منزلق — بلا منطقة ميتة بينهما. */
+/* ═══ CORE-01 · المكوّناتُ الأساسية المشتركة (docs/components.md) — على الرموز الدلالية وحدها (docs/design-system.md):
+   زرّ .bs-btn (‎--primary · --ghost · --danger · --icon 38×38) · بطاقة .bs-card/.bs-card-h/.bs-card-b · حوار .bs-dlg/.bs-dlg-box
+   (لوحٌ سفليٌّ بعرض الشاشة على الجوال — كتلة 640 أدناه) · هيكلُ تحميل .bs-skel · حالةٌ فارغة .bs-empty ═══ */
+.bs-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);min-height:36px;padding:0 var(--sp-4);box-sizing:border-box;border-radius:var(--r-md);border:1px solid var(--border-default);background:var(--bg-surface);color:var(--text-primary);font:600 var(--fs-md)/1.2 var(--font-ui);white-space:nowrap;text-decoration:none;cursor:pointer;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}
+.bs-btn:hover{border-color:var(--tone-gold-50-a50);color:var(--brand-fg)}
+.bs-btn:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+.bs-btn--primary{background:var(--brand-primary);border-color:var(--brand-primary);color:var(--text-on-brand)}
+.bs-btn--primary:hover{background:var(--brand-hover);border-color:var(--brand-hover);color:var(--text-on-brand)}
+.bs-btn--danger{background:var(--danger);border-color:var(--danger);color:var(--text-on-fill)}
+.bs-btn--danger:hover{border-color:var(--danger);color:var(--text-on-fill);box-shadow:0 0 0 3px var(--danger-soft)}
+.bs-btn--ghost{background:transparent;border-color:transparent;color:var(--text-secondary)}
+.bs-btn--ghost:hover{background:var(--hover-bg);border-color:transparent;color:var(--text-primary)}
+.bs-btn--icon{width:38px;height:38px;min-height:38px;padding:0;flex-shrink:0;border-color:var(--tone-neutral-10-a12);color:var(--text-secondary)}
+.bs-btn:disabled,.bs-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;box-shadow:none}
+.bs-btn:disabled:hover,.bs-btn[aria-disabled="true"]:hover{border-color:var(--border-default);color:var(--text-primary)}
+.bs-card{min-width:0;background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:var(--r-xl);box-shadow:var(--shadow-card)}
+.bs-card-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);background:var(--bg-surface-2);border-bottom:1px solid var(--border-subtle);border-radius:var(--r-xl) var(--r-xl) 0 0;font-size:var(--fs-md);font-weight:700}
+.bs-card-b{padding:var(--sp-4)}
+.bs-dlg{position:fixed;inset:0;z-index:var(--z-dlg);display:flex;align-items:center;justify-content:center;padding:var(--sp-6);background:var(--bg-overlay);font-family:var(--font-ui)}
+.bs-dlg-box{width:min(440px,100%);max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);overflow:auto;overscroll-behavior:contain;box-sizing:border-box;background:var(--bg-modal);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:var(--r-xl);box-shadow:var(--shadow-elevated)}
+.bs-skel,.bs-main > .sc-host > .sc-placeholder::before{background-image:linear-gradient(90deg,var(--bg-surface-3) 25%,var(--bg-surface-2) 37%,var(--bg-surface-3) 63%);background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+.bs-skel{display:block;min-height:12px;border-radius:var(--r-sm)}
+.bs-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-2);padding:calc(var(--sp-6) + var(--sp-2)) var(--sp-4);text-align:center;font-family:var(--font-ui);font-size:var(--fs-sm);color:var(--text-faint)}
+.bs-empty b{font-size:var(--fs-md);font-weight:600;color:var(--text-secondary)}
 /* ══ الطباعة وحفظ PDF ══════════════════════════════════════════════════════════
    القواعد مبنيّة على @media print وحدها بلا سمة على الجذر: المحاولة السابقة
    وضعت data-bs-print قبل النداء ورفعتها بعده، فلو تعثّر الرفع (متصفّح لا
@@ -283,6 +307,8 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
   :root{--bs-topbar-h:64px}
   .bs-topbar{padding:0 12px!important;height:64px!important}
   .bs-main{padding-top:66px!important}
+  .bs-dlg{align-items:flex-end;padding:0}
+  .bs-dlg-box{width:100%;max-height:92vh;max-height:92dvh;border-radius:var(--r-xl) var(--r-xl) 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom,0px)}
 }
 @media (max-width:420px){
   [data-screen-label]{ padding:8px !important; }
@@ -330,28 +356,16 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 }
 .bs-hscroll{ -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 
-/* ═══ شريط البحث: زرّ المسح ورسالة لا نتائج ═══ */
+/* ═══ شريط البحث: زرّ المسح (رسالةُ «لا نتائج» = .bs-empty أدناه) ═══ */
 .bs-qclear{
   position:absolute; left:8px; top:50%; transform:translateY(-50%);
   width:22px; height:22px; display:none; align-items:center; justify-content:center;
   border:0; border-radius:9999px; background:var(--tone-neutral-55-a12); color:var(--text-muted);
-  font-family:'Cairo',sans-serif; font-size:13px; line-height:1; cursor:pointer;
+  font-family:var(--font-ui); font-size:13px; line-height:1; cursor:pointer;
   padding:0; transition:background .15s,color .15s; z-index:3;
 }
 .bs-qclear:hover{ background:var(--bg-pink-30-a12); color:var(--danger-text); }
 .bs-qclear.on{ display:flex; }
-.bs-noqres{
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px;
-  padding:34px 18px; font-family:'Cairo',sans-serif; text-align:center;
-}
-.bs-noqres b{ font-size:12.5px; font-weight:600; color:var(--text-secondary); }
-.bs-noqres span{ font-size:11px; font-weight:400; color:var(--text-faint); }
-.bs-noqres button{
-  height:30px; padding:0 14px; border-radius:9px; cursor:pointer;
-  border:1px solid var(--tone-gold-50-a40); background:var(--bg-gold-50-a8-v2); color:var(--brand-text);
-  font-family:'Cairo',sans-serif; font-size:11px; font-weight:600;
-}
-.bs-noqres button:hover{ background:var(--tone-gold-50-a16); }
 
 
 /* ═══ رؤوس الجداول الكبيرة ثابتة عند التمرير ═══
@@ -469,6 +483,16 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
   /* لافتةُ الاتصال (.bs-netbar أدناه) تظهر حيث القائمةُ درج */
   .bs-netbar:not([hidden]){display:flex}.bs-netbar .t,.bs-netbar .s{display:block}
 }
+/* CORE-01: تلاشي الحافة لشريط التبويبات على كل عرض — يظهر عند الحافة التي خلفها تبويباتٌ فقط (خطُّ زمنِ التمرير)،
+   فيغني عن ظلّ الخلفية أعلاه؛ والمتصفّحُ بلا خطّ زمن التمرير يبقى على ذلك الظلّ. القناعُ شفافيةٌ لا لون — يصحّ في الفاتح والداكن. */
+@property --bs-fs{syntax:'<length>';inherits:false;initial-value:0px}
+@property --bs-fe{syntax:'<length>';inherits:false;initial-value:0px}
+@keyframes bs-tabfade{0%{--bs-fs:0px;--bs-fe:28px}8%,92%{--bs-fs:28px;--bs-fe:28px}100%{--bs-fs:28px;--bs-fe:0px}}
+@supports (animation-timeline:scroll()){
+  .bs-tabstrip{background-image:none;animation:bs-tabfade linear both;animation-timeline:scroll(self inline);
+    -webkit-mask-image:linear-gradient(to left,transparent,black var(--bs-fs),black calc(100% - var(--bs-fe)),transparent);
+    mask-image:linear-gradient(to left,transparent,black var(--bs-fs),black calc(100% - var(--bs-fe)),transparent)}
+}
 
 /* ٤) لوحة الكانفس: أعرض على الشاشات الكبيرة فتظهر النصوص كاملة،
       وتطفو فوق الخريطة على الشاشات الضيّقة بدل أن تزاحمها */
@@ -482,7 +506,7 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
 /* انزلاقُ المحتوى مع الشريط: transform على المُركِّب — الهامشُ يثبت فوراً فيقع تخطيطٌ واحد */
 @keyframes bsSlideOpen{from{transform:translateX(194px)}to{transform:none}}
 @keyframes bsSlideClose{from{transform:translateX(-194px)}to{transform:none}}
-.bsb{position:fixed;top:0;bottom:0;right:0;z-index:55;width:260px;background:var(--bg-sidebar);border-left:1px solid var(--border-subtle);box-shadow:var(--shadow-soft);display:flex;flex-direction:column;overflow:hidden;transition:width .25s ease;font-family:'Cairo',sans-serif}
+.bsb{position:fixed;top:0;bottom:0;right:0;z-index:var(--z-sidebar);width:260px;background:var(--bg-sidebar);border-left:1px solid var(--border-subtle);box-shadow:var(--shadow-soft);display:flex;flex-direction:column;overflow:hidden;transition:width .25s ease;font-family:var(--font-ui)}
 .bsb.cx{width:66px}
 /* ارتفاع رأس الشريط = ارتفاع الهيدر بالضبط، فيصير خطّه امتداداً لخطّ الهيدر */
 .bsb .s-brand{display:flex;align-items:center;gap:12px;height:var(--bs-topbar-h);box-sizing:border-box;padding:0 18px;border-bottom:1px solid var(--tone-neutral-10-a8);flex-shrink:0;transition:padding .25s ease,gap .25s ease}
@@ -529,10 +553,10 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
 /* ═══ رأس القائمة ومبدّل الإدارة ═══ */
 .bsb .s-ghead{display:flex;align-items:center;gap:8px;padding:4px 6px 10px 6px;border-bottom:1px solid var(--tone-neutral-10-a7);margin-bottom:8px}
 .bsb.cx .s-ghead{padding:2px 0 10px;justify-content:center}
-.bsb .s-dept{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:38px;padding:0 9px;border-radius:11px;border:1px solid var(--tone-gold-50-a30);background:var(--bg-gold-50-a7);cursor:pointer;font-family:'Cairo',sans-serif;transition:all .15s}
+.bsb .s-dept{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:38px;padding:0 9px;border-radius:11px;border:1px solid var(--tone-gold-50-a30);background:var(--bg-gold-50-a7);cursor:pointer;font-family:var(--font-ui);transition:all .15s}
 .bsb .s-dept:hover{background:var(--bg-gold-50-a14)}
 /* RISHAD266: «+ قسم» بجوار مبدّل الوحدة — يُخفى في الشريط المطويّ */
-.bsb .s-secadd{flex:none;height:38px;padding:0 10px;border-radius:11px;border:1px dashed var(--tone-gold-50-a30);background:transparent;color:var(--brand-text);font:700 11.5px 'Cairo',sans-serif;cursor:pointer;white-space:nowrap}
+.bsb .s-secadd{flex:none;height:38px;padding:0 10px;border-radius:11px;border:1px dashed var(--tone-gold-50-a30);background:transparent;color:var(--brand-text);font:700 11.5px var(--font-ui);cursor:pointer;white-space:nowrap}
 .bsb .s-secadd:hover{background:var(--bg-gold-50-a7)}
 .bsb.cx .s-secadd{display:none}
 .bsb .s-depti{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--brand-muted),var(--border-brand));color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -569,7 +593,7 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
 .bs-sr-only{position:absolute!important;top:0;left:0;width:1px;height:1px;padding:0;margin:0;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}/* KIVO_265 · فحص القبول: كان margin:-1px بلا موضعٍ صريح فيجاوز الحافةَ اليمنى بكسلاً واحداً على الجوال (تمريرٌ أفقي) */
 
 /* KIVO_254 · SOT-157 (البند ١): لافتةُ الاتصال على الجوال واللوحي (القائمةُ درج) — تحت الرأس · لا تحجب المحتوى · تختفي على الحاسوب */
-.bs-netbar{display:none;position:fixed;top:calc(56px + env(safe-area-inset-top,0px));right:12px;left:12px;z-index:60;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:12px;font-family:'Cairo',Tahoma,sans-serif;font-size:12.5px;line-height:1.5;box-shadow:var(--shadow-elevated);border:1px solid transparent}
+.bs-netbar{display:none;position:fixed;top:calc(56px + env(safe-area-inset-top,0px));right:12px;left:12px;z-index:var(--z-banner);align-items:flex-start;gap:10px;padding:10px 14px;border-radius:12px;font-family:var(--font-ui);font-size:12.5px;line-height:1.5;box-shadow:var(--shadow-elevated);border:1px solid transparent}
 .bs-netbar[hidden]{display:none!important}
 .bs-netbar .i{flex-shrink:0;font-size:15px;line-height:1.3}
 .bs-netbar .t{font-weight:700}
@@ -581,16 +605,14 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
 .bs-main > .sc-host > .sc-placeholder{min-height:420px;padding:22px 20px 0;background:var(--bg-card);border-radius:16px;margin:0 0 12px}
 .bs-main > .sc-host > .sc-placeholder::after{content:none}
 .bs-main > .sc-host > .sc-placeholder::before{content:'';position:absolute;inset:22px 20px auto 20px;height:372px;pointer-events:none;border-radius:8px;
-  background-image:linear-gradient(90deg,var(--bg-pink-30-a0) 25%,var(--bg-orange-40-a95) 37%,var(--bg-pink-30-a0) 63%);
-  background-size:400% 100%;animation:sc-shine 1.4s ease infinite;
   -webkit-mask:linear-gradient(#000 0 0) 0 0/36% 22px no-repeat,repeating-linear-gradient(#000 0 14px,transparent 14px 36px) 0 44px/100% 328px no-repeat;
   mask:linear-gradient(#000 0 0) 0 0/36% 22px no-repeat,repeating-linear-gradient(#000 0 14px,transparent 14px 36px) 0 44px/100% 328px no-repeat}
-@media (prefers-reduced-motion:reduce){.bs-main > .sc-host > .sc-placeholder::before{animation:none}}
+@media (prefers-reduced-motion:reduce){.bs-skel,.bs-main > .sc-host > .sc-placeholder::before{animation:none}}
 
 /* KIVO_254 · البند ٣ من RM-3: بطاقةُ «أعد المحاولة» الموحَّدة — الرسالةُ داخل البطاقة/اللوحة نفسِها مع زرّ، لا شريطَ عام */
-.bs-retry{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;border:1px solid var(--danger-border);background:var(--danger-bg);color:var(--danger-text);font-family:'Cairo',Tahoma,sans-serif;font-size:12.5px;line-height:1.6}
+.bs-retry{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;border:1px solid var(--danger-border);background:var(--danger-bg);color:var(--danger-text);font-family:var(--font-ui);font-size:12.5px;line-height:1.6}
 .bs-retry .m{flex:1;min-width:0;font-weight:600}
-.bs-retry .b{flex-shrink:0;min-height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--danger-border);background:var(--bg-card);color:var(--danger-text);font:700 12.5px/1 'Cairo',Tahoma,sans-serif;cursor:pointer}
+.bs-retry .b{flex-shrink:0;min-height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--danger-border);background:var(--bg-card);color:var(--danger-text);font:700 12.5px/1 var(--font-ui);cursor:pointer}
 .bs-retry .b:hover{background:var(--danger-bg)}
 
 /* KIVO_254 · SOT-055/058 (البند ٤): الحاشيةُ اللمسية الشفافة — تكمّل مساحةَ الاستجابة إلى 44×44 على أجهزة اللمس دون تغيير الشكل */
