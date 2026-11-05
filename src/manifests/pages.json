@@ -7,11 +7,14 @@
   "containers (NAV_REG) = روابط قائمة بلا مفتاح صلاحية: أوراقها هي أوراق صفحاتها بمفاتيحها نفسها (refs) — لا مفتاح جديد ولا خطوة ترحيل؛ names = أسماء الأوراق داخل الحاوية.",
   "lenses = عدسات الخريطة (المناطق ثابتة لا تدخل القائمة) · tabAddr = الصفحات التي لتبويباتها عناوين #/page/tab · navOrder/navNames = ترتيب وأسماء روابط المجموعة الأولى في القالب (nth-of-type) · routeNames = أسماء المسارات للعنوان (ومنها sysadmin/profile خارج السجل).",
   "الخادم يستهلك البنية وحدها (PG_REG: key · subs · tabs · off · under) ويُولَّد من هذا الملف نفسه؛ الواجهة تأخذ نسخاً عميقة (clone) كما كانت أدبياتها مستقلة.",
-  "KIVO_261 (SOT-003 · 1:1 مع المنصة): كلُّ لوحةٍ يعرضها «مؤشرات الإدارة» وحده (refs الحاوية kpis) ورقةٌ offPage — لا تفتح صفحتَها (لا تظهر هناك أصلاً: الاسترشادُ والمضبوطاتُ ولوحاتُ المتابعة والجاهزيةُ تُستورد solo)، فمنحُها وحدها يُظهر «مؤشرات الإدارة» لا صفحةً فارغة. القاعدةُ يفحصها k261tree."
+  "KIVO_261 (SOT-003 · 1:1 مع المنصة): كلُّ لوحةٍ يعرضها «مؤشرات الإدارة» وحده (refs الحاوية kpis) ورقةٌ offPage — لا تفتح صفحتَها (لا تظهر هناك أصلاً: الاسترشادُ والمضبوطاتُ ولوحاتُ المتابعة والجاهزيةُ تُستورد solo)، فمنحُها وحدها يُظهر «مؤشرات الإدارة» لا صفحةً فارغة. القاعدةُ يفحصها k261tree.",
+  "CORE-01 (عقدُ تعريف النظام — للبناء وحده، يحذفه tools/generate.py من الواجهة والخادم): module = slug الوحدة في modules/modules.json (ميثاقُها meta.json) · activation = toggle (يطفئها mods.off · ff.module.<key>.enabled) أو always (لا تُطفأ) · requires = [{for: ورقة offPage، on: صفحة أو lens:<عدسة>، kind: perm|lens|code}] — يطابقها tools/validate_schemas.py مع الشيفرة (331 · admin/logic · 334 kpiPanelOk · dc-import). الشرحُ docs/modules.md."
  ],
  "pages": [
   {
    "key": "dstats",
+   "module": "dstats",
+   "activation": "toggle",
    "nav": "dstats",
    "name": "الإحصائيات اليومية",
    "seq": [
@@ -57,6 +60,8 @@
   },
   {
    "key": "emps",
+   "module": "employees",
+   "activation": "toggle",
    "departmentComponents": ["Employees"],
    "nav": "employees",
    "name": "موظفو الإدارة",
@@ -77,6 +82,11 @@
   },
   {
    "key": "planning",
+   "module": "planning",
+   "activation": "toggle",
+   "requires": [
+    {"for": "planning/readiness", "on": "emps", "kind": "code"}
+   ],
    "departmentComponents": ["Planning"],
    "nav": "planning",
    "name": "الخطة التشغيلية",
@@ -95,6 +105,8 @@
   },
   {
    "key": "staff",
+   "module": "staff",
+   "activation": "toggle",
    "departmentComponents": ["Staffing"],
    "nav": "staffing",
    "name": "الجدول الشهري",
@@ -102,6 +114,8 @@
   },
   {
    "key": "plan",
+   "module": "plan",
+   "activation": "toggle",
    "departmentComponents": ["Operational Plan"],
    "nav": "plan",
    "name": "التشغيل الميداني",
@@ -109,6 +123,14 @@
   },
   {
    "key": "daily",
+   "module": "daily",
+   "activation": "toggle",
+   "requires": [
+    {"for": "daily/kpiDaily", "on": "dreport", "kind": "perm"},
+    {"for": "daily/kpiOcc", "on": "lens:zones", "kind": "lens"},
+    {"for": "daily/kpiOcc", "on": "lens:dens", "kind": "lens"},
+    {"for": "daily/kpiZones", "on": "lens:zones", "kind": "lens"}
+   ],
    "departmentComponents": ["Daily Sessions"],
    "nav": "daily",
    "name": "المتابعة اليومية",
@@ -151,6 +173,8 @@
   },
   {
    "key": "dreport",
+   "module": "dreport",
+   "activation": "toggle",
    "departmentComponents": ["Daily Report"],
    "nav": "dreport",
    "name": "التقرير اليومي",
@@ -158,6 +182,8 @@
   },
   {
    "key": "tasks",
+   "module": "tasks",
+   "activation": "toggle",
    "departmentComponents": ["Tasks"],
    "nav": "tasks",
    "name": "المهام",
@@ -165,6 +191,8 @@
   },
   {
    "key": "irshad",
+   "module": "irshad",
+   "activation": "toggle",
    "departmentComponents": ["Irshad"],
    "nav": "irshad",
    "name": "نظام الاسترشاد",
@@ -182,6 +210,8 @@
   },
   {
    "key": "seized",
+   "module": "seized",
+   "activation": "toggle",
    "departmentComponents": ["Seized"],
    "nav": "seized",
    "name": "نظام المضبوطات",
@@ -199,6 +229,8 @@
   },
   {
    "key": "award",
+   "module": "award",
+   "activation": "toggle",
    "departmentComponents": ["Award"],
    "nav": "award",
    "name": "جائزة التميز",
@@ -219,16 +251,20 @@
   },
   {
    "key": "links",
+   "activation": "toggle",
    "nav": "links",
    "name": "مواقع ذات صلة"
   },
   {
    "key": "help",
+   "activation": "toggle",
    "nav": "help",
    "name": "المساعدة"
   },
   {
    "key": "admin",
+   "module": "admin",
+   "activation": "always",
    "nav": "admin",
    "name": "الإعدادات",
    "subs": [

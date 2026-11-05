@@ -44,6 +44,36 @@
 
 عناوين التبويبات `#/<صفحة>/<تبويب>` في `pages.json` (`tabAddr`) توثيقٌ يقرؤه «حول المنصة» وشجرة الصلاحيات وسجل المسارات؛ لا يحكم التوجيه. والاختبار `tests/unit/tabaddr_coverage.test.mjs` يشترط أن تكون كل صفحةٍ تكتب عنواناً مسجَّلةً فيه، وكلَّ تبويبٍ مكتوبٍ نصّاً حرفياً مسجَّلاً، وأن يشير كل عنوانٍ مسجَّل إلى تبويبٍ حقيقي داخل صفحته (التبويب الذي يُكتب بمتغيّر، كمسجد dstats، تحقّقه اختبارات المتصفح).
 
+## عقد تعريف النظام (CORE-01)
+كل نظام هو مدخلٌ في `src/manifests/pages.json` → `pages[]` بلا `under`. العقد يشير إلى الأماكن القائمة ولا ينسخ منها شيئاً. الحقول الثلاثة الجديدة للبناء وحده: يحذفها `tools/generate.py` (`BUILD_ONLY`) من `manifests/255-page-manifest.js` ومن `PG_REG` في الخادم، فالمشتقّات بايتاً بايتاً كما كانت والحجم +0. والتشغيل لا يقرؤها، فلا يتغيّر أي سلوك.
+
+| الجزء | أين يعيش | الحقل |
+|---|---|---|
+| الهوية | `pages.json`: `key` (مفتاح الصلاحية) · `nav` (مفتاح التنقّل) · `name` | قائم |
+| وحدة الشيفرة | `module` = slug في `src/modules/modules.json`، وميثاقها (المالك · الغاية · البيانات · الاختبارات) في `src/modules/<slug>/meta.json` → `charter` | **جديد** (12 صفحة؛ `links` و`help` بلا وحدة) |
+| الصفحات | المدخلات التي `under` فيها = `key` النظام (مثل `staff`/`plan` تحت `planning`، و`dreport`/`tasks` تحت `daily`) | قائم، مشتقّ |
+| التبويبات | `subs` · `tabs` · `seq` · `tabLabel` · `tabAddr` | قائم |
+| المؤشرات | الأوراق ذات `offPage` + `containers[kpis].refs` | قائم |
+| الصلاحيات | `src/manifests/perm-tree24.json` (`page == key`) · `src/permissions/registry/registry-v24.9.json` | مرجع |
+| التفعيل | `activation`: `toggle` = تُطفأ بإدراج `key` في `bassam_platform_v1.mods.off`، ولها `ff.module.<key>.enabled` في السجل · `always` = لا تُطفأ (`admin` وحده) | **جديد** |
+| الاعتماديات | `requires: [{for, on, kind}]`. `for` ورقة `offPage` من أوراق الصفحة. `on` مفتاح صفحة أو `lens:<عدسة>`. `kind` واحد من: `perm` (صلاحية عرض الصفحة) · `lens` (عدسة مفعّلة للإدارة) · `code` (اللوحة ترسمها وحدة `on`) | **جديد** |
+
+الاعتماديات المعلنة اليوم:
+- `daily/kpiDaily` ← `dreport` (perm)
+- `daily/kpiOcc` ← `lens:zones` و`lens:dens` (lens)
+- `daily/kpiZones` ← `lens:zones` (lens)
+- `planning/readiness` ← `emps` (code: `<dc-import name="Employees" solo="readiness">`)
+
+**الفحص** `python3 tools/validate_schemas.py` (يشغّله `generate.py --check`). المخطّط `src/schemas/pages.schema.json`، ومعه هذه المطابقات مع الشيفرة:
+1. كل `module` موجودة في `modules.json`، وكل slug لصفحة واحدة.
+2. كل صفحة لها `activation`. كل `toggle` لها `ff.module.<key>.enabled`. ومجموعة `always` = الصفحات المستثناة من `mods.off` حرفياً في `331-perm-model.js` وفي `admin/logic.js` (`t24PlatOff`).
+3. كل `requires.for` ورقة `offPage` حقيقية من أوراق صفحتها. كل `on` صفحة أو عدسة من `src/plugins/lenses`، و`kind` يطابق شكل `on`.
+4. كل `containers.kpis.refs` ورقة `offPage`.
+5. اعتماديات `perm`/`lens` = قواعد `kpiPanelOk` الحرفية في `334-perm-tree-tpl.js`. إذا تغيّرت الشيفرة ولم يتغيّر الإعلان (أو العكس) يفشل البناء.
+6. اعتماديات `code`: `view.html` لوحدة الصفحة يستورد لوحة الورقة من وحدة `on`.
+
+لا يتغيّر بهذا العقد: آلية الصلاحيات، ومعنى `mods.off`، وأعلام `ff.module.*` (ما زالت ظلّاً)، و`navNames`/`routeNames` (باقيان كما هما).
+
 ## قياس حجم العامل (P1)
 - الرقم المعتمد الوحيد: `python3 tools/perf_budget.py pk265` على العامل المبني `pk265/_worker.js` (gzip -9)، والسقف `worker:_worker.js` في `tools/perf_budget.json`.
 - أساس `cdb6191`: **459,908** من 460,000.

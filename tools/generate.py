@@ -78,9 +78,12 @@ def main():
 # (الاستدعاء في الأسفل بعد توسعة 247)
 
 # ── KIVO_247 · AUD-015: manifest الصفحات → كتلة الواجهة + PG_REG في جزء الخادم ─────────────────────────────────────────
+BUILD_ONLY = ('module', 'activation', 'requires')
 def gen_manifest(S):
     M = json.load(open(os.path.join(S, layout(S)['pagesManifest']), encoding='utf-8'))
     data = {k: (M[k] if k != 'lenses' else lenses_of(S, M)) for k in ('version', 'pages', 'containers', 'lenses', 'tabAddr', 'navOrder', 'navNames', 'routeNames')}
+    # CORE-01: module · activation · requires are a build-time contract (validate_schemas.py checks them) — never shipped
+    data['pages'] = [{k: v for k, v in p.items() if k not in BUILD_ONLY} for p in M['pages']]
     # The module charter is already the data-ownership source of truth. Export
     # its read sets for the existing page-loader's acknowledged cloud prefetch.
     data['operationsReadSets'] = {}

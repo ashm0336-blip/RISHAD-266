@@ -54,4 +54,69 @@ x = [k for k in M['navOrder'] if k not in keys]; y = [n for n in navs if n not i
 if x or z: print('✘ pages.json تناسق: navOrder غريب ' + str(x) + ' · under غريب ' + str(z)); bad += 1
 else: print('✔ pages.json متناسق داخلياً (navOrder · under)')
 if y: print('✘ pages.json: مساراتٌ بلا اسمٍ في routeNames ' + str(y) + ' (KIVO_263 · SOT-095: خطأٌ لا تحذير)'); bad += 1
+# CORE-01 · عقدُ تعريف النظام (module · activation · requires في pages.json — للبناء وحده، لا يُصدَّر): يُطابَق مع ما هو قائمٌ في الشيفرة
+def _core01(S, M):
+    err = []; R = lambda *a: open(os.path.join(S, *a), encoding='utf-8').read()
+    MODS = {m['slug']: m['name'] for m in json.load(open(os.path.join(S, 'modules', 'modules.json'), encoding='utf-8'))['pages']}
+    PG = {p['key']: p for p in M['pages']}
+    LENS = {d for d in os.listdir(os.path.join(S, 'plugins', 'lenses')) if os.path.isfile(os.path.join(S, 'plugins', 'lenses', d, 'manifest.json'))} if os.path.isdir(os.path.join(S, 'plugins', 'lenses')) else {l['key'] for l in M.get('lenses', [])}
+    FF = set(json.load(open(os.path.join(S, 'permissions', 'registry', 'registry-v24.9.json'), encoding='utf-8')).get('featureFlags', {}))
+    # ① module: وحدةٌ في modules.json · وكلُّ slug لصفحةٍ واحدة على الأكثر
+    seen = {}
+    for p in M['pages']:
+        m = p.get('module')
+        if m is None: continue
+        if m not in MODS: err.append(p['key'] + '.module «' + m + '» ليست في modules/modules.json')
+        if m in seen: err.append('module «' + m + '» لصفحتين: ' + seen[m] + ' · ' + p['key'])
+        seen[m] = p['key']
+    # ② activation: لكلّ صفحة · toggle ⇒ ff.module.<key>.enabled في السجل · always = المستثناةُ من mods.off في الشيفرة (331 · admin/logic)
+    for p in M['pages']:
+        a = p.get('activation')
+        if a is None: err.append(p['key'] + ': activation مفقود')
+        elif a == 'toggle' and 'ff.module.' + p['key'] + '.enabled' not in FF: err.append(p['key'] + ': toggle بلا ff.module.' + p['key'] + '.enabled في registry-v24.9.json')
+    always = {p['key'] for p in M['pages'] if p.get('activation') == 'always'}
+    ex331 = set(re.findall(r"off\[i\] !== '([a-z]\w*)'", R('permissions', '331-perm-model.js')))
+    exAdm = set(re.findall(r'\(\(pl && pl\.mods && pl\.mods\.off\) \|\| \[\]\)\.filter\(\(k\) => "([a-z]\w*)" !== k\)', R('modules', 'admin', 'logic.js')))
+    if not (always == ex331 == exAdm): err.append('activation:always ' + str(sorted(always)) + ' ≠ استثناءُ mods.off في 331 ' + str(sorted(ex331)) + ' / admin/logic ' + str(sorted(exAdm)))
+    # ③ requires: for ورقةٌ offPage حقيقية في صفحتها · on صفحةٌ أو عدسة (lens:<key>) · kind يطابق شكل on
+    def leaf(ref):
+        pk, sk = ref.split('/'); pg = PG.get(pk)
+        return next((x for x in (pg.get('subs') or []) + (pg.get('tabs') or []) if x['key'] == sk), None) if pg else None
+    reqs = []
+    for p in M['pages']:
+        for r in p.get('requires', []):
+            f, on = r['for'], r['on']; k = r.get('kind') or ('lens' if on.startswith('lens:') else 'perm'); reqs.append((f, on, k))
+            lf = leaf(f)
+            if f.split('/')[0] != p['key']: err.append(p['key'] + '.requires: for «' + f + '» ليست من أوراق الصفحة')
+            elif not lf or not lf.get('offPage'): err.append(p['key'] + '.requires: for «' + f + '» ليست ورقةً offPage')
+            if on.startswith('lens:'):
+                if on[5:] not in LENS: err.append(f + ': on «' + on + '» ليست عدسة')
+                if k != 'lens': err.append(f + ': on «' + on + '» عدسةٌ و kind=' + k)
+            else:
+                if on not in PG: err.append(f + ': on «' + on + '» ليست صفحة')
+                if k == 'lens': err.append(f + ': kind=lens و on «' + on + '» ليست lens:')
+    # ④ containers.kpis.refs كلُّها offPage
+    for c in M['containers']:
+        for ref in c.get('refs', []):
+            lf = leaf(ref)
+            if not lf or not lf.get('offPage'): err.append(c['key'] + '.refs: «' + ref + '» ليست ورقةً offPage')
+    # ⑤ اعتمادياتُ perm/lens = قواعدُ kpiPanelOk الحرفية في 334 (شيفرةٌ وإعلانٌ لا يفترقان)
+    body = re.search(r'function kpiPanelOk\(pk, sk\)\{([\s\S]*?)\n  \}', R('permissions', '334-perm-tree-tpl.js'))
+    lit = set()
+    for sk, expr in re.findall(r"if \(sk === '(\w+)'\) return ([^;]+);", body.group(1) if body else ''):
+        lit |= {(sk, 'lens:' + x, 'lens') for x in re.findall(r"onCap\('(\w+)'\)", expr)}
+        lit |= {(sk, x, 'perm') for x in re.findall(r"\bcan\('(\w+)', 'view'\)", expr)}
+    dec = {(f.split('/')[1], on, k) for f, on, k in reqs if k != 'code'}
+    if not lit: err.append('334 kpiPanelOk: لم تُقرأ قواعدُه')
+    elif dec != lit: err.append('requires(perm/lens) ≠ 334 kpiPanelOk: زائدٌ ' + str(sorted(dec - lit)) + ' · ناقصٌ ' + str(sorted(lit - dec)))
+    # ⑥ اعتمادياتُ code: صفحةُ for تستورد لوحتَها من وحدة on (<dc-import name="<وحدة on>" solo="<الورقة>">)
+    for f, on, k in reqs:
+        if k != 'code': continue
+        pk, sk = f.split('/'); vm = PG[pk].get('module'); om = PG.get(on, {}).get('module')
+        v = os.path.join(S, 'modules', vm or '', 'view.html')
+        if not vm or not om or not os.path.isfile(v) or ('<dc-import name="' + MODS.get(om, '') + '" solo="' + sk + '"') not in R(v): err.append(f + ': kind=code لكن ' + str(vm) + '/view.html لا يستورد ' + str(MODS.get(om)) + ' solo="' + sk + '"')
+    return err, len(seen), len(always), len(reqs)
+_e, _nm, _na, _nr = _core01(S, M)
+if _e: print('✘ pages.json عقدُ النظام (CORE-01): ' + ' · '.join(_e)); bad += 1
+else: print('✔ pages.json عقدُ النظام (CORE-01): ' + str(_nm) + ' وحدة · ' + str(_na) + ' always · ' + str(_nr) + ' اعتمادية = modules.json · ff.module · 331/admin · 334 kpiPanelOk · dc-import')
 sys.exit(1 if bad else 0)
