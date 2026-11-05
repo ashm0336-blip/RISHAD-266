@@ -92,6 +92,7 @@
   <sc-if value="{{on_sz}}" hint-placeholder-val="{{ false }}"><dc-import name="Seized" solo="dash" hint-size="100%,1100px"></dc-import></sc-if>
   <sc-if value="{{on_ir}}" hint-placeholder-val="{{ false }}"><dc-import name="Irshad" solo="dash" hint-size="100%,1100px"></dc-import></sc-if>
   <!-- ═══ مؤشرات المهام — يملكها نظامُ المهام (RISHAD-266 P9: src/modules/tasks · logic-kpi.js) ═══ -->
+  <sc-if value="{{tkScopeNotice}}" hint-placeholder-val="{{ false }}"><div style="border:1px dashed var(--border-subtle);border-radius:12px;padding:22px;text-align:center;color:var(--text-muted);font-size:12px">{{tkScopeNotice}}</div></sc-if>
   <sc-if value="{{on_tk}}" hint-placeholder-val="{{ false }}"><dc-import name="Tasks" solo="kpi" hint-size="100%,600px"></dc-import></sc-if>
   <sc-if value="{{on_dsh}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Stats" solo="haram" hint-size="100%,1600px"></dc-import></sc-if>
   <sc-if value="{{on_dsn}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Stats" solo="nabawi" hint-size="100%,1700px"></dc-import></sc-if>

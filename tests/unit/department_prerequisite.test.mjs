@@ -203,7 +203,9 @@ test('actual KPIs guards inline task metrics without hiding global daily-statist
     assert.equal(metrics, 0); assert.equal(blocked.on_tk, false); assert.match(blocked.tkScopeNotice, /لا توجد إدارة/);
     component.state.ktab = 'dsh'; assert.equal(component.renderVals().on_dsh, true);
     f.D.save([{ id: 'real', name: 'TEST_ONLY real' }]); component.state.ktab = 'tk';
-    assert.equal(component.renderVals().on_tk, true); assert.equal(metrics, 1);
+    const ready = component.renderVals(); assert.equal(ready.on_tk, true); assert.equal(ready.tkScopeNotice, undefined);
+    /* RISHAD-266 P9: the metrics are the Tasks system's (tasks/logic-kpi.js, imported with solo="kpi"); the viewer only gates the import */
+    assert.equal(metrics, 0, 'the KPIs viewer computes no task metrics itself');
   } finally { f.T.dispose(); }
 });
 

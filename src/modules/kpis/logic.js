@@ -72,6 +72,14 @@ class Component extends DCLogic {
             n.setState({ ktab: t.k });
           }));
       }),
+      /* لوحةُ المهام يملكها نظامُ المهام (RISHAD-266 P9 · tasks/logic-kpi.js) — العارضُ يحرس سياقَ الإدارة وحده كما كان: بلا إدارةٍ جاهزة لا تُستورد اللوحة */
+      e.on_tk && (() => {
+        const scope = KIVO.BassamDepts?.context?.();
+        if (!scope || scope.state !== "ready") {
+          e.tkScopeNotice = scope?.message || "تعذّر قراءة سجل الإدارات — أعد المحاولة";
+          e.on_tk = false;
+        }
+      })(),
       e
     );
   }

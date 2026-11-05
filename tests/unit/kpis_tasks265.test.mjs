@@ -4,7 +4,9 @@
      (2) القيمُ التي تراها الشاشة (renderVals): التبويبُ لمن يرى صفحةَ المهام (tasks · view) وحده · البطاقاتُ بألوانٍ دلالية · الشهرُ الحالي
          افتراضاً مع تنقّلٍ سابق/تالٍ (ولفُّ السنة) · «لا مهام في هذا الشهر» · القراءةُ من localStorage «bassam_tasks_v1» (320 يحوّله للإدارة النشطة)
      (3) القالب: التبويبُ والقسمُ ورموزُه الدلالية وحدها
-   منطقُ الصفحة الحقيقي في vm بلا متصفح (كما tests/unit/custody_store.test.mjs وprofile_world.mjs). */
+   منطقُ الصفحة الحقيقي في vm بلا متصفح (كما tests/unit/custody_store.test.mjs وprofile_world.mjs).
+   RISHAD-266 P9: الحسابُ واللوحةُ يملكهما نظامُ المهام (src/modules/tasks/logic-kpi.js · solo="kpi") والتبويبُ والصلاحيةُ في العارض
+   (src/modules/kpis) — الاختبارُ يحمّل الاثنين: P.c مكوّنُ اللوحة (المهام) وV() قيمُ العارض ثم قيمُ اللوحة حين تُستورد (on_tk). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -13,6 +15,7 @@ import path from 'node:path';
 import { ROOT } from './harness.mjs';
 
 const LOGIC = path.join(ROOT, 'src/modules/kpis/logic.js'), VIEW = path.join(ROOT, 'src/modules/kpis/view.html');
+const PANEL = path.join(ROOT, 'src/modules/tasks/logic-kpi.js'), PANEL_VIEW = path.join(ROOT, 'src/modules/tasks/view.html');
 const MIN = 60e3;
 /* صفٌّ بالأعمدة المعنية وحدها: 3 الحالة · 6 الأداء · 11 القبول · 15 البداية · 21 الإثبات */
 function row(o) { const r = ['TEST_ONLY ' + (o.t || 'مهمة'), '', 'normal', o.st || 'pending', 'normal', 'مضافة', o.perf || null, [], '', '', 60, o.acc || null, o.fin || null, o.id || 1, 'tst_e', o.s || null, o.e || null, null, null, null, null, o.r21 || null]; return r; }
@@ -50,8 +53,13 @@ function page(o = {}) {
   KIVO.__BS_SRV = { operations: { get: (k) => { if (k !== 'bassam_tasks_v1' || !LS.has(k)) return null; try { return JSON.parse(LS.get(k)); } catch (e) { return null; } } } };
   ctx.DCLogic = class { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); } };
   vm.runInContext(fs.readFileSync(LOGIC, 'utf8') + '\n;globalThis.__C = Component;', ctx, { filename: 'kpis/logic.js' });
-  const c = new ctx.__C();
-  return { c, V: () => c.renderVals(), LS };
+  const k = new ctx.__C();
+  /* اللوحةُ: جزءُ المهام على صنفٍ كما يركّبه page_modules (Object.assign على النموذج) — props.solo = "kpi" كما في dc-import */
+  vm.runInContext('globalThis.__P = class extends DCLogic { constructor() { super(); this.props = { solo: "kpi" }; } };', ctx);
+  vm.runInContext('(function (Component) {' + fs.readFileSync(PANEL, 'utf8') + '\n})(globalThis.__P);', ctx, { filename: 'tasks/logic-kpi.js' });
+  const c = new ctx.__P();
+  const V = () => { const e = k.renderVals(); return e.on_tk ? Object.assign(e, c._tkSoloVals()) : e; };
+  return { c, k, V, LS };
 }
 
 test('(1) الحسابُ النقيّ للشهر: المنجزةُ ونسبُها (في الوقت · متأخرة · موثّقة) ومتوسطُ زمن القبول — صفوفُ الشهر وحدها، وما ليس صفاً أو مفتاحاً يُهمل', () => {
@@ -115,8 +123,10 @@ test('(2) الشاشة: التبويبُ لمن يرى المهام · البط�
 test('(3) القالب: تبويبُ «مؤشرات المهام» في الشريط وقسمُه بالبطاقات والتنقّل والفراغ — بالرموز الدلالية وحدها داخل القسم', () => {
   const v = fs.readFileSync(VIEW, 'utf8');
   assert.match(v, /\{\{ok_tk\}\}[\s\S]*?\{\{go_tk\}\}[\s\S]*?\{\{lb_tk\}\}">مؤشرات المهام</, 'التبويب');
-  const i = v.indexOf('<sc-if value="{{on_tk}}" hint-placeholder-val="{{ false }}">\n  <div'); assert.ok(i > 0, 'قسمُ اللوحة');
-  const s = v.slice(i, v.indexOf('</sc-if>', v.indexOf('{{tkKpiCards}}')));
+  assert.match(v, /<sc-if value="\{\{on_tk\}\}" hint-placeholder-val="\{\{ false \}\}"><dc-import name="Tasks" solo="kpi"/, 'القسمُ في العارض: استيرادُ لوحة المهام');
+  const pv = fs.readFileSync(PANEL_VIEW, 'utf8');
+  const i = pv.indexOf('<sc-if value="{{tkKpiOn}}" hint-placeholder-val="{{ false }}">\n  <div'); assert.ok(i > 0, 'قسمُ اللوحة (في المهام)');
+  const s = pv.slice(i, pv.indexOf('</sc-if>', pv.indexOf('{{tkKpiCards}}')));
   for (const b of ['{{tkKpiTitle}}', '{{tkKpiSub}}', '{{tkKpiPrev}}', '{{tkKpiNext}}', '{{tkKpiEmpty}}', '{{tkKpiNoDone}}', '{{tkKpiCards}}', '{{c.t}}', '{{c.v}}', '{{c.sub}}', 'color:{{c.c}}']) assert.ok(s.indexOf(b) > 0, 'ربطُ ' + b);
   assert.ok(s.indexOf('لا مهام في هذا الشهر') > 0);
   assert.doesNotMatch(s, /--(fg|bg|bd)-[xa]/, 'لا رموزَ حرفيةً قديمة داخل القسم — الدلاليةُ وحدها');

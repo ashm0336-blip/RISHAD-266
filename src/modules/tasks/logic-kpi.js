@@ -1,4 +1,4 @@
-/* RISHAD-266 · P9 — جزءُ «مؤشرات المهام» من منطق صفحة المهام (نُقل من src/modules/kpis/logic.js كما هو). يُجمَع بعد logic.js بترتيب
+/* KIVO_265 · البند 19 (تقسيمُ منطق صفحة المهام) — جزءُ «مؤشرات المهام» (RISHAD-266 P9) (نُقل من src/modules/kpis/logic.js كما هو). يُجمَع بعد logic.js بترتيب
    meta.json «logicParts»، ويُستدعى من renderVals حين props.solo === "kpi" (لوحةُ «مؤشرات الإدارة»). لا كتابةَ ولا طلبَ خادم. */
 "use strict";
 Object.assign(Component.prototype, {
