@@ -643,7 +643,8 @@ class Component extends DCLogic {
     }
     let ok = true;
     if (S && S.flushAsync) { try { ok = (await S.flushAsync(4000)) === true; } catch (e) { ok = false; } }
-    if (!ok) { this.bkToast("لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ", true); return false; }
+    if (!ok) { let still = true; try { still = !!(S && ((S.dirty && S.dirty()) || (S.inflight && S.inflight()))); } catch (e) { still = true; }
+      if (still) { this.bkToast("لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ", true); return false; } }   /* لا تعديلَ معلَّق (جلسةٌ منتهية · عمليةٌ عالقة) ⇒ لا رسالةَ كاذبة ولا منع */
     return true;
   }
   async _switchUnit(id, name) {

@@ -11,7 +11,7 @@ const srv = (o) => ({ dirty: () => !!o.dirty, inflight: () => false, flushAsync:
 const pick = async (W, id) => { await W.c._switchUnit(id, UNITS.find((u) => u.id === id).name); await settle(); };
 
 test('failed flush ⇒ no reload, active unit unchanged, plain message', async () => {
-  for (const o of [{ dirty: true, result: false }, { dirty: true, reject: true }, { dirty: false, result: false }]) {
+  for (const o of [{ dirty: true, result: false }, { dirty: true, reject: true }]) {
     const W = world({ srv: srv(o) });
     await pick(W, UNITS[1].id);
     assert.equal(W.reloads.length, 0, 'no reload ' + JSON.stringify(o));
@@ -19,6 +19,14 @@ test('failed flush ⇒ no reload, active unit unchanged, plain message', async (
     assert.equal(W.lastToast(), 'لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ', 'through the one toast (KIVO.bsToast)');
     assert.equal(o.calls, 1); assert.equal(o.ms, 4000);
   }
+});
+
+test('flush not confirmed but nothing pending (ended session, stuck operation): no false «لم تُحفظ» and the switch goes ahead', async () => {
+  const o = { dirty: false, result: false };
+  const W = world({ srv: srv(o) });
+  await pick(W, UNITS[1].id);
+  assert.equal(o.calls, 1); assert.equal(W.active(), UNITS[1].id, 'switched'); assert.equal(W.reloads.length, 1, 'reloaded once');
+  assert.notEqual(W.lastToast(), 'لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ', 'no false unsaved message');
 });
 
 test('pending edits: the user is asked first; declining keeps everything as is', async () => {
