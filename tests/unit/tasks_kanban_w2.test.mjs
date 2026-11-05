@@ -61,7 +61,7 @@ test('DG-03 · القالب: ستةُ أعمدةٍ في صفٍّ واحد (لا 
   assert.doesNotMatch(blk, /repeat\(4,1fr\)|bs-cardrow/);
   assert.match(blk, /data-khide="\{\{col\.kHide\}\}"/);
   assert.match(blk, /\{\{col\.label\}\}/); assert.match(blk, /\{\{col\.count\}\}/);
-  assert.match(css, /@media \(max-width:760px\)\{\s*\.bs-cardgrid\.tk-kanban\{flex-direction:column;align-items:stretch!important;overflow:visible!important;[^}]*\}\s*\.bs-cardgrid\.tk-kanban > \*\{width:auto;flex:0 0 auto;align-self:stretch\}\s*\.bs-cardgrid\.tk-kanban > \[data-khide="1"\]\{display:none!important\}\s*\}/);
+  assert.match(css, /@media \(max-width:900px\)\{\s*\.bs-cardgrid\.tk-kanban\{flex-direction:column;align-items:stretch!important;overflow:visible!important;[^}]*\}\s*\.bs-cardgrid\.tk-kanban > \*\{width:auto;flex:0 0 auto;align-self:stretch\}\s*\.bs-cardgrid\.tk-kanban > \[data-khide="1"\]\{display:none!important\}\s*\}/);
 });
 
 test('DG-03 · تذييلُ بطاقة اللوحة يلتفّ: «بواسطة …» ينزل تحت الأسماء في العمود الضيّق ولا يحشر سطرَ السياسة/النافذة في ≈60px', () => {

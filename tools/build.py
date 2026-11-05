@@ -148,6 +148,63 @@ def own_assets(d):
 # KIVO_257 · AUD-024 (SOT-148): blocks.json «minify»: "tokens" ⇒ كلُّ كتلة js (عدا محمِّل الصفحات بعلاماته) تُصغَّر حافظةً للرموز
 # (tools/jsmin_tokens.mjs: حذفُ التعليقات والمسافات البادئة · كلُّ رمزٍ حرفاً بحرف · فواصلُ الأسطر بين الرموز باقية) — في الوضعين فيبقى
 # تكافؤُ التركيب (dist ↔ monolith) بايتاً؛ والبرهانُ مدمَج: تيّارُ الرموز في الناتج = الأصل لكل كتلة وإلا يتوقف البناء.
+# CORE-01 · step 0: comments are source documentation, not shipped bytes. The inline-CSS blocks (blocks.json kind inline-css), the
+# <style> elements of the shell template and the template's own <!--…--> are emitted without comments. Both modes share these
+# functions, so the monolith and the split shell stay byte-equal. Sources keep every comment.
+_NAME = re.compile(r'[A-Za-z0-9_%\\-]|[^\x00-\x7f]')
+def _cut(t, s, e, out):
+    """Drop t[s:e]. A comment alone on its lines takes its line with it; otherwise the text around it stays as it is, and a single
+    space is put back only where removal would fuse two name characters into one token (1px/**/solid)."""
+    ls = t.rfind('\n', 0, s) + 1; le = t.find('\n', e); le = len(t) if le < 0 else le
+    if t[ls:s].strip() == '' and t[e:le].strip() == '':
+        while out:
+            last = out[-1].rstrip(' \t')
+            if last: out[-1] = last; break
+            out.pop()
+        return le + 1 if le < len(t) else le
+    if s > 0 and e < len(t) and _NAME.match(t[s - 1]) and _NAME.match(t[e]): out.append(' ')
+    return e
+def strip_css_comments(t):
+    """/*…*/ out of CSS text, string-aware: quoted strings and unquoted url(…) are copied untouched."""
+    out, i, n = [], 0, len(t)
+    while i < n:
+        c = t[i]
+        if c in '"\'':
+            j = i + 1
+            while j < n and t[j] != c and t[j] != '\n': j += 2 if t[j] == '\\' else 1
+            out.append(t[i:j + 1]); i = j + 1
+        elif c == '/' and t.startswith('/*', i):
+            e = t.find('*/', i + 2); assert e >= 0, 'unterminated CSS comment'
+            i = _cut(t, i, e + 2, out)
+        elif t[i:i + 4].lower() == 'url(' and (i == 0 or not _NAME.match(t[i - 1])):
+            k = i + 4
+            while k < n and t[k] in ' \t\n': k += 1
+            if k < n and t[k] in '"\'': out.append(t[i:k]); i = k
+            else: e = t.find(')', k); e = n if e < 0 else e + 1; out.append(t[i:e]); i = e
+        else: out.append(c); i += 1
+    return ''.join(out)
+_KEEP_HTML_COMMENT = re.compile(r'<!--(?:BS_BOOT--|\[if|<!\[endif|\s*sc-)')
+_RAW = re.compile(r'(<(style|script)\b[^>]*>)([\s\S]*?)(</\2>)', re.I)
+def strip_shell_comments(t):
+    """<!--…--> out of the shell template (BS_BOOT, conditional comments and sc- markers stay) and /*…*/ out of its <style>
+    elements; <script> elements are copied untouched. Runs on the template before any block is substituted."""
+    out, pos = [], 0
+    def html(seg):
+        o, i = [], 0
+        while True:
+            s = seg.find('<!--', i)
+            if s < 0: o.append(seg[i:]); break
+            e = seg.find('-->', s + 4); assert e >= 0, 'unterminated HTML comment'
+            o.append(seg[i:s])
+            if _KEEP_HTML_COMMENT.match(seg, s): o.append(seg[s:e + 3]); i = e + 3
+            else: i = _cut(seg, s, e + 3, o)
+        return ''.join(o)
+    for m in _RAW.finditer(t):
+        out.append(html(t[pos:m.start()]))
+        out.append(m.group(1) + (strip_css_comments(m.group(3)) if m.group(2).lower() == 'style' else m.group(3)) + m.group(4))
+        pos = m.end()
+    out.append(html(t[pos:]))
+    return ''.join(out)
 _TMIN = {'p': None}
 def tmin_js(body, bid, preserve_test_tool=False):
     if _TMIN['p'] is None:
@@ -164,6 +221,7 @@ def render_block(bid, mode):
     # (نصُّ منطق الصفحات في الرأس كان يُربك الفحوصَ الساكنة التي تبحث عن أول </head>) — بلا العلامة: السلوكُ السابق (KIVO_246)
     if is_pages and (mode == 'monolith' or A.pages == 'bundled'): body = body.replace('@@KIVO_PAGES@@', pages_json()) + (logic_inline() if PRECOMPILED and META.get('dcLogicInline') != 'body-end' else '')
     elif is_pages: body = lazy_loader(body)
+    if b['kind'] == 'inline-css': body = strip_css_comments(body)
     body = resolve_assets(body, mode)
     if META.get('minify') == 'tokens' and b['kind'] == 'js' and not is_pages: body = tmin_js(body, bid)
     if PRECOMPILED and bid == ROOT_LOGIC:
@@ -182,7 +240,7 @@ def icons_cat():
     p = os.path.join(SRC, 'assets', 'icons', 'catalog.json')
     return json.load(open(p, encoding='utf-8')) if os.path.exists(p) else None
 def render_shell(mode):
-    t = rd(L('shell'))
+    t = strip_shell_comments(rd(L('shell')))
     cat = icons_cat()
     if cat:
         import sys as _s; _s.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tools')); import icons as _ic

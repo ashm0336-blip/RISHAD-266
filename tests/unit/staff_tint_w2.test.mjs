@@ -64,7 +64,7 @@ test('ES-11 · شريطُ الترقيم بلون السطح في كل الوح�
   assert.deepEqual(over(tok('tone-neutral-100-a20', false), tok('bg-surface', false)).map(Math.round), rgba(tok('bg-surface', false)).map(Math.round), 'فاتحاً: الشريطُ أبيضُ كما كان');
 });
 
-test('ES-7 · ترويسةُ معالج «سند تسليم عهدة جديد» تلتفّ: العنوانُ بأساس 150px والخطواتُ لا تنكسر وتنزل إلى سطرها في الوسط تحت 520px (قاعدةُ رأس الصفحة)', () => {
+test('ES-7 · ترويسةُ معالج «سند تسليم عهدة جديد» تلتفّ: العنوانُ بأساس 150px والخطواتُ لا تنكسر وتنزل إلى سطرها في الوسط تحت 640px (قاعدةُ رأس الصفحة)', () => {
   const v = rd('modules/employees/view.html');
   const i = v.indexOf('>سند تسليم عهدة جديد</div>'), hd = v.slice(v.lastIndexOf('<div class="es-wzhd"', i), v.indexOf('</sc-for>', i));
   assert.match(hd, /^<div class="es-wzhd" style="display:flex;align-items:center;flex-wrap:wrap;gap:10px 11px;/);
@@ -72,7 +72,7 @@ test('ES-7 · ترويسةُ معالج «سند تسليم عهدة جديد» 
   assert.match(hd, /<div class="es-wzst" style="display:flex;align-items:center;gap:7px">/);
   assert.match(hd, /font-size:10\.5px;font-weight:600;white-space:nowrap;color:\{\{st\.col\}\}/);
   /* القاعدةُ في رأس الصفحة (helmet) — لا في <style> «الجاهزية» داخل sc-if الذي لا يكون في الصفحة والمعالجُ مفتوح (جولةُ الإصلاح) */
-  const h = rd('modules/employees/helmet.css'), RX = /@media \(max-width:520px\)\{\.es-wzhd \.es-wzst\{flex-basis:100%;justify-content:center\}\}/;
+  const h = rd('modules/employees/helmet.css'), RX = /@media \(max-width:640px\)\{\.es-wzhd \.es-wzst\{flex-basis:100%;justify-content:center\}\}/;
   assert.match(h, RX);
   assert.doesNotMatch(v, /\.es-wzst\{/, 'لا نسخةَ في القالب');
   assert.ok(h.indexOf('</style>') > h.search(RX), 'داخل <style> الرأس');
