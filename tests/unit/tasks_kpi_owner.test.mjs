@@ -65,6 +65,6 @@ test('ownership: Tasks owns the code and the panel; the KPIs viewer imports it a
   assert.match(r('modules/tasks/logic.js'), /"kpi" === this\.props\.solo\) return this\._tkSoloVals\(\)/);
   assert.match(r('modules/tasks/view.html'), /<sc-if value="\{\{tkSolo\}\}"[\s\S]*مؤشرات المهام — \{\{tkKpiTitle\}\}[\s\S]*<sc-if value="\{\{tkFull\}\}"/);
   for (const f of ['logic.js', 'view.html', 'meta.json']) assert.equal((r('modules/kpis/' + f).match(/bassam_tasks_v1/g) || []).length, 0, 'kpis/' + f + ' reads no tasks store');
-  assert.match(r('modules/kpis/view.html'), /<sc-if value="\{\{on_tk\}\}"[^>]*><dc-import name="Tasks" solo="kpi"/);
+  assert.match(r('modules/kpis/view.html'), /<sc-if value="\{\{tkMount\}\}"[^>]*><div style="\{\{tkShow\}\}"><dc-import name="Tasks" solo="kpi"/, 'imported once opened, then kept mounted and hidden (month kept across tab switches)');
   assert.match(r('modules/kpis/logic.js'), /"tkKpi" === t\) return !r \|\| !r\.can \? !0 : !!r\.can\("tasks", "view"\)/, 'tab visibility rule unchanged (P10 moves it)');
 });

@@ -1,5 +1,5 @@
 class Component extends DCLogic {
-  state = { ktab: null, tkY: 0, tkM: 0 };
+  state = { ktab: null };
   _okOf(n, t) {
     try {
       const r = KIVO.BassamPerm;
@@ -80,6 +80,10 @@ class Component extends DCLogic {
           e.on_tk = false;
         }
       })(),
+      /* بعد أول فتح تبقى اللوحةُ مركَّبةً مخفيّة: شهرُها المختار يبقى عند الرجوع إلى التبويب كما كان قبل النقل، ولا تُقرأ قبل أن تُفتح */
+      e.on_tk && (this._tkSeen = !0),
+      (e.tkMount = !!this._tkSeen && !e.tkScopeNotice),
+      (e.tkShow = e.on_tk ? "" : "display:none"),
       e
     );
   }

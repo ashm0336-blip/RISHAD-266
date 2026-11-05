@@ -30,7 +30,7 @@ const norm = (x) => String(x).replace(/[\u0660-\u0669]/g, (d) => String(d.charCo
 const normV = (v) => ({ title: norm(v.title), sub: norm(v.sub), cards: v.cards.map((c) => c.map(norm)) });
 const shown = async (page) => { const v = await page.evaluate(() => {
   const t = [...document.querySelectorAll('div')].find((d) => !d.querySelector('div') && /^مؤشرات المهام — /.test(d.textContent.trim()));
-  if (!t) return null;
+  if (!t || !t.getClientRects().length) return null;   /* hidden (display:none) counts as not shown */
   const head = t.parentElement, isGrid = (d) => /grid-template-columns:\s*repeat\(auto-fit/.test(d.getAttribute('style') || '');
   let box = head; while (box && ![...box.querySelectorAll('div')].some(isGrid)) box = box.parentElement;
   const grid = box && [...box.querySelectorAll('div')].find(isGrid);
@@ -65,6 +65,11 @@ test('KPIs page · tasks tab: owner panel values, month navigation, no saves; Ta
       [y, m] = step(y, m, d);
       assert.deepEqual(await shown(s.page), expected(store, y, m), label + ' → ' + y + '-' + m);
     }
+    /* the chosen month survives a tab switch (as when the month lived in the KPIs viewer): leave, come back, same month */
+    assert.ok(await click(s.page, 'مؤشرات التشغيل اليومي'), 'another KPI tab'); await s.page.waitForTimeout(1500);
+    assert.equal(await shown(s.page), null, 'tasks panel hidden on the other tab');
+    assert.ok(await click(s.page, 'مؤشرات المهام'), 'back to the tasks tab'); await s.page.waitForTimeout(1200);
+    assert.deepEqual(await shown(s.page), expected(store, y, m), 'month kept after switching tabs → ' + y + '-' + m);
     assert.deepEqual(sv, [], 'opening the panel and navigating months saves nothing');
     /* the full Tasks page still renders its own view, without the KPI panel */
     await s.go('#/tasks', 5000);

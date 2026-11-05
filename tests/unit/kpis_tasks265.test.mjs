@@ -113,17 +113,23 @@ test('(2) الشاشة: التبويبُ لمن يرى المهام · البط�
   assert.equal(page({ tasks: '[1,2]' }).V().tkKpiEmpty, true);
   /* الصلاحية: بلا tasks·view لا تبويبَ ولا لوحة */
   const P3 = page({ can: (k) => k !== 'tasks' }); t = P3.V();
-  assert.equal(t.ok_tk, false); assert.equal(t.on_tk, false); assert.equal(t.noneOn, true); assert.equal(t.tkKpiCards, undefined, 'لا حسابَ لما لا يُعرض');
+  assert.equal(t.ok_tk, false); assert.equal(t.on_tk, false); assert.equal(t.noneOn, true); assert.equal(t.tkKpiCards, undefined, 'لا حسابَ لما لا يُعرض'); assert.equal(t.tkMount, false, 'ولا استيراد');
   /* مع لوحاتٍ أخرى: الشريطُ ظاهرٌ والأولى تُفتح ثم النقرُ على «مؤشرات المهام» */
   const P4 = page({ others: (pk, sk) => sk === 'readiness' }); t = P4.V();
   assert.equal(t.stripOn, true); assert.equal(t.on_read, true); assert.equal(t.on_tk, false); assert.equal(t.ok_tk, true);
+  assert.equal(t.tkMount, false, 'لم تُفتح بعد ⇒ لا تُستورد اللوحة (لا قراءةَ لها)');
   t.go_tk(); t = P4.V(); assert.equal(t.on_tk, true); assert.equal(t.on_read, false); assert.equal(t.tkKpiCards.length, 4);
+  assert.equal(t.tkMount, true); assert.equal(t.tkShow, '');
+  /* الشهرُ المختار يبقى بعد التنقّل بين التبويبات (كما كان حين كانت الحالةُ في العارض): اللوحةُ تبقى مركَّبةً مخفيّة */
+  t.tkKpiPrev(); t = P4.V(); assert.equal(t.tkKpiTitle, 'ربيع الأول 1448');
+  t.go_read(); t = P4.V(); assert.equal(t.on_tk, false); assert.equal(t.tkMount, true, 'تبقى مركَّبة'); assert.equal(t.tkShow, 'display:none', 'مخفيّة');
+  t.go_tk(); t = P4.V(); assert.equal(t.tkKpiTitle, 'ربيع الأول 1448', 'الشهرُ المختار باقٍ'); assert.equal(t.tkShow, '');
 });
 
 test('(3) القالب: تبويبُ «مؤشرات المهام» في الشريط وقسمُه بالبطاقات والتنقّل والفراغ — بالرموز الدلالية وحدها داخل القسم', () => {
   const v = fs.readFileSync(VIEW, 'utf8');
   assert.match(v, /\{\{ok_tk\}\}[\s\S]*?\{\{go_tk\}\}[\s\S]*?\{\{lb_tk\}\}">مؤشرات المهام</, 'التبويب');
-  assert.match(v, /<sc-if value="\{\{on_tk\}\}" hint-placeholder-val="\{\{ false \}\}"><dc-import name="Tasks" solo="kpi"/, 'القسمُ في العارض: استيرادُ لوحة المهام');
+  assert.match(v, /<sc-if value="\{\{tkMount\}\}" hint-placeholder-val="\{\{ false \}\}"><div style="\{\{tkShow\}\}"><dc-import name="Tasks" solo="kpi"/, 'القسمُ في العارض: استيرادُ لوحة المهام (يبقى مركَّباً مخفيّاً بعد أول فتح)');
   const pv = fs.readFileSync(PANEL_VIEW, 'utf8');
   const i = pv.indexOf('<sc-if value="{{tkKpiOn}}" hint-placeholder-val="{{ false }}">\n  <div'); assert.ok(i > 0, 'قسمُ اللوحة (في المهام)');
   const s = pv.slice(i, pv.indexOf('</sc-if>', pv.indexOf('{{tkKpiCards}}')));
