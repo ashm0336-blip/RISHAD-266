@@ -98,7 +98,7 @@
       if (o.tone === "err" && text.charAt(0) !== "⚠") text = "⚠ " + text;
       var host = document.body || document.documentElement; if (!host) return;
       if (!toastBox9 || !toastBox9.parentNode) {
-        toastBox9 = document.createElement("div"); toastBox9.id = "bs-toast"; toastBox9.className = "bs-toast";
+        toastBox9 = document.createElement("div"); toastBox9.id = "bs-stoast"; toastBox9.className = "bs-toast";
         toastBox9.setAttribute("role", "status"); toastBox9.setAttribute("aria-live", "polite"); toastBox9.setAttribute("dir", "rtl");
         host.appendChild(toastBox9); toastLines9 = [];
       }

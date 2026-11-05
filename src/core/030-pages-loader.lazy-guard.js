@@ -58,7 +58,7 @@
   }
   window.addEventListener("bs:session-gone", function () { for (var n in cards) { try { cardFill(cards[n], n); } catch (e) { /* عرضٌ فقط */ } } });
   function hideCard(name) { try { if (cards[name]) { cards[name].remove(); delete cards[name]; } } catch (e) { /* عرضٌ فقط */ } }
-  window.addEventListener('dc:page-load-failed', function (event) { var name = event.detail && event.detail.name; if (name) showCard(name); });
+  window.addEventListener('dc:page-load-failed', function (event) { var name = event.detail && event.detail.name; if (!name) return; showCard(name); gaveUp[name] = 1; if (!sweeper) sweeper = setInterval(sweep, 30000); });   /* CORE-01: قراءةُ البيانات المتعثّرة تُعاد تلقائياً كما تقول البطاقة (كل ٣٠ ث وعند عودة الاتصال) */
   window.addEventListener('dc:page-load-ready', function (event) { var name = event.detail && event.detail.name; if (name) hideCard(name); });
   function again(name) {
     var n = tries[name] = (tries[name] || 0) + 1;

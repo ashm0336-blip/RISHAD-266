@@ -72,9 +72,13 @@ test('CORE-01: السحبُ يحفظ أولاً — يُعاد التحميل ب
   ok.pull(ok.header); await tick();
   assert.deepEqual(calls, [4000]); assert.deepEqual(ok.log, ['reload']); assert.equal(ok.toasts.length, 0);
   for (const result of [() => Promise.resolve(false), () => Promise.reject(new Error('TEST_ONLY')), () => { throw new Error('TEST_ONLY'); }]) {
-    const bad = app({ flushAsync: result });
+    const bad = app({ flushAsync: result, dirty: () => true, inflight: () => false });
     bad.pull(bad.header); await tick(); await tick();
     assert.deepEqual(bad.log, [], 'لا إعادةَ تحميل والتعديلاتُ لم تُحفظ');
     assert.equal(bad.toasts.length, 1); assert.match(bad.toasts[0].m, /لم تُحفظ تعديلاتك بعد/); assert.equal(bad.toasts[0].o.tone, 'err');
+    /* CORE-01 (مراجعةٌ مستقلة): حفظٌ لم يكتمل بلا تعديلٍ معلَّق (جلسةٌ منتهية · عمليةٌ عالقة) ⇒ إعادةٌ بلا رسالةٍ كاذبة */
+    const clean = app({ flushAsync: result, dirty: () => false, inflight: () => false });
+    clean.pull(clean.header); await tick(); await tick();
+    assert.deepEqual(clean.log, ['reload'], 'لا تعديلَ معلَّقاً ⇒ تُعاد الصفحة'); assert.equal(clean.toasts.length, 0, 'ولا رسالةَ «لم تُحفظ»');
   }
 });

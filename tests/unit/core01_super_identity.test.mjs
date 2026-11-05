@@ -79,7 +79,10 @@ test('collapsed rail: the unit picker opens without expanding the sidebar; no na
   assert.equal(W.c.state.deptOpen, true); assert.equal(!!W.c.state.sidebarOpen, false);
   const T = rd('layouts/index.template.html');
   assert.match(T, /<button class="s-dept" sc-camel-on-click="\{\{sbDeptClick\}\}" aria-label="\{\{sbDeptTitle\}\}"/);
-  assert.doesNotMatch(T, /class="s-dept"[^>]*\btitle=/);
+  /* CORE-01 (مراجعةٌ مستقلة): التلميحُ (المسارُ الكامل) يعود والقائمةُ مغلقة — ولا يغطّي القائمةَ المفتوحة */
+  assert.match(T, /class="s-dept"[^>]*\btitle="\{\{sbDeptTip\}\}"/);
+  assert.equal(W.vals().sbDeptTip, '', 'list open ⇒ no native tooltip over it');
+  W.c.setState({ deptOpen: false }); assert.equal(W.vals().sbDeptTip, W.vals().sbDeptTitle, 'list closed ⇒ the full-path tooltip');
   assert.match(rd('layouts/helmet-global.css'), /\.bsb\.cx \.s-deptdd\{position:fixed;/);
 });
 

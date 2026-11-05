@@ -203,7 +203,7 @@ class Component extends DCLogic {
         try {
           const W = innerWidth, H = innerHeight; let best = null, bestZ = -1;
           for (const el of document.querySelectorAll('main *, body > *')) {
-            if (el === document.body || el.id === 'bsLoginGate' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.id === 'bs-toast' || (el.classList && el.classList.contains('login-screen'))) continue;
+            if (el === document.body || el.id === 'bsLoginGate' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.id === 'bs-toast' || el.id === 'bs-stoast' || (el.classList && el.classList.contains('login-screen'))) continue;
             if (!this._ovCand(el)) continue;   /* لا getComputedStyle إلا لمرشَّحٍ حقيقيّ */
             const cs = getComputedStyle(el); if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
             const r = el.getBoundingClientRect(); if (r.width < W * 0.9 || r.height < H * 0.9) continue;
@@ -982,7 +982,7 @@ class Component extends DCLogic {
       sbToggleChevron: "transition:transform .3s;" + (open ? "" : "transform:rotate(180deg)"),
       ...((() => {
         const D = KIVO.BassamDepts;
-        if (!D) return { deptName: "إدارة", crumbUnit: platPage ? "المنصة" : "إدارة", deptOpen: false, deptOpenAria: "false", deptTree: [], deptChev: "" };
+        if (!D) return { deptName: "إدارة", crumbUnit: platPage ? "المنصة" : "إدارة", deptOpen: false, deptOpenAria: "false", sbDeptTip: "", deptTree: [], deptChev: "" };
         const open = !!this.state.deptOpen;
         const act = D.active();
         /* F01: اسمُ الوحدة النشطة أولاً ثم إدارتُها الأم للقسم («قسم س · إدارة ص» — 320 unitLabel) فيُقصّ من آخره على الجوال لا اسمُ الوحدة */
@@ -1017,6 +1017,7 @@ class Component extends DCLogic {
           deptName: deptLabel,
           crumbUnit: platPage ? "المنصة" : deptLabel,
           deptOpen: open, deptOpenAria: open ? "true" : "false",
+          get sbDeptTip() { return open ? "" : this.sbDeptTitle; },   /* CORE-01: التلميحُ (المسارُ الكامل) والقائمةُ مغلقة وحدها — لا يغطّي القائمةَ المفتوحة */
           /* مبدّل القائمة الجانبية: يفتح لوحةَ الوحدات ويطويها. لغير المشرف زرٌّ ساكن (اسم إدارته فقط) */
           sbDeptClick: () => {
             if (!isSuper) return;
