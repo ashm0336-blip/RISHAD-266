@@ -36,6 +36,7 @@
 | رصد الميدان (`field`) | المتابعة اليومية (`daily/meta.json` · `daily/field`) | «ملفي» يضمّها | `field.view` |
 | «مهامك» | المهام (`src/services/545-task-self.js`) | «ملفي» يضمّها | `self.task.respond` |
 | لوحة الجاهزية (`planning/readiness`) | الخطة التشغيلية (الورقة)، والشيفرة اليوم في `employees` (`solo="readiness"`) | الخطة التشغيلية | `ready.view` |
+| مؤشرات المهام (`tasks/tkKpi`) — RISHAD-266 P9 | المهام (`tasks/logic-kpi.js` · `solo="kpi"`) | «مؤشرات الإدارة» تستورد اللوحة (`<dc-import name="Tasks" solo="kpi">`) ولا تقرأ مخزن المهام | `tasks.view` (القاعدة في `kpis/logic.js` `_okOf` باقية حتى P10) |
 | أقفال الشهر | المهام (`bassam_tasks_locks_v1`) والجدول الشهري (`bassam_staffing_locks_v1`) | صفحاتها | مفاتيح القفل في `006-guard-bindings` |
 | أقفال محاولات الدخول | النواة: الدخول (`/api/guard` · `/api/guard/unlock`) | مدير النظام ← الأمن | مدير النظام وحده |
 | الدخول والاسترداد الذاتي | النواة: الهوية (`062a`) — `/api/recover` · `/api/checkpw` · `/api/me/sess/kill` | شاشة الدخول وملفي | بلا جلسة بحارس المحاولات (`recover`) · أو جلسة صاحبها |

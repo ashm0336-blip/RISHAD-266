@@ -110,7 +110,7 @@ test('DG-01 · نسخةُ «أُعيد إسنادها» خارج المقام ·
 });
 
 test('DG-01 · لوحةُ «مؤشرات المهام» في مؤشرات الإدارة: الملغاةُ ليست «مفتوحة» — العدُّ من القائمة وتُذكر خارج الحساب', () => {
-  const P = page('kpis', { store: {} });
+  const P = tasksPage({});   /* RISHAD-266 P9: اللوحةُ يملكها نظامُ المهام (logic-kpi.js) وتُعرض في مؤشرات الإدارة عبر dc-import */
   const S = auditMonth();
   S[K(9)] = [row({ id: id(), title: 'مفتوحة', eid: ME.eid, s: NOW, e: NOW + H }), withX(row({ id: id(), title: 'نسخة', eid: MATE.eid }), REA)];
   const k = P.c._tkKpi(S, Y, M);

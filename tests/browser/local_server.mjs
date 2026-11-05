@@ -19,7 +19,7 @@ const hashOf = (pw) => { const m = /"ph":"(p2\$[^"]+)"/.exec(makeSql({ username:
 async function loadWorker() {
   const src = fs.readFileSync(process.env.KIVO_WORKER || WORKER, 'utf8');
   const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'lab-')), f = path.join(dir, 'w.mjs');
-  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, opLegacyPrepare, opGuardRetired };\n');
+  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, opLegacyPrepare, opGuardRetired, opChangeStatements, opInfo, opPrepared, ocPhysicalTables, ocFromPhysical, ocInflate };   /* the typed fixture helpers (replaceOperationalFixture) */\n');
   try { return await import(pathToFileURL(f).href); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 

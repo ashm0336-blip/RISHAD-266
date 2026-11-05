@@ -91,30 +91,8 @@
   <sc-if value="{{on_zn}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Sessions" solo="kpiZones" hint-size="100%,1100px"></dc-import></sc-if>
   <sc-if value="{{on_sz}}" hint-placeholder-val="{{ false }}"><dc-import name="Seized" solo="dash" hint-size="100%,1100px"></dc-import></sc-if>
   <sc-if value="{{on_ir}}" hint-placeholder-val="{{ false }}"><dc-import name="Irshad" solo="dash" hint-size="100%,1100px"></dc-import></sc-if>
-  <!-- ═══ KIVO_265 · البند 17 — مؤشرات المهام للشهر (من مخزن المهام المحلي للإدارة · ألوانٌ دلالية) ═══ -->
-  <sc-if value="{{tkScopeNotice}}" hint-placeholder-val="{{ false }}"><div style="border:1px dashed var(--border-subtle);border-radius:12px;padding:22px;text-align:center;color:var(--text-muted);font-size:12px">{{tkScopeNotice}}</div></sc-if>
-  <sc-if value="{{on_tk}}" hint-placeholder-val="{{ false }}">
-  <div style="border-radius:16px;border:1px solid var(--border-default);background:var(--bg-surface);padding:14px 16px;display:grid;gap:12px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-      <div style="min-width:0"><div style="font-size:14px;font-weight:700;color:var(--text-primary)">مؤشرات المهام — {{tkKpiTitle}}</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">{{tkKpiSub}}</div></div>
-      <div style="display:flex;gap:6px;flex-shrink:0">
-        <button onClick="{{tkKpiNext}}" style="border:1px solid var(--border-default);background:var(--bg-surface-2);color:var(--text-primary);border-radius:9px;padding:5px 11px;font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer">الشهر التالي</button>
-        <button onClick="{{tkKpiPrev}}" style="border:1px solid var(--border-default);background:var(--bg-surface-2);color:var(--text-primary);border-radius:9px;padding:5px 11px;font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer">الشهر السابق</button>
-      </div>
-    </div>
-    <sc-if value="{{tkKpiEmpty}}" hint-placeholder-val="{{ false }}"><div style="border:1px dashed var(--border-subtle);border-radius:12px;padding:22px;text-align:center;color:var(--text-muted);font-size:12px">لا مهام في هذا الشهر</div></sc-if>
-    <sc-if value="{{tkKpiNoDone}}" hint-placeholder-val="{{ false }}"><div style="font-size:11px;color:var(--warning-text);font-weight:700">لا مهام منجزة بعد في هذا الشهر — النسبُ تُحسب من المنجزة</div></sc-if>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
-      <sc-for list="{{tkKpiCards}}" as="c" hint-placeholder-count="4">
-      <div style="border:1px solid var(--border-subtle);background:var(--bg-surface-2);border-radius:13px;padding:12px 14px;display:grid;gap:4px">
-        <div style="font-size:11px;font-weight:700;color:var(--text-secondary)">{{c.t}}</div>
-        <div style="font-size:24px;font-weight:700;line-height:1.2;color:{{c.c}}" dir="rtl">{{c.v}}</div>
-        <div style="font-size:10.5px;color:var(--text-muted)">{{c.sub}}</div>
-      </div>
-      </sc-for>
-    </div>
-  </div>
-  </sc-if>
+  <!-- ═══ مؤشرات المهام — يملكها نظامُ المهام (RISHAD-266 P9: src/modules/tasks · logic-kpi.js) ═══ -->
+  <sc-if value="{{on_tk}}" hint-placeholder-val="{{ false }}"><dc-import name="Tasks" solo="kpi" hint-size="100%,600px"></dc-import></sc-if>
   <sc-if value="{{on_dsh}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Stats" solo="haram" hint-size="100%,1600px"></dc-import></sc-if>
   <sc-if value="{{on_dsn}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Stats" solo="nabawi" hint-size="100%,1700px"></dc-import></sc-if>
   <sc-if value="{{on_dsc}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Stats" solo="cmp" hint-size="100%,1600px"></dc-import></sc-if>

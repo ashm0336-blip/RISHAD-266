@@ -1729,6 +1729,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     );
   }
   renderVals() {
+    if (this.props && "kpi" === this.props.solo) return this._tkSoloVals();
     const t = this._tkPermVals(),
       e = this.state,
       n = this.empIndex(),
@@ -2192,6 +2193,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       E0 = !!SD && 0 === SDn,
       w = m > p;
     return {
+      tkFull: true,   /* RISHAD-266 P9: الصفحةُ كاملة — ولوحةُ «مؤشرات المهام» وحدها حين solo === "kpi" (logic-kpi.js) */
       dayLabel: g,
       isToday: d,
       yearLabel: e.year + " هـ",

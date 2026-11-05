@@ -15,7 +15,8 @@
   "logic-bulk.js",
   "logic-prod.js",
   "logic-adv.js",
-  "logic-recur.js"
+  "logic-recur.js",
+  "logic-kpi.js"
  ],
  "prettified": true,
  "originalSha256": "e40f7c606fbd6917b9b96ba2a115c9f06afa35e53363954cf19a02dce25f57a3",
@@ -39,7 +40,8 @@
    "src/modules/tasks/logic-bulk.js",
    "src/modules/tasks/logic-prod.js",
    "src/modules/tasks/logic-adv.js",
-   "src/modules/tasks/logic-recur.js"
+   "src/modules/tasks/logic-recur.js",
+   "src/modules/tasks/logic-kpi.js"
   ],
   "data": [
    "bassam_dayshift_v1",
@@ -92,7 +94,8 @@
    "gate:sec.mjs",
    "gate:sec163.mjs",
    "gate:theme248.mjs",
-   "gate:visual.mjs"
+   "gate:visual.mjs",
+   "tests/unit/rishad266_help_route.test.mjs"
   ]
  }
 }

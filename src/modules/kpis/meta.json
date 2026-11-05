@@ -22,7 +22,7 @@
   ],
   "domain": "src/modules/kpis/logic.js",
   "data": [
-   "bassam_tasks_v1"
+   "none — عارضٌ يرسم لوحاتِ الوحدات الأخرى بمحرّكاتها (المالكُ هو الصفحةُ الأصلية)"
   ],
   "permissions": [
    "shownIn:lens.dens.indicators.view",
@@ -42,7 +42,10 @@
    "gate:r188.mjs",
    "gate:r189.mjs",
    "gate:theme248.mjs",
-   "gate:visual.mjs"
+   "gate:visual.mjs",
+   "tests/unit/irsz_dash_w2.test.mjs",
+   "tests/unit/refresh_seed_w1.test.mjs",
+   "tests/unit/refresh_tabs_w1.test.mjs"
   ]
  }
 }
