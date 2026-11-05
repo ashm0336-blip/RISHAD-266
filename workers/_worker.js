@@ -8593,9 +8593,12 @@ async function empPrepareTransition(env, A, input) {
   });
   if (!manager && proposals.size) throw cuError('employee-transition-account-manager', 403);
   if (manager) {
-    var removedAccounts = users.filter(function (u) {
-      return u && u.role === 'staff' && u.deptId === d && !isMgrKey(u.ekey) && !alive.has(u.ekey);
-    });
+    /* An account goes only with an explicit removal: the deleted employees' own accounts, or every account without a remaining
+       employee on a full replace / delete «all». An ordinary add/update import never removes an account (as 671 for permissions). */
+    var gone = new Set(removed.map(empStableKey)),
+      removedAccounts = users.filter(function (u) {
+        return u && u.role === 'staff' && u.deptId === d && !isMgrKey(u.ekey) && !alive.has(u.ekey) && (replace || wipe || gone.has(u.ekey));
+      });
     var removedAccountSet = new Set(removedAccounts);
     users = users.filter(function (u) {
       return !removedAccountSet.has(u);
