@@ -8,7 +8,7 @@
   var raf = 0;
   function barBottom(){
     var h = 0;
-    [".bs-demobar", "header.bs-topbar", ".bs-topbar"].forEach(function(sel){
+    ["header.bs-topbar", ".bs-topbar"].forEach(function(sel){
       var el = null; try { el = document.querySelector(sel); } catch (e) { return; }
       if (!el) return;
       var cs = window.getComputedStyle(el);

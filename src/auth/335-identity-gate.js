@@ -218,14 +218,13 @@
 
     /* زرُّ الإضاءة في شاشة الدخول — السمةُ الحقيقية نفسُها: data-theme على الجذر وتفضيلُ bassam_theme (لا طبقةَ مرشِّح) */
     (function(){
-      try { var ov = document.getElementById('bs-dark'), tint = document.getElementById('bs-dark-tint'); if (ov) ov.remove(); if (tint) tint.remove(); } catch(e){}
       var tb = document.getElementById('bsGateTheme'); if (!tb) return;
       var MOON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path></svg>';
       var SUN = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>';
       var cur = function(){ try { return RAW.getItem.call(localStorage, 'bassam_theme') === 'dark' ? 'dark' : 'light'; } catch(e){ return 'light'; } };
       var apply = function(t, save){
         if (save) { try { RAW.setItem.call(localStorage, 'bassam_theme', t); } catch(e){} }
-        try { if (KIVO.__bsThemeSet) KIVO.__bsThemeSet(t); else { if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); else document.documentElement.removeAttribute('data-theme'); } } catch(e){}
+        try { KIVO.__bsThemeSet(t); } catch(e){}
         tb.innerHTML = t === 'dark' ? SUN : MOON;
         tb.title = t === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي';
         var tl = document.getElementById('bsGateThemeLbl'); if (tl) tl.textContent = t === 'dark' ? 'الوضع الفاتح' : 'الوضع الليلي';

@@ -59,6 +59,10 @@ class Component extends DCLogic {
       if (push && history.pushState) history.pushState(null, "", url); else if (history.replaceState) history.replaceState(null, "", url); else location.hash = "#/" + key;
     } catch (e) {}
   }
+  /* «مؤشرات الإدارة» حاويةُ عرض: متاحةٌ لمن تُرسم له لوحةٌ واحدةٌ من أوراقها في سجلّ الحاويات (BassamPerm.navLeaves) — مصدرٌ واحد للرابط والتنقّل والمسار */
+  _kpisOk() {
+    try { const P = KIVO.BassamPerm; if (!P) return true; return P.navLeaves("kpis").some(x => P.kpiPanelOk(x[0], x[1])); } catch (e) { return false; }
+  }
   /* يعيد مفتاح الصفحة إن كانت متاحة لصاحب الجلسة (ويضبط نمط الإعدادات)، وإلا "" */
   _pageAllowed(v) {
     try {
@@ -70,10 +74,8 @@ class Component extends DCLogic {
       const sup = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper());
       if (v === "help" && sup) return v;
       if (v === "kpis") {
-        const P = KIVO.BassamPerm; if (!P || sup) return v;
-        const ok = ((KIVO.BassamPerm && KIVO.BassamPerm.navLeaves) ? KIVO.BassamPerm.navLeaves("kpis") : [["planning","readiness"],["daily","kpiDaily"],["daily","kpiOcc"],["daily","kpiZones"],["seized","dash"],["irshad","dash"]])
-          .some(x => P.kpiPanelOk ? P.kpiPanelOk(x[0], x[1]) : (P.canSub ? P.canSub(x[0], x[1], "view") : true));
-        return ok ? v : "";
+        if (!KIVO.BassamPerm || sup) return v;
+        return this._kpisOk() ? v : "";
       }
       const pk = OK[v];
       if (pk && !(v === "admin" && sup) && KIVO.BassamPerm && !KIVO.BassamPerm.can(pk, "view")) return "";
@@ -665,10 +667,7 @@ class Component extends DCLogic {
   applyTheme(t) {
     const v = t === "dark" ? "dark" : "light";
     try { localStorage.setItem("bassam_theme", v); } catch (e) {}
-    try { if (KIVO.__bsThemeSet) KIVO.__bsThemeSet(v); else { if (v === "dark") document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme"); } } catch (e) {}
-    /* لا طبقاتَ مرشِّحٍ من إصداراتٍ سابقة أبداً */
-    try { const ov = document.getElementById("bs-dark"); if (ov) ov.remove(); } catch (e) {}
-    try { const tint = document.getElementById("bs-dark-tint"); if (tint) tint.remove(); } catch (e) {}
+    try { KIVO.__bsThemeSet(v); } catch (e) {}
     try { window.dispatchEvent(new CustomEvent("bassam:theme", { detail: { theme: v } })); } catch (e) {}
   }
   /* تجميع مفاتيح النسخة حسب سقف الإدارة — للنصّ فقط؛ النسخة نفسها تحمل كل المجموعات */
@@ -872,10 +871,7 @@ class Component extends DCLogic {
       const pk = NAVP[key];
       /* حاوية «الخطة التشغيلية» تُفتح إن كانت أيٌّ من صفحاتها الثلاث متاحة */
       /* حاوية «مؤشرات الإدارة» تُفتح لمن ملك ورقةً واحدةً من أوراقها الستّ */
-      const _kOK = () => { try { const P = KIVO.BassamPerm; if (!P) return true;
-        return ((KIVO.BassamPerm && KIVO.BassamPerm.navLeaves) ? KIVO.BassamPerm.navLeaves("kpis") : [["planning","readiness"],["daily","kpiDaily"],["daily","kpiOcc"],["daily","kpiZones"],["seized","dash"],["irshad","dash"]])
-          .some(x => P.kpiPanelOk ? P.kpiPanelOk(x[0], x[1]) : (P.canSub ? P.canSub(x[0], x[1], "view") : true)); } catch (e) { return false; } };
-      if (key === "kpis" ? !_kOK() : (key === "planning" ? !_pAny(["planning","staff","plan"]) : (pk && !_pOK(pk)))) return;   /* ردّ الانتقال لصفحة غير متاحة */
+      if (key === "kpis" ? !this._kpisOk() : (key === "planning" ? !_pAny(["planning","staff","plan"]) : (pk && !_pOK(pk)))) return;   /* ردّ الانتقال لصفحة غير متاحة */
       this._savePage(key);           /* تُستعاد بعد التحديث */
       /* على الجوال الشريط درجٌ فوق المحتوى — اختيار وجهة يغلقه فوراً، فلا
          يبقى معلّقاً يحجب الصفحة التي طلبتَها (سلوك التطبيقات المعتمد) */
@@ -924,9 +920,7 @@ class Component extends DCLogic {
           : (NM[pk] || "");
         /* «مؤشرات الإدارة» حاويةُ عرضٍ لأوراقٍ قائمة بمفاتيحها — فظهورُها من
            ملك واحدةٍ منها، لا من مفتاحٍ جديدٍ لها */
-        const _kpiLeaves = ((KIVO.BassamPerm && KIVO.BassamPerm.navLeaves) ? KIVO.BassamPerm.navLeaves("kpis") : [["planning","readiness"],["daily","kpiDaily"],["daily","kpiOcc"],["daily","kpiZones"],["seized","dash"],["irshad","dash"]]);
-        const _kpiAny = (() => { try { const P = KIVO.BassamPerm; if (!P) return true;
-          return _kpiLeaves.some(x => P.kpiPanelOk ? P.kpiPanelOk(x[0], x[1]) : (P.canSub ? P.canSub(x[0], x[1], "view") : true)); } catch (e) { return false; } })();
+        const _kpiAny = this._kpisOk();
         return {
           nKpis: "n" + (a === "kpis" ? " on" : "") + (_kpiAny ? "" : " gone"), tKpis: labels.kpis,
           nDstats: cls("dstats", "dstats"), tDstats: tip("dstats"),
@@ -940,8 +934,7 @@ class Component extends DCLogic {
           nIrshad: cls("irshad", "irshad"), tIrshad: tip("irshad"), nSeized: cls("seized", "seized"), tSeized: tip("seized"),
           nAward: cls("award", "award"), tAward: tip("award"),
           nLinks: cls("links", "links"), tLinks: tip("links"),
-          nTasks: cls("tasks", "tasks"),
-          nAdminOut: outOf("admin"), tAdmin: outOf("admin")
+          tAdmin: outOf("admin")
             ? ("الإعدادات — خارج سقف «" + dn + "» · مرئية لك بصلاحية المشرف")
             : "الإعدادات — نسخة الإدارة الاحتياطية",
         };
@@ -962,7 +955,7 @@ class Component extends DCLogic {
       sbToggleChevron: "transition:transform .3s;" + (open ? "" : "transform:rotate(180deg)"),
       ...((() => {
         const D = KIVO.BassamDepts;
-        if (!D) return { deptName: "إدارة", deptGroupName: "", deptOpen: false, deptList: [], deptTree: [], deptGrpShow: false, deptGrpName: "", deptGrpStyle: "", deptToggle: () => {}, deptChev: "", deptBtnStyle: "display:none" };
+        if (!D) return { deptName: "إدارة", deptOpen: false, deptTree: [], deptChev: "" };
         const open = !!this.state.deptOpen;
         const act = D.active();
         /* F01: اسمُ الوحدة النشطة أولاً ثم إدارتُها الأم للقسم («قسم س · إدارة ص» — 320 unitLabel) فيُقصّ من آخره على الجوال لا اسمُ الوحدة */
@@ -991,13 +984,10 @@ class Component extends DCLogic {
             /* المراجعة المستقلة: لا إعادةَ تحميلٍ إن لم يُحفظ — تبقى رسالةُ الرفض أو الانتظار ظاهرة */
             (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => false) : Promise.resolve(true)).then((ok) => { if (ok === false) this.setState({ toast: "لم يُحفظ القسم «" + nm + "» بعد — راجع رسالة الرفض إن ظهرت، أو تحقّق من الاتصال ثم أعد المحاولة" }); else go(); }, () => this.setState({ toast: "تعذّر حفظ القسم «" + nm + "» — تحقّق من الاتصال ثم أعد المحاولة" }));
           },
-          authName: (KIVO.BassamAuth && KIVO.BassamAuth.user() && KIVO.BassamAuth.user().name) || "",
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
           doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) KIVO.BassamAuth.logout(); },
           deptName: deptLabel,
-          deptGroupName: D.activeName() || "",
           deptOpen: open,
-          deptToggle: () => this.setState(st => ({ deptOpen: !st.deptOpen })),
           /* مبدّل القائمة الجانبية: المطويّة تنفتح أولاً ثم تنفتح اللوحة —
              وإلا فتبديل عادي. لغير المشرف زرٌّ ساكن (اسم إدارته فقط) */
           sbDeptClick: () => {
@@ -1010,15 +1000,7 @@ class Component extends DCLogic {
             if (!pa.length && D.activeGroupName()) pa = [D.activeGroupName()];
             return pa.concat([deptLabel]).join(" ← ") + (isSuper && act ? "  ·  انقر لتبديل " + (D.unitAl ? D.unitAl(act) : "الإدارة") : ""); })(),
           sbDeptBtnStyle: isSuper ? "" : "pointer-events:none",
-          deptBtnStyle: (isSuper ? "" : "pointer-events:none;") + "height:34px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border-radius:10px;font-size:12px;font-weight:600;font-family:'Cairo',sans-serif;cursor:pointer;background:var(--bg-a185151810p08);color:var(--fg-x9a7e40);border:1px solid " + (open ? "#b99751;box-shadow:0 0 0 2px rgba(185,151,81,0.15)" : "rgba(185,151,81,0.35)"),
           deptChev: (isSuper ? "" : "display:none;") + "transition:transform .2s;flex-shrink:0;opacity:.6;" + (open ? "transform:rotate(180deg)" : ""),
-          /* لا سطر منفصل باسم الإدارة العامة داخل المنسدلة: الشجرة تحته تُظهره
-             رأساً للمجموعة والإدارة النشطة مضيئة تحته — فالسطر يكرّره حرفياً
-             مرّتين متتاليتين. والمسار الكامل في تلميح الزرّ لمن أراده مطويّاً. */
-          deptGrpShow: !!D.activeGroupName(),
-          deptGrpName: D.activeGroupName(),
-          deptGrpStyle: "padding:0 10px 6px;font-size:9.5px;font-weight:700;color:var(--fg-x9a7e40);"
-            + "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--bd-a185151810p16);margin-bottom:4px",
           /* R191: قائمةُ الإدارات شجرةٌ كاملة — الشجرةُ نفسُها التي في «الإعدادات ← الإدارات» (D.railTree) بعمقٍ غير محدود:
              الإدارة العليا ← القطاعات ← الإدارات العامة ← الإدارات. لمدير العقدة فرعُه من عقدته، ولمدير النظام الشجرةُ كلُّها.
              كلُّ عقدةٍ مطويّةٌ افتراضاً ولا تُفتح إلا بيد المستخدم (بطلبه) — والمفتوحاتُ في الحالة بالمعرّف (deptNodeOpen).

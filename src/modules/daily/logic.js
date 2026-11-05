@@ -6913,7 +6913,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       h = !!s.mapFs,
       c = (() => {
         try {
-          return "dark" === localStorage.getItem("bassam_theme");
+          return "dark" === document.documentElement.getAttribute("data-theme");
         } catch (t) {
           return !1;
         }

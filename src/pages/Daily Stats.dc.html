@@ -1272,11 +1272,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       delete st[k]; all[site]=st;
       if(await self.save(all)){ self.setState(p=>({tick:(p.tick||0)+1,draft:(p.day===d&&p.month===m&&p.year===y)?null:p.draft})); self.bsToast("حُذفت أرقامُ يوم "+d+" "+nm,"ok"); }
       else self.bsToast("تعذّر الحذف","err"); };
-    try { const C=KIVO.bsConfirm;
-      if(C) C({ title:"حذفُ أرقام يوم "+d+" "+nm+" "+y+" هـ",
+    /* التأكيدُ بنافذة المنصّة وحدها (KIVO.bsConfirm) — غيابُها لا يحذف شيئاً */
+    try { KIVO.bsConfirm({ title:"حذفُ أرقام يوم "+d+" "+nm+" "+y+" هـ",
                 msg:"ستُمحى أرقامُ هذا اليوم في "+this.SN[site]+" ("+d+"/"+m+"/"+y+" هـ الموافق "+this.gTxt(y,m,d)+" م) نهائياً، ولا يمكن التراجع. بقيّةُ أيام الشهر لا تتأثّر.",
-                ok:"حذف أرقام اليوم", cancel:"إلغاء", danger:true }).then(go);
-      else go(window.confirm("حذفُ أرقام يوم "+d+" "+nm+" نهائياً؟")); } catch(e){} }
+                ok:"حذف أرقام اليوم", cancel:"إلغاء", danger:true }).then(go); } catch(e){} }
   MBTN(on){ return "height:34px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;"+
     "font-family:'Cairo',sans-serif;border-radius:10px;cursor:pointer;transition:all .2s;box-sizing:border-box;border:1px solid "+
     (on?"var(--bd-a185151810p45);background:var(--bg-a185151810p08);color:var(--fg-xb99751)"
@@ -1347,10 +1346,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       all[site]=st;
       if(await self.save(all)){ self.setState(p=>({tick:(p.tick||0)+1,draft:null})); self.bsToast("حُذفت أرقامُ "+nm+" ("+KIVO.BassamCount(n,"يوم")+")"+(keep.length?" — وبقي "+KIVO.BassamCount(keep.length,"يوم|مقفل")+" "+KIVO.BassamCount.agr(keep.length,"كما هو","كما هما","كما هي"):""),"ok"); }
       else self.bsToast("تعذّر الحذف","err"); };
-    try { const C=KIVO.bsConfirm;
-      if(C) C({ title:"حذفُ أرقام "+nm+" "+s.year+" هـ", msg:"سيُمحى كلُّ ما أُدخل لهذا الشهر في "+siteName+" نهائياً، ولا يمكن التراجع."+(nLk0?" ويبقى "+KIVO.BassamCount(nLk0,"يوم|مقفل")+" "+KIVO.BassamCount.agr(nLk0,"كما هو — افتحه بنقرتين على كرته إن أردت حذفَه.","كما هما — افتحهما بنقرتين على كرتيهما إن أردت حذفَهما.","كما هي — افتحها بنقرتين على كروتها إن أردت حذفَها."):""),
-                ok:"حذف الكل نهائياً", cancel:"إلغاء", danger:true }).then(go);
-      else go(window.confirm("حذفُ أرقام "+nm+" نهائياً؟")); } catch(e){} }
+    try { KIVO.bsConfirm({ title:"حذفُ أرقام "+nm+" "+s.year+" هـ", msg:"سيُمحى كلُّ ما أُدخل لهذا الشهر في "+siteName+" نهائياً، ولا يمكن التراجع."+(nLk0?" ويبقى "+KIVO.BassamCount(nLk0,"يوم|مقفل")+" "+KIVO.BassamCount.agr(nLk0,"كما هو — افتحه بنقرتين على كرته إن أردت حذفَه.","كما هما — افتحهما بنقرتين على كرتيهما إن أردت حذفَهما.","كما هي — افتحها بنقرتين على كروتها إن أردت حذفَها."):""),
+                ok:"حذف الكل نهائياً", cancel:"إلغاء", danger:true }).then(go); } catch(e){} }
 
   /* نوافذُ معيار الكروت: «فتح بأثر رجعي/إعادة القفل» و«اعتماد وإغلاق/فكّ الاعتماد» */
   _dlgVals(site,flds){

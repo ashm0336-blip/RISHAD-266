@@ -56,7 +56,7 @@
     try { if (document.title !== P.name) document.title = P.name; } catch (e) {}
     var appName = P.app.name || P.name;
     ["application-name", "apple-mobile-web-app-title"].forEach(function (n) { var m = document.querySelector('meta[name="' + n + '"]'); if (m && m.getAttribute("content") !== appName) m.setAttribute("content", appName); });
-    var tc = (H.getAttribute("data-theme") === "dark") ? "#171c21" : (STATUS[P.app.statusBar] || STATUS.light); document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) { if (m.getAttribute("content") !== tc) m.setAttribute("content", tc); });
+    var tc = (H.getAttribute("data-theme") === "dark") ? KIVO.__bsThemeColorDark : (STATUS[P.app.statusBar] || STATUS.light); document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) { if (m.getAttribute("content") !== tc) m.setAttribute("content", tc); });
     /* الأصناف على الجذر */
     H.classList.toggle("bs-plat-logo", !!P.logo);
     H.classList.toggle("bs-plat-nover", !P.side.ver);

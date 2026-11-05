@@ -1,6 +1,7 @@
 
 /* السمةُ قبل أوّل رسم: التفضيلُ جهازيّ (bassam_theme) — لا وميضَ فاتح. __bsThemeSet نقطةُ التغيير الوحيدة. */
-(function(){ try { KIVO.__bsThemeSet = function (t) { var H = document.documentElement; if (t === "dark") H.setAttribute("data-theme", "dark"); else H.removeAttribute("data-theme"); try { var tc = document.querySelectorAll('meta[name="theme-color"]'); if (t === "dark") tc.forEach(function (m) { if (!m.__bsTc) m.__bsTc = m.getAttribute("content"); m.setAttribute("content", "#25282C"); }); else tc.forEach(function (m) { if (m.__bsTc) m.setAttribute("content", m.__bsTc); }); } catch (e) {} };
+(function(){ try { KIVO.__bsThemeColorDark = "#25282C";   /* لونُ شريط المتصفح في الداكن (--bg-sidebar) — موضعٌ واحد يقرؤه 260 أيضاً */
+  KIVO.__bsThemeSet = function (t) { var H = document.documentElement; if (t === "dark") H.setAttribute("data-theme", "dark"); else H.removeAttribute("data-theme"); try { var tc = document.querySelectorAll('meta[name="theme-color"]'); if (t === "dark") tc.forEach(function (m) { if (!m.__bsTc) m.__bsTc = m.getAttribute("content"); m.setAttribute("content", KIVO.__bsThemeColorDark); }); else tc.forEach(function (m) { if (m.__bsTc) m.setAttribute("content", m.__bsTc); }); } catch (e) {} };
   if (localStorage.getItem("bassam_theme") === "dark") KIVO.__bsThemeSet("dark"); } catch (e) {} })();
 /* R186 — خرائطُ المواقع في الوضع الليلي: خطوطُها الداكنة تُعرض فاتحةً كما كانت أيامَ مرشِّح الشاشة القديم — للخريطة وحدها لا للصفحة.
    لكلّ صورةٍ وجهٌ ليليٌّ يُحسب مرّةً واحدة: الورقُ البيضاء شفّافة، والحبرُ بإضاءةٍ مقلوبةٍ وصبغتِه نفسِها كما كان المرشِّحُ القديم يفعل —

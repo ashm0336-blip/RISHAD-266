@@ -98,7 +98,7 @@
         if (st.indexOf("inset:") === -1) continue;
         if (el.hasAttribute("data-dock")) continue;
         if (window.getComputedStyle(el).position !== "fixed") continue;
-        if (el.classList.contains("bs-topbar") || el.classList.contains("bs-demobar")) continue;
+        if (el.classList.contains("bs-topbar")) continue;
         var r = el.getBoundingClientRect();
         if (!r.height || r.height > window.innerHeight * 0.9) continue;
         if (r.width > window.innerWidth * 0.95) continue;
