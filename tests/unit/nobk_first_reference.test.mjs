@@ -11,7 +11,7 @@ import { world, IDS } from './custody_review_fx.mjs';
 const SRC = process.env.KIVO_SRC || path.resolve('src');
 const state = (DB) => JSON.stringify([DB.q('SELECT k, rev FROM revs ORDER BY k'), DB.q('SELECT COUNT(*) n FROM aud'), DB.q('SELECT COUNT(*) n FROM kv'), DB.q("SELECT k, v FROM meta WHERE k <> 'rev' ORDER BY k")]);
 
-test('first=1: the platform administrator reads the earliest log time; read-only; nobody else', async () => {
+test('first=1: the platform administrator reads the platform start (earliest event, or the latest reset); read-only; nobody else', async () => {
   const t = await world({ mode: 'enforce' }), DB = t.env.DB;
   const old = Date.now() - 30 * 864e5;
   /* the earliest recorded change, as an older platform would have it */
@@ -27,6 +27,13 @@ test('first=1: the platform administrator reads the earliest log time; read-only
   }
   assert.equal((await t.api('super', '/api/aud?first=1', { method: 'POST', body: {} })).status, 405, 'read-only');
   assert.equal(state(DB), before, 'no revision, log, data or meta change');
+  /* after a platform reset (تهيئة) the log is kept, so the start is the latest reset, not the old history */
+  const ev = (cid, ts, act) => DB.prepare("INSERT INTO aud (cid, ts, uid, un, dept, k, rev, etype, eid, act) VALUES (?1, ?2, ?3, 'TEST_ONLY', '', 'system', 0, 'system', 'platform', ?4)").bind(cid, ts, IDS.super, act);
+  const r1 = Date.now() - 10 * 864e5, r2 = Date.now() - 2 * 864e5;
+  await DB.batch([ev('TEST_ONLY_reset1', r1, 'reset'), ev('TEST_ONLY_reset2', r2, 'reset'), ev('TEST_ONLY_after', Date.now() - 864e5, 'set')]);
+  const afterReset = state(DB), rr = await t.api('super', '/api/aud?first=1');
+  assert.deepEqual(rr.json, { ok: 1, first: r2 }, 'the latest reset');
+  assert.equal(state(DB), afterReset, 'still read-only');
   /* the ordinary listing is unchanged */
   const list = await t.api('super', '/api/aud?limit=5');
   assert.equal(list.status, 200); assert.ok(Array.isArray(list.json.rows)); assert.equal(list.json.first, undefined);

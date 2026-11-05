@@ -257,7 +257,7 @@ export interface KivoApi {
   "/api/get": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; v: unknown; keys: unknown }; "409": { ok: unknown; err: unknown } } };
   "/api/changes": { methods: "GET"; access: "actor"; responses: { "200": { v: unknown; keys: unknown }; "409": { ok: unknown; err: unknown } } };
   "/api/retro": { methods: "GET" | "POST"; access: "actor"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown } } };
-  "/api/aud": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; rows: unknown; next: unknown }; "405": { ok: unknown; err: unknown } } };
+  "/api/aud": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; rows: unknown; next: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown } } };
   "/api/imgs": { methods: "GET"; access: "actor"; responses: { "200": { [k: string]: unknown } } };
   "/api/img/": { methods: "GET" | "PUT" | "DELETE"; access: "actor"; responses: { "200": { ok: unknown }; "409": { ok: unknown; err: unknown }; "415": { ok: unknown; err: unknown }; "429": { ok: unknown; err: unknown; retry: unknown } } };
   "/api/presence": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; now: unknown; active: unknown; list: unknown } } };

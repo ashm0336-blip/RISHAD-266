@@ -869,10 +869,11 @@ export default {
         var AU = await actorOf(env, ss.uid);
         if (!AU) return json({ ok: 0, err: 'session' }, 401);
         var qA = url.searchParams;
-        /* بدايةُ تشغيل المنصة لتنبيه «لم تُنشأ نسخة احتياطية» (sy_nobk): أقدمُ حدثٍ في السجلّ — مرجعٌ سحابيٌّ للقراءة وحدها، لمدير النظام وحده */
+        /* بدايةُ تشغيل المنصة لتنبيه «لم تُنشأ نسخة احتياطية» (sy_nobk): آخرُ تهيئةٍ للمنصة إن وُجدت (السجلُّ يبقى بعدها) وإلا أقدمُ حدثٍ في السجلّ —
+           مرجعٌ سحابيٌّ للقراءة وحدها، لمدير النظام وحده */
         if (qA.get('first') === '1') {
           if (AU.u.role !== 'super') return json({ ok: 0, err: 'forbidden' }, 403);
-          var fA = await env.DB.prepare('SELECT MIN(ts) AS t FROM aud').first();
+          var fA = await env.DB.prepare("SELECT COALESCE((SELECT MAX(ts) FROM aud WHERE k = 'system' AND etype = 'system' AND act = 'reset'), (SELECT MIN(ts) FROM aud)) AS t").first();
           return json({ ok: 1, first: (fA && fA.t) || 0 });
         }
         var limA = Math.min(200, Math.max(1, parseInt(qA.get('limit') || '60', 10) || 60));
