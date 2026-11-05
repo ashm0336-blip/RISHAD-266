@@ -28,7 +28,6 @@
     var p = t.pct;
     if (p != null && isFinite(p)) { p = Math.max(0, Math.min(100, Math.round(p))); pct.textContent = p + '٪'; bar.classList.add('det'); barI.style.width = p + '%'; }
     else { pct.textContent = ''; bar.classList.remove('det'); barI.style.width = ''; }
-    pill.classList.remove('ok','err');
     clearTimeout(hideT); hideT = null;
     host.hidden = false; host.style.display = '';
     requestAnimationFrame(function(){ host.classList.add('on'); });
@@ -84,16 +83,9 @@
       }, 30); });
     });
   }
-  /* إشعار قصير بعد عملٍ انتهى (كحفظٍ على الخادم طال) — بلا شريط */
+  /* إشعارٌ قصير بعد عملٍ انتهى (كحفظٍ طال) — CORE-01: عبر التوست الواحد (KIVO.bsToast · 280) لا عبر حبّة المؤشر */
   function flash(label, s, tone){
-    el();
-    if (toks.some(function(t){ return !t.ended; })) return;
-    lbl.textContent = label || ''; sub.textContent = s || ''; pct.textContent = '';
-    bar.classList.remove('det'); barI.style.width = ''; bar.style.visibility = 'hidden';
-    pill.classList.remove('ok','err'); pill.classList.add(tone === 'err' ? 'err' : 'ok');
-    host.hidden = false; requestAnimationFrame(function(){ host.classList.add('on'); });
-    clearTimeout(hideT);
-    hideT = setTimeout(function(){ if (toks.some(function(t){ return !t.ended; })) return; host.classList.remove('on'); setTimeout(function(){ if (!toks.some(function(t){ return !t.ended; })) { host.hidden = true; bar.style.visibility = ''; pill.classList.remove('ok','err'); } }, 220); }, 1600);
+    try { KIVO.bsToast((label || '') + (s ? ' — ' + s : ''), { tone: tone === 'err' ? 'err' : '', ms: tone === 'err' ? 4200 : 2600 }); } catch(e){}
   }
   KIVO.BassamBusy = { start: start, wrap: wrap, run: run, flash: flash, fmtBytes: fmtBytes, active: function(){ return toks.filter(function(t){ return !t.ended; }).length; } };
 

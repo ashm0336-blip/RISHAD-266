@@ -106,8 +106,10 @@
     html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
     html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
       background:color-mix(in srgb,currentColor 8%,transparent)}
-    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
-      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-placeholder-error{position:relative;padding:16px;font:600 13px/1.7 var(--font-ui,inherit);text-align:center;
+      color:color-mix(in srgb,currentColor 80%,transparent)}
+    .sc-placeholder:has(.sc-placeholder-error)::after,
+    html.sc-dc-streaming .sc-placeholder:has(.sc-placeholder-error)::before{animation:none}
     .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
       vertical-align:text-bottom;background:var(--bg-a2552552550p3);border:1px solid var(--bd-a0000p5);
       border-radius:2px;box-sizing:border-box;color:transparent;
@@ -950,8 +952,8 @@
       },
       error ? h(
         "div",
-        { className: "sc-placeholder-error" },
-        (name ? name + ": " : "") + error
+        { className: "sc-placeholder-error", role: "status" },
+        error
       ) : null
     );
   }
@@ -1187,10 +1189,11 @@
           return h(
             "div",
             { ...hostBase, className: cls + " sc-has-error" },
+            techView() ? h("div", { className: "sc-logic-error", "data-omelette-chrome": "" }, this.__name + ": circular import: " + cycle) : null,
             h(Placeholder, {
               name: this.__name,
               hintSize: this.props.__hintSize,
-              error: "circular import: " + cycle
+              error: SCREEN_ERROR
             })
           );
         }
@@ -1198,15 +1201,15 @@
           return h(
             "div",
             { ...hostBase, className: cls + " sc-has-error" },
-            h(
+            techView() ? h(
               "div",
               { className: "sc-logic-error", "data-omelette-chrome": "" },
               this.__name + ": " + this.state.__err
-            ),
+            ) : null,
             h(Placeholder, {
               name: this.__name,
               hintSize: this.props.__hintSize,
-              error: this.state.__err
+              error: SCREEN_ERROR
             })
           );
         }
@@ -1215,7 +1218,7 @@
         }
         if (!dataReady(this.__name)) {
           if (!r.dataError) { ensureFetched(this.__name); ensureData(this.__name).catch(() => {}); }
-          return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: r.dataError ? (sessionGone() ? "انتهت جلستك — سجّل الدخول من جديد لعرض الشاشة" : r.dataError) : undefined }));
+          return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: r.dataError ? (sessionGone() ? "انتهت الجلسة — سجّل الدخول" : r.dataError) : undefined }));
         }
         this.__reconcileLogic();
         if (!r.tpl) {
@@ -1261,7 +1264,7 @@
         return h(
           "div",
           { ...hostBase, className: cls + (renderErr ? " sc-has-error" : "") },
-          renderErr && h(
+          renderErr && techView() && h(
             "div",
             { className: "sc-logic-error", "data-omelette-chrome": "" },
             renderErr
@@ -1758,6 +1761,11 @@
   }
 
   /* RISHAD-266: فشلُ بيانات الشاشة بعد انتهاء الجلسة لا يُنسب إلى الاتصال */
+  const DATA_RETRY_MS = [1000, 2000, 4000];
+  /* CORE-01: نصٌّ واحدٌ بلغةٍ عادية لكل شاشةٍ تعذّر عرضُها — والتفصيلُ التقني (اسمُ المكوّن · نصُّ الاستثناء)
+     لمدير المنصة أو بيئة التطوير وحدهما، ووحدةُ التحكم للجميع */
+  const SCREEN_ERROR = "تعذّر عرض هذه الشاشة الآن";
+  function techView() { try { return !!(typeof KIVO !== "undefined" && KIVO.bsTechView && KIVO.bsTechView()); } catch (e) { return false; } }
   function sessionGone() { try { const S = typeof KIVO !== "undefined" && KIVO.__BS_SRV; return !!(S && S.sesChanged && S.sesChanged()); } catch (e) { return false; } }
 
   // src/registry.ts
@@ -1824,15 +1832,30 @@
       if (r.dataPromise && r.dataPromiseContext === key) return r.dataPromise;
       r.dataError = null;
       r.dataPromiseContext = key;
-      const promise = Promise.resolve().then(() => KIVO.__dcBeforePage(name)).then(() => {
+      /* CORE-01: تعثّرُ القراءة يُعاد بهدوء (بعد ١ ثم ٢ ثم ٤ ثوانٍ، وفوراً عند عودة الاتصال) والهيكلُ ظاهر —
+         ولا تُعلَن الشاشةُ متعذّرة (dataError · dc:page-load-failed) إلا بعد آخر محاولة، أو فوراً إن انتهت الجلسة */
+      const attempt = () => Promise.resolve().then(() => KIVO.__dcBeforePage(name)).then(() => {
         if (pageContextKey(name) !== key) return;
         if (!dataReady(name)) throw Error("operations-page-read-failed");
+      });
+      const pause = (ms) => new Promise((resume) => {
+        let tm = 0;
+        const go = () => { clearTimeout(tm); try { window.removeEventListener("online", go); } catch (e) {} resume(); };
+        tm = setTimeout(go, ms);
+        try { window.addEventListener("online", go); } catch (e) {}
+      });
+      const run = (n) => attempt().catch((error) => {
+        if (pageContextKey(name) !== key || n >= DATA_RETRY_MS.length || sessionGone()) throw error;
+        return pause(DATA_RETRY_MS[n]).then(() => pageContextKey(name) === key ? run(n + 1) : void 0);
+      });
+      const promise = run(0).then(() => {
+        if (pageContextKey(name) !== key) return;
         r.dataError = null;
         try { window.dispatchEvent(new CustomEvent("dc:page-load-ready", { detail: { name } })); } catch (e) {}
         registry.bump(name);
       }).catch((error) => {
         if (pageContextKey(name) !== key) return;
-        r.dataError = "تعذّر تأكيد بيانات الشاشة — أعد المحاولة";
+        r.dataError = SCREEN_ERROR;
         try { window.dispatchEvent(new CustomEvent("dc:page-load-failed", { detail: { name } })); } catch (eventError) {}
         registry.bump(name);
         throw error;

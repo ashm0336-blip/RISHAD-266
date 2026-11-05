@@ -38,10 +38,11 @@ export function world(o = {}) {
     setActive: (id) => { if (!UNITS.some((u) => u.id === id)) return false; act = id; return true; },
   };
   KIVO.__BS_SRV = o.srv || null;
+  const toasts = []; KIVO.bsToast = (m, opt) => { toasts.push({ m, opt }); };   /* the one platform toast (280) */
   KIVO.bsConfirm = (q) => { confirms.push(q); return Promise.resolve(o.confirm === undefined ? true : !!o.confirm); };
   class DCLogic { constructor(props) { this.props = props || {}; this.state = {}; } setState(p, cb) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); if (cb) cb(); } }
   ctx.DCLogic = DCLogic;
   vm.runInContext(rd('layouts/root-logic.js') + '\n;globalThis.__C = Component;', ctx, { filename: 'root-logic.js' });
   const c = new ctx.__C();
-  return { c, KIVO, ctx, timers, reloads, confirms, active: () => act, vals: () => c.renderVals() };
+  return { c, KIVO, ctx, timers, reloads, confirms, toasts, lastToast: () => (toasts.length ? toasts[toasts.length - 1].m : ''), active: () => act, vals: () => c.renderVals() };
 }

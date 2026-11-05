@@ -1,12 +1,14 @@
 
-/* ═══ BassamLink: حالة الاتصال بالخادم كعنصر دائم في القائمة الجانبية ═══
-   set(state, extra): state = on | off | local · extra = نصّ صغير (عدد المتصلين، أو سبب الانقطاع) */
+/* ═══ BassamLink: حالة الاتصال في القائمة الجانبية ═══
+   set(state, extra): state = on | off | local · extra = نصّ صغير (عدد المتصلين، أو سبب الانقطاع)
+   CORE-01: يظهر المؤشرُ عند الانقطاع وحده (230-link-indicator.css) · نصوصُه بلغةٍ عادية بلا مصطلحاتٍ تقنية ·
+   ومراقبُ إعادة التركيب على القائمة الجانبية وحدها لا على الوثيقة كلها */
 (function () {
   var st = { state: "local", extra: "", title: "" }, el = null;
   var TXT = { on: "متصل", off: "انقطع الاتصال", local: "محلي" };
-  var TIP = { on: "الاتصال بالخادم فعّال — كل تعديل يُحفظ مركزياً ويصل الفريق لحظياً",
-              off: "تعذّر الوصول للخادم — التعديلات غير مؤكدة الحفظ. أبقِ الصفحة مفتوحة حتى يؤكد الخادم الحفظ",
-              local: "يلزم الاتصال بالمنصة السحابية لقراءة بيانات العمل وحفظها" };
+  var TIP = { on: "متصل — كل تعديل يُحفظ ويصل الفريق لحظياً",
+              off: "لا اتصال — تُحفظ تعديلاتك عند العودة. أبقِ الصفحة مفتوحة",
+              local: "يلزم الاتصال بالمنصة لقراءة بيانات العمل وحفظها" };
   function paint() {
     if (!el) return;
     el.setAttribute("data-st", st.state);
@@ -30,8 +32,25 @@
     bar.parentElement.insertBefore(el, bar);
     paint();
   }
-  try { new MutationObserver(function () { if (!el || !el.isConnected) mount(); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
-  document.addEventListener("DOMContentLoaded", mount);
+  /* القائمةُ الجانبية يرسمها الإطار بعد التحميل وقد يعيد رسمها: تُراقَب الوثيقةُ حتى يُركَّب المؤشر، ثم القائمةُ وحدها
+     (ومكانُها في أبيها) — وإن زال المؤشرُ مع قائمةٍ أُعيد رسمها عادت المراقبةُ الواسعة حتى يُركَّب من جديد */
+  var wide = null, near = null;
+  function watch() {
+    if (!el || !el.isConnected) mount();
+    try {
+      var side = el && el.isConnected ? el.closest("aside.bsb") : null;
+      if (side) {
+        if (wide) { wide.disconnect(); wide = null; }
+        if (!near) near = new MutationObserver(watch);
+        near.disconnect(); near.observe(side, { childList: true, subtree: true }); if (side.parentNode) near.observe(side.parentNode, { childList: true });
+      } else if (!wide) {
+        if (near) near.disconnect();
+        wide = new MutationObserver(watch); wide.observe(document.documentElement, { childList: true, subtree: true });
+      }
+    } catch (e) {}
+  }
+  watch();
+  document.addEventListener("DOMContentLoaded", watch);
   /* KIVO_254 · SOT-157 (البند ١ من RM-3 المعتمد): لافتةُ الجوال — حيث القائمةُ مطوية فلا يُرى المؤشر. تظهر لحظةَ الانقطاع
      توضّح أن التعديلات غير مؤكدة الحفظ وتتحوّل عند العودة إلى بيان الاتصال
      يختفي بعد ٤ ثوانٍ. لا تُعطَّل الأزرار. role=status/aria-live لقارئ الشاشة. تُعرض بالـCSS على الشاشات ≤ 1024px فقط (.bs-netbar). */
@@ -46,7 +65,7 @@
   }
   function netPaint() {
     var b = netbar(), off = st.state === "off";
-    if (off) { clearTimeout(nbT); b.setAttribute("data-k", "off"); b.querySelector(".i").textContent = "⚠"; b.querySelector(".t").textContent = "لا اتصال بالإنترنت"; b.querySelector(".s").textContent = "التعديلات غير مؤكدة الحفظ — أبقِ الصفحة مفتوحة حتى يؤكد الخادم الحفظ"; b.hidden = false; }
+    if (off) { clearTimeout(nbT); b.setAttribute("data-k", "off"); b.querySelector(".i").textContent = "⚠"; b.querySelector(".t").textContent = "لا اتصال"; b.querySelector(".s").textContent = "تُحفظ تعديلاتك عند العودة — أبقِ الصفحة مفتوحة"; b.hidden = false; }
     else if (prevSt === "off" && st.state === "on") { b.setAttribute("data-k", "back"); b.querySelector(".i").textContent = "✓"; b.querySelector(".t").textContent = "عاد الاتصال"; b.querySelector(".s").textContent = "تحقق من تأكيد الحفظ قبل مغادرة الصفحة"; b.hidden = false; clearTimeout(nbT); nbT = setTimeout(function () { b.hidden = true; }, 4000); }
     else if (st.state !== "off" && b.getAttribute("data-k") === "off") { b.hidden = true; }
     prevSt = st.state;

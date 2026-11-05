@@ -66,8 +66,11 @@ function world({ registry, preference = 'd1', user = { id: UID, role: 'super' },
       constructor(...args) { super(...args); constructors.push(name); }
       renderVals() { rendered.push(name); return {}; }
     } };
-    const source = read('src/core/050-dc-runtime.js'), marker = '  hideRawTemplate();';
-    assert.equal(source.split(marker).length, 2);
+    const source0 = read('src/core/050-dc-runtime.js'), marker = '  hideRawTemplate();', RETRY = 'const DATA_RETRY_MS = [1000, 2000, 4000];';
+    assert.equal(source0.split(marker).length, 2);
+    /* CORE-01: the quiet 1/2/4 s data retry is pinned, then shortened so the same three retries fit the fixture */
+    assert.equal(source0.split(RETRY).length, 2);
+    const source = source0.replace(RETRY, 'const DATA_RETRY_MS = [5, 10, 20];');
     vm.runInContext(source.replace(marker, '  KIVO.__TEST_runtime = createRuntime; return;\n' + marker), T.ctx, { filename: '050-dc-runtime.js' });
     const runtime = T.W.KIVO.__TEST_runtime(doc); delete T.W.KIVO.__TEST_runtime;
     const Dispatcher = runtime.getDC(name), tree = Dispatcher({}), component = new tree.type(tree.props);
@@ -166,8 +169,8 @@ test('a real department denied by HTTP remains a failed read, never a no-departm
   try {
     assert.equal(await until(() => !!page.runtime.registry.get(page.name).dataError, 500), true);
     const tree = page.component.render();
-    assert.equal(f.D.context().state, 'ready'); assert.equal(f.calls.length, 1); assert.equal(f.constructors.length, 0);
-    assert.match(tree.props.children[0].props.error, /تعذّر تأكيد/);
+    assert.equal(f.D.context().state, 'ready'); assert.equal(f.calls.length, 4, 'one read and three quiet retries'); assert.equal(f.constructors.length, 0);
+    assert.equal(tree.props.children[0].props.error, 'تعذّر عرض هذه الشاشة الآن');
     assert.doesNotMatch(tree.props.children[0].props.error, /لا توجد إدارة/);
   } finally { f.T.dispose(); }
 });
@@ -216,7 +219,8 @@ test('leaving a failed department context and selecting it again performs a fres
     assert.equal(await until(() => !!page.runtime.registry.get(page.name).dataError, 500), true);
     f.D.save([]); page.component.render();
     denied = false; f.D.save([{ id: 'real', name: 'TEST_ONLY real' }]); page.component.render();
-    assert.equal(await until(() => f.calls.length === 2 && f.T.W.KIVO.__dcPageReady(page.name), 500), true);
+    assert.equal(f.calls.length, 4, 'the failed read was retried quietly before the error');
+    assert.equal(await until(() => f.calls.length === 5 && f.T.W.KIVO.__dcPageReady(page.name), 500), true);
     page.component.render(); assert.equal(f.constructors.length, 1);
   } finally { f.T.dispose(); }
 });

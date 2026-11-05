@@ -44,12 +44,13 @@ function world({ gone }) {
   return { win, inserted, state };
 }
 
-test('connection failure: the card keeps the connection text and retries', () => {
+test('connection failure: the card says so in plain words (CORE-01) and retries', () => {
   const W = world({ gone: false });
   W.win.dispatch('dc:page-load-failed', { name: 'Profile' });
   assert.equal(W.inserted.length, 1);
   const c = W.inserted[0];
-  assert.match(c.querySelector('.m').textContent, /تحقّق من الاتصال/);
+  assert.equal(c.querySelector('.m').textContent, 'تعذّر عرض هذه الشاشة الآن — سنحاول مجددًا تلقائيًا');
+  assert.doesNotMatch(c.querySelector('.m').textContent, /جلس/);
   assert.match(c.querySelector('.b').textContent, /أعد المحاولة/);
   c.querySelector('button').listeners.click[0]();
   assert.equal(W.state.reloaded, 0, 'retry does not reload the page');
@@ -59,8 +60,8 @@ test('session already ended: the card names the ended session and its button sig
   const W = world({ gone: true });
   W.win.dispatch('dc:page-load-failed', { name: 'Profile' });
   const c = W.inserted[0];
-  assert.match(c.querySelector('.m').textContent, /انتهت جلستك/);
-  assert.doesNotMatch(c.querySelector('.m').textContent, /الاتصال/);
+  assert.equal(c.querySelector('.m').textContent, 'انتهت الجلسة — سجّل الدخول');
+  assert.doesNotMatch(c.querySelector('.m').textContent, /الاتصال|تعذّر/);
   assert.equal(c.querySelector('.b').textContent, 'تسجيل الدخول');
   c.querySelector('button').listeners.click[0]();
   assert.equal(W.state.reloaded, 1, 'sign-in again = reload to the sign-in gate');
@@ -70,14 +71,15 @@ test('session ends after the card is shown: the existing card is rewritten to th
   const W = world({ gone: false });
   W.win.dispatch('dc:page-load-failed', { name: 'Profile' });
   const c = W.inserted[0];
-  assert.match(c.querySelector('.m').textContent, /الاتصال/);
+  assert.match(c.querySelector('.m').textContent, /تعذّر عرض هذه الشاشة/);
   W.state.gone = true; W.win.dispatch('bs:session-gone');
-  assert.match(c.querySelector('.m').textContent, /انتهت جلستك/);
+  assert.equal(c.querySelector('.m').textContent, 'انتهت الجلسة — سجّل الدخول');
   assert.equal(c.querySelector('.b').textContent, 'تسجيل الدخول');
 });
 
 test('runtime placeholder and the storage layer use the same truthful cause', () => {
-  assert.match(RUNTIME, /error: r\.dataError \? \(sessionGone\(\) \? "انتهت جلستك — سجّل الدخول من جديد لعرض الشاشة" : r\.dataError\)/);
+  assert.match(RUNTIME, /error: r\.dataError \? \(sessionGone\(\) \? "انتهت الجلسة — سجّل الدخول" : r\.dataError\)/);
+  assert.match(RUNTIME, /if \(pageContextKey\(name\) !== key \|\| n >= DATA_RETRY_MS\.length \|\| sessionGone\(\)\) throw error;/, 'an ended session is not retried quietly');
   assert.match(RUNTIME, /addEventListener\("bs:session-gone"/);
   const storage = fs.readFileSync(path.join(ROOT, 'src/api/280-server-storage.js'), 'utf8');
   assert.match(storage, /dispatchEvent\(new CustomEvent\("bs:session-gone"\)\)/);

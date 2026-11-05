@@ -456,7 +456,8 @@
     </div>
   </div>
   <div style="flex:1;overflow-y:auto">
-    <sc-if value="{{nfNoticeOn}}" hint-placeholder-val="{{ false }}"><div role="status" style="padding:12px;font-size:12px">{{nfNotice}} <button type="button" sc-camel-on-click="{{nfRefreshList}}">تحديث القائمة</button></div></sc-if>
+    <sc-if value="{{nfNoticeOn}}" hint-placeholder-val="{{ false }}"><div role="status" style="padding:12px;font-size:12px">{{nfNotice}}</div></sc-if>
+    <sc-if value="{{nfNewOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="bs-btn bs-btn--ghost" style="width:100%" sc-camel-on-click="{{nfShowNew}}">وصلت تنبيهات جديدة — عرض الجديد</button></sc-if>
     <sc-if value="{{nfEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:40px 16px;text-align:center;color:var(--fg-x94a3b8);font-size:12px">لا تنبيهات هنا</div></sc-if>
     <sc-for list="{{nfRows}}" as="r" hint-placeholder-count="6">
       <sc-if value="{{r.isGrp}}" hint-placeholder-val="{{ false }}"><div style="font-size:10px;font-weight:700;color:var(--fg-x94a3b8);padding:9px 14px 4px;background:var(--bg-xfafbfc);border-bottom:1px solid var(--bd-xf1f3f5)">{{r.name}}</div></sc-if>
@@ -514,9 +515,6 @@
   <sc-if value="{{nfToastHasMore}}" hint-placeholder-val="{{ false }}"><span sc-camel-on-click="{{nfToastAll}}" style="font-size:10.5px;color:var(--fg-a2552552550p7);cursor:pointer;white-space:nowrap">{{nfToastMore}} أخرى</span></sc-if>
   <span sc-camel-on-click="{{nfToastClose}}" style="cursor:pointer;color:var(--fg-a2552552550p6);padding:0 4px">×</span>
 </div>
-</sc-if>
-<sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
-  <div class="bs-toast" role="status" aria-live="polite">{{toastMsg}}</div>
 </sc-if>
 </div>
 </x-dc>

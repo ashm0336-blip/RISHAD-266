@@ -51,8 +51,9 @@
   function gone() { try { var S = window.KIVO && window.KIVO.__BS_SRV; return !!(S && S.sesChanged && S.sesChanged()); } catch (e) { return false; } }
   function cardFill(c, name) {
     var g = gone();
-    c.innerHTML = g ? '<span class="m">⚠ انتهت جلستك — سجّل الدخول من جديد لعرض الشاشة</span><button type="button" class="b">تسجيل الدخول</button>'
-      : '<span class="m">⚠ تعذّر تحميل الشاشة — تحقّق من الاتصال ثم أعد المحاولة</span><button type="button" class="b">↻ أعد المحاولة</button>';
+    /* CORE-01: لغةٌ عادية — والبطاقةُ وحدها سطحُ الخطأ (نصُّ مكان الشاشة يُخفى تحتها بالـCSS) */
+    c.innerHTML = g ? '<span class="m">انتهت الجلسة — سجّل الدخول</span><button type="button" class="b">تسجيل الدخول</button>'
+      : '<span class="m">تعذّر عرض هذه الشاشة الآن — سنحاول مجددًا تلقائيًا</span><button type="button" class="b">↻ أعد المحاولة</button>';
     c.querySelector("button").addEventListener("click", function () { if (gone()) { location.reload(); return; } hideCard(name); delete gaveUp[name]; tries[name] = 0; wake(name); });
   }
   window.addEventListener("bs:session-gone", function () { for (var n in cards) { try { cardFill(cards[n], n); } catch (e) { /* عرضٌ فقط */ } } });

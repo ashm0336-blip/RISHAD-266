@@ -111,6 +111,9 @@ function world({ registered = false, readResponse = response } = {}) {
     if (src.includes('/050-dc-runtime.')) {
       const marker = 'hideRawTemplate();'; assert.equal(source.split(marker).length, 2);
       source = source.replace(marker, 'KIVO.__TEST_runtime = createRuntime; return; ' + marker);
+      /* CORE-01: the emitted runtime keeps the quiet 1/2/4 s data retry; shortened here so the same three retries fit the fixture */
+      const retry = 'const DATA_RETRY_MS = [1000, 2000, 4000];'; assert.equal(source.split(retry).length, 2, 'emitted quiet-retry schedule');
+      source = source.replace(retry, 'const DATA_RETRY_MS = [5, 10, 20];');
     }
     vm.runInContext(source, ctx, { filename: asset.path });
   }
@@ -161,10 +164,11 @@ test('emitted real-scope read failure stays an error and the existing retry load
     assert.equal(typeof f.W.KIVO.__dcBeforePage, 'function');
     const component = f.mount();
     assert.equal(await until(() => !!f.runtime.registry.get('Employees').dataError, 1000, 10), true);
-    const failed = component.render(); assert.match(failed.props.children[0].props.error, /تعذّر تأكيد/); assert.equal(f.constructors.length, 0);
+    assert.equal(f.calls.length, 4, 'one read and three quiet retries before the error');
+    const failed = component.render(); assert.equal(failed.props.children[0].props.error, 'تعذّر عرض هذه الشاشة الآن'); assert.equal(f.constructors.length, 0);
     const card = f.body.children.find(node => node.className === 'bs-retry bs-retry-page'); assert.ok(card, 'Actual emitted lazy guard provides the retry');
     valid = true; card.button.click(); component.render();
-    assert.equal(await until(() => f.calls.length === 2 && f.W.KIVO.__dcPageReady('Employees'), 1000, 10), true);
+    assert.equal(await until(() => f.calls.length === 5 && f.W.KIVO.__dcPageReady('Employees'), 1000, 10), true);
     assert.equal(await until(() => !!f.runtime.registry.get('Employees').Logic, 1000, 10), true);
     component.render(); assert.equal(f.constructors.length, 1); assert.deepEqual(f.constructors[0].employees, f.rows); assert.equal(card.removed, true);
   } finally { f.dispose(); }

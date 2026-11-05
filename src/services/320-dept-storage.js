@@ -79,7 +79,7 @@
   function mine(){ var a = active(); return a ? PREFIX + a + ':' : null; }
   function context(){
     var r = readReg(), a = active();
-    if (r.state === 'error' || r.state === 'corrupt') return { state:'error', dept:null, message:'تعذّر قراءة سجل الإدارات — أعد المحاولة' };
+    if (r.state === 'error' || r.state === 'corrupt') return { state:'error', dept:null, message:'تعذّر عرض الإدارات الآن' };
     if (a) return { state:'ready', dept:a, message:'' };
     if (!r.list || !r.list.length) return { state:'empty', dept:null, message:'لا توجد إدارة — أضف إدارة من إعدادات المنصة' };
     return { state:'unavailable', dept:null, message:'اختر إدارة متاحة لحسابك' };

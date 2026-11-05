@@ -152,6 +152,7 @@
   }
   function curPub(){ var u = cur(); if (!u) return null; var c = {}; for (var k in u) if (k !== 'ph') c[k] = u[k]; return c; }
   function isSuper(){ var u = cur(); return !!(u && u.role === 'super'); }
+  try { KIVO.bsTechWho(isSuper); } catch (eT) { /* CORE-01: التفصيلُ التقني لمدير المنصة (130) — بلا شريطٍ يبقى كما هو */ }
 
   /* وضع كلاود فلير: الحكم للخادم وحده — عنده البصمات وحدّ المحاولات
      ودرع أول تشغيل. نجاحه يزرع كوكي الجلسة (HttpOnly)، وهنا تُكتب جلسة

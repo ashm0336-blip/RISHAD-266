@@ -16,7 +16,7 @@ test('failed flush ⇒ no reload, active unit unchanged, plain message', async (
     await pick(W, UNITS[1].id);
     assert.equal(W.reloads.length, 0, 'no reload ' + JSON.stringify(o));
     assert.equal(W.active(), UNITS[0].id, 'active unit unchanged');
-    assert.equal(W.c.state.toast, 'لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ');
+    assert.equal(W.lastToast(), 'لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ', 'through the one toast (KIVO.bsToast)');
     assert.equal(o.calls, 1); assert.equal(o.ms, 4000);
   }
 });

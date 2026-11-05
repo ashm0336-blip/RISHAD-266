@@ -70,8 +70,12 @@ function runtimeWorld(readResponse) {
       rendered.push({ state, records }); return { records };
     }
   } };
-  const source = read('src/core/050-dc-runtime.js'), marker = '  hideRawTemplate();';
-  assert.equal(source.split(marker).length, 2);
+  const source0 = read('src/core/050-dc-runtime.js'), marker = '  hideRawTemplate();', RETRY = 'const DATA_RETRY_MS = [1000, 2000, 4000];';
+  assert.equal(source0.split(marker).length, 2);
+  /* CORE-01: the real quiet-retry schedule (1 s, 2 s, 4 s) is pinned here, then shortened for the test so the
+     same three retries (and the card only after them) run within the fixture's timeouts */
+  assert.equal(source0.split(RETRY).length, 2, 'The quiet data retry keeps its 1/2/4 s schedule');
+  const source = source0.replace(RETRY, 'const DATA_RETRY_MS = [5, 10, 20];');
   // Expose the actual factory and skip automatic DOM boot only; no runtime
   // method or prefetch/constructor ordering is replaced by this seam.
   vm.runInContext(source.replace(marker, '  KIVO.__TEST_runtime = createRuntime; return;\n' + marker), T.ctx, { filename: '050-dc-runtime.js' });
@@ -102,11 +106,14 @@ test('actual page runtime cannot construct its business Component before the typ
   } finally { release(); f.T.dispose(); }
 });
 
-test('a failed typed read leaves no empty business Component and uses the existing retry card before a fresh read', async () => {
-  let valid = false;
-  const f = runtimeWorld(data => response(valid ? data : { ...data, base: {} }));
+test('a failed typed read retries quietly, leaves no empty business Component and uses the existing retry card before a fresh read', async () => {
+  let valid = false, cardAt = -1;
+  let f = null; f = runtimeWorld(data => { if (f && f.body.children.some(node => node.className === 'bs-retry bs-retry-page') && cardAt < 0) cardAt = f.calls.length; return response(valid ? data : { ...data, base: {} }); });
   try {
     assert.equal(await until(() => f.body.children.some(node => node.className === 'bs-retry bs-retry-page'), 500), true);
+    assert.equal(f.calls.length, 4, 'one read and three quiet retries before the card');
+    assert.equal(cardAt, -1, 'no card while the quiet retries run');
+    assert.equal(f.runtime.registry.get(f.name).dataError, 'تعذّر عرض هذه الشاشة الآن');
     f.component.render();
     assert.equal(f.constructors.length, 0);
     assert.equal(f.runtime.registry.get(f.name).Logic, null);
@@ -115,7 +122,7 @@ test('a failed typed read leaves no empty business Component and uses the existi
     assert.equal(await until(() => !!f.runtime.registry.get(f.name).Logic, 500), true);
     f.component.render();
     assert.equal(f.constructors.length, 1);
-    assert.equal(f.calls.length, 2);
+    assert.equal(f.calls.length, 5);
     assert.equal(card.removed, true);
     assert.deepEqual(JSON.parse(JSON.stringify(f.constructors[0])), f.values);
     assert.equal(f.T.saves().length, 0);
@@ -143,11 +150,12 @@ test('remote and authority changes hide unconfirmed records, preserve the same e
     assert.equal(editor.state.draft, 'TEST_ONLY unsaved editor');
     release();
     assert.equal(await until(() => !!f.runtime.registry.get(f.name).dataError, 500), true);
+    assert.equal(f.calls.length, 5, 'the failed re-read was retried quietly three times before the error');
     f.component.render(); assert.equal(f.rendered.length, prior);
     const card = f.body.children.find(node => node.className === 'bs-retry bs-retry-page');
     assert.ok(card);
     mode = 'ok'; card.button.click(); f.Dispatcher({});
-    assert.equal(await until(() => f.calls.length === 3 && f.T.W.KIVO.__BS_SRV.operations.ready([E]), 500), true);
+    assert.equal(await until(() => f.calls.length === 6 && f.T.W.KIVO.__BS_SRV.operations.ready([E]), 500), true);
     f.component.render();
     assert.equal(f.component.logic, editor); assert.equal(f.constructors.length, 1);
     assert.equal(editor.state.draft, 'TEST_ONLY unsaved editor');

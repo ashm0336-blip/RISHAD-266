@@ -247,7 +247,7 @@ var REG = [
   function same(c){ var n = current(); return !!c.uid && n.uid === c.uid && n.dept === c.dept && n.generation === c.generation; }
   function event(name, detail){ try { window.dispatchEvent(new CustomEvent(name, { detail:detail || {} })); } catch(e){} }
   function failed(message, c){
-    var text = message || 'تعذّر تأكيد العملية من خادم التنبيهات';
+    var text = message || 'تعذّر تأكيد العملية — حاول مجددًا';
     if (same(c)) { view.error = text; event('bassam:notif-error', { message:text }); }
     try { console.warn('[notifications] request was not acknowledged'); } catch(e){}
     return { ok:0, err:text };
@@ -266,14 +266,14 @@ var REG = [
       if (r.status === 401 || (j && j.err === 'session-changed')) {
         view.items=[]; view.broadcasts=[]; view.stats={}; view.cfg={t:{}}; view.ready=false; view.rev=null; view.configRev=null; view.broadcastRev=null;
         view.counters=null;view.next='';view.pages=0;view.hasUpdates=false;view.bcNext='';view.bcTotal=0;view.bcReady=false;
-        var expired=failed('انتهت جلسة التنبيهات — أعد تسجيل الدخول',c);
+        var expired=failed('انتهت الجلسة — سجّل الدخول',c);
         generation++; readEpoch++; refreshFlight=null;
         event('bassam:notif',{refreshed:true,expired:true});
         return expired;
       }
-      if (!r.ok || !j || j.ok !== 1 || !validRev(j.rev)) return failed(j && typeof j.err === 'string' ? j.err : 'تعذّر تأكيد العملية من خادم التنبيهات', c);
+      if (!r.ok || !j || j.ok !== 1 || !validRev(j.rev)) return failed(j && typeof j.err === 'string' ? j.err : 'تعذّر تأكيد العملية — حاول مجددًا', c);
       return j;
-    } catch(e){ return failed('تعذّر الاتصال بخادم التنبيهات — أعد المحاولة', c); }
+    } catch(e){ return failed('لا اتصال — حاول مجددًا بعد قليل', c); }
     finally { if (tm) clearTimeout(tm); }
   }
   function itemShape(x){ return !!(x && typeof x.id === 'string' && x.id && typeof x.t === 'string' && typeof x.b === 'string' && typeof x.at === 'number' && Number.isFinite(x.at)); }
@@ -302,10 +302,10 @@ var REG = [
       var j=await request(feedURL(c,more,false),null,c);
       if (ticket!==readEpoch) return {ok:0,superseded:true};
       if (!j.ok) return j;
-      if (!Array.isArray(j.items) || j.items.length>200 || !j.items.every(itemShape) || !validCounters(j.counters) || !j.cfg || !j.cfg.t || typeof j.cfg.t !== 'object' || Array.isArray(j.cfg.t) || !validRev(j.configRev) || !validRev(j.broadcastRev) || (j.next && typeof j.next !== 'string')) return failed('استجابة التنبيهات غير مكتملة',c);
-      if ((expected!=null && j.rev!==expected) || (view.rev!=null && j.rev<view.rev) || (view.configRev!=null && j.configRev<view.configRev) || (view.broadcastRev!=null && j.broadcastRev<view.broadcastRev)) return failed('تغيّرت مراجعة التنبيهات — حدّث القائمة',c);
+      if (!Array.isArray(j.items) || j.items.length>200 || !j.items.every(itemShape) || !validCounters(j.counters) || !j.cfg || !j.cfg.t || typeof j.cfg.t !== 'object' || Array.isArray(j.cfg.t) || !validRev(j.configRev) || !validRev(j.broadcastRev) || (j.next && typeof j.next !== 'string')) return failed('تعذّر عرض التنبيهات الآن',c);
+      if ((expected!=null && j.rev!==expected) || (view.rev!=null && j.rev<view.rev) || (view.configRev!=null && j.configRev<view.configRev) || (view.broadcastRev!=null && j.broadcastRev<view.broadcastRev)) return failed('وصلت تنبيهات جديدة — اعرض الجديد',c);
       var items=more ? view.items.concat(j.items) : j.items,unique=Object.create(null);
-      if (items.some(function(x){if(unique[x.id])return true;unique[x.id]=1;return false;})) return failed('معرّفات تنبيهات مكررة في الاستجابة',c);
+      if (items.some(function(x){if(unique[x.id])return true;unique[x.id]=1;return false;})) return failed('تعذّر عرض التنبيهات الآن',c);
       if (!same(c)) return {ok:0,err:'تغيّر نطاق التنبيهات'};
       var initial=!view.ready,changed=view.rev!==j.rev;
       view.items=items;view.cfg=j.cfg;view.counters=j.counters;view.next=j.next || '';view.pages=more ? view.pages+1 : 1;
@@ -323,7 +323,7 @@ var REG = [
     var ticket=readEpoch,j=await request(feedURL(c,false,true),null,c);
     if(ticket!==readEpoch || !same(c))return {ok:0,superseded:true};
     if(!j.ok)return j;
-    if(!validCounters(j.counters) || j.rev<view.rev)return failed('استجابة عدادات التنبيهات غير مكتملة',c);
+    if(!validCounters(j.counters) || j.rev<view.rev)return failed('تعذّر عرض التنبيهات الآن',c);
     view.counters=j.counters;
     if(j.rev!==view.rev){
       if(view.pages<=1)return refresh();

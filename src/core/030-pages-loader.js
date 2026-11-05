@@ -41,7 +41,7 @@ window.__resourceBlobs = {};
     }
     if (!departmentComponents.has(name)) return null;
     var service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
-    return service && typeof service.departmentContext === 'function' ? service.departmentContext() : { state: 'error', dept: null, message: 'تعذّر قراءة سجل الإدارات — أعد المحاولة' };
+    return service && typeof service.departmentContext === 'function' ? service.departmentContext() : { state: 'error', dept: null, message: 'تعذّر عرض الإدارات الآن' };
   }
   function pageData(name) {
     var manifest = KIVO.KIVO_MANIFEST;

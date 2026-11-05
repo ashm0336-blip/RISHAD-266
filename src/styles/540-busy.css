@@ -18,10 +18,6 @@
 #bs-busy .bsb-sub:empty{display:none}
 #bs-busy .bsb-pct{font-size:11px;color:var(--brand-text);font-weight:700;font-feature-settings:'tnum';border-inline-start:1px solid var(--border-default);padding-inline-start:10px;direction:ltr}
 #bs-busy .bsb-pct:empty{display:none}
-#bs-busy .bsb-pill.ok .bsb-sp{border:0;background:var(--success-bg);color:var(--success-text);display:flex;align-items:center;justify-content:center;animation:none;font-size:12px;font-weight:900}
-#bs-busy .bsb-pill.ok .bsb-sp::before{content:"✓"}
-#bs-busy .bsb-pill.err .bsb-sp{border:0;background:var(--danger-bg);color:var(--danger-text);display:flex;align-items:center;justify-content:center;animation:none;font-size:12px;font-weight:900}
-#bs-busy .bsb-pill.err .bsb-sp::before{content:"!"}
 .bsb-frozen{opacity:.7!important;pointer-events:none!important;cursor:progress!important}
 .bsb-btnsp{display:inline-block;width:13px;height:13px;border-radius:50%;border:2px solid var(--tone-neutral-100-a35);border-top-color:currentColor;animation:bsb-spin .8s linear infinite;margin-inline-end:6px;vertical-align:-2px;flex-shrink:0}
 @media print{#bs-busy{display:none!important}}

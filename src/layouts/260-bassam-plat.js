@@ -156,7 +156,7 @@
         rb.disabled = false;
         if (j && j.ok) { m.style.color = "var(--fg-x065f46)"; m.textContent = "تم — سجّل الدخول الآن باسم «" + j.un + "» وكلمتك الجديدة. المفتاح أُبطل، أنشئ غيره بعد الدخول."; if (un) un.value = j.un; box.querySelector("#bsRkKey").value = ""; box.querySelector("#bsRkPw").value = ""; box.querySelector("#bsRkPw2").value = ""; }
         else { m.style.color = "var(--fg-x991b1b)"; m.textContent = (j && j.err) || "تعذّر"; }
-      }).catch(function () { rb.disabled = false; m.textContent = "تعذّر الاتصال بالخادم"; });
+      }).catch(function () { rb.disabled = false; m.textContent = "لا اتصال — حاول مجددًا بعد قليل"; });
     });
   }
   /* ── الطباعة: ترويسة موحّدة وتذييل ── */

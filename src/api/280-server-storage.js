@@ -80,19 +80,37 @@
     try { window.dispatchEvent(new StorageEvent("storage", { key: String(k) })); } catch (e) {}
     try { window.dispatchEvent(new CustomEvent("bassam:store", { detail: { key: unscoped(k), remote: true } })); } catch (e) {}
   }
-  /* ── إشعار خفيف — لا يحجب شيئاً ── */
-  var noteT = null;
-  function note(msg, bg) {
-    try {
-      var host = document.body || document.documentElement; if (!host) return;
-      var d = document.getElementById("bs-syncnote");
-      if (!d) { d = document.createElement("div"); d.id = "bs-syncnote"; d.setAttribute("dir", "rtl"); host.appendChild(d); }
-      d.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:64px;z-index:2147483540;background:" + (bg || "var(--bg-toast)")
-        + ";color:var(--toast-text);border:1px solid var(--border-brand-soft);font:600 12.5px/1.8 Cairo,Tahoma,Arial;padding:10px 18px;border-radius:11px;box-shadow:var(--shadow-elevated);max-width:86vw;text-align:center";
-      d.textContent = msg;
-      clearTimeout(noteT); noteT = setTimeout(function () { try { d.parentNode.removeChild(d); } catch (e) {} }, 6500);
-    } catch (e) {}
+  /* ── CORE-01: التوستُ الواحد للمنصة — KIVO.bsToast(msg, { tone: "err", ms }) ──
+     رسائلُ الحفظ هنا ورسائلُ الإطار (root-logic) وBassamBusy.flash كلُّها تمرّ به؛ وشكلُه .bs-toast في الغلاف (بلا أنماطٍ مضمَّنة).
+     يعيش في طبقة التخزين لأنها أولُ كتلةٍ مشتركةٍ حاضرةٍ دائماً تخاطب المستخدم. حتى ثلاثةِ أسطرٍ معاً (الأحدثُ أسفل) —
+     فلا تمحو رسالةٌ لاحقةٌ سببَ رفضٍ سبقها — والنصُّ المكرَّر يجدّد مدّتَه ولا يتكرّر. لا يحجب شيئاً (pointer-events:none). */
+  var toastBox9 = null, toastLines9 = [];
+  function toastDrop9(line) {
+    clearTimeout(line.t);
+    var i = toastLines9.indexOf(line); if (i >= 0) toastLines9.splice(i, 1);
+    try { line.el.parentNode.removeChild(line.el); } catch (e) { /* أُزيل */ }
+    if (!toastLines9.length && toastBox9) { try { toastBox9.parentNode.removeChild(toastBox9); } catch (e) { /* أُزيل */ } toastBox9 = null; }
   }
+  function bsToast(msg, o) {
+    try {
+      o = o || {};
+      var text = String(msg == null ? "" : msg); if (!text) return;
+      if (o.tone === "err" && text.charAt(0) !== "⚠") text = "⚠ " + text;
+      var host = document.body || document.documentElement; if (!host) return;
+      if (!toastBox9 || !toastBox9.parentNode) {
+        toastBox9 = document.createElement("div"); toastBox9.id = "bs-toast"; toastBox9.className = "bs-toast";
+        toastBox9.setAttribute("role", "status"); toastBox9.setAttribute("aria-live", "polite"); toastBox9.setAttribute("dir", "rtl");
+        host.appendChild(toastBox9); toastLines9 = [];
+      }
+      var line = null;
+      for (var i = 0; i < toastLines9.length; i++) if (toastLines9[i].text === text) { line = toastLines9.splice(i, 1)[0]; break; }
+      if (!line) { line = { text: text, el: document.createElement("div") }; line.el.textContent = text; toastBox9.appendChild(line.el); }
+      toastLines9.push(line);
+      while (toastLines9.length > 3) toastDrop9(toastLines9[0]);
+      clearTimeout(line.t); line.t = setTimeout(function () { toastDrop9(line); }, o.ms || 6500);
+    } catch (e) { /* عرضٌ فقط */ }
+  }
+  KIVO.bsToast = bsToast;
   /* ── شريط التعارض: ثابت أعلى الصفحة تحت الرأس، باسم مَن سبقك ووقته وعدد الخانات — يبقى حتى تغلقه ── */
   var bannerT = null;
   function esc9(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch]; }); }
@@ -144,11 +162,11 @@
               "task-rv": "المراجِعُ لا يكون المكلَّفَ نفسَه — غيّر المراجِعَ من إعدادات المهمة أولاً",
               "task-own": "توثيقُ الموظف (صورُ الإثبات · التسليمُ · البدء) لا يُمحى بالحفظ — حدّث الصفحة ثم أعد التعديل؛ وإن أردت إعادة المهمة إليه فمن قائمتها",
               "task-del": "لا تُحذف مهمةٌ بدأ عليها نشاطٌ (قبول · توثيق · تسليم · إنجاز · اعتذار) — استعمل «إلغاء» من قائمة المهمة ليبقى سجلُّها؛ الحذفُ للأخطاء الحديثة وحدها",
-              "task-x": "إعداداتُ المهمة (المراجِعُ · سياسةُ الإثبات · الإلغاءُ وإعادةُ الإسناد) يكتبها الخادمُ وحده — استعمل أزرارَ المهمة" };
+              "task-x": "إعداداتُ المهمة (المراجِعُ · سياسةُ الإثبات · الإلغاءُ وإعادةُ الإسناد) تُغيَّر من أزرار المهمة وحدها — استعمل أزرارَ المهمة" };
   /* KIVO_243: أسبابُ رفض الإنفاذ (تُستعمل حين __BS_AUTHZ وحده — رسائلُ النظام القديم كما هي) */
   /* RISHAD-266: سقفُ النطاق القديم أُلغي — فلا «الموقع · العنصر · الوردية» في سبب scope، ولا unmigrated-department-ceiling */
   var WHY_ENF = { perm: "صلاحيتك لا تشمل هذا الإجراء", scope: "خارج نطاقك (المسنَد إليك · المصدر · الفترة) — راجع مدير الإدارة إن كنت تحتاج هذا التعديل",
-              "scope-unknown": "تعذّر التحقق من قفل الفترة لهذا التعديل — حدّث الصفحة ثم أعد المحاولة، وإن تكرر فأبلغ مدير النظام",
+              "scope-unknown": "تعذّر التحقق من قفل الفترة لهذا التعديل — أعد المحاولة بعد قليل، وإن تكرر فأبلغ مدير النظام",
               "scope-retired": WHY["scope-retired"], reason: "هذا الإجراء يتطلب سبباً",
               "restore-policy": "الاستعادةُ لمدير النظام أو لمدير الإدارة الممنوح مفتاحها", "import-allowlist": "هذا السجلّ خارج قائمة الاستيراد المسموحة",
               grant: "لا تملك منح هذا المفتاح", unmapped: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً", residual: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً",
@@ -552,7 +570,7 @@
     var nm = fx.hit.map(function (x) { return "«" + String((x && (x.name || x.un)) || "موظف") + "»"; }), n = nm.length, C9 = KIVO.BassamCount;
     var agr = function (a, b, c) { return C9 && C9.agr ? C9.agr(n, a, b, c) : a; };
     var more = n > 5 ? " (و" + (C9 ? C9(n - 5, "موظف", "g") : String(n - 5)) + " غيرُهم)" : "";
-    var tail = fx.act ? agr("لم يُفعَّل حسابه", "لم يُفعَّل حساباهما", "لم تُفعَّل حساباتهم") : agr("أُعيد حسابُه كما في الخادم", "أُعيد حساباهما كما في الخادم", "أُعيدت حساباتهم كما في الخادم");
+    var tail = fx.act ? agr("لم يُفعَّل حسابه", "لم يُفعَّل حساباهما", "لم تُفعَّل حساباتهم") : agr("أُعيد حسابُه كما كان محفوظاً", "أُعيد حساباهما كما كانا محفوظَين", "أُعيدت حساباتهم كما كانت محفوظة");
     return nm.slice(0, 5).join("، ") + more + ": رقم الهوية أو الجوال مستخدمٌ في حسابٍ آخر — " + tail;
   }
   /* جوابُ الخادم يُطبَّق على اللقطة المُرسَلة لا على الطابور الحالي: ما كُتب
@@ -597,7 +615,7 @@
       }
       /* caps-own: a refusal that protects latent permissions carries its own text (021 latentLossWhy · capStaleBatch) */
       var lm9 = /^stale-client: (.+)$/.exec(String(d.detail || "")) || /^latent: .*? \| (.+)$/.exec(String(d.detail || ""));
-      if (d.why !== "flag") note(fx9 ? usersDupMsg9(fx9) : "لم يُحفظ تعديلك على «" + lbl(k) + "» — " + (lm9 ? lm9[1] : whyText9(d.why)) + ". أُعيدت القيمة كما في الخادم", "#7f1d1d");
+      if (d.why !== "flag") bsToast(fx9 ? usersDupMsg9(fx9) : "لم يُحفظ تعديلك على «" + lbl(k) + "» — " + (lm9 ? lm9[1] : whyText9(d.why)) + ". أُعيدت القيمة المحفوظة", { tone: "err" });
     }
     var cf = j.conflicts || {}, banners = [];
     for (k in cf) {
@@ -651,7 +669,7 @@
   function operationClone9(value) { return JSON.parse(JSON.stringify(value)); }
   function operationDepartmentContext9() {
     var depts = KIVO.BassamDepts;
-    return depts && typeof depts.context === 'function' ? depts.context() : { state: 'error', dept: null, message: 'تعذّر قراءة سجل الإدارات — أعد المحاولة' };
+    return depts && typeof depts.context === 'function' ? depts.context() : { state: 'error', dept: null, message: 'تعذّر عرض الإدارات الآن' };
   }
   function operationContext9() {
     var user = KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user();
@@ -966,7 +984,7 @@
     }
     if (!ok) overFlush9(null);
     recount();
-    if (ok) kick(); else { note(msg || "أُلغي التعديل — أُعيدت القيمة كما في الخادم", "#7f1d1d"); settleWaiters(false); }
+    if (ok) kick(); else { bsToast(msg || "أُلغي التعديل — أُعيدت القيمة المحفوظة", { tone: "err" }); settleWaiters(false); }
   }
   function dlg9(o, cb) {
     try {
@@ -991,7 +1009,7 @@
   function reasonAsk9(items) {
     var sig = items.map(function (x) { return (x.d.reasonKeys || []).slice().sort().join(","); }).sort().join("|");
     holdKeys9(items);
-    var fin9 = function (r, rem) { if (r) { for (var q = 0; q < items.length; q++) why9[items[q].k] = r; if (rem) rsnMem9[sig] = r; } releaseKeys9(items, !!r, "أُلغي التعديل لعدم كتابة سبب — أُعيدت القيمة كما في الخادم"); };
+    var fin9 = function (r, rem) { if (r) { for (var q = 0; q < items.length; q++) why9[items[q].k] = r; if (rem) rsnMem9[sig] = r; } releaseKeys9(items, !!r, "أُلغي التعديل لعدم كتابة سبب — أُعيدت القيمة المحفوظة"); };
     if (rsnMem9[sig]) { setTimeout(function () { fin9(rsnMem9[sig], true); }, 0); return; }
     dlg9({ title: "هذا الإجراء يتطلب سبباً", desc: "التعديل على " + namesOf9(items) + " إجراءٌ حسّاس يُسجَّل سببُه في سجل التدقيق.", ok: "حفظ بالسبب", remember: true }, fin9);
   }
@@ -1022,7 +1040,7 @@
         fetch("/api/retro", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ res: w.res, dept: w.dept, act: "open", scope: { y: w.y, m: w.m }, reason: r }) })
           .then(function (x) { return x.json().catch(function () { return null; }); })
           .then(function (j) { if (j && j.ok === 1) go(n + 1); else releaseKeys9(items, false, "تعذّر فتحُ نافذة الاستدراك" + (j && j.err ? " (" + j.err + ")" : "")); })
-          .catch(function () { releaseKeys9(items, false, "تعذّر فتحُ نافذة الاستدراك — الشبكة"); });
+          .catch(function () { releaseKeys9(items, false, "تعذّر فتحُ نافذة الاستدراك — لا اتصال، حاول مجددًا عند العودة"); });
       };
       go(0);
     });
@@ -1231,16 +1249,16 @@
     /* لا إعادةَ إرسال بعد انتهاء الهوية: ما كان طائراً أو منتظراً يبقى معزولاً
        في ذاكرة الصفحة، ولا يُكتب على الجهاز ولا يُرسل ببيانات حسابٍ يدخل لاحقاً. */
     if (!stopSession9(snap)) return;
-    link9("off", "انتهت جلستك — سجّل الدخول");
+    link9("off", "انتهت الجلسة — سجّل الدخول");
     var host = document.body || document.documentElement;
     if (!host) return;
     sgBar9 = document.createElement("div");
     sgBar9.setAttribute("dir", "rtl");
-    sgBar9.title = "انقطعت جلستك في الخادم فتوقف الحفظ — الدخول من جديد يعيد كل شيء للعمل";
+    sgBar9.title = "انتهت الجلسة فتوقف الحفظ — الدخول من جديد يعيد كل شيء للعمل";
     sgBar9.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:2147483647;"
       + "background:var(--bg-x7f1d1d);color:var(--fg-xffffff);font:600 12.5px/1.9 Cairo,Tahoma,Arial;padding:11px 18px;"
       + "border-radius:11px;box-shadow:var(--shadow-elevated);cursor:pointer;max-width:86vw;text-align:center";
-    sgBar9.textContent = "⚠ انتهت جلستك في الخادم — تعديلاتك الأخيرة لم تُحفظ. اضغط هنا لتسجيل الدخول من جديد";
+    sgBar9.textContent = "⚠ انتهت الجلسة — سجّل الدخول. تعديلاتك الأخيرة لم تُحفظ؛ اضغط هنا لتسجيل الدخول من جديد";
     sgBar9.addEventListener("click", function () { location.reload(); });
     host.appendChild(sgBar9);
     try { window.dispatchEvent(new CustomEvent("bs:session-gone")); } catch (e) { /* إعلامٌ فقط */ }   /* RISHAD-266: بطاقاتُ تعذّر الشاشة تقول السببَ الحقيقي */
@@ -1248,7 +1266,7 @@
 
   /* ── تنبيه صريح حين يتعذّر الحفظ ───────────────────────────────────────── */
   function warn(bad) {
-    link9(bad ? "off" : "on", bad ? (operationActive9 ? "لم يتأكد الحفظ — أعد المحاولة بالطلب نفسه" : "تعديلات غير محفوظة — تُرسل عند عودة الاتصال") : presN9);
+    link9(bad ? "off" : "on", bad ? (operationActive9 ? "لم يتأكد الحفظ — أعد المحاولة بالطلب نفسه" : "لم يُحفظ بعد — نحاول تلقائيًا") : presN9);
   }
 
   /* شبكة أمان أخيرة: لو بقي في الطابور شيء عند الإغلاق، يُرسَل بنبضة لا
@@ -1259,6 +1277,14 @@
     try { if (inflight) { requeue(inflight); inflight = null; } } catch (e0) {}
     if (!dirty) return;
     try { navigator.sendBeacon("/api/save", new Blob([payload()], { type: "application/json" })); } catch (e) {}
+  });
+
+  /* CORE-01: تنبيهُ المغادرة الواحد — لا يُسأل المستخدم إلا وفي الطابور ما لم يُحفظ، أو طلبٌ في الطريق، أو عمليةٌ جارية؛
+     ولا بعد الخروج أو تبدّل الجلسة (ما بقي حينها معزولٌ لا يُرسل). الإعادةُ المقصودة (تبديلُ الوحدة · السحبُ للتحديث) تحفظ قبلها فلا تسأل. */
+  window.addEventListener("beforeunload", function (e) {
+    if (ANON9 || bye9 || sx9 || !(dirty || inflight || operationActive9)) return;
+    try { e.preventDefault(); e.returnValue = ""; } catch (eB) { /* متصفحٌ قديم */ }
+    return "";
   });
 
   /* ── استبدال مخزن المتصفّح ───────────────────────────────────────────────
@@ -1356,7 +1382,7 @@
      وعودتُه تُطلق الطابورَ المؤجَّل فوراً بدل انتظار دورة إعادة المحاولة. لا تُعطَّل الأزرار: التعديلاتُ تبقى في ذاكرة الصفحة وتُرسل عند العودة. ── */
   if (!ANON9) (function () {
     var net9 = !(typeof navigator !== "undefined" && navigator.onLine === false);
-    function down9() { if (!net9) return; net9 = false; link9("off", "بلا إنترنت — تُرسل عند العودة"); }
+    function down9() { if (!net9) return; net9 = false; link9("off", "لا اتصال — تُحفظ تعديلاتك عند العودة"); }
     function up9() {
       if (net9) return; net9 = true; fails = 0;
       if (retryT) { clearTimeout(retryT); retryT = null; }
@@ -1529,7 +1555,7 @@
         /* إعادةُ تحميلٍ واحدة في الدقيقة على الأكثر — لا حلقةَ إعادة لو تعذّر حقنُ المفاتيح بعد التحميل؛ والدورةُ التالية تعيد المحاولة */
         try { var last9 = +(sessionStorage.getItem("bs_az_reload") || 0); if (Date.now() - last9 < 60000) return; sessionStorage.setItem("bs_az_reload", String(Date.now())); } catch (eS9) {}
         azReload9 = true;
-        note("تغيّر وضعُ الصلاحيات في الخادم — تُحفظ تعديلاتك ثم يُعاد تحميل الصفحة", "#25343f");
+        bsToast("تغيّر وضعُ الصلاحيات — تُحفظ تعديلاتك ثم يُعاد تحميل الصفحة");
         setTimeout(function () { flushAsync(6000).then(function () { location.reload(); }, function () { location.reload(); }); }, 2500);
         return;
       }

@@ -203,7 +203,7 @@ class Component extends DCLogic {
         try {
           const W = innerWidth, H = innerHeight; let best = null, bestZ = -1;
           for (const el of document.querySelectorAll('main *, body > *')) {
-            if (el === document.body || el.id === 'bsLoginGate' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.id === 'bs-toast' || el.id === 'bs-syncnote' || (el.classList && el.classList.contains('login-screen'))) continue;
+            if (el === document.body || el.id === 'bsLoginGate' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.id === 'bs-toast' || (el.classList && el.classList.contains('login-screen'))) continue;
             if (!this._ovCand(el)) continue;   /* لا getComputedStyle إلا لمرشَّحٍ حقيقيّ */
             const cs = getComputedStyle(el); if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
             const r = el.getBoundingClientRect(); if (r.width < W * 0.9 || r.height < H * 0.9) continue;
@@ -281,15 +281,10 @@ class Component extends DCLogic {
       this._onNotif = (ev) => { try {
         if (ev && ev.detail && (ev.detail.initial || ev.detail.more || ev.detail.queryChanged)) (KIVO.BassamNotif ? KIVO.BassamNotif.list() : []).forEach(x=>{this._nfKnown[x.id]=1;});
         this._nfRefresh(!(ev && ev.detail && (ev.detail.initial || ev.detail.more || ev.detail.queryChanged)));
+        if (ev && ev.detail && ev.detail.counters) this._nfAutoNew();
       } catch (e) {} };
       window.addEventListener("bassam:notif", this._onNotif);
-      this._onNotifError = (ev) => {
-        if (Date.now() - (this._nfErrorAt || 0) < 10000) return;
-        this._nfErrorAt = Date.now();
-        this.setState({ toast: (ev && ev.detail && ev.detail.message) || "تعذّر تحديث التنبيهات" });
-        clearTimeout(this._toastTimer); this._toastTimer = setTimeout(() => this.setState({ toast:"" }),4000);
-      };
-      window.addEventListener("bassam:notif-error",this._onNotifError);
+      /* CORE-01: أخطاءُ الاستطلاع الخلفي للتنبيهات صامتة — ما يفعله المستخدمُ وحده يُبلَّغ (_nfWork) */
       this._nfKnown = {}; try { (KIVO.BassamNotif ? KIVO.BassamNotif.list() : []).forEach(x => { this._nfKnown[x.id] = 1; }); } catch (e) {}
       this._nfDocClick = (ev) => { try { if (this.state.nfOpen && !ev.target.closest("[data-bs-nf]")) this.setState({ nfOpen: false }); } catch (e) {} };
       document.addEventListener("click", this._nfDocClick);
@@ -303,7 +298,7 @@ class Component extends DCLogic {
     try { if (this._dlgMO) this._dlgMO.disconnect(); clearTimeout(this._dlgT); } catch (e) {}
     try { if (this._onViewSave) { window.removeEventListener("pagehide", this._onViewSave); window.removeEventListener("beforeunload", this._onViewSave); } } catch (e) {}
     try { if (this._onRemote) window.removeEventListener("bassam:remote", this._onRemote); } catch (e) {}
-    try { if (this._onNotif) window.removeEventListener("bassam:notif", this._onNotif); if (this._onNotifError) window.removeEventListener("bassam:notif-error",this._onNotifError); if (this._nfDocClick) document.removeEventListener("click", this._nfDocClick); } catch (e) {}
+    try { if (this._onNotif) window.removeEventListener("bassam:notif", this._onNotif); if (this._nfDocClick) document.removeEventListener("click", this._nfDocClick); } catch (e) {}
     clearTimeout(this._nfToastT); clearTimeout(this._nfAnnT);
     clearTimeout(this._liveT);
   }
@@ -332,22 +327,27 @@ class Component extends DCLogic {
     try {
       const result = await run();
       if (!result || result.ok !== 1) {
-        this.setState({toast:(result && result.err) || "تعذّر تأكيد التغيير — حاول مجددًا"});
-        clearTimeout(this._toastTimer); this._toastTimer=setTimeout(()=>this.setState({toast:""}),4000);
+        this.bkToast((result && result.err) || "تعذّر تأكيد التغيير — حاول مجددًا", 4000);
         return null;
       }
       this._nfRefresh(false);
       return result;
-    } catch (e) { this.setState({toast:"تعذّر الاتصال بخادم التنبيهات"}); return null; }
+    } catch (e) { this.bkToast("لا اتصال — حاول مجددًا بعد قليل", 4000); return null; }
   }
   async _nfOpenItem(x) {
     const NF=KIVO.BassamNotif; if (!NF) return;
     const required = x.ack && !x.acked;
     const result = await this._nfWork(()=>required ? NF.ack(x.id) : NF.markRead(x.id));
     if (!result) return;
-    if (required) { this.setState({nfToast:null,toast:"سُجّل تأكيد قراءتك للتعميم"}); clearTimeout(this._toastTimer); this._toastTimer=setTimeout(()=>this.setState({toast:""}),2500); return; }
+    if (required) { this.setState({nfToast:null}); this.bkToast("سُجّل تأكيد قراءتك للتعميم", 2500); return; }
     const nav = x.go && (!NF.goOk || NF.goOk(x)) ? (NF.GO_NAV[x.go] || "") : "";   /* R183: لا انتقالَ إلى صفحةٍ لا تُفتح لك */
     if (nav) { this.setState({ nfOpen: false, nfToast: null }); if (nav === "sysadmin") { if (KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) { KIVO.__ADMIN_MODE = "site"; KIVO.__ADMIN_OPEN_TAB = x.go === "المنصة" ? "plat" : "sec"; this._savePage("sysadmin"); this.setState({ active: "sysadmin" }); } return; } if (nav === "help") { try { KIVO.BassamPlat.openAbout(); } catch (e) {} return; } if (nav === "admin") { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); return; } try { KIVO.BassamNav.go(nav); } catch (e) {} }
+  }
+  /* CORE-01: وصل جديدٌ والقائمةُ مغلقة ⇒ تُجلب صفحتُها الأولى بهدوء (بلا رسالة — الاستطلاعُ الخلفي صامت) */
+  _nfAutoNew() {
+    const N = KIVO.BassamNotif, s = this.state;
+    if (!N || s.nfOpen || !N.status().hasUpdates) return;
+    try { Promise.resolve(N.refresh({ all: !!s.nfAllDepts, filter: s.nfFilt || "all", kinds: Object.keys(s.nfKinds || {}).filter(k => s.nfKinds[k]) })).catch(() => {}); } catch (e) { /* صامت */ }
   }
   _nfReload(patch) {
     this.setState(patch || {},()=>{
@@ -387,7 +387,9 @@ class Component extends DCLogic {
     return {
       nfOn: true, nfCount: un ? String(un) : "", nfHas: un > 0, nfUrg: urg > 0, nfOpen: !!s.nfOpen, nfEmpty: status.ready && !status.loading && rows.length === 0,
       nfHasMore:!!status.next,nfMore:()=>this._nfWork(()=>NF.loadMore()),nfMoreLabel:status.loading ? "جارٍ التحميل…" : "عرض تنبيهات أقدم",
-      nfNoticeOn:!!(status.hasUpdates || status.loading || status.error),nfNotice:status.hasUpdates ? "وصلت تحديثات جديدة — حدّث القائمة لعرضها" : status.loading ? "جارٍ تحميل التنبيهات…" : status.error,nfRefreshList:()=>this._nfReload(),
+      /* CORE-01: لا زرَّ تحديثٍ روتيني — الجديدُ يُجلب تلقائياً والقائمةُ مغلقة (_nfAutoNew)، و«عرض الجديد» وهي مفتوحة وحدها */
+      nfNoticeOn:!status.hasUpdates && !!(status.loading || status.error),nfNotice:status.loading ? "جارٍ تحميل التنبيهات…" : "تعذّر عرض التنبيهات الآن",
+      nfNewOn:!!status.hasUpdates,nfShowNew:()=>this._nfReload(),
       nfBellSt: urg ? "urg" : (un ? "un" : ""),
       nfToggle: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); const opening=!this.state.nfOpen;this.setState({nfOpen:opening,nfToast:null},()=>{if(opening)this._nfReload();}); },
       nfClose: () => this.setState({ nfOpen: false }),
@@ -417,8 +419,8 @@ class Component extends DCLogic {
           ? (rest ? "لا شيءَ يُحذف — " + keepTxt.replace(/^و/, "") : "لا شيء يُحذف")
           : (rest ? delTxt + " · " + keepTxt : delTxt + " من جرسك");
         /* وإن بقي شيءٌ فالمرشِّحُ ينتقل إليه — فيراه المستخدمُ الآن لا بعد بحث */
-        if(rest)this._nfReload({toast:msg,nfFilt:"act"});else this.setState({toast:msg});
-        clearTimeout(this._toastTimer); this._toastTimer = setTimeout(() => this.setState({ toast: "" }), rest ? 3600 : 2200);
+        if(rest)this._nfReload({nfFilt:"act"});
+        this.bkToast(msg, rest ? 3600 : 2200);
       },
       nfMute: NF.muteGet(), nfMuteTip: NF.muteGet() ? "التوست الفوري مكتوم لغير العاجل — انقر لإعادته" : "كتم التوست الفوري لغير العاجل (العاجل يظهر دائماً)",
       nfMuteStyle: "display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;cursor:pointer;padding:2px 8px;border-radius:9999px;border:1px solid " + (NF.muteGet() ? "rgba(180,83,9,.4);color:var(--fg-xb45309);background:var(--bg-a1808390p06)" : "#e2e8f0;color:var(--fg-x94a3b8);background:var(--bg-xffffff)"),
@@ -440,8 +442,8 @@ class Component extends DCLogic {
         try {
           const result=await this._nfWork(()=>NF.bcSendDept({title:c.title,body:c.body,lvl:c.lvl,ack:c.ack,pin:c.pin}));
           if (!result) return;
-          this.setState(Object.assign({toast:"حُفظ التعميم وأصبح متاحًا في جرس منسوبي الإدارة"},JSON.stringify(this.state.nfCompose || {})===submitted ? {nfCompose:null} : {}));
-          clearTimeout(this._toastTimer); this._toastTimer=setTimeout(()=>this.setState({toast:""}),3000);
+          if (JSON.stringify(this.state.nfCompose || {})===submitted) this.setState({nfCompose:null});
+          this.bkToast("حُفظ التعميم وأصبح متاحًا في جرس منسوبي الإدارة", 3000);
         } finally { this._nfSending=false; }
       },
       /* التوست الفوري */
@@ -469,13 +471,13 @@ class Component extends DCLogic {
     if (lost) {
       const nm = (this._pageNames && this._pageNames()[a]) || a;
       this._savePage("profile");
-      this.setState({ active: "profile", sidebarOpen: false, toast: "تغيّرت صلاحياتك — أُغلقت صفحة «" + nm + "»" });
-      clearTimeout(this._toastTimer); this._toastTimer = setTimeout(() => this.setState({ toast: "" }), 4000);
+      this.setState({ active: "profile", sidebarOpen: false });
+      this.bkToast("تغيّرت صلاحياتك — أُغلقت صفحة «" + nm + "»", 4000);
       return;
     }
     /* الصفحة ما زالت له: تُعاد قراءتها في مكانها فتظهر الأفعال والتبويبات الجديدة، والقائمة تتحدّث معها */
     this._livePend = true; clearTimeout(this._liveT); this._liveT = setTimeout(() => this._liveTry(0), 300);
-    this.setState({ toast: "تحدّثت صلاحياتك" }); clearTimeout(this._toastTimer); this._toastTimer = setTimeout(() => this.setState({ toast: "" }), 2500);
+    this.bkToast("تحدّثت صلاحياتك", 2500);
   }
   _byeBar(msg, then) {
     try {
@@ -649,7 +651,7 @@ class Component extends DCLogic {
     const D = KIVO.BassamDepts;
     let set = false; try { set = !!(D && D.setActive(id)); } catch (e) { set = false; }
     if (!set) { this.bkToast("تعذّر التبديل إلى «" + name + "»", true); return false; }
-    this.setState({ toast: "جارٍ التبديل إلى «" + name + "»…" });
+    this.bkToast("جارٍ التبديل إلى «" + name + "»…");
     try { location.reload(); } catch (e) {}
     return true;
   }
@@ -686,7 +688,7 @@ class Component extends DCLogic {
     } catch (e) {}
     return out;
   }
-  state = { active: this._loadPage(), sidebarOpen: false, toast: "", theme: this.loadTheme(), bkConf: null, bkStep: "pick", cfm: null };
+  state = { active: this._loadPage(), sidebarOpen: false, theme: this.loadTheme(), bkConf: null, bkStep: "pick", cfm: null };
   /* ═══ السمةُ الحقيقية (فاتح/داكن) — رموزُ CSS تحت html[data-theme]، بلا مرشِّحات ولا طبقات ═══
      التفضيلُ جهازيٌّ في bassam_theme (لا يُزامَن). loadTheme يقرأه؛ applyTheme يضع السمةَ على الجذر ويحفظها ويُعلِم الصفحات. */
   loadTheme() { try { return localStorage.getItem("bassam_theme") === "dark" ? "dark" : "light"; } catch (e) { return "light"; } }
@@ -719,7 +721,7 @@ class Component extends DCLogic {
         const read = async path => {
           if (!same()) throw new Error("تغيّرت البيانات أو الجلسة");
           const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20000);
-          try { const response = await fetch(path, { credentials: "same-origin", cache: "no-store", signal: controller.signal }), body = await response.json(); if (!response.ok || body?.ok !== 1 || !same()) throw new Error("تعذّر تأكيد نسخة الخادم"); return body; }
+          try { const response = await fetch(path, { credentials: "same-origin", cache: "no-store", signal: controller.signal }), body = await response.json(); if (!response.ok || body?.ok !== 1 || !same()) throw new Error("تعذّر تأكيد النسخة المحفوظة"); return body; }
           finally { clearTimeout(timer); }
         };
         const fence = async () => { const result = await read("/api/get?keys=&uid=" + encodeURIComponent(snapshot.uid)); if (result.v !== snapshot.v) throw new Error("حدّث البيانات ثم أعد التصدير"); };
@@ -799,7 +801,7 @@ class Component extends DCLogic {
             fresh: 0,
             src: obj.dept || "الملف",
             dest: name,
-            capNote: "ستُراجع الصلاحيات والنطاق على الخادم قبل الكتابة",
+            capNote: "ستُراجع الصلاحيات والنطاق قبل الكتابة",
           },
         });
       } catch (error) {
@@ -859,10 +861,9 @@ class Component extends DCLogic {
     }
   }
 
+  /* CORE-01: رسالةُ الإطار تمرّ بالتوست الواحد (KIVO.bsToast · 280) — long: true ⇒ 4.2 ث · رقمٌ ⇒ مدّتُه */
   bkToast(msg, long) {
-    clearTimeout(this._toastTimer);
-    this.setState({ toast: msg });
-    this._toastTimer = setTimeout(() => this.setState({ toast: "" }), long ? 4200 : 2600);
+    try { KIVO.bsToast(msg, { ms: typeof long === "number" ? long : long ? 4200 : 2600 }); } catch (e) { /* عرضٌ فقط */ }
   }
   renderVals() {
     if (this._viewLastActive !== this.state.active) { const pg = this.state.active; this._viewLastActive = pg; this._seedUsed = null; try { requestAnimationFrame(() => this._viewRestore(pg, 0)); } catch(e) { /* لا يمنع العرض — يُتجاوز بصمت */ } }
@@ -985,7 +986,7 @@ class Component extends DCLogic {
         const open = !!this.state.deptOpen;
         const act = D.active();
         /* F01: اسمُ الوحدة النشطة أولاً ثم إدارتُها الأم للقسم («قسم س · إدارة ص» — 320 unitLabel) فيُقصّ من آخره على الجوال لا اسمُ الوحدة */
-        const scope = D.context?.(), deptLabel = (D.unitLabel ? D.unitLabel(act) : "") || D.activeName() || (scope?.state === "empty" ? "لا توجد إدارة" : scope?.state === "error" ? "تعذّر قراءة الإدارات" : "اختر إدارة");
+        const scope = D.context?.(), deptLabel = (D.unitLabel ? D.unitLabel(act) : "") || D.activeName() || (scope?.state === "empty" ? "لا توجد إدارة" : scope?.state === "error" ? "تعذّر عرض الإدارات الآن" : "اختر إدارة");
         const isSuper0 = !!(KIVO.BassamAuth && KIVO.BassamAuth.user()) && KIVO.BassamAuth.isSuper();   /* CORE-01: لا جلسةَ = لا مبدّل (كان غيابُ الجلسة يُعامَل مشرفاً) */
         const gmU = (KIVO.BassamAuth && KIVO.BassamAuth.user() && KIVO.BassamAuth.user().role === "gm") ? KIVO.BassamAuth.user() : null;
         /* مدير الإدارة العامة يبدّل بين إدارات مجموعته فقط — كالمشرف داخل نطاقه.
@@ -1005,11 +1006,11 @@ class Component extends DCLogic {
             const nm = await this.cfmAsk({ title: "إضافة قسم", msg: "قسمٌ جديد تحت «" + (D.activeName() || deptLabel) + "». سقفُه يبدأ نسخةً من سقف الإدارة، وتديره من «الصلاحيات».", input: "اسم القسم", ok: "إضافة" });
             if (!nm) return;
             const r = D.sectionAdd({ name: nm, deptId: act });
-            if (!r || !r.ok) { this.setState({ toast: "لم يُضف القسم: " + ((r && r.err) || "تعذّر الإنشاء") }); return; }
-            this.setState({ toast: "جارٍ حفظ القسم «" + nm + "»…" });
+            if (!r || !r.ok) { this.bkToast("لم يُضف القسم: " + ((r && r.err) || "تعذّر الإنشاء")); return; }
+            this.bkToast("جارٍ حفظ القسم «" + nm + "»…");
             const S = KIVO.__BS_SRV, go = () => { try { location.reload(); } catch (e) {} };
             /* المراجعة المستقلة: لا إعادةَ تحميلٍ إن لم يُحفظ — تبقى رسالةُ الرفض أو الانتظار ظاهرة */
-            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => false) : Promise.resolve(true)).then((ok) => { if (ok !== true) this.setState({ toast: "لم يُحفظ القسم «" + nm + "» بعد — راجع رسالة الرفض إن ظهرت، أو تحقّق من الاتصال ثم أعد المحاولة" }); else go(); }, () => this.setState({ toast: "تعذّر حفظ القسم «" + nm + "» — تحقّق من الاتصال ثم أعد المحاولة" }));
+            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => false) : Promise.resolve(true)).then((ok) => { if (ok !== true) this.bkToast("لم يُحفظ القسم «" + nm + "» بعد — نحاول تلقائيًا", true); else go(); }, () => this.bkToast("لم يُحفظ القسم «" + nm + "» بعد — نحاول تلقائيًا", true));
           },
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
           doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) KIVO.BassamAuth.logout(); },
@@ -1087,8 +1088,8 @@ class Component extends DCLogic {
           bkcHead: "إدارة «" + (c.dest || (D ? D.activeName() : "")) + "» تحتوي بيانات",
           bkcSub: "ملف النسخة سيُستورد داخل إدارة «" + (c.dest || (D ? D.activeName() : "")) + "» — اختر طريقة التعامل مع بياناتها الحالية.",
           bkcMergeDesc: "تُضاف مجموعات البيانات المفقودة فقط؛ المجموعات والمجالات الموجودة تبقى كما هي، دون دمج السجلات داخلها.",
-          bkcReplaceDesc: "يعرض الخادم جرد الإدارة الهدف، ثم يستبدل مواردها المعلنة بالنسخة في معاملة واحدة ويحفظ لقطة ما قبلها.",
-          bkcWarn: "الإدارات الأخرى والمجالات العامة لا تتأثر. ستُراجع الصلاحيات والنطاق على الخادم قبل التأكيد النهائي.",
+          bkcReplaceDesc: "تعرض المنصة جرد الإدارة الهدف، ثم يستبدل مواردها المعلنة بالنسخة في معاملة واحدة ويحفظ لقطة ما قبلها.",
+          bkcWarn: "الإدارات الأخرى والمجالات العامة لا تتأثر. ستُراجع الصلاحيات والنطاق قبل التأكيد النهائي.",
           bkcCancel: () => { if(this._bkSaving||this._bkPend&&this._bkPend.uncertain){this.bkToast("تعذّر تأكيد نتيجة الطلب؛ أعد المحاولة نفسها قبل إغلاق الملف",true);return;}this._bkPend = null; this.setState({ bkConf: null, bkStep: "pick" }); this.bkToast("أُلغي الاستيراد — لم يتغيّر شيء"); },
           bkcMerge: () => this.bkCommit("merge"),
           bkcAskReplace: () => this.setState({ bkStep: "confirm" }),
@@ -1096,7 +1097,7 @@ class Component extends DCLogic {
           bkcDoReplace: () => this.bkCommit("replace"),
         };
       })()),
-      toastOn: !!this.state.toast, toastMsg: this.state.toast,
+
       toggleTheme: () => { const t = this.state.theme === "dark" ? "light" : "dark"; this.applyTheme(t); this.setState({ theme: t }); },
       isDarkMode: this.state.theme === "dark", isLightMode: this.state.theme !== "dark",
       themeTitle: this.state.theme === "dark" ? "الوضع النهاري" : "الوضع الليلي",

@@ -12,7 +12,7 @@ import { SRC } from './harness.mjs';
 
 const FILE = process.env.PULL_SRC || path.join(SRC, 'components', '450-pull-refresh.js');
 
-function app() {
+function app(srv) {
   const L = {}, timers = [], log = [];
   class El {
     constructor(tag, parent, attrs = {}) { this.tagName = tag.toUpperCase(); this.nodeType = 1; this.attrs = attrs; this.style = {}; this.parentNode = parent || null; this.parentElement = parent || null; }
@@ -24,7 +24,8 @@ function app() {
   const ids = { bsPtrTxt: { textContent: '' }, bsPtrIco: { style: {} } };
   const doc = { body, documentElement: Object.assign(html, { style: {} }), scrollingElement: { scrollTop: 0 }, activeElement: body,
     querySelector: () => null, createElement: (t) => new El(t), getElementById: (k) => ids[k] || null };
-  const win = { KIVO: {}, document: doc, navigator: { standalone: true }, scrollY: 0, ontouchstart: null,
+  const toasts = [];
+  const win = { KIVO: { __BS_SRV: srv, bsToast: (m, o) => toasts.push({ m, o }) }, document: doc, navigator: { standalone: true }, scrollY: 0, ontouchstart: null,
     matchMedia: () => ({ matches: false }), location: { reload: () => log.push('reload') },
     setTimeout: (f) => { timers.push(f); return timers.length; }, addEventListener: (t, f) => { (L[t] = L[t] || []).push(f); } };
   win.window = win;
@@ -34,7 +35,7 @@ function app() {
   /* سحبٌ بإصبعٍ واحد إلى الأسفل 340px ثمّ رفع (كما في قياس اللوحي: الحبّةُ تبلغ «حرّر للتحديث») */
   const pull = (target) => { fire('touchstart', target, 100); for (let y = 120; y <= 440; y += 20) fire('touchmove', target, y); const txt = ids.bsPtrTxt.textContent; fire('touchend', target); timers.splice(0).forEach((f) => f()); return txt; };
   const main = new El('main', body), card = new El('div', main), header = new El('header', body);
-  return { El, log, pull, main, card, header, ids };
+  return { El, log, pull, main, card, header, ids, toasts };
 }
 
 test('CANVAS-2: سحبُ خريطة الخطة إلى الأسفل (تحريكُ العرض أو سحبُ مصلّى) لا يُظهر «حرّر للتحديث» ولا يُعيد تحميلَ الصفحة', () => {
@@ -53,10 +54,27 @@ test('CANVAS-2: خريطةُ الجولات اليومية وأيُّ سطحٍ �
   assert.deepEqual(A.log, []);
 });
 
-test('CANVAS-2: السحبُ من رأس الصفحة أو من محتواها العادي ما زال يُحدّث الصفحة', () => {
+const tick = () => new Promise((r) => setImmediate(r));
+
+test('CANVAS-2: السحبُ من رأس الصفحة أو من محتواها العادي ما زال يُحدّث الصفحة', async () => {
   const A = app();
-  assert.equal(A.pull(A.header), 'حرّر للتحديث', 'الحبّةُ تبلغ عتبة التحديث');
+  assert.equal(A.pull(A.header), 'حرّر لجلب الأحدث', 'الحبّةُ تبلغ عتبة التحديث');
+  await tick();
   assert.deepEqual(A.log, ['reload'], 'وعند الرفع تُعاد الصفحة');
-  A.pull(A.card);
+  A.pull(A.card); await tick();
   assert.deepEqual(A.log, ['reload', 'reload']);
+});
+
+/* CORE-01: الإعادةُ بعد حفظٍ ناجحٍ وحده — كان go9 يُستدعى نجح الحفظ أم فشل (وبعد 4.2 ث في كل حال) فتضيع التعديلات المعلّقة */
+test('CORE-01: السحبُ يحفظ أولاً — يُعاد التحميل بعد flushAsync صادق وحده، والحفظُ الفاشل يُبقي الصفحة برسالة', async () => {
+  const calls = [];
+  const ok = app({ flushAsync: (ms) => { calls.push(ms); return Promise.resolve(true); } });
+  ok.pull(ok.header); await tick();
+  assert.deepEqual(calls, [4000]); assert.deepEqual(ok.log, ['reload']); assert.equal(ok.toasts.length, 0);
+  for (const result of [() => Promise.resolve(false), () => Promise.reject(new Error('TEST_ONLY')), () => { throw new Error('TEST_ONLY'); }]) {
+    const bad = app({ flushAsync: result });
+    bad.pull(bad.header); await tick(); await tick();
+    assert.deepEqual(bad.log, [], 'لا إعادةَ تحميل والتعديلاتُ لم تُحفظ');
+    assert.equal(bad.toasts.length, 1); assert.match(bad.toasts[0].m, /لم تُحفظ تعديلاتك بعد/); assert.equal(bad.toasts[0].o.tone, 'err');
+  }
 });
