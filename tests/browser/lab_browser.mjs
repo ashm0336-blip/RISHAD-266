@@ -12,9 +12,16 @@ export async function openAs(browser, lab, un, pw, opts = {}) {
   if (typeof opts.onPage === 'function') await opts.onPage(page);   /* lets a test attach its own listeners (or set page.clock) before sign-in */
   await page.goto(lab.base + '/', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('input[type=password]', { timeout: 30000 });
-  await page.fill('input:not([type=password]):not([type=hidden])', un);
-  await page.fill('input[type=password]', pw);
-  await page.keyboard.press('Enter');
+  /* submit, and make sure the sign-in request was really sent: right after load (or a sign-out) the form can still be wiring up,
+     and an Enter pressed then is dropped. If no /api/login goes out within 8 s, fill and submit once more. The server's answer is not
+     retried — a refused sign-in still fails below. */
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.fill('input:not([type=password]):not([type=hidden])', un);
+    await page.fill('input[type=password]', pw);
+    const sent = page.waitForRequest((r) => /\/api\/login\b/.test(r.url()) && r.method() === 'POST', { timeout: 8000 }).then(() => true, () => false);
+    await page.keyboard.press('Enter');
+    if (await sent) break;
+  }
   try { await page.waitForFunction(() => !document.querySelector('input[type=password]'), null, { timeout: 30000 }); }
   catch (e) { let seen = ''; try { seen = (await page.evaluate(() => location.href + ' :: ' + document.body.innerText)).replace(/\s+/g, ' ').slice(0, 400); } catch (x) { seen = String(x && x.message || x).slice(0, 200); } throw new Error('sign-in did not complete in 30 s for ' + un + ' — page shows: ' + seen); }   /* say what the page shows */
   await page.waitForTimeout(2500);
