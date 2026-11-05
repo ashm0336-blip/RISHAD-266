@@ -12,5 +12,5 @@
 aside.bsb.cx .bs-link{margin:10px auto 2px;padding:7px;justify-content:center;width:auto}
 aside.bsb.cx .bs-link .l,aside.bsb.cx .bs-link .x{display:none}
 /* شبكات شاشة مدير النظام تنزل عموداً واحداً على الشاشات الضيقة */
-@media (max-width:1100px){ .bs-ovgrid{grid-template-columns:1fr!important} .bs-secgrid{grid-template-columns:1fr!important} }
+@media (max-width:1100px){ .bs-secgrid{grid-template-columns:1fr!important} }
 @media (max-width:900px){ aside.bsb .bs-link{margin:10px 14px 2px} }

@@ -12,7 +12,9 @@ import { SRC } from './harness.mjs';
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 /* بصمةُ شريط التبويبات: display:flex · align-items:center · justify-content:center · flex-wrap:wrap · gap:8px · padding:4px 0 */
 const SIG = /<div(?: class="([^"]*)")? style="display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;flex-wrap:wrap">/g;
-const EXPECT = { admin: 2, award: 1, daily: 1, dstats: 1, employees: 1, irshad: 1, planning: 1, seized: 1 };
+const EXPECT = { award: 1, daily: 1, dstats: 1, employees: 1, irshad: 1, planning: 1, seized: 1 };
+/* CORE-01: شريطا admin (مدير النظام · إعدادات الإدارة) صارا صنفاً بلا نمطٍ مضمَّن — «bs-hbar bs-tabstrip adm-tabs» مرتين، ولا بصمةَ قديمة فيهما */
+const ADM = /<div class="bs-hbar bs-tabstrip adm-tabs" role="tablist"/g;
 
 test('ES-3 · PLAN-03 · DG-08: كلُّ شريط تبويباتٍ يحمل بصمةَ التوحيد يحمل «bs-hbar bs-tabstrip» في المصدر من أول رسم', () => {
   const mods = JSON.parse(rd('modules/modules.json')).pages.map((p) => p.slug);
@@ -26,11 +28,13 @@ test('ES-3 · PLAN-03 · DG-08: كلُّ شريط تبويباتٍ يحمل بص
       assert.match(x[1] || '', /(^| )bs-tabstrip( |$)/, m + ': الشريطُ بلا bs-tabstrip — يُضاف بعد الرسم فيقفز على الجوال');
     }
   }
-  assert.deepEqual(found, EXPECT, 'الأشرطةُ التسعة (والتعدادُ يكشف شريطاً جديداً بلا صنف)');
+  assert.deepEqual(found, EXPECT, 'الأشرطةُ (والتعدادُ يكشف شريطاً جديداً بلا صنف)');
+  assert.equal([...rd('modules/admin/view.html').matchAll(ADM)].length, 2, 'admin: شريطا التبويبات بالصنفين من أول رسم');
 });
 
 test('ES-3 · PLAN-03 · DG-08: الصفحاتُ المولَّدة تحمل الصنفين (generate.py) · وقواعدُ الجوال للصنف', () => {
-  for (const p of ['Employees', 'Planning', 'Daily Sessions', 'Irshad', 'Seized', 'Admin', 'Award', 'Daily Stats']) {
+  assert.equal([...rd('pages/Admin.dc.html').matchAll(ADM)].length, 2, 'Admin.dc.html');
+  for (const p of ['Employees', 'Planning', 'Daily Sessions', 'Irshad', 'Seized', 'Award', 'Daily Stats']) {
     const h = rd('pages/' + p + '.dc.html');
     assert.ok(h.indexOf('class="bs-hbar bs-tabstrip" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;flex-wrap:wrap"') >= 0, p + '.dc.html');
   }

@@ -9,82 +9,42 @@
 </sc-if>
 
 <sc-if value="{{admModeSite}}" hint-placeholder-val="{{ true }}">
-<!-- شريطُ تبويبٍ واحد لا يعرض خياراً: يختفي الإطار كلّه وتُعرض لوحته مباشرةً -->
+<!-- CORE-01: شريطُ تبويبٍ واحد يمرّ أفقياً؛ تبويبٌ واحد يُخفيه -->
 <sc-if value="{{admTabBarShow}}" hint-placeholder-val="{{ true }}">
-<div style="border-radius:16px;border:2px solid var(--bd-a185151810p1);background:linear-gradient(90deg,var(--bg-a185151810p03),transparent,var(--bg-a185151810p03));padding:12px">
-  <div class="bs-hbar bs-tabstrip" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;flex-wrap:wrap">
-
-    <sc-if value="{{admSrvTabs}}" hint-placeholder-val="{{ false }}">
-    <div onClick="{{admGoOverview}}" style="{{admOvTabStyle}}">
-      <div style="{{admOvTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-6b355220"></svg></div>
-      <span style="{{admOvTabLbl}}">نظرة عامة</span>
-      <sc-if value="{{admOnOverview}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    <div onClick="{{admGoSec}}" style="{{admSecTabStyle}}">
-      <div style="{{admSecTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-217a5f12"></svg></div>
-      <span style="{{admSecTabLbl}}">الأمن</span>
-      <sc-if value="{{secBadgeOn}}" hint-placeholder-val="{{ false }}"><span title="أحداث أمنية اليوم تستحق نظراً" style="position:absolute;top:8px;left:10px;min-width:18px;height:18px;border-radius:9999px;background:var(--bg-xdc2626);color:var(--fg-xffffff);font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px;font-feature-settings:'tnum'">{{secBadge}}</span></sc-if>
-      <sc-if value="{{admOnSec}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    <div onClick="{{admGoUsers}}" style="{{admUsTabStyle}}">
-      <div style="{{admUsTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5411fa4a"></svg></div>
-      <span style="{{admUsTabLbl}}">مراقبة الحسابات</span>
-      <sc-if value="{{admOnUsers}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    <div onClick="{{admGoPerms}}" style="{{admPmTabStyle}}">
-      <div style="{{admPmTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg></div>
-      <span style="{{admPmTabLbl}}">خريطة الصلاحيات</span>
-      <sc-if value="{{admOnPerms}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    </sc-if>
-    <sc-if value="{{authSuper}}" hint-placeholder-val="{{ false }}">
-    <div onClick="{{admGoPlat}}" style="{{admPlTabStyle}}">
-      <div style="{{admPlTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e5471789"></svg></div>
-      <span style="{{admPlTabLbl}}">المنصة</span>
-      <sc-if value="{{plRkAskOn}}" hint-placeholder-val="{{ false }}">
-<div style="position:fixed;inset:0;z-index:2147483000;background:var(--bg-a1523420p45);display:flex;align-items:center;justify-content:center" onClick="{{plRkClose}}">
-  <div dir="rtl" onClick="{{plRkKeep}}" style="background:var(--bg-xffffff);border-radius:16px;padding:20px 22px;width:min(440px,92vw);box-shadow:var(--shadow-elevated);font-family:'Cairo',sans-serif">
+<div class="adm-tabbar"><div class="bs-hbar bs-tabstrip adm-tabs" role="tablist" aria-label="أقسام مدير النظام">
+  <sc-if value="{{admSrvTabs}}" hint-placeholder-val="{{ false }}">
+  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnOverview}}" onClick="{{admGoOverview}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-6b355220"></svg></div><span>نظرة عامة</span></button>
+  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnSec}}" onClick="{{admGoSec}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-217a5f12"></svg></div><span>الأمن</span><sc-if value="{{secBadgeOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" title="أحداث أمنية اليوم تستحق نظراً">{{secBadge}}</span></sc-if></button>
+  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnUsers}}" onClick="{{admGoUsers}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5411fa4a"></svg></div><span>مراقبة الحسابات</span></button>
+  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnPerms}}" onClick="{{admGoPerms}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg></div><span>خريطة الصلاحيات</span></button>
+  </sc-if>
+  <sc-if value="{{authSuper}}" hint-placeholder-val="{{ false }}">
+  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnPlat}}" onClick="{{admGoPlat}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e5471789"></svg></div><span>المنصة</span></button>
+  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnDepts}}" onClick="{{admGoDepts}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-533ecb79"></svg></div><span>الإدارات</span></button>
+  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnAud}}" onClick="{{admGoAud}}" data-adm-tab="aud"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9131ec87"></svg></div><span>سجل الأنشطة والتغييرات</span></button>
+  </sc-if>
+  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnBackup}}" onClick="{{admGoBackup}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg></div><span>النسخة الاحتياطية</span></button>
+  <sc-if value="{{admHistOn}}" hint-placeholder-val="{{ false }}">
+  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnHist}}" onClick="{{admGoHist}}" data-adm-tab="histimp"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-7d59ecc4"></svg></div><span>استيراد البيانات التاريخية</span></button>
+  </sc-if>
+</div></div>
+</sc-if>
+<!-- مفتاحُ الاستعادة: حوارٌ خارج شريط التبويبات -->
+<sc-if value="{{plRkAskOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{plRkClose}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-label="مفتاح الاستعادة" onClick="{{plRkKeep}}" class="bs-dlg-box adm-rk">
     <sc-if value="{{plRkKeyOn}}" hint-placeholder-val="{{ false }}">
-    <div style="font-size:15px;font-weight:800;color:var(--fg-x141414);margin-bottom:6px">مفتاح الاستعادة — يُعرض مرة واحدة</div>
-    <div style="font-size:12px;color:var(--fg-x475569);line-height:1.9;margin-bottom:12px">اطبعه أو انسخه الآن واحفظه في مكان آمن بعيداً عن كلمة المرور. لن يظهر مرة أخرى؛ إن ضاع أنشئ غيره من هنا.</div>
-    <div dir="ltr" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px dashed var(--bd-xb99751);border-radius:10px;padding:12px 14px;background:var(--bg-a185151810p06);font-family:monospace;font-size:18px;font-weight:700;letter-spacing:2px;color:var(--fg-x141414)">{{plRkKey}}</div>
-    <div style="display:flex;gap:8px;margin-top:14px"><button onClick="{{plRkPrint}}" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x3d4148);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">طباعة</button><button onClick="{{plRkCopy}}" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x3d4148);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">نسخ</button><button onClick="{{plRkClose}}" style="height:32px;padding:0 14px;border-radius:9px;border:1px solid var(--bd-xa8853f);background:linear-gradient(180deg,var(--bg-xc5a45c),var(--bg-xb99751));color:var(--text-on-brand);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 14px -8px rgba(138,111,53,.9);margin-right:auto">حفظته في مكان آمن</button></div>
+    <b class="t">مفتاح الاستعادة — يُعرض مرة واحدة</b>
+    <p class="m">اطبعه أو انسخه الآن واحفظه في مكان آمن بعيداً عن كلمة المرور. لن يظهر مرة أخرى؛ إن ضاع أنشئ غيره من هنا.</p>
+    <div dir="ltr" class="key">{{plRkKey}}</div>
+    <div class="ft"><button type="button" class="bs-btn" onClick="{{plRkPrint}}">طباعة</button><button type="button" class="bs-btn" onClick="{{plRkCopy}}">نسخ</button><button type="button" class="bs-btn bs-btn--primary end" onClick="{{plRkClose}}">حفظته في مكان آمن</button></div>
     </sc-if>
-        <sc-if value="{{plRkKeyOff}}" hint-placeholder-val="{{ true }}">
-    <div style="font-size:15px;font-weight:800;color:var(--fg-x141414);margin-bottom:6px">تأكيد كلمة مرورك</div>
-    <div style="font-size:12px;color:var(--fg-x475569);line-height:1.9;margin-bottom:12px">إنشاء مفتاح استعادة جديد يُبطل القديم إن وُجد. المفتاح يفتح حساب مدير النظام الرئيسي.</div>
-    <input type="password" value="{{plRkPw}}" onChange="{{plRkOnPw}}" placeholder="كلمة المرور الحالية" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none">
-    <sc-if value="{{plRkMsgOn}}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;color:var(--fg-x991b1b);margin-top:6px">{{plRkMsg}}</div></sc-if>
-    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-start"><button onClick="{{plRkGo}}" style="height:32px;padding:0 14px;border-radius:9px;border:1px solid var(--bd-xa8853f);background:linear-gradient(180deg,var(--bg-xc5a45c),var(--bg-xb99751));color:var(--text-on-brand);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 14px -8px rgba(138,111,53,.9)">إنشاء المفتاح</button><button onClick="{{plRkClose}}" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x3d4148);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">إلغاء</button></div>
-    </sc-if>
-  </div>
-</div>
-</sc-if>
-<sc-if value="{{admOnPlat}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    <div onClick="{{admGoDepts}}" style="{{admDeptsTabStyle}}">
-      <div style="{{admDeptsTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-533ecb79"></svg></div>
-      <span style="{{admDeptsTabLbl}}">الإدارات</span>
-      <sc-if value="{{admOnDepts}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    <div onClick="{{admGoAud}}" style="{{admAudTabStyle}}" data-adm-tab="aud">
-      <div style="{{admAudTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9131ec87"></svg></div>
-      <span style="{{admAudTabLbl}}">سجل الأنشطة والتغييرات</span>
-      <sc-if value="{{admOnAud}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    
-    </sc-if>
-    <div onClick="{{admGoBackup}}" style="{{admBackupTabStyle}}">
-      <div style="{{admBackupTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg></div>
-      <span style="{{admBackupTabLbl}}">النسخة الاحتياطية</span>
-      <sc-if value="{{admOnBackup}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    <sc-if value="{{admHistOn}}" hint-placeholder-val="{{ false }}">
-    <div onClick="{{admGoHist}}" style="{{admHistTabStyle}}" data-adm-tab="histimp">
-      <div style="{{admHistTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-7d59ecc4"></svg></div>
-      <span style="{{admHistTabLbl}}">استيراد البيانات التاريخية</span>
-      <sc-if value="{{admOnHist}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
+    <sc-if value="{{plRkKeyOff}}" hint-placeholder-val="{{ true }}">
+    <b class="t">تأكيد كلمة مرورك</b>
+    <p class="m">إنشاء مفتاح استعادة جديد يُبطل القديم إن وُجد. المفتاح يفتح حساب مدير النظام الرئيسي.</p>
+    <input type="password" class="in" value="{{plRkPw}}" onChange="{{plRkOnPw}}" placeholder="كلمة المرور الحالية" aria-label="كلمة المرور الحالية">
+    <sc-if value="{{plRkMsgOn}}" hint-placeholder-val="{{ false }}"><div class="err" role="alert">{{plRkMsg}}</div></sc-if>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{plRkGo}}">إنشاء المفتاح</button><button type="button" class="bs-btn" onClick="{{plRkClose}}">إلغاء</button></div>
     </sc-if>
   </div>
 </div>
@@ -93,136 +53,121 @@
 
 
 
-<!-- KIVO_254 · البند ٣ من RM-3: تعذُّرُ جلب بيانات الخادم يُعرض بطاقةً داخل اللوحة مع زرّ إعادة المحاولة — لا شريطَ خطأٍ عاماً -->
-<sc-if value="{{adErrOn}}" hint-placeholder-val="{{ false }}">
-<div class="bs-retry" role="alert" style="margin-top:12px"><span class="m">⚠ تعذّر جلب بيانات الخادم — تحقّق من الاتصال ثم أعد المحاولة</span><button type="button" class="b" onClick="{{adRetry}}">↻ أعد المحاولة</button></div>
-</sc-if>
+<!-- CORE-01 · رئيسيةُ مدير النظام: القراءةُ تُعاد تلقائياً (adLoad) بلا زرّ إعادة -->
 <sc-if value="{{admOnOverview}}" hint-placeholder-val="{{ false }}">
-<div style="height:12px"></div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
-  <sc-for list="{{ovCards}}" as="c" hint-placeholder-count="6">
-  <div title="{{c.tip}}" style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:14px;padding:12px 14px;min-width:0">
-    <div style="{{c.vStyle}}">{{c.v}}</div>
-    <div style="font-size:11px;color:var(--fg-x475569);margin-top:2px">{{c.l}}</div>
-    <div style="font-size:10px;color:var(--fg-x94a3b8);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{c.sub}}</div>
+<div class="adm-ov">
+<section class="bs-card adm-ov-card adm-ov-hero" aria-label="يحتاج قرارك">
+  <div class="adm-ov-hd"><div><b>يحتاج قرارك</b><small>تنبيهات مجمَّعة — تختفي بمعالجتها</small></div>
+    <sc-if value="{{adErrOn}}" hint-placeholder-val="{{ false }}"><span class="adm-stale" title="ستُحدَّث القراءة تلقائياً">{{ovStale}}</span></sc-if>
   </div>
-  </sc-for>
-</div>
-<div style="height:14px"></div>
-<div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden">
-  <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)">
-    <div><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">يحتاج قرارك</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">تنبيهات مجمَّعة — تختفي بمعالجتها</div></div>
-    <span style="margin-right:auto;font-size:10.5px;color:var(--fg-x94a3b8)">{{ovRefreshed}}</span>
-  </div>
-  <sc-if value="{{ovAlertsEmpty}}" hint-placeholder-val="{{ true }}"><div style="padding:14px 16px;font-size:12px;color:var(--fg-x065f46);display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:9999px;background:var(--bg-x059669)"></span>لا شيء يستدعي قرارك الآن</div></sc-if>
+  <sc-if value="{{ovAlertsEmpty}}" hint-placeholder-val="{{ true }}"><div class="adm-ov-ok"><span class="d"></span>لا شيء يستدعي قرارك الآن</div></sc-if>
   <sc-for list="{{ovAlerts}}" as="a" hint-placeholder-count="2">
-  <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-    <span style="{{a.dot}}"></span>
-    <div style="flex:1;color:var(--fg-x141414);min-width:0">{{a.txt}}</div>
-    <span style="font-size:10.5px;color:var(--fg-x94a3b8);white-space:nowrap">{{a.when}}</span>
-    <sc-if value="{{a.hasAct}}" hint-placeholder-val="{{ true }}"><button onClick="{{a.go}}" style="height:26px;padding:0 10px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x8a6f35);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">{{a.act}}</button></sc-if>
+  <div class="adm-ov-al" data-tone="{{a.tone}}">
+    <span class="d"></span>
+    <div class="t">{{a.txt}}</div>
+    <span class="w">{{a.when}}</span>
+    <sc-if value="{{a.hasAct}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-btn" onClick="{{a.go}}">{{a.act}}</button></sc-if>
   </div>
   </sc-for>
+</section>
+<div class="adm-ov-kpis">
+  <sc-for list="{{ovCards}}" as="c" hint-placeholder-count="6">
+  <sc-if value="{{c.act}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-card adm-ov-kpi" title="{{c.tip}}" data-tone="{{c.tone}}" onClick="{{c.go}}"><span class="v">{{c.v}}</span><span class="l">{{c.l}}</span><span class="s">{{c.sub}}</span></button></sc-if>
+  <sc-if value="{{c.still}}" hint-placeholder-val="{{ false }}"><div class="bs-card adm-ov-kpi" title="{{c.tip}}" data-tone="{{c.tone}}"><span class="v">{{c.v}}</span><span class="l">{{c.l}}</span><span class="s">{{c.sub}}</span></div></sc-if>
+  </sc-for>
 </div>
-<div style="height:14px"></div>
-<div class="bs-ovgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-  <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden;min-width:0">
-    <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">المتصلون الآن</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">نشط = تفاعل خلال دقيقتين · يتحدّث كل ٢٥ ثانية</div></div><span style="margin-right:auto;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:9999px;background:var(--bg-a51501050p1);color:var(--fg-x065f46)">{{ovPresN}}</span></div>
-    <div style="display:grid;grid-template-columns:1.5fr 1fr 1.2fr 64px;gap:8px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)"><span>المستخدم</span><span>الحالة</span><span>آخر عملية</span><span></span></div>
-    <sc-if value="{{ovPresEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:12px 16px;font-size:11.5px;color:var(--fg-x94a3b8)">لا جلسات حيّة الآن</div></sc-if>
+<div class="bs-ovgrid adm-ov-cols">
+  <div class="adm-ov-col">
+  <section class="bs-card adm-ov-card" data-ov="pres">
+    <div class="adm-ov-hd"><div><b>المتصلون الآن</b><small>نشط = تفاعل خلال دقيقتين · يتحدّث كل ٢٥ ثانية</small></div><span class="n" data-tone="ok">{{ovPresN}}</span></div>
+    <div class="adm-ov-row adm-ov-th c-pres"><span>المستخدم</span><span>الحالة</span><span>آخر عملية</span><span></span></div>
+    <sc-if value="{{ovPresEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا جلسات حيّة الآن</div></sc-if>
     <sc-for list="{{ovPres}}" as="p" hint-placeholder-count="3">
-    <div style="display:grid;grid-template-columns:1.5fr 1fr 1.2fr 64px;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-      <div style="display:flex;align-items:center;gap:8px;min-width:0" title="{{p.tip}}"><div style="width:28px;height:28px;border-radius:9999px;background:var(--bg-xb99751);color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">{{p.ini}}</div><div style="min-width:0"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg-x141414)">{{p.name}}</div><div style="font-size:10px;color:var(--fg-x94a3b8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.sub}}</div></div></div>
-      <div style="{{p.stStyle}}"><span style="{{p.dot}}"></span>{{p.st}}</div>
-      <div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{p.lastTip}}">{{p.last}}</div>
-      <sc-if value="{{p.canKill}}" hint-placeholder-val="{{ true }}"><button onClick="{{p.kill}}" title="إنهاء كل جلسات هذا المستخدم الآن" style="height:26px;padding:0 9px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x7f1d1d);font-family:'Cairo',sans-serif;font-size:10.5px;cursor:pointer">إنهاء</button></sc-if>
-      <sc-if value="{{p.mine}}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;color:var(--fg-x94a3b8)">أنت</span></sc-if>
+    <div class="adm-ov-row c-pres">
+      <div class="adm-ov-who" title="{{p.tip}}"><span class="av">{{p.ini}}</span><span class="nm"><b>{{p.name}}</b><small>{{p.sub}}</small></span></div>
+      <div class="st" data-tone="{{p.tone}}"><span class="d"></span>{{p.st}}</div>
+      <div class="mt" title="{{p.lastTip}}">{{p.last}}</div>
+      <sc-if value="{{p.canKill}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-btn adm-ov-act" data-tone="bad" onClick="{{p.kill}}" title="إنهاء كل جلسات هذا المستخدم الآن">إنهاء</button></sc-if>
+      <sc-if value="{{p.mine}}" hint-placeholder-val="{{ false }}"><span class="mt">أنت</span></sc-if>
     </div>
     </sc-for>
-  </div>
-  <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden;min-width:0">
-    <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">آخر الحسابات المضافة</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">آخر ٧ أيام · {{ovAddedN}}</div></div></div>
-    <div style="display:grid;grid-template-columns:1.5fr 1.1fr 1fr;gap:8px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)"><span>الحساب</span><span>أضافه</span><span>الحالة</span></div>
-    <sc-if value="{{ovAddedEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:12px 16px;font-size:11.5px;color:var(--fg-x94a3b8)">لم يُضَف حساب خلال ٧ أيام</div></sc-if>
-    <sc-for list="{{ovAdded}}" as="p" hint-placeholder-count="3">
-    <div style="display:grid;grid-template-columns:1.5fr 1.1fr 1fr;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-      <div style="display:flex;align-items:center;gap:8px;min-width:0"><div style="width:28px;height:28px;border-radius:9999px;background:var(--bg-xb99751);color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">{{p.ini}}</div><div style="min-width:0"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg-x141414)">{{p.name}}</div><div style="font-size:10px;color:var(--fg-x94a3b8)">{{p.sub}}</div></div></div>
-      <div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.by}}</div>
-      <div style="{{p.stStyle}}"><span style="{{p.dot}}"></span>{{p.st}}</div>
-    </div>
-    </sc-for>
-  </div>
-  <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden;min-width:0">
-    <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">الحسابات المجمّدة</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">{{ovFrozenN}}</div></div></div>
-    <div style="display:grid;grid-template-columns:1.5fr 1.2fr 96px;gap:8px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)"><span>الحساب</span><span>جمّده</span><span></span></div>
-    <sc-if value="{{ovFrozenEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:12px 16px;font-size:11.5px;color:var(--fg-x94a3b8)">لا حسابات مجمّدة</div></sc-if>
+  </section>
+  <section class="bs-card adm-ov-card">
+    <div class="adm-ov-hd"><div><b>الحسابات المجمّدة</b><small>{{ovFrozenN}}</small></div></div>
+    <div class="adm-ov-row adm-ov-th c-frz"><span>الحساب</span><span>جمّده</span><span></span></div>
+    <sc-if value="{{ovFrozenEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا حسابات مجمّدة</div></sc-if>
     <sc-for list="{{ovFrozen}}" as="p" hint-placeholder-count="2">
-    <div style="display:grid;grid-template-columns:1.5fr 1.2fr 96px;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-      <div style="display:flex;align-items:center;gap:8px;min-width:0"><div style="width:28px;height:28px;border-radius:9999px;background:var(--bg-x94a3b8);color:var(--fg-xffffff);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">{{p.ini}}</div><div style="min-width:0"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg-x141414)">{{p.name}}</div><div style="font-size:10px;color:var(--fg-x94a3b8)">{{p.sub}}</div></div></div>
-      <div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.by}}</div>
-      <button onClick="{{p.unfreeze}}" style="height:26px;padding:0 9px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x065f46);font-family:'Cairo',sans-serif;font-size:10.5px;cursor:pointer;white-space:nowrap">إعادة التفعيل</button>
+    <div class="adm-ov-row c-frz">
+      <div class="adm-ov-who"><span class="av" data-tone="mute">{{p.ini}}</span><span class="nm"><b>{{p.name}}</b><small>{{p.sub}}</small></span></div>
+      <div class="mt">{{p.by}}</div>
+      <button type="button" class="bs-btn adm-ov-act" data-tone="ok" onClick="{{p.unfreeze}}">إعادة التفعيل</button>
     </div>
     </sc-for>
+  </section>
   </div>
-  <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden;min-width:0">
-    <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">محاولات الدخول الفاشلة</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">اليوم · {{ovFailsN}}</div></div></div>
-    <div style="display:grid;grid-template-columns:1.4fr 1fr 44px 1fr 74px;gap:8px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)"><span>الاسم المجرَّب</span><span>المصدر</span><span>العدد</span><span>القفل</span><span></span></div>
-    <sc-if value="{{ovFailsEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:12px 16px;font-size:11.5px;color:var(--fg-x94a3b8)">لا محاولات فاشلة اليوم</div></sc-if>
+  <div class="adm-ov-col">
+  <section class="bs-card adm-ov-card">
+    <div class="adm-ov-hd"><div><b>محاولات الدخول الفاشلة</b><small>اليوم · {{ovFailsN}}</small></div></div>
+    <div class="adm-ov-row adm-ov-th c-fail"><span>الاسم المجرَّب</span><span>المصدر</span><span>العدد</span><span>القفل</span><span></span></div>
+    <sc-if value="{{ovFailsEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا محاولات فاشلة اليوم</div></sc-if>
     <sc-for list="{{ovFails}}" as="p" hint-placeholder-count="2">
-    <div style="display:grid;grid-template-columns:1.4fr 1fr 44px 1fr 74px;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-      <div style="min-width:0"><div dir="ltr" style="font-weight:700;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg-x141414);font-feature-settings:'tnum'">{{p.un}}</div><div style="{{p.knownStyle}}">{{p.known}}</div></div>
-      <div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.src}}</div>
-      <div style="font-weight:700;color:var(--fg-xdc2626);font-feature-settings:'tnum'">{{p.n}}</div>
-      <div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.lock}}</div>
-      <sc-if value="{{p.locked}}" hint-placeholder-val="{{ false }}"><button onClick="{{p.unlock}}" style="height:26px;padding:0 9px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x8a6f35);font-family:'Cairo',sans-serif;font-size:10.5px;cursor:pointer;white-space:nowrap">فكّ القفل</button></sc-if>
+    <div class="adm-ov-row c-fail">
+      <div class="nm"><b dir="ltr">{{p.un}}</b><small data-tone="{{p.knownTone}}">{{p.known}}</small></div>
+      <div class="mt">{{p.src}}</div>
+      <div class="ct">{{p.n}}</div>
+      <div class="mt">{{p.lock}}</div>
+      <sc-if value="{{p.locked}}" hint-placeholder-val="{{ false }}"><button type="button" class="bs-btn adm-ov-act" onClick="{{p.unlock}}">فكّ القفل</button></sc-if>
     </div>
     </sc-for>
+  </section>
+  <section class="bs-card adm-ov-card">
+    <div class="adm-ov-hd"><div><b>آخر الحسابات المضافة</b><small>آخر ٧ أيام · {{ovAddedN}}</small></div></div>
+    <div class="adm-ov-row adm-ov-th c-add"><span>الحساب</span><span>أضافه</span><span>الحالة</span></div>
+    <sc-if value="{{ovAddedEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لم يُضَف حساب خلال ٧ أيام</div></sc-if>
+    <sc-for list="{{ovAdded}}" as="p" hint-placeholder-count="3">
+    <div class="adm-ov-row c-add">
+      <div class="adm-ov-who"><span class="av">{{p.ini}}</span><span class="nm"><b>{{p.name}}</b><small>{{p.sub}}</small></span></div>
+      <div class="mt">{{p.by}}</div>
+      <div class="st" data-tone="{{p.tone}}"><span class="d"></span>{{p.st}}</div>
+    </div>
+    </sc-for>
+  </section>
   </div>
 </div>
-<!-- KIVO_265 · حادثةُ الصور (البند 6): تشخيصُ مخزن الصور لمدير النظام — من /api/overview imgs -->
+<nav class="adm-ov-go" aria-label="اختصارات">
+  <sc-for list="{{ovGo}}" as="g" hint-placeholder-count="6"><button type="button" class="bs-btn" onClick="{{g.go}}">{{g.t}}</button></sc-for>
+</nav>
 <sc-if value="{{ovImgOn}}" hint-placeholder-val="{{ false }}">
-<div style="height:14px"></div>
-<div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:16px;overflow:hidden">
-  <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-surface-2);border-bottom:1px solid var(--border-subtle)">
-    <div><div style="font-size:13.5px;font-weight:800;color:var(--text-primary)">تشخيص صور التوثيق</div><div style="font-size:10.5px;color:var(--text-faint)">مخزن الصور كما يراه الخادم الآن — هل وصلت الصور فعلاً وأين هي</div></div>
-  </div>
-  <sc-if value="{{ovImgErr}}" hint-placeholder-val="{{ false }}"><div style="padding:12px 16px;font-size:12px;color:var(--danger-text)">{{ovImgErr}}</div></sc-if>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:12px 16px">
+<section class="bs-card adm-ov-card">
+  <button type="button" class="adm-ov-hd adm-ov-tg" aria-expanded="{{ovStoreOpen}}" onClick="{{ovStoreTog}}"><div><b>صحة التخزين</b><small>صور التوثيق: هل وصلت وأين هي</small></div><span class="n" data-tone="{{ovImgTone}}">{{ovImgState}}</span><span class="cv"></span></button>
+  <sc-if value="{{ovStoreOpen}}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{ovImgErr}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none" data-tone="bad">{{ovImgErr}}</div></sc-if>
+  <div class="adm-ov-kpis adm-ov-in">
     <sc-for list="{{ovImgCards}}" as="c" hint-placeholder-count="6">
-    <div style="background:var(--bg-surface-2);border:1px solid var(--border-subtle);border-radius:12px;padding:10px 12px;min-width:0">
-      <div style="{{c.vStyle}}">{{c.v}}</div>
-      <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">{{c.l}}</div>
-      <div style="font-size:10px;color:var(--text-faint);margin-top:2px;line-height:1.5">{{c.sub}}</div>
-    </div>
+    <div class="adm-ov-kpi adm-ov-sub" data-tone="{{c.tone}}"><span class="v">{{c.v}}</span><span class="l">{{c.l}}</span><span class="s w">{{c.sub}}</span></div>
     </sc-for>
   </div>
-  <div class="bs-ovgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 16px 14px">
-    <div style="border:1px solid var(--border-subtle);border-radius:12px;overflow:hidden;min-width:0">
-      <div style="padding:8px 12px;font-size:11.5px;font-weight:800;color:var(--text-primary);background:var(--bg-surface-2)">رُفعت ولم تُربط بمهمة</div>
-      <sc-if value="{{ovImgClaimsEmpty}}" hint-placeholder-val="{{ true }}"><div style="padding:10px 12px;font-size:11.5px;color:var(--text-faint)">لا صور معلّقة</div></sc-if>
+  <div class="bs-ovgrid adm-ov-cols adm-ov-in">
+    <div class="adm-ov-sub">
+      <b class="adm-ov-st">رُفعت ولم تُحفظ مع مهمة</b>
+      <sc-if value="{{ovImgClaimsEmpty}}" hint-placeholder-val="{{ true }}"><div class="adm-ov-none">لا صور معلّقة</div></sc-if>
       <sc-for list="{{ovImgClaims}}" as="p" hint-placeholder-count="2">
-      <div style="display:grid;grid-template-columns:1.4fr 1.2fr 1fr;gap:8px;align-items:center;padding:7px 12px;border-top:1px solid var(--border-subtle);font-size:11.5px">
-        <div style="font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{p.img}}">{{p.who}}</div>
-        <div style="color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.dept}}</div>
-        <div style="color:var(--text-faint);font-size:11px;white-space:nowrap">{{p.when}}</div>
-      </div>
+      <div class="adm-ov-row c-img"><b class="nm1">{{p.who}}</b><span class="mt">{{p.dept}}</span><span class="mt">{{p.when}}</span></div>
       </sc-for>
     </div>
-    <div style="border:1px solid var(--border-subtle);border-radius:12px;overflow:hidden;min-width:0">
-      <div style="padding:8px 12px;font-size:11.5px;font-weight:800;color:var(--text-primary);background:var(--bg-surface-2)">يتيمة في مهلة السماح</div>
-      <sc-if value="{{ovImgOrphEmpty}}" hint-placeholder-val="{{ true }}"><div style="padding:10px 12px;font-size:11.5px;color:var(--text-faint)">لا صور يتيمة</div></sc-if>
+    <div class="adm-ov-sub">
+      <b class="adm-ov-st">بانتظار الحذف</b>
+      <sc-if value="{{ovImgOrphEmpty}}" hint-placeholder-val="{{ true }}"><div class="adm-ov-none">لا صور بانتظار الحذف</div></sc-if>
       <sc-for list="{{ovImgOrph}}" as="p" hint-placeholder-count="2">
-      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;align-items:center;padding:7px 12px;border-top:1px solid var(--border-subtle);font-size:11.5px">
-        <div style="color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{p.img}}">{{p.dept}}</div>
-        <div style="color:var(--text-faint);font-size:11px;white-space:nowrap">{{p.when}}</div>
-        <div style="color:var(--warning-text);font-size:11px;white-space:nowrap">تُكنس بعد {{p.left}}</div>
-      </div>
+      <div class="adm-ov-row c-img"><span class="mt">{{p.dept}}</span><span class="mt">{{p.when}}</span><span class="mt" data-tone="warn">تُحذف بعد {{p.left}}</span></div>
       </sc-for>
     </div>
   </div>
-  <div style="padding:0 16px 12px;font-size:10.5px;color:var(--text-faint);line-height:1.7">{{ovImgNote}}</div>
-</div>
+  <p class="adm-ov-note">{{ovImgNote}}</p>
+  </sc-if>
+</section>
 </sc-if>
+</div>
 </sc-if>
 
 <sc-if value="{{admOnSec}}" hint-placeholder-val="{{ false }}">
@@ -400,14 +345,9 @@
 
 <sc-if value="{{admOnPlat}}" hint-placeholder-val="{{ false }}">
 <div style="height:8px"></div>
-<div style="border-radius:14px;border:1px solid var(--bd-xeceef1);background:var(--bg-xffffff);padding:8px;margin-bottom:14px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;box-shadow:var(--shadow-card)">
+<div class="bs-card bs-tabstrip adm-subtabs" role="tablist" aria-label="أقسام المنصة">
   <sc-for list="{{plTabs}}" as="tb" hint-placeholder-count="8">
-  <div onClick="{{tb.go}}" style="{{tb.style}}">
-    <div style="{{tb.icon}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-efabd80c"></svg></div>
-    <span style="{{tb.lbl}}">{{tb.t}}</span>
-    <sc-if value="{{tb.on}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    <sc-if value="{{tb.dirty}}" hint-placeholder-val="{{ false }}"><span title="تغييرات غير محفوظة" style="position:absolute;top:8px;left:10px;width:7px;height:7px;border-radius:9999px;background:var(--bg-xd97706)"></span></sc-if>
-  </div>
+  <button type="button" role="tab" class="adm-tab adm-tab--sm" aria-selected="{{tb.on}}" onClick="{{tb.go}}"><div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-efabd80c"></svg></div><span>{{tb.t}}</span><sc-if value="{{tb.dirty}}" hint-placeholder-val="{{ false }}"><span class="dty" title="تغييرات غير محفوظة"></span></sc-if></button>
   </sc-for>
 </div>
 <div class="bs-secgrid" style="{{plGrid}}">
@@ -1470,46 +1410,13 @@
 
 
 <sc-if value="{{dTabBarShow}}" hint-placeholder-val="{{ false }}">
-<div style="border-radius:16px;border:2px solid var(--bd-a185151810p1);background:linear-gradient(90deg,var(--bg-a185151810p03),transparent,var(--bg-a185151810p03));padding:12px;margin-bottom:14px">
-  <div class="bs-hbar bs-tabstrip" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;flex-wrap:wrap">
-    <sc-if value="{{dTabBkOn}}" hint-placeholder-val="{{ true }}">
-    <div onClick="{{dTabGoBackup}}" style="{{dBkTabStyle}}">
-      <div style="{{dBkTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg></div>
-      <span style="{{dBkTabLbl}}">النسخة الاحتياطية</span>
-      <sc-if value="{{showDeptBk}}" hint-placeholder-val="{{ true }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    </sc-if>
-    <sc-if value="{{dTabLgOn}}" hint-placeholder-val="{{ false }}">
-    <div onClick="{{dTabGoLog}}" style="{{dLgTabStyle}}">
-      <div style="{{dLgTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9131ec87"></svg></div>
-      <span style="{{dLgTabLbl}}">سجل الحركة</span>
-      <sc-if value="{{showDeptLog}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    </sc-if>
-    
-    <sc-if value="{{dTabSfOn}}" hint-placeholder-val="{{ true }}">
-    <div onClick="{{dTabGoSf}}" style="{{dSfTabStyle}}" data-d-tab="shifts">
-      <div style="{{dSfTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-62e7f9cd"></svg></div>
-      <span style="{{dSfTabLbl}}">الورديات</span>
-      <sc-if value="{{showDeptSf}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    </sc-if>
-    <sc-if value="{{dTabTpOn}}" hint-placeholder-val="{{ true }}">
-    <div onClick="{{dTabGoTp}}" style="{{dTpTabStyle}}" data-d-tab="ptpls">
-      <div style="{{dTpTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e448ef4a"></svg></div>
-      <span style="{{dTpTabLbl}}">قوالب الصلاحيات</span>
-      <sc-if value="{{showDeptTp}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    </sc-if>
-    <sc-if value="{{dTabImOn}}" hint-placeholder-val="{{ true }}">
-    <div onClick="{{dTabGoIm}}" style="{{dImTabStyle}}" data-d-tab="import">
-      <div style="{{dImTabIcon}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg></div>
-      <span style="{{dImTabLbl}}">استيراد بيانات</span>
-      <sc-if value="{{showDeptIm}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-    </div>
-    </sc-if>
-  </div>
-</div>
+<div class="adm-tabbar adm-tabbar--d"><div class="bs-hbar bs-tabstrip adm-tabs" role="tablist" aria-label="إعدادات الإدارة">
+  <sc-if value="{{dTabBkOn}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{showDeptBk}}" onClick="{{dTabGoBackup}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg></div><span>النسخة الاحتياطية</span></button></sc-if>
+  <sc-if value="{{dTabLgOn}}" hint-placeholder-val="{{ false }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{showDeptAud}}" onClick="{{dTabGoLog}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9131ec87"></svg></div><span>سجل الحركة</span></button></sc-if>
+  <sc-if value="{{dTabSfOn}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{showDeptSf}}" onClick="{{dTabGoSf}}" data-d-tab="shifts"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-62e7f9cd"></svg></div><span>الورديات</span></button></sc-if>
+  <sc-if value="{{dTabTpOn}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{showDeptTp}}" onClick="{{dTabGoTp}}" data-d-tab="ptpls"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e448ef4a"></svg></div><span>قوالب الصلاحيات</span></button></sc-if>
+  <sc-if value="{{dTabImOn}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{showDeptIm}}" onClick="{{dTabGoIm}}" data-d-tab="import"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg></div><span>استيراد بيانات</span></button></sc-if>
+</div></div>
 </sc-if>
 <!-- ═══ ورقة الإدارة: استيراد بيانات ═══ -->
 <sc-if value="{{showDeptIm}}" hint-placeholder-val="{{ false }}">

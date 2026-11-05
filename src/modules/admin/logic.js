@@ -1162,11 +1162,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         i = r ? t[3] : t[2],
         n = { adTick: (this.state.adTick || 0) + 1, adErr: !(e && e.ok && s && s.ok) };
       (e && e.ok && (n.adPres = e),
-        s && s.ok && ((n.adOv = s), this.state.adPol || (n.adPol = Object.assign({}, s.policy || {}))),
+        s && s.ok && ((n.adOv = s), (this._adOk = Date.now()), this.state.adPol || (n.adPol = Object.assign({}, s.policy || {}))),
         a && a.ok && (n.adPmLog = a.rows || []),
         i && i.ok && (n.adSec = i.rows || []),
-        this.setState(n));
+        this.setState(n),
+        this._adRetry(n.adErr));
     });
+  }
+  /* CORE-01: إعادةٌ هادئة بعد ٢·٤·٨·١٦ ث ثم التحديثُ الدوري */
+  _adRetry(bad) {
+    clearTimeout(this._adRt);
+    this._adRt = null;
+    if (!bad) return void (this._adRn = 0);
+    const k = (this._adRn = (this._adRn || 0) + 1);
+    k <= 4 &&
+      (this._adRt = setTimeout(() => {
+        ((this._adRt = null), (this._adLast = 0), document.hidden || this.adLoad());
+      }, 1e3 * 2 ** k));
   }
   adTimerOn() {
     this._adT ||
@@ -1175,7 +1187,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }, 25e3));
   }
   adTimerOff() {
-    this._adT && (clearInterval(this._adT), (this._adT = null));
+    (this._adT && (clearInterval(this._adT), (this._adT = null)), clearTimeout(this._adRt), (this._adRt = null));
   }
   adGo(t) {
     this.setState({ admTab: t }, () => {
@@ -1721,7 +1733,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         : s("أكمل الحقول الثلاثة — وكلمة التأكيد هي «تهيئة»");
     this.setState({ plRs: t, plRsMsg: "" });
   }
-  plVals(t, e, s) {
+  /* CORE-01: قسمٌ من «المنصة» — لشريطها ولاختصارات نظرة عامة */
+  _plGo(k) {
+    this.setState({ admTab: "plat", plTab: k, plPv: "" }, () => {
+      ("setup" === k && this.plRkLoad(), "notif" === k && this.nfLoadManagement(), this.plPvPost());
+    });
+  }
+  plVals() {
     const a = this.plP();
     if (!a) return { admOnPlat: !1 };
     const r = this.state,
@@ -1786,25 +1804,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         (i.logo && i.logo,
         i.logo ? i.logo : (i.name || "م").charAt(0),
         {
-          plTabs: p.map((t) => {
-            return {
-              t: t[1],
-              p: t[3],
-              on: t[0] === l,
-              dirty: this.plDirtyTab(t[0]),
-              style:
-                ((a = t[0] === l),
-                "position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 12px;border-radius:12px;min-width:96px;cursor:pointer;font-family:'Cairo',sans-serif;border:2px solid " +
-                  (a ? "rgba(185,151,81,.4);background:var(--bg-a185151810p06)" : "transparent;background:transparent")),
-              icon: e(t[0] === l),
-              lbl: s(t[0] === l),
-              go: () =>
-                this.setState({ plTab: t[0], plPv: "" }, () => {
-                  ("setup" === t[0] && this.plRkLoad(), "notif" === t[0] && this.nfLoadManagement(), this.plPvPost());
-                }),
-            };
-            var a;
-          }),
+          plTabs: p.map((t) => ({ t: t[1], on: t[0] === l, dirty: this.plDirtyTab(t[0]), go: () => this._plGo(t[0]) })),
           plTitle: d[1],
           plSub: d[2] + " — تُطبَّق على كل المستخدمين فور الحفظ",
           plClean: 0 === o,
@@ -2724,26 +2724,26 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       pmLogEmpty: !R.length,
     };
   }
-  /* KIVO_265 · حادثةُ الصور (البند 6): بطاقةُ «تشخيص الصور» في نظرة عامة — من /api/overview imgs (الخادم) · أسماءُ الإدارات من السجل المحلي */
+  /* KIVO_265 · حادثةُ الصور (البند 6) · CORE-01: «صحة التخزين» في نظرة عامة — من /api/overview imgs · أسماءُ الإدارات من السجل المحلي */
   _adImgVals(I, now) {
     if (!I) return { ovImgOn: !1 };
-    if (I.err) return { ovImgOn: !0, ovImgErr: "تعذّر قراءة مخزن الصور: " + I.err, ovImgCards: [], ovImgClaims: [], ovImgClaimsEmpty: !0, ovImgOrph: [], ovImgOrphEmpty: !0, ovImgNote: "" };
+    if (I.err) return { ovImgOn: !0, ovImgErr: "تعذّرت قراءة حالة الصور الآن", ovImgState: "غير معروف", ovImgTone: "warn", ovImgCards: [], ovImgClaims: [], ovImgClaimsEmpty: !0, ovImgOrph: [], ovImgOrphEmpty: !0, ovImgNote: "" };
     const dn = (() => { const m = {}; try { (KIVO.BassamDepts.list() || []).forEach((d) => { m[d.id] = d.name; }); } catch (t) {} return (id) => (id && m[id]) || id || "—"; })(),
       c = I.counts || {},
-      vs = (col) => "font-size:22px;font-weight:800;font-feature-settings:'tnum';color:" + col,
       cards = [
-        { l: "مخزن الأصول", v: I.r2 ? "R2 مربوط" : "D1 فقط", sub: I.r2 ? "الصور الكبيرة في المستودع الكائني" : "لا ربط IMG_R2 — الصور داخل القاعدة", vStyle: vs(I.r2 ? "var(--success-text)" : "var(--warning-text)"), tip: "" },
-        { l: "صور مخزّنة", v: String(I.stored || 0), sub: KIVO.BassamCount(c.bound || 0, "صورة") + " مربوطة بسجلّها", vStyle: vs("var(--text-primary)"), tip: "" },
-        { l: "رُفعت ولم تُربط", v: String(c.claim || 0), sub: c.claim ? "رفعٌ لم يتبعه حفظٌ أو تسليم" : "لا شيء معلّق", vStyle: vs(c.claim ? "var(--warning-text)" : "var(--success-text)"), tip: "" },
-        { l: "يتيمة (مهلة السماح)", v: String(c.orphan || 0), sub: "تُكنس بعد " + Math.round((I.grace || 0) / 864e5) + " يوماً من إزالة مرجعها", vStyle: vs(c.orphan ? "var(--warning-text)" : "var(--text-primary)"), tip: "" },
-        { l: "رفوع لم تكتمل", v: String(I.staged || 0), sub: I.staged ? "أجزاءٌ مرحَّلة لصورٍ انقطع رفعُها" : "لا أجزاء معلّقة", vStyle: vs(I.staged ? "var(--warning-text)" : "var(--text-primary)"), tip: "" },
-        { l: "غير محسومة", v: String(c.amb || 0), sub: "قديمةٌ بلا مالك واضح — لمدير النظام", vStyle: vs("var(--text-secondary)"), tip: "" },
+        { l: "مخزن الصور", v: I.r2 ? "مرتبط" : "داخلي", sub: I.r2 ? "الصور الكبيرة في مخزن الصور المخصّص" : "الصور محفوظة مع البيانات", tone: I.r2 ? "ok" : "warn" },
+        { l: "صور محفوظة", v: String(I.stored || 0), sub: KIVO.BassamCount(c.bound || 0, "صورة") + " مرتبطة بسجلّها", tone: "" },
+        { l: "رُفعت ولم تُحفظ", v: String(c.claim || 0), sub: c.claim ? "رفعٌ لم يتبعه حفظٌ أو تسليم" : "لا شيء معلّق", tone: c.claim ? "warn" : "ok" },
+        { l: "بانتظار الحذف", v: String(c.orphan || 0), sub: "تُحذف بعد " + Math.round((I.grace || 0) / 864e5) + " يوماً من إزالتها من سجلّها", tone: c.orphan ? "warn" : "" },
+        { l: "رفوع لم تكتمل", v: String(I.staged || 0), sub: I.staged ? "صورٌ انقطع رفعُها قبل اكتماله" : "لا رفوع معلّقة", tone: I.staged ? "warn" : "" },
+        { l: "غير محسومة", v: String(c.amb || 0), sub: "قديمةٌ بلا صاحب واضح", tone: "mute" },
       ],
       age = (ts) => (ts ? this.adRel(ts, now) : "—"),
       cl = (I.claims || []).map((q) => ({ img: q.img, who: q.name || q.uid || "—", dept: dn(q.dept), when: age(q.ts) })),
       or = (I.orphans || []).map((q) => ({ img: q.img, dept: dn(q.dept), when: age(q.ts), left: Math.max(0, Math.ceil(((q.ts || 0) + (I.grace || 0) - now) / 864e5)) + " يوماً" }));
-    return { ovImgOn: !0, ovImgErr: "", ovImgCards: cards, ovImgClaims: cl, ovImgClaimsEmpty: !cl.length, ovImgOrph: or, ovImgOrphEmpty: !or.length,
-      ovImgNote: "صورة التوثيق تمرّ بثلاث حالات: رفع (claim) ⇐ ربط بالمهمة عند الحفظ أو التسليم (bound) ⇐ يتيمة إن أُزيل مرجعها (orphan) ثم تُكنس بعد مهلة السماح. رفعٌ بقي غير مربوط طويلاً يعني أن الموظف لم يحفظ ولم يسلّم بعده." };
+    const warn = !!(c.claim || I.staged);
+    return { ovImgOn: !0, ovImgErr: "", ovImgState: warn ? "يحتاج نظراً" : "سليم", ovImgTone: warn ? "warn" : "ok", ovImgCards: cards, ovImgClaims: cl, ovImgClaimsEmpty: !cl.length, ovImgOrph: or, ovImgOrphEmpty: !or.length,
+      ovImgNote: "الصورة تُرفع أولاً، ثم تُحفظ مع المهمة عند الحفظ أو التسليم. إن أُزيلت من سجلّها تبقى مدةً قصيرة ثم تُحذف. صورةٌ بقيت مرفوعة دون حفظ طويلاً تعني أن الموظف لم يحفظ ولم يسلّم بعد." };
   }
   _adVals0() {
     const t = this.state,
@@ -2759,8 +2759,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         String(t || "")
           .trim()
           .charAt(0) || "؟",
-      d = (t) => "display:inline-block;width:8px;height:8px;border-radius:9999px;margin-left:6px;vertical-align:middle;background:" + t,
-      c = (t) => "font-size:11.5px;white-space:nowrap;color:" + t,
       g = KIVO.BassamLink ? KIVO.BassamLink.get() : "local",
       h = n.filter((t) => !t.dis).length,
       m = n.filter((t) => t.dis).length;
@@ -2771,20 +2769,22 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     let u = this._fullStamp();
     const b = this._expInfo(u, "full"),
       w = u ? Math.floor((e - new Date(u).getTime()) / 864e5) : 999,
+      go = (k, x) => () => (x ? this.setState(x, () => this.adGo(k)) : this.adGo(k)),
       y = [
         {
           v: "on" === g ? "● متصل" : "off" === g ? "● منقطع" : "● محلي",
-          l: "الخادم والقاعدة",
+          l: "الاتصال والبيانات",
           sub: "on" === g ? "الإصدار " + (KIVO.__BS_VER || "") : "off" === g ? "التعديلات تُحفظ مؤقتاً" : "نسخة الجهاز",
-          vStyle: "font-size:20px;font-weight:800;line-height:1.3;color:" + ("on" === g ? "#059669" : "off" === g ? "#dc2626" : "#64748b"),
-          tip: "حالة الاتصال بالخادم كما في مؤشر القائمة الجانبية",
+          tone: "on" === g ? "ok" : "off" === g ? "bad" : "mute",
+          tip: "حالة الاتصال كما في مؤشر القائمة الجانبية",
         },
         {
           v: h + " / " + m + " / " + (missingAccounts === null ? "—" : missingAccounts),
           l: "الحسابات: نشط / مجمّد / بلا حساب",
-          sub: f === null ? (t.adErr || o.ok === 1 ? "تعذّر تأكيد عدد الموظفين — أعد المحاولة" : "جارٍ تأكيد عدد الموظفين…") : KIVO.BassamCount(f, "موظف") + " في كل الإدارات",
-          vStyle: "font-size:20px;font-weight:800;line-height:1.3;color:var(--fg-x141414);font-feature-settings:'tnum'",
-          tip: "حسابات الدخول عبر كل الإدارات",
+          sub: f === null ? (t.adErr || o.ok === 1 ? "تعذّر تأكيد عدد الموظفين — سنحاول مجدداً تلقائياً" : "جارٍ تأكيد عدد الموظفين…") : KIVO.BassamCount(f, "موظف") + " في كل الإدارات",
+          tone: "",
+          tip: "حسابات الدخول عبر كل الإدارات — افتح مراقبة الحسابات",
+          go: go("users"),
         },
         {
           v: String(p.active || 0),
@@ -2792,43 +2792,46 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           sub: (p.list || []).length
             ? KIVO.BassamCount((p.list || []).length - (p.active || 0), ["خامل واحد", "خاملان", "خاملَين", "خاملين", "خاملاً", "خامل"])
             : "—",
-          vStyle: "font-size:20px;font-weight:800;line-height:1.3;color:var(--fg-x059669);font-feature-settings:'tnum'",
+          tone: "ok",
           tip: "جلسات تفاعلت خلال آخر دقيقتين",
+          go: () => {
+            try {
+              const el = document.querySelector('[data-ov="pres"]');
+              el && el.scrollIntoView({ behavior: "smooth", block: "start" });
+            } catch (x) { /* تجميلٌ فقط */ }
+          },
         },
         {
           v: String(o.failsToday || 0),
           l: "محاولات دخول فاشلة اليوم",
           sub: o.lockedNow ? o.lockedNow + " قفل نشط الآن" : "لا أقفال نشطة",
-          vStyle:
-            "font-size:20px;font-weight:800;line-height:1.3;color:" +
-            (o.failsToday ? "var(--fg-xdc2626)" : "var(--fg-x141414)") +
-            ";font-feature-settings:'tnum'",
+          tone: o.failsToday ? "bad" : "",
           tip: "من سجل أحداث الأمن",
+          go: go("sec", { adSecKind: "login" }),
         },
         {
           v: String(o.deniedToday || 0),
           l: "كتابات مرفوضة اليوم",
           sub: "محاولات تعديل خارج الصلاحية",
-          vStyle:
-            "font-size:20px;font-weight:800;line-height:1.3;color:" +
-            (o.deniedToday ? "var(--fg-x7c3aed)" : "var(--fg-x141414)") +
-            ";font-feature-settings:'tnum'",
-          tip: "رفضها الخادم وأُعيدت القيم كما هي",
+          tone: o.deniedToday ? "plum" : "",
+          tip: "رُفضت وأُعيدت القيم كما هي",
+          go: go("sec", { adSecKind: "denied" }),
         },
         {
           v: u ? this.adRel(new Date(u).getTime(), e) : "—",
           l: "آخر نسخة احتياطية شاملة",
           sub: u ? (w >= 2 ? "تجاوزت المدة المقبولة (يومان)" : "ضمن المدة") : "لم تُؤخذ نسخة بعد",
-          vStyle: "font-size:20px;font-weight:800;line-height:1.3;color:" + (w >= 2 ? "var(--fg-xd97706)" : "var(--fg-x141414)"),
+          tone: w >= 2 ? "warn" : "",
           tip: b.txt,
+          go: go("backup"),
         },
-      ],
+      ].map((c) => Object.assign(c, { act: !!c.go, still: !c.go })),
       S = [];
     ((o.fails || [])
       .filter((t) => t.n >= 3)
       .forEach((t) =>
         S.push({
-          c: "#dc2626",
+          tone: "bad",
           txt:
             KIVO.BassamCount(t.n, "محاولة دخول فاشلة") +
             " باسم " +
@@ -2843,7 +2846,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ),
       (!u || w >= 2) &&
         S.push({
-          c: "#d97706",
+          tone: "warn",
           txt: u ? "النسخة الاحتياطية الشاملة متأخرة " + KIVO.BassamCount(w, "يوم", "g") + "" : "لم تُؤخذ نسخة احتياطية شاملة بعد",
           when: "الآن",
           act: "أخذ نسخة الآن",
@@ -2853,7 +2856,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         .filter((t) => t.n >= 2)
         .forEach((t) =>
           S.push({
-            c: "#9c3d6b",
+            tone: "plum",
             txt: (t.name || "مستخدم") + " حاول التعديل خارج صلاحيته " + KIVO.BassamCount(t.n, "مرة", "g") + " اليوم",
             when: this.adRel(t.t, e),
             act: "عرض السجل",
@@ -2861,7 +2864,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           }),
         ));
     const x = S.map((t) => ({
-        dot: "width:8px;height:8px;border-radius:9999px;flex-shrink:0;background:" + t.c,
+        tone: t.tone,
         txt: t.txt,
         when: t.when,
         act: t.act,
@@ -2888,8 +2891,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           (t.devs.indexOf("m") >= 0 ? "جوال" : "حاسوب") +
           (t.n > 1 ? " ×" + t.n : ""),
         st: t.active ? "نشط الآن" : this.adRel(t.la, e),
-        stStyle: c(t.active ? "#065f46" : "#64748b") + (t.active ? ";font-weight:700" : ""),
-        dot: d(t.active ? "#059669" : "#d97706"),
+        tone: t.active ? "ok" : "idle",
         last: k(t.last),
         lastTip: t.last ? this.adFull(t.last.t) : "",
         mine: !!t.mine,
@@ -2913,8 +2915,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         sub: this.adSub(t.tg),
         by: (t.by || "") + " · " + this.adRel(t.ts, e),
         st: t.lastLogin ? "دخل · " + this.adRel(t.lastLogin, e) : "لم يدخل بعد",
-        stStyle: c(t.lastLogin ? "#065f46" : "#64748b"),
-        dot: d(t.lastLogin ? "#059669" : "#94a3b8"),
+        tone: t.lastLogin ? "ok" : "mute",
       })),
       O = {};
     (o.frozen || []).forEach((t) => {
@@ -2940,7 +2941,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       T = (o.fails || []).map((t) => ({
         un: t.un,
         known: t.known ? "حساب حقيقي" : "لا يطابق حساباً",
-        knownStyle: "font-size:10px;color:" + (t.known ? "var(--fg-x94a3b8)" : "var(--fg-xb91c1c)"),
+        knownTone: t.known ? "" : "bad",
         src: [t.city, "m" === t.dev ? "جوال" : "حاسوب"].filter(Boolean).join(" · ") || "—",
         n: String(t.n),
         lock: t.until > e ? "مقفل حتى " + this.adClock(t.until) : "—",
@@ -3048,7 +3049,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ...this._adImgVals(o.imgs, e),
       ovAlerts: x,
       ovAlertsEmpty: !x.length,
-      ovRefreshed: t.adOv ? "حُدّث " + this.adRel(this._adLast || e, e) : s ? "جارٍ التحميل…" : "متاح على وضع الخادم فقط",
+      ovStale: t.adOv ? "آخر تحديث " + this.adRel(this._adOk || e, e) : "لم تكتمل القراءة بعد",
+      ovGo: [
+        ["هوية المنصة", () => (this._plGo("id"), this.plRkLoad())],
+        ["الوحدات", () => (this._plGo("mods"), this.plRkLoad())],
+        ["التنبيهات والتعاميم", () => (this._plGo("notif"), this.plRkLoad())],
+        ["الإدارات", () => this.setState({ admTab: "depts" })],
+        ["سجل الأنشطة والتغييرات", () => this.setState({ admTab: "oplog" }, () => this.audLoad(!0))],
+        ["النسخة الاحتياطية", () => this.setState({ admTab: "backup" })],
+      ].map((q) => ({ t: q[0], go: q[1] })),
       ovPresN: KIVO.BassamCount(p.active || 0, ["نشط واحد", "نشطان", "نشطَين", "نشطين", "نشطاً", "نشط"]),
       ovPres: v,
       ovPresEmpty: !v.length,
@@ -7283,20 +7292,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       s = !(!KIVO.BassamAuth || !KIVO.BassamAuth.isSuper());
     return {
       ...(() => {
-        const t = (t) =>
-            "position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;border-radius:12px;transition:all .3s;flex-shrink:0;min-width:110px;cursor:pointer;font-family:'Cairo',sans-serif;" +
-            (t
-              ? "background:var(--bg-xffffff);box-shadow:0 3px 10px -4px rgba(138,111,53,0.45);border:2px solid var(--bd-a185151810p45)"
-              : "background:transparent;border:2px solid transparent"),
-          a = (t) =>
-            "width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .3s;" +
-            (t
-              ? "background:var(--bg-a185151810p1);color:var(--fg-xb99751)"
-              : "background:var(--bg-a2452452450p9);color:var(--fg-x94a3b8)"),
-          r = (t) =>
-            "font-size:12px;transition:color .3s;" +
-            (t ? "font-weight:600;color:var(--fg-xb99751)" : "font-weight:400;color:var(--fg-x53565a)"),
-          i = "undefined" != typeof window && "site" === KIVO.__ADMIN_MODE ? "site" : "dept",
+        const i = "undefined" != typeof window && "site" === KIVO.__ADMIN_MODE ? "site" : "dept",
           n = "site" === i && s,
           o = n && !(!window.__BS_BOOT || !window.__BS_BOOT.cf),
           p = n
@@ -7325,60 +7321,29 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           admOnDepts: n && "depts" === d,
           admOnPlat: n && "plat" === d,
           admGoPlat: () => this.setState({ admTab: "plat" }, () => this.plRkLoad()),
-          admPlTabStyle: t("plat" === d),
-          admPlTabIcon: a("plat" === d),
-          admPlTabLbl: r("plat" === d),
-          ...(n && "plat" === d ? this.plVals(t, a, r) : {}),
+          ...(n && "plat" === d ? this.plVals() : {}),
           admSrvTabs: o,
           admOnOverview: o && "overview" === d,
           admOnSec: o && "sec" === d,
           admOnUsers: o && "users" === d,
           admOnPerms: o && "perms" === d,
-          admUsTabStyle: t("users" === d),
-          admUsTabIcon: a("users" === d),
-          admUsTabLbl: r("users" === d),
-          admPmTabStyle: t("perms" === d),
-          admPmTabIcon: a("perms" === d),
-          admPmTabLbl: r("perms" === d),
-          admOvTabStyle: t("overview" === d),
-          admOvTabIcon: a("overview" === d),
-          admOvTabLbl: r("overview" === d),
-          admSecTabStyle: t("sec" === d),
-          admSecTabIcon: a("sec" === d),
-          admSecTabLbl: r("sec" === d),
           ...this.adVals(),
           admOnBackup: "backup" === d,
           admOnAud: o && "oplog" === d,
           admGoAud: () => this.setState({ admTab: "oplog" }, () => this.audLoad(!0)),
-          admAudTabStyle: t("oplog" === d),
-          admAudTabIcon: a("oplog" === d),
-          admAudTabLbl: r("oplog" === d),
           showDeptAud: "dept" === i && "oplog" === h,
-          dTabAudOn: !1,
-          dTabGoAud: () => {},
-          dAudTabStyle: "",
-          dAudTabIcon: "",
-          dAudTabLbl: "",
           audNode: (o && "oplog" === d) || ("dept" === i && "oplog" === h) ? this.audNode() : null,
           adErrOn: !!this.state.adErr,
-          adRetry: () => {
-            ((this._adLast = 0), this.setState({ adErr: !1 }), this.adLoad(!0));
-          },
+          ovStoreOpen: !!this.state.adStoreOpen,
+          ovStoreTog: () => this.setState({ adStoreOpen: !this.state.adStoreOpen }),
           admSiteBackup: n && "backup" === d,
           showDeptBk: "dept" === i && "backup" === h,
-          showDeptLog: !1,
           dTabBarShow: "dept" === i && g.length > 1,
           dTabGoBackup: () => this.setState({ deptTab: "backup" }),
           dTabGoLog: () =>
             this.setState({ deptTab: "oplog" }, () => {
               this.audLoad(!0);
             }),
-          dBkTabStyle: t("backup" === h),
-          dBkTabIcon: a("backup" === h),
-          dBkTabLbl: r("backup" === h),
-          dLgTabStyle: t("oplog" === h),
-          dLgTabIcon: a("oplog" === h),
-          dLgTabLbl: r("oplog" === h),
           dTabBkOn: -1 !== g.indexOf("backup"),
           dTabLgOn: -1 !== g.indexOf("oplog"),
           dTabSfOn: -1 !== g.indexOf("shifts"),
@@ -7386,20 +7351,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           dTabImOn: -1 !== g.indexOf("import"),
           showDeptIm: "dept" === i && "import" === h,
           dTabGoIm: () => this.setState({ deptTab: "import" }),
-          dImTabStyle: t("import" === h),
-          dImTabIcon: a("import" === h),
-          dImTabLbl: r("import" === h),
           ...("dept" === i && "import" === h ? this.impVals() : {}),
           showDeptSf: "dept" === i && "shifts" === h,
           showDeptTp: "dept" === i && "ptpls" === h,
           dTabGoSf: () => this.setState({ deptTab: "shifts" }),
           dTabGoTp: () => this.setState({ deptTab: "ptpls" }),
-          dSfTabStyle: t("shifts" === h),
-          dSfTabIcon: a("shifts" === h),
-          dSfTabLbl: r("shifts" === h),
-          dTpTabStyle: t("ptpls" === h),
-          dTpTabIcon: a("ptpls" === h),
-          dTpTabLbl: r("ptpls" === h),
           ...("dept" === i && "shifts" === h ? this.sfVals() : {}),
           ...("dept" === i && "ptpls" === h ? this.tpVals() : {}),
           deptIntro:
@@ -7426,18 +7382,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           },
           admGoDepts: () => this.setState({ admTab: "depts" }),
           admGoBackup: () => this.setState({ admTab: "backup" }),
-          admDeptsTabStyle: t("depts" === d),
-          admDeptsTabIcon: a("depts" === d),
-          admDeptsTabLbl: r("depts" === d),
-          admBackupTabStyle: t("backup" === d),
-          admBackupTabIcon: a("backup" === d),
-          admBackupTabLbl: r("backup" === d),
           admHistOn: n,
           admOnHist: n && "histimp" === d,
           admGoHist: () => this.setState({ admTab: "histimp" }),
-          admHistTabStyle: t("histimp" === d),
-          admHistTabIcon: a("histimp" === d),
-          admHistTabLbl: r("histimp" === d),
           hiNode: n && "histimp" === d ? this.hiNode() : ((this._hiTabOn = 0), null),
         };
       })(),
