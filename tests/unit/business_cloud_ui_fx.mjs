@@ -29,6 +29,8 @@ const waitFor = async predicate => {
 
 function browser(module, handler, currentClock = clock) {
   let dept = 'TEST_ONLY_department', uid = 'TEST_ONLY_owner';
+  /* The active unit's page ceiling, read through deptCap() exactly as the real 331 model exposes it (award writes need 'award' in it). */
+  let cap = ['seized', 'award'];
   const calls = [], storage = [], notices = [], timers = new Set(), events = new Map();
   const Count = (n, label) => String(n) + ' ' + label;
   Count.pair = (key, value) => ({ [key]: value }); Count.agr = () => '';
@@ -50,7 +52,7 @@ function browser(module, handler, currentClock = clock) {
   const KIVO = { BassamPageKit: { base: () => Base }, BassamCount: Count,
     BassamAuth: { user: () => ({ id: uid, role: 'super' }), display: () => ({ name: 'TEST_ONLY_actor' }), isSuper: () => true },
     BassamDepts: { active: () => dept, has: value => value === dept && !!dept, activeName: () => 'TEST_ONLY_department' },
-    BassamPerm: { can: () => true, subOn: () => true, key: () => true },
+    BassamPerm: { can: () => true, subOn: () => true, key: () => true, deptCap: () => cap.slice() },
     __BS_SRV: { sesChanged: () => false }, BassamFind: { filter: (_, rows) => rows, match: () => true } };
   const W = { KIVO, DCLogic: Base, URLSearchParams, AbortController, Uint8Array, crypto: webcrypto, Intl, Date, console,
     __BS_BOOT: { srv: 1, cf: 1, uid },
@@ -74,7 +76,7 @@ function browser(module, handler, currentClock = clock) {
   return { page, W, KIVO, calls, storage, notices, events, base: { ...bases[module] },
     seed(view, extra = {}) { const data = { ok: 1, dept, view, base: { ...bases[module] }, clock, _contextKey: uid + '\0' + dept, ...extra }; page.state[module === 'seized' ? 'sz' + view[0].toUpperCase() + view.slice(1) : 'aw' + view[0].toUpperCase() + view.slice(1)] = data; return data; },
     context() { return { uid, dept, key: uid + '\0' + dept }; },
-    dept(value) { dept = value; }, user(value) { uid = value; }, cleanup() { for (const timer of timers) clearTimeout(timer); } };
+    dept(value) { dept = value; }, user(value) { uid = value; }, ceiling(value) { cap = value.slice(); }, cleanup() { for (const timer of timers) clearTimeout(timer); } };
 }
 
 function seedForm(B, module) {

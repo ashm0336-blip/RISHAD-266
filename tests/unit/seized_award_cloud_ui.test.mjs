@@ -273,6 +273,9 @@ test('award references use the confirmed department document, preserve HTML byte
   assert.equal(await B.page.awDocsPut(document), true);
   const body = JSON.parse(B.calls[0].options.body); assert.equal(body.op, 'reference-replace'); assert.equal(body.version, 2); assert.equal(body.dept, 'TEST_ONLY_department'); assert.equal(body.document.A.secs[0].body, document.A.secs[0].body);
   B.seed('references', { scope: 'global', references }); assert.equal(await B.page.awDocsPut(document), false); assert.equal(B.calls.length, 1); assert.deepEqual(B.storage, []);
+  /* outside the unit's ceiling (no 'award'): the reference editor is not offered and nothing is sent (decision هـ) */
+  B.seed('references', { scope: 'dept', references }); B.ceiling(['seized']);
+  assert.equal(B.page.awCanSetRef(), false); assert.equal(await B.page.awDocsPut(document), false); assert.equal(B.calls.length, 1); assert.deepEqual(B.storage, []);
 });
 
 test('award defaults appear only after a complete confirmed references response and no read triggers migration writes', async t => {

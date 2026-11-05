@@ -122,6 +122,24 @@ test('canonical Award HTTP opens a missing-id legacy detail, preserves existing 
   const global = await B.api('super', '/api/award?' + new URLSearchParams({ uid: IDS.super, dept: D1, scope: 'global', view: 'references' })); assert.equal(global.status, 200); assert.equal(global.json.references.document.A.title, 'AGLOBAL');
   assert.equal((await B.api('noView', '/api/award?' + new URLSearchParams({ uid: IDS.noView, dept: D1, view: 'records' }))).status, 403);
   assert.deepEqual(identitySnapshot(B.DB), protectedBefore); assert.deepEqual(C.storage, []); assert.deepEqual(owner.storage, []); assert.deepEqual(B.DB.q('PRAGMA foreign_key_check'), []);
+  /* the server still refuses the same write once 'award' leaves the unit's ceiling — 403, document unchanged (019m resOnCeiling · decision هـ) */
+  const sent = owner.calls.filter((call) => call.options.method === 'POST').at(-1), noAward = clone(B.keys.bassam_perms_v1);
+  Object.entries(noAward.caps).forEach(([unit, caps]) => { caps.push('seized'); if (unit !== D1) caps.push('award'); });
+  await B.put('bassam_perms_v1', noAward, true);
+  const current = await B.api('super', '/api/award?' + new URLSearchParams({ uid: IDS.super, dept: D1, view: 'references' }));
+  assert.ok(current.json.base, 'the current revision base is readable: ' + JSON.stringify(Object.keys(current.json)));
+  const outside = JSON.parse(sent.options.body); outside.base = current.json.base; outside.requestId = 'TEST_ONLY_outside_ceiling'; outside.document = clone(next); outside.document.A.secs[0].body = '<p>TEST_ONLY outside the ceiling</p>';
+  const denied = await B.W.default.fetch(new Request('http://x' + sent.url, { method: 'POST', body: JSON.stringify(outside), headers: { 'Content-Type': 'application/json', Cookie: 'bs_tok=TEST_ONLY_session_super', Origin: 'http://x' } }), B.env);
+  assert.equal(denied.status, 403, 'reference write outside the ceiling: ' + denied.status + ' ' + await denied.clone().text());
+  const refsAfter = await B.api('super', '/api/award?' + new URLSearchParams({ uid: IDS.super, dept: D1, view: 'references' }));
+  assert.equal(refsAfter.json.references.document.A.secs[0].body, next.A.secs[0].body, 'the refused write changed nothing');
+  assert.equal((await denied.json()).err, 'award-denied');
+  /* control: the same request with 'award' back on the ceiling is accepted — so the 403 above is the ceiling, not the request */
+  const withAward = clone(noAward); withAward.caps[D1].push('award'); await B.put('bassam_perms_v1', withAward, true);
+  const fresh = await B.api('super', '/api/award?' + new URLSearchParams({ uid: IDS.super, dept: D1, view: 'references' }));
+  const inside = { ...outside, base: fresh.json.base, requestId: 'TEST_ONLY_inside_ceiling' };
+  const accepted = await B.W.default.fetch(new Request('http://x' + sent.url, { method: 'POST', body: JSON.stringify(inside), headers: { 'Content-Type': 'application/json', Cookie: 'bs_tok=TEST_ONLY_session_super', Origin: 'http://x' } }), B.env);
+  assert.equal(accepted.status, 200, 'inside the ceiling: ' + accepted.status + ' ' + await accepted.clone().text());
 });
 
 test('canonical Award HTTP create retains an unacknowledged wizard and retries its committed request without a duplicate nomination', async t => {
