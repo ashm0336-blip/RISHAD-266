@@ -25,7 +25,7 @@
     el.addEventListener("click", function () {
       if (el.getAttribute("data-go") !== "1") return;
       /* مدير النظام: إلى صفحة مدير النظام ← نظرة عامة */
-      try { KIVO.__ADMIN_OPEN_TAB = "overview"; var n = [].slice.call(document.querySelectorAll(".nlbl")).filter(function (x) { return x.textContent.trim() === "مدير النظام"; })[0]; if (n) (n.closest("a") || n).click(); } catch (e) {}
+      try { KIVO.__ADMIN_OPEN_TAB = "overview"; if (KIVO.BassamNav && KIVO.BassamNav.go) KIVO.BassamNav.go("sysadmin"); } catch (e) {}   /* CORE-01: بمساعد التنقّل لا بمطابقة نصّ التسمية */
     });
     bar.parentElement.insertBefore(el, bar);
     paint();

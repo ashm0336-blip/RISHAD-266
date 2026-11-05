@@ -388,7 +388,7 @@ class Component extends DCLogic {
       nfOn: true, nfCount: un ? String(un) : "", nfHas: un > 0, nfUrg: urg > 0, nfOpen: !!s.nfOpen, nfEmpty: status.ready && !status.loading && rows.length === 0,
       nfHasMore:!!status.next,nfMore:()=>this._nfWork(()=>NF.loadMore()),nfMoreLabel:status.loading ? "جارٍ التحميل…" : "عرض تنبيهات أقدم",
       nfNoticeOn:!!(status.hasUpdates || status.loading || status.error),nfNotice:status.hasUpdates ? "وصلت تحديثات جديدة — حدّث القائمة لعرضها" : status.loading ? "جارٍ تحميل التنبيهات…" : status.error,nfRefreshList:()=>this._nfReload(),
-      nfBellStyle: "position:relative;width:38px;height:38px;border-radius:10px;background:var(--bg-xffffff);border:1px solid " + (urg ? "rgba(220,38,38,.45);box-shadow:0 0 0 3px rgba(220,38,38,.12)" : (un ? "rgba(185,151,81,.5);box-shadow:0 0 0 3px rgba(185,151,81,.16)" : "rgba(37,52,63,.12)")) + ";display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg-x4a5c68);transition:all .15s;padding:0;flex-shrink:0",
+      nfBellSt: urg ? "urg" : (un ? "un" : ""),
       nfToggle: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); const opening=!this.state.nfOpen;this.setState({nfOpen:opening,nfToast:null},()=>{if(opening)this._nfReload();}); },
       nfClose: () => this.setState({ nfOpen: false }),
       nfStop: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); },
@@ -627,6 +627,32 @@ class Component extends DCLogic {
     };
     requestAnimationFrame(() => requestAnimationFrame(go)); setTimeout(go, 450); setTimeout(go, 1300); setTimeout(stop, 1400);
   }
+  /* ═══ CORE-01 · تبديلُ الوحدة وإضافةُ القسم بأمان ═══
+     إعادةُ التحميل كانت تُنفَّذ نجح الحفظ أم فشل (نجاحاً أو رفضاً) وبعد setActive — فتضيع التعديلاتُ المعلّقة وتتبدّل الوحدة.
+     الآن: إن كان في الطابور ما لم يُحفظ يُسأل المستخدم (KIVO.bsConfirm)، ثم flushAsync — ولا يُبدَّل ولا يُعاد التحميل إلا إن صدق الحفظ. */
+  async _unsavedGuard() {
+    const S = KIVO.__BS_SRV;
+    let pending = false;
+    try { pending = !!(S && ((S.dirty && S.dirty()) || (S.inflight && S.inflight()))); } catch (e) { pending = true; }
+    if (pending) {
+      let goOn = false;
+      try { goOn = !!(await KIVO.bsConfirm({ title: "تعديلات لم تُحفظ بعد", msg: "لديك تعديلات لم يكتمل حفظها. نحفظها أولاً ثم نتابع.", ok: "احفظ وتابع", cancel: "ابقَ هنا" })); } catch (e) { goOn = false; }
+      if (!goOn) return false;
+    }
+    let ok = true;
+    if (S && S.flushAsync) { try { ok = (await S.flushAsync(4000)) === true; } catch (e) { ok = false; } }
+    if (!ok) { this.bkToast("لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ", true); return false; }
+    return true;
+  }
+  async _switchUnit(id, name) {
+    if (!(await this._unsavedGuard())) return false;
+    const D = KIVO.BassamDepts;
+    let set = false; try { set = !!(D && D.setActive(id)); } catch (e) { set = false; }
+    if (!set) { this.bkToast("تعذّر التبديل إلى «" + name + "»", true); return false; }
+    this.setState({ toast: "جارٍ التبديل إلى «" + name + "»…" });
+    try { location.reload(); } catch (e) {}
+    return true;
+  }
   /* ═══ حوارُ تأكيدٍ موحَّد — بدل confirm() الأصليّ للعمليات الروتينية ═══
      Promise<boolean>. التركيزُ على الإلغاء للفعل التدميريّ (الخيارُ الآمن)، Escape يُلغي، والتركيزُ يعود لمن فتحه. */
   cfmAsk(o) {
@@ -855,17 +881,18 @@ class Component extends DCLogic {
     const a = this.state.active, open = this.state.sidebarOpen;
     /* أثناء المرحلة الأولى من التنقّل لا تُركَّب أيُّ صفحة — يُرسَم الإطارُ أولاً */
     const ap = this.state.navPending ? "__pending__" : a;
+    /* CORE-01: صفحاتُ المنصة (لا وحدةَ لها) — عنوانُها «المنصة / ‹الصفحة›» لا اسمُ الوحدة النشطة */
+    const platPage = a === "sysadmin";
     /* حركةُ المحتوى عند فتح الشريط/إغلاقه: انزلاقٌ على المُركِّب لا تخطيطٌ في كلِّ إطار.
        لا حركةَ عند أول رسم، ولا على الجوال (الشريطُ هناك درجٌ فوق المحتوى). */
     const wide = (typeof window !== "undefined" && window.innerWidth > 1024);
     const slide = (this.__sbToggled && wide) ? (open ? "animation:bsSlideOpen .3s ease-in-out;" : "animation:bsSlideClose .3s ease-in-out;") : "";
-    /* كانت 272 بينما عرض الشريط الفعلي 260 (قاعدة .bsb) — 12px شبحية تُزاح
-       بلا مقابل فتُرى فراغاً زائداً بجانب القائمة. الآن الإزاحة = عرض الشريط. */
-    const W = open ? 260 : 66;   /* منطقة الذهب للوحات التحكم: 256–280 — توازن بين التنفس والرشاقة */
     /* مفتاح الصفحة في منظومة الصلاحيات مقابل مفتاح التنقل */
     const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps", staffing: "staff", plan: "plan", daily: "daily", tasks: "tasks", irshad: "irshad", admin: "admin" };
     const _pOK = (pk) => { try { if (pk === "admin" && KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) return true; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
     const _pAny = (ks) => ks.some(_pOK);
+    /* «مدير النظام»: لمدير النظام وحده (كان: الشرط يتطلّب user() صادقة، فغياب الجلسة يتخطّى الخروج المبكر ويفتح الشاشة) */
+    const goSys = () => { if (!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper())) return; KIVO.__ADMIN_MODE = "site"; this._savePage("sysadmin"); this.setState({ active: "sysadmin" }); };
     const go = (key) => () => {
       if (key === "help") return this._openHelpRoute();
       const pk = NAVP[key];
@@ -889,7 +916,7 @@ class Component extends DCLogic {
       sidebarOpen: open,
       lKpis: labels.kpis, lEmployees: labels.employees, deptDdHead: _ua === "القسم" ? "الوحدة النشطة" : "الإدارة النشطة",
       sbClass: "bsb" + (open ? "" : " cx"),
-      headerStyle: "position:fixed;top:0;left:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:81px;background:var(--bg-header);color:var(--text-primary);border-bottom:1px solid var(--border-subtle);font-family:'Cairo',sans-serif;transition:right .25s ease;right:" + (this.state.sidebarOpen ? 260 : 66) + "px",
+      headerStyle: "right:var(" + (open ? "--bs-side" : "--bs-side-cx") + ")",   /* CORE-01: الهندسةُ في .bs-topbar (--bs-topbar-h · --bs-side) — هنا الإزاحةُ وحدها */
       // كان: غياب المستخدم يجعلها true فيظهر عنصر «مدير النظام» بعد انقضاء الجلسة
       authSuperSb: !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper()),
       // حساب الموظف للاطّلاع والعمل الميداني — لا لضبط النظام ولا لفتح الحسابات
@@ -943,8 +970,7 @@ class Component extends DCLogic {
          العام فيراها دائماً (لا يُحبس أحد خارج النسخ الاحتياطي). */
       nAdmin: "n" + (a === "admin" ? " on" : "") + (((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) || _pOK("admin")) ? "" : " gone") + ((() => { try { const P = KIVO.BassamPerm, A = KIVO.BassamAuth; return (A && A.isSuper && A.isSuper() && P && P.deptCap().indexOf("admin") === -1) ? " out" : ""; } catch (e) { return ""; } })()),
       nSysAdmin: "n" + (a === "sysadmin" ? " on" : ""),
-      goSysAdmin: () => { /* كان: الشرط يتطلّب user() صادقة، فغياب الجلسة يتخطّى الخروج المبكر ويفتح الشاشة */
-        if (!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper())) return; KIVO.__ADMIN_MODE = "site"; this._savePage("sysadmin"); this.setState({ active: "sysadmin" }); },
+      goSysAdmin: goSys,
       /* الطبقة المعتمة تظهر مع الشريط المفتوح — والـCSS يقصرها على الشاشات الصغيرة */
       scrimOn: !!this.state.sidebarOpen,
       toggleSidebar: () => this.setState({ sidebarOpen: !this.state.sidebarOpen }),
@@ -955,12 +981,12 @@ class Component extends DCLogic {
       sbToggleChevron: "transition:transform .3s;" + (open ? "" : "transform:rotate(180deg)"),
       ...((() => {
         const D = KIVO.BassamDepts;
-        if (!D) return { deptName: "إدارة", deptOpen: false, deptTree: [], deptChev: "" };
+        if (!D) return { deptName: "إدارة", crumbUnit: platPage ? "المنصة" : "إدارة", deptOpen: false, deptOpenAria: "false", deptTree: [], deptChev: "" };
         const open = !!this.state.deptOpen;
         const act = D.active();
         /* F01: اسمُ الوحدة النشطة أولاً ثم إدارتُها الأم للقسم («قسم س · إدارة ص» — 320 unitLabel) فيُقصّ من آخره على الجوال لا اسمُ الوحدة */
         const scope = D.context?.(), deptLabel = (D.unitLabel ? D.unitLabel(act) : "") || D.activeName() || (scope?.state === "empty" ? "لا توجد إدارة" : scope?.state === "error" ? "تعذّر قراءة الإدارات" : "اختر إدارة");
-        const isSuper0 = !(KIVO.BassamAuth && KIVO.BassamAuth.user()) || KIVO.BassamAuth.isSuper();
+        const isSuper0 = !!(KIVO.BassamAuth && KIVO.BassamAuth.user()) && KIVO.BassamAuth.isSuper();   /* CORE-01: لا جلسةَ = لا مبدّل (كان غيابُ الجلسة يُعامَل مشرفاً) */
         const gmU = (KIVO.BassamAuth && KIVO.BassamAuth.user() && KIVO.BassamAuth.user().role === "gm") ? KIVO.BassamAuth.user() : null;
         /* مدير الإدارة العامة يبدّل بين إدارات مجموعته فقط — كالمشرف داخل نطاقه.
            F01: ومديرُ الإدارة (حسابُها أو حاملُ الشارة) بين إدارته وأقسامها (320 switchUnits — والخادمُ يحكم 018 secMgrOf) */
@@ -975,6 +1001,7 @@ class Component extends DCLogic {
           secAddOn,
           secAdd: async (ev) => {
             try { ev && ev.stopPropagation && ev.stopPropagation(); } catch (e) {}
+            if (!(await this._unsavedGuard())) return;   /* CORE-01: التعديلاتُ المعلّقة تُحفظ أولاً — لا تضيع مع إعادة التحميل */
             const nm = await this.cfmAsk({ title: "إضافة قسم", msg: "قسمٌ جديد تحت «" + (D.activeName() || deptLabel) + "». سقفُه يبدأ نسخةً من سقف الإدارة، وتديره من «الصلاحيات».", input: "اسم القسم", ok: "إضافة" });
             if (!nm) return;
             const r = D.sectionAdd({ name: nm, deptId: act });
@@ -982,18 +1009,17 @@ class Component extends DCLogic {
             this.setState({ toast: "جارٍ حفظ القسم «" + nm + "»…" });
             const S = KIVO.__BS_SRV, go = () => { try { location.reload(); } catch (e) {} };
             /* المراجعة المستقلة: لا إعادةَ تحميلٍ إن لم يُحفظ — تبقى رسالةُ الرفض أو الانتظار ظاهرة */
-            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => false) : Promise.resolve(true)).then((ok) => { if (ok === false) this.setState({ toast: "لم يُحفظ القسم «" + nm + "» بعد — راجع رسالة الرفض إن ظهرت، أو تحقّق من الاتصال ثم أعد المحاولة" }); else go(); }, () => this.setState({ toast: "تعذّر حفظ القسم «" + nm + "» — تحقّق من الاتصال ثم أعد المحاولة" }));
+            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => false) : Promise.resolve(true)).then((ok) => { if (ok !== true) this.setState({ toast: "لم يُحفظ القسم «" + nm + "» بعد — راجع رسالة الرفض إن ظهرت، أو تحقّق من الاتصال ثم أعد المحاولة" }); else go(); }, () => this.setState({ toast: "تعذّر حفظ القسم «" + nm + "» — تحقّق من الاتصال ثم أعد المحاولة" }));
           },
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
           doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) KIVO.BassamAuth.logout(); },
           deptName: deptLabel,
-          deptOpen: open,
-          /* مبدّل القائمة الجانبية: المطويّة تنفتح أولاً ثم تنفتح اللوحة —
-             وإلا فتبديل عادي. لغير المشرف زرٌّ ساكن (اسم إدارته فقط) */
+          crumbUnit: platPage ? "المنصة" : deptLabel,
+          deptOpen: open, deptOpenAria: open ? "true" : "false",
+          /* مبدّل القائمة الجانبية: يفتح لوحةَ الوحدات ويطويها. لغير المشرف زرٌّ ساكن (اسم إدارته فقط) */
           sbDeptClick: () => {
             if (!isSuper) return;
-            if (!this.state.sidebarOpen) this.setState({ sidebarOpen: true, deptOpen: true });
-            else this.setState(st => ({ deptOpen: !st.deptOpen }));
+            this.setState(st => ({ deptOpen: !st.deptOpen }));   /* CORE-01: في الشريط المطويّ تنبثق اللوحةُ بجواره (.bsb.cx .s-deptdd) ولا يتّسع الشريط */
           },
           /* R191 (أخٌ): تلميحُ زرّ الإدارة بمسارها في الشجرة كلِّه (الإدارة العليا ← القطاع ← الإدارة العامة ← الإدارة) — كان المجموعةَ المباشرة وحدها */
           sbDeptTitle: (() => { let pa = []; try { pa = (D.ancestorsOf(act) || []).slice().reverse().map(x => { const n = D.nodeOf(x); return n && n.name; }).filter(Boolean); } catch (e) { pa = []; }
@@ -1032,7 +1058,7 @@ class Component extends DCLogic {
                   + (r.t === "none" ? "opacity:.72" : ""),
                 chev: "flex-shrink:0;opacity:.7;transition:transform .2s;" + (gOpen ? "" : "transform:rotate(90deg)"),
                 items: direct[q].map(d => ({ name: d.sec ? "↳ " + d.name + " · قسم" : d.name, on: d.id === act,
-                pick: () => { if (d.id !== act) { D.setActive(d.id); this.setState({ deptOpen: false, toast: "جارٍ التبديل إلى «" + d.name + "»…" }); const S = KIVO.__BS_SRV, go = () => { try { location.reload(); } catch (e) {} }; (S && S.flushAsync ? Promise.resolve(S.flushAsync(4000)).catch(() => {}) : Promise.resolve()).then(go, go); } else this.setState({ deptOpen: false }); },
+                pick: () => { this.setState({ deptOpen: false }); if (d.id !== act) this._switchUnit(d.id, d.name); },
                 style: "display:flex;align-items:center;gap:8px;padding:8px 10px 8px 10px;margin-right:" + (10 + 12 * r.depth + (d.sec && r.id !== "_sec" ? 12 : 0)) + "px;border-radius:8px;font-size:12px;cursor:pointer;transition:background .15s;font-family:'Cairo',sans-serif;border-right:1px solid var(--bd-a185151810p2);" + (d.id === act ? "background:var(--bg-a185151810p08);color:var(--fg-x9a7e40);font-weight:600" : "color:var(--fg-x141414);font-weight:400") }))
               });
               if (!gOpen) hide = r.depth;
@@ -1041,7 +1067,7 @@ class Component extends DCLogic {
           })()
         };
       })()),
-      mainStyle: "flex:1;min-width:0;margin-right:" + W + "px;padding-top:82px;" + slide,
+      mainStyle: "flex:1;min-width:0;margin-right:var(" + (open ? "--bs-side" : "--bs-side-cx") + ");padding-top:calc(var(--bs-topbar-h) + 1px);" + slide,   /* الإزاحةُ = عرضُ الشريط (.bsb) وارتفاعُ الشريط العلوي بحدّه */
       goKpis: go("kpis"),
       goDstats: go("dstats"),
       goEmployees: go("employees"),
@@ -1070,29 +1096,27 @@ class Component extends DCLogic {
           bkcDoReplace: () => this.bkCommit("replace"),
         };
       })()),
-      /* وضع التطبيق المثبّت: لا شريط متصفح — فيُعرض زر التحديث */
-      notAppMode: !((() => { try { return (window.matchMedia && (window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches || window.matchMedia("(display-mode: minimal-ui)").matches)) || window.navigator.standalone === true; } catch (e) { return false; } })()),
       toastOn: !!this.state.toast, toastMsg: this.state.toast,
       toggleTheme: () => { const t = this.state.theme === "dark" ? "light" : "dark"; this.applyTheme(t); this.setState({ theme: t }); },
       isDarkMode: this.state.theme === "dark", isLightMode: this.state.theme !== "dark",
       themeTitle: this.state.theme === "dark" ? "الوضع النهاري" : "الوضع الليلي",
-      ...(() => { const c = this.state.cfm; if (!c) return { cfmOn: false, cfmNoOn: true, cfmTitle: "", cfmMsg: "", cfmOk: "", cfmCancel: "", cfmOkStyle: "", cfmIconStyle: "", cfmTypedOn: false, cfmTypedLabel: "", cfmTypedVal: "", cfmTypedInput: () => {}, cfmYes: () => {}, cfmNo: () => {} };
-        const base = "height:38px;padding:0 18px;border-radius:10px;font-size:13px;font-weight:600;border:0;cursor:pointer;font-family:'Cairo',sans-serif;color:var(--fg-xffffff);background:";
+      ...(() => { const c = this.state.cfm; if (!c) return { cfmOn: false, cfmNoOn: true, cfmTitle: "", cfmMsg: "", cfmOk: "", cfmCancel: "", cfmOkCls: "", cfmIcCls: "", cfmTypedOn: false, cfmTypedLabel: "", cfmTypedVal: "", cfmTypedInput: () => {}, cfmYes: () => {}, cfmNo: () => {} };
         const match = !c.typed || String(c.val || "").trim() === c.typed;   /* KIVO_265: التأكيدُ المكتوب (والإدخالُ الفارغ يُحلّ "" فيُعامَل إلغاءً) */
-        return { cfmOn: true, cfmNoOn: !c.info, cfmTitle: c.title, cfmMsg: c.msg, cfmOk: c.ok, cfmCancel: c.cancel, cfmOkStyle: base + (c.danger ? "#dc2626" : "#b99751") + (match ? "" : ";opacity:.45;cursor:not-allowed"),
+        return { cfmOn: true, cfmNoOn: !c.info, cfmTitle: c.title, cfmMsg: c.msg, cfmOk: c.ok, cfmCancel: c.cancel, cfmOkCls: (c.danger ? "bs-btn--danger" : "bs-btn--primary") + (match ? "" : " is-off"),   /* لا disabled: النقرةُ تصل ولا تؤكّد (cfmYes) */
           cfmTypedOn: !!(c.typed || c.input), cfmTypedLabel: c.input || ("للتأكيد اكتب اسم «" + c.typed + "» كما هو"), cfmTypedVal: c.val || "",
           cfmTypedInput: (ev) => this.setState({ cfm: { ...this.state.cfm, val: ev.target.value } }),
-          cfmIconStyle: "width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" + (c.danger ? "background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);color:var(--fg-xb91c1c)" : "background:var(--bg-xfffbeb);border:1px solid var(--bd-xfde68a);color:var(--fg-xb45309)"),
+          cfmIcCls: c.danger ? "is-danger" : "",
           cfmYes: () => { match && this.cfmClose(true); }, cfmNo: () => this.cfmClose(false) }; })(),
       ...this._nfVals(),
       goPlan: go("plan"), goDaily: go("daily"), goDreport: go("dreport"), goPlanning: go("planning"), goIrshad: go("irshad"), goSeized: go("seized"), goAward: go("award"), goLinks: go("links"),
       ...((() => {
         let pr = null;
         try { if (KIVO.BassamAuth && KIVO.BassamAuth.display) pr = KIVO.BassamAuth.display(); } catch (e) {}
-        if (!pr) pr = { name: "مدير النظام", role: "مدير النظام" };
-        return { profName: pr.name, profRole: pr.role, profInitial: (pr.name || "؟").trim().charAt(0) };
+        if (!pr) pr = { name: "", role: "" };   /* CORE-01: بلا طبقة الحسابات تسميةٌ محايدة — لا افتراضَ «مدير النظام» */
+        /* شارةُ «المنصة» الثابتة بجوار الدور: من display() نفسها (نطاقُ مدير النظام المنصةُ لا الوحدةُ النشطة) — لا تتغيّر بالتبديل */
+        return { profName: pr.name || "", profRole: pr.role || "", profInitial: (pr.name || "؟").trim().charAt(0) || "؟", profBadgeOn: pr.scope === "platform", profBadge: "المنصة" };
       })()),
-      __nav: (KIVO.BassamNav = { go: (k) => { try { go(k)(); } catch (e) {} } }),
+      __nav: (KIVO.BassamNav = { go: (k) => { try { (k === "sysadmin" ? goSys : go(k))(); } catch (e) {} } }),
       goAdmin: () => { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); }, goProfile: (ev) => { try { if (ev && ev.target && ev.target.closest && ev.target.closest(".s-logout")) return; } catch (e) {} go("profile")(); }, bsVerTxt: "الإصدار " + (KIVO.__BS_VER || ""),
       pageName: this._pageNames()[a] || "لوحة التحكم",
       isKpis: ap === "kpis", isDstats: ap === "dstats",

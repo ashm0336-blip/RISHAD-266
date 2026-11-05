@@ -6,10 +6,10 @@ html.bs-plat-nover aside.bsb .s-txt > div:nth-child(2){display:none}
 html.bs-plat-nolinks aside.bsb .s-nav .grp:nth-of-type(2){display:none}
 /* حين تُطفأ «مواقع ذات صلة» يذهب خطّها الفاصل معها — فتحمل «المساعدة» الخطّ بنفسها */
 html.bs-plat-nolinks aside.bsb .s-nav .bs-plat-helpgrp{border-top:1px solid var(--tone-neutral-10-a8);margin:6px 8px 0!important;padding-top:10px}
-html.bs-plat-notheme .bs-topbar > div:last-child > button:nth-last-child(2){display:none!important}
-html.bs-plat-crumb-page .bs-topbar > div:first-child > div:last-child{font-size:0}
-html.bs-plat-crumb-page .bs-topbar > div:first-child > div:last-child > span{font-size:16px}
-html.bs-plat-crumb-none .bs-topbar > div:first-child > div:last-child{display:none}
+html.bs-plat-notheme .bs-topbar .bs-thm{display:none!important}
+html.bs-plat-crumb-page .bs-crumb{font-size:0}
+html.bs-plat-crumb-page .bs-crumb > span{font-size:var(--fs-lg)}
+html.bs-plat-crumb-none .bs-crumb{display:none}
 aside.bsb .s-nav .grp:first-of-type{display:flex;flex-direction:column}
 aside.bsb .s-nav .grp:first-of-type > .s-ghead{order:-20}
 aside.bsb .s-nav .grp:first-of-type > .s-deptdd{order:-19}

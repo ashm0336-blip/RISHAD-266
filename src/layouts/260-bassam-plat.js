@@ -15,9 +15,8 @@
     mods: { off: [] },
     about: { license: "", licType: "", support: "", phone: "", msg: "", whatsnew: "", guides: [{ t: "دليل مدير النظام", u: "" }, { t: "دليل مدير الإدارة", u: "" }, { t: "دليل الموظف", u: "" }, { t: "دليل التشغيل والرفع", u: "" }] }
   };
-  /* ترتيب روابط القائمة في القالب — والقاعدة: كل رابطٍ في المجموعة الأولى له
-     مفتاحٌ هنا بترتيبه نفسه، لأن التنسيق يُكتب بـ nth-of-type. فإن أُضيف رابطٌ
-     ولم يُضف مفتاحُه انزاحت الأرقام كلها وبقي آخرُ رابطٍ بلا ترتيبٍ فطفا فوق. */
+  /* ترتيب روابط القائمة: كل رابطٍ في المجموعة الأولى يحمل مفتاحَه (data-key في القالب) والتنسيقُ يُكتب به —
+     فلا يزيح رابطٌ جديدٌ غيرَه، ورابطٌ بلا مفتاحٍ هنا يبقى في موضعه من القالب. */
   var NAVKEYS = KIVO.KIVO_MANIFEST.clone('navOrder');   /* KIVO_247 · AUD-015: من manifests/pages.json */
   var NAVNAMES = KIVO.KIVO_MANIFEST.clone('navNames');
   var STATUS = { light: "#F7F6F2", dark: "#25343F", gold: "#b99751" };
@@ -68,7 +67,7 @@
     if (sig !== lastSig) {
       var css = "";
       var order = (P.side.order || []).filter(function (k) { return NAVKEYS.indexOf(k) >= 0; }); NAVKEYS.forEach(function (k, i) { if (order.indexOf(k) >= 0) return; var prev = i > 0 ? order.indexOf(NAVKEYS[i - 1]) : -1; order.splice(prev + 1, 0, k); });   /* رابط جديد لم يُرتَّب بعد يقف خلف سابقه في القالب لا في الذيل */
-      NAVKEYS.forEach(function (k, i) { var pos = order.indexOf(k); var hide = (P.side.hidden || []).indexOf(k) >= 0 || (P.mods.off || []).indexOf(k) >= 0; css += "aside.bsb .s-nav .grp:first-of-type > a:nth-of-type(" + (i + 1) + "){order:" + pos + (hide ? ";display:none!important" : "") + "}\n"; });
+      NAVKEYS.forEach(function (k) { var pos = order.indexOf(k); var hide = (P.side.hidden || []).indexOf(k) >= 0 || (P.mods.off || []).indexOf(k) >= 0; css += 'aside.bsb .s-nav .grp > a[data-key="' + k + '"]{order:' + pos + (hide ? ";display:none!important" : "") + "}\n"; });   /* CORE-01: بمفتاح الرابط (data-key) لا بموضعه في القالب */
       if (P.print.paper) css += "@media print{@page{size:" + ({ a4p: "A4 portrait", a4l: "A4 landscape", a3l: "A3 landscape" }[P.print.paper] || "auto") + "}}\n";
       if (!styleEl) { styleEl = document.createElement("style"); styleEl.id = "bs-plat-css"; (document.head || document.documentElement).appendChild(styleEl); }
       styleEl.textContent = css;

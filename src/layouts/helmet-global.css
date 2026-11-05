@@ -23,7 +23,7 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
    ٢) كل شريط أفقي لا ينزل صفّاً ثانياً أبداً — يُمرَّر يميناً ويساراً بلا شريط مرئي.
    ٣) القائمة الجانبية للتطبيق ولوحة الكانفس تتقلّصان بالترتيب قبل أن يتأثّر المحتوى.
    ═══════════════════════════════════════════════════════════════════════ */
-:root{--bs-topbar-h:81px;--bs-side:260px;--bs-panel-w:clamp(440px,32vw,560px);--bs-map-h:clamp(360px,54vh,620px);--bs-surface:var(--bg-surface)}
+:root{--bs-topbar-h:81px;--bs-side:260px;--bs-side-cx:66px;--bs-panel-w:clamp(440px,32vw,560px);--bs-map-h:clamp(360px,54vh,620px);--bs-surface:var(--bg-surface)}
 /* ═══ طبقة الاستجابة المشتركة ═══
    ١) إشارة التمرير الأفقي: ظِلّان على الحافتين يظهران فقط حين يبقى خلف الحافة
       محتوى. الحيلة أن طبقتَي القناع مثبّتتان بالمحتوى (local) فتنزلقان معه
@@ -229,8 +229,8 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 .bs-btn--ghost{background:transparent;border-color:transparent;color:var(--text-secondary)}
 .bs-btn--ghost:hover{background:var(--hover-bg);border-color:transparent;color:var(--text-primary)}
 .bs-btn--icon{width:38px;height:38px;min-height:38px;padding:0;flex-shrink:0;border-color:var(--tone-neutral-10-a12);color:var(--text-secondary)}
-.bs-btn:disabled,.bs-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;box-shadow:none}
-.bs-btn:disabled:hover,.bs-btn[aria-disabled="true"]:hover{border-color:var(--border-default);color:var(--text-primary)}
+.bs-btn:disabled,.bs-btn[aria-disabled="true"],.bs-btn.is-off{opacity:.5;cursor:not-allowed;box-shadow:none}
+.bs-btn:disabled:hover,.bs-btn[aria-disabled="true"]:hover,.bs-btn.is-off:hover{border-color:var(--border-default);color:var(--text-primary)}
 .bs-card{min-width:0;background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:var(--r-xl);box-shadow:var(--shadow-card)}
 .bs-card-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);background:var(--bg-surface-2);border-bottom:1px solid var(--border-subtle);border-radius:var(--r-xl) var(--r-xl) 0 0;font-size:var(--fs-md);font-weight:700}
 .bs-card-b{padding:var(--sp-4)}
@@ -506,8 +506,8 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
 /* انزلاقُ المحتوى مع الشريط: transform على المُركِّب — الهامشُ يثبت فوراً فيقع تخطيطٌ واحد */
 @keyframes bsSlideOpen{from{transform:translateX(194px)}to{transform:none}}
 @keyframes bsSlideClose{from{transform:translateX(-194px)}to{transform:none}}
-.bsb{position:fixed;top:0;bottom:0;right:0;z-index:var(--z-sidebar);width:260px;background:var(--bg-sidebar);border-left:1px solid var(--border-subtle);box-shadow:var(--shadow-soft);display:flex;flex-direction:column;overflow:hidden;transition:width .25s ease;font-family:var(--font-ui)}
-.bsb.cx{width:66px}
+.bsb{position:fixed;top:0;bottom:0;right:0;z-index:var(--z-sidebar);width:var(--bs-side);background:var(--bg-sidebar);border-left:1px solid var(--border-subtle);box-shadow:var(--shadow-soft);display:flex;flex-direction:column;overflow:hidden;transition:width .25s ease;font-family:var(--font-ui)}
+.bsb.cx{width:var(--bs-side-cx)}
 /* ارتفاع رأس الشريط = ارتفاع الهيدر بالضبط، فيصير خطّه امتداداً لخطّ الهيدر */
 .bsb .s-brand{display:flex;align-items:center;gap:12px;height:var(--bs-topbar-h);box-sizing:border-box;padding:0 18px;border-bottom:1px solid var(--tone-neutral-10-a8);flex-shrink:0;transition:padding .25s ease,gap .25s ease}
 .bsb .s-mark{width:40px;height:40px;border-radius:12px;flex-shrink:0;background:linear-gradient(140deg,var(--brand-deep),var(--brand-muted) 50%,var(--brand-deep));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:var(--text-primary);box-shadow:0 4px 16px rgba(187,150,97,.38);cursor:pointer;transition:transform .15s;user-select:none}
@@ -567,7 +567,8 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
 .bsb.cx .s-deptc{display:none}
 .bsb .s-deptdd{margin:2px 6px 6px;padding:5px;border:1px solid var(--tone-gold-50-a30);border-radius:12px;background:var(--bg-surface);box-shadow:var(--shadow-soft);display:flex;flex-direction:column;gap:2px;max-height:250px;overflow-y:auto}
 .bsb .s-deptddh{padding:4px 10px 5px;font-size:9px;font-weight:800;color:var(--text-faint);letter-spacing:.05em}
-.bsb.cx .s-deptdd{display:none}
+/* المطويّة: اللوحة تنبثق بجوار الشريط دون أن يتّسع الشريطُ كلّه */
+.bsb.cx .s-deptdd{position:fixed;right:calc(var(--bs-side-cx) + 6px);top:calc(var(--bs-topbar-h) + 96px);width:260px;max-height:min(60vh,420px);margin:0;z-index:var(--z-pop)}
 /* زر الطيّ في صف الهوية: آخر الصف (يسار RTL) فوق مبدّل الإدارات مباشرة */
 /* شريط زرّ الطيّ: أسفل الخطّ الفاصل مباشرة — الهيدر للاسم والإصدار وحدهما */.bsb .s-togbar{display:flex;justify-content:flex-end;align-items:center;padding:8px 14px;border-bottom:1px solid var(--tone-neutral-10-a6);flex-shrink:0}.bsb.cx .s-togbar{justify-content:center;padding:8px 0}.bsb .s-tog2{width:28px;height:28px;border-radius:9px;border:1px solid var(--tone-gold-50-a30);background:var(--bg-gold-50-a7);color:var(--brand-text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s}
 .bsb .s-tog2:hover{background:var(--tone-gold-50-a15)}
@@ -588,6 +589,40 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
 .bsb .s-logout{margin-right:auto;flex-shrink:0;width:32px;height:32px;border-radius:9px;border:none;cursor:pointer;background:var(--bg-pink-30-a12);color:var(--toast-err);display:flex;align-items:center;justify-content:center;transition:all .2s;overflow:hidden}
 .bsb .s-logout:hover{background:var(--bg-pink-30-a24)}
 .bsb.cx .s-logout{max-width:0;width:0;opacity:0;padding:0;visibility:hidden}
+.bsb .s-badge{display:inline-block;margin-inline-start:6px;padding:0 6px;border-radius:var(--r-pill);background:var(--bg-gold-50-a14);color:var(--brand-text);font-size:9.5px;font-weight:800;line-height:16px;vertical-align:1px}
+/* ═══ CORE-01 · إطار التطبيق على الأساسيات (.bs-btn · .bs-dlg): الشريط العلوي بإزاحة --bs-topbar-h و--bs-side،
+   أزرارُه أيقوناتٌ موحّدة، والعنوان «نطاق / صفحة» يُقصّ ولا يلتفّ؛ حوارُ التأكيد وحوارا الاستيراد والتعميم والتوست ═══ */
+.bs-topbar{position:fixed;top:0;left:0;right:var(--bs-side);z-index:var(--z-topbar);display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:0 24px;height:var(--bs-topbar-h);background:var(--bg-header);color:var(--text-primary);border-bottom:1px solid var(--border-subtle);font-family:var(--font-ui);transition:right .25s ease}
+.bs-tbs{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.bs-tbe{display:flex;align-items:center;gap:var(--sp-2);flex-shrink:0}
+.bs-burger{display:none}
+.bs-crumb{min-width:0;font-size:var(--fs-lg);font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bs-crumb>span{color:var(--brand-fg)}
+.bs-nfbell{position:relative}
+.bs-nfbell[data-st="un"]{border-color:var(--tone-gold-50-a50);box-shadow:0 0 0 3px var(--bg-gold-50-a14)}
+.bs-nfbell[data-st="urg"]{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-soft)}
+.bs-nfbadge{position:absolute;top:-6px;left:-6px;min-width:18px;height:18px;box-sizing:border-box;padding:0 5px;border-radius:var(--r-pill);background:var(--danger);color:var(--text-on-fill);font:800 10px/18px var(--font-ui);font-style:normal;text-align:center;box-shadow:0 0 0 2px var(--bg-card)}
+.bs-hdrout,.bs-hdrout:hover{color:var(--toast-err)}
+.bs-hdrout{background:var(--bg-pink-30-a12);border-color:var(--bd-pink-30-a28)}
+.bs-hdrout:hover{background:var(--bg-pink-30-a24);border-color:var(--bd-pink-30-a50)}
+.bs-dlg--cfm{z-index:var(--z-confirm)}
+.bs-dlg--modal{z-index:var(--z-modal)}
+.bs-cfm,.bs-bkc{text-align:right;direction:rtl}
+.bs-cfm{padding:22px 24px max(22px,env(safe-area-inset-bottom,0px))}
+.bs-cfm-hd{display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-3)}
+.bs-cfm-hd h3{flex:1;min-width:0;margin:0;font-size:var(--fs-lg);font-weight:600;color:var(--text-primary)}
+.bs-cfm-ic{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--warning-bg);border:1px solid var(--warning-border);color:var(--warning-text)}
+.bs-cfm-ic.is-danger{background:var(--danger-bg);border-color:var(--danger-border);color:var(--danger-text)}
+.bs-cfm p{margin:0 0 18px;font-size:12.5px;line-height:1.9;color:var(--text-secondary)}
+.bs-cfm label{display:block;margin:-8px 0 6px;font-size:11.5px;font-weight:600;color:var(--danger-text)}
+.bs-cfm input{width:100%;height:38px;box-sizing:border-box;margin:0 0 14px;padding:0 12px;border-radius:var(--r-md);border:1.5px solid var(--danger-border);background:var(--bg-surface);color:var(--text-primary);font:13px var(--font-ui);outline:none}
+.bs-cfm input:focus{border-color:var(--focus-ring)}
+.bs-cfm-ft{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.bs-cfm-ft .bs-btn{min-height:38px}
+.bs-bkc{width:min(520px,100%);padding:24px 24px max(24px,env(safe-area-inset-bottom,0px))}
+.bs-nfcp{width:min(560px,100%)}
+.bs-nfcp-ft{display:flex;gap:9px;padding:12px 16px;border-top:1px solid var(--border-default);background:var(--bg-surface-2)}
+.bs-toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:var(--z-toast);width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;padding:10px 22px;border-radius:var(--r-pill);border:1px solid var(--border-brand-soft);background:var(--bg-toast);color:var(--toast-text);box-shadow:var(--shadow-elevated);font:400 var(--fs-md)/1.6 var(--font-ui);text-align:center}
 
 /* KIVO_254 · AUD-020: نصٌّ لقارئ الشاشة فقط (العنوانُ الأول لكل شاشة) */
 .bs-sr-only{position:absolute!important;top:0;left:0;width:1px;height:1px;padding:0;margin:0;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}/* KIVO_265 · فحص القبول: كان margin:-1px بلا موضعٍ صريح فيجاوز الحافةَ اليمنى بكسلاً واحداً على الجوال (تمريرٌ أفقي) */

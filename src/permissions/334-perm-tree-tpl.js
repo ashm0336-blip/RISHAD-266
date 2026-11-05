@@ -448,7 +448,7 @@
     isStaff: function(){ var u = cur(); return !!(u && u.role === 'staff'); },
     display: function(){
       var u = cur();
-      if (u && u.role === 'super') return { name: (u.name || 'مدير النظام'), role: 'مدير النظام' };
+      if (u && u.role === 'super') return { name: (u.name || 'مدير النظام'), role: 'مدير النظام', scope: 'platform' };   /* CORE-01: نطاقُه المنصة — شارةٌ ثابتة في بطاقة المستخدم لا تتبع الوحدة النشطة */
       if (u && u.role === 'dept') {
         var dn = '';
         try { dn = (D.list().filter(function(d){ return d.id === u.deptId; })[0] || {}).name || ''; } catch(e){}
