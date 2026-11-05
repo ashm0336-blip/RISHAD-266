@@ -20,9 +20,9 @@ test('desktop: link set per role unchanged; administrator identity fixed across 
   const b = await chromium.launch();
   try {
     for (const who of ['super', 'mgrA', 'dmA', 'empA']) {
-      const lab = await startLab();
+      const lab = await startLab(); let s = null;
       try {
-        const s = await openAs(b, lab, ...cred(who));
+        s = await openAs(b, lab, ...cred(who)); s.page.setDefaultTimeout(15000);
         for (const h of ['#/kpis', '#/tasks', '#/profile']) {
           await s.go(h, 2500);
           assert.deepEqual(await links(s.page), BEFORE[who][h], who + ' ' + h + ': the same sidebar links as before CORE-01');
@@ -40,9 +40,14 @@ test('desktop: link set per role unchanged; administrator identity fixed across 
           const unit0 = await s.page.evaluate(() => KIVO.BassamDepts.active());
           /* a real unit switch through the picker */
           await s.page.click('.s-dept'); await s.page.waitForTimeout(500);
-          const target = await s.page.evaluate((cur) => { const D = KIVO.BassamDepts; const o = D.list().find((d) => d.id !== cur && !/قسم/.test(d.kind || '')); return o && o.name; }, unit0);
-          assert.ok(target, 'another unit to switch to');
-          await s.page.locator('.s-deptdd [role="button"]', { hasText: target }).first().click();
+          /* the tree starts collapsed (by design): expand the nodes as a user would, then pick another unit it shows */
+          for (let i = 0; i < 4; i++) { const has = await s.page.evaluate(() => [...document.querySelectorAll('.s-deptdd [role="button"]')].some((x) => x.getClientRects().length && /TEST_ONLY إدارة ب/.test(x.textContent))); if (has) break;
+            const head = s.page.locator('.s-deptdd [role="button"][title]').filter({ hasText: 'TEST_ONLY' }).nth(i); if (!(await head.count())) break; await head.click({ timeout: 5000 }); await s.page.waitForTimeout(400); }
+          const opts = await s.page.evaluate(() => [...document.querySelectorAll('.s-deptdd [role="button"]')].filter((x) => x.getClientRects().length).map((x) => x.textContent.replace(/\s+/g, ' ').trim()));
+          const curName = await s.page.evaluate((cur) => (KIVO.BassamDepts.list().find((d) => d.id === cur) || {}).name, unit0);
+          const target = opts.find((t) => t && curName && !t.includes(curName) && /TEST_ONLY إدارة ب/.test(t)) ? 'TEST_ONLY إدارة ب' : null;
+          assert.ok(target, 'another unit in the picker: ' + JSON.stringify({ opts, curName }));
+          await s.page.locator('.s-deptdd [role="button"]:not([title])', { hasText: target }).first().click({ timeout: 10000 });
           await s.page.waitForLoadState('domcontentloaded'); await s.page.waitForTimeout(4500);
           const unit1 = await s.page.evaluate(() => KIVO.BassamDepts.active());
           assert.notEqual(unit1, unit0, 'the unit changed');
@@ -52,7 +57,9 @@ test('desktop: link set per role unchanged; administrator identity fixed across 
           await s.page.evaluate(() => { const S = KIVO.__BS_SRV; S.dirty = () => true; S.flushAsync = () => Promise.resolve(false); });
           let reloaded = false; s.page.once('load', () => { reloaded = true; });
           await s.page.click('.s-dept'); await s.page.waitForTimeout(500);
-          await s.page.locator('.s-deptdd [role="button"]').filter({ hasNotText: target }).first().click();
+          for (let i = 0; i < 4; i++) { const has = await s.page.evaluate((n) => [...document.querySelectorAll('.s-deptdd [role="button"]:not([title])')].some((x) => x.getClientRects().length && x.textContent.includes(n)), curName); if (has) break;
+            const head = s.page.locator('.s-deptdd [role="button"][title]').filter({ hasText: 'TEST_ONLY' }).nth(i); if (!(await head.count())) break; await head.click({ timeout: 5000 }); await s.page.waitForTimeout(400); }
+          await s.page.locator('.s-deptdd [role="button"]:not([title])', { hasText: curName }).first().click({ timeout: 10000 });
           await s.page.waitForSelector('#bsCfm', { state: 'visible', timeout: 5000 });
           assert.match(await s.page.textContent('#bsCfmTitle'), /تعديلات لم تُحفظ بعد/);
           await s.page.click('#bsCfmOk'); await s.page.waitForTimeout(2500);
@@ -64,8 +71,7 @@ test('desktop: link set per role unchanged; administrator identity fixed across 
           assert.equal(await s.page.evaluate(() => document.documentElement.getAttribute('data-theme')), 'dark');
         }
         assert.deepEqual(s.errs, [], who + ': no page errors');
-        await s.ctx.close();
-      } finally { await lab.close(); }
+      } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); }   /* an open page keeps the lab's long-poll alive */
     }
   } finally { await b.close(); }
 });
@@ -74,9 +80,9 @@ test('mobile 390×844: drawer and unit picker open, no sideways overflow, same l
   const b = await chromium.launch();
   try {
     for (const who of ['super', 'mgrA']) {
-      const lab = await startLab();
+      const lab = await startLab(); let s = null;
       try {
-        const s = await openAs(b, lab, ...cred(who), MOBILE);
+        s = await openAs(b, lab, ...cred(who), MOBILE); s.page.setDefaultTimeout(15000);
         for (const h of who === 'super' ? ['#/kpis', '#/tasks', '#/sysadmin', '#/profile'] : ['#/kpis', '#/tasks', '#/profile']) {
           await s.go(h, 3000);
           const ov = await s.page.evaluate(() => ({ sw: document.documentElement.scrollWidth, w: window.innerWidth }));
@@ -92,8 +98,7 @@ test('mobile 390×844: drawer and unit picker open, no sideways overflow, same l
           assert.ok(dd, 'super: the unit picker opens inside the screen');
         }
         assert.deepEqual(s.errs, [], who + ': no page errors on mobile');
-        await s.ctx.close();
-      } finally { await lab.close(); }
+      } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); }   /* an open page keeps the lab's long-poll alive */
     }
   } finally { await b.close(); }
 });
