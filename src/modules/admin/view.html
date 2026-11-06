@@ -33,12 +33,13 @@
 </sc-if>
 <!-- مفتاحُ الاستعادة: حوارٌ خارج شريط التبويبات -->
 <sc-if value="{{plRkAskOn}}" hint-placeholder-val="{{ false }}">
-<div class="bs-dlg bs-dlg--modal" onClick="{{plRkClose}}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{plRkOut}}">
   <div dir="rtl" role="dialog" aria-modal="true" aria-label="مفتاح الاستعادة" onClick="{{plRkKeep}}" class="bs-dlg-box adm-rk">
     <sc-if value="{{plRkKeyOn}}" hint-placeholder-val="{{ false }}">
     <b class="t">مفتاح الاستعادة — يُعرض مرة واحدة</b>
     <p class="m">اطبعه أو انسخه الآن واحفظه في مكان آمن بعيداً عن كلمة المرور. لن يظهر مرة أخرى؛ إن ضاع أنشئ غيره من هنا.</p>
     <div dir="ltr" class="key">{{plRkKey}}</div>
+    <sc-if value="{{plRkInfoOn}}" hint-placeholder-val="{{ false }}"><div class="info" role="alert">{{plRkInfo}}</div></sc-if>
     <div class="ft"><button type="button" class="bs-btn" onClick="{{plRkPrint}}">طباعة</button><button type="button" class="bs-btn" onClick="{{plRkCopy}}">نسخ</button><button type="button" class="bs-btn bs-btn--primary end" onClick="{{plRkClose}}">حفظته في مكان آمن</button></div>
     </sc-if>
     <sc-if value="{{plRkKeyOff}}" hint-placeholder-val="{{ true }}">
@@ -46,7 +47,7 @@
     <p class="m">إنشاء مفتاح استعادة جديد يُبطل القديم إن وُجد. المفتاح يفتح حساب مسؤول المنصة الرئيسي.</p>
     <input type="password" class="in" value="{{plRkPw}}" onChange="{{plRkOnPw}}" placeholder="كلمة المرور الحالية" aria-label="كلمة المرور الحالية">
     <sc-if value="{{plRkMsgOn}}" hint-placeholder-val="{{ false }}"><div class="err" role="alert">{{plRkMsg}}</div></sc-if>
-    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{plRkGo}}">إنشاء المفتاح</button><button type="button" class="bs-btn" onClick="{{plRkClose}}">إلغاء</button></div>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{plRkGo}}" disabled="{{plRkBusy}}" aria-busy="{{plRkBusy}}">{{plRkGoLbl}}</button><button type="button" class="bs-btn" onClick="{{plRkClose}}" disabled="{{plRkBusy}}">إلغاء</button></div>
     </sc-if>
   </div>
 </div>
@@ -472,6 +473,12 @@
     <div style="border:1px solid var(--bd-a15327270p25);background:linear-gradient(180deg,var(--bg-a22038380p03),var(--bg-a22038380p01));border-radius:14px;padding:14px">
       <sc-for list="{{plSteps}}" as="st" hint-placeholder-count="5">
       <div style="display:flex;gap:10px;align-items:flex-start;padding:7px 0"><span style="{{st.dot}}">{{st.n}}</span><div style="flex:1;min-width:0"><b style="font-size:12px;color:var(--fg-x141414)">{{st.t}}</b><div style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.6">{{st.d}}</div>
+        <sc-if value="{{st.isBk}}" hint-placeholder-val="{{ false }}"><div class="adm-rs-bk">
+          <sc-if value="{{plRsBkNo}}" hint-placeholder-val="{{ true }}"><p>يُطلب منك اختيار كلمة مرور تشفّر النسخة، ثم يُنزَّل الملف. لا تنتقل إلى الخطوة التالية قبل أن يكتمل التنزيل.</p></sc-if>
+          <sc-if value="{{plRsBkOk}}" hint-placeholder-val="{{ false }}"><p class="ok" role="status">سلّم المتصفح ملف النسخة للتنزيل: <bdi dir="ltr">{{plRsBkFile}}</bdi></p>
+          <p>لا يستطيع المتصفح التأكد من أن الملف حُفظ فعلاً على جهازك. افتح مجلد التنزيلات وتأكد من وجوده قبل المتابعة.</p>
+          <div class="row"><label class="ack"><input type="checkbox" checked="{{plRsAck}}" onChange="{{plRsAckTog}}"> تأكدت من حفظ ملف النسخة</label><button type="button" class="bs-btn bs-btn--ghost" onClick="{{plRsBkAgain}}">تنزيل النسخة مرة أخرى</button></div></sc-if>
+        </div></sc-if>
         <sc-if value="{{st.isKeep}}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:14px;margin-top:6px;flex-wrap:wrap"><span style="font-size:11.5px;display:flex;align-items:center;gap:8px"><span onClick="{{plRsKeepTog}}" style="{{tg_rs_keepBrand}}"></span> إبقاء هوية المنصة (الاسم والشعار والنصوص)</span></div></sc-if>
         <sc-if value="{{st.isAdmin}}" hint-placeholder-val="{{ false }}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px"><input value="{{plRs.un}}" data-k="rs.un" onChange="{{plFormOn}}" placeholder="جوال أو هوية مسؤول المنصة الجديد (10 أرقام)" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input value="{{plRs.name}}" data-k="rs.name" onChange="{{plFormOn}}" placeholder="الاسم الظاهر" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input type="password" value="{{plRs.pw}}" data-k="rs.pw" onChange="{{plFormOn}}" placeholder="كلمة مرور مؤقتة (6 أرقام)" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input type="password" value="{{plRs.pw2}}" data-k="rs.pw2" onChange="{{plFormOn}}" placeholder="تأكيد الرقم"
             style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></sc-if>
@@ -754,7 +761,7 @@
           </sc-if>
           <sc-if value="{{dhIsNode}}" hint-placeholder-val="{{ false }}">
           <sc-if value="{{dhDelOn}}" hint-placeholder-val="{{ true }}">
-          <button class="dz {{dhDelCls}}" onClick="{{dhDel}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></i>{{dhDelLbl}}</button>
+          <button class="dz" onClick="{{dhDel}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></i>{{dhDelLbl}}</button>
           </sc-if>
           </sc-if>
           <sc-if value="{{dhIsDept}}" hint-placeholder-val="{{ true }}">
@@ -767,7 +774,7 @@
               <sc-if value="{{dhNotActive}}" hint-placeholder-val="{{ false }}"><button class="mi t off" title="نسخة الإدارة — بدّل إلى هذه الإدارة أولاً"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg></button></sc-if>
               <label class="mi t" title="استيراد نسخة احتياطية إلى هذه الإدارة — دمج أو استبدال"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-9420a7bd"></svg><input type="file" accept="application/json,.json" onChange="{{dhImpPick}}" onClick="{{dhImpStop}}" style="display:none"></label>
               <button class="mi o" onClick="{{dhWipe}}" title="مسح البيانات — يفرّغ الإدارة من كل بياناتها ويبقيها في الهيكل"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2a91be15"></svg></button>
-              <sc-if value="{{dhDelOn}}" hint-placeholder-val="{{ true }}"><button class="mi dz {{dhDelCls}}" onClick="{{dhDel}}" title="{{dhDelTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></button></sc-if>
+              <sc-if value="{{dhDelOn}}" hint-placeholder-val="{{ true }}"><button class="mi dz" onClick="{{dhDel}}" title="{{dhDelTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></button></sc-if>
             </span>
             </sc-if>
           </span>
@@ -807,7 +814,7 @@
             <button class="k" onClick="{{g.tmp}}" title="كلمة مرور مؤقتة — تُسلَّم له ويُطلب تغييرها عند أول دخول"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-864e3ccd"></svg></button>
             <button onClick="{{g.perm}}" title="{{g.permTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg></button>
             <button class="p" onClick="{{g.dis}}" title="{{g.disTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-6afc61fe"></svg></button>
-            <button class="dz {{g.delCls}}" onClick="{{g.del}}" title="{{g.delTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></button>
+            <button class="dz" onClick="{{g.del}}" title="{{g.delTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></button>
           </div>
         </div>
         </sc-for>

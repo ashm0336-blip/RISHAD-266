@@ -1,7 +1,7 @@
 /* KIVO_265 · حادثةُ Test (2026-10-19): حُذفت إدارةٌ فيها مديرٌ و103 موظفين بضغطتين على أيقونة الحذف (تسليحٌ أربعَ ثوانٍ وتنبيهٌ عابر)،
    فذهبت حساباتُها وبياناتُها. القاعدة: إدارةٌ فيها مديرٌ أو موظفون أو حساباتُ دخول لا تُحذف إلا بنافذة تأكيدٍ تعرض ما سيُمحى
-   وتُلزم بكتابة اسم الإدارة حرفاً (typed)؛ الفارغةُ تبقى على التسليح بضغطتين. يُثبت هنا: deptDel يسلك النافذةَ للإدارة غير الفارغة
-   ولا يحذف إلا بعد الموافقة · الفارغةُ تُسلَّح أولاً · النافذةُ المشتركة تدعم typed ولا تقبل إلا بالمطابقة. */
+   وتُلزم بكتابة اسم الإدارة حرفاً (typed)؛ الفارغةُ تُؤكَّد بالحوار نفسه بلا كتابة (CORE-02، بدل التسليح بضغطتين). يُثبت هنا: deptDel يسلك النافذةَ للإدارة غير الفارغة
+   ولا يحذف إلا بعد الموافقة · الفارغةُ تسأل بالحوار والإلغاءُ لا يحذف · النافذةُ المشتركة تدعم typed ولا تقبل إلا بالمطابقة. */
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -58,18 +58,19 @@ test('إدارة فيها مدير و103 موظفين: تأكيد باسم ال�
   assert.equal(h.self.state.admArm,null,'ولا يُسلّح');assert.ok(h.calls.state.every(value=>!value.admArm));
 });
 
-test('الموافقة تنتظر ACK الحذف · والإدارة الفارغة تبقى على التسليح بضغطتين',async()=>{
+test('الموافقة تنتظر ACK الحذف · والإدارة الفارغة تُؤكَّد بالحوار نفسه (CORE-02: بدل الضغطتين خلال ٤ ثوانٍ)',async()=>{
   const h=harness({populated:true,answer:true}),pending=h.run(DEPT);await bounded(h.postStarted,'populated department POST');
   assert.equal(h.calls.post.length,1,'الموافقة ترسل طلباً واحداً');assert.equal(h.calls.ack.length,0,'لا نجاح قبل إقرار الخادم');assert.equal(h.self.state.sysSel,DEPT.id);
   await h.run(DEPT);assert.equal(h.calls.post.length,1,'ضغطتان أثناء الانتظار لا تكرران الحذف');h.ack();await bounded(pending,'populated department ACK');
   assert.equal(h.calls.ack.length,1);assert.equal(h.self.state.sysSel,'');assert.deepEqual(h.calls.sync,[false]);
-  const e=harness();await e.run(DEPT);
-  assert.equal(e.calls.confirm.length,0,'الفارغة بلا نافذة');assert.equal(e.self.state.admArm?.id,DEPT.id,'الضغطة الأولى تسلّح');
-  assert.match(e.calls.toast[0],/اضغط.*مرة أخرى/);assert.deepEqual(e.calls.post,[],'لا حذف من الضغطة الأولى');
-  const second=e.run(DEPT);await bounded(e.postStarted,'empty department second-click POST');assert.equal(e.calls.post.length,1);assert.equal(e.calls.ack.length,0,'الضغطة الثانية لا تُعد نجاحاً قبل ACK');e.ack();await bounded(second,'empty department ACK');
-  assert.equal(e.calls.ack.length,1);assert.equal(e.self.state.admArm,null);
-  const e2=harness({arm:{t:'dept',id:DEPT.id,ts:1}}),armed=e2.run(DEPT);await bounded(e2.postStarted,'already armed department POST');
-  assert.equal(e2.calls.confirm.length,0);assert.equal(e2.calls.post.length,1,'الضغطة الثانية تستعمل التسليح الموجود');assert.equal(e2.calls.ack.length,0);e2.ack();await bounded(armed,'already armed department ACK');assert.equal(e2.calls.ack.length,1);
+  // CORE-02: the empty department is confirmed by the same KIVO.bsConfirm dialog; cancelling writes nothing and arms nothing.
+  const e=harness({answer:false});await e.run(DEPT);
+  assert.equal(e.calls.confirm.length,1,'الفارغة تسأل بالحوار نفسه');assert.equal(e.calls.confirm[0].danger,true);assert.match(e.calls.confirm[0].msg,/خالية/);assert.equal(e.calls.confirm[0].typed,undefined,'بلا كتابة اسم للإدارة الخالية');
+  assert.deepEqual(e.calls.post,[],'الإلغاء لا يحذف');assert.deepEqual(e.calls.ack,[]);assert.ok(e.calls.state.every(value=>!value.admArm),'ولا تسليح بضغطتين');
+  await e.run(DEPT);assert.equal(e.calls.confirm.length,2,'الضغطة الثانية بعد الإلغاء تسأل من جديد ولا تحذف');assert.deepEqual(e.calls.post,[]);
+  const y=harness({answer:true}),yes=y.run(DEPT);await bounded(y.postStarted,'empty department confirmed POST');
+  assert.equal(y.calls.confirm.length,1);assert.equal(y.calls.post.length,1,'الموافقة ترسل طلباً واحداً');assert.equal(y.calls.ack.length,0,'لا نجاح قبل ACK');y.ack();await bounded(yes,'empty department ACK');
+  assert.equal(y.calls.ack.length,1);
 });
 
 test('النافذةُ المشتركة: typed يعطّل التأكيد حتى تطابق الكتابة الاسمَ حرفاً', () => {
