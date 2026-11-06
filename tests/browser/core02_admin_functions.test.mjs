@@ -4,7 +4,8 @@
    manager every #/admin/<tab>: the visible headings, the action labels, and the form fields and toggles (normalised text).
    This test asserts, on the current code:
      (1) every recorded heading / action / field is still reachable from the same route (a documented rename only through RENAMES);
-     (2) each deep link #/sysadmin/<tab> (fresh load) opens that same tab, and the hash stays on it;
+     (2) each deep link #/sysadmin/<tab> (fresh load) opens that same tab, and the hash stays on it; since CORE-02 step 1 the tab
+         shows as its group (and, in a group of several, its second-level tab) selected, and every tab is reachable in-app by group → tab;
      (3) a department manager (and a unit account) never reaches #/sysadmin content;
      (4) opening the tabs saves nothing (only POST /api/login, an empty /api/save flush and the notifications security-poll);
      (5) zero page errors.
@@ -26,6 +27,17 @@ const DEPT_TABS = ['backup', 'oplog', 'shifts', 'ptpls', 'import'];
 const RENAMES = {
   'مدير النظام': 'مسؤول المنصة',
 };
+/* CORE-02 step 1: the nine tabs sit in five groups (two-level navigation inside .adm-tabbar). Each recorded tab must show its group
+   selected, and, where the group holds more than one tab, the tab itself selected on the second level (the recorded tab label).
+   A single-tab group (الرئيسية = نظرة عامة · إعدادات المنصة = المنصة) is selected by its group alone. */
+const NAV = {
+  overview: ['الرئيسية'], depts: ['الإدارة المؤسسية', 'الإدارات'], users: ['الإدارة المؤسسية', 'مراقبة الحسابات'], perms: ['الإدارة المؤسسية', 'خريطة الصلاحيات'],
+  plat: ['إعدادات المنصة'], sec: ['الأمن والرقابة', 'الأمن'], oplog: ['الأمن والرقابة', 'سجل الأنشطة والتغييرات'],
+  backup: ['البيانات والاستمرارية', 'النسخة الاحتياطية'], histimp: ['البيانات والاستمرارية', 'استيراد البيانات التاريخية'],
+};
+/* the selected nav labels without a count badge («الأمن #») */
+const selNow = (r) => r.selected.map((x) => x.replace(/ #$/, ''));
+const opened = (t, r) => NAV[t].every((v) => selNow(r).includes(v));
 const MOBILE = { viewport: { width: 390, height: 844 }, context: { isMobile: true, hasTouch: true, deviceScaleFactor: 1 } };
 const DESKTOP = { viewport: { width: 1366, height: 900 }, context: { deviceScaleFactor: 1 } };
 
@@ -134,6 +146,36 @@ async function world() {
   lab.revs = () => JSON.stringify(DB.q("SELECT k,rev FROM revs WHERE k<>'bassam_notifications_domain_v1' ORDER BY k"));
   return lab;
 }
+const GRP = { overview: 'home', depts: 'org', users: 'org', perms: 'org', plat: 'plat', sec: 'sec', oplog: 'sec', backup: 'data', histimp: 'data' };
+async function nav2(page, vn) {
+  const hash = () => page.evaluate(() => location.hash);
+  await page.evaluate(() => { location.hash = '#/sysadmin/overview'; }); await page.waitForTimeout(2500);
+  for (const t of SYS_TABS) {
+    await page.locator('.adm-tabbar [data-adm-grp="' + GRP[t] + '"]').click(); await page.waitForTimeout(700);
+    if (NAV[t].length > 1) { await page.locator('.adm-tabbar .adm-l2 [role=tab][data-adm-tab="' + t + '"]').click(); await page.waitForTimeout(900); }
+    assert.equal(await hash(), '#/sysadmin/' + t, vn + ': group «' + NAV[t][0] + '» then its tab writes #/sysadmin/' + t);
+    const r = await page.evaluate(collect); assert.ok(opened(t, r), vn + ': ' + t + ' selected as ' + JSON.stringify(NAV[t]) + ' (now ' + JSON.stringify(r.selected) + ')');
+    const ov = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(ov <= 1, vn + ': ' + t + ': no horizontal page scroll (' + ov + 'px)');
+    const two = await page.locator('.adm-tabbar .adm-l2').count();
+    assert.equal(two > 0, NAV[t].length > 1 || GRP[t] === 'data', vn + ': ' + t + ': the second level shows only for a group of more than one entry');
+  }
+  /* a group remembers its last tab: org → perms, away, back to org → perms */
+  await page.locator('.adm-tabbar [data-adm-grp="org"]').click(); await page.waitForTimeout(700);
+  await page.locator('.adm-tabbar .adm-l2 [role=tab][data-adm-tab="perms"]').click(); await page.waitForTimeout(900);
+  await page.locator('.adm-tabbar [data-adm-grp="home"]').click(); await page.waitForTimeout(700);
+  await page.locator('.adm-tabbar [data-adm-grp="org"]').click(); await page.waitForTimeout(900);
+  assert.equal(await hash(), '#/sysadmin/perms', vn + ': a group reopens on the tab last used in it');
+  await page.locator('.adm-tabbar [data-adm-grp="data"]').click(); await page.waitForTimeout(700);
+  await page.locator('.adm-tabbar .adm-l2-lnk').click(); await page.waitForTimeout(1200);
+  assert.equal(await hash(), '#/sysadmin/plat', vn + ': «التهيئة والاستعادة» opens the platform settings tab');
+  const sel = await page.evaluate(() => [...document.querySelectorAll('main.bs-main [role=tablist]:not(.adm-tabs) [role=tab][aria-selected=true]')].filter((e) => !e.closest('.adm-tabbar')).map((e) => e.textContent.trim()));
+  assert.deepEqual(sel, ['التهيئة والاستعادة'], vn + ': … on its own «التهيئة والاستعادة» section');
+  /* a deep link to a tab at the far end of the strips: its group and tab are scrolled into view (not clipped) */
+  await page.goto(new URL(page.url()).origin + '/#/sysadmin/histimp', { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(4500);
+  const clip = await page.evaluate(() => [...document.querySelectorAll('.adm-tabbar [role=tab][aria-selected=true]')].map((e) => { const a = e.getBoundingClientRect(), b = e.parentElement.getBoundingClientRect(); return [e.textContent.trim(), a.left >= b.left - 1 && a.right <= b.right + 1]; }));
+  assert.deepEqual(clip, [['البيانات والاستمرارية', true], ['استيراد البيانات التاريخية', true]], vn + ': the selected group and tab are fully in view after a deep link');
+}
 const sess = async (b, lab, who, view, writes) => openAs(b, lab, ...(who === 'super' ? [LAB.superUn, LAB.superPw] : [LAB[who], LAB.pw]), { ...view, onPage: (p) => watchWrites(p, writes) });
 const shot = async (page, dir, name) => { fs.mkdirSync(dir, { recursive: true }); await page.screenshot({ path: path.join(dir, name + '.png'), fullPage: true }); };
 const theme = async (page, t) => { await page.evaluate((x) => KIVO.__bsThemeSet(x), t); await page.waitForTimeout(350); };
@@ -192,10 +234,11 @@ if (CAPTURE) {
       s = await sess(b, lab, 'super', DESKTOP, writes); s.page.setDefaultTimeout(15000);
       const rev0 = lab.revs();
       assert.deepEqual(Object.keys(FX.sys), SYS_TABS, 'the fixture covers all nine admin tabs');
+      assert.deepEqual(Object.keys(NAV).sort(), [...SYS_TABS].sort(), 'every admin tab has its place in the two-level navigation');
       for (const t of SYS_TABS) {
         await s.go('#/sysadmin/' + t, 4000);
         const states = await probes(s.page, 'sys', t), now = union(states), rec = FX.sys[t];
-        assert.ok(variants(rec.selected).some((v) => states[0].selected.includes(v)), t + ': the tab opened is «' + rec.selected + '» (now ' + JSON.stringify(states[0].selected) + ')');
+        assert.ok(opened(t, states[0]), t + ': the tab opened (recorded «' + rec.selected + '») shows ' + JSON.stringify(NAV[t]) + ' selected (now ' + JSON.stringify(states[0].selected) + ')');
         for (const kind of ['headings', 'actions', 'fields']) assert.deepEqual(missing(rec[kind], now, kind), [], t + ': every recorded ' + kind + ' still reachable');
       }
       /* deep links: a fresh load of #/sysadmin/<tab> opens that tab and keeps the address */
@@ -203,8 +246,16 @@ if (CAPTURE) {
         await s.page.goto(lab.base + '/#/sysadmin/' + t, { waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(4500);
         const r = await s.page.evaluate(collect), h = await s.page.evaluate(() => location.hash);
         assert.equal(h, '#/sysadmin/' + t, t + ': the deep link stays on its address');
-        assert.ok(variants(FX.sys[t].selected).some((v) => r.selected.includes(v)), t + ': the deep link opens «' + FX.sys[t].selected + '» (now ' + JSON.stringify(r.selected) + ')');
+        assert.ok(opened(t, r), t + ': the deep link opens ' + JSON.stringify(NAV[t]) + ' (recorded «' + FX.sys[t].selected + '»; now ' + JSON.stringify(r.selected) + ')');
       }
+      /* CORE-02 step 1: in-app two-level navigation — a group then its tab reaches every tab and writes its address; the data group links to
+         «التهيئة والاستعادة» inside the platform settings (the existing section, not a copy); on a phone both levels fit without a page scroll */
+      await nav2(s.page, 'desktop');
+      const m = await sess(b, lab, 'super', MOBILE, writes); m.page.setDefaultTimeout(15000);
+      try {
+        await nav2(m.page, 'mobile');
+        assert.deepEqual(m.errs, [], 'mobile: no page errors');
+      } finally { try { await m.ctx.close(); } catch (e) { /* closed */ } }
       assert.deepEqual(writes, [], 'opening the admin tabs saves nothing');
       await lab.idle(); assert.equal(lab.revs(), rev0, 'no stored record changed on the server');
       assert.deepEqual(s.errs, [], 'no page errors');

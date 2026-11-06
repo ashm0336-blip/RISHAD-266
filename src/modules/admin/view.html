@@ -9,25 +9,27 @@
 </sc-if>
 
 <sc-if value="{{admModeSite}}" hint-placeholder-val="{{ true }}">
-<!-- CORE-01: شريطُ تبويبٍ واحد يمرّ أفقياً؛ تبويبٌ واحد يُخفيه -->
+<!-- CORE-02 · مركز إدارة رشاد: تنقّلٌ بمستويين داخل الصفحة نفسها (لا موقعٌ منفصل ولا شريطٌ جانبي ثانٍ) — المستوى الأول خمسُ مجموعات،
+     والثاني تبويباتُ المجموعة المختارة؛ كلُّ تبويبٍ هو تبويبُ #/sysadmin/<tab> القائم، والتبويبُ الواحد يُخفي المستوى الثاني -->
 <sc-if value="{{admTabBarShow}}" hint-placeholder-val="{{ true }}">
-<div class="adm-tabbar"><div class="bs-hbar bs-tabstrip adm-tabs" role="tablist" aria-label="أقسام مدير النظام">
-  <sc-if value="{{admSrvTabs}}" hint-placeholder-val="{{ false }}">
-  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnOverview}}" onClick="{{admGoOverview}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-6b355220"></svg></div><span>نظرة عامة</span></button>
-  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnSec}}" onClick="{{admGoSec}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-217a5f12"></svg></div><span>الأمن</span><sc-if value="{{secBadgeOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" title="أحداث أمنية اليوم تستحق نظراً">{{secBadge}}</span></sc-if></button>
-  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnUsers}}" onClick="{{admGoUsers}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5411fa4a"></svg></div><span>مراقبة الحسابات</span></button>
-  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnPerms}}" onClick="{{admGoPerms}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg></div><span>خريطة الصلاحيات</span></button>
-  </sc-if>
-  <sc-if value="{{authSuper}}" hint-placeholder-val="{{ false }}">
-  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnPlat}}" onClick="{{admGoPlat}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e5471789"></svg></div><span>المنصة</span></button>
-  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnDepts}}" onClick="{{admGoDepts}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-533ecb79"></svg></div><span>الإدارات</span></button>
-  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnAud}}" onClick="{{admGoAud}}" data-adm-tab="aud"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9131ec87"></svg></div><span>سجل الأنشطة والتغييرات</span></button>
-  </sc-if>
-  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnBackup}}" onClick="{{admGoBackup}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg></div><span>النسخة الاحتياطية</span></button>
-  <sc-if value="{{admHistOn}}" hint-placeholder-val="{{ false }}">
-  <button type="button" role="tab" class="adm-tab" aria-selected="{{admOnHist}}" onClick="{{admGoHist}}" data-adm-tab="histimp"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-7d59ecc4"></svg></div><span>استيراد البيانات التاريخية</span></button>
-  </sc-if>
-</div></div>
+<nav class="adm-tabbar" aria-label="مركز إدارة رشاد"><div class="bs-hbar bs-tabstrip adm-tabs" role="tablist" aria-label="مجموعات مركز الإدارة">
+  <sc-if value="{{admNav.home.show}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{admNav.home.on}}" onClick="{{admNav.home.go}}" title="{{admNav.home.hint}}" data-adm-grp="home"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-6b355220"></svg></div><span>الرئيسية</span></button></sc-if>
+  <sc-if value="{{admNav.org.show}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{admNav.org.on}}" onClick="{{admNav.org.go}}" title="{{admNav.org.hint}}" data-adm-grp="org"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-533ecb79"></svg></div><span>الإدارة المؤسسية</span></button></sc-if>
+  <sc-if value="{{admNav.plat.show}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{admNav.plat.on}}" onClick="{{admNav.plat.go}}" title="{{admNav.plat.hint}}" data-adm-grp="plat"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e5471789"></svg></div><span>إعدادات المنصة</span></button></sc-if>
+  <sc-if value="{{admNav.sec.show}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{admNav.sec.on}}" onClick="{{admNav.sec.go}}" title="{{admNav.sec.hint}}" data-adm-grp="sec"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-217a5f12"></svg></div><span>الأمن والرقابة</span><sc-if value="{{admNav.sec.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" title="أحداث أمنية اليوم تستحق نظراً">{{secBadge}}</span></sc-if></button></sc-if>
+  <sc-if value="{{admNav.data.show}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{admNav.data.on}}" onClick="{{admNav.data.go}}" title="{{admNav.data.hint}}" data-adm-grp="data"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg></div><span>البيانات والاستمرارية</span></button></sc-if>
+</div>
+<sc-if value="{{admSubShow}}" hint-placeholder-val="{{ true }}">
+<div class="adm-l2">
+  <div class="bs-tabstrip adm-l2-tabs" role="tablist" aria-label="{{admSubLbl}}">
+  <sc-for list="{{admSub}}" as="st" hint-placeholder-count="3">
+  <button type="button" role="tab" class="bs-btn bs-btn--ghost adm-l2-tab" aria-selected="{{st.on}}" onClick="{{st.go}}" data-adm-tab="{{st.k}}"><span>{{st.t}}</span><sc-if value="{{st.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" title="أحداث أمنية اليوم تستحق نظراً">{{st.bdg}}</span></sc-if></button>
+  </sc-for>
+  </div>
+  <sc-if value="{{admSubLnkOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="bs-btn bs-btn--ghost adm-l2-lnk" onClick="{{admSubLnkGo}}" title="يفتح قسم «التهيئة والاستعادة» في إعدادات المنصة"><span>التهيئة والاستعادة</span><small>في إعدادات المنصة</small><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-5ff99641"></svg></button></sc-if>
+</div>
+</sc-if>
+</nav>
 </sc-if>
 <!-- مفتاحُ الاستعادة: حوارٌ خارج شريط التبويبات -->
 <sc-if value="{{plRkAskOn}}" hint-placeholder-val="{{ false }}">

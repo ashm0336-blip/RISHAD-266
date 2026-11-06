@@ -1194,6 +1194,82 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (this.adLoad(!0), this.adTimerOn(), "oplog" === t && this.audLoad(!0));
     });
   }
+  /* CORE-02: الانتقالُ إلى تبويبٍ من تبويبات مركز الإدارة التسعة — ما كانت تفعله أزرارُ الشريط القديم كلٌّ على حدة، في موضعٍ واحد:
+     تبويباتُ الخادم الأربعة بـ adGo (قراءةٌ + المؤقّت) · المنصة تقرأ حالة مفتاح الاستعادة · السجلُّ يُحمَّل · والباقي تبديلٌ فقط */
+  _admGo(k) {
+    "overview" === k || "sec" === k || "users" === k || "perms" === k
+      ? this.adGo(k)
+      : "plat" === k
+        ? this.setState({ admTab: "plat" }, () => this.plRkLoad())
+        : "oplog" === k
+          ? this.setState({ admTab: "oplog" }, () => this.audLoad(!0))
+          : this.setState({ admTab: k });
+  }
+  /* CORE-02 · مركز إدارة رشاد: تنقّلٌ بمستويين فوق التبويبات القائمة نفسها — المستوى الأول خمسُ مجموعات، والثاني تبويباتُ المجموعة
+     المختارة. المجموعةُ تُشتقّ من التبويب المعروض (d) فالعنوانُ #/sysadmin/<tab> والروابطُ المباشرة كما هي، ولا يظهر تبويبٌ ليس في p
+     (تبويباتُ الخادم في p كما كانت: وضعُ الموقع + مسؤول المنصة + الخادم السحابي). «التهيئة والاستعادة» في المجموعة الخامسة رابطٌ إلى قسمها في إعدادات المنصة، لا نسخةٌ منه. sb: بشارةُ الأمن */
+  _admNav(p, d, sb) {
+    const T = {
+        overview: "نظرة عامة",
+        depts: "الإدارات",
+        users: "مراقبة الحسابات",
+        perms: "خريطة الصلاحيات",
+        plat: "المنصة",
+        sec: "الأمن",
+        oplog: "سجل الأنشطة والتغييرات",
+        backup: "النسخة الاحتياطية",
+        histimp: "استيراد البيانات التاريخية",
+      },
+      G = [
+        ["home", "الرئيسية", ["overview"]],
+        ["org", "الإدارة المؤسسية", ["depts", "users", "perms"]],
+        ["plat", "إعدادات المنصة", ["plat"]],
+        ["sec", "الأمن والرقابة", ["sec", "oplog"]],
+        ["data", "البيانات والاستمرارية", ["backup", "histimp"]],
+      ],
+      L = this.__admGrpLast || (this.__admGrpLast = {}),   /* آخرُ تبويبٍ فُتح في كل مجموعة */
+      nav = {};
+    let cur = null;
+    G.forEach(([k, t, ks]) => {
+      const av = ks.filter((x) => p.includes(x)),
+        on = av.includes(d);
+      on && ((L[k] = d), (cur = { k: k, t: t, av: av }));
+      nav[k] = {
+        show: av.length > 0,
+        on: on,
+        hint: av.map((x) => T[x]).join(" · "),
+        bdgOn: "sec" === k && !!sb && av.includes("sec"),
+        go: () => on || this._admGo(av.includes(L[k]) ? L[k] : av[0]),
+      };
+    });
+    const lnk = !!cur && "data" === cur.k && p.includes("plat"),
+      shown = (cur ? cur.k : "") + "/" + d;
+    /* الشريطان ينزلقان أفقياً على الشاشة الضيّقة: المجموعةُ والتبويبُ المختاران يُكشفان إن كانا مقصوصَي الطرف — مرّةً عند تغيّرهما لا مع كل رسم
+       (كان هذا لتبويب «استيراد البيانات التاريخية» وحده في hiNode) */
+    if (this._admNavShown !== shown) {
+      this._admNavShown = shown;
+      setTimeout(() => {
+        try {
+          document.querySelectorAll('.adm-tabbar [role="tab"][aria-selected="true"]').forEach((e) => {
+            const s = e.parentElement,
+              a = e.getBoundingClientRect(),
+              b = s.getBoundingClientRect();
+            (a.left < b.left - 1 || a.right > b.right + 1) && e.scrollIntoView({ block: "nearest", inline: "nearest" });
+          });
+        } catch (x) { /* لا يمنع العرض — يُتجاوز بصمت */ }
+      }, 80);
+    }
+    return {
+      admNav: nav,
+      admSubShow: !!cur && cur.av.length + (lnk ? 1 : 0) > 1,
+      admSubLbl: cur ? "أقسام " + cur.t : "",
+      admSub: cur
+        ? cur.av.map((x) => ({ k: x, t: T[x], on: x === d, go: () => this._admGo(x), bdgOn: "sec" === x && !!sb, bdg: sb || "" }))
+        : [],
+      admSubLnkOn: lnk,
+      admSubLnkGo: () => this._plGo("setup"),
+    };
+  }
   adAct(t, e, s) {
     return this.adFetch(t, e).then(
       (t) => (
@@ -2622,8 +2698,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return { txt: s.t + (r ? ": " + r : ""), who: t.name || t.un || "—", when: this.adWhen(t.ts, e), whenTip: this.adFull(t.ts) };
       });
     return {
-      admGoUsers: () => this.adGo("users"),
-      admGoPerms: () => this.adGo("perms"),
       usCards: x,
       usFilters: y,
       usQ: t.usQ || "",
@@ -3042,8 +3116,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         kill: () => this.adAct("/api/sess/kill", { uid: t.u.id }, "أُنهيت الجلسات"),
       }));
     return {
-      admGoOverview: () => this.adGo("overview"),
-      admGoSec: () => this.adGo("sec"),
       ...this.adUsersVals(),
       ovCards: y,
       ...this._adImgVals(o.imgs, e),
@@ -5522,20 +5594,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
   }
   hiNode() {
-    /* الشريطُ ينزلق أفقياً: تبويبُنا آخرُه، فإن فُتح وهو مقصوصُ الطرف يُكشف كاملاً (مرّةً عند فتحه لا عند كل رسم) */
-    if (!this._hiTabOn) {
-      this._hiTabOn = 1;
-      setTimeout(() => {
-        try {
-          const e = document.querySelector('[data-adm-tab="histimp"]'),
-            s = e && e.parentElement;
-          if (!e || !s) return;
-          const a = e.getBoundingClientRect(),
-            b = s.getBoundingClientRect();
-          (a.left < b.left - 1 || a.right > b.right + 1) && e.scrollIntoView({ block: "nearest", inline: "nearest" });
-        } catch (x) {}
-      }, 80);
-    }
     const h = React.createElement,
       F = React.Fragment,
       H = this.hiS(),
@@ -7311,7 +7369,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             })
             .filter((t) => "oplog" !== t || c),
           { l, h } = this._admTabsNow(i, n, p, g),
-          d = p.includes(l) ? l : n ? "depts" : "backup";
+          d = p.includes(l) ? l : n ? "depts" : "backup",
+          av = this.adVals();
         try {
           "dept" === i ? this._hashTab("admin", h) : n && this._hashTab("sysadmin", d);
         } catch (t) {}
@@ -7320,17 +7379,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           admModeSite: "site" === i,
           admOnDepts: n && "depts" === d,
           admOnPlat: n && "plat" === d,
-          admGoPlat: () => this.setState({ admTab: "plat" }, () => this.plRkLoad()),
+          admGoPlat: () => this._admGo("plat"),
+          ...(n ? this._admNav(p, d, av.secBadgeOn ? av.secBadge : "") : { admNav: {}, admSub: [], admSubShow: !1, admSubLnkOn: !1 }),
           ...(n && "plat" === d ? this.plVals() : {}),
-          admSrvTabs: o,
           admOnOverview: o && "overview" === d,
           admOnSec: o && "sec" === d,
           admOnUsers: o && "users" === d,
           admOnPerms: o && "perms" === d,
-          ...this.adVals(),
+          ...av,
           admOnBackup: "backup" === d,
           admOnAud: o && "oplog" === d,
-          admGoAud: () => this.setState({ admTab: "oplog" }, () => this.audLoad(!0)),
           showDeptAud: "dept" === i && "oplog" === h,
           audNode: (o && "oplog" === d) || ("dept" === i && "oplog" === h) ? this.audNode() : null,
           adErrOn: !!this.state.adErr,
@@ -7380,12 +7438,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             const e = t.target && t.target.files && t.target.files[0];
             (t.target && (t.target.value = ""), e && KIVO.BassamDeptBackup && KIVO.BassamDeptBackup.importFile(e));
           },
-          admGoDepts: () => this.setState({ admTab: "depts" }),
-          admGoBackup: () => this.setState({ admTab: "backup" }),
-          admHistOn: n,
+          admGoBackup: () => this._admGo("backup"),
           admOnHist: n && "histimp" === d,
-          admGoHist: () => this.setState({ admTab: "histimp" }),
-          hiNode: n && "histimp" === d ? this.hiNode() : ((this._hiTabOn = 0), null),
+          hiNode: n && "histimp" === d ? this.hiNode() : null,
         };
       })(),
       ...(() => {
@@ -8922,7 +8977,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ),
         };
       })(),
-      authSuper: s,
       admTabBarShow: s,
       ...(() => {
         const t = KIVO.BassamAuth,
