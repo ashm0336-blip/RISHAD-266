@@ -20,5 +20,5 @@
 | `#/help` | المساعدة | `help` | `shell (src/layouts)` | ورقةُ الصفحة «help» (P.can("help","view")) — help.view | رابطٌ في التذييل/القائمة الثانوية | — |
 | `#/admin` | الإعدادات | `admin` | `admin` | P.can("admin","view") ⇐ audit.view، backup.view، import.view، tpl.view | رابطٌ في التذييل/القائمة الثانوية · العنوانُ يحمل التبويب #/admin/<تبويب> | `backup` · `oplog` · `shifts` · `ptpls` · `import` |
 | `#/profile` | صفحتي | `profile` | `profile` | كلُّ صاحب جلسة (الصفحةُ الشخصية · المرتدُّ الأخير) | خارج القائمة — من قائمة المستخدم | — |
-| `#/sysadmin` | مدير النظام | `sysadmin` | `admin` | مدير النظام وحده (isSuper) — وإلا لا يُفتح | من قائمة المستخدم «🛡 مدير النظام» · #/sysadmin/<تبويب> | — |
+| `#/sysadmin` | مركز إدارة رشاد | `sysadmin` | `admin` | مسؤول المنصة وحده (isSuper) — وإلا لا يُفتح | من القائمة الجانبية «🛡 مركز إدارة رشاد» · #/sysadmin/<تبويب> | — |
 | `#/kpis` | مؤشرات الإدارة | `kpis` | `kpis` | من يملك ورقةً من أوراق لوحاتها (navLeaves("kpis") · kpiPanelOk) — مدير النظام دائماً | حاويةُ عرضٍ في القائمة (navOrder) | — |

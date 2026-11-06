@@ -130,7 +130,7 @@ for (const mode of MODES) {
     const src = fs.readFileSync(new URL('../../src/services/548-atomic-backup.js', import.meta.url), 'utf8');
     const m = /'restore-personal-blank':\s*'([^']*)'/.exec(src);
     assert.ok(m, 'client message present');
-    for (const p of ['لم يُكتب شيء', 'فلا يمكن التحقق', 'نسخةً كاملة صدّرها مدير الوحدة أو مدير النظام بعد إدخال']) assert.ok(m[1].includes(p), p);
+    for (const p of ['لم يُكتب شيء', 'فلا يمكن التحقق', 'نسخةً كاملة صدّرها مدير الوحدة أو مسؤول المنصة بعد إدخال']) assert.ok(m[1].includes(p), p);
     for (const p of ['عدّل', 'يدوي', 'إفراغ', 'امسح']) assert.ok(!m[1].includes(p), 'no clearing advice: ' + p);
   });
 }

@@ -265,7 +265,7 @@
   <sc-if value="{{pfEditable}}" hint-placeholder-val="{{ false }}">
   <div class="pf-form">
     <sc-if value="{{pfNameEdit}}" hint-placeholder-val="{{ true }}"><div><label>الاسم الكامل *</label><input value="{{pfName}}" onChange="{{onPfName}}" placeholder="اسمك الكامل"></div></sc-if>
-    <sc-if value="{{pfNameRO}}" hint-placeholder-val="{{ false }}"><div><label>الاسم الكامل — يعدّله مدير النظام</label><div class="pf-fixed" data-pf-name-ro="1">{{pfName}}</div></div></sc-if>
+    <sc-if value="{{pfNameRO}}" hint-placeholder-val="{{ false }}"><div><label>الاسم الكامل — يعدّله مسؤول المنصة</label><div class="pf-fixed" data-pf-name-ro="1">{{pfName}}</div></div></sc-if>
     <div><label>الدور — يحدده نوع الحساب</label><div class="pf-fixed">{{pfRoleFixed}}</div></div>
     <div><label>البريد الإلكتروني</label><input value="{{pfEmail}}" onChange="{{onPfEmail}}" dir="ltr" placeholder="name@example.com" style="text-align:left"></div>
     <div><label>رقم الجوال</label><input value="{{pfPhone}}" onChange="{{onPfPhone}}" dir="ltr" placeholder="05xxxxxxxx" style="text-align:left"></div>

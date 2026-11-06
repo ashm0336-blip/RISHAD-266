@@ -241,7 +241,7 @@
   </nav>
   <sc-if value="{{authSuperSb}}" hint-placeholder-val="{{ true }}">
   <div class="s-togwrap" style="border-top:1px solid var(--bd-a3752630p08)">
-    <a class="{{nSysAdmin}}" role="link" tabindex="0" sc-camel-on-click="{{goSysAdmin}}" title="مدير النظام — خاصة بالأدمن فقط"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-97d6f6ed"></svg></span><span class="nlbl">مدير النظام</span></a>
+    <a class="{{nSysAdmin}}" role="link" tabindex="0" sc-camel-on-click="{{goSysAdmin}}" title="مركز إدارة رشاد — لمسؤول المنصة وحده"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-97d6f6ed"></svg></span><span class="nlbl">مركز إدارة رشاد</span></a>
   </div>
   </sc-if>
   <div class="s-foot">
@@ -483,7 +483,7 @@
     <sc-if value="{{nfHasMore}}" hint-placeholder-val="{{ false }}"><div style="padding:12px;text-align:center"><button type="button" sc-camel-on-click="{{nfMore}}">{{nfMoreLabel}}</button></div></sc-if>
   </div>
   <div style="padding:10px 14px;border-top:1px solid var(--bd-xeceef1);background:var(--bg-xfafbfc);display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--fg-x94a3b8)">
-    <span style="flex:1">ما يصلك يحدده مدير النظام من «التنبيهات والتعاميم»</span>
+    <span style="flex:1">ما يصلك يحدده مسؤول المنصة من «التنبيهات والتعاميم»</span>
     <sc-if value="{{nfIsMgr}}" hint-placeholder-val="{{ false }}"><span sc-camel-on-click="{{nfComposeGo}}" style="display:inline-flex;align-items:center;gap:5px;font-weight:700;color:var(--text-on-brand);background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));border-radius:8px;padding:4px 10px;cursor:pointer"><svg width="11" height="11" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7e8d6b4c"></svg>تعميم لإدارتي</span></sc-if>
   </div>
 </div>

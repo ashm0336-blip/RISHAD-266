@@ -27,6 +27,8 @@ const DEPT_TABS = ['backup', 'oplog', 'shifts', 'ptpls', 'import'];
 const RENAMES = {
   'مدير النظام': 'مسؤول المنصة',
 };
+/* CORE-02 step 2: old display names of the top role / the admin interface that must no longer be shown on any admin tab */
+const OLD_NAMES = ['مدير النظام', 'المشرف العام', 'مشرف المنصة', 'مدير المنصة'];
 /* CORE-02 step 1: the nine tabs sit in five groups (two-level navigation inside .adm-tabbar). Each recorded tab must show its group
    selected, and, where the group holds more than one tab, the tab itself selected on the second level (the recorded tab label).
    A single-tab group (الرئيسية = نظرة عامة · إعدادات المنصة = المنصة) is selected by its group alone. */
@@ -240,7 +242,15 @@ if (CAPTURE) {
         const states = await probes(s.page, 'sys', t), now = union(states), rec = FX.sys[t];
         assert.ok(opened(t, states[0]), t + ': the tab opened (recorded «' + rec.selected + '») shows ' + JSON.stringify(NAV[t]) + ' selected (now ' + JSON.stringify(states[0].selected) + ')');
         for (const kind of ['headings', 'actions', 'fields']) assert.deepEqual(missing(rec[kind], now, kind), [], t + ': every recorded ' + kind + ' still reachable');
+        /* CORE-02 step 2: the display names — no old name for the top role or the admin interface is shown anywhere on the page */
+        const txt = await s.page.evaluate(() => document.body.innerText + ' ' + [...document.querySelectorAll('[title],[aria-label],[placeholder]')]
+          .map((e) => [e.getAttribute('title'), e.getAttribute('aria-label'), e.getAttribute('placeholder')].join(' ')).join(' '));
+        assert.deepEqual(OLD_NAMES.filter((o) => txt.includes(o)), [], t + ': no old display name is shown');
       }
+      /* CORE-02 step 2: the page is titled «المنصة / مركز إدارة رشاد», the sidebar link reads «مركز إدارة رشاد», the user card reads «مسؤول المنصة» */
+      assert.equal((await s.page.textContent('.bs-crumb')).replace(/\s+/g, ' ').trim(), 'المنصة / مركز إدارة رشاد', 'crumb names the admin interface');
+      assert.ok((await s.page.$$eval('.nlbl', (els) => els.map((e) => e.textContent.trim()))).includes('مركز إدارة رشاد'), 'sidebar link «مركز إدارة رشاد»');
+      assert.ok((await s.page.evaluate(() => document.body.innerText)).includes('مسؤول المنصة'), 'the top role is shown as «مسؤول المنصة»');
       /* deep links: a fresh load of #/sysadmin/<tab> opens that tab and keeps the address */
       for (const t of SYS_TABS) {
         await s.page.goto(lab.base + '/#/sysadmin/' + t, { waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(4500);

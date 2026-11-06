@@ -53,7 +53,7 @@ test('إدارة فيها مدير و103 موظفين: تأكيد باسم ال�
   assert.equal(options.typed,DEPT.name,'يُلزم باسم الإدارة الموثوق من الخادم');assert.equal(options.danger,true);
   assert.match(options.msg,/104 حساب إدارة\/موظف/,'حسابات هذه الإدارة: المدير و103 موظفين');
   assert.match(options.msg,/7 مورد بيانات/);assert.match(options.msg,/3 سجل عهدة/);assert.match(options.msg,/4 تنبيه/);assert.match(options.msg,/2 سجل استرشاد/);assert.match(options.msg,/5 من بيانات المضبوطات/);assert.match(options.msg,/6 من بيانات التكريم/);
-  assert.match(options.msg,/نهائياً/);assert.match(options.msg,/حسابات مدير المنصة والإدارات العامة والإدارات الأخرى محفوظة/);
+  assert.match(options.msg,/نهائياً/);assert.match(options.msg,/حسابات مسؤول المنصة والإدارات العامة والإدارات الأخرى محفوظة/);
   assert.deepEqual(h.calls.post,[],'رفض النافذة لا يحذف');assert.deepEqual(h.calls.ack,[],'ولا يعرض نجاحاً');
   assert.equal(h.self.state.admArm,null,'ولا يُسلّح');assert.ok(h.calls.state.every(value=>!value.admArm));
 });

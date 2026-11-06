@@ -462,7 +462,7 @@ class Component extends DCLogic {
     try { P._bust(); } catch (e) {}
     try { if (KIVO.BassamPlat && KIVO.BassamPlat.apply) setTimeout(() => KIVO.BassamPlat.apply(), 400); } catch (e) {}   /* زر المساعدة يتبع صلاحية «المساعدة» */
     const u = A.user ? A.user() : null;
-    if (!u) { this._byeBar("أُنهيت جلستك — جُمّد حسابك أو حُذف من مدير النظام", () => { try { A.logout(); } catch (e) { location.reload(); } }); return; }
+    if (!u) { this._byeBar("أُنهيت جلستك — جُمّد حسابك أو حُذف من مسؤول المنصة", () => { try { A.logout(); } catch (e) { location.reload(); } }); return; }
     if (A.isSuper && A.isSuper()) { this.setState({ tick: (this.state.tick || 0) + 1 }); return; }
     const a = this.state.active;
     const NAVP2 = P.NAV2PERM || {};
@@ -913,7 +913,7 @@ class Component extends DCLogic {
     const inPlanning = ["employees","staffing","plan","daily","tasks","irshad","seized","award"].includes(a);
     /* F01: اسمُ الصفحة بنوع الوحدة النشطة — «موظفو القسم» · «مؤشرات القسم» حين تكون قسماً */
     const _ua = (() => { try { const D = KIVO.BassamDepts; return D && D.unitAl ? D.unitAl(D.active()) : "الإدارة"; } catch (e) { return "الإدارة"; } })();
-    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مدير النظام" };
+    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
     return {
       sidebarOpen: open,
       lKpis: labels.kpis, lEmployees: labels.employees, deptDdHead: _ua === "القسم" ? "الوحدة النشطة" : "الإدارة النشطة",
@@ -1139,7 +1139,7 @@ class Component extends DCLogic {
             del: () => { save(list.filter((_, j) => j !== i)); } })),
           lkEmpty: !list.length && !f, lkCanEdit: sup, lkFormOn: !!f, lkT: f ? f.t : "", lkU: f ? f.u : "", lkD: f ? f.d : "", lkErr: this.state.lkErr || "",
           lkSub: list.length ? KIVO.BassamCount(list.length, "موقع") + " — تُفتح في نافذة جديدة" : "روابط الجهات والأنظمة التي يحتاجها موظفو الإدارة",
-          lkEmptyHint: sup ? "أضف روابط الأنظمة والجهات ذات الصلة من زر «إضافة موقع»" : "سيضيفها مدير النظام",
+          lkEmptyHint: sup ? "أضف روابط الأنظمة والجهات ذات الصلة من زر «إضافة موقع»" : "سيضيفها مسؤول المنصة",
           lkAdd: () => this.setState({ lkForm: { t: "", u: "", d: "", i: -1 }, lkErr: "" }),
           lkCancel: () => this.setState({ lkForm: null, lkErr: "" }),
           lkOnT: (ev) => setF("t", ev), lkOnU: (ev) => setF("u", ev), lkOnD: (ev) => setF("d", ev),

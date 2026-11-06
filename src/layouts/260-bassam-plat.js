@@ -6,14 +6,14 @@
   var RAWget = Storage.prototype.getItem, RAWset = Storage.prototype.setItem;
   var DEF = {
     name: "المنصة التشغيلية", short: "المنصة", org: "", logo: "", themeDef: "light",
-    login: { rights: "جميع الحقوق محفوظة © {م}", title: "", desc: "منظومة رقمية متكاملة تجمع إدارات الحرم المكي الشريف في مكان واحد — كل إدارة ببياناتها وصلاحياتها المستقلة، بدخول موحد واحد.", footer: "AL HARAMAIN", legal: "", sub: "سجّل دخولك للمتابعة إلى لوحة التحكم", state: "منصة مؤسَّسة — الدخول بالحسابات المسجّلة فيها", helpStaff: "موظف أو مدير إدارة؟ تواصل مع مدير إدارتك — يعيد تعيين كلمة مرورك من شاشته في ثوانٍ.", helpNoKey: "لم يُنشأ مفتاح استعادة لهذه المنصة بعد — يُنشأ من مدير النظام ← المنصة ← التهيئة والاستعادة.", showVer: true, remember: true, help: true },
+    login: { rights: "جميع الحقوق محفوظة © {م}", title: "", desc: "منظومة رقمية متكاملة تجمع إدارات الحرم المكي الشريف في مكان واحد — كل إدارة ببياناتها وصلاحياتها المستقلة، بدخول موحد واحد.", footer: "AL HARAMAIN", legal: "", sub: "سجّل دخولك للمتابعة إلى لوحة التحكم", state: "منصة مؤسَّسة — الدخول بالحسابات المسجّلة فيها", helpStaff: "موظف أو مدير إدارة؟ تواصل مع مدير إدارتك — يعيد تعيين كلمة مرورك من شاشته في ثوانٍ.", helpNoKey: "لم يُنشأ مفتاح استعادة لهذه المنصة بعد — يُنشأ من مركز إدارة رشاد ← إعدادات المنصة ← التهيئة والاستعادة.", showVer: true, remember: true, help: true },
     app: { name: "", statusBar: "light", install: true },
     side: { order: ["kpis", "emps", "planning", "daily", "irshad", "seized", "award"], hidden: [], ver: true, help: true, links: true },
     links: [],   /* «مواقع ذات صلة»: [{ t: العنوان, u: الرابط, d: الوصف }] يحرّرها مدير النظام من الصفحة نفسها */
     top: { theme: true, crumb: "full" },
     print: { l1: "", l2: "", l3: "", logoPos: "right", footer: "", date: true, who: true, paper: "" },
     mods: { off: [] },
-    about: { license: "", licType: "", support: "", phone: "", msg: "", whatsnew: "", guides: [{ t: "دليل مدير النظام", u: "" }, { t: "دليل مدير الإدارة", u: "" }, { t: "دليل الموظف", u: "" }, { t: "دليل التشغيل والرفع", u: "" }] }
+    about: { license: "", licType: "", support: "", phone: "", msg: "", whatsnew: "", guides: [{ t: "دليل مسؤول المنصة", u: "" }, { t: "دليل مدير الإدارة", u: "" }, { t: "دليل الموظف", u: "" }, { t: "دليل التشغيل والرفع", u: "" }] }
   };
   /* ترتيب روابط القائمة: كل رابطٍ في المجموعة الأولى يحمل مفتاحَه (data-key في القالب) والتنسيقُ يُكتب به —
      فلا يزيح رابطٌ جديدٌ غيرَه، ورابطٌ بلا مفتاحٍ هنا يبقى في موضعه من القالب. */
@@ -38,7 +38,7 @@
   }
   function set(next) {
     var sup = false; try { sup = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()); } catch (e) {}
-    if (!sup) return { ok: false, err: "إعدادات المنصة لمدير النظام وحده" };
+    if (!sup) return { ok: false, err: "إعدادات المنصة لمسؤول المنصة وحده" };
     try { localStorage.setItem(K, JSON.stringify(merge(DEF, next || {}))); } catch (e) { return { ok: false, err: "تعذّر الحفظ" }; }
     cache = null; apply(); return { ok: true };
   }
@@ -139,11 +139,11 @@
     var box = document.createElement("div"); box.className = "login-help-box"; box.id = "bsGateHelpBox";
     var rk = !!(B.cf && B.rk);
     box.innerHTML = '<div id="bsGateHelpStaff"></div>' + (rk
-      ? '<div style="margin-top:8px;border-top:1px dashed var(--bd-a185151810p4);padding-top:8px"><b>مدير النظام؟</b> أدخل مفتاح الاستعادة واختر كلمة مرور جديدة:<input class="k" id="bsRkKey" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" autocomplete="off"><input type="password" id="bsRkPw" placeholder="كلمة المرور الجديدة"><input type="password" id="bsRkPw2" placeholder="تأكيد كلمة المرور"><div id="bsRkMsg" style="font-size:11.5px;margin-top:6px;min-height:18px"></div><button type="button" id="bsRkBtn" class="bs-plat-btn" style="width:100%;margin-top:4px">فتح الحساب بكلمة جديدة</button></div>'
+      ? '<div style="margin-top:8px;border-top:1px dashed var(--bd-a185151810p4);padding-top:8px"><b>مسؤول المنصة؟</b> أدخل مفتاح الاستعادة واختر كلمة مرور جديدة:<input class="k" id="bsRkKey" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" autocomplete="off"><input type="password" id="bsRkPw" placeholder="كلمة المرور الجديدة"><input type="password" id="bsRkPw2" placeholder="تأكيد كلمة المرور"><div id="bsRkMsg" style="font-size:11.5px;margin-top:6px;min-height:18px"></div><button type="button" id="bsRkBtn" class="bs-plat-btn" style="width:100%;margin-top:4px">فتح الحساب بكلمة جديدة</button></div>'
       : (B.cf ? '<div id="bsGateHelpNoKey" style="margin-top:6px;color:var(--fg-x8a99a5)"></div>' : ""));
     form.appendChild(a); form.appendChild(box);
     /* زر استيراد النسخة الشاملة يسكن داخل «تعذّر الدخول؟» باسمٍ صريح — لا أيقونة عارية على الشاشة */
-    try { var rs9 = form.querySelector(".login-restore"); if (rs9) { var hd9 = document.createElement("div"); hd9.className = "login-restore-hd"; hd9.innerHTML = "<b>مدير النظام؟</b> استعادة المنصة من ملف نسخة شاملة على هذا الجهاز:"; box.appendChild(hd9); box.appendChild(rs9); var lb9 = rs9.querySelector(".login-restore-btn"); if (lb9) { var tx9 = document.createElement("span"); tx9.className = "login-restore-lbl"; tx9.textContent = "اختيار ملف النسخة…"; tx9.addEventListener("click", function () { lb9.click(); }); lb9.insertAdjacentElement("afterend", tx9); } } } catch (e9) {}
+    try { var rs9 = form.querySelector(".login-restore"); if (rs9) { var hd9 = document.createElement("div"); hd9.className = "login-restore-hd"; hd9.innerHTML = "<b>مسؤول المنصة؟</b> استعادة المنصة من ملف نسخة شاملة على هذا الجهاز:"; box.appendChild(hd9); box.appendChild(rs9); var lb9 = rs9.querySelector(".login-restore-btn"); if (lb9) { var tx9 = document.createElement("span"); tx9.className = "login-restore-lbl"; tx9.textContent = "اختيار ملف النسخة…"; tx9.addEventListener("click", function () { lb9.click(); }); lb9.insertAdjacentElement("afterend", tx9); } } } catch (e9) {}
     gateApply(w, P);
     a.addEventListener("click", function (ev) { ev.preventDefault(); box.classList.toggle("on"); });
     var rb = box.querySelector("#bsRkBtn");
@@ -204,7 +204,7 @@
       + "<div><h3>" + esc(P.name) + "</h3><div class=\"m\">الإصدار " + esc(ver()) + (P.org ? " · " + esc(P.org) : "") + "</div></div></div>"
       + (P.about.license ? '<div class="m" style="margin-bottom:8px">' + esc(P.about.license) + (P.about.licType ? " · " + esc(P.about.licType) : "") + "</div>" : "")
       + (P.about.whatsnew ? '<div style="border:1px solid var(--bd-xe9e6df);border-radius:11px;padding:10px 12px;margin-bottom:10px"><div style="font-size:11px;font-weight:700;color:var(--fg-xb99751);margin-bottom:3px">ما الجديد في هذا الإصدار</div><div class="m" style="white-space:pre-line">' + esc(P.about.whatsnew) + "</div></div>" : "")
-      + (gs.length ? '<div style="font-size:11px;font-weight:700;color:var(--fg-x64748b);margin-bottom:2px">الأدلة</div>' + gs.map(function (g) { return '<a class="g" href="' + esc(g.u) + '" target="_blank" rel="noopener">' + esc(g.t) + " <span style=\"color:var(--fg-xb99751)\">↗</span></a>"; }).join("") : (sup ? '<div class="m">لم تُضف أدلة بعد — تُضاف من مدير النظام ← المنصة ← حول المنصة.</div>' : ""))
+      + (gs.length ? '<div style="font-size:11px;font-weight:700;color:var(--fg-x64748b);margin-bottom:2px">الأدلة</div>' + gs.map(function (g) { return '<a class="g" href="' + esc(g.u) + '" target="_blank" rel="noopener">' + esc(g.t) + " <span style=\"color:var(--fg-xb99751)\">↗</span></a>"; }).join("") : (sup ? '<div class="m">لم تُضف أدلة بعد — تُضاف من مركز إدارة رشاد ← إعدادات المنصة ← حول المنصة.</div>' : ""))
       + (P.about.support || P.about.phone ? '<div style="margin-top:10px;border-top:1px solid var(--bd-xf1efe9);padding-top:10px"><div style="font-size:11px;font-weight:700;color:var(--fg-x64748b)">الدعم الفني</div><div class="m">' + esc([P.about.support, P.about.phone].filter(Boolean).join(" · ")) + (P.about.msg ? "<br>" + esc(P.about.msg) : "") + "</div></div>" : "")
       + '<div style="display:flex;justify-content:flex-start;margin-top:14px"><button class="bs-plat-btn" id="bsAboutX">إغلاق</button></div></div>';
     document.body.appendChild(ov);

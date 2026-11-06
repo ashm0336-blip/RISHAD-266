@@ -677,7 +677,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     const n=per.haram+per.nabawi, nSk=skNo.haram+skNo.nabawi+skAd+skEd, nLk=skLm+skLd;
     if(!n&&nLk&&!nSk) return this.bsToast("أيامُ الملف كلُّها مقفلة — افتح الشهرَ بأثر رجعي أو اليومَ بنقرتين على كرته، ثم استورد","warn");
     if(!n&&nLk) return this.bsToast("لا صفَّ في الملف يمكن إدخالُه — بعضُه بلا صلاحيةٍ لك وبعضُه في أيامٍ مقفلة","warn");
-    if(!n&&nSk) return this.bsToast("لا صفَّ في الملف تملك صلاحيةَ إدخاله — راجع مدير النظام إن احتجت ذلك","warn");
+    if(!n&&nSk) return this.bsToast("لا صفَّ في الملف تملك صلاحيةَ إدخاله — راجع مسؤول المنصة إن احتجت ذلك","warn");
     if(!n) return this.bsToast("لم أجد صفّاً واحداً صالحاً — تحقّق من عمود التاريخ الهجري","warn");
     const parts=[KIVO.BassamCount(n,"يوم")+" ("+KIVO.BassamCount(cells,"قيمة")+")"];
     if(per.haram&&per.nabawi) parts.push("الحرم "+per.haram+" والنبوي "+per.nabawi);

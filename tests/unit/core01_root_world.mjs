@@ -29,7 +29,7 @@ export function world(o = {}) {
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
   const isSuper = () => !!(user && user.role === 'super');
-  KIVO.KIVO_MANIFEST = { clone: (k) => (k === 'routeNames' ? { kpis: 'TEST_ONLY مؤشرات', sysadmin: 'مدير النظام', tasks: 'TEST_ONLY المهام' } : {}) };
+  KIVO.KIVO_MANIFEST = { clone: (k) => (k === 'routeNames' ? { kpis: 'TEST_ONLY مؤشرات', sysadmin: JSON.parse(rd('manifests/pages.json')).routeNames.sysadmin, tasks: 'TEST_ONLY المهام' } : {}) };
   KIVO.BassamAuth = { user: () => user, isSuper, isStaff: () => !!(user && user.role === 'staff'), display: () => (o.display ? o.display(user, act) : null), logout() {} };
   KIVO.BassamPerm = { NAV2PERM: { kpis: 'kpis', tasks: 'tasks' }, can: () => true, deptCap: () => ['kpis', 'tasks'], navLeaves: () => [], kpiPanelOk: () => true, PAGE_REG: [] };
   KIVO.BassamDepts = {

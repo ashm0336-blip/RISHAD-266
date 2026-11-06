@@ -1755,9 +1755,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       return void (-1 === s.indexOf("daily")
         ? (t.fdNote =
             r +
-            "يحتاج تفعيل صفحة «المتابعة اليومية» في سقف إدارتك أولاً — يفعّلها مدير النظام من «الإدارات»، ثم يمنحك مدير الإدارة ورقة «رصد الميدان»")
+            "يحتاج تفعيل صفحة «المتابعة اليومية» في سقف إدارتك أولاً — يفعّلها مسؤول المنصة من «الإدارات»، ثم يمنحك مدير الإدارة ورقة «رصد الميدان»")
         : -1 === a.indexOf("field")
-          ? (t.fdNote = r + "يحتاج تفعيل ورقة «رصد الميدان» ضمن أوراق «المتابعة اليومية» لإدارتك — يفعّلها مدير النظام من «الإدارات»")
+          ? (t.fdNote = r + "يحتاج تفعيل ورقة «رصد الميدان» ضمن أوراق «المتابعة اليومية» لإدارتك — يفعّلها مسؤول المنصة من «الإدارات»")
           : (t.fdNote =
               r +
               "يحتاج ورقة «رصد الميدان» في صلاحيتك: صلاحيات الموظف ← المتابعة اليومية ← رصد الميدان (أو قالب «راصد ميدان») — يمنحها مدير الإدارة"));
@@ -2336,8 +2336,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       L.push(F("dept", sc ? "القسم" : "الإدارة", dn || "—"));
       mg.length && L.push(F("mgr", sc ? "مديرو القسم الآخرون" : "مديرو الإدارة الآخرون", mg.join(" · "), { w: "1" }));
       out.pfInfo = L;
-      out.pfDataSub = "حسابك مُعيَّن من مدير النظام — بلا سجلّ موظف";
-      out.pfInfoNote = "مديرُ الإدارة المعيَّن لا يحتاج سجلّاً في «موظفو الإدارة»؛ بياناتُ حسابك تُحدَّث من مدير النظام ← الإدارات.";
+      out.pfDataSub = "حسابك مُعيَّن من مسؤول المنصة — بلا سجلّ موظف";
+      out.pfInfoNote = "مديرُ الإدارة المعيَّن لا يحتاج سجلّاً في «موظفو الإدارة»؛ بياناتُ حسابك تُحدَّث من مركز إدارة رشاد ← الإدارات.";
       return out;
     }
     const rec = i.myRec,
@@ -2385,7 +2385,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!e) return { pfDeptInfo: o, pfDeptSub: "" };
     const title = (() => {
       try {
-        return i.isSuper ? "مدير النظام" : (AU && AU.myTitle && AU.myTitle()) || ("gm" === e.role ? (AU && AU.gmRoleLabel ? AU.gmRoleLabel() : "مدير إدارة عامة") : i.isAppt ? (this.deptIsSec(e.deptId) ? "مدير القسم" : "مدير الإدارة") : AU && AU.permLabel && e.ekey ? AU.permLabel(e.ekey) || "بلا صلاحيات" : "");
+        return i.isSuper ? "مسؤول المنصة" : (AU && AU.myTitle && AU.myTitle()) || ("gm" === e.role ? (AU && AU.gmRoleLabel ? AU.gmRoleLabel() : "مدير إدارة عامة") : i.isAppt ? (this.deptIsSec(e.deptId) ? "مدير القسم" : "مدير الإدارة") : AU && AU.permLabel && e.ekey ? AU.permLabel(e.ekey) || "بلا صلاحيات" : "");
       } catch (t) {
         return "";
       }
@@ -2410,7 +2410,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         n = 0;
       }
       o.push(H("h1", "نطاقك"), R("dept", "الصلاحية", "على كل الإدارات" + (n ? " (" + KIVO.BassamCount(n - ns, "إدارة") + (ns ? " · " + KIVO.BassamCount(ns, "قسم") : "") + ")" : ""), { w: "1" }), R("mgr", "الدور", title));
-      return { pfDeptInfo: o, pfDeptSub: "مدير النظام — لا يتبع إدارةً بعينها" };
+      return { pfDeptInfo: o, pfDeptSub: "مسؤول المنصة — لا يتبع إدارةً بعينها" };
     }
     if ("gm" === e.role) {
       let nm = "",
@@ -2484,7 +2484,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this._pfHR();
     const t = KIVO.BassamAuth,
       e = this.me();
-    let s = { name: "مدير النظام", role: "مدير النظام" };
+    let s = { name: "مسؤول المنصة", role: "مسؤول المنصة" };
     try {
       t && t.display && (s = t.display());
     } catch (t) {}
@@ -2633,7 +2633,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const h = e && e.deptId ? this.deptNameOf(e.deptId) : "",
       p = (() => {
         try {
-          if (i.isSuper) return "مدير النظام";
+          if (i.isSuper) return "مسؤول المنصة";
           const T = KIVO.BassamAuth && KIVO.BassamAuth.myTitle ? KIVO.BassamAuth.myTitle() : "";
           if (T) return T;
           if ("gm" === i.role) return KIVO.BassamAuth && KIVO.BassamAuth.gmRoleLabel ? KIVO.BassamAuth.gmRoleLabel() : "مدير إدارة عامة";
@@ -3243,7 +3243,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         : acct.appointed
           ? "لا سجلَّ تشغيليّاً — حسابك مُعيَّن لإدارة الإدارة بلا سجلّ موظف (متوقَّع لهذا الدور)؛ أحداثُ حسابك في «التنقلات»"
           : "super" === acct.role
-            ? "مدير النظام — لا سجلَّ تشغيليّاً؛ أحداثُ حسابك في «التنقلات»"
+            ? "مسؤول المنصة — لا سجلَّ تشغيليّاً؛ أحداثُ حسابك في «التنقلات»"
             : "gm" === acct.role
               ? "مدير عقدة — لا سجلَّ تشغيليّاً؛ أحداثُ حسابك في «التنقلات»"
               : "لا سجلَّ تشغيليّاً مرتبطاً بحسابك بمعرّفٍ ثابت — يربطه مدير الإدارة";

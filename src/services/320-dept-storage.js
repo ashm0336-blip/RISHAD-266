@@ -559,7 +559,7 @@
       var did = String(o.deptId || '').trim(), u = null, BA = KIVO.BassamAuth;
       try { u = BA && BA.user ? BA.user() : null; } catch(e){ u = null; }
       var sup = !!(u && u.role === 'super'), mgr = !!(u && did && u.deptId === did && (u.role === 'dept' || (u.role === 'staff' && u.mgr)));
-      if (!sup && !mgr) return { ok: false, err: 'إنشاء القسم لمدير النظام أو لمدير الإدارة الأم' };
+      if (!sup && !mgr) return { ok: false, err: 'إنشاء القسم لمسؤول المنصة أو لمدير الإدارة الأم' };
       var why = this.placeWhy({ id: '', dept: true, sec: true }, did || null); if (why) return { ok: false, err: why };
       if (this.nodes().some(function(n){ return n.name === nm; }) || reg().some(function(d){ return d.name === nm; }))
         return { ok: false, err: 'يوجد في الهيكل ما يحمل هذا الاسم' };

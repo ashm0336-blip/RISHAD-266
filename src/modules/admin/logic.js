@@ -919,7 +919,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       tpCapOn: n.length > 0,
       tpCapNote: n.length
         ? "الشجرة محصورة بسقف صفحات إدارتك — ما هو خارجه لا يُمنح ولا يُعرض."
-        : "سقف صفحات إدارتك فارغ — راجع مدير النظام قبل بناء القوالب.",
+        : "سقف صفحات إدارتك فارغ — راجع مسؤول المنصة قبل بناء القوالب.",
       tpRows2: h ? this.tskRecLegacy(h.rows) : [],
       tpCountTxt: h ? h.pagesOn + " من " + KIVO.BassamCount(h.pagesTot, "ورقة", "g") + "" : "",
       tpExpAll: () => {
@@ -1058,7 +1058,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         tpClear: () => this.setState({ tp24Draft: {}, tpLens: [] }),
         tpCapNote: n.length
           ? "شجرةُ v24.9 محصورةٌ بسقف إدارتك — القالبُ مفاتيحُ تُمنح لحامليه كما هي، وما خارج السقف لا يُعرض ولا يُمنح."
-          : "سقف صفحات إدارتك فارغ — راجع مدير النظام قبل بناء القوالب.",
+          : "سقف صفحات إدارتك فارغ — راجع مسؤول المنصة قبل بناء القوالب.",
         tpLensOnBox: !1,
         tpDirty: g24,
         tpDirtyTxt: g24 ? "تغييرات لم تُحفظ" : "",
@@ -1324,7 +1324,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (T) return T;
     return (
       {
-        super: "مدير النظام",
+        super: "مسؤول المنصة",
         dept: "مدير الإدارة",
         gm: KIVO.BassamAuth && KIVO.BassamAuth.gmRoleLabel ? KIVO.BassamAuth.gmRoleLabel(t && t.gid) : "مدير إدارة عامة",
         staff: t && t.mgr ? "مدير الإدارة" : "موظف",
@@ -1435,7 +1435,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })(),
       s = e ? e.name || e.un || "" : t.target || "",
       a = {
-        super: "الإعداد لمدير النظام وحده",
+        super: "الإعداد لمسؤول المنصة وحده",
         dept: "السجل يخصّ إدارة أخرى",
         cap: "الصفحة خارج سقف إدارته",
         page: "صلاحيته على الصفحة عرضٌ فقط",
@@ -1449,7 +1449,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       case "login_ok":
         return { t: "تسجيل دخول ناجح", k: "login" };
       case "recovery_key":
-        return { t: "أنشأ مفتاح استعادة جديداً لحساب مدير النظام", k: "sec", w: "حدث أمني" };
+        return { t: "أنشأ مفتاح استعادة جديداً لحساب مسؤول المنصة", k: "sec", w: "حدث أمني" };
       case "recover_fail":
         return {
           t: "محاولة استعادة فاشلة من شاشة الدخول" + ("no-key" === t.detail ? " — لا مفتاح مُنشأ" : " — مفتاح خاطئ"),
@@ -1457,7 +1457,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           w: "حدث أمني · محاولة استعادة",
         };
       case "recover_ok":
-        return { t: "استُعيد دخول مدير النظام بمفتاح الاستعادة — كلمة جديدة والمفتاح أُبطل", k: "sec", w: "حدث أمني" };
+        return { t: "استُعيد دخول مسؤول المنصة بمفتاح الاستعادة — كلمة جديدة والمفتاح أُبطل", k: "sec", w: "حدث أمني" };
       case "reset":
         return {
           t:
@@ -1465,7 +1465,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             (() => {
               try {
                 const e = JSON.parse(t.detail || "{}");
-                return (e.keepBrand ? " (أُبقيت الهوية)" : "") + " · مدير النظام الجديد: " + (e.newAdmin || "");
+                return (e.keepBrand ? " (أُبقيت الهوية)" : "") + " · مسؤول المنصة الجديد: " + (e.newAdmin || "");
               } catch (t) {
                 return "";
               }
@@ -1490,7 +1490,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       case "logout":
         return { t: "تسجيل خروج", k: "login" };
       case "sess_kill":
-        return { t: "أنهى جلسات " + (e && "*" === e.id ? "الجميع" : s) + " من شاشة مدير النظام", k: "adm" };
+        return { t: "أنهى جلسات " + (e && "*" === e.id ? "الجميع" : s) + " من شاشة مسؤول المنصة", k: "adm" };
       case "guard_unlock":
         return {
           t: "فكّ قفل الدخول" + (t.target && "*" !== t.target ? " عن " + String(t.target).replace(/^u:/, "") : " عن الجميع"),
@@ -1746,7 +1746,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     KIVO
       .bsConfirm({
         title: "حذف الحساب الاحتياطي",
-        msg: "سيُحذف حساب مدير النظام الاحتياطي نهائياً ولن يعود صالحاً للدخول.",
+        msg: "سيُحذف حساب مسؤول المنصة الاحتياطي نهائياً ولن يعود صالحاً للدخول.",
         ok: "حذف الحساب",
         danger: !0,
       })
@@ -1799,7 +1799,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               KIVO
                 .bsConfirm({
                   title: "تمت التهيئة",
-                  msg: "المنصة الآن فارغة ومدير النظام الجديد هو «" + t.un + "». ستُعاد الآن إلى شاشة الدخول.",
+                  msg: "المنصة الآن فارغة ومسؤول المنصة الجديد هو «" + t.un + "». ستُعاد الآن إلى شاشة الدخول.",
                   ok: "إلى شاشة الدخول",
                   info: !0,
                 })
@@ -2068,7 +2068,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           },
           plFoot:
             {
-              notif: "الشجرة تُقرأ من سجل الأحداث في الكود — أي حدث يُضاف للمنصة يظهر هنا تلقائياً · التعاميم العامة لمدير النظام وحده",
+              notif: "الشجرة تُقرأ من سجل الأحداث في الكود — أي حدث يُضاف للمنصة يظهر هنا تلقائياً · التعاميم العامة لمسؤول المنصة وحده",
               id: "الشعار يُحفظ مع الإعدادات في الخادم — لا ملفات خارجية",
               login: "التغيير هنا لا يمسّ حسابات أحد",
               app: "يعمل كتطبيق ويب تقدّمي (PWA) — نفس المنصة ونفس الحساب، بلا نشر في المتاجر",
@@ -2197,7 +2197,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           plRsNextTxt:
             [
               "تنزيل نسخة كاملة والمتابعة",
-              "متابعة إلى مدير النظام الجديد",
+              "متابعة إلى مسؤول المنصة الجديد",
               "متابعة إلى التأكيد",
               "متابعة",
               r.plBusy ? "جارٍ التنفيذ…" : "تهيئة المنصة الآن — لا رجعة",
@@ -2205,7 +2205,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           plSteps: [
             ["نسخة كاملة تُنزَّل على جهازك", "تشمل كل الإدارات والحسابات والصور — احتفظ بها قبل أي شيء"],
             ["ماذا يبقى؟", "كل الإدارات والموظفين والحسابات والسجلات تُمسح — تختار إن كانت الهوية تبقى"],
-            ["مدير النظام الجديد", "اسم المستخدم وكلمة مؤقتة تُفرض عليه تغييرها عند أول دخول"],
+            ["مسؤول المنصة الجديد", "اسم المستخدم وكلمة مؤقتة تُفرض عليه تغييرها عند أول دخول"],
             [
               "ما بعد التهيئة",
               "تُنهى كل الجلسات (بما فيها جلستك)، ويبدأ سجل الأمن صفحة جديدة بسطر واحد يوثّق التهيئة، ويُبطل مفتاح الاستعادة",
@@ -2279,7 +2279,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               : "لم يُنشأ بعد"
         : "غير متاح في نسخة الجهاز"),
       (w.plRkNote =
-        "٢٠ حرفاً يُعرض مرة واحدة ويُطبع ويُحفظ في مكان آمن. من شاشة الدخول ← «تعذّر الدخول؟» يفتح حساب مدير النظام" +
+        "٢٠ حرفاً يُعرض مرة واحدة ويُطبع ويُحفظ في مكان آمن. من شاشة الدخول ← «تعذّر الدخول؟» يفتح حساب مسؤول المنصة" +
         (S && S.key && S.key.uid, " بكلمة جديدة ثم يُبطل. وهو شرط تهيئة المنصة.")),
       (w.plRkBtn = S && S.key ? "إنشاء مفتاح جديد (يُبطل الحالي)" : "إنشاء مفتاح الاستعادة"),
       (w.plRkAsk = () => this.setState({ plRkAskOn: !0, plRkPw: "", plRkMsg: "" })));
@@ -2312,9 +2312,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           (t.document.write(
             '<html dir="rtl"><head><style>' +
               KIVO.BassamCssText.byId("bs-theme-tokens") +
-              '</style></head><body style="font-family:Cairo,Arial;padding:40px"><h2>مفتاح استعادة مدير النظام — ' +
+              '</style></head><body style="font-family:Cairo,Arial;padding:40px"><h2>مفتاح استعادة مسؤول المنصة — ' +
               (i.name || "") +
-              '</h2><p>يُحفظ في مكان آمن. يفتح حساب مدير النظام من شاشة الدخول ← «تعذّر الدخول؟» ويُبطل بعد الاستعمال.</p><p style="font-family:monospace;font-size:28px;letter-spacing:4px;direction:ltr;text-align:center;border:2px dashed var(--bd-x999999);padding:20px">' +
+              '</h2><p>يُحفظ في مكان آمن. يفتح حساب مسؤول المنصة من شاشة الدخول ← «تعذّر الدخول؟» ويُبطل بعد الاستعمال.</p><p style="font-family:monospace;font-size:28px;letter-spacing:4px;direction:ltr;text-align:center;border:2px dashed var(--bd-x999999);padding:20px">' +
               r.plRkKey +
               "</p><p>أُنشئ: " +
               new Date().toLocaleString("ar-SA-u-nu-latn") +
@@ -3089,7 +3089,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ["acct", "حسابات"],
         ["perm", "صلاحيات"],
         ["denied", "مرفوض"],
-        ["admin", "مدير النظام"],
+        ["admin", "مسؤول المنصة"],
       ].map((e) => E(e[1], (t.adSecKind || "all") === e[0], () => M(e[0]))),
       L = [
         ["today", "اليوم"],
@@ -4028,7 +4028,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   async deptDel(target) {
     if (!target || !target.id || this._deptDeleteBusy || this._wpBusy || this._wpUncertain) return;
-    const actor = this._wpActor(); if (!actor) return this.bsToast("حذف الإدارة يتطلب جلسة مدير النظام الحالية", "warn");
+    const actor = this._wpActor(); if (!actor) return this.bsToast("حذف الإدارة يتطلب جلسة مسؤول المنصة الحالية", "warn");
     const pending = this._deptDeleteDraft;
     if (pending && pending.uncertain && pending.dept !== target.id) return this.bsToast("لم يُحسم طلب الحذف السابق؛ أعد محاولته نفسه قبل اختيار إدارة أخرى", "warn");
     if (pending && pending.dept === target.id && pending.actor === actor && pending.confirmed && !pending.needsReview) return this._deptDelGo(target);
@@ -4049,7 +4049,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const counts = data.counts, populated = counts.keys + counts.accounts + counts.custody + counts.notifications + counts.irshad + counts.seized + counts.awards > 0,
         name = data.department.name;
       if (populated) {
-        const accepted = await KIVO.bsConfirm({ title: "حذف إدارة «" + name + "»", msg: "جرد الخادم: " + counts.keys + " مورد بيانات، " + counts.accounts + " حساب إدارة/موظف، " + counts.custody + " سجل عهدة، " + counts.notifications + " تنبيه، " + counts.irshad + " سجل استرشاد، "+counts.seized+" من بيانات المضبوطات، "+counts.awards+" من بيانات التكريم. سيُحذف تعريف الإدارة وحساباتها وبياناتها ومراجع صورها نهائياً. حسابات مدير المنصة والإدارات العامة والإدارات الأخرى محفوظة. صدّر نسخة احتياطية قبل الحذف إن احتجتها.", ok: "احذف الإدارة وكل بياناتها", danger: true, typed: name });
+        const accepted = await KIVO.bsConfirm({ title: "حذف إدارة «" + name + "»", msg: "جرد الخادم: " + counts.keys + " مورد بيانات، " + counts.accounts + " حساب إدارة/موظف، " + counts.custody + " سجل عهدة، " + counts.notifications + " تنبيه، " + counts.irshad + " سجل استرشاد، "+counts.seized+" من بيانات المضبوطات، "+counts.awards+" من بيانات التكريم. سيُحذف تعريف الإدارة وحساباتها وبياناتها ومراجع صورها نهائياً. حسابات مسؤول المنصة والإدارات العامة والإدارات الأخرى محفوظة. صدّر نسخة احتياطية قبل الحذف إن احتجتها.", ok: "احذف الإدارة وكل بياناتها", danger: true, typed: name });
         if (!accepted || this._deptDeleteDraft !== draft || this._wpActor() !== actor) return;
         draft.confirmed = true; execute = true;
       } else {
@@ -4086,7 +4086,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
       if (!result.ok) {
         draft.uncertain = ["network", "receipt", "server", "session"].includes(result.err); draft.needsReview = result.err === "conflict";
-        return this.bsToast(draft.needsReview ? "تغيّرت بيانات الإدارة؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُحذف الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مدير المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تسمح بحذف الإدارة؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
+        return this.bsToast(draft.needsReview ? "تغيّرت بيانات الإدارة؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُحذف الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تسمح بحذف الإدارة؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
       }
       const receipt = result.body, natural = value => Number.isSafeInteger(value) && value >= 0;
       if (receipt.mode !== "dept-delete" || receipt.dept !== draft.dept || receipt.requestId !== draft.ticket.requestId || !natural(receipt.rev) || !receipt.revs || typeof receipt.revs !== "object" || Array.isArray(receipt.revs) || Object.values(receipt.revs).some(value => !natural(value)) || !receipt.counts || ["keys", "accounts", "custody", "notifications", "irshad", "seized", "awards"].some(key => !natural(receipt.counts[key]))) {
@@ -4189,7 +4189,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
       if (!result.ok) {
         this._wpUncertain = ["network", "receipt", "server", "session"].includes(result.err);
-        return void this.setState({ wpNeedsReview: result.err === "conflict", wpMsg: result.err === "conflict" ? "تغيّرت بيانات الإدارة؛ لم يُنفّذ طلب المسح بهذه النسخة. أعد مراجعة الجرد قبل التأكيد." : result.err === "reason" ? "يشترط الخادم سبباً لهذا الإجراء؛ تأكيد المسح محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مدير المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تشمل مسح الإدارة" : "لم يصل تأكيد المسح؛ محفوظ طلبك لإعادة المحاولة نفسها دون ادعاء نجاح" });
+        return void this.setState({ wpNeedsReview: result.err === "conflict", wpMsg: result.err === "conflict" ? "تغيّرت بيانات الإدارة؛ لم يُنفّذ طلب المسح بهذه النسخة. أعد مراجعة الجرد قبل التأكيد." : result.err === "reason" ? "يشترط الخادم سبباً لهذا الإجراء؛ تأكيد المسح محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تشمل مسح الإدارة" : "لم يصل تأكيد المسح؛ محفوظ طلبك لإعادة المحاولة نفسها دون ادعاء نجاح" });
       }
       const receipt = result.body;
       if (receipt.dept !== dept || receipt.requestId !== ticket.body.requestId || !Number.isSafeInteger(receipt.rev) || receipt.rev < 0 || !receipt.counts || ["keys", "custody", "notifications", "irshad", "seized", "awards"].some(key => !Number.isSafeInteger(receipt.counts[key]) || receipt.counts[key] < 0))
@@ -4568,7 +4568,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             on: cap ? !0 : sup || (byMgr && !!tgt.mgr),
             dis: !0,
             kind: "role",
-            tip: "بالدور: " + (byMgr ? "مدير الإدارة" : "مدير النظام") + " — لا يُمنح",
+            tip: "بالدور: " + (byMgr ? "مدير الإدارة" : "مسؤول المنصة") + " — لا يُمنح",
           });
         }
         const kOn = P24.keyOn(k, C);
@@ -4576,7 +4576,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         if (!kOn) return Object.assign(base, { on: !1, dis: !0, kind: "out", tip: "خارج سقف الإدارة · " + k + sh });
         if (/^lens\.[a-z]+\.enable$/.test(k))
           return Object.assign(base, { on: sup || -1 !== lens.indexOf(L), dis: !0, kind: "gate", tip: "بوابةُ العدسة — تتبع تفعيلَ العدسة للموظف (مربّعُ العدسة)" });
-        if (sup) return Object.assign(base, { on: !0, dis: !0, kind: "role", tip: "مدير النظام يحمل كلَّ ما في السقف" });
+        if (sup) return Object.assign(base, { on: !0, dis: !0, kind: "role", tip: "مسؤول المنصة يحمل كلَّ ما في السقف" });
         if (ix.needMgr[k] && !tgt.mgr) return Object.assign(base, { on: !1, dis: !0, kind: "mgr", tip: "لمدير الإدارة وحده · " + k });
         const der = Object.keys(P24.DERIVE).filter((s) => -1 !== P24.DERIVE[s].indexOf(k))[0];
         return Object.assign(base, {
@@ -4759,7 +4759,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 : l.managed && l.managed.length
                   ? "تُدير هذه الورقةُ مرجعاً مستقلاً («" + ((R.owners[(R.byKey[l.managed[0]] || {}).owner] || {}).label || "") + "») — مفاتيحُه هنا"
                   : "platform" === l.type
-                    ? "عقدةُ المنصة: مفاتيحُها بالدور (مدير النظام · مدير الإدارة) أو ذاتية لكل مستخدم — لا تدخل السقف ولا القوالب"
+                    ? "عقدةُ المنصة: مفاتيحُها بالدور (مسؤول المنصة · مدير الإدارة) أو ذاتية لكل مستخدم — لا تدخل السقف ولا القوالب"
                     : gate
                       ? "العدسةُ إضافةٌ على كانفس «التشغيل الميداني» و«الجولات اليومية» — بوابتُها: سقفُ الإدارة ∧ تفعيلُها للموظف"
                       : "tasks" === l.owner
@@ -7417,7 +7417,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ...("dept" === i && "shifts" === h ? this.sfVals() : {}),
           ...("dept" === i && "ptpls" === h ? this.tpVals() : {}),
           deptIntro:
-            "من هنا تأخذ نسخة احتياطية من بيانات هذه الإدارة وتستعيدها. النسخة الشاملة لكل الإدارات ومسح بيانات أي إدارة في صفحة «مدير النظام».",
+            "من هنا تأخذ نسخة احتياطية من بيانات هذه الإدارة وتستعيدها. النسخة الشاملة لكل الإدارات ومسح بيانات أي إدارة في «مركز إدارة رشاد».",
           dbkExport: () => {
             KIVO.BassamDeptBackup && KIVO.BassamDeptBackup.export();
           },
@@ -8497,7 +8497,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       : "للمدير ورقة مضيَّقة — أشّر الكل ليعود إلى توريث سقف الإدارة كاملاً."
                     : "الحاوية بلا تأشير — تظهر في قائمة الموظف تلقائياً متى مُنح صفحةً واحدة تحتها. مربع الصفحة يمنح الأفعال الستة دفعة واحدة ثم تُلغي ما لا تريده، أو تؤشّر الأفعال بنفسك فيعكس حالتها. ما هو خارج سقف الإدارة يبقى مقفلاً."
                 : c
-                  ? "لتعديل صلاحيات المدير سجّل الدخول كمدير النظام."
+                  ? "لتعديل صلاحيات المدير سجّل الدخول كمسؤول المنصة."
                   : "الضبط الفعلي لصلاحيات الموظف من صفحة الموظفين بيد مدير إدارته — وهذه الشاشة للعرض.",
               upTplOn: g && d.length > 0,
               upTplRows: (() => {
@@ -8608,7 +8608,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 upNote: M.ed
                   ? "شجرةُ v24.9: الحاويةُ لا تُمنح — المفاتيحُ على الأوراق والعدسات. مربّعُ الورقة يمنح مفاتيحَها القابلة للمنح دفعةً واحدة، ومفتاحُ العرض شرطُ باقيها؛ وافتح الورقةَ (السهم) لتمنح أو تُسقط مفتاحاً بعينه. ما خارج سقف الإدارة مقفل، ومفاتيحُ الدور والذات لا تُمنح. الحفظُ يُكتب منحاً صريحاً فوق ورقته القديمة فلا يمسّها."
                   : g
-                    ? "حسابٌ لا تُمنح مفاتيحُه من هنا (مدير النظام يحمل كلَّ ما في السقف · حسابُ الإدارة بالدور) — والشجرةُ للعرض."
+                    ? "حسابٌ لا تُمنح مفاتيحُه من هنا (مسؤول المنصة يحمل كلَّ ما في السقف · حسابُ الإدارة بالدور) — والشجرةُ للعرض."
                     : "الضبط الفعلي لصلاحيات الموظف من صفحة الموظفين بيد مدير إدارته — وهذه الشاشةُ للعرض: الحالةُ الفعلية كما يحسبها الخادم.",
                 upBarBorder: dirty ? "var(--warning-border)" : "var(--border-default)",
                 upBarBg: dirty ? "var(--warning-bg)" : "var(--bg-surface-2)",
@@ -9009,7 +9009,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       exportBackup: () => {
         this._encPend = null;
         const t = KIVO.BassamDepts;
-        if (!s) return void this.setState({ backupMsg: "صلاحية غير كافية — تصدير النسخة الشاملة للمشرف العام فقط" });
+        if (!s) return void this.setState({ backupMsg: "صلاحية غير كافية — تصدير النسخة الشاملة لمسؤول المنصة فقط" });
         if (!t) return void this.setState({ backupMsg: "تعذّر التصدير — نظام الإدارات غير متاح على هذا الجهاز" });
         const e = async (e) => {
           try {
@@ -9158,7 +9158,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       event.target.value = "";
     } catch (error) {}
     if (!KIVO.BassamAuth || !KIVO.BassamAuth.isSuper()) {
-      this.setState({ backupMsg: "استعادة النسخة الشاملة للمشرف العام فقط" });
+      this.setState({ backupMsg: "استعادة النسخة الشاملة لمسؤول المنصة فقط" });
       return;
     }
     const accept = (text) => {

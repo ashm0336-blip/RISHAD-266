@@ -198,7 +198,7 @@
      lensGate · enfKeyOnCeiling), so widening it again restores exactly what each one had. (Was: trimEmps · pruneEmpLeaves · the empLens
      filter · p24TrimGrants deleted them, for a node's whole branch.) */
   function setDeptCap(did, arr){
-    if (!isSuper()) return { ok:false, err:'سقف الإدارة للمشرف العام وحده' };
+    if (!isSuper()) return { ok:false, err:'سقف الإدارة لمسؤول المنصة وحده' };
     var o = permStore(), d = did || curDept();
     o.caps[d] = (arr || []).filter(function(k){ return PAGE_KEYS.indexOf(k) !== -1; });
     permSave(o); return { ok:true };
@@ -209,7 +209,7 @@
      ceiling as its own record (so nobody gains or loses a page at that moment; widening it is a later explicit edit). Switching off
      returns the unit to the ancestors' intersection (never wider). Nothing else is touched. */
   function setCapOwn(did, on){
-    if (!isSuper()) return { ok:false, err:'سقف الإدارة للمشرف العام وحده' };
+    if (!isSuper()) return { ok:false, err:'سقف الإدارة لمسؤول المنصة وحده' };
     var o = permStore(), d = did || curDept();
     if (o.capMode === 'own') return { ok:false, err:'السقوف كلها مستقلة' };
     if (!!on === capOwnOf(d)) return { ok:true, same:true };
@@ -263,7 +263,7 @@
   function patternSet(key, draft){
     if (!PATTERN_DEF[key] || !draft || !Array.isArray(draft.cap)) return { ok:false, err:'نمط غير معروف' };
     var sup = false; try { sup = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()); } catch(e){}
-    if (!sup) return { ok:false, err:'أنماط السقف لمدير النظام وحده' };
+    if (!sup) return { ok:false, err:'أنماط السقف لمسؤول المنصة وحده' };
     var o = permStore(); o.patterns = o.patterns || {}; o.patterns[key] = { cap: draft.cap.slice(), subs: pClone(draft.subs || {}), tabs: pClone(draft.tabs || {}), lenses: (draft.lenses || []).slice() };
     permSave(o); return { ok:true };
   }
@@ -339,7 +339,7 @@
     return L.filter(function(k){ return all.indexOf(k) !== -1; });
   }
   function setDeptSubs(did, pk, arr){
-    if (!isSuper()) return { ok:false, err:'سقف التبويبات للمشرف العام وحده' };
+    if (!isSuper()) return { ok:false, err:'سقف التبويبات لمسؤول المنصة وحده' };
     var all = subKeysOf(pk); if (!all.length) return { ok:false, err:'لا تبويبات لهذه الصفحة' };
     var pg = PAGE_OF[pk];
     if (pg && pg.subStore === 'lenses') return setDeptLenses(did, arr);
@@ -361,7 +361,7 @@
     return L.filter(function(k){ return all.indexOf(k) !== -1; });
   }
   function setDeptTabs(did, pk, arr){
-    if (!isSuper()) return { ok:false, err:'سقف التبويبات للمشرف العام وحده' };
+    if (!isSuper()) return { ok:false, err:'سقف التبويبات لمسؤول المنصة وحده' };
     var all = tabKeysOf(pk); if (!all.length) return { ok:false, err:'لا تبويبات لهذه الصفحة' };
     var o = permStore(), d = did || curDept();
     o.subs = o.subs || {}; o.subs[d] = o.subs[d] || {};
@@ -399,7 +399,7 @@
     return L.filter(function(k){ return LENS_KEYS.indexOf(k) !== -1; });
   }
   function setDeptLenses(did, arr){
-    if (!isSuper()) return { ok:false, err:'سقف العدسات للمشرف العام وحده' };
+    if (!isSuper()) return { ok:false, err:'سقف العدسات لمسؤول المنصة وحده' };
     var o = permStore(), d = did || curDept();
     o.lenses = o.lenses || {};
     o.lenses[d] = (arr || []).filter(function(k){ return LENS_KEYS.indexOf(k) !== -1; });

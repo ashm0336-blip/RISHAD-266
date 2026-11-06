@@ -195,7 +195,7 @@
   /* ── مُعدِّلات محروسة ──────────────────────────────────────────────────────────
      كل معالجات صفحة «الإدارة» كانت تنفّذ بلا أي فحص صلاحية — الحماية الوحيدة
      كانت إخفاء الزر. الفحص الآن داخل العملية نفسها. */
-  function requireSuper(){ return isSuper() ? null : { ok:false, err:'صلاحية غير كافية — هذا الإجراء للمشرف العام فقط' }; }
+  function requireSuper(){ return isSuper() ? null : { ok:false, err:'صلاحية غير كافية — هذا الإجراء لمسؤول المنصة فقط' }; }
   function taken(un, exceptId){
     un = String(un||'').trim().toLowerCase();
     if (!un) return false;
@@ -626,7 +626,7 @@
     if (why === 'self-lock') return 'لم يُحفظ تغييرُ اسم الدخول: محاولاتٌ كثيرة بكلمة مرورٍ خاطئة — انتظر قليلاً ثم أعد المحاولة';   /* KIVO_264 (المراجعة F6) */
     if (why !== 'self') return '';
     role = role || (cur() || {}).role;
-    if (role === 'gm') return 'يُعدَّل من حسابك كلمةُ المرور والبريد والجوال فقط — الاسمُ يعدّله مدير النظام';
+    if (role === 'gm') return 'يُعدَّل من حسابك كلمةُ المرور والبريد والجوال فقط — الاسمُ يعدّله مسؤول المنصة';
     if (role === 'super') return 'هذا الحقلُ لا يُعدَّل من حسابك';
     return 'لا يُعدَّل من حسابك هنا سوى كلمة المرور — بياناتُك الأخرى من سجلّك في «موظفو الإدارة»';
   }
@@ -713,7 +713,7 @@
     return (rawUsers() || []).filter(function(x){ return x.role === 'dept'; }).length;
   }
   function purgeDeptAccounts(){
-    if (!isSuper()) return { ok:false, err:'العملية للمشرف العام وحده' };
+    if (!isSuper()) return { ok:false, err:'العملية لمسؤول المنصة وحده' };
     var us = rawUsers() || [];
     var nu = us.filter(function(x){ return x.role !== 'dept'; });
     var removed = us.length - nu.length;
