@@ -9,6 +9,8 @@
        operational collapse state;
    (C) phone 390×844: the drawer holds the console tree, closes on a choice, nothing overflows;
    (D) a unit manager's #/admin is untouched (no console, its own settings strip); an employee is refused #/sysadmin;
+   (S8) «الرئيسية»: a skeleton (never «٠») while /api/overview is held back, then the four status cards with the lab's real counts; each
+       card link, «عرض الكل» and «إرسال تعميم» land on their page; a failed read shows a status row and no «تحديث» button; phone fits;
    nothing is saved and no page error anywhere. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -180,6 +182,99 @@ test('(C)(D) phone drawer; a unit manager keeps #/admin; an employee is refused 
         assert.doesNotMatch(await s.page.evaluate(() => location.hash), /^#\/sysadmin/, 'employee: #/sysadmin refused');
         assert.equal(await s.page.locator('aside.bsb.bsb--console, aside.bsb [data-con-tab]').count(), 0, 'employee: no console');
         assert.deepEqual(s.errs, []);
+      } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); }
+    }
+  } finally { await b.close(); }
+});
+
+/* CORE-02 S8 — the home page. Lab seed (local_server.mjs): 5 active accounts and none frozen; 3 registered employees, 2 of them without an
+   account; 2 departments and 1 section, the section with no manager; the super is the one live session. */
+test('(S8) «الرئيسية»: skeleton before the read, real counts after it, links, actions, failed read, phone', { timeout: 600000 }, async () => {
+  const b = await chromium.launch();
+  /* the display layer writes digits as ٠-٩ inside bidi marks: compared here as plain digits */
+  const cards = (page) => page.evaluate(() => { const N = (x) => String(x).replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim(); return Object.fromEntries([...document.querySelectorAll('main .adm-ov-stat')].map((c) => [c.querySelector('h3').textContent.trim(),
+    { rows: Object.fromEntries([...c.querySelectorAll('.adm-ov-sr')].map((r) => [r.querySelector('.l').textContent.trim(), r.querySelector('.v') ? N(r.querySelector('.v').textContent) : (r.querySelector('.bs-skel') ? 'SKEL' : '')])),
+      lnk: c.querySelector('.adm-ov-lnk').textContent.trim(), href: c.querySelector('.adm-ov-lnk').getAttribute('href') }])); });
+  try {
+    {
+      const lab = await world(); const writes = []; let s = null, release = null;
+      const held = new Promise((r) => { release = r; });
+      try {
+        s = await openAs(b, lab, LAB.superUn, LAB.superPw, { onPage: async (p) => { watchWrites(p, writes); await p.route('**/api/overview', async (r) => { await held; await r.continue(); }); } });
+        s.page.setDefaultTimeout(15000); const page = s.page;
+        await page.waitForTimeout(1000);
+        assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/overview');
+        const c0 = await cards(page);
+        assert.deepEqual(Object.keys(c0), ['حالة المنصة', 'الحسابات', 'الوحدات التنظيمية', 'الأمن اليوم']);
+        assert.deepEqual(c0['الأمن اليوم'].rows, { 'محاولات دخول فاشلة': 'SKEL', 'أقفال نشطة': 'SKEL', 'كتابات مرفوضة': 'SKEL' }, 'held read: skeletons, no «٠»');
+        assert.equal(c0['الحسابات'].rows['موظفون بلا حساب'], 'SKEL');
+        assert.ok(await page.locator('main .adm-ov-hero .adm-ov-skl .bs-skel').count() > 0, 'the decision list shows a skeleton');
+        assert.equal(await page.locator('main .adm-ov-ok').count(), 0, 'no «لا شيء يحتاج قرارك» before the read');
+        assert.equal(await page.locator('main .adm-ov-stat[aria-busy="true"]').count(), 2);
+        release(); await page.waitForTimeout(3500);
+        const c1 = await cards(page);
+        assert.deepEqual(c1['الحسابات'].rows, { 'نشطة': '5', 'مجمّدة': '0', 'موظفون بلا حساب': '2', 'متصلون الآن': '1' }, JSON.stringify(c1['الحسابات']));
+        assert.deepEqual(c1['الوحدات التنظيمية'].rows, { 'الإدارات': '2', 'الأقسام': '1', 'بلا مدير': '1' });
+        assert.deepEqual(c1['الأمن اليوم'].rows, { 'محاولات دخول فاشلة': '0', 'أقفال نشطة': '0', 'كتابات مرفوضة': '0' });
+        assert.equal(c1['حالة المنصة'].rows['الاتصال'], '● متصل');
+        assert.equal(c1['حالة المنصة'].rows['آخر نسخة شاملة'], 'لم تُؤخذ بعد');
+        assert.match(await page.textContent('main .adm-ov-stat[data-k="acc"] small'), /^\W*[3٣]\W* موظفين في كل الإدارات$/);
+        /* decisions: the lab has no backup yet and one unit without a manager; their actions exist (none is clicked: nothing is written) */
+        const dec = await page.evaluate(() => [...document.querySelectorAll('main .adm-ov-al')].map((a) => [a.querySelector('.t').textContent.trim(), a.querySelector('button') ? a.querySelector('button').textContent.trim() : '']));
+        assert.deepEqual(dec, [['لم تُؤخذ نسخة احتياطية شاملة بعد', 'أخذ نسخة الآن'], ['وحدة واحدة بلا مدير — لا يعتمد فيها أحدٌ الجدول أو التقرير اليومي', 'الإدارات']]);
+        assert.match((await page.textContent('main #ov-h-dec')).trim(), /^يحتاج قرارك \(\W*[2٢]\W*\)$/);
+        /* no shortcut tiles: the platform settings are sidebar items only */
+        assert.equal(await page.locator('main a[href*="/plat/"], main [data-con-tab]').count(), 0);
+        /* each card link opens its page (and Back returns home) */
+        for (const [t, h] of [['حالة المنصة', '#/sysadmin/backup'], ['الحسابات', '#/sysadmin/users'], ['الوحدات التنظيمية', '#/sysadmin/depts'], ['الأمن اليوم', '#/sysadmin/sec']]) {
+          assert.equal(c1[t].href, h);
+          await page.locator('main .adm-ov-stat', { has: page.locator('h3', { hasText: t }) }).locator('.adm-ov-lnk').click(); await page.waitForTimeout(1500);
+          assert.equal(await page.evaluate(() => location.hash), h, t + ' → ' + h);
+          assert.equal(await page.locator('aside.bsb [aria-current="page"]').count(), 1);
+          await page.goBack(); await page.waitForTimeout(1500);
+          assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/overview', 'Back returns home');
+        }
+        /* a filtered row: failed sign-ins today → the security log, filter «دخول» + «اليوم» */
+        await page.locator('main .adm-ov-stat[data-k="sec"] button.adm-ov-sr', { hasText: 'محاولات دخول فاشلة' }).click(); await page.waitForTimeout(1500);
+        assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/sec');
+        assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('main .adm-chip[aria-pressed="true"]')].map((e) => e.textContent.trim())), ['دخول', 'اليوم']);
+        await page.goBack(); await page.waitForTimeout(1500);
+        /* «عرض الكل» */
+        for (const [t, h] of [['عرض الكل في سجل الأمن', '#/sysadmin/sec'], ['عرض الكل في مراقبة الحسابات', '#/sysadmin/users']]) {
+          await page.locator('main .adm-ov-more', { hasText: t }).first().click(); await page.waitForTimeout(1500);
+          assert.equal(await page.evaluate(() => location.hash), h, t);
+          await page.goBack(); await page.waitForTimeout(1500);
+        }
+        const nf0 = await page.locator('[data-bs-nf]').count();   /* the bell button itself carries data-bs-nf; the open list adds its panel */
+        await page.locator('main .adm-ov-more', { hasText: 'عرض الكل في التنبيهات' }).click(); await page.waitForTimeout(1200);
+        assert.ok(await page.locator('[data-bs-nf]').count() > nf0, '«عرض الكل» of the platform events opens the bell');
+        await page.keyboard.press('Escape'); await page.mouse.click(700, 140); await page.waitForTimeout(500);
+        /* «إرسال تعميم» → the broadcast view of «التنبيهات والتعاميم» */
+        await page.locator('main .con-ph-a button', { hasText: 'إرسال تعميم' }).click(); await page.waitForTimeout(2000);
+        assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/plat/notif');
+        assert.equal(await page.locator('main textarea[data-nf-bc="body"]').count(), 1, 'opens on the broadcast form');
+        await page.goBack(); await page.waitForTimeout(1500);
+        await page.locator('main .con-ph-a button', { hasText: 'أخذ نسخة شاملة' }).click(); await page.waitForTimeout(1500);
+        assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/backup');
+        assert.deepEqual(writes, []); assert.deepEqual(s.errs, []);
+      } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); }
+    }
+    {
+      /* /api/overview fails: a status row, the automatic retry, no «تحديث» button; and the phone layout fits */
+      const lab = await world(); const writes = []; let s = null;
+      try {
+        s = await openAs(b, lab, LAB.superUn, LAB.superPw, { ...MOBILE, onPage: async (p) => { watchWrites(p, writes); await p.route('**/api/overview', (r) => r.fulfill({ status: 500, contentType: 'application/json', body: '{"ok":0}' })); } });
+        s.page.setDefaultTimeout(15000); const page = s.page;
+        await page.waitForTimeout(1500);
+        assert.equal(await page.locator('main .adm-ov-err[role="status"]').count(), 1);
+        assert.match(await page.textContent('main .adm-ov-err'), /تعذّرت القراءة، نعيد المحاولة تلقائياً/);
+        assert.equal(await page.locator('main button', { hasText: /^تحديث$/ }).count(), 0, 'no «تحديث» button');
+        assert.equal(await page.locator('main .adm-ov-ok').count(), 0, 'no «nothing to decide» claim without data');
+        assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 1, 'phone: no sideways scroll');
+        await page.unroute('**/api/overview'); await page.waitForTimeout(9000);
+        assert.equal(await page.locator('main .adm-ov-err').count(), 0, 'the automatic retry clears the error');
+        assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 1, 'phone: no sideways scroll with data');
+        assert.deepEqual(writes, []); assert.deepEqual(s.errs, []);
       } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); }
     }
   } finally { await b.close(); }

@@ -42,7 +42,19 @@ const RENAMES = {
    at its destination: the platform sub-tab (a recorded action of #/sysadmin/plat) or the admin tab itself (its place in NAV, whose
    group → tab reachability is asserted below). The ONLY place a recorded item may leave its route; never add an entry to hide a loss. */
 const MOVED = {
-  overview: { 'هوية المنصة': 'plat', 'الوحدات': 'plat', 'التنبيهات والتعاميم': 'plat', 'الإدارات': 'depts', 'سجل الأنشطة والتغييرات': 'oplog', 'النسخة الاحتياطية': 'backup' },
+  overview: { 'هوية المنصة': 'plat', 'الوحدات': 'plat', 'التنبيهات والتعاميم': 'plat', 'الإدارات': 'depts', 'سجل الأنشطة والتغييرات': 'oplog', 'النسخة الاحتياطية': 'backup',
+    /* CORE-02 S8: the six KPI tiles became four status cards on the same page ('=' + the action that now does the same thing there):
+       the accounts tile (→ مراقبة الحسابات) is the «الحسابات» card's link; the online / failed-sign-in / denied-write tiles are rows of their
+       cards with the same action (scroll to the live sessions · the security log filtered to today's sign-ins / denied writes); the backup tile
+       is the «آخر نسخة شاملة» row of «حالة المنصة» (→ النسخة الاحتياطية); the connection tile is that card's «الاتصال» row (a heading, still
+       recorded as «● متصل»); the «اليوم» footnote is the «الأمن اليوم» card's subtitle */
+    '# / # / #الحسابات: نشط / مجمّد / بلا حساب# موظفين في كل الإدارات': '=إلى مراقبة الحسابات',
+    'حسابات الدخول عبر كل الإدارات — افتح مراقبة الحسابات': '=إلى مراقبة الحسابات',
+    '#متصلون الآن# خامل': '=متصلون الآن#',
+    '#محاولات دخول فاشلة اليوملا أقفال نشطة': '=محاولات دخول فاشلة#',
+    '#كتابات مرفوضة اليوممحاولات تعديل خارج الصلاحية': '=كتابات مرفوضة#',
+    'رُفضت وأُعيدت القيم كما هي': '=رُفضت وأُعيدت القيم كما هي — محاولات تعديل خارج الصلاحية',
+    '—آخر نسخة احتياطية شاملةلم تُؤخذ نسخة بعد': '=آخر نسخة شاملةلم تُؤخذ بعد' },
   /* CORE-02 S7: the nine platform sections were in-page tabs; each is now a named item of the console sidebar (#/sysadmin/plat/<sub>) —
      «التهيئة والاستعادة» under البيانات والاستمرارية, the other eight under إعدادات المنصة */
   plat: { 'هوية المنصة': 'aside', 'شاشة تسجيل الدخول': 'aside', 'تطبيق الجوال': 'aside', 'القوائم': 'aside', 'الطباعة والتقارير': 'aside', 'الوحدات': 'aside', 'التهيئة والاستعادة': 'aside', 'التنبيهات والتعاميم': 'aside', 'حول المنصة': 'aside' },
@@ -315,7 +327,7 @@ if (CAPTURE) {
       /* CORE-02 step 5: every link of the removed quick-links strip is still reachable at its destination */
       const side = (await s.page.evaluate(collect)).side;
       assert.equal(side.length, 17, 'the console sidebar holds 17 destinations (' + JSON.stringify(side) + ')');
-      for (const [from, x, to] of moved) assert.ok(to === 'aside' ? side.includes(x) : (NAV[to].includes(x) || side.includes(x) || variants(x).some((v) => nowBy[to].actions.has(v))), from + ': «' + x + '» (moved) is still reachable ' + (to === 'aside' ? 'in the console sidebar' : 'on ' + to));
+      for (const [from, x, to] of moved) assert.ok(to.startsWith('=') ? nowBy[from].actions.has(to.slice(1)) : to === 'aside' ? side.includes(x) : (NAV[to].includes(x) || side.includes(x) || variants(x).some((v) => nowBy[to].actions.has(v))), from + ': «' + x + '» (moved) is still reachable ' + (to === 'aside' ? 'in the console sidebar' : 'on ' + to));
       /* CORE-02 step 2: the page is titled «المنصة / مركز إدارة رشاد», the sidebar link reads «مركز إدارة رشاد», the user card reads «مسؤول المنصة» */
       assert.equal((await s.page.textContent('.bs-crumb')).replace(/\s+/g, ' ').trim(), 'المنصة / مركز إدارة رشاد', 'crumb names the admin interface');
       assert.ok((await s.page.$$eval('.nlbl', (els) => els.map((e) => e.textContent.trim()))).includes('مركز إدارة رشاد'), 'sidebar link «مركز إدارة رشاد»');

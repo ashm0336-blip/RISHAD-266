@@ -49,7 +49,8 @@ test('(d) «آخر الحسابات المضافة — آخر ٧ أيام» list
   assert.deepEqual(v.ovAdded.map((r) => r.name), ['TEST_ONLY a0', 'TEST_ONLY a1'], 'only the accounts added in the last 7 days');
   assert.equal(v.ovAddedN, 'حسابان');
   const view = fs.readFileSync(path.join(ROOT, 'src/modules/admin/view.html'), 'utf8');
-  assert.match(view, /<b>آخر الحسابات المضافة<\/b><small>آخر ٧ أيام · \{\{ovAddedN\}\}<\/small>/, 'the label is unchanged and now true');
+  assert.match(view, /<h3 id="ov-h-add">آخر الحسابات المضافة<\/h3><small>آخر ٧ أيام · \{\{ovAddedN\}\}<\/small>/,   /* CORE-02 S8: the card title is a real h3 under the page h2 */
+    'the label is unchanged and now true');
   const old = admin({ admTab: 'overview', adOv: { ok: 1, added: added.slice(2) } }).page.adVals();
   assert.equal(old.ovAddedEmpty, true, '«لم يُضَف حساب خلال ٧ أيام» when the only additions are older');
 });
@@ -83,10 +84,12 @@ test('(e) the security-log request for «اليوم» uses that boundary; 7 / 30
   /* CORE-02 step 6: the period chip is a real button (aria-pressed) — its tooltip still says what the period means */
   assert.match(view, /<sc-for list="\{\{secPeriods\}\}"[^>]*><button type="button" class="adm-chip" aria-pressed="\{\{k\.on\}\}" onClick="\{\{k\.go\}\}" title="\{\{k\.tip\}\}"/);
   const ov = admin({ admTab: 'overview', adOv: { ok: 1, failsToday: 2, deniedToday: 1 } }).page.adVals();
-  const card = ov.ovCards.find((c) => c.l === 'محاولات دخول فاشلة اليوم');
+  /* CORE-02 S8: the tiles became the «الأمن اليوم» status card; its subtitle says where the server-counted «اليوم» starts (server unchanged);
+     where the log filter starts is the period chip's own tooltip (asserted above) */
+  const sc = ov.ovStats.find((c) => c.k === 'sec'), card = sc.rows.find((c) => c.l === 'محاولات دخول فاشلة');
   assert.equal(card.go && typeof card.go, 'function');
-  assert.match(view, /«اليوم» في بطاقتي المحاولات الفاشلة والكتابات المرفوضة يعدّه الخادم من الثالثة فجراً بتوقيت الرياض، وفلتر «اليوم» في سجل الأمن يبدأ من منتصف الليل بتوقيت الرياض/,
-    'the overview says where the server-counted «اليوم» starts (server unchanged) and where the log filter starts');
+  assert.equal(card.v, '2');
+  assert.equal(sc.sub, '«اليوم» يبدأ من الثالثة فجراً بتوقيت الرياض', 'the overview says where the server-counted «اليوم» starts');
 });
 
 /* ── (f) ── */

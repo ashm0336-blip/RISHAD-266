@@ -1275,7 +1275,9 @@ class Component extends DCLogic {
         return { profName: pr.name || "", profRole: pr.role || "", profInitial: (pr.name || "؟").trim().charAt(0) || "؟", profBadgeOn: pr.scope === "platform", profBadge: "المنصة" };
       })()),
       __nav: (KIVO.BassamNav = { go: (k) => { try { (k === "sysadmin" ? goSys : go(k))(); } catch (e) {} },
-        conSync: (s) => this._conSync(s), conGo: (tab, sub) => this._conGo(tab, sub, false) }),
+        conSync: (s) => this._conSync(s), conGo: (tab, sub) => this._conGo(tab, sub, false),
+        /* CORE-02 S8: «عرض الكل» في «أحداث المنصة الأخيرة» يفتح الجرس (بعد نقرة الفتح كي لا يغلقه مستمعُ النقر خارجه) */
+        bell: () => setTimeout(() => { if (!this.state.nfOpen) this.setState({ nfOpen: true, nfToast: null }, () => this._nfReload()); }, 0) }),
       goAdmin: () => { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); }, goProfile: (ev) => { try { if (ev && ev.target && ev.target.closest && ev.target.closest(".s-logout")) return; } catch (e) {} go("profile")(); }, bsVerTxt: "الإصدار " + (KIVO.__BS_VER || ""),
       pageName: this._pageNames()[a] || "لوحة التحكم",
       isKpis: ap === "kpis", isDstats: ap === "dstats",

@@ -1214,6 +1214,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       x = "plat" === d ? ["setup" === ps ? "data" : "plat", ""] : T[d] || ["", ""];
     return { conEyebrow: G[x[0]] || "", conEyebrowOn: !!G[x[0]], conTitle: x[1] };
   }
+  /* CORE-02 S8 · من الرئيسية إلى صفحةٍ في المركز: عبر شريطه (عنوانٌ في السجلّ وتحديدُ العنصر) — وإن غاب الشريط فالانتقالُ نفسُه داخل الصفحة */
+  _ovGo(k, sub) {
+    const N = KIVO.BassamNav;
+    N && N.conGo ? N.conGo(k, sub || null) : "plat" === k ? this._plGo(sub || "id") : this._admGo(k);
+  }
+  /* الوحداتُ (إداراتٍ وأقساماً) التي لا مدير لها — القاعدةُ نفسُها التي تكتب «بلا مدير» في شجرة الإدارات */
+  _deptsNoMgr() {
+    const A = KIVO.BassamAuth;
+    let L = [];
+    try {
+      L = KIVO.BassamDepts.list() || [];
+    } catch (x) {}
+    return A && A.deptManager ? L.filter((d) => d && d.id && !A.deptManager(d.id)) : [];
+  }
   adAct(t, e, s) {
     return this.adFetch(t, e).then(
       (t) => (
@@ -1340,7 +1354,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       d = KIVO.BassamDepts.active();
     } catch (t) {}
-    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|");
+    let nr = "";
+    try {
+      nr = KIVO.BassamNotif && KIVO.BassamNotif.status ? String(KIVO.BassamNotif.status().rev) : "";   /* CORE-02 S8: «أحداث المنصة الأخيرة» */
+    } catch (t) {}
+    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|") + "|n" + nr;
   }
   _adMemo(n, f) {
     const k = this._adKey(),
@@ -2800,63 +2818,108 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     let u = this._fullStamp();
     const b = this._expInfo(u, "full"),
       w = u ? Math.floor((e - new Date(u).getTime()) / 864e5) : 999,
-      go = (k, x) => () => (x ? this.setState(x, () => this.adGo(k)) : this.adGo(k)),
+      /* CORE-02 S8 · رئيسيةُ المركز: «٠» قبل وصول القراءة الأولى يُقرأ رقماً حقيقياً — فالقيمُ من الخادم هيكلُ تحميل حتى تصل */
+      ld = s && null == t.adOv && !t.adErr,
+      pl = s && !t.adPres && !t.adErr,
+      go = (k, x, sub) => () => this.setState(x || {}, () => this._ovGo(k, sub)),
+      dl = (() => {
+        try {
+          return KIVO.BassamDepts.list() || [];
+        } catch (x) {
+          return [];
+        }
+      })(),
+      isSec = (d) => {
+        try {
+          return !!KIVO.BassamDepts.isSection(d.id);
+        } catch (x) {
+          return !1;
+        }
+      },
+      nm = this._deptsNoMgr(),
+      oh = ld ? 0 : (o.oldHash || []).length,
+      dirty = (() => {
+        try {
+          return !!(KIVO.__BS_SRV && KIVO.__BS_SRV.dirty && KIVO.__BS_SRV.dirty());
+        } catch (x) {
+          return !1;
+        }
+      })(),
+      row = (l, v, x) => Object.assign({ l: l, v: String(v), tone: "", skel: !1, tip: "", go: null, ltr: !1 }, x || {}),
+      card = (k, ti, sub, lnk, tab, rows, x) => ({
+        k: k,
+        t: ti,
+        sub: sub,
+        subOn: !!sub,
+        lnk: lnk,
+        href: "#/sysadmin/" + tab,
+        go: (ev) => {
+          ev && ev.preventDefault && ev.preventDefault();
+          (x || go(tab))();
+        },
+        hid: "ov-c-" + k,
+        busy: rows.some((r) => r && r.skel) ? "true" : "false",
+        rows: rows.filter(Boolean).map((r) => Object.assign(r, { act: !!r.go && !r.skel, still: !r.go || r.skel, val: !r.skel })),
+      }),
       y = [
-        {
-          v: "on" === g ? "● متصل" : "off" === g ? "● منقطع" : "● محلي",
-          l: "الاتصال والبيانات",
-          sub: "on" === g ? "الإصدار " + (KIVO.__BS_VER || "") : "off" === g ? "التعديلات تُحفظ مؤقتاً" : "نسخة الجهاز",
-          tone: "on" === g ? "ok" : "off" === g ? "bad" : "mute",
-          tip: "حالة الاتصال كما في مؤشر القائمة الجانبية",
-        },
-        {
-          v: h + " / " + m + " / " + (missingAccounts === null ? "—" : missingAccounts),
-          l: "الحسابات: نشط / مجمّد / بلا حساب",
-          sub: f === null ? (t.adErr || o.ok === 1 ? "تعذّر تأكيد عدد الموظفين — سنحاول مجدداً تلقائياً" : "جارٍ تأكيد عدد الموظفين…") : KIVO.BassamCount(f, "موظف") + " في كل الإدارات",
-          tone: "",
-          tip: "حسابات الدخول عبر كل الإدارات — افتح مراقبة الحسابات",
-          go: go("users"),
-        },
-        {
-          v: String(p.active || 0),
-          l: "متصلون الآن",
-          sub: (p.list || []).length
-            ? KIVO.BassamCount((p.list || []).length - (p.active || 0), ["خامل واحد", "خاملان", "خاملَين", "خاملين", "خاملاً", "خامل"])
-            : "—",
-          tone: "ok",
-          tip: "جلسات تفاعلت خلال آخر دقيقتين",
-          go: () => {
-            try {
-              const el = document.querySelector('[data-ov="pres"]');
-              el && el.scrollIntoView({ behavior: "smooth", block: "start" });
-            } catch (x) { /* تجميلٌ فقط */ }
-          },
-        },
-        {
-          v: String(o.failsToday || 0),
-          l: "محاولات دخول فاشلة اليوم",
-          sub: o.lockedNow ? o.lockedNow + " قفل نشط الآن" : "لا أقفال نشطة",
-          tone: o.failsToday ? "bad" : "",
-          tip: "من سجل أحداث الأمن",
-          go: go("sec", { adSecKind: "login", adSecPeriod: "today" }),
-        },
-        {
-          v: String(o.deniedToday || 0),
-          l: "كتابات مرفوضة اليوم",
-          sub: "محاولات تعديل خارج الصلاحية",
-          tone: o.deniedToday ? "plum" : "",
-          tip: "رُفضت وأُعيدت القيم كما هي",
-          go: go("sec", { adSecKind: "denied", adSecPeriod: "today" }),
-        },
-        {
-          v: u ? this.adRel(new Date(u).getTime(), e) : "—",
-          l: "آخر نسخة احتياطية شاملة",
-          sub: u ? (w >= 2 ? "تجاوزت المدة المقبولة (يومان)" : "ضمن المدة") : "لم تُؤخذ نسخة بعد",
-          tone: w >= 2 ? "warn" : "",
-          tip: b.txt,
-          go: go("backup"),
-        },
-      ].map((c) => Object.assign(c, { act: !!c.go, still: !c.go })),
+        card("plat", "حالة المنصة", "النسخة الشاملة كما سُجّلت على هذا الجهاز", "إلى النسخة الاحتياطية", "backup", [
+          row("الاتصال", "on" === g ? "● متصل" : "off" === g ? "● منقطع" : "● محلي", {
+            tone: "on" === g ? "ok" : "off" === g ? "bad" : "mute",
+            tip: "حالة الاتصال كما في مؤشر القائمة الجانبية",
+          }),
+          row("الإصدار", KIVO.__BS_VER || "—", { ltr: !0 }),
+          row("التعديلات", dirty ? "بانتظار الحفظ" : "كل التغييرات محفوظة", { tone: dirty ? "warn" : "ok" }),
+          row("آخر نسخة شاملة", u ? this.adRel(new Date(u).getTime(), e) : "لم تُؤخذ بعد", {
+            tone: w >= 2 ? "warn" : "",
+            tip: b.txt || "",
+            go: go("backup"),
+          }),
+        ]),
+        card(
+          "acc",
+          "الحسابات",
+          f === null ? (t.adErr || o.ok === 1 ? "تعذّر تأكيد عدد الموظفين — سنحاول مجدداً تلقائياً" : "جارٍ تأكيد عدد الموظفين…") : KIVO.BassamCount(f, "موظف") + " في كل الإدارات",
+          "إلى مراقبة الحسابات",
+          "users",
+          [
+            row("نشطة", h),
+            row("مجمّدة", m, { tone: m ? "warn" : "" }),
+            row("موظفون بلا حساب", missingAccounts === null ? "—" : missingAccounts, { skel: ld }),
+            row("متصلون الآن", p.active || 0, {
+              skel: pl,
+              tone: "ok",
+              tip: "جلسات تفاعلت خلال آخر دقيقتين",
+              go: () => {
+                try {
+                  const el = document.querySelector('[data-ov="pres"]');
+                  el && el.scrollIntoView({ behavior: "smooth", block: "start" });
+                } catch (x) { /* تجميلٌ فقط */ }
+              },
+            }),
+            oh > 0 && row("بصيغة كلمة مرور قديمة", oh, { tone: "warn", go: go("users", { usF: "old" }) }),
+          ],
+        ),
+        card("org", "الوحدات التنظيمية", "", "إلى الإدارات", "depts", [
+          row("الإدارات", dl.filter((d) => !isSec(d)).length),
+          row("الأقسام", dl.filter(isSec).length),
+          row("بلا مدير", nm.length, { tone: nm.length ? "warn" : "" }),
+        ]),
+        card("sec", "الأمن اليوم", "«اليوم» يبدأ من الثالثة فجراً بتوقيت الرياض", "إلى صفحة الأمن", "sec", [
+          row("محاولات دخول فاشلة", o.failsToday || 0, {
+            skel: ld,
+            tone: o.failsToday ? "bad" : "",
+            tip: "من سجل أحداث الأمن",
+            go: go("sec", { adSecKind: "login", adSecPeriod: "today" }),
+          }),
+          row("أقفال نشطة", o.lockedNow || 0, { skel: ld, tone: o.lockedNow ? "warn" : "" }),
+          row("كتابات مرفوضة", o.deniedToday || 0, {
+            skel: ld,
+            tone: o.deniedToday ? "plum" : "",
+            tip: "رُفضت وأُعيدت القيم كما هي — محاولات تعديل خارج الصلاحية",
+            go: go("sec", { adSecKind: "denied", adSecPeriod: "today" }),
+          }),
+        ]),
+      ],
       S = [];
     ((o.fails || [])
       .filter((t) => t.n >= 3)
@@ -2894,6 +2957,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             go: () => this.setState({ adSecKind: "denied" }, () => this.adGo("sec")),
           }),
         ));
+    /* CORE-02 S8: من بياناتٍ محمَّلة أصلاً — تظهر عند وجودها فقط */
+    (nm.length &&
+      S.push({
+        tone: "warn",
+        txt: KIVO.BassamCount(nm.length, ["وحدة واحدة", "وحدتان", "وحدتين", "وحدات", "وحدة", "وحدة"]) + " بلا مدير — لا يعتمد فيها أحدٌ الجدول أو التقرير اليومي",
+        when: "",
+        act: "الإدارات",
+        go: go("depts"),
+      }),
+      oh &&
+        S.push({
+          tone: "warn",
+          txt: KIVO.BassamCount(oh, "حساب") + " بصيغة كلمة مرور قديمة التشفير",
+          when: "",
+          act: "مراقبة الحسابات",
+          go: go("users", { usF: "old" }),
+        }));
     const x = S.map((t) => ({
         tone: t.tone,
         txt: t.txt,
@@ -3045,25 +3125,62 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         canKill: !t.mine,
         kill: () => this._adKill(t.u),
       }));
+    /* CORE-02 S8 · «أحداث المنصة الأخيرة»: تنبيهاتُ المنصة والأمن كما وصلت إلى الجرس (لا قراءةَ جديدة) — أحدثُ خمسة */
+    const ev = (() => {
+        try {
+          const N = KIVO.BassamNotif;
+          return N && N.list
+            ? N.list()
+                .filter((x) => "sys" === x.k || "sec" === x.k)
+                .sort((a, b) => b.at - a.at)
+                .slice(0, 5)
+                .map((x) => ({ t: x.t || "", b: x.b || "", bOn: !!x.b, when: this.adRel(x.at, e), whenTip: this.adFull(x.at), tone: "sec" === x.k ? "bad" : "" }))
+            : [];
+        } catch (x) {
+          return [];
+        }
+      })(),
+      /* «عرض الكل»: كلُّ قائمةٍ تعرض خمسة صفوف، والباقي في صفحته */
+      all = (k, xs, sub) => ({ go: go(k, xs, sub) }),
+      cap = (a) => a.slice(0, 5);
     return {
       ...this.adUsersVals(),
-      ovCards: y,
+      ovStats: y,
+      ovLoading: ld,
+      ovLoaded: !ld,
+      ovErrOn: !!(s && t.adErr),
       ...this._adImgVals(o.imgs, e),
       ovAlerts: x,
-      ovAlertsEmpty: !x.length,
-      ovStale: t.adOv ? "آخر تحديث " + this.adRel(this._adOk || e, e) : "لم تكتمل القراءة بعد",
+      ovAlertsEmpty: !!t.adOv && !x.length,
+      ovAlertsOn: ld || x.length > 0,
+      ovAlertsT: x.length ? "يحتاج قرارك (" + x.length + ")" : "يحتاج قرارك",
+      ovStale: t.adOv ? "آخر قراءة ناجحة " + this.adRel(this._adOk || e, e) : "لم تكتمل القراءة بعد",
+      ovMeta: ld ? "جارٍ القراءة…" : t.adOv ? "آخر قراءة " + this.adRel(this._adOk || e, e) + " · تتحدّث تلقائياً" : "تتحدّث تلقائياً",
       ovPresN: KIVO.BassamCount(p.active || 0, ["نشط واحد", "نشطان", "نشطَين", "نشطين", "نشطاً", "نشط"]),
-      ovPres: v,
-      ovPresEmpty: !v.length,
-      ovAdded: _,
+      ovPres: cap(v),
+      ovPresLoading: pl,
+      ovPresEmpty: !!t.adPres && !v.length,
+      ovPresAll: all("sec").go,
+      ovAdded: cap(_),
       ovAddedN: KIVO.BassamCount(_.length, "حساب") + "",
-      ovAddedEmpty: !_.length,
-      ovFrozen: D,
+      ovAddedEmpty: !!t.adOv && !_.length,
+      ovAddedAll: all("users", { usF: "week" }).go,
+      ovFrozen: cap(D),
       ovFrozenN: D.length ? KIVO.BassamCount(D.length, "حساب") + "" : "لا شيء",
       ovFrozenEmpty: !D.length,
-      ovFails: T,
+      ovFrozenAll: all("users", { usF: "frozen" }).go,
+      ovFails: cap(T),
       ovFailsN: KIVO.BassamCount(o.failsToday || 0, "محاولة") + "",
-      ovFailsEmpty: !T.length,
+      ovFailsEmpty: !!t.adOv && !T.length,
+      ovFailsAll: all("sec", { adSecKind: "login", adSecPeriod: "today" }).go,
+      ovEvents: ev,
+      ovEventsEmpty: !ev.length,
+      ovEventsAll: () => {
+        try {
+          KIVO.BassamNav && KIVO.BassamNav.bell && KIVO.BassamNav.bell();
+        } catch (x) { /* الجرسُ في القشرة */ }
+      },
+      ovSendBc: () => this.setState({ nfSec: "bc" }, () => this._ovGo("plat", "notif")),
       ...KIVO.BassamCount.pair("secBadge", String(C), "حدث"),
       secBadgeOn: s && C > 0,
       secQ: t.adSecQ || "",
@@ -7085,7 +7202,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ...(n ? this._conHead(d, ps) : {}),
           ...pv,
           ...(n && "plat" === d ? { conTitle: pv.plTitle || "", conDesc: pv.plSub || "" } : {}),
-          conDescOn: n && "plat" === d && !!pv.plSub,
+          /* CORE-02 S8: الرئيسية — سطرُ وقت القراءة تحت العنوان */
+          ...(o && "overview" === d ? { conDesc: av.ovMeta } : {}),
+          conDescOn: (n && "plat" === d && !!pv.plSub) || (o && "overview" === d),
           conPhCls: "con-ph" + (n && "plat" === d ? " con-ph--sticky" : ""),
           admOnOverview: o && "overview" === d,
           admOnSec: o && "sec" === d,

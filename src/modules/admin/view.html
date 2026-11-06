@@ -17,6 +17,9 @@
     <h2 tabindex="-1">{{conTitle}}</h2>
     <sc-if value="{{conDescOn}}" hint-placeholder-val="{{ false }}"><p class="con-desc">{{conDesc}}</p></sc-if>
   </div>
+  <sc-if value="{{admOnOverview}}" hint-placeholder-val="{{ false }}">
+      <div class="con-ph-a"><button type="button" class="bs-btn" onClick="{{ovSendBc}}">إرسال تعميم</button><button type="button" class="bs-btn" onClick="{{admGoBackup}}">أخذ نسخة شاملة</button></div>
+  </sc-if>
   <sc-if value="{{admOnPlat}}" hint-placeholder-val="{{ false }}">
       <div class="con-ph-a">
         <sc-if value="{{plClean}}" hint-placeholder-val="{{ true }}"><span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:9999px;background:var(--bg-a51501050p1);color:var(--fg-x065f46)">✓ محفوظ ومنشور</span></sc-if>
@@ -53,14 +56,17 @@
 
 
 
-<!-- CORE-01 · رئيسيةُ مدير النظام: القراءةُ تُعاد تلقائياً (adLoad) بلا زرّ إعادة -->
+<!-- CORE-02 S8 · «الرئيسية» في «مركز إدارة رشاد»: ما يحتاج قرار مسؤول المنصة، ثم أربع بطاقات حالةٍ من بياناتٍ موجودة (لا مقياسَ مختلَق)،
+     ثم القوائم. القراءةُ تُعاد تلقائياً (adLoad) بلا زرّ «تحديث»؛ وقبل وصولها هيكلُ تحميل لا «٠». لا بلاطاتٍ تنقل إلى صفحات المركز هنا:
+     كلُّها عناصرُ مسمّاة في الشريط الجانبي — والمهمّةُ المتكرّرة («إرسال تعميم») فعلٌ في رأس الصفحة -->
 <sc-if value="{{admOnOverview}}" hint-placeholder-val="{{ false }}">
 <div class="adm-ov">
-<section class="bs-card adm-ov-card adm-ov-hero" aria-label="يحتاج قرارك">
-  <div class="adm-ov-hd"><div><b>يحتاج قرارك</b><small>تنبيهات مجمَّعة — تختفي بمعالجتها</small></div>
-    <sc-if value="{{adErrOn}}" hint-placeholder-val="{{ false }}"><span class="adm-stale" title="ستُحدَّث القراءة تلقائياً">{{ovStale}}</span></sc-if>
-  </div>
-  <sc-if value="{{ovAlertsEmpty}}" hint-placeholder-val="{{ true }}"><div class="adm-ov-ok"><span class="d"></span>لا شيء يستدعي قرارك الآن</div></sc-if>
+<sc-if value="{{ovErrOn}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-err" role="status"><span class="d"></span><span class="t">تعذّرت القراءة، نعيد المحاولة تلقائياً</span><span class="adm-stale">{{ovStale}}</span></div></sc-if>
+<sc-if value="{{ovAlertsEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-ok" role="status"><span class="d"></span>لا شيء يحتاج قرارك الآن</div></sc-if>
+<sc-if value="{{ovAlertsOn}}" hint-placeholder-val="{{ true }}">
+<section class="bs-card adm-ov-card adm-ov-hero" aria-labelledby="ov-h-dec">
+  <div class="adm-ov-hd"><div><h3 id="ov-h-dec">{{ovAlertsT}}</h3><small>تنبيهات مجمَّعة — تختفي بمعالجتها</small></div></div>
+  <sc-if value="{{ovLoading}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-skl" aria-hidden="true"><span class="bs-skel"></span><span class="bs-skel"></span></div></sc-if>
   <sc-for list="{{ovAlerts}}" as="a" hint-placeholder-count="2">
   <div class="adm-ov-al" data-tone="{{a.tone}}">
     <span class="d"></span>
@@ -70,46 +76,27 @@
   </div>
   </sc-for>
 </section>
-<div class="adm-ov-kpis">
-  <sc-for list="{{ovCards}}" as="c" hint-placeholder-count="6">
-  <sc-if value="{{c.act}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-card adm-ov-kpi" title="{{c.tip}}" data-tone="{{c.tone}}" onClick="{{c.go}}"><span class="v">{{c.v}}</span><span class="l">{{c.l}}</span><span class="s">{{c.sub}}</span></button></sc-if>
-  <sc-if value="{{c.still}}" hint-placeholder-val="{{ false }}"><div class="bs-card adm-ov-kpi" title="{{c.tip}}" data-tone="{{c.tone}}"><span class="v">{{c.v}}</span><span class="l">{{c.l}}</span><span class="s">{{c.sub}}</span></div></sc-if>
+</sc-if>
+<div class="adm-ov-stats">
+  <sc-for list="{{ovStats}}" as="c" hint-placeholder-count="4">
+  <section class="bs-card adm-ov-stat" data-k="{{c.k}}" aria-labelledby="{{c.hid}}" aria-busy="{{c.busy}}">
+    <div class="adm-ov-sh"><h3 id="{{c.hid}}">{{c.t}}</h3><sc-if value="{{c.subOn}}" hint-placeholder-val="{{ true }}"><small>{{c.sub}}</small></sc-if></div>
+    <div class="adm-ov-sl">
+      <sc-for list="{{c.rows}}" as="r" hint-placeholder-count="3">
+      <sc-if value="{{r.act}}" hint-placeholder-val="{{ false }}"><button type="button" class="adm-ov-sr" data-tone="{{r.tone}}" title="{{r.tip}}" onClick="{{r.go}}"><span class="l">{{r.l}}</span><bdi class="v">{{r.v}}</bdi></button></sc-if>
+      <sc-if value="{{r.still}}" hint-placeholder-val="{{ true }}"><div class="adm-ov-sr" data-tone="{{r.tone}}" title="{{r.tip}}"><span class="l">{{r.l}}</span><sc-if value="{{r.val}}" hint-placeholder-val="{{ true }}"><bdi class="v">{{r.v}}</bdi></sc-if><sc-if value="{{r.skel}}" hint-placeholder-val="{{ false }}"><span class="bs-skel adm-ov-sk" aria-label="جارٍ القراءة"></span></sc-if></div></sc-if>
+      </sc-for>
+    </div>
+    <a class="adm-ov-lnk" href="{{c.href}}" onClick="{{c.go}}">{{c.lnk}}</a>
+  </section>
   </sc-for>
 </div>
-<div style="margin:6px 2px 0;font-size:10.5px;color:var(--fg-x94a3b8)">«اليوم» في بطاقتي المحاولات الفاشلة والكتابات المرفوضة يعدّه الخادم من الثالثة فجراً بتوقيت الرياض، وفلتر «اليوم» في سجل الأمن يبدأ من منتصف الليل بتوقيت الرياض</div>
-<div class="bs-ovgrid adm-ov-cols">
+<div class="bs-ovgrid adm-ov-cols adm-ov-cols--home">
   <div class="adm-ov-col">
-  <section class="bs-card adm-ov-card" data-ov="pres">
-    <div class="adm-ov-hd"><div><b>المتصلون الآن</b><small>نشط = تفاعل خلال دقيقتين · يتحدّث كل ٢٥ ثانية</small></div><span class="n" data-tone="ok">{{ovPresN}}</span></div>
-    <div class="adm-ov-row adm-ov-th c-pres"><span>المستخدم</span><span>الحالة</span><span>آخر عملية</span><span></span></div>
-    <sc-if value="{{ovPresEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا جلسات حيّة الآن</div></sc-if>
-    <sc-for list="{{ovPres}}" as="p" hint-placeholder-count="3">
-    <div class="adm-ov-row c-pres">
-      <div class="adm-ov-who" title="{{p.tip}}"><span class="av">{{p.ini}}</span><span class="nm"><b>{{p.name}}</b><small>{{p.sub}}</small></span></div>
-      <div class="st" data-tone="{{p.tone}}"><span class="d"></span>{{p.st}}</div>
-      <div class="mt" title="{{p.lastTip}}">{{p.last}}</div>
-      <sc-if value="{{p.canKill}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-btn adm-ov-act" data-tone="bad" onClick="{{p.kill}}" title="إنهاء كل جلسات هذا المستخدم الآن">إنهاء</button></sc-if>
-      <sc-if value="{{p.mine}}" hint-placeholder-val="{{ false }}"><span class="mt">أنت</span></sc-if>
-    </div>
-    </sc-for>
-  </section>
-  <section class="bs-card adm-ov-card">
-    <div class="adm-ov-hd"><div><b>الحسابات المجمّدة</b><small>{{ovFrozenN}}</small></div></div>
-    <div class="adm-ov-row adm-ov-th c-frz"><span>الحساب</span><span>جمّده</span><span></span></div>
-    <sc-if value="{{ovFrozenEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا حسابات مجمّدة</div></sc-if>
-    <sc-for list="{{ovFrozen}}" as="p" hint-placeholder-count="2">
-    <div class="adm-ov-row c-frz">
-      <div class="adm-ov-who"><span class="av" data-tone="mute">{{p.ini}}</span><span class="nm"><b>{{p.name}}</b><small>{{p.sub}}</small></span></div>
-      <div class="mt">{{p.by}}</div>
-      <button type="button" class="bs-btn adm-ov-act" data-tone="ok" onClick="{{p.unfreeze}}">إعادة التفعيل</button>
-    </div>
-    </sc-for>
-  </section>
-  </div>
-  <div class="adm-ov-col">
-  <section class="bs-card adm-ov-card">
-    <div class="adm-ov-hd"><div><b>محاولات الدخول الفاشلة</b><small>اليوم · {{ovFailsN}}</small></div></div>
+  <section class="bs-card adm-ov-card" aria-labelledby="ov-h-fail">
+    <div class="adm-ov-hd"><div><h3 id="ov-h-fail">محاولات الدخول الفاشلة</h3><small>اليوم · {{ovFailsN}}</small></div></div>
     <div class="adm-ov-row adm-ov-th c-fail"><span>الاسم المجرَّب</span><span>المصدر</span><span>العدد</span><span>القفل</span><span></span></div>
+    <sc-if value="{{ovLoading}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-skl" aria-hidden="true"><span class="bs-skel"></span><span class="bs-skel"></span></div></sc-if>
     <sc-if value="{{ovFailsEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا محاولات فاشلة اليوم</div></sc-if>
     <sc-for list="{{ovFails}}" as="p" hint-placeholder-count="2">
     <div class="adm-ov-row c-fail">
@@ -120,10 +107,12 @@
       <sc-if value="{{p.locked}}" hint-placeholder-val="{{ false }}"><button type="button" class="bs-btn adm-ov-act" onClick="{{p.unlock}}">فكّ القفل</button></sc-if>
     </div>
     </sc-for>
+    <button type="button" class="adm-ov-more" onClick="{{ovFailsAll}}">عرض الكل في سجل الأمن</button>
   </section>
-  <section class="bs-card adm-ov-card">
-    <div class="adm-ov-hd"><div><b>آخر الحسابات المضافة</b><small>آخر ٧ أيام · {{ovAddedN}}</small></div></div>
+  <section class="bs-card adm-ov-card" aria-labelledby="ov-h-add">
+    <div class="adm-ov-hd"><div><h3 id="ov-h-add">آخر الحسابات المضافة</h3><small>آخر ٧ أيام · {{ovAddedN}}</small></div></div>
     <div class="adm-ov-row adm-ov-th c-add"><span>الحساب</span><span>أضافه</span><span>الحالة</span></div>
+    <sc-if value="{{ovLoading}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-skl" aria-hidden="true"><span class="bs-skel"></span><span class="bs-skel"></span></div></sc-if>
     <sc-if value="{{ovAddedEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لم يُضَف حساب خلال ٧ أيام</div></sc-if>
     <sc-for list="{{ovAdded}}" as="p" hint-placeholder-count="3">
     <div class="adm-ov-row c-add">
@@ -132,6 +121,50 @@
       <div class="st" data-tone="{{p.tone}}"><span class="d"></span>{{p.st}}</div>
     </div>
     </sc-for>
+    <button type="button" class="adm-ov-more" onClick="{{ovAddedAll}}">عرض الكل في مراقبة الحسابات</button>
+  </section>
+  </div>
+  <div class="adm-ov-col">
+  <section class="bs-card adm-ov-card" data-ov="pres" aria-labelledby="ov-h-pres">
+    <div class="adm-ov-hd"><div><h3 id="ov-h-pres">المتصلون الآن</h3><small>نشط = تفاعل خلال دقيقتين · يتحدّث كل ٢٥ ثانية</small></div><span class="n" data-tone="ok">{{ovPresN}}</span></div>
+    <div class="adm-ov-row adm-ov-th c-pres"><span>المستخدم</span><span>الحالة</span><span>آخر عملية</span><span></span></div>
+    <sc-if value="{{ovPresLoading}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-skl" aria-hidden="true"><span class="bs-skel"></span><span class="bs-skel"></span></div></sc-if>
+    <sc-if value="{{ovPresEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا جلسات حيّة الآن</div></sc-if>
+    <sc-for list="{{ovPres}}" as="p" hint-placeholder-count="3">
+    <div class="adm-ov-row c-pres">
+      <div class="adm-ov-who" title="{{p.tip}}"><span class="av">{{p.ini}}</span><span class="nm"><b>{{p.name}}</b><small>{{p.sub}}</small></span></div>
+      <div class="st" data-tone="{{p.tone}}"><span class="d"></span>{{p.st}}</div>
+      <div class="mt" title="{{p.lastTip}}">{{p.last}}</div>
+      <sc-if value="{{p.canKill}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-btn adm-ov-act" data-tone="bad" onClick="{{p.kill}}" title="إنهاء كل جلسات هذا المستخدم الآن">إنهاء</button></sc-if>
+      <sc-if value="{{p.mine}}" hint-placeholder-val="{{ false }}"><span class="mt">أنت</span></sc-if>
+    </div>
+    </sc-for>
+    <button type="button" class="adm-ov-more" onClick="{{ovPresAll}}">عرض الكل في الأمن</button>
+  </section>
+  <section class="bs-card adm-ov-card" aria-labelledby="ov-h-frz">
+    <div class="adm-ov-hd"><div><h3 id="ov-h-frz">الحسابات المجمّدة</h3><small>{{ovFrozenN}}</small></div></div>
+    <div class="adm-ov-row adm-ov-th c-frz"><span>الحساب</span><span>جمّده</span><span></span></div>
+    <sc-if value="{{ovFrozenEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا حسابات مجمّدة</div></sc-if>
+    <sc-for list="{{ovFrozen}}" as="p" hint-placeholder-count="2">
+    <div class="adm-ov-row c-frz">
+      <div class="adm-ov-who"><span class="av" data-tone="mute">{{p.ini}}</span><span class="nm"><b>{{p.name}}</b><small>{{p.sub}}</small></span></div>
+      <div class="mt">{{p.by}}</div>
+      <button type="button" class="bs-btn adm-ov-act" data-tone="ok" onClick="{{p.unfreeze}}">إعادة التفعيل</button>
+    </div>
+    </sc-for>
+    <button type="button" class="adm-ov-more" onClick="{{ovFrozenAll}}">عرض الكل في مراقبة الحسابات</button>
+  </section>
+  <section class="bs-card adm-ov-card" aria-labelledby="ov-h-ev">
+    <div class="adm-ov-hd"><div><h3 id="ov-h-ev">أحداث المنصة الأخيرة</h3><small>تنبيهات المنصة والأمن كما وصلت إلى الجرس</small></div></div>
+    <sc-if value="{{ovEventsEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا أحداث حديثة</div></sc-if>
+    <sc-for list="{{ovEvents}}" as="p" hint-placeholder-count="3">
+    <div class="adm-ov-row c-ev" data-tone="{{p.tone}}">
+      <span class="d"></span>
+      <div class="nm"><b>{{p.t}}</b><sc-if value="{{p.bOn}}" hint-placeholder-val="{{ true }}"><small>{{p.b}}</small></sc-if></div>
+      <span class="mt" title="{{p.whenTip}}">{{p.when}}</span>
+    </div>
+    </sc-for>
+    <button type="button" class="adm-ov-more" onClick="{{ovEventsAll}}">عرض الكل في التنبيهات</button>
   </section>
   </div>
 </div>
