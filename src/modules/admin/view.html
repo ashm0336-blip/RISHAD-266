@@ -79,6 +79,7 @@
   <sc-if value="{{c.still}}" hint-placeholder-val="{{ false }}"><div class="bs-card adm-ov-kpi" title="{{c.tip}}" data-tone="{{c.tone}}"><span class="v">{{c.v}}</span><span class="l">{{c.l}}</span><span class="s">{{c.sub}}</span></div></sc-if>
   </sc-for>
 </div>
+<div style="margin:6px 2px 0;font-size:10.5px;color:var(--fg-x94a3b8)">«اليوم» في بطاقتي المحاولات الفاشلة والكتابات المرفوضة يعدّه الخادم من الثالثة فجراً بتوقيت الرياض، وفلتر «اليوم» في سجل الأمن يبدأ من منتصف الليل بتوقيت الرياض</div>
 <div class="bs-ovgrid adm-ov-cols">
   <div class="adm-ov-col">
   <section class="bs-card adm-ov-card" data-ov="pres">
@@ -188,7 +189,7 @@
       <input value="{{secQ}}" onChange="{{secOnQ}}" placeholder="بحث بالاسم أو اسم المستخدم…" style="flex:1;min-width:180px;height:30px;border:1px solid var(--bd-xe1e1e1);border-radius:9px;padding:0 10px;font-family:'Cairo',sans-serif;font-size:11.5px;outline:none;box-sizing:border-box">
       <sc-for list="{{secKinds}}" as="k" hint-placeholder-count="7"><span onClick="{{k.go}}" style="{{k.style}}">{{k.t}}</span></sc-for>
       <span style="width:1px;height:20px;background:var(--bg-xe1e1e1);margin:0 2px"></span>
-      <sc-for list="{{secPeriods}}" as="k" hint-placeholder-count="3"><span onClick="{{k.go}}" style="{{k.style}}">{{k.t}}</span></sc-for>
+      <sc-for list="{{secPeriods}}" as="k" hint-placeholder-count="3"><span onClick="{{k.go}}" title="{{k.tip}}" style="{{k.style}}">{{k.t}}</span></sc-for>
     </div>
     <div style="display:grid;grid-template-columns:30px 1fr 150px 92px 96px;gap:10px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)"><span></span><span>الحدث</span><span>المستخدم</span><span>الوقت</span><span>الجهاز</span></div>
     <sc-if value="{{secEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:14px 16px;font-size:11.5px;color:var(--fg-x94a3b8)">لا أحداث في هذه الفترة</div></sc-if>
@@ -289,12 +290,12 @@
 <div style="height:12px"></div>
 <div class="bs-ovgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
   <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden;min-width:0">
-    <div style="padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">سقوف الإدارات والعدسات</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">ما يحق لكل إدارة رؤيته — يُعدَّل من تبويب «الإدارات»</div></div>
+    <div style="padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">سقوف الإدارات والعدسات</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">ما يحق لكل إدارة رؤيته فعلاً (بعد ما أطفأته المنصة) — يُعدَّل من تبويب «الإدارات»</div></div>
     <div style="display:grid;grid-template-columns:1fr 2fr .8fr 60px;gap:8px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)"><span>الإدارة</span><span>الصفحات المتاحة</span><span>العدسات</span><span></span></div>
     <sc-for list="{{pmCaps}}" as="d" hint-placeholder-count="2">
     <div style="display:grid;grid-template-columns:1fr 2fr .8fr 60px;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
       <div style="font-weight:700;color:var(--fg-x141414);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{d.name}}</div>
-      <div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{d.pages}}">{{d.pages}}</div>
+      <div style="min-width:0"><div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{d.pages}}">{{d.pages}}</div><sc-if value="{{d.offOn}}" hint-placeholder-val="{{ false }}"><div style="color:var(--fg-x92400e);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{d.offTxt}}">{{d.offTxt}}</div></sc-if></div>
       <div style="color:var(--fg-x475569);font-size:11px">{{d.lenses}}</div>
       <button onClick="{{d.go}}" style="height:24px;padding:0 8px;border-radius:7px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x8a6f35);font-family:'Cairo',sans-serif;font-size:10.5px;cursor:pointer">تعديل</button>
     </div>
@@ -308,14 +309,14 @@
     <div style="display:grid;grid-template-columns:1.2fr 2fr .6fr;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
       <div style="min-width:0"><div style="font-weight:700;color:var(--fg-x141414);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.name}}</div><div style="font-size:10px;color:var(--fg-x94a3b8)">{{p.dept}}<sc-if value="{{p.sup}}" hint-placeholder-val="{{ false }}"> · <span style="color:var(--fg-x8a6f35)">إشرافي</span></sc-if></div></div>
       <div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{p.grant}}">{{p.grant}}</div>
-      <div style="font-weight:700;color:var(--fg-x141414);font-feature-settings:'tnum'">{{p.n}}</div>
+      <div style="font-weight:700;color:var(--fg-x141414);font-feature-settings:'tnum'" title="{{p.nTip}}">{{p.n}}</div>
     </div>
     </sc-for>
   </div>
 </div>
 <div style="height:14px"></div>
 <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden">
-  <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9);flex-wrap:wrap"><div><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">مصفوفة الصلاحيات</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">من يملك ماذا عبر المنصة كلها — الخلية: <b>ع</b> عرض · <b>ت</b> تعديل · <b>ا</b> اعتماد · <b>ص</b> تصدير</div></div>
+  <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9);flex-wrap:wrap"><div><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">مصفوفة الصلاحيات</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">ما يقرّره محرّك الصلاحيات لكل حساب في إدارته (مدير الإدارة العامة: في أيٍّ من إدارات فرعه · مسؤول المنصة: في الإدارة النشطة) — الخلية: <b>ع</b> عرض · <b>ت</b> تعديل · <b>ا</b> اعتماد · <b>ص</b> تصدير</div></div>
     <input value="{{pmQ}}" onChange="{{pmOnQ}}" placeholder="بحث بالاسم…" style="margin-right:auto;width:200px;height:28px;border:1px solid var(--bd-xe1e1e1);border-radius:8px;padding:0 10px;font-family:'Cairo',sans-serif;font-size:11px;outline:none;box-sizing:border-box">
     <button onClick="{{pmExport}}" style="height:28px;padding:0 11px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x475569);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer">تصدير</button></div>
   <div style="overflow-x:auto">
@@ -329,6 +330,9 @@
       </sc-for>
     </div>
   </div>
+  <sc-if value="{{pmCutOn}}" hint-placeholder-val="{{ false }}"><div role="status" style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:11px;color:var(--fg-x92400e)">{{pmCut}}</div></sc-if>
+  <sc-if value="{{pmAzOn}}" hint-placeholder-val="{{ false }}"><div style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:11px;color:var(--fg-x475569)">في وضع الإنفاذ يحكم الخادم أيضاً بمفاتيح الصلاحيات: المنح والسحب الصريحان لموظفٍ وبوابات العدسات لا تظهر في هذه الخلايا — افتح صلاحيات الحساب لرؤيتها</div></sc-if>
+  <sc-if value="{{pmLegacyOn}}" hint-placeholder-val="{{ false }}"><div style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:11px;color:var(--fg-x94a3b8)">{{pmLegacy}}</div></sc-if>
   <div style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:11px;color:var(--fg-x94a3b8)">{{pmFoot}}</div>
 </div>
 <div style="height:14px"></div>

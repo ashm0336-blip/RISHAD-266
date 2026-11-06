@@ -1146,14 +1146,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const a = [this.adFetch("/api/presence"), this.adFetch("/api/overview")];
     if ((("perms" === e || t) && a.push(this.adFetch("/api/sec?limit=30&kind=perm")), "sec" === e || t)) {
       const t = this.state,
-        e = new Date();
-      e.setHours(0, 0, 0, 0);
-      const r = "today" === t.adSecPeriod ? e.getTime() : "7d" === t.adSecPeriod ? s - 6048e5 : s - 2592e6;
-      a.push(
-        this.adFetch(
-          "/api/sec?limit=" + (t.adSecLim || 100) + "&since=" + r + (t.adSecKind && "all" !== t.adSecKind ? "&kind=" + t.adSecKind : ""),
-        ),
-      );
+        r = "today" === (t.adSecPeriod || "today") ? this._adDay0(s) : "7d" === t.adSecPeriod ? s - 6048e5 : s - 2592e6,
+        k = this._adSecKind(t.adSecKind);
+      /* نوعٌ يطابق فلتر الخادم كما هو يُرسَل إليه؛ وما يضمّ أحداثاً لا يعرفها فلترُ الخادم (الاستعادة · التهيئة · تعذّر التحقق) يُقرأ كلُّه ويُصفّى هنا */
+      a.push(this.adFetch("/api/sec?limit=" + (t.adSecLim || 100) + "&since=" + r + (k && k.srv ? "&kind=" + k.k : "")));
     }
     const r = "perms" === e || t;
     Promise.all(a).then((t) => {
@@ -1446,6 +1442,32 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }[s] || s.replace(/^bassam_/, "").replace(/_v\d+$/, "")) + (e ? " · " + this.adDept(e[1]) : "")
     );
   }
+  /* CORE-02 · «اليوم» في فلاتر الواجهة = منذ منتصف الليل بتوقيت الرياض (UTC+3 بلا توقيت صيفي) أيّاً كانت منطقة جهاز المتصفح */
+  _adDay0(now) {
+    return Math.floor(((now || Date.now()) + 108e5) / 864e5) * 864e5 - 108e5;
+  }
+  /* أنواعُ سجل الأمن في الواجهة. srv: الأحداثُ = فلترُ الخادم لهذا النوع حرفاً بحرف (063 /api/sec kind) فيُرسَل إليه؛ وإلا يُصفّى هنا.
+     الاستعادةُ من شاشة الدخول تحت «دخول»، ومفتاحُ الاستعادة والتهيئة تحت «مسؤول المنصة»، وتعذّرُ التحقق من الصلاحيات نوعٌ بذاته — كانت كلها في «الكل» وحده */
+  _adSecKind(k) {
+    const K = {
+      login: { t: "دخول", acts: ["login_ok", "login_fail", "lock", "logout", "sess_kill", "guard_unlock", "recover_ok", "recover_fail"] },
+      pw: { t: "كلمات مرور", acts: ["pw_change"], srv: 1 },
+      acct: { t: "حسابات", acts: ["acct_add", "acct_del", "acct_freeze", "acct_unfreeze"], srv: 1 },
+      perm: { t: "صلاحيات", acts: ["perm_change"], srv: 1 },
+      denied: { t: "مرفوض", acts: ["denied"], srv: 1 },
+      admin: { t: "مسؤول المنصة", acts: ["admin", "policy_change", "sess_kill", "guard_unlock", "recovery_key", "reset"] },
+      authz: { t: "تعذّر التحقق", acts: ["authz_unavailable"] },
+    };
+    if (!k) return K;
+    return K[k] ? Object.assign({ k }, K[k]) : null;
+  }
+  /* صفوفُ السجل المقروءة بعد فلتر النوع في الواجهة (لما لا يصفّيه الخادم) — للعرض والتصدير معاً */
+  _adSecRows() {
+    const t = this.state,
+      k = this._adSecKind(t.adSecKind),
+      L = t.adSec || [];
+    return k && !k.srv ? L.filter((r) => k.acts.indexOf(r.act) >= 0) : L;
+  }
   adSecTxt(t) {
     const e = (() => {
         try {
@@ -1554,12 +1576,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 : "إجراء إداري",
           k: "adm",
         };
+      case "authz_unavailable":
+        return { t: "تعذّر على الخادم التحقق من الصلاحيات فرُفض الطلب مؤقتاً — يُعاد تلقائياً بعد ثوانٍ", k: "warn", w: "حدث أمني · تعذّر التحقق" };
       default:
-        return { t: t.act, k: "adm" };
+        return { t: "حدث أمني آخر", k: "adm" };
     }
   }
   adSecExport() {
-    const t = this.state.adSec || [],
+    const t = this._adSecRows(),
       e = (Date.now(), (t) => '"' + String(null == t ? "" : t).replace(/"/g, '""') + '"'),
       s = [["الوقت", "الحدث", "المستخدم", "الدور", "المدينة", "الجهاز", "IP"].map(e).join(",")];
     t.forEach((t) => {
@@ -2628,100 +2652,22 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         );
       }),
       _ = (a && a.PAGE_REG) || [],
-      O = (_.filter((t) => !t.under).concat(_.filter((t) => t.under)), _.map((t) => ({ key: t.key, name: t.name }))),
+      O = _.map((t) => ({ key: t.key, name: t.name })),
       D = r ? r.list() : [],
-      T = D.map((t) => {
-        const e = a ? a.deptCap(t.id) : [],
-          s = a && a.deptLenses ? a.deptLenses(t.id) : [];
-        return {
-          name: t.name,
-          pages: e.map((t) => (_.filter((e) => e.key === t)[0] || { name: t }).name).join(" · ") || "— لا صفحات",
-          lenses: KIVO.BassamCount(s.length, "عدسة") + "",
-          go: () => {
-            (this.sysPick(t.id), this.adGo("depts"));
-          },
-        };
-      }),
-      A = [];
-    D.forEach((t) => {
-      let e = [];
-      try {
-        e = JSON.parse(r.raw.getItem.call(localStorage, "bsdept:" + t.id + ":bassam_perm_tpls_v1") || "[]") || [];
-      } catch (t) {
-        e = [];
-      }
-      ((a && a._store ? a._store() : null) || {}).tplOf;
-      let s = {};
-      try {
-        const e = JSON.parse(r.raw.getItem.call(localStorage, "bassam_perms_v1") || "{}");
-        s = (e.tplOf || {})[t.id] || {};
-      } catch (t) {}
-      e.forEach((e) => {
-        const a = Object.keys(e.perms || {})
-          .filter((t) => (e.perms[t] || []).length)
-          .map(
-            (t) =>
-              (_.filter((e) => e.key === t)[0] || { name: t }).name +
-              " (" +
-              (e.perms[t] || []).map((t) => ({ view: "ع", add: "إ", edit: "ت", del: "ح", approve: "ا", export: "ص" })[t] || t).join("") +
-              ")",
-          )
-          .join(" · ");
-        A.push({
-          name: e.name || e.id,
-          dept: t.name,
-          sup: !!e.sup,
-          grant: a || "لا شيء",
-          n: String(Object.keys(s).filter((t) => s[t] === e.id).length),
-        });
-      });
-    });
-    const P = { view: "ع", edit: "ت", add: "إ", del: "ح", approve: "ا", export: "ص" },
+      /* CORE-02 · سقوفُ الإدارات وقوالبُها والمصفوفة تُحسب حين يُفتح تبويبها وحده (كانت تُحسب مع كل رسمٍ لمراقبة الحسابات) */
+      pmOn = "perms" === t.admTab,
+      pmOff = pmOn ? this.t24PlatOff() : [],
+      T = pmOn ? D.map((t) => this._pmCapRow(t, a, _, pmOff)) : [],
+      A = pmOn ? this._pmTplRows(D, a, _) : [],
+      P = { view: "ع", edit: "ت", add: "إ", del: "ح", approve: "ا", export: "ص" },
       B = String(t.pmQ || "")
         .trim()
         .toLowerCase(),
-      E = (t) => {
-        if ("super" === t.role) {
-          const t = {};
-          return (
-            _.forEach((e) => {
-              t[e.key] = ["view", "add", "edit", "del", "approve", "export"];
-            }),
-            t
-          );
-        }
-        if ("dept" === t.role) {
-          const e = {};
-          return (
-            (a ? a.deptCap(t.deptId) : []).forEach((t) => {
-              e[t] = ["view", "add", "edit", "del", "approve", "export"];
-            }),
-            e
-          );
-        }
-        if ("gm" === t.role) {
-          const e = {},
-            U = (() => {
-              try {
-                return KIVO.BassamDepts.deptsUnder(t.gid) || [];
-              } catch (t) {
-                return [];
-              }
-            })();
-          return (
-            D.filter((e) => U.indexOf(e.id) !== -1).forEach((s) => {
-              const r = a.empPagePerms(t.ekey, s.id);
-              Object.keys(r).forEach((t) => {
-                e[t] = (e[t] || []).concat(r[t].filter((s) => (e[t] || []).indexOf(s) < 0));
-              });
-            }),
-            e
-          );
-        }
-        return a && t.ekey ? a.empPagePerms(t.ekey, t.deptId) : {};
-      },
-      M = o
-        .filter((t) => !t.dis)
+      E = (t) => this._pmEff(t, a, pmOff),
+      /* «حسابات الإدارة» (role dept) أُلغيت — لا تُنشأ ولا تُعدَّل وتُحذف بزرّ «تنظيف» في الإدارات؛ لا تُعرض صفوفاً في المصفوفة */
+      pmLegacy = pmOn ? o.filter((t) => !t.dis && "dept" === t.role).length : 0,
+      M = (pmOn ? o : [])
+        .filter((t) => !t.dis && "dept" !== t.role)
         .filter(
           (t) => !B || KIVO.BassamFind.dig([t.name, t.un, this.adUnit(t)].join(" ").toLowerCase()).indexOf(KIVO.BassamFind.dig(B)) >= 0,
         ),
@@ -2848,6 +2794,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       pmQ: t.pmQ || "",
       pmOnQ: (t) => this.setState({ pmQ: t.target.value }),
       pmFoot: N.length + " من " + KIVO.BassamCount(M.length, "حساب|نشط", "g") + "",
+      pmCutOn: M.length > N.length,
+      pmCut: "تُعرض أول " + N.length + " حساب من " + M.length + " — ضيّق البحث بالاسم، أو صدّر الجدول ليشمل الحسابات كلها",
+      pmLegacyOn: pmLegacy > 0,
+      pmLegacy: KIVO.BassamCount(pmLegacy, "حساب|إدارة|قديم", "g") + " لا يُعرض هنا: «حسابات الإدارة» أُلغيت — احذفها من تبويب «الإدارات» بزرّ «تنظيف»",
+      pmAzOn: pmOn && !!(a && a.authz && a.authz()),
       pmExport: () => {
         const t = (t) => '"' + String(null == t ? "" : t).replace(/"/g, '""') + '"',
           e = [
@@ -2970,7 +2921,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           sub: o.lockedNow ? o.lockedNow + " قفل نشط الآن" : "لا أقفال نشطة",
           tone: o.failsToday ? "bad" : "",
           tip: "من سجل أحداث الأمن",
-          go: go("sec", { adSecKind: "login" }),
+          go: go("sec", { adSecKind: "login", adSecPeriod: "today" }),
         },
         {
           v: String(o.deniedToday || 0),
@@ -2978,7 +2929,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           sub: "محاولات تعديل خارج الصلاحية",
           tone: o.deniedToday ? "plum" : "",
           tip: "رُفضت وأُعيدت القيم كما هي",
-          go: go("sec", { adSecKind: "denied" }),
+          go: go("sec", { adSecKind: "denied", adSecPeriod: "today" }),
         },
         {
           v: u ? this.adRel(new Date(u).getTime(), e) : "—",
@@ -3061,7 +3012,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         canKill: !t.mine,
         kill: () => this._adKill(t.u),
       })),
-      _ = (o.added || []).map((t) => ({
+      /* «آخر الحسابات المضافة — آخر ٧ أيام»: الخادم يعيد إضافات ٣٠ يوماً (لعمود «أُضيف» في مراقبة الحسابات) — والبطاقة تعرض ما يقوله عنوانها */
+      _ = (o.added || []).filter((t) => t && t.tg && t.ts >= e - 6048e5).map((t) => ({
         ini: l(t.tg.name),
         name: t.tg.name || t.tg.un || "",
         sub: this.adSub(t.tg),
@@ -3114,7 +3066,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       P = String(t.adSecQ || "")
         .trim()
         .toLowerCase(),
-      B = (t.adSec || [])
+      B = this._adSecRows()
         .filter(
           (t) =>
             !P ||
@@ -3161,20 +3113,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         this.setState({ adSecPeriod: t }, () => {
           ((this._adLast = 0), this.adLoad(!0));
         }),
-      R = [
-        ["all", "الكل"],
-        ["login", "دخول"],
-        ["pw", "كلمات مرور"],
-        ["acct", "حسابات"],
-        ["perm", "صلاحيات"],
-        ["denied", "مرفوض"],
-        ["admin", "مسؤول المنصة"],
-      ].map((e) => E(e[1], (t.adSecKind || "all") === e[0], () => M(e[0]))),
+      R = [["all", "الكل"]]
+        .concat(Object.entries(this._adSecKind()).map((e) => [e[0], e[1].t]))
+        .map((e) => E(e[1], (t.adSecKind || "all") === e[0], () => M(e[0]))),
       L = [
-        ["today", "اليوم"],
-        ["7d", "٧ أيام"],
-        ["30d", "٣٠ يوماً"],
-      ].map((e) => E(e[1], (t.adSecPeriod || "today") === e[0], () => N(e[0]))),
+        ["today", "اليوم", "منذ منتصف الليل بتوقيت الرياض"],
+        ["7d", "٧ أيام", "آخر ٧ أيام حتى الآن"],
+        ["30d", "٣٠ يوماً", "آخر ٣٠ يوماً حتى الآن"],
+      ].map((e) => Object.assign(E(e[1], (t.adSecPeriod || "today") === e[0], () => N(e[0])), { tip: e[2] })),
       C = (o.failsToday || 0) + (o.deniedToday || 0),
       F = t.adPol || {},
       I = (t, e) => this.setState({ adPol: Object.assign({}, this.state.adPol || {}, { [t]: e }), adPolMsg: "" }),
@@ -5027,6 +4973,93 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {
       return [];
     }
+  }
+  /* ── CORE-02 · مصفوفةُ الصلاحيات = قرارُ محرّك 331 لكل حساب، لا تفرّعٌ خاصّ بالوحدة ──
+     myPerms في 331 تُجيب عن الحساب المسجَّل وحده (cur · curDept)، فلا مدخلَ عامّاً لحسابٍ آخر؛ والصفُّ هنا يستدعي الدوالَّ المصدَّرة نفسَها
+     التي تركّبها myPerms لدور ذلك الحساب وبالترتيب نفسِه — ولا يحكم بنفسه على صفحةٍ أو فعل:
+       • مسؤول المنصة: myPerms نفسُها (العارضُ مسؤولُ المنصة، ونتيجتُها لا تتعلّق إلا بالإدارة النشطة وإعدادات المنصة)
+       • مدير الإدارة (staff بمفتاح mgr:): بلا ورقةٍ مخزَّنة ⇐ capAllPerms(إدارته) · بورقةٍ ⇐ empPagePerms
+       • مدير الإدارة العامة: القاعدةُ نفسُها في كل إدارةٍ من فرعه (deptsUnder) — والخلية اجتماعُها (ما يملكه في أيٍّ منها)
+       • الموظف: empPagePerms(مفتاحه، إدارته)
+     ثم يسقط ما أطفأته المنصة كما تسقطه myPerms (t24PlatOff = mods.off عدا admin). وفي وضع الإنفاذ يقصّ الخادمُ بالمفاتيح فوق ذلك (pmAzOn).
+     tests/unit/core02_perm_matrix_parity.test.mjs يقارن كلَّ خلية بـ myPerms في عميل الحساب نفسه. */
+  _pmEff(u, P, off) {
+    if (!u || !P) return {};
+    if ("super" === u.role) return P.myPerms ? P.myPerms() : {};
+    const A = KIVO.BassamAuth,
+      one = (d) => (P.hasOwnSheet(u.ekey, d) ? P.empPagePerms(u.ekey, d) : P.capAllPerms(d)),
+      out = {},
+      add = (m) =>
+        Object.keys(m || {}).forEach((k) => {
+          const L = (out[k] = out[k] || []);
+          (m[k] || []).forEach((x) => L.indexOf(x) < 0 && L.push(x));
+        });
+    try {
+      if ("gm" === u.role) {
+        (u.gid && KIVO.BassamDepts.deptsUnder ? KIVO.BassamDepts.deptsUnder(u.gid) || [] : []).forEach((d) => add(one(d)));
+      } else if ("staff" === u.role && A && A.isMgrKey && A.isMgrKey(u.ekey)) add(one(u.deptId));
+      else if (u.ekey) add(P.empPagePerms(u.ekey, u.deptId));
+    } catch (t) {
+      return {};
+    }
+    (off || []).forEach((k) => delete out[k]);
+    return out;
+  }
+  /* سقفُ الإدارة كما يطبّقه المحرّك: p24.ceil يقصّ deptCap بما أطفأته المنصة (= deptCapOf في الخادم 021) — والمطفأُ يُذكر باسمه */
+  _pmCapRow(t, P, reg, off) {
+    const nm = (k) => (reg.filter((e) => e.key === k)[0] || { name: k }).name,
+      cap = P ? P.deptCap(t.id) : [],
+      C = P && P.p24 && P.p24.ceil ? P.p24.ceil(t.id) : null,
+      isOn = (k) => (C ? C.page(k) : off.indexOf(k) === -1),
+      on = cap.filter(isOn),
+      dis = cap.filter((k) => !isOn(k)),
+      s = P && P.deptLenses ? P.deptLenses(t.id) : [];
+    return {
+      name: t.name,
+      pages: on.map(nm).join(" · ") || "— لا صفحات",
+      offOn: dis.length > 0,
+      offTxt: "معطّلة على مستوى المنصة: " + dis.map(nm).join(" · "),
+      lenses: KIVO.BassamCount(s.length, "عدسة") + "",
+      go: () => {
+        (this.sysPick(t.id), this.adGo("depts"));
+      },
+    };
+  }
+  /* قوالبُ كل إدارة وحاملوها من واجهة BassamPerm (tplsList · tplHolders) — لا قراءةَ مباشرة للتخزين */
+  _pmTplRows(D, P, reg) {
+    const out = [],
+      AC = { view: "ع", add: "إ", edit: "ت", del: "ح", approve: "ا", export: "ص" },
+      nm = (k) => (reg.filter((e) => e.key === k)[0] || { name: k }).name;
+    D.forEach((d) => {
+      let L = [];
+      try {
+        L = (P && P.tplsList ? P.tplsList(d.id) : []) || [];
+      } catch (t) {
+        L = [];
+      }
+      L.forEach((e) => {
+        /* حاملوه يُعرفون من موظفي الإدارة (tplHolders) — وما لم تُقرأ قائمتهم بعد في هذه الجلسة يُقال ذلك ولا يُعرض صفرٌ مضلّل */
+        let n = "—";
+        try {
+          n = P.tplHolders ? String((P.tplHolders(e.id, d.id) || []).length) : "—";
+        } catch (t) {
+          n = "—";
+        }
+        const g = Object.keys(e.perms || {})
+          .filter((k) => (e.perms[k] || []).length)
+          .map((k) => nm(k) + " (" + (e.perms[k] || []).map((x) => AC[x] || x).join("") + ")")
+          .join(" · ");
+        out.push({
+          name: e.name || e.id,
+          dept: d.name,
+          sup: !!e.sup,
+          grant: g || "لا شيء",
+          n,
+          nTip: "—" === n ? "يظهر العدد بعد فتح بيانات موظفي هذه الإدارة في هذه الجلسة" : "من مُنح القالب أو تطابق صلاحياته صلاحياتِه",
+        });
+      });
+    });
+    return out;
   }
   /* ── قوالبُ الصلاحيات في وضع الإنفاذ: القالبُ يحمل مفاتيحه (keys24) وورقتَه القديمة المغطّاة (perms — لا تتجاوزها أبداً) ── */
   tp24Base(tp, did, C) {
