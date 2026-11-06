@@ -138,9 +138,6 @@
   </section>
   </div>
 </div>
-<nav class="adm-ov-go" aria-label="اختصارات">
-  <sc-for list="{{ovGo}}" as="g" hint-placeholder-count="6"><button type="button" class="bs-btn" onClick="{{g.go}}">{{g.t}}</button></sc-for>
-</nav>
 <sc-if value="{{ovImgOn}}" hint-placeholder-val="{{ false }}">
 <section class="bs-card adm-ov-card">
   <button type="button" class="adm-ov-hd adm-ov-tg" aria-expanded="{{ovStoreOpen}}" onClick="{{ovStoreTog}}"><div><b>صحة التخزين</b><small>صور التوثيق: هل وصلت وأين هي</small></div><span class="n" data-tone="{{ovImgTone}}">{{ovImgState}}</span><span class="cv"></span></button>
@@ -754,12 +751,6 @@
           <sc-if value="{{dhSecAddOn}}" hint-placeholder-val="{{ false }}">
           <button class="p" onClick="{{dhSecAdd}}" title="قسمٌ تحت هذه الإدارة: له مديره وموظفوه وسقفه وبياناته"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-de4e6997"></svg></i>إضافة قسم</button>
           </sc-if>
-                    <sc-if value="{{dhNever}}" hint-placeholder-val="{{ false }}">
-          <button onClick="{{dhMgr}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-dd12348b"></svg></i>تعيين مدير</button>
-          </sc-if>
-                    <sc-if value="{{dhNever}}" hint-placeholder-val="{{ false }}">
-          <button onClick="{{dhDis}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-6afc61fe"></svg></i>{{dhDisLbl}}</button>
-          </sc-if>
           <sc-if value="{{dhNotActive}}" hint-placeholder-val="{{ false }}">
           <button onClick="{{dhSwitch}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></i>التبديل إليها</button>
           </sc-if>
@@ -1051,16 +1042,6 @@
         <sc-for list="{{deptRows}}" as="d" hint-placeholder-count="3">
         <div style="min-width:0">
         <sc-if value="{{d.grpShow}}" hint-placeholder-val="{{ true }}">
-          <sc-if value="{{d.trIsSector}}" hint-placeholder-val="{{ false }}">
-          <div class="tr-sec {{d.trSelCls}}" onClick="{{d.grpCapGo}}" title="{{d.grpName}}">
-            <span class="cv" onClick="{{d.grpToggle}}" title="طيّ/فتح ما تحته"><sc-if value="{{d.grpChevOn}}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="{{d.grpChev}}" data-i="i-c92915c6"></svg></sc-if></span>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-57689779"></svg>
-            <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{d.grpName}}</span>
-            <sc-if value="{{d.grpMgrHas}}" hint-placeholder-val="{{ false }}"><span class="mg" title="{{d.grpMgrTip}}">{{d.grpMgrName}}</span></sc-if>
-            <small>{{d.grpCount}} {{d.grpCountW}}</small>
-          </div>
-          </sc-if>
-          <sc-if value="{{d.trIsRow}}" hint-placeholder-val="{{ true }}">
           <div class="tr-rw two {{d.trDepCls}} {{d.trSelCls}} {{d.trDragCls}}" draggable="true" onDragStart="{{d.trDragStart}}" onDragOver="{{d.trDragOver}}" onDragLeave="{{d.trDragLeave}}" onDrop="{{d.trDrop}}" onDragEnd="{{d.trDragEnd}}" onClick="{{d.grpCapGo}}" title="{{d.grpName}}">
             <span class="cv" onClick="{{d.grpToggle}}"><sc-if value="{{d.grpChevOn}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="{{d.grpChev}}" data-i="i-c92915c6"></svg></sc-if></span>
             <span class="ic"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-57689779"></svg></span>
@@ -1071,7 +1052,6 @@
             <sc-if value="{{d.grpKindOn}}" hint-placeholder-val="{{ true }}"><span class="kd">{{d.grpKindLbl}}</span></sc-if>
             <span class="cnt">{{d.grpCount}} {{d.grpCountW}}</span>
           </div>
-          </sc-if>
         </sc-if>
         <sc-if value="{{d.grpEmpty}}" hint-placeholder-val="{{ false }}">
         <div class="tr-empty">لم تُسنَد إليها إدارة بعد</div>
@@ -1771,20 +1751,8 @@
     </div>
     <div class="bs-hbar" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
       <div style="flex:1;min-width:120px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px">
-        <div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">إدارات حالية</div>
-        <div style="font-size:17px;font-weight:600;color:var(--fg-x141414)">{{fbkCur}}</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px">
         <div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">إدارات في الملف</div>
         <div style="font-size:17px;font-weight:600;color:var(--fg-x141414)">{{fbkFile}}</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px">
-        <div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">موجودة في الاثنين</div>
-        <div style="font-size:17px;font-weight:600;color:var(--fg-xb45309)">{{fbkOver}}</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px">
-        <div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">إدارات جديدة</div>
-        <div style="font-size:17px;font-weight:600;color:var(--fg-x047857)">{{fbkFresh}}</div>
       </div>
     </div>
     <sc-if value="{{fbkPick}}" hint-placeholder-val="{{ true }}">

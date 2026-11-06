@@ -982,7 +982,7 @@
   "i-57689779": {
    "body": "<path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path>",
    "uses": {
-    "modules/admin/view.html": 4
+    "modules/admin/view.html": 3
    },
    "viewBox": "0 0 24 24"
   },
@@ -1153,7 +1153,7 @@
   "i-6afc61fe": {
    "body": "<path d=\"M18.36 6.64A9 9 0 1 1 5.64 6.64\"></path><path d=\"M12 2v10\"></path>",
    "uses": {
-    "modules/admin/view.html": 2,
+    "modules/admin/view.html": 1,
     "modules/dstats/view.html": 1
    },
    "viewBox": "0 0 24 24"
@@ -2394,7 +2394,7 @@
   "i-c92915c6": {
    "body": "<path d=\"m6 9 6 6 6-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 14,
+    "modules/admin/view.html": 13,
     "modules/award/view.html": 3,
     "modules/daily/view.html": 10,
     "modules/dreport/view.html": 6,
@@ -2634,7 +2634,6 @@
   "i-dd12348b": {
    "body": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle><path d=\"M19 8v6\"></path><path d=\"M22 11h-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "modules/plan/view.html": 6
    },
    "viewBox": "0 0 24 24"

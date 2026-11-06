@@ -27,6 +27,12 @@ const DEPT_TABS = ['backup', 'oplog', 'shifts', 'ptpls', 'import'];
 const RENAMES = {
   'مدير النظام': 'مسؤول المنصة',
 };
+/* CORE-02 step 5: the overview's quick-links strip repeated the tab bar and was removed. Each of its six links must still be reachable
+   at its destination: the platform sub-tab (a recorded action of #/sysadmin/plat) or the admin tab itself (its place in NAV, whose
+   group → tab reachability is asserted below). The ONLY place a recorded item may leave its route; never add an entry to hide a loss. */
+const MOVED = {
+  overview: { 'هوية المنصة': 'plat', 'الوحدات': 'plat', 'التنبيهات والتعاميم': 'plat', 'الإدارات': 'depts', 'سجل الأنشطة والتغييرات': 'oplog', 'النسخة الاحتياطية': 'backup' },
+};
 /* CORE-02 step 2: old display names of the top role / the admin interface that must no longer be shown on any admin tab */
 const OLD_NAMES = ['مدير النظام', 'المشرف العام', 'مشرف المنصة', 'مدير المنصة'];
 /* CORE-02 step 1: the nine tabs sit in five groups (two-level navigation inside .adm-tabbar). Each recorded tab must show its group
@@ -237,16 +243,23 @@ if (CAPTURE) {
       const rev0 = lab.revs();
       assert.deepEqual(Object.keys(FX.sys), SYS_TABS, 'the fixture covers all nine admin tabs');
       assert.deepEqual(Object.keys(NAV).sort(), [...SYS_TABS].sort(), 'every admin tab has its place in the two-level navigation');
+      const nowBy = {}, moved = [];
       for (const t of SYS_TABS) {
         await s.go('#/sysadmin/' + t, 4000);
         const states = await probes(s.page, 'sys', t), now = union(states), rec = FX.sys[t];
+        nowBy[t] = now;
         assert.ok(opened(t, states[0]), t + ': the tab opened (recorded «' + rec.selected + '») shows ' + JSON.stringify(NAV[t]) + ' selected (now ' + JSON.stringify(states[0].selected) + ')');
-        for (const kind of ['headings', 'actions', 'fields']) assert.deepEqual(missing(rec[kind], now, kind), [], t + ': every recorded ' + kind + ' still reachable');
+        for (const kind of ['headings', 'actions', 'fields']) {
+          const miss = missing(rec[kind], now, kind).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x] && moved.push([t, x, MOVED[t][x]])));
+          assert.deepEqual(miss, [], t + ': every recorded ' + kind + ' still reachable');
+        }
         /* CORE-02 step 2: the display names — no old name for the top role or the admin interface is shown anywhere on the page */
         const txt = await s.page.evaluate(() => document.body.innerText + ' ' + [...document.querySelectorAll('[title],[aria-label],[placeholder]')]
           .map((e) => [e.getAttribute('title'), e.getAttribute('aria-label'), e.getAttribute('placeholder')].join(' ')).join(' '));
         assert.deepEqual(OLD_NAMES.filter((o) => txt.includes(o)), [], t + ': no old display name is shown');
       }
+      /* CORE-02 step 5: every link of the removed quick-links strip is still reachable at its destination */
+      for (const [from, x, to] of moved) assert.ok(NAV[to].includes(x) || variants(x).some((v) => nowBy[to].actions.has(v)), from + ': «' + x + '» (removed quick link) is still reachable on ' + to);
       /* CORE-02 step 2: the page is titled «المنصة / مركز إدارة رشاد», the sidebar link reads «مركز إدارة رشاد», the user card reads «مسؤول المنصة» */
       assert.equal((await s.page.textContent('.bs-crumb')).replace(/\s+/g, ' ').trim(), 'المنصة / مركز إدارة رشاد', 'crumb names the admin interface');
       assert.ok((await s.page.$$eval('.nlbl', (els) => els.map((e) => e.textContent.trim()))).includes('مركز إدارة رشاد'), 'sidebar link «مركز إدارة رشاد»');
