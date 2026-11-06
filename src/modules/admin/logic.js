@@ -2014,7 +2014,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           plGrid:
             "display:grid;grid-template-columns:" +
             ("notif" === l || "setup" === l ? "1fr" : "1fr 340px") +
-            ";border:1px solid var(--bd-xeceef1);border-radius:18px;background:var(--bg-xffffff);overflow:hidden;box-shadow:var(--shadow-soft);align-items:stretch",
+            ";border:1px solid var(--border-subtle);border-radius:var(--r-lg);background:var(--bg-surface);overflow:hidden;box-shadow:var(--shadow-soft);align-items:stretch",
           ...("notif" === l ? this.nfVals() : {}),
           plOn: (t) => {
             const e = t.target,

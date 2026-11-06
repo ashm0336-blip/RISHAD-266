@@ -279,3 +279,56 @@ test('(S8) «الرئيسية»: skeleton before the read, real counts after it,
     }
   } finally { await b.close(); }
 });
+
+/* CORE-02 S9 — one visual system on every console page, at three sizes and in both themes: no sideways scroll, the page title (h2)
+   whole and inside the screen, the content starting under the header (no overlap), and the platform save actions where the thumb is:
+   in the header on desktop and tablet, a bar at the bottom of the screen on a phone. Nothing is saved; no page error. */
+test('(S9) every destination × phone / tablet / desktop × light / dark: no overflow, whole title, content under the header; plat save bar', { timeout: 900000 }, async () => {
+  const b = await chromium.launch();
+  const SIZES = [['phone', MOBILE], ['tablet', { viewport: { width: 768, height: 1024 }, context: { isMobile: true, hasTouch: true } }], ['desktop', { viewport: { width: 1440, height: 900 } }]];
+  try {
+    for (const [sz, opt] of SIZES) {
+      const lab = await world(); const writes = []; let s = null;
+      try {
+        s = await openAs(b, lab, LAB.superUn, LAB.superPw, { ...opt, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+        const page = s.page; await page.waitForTimeout(1500);
+        for (const th of ['light', 'dark']) {
+          await page.evaluate((x) => KIVO.__bsThemeSet(x), th); await page.waitForTimeout(300);
+          for (const d of DEST) {
+            await s.go(addr(d), 900);
+            const m = await page.evaluate(() => {
+              const h = document.querySelector('main .con-ph h2'), ph = document.querySelector('main .con-ph');
+              const r = h && h.getBoundingClientRect(), pr = ph && ph.getBoundingClientRect();
+              let nx = ph && ph.nextElementSibling; while (nx && (!nx.getBoundingClientRect().height || getComputedStyle(nx).position === 'fixed')) nx = nx.nextElementSibling;
+              return { ov: document.documentElement.scrollWidth - document.documentElement.clientWidth, h2: h ? h.textContent.trim() : null,
+                inside: !!r && r.left >= -1 && r.right <= innerWidth + 1 && r.height > 0, clip: !!h && h.scrollWidth > h.clientWidth + 1,
+                under: !nx || nx.getBoundingClientRect().top >= pr.bottom - 1, theme: document.documentElement.getAttribute('data-theme') };
+            });
+            const at = sz + ' ' + th + ' ' + addr(d);
+            assert.ok(m.ov <= 1, at + ': no sideways scroll (' + m.ov + ')');
+            assert.equal(m.h2, d[2], at + ': the page title');
+            assert.ok(m.inside && !m.clip, at + ': the title is whole and inside the screen');
+            assert.ok(m.under, at + ': the content starts under the header');
+          }
+        }
+        /* the platform save actions: a draft (typed, never saved) shows them; on a phone they are a bar at the bottom of the screen */
+        await s.go('#/sysadmin/plat/id', 1500);
+        const inp = page.locator('main input[data-k="name"]'); await inp.fill('منصة تجريبية'); await inp.blur(); await page.waitForTimeout(700);
+        const bar = await page.evaluate(() => {
+          const e = document.querySelector('main .adm-pl-bar'), sv = [...document.querySelectorAll('main .con-ph button')].find((x) => /حفظ ونشر/.test(x.textContent));
+          const r = sv && sv.getBoundingClientRect(), cs = e && getComputedStyle(e);
+          return { on: !!e, pos: cs && cs.position, save: !!r && r.width > 0 && r.top >= 0 && r.bottom <= innerHeight + 1, bottom: !!r && r.bottom > innerHeight - 70, primary: !!sv && sv.classList.contains('bs-btn--primary'),
+            ov: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+        });
+        assert.ok(bar.on && bar.save && bar.primary, sz + ': «حفظ ونشر للجميع» is visible and is the primary button');
+        assert.equal(bar.pos === 'fixed', sz === 'phone', sz + ': the save bar is fixed at the bottom on a phone only');
+        if (sz === 'phone') assert.ok(bar.bottom, 'phone: the save actions sit at the bottom of the screen');
+        assert.ok(bar.ov <= 1, sz + ': no sideways scroll with the save bar');
+        await page.locator('main .con-ph button', { hasText: 'تجاهل' }).click(); await page.waitForTimeout(600);
+        assert.equal(await page.locator('main .adm-pl-bar').count(), 0, sz + ': discarding the draft removes the bar');
+        assert.deepEqual(writes, [], sz + ': nothing was saved');
+        assert.deepEqual(s.errs, [], sz + ': no page error');
+      } finally { if (s) await s.ctx.close().catch(() => {}); await lab.close(); }
+    }
+  } finally { await b.close(); }
+});

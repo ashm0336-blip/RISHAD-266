@@ -131,16 +131,54 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 .adm-tabbar{border-radius:var(--r-xl);border:2px solid var(--brand-soft);background:linear-gradient(90deg,var(--brand-soft),transparent,var(--brand-soft));padding:var(--sp-3)}
 .adm-tabbar--d{margin-bottom:14px}
 /* CORE-02 S7 · رأسُ الصفحة في «مركز إدارة رشاد»: المجموعةُ (سطرٌ صغير) ثم العنوان (h2) ثم وصفٌ واحد · وفي إعدادات المنصة يثبت أعلى الشاشة بحالة الحفظ وأزرارِه */
-.con-ph{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sp-3);flex-wrap:wrap;padding:var(--sp-1) 0 var(--sp-2);font-family:var(--font-ui)}
+.con-ph{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sp-3);flex-wrap:wrap;padding:var(--sp-1) 0 var(--sp-1);margin-bottom:calc(-1 * var(--sp-2));font-family:var(--font-ui)}
 .con-ph-t{min-width:0;flex:1 1 280px}
-.con-ph .con-eyebrow{margin:0 0 2px;font-size:var(--fs-sm);font-weight:700;line-height:1.4;color:var(--text-faint)}
-.con-ph h2{margin:0;font-size:20px;font-weight:800;line-height:1.35;color:var(--text-primary)}
+.con-ph .con-eyebrow{margin:0;font-size:var(--fs-sm);font-weight:700;line-height:1.4;color:var(--text-faint)}
+.con-ph h2{margin:0;font-size:var(--fs-xl);font-weight:800;line-height:1.35;color:var(--text-primary)}
 .con-ph h2:focus{outline:none}
 .con-ph h2:focus-visible{outline:2px solid var(--focus-ring);outline-offset:3px;border-radius:var(--r-sm)}
-.con-ph .con-desc{margin:4px 0 0;font-size:var(--fs-sm);line-height:1.5;color:var(--text-muted)}
+.con-ph .con-desc{margin:2px 0 0;font-size:var(--fs-sm);line-height:1.5;color:var(--text-muted)}
 .con-ph-a{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
-.con-ph--sticky{position:sticky;top:var(--bs-topbar-h);z-index:3;padding-block:var(--sp-2);background:var(--bg-app);box-shadow:var(--sp-3) 0 0 var(--bg-app),calc(-1 * var(--sp-3)) 0 0 var(--bg-app),0 1px 0 var(--border-subtle)}
+.con-ph--sticky{position:sticky;top:var(--bs-topbar-h);z-index:3;padding-block:var(--sp-1);background:var(--bg-app);box-shadow:var(--sp-3) 0 0 var(--bg-app),calc(-1 * var(--sp-3)) 0 0 var(--bg-app),0 1px 0 var(--border-subtle)}
 @media (max-width:640px){.con-ph h2{font-size:var(--fs-lg)}}
+/* CORE-02 S9 · إعدادات المنصة بأصنافٍ من الرموز بدل الأنماط المضمّنة: قسمٌ (h3) ← وصفٌ ← حقول (التسمية فوق الحقل) ← صفوف الخيارات */
+.adm-pl-sec{padding:14px var(--sp-5) var(--sp-4);border-bottom:1px solid var(--border-subtle)}
+.adm-pl-h{margin:0 0 2px;font-size:var(--fs-lg);font-weight:800;line-height:1.4;color:var(--text-primary)}
+.adm-pl-help{margin:0 0 var(--sp-2);font-size:var(--fs-sm);line-height:1.5;color:var(--text-muted)}
+.adm-pl-g2{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3) var(--sp-4)}
+.adm-pl-full{grid-column:1/3}
+.adm-pl-lbl{display:block;margin-bottom:4px;font-size:var(--fs-sm);font-weight:700;line-height:1.5;color:var(--text-secondary)}
+.adm-pl-lh{font-weight:500;color:var(--text-muted)}
+.adm-pl-in{width:100%;height:36px;box-sizing:border-box;padding:0 11px;border:1px solid var(--border-default);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font-ui);font-size:var(--fs-md);outline:none}
+.adm-pl-in:focus-visible,.adm-pl-in:focus{border-color:var(--focus-ring);box-shadow:0 0 0 3px var(--brand-soft)}
+.adm-pl-row{display:flex;align-items:center;gap:var(--sp-3);padding:10px 0;border-top:1px solid var(--border-subtle)}
+.adm-pl-rt{display:block;font-size:var(--fs-md);font-weight:700;color:var(--text-primary)}
+.adm-pl-rs{display:block;font-size:var(--fs-xs);line-height:1.5;color:var(--text-muted)}
+.adm-pl-seg{display:inline-flex;flex-wrap:wrap;max-width:100%;padding:3px;gap:2px;border-radius:var(--r-md);background:var(--bg-surface-2);border:1px solid var(--border-subtle)}
+.adm-pl-lk{border:0;background:transparent;padding:3px 6px;border-radius:var(--r-sm);font-family:var(--font-ui);font-size:var(--fs-xs);font-weight:700;color:var(--info-strong);cursor:pointer}
+.adm-pl-lk:hover{background:var(--hover-bg)}
+.adm-pl-lk:focus-visible{outline:2px solid var(--focus-ring);outline-offset:1px}
+.bs-btn.adm-pl-btn{min-height:32px;padding:0 var(--sp-3);font-size:var(--fs-sm);font-weight:600}
+.adm-f1{flex:1;min-width:0}
+.adm-mw0{min-width:0}
+.adm-pl-mt{font-size:var(--fs-xs);color:var(--text-muted)}
+.adm-pl-note{margin:4px 0 10px;font-size:var(--fs-xs);line-height:1.6;color:var(--text-muted)}
+.adm-pl-cap{margin-bottom:8px;font-size:var(--fs-xs);font-weight:800;color:var(--text-faint)}
+.adm-pl-box{border:1px solid var(--border-subtle);border-radius:var(--r-lg);padding:var(--sp-3) var(--sp-4);background:var(--bg-surface)}
+.adm-pl-box--sm{border-radius:var(--r-md);padding:10px var(--sp-4)}
+.adm-pl-stl{display:flex;align-items:center;gap:8px;font-size:var(--fs-sm);font-weight:700;color:var(--text-primary)}
+.bs-btn.adm-pl-btn--danger{color:var(--danger-text);border-color:var(--danger-border,var(--border-default))}
+.bs-btn.adm-pl-btn--danger:hover{background:var(--danger-soft);color:var(--danger-text);border-color:var(--danger)}
+.adm-dlg-col{display:flex;flex-direction:column;overflow:hidden}
+.con-ph-a .adm-pl-st{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:9999px;font-size:var(--fs-xs);font-weight:700;background:var(--success-soft);color:var(--success-text)}
+.con-ph-a .adm-pl-st[data-tone="warn"]{background:var(--warning-soft);color:var(--warning-text)}
+.con-ph-a .adm-pl-st[data-tone="warn"]::before{content:"";width:6px;height:6px;border-radius:9999px;background:var(--warning)}
+@media (pointer:coarse){.adm-pl-in{height:40px}.bs-btn.adm-pl-btn{min-height:40px}}
+.adm-pl-bar{display:contents}
+@media (max-width:640px){.adm-pl-sec{padding:var(--sp-4)}.adm-pl-full{grid-column:auto}
+  .con-ph--sticky{position:static;box-shadow:none}
+  .adm-pl-bar{display:flex;align-items:center;gap:var(--sp-2);position:fixed;inset-inline:0;bottom:0;z-index:var(--z-sticky);padding:var(--sp-2) var(--sp-4) calc(var(--sp-2) + env(safe-area-inset-bottom,0px));background:var(--bg-surface);border-top:1px solid var(--border-default);box-shadow:var(--shadow-soft)}
+  .adm-pl-bar .adm-pl-st{margin-inline-end:auto}}
 .adm-tabs{align-items:center;gap:var(--sp-2);padding:4px 0}
 .adm-tab{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;border-radius:var(--r-lg);border:2px solid transparent;background:transparent;flex-shrink:0;min-width:110px;cursor:pointer;font:400 var(--fs-sm) var(--font-ui);color:var(--text-secondary)}
 .adm-tab>div:first-child{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;background:var(--bg-surface-3);color:var(--text-faint)}
@@ -172,8 +210,7 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 .adm-ov-hero{border-color:var(--border-brand-soft)}
 .adm-ov-hd{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-surface-2);border-bottom:1px solid var(--border-subtle)}
 .adm-ov-hd>div{min-width:0}
-.adm-ov-hd b,.adm-ov-hd h3{display:block;margin:0;font-size:13.5px;font-weight:800;line-height:1.4;color:var(--text-primary)}
-.adm-ov-hero .adm-ov-hd h3{font-size:var(--fs-lg)}
+.adm-ov-hd b,.adm-ov-hd h3{display:block;margin:0;font-size:var(--fs-lg);font-weight:800;line-height:1.4;color:var(--text-primary)}
 .adm-ov-hd small{display:block;font-size:var(--fs-sm);color:var(--text-faint)}
 .adm-ov-hd .n{margin-inline-start:auto;font-size:var(--fs-sm);font-weight:700;padding:2px 9px;border-radius:var(--r-pill);background:var(--bg-surface-3);color:var(--text-secondary);white-space:nowrap}
 .adm-ov-hd .n[data-tone="ok"]{background:var(--success-soft);color:var(--success-text)}
@@ -280,7 +317,6 @@ button.adm-ov-sr:focus-visible{outline:2px solid var(--focus-ring);outline-offse
 /* CORE-02 · الخطوة ٦: تصميمٌ موحّد لتبويبات الأمن ومراقبة الحسابات وخريطة الصلاحيات والنسخة الاحتياطية (وحوارا كلمة المرور والاستعادة الشاملة)
    على مكوّنات CORE-01 (.bs-card · .bs-btn · .bs-dlg) والرموز الدلالية وحدها — فالداكنُ من الرموز نفسها؛ وعلى الجوال (≤640) تتكدّس صفوفُ الجداول
    الثابتة سطرين بدل أعمدةٍ تُعصر */
-.adm-gap{height:12px}
 button.adm-seg{border:0;background:transparent;font-family:var(--font-ui)}
 button.adm-seg:focus-visible{outline:2px solid var(--focus-ring);outline-offset:1px}
 button.adm-sw{border:0;padding:0;margin:0;-webkit-appearance:none;appearance:none}
@@ -300,6 +336,9 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 .adm-chip{display:inline-flex;align-items:center;min-height:28px;padding:0 11px;border-radius:var(--r-pill);border:1px solid var(--border-default);background:var(--bg-surface);color:var(--text-secondary);font:600 11px var(--font-ui);white-space:nowrap;cursor:pointer}
 .adm-chip:hover{border-color:var(--tone-gold-50-a50);color:var(--brand-fg)}
 .adm-chip[aria-pressed="true"]{background:var(--brand-primary);border-color:var(--brand-primary);color:var(--text-on-brand)}
+.adm-chips{margin:0}
+/* CORE-02 S9 · على الجوال: كل مجموعة مرشّحات صفٌّ واحد يُمرَّر أفقياً داخل البطاقة بدل ثلاثة أسطر */
+@media (max-width:640px){.adm-chips{flex:1 1 100%;min-width:0;flex-wrap:nowrap;overflow-x:auto;max-width:100%;margin-inline-start:0;padding-block:2px;scrollbar-width:none}.adm-chips>.adm-chip{flex-shrink:0}.adm-chips::-webkit-scrollbar{display:none}.adm-bar .adm-sep{display:none}}
 .adm-sep{width:1px;height:20px;margin:0 2px;background:var(--border-default)}
 .bs-btn.adm-sm{min-height:30px;padding:0 11px;font-size:var(--fs-sm)}
 .bs-btn.adm-xs{min-height:26px;padding:0 9px;font-size:var(--fs-xs);font-weight:600}
@@ -377,7 +416,7 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 /* النسخة الاحتياطية والحوارات */
 .adm-bk{display:flex;flex-direction:column;gap:14px;padding:24px;border-color:var(--border-brand-soft)}
 .adm-bk-hd{display:flex;align-items:center;gap:12px}
-.adm-bk-hd h2{margin:0;font-size:var(--fs-lg);font-weight:700;color:var(--text-primary)}
+.adm-bk-hd h2,.adm-bk-hd h3{margin:0;font-size:var(--fs-lg);font-weight:700;color:var(--text-primary)}
 .adm-bk-hd p{margin:3px 0 0;font-size:var(--fs-sm);line-height:1.7;color:var(--text-secondary)}
 .adm-bk-ic{width:44px;height:44px;border-radius:var(--r-lg);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--brand-soft);border:1px solid var(--border-brand-soft);color:var(--brand-fg)}
 .adm-bk-ic[data-tone="warn"]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}
