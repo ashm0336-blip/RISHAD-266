@@ -94,15 +94,13 @@ const ROWS = ['login_ok', 'login_fail', 'recover_ok', 'recover_fail', 'recovery_
   .map((act, i) => ({ id: i + 1, ts: Date.now() - i * 1000, act, uid: 'TEST_ONLY_su', un: '9000002000', detail: act === 'reset' ? '{"newAdmin":"TEST_ONLY n"}' : '', target: '' }));
 test('(f) recovery, reset and authz_unavailable events are reachable under their kind (not only «الكل»)', async () => {
   const kinds = cp(admin().page.adVals().secKinds.map((k) => k.t));
-  assert.deepEqual(kinds, ['الكل', 'دخول', 'كلمات مرور', 'حسابات', 'صلاحيات', 'مرفوض', 'مسؤول المنصة', 'تعذّر التحقق']);
+  assert.deepEqual(kinds, ['الكل', 'دخول', 'كلمات مرور', 'حسابات', 'صلاحيات', 'مرفوض', 'مسؤول المنصة', 'استعادة وتهيئة وتحقق']);
   const under = (kind) => { const { page } = admin({ adSecKind: kind, adSec: ROWS }); return cp(page._adSecRows().map((r) => r.act)); };
-  assert.ok(['recover_ok', 'recover_fail'].every((a) => under('login').includes(a)), 'login-screen recovery under «دخول»');
-  assert.ok(['recovery_key', 'reset', 'policy_change'].every((a) => under('admin').includes(a)), 'recovery key and reset under «مسؤول المنصة»');
-  assert.deepEqual(under('authz'), ['authz_unavailable']);
+  assert.deepEqual(under('authz'), ['recover_ok', 'recover_fail', 'recovery_key', 'reset', 'authz_unavailable'], 'recovery, reset and authz_unavailable under their own kind');
   const KK = cp(admin().page._adSecKind()), every = new Set(Object.values(KK).flatMap((k) => k.acts));   /* kinds the server filters are not re-filtered here */
   assert.deepEqual(ROWS.map((r) => r.act).filter((a) => !every.has(a)), ['TEST_ONLY_unknown'], 'every known event has a kind');
   /* the request: kinds the server filters exactly are sent; the others read everything in the period and filter here */
-  for (const [k, sent] of [['pw', true], ['acct', true], ['perm', true], ['denied', true], ['login', false], ['admin', false], ['authz', false], ['all', false]]) {
+  for (const [k, sent] of [['pw', true], ['acct', true], ['perm', true], ['denied', true], ['login', true], ['admin', true], ['authz', false], ['all', false]]) {
     const f = admin({ adSecKind: k }); f.page.adLoad(true);
     assert.equal(/&kind=/.test(secUrl(f)), sent, k + (sent ? ' sent to the server' : ' filtered in the browser'));
   }
@@ -124,7 +122,19 @@ test('(f) plain labels: authz_unavailable and unknown events are never shown as 
   assert.equal(page.adSecTxt({ act: 'TEST_ONLY_unknown' }).t, 'حدث أمني آخر');
   /* the CSV export follows the same kind filter as the list */
   const g = admin({ adSec: ROWS, adSecKind: 'authz' });
-  assert.deepEqual(cp(g.page._adSecRows().map((r) => r.act)), ['authz_unavailable']);
+  assert.deepEqual(cp(g.page._adSecRows().map((r) => r.act)), ['recover_ok', 'recover_fail', 'recovery_key', 'reset', 'authz_unavailable']);
   const L = fs.readFileSync(path.join(ROOT, 'src/modules/admin/logic.js'), 'utf8');
   assert.match(L, /adSecExport\(\) \{\r?\n\s*const t = this\._adSecRows\(\),/);
+});
+
+/* review fix: «دخول» and «مسؤول المنصة» stay filtered on the server (no event lost behind the 500-row read), and the footer says so when a read reaches the server cap */
+test('(f) security log: server filter for «دخول»/«مسؤول المنصة»; the 500-row cap is stated, no useless «عرض المزيد»', () => {
+  const K = admin().page._adSecKind();
+  assert.ok(K.login.srv && K.admin.srv, 'login and admin are filtered by the server, as on develop');
+  const many = Array.from({ length: 500 }, (_, i) => ({ id: i + 1, ts: Date.now() - i, act: 'login_ok', uid: 'TEST_ONLY_su', un: '9000002000', detail: '', target: '' }));
+  const v = admin({ admTab: 'sec', adSecKind: 'login', adSec: many, adSecLim: 700 }).page.adVals();
+  assert.equal(v.secMoreOn, false, 'no «عرض المزيد» once the server cap is reached');
+  assert.match(v.secFoot, /بلغ العرض حدّه \(أحدث 500 حدث في الفترة\) — اختر فترة أقصر لرؤية الأقدم/);
+  const v2 = admin({ admTab: 'sec', adSec: many.slice(0, 100), adSecLim: 100 }).page.adVals();
+  assert.equal(v2.secMoreOn, true); assert.match(v2.secFoot, /يوجد المزيد/);
 });

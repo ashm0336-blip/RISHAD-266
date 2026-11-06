@@ -1447,16 +1447,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return Math.floor(((now || Date.now()) + 108e5) / 864e5) * 864e5 - 108e5;
   }
   /* أنواعُ سجل الأمن في الواجهة. srv: الأحداثُ = فلترُ الخادم لهذا النوع حرفاً بحرف (063 /api/sec kind) فيُرسَل إليه؛ وإلا يُصفّى هنا.
-     الاستعادةُ من شاشة الدخول تحت «دخول»، ومفتاحُ الاستعادة والتهيئة تحت «مسؤول المنصة»، وتعذّرُ التحقق من الصلاحيات نوعٌ بذاته — كانت كلها في «الكل» وحده */
+     «دخول» و«مسؤول المنصة» يصفّيهما الخادم كما كانا (لا يُفقد حدثٌ خلف حدّ القراءة)؛ وأحداثُ الاستعادة والتهيئة وتعذّر التحقق — وكانت في «الكل» وحده — نوعٌ واحد يُصفّى هنا */
   _adSecKind(k) {
     const K = {
-      login: { t: "دخول", acts: ["login_ok", "login_fail", "lock", "logout", "sess_kill", "guard_unlock", "recover_ok", "recover_fail"] },
+      login: { t: "دخول", acts: ["login_ok", "login_fail", "lock", "logout", "sess_kill", "guard_unlock"], srv: 1 },
       pw: { t: "كلمات مرور", acts: ["pw_change"], srv: 1 },
       acct: { t: "حسابات", acts: ["acct_add", "acct_del", "acct_freeze", "acct_unfreeze"], srv: 1 },
       perm: { t: "صلاحيات", acts: ["perm_change"], srv: 1 },
       denied: { t: "مرفوض", acts: ["denied"], srv: 1 },
-      admin: { t: "مسؤول المنصة", acts: ["admin", "policy_change", "sess_kill", "guard_unlock", "recovery_key", "reset"] },
-      authz: { t: "تعذّر التحقق", acts: ["authz_unavailable"] },
+      admin: { t: "مسؤول المنصة", acts: ["admin", "policy_change", "sess_kill", "guard_unlock"], srv: 1 },
+      authz: { t: "استعادة وتهيئة وتحقق", acts: ["recover_ok", "recover_fail", "recovery_key", "reset", "authz_unavailable"] },
     };
     if (!k) return K;
     return K[k] ? Object.assign({ k }, K[k]) : null;
@@ -3127,8 +3127,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       secPeriods: L,
       secRows: B,
       secEmpty: !B.length,
-      secFoot: KIVO.BassamCount(B.length, "حدث") + "" + (t.adSec && t.adSec.length >= (t.adSecLim || 100) ? " · يوجد المزيد" : ""),
-      secMoreOn: !!(t.adSec && t.adSec.length >= (t.adSecLim || 100)),
+      /* الخادم يعيد 500 حدث على الأكثر في القراءة الواحدة: عند بلوغها لا «عرض المزيد» بلا فائدة، ويُقال ذلك صراحة */
+      secFoot: KIVO.BassamCount(B.length, "حدث") + "" + (t.adSec && t.adSec.length >= 500 ? " · بلغ العرض حدّه (أحدث 500 حدث في الفترة) — اختر فترة أقصر لرؤية الأقدم" : t.adSec && t.adSec.length >= (t.adSecLim || 100) ? " · يوجد المزيد" : ""),
+      secMoreOn: !!(t.adSec && t.adSec.length >= (t.adSecLim || 100) && t.adSec.length < 500),
       secMore: () =>
         this.setState({ adSecLim: (t.adSecLim || 100) + 200 }, () => {
           ((this._adLast = 0), this.adLoad(!0));
