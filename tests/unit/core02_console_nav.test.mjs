@@ -1,0 +1,181 @@
+/* RISHAD CORE-02 S7 — «مركز إدارة رشاد» as its own space in the app shell (client only; permissions, routes and server unchanged).
+     (1) the one map (_sysNav in root-logic.js): the nine admin tabs once each, the nine platform sections once each, in the approved
+         five groups; «التهيئة والاستعادة» lives under البيانات والاستمرارية; the labels are the page titles the admin page shows;
+     (2) the template: the operational sidebar (unit picker, «+ قسم», the eight page links, «مواقع ذات صلة», «الإعدادات») sits unchanged
+         inside sc-if sbOps; the console block holds none of them;
+     (3) console mode is for the platform administrator on #/sysadmin only; every operational page — super included — keeps the class,
+         the header offset and the collapse state it had (conCx never touches sidebarOpen);
+     (4) the admin page publishes what it shows (conSync) once per change and after the render (no setState inside another render);
+         _admTabsNow routes the request through _admGo / _plGo (so the recovery-key read, the log and the notifications load run on
+         every path), and the platform section is in the state before the first render;
+     (5) the removed in-page strip and its symbols are gone; 260-bassam-plat drops its help group in the console; tokens --con-*.
+   The real root-logic.js runs in vm over core01_root_world (TEST_ONLY data). */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { world, rd } from './core01_root_world.mjs';
+
+const T = rd('layouts/index.template.html'), R = rd('layouts/root-logic.js'), P = rd('layouts/260-bassam-plat.js');
+const L = rd('modules/admin/logic.js'), V = rd('modules/admin/view.html'), C = rd('modules/admin/helmet.css'), PG = rd('pages/Admin.dc.html');
+/* values built inside the vm are of another realm: compare as data */
+const J = (x) => JSON.parse(JSON.stringify(x)), deq = (a, b, m) => assert.deepEqual(J(a), J(b), m);
+const SYS_TABS = ['overview', 'depts', 'users', 'perms', 'plat', 'sec', 'oplog', 'backup', 'histimp'];
+const PL = ['id', 'mods', 'notif', 'login', 'side', 'print', 'app', 'about', 'setup'];
+const ALL = ['overview', 'sec', 'users', 'perms', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
+
+test('(1) the one map: nine tabs and nine platform sections once each, five groups in order, setup under data', () => {
+  const W = world({ hash: '#/sysadmin/overview' });
+  const N = W.c._sysNav();
+  deq(Object.keys(N), ['home', 'org', 'plat', 'sec', 'data']);
+  const all = Object.values(N).flat();
+  const keys = all.map((x) => x[0] + '/' + (x[1] || ''));
+  assert.equal(new Set(keys).size, keys.length, 'no destination twice');
+  assert.equal(all.length, 17, '17 destinations');
+  deq([...new Set(all.map((x) => x[0]))].sort(), [...SYS_TABS].sort(), 'every admin tab, once');
+  deq(all.filter((x) => x[0] === 'plat').map((x) => x[1]).sort(), [...PL].sort(), 'every platform section, once');
+  deq(N.data.map((x) => x[1] || x[0]), ['backup', 'setup', 'histimp'], '«التهيئة والاستعادة» in البيانات والاستمرارية');
+  deq(N.plat.slice(0, 3).map((x) => x[2]), ['هوية المنصة', 'الوحدات', 'التنبيهات والتعاميم'], 'the three most-used settings first');
+  /* the labels are the titles the admin page gives itself (_conHead · plVals) */
+  for (const [g, items] of Object.entries(N)) for (const x of items) {
+    const re = x[0] === 'plat' ? new RegExp('"' + x[1] + '",\\s*"' + x[2] + '"') : new RegExp('\\b' + x[0] + ': \\[(""|"' + g + '"), "' + x[2] + '"\\]');
+    assert.match(L, re, g + ': ' + x[0] + (x[1] ? '/' + x[1] : '') + ' is titled «' + x[2] + '» on its own page');
+  }
+  const plKeys = /PL_KEYS\(\) \{\s*return (\[[^\]]+\])/.exec(L); assert.ok(plKeys, 'PL_KEYS in the admin page');
+  deq(JSON.parse(plKeys[1]).sort(), [...PL].sort(), 'the admin page knows the same nine sections');
+});
+
+test('(2) template: the operational sidebar is unchanged inside sc-if sbOps; the console block holds only the console', () => {
+  const ops0 = T.indexOf('<sc-if value="{{sbOps}}" hint-placeholder-val="{{ true }}">'), con0 = T.indexOf('<sc-if value="{{sbConsole}}" hint-placeholder-val="{{ false }}">');
+  assert.ok(ops0 > 0 && con0 > ops0, 'both blocks in the one aside');
+  const ops = T.slice(ops0, con0), con = T.slice(con0, T.indexOf('</nav>'));
+  for (const s of ['class="s-dept"', 'class="s-secadd"', 'class="s-ghead"', 'مواقع ذات صلة', '{{goAdmin}}']) assert.ok(ops.includes(s), 'operational block keeps ' + s);
+  deq([...ops.matchAll(/data-key="([a-z]+)"/g)].map((m) => m[1]), ['kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award'], 'the eight page links, in order');
+  for (const s of ['data-key', 's-dept', 's-secadd', 'مواقع ذات صلة', 'goAdmin']) assert.ok(!con.includes(s), 'console block has no ' + s);
+  for (const g of ['org', 'plat', 'sec', 'data']) assert.ok(con.includes('aria-labelledby="con-gh-' + g + '"') && con.includes('id="con-gh-' + g + '"'), 'group ' + g + ' labelled by its heading');
+  assert.match(con, /<span class="nlbl">مركز إدارة رشاد<\/span>/, 'the space is named');
+  assert.match(T, /<nav class="s-nav" aria-label="\{\{sbNavLbl\}\}">/);
+  assert.match(T, /<header class="\{\{topClass\}\}"/);
+  assert.match(T, /<a class="n s-exit"[^>]*sc-camel-on-click="\{\{goOps\}\}"[^>]*>.*مساحة العمل التشغيلية/, 'the exit to the operational workspace');
+  assert.match(T, /<a class="\{\{nSysAdmin\}\}" role="link" tabindex="0" sc-camel-on-click="\{\{goSysAdmin\}\}" title="مركز إدارة رشاد — لمسؤول المنصة وحده">/, 'the return link is the same link');
+});
+
+test('(3) console mode only for the platform administrator on #/sysadmin; operational pages keep class, offset and collapse state', () => {
+  const ops = world({ hash: '#/kpis' });
+  ops.c.state.active = 'kpis';
+  const v0 = ops.vals();
+  assert.equal(v0.sbClass, 'bsb cx'); assert.equal(v0.topClass, 'bs-topbar'); assert.equal(v0.sbOps, true); assert.equal(v0.sbConsole, false);
+  assert.equal(v0.headerStyle, 'right:var(--bs-side-cx)'); assert.equal(v0.con, null); assert.equal(v0.sbNavLbl, undefined);
+  ops.c.state.sidebarOpen = true; assert.equal(ops.vals().sbClass, 'bsb');
+  /* super on the console: expanded by default, its own collapse key */
+  const W = world({ hash: '#/sysadmin/users' });
+  W.c.state.active = 'sysadmin'; W.c.state.sidebarOpen = false;
+  let v = W.vals();
+  assert.equal(v.sbClass, 'bsb bsb--console'); assert.equal(v.topClass, 'bs-topbar is-console'); assert.equal(v.sbNavLbl, 'مركز إدارة رشاد');
+  assert.equal(v.headerStyle, 'right:var(--bs-side)');
+  v.toggleSidebar();
+  assert.equal(W.c.state.conCx, true); assert.equal(W.c.state.sidebarOpen, false, 'the console collapse never touches sidebarOpen');
+  assert.equal(W.ctx.localStorage.getItem('bassam_con_cx_v1'), '1');
+  v = W.vals(); assert.equal(v.sbClass, 'bsb cx bsb--console bsb--rail'); assert.equal(v.conRail, true);
+  W.c.state.active = 'kpis'; assert.equal(W.vals().sbClass, 'bsb cx', 'back on an operational page: its own state');
+  /* a non-administrator never gets console mode, even on the sysadmin key */
+  const M = world({ hash: '#/sysadmin', user: { id: 'TEST_ONLY_m', role: 'dept' } });
+  assert.equal(M.c._pageAllowed('sysadmin'), '', 'the page itself is refused (unchanged)');
+  M.c.state.active = 'sysadmin'; assert.equal(M.vals().sbConsole, false);
+  /* on the drawer width the burger keeps sidebarOpen */
+  const N = world({ hash: '#/sysadmin/users' }); N.ctx.innerWidth = 800; N.c.state.active = 'sysadmin';
+  N.vals().toggleSidebar(); assert.equal(N.c.state.sidebarOpen, true); assert.equal(N.c.state.conCx, false);
+  assert.match(R, /CH = \{[^}]*conTick: 1, conCx: 1 \}/, 'conTick and conCx are cosmetic (no page re-render)');
+});
+
+test('(3b) the console items: availability from the admin page, selection from the address, the group remembers its last item', async () => {
+  const W = world({ hash: '#/sysadmin/plat/notif' });
+  W.c.state.active = 'sysadmin';
+  let v = W.vals();
+  assert.equal(v.con.loading, true, 'before the admin page publishes: a skeleton, no guessed items');
+  W.c._conSync({ avail: ALL, tab: 'plat', sub: 'notif', secBadge: 3, dirty: ['id'], dirtyN: 2 });
+  await Promise.resolve();
+  v = W.vals();
+  const items = ['org', 'plat', 'sec', 'data'].flatMap((g) => v.con[g].items);
+  assert.equal(items.length + (v.con.home.show ? 1 : 0), 17);
+  const cur = items.filter((i) => i.cur === 'page');
+  deq(cur.map((i) => i.t), ['التنبيهات والتعاميم'], 'exactly one current item');
+  assert.equal(cur[0].href, '#/sysadmin/plat/notif');
+  assert.ok(items.every((i) => i.cur === undefined || i.cur === 'page'));
+  const sec = v.con.sec.items.find((i) => i.tab === 'sec');
+  assert.equal(sec.bdgOn, true); assert.equal(sec.lbl, 'الأمن، أحداث أمنية اليوم: 3');
+  assert.equal(v.con.plat.items.find((i) => i.sub === 'id').dirty, true, 'the unsaved section is marked');
+  deq(v.con.plat.items.filter((i) => i.div).map((i) => i.sub), ['login', 'about']);
+  /* without the cloud server (Admin p): no Home, no security group */
+  W.c._conSync({ avail: ['plat', 'depts', 'backup', 'histimp'], tab: 'depts', sub: 'id', secBadge: 0, dirty: [], dirtyN: 0 });
+  W.ctx.location.hash = '#/sysadmin/depts';
+  v = W.vals();
+  assert.equal(v.con.home.show, false); assert.equal(v.con.sec.show, false);
+  deq(v.con.org.items.map((i) => i.tab), ['depts']);
+  deq(v.con.data.items.map((i) => i.sub || i.tab), ['backup', 'setup', 'histimp']);
+  /* the collapsed rail: a group opens on its last item */
+  W.c._conSync({ avail: ALL, tab: 'perms', sub: 'id', secBadge: 0, dirty: [], dirtyN: 0 });
+  W.ctx.location.hash = '#/sysadmin/perms'; W.vals();
+  W.ctx.location.hash = '#/sysadmin/backup'; v = W.vals();
+  v.con.org.railGo({ preventDefault() {} });
+  assert.equal(W.ctx.location.hash, '#/sysadmin/perms', 'the group reopens on its last item');
+});
+
+test('(4) conSync: deduplicated by signature and deferred (no setState during the admin render)', async () => {
+  const W = world({ hash: '#/sysadmin/users' }); W.c.state.active = 'sysadmin';
+  let calls = 0; const set0 = W.c.setState.bind(W.c); W.c.setState = (u, cb) => { calls++; return set0(u, cb); };
+  const s = { avail: ALL, tab: 'users', sub: 'id', secBadge: 0, dirty: [], dirtyN: 0 };
+  W.c._conSync(s); assert.equal(calls, 0, 'not synchronous');
+  await Promise.resolve(); await Promise.resolve(); assert.equal(calls, 1);
+  W.c._conSync({ ...s }); await Promise.resolve(); await Promise.resolve(); assert.equal(calls, 1, 'same signature: nothing');
+  deq(W.c.__lastCon, ['users', null]);
+});
+
+test('(4b) leaving and returning: draft confirmation, last operational page, last console page', async () => {
+  const W = world({ hash: '#/sysadmin/plat/id', confirm: false }); W.c.state.active = 'kpis';
+  W.c.setState({ active: 'sysadmin' }); assert.equal(W.c.__lastOps, 'kpis', 'the operational page left is remembered');
+  W.c.state.active = 'sysadmin'; W.vals();
+  let gone = ''; W.KIVO.BassamNav.go = (k) => { gone = k; };
+  W.c._conSync({ avail: ALL, tab: 'plat', sub: 'id', secBadge: 0, dirty: ['id'], dirtyN: 1 });
+  assert.equal(await W.c._goOps(), false, 'cancel keeps the console and the draft');
+  assert.equal(W.confirms.length, 1); assert.equal(W.confirms[0].cancel, 'البقاء'); assert.equal(gone, '');
+  const Y = world({ hash: '#/sysadmin/users', confirm: true }); Y.c.state.active = 'tasks'; Y.c.setState({ active: 'sysadmin' }); Y.vals();
+  Y.c._conSync({ avail: ALL, tab: 'users', sub: 'id', secBadge: 0, dirty: [], dirtyN: 0 });
+  let to = ''; Y.KIVO.BassamNav.go = (k) => { to = k; };
+  assert.equal(await Y.c._goOps(), true); assert.equal(Y.confirms.length, 0, 'no draft: no question'); assert.equal(to, 'tasks');
+  /* return: the last console page is requested from the admin page */
+  Y.c.state.active = 'tasks'; Y.c._goSys();
+  assert.equal(Y.KIVO.__ADMIN_OPEN_TAB, 'users'); assert.equal(Y.c.state.active, 'sysadmin');
+  /* a non-administrator cannot enter */
+  const M = world({ hash: '#/kpis', user: { id: 'TEST_ONLY_m', role: 'dept' } }); M.c.state.active = 'kpis'; M.c._goSys();
+  assert.equal(M.c.state.active, 'kpis');
+});
+
+test('(4c) the admin page: request routed through _admGo / _plGo, section in the state before the render, canonical address', () => {
+  const head = L.indexOf('\n  _admTabsNow(i, n, p, g) {'), body = L.slice(head, L.indexOf('\n  renderVals() {', head));
+  assert.match(body, /this\._plGo\(ps\)/); assert.match(body, /this\._admGo\(q\)/); assert.doesNotMatch(body, /this\.adGo\(/, 'no direct adGo');
+  assert.match(body, /KIVO\.__ADMIN_OPEN_PSUB = null/);
+  const rv = L.slice(L.indexOf('\n  renderVals() {'));
+  assert.match(rv, /this\._hashTab\("sysadmin", ps \? "plat\/" \+ ps : d\)/, 'canonical #/sysadmin/plat/<sub>');
+  assert.ok(rv.indexOf('KIVO.BassamNav.conSync({') > rv.indexOf('this._hashTab("sysadmin"'), 'published after the address is written');
+  assert.match(R, /if \(key === "sysadmin"\) \{ KIVO\.__ADMIN_OPEN_TAB = t; KIVO\.__ADMIN_OPEN_PSUB = this\._hashSub\(\) \|\| null; \}/);
+});
+
+test('(5) removed: the in-page strip, the platform tab row and their symbols; P and tokens', () => {
+  deq([...V.matchAll(/class="adm-tabbar[^"]*"/g)].map((m) => m[0]), ['class="adm-tabbar adm-tabbar--d"'], 'only the unit settings strip remains');
+  for (const s of ['adm-subtabs', 'adm-l2', 'admNav', 'admSub', 'plTabs', 'admTabBarShow', 'adm-tab--sm']) {
+    assert.ok(!V.includes(s) && !PG.includes(s) && !C.includes(s), s + ' gone from view, page and style');
+  }
+  for (const s of ['_admNav', 'admSub', 'plTabs', '__admGrpLast', 'admTabBarShow']) assert.ok(!L.includes(s), s + ' gone from logic');
+  assert.equal((L.match(/admGoBackup:/g) || []).length, 1, 'one admGoBackup');
+  assert.match(V, /<h2 tabindex="-1">\{\{conTitle\}\}<\/h2>/, 'the page title is a focusable h2');
+  assert.match(P, /aside\.classList\.contains\("bsb--console"\)/, 'no help group in the console');
+  assert.match(P, /مركز إدارة رشاد ← البيانات والاستمرارية ← التهيئة والاستعادة/);
+  const TK = JSON.parse(rd('styles/tokens/tokens.json'));
+  for (const n of ['con-bg', 'con-fg', 'con-fg-muted', 'con-accent', 'con-hover', 'con-on', 'con-line']) {
+    assert.ok(TK.semantic.some((x) => x.name === n && /^var\(--p-/.test(x.value)), n + ' (palette reference)');
+    assert.ok(rd('styles/070-theme-tokens.css').includes('--' + n + ':'), n + ' emitted');
+  }
+  for (const n of ['con-bg', 'con-line']) assert.ok(TK.dark.some((x) => x.name === n) && rd('styles/080-theme-dark.css').includes('--' + n + ':'), n + ' dark');
+});

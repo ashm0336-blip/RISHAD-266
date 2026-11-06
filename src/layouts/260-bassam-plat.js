@@ -6,7 +6,7 @@
   var RAWget = Storage.prototype.getItem, RAWset = Storage.prototype.setItem;
   var DEF = {
     name: "المنصة التشغيلية", short: "المنصة", org: "", logo: "", themeDef: "light",
-    login: { rights: "جميع الحقوق محفوظة © {م}", title: "", desc: "منظومة رقمية متكاملة تجمع إدارات الحرم المكي الشريف في مكان واحد — كل إدارة ببياناتها وصلاحياتها المستقلة، بدخول موحد واحد.", footer: "AL HARAMAIN", legal: "", sub: "سجّل دخولك للمتابعة إلى لوحة التحكم", state: "منصة مؤسَّسة — الدخول بالحسابات المسجّلة فيها", helpStaff: "موظف أو مدير إدارة؟ تواصل مع مدير إدارتك — يعيد تعيين كلمة مرورك من شاشته في ثوانٍ.", helpNoKey: "لم يُنشأ مفتاح استعادة لهذه المنصة بعد — يُنشأ من مركز إدارة رشاد ← إعدادات المنصة ← التهيئة والاستعادة.", showVer: true, remember: true, help: true },
+    login: { rights: "جميع الحقوق محفوظة © {م}", title: "", desc: "منظومة رقمية متكاملة تجمع إدارات الحرم المكي الشريف في مكان واحد — كل إدارة ببياناتها وصلاحياتها المستقلة، بدخول موحد واحد.", footer: "AL HARAMAIN", legal: "", sub: "سجّل دخولك للمتابعة إلى لوحة التحكم", state: "منصة مؤسَّسة — الدخول بالحسابات المسجّلة فيها", helpStaff: "موظف أو مدير إدارة؟ تواصل مع مدير إدارتك — يعيد تعيين كلمة مرورك من شاشته في ثوانٍ.", helpNoKey: "لم يُنشأ مفتاح استعادة لهذه المنصة بعد — يُنشأ من مركز إدارة رشاد ← البيانات والاستمرارية ← التهيئة والاستعادة.", showVer: true, remember: true, help: true },
     app: { name: "", statusBar: "light", install: true },
     side: { order: ["kpis", "emps", "planning", "daily", "irshad", "seized", "award"], hidden: [], ver: true, help: true, links: true },
     links: [],   /* «مواقع ذات صلة»: [{ t: العنوان, u: الرابط, d: الوصف }] يحرّرها مدير النظام من الصفحة نفسها */
@@ -87,7 +87,9 @@
       /* «المساعدة» صفحة في سجل الصلاحيات: تظهر لمن له عرضها (مدير النظام دائماً) وإعداد المنصة يطفئها للجميع */
       var helpOk = false; try { var PM9 = KIVO.BassamPerm; helpOk = !PM9 || !PM9.can || (KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) || PM9.can('help', 'view'); } catch (e9) { helpOk = true; }
       /* KIVO_254 (AUD-020 · لوحة المفاتيح): رابطُ «المساعدة» <a> بلا href كروابط التنقّل — role="link" وtabindex="0" يدخلانه ترتيبَ Tab ويُفتح بـEnter (المُحسِّن 660) */
-      if (nav && P.side.help && helpOk && !hg) { hg = document.createElement("div"); hg.className = "grp bs-plat-helpgrp"; hg.innerHTML = '<a class="n bs-plat-help" role="link" tabindex="0" title="حول المنصة والأدلة"><span class="ni">' + svg(I_HELP) + '</span><span class="nlbl">المساعدة</span></a>'; hg.querySelector("a").addEventListener("click", function (ev) { ev.preventDefault(); openAbout(); }); hg.style.marginTop = "0";
+      /* CORE-02 S7: في مساحة «مركز إدارة رشاد» لا مجموعةَ مساعدة — المساعدةُ هناك في «حول المنصة» والجرس */
+      if (aside.classList.contains("bsb--console")) { if (hg) hg.remove(); }
+      else if (nav && P.side.help && helpOk && !hg) { hg = document.createElement("div"); hg.className = "grp bs-plat-helpgrp"; hg.innerHTML = '<a class="n bs-plat-help" role="link" tabindex="0" title="حول المنصة والأدلة"><span class="ni">' + svg(I_HELP) + '</span><span class="nlbl">المساعدة</span></a>'; hg.querySelector("a").addEventListener("click", function (ev) { ev.preventDefault(); openAbout(); }); hg.style.marginTop = "0";
         /* «المساعدة» تلي «مواقع ذات صلة» مباشرة — مجموعة المراجع — لا آخر القائمة بعد «الإعدادات»؛ وتبقى مجموعةً مستقلة كي لا تختفي معها حين تُطفأ المواقع */
         var lg = nav.querySelectorAll(":scope > .grp")[1]; if (lg && lg.nextSibling) nav.insertBefore(hg, lg.nextSibling); else nav.appendChild(hg); }
       else if (hg && (!P.side.help || !helpOk)) hg.remove();

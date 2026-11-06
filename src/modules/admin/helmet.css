@@ -130,6 +130,17 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 /* CORE-01 · التبويبات: الحالةُ من aria-selected */
 .adm-tabbar{border-radius:var(--r-xl);border:2px solid var(--brand-soft);background:linear-gradient(90deg,var(--brand-soft),transparent,var(--brand-soft));padding:var(--sp-3)}
 .adm-tabbar--d{margin-bottom:14px}
+/* CORE-02 S7 · رأسُ الصفحة في «مركز إدارة رشاد»: المجموعةُ (سطرٌ صغير) ثم العنوان (h2) ثم وصفٌ واحد · وفي إعدادات المنصة يثبت أعلى الشاشة بحالة الحفظ وأزرارِه */
+.con-ph{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sp-3);flex-wrap:wrap;padding:var(--sp-1) 0 var(--sp-2);font-family:var(--font-ui)}
+.con-ph-t{min-width:0;flex:1 1 280px}
+.con-ph .con-eyebrow{margin:0 0 2px;font-size:var(--fs-sm);font-weight:700;line-height:1.4;color:var(--text-faint)}
+.con-ph h2{margin:0;font-size:20px;font-weight:800;line-height:1.35;color:var(--text-primary)}
+.con-ph h2:focus{outline:none}
+.con-ph h2:focus-visible{outline:2px solid var(--focus-ring);outline-offset:3px;border-radius:var(--r-sm)}
+.con-ph .con-desc{margin:4px 0 0;font-size:var(--fs-sm);line-height:1.5;color:var(--text-muted)}
+.con-ph-a{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.con-ph--sticky{position:sticky;top:var(--bs-topbar-h);z-index:3;padding-block:var(--sp-2);background:var(--bg-app);box-shadow:var(--sp-3) 0 0 var(--bg-app),calc(-1 * var(--sp-3)) 0 0 var(--bg-app),0 1px 0 var(--border-subtle)}
+@media (max-width:640px){.con-ph h2{font-size:var(--fs-lg)}}
 .adm-tabs{align-items:center;gap:var(--sp-2);padding:4px 0}
 .adm-tab{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;border-radius:var(--r-lg);border:2px solid transparent;background:transparent;flex-shrink:0;min-width:110px;cursor:pointer;font:400 var(--fs-sm) var(--font-ui);color:var(--text-secondary)}
 .adm-tab>div:first-child{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;background:var(--bg-surface-3);color:var(--text-faint)}
@@ -137,19 +148,6 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 .adm-tab[aria-selected="true"]{background:var(--bg-surface);border-color:var(--border-brand-soft);box-shadow:0 3px 10px -4px var(--brand-glow);font-weight:600;color:var(--brand-fg)}
 .adm-tab[aria-selected="true"]>div:first-child{background:var(--brand-soft);color:var(--brand-primary)}
 .adm-tab[aria-selected="true"]::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:var(--r-pill);background:var(--brand-primary)}
-.adm-tab .bdg{position:absolute;top:8px;left:10px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:var(--r-pill);background:var(--danger);color:var(--text-on-fill);font-size:var(--fs-xs);font-weight:700;display:flex;align-items:center;justify-content:center;font-feature-settings:'tnum'}
-.adm-tab .dty{position:absolute;top:8px;left:10px;width:7px;height:7px;border-radius:var(--r-pill);background:var(--warning)}
-.adm-subtabs{gap:4px;padding:8px;margin-bottom:14px;border-radius:14px}
-/* CORE-02 · مركز إدارة رشاد: المستوى الثاني — تبويباتُ المجموعة المختارة (.bs-btn) تحت المجموعات في الإطار نفسه، ورابطُ «التهيئة والاستعادة» */
-.adm-l2{display:flex;align-items:center;gap:var(--sp-2);margin-top:var(--sp-2);padding-top:var(--sp-3);border-top:1px solid var(--border-brand-soft)}
-.adm-l2-tabs{flex:1 1 auto;gap:var(--sp-2);padding:2px}
-.adm-l2-tab{position:relative;flex-shrink:0;font-size:var(--fs-sm);color:var(--text-secondary)}
-.adm-l2-tab[aria-selected="true"]{background:var(--bg-surface);border-color:var(--border-brand-soft);color:var(--brand-fg);box-shadow:0 2px 8px -4px var(--brand-glow)}
-.adm-l2-tab .bdg{min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:var(--r-pill);background:var(--danger);color:var(--text-on-fill);font-size:var(--fs-xs);font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-feature-settings:'tnum'}
-.adm-l2-lnk{flex-shrink:0;font-size:var(--fs-sm)}
-.adm-l2-lnk small{font-size:var(--fs-xs);font-weight:400;color:var(--text-faint)}
-@media (max-width:640px){.adm-l2{flex-direction:column;align-items:stretch}.adm-l2-lnk{justify-content:flex-start}}
-.adm-tab--sm{gap:5px;padding:9px 12px;min-width:96px}
 .adm-rk{padding:20px 22px}
 .adm-rk .t{display:block;font-size:15px;font-weight:800;margin-bottom:6px}
 .adm-rk .m{margin:0 0 12px;font-size:var(--fs-sm);color:var(--text-secondary);line-height:1.9}

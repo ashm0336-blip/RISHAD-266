@@ -1202,70 +1202,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ? this.setState({ admTab: "oplog" }, () => this.audLoad(!0))
           : this.setState({ admTab: k });
   }
-  /* CORE-02 · مركز إدارة رشاد: تنقّلٌ بمستويين فوق التبويبات القائمة نفسها — المستوى الأول خمسُ مجموعات، والثاني تبويباتُ المجموعة
-     المختارة. المجموعةُ تُشتقّ من التبويب المعروض (d) فالعنوانُ #/sysadmin/<tab> والروابطُ المباشرة كما هي، ولا يظهر تبويبٌ ليس في p
-     (تبويباتُ الخادم في p كما كانت: وضعُ الموقع + مسؤول المنصة + الخادم السحابي). «التهيئة والاستعادة» في المجموعة الخامسة رابطٌ إلى قسمها في إعدادات المنصة، لا نسخةٌ منه. sb: بشارةُ الأمن */
-  _admNav(p, d, sb) {
-    const T = {
-        overview: "نظرة عامة",
-        depts: "الإدارات",
-        users: "مراقبة الحسابات",
-        perms: "خريطة الصلاحيات",
-        plat: "المنصة",
-        sec: "الأمن",
-        oplog: "سجل الأنشطة والتغييرات",
-        backup: "النسخة الاحتياطية",
-        histimp: "استيراد البيانات التاريخية",
-      },
-      G = [
-        ["home", "الرئيسية", ["overview"]],
-        ["org", "الإدارة المؤسسية", ["depts", "users", "perms"]],
-        ["plat", "إعدادات المنصة", ["plat"]],
-        ["sec", "الأمن والرقابة", ["sec", "oplog"]],
-        ["data", "البيانات والاستمرارية", ["backup", "histimp"]],
-      ],
-      L = this.__admGrpLast || (this.__admGrpLast = {}),   /* آخرُ تبويبٍ فُتح في كل مجموعة */
-      nav = {};
-    let cur = null;
-    G.forEach(([k, t, ks]) => {
-      const av = ks.filter((x) => p.includes(x)),
-        on = av.includes(d);
-      on && ((L[k] = d), (cur = { k: k, t: t, av: av }));
-      nav[k] = {
-        show: av.length > 0,
-        on: on,
-        hint: av.map((x) => T[x]).join(" · "),
-        bdgOn: "sec" === k && !!sb && av.includes("sec"),
-        go: () => on || this._admGo(av.includes(L[k]) ? L[k] : av[0]),
-      };
-    });
-    const lnk = !!cur && "data" === cur.k && p.includes("plat"),
-      shown = (cur ? cur.k : "") + "/" + d;
-    /* الشريطان ينزلقان أفقياً على الشاشة الضيّقة: المجموعةُ والتبويبُ المختاران يُكشفان إن كانا مقصوصَي الطرف — مرّةً عند تغيّرهما لا مع كل رسم
-       (كان هذا لتبويب «استيراد البيانات التاريخية» وحده في hiNode) */
-    if (this._admNavShown !== shown) {
-      this._admNavShown = shown;
-      setTimeout(() => {
-        try {
-          document.querySelectorAll('.adm-tabbar [role="tab"][aria-selected="true"]').forEach((e) => {
-            const s = e.parentElement,
-              a = e.getBoundingClientRect(),
-              b = s.getBoundingClientRect();
-            (a.left < b.left - 1 || a.right > b.right + 1) && e.scrollIntoView({ block: "nearest", inline: "nearest" });
-          });
-        } catch (x) { /* لا يمنع العرض — يُتجاوز بصمت */ }
-      }, 80);
-    }
-    return {
-      admNav: nav,
-      admSubShow: !!cur && cur.av.length + (lnk ? 1 : 0) > 1,
-      admSubLbl: cur ? "أقسام " + cur.t : "",
-      admSub: cur
-        ? cur.av.map((x) => ({ k: x, t: T[x], on: x === d, go: () => this._admGo(x), bdgOn: "sec" === x && !!sb, bdg: sb || "" }))
-        : [],
-      admSubLnkOn: lnk,
-      admSubLnkGo: () => this._plGo("setup"),
-    };
+  /* CORE-02 S7 · أقسامُ «إعدادات المنصة» (#/sysadmin/plat/<sub>) — تنقّلُها في شريط «مركز إدارة رشاد» (root-logic _sysNav) */
+  PL_KEYS() {
+    return ["id", "mods", "notif", "login", "side", "print", "app", "about", "setup"];
+  }
+  /* رأسُ الصفحة في المركز: مجموعتُها (سطرٌ صغير) ثم عنوانُها — المجموعةُ من موضع التبويب في الشريط الجانبي */
+  _conHead(d, ps) {
+    const G = { org: "الإدارة المؤسسية", plat: "إعدادات المنصة", sec: "الأمن والرقابة", data: "البيانات والاستمرارية" },
+      T = { overview: ["", "الرئيسية"], depts: ["org", "الإدارات"], users: ["org", "مراقبة الحسابات"], perms: ["org", "خريطة الصلاحيات"],
+        sec: ["sec", "الأمن"], oplog: ["sec", "سجل الأنشطة والتغييرات"], backup: ["data", "النسخة الاحتياطية"], histimp: ["data", "استيراد البيانات التاريخية"] },
+      x = "plat" === d ? ["setup" === ps ? "data" : "plat", ""] : T[d] || ["", ""];
+    return { conEyebrow: G[x[0]] || "", conEyebrowOn: !!G[x[0]], conTitle: x[1] };
   }
   adAct(t, e, s) {
     return this.adFetch(t, e).then(
@@ -2001,7 +1948,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         (i.logo && i.logo,
         i.logo ? i.logo : (i.name || "م").charAt(0),
         {
-          plTabs: p.map((t) => ({ t: t[1], on: t[0] === l, dirty: this.plDirtyTab(t[0]), go: () => this._plGo(t[0]) })),
           plTitle: d[1],
           plSub: d[2] + " — تُطبَّق على كل المستخدمين فور الحفظ",
           plClean: 0 === o,
@@ -2046,10 +1992,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 })()
               : "",
           plOnNotif: "notif" === l,
-          plPvOn: "notif" !== l,
+          plPvOn: "notif" !== l && "setup" !== l,
           plGrid:
             "display:grid;grid-template-columns:" +
-            ("notif" === l ? "1fr" : "1fr 340px") +
+            ("notif" === l || "setup" === l ? "1fr" : "1fr 340px") +
             ";border:1px solid var(--bd-xeceef1);border-radius:18px;background:var(--bg-xffffff);overflow:hidden;box-shadow:var(--shadow-soft);align-items:stretch",
           ...("notif" === l ? this.nfVals() : {}),
           plOn: (t) => {
@@ -2353,7 +2299,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? "background:var(--bg-x141414);color:var(--fg-xffffff)"
                   : "background:var(--bg-xe5e2da);color:var(--fg-x8b8f98)"),
           })),
-          admGoBackup: () => this.setState({ admTab: "backup" }),
         });
     ([
       "login.help",
@@ -7055,10 +7000,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       dq = null;
     try {
       if (KIVO.__ADMIN_OPEN_TAB && n) {
-        const q = (l = KIVO.__ADMIN_OPEN_TAB);
+        /* CORE-02 S7: والقسمُ (#/sysadmin/plat/<sub> — __ADMIN_OPEN_PSUB) في الحالة قبل الرسم أيضاً؛ والتحميلُ بعده بالمسار الواحد
+           (_admGo · _plGo) فتُقرأ حالةُ مفتاح الاستعادة وسجلُّ الأنشطة وإدارةُ التنبيهات من الجرس والرابط والشريط سواءً */
+        const q = (l = KIVO.__ADMIN_OPEN_TAB),
+          K = this.PL_KEYS(),
+          rq = KIVO.__ADMIN_OPEN_PSUB,
+          ps = "plat" === q ? (K.includes(rq) ? rq : !rq && K.includes(e.plTab) ? e.plTab : "id") : null;   /* بلا قسم: آخرُ قسمٍ فُتح · قسمٌ مجهول: «هوية المنصة» */
         KIVO.__ADMIN_OPEN_TAB = null;
-        p.includes(q) && q !== e.admTab && (this.state = { ...this.state, admTab: q });
-        setTimeout(() => this.adGo(q), 0);
+        KIVO.__ADMIN_OPEN_PSUB = null;
+        p.includes(q) && (q !== e.admTab || (ps && ps !== e.plTab)) && (this.state = { ...this.state, admTab: q, ...(ps ? { plTab: ps } : {}) });
+        p.includes(q) && setTimeout(() => (ps ? (this._plGo(ps), "setup" !== ps && this.plRkLoad()) : this._admGo(q)), 0);
       }
     } catch(t) { /* لا يمنع العرض — يُتجاوز بصمت */ }
     try {
@@ -7105,8 +7056,25 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           { l, h } = this._admTabsNow(i, n, p, g),
           d = p.includes(l) ? l : n ? "depts" : "backup",
           av = this.adVals();
+        const ps = "plat" === d ? (this.PL_KEYS().includes(this.state.plTab) ? this.state.plTab : "id") : null,
+          pv = n && "plat" === d ? this.plVals() : {};
         try {
-          "dept" === i ? this._hashTab("admin", h) : n && this._hashTab("sysadmin", d);
+          "dept" === i ? this._hashTab("admin", h) : n && this._hashTab("sysadmin", ps ? "plat/" + ps : d);
+        } catch (t) {}
+        /* CORE-02 S7: ما تعرضه الصفحة يُنشر لشريط «مركز إدارة رشاد» (التوافرُ قاعدةُ p هنا وحدها) — بعد كتابة العنوان */
+        try {
+          const dz = !(!this.state.plDraft && !this.state.nfDraft);
+          n &&
+            KIVO.BassamNav &&
+            KIVO.BassamNav.conSync &&
+            KIVO.BassamNav.conSync({
+              avail: p,
+              tab: d,
+              sub: ps || (this.PL_KEYS().includes(this.state.plTab) ? this.state.plTab : "id"),
+              secBadge: av.secBadgeOn ? av.secBadge | 0 : 0,
+              dirty: dz ? this.PL_KEYS().filter((k) => this.plDirtyTab(k)) : [],
+              dirtyN: dz ? this.plDirtyN() : 0,
+            });
         } catch (t) {}
         return {
           admModeDept: "dept" === i,
@@ -7114,8 +7082,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           admOnDepts: n && "depts" === d,
           admOnPlat: n && "plat" === d,
           admGoPlat: () => this._admGo("plat"),
-          ...(n ? this._admNav(p, d, av.secBadgeOn ? av.secBadge : "") : { admNav: {}, admSub: [], admSubShow: !1, admSubLnkOn: !1 }),
-          ...(n && "plat" === d ? this.plVals() : {}),
+          ...(n ? this._conHead(d, ps) : {}),
+          ...pv,
+          ...(n && "plat" === d ? { conTitle: pv.plTitle || "", conDesc: pv.plSub || "" } : {}),
+          conDescOn: n && "plat" === d && !!pv.plSub,
+          conPhCls: "con-ph" + (n && "plat" === d ? " con-ph--sticky" : ""),
           admOnOverview: o && "overview" === d,
           admOnSec: o && "sec" === d,
           admOnUsers: o && "users" === d,
@@ -8631,7 +8602,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ),
         };
       })(),
-      admTabBarShow: s,
       ...(() => {
         const t = KIVO.BassamAuth,
           s = KIVO.BassamDepts;

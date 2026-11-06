@@ -13,6 +13,10 @@
          (sub-tabs, row menu, panels): nothing scrolls the page sideways, no content is cut off at the screen edge outside its own scroll
          area, no readable text falls under 3:1 contrast against its background, every recorded function is still reachable, and no
          page error, no save.
+   CORE-02 S7 (intended navigation change): the five groups and their pages left the in-page strip for the sidebar of the console
+   («مركز إدارة رشاد» as its own space). The selected place is read from the sidebar (aria-current="page" and its group heading), the
+   platform sections are reached as sidebar items (#/sysadmin/plat/<sub>), and a recorded in-page link that is now a sidebar item is
+   checked there (MOVED → 'aside'). The fixture is not edited.
    Capture mode (writes the fixture and the BEFORE screenshots; not part of the normal run):
      KIVO_CORE02_CAPTURE=<screenshot dir> node --test tests/browser/core02_admin_functions.test.mjs
    Screenshots only (the same screens, the fixture is read and never rewritten — the AFTER set):
@@ -39,12 +43,15 @@ const RENAMES = {
    group → tab reachability is asserted below). The ONLY place a recorded item may leave its route; never add an entry to hide a loss. */
 const MOVED = {
   overview: { 'هوية المنصة': 'plat', 'الوحدات': 'plat', 'التنبيهات والتعاميم': 'plat', 'الإدارات': 'depts', 'سجل الأنشطة والتغييرات': 'oplog', 'النسخة الاحتياطية': 'backup' },
+  /* CORE-02 S7: the nine platform sections were in-page tabs; each is now a named item of the console sidebar (#/sysadmin/plat/<sub>) —
+     «التهيئة والاستعادة» under البيانات والاستمرارية, the other eight under إعدادات المنصة */
+  plat: { 'هوية المنصة': 'aside', 'شاشة تسجيل الدخول': 'aside', 'تطبيق الجوال': 'aside', 'القوائم': 'aside', 'الطباعة والتقارير': 'aside', 'الوحدات': 'aside', 'التهيئة والاستعادة': 'aside', 'التنبيهات والتعاميم': 'aside', 'حول المنصة': 'aside' },
 };
 /* CORE-02 step 2: old display names of the top role / the admin interface that must no longer be shown on any admin tab */
 const OLD_NAMES = ['مدير النظام', 'المشرف العام', 'مشرف المنصة', 'مدير المنصة'];
-/* CORE-02 step 1: the nine tabs sit in five groups (two-level navigation inside .adm-tabbar). Each recorded tab must show its group
-   selected, and, where the group holds more than one tab, the tab itself selected on the second level (the recorded tab label).
-   A single-tab group (الرئيسية = نظرة عامة · إعدادات المنصة = المنصة) is selected by its group alone. */
+/* CORE-02 step 1 / S7: the nine tabs sit in five groups — since S7 in the console sidebar. Each recorded tab must show its group
+   heading and its own item selected (aria-current="page"); الرئيسية is a single item with no heading, and إعدادات المنصة is selected
+   with one of its sections. */
 const NAV = {
   overview: ['الرئيسية'], depts: ['الإدارة المؤسسية', 'الإدارات'], users: ['الإدارة المؤسسية', 'مراقبة الحسابات'], perms: ['الإدارة المؤسسية', 'خريطة الصلاحيات'],
   plat: ['إعدادات المنصة'], sec: ['الأمن والرقابة', 'الأمن'], oplog: ['الأمن والرقابة', 'سجل الأنشطة والتغييرات'],
@@ -52,7 +59,8 @@ const NAV = {
 };
 /* the selected nav labels without a count badge («الأمن #») */
 const selNow = (r) => r.selected.map((x) => x.replace(/ #$/, ''));
-const opened = (t, r) => NAV[t].every((v) => selNow(r).includes(v));
+/* CORE-02 S7: the platform settings open on their last section — «التهيئة والاستعادة» is selected under البيانات والاستمرارية */
+const opened = (t, r) => NAV[t].every((v) => selNow(r).includes(v)) || (t === 'plat' && ['البيانات والاستمرارية', 'التهيئة والاستعادة'].every((v) => selNow(r).includes(v)));
 const MOBILE = { viewport: { width: 390, height: 844 }, context: { isMobile: true, hasTouch: true, deviceScaleFactor: 1 } };
 const DESKTOP = { viewport: { width: 1366, height: 900 }, context: { deviceScaleFactor: 1 } };
 
@@ -101,7 +109,11 @@ function collect() {
   }
   /* section labels given as aria-label on a region */
   for (const e of root.querySelectorAll('section[aria-label],[role=region][aria-label],[role=dialog][aria-label],[role=tablist][aria-label]')) if (vis(e) && !e.closest('.adm-tabbar')) { const t = norm(e.getAttribute('aria-label')); if (keep(t)) out.headings.add(t); }
-  return { headings: [...out.headings], actions: [...out.actions], fields: [...out.fields], selected: out.selected, nav: out.nav, text: norm(root.innerText) };
+  /* CORE-02 S7: the console sidebar — the current item and its group heading are the selected place; every item label is reachable */
+  const side = [...document.querySelectorAll('aside.bsb [data-con-tab]')].map((e) => norm(e.querySelector('.nlbl') ? e.querySelector('.nlbl').textContent : e.textContent));
+  const cur = document.querySelector('aside.bsb [data-con-tab][aria-current="page"]');
+  if (cur) { const g = cur.closest('.s-cg'), h = g && g.querySelector('.s-cgh'); if (h) out.selected.push(norm(h.textContent)); out.selected.push(norm(cur.querySelector('.nlbl').textContent)); }
+  return { headings: [...out.headings], actions: [...out.actions], fields: [...out.fields], selected: out.selected, nav: out.nav, side, text: norm(root.innerText) };
 }
 
 /* CORE-02 step 6: what a phone or the dark theme can break (runs in the page). Returns
@@ -133,6 +145,12 @@ function audit() {
   return out;
 }
 
+/* CORE-02 S7: open a console sidebar item as a user would — on a phone or tablet the sidebar is a drawer, opened by the burger first */
+async function asideGo(page, sel) {
+  const closed = await page.evaluate(() => innerWidth <= 1024 && document.querySelector('aside.bsb').classList.contains('cx'));
+  if (closed) { await page.click('.bs-burger'); await page.waitForTimeout(500); }
+  await page.locator('aside.bsb ' + sel).first().click({ timeout: 10000 });
+}
 /* Probes: the in-tab navigation a user takes to reach the rest of a tab (sub-tabs, a row's action menu, a details panel).
    Each only opens/switches views — none of them saves. */
 async function probes(page, scope, tab, each) {
@@ -140,10 +158,11 @@ async function probes(page, scope, tab, each) {
   const snap = async (name) => { const r = await page.evaluate(collect); states.push({ name, ...r }); if (each) await each(name); };
   await snap('base');
   if (scope === 'sys' && tab === 'plat') {
-    const subs = await page.evaluate(() => [...document.querySelectorAll('main.bs-main [role=tablist] [role=tab]')].filter((e) => !e.closest('.adm-tabbar') && e.getClientRects().length).map((e) => e.textContent.replace(/\s+/g, ' ').trim()));
-    for (const s of subs) {
-      await page.locator('main.bs-main [role=tablist]:not(.adm-tabs) [role=tab]', { hasText: s }).first().click({ timeout: 10000 });
-      await page.waitForTimeout(900); await snap('sub:' + s);
+    /* CORE-02 S7: the platform sections are sidebar items (8 under إعدادات المنصة, setup under البيانات والاستمرارية) */
+    const subs = await page.evaluate(() => [...document.querySelectorAll('aside.bsb [data-con-tab="plat"][data-con-sub]')].map((e) => [e.getAttribute('data-con-sub'), e.textContent.replace(/\s+/g, ' ').trim()]));
+    for (const [k, t] of subs) {
+      await asideGo(page, '[data-con-tab="plat"][data-con-sub="' + k + '"]');
+      await page.waitForTimeout(900); await snap('sub:' + t);
     }
   }
   if (scope === 'sys' && tab === 'users') {
@@ -192,33 +211,29 @@ async function world() {
 }
 const GRP = { overview: 'home', depts: 'org', users: 'org', perms: 'org', plat: 'plat', sec: 'sec', oplog: 'sec', backup: 'data', histimp: 'data' };
 async function nav2(page, vn) {
+  /* CORE-02 S7: one primary navigation — the console sidebar. Every tab is one item; the platform settings tab opens on a section */
   const hash = () => page.evaluate(() => location.hash);
   await page.evaluate(() => { location.hash = '#/sysadmin/overview'; }); await page.waitForTimeout(2500);
   for (const t of SYS_TABS) {
-    await page.locator('.adm-tabbar [data-adm-grp="' + GRP[t] + '"]').click(); await page.waitForTimeout(700);
-    if (NAV[t].length > 1) { await page.locator('.adm-tabbar .adm-l2 [role=tab][data-adm-tab="' + t + '"]').click(); await page.waitForTimeout(900); }
-    assert.equal(await hash(), '#/sysadmin/' + t, vn + ': group «' + NAV[t][0] + '» then its tab writes #/sysadmin/' + t);
+    await asideGo(page, t === 'plat' ? '[data-con-tab="plat"][data-con-sub="id"]' : '[data-con-tab="' + t + '"]:not([data-con-sub])'); await page.waitForTimeout(900);
+    assert.equal(await hash(), '#/sysadmin/' + t + (t === 'plat' ? '/id' : ''), vn + ': the sidebar item writes #/sysadmin/' + t);
     const r = await page.evaluate(collect); assert.ok(opened(t, r), vn + ': ' + t + ' selected as ' + JSON.stringify(NAV[t]) + ' (now ' + JSON.stringify(r.selected) + ')');
     const ov = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(ov <= 1, vn + ': ' + t + ': no horizontal page scroll (' + ov + 'px)');
-    const two = await page.locator('.adm-tabbar .adm-l2').count();
-    assert.equal(two > 0, NAV[t].length > 1 || GRP[t] === 'data', vn + ': ' + t + ': the second level shows only for a group of more than one entry');
+    assert.equal(await page.locator('main .adm-tabbar:not(.adm-tabbar--d), main .adm-l2, main .adm-subtabs').count(), 0, vn + ': ' + t + ': no in-page strip and no second row of tabs');
+    assert.equal(await page.locator('main [role=tablist]').count(), 0, vn + ': ' + t + ': no tab row in the page (the sidebar is the one navigation)');
   }
-  /* a group remembers its last tab: org → perms, away, back to org → perms */
-  await page.locator('.adm-tabbar [data-adm-grp="org"]').click(); await page.waitForTimeout(700);
-  await page.locator('.adm-tabbar .adm-l2 [role=tab][data-adm-tab="perms"]').click(); await page.waitForTimeout(900);
-  await page.locator('.adm-tabbar [data-adm-grp="home"]').click(); await page.waitForTimeout(700);
-  await page.locator('.adm-tabbar [data-adm-grp="org"]').click(); await page.waitForTimeout(900);
-  assert.equal(await hash(), '#/sysadmin/perms', vn + ': a group reopens on the tab last used in it');
-  await page.locator('.adm-tabbar [data-adm-grp="data"]').click(); await page.waitForTimeout(700);
-  await page.locator('.adm-tabbar .adm-l2-lnk').click(); await page.waitForTimeout(1200);
-  assert.equal(await hash(), '#/sysadmin/plat', vn + ': «التهيئة والاستعادة» opens the platform settings tab');
-  const sel = await page.evaluate(() => [...document.querySelectorAll('main.bs-main [role=tablist]:not(.adm-tabs) [role=tab][aria-selected=true]')].filter((e) => !e.closest('.adm-tabbar')).map((e) => e.textContent.trim()));
-  assert.deepEqual(sel, ['التهيئة والاستعادة'], vn + ': … on its own «التهيئة والاستعادة» section');
-  /* a deep link to a tab at the far end of the strips: its group and tab are scrolled into view (not clipped) */
+  /* «التهيئة والاستعادة» is one item, under البيانات والاستمرارية, and opens the platform settings on its own section */
+  assert.equal(await page.locator('aside.bsb [data-con-sub="setup"]').count(), 1, vn + ': one entry for «التهيئة والاستعادة»');
+  await asideGo(page, '[data-con-sub="setup"]'); await page.waitForTimeout(1200);
+  assert.equal(await hash(), '#/sysadmin/plat/setup', vn + ': «التهيئة والاستعادة» opens #/sysadmin/plat/setup');
+  const r = await page.evaluate(collect);
+  assert.deepEqual(r.selected, ['البيانات والاستمرارية', 'التهيئة والاستعادة'], vn + ': … selected under its group');
+  /* a deep link to an item at the far end of the sidebar: the current item is fully inside the sidebar's scroll area */
   await page.goto(new URL(page.url()).origin + '/#/sysadmin/histimp', { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(4500);
-  const clip = await page.evaluate(() => [...document.querySelectorAll('.adm-tabbar [role=tab][aria-selected=true]')].map((e) => { const a = e.getBoundingClientRect(), b = e.parentElement.getBoundingClientRect(); return [e.textContent.trim(), a.left >= b.left - 1 && a.right <= b.right + 1]; }));
-  assert.deepEqual(clip, [['البيانات والاستمرارية', true], ['استيراد البيانات التاريخية', true]], vn + ': the selected group and tab are fully in view after a deep link');
+  if (await page.evaluate(() => innerWidth <= 1024)) { await page.click('.bs-burger'); await page.waitForTimeout(700); }
+  const clip = await page.evaluate(() => { const e = document.querySelector('aside.bsb .s-ci.on'), n = e && e.closest('.s-nav'); if (!e) return null; const a = e.getBoundingClientRect(), b = n.getBoundingClientRect(); return [e.textContent.trim(), a.top >= b.top - 1 && a.bottom <= b.bottom + 1]; });
+  assert.deepEqual(clip, ['استيراد البيانات التاريخية', true], vn + ': the selected item is fully in view after a deep link');
 }
 const sess = async (b, lab, who, view, writes) => openAs(b, lab, ...(who === 'super' ? [LAB.superUn, LAB.superPw] : [LAB[who], LAB.pw]), { ...view, onPage: (p) => watchWrites(p, writes) });
 const shot = async (page, dir, name) => { fs.mkdirSync(dir, { recursive: true }); await page.screenshot({ path: path.join(dir, name + '.png'), fullPage: true }); };
@@ -257,7 +272,7 @@ if (CAPTURE) {
                 await shot(s.page, CAPTURE, `${scope}-${t}-${vn}-${th}`);
                 if (scope === 'sys' && t === 'plat') {
                   for (const sub of fx.sys.plat.probes.filter((x) => x.startsWith('sub:')).map((x) => x.slice(4))) {
-                    await s.page.locator('main.bs-main [role=tablist]:not(.adm-tabs) [role=tab]', { hasText: sub }).first().click({ timeout: 10000 }).catch(() => {});
+                    await asideGo(s.page, '[data-con-tab="plat"][title="' + sub + '"]').catch(() => {});
                     await s.page.waitForTimeout(800); await shot(s.page, CAPTURE, `sys-plat-${sub.replace(/[\s/«»]+/g, '_')}-${vn}-${th}`);
                   }
                 }
@@ -298,7 +313,9 @@ if (CAPTURE) {
         assert.deepEqual(OLD_NAMES.filter((o) => txt.includes(o)), [], t + ': no old display name is shown');
       }
       /* CORE-02 step 5: every link of the removed quick-links strip is still reachable at its destination */
-      for (const [from, x, to] of moved) assert.ok(NAV[to].includes(x) || variants(x).some((v) => nowBy[to].actions.has(v)), from + ': «' + x + '» (removed quick link) is still reachable on ' + to);
+      const side = (await s.page.evaluate(collect)).side;
+      assert.equal(side.length, 17, 'the console sidebar holds 17 destinations (' + JSON.stringify(side) + ')');
+      for (const [from, x, to] of moved) assert.ok(to === 'aside' ? side.includes(x) : (NAV[to].includes(x) || side.includes(x) || variants(x).some((v) => nowBy[to].actions.has(v))), from + ': «' + x + '» (moved) is still reachable ' + (to === 'aside' ? 'in the console sidebar' : 'on ' + to));
       /* CORE-02 step 2: the page is titled «المنصة / مركز إدارة رشاد», the sidebar link reads «مركز إدارة رشاد», the user card reads «مسؤول المنصة» */
       assert.equal((await s.page.textContent('.bs-crumb')).replace(/\s+/g, ' ').trim(), 'المنصة / مركز إدارة رشاد', 'crumb names the admin interface');
       assert.ok((await s.page.$$eval('.nlbl', (els) => els.map((e) => e.textContent.trim()))).includes('مركز إدارة رشاد'), 'sidebar link «مركز إدارة رشاد»');
@@ -307,7 +324,8 @@ if (CAPTURE) {
       for (const t of SYS_TABS) {
         await s.page.goto(lab.base + '/#/sysadmin/' + t, { waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(4500);
         const r = await s.page.evaluate(collect), h = await s.page.evaluate(() => location.hash);
-        assert.equal(h, '#/sysadmin/' + t, t + ': the deep link stays on its address');
+        if (t === 'plat') assert.match(h, /^#\/sysadmin\/plat\/(id|mods|notif|login|side|print|app|about|setup)$/, t + ': the deep link opens the platform settings on a section (the last one opened) and names it in the address');
+        else assert.equal(h, '#/sysadmin/' + t, t + ': the deep link stays on its address');
         assert.ok(opened(t, r), t + ': the deep link opens ' + JSON.stringify(NAV[t]) + ' (recorded «' + FX.sys[t].selected + '»; now ' + JSON.stringify(r.selected) + ')');
       }
       /* CORE-02 step 1: in-app two-level navigation — a group then its tab reaches every tab and writes its address; the data group links to

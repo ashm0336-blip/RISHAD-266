@@ -27,6 +27,9 @@ try {
   const p = s.page;
   await s.go('#/sysadmin/depts');
   const open = async (name) => {
+    /* CORE-02 S7: the page starts higher (the in-page strip left for the sidebar), so on the phone the row menu now sits under the screen
+       centre — a forced click at the backdrop's centre landed on the menu. Close it the keyboard way (Escape → the backdrop's own click) */
+    if (await p.locator('main span.mbk').count()) { await p.keyboard.press('Escape'); await p.waitForTimeout(300); }
     if (await p.locator('main span.mbk').count()) { await p.locator('main span.mbk').first().click({ force: true }); await p.waitForTimeout(300); }
     await p.locator('main .tr-sb a', { hasText: 'فرد الكل' }).click(); await p.waitForTimeout(400);
     await p.locator('main .tr-rw', { hasText: name }).first().click(); await p.waitForTimeout(700);

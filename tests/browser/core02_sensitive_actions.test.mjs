@@ -66,7 +66,8 @@ test('CORE-02 step 3: sensitive actions ask first, the recovery key dialog holds
     await cancelDialog(page, 'delete a unit manager', 'حذف حساب المدير');
 
     await s.go('#/sysadmin/plat', 3500);
-    await main(page).locator('[role=tab]', { hasText: 'التنبيهات والتعاميم' }).first().click(); await page.waitForTimeout(2500);
+    /* CORE-02 S7 (intended navigation change): the platform sections are items of the console sidebar, not in-page tabs */
+    await page.locator('aside.bsb [data-con-sub="notif"]').click(); await page.waitForTimeout(2500);
     await main(page).getByText('تعميم جديد', { exact: true }).click(); await page.waitForTimeout(1200);
     await main(page).locator('[data-nf-bc="title"]').fill('TEST_ONLY تعميم'); await main(page).locator('[data-nf-bc="body"]').fill('TEST_ONLY نص التعميم');
     await page.waitForTimeout(2500);
@@ -77,7 +78,7 @@ test('CORE-02 step 3: sensitive actions ask first, the recovery key dialog holds
     assert.equal(lab.revs(), before, 'cancelling changed no stored record');
 
     /* (2) recovery key dialog */
-    await main(page).locator('[role=tab]', { hasText: 'التهيئة والاستعادة' }).first().click(); await page.waitForTimeout(2500);
+    await page.locator('aside.bsb [data-con-sub="setup"]').click(); await page.waitForTimeout(2500);
     await main(page).getByRole('button', { name: /إنشاء مفتاح/ }).first().click();
     const dlg = page.locator('[role=dialog][aria-label="مفتاح الاستعادة"]');
     await dlg.locator('input[type=password]').fill(LAB.superPw);

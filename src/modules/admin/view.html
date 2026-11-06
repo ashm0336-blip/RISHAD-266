@@ -9,28 +9,25 @@
 </sc-if>
 
 <sc-if value="{{admModeSite}}" hint-placeholder-val="{{ true }}">
-<!-- CORE-02 · مركز إدارة رشاد: تنقّلٌ بمستويين داخل الصفحة نفسها (لا موقعٌ منفصل ولا شريطٌ جانبي ثانٍ) — المستوى الأول خمسُ مجموعات،
-     والثاني تبويباتُ المجموعة المختارة؛ كلُّ تبويبٍ هو تبويبُ #/sysadmin/<tab> القائم، والتبويبُ الواحد يُخفي المستوى الثاني -->
-<sc-if value="{{admTabBarShow}}" hint-placeholder-val="{{ true }}">
-<nav class="adm-tabbar" aria-label="مركز إدارة رشاد"><div class="bs-hbar bs-tabstrip adm-tabs" role="tablist" aria-label="مجموعات مركز الإدارة">
-  <sc-if value="{{admNav.home.show}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{admNav.home.on}}" onClick="{{admNav.home.go}}" title="{{admNav.home.hint}}" data-adm-grp="home"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-6b355220"></svg></div><span>الرئيسية</span></button></sc-if>
-  <sc-if value="{{admNav.org.show}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{admNav.org.on}}" onClick="{{admNav.org.go}}" title="{{admNav.org.hint}}" data-adm-grp="org"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-533ecb79"></svg></div><span>الإدارة المؤسسية</span></button></sc-if>
-  <sc-if value="{{admNav.plat.show}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{admNav.plat.on}}" onClick="{{admNav.plat.go}}" title="{{admNav.plat.hint}}" data-adm-grp="plat"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e5471789"></svg></div><span>إعدادات المنصة</span></button></sc-if>
-  <sc-if value="{{admNav.sec.show}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{admNav.sec.on}}" onClick="{{admNav.sec.go}}" title="{{admNav.sec.hint}}" data-adm-grp="sec"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-217a5f12"></svg></div><span>الأمن والرقابة</span><sc-if value="{{admNav.sec.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" title="أحداث أمنية اليوم تستحق نظراً">{{secBadge}}</span></sc-if></button></sc-if>
-  <sc-if value="{{admNav.data.show}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{admNav.data.on}}" onClick="{{admNav.data.go}}" title="{{admNav.data.hint}}" data-adm-grp="data"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg></div><span>البيانات والاستمرارية</span></button></sc-if>
-</div>
-<sc-if value="{{admSubShow}}" hint-placeholder-val="{{ true }}">
-<div class="adm-l2">
-  <div class="bs-tabstrip adm-l2-tabs" role="tablist" aria-label="{{admSubLbl}}">
-  <sc-for list="{{admSub}}" as="st" hint-placeholder-count="3">
-  <button type="button" role="tab" class="bs-btn bs-btn--ghost adm-l2-tab" aria-selected="{{st.on}}" onClick="{{st.go}}" data-adm-tab="{{st.k}}"><span>{{st.t}}</span><sc-if value="{{st.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" title="أحداث أمنية اليوم تستحق نظراً">{{st.bdg}}</span></sc-if></button>
-  </sc-for>
+<!-- CORE-02 S7 · رأسُ الصفحة في «مركز إدارة رشاد»: التنقّلُ كلُّه في الشريط الجانبي (مساحةُ المركز)، والصفحةُ تبدأ بموضعها — المجموعة ثم العنوان
+     (h2 · يستقبل التركيزَ بعد التنقّل من الشريط)؛ وفي إعدادات المنصة وصفُ القسم وحالةُ الحفظ وأزرارُه في الرأس نفسِه، ثابتاً أعلى الشاشة -->
+<div class="{{conPhCls}}">
+  <div class="con-ph-t">
+    <sc-if value="{{conEyebrowOn}}" hint-placeholder-val="{{ true }}"><p class="con-eyebrow">{{conEyebrow}}</p></sc-if>
+    <h2 tabindex="-1">{{conTitle}}</h2>
+    <sc-if value="{{conDescOn}}" hint-placeholder-val="{{ false }}"><p class="con-desc">{{conDesc}}</p></sc-if>
   </div>
-  <sc-if value="{{admSubLnkOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="bs-btn bs-btn--ghost adm-l2-lnk" onClick="{{admSubLnkGo}}" title="يفتح قسم «التهيئة والاستعادة» في إعدادات المنصة"><span>التهيئة والاستعادة</span><small>في إعدادات المنصة</small><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-5ff99641"></svg></button></sc-if>
+  <sc-if value="{{admOnPlat}}" hint-placeholder-val="{{ false }}">
+      <div class="con-ph-a">
+        <sc-if value="{{plClean}}" hint-placeholder-val="{{ true }}"><span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:9999px;background:var(--bg-a51501050p1);color:var(--fg-x065f46)">✓ محفوظ ومنشور</span></sc-if>
+        <sc-if value="{{plDirtyOn}}" hint-placeholder-val="{{ false }}">
+          <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:9999px;background:var(--bg-a21711960p1);color:var(--fg-x92400e);display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:9999px;background:var(--bg-xd97706)"></span>{{plDirtyTxt}}</span>
+          <button onClick="{{plDiscard}}" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x3d4148);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">تجاهل</button>
+          <button onClick="{{plSave}}" style="height:32px;padding:0 14px;border-radius:9px;border:1px solid var(--bd-xa8853f);background:linear-gradient(180deg,var(--bg-xc5a45c),var(--bg-xb99751));color:var(--text-on-brand);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 14px -8px rgba(138,111,53,.9)">✓ حفظ ونشر للجميع</button>
+        </sc-if>
+      </div>
+  </sc-if>
 </div>
-</sc-if>
-</nav>
-</sc-if>
 <!-- مفتاحُ الاستعادة: حوارٌ خارج شريط التبويبات -->
 <sc-if value="{{plRkAskOn}}" hint-placeholder-val="{{ false }}">
 <div class="bs-dlg bs-dlg--modal" onClick="{{plRkOut}}">
@@ -347,26 +344,8 @@
 
 
 <sc-if value="{{admOnPlat}}" hint-placeholder-val="{{ false }}">
-<div style="height:8px"></div>
-<div class="bs-card bs-tabstrip adm-subtabs" role="tablist" aria-label="أقسام المنصة">
-  <sc-for list="{{plTabs}}" as="tb" hint-placeholder-count="8">
-  <button type="button" role="tab" class="adm-tab adm-tab--sm" aria-selected="{{tb.on}}" onClick="{{tb.go}}"><div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-efabd80c"></svg></div><span>{{tb.t}}</span><sc-if value="{{tb.dirty}}" hint-placeholder-val="{{ false }}"><span class="dty" title="تغييرات غير محفوظة"></span></sc-if></button>
-  </sc-for>
-</div>
 <div class="bs-secgrid" style="{{plGrid}}">
  <div style="min-width:0;display:flex;flex-direction:column">
-  <div style="display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--bd-xeceef1);background:var(--bg-a2552552550p92);position:sticky;top:0;z-index:2;flex-wrap:wrap">
-    <div><div style="margin:0;font-size:16px;font-weight:800;color:var(--fg-x141414)">{{plTitle}}</div><div style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8)">{{plSub}}</div></div>
-    <div style="margin-right:auto;display:flex;align-items:center;gap:8px">
-      <sc-if value="{{plClean}}" hint-placeholder-val="{{ true }}"><span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:9999px;background:var(--bg-a51501050p1);color:var(--fg-x065f46)">✓ محفوظ ومنشور</span></sc-if>
-      <sc-if value="{{plDirtyOn}}" hint-placeholder-val="{{ false }}">
-        <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:9999px;background:var(--bg-a21711960p1);color:var(--fg-x92400e);display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:9999px;background:var(--bg-xd97706)"></span>{{plDirtyTxt}}</span>
-        <button onClick="{{plDiscard}}" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x3d4148);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">تجاهل</button>
-        <button onClick="{{plSave}}" style="height:32px;padding:0 14px;border-radius:9px;border:1px solid var(--bd-xa8853f);background:linear-gradient(180deg,var(--bg-xc5a45c),var(--bg-xb99751));color:var(--text-on-brand);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 14px -8px rgba(138,111,53,.9)">✓ حفظ ونشر للجميع</button>
-      </sc-if>
-    </div>
-  </div>
-
   <!-- ═══ هوية المنصة ═══ -->
   <sc-if value="{{plOnId}}" hint-placeholder-val="{{ true }}">
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الاسم والجهة</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">هوية المنصة الثابتة في كل مكان — نصوص شاشة الدخول وحدها في تبويبها، واسم التطبيق على الجوال في تبويبه</div>

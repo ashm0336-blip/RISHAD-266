@@ -31,7 +31,8 @@
   function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '')) !== -1; }
   function operationKey9(k) { return typeof k === 'string' && /^bsdept:[^:\s,]+:bassam_[A-Za-z0-9_]+$/.test(k) && operationResource9(k); }
   var DEVK9 = { bassam_session_v1: 1, bassam_theme: 1,
-                bassam_active_dept_v1: 1, bassam_fresh_login_v1: 1, bassam_notif_mute_v1: 1 };
+                bassam_active_dept_v1: 1, bassam_fresh_login_v1: 1, bassam_notif_mute_v1: 1,
+                bassam_con_cx_v1: 1 };   /* CORE-02 S7: طيُّ شريط «مركز إدارة رشاد» تفضيلُ جهازٍ كالسمة — لا يُرسل للخادم */
   /* «آخر صفحة مفتوحة» تفضيلُ جهازٍ لا بيانات فريق: كانت تُرسل للخادم — وعند الخروج
      تُرسل بعد إنهاء الجلسة فتُرفض (401) ويومض شريط «انتهت جلستك» قبل إعادة التحميل */
   /* R187: «مجموعات | قائمة» في الجدول الشهري (bassam_st_grp_v1، لكل إدارة) تفضيلُ عرضٍ لهذا الجهاز كذلك —

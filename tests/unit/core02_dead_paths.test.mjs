@@ -43,7 +43,7 @@ test('(2) kept entry points still exist (same data shown in different useful pla
   for (const m of METHODS) assert.match(L, new RegExp('\\n  (async )?' + m.replace(/\$/g, '\\$') + '\\('), 'method ' + m);
   const KEYS = ['dhAdd', 'dhSecAdd', 'dhSecAddOn', 'dhSwitch', 'dhExp', 'dhImpPick', 'dhImpStop', 'dhWipe', 'dhDel', 'dhDelOn', 'dhDelLbl', 'dhMenuTog', 'dhIsNode', 'dhNotActive',
     'selSetGid', 'selRenameSave', 'gdeptOpts', 'ndGo', 'ndPidOpts', 'ndKinds', 'deptRows', 'fbkFile', 'fbkMerge', 'fbkAskReplace', 'fbkDoReplace', 'fbkCancel',
-    'ovPres', 'ovPresEmpty', 'secSess', 'secSessN', 'ovFrozen', 'ovFrozenN', 'usFilters', 'usCards', 'admGoBackup', 'admSubLnkGo'];
+    'ovPres', 'ovPresEmpty', 'secSess', 'secSessN', 'ovFrozen', 'ovFrozenN', 'usFilters', 'usCards', 'admGoBackup'];   /* CORE-02 S7: admSubLnkGo left with the in-page strip — «التهيئة والاستعادة» is one sidebar item */
   for (const k of KEYS) {
     assert.ok(word(L, k), 'logic.js still provides ' + k);
     assert.ok(V.includes('{{' + k + '}}') || V.includes('{{' + k + '.'), 'view.html still renders ' + k);
