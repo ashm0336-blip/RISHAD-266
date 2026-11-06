@@ -8,9 +8,15 @@
          shows as its group (and, in a group of several, its second-level tab) selected, and every tab is reachable in-app by group → tab;
      (3) a department manager (and a unit account) never reaches #/sysadmin content;
      (4) opening the tabs saves nothing (only POST /api/login, an empty /api/save flush and the notifications security-poll);
-     (5) zero page errors.
+     (5) zero page errors;
+     (6) since CORE-02 step 6, on a phone (390×844, touch) in light and dark and on the desktop in dark, every tab and every probed view
+         (sub-tabs, row menu, panels): nothing scrolls the page sideways, no content is cut off at the screen edge outside its own scroll
+         area, no readable text falls under 3:1 contrast against its background, every recorded function is still reachable, and no
+         page error, no save.
    Capture mode (writes the fixture and the BEFORE screenshots; not part of the normal run):
-     KIVO_CORE02_CAPTURE=<screenshot dir> node --test tests/browser/core02_admin_functions.test.mjs */
+     KIVO_CORE02_CAPTURE=<screenshot dir> node --test tests/browser/core02_admin_functions.test.mjs
+   Screenshots only (the same screens, the fixture is read and never rewritten — the AFTER set):
+     KIVO_CORE02_CAPTURE=<screenshot dir> KIVO_CORE02_SHOTS_ONLY=1 node --test tests/browser/core02_admin_functions.test.mjs */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -20,6 +26,7 @@ import { chromium, openAs } from './lab_browser.mjs';
 
 const FIX = new URL('./fixtures/core02_admin_before.json', import.meta.url);
 const CAPTURE = process.env.KIVO_CORE02_CAPTURE || '';
+const SHOTS_ONLY = !!process.env.KIVO_CORE02_SHOTS_ONLY;
 const SYS_TABS = ['overview', 'sec', 'users', 'perms', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
 const DEPT_TABS = ['backup', 'oplog', 'shifts', 'ptpls', 'import'];
 /* The ONLY place a recorded label may change: old normalised text → new normalised text (CORE-02 display names).
@@ -97,11 +104,40 @@ function collect() {
   return { headings: [...out.headings], actions: [...out.actions], fields: [...out.fields], selected: out.selected, nav: out.nav, text: norm(root.innerText) };
 }
 
+/* CORE-02 step 6: what a phone or the dark theme can break (runs in the page). Returns
+   ov: how far the page scrolls sideways · cut: visible content past the screen edge that no scroll area of its own holds and no ellipsis
+   truncates (it is simply cut off) · low: readable text under 3:1 against the colour behind it (gradients, disabled and faded controls,
+   and symbol-only text such as emoji are not measured). */
+function audit() {
+  const vw = document.documentElement.clientWidth, root = document.querySelector('main.bs-main') || document.body;
+  const vis = (e) => { if (!e.getClientRects().length) return false; const cs = getComputedStyle(e); return cs.visibility !== 'hidden' && cs.display !== 'none'; };
+  const held = (e) => { for (let a = e; a && a !== document.body; a = a.parentElement) { const cs = getComputedStyle(a); if (a !== e && (cs.overflowX === 'auto' || cs.overflowX === 'scroll')) return true; if (cs.textOverflow === 'ellipsis') return true; } return false; };
+  const name = (e) => e.tagName.toLowerCase() + ' «' + (e.textContent || e.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 40) + '»';
+  const out = { ov: document.documentElement.scrollWidth - vw, cut: [], low: [] };
+  const all = [...root.querySelectorAll('*')].filter((e) => vis(e) && !e.closest('.bs-sr-only'));
+  for (const e of all) {
+    const r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2) continue;
+    if ((r.right > vw + 1 || r.left < -1) && !held(e)) { const p = e.parentElement, q = p && p.getBoundingClientRect(); if (!(q && (q.right > vw + 1 || q.left < -1) && !held(p))) out.cut.push(name(e) + ' [' + Math.round(r.left) + ',' + Math.round(r.right) + ']'); }
+  }
+  const rgb = (x) => { const m = String(x).match(/rgba?\(([^)]+)\)/); if (!m) return null; const v = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 }; };
+  const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+  const behind = (e) => { for (let a = e; a; a = a.parentElement) { const cs = getComputedStyle(a); if (cs.backgroundImage.includes('gradient')) return null; const c = rgb(cs.backgroundColor); if (c && c.a >= 0.6) return c; } return rgb(getComputedStyle(document.body).backgroundColor); };
+  const faded = (e) => { let o = 1; for (let a = e; a; a = a.parentElement) o *= +getComputedStyle(a).opacity; return o < 0.9; };
+  for (const e of all) {
+    if (![...e.childNodes].some((x) => x.nodeType === 3 && /[A-Za-z؀-ۿ]/.test(x.textContent))) continue;
+    if (e.closest(':disabled,[aria-disabled="true"]') || faded(e)) continue;
+    const c = rgb(getComputedStyle(e).color), b = behind(e); if (!c || c.a < 0.5 || !b) continue;
+    const l1 = lum(c), l2 = lum(b), cr = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    if (cr < 3) out.low.push(name(e) + ' ' + cr.toFixed(2) + ':1');
+  }
+  return out;
+}
+
 /* Probes: the in-tab navigation a user takes to reach the rest of a tab (sub-tabs, a row's action menu, a details panel).
    Each only opens/switches views — none of them saves. */
-async function probes(page, scope, tab) {
+async function probes(page, scope, tab, each) {
   const states = [];
-  const snap = async (name) => { const r = await page.evaluate(collect); states.push({ name, ...r }); };
+  const snap = async (name) => { const r = await page.evaluate(collect); states.push({ name, ...r }); if (each) await each(name); };
   await snap('base');
   if (scope === 'sys' && tab === 'plat') {
     const subs = await page.evaluate(() => [...document.querySelectorAll('main.bs-main [role=tablist] [role=tab]')].filter((e) => !e.closest('.adm-tabbar') && e.getClientRects().length).map((e) => e.textContent.replace(/\s+/g, ' ').trim()));
@@ -190,9 +226,9 @@ const theme = async (page, t) => { await page.evaluate((x) => KIVO.__bsThemeSet(
 
 if (CAPTURE) {
   test('CAPTURE: fixture and BEFORE screenshots', { timeout: 1800000 }, async () => {
-    const b = await chromium.launch(); const fx = { _note: 'RISHAD CORE-02 step 0: function inventory captured in the lab on develop@625dac6 BEFORE CORE-02 (synthetic TEST_ONLY data). Normalised text: digits → #, bidi marks removed, data rows (TEST_ONLY / account names) dropped. Checked by core02_admin_functions.test.mjs.', sys: {}, dept: {}, nav: {} };
+    const b = await chromium.launch(); const fx = SHOTS_ONLY ? JSON.parse(fs.readFileSync(FIX, 'utf8')) : { _note: 'RISHAD CORE-02 step 0: function inventory captured in the lab on develop@625dac6 BEFORE CORE-02 (synthetic TEST_ONLY data). Normalised text: digits → #, bidi marks removed, data rows (TEST_ONLY / account names) dropped. Checked by core02_admin_functions.test.mjs.', sys: {}, dept: {}, nav: {} };
     try {
-      for (const [scope, who, base, tabs] of [['sys', 'super', '#/sysadmin/', SYS_TABS], ['dept', 'mgrA', '#/admin/', DEPT_TABS]]) {
+      for (const [scope, who, base, tabs] of SHOTS_ONLY ? [] : [['sys', 'super', '#/sysadmin/', SYS_TABS], ['dept', 'mgrA', '#/admin/', DEPT_TABS]]) {
         const lab = await world(); const writes = []; let s = null;
         try {
           s = await sess(b, lab, who, DESKTOP, writes); s.page.setDefaultTimeout(15000);
@@ -207,7 +243,7 @@ if (CAPTURE) {
           assert.deepEqual(s.errs, []); assert.deepEqual(writes, []);
         } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); }
       }
-      fs.writeFileSync(FIX, JSON.stringify(fx, null, 1) + '\n');
+      if (!SHOTS_ONLY) fs.writeFileSync(FIX, JSON.stringify(fx, null, 1) + '\n');
       /* screenshots: desktop and mobile, light and dark */
       for (const [vn, view] of [['desktop', DESKTOP], ['mobile', MOBILE]]) {
         for (const [scope, who, base] of [['sys', 'super', '#/sysadmin/'], ['dept', 'mgrA', '#/admin/']]) {
@@ -234,7 +270,10 @@ if (CAPTURE) {
   });
 } else {
   const FX = JSON.parse(fs.readFileSync(FIX, 'utf8'));
-  const missing = (rec, now, kind) => rec.filter((x) => !variants(x).some((v) => kind === 'headings' ? (now.headings.has(v) || now.text.includes(v.replace(/^[a-z]+:/, ''))) : now[kind].has(v)));
+  /* CORE-02 step 6: a filter or segmented choice that became a real toggle button (aria-pressed) is recorded as the same label under
+     fields «toggle:», and an unlabelled switch («control:<its row>») that became a named role=switch as «toggle:<its row>» — the same
+     function on the same route, now announced with its name and its on/off state */
+  const missing = (rec, now, kind) => rec.filter((x) => !variants(x).some((v) => kind === 'headings' ? (now.headings.has(v) || now.text.includes(v.replace(/^[a-z]+:/, ''))) : (now[kind].has(v) || (kind === 'actions' && now.fields.has('toggle:' + v)) || (kind === 'fields' && v.startsWith('control:') && now.fields.has('toggle:' + v.slice(8))))));
 
   test('platform administrator: every recorded heading, action and field of every #/sysadmin tab is still reachable; deep links; no save; no errors', { timeout: 900000 }, async () => {
     const b = await chromium.launch(); const lab = await world(); const writes = []; let s = null;
@@ -326,5 +365,41 @@ if (CAPTURE) {
         } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); }
       }
     } finally { await b.close(); }
+  });
+
+  test('CORE-02 step 6: phone (390×844) light and dark, desktop dark — every tab and probed view: no sideways scroll, nothing cut off, readable contrast, every function reachable, no save, no errors', { timeout: 1500000 }, async () => {
+    const b = await chromium.launch(); const lab = await world(); const writes = [];
+    /* the department pages once, on the phone in dark — last, since a manager's sign-in reorders the accounts list (by last sign-in)
+       and the probes open the first row's menu */
+    const RUNS = [['phone-light', MOBILE, 'light', 'sys'], ['phone-dark', MOBILE, 'dark', 'sys'], ['desktop-dark', DESKTOP, 'dark', 'sys'], ['phone-dark', MOBILE, 'dark', 'dept']];
+    const bad = [], rev0 = lab.revs();
+    try {
+      for (const [vn, view, th, sc] of RUNS) {
+        for (const [scope, who, base, rec] of [['sys', 'super', '#/sysadmin/', FX.sys], ['dept', 'mgrA', '#/admin/', FX.dept]].filter((x) => x[0] === sc)) {
+          const s = await sess(b, lab, who, view, writes); s.page.setDefaultTimeout(15000);
+          try {
+            await theme(s.page, th);
+            for (const t of Object.keys(rec)) {
+              await s.go(base + t, 3500);
+              const each = async (st) => {
+                const a = await s.page.evaluate(audit), at = vn + ' ' + scope + '/' + t + (st === 'base' ? '' : ' › ' + st);
+                if (a.ov > 1) bad.push(at + ': the page scrolls sideways by ' + a.ov + 'px');
+                if (a.cut.length) bad.push(at + ': cut off at the screen edge: ' + a.cut.slice(0, 4).join(' · '));
+                if (a.low.length) bad.push(at + ': text under 3:1: ' + a.low.slice(0, 4).join(' · '));
+              };
+              const states = await probes(s.page, scope, t, each), now = union(states);
+              for (const kind of ['headings', 'actions', 'fields']) {
+                const miss = missing(rec[t][kind], now, kind).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x]));
+                if (miss.length) bad.push(vn + ' ' + scope + '/' + t + ': not reachable (' + kind + '): ' + miss.join(' · '));
+              }
+            }
+            if (s.errs.length) bad.push(vn + ' ' + who + ': page errors: ' + s.errs.join(' · '));
+          } finally { try { await s.ctx.close(); } catch (e) { /* closed */ } }
+        }
+      }
+      assert.deepEqual(bad, [], 'phone and dark: every admin tab is laid out, readable and complete');
+      assert.deepEqual(writes, [], 'opening the tabs on the phone and in dark saves nothing');
+      await lab.idle(); assert.equal(lab.revs(), rev0, 'no stored record changed on the server');
+    } finally { await lab.close(); await b.close(); }
   });
 }

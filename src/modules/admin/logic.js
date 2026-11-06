@@ -1984,8 +1984,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       c = (t) =>
         "width:36px;height:20px;border-radius:9999px;display:inline-block;flex-shrink:0;cursor:pointer;transition:background .2s;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04);background:" +
         (t
-          ? "radial-gradient(circle at 10px 10px,#fff 6.5px,transparent 7.5px) #059669"
-          : "radial-gradient(circle at 26px 10px,#fff 6.5px,transparent 7.5px) #cfd3da"),
+          ? "radial-gradient(circle at 10px 10px,var(--text-on-fill) 6.5px,transparent 7.5px) var(--success)"
+          : "radial-gradient(circle at 26px 10px,var(--text-on-fill) 6.5px,transparent 7.5px) var(--neutral-fill-soft)"),
       g = (t) =>
         "padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;" +
         (t ? "background:var(--bg-xffffff);color:var(--fg-x141414);box-shadow:var(--shadow-card)" : "color:var(--fg-x6b7280)"),
@@ -2368,6 +2368,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       "print.who",
     ].forEach((t) => {
       w["tg_" + t.replace(".", "_")] = c(!!this.plGetPath(i, t));
+      w["tgOn_" + t.replace(".", "_")] = !!this.plGetPath(i, t);   /* CORE-02 · الخطوة ٦: المفتاحُ زرٌّ role=switch وحالتُه aria-checked */
     }),
       [
         ["themeDef", ["light", "dark", "auto"]],
@@ -2378,6 +2379,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ].forEach((t) =>
         t[1].forEach((e) => {
           w["sg_" + t[0].replace(".", "_") + "_" + e] = g(String(this.plGetPath(i, t[0]) || "") === e);
+          w["sgOn_" + t[0].replace(".", "_") + "_" + e] = String(this.plGetPath(i, t[0]) || "") === e;
         }),
       ));
     const y = (() => {
@@ -2512,34 +2514,25 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           return {
             t: e[1] + ("all" === e[0] ? "" : " · " + w(e)),
             go: () => this.setState({ usF: e[0] }),
-            style:
-              "height:26px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid " +
-              ((s = (t.usF || "all") === e[0]) ? "#b99751" : "#E1E1E1") +
-              ";background:" +
-              (s ? "var(--bg-xb99751)" : "var(--bg-xffffff)") +
-              ";color:" +
-              (s ? "var(--fg-x1a1206)" : "var(--fg-x475569)"),
+            on: (t.usF || "all") === e[0],
           };
-          var s;
         }),
       S = (e, s, a, r, i) => ({
         v: String(e),
         l: s,
         tip: i || "",
         go: () => this.setState({ usF: r }),
-        style:
-          "background:var(--bg-xffffff);border:1px solid " +
-          ((t.usF || "all") === r ? "#b99751" : "#ECEEF1") +
-          ";border-radius:14px;padding:11px 14px;min-width:0;cursor:pointer",
-        vStyle: "font-size:20px;font-weight:800;line-height:1.3;color:" + a + ";font-feature-settings:'tnum'",
+        /* CORE-02 · الخطوة ٦: البطاقةُ زرٌّ (.bs-card.adm-stat) ولونُ الرقم نبرةٌ على الرموز الدلالية (كان سداسياً ثابتاً) */
+        on: (t.usF || "all") === r,
+        tone: a,
       }),
       x = [
-        S(o.length, "إجمالي الحسابات", "#141414", "all"),
-        S(o.filter((t) => !t.dis).length, "نشط", "#059669", "all"),
-        S(w(m[1]), "مجمّد", "#d97706", "frozen"),
-        S(w(m[2]), "لم يدخلوا منذ بدء السجل", "#64748b", "never", "سجل الدخول يبدأ من تاريخ رفع هذا الإصدار"),
-        S(w(m[4]), "خامل ٩٠ يوماً", "#64748b", "idle"),
-        S(w(m[7]), "بصيغة كلمة مرور قديمة", w(m[7]) ? "#dc2626" : "#141414", "old", "لا يستطيع الدخول حتى تُعاد كلمة مروره"),
+        S(o.length, "إجمالي الحسابات", "", "all"),
+        S(o.filter((t) => !t.dis).length, "نشط", "ok", "all"),
+        S(w(m[1]), "مجمّد", "warn", "frozen"),
+        S(w(m[2]), "لم يدخلوا منذ بدء السجل", "mute", "never", "سجل الدخول يبدأ من تاريخ رفع هذا الإصدار"),
+        S(w(m[4]), "خامل ٩٠ يوماً", "mute", "idle"),
+        S(w(m[7]), "بصيغة كلمة مرور قديمة", w(m[7]) ? "bad" : "", "old", "لا يستطيع الدخول حتى تُعاد كلمة مروره"),
       ],
       k = (t, e) => this.setState({ usTmp: { name: t.name || t.un, pw: e } }),
       v = b.map((a) => {
@@ -2613,38 +2606,24 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               },
             }),
           {
-            rowStyle:
-              "display:grid;grid-template-columns:1.7fr 1fr .9fr 1fr .9fr .9fr 1.1fr 40px;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px" +
-              (t.rowMenu === "uw" + a.id ? ";position:relative;z-index:2" : ""),
             ini: h(a.name),
             name: a.name || a.un,
-            avStyle:
-              "width:28px;height:28px;border-radius:9999px;color:var(--fg-xffffff);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;background:" +
-              (a.dis ? "var(--bg-x94a3b8)" : "var(--bg-xb99751)"),
+            avTone: a.dis ? "mute" : "",
             flagOn: !(!d[a.id] && !a.mc),
             flag: d[a.id] ? "كلمة مرور بصيغة قديمة — أعد تعيينها" : "كلمة مؤقتة — يغيّرها عند الدخول",
-            flagStyle: "font-size:10px;color:" + (d[a.id] ? "var(--fg-xb91c1c)" : "var(--fg-x92400e)"),
+            flagCls: d[a.id] ? "adm-bad" : "adm-warn",
             un: a.un || "—",
             role: this.adRole(a),
             dept: "super" === a.role ? "الإدارة العامة" : this.adUnit(a) || "—",
             st: "frozen" === i ? "مجمّد" : o && o.active ? "متصل الآن" : "active" === i ? "نشط" : "لم يدخل",
-            stStyle: "font-size:11.5px;white-space:nowrap;color:" + ("frozen" === i ? "#92400e" : "active" === i ? "#065f46" : "#64748b"),
-            dot:
-              "display:inline-block;width:8px;height:8px;border-radius:9999px;margin-left:6px;vertical-align:middle;background:" +
-              ("frozen" === i ? "#d97706" : o && o.active ? "#059669" : "active" === i ? "#10b981" : "#94a3b8"),
+            stTone: "frozen" === i ? "warn" : o && o.active ? "live" : "active" === i ? "ok" : "",
             last: l[a.id] ? this.adWhen(l[a.id], e) : "—",
             lastTip: l[a.id] ? this.adFull(l[a.id]) : "لا دخول مسجّل منذ بدء السجل",
             added: c[a.id] ? c[a.id].by + " · " + this.adRel(c[a.id].ts, e) : "—",
             ...(() => {
               const t = this._rowMenu("uw" + a.id, a.id === n ? [] : p.map((t) => ({ name: t.t, danger: !!t.danger, run: t.go })));
               return (
-                (t.rmItems = t.rmItems.map((t) =>
-                  Object.assign({}, t, {
-                    txtStyle:
-                      "padding:7px 10px;border-radius:8px;font-size:11.5px;cursor:pointer;font-family:'Cairo',sans-serif;color:" +
-                      (/حذف/.test(t.name) ? "#991b1b" : "#141414"),
-                  }),
-                )),
+                (t.rmItems = t.rmItems.map((t) => Object.assign({}, t, { tone: /حذف/.test(t.name) ? "bad" : "" }))),
                 t
               );
             })(),
@@ -2677,12 +2656,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ini: h(t.name),
           name: t.name || t.un,
           sub: this.adSub(t),
-          avStyle:
-            "width:26px;height:26px;border-radius:9999px;background:var(--bg-xb99751);color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0",
-          style:
-            "display:grid;grid-template-columns:200px repeat(" +
-            _.length +
-            ",1fr);gap:6px;align-items:center;padding:7px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px",
           cells: _.map((t) => {
             const s = e[t.key] || [],
               a = s.length
@@ -2691,7 +2664,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     .map((t) => P[t])
                     .join(" ")
                 : "—",
-              r = s.length ? (s.indexOf("approve") >= 0 ? "#065f46" : s.indexOf("edit") >= 0 ? "#8A6F35" : "#475569") : "#cbd5e1";
+              /* درجةُ الخلية تلوّنها بصنفٍ على الرموز الدلالية (.adm-cell[data-lvl]) — كانت ألواناً سداسية ثابتة */
+              r = s.length ? (s.indexOf("approve") >= 0 ? "approve" : s.indexOf("edit") >= 0 ? "edit" : "view") : "";
             return {
               t: a,
               tip: s.length
@@ -2701,7 +2675,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     .map((t) => ({ view: "عرض", add: "إضافة", edit: "تعديل", del: "حذف", approve: "اعتماد", export: "تصدير" })[t] || t)
                     .join("، ")
                 : t.name + ": لا شيء",
-              style: "text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;color:" + r,
+              lvl: r,
             };
           }),
         };
@@ -2830,10 +2804,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           this.bsToast("تعذّر التصدير", "warn");
         }
       },
-      pmHeadStyle:
-        "display:grid;grid-template-columns:200px repeat(" +
-        _.length +
-        ",1fr);gap:6px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)",
+      /* أعمدةُ المصفوفة بعدد الصفحات المسجّلة — العرضُ وحده ينتقل من المنطق، والألوانُ أصنافٌ في helmet.css */
+      pmGrid: "grid-template-columns:200px repeat(" + _.length + ",1fr)",
       pmLog: R,
       pmLogEmpty: !R.length,
     };
@@ -3054,12 +3026,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         unlock: () => this.adAct("/api/guard/unlock", { gk: "u:" + String(t.un).toLowerCase(), gks: t.gks || [] }, "فُكّ القفل"),
       })),
       A = {
-        login: ["#059669", "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4 M10 17l5-5-5-5 M15 12H3"],
-        warn: ["#d97706", "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01"],
-        sec: ["#dc2626", "M3 11h18v11H3z M7 11V7a5 5 0 0 1 10 0v4"],
-        perm: ["#9c3d6b", "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"],
+        login: ["login", "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4 M10 17l5-5-5-5 M15 12H3"],
+        warn: ["warn", "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01"],
+        sec: ["sec", "M3 11h18v11H3z M7 11V7a5 5 0 0 1 10 0v4"],
+        perm: ["perm", "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"],
         adm: [
-          "#0e7490",
+          "adm",
           "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
         ],
       },
@@ -3078,11 +3050,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           const s = this.adSecTxt(t),
             a = A[s.k] || A.adm;
           return {
-            icoStyle:
-              "width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:" +
-              a[0] +
-              "14;color:" +
-              a[0],
+            /* CORE-02 · الخطوة ٦: نوعُ الحدث يلوّن أيقونتَه بصنفٍ على الرموز الدلالية (.adm-ico[data-k]) — كان لوناً سداسياً ثابتاً لا يتبع الداكن */
+            k: a[0],
             icoPath: a[1],
             txt: s.t,
             warn: !!s.w,
@@ -3094,17 +3063,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             dev: ["m" === t.dev ? "جوال" : "d" === t.dev ? "حاسوب" : "", t.city].filter(Boolean).join(" · ") || "—",
           };
         }),
-      E = (t, e, s) => ({
-        t: t,
-        go: s,
-        style:
-          "height:26px;display:inline-flex;align-items:center;padding:0 10px;border-radius:9999px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid " +
-          (e ? "var(--bd-xb99751)" : "var(--bd-xe1e1e1)") +
-          ";background:" +
-          (e ? "var(--bg-xb99751)" : "var(--bg-xffffff)") +
-          ";color:" +
-          (e ? "var(--fg-x1a1206)" : "var(--fg-x475569)"),
-      }),
+      /* رقاقةُ تصفية: زرٌّ حقيقي (.adm-chip) وحالتُه aria-pressed */
+      E = (t, e, s) => ({ t: t, go: s, on: !!e }),
       M = (t) =>
         this.setState({ adSecKind: t }, () => {
           ((this._adLast = 0), this.adLoad(!0));
@@ -3176,8 +3136,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       secExport: () => this.adSecExport(),
       secPol: j,
       secPolMsg: t.adPolMsg || "",
-      secPolSaveStyle:
-        "height:28px;padding:0 12px;border-radius:8px;border:0;background:var(--bg-xb99751);color:var(--text-on-brand);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer",
       secPolSave: () =>
         this._adAsk(
           { title: "حفظ سياسات الأمن", msg: "تسري القيم الجديدة على كل حسابات المنصة من الدخول التالي. هل تحفظها؟", ok: "حفظ السياسات" },
@@ -5384,7 +5342,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       fg: "var(--text-primary)",
       mu: "var(--text-secondary)",
       br: "var(--brand-primary)",
-      onBr: "var(--text-on-fill)",
+      onBr: "var(--text-on-brand)",   /* CORE-02 · الخطوة ٦: نصُّ الزرّ الأساسي على الذهبي كـ.bs-btn--primary (الأبيضُ عليه 2.8:1 دون حدّ القراءة) */
       good: "var(--success-text)",
       goodI: "var(--success)",
       warn: "var(--warning-text)",
@@ -7202,9 +7160,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             const e = this._expInfo(t, "dept");
             return {
               dbkLastTxt: e.txt,
-              dbkLastStyle:
-                "margin-top:12px;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;color:" +
-                (e.stale ? "var(--fg-xb45309)" : "var(--fg-x8a929b)"),
+              dbkLastTone: e.stale ? "warn" : "",
             };
           })(),
           dbkImport: (t) => {
@@ -7218,7 +7174,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })(),
       ...(() => {
         const t = KIVO.BassamDepts;
-        if (!t) return { deptRows: [], deptMsg: "", deptMsgColor: "#dc2626", actDeptName: "" };
+        if (!t) return { deptRows: [], deptMsg: "", deptMsgColor: "var(--danger-text)", actDeptName: "" };
         const s = t.active(),
           a = t.treeFlat(),
           r = (() => {
@@ -7779,7 +7735,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         Object.assign(
                           {
                             name: s.name,
-                            nameColor: i ? (lm ? "#b45309" : "#141414") : "#94a3b8",
+                            nameColor: i ? (lm ? "var(--warning-text)" : "var(--text-primary)") : "var(--text-faint)",
                             isChild: !!a,
                             isParent: !1,
                             isLeafRow: !0,
@@ -7819,7 +7775,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         g = a && -1 !== c.indexOf(r.key);
                       t.push({
                         name: n || r.name,
-                        nameColor: g ? "#141414" : "#94a3b8",
+                        nameColor: g ? "var(--text-primary)" : "var(--text-faint)",
                         isChild: !0,
                         isParent: !1,
                         isLeafRow: !0,
@@ -7876,7 +7832,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                           const s = u > 0;
                           t.push({
                             name: e.name,
-                            nameColor: s ? "#141414" : "#94a3b8",
+                            nameColor: s ? "var(--text-primary)" : "var(--text-faint)",
                             isChild: !1,
                             isParent: !0,
                             isLeafRow: !1,
@@ -7928,7 +7884,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         i = r > 0;
                       (t.push({
                         name: e.name,
-                        nameColor: i ? "#141414" : "#94a3b8",
+                        nameColor: i ? "var(--text-primary)" : "var(--text-faint)",
                         isChild: !1,
                         isParent: !0,
                         isLeafRow: !1,
@@ -8379,7 +8335,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           deptMsg2: e.deptMsg || "",
           actDeptName: t.activeName(),
           deptMsg: e.deptMsg || "",
-          deptMsgColor: /^✓/.test(e.deptMsg || "") ? "#047857" : "#dc2626",
+          deptMsgColor: /^✓/.test(e.deptMsg || "") ? "var(--success-text)" : "var(--danger-text)",
           sdShow: (() => {
             try {
               return !!(t.needsStructure && t.needsStructure());
@@ -8388,7 +8344,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             }
           })(),
           sdLbl: e.sdArm ? "اضغط مرة أخرى لزرع الهيكل" : "زرع هيكل القطاع",
-          sdBg: e.sdArm ? "rgba(185,151,81,0.16)" : "#fff",
+          sdBg: e.sdArm ? "rgba(185,151,81,0.16)" : "var(--bg-surface)",
           sdGo: () => {
             if (!this.state.sdArm) {
               this.setState({ sdArm: !0, ndMsg: "" });
@@ -8441,7 +8397,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             }
           })(),
           ndMsg: e.ndMsg || "",
-          ndMsgColor: /^✓/.test(e.ndMsg || "") ? "#047857" : "#dc2626",
+          ndMsgColor: /^✓/.test(e.ndMsg || "") ? "var(--success-text)" : "var(--danger-text)",
           ndGo: () => {
             const e = (this.state.ndName || "").trim(),
               s = ("__new" === this.state.ndKind ? this.state.ndNewKind || "" : this.state.ndKind || "").trim(),
@@ -8678,7 +8634,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ...(() => {
         const t = KIVO.BassamAuth,
           s = KIVO.BassamDepts;
-        if (!t || !s) return { uaMsg: "", uaMsgColor: "#dc2626", pwHint: "" };
+        if (!t || !s) return { uaMsg: "", uaMsgColor: "var(--danger-text)", pwHint: "" };
         const a = s.active();
         return (
           t.users().find((t) => "dept" === t.role && t.deptId === a),
@@ -8687,20 +8643,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             pwHint:
               "كلمة المرور: " + KIVO.BassamCount(t.PW_MIN || 6, "رقم") + " على الأقل — عند التعديل اترك الحقل فارغاً لإبقاء الحالي.",
             uaMsg: e.uaMsg || "",
-            uaMsgColor: /^✓/.test(e.uaMsg || "") ? "#047857" : "#dc2626",
+            uaMsgColor: /^✓/.test(e.uaMsg || "") ? "var(--success-text)" : "var(--danger-text)",
           }
         );
       })(),
       backupMsg: e.backupMsg || "",
-      backupMsgColor: /تعذّر|غير صالح|لا توجد/.test(e.backupMsg || "") ? "#dc2626" : "#047857",
+      /* CORE-02 · الخطوة ٦: نبرةُ الرسالة (.adm-bk-msg[data-tone]) على الرموز الدلالية — كانت سداسيةً ثابتة لا تتبع الداكن */
+      backupMsgTone: /تعذّر|غير صالح|لا توجد/.test(e.backupMsg || "") ? "bad" : "ok",
       ...(() => {
         let t = this._fullStamp();
         const e = this._expInfo(t, "full");
         return {
           fullLastTxt: e.txt,
-          fullLastStyle:
-            "margin-top:12px;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;color:" +
-            (e.stale ? "var(--fg-xb45309)" : "var(--fg-x8a929b)"),
+          fullLastTone: e.stale ? "warn" : "",
         };
       })(),
       /* done (اختياري): يُبلَّغ بنتيجة التصدير — (true, اسمُ الملف) بعد أن يسلّم المتصفحُ الملفَّ للتنزيل، أو (false, السبب) عند الإخفاق أو الإلغاء */
@@ -9101,8 +9056,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       y = (t) =>
         "position:relative;display:inline-block;width:36px;height:20px;border-radius:9999px;flex-shrink:0;cursor:pointer;transition:background .2s;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04);background:" +
         (t
-          ? "radial-gradient(circle at 10px 10px,#fff 6.5px,transparent 7.5px) #059669"
-          : "radial-gradient(circle at 26px 10px,#fff 6.5px,transparent 7.5px) #cfd3da"),
+          ? "radial-gradient(circle at 10px 10px,var(--text-on-fill) 6.5px,transparent 7.5px) var(--success)"
+          : "radial-gradient(circle at 26px 10px,var(--text-on-fill) 6.5px,transparent 7.5px) var(--neutral-fill-soft)"),
       S = (t, e) =>
         !r ||
         -1 !==

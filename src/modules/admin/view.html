@@ -172,178 +172,177 @@
 </sc-if>
 
 <sc-if value="{{admOnSec}}" hint-placeholder-val="{{ false }}">
-<div style="height:12px"></div>
+<div class="adm-gap"></div>
 <div class="bs-secgrid" style="display:grid;grid-template-columns:1fr 330px;gap:14px;align-items:start">
-  <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden;min-width:0">
-    <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9);flex-wrap:wrap">
-      <div><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">سجل أحداث الأمن</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">دخول وخروج · كلمات مرور · حسابات · صلاحيات · كتابات مرفوضة · إجراءات مسؤول المنصة — منفصل عن سجل العمليات التشغيلية</div></div>
-      <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
-        <sc-if value="{{secBadgeOn}}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:9999px;background:var(--bg-a22038380p08);color:var(--fg-x991b1b)">{{secBadge}} {{secBadgeW}} تستحق نظراً اليوم</span></sc-if>
-        <button onClick="{{secExport}}" title="تصدير الأحداث المعروضة إلى ملف CSV يفتحه Excel" style="height:28px;padding:0 11px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x475569);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer">تصدير</button>
+  <section class="bs-card adm-card" aria-label="سجل أحداث الأمن">
+    <div class="adm-ov-hd">
+      <div><b>سجل أحداث الأمن</b><small>دخول وخروج · كلمات مرور · حسابات · صلاحيات · كتابات مرفوضة · إجراءات مسؤول المنصة — منفصل عن سجل العمليات التشغيلية</small></div>
+      <div class="adm-tools">
+        <sc-if value="{{secBadgeOn}}" hint-placeholder-val="{{ false }}"><span class="adm-pill" data-tone="bad">{{secBadge}} {{secBadgeW}} تستحق نظراً اليوم</span></sc-if>
+        <button type="button" class="bs-btn adm-sm" onClick="{{secExport}}" title="تصدير الأحداث المعروضة إلى ملف CSV يفتحه Excel">تصدير</button>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-bottom:1px solid var(--bd-xf1f5f9);flex-wrap:wrap">
-      <input value="{{secQ}}" onChange="{{secOnQ}}" placeholder="بحث بالاسم أو اسم المستخدم…" style="flex:1;min-width:180px;height:30px;border:1px solid var(--bd-xe1e1e1);border-radius:9px;padding:0 10px;font-family:'Cairo',sans-serif;font-size:11.5px;outline:none;box-sizing:border-box">
-      <sc-for list="{{secKinds}}" as="k" hint-placeholder-count="7"><span onClick="{{k.go}}" style="{{k.style}}">{{k.t}}</span></sc-for>
-      <span style="width:1px;height:20px;background:var(--bg-xe1e1e1);margin:0 2px"></span>
-      <sc-for list="{{secPeriods}}" as="k" hint-placeholder-count="3"><span onClick="{{k.go}}" title="{{k.tip}}" style="{{k.style}}">{{k.t}}</span></sc-for>
+    <div class="adm-bar">
+      <input type="search" class="adm-q" value="{{secQ}}" onChange="{{secOnQ}}" placeholder="بحث بالاسم أو اسم المستخدم…" aria-label="بحث بالاسم أو اسم المستخدم…">
+      <div role="group" aria-label="نوع الحدث" class="adm-tools" style="margin:0"><sc-for list="{{secKinds}}" as="k" hint-placeholder-count="7"><button type="button" class="adm-chip" aria-pressed="{{k.on}}" onClick="{{k.go}}">{{k.t}}</button></sc-for></div>
+      <span class="adm-sep" aria-hidden="true"></span>
+      <div role="group" aria-label="الفترة" class="adm-tools" style="margin:0"><sc-for list="{{secPeriods}}" as="k" hint-placeholder-count="3"><button type="button" class="adm-chip" aria-pressed="{{k.on}}" onClick="{{k.go}}" title="{{k.tip}}">{{k.t}}</button></sc-for></div>
     </div>
-    <div style="display:grid;grid-template-columns:30px 1fr 150px 92px 96px;gap:10px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)"><span></span><span>الحدث</span><span>المستخدم</span><span>الوقت</span><span>الجهاز</span></div>
-    <sc-if value="{{secEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:14px 16px;font-size:11.5px;color:var(--fg-x94a3b8)">لا أحداث في هذه الفترة</div></sc-if>
+    <div class="adm-tr adm-th g-sec" aria-hidden="true"><span></span><span>الحدث</span><span>المستخدم</span><span>الوقت</span><span>الجهاز</span></div>
+    <sc-if value="{{secEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-none">لا أحداث في هذه الفترة</div></sc-if>
     <sc-for list="{{secRows}}" as="r" hint-placeholder-count="5">
-    <div style="display:grid;grid-template-columns:30px 1fr 150px 92px 96px;align-items:center;gap:10px;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-      <span style="{{r.icoStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-08f6c4ae"></svg></span>
-      <div style="min-width:0"><div style="color:var(--fg-x141414);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{r.txt}}">{{r.txt}}</div><sc-if value="{{r.warn}}" hint-placeholder-val="{{ false }}"><div style="font-size:10.5px;color:var(--fg-xb91c1c)">{{r.warnTxt}}</div></sc-if></div>
-      <div style="color:var(--fg-x475569);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{r.whoTip}}">{{r.who}}</div>
-      <div style="color:var(--fg-x94a3b8);font-size:11px;font-feature-settings:'tnum'" title="{{r.whenTip}}">{{r.when}}</div>
-      <div style="color:var(--fg-x94a3b8);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.dev}}</div>
+    <div class="adm-tr g-sec">
+      <span class="adm-ico" data-k="{{r.k}}" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-08f6c4ae"></svg></span>
+      <div class="adm-main"><div class="adm-ell" title="{{r.txt}}">{{r.txt}}</div><sc-if value="{{r.warn}}" hint-placeholder-val="{{ false }}"><div class="adm-xs adm-bad">{{r.warnTxt}}</div></sc-if></div>
+      <div class="adm-ell adm-2nd adm-sub" title="{{r.whoTip}}">{{r.who}}</div>
+      <div class="adm-mute adm-sm-t adm-tnum adm-sub" title="{{r.whenTip}}">{{r.when}}</div>
+      <div class="adm-ell adm-mute adm-xs adm-sub">{{r.dev}}</div>
     </div>
     </sc-for>
-    <div style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:11px;color:var(--fg-x94a3b8);display:flex;justify-content:space-between;align-items:center"><span>{{secFoot}}</span><sc-if value="{{secMoreOn}}" hint-placeholder-val="{{ false }}"><span onClick="{{secMore}}" style="color:var(--fg-xb99751);cursor:pointer;font-weight:700">عرض المزيد</span></sc-if></div>
-  </div>
+    <div class="adm-foot"><span>{{secFoot}}</span><sc-if value="{{secMoreOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="bs-btn bs-btn--ghost adm-sm adm-more" onClick="{{secMore}}">عرض المزيد</button></sc-if></div>
+  </section>
   <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
-    <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden">
-      <div style="padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">سياسات الأمن</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">تسري على الجميع من الدخول التالي</div></div>
+    <section class="bs-card adm-card" aria-label="سياسات الأمن">
+      <div class="adm-ov-hd"><div><b>سياسات الأمن</b><small>تسري على الجميع من الدخول التالي</small></div></div>
       <sc-for list="{{secPol}}" as="p" hint-placeholder-count="5">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-        <span style="color:var(--fg-x141414)">{{p.l}}</span>
-        <span style="display:inline-flex;align-items:center;gap:5px"><input value="{{p.v}}" onChange="{{p.on}}" type="number" aria-label="{{p.l}}" style="width:64px;height:28px;border:1px solid var(--bd-xe1e1e1);border-radius:8px;padding:0 8px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x8a6f35);text-align:center;outline:none;box-sizing:border-box"><span style="font-size:10.5px;color:var(--fg-x94a3b8)">{{p.u}}</span></span>
+      <div class="adm-tr g-pol">
+        <span>{{p.l}}</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0"><input value="{{p.v}}" onChange="{{p.on}}" type="number" inputmode="numeric" aria-label="{{p.l}}" class="adm-num"><span class="adm-xs adm-mute">{{p.u}}</span></span>
       </div>
       </sc-for>
-      <div style="display:flex;gap:6px;padding:10px 16px;border-top:1px solid var(--bd-xf1f5f9);align-items:center">
-        <button onClick="{{secPolSave}}" style="{{secPolSaveStyle}}">حفظ السياسات</button>
-        <span style="font-size:10.5px;color:var(--fg-x94a3b8)">{{secPolMsg}}</span>
+      <div class="adm-foot" style="justify-content:flex-start">
+        <button type="button" class="bs-btn bs-btn--primary adm-sm" onClick="{{secPolSave}}">حفظ السياسات</button>
+        <span role="status">{{secPolMsg}}</span>
       </div>
-    </div>
-    <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden">
-      <div style="padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">الجلسات النشطة</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">{{secSessN}}</div></div>
+    </section>
+    <section class="bs-card adm-card" aria-label="الجلسات النشطة">
+      <div class="adm-ov-hd"><div><b>الجلسات النشطة</b><small>{{secSessN}}</small></div></div>
       <sc-for list="{{secSess}}" as="p" hint-placeholder-count="3">
-      <div style="display:grid;grid-template-columns:1.4fr 1fr 60px;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-        <div style="display:flex;align-items:center;gap:8px;min-width:0"><div style="width:26px;height:26px;border-radius:9999px;background:var(--bg-xb99751);color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">{{p.ini}}</div><span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg-x141414)">{{p.name}}</span></div>
-        <span style="color:var(--fg-x94a3b8);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.devs}}</span>
-        <sc-if value="{{p.canKill}}" hint-placeholder-val="{{ true }}"><button onClick="{{p.kill}}" style="height:24px;padding:0 8px;border-radius:7px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x7f1d1d);font-family:'Cairo',sans-serif;font-size:10.5px;cursor:pointer">إنهاء</button></sc-if>
-        <sc-if value="{{p.mine}}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;color:var(--fg-x94a3b8)">أنت</span></sc-if>
+      <div class="adm-tr g-ses">
+        <div class="adm-who adm-main"><span class="adm-av sm" aria-hidden="true">{{p.ini}}</span><span class="adm-b adm-ell">{{p.name}}</span></div>
+        <span class="adm-mute adm-sm-t adm-ell adm-sub">{{p.devs}}</span>
+        <sc-if value="{{p.canKill}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-btn adm-xs adm-end" data-tone="bad" onClick="{{p.kill}}" title="إنهاء كل جلسات هذا المستخدم الآن">إنهاء</button></sc-if>
+        <sc-if value="{{p.mine}}" hint-placeholder-val="{{ false }}"><span class="adm-xs adm-mute adm-end">أنت</span></sc-if>
       </div>
       </sc-for>
-      <div style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9)"><button onClick="{{secKillAll}}" style="height:28px;padding:0 11px;border-radius:8px;border:1px solid var(--bd-a22038380p35);background:var(--bg-xffffff);color:var(--fg-x991b1b);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer">إنهاء كل الجلسات عدا جلستي</button></div>
-    </div>
+      <div class="adm-foot"><button type="button" class="bs-btn adm-sm" data-tone="bad" onClick="{{secKillAll}}">إنهاء كل الجلسات عدا جلستي</button></div>
+    </section>
   </div>
 </div>
 </sc-if>
 
 <sc-if value="{{admOnUsers}}" hint-placeholder-val="{{ false }}">
-<div style="height:12px"></div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+<div class="adm-gap"></div>
+<div class="adm-stats">
   <sc-for list="{{usCards}}" as="c" hint-placeholder-count="6">
-  <div onClick="{{c.go}}" title="{{c.tip}}" style="{{c.style}}"><div style="{{c.vStyle}}">{{c.v}}</div><div style="font-size:11px;color:var(--fg-x475569);margin-top:2px">{{c.l}}</div></div>
+  <button type="button" class="bs-card adm-stat" onClick="{{c.go}}" title="{{c.tip}}" data-tone="{{c.tone}}" data-on="{{c.on}}"><span class="v">{{c.v}}</span><span class="l">{{c.l}}</span></button>
   </sc-for>
 </div>
 <div style="height:14px"></div>
-<div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:visible">
-  <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9);border-radius:16px 16px 0 0">
-    <div><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">مراقبة الحسابات — كل الإدارات</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">نظرة رقابية على كل حسابات المنصة: من دخل ومتى، ومن أُضيف، ومن جُمّد · فتح الحسابات ومنح الصلاحيات من «الإدارات ← المستخدمون»</div></div>
-    <div style="margin-right:auto;display:flex;gap:6px"><button onClick="{{usExport}}" style="height:28px;padding:0 11px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x475569);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer">تصدير</button></div>
+<section class="bs-card adm-card adm-card--menu" aria-label="مراقبة الحسابات — كل الإدارات">
+  <div class="adm-ov-hd">
+    <div><b>مراقبة الحسابات — كل الإدارات</b><small>نظرة رقابية على كل حسابات المنصة: من دخل ومتى، ومن أُضيف، ومن جُمّد · فتح الحسابات ومنح الصلاحيات من «الإدارات ← المستخدمون»</small></div>
+    <div class="adm-tools"><button type="button" class="bs-btn adm-sm" onClick="{{usExport}}">تصدير</button></div>
   </div>
-  <div style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-bottom:1px solid var(--bd-xf1f5f9);flex-wrap:wrap">
-    <input value="{{usQ}}" onChange="{{usOnQ}}" placeholder="بحث بالاسم أو اسم المستخدم أو الإدارة…" style="flex:1;min-width:200px;height:30px;border:1px solid var(--bd-xe1e1e1);border-radius:9px;padding:0 10px;font-family:'Cairo',sans-serif;font-size:11.5px;outline:none;box-sizing:border-box">
-    <sc-for list="{{usFilters}}" as="k" hint-placeholder-count="7"><span onClick="{{k.go}}" style="{{k.style}}">{{k.t}}</span></sc-for>
+  <div class="adm-bar">
+    <input type="search" class="adm-q" value="{{usQ}}" onChange="{{usOnQ}}" placeholder="بحث بالاسم أو اسم المستخدم أو الإدارة…" aria-label="بحث بالاسم أو اسم المستخدم أو الإدارة…">
+    <div role="group" aria-label="تصفية الحسابات" class="adm-tools" style="margin:0"><sc-for list="{{usFilters}}" as="k" hint-placeholder-count="7"><button type="button" class="adm-chip" aria-pressed="{{k.on}}" onClick="{{k.go}}">{{k.t}}</button></sc-for></div>
   </div>
-  <div style="display:grid;grid-template-columns:1.7fr 1fr .9fr 1fr .9fr .9fr 1.1fr 40px;gap:8px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)"><span>الحساب</span><span>اسم المستخدم</span><span>الدور</span><span>الإدارة</span><span>الحالة</span><span>آخر دخول</span><span>أُضيف</span><span></span></div>
-  <sc-if value="{{usEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:14px 16px;font-size:11.5px;color:var(--fg-x94a3b8)">لا حسابات تطابق التصفية</div></sc-if>
+  <div class="adm-tr adm-th g-us" aria-hidden="true"><span>الحساب</span><span>اسم المستخدم</span><span>الدور</span><span>الإدارة</span><span>الحالة</span><span>آخر دخول</span><span>أُضيف</span><span></span></div>
+  <sc-if value="{{usEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-none">لا حسابات تطابق التصفية</div></sc-if>
   <sc-for list="{{usRows}}" as="u" hint-placeholder-count="5">
-  <div style="{{u.rowStyle}}">
-    <div style="display:flex;align-items:center;gap:8px;min-width:0"><div style="{{u.avStyle}}">{{u.ini}}</div><div style="min-width:0"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg-x141414)">{{u.name}}</div><sc-if value="{{u.flagOn}}" hint-placeholder-val="{{ false }}"><div style="{{u.flagStyle}}">{{u.flag}}</div></sc-if></div></div>
-    <div dir="ltr" style="text-align:right;font-size:11px;color:var(--fg-x475569);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-feature-settings:'tnum'">{{u.un}}</div>
-    <div style="font-size:11.5px;color:var(--fg-x475569);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{u.role}}</div>
-    <div style="font-size:11.5px;color:var(--fg-x475569);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{u.dept}}</div>
-    <div style="{{u.stStyle}}"><span style="{{u.dot}}"></span>{{u.st}}</div>
-    <div style="font-size:11px;color:var(--fg-x475569);white-space:nowrap" title="{{u.lastTip}}">{{u.last}}</div>
-    <div style="font-size:10.5px;color:var(--fg-x94a3b8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{u.added}}</div>
-    <div style="position:relative">
-      <sc-if value="{{u.rmHas}}" hint-placeholder-val="{{ true }}"><button onClick="{{u.rmToggle}}" title="أفعال هذا الحساب" style="{{u.rmBtnStyle}}">⋯</button></sc-if>
+  <div class="adm-tr g-us" data-open="{{u.rmOpen}}">
+    <div class="adm-who adm-main"><span class="adm-av" data-tone="{{u.avTone}}" aria-hidden="true">{{u.ini}}</span><div><div class="adm-b adm-ell">{{u.name}}</div><sc-if value="{{u.flagOn}}" hint-placeholder-val="{{ false }}"><div class="adm-xs {{u.flagCls}}">{{u.flag}}</div></sc-if></div></div>
+    <div dir="ltr" class="adm-ell adm-2nd adm-sm-t adm-tnum adm-sub" style="text-align:right">{{u.un}}</div>
+    <div class="adm-ell adm-2nd adm-sub">{{u.role}}</div>
+    <div class="adm-ell adm-2nd adm-sub">{{u.dept}}</div>
+    <div class="adm-st" data-tone="{{u.stTone}}"><span class="d" aria-hidden="true"></span>{{u.st}}</div>
+    <div class="adm-2nd adm-sm-t adm-sub" style="white-space:nowrap" title="{{u.lastTip}}">{{u.last}}</div>
+    <div class="adm-ell adm-mute adm-xs adm-sub">{{u.added}}</div>
+    <div class="adm-rmw adm-end">
+      <sc-if value="{{u.rmHas}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-btn bs-btn--icon adm-rmb" onClick="{{u.rmToggle}}" title="أفعال هذا الحساب" aria-haspopup="menu" aria-expanded="{{u.rmOpen}}">⋯</button></sc-if>
       <sc-if value="{{u.rmOpen}}" hint-placeholder-val="{{ false }}">
-      <div data-bs-dd="1" style="position:absolute;top:100%;left:0;z-index:70;min-width:200px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);padding:4px;text-align:right">
-        <sc-for list="{{u.rmItems}}" as="a" hint-placeholder-count="4"><div onClick="{{a.run}}" style="{{a.txtStyle}}" style-hover="background:var(--bg-a185151810p06)">{{a.name}}</div></sc-for>
+      <div data-bs-dd="1" role="menu" class="adm-rm">
+        <sc-for list="{{u.rmItems}}" as="a" hint-placeholder-count="4"><button type="button" role="menuitem" onClick="{{a.run}}" data-tone="{{a.tone}}">{{a.name}}</button></sc-for>
       </div>
       </sc-if>
     </div>
   </div>
   </sc-for>
-  <div style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:11px;color:var(--fg-x94a3b8);display:flex;justify-content:space-between"><span>{{usFoot}}</span><span>{{usNote}}</span></div>
-</div>
+  <div class="adm-foot"><span>{{usFoot}}</span><span>{{usNote}}</span></div>
+</section>
 <sc-if value="{{usTmpOn}}" hint-placeholder-val="{{ false }}">
-<div style="position:fixed;inset:0;z-index:2147483000;background:var(--bg-a1523420p45);display:flex;align-items:center;justify-content:center" onClick="{{usTmpClose}}">
-  <div dir="rtl" onClick="{{usTmpKeep}}" style="background:var(--bg-xffffff);border-radius:16px;padding:20px 22px;width:min(440px,92vw);box-shadow:var(--shadow-elevated);font-family:'Cairo',sans-serif">
-    <div style="font-size:15px;font-weight:800;color:var(--fg-x141414);margin-bottom:6px">كلمة مرور مؤقتة لـ {{usTmpName}}</div>
-    <div style="font-size:12px;color:var(--fg-x475569);line-height:1.9;margin-bottom:12px">سلّمها لصاحب الحساب بطريقة آمنة. سيُطلب منه تغييرها عند أول دخول، ولن تظهر هنا مرة أخرى.</div>
-    <div dir="ltr" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px dashed var(--bd-xb99751);border-radius:10px;padding:10px 14px;background:var(--bg-a185151810p06);font-family:monospace;font-size:20px;font-weight:700;letter-spacing:1px;color:var(--fg-x141414)">{{usTmpPw}}<button onClick="{{usTmpCopy}}" style="height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer">نسخ</button></div>
-    <div style="display:flex;justify-content:flex-start;margin-top:14px"><button onClick="{{usTmpClose}}" style="height:32px;padding:0 16px;border-radius:9px;border:0;background:var(--bg-xb99751);color:var(--text-on-brand);font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer">تم</button></div>
+<div class="bs-dlg bs-dlg--modal" style="z-index:var(--z-confirm)" onClick="{{usTmpClose}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-label="كلمة مرور مؤقتة" onClick="{{usTmpKeep}}" class="bs-dlg-box adm-dlg">
+    <b class="t">كلمة مرور مؤقتة لـ {{usTmpName}}</b>
+    <p class="m">سلّمها لصاحب الحساب بطريقة آمنة. سيُطلب منه تغييرها عند أول دخول، ولن تظهر هنا مرة أخرى.</p>
+    <div dir="ltr" class="key">{{usTmpPw}}<button type="button" class="bs-btn adm-sm" onClick="{{usTmpCopy}}">نسخ</button></div>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{usTmpClose}}">تم</button></div>
   </div>
 </div>
 </sc-if>
 </sc-if>
 
 <sc-if value="{{admOnPerms}}" hint-placeholder-val="{{ false }}">
-<div style="height:12px"></div>
+<div class="adm-gap"></div>
 <div class="bs-ovgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-  <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden;min-width:0">
-    <div style="padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">سقوف الإدارات والعدسات</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">ما يحق لكل إدارة رؤيته فعلاً (بعد ما أطفأته المنصة) — يُعدَّل من تبويب «الإدارات»</div></div>
-    <div style="display:grid;grid-template-columns:1fr 2fr .8fr 60px;gap:8px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)"><span>الإدارة</span><span>الصفحات المتاحة</span><span>العدسات</span><span></span></div>
+  <section class="bs-card adm-card" aria-label="سقوف الإدارات والعدسات">
+    <div class="adm-ov-hd"><div><b>سقوف الإدارات والعدسات</b><small>ما يحق لكل إدارة رؤيته فعلاً (بعد ما أطفأته المنصة) — يُعدَّل من تبويب «الإدارات»</small></div></div>
+    <div class="adm-tr adm-th g-cap" aria-hidden="true"><span>الإدارة</span><span>الصفحات المتاحة</span><span>العدسات</span><span></span></div>
     <sc-for list="{{pmCaps}}" as="d" hint-placeholder-count="2">
-    <div style="display:grid;grid-template-columns:1fr 2fr .8fr 60px;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-      <div style="font-weight:700;color:var(--fg-x141414);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{d.name}}</div>
-      <div style="min-width:0"><div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{d.pages}}">{{d.pages}}</div><sc-if value="{{d.offOn}}" hint-placeholder-val="{{ false }}"><div style="color:var(--fg-x92400e);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{d.offTxt}}">{{d.offTxt}}</div></sc-if></div>
-      <div style="color:var(--fg-x475569);font-size:11px">{{d.lenses}}</div>
-      <button onClick="{{d.go}}" style="height:24px;padding:0 8px;border-radius:7px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x8a6f35);font-family:'Cairo',sans-serif;font-size:10.5px;cursor:pointer">تعديل</button>
+    <div class="adm-tr g-cap">
+      <div class="adm-b adm-ell adm-main">{{d.name}}</div>
+      <div class="adm-sub" style="flex-basis:100%"><div class="adm-2nd adm-sm-t adm-ell" title="{{d.pages}}">{{d.pages}}</div><sc-if value="{{d.offOn}}" hint-placeholder-val="{{ false }}"><div class="adm-warn adm-xs adm-ell" title="{{d.offTxt}}">{{d.offTxt}}</div></sc-if></div>
+      <div class="adm-2nd adm-sm-t adm-sub">{{d.lenses}}</div>
+      <button type="button" class="bs-btn adm-xs adm-end" onClick="{{d.go}}">تعديل</button>
     </div>
     </sc-for>
-  </div>
-  <div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden;min-width:0">
-    <div style="padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">قوالب الصلاحيات</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">تُدار من الجدول الشهري لكل إدارة — وحاملو كل قالب</div></div>
-    <div style="display:grid;grid-template-columns:1.2fr 2fr .6fr;gap:8px;padding:6px 16px;font-size:10.5px;font-weight:700;color:var(--fg-x94a3b8);background:var(--bg-xfafaf9)"><span>القالب</span><span>ما يمنحه</span><span>حاملوه</span></div>
-    <sc-if value="{{pmTplEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:12px 16px;font-size:11.5px;color:var(--fg-x94a3b8)">لا قوالب بعد</div></sc-if>
+  </section>
+  <section class="bs-card adm-card" aria-label="قوالب الصلاحيات">
+    <div class="adm-ov-hd"><div><b>قوالب الصلاحيات</b><small>تُدار من الجدول الشهري لكل إدارة — وحاملو كل قالب</small></div></div>
+    <div class="adm-tr adm-th g-tpl" aria-hidden="true"><span>القالب</span><span>ما يمنحه</span><span>حاملوه</span></div>
+    <sc-if value="{{pmTplEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-none">لا قوالب بعد</div></sc-if>
     <sc-for list="{{pmTpls}}" as="p" hint-placeholder-count="3">
-    <div style="display:grid;grid-template-columns:1.2fr 2fr .6fr;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-      <div style="min-width:0"><div style="font-weight:700;color:var(--fg-x141414);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{p.name}}</div><div style="font-size:10px;color:var(--fg-x94a3b8)">{{p.dept}}<sc-if value="{{p.sup}}" hint-placeholder-val="{{ false }}"> · <span style="color:var(--fg-x8a6f35)">إشرافي</span></sc-if></div></div>
-      <div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{p.grant}}">{{p.grant}}</div>
-      <div style="font-weight:700;color:var(--fg-x141414);font-feature-settings:'tnum'" title="{{p.nTip}}">{{p.n}}</div>
+    <div class="adm-tr g-tpl">
+      <div class="adm-main"><div class="adm-b adm-ell">{{p.name}}</div><div class="adm-xs adm-mute">{{p.dept}}<sc-if value="{{p.sup}}" hint-placeholder-val="{{ false }}"> · <span class="adm-brand">إشرافي</span></sc-if></div></div>
+      <div class="adm-2nd adm-sm-t adm-ell adm-sub" title="{{p.grant}}">{{p.grant}}</div>
+      <div class="adm-b adm-tnum adm-end" title="{{p.nTip}}">{{p.n}}</div>
     </div>
     </sc-for>
-  </div>
+  </section>
 </div>
 <div style="height:14px"></div>
-<div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden">
-  <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9);flex-wrap:wrap"><div><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">مصفوفة الصلاحيات</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">ما يقرّره محرّك الصلاحيات لكل حساب في إدارته (مدير الإدارة العامة: في أيٍّ من إدارات فرعه · مسؤول المنصة: في الإدارة النشطة) — الخلية: <b>ع</b> عرض · <b>ت</b> تعديل · <b>ا</b> اعتماد · <b>ص</b> تصدير</div></div>
-    <input value="{{pmQ}}" onChange="{{pmOnQ}}" placeholder="بحث بالاسم…" style="margin-right:auto;width:200px;height:28px;border:1px solid var(--bd-xe1e1e1);border-radius:8px;padding:0 10px;font-family:'Cairo',sans-serif;font-size:11px;outline:none;box-sizing:border-box">
-    <button onClick="{{pmExport}}" style="height:28px;padding:0 11px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x475569);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer">تصدير</button></div>
-  <div style="overflow-x:auto">
+<section class="bs-card adm-card" aria-label="مصفوفة الصلاحيات">
+  <div class="adm-ov-hd"><div><b>مصفوفة الصلاحيات</b><small>ما يقرّره محرّك الصلاحيات لكل حساب في إدارته (مدير الإدارة العامة: في أيٍّ من إدارات فرعه · مسؤول المنصة: في الإدارة النشطة) — الخلية: <b>ع</b> عرض · <b>ت</b> تعديل · <b>ا</b> اعتماد · <b>ص</b> تصدير</small></div>
+    <div class="adm-tools"><input type="search" class="adm-q" style="width:200px;flex:0 1 200px" value="{{pmQ}}" onChange="{{pmOnQ}}" placeholder="بحث بالاسم…" aria-label="بحث بالاسم…"><button type="button" class="bs-btn adm-sm" onClick="{{pmExport}}">تصدير</button></div></div>
+  <div class="adm-mx" tabindex="0" role="region" aria-label="جدول المصفوفة — يمرَّر أفقياً">
     <div style="min-width:900px">
-      <div style="{{pmHeadStyle}}"><span>المستخدم</span><sc-for list="{{pmCols}}" as="c" hint-placeholder-count="8"><span style="text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{c.name}}">{{c.name}}</span></sc-for></div>
+      <div class="adm-tr adm-th" style="{{pmGrid}}"><span>المستخدم</span><sc-for list="{{pmCols}}" as="c" hint-placeholder-count="8"><span class="adm-ell" style="text-align:center" title="{{c.name}}">{{c.name}}</span></sc-for></div>
       <sc-for list="{{pmRows}}" as="r" hint-placeholder-count="5">
-      <div style="{{r.style}}">
-        <div style="display:flex;align-items:center;gap:8px;min-width:0"><div style="{{r.avStyle}}">{{r.ini}}</div><div style="min-width:0"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg-x141414)">{{r.name}}</div><div style="font-size:10px;color:var(--fg-x94a3b8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.sub}}</div></div></div>
-        <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="8"><span title="{{c.tip}}" style="{{c.style}}">{{c.t}}</span></sc-for>
+      <div class="adm-tr" style="{{pmGrid}}">
+        <div class="adm-who"><span class="adm-av sm" aria-hidden="true">{{r.ini}}</span><div><div class="adm-b adm-ell">{{r.name}}</div><div class="adm-xs adm-mute adm-ell">{{r.sub}}</div></div></div>
+        <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="8"><span class="adm-cell" data-lvl="{{c.lvl}}" title="{{c.tip}}">{{c.t}}</span></sc-for>
       </div>
       </sc-for>
     </div>
   </div>
-  <sc-if value="{{pmCutOn}}" hint-placeholder-val="{{ false }}"><div role="status" style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:11px;color:var(--fg-x92400e)">{{pmCut}}</div></sc-if>
-  <sc-if value="{{pmAzOn}}" hint-placeholder-val="{{ false }}"><div style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:11px;color:var(--fg-x475569)">في وضع الإنفاذ يحكم الخادم أيضاً بمفاتيح الصلاحيات: المنح والسحب الصريحان لموظفٍ وبوابات العدسات لا تظهر في هذه الخلايا — افتح صلاحيات الحساب لرؤيتها</div></sc-if>
-  <sc-if value="{{pmLegacyOn}}" hint-placeholder-val="{{ false }}"><div style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:11px;color:var(--fg-x94a3b8)">{{pmLegacy}}</div></sc-if>
-  <div style="padding:9px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:11px;color:var(--fg-x94a3b8)">{{pmFoot}}</div>
-</div>
+  <sc-if value="{{pmCutOn}}" hint-placeholder-val="{{ false }}"><div role="status" class="adm-note" data-tone="warn">{{pmCut}}</div></sc-if>
+  <sc-if value="{{pmAzOn}}" hint-placeholder-val="{{ false }}"><div class="adm-note">في وضع الإنفاذ يحكم الخادم أيضاً بمفاتيح الصلاحيات: المنح والسحب الصريحان لموظفٍ وبوابات العدسات لا تظهر في هذه الخلايا — افتح صلاحيات الحساب لرؤيتها</div></sc-if>
+  <sc-if value="{{pmLegacyOn}}" hint-placeholder-val="{{ false }}"><div class="adm-note" data-tone="mute">{{pmLegacy}}</div></sc-if>
+  <div class="adm-note" data-tone="mute">{{pmFoot}}</div>
+</section>
 <div style="height:14px"></div>
-<div style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden">
-  <div style="padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9)"><div style="font-size:13.5px;font-weight:800;color:var(--fg-x141414)">آخر تغييرات الصلاحيات</div><div style="font-size:10.5px;color:var(--fg-x94a3b8)">من مُنح ماذا ومتى ومن منحه — من سجل الأمن</div></div>
-  <sc-if value="{{pmLogEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:12px 16px;font-size:11.5px;color:var(--fg-x94a3b8)">لا تغييرات مسجّلة بعد</div></sc-if>
+<section class="bs-card adm-card" aria-label="آخر تغييرات الصلاحيات">
+  <div class="adm-ov-hd"><div><b>آخر تغييرات الصلاحيات</b><small>من مُنح ماذا ومتى ومن منحه — من سجل الأمن</small></div></div>
+  <sc-if value="{{pmLogEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-none">لا تغييرات مسجّلة بعد</div></sc-if>
   <sc-for list="{{pmLog}}" as="r" hint-placeholder-count="3">
-  <div style="display:grid;grid-template-columns:1fr 1.2fr 100px;gap:8px;align-items:center;padding:8px 16px;border-top:1px solid var(--bd-xf1f5f9);font-size:12px">
-    <div style="color:var(--fg-x141414);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{r.txt}}">{{r.txt}}</div>
-    <div style="color:var(--fg-x475569);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.who}}</div>
-    <div style="color:var(--fg-x94a3b8);font-size:11px;white-space:nowrap" title="{{r.whenTip}}">{{r.when}}</div>
+  <div class="adm-tr g-plog">
+    <div class="adm-ell adm-main" title="{{r.txt}}">{{r.txt}}</div>
+    <div class="adm-2nd adm-sm-t adm-ell adm-sub">{{r.who}}</div>
+    <div class="adm-mute adm-sm-t adm-sub" style="white-space:nowrap" title="{{r.whenTip}}">{{r.when}}</div>
   </div>
   </sc-for>
-</div>
+</section>
 </sc-if>
 
 
@@ -371,7 +370,7 @@
   <!-- ═══ هوية المنصة ═══ -->
   <sc-if value="{{plOnId}}" hint-placeholder-val="{{ true }}">
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الاسم والجهة</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">هوية المنصة الثابتة في كل مكان — نصوص شاشة الدخول وحدها في تبويبها، واسم التطبيق على الجوال في تبويبه</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">اسم المنصة <span style="font-weight:400;color:var(--fg-x94a3b8)">· يظهر في القائمة وعنوان المتصفح وبطاقة الدخول</span></label><input type="text" value="{{plD.name}}" data-k="name" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">الجهة المالكة للمنصة <span style="font-weight:400;color:var(--fg-x94a3b8)">· تظهر في ترويسة الطباعة و«حول المنصة» وأسفل الجانب التعريفي للدخول</span></label><input type="text" value="{{plD.org}}" data-k="org" onChange="{{plOn}}" placeholder="مثال: الرئاسة العامة لشؤون المسجد الحرام"
+    <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">اسم المنصة <span style="font-weight:400;color:var(--fg-x94a3b8)">· يظهر في القائمة وعنوان المتصفح وبطاقة الدخول</span></label><input type="text" value="{{plD.name}}" data-k="name" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">الجهة المالكة للمنصة <span style="font-weight:400;color:var(--fg-x94a3b8)">· تظهر في ترويسة الطباعة و«حول المنصة» وأسفل الجانب التعريفي للدخول</span></label><input type="text" value="{{plD.org}}" data-k="org" onChange="{{plOn}}" placeholder="مثال: الرئاسة العامة لشؤون المسجد الحرام"
         style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></div></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الشعار</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">PNG أو SVG أو JPG — يُحوَّل تلقائياً إلى مربع 512px ويُستخدم في القائمة والدخول والطباعة وأيقونة الجوال</div>
     <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center">
@@ -383,32 +382,32 @@
         <sc-if value="{{plLogoOn}}" hint-placeholder-val="{{ false }}"><div style="margin-top:8px"><button onClick="{{plLogoClear}}" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x3d4148);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">إزالة الشعار — الرجوع للافتراضي</button></div></sc-if></div>
     </div></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">المظهر</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">لكل مستخدم زر الإضاءة في الشريط العلوي — هنا ما يبدأ به من لم يختر بعد</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">المظهر الافتراضي للمستخدم الجديد</label><span style="display:inline-flex;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><span data-k="themeDef" data-v="light" onClick="{{plSeg}}" style="{{sg_themeDef_light}}">فاتح</span><span data-k="themeDef" data-v="dark" onClick="{{plSeg}}" style="{{sg_themeDef_dark}}">داكن</span><span data-k="themeDef" data-v="auto" onClick="{{plSeg}}" style="{{sg_themeDef_auto}}">حسب الجهاز</span></span></div></div></div>
+    <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">المظهر الافتراضي للمستخدم الجديد</label><span style="display:inline-flex;flex-wrap:wrap;max-width:100%;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><button type="button" class="adm-seg" aria-pressed="{{sgOn_themeDef_light}}" data-k="themeDef" data-v="light" onClick="{{plSeg}}" style="{{sg_themeDef_light}}">فاتح</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_themeDef_dark}}" data-k="themeDef" data-v="dark" onClick="{{plSeg}}" style="{{sg_themeDef_dark}}">داكن</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_themeDef_auto}}" data-k="themeDef" data-v="auto" onClick="{{plSeg}}" style="{{sg_themeDef_auto}}">حسب الجهاز</button></span></div></div></div>
   </sc-if>
 
   <!-- ═══ شاشة تسجيل الدخول ═══ -->
   <sc-if value="{{plOnLogin}}" hint-placeholder-val="{{ false }}">
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">النصوص</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">ما يقرؤه المستخدم قبل أن يدخل — يُطبَّق على شاشة الدخول فور الحفظ</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">العنوان <span style="font-weight:400;color:var(--fg-x94a3b8)">· فارغ = اسم المنصة</span></label><input type="text" value="{{plD.login.title}}" data-k="login.title" onChange="{{plOn}}" placeholder="اسم المنصة" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">سطر التذييل (الجانب التعريفي)</label><input type="text" value="{{plD.login.footer}}" data-k="login.footer" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div>
+    <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">العنوان <span style="font-weight:400;color:var(--fg-x94a3b8)">· فارغ = اسم المنصة</span></label><input type="text" value="{{plD.login.title}}" data-k="login.title" onChange="{{plOn}}" placeholder="اسم المنصة" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">سطر التذييل (الجانب التعريفي)</label><input type="text" value="{{plD.login.footer}}" data-k="login.footer" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div>
       <div style="grid-column:1/3"><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">الوصف <span style="font-weight:400;color:var(--fg-x94a3b8)">· سطران على الأكثر</span></label><textarea data-k="login.desc" onChange="{{plOn}}" value="{{plD.login.desc}}" rows="2" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none;height:auto;padding:8px 11px;line-height:1.7;resize:vertical"></textarea></div>
       <div style="grid-column:1/3"><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">سطر الحقوق <span style="font-weight:400;color:var(--fg-x94a3b8)">· يظهر في موضعَي شاشة الدخول · اكتب {م} للسنة الميلادية و{هـ} للهجرية فتُحدَّث تلقائياً · الآن: {{plRightsNow}}</span></label><input type="text" value="{{plD.login.rights}}" data-k="login.rights" onChange="{{plOn}}" placeholder="جميع الحقوق محفوظة © {م}" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div>
       <div style="grid-column:1/3"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">تنبيه قانوني <span style="font-weight:400;color:var(--fg-x94a3b8)">· اختياري · يظهر تحت زر الدخول</span></label><input type="text" value="{{plD.login.legal}}" data-k="login.legal" onChange="{{plOn}}" placeholder="مثال: هذه المنصة لمنسوبي الجهة. كل دخول يُسجَّل." style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></div><div style="grid-column:1/3"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">سطر تحت اسم المنصة في بطاقة الدخول <span style="font-weight:400;color:var(--fg-x94a3b8)">· فارغ = يختفي</span></label><input type="text" value="{{plD.login.sub}}" data-k="login.sub" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></div><div
           style="grid-column:1/3"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">سطر حالة المنصة <span style="font-weight:400;color:var(--fg-x94a3b8)">· يظهر بعد التأسيس · فارغ = يختفي (حالة التهيئة تظهر برسالة إدارية دون بيانات دخول افتراضية)</span></label><input type="text" value="{{plD.login.state}}" data-k="login.state" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></div><div style="grid-column:1/3"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">نص «تعذّر الدخول؟» للموظف ومدير الإدارة <span style="font-weight:400;color:var(--fg-x94a3b8)">· يُلحق به الدعم الفني من «حول المنصة» إن وُجد</span></label><input type="text" value="{{plD.login.helpStaff}}" data-k="login.helpStaff" onChange="{{plOn}}" placeholder=""
           style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></div><div style="grid-column:1/3"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">نص «تعذّر الدخول؟» لمسؤول المنصة حين لا مفتاح استعادة <span style="font-weight:400;color:var(--fg-x94a3b8)">· فارغ = يختفي · وعند وجود مفتاح يظهر نموذج المفتاح بدلاً منه</span></label><input type="text" value="{{plD.login.helpNoKey}}" data-k="login.helpNoKey" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></div></div></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الخيارات</h2>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">رابط «تعذّر الدخول؟»</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">للموظف: توجيه لمدير إدارته · لمسؤول المنصة: مفتاح الاستعادة (وضع الخادم)</small></div><span data-k="login.help" onClick="{{plTog}}" style="{{tg_login_help}}"></span></div>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">تذكّر اسم المستخدم على هذا الجهاز</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">لا يحفظ كلمة المرور أبداً</small></div><span data-k="login.remember" onClick="{{plTog}}" style="{{tg_login_remember}}"></span></div>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">إظهار رقم الإصدار في شاشة الدخول</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">مفيد للدعم الفني</small></div><span data-k="login.showVer" onClick="{{plTog}}" style="{{tg_login_showVer}}"></span></div></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">رابط «تعذّر الدخول؟»</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">للموظف: توجيه لمدير إدارته · لمسؤول المنصة: مفتاح الاستعادة (وضع الخادم)</small></div><button type="button" role="switch" class="adm-sw" aria-checked="{{tgOn_login_help}}" aria-label="رابط «تعذّر الدخول؟»" data-k="login.help" onClick="{{plTog}}" style="{{tg_login_help}}"></button></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">تذكّر اسم المستخدم على هذا الجهاز</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">لا يحفظ كلمة المرور أبداً</small></div><button type="button" role="switch" class="adm-sw" aria-checked="{{tgOn_login_remember}}" aria-label="تذكّر اسم المستخدم على هذا الجهاز" data-k="login.remember" onClick="{{plTog}}" style="{{tg_login_remember}}"></button></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">إظهار رقم الإصدار في شاشة الدخول</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">مفيد للدعم الفني</small></div><button type="button" role="switch" class="adm-sw" aria-checked="{{tgOn_login_showVer}}" aria-label="إظهار رقم الإصدار في شاشة الدخول" data-k="login.showVer" onClick="{{plTog}}" style="{{tg_login_showVer}}"></button></div></div>
   </sc-if>
 
   <!-- ═══ تطبيق الجوال ═══ -->
   <sc-if value="{{plOnApp}}" hint-placeholder-val="{{ false }}">
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1);background:linear-gradient(180deg,var(--bg-a185151810p05),transparent)"><div style="display:flex;gap:14px;align-items:center"><div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,var(--bg-xc5a45c),var(--bg-x8a6f35));display:flex;align-items:center;justify-content:center;color:var(--text-on-brand);flex-shrink:0;overflow:hidden"><sc-if value="{{plLogoOn}}" hint-placeholder-val="{{ false }}"><img src="{{plD.logo}}" alt="" style="width:100%;height:100%;object-fit:contain"></sc-if><sc-if value="{{plLogoOff}}" hint-placeholder-val="{{ true }}"><span style="font-weight:800;font-size:16px">{{plInitial}}</span></sc-if></div><div><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">المنصة كتطبيق على الجوال — بلا متجر تطبيقات</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px;margin:2px 0 0">هذه الخاصية مبنية في المنصة أصلاً: يفتح المستخدم الرابط مرة واحدة ويضغط «إضافة إلى الشاشة الرئيسية» فتصير تطبيقاً بأيقونتها واسمها بملء الشاشة. من هنا تضبط ما يراه على شاشة جواله.</div></div></div></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الأيقونة والاسم</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">الأيقونة هي شعار المنصة (تبويب الهوية) — ومع غيابه تبقى الأيقونة الافتراضية</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">اسم التطبيق تحت الأيقونة <span style="font-weight:400;color:var(--fg-x94a3b8)">· ١٢ حرفاً كحد أقصى ليظهر كاملاً · فارغ = اسم المنصة</span></label><input type="text" value="{{plD.app.name}}" data-k="app.name" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div>
-      <div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">لون شريط الحالة</label><span style="display:inline-flex;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><span data-k="app.statusBar" data-v="light" onClick="{{plSeg}}" style="{{sg_app_statusBar_light}}">فاتح</span><span data-k="app.statusBar" data-v="dark" onClick="{{plSeg}}" style="{{sg_app_statusBar_dark}}">داكن</span><span data-k="app.statusBar" data-v="gold" onClick="{{plSeg}}" style="{{sg_app_statusBar_gold}}">ذهبي</span></span></div></div></div>
+    <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">اسم التطبيق تحت الأيقونة <span style="font-weight:400;color:var(--fg-x94a3b8)">· ١٢ حرفاً كحد أقصى ليظهر كاملاً · فارغ = اسم المنصة</span></label><input type="text" value="{{plD.app.name}}" data-k="app.name" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div>
+      <div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">لون شريط الحالة</label><span style="display:inline-flex;flex-wrap:wrap;max-width:100%;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><button type="button" class="adm-seg" aria-pressed="{{sgOn_app_statusBar_light}}" data-k="app.statusBar" data-v="light" onClick="{{plSeg}}" style="{{sg_app_statusBar_light}}">فاتح</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_app_statusBar_dark}}" data-k="app.statusBar" data-v="dark" onClick="{{plSeg}}" style="{{sg_app_statusBar_dark}}">داكن</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_app_statusBar_gold}}" data-k="app.statusBar" data-v="gold" onClick="{{plSeg}}" style="{{sg_app_statusBar_gold}}">ذهبي</button></span></div></div></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">سلوك التطبيق</h2>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">دعوة التثبيت</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">شريط لطيف يظهر مرة واحدة لمن يفتح من الجوال: «أضف المنصة لشاشتك الرئيسية» — ويختفي إن ثُبّتت</small></div><span data-k="app.install" onClick="{{plTog}}" style="{{tg_app_install}}"></span></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">دعوة التثبيت</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">شريط لطيف يظهر مرة واحدة لمن يفتح من الجوال: «أضف المنصة لشاشتك الرئيسية» — ويختفي إن ثُبّتت</small></div><button type="button" role="switch" class="adm-sw" aria-checked="{{tgOn_app_install}}" aria-label="دعوة التثبيت" data-k="app.install" onClick="{{plTog}}" style="{{tg_app_install}}"></button></div>
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">فتح بملء الشاشة بلا شريط متصفح</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);display:block">مبني في المنصة — ومع التثبيت يظهر زر «تحديث» في الشريط العلوي لأن لا شريط متصفح</small></div><span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:9999px;background:var(--bg-a51501050p1);color:var(--fg-x065f46)">مفعّل دائماً</span></div>
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">الإشعارات على الجوال · العمل بلا اتصال</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);display:block">يحتاجان ملف خدمة منفصلاً على الخادم — مرحلة لاحقة</small></div><span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:9999px;background:var(--bg-xf3f1ec);color:var(--fg-x94a3b8)">مرحلة لاحقة</span></div></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">التثبيت</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">أرسل الرابط للفريق — أو اطبع رمز QR ليمسحوه</div>
@@ -422,24 +421,26 @@
     <div style="{{r.style}}"><span style="display:flex;flex-direction:column;gap:2px"><button data-k="{{r.i}}" onClick="{{plUp}}" title="أعلى" style="width:22px;height:18px;border:1px solid var(--bd-xe1e1e1);border-radius:5px;background:var(--bg-xffffff);cursor:pointer;font-size:10px;line-height:1">▲</button><button data-k="{{r.i}}" onClick="{{plDown}}" title="أسفل" style="width:22px;height:18px;border:1px solid var(--bd-xe1e1e1);border-radius:5px;background:var(--bg-xffffff);cursor:pointer;font-size:10px;line-height:1">▼</button></span><span style="flex:1;font-size:12px;color:var(--fg-x141414)">{{r.name}}</span><span style="font-size:10.5px;color:var(--fg-x94a3b8)">{{r.note}}</span><span data-k="{{r.k}}" onClick="{{plHideTog}}" style="{{r.tg}}"></span></div>
     </sc-for></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">القسم السفلي والعناصر الثابتة</h2>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">«مواقع ذات صلة»</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">الرابط أسفل صفحات العمل</small></div><span data-k="side.links" onClick="{{plTog}}" style="{{tg_side_links}}"></span></div>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">المساعدة والأدلة</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">زر أسفل القائمة يفتح «حول المنصة» والأدلة لكل مستخدم</small></div><span data-k="side.help" onClick="{{plTog}}" style="{{tg_side_help}}"></span></div>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">رقم الإصدار تحت اسم المنصة</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block"></small></div><span data-k="side.ver" onClick="{{plTog}}" style="{{tg_side_ver}}"></span></div></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">«مواقع ذات صلة»</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">الرابط أسفل صفحات العمل</small></div><button type="button" role="switch" class="adm-sw" aria-checked="{{tgOn_side_links}}" aria-label="«مواقع ذات صلة»" data-k="side.links" onClick="{{plTog}}" style="{{tg_side_links}}"></button></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">المساعدة والأدلة</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">زر أسفل القائمة يفتح «حول المنصة» والأدلة لكل مستخدم</small></div><button type="button" role="switch" class="adm-sw" aria-checked="{{tgOn_side_help}}" aria-label="المساعدة والأدلة" data-k="side.help" onClick="{{plTog}}" style="{{tg_side_help}}"></button></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">رقم الإصدار تحت اسم المنصة</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block"></small></div><button type="button" role="switch" class="adm-sw" aria-checked="{{tgOn_side_ver}}" aria-label="رقم الإصدار تحت اسم المنصة" data-k="side.ver" onClick="{{plTog}}" style="{{tg_side_ver}}"></button></div></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الشريط العلوي</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">مسار الصفحة وزر الإضاءة — زر الخروج وزر التحديث (في وضع التطبيق) ثابتان</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">مسار الصفحة</label><span style="display:inline-flex;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><span data-k="top.crumb" data-v="full" onClick="{{plSeg}}" style="{{sg_top_crumb_full}}">الإدارة / الصفحة</span><span data-k="top.crumb" data-v="page" onClick="{{plSeg}}" style="{{sg_top_crumb_page}}">الصفحة فقط</span><span data-k="top.crumb" data-v="none" onClick="{{plSeg}}" style="{{sg_top_crumb_none}}">مخفي</span></span></div></div>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">زر الإضاءة (المظهر الفاتح/الداكن)</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">يبدّل المستخدم مظهره من الشريط العلوي — أطفئه لإخفاء الزرّ وتثبيت المظهر الافتراضي</small></div><span data-k="top.theme" onClick="{{plTog}}" style="{{tg_top_theme}}"></span></div></div>
+    <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">مسار الصفحة</label><span style="display:inline-flex;flex-wrap:wrap;max-width:100%;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><button type="button" class="adm-seg" aria-pressed="{{sgOn_top_crumb_full}}" data-k="top.crumb" data-v="full" onClick="{{plSeg}}" style="{{sg_top_crumb_full}}">الإدارة / الصفحة</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_top_crumb_page}}" data-k="top.crumb" data-v="page" onClick="{{plSeg}}" style="{{sg_top_crumb_page}}">الصفحة فقط</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_top_crumb_none}}" data-k="top.crumb" data-v="none" onClick="{{plSeg}}" style="{{sg_top_crumb_none}}">مخفي</button></span></div></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">زر الإضاءة (المظهر الفاتح/الداكن)</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block">يبدّل المستخدم مظهره من الشريط العلوي — أطفئه لإخفاء الزرّ وتثبيت المظهر الافتراضي</small></div><button type="button" role="switch" class="adm-sw" aria-checked="{{tgOn_top_theme}}" aria-label="زر الإضاءة (المظهر الفاتح/الداكن)" data-k="top.theme" onClick="{{plTog}}" style="{{tg_top_theme}}"></button></div></div>
   </sc-if>
 
   <!-- ═══ الطباعة والتقارير ═══ -->
   <sc-if value="{{plOnPrint}}" hint-placeholder-val="{{ false }}">
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الترويسة الموحّدة</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">تُضاف أعلى كل ما يُطبع من المنصة (التقرير اليومي، الجدول الشهري، المهام، الاسترشاد، الموظفون…) فوق ترويسة الصفحة نفسها</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">السطر الأول <span style="font-weight:400;color:var(--fg-x94a3b8)">· فارغ = اسم الجهة أو المنصة</span></label><input type="text" value="{{plD.print.l1}}" data-k="print.l1" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">السطر الثاني <span style="font-weight:400;color:var(--fg-x94a3b8)">· مثال: الإدارة العامة لإدارة الحشود</span></label><input type="text" value="{{plD.print.l2}}" data-k="print.l2" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">السطر الثالث <span
+    <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">السطر الأول <span style="font-weight:400;color:var(--fg-x94a3b8)">· فارغ = اسم الجهة أو المنصة</span></label><input type="text" value="{{plD.print.l1}}" data-k="print.l1" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">السطر الثاني <span style="font-weight:400;color:var(--fg-x94a3b8)">· مثال: الإدارة العامة لإدارة الحشود</span></label><input type="text" value="{{plD.print.l2}}" data-k="print.l2" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">السطر الثالث <span
         style="font-weight:400;color:var(--fg-x94a3b8)">· {الإدارة} و{الصفحة} تُملآن تلقائياً</span></label><input type="text" value="{{plD.print.l3}}" data-k="print.l3" onChange="{{plOn}}" placeholder="{الإدارة} · {الصفحة}" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div>
-      <div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">موضع الشعار</label><span style="display:inline-flex;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><span data-k="print.logoPos" data-v="right" onClick="{{plSeg}}" style="{{sg_print_logoPos_right}}">يمين</span><span data-k="print.logoPos" data-v="center" onClick="{{plSeg}}" style="{{sg_print_logoPos_center}}">وسط</span><span data-k="print.logoPos" data-v="left" onClick="{{plSeg}}" style="{{sg_print_logoPos_left}}">يسار</span><span data-k="print.logoPos" data-v="none" onClick="{{plSeg}}" style="{{sg_print_logoPos_none}}">بلا شعار</span></span></div></div></div>
+      <div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">موضع الشعار</label><span style="display:inline-flex;flex-wrap:wrap;max-width:100%;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><button type="button" class="adm-seg" aria-pressed="{{sgOn_print_logoPos_right}}" data-k="print.logoPos" data-v="right" onClick="{{plSeg}}" style="{{sg_print_logoPos_right}}">يمين</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_print_logoPos_center}}" data-k="print.logoPos" data-v="center" onClick="{{plSeg}}" style="{{sg_print_logoPos_center}}">وسط</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_print_logoPos_left}}" data-k="print.logoPos" data-v="left" onClick="{{plSeg}}" style="{{sg_print_logoPos_left}}">يسار</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_print_logoPos_none}}" data-k="print.logoPos" data-v="none" onClick="{{plSeg}}" style="{{sg_print_logoPos_none}}">بلا شعار</button></span></div></div></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">التذييل</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">نص التذييل</label><input type="text" value="{{plD.print.footer}}" data-k="print.footer" onChange="{{plOn}}" placeholder="مثال: سرّي — للاستخدام الداخلي" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">حجم الورق الافتراضي</label><span style="display:inline-flex;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><span data-k="print.paper" data-v="" onClick="{{plSeg}}" style="{{sg_print_paper_}}">كما تحدده كل صفحة</span><span data-k="print.paper" data-v="a4p" onClick="{{plSeg}}" style="{{sg_print_paper_a4p}}">A4 عمودي</span><span data-k="print.paper" data-v="a4l" onClick="{{plSeg}}" style="{{sg_print_paper_a4l}}">A4 أفقي</span><span data-k="print.paper" data-v="a3l" onClick="{{plSeg}}" style="{{sg_print_paper_a3l}}">A3 أفقي</span></span></div></div>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">تاريخ الطباعة ووقتها</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block"></small></div><span data-k="print.date" onClick="{{plTog}}" style="{{tg_print_date}}"></span></div>
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">اسم من طبع</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block"></small></div><span data-k="print.who" onClick="{{plTog}}" style="{{tg_print_who}}"></span></div>
+    <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px">
+      <div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">نص التذييل</label><input type="text" value="{{plD.print.footer}}" data-k="print.footer" onChange="{{plOn}}" placeholder="مثال: سرّي — للاستخدام الداخلي" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div>
+      <div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">حجم الورق الافتراضي</label><span style="display:inline-flex;flex-wrap:wrap;max-width:100%;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><button type="button" class="adm-seg" aria-pressed="{{sgOn_print_paper_}}" data-k="print.paper" data-v="" onClick="{{plSeg}}" style="{{sg_print_paper_}}">كما تحدده كل صفحة</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_print_paper_a4p}}" data-k="print.paper" data-v="a4p" onClick="{{plSeg}}" style="{{sg_print_paper_a4p}}">A4 عمودي</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_print_paper_a4l}}" data-k="print.paper" data-v="a4l" onClick="{{plSeg}}" style="{{sg_print_paper_a4l}}">A4 أفقي</button><button type="button" class="adm-seg" aria-pressed="{{sgOn_print_paper_a3l}}" data-k="print.paper" data-v="a3l" onClick="{{plSeg}}" style="{{sg_print_paper_a3l}}">A3 أفقي</button></span></div></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">تاريخ الطباعة ووقتها</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block"></small></div><button type="button" role="switch" class="adm-sw" aria-checked="{{tgOn_print_date}}" aria-label="تاريخ الطباعة ووقتها" data-k="print.date" onClick="{{plTog}}" style="{{tg_print_date}}"></button></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">اسم من طبع</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.5;display:block"></small></div><button type="button" role="switch" class="adm-sw" aria-checked="{{tgOn_print_who}}" aria-label="اسم من طبع" data-k="print.who" onClick="{{plTog}}" style="{{tg_print_who}}"></button></div>
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd-xf1efe9)"><div style="flex:1"><b style="font-size:12px;display:block;color:var(--fg-x141414)">رقم الصفحة · ختم «معتمد» · علامة «مسودة»</b><small style="font-size:10.5px;color:var(--fg-x94a3b8);display:block">تحتاج ربطاً بحالة الاعتماد في كل صفحة — مرحلة لاحقة</small></div><span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:9999px;background:var(--bg-xf3f1ec);color:var(--fg-x94a3b8)">مرحلة لاحقة</span></div></div>
   </sc-if>
 
@@ -456,7 +457,7 @@
   <sc-if value="{{plOnSetup}}" hint-placeholder-val="{{ false }}">
   <sc-if value="{{plNoSrv}}" hint-placeholder-val="{{ false }}"><div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><div style="border:1px solid var(--bd-a21711960p35);background:var(--bg-a21711960p05);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--fg-x92400e);line-height:1.8">هذه الصفحة تعمل مع الخادم (Cloudflare) — في نسخة الجهاز لا مفتاح استعادة ولا تهيئة عن بُعد؛ يبقى الحساب الاحتياطي والنسخة الاحتياطية اليدوية.</div></div></sc-if>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">جاهزية الطوارئ</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">ثلاث طبقات تضمن ألا يُقفل باب المنصة على أحد — بلا لوحة Cloudflare</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+    <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div style="border:1px solid var(--bd-xeceef1);border-radius:14px;padding:14px"><div style="font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--fg-x94a3b8);margin-bottom:8px">١ · مدير نظام احتياطي</div>
         <sc-if value="{{plBkOn}}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--fg-x141414)"><span style="width:8px;height:8px;border-radius:9999px;background:var(--bg-x059669)"></span>{{plBkUn}}</div><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin:4px 0 10px;line-height:1.6">{{plBkNote}}</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button onClick="{{plBkReset}}" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x3d4148);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">كلمة مؤقتة</button><button onClick="{{plBkRemove}}" style="height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--bd-a15327270p3);background:var(--bg-a22038380p03);color:var(--fg-x991b1b);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer">حذف</button></div></sc-if>
         <sc-if value="{{plBkOff}}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--fg-x92400e)"><span style="width:8px;height:8px;border-radius:9999px;background:var(--bg-xd97706)"></span>غير موجود</div><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin:4px 0 10px;line-height:1.6">حساب ثانٍ بكامل الصلاحية لا يُستخدم إلا إذا تعذّر دخول الرئيسي</div>
@@ -481,9 +482,9 @@
           <div class="row"><label class="ack"><input type="checkbox" checked="{{plRsAck}}" onChange="{{plRsAckTog}}"> تأكدت من حفظ ملف النسخة</label><button type="button" class="bs-btn bs-btn--ghost" onClick="{{plRsBkAgain}}">تنزيل النسخة مرة أخرى</button></div></sc-if>
         </div></sc-if>
         <sc-if value="{{st.isKeep}}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:14px;margin-top:6px;flex-wrap:wrap"><span style="font-size:11.5px;display:flex;align-items:center;gap:8px"><span onClick="{{plRsKeepTog}}" style="{{tg_rs_keepBrand}}"></span> إبقاء هوية المنصة (الاسم والشعار والنصوص)</span></div></sc-if>
-        <sc-if value="{{st.isAdmin}}" hint-placeholder-val="{{ false }}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px"><input value="{{plRs.un}}" data-k="rs.un" onChange="{{plFormOn}}" placeholder="جوال أو هوية مسؤول المنصة الجديد (10 أرقام)" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input value="{{plRs.name}}" data-k="rs.name" onChange="{{plFormOn}}" placeholder="الاسم الظاهر" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input type="password" value="{{plRs.pw}}" data-k="rs.pw" onChange="{{plFormOn}}" placeholder="كلمة مرور مؤقتة (6 أرقام)" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input type="password" value="{{plRs.pw2}}" data-k="rs.pw2" onChange="{{plFormOn}}" placeholder="تأكيد الرقم"
+        <sc-if value="{{st.isAdmin}}" hint-placeholder-val="{{ false }}"><div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px"><input value="{{plRs.un}}" data-k="rs.un" onChange="{{plFormOn}}" placeholder="جوال أو هوية مسؤول المنصة الجديد (10 أرقام)" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input value="{{plRs.name}}" data-k="rs.name" onChange="{{plFormOn}}" placeholder="الاسم الظاهر" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input type="password" value="{{plRs.pw}}" data-k="rs.pw" onChange="{{plFormOn}}" placeholder="كلمة مرور مؤقتة (6 أرقام)" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input type="password" value="{{plRs.pw2}}" data-k="rs.pw2" onChange="{{plFormOn}}" placeholder="تأكيد الرقم"
             style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></sc-if>
-        <sc-if value="{{st.isConfirm}}" hint-placeholder-val="{{ false }}"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px"><input type="password" value="{{plRs.curPw}}" data-k="rs.curPw" onChange="{{plFormOn}}" placeholder="كلمة مرورك الحالية" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input value="{{plRs.key}}" data-k="rs.key" onChange="{{plFormOn}}" placeholder="مفتاح الاستعادة" dir="ltr" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none;font-family:monospace;letter-spacing:.1em"><input value="{{plRs.confirm}}" data-k="rs.confirm" onChange="{{plFormOn}}" placeholder="اكتب: تهيئة" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></sc-if>
+        <sc-if value="{{st.isConfirm}}" hint-placeholder-val="{{ false }}"><div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px"><input type="password" value="{{plRs.curPw}}" data-k="rs.curPw" onChange="{{plFormOn}}" placeholder="كلمة مرورك الحالية" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input value="{{plRs.key}}" data-k="rs.key" onChange="{{plFormOn}}" placeholder="مفتاح الاستعادة" dir="ltr" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none;font-family:monospace;letter-spacing:.1em"><input value="{{plRs.confirm}}" data-k="rs.confirm" onChange="{{plFormOn}}" placeholder="اكتب: تهيئة" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></sc-if>
       </div></div>
       </sc-for>
       <sc-if value="{{plRsMsgOn}}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;color:var(--fg-x991b1b);margin-top:6px">{{plRsMsg}}</div></sc-if>
@@ -495,12 +496,12 @@
   <!-- ═══ حول المنصة ═══ -->
   <sc-if value="{{plOnAbout}}" hint-placeholder-val="{{ false }}">
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><div style="display:flex;gap:14px;align-items:center"><div style="width:54px;height:54px;border-radius:15px;background:linear-gradient(135deg,var(--bg-xc5a45c),var(--bg-x8a6f35));display:flex;align-items:center;justify-content:center;color:var(--text-on-brand);flex-shrink:0;overflow:hidden"><sc-if value="{{plLogoOn}}" hint-placeholder-val="{{ false }}"><img src="{{plD.logo}}" alt="" style="width:100%;height:100%;object-fit:contain"></sc-if><sc-if value="{{plLogoOff}}" hint-placeholder-val="{{ true }}"><span style="font-weight:800;font-size:16px">{{plInitial}}</span></sc-if></div><div style="flex:1"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">{{plD.name}}</h2><div style="font-size:11px;color:var(--fg-x94a3b8)">الإصدار <b style="color:var(--fg-x141414)">{{plVer}}</b> · {{plSrvTxt}}</div></div></div></div>
-  <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الرخصة والجهة</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">مرخّصة لـ</label><input type="text" value="{{plD.about.license}}" data-k="about.license" onChange="{{plOn}}" placeholder="اسم الجهة المرخَّص لها" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">نوع الرخصة</label><input type="text" value="{{plD.about.licType}}" data-k="about.licType" onChange="{{plOn}}" placeholder="مثال: استخدام داخلي — غير محدودة المستخدمين" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></div></div>
-  <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الدعم الفني</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">يظهر في «حول المنصة» وفي «تعذّر الدخول؟»</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">البريد</label><input type="text" value="{{plD.about.support}}" data-k="about.support" onChange="{{plOn}}" placeholder="support@…" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">الجوال / واتساب</label><input type="text" value="{{plD.about.phone}}" data-k="about.phone" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div
+  <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الرخصة والجهة</h2><div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">مرخّصة لـ</label><input type="text" value="{{plD.about.license}}" data-k="about.license" onChange="{{plOn}}" placeholder="اسم الجهة المرخَّص لها" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">نوع الرخصة</label><input type="text" value="{{plD.about.licType}}" data-k="about.licType" onChange="{{plOn}}" placeholder="مثال: استخدام داخلي — غير محدودة المستخدمين" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></div></div>
+  <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الدعم الفني</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">يظهر في «حول المنصة» وفي «تعذّر الدخول؟»</div><div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">البريد</label><input type="text" value="{{plD.about.support}}" data-k="about.support" onChange="{{plOn}}" placeholder="support@…" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">الجوال / واتساب</label><input type="text" value="{{plD.about.phone}}" data-k="about.phone" onChange="{{plOn}}" placeholder="" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div><div
       style="grid-column:1/3"><div><label style="display:block;font-size:11px;font-weight:700;color:var(--fg-x3d4148);margin-bottom:5px">رسالة للمستخدم عند الحاجة للدعم</label><input type="text" value="{{plD.about.msg}}" data-k="about.msg" onChange="{{plOn}}" placeholder="تواصل مع مدير إدارتك أولاً، فإن تعذّر فمع الدعم الفني" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div></div></div></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">الأدلة والمساعدة</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">روابط ملفات PDF (على Google Drive أو SharePoint أو أي رابط مباشر) — تُفتح من زر «المساعدة» أسفل القائمة</div>
     <sc-for list="{{plGuides}}" as="g" hint-placeholder-count="4">
-    <div style="display:grid;grid-template-columns:200px 1fr;gap:8px;margin-bottom:6px"><input value="{{g.t}}" data-k="{{g.kt}}" onChange="{{plOn}}" placeholder="اسم الدليل" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input value="{{g.u}}" data-k="{{g.ku}}" onChange="{{plOn}}" placeholder="https://…" dir="ltr" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div>
+    <div class="adm-st3" style="display:grid;grid-template-columns:200px 1fr;gap:8px;margin-bottom:6px"><input value="{{g.t}}" data-k="{{g.kt}}" onChange="{{plOn}}" placeholder="اسم الدليل" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"><input value="{{g.u}}" data-k="{{g.ku}}" onChange="{{plOn}}" placeholder="https://…" dir="ltr" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none"></div>
     </sc-for></div>
   <div style="padding:18px 22px;border-bottom:1px solid var(--bd-xeceef1)"><h2 style="margin:0 0 2px;font-size:13px;font-weight:800;color:var(--fg-x141414)">ما الجديد</h2><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:14px">يظهر لكل مستخدم مرة واحدة بعد تحديث الإصدار — اتركه فارغاً فلا يظهر شيء</div>
     <textarea data-k="about.whatsnew" onChange="{{plOn}}" value="{{plD.about.whatsnew}}" rows="3" placeholder="سطر لكل إضافة…" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;color:var(--fg-x141414);background:var(--bg-xffffff);width:100%;box-sizing:border-box;outline:none;height:auto;padding:8px 11px;line-height:1.7;resize:vertical"></textarea></div>
@@ -517,7 +518,7 @@
   <sc-if value="{{nfUnavailable}}" hint-placeholder-val="{{ false }}"><div style="padding:20px;font-size:13px;line-height:1.8" role="status">{{nfLoadMessage}} <button type="button" onClick="{{nfRetry}}">إعادة المحاولة</button></div></sc-if>
   <sc-if value="{{nfReady}}" hint-placeholder-val="{{ true }}">
   <div data-bs="notif-adm" style="padding:16px 22px;display:flex;flex-direction:column;gap:14px">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+    <div class="adm-st3" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
       <div style="border:1px solid var(--bd-xeceef1);border-radius:12px;padding:10px 14px;background:var(--bg-xffffff)"><div style="font-size:10px;color:var(--fg-x94a3b8);font-weight:600">أحداث المنصة</div><div style="font-size:22px;font-weight:800;color:var(--fg-x141414);line-height:1.3">{{nfKTypes}}</div></div>
       <div style="border:1px solid var(--bd-xeceef1);border-radius:12px;padding:10px 14px;background:var(--bg-xffffff)"><div style="font-size:10px;color:var(--fg-x94a3b8);font-weight:600">مفعّل</div><div style="font-size:22px;font-weight:800;color:var(--fg-x059669);line-height:1.3">{{nfKOn}}</div></div>
       <div style="border:1px solid var(--bd-xeceef1);border-radius:12px;padding:10px 14px;background:var(--bg-xffffff)"><div style="font-size:10px;color:var(--fg-x94a3b8);font-weight:600">عاجل (توست دائماً)</div><div style="font-size:22px;font-weight:800;color:var(--fg-xdc2626);line-height:1.3">{{nfKUrg}}</div></div>
@@ -543,6 +544,7 @@
         <button onClick="{{nfOnAll}}" style="border:0;background:transparent;font-size:10.5px;font-weight:600;color:var(--fg-x0e7490);padding:3px 6px;border-radius:7px;cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-a141161440p08)">تفعيل الكل</button>
         <button onClick="{{nfOffAll}}" style="border:0;background:transparent;font-size:10.5px;font-weight:600;color:var(--fg-x0e7490);padding:3px 6px;border-radius:7px;cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-a141161440p08)">إطفاء الكل</button>
       </div>
+      <div class="adm-mx" tabindex="0" role="region" aria-label="دليل التنبيهات — يمرَّر أفقياً على الشاشة الضيقة"><div class="adm-wide">
       <div style="display:grid;grid-template-columns:36px minmax(150px,1.3fr) minmax(170px,1fr) 176px 132px minmax(190px,1.5fr);gap:10px;padding:6px 30px 6px 12px;background:var(--bg-xfcfbf8);border-bottom:1px solid var(--bd-xf1f3f5);font-size:9.5px;font-weight:700;color:var(--fg-x94a3b8)"><span>تشغيل</span><span>الحدث · متى</span><span>يصل إلى</span><span>المستوى</span><span>القناة</span><span>نص التنبيه — الأقواس تُملأ آلياً</span></div>
       <sc-for list="{{nfRows}}" as="r" hint-placeholder-count="12">
         <sc-if value="{{r.isCont}}" hint-placeholder-val="{{ true }}">
@@ -571,6 +573,7 @@
         </div>
         </sc-if>
       </sc-for>
+      </div></div>
       <sc-if value="{{nfEmptyQ}}" hint-placeholder-val="{{ false }}"><div style="padding:28px;text-align:center;color:var(--fg-x94a3b8);font-size:12px">{{nfEmptyTxt}}</div></sc-if>
     </div>
     <div style="font-size:10.5px;color:var(--fg-x94a3b8);line-height:1.8">«صاحبه» يعني الموظف الذي يخصّه الحدث · «رئيس الوردية» يُحدَّد من التقرير اليومي · العاجل يظهر توستاً عند الجميع حتى لمن كتم التوست · النص يقبل الأقواس المذكورة فقط.</div>
@@ -582,16 +585,16 @@
       <div style="border:1px solid var(--bd-xeceef1);border-radius:14px;background:var(--bg-xffffff);padding:16px;display:flex;flex-direction:column;gap:12px">
         <div><label style="display:block;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);margin-bottom:4px">العنوان</label><input value="{{nfBcTitle}}" onInput="{{nfBcSetTitle}}" placeholder="مثال: تطبيق نموذج محضر المضبوطات الجديد" data-nf-bc="title" style="width:100%;height:36px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;box-sizing:border-box;outline:none"></div>
         <div><label style="display:block;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);margin-bottom:4px">النص</label><textarea value="{{nfBcBody}}" onInput="{{nfBcSetBody}}" rows="5" placeholder="اكتب نص التعميم…" data-nf-bc="body" style="width:100%;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:12px;box-sizing:border-box;outline:none;line-height:1.7;resize:vertical"></textarea></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div><label style="display:block;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);margin-bottom:4px">رابط داخل المنصة</label><select value="{{nfBcLink}}" onChange="{{nfBcSetLink}}" data-nf-bc="link" style="width:100%;height:36px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 8px;font-family:'Cairo',sans-serif;font-size:12px;background:var(--bg-xffffff)"><sc-for list="{{nfBcLinks}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></div>
           <div><label style="display:block;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);margin-bottom:4px">الانتهاء</label><select value="{{nfBcExp}}" onChange="{{nfBcSetExp}}" data-nf-bc="exp" style="width:100%;height:36px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 8px;font-family:'Cairo',sans-serif;font-size:12px;background:var(--bg-xffffff)"><sc-for list="{{nfBcExps}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:10.5px;font-weight:700;color:var(--fg-x53565a)">المستوى</span><span style="display:inline-flex;gap:2px;background:var(--bg-xfafbfc);border:1px solid var(--bd-xeceef1);border-radius:8px;padding:2px"><sc-for list="{{nfBcLvls}}" as="v" hint-placeholder-count="3"><span onClick="{{v.go}}" style="{{v.style}}" data-nf-bclvl="1">{{v.lbl}}</span></sc-for></span>
           <span style="flex:1"></span>
-          <span style="font-size:10.5px;font-weight:700;color:var(--fg-x53565a)">الإرسال</span><span style="display:inline-flex;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><span onClick="{{nfBcNow}}" style="{{nfBcNowS}}">الآن</span><span onClick="{{nfBcSched}}" style="{{nfBcSchedS}}">مجدول</span></span>
+          <span style="font-size:10.5px;font-weight:700;color:var(--fg-x53565a)">الإرسال</span><span style="display:inline-flex;flex-wrap:wrap;max-width:100%;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><span onClick="{{nfBcNow}}" style="{{nfBcNowS}}">الآن</span><span onClick="{{nfBcSched}}" style="{{nfBcSchedS}}">مجدول</span></span>
           <sc-if value="{{nfBcIsSched}}" hint-placeholder-val="{{ false }}"><input type="datetime-local" value="{{nfBcAt}}" onChange="{{nfBcSetAt}}" data-nf-bc="at" style="height:32px;border:1px solid var(--bd-xe1e1e1);border-radius:9px;padding:0 8px;font-family:'Cairo',sans-serif;font-size:11.5px"></sc-if>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div class="adm-st3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
           <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--bd-xeceef1);border-radius:10px;font-size:11px"><div style="flex:1"><b>يتطلب تأكيد القراءة</b><small style="display:block;font-size:9.5px;color:var(--fg-x94a3b8)">زر «قرأت وفهمت» ونسبة التأكيد في السجل</small></div><span onClick="{{nfBcAckTog}}" style="{{nfBcAckSw}}" data-nf-bc="ack"></span></div>
           <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--bd-xeceef1);border-radius:10px;font-size:11px"><div style="flex:1"><b>مثبّت أعلى الجرس</b><small style="display:block;font-size:9.5px;color:var(--fg-x94a3b8)">يبقى في الصدارة حتى يُقرأ</small></div><span onClick="{{nfBcPinTog}}" style="{{nfBcPinSw}}" data-nf-bc="pin"></span></div>
           <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--bd-xeceef1);border-radius:10px;font-size:11px"><div style="flex:1"><b>تذكير آلي</b><small style="display:block;font-size:9.5px;color:var(--fg-x94a3b8)">لمن لم يقرأ بعد 24 ساعة</small></div><span onClick="{{nfBcRemTog}}" style="{{nfBcRemSw}}" data-nf-bc="rem"></span></div>
@@ -638,6 +641,7 @@
     <!-- سجل التعاميم -->
     <sc-if value="{{nfOnLog}}" hint-placeholder-val="{{ false }}">
     <div style="border:1px solid var(--bd-xeceef1);border-radius:14px;overflow:hidden;background:var(--bg-xffffff)">
+      <div class="adm-mx" tabindex="0" role="region" aria-label="سجل التعاميم — يمرَّر أفقياً على الشاشة الضيقة"><div class="adm-wide">
       <div style="display:grid;grid-template-columns:minmax(200px,1.6fr) minmax(140px,1fr) 90px 150px 110px 110px auto;gap:10px;padding:8px 14px;background:var(--bg-xfcfbf8);border-bottom:1px solid var(--bd-xf1f3f5);font-size:9.5px;font-weight:700;color:var(--fg-x94a3b8)"><span>التعميم</span><span>إلى</span><span>المستوى</span><span>أُرسل</span><span>القراءة</span><span>التأكيد</span><span></span></div>
       <sc-for list="{{nfLog}}" as="h" hint-placeholder-count="4">
       <div style="{{h.rowStyle}}" data-nf-log="{{h.id}}">
@@ -653,6 +657,7 @@
         </div>
       </div>
       </sc-for>
+      </div></div>
       <sc-if value="{{nfLogMessageOn}}" hint-placeholder-val="{{ false }}"><div role="status" style="padding:12px;font-size:12px">{{nfLogMessage}}</div></sc-if>
       <div style="padding:12px;display:flex;gap:8px"><button type="button" onClick="{{nfLogRefresh}}">تحديث السجل</button><sc-if value="{{nfLogMoreOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{nfLogMore}}">عرض تعاميم أقدم</button></sc-if></div>
       <sc-if value="{{nfLogEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:28px;text-align:center;color:var(--fg-x94a3b8);font-size:12px">لا تعاميم بعد — أرسل أول تعميم من «تعميم جديد»</div></sc-if>
@@ -668,7 +673,7 @@
  <!-- ═══ عمود المعاينة الحيّة ═══ -->
  <sc-if value="{{plPvOn}}" hint-placeholder-val="{{ true }}">
  <div style="border-right:1px solid var(--bd-xeceef1);background:radial-gradient(120% 80% at 50% 0%,var(--bg-xf7f4ec),var(--bg-xf1eee6) 70%);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0">
-  <div style="display:flex;align-items:center;justify-content:space-between"><b style="font-size:12px;color:var(--fg-x141414)">معاينة حيّة</b><span style="display:inline-flex;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><sc-for list="{{plPvTabs}}" as="pv" hint-placeholder-count="4"><span onClick="{{pv.go}}" style="{{pv.style}}">{{pv.t}}</span></sc-for></span></div>
+  <div style="display:flex;align-items:center;justify-content:space-between"><b style="font-size:12px;color:var(--fg-x141414)">معاينة حيّة</b><span style="display:inline-flex;flex-wrap:wrap;max-width:100%;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px;gap:2px"><sc-for list="{{plPvTabs}}" as="pv" hint-placeholder-count="4"><span onClick="{{pv.go}}" style="{{pv.style}}">{{pv.t}}</span></sc-for></span></div>
   <sc-if value="{{pvLogin}}" hint-placeholder-val="{{ true }}">
   <div style="border-radius:12px;overflow:hidden;box-shadow:var(--shadow-elevated);background:var(--bg-x1a252e);border:1px solid var(--bd-xeceef1)"><div style="height:22px;background:var(--bg-xf3f1ec);display:flex;align-items:center;gap:4px;padding:0 8px"><i style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd9d6cf)"></i><i style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd9d6cf)"></i><i style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd9d6cf)"></i><span style="margin-right:auto;font-size:8.5px;color:var(--fg-x94a3b8);font-family:monospace">{{plUrl}}</span></div>
     <div style="width:100%;aspect-ratio:1280/800;position:relative;overflow:hidden"><iframe title="معاينة شاشة الدخول — سطح المكتب" src="{{plPvSrc}}" data-pv="desktop" style="position:absolute;top:0;left:0;width:1280px;height:800px;border:0;transform-origin:top left;transform:scale({{plPvScaleD}})"></iframe></div></div>
@@ -705,7 +710,7 @@
     <div style="display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:12px;background:var(--bg-a1808390p07);border:1px solid var(--bd-a1808390p28);color:var(--fg-xb45309);font-size:11.5px;font-weight:400;margin-bottom:12px">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-9d08ae4a"></svg>
       <span style="flex:1">{{oldAccMsg}}</span>
-      <button onClick="{{oldAccDo}}" style="height:30px;padding:0 13px;border-radius:8px;border:0;background:var(--bg-xb45309);color:var(--fg-xffffff);font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;cursor:pointer">تنظيف</button>
+      <button type="button" class="bs-btn bs-btn--danger adm-sm" onClick="{{oldAccDo}}">تنظيف</button>
     </div>
   </sc-if>
 
@@ -1108,7 +1113,7 @@
           <label style="font-size:11px;font-weight:600;color:var(--fg-x374151);display:block;margin-bottom:6px">الدور <span style="font-weight:400;color:var(--fg-x94a3b8)">— يظهر تحت الاسم في القائمة الجانبية · اختياري</span></label>
           <input value="{{mgrRole}}" onChange="{{onMgrRole}}" placeholder="{{mgrRolePh}}" style="width:100%;height:40px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 12px;font-size:13px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box" style-focus="border-color:var(--bd-xb99751)">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
           <div>
             <label style="font-size:11px;font-weight:600;color:var(--fg-x374151);display:block;margin-bottom:6px">رقم الهوية <span style="font-weight:400;color:var(--fg-x94a3b8)">— ١٠ أرقام</span></label>
             <input value="{{mgrNid}}" onChange="{{onMgrNid}}" dir="ltr" placeholder="1XXXXXXXXX" style="width:100%;height:40px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 12px;font-size:13px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;font-feature-settings:'tnum'" style-focus="border-color:var(--bd-xb99751)">
@@ -1369,35 +1374,26 @@
 
 
 <sc-if value="{{admSiteBackup}}" hint-placeholder-val="{{ false }}">
-<div style="border:1px solid var(--bd-a185151810p25);border-radius:16px;background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:24px;display:flex;flex-direction:column;gap:14px">
-  <div style="display:flex;align-items:center;gap:12px">
-    <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--bg-a185151810p1);border:1px solid var(--bd-a185151810p25);color:var(--fg-xb99751)">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg>
-    </div>
+<section class="bs-card adm-bk" aria-label="النسخة الشاملة — كل الإدارات">
+  <div class="adm-bk-hd">
+    <div class="adm-bk-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg></div>
     <div style="flex:1;min-width:0">
-      <h2 style="font-size:16px;font-weight:600;margin:0">النسخة الشاملة — كل الإدارات</h2>
-      <p style="font-size:12px;color:var(--fg-x53565a);margin:3px 0 0;line-height:1.7">صمام الأمان الكامل: ملف واحد يحتوي جميع الإدارات بكل بياناتها وصور خرائطها. افتح الموقع على أي جهاز واستورده لاسترجاع النظام كله كما هو.</p>
+      <h2>النسخة الشاملة — كل الإدارات</h2>
+      <p>صمام الأمان الكامل: ملف واحد يحتوي جميع الإدارات بكل بياناتها وصور خرائطها. افتح الموقع على أي جهاز واستورده لاسترجاع النظام كله كما هو.</p>
     </div>
   </div>
-  <div class="bs-hbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--bd-xf1f5f9);padding-top:14px">
+  <div class="bs-hbar adm-bk-act">
 <sc-if value="{{adPmExport}}" hint-placeholder-val="{{ true }}">
-    <button onClick="{{exportBackup}}" style="height:40px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;background:linear-gradient(135deg,var(--bg-xb99751),var(--bg-a185151810p85));color:var(--text-on-brand);border:0;cursor:pointer;font-family:'Cairo',sans-serif;display:inline-flex;align-items:center;gap:8px" style-hover="opacity:.9">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg>
-      تصدير النسخة الشاملة
-    </button>
+    <button type="button" class="bs-btn bs-btn--primary" onClick="{{exportBackup}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-53b60cd3"></svg>تصدير النسخة الشاملة</button>
 </sc-if>
-    <sc-if value="{{adPmWrite}}" hint-placeholder-val="{{ true }}">
-<label style="height:40px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif;display:inline-flex;align-items:center;gap:8px" style-hover="background:var(--bg-xf5f5f5);border-color:var(--bd-xb99751)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg>
-      استيراد نسخة شاملة
-      <input type="file" accept="application/json,.json" onChange="{{importBackup}}" style="display:none">
-    </label>
+<sc-if value="{{adPmWrite}}" hint-placeholder-val="{{ true }}">
+    <label class="bs-btn adm-file"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-2ef48b8f"></svg>استيراد نسخة شاملة<input type="file" accept="application/json,.json" onChange="{{importBackup}}" aria-label="استيراد نسخة شاملة"></label>
 </sc-if>
-    <sc-if value="{{backupMsg}}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;font-weight:400;color:{{backupMsgColor}}">{{backupMsg}}</span></sc-if>
+    <sc-if value="{{backupMsg}}" hint-placeholder-val="{{ false }}"><span class="adm-bk-msg" role="status" data-tone="{{backupMsgTone}}">{{backupMsg}}</span></sc-if>
   </div>
-  <p style="font-size:11px;color:var(--fg-x94a3b8);margin:0;line-height:1.6">ملاحظة: الاستيراد يستبدل البيانات الحالية على هذا الجهاز بالكامل. احتفظ بالملف في مكان آمن — يحتوي بيانات الموظفين وأرقام جوالاتهم.</p>
-  <div style="{{fullLastStyle}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-70ea30dc"></svg>{{fullLastTxt}}</div>
-</div>
+  <p class="adm-bk-note">ملاحظة: الاستيراد يستبدل البيانات الحالية على هذا الجهاز بالكامل. احتفظ بالملف في مكان آمن — يحتوي بيانات الموظفين وأرقام جوالاتهم.</p>
+  <div class="adm-bk-last" data-tone="{{fullLastTone}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-70ea30dc"></svg>{{fullLastTxt}}</div>
+</section>
 </sc-if>
 </sc-if>
 
@@ -1705,89 +1701,59 @@
 
 <!-- R169-CC: شاشةُ «سجل الحركة» القديمة أُزيلت — الشاشةُ الموحَّدة واحدةٌ فوق. -->
 <sc-if value="{{showDeptBk}}" hint-placeholder-val="{{ true }}">
-<div style="border:1px solid var(--bd-a185151810p25);border-radius:16px;background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:24px;display:flex;flex-direction:column;gap:14px">
-  <div style="display:flex;align-items:center;gap:12px">
-    <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--bg-a185151810p1);border:1px solid var(--bd-a185151810p25);color:var(--fg-xb99751)">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-231d5af6"></svg>
-    </div>
+<section class="bs-card adm-bk" aria-label="نسخة الإدارة">
+  <div class="adm-bk-hd">
+    <div class="adm-bk-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-231d5af6"></svg></div>
     <div style="flex:1;min-width:0">
-      <h2 style="font-size:16px;font-weight:600;margin:0">نسخة إدارة «{{actDeptName}}»</h2>
-      <p style="font-size:12px;color:var(--fg-x53565a);margin:3px 0 0;line-height:1.7">ملف واحد يحتوي بيانات هذه الإدارة وحدها بكل خططها وجولاتها وموظفيها وجداولها وصور خرائطها. احتفظ به قبل أي تعديل كبير، واستورده لاسترجاع الإدارة كما كانت.</p>
+      <h2>نسخة إدارة «{{actDeptName}}»</h2>
+      <p>ملف واحد يحتوي بيانات هذه الإدارة وحدها بكل خططها وجولاتها وموظفيها وجداولها وصور خرائطها. احتفظ به قبل أي تعديل كبير، واستورده لاسترجاع الإدارة كما كانت.</p>
     </div>
   </div>
-  <div class="bs-hbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--bd-xf1f5f9);padding-top:14px">
+  <div class="bs-hbar adm-bk-act">
 <sc-if value="{{adPmExport}}" hint-placeholder-val="{{ true }}">
-    <button onClick="{{dbkExport}}" style="height:40px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;background:linear-gradient(135deg,var(--bg-xb99751),var(--bg-a185151810p85));color:var(--text-on-brand);border:0;cursor:pointer;font-family:'Cairo',sans-serif;display:inline-flex;align-items:center;gap:8px" style-hover="opacity:.9">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg>
-      تصدير نسخة هذه الإدارة
-    </button>
+    <button type="button" class="bs-btn bs-btn--primary" onClick="{{dbkExport}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-53b60cd3"></svg>تصدير نسخة هذه الإدارة</button>
 </sc-if>
 <sc-if value="{{adPmWrite}}" hint-placeholder-val="{{ true }}">
-    <label style="height:40px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif;display:inline-flex;align-items:center;gap:8px" style-hover="background:var(--bg-xf5f5f5);border-color:var(--bd-xb99751)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg>
-      استيراد نسخة إدارة
-      <input type="file" accept="application/json,.json" onChange="{{dbkImport}}" style="display:none">
-    </label>
+    <label class="bs-btn adm-file"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-2ef48b8f"></svg>استيراد نسخة إدارة<input type="file" accept="application/json,.json" onChange="{{dbkImport}}" aria-label="استيراد نسخة إدارة"></label>
 </sc-if>
   </div>
-  <p style="font-size:11px;color:var(--fg-x94a3b8);margin:0;line-height:1.6">الاستيراد يسألك أولاً: دمج مع الموجود أو استبدال كامل — ولا يمسّ الإدارات الأخرى إطلاقاً. ملف النسخة يحتوي بيانات الموظفين وأرقام جوالاتهم فاحفظه في مكان آمن.</p>
-  <div style="{{dbkLastStyle}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-70ea30dc"></svg>{{dbkLastTxt}}</div>
-</div>
+  <p class="adm-bk-note">الاستيراد يسألك أولاً: دمج مع الموجود أو استبدال كامل — ولا يمسّ الإدارات الأخرى إطلاقاً. ملف النسخة يحتوي بيانات الموظفين وأرقام جوالاتهم فاحفظه في مكان آمن.</p>
+  <div class="adm-bk-last" data-tone="{{dbkLastTone}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-70ea30dc"></svg>{{dbkLastTxt}}</div>
+</section>
 </sc-if>
 
 
 </div>
 <sc-if value="{{fbkOpen}}" hint-placeholder-val="{{ false }}">
-<div onClick="{{fbkCancel}}" style="position:fixed;inset:0;z-index:400;background:var(--bg-a0000p5);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Cairo',sans-serif">
-  <div onClick="{{fbkStop}}" style="background:var(--bg-xffffff);border-radius:18px;box-shadow:var(--shadow-elevated);width:100%;max-width:520px;padding:24px;max-height:88vh;overflow-y:auto;text-align:right;direction:rtl">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-      <div style="width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--bg-xfffbeb);border:1px solid var(--bd-xfde68a);color:var(--fg-xb45309);flex-shrink:0">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9d08ae4a"></svg>
-      </div>
+<div class="bs-dlg bs-dlg--modal" style="z-index:var(--z-modal)" onClick="{{fbkCancel}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-label="يوجد بيانات على هذا الجهاز بالفعل" onClick="{{fbkStop}}" class="bs-dlg-box adm-dlg adm-dlg--w">
+    <div class="adm-bk-hd" style="margin-bottom:14px">
+      <div class="adm-bk-ic" data-tone="warn" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9d08ae4a"></svg></div>
       <div style="flex:1;min-width:0">
-        <h3 style="font-size:16px;font-weight:600;margin:0 0 3px;color:var(--fg-x141414)">يوجد بيانات على هذا الجهاز بالفعل</h3>
-        <p style="font-size:11.5px;color:var(--fg-x53565a);margin:0;line-height:1.7">ملف النسخة الشاملة يحتوي إدارات كاملة — اختر كيف يُدمج مع الموجود.</p>
+        <h3 class="t" style="margin:0 0 3px">يوجد بيانات على هذا الجهاز بالفعل</h3>
+        <p class="m" style="margin:0">ملف النسخة الشاملة يحتوي إدارات كاملة — اختر كيف يُدمج مع الموجود.</p>
       </div>
     </div>
-    <div class="bs-hbar" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <div style="flex:1;min-width:120px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px">
-        <div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">إدارات في الملف</div>
-        <div style="font-size:17px;font-weight:600;color:var(--fg-x141414)">{{fbkFile}}</div>
-      </div>
-    </div>
+    <div class="cnt"><small>إدارات في الملف</small><b>{{fbkFile}}</b></div>
     <sc-if value="{{fbkPick}}" hint-placeholder-val="{{ true }}">
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div onClick="{{fbkMerge}}" style="text-align:right;border:1px solid var(--bd-xe1e1e1);border-radius:14px;padding:13px 14px;cursor:pointer;background:var(--bg-xffffff);display:flex;align-items:flex-start;gap:11px;transition:all .15s" style-hover="border-color:var(--bd-x0891b2);background:var(--bg-a81451780p05)">
-        <div style="width:34px;height:34px;border-radius:10px;background:var(--bg-a81451780p12);color:var(--fg-x0891b2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-b87f583a"></svg>
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;margin-bottom:3px">دمج مع الموجود</div>
-          <div style="font-size:11px;color:var(--fg-x53565a);line-height:1.7">{{fbkMergeDesc}}</div>
-        </div>
-      </div>
-      <div onClick="{{fbkAskReplace}}" style="text-align:right;border:1px solid var(--bd-a23968680p35);border-radius:14px;padding:13px 14px;cursor:pointer;background:var(--bg-xffffff);display:flex;align-items:flex-start;gap:11px;transition:all .15s" style-hover="border-color:var(--bd-xdc2626);background:var(--bg-a23968680p05)">
-        <div style="width:34px;height:34px;border-radius:10px;background:var(--bg-xfef2f2);color:var(--fg-xdc2626);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9bf9a6dd"></svg>
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;margin-bottom:3px;color:var(--fg-xdc2626)">استبدال كامل</div>
-          <div style="font-size:11px;color:var(--fg-x53565a);line-height:1.7">{{fbkReplaceDesc}}</div>
-        </div>
-      </div>
-    </div>
-    <div style="display:flex;justify-content:flex-start;margin-top:14px">
-      <button onClick="{{fbkCancel}}" style="height:36px;padding:0 16px;border-radius:10px;font-size:12.5px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">إلغاء الاستيراد</button>
-    </div>
+    <button type="button" class="adm-pick" onClick="{{fbkMerge}}">
+      <span class="i" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-b87f583a"></svg></span>
+      <span style="flex:1;min-width:0"><b>دمج مع الموجود</b><small>{{fbkMergeDesc}}</small></span>
+    </button>
+    <button type="button" class="adm-pick" data-tone="bad" onClick="{{fbkAskReplace}}">
+      <span class="i" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9bf9a6dd"></svg></span>
+      <span style="flex:1;min-width:0"><b>استبدال كامل</b><small>{{fbkReplaceDesc}}</small></span>
+    </button>
+    <div class="ft"><button type="button" class="bs-btn" onClick="{{fbkCancel}}">إلغاء الاستيراد</button></div>
     </sc-if>
     <sc-if value="{{fbkConfirm}}" hint-placeholder-val="{{ false }}">
-    <div style="background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);border-radius:14px;padding:14px">
-      <div style="font-size:13px;font-weight:600;color:var(--fg-xdc2626);margin-bottom:5px">تأكيد الاستبدال</div>
-      <p style="font-size:11.5px;color:var(--fg-x53565a);line-height:1.9;margin:0 0 12px">{{fbkWarn}}</p>
+    <div class="adm-conf" role="alert">
+      <b>تأكيد الاستبدال</b>
+      <p>{{fbkWarn}}</p>
       <div class="bs-hbar" style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onClick="{{fbkDoReplace}}" style="height:36px;padding:0 16px;border-radius:10px;font-size:12.5px;font-weight:400;background:var(--bg-xdc2626);color:var(--fg-xffffff);border:0;cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xb91c1c)">نعم، استبدل</button>
-        <button onClick="{{exportBackup}}" style="height:36px;padding:0 16px;border-radius:10px;font-size:12.5px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x8a6f35);border:1px solid var(--bd-xb99751);cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-a185151810p08)">صدّر نسخة احتياطية أولاً</button>
-        <button onClick="{{fbkBack}}" style="height:36px;padding:0 16px;border-radius:10px;font-size:12.5px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">رجوع</button>
+        <button type="button" class="bs-btn bs-btn--danger" onClick="{{fbkDoReplace}}">نعم، استبدل</button>
+        <button type="button" class="bs-btn" onClick="{{exportBackup}}">صدّر نسخة احتياطية أولاً</button>
+        <button type="button" class="bs-btn" onClick="{{fbkBack}}">رجوع</button>
       </div>
     </div>
     </sc-if>
@@ -1795,25 +1761,23 @@
 </div>
 </sc-if>
 <sc-if value="{{pwOn}}" hint-placeholder-val="{{ false }}">
-<div onClick="{{pwCancel}}" style="position:fixed;inset:0;z-index:9340;background:var(--bg-a1523420p55);display:flex;align-items:center;justify-content:center;padding:24px">
-  <div onClick="{{pwStop}}" style="background:var(--bg-xffffff);border-radius:18px;box-shadow:var(--shadow-elevated);width:100%;max-width:380px;font-family:'Cairo',sans-serif" dir="rtl">
-    <div style="display:flex;align-items:center;gap:10px;padding:15px 17px;border-bottom:2px solid var(--bd-a185151810p25);background:linear-gradient(90deg,var(--bg-a185151810p1),var(--bg-a185151810p03))">
-      <span style="width:28px;height:28px;border-radius:8px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p5);display:flex;align-items:center;justify-content:center;color:var(--fg-xb99751)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg></span>
-      <span style="font-size:14px;font-weight:600;flex:1">{{pwTitle}}</span>
+<div class="bs-dlg bs-dlg--modal" style="z-index:9340" onClick="{{pwCancel}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-label="{{pwTitle}}" onClick="{{pwStop}}" class="bs-dlg-box adm-dlg" style="width:min(380px,100%)">
+    <div class="adm-bk-hd" style="margin-bottom:10px">
+      <span class="adm-bk-ic" style="width:32px;height:32px" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg></span>
+      <b class="t" style="flex:1;margin:0">{{pwTitle}}</b>
     </div>
-    <div style="padding:14px 16px">
-      <p style="font-size:11px;color:var(--fg-x53565a);margin:0 0 12px;line-height:1.8">{{pwHint}}</p>
-      <label style="display:block;margin-bottom:10px"><span style="display:block;font-size:10.5px;font-weight:600;color:var(--fg-x53565a);margin-bottom:4px">كلمة المرور</span><input id="bsPwD1" type="password" dir="ltr" value="{{pwP1}}" onInput="{{pwP1Set}}" onKeyDown="{{pwKey}}" style="width:100%;height:38px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 12px;font-size:13px;outline:none;box-sizing:border-box" style-focus="border-color:var(--bd-xb99751);box-shadow:0 0 0 3px rgba(185,151,81,0.13)"></label>
-      <sc-if value="{{pwIsExp}}" hint-placeholder-val="{{ false }}">
-      <label style="display:block;margin-bottom:10px"><span style="display:block;font-size:10.5px;font-weight:600;color:var(--fg-x53565a);margin-bottom:4px">تأكيد كلمة المرور</span><input type="password" dir="ltr" value="{{pwP2}}" onInput="{{pwP2Set}}" onKeyDown="{{pwKey}}" style="width:100%;height:38px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 12px;font-size:13px;outline:none;box-sizing:border-box" style-focus="border-color:var(--bd-xb99751);box-shadow:0 0 0 3px rgba(185,151,81,0.13)"></label>
-      </sc-if>
-      <sc-if value="{{pwErrOn}}" hint-placeholder-val="{{ false }}">
-      <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--fg-xb91c1c);background:var(--bg-a22038380p06);border:1px solid var(--bd-a22038380p3);border-radius:10px;padding:8px 11px;margin-bottom:10px;line-height:1.7">⚠ {{pwErr}}</div>
-      </sc-if>
-      <div style="display:flex;gap:8px;border-top:1px solid var(--bd-xf1f3f5);padding-top:12px">
-        <button onClick="{{pwGo}}" style="height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;border:0;cursor:pointer;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;background:linear-gradient(135deg,var(--bg-xb99751),var(--bg-a185151810p85))">{{pwGoLabel}}</button>
-        <button onClick="{{pwCancel}}" style="height:38px;padding:0 18px;border-radius:10px;font-size:13px;font-weight:400;cursor:pointer;color:var(--fg-x53565a);background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);font-family:'Cairo',sans-serif" style-hover="background:var(--bg-xf5f5f5)">إلغاء</button>
-      </div>
+    <p class="m">{{pwHint}}</p>
+    <label class="fl"><span>كلمة المرور</span><input id="bsPwD1" type="password" dir="ltr" value="{{pwP1}}" onInput="{{pwP1Set}}" onKeyDown="{{pwKey}}"></label>
+    <sc-if value="{{pwIsExp}}" hint-placeholder-val="{{ false }}">
+    <label class="fl"><span>تأكيد كلمة المرور</span><input type="password" dir="ltr" value="{{pwP2}}" onInput="{{pwP2Set}}" onKeyDown="{{pwKey}}"></label>
+    </sc-if>
+    <sc-if value="{{pwErrOn}}" hint-placeholder-val="{{ false }}">
+    <div class="err" role="alert">⚠ {{pwErr}}</div>
+    </sc-if>
+    <div class="ft">
+      <button type="button" class="bs-btn bs-btn--primary" onClick="{{pwGo}}">{{pwGoLabel}}</button>
+      <button type="button" class="bs-btn" onClick="{{pwCancel}}">إلغاء</button>
     </div>
   </div>
 </div>

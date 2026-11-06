@@ -80,7 +80,8 @@ test('(e) the security-log request for «اليوم» uses that boundary; 7 / 30
   const v = admin().page.adVals();
   assert.deepEqual(cp(v.secPeriods.map((x) => [x.t, x.tip])), [['اليوم', 'منذ منتصف الليل بتوقيت الرياض'], ['٧ أيام', 'آخر ٧ أيام حتى الآن'], ['٣٠ يوماً', 'آخر ٣٠ يوماً حتى الآن']]);
   const view = fs.readFileSync(path.join(ROOT, 'src/modules/admin/view.html'), 'utf8');
-  assert.match(view, /<sc-for list="\{\{secPeriods\}\}"[^>]*><span onClick="\{\{k\.go\}\}" title="\{\{k\.tip\}\}"/);
+  /* CORE-02 step 6: the period chip is a real button (aria-pressed) — its tooltip still says what the period means */
+  assert.match(view, /<sc-for list="\{\{secPeriods\}\}"[^>]*><button type="button" class="adm-chip" aria-pressed="\{\{k\.on\}\}" onClick="\{\{k\.go\}\}" title="\{\{k\.tip\}\}"/);
   const ov = admin({ admTab: 'overview', adOv: { ok: 1, failsToday: 2, deniedToday: 1 } }).page.adVals();
   const card = ov.ovCards.find((c) => c.l === 'محاولات دخول فاشلة اليوم');
   assert.equal(card.go && typeof card.go, 'function');
