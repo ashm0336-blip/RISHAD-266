@@ -2501,11 +2501,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }),
       x = [
         S(o.length, "إجمالي الحسابات", "", "all"),
-        S(o.filter((t) => !t.dis).length, "نشط", "ok", "all"),
-        S(w(m[1]), "مجمّد", "warn", "frozen"),
+        /* اتساق الأرقام: نبرةُ الرقم قاعدةُ بطاقة «الحسابات» في الرئيسية نفسُها — العدُّ العاديّ محايد، والتنبيهُ لما يحتاج إجراءً وحين يكون غيرَ صفر */
+        S(o.filter((t) => !t.dis).length, "نشط", "", "all"),
+        S(w(m[1]), "مجمّد", w(m[1]) ? "warn" : "", "frozen"),
         S(w(m[2]), "لم يدخلوا منذ بدء السجل", "mute", "never", "سجل الدخول يبدأ من تاريخ رفع هذا الإصدار"),
         S(w(m[4]), "خامل ٩٠ يوماً", "mute", "idle"),
-        S(w(m[7]), "بصيغة كلمة مرور قديمة", w(m[7]) ? "bad" : "", "old", "لا يستطيع الدخول حتى تُعاد كلمة مروره"),
+        S(w(m[7]), "بصيغة كلمة مرور قديمة", w(m[7]) ? "warn" : "", "old", "لا يستطيع الدخول حتى تُعاد كلمة مروره"),
       ],
       k = (t, e) => this.setState({ usTmp: { name: t.name || t.un, pw: e } }),
       v = b.map((a) => {
@@ -2735,7 +2736,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
       pmCaps: T,
       pmTpls: A,
-      pmTplEmpty: !A.length,
+      pmTplEmpty: !A.length, pmTplHas: !!A.length,
       pmCols: O,
       pmRows: N,
       pmQ: t.pmQ || "",
@@ -3204,7 +3205,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       secKinds: R,
       secPeriods: L,
       secRows: B,
-      secEmpty: !B.length,
+      secEmpty: !B.length, secHas: !!B.length,
       /* الخادم يعيد 500 حدث على الأكثر في القراءة الواحدة: عند بلوغها لا «عرض المزيد» بلا فائدة، ويُقال ذلك صراحة */
       secFoot: KIVO.BassamCount(B.length, "حدث") + "" + (t.adSec && t.adSec.length >= 500 ? " · بلغ العرض حدّه (أحدث 500 حدث في الفترة) — اختر فترة أقصر لرؤية الأقدم" : t.adSec && t.adSec.length >= (t.adSecLim || 100) ? " · يوجد المزيد" : ""),
       secMoreOn: !!(t.adSec && t.adSec.length >= (t.adSecLim || 100) && t.adSec.length < 500),
@@ -6637,7 +6638,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         style: { ...this._audCss(IN), width: w || 130 },
       });
     const chip = (on, txt, go, key) =>
-      h(
+      sc.site
+        ? h("button", { key: key, type: "button", className: "adm-chip", "aria-pressed": on ? "true" : "false", onClick: go }, txt)
+        : h(
         "button",
         {
           key: key,
@@ -6816,34 +6819,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "تصدير CSV",
       ),
     );
-    const filters = h(
-      "div",
-      {
-        key: "ft",
-        style: {
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          padding: "10px 18px",
-          borderBottom: "1px solid var(--border-subtle)",
-          background: "var(--bg-surface-2)",
-        },
-      },
-      h(
-        "div",
-        { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" } },
-        [chip(!F.etype, "كل الكيانات", () => this.audSetF("etype", ""), "e_")].concat(
-          A.ET_FILTER.map((o) => chip(F.etype === o[0], o[1], () => this.audSetF("etype", F.etype === o[0] ? "" : o[0]), "e" + o[0])),
-        ),
-      ),
-      h(
-        "div",
-        { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" } },
-        [chip(!F.act, "كل الأفعال", () => this.audSetF("act", ""), "a_")].concat(
-          A.ACT_FILTER.map((o) => chip(F.act === o[0], o[1], () => this.audSetF("act", F.act === o[0] ? "" : o[0]), "a" + o[0])),
-        ),
-      ),
-      h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" } }, [
+    const fDept =
         sc.site
           ? h(
               "select",
@@ -6858,22 +6834,32 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 depts.map((d) => h("option", { key: d.id, value: d.id }, d.name || d.id)),
               ),
             )
-          : null,
+          : null;
+    const fUid =
         sel(
           "uid",
           Object.keys(users).map((u) => [u, users[u]]),
           "كل المستخدمين",
           150,
           "تصفية بالمستخدم",
-        ),
-        inp("q", "بحث بالاسم أو المعرّف", 170),
-        inp("site", "الموقع", 120),
-        inp("plan", "الشهر (1448-4)", 110),
-        inp("day", "اليوم (1448-4-10)", 120),
-        h("span", { key: "fl", style: { fontSize: 10.5, color: "var(--text-muted)" } }, "من"),
-        inp("from", "", 130, "date", "من تاريخ"),
-        h("span", { key: "tl", style: { fontSize: 10.5, color: "var(--text-muted)" } }, "إلى"),
-        inp("to", "", 130, "date", "إلى تاريخ"),
+        );
+    const fQ =
+        inp("q", "بحث بالاسم أو المعرّف", 170);
+    const fSite =
+        inp("site", "الموقع", 120);
+    const fPlan =
+        inp("plan", "الشهر (1448-4)", 110);
+    const fDay =
+        inp("day", "اليوم (1448-4-10)", 120);
+    const fFromL =
+        h("span", { key: "fl", style: { fontSize: 10.5, color: "var(--text-muted)" } }, "من");
+    const fFrom =
+        inp("from", "", 130, "date", "من تاريخ");
+    const fToL =
+        h("span", { key: "tl", style: { fontSize: 10.5, color: "var(--text-muted)" } }, "إلى");
+    const fTo =
+        inp("to", "", 130, "date", "إلى تاريخ");
+    const fClr =
         F.etype || F.act || F.uid || F.q || F.site || F.plan || F.day || F.from || F.to
           ? h(
               "button",
@@ -6894,8 +6880,40 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               },
               "مسح المرشّحات",
             )
-          : null,
-      ]),
+          : null;
+    const fEt = [chip(!F.etype, "كل الكيانات", () => this.audSetF("etype", ""), "e_")].concat(
+          A.ET_FILTER.map((o) => chip(F.etype === o[0], o[1], () => this.audSetF("etype", F.etype === o[0] ? "" : o[0]), "e" + o[0])),
+        );
+    const fAct = [chip(!F.act, "كل الأفعال", () => this.audSetF("act", ""), "a_")].concat(
+          A.ACT_FILTER.map((o) => chip(F.act === o[0], o[1], () => this.audSetF("act", F.act === o[0] ? "" : o[0]), "a" + o[0])),
+        );
+    /* اتساق المرشّحات (مركز إدارة رشاد وحده — #/admin كما هو): أربعُ مجموعاتٍ مسمّاة على مكوّن الرقائق المشترك (.adm-chip كسجل الأمن)؛
+       على سطح المكتب تلتفّ الرقائق تحت اسم مجموعتها، وعلى الجوال (≤640) صفُّ كل مجموعة يمرّر أفقياً، و«من … إلى» لا ينفصلان */
+    const fGrp = (k, lbl, cls, kids) =>
+      h("div", { key: "g" + k, className: "adm-flt-r" }, h("span", { className: "adm-flt-l", id: "aud-fl-" + k }, lbl), h("div", { role: "group", "aria-labelledby": "aud-fl-" + k, className: cls }, kids));
+    const filters = sc.site
+      ? h("div", { key: "ft", className: "adm-flt" }, [
+          fGrp("e", "الكيان", "adm-chips adm-flt-c", fEt),
+          fGrp("a", "الفعل", "adm-chips adm-flt-c", fAct),
+          fGrp("q", "البحث", "adm-flt-f", [fDept, fUid, fQ, fSite]),
+          fGrp("d", "الفترة", "adm-flt-f", [fPlan, fDay, h("span", { key: "rng", className: "adm-flt-rng" }, fFromL, fFrom, fToL, fTo), fClr]),
+        ])
+      : h(
+      "div",
+      {
+        key: "ft",
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          padding: "10px 18px",
+          borderBottom: "1px solid var(--border-subtle)",
+          background: "var(--bg-surface-2)",
+        },
+      },
+      h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" } }, fEt),
+      h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" } }, fAct),
+      h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" } }, [fDept, fUid, fQ, fSite, fPlan, fDay, fFromL, fFrom, fToL, fTo, fClr]),
     );
     const dn = (id) => {
       const d = depts.filter((x) => x.id === id)[0];
@@ -9393,6 +9411,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       nfKTypes: String(c.length),
       nfKOn: String(g),
       nfKUrg: String(h),
+      nfKOnTone: g ? "ok" : "", nfKUrgTone: h ? "bad" : "",   /* اتساق الأرقام: بطاقةُ العدّ المشتركة (.adm-ov-kpi) ونبرتُها لغير الصفر */
       nfKBc:t.status().bcReady ? String(t.status().bcTotal) : "…",
       nfKSum: KIVO.BassamCount(t.REG.length, "صفحة") + " · " + KIVO.BassamCount(c.length, "حدث") + " · " + g + " مفعّلاً",
       nfOnTree: "tree" === n,

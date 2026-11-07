@@ -734,3 +734,68 @@ test('(ACC) accordion sidebar: deep links per group, toggle without navigation, 
     }
   } finally { await b.close(); }
 });
+
+/* (CON) consistency pass over the console (owner request): counts follow one tone rule (Home «الحسابات» card = the accounts tiles: an
+   ordinary count is neutral, a warning only when non-zero) and one count tile (.adm-ov-kpi: the number above its label, 20px/800) on
+   «التنبيهات والتعاميم»; the three readiness states of «التهيئة والاستعادة» share one status style; a list with no rows shows no column
+   header; the activity log's filters are four labelled groups on the shared chip (desktop: wrapping rows; phone: each group scrolls
+   sideways, the page does not), «من» stays beside its date; a unit manager's #/admin log keeps its own filters. */
+test('(CON) consistency: tone rule for counts, one count tile, one status style, empty lists, labelled activity-log filters', { timeout: 600000 }, async () => {
+  const b = await chromium.launch(); const lab = await world(); const writes = []; let s = null, m = null, g = null;
+  try {
+    s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: { width: 1366, height: 900 }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+    const page = s.page;
+    const tiles = (q) => page.evaluate((q) => [...document.querySelectorAll(q)].map((e) => { const v = e.querySelector('.v'), cs = getComputedStyle(v); return { l: e.querySelector('.l').textContent.trim(), v: v.textContent.trim(), c: cs.color, fs: cs.fontSize, fw: cs.fontWeight, vFirst: v === e.firstElementChild }; }), q);
+    await s.go('#/sysadmin/users', 3500);
+    const us = await tiles('main .adm-stat'), U = Object.fromEntries(us.map((x) => [x.l, x]));
+    const zero = (v) => /^[0٠]$/.test(v);
+    assert.equal(U['نشط'].c, U['إجمالي الحسابات'].c, 'an ordinary count is neutral («نشط» like «إجمالي الحسابات», as on Home)');
+    for (const l of ['مجمّد', 'بصيغة كلمة مرور قديمة']) if (U[l] && zero(U[l].v)) assert.equal(U[l].c, U['إجمالي الحسابات'].c, '«' + l + '» at zero is not a warning');
+    await s.go('#/sysadmin/plat/notif', 3500);
+    const nf = await tiles('main [data-bs="notif-adm"] .adm-ov-kpi');
+    assert.equal(nf.length, 4, 'four count tiles on the shared tile');
+    for (const x of nf) { assert.ok(x.vFirst, x.l + ': the number above its label'); assert.equal(x.fs, us[0].fs, x.l + ': same number size as the accounts tiles'); assert.equal(x.fw, us[0].fw); }
+    for (const x of nf) if (zero(x.v)) assert.equal(x.c, nf[0].c, x.l + ' at zero is neutral');
+    await s.go('#/sysadmin/plat/setup', 3500);
+    const stl = await page.evaluate(() => [...document.querySelectorAll('main .adm-st3 > .adm-pl-box')].map((bx) => { const e = bx.querySelector('.adm-pl-cap + *'); return [e.className, getComputedStyle(e).color, getComputedStyle(e).fontSize]; }));
+    assert.equal(stl.length, 3);
+    for (const x of stl) { assert.equal(x[0], 'adm-pl-stl', 'every readiness state uses the status line'); assert.deepEqual(x.slice(1), stl[0].slice(1), 'same colour and size'); }
+    await s.go('#/sysadmin/perms', 3500);
+    const emp = await page.evaluate(() => [...document.querySelectorAll('main .adm-none')].filter((e) => e.offsetParent).map((e) => [e.textContent.trim(), e.closest('section').querySelectorAll('.adm-th').length]));
+    assert.ok(emp.some((x) => x[0] === 'لا قوالب بعد'), 'the lab has no templates');
+    for (const [t, n] of emp) assert.equal(n, 0, '«' + t + '»: no column header over an empty list');
+    /* activity log, desktop */
+    await s.go('#/sysadmin/oplog', 3500);
+    const fl = () => page.evaluate(() => [...document.querySelectorAll('main .adm-flt > .adm-flt-r')].map((r) => { const l = r.querySelector('.adm-flt-l'), gp = r.querySelector('[role="group"]'), lr = l.getBoundingClientRect(), gr = gp.getBoundingClientRect();
+      return { l: l.textContent.trim(), by: gp.getAttribute('aria-labelledby') === l.id, chips: gp.querySelectorAll('.adm-chip[aria-pressed]').length, lTop: lr.top, lBottom: lr.bottom, lRight: lr.right, gTop: gr.top, gRight: gr.right, sw: gp.scrollWidth, cw: gp.clientWidth }; }));
+    let F = await fl();
+    assert.deepEqual(F.map((x) => x.l), ['الكيان', 'الفعل', 'البحث', 'الفترة'], 'four labelled filter groups');
+    for (const x of F) assert.ok(x.by, x.l + ': the group is named by its label');
+    assert.ok(F[0].chips > 10 && F[1].chips > 10, 'entity and action filters are the shared pressed chips');
+    for (const x of F) assert.ok(x.lRight > x.gRight, x.l + ': desktop label beside its group (RTL)');
+    const rng = await page.evaluate(() => { const r = (e) => e.getBoundingClientRect().top, sp = [...document.querySelectorAll('main .adm-flt-rng > span')]; return [r(sp[0]), r(document.querySelector('main input[aria-label="من تاريخ"]')), r(sp[1]), r(document.querySelector('main input[aria-label="إلى تاريخ"]'))]; });
+    assert.ok(Math.max(...rng) - Math.min(...rng) < 12, '«من» date «إلى» date on one line: ' + rng);
+    const press = (t) => page.locator('main .adm-flt .adm-chip', { hasText: new RegExp('^' + t + '$') });
+    await press('إنشاء').click(); await page.waitForTimeout(800);
+    assert.equal(await press('إنشاء').getAttribute('aria-pressed'), 'true'); assert.equal(await press('كل الأفعال').getAttribute('aria-pressed'), 'false');
+    await press('كل الأفعال').click(); await page.waitForTimeout(800);
+    assert.equal(await press('كل الأفعال').getAttribute('aria-pressed'), 'true');
+    assert.deepEqual(writes, [], 'nothing saved'); assert.deepEqual(s.errs, [], 'no page errors');
+    /* phone */
+    m = await openAs(b, lab, LAB.superUn, LAB.superPw, { ...MOBILE, onPage: (p) => watchWrites(p, writes) }); m.page.setDefaultTimeout(15000);
+    await m.go('#/sysadmin/oplog', 3500);
+    F = await m.page.evaluate(() => [...document.querySelectorAll('main .adm-flt > .adm-flt-r')].map((r) => { const l = r.querySelector('.adm-flt-l'), gp = r.querySelector('[role="group"]'); return { l: l.textContent.trim(), lBottom: l.getBoundingClientRect().bottom, gTop: gp.getBoundingClientRect().top, sw: gp.scrollWidth, cw: gp.clientWidth, ox: getComputedStyle(gp).overflowX }; }));
+    for (const x of F) assert.ok(x.lBottom <= x.gTop + 1, x.l + ': phone label above its group');
+    for (const x of F.slice(0, 2)) { assert.equal(x.ox, 'auto', x.l + ': one sideways-scrolling row'); assert.ok(x.sw > x.cw, x.l + ': more chips than fit, reached by scrolling the row'); }
+    const ph = await m.page.evaluate(() => ({ sx: document.documentElement.scrollWidth - document.documentElement.clientWidth, h: document.querySelector('main .adm-flt').getBoundingClientRect().height }));
+    assert.ok(ph.sx <= 0, 'the page does not scroll sideways');
+    assert.ok(ph.h < 420, 'the phone filter block is compact (' + ph.h + 'px)');
+    assert.deepEqual(writes, [], 'phone: nothing saved'); assert.deepEqual(m.errs, [], 'phone: no page errors');
+    /* a unit manager's #/admin activity log is unchanged */
+    g = await openAs(b, lab, LAB.mgrA, LAB.pw); g.page.setDefaultTimeout(15000);
+    await g.go('#/admin/oplog', 3500);
+    const own = await g.page.evaluate(() => ({ flt: document.querySelectorAll('main .adm-flt').length, chip: [...document.querySelectorAll('main button')].some((e) => e.textContent.trim() === 'كل الأفعال') }));
+    assert.deepEqual(own, { flt: 0, chip: true }, '#/admin keeps its own activity-log filters');
+    assert.deepEqual(g.errs, []);
+  } finally { for (const x of [s, m, g]) { try { if (x) await x.ctx.close(); } catch (e) { /* closed */ } } await lab.close(); await b.close(); }
+});

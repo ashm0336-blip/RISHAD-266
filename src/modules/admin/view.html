@@ -217,7 +217,7 @@
       <span class="adm-sep" aria-hidden="true"></span>
       <div role="group" aria-label="الفترة" class="adm-tools adm-chips"><sc-for list="{{secPeriods}}" as="k" hint-placeholder-count="3"><button type="button" class="adm-chip" aria-pressed="{{k.on}}" onClick="{{k.go}}" title="{{k.tip}}">{{k.t}}</button></sc-for></div>
     </div>
-    <div class="adm-tr adm-th g-sec" aria-hidden="true"><span></span><span>الحدث</span><span>المستخدم</span><span>الوقت</span><span>الجهاز</span></div>
+    <sc-if value="{{secHas}}" hint-placeholder-val="{{ true }}"><div class="adm-tr adm-th g-sec" aria-hidden="true"><span></span><span>الحدث</span><span>المستخدم</span><span>الوقت</span><span>الجهاز</span></div></sc-if>
     <sc-if value="{{secEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-none">لا أحداث في هذه الفترة</div></sc-if>
     <sc-for list="{{secRows}}" as="r" hint-placeholder-count="5">
     <div class="adm-tr g-sec">
@@ -326,7 +326,7 @@
   </section>
   <section class="bs-card adm-card" aria-label="قوالب الصلاحيات">
     <div class="adm-ov-hd"><div><h3>قوالب الصلاحيات</h3><small>تُدار من الجدول الشهري لكل إدارة — وحاملو كل قالب</small></div></div>
-    <div class="adm-tr adm-th g-tpl" aria-hidden="true"><span>القالب</span><span>ما يمنحه</span><span>حاملوه</span></div>
+    <sc-if value="{{pmTplHas}}" hint-placeholder-val="{{ true }}"><div class="adm-tr adm-th g-tpl" aria-hidden="true"><span>القالب</span><span>ما يمنحه</span><span>حاملوه</span></div></sc-if>
     <sc-if value="{{pmTplEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-none">لا قوالب بعد</div></sc-if>
     <sc-for list="{{pmTpls}}" as="p" hint-placeholder-count="3">
     <div class="adm-tr g-tpl">
@@ -466,7 +466,7 @@
     <div class="adm-st3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div class="adm-pl-box"><div class="adm-pl-cap">١ · مسؤول منصة احتياطي</div>
         <sc-if value="{{plBkOn}}" hint-placeholder-val="{{ false }}"><div class="adm-pl-stl"><span style="width:8px;height:8px;border-radius:9999px;background:var(--bg-x059669)"></span>{{plBkUn}}</div><div class="adm-pl-note">{{plBkNote}}</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button onClick="{{plBkReset}}" class="bs-btn adm-pl-btn">كلمة مؤقتة</button><button onClick="{{plBkRemove}}" class="bs-btn adm-pl-btn adm-pl-btn--danger">حذف</button></div></sc-if>
-        <sc-if value="{{plBkOff}}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--fg-x92400e)"><span style="width:8px;height:8px;border-radius:9999px;background:var(--bg-xd97706)"></span>غير موجود</div><div class="adm-pl-note">حساب ثانٍ بكامل الصلاحية لا يُستخدم إلا إذا تعذّر دخول الرئيسي</div>
+        <sc-if value="{{plBkOff}}" hint-placeholder-val="{{ true }}"><div class="adm-pl-stl"><span style="width:8px;height:8px;border-radius:9999px;background:var(--bg-xd97706)"></span>غير موجود</div><div class="adm-pl-note">حساب ثانٍ بكامل الصلاحية لا يُستخدم إلا إذا تعذّر دخول الرئيسي</div>
           <input value="{{plBkForm.un}}" data-k="bk.un" onChange="{{plFormOn}}" placeholder="رقم الجوال أو الهوية (10 أرقام)" class="adm-pl-in" style="margin-bottom:6px"><input value="{{plBkForm.name}}" data-k="bk.name" onChange="{{plFormOn}}" placeholder="الاسم الظاهر" class="adm-pl-in" style="margin-bottom:6px"><input type="password" value="{{plBkForm.pw}}" data-k="bk.pw" onChange="{{plFormOn}}" placeholder="كلمة مرور مؤقتة (6 أرقام)" class="adm-pl-in" style="margin-bottom:8px"><button onClick="{{plBkSave}}" class="bs-btn bs-btn--primary adm-pl-btn">إنشاء الحساب</button></sc-if>
         <sc-if value="{{plBkMsgOn}}" hint-placeholder-val="{{ false }}"><div style="font-size:11px;color:var(--fg-x991b1b);margin-top:6px">{{plBkMsg}}</div></sc-if></div>
       <div class="adm-pl-box"><div class="adm-pl-cap">٢ · مفتاح الاستعادة</div>
@@ -522,10 +522,10 @@
   <sc-if value="{{nfReady}}" hint-placeholder-val="{{ true }}">
   <div data-bs="notif-adm" style="padding:16px 22px;display:flex;flex-direction:column;gap:14px">
     <div class="adm-st3" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
-      <div class="adm-pl-box adm-pl-box--sm"><div style="font-size:10px;color:var(--fg-x94a3b8);font-weight:600">أحداث المنصة</div><div style="font-size:22px;font-weight:800;color:var(--fg-x141414);line-height:1.3">{{nfKTypes}}</div></div>
-      <div class="adm-pl-box adm-pl-box--sm"><div style="font-size:10px;color:var(--fg-x94a3b8);font-weight:600">مفعّل</div><div style="font-size:22px;font-weight:800;color:var(--fg-x059669);line-height:1.3">{{nfKOn}}</div></div>
-      <div class="adm-pl-box adm-pl-box--sm"><div style="font-size:10px;color:var(--fg-x94a3b8);font-weight:600">عاجل (توست دائماً)</div><div style="font-size:22px;font-weight:800;color:var(--fg-xdc2626);line-height:1.3">{{nfKUrg}}</div></div>
-      <div class="adm-pl-box adm-pl-box--sm"><div style="font-size:10px;color:var(--fg-x94a3b8);font-weight:600">التعاميم المسجلة</div><div style="font-size:22px;font-weight:800;color:var(--fg-x1d6fd6);line-height:1.3">{{nfKBc}}</div></div>
+      <div class="adm-pl-box adm-pl-box--sm adm-ov-kpi"><span class="v">{{nfKTypes}}</span><span class="l">أحداث المنصة</span></div>
+      <div class="adm-pl-box adm-pl-box--sm adm-ov-kpi" data-tone="{{nfKOnTone}}"><span class="v">{{nfKOn}}</span><span class="l">مفعّل</span></div>
+      <div class="adm-pl-box adm-pl-box--sm adm-ov-kpi" data-tone="{{nfKUrgTone}}"><span class="v">{{nfKUrg}}</span><span class="l">عاجل (توست دائماً)</span></div>
+      <div class="adm-pl-box adm-pl-box--sm adm-ov-kpi"><span class="v">{{nfKBc}}</span><span class="l">التعاميم المسجلة</span></div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="display:inline-flex;background:var(--bg-xf3f1ec);border-radius:11px;padding:3px;gap:2px">

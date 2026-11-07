@@ -337,6 +337,13 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 .adm-chip:hover{border-color:var(--tone-gold-50-a50);color:var(--brand-fg)}
 .adm-chip[aria-pressed="true"]{background:var(--brand-primary);border-color:var(--brand-primary);color:var(--text-on-brand)}
 .adm-chips{margin:0}
+/* سجل الأنشطة في المركز: مجموعاتُ مرشّحاتٍ مسمّاة (الكيان · الفعل · البحث · الفترة) — الاسمُ عمودٌ على سطح المكتب وسطرٌ فوق مجموعته على الجوال */
+.adm-flt{display:flex;flex-direction:column;gap:var(--sp-2);padding:10px 18px;border-bottom:1px solid var(--border-subtle);background:var(--bg-surface-2)}
+.adm-flt-r{display:grid;grid-template-columns:56px minmax(0,1fr);gap:var(--sp-2);align-items:start}
+.adm-flt-l{padding-top:5px;font-size:var(--fs-xs);font-weight:700;color:var(--text-muted)}
+.adm-flt-c,.adm-flt-f{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.adm-flt-f{gap:var(--sp-2)}
+.adm-flt-rng{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 /* CORE-02 S9 · على الجوال: كل مجموعة مرشّحات صفٌّ واحد يُمرَّر أفقياً داخل البطاقة بدل ثلاثة أسطر */
 @media (max-width:640px){.adm-chips{flex:1 1 100%;min-width:0;flex-wrap:nowrap;overflow-x:auto;max-width:100%;margin-inline-start:0;padding-block:2px;scrollbar-width:none}.adm-chips>.adm-chip{flex-shrink:0}.adm-chips::-webkit-scrollbar{display:none}.adm-bar .adm-sep{display:none}}
 .adm-sep{width:1px;height:20px;margin:0 2px;background:var(--border-default)}
@@ -477,6 +484,8 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 @media (max-width:640px){
   .adm-ov-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .adm-ov-stats{grid-template-columns:minmax(0,1fr)}
+  .adm-flt{padding:10px 12px}.adm-flt-r{grid-template-columns:minmax(0,1fr);gap:4px}.adm-flt-l{padding-top:0}
+  .adm-flt-f>input,.adm-flt-f>select{flex:1 1 140px;width:auto!important;min-width:0}.adm-flt-rng{flex:1 1 100%}.adm-flt-rng>input{flex:1 1 0;width:auto!important;min-width:0}
   .adm-ov-sh{min-height:0}
   .adm-ov-row.c-ev{display:grid}
   .adm-ov-row.adm-ov-th{display:none}

@@ -13,6 +13,11 @@
          collapsed); one group open at a time, following the address (cold load, Back, in-page link); a header toggles without
          navigating and writes nothing to storage; a collapsed group holding the current page is marked; the rail closes every list;
          every one of the 17 destinations is reachable (its group opens on its address, or the group header opens it).
+     (8) consistency pass (owner request): the accounts tiles use the tone rule of Home's «الحسابات» card (ordinary count neutral,
+         a warning only when non-zero, the same warning for the same metric); «التنبيهات والتعاميم» counts are the shared count tile
+         (.adm-ov-kpi, no fixed hex colour, a tone only when non-zero); the three readiness states share .adm-pl-stl; a list with no rows
+         shows no column header (templates, security log); the activity-log filters in the console are four labelled groups on the
+         shared .adm-chip (aria-pressed, role=group named by its label) while #/admin keeps its own; the phone rules exist.
    The real root-logic.js runs in vm over core01_root_world (TEST_ONLY data). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -294,4 +299,38 @@ test('(7) accordion: real buttons controlling hidden lists, one open group that 
   for (const g of ['org', 'plat', 'sec', 'data']) { assert.equal(v.con[g].shut, true, g + ': rail: list closed'); assert.equal(typeof v.con[g].railGo, 'function'); }
   /* the toggle is cosmetic (conTick): no page re-render */
   const w0 = W.KIVO.__dcWorld; W.c.state.conCx = false; v = W.vals(); v.con.sec.toggle(); assert.equal(W.KIVO.__dcWorld, w0, 'toggling does not re-render the page');
+});
+
+test('(8) consistency: one tone rule for counts, one count tile, one status line, no header over an empty list, labelled log filters', () => {
+  /* accounts tiles = Home «الحسابات» card */
+  assert.match(L, /S\(o\.filter\(\(t\) => !t\.dis\)\.length, "نشط", "", "all"\)/, '«نشط» neutral as on Home');
+  assert.match(L, /S\(w\(m\[1\]\), "مجمّد", w\(m\[1\]\) \? "warn" : "", "frozen"\)/, '«مجمّد» warns only when non-zero (Home: tone m ? "warn")');
+  assert.match(L, /row\("مجمّدة", m, \{ tone: m \? "warn" : "" \}\)/, 'Home keeps the same rule');
+  assert.match(L, /"بصيغة كلمة مرور قديمة", w\(m\[7\]\) \? "warn" : ""/, 'old password format: the same warning as Home');
+  assert.match(L, /row\("بصيغة كلمة مرور قديمة", oh, \{ tone: "warn"/);
+  /* notification counts on the shared tile */
+  const nf = V.slice(V.indexOf('data-bs="notif-adm"'), V.indexOf('data-bs="notif-adm"') + 1200);
+  assert.equal((nf.match(/class="adm-pl-box adm-pl-box--sm adm-ov-kpi"/g) || []).length, 4, 'four shared count tiles');
+  assert.doesNotMatch(nf.slice(0, nf.indexOf('{{nfKBc}}')), /font-size:22px|--fg-x(059669|dc2626|1d6fd6|141414)/, 'no fixed size or hex colour');
+  assert.match(L, /nfKOnTone: g \? "ok" : "", nfKUrgTone: h \? "bad" : ""/, 'a tone only when non-zero');
+  /* readiness: one status line */
+  const rd3 = V.slice(V.indexOf('١ · مسؤول منصة احتياطي'), V.indexOf('٣ · نسخة ما قبل الكارثة') + 200);
+  assert.equal((rd3.match(/class="adm-pl-stl"/g) || []).length, 4, 'backup admin (on/off), recovery key and backup share .adm-pl-stl');
+  assert.doesNotMatch(rd3, /color:var\(--fg-x92400e\)"><span[^>]*><\/span>غير موجود/);
+  /* empty lists: no header */
+  assert.match(V, /<sc-if value="\{\{pmTplHas\}\}"[^>]*><div class="adm-tr adm-th g-tpl"/);
+  assert.match(V, /<sc-if value="\{\{secHas\}\}"[^>]*><div class="adm-tr adm-th g-sec"/);
+  assert.match(L, /pmTplEmpty: !A\.length, pmTplHas: !!A\.length/); assert.match(L, /secEmpty: !B\.length, secHas: !!B\.length/);
+  /* activity-log filters */
+  assert.match(L, /sc\.site\r?\n\s+\? h\("button", \{ key: key, type: "button", className: "adm-chip", "aria-pressed": on \? "true" : "false", onClick: go \}, txt\)/);
+  for (const g of ['"e", "الكيان", "adm-chips adm-flt-c", fEt', '"a", "الفعل", "adm-chips adm-flt-c", fAct', '"q", "البحث", "adm-flt-f", [fDept, fUid, fQ, fSite]'])
+    assert.ok(L.includes('fGrp(' + g), 'group ' + g);
+  assert.match(L, /fGrp\("d", "الفترة", "adm-flt-f", \[fPlan, fDay, h\("span", \{ key: "rng", className: "adm-flt-rng" \}, fFromL, fFrom, fToL, fTo\), fClr\]\)/, '«من … إلى» kept together');
+  assert.match(L, /role: "group", "aria-labelledby": "aud-fl-" \+ k/);
+  assert.match(L, /: h\(\r?\n\s+"div",[\s\S]{0,1200}fDept, fUid, fQ, fSite, fPlan, fDay, fFromL, fFrom, fToL, fTo, fClr\]\),/, '#/admin keeps its own row of filters');
+  assert.match(C, /\.adm-flt-r\{display:grid;grid-template-columns:56px minmax\(0,1fr\)/);
+  const ph = C.slice(C.lastIndexOf('@media (max-width:640px){'));
+  assert.match(ph, /\.adm-flt-r\{grid-template-columns:minmax\(0,1fr\)/, 'phone: label above its group');
+  assert.ok(C.indexOf('.adm-flt-c,.adm-flt-f{') < C.indexOf('@media (max-width:640px){.adm-chips{'), 'the phone chip row (scrolls sideways) comes after the wrapping rule');
+  assert.ok(PG.includes('adm-flt') && PG.includes('pmTplHas'), 'the generated page is current');
 });
