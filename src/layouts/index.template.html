@@ -128,7 +128,7 @@
 <header class="{{topClass}}" style="{{headerStyle}}">
   <div class="bs-tbs">
     <!-- زر القائمة: يفتح درج الشريط الجانبي — يظهر على الجوال وحده -->
-    <button class="bs-btn bs-btn--icon bs-burger" sc-camel-on-click="{{toggleSidebar}}" title="القائمة">
+    <button class="bs-btn bs-btn--icon bs-burger" sc-camel-on-click="{{toggleSidebar}}" title="القائمة" aria-expanded="{{burgerExp}}">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-198c558e"></svg>
     </button>
     <!-- العنوان: «نطاق / صفحة» — «المنصة» على صفحات المنصة، والوحدة النشطة في غيرها؛ يظهر في التطبيق المثبّت أيضاً ويُقصّ على الجوال -->
@@ -175,7 +175,7 @@
   </div>
   <!-- زر الفتح/الإغلاق: أسفل الخط الفاصل مباشرة، شريط مستقل -->
   <div class="s-togbar">
-    <div class="s-tog2" role="button" tabindex="0" aria-label="{{sbToggleTitle}}" sc-camel-on-click="{{toggleSidebar}}" title="{{sbToggleTitle}}">
+    <div class="s-tog2" role="button" tabindex="0" aria-label="{{sbToggleTitle}}" aria-expanded="{{sbExp}}" sc-camel-on-click="{{toggleSidebar}}" title="{{sbToggleTitle}}">
       <svg width="14" height="14" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{sbToggleChevron}}" data-i="i-ee575b7e"></svg>
     </div>
   </div>
@@ -422,13 +422,13 @@
 </sc-if>
 <sc-if value="{{bkcOpen}}" hint-placeholder-val="{{ false }}">
 <div onClick="{{bkcCancel}}" class="bs-dlg bs-dlg--modal">
-  <div onClick="{{bkcStop}}" role="dialog" aria-modal="true" class="bs-dlg-box bs-bkc">
+  <div onClick="{{bkcStop}}" role="dialog" aria-modal="true" aria-labelledby="bsBkcTitle" class="bs-dlg-box bs-bkc">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
       <div style="width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--bg-xfffbeb);border:1px solid var(--bd-xfde68a);color:var(--fg-xb45309);flex-shrink:0">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9d08ae4a"></svg>
       </div>
       <div style="flex:1;min-width:0">
-        <h3 style="font-size:16px;font-weight:600;margin:0 0 3px;color:var(--fg-x141414)">{{bkcHead}}</h3>
+        <h3 id="bsBkcTitle" style="font-size:16px;font-weight:600;margin:0 0 3px;color:var(--fg-x141414)">{{bkcHead}}</h3>
         <p style="font-size:11.5px;color:var(--fg-x53565a);margin:0;line-height:1.7">{{bkcSub}}</p>
       </div>
     </div>
@@ -546,8 +546,8 @@
 <!-- ═══ تعميم مدير الإدارة داخل إدارته ═══ -->
 <sc-if value="{{nfComposeOpen}}" hint-placeholder-val="{{ false }}">
 <div class="bs-dlg" sc-camel-on-click="{{nfComposeClose}}">
-  <div dir="rtl" role="dialog" aria-modal="true" class="bs-dlg-box bs-nfcp" sc-camel-on-click="{{nfStop}}">
-    <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:linear-gradient(to left,var(--bg-a185151810p13),var(--bg-a185151810p03));border-bottom:2px solid var(--bd-a185151810p35);font-size:13px;font-weight:600;color:var(--fg-x9a7e40)"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-7e8d6b4c"></svg>تعميم لمنسوبي {{nfCpDept}}</div>
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="bsNfcpTitle" class="bs-dlg-box bs-nfcp" sc-camel-on-click="{{nfStop}}">
+    <div id="bsNfcpTitle" style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:linear-gradient(to left,var(--bg-a185151810p13),var(--bg-a185151810p03));border-bottom:2px solid var(--bd-a185151810p35);font-size:13px;font-weight:600;color:var(--fg-x9a7e40)"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-7e8d6b4c"></svg>تعميم لمنسوبي {{nfCpDept}}</div>
     <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
       <div><label style="display:block;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);margin-bottom:4px">العنوان</label><input value="{{nfCpTitle}}" sc-camel-on-change="{{nfCpSetTitle}}" placeholder="مثال: اجتماع الوردية الأولى غداً" style="width:100%;height:36px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;box-sizing:border-box;outline:none"></div>
       <div><label style="display:block;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);margin-bottom:4px">النص</label><textarea value="{{nfCpBody}}" sc-camel-on-change="{{nfCpSetBody}}" rows="4" placeholder="اكتب نص التعميم…" style="width:100%;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:12px;box-sizing:border-box;outline:none;line-height:1.7;resize:vertical"></textarea></div>

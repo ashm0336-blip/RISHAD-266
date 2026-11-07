@@ -182,10 +182,12 @@ class Component extends DCLogic {
       } catch (e) {} };
       window.addEventListener("hashchange", this._onHash);
       /* Escape: حوارُ التأكيد أولاً، وإلا أعلى طبقةِ حوارٍ/قائمةٍ ملءَ الشاشة تُغلَق بالنقر خارجَ بطاقتها — نقرٌ صناعيٌّ على الطبقة نفسها */
+      /* CORE-02 S10: نطاقُ البحث عن الطبقات — ما في main، وأبناءُ body، وحواراتُ الإطار (.bs-dlg تحت جذره: التأكيد · النسخ · التعميم) */
+      this._ovScope = 'main *, body > *, [data-screen-label="إطار التطبيق"] > .bs-dlg';
       this._escDismiss = () => {
         try {
           const W = innerWidth, H = innerHeight; let best = null, bestZ = -1, order = 0;
-          for (const el of document.querySelectorAll('main *, body > *')) {
+          for (const el of document.querySelectorAll(this._ovScope)) {
             if (el === document.body || el.id === 'bsLoginGate' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') continue;
             const cs = getComputedStyle(el); if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
             const r = el.getBoundingClientRect(); if (r.width < W * 0.9 || r.height < H * 0.9) continue;
@@ -200,15 +202,21 @@ class Component extends DCLogic {
         } catch (e) { return false; }
       };
       /* القوائمُ المنسدلة بلا طبقةِ التقاط (قوائمُ الصفوف، الفلاتر، الجرس): تُغلق بالنقر خارجَها — فـEscape نقرةٌ صناعيّةٌ على body (خارجَ كلِّ شيء) */
+      /* CORE-02 S10: الدرجُ المفتوح (≤1024 · الوضعان) يُغلق بـEscape بعد الحوارات، ويعود التركيزُ إلى زرّ القائمة — القائمةُ المنسدلة داخله تُغلق أولاً */
+      this._drawerEsc = () => {
+        if (!this.state.sidebarOpen || this.state.deptOpen || innerWidth > 1024) return false;
+        this.setState({ sidebarOpen: false }, () => { try { const bg = document.querySelector(".bs-burger"); if (bg) bg.focus({ preventScroll: true }); } catch (e) {} });
+        return true;
+      };
       this._escMenus = () => { try { document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })); return true; } catch (e) { return false; } };
       /* مديرُ تركيز الحوارات: أعلى طبقةٍ ثابتةٍ ملءَ الشاشة الآن (بلا شرطِ معالجِ نقر) */
-      this._ovClassRe = /(^|\s)(pf-ov|fd-ov|mbk|bs-plat-ov|tkf-ov)(\s|$)/;   /* الموجة 2 · DG-11: tkf-ov نافذةُ «مهمة جديدة» (موضعُها في CSS) */
+      this._ovClassRe = /(^|\s)(pf-ov|fd-ov|mbk|bs-plat-ov|tkf-ov|bs-dlg)(\s|$)/;   /* الموجة 2 · DG-11: tkf-ov نافذةُ «مهمة جديدة» (موضعُها في CSS) */
       /* مرشَّحُ طبقةٍ (بلا أنماطٍ محسوبة): inline fixed بأطرافٍ أربعةٍ صفرٍ، أو صنفُ طبقةٍ معروف */
       this._ovCand = (el) => { try { const st = el.style; if (st && st.position === 'fixed' && st.top === '0px' && st.left === '0px' && st.right === '0px' && st.bottom === '0px') return true; const cn = el.className; return typeof cn === 'string' && this._ovClassRe.test(cn); } catch (e) { return false; } };
       this._topOverlay = () => {
         try {
           const W = innerWidth, H = innerHeight; let best = null, bestZ = -1;
-          for (const el of document.querySelectorAll('main *, body > *')) {
+          for (const el of document.querySelectorAll(this._ovScope)) {
             if (el === document.body || el.id === 'bsLoginGate' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.id === 'bs-toast' || el.id === 'bs-stoast' || (el.classList && el.classList.contains('login-screen'))) continue;
             if (!this._ovCand(el)) continue;   /* لا getComputedStyle إلا لمرشَّحٍ حقيقيّ */
             const cs = getComputedStyle(el); if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
@@ -259,7 +267,7 @@ class Component extends DCLogic {
         if (!ev || ev.isComposing) return;
         if (ev.key === "Escape") {
           if (this.state.cfm) { ev.preventDefault(); ev.stopPropagation(); this.cfmClose(false); }
-          else if (!ev.defaultPrevented) { if (this._escDismiss()) ev.preventDefault(); else this._escMenus(); }
+          else if (!ev.defaultPrevented) { if (this._escDismiss() || this._drawerEsc()) ev.preventDefault(); else this._escMenus(); }
         } else if (ev.key === "Tab") {
           /* Tab داخل حوارٍ مفتوح لا يخرج منه */
           const top = this._topOverlay(); if (!top) return;
@@ -670,8 +678,9 @@ class Component extends DCLogic {
       const prev = document.activeElement;
       /* KIVO_265 · typed: نصٌّ يجب كتابتُه حرفاً للتأكيد (حذفُ إدارةٍ فيها مدير أو موظفون) — زرُّ التأكيد معطّل حتى يطابق */
       /* RISHAD266 · input: حقلُ إدخالٍ (تسميته o.input) — يُحلّ الوعدُ بالنصّ المكتوب أو null عند الإلغاء */
-      this.setState({ cfm: { title: o.title || "تأكيد", msg: o.msg || "", ok: o.ok || "تأكيد", cancel: o.cancel || "إلغاء", danger: !!o.danger, info: !!o.info, typed: o.typed ? String(o.typed) : "", val: "", input: o.input ? String(o.input) : "", res, prev } });
-      setTimeout(() => { try { const b = document.getElementById(o.input ? "bsCfmTyped" : o.danger ? "bsCfmNo" : "bsCfmOk"); b && b.focus(); } catch (e) {} }, 30);
+      /* CORE-02 S10: التركيزُ الأوّل لحظةَ رسم الحوار (نداءُ setState بعد الإيداع) لا بعد مهلةٍ ثابتة قد تسبق الرسمَ تحت الحِمل */
+      const fo = (n) => { try { const b = document.getElementById(o.input ? "bsCfmTyped" : o.danger ? "bsCfmNo" : "bsCfmOk"); if (b) b.focus(); else if (n < 20) setTimeout(() => fo(n + 1), 30); } catch (e) {} };
+      this.setState({ cfm: { title: o.title || "تأكيد", msg: o.msg || "", ok: o.ok || "تأكيد", cancel: o.cancel || "إلغاء", danger: !!o.danger, info: !!o.info, typed: o.typed ? String(o.typed) : "", val: "", input: o.input ? String(o.input) : "", res, prev } }, () => fo(0));
     });
   }
   cfmClose(v) {
@@ -974,6 +983,11 @@ class Component extends DCLogic {
       }));
     } catch (e) {}
   }
+  /* CORE-02 S10: فتحُ الدرج يضع التركيزَ على الصفحة الحالية فيه (وإلا أولِ رابطٍ متاح) — Escape يعيده إلى زرّ القائمة (_drawerEsc) */
+  _drawerFocus() {
+    try { requestAnimationFrame(() => { try { const a = document.querySelector("aside.bsb"); if (!a) return;
+      const t = a.querySelector(".s-nav .n.on:not(.gone)") || a.querySelector(".s-nav a.n:not(.gone)"); if (t) t.focus({ preventScroll: true }); } catch (e) {} }); } catch (e) {}
+  }
   /* العنصرُ الحاليّ داخل منطقة تمرير الشريط (بلا تمرير الصفحة) */
   _conReveal() {
     try { requestAnimationFrame(() => { try { const it = document.querySelector("aside.bsb .s-ci.on"), nv = it && it.closest(".s-nav"); if (!nv) return;
@@ -1128,11 +1142,12 @@ class Component extends DCLogic {
           this.setState({ conCx: v }); return;
         }
         const opening = !this.state.sidebarOpen;
-        this.setState({ sidebarOpen: opening }, () => { if (opening && sbConsole) this._conReveal(); });   /* الدرج: العنصرُ الحاليّ ظاهرٌ عند فتحه */
+        this.setState({ sidebarOpen: opening }, () => { if (opening && sbConsole) this._conReveal(); if (opening && !wide) this._drawerFocus(); });   /* الدرج: العنصرُ الحاليّ ظاهرٌ ومركَّزٌ عند فتحه */
       },
       // كان في الشريط ثلاثة مفاتيح طيّ: الزرّ السفلي، ونقر الشعار الخفيّ، وسهم طيّ
       // المجموعة. بقي واحد فوق القائمة — وطيّ المجموعة سقط لأنه لم يعد يوفّر شيئاً
       // بعدما صارت قائمةً مسطّحة من ستة عناصر ثابتة.
+      burgerExp: open ? "true" : "false", sbExp: sbOpen ? "true" : "false",
       sbToggleTitle: sbOpen ? "إغلاق القائمة الجانبية" : "فتح القائمة الجانبية",
       sbToggleChevron: "transition:transform .3s;" + (sbOpen ? "" : "transform:rotate(180deg)"),
       ...((() => {

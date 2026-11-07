@@ -332,3 +332,124 @@ test('(S9) every destination × phone / tablet / desktop × light / dark: no ove
     }
   } finally { await b.close(); }
 });
+
+/* CORE-02 S10 — accessibility and keyboard. A keyboard-only walk (Tab order = the sidebar's visual order, Enter opens the page and puts the
+   focus on its h2, Shift+Tab returns to the sidebar); the focus ring on the dark sidebar and every sidebar text pair measured in the page
+   (light and dark); one h1, one h2 and no skipped heading level on all 17 pages, one current item and no aria-selected in the sidebar;
+   dialogs: named, focus inside, Tab stays inside, Escape closes and the focus returns to the opener (a manager dialog and the exit
+   confirmation); reduced motion stops the collapse slide; the phone drawer in both modes: the burger states aria-expanded, opening moves
+   the focus to the current page, Escape closes it and returns to the burger. Nothing is saved. */
+const CONTRAST = `(() => {
+  const P = (s) => { const m = /rgba?\\(([^)]+)\\)/.exec(s || ''); if (!m) return null; const v = m[1].split(/[ ,\\/]+/).filter(Boolean).map(Number); return [v[0], v[1], v[2], v.length > 3 ? v[3] : 1]; };
+  const over = (f, b) => [0, 1, 2].map((i) => f[i] * f[3] + b[i] * (1 - f[3])).concat(1);
+  const lum = (c) => { const l = c.slice(0, 3).map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }); return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]; };
+  const cr = (a, b) => { const x = lum(a), y = lum(b); return Math.round(((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)) * 100) / 100; };
+  const bgOf = (el) => { const st = []; for (let n = el; n; n = n.parentElement) { st.push(P(getComputedStyle(n).backgroundColor)); if (n.matches('aside.bsb')) break; }
+    let c = [255, 255, 255, 1]; for (let i = st.length - 1; i >= 0; i--) if (st[i] && st[i][3] > 0) c = over(st[i], c); return c; };
+  window.__cr = (el, prop) => { const f = P(getComputedStyle(el)[prop || 'color']), b = bgOf(el); return cr(f[3] < 1 ? over(f, b) : f, b); };
+  window.__crBg = (el) => bgOf(el);
+})()`;
+test('(S10) keyboard walk, focus ring and contrast, headings, dialogs, reduced motion, the phone drawer', { timeout: 900000 }, async () => {
+  const b = await chromium.launch();
+  try {
+    {
+      const lab = await world(); const writes = []; let s = null;
+      try {
+        s = await openAs(b, lab, LAB.superUn, LAB.superPw, { context: { reducedMotion: 'reduce' }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+        const page = s.page; await page.waitForTimeout(1500); await page.evaluate(CONTRAST);
+        await s.go('#/sysadmin/overview', 2000);
+        /* keyboard only: the collapse control, then the 17 items in their visual order, then the exit and the user card */
+        await page.focus('aside.bsb .s-tog2');
+        const order = [];
+        for (let i = 0; i < 19; i++) {
+          await page.keyboard.press('Tab');
+          order.push(await page.evaluate(() => { const a = document.activeElement, cs = getComputedStyle(a);
+            return { t: a.classList.contains('s-exit') ? 'exit' : a.classList.contains('s-user') ? 'user' : (a.getAttribute('data-con-tab') ? (a.querySelector('.nlbl') || a).textContent.trim() : a.className),
+              ring: cs.outlineStyle === 'solid' && parseFloat(cs.outlineWidth) >= 2 ? window.__cr(a, 'outlineColor') : 0 }; }));
+        }
+        assert.deepEqual(order.map((o) => o.t), [...DEST.map((d) => d[2]), 'exit', 'user'], 'Tab order = the sidebar order: items, the exit, the user card');
+        for (const o of order) assert.ok(o.ring >= 3, 'light: the focus ring on «' + o.t + '» is ' + o.ring + ':1 (≥3)');
+        /* Enter on an item opens it and puts the focus on the page title; Shift+Tab goes back into the sidebar */
+        await page.focus(sel(['users', null])); await page.keyboard.press('Enter'); await page.waitForTimeout(1500);
+        let st = await state(page);
+        assert.equal(st.hash, '#/sysadmin/users'); assert.equal(st.h2, 'مراقبة الحسابات'); assert.ok(st.focus, 'Enter: the focus is on the page h2');
+        await page.keyboard.press('Shift+Tab');
+        assert.ok(await page.evaluate(() => !!document.activeElement.closest('aside.bsb')), 'Shift+Tab from the title returns to the sidebar');
+        /* contrast of the sidebar text, light and dark */
+        for (const th of ['light', 'dark']) {
+          await page.evaluate((x) => KIVO.__bsThemeSet(x), th); await page.waitForTimeout(400);
+          const m = await page.evaluate(() => {
+            const q = (s) => document.querySelector('aside.bsb ' + s), out = {};
+            for (const [k, s] of [['item', '.s-ci:not(.on) .nlbl'], ['current', '.s-ci.on .nlbl'], ['heading', '.s-cgh .nlbl'], ['space', '.s-space .s-spt > span.nlbl'], ['space-small', '.s-space small'],
+              ['exit', '.s-exit .nlbl'], ['exit-small', '.s-exit small'], ['brand', '.s-co'], ['version', '.s-ver'], ['user', '.s-un'], ['role', '.s-ur']]) { const e = q(s); out[k] = e ? window.__cr(e) : -1; }
+            const a = q('.s-ci.on'); a.focus(); out.ringCur = window.__cr(a, 'outlineColor'); return out;
+          });
+          for (const [k, r] of Object.entries(m)) assert.ok(r >= (k.startsWith('ring') ? 3 : 4.5), th + ': ' + k + ' ' + r + ':1');
+        }
+        await page.evaluate(() => KIVO.__bsThemeSet('light')); await page.waitForTimeout(300);
+        /* every page: one h1, one h2, no skipped level; one current item; no tab semantics in the sidebar */
+        for (const d of DEST) {
+          await s.go(addr(d), 900);
+          const h = await page.evaluate(() => {
+            const vis = (e) => e.classList.contains('bs-sr-only') || (e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().height > 0);
+            const hs = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role=heading]')].filter(vis).map((e) => +(e.getAttribute('aria-level') || e.tagName[1]));
+            let prev = 0, skip = ''; for (const l of hs) { if (l > prev + 1 && !skip) skip = prev + '→' + l; prev = l; }
+            return { h1: hs.filter((l) => l === 1).length, h2: hs.filter((l) => l === 2).length, first: hs[0], skip, cur: document.querySelectorAll('aside.bsb [aria-current="page"]').length,
+              sel: document.querySelectorAll('aside.bsb [aria-selected], aside.bsb [role=tab]').length };
+          });
+          const at = addr(d);
+          assert.equal(h.h1, 1, at + ': one h1'); assert.equal(h.first, 1, at + ': the h1 comes first'); assert.equal(h.h2, 1, at + ': one h2'); assert.equal(h.skip, '', at + ': no skipped heading level');
+          assert.equal(h.cur, 1, at + ': one current item'); assert.equal(h.sel, 0, at + ': no tab semantics in the sidebar');
+        }
+        /* a dialog: named, focus inside, Tab stays inside, Escape closes, focus back on the opener */
+        await s.go('#/sysadmin/depts', 1500);
+        const op = page.locator('main button.add').first(); await op.focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(500);
+        const dlg = () => page.evaluate(() => { const d = document.querySelector('main [role=dialog]'); return d ? { name: d.getAttribute('aria-label') || '', inside: d.contains(document.activeElement) } : null; });
+        let dl = await dlg(); assert.ok(dl && dl.name.length > 0, 'the manager dialog is named'); assert.ok(dl.inside, 'the focus moves into the dialog');
+        for (let i = 0; i < 14; i++) await page.keyboard.press('Tab');
+        assert.ok((await dlg()).inside, 'Tab stays inside the dialog');
+        for (let i = 0; i < 4; i++) await page.keyboard.press('Shift+Tab');
+        assert.ok((await dlg()).inside, 'Shift+Tab stays inside the dialog');
+        await page.keyboard.press('Escape'); await page.waitForTimeout(500);
+        assert.equal(await dlg(), null, 'Escape closes the dialog');
+        assert.ok(await op.evaluate((e) => e === document.activeElement), 'the focus returns to the button that opened it');
+        /* the exit confirmation (an unsaved platform draft): named, starts on «البقاء», Escape keeps the console and returns to the exit */
+        await s.go('#/sysadmin/plat/id', 1500);
+        const inp = page.locator('main input[data-k="name"]'); await inp.fill('منصة تجريبية'); await inp.blur(); await page.waitForTimeout(700);
+        await page.focus('aside.bsb .s-exit'); await page.keyboard.press('Enter'); await page.waitForTimeout(600);
+        const cf = await page.evaluate(() => { const d = document.querySelector('[role=alertdialog]'), id = d && d.getAttribute('aria-labelledby'), t = id && document.getElementById(id);
+          return d ? { name: t ? t.textContent.trim() : '', start: document.activeElement.textContent.trim() } : null; });
+        assert.ok(cf, 'leaving with a draft asks first'); assert.equal(cf.name, 'تغييرات غير محفوظة', 'the confirmation is named'); assert.equal(cf.start, 'البقاء', 'the focus starts on «البقاء»');
+        await page.keyboard.press('Escape'); await page.waitForTimeout(600);
+        assert.equal(await page.locator('[role=alertdialog]').count(), 0, 'Escape answers «البقاء»');
+        assert.match(await page.evaluate(() => location.hash), /^#\/sysadmin\/plat\/id/, 'still in the console');
+        assert.ok(await page.evaluate(() => document.activeElement.classList.contains('s-exit')), 'the focus returns to the exit');
+        await page.locator('main .con-ph button', { hasText: 'تجاهل' }).click(); await page.waitForTimeout(500);
+        /* reduced motion: the collapse does not slide */
+        await page.click('aside.bsb .s-tog2'); await page.waitForTimeout(150);
+        const dur = await page.evaluate(() => getComputedStyle(document.querySelector('main.bs-main')).animationDuration);
+        assert.ok(parseFloat(dur) < 0.01, 'reduced motion: no slide (' + dur + ')');
+        await page.click('aside.bsb .s-tog2'); await page.waitForTimeout(400);
+        assert.deepEqual(writes, [], 'nothing was saved'); assert.deepEqual(s.errs, [], 'no page error');
+      } finally { if (s) await s.ctx.close().catch(() => {}); await lab.close(); }
+    }
+    {
+      const lab = await world(); const writes = []; let s = null;
+      try {
+        s = await openAs(b, lab, LAB.superUn, LAB.superPw, { ...MOBILE, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+        const page = s.page; await page.waitForTimeout(1500);
+        for (const [hash, cur] of [['#/sysadmin/sec', '.s-ci.on'], ['#/kpis', 'a.n.on[data-key="kpis"]']]) {
+          await s.go(hash, 2000);
+          const dw = () => page.evaluate((c) => { const a = document.querySelector('aside.bsb'), r = a.getBoundingClientRect(), bg = document.querySelector('.bs-burger');
+            return { open: r.right > 0 && r.left < innerWidth && !a.classList.contains('cx'), exp: bg.getAttribute('aria-expanded'), onCur: !!document.activeElement.closest('aside.bsb') && document.activeElement.matches(c), onBurger: document.activeElement === bg }; }, cur);
+          assert.equal((await dw()).exp, 'false', hash + ': the burger states a closed drawer');
+          await page.focus('.bs-burger'); await page.keyboard.press('Enter'); await page.waitForTimeout(700);
+          let d = await dw(); assert.ok(d.open, hash + ': the drawer opens'); assert.equal(d.exp, 'true'); assert.ok(d.onCur, hash + ': the focus is on the current page in the drawer');
+          await page.keyboard.press('Escape'); await page.waitForTimeout(700);
+          d = await dw(); assert.ok(!d.open, hash + ': Escape closes the drawer'); assert.equal(d.exp, 'false'); assert.ok(d.onBurger, hash + ': the focus returns to the burger');
+        }
+        assert.deepEqual(writes, [], 'phone: nothing was saved'); assert.deepEqual(s.errs, [], 'phone: no page error');
+      } finally { if (s) await s.ctx.close().catch(() => {}); await lab.close(); }
+    }
+  } finally { await b.close(); }
+});
