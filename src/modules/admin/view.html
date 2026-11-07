@@ -298,16 +298,6 @@
   </sc-for>
   <div class="adm-foot"><span>{{usFoot}}</span><span>{{usNote}}</span></div>
 </section>
-<sc-if value="{{usTmpOn}}" hint-placeholder-val="{{ false }}">
-<div class="bs-dlg bs-dlg--modal" style="z-index:var(--z-confirm)" onClick="{{usTmpClose}}">
-  <div dir="rtl" role="dialog" aria-modal="true" aria-label="كلمة مرور مؤقتة" onClick="{{usTmpKeep}}" class="bs-dlg-box adm-dlg">
-    <b class="t">كلمة مرور مؤقتة لـ {{usTmpName}}</b>
-    <p class="m">سلّمها لصاحب الحساب بطريقة آمنة. سيُطلب منه تغييرها عند أول دخول، ولن تظهر هنا مرة أخرى.</p>
-    <div dir="ltr" class="key">{{usTmpPw}}<button type="button" class="bs-btn adm-sm" onClick="{{usTmpCopy}}">نسخ</button></div>
-    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{usTmpClose}}">تم</button></div>
-  </div>
-</div>
-</sc-if>
 </sc-if>
 
 <sc-if value="{{admOnPerms}}" hint-placeholder-val="{{ false }}">
@@ -1398,6 +1388,18 @@
 </sc-if>
 </sc-if>
 
+
+<!-- كلمةُ المرور المؤقتة على مستوى الوحدة: تظهر في الصفحة التي طُلبت منها (المستخدمون أو «تهيئة المنصة ← المسؤول الاحتياطي») -->
+<sc-if value="{{usTmpOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" style="z-index:var(--z-confirm)" onClick="{{usTmpClose}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-label="كلمة مرور مؤقتة" onClick="{{usTmpKeep}}" class="bs-dlg-box adm-dlg">
+    <b class="t">كلمة مرور مؤقتة لـ {{usTmpName}}</b>
+    <p class="m">سلّمها لصاحب الحساب بطريقة آمنة. سيُطلب منه تغييرها عند أول دخول، ولن تظهر هنا مرة أخرى.</p>
+    <div dir="ltr" class="key">{{usTmpPw}}<button type="button" class="bs-btn adm-sm" onClick="{{usTmpCopy}}">نسخ</button></div>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{usTmpClose}}">تم</button></div>
+  </div>
+</div>
+</sc-if>
 
 <sc-if value="{{dTabBarShow}}" hint-placeholder-val="{{ false }}">
 <div class="adm-tabbar adm-tabbar--d"><div class="bs-hbar bs-tabstrip adm-tabs" role="tablist" aria-label="إعدادات الإدارة">

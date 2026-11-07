@@ -70,5 +70,5 @@ test('الربط: cur() بالفهرس · الواجهةُ العامة userById
   const L = rd('src/modules/admin/logic.js');
   assert.match(L, /adUsersVals\(\) \{\n\s*return this\._adMemo\("users", \(\) => this\._adUsersVals0\(\)\);/); assert.match(L, /adVals\(\) \{\n\s*return this\._adMemo\("ov", \(\) => this\._adVals0\(\)\);/);
   assert.match(L, /A\.userById \? A\.userById\(t\.id\)/, '_who بالفهرس');
-  assert.match(L, /\[A && A\.usersVer \? A\.usersVer\(\) : 0, KIVO\.__dcWorld \|\| 0, KIVO\.__dcWrite \|\| 0, Math\.floor\(Date\.now\(\) \/ 6e4\), d, t\.usF, t\.usQ, t\.pmQ, t\.adSecQ, t\.rowMenu, t\.admTab, t\.adErr, tag\(t\.usTmp\), tag\(t\.rmItems\), tag\(t\.adOv\), tag\(t\.adPres\)\]/, 'مدخلاتُ المفتاح كاملة');
+  assert.match(L, /\[A && A\.usersVer \? A\.usersVer\(\) : 0, KIVO\.__dcWorld \|\| 0, KIVO\.__dcWrite \|\| 0, Math\.floor\(Date\.now\(\) \/ 6e4\), d, t\.usF, t\.usQ, t\.pmQ, t\.adSecQ, tag\(t\.adPol\), t\.adPolMsg, t\.rowMenu, t\.admTab, t\.adErr, tag\(t\.usTmp\), tag\(t\.rmItems\), tag\(t\.adOv\), tag\(t\.adPres\)\]/, 'مدخلاتُ المفتاح كاملة');
 });

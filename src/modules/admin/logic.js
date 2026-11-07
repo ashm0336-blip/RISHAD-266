@@ -1403,7 +1403,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       nr = KIVO.BassamNotif && KIVO.BassamNotif.status ? String(KIVO.BassamNotif.status().rev) : "";   /* CORE-02 S8: «أحداث المنصة الأخيرة» */
     } catch (t) {}
-    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.adSecQ, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|") + "|n" + nr;
+    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.adSecQ, tag(t.adPol), t.adPolMsg, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|") + "|n" + nr;
   }
   _adMemo(n, f) {
     const k = this._adKey(),
@@ -9411,7 +9411,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       nfKTypes: String(c.length),
       nfKOn: String(g),
       nfKUrg: String(h),
-      nfKOnTone: g ? "ok" : "", nfKUrgTone: h ? "bad" : "",   /* اتساق الأرقام: بطاقةُ العدّ المشتركة (.adm-ov-kpi) ونبرتُها لغير الصفر */
+      nfKOnTone: "", nfKUrgTone: "",   /* اتساق الأرقام: عدّا «مفعّل» و«عاجل» عدّا إعدادٍ لا حالة، فنبرتُهما محايدة */
       nfKBc:t.status().bcReady ? String(t.status().bcTotal) : "…",
       nfKSum: KIVO.BassamCount(t.REG.length, "صفحة") + " · " + KIVO.BassamCount(c.length, "حدث") + " · " + g + " مفعّلاً",
       nfOnTree: "tree" === n,

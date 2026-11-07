@@ -312,7 +312,7 @@ test('(8) consistency: one tone rule for counts, one count tile, one status line
   const nf = V.slice(V.indexOf('data-bs="notif-adm"'), V.indexOf('data-bs="notif-adm"') + 1200);
   assert.equal((nf.match(/class="adm-pl-box adm-pl-box--sm adm-ov-kpi"/g) || []).length, 4, 'four shared count tiles');
   assert.doesNotMatch(nf.slice(0, nf.indexOf('{{nfKBc}}')), /font-size:22px|--fg-x(059669|dc2626|1d6fd6|141414)/, 'no fixed size or hex colour');
-  assert.match(L, /nfKOnTone: g \? "ok" : "", nfKUrgTone: h \? "bad" : ""/, 'a tone only when non-zero');
+  assert.match(L, /nfKOnTone: "", nfKUrgTone: "",/, '«مفعّل» and «عاجل» are configuration counts: neutral tone (no green/red)');
   /* readiness: one status line */
   const rd3 = V.slice(V.indexOf('١ · مسؤول منصة احتياطي'), V.indexOf('٣ · نسخة ما قبل الكارثة') + 200);
   assert.equal((rd3.match(/class="adm-pl-stl"/g) || []).length, 4, 'backup admin (on/off), recovery key and backup share .adm-pl-stl');

@@ -19,6 +19,10 @@
        group; nothing hidden takes the focus; the rail names its icons (aria-label + a tooltip on hover and on keyboard focus); 1366×768
        and 1280×720 show «الرئيسية», the four headers, the exit and the user card with the largest group open, no sideways scroll; the
        phone drawer (390×844) does the same; nothing is stored or saved;
+   (FIX) review findings: a collapsed group shows and announces its security-events count or unsaved drafts (header and rail
+       icon, which is also aria-current for the current group); the open console drawer keeps Tab inside it; the keyboard exit keeps
+       the focus; neutral notification counts; policy fields keep each key and the save is confirmed at once; «كلمة مؤقتة» on setup
+       shows its dialog there;
    nothing is saved and no page error anywhere. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -798,4 +802,110 @@ test('(CON) consistency: tone rule for counts, one count tile, one status style,
     assert.deepEqual(own, { flt: 0, chip: true }, '#/admin keeps its own activity-log filters');
     assert.deepEqual(g.errs, []);
   } finally { for (const x of [s, m, g]) { try { if (x) await x.ctx.close(); } catch (e) { /* closed */ } } await lab.close(); await b.close(); }
+});
+
+/* (FIX) review findings at e405b70: a collapsed group shows and announces what it holds (the security-events count, unsaved drafts) —
+   on its header in the expanded sidebar and on its rail icon (aria-label · aria-current for the current group); the open console
+   drawer (≤1024) keeps Tab inside it; leaving with «مساحة العمل التشغيلية» by keyboard keeps the focus off <body>; «مفعّل» and
+   «عاجل» on «التنبيهات والتعاميم» are neutral counts; the security policies keep each typed key and confirm the save at once;
+   «كلمة مؤقتة» of the backup administrator shows the new password on «التهيئة والاستعادة» itself. */
+test('(FIX) collapsed-group marks, rail names, drawer Tab trap, exit focus, notif tone, policy typing and save, backup temp password', { timeout: 900000 }, async () => {
+  const b = await chromium.launch(); const lab = await world(); const writes = []; let s = null, t = null;
+  try {
+    const DB = lab.env.DB, NOW = Date.now();
+    await DB.batch([1, 2, 3].map((i) => DB.prepare('INSERT INTO sec(ts,uid,un,act,target,detail,ip,city,dev) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9)').bind(NOW - i * 7000, '', 'TEST_ONLY_fix_' + i, 'login_fail', '', '', '8.8.1.' + i, '', 'd')));
+    s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: { width: 1366, height: 900 }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+    const page = s.page;
+    await s.go('#/sysadmin/overview', 4000);
+    const hdr = (g) => page.evaluate((g) => { const h = document.getElementById('con-gh-' + g), ids = (h.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+      return { exp: h.getAttribute('aria-expanded'), bdg: (h.querySelector('.bdg') || {}).textContent || '', bdgVis: !!(h.querySelector('.bdg') && h.querySelector('.bdg').getClientRects().length), dot: !!h.querySelector('.s-dot'),
+        desc: ids.map((i) => (document.getElementById(i) || {}).textContent || '').join(' | ') }; }, g);
+    /* the shell shows digits in Arabic-Indic with direction marks: compare the plain number */
+    const N = (x) => String(x || '').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+    let H = await hdr('sec');
+    assert.equal(H.exp, 'false', 'Home: «الأمن والرقابة» is collapsed');
+    assert.ok(H.bdgVis && N(H.bdg) === '3', 'the collapsed header shows the security-events count: ' + JSON.stringify(H));
+    assert.match(N(H.desc), /أحداث أمنية اليوم: 3/, 'and describes it to assistive technology');
+    assert.deepEqual(await hdr('org'), { exp: 'false', bdg: '', bdgVis: false, dot: false, desc: '' }, 'a group with nothing pending shows no mark');
+    await page.click('#con-gh-sec'); await page.waitForTimeout(300);
+    H = await hdr('sec'); assert.equal(H.exp, 'true'); assert.ok(!H.bdg && !H.desc, 'open: the badge is on the item itself, not on the header');
+    assert.equal(N(await page.locator('aside.bsb [data-con-tab="sec"]').getAttribute('aria-label')), 'الأمن، أحداث أمنية اليوم: 3');
+    /* the rail: the current group is aria-current, the security icon names the count */
+    await s.go('#/sysadmin/plat/notif', 3500);
+    await page.click('aside.bsb .s-tog2'); await page.waitForTimeout(600);
+    const rail = await page.evaluate(() => [...document.querySelectorAll('aside.bsb .s-cgi')].map((e) => [e.getAttribute('aria-label'), e.getAttribute('aria-current')])).then((r) => r.map(([l, c]) => [N(l), c]));
+    assert.deepEqual(rail, [['الإدارة المؤسسية', null], ['إعدادات المنصة', 'true'], ['الأمن والرقابة، أحداث أمنية اليوم: 3', null], ['البيانات والاستمرارية', null]], 'rail: current group and the count are exposed');
+    await page.click('aside.bsb .s-tog2'); await page.waitForTimeout(600);
+    /* notif counts are neutral */
+    const tones = await page.evaluate(() => [...document.querySelectorAll('main [data-bs="notif-adm"] .adm-ov-kpi')].map((e) => e.getAttribute('data-tone') || ''));
+    assert.equal(tones.length, 4); assert.ok(tones.every((x) => x !== 'bad' && x !== 'ok'), '«مفعّل» and «عاجل» are not green/red: ' + tones);
+    /* a draft in a collapsed «إعدادات المنصة» is marked on its header */
+    await s.go('#/sysadmin/plat/id', 3500);
+    const nm = page.locator('main [data-k="name"]'); await nm.fill((await nm.inputValue()) + ' TEST_ONLY'); await nm.dispatchEvent('change'); await page.waitForTimeout(800);
+    await page.click('#con-gh-plat'); await page.waitForTimeout(300);
+    H = await hdr('plat');
+    assert.equal(H.exp, 'false'); assert.ok(H.dot, 'collapsed «إعدادات المنصة» with a draft: the unsaved dot on its header');
+    assert.match(H.desc, /الصفحة الحالية ضمن هذه المجموعة \| تغييرات غير محفوظة/, 'described as current and unsaved');
+    await page.locator('main .con-ph-a button', { hasText: 'تجاهل' }).click(); await page.waitForTimeout(800);
+    /* the keyboard exit: the focus lands on the operational sidebar, not on <body> */
+    await page.focus('aside.bsb a.s-exit'); await page.keyboard.press('Enter'); await page.waitForTimeout(3000);
+    const ex = await page.evaluate(() => { const a = document.activeElement; return { hash: location.hash, tag: a.tagName, inAside: !!a.closest('aside.bsb'), on: a.classList.contains('on'), console: !!document.querySelector('aside.bsb.bsb--console') }; });
+    assert.ok(!ex.console && ex.hash !== '' && !/sysadmin/.test(ex.hash), 'left the console: ' + JSON.stringify(ex));
+    assert.ok(ex.tag !== 'BODY' && ex.inAside && ex.on, 'the focus is on the current operational page in the sidebar: ' + JSON.stringify(ex));
+    /* security policies: each typed key stays; the save is confirmed at once and stores the typed value */
+    await s.go('#/sysadmin/sec', 4500);
+    const posts = []; page.on('request', (r) => { if (r.method() === 'POST' && /\/api\/policy/.test(r.url())) posts.push(r.postData()); });
+    const inp = page.locator('main input[type=number][aria-label="محاولات قبل القفل"]');
+    await inp.click({ clickCount: 3 }); await page.keyboard.press('Backspace'); await page.waitForTimeout(250);
+    assert.equal(await inp.inputValue(), '', 'Backspace clears the field');
+    await page.keyboard.type('10', { delay: 150 }); await page.waitForTimeout(300);
+    assert.equal(await inp.inputValue(), '10', 'typing «10» key by key shows 10');
+    await page.locator('main').getByRole('button', { name: 'حفظ السياسات' }).click();
+    await page.waitForSelector('#bsCfmOk', { state: 'visible', timeout: 8000 }); await page.locator('#bsCfmOk').click();
+    const st = page.locator('main section[aria-label="سياسات الأمن"] [role=status]');
+    await page.waitForFunction(() => /حُفظت/.test((document.querySelector('main section[aria-label="سياسات الأمن"] [role=status]') || {}).textContent || ''), null, { timeout: 2500 });
+    assert.match(await st.innerText(), /حُفظت — تسري من الدخول التالي/, 'the save is confirmed right away');
+    assert.equal(JSON.parse(posts.slice(-1)[0]).lockN, '10', 'the typed value is sent');
+    assert.equal(String((await s.api('/api/overview')).j.policy.lockN), '10', 'and stored');
+    assert.equal(await inp.inputValue(), '10');
+    /* backup administrator: «كلمة مؤقتة» shows the dialog on «التهيئة والاستعادة» itself */
+    await s.go('#/sysadmin/plat/setup', 4000);
+    const F = (k) => page.locator('main [data-k="' + k + '"]');
+    const setv = async (k, v) => { await F(k).fill(v); await F(k).dispatchEvent('change'); await page.waitForTimeout(200); };
+    await setv('bk.un', '1400000077'); await setv('bk.name', 'TEST_ONLY احتياطي'); await setv('bk.pw', String(100000 + Math.floor(Math.random() * 899999)));
+    await page.locator('main').getByRole('button', { name: 'إنشاء الحساب' }).click(); await page.waitForTimeout(2500);
+    const ack = page.locator('#bsCfmOk'); if (await ack.isVisible().catch(() => false)) { await ack.click(); await page.waitForTimeout(600); }
+    const tmp = page.locator('main').getByRole('button', { name: 'كلمة مؤقتة' });
+    assert.equal(await tmp.count(), 1, 'the backup administrator exists');
+    await tmp.click(); await page.waitForTimeout(800);
+    if (await ack.isVisible().catch(() => false)) { await ack.click(); }
+    const dlg = page.locator('[role=dialog][aria-label="كلمة مرور مؤقتة"]');
+    await dlg.waitFor({ state: 'visible', timeout: 6000 });
+    assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/plat/setup', 'shown on the page where it was asked');
+    assert.match(await dlg.innerText(), /كلمة مرور مؤقتة لـ TEST_ONLY احتياطي/);
+    assert.match(await dlg.locator('.key').innerText(), /\S{4,}/, 'the new password is shown (not printed here)');
+    await dlg.getByRole('button', { name: 'تم' }).click(); await page.waitForTimeout(400);
+    assert.equal(await dlg.count(), 0, '«تم» closes it');
+    assert.deepEqual(s.errs, [], 'no page errors');
+    /* the open console drawer keeps Tab inside it (phone and tablet) */
+    for (const vp of [MOBILE, { viewport: { width: 820, height: 1180 }, context: { isMobile: true, hasTouch: true, deviceScaleFactor: 1 } }]) {
+      t = await openAs(b, lab, LAB.superUn, LAB.superPw, vp); t.page.setDefaultTimeout(15000);
+      await t.go('#/sysadmin/plat/notif', 3000);
+      await t.page.click('.bs-burger'); await t.page.waitForTimeout(700);
+      const seen = new Set();
+      for (let i = 0; i < 40; i++) {
+        await t.page.keyboard.press(i % 7 === 6 ? 'Shift+Tab' : 'Tab');
+        const f = await t.page.evaluate(() => { const a = document.activeElement; return { inAside: !!a.closest('aside.bsb'), t: (a.getAttribute('aria-label') || a.textContent || a.title || '').trim().slice(0, 30) }; });
+        assert.ok(f.inAside, vp.viewport.width + ': Tab ' + i + ' stays in the open drawer («' + f.t + '»)');
+        seen.add(f.t);
+      }
+      assert.ok(seen.size >= 5, 'the walk wraps through the drawer controls');
+      await t.page.keyboard.press('Escape'); await t.page.waitForTimeout(500);
+      assert.match(await t.page.evaluate(() => document.querySelector('aside.bsb').className), /\bcx\b/, 'Escape still closes the drawer');
+      assert.ok(await t.page.evaluate(() => document.activeElement.classList.contains('bs-burger')), 'and returns the focus to the burger');
+      await t.page.keyboard.press('Tab');
+      assert.ok(!(await t.page.evaluate(() => !!document.activeElement.closest('aside.bsb'))), 'closed: Tab moves on to the page');
+      assert.deepEqual(t.errs, []); await t.ctx.close(); t = null;
+    }
+  } finally { for (const x of [s, t]) { try { if (x) await x.ctx.close(); } catch (e) { /* closed */ } } await lab.close(); await b.close(); }
 });

@@ -279,7 +279,8 @@ class Component extends DCLogic {
           else if (!ev.defaultPrevented) { if (this._escDismiss() || this._drawerEsc()) ev.preventDefault(); else this._escMenus(); }
         } else if (ev.key === "Tab") {
           /* Tab داخل حوارٍ مفتوح لا يخرج منه */
-          const top = this._topOverlay(); if (!top) return;
+          /* ودرجُ المركز المفتوح (≤1024) طبقةٌ كذلك: لا يصل Tab إلى الصفحة تحت الستارة */
+          const top = this._topOverlay() || (this.state.sidebarOpen && !this.state.deptOpen && innerWidth <= 1024 && document.querySelector("aside.bsb.bsb--console")) || null; if (!top) return;
           const f = this._focusables(top); if (!f.length) return;
           const i = f.indexOf(document.activeElement);
           if (i === -1) { ev.preventDefault(); f[0].focus(); }
@@ -958,10 +959,16 @@ class Component extends DCLogic {
       if (on) L[g] = [tab, sub];
       const last = L[g] && items.find((i) => i.tab === L[g][0] && (i.sub || null) === (L[g][1] || null));
       const tgt = last || items[0], open = !rail && this.__conOpen === g;
+      /* ما في المجموعة من شارةٍ أو مسوّدةٍ يظهر على رأسها وهي مطويّة وعلى أيقونتها في الشريط المطويّ — مرئيّاً ومقروءاً (aria-describedby · aria-label) */
+      const bdgOn = items.some((i) => i.bdgOn), dz = items.some((i) => i.dirty);
+      const mTxt = [bdgOn ? "أحداث أمنية اليوم: " + bd : "", dz ? "تغييرات غير محفوظة" : ""].filter(Boolean).join("، ");
+      const hMark = !open && !!mTxt;
       out[g] = { show: items.length > 0, items, t: GT[g] || "",
-        exp: open ? "true" : "false", shut: !open, toggle: toggle(g), hCls: "s-cgh" + (on ? " is-cur" : ""), desc: on && !open ? "con-gh-cur" : undefined,
-        railCls: "n s-cgi" + (on ? " on" : ""), railTitle: (GT[g] ? GT[g] + ": " : "") + items.map((i) => i.t).join(" · "),
-        railMark: items.some((i) => i.bdgOn || i.dirty),
+        exp: open ? "true" : "false", shut: !open, toggle: toggle(g), hCls: "s-cgh" + (on ? " is-cur" : ""),
+        desc: [on && !open ? "con-gh-cur" : "", hMark ? "con-gm-" + g : ""].filter(Boolean).join(" ") || undefined,
+        hBdgOn: hMark && bdgOn, hDot: hMark && !bdgOn && dz, bdg: String(bd), mTxt,
+        railCls: "n s-cgi" + (on ? " on" : ""), railCur: on ? "true" : undefined, railTitle: (GT[g] ? GT[g] + ": " : "") + items.map((i) => i.t).join(" · "),
+        railLbl: (GT[g] || "") + (mTxt ? "، " + mTxt : ""), railMark: !!mTxt,
         railGo: tgt ? go(tgt.tab, tgt.sub) : () => {} };
     }
     out.home = Object.assign(out.home, out.home.items[0] || {});
@@ -1043,6 +1050,11 @@ class Component extends DCLogic {
     const last = this.__lastOps && this._pageAllowed(this.__lastOps);
     const k = last || (this._kpisOk() ? "kpis" : (["dstats", "employees", "planning", "daily", "irshad", "seized", "award", "links"].find((x) => this._pageAllowed(x)) || "profile"));
     try { KIVO.BassamNav.go(k, true); } catch (e) {}
+    /* رابطُ الخروج يزول مع شريط المركز فيسقط التركيزُ إلى body: يُنقل إلى الصفحة الحالية في الشريط التشغيلي (والدرجُ يُغلق ⇒ زرُّ القائمة) — ما لم يتحرّك المستخدم */
+    const f = (n) => { try { const ae = document.activeElement; if (ae && ae !== document.body && !(ae.closest && ae.closest("aside.bsb"))) return;
+      const vis = (e) => e && e.getClientRects().length > 0, t = innerWidth <= 1024 ? document.querySelector(".bs-burger") : document.querySelector("aside.bsb:not(.bsb--console) .s-nav .n.on:not(.gone)");
+      if (vis(t)) t.focus({ preventScroll: true }); else if (n < 8) setTimeout(() => f(n + 1), 60); } catch (e) {} };
+    try { requestAnimationFrame(() => f(0)); } catch (e) {}
     return true;
   }
   renderVals() {
