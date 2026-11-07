@@ -11,6 +11,8 @@
    (D) a unit manager's #/admin is untouched (no console, its own settings strip); an employee is refused #/sysadmin;
    (S8) «الرئيسية»: a skeleton (never «٠») while /api/overview is held back, then the four status cards with the lab's real counts; each
        card link, «عرض الكل» and «إرسال تعميم» land on their page; a failed read shows a status row and no «تحديث» button; phone fits;
+   (P) parity with develop@625dac6: an active lock beyond Home's first five failed-sign-in rows keeps «فكّ القفل»; the users row menu
+       «تعديل الصلاحيات» opens «الإدارات» on the account's unit (Back returns); the security log search keeps the typed text and filters;
    nothing is saved and no page error anywhere. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -518,4 +520,57 @@ test('(R) review of S10: sidebar fits 1366×900, gold edge, Back after in-page l
     assert.ok(pv.mid <= 2, 'centred in its column');
     assert.deepEqual(t.errs, []);
   } finally { for (const x of [s, t]) { try { if (x) await x.ctx.close(); } catch (e) { /* closed */ } } await lab.close(); await b.close(); }
+});
+
+test('(P) parity with 625dac6: a late active lock keeps «فكّ القفل» on Home; «تعديل الصلاحيات» opens the unit; the security log search filters', { timeout: 600000 }, async () => {
+  const b = await chromium.launch(); const lab = await world(); const writes = []; let s = null;
+  try {
+    const DB = lab.env.DB, NOW = Date.now();
+    const sec = (ts, un, ip) => DB.prepare('INSERT INTO sec(ts,uid,un,act,target,detail,ip,city,dev) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9)').bind(ts, '', un, 'login_fail', '', '', ip, '', 'd');
+    const st = [];
+    /* six names with four failures each fill Home's five rows; late_lock has one failure (no «يحتاج قرارك» alert) and an active lock */
+    for (let k = 1; k <= 6; k++) for (let i = 0; i < 4; i++) st.push(sec(NOW - 90000 - k * 1000 - i, 'TEST_ONLY_ghost_' + k, '5.5.5.' + k));
+    st.push(sec(NOW - 30000, 'TEST_ONLY_late_lock', '6.6.6.6'));
+    st.push(DB.prepare('INSERT INTO guard(gk,n,until) VALUES(?1,?2,?3)').bind('p:test_only_late_lock|6.6.6.6', 5, NOW + 3600000));
+    await DB.batch(st);
+    s = await openAs(b, lab, LAB.superUn, LAB.superPw, { onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+    const page = s.page;
+    /* H36 · Home: the locked row is listed with its «فكّ القفل», and the button lifts the lock */
+    await s.go('#/sysadmin/overview', 4000);
+    const late = page.locator('main .adm-ov-row.c-fail', { hasText: 'TEST_ONLY_late_lock' });
+    assert.equal(await late.count(), 1, 'Home lists the locked name beyond the first five rows');
+    const btn = late.locator('button', { hasText: 'فكّ القفل' });
+    assert.equal(await btn.count(), 1, 'the locked row keeps «فكّ القفل»');
+    assert.equal(await page.locator('main .adm-ov-row.c-fail:not(.adm-ov-th)', { hasNotText: 'فكّ القفل' }).filter({ hasText: 'TEST_ONLY_ghost' }).count(), 5, 'unlocked names stay capped at five');
+    await btn.click(); await page.waitForTimeout(3000);
+    assert.ok(writes.some((w) => /^POST \/api\/guard\/unlock .*u:test_only_late_lock/.test(w)), '«فكّ القفل» asks the server to lift that lock: ' + writes.join(' ; '));
+    assert.equal(DB.q('SELECT gk FROM guard WHERE gk=?1 AND until>?2', 'p:test_only_late_lock|6.6.6.6', Date.now()).length, 0, 'the lock is lifted');
+    writes.length = 0;
+    /* U14 · users row menu «تعديل الصلاحيات»: «الإدارات» on the account's unit; Back returns to the accounts */
+    for (const [who, unit] of [['TEST_ONLY موظف أ', 'TEST_ONLY إدارة أ'], ['TEST_ONLY مدير ب', 'TEST_ONLY إدارة ب']]) {
+      await s.go('#/sysadmin/users', 4000);
+      const row = page.locator('main .adm-tr.g-us', { hasText: who }).filter({ has: page.locator('.adm-rmb') }).last();
+      await row.locator('.adm-rmb').first().click(); await page.waitForTimeout(600);
+      await row.locator('[data-bs-dd]').getByText('تعديل الصلاحيات', { exact: true }).click(); await page.waitForTimeout(2500);
+      const st1 = await state(page);
+      assert.equal(st1.hash, '#/sysadmin/depts', who + ': «تعديل الصلاحيات» opens «الإدارات»');
+      assert.deepEqual(st1.cur, ['الإدارات']);
+      assert.equal(await page.evaluate(() => (document.getElementById('bsSelName') || {}).value ?? null), unit, who + ': the account\'s unit is selected');
+      await page.goBack(); await page.waitForTimeout(1500);
+      assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/users', who + ': Back returns to the accounts');
+    }
+    /* security log search: the typed text stays and only the matching rows are listed, right away */
+    await DB.batch(['TEST_ONLY_alpha', 'TEST_ONLY_beta'].map((u, i) => sec(Date.now() - 6e4 - i * 1e4, u, '7.7.7.' + i)));
+    await s.go('#/sysadmin/sec', 4500);
+    const names = () => page.evaluate(() => [...new Set(document.querySelector('main').innerText.match(/TEST_ONLY_(alpha|beta)\b/g) || [])].sort().join(','));
+    assert.equal(await names(), 'TEST_ONLY_alpha,TEST_ONLY_beta');
+    const q = page.locator('main input[placeholder="بحث بالاسم أو اسم المستخدم…"]');
+    assert.equal(await q.count(), 1);
+    await q.pressSequentially('alpha', { delay: 80 }); await page.waitForTimeout(1000);
+    assert.equal(await q.inputValue(), 'alpha', 'typing keeps the text');
+    assert.equal(await names(), 'TEST_ONLY_alpha', 'the log lists the matching name only');
+    await q.fill(''); await page.waitForTimeout(1000);
+    assert.equal(await names(), 'TEST_ONLY_alpha,TEST_ONLY_beta', 'clearing the search lists every row again');
+    assert.deepEqual(writes, [], 'nothing saved'); assert.deepEqual(s.errs, [], 'no page errors');
+  } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); await b.close(); }
 });

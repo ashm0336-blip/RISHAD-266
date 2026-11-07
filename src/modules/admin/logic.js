@@ -1258,7 +1258,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* CORE-02 S8 · من الرئيسية إلى صفحةٍ في المركز: عبر شريطه (عنوانٌ في السجلّ وتحديدُ العنصر) — وإن غاب الشريط فالانتقالُ نفسُه داخل الصفحة */
   _ovGo(k, sub) {
     const N = KIVO.BassamNav;
-    N && N.conGo ? N.conGo(k, sub || null) : "plat" === k ? this._plGo(sub || "id") : this._admGo(k);
+    if (!N || !N.conGo) return "plat" === k ? this._plGo(sub || "id") : this._admGo(k);
+    N.conGo(k, sub || null);
+    /* العنوانُ تغيّر الآن و«hashchange» يفتح الصفحةَ لاحقاً — رسمٌ بينهما (قائمةٌ تُغلَق · اختيارُ إدارة) كان يعيد كتابةَ التبويب القديم
+       في العنوان (_hashTab) فلا يُفتح شيء؛ فالتبويبُ يتبع العنوانَ من الآن، والقراءةُ تبقى لمسار «hashchange» وحده */
+    "plat" !== k && k !== this.state.admTab && String(location.hash || "") === "#/sysadmin/" + k && this.setState({ admTab: k });
   }
   /* الوحداتُ (إداراتٍ وأقساماً) التي لا مدير لها — القاعدةُ نفسُها التي تكتب «بلا مدير» في شجرة الإدارات */
   _deptsNoMgr() {
@@ -1399,7 +1403,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       nr = KIVO.BassamNotif && KIVO.BassamNotif.status ? String(KIVO.BassamNotif.status().rev) : "";   /* CORE-02 S8: «أحداث المنصة الأخيرة» */
     } catch (t) {}
-    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|") + "|n" + nr;
+    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.adSecQ, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|") + "|n" + nr;
   }
   _adMemo(n, f) {
     const k = this._adKey(),
@@ -3178,7 +3182,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ovFrozenEmpty: !D.length,
       ovFrozenHas: D.length > 0,
       ovFrozenAll: all("users", { usF: "frozen" }).go,
-      ovFails: cap(T),
+      /* كلُّ قفلٍ نشط يبقى ظاهراً بزرّ «فكّ القفل» ولو تجاوز الصفوفَ الخمسة — فسجلُّ الأمن لا يفكّ قفلاً */
+      ovFails: T.filter((r, i) => i < 5 || r.locked),
       ovFailsN: KIVO.BassamCount(o.failsToday || 0, "محاولة") + "",
       ovFailsEmpty: !!t.adOv && !T.length,
       /* مراجعة S10: رأسُ الأعمدة مع الصفوف وحدها — القائمةُ الفارغة سطرٌ واحد */
