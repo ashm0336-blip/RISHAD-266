@@ -36,9 +36,13 @@
     var o = null; try { o = r ? JSON.parse(r) : null; } catch (e) { o = null; }
     cache = merge(DEF, isObj(o) ? o : {}); cacheRaw = r; return cache;
   }
+  /* CORE-02 (B1): اسمُ المنصة مطلوب — الفارغُ والمسافاتُ وحدها (ومحارفُ الاتجاه والعرض الصفري) لا تُحفظ؛ والخادمُ يرفضه كذلك (044 platNameWhy) */
+  var NAME_REQ = "اسم المنصة مطلوب — اكتب اسماً قبل الحفظ";
+  function blankName(v) { return typeof v !== "string" || /^[\s\u061c\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069]*$/.test(v); }
   function set(next) {
     var sup = false; try { sup = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()); } catch (e) {}
     if (!sup) return { ok: false, err: "إعدادات المنصة لمسؤول المنصة وحده" };
+    if (next && Object.prototype.hasOwnProperty.call(next, "name") && blankName(next.name)) return { ok: false, err: NAME_REQ, field: "name" };   /* CORE-02 (B1) */
     try { localStorage.setItem(K, JSON.stringify(merge(DEF, next || {}))); } catch (e) { return { ok: false, err: "تعذّر الحفظ" }; }
     cache = null; apply(); return { ok: true };
   }
@@ -227,5 +231,5 @@
   try { new MutationObserver(function (m) { for (var i = 0; i < m.length; i++) { var t = m[i].target; if (t && t.closest && t.closest("aside.bsb")) { tick(); return; } if (m[i].addedNodes && m[i].addedNodes.length) { for (var j = 0; j < m[i].addedNodes.length; j++) { var n = m[i].addedNodes[j]; if (n.nodeType === 1 && (n.matches && (n.matches("aside.bsb") || n.querySelector && n.querySelector("aside.bsb")))) { tick(); return; } } } } }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
   document.addEventListener("DOMContentLoaded", function () { try { apply(); } catch (e) {} });
   window.addEventListener("load", function () { setTimeout(function () { try { apply(); whatsNewOnce(); installBar(); } catch (e) {} }, 2500); });
-  KIVO.BassamPlat = { DEF: DEF, NAVKEYS: NAVKEYS, NAVNAMES: NAVNAMES, STATUS: STATUS, get: get, defaults: function () { return clone(DEF); }, set: set, apply: apply, gate: gate, openAbout: openAbout, rightsText: function () { return rightsText(get()); }, merge: merge, key: K };
+  KIVO.BassamPlat = { DEF: DEF, NAVKEYS: NAVKEYS, NAVNAMES: NAVNAMES, STATUS: STATUS, get: get, defaults: function () { return clone(DEF); }, set: set, blankName: blankName, NAME_REQ: NAME_REQ, apply: apply, gate: gate, openAbout: openAbout, rightsText: function () { return rightsText(get()); }, merge: merge, key: K };
 })();

@@ -236,7 +236,7 @@
       <sc-for list="{{secPol}}" as="p" hint-placeholder-count="5">
       <div class="adm-tr g-pol">
         <span>{{p.l}}</span>
-        <span style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0"><input value="{{p.v}}" onChange="{{p.on}}" type="number" inputmode="numeric" aria-label="{{p.l}}" class="adm-num"><span class="adm-xs adm-mute">{{p.u}}</span></span>
+        <span style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0"><input value="{{p.v}}" onChange="{{p.on}}" type="number" inputmode="decimal" min="{{p.min}}" max="{{p.max}}" step="{{p.step}}" aria-invalid="{{p.bad}}" aria-label="{{p.l}}" title="{{p.hint}}" class="adm-num"><span class="adm-xs adm-mute">{{p.u}}</span></span>
       </div>
       </sc-for>
       <div class="adm-foot" style="justify-content:flex-start">
@@ -366,7 +366,7 @@
   <!-- ═══ هوية المنصة ═══ -->
   <sc-if value="{{plOnId}}" hint-placeholder-val="{{ true }}">
   <div class="adm-pl-sec"><h3 class="adm-pl-h">الاسم والجهة</h3><div class="adm-pl-help">هوية المنصة الثابتة في كل مكان — نصوص شاشة الدخول وحدها في تبويبها، واسم التطبيق على الجوال في تبويبه</div>
-    <div class="adm-pl-g2 adm-st3"><div><label class="adm-pl-lbl">اسم المنصة <span class="adm-pl-lh">· يظهر في القائمة وعنوان المتصفح وبطاقة الدخول</span></label><input type="text" value="{{plD.name}}" data-k="name" onChange="{{plOn}}" placeholder="" class="adm-pl-in"></div><div><label class="adm-pl-lbl">الجهة المالكة للمنصة <span class="adm-pl-lh">· تظهر في ترويسة الطباعة و«حول المنصة» وأسفل الجانب التعريفي للدخول</span></label><input type="text" value="{{plD.org}}" data-k="org" onChange="{{plOn}}" placeholder="مثال: الرئاسة العامة لشؤون المسجد الحرام" class="adm-pl-in"></div></div></div>
+    <div class="adm-pl-g2 adm-st3"><div><label class="adm-pl-lbl">اسم المنصة <span class="adm-pl-lh">· يظهر في القائمة وعنوان المتصفح وبطاقة الدخول</span></label><input type="text" value="{{plD.name}}" data-k="name" onChange="{{plOn}}" placeholder="" required aria-invalid="{{plNameBad}}" class="adm-pl-in"></div><div><label class="adm-pl-lbl">الجهة المالكة للمنصة <span class="adm-pl-lh">· تظهر في ترويسة الطباعة و«حول المنصة» وأسفل الجانب التعريفي للدخول</span></label><input type="text" value="{{plD.org}}" data-k="org" onChange="{{plOn}}" placeholder="مثال: الرئاسة العامة لشؤون المسجد الحرام" class="adm-pl-in"></div></div></div>
   <div class="adm-pl-sec"><h3 class="adm-pl-h">الشعار</h3><div class="adm-pl-help">PNG أو SVG أو JPG — يُحوَّل تلقائياً إلى مربع 512px ويُستخدم في القائمة والدخول والطباعة وأيقونة الجوال</div>
     <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center">
       <div style="display:flex;gap:10px">
@@ -1391,11 +1391,12 @@
 
 <!-- كلمةُ المرور المؤقتة على مستوى الوحدة: تظهر في الصفحة التي طُلبت منها (المستخدمون أو «تهيئة المنصة ← المسؤول الاحتياطي») -->
 <sc-if value="{{usTmpOn}}" hint-placeholder-val="{{ false }}">
-<div class="bs-dlg bs-dlg--modal" style="z-index:var(--z-confirm)" onClick="{{usTmpClose}}">
+<div class="bs-dlg bs-dlg--modal" style="z-index:var(--z-confirm)" onClick="{{usTmpOut}}">
   <div dir="rtl" role="dialog" aria-modal="true" aria-label="كلمة مرور مؤقتة" onClick="{{usTmpKeep}}" class="bs-dlg-box adm-dlg">
     <b class="t">كلمة مرور مؤقتة لـ {{usTmpName}}</b>
     <p class="m">سلّمها لصاحب الحساب بطريقة آمنة. سيُطلب منه تغييرها عند أول دخول، ولن تظهر هنا مرة أخرى.</p>
     <div dir="ltr" class="key">{{usTmpPw}}<button type="button" class="bs-btn adm-sm" onClick="{{usTmpCopy}}">نسخ</button></div>
+    <sc-if value="{{usTmpInfoOn}}" hint-placeholder-val="{{ false }}"><div class="info" role="alert">{{usTmpInfo}}</div></sc-if>
     <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{usTmpClose}}">تم</button></div>
   </div>
 </div>

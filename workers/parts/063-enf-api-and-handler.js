@@ -748,6 +748,9 @@ export default {
         if (path === '/api/policy') {
           if (request.method === 'POST') {
             var rbp = await bodyRead(request, path); if (rbp.res) return rbp.res; var bp = rbp.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
+            /* CORE-02 (B2): a value outside its range is refused by name (400 policy-invalid) — it was clamped or dropped silently while the
+               answer said «saved». Same ranges as before; a field left out keeps the current value; pwMin stays fixed at 6 (KIVO_259). */
+            var badP = policyBad(bp); if (badP) return json(Object.assign({ ok: 0, err: 'policy-invalid' }, badP), 400);
             var np = {}; Object.keys(POLICY_DEF).forEach(function (k) { var v = +bp[k]; if (isFinite(v) && v > 0) np[k] = v; });
             np.sessH = Math.min(72, Math.max(1, np.sessH || POL.sessH)); np.idleH = Math.min(24, Math.max(0.25, np.idleH || POL.idleH));
             np.lockN = Math.min(20, Math.max(3, np.lockN || POL.lockN)); np.lockMin = Math.min(60, Math.max(1, np.lockMin || POL.lockMin)); np.pwMin = 6;   /* KIVO_259 (إصلاح — كشفه التدقيقُ المستقل): رقمُ مدير النظام 6 أرقام بالضبط (pwCheck) — كان المدخلُ يُقبل حتى 32 فيجعل كلَّ رقمٍ غيرَ صالح (قفلٌ تامّ) */ np.wrMin = Math.min(5000, Math.max(30, np.wrMin || POL.wrMin));   /* KIVO_255 · SOT-139 */

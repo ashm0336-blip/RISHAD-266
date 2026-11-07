@@ -54,7 +54,7 @@ function world(opts = {}) {
     plRkLoad() {}, adOnSrv: () => true,
   };
   for (const n of klass.body.body) {
-    if (n.type !== 'MethodDefinition' || !/^(_adAsk|_adKill|_adFreeze|plRsNext|plRsBackup|plRkNew|plRkOut|plRkClose|plRkCopy|plRkPrint|pwDlgCancel|pwDlgGo)$/.test(n.key.name)) continue;
+    if (n.type !== 'MethodDefinition' || !/^(_adAsk|_adKill|_adFreeze|_adPolRange|_adPolBadOf|_adPolBad|plRsNext|plRsBackup|plRkNew|plRkOut|plRkClose|plRkCopy|plRkPrint|pwDlgCancel|pwDlgGo)$/.test(n.key.name)) continue;
     page[n.key.name] = vm.runInContext('({' + L.slice(n.start, n.end) + '}).' + n.key.name, ctx);
   }
   /* a render-time handler with its free variables bound, `this` = page */

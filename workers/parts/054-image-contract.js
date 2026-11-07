@@ -727,7 +727,7 @@ async function guardCount(env, gk) {
   /* KIVO_259: زيادةٌ ذرّية (كان يقرأ ثم يكتب فتضيع زياداتٌ تحت التزامن) */
   var g = await env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, 1, 0) ON CONFLICT(gk) DO UPDATE SET n = guard.n + 1, until = 0 RETURNING n').bind(gk).first();
   var n = g ? g.n : 0;
-  if (n === LOCK_N) await secLog(env, { un: gk.indexOf('u:') === 0 ? gk.slice(2) : '', act: 'lock', target: gk, detail: 'attempts' });
+  if (n === LOCK_N) await secLog(env, { un: gk.indexOf('u:') === 0 ? gk.slice(2) : '', act: 'lock', target: gk, detail: String(n) });   /* CORE-02 (B3): the count, as guardFail writes it — was the word 'attempts' */
 }
 /* ── حدُّ معدّل الكتابة ─────────────────────────────────────────────────────
    نافذةٌ ثابتةٌ من دقيقة، ومفتاحُها الحسابُ لا عنوانُ الشبكة: مكتبٌ كاملٌ خلف

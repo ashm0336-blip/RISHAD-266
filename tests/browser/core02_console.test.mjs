@@ -909,3 +909,66 @@ test('(FIX) collapsed-group marks, rail names, drawer Tab trap, exit focus, noti
     }
   } finally { for (const x of [s, t]) { try { if (x) await x.ctx.close(); } catch (e) { /* closed */ } } await lab.close(); await b.close(); }
 });
+
+test('(ACC-FIX) acceptance audit B1–B4: blank platform name, out-of-range policy, the lock entry text, the temporary-password dialog', { timeout: 600000 }, async () => {
+  const b = await chromium.launch(); const lab = await world(); const writes = []; let s = null;
+  try {
+    const DB = lab.env.DB, NOW = Date.now(), plat = () => DB.q('SELECT v FROM kv WHERE k=?1 ORDER BY seq', 'bassam_platform_v1').map((r) => r.v).join('');
+    /* B3: a pre-fix entry (detail «attempts», account counter) and a source lock with its count */
+    await DB.batch([['u:TEST_ONLY_lk', 'attempts', 1000], ['p:TEST_ONLY_lk|10.0.0.9', '6', 2000]].map(([tg, d, ago]) => DB.prepare('INSERT INTO sec(ts,uid,un,act,target,detail,ip,city,dev) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9)').bind(NOW - ago, '', 'TEST_ONLY_lk', 'lock', tg, d, '', '', '')));
+    s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: { width: 1366, height: 900 }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+    const page = s.page, toast = () => page.evaluate(() => [...document.querySelectorAll('#bs-toast,#bs-stoast,[role=status],[aria-live]')].map((e) => e.textContent.trim()).filter(Boolean).join(' | '));
+    /* B1: a blank name is refused before any save; the field is marked; the stored name stays */
+    await s.go('#/sysadmin/plat/id', 3500);
+    const before = plat(), nm = page.locator('main [data-k="name"]');
+    for (const v of ['', '   ']) {
+      await nm.fill(v); await nm.dispatchEvent('change'); await page.waitForTimeout(400);
+      assert.equal(await nm.getAttribute('aria-invalid'), 'true', JSON.stringify(v) + ': the field is marked invalid');
+      const w0 = writes.length; await page.locator('main').getByRole('button', { name: '✓ حفظ ونشر للجميع' }).click(); await page.waitForTimeout(1500);
+      assert.deepEqual(writes.slice(w0), [], JSON.stringify(v) + ': nothing is sent');
+      assert.match(await toast(), /اسم المنصة مطلوب/, 'the reason is shown'); assert.doesNotMatch(await toast(), /محفوظ ومنشور/);
+      assert.equal(plat(), before, 'the stored value is unchanged'); assert.notEqual((await page.title()).trim(), '', 'the tab keeps a title');
+    }
+    await page.locator('main .con-ph-a button', { hasText: 'تجاهل' }).click(); await page.waitForTimeout(800);
+    assert.equal(await nm.getAttribute('aria-invalid'), 'false');
+    /* B2: an out-of-range value is refused by name — no question, no request, no «حُفظت»; the stored policy stays */
+    await s.go('#/sysadmin/sec', 4500);
+    const pol0 = JSON.stringify((await s.api('/api/policy')).j.policy), st = page.locator('main section[aria-label="سياسات الأمن"] [role=status]');
+    const inp = page.locator('main input[type=number][aria-label="محاولات قبل القفل"]');
+    assert.equal(await inp.getAttribute('min'), '3'); assert.equal(await inp.getAttribute('max'), '20');
+    await inp.fill('0'); await inp.dispatchEvent('change'); await page.waitForTimeout(400);
+    assert.equal(await inp.getAttribute('aria-invalid'), 'true');
+    const w1 = writes.length; await page.locator('main').getByRole('button', { name: 'حفظ السياسات' }).click(); await page.waitForTimeout(1200);
+    assert.equal(await page.locator('#bsCfmOk').isVisible().catch(() => false), false, 'no confirmation for an invalid value');
+    assert.deepEqual(writes.slice(w1), [], 'nothing is sent');
+    const N = (x) => String(x || '').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+    assert.equal(N(await st.innerText()), 'لم تُحفظ — محاولات قبل القفل: أدخل عدداً صحيحاً من 3 إلى 20', 'the field and its range are named');
+    assert.equal(JSON.stringify((await s.api('/api/policy')).j.policy), pol0, 'the policy is unchanged');
+    /* the server refuses on its own too (a form that skipped the check): 400 with the reason */
+    const raw = await s.api('/api/policy', { method: 'POST', body: JSON.stringify({ lockN: 0 }) });
+    assert.equal(raw.status, 400); assert.equal(raw.j.err, 'policy-invalid'); assert.equal(raw.j.field, 'lockN');
+    await inp.fill('8'); await inp.dispatchEvent('change'); await page.waitForTimeout(300);
+    await page.locator('main').getByRole('button', { name: 'حفظ السياسات' }).click();
+    await page.waitForSelector('#bsCfmOk', { state: 'visible', timeout: 8000 }); await page.locator('#bsCfmOk').click();
+    await page.waitForFunction(() => /حُفظت/.test((document.querySelector('main section[aria-label="سياسات الأمن"] [role=status]') || {}).textContent || ''), null, { timeout: 4000 });
+    assert.equal((await s.api('/api/policy')).j.policy.lockN, 8, 'a valid value is saved');
+    /* B3: the lock entries read as Arabic sentences with a count or none */
+    const log = await page.evaluate(() => [...document.querySelectorAll('main .adm-tr.g-sec')].map((r) => r.textContent.replace(/\s+/g, ' ')).filter((t) => /TEST_ONLY_lk/.test(t)).join(' || '));
+    assert.doesNotMatch(log, /attempts/); assert.match(log, /تنبيه: محاولات فاشلة متتالية باسم TEST_ONLY_lk — لا يُقفل الحساب نفسه/); assert.match(log, /قُفل الدخول مؤقتاً بعد/);
+    /* B4: «إعادة تعيين كلمة المرور» → the temporary password stays after a click outside and Escape; «تم» closes it */
+    await s.go('#/sysadmin/users', 4000);
+    const row = page.locator('main .adm-tr:not(.adm-th)', { hasText: 'مدير ب' });
+    await row.getByRole('button', { name: /⋯|الإجراءات/ }).first().click(); await page.waitForTimeout(500);
+    await page.locator('[role=menu] >> text=إعادة تعيين كلمة المرور').click();
+    await page.waitForSelector('#bsCfmOk', { state: 'visible', timeout: 8000 }); await page.locator('#bsCfmOk').click();
+    const dlg = page.locator('[role=dialog][aria-label="كلمة مرور مؤقتة"]'); await dlg.waitFor({ state: 'visible', timeout: 6000 });
+    const pw = await dlg.locator('.key').innerText();
+    await page.mouse.click(8, 450); await page.waitForTimeout(400);
+    assert.equal(await dlg.count(), 1, 'a click outside keeps it'); assert.match(await dlg.locator('[role=alert]').innerText(), /لا تظهر مرة أخرى/);
+    await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+    assert.equal(await dlg.count(), 1, 'Escape keeps it'); assert.equal(await dlg.locator('.key').innerText(), pw, 'the same password is still shown');
+    await dlg.getByRole('button', { name: 'تم' }).click(); await page.waitForTimeout(400);
+    assert.equal(await dlg.count(), 0, '«تم» closes it');
+    assert.deepEqual(s.errs, [], 'no page errors');
+  } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); await b.close(); }
+});

@@ -1131,9 +1131,32 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   adOnSrv() {
     return !!(window.__BS_BOOT && window.__BS_BOOT.cf && KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper());
   }
-  adFetch(t, e) {
+  /* CORE-02 (B2): نطاقاتُ نموذج سياسات الأمن — نفسُها في الخادم (001 POLICY_RANGE): [الأدنى، الأعلى، عددٌ صحيح]. القيمةُ خارجها تُرفض باسمها
+     قبل التأكيد، ولا يُعرض «حُفظت» إلا بعد قبول الخادم */
+  _adPolRange() {
+    return { sessH: [1, 72, 1], idleH: [0.25, 24, 0], lockN: [3, 20, 1], lockMin: [1, 60, 1], pwMin: [6, 6, 1], wrMin: [30, 5000, 1] };
+  }
+  _adPolBadOf(k, x) {
+    const r = this._adPolRange()[k];
+    if (!r || null == x) return !1;
+    const s = "string" == typeof x ? x.trim() : x,
+      v = "" === s ? NaN : +s;
+    return !isFinite(v) || v < r[0] || v > r[1] || (!!r[2] && Math.floor(v) !== v);
+  }
+  _adPolBad(p) {
+    const R = this._adPolRange();
+    for (const k of Object.keys(R))
+      if (this._adPolBadOf(k, p && p[k])) {
+        const r = R[k],
+          l = { sessH: "مدة الجلسة القصوى", idleH: "الخمول قبل الخروج", lockN: "محاولات قبل القفل", lockMin: "مدة القفل القصوى", pwMin: "الحد الأدنى لكلمة المرور", wrMin: "سقف الحفظ في الدقيقة" }[k];
+        return { k: k, msg: l + (r[0] === r[1] ? " ثابت: " + r[0] : ": أدخل " + (r[2] ? "عدداً صحيحاً" : "رقماً") + " من " + r[0] + " إلى " + r[1]) };
+      }
+    return null;
+  }
+  /* CORE-02 (B2): keepErr — the refusal body (err · msg · field) instead of null, so its reason can be shown */
+  adFetch(t, e, keepErr) {
     return fetch(t, e ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(e) } : {})
-      .then((t) => (t.ok ? t.json() : null))
+      .then((t) => (t.ok ? t.json() : keepErr ? t.json().catch(() => null) : null))
       .catch(() => null);
   }
   adLoad(t) {
@@ -1534,12 +1557,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           k: "warn",
           w: "no-user" === t.detail ? "حدث أمني · اسم مستخدم غير معروف" : "",
         };
-      case "lock":
-        return {
-          t: "قُفل الدخول مؤقتاً بعد " + KIVO.BassamCount(t.detail || "", "محاولة|فاشلة", "g") + "" + (t.un ? " باسم " + t.un : ""),
-          k: "warn",
-          w: "حدث أمني",
-        };
+      case "lock": {
+        /* CORE-02 (B3): detail عددُ المحاولات — وسجلاتُ ما قبل الإصلاح تحمل الكلمة «attempts» فلا يُعرض رقمٌ مكانها. والهدفُ «u:» عدّادُ تنبيهٍ
+           على الحساب لا يقفله (054 guardCount) — القفلُ الفعليّ على مصدر المحاولات (guardFail: «p:» · «ip:») */
+        const n = /^\d+$/.test(String(t.detail || "")) ? +t.detail : 0,
+          c = n ? KIVO.BassamCount(n, "محاولة|فاشلة", "g") : "محاولات فاشلة متتالية",
+          acct = 0 === String(t.target || "").indexOf("u:");
+        return acct
+          ? { t: "تنبيه: " + c + (t.un ? " باسم " + t.un : "") + " — لا يُقفل الحساب نفسه، ويُقفل مصدر المحاولات", k: "warn", w: "حدث أمني" }
+          : { t: "قُفل الدخول مؤقتاً بعد " + c + (t.un ? " باسم " + t.un : ""), k: "warn", w: "حدث أمني" };
+      }
       case "logout":
         return { t: "تسجيل خروج", k: "login" };
       case "sess_kill":
@@ -1693,6 +1720,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   async plSave() {
     const t = this.plP();
     if (!t) return;
+    /* CORE-02 (B1): اسمُ المنصة الفارغ يُرفض قبل أيّ حفظ (ولا تُحفظ شجرةُ التنبيهات وحدها) — والخادمُ يرفضه كذلك */
+    const d0 = this.state.plDraft ? this.plDraft() : null;
+    if (d0 && t.blankName && t.blankName(d0.name)) return void this.bsToast(t.NAME_REQ, "warn");
     const e = await this.nfSave();
     if (e && e.n && !e.ok) return void this.bsToast(e.err || "تعذّر حفظ التنبيهات", "warn");
     if (!this.state.plDraft)
@@ -2408,6 +2438,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (w.plRkInfo = r.plRkInfo || ""),
       (w.plRkInfoOn = !!r.plRkInfo),
       (w.plD = i),
+      (w.plNameBad = !!(i && KIVO.BassamPlat && KIVO.BassamPlat.blankName && KIVO.BassamPlat.blankName(i.name))),
       (w.plRkCopy = () => this.plRkCopy()),
       (w.plRkPrint = () => this.plRkPrint(i.name)));
     const v =
@@ -2724,6 +2755,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       usTmpName: t.usTmp ? t.usTmp.name : "",
       usTmpPw: t.usTmp ? t.usTmp.pw : "",
       usTmpClose: () => this.setState({ usTmp: null }),
+      /* CORE-02 (B4): النقرُ خارج الحوار وEscape (نقرةٌ على الطبقة) لا يُغلقانه — الكلمةُ لا تظهر مرة ثانية؛ يُغلق بزرّ «تم» وحده */
+      usTmpOut: () => this.state.usTmp && this.setState({ usTmp: Object.assign({}, this.state.usTmp, { info: "الكلمة لا تظهر مرة أخرى — انسخها أولاً، ثم اضغط «تم» لإغلاق النافذة" }) }),
+      usTmpInfo: t.usTmp ? t.usTmp.info || "" : "",
+      usTmpInfoOn: !(!t.usTmp || !t.usTmp.info),
       usTmpKeep: (t) => {
         try {
           t.stopPropagation();
@@ -3127,7 +3162,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ["lockMin", "مدة القفل القصوى", "دقيقة"],
         ["pwMin", "الحد الأدنى لكلمة مرور الحسابات الإدارية (ثابت)", "خانة"],
         ["wrMin", "سقفُ الحفظ لكل حساب في الدقيقة (رفعُ الصور ربعُه)", "حفظة"],
-      ].map((t) => ({ l: t[1], u: t[2], v: null == F[t[0]] ? "" : String(F[t[0]]), on: (e) => I(t[0], e.target.value) })),
+      ].map((t) => {
+        const r = this._adPolRange()[t[0]];
+        return { l: t[1], u: t[2], v: null == F[t[0]] ? "" : String(F[t[0]]), on: (e) => I(t[0], e.target.value), min: r[0], max: r[1], step: r[2] ? 1 : 0.25,
+          bad: this._adPolBadOf(t[0], F[t[0]]), hint: r[0] === r[1] ? "ثابت: " + r[0] : "من " + r[0] + " إلى " + r[1] };
+      }),
       G = (p.list || []).map((t) => ({
         ini: l(t.u.name),
         name: t.u.name || t.u.un,
@@ -3216,14 +3255,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       secExport: () => this.adSecExport(),
       secPol: j,
       secPolMsg: t.adPolMsg || "",
-      secPolSave: () =>
+      secPolSave: () => {
+        /* CORE-02 (B2): قيمةٌ خارج نطاقها تُرفض هنا باسمها (لا تأكيدَ ولا طلب) · ورفضُ الخادم يُعرض بسببه — لا «حُفظت» كاذبة ولا تغييرَ صامت */
+        const bad = this._adPolBad(this.state.adPol || {});
+        if (bad) return void (this.setState({ adPolMsg: "لم تُحفظ — " + bad.msg }), this.bsToast(bad.msg, "warn"));
         this._adAsk(
           { title: "حفظ سياسات الأمن", msg: "تسري القيم الجديدة على كل حسابات المنصة من الدخول التالي. هل تحفظها؟", ok: "حفظ السياسات" },
           () =>
-            this.adFetch("/api/policy", this.state.adPol || {}).then((t) => {
-              t && t.ok ? this.setState({ adPol: t.policy, adPolMsg: "حُفظت — تسري من الدخول التالي" }) : this.bsToast("تعذّر الحفظ", "warn");
+            this.adFetch("/api/policy", this.state.adPol || {}, !0).then((t) => {
+              if (t && t.ok) return void this.setState({ adPol: t.policy, adPolMsg: "حُفظت — تسري من الدخول التالي" });
+              const m = (t && t.msg) || "تعذّر الحفظ";
+              (this.setState({ adPolMsg: "لم تُحفظ — " + m }), this.bsToast(m, "warn"));
             }),
-        ),
+        );
+      },
       secSess: G,
       secSessN:
         KIVO.BassamCount((p.list || []).length, "مستخدم") +
