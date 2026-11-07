@@ -59,6 +59,12 @@ const MOVED = {
      «التهيئة والاستعادة» under البيانات والاستمرارية, the other eight under إعدادات المنصة */
   plat: { 'هوية المنصة': 'aside', 'شاشة تسجيل الدخول': 'aside', 'تطبيق الجوال': 'aside', 'القوائم': 'aside', 'الطباعة والتقارير': 'aside', 'الوحدات': 'aside', 'التهيئة والاستعادة': 'aside', 'التنبيهات والتعاميم': 'aside', 'حول المنصة': 'aside' },
 };
+/* CORE-02 review of S10 (intended): a card title that only repeated the page title (h2) was dropped; the recorded heading is the h2
+   named here, which must be shown. The ONLY place a recorded heading may merge into the page title; never add an entry to hide a loss. */
+const MERGED = {
+  users: { 'مراقبة الحسابات — كل الإدارات': 'مراقبة الحسابات' },
+};
+const merged = (t, x, now) => !!(MERGED[t] && MERGED[t][x] && now.headings.has(MERGED[t][x]));
 /* CORE-02 step 2: old display names of the top role / the admin interface that must no longer be shown on any admin tab */
 const OLD_NAMES = ['مدير النظام', 'المشرف العام', 'مشرف المنصة', 'مدير المنصة'];
 /* CORE-02 step 1 / S7: the nine tabs sit in five groups — since S7 in the console sidebar. Each recorded tab must show its group
@@ -316,7 +322,7 @@ if (CAPTURE) {
         nowBy[t] = now;
         assert.ok(opened(t, states[0]), t + ': the tab opened (recorded «' + rec.selected + '») shows ' + JSON.stringify(NAV[t]) + ' selected (now ' + JSON.stringify(states[0].selected) + ')');
         for (const kind of ['headings', 'actions', 'fields']) {
-          const miss = missing(rec[kind], now, kind).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x] && moved.push([t, x, MOVED[t][x]])));
+          const miss = missing(rec[kind], now, kind).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x] && moved.push([t, x, MOVED[t][x]]))).filter((x) => !(kind === 'headings' && merged(t, x, now)));
           assert.deepEqual(miss, [], t + ': every recorded ' + kind + ' still reachable');
         }
         /* CORE-02 step 2: the display names — no old name for the top role or the admin interface is shown anywhere on the page */
@@ -419,7 +425,7 @@ if (CAPTURE) {
               };
               const states = await probes(s.page, scope, t, each), now = union(states);
               for (const kind of ['headings', 'actions', 'fields']) {
-                const miss = missing(rec[t][kind], now, kind).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x]));
+                const miss = missing(rec[t][kind], now, kind).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x])).filter((x) => !(kind === 'headings' && scope === 'sys' && merged(t, x, now)));
                 if (miss.length) bad.push(vn + ' ' + scope + '/' + t + ': not reachable (' + kind + '): ' + miss.join(' · '));
               }
             }

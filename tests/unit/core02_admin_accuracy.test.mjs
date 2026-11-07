@@ -89,7 +89,7 @@ test('(e) the security-log request for «اليوم» uses that boundary; 7 / 30
   const sc = ov.ovStats.find((c) => c.k === 'sec'), card = sc.rows.find((c) => c.l === 'محاولات دخول فاشلة');
   assert.equal(card.go && typeof card.go, 'function');
   assert.equal(card.v, '2');
-  assert.equal(sc.sub, '«اليوم» يبدأ من الثالثة فجراً بتوقيت الرياض', 'the overview says where the server-counted «اليوم» starts');
+  assert.equal(sc.sub, '«اليوم» هنا يبدأ من الثالثة فجراً بتوقيت الرياض، وفي سجل الأمن من منتصف الليل', 'the overview says where the server-counted «اليوم» starts, and (review of S10) where the log it opens starts');
 });
 
 /* ── (f) ── */

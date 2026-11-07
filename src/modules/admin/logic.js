@@ -1202,12 +1202,53 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ? this.setState({ admTab: "oplog" }, () => this.audLoad(!0))
           : this.setState({ admTab: k });
   }
-  /* CORE-02 S7 · أقسامُ «إعدادات المنصة» (#/sysadmin/plat/<sub>) — تنقّلُها في شريط «مركز إدارة رشاد» (root-logic _sysNav) */
+  /* CORE-02 S7 · أقسامُ «إعدادات المنصة» (#/sysadmin/plat/<sub>) — تنقّلُها في شريط «مركز إدارة رشاد» (root-logic _sysNav).
+     مراجعة S10: القائمةُ الواحدة [المفتاح · العنوان · الوصف · الأيقونة] — منها المفاتيحُ (PL_KEYS) وعنوانُ الصفحة ووصفُها (plVals) */
+  PL_SECS() {
+    return [
+      [
+        "id",
+        "هوية المنصة",
+        "الاسم والشعار والمظهر",
+        "M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+      ],
+      ["login", "شاشة تسجيل الدخول", "النصوص والخيارات", "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"],
+      [
+        "app",
+        "تطبيق الجوال",
+        "التثبيت على الشاشة الرئيسية",
+        "M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM12 18h.01",
+      ],
+      ["side", "القوائم", "القائمة الجانبية والشريط العلوي", "M3 4h18v16H3zM15 4v16"],
+      [
+        "print",
+        "الطباعة والتقارير",
+        "الترويسة والتذييل",
+        "M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z",
+      ],
+      ["mods", "الوحدات", "تفعيل أقسام المنصة", "M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"],
+      [
+        "setup",
+        "التهيئة والاستعادة",
+        "الطوارئ والتسليم",
+        "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",
+      ],
+      [
+        "notif",
+        "التنبيهات والتعاميم",
+        "شجرة الأحداث · التعميم · السجل",
+        "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0",
+      ],
+      ["about", "حول المنصة", "الإصدار والرخصة والأدلة", "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01"],
+    ];
+  }
   PL_KEYS() {
-    return ["id", "mods", "notif", "login", "side", "print", "app", "about", "setup"];
+    return this.PL_SECS().map((x) => x[0]);
   }
   /* رأسُ الصفحة في المركز: مجموعتُها (سطرٌ صغير) ثم عنوانُها — المجموعةُ من موضع التبويب في الشريط الجانبي */
   _conHead(d, ps) {
+    /* أسماءُ المجموعات وعناوينُ الصفحات هنا توأمُ GT و_sysNav في root-logic عن قصد: صفحةُ الإدارة لا تعتمد على الإطار (V5) —
+       وتطابقُهما يثبّته core02_console_nav.test.mjs (6) */
     const G = { org: "الإدارة المؤسسية", plat: "إعدادات المنصة", sec: "الأمن والرقابة", data: "البيانات والاستمرارية" },
       T = { overview: ["", "الرئيسية"], depts: ["org", "الإدارات"], users: ["org", "مراقبة الحسابات"], perms: ["org", "خريطة الصلاحيات"],
         sec: ["sec", "الأمن"], oplog: ["sec", "سجل الأنشطة والتغييرات"], backup: ["data", "النسخة الاحتياطية"], histimp: ["data", "استيراد البيانات التاريخية"] },
@@ -1404,7 +1445,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         bassam_seized_jew_v1: "أنواع قطع المجوهرات",
         bassam_award_v1: "جائزة التميز",
         bassam_custody_v1: "العهد",
-      }[s] || s.replace(/^bassam_/, "").replace(/_v\d+$/, "")) + (e ? " · " + this.adDept(e[1]) : "")
+      }[s] || (KL ? KL.label(s) : "بيانات المنصة")) + (e ? " · " + this.adDept(e[1]) : "")
     );
   }
   /* CORE-02 · «اليوم» في فلاتر الواجهة = منذ منتصف الليل بتوقيت الرياض (UTC+3 بلا توقيت صيفي) أيّاً كانت منطقة جهاز المتصفح */
@@ -1908,42 +1949,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       i = this.plDraft(),
       n = (this.plSaved(), this.adOnSrv()),
       o = this.plDirtyN(),
-      p = [
-        [
-          "id",
-          "هوية المنصة",
-          "الاسم والشعار والمظهر",
-          "M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
-        ],
-        ["login", "شاشة تسجيل الدخول", "النصوص والخيارات", "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"],
-        [
-          "app",
-          "تطبيق الجوال",
-          "التثبيت على الشاشة الرئيسية",
-          "M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM12 18h.01",
-        ],
-        ["side", "القوائم", "القائمة الجانبية والشريط العلوي", "M3 4h18v16H3zM15 4v16"],
-        [
-          "print",
-          "الطباعة والتقارير",
-          "الترويسة والتذييل",
-          "M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z",
-        ],
-        ["mods", "الوحدات", "تفعيل أقسام المنصة", "M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"],
-        [
-          "setup",
-          "التهيئة والاستعادة",
-          "الطوارئ والتسليم",
-          "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",
-        ],
-        [
-          "notif",
-          "التنبيهات والتعاميم",
-          "شجرة الأحداث · التعميم · السجل",
-          "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0",
-        ],
-        ["about", "حول المنصة", "الإصدار والرخصة والأدلة", "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01"],
-      ],
+      p = this.PL_SECS(),
       l = p.some((t) => t[0] === r.plTab) ? r.plTab : "id",
       d = p.filter((t) => t[0] === l)[0],
       c = (t) =>
@@ -2545,7 +2551,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             p.push({
               t: "تعديل الصلاحيات",
               go: () => {
-                (a.deptId && this.sysPick(a.deptId), this.adGo("depts"));
+                (a.deptId && this.sysPick(a.deptId), this._ovGo("depts"));
               },
             }),
           "staff" !== a.role ||
@@ -2904,7 +2910,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           row("الأقسام", dl.filter(isSec).length),
           row("بلا مدير", nm.length, { tone: nm.length ? "warn" : "" }),
         ]),
-        card("sec", "الأمن اليوم", "«اليوم» يبدأ من الثالثة فجراً بتوقيت الرياض", "إلى صفحة الأمن", "sec", [
+        card("sec", "الأمن اليوم", "«اليوم» هنا يبدأ من الثالثة فجراً بتوقيت الرياض، وفي سجل الأمن من منتصف الليل", "إلى صفحة الأمن", "sec", [
           row("محاولات دخول فاشلة", o.failsToday || 0, {
             skel: ld,
             tone: o.failsToday ? "bad" : "",
@@ -2935,7 +2941,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           when: this.adRel(t.t, e),
           act: t.until > e ? "فكّ القفل" : "عرض السجل",
           go: () =>
-            t.until > e ? this.adAct("/api/guard/unlock", { gk: "u:" + String(t.un).toLowerCase(), gks: t.gks || [] }, "فُكّ القفل") : this.adGo("sec"),   /* KIVO_261 (AUD-052): أقفالُ الاسم الفعلية */
+            t.until > e ? this.adAct("/api/guard/unlock", { gk: "u:" + String(t.un).toLowerCase(), gks: t.gks || [] }, "فُكّ القفل") : go("sec")(),   /* KIVO_261 (AUD-052): أقفالُ الاسم الفعلية */
         }),
       ),
       (!u || w >= 2) &&
@@ -2944,7 +2950,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           txt: u ? "النسخة الاحتياطية الشاملة متأخرة " + KIVO.BassamCount(w, "يوم", "g") + "" : "لم تُؤخذ نسخة احتياطية شاملة بعد",
           when: "الآن",
           act: "أخذ نسخة الآن",
-          go: () => this.adGo("backup"),
+          go: go("backup"),
         }),
       (o.deniedBy || [])
         .filter((t) => t.n >= 2)
@@ -2954,7 +2960,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             txt: (t.name || "مستخدم") + " حاول التعديل خارج صلاحيته " + KIVO.BassamCount(t.n, "مرة", "g") + " اليوم",
             when: this.adRel(t.t, e),
             act: "عرض السجل",
-            go: () => this.setState({ adSecKind: "denied" }, () => this.adGo("sec")),
+            go: go("sec", { adSecKind: "denied" }),
           }),
         ));
     /* CORE-02 S8: من بياناتٍ محمَّلة أصلاً — تظهر عند وجودها فقط */
@@ -3160,18 +3166,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ovPres: cap(v),
       ovPresLoading: pl,
       ovPresEmpty: !!t.adPres && !v.length,
+      ovPresHas: v.length > 0,
       ovPresAll: all("sec").go,
       ovAdded: cap(_),
       ovAddedN: KIVO.BassamCount(_.length, "حساب") + "",
       ovAddedEmpty: !!t.adOv && !_.length,
+      ovAddedHas: _.length > 0,
       ovAddedAll: all("users", { usF: "week" }).go,
       ovFrozen: cap(D),
       ovFrozenN: D.length ? KIVO.BassamCount(D.length, "حساب") + "" : "لا شيء",
       ovFrozenEmpty: !D.length,
+      ovFrozenHas: D.length > 0,
       ovFrozenAll: all("users", { usF: "frozen" }).go,
       ovFails: cap(T),
       ovFailsN: KIVO.BassamCount(o.failsToday || 0, "محاولة") + "",
       ovFailsEmpty: !!t.adOv && !T.length,
+      /* مراجعة S10: رأسُ الأعمدة مع الصفوف وحدها — القائمةُ الفارغة سطرٌ واحد */
+      ovFailsHas: T.length > 0,
       ovFailsAll: all("sec", { adSecKind: "login", adSecPeriod: "today" }).go,
       ovEvents: ev,
       ovEventsEmpty: !ev.length,
@@ -4708,7 +4719,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       offTxt: "معطّلة على مستوى المنصة: " + dis.map(nm).join(" · "),
       lenses: KIVO.BassamCount(s.length, "عدسة") + "",
       go: () => {
-        (this.sysPick(t.id), this.adGo("depts"));
+        (this.sysPick(t.id), this._ovGo("depts"));
       },
     };
   }
@@ -5709,10 +5720,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "hist-head-card",
         head(
           12,
-          title(18, "28px", null, ic("database", 20, { color: C.br }), "استيراد البيانات التاريخية"),
+          /* مراجعة S10: العنوانُ في رأس الصفحة (h2) — الكرتُ يبدأ بوصفه */
           h(
             "p",
-            { style: { margin: "6px 0 0 0", fontSize: 12, lineHeight: "16px", color: C.mu, fontFamily: FF } },
+            { style: { margin: 0, fontSize: 12, lineHeight: "16px", color: C.mu, fontFamily: FF } },
             "ارفع ملف Excel موحّد يحتوي بيانات الحرم والنبوي معاً. كل صف = يوم هجري واحد.",
           ),
         ),
@@ -6696,7 +6707,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           flexWrap: "wrap",
         },
       },
-      h(
+      /* مراجعة S10: في «مركز إدارة رشاد» عنوانُ الصفحة (h2) يحمل الاسم — الكرتُ يبدأ بوصفه وأدواته؛ و#/admin كما هو */
+      sc.site
+        ? null
+        : h(
         "div",
         {
           style: {
@@ -6730,10 +6744,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       h(
         "div",
         { style: { flex: 1, minWidth: 180 } },
-        h("div", { style: { fontSize: 14, fontWeight: 700, color: "var(--text-primary)" } }, "سجل الأنشطة والتغييرات"),
+        sc.site ? null : h("div", { style: { fontSize: 14, fontWeight: 700, color: "var(--text-primary)" } }, "سجل الأنشطة والتغييرات"),
         h(
           "div",
-          { style: { fontSize: 10.5, color: "var(--text-muted)", marginTop: 2 } },
+          { style: { fontSize: sc.site ? 12 : 10.5, color: "var(--text-muted)", marginTop: sc.site ? 0 : 2 } },
           "كلُّ فعلٍ تشغيليّ على كيانات المنصة — يبقى بعد حذف الكيان · الفاعلُ والوقتُ من الخادم · " +
             (sc.site ? (sc.dept ? "إدارة واحدة" : "كل الإدارات") : "إدارتك"),
         ),
@@ -7258,7 +7272,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             const e = t.target && t.target.files && t.target.files[0];
             (t.target && (t.target.value = ""), e && KIVO.BassamDeptBackup && KIVO.BassamDeptBackup.importFile(e));
           },
-          admGoBackup: () => this._admGo("backup"),
+          /* مراجعة S10: كلُّ انتقالٍ داخل المركز عبر _ovGo (BassamNav.conGo) — عنوانٌ جديد في السجلّ فيعمل زرُّ الرجوع */
+          admGoBackup: () => this._ovGo("backup"),
           admOnHist: n && "histimp" === d,
           hiNode: n && "histimp" === d ? this.hiNode() : null,
         };

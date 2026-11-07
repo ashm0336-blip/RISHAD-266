@@ -487,4 +487,7 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
   .adm-ov-al .t{flex:1 1 calc(100% - 20px)}
   .adm-ov-al .bs-btn{margin-inline-start:auto}
 }
+/* مراجعة S10 · معاينةُ شاشة الدخول على سطح المكتب: الإطارُ بعرض الصورة المصغّرة (1280 × plPvScaleD 0.2445 + الحدّ) في وسط عمودها —
+   حين يتكدّس العمود تحت النموذج (اللوحي) لا تبقى مساحةٌ فارغة داكنة في الإطار */
+.adm-pv-d{width:100%;max-width:315px;margin-inline:auto;box-sizing:border-box}
 </style>

@@ -662,28 +662,30 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
 .bsb .s-ver{font-size:9px;font-weight:600;color:var(--brand-fg);letter-spacing:.4px;margin-top:2px}
 .bsb:not(.bsb--console) .s-togwrap .n{background:var(--brand-soft);border-color:var(--border-brand-soft)}
 .bs-topbar.is-console{box-shadow:inset 0 -2px 0 var(--con-accent)}
-.bsb--console{background:var(--con-bg);border-left-color:var(--con-line);box-shadow:inset -2px 0 0 var(--con-accent),var(--shadow-soft)}
+.bsb--console{background:var(--con-bg);border-left-color:var(--con-line);box-shadow:inset 2px 0 0 var(--con-accent),var(--shadow-soft)}
 .bsb--console .s-brand,.bsb--console .s-togbar{border-bottom-color:var(--con-line)}
+/* مراجعة S10: في المركز لا صفَّ مستقلاً لزرّ الطيّ (≈48px تُستردّ للتنقّل) — يجلس الزرُّ نفسُه في الطرف الفارغ من صفّ الاسم؛ الشريطُ المطويّ (rail) يُبقي صفَّه */
+.bsb--console:not(.cx) .s-togbar{position:absolute;top:0;inset-inline-end:0;height:var(--bs-topbar-h);box-sizing:border-box;padding:0 14px;border-bottom:0;z-index:1}
 .bsb--console .s-togwrap,.bsb--console .s-foot{border-top-color:var(--con-line)}
 .bsb--console .s-co,.bsb--console .s-un,.bsb--console .s-ur{color:var(--con-fg)}
 .bsb--console .s-ver{color:var(--con-fg-muted)}
 .bsb--console .s-tog2{color:var(--con-fg-muted)}
 .bsb--console .s-badge{background:var(--con-on);color:var(--con-fg)}
-.bsb--console .s-space{display:flex;align-items:center;gap:10px;min-height:40px;margin:2px 0 6px;padding:6px 10px;border-radius:var(--r-md);background:var(--con-hover);color:var(--con-fg)}
+.bsb--console .s-space{display:flex;align-items:center;gap:10px;min-height:36px;box-sizing:border-box;margin:0 0 4px;padding:4px 10px;border-radius:var(--r-md);background:var(--con-hover);color:var(--con-fg)}
 .bsb--console .s-space .ni{color:var(--con-accent)}
 .bsb--console .s-spt{display:flex;flex-direction:column;min-width:0;line-height:1.3}
 .bsb--console .s-spt .nlbl{font-size:var(--fs-md);font-weight:800}
-.bsb--console .s-spt small.nlbl{font-size:var(--fs-xs);font-weight:600;color:var(--con-fg-muted)}
-.bsb--console .s-cg{margin-top:var(--sp-1)}
-.bsb--console .s-cgh{display:flex;align-items:center;gap:10px;margin:0;padding:var(--sp-2) 10px var(--sp-1);font-size:var(--fs-sm);font-weight:800;line-height:1.4;color:var(--con-fg-muted);white-space:nowrap}
+.bsb--console .s-nav{padding-block:4px}
+.bsb--console .s-cg{margin-top:0}
+.bsb--console .s-cgh{display:flex;align-items:center;gap:10px;margin:0;padding:var(--sp-1) 10px;font-size:var(--fs-sm);font-weight:800;line-height:1.3;color:var(--con-fg-muted);white-space:nowrap}
 .bsb--console .s-cgh .ni{opacity:.8}
 .bsb--console .n{color:var(--con-fg-muted);text-decoration:none}
 .bsb--console .n:hover{background:var(--con-hover);color:var(--con-fg)}
-.bsb--console .s-ci{min-height:32px;box-sizing:border-box;padding-block:5px;padding-inline:38px 10px;line-height:1.4;font-size:var(--fs-md);font-weight:600}
+.bsb--console .s-ci{min-height:29px;box-sizing:border-box;padding-block:3px;padding-inline:38px 10px;line-height:1.4;font-size:var(--fs-md);font-weight:600}
 .bsb--console .s-ci--top{padding-inline:10px;margin-top:2px}
 .bsb--console .n.on{background:var(--con-on);color:var(--con-fg);font-weight:700;border-color:transparent;border-inline-start:3px solid var(--con-accent);border-radius:0 9px 9px 0}
 .bsb--console .n.on .ni{color:var(--con-accent)}
-.bsb--console .s-cdiv{display:block;height:1px;margin:var(--sp-1) 38px var(--sp-1) var(--sp-3);background:var(--con-line)}
+.bsb--console .s-cdiv{display:block;height:1px;margin:2px 38px 2px var(--sp-3);background:var(--con-line)}
 .bsb--console .s-ci .bdg{margin-inline-start:auto;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:var(--r-pill);background:var(--danger);color:var(--text-on-fill);font-size:var(--fs-xs);font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-feature-settings:'tnum'}
 .bsb--console .s-dot{margin-inline-start:auto;width:6px;height:6px;border-radius:var(--r-pill);background:var(--warning-strong);flex-shrink:0}
 .bsb--console .s-cskel{display:flex;flex-direction:column;gap:10px;padding:var(--sp-3) 10px}
@@ -696,7 +698,7 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
 .bsb--console .s-cgi{position:relative}
 .bsb--console .s-cmark{position:absolute;top:6px;inset-inline-end:10px;width:6px;height:6px;border-radius:var(--r-pill);background:var(--warning-strong)}
 /* مطويّاً على الحاسوب (.bsb--rail — على الشاشة الضيّقة .cx درجٌ مغلقٌ لا شريطٌ مطويّ) */
-.bsb--rail .s-cgh,.bsb--rail .s-ci:not(.s-ci--top),.bsb--rail .s-cdiv,.bsb--rail .s-space small{display:none}
+.bsb--rail .s-cgh,.bsb--rail .s-ci:not(.s-ci--top),.bsb--rail .s-cdiv{display:none}
 .bsb--rail .s-space{justify-content:center;padding:6px 0}
 .bsb--rail .s-cg{margin-top:2px}
 .bsb--rail .s-cgi,.bsb--rail .s-ci--top{justify-content:center;width:38px;height:38px;margin-inline:auto;padding:0;border-inline-start-width:1px}

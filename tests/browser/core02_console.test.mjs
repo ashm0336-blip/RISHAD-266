@@ -380,7 +380,7 @@ test('(S10) keyboard walk, focus ring and contrast, headings, dialogs, reduced m
           await page.evaluate((x) => KIVO.__bsThemeSet(x), th); await page.waitForTimeout(400);
           const m = await page.evaluate(() => {
             const q = (s) => document.querySelector('aside.bsb ' + s), out = {};
-            for (const [k, s] of [['item', '.s-ci:not(.on) .nlbl'], ['current', '.s-ci.on .nlbl'], ['heading', '.s-cgh .nlbl'], ['space', '.s-space .s-spt > span.nlbl'], ['space-small', '.s-space small'],
+            for (const [k, s] of [['item', '.s-ci:not(.on) .nlbl'], ['current', '.s-ci.on .nlbl'], ['heading', '.s-cgh .nlbl'], ['space', '.s-space .s-spt > span.nlbl'],   /* review of S10: the «مسؤول المنصة» line left the space row (the user card names the role) */
               ['exit', '.s-exit .nlbl'], ['exit-small', '.s-exit small'], ['brand', '.s-co'], ['version', '.s-ver'], ['user', '.s-un'], ['role', '.s-ur']]) { const e = q(s); out[k] = e ? window.__cr(e) : -1; }
             const a = q('.s-ci.on'); a.focus(); out.ringCur = window.__cr(a, 'outlineColor'); return out;
           });
@@ -452,4 +452,70 @@ test('(S10) keyboard walk, focus ring and contrast, headings, dialogs, reduced m
       } finally { if (s) await s.ctx.close().catch(() => {}); await lab.close(); }
     }
   } finally { await b.close(); }
+});
+
+/* review of S10: at 1366×900 the whole console sidebar is in view; the gold edge faces the page; every in-console link adds a history
+   entry (Back returns to the page it was clicked on); leaving with an unsaved platform draft by Back or a typed address asks first;
+   no page title repeated as its first card title; Home's empty lists have no column header; the tablet login preview has no empty
+   frame; the activity log shows no raw server code or storage key. */
+test('(R) review of S10: sidebar fits 1366×900, gold edge, Back after in-page links, draft on Back, titles, empty lists, tablet preview, Arabic log', { timeout: 600000 }, async () => {
+  const b = await chromium.launch(); const lab = await world(); const writes = []; let s = null, t = null;
+  try {
+    s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: { width: 1366, height: 900 }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+    const page = s.page;
+    await s.go('#/sysadmin/overview', 3500);
+    const fit = await page.evaluate(() => {
+      const n = document.querySelector('aside.bsb .s-nav'), it = [...document.querySelectorAll('aside.bsb [data-con-tab]')], nb = n.getBoundingClientRect(), last = it[it.length - 1].getBoundingClientRect();
+      return { n: it.length, lastBot: Math.round(last.bottom), navBot: Math.round(nb.bottom), sh: n.scrollHeight, ch: n.clientHeight, shadow: getComputedStyle(document.querySelector('aside.bsb')).boxShadow };
+    });
+    assert.equal(fit.n, 17);
+    assert.ok(fit.lastBot <= fit.navBot, '1366×900: the last console item (bottom ' + fit.lastBot + ') is inside the sidebar (bottom ' + fit.navBot + ')');
+    assert.ok(fit.sh <= fit.ch + 1, '1366×900: the console navigation does not scroll (' + fit.sh + ' / ' + fit.ch + ')');
+    assert.match(fit.shadow, /2px 0px 0px 0px inset|inset 2px 0px 0px/, 'gold edge on the page-facing edge (' + fit.shadow + ')');
+    assert.doesNotMatch(fit.shadow, /-2px 0px 0px/, 'not on the outer screen edge');
+    /* Home's empty lists: the empty line only, no column header */
+    const th = await page.evaluate(() => [...document.querySelectorAll('main .adm-ov-none')].filter((e) => e.offsetParent).map((e) => { const c = e.closest('section, .bs-card'); return [e.textContent.trim(), c ? c.querySelectorAll('.adm-ov-th').length : -1]; }));
+    assert.ok(th.length > 0, 'the lab has at least one empty Home list');
+    for (const [txt, n] of th) assert.equal(n, 0, '«' + txt + '»: no column header over an empty list');
+    /* in-page links add a history entry: Back returns to the page they were clicked on */
+    await page.locator('main .con-ph-a button', { hasText: 'أخذ نسخة شاملة' }).click(); await page.waitForTimeout(1500);
+    assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/backup');
+    await page.goBack(); await page.waitForTimeout(1500);
+    assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/overview', '«أخذ نسخة شاملة» then Back: Home');
+    await s.go('#/sysadmin/plat/setup', 3000);
+    await page.locator('main button', { hasText: 'إلى النسخة الاحتياطية' }).first().click(); await page.waitForTimeout(1500);
+    assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/backup');
+    await page.goBack(); await page.waitForTimeout(1500);
+    assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/plat/setup', 'setup → «إلى النسخة الاحتياطية» → Back: setup');
+    /* no page title repeated as the first card title */
+    for (const [h, title] of [['#/sysadmin/users', 'مراقبة الحسابات'], ['#/sysadmin/oplog', 'سجل الأنشطة والتغييرات'], ['#/sysadmin/histimp', 'استيراد البيانات التاريخية']]) {
+      await s.go(h, 3000);
+      const n = await page.evaluate((x) => document.querySelector('main').innerText.split(x).length - 1, title);
+      assert.equal(n, 1, h + ': «' + title + '» once (the page h2)');
+    }
+    /* the activity log reads as Arabic: no server act code and no storage key */
+    const logTxt = await page.evaluate(() => { location.hash = '#/sysadmin/oplog'; return new Promise((r) => setTimeout(() => r(document.querySelector('main').innerText), 3000)); });
+    assert.doesNotMatch(logTxt, /\b(emitted|changed|updated|migrated|rolled_back)\b|bassam_[a-z_]+/, 'no raw code or key in the activity log');
+    /* an unsaved draft: Back out of the console asks first; cancel keeps the console and the draft; a typed address asks too */
+    await s.go('#/kpis', 2500); await s.go('#/sysadmin/plat/id', 3500);
+    await page.locator('main input[data-k="name"]').fill('TEST_ONLY اسم مؤقت'); await page.waitForTimeout(800);
+    await page.goBack(); await page.waitForSelector('#bsCfm', { state: 'visible', timeout: 5000 });
+    assert.match(await page.textContent('#bsCfmTitle'), /تغييرات غير محفوظة/, 'Back with a draft asks first');
+    await page.click('#bsCfmNo'); await page.waitForTimeout(1200);
+    let st = await state(page);
+    assert.equal(st.hash, '#/sysadmin/plat/id', 'cancel: the address stays on the console page'); assert.match(st.cls, /bsb--console/);
+    assert.equal(await page.inputValue('main input[data-k="name"]'), 'TEST_ONLY اسم مؤقت', 'cancel keeps the draft');
+    await page.evaluate(() => { location.hash = '#/tasks'; }); await page.waitForSelector('#bsCfm', { state: 'visible', timeout: 5000 });
+    await page.click('#bsCfmOk'); await page.waitForTimeout(3000);
+    st = await state(page); assert.equal(st.hash, '#/tasks', 'confirm: the typed address opens'); assert.doesNotMatch(st.cls, /bsb--console/);
+    assert.deepEqual(writes, [], 'nothing saved'); assert.deepEqual(s.errs, [], 'no page errors');
+    /* tablet: the stacked login preview frame is the picture's width, centred — no empty dark area */
+    t = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: { width: 820, height: 1180 } }); t.page.setDefaultTimeout(15000);
+    await t.go('#/sysadmin/plat/id', 4000);
+    const pv = await t.page.evaluate(() => { const f = document.querySelector('main .adm-pv-d'), i = f && f.querySelector('iframe'); if (!f) return null; const a = f.getBoundingClientRect(), c = f.parentElement.getBoundingClientRect(), r = i.getBoundingClientRect(); return { fw: Math.round(a.width), iw: Math.round(r.width), mid: Math.abs((a.left + a.right) / 2 - (c.left + c.right) / 2) }; });
+    assert.ok(pv, 'the desktop login preview is shown');
+    assert.ok(pv.fw - pv.iw <= 4, 'the frame is the picture\'s width (' + pv.fw + ' vs ' + pv.iw + ')');
+    assert.ok(pv.mid <= 2, 'centred in its column');
+    assert.deepEqual(t.errs, []);
+  } finally { for (const x of [s, t]) { try { if (x) await x.ctx.close(); } catch (e) { /* closed */ } } await lab.close(); await b.close(); }
 });

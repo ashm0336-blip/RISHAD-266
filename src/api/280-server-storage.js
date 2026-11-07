@@ -195,7 +195,7 @@
       bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"], bassam_leave_kinds_v1:["أنواع الإجازات"], bassam_callsigns_v1:["رموز النداء"],
       bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_perm_tpls_v1:["قوالب الصلاحيات"],
       bassam_depts_v1:["الإدارات"], bassam_gdepts_v1:["الهيكل التنظيمي"], bassam_platform_v1:["إعدادات المنصة"], bassam_profile_v1:["الملف الشخصي"],
-      bassam_media:["الصور والملفات"],
+      bassam_media:["الصور والملفات"], bassam_notifications_domain_v1:["التنبيهات والتعاميم"],
       bassam_last_export_v1:["آخر تصدير"], bassam_last_full_export_v1:["آخر نسخة شاملة"],
       /* تقنية */
       bassam_session_v1:["الجلسة","tech"], bassam_active_dept_v1:["الإدارة النشطة","tech"], bassam_page_v1:["الصفحة المحفوظة","tech"], bassam_st_grp_v1:["مجموعات الجدول الشهري","tech"], bassam_theme:["المظهر","tech"],

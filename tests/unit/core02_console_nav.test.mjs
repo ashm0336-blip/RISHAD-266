@@ -42,8 +42,11 @@ test('(1) the one map: nine tabs and nine platform sections once each, five grou
     const re = x[0] === 'plat' ? new RegExp('"' + x[1] + '",\\s*"' + x[2] + '"') : new RegExp('\\b' + x[0] + ': \\[(""|"' + g + '"), "' + x[2] + '"\\]');
     assert.match(L, re, g + ': ' + x[0] + (x[1] ? '/' + x[1] : '') + ' is titled «' + x[2] + '» on its own page');
   }
-  const plKeys = /PL_KEYS\(\) \{\s*return (\[[^\]]+\])/.exec(L); assert.ok(plKeys, 'PL_KEYS in the admin page');
-  deq(JSON.parse(plKeys[1]).sort(), [...PL].sort(), 'the admin page knows the same nine sections');
+  /* review of S10: PL_KEYS is derived from the one section list (PL_SECS), which also titles each section's page */
+  assert.match(L, /PL_KEYS\(\) \{\s*return this\.PL_SECS\(\)\.map\(\(x\) => x\[0\]\);/, 'PL_KEYS derived from PL_SECS');
+  const secs = L.slice(L.indexOf('  PL_SECS() {'), L.indexOf('  PL_KEYS() {'));
+  deq([...secs.matchAll(/\[\s*"([a-z]+)",\s*"/g)].map((m) => m[1]).sort(), [...PL].sort(), 'the admin page knows the same nine sections');
+  assert.match(L, /p = this\.PL_SECS\(\),/, 'plVals reads the same list');
 });
 
 test('(2) template: the operational sidebar is unchanged inside sc-if sbOps; the console block holds only the console', () => {
@@ -178,4 +181,54 @@ test('(5) removed: the in-page strip, the platform tab row and their symbols; P 
     assert.ok(rd('styles/070-theme-tokens.css').includes('--' + n + ':'), n + ' emitted');
   }
   for (const n of ['con-bg', 'con-line']) assert.ok(TK.dark.some((x) => x.name === n) && rd('styles/080-theme-dark.css').includes('--' + n + ':'), n + ' dark');
+});
+
+test('(6) review of S10: sidebar fits, gold edge faces the page, one history path, drafts asked on every exit, Arabic labels, eol', async () => {
+  const G = rd('layouts/helmet-global.css');
+  /* the console sidebar is compact enough for 1366×900 (the browser test measures it): no separate collapse row, no subtitle */
+  assert.match(G, /\.bsb--console:not\(\.cx\) \.s-togbar\{position:absolute;/, 'the collapse button sits in the brand row');
+  const con = T.slice(T.indexOf('<sc-if value="{{sbConsole}}"'), T.indexOf('</nav>'));
+  assert.ok(!/<small/.test(con.slice(con.indexOf('class="s-space"'), con.indexOf('</div>', con.indexOf('class="s-space"')))), 'no «مسؤول المنصة» line in the space row');
+  assert.match(G, /\.bsb--console \.s-ci\{min-height:29px;/);
+  /* RTL: the aside sits on the right, its page-facing edge is the left one — a positive inset x-offset paints there */
+  const cs = /\.bsb--console\{[^}]*box-shadow:([^;}]+)/.exec(G);
+  assert.ok(cs && /inset 2px 0 0 var\(--con-accent\)/.test(cs[1]), 'gold edge on the page-facing edge');
+  assert.doesNotMatch(cs[1], /inset -\d/, 'no negative physical inset x-offset');
+  /* every in-console link goes through _ovGo (BassamNav.conGo → a history entry): no direct adGo / _admGo("backup") left */
+  assert.equal((L.match(/this\.adGo\("/g) || []).length, 0, 'no direct adGo("…") navigation');
+  assert.match(L, /admGoBackup: \(\) => this\._ovGo\("backup"\)/);
+  assert.match(L, /go: go\("backup"\)/); assert.match(L, /go: go\("sec", \{ adSecKind: "denied" \}\)/);
+  assert.equal((L.match(/this\.sysPick\([^)]*\), this\._ovGo\("depts"\)/g) || []).length, 2, 'both «تعديل» links');
+  /* the group names: Admin keeps its own copy (V5), equal to the shell's */
+  const gt = /GT = (\{[^}]+\})/.exec(R), g = /const G = (\{[^}]+\})/.exec(L);
+  deq(JSON.parse(g[1].replace(/(\w+):/g, '"$1":')), JSON.parse(gt[1].replace(/(\w+):/g, '"$1":')), 'same four group names');
+  /* Home: a list's column header only with rows */
+  for (const [c, f] of [['c-fail', 'ovFailsHas'], ['c-add', 'ovAddedHas'], ['c-pres', 'ovPresHas'], ['c-frz', 'ovFrozenHas']]) {
+    assert.match(V, new RegExp('<sc-if value="\\{\\{' + f + '\\}\\}"[^>]*><div class="adm-ov-row adm-ov-th ' + c + '"'), c + ' header gated on ' + f);
+  }
+  /* unsaved platform drafts: every operational destination asks first (the sidebar user card, the bell, BassamNav.go), once */
+  const W = world({ hash: '#/sysadmin/plat/id', confirm: false }); W.c.state.active = 'sysadmin'; W.vals();
+  W.c._conSync({ avail: ALL, tab: 'plat', sub: 'id', secBadge: 0, dirty: ['id'], dirtyN: 1 });
+  W.KIVO.BassamNav.go('tasks'); await new Promise((r) => setImmediate(r));
+  assert.equal(W.confirms.length, 1, 'asked'); assert.equal(W.c.state.active, 'sysadmin', 'cancel: stays in the console');
+  const Y = world({ hash: '#/sysadmin/plat/id', confirm: true }); Y.c.state.active = 'sysadmin'; Y.vals();
+  Y.c._conSync({ avail: ALL, tab: 'plat', sub: 'id', secBadge: 0, dirty: ['id'], dirtyN: 1 });
+  assert.equal(await Y.c._goOps(), true); await new Promise((r) => setImmediate(r));
+  assert.equal(Y.confirms.length, 1, 'the exit link asks once (no second question from BassamNav.go)'); assert.notEqual(Y.c.state.active, 'sysadmin');
+  assert.match(R, /if \(ok !== "sysadmin" && !this\.__conAsked && this\._conDirty\(\)\)/, 'Back / a typed address asks too');
+  /* Arabic labels for server codes and storage keys in the activity log */
+  const ctx = { KIVO: {}, console }; vm.createContext(ctx);
+  ctx.KIVO.BassamKeyLabels = { all: { bassam_perms_v1: 1, bassam_notifications_domain_v1: 1 }, label: (k) => ({ bassam_perms_v1: 'الصلاحيات', bassam_notifications_domain_v1: 'التنبيهات والتعاميم' })[String(k).replace(/^bsdept:[^:]+:/, '')] || 'بيانات المنصة' };
+  vm.runInContext(rd('services/290-activity-log.js'), ctx);
+  const d = ctx.KIVO.BassamAudit.describe;
+  assert.equal(d({ etype: 'dataset', act: 'changed', ename: 'bassam_perms_v1', k: 'bassam_perms_v1' }), 'عُدِّل — الصلاحيات');
+  assert.equal(d({ etype: 'dataset', act: 'emitted', ename: '', eid: 'notifications', k: 'bassam_notifications_domain_v1' }), 'أُرسل تنبيه — التنبيهات والتعاميم');
+  assert.equal(d({ etype: 'dataset', act: 'weird_code', ename: 'custody', k: 'bsdept:d1:bassam_x_v1' }), 'تعديل — بيانات المنصة', 'no raw code or key');
+  assert.equal(d({ etype: 'dataset', act: 'import', ename: 'الإحصائيات اليومية' }), 'استُورد — الإحصائيات اليومية');
+  assert.match(rd('api/280-server-storage.js'), /bassam_notifications_domain_v1:\["التنبيهات والتعاميم"\]/);
+  assert.doesNotMatch(L, /s\.replace\(\/\^bassam_\/, ""\)\.replace\(\/_v\\d\+\$\/, ""\)/, 'adKeyLbl no longer prints the raw key');
+  /* «اليوم» on Home and in the log it opens */
+  assert.ok(L.includes('«اليوم» هنا يبدأ من الثالثة فجراً بتوقيت الرياض، وفي سجل الأمن من منتصف الليل'));
+  /* 260-bassam-plat.js stays LF-only (S7 added two CRLF lines) */
+  assert.equal((P.match(/\r\n/g) || []).length, 0, '260-bassam-plat.js: LF only');
 });

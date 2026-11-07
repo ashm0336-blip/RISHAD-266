@@ -65,7 +65,10 @@
   }
 
   /* ── العرض: نصٌّ عربيّ للحدث، وصفوفٌ للوحة ── */
-  var ACT_AR = { created: 'أُنشئ', edited: 'عُدِّل', deleted: 'حُذف', status_changed: 'تغيّرت حالته', enabled: 'أُعيد تفعيله', disabled: 'عُطِّل', geometry_changed: 'عُدِّل شكله', moved: 'نُقل موضعه', reassigned: 'أُعيد توزيعه', approved: 'اعتُمد', approval_revoked: 'أُلغي اعتماده', locked: 'أُقفل', unlocked: 'فُتح', completed: 'أُنجز', declined: 'اعتُذر عنه', synced: 'حُدِّث من الخطة', restore: 'استُعيدت نسخة', import: 'استُورد', wipe: 'مُسحت بيانات', reset: 'تهيئة المنصة', bulk: 'تغييرات كثيرة' };
+  var ACT_AR = { created: 'أُنشئ', edited: 'عُدِّل', deleted: 'حُذف', status_changed: 'تغيّرت حالته', enabled: 'أُعيد تفعيله', disabled: 'عُطِّل', geometry_changed: 'عُدِّل شكله', moved: 'نُقل موضعه', reassigned: 'أُعيد توزيعه', approved: 'اعتُمد', approval_revoked: 'أُلغي اعتماده', locked: 'أُقفل', unlocked: 'فُتح', completed: 'أُنجز', declined: 'اعتُذر عنه', synced: 'حُدِّث من الخطة', restore: 'استُعيدت نسخة', import: 'استُورد', wipe: 'مُسحت بيانات', reset: 'تهيئة المنصة', bulk: 'تغييرات كثيرة',
+    /* رموزُ الخادم لأحداث مجموعات البيانات (054 · 019e · 063 · 019 · 020 · 019a/i/m) — بالعربية لا بالرمز */
+    changed: 'عُدِّل', updated: 'حُدِّث', added: 'أُضيف', migrated: 'رُحِّل', rolled_back: 'أُعيد إلى ما قبل التعديل', emitted: 'أُرسل تنبيه', remind: 'أُرسل تذكير', config: 'عُدِّلت إعداداته', state: 'حُدِّثت حالته',
+    create: 'أُنشئ', edit: 'عُدِّل', delete: 'حُذف', status: 'تغيّرت حالته', issue: 'سُلِّم', close: 'أُغلق' };
   var ET_AR = { zone: 'المصلى', gate: 'الباب', mark: 'المعلم', path: 'المسار', sector: 'النطاق', site: 'الموقع', plan: 'خطة الشهر', plan_site: 'خطة الموقع', round: 'جولة اليوم', round_site: 'موقع الجولة', round_month: 'جولات الشهر', round_shift: 'جولة الوردية', round_lock: 'قفل اليوم', task: 'المهمة', employee: 'الموظف', staffing: 'التسكين الشهري', dreport: 'التقرير اليومي', seized: 'محضر المضبوطات', irshad: 'تقرير الاسترشاد', award: 'ترشيح الجائزة', dataset: 'مجموعة البيانات', system: 'المنصة' };
   var ET_FILTER = [['zone', 'المصليات'], ['gate', 'الأبواب'], ['mark', 'المعالم'], ['path', 'المسارات'], ['sector', 'النطاقات'], ['site', 'المواقع'], ['plan', 'خطط الشهور'], ['round', 'الجولات'], ['task', 'المهام'], ['employee', 'الموظفون'], ['staffing', 'التسكين الشهري'], ['dreport', 'التقرير اليومي'], ['seized', 'المضبوطات'], ['irshad', 'الاسترشاد'], ['award', 'الجائزة'], ['dataset', 'مجموعات البيانات']];
   var ACT_FILTER = [['created', 'إنشاء'], ['edited', 'تعديل'], ['geometry_changed', 'تعديل الشكل'], ['moved', 'نقل'], ['enabled', 'تفعيل'], ['disabled', 'تعطيل'], ['status_changed', 'تغيير حالة'], ['reassigned', 'إعادة توزيع'], ['approved', 'اعتماد'], ['approval_revoked', 'إلغاء اعتماد'], ['locked', 'قفل'], ['unlocked', 'فتح'], ['completed', 'إنجاز'], ['deleted', 'حذف'], ['restore', 'استعادة'], ['import', 'استيراد'], ['wipe', 'مسح بيانات']];
@@ -81,10 +84,19 @@
     if (c.site) parts.push(c.site);
     return parts.join(' · ');
   }
+  /* مراجعة S10: لا يُطبع رمزٌ داخلي — فعلٌ مجهول «تعديل»، واسمُ مجموعة البيانات من KIVO.BassamKeyLabels (المصدرُ الواحد لأسماء المفاتيح) */
+  function actAr(a) { return ACT_AR[a] || (/^[a-z_]+$/.test(String(a || '')) ? 'تعديل' : String(a || '')); }
+  function dsName(r) {
+    var n = String(r.ename || ''), KL = KIVO.BassamKeyLabels;
+    if (n && !/^[A-Za-z0-9_:.-]+$/.test(n)) return n;
+    if (!KL) return ET_AR[r.etype] || '';
+    var known = function (k) { return !!KL.all[String(k || '').replace(/^bsdept:[^:]+:/, '').replace(/:.*$/, '')]; };
+    return KL.label(known(n) || !known(r.k) ? n : r.k);
+  }
   function describe(r) {
-    var et = ET_AR[r.etype] || r.etype, act = ACT_AR[r.act] || r.act;
+    var et = ET_AR[r.etype] || r.etype, act = actAr(r.act);
     var nm = r.ename ? ' «' + r.ename + '»' : '';
-    if (r.etype === 'dataset' || r.etype === 'system') return act + ' — ' + (r.ename || et);
+    if (r.etype === 'dataset' || r.etype === 'system') return act + ' — ' + dsName(r);
     return act + ' ' + et + nm;
   }
   function parseJ(s) { if (s == null || s === '') return null; if (typeof s !== 'string') return s; try { return JSON.parse(s); } catch (e) { return s; } }

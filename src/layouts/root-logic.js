@@ -174,6 +174,15 @@ class Component extends DCLogic {
         if (k === this.state.active) { this._applyHashTab(k); this.setState({ hashTick: Date.now() }); return; }
         const ok = this._pageAllowed(k);
         if (!ok) { this._hashWrite(this.state.active, false); return; }
+        /* مراجعة S10: الخروجُ من المركز بالرجوع أو بعنوانٍ مكتوب ومسوّداتُ إعدادات المنصة غيرُ محفوظة — يبقى العنوانُ على المركز ويُسأل أولاً
+           (السؤالُ نفسُه في _conLeaveOk لكل مخرج) */
+        if (ok !== "sysadmin" && !this.__conAsked && this._conDirty()) {
+          const want = location.href, lc = this.__lastCon || ["overview", null];
+          KIVO.__ADMIN_MODE = "site";
+          try { history.replaceState(null, "", location.pathname + location.search + "#/sysadmin/" + lc[0] + (lc[1] ? "/" + lc[1] : "")); } catch (e) {}
+          this._conLeaveOk().then((y) => { if (!y) return; try { history.replaceState(null, "", want); } catch (e) {} this.__conAsked = true; try { this._onHash(); } finally { this.__conAsked = false; } });
+          return;
+        }
         if (ok === "help") {this._openHelpRoute();return;}
         this._applyHashTab(ok);
         this._savePage(ok);                                   /* يلتقط موضعَ الصفحة المغادَرة */
@@ -355,7 +364,7 @@ class Component extends DCLogic {
     if (!result) return;
     if (required) { this.setState({nfToast:null}); this.bkToast("سُجّل تأكيد قراءتك للتعميم", 2500); return; }
     const nav = x.go && (!NF.goOk || NF.goOk(x)) ? (NF.GO_NAV[x.go] || "") : "";   /* R183: لا انتقالَ إلى صفحةٍ لا تُفتح لك */
-    if (nav) { this.setState({ nfOpen: false, nfToast: null }); if (nav === "sysadmin") { if (KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) { KIVO.__ADMIN_MODE = "site"; KIVO.__ADMIN_OPEN_TAB = x.go === "المنصة" ? "plat" : "sec"; this._savePage("sysadmin"); this.setState({ active: "sysadmin" }); } return; } if (nav === "help") { try { KIVO.BassamPlat.openAbout(); } catch (e) {} return; } if (nav === "admin") { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); return; } try { KIVO.BassamNav.go(nav); } catch (e) {} }
+    if (nav) { this.setState({ nfOpen: false, nfToast: null }); if (nav === "sysadmin") { if (KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) { KIVO.__ADMIN_MODE = "site"; KIVO.__ADMIN_OPEN_TAB = x.go === "المنصة" ? "plat" : "sec"; this._savePage("sysadmin"); this.setState({ active: "sysadmin" }); } return; } if (nav === "help") { try { KIVO.BassamPlat.openAbout(); } catch (e) {} return; } if (nav === "admin") { if (!(await this._conLeaveOk())) return; KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); return; } try { KIVO.BassamNav.go(nav); } catch (e) {} }
   }
   /* CORE-01: وصل جديدٌ والقائمةُ مغلقة ⇒ تُجلب صفحتُها الأولى بهدوء (بلا رسالة — الاستطلاعُ الخلفي صامت) */
   _nfAutoNew() {
@@ -1005,16 +1014,20 @@ class Component extends DCLogic {
   }
   /* «مساحة العمل التشغيلية»: آخرُ صفحةٍ تشغيلية فُتحت، وإلا أولُ صفحةٍ متاحة — والوحدةُ النشطة كما هي.
      مسوّداتُ إعدادات المنصة في حالة الصفحة وحدها: تُفقد بالخروج، فيُسأل المستخدم أولاً */
+  /* مسوّداتُ إعدادات المنصة غيرُ المحفوظة والصفحةُ صفحةُ المركز */
+  _conDirty() {
+    return this.state.active === "sysadmin" && ((this.__con || {}).dirtyN | 0) > 0;
+  }
+  /* سؤالٌ واحد قبل مغادرة المركز بمسوّداتٍ غير محفوظة — لكل مخرج: «مساحة العمل التشغيلية» · الرجوع والعنوان المكتوب · الجرس · بطاقة المستخدم */
+  async _conLeaveOk() {
+    if (!this._conDirty()) return true;
+    try { return !!(await KIVO.bsConfirm({ title: "تغييرات غير محفوظة", msg: "لديك تغييرات غير محفوظة في إعدادات المنصة، والخروج يتجاهلها.", ok: "اخرج دون حفظ", cancel: "البقاء", danger: true })); } catch (e) { return false; }
+  }
   async _goOps() {
-    const C = this.__con || {};
-    if ((C.dirtyN | 0) > 0) {
-      let ok = false;
-      try { ok = !!(await KIVO.bsConfirm({ title: "تغييرات غير محفوظة", msg: "لديك تغييرات غير محفوظة في إعدادات المنصة، والخروج يتجاهلها.", ok: "اخرج دون حفظ", cancel: "البقاء", danger: true })); } catch (e) { ok = false; }
-      if (!ok) return false;
-    }
+    if (!(await this._conLeaveOk())) return false;
     const last = this.__lastOps && this._pageAllowed(this.__lastOps);
     const k = last || (this._kpisOk() ? "kpis" : (["dstats", "employees", "planning", "daily", "irshad", "seized", "award", "links"].find((x) => this._pageAllowed(x)) || "profile"));
-    try { KIVO.BassamNav.go(k); } catch (e) {}
+    try { KIVO.BassamNav.go(k, true); } catch (e) {}
     return true;
   }
   renderVals() {
@@ -1050,12 +1063,13 @@ class Component extends DCLogic {
     const _pAny = (ks) => ks.some(_pOK);
     /* «مدير النظام»: لمدير النظام وحده (كان: الشرط يتطلّب user() صادقة، فغياب الجلسة يتخطّى الخروج المبكر ويفتح الشاشة) */
     const goSys = () => this._goSys();
-    const go = (key) => () => {
+    const go = (key, asked) => () => {
       if (key === "help") return this._openHelpRoute();
       const pk = NAVP[key];
       /* حاوية «الخطة التشغيلية» تُفتح إن كانت أيٌّ من صفحاتها الثلاث متاحة */
       /* حاوية «مؤشرات الإدارة» تُفتح لمن ملك ورقةً واحدةً من أوراقها الستّ */
       if (key === "kpis" ? !this._kpisOk() : (key === "planning" ? !_pAny(["planning","staff","plan"]) : (pk && !_pOK(pk)))) return;   /* ردّ الانتقال لصفحة غير متاحة */
+      if (!asked && this._conDirty()) { this._conLeaveOk().then((y) => { if (y) go(key, true)(); }); return; }   /* مراجعة S10: مسوّداتُ المركز */
       this._savePage(key);           /* تُستعاد بعد التحديث */
       /* على الجوال الشريط درجٌ فوق المحتوى — اختيار وجهة يغلقه فوراً، فلا
          يبقى معلّقاً يحجب الصفحة التي طلبتَها (سلوك التطبيقات المعتمد) */
@@ -1289,7 +1303,7 @@ class Component extends DCLogic {
         /* شارةُ «المنصة» الثابتة بجوار الدور: من display() نفسها (نطاقُ مدير النظام المنصةُ لا الوحدةُ النشطة) — لا تتغيّر بالتبديل */
         return { profName: pr.name || "", profRole: pr.role || "", profInitial: (pr.name || "؟").trim().charAt(0) || "؟", profBadgeOn: pr.scope === "platform", profBadge: "المنصة" };
       })()),
-      __nav: (KIVO.BassamNav = { go: (k) => { try { (k === "sysadmin" ? goSys : go(k))(); } catch (e) {} },
+      __nav: (KIVO.BassamNav = { go: (k, asked) => { try { (k === "sysadmin" ? goSys : go(k, asked))(); } catch (e) {} },
         conSync: (s) => this._conSync(s), conGo: (tab, sub) => this._conGo(tab, sub, false),
         /* CORE-02 S8: «عرض الكل» في «أحداث المنصة الأخيرة» يفتح الجرس (بعد نقرة الفتح كي لا يغلقه مستمعُ النقر خارجه) */
         bell: () => setTimeout(() => { if (!this.state.nfOpen) this.setState({ nfOpen: true, nfToast: null }, () => this._nfReload()); }, 0) }),

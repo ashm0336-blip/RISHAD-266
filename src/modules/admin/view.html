@@ -95,7 +95,7 @@
   <div class="adm-ov-col">
   <section class="bs-card adm-ov-card" aria-labelledby="ov-h-fail">
     <div class="adm-ov-hd"><div><h3 id="ov-h-fail">محاولات الدخول الفاشلة</h3><small>اليوم · {{ovFailsN}}</small></div></div>
-    <div class="adm-ov-row adm-ov-th c-fail"><span>الاسم المجرَّب</span><span>المصدر</span><span>العدد</span><span>القفل</span><span></span></div>
+    <sc-if value="{{ovFailsHas}}" hint-placeholder-val="{{ true }}"><div class="adm-ov-row adm-ov-th c-fail"><span>الاسم المجرَّب</span><span>المصدر</span><span>العدد</span><span>القفل</span><span></span></div></sc-if>
     <sc-if value="{{ovLoading}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-skl" aria-hidden="true"><span class="bs-skel"></span><span class="bs-skel"></span></div></sc-if>
     <sc-if value="{{ovFailsEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا محاولات فاشلة اليوم</div></sc-if>
     <sc-for list="{{ovFails}}" as="p" hint-placeholder-count="2">
@@ -111,7 +111,7 @@
   </section>
   <section class="bs-card adm-ov-card" aria-labelledby="ov-h-add">
     <div class="adm-ov-hd"><div><h3 id="ov-h-add">آخر الحسابات المضافة</h3><small>آخر ٧ أيام · {{ovAddedN}}</small></div></div>
-    <div class="adm-ov-row adm-ov-th c-add"><span>الحساب</span><span>أضافه</span><span>الحالة</span></div>
+    <sc-if value="{{ovAddedHas}}" hint-placeholder-val="{{ true }}"><div class="adm-ov-row adm-ov-th c-add"><span>الحساب</span><span>أضافه</span><span>الحالة</span></div></sc-if>
     <sc-if value="{{ovLoading}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-skl" aria-hidden="true"><span class="bs-skel"></span><span class="bs-skel"></span></div></sc-if>
     <sc-if value="{{ovAddedEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لم يُضَف حساب خلال ٧ أيام</div></sc-if>
     <sc-for list="{{ovAdded}}" as="p" hint-placeholder-count="3">
@@ -127,7 +127,7 @@
   <div class="adm-ov-col">
   <section class="bs-card adm-ov-card" data-ov="pres" aria-labelledby="ov-h-pres">
     <div class="adm-ov-hd"><div><h3 id="ov-h-pres">المتصلون الآن</h3><small>نشط = تفاعل خلال دقيقتين · يتحدّث كل ٢٥ ثانية</small></div><span class="n" data-tone="ok">{{ovPresN}}</span></div>
-    <div class="adm-ov-row adm-ov-th c-pres"><span>المستخدم</span><span>الحالة</span><span>آخر عملية</span><span></span></div>
+    <sc-if value="{{ovPresHas}}" hint-placeholder-val="{{ true }}"><div class="adm-ov-row adm-ov-th c-pres"><span>المستخدم</span><span>الحالة</span><span>آخر عملية</span><span></span></div></sc-if>
     <sc-if value="{{ovPresLoading}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-skl" aria-hidden="true"><span class="bs-skel"></span><span class="bs-skel"></span></div></sc-if>
     <sc-if value="{{ovPresEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا جلسات حيّة الآن</div></sc-if>
     <sc-for list="{{ovPres}}" as="p" hint-placeholder-count="3">
@@ -143,7 +143,7 @@
   </section>
   <section class="bs-card adm-ov-card" aria-labelledby="ov-h-frz">
     <div class="adm-ov-hd"><div><h3 id="ov-h-frz">الحسابات المجمّدة</h3><small>{{ovFrozenN}}</small></div></div>
-    <div class="adm-ov-row adm-ov-th c-frz"><span>الحساب</span><span>جمّده</span><span></span></div>
+    <sc-if value="{{ovFrozenHas}}" hint-placeholder-val="{{ true }}"><div class="adm-ov-row adm-ov-th c-frz"><span>الحساب</span><span>جمّده</span><span></span></div></sc-if>
     <sc-if value="{{ovFrozenEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-ov-none">لا حسابات مجمّدة</div></sc-if>
     <sc-for list="{{ovFrozen}}" as="p" hint-placeholder-count="2">
     <div class="adm-ov-row c-frz">
@@ -268,7 +268,7 @@
 </div>
 <section class="bs-card adm-card adm-card--menu" aria-label="مراقبة الحسابات — كل الإدارات">
   <div class="adm-ov-hd">
-    <div><h3>مراقبة الحسابات — كل الإدارات</h3><small>نظرة رقابية على كل حسابات المنصة: من دخل ومتى، ومن أُضيف، ومن جُمّد · فتح الحسابات ومنح الصلاحيات من «الإدارات ← المستخدمون»</small></div>
+    <div><small><b>كل الإدارات</b> · نظرة رقابية على كل حسابات المنصة: من دخل ومتى، ومن أُضيف، ومن جُمّد · فتح الحسابات ومنح الصلاحيات من «الإدارات ← المستخدمون»</small></div>
     <div class="adm-tools"><button type="button" class="bs-btn adm-sm" onClick="{{usExport}}">تصدير</button></div>
   </div>
   <div class="adm-bar">
@@ -678,7 +678,7 @@
  <div style="border-right:1px solid var(--bd-xeceef1);background:radial-gradient(120% 80% at 50% 0%,var(--bg-xf7f4ec),var(--bg-xf1eee6) 70%);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0">
   <div style="display:flex;align-items:center;justify-content:space-between"><b style="font-size:12px;color:var(--fg-x141414)">معاينة حيّة</b><span class="adm-pl-seg"><sc-for list="{{plPvTabs}}" as="pv" hint-placeholder-count="4"><span onClick="{{pv.go}}" style="{{pv.style}}">{{pv.t}}</span></sc-for></span></div>
   <sc-if value="{{pvLogin}}" hint-placeholder-val="{{ true }}">
-  <div style="border-radius:12px;overflow:hidden;box-shadow:var(--shadow-elevated);background:var(--bg-x1a252e);border:1px solid var(--bd-xeceef1)"><div style="height:22px;background:var(--bg-xf3f1ec);display:flex;align-items:center;gap:4px;padding:0 8px"><i style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd9d6cf)"></i><i style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd9d6cf)"></i><i style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd9d6cf)"></i><span style="margin-right:auto;font-size:8.5px;color:var(--fg-x94a3b8);font-family:monospace">{{plUrl}}</span></div>
+  <div class="adm-pv-d" style="border-radius:12px;overflow:hidden;box-shadow:var(--shadow-elevated);background:var(--bg-x1a252e);border:1px solid var(--bd-xeceef1)"><div style="height:22px;background:var(--bg-xf3f1ec);display:flex;align-items:center;gap:4px;padding:0 8px"><i style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd9d6cf)"></i><i style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd9d6cf)"></i><i style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd9d6cf)"></i><span style="margin-right:auto;font-size:8.5px;color:var(--fg-x94a3b8);font-family:monospace">{{plUrl}}</span></div>
     <div style="width:100%;aspect-ratio:1280/800;position:relative;overflow:hidden"><iframe title="معاينة شاشة الدخول — سطح المكتب" src="{{plPvSrc}}" data-pv="desktop" style="position:absolute;top:0;left:0;width:1280px;height:800px;border:0;transform-origin:top left;transform:scale({{plPvScaleD}})"></iframe></div></div>
   <div style="font-size:10px;color:var(--fg-x94a3b8);text-align:center">شاشة الدخول الحقيقية على سطح المكتب — تتحدّث مع كل حرف تكتبه (بلا جلسة ولا بيانات)</div>
   </sc-if>
