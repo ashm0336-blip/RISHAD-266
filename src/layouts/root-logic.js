@@ -919,7 +919,9 @@ class Component extends DCLogic {
     for (const g in N) if (N[g].some((x) => x[0] === tab && (x[1] || null) === (sub || null))) return g;
     return "";
   }
-  /* قيمُ شريط المركز: لكل مجموعةٍ عناصرُها المتاحة (Admin p) والمختارُ منها (العنوان) · null قبل أول نشرٍ ⇒ هيكلُ تحميل */
+  /* قيمُ شريط المركز: لكل مجموعةٍ عناصرُها المتاحة (Admin p) والمختارُ منها (العنوان) · null قبل أول نشرٍ ⇒ هيكلُ تحميل ·
+     أكورديون: مجموعةٌ واحدةٌ مفتوحة (أقصرُ شريطٍ وطولُه معروفٌ على 1366×768 والدرج) — تتبع العنوانَ (التحميل · الرابط المباشر ·
+     الرجوع · روابط الصفحة) ورأسُها زرٌّ يفتحها ويطويها بلا تنقّل. لا تُخزَّن: العنوانُ يقرّرها عند كل تحميل */
   _conVals(rail) {
     const N = this._sysNav(), GT = { org: "الإدارة المؤسسية", plat: "إعدادات المنصة", sec: "الأمن والرقابة", data: "البيانات والاستمرارية" };
     const C = this.__con || {}, avail = C.avail || this.__conAvail || null;
@@ -927,6 +929,9 @@ class Component extends DCLogic {
     const sub = tab === "plat" ? (this._hashSub() || C.sub || "id") : null;
     const L = this.__conGrpLast || (this.__conGrpLast = {});
     const dirty = C.dirty || [], bd = C.secBadge | 0;
+    const ag = this._conGrpOf(tab, sub), at = tab + "/" + (sub || "");
+    if (this.__conOpenAt !== at) { this.__conOpenAt = at; if (ag && ag !== "home") this.__conOpen = ag; }   /* «الرئيسية» لا تطوي ما فتحه المستخدم */
+    const toggle = (g) => () => { this.__conOpen = this.__conOpen === g ? "" : g; this.setState({ conTick: (this.state.conTick | 0) + 1 }); };
     const go = (t, s) => (ev) => {
       try { if (ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button === 1)) return; if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {}
       this._conGo(t, s, true);
@@ -937,15 +942,24 @@ class Component extends DCLogic {
         cls: "n s-ci" + (on ? " on" : ""), div: !!x[3], bdgOn: bg, bdg: String(bd), dirty: dz,
         lbl: bg ? x[2] + "، أحداث أمنية اليوم: " + bd : dz ? x[2] + "، تغييرات غير محفوظة" : undefined, go: go(x[0], x[1]) };
     };
-    const out = { loading: !avail, rail: !!rail };
+    /* الأسهم ↑↓ وHome/End تنقل التركيزَ بين رؤوس المجموعات والروابط الظاهرة (Tab يبقى بترتيب الشريط) */
+    const key = (ev) => {
+      try { const k = ev.key, w = ev.currentTarget, a = document.activeElement;
+        if (!/^(ArrowDown|ArrowUp|Home|End)$/.test(k) || ev.altKey || ev.ctrlKey || ev.metaKey || !w || !w.contains(a)) return;
+        const F = [...w.querySelectorAll(".s-cgh, a.n")].filter((e) => e.getClientRects().length > 0), i = F.indexOf(a); if (i < 0) return;
+        const j = k === "Home" ? 0 : k === "End" ? F.length - 1 : i + (k === "ArrowDown" ? 1 : -1);
+        ev.preventDefault(); if (F[j]) F[j].focus(); } catch (e) {}
+    };
+    const out = { loading: !avail, rail: !!rail, key };
     for (const g in N) {
       const items = avail ? N[g].filter((x) => avail.indexOf(x[0]) >= 0).map(item) : [];
       if (items.length && items[0].div) items[0].div = false;
       const on = items.some((i) => i.on);
       if (on) L[g] = [tab, sub];
       const last = L[g] && items.find((i) => i.tab === L[g][0] && (i.sub || null) === (L[g][1] || null));
-      const tgt = last || items[0];
+      const tgt = last || items[0], open = !rail && this.__conOpen === g;
       out[g] = { show: items.length > 0, items, t: GT[g] || "",
+        exp: open ? "true" : "false", shut: !open, toggle: toggle(g), hCls: "s-cgh" + (on ? " is-cur" : ""), desc: on && !open ? "con-gh-cur" : undefined,
         railCls: "n s-cgi" + (on ? " on" : ""), railTitle: (GT[g] ? GT[g] + ": " : "") + items.map((i) => i.t).join(" · "),
         railMark: items.some((i) => i.bdgOn || i.dirty),
         railGo: tgt ? go(tgt.tab, tgt.sub) : () => {} };
@@ -992,10 +1006,11 @@ class Component extends DCLogic {
       }));
     } catch (e) {}
   }
-  /* CORE-02 S10: فتحُ الدرج يضع التركيزَ على الصفحة الحالية فيه (وإلا أولِ رابطٍ متاح) — Escape يعيده إلى زرّ القائمة (_drawerEsc) */
+  /* CORE-02 S10: فتحُ الدرج يضع التركيزَ على الصفحة الحالية فيه (مجموعتُها مطويّة ⇒ رأسُها · وإلا أولِ رابطٍ متاح) — Escape يعيده إلى زرّ القائمة (_drawerEsc) */
   _drawerFocus() {
     try { requestAnimationFrame(() => { try { const a = document.querySelector("aside.bsb"); if (!a) return;
-      const t = a.querySelector(".s-nav .n.on:not(.gone)") || a.querySelector(".s-nav a.n:not(.gone)"); if (t) t.focus({ preventScroll: true }); } catch (e) {} }); } catch (e) {}
+      const vis = (e) => e.getClientRects().length > 0, t = [".s-nav .n.on:not(.gone)", ".s-nav .s-cgh.is-cur", ".s-nav a.n:not(.gone)"].map((q) => [...a.querySelectorAll(q)].find(vis)).find(Boolean);
+      if (t) t.focus({ preventScroll: true }); } catch (e) {} }); } catch (e) {}
   }
   /* العنصرُ الحاليّ داخل منطقة تمرير الشريط (بلا تمرير الصفحة) */
   _conReveal() {

@@ -9,6 +9,10 @@
          _admTabsNow routes the request through _admGo / _plGo (so the recovery-key read, the log and the notifications load run on
          every path), and the platform section is in the state before the first render;
      (5) the removed in-page strip and its symbols are gone; 260-bassam-plat drops its help group in the console; tokens --con-*.
+     (7) the collapsible accordion: each group header is a real <button> (aria-expanded · aria-controls → its list, which is hidden when
+         collapsed); one group open at a time, following the address (cold load, Back, in-page link); a header toggles without
+         navigating and writes nothing to storage; a collapsed group holding the current page is marked; the rail closes every list;
+         every one of the 17 destinations is reachable (its group opens on its address, or the group header opens it).
    The real root-logic.js runs in vm over core01_root_world (TEST_ONLY data). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -231,4 +235,63 @@ test('(6) review of S10: sidebar fits, gold edge faces the page, one history pat
   assert.ok(L.includes('«اليوم» هنا يبدأ من الثالثة فجراً بتوقيت الرياض، وفي سجل الأمن من منتصف الليل'));
   /* 260-bassam-plat.js stays LF-only (S7 added two CRLF lines) */
   assert.equal((P.match(/\r\n/g) || []).length, 0, '260-bassam-plat.js: LF only');
+});
+
+test('(7) accordion: real buttons controlling hidden lists, one open group that follows the address, toggles without navigating', async () => {
+  const con = T.slice(T.indexOf('<sc-if value="{{sbConsole}}" hint-placeholder-val="{{ false }}">'), T.indexOf('</nav>'));
+  for (const g of ['org', 'plat', 'sec', 'data']) {
+    const h = new RegExp('<button type="button" class="\\{\\{con\\.' + g + '\\.hCls\\}\\}" id="con-gh-' + g + '" aria-expanded="\\{\\{con\\.' + g + '\\.exp\\}\\}" aria-controls="con-gl-' + g + '" aria-describedby="\\{\\{con\\.' + g + '\\.desc\\}\\}" sc-camel-on-click="\\{\\{con\\.' + g + '\\.toggle\\}\\}">');
+    assert.match(con, h, g + ': the header is a button with aria-expanded and aria-controls');
+    assert.ok(con.includes('<div class="s-cl" id="con-gl-' + g + '" role="group" aria-labelledby="con-gh-' + g + '" hidden="{{con.' + g + '.shut}}">'), g + ': the controlled list is labelled by its header and hidden when collapsed');
+    const L0 = con.indexOf('id="con-gl-' + g + '"'), L1 = con.indexOf('</div>', L0);
+    assert.ok(con.slice(L0, L1).includes('<sc-for list="{{con.' + g + '.items}}"'), g + ': its items live inside the list');
+  }
+  assert.ok(!/<p class="s-cgh"/.test(con), 'no static group heading left');
+  assert.match(con, /<div class="s-cacc" sc-camel-on-key-down="\{\{con\.key\}\}">/, 'arrow keys on the one console block');
+  assert.match(con, /<span id="con-gh-cur" hidden="hidden">الصفحة الحالية ضمن هذه المجموعة<\/span>/);
+  assert.equal((T.match(/<nav class="s-nav"/g) || []).length, 1, 'still one navigation');
+  const G = rd('layouts/helmet-global.css');
+  assert.match(G, /\.bsb--console \.s-cl\[hidden\]\{display:none\}/, 'a collapsed list is not displayed (no hidden-but-focusable link)');
+  assert.match(G, /\.bsb--rail \.s-cgh,/, 'the rail hides the headers');
+  assert.match(rd('components/600-tooltip-portal.js'), /addEventListener\('focusin'[\s\S]{0,200}\.bsb--rail/, 'the rail names show on keyboard focus too');
+
+  const W = world({ hash: '#/sysadmin/plat/notif' }); W.c.state.active = 'sysadmin';
+  W.c._conSync({ avail: ALL, tab: 'plat', sub: 'notif', secBadge: 0, dirty: [], dirtyN: 0 }); await Promise.resolve();
+  const ls0 = JSON.stringify([...W.ctx.localStorage.m]);
+  const hd = (v) => Object.fromEntries(['org', 'plat', 'sec', 'data'].map((g) => [g, v.con[g].exp + (v.con[g].shut ? '/shut' : '/open') + (v.con[g].hCls.includes('is-cur') ? '*' : '') + (v.con[g].desc ? 'D' : '')]));
+  let v = W.vals();
+  deq(hd(v), { org: 'false/shut', plat: 'true/open*', sec: 'false/shut', data: 'false/shut' }, 'deep link: the group of the current page is open, the others collapsed');
+  /* a header toggles without navigating; single-open: opening another group collapses the current one, which stays marked */
+  v.con.org.toggle(); v = W.vals();
+  assert.equal(W.ctx.location.hash, '#/sysadmin/plat/notif', 'toggling does not navigate');
+  deq(hd(v), { org: 'true/open', plat: 'false/shut*D', sec: 'false/shut', data: 'false/shut' }, 'one open group; the collapsed current group is marked and described');
+  v.con.org.toggle(); v = W.vals();
+  deq(hd(v), { org: 'false/shut', plat: 'false/shut*D', sec: 'false/shut', data: 'false/shut' }, 'the open group closes again');
+  /* the address decides again on the next move (Back / an in-page link / a typed address) */
+  W.ctx.location.hash = '#/sysadmin/backup'; v = W.vals();
+  deq(hd(v), { org: 'false/shut', plat: 'false/shut', sec: 'false/shut', data: 'true/open*' }, 'moving to another page opens its group');
+  W.ctx.location.hash = '#/sysadmin/overview'; v = W.vals();
+  assert.equal(v.con.data.exp, 'true', '«الرئيسية» (no group) keeps the open group');
+  assert.equal(v.con.home.cur, 'page');
+  assert.equal(JSON.stringify([...W.ctx.localStorage.m]), ls0, 'the open group is not stored (the address decides it on every load)');
+  /* every destination is reachable: on its own address its group is open and its item is in an open list */
+  const N = W.c._sysNav();
+  for (const [g, items] of Object.entries(N)) for (const x of items) {
+    W.ctx.location.hash = '#/sysadmin/' + x[0] + (x[1] ? '/' + x[1] : ''); v = W.vals();
+    const it = g === 'home' ? v.con.home : v.con[g].items.find((i) => i.tab === x[0] && (i.sub || null) === (x[1] || null));
+    assert.ok(it && it.cur === 'page', x[2] + ': current on its address');
+    if (g !== 'home') { assert.equal(v.con[g].exp, 'true', x[2] + ': its group opens'); for (const o of ['org', 'plat', 'sec', 'data']) if (o !== g) assert.equal(v.con[o].shut, true, x[2] + ': ' + o + ' collapsed'); }
+  }
+  /* from any page, any group opens by its header (no navigation) and lists all its items */
+  for (const g of ['org', 'plat', 'sec', 'data']) {
+    W.ctx.location.hash = '#/sysadmin/overview'; v = W.vals(); if (v.con[g].exp !== 'true') { v.con[g].toggle(); v = W.vals(); }
+    assert.equal(v.con[g].exp, 'true'); assert.equal(v.con[g].items.length, N[g].length, g + ': every item listed');
+    assert.equal(W.ctx.location.hash, '#/sysadmin/overview');
+  }
+  /* the collapsed rail: no list open, no header offered; each group keeps its icon and its last item */
+  W.c.state.conCx = true; v = W.vals();
+  assert.equal(v.conRail, true);
+  for (const g of ['org', 'plat', 'sec', 'data']) { assert.equal(v.con[g].shut, true, g + ': rail: list closed'); assert.equal(typeof v.con[g].railGo, 'function'); }
+  /* the toggle is cosmetic (conTick): no page re-render */
+  const w0 = W.KIVO.__dcWorld; W.c.state.conCx = false; v = W.vals(); v.con.sec.toggle(); assert.equal(W.KIVO.__dcWorld, w0, 'toggling does not re-render the page');
 });

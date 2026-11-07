@@ -78,6 +78,7 @@ test('CORE-02 step 3: sensitive actions ask first, the recovery key dialog holds
     assert.equal(lab.revs(), before, 'cancelling changed no stored record');
 
     /* (2) recovery key dialog */
+    await page.click('#con-gh-data'); await page.waitForTimeout(300);   /* the accordion sidebar: «التهيئة والاستعادة» is under the collapsed «البيانات والاستمرارية» */
     await page.locator('aside.bsb [data-con-sub="setup"]').click(); await page.waitForTimeout(2500);
     await main(page).getByRole('button', { name: /إنشاء مفتاح/ }).first().click();
     const dlg = page.locator('[role=dialog][aria-label="مفتاح الاستعادة"]');

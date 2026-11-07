@@ -13,6 +13,12 @@
        card link, «عرض الكل» and «إرسال تعميم» land on their page; a failed read shows a status row and no «تحديث» button; phone fits;
    (P) parity with develop@625dac6: an active lock beyond Home's first five failed-sign-in rows keeps «فكّ القفل»; the users row menu
        «تعديل الصلاحيات» opens «الإدارات» on the account's unit (Back returns); the security log search keeps the typed text and filters;
+   (ACC) the collapsible accordion sidebar: each group header is a button (aria-expanded · aria-controls); a deep link opens the group of
+       its page (one per group) and only that one; a header opens/closes a group without navigating (Enter, Space, a click), arrows move
+       between the visible controls, a collapsed group holding the current page is marked; Back and an in-page link reopen the right
+       group; nothing hidden takes the focus; the rail names its icons (aria-label + a tooltip on hover and on keyboard focus); 1366×768
+       and 1280×720 show «الرئيسية», the four headers, the exit and the user card with the largest group open, no sideways scroll; the
+       phone drawer (390×844) does the same; nothing is stored or saved;
    nothing is saved and no page error anywhere. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -29,6 +35,12 @@ const DEST = [['overview', null, 'الرئيسية'], ['depts', null, 'الإد�
   ['histimp', null, 'استيراد البيانات التاريخية']];
 const addr = (d) => '#/sysadmin/' + d[0] + (d[1] ? '/' + d[1] : '');
 const sel = (d) => 'aside.bsb [data-con-tab="' + d[0] + '"]' + (d[1] ? '[data-con-sub="' + d[1] + '"]' : ':not([data-con-sub])');
+/* the accordion sidebar (one group open at a time): an item of a collapsed group is reached by opening its group header first */
+async function reach(page, d) {
+  const l = page.locator(typeof d === 'string' ? d : sel(d)).first();
+  if (!(await l.isVisible())) { await page.click('#' + await l.evaluate((e) => e.closest('.s-cg').querySelector('.s-cgh').id)); await page.waitForTimeout(200); }
+  return l;
+}
 const links = (page) => page.evaluate(() => [...document.querySelectorAll('aside.bsb a, aside.bsb .n')].map((a) => (a.className || '') + '|' + (a.getAttribute('title') || '') + '|' + (a.textContent || '').replace(/\s+/g, ' ').trim()));
 /* writes while only navigating: sign-in, an empty save flush and the notifications security-poll / recipient preview */
 function watchWrites(page, out) {
@@ -76,7 +88,7 @@ test('(A)(B) platform administrator: the console, its 17 destinations, deep link
     assert.equal(await page.locator('main [role=tablist], main .adm-tabbar').count(), 0, 'no tab strip in the page');
     /* every destination: one click → its address, one current item, its title, the focus on the title */
     for (const d of DEST) {
-      await page.locator(sel(d)).click(); await page.waitForTimeout(1100);
+      await (await reach(page, d)).click(); await page.waitForTimeout(1100);
       st = await state(page);
       assert.equal(st.hash, addr(d), d[2] + ': address');
       assert.deepEqual(st.cur, [d[2]], d[2] + ': exactly that item is current');
@@ -96,11 +108,11 @@ test('(A)(B) platform administrator: the console, its 17 destinations, deep link
       assert.deepEqual(st.cur, [title], h + ': its item is current');
     }
     /* (B) a platform draft: marked, kept across a move inside the console, and leaving asks first */
-    await page.locator(sel(['plat', 'id'])).click(); await page.waitForTimeout(1200);
+    await (await reach(page, ['plat', 'id'])).click(); await page.waitForTimeout(1200);
     await page.locator('main input[data-k="name"]').fill('TEST_ONLY اسم مؤقت'); await page.waitForTimeout(800);
     assert.equal(await page.locator(sel(['plat', 'id']) + ' .s-dot').count(), 1, 'the unsaved section is marked in the sidebar');
-    await page.locator(sel(['users', null])).click(); await page.waitForTimeout(1200);
-    await page.locator(sel(['plat', 'id'])).click(); await page.waitForTimeout(1200);
+    await (await reach(page, ['users', null])).click(); await page.waitForTimeout(1200);
+    await (await reach(page, ['plat', 'id'])).click(); await page.waitForTimeout(1200);
     assert.equal(await page.inputValue('main input[data-k="name"]'), 'TEST_ONLY اسم مؤقت', 'the draft survives a move inside the console');
     await page.locator('aside.bsb .s-exit').click();
     await page.waitForSelector('#bsCfm', { state: 'visible', timeout: 5000 });
@@ -156,7 +168,7 @@ test('(C)(D) phone drawer; a unit manager keeps #/admin; an employee is refused 
         assert.ok(open, 'the drawer opens');
         assert.equal(await page.locator('aside.bsb [data-con-tab]').count(), 17, 'the drawer holds the console tree');
         assert.equal(await page.locator('aside.bsb .s-dept, aside.bsb a[data-key]').count(), 0);
-        await page.locator(sel(['plat', 'notif'])).click(); await page.waitForTimeout(1500);
+        await (await reach(page, ['plat', 'notif'])).click(); await page.waitForTimeout(1500);
         const st = await state(page);
         assert.equal(st.hash, '#/sysadmin/plat/notif'); assert.match(st.cls, /\bcx\b/, 'the drawer closes on a choice'); assert.ok(st.ov <= 1, 'no sideways scroll');
         assert.equal(st.h2, 'التنبيهات والتعاميم');
@@ -360,19 +372,29 @@ test('(S10) keyboard walk, focus ring and contrast, headings, dialogs, reduced m
         s = await openAs(b, lab, LAB.superUn, LAB.superPw, { context: { reducedMotion: 'reduce' }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
         const page = s.page; await page.waitForTimeout(1500); await page.evaluate(CONTRAST);
         await s.go('#/sysadmin/overview', 2000);
-        /* keyboard only: the collapse control, then the 17 items in their visual order, then the exit and the user card */
-        await page.focus('aside.bsb .s-tog2');
-        const order = [];
-        for (let i = 0; i < 19; i++) {
-          await page.keyboard.press('Tab');
-          order.push(await page.evaluate(() => { const a = document.activeElement, cs = getComputedStyle(a);
-            return { t: a.classList.contains('s-exit') ? 'exit' : a.classList.contains('s-user') ? 'user' : (a.getAttribute('data-con-tab') ? (a.querySelector('.nlbl') || a).textContent.trim() : a.className),
-              ring: cs.outlineStyle === 'solid' && parseFloat(cs.outlineWidth) >= 2 ? window.__cr(a, 'outlineColor') : 0 }; }));
-        }
-        assert.deepEqual(order.map((o) => o.t), [...DEST.map((d) => d[2]), 'exit', 'user'], 'Tab order = the sidebar order: items, the exit, the user card');
+        /* keyboard only (accordion since the console sidebar became collapsible — intended change of this order): the collapse control,
+           «الرئيسية», the four group headers (all collapsed on Home), the exit and the user card; an open group's items follow its header */
+        const walk = async (n) => {
+          await page.focus('aside.bsb .s-tog2');
+          const order = [];
+          for (let i = 0; i < n; i++) {
+            await page.keyboard.press('Tab');
+            order.push(await page.evaluate(() => { const a = document.activeElement, cs = getComputedStyle(a);
+              return { t: a.classList.contains('s-exit') ? 'exit' : a.classList.contains('s-user') ? 'user' : a.classList.contains('s-cgh') ? 'H:' + a.textContent.trim() : (a.getAttribute('data-con-tab') ? (a.querySelector('.nlbl') || a).textContent.trim() : a.className),
+                ring: cs.outlineStyle === 'solid' && parseFloat(cs.outlineWidth) >= 2 ? window.__cr(a, 'outlineColor') : 0 }; }));
+          }
+          return order;
+        };
+        const H = ['الإدارة المؤسسية', 'إعدادات المنصة', 'الأمن والرقابة', 'البيانات والاستمرارية'].map((x) => 'H:' + x);
+        let order = await walk(7);
+        assert.deepEqual(order.map((o) => o.t), ['الرئيسية', ...H, 'exit', 'user'], 'Tab order on Home: «الرئيسية», the four headers, the exit, the user card');
+        for (const o of order) assert.ok(o.ring >= 3, 'light: the focus ring on «' + o.t + '» is ' + o.ring + ':1 (≥3)');
+        await page.click('#con-gh-plat'); await page.waitForTimeout(300);
+        order = await walk(15);
+        assert.deepEqual(order.map((o) => o.t), ['الرئيسية', H[0], H[1], ...DEST.filter((d) => d[0] === 'plat' && d[1] !== 'setup').map((d) => d[2]), H[2], H[3], 'exit', 'user'], 'an open group: its items, in order, right after its header');
         for (const o of order) assert.ok(o.ring >= 3, 'light: the focus ring on «' + o.t + '» is ' + o.ring + ':1 (≥3)');
         /* Enter on an item opens it and puts the focus on the page title; Shift+Tab goes back into the sidebar */
-        await page.focus(sel(['users', null])); await page.keyboard.press('Enter'); await page.waitForTimeout(1500);
+        await (await reach(page, ['users', null])).focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(1500);
         let st = await state(page);
         assert.equal(st.hash, '#/sysadmin/users'); assert.equal(st.h2, 'مراقبة الحسابات'); assert.ok(st.focus, 'Enter: the focus is on the page h2');
         await page.keyboard.press('Shift+Tab');
@@ -465,16 +487,17 @@ test('(R) review of S10: sidebar fits 1366×900, gold edge, Back after in-page l
   try {
     s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: { width: 1366, height: 900 }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
     const page = s.page;
-    await s.go('#/sysadmin/overview', 3500);
+    await s.go('#/sysadmin/plat/id', 3500);   /* the accordion: the largest group (إعدادات المنصة, 8 items) open — the longest the sidebar gets */
     const fit = await page.evaluate(() => {
-      const n = document.querySelector('aside.bsb .s-nav'), it = [...document.querySelectorAll('aside.bsb [data-con-tab]')], nb = n.getBoundingClientRect(), last = it[it.length - 1].getBoundingClientRect();
-      return { n: it.length, lastBot: Math.round(last.bottom), navBot: Math.round(nb.bottom), sh: n.scrollHeight, ch: n.clientHeight, shadow: getComputedStyle(document.querySelector('aside.bsb')).boxShadow };
+      const n = document.querySelector('aside.bsb .s-nav'), all = [...document.querySelectorAll('aside.bsb [data-con-tab]')], it = [...document.querySelectorAll('aside.bsb [data-con-tab], aside.bsb .s-cgh')].filter((e) => e.getClientRects().length), nb = n.getBoundingClientRect(), last = it[it.length - 1].getBoundingClientRect();
+      return { n: all.length, lastBot: Math.round(last.bottom), navBot: Math.round(nb.bottom), sh: n.scrollHeight, ch: n.clientHeight, shadow: getComputedStyle(document.querySelector('aside.bsb')).boxShadow };
     });
     assert.equal(fit.n, 17);
-    assert.ok(fit.lastBot <= fit.navBot, '1366×900: the last console item (bottom ' + fit.lastBot + ') is inside the sidebar (bottom ' + fit.navBot + ')');
+    assert.ok(fit.lastBot <= fit.navBot, '1366×900: the last visible console control (bottom ' + fit.lastBot + ') is inside the sidebar (bottom ' + fit.navBot + ')');
     assert.ok(fit.sh <= fit.ch + 1, '1366×900: the console navigation does not scroll (' + fit.sh + ' / ' + fit.ch + ')');
     assert.match(fit.shadow, /2px 0px 0px 0px inset|inset 2px 0px 0px/, 'gold edge on the page-facing edge (' + fit.shadow + ')');
     assert.doesNotMatch(fit.shadow, /-2px 0px 0px/, 'not on the outer screen edge');
+    await s.go('#/sysadmin/overview', 3000);
     /* Home's empty lists: the empty line only, no column header */
     const th = await page.evaluate(() => [...document.querySelectorAll('main .adm-ov-none')].filter((e) => e.offsetParent).map((e) => { const c = e.closest('section, .bs-card'); return [e.textContent.trim(), c ? c.querySelectorAll('.adm-ov-th').length : -1]; }));
     assert.ok(th.length > 0, 'the lab has at least one empty Home list');
@@ -573,4 +596,141 @@ test('(P) parity with 625dac6: a late active lock keeps «فكّ القفل» on
     assert.equal(await names(), 'TEST_ONLY_alpha,TEST_ONLY_beta', 'clearing the search lists every row again');
     assert.deepEqual(writes, [], 'nothing saved'); assert.deepEqual(s.errs, [], 'no page errors');
   } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); await b.close(); }
+});
+
+test('(ACC) accordion sidebar: deep links per group, toggle without navigation, keyboard, Back, rail names, 1366×768 · 1280×720 fit, phone drawer', { timeout: 900000 }, async () => {
+  const b = await chromium.launch();
+  const acc = (page) => page.evaluate(() => {
+    const a = document.querySelector('aside.bsb'), vis = (e) => e.getClientRects().length > 0;
+    return { hash: location.hash,
+      hdr: Object.fromEntries([...a.querySelectorAll('.s-cgh')].map((h) => { const l = document.getElementById(h.getAttribute('aria-controls'));
+        return [h.id.slice(7), { exp: h.getAttribute('aria-expanded'), tag: h.tagName, list: !!l, hidden: l ? l.hidden : null, cur: h.classList.contains('is-cur'), desc: h.getAttribute('aria-describedby') || '' }]; })),
+      vis: [...a.querySelectorAll('[data-con-tab]')].filter(vis).map((e) => e.textContent.replace(/\s+/g, ' ').trim()),
+      cur: [...a.querySelectorAll('[aria-current="page"]')].map((e) => [e.textContent.replace(/\s+/g, ' ').trim(), vis(e)]),
+      act: document.activeElement ? (document.activeElement.id || (document.activeElement.textContent || '').trim()) : '',
+      ov: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+  });
+  const openOf = (st) => Object.entries(st.hdr).filter(([, h]) => h.exp === 'true').map(([g]) => g);
+  const lsKeys = (page) => page.evaluate(() => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); } return o; });
+  try {
+    for (const [w, h] of [[1366, 768], [1280, 720]]) {
+      const lab = await world(); const writes = []; let s = null;
+      try {
+        s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: { width: w, height: h }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+        const page = s.page; await page.waitForTimeout(1500);
+        const vp = w + '×' + h;
+        if (w === 1366) {
+          /* structure: four header buttons, each controlling its own list; Home has no header */
+          let st = await acc(page);
+          assert.deepEqual(Object.keys(st.hdr), ['org', 'plat', 'sec', 'data']);
+          for (const [g, x] of Object.entries(st.hdr)) { assert.equal(x.tag, 'BUTTON', g + ': a real button'); assert.ok(x.list, g + ': aria-controls names its list'); assert.equal(x.hidden, x.exp === 'false', g + ': the list is hidden exactly when collapsed'); }
+          assert.deepEqual(openOf(st), [], 'Home: every group collapsed');
+          assert.deepEqual(st.vis, ['الرئيسية'], 'Home: only «الرئيسية» among the items');
+          /* deep link (a real load) per group: that group alone opens, its current item is visible */
+          for (const [hash, g, t] of [['#/sysadmin/perms', 'org', 'خريطة الصلاحيات'], ['#/sysadmin/plat/print', 'plat', 'الطباعة والتقارير'], ['#/sysadmin/oplog', 'sec', 'سجل الأنشطة والتغييرات'], ['#/sysadmin/plat/setup', 'data', 'التهيئة والاستعادة']]) {
+            await page.goto('about:blank'); await page.goto(lab.base + '/' + hash, { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(3500);
+            st = await acc(page);
+            assert.deepEqual(openOf(st), [g], hash + ': its group opens, and only it');
+            assert.ok(st.hdr[g].cur, hash + ': its header is marked'); assert.deepEqual(st.cur, [[t, true]], hash + ': the current item is visible and current');
+          }
+          /* toggle without navigation: a click opens another group (single-open), the collapsed current group stays marked */
+          const ls0 = await lsKeys(page);
+          await page.click('#con-gh-org'); await page.waitForTimeout(300);
+          st = await acc(page);
+          assert.equal(st.hash, '#/sysadmin/plat/setup', 'a header click does not navigate');
+          assert.deepEqual(openOf(st), ['org']); assert.deepEqual(st.vis, ['الرئيسية', 'الإدارات', 'مراقبة الحسابات', 'خريطة الصلاحيات']);
+          assert.ok(st.hdr.data.cur && st.hdr.data.desc === 'con-gh-cur', 'the collapsed group of the current page is marked and described');
+          assert.equal(await page.evaluate(() => document.getElementById('con-gh-cur').textContent), 'الصفحة الحالية ضمن هذه المجموعة');
+          assert.deepEqual(st.cur, [['التهيئة والاستعادة', false]], 'still exactly one current item (inside the collapsed group)');
+          /* keyboard: Enter and Space toggle the focused header; arrows move between the visible controls */
+          await page.focus('#con-gh-sec'); await page.keyboard.press('Enter'); await page.waitForTimeout(250);
+          assert.deepEqual(openOf(await acc(page)), ['sec'], 'Enter opens');
+          await page.keyboard.press('Space'); await page.waitForTimeout(250);
+          st = await acc(page); assert.deepEqual(openOf(st), [], 'Space closes'); assert.equal(st.act, 'con-gh-sec', 'the focus stays on the header');
+          await page.keyboard.press('Space'); await page.waitForTimeout(250);
+          await page.keyboard.press('ArrowDown'); assert.equal((await acc(page)).act, 'الأمن', 'ArrowDown: the first item of the open group');
+          await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown'); assert.equal((await acc(page)).act, 'con-gh-data', 'ArrowDown: on to the next header');
+          await page.keyboard.press('ArrowUp'); assert.equal((await acc(page)).act, 'سجل الأنشطة والتغييرات');
+          await page.keyboard.press('Home'); assert.equal((await acc(page)).act, 'الرئيسية', 'Home: the first control');
+          await page.keyboard.press('End'); assert.equal((await acc(page)).act, 'con-gh-data', 'End: the last visible control');
+          assert.equal((await acc(page)).hash, '#/sysadmin/plat/setup', 'the keyboard toggles never navigated');
+          assert.deepEqual(await lsKeys(page), ls0, 'opening and closing groups stores nothing (device or server)');
+          /* nothing hidden takes the focus: a Tab walk through the whole sidebar meets only visible controls */
+          await page.focus('aside.bsb .s-tog2');
+          for (let i = 0; i < 30; i++) {
+            await page.keyboard.press('Tab');
+            const f = await page.evaluate(() => { const a = document.activeElement; return { inAside: !!a.closest('aside.bsb'), rects: a.getClientRects().length, op: getComputedStyle(a).visibility, t: (a.textContent || '').trim().slice(0, 30) }; });
+            if (!f.inAside) break;
+            assert.ok(f.rects > 0 && f.op === 'visible', 'focusable and visible: «' + f.t + '»');
+          }
+          /* an item of the open group navigates; Back reopens the group of the previous page; an in-page link opens its group */
+          await page.click('#con-gh-org'); await page.waitForTimeout(250);
+          await page.click('aside.bsb [data-con-tab="users"]'); await page.waitForTimeout(1500);
+          st = await acc(page); assert.equal(st.hash, '#/sysadmin/users'); assert.deepEqual(openOf(st), ['org']);
+          await page.goBack(); await page.waitForTimeout(1500);
+          st = await acc(page); assert.equal(st.hash, '#/sysadmin/plat/setup'); assert.deepEqual(openOf(st), ['data'], 'Back: the group of the page returned to');
+          await (await reach(page, ['overview', null])).click(); await page.waitForTimeout(1500);
+          assert.deepEqual(openOf(await acc(page)), ['data'], '«الرئيسية» keeps the open group');
+          await page.click('#con-gh-data'); await page.waitForTimeout(250);
+          await page.locator('main .con-ph-a button', { hasText: 'أخذ نسخة شاملة' }).click(); await page.waitForTimeout(1500);
+          st = await acc(page); assert.equal(st.hash, '#/sysadmin/backup'); assert.deepEqual(openOf(st), ['data'], 'an in-page link opens the group of its page');
+          /* the rail: accessible names, a tooltip on hover and on keyboard focus, a group icon reaches its last item, no hidden header */
+          await page.click('aside.bsb .s-tog2'); await page.waitForTimeout(600);
+          const rail = await page.evaluate(() => [...document.querySelectorAll('aside.bsb .s-cgi, aside.bsb .s-ci--top')].map((e) => [e.getAttribute('aria-label') || e.textContent.trim(), e.getClientRects().length > 0]));
+          assert.deepEqual(rail, [['الرئيسية', true], ['الإدارة المؤسسية', true], ['إعدادات المنصة', true], ['الأمن والرقابة', true], ['البيانات والاستمرارية', true]], 'rail: five named icons');
+          assert.equal(await page.locator('aside.bsb .s-cgh:visible, aside.bsb [data-con-tab]:not(.s-ci--top):visible').count(), 0, 'rail: no header and no item shown');
+          const tip = () => page.evaluate(() => { const p = document.getElementById('bs-tip-portal'); return p && p.style.display !== 'none' ? { t: p.textContent, pos: p.getAttribute('data-pos'), r: Math.round(p.getBoundingClientRect().right), aside: Math.round(document.querySelector('aside.bsb').getBoundingClientRect().left) } : null; });
+          await page.focus('aside.bsb .s-tog2'); await page.keyboard.press('Tab'); await page.keyboard.press('Tab'); await page.waitForTimeout(300);
+          let tp = await tip();
+          assert.ok(tp && tp.t.startsWith('الإدارة المؤسسية'), 'keyboard focus on a rail icon shows its name: ' + JSON.stringify(tp));
+          assert.equal(tp.pos, 'side'); assert.ok(tp.r <= tp.aside, 'the tooltip sits beside the rail, over the page');
+          await page.keyboard.press('Tab'); await page.waitForTimeout(300);
+          tp = await tip(); assert.ok(tp && tp.t.startsWith('إعدادات المنصة'), 'the next icon, its own name');
+          await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Enter'); await page.waitForTimeout(1500);
+          assert.equal((await acc(page)).hash, '#/sysadmin/users', 'Enter on a group icon reaches the group\'s last item');
+          await page.mouse.move(700, 500); await page.locator('aside.bsb .s-cgi[aria-label="الأمن والرقابة"]').hover(); await page.waitForTimeout(400);
+          tp = await tip(); assert.ok(tp && tp.t.startsWith('الأمن والرقابة'), 'hover shows the name too');
+          await page.mouse.move(700, 500);
+          await page.click('aside.bsb .s-tog2'); await page.waitForTimeout(600);
+        }
+        /* short screens: with the largest group open, «الرئيسية», the four headers, the exit and the user card are all in view */
+        await s.go('#/sysadmin/plat/id', 3000);
+        const fit = await page.evaluate(() => {
+          const r = (q) => { const e = document.querySelector(q); const x = e.getBoundingClientRect(); return [Math.round(x.top), Math.round(x.bottom)]; };
+          const n = document.querySelector('aside.bsb .s-nav'), nb = n.getBoundingClientRect();
+          const hs = [...document.querySelectorAll('aside.bsb .s-cgh, aside.bsb .s-ci--top')].map((e) => e.getBoundingClientRect());
+          return { ih: innerHeight, navTop: Math.round(nb.top), navBot: Math.round(nb.bottom), hMax: Math.round(Math.max(...hs.map((x) => x.bottom))), hMin: Math.round(Math.min(...hs.map((x) => x.top))),
+            exit: r('aside.bsb .s-exit'), user: r('aside.bsb .s-user'), sw: n.scrollWidth - n.clientWidth, ov: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+        });
+        assert.ok(fit.hMin >= fit.navTop && fit.hMax <= fit.navBot, vp + ': «الرئيسية» and the four headers in view (' + JSON.stringify(fit) + ')');
+        assert.ok(fit.exit[1] <= fit.ih && fit.user[1] <= fit.ih, vp + ': the exit and the user card in view');
+        assert.ok(fit.sw <= 0 && fit.ov <= 1, vp + ': no sideways scroll');
+        assert.deepEqual(writes, [], vp + ': nothing saved'); assert.deepEqual(s.errs, [], vp + ': no page error');
+      } finally { if (s) await s.ctx.close().catch(() => {}); await lab.close(); }
+    }
+    /* phone 390×844: the drawer holds the accordion; the exit and the user card stay reachable; a choice closes the drawer */
+    {
+      const lab = await world(); const writes = []; let s = null;
+      try {
+        s = await openAs(b, lab, LAB.superUn, LAB.superPw, { ...MOBILE, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+        const page = s.page; await page.waitForTimeout(1500);
+        await s.go('#/sysadmin/plat/notif', 2500);
+        await page.click('.bs-burger'); await page.waitForTimeout(700);
+        let st = await acc(page);
+        assert.deepEqual(openOf(st), ['plat'], 'drawer: the group of the current page is open');
+        assert.equal(await page.evaluate(() => document.activeElement.textContent.trim()), 'التنبيهات والتعاميم', 'drawer: the focus is on the current page');
+        await page.click('#con-gh-data'); await page.waitForTimeout(300);
+        st = await acc(page);
+        assert.deepEqual(openOf(st), ['data']); assert.equal(st.hash, '#/sysadmin/plat/notif', 'drawer: a header does not navigate or close the drawer');
+        const dr = await page.evaluate(() => { const a = document.querySelector('aside.bsb'), r = (q) => a.querySelector(q).getBoundingClientRect(), n = a.querySelector('.s-nav');
+          return { open: !a.classList.contains('cx'), exit: Math.round(r('.s-exit').bottom), user: Math.round(r('.s-user').bottom), ih: innerHeight, sw: n.scrollWidth - n.clientWidth }; });
+        assert.ok(dr.open && dr.exit <= dr.ih && dr.user <= dr.ih && dr.sw <= 0, 'drawer: exit and user card in view, no sideways scroll ' + JSON.stringify(dr));
+        await page.click('aside.bsb [data-con-tab="histimp"]'); await page.waitForTimeout(1500);
+        st = await acc(page);
+        assert.equal(st.hash, '#/sysadmin/histimp'); assert.ok(st.ov <= 1, 'phone: no sideways scroll');
+        assert.match(await page.evaluate(() => document.querySelector('aside.bsb').className), /\bcx\b/, 'the drawer closes on a choice');
+        assert.deepEqual(writes, [], 'phone: nothing saved'); assert.deepEqual(s.errs, [], 'phone: no page error');
+      } finally { if (s) await s.ctx.close().catch(() => {}); await lab.close(); }
+    }
+  } finally { await b.close(); }
 });

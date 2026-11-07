@@ -163,11 +163,14 @@ function audit() {
   return out;
 }
 
-/* CORE-02 S7: open a console sidebar item as a user would — on a phone or tablet the sidebar is a drawer, opened by the burger first */
+/* CORE-02 S7: open a console sidebar item as a user would — on a phone or tablet the sidebar is a drawer, opened by the burger first;
+   the accordion sidebar (one group open at a time) opens the item's group by its header first */
 async function asideGo(page, sel) {
   const closed = await page.evaluate(() => innerWidth <= 1024 && document.querySelector('aside.bsb').classList.contains('cx'));
   if (closed) { await page.click('.bs-burger'); await page.waitForTimeout(500); }
-  await page.locator('aside.bsb ' + sel).first().click({ timeout: 10000 });
+  const l = page.locator('aside.bsb ' + sel).first();
+  if (!(await l.isVisible())) { await page.click('#' + await l.evaluate((e) => e.closest('.s-cg').querySelector('.s-cgh').id), { timeout: 10000 }); await page.waitForTimeout(200); }
+  await l.click({ timeout: 10000 });
 }
 /* Probes: the in-tab navigation a user takes to reach the rest of a tab (sub-tabs, a row's action menu, a details panel).
    Each only opens/switches views — none of them saves. */

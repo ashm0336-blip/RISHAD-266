@@ -241,51 +241,63 @@
     </sc-if>
     </sc-if>
     <!-- CORE-02 S7 · مساحةُ «مركز إدارة رشاد»: تنقّلُ المركز وحده (خمسُ مجموعاتٍ ثابتة؛ العناصرُ من خريطة _sysNav وتوافرِ صفحة الإدارة) —
-         لا أنظمةَ تشغيلية ولا مبدّلَ وحدات ولا «+ قسم». الخروجُ إلى مساحة العمل التشغيلية في موضعٍ ثابتٍ أسفل الشريط -->
+         لا أنظمةَ تشغيلية ولا مبدّلَ وحدات ولا «+ قسم». الخروجُ إلى مساحة العمل التشغيلية في موضعٍ ثابتٍ أسفل الشريط ·
+         أكورديون: رأسُ المجموعة زرٌّ (aria-expanded · aria-controls) وقائمتُها hidden حين تُطوى — لا عنصرَ مخفيّاً يأخذ التركيز -->
     <sc-if value="{{sbConsole}}" hint-placeholder-val="{{ false }}">
     <div class="s-space"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-97d6f6ed"></svg></span><span class="s-spt"><span class="nlbl">مركز إدارة رشاد</span></span></div>
     <sc-if value="{{con.loading}}" hint-placeholder-val="{{ false }}"><div class="s-cskel" aria-hidden="true"><span class="bs-skel"></span><span class="bs-skel"></span><span class="bs-skel"></span><span class="bs-skel"></span><span class="bs-skel"></span><span class="bs-skel"></span></div></sc-if>
+    <div class="s-cacc" sc-camel-on-key-down="{{con.key}}">
+    <span id="con-gh-cur" hidden="hidden">الصفحة الحالية ضمن هذه المجموعة</span>
     <sc-if value="{{con.home.show}}" hint-placeholder-val="{{ false }}"><a class="{{con.home.cls}} s-ci--top" href="#/sysadmin/overview" aria-current="{{con.home.cur}}" data-con-tab="overview" sc-camel-on-click="{{con.home.go}}" title="الرئيسية"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-6b355220"></svg></span><span class="nlbl">الرئيسية</span></a></sc-if>
     <sc-if value="{{con.org.show}}" hint-placeholder-val="{{ false }}">
-    <div class="grp s-cg" role="group" aria-labelledby="con-gh-org">
-      <p class="s-cgh" id="con-gh-org"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-533ecb79"></svg></span><span class="nlbl">الإدارة المؤسسية</span></p>
+    <div class="grp s-cg">
+      <button type="button" class="{{con.org.hCls}}" id="con-gh-org" aria-expanded="{{con.org.exp}}" aria-controls="con-gl-org" aria-describedby="{{con.org.desc}}" sc-camel-on-click="{{con.org.toggle}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-533ecb79"></svg></span><span class="nlbl">الإدارة المؤسسية</span></button>
       <sc-if value="{{conRail}}" hint-placeholder-val="{{ false }}"><a class="{{con.org.railCls}}" role="link" tabindex="0" aria-label="الإدارة المؤسسية" title="{{con.org.railTitle}}" sc-camel-on-click="{{con.org.railGo}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-533ecb79"></svg></span><sc-if value="{{con.org.railMark}}" hint-placeholder-val="{{ false }}"><i class="s-cmark" aria-hidden="true"></i></sc-if></a></sc-if>
+      <div class="s-cl" id="con-gl-org" role="group" aria-labelledby="con-gh-org" hidden="{{con.org.shut}}">
       <sc-for list="{{con.org.items}}" as="it" hint-placeholder-count="3">
       <sc-if value="{{it.div}}" hint-placeholder-val="{{ false }}"><span class="s-cdiv" aria-hidden="true"></span></sc-if>
       <a class="{{it.cls}}" href="{{it.href}}" aria-current="{{it.cur}}" aria-label="{{it.lbl}}" data-con-tab="{{it.tab}}" data-con-sub="{{it.sub}}" sc-camel-on-click="{{it.go}}" title="{{it.t}}"><span class="nlbl">{{it.t}}</span><sc-if value="{{it.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{it.bdg}}</span></sc-if><sc-if value="{{it.dirty}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></a>
       </sc-for>
+      </div>
     </div>
     </sc-if>
     <sc-if value="{{con.plat.show}}" hint-placeholder-val="{{ false }}">
-    <div class="grp s-cg" role="group" aria-labelledby="con-gh-plat">
-      <p class="s-cgh" id="con-gh-plat"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-e5471789"></svg></span><span class="nlbl">إعدادات المنصة</span></p>
+    <div class="grp s-cg">
+      <button type="button" class="{{con.plat.hCls}}" id="con-gh-plat" aria-expanded="{{con.plat.exp}}" aria-controls="con-gl-plat" aria-describedby="{{con.plat.desc}}" sc-camel-on-click="{{con.plat.toggle}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-e5471789"></svg></span><span class="nlbl">إعدادات المنصة</span></button>
       <sc-if value="{{conRail}}" hint-placeholder-val="{{ false }}"><a class="{{con.plat.railCls}}" role="link" tabindex="0" aria-label="إعدادات المنصة" title="{{con.plat.railTitle}}" sc-camel-on-click="{{con.plat.railGo}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-e5471789"></svg></span><sc-if value="{{con.plat.railMark}}" hint-placeholder-val="{{ false }}"><i class="s-cmark" aria-hidden="true"></i></sc-if></a></sc-if>
+      <div class="s-cl" id="con-gl-plat" role="group" aria-labelledby="con-gh-plat" hidden="{{con.plat.shut}}">
       <sc-for list="{{con.plat.items}}" as="it" hint-placeholder-count="3">
       <sc-if value="{{it.div}}" hint-placeholder-val="{{ false }}"><span class="s-cdiv" aria-hidden="true"></span></sc-if>
       <a class="{{it.cls}}" href="{{it.href}}" aria-current="{{it.cur}}" aria-label="{{it.lbl}}" data-con-tab="{{it.tab}}" data-con-sub="{{it.sub}}" sc-camel-on-click="{{it.go}}" title="{{it.t}}"><span class="nlbl">{{it.t}}</span><sc-if value="{{it.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{it.bdg}}</span></sc-if><sc-if value="{{it.dirty}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></a>
       </sc-for>
+      </div>
     </div>
     </sc-if>
     <sc-if value="{{con.sec.show}}" hint-placeholder-val="{{ false }}">
-    <div class="grp s-cg" role="group" aria-labelledby="con-gh-sec">
-      <p class="s-cgh" id="con-gh-sec"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-217a5f12"></svg></span><span class="nlbl">الأمن والرقابة</span></p>
+    <div class="grp s-cg">
+      <button type="button" class="{{con.sec.hCls}}" id="con-gh-sec" aria-expanded="{{con.sec.exp}}" aria-controls="con-gl-sec" aria-describedby="{{con.sec.desc}}" sc-camel-on-click="{{con.sec.toggle}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-217a5f12"></svg></span><span class="nlbl">الأمن والرقابة</span></button>
       <sc-if value="{{conRail}}" hint-placeholder-val="{{ false }}"><a class="{{con.sec.railCls}}" role="link" tabindex="0" aria-label="الأمن والرقابة" title="{{con.sec.railTitle}}" sc-camel-on-click="{{con.sec.railGo}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-217a5f12"></svg></span><sc-if value="{{con.sec.railMark}}" hint-placeholder-val="{{ false }}"><i class="s-cmark" aria-hidden="true"></i></sc-if></a></sc-if>
+      <div class="s-cl" id="con-gl-sec" role="group" aria-labelledby="con-gh-sec" hidden="{{con.sec.shut}}">
       <sc-for list="{{con.sec.items}}" as="it" hint-placeholder-count="3">
       <sc-if value="{{it.div}}" hint-placeholder-val="{{ false }}"><span class="s-cdiv" aria-hidden="true"></span></sc-if>
       <a class="{{it.cls}}" href="{{it.href}}" aria-current="{{it.cur}}" aria-label="{{it.lbl}}" data-con-tab="{{it.tab}}" data-con-sub="{{it.sub}}" sc-camel-on-click="{{it.go}}" title="{{it.t}}"><span class="nlbl">{{it.t}}</span><sc-if value="{{it.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{it.bdg}}</span></sc-if><sc-if value="{{it.dirty}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></a>
       </sc-for>
+      </div>
     </div>
     </sc-if>
     <sc-if value="{{con.data.show}}" hint-placeholder-val="{{ false }}">
-    <div class="grp s-cg" role="group" aria-labelledby="con-gh-data">
-      <p class="s-cgh" id="con-gh-data"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-53b60cd3"></svg></span><span class="nlbl">البيانات والاستمرارية</span></p>
+    <div class="grp s-cg">
+      <button type="button" class="{{con.data.hCls}}" id="con-gh-data" aria-expanded="{{con.data.exp}}" aria-controls="con-gl-data" aria-describedby="{{con.data.desc}}" sc-camel-on-click="{{con.data.toggle}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-53b60cd3"></svg></span><span class="nlbl">البيانات والاستمرارية</span></button>
       <sc-if value="{{conRail}}" hint-placeholder-val="{{ false }}"><a class="{{con.data.railCls}}" role="link" tabindex="0" aria-label="البيانات والاستمرارية" title="{{con.data.railTitle}}" sc-camel-on-click="{{con.data.railGo}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-53b60cd3"></svg></span><sc-if value="{{con.data.railMark}}" hint-placeholder-val="{{ false }}"><i class="s-cmark" aria-hidden="true"></i></sc-if></a></sc-if>
+      <div class="s-cl" id="con-gl-data" role="group" aria-labelledby="con-gh-data" hidden="{{con.data.shut}}">
       <sc-for list="{{con.data.items}}" as="it" hint-placeholder-count="3">
       <sc-if value="{{it.div}}" hint-placeholder-val="{{ false }}"><span class="s-cdiv" aria-hidden="true"></span></sc-if>
       <a class="{{it.cls}}" href="{{it.href}}" aria-current="{{it.cur}}" aria-label="{{it.lbl}}" data-con-tab="{{it.tab}}" data-con-sub="{{it.sub}}" sc-camel-on-click="{{it.go}}" title="{{it.t}}"><span class="nlbl">{{it.t}}</span><sc-if value="{{it.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{it.bdg}}</span></sc-if><sc-if value="{{it.dirty}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></a>
       </sc-for>
+      </div>
     </div>
     </sc-if>
+    </div>
     </sc-if>
   </nav>
   <sc-if value="{{authSuperSb}}" hint-placeholder-val="{{ true }}">
