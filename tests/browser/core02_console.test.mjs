@@ -245,7 +245,7 @@ test('(S8) «الرئيسية»: skeleton before the read, real counts after it,
         /* no shortcut tiles: the platform settings are sidebar items only */
         assert.equal(await page.locator('main a[href*="/plat/"], main [data-con-tab]').count(), 0);
         /* each card link opens its page (and Back returns home) */
-        for (const [t, h] of [['حالة المنصة', '#/sysadmin/backup'], ['الحسابات', '#/sysadmin/users'], ['الوحدات التنظيمية', '#/sysadmin/depts'], ['الأمن اليوم', '#/sysadmin/sec']]) {
+        for (const [t, h] of [['حالة المنصة', '#/sysadmin/backup'], ['الحسابات', '#/sysadmin/users'], ['الوحدات التنظيمية', '#/sysadmin/org'], ['الأمن اليوم', '#/sysadmin/sec']]) {
           assert.equal(c1[t].href, h);
           await page.locator('main .adm-ov-stat', { has: page.locator('h3', { hasText: t }) }).locator('.adm-ov-lnk').click(); await page.waitForTimeout(1500);
           assert.equal(await page.evaluate(() => location.hash), h, t + ' → ' + h);
