@@ -4,6 +4,7 @@
    (أ) القواعدُ وحدها في vm (070 + 073 كما هما): التحقّق (n خارج المدى · md) · every يعدّ الأيام من البدء · 'last' في شهر 29 وشهر 30 بأم القرى
    (ب) على العامل الحقيقي بالوضعين: التوليدُ يولّد مواعيدَ القاعدة وحدها في الأفق (every n=3 · last) · لا تكرارَ عند إعادة التشغيل · 400 at rec.n/rec.md ·
        التعديلُ إلى every والتحويلُ (start) يحملان n · وملخّصُ التدقيق (tkRecSum) يذكر n */
+import { RECUR_ANCHOR } from './tasks_recur_clock.mjs';   /* first: one fixed «now» for the fixture, the worker and this file (see there) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -122,7 +123,7 @@ for (const mode of ['legacy', 'enforce']) {
     const L = ser(W, s.j.rec.id).map((q) => q.dk).sort(); assert.deepEqual(L, inH([0, 4, 8, 12, 16, 20, 24, 28]).map(kOf).sort(), 'المحوَّلةُ تولِّد كل 4 أيام: ' + L.join(' '));
   });
 
-  test(M + '(ب) monthly md "last": التوليدُ يولّد آخرَ يومٍ في الشهر الهجري وحده في الأفق (29 أو 30) · لا تكرار · وآخرُ الشهر لا يُتخطّى', async () => {
+  test(M + '(ب) monthly md "last": التوليدُ يولّد آخرَ يومٍ في الشهر الهجري وحده في الأفق (29 أو 30) · لا تكرار · وآخرُ الشهر لا يُتخطّى [' + RECUR_ANCHOR + ']', async () => {
     const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM);
     const c = await mk(W, dm.ck, { title: 'آخر الشهر', body: { rec: { t: 'monthly', md: 'last', open: 1 } } }); assert.equal(c.status, 200, show(c));
     const id = recIdOf(W, c); assert.equal(ser(W, id)[0].r[23].rec.md, 'last');
@@ -131,6 +132,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(exp.length >= 1, 'في أفق 30 يوماً آخرُ شهرٍ واحدٌ على الأقل');
     assert.deepEqual(gen(W, id, c), exp, 'آخرُ الشهر (29 أو 30) وحده: ' + gen(W, id, c).join(' ') + ' ≠ ' + exp.join(' '));
     assert.ok(exp.every((k) => +k.split('-')[2] === 29 || +k.split('-')[2] === 30), 'يومُه 29 أو 30');
+    assert.equal(+exp[0].split('-')[2], RECUR_ANCHOR === 'm29' ? 29 : 30, 'the anchored horizon ends a ' + (RECUR_ANCHOR === 'm29' ? 29 : 30) + '-day month (tasks_recur_clock)');
     assert.equal((await run(W)).j.created, 0, 'لا تكرارَ عند إعادة التشغيل');
     assert.ok(ser(W, id).every((q) => q.r[14] === ME.eid), 'للمكلَّف');
   });
