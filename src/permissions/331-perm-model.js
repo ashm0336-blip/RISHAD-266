@@ -172,6 +172,14 @@
     try { var D = KIVO.BassamDepts; return !!(D && D.ancestorsOf && (D.ancestorsOf(d) || []).some(function(a){ return hasCap(a); })); } catch(e){ return true; }   /* RISHAD266: تعذّرُ القراءة لا يعني «مفتوح» */
   }
   function deptCap(did){ var d = did || curDept(); return capSetAnywhere(d) ? effCap(d) : PAGE_KEYS.slice(); }
+  /* V7 P3-0 · حالةُ السقف — مصدرٌ واحد لكل ما يُعرض عنه (الشجرة · قائمة التهيئة · محرّر السقف)، قراءةٌ فقط من الدوال نفسِها:
+     'open'    لا سجلَّ في الوحدة ولا في أيٍّ من أصولها ⇒ مفتوحٌ على كل الصفحات (غيرُ مضبوط — ليس قراراً اتُّخذ)
+     'inherit' لا سجلَّ خاصّ، ويحدّها أصلٌ مسقوف ⇒ سقفُها الفعليُّ ما يسمح به الأصل
+     'own'     لها سجلٌّ خاصّ (independent: مستقلٌّ لا يتقيّد بالأصول) — n عددُ صفحات السقف الفعلي، all عددُ صفحات المنصة */
+  function capState(did){
+    var d = did || curDept(), own = hasCap(d), eff = deptCap(d);
+    return { kind: own ? 'own' : capSetAnywhere(d) ? 'inherit' : 'open', independent: own && capOwnOf(d), n: eff.length, all: PAGE_KEYS.length, empty: !eff.length };
+  }
   /* ═══ البوابة الموحّدة على مستوى الإدارة ═══
      on('emps') · on('emps/custody') · on('zones') — سؤال واحد: هل هذه القدرة مفعّلة لهذه الإدارة؟
      تقرأه القوالب وقارئات البيانات والمؤشرات والتنبيهات؛ لا استثناءات متناثرة. */
@@ -242,44 +250,16 @@
   /* وراثةُ السقف عند إنشاء عقدة: لقطةٌ من سقف الأب الفعليّ لا رابطٌ حيّ.
      لقطةً لأن التوسيع قرارٌ صريح: لو وسّعتَ سقف الأب لاحقاً لم يتوسّع الأبناء
      من تلقاء أنفسهم. أما التضييق فيسري فوراً بحكم التقاطع في effCap.
-     والجذر يبدأ فارغاً — لا أبَ له يرث منه، وهو موضع القرار الإنساني. */
+     والعقدةُ في الجذر (أو تحت أبٍ بلا سجلّ) لا يُكتب لها سجلّ — فسقفُها مفتوحٌ حتى يضبطه مسؤول المنصة (capState: 'open'). */
 
-  /* ═══ أنماط السقف — «أساسي» وما فوقه: محفوظة في سجل الصلاحيات ويحرّرها مدير النظام من شاشة السقف ═══ */
-  var PATTERN_META = [ { key:'basic', name:'أساسي', mode:'set', tip:'يؤشّر الشجرة بالنمط الأساسي — وهو ما يبدأ به كل ما يُنشأ من إدارات' },
-                       { key:'office', name:'مكتبي', mode:'set', tip:'الأساسي + التقرير اليومي' },
-                       { key:'field', name:'ميداني', mode:'set', tip:'الأساسي + الخطة التشغيلية والمتابعة اليومية بعدساتها ومؤشراتها' },
-                       { key:'irshad', name:'+ استرشاد', mode:'add', tip:'يضيف نظام الاسترشاد ولوحته إلى التأشير الحالي' },
-                       { key:'seized', name:'+ مضبوطات', mode:'add', tip:'يضيف نظام المضبوطات ولوحته إلى التأشير الحالي' } ];
-  var PATTERN_DEF = {
-    basic:  { cap:['emps','tasks','planning','staff','links','help','admin'], subs:{ emps:['data','custody'], planning:['readiness'], admin:['shifts','backup','ptpls','import'] }, tabs:{}, lenses:[] },
-    office: { cap:['emps','tasks','planning','staff','links','help','admin','daily','dreport'], subs:{ emps:['data','custody'], planning:['readiness'], admin:['shifts','backup','ptpls','import'] }, tabs:{ daily:[] }, lenses:[] },
-    field:  { cap:['emps','tasks','planning','staff','plan','links','help','admin','daily','dreport'], subs:{ emps:['data','custody'], planning:['readiness'], admin:['shifts','backup','ptpls','import'] }, tabs:{ daily:['kpiDaily','kpiOcc','kpiZones','rounds','field'] }, lenses:null /* = كلُّ العدسات (LENS_KEYS — من الإضافات · يُضبط بعد تعريفها أدناه · AUD-030) */ },
-    irshad: { cap:['irshad'], subs:{ irshad:['dash','records'] }, tabs:{}, lenses:[] },
-    seized: { cap:['seized'], subs:{ seized:['dash','records'] }, tabs:{}, lenses:[] }
-  };
-  function pClone(x){ return JSON.parse(JSON.stringify(x)); }
-  function patternMeta(){ return pClone(PATTERN_META); }
-  function patterns(){ var o = permStore(), p = o.patterns || {}, out = {}; PATTERN_META.forEach(function(m){ var v = p[m.key]; out[m.key] = (v && Array.isArray(v.cap)) ? pClone(v) : pClone(PATTERN_DEF[m.key]); }); return out; }
-  function patternSet(key, draft){
-    if (!PATTERN_DEF[key] || !draft || !Array.isArray(draft.cap)) return { ok:false, err:'نمط غير معروف' };
-    var sup = false; try { sup = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()); } catch(e){}
-    if (!sup) return { ok:false, err:'أنماط السقف لمسؤول المنصة وحده' };
-    var o = permStore(); o.patterns = o.patterns || {}; o.patterns[key] = { cap: draft.cap.slice(), subs: pClone(draft.subs || {}), tabs: pClone(draft.tabs || {}), lenses: (draft.lenses || []).slice() };
-    permSave(o); return { ok:true };
-  }
-  function uniq(a){ var s = {}; return (a || []).filter(function(x){ if (s[x]) return false; s[x] = 1; return true; }); }
-  function patternApply(draft, key){
-    var m = PATTERN_META.filter(function(x){ return x.key === key; })[0]; if (!m) return draft;
-    var pt = patterns()[key];
-    if (m.mode === 'set' || !draft) return pClone(pt);
-    var out = { cap: uniq((draft.cap || []).concat(pt.cap)), subs: pClone(draft.subs || {}), tabs: pClone(draft.tabs || {}), lenses: uniq((draft.lenses || []).concat(pt.lenses || [])) };
-    Object.keys(pt.subs || {}).forEach(function(k){ out.subs[k] = uniq((out.subs[k] || []).concat(pt.subs[k])); });
-    Object.keys(pt.tabs || {}).forEach(function(k){ out.tabs[k] = uniq((out.tabs[k] || []).concat(pt.tabs[k])); });
-    return out;
-  }
-  /* الإدارة الجديدة تبدأ بالنمط الأساسي — والسقف الفعلي يبقى تقاطعه مع سقوف الأسلاف */
+  /* V7 P3-0 · بذرُ «أساسي» — الأثرُ الوحيد الباقي لأنماط السقف: الأنماطُ الخمسة وواجهتُها (patternMeta · patternApply · patternSet ·
+     أزرارُ المحرّر) أُزيلت لأنها لم تكن معروضةً ولا مستدعاة. يبقى هذا البذرُ لأبٍ سقفُه الفعليُّ فارغ (seedCapFrom): سقفُ الابن
+     الفعليُّ فارغٌ لحظتَها بحكم التقاطع، ويحدّه «أساسي» إن وُسِّع سقفُ الأب لاحقاً — بلا سجلٍّ لورث التوسعةَ كلَّها (اختبارُ التكافؤ).
+     ونمطٌ «أساسي» محفوظٌ في السجل (patterns.basic — كتبته واجهةٌ سابقة) يبقى هو المرجع كما كان. */
+  var SEED_BASIC = { cap:['emps','tasks','planning','staff','links','help','admin'], subs:{ emps:['data','custody'], planning:['readiness'], admin:['shifts','backup','ptpls','import'] }, tabs:{}, lenses:[] };
+  function seedBasic(){ var p = (permStore().patterns || {}).basic; return JSON.parse(JSON.stringify((p && Array.isArray(p.cap)) ? p : SEED_BASIC)); }
   function patternSeed(did){
-    var pt = patterns().basic; var o = permStore(); o.caps[did] = pt.cap.slice(); permSave(o);
+    var pt = seedBasic(); var o = permStore(); o.caps[did] = pt.cap.slice(); permSave(o);
     try { Object.keys(pt.subs || {}).forEach(function(k){ setDeptSubs(did, k, pt.subs[k]); }); Object.keys(pt.tabs || {}).forEach(function(k){ setDeptTabs(did, k, pt.tabs[k]); }); setDeptLenses(did, pt.lenses || []); } catch(e){}
     return { ok:true, n: pt.cap.length };
   }
@@ -324,7 +304,6 @@
   var LENS_KEYS = KIVO.KIVO_MANIFEST.clone('lenses').map(function(x){ return x.key; });   /* AUD-015: = مفاتيحُ LENS_REG (كانت قائمةً مكرَّرة يدوياً) */
   /* أسماؤها العربية بجانب مفاتيحها — كانت مكتوبة داخل سجل الصفحات مرّتين */
   var LENS_REG = KIVO.KIVO_MANIFEST.clone('lenses');   /* AUD-015 */
-  PATTERN_DEF.field.lenses = LENS_KEYS.slice();   /* KIVO_259 · AUD-030: النمطُ «ميداني» = الخطةُ والمتابعةُ «بعدساتها» = كلُّ عدسات الإضافات (كانت قائمةً حرفيّة بالترتيب نفسِه) */
   /* ═══ سقف التبويبات الداخلية لكل إدارة ═══
      غياب السجل = كل التبويبات مفعّلة — نفس منطق العدسات، فلا تفقد إدارة قائمة
      شيئاً عند الترحيل. صفحات subStore:'lenses' تُقرأ وتُكتب من مخزن العدسات. */
@@ -819,8 +798,8 @@
   I.p24AfterTpl = p24AfterTpl; I.p24Apply = p24Apply; I.p24Assignable = p24Assignable; I.p24Ceil = p24Ceil; I.p24Cover = p24Cover;
   I.p24Delta = p24Delta; I.p24Effective = p24Effective; I.p24GrantOf = p24GrantOf; I.p24Grantable = p24Grantable; I.p24Ix = p24Ix;
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
-  I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.patternApply = patternApply; I.capOwnOf = capOwnOf; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
-  I.patternMeta = patternMeta; I.patternSeed = patternSeed; I.patternSet = patternSet; I.patterns = patterns; I.permSave = permSave;
+  I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.capOwnOf = capOwnOf; I.capState = capState; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
+  I.patternSeed = patternSeed; I.permSave = permSave;
   I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.seedSectionCap = seedSectionCap; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;
   I.setEmpTpl = setEmpTpl; I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;

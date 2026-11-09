@@ -59,7 +59,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
      كلُّ قيمةٍ من الخدمات القائمة (BassamDepts · BassamAuth · BassamPerm) — لا مصدرَ جديد */
   _orgOvVals(D, o, n, p) {
     const A = KIVO.BassamAuth || null,
-      P = KIVO.BassamPerm || null,
       safe = (f, d) => {
         try {
           return f();
@@ -77,9 +76,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
     }));
     const mgs = safe(() => (n ? A.groupManagers(o) : A.deptManagers(o)) || [], []),
-      hasCap = safe(() => !!P.hasCap(o), !1),
-      capN = safe(() => P.rawCap(o).length, 0),
-      capAll = ((P && P.PAGE_REG) || []).length,
+      capSt = this._capStateTxt(o),
       staff = n ? 0 : safe(() => A.users().filter((u) => "staff" === u.role && u.deptId === o && !u.mgr).length, 0),
       units = n ? safe(() => (D.deptsUnder(o) || []).length, 0) : 0,
       step = (t, st, ok, tab) => ({ t, st, cls: ok ? "ok" : "wn", mark: ok ? "✓" : "!", goOn: !!tab, goLbl: "cap" === tab ? "فتح سقف الصفحات" : "فتح الحسابات", go: () => tab && this.setState({ sysTab: tab }) });
@@ -90,13 +87,32 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ovKidsN: KIVO.BassamCount(kids.length, "تابع"),
       ovSteps: [
         step("تعريف العقدة", (p.kind || (n ? "عقدة" : "إدارة")) + " · في الهيكل", !0, ""),
-        step("سقف الصفحات", hasCap ? "سقفٌ خاص: " + capN + " من " + KIVO.BassamCount(capAll, "صفحة", "g") : "موروثٌ من الأعلى", !0, "cap"),
+        /* V7 P3-0: الحالةُ من مصدرٍ واحد (_capStateTxt ← BassamPerm.capState) — «مفتوح — لم يُضبط» تنبيهٌ لا علامةُ تمام */
+        step("سقف الصفحات", capSt.txt, capSt.ok, "cap"),
         step("المسؤول", mgs.length ? "معيَّن: " + mgs.map((m) => m.name || m.un).join("، ") : "لم يُعيَّن بعد", mgs.length > 0, "emps"),
         n
           ? step("الإدارات التابعة", KIVO.BassamCount(units, "إدارة") + " تحتها", units > 0, "")
           : step("الحسابات", KIVO.BassamCount(staff, "حساب موظف"), !0, "emps"),
       ],
     };
+  }
+  /* V7 P3-0 · نصُّ حالة السقف من مصدرٍ واحد (KIVO.BassamPerm.capState) — الشجرة وقائمة التهيئة ومحرّر السقف تقرؤه هو وحده.
+     عرضٌ فقط: لا يغيّر سقفاً ولا تفويضاً */
+  _capStateTxt(o) {
+    const P = KIVO.BassamPerm;
+    let s = null;
+    try {
+      s = P && P.capState ? P.capState(o) : null;
+    } catch (e) {}
+    if (!s) return { kind: "", ok: !0, tone: "", short: "", txt: "" };
+    const of = s.n + " من " + KIVO.BassamCount(s.all, "صفحة", "g"),
+      k = s.kind;
+    if (s.empty)
+      return { kind: k, ok: !1, tone: "warn", short: "السقف فارغ", txt: "own" === k ? "سقفٌ خاصّ فارغ — لا صفحة مفعّلة لهذه الوحدة" : "فارغ — سقفُ أصلٍ فوقها فارغ، فلا صفحة مفعّلة" };
+    if ("open" === k)
+      return { kind: k, ok: !1, tone: "warn", short: "السقف مفتوح — لم يُضبط", txt: "مفتوح — لم يُضبط: لا سقفَ لها ولا لأصولها، فكلُّ صفحات المنصة متاحة (" + of + ")" };
+    if ("inherit" === k) return { kind: k, ok: !0, tone: "", short: "يرث سقف الأصل · " + of, txt: "موروثٌ من الأصل: لا سقفَ خاصّاً لها، ويحدّها سقفُ أصلٍ فوقها — " + of };
+    return { kind: k, ok: !0, tone: "", short: "سقفٌ خاصّ · " + of + (s.independent ? " · مستقلّ" : ""), txt: "سقفٌ خاصّ" + (s.independent ? " مستقلّ" : "") + ": " + of };
   }
   /* V7 P1: #/sysadmin/org بلا معرّف = صفحةُ الهيكل — والسقفُ بتعديلٍ غير محفوظ يُبقي صفحةَ العقدة ويقول ذلك */
   _orgClose() {
@@ -7585,7 +7601,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               selIsDept: !n,
               ...(() => {
                 const A = KIVO.BassamAuth || null,
-                  P = KIVO.BassamPerm || null,
                   act = t.active(),
                   pid = n ? t.parentIdOf(o) || "" : t.groupIdOf(o) || "";
                 let path = [];
@@ -7593,21 +7608,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   path = (pid ? (t.pathOf(pid) || []).concat([(t.nodeOf(pid) || {}).name]) : []).filter(Boolean);
                 } catch (t) {}
                 const mg = n ? (A && A.groupManager ? A.groupManager(o) : null) : A && A.deptManager ? A.deptManager(o) : null;
-                const cap = (() => {
-                    try {
-                      return P ? P.rawCap(o).length : 0;
-                    } catch (t) {
-                      return 0;
-                    }
-                  })(),
-                  capAll = ((P && P.PAGE_REG) || []).length,
-                  hasCap = (() => {
-                    try {
-                      return !!(P && P.hasCap(o));
-                    } catch (t) {
-                      return !1;
-                    }
-                  })();
                 const users = n ? 0 : (A && A.users ? A.users() : []).filter((t) => "staff" === t.role && t.deptId === o).length;
                 const kids = n
                   ? (() => {
@@ -7628,8 +7628,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   dhMgrLbl: mg ? "المدير: " + mg.name + (mg.dis ? " · موقوف" : "") : "بلا مدير",
                   dhMgrOk: !!mg,
                   dhMgrNo: !mg,
-                  dhCapLbl: hasCap ? (cap ? "السقف " + cap + " من " + KIVO.BassamCount(capAll, "صفحة", "g") + "" : "السقف فارغ — لا صفحة مفعّلة") : cap ? (cap < capAll ? "يرث سقف الأصل " + cap + " من " + KIVO.BassamCount(capAll, "صفحة", "g") : "السقف مفتوح — لم يُضبط") : "السقف فارغ — بسقف أصلٍ فوقها",
-                  dhCapEmpty: !cap,
                   dhUsersLbl: n ? (t.unitCountTxt ? t.unitCountTxt(t.deptsUnder(o) || []) : KIVO.BassamCount(kids, "إدارة")) + " تحتها" : KIVO.BassamCount(users, "مستخدم") + "",
                   /* F01: «إضافة قسم» للإدارة (لا للقسم: لا شيءَ تحت قسم) — نافذةُ الإضافة بنوع «قسم» وأبٍ هو الإدارة (sectionAdd) */
                   dhSecAddOn: !n && !(t.isSection && t.isSection(o)),
@@ -7855,6 +7853,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? "سقف الصفحات فارغ — لا صفحة مفعّلة لهذه الإدارة، فالمدير والموظفون لن يروا أي صفحة. أشّر الصفحات المطلوبة في الشجرة أدناه (أو «تحديد الكل») ثم اضغط «حفظ السقف»."
                   : "السقف الفعلي لهذه الإدارة فارغ لأن سقف أصلٍ فوقها (الإدارة العامة أو القطاع) فارغ — لا صفحة مفعّلة للمدير والموظفين. افتح الصفحات في سقف الأصل أولاً ثم أشّرها هنا.",
               capLimOn: BLK.length > 0,
+              /* V7 P3-0: حالةُ السقف في رأس المحرّر — من المصدر الواحد نفسِه (الشجرة · قائمة التهيئة) */
+              ...(() => {
+                const cs = this._capStateTxt(o);
+                return { capStateTxt: cs.txt, capStateTone: cs.tone, capStateOn: !!cs.txt };
+              })(),
               capOwnShow: !!(r && r.setCapOwn && r.capOwnOf),
               capOwnTxt:
                 r && r.capOwnOf && r.capOwnOf(o)
@@ -7883,49 +7886,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               capLimNote:
                 "السقف الفعلي لأي إدارة = تقاطع سقفها مع سقوف الأصول فوقها (الإدارة العامة والقطاع). افتح هذه الصفحات في سقف الأصل أولاً ثم تُفعَّل هنا تلقائياً — أو أزلها من هنا.",
               ...KIVO.BassamCount.pair("capEffN", String(r && r.deptCap ? r.deptCap(o).length : 0), "صفحة", "g"),
-              capPatRows: (r && r.patternMeta ? r.patternMeta() : []).map((t) => {
-                const s = (e.capPat || "basic") === t.key && "set" === t.mode;
-                return {
-                  name: t.name,
-                  tip: t.tip,
-                  style:
-                    "height:26px;padding:0 11px;border-radius:9999px;font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif;transition:.15s;font-weight:" +
-                    (s ? "700" : "400") +
-                    ";border:1px solid " +
-                    (s
-                      ? "#b99751;background:var(--bg-a185151810p12);color:var(--fg-x9a7e40)"
-                      : "#E1E1E1;background:var(--bg-xffffff);color:var(--fg-x475569)"),
-                  pick: () => {
-                    ((e.capDraft && e.sysSel === o) || this.sysPick(o),
-                      setTimeout(() => {
-                        const s = this.state.capDraft;
-                        s &&
-                          r &&
-                          r.patternApply &&
-                          this.setState({
-                            capDraft: r.patternApply(s, t.key),
-                            capPat: "add" === t.mode ? this.state.capPat || "basic" : t.key,
-                          });
-                      }, 0));
-                  },
-                };
-              }),
-              capPatSaveTip:
-                "اجعل التأشير الحالي هو نمط «" +
-                ((r && r.patternMeta ? r.patternMeta() : []).filter((t) => t.key === (e.capPat || "basic"))[0] || { name: "أساسي" }).name +
-                "» — يُحفظ في المنصة" +
-                ("basic" === (e.capPat || "basic") ? " ويبدأ به كل ما يُنشأ من إدارات" : ""),
-              capPatSaveDo: () => {
-                const t = this.state.capDraft;
-                if (!t || !r || !r.patternSet) return;
-                const s = e.capPat || "basic",
-                  a = r.patternSet(s, t),
-                  i = ((r.patternMeta ? r.patternMeta() : []).filter((t) => t.key === s)[0] || {}).name || s;
-                this.bsToast(
-                  a && !1 === a.ok ? a.err : "حُفظ نمط «" + i + "»" + ("basic" === s ? " — يبدأ به كل ما يُنشأ من إدارات" : ""),
-                  a && !1 === a.ok ? "err" : "ok",
-                );
-              },
               capNoneDo: () => {
                 ((e.capDraft && e.sysSel === o) || this.sysPick(o), setTimeout(() => this.capAll(!1), 0));
               },
@@ -8855,7 +8815,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         : "",
                       trCapTxt: (() => {
                         try {
-                          return l && l.hasCap(r.id) ? "السقف " + d + " من " + c : "السقف مفتوح";
+                          return this._capStateTxt(r.id).short;   /* V7 P3-0: المصدرُ الواحد — «مفتوح» لا تُقال لوحدةٍ يحدّها أصلٌ مسقوف */
                         } catch (t) {
                           return "السقف مفتوح";
                         }
