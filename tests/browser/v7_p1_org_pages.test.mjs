@@ -1,8 +1,8 @@
 /* RISHAD V7 P1 — the organisation structure page and a page per node, in the isolated lab (TEST_ONLY data, no network).
    #/sysadmin/org is the structure page: the tree alone, searchable, expandable and collapsible. A row opens the node's own page
    #/sysadmin/org/<id> (the P0 address), whose tabs follow its nature:
-     · a supervisory node («عقدة إشرافية»): نظرة عامة · حسابات الإدارة العامة · سقف الصفحات — no data tab (a node holds no data);
-     · an operational unit («إدارة تشغيلية» / «قسم تشغيلي»): نظرة عامة · حسابات الإدارة · سقف الصفحات · البيانات.
+     · a supervisory node («عقدة إشرافية»): نظرة عامة · المسؤولون والحسابات (V7 P2) · سقف الصفحات — no data tab (a node holds no data);
+     · an operational unit («إدارة تشغيلية» / «قسم تشغيلي»): نظرة عامة · المسؤولون والحسابات · سقف الصفحات · البيانات.
    The overview gathers the node's place and actions, what sits under it (links to their pages) and the setup checklist (links to the tab
    that does each step). «العودة إلى الهيكل» and the browser Back return to the tree. Deleting a node that still has anything under it is
    refused BEFORE any confirmation (it used to ask, then refuse); the server keeps refusing it on its own (tests/unit/v7_p0_node_integrity).
@@ -68,7 +68,7 @@ test('V7 P1 · structure page, node pages by nature, overview links, delete refu
     await p.locator('main section[aria-label="ما تحتها"] a', { hasText: 'TEST_ONLY إدارة أ' }).click(); await p.waitForTimeout(1500);
     assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A'); assert.equal(await SEL(), 'TEST_ONLY إدارة أ');
     t = await tabs(); assert.deepEqual(t.map((x) => x[0]).filter((x) => /نظرة عامة|سقف الصفحات|البيانات/.test(x)), ['نظرة عامة', 'سقف الصفحات', 'البيانات'], 'unit tabs: ' + JSON.stringify(t));
-    assert.ok(t.some((x) => /^حسابات الإدارة/.test(x[0])), 'the accounts tab');
+    assert.ok(t.some((x) => /^المسؤولون والحسابات/.test(x[0])), 'the accounts tab (V7 P2: «المسؤولون والحسابات»)');
     assert.equal((await p.locator('main .nt').innerText()).trim(), 'إدارة تشغيلية');
     /* the setup checklist leads to the tab that does the step */
     await p.locator('main section[aria-label="قائمة التهيئة"] button', { hasText: 'فتح سقف الصفحات' }).click(); await p.waitForTimeout(900);
