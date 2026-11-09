@@ -328,7 +328,7 @@
   "i-217a5f12": {
    "body": "<path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"></path>",
    "uses": {
-    "modules/admin/view.html": 1
+    "layouts/index.template.html": 2
    },
    "viewBox": "0 0 24 24"
   },
@@ -593,7 +593,7 @@
   "i-3a0791fe": {
    "body": "<rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"></path>",
    "uses": {
-    "modules/admin/view.html": 6,
+    "modules/admin/view.html": 5,
     "modules/daily/view.html": 1,
     "modules/dreport/view.html": 3,
     "modules/dstats/view.html": 1,
@@ -917,14 +917,15 @@
   "i-533ecb79": {
    "body": "<path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path>",
    "uses": {
-    "modules/admin/view.html": 1
+    "layouts/index.template.html": 2
    },
    "viewBox": "0 0 24 24"
   },
   "i-53b60cd3": {
    "body": "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><path d=\"M7 10l5 5 5-5\"></path><path d=\"M12 15V3\"></path>",
    "uses": {
-    "modules/admin/view.html": 6,
+    "layouts/index.template.html": 2,
+    "modules/admin/view.html": 5,
     "modules/dreport/view.html": 1,
     "modules/dstats/view.html": 2,
     "modules/employees/view.html": 1,
@@ -939,7 +940,6 @@
   "i-5411fa4a": {
    "body": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"></path><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "modules/dreport/view.html": 1
    },
    "viewBox": "0 0 24 24"
@@ -983,7 +983,7 @@
   "i-57689779": {
    "body": "<path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path>",
    "uses": {
-    "modules/admin/view.html": 4
+    "modules/admin/view.html": 3
    },
    "viewBox": "0 0 24 24"
   },
@@ -1154,7 +1154,7 @@
   "i-6afc61fe": {
    "body": "<path d=\"M18.36 6.64A9 9 0 1 1 5.64 6.64\"></path><path d=\"M12 2v10\"></path>",
    "uses": {
-    "modules/admin/view.html": 2,
+    "modules/admin/view.html": 1,
     "modules/dstats/view.html": 1
    },
    "viewBox": "0 0 24 24"
@@ -1162,7 +1162,7 @@
   "i-6b355220": {
    "body": "<rect x=\"3\" y=\"3\" width=\"7\" height=\"9\"></rect><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\"></rect><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\"></rect><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\"></rect>",
    "uses": {
-    "modules/admin/view.html": 1
+    "layouts/index.template.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -1329,13 +1329,6 @@
    "body": "<path d=\"M3 6h18\"></path><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"></path><path d=\"M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2\"></path><path d=\"M13 4h3a2 2 0 0 1 2 2\"></path>",
    "uses": {
     "modules/plan/view.html": 2
-   },
-   "viewBox": "0 0 24 24"
-  },
-  "i-7d59ecc4": {
-   "body": "<ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"></ellipse><path d=\"M3 5V19A9 3 0 0 0 21 19V5\"></path><path d=\"M3 12A9 3 0 0 0 21 12\"></path>",
-   "uses": {
-    "modules/admin/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -1533,7 +1526,7 @@
   "i-8bfe300f": {
    "body": "<path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path>",
    "uses": {
-    "layouts/index.template.html": 1
+    "layouts/index.template.html": 2
    },
    "viewBox": ""
   },
@@ -1576,7 +1569,7 @@
   "i-9131ec87": {
    "body": "<path d=\"M12 8v4l3 3\"></path><circle cx=\"12\" cy=\"12\" r=\"10\"></circle>",
    "uses": {
-    "modules/admin/view.html": 2
+    "modules/admin/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -1695,7 +1688,7 @@
   "i-97d6f6ed": {
    "body": "<path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m9 12 2 2 4-4\"></path>",
    "uses": {
-    "layouts/index.template.html": 1
+    "layouts/index.template.html": 2
    },
    "viewBox": ""
   },
@@ -2402,7 +2395,7 @@
   "i-c92915c6": {
    "body": "<path d=\"m6 9 6 6 6-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 14,
+    "modules/admin/view.html": 13,
     "modules/award/view.html": 3,
     "modules/daily/view.html": 10,
     "modules/dreport/view.html": 6,
@@ -2642,7 +2635,6 @@
   "i-dd12348b": {
    "body": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle><path d=\"M19 8v6\"></path><path d=\"M22 11h-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "modules/plan/view.html": 6
    },
    "viewBox": "0 0 24 24"
@@ -2727,7 +2719,7 @@
   "i-e5471789": {
    "body": "<circle cx=\"12\" cy=\"12\" r=\"3\"></circle><path d=\"M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1\"></path>",
    "uses": {
-    "modules/admin/view.html": 1
+    "layouts/index.template.html": 2
    },
    "viewBox": "0 0 24 24"
   },
@@ -2830,13 +2822,6 @@
    "body": "<circle cx=\"12\" cy=\"13\" r=\"8\"></circle><path d=\"M12 9v4l2.5 2\"></path><path d=\"M5 3 2 6M22 6l-3-3\"></path>",
    "uses": {
     "modules/tasks/view.html": 1
-   },
-   "viewBox": "0 0 24 24"
-  },
-  "i-efabd80c": {
-   "body": "<path d=\"{{tb.p}}\"></path>",
-   "uses": {
-    "modules/admin/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },

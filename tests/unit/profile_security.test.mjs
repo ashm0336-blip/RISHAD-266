@@ -132,7 +132,7 @@ test('(١) ما لا يمسّ اسمَ الدخول كما كان: الاسمُ 
 test('(٢) حقولُ حسابي لكل دور (مرآةُ الخادم): مديرُ العقدة يغيّر بريدَه وجوالَه لا اسمَه · والموظفُ كلمةَ مروره وحدها · ورسائلُ الرفض الثلاث', async () => {
   const G = world({ users: [GM], uid: 'g1m' });
   let r = await G.I.changeOwnAccount({ name: 'اسمٌ آخر', email: 'a@b.sa', phone: '0500000000' });
-  assert.deepEqual([r.ok, r.why], [false, 'self']); assert.match(r.err, /الاسمُ يعدّله مدير النظام/); assert.equal(G.me().name, 'مدير العقدة');
+  assert.deepEqual([r.ok, r.why], [false, 'self']); assert.match(r.err, /الاسمُ يعدّله مسؤول المنصة/); assert.equal(G.me().name, 'مدير العقدة');
   r = await G.I.changeOwnAccount({ name: 'مدير العقدة', email: 'n@b.sa', phone: '0500000000' });
   assert.equal(r.ok, true, 'الاسمُ كما هو ⇒ لا يُعدّ تعديلاً'); assert.deepEqual([G.me().email, G.me().phone, G.me().name], ['n@b.sa', '0500000000', 'مدير العقدة']);
   const S = world({ users: [ST], uid: 's1' });

@@ -436,7 +436,7 @@
       return;
     }
     if (!KIVO.BackupRestore || !KIVO.BackupRestore.context()) {
-      setMsg("سجّل الدخول بحساب مدير المنصة الحالي ثم اختر النسخة؛ كلمة ملف النسخة لا تصادق على الخادم", "#F87171");
+      setMsg("سجّل الدخول بحساب مسؤول المنصة الحالي ثم اختر النسخة؛ كلمة ملف النسخة لا تصادق على الخادم", "#F87171");
       return;
     }
     var reader = new FileReader();
@@ -486,7 +486,7 @@
   async function doRestore(obj, setMsg, label) {
   var svc = KIVO.BackupRestore;
   if (!svc || !svc.context()) {
-    setMsg("سجّل الدخول بحساب مدير المنصة الحالي أولًا", "#F87171");
+    setMsg("سجّل الدخول بحساب مسؤول المنصة الحالي أولًا", "#F87171");
     return;
   }
   var pending = doRestore.pending;

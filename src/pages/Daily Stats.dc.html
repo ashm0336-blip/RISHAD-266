@@ -171,7 +171,7 @@ html[data-theme="dark"] .dz-glow{opacity:.3}
 <sc-if value="{{readOnly}}" hint-placeholder-val="{{ false }}">
 <div style="display:flex;align-items:center;gap:9px;border-radius:12px;padding:9px 14px;font-size:11.5px;font-weight:600;background:var(--bg-a1481631840p1);border:1px solid var(--bd-a1481631840p25);color:var(--fg-x64748b)">
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-  <span>صلاحيتك على {{roSite}}: <b style="font-weight:800">عرض فقط</b> — الإدخالُ والاستيرادُ مخفيّان. راجع مدير النظام إن احتجت تعديلاً.</span>
+  <span>صلاحيتك على {{roSite}}: <b style="font-weight:800">عرض فقط</b> — الإدخالُ والاستيرادُ مخفيّان. راجع مسؤول المنصة إن احتجت تعديلاً.</span>
 </div>
 </sc-if>
 
@@ -1732,7 +1732,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     const n=per.haram+per.nabawi, nSk=skNo.haram+skNo.nabawi+skAd+skEd, nLk=skLm+skLd;
     if(!n&&nLk&&!nSk) return this.bsToast("أيامُ الملف كلُّها مقفلة — افتح الشهرَ بأثر رجعي أو اليومَ بنقرتين على كرته، ثم استورد","warn");
     if(!n&&nLk) return this.bsToast("لا صفَّ في الملف يمكن إدخالُه — بعضُه بلا صلاحيةٍ لك وبعضُه في أيامٍ مقفلة","warn");
-    if(!n&&nSk) return this.bsToast("لا صفَّ في الملف تملك صلاحيةَ إدخاله — راجع مدير النظام إن احتجت ذلك","warn");
+    if(!n&&nSk) return this.bsToast("لا صفَّ في الملف تملك صلاحيةَ إدخاله — راجع مسؤول المنصة إن احتجت ذلك","warn");
     if(!n) return this.bsToast("لم أجد صفّاً واحداً صالحاً — تحقّق من عمود التاريخ الهجري","warn");
     const parts=[KIVO.BassamCount(n,"يوم")+" ("+KIVO.BassamCount(cells,"قيمة")+")"];
     if(per.haram&&per.nabawi) parts.push("الحرم "+per.haram+" والنبوي "+per.nabawi);

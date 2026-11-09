@@ -21,7 +21,10 @@ test('(أ) الافتراضي wrMin=1200 في السياسة · 40 حفظاً س
   const { C, ck } = await ready(0);
   const p = await C.api('/api/policy', { cookie: ck }); assert.equal(p.j.policy.wrMin, 1200);
   for (let i = 0; i < 40; i++) { const s = await C.save(ck, { [DEPT]: JSON.stringify([{ id: 'dA', name: 'إدارة ' + i, gid: '' }]) }); assert.equal(s.status, 200, 'الحفظ ' + i); }
-  const low = await C.api('/api/policy', { method: 'POST', body: { sessH: 12, idleH: 2, lockN: 5, lockMin: 5, pwMin: 6, wrMin: 5 }, cookie: ck }); assert.equal(low.j.policy.wrMin, 30, 'الحدُّ الأدنى 30');
+  /* CORE-02 (B2): ما دون 30 يُرفض باسمه (400 policy-invalid) والسياسةُ كما هي — كان يُرفع إلى 30 بصمتٍ مع «حُفظت» */
+  const low = await C.api('/api/policy', { method: 'POST', body: { sessH: 12, idleH: 2, lockN: 5, lockMin: 5, pwMin: 6, wrMin: 5 }, cookie: ck });
+  assert.equal(low.status, 400); assert.equal(low.j.err, 'policy-invalid'); assert.equal(low.j.field, 'wrMin'); assert.equal(low.j.min, 30);
+  assert.equal((await C.api('/api/policy', { cookie: ck })).j.policy.wrMin, 1200, 'الحدُّ الأدنى 30 — والمرفوضُ لا يغيّر شيئاً');
 });
 test('(ب)(ج) سقف 30: الحفظُ الـ31 ⇒ 429 بلا كتابة · القراءاتُ لا تُحدّ · نافذةٌ جديدة تعيد العدّ', S255, async () => {
   const clk = freezeClock(); try {

@@ -115,9 +115,9 @@ test('الإعدادات (R1 · AUX-06): #/admin/import|ptpls|shifts|oplog — �
   /* تبويبٌ غيرُ متاح: الافتراضيّ ولا تغييرَ في الحالة */
   const X = page('admin', ['_admTabsNow(i, n, p, g) {'], { state: { admTab: 'depts', deptTab: 'backup' }, kivo: { __ADMIN_OPEN_DTAB: 'oplog' } });
   assert.equal(X.c._admTabsNow('dept', false, ['backup'], ['backup', 'import']).h, 'backup'); assert.equal(X.c.state.deptTab, 'backup');
-  /* مدير النظام: الطلبُ (الجرس/الرابط) في الحالة قبل الرسم · والتحميلُ وحده بعده */
+  /* مدير النظام: الطلبُ (الجرس/الرابط) في الحالة قبل الرسم · والتحميلُ وحده بعده — CORE-02 S7 (تغييرٌ مقصود): بالمسار الواحد _admGo لا adGo مباشرة */
   let go = '';
-  const Y = page('admin', ['_admTabsNow(i, n, p, g) {'], { state: { admTab: 'depts', deptTab: 'backup' }, self: { adGo: (t) => { go = t; } }, kivo: { __ADMIN_OPEN_TAB: 'sec' } });
+  const Y = page('admin', ['_admTabsNow(i, n, p, g) {', 'PL_KEYS() {', 'PL_SECS() {'],   /* review of S10: PL_KEYS reads the one section list */ { state: { admTab: 'depts', deptTab: 'backup' }, self: { _admGo: (t) => { go = t; } }, kivo: { __ADMIN_OPEN_TAB: 'sec' } });
   const ry = Y.c._admTabsNow('site', true, ['overview', 'sec', 'depts'], g);
   assert.equal(ry.l, 'sec'); assert.equal(Y.c.state.admTab, 'sec'); Y.timers.splice(0).forEach((f) => f()); assert.equal(go, 'sec');
   const src = rd('modules/admin/logic.js'), rv = src.slice(src.indexOf('\n  renderVals() {'));

@@ -33,9 +33,13 @@
     if(left + w > innerWidth - pad) left = innerWidth - pad - w;
     var top = r.bottom + 9, above = false;
     if(top + h > innerHeight - pad) { top = r.top - 9 - h; above = true; }
+    /* CORE-02: أيقونةُ شريط المركز المطويّ — التلميحُ بجانبها نحو الصفحة (لا فوق الأيقونة التالية) */
+    var rail = ic.closest ? ic.closest('.bsb--rail') : null, edge = rail ? rail.getBoundingClientRect().left : 0;
+    var side = !!rail && edge - 9 - w >= pad;
+    if(side){ left = edge - 9 - w; top = Math.max(pad, Math.min(innerHeight - pad - h, r.top + r.height/2 - h/2)); }
     p.style.left = left + 'px'; p.style.top = top + 'px';
     /* السهم: يتبع مركزَ العنصر (حتى بعد قصّ الحافة) ويقلب مع الحاوية */
-    p.setAttribute('data-pos', above ? 'above' : 'below');
+    p.setAttribute('data-pos', side ? 'side' : above ? 'above' : 'below');
     p.style.setProperty('--tip-ax', Math.max(12, Math.min(w - 12, r.left + r.width/2 - left)) + 'px');
     requestAnimationFrame(function(){ p.style.opacity = '1'; });
   }
@@ -63,12 +67,20 @@
     supIc = ic || curIc;
     if(curIc || ic) hide();
   }, true);
+  /* CORE-02: في شريط المركز المطويّ يظهر اسمُ الأيقونة عند التركيز بلوحة المفاتيح أيضاً (لا بالتحويم وحده) */
+  document.addEventListener('focusin', function(e){
+    var t = e.target;
+    if(!t || !t.closest || !t.closest('.bsb--rail') || !t.matches(':focus-visible')) return;
+    if(t.getAttribute('title')){ t.setAttribute('data-tip', t.getAttribute('title')); t.removeAttribute('title'); }
+    if(t.getAttribute('data-tip')){ supIc = null; curIc = t; show(t); }
+  }, true);
+  document.addEventListener('focusout', function(e){ if(curIc && e.target === curIc) hide(); }, true);
   document.addEventListener('scroll', hide, true);
   document.addEventListener('wheel', function(e){
     if (e.target && e.target.closest && e.target.closest('svg[data-map-zoom]')) e.preventDefault();
   }, { passive: false });
   // suppress inline tips entirely
   var st = document.createElement('style');
-  st.textContent = '.bs-tip{display:none !important} #bs-tip-portal b{color:var(--brand-tooltip);font-weight:600}' + '#bs-tip-portal::after{content:"";position:absolute;width:8px;height:8px;left:calc(var(--tip-ax,50%) - 4px);top:-5px;background:var(--bg-tooltip);border-left:1px solid var(--border-tooltip);border-top:1px solid var(--border-tooltip);transform:rotate(45deg)}' + '#bs-tip-portal[data-pos=above]::after{top:auto;bottom:-5px;border:0;border-right:1px solid var(--border-tooltip);border-bottom:1px solid var(--border-tooltip)}';
+  st.textContent = '.bs-tip{display:none !important} #bs-tip-portal b{color:var(--brand-tooltip);font-weight:600}' + '#bs-tip-portal::after{content:"";position:absolute;width:8px;height:8px;left:calc(var(--tip-ax,50%) - 4px);top:-5px;background:var(--bg-tooltip);border-left:1px solid var(--border-tooltip);border-top:1px solid var(--border-tooltip);transform:rotate(45deg)}' + '#bs-tip-portal[data-pos=above]::after{top:auto;bottom:-5px;border:0;border-right:1px solid var(--border-tooltip);border-bottom:1px solid var(--border-tooltip)}' + '#bs-tip-portal[data-pos=side]::after{left:auto;right:-5px;top:calc(50% - 4px);border:0;border-top:1px solid var(--border-tooltip);border-right:1px solid var(--border-tooltip)}';
   document.head.appendChild(st);
 })();

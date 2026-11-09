@@ -5,11 +5,13 @@ class Component extends DCLogic {
      نسخةَ العالم فتُعاد كما كانت. المُحدِّثُ الدالّيُّ يُعامَل بحذرٍ: يرفعها. */
   setState(u, cb) {
     try {
-      const CH = { sidebarOpen: 1, toast: 1, deptOpen: 1, deptNodeOpen: 1, nfOpen: 1, nfToast: 1, nfTick: 1, nfKinds: 1, nfFilt: 1, nfCompose: 1, bkConf: 1, bkStep: 1, navPending: 1 };
+      const CH = { sidebarOpen: 1, toast: 1, deptOpen: 1, deptNodeOpen: 1, nfOpen: 1, nfToast: 1, nfTick: 1, nfKinds: 1, nfFilt: 1, nfCompose: 1, bkConf: 1, bkStep: 1, navPending: 1, conTick: 1, conCx: 1 };
       let bump = true;
       if (u && typeof u === "object") { bump = false; for (const k in u) if (!CH[k]) { bump = true; break; } }
       if (bump) KIVO.__dcWorld = (KIVO.__dcWorld || 0) + 1;
-      if (u && typeof u === "object" && "sidebarOpen" in u && u.sidebarOpen !== this.state.sidebarOpen) { this.__sbToggled = true; try { KIVO.__bsQuiet && KIVO.__bsQuiet(380); } catch (e) {} }
+      /* CORE-02 S7: الصفحةُ التشغيلية التي يغادرها المستخدم تُحفظ — «مساحة العمل التشغيلية» من المركز تعود إليها */
+      if (u && typeof u === "object" && "active" in u && u.active !== this.state.active && this.state.active && this.state.active !== "sysadmin" && this.state.active !== "admin") this.__lastOps = this.state.active;
+      if (u && typeof u === "object" && (("sidebarOpen" in u && u.sidebarOpen !== this.state.sidebarOpen) || ("conCx" in u && u.conCx !== this.state.conCx))) { this.__sbToggled = true; try { KIVO.__bsQuiet && KIVO.__bsQuiet(380); } catch (e) {} }
       /* التنقّلُ على مرحلتين: أولاً استجابةٌ مرئيةٌ فوريّة (تظليلُ الوجهة، إفراغُ
          المحتوى)، ثم — بعد أن يرسم المتصفحُ — تركيبُ الصفحة الجديدة في transition
          مُقطَّعٍ لا يحجب الخيط. كان التركيبُ كلُّه يقع داخل مهمّة النقر نفسِها. */
@@ -48,9 +50,13 @@ class Component extends DCLogic {
   _hashTab() {
     try { const m = /^#\/[a-z]+\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
   }
+  /* CORE-02 S7: المقطعُ الثالث — قسمُ إعدادات المنصة (#/sysadmin/plat/<sub>) */
+  _hashSub() {
+    try { const m = /^#\/[a-z]+\/[a-z]+\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
+  }
   /* ذيل العنوان لصفحتَي الإعدادات ومدير النظام يُمرَّر لصفحة الإعدادات عبر خطّافيها (القائم __ADMIN_OPEN_TAB والجديد __ADMIN_OPEN_DTAB) */
   _applyHashTab(key) {
-    try { const t = this._hashTab(); if (!t) return; if (key === "sysadmin") KIVO.__ADMIN_OPEN_TAB = t; else if (key === "admin") KIVO.__ADMIN_OPEN_DTAB = t; else KIVO.__BS_OPEN_TAB = { page: key, tab: t }; } catch (e) {}
+    try { const t = this._hashTab(); if (!t) return; if (key === "sysadmin") { KIVO.__ADMIN_OPEN_TAB = t; KIVO.__ADMIN_OPEN_PSUB = this._hashSub() || null; } else if (key === "admin") KIVO.__ADMIN_OPEN_DTAB = t; else KIVO.__BS_OPEN_TAB = { page: key, tab: t }; } catch (e) {}
   }
   _hashWrite(key, push) {
     try {
@@ -168,6 +174,15 @@ class Component extends DCLogic {
         if (k === this.state.active) { this._applyHashTab(k); this.setState({ hashTick: Date.now() }); return; }
         const ok = this._pageAllowed(k);
         if (!ok) { this._hashWrite(this.state.active, false); return; }
+        /* مراجعة S10: الخروجُ من المركز بالرجوع أو بعنوانٍ مكتوب ومسوّداتُ إعدادات المنصة غيرُ محفوظة — يبقى العنوانُ على المركز ويُسأل أولاً
+           (السؤالُ نفسُه في _conLeaveOk لكل مخرج) */
+        if (ok !== "sysadmin" && !this.__conAsked && this._conDirty()) {
+          const want = location.href, lc = this.__lastCon || ["overview", null];
+          KIVO.__ADMIN_MODE = "site";
+          try { history.replaceState(null, "", location.pathname + location.search + "#/sysadmin/" + lc[0] + (lc[1] ? "/" + lc[1] : "")); } catch (e) {}
+          this._conLeaveOk().then((y) => { if (!y) return; try { history.replaceState(null, "", want); } catch (e) {} this.__conAsked = true; try { this._onHash(); } finally { this.__conAsked = false; } });
+          return;
+        }
         if (ok === "help") {this._openHelpRoute();return;}
         this._applyHashTab(ok);
         this._savePage(ok);                                   /* يلتقط موضعَ الصفحة المغادَرة */
@@ -176,10 +191,12 @@ class Component extends DCLogic {
       } catch (e) {} };
       window.addEventListener("hashchange", this._onHash);
       /* Escape: حوارُ التأكيد أولاً، وإلا أعلى طبقةِ حوارٍ/قائمةٍ ملءَ الشاشة تُغلَق بالنقر خارجَ بطاقتها — نقرٌ صناعيٌّ على الطبقة نفسها */
+      /* CORE-02 S10: نطاقُ البحث عن الطبقات — ما في main، وأبناءُ body، وحواراتُ الإطار (.bs-dlg تحت جذره: التأكيد · النسخ · التعميم) */
+      this._ovScope = 'main *, body > *, [data-screen-label="إطار التطبيق"] > .bs-dlg';
       this._escDismiss = () => {
         try {
           const W = innerWidth, H = innerHeight; let best = null, bestZ = -1, order = 0;
-          for (const el of document.querySelectorAll('main *, body > *')) {
+          for (const el of document.querySelectorAll(this._ovScope)) {
             if (el === document.body || el.id === 'bsLoginGate' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') continue;
             const cs = getComputedStyle(el); if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
             const r = el.getBoundingClientRect(); if (r.width < W * 0.9 || r.height < H * 0.9) continue;
@@ -194,15 +211,21 @@ class Component extends DCLogic {
         } catch (e) { return false; }
       };
       /* القوائمُ المنسدلة بلا طبقةِ التقاط (قوائمُ الصفوف، الفلاتر، الجرس): تُغلق بالنقر خارجَها — فـEscape نقرةٌ صناعيّةٌ على body (خارجَ كلِّ شيء) */
+      /* CORE-02 S10: الدرجُ المفتوح (≤1024 · الوضعان) يُغلق بـEscape بعد الحوارات، ويعود التركيزُ إلى زرّ القائمة — القائمةُ المنسدلة داخله تُغلق أولاً */
+      this._drawerEsc = () => {
+        if (!this.state.sidebarOpen || this.state.deptOpen || innerWidth > 1024) return false;
+        this.setState({ sidebarOpen: false }, () => { try { const bg = document.querySelector(".bs-burger"); if (bg) bg.focus({ preventScroll: true }); } catch (e) {} });
+        return true;
+      };
       this._escMenus = () => { try { document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })); return true; } catch (e) { return false; } };
       /* مديرُ تركيز الحوارات: أعلى طبقةٍ ثابتةٍ ملءَ الشاشة الآن (بلا شرطِ معالجِ نقر) */
-      this._ovClassRe = /(^|\s)(pf-ov|fd-ov|mbk|bs-plat-ov|tkf-ov)(\s|$)/;   /* الموجة 2 · DG-11: tkf-ov نافذةُ «مهمة جديدة» (موضعُها في CSS) */
+      this._ovClassRe = /(^|\s)(pf-ov|fd-ov|mbk|bs-plat-ov|tkf-ov|bs-dlg)(\s|$)/;   /* الموجة 2 · DG-11: tkf-ov نافذةُ «مهمة جديدة» (موضعُها في CSS) */
       /* مرشَّحُ طبقةٍ (بلا أنماطٍ محسوبة): inline fixed بأطرافٍ أربعةٍ صفرٍ، أو صنفُ طبقةٍ معروف */
       this._ovCand = (el) => { try { const st = el.style; if (st && st.position === 'fixed' && st.top === '0px' && st.left === '0px' && st.right === '0px' && st.bottom === '0px') return true; const cn = el.className; return typeof cn === 'string' && this._ovClassRe.test(cn); } catch (e) { return false; } };
       this._topOverlay = () => {
         try {
           const W = innerWidth, H = innerHeight; let best = null, bestZ = -1;
-          for (const el of document.querySelectorAll('main *, body > *')) {
+          for (const el of document.querySelectorAll(this._ovScope)) {
             if (el === document.body || el.id === 'bsLoginGate' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.id === 'bs-toast' || el.id === 'bs-stoast' || (el.classList && el.classList.contains('login-screen'))) continue;
             if (!this._ovCand(el)) continue;   /* لا getComputedStyle إلا لمرشَّحٍ حقيقيّ */
             const cs = getComputedStyle(el); if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') continue;
@@ -253,10 +276,11 @@ class Component extends DCLogic {
         if (!ev || ev.isComposing) return;
         if (ev.key === "Escape") {
           if (this.state.cfm) { ev.preventDefault(); ev.stopPropagation(); this.cfmClose(false); }
-          else if (!ev.defaultPrevented) { if (this._escDismiss()) ev.preventDefault(); else this._escMenus(); }
+          else if (!ev.defaultPrevented) { if (this._escDismiss() || this._drawerEsc()) ev.preventDefault(); else this._escMenus(); }
         } else if (ev.key === "Tab") {
           /* Tab داخل حوارٍ مفتوح لا يخرج منه */
-          const top = this._topOverlay(); if (!top) return;
+          /* ودرجُ المركز المفتوح (≤1024) طبقةٌ كذلك: لا يصل Tab إلى الصفحة تحت الستارة */
+          const top = this._topOverlay() || (this.state.sidebarOpen && !this.state.deptOpen && innerWidth <= 1024 && document.querySelector("aside.bsb.bsb--console")) || null; if (!top) return;
           const f = this._focusables(top); if (!f.length) return;
           const i = f.indexOf(document.activeElement);
           if (i === -1) { ev.preventDefault(); f[0].focus(); }
@@ -341,7 +365,7 @@ class Component extends DCLogic {
     if (!result) return;
     if (required) { this.setState({nfToast:null}); this.bkToast("سُجّل تأكيد قراءتك للتعميم", 2500); return; }
     const nav = x.go && (!NF.goOk || NF.goOk(x)) ? (NF.GO_NAV[x.go] || "") : "";   /* R183: لا انتقالَ إلى صفحةٍ لا تُفتح لك */
-    if (nav) { this.setState({ nfOpen: false, nfToast: null }); if (nav === "sysadmin") { if (KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) { KIVO.__ADMIN_MODE = "site"; KIVO.__ADMIN_OPEN_TAB = x.go === "المنصة" ? "plat" : "sec"; this._savePage("sysadmin"); this.setState({ active: "sysadmin" }); } return; } if (nav === "help") { try { KIVO.BassamPlat.openAbout(); } catch (e) {} return; } if (nav === "admin") { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); return; } try { KIVO.BassamNav.go(nav); } catch (e) {} }
+    if (nav) { this.setState({ nfOpen: false, nfToast: null }); if (nav === "sysadmin") { if (KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) { KIVO.__ADMIN_MODE = "site"; KIVO.__ADMIN_OPEN_TAB = x.go === "المنصة" ? "plat" : "sec"; this._savePage("sysadmin"); this.setState({ active: "sysadmin" }); } return; } if (nav === "help") { try { KIVO.BassamPlat.openAbout(); } catch (e) {} return; } if (nav === "admin") { if (!(await this._conLeaveOk())) return; KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); return; } try { KIVO.BassamNav.go(nav); } catch (e) {} }
   }
   /* CORE-01: وصل جديدٌ والقائمةُ مغلقة ⇒ تُجلب صفحتُها الأولى بهدوء (بلا رسالة — الاستطلاعُ الخلفي صامت) */
   _nfAutoNew() {
@@ -462,7 +486,7 @@ class Component extends DCLogic {
     try { P._bust(); } catch (e) {}
     try { if (KIVO.BassamPlat && KIVO.BassamPlat.apply) setTimeout(() => KIVO.BassamPlat.apply(), 400); } catch (e) {}   /* زر المساعدة يتبع صلاحية «المساعدة» */
     const u = A.user ? A.user() : null;
-    if (!u) { this._byeBar("أُنهيت جلستك — جُمّد حسابك أو حُذف من مدير النظام", () => { try { A.logout(); } catch (e) { location.reload(); } }); return; }
+    if (!u) { this._byeBar("أُنهيت جلستك — جُمّد حسابك أو حُذف من مسؤول المنصة", () => { try { A.logout(); } catch (e) { location.reload(); } }); return; }
     if (A.isSuper && A.isSuper()) { this.setState({ tick: (this.state.tick || 0) + 1 }); return; }
     const a = this.state.active;
     const NAVP2 = P.NAV2PERM || {};
@@ -664,8 +688,9 @@ class Component extends DCLogic {
       const prev = document.activeElement;
       /* KIVO_265 · typed: نصٌّ يجب كتابتُه حرفاً للتأكيد (حذفُ إدارةٍ فيها مدير أو موظفون) — زرُّ التأكيد معطّل حتى يطابق */
       /* RISHAD266 · input: حقلُ إدخالٍ (تسميته o.input) — يُحلّ الوعدُ بالنصّ المكتوب أو null عند الإلغاء */
-      this.setState({ cfm: { title: o.title || "تأكيد", msg: o.msg || "", ok: o.ok || "تأكيد", cancel: o.cancel || "إلغاء", danger: !!o.danger, info: !!o.info, typed: o.typed ? String(o.typed) : "", val: "", input: o.input ? String(o.input) : "", res, prev } });
-      setTimeout(() => { try { const b = document.getElementById(o.input ? "bsCfmTyped" : o.danger ? "bsCfmNo" : "bsCfmOk"); b && b.focus(); } catch (e) {} }, 30);
+      /* CORE-02 S10: التركيزُ الأوّل لحظةَ رسم الحوار (نداءُ setState بعد الإيداع) لا بعد مهلةٍ ثابتة قد تسبق الرسمَ تحت الحِمل */
+      const fo = (n) => { try { const b = document.getElementById(o.input ? "bsCfmTyped" : o.danger ? "bsCfmNo" : "bsCfmOk"); if (b) b.focus(); else if (n < 20) setTimeout(() => fo(n + 1), 30); } catch (e) {} };
+      this.setState({ cfm: { title: o.title || "تأكيد", msg: o.msg || "", ok: o.ok || "تأكيد", cancel: o.cancel || "إلغاء", danger: !!o.danger, info: !!o.info, typed: o.typed ? String(o.typed) : "", val: "", input: o.input ? String(o.input) : "", res, prev } }, () => fo(0));
     });
   }
   cfmClose(v) {
@@ -689,7 +714,17 @@ class Component extends DCLogic {
     } catch (e) {}
     return out;
   }
-  state = { active: this._loadPage(), sidebarOpen: false, theme: this.loadTheme(), bkConf: null, bkStep: "pick", cfm: null };
+  /* CORE-02 S7: طيُّ شريط المركز على الحاسوب حالةٌ مستقلّة (bassam_con_cx_v1) — لا تمسّ sidebarOpen في الصفحات التشغيلية.
+     تفضيلُ جهازٍ في التخزين الخام (__BS_RAWLS): لا يُنسب لوحدةٍ ولا يُزامَن مع الخادم */
+  _conCxRaw(v) {
+    try { const R0 = KIVO.__BS_RAWLS, ls = localStorage;
+      if (v === undefined) return R0 ? R0.getItem.call(ls, "bassam_con_cx_v1") : ls.getItem("bassam_con_cx_v1");
+      if (R0) R0.setItem.call(ls, "bassam_con_cx_v1", v); else ls.setItem("bassam_con_cx_v1", v);
+    } catch (e) {}
+    return null;
+  }
+  _conCxLoad() { return this._conCxRaw() === "1"; }
+  state = { active: this._loadPage(), sidebarOpen: false, conCx: this._conCxLoad(), theme: this.loadTheme(), bkConf: null, bkStep: "pick", cfm: null };
   /* ═══ السمةُ الحقيقية (فاتح/داكن) — رموزُ CSS تحت html[data-theme]، بلا مرشِّحات ولا طبقات ═══
      التفضيلُ جهازيٌّ في bassam_theme (لا يُزامَن). loadTheme يقرأه؛ applyTheme يضع السمةَ على الجذر ويحفظها ويُعلِم الصفحات. */
   loadTheme() { try { return localStorage.getItem("bassam_theme") === "dark" ? "dark" : "light"; } catch (e) { return "light"; } }
@@ -866,6 +901,162 @@ class Component extends DCLogic {
   bkToast(msg, long) {
     try { KIVO.bsToast(msg, { ms: typeof long === "number" ? long : long ? 4200 : 2600 }); } catch (e) { /* عرضٌ فقط */ }
   }
+  /* ═══ CORE-02 S7 · «مركز إدارة رشاد» مساحةٌ مستقلّة داخل التطبيق ═══
+     الخريطةُ هنا وحدها (ترتيبُ الشريط وتسمياتُ الصفحات) · التوافرُ قاعدةُ صفحة الإدارة نفسُها تنشرها بـ conSync ·
+     الاختيارُ من العنوان #/sysadmin/<tab>[/<sub>]. عنصرٌ رابعٌ = خطٌّ فاصلٌ قبله. */
+  _sysNav() {
+    return {
+      home: [["overview", null, "الرئيسية"]],
+      org: [["depts", null, "الإدارات"], ["users", null, "مراقبة الحسابات"], ["perms", null, "خريطة الصلاحيات"]],
+      plat: [["plat", "id", "هوية المنصة"], ["plat", "mods", "الوحدات"], ["plat", "notif", "التنبيهات والتعاميم"],
+        ["plat", "login", "شاشة تسجيل الدخول", 1], ["plat", "side", "القوائم"], ["plat", "print", "الطباعة والتقارير"], ["plat", "app", "تطبيق الجوال"],
+        ["plat", "about", "حول المنصة", 1]],
+      sec: [["sec", null, "الأمن"], ["oplog", null, "سجل الأنشطة والتغييرات"]],
+      data: [["backup", null, "النسخة الاحتياطية"], ["plat", "setup", "التهيئة والاستعادة"], ["histimp", null, "استيراد البيانات التاريخية"]],
+    };
+  }
+  _conGrpOf(tab, sub) {
+    const N = this._sysNav();
+    for (const g in N) if (N[g].some((x) => x[0] === tab && (x[1] || null) === (sub || null))) return g;
+    return "";
+  }
+  /* قيمُ شريط المركز: لكل مجموعةٍ عناصرُها المتاحة (Admin p) والمختارُ منها (العنوان) · null قبل أول نشرٍ ⇒ هيكلُ تحميل ·
+     أكورديون: مجموعةٌ واحدةٌ مفتوحة (أقصرُ شريطٍ وطولُه معروفٌ على 1366×768 والدرج) — تتبع العنوانَ (التحميل · الرابط المباشر ·
+     الرجوع · روابط الصفحة) ورأسُها زرٌّ يفتحها ويطويها بلا تنقّل. لا تُخزَّن: العنوانُ يقرّرها عند كل تحميل */
+  _conVals(rail) {
+    const N = this._sysNav(), GT = { org: "الإدارة المؤسسية", plat: "إعدادات المنصة", sec: "الأمن والرقابة", data: "البيانات والاستمرارية" };
+    const C = this.__con || {}, avail = C.avail || this.__conAvail || null;
+    const tab = this._hashTab() || C.tab || "overview";
+    const sub = tab === "plat" ? (this._hashSub() || C.sub || "id") : null;
+    const L = this.__conGrpLast || (this.__conGrpLast = {});
+    const dirty = C.dirty || [], bd = C.secBadge | 0;
+    const ag = this._conGrpOf(tab, sub), at = tab + "/" + (sub || "");
+    if (this.__conOpenAt !== at) { this.__conOpenAt = at; if (ag && ag !== "home") this.__conOpen = ag; }   /* «الرئيسية» لا تطوي ما فتحه المستخدم */
+    const toggle = (g) => () => { this.__conOpen = this.__conOpen === g ? "" : g; this.setState({ conTick: (this.state.conTick | 0) + 1 }); };
+    const go = (t, s) => (ev) => {
+      try { if (ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button === 1)) return; if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {}
+      this._conGo(t, s, true);
+    };
+    const item = (x) => {
+      const on = x[0] === tab && (x[1] || null) === sub, dz = x[0] === "plat" && dirty.indexOf(x[1]) >= 0, bg = x[0] === "sec" && bd > 0;
+      return { t: x[2], tab: x[0], sub: x[1] || undefined, href: "#/sysadmin/" + x[0] + (x[1] ? "/" + x[1] : ""), cur: on ? "page" : undefined, on,
+        cls: "n s-ci" + (on ? " on" : ""), div: !!x[3], bdgOn: bg, bdg: String(bd), dirty: dz,
+        lbl: bg ? x[2] + "، أحداث أمنية اليوم: " + bd : dz ? x[2] + "، تغييرات غير محفوظة" : undefined, go: go(x[0], x[1]) };
+    };
+    /* الأسهم ↑↓ وHome/End تنقل التركيزَ بين رؤوس المجموعات والروابط الظاهرة (Tab يبقى بترتيب الشريط) */
+    const key = (ev) => {
+      try { const k = ev.key, w = ev.currentTarget, a = document.activeElement;
+        if (!/^(ArrowDown|ArrowUp|Home|End)$/.test(k) || ev.altKey || ev.ctrlKey || ev.metaKey || !w || !w.contains(a)) return;
+        const F = [...w.querySelectorAll(".s-cgh, a.n")].filter((e) => e.getClientRects().length > 0), i = F.indexOf(a); if (i < 0) return;
+        const j = k === "Home" ? 0 : k === "End" ? F.length - 1 : i + (k === "ArrowDown" ? 1 : -1);
+        ev.preventDefault(); if (F[j]) F[j].focus(); } catch (e) {}
+    };
+    const out = { loading: !avail, rail: !!rail, key };
+    for (const g in N) {
+      const items = avail ? N[g].filter((x) => avail.indexOf(x[0]) >= 0).map(item) : [];
+      if (items.length && items[0].div) items[0].div = false;
+      const on = items.some((i) => i.on);
+      if (on) L[g] = [tab, sub];
+      const last = L[g] && items.find((i) => i.tab === L[g][0] && (i.sub || null) === (L[g][1] || null));
+      const tgt = last || items[0], open = !rail && this.__conOpen === g;
+      /* ما في المجموعة من شارةٍ أو مسوّدةٍ يظهر على رأسها وهي مطويّة وعلى أيقونتها في الشريط المطويّ — مرئيّاً ومقروءاً (aria-describedby · aria-label) */
+      const bdgOn = items.some((i) => i.bdgOn), dz = items.some((i) => i.dirty);
+      const mTxt = [bdgOn ? "أحداث أمنية اليوم: " + bd : "", dz ? "تغييرات غير محفوظة" : ""].filter(Boolean).join("، ");
+      const hMark = !open && !!mTxt;
+      out[g] = { show: items.length > 0, items, t: GT[g] || "",
+        exp: open ? "true" : "false", shut: !open, toggle: toggle(g), hCls: "s-cgh" + (on ? " is-cur" : ""),
+        desc: [on && !open ? "con-gh-cur" : "", hMark ? "con-gm-" + g : ""].filter(Boolean).join(" ") || undefined,
+        hBdgOn: hMark && bdgOn, hDot: hMark && !bdgOn && dz, bdg: String(bd), mTxt,
+        railCls: "n s-cgi" + (on ? " on" : ""), railCur: on ? "true" : undefined, railTitle: (GT[g] ? GT[g] + ": " : "") + items.map((i) => i.t).join(" · "),
+        railLbl: (GT[g] || "") + (mTxt ? "، " + mTxt : ""), railMark: !!mTxt,
+        railGo: tgt ? go(tgt.tab, tgt.sub) : () => {} };
+    }
+    out.home = Object.assign(out.home, out.home.items[0] || {});
+    return out;
+  }
+  /* التنقّلُ داخل المركز: عنوانٌ جديد في السجلّ (زرُّ الرجوع يتنقّل بين صفحاته) · الدرجُ يُغلق على الشاشة الضيّقة ·
+     التركيزُ ينتقل إلى عنوان الصفحة إذا بدأ التنقّلُ من الشريط */
+  _conGo(tab, sub, fromAside) {
+    try {
+      sub = tab === "plat" ? (sub || "id") : null;
+      if (this.state.active !== "sysadmin") { this.__lastCon = [tab, sub]; this._goSys(); return; }
+      const g = this._conGrpOf(tab, sub); if (g) (this.__conGrpLast || (this.__conGrpLast = {}))[g] = [tab, sub];
+      const h = "#/sysadmin/" + tab + (sub ? "/" + sub : "");
+      if (fromAside) this.__conFocus = tab + "/" + (sub || "");
+      if (String(location.hash || "") !== h) location.hash = h; else if (fromAside) this._conFocusNow(tab + "/" + (sub || ""));
+      if (typeof window !== "undefined" && window.innerWidth <= 1024 && this.state.sidebarOpen) this.setState({ sidebarOpen: false });
+    } catch (e) {}
+  }
+  _conFocusNow(key) {
+    if (this.__conFocus !== key) return;
+    this.__conFocus = "";
+    /* معاينةُ إعدادات المنصة (iframe) تأخذ التركيزَ عند تحميلها — يعود إلى العنوان ما لم يتحرّك المستخدم خلال ثانيتين */
+    const keep = (h) => { let acted = false; const mark = () => { acted = true; };
+      const back = () => setTimeout(() => { try { const a = document.activeElement; if (!acted && a && a.tagName === "IFRAME" && document.contains(h)) h.focus({ preventScroll: true }); } catch (e) {} }, 0);
+      try { window.addEventListener("pointerdown", mark, true); window.addEventListener("keydown", mark, true); window.addEventListener("blur", back); } catch (e) {}
+      setTimeout(() => { try { window.removeEventListener("pointerdown", mark, true); window.removeEventListener("keydown", mark, true); window.removeEventListener("blur", back); } catch (e) {} }, 2000); };
+    const f = (n) => { try { const h = document.querySelector("main .con-ph h2"); if (h) { h.focus({ preventScroll: true }); keep(h); } else if (n < 6) setTimeout(() => f(n + 1), 60); } catch (e) {} };
+    try { requestAnimationFrame(() => f(0)); } catch (e) {}
+  }
+  /* صفحةُ الإدارة تنشر ما تعرضه (التبويب · القسم · التوافر · الشارة · المسوّدات) — مرّةً لكل تغيّر، ورسمُ الشريط بعد رسمها (لا setState أثناء رسمٍ آخر) */
+  _conSync(s) {
+    try {
+      if (!s) return;
+      const sig = JSON.stringify(s);
+      if (sig === this.__conSig) return;
+      this.__conSig = sig; this.__con = s; this.__conAvail = s.avail;
+      const key = s.tab + "/" + (s.tab === "plat" ? s.sub || "" : "");
+      this.__lastCon = [s.tab, s.tab === "plat" ? s.sub || "id" : null];
+      Promise.resolve().then(() => this.setState({ conTick: (this.state.conTick | 0) + 1 }, () => {
+        this._conFocusNow(key);
+        if (this.__conSeen !== key) { this.__conSeen = key; this._conReveal(); }
+      }));
+    } catch (e) {}
+  }
+  /* CORE-02 S10: فتحُ الدرج يضع التركيزَ على الصفحة الحالية فيه (مجموعتُها مطويّة ⇒ رأسُها · وإلا أولِ رابطٍ متاح) — Escape يعيده إلى زرّ القائمة (_drawerEsc) */
+  _drawerFocus() {
+    try { requestAnimationFrame(() => { try { const a = document.querySelector("aside.bsb"); if (!a) return;
+      const vis = (e) => e.getClientRects().length > 0, t = [".s-nav .n.on:not(.gone)", ".s-nav .s-cgh.is-cur", ".s-nav a.n:not(.gone)"].map((q) => [...a.querySelectorAll(q)].find(vis)).find(Boolean);
+      if (t) t.focus({ preventScroll: true }); } catch (e) {} }); } catch (e) {}
+  }
+  /* العنصرُ الحاليّ داخل منطقة تمرير الشريط (بلا تمرير الصفحة) */
+  _conReveal() {
+    try { requestAnimationFrame(() => { try { const it = document.querySelector("aside.bsb .s-ci.on"), nv = it && it.closest(".s-nav"); if (!nv) return;
+      if (it.classList.contains("s-ci--top")) { nv.scrollTop = 0; return; }   /* «الرئيسية»: رأسُ الشريط كلُّه ظاهر */
+      const a = it.getBoundingClientRect(), b = nv.getBoundingClientRect();
+      if (a.top < b.top) nv.scrollTop -= b.top - a.top + 8; else if (a.bottom > b.bottom) nv.scrollTop += a.bottom - b.bottom + 8; } catch (e) {} }); } catch (e) {}
+  }
+  /* «مركز إدارة رشاد»: لمسؤول المنصة وحده — يعود إلى آخر صفحةٍ فُتحت فيه */
+  _goSys() {
+    if (!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper())) return;
+    KIVO.__ADMIN_MODE = "site";
+    const lc = this.__lastCon;
+    if (lc && this.state.active !== "sysadmin") { KIVO.__ADMIN_OPEN_TAB = lc[0]; KIVO.__ADMIN_OPEN_PSUB = lc[1] || null; }
+    this._savePage("sysadmin"); this.setState({ active: "sysadmin" });
+  }
+  /* «مساحة العمل التشغيلية»: آخرُ صفحةٍ تشغيلية فُتحت، وإلا أولُ صفحةٍ متاحة — والوحدةُ النشطة كما هي.
+     مسوّداتُ إعدادات المنصة في حالة الصفحة وحدها: تُفقد بالخروج، فيُسأل المستخدم أولاً */
+  /* مسوّداتُ إعدادات المنصة غيرُ المحفوظة والصفحةُ صفحةُ المركز */
+  _conDirty() {
+    return this.state.active === "sysadmin" && ((this.__con || {}).dirtyN | 0) > 0;
+  }
+  /* سؤالٌ واحد قبل مغادرة المركز بمسوّداتٍ غير محفوظة — لكل مخرج: «مساحة العمل التشغيلية» · الرجوع والعنوان المكتوب · الجرس · بطاقة المستخدم */
+  async _conLeaveOk() {
+    if (!this._conDirty()) return true;
+    try { return !!(await KIVO.bsConfirm({ title: "تغييرات غير محفوظة", msg: "لديك تغييرات غير محفوظة في إعدادات المنصة، والخروج يتجاهلها.", ok: "اخرج دون حفظ", cancel: "البقاء", danger: true })); } catch (e) { return false; }
+  }
+  async _goOps() {
+    if (!(await this._conLeaveOk())) return false;
+    const last = this.__lastOps && this._pageAllowed(this.__lastOps);
+    const k = last || (this._kpisOk() ? "kpis" : (["dstats", "employees", "planning", "daily", "irshad", "seized", "award", "links"].find((x) => this._pageAllowed(x)) || "profile"));
+    try { KIVO.BassamNav.go(k, true); } catch (e) {}
+    /* رابطُ الخروج يزول مع شريط المركز فيسقط التركيزُ إلى body: يُنقل إلى الصفحة الحالية في الشريط التشغيلي (والدرجُ يُغلق ⇒ زرُّ القائمة) — ما لم يتحرّك المستخدم */
+    const f = (n) => { try { const ae = document.activeElement; if (ae && ae !== document.body && !(ae.closest && ae.closest("aside.bsb"))) return;
+      const vis = (e) => e && e.getClientRects().length > 0, t = innerWidth <= 1024 ? document.querySelector(".bs-burger") : document.querySelector("aside.bsb:not(.bsb--console) .s-nav .n.on:not(.gone)");
+      if (vis(t)) t.focus({ preventScroll: true }); else if (n < 8) setTimeout(() => f(n + 1), 60); } catch (e) {} };
+    try { requestAnimationFrame(() => f(0)); } catch (e) {}
+    return true;
+  }
   renderVals() {
     if (this._viewLastActive !== this.state.active) { const pg = this.state.active; this._viewLastActive = pg; this._seedUsed = null; try { requestAnimationFrame(() => this._viewRestore(pg, 0)); } catch(e) { /* لا يمنع العرض — يُتجاوز بصمت */ } }
     if (!this._themeApplied) { this._themeApplied = true; const t = this.state.theme; setTimeout(() => this.applyTheme(t), 0); }
@@ -888,19 +1079,24 @@ class Component extends DCLogic {
     /* حركةُ المحتوى عند فتح الشريط/إغلاقه: انزلاقٌ على المُركِّب لا تخطيطٌ في كلِّ إطار.
        لا حركةَ عند أول رسم، ولا على الجوال (الشريطُ هناك درجٌ فوق المحتوى). */
     const wide = (typeof window !== "undefined" && window.innerWidth > 1024);
-    const slide = (this.__sbToggled && wide) ? (open ? "animation:bsSlideOpen .3s ease-in-out;" : "animation:bsSlideClose .3s ease-in-out;") : "";
+    /* CORE-02 S7: صفحةُ «مركز إدارة رشاد» (لمسؤول المنصة وحده — _pageAllowed) مساحةٌ مستقلّة: شريطُها تنقّلُ المركز وحده،
+       ممدودٌ افتراضاً وطيُّه على الحاسوب conCx (لا يمسّ sidebarOpen في الصفحات التشغيلية) · على الشاشة الضيّقة الدرجُ نفسُه */
+    const sbConsole = platPage && !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper());
+    const sbOpen = sbConsole && wide ? !this.state.conCx : open;
+    const slide = (this.__sbToggled && wide) ? (sbOpen ? "animation:bsSlideOpen .3s ease-in-out;" : "animation:bsSlideClose .3s ease-in-out;") : "";
     /* مفتاح الصفحة في منظومة الصلاحيات مقابل مفتاح التنقل */
     const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps", staffing: "staff", plan: "plan", daily: "daily", tasks: "tasks", irshad: "irshad", admin: "admin" };
     const _pOK = (pk) => { try { if (pk === "admin" && KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) return true; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
     const _pAny = (ks) => ks.some(_pOK);
     /* «مدير النظام»: لمدير النظام وحده (كان: الشرط يتطلّب user() صادقة، فغياب الجلسة يتخطّى الخروج المبكر ويفتح الشاشة) */
-    const goSys = () => { if (!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper())) return; KIVO.__ADMIN_MODE = "site"; this._savePage("sysadmin"); this.setState({ active: "sysadmin" }); };
-    const go = (key) => () => {
+    const goSys = () => this._goSys();
+    const go = (key, asked) => () => {
       if (key === "help") return this._openHelpRoute();
       const pk = NAVP[key];
       /* حاوية «الخطة التشغيلية» تُفتح إن كانت أيٌّ من صفحاتها الثلاث متاحة */
       /* حاوية «مؤشرات الإدارة» تُفتح لمن ملك ورقةً واحدةً من أوراقها الستّ */
       if (key === "kpis" ? !this._kpisOk() : (key === "planning" ? !_pAny(["planning","staff","plan"]) : (pk && !_pOK(pk)))) return;   /* ردّ الانتقال لصفحة غير متاحة */
+      if (!asked && this._conDirty()) { this._conLeaveOk().then((y) => { if (y) go(key, true)(); }); return; }   /* مراجعة S10: مسوّداتُ المركز */
       this._savePage(key);           /* تُستعاد بعد التحديث */
       /* على الجوال الشريط درجٌ فوق المحتوى — اختيار وجهة يغلقه فوراً، فلا
          يبقى معلّقاً يحجب الصفحة التي طلبتَها (سلوك التطبيقات المعتمد) */
@@ -913,12 +1109,18 @@ class Component extends DCLogic {
     const inPlanning = ["employees","staffing","plan","daily","tasks","irshad","seized","award"].includes(a);
     /* F01: اسمُ الصفحة بنوع الوحدة النشطة — «موظفو القسم» · «مؤشرات القسم» حين تكون قسماً */
     const _ua = (() => { try { const D = KIVO.BassamDepts; return D && D.unitAl ? D.unitAl(D.active()) : "الإدارة"; } catch (e) { return "الإدارة"; } })();
-    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مدير النظام" };
+    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
     return {
       sidebarOpen: open,
       lKpis: labels.kpis, lEmployees: labels.employees, deptDdHead: _ua === "القسم" ? "الوحدة النشطة" : "الإدارة النشطة",
-      sbClass: "bsb" + (open ? "" : " cx"),
-      headerStyle: "right:var(" + (open ? "--bs-side" : "--bs-side-cx") + ")",   /* CORE-01: الهندسةُ في .bs-topbar (--bs-topbar-h · --bs-side) — هنا الإزاحةُ وحدها */
+      sbClass: "bsb" + (sbOpen ? "" : " cx") + (sbConsole ? " bsb--console" + (wide && !sbOpen ? " bsb--rail" : "") : ""),
+      sbConsole, sbOps: !sbConsole,
+      topClass: "bs-topbar" + (sbConsole ? " is-console" : ""),
+      sbNavLbl: sbConsole ? "مركز إدارة رشاد" : undefined,
+      con: sbConsole ? this._conVals(wide && !sbOpen) : null,
+      conRail: sbConsole && wide && !sbOpen,
+      goOps: () => { this._goOps(); },
+      headerStyle: "right:var(" + (sbOpen ? "--bs-side" : "--bs-side-cx") + ")",   /* CORE-01: الهندسةُ في .bs-topbar (--bs-topbar-h · --bs-side) — هنا الإزاحةُ وحدها */
       // كان: غياب المستخدم يجعلها true فيظهر عنصر «مدير النظام» بعد انقضاء الجلسة
       authSuperSb: !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper()),
       // حساب الموظف للاطّلاع والعمل الميداني — لا لضبط النظام ولا لفتح الحسابات
@@ -975,15 +1177,23 @@ class Component extends DCLogic {
       goSysAdmin: goSys,
       /* الطبقة المعتمة تظهر مع الشريط المفتوح — والـCSS يقصرها على الشاشات الصغيرة */
       scrimOn: !!this.state.sidebarOpen,
-      toggleSidebar: () => this.setState({ sidebarOpen: !this.state.sidebarOpen }),
+      toggleSidebar: () => {
+        if (sbConsole && typeof window !== "undefined" && window.innerWidth > 1024) {
+          const v = !this.state.conCx; this._conCxRaw(v ? "1" : "0");
+          this.setState({ conCx: v }); return;
+        }
+        const opening = !this.state.sidebarOpen;
+        this.setState({ sidebarOpen: opening }, () => { if (opening && sbConsole) this._conReveal(); if (opening && !wide) this._drawerFocus(); });   /* الدرج: العنصرُ الحاليّ ظاهرٌ ومركَّزٌ عند فتحه */
+      },
       // كان في الشريط ثلاثة مفاتيح طيّ: الزرّ السفلي، ونقر الشعار الخفيّ، وسهم طيّ
       // المجموعة. بقي واحد فوق القائمة — وطيّ المجموعة سقط لأنه لم يعد يوفّر شيئاً
       // بعدما صارت قائمةً مسطّحة من ستة عناصر ثابتة.
-      sbToggleTitle: open ? "إغلاق القائمة الجانبية" : "فتح القائمة الجانبية",
-      sbToggleChevron: "transition:transform .3s;" + (open ? "" : "transform:rotate(180deg)"),
+      burgerExp: open ? "true" : "false", sbExp: sbOpen ? "true" : "false",
+      sbToggleTitle: sbOpen ? "إغلاق القائمة الجانبية" : "فتح القائمة الجانبية",
+      sbToggleChevron: "transition:transform .3s;" + (sbOpen ? "" : "transform:rotate(180deg)"),
       ...((() => {
         const D = KIVO.BassamDepts;
-        if (!D) return { deptName: "إدارة", crumbUnit: platPage ? "المنصة" : "إدارة", deptOpen: false, deptOpenAria: "false", sbDeptTip: "", deptTree: [], deptChev: "" };
+        if (!D) return { deptName: "إدارة", conExitTitle: "الانتقال إلى مساحة العمل التشغيلية", crumbUnit: platPage ? "المنصة" : "إدارة", deptOpen: false, deptOpenAria: "false", sbDeptTip: "", deptTree: [], deptChev: "" };
         const open = !!this.state.deptOpen;
         const act = D.active();
         /* F01: اسمُ الوحدة النشطة أولاً ثم إدارتُها الأم للقسم («قسم س · إدارة ص» — 320 unitLabel) فيُقصّ من آخره على الجوال لا اسمُ الوحدة */
@@ -1016,6 +1226,7 @@ class Component extends DCLogic {
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
           doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) KIVO.BassamAuth.logout(); },
           deptName: deptLabel,
+          conExitTitle: "الانتقال إلى مساحة العمل التشغيلية — الوحدة النشطة: " + deptLabel,
           crumbUnit: platPage ? "المنصة" : deptLabel,
           deptOpen: open, deptOpenAria: open ? "true" : "false",
           get sbDeptTip() { return open ? "" : this.sbDeptTitle; },   /* CORE-01: التلميحُ (المسارُ الكامل) والقائمةُ مغلقة وحدها — لا يغطّي القائمةَ المفتوحة */
@@ -1070,7 +1281,7 @@ class Component extends DCLogic {
           })()
         };
       })()),
-      mainStyle: "flex:1;min-width:0;margin-right:var(" + (open ? "--bs-side" : "--bs-side-cx") + ");padding-top:calc(var(--bs-topbar-h) + 1px);" + slide,   /* الإزاحةُ = عرضُ الشريط (.bsb) وارتفاعُ الشريط العلوي بحدّه */
+      mainStyle: "flex:1;min-width:0;margin-right:var(" + (sbOpen ? "--bs-side" : "--bs-side-cx") + ");padding-top:calc(var(--bs-topbar-h) + 1px);" + slide,   /* الإزاحةُ = عرضُ الشريط (.bsb) وارتفاعُ الشريط العلوي بحدّه */
       goKpis: go("kpis"),
       goDstats: go("dstats"),
       goEmployees: go("employees"),
@@ -1119,7 +1330,10 @@ class Component extends DCLogic {
         /* شارةُ «المنصة» الثابتة بجوار الدور: من display() نفسها (نطاقُ مدير النظام المنصةُ لا الوحدةُ النشطة) — لا تتغيّر بالتبديل */
         return { profName: pr.name || "", profRole: pr.role || "", profInitial: (pr.name || "؟").trim().charAt(0) || "؟", profBadgeOn: pr.scope === "platform", profBadge: "المنصة" };
       })()),
-      __nav: (KIVO.BassamNav = { go: (k) => { try { (k === "sysadmin" ? goSys : go(k))(); } catch (e) {} } }),
+      __nav: (KIVO.BassamNav = { go: (k, asked) => { try { (k === "sysadmin" ? goSys : go(k, asked))(); } catch (e) {} },
+        conSync: (s) => this._conSync(s), conGo: (tab, sub) => this._conGo(tab, sub, false),
+        /* CORE-02 S8: «عرض الكل» في «أحداث المنصة الأخيرة» يفتح الجرس (بعد نقرة الفتح كي لا يغلقه مستمعُ النقر خارجه) */
+        bell: () => setTimeout(() => { if (!this.state.nfOpen) this.setState({ nfOpen: true, nfToast: null }, () => this._nfReload()); }, 0) }),
       goAdmin: () => { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); }, goProfile: (ev) => { try { if (ev && ev.target && ev.target.closest && ev.target.closest(".s-logout")) return; } catch (e) {} go("profile")(); }, bsVerTxt: "الإصدار " + (KIVO.__BS_VER || ""),
       pageName: this._pageNames()[a] || "لوحة التحكم",
       isKpis: ap === "kpis", isDstats: ap === "dstats",
@@ -1139,7 +1353,7 @@ class Component extends DCLogic {
             del: () => { save(list.filter((_, j) => j !== i)); } })),
           lkEmpty: !list.length && !f, lkCanEdit: sup, lkFormOn: !!f, lkT: f ? f.t : "", lkU: f ? f.u : "", lkD: f ? f.d : "", lkErr: this.state.lkErr || "",
           lkSub: list.length ? KIVO.BassamCount(list.length, "موقع") + " — تُفتح في نافذة جديدة" : "روابط الجهات والأنظمة التي يحتاجها موظفو الإدارة",
-          lkEmptyHint: sup ? "أضف روابط الأنظمة والجهات ذات الصلة من زر «إضافة موقع»" : "سيضيفها مدير النظام",
+          lkEmptyHint: sup ? "أضف روابط الأنظمة والجهات ذات الصلة من زر «إضافة موقع»" : "سيضيفها مسؤول المنصة",
           lkAdd: () => this.setState({ lkForm: { t: "", u: "", d: "", i: -1 }, lkErr: "" }),
           lkCancel: () => this.setState({ lkForm: null, lkErr: "" }),
           lkOnT: (ev) => setF("t", ev), lkOnU: (ev) => setF("u", ev), lkOnD: (ev) => setF("d", ev),

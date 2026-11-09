@@ -88,7 +88,7 @@ test('wipe 403 unit-unknown-data shows the data-integrity refusal; 403 denied ke
   await A.page.wpOpen(DEPT);A.page.setState({wpTxt:'TEST_ONLY confirmation'});await A.page.wpGo(DEPT);
   assert.equal(A.calls.filter(call=>call.options.method==='POST').length,1);assert.equal(A.acks.length,0,'no success');assert.equal(A.prompts.length,0);assert.equal(A.page.state.wpDid,DEPT);assert.deepEqual(A.syncs,[]);
   const message=A.page.state.wpMsg;
-  assert.match(message,/تحتوي الإدارة على مُدخلَين من البيانات لا تتعرّف عليها المنصة/);assert.match(message,/لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات/);assert.match(message,/لم يُحذف أي شيء/);assert.match(message,/تواصل مع مدير المنصة لمراجعة/);
+  assert.match(message,/تحتوي الإدارة على مُدخلَين من البيانات لا تتعرّف عليها المنصة/);assert.match(message,/لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات/);assert.match(message,/لم يُحذف أي شيء/);assert.match(message,/تواصل مع مسؤول المنصة لمراجعة/);
   assert.doesNotMatch(message,/صلاحيت/,'no permission wording');assert.equal(A.page._wpUncertain,false);
   const P=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,err:'denied',denied:{['bsdept:'+DEPT+':bassam_employees_v1']:{ok:false,why:'deny'}},conflicts:{}},403));
   await P.page.wpOpen(DEPT);P.page.setState({wpTxt:'TEST_ONLY confirmation'});await P.page.wpGo(DEPT);

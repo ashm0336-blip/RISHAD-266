@@ -71,13 +71,13 @@ test('2أ · مفاتيحُ المديرين في صفحة الموظفين (mkS
 
 test('2أ · صفحة الموظفين لغير مدير النظام: حسابُ المدير بلا أدوات (السبب بدلها) · بمفتاح مدير: التجميدُ وحده · والإجراءُ الجماعي يتخطّاهما بسبب', () => {
   const L = rdS('modules/employees/logic.js');
-  assert.match(L, /lk =\s+u \|\| "none" === r\s+\? ""\s+: h\s+\? "حساب مدير الإدارة يديره مدير النظام وحده — [^"]+"\s+: mkS\(a\)\s+\? "مفتاحُ هذا الحساب مفتاحُ مدير — صلاحيتك تجميدُه أو حذفُه فقط؛ إعادةُ تفعيله وتحديثُ بيانات دخوله لمدير النظام"/);
+  assert.match(L, /lk =\s+u \|\| "none" === r\s+\? ""\s+: h\s+\? "حساب مدير الإدارة يديره مسؤول المنصة وحده — [^"]+"\s+: mkS\(a\)\s+\? "مفتاحُ هذا الحساب مفتاحُ مدير — صلاحيتك تجميدُه أو حذفُه فقط؛ إعادةُ تفعيله وتحديثُ بيانات دخوله لمسؤول المنصة"/);
   assert.match(L, /accActivate: \(\) => \{\s+if \(lk\) return void \(this\.setState\(\{ accOpen: null \}\), this\.impToast\(lk\)\);/, 'السببُ قبل أيّ كتابة');
   assert.match(L, /accFreeze: \(\) => \{\s+if \("active" !== r\) return void this\.setState\(\{ accOpen: null \}\);\s+if \(lk && h\) return void/, 'حسابُ المدير لا يُجمَّد من هنا');
   assert.match(L, /accHint: lk\s+\? lk/);
   assert.match(L, /if \(sp && "none" !== s\(t\) && mkS\(o\(t\)\)\) return void k\+\+;/);
   assert.match(L, /if \(sp && r\.staffIsMgr && r\.staffIsMgr\(o\(a\)\)\) return void k\+\+;/);
-  assert.match(L, /" · تُخطّي " \+ k \+ " \(حساب مدير أو بمفتاح مدير — إعادة تفعيله لمدير النظام\)"/);
+  assert.match(L, /" · تُخطّي " \+ k \+ " \(حساب مدير أو بمفتاح مدير — إعادة تفعيله لمسؤول المنصة\)"/);
   /* نزعُ الشارة لا يُعرض لحسابٍ مفتاحُه mgr: */
   assert.match(L, /accMgrShow: u && "active" === r && !\(h && \/\^mgr:\/\.test\(String\(a \|\| ""\)\)\),/);
 });

@@ -24,7 +24,7 @@ const DISPLAY = realDisplay();
 test('super: role label and platform badge are constant across setActive', () => {
   const W = world({ user: { id: 'TEST_ONLY_su', role: 'super', name: 'TEST_ONLY مشرف' }, display: (u) => DISPLAY(u) });
   const before = W.vals();
-  assert.equal(before.profRole, 'مدير النظام');
+  assert.equal(before.profRole, 'مسؤول المنصة', 'CORE-02 display name of the top role');
   assert.equal(before.profBadgeOn, true, 'fixed platform badge for super');
   assert.equal(before.profBadge, 'المنصة');
   assert.equal(before.crumbUnit, UNITS[0].name, 'a unit page shows the active unit');
@@ -40,7 +40,7 @@ test('sysadmin title is «المنصة / ‹page›» without the unit name', ()
     W.c.setState({ active: 'sysadmin' });
     const v = W.vals();
     assert.equal(v.crumbUnit, 'المنصة');
-    assert.equal(v.pageName, 'مدير النظام');
+    assert.equal(v.pageName, 'مركز إدارة رشاد', 'CORE-02 display name of the admin interface');
     for (const u of UNITS) assert.ok(!(v.crumbUnit + ' / ' + v.pageName).includes(u.name), 'no unit name on a platform page');
   }
 });
@@ -49,7 +49,7 @@ test('other roles get no platform badge', () => {
   for (const user of [{ id: 'TEST_ONLY_m', role: 'staff', mgr: true, deptId: UNITS[0].id }, { id: 'TEST_ONLY_d', role: 'dept', deptId: UNITS[0].id }, { id: 'TEST_ONLY_g', role: 'gm', gid: 'TEST_ONLY_g1' }]) {
     const v = world({ user, display: (u) => DISPLAY(u) }).vals();
     assert.equal(v.profBadgeOn, false, user.role);
-    assert.notEqual(v.profRole, 'مدير النظام', user.role);
+    assert.notEqual(v.profRole, 'مسؤول المنصة', user.role);
   }
 });
 
@@ -69,7 +69,7 @@ test('no BassamAuth.display: neutral user card, no «مدير النظام» def
   delete W.KIVO.BassamAuth.display;
   const v = W.vals();
   assert.equal(v.profName, ''); assert.equal(v.profRole, ''); assert.equal(v.profBadgeOn, false); assert.equal(v.profInitial, '؟');
-  assert.doesNotMatch(rd('layouts/root-logic.js'), /pr = \{ name: "مدير النظام"/);
+  assert.doesNotMatch(rd('layouts/root-logic.js'), /pr = \{ name: "(مدير النظام|مسؤول المنصة)"/);
 });
 
 test('collapsed rail: the unit picker opens without expanding the sidebar; no native title over the list', () => {
@@ -95,7 +95,7 @@ test('shell markup: title in installed-app mode, data-key nav, key-based orderin
   const P = rd('layouts/260-bassam-plat.js');
   assert.match(P, /a\[data-key="' \+ k \+ '"\]\{order:/); assert.doesNotMatch(P, /nth-of-type/);
   const L = rd('components/240-bassam-link.js');
-  assert.match(L, /KIVO\.BassamNav\.go\("sysadmin"\)/); assert.doesNotMatch(L, /مدير النظام"/);
+  assert.match(L, /KIVO\.BassamNav\.go\("sysadmin"\)/); assert.doesNotMatch(L, /(مدير النظام|مسؤول المنصة)"/);
   const W = world(); W.vals();
   W.KIVO.BassamNav.go('sysadmin');
   assert.equal(W.c.state.active, 'sysadmin'); assert.equal(W.KIVO.__ADMIN_MODE, 'site');

@@ -24,7 +24,11 @@ const state = (page) => page.evaluate(() => {
   return { active: KIVO.BassamDepts.active(), role: u && u.role, uid: u && u.id, vis: P.visiblePages(), empsAdd: !!(P.can('emps', 'add') || P.can('emps/data', 'add')), nav };
 });
 const held = (page) => page.evaluate(async () => { const r0 = await (await fetch('/api/authz')).json(); const R = KIVO.KIVO_REGISTRY, o = {}; for (const [d, x] of Object.entries((r0.me || {}).depts || {})) { const bin = atob(x.h || ''); let n = 0; R.keys.forEach((k, i) => { if (bin.charCodeAt(i >> 3) & (1 << (i & 7))) n++; }); o[d] = n; } return o; });
-async function switchTo(s, d) { const ok = await s.page.evaluate((d) => KIVO.BassamDepts.setActive(d), d); await s.page.reload({ waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(3000); return ok; }
+/* CORE-02 S7 (intended change): super signs in to «مركز إدارة رشاد», whose sidebar holds the console navigation only — the operational
+   sidebar measured here is read on an operational page (#/profile, open to every account) */
+async function switchTo(s, d) { const ok = await s.page.evaluate((d) => KIVO.BassamDepts.setActive(d), d); await s.page.reload({ waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(3000);
+  if (await s.page.evaluate(() => /^#\/sysadmin/.test(location.hash))) { await s.page.evaluate(() => { location.hash = '#/profile'; }); await s.page.waitForTimeout(2500); }
+  return ok; }
 
 test('super: switching unit changes the data shown, not identity or page access; writes stay under the ceiling', { timeout: 300000 }, async () => {
   const { lab } = await narrowWorld();

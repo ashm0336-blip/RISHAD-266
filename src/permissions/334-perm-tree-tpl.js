@@ -348,10 +348,10 @@
     usersVer: function(){ return I.usersVer ? I.usersVer() : 0; },
     /* كلمة مرور مؤقتة لأي حساب بمعرّفه — لمدير النظام؛ تُفرض على صاحبها تغييرها عند أول دخول */
     resetPwById: function(uid){
-      if (!isSuper()) return Promise.resolve({ ok:false, err:'لمدير النظام وحده' });
+      if (!isSuper()) return Promise.resolve({ ok:false, err:'لمسؤول المنصة وحده' });
       var list = rawUsers() || [], hit = list.filter(function(x){ return x.id === uid; })[0];
       if (!hit) return Promise.resolve({ ok:false, err:'الحساب غير موجود' });
-      if (hit.role === 'super' && !hit.bk) return Promise.resolve({ ok:false, err:'كلمة مدير النظام تُغيَّر من صفحة «حسابي»' });   /* الاحتياطي يُعاد تعيينه من هنا */
+      if (hit.role === 'super' && !hit.bk) return Promise.resolve({ ok:false, err:'كلمة مسؤول المنصة تُغيَّر من صفحة «حسابي»' });   /* الاحتياطي يُعاد تعيينه من هنا */
       var fw = I.acctFixedWhy(hit, false); if (fw) return Promise.resolve({ ok:false, err:fw });   /* دفعة الواجهات (2أ) */
       var digits = ''; try { var a = new Uint32Array(2); window.crypto.getRandomValues(a); digits = String(a[0] % 900000 + 100000) + String(a[1] % 90 + 10); } catch(e){ digits = String(Math.floor(Math.random()*900000+100000)) + '17'; }
       var tmp = 'Tmp' + digits;
@@ -362,10 +362,10 @@
     },
     /* تجميد أو إعادة تفعيل أي حساب بمعرّفه — لمدير النظام (شاشة مدير النظام ← نظرة عامة) */
     setDisById: function(uid, on){
-      if (!isSuper()) return { ok:false, err:'لمدير النظام وحده' };
+      if (!isSuper()) return { ok:false, err:'لمسؤول المنصة وحده' };
       var list = rawUsers() || [], hit = list.filter(function(x){ return x.id === uid; })[0];
       if (!hit) return { ok:false, err:'الحساب غير موجود' };
-      if (hit.role === 'super') return { ok:false, err:'حساب مدير النظام لا يُجمَّد' };
+      if (hit.role === 'super') return { ok:false, err:'حساب مسؤول المنصة لا يُجمَّد' };
       var fw = I.acctFixedWhy(hit, !!on); if (fw) return { ok:false, err:fw };   /* دفعة الواجهات (2أ): ما يرفضه الخادم لا يُرسل */
       writeUsers(list.map(function(x){ return x.id === uid ? Object.assign({}, x, { dis: on ? 1 : 0 }) : x; }));
       return { ok:true };
@@ -448,7 +448,7 @@
     isStaff: function(){ var u = cur(); return !!(u && u.role === 'staff'); },
     display: function(){
       var u = cur();
-      if (u && u.role === 'super') return { name: (u.name || 'مدير النظام'), role: 'مدير النظام', scope: 'platform' };   /* CORE-01: نطاقُه المنصة — شارةٌ ثابتة في بطاقة المستخدم لا تتبع الوحدة النشطة */
+      if (u && u.role === 'super') return { name: (u.name || 'مسؤول المنصة'), role: 'مسؤول المنصة', scope: 'platform' };   /* CORE-01: نطاقُه المنصة — شارةٌ ثابتة في بطاقة المستخدم لا تتبع الوحدة النشطة */
       if (u && u.role === 'dept') {
         var dn = '';
         try { dn = (D.list().filter(function(d){ return d.id === u.deptId; })[0] || {}).name || ''; } catch(e){}

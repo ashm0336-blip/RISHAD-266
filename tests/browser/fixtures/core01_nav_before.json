@@ -1,5 +1,5 @@
 {
- "_note": "RISHAD CORE-01: each role's sidebar link set (class|title|text) captured in the lab on develop@34d5b8a BEFORE CORE-01 (synthetic TEST_ONLY data). The shell changes must keep it identical.",
+ "_note": "RISHAD CORE-01: each role's sidebar link set (class|title|text) captured in the lab on develop@34d5b8a BEFORE CORE-01 (synthetic TEST_ONLY data). The shell changes must keep it identical. CORE-02 step 2 (owner decision): the platform-admin link is shown as «مركز إدارة رشاد» (title «مركز إدارة رشاد — لمسؤول المنصة وحده»; was «مدير النظام — خاصة بالأدمن فقط»); same link, same class, same place.",
  "roles": {
   "super": {
    "#/kpis": [
@@ -14,7 +14,7 @@
     "n out|مواقع ذات صلة — خارج سقف «TEST_ONLY إدارة أ» - مرئية لك بصلاحية المشرف|مواقع ذات صلة",
     "n bs-plat-help|حول المنصة والأدلة|المساعدة",
     "n|الإعدادات — نسخة الإدارة الاحتياطية|الإعدادات",
-    "n|مدير النظام — خاصة بالأدمن فقط|مدير النظام"
+    "n|مركز إدارة رشاد — لمسؤول المنصة وحده|مركز إدارة رشاد"
    ],
    "#/tasks": [
     "n|مؤشرات الإدارة|مؤشرات الإدارة",
@@ -28,7 +28,7 @@
     "n out|مواقع ذات صلة — خارج سقف «TEST_ONLY إدارة أ» - مرئية لك بصلاحية المشرف|مواقع ذات صلة",
     "n bs-plat-help|حول المنصة والأدلة|المساعدة",
     "n|الإعدادات — نسخة الإدارة الاحتياطية|الإعدادات",
-    "n|مدير النظام — خاصة بالأدمن فقط|مدير النظام"
+    "n|مركز إدارة رشاد — لمسؤول المنصة وحده|مركز إدارة رشاد"
    ],
    "#/profile": [
     "n|مؤشرات الإدارة|مؤشرات الإدارة",
@@ -42,7 +42,7 @@
     "n out|مواقع ذات صلة — خارج سقف «TEST_ONLY إدارة أ» - مرئية لك بصلاحية المشرف|مواقع ذات صلة",
     "n bs-plat-help|حول المنصة والأدلة|المساعدة",
     "n|الإعدادات — نسخة الإدارة الاحتياطية|الإعدادات",
-    "n|مدير النظام — خاصة بالأدمن فقط|مدير النظام"
+    "n|مركز إدارة رشاد — لمسؤول المنصة وحده|مركز إدارة رشاد"
    ]
   },
   "mgrA": {

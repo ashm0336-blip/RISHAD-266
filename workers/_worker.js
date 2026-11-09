@@ -65,6 +65,22 @@ async function loadPolicy(env) {
   LOCK_N = Math.max(3, +o.lockN || 5); LOCK_MS = Math.max(1, +o.lockMin || 5) * 60000; PW_MIN = 6; o.pwMin = 6;   /* KIVO_259 (إصلاح): ثابتٌ 6 حتى لو حُفظت قيمةٌ أكبر قبلُ — قاعدةُ المنصة (pwCheck) لا تقبل أكثر من 6 أرقام لمدير النظام */ RL_SAVE = Math.min(5000, Math.max(30, +o.wrMin || 1200));
   return o;
 }
+/* CORE-02 (B2): the editable ranges of the policy form (the same limits the handler applied by clamping) — [min, max, whole number].
+   policyBad(body) names the first field outside its range, or returns null. A field left out (or null) is not judged: it keeps its value.
+   pwMin is not judged here: KIVO_259 (approved password policy) stores 6 whatever is sent — unchanged; the form keeps it at 6 itself. */
+var POLICY_RANGE = { sessH: [1, 72, 1], idleH: [0.25, 24, 0], lockN: [3, 20, 1], lockMin: [1, 60, 1], pwMin: [6, 6, 1], wrMin: [30, 5000, 1] };
+var POLICY_LABEL = { sessH: 'مدة الجلسة القصوى', idleH: 'الخمول قبل الخروج', lockN: 'محاولات قبل القفل', lockMin: 'مدة القفل القصوى', pwMin: 'الحد الأدنى لكلمة المرور', wrMin: 'سقف الحفظ في الدقيقة' };
+function policyBad(b) {
+  var ks = Object.keys(POLICY_RANGE);
+  for (var i = 0; i < ks.length; i++) {
+    var k = ks[i], r = POLICY_RANGE[k], x = b ? b[k] : undefined;
+    if (k === 'pwMin' || x === undefined || x === null) continue;
+    var s = typeof x === 'string' ? x.trim() : x, v = s === '' || typeof s === 'boolean' ? NaN : +s;
+    if (!isFinite(v) || v < r[0] || v > r[1] || (r[2] && Math.floor(v) !== v))
+      return { field: k, min: r[0], max: r[1], msg: POLICY_LABEL[k] + (r[0] === r[1] ? ' ثابت: ' + r[0] : ': أدخل ' + (r[2] ? 'عدداً صحيحاً' : 'رقماً') + ' من ' + r[0] + ' إلى ' + r[1]) };
+  }
+  return null;
+}
 /* ═══ سجل أحداث الأمن — منفصل عن تدقيق البيانات ═══
    act: login_ok · login_fail · lock · logout · sess_kill · pw_change · acct_add · acct_del · acct_freeze · acct_unfreeze ·
         perm_change · denied · policy_change · guard_unlock · admin */
@@ -21165,9 +21181,20 @@ function prot9(E, k, PV, ctx) {
   if (info.adopt) return 'adopt';
   return '';
 }
+/* CORE-02 (B1): platform name — never saved empty or blank (whitespace, zero-width and direction marks count as blank), both modes and any role.
+   Only a value that carries «name» is judged (a value without it keeps the default); a restore writes what its backup holds. */
+var PLAT_BLANK = /^[\s؜​-‏‪-‮⁠-⁤⁦-⁩]*$/;
+function platNameWhy(k, v, ctx) {
+  if (k !== K_PLAT || v == null || (ctx && (ctx.rst || (ctx.enf && ctx.enf.restore)))) return '';
+  var o = parseJson(String(v), null);
+  if (!o || typeof o !== 'object' || Array.isArray(o) || !Object.prototype.hasOwnProperty.call(o, 'name')) return '';
+  return typeof o.name === 'string' && !PLAT_BLANK.test(o.name) ? '' : 'plat-name';
+}
 function canWrite(A, k, newVal, curVal, ctx) {
   var lw = latentLossWhy(A, k, newVal, curVal, ctx);   /* caps-own: latent items are not lost by accident — any role, both modes (021) */
   if (lw) return A && A.enf ? enfNo('perms', { detail: 'latent: ' + lw + ' | ' + LATENT_MSG }) : { ok: false, why: 'perms', detail: 'latent: ' + lw + ' | ' + LATENT_MSG };
+  var pnw = platNameWhy(k, newVal, ctx);
+  if (pnw) return A && A.enf ? enfNo(pnw) : { ok: false, why: pnw };
   if (A && A.enf) return canWriteEnf(A, k, newVal, curVal, ctx);              /* KIVO_243: الكتابة من سجل v24.9 */
   var u = A.u;
   /* RISHAD-266: سقفُ النطاق القديم أُلغي (059 scopeRetiredWhy) — كان «unknown» هنا؛ السببُ الآن باسمه */
@@ -23600,7 +23627,7 @@ async function guardCount(env, gk) {
   /* KIVO_259: زيادةٌ ذرّية (كان يقرأ ثم يكتب فتضيع زياداتٌ تحت التزامن) */
   var g = await env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, 1, 0) ON CONFLICT(gk) DO UPDATE SET n = guard.n + 1, until = 0 RETURNING n').bind(gk).first();
   var n = g ? g.n : 0;
-  if (n === LOCK_N) await secLog(env, { un: gk.indexOf('u:') === 0 ? gk.slice(2) : '', act: 'lock', target: gk, detail: 'attempts' });
+  if (n === LOCK_N) await secLog(env, { un: gk.indexOf('u:') === 0 ? gk.slice(2) : '', act: 'lock', target: gk, detail: String(n) });   /* CORE-02 (B3): the count, as guardFail writes it — was the word 'attempts' */
 }
 /* ── حدُّ معدّل الكتابة ─────────────────────────────────────────────────────
    نافذةٌ ثابتةٌ من دقيقة، ومفتاحُها الحسابُ لا عنوانُ الشبكة: مكتبٌ كاملٌ خلف
@@ -28673,6 +28700,9 @@ export default {
         if (path === '/api/policy') {
           if (request.method === 'POST') {
             var rbp = await bodyRead(request, path); if (rbp.res) return rbp.res; var bp = rbp.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
+            /* CORE-02 (B2): a value outside its range is refused by name (400 policy-invalid) — it was clamped or dropped silently while the
+               answer said «saved». Same ranges as before; a field left out keeps the current value; pwMin stays fixed at 6 (KIVO_259). */
+            var badP = policyBad(bp); if (badP) return json(Object.assign({ ok: 0, err: 'policy-invalid' }, badP), 400);
             var np = {}; Object.keys(POLICY_DEF).forEach(function (k) { var v = +bp[k]; if (isFinite(v) && v > 0) np[k] = v; });
             np.sessH = Math.min(72, Math.max(1, np.sessH || POL.sessH)); np.idleH = Math.min(24, Math.max(0.25, np.idleH || POL.idleH));
             np.lockN = Math.min(20, Math.max(3, np.lockN || POL.lockN)); np.lockMin = Math.min(60, Math.max(1, np.lockMin || POL.lockMin)); np.pwMin = 6;   /* KIVO_259 (إصلاح — كشفه التدقيقُ المستقل): رقمُ مدير النظام 6 أرقام بالضبط (pwCheck) — كان المدخلُ يُقبل حتى 32 فيجعل كلَّ رقمٍ غيرَ صالح (قفلٌ تامّ) */ np.wrMin = Math.min(5000, Math.max(30, np.wrMin || POL.wrMin));   /* KIVO_255 · SOT-139 */

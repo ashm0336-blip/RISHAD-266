@@ -60,7 +60,7 @@ test('403 unit-unknown-data shows the data-integrity refusal; 403 denied keeps t
   assert.equal(A.calls.filter(call=>call.options.method==='POST').length,1);assert.equal(A.acks.length,0,'no success');assert.equal(A.prompts.length,0,'not treated as a reason request');assert.equal(A.page.state.sysSel,D1);assert.deepEqual(A.syncs,[]);assert.deepEqual(A.writes,[]);
   const message=A.toasts.at(-1)[0];assert.equal(A.toasts.at(-1)[1],'warn');
   assert.match(message,/تحتوي الإدارة على 3 مُدخلات من البيانات لا تتعرّف عليها المنصة/,'names how many entries the platform does not recognise');
-  assert.match(message,/لم تُحذف الإدارة حمايةً لسلامة البيانات/);assert.match(message,/لم يُحذف أي شيء/);assert.match(message,/تواصل مع مدير المنصة لمراجعة/);
+  assert.match(message,/لم تُحذف الإدارة حمايةً لسلامة البيانات/);assert.match(message,/لم يُحذف أي شيء/);assert.match(message,/تواصل مع مسؤول المنصة لمراجعة/);
   assert.doesNotMatch(message,/صلاحيت/,'no permission wording');assert.doesNotMatch(message,/نجاح|اعتمد الخادم حذف/);
   assert.equal(A.page._deptDeleteDraft.uncertain,false,'a definitive refusal is not an uncertain receipt');
   const P=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,err:'denied',denied:{[key]:{ok:false,why:'deny'}},conflicts:{}},403));await P.page.deptDel(target);

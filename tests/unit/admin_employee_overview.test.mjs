@@ -79,7 +79,10 @@ function admin(overview, { failed = false } = {}) {
   page._fullStamp = () => '';
   page._expInfo = () => ({});
   page.adUsersVals = () => ({});
-  return { page, reads, card: () => page.adVals().ovCards.find(card => card.l === 'الحسابات: نشط / مجمّد / بلا حساب') };
+  /* CORE-02 S8: the accounts tile «نشط / مجمّد / بلا حساب» became the «الحسابات» status card of the home page, one labelled row per number */
+  const card = () => { const c = page.adVals().ovStats.find(x => x.k === 'acc'), r = (l) => c.rows.find(x => x.l === l).v;
+    return { sub: c.sub, v: [r('نشطة'), r('مجمّدة'), r('موظفون بلا حساب')].join(' / ') }; };
+  return { page, reads, card };
 }
 
 test('overview counts only registered typed employee records and matches staff accounts instead of subtracting managers', async () => {
