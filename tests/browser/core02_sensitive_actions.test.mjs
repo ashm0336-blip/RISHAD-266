@@ -60,9 +60,11 @@ test('CORE-02 step 3: sensitive actions ask first, the recovery key dialog holds
     await row.locator('[data-bs-dd]').getByText('تجميد الحساب', { exact: true }).click();
     await cancelDialog(page, 'freeze an account', 'تجميد الحساب');
 
-    /* V7 P1: unit A's own page, its «حسابات الإدارة» tab lists TEST_ONLY مدير أ */
-    await s.go('#/sysadmin/org/TEST_ONLY_A', 4500); await main(page).locator('[aria-label="أقسام صفحة العقدة"] button', { hasText: 'حسابات الإدارة' }).first().click(); await page.waitForTimeout(800);
-    await main(page).locator('.mk button.dz[title="حذف حساب المدير — تبقى الإدارة وبياناتها"]').first().click();
+    /* V7 P1/P2: unit A's own page, its «المسؤولون والحسابات» tab lists TEST_ONLY مدير أ — the row menu (the same as «مراقبة الحسابات») deletes */
+    await s.go('#/sysadmin/org/TEST_ONLY_A', 4500); await main(page).locator('[aria-label="أقسام صفحة العقدة"] button', { hasText: 'المسؤولون والحسابات' }).first().click(); await page.waitForTimeout(800);
+    const mrow = main(page).locator('.mk .adm-tr.g-us', { hasText: 'TEST_ONLY مدير أ' }).filter({ has: page.locator('.adm-rmb') }).first();
+    await mrow.locator('.adm-rmb').click(); await page.waitForTimeout(500);
+    await mrow.locator('[data-bs-dd]').getByText('حذف حساب المدير', { exact: true }).click();
     await cancelDialog(page, 'delete a unit manager', 'حذف حساب المدير');
 
     await s.go('#/sysadmin/plat', 3500);

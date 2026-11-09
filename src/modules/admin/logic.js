@@ -1421,6 +1421,160 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       run,
     );
   }
+  /* V7 P2 · حسابٌ واحد بقائمة أفعالٍ واحدة: «مراقبة الحسابات» وتبويب «المسؤولون والحسابات» في صفحة العقدة يبنيان صفوفهما من هنا.
+     كلُّ فعلٍ معالجُه القائم في KIVO.BassamAuth، والخادمُ يقرّر (044 usersA1Why · 059 enfUsersWrite · requireSuper) — لا معالجَ موازٍ،
+     وعرضُ الحساب لا يمنح حقَّ تعديله: الأفعالُ نفسُها تُرفض خارج تفويضها في الخادم */
+  _acctCtx() {
+    const t = this.state,
+      p = t.adOv || {},
+      A = KIVO.BassamAuth,
+      me = A && A.user ? A.user() : null,
+      l = p.lastLogin || {},
+      d = {},
+      c = {},
+      g = {};
+    (p.oldHash || []).forEach((x) => {
+      d[x] = 1;
+    });
+    (p.added || []).forEach((x) => {
+      x.tg && x.tg.id && !c[x.tg.id] && (c[x.tg.id] = x);
+    });
+    ((t.adPres || {}).list || []).forEach((x) => {
+      g[x.u.id] = x;
+    });
+    return { l, d, c, g, me: me ? me.id : "", now: Date.now() };
+  }
+  /* عقدةُ الحساب في الهيكل: المدير العام عقدتُه (gid)، وغيرُه إدارتُه أو قسمُه (deptId) */
+  _acctUnit(a) {
+    return a ? ("gm" === a.role ? a.gid : a.deptId) || "" : "";
+  }
+  /* التعديلُ والصلاحيات نافذتان في صفحة العقدة: هناك تُفتحان، ومن «مراقبة الحسابات» يُفتح تبويبُ حسابات عقدة الحساب */
+  _acctOpen(a, what, here) {
+    const u = this._acctUnit(a);
+    if (!here) return void (u ? this._orgNav(u, "emps") : this._ovGo("depts"));
+    if ("edit" === what) return void ("gm" === a.role ? this.gmOpen(u, a.id) : this.mgrOpen(u, a.id));
+    const A = KIVO.BassamAuth;
+    this.setState({
+      upUid: a.id,
+      upGmDept: "gm" === a.role && A && A.groupDepts ? ((A.groupDepts(a.gid) || [])[0] || {}).id || "" : "",
+      upDraft: null,
+      upLensDraft: null,
+      upFor: "",
+      upExp: {},
+    });
+  }
+  _acctMenu(a, X, here) {
+    const s = KIVO.BassamAuth,
+      o = X.g[a.id],
+      p = [],
+      gm = "gm" === a.role,
+      mk = "staff" === a.role && /^mgr:/.test(String(a.ekey || "")),
+      nm = a.name || a.un,
+      fx = s.acctFixedWhy ? s.acctFixedWhy(a, !a.dis) : "";
+    return (
+      "super" !== a.role &&
+        ((gm || mk) && this._acctUnit(a) && p.push({ t: "تعديل بيانات المدير", go: () => this._acctOpen(a, "edit", here) }),
+        p.push({
+          t: (a.dis ? "إعادة التفعيل" : "تجميد الحساب") + (fx ? " — غير متاح" : ""),
+          go: () => {
+            if (fx) return void this.bsToast(fx, "warn");
+            this._adFreeze(a, !a.dis, () => {
+              const t = s.setDisById(a.id, !a.dis);
+              t && t.ok ? this.bsAck(a.dis ? "أُعيد التفعيل" : "جُمّد الحساب", "ok") : this.bsToast((t && t.err) || "تعذّر", "warn");
+            });
+          },
+        }),
+        p.push({
+          t: "إعادة تعيين كلمة المرور",
+          go: () => {
+            KIVO
+              .bsConfirm({
+                title: "إعادة تعيين كلمة المرور",
+                msg: "تعيين كلمة مرور مؤقتة لـ «" + nm + "»؟ ستُلغى كلمته الحالية فوراً، ويُطلب منه تغييرها عند أول دخول.",
+                ok: "تعيين كلمة مؤقتة",
+              })
+              .then((y) => {
+                y &&
+                  s.resetPwById(a.id).then((t) => {
+                    t && t.ok ? this.setState({ usTmp: { name: nm, pw: t.pw } }) : this.bsToast((t && t.err) || "تعذّر", "warn");
+                  });
+              });
+          },
+        })),
+      o && !o.mine && p.push({ t: "إنهاء جلساته الآن", go: () => this._adKill(a) }),
+      ("staff" === a.role || gm) && p.push({ t: "تعديل الصلاحيات", go: () => this._acctOpen(a, "perm", here) }),
+      gm || mk
+        ? p.push({
+            t: "حذف حساب المدير",
+            danger: !0,
+            go: () =>
+              this._adAsk(
+                {
+                  title: "حذف حساب المدير",
+                  msg: "حذف حساب «" + (nm || "المدير") + "» وصلاحياته نهائياً؟ لن يعود صالحاً للدخول. تبقى " + (gm ? "العقدة وإداراتها" : "الإدارة وبياناتها") + " كما هي.",
+                  ok: "حذف الحساب",
+                  danger: !0,
+                },
+                () => {
+                  const u = this._acctUnit(a),
+                    t = gm ? s.removeGroupManager(u, a.id) : s.removeDeptManager(u, a.id);
+                  t && t.ok
+                    ? (this.setState({ upUid: this.state.upUid === a.id ? "" : this.state.upUid }), this.bsAck("حُذف حساب «" + (nm || "المدير") + "»", "ok"))
+                    : this.bsToast((t && t.err) || "تعذّر الحذف", "warn");
+                },
+              ),
+          })
+        : "staff" !== a.role ||
+            a.mgr ||
+            p.push({
+              t: "حذف حساب الدخول",
+              danger: !0,
+              go: () =>
+                this._adAsk(
+                  {
+                    title: "حذف حساب الدخول",
+                    msg: "حذف حساب الدخول لـ «" + nm + "»؟ يبقى سجل الموظف ويُمحى حسابه وصلاحياته.",
+                    ok: "حذف الحساب",
+                    danger: !0,
+                  },
+                  () => {
+                    const t = s.removeStaffAccount(a.ekey, a.deptId);
+                    t && t.ok ? this.bsAck("حُذف الحساب", "ok") : this.bsToast((t && t.err) || "تعذّر", "warn");
+                  },
+                ),
+            }),
+      p
+    );
+  }
+  /* صفُّ الجدول نفسُه في الموضعين — الأعمدة: الحساب · اسم المستخدم · الدور · الإدارة · الحالة · آخر دخول · أُضيف · الأفعال */
+  _acctRow(a, X, here) {
+    const { l, d, c, g, me, now } = X,
+      i = a.dis ? "frozen" : l[a.id] ? "active" : "never",
+      o = g[a.id],
+      p = this._acctMenu(a, X, here),
+      t = this._rowMenu("uw" + a.id, a.id === me ? [] : p.map((x) => ({ name: x.t, danger: !!x.danger, run: x.go })));
+    return {
+      ini:
+        String(a.name || "")
+          .trim()
+          .charAt(0) || "؟",
+      name: a.name || a.un,
+      avTone: a.dis ? "mute" : "",
+      flagOn: !(!d[a.id] && !a.mc),
+      flag: d[a.id] ? "كلمة مرور بصيغة قديمة — أعد تعيينها" : "كلمة مؤقتة — يغيّرها عند الدخول",
+      flagCls: d[a.id] ? "adm-bad" : "adm-warn",
+      un: a.un || "—",
+      role: this.adRole(a),
+      dept: "super" === a.role ? "الإدارة العامة" : this.adUnit(a) || "—",
+      st: "frozen" === i ? "مجمّد" : o && o.active ? "متصل الآن" : "active" === i ? "نشط" : "لم يدخل",
+      stTone: "frozen" === i ? "warn" : o && o.active ? "live" : "active" === i ? "ok" : "",
+      last: l[a.id] ? this.adWhen(l[a.id], now) : "—",
+      lastTip: l[a.id] ? this.adFull(l[a.id]) : "لا دخول مسجّل منذ بدء السجل",
+      added: c[a.id] ? c[a.id].by + " · " + this.adRel(c[a.id].ts, now) : "—",
+      ...t,
+      rmItems: t.rmItems.map((x) => Object.assign({}, x, { tone: /حذف/.test(x.name) ? "bad" : "" })),
+    };
+  }
   adRel(t, e) {
     if (!t) return "—";
     const s = Math.max(0, (e || Date.now()) - t),
@@ -2547,23 +2701,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       s = KIVO.BassamAuth,
       a = KIVO.BassamPerm,
       r = KIVO.BassamDepts,
-      i = s && s.user ? s.user() : null,
-      n = i ? i.id : "",
       o = s && s.users ? s.users() : [],
-      p = t.adOv || {},
-      l = p.lastLogin || {},
-      d = {};
-    (p.oldHash || []).forEach((t) => {
-      d[t] = 1;
-    });
-    const c = {};
-    (p.added || []).forEach((t) => {
-      t.tg && t.tg.id && !c[t.tg.id] && (c[t.tg.id] = t);
-    });
-    const g = {};
-    ((t.adPres || {}).list || []).forEach((t) => {
-      g[t.u.id] = t;
-    });
+      X = this._acctCtx(),
+      { l, d, c } = X;
     const h = (t) =>
         String(t || "")
           .trim()
@@ -2634,102 +2774,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         S(w(m[4]), "خامل ٩٠ يوماً", "mute", "idle"),
         S(w(m[7]), "بصيغة كلمة مرور قديمة", w(m[7]) ? "warn" : "", "old", "لا يستطيع الدخول حتى تُعاد كلمة مروره"),
       ],
-      k = (t, e) => this.setState({ usTmp: { name: t.name || t.un, pw: e } }),
-      v = b.map((a) => {
-        const i = ((t) => (t.dis ? "frozen" : l[t.id] ? "active" : "never"))(a),
-          o = g[a.id],
-          p = [],
-          /* دفعة الواجهات (2أ): حسابُ «الإدارة» الملغى، وحسابٌ بمفتاح mgr: بلا الشارة — يرفض الخادمُ تعديلَهما (dept-role · mgr-key) فيُعرض السببُ لا الفعل */
-          fx = s.acctFixedWhy ? s.acctFixedWhy(a, !a.dis) : "";
-        return (
-          "super" !== a.role &&
-            (p.push({
-              t: (a.dis ? "إعادة التفعيل" : "تجميد الحساب") + (fx ? " — غير متاح" : ""),
-              go: () => {
-                if (fx) return void this.bsToast(fx, "warn");
-                this._adFreeze(a, !a.dis, () => {
-                  const t = s.setDisById(a.id, !a.dis);
-                  t && t.ok ? this.bsAck(a.dis ? "أُعيد التفعيل" : "جُمّد الحساب", "ok") : this.bsToast((t && t.err) || "تعذّر", "warn");
-                });
-              },
-            }),
-            p.push({
-              t: "إعادة تعيين كلمة المرور",
-              go: () => {
-                KIVO
-                  .bsConfirm({
-                    title: "إعادة تعيين كلمة المرور",
-                    msg: "تعيين كلمة مرور مؤقتة لـ «" + (a.name || a.un) + "»؟ ستُلغى كلمته الحالية فوراً.",
-                    ok: "تعيين كلمة مؤقتة",
-                  })
-                  .then((y) => {
-                    y &&
-                      s.resetPwById(a.id).then((t) => {
-                        t && t.ok ? k(a, t.pw) : this.bsToast((t && t.err) || "تعذّر", "warn");
-                      });
-                  });
-              },
-            })),
-          o &&
-            !o.mine &&
-            p.push({
-              t: "إنهاء جلساته الآن",
-              go: () => {
-                this._adKill(a);
-              },
-            }),
-          ("staff" !== a.role && "gm" !== a.role) ||
-            p.push({
-              t: "تعديل الصلاحيات",
-              go: () => {
-                a.deptId ? this._orgNav(a.deptId, "emps") : this._ovGo("depts");
-              },
-            }),
-          "staff" !== a.role ||
-            a.mgr ||
-            p.push({
-              t: "حذف حساب الدخول",
-              danger: !0,
-              go: () => {
-                KIVO
-                  .bsConfirm({
-                    title: "حذف حساب الدخول",
-                    msg: "حذف حساب الدخول لـ «" + (a.name || a.un) + "»؟ يبقى سجل الموظف ويُمحى حسابه وصلاحياته.",
-                    ok: "حذف الحساب",
-                    danger: !0,
-                  })
-                  .then((y) => {
-                    if (!y) return;
-                    const t = s.removeStaffAccount(a.ekey, a.deptId);
-                    t && t.ok ? this.bsAck("حُذف الحساب", "ok") : this.bsToast((t && t.err) || "تعذّر", "warn");
-                  });
-              },
-            }),
-          {
-            ini: h(a.name),
-            name: a.name || a.un,
-            avTone: a.dis ? "mute" : "",
-            flagOn: !(!d[a.id] && !a.mc),
-            flag: d[a.id] ? "كلمة مرور بصيغة قديمة — أعد تعيينها" : "كلمة مؤقتة — يغيّرها عند الدخول",
-            flagCls: d[a.id] ? "adm-bad" : "adm-warn",
-            un: a.un || "—",
-            role: this.adRole(a),
-            dept: "super" === a.role ? "الإدارة العامة" : this.adUnit(a) || "—",
-            st: "frozen" === i ? "مجمّد" : o && o.active ? "متصل الآن" : "active" === i ? "نشط" : "لم يدخل",
-            stTone: "frozen" === i ? "warn" : o && o.active ? "live" : "active" === i ? "ok" : "",
-            last: l[a.id] ? this.adWhen(l[a.id], e) : "—",
-            lastTip: l[a.id] ? this.adFull(l[a.id]) : "لا دخول مسجّل منذ بدء السجل",
-            added: c[a.id] ? c[a.id].by + " · " + this.adRel(c[a.id].ts, e) : "—",
-            ...(() => {
-              const t = this._rowMenu("uw" + a.id, a.id === n ? [] : p.map((t) => ({ name: t.t, danger: !!t.danger, run: t.go })));
-              return (
-                (t.rmItems = t.rmItems.map((t) => Object.assign({}, t, { tone: /حذف/.test(t.name) ? "bad" : "" }))),
-                t
-              );
-            })(),
-          }
-        );
-      }),
+      /* V7 P2: الصفُّ وقائمةُ أفعاله من _acctRow — المصدرُ نفسُه لتبويب «المسؤولون والحسابات» في صفحة العقدة */
+      v = b.map((a) => this._acctRow(a, X, !1)),
       _ = (a && a.PAGE_REG) || [],
       O = _.map((t) => ({ key: t.key, name: t.name })),
       D = r ? r.list() : [],
@@ -7622,95 +7668,45 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       ? 0
                       : (A && A.users ? A.users() : []).filter((t) => "staff" === t.role && t.deptId === o && !t.mgr).length;
                     const K = n ? this._gmKind(o) : "";
-                    const firstDept = n ? (t.deptsUnder(o) || [])[0] || "" : "";
+                    /* V7 P2 · «المسؤولون والحسابات»: جدولُ «مراقبة الحسابات» نفسُه (_acctRow · قائمة الأفعال الواحدة) مصفّىً بنطاق العقدة —
+                       حساباتُ العقدة وما تحتها في الهيكل (المدير العام بعقدته gid، وغيرُه بإدارته أو قسمه deptId)، المسؤولون أولاً */
+                    const X = this._acctCtx(),
+                      ids = { [o]: 1 };
+                    try {
+                      (t.descendantsOf ? t.descendantsOf(o) : []).forEach((x) => {
+                        ids[x] = 1;
+                      });
+                    } catch (x) {}
+                    const rank = (a) => ("gm" === a.role ? 0 : "staff" === a.role && (a.mgr || /^mgr:/.test(String(a.ekey || ""))) ? 1 : "staff" === a.role ? 2 : 3),
+                      q = e.ndQ ? KIVO.BassamFind.dig(String(e.ndQ).trim().toLowerCase()) : "",
+                      scope = (A && A.users ? A.users() : []).filter((a) => "super" !== a.role && !!ids["gm" === a.role ? a.gid : a.deptId]),
+                      shown = scope
+                        .filter((a) => !q || KIVO.BassamFind.dig([a.name, a.un, a.alt, this.adUnit(a), this.adRole(a)].join(" ").toLowerCase()).indexOf(q) >= 0)
+                        .sort((a, b) => rank(a) - rank(b) || String(a.name || "").localeCompare(String(b.name || ""), "ar"));
                     return {
-                      mgCount: String(list.length),
+                      mgCount: String(scope.length),
                       mgHas: list.length > 0,
                       mgNone: 0 === list.length,
                       mgStaffTxt: n
                         ? KIVO.BassamCount(kids, "إدارة") + " في هذا الفرع"
                         : KIVO.BassamCount(staff, "موظف") + " " + KIVO.BassamCount.agr(staff, "له", "لهما", "لهم") + " حساب دخول",
-                      mgTitle: n ? "مديرو " + K : "مديرو الإدارة",
+                      mgTitle: n ? "مديرو " + K : "مديرو " + (t.isSection && t.isSection(o) ? "القسم" : "الإدارة"),
                       mgSub: n
                         ? "ينتقلون بين إدارات الفرع كلها ويرثون سقف كل إدارة كاملاً · أكثر من مدير مسموح"
-                        : "يرثون سقف الإدارة كاملاً · أكثر من مدير مسموح",
+                        : "يرثون سقف " + (t.isSection && t.isSection(o) ? "القسم" : "الإدارة") + " كاملاً · أكثر من مدير مسموح",
                       mgAddTip: n ? "إضافة مدير جديد " + this._gmFor(o) : "إضافة مدير جديد لهذه الإدارة",
                       mgEmptyT: n ? "لا مدير " + this._gmFor(o) + " بعد" : "لا مدير لهذه الإدارة بعد",
                       mgEmptyS: n
                         ? "أضف أول مدير من زر + — يرث سقف كل إدارة في الفرع كاملاً."
                         : "بلا مدير لا يستطيع أحد اعتماد الجدول أو التقرير اليومي — أضف أول مدير من زر +.",
-                      mgTmpOn: !!(e.mgTmp && e.mgTmp.pw),
-                      mgTmpName: e.mgTmp ? e.mgTmp.name : "",
-                      mgTmpPw: e.mgTmp ? e.mgTmp.pw : "",
-                      mgTmpClose: () => this.setState({ mgTmp: null }),
                       mgAdd: () => (n ? this.gmOpen(o, "__add") : this.mgrOpen(o, "__add")),
-                      mgRows: list.map((g) => ({
-                        permTip: n
-                          ? "الصلاحيات — يرث سقف كل إدارة في الفرع كاملاً، والتضييق اختياري لكل إدارة"
-                          : "الصلاحيات — يرث سقف الإدارة كاملاً، والتضييق اختياري",
-                        ini: String(g.name || "?")
-                          .trim()
-                          .charAt(0),
-                        name: g.name || "—",
-                        un: g.un || "—",
-                        alt: g.alt || "",
-                        altOn: !!g.alt,
-                        no: g.empno || "—",
-                        avCls: g.dis ? "d" : "",
-                        rl: g.dis
-                          ? "مدير — موقوف"
-                          : String(g.title || "").trim() || (n ? ("الإدارة العليا" === K ? K : "مدير " + K) : "مدير الإدارة"),
-                        rlCls: g.dis ? "dis" : "",
-                        stCls: g.dis ? "off" : "",
-                        stTip: g.dis ? "موقوف — لا يستطيع الدخول" : "نشط",
-                        edit: () => (n ? this.gmOpen(o, g.id) : this.mgrOpen(o, g.id)),
-                        tmp: () => {
-                          if (!A || !A.resetPwById) return;
-                          Promise.resolve(A.resetPwById(g.id)).then((t) => {
-                            t && t.ok
-                              ? this.setState({ mgTmp: { name: g.name || g.un, pw: t.pw }, tick: (this.state.tick || 0) + 1 })
-                              : this.bsToast((t && t.err) || "تعذّر", "warn");
-                          });
-                        },
-                        perm: () =>
-                          this.setState({
-                            upUid: g.id,
-                            upGmDept: n ? firstDept : "",
-                            upDraft: null,
-                            upLensDraft: null,
-                            upFor: "",
-                            upExp: {},
-                          }),
-                        disTip: g.dis ? "إعادة تفعيل الحساب" : "إيقاف الحساب مؤقتاً — يمنع الدخول بلا حذف",
-                        dis: () =>
-                          this._adFreeze(g, !g.dis, () => {
-                            const t = n ? A.setGroupManagerDis(o, !g.dis, g.id) : A.setDeptManagerDis(o, !g.dis, g.id);
-                            t && t.ok
-                              ? (this.setState({ tick: (this.state.tick || 0) + 1 }),
-                                this.bsAck(g.dis ? "أُعيد تفعيل حساب المدير" : "أُوقف حساب المدير", "ok"))
-                              : this.bsToast((t && t.err) || "تعذّر", "warn");
-                          }),
-                        delTip: "حذف حساب المدير — تبقى الإدارة وبياناتها",
-                        del: () =>
-                          this._adAsk(
-                            {
-                              title: "حذف حساب المدير",
-                              msg: "حذف حساب «" + (g.name || g.un || "المدير") + "» وصلاحياته نهائياً؟ لن يعود صالحاً للدخول. تبقى الإدارة وبياناتها كما هي.",
-                              ok: "حذف الحساب",
-                              danger: !0,
-                            },
-                            () => {
-                              const t = n ? A.removeGroupManager(o, g.id) : A.removeDeptManager(o, g.id);
-                              t && t.ok
-                                ? (this.setState({
-                                    tick: (this.state.tick || 0) + 1,
-                                    upUid: this.state.upUid === g.id ? "" : this.state.upUid,
-                                  }),
-                                  this.bsAck("حُذف حساب «" + (g.name || "المدير") + "»", "ok"))
-                                : this.bsToast((t && t.err) || "تعذّر الحذف", "warn");
-                            },
-                          ),
-                      })),
+                      ndQ: e.ndQ || "",
+                      ndOnQ: (x) => this.setState({ ndQ: x.target.value }),
+                      ndRows: shown.map((a) => this._acctRow(a, X, !0)),
+                      ndHas: shown.length > 0,
+                      ndEmpty: 0 === shown.length,
+                      ndEmptyTxt: scope.length ? "لا حسابات تطابق البحث" : "لا حسابات دخول في هذا النطاق بعد",
+                      ndFoot: KIVO.BassamCount(scope.length, "حساب") + (n ? " في العقدة وفرعها" : " في هذه الوحدة وما تحتها"),
                     };
                   })(),
                   dhDelTip: n ? "حذف العقدة" : t.isSection && t.isSection(o) ? "حذف القسم — يمسح القسم وكل بياناته وحساباته نهائياً" : (t.deptDelWhy && t.deptDelWhy(o)) || "حذف الإدارة — يمسح الإدارة وكل بياناتها وحساباتها نهائياً",
@@ -7724,7 +7720,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       const kd = (t.childrenOf && t.childrenOf(o)) || [];
                       if (kd.length) return void this.bsToast("تحت «" + p.name + "» " + KIVO.BassamCount(kd.length, "تابع") + " — انقلها أو احذفها أولاً ثم احذف العقدة", "warn");
                       const m = KIVO.BassamAuth && KIVO.BassamAuth.groupManagers ? KIVO.BassamAuth.groupManagers(o).length : 0;
-                      if (m) return void this.bsToast("لـ«" + p.name + "» " + KIVO.BassamCount(m, "حساب مدير") + " — احذفه أولاً من «حسابات " + (p.kind || "العقدة") + "» ثم احذف العقدة", "warn");
+                      if (m) return void this.bsToast("لـ«" + p.name + "» " + KIVO.BassamCount(m, "حساب مدير") + " — احذفه أولاً من «المسؤولون والحسابات» ثم احذف العقدة", "warn");
                       return void this._adAsk(
                         {
                           title: "حذف «" + p.name + "»",
@@ -7820,7 +7816,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               onTabEmps: "emps" === l,
               onTabCap: "cap" === l,
               tabEmpsShow: !0,
-              tabEmpsLbl: n ? "حسابات " + this._gmKind(o) : t.isSection && t.isSection(o) ? "حسابات القسم" : "حسابات الإدارة",
+              tabEmpsLbl: "المسؤولون والحسابات",   /* V7 P2: المديرون والحسابات في جدولٍ واحد لكل عقدة */
               ...(() => {
                 let t = 0,
                   e = 0;

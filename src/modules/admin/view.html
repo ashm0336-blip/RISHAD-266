@@ -813,33 +813,37 @@
 
       <!-- ═══ تبويب الموظفين والحسابات ═══ -->
       <sc-if value="{{onTabEmps}}" hint-placeholder-val="{{ true }}">
-      <div class="mk">
+      <!-- ═══ V7 P2 · المسؤولون والحسابات: جدولُ «مراقبة الحسابات» نفسُه (صفٌّ وقائمةُ أفعالٍ واحدة — _acctRow) مصفّىً بنطاق العقدة ═══ -->
+      <div class="mk ac7">
         <div class="top"><h3>{{mgTitle}}</h3><small>{{mgSub}}</small><button class="add" onClick="{{mgAdd}}" title="{{mgAddTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-de4e6997"></svg></button></div>
-        <sc-if value="{{mgTmpOn}}" hint-placeholder-val="{{ false }}">
-        <div class="tmp"><b>كلمة مرور مؤقتة لـ «{{mgTmpName}}»:</b> <code dir="ltr">{{mgTmpPw}}</code> <span>سلّمها له بطريقة آمنة — سيُطلب منه تغييرها عند أول دخول، ولن تظهر هنا مرة أخرى.</span><button onClick="{{mgTmpClose}}" title="إخفاء">×</button></div>
-        </sc-if>
-        <sc-if value="{{mgHas}}" hint-placeholder-val="{{ true }}">
-        <sc-for list="{{mgRows}}" as="g" hint-placeholder-count="2">
-        <div class="card">
-          <span class="av {{g.avCls}}">{{g.ini}}</span>
-          <div class="info">
-            <div class="nm">{{g.name}}<span class="rl {{g.rlCls}}">{{g.rl}}</span></div>
-            <div class="ln"><span>اسم المستخدم <b>{{g.un}}</b></span><sc-if value="{{g.altOn}}" hint-placeholder-val="{{ false }}"><i>·</i><span>أو <b>{{g.alt}}</b></span></sc-if><i>·</i><span>الرقم الوظيفي <b>{{g.no}}</b></span></div>
-          </div>
-          <span class="st {{g.stCls}}" title="{{g.stTip}}"></span>
-          <div class="ac">
-            <button onClick="{{g.edit}}" title="تعديل بيانات المدير"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-5541214a"></svg></button>
-            <button class="k" onClick="{{g.tmp}}" title="كلمة مرور مؤقتة — تُسلَّم له ويُطلب تغييرها عند أول دخول"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-864e3ccd"></svg></button>
-            <button onClick="{{g.perm}}" title="{{g.permTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg></button>
-            <button class="p" onClick="{{g.dis}}" title="{{g.disTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-6afc61fe"></svg></button>
-            <button class="dz" onClick="{{g.del}}" title="{{g.delTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></button>
-          </div>
-        </div>
-        </sc-for>
-        </sc-if>
         <sc-if value="{{mgNone}}" hint-placeholder-val="{{ false }}">
         <div class="empty"><div>{{mgEmptyT}}</div>{{mgEmptyS}}</div>
         </sc-if>
+        <section class="ac7-t" aria-label="المسؤولون والحسابات">
+          <div class="adm-bar"><input type="search" class="adm-q" value="{{ndQ}}" onChange="{{ndOnQ}}" placeholder="بحث في حسابات هذا النطاق…" aria-label="بحث في حسابات هذا النطاق…"></div>
+  <div class="adm-tr adm-th g-us" aria-hidden="true"><span>الحساب</span><span>اسم المستخدم</span><span>الدور</span><span>الإدارة</span><span>الحالة</span><span>آخر دخول</span><span>أُضيف</span><span></span></div>
+          <sc-if value="{{ndEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-none">{{ndEmptyTxt}}</div></sc-if>
+  <sc-for list="{{ndRows}}" as="u" hint-placeholder-count="5">
+  <div class="adm-tr g-us" data-open="{{u.rmOpen}}">
+    <div class="adm-who adm-main"><span class="adm-av" data-tone="{{u.avTone}}" aria-hidden="true">{{u.ini}}</span><div><div class="adm-b adm-ell">{{u.name}}</div><sc-if value="{{u.flagOn}}" hint-placeholder-val="{{ false }}"><div class="adm-xs {{u.flagCls}}">{{u.flag}}</div></sc-if></div></div>
+    <div dir="ltr" class="adm-ell adm-2nd adm-sm-t adm-tnum adm-sub" style="text-align:right">{{u.un}}</div>
+    <div class="adm-ell adm-2nd adm-sub">{{u.role}}</div>
+    <div class="adm-ell adm-2nd adm-sub">{{u.dept}}</div>
+    <div class="adm-st" data-tone="{{u.stTone}}"><span class="d" aria-hidden="true"></span>{{u.st}}</div>
+    <div class="adm-2nd adm-sm-t adm-sub" style="white-space:nowrap" title="{{u.lastTip}}">{{u.last}}</div>
+    <div class="adm-ell adm-mute adm-xs adm-sub">{{u.added}}</div>
+    <div class="adm-rmw adm-end">
+      <sc-if value="{{u.rmHas}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-btn bs-btn--icon adm-rmb" onClick="{{u.rmToggle}}" title="أفعال هذا الحساب" aria-haspopup="menu" aria-expanded="{{u.rmOpen}}">⋯</button></sc-if>
+      <sc-if value="{{u.rmOpen}}" hint-placeholder-val="{{ false }}">
+      <div data-bs-dd="1" role="menu" class="adm-rm">
+        <sc-for list="{{u.rmItems}}" as="a" hint-placeholder-count="4"><button type="button" role="menuitem" onClick="{{a.run}}" data-tone="{{a.tone}}">{{a.name}}</button></sc-for>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-for>
+          <div class="adm-foot"><span>{{ndFoot}}</span></div>
+        </section>
         <div class="foot"><span>{{mgStaffTxt}}</span><sc-if value="{{dhIsDept}}" hint-placeholder-val="{{ true }}"><i>·</i><span>يُدارون من داخل الإدارة: موظفو الإدارة ← حساب الدخول</span></sc-if><sc-if value="{{dhNotActive}}" hint-placeholder-val="{{ false }}"><a onClick="{{dhSwitch}}">التبديل إلى الإدارة ←</a></sc-if></div>
       </div>
       </sc-if>

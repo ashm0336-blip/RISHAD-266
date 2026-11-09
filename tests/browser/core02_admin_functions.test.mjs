@@ -58,7 +58,13 @@ const MOVED = {
   /* V7 P1: a unit's details became its own page (#/sysadmin/org/<id>) in tabs. The «بيانات الإدارة» menu button became the «البيانات» tab
      (its four items — نسخة الإدارة · استيراد · مسح البيانات · حذف — stay recorded actions, checked as such), and «طيّ لوحة التفاصيل»
      became «العودة إلى الهيكل» (the structure page: the tree) */
-  depts: { 'بيانات الإدارة: نسخة - استيراد - مسح - حذف': '=البيانات', 'طيّ لوحة التفاصيل': '=العودة إلى الهيكل' },
+  depts: { 'بيانات الإدارة: نسخة - استيراد - مسح - حذف': '=البيانات', 'طيّ لوحة التفاصيل': '=العودة إلى الهيكل',
+    /* V7 P2: the accounts tab is «المسؤولون والحسابات» — the «مراقبة الحسابات» table, one row menu per account (_acctMenu); the manager
+       card's icon buttons are that menu's items (same handlers: setDisById · resetPwById → the temporary-password dialog · the permissions
+       dialog · removeDeptManager); «تعديل بيانات المدير» keeps its name */
+    'حسابات الإدارة #': '=المسؤولون والحسابات #', 'إيقاف الحساب مؤقتاً — يمنع الدخول بلا حذف': '=تجميد الحساب',
+    'كلمة مرور مؤقتة — تُسلَّم له ويُطلب تغييرها عند أول دخول': '=إعادة تعيين كلمة المرور', 'الصلاحيات — يرث سقف الإدارة كاملاً، والتضييق اختياري': '=تعديل الصلاحيات',
+    'حذف حساب المدير — تبقى الإدارة وبياناتها': '=حذف حساب المدير' },
   /* CORE-02 S7: the nine platform sections were in-page tabs; each is now a named item of the console sidebar (#/sysadmin/plat/<sub>) —
      «التهيئة والاستعادة» under البيانات والاستمرارية, the other eight under إعدادات المنصة */
   plat: { 'هوية المنصة': 'aside', 'شاشة تسجيل الدخول': 'aside', 'تطبيق الجوال': 'aside', 'القوائم': 'aside', 'الطباعة والتقارير': 'aside', 'الوحدات': 'aside', 'التهيئة والاستعادة': 'aside', 'التنبيهات والتعاميم': 'aside', 'حول المنصة': 'aside' },
@@ -201,9 +207,14 @@ async function probes(page, scope, tab, each) {
     if (await all.count()) { await all.click({ timeout: 10000 }); await page.waitForTimeout(400); }
     const row = page.locator('main.bs-main .tr-rw', { hasText: 'TEST_ONLY إدارة أ' }).first();
     if (await row.count()) { await row.click({ timeout: 10000 }); await page.waitForTimeout(2000); await snap('node'); }
-    for (const label of ['سقف الصفحات', 'حسابات الإدارة', 'البيانات']) {
+    for (const label of ['سقف الصفحات', 'المسؤولون والحسابات', 'البيانات']) {
       const b = page.locator('main.bs-main [aria-label="أقسام صفحة العقدة"] button', { hasText: label }).first();
       if (await b.count()) { await b.click({ timeout: 10000 }); await page.waitForTimeout(700); await snap('tab:' + label); }
+      /* V7 P2: the accounts tab is the «مراقبة الحسابات» table — its manager row's action menu holds the former card buttons */
+      if (label === 'المسؤولون والحسابات') {
+        const r = page.locator('main.bs-main .mk .adm-tr.g-us', { hasText: 'TEST_ONLY مدير أ' }).filter({ has: page.locator('.adm-rmb') }).first();
+        if (await r.count()) { await r.locator('.adm-rmb').click({ timeout: 10000 }); await page.waitForTimeout(500); await snap('tab-menu:' + label); await page.keyboard.press('Escape'); await page.waitForTimeout(300); }
+      }
     }
   }
   return states;

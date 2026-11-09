@@ -210,7 +210,9 @@ test('(6) review of S10: sidebar fits, gold edge faces the page, one history pat
   assert.match(L, /go: go\("backup"\)/); assert.match(L, /go: go\("sec", \{ adSecKind: "denied" \}\)/);
   /* V7 P1: both «تعديل» links open the unit's own page (#/sysadmin/org/<id> — a history entry) on the tab they edit */
   assert.match(L, /this\._orgNav\(t\.id, "cap"\)/, '«تعديل» in the permission map → the ceiling tab');
-  assert.match(L, /a\.deptId \? this\._orgNav\(a\.deptId, "emps"\) : this\._ovGo\("depts"\)/, '«تعديل الصلاحيات» on an account → the accounts tab');
+  /* V7 P2: the account menu is one (_acctMenu); from «مراقبة الحسابات» edit and permissions open the account's node page on «المسؤولون والحسابات» */
+  assert.match(L, /p\.push\(\{ t: "تعديل الصلاحيات", go: \(\) => this\._acctOpen\(a, "perm", here\) \}\)/, '«تعديل الصلاحيات» → _acctOpen');
+  assert.match(L, /if \(!here\) return void \(u \? this\._orgNav\(u, "emps"\) : this\._ovGo\("depts"\)\);/, 'outside the node page: the account\'s node, accounts tab');
   /* the group names: Admin keeps its own copy (V5), equal to the shell's */
   const gt = /GT = (\{[^}]+\})/.exec(R), g = /const G = (\{[^}]+\})/.exec(L);
   deq(JSON.parse(g[1].replace(/(\w+):/g, '"$1":')), JSON.parse(gt[1].replace(/(\w+):/g, '"$1":')), 'same four group names');
