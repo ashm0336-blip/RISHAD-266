@@ -30,6 +30,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   /* رابطٌ مباشر إلى عقدة: يُفتح بمسار النقر نفسه (nodePick · sysPick) إن كانت في الهيكل، وإلا تبقى الصفحةُ على الهيكل ويُقال ذلك */
   _orgOpen(id) {
+    this.__orgPend = "";
     if (!this._orgKnown(id)) return void setTimeout(() => this.bsToast("العقدة المطلوبة غير موجودة في الهيكل", "warn"), 0);
     /* V7 P1: صفحةُ العقدة تُفتح على تبويبٍ يحدّده من فتحها (_orgNav) وإلا «نظرة عامة» */
     const tab = this.__orgTab || "ov";
@@ -45,7 +46,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       const h = "#/sysadmin/org/" + encodeURIComponent(id);
       this.__orgTab = tab || "ov";
-      String(location.hash || "") !== h ? (location.hash = h) : this._orgOpen(id);
+      /* رسمٌ قبل «hashchange» (إغلاقُ قائمة صفٍّ مثلاً) كان يعيد كتابة العنوان القديم (_hashTab) فلا تُفتح الصفحة — العنوانُ المنتظَر يُحترم حتى تُفتح */
+      String(location.hash || "") !== h ? ((this.__orgPend = h), (location.hash = h)) : this._orgOpen(id);
     } catch (e) {}
   }
   _orgHome() {
@@ -111,7 +113,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   _hashTab(p, t) {
     try {
       const h = String(location.hash || "");
-      if (!t || h.indexOf("#/" + p) !== 0) return;
+      if (!t || h.indexOf("#/" + p) !== 0 || (this.__orgPend && h === this.__orgPend)) return;
       const w = "#/" + p + "/" + t;
       h !== w && history.replaceState && history.replaceState(null, "", location.pathname + location.search + w);
     } catch (e) {}
