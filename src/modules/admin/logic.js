@@ -38,7 +38,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (id === this.state.sysSel) return void (tab !== this.state.sysTab && (this.state = { ...this.state, sysTab: tab }));
     const node = (KIVO.BassamDepts.nodes() || []).some((x) => x && x.id === id);
     /* تعديلٌ غيرُ محفوظ في السقف: الاختيارُ يمرّ بسؤال مسار النقر نفسه (sysPick · nodePick) — لا يُستبدل قبله */
-    this._dirty() || (this.state = { ...this.state, sysSel: id, sysTab: tab });
+    this._dirty() || (this.state = { ...this.state, sysSel: id, sysTab: tab, ndQ: "" });   /* V7 P2: بحثُ «المسؤولون والحسابات» لكل صفحة عقدة */
     setTimeout(() => (node ? this.nodePick(id) : this.sysPick(id), this.state.sysSel === id && this.state.sysTab !== tab && this.setState({ sysTab: tab })), 0);
   }
   /* V7 P1: صفحةُ عقدةٍ بعنوانها — انتقالٌ حقيقيّ في سجلّ المتصفح (الرجوعُ يعود إلى الهيكل أو الصفحة السابقة) */
@@ -1468,7 +1468,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       o = X.g[a.id],
       p = [],
       gm = "gm" === a.role,
-      mk = "staff" === a.role && /^mgr:/.test(String(a.ekey || "")),
+      /* مديرُ الإدارة بقاعدة deptManagers نفسِها (330): mgr:<إدارته> أو mgr:<إدارته>:<n> — وإلا فحذفُه بمسار حساب الموظف */
+      mk = "staff" === a.role && (a.ekey === "mgr:" + a.deptId || String(a.ekey || "").indexOf("mgr:" + a.deptId + ":") === 0),
       nm = a.name || a.un,
       fx = s.acctFixedWhy ? s.acctFixedWhy(a, !a.dis) : "";
     return (
@@ -1552,13 +1553,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       i = a.dis ? "frozen" : l[a.id] ? "active" : "never",
       o = g[a.id],
       p = this._acctMenu(a, X, here),
-      t = this._rowMenu("uw" + a.id, a.id === me ? [] : p.map((x) => ({ name: x.t, danger: !!x.danger, run: x.go })));
+      t = this._rowMenu((here ? "nw" : "uw") + a.id, a.id === me ? [] : p.map((x) => ({ name: x.t, danger: !!x.danger, run: x.go })));
     return {
       ini:
         String(a.name || "")
           .trim()
           .charAt(0) || "؟",
       name: a.name || a.un,
+      /* ما كانت تعرضه بطاقةُ المدير: اسمُ المستخدم البديل والرقمُ الوظيفي — تلميحٌ على اسم الحساب */
+      whoTip: [a.alt ? "أو " + a.alt : "", a.empno || a.no ? "الرقم الوظيفي " + (a.empno || a.no) : ""].filter(Boolean).join(" · "),
       avTone: a.dis ? "mute" : "",
       flagOn: !(!d[a.id] && !a.mc),
       flag: d[a.id] ? "كلمة مرور بصيغة قديمة — أعد تعيينها" : "كلمة مؤقتة — يغيّرها عند الدخول",
@@ -7695,7 +7698,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         ? "ينتقلون بين إدارات الفرع كلها ويرثون سقف كل إدارة كاملاً · أكثر من مدير مسموح"
                         : "يرثون سقف " + (t.isSection && t.isSection(o) ? "القسم" : "الإدارة") + " كاملاً · أكثر من مدير مسموح",
                       mgAddTip: n ? "إضافة مدير جديد " + this._gmFor(o) : "إضافة مدير جديد لهذه الإدارة",
-                      mgEmptyT: n ? "لا مدير " + this._gmFor(o) + " بعد" : "لا مدير لهذه الإدارة بعد",
+                      mgEmptyT: n ? "لا مدير " + this._gmFor(o) + " بعد" : t.isSection && t.isSection(o) ? "لا مدير لهذا القسم بعد" : "لا مدير لهذه الإدارة بعد",
                       mgEmptyS: n
                         ? "أضف أول مدير من زر + — يرث سقف كل إدارة في الفرع كاملاً."
                         : "بلا مدير لا يستطيع أحد اعتماد الجدول أو التقرير اليومي — أضف أول مدير من زر +.",
@@ -7703,8 +7706,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       ndQ: e.ndQ || "",
                       ndOnQ: (x) => this.setState({ ndQ: x.target.value }),
                       ndRows: shown.map((a) => this._acctRow(a, X, !0)),
-                      ndHas: shown.length > 0,
-                      ndEmpty: 0 === shown.length,
+                      ndEmpty: 0 === shown.length && !(0 === list.length && 0 === scope.length),   /* بلا مديرٍ ولا حساب: رسالةٌ واحدة (mgNone) */
                       ndEmptyTxt: scope.length ? "لا حسابات تطابق البحث" : "لا حسابات دخول في هذا النطاق بعد",
                       ndFoot: KIVO.BassamCount(scope.length, "حساب") + (n ? " في العقدة وفرعها" : " في هذه الوحدة وما تحتها"),
                     };

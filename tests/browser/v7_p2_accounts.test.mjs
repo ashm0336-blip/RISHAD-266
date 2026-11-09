@@ -43,7 +43,9 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
     assert.deepEqual(await rows(NODE), ['TEST_ONLY مدير أ', 'TEST_ONLY موظف أ', 'TEST_ONLY حساب إدارة أ'], 'unit A: managers first, then its accounts');
     assert.equal(await p.locator(NODE + ' .adm-th.g-us').count(), 1, 'the central table header');
     await s.go('#/sysadmin/org/TEST_ONLY_A_S1', 3000); await tab('المسؤولون والحسابات');
-    assert.deepEqual(await rows(NODE), [], 'section S1: no accounts'); assert.match(await p.locator(NODE).innerText(), /لا حسابات دخول في هذا النطاق بعد/);
+    assert.deepEqual(await rows(NODE), [], 'section S1: no accounts');
+    const s1 = await p.locator(NODE).innerText();
+    assert.match(s1, /لا مدير لهذا القسم بعد/, 'one empty state, worded for a section'); assert.doesNotMatch(s1, /لا حسابات دخول في هذا النطاق بعد/, 'not a second empty message');
     await s.go('#/sysadmin/org/TEST_ONLY_G', 3000); await tab('المسؤولون والحسابات');
     const g = await rows(NODE);
     assert.deepEqual(g.slice(0, 2).sort(), ['TEST_ONLY مدير أ', 'TEST_ONLY مدير ب'], 'node G: the unit managers of its branch first'); assert.equal(g.length, 4, JSON.stringify(g));
@@ -51,7 +53,10 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
     /* search inside the scope */
     await p.fill(NODE + ' input.adm-q', 'موظف'); await p.waitForTimeout(500);
     assert.deepEqual(await rows(NODE), ['TEST_ONLY موظف أ'], 'search narrows the scope');
-    await p.fill(NODE + ' input.adm-q', ''); await p.waitForTimeout(400);
+    /* the search belongs to one node page: opening another node starts unfiltered (independent review, V7 P2) */
+    await p.evaluate(() => { location.hash = '#/sysadmin/org/TEST_ONLY_A'; }); await p.waitForTimeout(1800); await tab('المسؤولون والحسابات');
+    assert.equal(await p.inputValue(NODE + ' input.adm-q'), '', 'another node: the search is empty');
+    assert.equal((await rows(NODE)).length, 3, 'another node: its whole scope');
 
     /* one menu, both places */
     await s.go('#/sysadmin/users', 3500);

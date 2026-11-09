@@ -279,7 +279,7 @@
   <sc-if value="{{usEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-none">لا حسابات تطابق التصفية</div></sc-if>
   <sc-for list="{{usRows}}" as="u" hint-placeholder-count="5">
   <div class="adm-tr g-us" data-open="{{u.rmOpen}}">
-    <div class="adm-who adm-main"><span class="adm-av" data-tone="{{u.avTone}}" aria-hidden="true">{{u.ini}}</span><div><div class="adm-b adm-ell">{{u.name}}</div><sc-if value="{{u.flagOn}}" hint-placeholder-val="{{ false }}"><div class="adm-xs {{u.flagCls}}">{{u.flag}}</div></sc-if></div></div>
+    <div class="adm-who adm-main"><span class="adm-av" data-tone="{{u.avTone}}" aria-hidden="true">{{u.ini}}</span><div><div class="adm-b adm-ell" title="{{u.whoTip}}">{{u.name}}</div><sc-if value="{{u.flagOn}}" hint-placeholder-val="{{ false }}"><div class="adm-xs {{u.flagCls}}">{{u.flag}}</div></sc-if></div></div>
     <div dir="ltr" class="adm-ell adm-2nd adm-sm-t adm-tnum adm-sub" style="text-align:right">{{u.un}}</div>
     <div class="adm-ell adm-2nd adm-sub">{{u.role}}</div>
     <div class="adm-ell adm-2nd adm-sub">{{u.dept}}</div>
@@ -825,7 +825,7 @@
           <sc-if value="{{ndEmpty}}" hint-placeholder-val="{{ false }}"><div class="adm-none">{{ndEmptyTxt}}</div></sc-if>
   <sc-for list="{{ndRows}}" as="u" hint-placeholder-count="5">
   <div class="adm-tr g-us" data-open="{{u.rmOpen}}">
-    <div class="adm-who adm-main"><span class="adm-av" data-tone="{{u.avTone}}" aria-hidden="true">{{u.ini}}</span><div><div class="adm-b adm-ell">{{u.name}}</div><sc-if value="{{u.flagOn}}" hint-placeholder-val="{{ false }}"><div class="adm-xs {{u.flagCls}}">{{u.flag}}</div></sc-if></div></div>
+    <div class="adm-who adm-main"><span class="adm-av" data-tone="{{u.avTone}}" aria-hidden="true">{{u.ini}}</span><div><div class="adm-b adm-ell" title="{{u.whoTip}}">{{u.name}}</div><sc-if value="{{u.flagOn}}" hint-placeholder-val="{{ false }}"><div class="adm-xs {{u.flagCls}}">{{u.flag}}</div></sc-if></div></div>
     <div dir="ltr" class="adm-ell adm-2nd adm-sm-t adm-tnum adm-sub" style="text-align:right">{{u.un}}</div>
     <div class="adm-ell adm-2nd adm-sub">{{u.role}}</div>
     <div class="adm-ell adm-2nd adm-sub">{{u.dept}}</div>
