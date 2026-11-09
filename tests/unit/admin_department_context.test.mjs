@@ -274,7 +274,7 @@ test("the actual template gates every existing selected-detail action while leav
   for (const binding of [
     "{{selName}}",
     "{{dhSwitch}}",
-    "{{dhMenuTog}}",
+    "{{goTabData}}",   /* V7 P1: the «بيانات الإدارة» menu became the «البيانات» tab */
     "{{tabEmpsLbl}}",
     "{{capSaveDo}}",
   ])

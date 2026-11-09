@@ -51,7 +51,7 @@ function world(opts = {}) {
     bsToast: (...a) => calls.toast.push(a), bsAck: (...a) => calls.ack.push(a),
     adAct: (...a) => (calls.act.push(a), Promise.resolve({ ok: 1 })),
     adFetch: (...a) => (calls.fetch.push(a), opts.fetch ? opts.fetch(...a) : Promise.resolve({ ok: 1, policy: {} })),
-    plRkLoad() {}, adOnSrv: () => true,
+    plRkLoad() {}, adOnSrv: () => true, _orgHome() {},
   };
   for (const n of klass.body.body) {
     if (n.type !== 'MethodDefinition' || !/^(_adAsk|_adKill|_adFreeze|_adPolRange|_adPolBadOf|_adPolBad|plRsNext|plRsBackup|plRkNew|plRkOut|plRkClose|plRkCopy|plRkPrint|pwDlgCancel|pwDlgGo)$/.test(n.key.name)) continue;
@@ -174,6 +174,19 @@ for (const [label, name, has, free, effect, nth] of CASES) {
     }
   });
 }
+
+/* V7 P1: a node with anything under it (child nodes or units — BassamDepts.childrenOf) is refused BEFORE the question: no confirmation,
+   nothing deleted, one warning naming what to do. (The server refuses it too — 018 nodeRemoveWhy, tests/unit/v7_p0_node_integrity.) */
+test('deleting a node that still has children warns first and never asks', async () => {
+  for (const kids of [[{ id: 'TEST_ONLY_G2' }], [{ id: 'TEST_ONLY_D1' }, { id: 'TEST_ONLY_D2' }]]) {
+    const w = world({ answer: true });
+    const fn = w.page.handler('dhDel', 'nodeDel', { n: true, o: 'TEST_ONLY_G', p: { name: 'TEST_ONLY' }, t: { nodeDel: (x) => (w.calls.nodeDel.push(x), { ok: 1 }), list: () => [], childrenOf: (id) => (id === 'TEST_ONLY_G' ? kids : []) } });
+    fn(); for (let i = 0; i < 4; i++) await tick();
+    assert.equal(w.calls.confirm.length, 0, 'no confirmation is shown');
+    assert.deepEqual(w.calls.nodeDel, [], 'nothing is deleted');
+    assert.equal(w.calls.toast.length, 1); assert.match(w.calls.toast[0][0], /TEST_ONLY.*انقلها أو احذفها أولاً/); assert.equal(w.calls.toast[0][1], 'warn');
+  }
+});
 
 test('a broadcast to a unit or chosen people is not interrupted; the platform-wide one cannot be asked twice at once', async () => {
   const w = world({ answer: true }); const fn = w.page.handler('nfBcSend', '', { E: true, k: { mode: 'dept', sel: ['TEST_ONLY_A'], title: 'TEST_ONLY', body: 'TEST_ONLY', when: 'now' }, _: 2, v: { ready: true }, M: (x) => w.calls.send.push(x) });

@@ -478,7 +478,7 @@
   "i-2ef48b8f": {
    "body": "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><path d=\"M17 8l-5-5-5 5\"></path><path d=\"M12 3v12\"></path>",
    "uses": {
-    "modules/admin/view.html": 6
+    "modules/admin/view.html": 7
    },
    "viewBox": "0 0 24 24"
   },
@@ -795,13 +795,6 @@
    },
    "viewBox": "0 0 24 24"
   },
-  "i-4a3f11f0": {
-   "body": "<circle cx=\"5\" cy=\"12\" r=\"2\"></circle><circle cx=\"12\" cy=\"12\" r=\"2\"></circle><circle cx=\"19\" cy=\"12\" r=\"2\"></circle>",
-   "uses": {
-    "modules/admin/view.html": 1
-   },
-   "viewBox": "0 0 24 24"
-  },
   "i-4aa3024c": {
    "body": "<path d=\"{{t.p1}}\"></path><path d=\"{{t.p2}}\"></path>",
    "uses": {
@@ -983,7 +976,7 @@
   "i-57689779": {
    "body": "<path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path>",
    "uses": {
-    "modules/admin/view.html": 3
+    "modules/admin/view.html": 4
    },
    "viewBox": "0 0 24 24"
   },
@@ -1062,7 +1055,7 @@
   "i-5ff99641": {
    "body": "<path d=\"m15 18-6-6 6-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 2,
+    "modules/admin/view.html": 1,
     "modules/award/view.html": 1,
     "modules/daily/view.html": 2,
     "modules/dreport/view.html": 2,

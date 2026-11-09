@@ -709,30 +709,52 @@
   <!-- ═══════════ سيّد–تفصيل: قائمة الإدارات + لوحة الإدارة المختارة ═══════════ -->
   <div style="{{mdGridStyle}}" class="bs-mdgrid">
 
-    <!-- ═══ التفصيل — يُطوى إلى شريط رفيع فتتسع الشجرة ═══ -->
+    <!-- ═══ V7 P1 · صفحةُ العقدة (#/sysadmin/org/<id>) — بعرض الصفحة ═══ -->
+    <sc-if value="{{orgNodeOn}}" hint-placeholder-val="{{ false }}">
     <div style="border-radius:16px;border:1px solid var(--bd-a2252252250p6);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden;min-width:0">
       <sc-if value="{{deptDetailEmpty}}" hint-placeholder-val="{{ false }}">
       <div role="status" style="padding:28px 20px;font-size:12px;line-height:1.9;color:var(--fg-x53565a)">{{deptDetailMessage}}</div>
       </sc-if>
       <sc-if value="{{deptDetailReady}}" hint-placeholder-val="{{ true }}">
-      <sc-if value="{{dlShut}}" hint-placeholder-val="{{ false }}">
-      <div onClick="{{dlToggle}}" title="فتح لوحة التفاصيل" style="display:flex;flex-direction:column;align-items:center;gap:9px;padding:12px 6px;cursor:pointer;background:linear-gradient(to bottom,var(--bg-a185151810p13),var(--bg-a185151810p03))" style-hover="background:var(--bg-a185151810p16)">
-        <span style="width:28px;height:28px;border-radius:8px;border:1px solid var(--bd-a185151810p35);background:var(--bg-xffffff);color:var(--fg-x8a6f35);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg>
-        </span>
-        <span style="writing-mode:vertical-rl;font-size:11px;font-weight:600;color:var(--fg-x9a7e40);letter-spacing:.5px;max-height:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{selName}}</span>
-      </div>
-      </sc-if>
       <sc-if value="{{dlOpen}}" hint-placeholder-val="{{ true }}">
       <!-- ترويسة العقدة المحددة: مسارها الكامل، اسمها (يُعدَّل بالكتابة)، موضعها، حالتها، وكل أفعالها في مكان واحد -->
       <div class="dh">
-        <button onClick="{{dlToggle}}" title="طيّ لوحة التفاصيل" class="dl-tg"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
+        <button type="button" class="dl-bk" onClick="{{orgBack}}" title="العودة إلى الهيكل التنظيمي"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg>العودة إلى الهيكل</button>
         <sc-if value="{{dhPathOn}}" hint-placeholder-val="{{ true }}">
         <div class="bc">{{dhPathTxt}}</div>
         </sc-if>
         <div class="ttl">
           <span class="nmw" title="اكتب لتغيير الاسم ثم اخرج من الحقل"><input id="bsSelName" aria-label="اسم الإدارة" value="{{selName}}" onChange="{{selRename}}" onBlur="{{selRenameSave}}"><svg class="pn" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-5541214a"></svg></span>
           <span class="kd">{{selKindLbl}}</span>
+          <span class="nt {{selNatureCls}}">{{selNature}}</span>
+        </div>
+              </div>
+
+      <div class="bs-subseg org-tabs" role="tablist" aria-label="أقسام صفحة العقدة" style="display:flex;gap:2px;padding:10px 16px 0;margin:10px 16px 4px">
+        <button type="button" role="tab" aria-selected="{{onTabOv}}" onClick="{{goTabOv}}" class="bs-subbtn" data-on="{{onTabOv}}" style="{{tabOvStyle}}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-57689779"></svg>نظرة عامة
+        </button>
+        <sc-if value="{{tabEmpsShow}}" hint-placeholder-val="{{ true }}">
+        <button type="button" role="tab" aria-selected="{{onTabEmps}}" onClick="{{goTabEmps}}" class="bs-subbtn" data-on="{{onTabEmps}}" style="{{tabEmpsStyle}}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2f5bf57f"></svg>{{tabEmpsLbl}} <span class="mgN">{{mgCount}}</span>
+        </button>
+        </sc-if>
+        <button type="button" role="tab" aria-selected="{{onTabCap}}" onClick="{{goTabCap}}" class="bs-subbtn" data-on="{{onTabCap}}" style="{{tabCapStyle}}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg>سقف الصفحات
+        </button>
+        <sc-if value="{{tabDataShow}}" hint-placeholder-val="{{ true }}">
+        <button type="button" role="tab" aria-selected="{{onTabData}}" onClick="{{goTabData}}" class="bs-subbtn" data-on="{{onTabData}}" style="{{tabDataStyle}}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg>البيانات
+        </button>
+        </sc-if>
+      </div>
+
+      <!-- ═══ V7 P1 · نظرة عامة: الموضع والأفعال · ما تحتها · قائمة التهيئة · حذف العقدة — كلُّ زرٍّ بمعالجه القائم ═══ -->
+      <sc-if value="{{onTabOv}}" hint-placeholder-val="{{ true }}">
+      <div class="dh ov7">
+        <section class="ov7-s" aria-label="الموضع والأفعال">
+          <h3 class="ov7-h">الموضع والأفعال</h3>
+          <div class="ttl">
           <span class="pos">الموضع:
             <select value="{{selGid}}" onChange="{{selSetGid}}" title="العقدة الأب في الهيكل — والشجرة تُعرض بعمقها">
               <option value="">— بلا أب (في الجذر) —</option>
@@ -740,8 +762,8 @@
               <sc-if value="{{selIsDept}}" hint-placeholder-val="{{ true }}"><option value="__new">+ إدارة عامة جديدة…</option></sc-if>
             </select>
           </span>
-        </div>
-        <div class="ac">
+          </div>
+          <div class="ac">
           <sc-if value="{{dhIsNode}}" hint-placeholder-val="{{ false }}">
           <button class="p" onClick="{{dhAdd}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-de4e6997"></svg></i>إضافة تحتها</button>
           </sc-if>
@@ -751,39 +773,43 @@
           <sc-if value="{{dhNotActive}}" hint-placeholder-val="{{ false }}">
           <button onClick="{{dhSwitch}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></i>التبديل إليها</button>
           </sc-if>
-          <sc-if value="{{dhIsNode}}" hint-placeholder-val="{{ false }}">
-          <sc-if value="{{dhDelOn}}" hint-placeholder-val="{{ true }}">
-          <button class="dz" onClick="{{dhDel}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></i>{{dhDelLbl}}</button>
+          </div>
+        </section>
+        <section class="ov7-s" aria-label="ما تحتها">
+          <h3 class="ov7-h">ما تحتها <span class="ov7-c">{{ovKidsN}}</span></h3>
+          <sc-if value="{{ovKidsOn}}" hint-placeholder-val="{{ true }}">
+          <ul class="ov7-k"><sc-for list="{{ovKids}}" as="k" hint-placeholder-count="2"><li><a href="{{k.href}}" onClick="{{k.go}}">{{k.name}}</a><span class="kd">{{k.kind}}</span></li></sc-for></ul>
           </sc-if>
-          </sc-if>
-          <sc-if value="{{dhIsDept}}" hint-placeholder-val="{{ true }}">
-          <span class="mn">
-            <button class="mb {{dhMenuCls}}" onClick="{{dhMenuTog}}" title="بيانات الإدارة: نسخة · استيراد · مسح · حذف"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" data-i="i-4a3f11f0"></svg></button>
-            <sc-if value="{{dhMenuOpen}}" hint-placeholder-val="{{ false }}">
-            <span class="mbk" onClick="{{dhMenuClose}}"></span>
-            <span class="mp">
-              <sc-if value="{{dhActive}}" hint-placeholder-val="{{ true }}"><button class="mi t" onClick="{{dhExp}}" title="نسخة الإدارة — تصدير كل بيانات هذه الإدارة إلى ملف"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg></button></sc-if>
-              <sc-if value="{{dhNotActive}}" hint-placeholder-val="{{ false }}"><button class="mi t off" title="نسخة الإدارة — بدّل إلى هذه الإدارة أولاً"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg></button></sc-if>
-              <label class="mi t" title="استيراد نسخة احتياطية إلى هذه الإدارة — دمج أو استبدال"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-9420a7bd"></svg><input type="file" accept="application/json,.json" onChange="{{dhImpPick}}" onClick="{{dhImpStop}}" style="display:none"></label>
-              <button class="mi o" onClick="{{dhWipe}}" title="مسح البيانات — يفرّغ الإدارة من كل بياناتها ويبقيها في الهيكل"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2a91be15"></svg></button>
-              <sc-if value="{{dhDelOn}}" hint-placeholder-val="{{ true }}"><button class="mi dz" onClick="{{dhDel}}" title="{{dhDelTip}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></button></sc-if>
-            </span>
+          <sc-if value="{{ovKidsNone}}" hint-placeholder-val="{{ false }}"><p class="ov7-n">لا شيء تحتها بعد.</p></sc-if>
+        </section>
+        <section class="ov7-s" aria-label="قائمة التهيئة">
+          <h3 class="ov7-h">قائمة التهيئة</h3>
+          <p class="ov7-n">التسلسل المعتمد: العقدة ← سقف الصفحات ← المسؤول ← الصلاحيات ← المراجعة. للتوثيق — لا تمنع التشغيل.</p>
+          <ol class="ov7-st"><sc-for list="{{ovSteps}}" as="s" hint-placeholder-count="4"><li class="{{s.cls}}"><span class="mk" aria-hidden="true">{{s.mark}}</span><b>{{s.t}}</b><span class="st">{{s.st}}</span><sc-if value="{{s.goOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{s.go}}">{{s.goLbl}}</button></sc-if></li></sc-for></ol>
+        </section>
+            <sc-if value="{{dhIsNode}}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{dhDelOn}}" hint-placeholder-val="{{ true }}">
+            <section class="ov7-s ov7-dz" aria-label="حذف العقدة"><h3 class="ov7-h">حذف العقدة</h3><p class="ov7-n">تُحذف العقدة الفارغة وحدها: انقل ما تحتها واحذف حساب مديرها العام أولاً. لا تُمسّ بيانات أي إدارة.</p><div class="ac"><button class="dz" onClick="{{dhDel}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></i>{{dhDelLbl}}</button></div></section>
             </sc-if>
-          </span>
-          </sc-if>
-        </div>
-              </div>
-
-      <div class="bs-subseg" style="display:flex;gap:2px;padding:10px 16px 0;margin:10px 16px 4px">
-        <sc-if value="{{tabEmpsShow}}" hint-placeholder-val="{{ true }}">
-        <button onClick="{{goTabEmps}}" class="bs-subbtn" data-on="{{onTabEmps}}" style="{{tabEmpsStyle}}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2f5bf57f"></svg>{{tabEmpsLbl}} <span class="mgN">{{mgCount}}</span>
-        </button>
-        </sc-if>
-        <button onClick="{{goTabCap}}" class="bs-subbtn" data-on="{{onTabCap}}" style="{{tabCapStyle}}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg>سقف الصفحات
-        </button>
+            </sc-if>
       </div>
+      </sc-if>
+      <!-- ═══ V7 P1 · البيانات (الإدارة والقسم): ما كان في قائمة «بيانات الإدارة» — بالمعالجات والعناوين نفسها ═══ -->
+      <sc-if value="{{onTabData}}" hint-placeholder-val="{{ false }}">
+      <div class="dh ov7">
+        <section class="ov7-s" aria-label="بيانات الإدارة">
+          <h3 class="ov7-h">بيانات الإدارة</h3>
+          <p class="ov7-n">النسخة تُصدَّر من الإدارة النشطة · الاستيراد يدمج أو يستبدل · المسح يفرّغ البيانات ويبقي الإدارة · الحذف يمرّ بجرد الخادم.</p>
+          <div class="ac">
+            <sc-if value="{{dhActive}}" hint-placeholder-val="{{ true }}"><button class="t" onClick="{{dhExp}}" title="نسخة الإدارة — تصدير كل بيانات هذه الإدارة إلى ملف"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg></i>نسخة الإدارة</button></sc-if>
+            <sc-if value="{{dhNotActive}}" hint-placeholder-val="{{ false }}"><button class="t off" disabled title="نسخة الإدارة — بدّل إلى هذه الإدارة أولاً"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg></i>نسخة الإدارة</button></sc-if>
+            <label class="b t" title="استيراد نسخة احتياطية إلى هذه الإدارة — دمج أو استبدال"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-9420a7bd"></svg></i>استيراد نسخة<input type="file" accept="application/json,.json" onChange="{{dhImpPick}}" onClick="{{dhImpStop}}" style="display:none"></label>
+            <button class="o" onClick="{{dhWipe}}" title="مسح البيانات — يفرّغ الإدارة من كل بياناتها ويبقيها في الهيكل"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2a91be15"></svg></i>مسح البيانات</button>
+            <sc-if value="{{dhDelOn}}" hint-placeholder-val="{{ true }}"><button class="dz" onClick="{{dhDel}}" title="{{dhDelTip}}"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7f5a10d8"></svg></i>{{dhDelLbl}}</button></sc-if>
+          </div>
+        </section>
+      </div>
+      </sc-if>
 
       <!-- ═══ تبويب الموظفين والحسابات ═══ -->
       <sc-if value="{{onTabEmps}}" hint-placeholder-val="{{ true }}">
@@ -978,8 +1004,10 @@
     </sc-if>
       </sc-if>
     </div>
+    </sc-if>
 
-    <!-- ═══ الشجرة — مفتوحة دائماً على اليسار ═══ -->
+    <!-- ═══ V7 P1 · صفحةُ الهيكل (#/sysadmin/org): الشجرةُ بعرض الصفحة — كلُّ صفٍّ يفتح صفحةَ عقدته ═══ -->
+    <sc-if value="{{orgTreeOn}}" hint-placeholder-val="{{ true }}">
     <div style="border-radius:16px;border:1px solid var(--bd-a2252252250p6);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
 
       <div style="display:flex;align-items:center;gap:8px;padding:11px 13px;background:linear-gradient(to left,var(--bg-a185151810p13),var(--bg-a185151810p03),var(--bg-a185151810p13));border-bottom:1px solid var(--bd-a185151810p18)">
@@ -1070,9 +1098,8 @@
       </div>
       
 
-      <!-- ═══ مطويّة: شريط رفيع يعيد فتحها ═══ -->
-      
     </div>
+    </sc-if>
 
 
   </div>

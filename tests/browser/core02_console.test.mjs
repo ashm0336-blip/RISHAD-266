@@ -431,7 +431,8 @@ test('(S10) keyboard walk, focus ring and contrast, headings, dialogs, reduced m
           assert.equal(h.cur, 1, at + ': one current item'); assert.equal(h.sel, 0, at + ': no tab semantics in the sidebar');
         }
         /* a dialog: named, focus inside, Tab stays inside, Escape closes, focus back on the opener */
-        await s.go('#/sysadmin/depts', 1500);
+        /* V7 P1: the unit's own page, its «حسابات الإدارة» tab (the structure page #/sysadmin/org holds only the tree) */
+        await s.go('#/sysadmin/org/TEST_ONLY_A', 2500); await page.locator('main [role=tab]', { hasText: 'حسابات الإدارة' }).first().click(); await page.waitForTimeout(600);
         const op = page.locator('main button.add').first(); await op.focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(500);
         const dlg = () => page.evaluate(() => { const d = document.querySelector('main [role=dialog]'); return d ? { name: d.getAttribute('aria-label') || '', inside: d.contains(document.activeElement) } : null; });
         let dl = await dlg(); assert.ok(dl && dl.name.length > 0, 'the manager dialog is named'); assert.ok(dl.inside, 'the focus moves into the dialog');
@@ -987,7 +988,9 @@ test('(V7-P0) node addresses: #/sysadmin/org/<id> opens that node or unit, survi
     assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A'); assert.equal(await SEL(), 'TEST_ONLY إدارة أ', 'still selected after a reload');
     await cold('#/sysadmin/org/TEST_ONLY_G');
     assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_G'); assert.equal(await SEL(), 'TEST_ONLY إدارة عامة', 'the node is selected');
-    /* a click in the tree writes the address of what it selects */
+    /* a click in the tree writes the address of what it selects (V7 P1: the tree is the structure page — «العودة إلى الهيكل» leads there) */
+    await page.locator('main button.dl-bk').click(); await page.waitForTimeout(1200);
+    assert.equal(await H(), '#/sysadmin/org', '«العودة إلى الهيكل» writes the structure address'); assert.equal(await SEL(), null, 'the structure page shows no node page');
     await page.locator('main a:has-text("فرد الكل")').click(); await page.waitForTimeout(500);
     await page.locator('main .tr-rw', { hasText: 'TEST_ONLY إدارة ب' }).first().click(); await page.waitForTimeout(1500);
     assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_B', 'clicking unit B writes its address'); assert.equal(await SEL(), 'TEST_ONLY إدارة ب');
