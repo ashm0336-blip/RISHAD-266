@@ -34,21 +34,21 @@ test('V7 P3-0 · ceiling state from one source: open (warning), inherited, own, 
     let v = await view(b, lab);
     assert.match(await v.tree('TEST_ONLY إدارة ب'), /السقف مفتوح — لم يُضبط/, 'tree: open');
     let st = await v.step('TEST_ONLY_B'); assert.match(st.txt, /مفتوح — لم يُضبط/); assert.match(st.cls, /\bwn\b/, 'checklist: open is a warning, not ✓');
-    let h = await v.head('TEST_ONLY_B'); assert.match(h.txt, /^مفتوح — لم يُضبط/); assert.equal(h.tone, 'warn', 'editor: warning tone');
+    let h = await v.head('TEST_ONLY_B'); assert.match(h.txt, /^المحفوظ: مفتوح — لم يُضبط/); assert.equal(h.tone, 'warn', 'editor: warning tone');
     assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
     /* inherit (G capped, B no record) · own (A) · independent (A capOwn) */
     await setPerms(lab, (P) => { P.caps = { TEST_ONLY_G: ['tasks', 'emps', 'admin'], TEST_ONLY_A: ['tasks', 'emps', 'help'] }; P.capOwn = {}; });
     v = await view(b, lab);
     assert.match(await v.tree('TEST_ONLY إدارة ب'), /يرث سقف الأصل [·-] [3٣] من/, 'tree: inherited (3 pages of G)');
     st = await v.step('TEST_ONLY_B'); assert.match(st.txt, /موروثٌ من الأصل/); assert.match(st.cls, /\bok\b/);
-    h = await v.head('TEST_ONLY_B'); assert.match(h.txt, /^موروثٌ من الأصل/); assert.equal(h.tone, '');
+    h = await v.head('TEST_ONLY_B'); assert.match(h.txt, /^المحفوظ: موروثٌ من الأصل/); assert.equal(h.tone, '');
     assert.match(await v.tree('TEST_ONLY إدارة أ'), /سقفٌ خاصّ [·-] [2٢] من/, 'tree: own, cut by G (tasks, emps)');
-    h = await v.head('TEST_ONLY_A'); assert.match(h.txt, /^سقفٌ خاصّ: [2٢] من/);
+    h = await v.head('TEST_ONLY_A'); assert.match(h.txt, /^المحفوظ: سقفٌ خاصّ: [2٢] من/);
     assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
     await setPerms(lab, (P) => { P.capOwn = { TEST_ONLY_A: true }; });
     v = await view(b, lab);
     assert.match(await v.tree('TEST_ONLY إدارة أ'), /سقفٌ خاصّ [·-] [3٣] من .* [·-] مستقلّ/, 'tree: independent, its own 3 pages');
-    h = await v.head('TEST_ONLY_A'); assert.match(h.txt, /^سقفٌ خاصّ مستقلّ: [3٣] من/);
+    h = await v.head('TEST_ONLY_A'); assert.match(h.txt, /^المحفوظ: سقفٌ خاصّ مستقلّ: [3٣] من/);
     assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
     /* empty */
     await setPerms(lab, (P) => { P.caps = { TEST_ONLY_A: [] }; P.capOwn = {}; });
@@ -75,6 +75,8 @@ test('V7 P3-0 · seeding after the pattern removal: empty parent ⇒ «أساس�
     await ev((id) => KIVO.BassamPerm.setDeptCap(id, []), root.id); await flush();
     const kid = await ev((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY ابن', kind: 'قطاع', pid }), root.id); await flush();
     assert.deepEqual(readP(lab).caps[kid.id].slice().sort(), BASIC, 'under an empty parent: the «أساسي» record');
+    assert.deepEqual(readP(lab).subs[kid.id], { emps: ['data', 'custody'], planning: ['readiness'], admin: ['shifts', 'backup', 'ptpls', 'import'] }, 'and its inner tabs');
+    assert.deepEqual(readP(lab).lenses[kid.id], [], 'and its lenses');
     assert.deepEqual(await eff(kid.id), [], 'its effective ceiling is empty (the parent)');
     await ev(([id, all]) => KIVO.BassamPerm.setDeptCap(id, all), [root.id, ALL]); await flush();
     assert.deepEqual(await eff(kid.id), BASIC, 'the parent widened to every page: the child stays within «أساسي»');
@@ -82,6 +84,16 @@ test('V7 P3-0 · seeding after the pattern removal: empty parent ⇒ «أساس�
     await ev((id) => KIVO.BassamPerm.setDeptCap(id, ['emps', 'tasks', 'help']), capped.id); await flush();
     const snap = await ev((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY لقطة', kind: 'قطاع', pid }), capped.id); await flush();
     assert.deepEqual(readP(lab).caps[snap.id].slice().sort(), ['emps', 'help', 'tasks'], 'under a capped parent: a snapshot of it');
-    assert.deepEqual(s.errs, []);
+    assert.deepEqual(s.errs, []); await s.ctx.close();
+    /* a stored patterns.basic (written by an earlier admin screen) still wins, end to end */
+    await setPerms(lab, (P) => { P.patterns = { basic: { cap: ['help', 'links'], subs: {}, tabs: {}, lenses: [] } }; });
+    const s2 = await openAs(b, lab, LAB.superUn, LAB.superPw); const p2 = s2.page; await s2.go('#/sysadmin/org', 3000);
+    const flush2 = async () => { await p2.evaluate(() => (KIVO.__BS_SRV && KIVO.__BS_SRV.flushAsync ? KIVO.__BS_SRV.flushAsync(4000) : null)).catch(() => {}); await p2.waitForTimeout(700); await lab.idle(); };
+    const kid2 = await p2.evaluate((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY ابن ثانٍ', kind: 'قطاع', pid }), root.id); await flush2();
+    await p2.evaluate((id) => KIVO.BassamPerm.setDeptCap(id, []), root.id); await flush2();
+    const kid3 = await p2.evaluate((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY ابن ثالث', kind: 'قطاع', pid }), root.id); await flush2();
+    assert.deepEqual(readP(lab).caps[kid3.id].slice().sort(), ['help', 'links'], 'the stored «أساسي» is used for the seed');
+    assert.ok(Array.isArray(readP(lab).caps[kid2.id]), 'kid2 (parent widened at that time) got a snapshot');
+    assert.deepEqual(s2.errs, []);
   } finally { await b.close(); await lab.close(); }
 });

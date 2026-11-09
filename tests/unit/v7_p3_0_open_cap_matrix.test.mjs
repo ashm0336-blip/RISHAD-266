@@ -75,8 +75,8 @@ for (const mode of ['legacy', 'enforce']) {
     const out = await matrix(mode);
     for (const [k, v] of Object.entries(out)) {
       if (mode === 'legacy' && LEGACY_GAP.includes(k)) {
-        assert.equal(v.FULL, 'yes', k + ': FULL allows');
-        assert.notEqual(v.OPEN, 'yes', k + ': OPEN is refused in legacy (writePages/anyWriter — no implicit write without the unit record)');
+        assert.equal(v.FULL, 'yes', k + ': FULL allows'); assert.equal(v.BASIC, 'yes', k + ': BASIC allows (its own record)');
+        assert.equal(v.OPEN, /image/.test(k) ? 'HTTP 403:none' : 'no:view', k + ': OPEN is refused in legacy for exactly this reason (writePages/anyWriter — no implicit write without the unit record)');
         continue;
       }
       assert.equal(v.OPEN, v.FULL, k + ': OPEN = FULL · ' + JSON.stringify(v));

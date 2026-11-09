@@ -108,7 +108,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const of = s.n + " من " + KIVO.BassamCount(s.all, "صفحة", "g"),
       k = s.kind;
     if (s.empty)
-      return { kind: k, ok: !1, tone: "warn", short: "السقف فارغ", txt: "own" === k ? "سقفٌ خاصّ فارغ — لا صفحة مفعّلة لهذه الوحدة" : "فارغ — سقفُ أصلٍ فوقها فارغ، فلا صفحة مفعّلة" };
+      return { kind: k, empty: !0, ok: !1, tone: "warn", short: "السقف فارغ", txt: "own" === k ? "سقفٌ خاصّ فارغ — لا صفحة مفعّلة لهذه الوحدة" : "السقف الفعلي فارغ بحكم سقوف الأصول — لا صفحة مفعّلة" };
     if ("open" === k)
       return { kind: k, ok: !1, tone: "warn", short: "السقف مفتوح — لم يُضبط", txt: "مفتوح — لم يُضبط: لا سقفَ لها ولا لأصولها، فكلُّ صفحات المنصة متاحة (" + of + ")" };
     if ("inherit" === k) return { kind: k, ok: !0, tone: "", short: "يرث سقف الأصل · " + of, txt: "موروثٌ من الأصل: لا سقفَ خاصّاً لها، ويحدّها سقفُ أصلٍ فوقها — " + of };
@@ -7855,8 +7855,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               capLimOn: BLK.length > 0,
               /* V7 P3-0: حالةُ السقف في رأس المحرّر — من المصدر الواحد نفسِه (الشجرة · قائمة التهيئة) */
               ...(() => {
-                const cs = this._capStateTxt(o);
-                return { capStateTxt: cs.txt, capStateTone: cs.tone, capStateOn: !!cs.txt };
+                const cs = this._capStateTxt(o);   /* الحالةُ المحفوظة — المسودةُ تُرى في الشجرة أدناه حتى تُحفظ؛ والفارغُ له تنبيهُه (capEmptyOn) */
+                return { capStateTxt: cs.txt ? "المحفوظ: " + cs.txt : "", capStateTone: cs.tone, capStateOn: !!cs.txt && !cs.empty };
               })(),
               capOwnShow: !!(r && r.setCapOwn && r.capOwnOf),
               capOwnTxt:
@@ -8745,11 +8745,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                           return !1;
                         }
                       })(),
-                      o = (s && s.users ? s.users() : []).filter((t) => "staff" === t.role && t.deptId === r.id),
-                      p = o.filter((t) => !t.dis).length,
-                      l = KIVO.BassamPerm || null,
-                      d = l ? l.deptCap(r.id).length : 0,
-                      c = ((l && l.PAGE_REG) || []).length;
+                      o = (s && s.users ? s.users() : []).filter((t) => "staff" === t.role && t.deptId === r.id);
                     return {
                       mgrOpen: (t) => {
                         (t && t.stopPropagation && t.stopPropagation(), this.mgrOpen(r.id));
@@ -8790,15 +8786,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       delGo: (t) => {
                         (t && t.stopPropagation && t.stopPropagation(), this.deptDel(r));
                       },
-                      subLine:
-                        KIVO.BassamCount(o.length, "مستخدم") +
-                        " · " +
-                        KIVO.BassamCount(p, ["نشط واحد", "نشطان", "نشطَين", "نشطين", "نشطاً", "نشط"]) +
-                        " · سقف " +
-                        d +
-                        " من " +
-                        KIVO.BassamCount(c, "صفحة", "g") +
-                        "",
                       trMgrOn: !!i,
                       trMgrNo: !i,
                       trMgrName: i
@@ -8813,13 +8800,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                             }
                           })()
                         : "",
-                      trCapTxt: (() => {
-                        try {
-                          return this._capStateTxt(r.id).short;   /* V7 P3-0: المصدرُ الواحد — «مفتوح» لا تُقال لوحدةٍ يحدّها أصلٌ مسقوف */
-                        } catch (t) {
-                          return "السقف مفتوح";
-                        }
-                      })(),
+                      trCapTxt: this._capStateTxt(r.id).short,   /* V7 P3-0: المصدرُ الواحد — «مفتوح» لا تُقال لوحدةٍ يحدّها أصلٌ مسقوف */
                       ...KIVO.BassamCount.pair("trUsers", String(o.filter((t) => !t.mgr).length), "مستخدم"),
                     };
                   })(),

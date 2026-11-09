@@ -43,6 +43,7 @@ test('capState: open · inherit · own · independent · empty — from the exis
   assert.deepEqual(state({ g: ['emps'], u: ['emps', 'help'] }, { u: ['g'] }, { u: true }, 'u'), { kind: 'own', independent: true, n: 2, all: 5, empty: false }, 'independent: its record alone');
   assert.deepEqual(state({ u: [] }, { u: [] }, {}, 'u'), { kind: 'own', independent: false, n: 0, all: 5, empty: true }, 'an explicit empty record');
   assert.deepEqual(state({ g: [] }, { u: ['g'] }, {}, 'u'), { kind: 'inherit', independent: false, n: 0, all: 5, empty: true }, 'an empty ancestor empties it');
+  assert.deepEqual(state({ u: ['emps', 'legacy_x', 'help'] }, { u: [] }, {}, 'u'), { kind: 'own', independent: false, n: 2, all: 5, empty: false }, 'only known pages are counted (n ≤ all)');
   assert.match(T, /capState: I\.capState,/, 'exported on KIVO.BassamPerm');
 });
 
@@ -52,10 +53,11 @@ test('the admin center shows the state from that one source in the tree, the ove
   assert.match(L, /step\("سقف الصفحات", capSt\.txt, capSt\.ok, "cap"\)/, 'checklist: its text and ✓/! from the source (open is not ✓)');
   assert.match(L, /capSt = this\._capStateTxt\(o\),/);
   assert.doesNotMatch(L, /"موروثٌ من الأعلى"/, 'the P1 text that called every unit without a record «inherited» is gone');
-  assert.match(L, /trCapTxt: \(\(\) => \{\s+try \{\s+return this\._capStateTxt\(r\.id\)\.short;/, 'tree');
+  assert.match(L, /trCapTxt: this\._capStateTxt\(r\.id\)\.short,/, 'tree');
   assert.doesNotMatch(L, /: "السقف مفتوح";/, 'the tree no longer calls a limited unit «open»');
-  assert.match(L, /const cs = this\._capStateTxt\(o\);\s+return \{ capStateTxt: cs\.txt, capStateTone: cs\.tone, capStateOn: !!cs\.txt \};/, 'editor');
-  assert.match(V, /<div class="capst" data-tone="\{\{capStateTone\}\}" role="status">\{\{capStateTxt\}\}<\/div>/, 'editor header line (announced)');
+  assert.match(L, /const cs = this\._capStateTxt\(o\);[^\n]*\s+return \{ capStateTxt: cs\.txt \? "المحفوظ: " \+ cs\.txt : "", capStateTone: cs\.tone, capStateOn: !!cs\.txt && !cs\.empty \};/, 'editor: the SAVED state; hidden when empty (capEmptyOn warns)');
+  assert.match(V, /<div class="capst" data-tone="\{\{capStateTone\}\}">\{\{capStateTxt\}\}<\/div>/, 'editor header line');
+  assert.doesNotMatch(L, /subLine:/, 'the unrendered tree subtitle (a second ceiling count) is gone');
   /* the texts: open is a warning, never ✓ */
   const ctx = { KIVO: { BassamCount: (n) => String(n), BassamPerm: { capState: () => ({ kind: 'open', independent: false, n: 14, all: 14, empty: false }) } } };
   const run = (st) => { ctx.KIVO.BassamPerm.capState = () => st; return vm.runInNewContext('({' + f + '})._capStateTxt("x")', ctx); };
@@ -63,7 +65,8 @@ test('the admin center shows the state from that one source in the tree, the ove
   assert.equal(r.ok, false); assert.equal(r.tone, 'warn'); assert.match(r.txt, /^مفتوح — لم يُضبط/); assert.equal(r.short, 'السقف مفتوح — لم يُضبط');
   r = run({ kind: 'inherit', n: 3, all: 14, empty: false }); assert.equal(r.ok, true); assert.match(r.txt, /^موروثٌ من الأصل/); assert.match(r.short, /^يرث سقف الأصل · 3 من/);
   r = run({ kind: 'own', independent: true, n: 5, all: 14, empty: false }); assert.equal(r.ok, true); assert.match(r.txt, /^سقفٌ خاصّ مستقلّ: 5 من/); assert.match(r.short, /· مستقلّ$/);
-  r = run({ kind: 'own', n: 0, all: 14, empty: true }); assert.equal(r.ok, false); assert.equal(r.tone, 'warn'); assert.equal(r.short, 'السقف فارغ');
+  r = run({ kind: 'own', n: 0, all: 14, empty: true }); assert.equal(r.ok, false); assert.equal(r.tone, 'warn'); assert.equal(r.short, 'السقف فارغ'); assert.equal(r.empty, true);
+  r = run({ kind: 'inherit', n: 0, all: 14, empty: true }); assert.equal(r.txt, 'السقف الفعلي فارغ بحكم سقوف الأصول — لا صفحة مفعّلة', 'neutral: ancestors that do not overlap, or an empty one');
 });
 
 test('the unused patterns are gone; the live seed keeps its behaviour (and a stored «أساسي» still wins)', () => {
