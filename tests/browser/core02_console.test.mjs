@@ -37,7 +37,8 @@ const DEST = [['overview', null, 'الرئيسية'], ['depts', null, 'الإد�
   ['plat', 'side', 'القوائم'], ['plat', 'print', 'الطباعة والتقارير'], ['plat', 'app', 'تطبيق الجوال'], ['plat', 'about', 'حول المنصة'],
   ['sec', null, 'الأمن'], ['oplog', null, 'سجل الأنشطة والتغييرات'], ['backup', null, 'النسخة الاحتياطية'], ['plat', 'setup', 'التهيئة والاستعادة'],
   ['histimp', null, 'استيراد البيانات التاريخية']];
-const addr = (d) => '#/sysadmin/' + d[0] + (d[1] ? '/' + d[1] : '');
+/* V7 P0: «الإدارات» عنوانُها #/sysadmin/org (والقديم #/sysadmin/depts يُقرأ ثم يُكتب الجديد) */
+const addr = (d) => '#/sysadmin/' + (d[0] === 'depts' ? 'org' : d[0]) + (d[1] ? '/' + d[1] : '');
 const sel = (d) => 'aside.bsb [data-con-tab="' + d[0] + '"]' + (d[1] ? '[data-con-sub="' + d[1] + '"]' : ':not([data-con-sub])');
 /* the accordion sidebar (one group open at a time): an item of a collapsed group is reached by opening its group header first */
 async function reach(page, d) {
@@ -104,7 +105,7 @@ test('(A)(B) platform administrator: the console, its 17 destinations, deep link
     await page.goBack(); await page.waitForTimeout(1500);
     st = await state(page); assert.equal(st.hash, '#/sysadmin/plat/setup', 'Back returns to the previous console page'); assert.equal(st.h2, 'التهيئة والاستعادة');
     /* every address opens cold; #/sysadmin/plat alone reopens the last section (kept with the page view state), an unknown one opens «هوية المنصة» */
-    for (const [h, want, title] of [...DEST.map((d) => [addr(d), addr(d), d[2]]), ['#/sysadmin/plat', '#/sysadmin/plat/setup', 'التهيئة والاستعادة'], ['#/sysadmin/plat/zzz', '#/sysadmin/plat/id', 'هوية المنصة']]) {
+    for (const [h, want, title] of [...DEST.map((d) => [addr(d), addr(d), d[2]]), ['#/sysadmin/depts', '#/sysadmin/org', 'الإدارات'], ['#/sysadmin/plat', '#/sysadmin/plat/setup', 'التهيئة والاستعادة'], ['#/sysadmin/plat/zzz', '#/sysadmin/plat/id', 'هوية المنصة']]) {
       await page.goto('about:blank'); await page.goto(lab.base + '/' + h, { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(3500);   /* a real load, not a same-document hash change */
       st = await state(page);
       assert.equal(st.hash, want, h + ': cold load keeps / normalises the address');
@@ -244,7 +245,7 @@ test('(S8) «الرئيسية»: skeleton before the read, real counts after it,
         /* no shortcut tiles: the platform settings are sidebar items only */
         assert.equal(await page.locator('main a[href*="/plat/"], main [data-con-tab]').count(), 0);
         /* each card link opens its page (and Back returns home) */
-        for (const [t, h] of [['حالة المنصة', '#/sysadmin/backup'], ['الحسابات', '#/sysadmin/users'], ['الوحدات التنظيمية', '#/sysadmin/depts'], ['الأمن اليوم', '#/sysadmin/sec']]) {
+        for (const [t, h] of [['حالة المنصة', '#/sysadmin/backup'], ['الحسابات', '#/sysadmin/users'], ['الوحدات التنظيمية', '#/sysadmin/org'], ['الأمن اليوم', '#/sysadmin/sec']]) {
           assert.equal(c1[t].href, h);
           await page.locator('main .adm-ov-stat', { has: page.locator('h3', { hasText: t }) }).locator('.adm-ov-lnk').click(); await page.waitForTimeout(1500);
           assert.equal(await page.evaluate(() => location.hash), h, t + ' → ' + h);
@@ -580,7 +581,7 @@ test('(P) parity with 625dac6: a late active lock keeps «فكّ القفل» on
       await row.locator('.adm-rmb').first().click(); await page.waitForTimeout(600);
       await row.locator('[data-bs-dd]').getByText('تعديل الصلاحيات', { exact: true }).click(); await page.waitForTimeout(2500);
       const st1 = await state(page);
-      assert.equal(st1.hash, '#/sysadmin/depts', who + ': «تعديل الصلاحيات» opens «الإدارات»');
+      assert.match(st1.hash, /^#\/sysadmin\/org\/TEST_ONLY_[AB]$/, who + ': «تعديل الصلاحيات» opens «الإدارات» on the unit (V7 P0: its address names it)');
       assert.deepEqual(st1.cur, ['الإدارات']);
       assert.equal(await page.evaluate(() => (document.getElementById('bsSelName') || {}).value ?? null), unit, who + ': the account\'s unit is selected');
       await page.goBack(); await page.waitForTimeout(1500);
@@ -971,4 +972,44 @@ test('(ACC-FIX) acceptance audit B1–B4: blank platform name, out-of-range poli
     assert.equal(await dlg.count(), 0, '«تم» closes it');
     assert.deepEqual(s.errs, [], 'no page errors');
   } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await lab.close(); await b.close(); }
+});
+
+test('(V7-P0) node addresses: #/sysadmin/org/<id> opens that node or unit, survives a reload, follows a click; unknown or unsafe ids fall back; only the platform administrator', { timeout: 600000 }, async () => {
+  const b = await chromium.launch(); const lab = await world(); const writes = []; let s = null, m = null;
+  try {
+    s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: { width: 1366, height: 900 }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
+    const page = s.page, H = () => page.evaluate(() => location.hash), SEL = () => page.evaluate(() => (document.getElementById('bsSelName') || {}).value ?? null);
+    const cold = async (h) => { await page.goto('about:blank'); await page.goto(lab.base + '/' + h, { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(4000); };
+    /* a data unit and a node, cold */
+    await cold('#/sysadmin/org/TEST_ONLY_A');
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A', 'the unit address stays'); assert.equal(await SEL(), 'TEST_ONLY إدارة أ', 'unit A is selected');
+    await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForTimeout(4000);
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A'); assert.equal(await SEL(), 'TEST_ONLY إدارة أ', 'still selected after a reload');
+    await cold('#/sysadmin/org/TEST_ONLY_G');
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_G'); assert.equal(await SEL(), 'TEST_ONLY إدارة عامة', 'the node is selected');
+    /* a click in the tree writes the address of what it selects */
+    await page.locator('main a:has-text("فرد الكل")').click(); await page.waitForTimeout(500);
+    await page.locator('main .tr-rw', { hasText: 'TEST_ONLY إدارة ب' }).first().click(); await page.waitForTimeout(1500);
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_B', 'clicking unit B writes its address'); assert.equal(await SEL(), 'TEST_ONLY إدارة ب');
+    await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForTimeout(4000);
+    assert.equal(await SEL(), 'TEST_ONLY إدارة ب', 'the clicked selection survives a reload');
+    /* a typed address while on the page */
+    await page.evaluate(() => { location.hash = '#/sysadmin/org/TEST_ONLY_A_S1'; }); await page.waitForTimeout(2500);
+    assert.equal(await SEL(), 'TEST_ONLY قسم أ١', 'a typed section address selects the section');
+    /* unknown and unsafe ids fall back to the structure, said once, no error */
+    for (const h of ['#/sysadmin/org/TEST_ONLY_NOPE', '#/sysadmin/org/%3Cimg%20src%3Dx%3E', '#/sysadmin/org/a/b']) {
+      await cold(h);
+      assert.equal(await H(), '#/sysadmin/org', h + ': falls back to #/sysadmin/org');
+    }
+    await cold('#/sysadmin/org/TEST_ONLY_NOPE');
+    assert.match(await page.evaluate(() => [...document.querySelectorAll('#bs-toast,#bs-stoast,[role=status]')].map((e) => e.textContent).join(' ')), /غير موجودة في الهيكل/, 'the unknown node is named as missing');
+    assert.deepEqual(s.errs, [], 'no page errors'); assert.deepEqual(writes, [], 'opening addresses saves nothing');
+    /* a unit manager cannot reach it by address */
+    m = await openAs(b, lab, LAB.mgrA, LAB.pw, { viewport: { width: 1366, height: 900 } });
+    for (const h of ['#/sysadmin/org/TEST_ONLY_A', '#/sysadmin/org/TEST_ONLY_G', '#/sysadmin/depts']) {
+      await m.page.goto(lab.base + '/' + h, { waitUntil: 'domcontentloaded' }); await m.page.waitForTimeout(3500);
+      const r = await m.page.evaluate(() => ({ h: location.hash, con: !!document.querySelector('aside.bsb--console') }));
+      assert.ok(!/^#\/sysadmin/.test(r.h) && !r.con, 'manager: ' + h + ' refused (now ' + r.h + ')');
+    }
+  } finally { for (const x of [s, m]) { try { if (x) await x.ctx.close(); } catch (e) { /* closed */ } } await lab.close(); await b.close(); }
 });

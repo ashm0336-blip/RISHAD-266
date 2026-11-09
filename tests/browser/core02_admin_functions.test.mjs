@@ -237,7 +237,9 @@ async function nav2(page, vn) {
   await page.evaluate(() => { location.hash = '#/sysadmin/overview'; }); await page.waitForTimeout(2500);
   for (const t of SYS_TABS) {
     await asideGo(page, t === 'plat' ? '[data-con-tab="plat"][data-con-sub="id"]' : '[data-con-tab="' + t + '"]:not([data-con-sub])'); await page.waitForTimeout(900);
-    assert.equal(await hash(), '#/sysadmin/' + t + (t === 'plat' ? '/id' : ''), vn + ': the sidebar item writes #/sysadmin/' + t);
+    const seg = t === 'depts' ? 'org' : t;   /* V7 P0: «الإدارات» = #/sysadmin/org */
+    if (t === 'depts') assert.match(await hash(), /^#\/sysadmin\/org(\/[^/]+)?$/, vn + ': the sidebar item writes #/sysadmin/org (with the unit selected in this page, if any)');
+    else assert.equal(await hash(), '#/sysadmin/' + seg + (t === 'plat' ? '/id' : ''), vn + ': the sidebar item writes #/sysadmin/' + seg);
     const r = await page.evaluate(collect); assert.ok(opened(t, r), vn + ': ' + t + ' selected as ' + JSON.stringify(NAV[t]) + ' (now ' + JSON.stringify(r.selected) + ')');
     const ov = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(ov <= 1, vn + ': ' + t + ': no horizontal page scroll (' + ov + 'px)');
@@ -346,6 +348,7 @@ if (CAPTURE) {
         await s.page.goto(lab.base + '/#/sysadmin/' + t, { waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(4500);
         const r = await s.page.evaluate(collect), h = await s.page.evaluate(() => location.hash);
         if (t === 'plat') assert.match(h, /^#\/sysadmin\/plat\/(id|mods|notif|login|side|print|app|about|setup)$/, t + ': the deep link opens the platform settings on a section (the last one opened) and names it in the address');
+        else if (t === 'depts') assert.match(h, /^#\/sysadmin\/org(\/[^/]+)?$/, t + ': the recorded #/sysadmin/depts opens and is written as #/sysadmin/org — with the unit still selected in this page (a same-document address change keeps the selection; V7 P0)');
         else assert.equal(h, '#/sysadmin/' + t, t + ': the deep link stays on its address');
         assert.ok(opened(t, r), t + ': the deep link opens ' + JSON.stringify(NAV[t]) + ' (recorded «' + FX.sys[t].selected + '»; now ' + JSON.stringify(r.selected) + ')');
       }

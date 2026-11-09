@@ -1915,6 +1915,7 @@ function nodeShapeWhy(A, newJson, curJson, rst) {
   if (!Array.isArray(b)) return '';
   var S = shapeDiff(b, a); if (S.dup) return 'dept-shape';
   var N = shapeFirst(b), U = shapeFirst(shapeList(A, K_DEPTS)), BU = A.__batchUnits || nmap();
+  if (!rst) { var rw = nodeRemoveWhy(A, S.old, N); if (rw) return rw; }
   for (i = 0; i < S.ch.length; i++) {
     r = S.ch[i]; if (r.id == null || r.id === '') continue;
     var id = String(r.id), p = shapeRef(r, 'pid'), o = S.old[id];
@@ -1924,6 +1925,24 @@ function nodeShapeWhy(A, newJson, curJson, rst) {
     if (p && !N[p] && !U[p] && !BU[p] && !rst) return 'dept-shape';
     if (shapeLoop(N, U, id, p)) return 'dept-shape';
   }
+  return '';
+}
+/* V7 P0: removing a node is judged on the graph the save leaves behind (both registries as the batch leaves them — shapeList), not on the
+   changed rows only (the removed rows were never looked at, so a direct save could orphan children past the client's guard):
+   · no node or data unit may still point at a removed node ⇒ «node-has-children» (move them first);
+   · no node of the stored graph may be removed together with its removed parent ⇒ «node-cascade» (no chained delete in one save);
+   · no general-manager account may still be bound to a removed node ⇒ «node-has-manager» (remove the account first).
+   An empty node is removed as before. A restore (rst) keeps its own path. Old dangling references the save did not create are left alone. */
+function nodeRemoveWhy(A, old, N) {
+  var G = nmap(), any = false, q, i;
+  for (q in old) if (!N[q]) { G[q] = 1; any = true; }
+  if (!any) return '';
+  for (q in N) if (G[shapeRef(N[q], 'pid')]) return 'node-has-children';
+  var L = shapeList(A, K_DEPTS) || [];
+  for (i = 0; i < L.length; i++) if (isObj(L[i]) && G[shapeRef(L[i], 'gid')]) return 'node-has-children';
+  for (q in old) if (G[q] && G[shapeRef(old[q], 'pid')]) return 'node-cascade';
+  var us = Array.isArray(A.users) ? A.users : [];
+  for (i = 0; i < us.length; i++) if (isObj(us[i]) && us[i].role === 'gm' && G[shapeRef(us[i], 'gid')]) return 'node-has-manager';
   return '';
 }
 /* ══ مديرُ الإدارة يُنشئ أقسامَ إدارته (F01 · خطة التوحيد) ══

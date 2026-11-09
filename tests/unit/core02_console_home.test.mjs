@@ -60,7 +60,7 @@ test('the four status cards carry exact counts from data the page already has', 
   assert.deepEqual([val(o, 'الإدارات'), val(o, 'الأقسام'), val(o, 'بلا مدير')], ['2', '1', '2']);
   assert.deepEqual([val(s, 'محاولات دخول فاشلة'), val(s, 'أقفال نشطة'), val(s, 'كتابات مرفوضة')], ['4', '1', '3']);
   assert.equal(s.sub, '«اليوم» هنا يبدأ من الثالثة فجراً بتوقيت الرياض، وفي سجل الأمن من منتصف الليل');
-  assert.deepEqual(cp(v.ovStats.map((c) => [c.href, c.lnk])), [['#/sysadmin/backup', 'إلى النسخة الاحتياطية'], ['#/sysadmin/users', 'إلى مراقبة الحسابات'], ['#/sysadmin/depts', 'إلى الإدارات'], ['#/sysadmin/sec', 'إلى صفحة الأمن']]);
+  assert.deepEqual(cp(v.ovStats.map((c) => [c.href, c.lnk])), [['#/sysadmin/backup', 'إلى النسخة الاحتياطية'], ['#/sysadmin/users', 'إلى مراقبة الحسابات'], ['#/sysadmin/org', 'إلى الإدارات'], ['#/sysadmin/sec', 'إلى صفحة الأمن']]);
   assert.ok(v.ovStats.every((c) => c.rows.every((r) => r.val && !r.skel)), 'all values are shown once read');
 });
 
