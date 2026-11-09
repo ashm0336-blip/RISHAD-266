@@ -54,9 +54,22 @@ class Component extends DCLogic {
   _hashSub() {
     try { const m = /^#\/[a-z]+\/[a-z]+\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
   }
+  /* V7 P0: «الإدارات» في المركز عنوانُها #/sysadmin/org[/<معرّف العقدة أو الوحدة>] — والتبويبُ في الصفحة اسمُه depts كما هو.
+     العنوانُ القديم #/sysadmin/depts يُقرأ بالقاعدة نفسها (مقطعٌ يُترجَم) ثم تكتب الصفحةُ العنوانَ الجديد. المعرّفُ مُرمَّزٌ (encodeURIComponent):
+     المعرّفاتُ المخزَّنة ليست صيغةً واحدة (n…/d…/s… بأساس 36 · والمستورَدةُ قديماً بأحرفٍ كبيرة وشرطة سفلية) — فلا يُفترض شكلُها؛
+     والصفحةُ لا تفتح إلا معرّفاً موجوداً في الهيكل، والرابطُ لا يمنح شيئاً: «مركز إدارة رشاد» لمسؤول المنصة وحده (_pageAllowed) والخادمُ هو الحَكَم */
+  _sysSeg(tab) { return tab === "depts" ? "org" : tab; }
+  _sysTabOf(seg) { return seg === "org" ? "depts" : seg; }
+  _hashOrgId() {
+    try {
+      const m = /^#\/sysadmin\/org\/([^/?#]+)$/.exec(String(location.hash || "")); if (!m) return "";
+      const id = decodeURIComponent(m[1]);
+      return id.length <= 128 && !/[\u0000-\u001f<>"'`\\]/.test(id) ? id : "";
+    } catch (e) { return ""; }
+  }
   /* ذيل العنوان لصفحتَي الإعدادات ومدير النظام يُمرَّر لصفحة الإعدادات عبر خطّافيها (القائم __ADMIN_OPEN_TAB والجديد __ADMIN_OPEN_DTAB) */
   _applyHashTab(key) {
-    try { const t = this._hashTab(); if (!t) return; if (key === "sysadmin") { KIVO.__ADMIN_OPEN_TAB = t; KIVO.__ADMIN_OPEN_PSUB = this._hashSub() || null; } else if (key === "admin") KIVO.__ADMIN_OPEN_DTAB = t; else KIVO.__BS_OPEN_TAB = { page: key, tab: t }; } catch (e) {}
+    try { const t = this._hashTab(); if (!t) return; if (key === "sysadmin") { KIVO.__ADMIN_OPEN_TAB = this._sysTabOf(t); KIVO.__ADMIN_OPEN_PSUB = t === "plat" ? this._hashSub() || null : null; KIVO.__ADMIN_OPEN_ORG = t === "org" ? this._hashOrgId() || null : null; } else if (key === "admin") KIVO.__ADMIN_OPEN_DTAB = t; else KIVO.__BS_OPEN_TAB = { page: key, tab: t }; } catch (e) {}
   }
   _hashWrite(key, push) {
     try {
@@ -179,7 +192,7 @@ class Component extends DCLogic {
         if (ok !== "sysadmin" && !this.__conAsked && this._conDirty()) {
           const want = location.href, lc = this.__lastCon || ["overview", null];
           KIVO.__ADMIN_MODE = "site";
-          try { history.replaceState(null, "", location.pathname + location.search + "#/sysadmin/" + lc[0] + (lc[1] ? "/" + lc[1] : "")); } catch (e) {}
+          try { history.replaceState(null, "", location.pathname + location.search + "#/sysadmin/" + this._sysSeg(lc[0]) + (lc[1] ? "/" + lc[1] : "")); } catch (e) {}
           this._conLeaveOk().then((y) => { if (!y) return; try { history.replaceState(null, "", want); } catch (e) {} this.__conAsked = true; try { this._onHash(); } finally { this.__conAsked = false; } });
           return;
         }
@@ -926,7 +939,7 @@ class Component extends DCLogic {
   _conVals(rail) {
     const N = this._sysNav(), GT = { org: "الإدارة المؤسسية", plat: "إعدادات المنصة", sec: "الأمن والرقابة", data: "البيانات والاستمرارية" };
     const C = this.__con || {}, avail = C.avail || this.__conAvail || null;
-    const tab = this._hashTab() || C.tab || "overview";
+    const tab = this._sysTabOf(this._hashTab()) || C.tab || "overview";
     const sub = tab === "plat" ? (this._hashSub() || C.sub || "id") : null;
     const L = this.__conGrpLast || (this.__conGrpLast = {});
     const dirty = C.dirty || [], bd = C.secBadge | 0;
@@ -939,7 +952,7 @@ class Component extends DCLogic {
     };
     const item = (x) => {
       const on = x[0] === tab && (x[1] || null) === sub, dz = x[0] === "plat" && dirty.indexOf(x[1]) >= 0, bg = x[0] === "sec" && bd > 0;
-      return { t: x[2], tab: x[0], sub: x[1] || undefined, href: "#/sysadmin/" + x[0] + (x[1] ? "/" + x[1] : ""), cur: on ? "page" : undefined, on,
+      return { t: x[2], tab: x[0], sub: x[1] || undefined, href: "#/sysadmin/" + this._sysSeg(x[0]) + (x[1] ? "/" + x[1] : ""), cur: on ? "page" : undefined, on,
         cls: "n s-ci" + (on ? " on" : ""), div: !!x[3], bdgOn: bg, bdg: String(bd), dirty: dz,
         lbl: bg ? x[2] + "، أحداث أمنية اليوم: " + bd : dz ? x[2] + "، تغييرات غير محفوظة" : undefined, go: go(x[0], x[1]) };
     };
@@ -981,7 +994,7 @@ class Component extends DCLogic {
       sub = tab === "plat" ? (sub || "id") : null;
       if (this.state.active !== "sysadmin") { this.__lastCon = [tab, sub]; this._goSys(); return; }
       const g = this._conGrpOf(tab, sub); if (g) (this.__conGrpLast || (this.__conGrpLast = {}))[g] = [tab, sub];
-      const h = "#/sysadmin/" + tab + (sub ? "/" + sub : "");
+      const h = "#/sysadmin/" + this._sysSeg(tab) + (sub ? "/" + sub : "");
       if (fromAside) this.__conFocus = tab + "/" + (sub || "");
       if (String(location.hash || "") !== h) location.hash = h; else if (fromAside) this._conFocusNow(tab + "/" + (sub || ""));
       if (typeof window !== "undefined" && window.innerWidth <= 1024 && this.state.sidebarOpen) this.setState({ sidebarOpen: false });

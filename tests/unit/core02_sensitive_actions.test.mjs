@@ -34,7 +34,7 @@ function world(opts = {}) {
     bsConfirm: async (o) => { calls.confirm.push(o); return typeof opts.answer === 'function' ? opts.answer(o) : !!opts.answer; },
     BassamCount: (n, w) => n + ' ' + String(w || '').split('|')[0],
     BassamPerm: { purgeDeptAccounts: () => (calls.purge.push(1), { ok: 1 }) },
-    BassamAuth: { isSuper: () => true, groupManagers: () => [{ id: 'TEST_ONLY_gm' }], removeGroupManager: (o) => calls.rmMgr.push(o) },
+    BassamAuth: { isSuper: () => true, groupManagers: () => (opts.gms || []), removeGroupManager: (o) => calls.rmMgr.push(o) },
     BassamCssText: { byId: () => '' },
     __BS_SRV: null,
   };
@@ -169,7 +169,7 @@ for (const [label, name, has, free, effect, nth] of CASES) {
       fn(); for (let i = 0; i < 4; i++) await tick();
       assert.equal(w.calls.confirm.length, 1, label + ': one KIVO.bsConfirm');
       assert.ok(w.calls.confirm[0].title && w.calls.confirm[0].msg && w.calls.confirm[0].ok, label + ': titled, explained, named action');
-      assert.equal(effect(w), answer ? (name === 'dhDel' ? 2 : 1) : 0, label + (answer ? ': runs once after confirming' : ': cancelling sends and changes nothing'));
+      assert.equal(effect(w), answer ? 1 : 0, label + (answer ? ': runs once after confirming' : ': cancelling sends and changes nothing'));
       if (!answer) { assert.deepEqual(w.calls.ack, []); assert.deepEqual(w.calls.fetch, []); assert.deepEqual(w.calls.act, []); }
     }
   });
@@ -186,4 +186,14 @@ test('the 4-second two-click confirmations are gone from the reachable delete bu
   for (const [name, has] of [['dhDel', 'nodeDel'], ['del', 'removeDeptManager']]) assert.doesNotMatch(propSrc(name, has), /setTimeout|Arm/, name + ': no arming timer');
   assert.doesNotMatch(L, /mgArm|_mgArmT|dhDelArm|admArm\s*:\s*\{/, 'no arming state left for nodes, managers or empty units');
   assert.doesNotMatch(V, /dhDelCls|g\.delCls/);
+});
+
+/* V7 P0: a node that still has a general-manager account is not deleted (the server refuses it too: 018 nodeRemoveWhy «node-has-manager»);
+   the page says to remove the account first — no question, no deletion, no account removal (it used to delete both in one step) */
+test('delete a node that has a general manager: refused with guidance, nothing asked or deleted', async () => {
+  const w = world({ answer: true, gms: [{ id: 'TEST_ONLY_gm' }] });
+  const fn = w.page.handler('dhDel', 'nodeDel', { n: true, o: 'TEST_ONLY_G', p: { name: 'TEST_ONLY', kind: 'إدارة عامة' }, t: { nodeDel: (x) => (w.calls.nodeDel.push(x), { ok: 1 }), list: () => [] } });
+  fn(); for (let i = 0; i < 4; i++) await tick();
+  assert.equal(w.calls.confirm.length, 0, 'no question'); assert.deepEqual(w.calls.nodeDel, []); assert.deepEqual(w.calls.rmMgr, []);
+  assert.equal(w.calls.toast.length, 1); assert.match(w.calls.toast[0][0], /احذفه أولاً من «حسابات إدارة عامة» ثم احذف العقدة/); assert.equal(w.calls.toast[0][1], 'warn');
 });

@@ -15,6 +15,27 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       return "";
     }
   }
+  /* V7 P0: عنوانُ «الإدارات» #/sysadmin/org[/<id>] — المعرّفُ هو الاختيارُ الصريح (sysSel) متى كان عقدةً أو وحدةً قائمة، فيبقى بعد إعادة التحميل */
+  _orgSeg() {
+    const id = this._orgKnown(this.state.sysSel) ? this.state.sysSel : "";
+    return "org" + (id ? "/" + encodeURIComponent(id) : "");
+  }
+  _orgKnown(id) {
+    try {
+      const D = KIVO.BassamDepts;
+      return !!id && !!D && (D.allNodes ? D.allNodes() : D.nodes().concat(D.list())).some((x) => x && x.id === id);
+    } catch (e) {
+      return !1;
+    }
+  }
+  /* رابطٌ مباشر إلى عقدة: يُفتح بمسار النقر نفسه (nodePick · sysPick) إن كانت في الهيكل، وإلا تبقى الصفحةُ على الهيكل ويُقال ذلك */
+  _orgOpen(id) {
+    if (!this._orgKnown(id)) return void setTimeout(() => this.bsToast("العقدة المطلوبة غير موجودة في الهيكل", "warn"), 0);
+    if (id === this.state.sysSel) return;
+    const node = (KIVO.BassamDepts.nodes() || []).some((x) => x && x.id === id);
+    this.state = { ...this.state, sysSel: id, dlShut: !1 };
+    setTimeout(() => (node ? this.nodePick(id) : this.sysPick(id)), 0);
+  }
   _hashTab(p, t) {
     try {
       const h = String(location.hash || "");
@@ -1285,7 +1306,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     N.conGo(k, sub || null);
     /* العنوانُ تغيّر الآن و«hashchange» يفتح الصفحةَ لاحقاً — رسمٌ بينهما (قائمةٌ تُغلَق · اختيارُ إدارة) كان يعيد كتابةَ التبويب القديم
        في العنوان (_hashTab) فلا يُفتح شيء؛ فالتبويبُ يتبع العنوانَ من الآن، والقراءةُ تبقى لمسار «hashchange» وحده */
-    "plat" !== k && k !== this.state.admTab && String(location.hash || "") === "#/sysadmin/" + k && this.setState({ admTab: k });
+    "plat" !== k && k !== this.state.admTab && String(location.hash || "") === "#/sysadmin/" + ("depts" === k ? "org" : k) && this.setState({ admTab: k });
   }
   /* الوحداتُ (إداراتٍ وأقساماً) التي لا مدير لها — القاعدةُ نفسُها التي تكتب «بلا مدير» في شجرة الإدارات */
   _deptsNoMgr() {
@@ -2898,7 +2919,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         sub: sub,
         subOn: !!sub,
         lnk: lnk,
-        href: "#/sysadmin/" + tab,
+        href: "#/sysadmin/" + ("depts" === tab ? "org" : tab),
         go: (ev) => {
           ev && ev.preventDefault && ev.preventDefault();
           (x || go(tab))();
@@ -7205,8 +7226,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           K = this.PL_KEYS(),
           rq = KIVO.__ADMIN_OPEN_PSUB,
           ps = "plat" === q ? (K.includes(rq) ? rq : !rq && K.includes(e.plTab) ? e.plTab : "id") : null;   /* بلا قسم: آخرُ قسمٍ فُتح · قسمٌ مجهول: «هوية المنصة» */
+        const oid = KIVO.__ADMIN_OPEN_ORG;
         KIVO.__ADMIN_OPEN_TAB = null;
         KIVO.__ADMIN_OPEN_PSUB = null;
+        KIVO.__ADMIN_OPEN_ORG = null;
+        "depts" === q && oid && p.includes(q) && this._orgOpen(oid);
         p.includes(q) && (q !== e.admTab || (ps && ps !== e.plTab)) && (this.state = { ...this.state, admTab: q, ...(ps ? { plTab: ps } : {}) });
         p.includes(q) && setTimeout(() => (ps ? (this._plGo(ps), "setup" !== ps && this.plRkLoad()) : this._admGo(q)), 0);
       }
@@ -7258,7 +7282,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         const ps = "plat" === d ? (this.PL_KEYS().includes(this.state.plTab) ? this.state.plTab : "id") : null,
           pv = n && "plat" === d ? this.plVals() : {};
         try {
-          "dept" === i ? this._hashTab("admin", h) : n && this._hashTab("sysadmin", ps ? "plat/" + ps : d);
+          "dept" === i ? this._hashTab("admin", h) : n && this._hashTab("sysadmin", ps ? "plat/" + ps : "depts" === d ? this._orgSeg() : d);
         } catch (t) {}
         /* CORE-02 S7: ما تعرضه الصفحة يُنشر لشريط «مركز إدارة رشاد» (التوافرُ قاعدةُ p هنا وحدها) — بعد كتابة العنوان */
         try {
@@ -7618,23 +7642,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   dhDelLbl: n ? "حذف العقدة" : t.isSection && t.isSection(o) ? "حذف القسم" : "حذف الإدارة",
                   dhDel: () => {
                     if (n) {
+                      /* V7 P0: عقدةٌ لها حسابُ مدير عام لا تُحذف — يُحذف الحسابُ أولاً (والخادمُ يرفضها كذلك: 018 nodeRemoveWhy «node-has-manager»).
+                         كانت تُحذف العقدةُ ثم حسابُها في خطوةٍ واحدة. والعقدةُ الفارغة: تأكيدٌ بسيط كما هو */
                       const m = KIVO.BassamAuth && KIVO.BassamAuth.groupManagers ? KIVO.BassamAuth.groupManagers(o).length : 0;
+                      if (m) return void this.bsToast("لـ«" + p.name + "» " + KIVO.BassamCount(m, "حساب مدير") + " — احذفه أولاً من «حسابات " + (p.kind || "العقدة") + "» ثم احذف العقدة", "warn");
                       return void this._adAsk(
                         {
                           title: "حذف «" + p.name + "»",
-                          msg:
-                            "تُحذف «" + p.name + "» من الهيكل" +
-                            (m ? " مع " + KIVO.BassamCount(m, "حساب مدير") + " لها نهائياً" : "") +
-                            ". لا تُمسّ بيانات أي إدارة.",
+                          msg: "تُحذف «" + p.name + "» من الهيكل. لا تُمسّ بيانات أي إدارة.",
                           ok: "حذف",
                           danger: !0,
                         },
                         () => {
                           const s = t.nodeDel(o);
                           if (!s || !s.ok) return void this.bsToast((s && s.err) || "تعذّر الحذف");
-                          try {
-                            KIVO.BassamAuth && KIVO.BassamAuth.removeGroupManager && KIVO.BassamAuth.removeGroupManager(o);
-                          } catch (t) {}
                           const a = t.list()[0];
                           (this.setState({ sysSel: a ? a.id : null, deptMsg: "✓ حُذفت «" + p.name + "»" }), this.bsAck("حُذفت العقدة", "ok"));
                         },

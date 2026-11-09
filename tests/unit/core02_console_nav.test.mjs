@@ -169,9 +169,10 @@ test('(4c) the admin page: request routed through _admGo / _plGo, section in the
   assert.match(body, /this\._plGo\(ps\)/); assert.match(body, /this\._admGo\(q\)/); assert.doesNotMatch(body, /this\.adGo\(/, 'no direct adGo');
   assert.match(body, /KIVO\.__ADMIN_OPEN_PSUB = null/);
   const rv = L.slice(L.indexOf('\n  renderVals() {'));
-  assert.match(rv, /this\._hashTab\("sysadmin", ps \? "plat\/" \+ ps : d\)/, 'canonical #/sysadmin/plat/<sub>');
+  /* V7 P0: «الإدارات» تكتب #/sysadmin/org[/<id>] (_orgSeg) */
+  assert.match(rv, /this\._hashTab\("sysadmin", ps \? "plat\/" \+ ps : "depts" === d \? this\._orgSeg\(\) : d\)/, 'canonical #/sysadmin/plat/<sub> and #/sysadmin/org[/<id>]');
   assert.ok(rv.indexOf('KIVO.BassamNav.conSync({') > rv.indexOf('this._hashTab("sysadmin"'), 'published after the address is written');
-  assert.match(R, /if \(key === "sysadmin"\) \{ KIVO\.__ADMIN_OPEN_TAB = t; KIVO\.__ADMIN_OPEN_PSUB = this\._hashSub\(\) \|\| null; \}/);
+  assert.match(R, /if \(key === "sysadmin"\) \{ KIVO\.__ADMIN_OPEN_TAB = this\._sysTabOf\(t\); KIVO\.__ADMIN_OPEN_PSUB = t === "plat" \? this\._hashSub\(\) \|\| null : null; KIVO\.__ADMIN_OPEN_ORG = t === "org" \? this\._hashOrgId\(\) \|\| null : null; \}/);
 });
 
 test('(5) removed: the in-page strip, the platform tab row and their symbols; P and tokens', () => {
