@@ -25,17 +25,16 @@ const tap = (p, sel) => p.click(sel);
 try {
   const s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: vp, ...(vp ? {} : {}) });
   const p = s.page;
-  await s.go('#/sysadmin/depts');
+  await s.go('#/sysadmin/depts');   /* the recorded address: it becomes #/sysadmin/org (V7 P0) */
   const open = async (name) => {
-    /* CORE-02 S7: the page starts higher (the in-page strip left for the sidebar), so on the phone the row menu now sits under the screen
-       centre — a forced click at the backdrop's centre landed on the menu. Close it the keyboard way (Escape → the backdrop's own click) */
-    if (await p.locator('main span.mbk').count()) { await p.keyboard.press('Escape'); await p.waitForTimeout(300); }
-    if (await p.locator('main span.mbk').count()) { await p.locator('main span.mbk').first().click({ force: true }); await p.waitForTimeout(300); }
+    /* V7 P1: the structure page (#/sysadmin/org) is the tree; a row opens the unit's own page, whose «البيانات» tab holds the delete
+       (it was the last item of the «بيانات الإدارة» row menu). Each open starts from the structure page */
+    await s.go('#/sysadmin/org', 1500);
     await p.locator('main .tr-sb a', { hasText: 'فرد الكل' }).click(); await p.waitForTimeout(400);
-    await p.locator('main .tr-rw', { hasText: name }).first().click(); await p.waitForTimeout(700);
-    const mb = p.locator('main button.mb').first();
-    if (await mb.count()) { if (!(await p.locator('main span.mbk').count())) await mb.click(); await p.waitForTimeout(300); await p.locator('main button.mi.dz').first().click(); }
-    else res.push('DEBUG no menu btn: ' + JSON.stringify(await p.evaluate(() => [...document.querySelectorAll('main .tr-rw')].map(r => r.className + '|' + r.title + '|' + r.textContent.trim().slice(0,40)).slice(0, 8).concat([...document.querySelectorAll('main button')].map(x => x.textContent.trim().slice(0,20) + '|' + (x.title||'').slice(0,40)).slice(0,25)))));
+    await p.locator('main .tr-rw', { hasText: name }).first().click(); await p.waitForTimeout(1200);
+    const tab = p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).first();
+    if (await tab.count()) { await tab.click(); await p.waitForTimeout(400); await p.locator('main .ov7 button.dz').first().click(); }
+    else res.push('DEBUG no data tab: ' + JSON.stringify(await p.evaluate(() => [location.hash].concat([...document.querySelectorAll('main [aria-label="أقسام صفحة العقدة"] button')].map(x => x.textContent.trim().slice(0, 30))))));
     await p.waitForSelector('#bsCfm', { timeout: 8000 }).catch(() => {}); await p.waitForTimeout(300);
     const dd = await dlg(p); if (!dd.open) res.push('DEBUG no dialog: ' + JSON.stringify(await p.evaluate(() => ({ toast: (document.querySelector('#bs-toast')||{}).textContent, mbk: document.querySelectorAll('main span.mbk').length, mi: [...document.querySelectorAll('main button.mi.dz, main button.dz')].map(x => x.className + '|' + x.title) }))));
     return dd;
@@ -63,7 +62,7 @@ try {
   // section S1
   d = await open('TEST_ONLY قسم أ١');
   if (d.open) { await tap(p, '#bsCfmTyped'); const nm = d.title.replace(/^.*«|».*$/g, ''); await p.keyboard.type(nm, { delay: 30 }); const d2 = await dlg(p); ok('section dialog stays open while typing', d2.open && d2.val === nm, d2); await p.click('#bsCfmOk'); }
-  else { res.push('INFO section S1 empty -> two-click arm path (no typed dialog)'); await p.locator('main button.mi.dz').first().click(); }
+  else { res.push('INFO section S1 empty -> no typed dialog'); }
   await p.waitForTimeout(4000); await lab.idle();
   ok('section deleted on server', !depts().includes('TEST_ONLY_A_S1') && keysOf('TEST_ONLY_A_S1') === 0, depts());
   ok('no page errors (super)', !s.errs.length, s.errs);

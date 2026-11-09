@@ -61,9 +61,31 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 .tr-lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-end:4px;vertical-align:middle}
 .tr-empty{padding:18px;text-align:center;color:var(--text-faint);font-size:11.5px;background:var(--brand-pattern) center/96px 96px;opacity:.95}
 .dh{padding:12px 16px;border-bottom:1px solid var(--border-default);position:relative}
-.dh .dl-tg{position:absolute;top:12px;inset-inline-end:14px;width:28px;height:28px;border-radius:8px;border:1px solid var(--brand-glow);background:var(--bg-surface);color:var(--brand-text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
-.dh .dl-tg:hover{background:var(--bg-gold-50-a12)}
-.dh .bc,.dh .ttl{padding-inline-end:36px}
+/* V7 P1 · صفحةُ العقدة: رابطُ العودة إلى الهيكل · شارةُ طبيعة العقدة · تبويبا «نظرة عامة» و«البيانات» (بأنماط .dh .ac نفسها) */
+.dh .dl-bk{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;margin-bottom:6px;border-radius:8px;border:1px solid var(--brand-glow);background:var(--bg-surface);color:var(--brand-text);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer}
+.dh .dl-bk:hover{background:var(--bg-gold-50-a12)}
+.dh .nt{font-size:9.5px;font-weight:700;border-radius:7px;padding:3px 8px;white-space:nowrap;border:1px solid var(--border-default)}
+.dh .nt.sup{color:var(--info-text);background:var(--bg-blue-50-a8)}
+.dh .nt.opr{color:var(--success-text);background:var(--bg-green-25-a10)}
+.ov7{border-bottom:0;display:flex;flex-direction:column;gap:14px}
+.ov7-s{border:1px solid var(--border-default);border-radius:12px;padding:12px 14px;background:var(--bg-surface)}
+.ov7-h{margin:0 0 8px;font-size:12.5px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:8px}
+.ov7-c{font-size:10.5px;font-weight:700;color:var(--text-faint)}
+.ov7-n{margin:0 0 8px;font-size:11px;line-height:1.8;color:var(--text-secondary)}
+.ov7 .ac{margin-top:8px}
+.ov7 .ac button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.ov7-k{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ov7-k li{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.ov7-k a{color:var(--brand-text);font-weight:700;font-size:12px;text-decoration:none}
+.ov7-k a:hover,.ov7-k a:focus-visible{text-decoration:underline}
+.ov7-st{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ov7-st li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px}
+.ov7-st .mk{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:11px}
+.ov7-st .ok .mk{background:var(--bg-green-25-a10);color:var(--success-text)}
+.ov7-st .wn .mk{background:var(--warning-bg);color:var(--warning-text)}
+.ov7-st .st{color:var(--text-secondary);flex:1;min-width:120px}
+.ov7-st button{height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-surface);color:var(--brand-text);font-family:'Cairo',sans-serif;font-size:10.5px;font-weight:700;cursor:pointer}
+.ov7-dz{border-color:var(--bd-pink-30-a25)}
 .dh .bc{font-size:11px;color:var(--text-faint);font-weight:600;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:2px}
 .dh .ttl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .dh .nmw{flex:1;min-width:160px;max-width:380px;position:relative;display:flex;align-items:center}
@@ -94,22 +116,6 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 .dh .ac .dz i{background:var(--bg-pink-30-a8);color:var(--danger-text)}
 .dh .ac .dz:hover{background:var(--danger);color:var(--text-on-fill);border-color:var(--danger)}
 .dh .ac .dz:hover i{background:var(--tone-neutral-100-a20);color:var(--text-on-fill)}
-.dh .mn{position:relative;display:inline-flex}
-.dh .mb{width:32px;height:32px;padding:0;border-radius:9px;border:1px solid var(--border-default);background:var(--bg-surface);color:var(--text-secondary);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
-.dh .mb:hover,.dh .mb.on{border-color:var(--tone-gold-50-a50);color:var(--brand-text);background:var(--bg-gold-50-a6-v2)}
-.dh .mbk{position:fixed;inset:0;z-index:40}
-.dh .mp{position:absolute;top:38px;inset-inline-start:0;z-index:41;display:flex;gap:6px;padding:6px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:11px;box-shadow:var(--shadow-elevated)}
-.dh .mp:before{content:"";position:absolute;top:-6px;inset-inline-start:12px;width:10px;height:10px;background:var(--bg-surface);border-left:1px solid var(--border-default);border-top:1px solid var(--border-default);transform:rotate(45deg)}
-.dh .mi{width:34px;height:34px;padding:0;margin:0;border-radius:9px;border:1px solid var(--border-default);background:var(--bg-surface);color:var(--text-secondary);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;box-sizing:border-box}
-.dh .mi:hover{transform:translateY(-1px)}
-.dh .mi.t{color:var(--info-text);background:var(--bg-blue-50-a8)}
-.dh .mi.t:hover{background:var(--info-strong);color:var(--text-on-fill)}
-.dh .mi.o{color:var(--warning-text);background:var(--bg-orange-40-a10)}
-.dh .mi.o:hover{background:var(--warning-strong);color:var(--text-on-fill)}
-.dh .mi.dz{color:var(--danger-text);background:var(--bg-pink-30-a8)}
-.dh .mi.dz:hover{background:var(--danger);color:var(--text-on-fill)}
-.dh .mi.off{opacity:.4;cursor:not-allowed}
-.dh .mi.off:hover{transform:none;background:var(--bg-blue-50-a8);color:var(--info-text)}
 .mgN{font-size:10px;font-weight:700;color:var(--brand-text);background:var(--bg-gold-50-a12);border-radius:9999px;padding:0 7px;margin-inline-start:4px}
 .mk{font-family:'Cairo',sans-serif;padding:14px 16px}.mk .top{display:flex;align-items:center;gap:10px;margin-bottom:10px}.mk .top h3,.mk .top h4{margin:0;font-size:13px;font-weight:800;color:var(--text-primary)}.mk .top small{font-size:11px;color:var(--text-faint);font-weight:600;flex:1}
 .mk .add{width:32px;height:32px;padding:0;border-radius:9px;border:0;background:var(--border-brand);color:var(--text-on-brand);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s}.mk .add:hover{background:var(--border-brand);transform:translateY(-1px)}
@@ -499,4 +505,8 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 /* مراجعة S10 · معاينةُ شاشة الدخول على سطح المكتب: الإطارُ بعرض الصورة المصغّرة (1280 × plPvScaleD 0.2445 + الحدّ) في وسط عمودها —
    حين يتكدّس العمود تحت النموذج (اللوحي) لا تبقى مساحةٌ فارغة داكنة في الإطار */
 .adm-pv-d{width:100%;max-width:315px;margin-inline:auto;box-sizing:border-box}
+/* V7 P1 · صفحة العقدة: لا يتجاوز عمودُ التفاصيل عرضَ الشاشة (عنصر الشبكة يقبل الانكماش)، وعلى الهاتف تلتفّ تبويباتُ العقدة إلى سطرين بدل أن يختفي بعضها خلف التمرير */
+.bs-mdgrid > *{min-width:0}
+.bs-subseg.org-tabs{max-width:calc(100% - 32px)}
+@media (max-width:600px){ .bs-subseg.org-tabs{flex-wrap:wrap!important;overflow-x:visible} }
 </style>

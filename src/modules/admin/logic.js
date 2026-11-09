@@ -30,16 +30,90 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   /* رابطٌ مباشر إلى عقدة: يُفتح بمسار النقر نفسه (nodePick · sysPick) إن كانت في الهيكل، وإلا تبقى الصفحةُ على الهيكل ويُقال ذلك */
   _orgOpen(id) {
+    this.__orgPend = "";
     if (!this._orgKnown(id)) return void setTimeout(() => this.bsToast("العقدة المطلوبة غير موجودة في الهيكل", "warn"), 0);
-    if (id === this.state.sysSel) return;
+    /* V7 P1: صفحةُ العقدة تُفتح على تبويبٍ يحدّده من فتحها (_orgNav) وإلا «نظرة عامة» */
+    const tab = this.__orgTab || "ov";
+    this.__orgTab = "";
+    if (id === this.state.sysSel) return void (tab !== this.state.sysTab && (this.state = { ...this.state, sysTab: tab }));
     const node = (KIVO.BassamDepts.nodes() || []).some((x) => x && x.id === id);
-    this.state = { ...this.state, sysSel: id, dlShut: !1 };
-    setTimeout(() => (node ? this.nodePick(id) : this.sysPick(id)), 0);
+    /* تعديلٌ غيرُ محفوظ في السقف: الاختيارُ يمرّ بسؤال مسار النقر نفسه (sysPick · nodePick) — لا يُستبدل قبله */
+    this._dirty() || (this.state = { ...this.state, sysSel: id, sysTab: tab });
+    setTimeout(() => (node ? this.nodePick(id) : this.sysPick(id), this.state.sysSel === id && this.state.sysTab !== tab && this.setState({ sysTab: tab })), 0);
+  }
+  /* V7 P1: صفحةُ عقدةٍ بعنوانها — انتقالٌ حقيقيّ في سجلّ المتصفح (الرجوعُ يعود إلى الهيكل أو الصفحة السابقة) */
+  _orgNav(id, tab) {
+    try {
+      const h = "#/sysadmin/org/" + encodeURIComponent(id);
+      this.__orgTab = tab || "ov";
+      /* رسمٌ قبل «hashchange» (إغلاقُ قائمة صفٍّ مثلاً) كان يعيد كتابة العنوان القديم (_hashTab) فلا تُفتح الصفحة — العنوانُ المنتظَر يُحترم حتى تُفتح */
+      String(location.hash || "") !== h ? ((this.__orgPend = h), (location.hash = h)) : this._orgOpen(id);
+    } catch (e) {}
+  }
+  _orgHome() {
+    try {
+      String(location.hash || "") !== "#/sysadmin/org" && (location.hash = "#/sysadmin/org");
+    } catch (e) {}
+  }
+  /* V7 P1 · «نظرة عامة»: ما تحت العقدة (روابطُ صفحاتها) وقائمةُ التهيئة بالتسلسل المعتمد — للتوثيق وحده، لا حالةَ تمنع التشغيل.
+     كلُّ قيمةٍ من الخدمات القائمة (BassamDepts · BassamAuth · BassamPerm) — لا مصدرَ جديد */
+  _orgOvVals(D, o, n, p) {
+    const A = KIVO.BassamAuth || null,
+      P = KIVO.BassamPerm || null,
+      safe = (f, d) => {
+        try {
+          return f();
+        } catch (e) {
+          return d;
+        }
+      };
+    const kids = safe(() => D.childrenOf(o) || [], []).map((k) => ({
+      name: k.name || "—",
+      kind: k.kind || (D.isSection && D.isSection(k.id) ? "قسم" : "إدارة"),
+      href: "#/sysadmin/org/" + encodeURIComponent(k.id),
+      go: (ev) => {
+        ev && ev.preventDefault && ev.preventDefault();
+        this._orgNav(k.id);
+      },
+    }));
+    const mgs = safe(() => (n ? A.groupManagers(o) : A.deptManagers(o)) || [], []),
+      hasCap = safe(() => !!P.hasCap(o), !1),
+      capN = safe(() => P.rawCap(o).length, 0),
+      capAll = ((P && P.PAGE_REG) || []).length,
+      staff = n ? 0 : safe(() => A.users().filter((u) => "staff" === u.role && u.deptId === o && !u.mgr).length, 0),
+      units = n ? safe(() => (D.deptsUnder(o) || []).length, 0) : 0,
+      step = (t, st, ok, tab) => ({ t, st, cls: ok ? "ok" : "wn", mark: ok ? "✓" : "!", goOn: !!tab, goLbl: "cap" === tab ? "فتح سقف الصفحات" : "فتح الحسابات", go: () => tab && this.setState({ sysTab: tab }) });
+    return {
+      ovKids: kids,
+      ovKidsOn: kids.length > 0,
+      ovKidsNone: !kids.length,
+      ovKidsN: KIVO.BassamCount(kids.length, "تابع"),
+      ovSteps: [
+        step("تعريف العقدة", (p.kind || (n ? "عقدة" : "إدارة")) + " · في الهيكل", !0, ""),
+        step("سقف الصفحات", hasCap ? "سقفٌ خاص: " + capN + " من " + KIVO.BassamCount(capAll, "صفحة", "g") : "موروثٌ من الأعلى", !0, "cap"),
+        step("المسؤول", mgs.length ? "معيَّن: " + mgs.map((m) => m.name || m.un).join("، ") : "لم يُعيَّن بعد", mgs.length > 0, "emps"),
+        n
+          ? step("الإدارات التابعة", KIVO.BassamCount(units, "إدارة") + " تحتها", units > 0, "")
+          : step("الحسابات", KIVO.BassamCount(staff, "حساب موظف"), !0, "emps"),
+      ],
+    };
+  }
+  /* V7 P1: #/sysadmin/org بلا معرّف = صفحةُ الهيكل — والسقفُ بتعديلٍ غير محفوظ يُبقي صفحةَ العقدة ويقول ذلك */
+  _orgClose() {
+    if (!this.state.sysSel) return;
+    if (this._dirty()) {
+      /* العنوانُ يعود إلى العقدة المعروضة بلا مدخلٍ جديد في السجلّ (replaceState لا يُطلق hashchange) */
+      try {
+        history.replaceState(history.state, "", "#/sysadmin/org/" + encodeURIComponent(this.state.sysSel));
+      } catch (e) {}
+      return void setTimeout(() => this.bsToast("في سقف الصفحات تعديلٌ غير محفوظ — احفظه أو تراجع عنه ثم عُد إلى الهيكل", "warn"), 0);
+    }
+    this.state = { ...this.state, sysSel: "", capDraft: null, capBase: null };
   }
   _hashTab(p, t) {
     try {
       const h = String(location.hash || "");
-      if (!t || h.indexOf("#/" + p) !== 0) return;
+      if (!t || h.indexOf("#/" + p) !== 0 || (this.__orgPend && h === this.__orgPend)) return;
       const w = "#/" + p + "/" + t;
       h !== w && history.replaceState && history.replaceState(null, "", location.pathname + location.search + w);
     } catch (e) {}
@@ -2608,7 +2682,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             p.push({
               t: "تعديل الصلاحيات",
               go: () => {
-                (a.deptId && this.sysPick(a.deptId), this._ovGo("depts"));
+                a.deptId ? this._orgNav(a.deptId, "emps") : this._ovGo("depts");
               },
             }),
           "staff" !== a.role ||
@@ -3764,10 +3838,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (o.grpChevOn = !!l),
       (o.grpChev = "flex-shrink:0;opacity:.7;transition:transform .2s;" + (a ? "" : "transform:rotate(90deg)")),
       (o.grpToggle = (t) => {
-        (t && t.stopPropagation && t.stopPropagation(), l ? this._grpFlip(s.id) : p || this.nodePick(s.id));
+        (t && t.stopPropagation && t.stopPropagation(), l ? this._grpFlip(s.id) : p || this._orgNav(s.id));
       }),
       (o.grpCapGo = (t) => {
-        (t && t.stopPropagation && t.stopPropagation(), this.nodePick(s.id));
+        (t && t.stopPropagation && t.stopPropagation(), this._orgNav(s.id));
       }),
       Object.assign(o, p ? {} : this._trDragProps(s.id, e)));
     const f = !p && i && i.groupManager ? i.groupManager(s.id) : null;
@@ -3797,8 +3871,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const e = this._loadDraft(t);
       this.setState({
         sysSel: t,
-        sysTab: "cap",
-        dhMenu: !1,
         capDraft: e,
         capBase: JSON.parse(JSON.stringify(e)),
         capOpenRows: {},
@@ -4062,7 +4134,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (isDepartment && !await this.scLoadReferences(t, true)) return;
       if (selection !== this._referenceSelection) return;
       const e = this._loadDraft(t);
-      this.setState({ sysSel: t, dhMenu: !1, capDraft: e, capBase: JSON.parse(JSON.stringify(e)), capOpenRows: {}, empQ: "" });
+      this.setState({ sysSel: t, capDraft: e, capBase: JSON.parse(JSON.stringify(e)), capOpenRows: {}, empQ: "" });
     };
     this._dirty()
       ? KIVO
@@ -4791,7 +4863,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       offTxt: "معطّلة على مستوى المنصة: " + dis.map(nm).join(" · "),
       lenses: KIVO.BassamCount(s.length, "عدسة") + "",
       go: () => {
-        (this.sysPick(t.id), this._ovGo("depts"));
+        this._orgNav(t.id, "cap");
       },
     };
   }
@@ -7230,7 +7302,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         KIVO.__ADMIN_OPEN_TAB = null;
         KIVO.__ADMIN_OPEN_PSUB = null;
         KIVO.__ADMIN_OPEN_ORG = null;
-        "depts" === q && oid && p.includes(q) && this._orgOpen(oid);
+        "depts" === q && p.includes(q) && (oid ? this._orgOpen(oid) : this._orgClose());
         p.includes(q) && (q !== e.admTab || (ps && ps !== e.plTab)) && (this.state = { ...this.state, admTab: q, ...(ps ? { plTab: ps } : {}) });
         p.includes(q) && setTimeout(() => (ps ? (this._plGo(ps), "setup" !== ps && this.plRkLoad()) : this._admGo(q)), 0);
       }
@@ -7383,10 +7455,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               p = n ? t.nodeOf(o) : a.filter((t) => t.id === o)[0];
             const tree = {
               deptCount: String(a.length),
-              dlOpen: !!p && !e.dlShut,
-              dlShut: !!p && !!e.dlShut,
-              dlToggle: () => this.setState({ dlShut: !this.state.dlShut }),
-              mdGridStyle: "display:grid;align-items:start;gap:13px;grid-template-columns:" + (p && e.dlShut ? "56px 1fr" : "minmax(380px,42%) 1fr"),
+              /* V7 P1: صفحتان — الهيكل (#/sysadmin/org: الشجرةُ بعرض الصفحة) وصفحةُ العقدة (#/sysadmin/org/<id>: الاختيارُ الصريح وحده) */
+              orgNodeOn: !!p && this._orgKnown(e.sysSel),
+              orgTreeOn: !(p && this._orgKnown(e.sysSel)),
+              dlOpen: !0,
+              orgBack: () => {
+                try {
+                  location.hash = "#/sysadmin/org";
+                } catch (t) {}
+              },
+              mdGridStyle: "display:grid;align-items:start;gap:13px;grid-template-columns:minmax(0,1fr)",
               trQ: e.trQ || "",
               trOnQ: (t) => this.setState({ trQ: t.target.value }),
               trClear: () => this.setState({ trQ: "" }),
@@ -7394,7 +7472,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               trExpandAll: () => this._trSetAll(t, !0),
               trCollapseAll: () => this._trSetAll(t, !1),
             };
-            if (!p) {
+            if (!p || !this._orgKnown(e.sysSel)) {
+              if (p) return { ...tree, deptDetailReady: false, deptDetailEmpty: false, _sel: "" };
               let context = null;
               try { context = t.context && t.context(); } catch (error) {}
               const message = context && ["error", "unavailable"].includes(context.state) && context.message
@@ -7403,7 +7482,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   : "لا توجد إدارة — أضف إدارة من الهيكل";
               return { ...tree, deptDetailReady: false, deptDetailEmpty: true, deptDetailMessage: message, _sel: "" };
             }
-            const l = "cap" === e.sysTab ? "cap" : "emps",
+            /* V7 P1: تبويباتُ صفحة العقدة — «نظرة عامة» افتراضاً · «البيانات» للإدارة والقسم وحدهما */
+            const l = ["ov", "emps", "cap", "data"].includes(e.sysTab) && !(n && "data" === e.sysTab) ? e.sysTab : "ov",
               d =
                 e.capDraft && e.sysSel === o
                   ? e.capDraft
@@ -7507,12 +7587,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   dhSecAdd: () => {
                     const e = { ...(this.state.admGrpFlip || {}) };
                     (delete e[o],
-                      this.setState({ admGrpFlip: e, ndOpen: !0, ndPid: o, ndName: "", ndKind: t.NODE_KIND_SEC || "قسم", ndNewKind: "", ndMsg: "", dlShut: !1 }));
+                      this.setState({ admGrpFlip: e, ndOpen: !0, ndPid: o, ndName: "", ndKind: t.NODE_KIND_SEC || "قسم", ndNewKind: "", ndMsg: "" }, () => this._orgHome()));
                   },
                   dhAdd: () => {
                     const e = { ...(this.state.admGrpFlip || {}) };
                     (delete e[o],
-                      this.setState({ admGrpFlip: e, ndOpen: !0, ndPid: o, ndName: "", ndKind: "", ndNewKind: "", ndMsg: "", dlShut: !1 }));
+                      this.setState({ admGrpFlip: e, ndOpen: !0, ndPid: o, ndName: "", ndKind: "", ndNewKind: "", ndMsg: "" }, () => this._orgHome()));
                   },
                   dhSwitch: () => {
                     (t.setActive(o),
@@ -7633,17 +7713,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       })),
                     };
                   })(),
-                  dhMenuOpen: !!e.dhMenu,
-                  dhMenuCls: e.dhMenu ? "on" : "",
-                  dhMenuTog: () => this.setState({ dhMenu: !this.state.dhMenu }),
-                  dhMenuClose: () => this.setState({ dhMenu: !1 }),
                   dhDelTip: n ? "حذف العقدة" : t.isSection && t.isSection(o) ? "حذف القسم — يمسح القسم وكل بياناته وحساباته نهائياً" : (t.deptDelWhy && t.deptDelWhy(o)) || "حذف الإدارة — يمسح الإدارة وكل بياناتها وحساباتها نهائياً",
-                  dhDelOn: n ? !kids : t.list().length > 1,
+                  dhDelOn: n ? !0 : t.list().length > 1,
                   dhDelLbl: n ? "حذف العقدة" : t.isSection && t.isSection(o) ? "حذف القسم" : "حذف الإدارة",
                   dhDel: () => {
                     if (n) {
                       /* V7 P0: عقدةٌ لها حسابُ مدير عام لا تُحذف — يُحذف الحسابُ أولاً (والخادمُ يرفضها كذلك: 018 nodeRemoveWhy «node-has-manager»).
                          كانت تُحذف العقدةُ ثم حسابُها في خطوةٍ واحدة. والعقدةُ الفارغة: تأكيدٌ بسيط كما هو */
+                      /* V7 P1: ما تحتها يُفحص قبل السؤال (عُقدٌ ووحدات — t.childrenOf) — كان التأكيدُ يظهر ثم يرفض nodeDel؛ والخادمُ يرفض كذلك (018 nodeRemoveWhy) */
+                      const kd = (t.childrenOf && t.childrenOf(o)) || [];
+                      if (kd.length) return void this.bsToast("تحت «" + p.name + "» " + KIVO.BassamCount(kd.length, "تابع") + " — انقلها أو احذفها أولاً ثم احذف العقدة", "warn");
                       const m = KIVO.BassamAuth && KIVO.BassamAuth.groupManagers ? KIVO.BassamAuth.groupManagers(o).length : 0;
                       if (m) return void this.bsToast("لـ«" + p.name + "» " + KIVO.BassamCount(m, "حساب مدير") + " — احذفه أولاً من «حسابات " + (p.kind || "العقدة") + "» ثم احذف العقدة", "warn");
                       return void this._adAsk(
@@ -7656,8 +7735,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         () => {
                           const s = t.nodeDel(o);
                           if (!s || !s.ok) return void this.bsToast((s && s.err) || "تعذّر الحذف");
-                          const a = t.list()[0];
-                          (this.setState({ sysSel: a ? a.id : null, deptMsg: "✓ حُذفت «" + p.name + "»" }), this.bsAck("حُذفت العقدة", "ok"));
+                          (this.setState({ sysSel: "", deptMsg: "✓ حُذفت «" + p.name + "»" }), this.bsAck("حُذفت العقدة", "ok"), this._orgHome());
                         },
                       );
                     } else {
@@ -7698,7 +7776,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   const c = t.setDeptParent(o, r.id);
                   if (!c || !c.ok) return (t.nodeDel(r.id), void this.bsToast((c && c.err) || "تعذّر الإسناد"));
                   return void this.setState({
-                    dlShut: !1,
                     deptMsg: "✓ أُنشئت «" + s + "» وأُسندت إليها هذه الإدارة — غيّر اسمها من لوحتها في الشجرة",
                   });
                 }
@@ -7725,6 +7802,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 } else this.setState({ ["dnm_" + o]: void 0 });
               },
               goTabEmps: () => this.setState({ sysTab: "emps" }),
+              goTabOv: () => this.setState({ sysTab: "ov" }),
+              goTabData: () => this.setState({ sysTab: "data" }),
+              onTabOv: "ov" === l,
+              onTabData: "data" === l,
+              tabOvStyle: M("ov" === l),
+              tabDataStyle: M("data" === l),
+              tabDataShow: !n,
+              selNature: n ? "عقدة إشرافية" : t.isSection && t.isSection(o) ? "قسم تشغيلي" : "إدارة تشغيلية",
+              selNatureCls: n ? "sup" : "opr",
+              ...this._orgOvVals(t, o, n, p),
               goTabCap: () => {
                 (this.setState({ sysTab: "cap" }), (e.capDraft && e.sysSel === o) || this.sysPick(o));
               },
@@ -8689,7 +8776,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       ? "background:var(--bg-xb99751);color:var(--text-on-brand)"
                       : "background:var(--bg-a185151810p1);color:var(--fg-x9a7e40)"),
                   trStyle: "background:" + (r.id === s ? "var(--bg-a185151810p06)" : "var(--bg-xffffff)"),
-                  pick: () => this.sysPick(r.id),
+                  pick: () => this._orgNav(r.id),
                   ...(() => {
                     const s = KIVO.BassamAuth || null,
                       i = s && s.deptManager ? s.deptManager(r.id) : null,

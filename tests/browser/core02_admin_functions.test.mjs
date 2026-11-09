@@ -55,6 +55,10 @@ const MOVED = {
     '#كتابات مرفوضة اليوممحاولات تعديل خارج الصلاحية': '=كتابات مرفوضة#',
     'رُفضت وأُعيدت القيم كما هي': '=رُفضت وأُعيدت القيم كما هي — محاولات تعديل خارج الصلاحية',
     '—آخر نسخة احتياطية شاملةلم تُؤخذ نسخة بعد': '=آخر نسخة شاملةلم تُؤخذ بعد' },
+  /* V7 P1: a unit's details became its own page (#/sysadmin/org/<id>) in tabs. The «بيانات الإدارة» menu button became the «البيانات» tab
+     (its four items — نسخة الإدارة · استيراد · مسح البيانات · حذف — stay recorded actions, checked as such), and «طيّ لوحة التفاصيل»
+     became «العودة إلى الهيكل» (the structure page: the tree) */
+  depts: { 'بيانات الإدارة: نسخة - استيراد - مسح - حذف': '=البيانات', 'طيّ لوحة التفاصيل': '=العودة إلى الهيكل' },
   /* CORE-02 S7: the nine platform sections were in-page tabs; each is now a named item of the console sidebar (#/sysadmin/plat/<sub>) —
      «التهيئة والاستعادة» under البيانات والاستمرارية, the other eight under إعدادات المنصة */
   plat: { 'هوية المنصة': 'aside', 'شاشة تسجيل الدخول': 'aside', 'تطبيق الجوال': 'aside', 'القوائم': 'aside', 'الطباعة والتقارير': 'aside', 'الوحدات': 'aside', 'التهيئة والاستعادة': 'aside', 'التنبيهات والتعاميم': 'aside', 'حول المنصة': 'aside' },
@@ -191,12 +195,16 @@ async function probes(page, scope, tab, each) {
     if (await m.count()) { await m.click({ timeout: 10000 }); await page.waitForTimeout(500); await snap('row-menu'); await page.keyboard.press('Escape'); await page.waitForTimeout(300); }
   }
   if (scope === 'sys' && tab === 'depts') {
-    for (const label of ['سقف الصفحات', 'حسابات الإدارة']) {
-      const b = page.locator('main.bs-main button', { hasText: label }).first();
-      if (await b.count()) { await b.click({ timeout: 10000 }); await page.waitForTimeout(700); await snap('panel:' + label); }
+    /* V7 P1: #/sysadmin/org is the structure page (the tree alone); a unit's details are its own page #/sysadmin/org/<id>, reached by
+       clicking its row, in tabs (نظرة عامة · حسابات الإدارة · سقف الصفحات · البيانات). The recorded «بيانات الإدارة» menu is the «البيانات» tab */
+    const all = page.locator('main.bs-main a', { hasText: 'فرد الكل' }).first();
+    if (await all.count()) { await all.click({ timeout: 10000 }); await page.waitForTimeout(400); }
+    const row = page.locator('main.bs-main .tr-rw', { hasText: 'TEST_ONLY إدارة أ' }).first();
+    if (await row.count()) { await row.click({ timeout: 10000 }); await page.waitForTimeout(2000); await snap('node'); }
+    for (const label of ['سقف الصفحات', 'حسابات الإدارة', 'البيانات']) {
+      const b = page.locator('main.bs-main [aria-label="أقسام صفحة العقدة"] button', { hasText: label }).first();
+      if (await b.count()) { await b.click({ timeout: 10000 }); await page.waitForTimeout(700); await snap('tab:' + label); }
     }
-    const d = page.locator('main.bs-main [aria-label^="بيانات الإدارة"]').first();
-    if (await d.count()) { await d.click({ timeout: 10000 }); await page.waitForTimeout(500); await snap('data-menu'); await page.keyboard.press('Escape'); await page.waitForTimeout(300); }
   }
   return states;
 }
