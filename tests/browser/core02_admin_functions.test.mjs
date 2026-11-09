@@ -202,7 +202,7 @@ async function probes(page, scope, tab, each) {
     const row = page.locator('main.bs-main .tr-rw', { hasText: 'TEST_ONLY إدارة أ' }).first();
     if (await row.count()) { await row.click({ timeout: 10000 }); await page.waitForTimeout(2000); await snap('node'); }
     for (const label of ['سقف الصفحات', 'حسابات الإدارة', 'البيانات']) {
-      const b = page.locator('main.bs-main [role=tab]', { hasText: label }).first();
+      const b = page.locator('main.bs-main [aria-label="أقسام صفحة العقدة"] button', { hasText: label }).first();
       if (await b.count()) { await b.click({ timeout: 10000 }); await page.waitForTimeout(700); await snap('tab:' + label); }
     }
   }

@@ -432,7 +432,7 @@ test('(S10) keyboard walk, focus ring and contrast, headings, dialogs, reduced m
         }
         /* a dialog: named, focus inside, Tab stays inside, Escape closes, focus back on the opener */
         /* V7 P1: the unit's own page, its «حسابات الإدارة» tab (the structure page #/sysadmin/org holds only the tree) */
-        await s.go('#/sysadmin/org/TEST_ONLY_A', 2500); await page.locator('main [role=tab]', { hasText: 'حسابات الإدارة' }).first().click(); await page.waitForTimeout(600);
+        await s.go('#/sysadmin/org/TEST_ONLY_A', 2500); await page.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'حسابات الإدارة' }).first().click(); await page.waitForTimeout(600);
         const op = page.locator('main button.add').first(); await op.focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(500);
         const dlg = () => page.evaluate(() => { const d = document.querySelector('main [role=dialog]'); return d ? { name: d.getAttribute('aria-label') || '', inside: d.contains(document.activeElement) } : null; });
         let dl = await dlg(); assert.ok(dl && dl.name.length > 0, 'the manager dialog is named'); assert.ok(dl.inside, 'the focus moves into the dialog');

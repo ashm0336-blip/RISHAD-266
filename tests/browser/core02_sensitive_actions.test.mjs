@@ -61,7 +61,7 @@ test('CORE-02 step 3: sensitive actions ask first, the recovery key dialog holds
     await cancelDialog(page, 'freeze an account', 'تجميد الحساب');
 
     /* V7 P1: unit A's own page, its «حسابات الإدارة» tab lists TEST_ONLY مدير أ */
-    await s.go('#/sysadmin/org/TEST_ONLY_A', 4500); await main(page).locator('[role=tab]', { hasText: 'حسابات الإدارة' }).first().click(); await page.waitForTimeout(800);
+    await s.go('#/sysadmin/org/TEST_ONLY_A', 4500); await main(page).locator('[aria-label="أقسام صفحة العقدة"] button', { hasText: 'حسابات الإدارة' }).first().click(); await page.waitForTimeout(800);
     await main(page).locator('.mk button.dz[title="حذف حساب المدير — تبقى الإدارة وبياناتها"]').first().click();
     await cancelDialog(page, 'delete a unit manager', 'حذف حساب المدير');
 

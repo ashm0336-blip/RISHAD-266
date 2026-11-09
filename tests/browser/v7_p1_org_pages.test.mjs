@@ -22,8 +22,8 @@ async function page(b, lab, view) {
   const p = s.page;
   const H = () => p.evaluate(() => location.hash);
   const SEL = () => p.evaluate(() => (document.getElementById('bsSelName') || {}).value ?? null);
-  const tabs = () => p.evaluate(() => [...document.querySelectorAll('main [role=tablist][aria-label="أقسام صفحة العقدة"] [role=tab]')]
-    .map((e) => [e.textContent.replace(/[\d٠-٩\u200e\u200f\u202a-\u202e\u2066-\u2069]+/g, '').replace(/\s+/g, ' ').trim(), e.getAttribute('aria-selected')]));
+  const tabs = () => p.evaluate(() => [...document.querySelectorAll('main [aria-label="أقسام صفحة العقدة"] button')]
+    .map((e) => [e.textContent.replace(/[\d٠-٩\u200e\u200f\u202a-\u202e\u2066-\u2069]+/g, '').replace(/\s+/g, ' ').trim(), e.getAttribute('aria-current')]));
   const rows = () => p.evaluate(() => [...document.querySelectorAll('main .tr-rw')].filter((e) => e.getClientRects().length).map((e) => e.textContent.replace(/\s+/g, ' ').trim()));
   const toast = () => p.evaluate(() => [...document.querySelectorAll('#bs-toast,#bs-stoast,[role=status]')].map((e) => e.textContent).join(' '));
   const side = () => p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -75,7 +75,7 @@ test('V7 P1 · structure page, node pages by nature, overview links, delete refu
     assert.deepEqual((await tabs()).filter((x) => x[1] === 'true').map((x) => x[0]), ['سقف الصفحات'], 'the checklist opened the ceiling tab');
     assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A', 'the address still names the unit');
     /* the data tab: the four unit data actions with their recorded titles */
-    await p.locator('main [role=tab]', { hasText: 'البيانات' }).click(); await p.waitForTimeout(600);
+    await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).click(); await p.waitForTimeout(600);
     for (const ti of ['نسخة الإدارة — تصدير كل بيانات هذه الإدارة إلى ملف', 'استيراد نسخة احتياطية إلى هذه الإدارة — دمج أو استبدال', 'مسح البيانات — يفرّغ الإدارة من كل بياناتها ويبقيها في الهيكل'])
       assert.equal(await p.locator('main [title="' + ti + '"]').count(), 1, 'data tab: ' + ti);
     assert.equal(await p.locator('main section[aria-label="بيانات الإدارة"] button.dz').count(), 1, 'data tab: delete');
@@ -111,9 +111,9 @@ test('V7 P1 · phone (390×844) light and dark: the structure page and every nod
         await s.go('#/sysadmin/org/' + id, 2000);
         const names = (await tabs()).map((x) => x[0]);
         for (const [i, name] of names.entries()) {
-          await p.locator('main [role=tablist][aria-label="أقسام صفحة العقدة"] [role=tab]').nth(i).click(); await p.waitForTimeout(500);
+          await p.locator('main [aria-label="أقسام صفحة العقدة"] button').nth(i).click(); await p.waitForTimeout(500);
           const ov = await side(); if (ov > 1) bad.push(th + ' ' + id + ' › ' + name + ': scrolls sideways by ' + ov);
-          const out = await p.evaluate(() => { const vw = document.documentElement.clientWidth; return [...document.querySelectorAll('main [role=tab], main .dl-bk, main .ov7-s, main select')].filter((e) => { const r = e.getBoundingClientRect(); return e.getClientRects().length && (r.right > vw + 1 || r.left < -1); }).map((e) => e.className + ' ' + (e.textContent || '').trim().slice(0, 20)); });
+          const out = await p.evaluate(() => { const vw = document.documentElement.clientWidth; return [...document.querySelectorAll('main [aria-label="أقسام صفحة العقدة"] button, main .dl-bk, main .ov7-s, main select')].filter((e) => { const r = e.getBoundingClientRect(); return e.getClientRects().length && (r.right > vw + 1 || r.left < -1); }).map((e) => e.className + ' ' + (e.textContent || '').trim().slice(0, 20)); });
           if (out.length) bad.push(th + ' ' + id + ' › ' + name + ': off screen: ' + out.join(' · '));
         }
       }
@@ -121,8 +121,8 @@ test('V7 P1 · phone (390×844) light and dark: the structure page and every nod
     assert.deepEqual(bad, [], 'phone light and dark');
     /* keyboard: a tab is a focusable button, Enter selects it; «العودة إلى الهيكل» works with Enter */
     await s.go('#/sysadmin/org/TEST_ONLY_A', 2000);
-    const cap = p.locator('main [role=tab]', { hasText: 'سقف الصفحات' }).first();
-    await cap.focus(); assert.ok(await cap.evaluate((e) => e === document.activeElement), 'a tab takes the focus');
+    const cap = p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'سقف الصفحات' }).first();
+    await cap.focus(); assert.ok(await cap.evaluate((e) => e === document.activeElement), 'a tab button takes the focus');
     await p.keyboard.press('Enter'); await p.waitForTimeout(600);
     assert.deepEqual((await tabs()).filter((x) => x[1] === 'true').map((x) => x[0]), ['سقف الصفحات'], 'Enter selects the tab');
     await p.locator('main .dl-bk').focus(); await p.keyboard.press('Enter'); await p.waitForTimeout(1200);

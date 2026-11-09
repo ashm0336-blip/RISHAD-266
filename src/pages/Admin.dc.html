@@ -1254,20 +1254,20 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
         </div>
               </div>
 
-      <div class="bs-subseg org-tabs" role="tablist" aria-label="أقسام صفحة العقدة" style="display:flex;gap:2px;padding:10px 16px 0;margin:10px 16px 4px">
-        <button type="button" role="tab" aria-selected="{{onTabOv}}" onClick="{{goTabOv}}" class="bs-subbtn" data-on="{{onTabOv}}" style="{{tabOvStyle}}">
+      <div class="bs-subseg org-tabs" role="group" aria-label="أقسام صفحة العقدة" style="display:flex;gap:2px;padding:10px 16px 0;margin:10px 16px 4px">
+        <button type="button" aria-current="{{onTabOv}}" onClick="{{goTabOv}}" class="bs-subbtn" data-on="{{onTabOv}}" style="{{tabOvStyle}}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path></svg>نظرة عامة
         </button>
         <sc-if value="{{tabEmpsShow}}" hint-placeholder-val="{{ true }}">
-        <button type="button" role="tab" aria-selected="{{onTabEmps}}" onClick="{{goTabEmps}}" class="bs-subbtn" data-on="{{onTabEmps}}" style="{{tabEmpsStyle}}">
+        <button type="button" aria-current="{{onTabEmps}}" onClick="{{goTabEmps}}" class="bs-subbtn" data-on="{{onTabEmps}}" style="{{tabEmpsStyle}}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path></svg>{{tabEmpsLbl}} <span class="mgN">{{mgCount}}</span>
         </button>
         </sc-if>
-        <button type="button" role="tab" aria-selected="{{onTabCap}}" onClick="{{goTabCap}}" class="bs-subbtn" data-on="{{onTabCap}}" style="{{tabCapStyle}}">
+        <button type="button" aria-current="{{onTabCap}}" onClick="{{goTabCap}}" class="bs-subbtn" data-on="{{onTabCap}}" style="{{tabCapStyle}}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>سقف الصفحات
         </button>
         <sc-if value="{{tabDataShow}}" hint-placeholder-val="{{ true }}">
-        <button type="button" role="tab" aria-selected="{{onTabData}}" onClick="{{goTabData}}" class="bs-subbtn" data-on="{{onTabData}}" style="{{tabDataStyle}}">
+        <button type="button" aria-current="{{onTabData}}" onClick="{{goTabData}}" class="bs-subbtn" data-on="{{onTabData}}" style="{{tabDataStyle}}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5"></path><path d="M12 3v12"></path></svg>البيانات
         </button>
         </sc-if>

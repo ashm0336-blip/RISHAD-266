@@ -32,9 +32,9 @@ try {
     await s.go('#/sysadmin/org', 1500);
     await p.locator('main .tr-sb a', { hasText: 'فرد الكل' }).click(); await p.waitForTimeout(400);
     await p.locator('main .tr-rw', { hasText: name }).first().click(); await p.waitForTimeout(1200);
-    const tab = p.locator('main [role=tab]', { hasText: 'البيانات' }).first();
+    const tab = p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).first();
     if (await tab.count()) { await tab.click(); await p.waitForTimeout(400); await p.locator('main .ov7 button.dz').first().click(); }
-    else res.push('DEBUG no data tab: ' + JSON.stringify(await p.evaluate(() => [location.hash].concat([...document.querySelectorAll('main [role=tab]')].map(x => x.textContent.trim().slice(0, 30))))));
+    else res.push('DEBUG no data tab: ' + JSON.stringify(await p.evaluate(() => [location.hash].concat([...document.querySelectorAll('main [aria-label="أقسام صفحة العقدة"] button')].map(x => x.textContent.trim().slice(0, 30))))));
     await p.waitForSelector('#bsCfm', { timeout: 8000 }).catch(() => {}); await p.waitForTimeout(300);
     const dd = await dlg(p); if (!dd.open) res.push('DEBUG no dialog: ' + JSON.stringify(await p.evaluate(() => ({ toast: (document.querySelector('#bs-toast')||{}).textContent, mbk: document.querySelectorAll('main span.mbk').length, mi: [...document.querySelectorAll('main button.mi.dz, main button.dz')].map(x => x.className + '|' + x.title) }))));
     return dd;
