@@ -23,7 +23,9 @@ async function view(b, lab) {
   const tree = async (name) => { await s.go('#/sysadmin/org', 2500); await p.locator('main a:has-text("فرد الكل")').click(); await p.waitForTimeout(400); return (await p.locator('main .tr-rw', { hasText: name }).first().innerText()).replace(/\s+/g, ' '); };
   const step = async (id) => { await s.go('#/sysadmin/org/' + id, 2500); const li = p.locator('main section[aria-label="قائمة التهيئة"] li', { hasText: 'سقف الصفحات' }).first(); return { txt: (await li.innerText()).replace(/\s+/g, ' '), cls: await li.getAttribute('class') }; };
   const head = async (id) => { await s.go('#/sysadmin/org/' + id, 2500); await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'سقف الصفحات' }).click(); await p.waitForTimeout(800); const e = p.locator('main .capst').first(); return { txt: (await e.innerText()).trim(), tone: await e.getAttribute('data-tone') }; };
-  return { s, p, tree, step, head };
+  const emptyAlert = async (id) => { await s.go('#/sysadmin/org/' + id, 2500); await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'سقف الصفحات' }).click(); await p.waitForTimeout(800);
+    return p.evaluate(() => { const m = document.querySelector('main').innerText.split('\n').map((x) => x.trim()); return m.find((x) => /^سقف الصفحات فارغ — |^السقف الفعلي لهذه الإدارة فارغ/.test(x)) || ''; }); };
+  return { s, p, tree, step, head, emptyAlert };
 }
 
 test('V7 P3-0 · ceiling state from one source: open (warning), inherited, own, independent, empty — tree, checklist and editor agree', { timeout: 600000 }, async () => {
@@ -54,7 +56,24 @@ test('V7 P3-0 · ceiling state from one source: open (warning), inherited, own, 
     await setPerms(lab, (P) => { P.caps = { TEST_ONLY_A: [] }; P.capOwn = {}; });
     v = await view(b, lab);
     assert.match(await v.tree('TEST_ONLY إدارة أ'), /السقف فارغ/);
-    st = await v.step('TEST_ONLY_A'); assert.match(st.txt, /سقفٌ خاصّ فارغ/); assert.match(st.cls, /\bwn\b/);
+    st = await v.step('TEST_ONLY_A'); assert.match(st.txt, /سقفٌ خاصّ فارغ — لا صفحة مفعّلة لهذه الوحدة/); assert.match(st.cls, /\bwn\b/);
+    let ea = await v.emptyAlert('TEST_ONLY_A'); assert.match(ea, /^سقف الصفحات فارغ — لا صفحة مفعّلة لهذه الإدارة/, 'editor alert: its own empty record — tick pages');
+    assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
+    /* V7 P3-0 acceptance fix: an own NON-empty record under an empty ancestor — the emptiness comes from the ancestor */
+    await setPerms(lab, (P) => { P.caps = { TEST_ONLY_G: [], TEST_ONLY_A: ['tasks', 'emps', 'admin'] }; P.capOwn = {}; });
+    v = await view(b, lab);
+    assert.match(await v.tree('TEST_ONLY إدارة أ'), /السقف فارغ بحكم الأصول/, 'tree: empty because of the ancestors');
+    st = await v.step('TEST_ONLY_A'); assert.match(st.txt, /السقف الفعلي فارغ بحكم سقوف الأصول/); assert.doesNotMatch(st.txt, /سقفٌ خاصّ فارغ/); assert.match(st.cls, /\bwn\b/);
+    ea = await v.emptyAlert('TEST_ONLY_A'); assert.match(ea, /^السقف الفعلي لهذه الإدارة فارغ لأن سقف أصلٍ فوقها/, 'editor alert: the ancestor, not «tick pages»');
+    /* inherited and empty (B has no record under G []) */
+    assert.match(await v.tree('TEST_ONLY إدارة ب'), /السقف فارغ بحكم الأصول/);
+    st = await v.step('TEST_ONLY_B'); assert.match(st.txt, /السقف الفعلي فارغ بحكم سقوف الأصول/);
+    assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
+    /* independent and empty: its own record, no ancestor assumed */
+    await setPerms(lab, (P) => { P.caps = { TEST_ONLY_G: ['tasks'], TEST_ONLY_A: [] }; P.capOwn = { TEST_ONLY_A: true }; });
+    v = await view(b, lab);
+    st = await v.step('TEST_ONLY_A'); assert.match(st.txt, /سقفٌ خاصّ مستقلّ فارغ — لا صفحة مفعّلة لهذه الوحدة/);
+    ea = await v.emptyAlert('TEST_ONLY_A'); assert.match(ea, /^سقف الصفحات فارغ — لا صفحة مفعّلة لهذه الإدارة/);
     assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
     /* showing the state wrote nothing */
     const before = JSON.stringify(readP(lab)); await lab.idle(); assert.equal(JSON.stringify(readP(lab)), before);

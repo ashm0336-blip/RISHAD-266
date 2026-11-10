@@ -59,14 +59,26 @@ test('the admin center shows the state from that one source in the tree, the ove
   assert.match(V, /<div class="capst" data-tone="\{\{capStateTone\}\}">\{\{capStateTxt\}\}<\/div>/, 'editor header line');
   assert.doesNotMatch(L, /subLine:/, 'the unrendered tree subtitle (a second ceiling count) is gone');
   /* the texts: open is a warning, never ✓ */
-  const ctx = { KIVO: { BassamCount: (n) => String(n), BassamPerm: { capState: () => ({ kind: 'open', independent: false, n: 14, all: 14, empty: false }) } } };
-  const run = (st) => { ctx.KIVO.BassamPerm.capState = () => st; return vm.runInNewContext('({' + f + '})._capStateTxt("x")', ctx); };
+  const g = fnSrc(L, '_capOwnRecEmpty', '\n  ');
+  const ctx = { KIVO: { BassamCount: (n) => String(n), BassamPerm: { PAGE_KEYS: ['emps', 'tasks', 'admin'], capState: () => ({ kind: 'open', independent: false, n: 14, all: 14, empty: false }) } } };
+  /* rec: the unit's own stored record (undefined = none) — the formatter reads it only to tell WHERE an empty ceiling comes from */
+  const run = (st, rec) => { Object.assign(ctx.KIVO.BassamPerm, { capState: () => st, hasCap: () => Array.isArray(rec), rawCap: () => (Array.isArray(rec) ? rec.slice() : []) }); return vm.runInNewContext('({' + f + ',' + g + '})._capStateTxt("x")', ctx); };
   let r = run({ kind: 'open', n: 14, all: 14, empty: false });
   assert.equal(r.ok, false); assert.equal(r.tone, 'warn'); assert.match(r.txt, /^مفتوح — لم يُضبط/); assert.equal(r.short, 'السقف مفتوح — لم يُضبط');
   r = run({ kind: 'inherit', n: 3, all: 14, empty: false }); assert.equal(r.ok, true); assert.match(r.txt, /^موروثٌ من الأصل/); assert.match(r.short, /^يرث سقف الأصل · 3 من/);
   r = run({ kind: 'own', independent: true, n: 5, all: 14, empty: false }); assert.equal(r.ok, true); assert.match(r.txt, /^سقفٌ خاصّ مستقلّ: 5 من/); assert.match(r.short, /· مستقلّ$/);
-  r = run({ kind: 'own', n: 0, all: 14, empty: true }); assert.equal(r.ok, false); assert.equal(r.tone, 'warn'); assert.equal(r.short, 'السقف فارغ'); assert.equal(r.empty, true);
-  r = run({ kind: 'inherit', n: 0, all: 14, empty: true }); assert.equal(r.txt, 'السقف الفعلي فارغ بحكم سقوف الأصول — لا صفحة مفعّلة', 'neutral: ancestors that do not overlap, or an empty one');
+  /* V7 P3-0 acceptance fix — where an empty ceiling comes from */
+  r = run({ kind: 'own', n: 0, all: 14, empty: true }, []);
+  assert.equal(r.txt, 'سقفٌ خاصّ فارغ — لا صفحة مفعّلة لهذه الوحدة', 'its own record is []'); assert.equal(r.short, 'السقف فارغ'); assert.equal(r.ownEmpty, true); assert.equal(r.tone, 'warn'); assert.equal(r.ok, false);
+  r = run({ kind: 'own', n: 0, all: 14, empty: true }, ['emps', 'tasks']);
+  assert.equal(r.txt, 'السقف الفعلي فارغ بحكم سقوف الأصول — لا صفحة مفعّلة', 'its own record is NOT empty — an ancestor empties it (the live FAIL)'); assert.equal(r.short, 'السقف فارغ بحكم الأصول'); assert.equal(r.ownEmpty, false);
+  r = run({ kind: 'own', n: 0, all: 14, empty: true }, ['legacy_only']);
+  assert.equal(r.ownEmpty, true, 'a record of unknown pages only counts as empty (n ≤ all)');
+  r = run({ kind: 'inherit', n: 0, all: 14, empty: true }, undefined);
+  assert.equal(r.txt, 'السقف الفعلي فارغ بحكم سقوف الأصول — لا صفحة مفعّلة', 'inherited and empty: the ancestor'); assert.equal(r.short, 'السقف فارغ بحكم الأصول');
+  r = run({ kind: 'own', independent: true, n: 0, all: 14, empty: true }, []);
+  assert.equal(r.txt, 'سقفٌ خاصّ مستقلّ فارغ — لا صفحة مفعّلة لهذه الوحدة', 'independent and empty: its own record, no ancestor assumed');
+  assert.match(L, /capEmptyTxt:\s+this\._capOwnRecEmpty\(o\)\s+\? "سقف الصفحات فارغ — لا صفحة مفعّلة لهذه الإدارة/, 'the editor alert picks its text by the same rule (own record empty ⇒ «tick pages»; otherwise the ancestors)');
 });
 
 test('the unused patterns are gone; the live seed keeps its behaviour (and a stored «أساسي» still wins)', () => {

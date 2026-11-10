@@ -107,12 +107,28 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!s) return { kind: "", ok: !0, tone: "", short: "", txt: "" };
     const of = s.n + " من " + KIVO.BassamCount(s.all, "صفحة", "g"),
       k = s.kind;
-    if (s.empty)
-      return { kind: k, empty: !0, ok: !1, tone: "warn", short: "السقف فارغ", txt: "own" === k ? "سقفٌ خاصّ فارغ — لا صفحة مفعّلة لهذه الوحدة" : "السقف الفعلي فارغ بحكم سقوف الأصول — لا صفحة مفعّلة" };
+    /* الفراغ: من سجلّ الوحدة نفسِه ([] — أو مستقلّةٌ سجلُّها فارغ) أم من سقوف الأصول (سجلُّها غيرُ فارغ أو لا سجلَّ لها)؟
+       قراءةُ السجلّ الخام للعرض وحده (rawCap) — لا تغيّر capState ولا التفويض */
+    if (s.empty) {
+      const ownEmpty = "own" === k && this._capOwnRecEmpty(o);
+      return ownEmpty
+        ? { kind: k, empty: !0, ownEmpty: !0, ok: !1, tone: "warn", short: "السقف فارغ", txt: "سقفٌ خاصّ" + (s.independent ? " مستقلّ" : "") + " فارغ — لا صفحة مفعّلة لهذه الوحدة" }
+        : { kind: k, empty: !0, ownEmpty: !1, ok: !1, tone: "warn", short: "السقف فارغ بحكم الأصول", txt: "السقف الفعلي فارغ بحكم سقوف الأصول — لا صفحة مفعّلة" };
+    }
     if ("open" === k)
       return { kind: k, ok: !1, tone: "warn", short: "السقف مفتوح — لم يُضبط", txt: "مفتوح — لم يُضبط: لا سقفَ لها ولا لأصولها، فكلُّ صفحات المنصة متاحة (" + of + ")" };
     if ("inherit" === k) return { kind: k, ok: !0, tone: "", short: "يرث سقف الأصل · " + of, txt: "موروثٌ من الأصل: لا سقفَ خاصّاً لها، ويحدّها سقفُ أصلٍ فوقها — " + of };
     return { kind: k, ok: !0, tone: "", short: "سقفٌ خاصّ · " + of + (s.independent ? " · مستقلّ" : ""), txt: "سقفٌ خاصّ" + (s.independent ? " مستقلّ" : "") + ": " + of };
+  }
+  /* سجلُّ سقف الوحدة نفسِها فارغٌ من صفحات المنصة المعروفة؟ (عرضٌ فقط — لتمييز «سقفٌ خاصّ فارغ» من «فارغ بحكم الأصول») */
+  _capOwnRecEmpty(o) {
+    const P = KIVO.BassamPerm;
+    try {
+      const keys = (P && P.PAGE_KEYS) || [];
+      return !!(P && P.hasCap && P.hasCap(o)) && !P.rawCap(o).some((x) => keys.indexOf(x) !== -1);
+    } catch (e) {
+      return !1;
+    }
   }
   /* V7 P1: #/sysadmin/org بلا معرّف = صفحةُ الهيكل — والسقفُ بتعديلٍ غير محفوظ يُبقي صفحةَ العقدة ويقول ذلك */
   _orgClose() {
@@ -7848,8 +7864,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               },
               /* KIVO_265 · ملاحظةُ المالك: السقفُ الفعليُّ فارغ ⇒ تنبيهٌ صريح — المديرُ والموظفون لن يروا أي صفحة */
               capEmptyOn: !!(r && r.deptCap && 0 === r.deptCap(o).length),
+              /* V7 P3-0: «أشّر الصفحات» تُقال حين يكون سجلُّ الوحدة نفسُه فارغاً — وإلا فالفراغُ من الأصول (سجلٌّ غيرُ فارغ تحت أصلٍ فارغ) */
               capEmptyTxt:
-                !!(r && r.hasCap && r.hasCap(o))
+                this._capOwnRecEmpty(o)
                   ? "سقف الصفحات فارغ — لا صفحة مفعّلة لهذه الإدارة، فالمدير والموظفون لن يروا أي صفحة. أشّر الصفحات المطلوبة في الشجرة أدناه (أو «تحديد الكل») ثم اضغط «حفظ السقف»."
                   : "السقف الفعلي لهذه الإدارة فارغ لأن سقف أصلٍ فوقها (الإدارة العامة أو القطاع) فارغ — لا صفحة مفعّلة للمدير والموظفين. افتح الصفحات في سقف الأصل أولاً ثم أشّرها هنا.",
               capLimOn: BLK.length > 0,
