@@ -4438,14 +4438,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   /* «تحديد الكل» على شجرة v24.9 (V7 P3): مفتاحُ العرض وحده لكل ورقةٍ بلا مفتاحٍ ممنوح، وما مُنح قبلُ يبقى كما هو */
   t24ViewAll(on, lens, C, tgt, L0) {
-    const S = this.t24Struct() || [];
+    const S = this.t24Struct() || [],
+      DV = KIVO.BassamPerm.p24.DERIVE || {},
+      dv = {};
+    /* «ممنوحة» بقاعدة الشجرة نفسِها (t24Rows): ورقةُ العدسة ببوابتها، وغيرُها بمفتاحٍ ممنوحٍ غيرِ مشتقّ — فالمشتقُّ (field.view ⇒ تغييرُ حالة
+       العدسات) لا يجعل العدسةَ ممنوحة، ولا يتغيّر الناتجُ بترتيب الأوراق (المراجعةُ المستقلة) */
+    Object.keys(DV).forEach((x) => DV[x].forEach((k) => (dv[k] = 1)));
     let r = { on: Object.assign({}, on), lens: (lens || []).slice() };
     S.forEach((c) =>
       (c.leaves || []).forEach((l) => {
         if ("platform" === l.type || "reference" === l.type) return;
         if ("plugin" === l.type && L0 && -1 === L0.indexOf(l.lens)) return;
         const ks = this.t24LeafKeys(l).filter((k) => KIVO.BassamPerm.p24.grantable(k, C, tgt));
-        if (!ks.length || ks.some((k) => r.on[k])) return;
+        if (!ks.length) return;
+        if ("plugin" === l.type ? -1 !== (lens || []).indexOf(l.lens) : ks.some((k) => on[k] && !dv[k])) return;
         r = this.t24TogLeaf(r.on, r.lens, l, !0, C, tgt);
       }),
     );
@@ -8607,9 +8613,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   this.setState({ upDraft: r.viewAllIn(m, t), upFor: i }));
               },
               /* V7 P3: العودةُ إلى توريث سقف الإدارة صراحةً (كانت بتأشير الأفعال الستة في كل ورقة) — المسودّةُ = السقفُ كاملاً فيحذف الحفظُ ورقتَه */
-              upInhOn: g && (c || p) && !inh && !!r.capAllPerms,
+              upInhOn: !!(g && (c || p) && !inh && r && r.capAllPerms),
               upInhDo: () => {
-                g && r.capAllPerms && this.setState({ upDraft: r.capAllPerms(o), upFor: i });
+                g && r && r.capAllPerms && this.setState({ upDraft: r.capAllPerms(o), upFor: i });
               },
               upNoneDo: () => {
                 g && this.setState({ upDraft: {}, upFor: i });
@@ -8629,7 +8635,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               upClose: () => this.setState({ upUid: "", upDraft: null, upLensDraft: null, upFor: "", upExp: {}, up24Draft: null, up24Exp: {}, up24Leaf: {} }),
               upV24: !1,
               upLegacy: !0,
-              ...this._edReview(g && b ? r.sheetDiff(h, m) : null, "up"),
+              ...(() => {
+                /* المراجعة على الأوراق وحدها (العودةُ إلى التوريث مسودّتُها capAllPerms بمفاتيح الحاويات) — والعدساتُ معها */
+                if (!(g && b && r && r.sheetDiff)) return this._edReview(null, "up");
+                const lf = (x) => Object.keys(x || {}).reduce((a, k) => (r.isContainer && r.isContainer(k) ? a : ((a[k] = x[k]), a)), {}),
+                  dL = JSON.stringify(u.slice().sort()) !== JSON.stringify(f.slice().sort());
+                return this._edReview(r.sheetDiff(lf(h), lf(m)), "up", dL ? [f, u] : null);
+              })(),
               upSrcRows: this._edSources({ did: o, user: n, inh: inh, mgr: c || p, sheet: h, lensOn: f.length }),
             };
             /* ═══ KIVO_256 · وضعُ الإنفاذ: شجرةُ v24.9 مفتاحاً مفتاحاً — الحالةُ الفعلية كما يحسبها الخادم، والحفظُ فرقٌ صريح (plus/minus) فوق الورقة ═══ */
@@ -8652,7 +8664,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     v = this.t24ViewAll(M.draft, M.lensNow, M.C, M.tgt, L0);
                   this.setState({ up24Draft: v.on, upLensDraft: v.lens, upFor: i });
                 },
-                ...this._edReview(M.dirty ? r.keyDiff(M.base, M.draft) : null, "up", M.dL ? [M.lensBase, M.lensNow] : null),
+                ...this._edReview(M.dirty && r.keyDiff ? r.keyDiff(M.base, M.draft) : null, "up", M.dL ? [M.lensBase, M.lensNow] : null),
                 upSrcRows: this._edSources({ did: o, user: n, inh: inh, mgr: M.tgt.mgr, sheet: h, lensOn: M.lensBase.length, eff: M.eff }),
                 upInhOn: !1,
                 upNoneDo: () => {

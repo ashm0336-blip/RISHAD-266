@@ -7,6 +7,7 @@
      · the save goes through the existing writers (setEmpPerms · p24.setGrant): the stored record is exactly what was chosen. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { startLab, LAB } from './local_server.mjs';
 import { chromium, openAs } from './lab_browser.mjs';
 
@@ -96,6 +97,13 @@ test('V7 P3 · enforce: a new leaf grant is its view key alone; the review names
     await v2.D.locator('[data-t24="all"]').click(); await v2.p.waitForTimeout(600);
     const rv2 = await v2.txt('[data-ed="review"]');
     assert.doesNotMatch(rv2, /سيُسحب/); assert.doesNotMatch(rv2, /إنشاء مهمة|تعديل مهمة|حذف مهمة/, 'select-all adds view keys only: ' + rv2);
+    await v2.save();
+    /* what select-all granted: view keys and the keys derived from them (field.view ⇒ lens status changes), nothing else; the
+       result does not depend on leaf order (independent review) */
+    const R = JSON.parse(fs.readFileSync(new URL('../../src/permissions/registry/registry-v24.9.json', import.meta.url), 'utf8')), T = {}; R.registry.forEach((e) => { T[e.key] = e.type; });
+    const plus = readK(lab, KG).emp.TEST_ONLY_eA1.plus, DER = ['lens.zones.status.change', 'lens.gates.status.change', 'lens.marks.status.change'];
+    assert.ok(plus.includes('task.view') && plus.length > 5, JSON.stringify(plus));
+    assert.deepEqual(plus.filter((k) => T[k] !== 'access' && T[k] !== 'view' && !DER.includes(k)), [], 'no act beyond view was granted');
     assert.deepEqual(v.s.errs, []); assert.deepEqual(v2.s.errs, []);
     await v.s.ctx.close(); await v2.s.ctx.close();
   } finally { await b.close(); await lab.close(); }

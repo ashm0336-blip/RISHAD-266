@@ -61,7 +61,8 @@ test('enforce: a new leaf grant is its first view key alone (p24.primView) — e
   const tl = fnSrc(L, 't24TogLeaf', '\n  ');
   assert.match(tl, /P24\.primView\(l\.owner, l\.keys\)/); assert.match(tl, /this\.t24Add\(d, L, pv\)/); assert.doesNotMatch(tl, /ks\.forEach\(\(k\) => this\.t24Add/, 'no longer every key of the leaf');
   assert.match(L, /o\.cb\.togLeaf\(l, !lOnState\)/, 'a partial leaf is withdrawn by its checkbox, never silently widened (was !all)');
-  assert.match(fnSrc(L, 't24ViewAll', '\n  '), /ks\.some\(\(k\) => r\.on\[k\]\)\) return;/, 'select-all skips a leaf that holds any key');
+  const va = fnSrc(L, 't24ViewAll', '\n  ');
+  assert.match(va, /"plugin" === l\.type \? -1 !== \(lens \|\| \[\]\)\.indexOf\(l\.lens\) : ks\.some\(\(k\) => on\[k\] && !dv\[k\]\)/, 'granted = the tree\'s rule: a lens by its gate, a leaf by a non-derived key (independent review: derived keys made the result depend on leaf order)');
 });
 
 /* ── one template-grant processor; each entry point keeps its recorded behaviour ── */
@@ -97,18 +98,18 @@ test('grantTpl: the monthly table (single) · monthly bulk · daily report · gr
   assert.match(fnSrc(ST, 'pmPick', '\n  '), /r\.grantTpl\(t, n, void 0, \{ lens: !0 \}\)/, 'monthly table: one employee, with lenses');
   assert.match(ST, /s\.grantTpl\(t, i \|\| null\)/, 'monthly bulk: no lenses');
   assert.match(DR, /var u = e\.grantTpl\(t, l\),/, 'daily report: no lenses');
-  assert.match(fnSrc(T, 'grantTplByName'), /grantTpl\(ekey, t, d, \{ lens:true, refuseEmpty:true \}\)/);
+  assert.match(fnSrc(T, 'grantTplByName'), /grantTpl\(ekey, t, d, \{ lens:true, refuseEmpty:true, strict:true \}\)/);
   assert.doesNotMatch(fnSrc(ST, 'pmPick', '\n  '), /setEmpPerms|setEmpLens/, 'no second writer left in the monthly table');
   assert.match(T, /viewAllIn: viewAllIn, sheetDiff: sheetDiff, keyDiff: keyDiff, grantTpl: grantTpl,/, 'exported on KIVO.BassamPerm');
 });
 
 test('the account window and the templates editor use the shared review and sources; the manager returns to inheritance explicitly', () => {
-  assert.match(L, /\.\.\.this\._edReview\(g && b \? r\.sheetDiff\(h, m\) : null, "up"\),/, 'account window (legacy)');
-  assert.match(L, /\.\.\.this\._edReview\(M\.dirty \? r\.keyDiff\(M\.base, M\.draft\) : null, "up", M\.dL \? \[M\.lensBase, M\.lensNow\] : null\),/, 'account window (enforce)');
+  assert.match(L, /return this\._edReview\(r\.sheetDiff\(lf\(h\), lf\(m\)\), "up", dL \? \[f, u\] : null\);/, 'account window (legacy): leaves only, lenses reviewed too');
+  assert.match(L, /\.\.\.this\._edReview\(M\.dirty && r\.keyDiff \? r\.keyDiff\(M\.base, M\.draft\) : null, "up", M\.dL \? \[M\.lensBase, M\.lensNow\] : null\),/, 'account window (enforce)');
   assert.match(L, /\.\.\.this\._edReview\(g && a && a\.sheetDiff \? a\.sheetDiff\(l, p\) : null, "tp", g \? \[c, d\] : null\),/, 'templates (legacy)');
   assert.match(L, /\.\.\.this\._edReview\(g24 && a\.keyDiff \? a\.keyDiff\(b24, dr\) : null, "tp", g24 \? \[c, d\] : null\),/, 'templates (enforce)');
   assert.match(L, /upSrcRows: this\._edSources\(/);
-  assert.match(L, /upInhDo: \(\) => \{\s+g && r\.capAllPerms && this\.setState\(\{ upDraft: r\.capAllPerms\(o\), upFor: i \}\);/, '«إعادة إلى التوريث» = the full ceiling as the draft — upSave clears the sheet as before');
+  assert.match(L, /upInhDo: \(\) => \{\s+g && r && r\.capAllPerms && this\.setState\(\{ upDraft: r\.capAllPerms\(o\), upFor: i \}\);/, '«إعادة إلى التوريث» = the full ceiling as the draft — upSave clears the sheet as before');
   assert.match(L, /upDraft: r\.viewAllIn\(m, t\)/, 'select-all (legacy): view on the ungranted, the rest as it is');
   assert.doesNotMatch(L, /\(t\[e\.key\] = r\.ALL_ACTS\.slice\(\)\)/, 'no six-act select-all left');
 });

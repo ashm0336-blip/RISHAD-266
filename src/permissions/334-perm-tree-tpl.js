@@ -195,7 +195,7 @@
     var empty = !!tp && !Object.keys(cut).some(function(k){ return (cut[k] || []).length; });
     if (empty && opt.refuseEmpty) return { ok:false, empty:true, err:'القالب «' + (tp.name || '') + '» بلا أوراق داخل سقف الإدارة' };
     var r = setEmpPerms(ekey, cut, d); if (r && r.ok === false) return r;
-    try { setEmpTpl(ekey, tp ? tp.id : '', d); } catch(e){}
+    if (opt.strict) setEmpTpl(ekey, tp ? tp.id : '', d); else try { setEmpTpl(ekey, tp ? tp.id : '', d); } catch(e){}   /* strict: عطلُه يُرفع للنداء (grantTplByName كما كان) */
     if (opt.lens) try { var dl = deptLenses(d) || []; setEmpLens(ekey, tp && Array.isArray(tp.lens) ? tp.lens.filter(function(k){ return dl.indexOf(k) !== -1; }) : dl, d); } catch(e){}
     return { ok:true, cut:cut, empty:empty, id: tp ? tp.id : '', name: tp ? tp.name : '' };
   }
@@ -322,7 +322,7 @@
       var t = (L || []).filter(function(x){ return norm(x.name) === norm(nm); })[0];
       if (!t) return { ok:false, err:'قالب غير معروف', unknown:true };
       /* قالبٌ بلا ورقة واحدة داخل سقف هذه الإدارة لا يُمنح — منحُه وهمٌ لا يظهر في قائمة الصلاحيات (V7 P3: بالمعالج الواحد grantTpl) */
-      var r = grantTpl(ekey, t, d, { lens:true, refuseEmpty:true }); if (!r || r.ok === false) return r;
+      var r = grantTpl(ekey, t, d, { lens:true, refuseEmpty:true, strict:true }); if (!r || r.ok === false) return r;
       return { ok:true, id:t.id, name:t.name };
     } catch(e){ return { ok:false, err:'تعذّر المنح' }; }
   }
