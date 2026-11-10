@@ -1277,14 +1277,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 try {
                   e.deptCap();
                 } catch (t) {}
-                var f = (l && l.perms) || {},
-                  h = e.tplCut ? e.tplCut(f) : {},
-                  u = e.setEmpPerms(t, h);
+                /* V7 P3 · المعالجُ الواحد لمنح القالب (grantTpl) بالسلوك القائم هنا: القصُّ بالسقف وهويةُ القالب — بلا ضبط العدسات */
+                var u = e.grantTpl(t, l),
+                  h = (u && u.cut) || {};
                 if (u && !1 === u.ok) this.bsToast(u.err || "تعذّر حفظ الصلاحيات", "warn");
                 else {
-                  try {
-                    e.setEmpTpl && e.setEmpTpl(t, l ? l.id : "");
-                  } catch (t) {}
                   try {
                     var m = KIVO.BassamNotif;
                     if (m && m.emit) {

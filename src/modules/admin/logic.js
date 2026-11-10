@@ -1140,6 +1140,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       tpDelGo: () => this.tpDelDo(),
       tpV24: !1,
       tpLegacy: !0,
+      /* V7 P3 · المحرّر الموحّد: ما سيُضاف وما سيُسحب من القالب قبل الحفظ (ويسري على حامليه) */
+      ...this._edReview(g && a && a.sheetDiff ? a.sheetDiff(l, p) : null, "tp", g ? [c, d] : null),
     };
     /* ═══ KIVO_256 · وضعُ الإنفاذ: القالبُ مفاتيحُ v24.9 (keys24) على شجرة الوثيقة — والورقةُ القديمة تُشتقّ منها (تغطيةٌ لا تتجاوزها) ═══ */
     if (V24 && o && a && a.p24) {
@@ -1178,6 +1180,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       Object.assign(RET, {
         tpV24: !0,
         tpLegacy: !1,
+        ...this._edReview(g24 && a.keyDiff ? a.keyDiff(b24, dr) : null, "tp", g24 ? [c, d] : null),
         tpRows24: md.rows,
         tpCount24: md.nOn + " من " + KIVO.BassamCount(md.nTot, "صلاحية", "g"),
         tpExpAll24Lbl: md.allExpanded ? "طيّ الكل" : "فرد الكل",
@@ -4415,7 +4418,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     d[k] ? this.t24Drop(d, [k]) : this.t24Add(d, L, k);
     return { on: d, lens: L };
   }
-  /* تبديلُ ورقةٍ كاملة: كلُّ مفاتيحها القابلة للمنح على السقف (والعدسةُ: البوابةُ ومفاتيحُها) */
+  /* تبديلُ ورقةٍ كاملة — V7 P3 (المحرّر الموحّد): المنحُ الجديد يبدأ بمفتاح العرض الأوّل وحده (p24.primView مع شرطه المسبق)، وبقيةُ
+     المفاتيح تُختار صراحةً من الورقة؛ الإلغاءُ يُسقط مفاتيحها كلها (والعدسةُ: البوابةُ معها). كان المنحُ يأخذ كلَّ مفاتيحها القابلة للمنح */
   t24TogLeaf(on, lens, l, val, C, tgt) {
     const P24 = KIVO.BassamPerm.p24,
       d = Object.assign({}, on),
@@ -4425,8 +4429,27 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const i = L.indexOf(l.lens);
       val ? -1 === i && L.push(l.lens) : -1 !== i && L.splice(i, 1);
     }
-    val ? ks.forEach((k) => this.t24Add(d, L, k)) : this.t24Drop(d, ks);
+    if (!val) this.t24Drop(d, ks);
+    else {
+      const pv = P24.primView ? P24.primView(l.owner, l.keys) : "";
+      pv && -1 !== ks.indexOf(pv) && this.t24Add(d, L, pv);
+    }
     return { on: d, lens: L };
+  }
+  /* «تحديد الكل» على شجرة v24.9 (V7 P3): مفتاحُ العرض وحده لكل ورقةٍ بلا مفتاحٍ ممنوح، وما مُنح قبلُ يبقى كما هو */
+  t24ViewAll(on, lens, C, tgt, L0) {
+    const S = this.t24Struct() || [];
+    let r = { on: Object.assign({}, on), lens: (lens || []).slice() };
+    S.forEach((c) =>
+      (c.leaves || []).forEach((l) => {
+        if ("platform" === l.type || "reference" === l.type) return;
+        if ("plugin" === l.type && L0 && -1 === L0.indexOf(l.lens)) return;
+        const ks = this.t24LeafKeys(l).filter((k) => KIVO.BassamPerm.p24.grantable(k, C, tgt));
+        if (!ks.length || ks.some((k) => r.on[k])) return;
+        r = this.t24TogLeaf(r.on, r.lens, l, !0, C, tgt);
+      }),
+    );
+    return r;
   }
   /* بصمةُ مجموعة مفاتيح/عدسات — لكشف «غير محفوظ» */
   t24Sig(o) {
@@ -4610,14 +4633,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             some = aOn > 0 && !all;
             lOnState = sup ? lOn : aOn > 0;
           }
-          tog = ed && chkOn ? () => o.cb && o.cb.togLeaf && o.cb.togLeaf(l, !all) : null;
+          /* V7 P3: الممنوحةُ (كلُّها أو بعضُها) تُلغى، وغيرُ الممنوحة تُمنح بالعرض وحده — لا توسيعَ صامتاً لورقةٍ جزئية */
+          tog = ed && chkOn ? () => o.cb && o.cb.togLeaf && o.cb.togLeaf(l, !lOnState) : null;
           chkTip = gate
-            ? all
+            ? lOnState
               ? "إيقافُ العدسة للموظف (البوابة) ومفاتيحِها"
-              : "تفعيلُ العدسة للموظف بكلّ مفاتيحها"
-            : all
+              : "تفعيلُ العدسة للموظف بمفتاح العرض وحده — ثم افتح الورقة لتختار باقي المفاتيح صراحةً"
+            : lOnState
               ? "إلغاءُ كلّ مفاتيح الورقة"
-              : "منحُ كلّ مفاتيح الورقة القابلة للمنح";
+              : "منحُ مفتاح العرض وحده — ثم افتح الورقة لتختار باقي المفاتيح صراحةً";
           cTot += asg.length;
           cOn += aOn;
         }
@@ -4870,6 +4894,78 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return Object.keys(a).filter((k) => !!draft[k] !== !!base[k]).length;
       })();
     return { md, eff, draft, base, lensNow, lensBase, ed, C, tgt, dirty: ed && (dK || dL), nDiff, dL };
+  }
+  /* ═══ V7 P3 · المحرّر الموحّد — لوحتان مشتركتان لنافذة الحساب وقوالب الإدارة (القديمُ والإنفاذ):
+     _edReview: ما سيُضاف وما سيُسحب قبل الحفظ · _edSources: الصلاحيةُ الفعلية ومصدرُها (السقف · الدور · التوريث · القالب · المنحُ المباشر ·
+     المنحُ الصريح · المشتقّ). قراءةٌ فقط من الدوال القائمة — لا مخزنَ ولا قرارَ تفويضٍ هنا. ═══ */
+  _edReview(df, pre, lensPair) {
+    const LR = (KIVO.BassamPerm && KIVO.BassamPerm.LENS_REG) || [],
+      ln = (k) => "عدسة «" + ((LR.filter((x) => x.key === k)[0] || {}).name || k) + "»",
+      add = [],
+      drop = [];
+    df &&
+      (df.add.forEach((x) => add.push(x.name + (x.acts ? " — " + x.acts.join("، ") : ""))),
+      df.drop.forEach((x) => drop.push(x.name + (x.acts ? " — " + (x.whole ? "كلُّها" : x.acts.join("، ")) : ""))));
+    if (lensPair) {
+      const [b, d] = lensPair;
+      d.filter((k) => -1 === b.indexOf(k)).forEach((k) => add.push(ln(k)));
+      b.filter((k) => -1 === d.indexOf(k)).forEach((k) => drop.push(ln(k)));
+    }
+    const cut = (L) => (L.length > 8 ? L.slice(0, 8).concat(["و" + (L.length - 8) + " أخرى"]) : L);
+    return {
+      [pre + "RevOn"]: add.length + drop.length > 0,
+      [pre + "RevAddOn"]: add.length > 0,
+      [pre + "RevDropOn"]: drop.length > 0,
+      [pre + "RevAdd"]: cut(add).map((t) => ({ t })),
+      [pre + "RevDrop"]: cut(drop).map((t) => ({ t })),
+      [pre + "RevHead"]: "قبل الحفظ: " + (add.length ? "سيُضاف " + KIVO.BassamCount(add.length, "بند") : "") + (add.length && drop.length ? " · " : "") + (drop.length ? "سيُسحب " + KIVO.BassamCount(drop.length, "بند") : ""),
+    };
+  }
+  _edSources(o) {
+    const P = KIVO.BassamPerm,
+      A = KIVO.BassamAuth,
+      n = o.user || {},
+      out = [];
+    try {
+      const cs = this._capStateTxt(o.did);
+      out.push({ k: "السقف", v: cs.short || cs.txt || "—" });
+    } catch (t) {}
+    const role =
+      "super" === n.role
+        ? "مسؤول المنصة — يحمل كل ما في السقف"
+        : "dept" === n.role
+          ? "حساب الإدارة — سقفُ الإدارة كاملاً بالدور"
+          : "gm" === n.role
+            ? (A && A.gmRoleLabel ? A.gmRoleLabel(n.gid) : "مدير إدارة عامة") + " — يرث سقفَ الإدارة النشطة"
+            : n.mgr
+              ? "مدير الإدارة — يرث سقفَ إدارته"
+              : "موظف";
+    out.push({ k: "الدور", v: role });
+    if ("super" !== n.role && "dept" !== n.role) {
+      let base = "";
+      if (o.inh) base = "توريثُ سقف الإدارة — بلا ورقةٍ خاصة";
+      else {
+        const has = Object.keys(o.sheet || {}).some((k) => (o.sheet[k] || []).length);
+        let tn = "";
+        try {
+          const id = has && P.tplOfEmp ? P.tplOfEmp(n.ekey, o.did) : "";
+          tn = id ? ((P.tplsList ? P.tplsList(o.did) : []).filter((t) => t.id === id)[0] || {}).name || "" : "";
+        } catch (t) {}
+        base = !has ? "بلا منح" : tn ? "قالب «" + tn + "»" : "منحٌ مباشر — ورقةٌ خاصة";
+      }
+      out.push({ k: "الأساس", v: base });
+    }
+    if (o.eff) {
+      const pl = (o.eff.plus || []).length,
+        mi = (o.eff.minus || []).length,
+        DV = (P.p24 && P.p24.DERIVE) || {},
+        dv = Object.keys(DV).reduce((a, s) => a.concat(o.eff.T && o.eff.T[s] ? DV[s] : []), []).filter((k, i, a) => a.indexOf(k) === i && o.eff.keys[k]).length;
+      out.push({ k: "المنح الصريح", v: pl || mi ? (pl ? "+" + KIVO.BassamCount(pl, "مفتاح") : "") + (pl && mi ? " · " : "") + (mi ? "−" + KIVO.BassamCount(mi, "مفتاح") : "") + (o.eff.src ? " (" + (/^tpl:/.test(o.eff.src) ? "من قالب" : o.eff.src) + ")" : "") : "لا شيء فوق الأساس" });
+      out.push({ k: "المفاتيح المشتقة", v: dv ? KIVO.BassamCount(dv, "مفتاح") + " تتبع مصدرها تلقائياً" : "لا شيء" });
+      out.push({ k: "الفعلي", v: KIVO.BassamCount(Object.keys(o.eff.keys || {}).length, "صلاحية") });
+    }
+    if ("number" === typeof o.lensOn) out.push({ k: "العدسات", v: KIVO.BassamCount(o.lensOn, "عدسة") });
+    return out;
   }
   up24Save(n, o, m) {
     const P = KIVO.BassamPerm,
@@ -8448,17 +8544,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       this._gmKind(n.gid) +
                       " يرث سقف إدارة «" +
                       ((l.filter((t) => t.id === o)[0] || {}).name || "") +
-                      "» كاملاً — التأشير أدناه هو حاله الآن؛ وأي تضييق تحفظه هنا يسري في هذه الإدارة وحدها، وإعادة التأشير كاملاً تعيده إلى التوريث."
+                      "» كاملاً — التأشير أدناه هو حاله الآن؛ وأي تضييق تحفظه هنا يسري في هذه الإدارة وحدها، و«إعادة إلى التوريث» تعيده إلى سقفها كاملاً."
                     : "لمدير " +
                       this._gmKind(n.gid) +
                       " ورقة مضيَّقة في إدارة «" +
                       ((l.filter((t) => t.id === o)[0] || {}).name || "") +
-                      "» — أشّر الكل ليعود إلى توريث سقفها كاملاً."
+                      "» — «إعادة إلى التوريث» تعيده إلى سقفها كاملاً."
                   : c
                     ? inh
-                      ? "مدير الإدارة يرث سقف إدارته كاملاً — التأشير أدناه هو حاله الآن؛ وأي تضييق تحفظه هنا يسري عليه، وإعادة التأشير كاملاً تعيده إلى التوريث."
-                      : "للمدير ورقة مضيَّقة — أشّر الكل ليعود إلى توريث سقف الإدارة كاملاً."
-                    : "الحاوية بلا تأشير — تظهر في قائمة الموظف تلقائياً متى مُنح صفحةً واحدة تحتها. مربع الصفحة يمنح الأفعال الستة دفعة واحدة ثم تُلغي ما لا تريده، أو تؤشّر الأفعال بنفسك فيعكس حالتها. ما هو خارج سقف الإدارة يبقى مقفلاً."
+                      ? "مدير الإدارة يرث سقف إدارته كاملاً — التأشير أدناه هو حاله الآن؛ وأي تضييق تحفظه هنا يسري عليه، و«إعادة إلى التوريث» تعيده إلى سقف الإدارة كاملاً."
+                      : "للمدير ورقة مضيَّقة — «إعادة إلى التوريث» تعيده إلى سقف الإدارة كاملاً."
+                    : "الحاوية بلا تأشير — تظهر في قائمة الموظف تلقائياً متى مُنح صفحةً واحدة تحتها. مربع الصفحة يمنح «عرض» وحده، وبقية الأفعال تختارها صراحةً من رقاقاتها؛ وما مُنح قبلُ يبقى كما هو. راجع ما سيُضاف وما سيُسحب قبل الحفظ. ما هو خارج سقف الإدارة يبقى مقفلاً."
                 : c
                   ? "لتعديل صلاحيات المدير سجّل الدخول كمسؤول المنصة."
                   : "الضبط الفعلي لصلاحيات الموظف من صفحة الموظفين بيد مدير إدارته — وهذه الشاشة للعرض.",
@@ -8500,15 +8596,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 }),
                   this.setState({ upExp: e }));
               },
+              /* V7 P3: «تحديد الكل» يمنح العرض وحده لكل ورقةٍ بلا منح داخل السقف — وما مُنح قبلُ يبقى كما هو */
               upAllDo: () => {
                 if (!g) return;
-                const t = {};
+                const t = [];
                 (r.leafReg().forEach((e) => {
                   -1 !== d.indexOf(e.page) &&
-                    ((e.sub && -1 === r.deptSubs(o, e.page).concat(r.deptTabs(o, e.page)).indexOf(e.sub)) ||
-                      (t[e.key] = r.ALL_ACTS.slice()));
+                    ((e.sub && -1 === r.deptSubs(o, e.page).concat(r.deptTabs(o, e.page)).indexOf(e.sub)) || t.push(e.key));
                 }),
-                  this.setState({ upDraft: t, upFor: i }));
+                  this.setState({ upDraft: r.viewAllIn(m, t), upFor: i }));
+              },
+              /* V7 P3: العودةُ إلى توريث سقف الإدارة صراحةً (كانت بتأشير الأفعال الستة في كل ورقة) — المسودّةُ = السقفُ كاملاً فيحذف الحفظُ ورقتَه */
+              upInhOn: g && (c || p) && !inh && !!r.capAllPerms,
+              upInhDo: () => {
+                g && r.capAllPerms && this.setState({ upDraft: r.capAllPerms(o), upFor: i });
               },
               upNoneDo: () => {
                 g && this.setState({ upDraft: {}, upFor: i });
@@ -8528,6 +8629,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               upClose: () => this.setState({ upUid: "", upDraft: null, upLensDraft: null, upFor: "", upExp: {}, up24Draft: null, up24Exp: {}, up24Leaf: {} }),
               upV24: !1,
               upLegacy: !0,
+              ...this._edReview(g && b ? r.sheetDiff(h, m) : null, "up"),
+              upSrcRows: this._edSources({ did: o, user: n, inh: inh, mgr: c || p, sheet: h, lensOn: f.length }),
             };
             /* ═══ KIVO_256 · وضعُ الإنفاذ: شجرةُ v24.9 مفتاحاً مفتاحاً — الحالةُ الفعلية كما يحسبها الخادم، والحفظُ فرقٌ صريح (plus/minus) فوق الورقة ═══ */
             if (this.t24On()) {
@@ -8542,16 +8645,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 upCount24: M.md.nOn + " من " + KIVO.BassamCount(M.md.nTot, "صلاحية", "g"),
                 upExpAll24Lbl: M.md.allExpanded ? "طيّ الكل" : "فرد الكل",
                 upExpAll24: () => this.setState({ up24Exp: this.t24ExpAll(M.md) }),
+                /* V7 P3: «تحديد الكل» = مفتاحُ العرض وحده لكل ورقةٍ بلا مفتاحٍ ممنوح (والعدسةُ المستضافة ببوابتها وعرضِها) — وما مُنح قبلُ يبقى كما هو */
                 upAllDo: () => {
                   if (!M.ed) return;
-                  const d = {},
-                    L = (r.deptLenses ? r.deptLenses(o) : []).filter((x) => M.C.lens(x) && P24.lensHosted(x, M.C));
-                  P24.assignable(M.C, M.tgt).forEach((k) => {
-                    const ln = P24.lensOf(k);
-                    (!ln || -1 !== L.indexOf(ln)) && (d[k] = !0);
-                  });
-                  this.setState({ up24Draft: d, upLensDraft: L, upFor: i });
+                  const L0 = (r.deptLenses ? r.deptLenses(o) : []).filter((x) => M.C.lens(x) && P24.lensHosted(x, M.C)),
+                    v = this.t24ViewAll(M.draft, M.lensNow, M.C, M.tgt, L0);
+                  this.setState({ up24Draft: v.on, upLensDraft: v.lens, upFor: i });
                 },
+                ...this._edReview(M.dirty ? r.keyDiff(M.base, M.draft) : null, "up", M.dL ? [M.lensBase, M.lensNow] : null),
+                upSrcRows: this._edSources({ did: o, user: n, inh: inh, mgr: M.tgt.mgr, sheet: h, lensOn: M.lensBase.length, eff: M.eff }),
+                upInhOn: !1,
                 upNoneDo: () => {
                   M.ed && this.setState({ up24Draft: {}, upLensDraft: [], upFor: i });
                 },
@@ -8569,7 +8672,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   M.ed && this.setState({ up24Draft: {}, upLensDraft: [], upFor: i });
                 },
                 upNote: M.ed
-                  ? "شجرةُ v24.9: الحاويةُ لا تُمنح — المفاتيحُ على الأوراق والعدسات. مربّعُ الورقة يمنح مفاتيحَها القابلة للمنح دفعةً واحدة، ومفتاحُ العرض شرطُ باقيها؛ وافتح الورقةَ (السهم) لتمنح أو تُسقط مفتاحاً بعينه. ما خارج سقف الإدارة مقفل، ومفاتيحُ الدور والذات لا تُمنح. الحفظُ يُكتب منحاً صريحاً فوق ورقته القديمة فلا يمسّها."
+                  ? "شجرةُ v24.9: الحاويةُ لا تُمنح — المفاتيحُ على الأوراق والعدسات. مربّعُ الورقة يمنح مفتاحَ العرض وحده، وبقيةُ المفاتيح تختارها صراحةً، ومفتاحُ العرض شرطُ باقيها؛ وما مُنح قبلُ يبقى كما هو. راجع ما سيُضاف وما سيُسحب قبل الحفظ؛ وافتح الورقةَ (السهم) لتمنح أو تُسقط مفتاحاً بعينه. ما خارج سقف الإدارة مقفل، ومفاتيحُ الدور والذات لا تُمنح. الحفظُ يُكتب منحاً صريحاً فوق ورقته القديمة فلا يمسّها."
                   : g
                     ? "حسابٌ لا تُمنح مفاتيحُه من هنا (مسؤول المنصة يحمل كلَّ ما في السقف · حسابُ الإدارة بالدور) — والشجرةُ للعرض."
                     : "الضبط الفعلي لصلاحيات الموظف من صفحة الموظفين بيد مدير إدارته — وهذه الشاشةُ للعرض: الحالةُ الفعلية كما يحسبها الخادم.",
