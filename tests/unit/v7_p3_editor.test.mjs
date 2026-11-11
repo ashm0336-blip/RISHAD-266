@@ -130,4 +130,12 @@ test('sources: the keys derived from field.view are named whatever the source of
   assert.equal(row({ keys: on(['task.view']), T: {}, plus: ['task.view'], minus: [] }), 'لا شيء');
   assert.equal(row({ keys: on(['field.view']), T: on(['field.view']), plus: [], minus: DER }), 'لا شيء');
   assert.doesNotMatch(f, /o\.eff\.T && o\.eff\.T\[s\]/, 'no longer read from the sheet translation alone');
+  /* «المسندة إليه فقط» is said for a confined holder only (owner's screenshot: a unit manager was told so, and a manager writes every element) */
+  const row2 = (user, extra, eff) => { const out = vm.runInNewContext('({' + f + ', _capStateTxt() { return { short: "س" }; } })._edSources(o)', Object.assign({ o: Object.assign({ did: 'd', user, sheet: {}, eff }, extra) }, ctx)); return J(out).find((r) => r.k === 'المفاتيح المشتقة').v; };
+  const held = on(['field.view', 'round.view'].concat(DER));
+  assert.match(row2({ role: 'staff', ekey: 'e' }, {}, { keys: held, T: {}, plus: [], minus: [] }), /المسندة إليه فقط/, 'an observer with views: confined');
+  const mgr = row2({ role: 'staff', ekey: 'mgr:d', mgr: true }, { mgr: true, inh: true }, { keys: held, T: held, plus: [], minus: [] });
+  assert.match(mgr, /تغيير حالة المصلى/); assert.doesNotMatch(mgr, /المسندة إليه فقط/, 'a manager is not told he is confined');
+  assert.doesNotMatch(row2({ role: 'staff', ekey: 'e' }, {}, { keys: on(['field.view', 'round.view', 'round.edit'].concat(DER)), T: {}, plus: [], minus: [] }), /المسندة إليه فقط/, 'an explicit write on the rounds: not confined');
+  assert.doesNotMatch(row2({ role: 'staff', ekey: 'e' }, {}, { keys: on(['field.view', 'lens.zones.data.edit'].concat(DER)), T: {}, plus: [], minus: [] }), /المسندة إليه فقط/, 'an explicit lens write: not confined');
 });
