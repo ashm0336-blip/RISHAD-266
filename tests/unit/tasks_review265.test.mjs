@@ -5,6 +5,7 @@
      M-2  التفرّدُ في الحقلين معاً (eid ∪ nid) — في «مهامي» و«ملفي» (062b) وتقرير الربط
      L-1  سقفُ القراءات الذاتية · L-3 مصدرُ كتابات التكرار هويةُ الخادم · L-5 النسخةُ المحذوفة لا تُولَّد من جديد
      والمساران الجديدان: /api/tasks/settings · /api/tasks/reopen (ما كانت صفحةُ المهام تكتبه في x بحفظٍ خام) */
+import './clock.mjs';   /* V7 port (RISHAD ff917e3 · 66477c5): ساعةُ الاختبار المثبَّتة (1448-5-9) — بياناتُه مبنيةٌ على شهرٍ بعينه (يُستورد أولاً) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, KT, notificationMessages, assertNotificationKVRetired, KE, D, DAY, TAG, IMG_MATE, stored, putKV, addAccount, row, hij, HR, WD_AR, wdOf, ymOf, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';

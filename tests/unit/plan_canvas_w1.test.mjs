@@ -5,6 +5,7 @@
      CANVAS-4: ضغطةُ السحب على خطةٍ كبيرة كانت ترسم الصفحةَ كلَّها في الحال (~150ms على اللوحي) فيتجمّد الإطارُ الأوّل ثمّ يقفز —
               باللمس والقلم ولا تحديدَ يُلغى: مرساةُ السحب في الحالة بلا رسم، ورسمةٌ واحدةٌ عند الرفع.
    PLAN_LOGIC=<مسار> يبدّل ملفَّ المنطق (لإثبات أنّ الاختبارات تُخفق على المنطق السابق). */
+import './clock.mjs';   /* V7 port (RISHAD ff917e3 · 66477c5): ساعةُ الاختبار المثبَّتة (1448-5-9) — بياناتُه مبنيةٌ على شهرٍ بعينه (يُستورد أولاً) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -21,7 +22,7 @@ const KP = 'bassam_plan_v1';
 function page(o = {}) {
   const store = new Map(), KIVO = {}, toasts = [];
   const can = o.can || (() => true);
-  const ctx = { KIVO, console, setTimeout: () => 0, clearTimeout: () => 0, setInterval: () => 0, clearInterval: () => 0, requestAnimationFrame: () => 0, cancelAnimationFrame() {}, performance: { now: () => 1 },
+  const ctx = { KIVO, console, Date, setTimeout: () => 0, clearTimeout: () => 0, setInterval: () => 0, clearInterval: () => 0, requestAnimationFrame: () => 0, cancelAnimationFrame() {}, performance: { now: () => 1 },
     localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
     document: { hidden: false, querySelector: () => null, querySelectorAll: () => [], getElementById: () => null, addEventListener() {}, removeEventListener() {} },
     navigator: { userAgent: 'node' }, addEventListener() {}, removeEventListener() {}, __BS_BOOT: { srv: 0 },
