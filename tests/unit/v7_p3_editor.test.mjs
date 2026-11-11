@@ -113,3 +113,21 @@ test('the account window and the templates editor use the shared review and sour
   assert.match(L, /upDraft: r\.viewAllIn\(m, t\)/, 'select-all (legacy): view on the ungranted, the rest as it is');
   assert.doesNotMatch(L, /\(t\[e\.key\] = r\.ALL_ACTS\.slice\(\)\)/, 'no six-act select-all left');
 });
+
+test('sources: the keys derived from field.view are named whatever the source of the grant (live acceptance FAIL)', () => {
+  const f = fnSrc(L, '_edSources', '\n  ');
+  const DER = ['lens.zones.status.change', 'lens.gates.status.change', 'lens.marks.status.change'], byKey = {};
+  REG.registry.forEach((e) => { byKey[e.key] = e; });
+  const ctx = { KIVO: { BassamCount: (n, w) => n + ' ' + w, KIVO_REGISTRY: { byKey }, BassamAuth: {}, BassamPerm: { p24: { DERIVE: { 'field.view': DER } }, tplOfEmp: () => '', tplsList: () => [] } } };
+  const row = (eff) => { const out = vm.runInNewContext('({' + f + ', _capStateTxt() { return { short: "س" }; } })._edSources(o)', Object.assign({ o: { did: 'd', user: { role: 'staff', ekey: 'e' }, sheet: {}, eff } }, ctx)); return J(out).find((r) => r.k === 'المفاتيح المشتقة').v; };
+  const on = (ks) => Object.fromEntries(ks.map((k) => [k, true]));
+  /* granted from the key-level editor: an explicit grant, nothing translated from a sheet — was «لا شيء» */
+  const ex = row({ keys: on(['field.view'].concat(DER)), T: {}, plus: ['field.view'].concat(DER), minus: [] });
+  assert.match(ex, /تغيير حالة المصلى · تغيير حالة البوابة · تغيير حالة العلامة\/المعلم/, ex); assert.match(ex, /من «الوصول إلى رصد الميدان»/); assert.match(ex, /المسندة إليه فقط/);
+  /* from a stored sheet: the same line */
+  assert.equal(row({ keys: on(['field.view'].concat(DER)), T: on(['field.view'].concat(DER)), plus: [], minus: [] }), ex);
+  /* field.view not held, or the derived keys dropped: nothing is claimed */
+  assert.equal(row({ keys: on(['task.view']), T: {}, plus: ['task.view'], minus: [] }), 'لا شيء');
+  assert.equal(row({ keys: on(['field.view']), T: on(['field.view']), plus: [], minus: DER }), 'لا شيء');
+  assert.doesNotMatch(f, /o\.eff\.T && o\.eff\.T\[s\]/, 'no longer read from the sheet translation alone');
+});

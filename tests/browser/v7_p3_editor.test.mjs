@@ -104,6 +104,10 @@ test('V7 P3 · enforce: a new leaf grant is its view key alone; the review names
     const plus = readK(lab, KG).emp.TEST_ONLY_eA1.plus, DER = ['lens.zones.status.change', 'lens.gates.status.change', 'lens.marks.status.change'];
     assert.ok(plus.includes('task.view') && plus.length > 5, JSON.stringify(plus));
     assert.deepEqual(plus.filter((k) => T[k] !== 'access' && T[k] !== 'view' && !DER.includes(k)), [], 'no act beyond view was granted');
+    /* the sources line names the keys derived from field.view, granted here by explicit grant (live acceptance FAIL: «لا شيء») */
+    const v3 = await dialog(b, lab, 'TEST_ONLY موظف أ'); const src = await v3.txt('[data-ed="sources"]');
+    assert.match(src, /المفاتيح المشتقة: تغيير حالة المصلى [·-] تغيير حالة البوابة [·-] تغيير حالة العلامة\/المعلم — من «الوصول إلى رصد الميدان»/, src);
+    assert.deepEqual(v3.s.errs, []); await v3.s.ctx.close();
     assert.deepEqual(v.s.errs, []); assert.deepEqual(v2.s.errs, []);
     await v.s.ctx.close(); await v2.s.ctx.close();
   } finally { await b.close(); await lab.close(); }
