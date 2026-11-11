@@ -4970,9 +4970,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         RG = (KIVO.KIVO_REGISTRY && KIVO.KIVO_REGISTRY.byKey) || {},
         lb = (k) => (RG[k] && RG[k].label) || k,
         dvs = Object.keys(DV).filter((s) => o.eff.keys[s]),
-        dvk = dvs.reduce((a, s) => a.concat(DV[s]), []).filter((k, i, a) => a.indexOf(k) === i && o.eff.keys[k]);
+        dvk = dvs.reduce((a, s) => a.concat(DV[s]), []).filter((k, i, a) => a.indexOf(k) === i && o.eff.keys[k]),
+        /* «المسندة إليه فقط» تُقال للمحصور وحده (= 057 enfFieldOnly): ليس مديراً ولا وارثاً، ولا يحمل كتابةً صريحةً غيرَ مشتقّة على الجولات أو عدساتها.
+           كانت تُقال لكل حامل — والمديرُ والمشرفُ يكتبان حالةَ كل العناصر (لقطةُ المالك من Preview Test). لغير المحصور لا يُدّعى حصر */
+        dvx = {},
+        lift = (k) => { const e = RG[k]; return !!e && "active" === e.status && !dvx[k] && 0 !== k.indexOf("ref.") && "access" !== e.type && "view" !== e.type && "capability" !== e.type && ("daily/rounds" === e.owner || "lens" === e.ownerKind); },
+        conf = (Object.keys(DV).forEach((s) => DV[s].forEach((k) => (dvx[k] = 1))), "staff" === n.role && !o.mgr && !o.inh && !Object.keys(o.eff.keys || {}).some((k) => o.eff.keys[k] && lift(k)));
       out.push({ k: "المنح الصريح", v: pl || mi ? (pl ? "+" + KIVO.BassamCount(pl, "مفتاح") : "") + (pl && mi ? " · " : "") + (mi ? "−" + KIVO.BassamCount(mi, "مفتاح") : "") + (o.eff.src ? " (" + (/^tpl:/.test(o.eff.src) ? "من قالب" : o.eff.src) + ")" : "") : "لا شيء فوق الأساس" });
-      out.push({ k: "المفاتيح المشتقة", v: dvk.length ? dvk.map(lb).join(" · ") + " — من «" + dvs.map(lb).join("» و«") + "»، وتكتب حالة العناصر المسندة إليه فقط" : "لا شيء" });
+      out.push({ k: "المفاتيح المشتقة", v: dvk.length ? dvk.map(lb).join(" · ") + " — من «" + dvs.map(lb).join("» و«") + "»" + (conf ? "، وتكتب حالة العناصر المسندة إليه فقط" : "") : "لا شيء" });
       out.push({ k: "الفعلي", v: KIVO.BassamCount(Object.keys(o.eff.keys || {}).length, "صلاحية") });
     }
     if ("number" === typeof o.lensOn) out.push({ k: "العدسات", v: KIVO.BassamCount(o.lensOn, "عدسة") });
