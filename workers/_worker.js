@@ -24319,7 +24319,9 @@ function enfFieldOnly(A, d) {
   var u = A && A.u; if (!u || !d || u.role === 'super' || u.role === 'dept') return false;
   var ep = ((A.perms.emps || {})[d] || {})[u.ekey] || {};
   if ((ep['daily/field'] || []).length && capOnDept(A, d, 'daily/field')) return dailyFieldOnly(A, d);   /* الورقةُ المخزَّنة تحكم كما كانت */
-  var g; try { g = enfGrantOf(A, d); } catch (e0) { return false; }                                    /* بلا سجلّ منحٍ مرفق (القديم): الورقةُ وحدها */
+  /* V7 sec (fail-closed): تعذُّرُ قراءة سجلّ المنح له حالتان. الوضعُ القديم (لا A.enf): لا سجلَّ منحٍ بالتصميم ⇒ الورقةُ وحدها كما كانت (غيرُ محصور).
+     وضعُ الإنفاذ (A.enf): السجلُّ يُرفق دائماً عند إنشاء الفاعل، فغيابُه أو عطلُ قراءته خطأٌ حقيقي ⇒ محصورٌ بالمسنَد (لا يُفتح الحصرُ بخطأ) */
+  var g; try { g = enfGrantOf(A, d); } catch (e0) { return !!A.enf; }
   if (!g.plus['field.view'] || !enfHeld(A, d, 'field.view')) return false;
   var L = enfFieldLift(), i;
   for (i = 0; i < L.length; i++) if (enfHeld(A, d, L[i])) return false;                                  /* كتابةٌ صريحةٌ غيرُ مشتقّة ⇒ بلا حصر، كالمشرف */

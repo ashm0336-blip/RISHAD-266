@@ -539,6 +539,8 @@
       if (kd.length) return { ok: false, err: 'لها ' + kd.length + ' ابناً — انقلهم أولاً ثم احذفها' };
       this.saveNodes(this.nodes().filter(function(n){ return n.id !== id; }));
       invalidate();
+      /* V7 · القضية #4: سجلاتُ سقف العقدة المحذوفة تُحذف معها (نظيرُ seedCapFrom في nodeAdd) — فلا يرث معرّفٌ عائدٌ سقفاً قديماً */
+      try { var P = KIVO.BassamPerm; if (P && P.dropNodeCap) P.dropNodeCap(id); } catch(e){}
       return { ok: true };
     },
     /* أبُ الإدارة يُكتب في حقل gid القائم نفسه — لا حقل جديد ولا ترحيل */

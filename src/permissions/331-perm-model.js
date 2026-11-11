@@ -281,6 +281,20 @@
     return { ok:true, n: o.caps[id].length };
   }
 
+  /* V7 · القضية #4 — حذفُ العقدة يحذف سجلاتِ سقفها (نظيرُ seedCapFrom عند الإنشاء). كانت تبقى caps/subs/lenses[<العقدة>] وعلامةُ capOwn
+     بعد الحذف (حذفُ الإدارة ينظّفها الخادم، وحذفُ العقدة لا)؛ فإن عاد المعرّفُ باستيرادٍ أو استعادة أبقى seedCapFrom السجلَّ القديم («له سقفٌ
+     مسبقاً — لا يُلمس») فحملت العقدةُ سقفاً قديماً صامتاً. لمسؤول المنصة وحده، وحفظةٌ عاديةٌ واحدة للسجل. خريطةُ capOwn تبقى (ولو فارغة):
+     الخادمُ يرفض إسقاطها كلِّها (021 capOwnWhy). لا يُمسّ شيءٌ لوحدةٍ أخرى. */
+  function dropNodeCap(id){
+    if (!id) return { ok:false, err:'معرّف مفقود' };
+    if (!isSuper()) return { ok:false, err:'سقف العقدة لمسؤول المنصة وحده' };
+    var o = permStore(), hit = [];
+    ['caps', 'subs', 'lenses'].forEach(function(k){ if (o[k] && Object.prototype.hasOwnProperty.call(o[k], id)) { delete o[k][id]; hit.push(k); } });
+    if (o.capOwn && Object.prototype.hasOwnProperty.call(o.capOwn, id)) { var m = {}; Object.keys(o.capOwn).forEach(function(k){ if (k !== id) m[k] = o.capOwn[k]; }); o.capOwn = m; hit.push('capOwn'); }
+    if (hit.length) permSave(o);
+    return { ok:true, removed: hit };
+  }
+
   /* F01 · سقفُ القسم الجديد: لقطةٌ من سقف الإدارة الأم الفعليّ (deptCap — سجلُّها إن كان لها، وإلا ما ترثه من أسلافها) مرةً واحدة
      (لا سجلَّ للقسم قبلُ) — فلا يتجاوز سقفَ إدارته ولا يُبدَّل بنمطٍ آخر. لا سقفَ في السلسلة كلِّها ⇒ لا سجلّ (الغيابُ لا يقيّد).
      الخادمُ يحكم: مديرُ الإدارة الأم يبذره مرةً جزءاً من سقف إدارته (018 permsSecSeedOk) */
@@ -800,7 +814,7 @@
   I.p24Delta = p24Delta; I.p24Effective = p24Effective; I.p24GrantOf = p24GrantOf; I.p24Grantable = p24Grantable; I.p24Ix = p24Ix;
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
   I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.capOwnOf = capOwnOf; I.capState = capState; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
-  I.patternSeed = patternSeed; I.permSave = permSave;
+  I.patternSeed = patternSeed; I.permSave = permSave; I.dropNodeCap = dropNodeCap;
   I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.seedSectionCap = seedSectionCap; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;
   I.setEmpTpl = setEmpTpl; I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;
