@@ -23,9 +23,9 @@ async function loadWorker() {
   try { return await import(pathToFileURL(f).href); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 
-export async function startLab({ port = 0 } = {}) {
+export async function startLab({ port = 0, mode = 'enforce' } = {}) {   /* V7 P3: mode 'legacy' for the six-action editor (default unchanged) */
   const W = await loadWorker();
-  const env = makeTestEnv({ KIVO_AUTHZ_MODE: 'enforce' });
+  const env = makeTestEnv({ KIVO_AUTHZ_MODE: mode });
   await W.initDb(env);
   const DB = env.DB;
   const usersRow = DB.q("SELECT v FROM kv WHERE k='bassam_auth_users_v1' ORDER BY seq").map((r) => r.v).join('');
@@ -53,7 +53,7 @@ export async function startLab({ port = 0 } = {}) {
     st.push(...W.kvPutStmts(env, 'kv', k, JSON.stringify(v)));
     st.push(DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=rev+1').bind(k));
   }
-  st.push(DB.prepare("INSERT INTO meta(k,v) VALUES('authz_mode','enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'"));
+  st.push(DB.prepare("INSERT INTO meta(k,v) VALUES('authz_mode',?1) ON CONFLICT(k) DO UPDATE SET v=?1").bind(mode));
   await DB.batch(st);
   await installOperationalFixture(env, W);
   const pending = new Set();

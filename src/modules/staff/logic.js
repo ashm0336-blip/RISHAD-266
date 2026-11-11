@@ -239,18 +239,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const i = n && r.tplCut ? r.tplCut(n.perms || {}) : {};
     if (n && !Object.keys(i).some((t) => (i[t] || []).length))
       return void this.bsToast("القالب «" + n.name + "» بلا أوراق داخل سقف هذه الإدارة — أضف أوراقه من «قوالب الصلاحيات» أولاً", "warn");
-    const a = r.setEmpPerms(t, i);
+    /* V7 P3 · المعالجُ الواحد لمنح القالب (KIVO.BassamPerm.grantTpl) — بالسلوك القائم هنا: القصُّ بالسقف · هويةُ القالب · عدساتُه */
+    const a = r.grantTpl(t, n, void 0, { lens: !0 });
     if (a && !1 === a.ok) this.bsToast(a.err || "تعذّر حفظ الصلاحيات", "warn");
     else {
-      try {
-        r.setEmpTpl && r.setEmpTpl(t, n ? n.id : "");
-      } catch (t) {}
-      try {
-        if (r.setEmpLens) {
-          const e = (r.deptLenses ? r.deptLenses() : []) || [];
-          r.setEmpLens(t, n && Array.isArray(n.lens) ? n.lens.filter((t) => -1 !== e.indexOf(t)) : e);
-        }
-      } catch (t) {}
       (this.setState({ pmOpen: null, pmPos: null, permTick: (this.state.permTick || 0) + 1 }),
         this.bsAck(
           n
@@ -2252,15 +2244,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               o = 0;
             (r.forEach((t) => {
               if (!n[t]) return void o++;
-              const e = {};
-              if (i) {
-                const t = KIVO.BassamPerm && KIVO.BassamPerm.tplCut ? KIVO.BassamPerm.tplCut(i.perms) : {};
-                Object.keys(t).forEach((s) => {
-                  e[s] = t[s];
-                });
-              }
+              /* V7 P3 · المعالجُ الواحد (grantTpl) بالسلوك القائم للإسناد الجماعي: القصُّ بالسقف وهويةُ القالب — بلا ضبط العدسات */
               try {
-                (s.setEmpPerms(t, e), s.setEmpTpl && s.setEmpTpl(t, i ? i.id : ""), a++);
+                (s.grantTpl(t, i || null), a++);
               } catch (t) {}
             }),
               this.setState({ permTick: (this.state.permTick || 0) + 1 }),

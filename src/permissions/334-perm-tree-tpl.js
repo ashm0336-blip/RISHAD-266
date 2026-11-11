@@ -51,9 +51,9 @@
       return { kind:'leaf', isLeaf:true, isCont:false, key:key, name:name, child:!!child, on:on, out:!!out, all:all, some:some,
         rowStyle: 'display:flex;align-items:center;gap:9px;padding:8px 12px;border-bottom:1px solid var(--bd-xf1f3f5);' + (on ? '' : 'background:var(--bg-a2502512520p6);') + (out ? 'opacity:.5;' : ''),
         chkStyle: 'width:20px;height:20px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:' + (dis ? 'default' : 'pointer') + ';border:2px solid ' + (all || some ? G : 'var(--bd-xcbd5e1)') + ';background:' + (all ? G : 'var(--bg-xffffff)') + ';color:' + (all ? 'var(--fg-xffffff)' : G) + (out ? ';opacity:.35' : ''),
-        chkTip: out ? 'خارج سقف الإدارة' : (on ? 'إلغاء كل الأفعال' : 'تحديد الأفعال الستة — ثم ألغِ ما لا تريده'),
+        chkTip: out ? 'خارج سقف الإدارة' : (on ? 'إلغاء كل الأفعال' : 'منحُ العرض وحده — ثم اختر باقي الأفعال صراحةً'),
         nameStyle: 'min-width:0;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:' + (dis ? 'default' : 'pointer') + ';color:' + (on ? 'var(--fg-x141414)' : 'var(--fg-x94a3b8)'),
-        toggle: function(ev){ if (ev && ev.stopPropagation) ev.stopPropagation(); if (dis || !cb.togLeaf) return; cb.togLeaf(key, !on); },   /* فارغ → الستة · ✓ أو – → لا شيء */
+        toggle: function(ev){ if (ev && ev.stopPropagation) ev.stopPropagation(); if (dis || !cb.togLeaf) return; cb.togLeaf(key, !on); },   /* V7 P3: فارغ → العرض وحده · ✓ أو – → لا شيء */
         acts: ALL_ACTS.map(function(a){
           var onA = acts.indexOf(a) !== -1;
           return { k:a, name:ACT_NAMES[a], on:onA,
@@ -139,10 +139,65 @@
     if (cur9.length) d2[key] = ALL_ACTS.filter(function(x){ return cur9.indexOf(x) !== -1; }); else delete d2[key];
     return d2;
   }
-  function togLeafIn(draft, key, onAll){
+  /* ═══ V7 P3 · المحرّر الموحّد — قواعدُ المنح ومراجعةُ الفرق لكل نقاط الدخول (نافذةُ الحساب · قوالبُ الإدارة · الجدولُ الشهري ·
+     التقريرُ اليومي) بلا مخزنٍ ولا معالجِ تفويضٍ جديد: الكتابةُ بالدوال نفسِها (setEmpPerms · setEmpTpl · setEmpLens · p24.setGrant).
+     القاعدة: المنحُ الجديد لورقةٍ يبدأ بالعرض وحده، وبقيةُ الأفعال تُختار صراحةً. وما خُزِّن قبلُ يُعرض ويُحفظ كما هو — لا يُعاد تفسيرُه
+     ولا يُضيَّق ولا يُوسَّع. (كان مربّعُ الورقة يمنح الأفعال الستة دفعةً واحدة «ثم ألغِ ما لا تريده».) ═══ */
+  function togLeafIn(draft, key, on){
     var d2 = JSON.parse(JSON.stringify(draft || {}));
-    if (onAll) d2[key] = ALL_ACTS.slice(); else delete d2[key];
+    if (!on) delete d2[key];
+    else if (!(d2[key] || []).length) d2[key] = ['view'];   /* منحٌ جديد: العرضُ وحده */
     return d2;
+  }
+  /* «تحديد الكل»: العرضُ وحده لكل ورقةٍ بلا منح، وما مُنح قبلُ يبقى كما هو */
+  function viewAllIn(draft, keys){
+    var d2 = JSON.parse(JSON.stringify(draft || {}));
+    (keys || []).forEach(function(k){ if (!(d2[k] || []).length) d2[k] = ['view']; });
+    return d2;
+  }
+  /* الفرقُ قبل الحفظ: ما سيُضاف وما سيُسحب، ورقةً ورقة وفعلاً فعلاً — بالأسماء المعروضة */
+  function sheetDiff(base, draft){
+    var add = [], drop = [], seen = {};
+    Object.keys(base || {}).concat(Object.keys(draft || {})).forEach(function(k){
+      if (seen[k]) return; seen[k] = 1;
+      var b = (base || {})[k] || [], d = (draft || {})[k] || [];
+      var plus = ALL_ACTS.filter(function(a){ return d.indexOf(a) !== -1 && b.indexOf(a) === -1; }),
+          minus = ALL_ACTS.filter(function(a){ return b.indexOf(a) !== -1 && d.indexOf(a) === -1; });
+      var nm = nameOf(k), an = function(L){ return L.map(function(a){ return ACT_NAMES[a] || a; }); };
+      if (plus.length) add.push({ key:k, name:nm, acts:an(plus), whole:!b.length });
+      if (minus.length) drop.push({ key:k, name:nm, acts:an(minus), whole:!d.length });
+    });
+    return { add: add, drop: drop, n: add.length + drop.length };
+  }
+  /* وضعُ الإنفاذ: الفرقُ مفتاحاً مفتاحاً بأسماء السجلّ */
+  function keyDiff(base, draft){
+    var R = p24R(), lab = function(k){ return (R && R.byKey[k] && R.byKey[k].label) || k; }, add = [], drop = [], seen = {};
+    Object.keys(base || {}).concat(Object.keys(draft || {})).forEach(function(k){
+      if (seen[k]) return; seen[k] = 1;
+      var b = !!(base || {})[k], d = !!(draft || {})[k];
+      if (d && !b) add.push({ key:k, name:lab(k) }); else if (b && !d) drop.push({ key:k, name:lab(k) });
+    });
+    return { add: add, drop: drop, n: add.length + drop.length };
+  }
+  /* مفتاحُ العرض الأوّل للمالك (access/view بترتيب السجلّ — نظيرُ «العرض» في الورقة القديمة): المنحُ الجديد لورقةٍ على شجرة v24.9 يبدأ به وحده */
+  function p24PrimView(owner, keys){
+    var R = p24R(); if (!R) return '';
+    var ks = keys || R.byOwner[owner] || [];
+    for (var i = 0; i < ks.length; i++) { var e = R.byKey[ks[i]]; if (e && e.status === 'active' && e.owner === owner && (e.type === 'access' || e.type === 'view')) return ks[i]; }
+    return '';
+  }
+  /* منحُ قالبٍ (أو سحبُ المنح بلا قالب) — المعالجُ الواحد لنقاط الدخول كلها. خياراتُ كل نقطةٍ تحفظ سلوكَها القائم كما هو:
+     lens: تُضبط عدساتُ الموظف من القالب (الجدولُ الشهري فرداً) · refuseEmpty: قالبٌ بلا ورقةٍ داخل السقف لا يُمنح */
+  function grantTpl(ekey, tp, did, opt){
+    opt = opt || {};
+    if (!ekey) return { ok:false, err:'حسابٌ بلا مفتاح موظف' };
+    var d = isSuper() ? (did || curDept()) : curDept(), cut = tp ? tplCut(tp.perms || {}, d) : {};
+    var empty = !!tp && !Object.keys(cut).some(function(k){ return (cut[k] || []).length; });
+    if (empty && opt.refuseEmpty) return { ok:false, empty:true, err:'القالب «' + (tp.name || '') + '» بلا أوراق داخل سقف الإدارة' };
+    var r = setEmpPerms(ekey, cut, d); if (r && r.ok === false) return r;
+    if (opt.strict) setEmpTpl(ekey, tp ? tp.id : '', d); else try { setEmpTpl(ekey, tp ? tp.id : '', d); } catch(e){}   /* strict: عطلُه يُرفع للنداء (grantTplByName كما كان) */
+    if (opt.lens) try { var dl = deptLenses(d) || []; setEmpLens(ekey, tp && Array.isArray(tp.lens) ? tp.lens.filter(function(k){ return dl.indexOf(k) !== -1; }) : dl, d); } catch(e){}
+    return { ok:true, cut:cut, empty:empty, id: tp ? tp.id : '', name: tp ? tp.name : '' };
   }
   /* ═══ التحديث الحيّ للصلاحيات: أي تغيير يصل من الخادم (أو من تبويب آخر) في الصلاحيات أو الحسابات أو الإدارات
      يُبطل النسخ المحفوظة في الذاكرة فوراً — كانت تبقى القديمة حتى إعادة التحميل ═══ */
@@ -216,13 +271,14 @@
     empPerms: empPerms, setEmpPerms: setEmpPerms, clearEmpPerms: clearEmpPerms, empPagePerms: empPagePerms, capAllPerms: capAllPerms, hasOwnSheet: hasOwnSheet,
     isContainer: isContainer, leafKeysOf: leafKeysOf, leafReg: leafReg, splitLeaf: splitLeaf, expandPerms: expandPerms, derivePages: derivePages, canSub: canSub,
     empLens: empLens, setEmpLens: setEmpLens, treeModel: treeModel, nameOf: nameOf, togActIn: togActIn, togLeafIn: togLeafIn, ACT_NAMES: ACT_NAMES,
+    viewAllIn: viewAllIn, sheetDiff: sheetDiff, keyDiff: keyDiff, grantTpl: grantTpl,   /* V7 P3 · المحرّر الموحّد */
     empTpl: empTpl, setEmpTpl: setEmpTpl, dropEmpTpl: dropEmpTpl,
     tplCut: tplCut, tplSig: tplSig, permSig: permSig, grantTplByName: grantTplByName, tplsMigrate: tplsMigrate,
     tplsList: tplsList, grantSig: grantSig, tplOfEmp: tplOfEmp, tplHolders: tplHolders,
     dropEmpPerms: dropEmpPerms, pruneOrphanEmpPerms: pruneOrphanEmpPerms,
     myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk,
     key: azKey, authz: function(){ return azZ(); },
-    p24: { R: p24R, ix: p24Ix, ceil: p24Ceil, leafOn: p24LeafOn, keyOn: p24KeyOn, lensHosted: p24LensHosted, translate: p24Translate, grantOf: p24GrantOf, grantable: p24Grantable, assignable: p24Assignable, effective: p24Effective, delta: p24Delta, cover: p24Cover, setGrant: p24SetGrant, apply: p24Apply, afterTpl: p24AfterTpl, lensOf: p24LensOf, DERIVE: P24_DERIVE } };
+    p24: { R: p24R, ix: p24Ix, ceil: p24Ceil, leafOn: p24LeafOn, keyOn: p24KeyOn, lensHosted: p24LensHosted, translate: p24Translate, grantOf: p24GrantOf, grantable: p24Grantable, assignable: p24Assignable, effective: p24Effective, delta: p24Delta, cover: p24Cover, setGrant: p24SetGrant, apply: p24Apply, afterTpl: p24AfterTpl, lensOf: p24LensOf, DERIVE: P24_DERIVE, primView: p24PrimView } };
 
   /* ═══ الطاقم الإشرافي — من لا يُسكَّن على المواقع ═══
      المعيار قالب الصلاحية الموسوم (سواء مُنح من الجدول الشهري أو التقرير اليومي)،
@@ -265,12 +321,8 @@
       var norm = function(x){ return String(x || '').trim().replace(/\s+/g, ' '); };
       var t = (L || []).filter(function(x){ return norm(x.name) === norm(nm); })[0];
       if (!t) return { ok:false, err:'قالب غير معروف', unknown:true };
-      var cut = tplCut(t.perms || {}, d);
-      /* قالبٌ بلا ورقة واحدة داخل سقف هذه الإدارة لا يُمنح — منحُه وهمٌ لا يظهر في قائمة الصلاحيات */
-      if (!Object.keys(cut).some(function(k){ return (cut[k] || []).length; })) return { ok:false, err:'القالب «' + t.name + '» بلا أوراق داخل سقف الإدارة', empty:true };
-      var r = setEmpPerms(ekey, cut, d); if (r && r.ok === false) return r;
-      setEmpTpl(ekey, t.id, d);
-      try { var dl = deptLenses(d) || []; setEmpLens(ekey, Array.isArray(t.lens) ? t.lens.filter(function(k){ return dl.indexOf(k) !== -1; }) : dl, d); } catch(e){}
+      /* قالبٌ بلا ورقة واحدة داخل سقف هذه الإدارة لا يُمنح — منحُه وهمٌ لا يظهر في قائمة الصلاحيات (V7 P3: بالمعالج الواحد grantTpl) */
+      var r = grantTpl(ekey, t, d, { lens:true, refuseEmpty:true, strict:true }); if (!r || r.ok === false) return r;
       return { ok:true, id:t.id, name:t.name };
     } catch(e){ return { ok:false, err:'تعذّر المنح' }; }
   }

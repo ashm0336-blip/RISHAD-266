@@ -7,6 +7,7 @@
      (ج) علامةُ restore مزوَّرة ⇒ التوثيقُ والصورةُ باقيان (الإنفاذ: ترفضها سياسةُ الاستعادة أصلاً)
      (د) ولا تراجع: الاستعادةُ المخوَّلة (مدير النظام — كما يرسلها bkCommit: علامةُ backup.restore + حدثُ import) تعيد النسخةَ كما هي ولو محت توثيقاً لاحقاً
    بياناتٌ اصطناعية وحدها (tasks_fx · TEST_ONLY). */
+import './clock.mjs';   /* V7 P3: ساعةُ الاختبار المثبَّتة (1448-5-9) — كان يُخفق في أول الشهر الهجري وبعد تبدّل الشهر (يُستورد أولاً) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, KT, TAG, stored, IMG_ME, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';

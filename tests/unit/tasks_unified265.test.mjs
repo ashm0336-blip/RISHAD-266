@@ -12,6 +12,7 @@
      (R-7) المراجِعُ لا يكون المكلَّفَ: إعادةُ الإسناد إليه (400) والحفظُ الخامّ ('task-rv')
      (R-8) العمودُ 23 بهوية الصفّ (13 · 14) حين تحمل الهويةُ صفّين: تبديلُ x بينهما · نزعُها بتغيير المكلَّف ⇒ رفض
      (R-9) تنبيهُ «لم تُولَّد» المخزَّن (يقرؤه أعضاءُ الإدارة) بلا حالة حساب الزميل — والتفصيلُ في ردّ التوليد لمن يملكه */
+import './clock.mjs';   /* V7 P3: ساعةُ الاختبار المثبَّتة (1448-5-9) — كان يُخفق في أول الشهر الهجري وبعد تبدّل الشهر (يُستورد أولاً) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, P0, KT, KE, notificationMessages, assertNotificationKVRetired, TAG, DAY, IMG_MATE, stored, putKV, addAccount, row, hij, HR, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';

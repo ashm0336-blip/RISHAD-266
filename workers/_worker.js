@@ -21678,7 +21678,7 @@ function permv4Ctx(A, d, k, okMap, ctx) {
   return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: dsToday(Date.now()), now: Date.now(),
            retroWin: (ctx && ctx.retroWin) || {}, locks: { staffing: pv4.staffingLocks, tasks: pv4.tasksLocks },
            actorShift: function (mk) { var m = staffing && isObj(staffing) ? staffing[mk] : null; var r = m && isObj(m) ? m[A.u.ekey] : null; return (r && isObj(r) && r.shift) ? String(r.shift) : null; },
-           held: okMap || {}, fieldOnly: !!d && dailyFieldOnly(A, d), sources: permv4Sources(A), scopeValues: null, deptCeiling: permv4DeptCeiling };
+           held: okMap || {}, fieldOnly: !!d && enfFieldOnly(A, d), sources: permv4Sources(A), scopeValues: null, deptCeiling: permv4DeptCeiling };
 }
 function pv4Bump(o, r) { o.calls++; if (r === 'allow') o.allow++; else if (r === 'deny') o.deny++; else if (r === 'unknown') o.unknown++; else o.notApplicable++; }
 function permv4Write(A, k, rn, P, a, b, res, real, okMap, asisOk, cat, cx, ctx, v, v2ok) {
@@ -24294,6 +24294,37 @@ var ENF_IX = null;
 var ENF_LEAF_RE = /^([A-Za-z]+(?:\/[A-Za-z]+)?):(view|add|edit|del|approve|export)$/;
 /* D-19 (v24.3 F-14): كاتبُ رصد الميدان يستهلك status.change على العناصر المسنَدة إليه فقط — بنطاق Assigned الذي يفرضه المحرّك (fieldOnly) */
 var ENF_DERIVE = { 'field.view': ['lens.zones.status.change', 'lens.gates.status.change', 'lens.marks.status.change'] };
+/* RISHAD-266 · V7 P3-sec — «المسنَد فقط» للراصد أياً كان مصدرُ المنح. كان حصرُ Assigned يُحسب من الورقة المخزَّنة وحدها (018 dailyFieldOnly):
+   من جاءه field.view بمنحٍ صريح (bassam_grants_v1 — بلا ورقة) ومعه عرضُ «الجولات» أو «التشغيل الميداني» عومل كمشرفٍ بلا حصر، فكتب
+   حالةَ عناصرَ غيرِ مسنَدةٍ إليه (القبولُ الحيّ لـV7 P3). القاعدة:
+     • ورقةٌ مخزَّنةٌ فيها daily/field ⇒ حكمُها كما كان حرفاً (dailyFieldOnly) — الراصدُ والمشرفُ صاحبا الورقة لا يتغيّر لهما شيء.
+     • وإلا: حاملُ field.view بمنحٍ صريح محصورٌ بالمسنَد إليه ما لم يحمل كتابةً صريحةً غيرَ مشتقّة على الجولات أو عدساتها
+       (ENF_FIELD_LIFT — كتابةُ المشرف اليوم) — مفاتيحُ العرض الأخرى لا ترفع الحصر، والمشتقّةُ الثلاثة (ENF_DERIVE) ليست كتابةً صريحة.
+     • مسؤولُ المنصة · حسابُ الإدارة · المديرُ الوارث (بلا منحٍ صريح لـfield.view): غيرُ محصورين كما كانوا.
+   في الوضع القديم لا سجلَّ منحٍ مرفقاً ⇒ الورقةُ وحدها كما كانت. */
+var ENF_FIELD_LIFT = null;
+function enfFieldLift() {
+  if (ENF_FIELD_LIFT) return ENF_FIELD_LIFT;
+  var R = KIVO_REGISTRY, out = [], der = {}, s, i, k, e;
+  for (s in ENF_DERIVE) for (i = 0; i < ENF_DERIVE[s].length; i++) der[ENF_DERIVE[s][i]] = 1;
+  for (i = 0; i < R.keys.length; i++) {
+    k = R.keys[i]; e = R.byKey[k];
+    if (!e || e.status !== 'active' || der[k] || k.indexOf('ref.') === 0) continue;
+    if (e.type === 'access' || e.type === 'view' || e.type === 'capability') continue;
+    if (e.owner === 'daily/rounds' || e.ownerKind === 'lens') out.push(k);
+  }
+  return (ENF_FIELD_LIFT = out);
+}
+function enfFieldOnly(A, d) {
+  var u = A && A.u; if (!u || !d || u.role === 'super' || u.role === 'dept') return false;
+  var ep = ((A.perms.emps || {})[d] || {})[u.ekey] || {};
+  if ((ep['daily/field'] || []).length && capOnDept(A, d, 'daily/field')) return dailyFieldOnly(A, d);   /* الورقةُ المخزَّنة تحكم كما كانت */
+  var g; try { g = enfGrantOf(A, d); } catch (e0) { return false; }                                    /* بلا سجلّ منحٍ مرفق (القديم): الورقةُ وحدها */
+  if (!g.plus['field.view'] || !enfHeld(A, d, 'field.view')) return false;
+  var L = enfFieldLift(), i;
+  for (i = 0; i < L.length; i++) if (enfHeld(A, d, L[i])) return false;                                  /* كتابةٌ صريحةٌ غيرُ مشتقّة ⇒ بلا حصر، كالمشرف */
+  return true;
+}
 /* D3-01 / §14.2: ربطُ approve → retro.open توافقٌ مؤقّت ينتهي عند ترحيل الصلاحيات (المنحُ الصريح وحده بعده) */
 var ENF_COMPAT = { 'ir.rec.retro.open': 'irshad/records:approve', 'sz.rec.retro.open': 'seized/records:approve' };
 /* KIVO_265 · قرارُ المالك 2026-10-20 («هذا الإجراء يتطلب سبباً … لا أرغب بها، أزلها»): تغييرُ حالة عناصر الخطة التشغيلية من «التشغيل الميداني»
@@ -24971,7 +25002,7 @@ function enfViewCtx(A, d, rn, refs) {
   /* RISHAD-266: Shift · Site · Zone/Element لا تقيّد (سقفُ النطاق القديم أُلغي) — Assigned · Source كما كانا */
   var dims = ['Assigned', 'Source'], rs = { 'Shift': false, 'Site': false, 'Zone/Element': false }, j;
   for (j = 0; j < dims.length; j++) { var all = held.length > 0; for (i = 0; i < held.length && all; i++) if (enfDimsOf(held[i]).indexOf(dims[j]) === -1) all = false; rs[dims[j]] = all; }
-  var V = { d: d, rn: rn, held: held, restrict: rs, sources: enfSources(A, 'read'), fieldOnly: dailyFieldOnly(A, d), ekey: String(A.u.ekey || ''),
+  var V = { d: d, rn: rn, held: held, restrict: rs, sources: enfSources(A, 'read'), fieldOnly: enfFieldOnly(A, d), ekey: String(A.u.ekey || ''),
     lens: {}, toks: rn === 'bassam_rounds_v1' && refs && refs.emps ? enfToksOf(refs.emps[d], String(A.u.ekey || '')) : null };
   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (KIVO_LENS_PLUGINS.keys) — بوابةُ كلٍّ منها بالمرجع نفسِه */
   for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) V.lens[KIVO_LENS_PLUGINS.keys[li]] = KIVO_BUILD.lensGate(A.perms, A.u, d, KIVO_LENS_PLUGINS.keys[li]).on;

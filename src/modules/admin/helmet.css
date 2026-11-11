@@ -508,4 +508,14 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 /* V7 P3-0 · حالةُ السقف في رأس المحرّر — «مفتوح — لم يُضبط» تنبيه */
 .capst{padding:8px 12px;margin-bottom:12px;border-radius:12px;border:1px solid var(--border-default);font-size:11.5px;font-weight:700;color:var(--text-secondary);background:var(--bg-surface-2)}
 .capst[data-tone="warn"]{color:var(--warning-text);background:var(--warning-bg);border-color:var(--warning-border)}
+/* V7 P3 · المحرّر الموحّد — مصادرُ الصلاحية ومراجعةُ الفرق قبل الحفظ (نافذةُ الحساب وقوالبُ الإدارة) */
+.ed-src{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.ed-src>span{display:inline-flex;gap:5px;align-items:baseline;max-width:100%;padding:4px 10px;border-radius:9999px;border:1px solid var(--border-default);background:var(--bg-surface-2);font-size:10.5px;font-weight:600;color:var(--text-secondary);overflow-wrap:anywhere}
+.ed-src>span b{font-weight:700;color:var(--text-primary)}
+.ed-rev{margin-top:11px;max-height:32vh;overflow-y:auto;padding:10px 12px;border-radius:12px;border:1px solid var(--warning-border);background:var(--warning-bg);font-size:11px;line-height:1.8;color:var(--text-primary)}
+.ed-rev>b{display:block;font-weight:700;color:var(--warning-text)}
+.ed-rev ul{margin:2px 0 0;padding:0 18px 0 0;overflow-wrap:anywhere}
+.ed-rev .ed-add li::marker{content:"+ ";color:var(--success-text)}
+.ed-rev .ed-drop li::marker{content:"− ";color:var(--danger-text)}
+.ed-rev .ed-lb{font-weight:700;color:var(--text-secondary)}
 </style>
