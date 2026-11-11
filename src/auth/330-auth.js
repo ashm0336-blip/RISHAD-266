@@ -150,6 +150,9 @@
     if (u.dis) { RAW.removeItem.call(localStorage, K_SESS); return null; }
     return u;
   }
+  /* V7 · القضية #3: مديرُ عقدةٍ قبل الخادمُ دخولَه وليس تحت عقدته إدارةُ بيانات — cur() لا تعدّه جلسةً (السطر أعلاه)، فكانت بوابةُ الدخول
+     تعود صامتةً بلا رسالة. هذا السؤالُ للبوابة وحدها لتقول السبب؛ لا يفتح شيئاً ولا يغيّر التفويض. */
+  function gmNoUnits(){ var ss = session(); if (!ss) return false; var u = userById(ss.uid); return !!(u && u.role === 'gm' && !u.dis && !gmDepts(u.gid).length); }
   function curPub(){ var u = cur(); if (!u) return null; var c = {}; for (var k in u) if (k !== 'ph') c[k] = u[k]; return c; }
   function isSuper(){ var u = cur(); return !!(u && u.role === 'super'); }
   try { KIVO.bsTechWho(isSuper); } catch (eT) { /* CORE-01: التفصيلُ التقني لمدير المنصة (130) — بلا شريطٍ يبقى كما هو */ }
@@ -728,7 +731,7 @@
   I.selfWhyText = selfWhyText;   /* KIVO_264: نصُّ رفض الخادم لتعديل حسابي (self · self-cur · self-un) — لطبقة المزامنة وللصفحة */
   I.countOrphanDeptAccounts = countOrphanDeptAccounts; I.cur = cur; I.curDept = curDept; I.curPub = curPub; I.deptAccountsCount = deptAccountsCount;
   I.deptManagerPub = deptManagerPub; I.deptManagersPub = deptManagersPub; I.freezeStaff = freezeStaff; I.gmDepts = gmDepts;
-  I.gmEnsureActive = gmEnsureActive; I.gmKeyOf = gmKeyOf; I.gmRoleLabel = gmRoleLabel; I.groupManagerPub = groupManagerPub;
+  I.gmEnsureActive = gmEnsureActive; I.gmNoUnits = gmNoUnits; I.gmKeyOf = gmKeyOf; I.gmRoleLabel = gmRoleLabel; I.groupManagerPub = groupManagerPub;
   I.groupManagersPub = groupManagersPub; I.hashPw = hashPw; I.isGmKey = isGmKey; I.isMgrKey = isMgrKey; I.isSuper = isSuper; I.login = login;
   I.mgrKeyOf = mgrKeyOf; I.needsPwChange = needsPwChange; I.pinRole = pinRole; I.pruneDeptAccounts = pruneDeptAccounts; I.pubUsers = pubUsers; I.userById = userById; I.usersVer = usersVer;
   I.purgeDeptAccounts = purgeDeptAccounts; I.pwCheck = pwCheck; I.pwRuleText = pwRuleText; I.rawUsers = rawUsers;

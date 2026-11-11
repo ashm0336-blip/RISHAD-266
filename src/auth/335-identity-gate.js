@@ -236,6 +236,8 @@
     var er = document.getElementById('bsGateErr');
     function say(m){ er.textContent = m || ''; er.classList.toggle('show', !!m); w.querySelectorAll('.login-input-wrap').forEach(function(x){ x.classList.toggle('err', !!m); }); if (m){ var c = w.querySelector('.login-card'); c.style.animation = 'loginShake .4s'; setTimeout(function(){ c.style.animation=''; }, 450); } }
     w.querySelectorAll('.login-input-wrap input').forEach(function(x){ x.addEventListener('input', function(){ w.querySelectorAll('.login-input-wrap').forEach(function(y){ y.classList.remove('err'); }); }); });
+    /* V7 · القضية #3: حسابٌ صالحٌ قبله الخادمُ ولا إدارةَ تحت عقدته بعد — تُقال له العلّةُ بدل شاشة دخولٍ صامتة (بلا اهتزازٍ ولا وسم الحقول: ليس خطأَ إدخال) */
+    try { if (I.gmNoUnits && I.gmNoUnits()) { er.textContent = 'لا توجد إدارة تابعة لعقدتك بعد — راجع مسؤول المنصة'; er.classList.add('show'); er.setAttribute('role', 'status'); } } catch (eG) { /* لا يمنع الدخول */ }
     /* قفل المحاولات: عدّاد تنازلي حيّ يعيد تفعيل الزر عند الصفر — لا رقم جامد يخمّن المستخدم متى ينتهي */
     var cdT = 0;
     /* KIVO_260: الثواني بصيغة العدد والمعدود (R183 — كانت «٣ ثانية») — BassamCount إن حُمِّلت، وإلا القاعدةُ نفسُها */
