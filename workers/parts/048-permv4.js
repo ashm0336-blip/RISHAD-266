@@ -44,7 +44,7 @@ function permv4Ctx(A, d, k, okMap, ctx) {
   return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: dsToday(Date.now()), now: Date.now(),
            retroWin: (ctx && ctx.retroWin) || {}, locks: { staffing: pv4.staffingLocks, tasks: pv4.tasksLocks },
            actorShift: function (mk) { var m = staffing && isObj(staffing) ? staffing[mk] : null; var r = m && isObj(m) ? m[A.u.ekey] : null; return (r && isObj(r) && r.shift) ? String(r.shift) : null; },
-           held: okMap || {}, fieldOnly: !!d && dailyFieldOnly(A, d), sources: permv4Sources(A), scopeValues: null, deptCeiling: permv4DeptCeiling };
+           held: okMap || {}, fieldOnly: !!d && enfFieldOnly(A, d), sources: permv4Sources(A), scopeValues: null, deptCeiling: permv4DeptCeiling };
 }
 function pv4Bump(o, r) { o.calls++; if (r === 'allow') o.allow++; else if (r === 'deny') o.deny++; else if (r === 'unknown') o.unknown++; else o.notApplicable++; }
 function permv4Write(A, k, rn, P, a, b, res, real, okMap, asisOk, cat, cx, ctx, v, v2ok) {
