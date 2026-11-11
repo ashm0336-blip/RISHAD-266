@@ -7377,132 +7377,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         ["dash", "متقطع", "dashed"],
         ["dot", "منقّط", "dotted"],
       ],
-      At = (t, e, s) => ("dash" === t ? 7 * e + " " + 4.5 * e : "dot" === t ? 0.01 * e + " " + Math.max(5, 2.6 * s) * e : null),
       vt = (t) => (t && !1 === t.active ? "#94a3b8" : (mt[(t && t.type) || "in"] || mt.in).c),
-      St = (t, e, s, n, a) => {
-        const i = Math.atan2(e.y - t.y, e.x - t.x),
-          r = Math.cos(i),
-          l = Math.sin(i),
-          o = -l,
-          d = r,
-          h = 11 * s,
-          p = 4.62 * s,
-          c = 11 * 0.66 * s,
-          g = e.x - r * h,
-          f = e.y - l * h,
-          u =
-            "M" +
-            e.x +
-            "," +
-            e.y +
-            " L" +
-            (g + o * p) +
-            "," +
-            (f + d * p) +
-            " L" +
-            (e.x - r * c) +
-            "," +
-            (e.y - l * c) +
-            " L" +
-            (g - o * p) +
-            "," +
-            (f - d * p) +
-            " Z";
-        return React.createElement("path", { key: a, d: u, fill: n, stroke: "#fff", strokeWidth: 0.9 * s, strokeLinejoin: "round" });
-      },
-      wt = (t, e, s, n, a) => {
-        const i = [],
-          r = "two" === n,
-          l = [];
-        let o = 0;
-        for (let e = 1; e < t.length; e++) {
-          const s = t[e - 1],
-            n = t[e],
-            a = Math.hypot(n.x - s.x, n.y - s.y);
-          a > 0.01 && (l.push({ a: s, b: n, len: a, ux: (n.x - s.x) / a, uy: (n.y - s.y) / a, d0: o }), (o += a));
-        }
-        if (!l.length) return i;
-        const d = (t) => {
-            let e = l[l.length - 1];
-            for (let s = 0; s < l.length; s++)
-              if (t <= l[s].d0 + l[s].len) {
-                e = l[s];
-                break;
-              }
-            const s = Math.max(0, Math.min(e.len, t - e.d0));
-            return { x: e.a.x + e.ux * s, y: e.a.y + e.uy * s, ux: e.ux, uy: e.uy };
-          },
-          h = 30 * e,
-          p = 17 * e,
-          c = Math.min(Math.floor((o - p) / h), 96);
-        for (let t = 1; t <= c; t++) {
-          const n = d(t * h);
-          r && t % 2 == 0
-            ? i.push(St({ x: n.x + n.ux, y: n.y + n.uy }, { x: n.x, y: n.y }, e, s, a + "r" + t))
-            : i.push(St({ x: n.x - n.ux, y: n.y - n.uy }, { x: n.x, y: n.y }, e, s, a + "s" + t));
-        }
-        const g = l[l.length - 1];
-        if ((i.push(St({ x: g.b.x - g.ux, y: g.b.y - g.uy }, g.b, e, s, a + "f")), r)) {
-          const t = l[0];
-          i.push(St({ x: t.a.x + t.ux, y: t.a.y + t.uy }, t.a, e, s, a + "b0"));
-        }
-        return i;
-      },
-      zt = (t, e, s, n, a) => {
-        if (!t || !1 === t.anim || !1 === t.active) return null;
-        const i = String(e || "")
-          .trim()
-          .split(/\s+/)
-          .map((t) => {
-            const e = t.split(",");
-            return { x: +e[0], y: +e[1] };
-          })
-          .filter((t) => isFinite(t.x) && isFinite(t.y));
-        if (i.length < 2) return null;
-        let r = 0;
-        for (let t = 1; t < i.length; t++) r += Math.hypot(i[t].x - i[t - 1].x, i[t].y - i[t - 1].y);
-        if (r < 26 * n) return null;
-        const l = (t) => "M " + t.map((t) => t.x + " " + t.y).join(" L "),
-          o = "bsPF_" + String(a || "f").replace(/[^A-Za-z0-9_]/g, ""),
-          d = o + "r",
-          h = "two" === t.dir,
-          p = Math.max(1.6, Math.min(16, r / 62));
-        let c = Math.max(1, Math.min(6, Math.round(r / 74)));
-        h && (c = Math.max(2, c));
-        const g = Math.max(3.4 * n, 1.05 * s),
-          f = 0.72 * g,
-          u = "M " + -g + " " + -f + " L " + g + " 0 L " + -g + " " + f + " Z",
-          m = [];
-        for (let t = 0; t < c; t++) {
-          const e = h && t % 2 == 1;
-          m.push(
-            React.createElement(
-              "path",
-              {
-                key: "h" + t,
-                d: u,
-                fill: "#ffffff",
-                opacity: 0.95,
-                stroke: "rgba(0,0,0,0.18)",
-                strokeWidth: 0.5 * n,
-                style: { pointerEvents: "none" },
-              },
-              React.createElement(
-                "animateMotion",
-                { dur: p.toFixed(2) + "s", repeatCount: "indefinite", rotate: "auto", begin: ((-t / c) * p).toFixed(2) + "s" },
-                React.createElement("mpath", { href: "#" + (e ? d : o) }),
-              ),
-            ),
-          );
-        }
-        return React.createElement(
-          "g",
-          { key: a || "flow", style: { pointerEvents: "none" } },
-          React.createElement("path", { id: o, d: l(i), fill: "none", stroke: "none" }),
-          h ? React.createElement("path", { id: d, d: l(i.slice().reverse()), fill: "none", stroke: "none" }) : null,
-          m,
-        );
-      },
+      St = (t, e, s, n, a) => this.bsPathArrow(t, e, s, n, a),
       Et = ((_ && this.bsLensOn("paths") && e.paths) || [])
         .map((t, s) => {
           const n = t.pts || [];
@@ -7511,12 +7387,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             r = !(!e.flash || "path" !== e.flash.t || e.flash.i !== s),
             l = !1 !== t.active,
             o = !(("plan" === e.lens && !e.zAsn) || "paths" === e.lens),
-            d = o ? "#94a3b8" : vt(t),
-            h = bt[t.w] || bt.normal,
-            p = h * gt,
-            c = n[Math.floor((n.length - 1) / 2)],
-            g = n.map((t) => t.x + "," + t.y).join(" "),
-            f = ((t) => (t && t.code ? t.code + " · " : "") + ((t && t.name) || ""))(t),
             u = !this.curApproved() && (("plan" === e.lens && !e.zAsn) || "paths" === e.lens);
           return React.createElement(
             "g",
@@ -7541,55 +7411,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 (t.stopPropagation(), u && (this.setState({ pdrag: null }), this.openPathEditor(s)));
               },
             },
-            React.createElement("polyline", {
-              points: g,
-              fill: "none",
-              stroke: "#ffffff",
-              strokeWidth: p + (r ? 7 : a ? 4.4 : 2) * gt,
-              strokeLinecap: "round",
-              strokeLinejoin: "round",
-              opacity: 0.92,
-            }),
-            r || a
-              ? React.createElement("polyline", {
-                  points: g,
-                  fill: "none",
-                  stroke: "#b99751",
-                  strokeWidth: p + 2.6 * gt,
-                  strokeLinecap: "round",
-                  strokeLinejoin: "round",
-                  opacity: 0.5,
-                })
-              : null,
-            React.createElement("polyline", {
-              points: g,
-              fill: "none",
-              stroke: d,
-              strokeWidth: p,
-              strokeLinecap: "round",
-              strokeLinejoin: "round",
-              strokeDasharray: At(t.line, gt, h),
-            }),
-            o ? null : zt(t, g, p, gt, "fl" + s),
-            wt(n, gt, d, t.dir, "a" + s + "_"),
-            rt && !t.hideLabel && f
-              ? React.createElement(
-                  "text",
-                  {
-                    x: c.x,
-                    y: c.y - (7 * gt + 1.6 * p),
-                    textAnchor: "middle",
-                    fontSize: 12.5 * gt,
-                    fontWeight: 600,
-                    fill: d,
-                    style: { fontFamily: "'Cairo',sans-serif", pointerEvents: "none" },
-                    stroke: "#fff",
-                    strokeWidth: 3.2 * gt,
-                    paintOrder: "stroke",
-                  },
-                  f,
-                )
-              : null,
+            this.bsPathVisual(t, { types: mt, scale: gt, selected: a, flash: r, muted: o, showLabels: rt, key: "plan_fl" + (e.floor || 0) + "_" + s }),
           );
         })
         .filter(Boolean);
@@ -10333,7 +10155,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       peCode: (e.pEdit && e.pEdit.code) || "",
       onPeCode: (t) =>
         this.setState({ pEdit: { ...this.state.pEdit, code: t.target.value } }),
-      peTypeLabel: e.pEdit ? (mt[e.pEdit.type || "in"] || mt.in).label : "",
+      peTypeLabel:
+        e.pEdit && e.pEdit.dir === "two" && (!e.pEdit.type || e.pEdit.type === "in" || e.pEdit.type === "out")
+          ? "دخول وخروج"
+          : e.pEdit ? (mt[e.pEdit.type || "in"] || mt.in).label : "",
       peHeadStyle: (() => {
         const t = e.pEdit ? (!1 === e.pEdit.active ? "#94a3b8" : (mt[e.pEdit.type || "in"] || mt.in).c) : "#b99751";
         return (
@@ -10368,27 +10193,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           h = Math.min(268 / Math.max(l - r, 1), 42 / Math.max(d - o, 1)),
           p = (300 - (l - r) * h) / 2,
           c = (74 - (d - o) * h) / 2,
-          g = n.map((t) => ({ x: (t.x - r) * h + p, y: (t.y - o) * h + c })),
-          f = !1 !== t.active,
-          u = f ? (mt[t.type || "in"] || mt.in).c : "#94a3b8",
-          m = bt[t.w] || bt.normal,
-          y = m,
-          b = g.map((t) => t.x + "," + t.y).join(" ");
+          g = n.map((t) => ({ x: (t.x - r) * h + p, y: (t.y - o) * h + c }));
         return React.createElement(
           "svg",
           { viewBox: "0 0 300 74", width: "100%", height: 74, preserveAspectRatio: "xMidYMid meet", style: { display: "block" } },
-          React.createElement("polyline", {
-            points: b,
-            fill: "none",
-            stroke: u,
-            strokeWidth: y,
-            strokeLinecap: "round",
-            strokeLinejoin: "round",
-            strokeDasharray: At(t.line, 1, m),
-            opacity: f ? 1 : 0.6,
-          }),
-          zt({ anim: t.anim, active: t.active }, b, y, 1, "pvf"),
-          wt(g, 1, u, t.dir, "pv_"),
+          this.bsPathVisual({ ...s, ...t, pts: g, hideLabel: true }, { types: mt, scale: 1, key: "plan_preview" }),
         );
       })(),
       peTypes: yt.map((t) => {
@@ -10431,6 +10240,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               : "#E1E1E1;background:var(--bg-xffffff);color:var(--fg-x64748b)"),
         };
       }),
+      peDirHint: this.bsPathDirectionHint(e.pEdit),
       peDirText:
         e.pEdit && "two" === e.pEdit.dir ? "اتجاهان ⇄" : "اتجاه واحد →",
       peDirColor: e.pEdit && "two" === e.pEdit.dir ? "#047857" : "#94a3b8",
