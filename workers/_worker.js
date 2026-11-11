@@ -1945,6 +1945,48 @@ function nodeRemoveWhy(A, old, N) {
   for (i = 0; i < us.length; i++) if (isObj(us[i]) && us[i].role === 'gm' && G[shapeRef(us[i], 'gid')]) return 'node-has-manager';
   return '';
 }
+/* V7 · issue #4 — a node's ceiling records live and die with the node (the unit counterpart is the atomic unit delete: 019e rsWipeRoute).
+   bassam_perms_v1 holds a node's ceiling in caps · subs · lenses [<id>] and its capOwn[<id>] flag. Judged on the node registry as this
+   save leaves it (gNew) against the stored one (gCur) — only when the node rules above accepted the save (054 applySave):
+   · a node the save removes: its records go in the same save (nodeRemoveWhy decides whether it may be removed at all);
+   · a node the save adds (the id did not exist before — an import, a restore, a re-used id): a record stored before it is a leftover of
+     a deleted node, not a decision about this one ⇒ dropped, unless this same save writes the record deliberately (pNew carries one that
+     differs from the stored record). A record equal to the stored one is what a page copies along («it already has a ceiling»).
+   The verified server restore (rst) that brings its own registry (pNew) keeps it verbatim. An id that is a data unit is never touched.
+   pNew = the registry this save writes (null: it carries none) · pCur = the stored one. Returns
+   { v: the registry to write instead (pNew if carried, else pCur) without those records — null when nothing changes ·
+     couple: this save writes a record for a node it adds ⇒ both registries are written together or not at all (otherwise a retried
+     structure would find its own fresh record «stored before it») }. The capOwn map itself stays, even empty (021 capOwnWhy). */
+var NODE_CAP_MAPS = ['caps', 'subs', 'lenses', 'capOwn'];
+function nodeCapRec(P, id) {
+  var r = {}, n = 0;
+  NODE_CAP_MAPS.forEach(function (f) { if (isObj(P[f]) && Object.prototype.hasOwnProperty.call(P[f], id)) { r[f] = P[f][id]; n++; } });
+  return n ? r : null;
+}
+function nodeCapSweep(A, gNew, gCur, pNew, pCur, rst) {
+  var out = { v: null, couple: false }, b = parseJson(gNew, null), a = parseJson(gCur, null);
+  if (!Array.isArray(b)) return out;
+  var S = parseJson(pCur, null), P = pNew == null ? null : parseJson(pNew, null);
+  if (!isObj(S)) S = {};
+  if (pNew != null && !isObj(P)) return out;
+  var N = shapeFirst(b), O = shapeFirst(a), U = shapeFirst(shapeList(A, K_DEPTS)), T = P || S, drop = [], q, rs, rp;
+  for (q in N) if (!O[q] && !U[q]) {
+    rs = nodeCapRec(S, q); rp = P ? nodeCapRec(P, q) : null;
+    if (rp && !deq(rp, rs)) out.couple = true;
+    else if (rs && !(rst && P)) drop.push(q);
+  }
+  if (!(rst && P)) for (q in O) if (!N[q] && !U[q] && nodeCapRec(T, q)) drop.push(q);
+  if (!drop.length) return out;
+  var R = Object.assign({}, T), hit = false;
+  NODE_CAP_MAPS.forEach(function (f) {
+    if (!isObj(T[f])) return;
+    var m = null;
+    drop.forEach(function (id) { if (Object.prototype.hasOwnProperty.call(T[f], id)) { m = m || Object.assign({}, T[f]); delete m[id]; } });
+    if (m) { R[f] = m; hit = true; }
+  });
+  if (hit) out.v = JSON.stringify(R);
+  return out;
+}
 /* ══ مديرُ الإدارة يُنشئ أقسامَ إدارته (F01 · خطة التوحيد) ══
    غيرُ مدير النظام يكتب سجلَّ الوحدات بشرطٍ واحد: كلُّ ما تغيّر قسمٌ مضافٌ (أو أُعيدت تسميتُه) تحت إدارةٍ يديرها هو (isMgrOf — وليست قسماً)،
    وما سواه كما خُزِّن حرفاً: لا حذفَ (الحذفُ ذرّيٌّ في الخادم: /api/admin/dept-delete لمدير النظام) ولا نقلَ ولا إدارةٌ جديدة. ثم قاعدةُ الشكل كاملةً. */
@@ -23706,11 +23748,23 @@ function tkKeepOff(A, k, d, rst, imp, X) {
    التي بنى عليها تعديله (base) وكان الخادم قد تجاوزها فلا تُكتب القيمة بل
    تعود الأحدث ليدمج المتصفح عليها ويعيد الإرسال؛ (٣) التدقيق — كل كتابة
    نافذة تُسجَّل بفاعلها ووقتها وفرقها. */
+/* V7 · issue #4 (018 nodeCapSweep): the answer of a save whose registry the server cleaned (out.__nc — set once in applySave, read once here).
+   · hide: the request did not carry bassam_perms_v1 — nothing about that key is reported (280 saveAck9 refuses an answer naming a key the
+     request did not send); the page learns the new registry as any change by another writer (live pull · a conflict on its next save);
+   · echo: the request carried it and the server wrote it without the swept records — answered as conflicts[k] = { cur: the written value,
+     rev: its revision } so the page adopts exactly what was stored (its merge over cur is cur: nothing re-sent, nothing announced). */
+function nodeCapAck(out) {
+  var m = out && out.__nc; if (!m) return out;
+  delete out.__nc;
+  if (m.hide) { if (out.revs) delete out.revs[K_PERM]; if (out.conflicts) delete out.conflicts[K_PERM]; }
+  else if (out.revs && out.revs[K_PERM] != null) { out.conflicts = out.conflicts || {}; out.conflicts[K_PERM] = { cur: m.echo, rev: out.revs[K_PERM], by: '', at: Date.now(), self: true }; delete out.revs[K_PERM]; }
+  return out;
+}
 async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ مهامٍ في الخادم يبني من القيمة الحالية · { quiet } الرفضُ لا يُسجَّل هنا (يحكم المستدعي) — F-10 */
   var planOnly=!!(opt && opt.__restorePlan===RESTORE_INTERNAL_TOKEN);
   if (planOnly && opt.__serverDepartmentWipes) A.__udel = 1;
   if (planOnly && opt.__srvRestore === RESTORE_INTERNAL_TOKEN) A.__srvRst = 1;   /* RISHAD266 (مراجعة المالك على aae024c): الاستعادةُ الخادمية المتحقَّقة (019d) وحدها — علامةُ الاستعادة القادمة من العميل لا تستثني من سلامة العلاقات */   /* RISHAD266: حفظةُ الحذف الذرّيّ نفسُه (019e rsWipeRoute · رمزٌ داخليّ) — الطريقُ الوحيد لحذف وحدة (018 deptShapeWhy) */
- if(!planOnly&&!(opt&&opt.__cuPass===RESTORE_INTERNAL_TOKEN)&&rsSaveNeedsAtomic(body))return await rsSaveCommit(env,A,body,ip,opt);
+ if(!planOnly&&!(opt&&opt.__cuPass===RESTORE_INTERNAL_TOKEN)&&rsSaveNeedsAtomic(body))return nodeCapAck(await rsSaveCommit(env,A,body,ip,opt));
   var set = (body && body.set) || {}, del = (body && body.del) || [], base = (body && body.base) || {};
   /* Retired document key: reject the entire mixed batch before any mutation. In
      particular a full restore must never acknowledge a partial relational restore. */
@@ -24037,6 +24091,22 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
   if (todo.length === regN9) { regUndo9(todo.length - 1); regPair9(); }               /* F01: حفظةٌ فيها السجلّان وحدهما */
+  /* V7 · issue #4 (018 nodeCapSweep): the node registry was accepted ⇒ the ceiling records of the nodes it removes go in this same save, and a
+     node it adds does not inherit a record stored before it. The registry is the request's own when it carries one (cleaned, and answered
+     with what was written — nodeCapAck), otherwise a write the server derives from the stored one. Either way the batch is all-or-nothing
+     (protOp): a refusal or a conflict on any key writes nothing, and the registry is never cleaned for a node that stays. */
+  var ncG9 = -1, ncP9 = -1, ncD9 = null, ncM9 = null;
+  for (i = 0; i < todo.length; i++) if (todo[i].act === 'set') { if (todo[i].k === K_GDEPTS) ncG9 = i; else if (todo[i].k === K_PERM) ncP9 = i; }
+  if (ncG9 !== -1 && evald[ncG9]) {
+    var ncS9 = await opResourceGet(env, K_PERM), ncE9 = ncP9 !== -1 ? evald[ncP9] : null,
+      nc9 = nodeCapSweep(A, todo[ncG9].v, await opResourceGet(env, K_GDEPTS), ncP9 !== -1 ? todo[ncP9].v : null, ncS9, !!A.__srvRst);
+    if (nc9.couple) protOp = protOp || 'nodeCap';
+    if (nc9.v != null && evald[ncG9].ok) {
+      protOp = protOp || 'nodeCap';
+      if (ncP9 === -1) { ncD9 = { cur: ncS9, v: nc9.v }; if (!A.__srvRst) ncM9 = { hide: 1 }; }
+      else if (ncE9 && (ncE9.ok || ncE9.noop)) { todo[ncP9].v = nc9.v; if (ncE9.noop) evald[ncP9] = { ok: 1, cur: ncE9.cur, keys: null, dep9: false }; ncM9 = { echo: nc9.v }; }
+    }
+  }
   /* caps-own (021 capStaleBatch): an older page that narrows a ceiling and deletes what fell outside it in the same request ⇒ the whole request
      is refused, nothing written (why 'perms' — the text an older page already shows: «الصلاحيات لم تُقبل … أُعيدت القيمة كما في الخادم») */
   if (capStaleBatch(A, todo, evald)) {
@@ -24075,6 +24145,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var snapIt = [], replace9 = false;
     for (i = 0; i < todo.length; i++) { var ev9 = evald[i]; if (!ev9 || !ev9.ok) continue; if (ev9.keys && ev9.keys.indexOf('import.replace') !== -1) replace9 = true; }
     if (ENFX.restore || replace9) for (i = 0; i < todo.length; i++) if (evald[i] && evald[i].ok) snapIt.push({ k: todo[i].k, cur: evald[i].cur });
+    if ((ENFX.restore || replace9) && ncD9) snapIt.push({ k: K_PERM, cur: ncD9.cur });   /* issue #4: the derived registry write is part of the operation */
     if (snapIt.length) { var sid9 = enfSnapId(ENFX.restore ? 'restore' : 'replace'); st = st.concat(enfSnapStmts(env, sid9, ENFX.restore ? 'restore' : 'replace', A, snapIt, revs, { keys: snapIt.length })); out.snap = sid9; }
   }
   /* ══ المرحلة الثانية: الكتابة ══ */
@@ -24124,6 +24195,13 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (k === K_PERM) secS.push(secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'perm_change', target: '', detail: permChangeDetail(parseJson(cur, {}), parseJson(v, {})), ip: ident.ip, city: ident.city, dev: ident.dev }));
     changed++;
   }
+  /* V7 · issue #4: the registry write derived from the accepted node registry — same batch, same revision, guarded by the registry's own revision */
+  if (ncD9 && pend.some(function (x) { return x.k === K_GDEPTS; })) {
+    pend.push({ k: K_PERM, act: 'set', cur: ncD9.cur, v: ncD9.v, have: revs[K_PERM] || 0, kvS: kvPutStmts(env, 'kv', K_PERM, ncD9.v), dep9: false,
+      secS: [secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'perm_change', target: '', detail: permChangeDetail(parseJson(ncD9.cur, {}), parseJson(ncD9.v, {})), ip: ident.ip, city: ident.city, dev: ident.dev })] });
+    changed++;
+  }
+  if (ncM9) out.__nc = ncM9;
   if(planOnly)return {__plan:1,ok:!Object.keys(out.denied).length&&!Object.keys(out.conflicts).length,protectedOp:protOp,pend:pend,out:out,revs:revs,ident:ident,authzRows:ENFX ? ENFX.log : []};
   /* لحظةُ التخصيص: بعد أن عُرف أن ثمّة تغييراً واحداً على الأقل سيُنفَّذ */
   if (changed) {
@@ -24175,7 +24253,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* بعد ثبوت الكتابة لا قبلها: الملكيةُ والاستعمالُ يتبعان الحالة المستقرّة */
   if (changed && imgTouch.length) await imgSync(env, A, imgTouch);
   if (ENFX) await enfLogPrune(env);
-  return out;
+  return opt && opt.__cuPass === RESTORE_INTERNAL_TOKEN ? out : nodeCapAck(out);   /* issue #4: inside rsSaveCommit the caller answers (above) */
 }
 
 /* ── حقن __BS_BOOT في صفحة المنصة ── */

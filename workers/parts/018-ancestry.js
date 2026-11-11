@@ -186,6 +186,48 @@ function nodeRemoveWhy(A, old, N) {
   for (i = 0; i < us.length; i++) if (isObj(us[i]) && us[i].role === 'gm' && G[shapeRef(us[i], 'gid')]) return 'node-has-manager';
   return '';
 }
+/* V7 · issue #4 — a node's ceiling records live and die with the node (the unit counterpart is the atomic unit delete: 019e rsWipeRoute).
+   bassam_perms_v1 holds a node's ceiling in caps · subs · lenses [<id>] and its capOwn[<id>] flag. Judged on the node registry as this
+   save leaves it (gNew) against the stored one (gCur) — only when the node rules above accepted the save (054 applySave):
+   · a node the save removes: its records go in the same save (nodeRemoveWhy decides whether it may be removed at all);
+   · a node the save adds (the id did not exist before — an import, a restore, a re-used id): a record stored before it is a leftover of
+     a deleted node, not a decision about this one ⇒ dropped, unless this same save writes the record deliberately (pNew carries one that
+     differs from the stored record). A record equal to the stored one is what a page copies along («it already has a ceiling»).
+   The verified server restore (rst) that brings its own registry (pNew) keeps it verbatim. An id that is a data unit is never touched.
+   pNew = the registry this save writes (null: it carries none) · pCur = the stored one. Returns
+   { v: the registry to write instead (pNew if carried, else pCur) without those records — null when nothing changes ·
+     couple: this save writes a record for a node it adds ⇒ both registries are written together or not at all (otherwise a retried
+     structure would find its own fresh record «stored before it») }. The capOwn map itself stays, even empty (021 capOwnWhy). */
+var NODE_CAP_MAPS = ['caps', 'subs', 'lenses', 'capOwn'];
+function nodeCapRec(P, id) {
+  var r = {}, n = 0;
+  NODE_CAP_MAPS.forEach(function (f) { if (isObj(P[f]) && Object.prototype.hasOwnProperty.call(P[f], id)) { r[f] = P[f][id]; n++; } });
+  return n ? r : null;
+}
+function nodeCapSweep(A, gNew, gCur, pNew, pCur, rst) {
+  var out = { v: null, couple: false }, b = parseJson(gNew, null), a = parseJson(gCur, null);
+  if (!Array.isArray(b)) return out;
+  var S = parseJson(pCur, null), P = pNew == null ? null : parseJson(pNew, null);
+  if (!isObj(S)) S = {};
+  if (pNew != null && !isObj(P)) return out;
+  var N = shapeFirst(b), O = shapeFirst(a), U = shapeFirst(shapeList(A, K_DEPTS)), T = P || S, drop = [], q, rs, rp;
+  for (q in N) if (!O[q] && !U[q]) {
+    rs = nodeCapRec(S, q); rp = P ? nodeCapRec(P, q) : null;
+    if (rp && !deq(rp, rs)) out.couple = true;
+    else if (rs && !(rst && P)) drop.push(q);
+  }
+  if (!(rst && P)) for (q in O) if (!N[q] && !U[q] && nodeCapRec(T, q)) drop.push(q);
+  if (!drop.length) return out;
+  var R = Object.assign({}, T), hit = false;
+  NODE_CAP_MAPS.forEach(function (f) {
+    if (!isObj(T[f])) return;
+    var m = null;
+    drop.forEach(function (id) { if (Object.prototype.hasOwnProperty.call(T[f], id)) { m = m || Object.assign({}, T[f]); delete m[id]; } });
+    if (m) { R[f] = m; hit = true; }
+  });
+  if (hit) out.v = JSON.stringify(R);
+  return out;
+}
 /* ══ مديرُ الإدارة يُنشئ أقسامَ إدارته (F01 · خطة التوحيد) ══
    غيرُ مدير النظام يكتب سجلَّ الوحدات بشرطٍ واحد: كلُّ ما تغيّر قسمٌ مضافٌ (أو أُعيدت تسميتُه) تحت إدارةٍ يديرها هو (isMgrOf — وليست قسماً)،
    وما سواه كما خُزِّن حرفاً: لا حذفَ (الحذفُ ذرّيٌّ في الخادم: /api/admin/dept-delete لمدير النظام) ولا نقلَ ولا إدارةٌ جديدة. ثم قاعدةُ الشكل كاملةً. */

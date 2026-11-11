@@ -294,6 +294,23 @@
     if (hit.length) permSave(o);
     return { ok:true, removed: hit };
   }
+  /* V7 · issue #4 — READ-ONLY count of existing leftovers: ceiling entries (caps · subs · lenses · capOwn) whose id is neither a current node
+     nor a current unit/section. Nothing is deleted or written (the server removes a node's records with the node from now on — 018
+     nodeCapSweep; what was left before that stays until the owner decides). Returns { ok, n, ids, maps: { <id>: [the maps holding it] } };
+     an unreadable structure answers ok:false — never «everything is a leftover». */
+  function capOrphans(){
+    var D = KIVO.BassamDepts, live = Object.create(null), maps = {}, ids = [], o;
+    try {
+      if (!D || typeof D.nodes !== 'function' || typeof D.list !== 'function') return { ok:false, err:'تعذّرت قراءة الهيكل' };
+      D.nodes().concat(D.list()).forEach(function(x){ if (x && x.id != null && x.id !== '') live[String(x.id)] = 1; });
+      o = permStore();
+    } catch(e){ return { ok:false, err:'تعذّرت قراءة الهيكل' }; }
+    ['caps', 'subs', 'lenses', 'capOwn'].forEach(function(k){
+      var m = o[k]; if (!m || typeof m !== 'object') return;
+      Object.keys(m).forEach(function(id){ if (live[id]) return; if (!maps[id]) { maps[id] = []; ids.push(id); } maps[id].push(k); });
+    });
+    return { ok:true, n: ids.length, ids: ids, maps: maps };
+  }
 
   /* F01 · سقفُ القسم الجديد: لقطةٌ من سقف الإدارة الأم الفعليّ (deptCap — سجلُّها إن كان لها، وإلا ما ترثه من أسلافها) مرةً واحدة
      (لا سجلَّ للقسم قبلُ) — فلا يتجاوز سقفَ إدارته ولا يُبدَّل بنمطٍ آخر. لا سقفَ في السلسلة كلِّها ⇒ لا سجلّ (الغيابُ لا يقيّد).
@@ -814,7 +831,7 @@
   I.p24Delta = p24Delta; I.p24Effective = p24Effective; I.p24GrantOf = p24GrantOf; I.p24Grantable = p24Grantable; I.p24Ix = p24Ix;
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
   I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.capOwnOf = capOwnOf; I.capState = capState; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
-  I.patternSeed = patternSeed; I.permSave = permSave; I.dropNodeCap = dropNodeCap;
+  I.patternSeed = patternSeed; I.permSave = permSave; I.dropNodeCap = dropNodeCap; I.capOrphans = capOrphans;
   I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.seedSectionCap = seedSectionCap; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;
   I.setEmpTpl = setEmpTpl; I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;

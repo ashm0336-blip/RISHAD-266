@@ -40,3 +40,23 @@ test('nodeDel calls it after removing the node; exported on KIVO.BassamPerm', ()
   assert.match(body, /if \(kd\.length\) return \{ ok: false/, 'a node with children is still refused first — nothing is dropped');
   assert.match(T, /dropNodeCap: I\.dropNodeCap,/); assert.match(M, /I\.dropNodeCap = dropNodeCap;/);
 });
+
+/* READ-ONLY check of existing leftovers (331 capOrphans): ceiling entries whose id is neither a current node nor a current unit/section. */
+function orphanWorld(store, nodes, units) {
+  const saved = [], D = nodes === null ? null : { nodes: () => nodes, list: () => units };
+  const ctx = { KIVO: { BassamDepts: D }, permStore: () => store, permSave: (o) => saved.push(o), Object, String };
+  vm.createContext(ctx); vm.runInContext(fnSrc(M, 'capOrphans'), ctx); return { ctx, saved };
+}
+test('capOrphans counts the leftovers and names the maps holding them — nodes, units and sections are not leftovers', () => {
+  const store = { caps: { N: ['emps'], U: ['tasks'], S: [], GONE: ['emps'], OLD: [] }, subs: { GONE: { emps: ['data'] }, U: {} }, lenses: { GONE: ['zones'], N: [] }, capOwn: { OLD: true, U: true },
+    emps: { ELSE: { e: {} } }, tplOf: { ELSE: {} }, empLens: { ELSE: {} } };
+  const before = JSON.stringify(store), w = orphanWorld(store, [{ id: 'N' }], [{ id: 'U' }, { id: 'S', kind: 'قسم', gid: 'U' }]);
+  assert.deepEqual(J(w.ctx.capOrphans()), { ok: true, n: 2, ids: ['GONE', 'OLD'], maps: { GONE: ['caps', 'subs', 'lenses'], OLD: ['caps', 'capOwn'] } });
+  assert.equal(JSON.stringify(store), before, 'read-only: the registry is untouched'); assert.equal(w.saved.length, 0, 'nothing is saved');
+  assert.deepEqual(J(orphanWorld({ caps: { N: [] }, subs: {}, lenses: {} }, [{ id: 'N' }], []).ctx.capOrphans()), { ok: true, n: 0, ids: [], maps: {} });
+});
+test('capOrphans: an unreadable structure is an error, never «everything is a leftover»; no deletion in its source; exported', () => {
+  assert.equal(orphanWorld({ caps: { N: [] } }, null).ctx.capOrphans().ok, false);
+  const src = fnSrc(M, 'capOrphans'); assert.doesNotMatch(src, /permSave|delete |setItem/);
+  assert.match(T, /capOrphans: I\.capOrphans,/); assert.match(M, /I\.capOrphans = capOrphans;/);
+});
