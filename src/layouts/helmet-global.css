@@ -116,6 +116,23 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 /* شريط داخل شريط: القاعدة أعلاه تمنع الداخلي من الانكماش، فلا يبلغ العرض الذي
    يشغّل تمريره ويفيض من الخارجي بدل أن يمرّ في نفسه. يُستثنى ليتقلّص ويمرّ. */
 .bs-hbar>.bs-hbar{flex-shrink:1;min-width:0}
+/* قرار المالك 2026-11-11 · ترويسةُ الخريطة (التشغيل الميداني والجولات اليومية): صفٌّ واحد دائماً — لا التفافَ إلى سطرٍ ثانٍ،
+   وينزلق الشريطُ كلُّه أفقياً بقاعدة .bs-hbar أعلاه (الموقع · الأدوات · العدسات · التكبير والطباعة). شريطُ الأدوات الداخليّ لا يُعصَر
+   ولا يمرّ في نفسه، فلا يبقى منتقي الموقع مثبَّتاً بجواره: يتحرّك مع بقية الشريط. يُلغي التفافَ PLAN-06 لهذه الترويسة */
+.bs-canvas-header>.bs-hbar{flex-shrink:0;overflow:visible}
+/* قائمةُ المواقع: يضعها 650-dropdown-unify داخل الشاشة المرئيّة ويُتبعها زرَّها عند التمرير (visibility تُفتح بعد الوضع) */
+.bs-canvas-site-menu{
+  position:fixed;visibility:hidden;z-index:2147483000;
+  box-sizing:border-box;width:22rem;max-width:calc(100vw - 16px);
+  display:flex;flex-direction:column;overflow:hidden;padding:4px;text-align:start;
+  background:var(--bg-surface);border:1px solid var(--brand-glow);
+  border-radius:10px;box-shadow:var(--shadow-elevated);
+}
+.bs-canvas-site-list{
+  min-height:0;max-height:18rem;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;
+}
+.bs-canvas-site-name{flex:1;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.35}
+.bs-canvas-site-footer{flex-shrink:0}
 /* justify-content:center مع overflow يقصّ البداية قصّاً لا يبلغه التمرير — وهي حالة شريط التلميح السفلي على الجوال.
    KIVO_259 (إصلاح — كشفه k258layout): المحدِّدُ السابق [style*="justify-content:center"] (بهوامش تلقائية) لم يطابق قط —
    React يعيد كتابةَ سمة النمط بمسافةٍ بعد النقطتين (justify-content: center) كما في ملاحظة الحلقة 118 أدناه — فبقيت بدايةُ
@@ -433,6 +450,13 @@ main .bs-hbar select,.bs-rtable td span[style*="cursor: pointer"]{min-height:36p
 main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{min-height:32px}
 .bsb .s-togbar{padding-top:4px!important;padding-bottom:4px!important}
 }
+/* أهداف اللمس في ترويسة الخريطة وقوائم التحرير: ٤٤ بكسل لكل زرٍّ في الترويسة وقائمةِ المواقع، وحقولُ قوائم التحرير ١٦ بكسل
+   (دونها يكبّر iOS الصفحةَ عند التركيز) */
+@media (pointer: coarse){
+[data-bs-editable-menu] input{font-size:16px!important}
+main .bs-canvas-header button:not([style*="position: absolute"]){min-width:44px;min-height:44px}
+.bs-canvas-site-option{min-height:44px}
+}
 
 /* ══ الشريط الجانبي على الجوال: درج ينزلق من اليمين فوق المحتوى ══
    دون 780 بكسل لا يبقى شريط مصغَّر يقضم العرض — يختفي تماماً ويُفتح بزرّ
@@ -502,6 +526,8 @@ main input:not([type=checkbox]):not([type=radio]):not([type=range]),main select{
   .bs-ws-row{position:relative}
   .bs-panel-shell{position:absolute!important;top:0;bottom:0;right:0;z-index:30;margin-left:0!important;
     filter:drop-shadow(0 10px 30px rgba(15,23,42,.18))}
+  /* اللوحةُ الطافية تبدأ تحت ترويسة الخريطة (يقيسها 650-dropdown-unify) فلا تحجب منتقي الموقع وأدواتِه */
+  .bs-ws-row>.bs-panel-shell{top:var(--bs-canvas-panel-top,0px)}
 }
 /* انزلاقُ المحتوى مع الشريط: transform على المُركِّب — الهامشُ يثبت فوراً فيقع تخطيطٌ واحد */
 @keyframes bsSlideOpen{from{transform:translateX(194px)}to{transform:none}}

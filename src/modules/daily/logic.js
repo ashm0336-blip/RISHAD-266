@@ -14692,7 +14692,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         A = y
                           ? e(
                               "div",
-                              { style: { ...w, zIndex: 46, padding: 10, display: "flex", flexDirection: "column", gap: 8 } },
+                              { "data-bs-editable-menu": "", style: { ...w, zIndex: 46, padding: 10, display: "flex", flexDirection: "column", gap: 8 } },
                               e("div", { style: { fontSize: 11, fontWeight: 600, color: "var(--fg-x9a7e40)" } }, "تعديل الخيار"),
                               e("input", {
                                 placeholder: "الاسم",
@@ -14843,7 +14843,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                           : u
                             ? e(
                                 "div",
-                                { style: { ...w, overflow: "hidden" } },
+                                { "data-bs-editable-menu": "", style: { ...w, overflow: "hidden" } },
                                 e(
                                   "div",
                                   { style: { maxHeight: 150, overflowY: "auto", padding: 4 } },
@@ -18973,29 +18973,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           };
         })(),
         fldOpen: !!s.fldOpen,
-        fldToggle: (t) => {
-          let e = null;
-          try {
-            const s = t.currentTarget.getBoundingClientRect();
-            e = { t: s.bottom, l: s.right, rl: s.left };
-          } catch (t) {
-            e = { t: 0, l: 0, rl: 0 };
-          }
-          this.setState((t) => ({ fldOpen: t.fldOpen ? null : e }));
-        },
-        fldPopStyle: (() => {
-          const t = s.fldOpen;
-          if (!t) return "display:none";
-          const e = "undefined" != typeof window ? window.innerWidth : 1200,
-            n = Math.max(4, Math.min(t.l - 210, e - 210 - 4));
-          return (
-            "position:fixed;top:" +
-            Math.round(t.t + 4) +
-            "px;left:" +
-            Math.round(n) +
-            "px;z-index:2147483000;min-width:210px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right"
-          );
-        })(),
+        fldToggle: () => this.setState((t) => ({ fldOpen: !t.fldOpen })),
         fldChev: "transition:transform .2s;flex-shrink:0;opacity:.6;" + (s.fldOpen ? "transform:rotate(180deg)" : ""),
         fldBtnStyle:
           "height:28px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;border-radius:10px;font-size:11px;font-weight:600;font-family:'Cairo',sans-serif;cursor:pointer;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid " +

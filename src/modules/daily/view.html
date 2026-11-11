@@ -900,7 +900,7 @@
 <div style="display:flex;flex-direction:column;gap:12px">
   <div class="bs-ws-row" style="{{wsStyle}}">
     <div style="flex:1;min-width:0;min-height:0;border-radius:16px;border:1px solid var(--bd-a2252252250p7);background:var(--bg-xffffff);overflow:hidden;box-shadow:var(--shadow-card);display:flex;flex-direction:column">
-      <div class="bs-hbar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:1px solid var(--bd-a2252252250p6);flex-wrap:wrap">
+      <div class="bs-hbar bs-canvas-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:1px solid var(--bd-a2252252250p6)">
     <!-- ترويسة الطباعة: مخفيّة على الشاشة، تظهر على الورق وحده -->
     <div class="bs-printhdr" style="align-items:center;justify-content:space-between;padding:0 0 8px;margin-bottom:10px;border-bottom:1.5px solid var(--bd-xb99751)">
       <div>
@@ -909,8 +909,8 @@
       </div>
       <div dir="ltr" style="font-family:'Cairo',sans-serif;font-feature-settings:'tnum';font-size:10.5px;color:var(--fg-x9a7e40)">{{printDate}}</div>
     </div>
-        <!-- الموقع النشط ثابت: الانزلاق الأفقي على الشريط الداخلي وحده،
-             فلا ينجرّ الموقع ولا قائمته مع تمرير ما بعدهما. -->
+        <!-- قرار المالك 2026-11-11: الترويسةُ صفٌّ واحد ينزلق كلُّه أفقياً — الموقعُ النشط غيرُ مثبَّت،
+             يتحرّك مع بقية الشريط وقائمتُه تتبع زرَّها. -->
         <div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">
           <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:400;color:var(--fg-x53565a)">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-550a316b"></svg>
@@ -921,16 +921,16 @@
   <button onClick="{{sitePrev}}" title="{{sitePrevTip}}" style="{{siteArrowStyle}}" style-hover="border-color:var(--bd-xb99751);color:var(--fg-x9a7e40);background:var(--bg-a185151810p08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
   </sc-if>
   <div id="bsFldBox" style="position:relative">
-    <button onClick="{{fldToggle}}" style="{{fldBtnStyle}}">
+    <button class="bs-canvas-site-trigger" onClick="{{fldToggle}}" aria-expanded="{{fldOpen}}" style="{{fldBtnStyle}}">
       <span style="white-space:nowrap">{{floorLabel}}</span>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{fldChev}}" data-i="i-c92915c6"></svg>
     </button>
     <sc-if value="{{fldOpen}}" hint-placeholder-val="{{ false }}">
-    <div class="bs-pop" style="{{fldPopStyle}}">
-      <div style="max-height:220px;overflow-y:auto">
+    <div class="bs-pop bs-canvas-site-menu" data-bs-site-menu="1">
+      <div class="bs-canvas-site-list">
       <sc-for list="{{floors}}" as="f" hint-placeholder-count="4">
-      <div onClick="{{f.click}}" style="{{f.style}}" style-hover="background:var(--bg-a185151810p06)">
-        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{f.name}}</span>
+      <div class="bs-canvas-site-option" onClick="{{f.click}}" style="{{f.style}}" style-hover="background:var(--bg-a185151810p06)">
+        <span class="bs-canvas-site-name">{{f.name}}</span>
         <sc-if value="{{f.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if>
         <button onClick="{{f.eyeToggle}}" title="{{f.eyeTip}}" style="{{f.eyeStyle}}" style-hover="background:var(--bg-a185151810p12)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-479089f0"></svg></button>
         <sc-if value="{{f.canEditF}}" hint-placeholder-val="{{ true }}">
@@ -945,7 +945,7 @@
       </div>
       </sc-for>
       </div>
-      <div style="padding:6px;border-top:1px solid var(--bd-xf1f5f9);background:var(--bg-xfafafa)">
+      <div class="bs-canvas-site-footer" style="padding:6px;border-top:1px solid var(--bd-xf1f5f9);background:var(--bg-xfafafa)">
         <button onClick="{{fldAddOpen}}" style="width:100%;height:34px;border-radius:8px;border:1px dashed var(--bd-a185151810p5);background:var(--bg-a185151810p05);color:var(--fg-x9a7e40);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:400;font-family:'Cairo',sans-serif;transition:all .15s" style-hover="background:var(--bg-a185151810p1);border-color:var(--bd-xb99751)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-i="i-de4e6997"></svg>
           إضافة موقع جديد
