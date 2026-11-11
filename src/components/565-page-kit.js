@@ -198,9 +198,309 @@
       }
     };
   };
-  /* ── daily · plan (20) ── */
+  /* ── daily · plan ── */
   T["daily+plan"] = function (B) {
     return class extends B {
+      /* اللونان يتعاقبان على المحور الأصلي نفسه؛ لا تُشتق هندسة جانبية من pts. */
+      bsPathDirectionHint(path) {
+        return path && path.dir === "two"
+          ? "مسار واحد باتجاهين على الخط نفسه: الأخضر مع ترتيب النقاط والأحمر بعكسه"
+          : "السهم يتبع ترتيب رسم النقاط";
+      }
+      bsPathArrow(from, to, scale, color, key, compact, halfWidth) {
+        const angle = Math.atan2(to.y - from.y, to.x - from.x),
+          x = Math.cos(angle),
+          y = Math.sin(angle);
+        const length = (compact ? 8 : 11) * scale,
+          half = compact ? Math.min(2.8 * scale, halfWidth || 2.8 * scale) : 4.62 * scale;
+        const bx = to.x - x * length,
+          by = to.y - y * length;
+        return React.createElement("path", {
+          key,
+          d:
+            "M" +
+            to.x +
+            "," +
+            to.y +
+            " L" +
+            (bx - y * half) +
+            "," +
+            (by + x * half) +
+            " L" +
+            (to.x - x * length * 0.66) +
+            "," +
+            (to.y - y * length * 0.66) +
+            " L" +
+            (bx + y * half) +
+            "," +
+            (by - x * half) +
+            " Z",
+          fill: color,
+          stroke: "var(--bg-xffffff)",
+          strokeWidth: (compact ? 0.2 : 0.9) * scale,
+          strokeLinejoin: "round",
+          style: { pointerEvents: "none" },
+        });
+      }
+      bsPathVisual(path, options) {
+        const o = options || {},
+          scale = o.scale || 1,
+          points = path.pts || [];
+        if (points.length < 2) return [];
+        const types = o.types,
+          type = types[path.type] ? path.type : "in",
+          two = path.dir === "two",
+          active = path.active !== false,
+          width =
+            ({ thin: 1.5, normal: 2.4, bold: 3.6 }[path.w] || 2.4) * scale,
+          strokeWidth = two ? Math.max(2 * scale, width) : width,
+          hitWidth = two
+            ? Math.max(
+                2.8 * strokeWidth,
+                2 * Math.max(4.2 * scale, width * 1.1) + width,
+              )
+            : width;
+        const str = (pts) => pts.map((p) => p.x + "," + p.y).join(" "),
+          color = (t) =>
+            !active || o.muted ? "var(--fg-x94a3b8)" : types[t].c,
+          line = str(points),
+          key = String(o.key || "path"),
+          segments = [];
+        let length = 0;
+        for (let i = 1; i < points.length; i++) {
+          const a = points[i - 1],
+            b = points[i],
+            size = Math.hypot(b.x - a.x, b.y - a.y);
+          if (size > 0.01) {
+            segments.push({ a, b, size, start: length });
+            length += size;
+          }
+        }
+        const at = (distance) => {
+          const segment =
+            segments.find((s) => distance <= s.start + s.size) ||
+            segments[segments.length - 1];
+          if (!segment) return null;
+          const ratio = (distance - segment.start) / segment.size;
+          return {
+            x: segment.a.x + (segment.b.x - segment.a.x) * ratio,
+            y: segment.a.y + (segment.b.y - segment.a.y) * ratio,
+            dx: (segment.b.x - segment.a.x) / segment.size,
+            dy: (segment.b.y - segment.a.y) / segment.size,
+          };
+        };
+        const dash =
+          path.line === "dash"
+            ? [7 * scale, 4.5 * scale]
+            : path.line === "dot"
+              ? [0.01 * scale, Math.max(5 * scale, 2.6 * width)]
+              : null;
+        // طلاءان متكاملان على pts نفسها: كل جزء ملوّن يلي الآخر طوليًا، بلا حارة جانبية.
+        const slot = Math.max(0.01, Math.min(26 * scale, length / 6)),
+          on = dash ? dash[0] : slot,
+          off = dash ? dash[1] : 0,
+          colorDash = on + " " + (on + 2 * off),
+          directions = two
+            ? [
+                { type: "in", reverse: false },
+                { type: "out", reverse: true },
+              ]
+            : [{ type, reverse: false }],
+          nodes = [
+            React.createElement("polyline", {
+              key: "hit",
+              points: line,
+              fill: "none",
+              stroke: "transparent",
+              strokeWidth: hitWidth + 8 * scale,
+              strokeLinecap: "round",
+              strokeLinejoin: "round",
+              "data-path-offset": 0,
+              "data-path-role": "hit",
+            }),
+          ];
+        if (o.selected || o.flash)
+          nodes.push(
+            React.createElement("polyline", {
+              key: "selection",
+              points: line,
+              fill: "none",
+              stroke: "var(--fg-xb99751)",
+              opacity: 0.5,
+              strokeWidth: strokeWidth + (o.flash ? 7 : 4.4) * scale,
+              strokeLinecap: "round",
+              strokeLinejoin: "round",
+              "data-path-offset": 0,
+            }),
+          );
+        nodes.push(
+          React.createElement("polyline", {
+            key: "edge",
+            points: line,
+            fill: "none",
+            stroke: "var(--bg-xffffff)",
+            strokeWidth: strokeWidth + 1.4 * scale,
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+            "data-path-offset": 0,
+            style: { pointerEvents: "none" },
+          }),
+        );
+        directions.forEach((direction, index) => {
+          const c = color(direction.type),
+            ordered = direction.reverse ? points.slice().reverse() : points;
+          nodes.push(
+            React.createElement("polyline", {
+              key: "stroke" + index,
+              points: line,
+              fill: "none",
+              stroke: c,
+              strokeWidth,
+              strokeLinecap: two && !dash ? "butt" : "round",
+              strokeLinejoin: "round",
+              strokeDasharray: two ? colorDash : dash ? dash.join(" ") : null,
+              strokeDashoffset: two && direction.reverse ? -(on + off) : 0,
+              "data-path-offset": 0,
+              "data-path-role": "stroke",
+              "data-path-type": direction.type,
+              "data-path-direction": direction.reverse ? "reverse" : "forward",
+            }),
+          );
+          const arrows = [],
+            arrow = (distance, arrowKey) => {
+              const p = at(distance);
+              if (!p) return;
+              const sign = direction.reverse ? -1 : 1;
+              arrows.push(
+                this.bsPathArrow(
+                  { x: p.x - sign * p.dx, y: p.y - sign * p.dy },
+                  p,
+                  scale,
+                  c,
+                  arrowKey,
+                  false,
+                ),
+              );
+            };
+          if (two) {
+            // مواضع الأسهم متعاقبة على طول المحور؛ لا تتراكب الاتجاهات عند أطوال متناظرة.
+            const spacing = Math.min(60 * scale, length);
+            if (spacing > 0.01)
+              for (
+                let distance = spacing * (index ? 0.75 : 0.25), count = 0;
+                distance < length && count < 96;
+                distance += spacing, count++
+              )
+                arrow(distance, "a" + count);
+          } else {
+            for (
+              let distance = 30 * scale, count = 0;
+              distance < length - 17 * scale && count < 96;
+              distance += 30 * scale, count++
+            )
+              arrow(distance, "a" + count);
+            if (segments.length) arrow(length, "end");
+          }
+          if (
+            !o.muted &&
+            active &&
+            path.anim !== false &&
+            length >= 26 * scale
+          ) {
+            const id =
+                "bsPF_" + (key + "_" + index).replace(/[^A-Za-z0-9_]/g, ""),
+              duration = Math.max(1.6, Math.min(16, length / 62)),
+              count = Math.max(
+                1,
+                Math.min(two ? 3 : 6, Math.round(length / (two ? 148 : 74))),
+              ),
+              half = 3.4 * scale;
+            arrows.push(
+              React.createElement("path", {
+                key: "motionPath",
+                id,
+                d: "M " + ordered.map((p) => p.x + " " + p.y).join(" L "),
+                fill: "none",
+                stroke: "none",
+              }),
+            );
+            for (let i = 0; i < count; i++)
+              arrows.push(
+                React.createElement(
+                  "path",
+                  {
+                    key: "flow" + i,
+                    d:
+                      "M " +
+                      -half +
+                      " " +
+                      -half * 0.72 +
+                      " L " +
+                      half +
+                      " 0 L " +
+                      -half +
+                      " " +
+                      half * 0.72 +
+                      " Z",
+                    fill: c,
+                    stroke: "var(--bg-xffffff)",
+                    strokeWidth: (two ? 0.2 : 0.4) * scale,
+                  },
+                  React.createElement(
+                    "animateMotion",
+                    {
+                      dur: duration.toFixed(2) + "s",
+                      repeatCount: "indefinite",
+                      rotate: "auto",
+                      begin: ((-i / count) * duration).toFixed(2) + "s",
+                    },
+                    React.createElement("mpath", { href: "#" + id }),
+                  ),
+                ),
+              );
+          }
+          nodes.push(
+            React.createElement(
+              "g",
+              {
+                key: "arrows" + index,
+                "aria-label": types[direction.type].label,
+                "data-path-direction": direction.reverse
+                  ? "reverse"
+                  : "forward",
+                style: { pointerEvents: "none" },
+              },
+              arrows,
+            ),
+          );
+        });
+        const middle = points[Math.floor((points.length - 1) / 2)],
+          label = (path.code ? path.code + " · " : "") + (path.name || "");
+        if (o.showLabels && !path.hideLabel && label)
+          nodes.push(
+            React.createElement(
+              "text",
+              {
+                key: "name",
+                x: middle.x,
+                y: middle.y - (7 * scale + 1.6 * width),
+                textAnchor: "middle",
+                fontSize: 12.5 * scale,
+                fontWeight: 600,
+                fill: color(type),
+                stroke: "var(--bg-xffffff)",
+                strokeWidth: 3.2 * scale,
+                paintOrder: "stroke",
+                style: {
+                  fontFamily: "'Cairo',sans-serif",
+                  pointerEvents: "none",
+                },
+              },
+              label,
+            ),
+          );
+        return nodes;
+      }
       GATE_LOCS = [
         ["الساحة الشمالية", "#1E458A"],
         ["الساحة الجنوبية", "#0E573A"],
