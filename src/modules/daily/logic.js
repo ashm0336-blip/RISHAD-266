@@ -2641,8 +2641,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   _kpiPrintBody() {
     if (!this.bsLensOn("zones")) return "";
-    let t = this._kpiSelLast;
-    if (((t && t.length) || (t = this._kpiPrintSel()), !t || !t.length)) return "";
+    /* قرار المالك 2026-11-11: مؤشراتُ التقرير المطبوع تتبع يومَ الجولة المطبوعة نفسَه (= سطرُ «جولة يوم …» في التذييل) —
+       كانت تُحسب من آخر اختيارٍ في لوحة المؤشرات إن وُجد وإلا من كل الجولات المحفوظة («كل الفترة») فتخالف اليومَ المطبوع */
+    const st = this.state || {};
+    let dd = st.day;
+    try {
+      dd = Math.min(st.day, this.hMonthDays(st.year, st.month));
+    } catch (t) {}
+    const t = this._kpiPrintSel().filter((t) => t.y === st.year && t.m === st.month && t.d === dd);
+    if (!t.length) return "";
     try {
       const e = this._kData(
           t,
@@ -2668,6 +2675,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       if (!e) return;
       const s = [].slice.call(e.querySelectorAll("div")).filter((t) => /linear-gradient\(125deg/.test(t.getAttribute("style") || ""))[0];
       if (!s || !s.children[1]) return;
+      /* ملفُّ PDF خفيف: توهّجُ خلفية اللوحة (طبقتا filter:blur ولمعةٌ مائلة شفّافة على كامل اللوحة) أثرٌ للشاشة — في الطباعة يصير صوراً
+         وأقنعةَ شفافيةٍ بحجم اللوحة فيُرسم الملفُّ ببطءٍ عند فتحه (قياس: ٢٫٤ ث ← ١٫١ ث لصفحة المؤشرات). النقشُ والتدرّجُ والمحتوى كما هي */
+      try {
+        const g = s.children[0],
+          gs = (g && g.getAttribute("style")) || "";
+        /pointer-events:\s*none/.test(gs) && /inset:\s*0/.test(gs) && (g.style.display = "none");
+      } catch (t) {}
       const n = s.children[1],
         i = n.children[0],
         o = n.children[1];
@@ -2728,14 +2742,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         (d.style.minHeight = "0"),
         (d.style.display = "flex"),
         (d.style.flexDirection = "column"),
-        (d.style.justifyContent = "space-between"));
+        /* طباعةُ المؤشرات = لوحةُ «مؤشرات الإدارة» نفسُها: بطاقةُ «التفعيل بحسب الساحة» تلي عنوانَها كما على الشاشة — كان space-between يُنزلها إلى أسفل الصفحة بفراغٍ فوقها */
+        (d.style.justifyContent = "flex-start"));
       const p = o.lastElementChild;
       if (p && p !== d) {
         p.style.flex = "0 0 auto";
         const t = p.lastElementChild;
         t && ((t.firstElementChild || t).style.gridTemplateColumns = "repeat(2,minmax(0,1fr))");
       }
-      const h = o.firstElementChild && o.firstElementChild.firstElementChild;
+      /* تكبيرُ الحلقة (136 → 196) للحلقة وحدها: صار أولُ العمود صفَّ عناوين الجدول فكانت أيقونةُ «الحصة» (11px) تُكبَّر إلى 196px */
+      const h0 = o.firstElementChild && o.firstElementChild.firstElementChild,
+        h = h0 && /width:\s*136px/.test(h0.getAttribute("style") || "") && /height:\s*136px/.test(h0.getAttribute("style") || "") ? h0 : null;
       if (h) {
         const t = 196,
           e = t / 136;
