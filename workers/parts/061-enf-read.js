@@ -51,7 +51,7 @@ function enfViewCtx(A, d, rn, refs) {
   /* RISHAD-266: Shift · Site · Zone/Element لا تقيّد (سقفُ النطاق القديم أُلغي) — Assigned · Source كما كانا */
   var dims = ['Assigned', 'Source'], rs = { 'Shift': false, 'Site': false, 'Zone/Element': false }, j;
   for (j = 0; j < dims.length; j++) { var all = held.length > 0; for (i = 0; i < held.length && all; i++) if (enfDimsOf(held[i]).indexOf(dims[j]) === -1) all = false; rs[dims[j]] = all; }
-  var V = { d: d, rn: rn, held: held, restrict: rs, sources: enfSources(A, 'read'), fieldOnly: dailyFieldOnly(A, d), ekey: String(A.u.ekey || ''),
+  var V = { d: d, rn: rn, held: held, restrict: rs, sources: enfSources(A, 'read'), fieldOnly: enfFieldOnly(A, d), ekey: String(A.u.ekey || ''),
     lens: {}, toks: rn === 'bassam_rounds_v1' && refs && refs.emps ? enfToksOf(refs.emps[d], String(A.u.ekey || '')) : null };
   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (KIVO_LENS_PLUGINS.keys) — بوابةُ كلٍّ منها بالمرجع نفسِه */
   for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) V.lens[KIVO_LENS_PLUGINS.keys[li]] = KIVO_BUILD.lensGate(A.perms, A.u, d, KIVO_LENS_PLUGINS.keys[li]).on;
