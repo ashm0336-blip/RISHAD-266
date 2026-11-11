@@ -10,6 +10,7 @@
          (فحصُ note/back العشوائي في canvas_recorder_r3).
    ضماناتُ الموجة 1 باقية: سحبٌ في أوّل 350ms يعود عند نزول الثاني · السحبُ المقصود يُحفظ مرةً · راحةُ الكفّ تُهمَل · الفأرةُ كما كانت.
    CANVAS_SRC / PLAN_LOGIC / DAILY_LOGIC=<مسار> تبدّل الطبقةَ والمنطق (لإثبات الإخفاق على السابق). */
+import './clock.mjs';   /* V7 P3: ساعةُ الاختبار المثبَّتة (1448-5-9) — كان يُخفق في أول الشهر الهجري وبعد تبدّل الشهر (يُستورد أولاً) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

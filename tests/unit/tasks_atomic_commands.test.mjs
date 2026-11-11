@@ -1,4 +1,5 @@
 /* Actual schema10 Worker + SQLite. No business-policy mocks or network. */
+import './clock.mjs';   /* V7 P3: ساعةُ الاختبار المثبَّتة (1448-5-9) — كان يُخفق في أول الشهر الهجري وبعد تبدّل الشهر (يُستورد أولاً) */
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, WCUR, D, DAY, YESTERDAY, ME, KT, KE, stored, putKV, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';

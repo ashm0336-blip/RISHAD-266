@@ -3,6 +3,7 @@
      ق2 سياسةُ الإثبات لكل مهمة (الافتراضيّ «صورة أو ملاحظة») · ق3 المراجِعُ منشئُ المهمة افتراضياً · ق6 لا بدءَ بعد المهلة إلا بتمديد ·
      ق5 التكرارُ في الخادم بلا Cron ومتساوي القوى · ق4 لا إعادةَ كتابةٍ تلقائية («غير مرتبطة» يدوياً · nid وقتَ القراءة) · ق7 (في رقعة «ملفي»).
    بياناتٌ اصطناعيةٌ وحدها (tests/unit/tasks_fx.mjs). */
+import './clock.mjs';   /* V7 P3: ساعةُ الاختبار المثبَّتة (1448-5-9) — كان يُخفق في أول الشهر الهجري وبعد تبدّل الشهر (يُستورد أولاً) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, KT, notificationMessages, KE, D, DAY, TOMORROW, YESTERDAY, PDAY, row, stored, rowsOf, putKV, hij, MID, HR, WD_AR, wdOf, ymOf, PNG, IMG_MATE, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';

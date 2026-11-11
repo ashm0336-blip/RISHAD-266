@@ -7,6 +7,7 @@
      (N-5) حفظٌ خامٌّ مصنوع ينقل إنجازَ الموظف وإثباتَه (20 · 21) إلى زميلٍ بهويةٍ جديدة (نقلاً أو نسخاً) ⇒ task-asg والزميلُ لا يقرأ الصورة (P0) —
           والمسارُ الذاتي يكتب 20/21 كما كان
      (N-6) علامةُ الاستعادة تُستثنى بها مخزنُ المهام إن كانت على مفتاحه نفسِه — لا علامةُ مفتاحٍ آخر في الحفظة */
+import './clock.mjs';   /* V7 P3: ساعةُ الاختبار المثبَّتة (1448-5-9) — كان يُخفق في أول الشهر الهجري وبعد تبدّل الشهر (يُستورد أولاً) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, P0, KT, KE, TAG, DAY, stored, putKV, row, hij, HR, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';

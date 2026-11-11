@@ -1,3 +1,4 @@
+import './clock.mjs';   /* V7 P3: ساعةُ الاختبار المثبَّتة (1448-5-9) — كان يُخفق في أول الشهر الهجري وبعد تبدّل الشهر (يُستورد أولاً) */
 import { attachTaskOperations, taskText } from './tasks_vm_operations_fx.mjs';
 import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { taskCommandBody } from './tasks_fx.mjs';

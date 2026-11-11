@@ -36,7 +36,7 @@ export function world() {
   doc.documentElement = root; doc.body = body; doc.hidden = false;
   doc.querySelector = (s) => root.querySelector(s); doc.querySelectorAll = (s) => root.querySelectorAll(s); doc.getElementById = () => null;
   const KIVO = {};
-  const ctx = { KIVO, console, document: doc, performance: { now: () => T.now }, Map,
+  const ctx = { KIVO, console, document: doc, performance: { now: () => T.now }, Map, Date,   /* V7 P3: ساعةُ الاختبار (المثبَّتة إن استورد الملفُّ clock.mjs) تصل الصفحةَ داخل vm — كان لها تاريخُها الحقيقي فيخالف شهرَ بيانات الاختبار */
     setTimeout: (f) => { timers.push(f); return timers.length; }, clearTimeout: () => {}, setInterval: () => 0, clearInterval: () => {},
     requestAnimationFrame: (f) => { frames.push(f); return frames.length; }, cancelAnimationFrame: () => {},
     localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },

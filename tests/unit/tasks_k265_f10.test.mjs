@@ -21,6 +21,7 @@
      (ك) التسليمُ للمراجِع (21.sub · 12) يبقى أمام حفظٍ قديم ثم يُعتمد بالمسار
      (ل) مساراتُ الخادم لا يمسّها الحفظُ الخامّ: «التمديد» يرفع علامةَ الانقضاء ولا يعيدها حفظٌ قديم
    KIVO_K265F10_ROUNDS عددُ جولات (أ) لكل وضع. */
+import './clock.mjs';   /* V7 P3: ساعةُ الاختبار المثبَّتة (1448-5-9) — كان يُخفق في أول الشهر الهجري وبعد تبدّل الشهر (يُستورد أولاً) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, P0, ME, MATE, KT, DAY, YESTERDAY, TOMORROW, row, stored, putKV, hij, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
