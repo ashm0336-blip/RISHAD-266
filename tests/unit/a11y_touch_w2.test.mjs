@@ -74,20 +74,59 @@ test('PLAN-06 · DG-10 · ES-9 · AUX-13: قواعدُ الوحدات (لا في
   assert.match(rd('modules/staff/view.html'), /title="سيتم حذف جميع بيانات الشهر" style="position:absolute;/);
 });
 
-test('PLAN-06 · الجوال (≤ 640px) واللمس: رأسُ الخريطة يلتفّ سطرين حين لا يتّسع فيأخذ شريطُ «حالة الموقع» والعدساتِ والتكبير سطراً كاملاً — كان يُعصَر إلى 0–47px على الجوال', () => {
-  const css = rd('modules/plan/helmet.css'), m = mediaAfter(css, 'على الجوال واللمس يلتفّ رأسُ الخريطة سطرين');
-  assert.equal(m.head, '@media screen and (max-width: 640px), screen and (pointer: coarse)', 'الشاشةُ وحدها — لا الطباعة، ولا الحاسوبُ بمؤشّرٍ دقيق');
-  const b = m.body.replace(/\s+/g, ' ');
-  assert.ok(b.includes('.bs-mapcard > .bs-hbar{ flex-wrap:wrap !important; row-gap:8px; }'));
-  /* أساسُه عرضُ محتواه (auto) — فلا يلتفّ ما دام يتّسع بجوار منتقي الموقع، ويملأ السطرَ حين يلتفّ */
-  assert.ok(b.includes('.bs-mapcard > .bs-hbar > .bs-hbar{ flex:1 1 auto; }'));
-  /* القالب: الرأسُ شريطٌ أفقيّ داخل البطاقة، والشريطُ الداخليّ (الشارةُ أولُه) ابنٌ مباشر له */
-  const v = rd('modules/plan/view.html'), i = v.indexOf('<div class="bs-mapcard"'), j = v.indexOf('<div class="bs-mapbody"', i), h = v.slice(i, j);
-  /* الموجة 2 (دمج): رأسُ الخريطة يحمل bs-wrap أيضاً (PLAN-02 — لا تختفي أدواتُ الخريطة على الجوال) والقاعدةُ هنا تبقى عليه */
-  assert.match(h, /^<div class="bs-mapcard"[^>]*>\n\s*<div class="bs-hbar(?: bs-wrap)?" style="display:flex;align-items:center;justify-content:space-between;/);
-  assert.match(h, /\n {4}<div class="bs-hbar(?: bs-wrap)?" style="display:flex;align-items:center;gap:8px;min-width:0[^"]*">\n\s*<sc-if value="\{\{hasSites\}\}"[^>]*>\n\s*<!--[^\n]*-->\n\s*<span title="\{\{approveBadgeTip\}\}"/);
-  /* والقاعدةُ العامة التي تمنع الالتفاف (!important) أضعفُ تحديداً من قاعدة البطاقة */
-  assert.match(rd('layouts/helmet-global.css'), /\.bs-hbar\{flex-wrap:nowrap!important;/);
+/* قرار المالك 2026-11-11 (نقل دفعة الترويسة): هذا الاختبار كان يثبت التفافَ رأس الخريطة سطرين على الجوال واللمس (PLAN-06)؛
+   أُعيدت كتابتُه عمداً ليثبت السلوكَ الجديد: صفٌّ واحد ينزلق كلُّه أفقياً، ومنتقي الموقع غيرُ مثبَّت. القياسُ الحيّ في tests/browser/v7_port_header.test.mjs */
+test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صفٌّ واحد لا يلتفّ — ينزلق الشريطُ كلُّه أفقياً ولا يُعصَر شريطُ الأدوات ولا يُثبَّت منتقي الموقع (قرار المالك 2026-11-11)', () => {
+  const css = rd('layouts/helmet-global.css'), bare = strip(css);
+  /* القاعدةُ العامة: صفٌّ واحد يمرّ أفقياً — والترويسةُ تُلغي انكماشَ الشريط الداخليّ وتمريرَه في نفسه، بعد قاعدة «شريط داخل شريط» (تحديدٌ مساوٍ) */
+  assert.match(bare, /\.bs-hbar\{flex-wrap:nowrap!important;overflow-x:auto;/);
+  const inner = bare.indexOf('.bs-hbar>.bs-hbar{flex-shrink:1;min-width:0}'), own = bare.indexOf('.bs-canvas-header>.bs-hbar{flex-shrink:0;overflow:visible}');
+  assert.ok(inner >= 0 && own > inner, 'قاعدةُ الترويسة بعد القاعدة العامة');
+  /* لا قاعدةَ التفافٍ في وحدة الخطة، ولا في أيّ مكان لهذه الترويسة */
+  const plan = rd('modules/plan/helmet.css');
+  assert.doesNotMatch(plan, /flex-wrap\s*:\s*wrap/, 'حُذفت قاعدةُ الالتفاف سطرين');
+  assert.doesNotMatch(plan, /\.bs-mapcard > \.bs-hbar/);
+  assert.doesNotMatch(bare, /\.bs-canvas-header[^{]*\{[^}]*flex-wrap\s*:\s*wrap/);
+  for (const [f, group] of [['modules/plan/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/], ['modules/daily/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/]]) {
+    const v = rd(f), m = /<div class="([^"]*\bbs-canvas-header\b[^"]*)" style="([^"]*)">/.exec(v); assert.ok(m, f);
+    assert.deepEqual(m[1].split(/\s+/), ['bs-hbar', 'bs-canvas-header'], f + ': bs-hbar بلا bs-wrap');
+    assert.doesNotMatch(m[2], /flex-wrap/, f + ': لا flex-wrap مكتوباً على الترويسة');
+    assert.equal((v.match(/\bbs-canvas-header\b/g) || []).length, 1, f);
+    /* أبناءُ الترويسة: ترويسةُ الطباعة · مجموعةُ الموقع (ليست لاصقة) · شريطُ الأدوات (ابنٌ مباشر يحمل bs-hbar) */
+    const h = v.slice(m.index, v.indexOf('{{mapBodyStyle}}', m.index));
+    assert.match(h, group, f);
+    assert.doesNotMatch(h, /position:\s*sticky/, f + ': لا شيءَ مثبَّت في الترويسة');
+    assert.match(h, /\n\s*<div class="bs-hbar" style="display:flex;align-items:center;gap:8px;min-width:0">\n/, f + ': شريطُ الأدوات');
+    /* زرُّ الطباعة في مكانه: داخل مربّع التكبير بجوار ملء الشاشة */
+    assert.match(h, /<sc-if value="\{\{(?:pl|ds)PmExport\}\}"[^>]*>\s*<button onClick="\{\{doPrint\}\}"[^\n]*<\/button>\s*<\/sc-if>\s*<div style="height:16px;width:1px;[^"]*"><\/div>\s*<button onClick="\{\{toggleFs\}\}"/, f + ': الطباعة');
+    /* قائمةُ المواقع يضعها 650 (لا مستطيلُ نقرةٍ محسوبٌ في المنطق) */
+    assert.match(h, /<button class="bs-canvas-site-trigger" onClick="\{\{fldToggle\}\}" aria-expanded="\{\{fldOpen\}\}"/, f);
+    assert.match(h, /<div class="bs-pop bs-canvas-site-menu" data-bs-site-menu="1">\s*<div class="bs-canvas-site-list">/, f);
+    assert.doesNotMatch(v, /fldPopStyle/, f);
+  }
+  for (const f of ['modules/plan/logic.js', 'modules/daily/logic.js']) {
+    const l = rd(f);
+    assert.doesNotMatch(l, /fldPopStyle/, f);
+    assert.match(l, /fldToggle: \(\) => this\.setState\(\(t\) => \(\{ fldOpen: !t\.fldOpen \}\)\),/, f);
+    assert.ok((l.match(/"data-bs-editable-menu": ""/g) || []).length >= 2, f + ': قوائمُ التحرير موسومة');
+  }
+  /* اللمس: ٤٤ بكسل لأزرار الترويسة وقائمة المواقع، وحقولُ قوائم التحرير ١٦ بكسل — داخل @media (pointer: coarse) وحدها */
+  const touch = mediaAfter(css, 'أهداف اللمس في ترويسة الخريطة وقوائم التحرير'), tb = strip(touch.body);
+  assert.equal(touch.head, '@media (pointer: coarse)');
+  assert.ok(tb.includes('main .bs-canvas-header button:not([style*="position: absolute"]){min-width:44px;min-height:44px}'));
+  assert.ok(tb.includes('.bs-canvas-site-option{min-height:44px}'));
+  assert.ok(tb.includes('[data-bs-editable-menu] input{font-size:16px!important}'));
+  assert.ok(css.indexOf('main .bs-canvas-header button') > css.indexOf('main .bs-hbar button:not([style*="position: absolute"])'), 'بعد قاعدة ٣٦ بكسل العامة (تحديدٌ مساوٍ)');
+  /* اللوحي (≤ 980px): اللوحةُ الطافية تبدأ تحت الترويسة — المتغيّرُ يكتبه 650 على صفّ مساحة العمل */
+  const panel = mediaAfter(css, 'وتطفو فوق الخريطة على الشاشات الضيّقة');
+  const at980 = mediaAfter(css.slice(css.indexOf('@media (max-width:980px)') - 1), '@media (max-width:980px)');
+  assert.ok(panel.head.startsWith('@media'));
+  assert.match(strip(at980.body), /\.bs-ws-row>\.bs-panel-shell\{top:var\(--bs-canvas-panel-top,0px\)\}/);
+  const dd = rd('components/650-dropdown-unify.js');
+  assert.match(dd, /workspace\.style\.setProperty\("--bs-canvas-panel-top", Math\.ceil\(top\) \+ "px"\)/);
+  assert.match(dd, /root\.querySelectorAll\("\.bs-canvas-header"\)\.forEach\(watchHeader\)/);
+  assert.match(dd, /menu\.hasAttribute\("data-bs-site-menu"\)/);
+  for (const f of ['modules/plan/view.html', 'modules/daily/view.html']) assert.match(rd(f), /<div class="bs-ws-row" style="\{\{wsStyle\}\}">/, f);
 });
 
 test('ES-9 · محرِّرُ الراحات لا يتجاوز الشاشة: عرضُه max-content بحدٍّ أقصى calc(100vw - 16px) وأيامُه تلتفّ — كان 452px فيخرج «سبت» عن جوال 390px (ولا طريقَ آخر للحذف باللمس)', () => {

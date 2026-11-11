@@ -9171,7 +9171,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               z = y
                 ? t(
                     "div",
-                    { className: "bs-optmenu", style: { ...S, zIndex: 46, padding: 10, display: "flex", flexDirection: "column", gap: 8 } },
+                    { className: "bs-optmenu", "data-bs-editable-menu": "", style: { ...S, zIndex: 46, padding: 10, display: "flex", flexDirection: "column", gap: 8 } },
                     t("div", { style: { fontSize: 11, fontWeight: 600, color: "var(--fg-x9a7e40)" } }, "تعديل الخيار"),
                     t("input", {
                       placeholder: "الاسم",
@@ -9322,7 +9322,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 : m
                   ? t(
                       "div",
-                      { className: "bs-optmenu", style: { ...S, overflow: "hidden" } },
+                      { className: "bs-optmenu", "data-bs-editable-menu": "", style: { ...S, overflow: "hidden" } },
                       t(
                         "div",
                         { style: { maxHeight: 150, overflowY: "auto", padding: 4 } },
@@ -10714,7 +10714,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               y = g
                 ? t(
                     "div",
-                    { className: "bs-optmenu", style: { ...m, zIndex: 46, padding: 10, display: "flex", flexDirection: "column", gap: 8 } },
+                    { className: "bs-optmenu", "data-bs-editable-menu": "", style: { ...m, zIndex: 46, padding: 10, display: "flex", flexDirection: "column", gap: 8 } },
                     t("div", { style: { fontSize: 11, fontWeight: 600, color: "var(--fg-x9a7e40)" } }, "تعديل الخيار"),
                     t("input", {
                       value: e.gDdEditVal || "",
@@ -10784,7 +10784,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 : c
                   ? t(
                       "div",
-                      { className: "bs-optmenu", style: { ...m, overflow: "hidden" } },
+                      { className: "bs-optmenu", "data-bs-editable-menu": "", style: { ...m, overflow: "hidden" } },
                       t(
                         "div",
                         { style: { maxHeight: 150, overflowY: "auto", padding: 4 } },
@@ -16766,29 +16766,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       ),
       gateCount: String(e.gates.length),
       fldOpen: !!e.fldOpen,
-      fldToggle: (t) => {
-        let e = null;
-        try {
-          const s = t.currentTarget.getBoundingClientRect();
-          e = { t: s.bottom, l: s.right, rl: s.left };
-        } catch (t) {
-          e = { t: 0, l: 0, rl: 0 };
-        }
-        this.setState((t) => ({ fldOpen: t.fldOpen ? null : e }));
-      },
-      fldPopStyle: (() => {
-        const t = e.fldOpen;
-        if (!t) return "display:none";
-        const s = "undefined" != typeof window ? window.innerWidth : 1200,
-          n = Math.max(4, Math.min(t.l - 190, s - 190 - 4));
-        return (
-          "position:fixed;top:" +
-          Math.round(t.t + 4) +
-          "px;left:" +
-          Math.round(n) +
-          "px;z-index:2147483000;min-width:190px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right"
-        );
-      })(),
+      fldToggle: () => this.setState((t) => ({ fldOpen: !t.fldOpen })),
       fldChev:
         "opacity:.5;transition:transform .2s;" +
         (e.fldOpen ? "transform:rotate(180deg)" : ""),

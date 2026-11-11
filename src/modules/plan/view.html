@@ -62,7 +62,7 @@
 <div class="bs-rep-gap" style="display:none"></div>
 <div class="bs-ws-row" style="{{wsStyle}}">
 <div class="bs-mapcard" style="flex:1;min-width:0;min-height:0;border-radius:16px;border:1px solid var(--bd-a2252252250p7);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column">
-  <div class="bs-hbar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px solid var(--bd-a2252252250p6);flex-wrap:wrap">
+  <div class="bs-hbar bs-canvas-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px solid var(--bd-a2252252250p6)">
     <!-- ترويسة الطباعة: مخفيّة على الشاشة، تظهر على الورق وحده -->
     <div class="bs-printhdr" style="align-items:center;justify-content:space-between;padding:0 0 8px;margin-bottom:10px;border-bottom:1.5px solid var(--bd-xb99751)">
       <div>
@@ -71,7 +71,7 @@
       </div>
       <div dir="ltr" style="font-family:'Cairo',sans-serif;font-feature-settings:'tnum';font-size:10.5px;color:var(--fg-x9a7e40)">{{printDate}}</div>
     </div>
-    <!-- الموقع النشط ثابت: الانزلاق الأفقي يبدأ بعد قائمته -->
+    <!-- قرار المالك 2026-11-11: الترويسةُ صفٌّ واحد ينزلق كلُّه أفقياً — الموقعُ النشط غيرُ مثبَّت، يتحرّك مع بقية الشريط -->
     <div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">
       <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:400;color:var(--fg-x53565a)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-550a316b"></svg>
@@ -82,16 +82,16 @@
       <button onClick="{{sitePrev}}" title="{{sitePrevTip}}" style="{{siteArrowStyle}}" style-hover="border-color:var(--bd-xb99751);color:var(--fg-x9a7e40);background:var(--bg-a185151810p08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-870cde61"></svg></button>
       </sc-if>
       <div id="bsFldBox" style="position:relative">
-        <button onClick="{{fldToggle}}" style="{{fldBtnStyle}}">
+        <button class="bs-canvas-site-trigger" onClick="{{fldToggle}}" aria-expanded="{{fldOpen}}" style="{{fldBtnStyle}}">
           <span style="white-space:nowrap">{{floorName}}</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{fldChev}}" data-i="i-c92915c6"></svg>
         </button>
         <sc-if value="{{fldOpen}}" hint-placeholder-val="{{ false }}">
-        <div class="bs-pop" style="{{fldPopStyle}}">
-          <div style="max-height:200px;overflow-y:auto">
+        <div class="bs-pop bs-canvas-site-menu" data-bs-site-menu="1">
+          <div class="bs-canvas-site-list">
           <sc-for list="{{fldOpts}}" as="o" hint-placeholder-count="4">
-          <div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
-            <span style="flex:1;white-space:nowrap">{{o.name}}</span>
+          <div class="bs-canvas-site-option" onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
+            <span class="bs-canvas-site-name">{{o.name}}</span>
             <sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if>
             <button onClick="{{o.eyeToggle}}" title="{{o.eyeTip}}" style="{{o.eyeStyle}}" style-hover="background:var(--bg-a185151810p12)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-c0e7562c"></svg></button>
             <sc-if value="{{o.canEditF}}" hint-placeholder-val="{{ true }}">
@@ -106,7 +106,7 @@
           </div>
           </sc-for>
           </div>
-          <div style="padding:6px;border-top:1px solid var(--bd-xf1f5f9);background:var(--bg-xfafafa)">
+          <div class="bs-canvas-site-footer" style="padding:6px;border-top:1px solid var(--bd-xf1f5f9);background:var(--bg-xfafafa)">
             <button onClick="{{fldAddOpen}}" style="width:100%;height:34px;border-radius:8px;border:1px dashed var(--bd-a185151810p5);background:var(--bg-a185151810p05);color:var(--fg-x9a7e40);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:400;font-family:'Cairo',sans-serif;transition:all .15s" style-hover="background:var(--bg-a185151810p1);border-color:var(--bd-xb99751)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-i="i-de4e6997"></svg>
               إضافة موقع جديد
@@ -119,7 +119,7 @@
       <button onClick="{{siteNext}}" title="{{siteNextTip}}" style="{{siteArrowStyle}}" style-hover="border-color:var(--bd-xb99751);color:var(--fg-x9a7e40);background:var(--bg-a185151810p08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-5ff99641"></svg></button>
       <span title="ترتيب الموقع النشط من مجموع المواقع" style="height:32px;display:inline-flex;align-items:center;padding:0 9px;border-radius:10px;border:1px solid var(--bd-a185151810p25);background:var(--bg-a185151810p06);color:var(--fg-x8a6f35);font-size:11px;font-weight:600;font-family:'Cairo',sans-serif;font-feature-settings:'tnum';flex-shrink:0;direction:ltr">{{siteCount}}</span>
       </sc-if>
-      <!-- ما بعد الموقع ينزلق أفقياً وحده -->
+      <!-- ما بعد الموقع: جزءٌ من الصفّ نفسه، بلا تمريرٍ داخليّ -->
       <div class="bs-hbar" style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
       <sc-if value="{{pullOn}}" hint-placeholder-val="{{ false }}">
       <button onClick="{{pullDo}}" title="نسخ مصليات وأبواب آخر شهر فيه بيانات إلى هذا الشهر" style="height:26px;display:inline-flex;align-items:center;gap:5px;padding:0 12px;border-radius:9999px;font-size:10px;font-weight:600;font-family:'Cairo',sans-serif;cursor:pointer;border:1px dashed var(--bd-a37992350p5);background:var(--bg-xeff6ff);color:var(--fg-x2563eb);transition:all .15s" style-hover="background:var(--bg-xdbeafe)">
