@@ -40,6 +40,8 @@ var IMG_PFX = ['img_', 'szp_'];
    imgSync) — is protected by refusing the save that would GROW a value past the cap. A refused save is safe; a dropped reference is not. */
 var IMG_CAP = 5000;
 function imgLike(s9) { for (var i9 = 0; i9 < IMG_PFX.length; i9++) if (s9.indexOf(IMG_PFX[i9]) >= 0) return true; return false; }
+/* the scanner's shape, whole: an id that does not match it can be mentioned by a record without imgIdsIn (and so imgref) ever seeing it */
+var IMG_SCAN_ID_RX = /^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/;
 function imgIdsIn(v) {
   var out = {}, s9 = String(v == null ? '' : v);
   if (!imgLike(s9)) return out;
@@ -280,7 +282,8 @@ async function imgSync(env, A, list) {
          outside any DB transaction; the rows go only after R2 confirmed, in one batch. A failed R2 delete, or a failed row batch, leaves the
          'dead' rows: the next pass retries them (IMG_DEAD_LEASE on ts keeps two passes, or a pass and a re-upload of the id, apart).
    A referenced orphan is not deleted: it turns 'amb' (the platform admin's), as before; a referenced stale upload gets its clock restarted.
-   Ids of any shape are handled (the match is instr, never a GLOB pattern), so a malformed row can neither be skipped forever nor hold the queue. */
+   Ids of any shape are handled (the match is instr, never a GLOB pattern), so a malformed row cannot hold the queue — but only an id of the
+   scanner's shape can be condemned (IMG_SCAN_ID_RX; see `odd` below): for any other id "no record mentions it" cannot be proven. */
 var IMG_ORPHAN_GRACE = 30 * 864e5, IMG_CLAIM_TTL = 30 * 864e5, IMG_STAGE_TTL = 7 * 864e5, IMG_DEAD_LEASE = 20000;
 var IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 40, IMG_SWEEP_DEAD = 400, IMG_SWEEP_EVERY = 10 * 60000, IMG_SWEEP_EVERY_ADMIN = 60000;
 var IMG_OWN_IDX = 'CREATE INDEX IF NOT EXISTS imgown_st_ts ON imgown (st, ts)';
@@ -328,7 +331,7 @@ async function imgRefScan(env) {
 function imgSnap(rows) { return JSON.stringify(rows.map(function (x) { return { i: x.img, s: x.st, t: x.ts }; })); }
 var IMG_SNAP_SAME = "EXISTS (SELECT 1 FROM json_each(?1) j WHERE json_extract(j.value, '$.i') = imgown.img AND json_extract(j.value, '$.s') = imgown.st AND json_extract(j.value, '$.t') = imgown.ts)";
 async function imgSweep(env, now, max, maxDead) {
-  var out = { seen: 0, purged: 0, kept: 0, retry: 0, staged: 0, scan: 0 }, lease = Math.max(Date.now(), now), i;
+  var out = { seen: 0, purged: 0, kept: 0, retry: 0, staged: 0, scan: 0, unprovable: 0 }, lease = Math.max(Date.now(), now), i;
   /* finding 5: the selections below are range scans of imgown (st, ts). The index is created here — idempotent, one statement per pass — and not
      by a numbered migration: a migration needs the operator's upgrade permit (052 migrateDb), and the sweep must not wait for an operator. */
   await env.DB.prepare(IMG_OWN_IDX).run();
@@ -353,6 +356,16 @@ async function imgSweep(env, now, max, maxDead) {
     .bind(now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max, maxDead || IMG_SWEEP_DEAD).all();
   var L = (r && r.results) || [], dead = L.filter(function (x) { return x.st === 'dead'; }), take = [];
   var cand = L.filter(function (x) { return x.st !== 'dead'; }).sort(function (a, b) { return a.ts - b.ts; }).slice(0, max);   /* the oldest first, whichever kind */
+  /* second review, finding 1 — an id the reference scanner could not have matched (the upload accepts ^[A-Za-z0-9_]{1,128}$, imgIdsIn sees only
+     (img|szp)_[a-z0-9]+_[a-z0-9]+) is UNPROVABLE: a typed record can show it with no imgref row and no kv value. It is never condemned; its clock
+     restarts (the row keeps its kind and owner), so it neither holds the queue nor is asked about again before its next term. */
+  var odd = cand.filter(function (x) { return !IMG_SCAN_ID_RX.test(String(x.img)); });
+  if (odd.length) {
+    cand = cand.filter(function (x) { return IMG_SCAN_ID_RX.test(String(x.img)); });
+    await env.DB.prepare("UPDATE imgown SET ts = ?2 WHERE st IN ('orphan', 'claim') AND " + IMG_SNAP_SAME).bind(imgSnap(odd), lease).run();
+    out.unprovable += odd.length;
+    logEv('info', 'img-sweep-unprovable', { why: 'id-shape', n: odd.length, rid: env.__rid });
+  }
   /* the re-scan runs only when there is something to condemn (a platform with no candidate never pays for it, and writes nothing) */
   if (cand.length && !(await imgRefScan(env))) cand = []; else if (cand.length) out.scan = 1;
   out.seen = dead.length + cand.length;

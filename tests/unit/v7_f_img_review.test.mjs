@@ -84,7 +84,10 @@ both(test, 'finding 2 · PUT /api/img/<id>: an id outside letters, digits and "_
   }
 });
 
-both(test, 'finding 2 · 41 malformed rows left by the old PUT, older than every delay, do not hold the queue: a valid stale upload is swept, and so are they', async (mode) => {
+/* second review, finding 1 (v7_f_img_unprovable.test.mjs): an id the reference scanner cannot match is never condemned — a typed record could show it
+   with nothing the sweep can look at. This test asserted until then that the malformed rows are deleted too; that half is now the opposite, on purpose:
+   they are KEPT (rows and objects), and still do not hold the queue. */
+both(test, 'finding 2 · 41 malformed rows left by the old PUT, older than every delay, do not hold the queue: a valid stale upload is swept; they are unprovable and kept', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, bad = [], now = Date.now();
   for (let k = 0; k < 41; k++) { const b = 'img_bad-' + T.x + '.' + k; bad.push(b);
     raw(W).prepare("INSERT INTO imgown (img, st, k, uid, dept, ts) VALUES (?, 'claim', '', 'tst_e2', ?, ?)").run(b, D2, now - 60 * 864e5 - k);
@@ -92,9 +95,10 @@ both(test, 'finding 2 · 41 malformed rows left by the old PUT, older than every
   const good = id('stale'); await upload(W, S.mgr2, good); age(W, good, 31);
   for (let k = 0; k < 9; k++) await pass(T);
   assert.ok(gone(await state(W, good)), 'the valid 31-day-old upload is swept · ' + JSON.stringify(await state(W, good)).replace(PNG, 'PNG'));
-  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM imgown WHERE img LIKE 'img_bad-%'")[0].n, 0, 'the malformed rows are gone');
-  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM imgs WHERE k LIKE 'img_bad-%'")[0].n, 0);
-  for (const b of bad) assert.equal(await W.env.IMG_R2.get('img/' + b), null, 'and their objects');
+  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM imgown WHERE img LIKE 'img_bad-%' AND st = 'claim'")[0].n, 41, 'the malformed rows are kept as they were (unprovable — never condemned)');
+  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM imgs WHERE k LIKE 'img_bad-%'")[0].n, 41);
+  for (const b of bad) assert.ok(await W.env.IMG_R2.get('img/' + b), 'and their objects');
+  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM imgown WHERE img LIKE 'img_bad-%' AND ts > ?", now - 864e5)[0].n, 41, 'each was met once and its clock restarted (not asked about again before its next term)');
 });
 
 /* ── finding 4 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
