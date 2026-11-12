@@ -26,7 +26,7 @@
    },
    "derived": ["cap"]
   },
-  "indicators": ["daily/kpiZones"]
+  "indicators": ["daily/kpiOcc", "daily/kpiZones"]
  },
  "guards": {
   "enable": "lens.zones.enable",

@@ -8,7 +8,8 @@
   "lenses = عدسات الخريطة (المناطق ثابتة لا تدخل القائمة) · tabAddr = الصفحات التي لتبويباتها عناوين #/page/tab · navOrder/navNames = ترتيب وأسماء روابط المجموعة الأولى في القالب (nth-of-type) · routeNames = أسماء المسارات للعنوان (ومنها sysadmin/profile خارج السجل).",
   "الخادم يستهلك البنية وحدها (PG_REG: key · subs · tabs · off · under) ويُولَّد من هذا الملف نفسه؛ الواجهة تأخذ نسخاً عميقة (clone) كما كانت أدبياتها مستقلة.",
   "KIVO_261 (SOT-003 · 1:1 مع المنصة): كلُّ لوحةٍ يعرضها «مؤشرات الإدارة» وحده (refs الحاوية kpis) ورقةٌ offPage — لا تفتح صفحتَها (لا تظهر هناك أصلاً: الاسترشادُ والمضبوطاتُ ولوحاتُ المتابعة والجاهزيةُ تُستورد solo)، فمنحُها وحدها يُظهر «مؤشرات الإدارة» لا صفحةً فارغة. القاعدةُ يفحصها k261tree.",
-  "CORE-01 (عقدُ تعريف النظام — للبناء وحده، يحذفه tools/generate.py من الواجهة والخادم): module = slug الوحدة في modules/modules.json (ميثاقُها meta.json) · activation = toggle (يطفئها mods.off · ff.module.<key>.enabled) أو always (لا تُطفأ) · requires = [{for: ورقة offPage، on: صفحة أو lens:<عدسة>، kind: perm|lens|code}] — يطابقها tools/validate_schemas.py مع الشيفرة (331 · admin/logic · 334 kpiPanelOk · dc-import). الشرحُ docs/modules.md."
+  "CORE-01 (عقدُ تعريف النظام — يصل الواجهةَ منذ V7 P4 لتُشتقّ منه خريطةُ الأنظمة و«الوحدات» وشروطُ اللوحات؛ الخادمُ يأخذ البنيةَ وحدها): module = slug الوحدة في modules/modules.json (ميثاقُها meta.json) · activation = toggle (يطفئها mods.off · ff.module.<key>.enabled) أو always (لا تُطفأ) · requires = [{for: ورقة offPage، on: صفحة أو lens:<عدسة>، kind: perm|lens|code}] — يطابقها tools/validate_schemas.py مع الشيفرة (331 · admin/logic · 334 kpiPanelOk · dc-import). الشرحُ docs/modules.md.",
+  "V7 P4: مرجعٌ بلا «/» في refs الحاوية = لوحةٌ تملكها صفحةٌ كاملة ويمنحها مفتاحُ عرضها نفسُه (tasks = «مؤشرات المهام» لمن يملك عرضَ المهام) — لا ورقةَ ولا مفتاحَ جديداً · platSwitch = للوحدة مفتاحُ إطفاءٍ في «المنصة ← الوحدات» اليوم · platLock = سببُ قفلها هناك (وحدةٌ toggle لا تُطفأ من الواجهة). ما لا يحمل أيَّهما يُعرض بلا مفتاح."
  ],
  "pages": [
   {
@@ -62,6 +63,7 @@
    "key": "emps",
    "module": "employees",
    "activation": "toggle",
+   "platLock": "أساسية: حسابات المنصة وبيانات الوحدات تقوم عليها — فصلُها شأنُ مشروع الهيكلة",
    "departmentComponents": ["Employees"],
    "nav": "employees",
    "name": "موظفو الإدارة",
@@ -84,6 +86,7 @@
    "key": "planning",
    "module": "planning",
    "activation": "toggle",
+   "platSwitch": true,
    "requires": [
     {"for": "planning/readiness", "on": "emps", "kind": "code"}
    ],
@@ -125,6 +128,7 @@
    "key": "daily",
    "module": "daily",
    "activation": "toggle",
+   "platSwitch": true,
    "requires": [
     {"for": "daily/kpiDaily", "on": "dreport", "kind": "perm"},
     {"for": "daily/kpiOcc", "on": "lens:zones", "kind": "lens"},
@@ -193,6 +197,7 @@
    "key": "irshad",
    "module": "irshad",
    "activation": "toggle",
+   "platSwitch": true,
    "departmentComponents": ["Irshad"],
    "nav": "irshad",
    "name": "نظام الاسترشاد",
@@ -212,6 +217,7 @@
    "key": "seized",
    "module": "seized",
    "activation": "toggle",
+   "platSwitch": true,
    "departmentComponents": ["Seized"],
    "nav": "seized",
    "name": "نظام المضبوطات",
@@ -231,6 +237,7 @@
    "key": "award",
    "module": "award",
    "activation": "toggle",
+   "platSwitch": true,
    "departmentComponents": ["Award"],
    "nav": "award",
    "name": "جائزة التميز",
@@ -303,6 +310,7 @@
     "daily/kpiZones",
     "seized/dash",
     "irshad/dash",
+    "tasks",
     "dstats/anHaram",
     "dstats/anNabawi",
     "dstats/anCmp",
@@ -315,6 +323,7 @@
     "daily/kpiZones": "مؤشرات المصليات",
     "seized/dash": "لوحة مؤشرات المضبوطات",
     "irshad/dash": "لوحة مؤشرات الاسترشاد",
+    "tasks": "مؤشرات المهام",
     "dstats/anHaram": "تحليل المسجد الحرام",
     "dstats/anNabawi": "تحليل المسجد النبوي",
     "dstats/anCmp": "مقارنة الحرمين",

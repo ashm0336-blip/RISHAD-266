@@ -12,14 +12,18 @@
      ليُعرض في الأشجار باهتاً بشارة «مطفأة من المنصة» لا أن يختفي من القائمة ويبقى في السقف كأنه متاح. */
   function navOrder(){
     var P = null; try { P = KIVO.BassamPlat && KIVO.BassamPlat.get && KIVO.BassamPlat.get(); } catch (e) {}
-    var keys = (KIVO.BassamPlat && KIVO.BassamPlat.NAVKEYS) || ['kpis','emps','planning','daily','irshad','seized','award'];
+    /* V7 P4 · G11: الاحتياطُ ومجموعتا «مراجع» و«الإدارة» من البيان — صفحةُ قمةٍ بلا وحدة (module) مرجعٌ عامّ، وما تفعيلُه always إدارة */
+    var keys = (KIVO.BassamPlat && KIVO.BassamPlat.NAVKEYS) || KIVO.KIVO_MANIFEST.clone('navOrder');
+    var top = PAGE_REG.filter(function(p){ return !p.under; });
+    var mgmt = top.filter(function(p){ return p.activation === 'always'; }).map(function(p){ return p.key; });
+    var gen = top.filter(function(p){ return !p.module && mgmt.indexOf(p.key) === -1 && keys.indexOf(p.key) === -1; }).map(function(p){ return p.key; });
     var order = (((P && P.side && P.side.order) || [])).filter(function(k){ return keys.indexOf(k) >= 0; });
     keys.forEach(function(k, i){ if (order.indexOf(k) >= 0) return; var prev = i > 0 ? order.indexOf(keys[i - 1]) : -1; order.splice(prev + 1, 0, k); });
     /* صفحة جديدة في السجل لم تدخل NAVKEYS بعد: تلحق بمجموعة العمل لا تضيع */
-    var known = order.concat(['links','help','admin']);
+    var known = order.concat(gen, mgmt);
     PAGE_REG.forEach(function(p){ if (!p.under && known.indexOf(p.key) === -1) order.push(p.key); });
     var hidden = ((P && P.side && P.side.hidden) || []).concat((P && P.mods && P.mods.off) || []);
-    return { groups: [ { key:'work', name:'عمل الإدارة', keys:order }, { key:'refs', name:'مراجع', keys:['links','help'] }, { key:'mgmt', name:'الإدارة', keys:['admin'] } ], hidden: hidden };
+    return { groups: [ { key:'work', name:'عمل الإدارة', keys:order }, { key:'refs', name:'مراجع', keys:gen }, { key:'mgmt', name:'الإدارة', keys:mgmt } ], hidden: hidden };
   }
   /* يعيد ترتيب صفوف شجرةٍ مسطّحة (رأسٌ يتبعه أبناؤه) على الترتيب الفعّال، ويدرج صفوف المجموعات، ويوسم المطفأ */
   function orderRows(rows){
@@ -45,17 +49,24 @@
   }
   /* ═══ خريطة المنصة — تُولَّد من السجلات (PAGE_REG · NAV_REG · navOrder) لا تُكتب يدوياً ═══
      صفوف مسطّحة للعرض في «المنصة ← حول المنصة»: كل ما يدخل السقف بالترتيب الفعّال ومجموعاته وعناوينه،
-     ثم ما هو خارج السقف بحكم طبيعته (الدخول · الملف الشخصي · مدير النظام) من سجل ثابت صغير هنا. */
+     ثم ما هو خارج السقف بحكم طبيعته (الدخول · الملف الشخصي · مدير النظام).
+     V7 P4 (G9/G10/G12): o.center = تبويباتُ «مركز إدارة رشاد» من قائمتها الواحدة في وحدة الإدارة (لا أسماءَ حرفية هنا) ·
+     o.struct = بنيةُ شجرة الصلاحيات (t24Struct) ومنها أقسامُ العدسات والمنصة والمراجع · شارةُ السقف تسمّي الإدارةَ التي حُسبت لها. */
   var TAB_ADDR = KIVO.KIVO_MANIFEST.clone('tabAddr');   /* الصفحات التي لتبويباتها عناوين #/page/tab */
-  function siteMap(){
+  function siteMap(o){
+    o = o || {};
     var NO = navOrder(), rows = [], GRP = {}, GRPO = {};
+    var capOf = ''; try { var cd = I.curDept(), dl = KIVO.BassamDepts.list().filter(function(x){ return x.id === cd; })[0]; capOf = dl ? dl.name : ''; } catch (e) {}
+    var capTxt = capOf ? 'خارج سقف «' + capOf + '»' : 'خارج سقف الإدارة النشطة';
     NAV_REG.forEach(function(g){ (g.refs || []).forEach(function(k){ GRP[k] = g.key; GRPO[k] = g; }); });
     var B = { box:['حاوية','#8A6F35','rgba(185,151,81,0.1)','rgba(185,151,81,0.35)'], page:['صفحة','#4A5C68','#F4F5F7','#E1E1E1'], tab:['تبويب','#0e7490','rgba(14,116,144,0.08)','rgba(14,116,144,0.3)'],
               off:['خارج الصفحة','#b45309','rgba(180,83,9,0.07)','rgba(180,83,9,0.25)'], ref:['ورقة مرجعية','#0e7490','rgba(14,116,144,0.08)','rgba(14,116,144,0.3)'], win:['نافذة','#64748b','transparent','#CBD5E1'],
-              srv:['خادم فقط','#64748b','transparent','#CBD5E1'], sup:['مسؤول المنصة','#b91c1c','rgba(185,28,28,0.07)','rgba(185,28,28,0.25)'], grp:['','','',''] };
+              srv:['خادم فقط','#64748b','transparent','#CBD5E1'],
+              sup:['مسؤول المنصة','#b91c1c','rgba(185,28,28,0.07)','rgba(185,28,28,0.25)'], lens:['عدسة','#0e7490','rgba(14,116,144,0.08)','rgba(14,116,144,0.3)'],
+              plat:['منصة','#64748b','transparent','#CBD5E1'], rdat:['مرجع','#6d28d9','rgba(109,40,217,0.06)','rgba(109,40,217,0.25)'], grp:['','','',''] };
     function row(depth, name, kind, addr, hint, platOff, capOff){
       var b = B[kind] || B.page, isG = kind === 'grp';
-      rows.push({ name:name, badge:b[0], addr:addr || '', hint:hint || '', isGroup:isG,
+      rows.push({ name:name, badge:b[0], kind:kind, addr:addr || '', hint:hint || '', isGroup:isG, capOffTxt: capOff ? capTxt : '',
         rowStyle: isG ? 'display:flex;align-items:center;gap:8px;padding:12px 12px 3px;font-size:9.5px;font-weight:800;color:var(--fg-x94a3b8);letter-spacing:.05em;border-bottom:1px solid var(--bd-xf1f3f5)'
                       : 'display:flex;align-items:center;gap:8px;padding:7px 12px;padding-right:' + (12 + depth * 22) + 'px;border-bottom:1px solid var(--bd-xf4f4f4);font-size:12px;' + ((platOff || capOff) ? 'opacity:.55;' : ''),
         nameStyle: 'font-weight:' + (depth ? '600' : '700') + ';color:var(--fg-x141414);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0',
@@ -85,19 +96,31 @@
         var nv = NAV_REG.filter(function(n){ return n.key === k; })[0];
         if (nv) { var off = NO.hidden.indexOf(k) !== -1; row(0, nv.name, 'box', '#/' + (nv.nav || k), 'حاوية عرض — أوراقها بمفاتيح صفحاتها', off, !onAny(nv.refs || []));
           (nv.refs || []).forEach(function(r){ var sp = splitLeaf(r), pp = PAGE_OF[sp.page], x = pp ? (pp.subs || []).concat(pp.tabs || []).filter(function(z){ return z.key === sp.sub; })[0] : null;
-            row(1, (nv.names && nv.names[r]) || (x && x.name) || r, 'ref', '', 'ورقة من «' + (pp ? pp.name : sp.page) + '»', off, !onCap(r)); }); return; }
+            row(1, (nv.names && nv.names[r]) || (x && x.name) || r, 'ref', '', (sp.sub ? 'ورقة من «' : 'لوحةُ صفحة «') + (pp ? pp.name : sp.page) + '»', off, !onCap(r)); }); return; }
         var p = PAGE_OF[k]; if (p && !p.under) page(p, 0);
       });
     });
+    /* العدسات · المنصة · المراجع — من بنّاء شجرة الصلاحيات نفسِه (المالكون وأسماؤهم من السجلّ، ومضيفو العدسة من ملفّها) */
+    var S = o.struct || [], cont = function(kind){ return S.filter(function(c){ return c.kind === kind; })[0]; };
+    var nm = function(id){ var out = id; S.forEach(function(c){ if (c.id === id) out = c.label; (c.leaves || []).forEach(function(l){ if (l.owner === id) out = l.label; }); }); return out; };
+    var nk = function(l){ return (l.keys || []).length; };
+    var LZ = cont('plugins'), PF = cont('platform'), RF = cont('reference');
+    if (LZ && LZ.leaves.length) { row(0, LZ.label + ' — إضافاتٌ على مضيفيها، لا صفحةَ لها', 'grp');
+      LZ.leaves.forEach(function(l){ row(0, l.label, 'lens', l.route, 'على ' + (l.hosts || []).map(function(h){ return '«' + nm(h) + '»'; }).join(' و'), false, !onCap(l.lens)); }); }
     /* خارج السقف بحكم طبيعتها */
     row(0, 'خارج السقف — لا تُمنح', 'grp');
     row(0, 'شاشة تسجيل الدخول', 'page', '', 'تسجيل الدخول · تأمين الحساب (أول دخول) · تعذّر الدخول؟');
-    row(0, 'الملف الشخصي', 'page', '#/profile', 'من الصورة الرمزية أسفل القائمة');
-    ['الإدارة — البيانات الوظيفية','بياناتي','الأمان — بيانات الدخول والجلسات'].forEach(function(n){ row(1, n, 'win'); });
-    row(1, 'يومك / أسبوعك · رصد الميدان', 'tab', '', 'لوحة الرصد تمنحها ورقة «رصد الميدان» في المتابعة اليومية');
-    row(0, 'مركز إدارة رشاد', 'sup', '#/sysadmin', 'صفحة الإعدادات في نمط «المنصة»');
-    [['overview','نظرة عامة','srv'],['sec','الأمن','srv'],['users','مراقبة الحسابات','srv'],['perms','خريطة الصلاحيات','srv'],['plat','المنصة','tab'],['depts','الإدارات','tab'],['backup','النسخة الاحتياطية','tab'],['histimp','استيراد البيانات التاريخية','tab']]
-      .forEach(function(t){ row(1, t[1], t[2], '#/sysadmin/' + (t[0] === 'depts' ? 'org' : t[0]), t[0] === 'plat' ? 'هوية المنصة · الدخول · الجوال · القوائم · الطباعة · الوحدات · التهيئة · التنبيهات · حول المنصة' : (t[0] === 'depts' ? 'المستخدمون · سقف الصفحات' : '')); });
+    /* نوافذُ «ملفي» وألواحُه: لا مصدرَ يعلنها (pages.json والسجلُّ يعرفان الصفحةَ مالكاً بلا أجزاء؛ والنوافذُ في قالب الصفحة وحده) —
+       فتبقى هنا حرفيةً كما كانت قبل V7 P4، تحت صفّ المالك «profile» المشتقّ من الشجرة */
+    var PF_SUB = [['الإدارة — البيانات الوظيفية','win'],['بياناتي','win'],['الأمان — بيانات الدخول والجلسات','win'],
+                  ['يومك / أسبوعك · رصد الميدان','tab','لوحة الرصد تمنحها ورقة «رصد الميدان» في المتابعة اليومية']];
+    if (PF) PF.leaves.forEach(function(l){ var self = (l.keys || []).length && (l.keys || []).every(function(k){ var e = KIVO.KIVO_REGISTRY && KIVO.KIVO_REGISTRY.byKey[k]; return e && e.grant === 'self'; });
+      row(0, l.label, 'plat', l.owner === 'profile' ? '#/profile' : '', nk(l) ? (self ? 'ذاتيّ لكل مستخدم' : 'بالدور') + ' · ' + KIVO.BassamCount(nk(l), 'مفتاح') : 'بلا مفاتيح');
+      if (l.owner === 'profile') PF_SUB.forEach(function(x){ row(1, x[0], x[1], '', x[2] || ''); }); });
+    if (RF) RF.leaves.forEach(function(l){ row(0, l.label, 'rdat', '', 'مرجعٌ مستقلّ يُدار في «' + nm(l.managedIn) + '»'); });
+    row(0, 'مركز إدارة رشاد', 'sup', '#/sysadmin', 'لمسؤول المنصة وحده');
+    /* t.srv = الحقلُ الرابع في قائمة تبويبات المركز (CON_TABS): تبويبٌ يعمل مع الخادم وحده ⇒ شارةُ «خادم فقط» */
+    (o.center || []).forEach(function(t){ row(1, t.name, t.srv ? 'srv' : 'tab', t.addr, t.hint || ''); });
     return rows;
   }
   /* → للأجزاء الأخرى */

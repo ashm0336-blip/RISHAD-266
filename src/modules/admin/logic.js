@@ -1355,6 +1355,98 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ? this.setState({ admTab: "oplog" }, () => this.audLoad(!0))
           : this.setState({ admTab: k });
   }
+  /* V7 P4 · G8/G14 — «وحدات المنصة» من البيان (pages.json): كلُّ صفحةٍ لها activation صفٌّ (لا قائمةَ يدوية) — always مقفلة ·
+     platSwitch = لها مفتاحُ إطفاءٍ هنا اليوم · platLock = مقفلةٌ بسببٍ معلن · وما سواها يُعرض بلا مفتاح. الوصفُ والعدّادُ من بنية الصفحة
+     (تبويباتُها وصفحاتُها) وسقوف الإدارات — لا نصوصَ قديمة. off: mods.off · tg: نمطُ المفتاح */
+  _plMods(off, tg) {
+    let pages = [];
+    try {
+      pages = KIVO.KIVO_MANIFEST.clone("pages");
+    } catch (t) {
+      return [];
+    }
+    const P = KIVO.BassamPerm,
+      under = (k) => pages.filter((q) => q.under === k),
+      depts = (() => {
+        try {
+          return KIVO.BassamDepts.list();
+        } catch (t) {
+          return [];
+        }
+      })(),
+      uses = (p) => {
+        try {
+          return depts.filter((d) => (P.deptCap(d.id) || []).some((e) => e === p.key || under(p.key).some((q) => q.key === e))).length;
+        } catch (t) {
+          return 0;
+        }
+      };
+    return pages
+      .filter((p) => p.activation)
+      .map((p) => {
+        const isOff = off.indexOf(p.key) >= 0,
+          sw = !0 === p.platSwitch && "toggle" === p.activation,
+          n = uses(p),
+          host = p.under ? pages.filter((q) => q.key === p.under)[0] : null,
+          why = "always" === p.activation ? "دائمة — لا تُطفأ" : p.platLock ? "لا تُطفأ — " + p.platLock : sw ? "" : "لا مفتاحَ إطفاءٍ لها هنا",
+          kids = (p.subs || [])
+            .concat(p.tabs || [])
+            .concat(under(p.key))
+            .map((x) => x.name);
+        return {
+          k: p.key,
+          name: p.name,
+          sub: (host ? ["تحت «" + host.name + "»"] : []).concat(kids).join(" · "),
+          sw: sw,
+          activation: p.activation,
+          why: why,
+          whyOn: !!why,
+          note: isOff
+            ? "مطفأة"
+            : n
+              ? KIVO.BassamCount(n, "إدارة") + " " + KIVO.BassamCount.agr(n, "تستخدمها", "تستخدمانها", "تستخدمها")
+              : "لا إدارة تستخدمها",
+          tg: tg(!isOff) + (sw ? "" : ";opacity:.35;cursor:not-allowed"),
+          style:
+            "display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bd-xeceef1);border-radius:11px;background:var(--bg-xffffff);margin-bottom:6px;" +
+            (isOff ? "opacity:.6" : ""),
+        };
+      });
+  }
+  /* V7 P4 · G9 — تبويباتُ «مركز إدارة رشاد»: القائمةُ الواحدة [المفتاح · المجموعة · العنوان · يعمل مع الخادم وحده] — منها ترتيبُ التبويبات
+     وعناوينُ الصفحات (_conHead) وصفوفُ المركز في «خريطة المنصة» (_siteMap). عنوانُ «plat» من أقسامه (PL_SECS) */
+  CON_TABS() {
+    return [
+      ["overview", "", "الرئيسية", 1],
+      ["sec", "sec", "الأمن", 1],
+      ["users", "org", "مراقبة الحسابات", 1],
+      ["perms", "org", "خريطة الصلاحيات", 1],
+      ["plat", "plat", "", 0],
+      ["depts", "org", "الإدارات", 0],
+      ["oplog", "sec", "سجل الأنشطة والتغييرات", 1],
+      ["backup", "data", "النسخة الاحتياطية", 0],
+      ["histimp", "data", "استيراد البيانات التاريخية", 0],
+    ];
+  }
+  /* «خريطة المنصة»: صفوفُ المركز من CON_TABS وأقسامُ المنصة من PL_SECS، والعدساتُ والمنصةُ والمراجعُ من بنّاء الشجرة نفسِه (t24Struct) */
+  _siteMap() {
+    const P = KIVO.BassamPerm;
+    if (!P || !P.siteMap) return [];
+    return P.siteMap({
+      center: this.CON_TABS().map((t) => ({
+        name: t[2] || this._conHead("plat", "").conEyebrow,
+        addr: "#/sysadmin/" + ("depts" === t[0] ? "org" : t[0]),
+        srv: t[3],
+        hint:
+          "plat" === t[0]
+            ? this.PL_SECS()
+                .map((x) => x[1])
+                .join(" · ")
+            : "",
+      })),
+      struct: this.t24Struct(),
+    });
+  }
   /* CORE-02 S7 · أقسامُ «إعدادات المنصة» (#/sysadmin/plat/<sub>) — تنقّلُها في شريط «مركز إدارة رشاد» (root-logic _sysNav).
      مراجعة S10: القائمةُ الواحدة [المفتاح · العنوان · الوصف · الأيقونة] — منها المفاتيحُ (PL_KEYS) وعنوانُ الصفحة ووصفُها (plVals) */
   PL_SECS() {
@@ -1403,8 +1495,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     /* أسماءُ المجموعات وعناوينُ الصفحات هنا توأمُ GT و_sysNav في root-logic عن قصد: صفحةُ الإدارة لا تعتمد على الإطار (V5) —
        وتطابقُهما يثبّته core02_console_nav.test.mjs (6) */
     const G = { org: "الإدارة المؤسسية", plat: "إعدادات المنصة", sec: "الأمن والرقابة", data: "البيانات والاستمرارية" },
-      T = { overview: ["", "الرئيسية"], depts: ["org", "الإدارات"], users: ["org", "مراقبة الحسابات"], perms: ["org", "خريطة الصلاحيات"],
-        sec: ["sec", "الأمن"], oplog: ["sec", "سجل الأنشطة والتغييرات"], backup: ["data", "النسخة الاحتياطية"], histimp: ["data", "استيراد البيانات التاريخية"] },
+      T = this.CON_TABS().reduce((a, t) => ((a[t[0]] = [t[1], t[2]]), a), {}),
       x = "plat" === d ? ["setup" === ps ? "data" : "plat", ""] : T[d] || ["", ""];
     return { conEyebrow: G[x[0]] || "", conEyebrowOn: !!G[x[0]], conTitle: x[1] };
   }
@@ -1713,7 +1804,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       nr = KIVO.BassamNotif && KIVO.BassamNotif.status ? String(KIVO.BassamNotif.status().rev) : "";   /* CORE-02 S8: «أحداث المنصة الأخيرة» */
     } catch (t) {}
-    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.adSecQ, tag(t.adPol), t.adPolMsg, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|") + "|n" + nr;
+    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.adSecQ, tag(t.adPol), t.adPolMsg, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres), t.pmLens, t.pmDid, t.pmUid, tag(t.pmExp), tag(t.pmLeaf)].join("|") + "|n" + nr;   /* V7 P4: عدسةُ الخريطة وفردُها */
   }
   _adMemo(n, f) {
     const k = this._adKey(),
@@ -2312,8 +2403,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "about" === l
               ? (() => {
                   try {
-                    const P = KIVO.BassamPerm;
-                    return P && P.siteMap ? P.siteMap() : [];
+                    return this._siteMap();
                   } catch (t) {
                     return [];
                   }
@@ -2323,7 +2413,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "about" === l
               ? (() => {
                   try {
-                    const r = KIVO.BassamPerm.siteMap();
+                    const r = this._siteMap();
                     const g = r.filter((t) => t.isGroup).length;
                     return (
                       KIVO.BassamCount(r.length - g, "عنصر") +
@@ -2416,64 +2506,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               a = s.indexOf(e);
             (a >= 0 ? s.splice(a, 1) : s.push(e), this.plSetPath("side.hidden", s));
           },
-          plMods: [
-            [
-              "emps",
-              "موظفو الإدارة",
-              "بيانات الموظفين · المهام · العهد",
-              "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
-              !0,
-            ],
-            ["planning", "الخطة التشغيلية", "مؤشرات الجاهزية · الجدول الشهري · التشغيل الميداني", "M3 4h18v18H3zM16 2v4M8 2v4M3 10h18", !1],
-            ["daily", "المتابعة اليومية", "المؤشرات · التقرير اليومي · الجولات", "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6v6l4 2", !1],
-            [
-              "irshad",
-              "نظام الاسترشاد",
-              "",
-              "M12 21s-7-5.2-7-10.5A7 7 0 0 1 19 10.5C19 15.8 12 21 12 21zM12 13a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2z",
-              !1,
-            ],
-            ["seized", "نظام المضبوطات", "محاضر الممنوعات والمحظورات · الصور · لوحة المؤشرات", "M21 8v13H3V8M1 3h22v5H1zM10 12h4", !1],
-            ["award", "جائزة التميز", "", "M8 4h8v5.2a4 4 0 0 1-8 0V4zM10 15h4M12 15v4M9 20h6", !1],
-          ].map((t) => {
-            const e = b.indexOf(t[0]) >= 0,
-              s = (() => {
-                try {
-                  const e = KIVO.BassamPerm;
-                  return KIVO.BassamDepts.list().filter((s) =>
-                    (e.deptCap(s.id) || []).some(
-                      (e) =>
-                        e === t[0] ||
-                        ("planning" === t[0] && ("staff" === e || "plan" === e)) ||
-                        ("daily" === t[0] && ("dreport" === e || "daily" === e)) ||
-                        ("emps" === t[0] && ("tasks" === e || "custody" === e)),
-                    ),
-                  ).length;
-                } catch (t) {
-                  return 0;
-                }
-              })();
-            return {
-              k: t[0],
-              name: t[1],
-              sub: t[2],
-              p: t[3],
-              note: t[4]
-                ? "أساسية — لا تُطفأ"
-                : e
-                  ? "مطفأة"
-                  : s
-                    ? KIVO.BassamCount(s, "إدارة") + " " + KIVO.BassamCount.agr(s, "تستخدمها", "تستخدمانها", "تستخدمها")
-                    : "لا إدارة تستخدمها",
-              tg: c(!e) + (t[4] ? ";opacity:.35;cursor:not-allowed" : ""),
-              style:
-                "display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bd-xeceef1);border-radius:11px;background:var(--bg-xffffff);margin-bottom:6px;" +
-                (e ? "opacity:.6" : ""),
-            };
-          }),
+          plMods: this._plMods(b, c),
           plModTog: (t) => {
             const e = t.target.closest("[data-k]").getAttribute("data-k");
-            if ("emps" === e) return;
+            /* V7 P4: المفتاحُ لما يحمل platSwitch في البيان وحده (ما كان يُطفأ قبلُ) — «موظفو الإدارة» مقفلةٌ بسببها المعلن */
+            if (!this._plMods(b, c).some((m) => m.k === e && m.sw)) return;
             const s = b.slice(),
               a = s.indexOf(e);
             (a >= 0 ? s.splice(a, 1) : s.push(e), this.plSetPath("mods.off", s));
@@ -2948,6 +2985,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           (navigator.clipboard.writeText(t.usTmp.pw), this.bsToast("نُسخت", "ok"));
         } catch (t) {}
       },
+      ...this._pmMap(
+        pmOn,
+        D,
+        o.filter((t) => !t.dis && "dept" !== t.role),
+      ),
       pmCaps: T,
       pmTpls: A,
       pmTplEmpty: !A.length, pmTplHas: !!A.length,
@@ -4256,7 +4298,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* ═══ KIVO_256 · SOT-003/004/010/015 — شجرةُ الصلاحيات TO-BE v24.9 (وثيقة الشجرة · القسم ٣): الحاويات · الأوراق · العدسات · المنصة · المراجع ═══
      تُشتقّ وقتَ التشغيل من بنية المنصة الحقيقية (KIVO_MANIFEST ← manifests/pages.json: الصفحات · التبويبات · الصفحاتُ تحت حاوية · ترتيبُ seq ·
      عناوينُ التبويبات tabAddr · حاويةُ «مؤشرات الإدارة») ومن السجلّ (KIVO_REGISTRY: المالكون · المفاتيحُ النشطة والمحجوزة) — ومطابقتُها لـ
-     src/manifests/perm-tree24.json (المولَّد من الوثيقة بأداة tools/perm_tree.py) مثبتةٌ في tests/unit/perm_tree24.test.mjs.
+     src/manifests/perm-tree24.json (المولَّد من الوثيقة بأداة tools/perm_tree.py) مثبتةٌ في tests/unit/v7_p4_systems_map.test.mjs (A2).
+     V7 P4 — خريطةُ الأنظمة: البنّاءُ نفسُه يحمل لكل ورقةٍ نظامَها (sys = module) وتصنيفَها (cls) وشروطَ لوحتها (req ← requires) ومضيفي العدسة
+     (hosts ← ملفّ العدسة)، ولكل حاويةٍ لوحاتِها التي بلا مالكٍ في السجل (panels) — كلُّه مشتقٌّ من البيان والسجلّ، لا قائمةَ يدوية.
      الحاويةُ لا تُمنح؛ المفاتيحُ على الأوراق والعدسات؛ المنصةُ بالدور/الذات؛ المرجعُ المستقلّ يُمنح في ورقة إدارته. ═══ */
   t24Struct() {
     if (this.__t24s) return this.__t24s;
@@ -4273,7 +4317,27 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     const PG = {};
     pages.forEach((p) => (PG[p.key] = p));
+    let lensM = [];
+    try {
+      lensM = M.clone("lenses");
+    } catch (t) {
+      /* بيانٌ بلا عدسات: أوراقُ العدسات بلا مضيفين معلنين */
+    }
     const kp = conts.filter((c) => "kpis" === c.key)[0] || null,
+      refs = (kp && kp.refs) || [],
+      /* شروطُ اللوحة كما يعلنها البيان (requires = المصدرُ الوحيد · يطابقه validate_schemas مع kpiPanelOk) */
+      reqOf = (id) =>
+        pages
+          .reduce((a, p) => a.concat((p.requires || []).filter((r) => r.for === id)), [])
+          .map((r) => ({ on: r.on, kind: r.kind || (0 === String(r.on).indexOf("lens:") ? "lens" : "perm") })),
+      /* التصنيفُ مشتقّ: الورقةُ خارج الصفحة لوحةُ مؤشراتٍ إن كانت من مراجع «مؤشرات الإدارة»، وإلا تبويب */
+      clsOf = (type, id) => ("offpage" === type ? (-1 !== refs.indexOf(id) ? "panel" : "tab") : "plugin" === type ? "lens" : type),
+      /* المفتاحُ الذي يمنح لوحةً بلا مالك: أهدافُ ذرّة «عرض» ورقتها في السجل */
+      viaOf = (id) =>
+        Object.keys(R.atoms || {}).reduce((a, k) => {
+          const at = R.atoms[k];
+          return at && at.leaf === id && "view" === at.act ? a.concat((at.targets || []).filter((x) => -1 === a.indexOf(x))) : a;
+        }, []),
       own = (id) => !!R.owners[id],
       act = (id) => (R.byOwner[id] || []).filter((k) => R.byKey[k] && "active" === R.byKey[k].status),
       resv = (id) => (R.byOwner[id] || []).filter((k) => R.byKey[k] && "active" !== R.byKey[k].status),
@@ -4289,7 +4353,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           .filter((o) => "reference" === R.owners[o].kind && R.owners[o].managedIn === leafId)
           .reduce((a, o) => a.concat(act(o)), []),
       leaf = (id, label, type, rt, extra) =>
-        Object.assign({ owner: id, label: label, type: type, route: rt, keys: act(id), reserved: resv(id), managed: refsOf(id) }, extra || {}),
+        Object.assign(
+          { owner: id, label: label, type: type, route: rt, keys: act(id), reserved: resv(id), managed: refsOf(id), cls: clsOf(type, id), req: reqOf(id) },
+          extra || {},
+        ),
       out = [];
     pages
       .filter((p) => !p.under)
@@ -4301,8 +4368,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   .concat((p.subs || []).map((x) => "sub:" + x.key))
                   .concat((p.tabs || []).map((x) => "tab:" + x.key))
                   .concat(pages.filter((q) => q.under === p.key).map((q) => "page:" + q.key)),
-          L = [];
-        if (!seq.length) own(p.key) && L.push(leaf(p.key, p.name, "page", route(p), { page: p.key }));
+          L = [],
+          PN = [];
+        if (!seq.length) own(p.key) && L.push(leaf(p.key, p.name, "page", route(p), { page: p.key, sys: p.module || "" }));
         else
           seq.forEach((e) => {
             const z = String(e).split(":"),
@@ -4310,27 +4378,48 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               v = z[1];
             if ("page" === k) {
               const q = PG[v];
-              q && own(q.key) && L.push(leaf(q.key, q.name, "page", route(q), { page: q.key, under: p.key }));
+              q && own(q.key) && L.push(leaf(q.key, q.name, "page", route(q), { page: q.key, under: p.key, sys: q.module || "" }));
               return;
             }
             const x = (("sub" === k ? p.subs : p.tabs) || []).filter((y) => y.key === v)[0],
               id = p.key + "/" + v;
-            x && own(id) && L.push(leaf(id, x.name, x.offPage ? "offpage" : "tab", route(p, v, x.offPage), { page: p.key, sub: v, subKind: k }));
+            x && own(id) && L.push(leaf(id, x.name, x.offPage ? "offpage" : "tab", route(p, v, x.offPage), { page: p.key, sub: v, subKind: k, sys: p.module || "" }));
+            /* لوحةٌ من مراجع «مؤشرات الإدارة» بلا مالكٍ في السجل (مفتاحُها عند مالكٍ آخر): صفٌّ في الخريطة وحدها — لا ورقةَ تُمنح */
+            x &&
+              !own(id) &&
+              -1 !== refs.indexOf(id) &&
+              PN.push({ id: id, label: (kp.names || {})[id] || x.name, at: L.length, page: p.key, sys: p.module || "", route: route(p, v, !0), via: viaOf(id), req: reqOf(id) });
           });
-        L.length && out.push({ id: p.key, label: p.name, kind: "page", page: p.key, nav: p.nav || p.key, leaves: L });
+        /* مرجعٌ بلا «/» = لوحةُ صفحةٍ كاملة يمنحها مفتاحُ عرضها («مؤشرات المهام») — صفُّها بعد ورقة صفحتها */
+        refs.forEach((r) => {
+          const i = -1 === r.indexOf("/") ? L.findIndex((l) => l.owner === r) : -1;
+          -1 !== i &&
+            PN.push({ id: r + "#panel", label: (kp.names || {})[r] || L[i].label, at: i + 1, page: r, sys: L[i].sys, route: "#/" + (kp.nav || kp.key), via: viaOf(r), req: reqOf(r) });
+        });
+        L.length && out.push({ id: p.key, label: p.name, kind: "page", page: p.key, nav: p.nav || p.key, leaves: L, panels: PN });
       });
     const byKind = (kind) => R.data.owners.filter((o) => o.kind === kind).map((o) => o.id),
       lbl = (id) =>
         String((R.owners[id] || {}).label || id)
           .replace(/\s*\((?:Platform Feature Flags|Presenter|صفحتي|مرجع مستقل)\)\s*$/, "")
-          .trim();
+          .trim(),
+      lensOf = (ln) => lensM.filter((z) => z.key === ln)[0] || {},
+      /* مسارُ المضيف كما تفتحه المنصة — من مضيفي العدسة في ملفّها (hosts)، لا نصَّ حرفياً */
+      hostRoute = (h) => {
+        const z = String(h).split("/");
+        return PG[z[0]] ? route(PG[z[0]], z[1]) : "";
+      };
     out.push({
       id: "lenses",
       label: "العدسات",
       kind: "plugins",
       page: null,
       nav: null,
-      leaves: byKind("lens").map((id) => leaf(id, lbl(id), "plugin", "#/plan · #/daily/rounds", { lens: id.replace(/^lens\./, "") })),
+      leaves: byKind("lens").map((id) => {
+        const ln = id.replace(/^lens\./, ""),
+          hs = (lensOf(ln).hosts || []).slice();
+        return leaf(id, lbl(id), "plugin", hs.map(hostRoute).filter(Boolean).join(" · "), { lens: ln, hosts: hs, ind: (lensOf(ln).indicators || []).slice() });
+      }),
     });
     out.push({ id: "platform", label: "المنصة", kind: "platform", page: null, nav: null, leaves: byKind("platform").map((id) => leaf(id, lbl(id), "platform", "")) });
     out.push({
@@ -4341,6 +4430,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       nav: null,
       leaves: byKind("reference").map((id) => leaf(id, lbl(id), "reference", "", { managedIn: R.owners[id].managedIn })),
     });
+    /* الأنظمة (Q1: النظام = module في pages.json كما هو) وحاوياتُ العرض — خصائصُ على المصفوفة فلا يتغيّر شكلُها لمحرّرات السقف والموظف والقالب */
+    out.systems = pages
+      .filter((p) => p.module)
+      .map((p) => ({ key: p.module, page: p.key, label: p.name, activation: p.activation, home: p.under || p.key }));
+    out.display = conts.map((c) => ({ id: c.key, label: c.name, nav: c.nav || c.key, refs: (c.refs || []).slice() }));
     return (this.__t24s = out);
   }
   /* المفاتيحُ التي حلّت محلّ لوحاتٍ أُلغيت أوراقُها في v24 («مؤشرات الإدارة»: مؤشراتُ التشغيل اليومي/الإشغال/المصليات) — أين تظهر في المنصة */
@@ -4472,7 +4566,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           .join(",");
   }
   /* صفوفُ الشجرة للعرض — mode: emp (منحُ موظف) · tpl (قالب) · view (عرض) · cap (سقفُ الإدارة)
-     o: {ceil, on, lens, exp, leafExp, canEdit, target:{role, mgr}, hideOut, lim:{allow, name(page)}, platOff:[…], cb:{togKey, togLeaf, capLeaf, expand, leafExpand}} */
+     o: {ceil, on, lens, exp, leafExp, canEdit, target:{role, mgr}, hideOut, lim:{allow, name(page)}, platOff:[…], cb:{togKey, togLeaf, capLeaf, expand, leafExpand}}
+     V7 P4 — o.map: خريطةُ الأنظمة والصلاحيات (قراءةٌ وحدها) بالمسار نفسِه: تُضاف صفوفُ الأنظمة (تحت حاويتها) واللوحاتُ التي بلا مالك وحاويةُ العرض،
+     وتحمل كلُّ ورقةٍ تصنيفَها المشتقّ (cls) وشروطَ لوحتها (req) · o.capWords: عبارتا «داخل/خارج» لعرض الإتاحة على المنصة */
   t24Rows(o) {
     const S = this.t24Struct(),
       P = KIVO.BassamPerm,
@@ -4493,6 +4589,22 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       shown = this.t24Shown(),
       lim = o.lim || null,
       off = o.platOff || [],
+      map = !!o.map,
+      capW = o.capWords || ["داخل سقف الإدارة", "خارج سقف الإدارة"],
+      CLS = { system: "نظام", container: "حاوية", page: "صفحة", tab: "تبويب", panel: "لوحة مؤشرات", lens: "عدسة", platform: "منصة", reference: "مرجع" },
+      all24 = S.reduce((a, cc) => a.concat(cc.leaves), []),
+      /* اسمُ ورقةٍ أو حاويةٍ أو عدسة (lens:<k>) من البنية نفسِها */
+      name24 = (id) => {
+        const ln = 0 === String(id).indexOf("lens:") ? String(id).slice(5) : "",
+          l = all24.filter((y) => (ln ? y.lens === ln : y.owner === id))[0];
+        return l ? l.label : (S.filter((cc) => cc.id === id)[0] || {}).label || id;
+      },
+      hostTxt = (l, sep) => (l.hosts || []).map((h) => "«" + name24(h) + "»").join(sep),
+      reqTxt = (rq) => {
+        const a = (rq || []).filter((r) => "code" !== r.kind).map((r) => ("lens" === r.kind ? name24(r.on) + " في سقف الوحدة" : "عرض «" + name24(r.on) + "»")),
+          b = (rq || []).filter((r) => "code" === r.kind).map((r) => "تُبنى من «" + name24(r.on) + "»");
+        return (a.length ? ["تظهر بشرط: " + a.join(" و")] : []).concat(b).join(" · ");
+      },
       G = "var(--brand-primary)",
       G2 = "var(--brand-deep)",
       T = "var(--info-strong)",
@@ -4548,7 +4660,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           });
         }
         const kOn = P24.keyOn(k, C);
-        if (cap) return Object.assign(base, { on: kOn, dis: !0, kind: "info", tip: (kOn ? "داخل سقف الإدارة" : "خارج سقف الإدارة") + " · " + k + sh });
+        if (cap) return Object.assign(base, { on: kOn, dis: !0, kind: "info", tip: (kOn ? capW[0] : capW[1]) + " · " + k + sh });
         if (!kOn) return Object.assign(base, { on: !1, dis: !0, kind: "out", tip: "خارج سقف الإدارة · " + k + sh });
         if (/^lens\.[a-z]+\.enable$/.test(k))
           return Object.assign(base, { on: sup || -1 !== lens.indexOf(L), dis: !0, kind: "gate", tip: "بوابةُ العدسة — تتبع تفعيلَ العدسة للموظف (مربّعُ العدسة)" });
@@ -4584,18 +4696,78 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             st.dis || !o.cb || !o.cb.togKey || o.cb.togKey(st.k);
           },
         }),
+      MF = { child: !0, isChild: !0, isSys: !1, isPanel: !1, isLeaf: !1, isCont: !1, isKeys: !1, isGroup: !1 },
+      /* صفُّ النظام (module): اسمُ صفحته · تفعيلُه كما في البيان · حالتُه على المنصة الآن */
+      sysRow = (s) => {
+        const y = (S.systems || []).filter((z) => z.key === s)[0] || { label: s, page: s, home: s },
+          sOff = -1 !== off.indexOf(y.page) || -1 !== off.indexOf(y.home);
+        return Object.assign({}, MF, {
+          kind: "sys",
+          isSys: !0,
+          key: "sys:" + s,
+          name: y.label,
+          cls: "system",
+          badge: CLS.system,
+          off: sOff,
+          actTxt: ("always" === y.activation ? "دائم — لا يُطفأ" : "قابلٌ للإطفاء") + " · " + (sOff ? "مطفأٌ من المنصة الآن" : "يعمل"),
+        });
+      },
+      /* لوحةُ مؤشراتٍ بلا مالك: تُعرض في «مؤشرات الإدارة» بمفتاحٍ يملكه غيرُها — يُذكر المفتاحُ ومالكُه وشروطُها (لا رقاقةَ ثانية للمفتاح) */
+      panelRow = (pn) =>
+        Object.assign({}, MF, {
+          kind: "panel",
+          isPanel: !0,
+          key: pn.id,
+          name: pn.label,
+          cls: "panel",
+          badge: CLS.panel,
+          route: pn.route,
+          routeOn: !!pn.route,
+          req: pn.req,
+          reqOn: !0,
+          via: pn.via,
+          reqTxt: ["يمنحها " + pn.via.map((k) => "«" + lab(k) + "» (في «" + name24((R.byKey[k] || {}).owner) + "»)").join(" · ")].concat(reqTxt(pn.req) || []).join(" — "),
+        }),
+      /* ترتيبُ الخريطة داخل الحاوية: الأوراقُ واللوحات بترتيب البيان، مجموعةً تحت نظامها (الحاويةُ مستوى عرض) */
+      arrange = (c, marks, kids) => {
+        const items = [],
+          by = {},
+          ord = [],
+          res = [],
+          pns = c.panels || [];
+        for (let i = 0; i <= c.leaves.length; i++) {
+          pns.filter((pn) => pn.at === i).forEach((pn) => items.push([pn.sys || "", [panelRow(pn)]]));
+          marks[i] && items.push([c.leaves[i].sys || "", kids.slice(marks[i][0], marks[i][1])]);
+        }
+        items.forEach((it) => {
+          by[it[0]] || (ord.push(it[0]), (by[it[0]] = []));
+          by[it[0]].push(it[1]);
+        });
+        ord.forEach((s) => {
+          s && res.push(sysRow(s));
+          by[s].forEach((rs) =>
+            rs.forEach((r) => {
+              s && !r.isPanel && (r.rowStyle = r.rowStyle.replace("padding-right:26px", "padding-right:44px").replace("padding-right:48px", "padding-right:66px"));
+              res.push(r);
+            }),
+          );
+        });
+        return res;
+      },
       rows = [];
     let nOn = 0,
       nTot = 0;
     S.forEach((c) => {
-      const kids = [];
+      const kids = [],
+        marks = [];
       let cOn = 0,
         cTot = 0;
       const cOff = "page" === c.kind && -1 !== off.indexOf(c.id);
-      c.leaves.forEach((l) => {
+      c.leaves.forEach((l, li) => {
         const lOn = !cOff && leafOn(l);
         if (o.hideOut && !lOn && "platform" !== l.type && "reference" !== l.type) return;
-        const lk = this.t24LeafKeys(l),
+        const k0 = kids.length,
+          lk = this.t24LeafKeys(l),
           sts = lk.map(keyState).filter(Boolean),
           resvSt = cap || "view" === mode ? l.reserved.map(keyState).filter(Boolean) : [],
           asg = sts.filter((x) => "asg" === x.kind),
@@ -4626,7 +4798,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             : "reference" === l.type
               ? "يتبع ورقةَ إدارته («" + l.managedIn + "»)"
               : "عقدةُ المنصة — بالدور لا بالسقف";
-          gate && lOnState && !P24.lensHosted(l.lens, C) && (note2 = "بلا مضيف — فعّل «التشغيل الميداني» أو «الجولات اليومية» ليظهر أثرُها");
+          gate && lOnState && !P24.lensHosted(l.lens, C) && (note2 = "بلا مضيف — فعّل " + hostTxt(l, " أو ") + " ليظهر أثرُها");
           cTot += capable ? 1 : 0;
           cOn += capable && lOnState ? 1 : 0;
         } else if ("reference" === l.type) {
@@ -4668,6 +4840,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           isGroup: !1,
           key: l.owner,
           name: l.label,
+          cls: l.cls,
+          req: l.req || [],
+          reqOn: map && !!reqTxt(l.req),
+          reqTxt: map ? reqTxt(l.req) : "",
           out: !!outTxt && !cap,
           outTxt: outTxt,
           limOn: !!limd,
@@ -4679,7 +4855,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           some: some,
           chkOn: chkOn,
           chkOff: !chkOn,
-          chkTip: chkTip,
+          chkTip: map ? (cap ? (lOnState ? capW[0] : capW[1]) : lOnState ? "له مفتاحٌ فعليٌّ منها" : "لا مفتاحَ فعلياً منها") : chkTip,
           toggle: (ev) => {
             ev && ev.stopPropagation && ev.stopPropagation();
             tog && tog();
@@ -4695,7 +4871,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           nameStyle:
             "min-width:0;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:" +
             (lOnState ? "var(--fg-x141414)" : "var(--fg-x94a3b8)"),
-          badge: b[0],
+          badge: map ? CLS[l.cls] : b[0],
           badgeStyle: badge(b),
           route: l.route,
           routeOn: !!l.route,
@@ -4738,11 +4914,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   : "platform" === l.type
                     ? "عقدةُ المنصة: مفاتيحُها بالدور (مسؤول المنصة · مدير الإدارة) أو ذاتية لكل مستخدم — لا تدخل السقف ولا القوالب"
                     : gate
-                      ? "العدسةُ إضافةٌ على كانفس «التشغيل الميداني» و«الجولات اليومية» — بوابتُها: سقفُ الإدارة ∧ تفعيلُها للموظف"
+                      ? "العدسةُ إضافةٌ على كانفس " + hostTxt(l, " و") + " — بوابتُها: سقفُ الإدارة ∧ تفعيلُها للموظف"
                       : "tasks" === l.owner
                         ? "التكرار: إنشاءُ مهمةٍ متكررة = «" + lab("task.create") + "» (+ «" + lab("task.assign") + "») · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «" + lab("task.edit") + "»"
                         : "",
-            chips = ("reference" === l.type && !cap ? [] : sts.concat(resvSt)).map(chip);
+            /* المرجعُ المستقلّ: مفاتيحُه رقاقاتٌ في ورقة إدارته — وفي الخريطة لا تُكرَّر هنا (كلُّ مفتاحٍ مرةً واحدة) */
+            chips = ("reference" === l.type && (!cap || map) ? [] : sts.concat(resvSt)).map(chip);
           kids.push({
             kind: "keys",
             child: !0,
@@ -4759,6 +4936,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             rowStyle: "padding:8px 12px 10px;padding-right:48px;border-bottom:1px solid var(--bd-xf1f3f5);background:var(--bg-xfafbfc)",
           });
         }
+        marks[li] = [k0, kids.length];
       });
       if (!kids.length) return;
       nOn += cOn;
@@ -4774,9 +4952,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         isGroup: !1,
         key: c.id,
         name: c.label,
+        cls: "container",
         out: !1,
         on: anyOn,
-        badge: b[0],
+        badge: map ? CLS.container : b[0],
         badgeStyle: badge(b),
         expanded: isX,
         countTxt:
@@ -4811,9 +4990,42 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           o.cb && o.cb.expand && o.cb.expand(c.id);
         },
       });
-      isX && kids.forEach((k) => rows.push(k));
+      isX && (map ? arrange(c, marks, kids) : kids).forEach((k) => rows.push(k));
     });
+    /* حاويةُ العرض («مؤشرات الإدارة»): رابطُ قائمةٍ بلا مفتاح — لوحاتُها صفوفٌ تحت أنظمتها */
+    map &&
+      (S.display || []).forEach((d) =>
+        rows.push(
+          Object.assign({}, MF, {
+            kind: "cont",
+            child: !1,
+            isChild: !1,
+            isCont: !0,
+            isShow: !0,
+            key: d.id,
+            name: d.label,
+            cls: "container",
+            badge: CLS.container,
+            badgeStyle: badge(BADGE.page_c),
+            on: !1,
+            out: !1,
+            expanded: !1,
+            countTxt: "حاويةُ عرضٍ بلا مفتاح — " + KIVO.BassamCount(d.refs.length, ["لوحة واحدة", "لوحتان", "لوحتين", "لوحات", "لوحةً", "لوحة"], "g") + " تحت أنظمتها",
+            rowStyle: "display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid var(--bd-xf1f3f5);flex-wrap:wrap;",
+            nameStyle: "min-width:0;font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--fg-x141414)",
+            dotStyle: "display:none",
+            expStyle: "display:none",
+            expand: () => {},
+          }),
+        ),
+      );
     const ordered = P.orderRows ? P.orderRows(rows) : rows;
+    map &&
+      ordered.forEach((r) => {
+        r.isSys = !!r.isSys;
+        r.isPanel = !!r.isPanel;
+        r.reqOn = !!r.reqOn;
+      });
     return { rows: ordered, nOn: nOn, nTot: nTot, allExpanded: S.every((c) => !!exp[c.id]), ok: !0, ids: S.map((c) => c.id) };
   }
   /* RISHAD-266: تبويبُ «سقف النطاق» ونطاقُ بيانات الموظفين (سجلُّ النطاق القديم لكل إدارة) أُزيلا مع تقاعد سقف النطاق القديم —
@@ -4860,20 +5072,35 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return e;
   }
   /* ── نافذةُ صلاحيات المستخدم في وضع الإنفاذ: الحالةُ الفعلية مفتاحاً مفتاحاً (= الخادم) والحفظُ فرقٌ صريح ── */
-  up24Model(n, o, inh, edit) {
-    const P = KIVO.BassamPerm,
-      P24 = P.p24,
-      st = this.state,
-      i = n.id,
+  /* V7 P4: الحسابُ يرث سقفَ إدارته (مديرٌ بلا ورقةٍ خاصة) — العبارةُ نفسُها لنافذة الحساب وللخريطة */
+  _upInh(n, o) {
+    const r = KIVO.BassamPerm;
+    return (!!n.mgr || "gm" === n.role) && r && r.hasOwnSheet && !r.hasOwnSheet(n.ekey, o);
+  }
+  /* V7 P4: الفعليُّ لحسابٍ في إدارته {C السقف · tgt · eff = p24.effective (= الخادم)} — مسارٌ واحد لنافذة الحساب (up24Model) ولعرض «الفعلي» في الخريطة */
+  _p24Of(n, o, inh) {
+    const P24 = KIVO.BassamPerm.p24,
       C = P24.ceil(o),
-      isMgr = !!n.mgr || "gm" === n.role,
+      isMgr = !!n.mgr || "gm" === n.role;
+    return {
+      C: C,
+      isMgr: isMgr,
+      tgt: { role: n.role, mgr: isMgr },
+      eff: P24.effective({ did: o, ekey: n.ekey, inherit: inh, ceil: C, mgr: isMgr }) || { keys: {}, T: {}, lens: [], plus: [], minus: [] },
+    };
+  }
+  up24Model(n, o, inh, edit) {
+    const st = this.state,
+      i = n.id,
+      E0 = this._p24Of(n, o, inh),
+      C = E0.C,
       ed = !!edit && "super" !== n.role && "dept" !== n.role && !!n.ekey,
-      eff = P24.effective({ did: o, ekey: n.ekey, inherit: inh, ceil: C, mgr: isMgr }) || { keys: {}, T: {}, lens: [], plus: [], minus: [] },
+      eff = E0.eff,
       base = eff.keys,
       draft = ed && st.up24Draft && st.upFor === i ? st.up24Draft : base,
       lensBase = eff.lens,
       lensNow = ed && st.upLensDraft && st.upFor === i ? st.upLensDraft : lensBase,
-      tgt = { role: n.role, mgr: isMgr },
+      tgt = E0.tgt,
       md = this.t24Rows({
         mode: ed ? "emp" : "view",
         ceil: C,
@@ -5004,6 +5231,88 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       "حُفظت صلاحيات «" + (n.name || "المستخدم") + "»" + (dr ? " — عدا " + KIVO.BassamCount(dr, "مفتاح") + " لا تحملها أنت فلا تمنحها" : ""),
       dr ? "warn" : "ok",
     );
+  }
+  /* ═══ V7 P4 — خريطةُ الأنظمة والصلاحيات (تبويب «خريطة الصلاحيات») ═══
+     عرضُ قراءةٍ للشجرة نفسِها التي تُحرَّر بها السقوفُ وصلاحياتُ الحسابات والقوالب (t24Struct ← t24Rows{map}) — لا تعريفَ ثانياً:
+       plat  الإتاحةُ على المنصة: كلُّ ما في السجلّ، وما أطفأته المنصة (mods.off) خارجٌ           (سقفٌ كامل ∧ p24.ceil يقصّ المطفأ)
+       cap   سقفُ وحدةٍ مختارة: p24.ceil(الوحدة) كما يطبّقه المحرّك
+       user  الفعليُّ لحسابٍ مختار: p24.effective (= قرار الخادم) بمسار نافذة الحساب نفسِه (_p24Of)
+     في وضع الإنفاذ وحده (قرارُ المالك): خارجَه لا يُحسب قرارٌ على مستوى المفتاح فتُعرض ملاحظةٌ بالسبب. المفاتيحُ مطويّةٌ ابتداءً
+     (الحاوياتُ ثم الأوراق تُفرد عند الطلب) فلا يثقل الرسم. */
+  _pmMap(on, depts, users) {
+    const none = { pmMapOn: !1, pmMapOff: !1, pmMapWhy: "", pmMapRows: [], pmMapLenses: [], pmMapDepts: [], pmMapUsers: [], pmMapCapOn: !1, pmMapUserOn: !1 };
+    if (!on) return none;
+    if (!this.t24On())
+      return Object.assign(none, {
+        pmMapOff: !0,
+        pmMapWhy:
+          "خريطةُ المفاتيح تُعرض في وضع الإنفاذ وحده: خارجَه يحكم المحرّكُ القديم (صفحة × فعل) ولا يُحسب قرارٌ على مستوى المفتاح، فعرضُ المفاتيح هنا قد يخالف ما يُطبَّق فعلاً. المرجعُ حينها المصفوفةُ أدناه وسقوفُ الإدارات.",
+      });
+    const st = this.state,
+      P = KIVO.BassamPerm,
+      S = this.t24Struct(),
+      lens = st.pmLens || "plat",
+      did = st.pmDid && depts.some((d) => d.id === st.pmDid) ? st.pmDid : (depts[0] || {}).id || "",
+      uid = st.pmUid && users.some((u) => u.id === st.pmUid) ? st.pmUid : (users[0] || {}).id || "",
+      n = users.filter((u) => u.id === uid)[0] || null,
+      exp = st.pmExp || {},
+      lx = st.pmLeaf || {},
+      base = {
+        map: !0,
+        exp: exp,
+        leafExp: lx,
+        canEdit: !1,
+        target: {},
+        platOff: this.t24PlatOff(),
+        cb: {
+          expand: (id) => this.setState({ pmExp: { ...(this.state.pmExp || {}), [id]: !(this.state.pmExp || {})[id] } }),
+          leafExpand: (id) => this.setState({ pmLeaf: { ...(this.state.pmLeaf || {}), [id]: !(this.state.pmLeaf || {})[id] } }),
+        },
+      },
+      sum = (f) => S.reduce((a, c) => a + c.leaves.reduce((b, l) => b + f(l), 0), 0);
+    let md, sub;
+    if ("user" === lens && n) {
+      const o = this._upDeptOf(n),
+        E = this._p24Of(n, o, this._upInh(n, o));
+      md = this.t24Rows(Object.assign(base, { mode: "view", ceil: E.C, on: E.eff.keys, lens: E.eff.lens, target: E.tgt }));
+      sub = "ما يحمله «" + (n.name || n.un) + "» فعلاً مفتاحاً مفتاحاً كما يحسبه الخادم: السقف، ثم ورقتُه أو قالبُه، ثم المنحُ والسحبُ الصريحان وبواباتُ العدسات — يُعدَّل من «تعديل الصلاحيات» في حسابه";
+    } else if ("cap" === lens && did) {
+      md = this.t24Rows(Object.assign(base, { mode: "cap", ceil: P.p24.ceil(did) }));
+      sub = "ما يدخل سقفَ «" + (depts.filter((d) => d.id === did)[0] || {}).name + "» بعد ما أطفأته المنصة — يُعدَّل من «سقف الصفحات» في صفحة الوحدة";
+    } else {
+      md = this.t24Rows(
+        Object.assign(base, {
+          mode: "cap",
+          ceil: P.p24.ceil("", { cap: P.PAGE_KEYS.slice(), lenses: P.LENS_KEYS.slice() }),
+          capWords: ["متاحٌ على المنصة", "مطفأٌ من المنصة"],
+        }),
+      );
+      sub = "كلُّ ما في السجلّ؛ وما أطفأته المنصة باهتٌ بشارة «مطفأة من المنصة» — يُعدَّل من «إعدادات المنصة ← الوحدات»";
+    }
+    return {
+      pmMapOn: !0,
+      pmMapOff: !1,
+      pmMapWhy: "",
+      pmMapRows: md.rows,
+      pmMapSub: sub,
+      pmMapStat:
+        "الأنظمة " + S.systems.length + " · الأوراق " + sum(() => 1) + " · المفاتيح النشطة " + sum((l) => l.keys.length) + " · المحجوزة " + sum((l) => l.reserved.length),
+      pmMapLenses: [
+        ["plat", "الإتاحة على المنصة"],
+        ["cap", "سقف وحدة"],
+        ["user", "الفعلي لحساب"],
+      ].map((x) => ({ k: x[0], t: x[1], on: lens === x[0], go: () => this.setState({ pmLens: x[0] }) })),
+      pmMapCapOn: "cap" === lens,
+      pmMapUserOn: "user" === lens,
+      pmMapDid: did,
+      pmMapDepts: depts.map((d) => ({ v: d.id, t: d.name })),
+      pmMapSetDid: (ev) => this.setState({ pmDid: ev.target.value }),
+      pmMapUid: uid,
+      pmMapUsers: users.map((u) => ({ v: u.id, t: (u.name || u.un) + " — " + this.adUnit(u) })),
+      pmMapSetUid: (ev) => this.setState({ pmUid: ev.target.value }),
+      pmMapExpAll: () => this.setState({ pmExp: this.t24ExpAll(md) }),
+      pmMapExpLbl: md.allExpanded ? "طيّ الكل" : "فرد الكل",
+    };
   }
   /* الحاوياتُ المطفأة على مستوى المنصة (القوائم/الوحدات) */
   t24PlatOff() {
@@ -7533,8 +7842,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           o = n && !(!window.__BS_BOOT || !window.__BS_BOOT.cf),
           p = n
             ? o
-              ? ["overview", "sec", "users", "perms", "plat", "depts", "oplog", "backup", "histimp"]
-              : ["plat", "depts", "backup", "histimp"]
+              ? this.CON_TABS().map((t) => t[0])
+              : this.CON_TABS()
+                  .filter((t) => !t[3])
+                  .map((t) => t[0])
             : ["backup"];
         const c = !(!window.__BS_BOOT || !window.__BS_BOOT.cf),
           g = ["backup", "oplog", "shifts", "ptpls", "import"]
@@ -8472,7 +8783,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               d = r ? r.deptCap(o) : [],
               c = !!n.mgr,
               g = !!(a && a.isSuper && a.isSuper()),
-              inh = (c || p) && r && r.hasOwnSheet && !r.hasOwnSheet(n.ekey, o),
+              inh = this._upInh(n, o),
               h = inh && r.capAllPerms ? r.capAllPerms(o) : r && r.empPerms ? r.empPerms(n.ekey, o) : {},
               m = g && e.upDraft && e.upFor === i ? e.upDraft : h,
               f = r && r.empLens ? r.empLens(n.ekey, o) : [],

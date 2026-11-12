@@ -66,5 +66,11 @@ test('ownership: Tasks owns the code and the panel; the KPIs viewer imports it a
   assert.match(r('modules/tasks/view.html'), /<sc-if value="\{\{tkSolo\}\}"[\s\S]*مؤشرات المهام — \{\{tkKpiTitle\}\}[\s\S]*<sc-if value="\{\{tkFull\}\}"/);
   for (const f of ['logic.js', 'view.html', 'meta.json']) assert.equal((r('modules/kpis/' + f).match(/bassam_tasks_v1/g) || []).length, 0, 'kpis/' + f + ' reads no tasks store');
   assert.match(r('modules/kpis/view.html'), /<sc-if value="\{\{tkMount\}\}"[^>]*><div style="\{\{tkShow\}\}"><dc-import name="Tasks" solo="kpi"/, 'imported once opened, then kept mounted and hidden (month kept across tab switches)');
-  assert.match(r('modules/kpis/logic.js'), /"tkKpi" === t\) return !r \|\| !r\.can \? !0 : !!r\.can\("tasks", "view"\)/, 'tab visibility rule unchanged (P10 moves it)');
+  /* V7 P4 · G6: the rule is the same right (tasks · view) but now lives with the other panels — the tasks panel is a ref of the
+     «مؤشرات الإدارة» container (pages.json refs: "tasks") and kpiPanelOk answers a page-level ref with the page's view right, so the
+     sidebar link, the route and the tab agree. The KPIs viewer keeps only a fallback for a missing engine. */
+  assert.match(r('modules/kpis/logic.js'), /\{ k: "tk", pk: "tasks", sk: "" \}/, 'the tasks tab is drawn from the page-level ref');
+  assert.match(r('modules/kpis/logic.js'), /if \(!t && !\(r && r\.kpiPanelOk\)\) return !r \|\| !r\.can \? !0 : !!r\.can\(n, "view"\);/, 'fallback without the engine: tasks · view');
+  assert.match(r('permissions/334-perm-tree-tpl.js'), /if \(!sk\) return can\(pk, 'view'\);/, 'tab visibility rule: whoever can view «المهام»');
+  assert.ok(JSON.parse(r('manifests/pages.json')).containers.find((c) => c.key === 'kpis').refs.includes('tasks'));
 });

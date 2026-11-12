@@ -3,8 +3,9 @@ class Component extends DCLogic {
   _okOf(n, t) {
     try {
       const r = KIVO.BassamPerm;
-      /* KIVO_265 · البند 17: لوحةُ «مؤشرات المهام» لمن يرى صفحةَ المهام (tasks · view) — لا ورقةَ جديدة في الشجرة */
-      if ("tkKpi" === t) return !r || !r.can ? !0 : !!r.can("tasks", "view");
+      /* KIVO_265 · البند 17: لوحةُ «مؤشرات المهام» لمن يرى صفحةَ المهام (tasks · view) — لا ورقةَ جديدة في الشجرة.
+         V7 P4 · G6: صارت مرجعاً في حاوية «مؤشرات الإدارة» (refs: "tasks" بلا ورقة) فيحكمها kpiPanelOk نفسُه مع رابط القائمة — وهذا السطرُ احتياطُ غياب المحرّك وحده */
+      if (!t && !(r && r.kpiPanelOk)) return !r || !r.can ? !0 : !!r.can(n, "view");
       if (r && r.kpiPanelOk) return !!r.kpiPanelOk(n, t);   /* KIVO_261: المصدرُ الواحد مع رابط القائمة (334) */
       if (r && r.canSub && !r.canSub(n, t, "view")) return !1;
       const L = (k) => !r || !r.on || !!r.on(k);
@@ -25,7 +26,7 @@ class Component extends DCLogic {
         { k: "zn", pk: "daily", sk: "kpiZones" },
         { k: "sz", pk: "seized", sk: "dash" },
         { k: "ir", pk: "irshad", sk: "dash" },
-        { k: "tk", pk: "tasks", sk: "tkKpi" },
+        { k: "tk", pk: "tasks", sk: "" },
         { k: "dsh", pk: "dstats", sk: "anHaram" },
         { k: "dsn", pk: "dstats", sk: "anNabawi" },
         { k: "dsc", pk: "dstats", sk: "anCmp" },

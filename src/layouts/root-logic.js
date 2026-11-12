@@ -79,8 +79,9 @@ class Component extends DCLogic {
     } catch (e) {}
   }
   /* «مؤشرات الإدارة» حاويةُ عرض: متاحةٌ لمن تُرسم له لوحةٌ واحدةٌ من أوراقها في سجلّ الحاويات (BassamPerm.navLeaves) — مصدرٌ واحد للرابط والتنقّل والمسار */
-  _kpisOk() {
-    try { const P = KIVO.BassamPerm; if (!P) return true; return P.navLeaves("kpis").some(x => P.kpiPanelOk(x[0], x[1])); } catch (e) { return false; }
+  /* leaf: الهبوطُ الافتراضي (_goOps) لا يفضّل «مؤشرات الإدارة» إلا لورقةٍ من أوراقها — مرجعُ الصفحة الكاملة («مؤشرات المهام») يُظهر الرابطَ ويفتح المسار ولا يغيّر صفحةَ الهبوط */
+  _kpisOk(leaf) {
+    try { const P = KIVO.BassamPerm; if (!P) return true; return P.navLeaves("kpis").some(x => (!leaf || x[1]) && P.kpiPanelOk(x[0], x[1])); } catch (e) { return false; }
   }
   /* يعيد مفتاح الصفحة إن كانت متاحة لصاحب الجلسة (ويضبط نمط الإعدادات)، وإلا "" */
   _pageAllowed(v) {
@@ -1061,7 +1062,7 @@ class Component extends DCLogic {
   async _goOps() {
     if (!(await this._conLeaveOk())) return false;
     const last = this.__lastOps && this._pageAllowed(this.__lastOps);
-    const k = last || (this._kpisOk() ? "kpis" : (["dstats", "employees", "planning", "daily", "irshad", "seized", "award", "links"].find((x) => this._pageAllowed(x)) || "profile"));
+    const k = last || (this._kpisOk(1) ? "kpis" : (["dstats", "employees", "planning", "daily", "irshad", "seized", "award", "links"].find((x) => this._pageAllowed(x)) || "profile"));
     try { KIVO.BassamNav.go(k, true); } catch (e) {}
     /* رابطُ الخروج يزول مع شريط المركز فيسقط التركيزُ إلى body: يُنقل إلى الصفحة الحالية في الشريط التشغيلي (والدرجُ يُغلق ⇒ زرُّ القائمة) — ما لم يتحرّك المستخدم */
     const f = (n) => { try { const ae = document.activeElement; if (ae && ae !== document.body && !(ae.closest && ae.closest("aside.bsb"))) return;

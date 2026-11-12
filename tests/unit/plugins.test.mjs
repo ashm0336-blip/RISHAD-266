@@ -31,7 +31,7 @@ test('① المولَّدُ = الإضافات: KIVO_LENS_PLUGINS (المفات
   same(W.KIVO_LENS_PLUGINS.elem, M.flatMap(m => (m.resources.elementFields || []).map(f => ({ lens: m.key, cols: f.cols, fields: f.fields, op: f.op }))));
   same(W.KIVO_LENS_PLUGINS.floor, M.flatMap(m => (m.resources.floorFields || []).map(f => ({ lens: m.key, field: f.field, op: f.op }))));
   const blk = fs.readFileSync(path.join(SRC, 'manifests', '255-page-manifest.js'), 'utf8'), data = JSON.parse(blk.slice(blk.lastIndexOf('})(') + 3, blk.lastIndexOf(');')));
-  same(data.lenses, M.map(m => ({ key: m.key, name: m.name })), 'LENS_REG (KIVO_MANIFEST.lenses) = الإضافات');
+  same(data.lenses, M.map(m => ({ key: m.key, name: m.name, hosts: m.hosts, indicators: m.resources.indicators || [] })), 'LENS_REG (KIVO_MANIFEST.lenses) = الإضافات (V7 P4: + المضيفون واللوحات، لخريطة الأنظمة واحتياط المضيف في 331)');
   const p331 = fs.readFileSync(path.join(SRC, 'permissions', '331-perm-model.js'), 'utf8');
   assert.ok(/P24_LENSES = LENS_KEYS\.slice\(\);/.test(p331) && !/\[\s*'zones',\s*'paths'/.test(p331), '331: P24_LENSES = LENS_KEYS (لا قائمةَ حرفيّة)');
   for (const f of ['057-enf-index.js', '059-protected-ops-2.js', '061-enf-read.js', '063-enf-api-and-handler.js']) {

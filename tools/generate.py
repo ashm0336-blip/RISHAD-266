@@ -78,12 +78,11 @@ def main():
 # (الاستدعاء في الأسفل بعد توسعة 247)
 
 # ── KIVO_247 · AUD-015: manifest الصفحات → كتلة الواجهة + PG_REG في جزء الخادم ─────────────────────────────────────────
-BUILD_ONLY = ('module', 'activation', 'requires')
 def gen_manifest(S):
     M = json.load(open(os.path.join(S, layout(S)['pagesManifest']), encoding='utf-8'))
     data = {k: (M[k] if k != 'lenses' else lenses_of(S, M)) for k in ('version', 'pages', 'containers', 'lenses', 'tabAddr', 'navOrder', 'navNames', 'routeNames')}
-    # CORE-01: module · activation · requires are a build-time contract (validate_schemas.py checks them) — never shipped
-    data['pages'] = [{k: v for k, v in p.items() if k not in BUILD_ONLY} for p in M['pages']]
+    # V7 P4: module · activation · requires (CORE-01) ship to the client manifest — the systems map, «الوحدات» and the panel
+    # conditions are derived from them (no hand lists). The server's PG_REG below still takes the structure alone.
     # The module charter is already the data-ownership source of truth. Export
     # its read sets for the existing page-loader's acknowledged cloud prefetch.
     data['operationsReadSets'] = {}
@@ -134,7 +133,8 @@ def lenses_of(S, M):
     P = _PL.load(S)
     if not P: return M['lenses']                      # التخطيطُ الانتقالي: pages.json.lenses
     if 'lenses' in M: raise SystemExit('pages.json.lenses and plugins/lenses both present — one source only (ADR-018)')
-    return [{'key': m['key'], 'name': m['name']} for m in P]
+    # V7 P4: hosts · indicators reach the client (the lens rows of the map and the host fallback of 331 read them — no literal host list)
+    return [{'key': m['key'], 'name': m['name'], 'hosts': m['hosts'], 'indicators': (m.get('resources') or {}).get('indicators', [])} for m in P]
 def gen_lens_part(S):
     if not _PL.load(S): return {}
     js = ('/* ═══ KIVO_259 · AUD-030 · SOT-089 — العدساتُ إضافات: مولَّدٌ من plugins/lenses/<key>/manifest.json بأداة tools/generate.py (tools/plugins.py)؛ لا يُحرَّر يدوياً.\n'
