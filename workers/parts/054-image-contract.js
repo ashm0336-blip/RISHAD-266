@@ -369,10 +369,16 @@ var IMG_ESC_DEC = (function () {
 var IMG_ESC_JOIN = '(substr(a.v, -1024) || substr(b.v, 1, 1024))';
 var IMG_ESC_CTE = 'WITH esc(d) AS MATERIALIZED (SELECT ' + IMG_ESC_DEC.replace('#', 'v') + " FROM kv WHERE instr(v, '\\u00') > 0 AND v GLOB " + IMG_ESC_GLOB +
   ' UNION ALL SELECT ' + IMG_ESC_DEC.replace('#', IMG_ESC_JOIN) + ' FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + IMG_ESC_JOIN + ' GLOB ' + IMG_ESC_GLOB + ') ';
+/* second review (LOW) — the sweep deletes objects: without a store that can delete it does NOTHING (no row deleted, none condemned, no clock moved),
+   or the rows would go and leave every object in the bucket with nothing that knows it. A missing binding is seen before the first statement; a
+   binding that cannot delete is looked at only by a pass that has something to delete (as before: a pass that deletes nothing never touches it). */
+function imgSweepStore(env) { var B = imgBucket(env); return (B && typeof B.delete === 'function') ? B : null; }
+function imgSweepOff(env, out, why) { out.off = why; logEv('warn', 'img-sweep-off', { why: why, rid: env.__rid }); return out; }
 function imgSnap(rows) { return JSON.stringify(rows.map(function (x) { return { i: x.img, s: x.st, t: x.ts }; })); }
 var IMG_SNAP_SAME = "EXISTS (SELECT 1 FROM json_each(?1) j WHERE json_extract(j.value, '$.i') = imgown.img AND json_extract(j.value, '$.s') = imgown.st AND json_extract(j.value, '$.t') = imgown.ts)";
 async function imgSweep(env, now, max, maxDead) {
   var out = { seen: 0, purged: 0, kept: 0, retry: 0, staged: 0, scan: 0, unprovable: 0, more: 0 }, lease = Math.max(Date.now(), now), i, deadMax = maxDead || IMG_SWEEP_DEAD;
+  if (!env.IMG_R2) return imgSweepOff(env, out, 'no-binding');
   /* finding 5: the selections below are range scans of imgown (st, ts). The index is created here — idempotent, one statement per pass — and not
      by a numbered migration: a migration needs the operator's upgrade permit (052 migrateDb), and the sweep must not wait for an operator. */
   await env.DB.prepare(IMG_OWN_IDX).run();
@@ -380,6 +386,7 @@ async function imgSweep(env, now, max, maxDead) {
   await env.DB.prepare("INSERT OR IGNORE INTO imgown (img, st, k, uid, dept, ts) SELECT DISTINCT ?1 || substr(k, 6, instr(substr(k, 6), '~') - 1), 'stage', '', '', '', ?4 FROM imgs WHERE k >= ?2 AND k < ?3")
     .bind(IMG_STG, IMG_STG, IMG_STG_END, now).run();
   var sg = ((await env.DB.prepare("SELECT img, ts FROM imgown WHERE st = 'stage' AND ts < ?1 ORDER BY ts LIMIT 50").bind(now - IMG_STAGE_TTL).all()).results) || [], sgSt = [];
+  if (sg.length && !imgSweepStore(env)) return imgSweepOff(env, out, 'binding-cannot-delete');
   sg.forEach(function (x) {
     var id = String(x.img).slice(IMG_STG.length), same = "EXISTS (SELECT 1 FROM imgown WHERE img = ?3 AND st = 'stage' AND ts = ?4)";
     sgSt.push(env.DB.prepare('DELETE FROM imgs WHERE k >= ?1 AND k < ?2 AND ' + same).bind(IMG_STG + id + '~', IMG_STG + id + '\u007f', x.img, x.ts));
@@ -387,16 +394,17 @@ async function imgSweep(env, now, max, maxDead) {
   });
   for (i = 0; i < sgSt.length; i += 90) await env.DB.batch(sgSt.slice(i, i + 90));
   out.staged = sg.length;
-  /* an orphan whose unit is not on the platform now is the platform admin's for good (a unit re-created later under that id inherits nothing) */
-  var dj = parseJson(await kvGet(env, 'kv', K_DEPTS), null);
-  if (Array.isArray(dj)) await env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE st = 'orphan' AND dept != '' AND uid != ?2 AND dept NOT IN (SELECT value FROM json_each(?1))")
-    .bind(JSON.stringify(dj.map(function (d) { return d && d.id; }).filter(function (x) { return typeof x === 'string' && x; })), IMG_GONE).run();
   var r = await env.DB.prepare("SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'dead' AND ts < ?3 ORDER BY ts LIMIT ?5) UNION ALL " +
     "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'orphan' AND ts < ?1 ORDER BY ts LIMIT ?4) UNION ALL " +
     "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'claim' AND ts < ?2 ORDER BY ts LIMIT ?4)")
     .bind(now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max, deadMax).all();
   var L = (r && r.results) || [], dead = L.filter(function (x) { return x.st === 'dead'; }), take = [];
   var cand = L.filter(function (x) { return x.st !== 'dead'; }).sort(function (a, b) { return a.ts - b.ts; }).slice(0, max);   /* the oldest first, whichever kind */
+  if (L.length && !imgSweepStore(env)) return imgSweepOff(env, out, 'binding-cannot-delete');
+  /* an orphan whose unit is not on the platform now is the platform admin's for good (a unit re-created later under that id inherits nothing) */
+  var dj = parseJson(await kvGet(env, 'kv', K_DEPTS), null);
+  if (Array.isArray(dj)) await env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE st = 'orphan' AND dept != '' AND uid != ?2 AND dept NOT IN (SELECT value FROM json_each(?1))")
+    .bind(JSON.stringify(dj.map(function (d) { return d && d.id; }).filter(function (x) { return typeof x === 'string' && x; })), IMG_GONE).run();
   /* second review, finding 1 — an id the reference scanner could not have matched (the upload accepts ^[A-Za-z0-9_]{1,128}$, imgIdsIn sees only
      (img|szp)_[a-z0-9]+_[a-z0-9]+) is UNPROVABLE: a typed record can show it with no imgref row and no kv value. It is never condemned; its clock
      restarts (the row keeps its kind and owner), so it neither holds the queue nor is asked about again before its next term. */
@@ -438,12 +446,12 @@ async function imgSweep(env, now, max, maxDead) {
      of IMG_SWEEP_CHUNK, as soon as R2 confirmed the chunk — an invocation that is cut (subrequest limit, waitUntil limit) keeps everything it
      finished, so every pass makes progress; before, the rows left in one batch at the very end, which a cut pass never reached. A store that
      refuses two whole chunks in a row is not asked again in this pass (it is down, or the invocation is out of subrequests). */
-  var B = take.length ? imgBucket(env) : null, refused = 0, j;             /* the object store is not even looked at by a pass that deletes nothing */
+  var B = take.length ? imgSweepStore(env) : null, refused = 0, j;             /* the object store is not even looked at by a pass that deletes nothing */
   var mine = "(SELECT img FROM imgown WHERE st = 'dead' AND ts = ?2 AND img IN (SELECT value FROM json_each(?1)))";
   try { for (i = 0; i < take.length && refused < 2; i += IMG_SWEEP_CHUNK) {
     var grp = take.slice(i, i + IMG_SWEEP_CHUNK), part = [];
     for (j = 0; j < grp.length; j++) {
-      if (B) { try { await B.delete('img/' + grp[j]); } catch (e) { swallow('r2-delete', e, env.__rid); out.retry++; continue; } }
+      try { await B.delete('img/' + grp[j]); } catch (e) { swallow('r2-delete', e, env.__rid); out.retry++; continue; }
       part.push(grp[j]);
     }
     refused = part.length ? 0 : refused + 1;
