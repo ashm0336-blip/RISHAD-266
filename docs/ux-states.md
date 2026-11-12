@@ -20,7 +20,7 @@
 | الوحدة | فارغ | تحميل | خطأ | بلا اتصال | أعد المحاولة |
 |---|---|---|---|---|---|
 | admin (Admin) | 54 | 35 | 285 | 2 | 17 |
-| award (Award) | 8 | 2 | 33 | 0 | 0 |
+| award (Award) | 8 | 1 | 34 | 0 | 0 |
 | daily (Daily Sessions) | 60 | 9 | 179 | 0 | 3 |
 | dreport (Daily Report) | 19 | 0 | 88 | 0 | 1 |
 | dstats (Daily Stats) | 14 | 1 | 38 | 0 | 0 |
@@ -30,7 +30,7 @@
 | plan (Operational Plan) | 57 | 8 | 98 | 0 | 2 |
 | planning (Planning) | 0 | 0 | 6 | 0 | 0 |
 | profile (Profile) | 31 | 18 | 104 | 0 | 11 |
-| seized (Seized) | 20 | 2 | 30 | 0 | 4 |
+| seized (Seized) | 20 | 1 | 31 | 0 | 4 |
 | staff (Staffing) | 14 | 0 | 59 | 0 | 1 |
 | tasks (Tasks) | 38 | 11 | 91 | 0 | 8 |
 
