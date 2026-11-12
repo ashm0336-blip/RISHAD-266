@@ -100,3 +100,62 @@ test('seized photo: report removed ⇒ orphan of its unit ⇒ another unit canno
   assert.equal(await F.KIVO.BassamIDB.get('szp_testonly_v7f3'), PNG);
   assert.equal(own(B, 'szp_testonly_v7f3').st, 'bound', 'the write that triggered the sweep kept its own photo'); assert.equal(B.objects.get('img/szp_testonly_v7f3'), PNG);
 });
+
+/* ── the independent review ──────────────────────────────────────────────────────────────────────────────────────────────────── */
+const sweepDue = (B) => B.DB.exec("DELETE FROM meta WHERE k = 'img_sweep_at'");
+const agePhoto = (B, id, days) => { B.DB.exec("UPDATE imgown SET ts = ts - " + days * 864e5 + " WHERE img = '" + id + "'"); sweepDue(B); };
+
+/* CLAIM TTL — owner rule «إن وُجدت أي شاشة تُبقي صورة مرفوعة في مسودة قبل الحفظ: مهلة غير المربوطة تصير 30 يوماً لا 7».
+   The seized draft is such a screen: _szConfirmPhotos uploads the photo and marks it confirmed BEFORE the report is sent; if the report is then not
+   saved (a conflict, a refusal, a lost connection) the draft stays — with its confirmed photo — for as long as the window lives (business-cloud
+   _businessSessions), and the retry does not upload again. RUN here: the actual seized module and 360 transport against the worker. */
+test('claim delay · a seized draft whose photo was uploaded but whose report was not saved: 8 and 29 days later the photo is still there and the retried save binds it', async (t) => {
+  const B = await setup(t), image = 'szp_testonly_draft', key = B.W.szKey(D1);
+  await install(B, D1, 'V7FD');
+  const C = mount(t, B); await C.reads();
+  /* the draft's photo reaches the server exactly as _szConfirmPhotos sends it; the report does not follow */
+  assert.equal(await C.KIVO.BassamIDB.set(image, PNG), true);
+  assert.deepEqual(own(B, image), { st: 'claim', k: '', dept: own(B, image).dept }, 'an unbound upload'); assert.equal(B.objects.get('img/' + image), PNG);
+  for (const [days, n] of [[8, 'a'], [21, 'b']]) {
+    agePhoto(B, image, days);
+    await createWithPhoto(C, 'szp_testonly_draft' + n, 'TEST_ONLY_V7FD_' + n);   /* other work goes on: an accepted write, a pass of the sweep */
+    assert.equal(own(B, 'szp_testonly_draft' + n).st, 'bound', JSON.stringify(C.errors).slice(-300));
+    assert.equal((own(B, image) || {}).st, 'claim', 'day ' + (days === 8 ? 8 : 29) + ': the draft\'s photo is kept'); assert.equal(B.objects.get('img/' + image), PNG);
+  }
+  C.errors.length = 0;
+  await createWithPhoto(C, image, 'TEST_ONLY_V7FD_retry', true);              /* the user returns to the draft: confirmed ⇒ no second upload */
+  assert.deepEqual(own(B, image), { st: 'bound', k: key, dept: D1 }, 'the retried report binds the photo it was drafted with · ' + JSON.stringify(C.errors).slice(0, 400));
+  assert.equal(B.objects.get('img/' + image), PNG); assert.deepEqual(refs(B, image), [key]);
+  /* and an upload nobody comes back to goes after 30 days */
+  const never = 'szp_testonly_never'; assert.equal(await C.KIVO.BassamIDB.set(never, PNG), true); agePhoto(B, never, 31);
+  await createWithPhoto(C, 'szp_testonly_draftc', 'TEST_ONLY_V7FD_c');
+  assert.equal(own(B, never), null, 'day 31: swept'); assert.equal(B.objects.has('img/' + never), false);
+});
+
+/* finding 4 — records stored OUTSIDE kv. The sweep's proof reads them directly: a seized photo row (seized_item_photos) and an award record's picture /
+   signature columns (award_records) protect their image even when the bookkeeping (imgown/imgref) is stale — «a candidate that cannot be PROVEN
+   unreferenced is not deleted». */
+test('finding 4 · a photo a live seized report shows, and a picture an award record shows, survive the sweep even with stale bookkeeping (no imgref, owner row says orphan)', async (t) => {
+  const B = await setup(t), photo = 'szp_testonly_stale', pic = 'img_testonly_awpic';
+  await install(B, D1, 'V7FS');
+  const C = mount(t, B); await C.reads();
+  await createWithPhoto(C, photo, 'TEST_ONLY_V7FS_new');
+  assert.equal(own(B, photo).st, 'bound', JSON.stringify(C.errors).slice(0, 300));
+  assert.equal(B.DB.q('SELECT COUNT(*) n FROM seized_item_photos WHERE image_id=?1', photo)[0].n, 1, 'the report shows the photo');
+  /* an award record whose picture column is an image id (award saves keep no imgref) */
+  assert.equal(await C.KIVO.BassamIDB.set(pic, PNG), true);
+  const cols = B.DB.q("PRAGMA table_info('award_records')"), names = [], vals = [];
+  for (const c of cols) { const v = c.name === 'department_id' ? D1 : c.name === 'record_id' ? 'TEST_ONLY_v7f_aw' : c.name === 'picture' ? pic : c.name === 'sequence' ? 900001 : (c.notnull && c.dflt_value == null) ? (/INT|REAL/i.test(c.type) ? 0 : '') : undefined;
+    if (v !== undefined) { names.push(c.name); vals.push(v); } }
+  B.DB.db.prepare('INSERT INTO award_records (' + names.join(',') + ') VALUES (' + names.map(() => '?').join(',') + ')').run(...vals);
+  /* the bookkeeping goes stale: what a truncated index or an older tool leaves */
+  B.DB.exec("DELETE FROM imgref WHERE img IN ('" + photo + "','" + pic + "')");
+  B.DB.exec("UPDATE imgown SET st = 'orphan', k = '' WHERE img = '" + photo + "'");
+  const control = 'img_testonly_awctl'; assert.equal(await C.KIVO.BassamIDB.set(control, PNG), true);
+  agePhoto(B, photo, 31); agePhoto(B, pic, 31); agePhoto(B, control, 31);
+  /* a pass of the sweep that no seized save precedes (a seized save of the unit would itself re-index the unit's photos): the admin's overview */
+  const ov = await B.api('super', '/api/overview?' + new URLSearchParams({ uid: IDS.super })); assert.equal(ov.status, 200, JSON.stringify(ov.json).slice(0, 200));
+  assert.equal(own(B, control), null, 'the pass ran: the unreferenced control upload of the same age is swept'); assert.equal(B.objects.has('img/' + control), false);
+  assert.equal(B.objects.get('img/' + photo), PNG, 'the seized photo\'s bytes are intact'); assert.ok(body(B, photo) > 0); assert.equal(own(B, photo).st, 'amb', 'referenced orphan ⇒ the platform admin\'s, not deleted');
+  assert.equal(B.objects.get('img/' + pic), PNG, 'the award picture\'s bytes are intact'); assert.ok(body(B, pic) > 0); assert.equal(own(B, pic).st, 'claim');
+});

@@ -116,6 +116,24 @@ both(test, 'finding 4 · a kv value that mentions the id ACROSS two stored rows 
   }
 });
 
+/* typed records live OUTSIDE kv (ops_* tables): they are protected by imgref alone — and the previous build wrote imgref from a scan that stopped
+   at 5000 mentions. So the sweep condemns nothing until a one-time re-scan (meta.imgref_scan_v1) has re-read every typed record and restored what was dropped. */
+both(test, 'finding 4 · a typed record whose reference row is missing (what the 5000-mention cap left behind): the one-time re-scan restores it before anything is condemned', async (mode) => {
+  const T = await scene(mode), { W, S, id } = T, b = id('legacy'), ctl = id('ctl'), K = dk(D, 'plan');
+  await upload(W, S.mgr, b); await upload(W, S.mgr, ctl);
+  const { replaceOperationalFixture } = await import('./tasks_fx.mjs'), v = stored(W.env, K); v.floors[0].iid = b;
+  await replaceOperationalFixture(W.env, K, v);                               /* the record shows b; no save of this build indexed it */
+  W.env.DB.exec("DELETE FROM imgref WHERE img = '" + b + "'"); W.env.DB.exec("DELETE FROM meta WHERE k = 'imgref_scan_v1'");   /* the database as the previous build left it */
+  assert.ok(mentions(W, K, b)); assert.deepEqual((await state(W, b)).refs, []);
+  age(W, b, 31); age(W, ctl, 31);
+  for (let k = 0; k < 4; k++) await pass(T);
+  const st = await state(W, b);
+  assert.equal(st.r2, PNG, 'the image the plan shows is intact · ' + JSON.stringify(st).replace(PNG, 'PNG')); assert.equal(st.body, 'r2');
+  assert.deepEqual(st.refs, [K], 'and its reference row is back');
+  assert.equal(W.env.DB.q("SELECT v FROM meta WHERE k = 'imgref_scan_v1'")[0].v, 'done');
+  assert.ok(gone(await state(W, ctl)), 'while the unreferenced upload of the same age is swept once the re-scan is complete');
+});
+
 /* ── finding 6 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
 both(test, 'finding 6 · the parts of an abandoned chunked upload are removed after 7 days (not before); a chunked upload that completes leaves no clock behind', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, dead = id('stgdead'), live = id('stglive'), done = id('stgdone'), old = id('stgold');
