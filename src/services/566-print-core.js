@@ -93,11 +93,29 @@
     });
     return out;
   }
+  /* صورةُ الصفحة تُرسم كما رُتّبت في إطار الطباعة: شروطُ ‎@media‎ تُثبَّت بحكم نافذة الإطار (all / not all) قبل تضمين الأنماط في الصورة.
+     صورةُ SVG لا مؤشّرَ لها ولا hover وعرضُها عرضُ الصورة المكبَّرة، فتُقيَّم الشروطُ فيها على غير ما قِيست عليه الصفحة: قاعدةُ الخطة
+     ‎@media (hover:hover) and (pointer:fine){.bs-oreg{display:none}}‎ كانت تسقط داخل الصورة فيظهر سجلُّ اللمس في الملف وحده ويدفع إطارَ
+     «عناصر الخريطة» السفليَّ تحت حدّ القصّ (ملاحظةُ المالك 2026-11-12). التعليقاتُ تُتخطّى، وشرطٌ يتعذّر تقييمُه يبقى كما هو */
+  function frozenMedia(css, matches) {
+    return String(css || "").replace(/\/\*[\s\S]*?\*\/|@media\b([^{};]*)\{/g, (all, q) => {
+      if (void 0 === q) return all;
+      try {
+        return "@media " + (matches(q.trim()) ? "all" : "not all") + "{";
+      } catch (e) {
+        return all;
+      }
+    });
+  }
   function pdfDownload(x, title) {
     try {
       const pgs = [].slice.call(x.querySelectorAll(".pg"));
       if (!pgs.length) return Promise.resolve(!1);
-      const css = [].map.call(x.querySelectorAll("style"), (t) => t.textContent || "").join("\n"), imgs = [];
+      const css = frozenMedia(
+          [].map.call(x.querySelectorAll("style"), (t) => t.textContent || "").join("\n"),
+          (q) => x.defaultView.matchMedia(q).matches,
+        ),
+        imgs = [];
       /* الدقّة: ×4 (384 نقطة/بوصة على A3) على الحاسوب، و×3 على أجهزة اللمس (لوحةُ الرسم محدودةُ المساحة فيها). إن رفض المتصفحُ قياساً نزلنا
          إلى الذي يليه وثبتنا عليه لبقية الصفحات — ولا ملفَّ إلا إن نجحت الصفحاتُ كلُّها */
       let coarse = !1;
@@ -479,7 +497,16 @@
                 s = t.querySelector(".pnIn"),
                 n = s && s.firstElementChild;
               return e && s && n
-                ? { pn: e, inr: s, root: n, availW: e.clientWidth, availH: e.clientHeight, baseW: s.getBoundingClientRect().width || 1 }
+                ? {
+                    pn: e,
+                    inr: s,
+                    root: n,
+                    availW: e.clientWidth,
+                    /* الارتفاعُ الفعليّ للعمود ناقصاً بكسلاً، لا clientHeight المقرَّب (847.8 ⇒ 848): اللوحةُ كانت تزيد عن عمودها كسرَ بكسل،
+                       وحدُّ القصّ يُحاذى إلى شبكة البكسل عند رسم الصفحة صورةً فيضيع أكثرُ حدِّها السفلي (1.3px) */
+                    availH: Math.floor(e.getBoundingClientRect().height) - 1,
+                    baseW: s.getBoundingClientRect().width || 1,
+                  }
                 : null;
             })
             .filter(Boolean);
@@ -856,5 +883,5 @@
       { name: ((e.floors || [])[t] || {}).name || "موقع بلا اسم", svg: i.outerHTML, panel: o.outerHTML, panelW: 760 }
     );
   }
-  KIVO.BassamPrintCore = { build: build, capture: capture, pdfBytes: pdfBytes };
+  KIVO.BassamPrintCore = { build: build, capture: capture, pdfBytes: pdfBytes, frozenMedia: frozenMedia };
 })();
