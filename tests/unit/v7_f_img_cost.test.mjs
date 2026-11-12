@@ -49,7 +49,9 @@ both(test, 'finding 5 · a pass with no candidate reads no kv value; a pass with
   }
   const ids = []; for (let k = 0; k < 6; k++) { const i = id('c' + k); await upload(W, S.mgr2, i); age(W, i, 31); ids.push(i); }
   const six = await measured(T);
-  assert.equal(six.kvScans, 1, 'one deciding statement for the whole batch · ' + six.kvScans);
+  /* fourth review: two kv-reading statements in a pass with work — the escape hold (054 imgEscHold, once per pass) and the ONE deciding statement */
+  assert.equal(six.sql.filter((s) => /UPDATE imgown SET st = 'dead'/.test(s)).length, 1, 'one deciding statement for the whole batch');
+  assert.equal(six.kvScans, 2, 'the escape hold and the deciding statement · ' + six.kvScans);
   for (const i of ids) assert.ok(gone(await state(W, i)), 'and all six are swept');
 });
 
@@ -103,7 +105,7 @@ test('COST · an ordinary typed save with kv ≈ 100 MB: statements, D1 round tr
 });
 
 /* ── second independent review: what its fixes cost ──────────────────────────────────────────────────────────────────────────── */
-both(test, 'second review · an ordinary save with no pass due is unchanged (legacy: 100 statements, 14 D1 round trips); reading JSON escapes adds no statement to a pass — it is part of the ONE deciding statement', async (mode) => {
+both(test, 'second review · an ordinary save with no pass due is unchanged (legacy: 100 statements, 14 D1 round trips); looking for JSON escapes is ONE statement of a pass with work (fourth review: the escape hold), not part of the deciding statement', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, DB = W.env.DB;
   due(W); await typedSave(T);
   const idle = await measured(T);
@@ -113,9 +115,9 @@ both(test, 'second review · an ordinary save with no pass due is unchanged (leg
   for (let k = 0; k < 6; k++) { const i = id('w' + k); await upload(W, S.mgr2, i); age(W, i, 31); }
   await measured(T);                                                          /* the one-time re-scan of the typed records is behind us */
   const ids = []; for (let k = 0; k < 6; k++) { const i = id('e' + k); await upload(W, S.mgr2, i); age(W, i, 31); ids.push(i); }
-  const six = await measured(T), esc = six.sql.filter((s) => /WITH esc\(d\) AS MATERIALIZED/.test(s));
-  assert.equal(esc.length, 1, 'one statement carries the escape reading'); assert.match(esc[0], /UPDATE imgown SET st = 'dead'/, 'and it is the deciding statement');
-  assert.equal(six.kvScans, 1, 'still one kv-reading statement in the pass');
+  const six = await measured(T), esc = six.sql.filter((s) => /GLOB '\*\\u00/.test(s));
+  assert.equal(esc.length, 1, 'one statement looks for escapes'); assert.doesNotMatch(esc[0], /UPDATE imgown/, 'and it changes nothing (the escape hold)');
+  assert.equal(six.kvScans, 2, 'two kv-reading statements in the pass: the escape hold and the deciding statement');
   for (const i of ids) assert.ok(gone(await state(W, i)));
   console.log('# COST [' + mode + '] second review · ordinary save: statements ' + idle.statements + ' · D1 round trips ' + idle.trips + ' — pass with 6 candidates, kv 100 MB, re-scan done: statements ' + six.statements + ' · D1 round trips ' + six.trips + ' · ' + six.ms.toFixed(0) + ' ms');
 });

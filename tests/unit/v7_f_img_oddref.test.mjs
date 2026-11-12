@@ -1,6 +1,7 @@
 /* V7-F · third independent review, item D — an upload under an id the reference scanner cannot match (PUT accepts ^[A-Za-z0-9_]{1,128}$, the
    scanner sees (img|szp)_[a-z0-9]+_[a-z0-9]+) was "unprovable → kept for ever": any uploader could make storage that is never reclaimed.
-   What PUT accepts is NOT changed. Now the sweep looks for the id's literal text (and its escaped spellings) everywhere references live — kv
+   What PUT accepts is NOT changed. Now the sweep looks for the id's literal text everywhere references live (fourth review: literally only —
+   an escaped spelling anywhere holds the whole pass, tests/unit/v7_f_img_literal.test.mjs) — kv
    (rows and row boundaries), every ops_* table (the typed records), seized_item_photos, award_records: found anywhere → kept, its row unchanged
    in kind (as before); found nowhere → swept like any other. At most 2 such ids are decided per pass; the others met wait an hour, so they never
    hold the queue. Real worker, legacy and enforce, rows and R2 bytes. */
@@ -23,15 +24,14 @@ both(test, 'unreferenced uploads under odd ids are swept (rows and object), a co
   for (const i of ids.concat(ctl)) assert.ok(gone(await state(W, i)), i + ' swept · ' + JSON.stringify(await state(W, i)).replace(PNG, 'PNG'));
 });
 
-both(test, 'an odd id referenced anywhere is kept — typed record, kv text, kv escaped spelling, kv row boundary, award record — and keeps its kind', async (mode) => {
+both(test, 'an odd id referenced anywhere is kept — typed record, kv text, kv row boundary, award record — and keeps its kind', async (mode) => {
   const T = await scene(mode), { W, S, x, id } = T, DB = W.env.DB.db, ctl = id('ctl2');
-  const ref = { typed: 'IMG_' + x.toUpperCase() + '_T', kvText: 'junk' + x + 'k', kvEsc: 'IMG_' + x.toUpperCase() + '_E', kvCut: 'img_' + x + '_c_d', award: 'aw' + x };
+  const ref = { typed: 'IMG_' + x.toUpperCase() + '_T', kvText: 'junk' + x + 'k', kvCut: 'img_' + x + '_c_d', award: 'aw' + x };
   for (const i of Object.values(ref)) await upload(W, S.mgr, i); await upload(W, S.mgr2, ctl);
   assert.ok((await edit(W, S.mgr, D, 'plan', EDIT.plan(ref.typed))).ok, 'typed save accepts the odd id (unchanged)');
   assert.ok(JSON.stringify(stored(W.env, dk(D, 'plan'))).includes('"' + ref.typed + '"')); assert.deepEqual((await state(W, ref.typed)).refs, []);
   const ins = DB.prepare('INSERT OR REPLACE INTO kv (k, seq, v) VALUES (?, ?, ?)');
   ins.run(dk(D, 'notes'), 0, JSON.stringify({ t: TAG, logo: ref.kvText }));
-  ins.run(dk(D, 'notes2'), 0, '{"t":"' + TAG + '","logo":"\\u0049' + ref.kvEsc.slice(1) + '"}');
   const cutAt = 7; ins.run(dk(D, 'notes3'), 0, '{"t":"' + TAG + '","logo":"' + ref.kvCut.slice(0, cutAt)); ins.run(dk(D, 'notes3'), 1, ref.kvCut.slice(cutAt) + '"}');
   DB.prepare('INSERT INTO award_records (department_id, record_id, sequence, picture, presence_mask, case_text_kind, answers_kind, scores_kind) VALUES (?, ?, ?, ?, 0, 0, 0, 0)').run(D, 'tst_aw_' + x, 900000 + n, ref.award);
   DB.prepare("UPDATE imgown SET st = 'orphan', k = '' WHERE img = ?").run(ref.kvText);   /* one of them as an orphan: it stays an orphan */

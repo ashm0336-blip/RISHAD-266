@@ -1,27 +1,26 @@
-/* V7-F · third independent review, items B + C — the escape decoding of the save (JS, 054 imgIdsIn) and of the sweep (SQL, 054 IMG_ESC_CTE).
-   B (owner's hard condition): the sweep's SQL decoder dropped EVERY backslash and then decoded any 'u00XX' — plain text included — so an id whose
-     own text holds e.g. 'u0061', mentioned by a legacy record with one letter escaped, was rewritten, not found, and its image deleted.
-   C: the save decoded one level, the sweep all of them — a nested spelling (\u005cu0069…) slipped past the ownership check of the plain save.
-   Now: one decoding for both — genuine escapes only (backslash + u00 + two hex digits), ordered literal replacements per level, repeated to a fixed
-   point (at most 8 levels); anything still not settled after that is refused on save and makes the sweep condemn nothing.
-   The parity test feeds the SAME inputs (the reviewer's cases + generated spellings + random token soup) to the worker's own JS scanner and to the
-   worker's own SQL (run in SQLite) and asserts they find the same ids. Real worker for the rest, legacy and enforce, rows and R2 bytes. */
+/* V7-F · third independent review, items B + C — JSON escapes in the save (JS, 054) and in the sweep (SQL, 054).
+   B (owner's hard condition): an id whose own text holds e.g. 'u0061', mentioned by a legacy record with one letter escaped, must keep its image.
+   C: a nested spelling (\u005cu0069…, \\u0069…) must not slip past the ownership check of the plain save.
+   Fourth review (reworked): the third review answered B + C with a multi-level decoder, proven unsound at depth >= 3 and removed. Now there is no
+   decoding at all: ids are matched literally; a text carrying a \u00XX escape of an id character or of '\' is refused at every save
+   ('img-escape') and holds every sweep pass while it is stored — so B and C hold for every depth, not only up to 8 levels.
+   The corpus test feeds the reviewer's cases, generated spellings and random token soup to the worker's own functions. Real worker for the rest,
+   legacy and enforce, rows and R2 bytes. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
 import { internals } from './internals.mjs';
 import { WORKER } from './harness.mjs';
 import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, age, due, EDIT } from './v7_f_img_fx.mjs';
 
 const RX = /(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g;
-const scan = (texts) => { const o = new Set(); for (const t of texts) for (const m of String(t).matchAll(RX)) o.add(m[0]); return [...o].sort(); };
+const scan = (t) => { const o = new Set(); for (const m of String(t).matchAll(RX)) o.add(m[0]); return [...o].sort(); };
 let rnd = 0x5eed1234;
 const rand = () => { rnd |= 0; rnd = (rnd + 0x6d2b79f5) | 0; let t = Math.imul(rnd ^ (rnd >>> 15), 1 | rnd); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const pick = (a) => a[Math.floor(rand() * a.length)];
 const hex2 = (c, up) => { const h = c.toString(16).padStart(2, '0'); return up ? h.toUpperCase() : h; };
 /* one id character spelled as an escape (either hex case) */
 const escCh = (ch) => '\\u00' + hex2(ch.charCodeAt(0), rand() < 0.3);
-/* a text one JSON level deeper: its backslashes doubled (JSON.stringify) or spelled \u005c (either case) */
+/* a text one JSON level deeper: its backslashes doubled (JSON.stringify) or spelled as the escape of hex 5c (either case) */
 const nest = (t) => rand() < 0.6 ? t.replace(/\\/g, '\\\\') : t.replace(/\\/g, () => '\\u005' + (rand() < 0.5 ? 'c' : 'C'));
 function spell(id, depth, p) { let t = [...id].map((ch) => rand() < p ? escCh(ch) : ch).join(''); for (let k = 0; k < depth; k++) t = nest(t); return t; }
 const TOK = ['\\', '\\\\', 'u', 'u00', '\\u00', '\\u005c', '\\u005C', '\\u0069', '\\u0049', '\\u006D', '\\u006d', '\\u0067', '\\u005f', '\\u005F', '\\u0061', 'u0061', 'u0069',
@@ -33,7 +32,7 @@ function corpus() {
     '{"logo":"img_a_b"}',                                        // plain
     '{"logo":"\\u0069mg_a_b"}',                                  // single
     '{"d":"{\\"logo\\":\\"\\\\u0069mg_a_b\\"}"}',               // nested (standard: \\u0069)
-    '{"d":"{\\"logo\\":\\"\\u005cu0069mg_a_b\\"}"}',            // nested through \u005c
+    '{"d":"{\\"logo\\":\\"\\u005cu0069mg_a_b\\"}"}',            // nested through the escape of hex 5c
     '{"d":"\\\\\\\\u0069mg_a_b"}',                               // double backslash, deeper
     '{"logo":"\\u0069MG_A_B \\u0049mg_a_b \\u006Dimg_q_r"}',    // upper-case hex and upper-case letters
     '{"logo":"\\u0069' + id.slice(1) + '"}',                    // an id that itself holds u0061 (A1)
@@ -44,41 +43,37 @@ function corpus() {
   ];
   for (let k = 0; k < 1500; k++) {
     const i = pick(['img_', 'szp_']) + Math.floor(rand() * 1e9).toString(36) + '_' + pick(['u0061', 'au0069q', 'x', '9', 'u005c']) + Math.floor(rand() * 1e6).toString(36);
-    out.push('{"t":"' + TAG + '","v":"' + spell(i, Math.floor(rand() * 5), rand()) + '"}');
+    out.push('{"t":"' + TAG + '","v":"' + spell(i, Math.floor(rand() * 12), rand()) + '"}');
   }
   for (let k = 0; k < 2500; k++) { let t = ''; const n = 1 + Math.floor(rand() * 30); for (let j = 0; j < n; j++) t += pick(TOK); out.push(t); }
   return out;
 }
+const noDb = { DB: { prepare: () => ({ bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }) }) } };
+const A0 = { u: { id: 'tst_u', role: 'staff' }, depts: [] };
 
-test('parity: the save (JS) and the sweep (SQL) decode every input to the same ids — reviewer cases, generated spellings, token soup', async () => {
-  const m = await internals(['imgIdsIn', 'IMG_ESC_CTE'], WORKER);
-  let deepFn = null; try { deepFn = (await internals(['imgEscDeep'], WORKER)).imgEscDeep; } catch (e) { deepFn = null; }
-  const db = new DatabaseSync(':memory:'); db.exec('CREATE TABLE kv (k TEXT NOT NULL, seq INTEGER NOT NULL, v TEXT NOT NULL, PRIMARY KEY (k, seq))');
-  const sqlTexts = db.prepare(m.IMG_ESC_CTE + 'SELECT d FROM esc'), ins = db.prepare("INSERT INTO kv (k, seq, v) VALUES ('k', 0, ?)");
-  const C = corpus(), bad = []; let compared = 0, withIds = 0;
+test('the save reads ids literally: a text without an id-hiding escape gives exactly the ids written in it; a text with one is refused whole (img-escape) — reviewer cases, spellings up to 12 levels, token soup', async () => {
+  const m = await internals(['imgIdsIn', 'imgForeignIn', 'imgEsc'], WORKER);
+  const C = corpus(), bad = []; let refused = 0, literal = 0;
   for (const s of C) {
-    db.exec('DELETE FROM kv'); ins.run(s);
-    if (deepFn && deepFn(s)) continue;                         /* not settled: covered by the next test (refused / keeps everything) */
-    const js = Object.keys(m.imgIdsIn(s)).sort(), sql = scan([s].concat(sqlTexts.all().map((r) => r.d)));
-    compared++; if (js.length) withIds++;
-    if (JSON.stringify(js) !== JSON.stringify(sql)) bad.push({ s, js, sql });
+    const why = await m.imgForeignIn(noDb, A0, dk(D, 'profile'), s, '', {});
+    if (m.imgEsc(s)) { refused++; if (why !== 'img-escape') bad.push({ s, why }); continue; }
+    literal++;
+    const js = Object.keys(m.imgIdsIn(s)).sort(); if (JSON.stringify(js) !== JSON.stringify(scan(s))) bad.push({ s, js });
+    if (why === 'img-escape') bad.push({ s, why });
   }
-  console.log('# parity: ' + C.length + ' inputs · ' + compared + ' compared · ' + withIds + ' with ids · ' + bad.length + ' differ');
-  assert.ok(withIds > 1000, 'the corpus exercises ids');
-  assert.deepEqual(bad.slice(0, 5), [], 'JS and SQL find different ids');
+  console.log('# corpus: ' + C.length + ' inputs · ' + refused + ' refused for an escape · ' + literal + ' read literally · ' + bad.length + ' wrong');
+  assert.ok(refused > 1000 && literal > 200, 'both kinds are exercised');
+  assert.deepEqual(bad.slice(0, 5), [], 'the save read a text wrongly');
 });
 
-test('not settled after 8 levels: JS and SQL agree, the save refuses it, the sweep keeps everything; 8 levels are still decoded', async () => {
-  const m = await internals(['imgIdsIn', 'imgEscDeep', 'IMG_ESC_CTE'], WORKER);
-  const db = new DatabaseSync(':memory:'); db.exec('CREATE TABLE kv (k TEXT NOT NULL, seq INTEGER NOT NULL, v TEXT NOT NULL, PRIMARY KEY (k, seq))');
-  const deepSql = (s) => { db.exec('DELETE FROM kv'); db.prepare("INSERT INTO kv VALUES ('k', 0, ?)").run(s); return db.prepare(m.IMG_ESC_CTE + 'SELECT COUNT(*) n FROM escdeep').get().n === 1; };
-  for (let n = 0; n <= 10; n++) {
-    /* n nested \u005c then the escaped first letter: one level per \u005c (the last one decodes the letter in the same level) */
+test('any depth: n nested \\u005c before the escaped letter (n = 0 … 12) is refused; the same id written plainly and nested by JSON.stringify (any depth) is read', async () => {
+  const m = await internals(['imgIdsIn', 'imgForeignIn'], WORKER);
+  for (let n = 0; n <= 12; n++) {
     let t = '\\u0069mg_d' + n + '_e'; for (let k = 0; k < n; k++) t = t.replace(/\\/g, '\\u005c');
-    const deep = Math.max(n, 1) > 8;
-    assert.equal(m.imgEscDeep(t), deep, 'JS deep at ' + n + ': ' + t);
-    assert.equal(deepSql(t), deep, 'SQL deep at ' + n);
-    if (!deep) assert.deepEqual(Object.keys(m.imgIdsIn(t)), ['img_d' + n + '_e'], 'decoded within 8 levels');
+    assert.equal(await m.imgForeignIn(noDb, A0, dk(D, 'profile'), t, '', {}), 'img-escape', 'refused at ' + n);
+    let p = 'img_d' + n + '_e'; for (let k = 0; k < n; k++) p = JSON.stringify({ d: p });
+    assert.deepEqual(Object.keys(m.imgIdsIn(p)), ['img_d' + n + '_e'], 'read at depth ' + n);
+    assert.equal(await m.imgForeignIn(noDb, A0, dk(D, 'profile'), p, '', {}), '', 'and accepted (no owner known here) at depth ' + n);
   }
 });
 
@@ -91,7 +86,7 @@ async function settled(T) {
   assert.ok(gone(await state(W, c)), 'warm-up');
 }
 
-both(test, 'B · a legacy kv value spells, with its first letter escaped, an id that itself holds "u0061" / "u0069": the image is kept', async (mode) => {
+both(test, 'B · a legacy kv value spells, with its first letter escaped, an id that itself holds "u0061" / "u0069": the image is kept (the pass holds); once the value is gone it is swept', async (mode) => {
   const T = await scene(mode), { W, S, x, id } = T; await settled(T);
   const ids = { idA: 'img_v7f' + x + '_u0061b', idB: 'img_v7f' + x + '_au0069q' }, keys = { idA: dk(D, 'profile'), idB: dk(D2, 'profile') }, ctl = id('ctl');
   for (const i of Object.values(ids)) await upload(W, S.mgr, i);
@@ -104,11 +99,15 @@ both(test, 'B · a legacy kv value spells, with its first letter escaped, an id 
   }
   age(W, ctl, 31);
   await pass(T); await pass(T); await pass(T);
-  assert.ok(gone(await state(W, ctl)), 'control: an unreferenced upload of the same age is swept');
-  for (const i of Object.values(ids)) { const s = await state(W, i); assert.equal(s.r2, PNG, 'LIVE-REFERENCED IMAGE DELETED: ' + i); assert.notEqual(s.st, 'dead'); }
+  for (const i of Object.values(ids)) { const s = await state(W, i); assert.equal(s.r2, PNG, 'LIVE-REFERENCED IMAGE DELETED: ' + i); assert.equal(s.st, 'claim'); }
+  assert.equal((await state(W, ctl)).st, 'claim', 'nothing at all is condemned while such a value is stored');
+  for (const k of Object.values(keys)) W.env.DB.db.prepare('DELETE FROM kv WHERE k = ?').run(k);
+  for (const i of Object.values(ids).concat(ctl)) age(W, i, 31);
+  await pass(T); await pass(T);
+  for (const i of Object.values(ids).concat(ctl)) assert.ok(gone(await state(W, i)), i + ' swept once nothing hides a reference to it');
 });
 
-both(test, 'C · a plain save by the unit-2 manager naming the unit-1 image — plain, escaped, nested, nested through \\u005c, too deep: every one refused, no reference row', async (mode) => {
+both(test, 'C · a plain save by the unit-2 manager naming the unit-1 image — escaped, nested, nested through \\u005c, too deep: every one refused (img-escape), plainly: refused (imgown); no reference row', async (mode) => {
   const T = await scene(mode), { W, S, id } = T; const i = id('victim'); await upload(W, S.mgr, i);
   assert.ok((await edit(W, S.mgr, D, 'plan', EDIT.plan(i))).ok, 'bound into the unit-1 plan');
   const KP = dk(D2, 'profile'), inner = (s) => JSON.stringify({ t: TAG, doc: JSON.stringify({ logo: 'X' }).replace('X', s) });
@@ -130,14 +129,16 @@ both(test, 'C · a plain save by the unit-2 manager naming the unit-1 image — 
   for (const [nm, o] of Object.entries(out)) {
     assert.equal(o.stored, false, 'FOREIGN IMAGE REFERENCE ACCEPTED via ' + nm + ' · ' + JSON.stringify(out));
     assert.deepEqual(o.refs, [dk(D, 'plan')], nm + ': no reference row for unit 2');
+    assert.equal(o.why, nm === 'plain' ? 'imgown' : 'img-escape', nm + ' · ' + JSON.stringify(o));
   }
-  assert.equal(out.tooDeep.why, 'img-escape', 'a spelling still not settled after 8 levels is refused as such');
-  /* the owner of the image may still save it plainly (the refusals above are about ownership / depth, not the spelling) */
-  const own = await W.C.save(S.mgr, { [dk(D, 'profile')]: spells.nested005c }), od = (own.j.denied || {})[dk(D, 'profile')];
-  assert.ok(!od, 'the unit-1 manager may name the unit-1 image through a nested spelling · ' + JSON.stringify(own.j).slice(0, 200));
+  /* fourth review: the escape is refused for what it may hide, whoever saves it — the owner names his image plainly */
+  const K1 = dk(D, 'profile'), own = await W.C.save(S.mgr, { [K1]: spells.nested005c });
+  assert.equal(((own.j.denied || {})[K1] || {}).why, 'img-escape', 'the unit-1 manager is refused the escaped spelling too · ' + JSON.stringify(own.j).slice(0, 200));
+  const own2 = await W.C.save(S.mgr, { [K1]: JSON.stringify({ t: TAG, doc: JSON.stringify({ logo: i }) }) });
+  assert.ok(!(own2.j.denied || {})[K1], 'and accepted written plainly, nested by JSON.stringify · ' + JSON.stringify(own2.j).slice(0, 200));
 });
 
-both(test, 'C · while a kv value holds a spelling not settled after 8 levels, the sweep condemns nothing; once it is gone, it sweeps', async (mode) => {
+both(test, 'C · while a kv value holds a spelling of any depth, the sweep condemns nothing; once it is gone, it sweeps', async (mode) => {
   const T = await scene(mode), { W, S, id } = T; await settled(T);
   const hid = id('hid'), ctl = id('ctl'); await upload(W, S.mgr, hid); await upload(W, S.mgr2, ctl);
   let t = '\\u0069' + hid.slice(1); for (let k = 0; k < 9; k++) t = t.replace(/\\/g, '\\u005c');
