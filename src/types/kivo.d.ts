@@ -314,7 +314,7 @@ export interface KivoLensPlugin { schema: 1; kind: "lens"; key: KivoLensKey; nam
   guards: { enable: string; resources: ("bassam_plan_v1" | "bassam_rounds_v1")[] }; tests: string[] }
 export interface KivoPage { key: KivoPageKey; nav?: string; name: string; under?: string; seq?: string[]; subs?: { key: string; name: string }[]; tabs?: { key: string; name: string; offPage?: boolean }[] }
 
-/* ── (٥) الفضاءُ العام window.KIVO (AUD-016 · ADR-017) — 102 اسماً؛ الأسماءُ نفسُها على window موصِّلاتٌ غيرُ قابلةٍ للعدّ (توافقٌ خلفي) ── */
+/* ── (٥) الفضاءُ العام window.KIVO (AUD-016 · ADR-017) — 103 اسماً؛ الأسماءُ نفسُها على window موصِّلاتٌ غيرُ قابلةٍ للعدّ (توافقٌ خلفي) ── */
 export interface KivoNamespace {
   BassamAck: any;
   BassamAudit: any;
@@ -371,6 +371,7 @@ export interface KivoNamespace {
   KIVO_MANIFEST: any;
   KIVO_REGISTRY: any;
   KIVO_REGISTRY_DATA: any;
+  PageStates: any;
   StreamableLogic: any;
   __ADMIN_MODE: any;
   __ADMIN_OPEN_DTAB: any;

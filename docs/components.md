@@ -8,6 +8,7 @@
 | المكوّن | الملف | الواجهة | الحالات (ودليلُ كلٍّ منها في الكود) |
 |---|---|---|---|
 | مؤشرُ التحميل الموحَّد | `src/components/550-bassam-busy.js` | `KIVO.BassamBusy` | خامل «host.hidden = true» · جارٍ بنسبة «pct» · انتهى «done» · فشل «fail(» · إشعارٌ قصير «flash» · لقارئ الشاشة «aria-live» |
+| حالاتُ الصفحة الموحَّدة | `src/components/555-page-states.js` | `KIVO.PageStates` (host · enter · describe · STR) | أول تحميل: هيكلٌ بعد ٣٠٠ م.ث «st === "loading"» بثلاثة قوالب «SHAPES = { table: 1, map: 1, cards: 1 }» · تحديث «يُحدَّث من الخادم» · فشل «تعذّر تحميل {name}» بزرٍّ واحد «أعد المحاولة» وإعادةٍ عند «"online"» · فارغ «ps-card ps-» بأزرارٍ لمن يمرّ فحصُه «allowed(a.can)» · وصل المحتوى «ps-enter» · صيغةُ القسم «ps-region» · بوابةُ الغلاف «KIVO.__dcStates» |
 | حالةُ الاتصال (القائمة الجانبية) | `src/components/240-bassam-link.js` | `KIVO.BassamLink` | متصل «on: "متصل"» · منقطع «off: "انقطع الاتصال"» · محلي «local: "محلي"» |
 | لافتةُ الشبكة (الجوال) | `src/components/240-bassam-link.js` | `.bs-netbar` | ظاهرةٌ لحظةَ الانقطاع «bs-netbar» · لقارئ الشاشة «role» |
 | إقرارُ الحفظ | `src/core/300-bassam-ack.js` | `KIVO.BassamAck` | معلَّق «حُفظ محلياً — بانتظار المزامنة» · مرفوض «denied» · مُقَرّ «ack» |

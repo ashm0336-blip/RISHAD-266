@@ -1,0 +1,214 @@
+/* V7 UX states · step 2 — the one page-states component (src/components/555-page-states.js), alone in a vm over a small DOM double.
+   Four states × three shapes; nothing before 300 ms; the add button only when the passed permission check is true; one retry on
+   `online`; reduced motion; aria roles; one strings table; no device storage; names and shapes from the pages manifest. */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+
+const read = (p) => fs.readFileSync(new URL('../../' + p, import.meta.url), 'utf8');
+const SRC = read('src/components/555-page-states.js'), CSS = read('src/styles/555-page-states.css');
+
+function el(tag) {
+  const L = {}, A = {};
+  const n = { tagName: tag.toUpperCase(), childNodes: [], parentNode: null, className: '', hidden: false, _text: '', isConnected: true,
+    get firstChild() { return this.childNodes[0] || null; },
+    get textContent() { return this._text + this.childNodes.map((c) => c.textContent).join(''); },
+    set textContent(v) { this.childNodes = []; this._text = String(v); },
+    appendChild(c) { c.parentNode = this; this.childNodes.push(c); return c; },
+    removeChild(c) { this.childNodes = this.childNodes.filter((x) => x !== c); c.parentNode = null; return c; },
+    setAttribute(k, v) { A[k] = String(v); }, getAttribute(k) { return k in A ? A[k] : null; }, removeAttribute(k) { delete A[k]; }, hasAttribute(k) { return k in A; },
+    addEventListener(k, f) { (L[k] ||= []).push(f); }, click() { (L.click || []).forEach((f) => f({ type: 'click' })); },
+    classList: { add(c) { if (!n.className.split(' ').includes(c)) n.className = (n.className + ' ' + c).trim(); }, remove(c) { n.className = n.className.split(' ').filter((x) => x !== c).join(' '); }, contains(c) { return n.className.split(' ').includes(c); } },
+    closest() { return n.parentNode; },
+    all(pred, out = []) { for (const c of this.childNodes) { if (pred(c)) out.push(c); c.all(pred, out); } return out; },
+    cls(c) { return this.all((x) => x.className.split(' ').includes(c)); },
+  };
+  return n;
+}
+const PAGES = [
+  { key: 'staff', module: 'staff', name: 'الجدول الشهري', under: 'planning', skeleton: 'table' },
+  { key: 'plan', module: 'plan', name: 'التشغيل الميداني', skeleton: 'map' },
+  { key: 'planning', module: 'planning', name: 'الخطة التشغيلية', skeleton: 'table' },
+  { key: 'emps', module: 'employees', name: 'موظفو الإدارة', skeleton: 'table', subs: [{ key: 'data', name: 'بيانات الموظفين' }, { key: 'custody', name: 'عهد الموظفين' }] },
+  { key: 'seized', module: 'seized', name: 'نظام المضبوطات', skeleton: 'table', subs: [{ key: 'dash', name: 'لوحة المؤشرات', offPage: true, skeleton: 'cards' }, { key: 'records', name: 'السجلات' }] },
+  { key: 'award', module: 'award', name: 'جائزة التميز', skeleton: 'cards', subs: [{ key: 'new', name: 'ترشيح جديد' }, { key: 'res', name: 'لوحة النتائج', skeleton: 'table' }, { key: 'doc', name: 'المراجع المعتمدة' }] },
+  { key: 'admin', module: 'admin', name: 'الإعدادات', skeleton: 'cards', subs: [{ key: 'oplog', name: 'سجل الحركة', skeleton: 'table' }] },
+];
+const MANIFEST = { pages: PAGES, containers: [{ key: 'kpis', nav: 'kpis', name: 'مؤشرات الإدارة', refs: ['seized/dash', 'staff'], names: { 'seized/dash': 'لوحة مؤشرات المضبوطات' } }],
+  routeNames: { kpis: 'مؤشرات الإدارة', staffing: 'الجدول الشهري', plan: 'التشغيل الميداني', planning: 'الخطة التشغيلية', employees: 'موظفو الإدارة', seized: 'نظام المضبوطات', award: 'جائزة التميز', admin: 'الإعدادات', sysadmin: 'مركز إدارة رشاد', profile: 'صفحتي' },
+  pageComponents: { Staffing: 'staff', 'Operational Plan': 'plan', Planning: 'planning', Employees: 'employees', Seized: 'seized', Award: 'award', Admin: 'admin', KPIs: 'kpis', Profile: 'profile' } };
+
+function world({ reduce = false, hash = '#/staffing' } = {}) {
+  const timers = []; let now = 0; const L = {};
+  const window = { location: { hash }, addEventListener(k, f) { (L[k] ||= []).push(f); }, matchMedia: (q) => ({ matches: reduce && /reduce/.test(q) }),
+    fire(k) { (L[k] || []).forEach((f) => f({ type: k })); } };
+  const KIVO = { KIVO_MANIFEST: { keys: Object.keys(MANIFEST), clone: (k) => JSON.parse(JSON.stringify(MANIFEST[k])) } };
+  const ctx = { window, KIVO, document: { createElement: el }, JSON,
+    setTimeout: (f, ms) => { timers.push({ f, at: now + (ms || 0) }); return timers.length; }, clearTimeout: (id) => { if (timers[id - 1]) timers[id - 1].f = null; } };
+  vm.runInNewContext(SRC, ctx);
+  const tick = (ms) => { now += ms; for (const t of timers) if (t.f && t.at <= now) { const f = t.f; t.f = null; f(); } };
+  return { window, KIVO, P: KIVO.PageStates, tick };
+}
+
+test('loading: nothing before 300 ms, then a skeleton of the page shape — no text, no button; status + aria-busy', () => {
+  for (const [shape, piece, count] of [['table', 'ps-row', 8], ['map', 'ps-canvas', 1], ['cards', 'ps-cardbone', 6]]) {
+    const { P, tick } = world(), host = el('div');
+    P.host(host, { shape, state: 'loading', name: 'الجدول الشهري' });
+    assert.equal(host.childNodes.length, 0, shape + ': empty at 0 ms');
+    tick(299); assert.equal(host.childNodes.length, 0, shape + ': still empty at 299 ms');
+    assert.equal(host.getAttribute('role'), 'status'); assert.equal(host.getAttribute('aria-busy'), 'true'); assert.equal(host.getAttribute('data-ps'), 'loading');
+    tick(1); assert.equal(host.cls('ps-skel').length, 1, shape + ': skeleton at 300 ms');
+    assert.equal(host.cls(piece).length, count, shape + ': ' + piece);
+    assert.ok(host.cls('bs-skel').length >= 6, 'built from the existing .bs-skel blocks');
+    assert.equal(host.textContent, '', 'no text'); assert.equal(host.all((x) => x.tagName === 'BUTTON').length, 0, 'no button');
+    assert.equal(host.cls('ps-skel')[0].getAttribute('aria-hidden'), 'true');
+  }
+  const { P, tick } = world(), t = el('div');
+  P.host(t, { shape: 'table', state: 'loading' }); assert.equal(t.cls('ps-kpi').length, 0); tick(300);
+  assert.equal(t.cls('ps-kpi').length, 4, 'table = KPI cards'); assert.equal(t.cls('ps-tool').length, 3, '+ toolbar'); assert.equal(t.cls('ps-side').length, 0);
+  const m = el('div'); P.host(m, { shape: 'map', state: 'loading' }); tick(300);
+  assert.equal(m.cls('ps-side').length, 1, 'map = canvas + side panel'); assert.equal(m.cls('ps-tool').length, 3);
+  const u = el('div'); P.host(u, { shape: 'nope', state: 'loading' }); tick(300); assert.equal(u.getAttribute('data-ps-shape'), 'cards', 'unknown shape falls back to cards');
+});
+
+test('a load that ends before 300 ms never shows a skeleton and gets no entrance; a shown one enters calmly', () => {
+  const { P, tick } = world(), host = el('div'), content = el('div');
+  P.host(host, { shape: 'table', state: 'loading', content });
+  tick(200); P.host(host, { shape: 'table', state: 'ready', content });
+  tick(500); assert.equal(host.childNodes.length, 0); assert.equal(host.hidden, true); assert.equal(content.classList.contains('ps-enter'), false, 'fast load: no entrance');
+  P.host(host, { shape: 'table', state: 'loading', content }); tick(300); assert.equal(host.cls('ps-skel').length, 1);
+  P.host(host, { shape: 'table', state: 'ready', content });
+  assert.equal(host.childNodes.length, 0); assert.equal(host.getAttribute('aria-busy'), null); assert.equal(host.getAttribute('role'), null);
+  assert.equal(content.classList.contains('ps-enter'), true, 'entrance class');
+  tick(1000); assert.equal(content.classList.contains('ps-enter'), false, 'and it is removed afterwards (no lasting transform)');
+});
+
+test('refreshing: a moving line and the badge; the content is the page\'s own and only marked busy', () => {
+  const { P } = world(), host = el('div'), content = el('div');
+  P.host(host, { state: 'refreshing', content });
+  assert.equal(host.cls('ps-line').length, 1); assert.equal(host.cls('ps-badge')[0].textContent, 'يُحدَّث من الخادم');
+  assert.equal(host.getAttribute('role'), 'status'); assert.equal(content.getAttribute('aria-busy'), 'true');
+  assert.equal(host.all((x) => x.tagName === 'BUTTON').length, 0, 'no button while refreshing');
+  assert.equal(content.hidden, false); assert.equal(content.hasAttribute('disabled'), false); assert.equal(content.hasAttribute('inert'), false);
+  P.host(host, { state: 'ready', content }); assert.equal(content.getAttribute('aria-busy'), null); assert.equal(host.hidden, true);
+});
+
+test('error: one card, role=alert, the content name, the fixed line and exactly one retry button', () => {
+  const { P } = world(), host = el('div'); let n = 0;
+  P.host(host, { state: 'error', name: 'الترشيحات', retry: () => { n++; } });
+  const card = host.cls('ps-card'); assert.equal(card.length, 1); assert.equal(card[0].getAttribute('role'), 'alert');
+  assert.equal(host.cls('ps-title')[0].textContent, 'تعذّر تحميل الترشيحات');
+  assert.equal(host.cls('ps-text')[0].textContent, 'لم يصل رد من الخادم. بياناتك المحفوظة لم تتأثر، وتُعاد المحاولة تلقائياً عند عودة الاتصال.');
+  const b = host.all((x) => x.tagName === 'BUTTON'); assert.equal(b.length, 1); assert.equal(b[0].textContent, 'أعد المحاولة'); assert.equal(b[0].type, 'button');
+  b[0].click(); assert.equal(n, 1);
+  assert.equal(host.getAttribute('aria-busy'), null);
+  const bare = el('div'); P.host(bare, { state: 'error' }); assert.equal(bare.cls('ps-title')[0].textContent, 'تعذّر تحميل المحتوى', 'no name ⇒ the generic noun');
+  assert.equal(bare.all((x) => x.tagName === 'BUTTON').length, 0, 'no retry function ⇒ no dead button');
+});
+
+test('online: every host in the error state is retried once; not after it left the error state, not with auto:false, not when detached', () => {
+  const { P, window } = world(), a = el('div'), b = el('div'), c = el('div'), d = el('div'); const hits = { a: 0, b: 0, c: 0, d: 0 };
+  P.host(a, { state: 'error', retry: () => { hits.a++; } });
+  P.host(b, { state: 'error', retry: () => { hits.b++; }, auto: false });
+  P.host(c, { state: 'error', retry: () => { hits.c++; } });
+  P.host(d, { state: 'error', retry: () => { hits.d++; } });
+  P.host(c, { state: 'ready', retry: () => { hits.c++; } }); d.isConnected = false;
+  window.fire('online'); assert.deepEqual(hits, { a: 1, b: 0, c: 0, d: 0 });
+  P.host(a, { state: 'error', retry: () => { hits.a += 10; } });          // the page re-renders with a fresh closure: the latest one is used, once
+  window.fire('online'); assert.equal(hits.a, 11);
+});
+
+test('empty: calm card; an action only when the passed permission check is true; two-button and note slots', () => {
+  const { P } = world(); let added = 0;
+  const spec = (can) => ({ state: 'empty', empty: { title: 'لا يوجد جدول لهذا الشهر', line: 'كل شهر له جدول مستقل.', actions: [{ label: 'إنشاء جدول', on: () => { added++; }, can }] } });
+  for (const can of [false, undefined, null, 0, 1, 'yes', () => false, () => { throw Error('x'); }]) {
+    const h = el('div'); P.host(h, spec(can)); assert.equal(h.all((x) => x.tagName === 'BUTTON').length, 0, 'no button for ' + String(can));
+    assert.equal(h.cls('ps-title')[0].textContent, 'لا يوجد جدول لهذا الشهر'); assert.equal(h.cls('ps-text')[0].textContent, 'كل شهر له جدول مستقل.');
+  }
+  for (const can of [true, () => true]) { const h = el('div'); P.host(h, spec(can)); const b = h.all((x) => x.tagName === 'BUTTON'); assert.equal(b.length, 1); b[0].click(); }
+  assert.equal(added, 2);
+  const h = el('div');
+  P.host(h, { state: 'empty', empty: { title: 'لا توجد جولة', notes: [{ tone: 'warn', text: 'الشهر مقفل' }, { text: 'لا يوجد موظفون' }],
+    actions: [{ label: 'سحب التشغيل', on() {}, can: true }, { label: 'متابعة جولة', on() {}, can: true }, { label: 'ثالث', on() {}, can: true }] } });
+  assert.deepEqual(h.all((x) => x.tagName === 'BUTTON').map((x) => x.textContent), ['سحب التشغيل', 'متابعة جولة'], 'at most two buttons');
+  assert.equal(h.cls('ps-note-warn')[0].textContent, 'الشهر مقفل'); assert.equal(h.cls('ps-note-info')[0].textContent, 'لا يوجد موظفون');
+  assert.equal(h.cls('ps-empty').length, 1); assert.equal(h.getAttribute('role'), null, 'empty is not a live region');
+  /* the permission is re-read on every call: a card drawn without the button gains it when the same check turns true */
+  const g = el('div'); let ok = false; const s = () => spec(() => ok);
+  P.host(g, s()); assert.equal(g.all((x) => x.tagName === 'BUTTON').length, 0); ok = true; P.host(g, s()); assert.equal(g.all((x) => x.tagName === 'BUTTON').length, 1);
+});
+
+test('region mode and idempotent re-render', () => {
+  const { P, tick } = world(), host = el('div');
+  P.host(host, { state: 'error', name: 'مهامك', region: true, retry() {} });
+  assert.ok(host.className.split(' ').includes('ps-region'));
+  const card = host.cls('ps-card')[0];
+  P.host(host, { state: 'error', name: 'مهامك', region: true, retry() {} });
+  assert.equal(host.cls('ps-card')[0], card, 'same description ⇒ the DOM is not rebuilt');
+  P.host(host, { state: 'loading', shape: 'table', region: true }); tick(300); assert.equal(host.cls('ps-skel').length, 1);
+});
+
+test('reduced motion: no entrance class from script, and the stylesheet stops every animation', () => {
+  const { P, tick } = world({ reduce: true }), host = el('div'), content = el('div');
+  P.host(host, { state: 'loading', content }); tick(300); P.host(host, { state: 'ready', content });
+  assert.equal(content.classList.contains('ps-enter'), false);
+  assert.equal(P.enter(content), false);
+  const rm = /@media \(prefers-reduced-motion:reduce\)\{([\s\S]*?)\n\}/.exec(CSS);
+  assert.ok(rm, 'reduced-motion block'); for (const s of ['.ps-skel .bs-skel', '.ps-line::after', '.ps-enter']) assert.ok(rm[1].includes(s), s);
+  assert.match(rm[1], /animation:none !important/);
+});
+
+test('one strings table; no device storage; theme variables only; 44 px targets; hidden in print', () => {
+  const { P } = world();
+  assert.deepEqual(Object.keys(P.STR).sort(), ['emptyTitle', 'failLine', 'failName', 'failTitle', 'loading', 'refreshing', 'retry']);
+  assert.equal(P.STR.failTitle, 'تعذّر تحميل {name}'); assert.equal(P.STR.retry, 'أعد المحاولة'); assert.equal(P.STR.refreshing, 'يُحدَّث من الخادم');
+  assert.equal(P.DELAY, 300); assert.deepEqual([...P.SHAPES], ['table', 'map', 'cards']);
+  /* every Arabic literal of the component outside comments lives in STR or in the name overrides */
+  const code = SRC.replace(/\/\*[\s\S]*?\*\//g, ''), table = code.slice(code.indexOf('var STR = {'), code.indexOf('var live'));
+  assert.doesNotMatch(code.replace(table, ''), /[؀-ۿ]/, 'Arabic text outside the tables');
+  assert.doesNotMatch(code, /localStorage|sessionStorage|indexedDB|IndexedDB|innerHTML|document\.cookie/);
+  assert.doesNotMatch(CSS.replace(/\/\*[\s\S]*?\*\//g, ''), /#[0-9a-fA-F]{3,8}\b|rgba?\(/, 'colours come from theme variables only');
+  assert.match(CSS, /\.ps-btn\{min-height:44px;min-width:44px/); assert.match(CSS, /\.ps-bar > button\{[^}]*min-height:44px/);
+  assert.match(CSS, /@media print\{\.ps,\.ps-bar\{display:none !important\}\}/);
+  assert.match(CSS, /\.ps-empty\{background:var\(--brand-pattern\)/, 'the eight-pointed star behind the empty card');
+  assert.match(CSS, /\.ps-line\{[^}]*height:3px/); assert.match(CSS, /\.ps-line::after\{[^}]*background:var\(--brand-primary\)/);
+  assert.match(CSS, /\.ps-enter\{animation:ps-in \.4s/); assert.match(CSS, /translateY\(8px\)/);
+  assert.match(CSS, /tr:nth-child\(-n\+10\)/); assert.match(CSS, /tr:nth-child\(2\)\{animation-delay:50ms\}/); assert.doesNotMatch(CSS, /tr:nth-child\(11\)/);
+});
+
+test('names and shapes come from the pages manifest: the open tab, else the page; written overrides; nested screens keep their own name', () => {
+  const { P } = world(), d = (c, h) => { const x = P.describe(c, h); return x.name + '|' + x.shape; };
+  assert.equal(d('Staffing', '#/staffing'), 'الجدول الشهري|table');
+  assert.equal(d('Operational Plan', '#/plan'), 'التشغيل الميداني|map');
+  assert.equal(d('Employees', '#/employees/custody'), 'عهد الموظفين|table');
+  assert.equal(d('Employees', '#/employees'), 'موظفو الإدارة|table');
+  assert.equal(d('Planning', '#/planning'), 'الخطة التشغيلية|table');
+  assert.equal(d('Staffing', '#/planning'), 'الجدول الشهري|table', 'a page embedded in a container is named by itself');
+  assert.equal(d('Seized', '#/kpis/dash'), 'لوحة مؤشرات المضبوطات|cards', 'a KPI panel takes its container name');
+  assert.equal(d('Seized', '#/seized/records'), 'سجلات المضبوطات|table', 'override');
+  assert.equal(d('Award', '#/award/new'), 'الترشيحات|cards', 'override: the loaded thing is the nominations');
+  assert.equal(d('Award', '#/award/res'), 'نتائج الترشيحات|table');
+  assert.equal(d('Award', '#/award/doc'), 'المراجع المعتمدة|cards', 'no override ⇒ the tab name');
+  assert.equal(d('Admin', '#/admin/oplog'), 'سجل الحركة|table');
+  assert.equal(d('Admin', '#/sysadmin/depts'), 'مركز إدارة رشاد|cards', 'a route with no page of its own ⇒ the route name');
+  assert.equal(d('Profile', '#/profile'), 'صفحتي|cards');
+  assert.equal(d('KPIs', '#/kpis'), 'مؤشرات الإدارة|cards');
+  assert.equal(d('Unknown', '#/nowhere'), '|cards');
+});
+
+test('shell gate hook: skeleton after 300 ms in the screen place, the failure card with the core retry, calm entrance when the place leaves', () => {
+  const { KIVO, tick } = world({ hash: '#/staffing' }), G = KIVO.__dcStates, hostEl = el('div'), ph = el('div'), box = el('div');
+  hostEl.appendChild(ph); ph.appendChild(box); box.closest = () => hostEl; let n = 0;
+  G.draw(box, { name: 'Staffing', retry: () => { n++; } });
+  assert.equal(box.getAttribute('data-ps'), 'loading'); tick(300); assert.equal(box.getAttribute('data-ps-shape'), 'table'); assert.equal(box.cls('ps-row').length, 8);
+  G.draw(null, { name: 'Staffing' }); tick(0); assert.equal(hostEl.classList.contains('ps-enter'), false, 'a re-render (ref detach + attach) is not a departure');
+  G.draw(box, { name: 'Staffing', failed: true, retry: () => { n++; } });
+  assert.equal(box.cls('ps-title')[0].textContent, 'تعذّر تحميل الجدول الشهري');
+  box.all((x) => x.tagName === 'BUTTON')[0].click(); assert.equal(n, 1);
+  G.draw(box, { name: 'Staffing', retry() {} }); tick(300);
+  box.isConnected = false; G.draw(null, { name: 'Staffing' }); tick(0);
+  assert.equal(hostEl.classList.contains('ps-enter'), true, 'the content enters calmly after a shown skeleton');
+  /* session end and scope messages stay outside: idle ⇒ the component draws nothing */
+  const b2 = el('div'); b2.closest = () => hostEl; G.draw(b2, { name: 'Staffing', idle: true }); tick(400); assert.equal(b2.childNodes.length, 0); assert.equal(b2.hidden, true);
+});

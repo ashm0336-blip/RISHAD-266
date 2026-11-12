@@ -18,6 +18,7 @@
    "activation": "toggle",
    "nav": "dstats",
    "name": "الإحصائيات اليومية",
+   "skeleton": "cards",
    "seq": [
     "sub:haram",
     "sub:nabawi",
@@ -67,6 +68,7 @@
    "departmentComponents": ["Employees"],
    "nav": "employees",
    "name": "موظفو الإدارة",
+   "skeleton": "table",
    "seq": [
     "sub:data",
     "sub:custody"
@@ -93,6 +95,7 @@
    "departmentComponents": ["Planning"],
    "nav": "planning",
    "name": "الخطة التشغيلية",
+   "skeleton": "table",
    "seq": [
     "sub:readiness",
     "page:staff",
@@ -113,6 +116,7 @@
    "departmentComponents": ["Staffing"],
    "nav": "staffing",
    "name": "الجدول الشهري",
+   "skeleton": "table",
    "under": "planning"
   },
   {
@@ -122,6 +126,7 @@
    "departmentComponents": ["Operational Plan"],
    "nav": "plan",
    "name": "التشغيل الميداني",
+   "skeleton": "map",
    "under": "planning"
   },
   {
@@ -138,6 +143,7 @@
    "departmentComponents": ["Daily Sessions"],
    "nav": "daily",
    "name": "المتابعة اليومية",
+   "skeleton": "map",
    "seq": [
     "tab:kpiDaily",
     "tab:kpiOcc",
@@ -182,6 +188,7 @@
    "departmentComponents": ["Daily Report"],
    "nav": "dreport",
    "name": "التقرير اليومي",
+   "skeleton": "table",
    "under": "daily"
   },
   {
@@ -191,6 +198,7 @@
    "departmentComponents": ["Tasks"],
    "nav": "tasks",
    "name": "المهام",
+   "skeleton": "table",
    "under": "daily"
   },
   {
@@ -201,10 +209,12 @@
    "departmentComponents": ["Irshad"],
    "nav": "irshad",
    "name": "نظام الاسترشاد",
+   "skeleton": "table",
    "subs": [
     {
      "key": "dash",
      "name": "لوحة المؤشرات",
+     "skeleton": "cards",
      "offPage": true
     },
     {
@@ -221,10 +231,12 @@
    "departmentComponents": ["Seized"],
    "nav": "seized",
    "name": "نظام المضبوطات",
+   "skeleton": "table",
    "subs": [
     {
      "key": "dash",
      "name": "لوحة المؤشرات",
+     "skeleton": "cards",
      "offPage": true
     },
     {
@@ -241,6 +253,7 @@
    "departmentComponents": ["Award"],
    "nav": "award",
    "name": "جائزة التميز",
+   "skeleton": "cards",
    "subs": [
     {
      "key": "new",
@@ -248,7 +261,8 @@
     },
     {
      "key": "res",
-     "name": "لوحة النتائج"
+     "name": "لوحة النتائج",
+     "skeleton": "table"
     },
     {
      "key": "doc",
@@ -274,6 +288,7 @@
    "activation": "always",
    "nav": "admin",
    "name": "الإعدادات",
+   "skeleton": "cards",
    "subs": [
     {
      "key": "backup",
@@ -281,7 +296,8 @@
     },
     {
      "key": "oplog",
-     "name": "سجل الحركة"
+     "name": "سجل الحركة",
+     "skeleton": "table"
     },
     {
      "key": "shifts",

@@ -713,6 +713,26 @@
    "origSha256": "b2d01a7f03ebbbb7f07ae3ce12c19568502ed20c86d07a133a566381df88ce6b"
   },
   {
+   "closeTag": "</style>",
+   "id": "styles/555-page-states.css",
+   "kind": "css",
+   "line": 10752,
+   "new": "V7 UX states: styles of KIVO.PageStates (skeletons, refresh line, failure and empty cards)",
+   "openTag": "<style id=\"bs-page-states-css\">",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "components/555-page-states.js",
+   "kind": "js",
+   "line": 10752,
+   "new": "V7 UX states: the one page-states component (loading, refreshing, error, empty)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
    "closeTag": "</script>",
    "id": "components/560-canvas-input.js",
    "kind": "js",
@@ -880,9 +900,9 @@
  ],
  "counts": {
   "assets": 9,
-  "css": 10,
+  "css": 11,
   "inline": 4,
-  "js": 72,
+  "js": 73,
   "pages": 14
  },
  "legacyManifestIcons": [
