@@ -212,3 +212,54 @@ test('shell gate hook: skeleton after 300 ms in the screen place, the failure ca
   /* session end and scope messages stay outside: idle ⇒ the component draws nothing */
   const b2 = el('div'); b2.closest = () => hostEl; G.draw(b2, { name: 'Staffing', idle: true }); tick(400); assert.equal(b2.childNodes.length, 0); assert.equal(b2.hidden, true);
 });
+
+/* ── step 3 · the core side of the gate: the lazy guard declares the failure in the registry and keeps only the session card ── */
+const GUARD = read('src/core/030-pages-loader.lazy-guard.js'), RUNTIME = read('src/core/050-dc-runtime.js');
+function guardWorld({ hook = true } = {}) {
+  const L = {}, inserted = [], state = { gone: false, bumps: 0, reloaded: 0 };
+  const card = () => { const k = { m: { textContent: '' }, b: { textContent: '', addEventListener() {} } }; return { setAttribute() {}, remove() { this.removed = true; },
+    set innerHTML(html) { k.m.textContent = (/class="m">([^<]*)/.exec(html) || [])[1] || ''; }, querySelector: (s) => s === '.m' ? k.m : k.b }; };
+  const reg = { Staffing: { html: '<x/>', Logic: null, dataError: 'x', fetched: true, subs: new Set([() => { state.bumps++; }]), ver: 0 } };
+  const win = { __resources: {}, fetch: async () => ({ ok: true }), __dcRegistry: reg, KIVO: { __BS_SRV: { sesChanged: () => state.gone } },
+    addEventListener(t, f) { (L[t] ||= []).push(f); }, fire(t, detail) { (L[t] || []).forEach((f) => f({ detail })); } };
+  if (hook) win.KIVO.__dcStates = { draw() {} };
+  vm.runInNewContext(GUARD, { window: win, document: { createElement: card, querySelector: (s) => /sc-host/.test(s) ? { parentNode: { insertBefore(c) { inserted.push(c); } } } : null },
+    location: { reload() { state.reloaded++; } }, setTimeout: () => 0, setInterval: () => 0, clearInterval() {}, Object, JSON, Math });
+  return { win, reg: reg.Staffing, inserted, state };
+}
+test('lazy guard: with the component registered a load failure is declared in the registry (no old bar); retry and success clear it; a session end takes the old card', () => {
+  const W = guardWorld();
+  W.win.fire('dc:page-load-failed', { name: 'Staffing' });
+  assert.equal(W.inserted.length, 0, 'no old red bar'); assert.equal(W.reg.loadFailed, true); assert.equal(W.state.bumps, 1, 'the screen is redrawn once');
+  W.win.fire('dc:page-load-failed', { name: 'Staffing' }); assert.equal(W.state.bumps, 1, 'declaring it again does not redraw');
+  assert.equal(typeof W.win.KIVO.__dcRetry, 'function');
+  W.win.KIVO.__dcRetry('Staffing');
+  assert.equal(W.reg.loadFailed, false); assert.equal(W.reg.dataError, null, 'the retry is the old button: it wakes the read'); assert.equal(W.reg.fetched, false);
+  W.reg.dataError = 'x'; W.win.fire('dc:page-load-failed', { name: 'Staffing' }); assert.equal(W.reg.loadFailed, true);
+  W.win.fire('dc:page-load-ready', { name: 'Staffing' }); assert.equal(W.reg.loadFailed, false, 'a successful load clears it');
+  /* session ended while the unified card is shown ⇒ it steps aside for the sign-in card (outside the component) */
+  W.reg.dataError = 'x'; W.win.fire('dc:page-load-failed', { name: 'Staffing' }); W.state.gone = true; W.win.fire('bs:session-gone');
+  assert.equal(W.reg.loadFailed, false); assert.equal(W.inserted.length, 1); assert.equal(W.inserted[0].querySelector('.m').textContent, 'انتهت الجلسة — سجّل الدخول');
+  W.win.KIVO.__dcRetry('Staffing'); assert.equal(W.state.reloaded, 1, 'after a session end the retry signs in again');
+  /* without the component everything is as before */
+  const O = guardWorld({ hook: false }); O.win.fire('dc:page-load-failed', { name: 'Staffing' });
+  assert.equal(O.inserted.length, 1); assert.equal(O.inserted[0].querySelector('.m').textContent, 'تعذّر عرض هذه الشاشة الآن — سنحاول مجددًا تلقائيًا'); assert.ok(!O.reg.loadFailed);
+});
+test('runtime placeholder: core owns the hook, draws the place through it, and keeps its own text for everything that is not a load failure', () => {
+  assert.match(RUNTIME, /KIVO\.__dcStates = KIVO\.__dcStates \|\| null;/, 'the hook is defined by core (deps R1)');
+  const body = RUNTIME.slice(RUNTIME.indexOf('function Placeholder({'), RUNTIME.indexOf('function hintToMin'));
+  const run = (hook, props) => { const calls = []; const h = (type, p, ...kids) => ({ type, props: p || {}, kids: kids.filter(Boolean) });
+    const P = vm.runInNewContext('(' + body.trim() + ')', { h, KIVO: hook ? { __dcStates: { draw: (el, info) => calls.push([el, info]) } } : {} });
+    const tree = P(props); tree.kids.forEach((k) => { if (k.props.ref) k.props.ref('EL'); }); return { tree, calls }; };
+  let r = run(true, { name: 'Staffing', hintSize: '100%,1300px' });
+  assert.equal(r.tree.kids.length, 1); assert.equal(r.tree.kids[0].props.className, 'sc-ps'); assert.equal(r.calls[0][0], 'EL');
+  assert.equal(r.calls[0][1].name, 'Staffing'); assert.equal(r.calls[0][1].failed, false); assert.equal(r.calls[0][1].idle, false);
+  r = run(true, { name: 'Staffing', error: 'تعذّر عرض هذه الشاشة الآن', failed: true });
+  assert.deepEqual(r.tree.kids.map((k) => k.props.className), ['sc-ps'], 'a load failure: the component card alone, no placeholder text'); assert.equal(r.calls[0][1].failed, true);
+  r = run(true, { name: 'Staffing', error: 'انتهت الجلسة — سجّل الدخول', failed: false });
+  assert.deepEqual(r.tree.kids.map((k) => k.props.className), ['sc-placeholder-error', 'sc-ps'], 'session end: the text stays'); assert.equal(r.calls[0][1].idle, true, 'and the component draws nothing');
+  r = run(true, { name: '', error: 'اختر إدارة متاحة لحسابك' });
+  assert.deepEqual(r.tree.kids.map((k) => k.props.className), ['sc-placeholder-error'], 'department-context messages stay outside the component');
+  r = run(false, { name: 'Staffing', error: 'تعذّر عرض هذه الشاشة الآن', failed: true });
+  assert.deepEqual(r.tree.kids.map((k) => k.props.className), ['sc-placeholder-error'], 'no component registered ⇒ exactly the old placeholder');
+});

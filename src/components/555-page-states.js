@@ -69,7 +69,7 @@
   function draw(rec) {
     var el = rec.el, s = rec.spec, st = s.state;
     clearTimeout(rec.timer); rec.timer = 0; clear(el);
-    el.className = "ps" + (s.region ? " ps-region" : "");
+    el.classList.add("ps"); el.classList[s.region ? "add" : "remove"]("ps-region");      /* أصنافُ المضيف نفسِه (تملكها الصفحة) لا تُمسّ */
     attr(el, "data-ps", st); attr(el, "data-ps-shape", st === "loading" ? s.shape : null); attr(el, "dir", "rtl");
     attr(el, "role", st === "loading" || st === "refreshing" ? "status" : null);
     attr(el, "aria-busy", st === "loading" || st === "refreshing" ? true : null);
@@ -123,11 +123,16 @@
     rec.spec = s;
     if (sig !== rec.sig) {
       rec.sig = sig; draw(rec);
-      if (s.state === "ready") { rec.shown = false; if (prev === "loading" && wasShown) enter(s.content); }
+      if (s.state === "ready") { rec.shown = false; if (prev === "loading" && wasShown) arrive(el, s.content); }
     }
     return { state: function () { return rec.spec.state; }, shown: function () { return rec.shown; }, release: function () { clearTimeout(rec.timer); live = live.filter(function (r) { return r !== rec; }); } };
   }
 
+  /* content: عنصرُ المحتوى، أو "next" = كلُّ ما يلي المضيفَ من إخوته (المضيفُ يوضع قبل محتوى الصفحة) */
+  function arrive(el, content) {
+    if (content !== "next") { enter(content); return; }
+    for (var n = el.nextElementSibling; n; n = n.nextElementSibling) enter(n);
+  }
   /** الدخول الهادئ للمحتوى عند وصوله: عتامة + إزاحة ٨px (٠٫٤ ث) وتدرّج ٥٠ م.ث لأول عشرة صفوف — الصنفُ يُزال بعدها (لا transform باقٍ). */
   function enter(el) {
     if (!el || !el.classList || reduced()) return false;

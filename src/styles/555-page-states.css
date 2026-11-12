@@ -73,9 +73,9 @@
 .ps-bar > button{flex-shrink:0;min-height:44px;padding:0 var(--sp-4);border-radius:var(--r-md);border:1px solid var(--info-border);background:var(--bg-card);color:var(--info-text);font:600 var(--fs-sm)/1 var(--font-ui);cursor:pointer}
 
 /* ── بوابة الغلاف: مكانُ الشاشة يرسمه المكوّن (‎.sc-ps‎) فيتنحّى هيكلُ الغلاف القديم وحلقتُه ── */
-.sc-placeholder:has(> .sc-ps){height:auto !important;min-height:0;padding:0;background:transparent;overflow:visible}
-.sc-placeholder:has(> .sc-ps)::before,.sc-placeholder:has(> .sc-ps)::after{content:none !important}
-.bs-main > .sc-host > .sc-placeholder:has(> .sc-ps){min-height:420px;padding:0;background:transparent;margin:0 0 var(--sp-3)}
+.sc-placeholder:has(> .sc-ps:not([hidden])){height:auto !important;min-height:0;padding:0;background:transparent;overflow:visible}
+.sc-placeholder:has(> .sc-ps:not([hidden]))::before,.sc-placeholder:has(> .sc-ps:not([hidden]))::after{content:none !important}
+.bs-main > .sc-host > .sc-placeholder:has(> .sc-ps:not([hidden])){min-height:420px;padding:0;background:transparent;margin:0 0 var(--sp-3)}
 
 /* ── الدخول الهادئ: عتامة + ٨px (٠٫٤ ث)، وتدرّج ٥٠ م.ث لأول عشرة صفوف ── */
 .ps-enter{animation:ps-in .4s ease both}
