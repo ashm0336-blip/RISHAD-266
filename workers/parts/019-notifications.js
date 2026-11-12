@@ -2607,8 +2607,10 @@ async function nfPlanEvents(env, A, events, internal) {
     nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"]);
     var T = nfType(nfStr(it.type, 80, false), cfg);
     /* RISHAD-266 · issue #1 (owner decision): employee notifications are issued by the server alone, from the save it accepted
-       (nfEmployeePlan below). No client may emit one — whatever it holds, the platform administrator included. */
-    if (!internal && T.k === "emp") throw nfErr("notification-server-only", 403);
+       (nfEmployeePlan below). No client may emit one — whatever it holds, the platform administrator included.
+       It is dropped, not refused: a tab loaded before this release still runs the retired watcher and flushes its queue as one
+       batch; a refusal would lose the other events of that batch and log a false «denied» for every legitimate manager. */
+    if (!internal && T.k === "emp") return;
     if (!T.on) return;
     var d = it.dept || A.u.deptId || "",
       own = it.own || [];
@@ -2786,7 +2788,7 @@ function nfEmployeeEvents(A, d, before, after) {
     return e.eid || e.name;
   }
   function text(v) {
-    return String(v == null ? "" : v).slice(0, 4000);
+    return String(v == null ? "" : v).slice(0, 120); /* names are the actor's text: bounded before they reach another reader's feed */
   }
   if (o.length && !n.length) {
     var unit = (A.depts || []).filter(function (x) {

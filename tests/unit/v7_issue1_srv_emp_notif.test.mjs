@@ -119,7 +119,7 @@ for (const mode of ['legacy', 'enforce']) {
     if (mode === 'legacy') assert.ok((await x.feed('tst_dm1')).some((i) => i.type === 'emp_add' && i.srv === 1), 'and it is in the manager\'s feed');
     /* the retired browser emit is refused — it is no longer how the event is produced (e34fa23 enforce: 403 notification-scope for the legitimate manager) */
     const r = await x.emit('tst_dm1', 'emp_add');
-    assert.equal(r.status, 403); assert.equal(r.err, 'notification-server-only');
+    assert.equal(r.status, 200, 'dropped, not refused'); assert.equal(x.msgs().length, m.length, 'and it produced nothing');
     assert.equal(x.of('emp_add').length, 1, 'and adds nothing');
   });
 
@@ -161,11 +161,11 @@ for (const mode of ['legacy', 'enforce']) {
     const x = await mk(mode);
     for (const who of ['tst_fg', 'tst_m2', 'tst_imp', 'tst_dm1', 'tst_gm1', 'super']) for (const type of TYPES) {
       const before = x.denied(), r = await x.emit(who, type, { own: ['tst_e_emp1'] });
-      assert.equal(r.status, 403, who + ' ' + type + ' is refused'); assert.equal(r.err, 'notification-server-only', who + ' ' + type);
-      assert.equal(x.denied(), before + 1, 'a refused forged emit is recorded, as every refused emit is');
+      assert.equal(r.status, 200, who + ' ' + type + ' is dropped silently (a stale tab must not lose its batch nor raise a false alert)');
+      assert.equal(x.denied(), before, 'no «denied» row'); assert.deepEqual(x.msgs(), [], who + ' ' + type + ' produced no notification');
     }
     const batch = await x.api('tst_fg', '/api/notifications/act', { method: 'POST', body: { uid: 'tst_fg', op: 'emit-batch', events: [{ type: 'emp_wipe', dept: D, vars: {} }, { type: 'emp_del', dept: D, vars: {} }] } });
-    assert.equal(batch.status, 403, 'nor in a batch'); assert.equal(batch.j.err, 'notification-server-only');
+    assert.equal(batch.status, 200, 'nor in a batch: dropped');
     assert.deepEqual(x.msgs(), [], 'no employee notification exists');
     /* and the staff account cannot cause one through the save either: it holds no write on the register */
     const g = await x.api('tst_fg', '/api/operations/read?' + new URLSearchParams({ uid: 'tst_fg', keys: KE })), all = stored(x.env, KE);
@@ -222,3 +222,18 @@ test('V7 #1 srv: the browser observer has no employee-register watcher and emits
   assert.ok(!/emit\(\s*'emp_/.test(src), 'no emp_* emit');
   for (const k of ['bassam_auth_users_v1', 'bassam_staffing_v3', 'bassam_tasks_v1', 'bassam_dreport_v1', 'bassam_rounds_v1', 'bassam_plan_v1']) assert.ok(src.includes("WATCH['" + k + "'] ="), 'the watcher of ' + k + ' is untouched');
 });
+
+/* ── second independent review of 9a37718 ── */
+for (const mode of ['legacy', 'enforce']) {
+  test('V7 #1 srv · ' + mode + ': a stale tab\'s batch [st_lock, emp_edit] keeps its st_lock and raises no «denied»; a very long employee name is bounded in the notice', async () => {
+    const x = await mk(mode), before = x.denied();
+    const r = await x.api('tst_dm1', '/api/notifications/act', { method: 'POST', body: { uid: 'tst_dm1', op: 'emit-batch', events: [{ type: 'st_lock', dept: D, vars: { 'الشهر': 'TEST_ONLY' } }, { type: 'emp_edit', dept: D, own: ['tst_e_emp1'], vars: {} }] } });
+    assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 200));
+    assert.equal(x.env.DB.q("SELECT COUNT(*) AS n FROM notification_messages WHERE type='st_lock'")[0].n, 1, 'the unrelated event of the batch is stored'); assert.equal(x.of('emp_edit').length, 0, 'the employee event is dropped');
+    assert.equal(x.denied(), before, 'no false security row');
+    const evil = 'TEST_ONLY ' + 'عاجل: اتصل بالرقم 0500000000 '.repeat(120);
+    const a = await x.save('tst_dm1', (v) => v.concat([{ eid: 'tst_e_evil', name: evil, empno: '99123', type: 'T'.repeat(3000), work: 'TEST_ONLY مراقب' }]));
+    assert.equal(a.status, 200, JSON.stringify(a.j).slice(0, 200));
+    const m = x.of('emp_add'); assert.equal(m.length, 1); assert.ok(m[0].body.length < 320, 'bounded body: ' + m[0].body.length);
+  });
+}
