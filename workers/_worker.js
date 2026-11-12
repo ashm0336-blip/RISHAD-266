@@ -23554,6 +23554,7 @@ async function imgSync(env, A, list) {
            · the row is still exactly the one selected (st, ts);
            · no imgref row — the index of every typed record (plan · rounds · tasks … 019r) and of every key saved through imgSync;
            · no seized_item_photos row — seized photos live in their own table (0009) and may predate imgref;
+           · no award_records row whose picture / signature column IS the id — award saves keep no imgref (their pictures are stored inline);
            · no kv value contains the id — in any row, AND across any row boundary of a value (IMG_KV_JOIN: values are stored in 700 000-char rows);
            · imgref is known COMPLETE for the typed tables: meta.imgref_scan_v1 = 'done'. Records saved before this version were indexed by a
              scan that stopped at 5000 mentions, so until imgRefScan has re-read every typed resource and inserted what was dropped, nothing is condemned.
@@ -23565,6 +23566,7 @@ async function imgSync(env, A, list) {
    Ids of any shape are handled (the match is instr, never a GLOB pattern), so a malformed row can neither be skipped forever nor hold the queue. */
 var IMG_ORPHAN_GRACE = 30 * 864e5, IMG_CLAIM_TTL = 30 * 864e5, IMG_STAGE_TTL = 7 * 864e5, IMG_DEAD_LEASE = 20000;
 var IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 40, IMG_SWEEP_DEAD = 400, IMG_SWEEP_EVERY = 10 * 60000, IMG_SWEEP_EVERY_ADMIN = 60000;
+var IMG_OWN_IDX = 'CREATE INDEX IF NOT EXISTS imgown_st_ts ON imgown (st, ts)';
 var IMG_STAGE = 'stage', IMG_SCAN_KEY = 'imgref_scan_v1', IMG_SWEEP_KEY = 'img_sweep_at', IMG_STG_END = '~stg\u007f';
 function imgStageRow(ik) { return IMG_STG + ik; }
 /* the clock of a chunked upload: one imgown row per staged id ('stage' — never an image: its key starts with the staging prefix) */
@@ -23610,6 +23612,9 @@ function imgSnap(rows) { return JSON.stringify(rows.map(function (x) { return { 
 var IMG_SNAP_SAME = "EXISTS (SELECT 1 FROM json_each(?1) j WHERE json_extract(j.value, '$.i') = imgown.img AND json_extract(j.value, '$.s') = imgown.st AND json_extract(j.value, '$.t') = imgown.ts)";
 async function imgSweep(env, now, max, maxDead) {
   var B = imgBucket(env), out = { seen: 0, purged: 0, kept: 0, retry: 0, staged: 0, scan: 0 }, lease = Math.max(Date.now(), now), i;
+  /* finding 5: the selections below are range scans of imgown (st, ts). The index is created here — idempotent, one statement per pass — and not
+     by a numbered migration: a migration needs the operator's upgrade permit (052 migrateDb), and the sweep must not wait for an operator. */
+  await env.DB.prepare(IMG_OWN_IDX).run();
   /* abandoned chunked uploads: parts staged before this version get their clock now; the expired ones go, parts and clock, in one batch */
   await env.DB.prepare("INSERT OR IGNORE INTO imgown (img, st, k, uid, dept, ts) SELECT DISTINCT ?1 || substr(k, 6, instr(substr(k, 6), '~') - 1), 'stage', '', '', '', ?4 FROM imgs WHERE k >= ?2 AND k < ?3")
     .bind(IMG_STG, IMG_STG, IMG_STG_END, now).run();
@@ -23627,9 +23632,11 @@ async function imgSweep(env, now, max, maxDead) {
     .bind(JSON.stringify(dj.map(function (d) { return d && d.id; }).filter(function (x) { return typeof x === 'string' && x; })), IMG_GONE).run();
   var scanned = await imgRefScan(env); out.scan = scanned ? 1 : 0;
   var r = await env.DB.prepare("SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'dead' AND ts < ?3 ORDER BY ts LIMIT ?5) UNION ALL " +
-    "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE (st = 'orphan' AND ts < ?1) OR (st = 'claim' AND ts < ?2) ORDER BY ts LIMIT ?4)")
+    "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'orphan' AND ts < ?1 ORDER BY ts LIMIT ?4) UNION ALL " +
+    "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'claim' AND ts < ?2 ORDER BY ts LIMIT ?4)")
     .bind(now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max, maxDead || IMG_SWEEP_DEAD).all();
-  var L = (r && r.results) || [], dead = L.filter(function (x) { return x.st === 'dead'; }), cand = scanned ? L.filter(function (x) { return x.st !== 'dead'; }) : [], take = [];
+  var L = (r && r.results) || [], dead = L.filter(function (x) { return x.st === 'dead'; }), take = [];
+  var cand = scanned ? L.filter(function (x) { return x.st !== 'dead'; }).sort(function (a, b) { return a.ts - b.ts; }).slice(0, max) : [];   /* the oldest first, whichever kind */
   out.seen = dead.length + cand.length;
   if (dead.length) {
     var hd = await env.DB.prepare("UPDATE imgown SET ts = ?2 WHERE st = 'dead' AND " + IMG_SNAP_SAME + ' RETURNING img').bind(imgSnap(dead), lease).all();
@@ -23641,6 +23648,7 @@ async function imgSweep(env, now, max, maxDead) {
       ' AND (SELECT v FROM meta WHERE k = ?3) = ?4' +
       ' AND NOT EXISTS (SELECT 1 FROM imgref WHERE imgref.img = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +
+      ' AND NOT EXISTS (SELECT 1 FROM award_records w WHERE w.picture = imgown.img OR w.employee_signature = imgown.img OR w.approver_signature = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(kv.v, imgown.img) > 0)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(imgown.img) > 1' +
       ' AND instr(substr(a.v, -(length(imgown.img) - 1)) || substr(b.v, 1, length(imgown.img) - 1), imgown.img) > 0) RETURNING img')

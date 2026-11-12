@@ -68,7 +68,7 @@ both(test, 'condition (i) · a 31-day-old upload bound in the same save that tri
 function between(W, hook) {
   const DB = W.env.DB, prepare = DB.prepare.bind(DB); let fired = 0;
   DB.prepare = (sql) => { const st = prepare(sql);
-    if (/SELECT img, st, ts FROM imgown WHERE \(st = 'orphan' AND ts </.test(sql)) { const all = st.all.bind(st); st.all = async () => { const r = await all(); if (r.results.length) { fired++; hook(); } return r; }; }
+    if (/SELECT img, st, ts FROM imgown WHERE st = 'orphan' AND ts </.test(sql)) { const all = st.all.bind(st); st.all = async () => { const r = await all(); if (r.results.length) { fired++; hook(); } return r; }; }
     return st; };
   return { fired: () => fired, off: () => { DB.prepare = prepare; } };
 }
