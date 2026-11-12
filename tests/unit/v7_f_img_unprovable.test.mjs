@@ -37,9 +37,12 @@ for (const mode of MODES) for (const st of ['claim', 'orphan']) for (const shape
   });
 }
 
+/* third review, item D (v7_f_img_oddref.test.mjs): an odd id that NOTHING mentions is now swept — so the seven here are mentioned by a record (a legacy
+   kv value), which is what makes them unprovable-and-kept; the rest of this test is as it was */
 for (const mode of MODES) test('unprovable ids do not hold the queue: seven of them, older, and one ordinary abandoned upload — the ordinary one is swept, the seven stay [' + mode + ']', { timeout: 600000 }, async () => {
   const T = await scene(mode), { W, S, x, id } = T, odd = [], ok = id('q');
   for (let k = 0; k < 7; k++) { const i = 'IMG_' + x.toUpperCase() + '_Q' + k; await upload(W, S.mgr2, i); age(W, i, 40); odd.push(i); }
+  W.env.DB.db.prepare('INSERT OR REPLACE INTO kv (k, seq, v) VALUES (?, 0, ?)').run(dk(D2, 'notes'), JSON.stringify({ t: TAG, logos: odd }));
   await upload(W, S.mgr2, ok); age(W, ok, 31);
   await pass(T); await pass(T);
   assert.ok(gone(await state(W, ok)), 'the ordinary abandoned upload is deleted (the batch of 6 was not held by the seven)');

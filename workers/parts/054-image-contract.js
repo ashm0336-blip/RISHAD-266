@@ -328,8 +328,9 @@ async function imgSync(env, A, list) {
          chunk (IMG_SWEEP_CHUNK), so a pass that is cut keeps what it finished. A failed R2 delete, or a failed row batch, leaves the
          'dead' rows: the next pass retries them (IMG_DEAD_LEASE on ts keeps two passes, or a pass and a re-upload of the id, apart).
    A referenced orphan is not deleted: it turns 'amb' (the platform admin's), as before; a referenced stale upload gets its clock restarted.
-   Ids of any shape are handled (the match is instr, never a GLOB pattern), so a malformed row cannot hold the queue — but only an id of the
-   scanner's shape can be condemned (IMG_SCAN_ID_RX; see `odd` below): for any other id "no record mentions it" cannot be proven. */
+   Ids of any shape are handled (the match is instr, never a GLOB pattern), so a malformed row cannot hold the queue. An id outside the
+   scanner's shape (IMG_SCAN_ID_RX; see `odd` below) has no imgref row even when a typed record shows it, so for it the proof also reads the
+   typed records' text (opstxt) — at most IMG_SWEEP_ODD such ids a pass. */
 var IMG_ORPHAN_GRACE = 30 * 864e5, IMG_CLAIM_TTL = 30 * 864e5, IMG_STAGE_TTL = 7 * 864e5, IMG_DEAD_LEASE = 20000;
 var IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 40, IMG_SWEEP_EVERY = 10 * 60000, IMG_SWEEP_EVERY_ADMIN = 60000;
 /* how many condemned rows ONE pass takes on top of its candidates (second review, finding 4).
@@ -342,6 +343,9 @@ var IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 40, IMG_SWEEP_EV
    IMG_SWEEP_DEAD_ADMIN = 400 — the platform admin's overview (at most one pass a minute) and the pass a reset forces: what drains a large
    backlog (a reset over 1200 images: 3 passes). Under a small limit such a pass IS cut — and still keeps every chunk it finished. */
 var IMG_SWEEP_DEAD = 6, IMG_SWEEP_DEAD_ADMIN = 400, IMG_SWEEP_CHUNK = 4;
+/* third review, item D: how many ids of an odd shape ONE pass decides (each pass that has one reads every ops_* text column once — opstxt), and how
+   soon the other odd ids met by that pass are asked again */
+var IMG_SWEEP_ODD = 2, IMG_ODD_DEFER = 3600e3;
 var IMG_OWN_IDX = 'CREATE INDEX IF NOT EXISTS imgown_st_ts ON imgown (st, ts)';
 var IMG_STAGE = 'stage', IMG_SCAN_KEY = 'imgref_scan_v1', IMG_SWEEP_KEY = 'rl:img-sweep', IMG_STG_END = '~stg\u007f';
 function imgStageRow(ik) { return IMG_STG + ik; }
@@ -406,6 +410,26 @@ var IMG_ESC_CTE = 'WITH esc(d) AS MATERIALIZED (SELECT d FROM esclv WHERE d != p
   'escsrc(s) AS MATERIALIZED (SELECT v FROM kv WHERE instr(v, \'\\u00\') > 0 AND v GLOB ' + IMG_ESC_GLOB +
   ' UNION ALL SELECT ' + IMG_ESC_JOIN + ' FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + IMG_ESC_JOIN + ' GLOB ' + IMG_ESC_GLOB + '), ' +
   'esclv(d, p, n) AS (SELECT ' + IMG_DEC_SQL.replace('#', 's') + ', s, 1 FROM escsrc UNION ALL SELECT ' + IMG_DEC_SQL.replace('#', 'd') + ', d, n + 1 FROM esclv WHERE n < ' + IMG_DEC_MAX + ' AND d != p AND d GLOB ' + IMG_ESC_GLOB + ') ';
+/* third review, item D — opstxt(t): one text per row of every ops_* table, all its text columns joined by char(1) (no id holds it, so no match is
+   made across two columns): ops_nodes' keys (row_key · parent_key · member_key: a map key can be an id) and every *_text column of the entity tables.
+   The tables and columns are the worker's own (opPhysicalTables — server constants, never user input). Built once per isolate. */
+var IMG_OPS_TXT = null;
+function imgOpsTxt() {
+  if (IMG_OPS_TXT) return IMG_OPS_TXT;
+  var t = opPhysicalTables(), parts = [];
+  Object.keys(t).sort().forEach(function (tb) {
+    var cols = t[tb].filter(function (c) { return tb === 'ops_nodes' ? /_key$/.test(c) : /_text$/.test(c); });
+    if (cols.length) parts.push('SELECT ' + cols.map(function (c) { return "coalesce(" + c + ", '')"; }).join(" || char(1) || ") + ' FROM ' + tb);
+  });
+  IMG_OPS_TXT = parts.join(' UNION ALL ');
+  return IMG_OPS_TXT;
+}
+/* the deciding statement's WITH list: IMG_ESC_CTE, and with an odd-shape candidate the typed records too (their texts, and their escapes into escsrc) */
+function imgEscCte(withOps) {
+  if (!withOps) return IMG_ESC_CTE;
+  return IMG_ESC_CTE.replace("escsrc(s) AS MATERIALIZED (SELECT v FROM kv WHERE", "escsrc(s) AS MATERIALIZED (SELECT t FROM opstxt WHERE instr(t, '\\u00') > 0 AND t GLOB " + IMG_ESC_GLOB + " UNION ALL SELECT v FROM kv WHERE") +
+    ', opstxt(t) AS MATERIALIZED (' + imgOpsTxt() + ') ';
+}
 /* second review (LOW) + third review, item A — the object store is OPTIONAL (config/wrangler.toml ships with IMG_R2 commented out: every body is
    then inline in D1). Without a store that can delete (no binding · no delete · not an object store) the sweep still runs for everything that lives
    in D1 alone — inline bodies and staged parts, as before — and SKIPS only a row whose body is the object-store marker (IMG_R2_MARK): it is not
@@ -456,14 +480,19 @@ async function imgSweep(env, now, max, maxDead) {
   if (Array.isArray(dj)) await env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE st = 'orphan' AND dept != '' AND uid != ?2 AND dept NOT IN (SELECT value FROM json_each(?1))")
     .bind(JSON.stringify(dj.map(function (d) { return d && d.id; }).filter(function (x) { return typeof x === 'string' && x; })), IMG_GONE).run();
   /* second review, finding 1 — an id the reference scanner could not have matched (the upload accepts ^[A-Za-z0-9_]{1,128}$, imgIdsIn sees only
-     (img|szp)_[a-z0-9]+_[a-z0-9]+) is UNPROVABLE: a typed record can show it with no imgref row and no kv value. It is never condemned; its clock
-     restarts (the row keeps its kind and owner), so it neither holds the queue nor is asked about again before its next term. */
-  var odd = cand.filter(function (x) { return !IMG_SCAN_ID_RX.test(String(x.img)); });
+     (img|szp)_[a-z0-9]+_[a-z0-9]+) has no imgref row even when a typed record shows it. Third review, item D — it was then kept for ever, so any
+     uploader could make storage that is never reclaimed (what PUT accepts is unchanged). Now at most IMG_SWEEP_ODD such ids a pass are decided
+     by the same deciding statement, with one more proof: their literal text is in no typed record either (opstxt — every text column of every
+     ops_* table, read only by a pass that has such an id), nor in an escaped spelling there (its rows join escsrc). Found anywhere: kept,
+     its clock restarted, its row unchanged in kind and owner (it stays unprovable). Found nowhere: swept like any other. The others met in
+     this pass wait IMG_ODD_DEFER (their clock is set back to just under the delay), so they never hold the queue and are asked again soon. */
+  var odd = cand.filter(function (x) { return !IMG_SCAN_ID_RX.test(String(x.img)); }), oddAsk = odd.slice(0, IMG_SWEEP_ODD), oddWait = odd.slice(IMG_SWEEP_ODD);
   if (odd.length) {
-    cand = cand.filter(function (x) { return IMG_SCAN_ID_RX.test(String(x.img)); });
-    await env.DB.prepare("UPDATE imgown SET ts = ?2 WHERE st IN ('orphan', 'claim') AND " + IMG_SNAP_SAME).bind(imgSnap(odd), lease).run();
-    out.unprovable += odd.length;
-    logEv('info', 'img-sweep-unprovable', { why: 'id-shape', n: odd.length, rid: env.__rid });
+    if (oddWait.length) {
+      cand = cand.filter(function (x) { return oddWait.indexOf(x) < 0; });
+      await env.DB.prepare("UPDATE imgown SET ts = ?2 WHERE st IN ('orphan', 'claim') AND " + IMG_SNAP_SAME).bind(imgSnap(oddWait), lease - Math.min(IMG_ORPHAN_GRACE, IMG_CLAIM_TTL) + IMG_ODD_DEFER).run();
+    }
+    logEv('info', 'img-sweep-unprovable', { why: 'id-shape', n: odd.length, asked: oddAsk.length, rid: env.__rid });
   }
   /* the re-scan runs only when there is something to condemn (a platform with no candidate never pays for it, and writes nothing) */
   if (cand.length && !(await imgRefScan(env))) cand = []; else if (cand.length) out.scan = 1;
@@ -474,7 +503,8 @@ async function imgSweep(env, now, max, maxDead) {
   }
   if (cand.length) {
     var snap = imgSnap(cand);
-    var hc = await env.DB.prepare(IMG_ESC_CTE + "UPDATE imgown SET st = 'dead', k = '', ts = ?2 WHERE " + IMG_SNAP_SAME +
+    var oddJs = JSON.stringify(oddAsk.map(function (x) { return x.img; }));
+    var hcS = env.DB.prepare(imgEscCte(oddAsk.length > 0) + "UPDATE imgown SET st = 'dead', k = '', ts = ?2 WHERE " + IMG_SNAP_SAME +
       ' AND (SELECT v FROM meta WHERE k = ?3) = ?4' +
       ' AND NOT EXISTS (SELECT 1 FROM imgref WHERE imgref.img = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +
@@ -482,14 +512,20 @@ async function imgSweep(env, now, max, maxDead) {
       ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(kv.v, imgown.img) > 0)' +
       ' AND NOT EXISTS (SELECT 1 FROM esc WHERE instr(esc.d, imgown.img) > 0) AND NOT EXISTS (SELECT 1 FROM escdeep)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(imgown.img) > 1' +
-      ' AND instr(substr(a.v, -(length(imgown.img) - 1)) || substr(b.v, 1, length(imgown.img) - 1), imgown.img) > 0) RETURNING img')
-      .bind(snap, lease, IMG_SCAN_KEY, 'done').all();
+      ' AND instr(substr(a.v, -(length(imgown.img) - 1)) || substr(b.v, 1, length(imgown.img) - 1), imgown.img) > 0)' +
+      (oddAsk.length ? ' AND (imgown.img NOT IN (SELECT value FROM json_each(?5)) OR NOT EXISTS (SELECT 1 FROM opstxt WHERE instr(opstxt.t, imgown.img) > 0))' : '') +
+      ' RETURNING img');
+    var hc = await hcS.bind.apply(hcS, [snap, lease, IMG_SCAN_KEY, 'done'].concat(oddAsk.length ? [oddJs] : [])).all();
     var condemned = ((hc && hc.results) || []).map(function (x) { return x.img; });
     take.push.apply(take, condemned);
     if (condemned.length < cand.length) {                                  /* re-bound meanwhile (no row matches) — or a record mentions it */
-      var hk = await env.DB.prepare("UPDATE imgown SET st = CASE WHEN st = 'orphan' THEN 'amb' ELSE st END, ts = CASE WHEN st = 'claim' THEN ?2 ELSE ts END WHERE st IN ('orphan', 'claim') AND " + IMG_SNAP_SAME + ' RETURNING img')
-        .bind(snap, lease).all();
-      out.kept = ((hk && hk.results) || []).length;
+      /* an unprovable id (odd shape) found somewhere keeps its kind and owner; only its clock restarts */
+      var hk = await env.DB.prepare("UPDATE imgown SET st = CASE WHEN st = 'orphan' AND img NOT IN (SELECT value FROM json_each(?3)) THEN 'amb' ELSE st END," +
+        " ts = CASE WHEN st = 'claim' OR img IN (SELECT value FROM json_each(?3)) THEN ?2 ELSE ts END WHERE st IN ('orphan', 'claim') AND " + IMG_SNAP_SAME + ' RETURNING img')
+        .bind(snap, lease, oddJs).all();
+      var hkL = ((hk && hk.results) || []).map(function (x) { return x.img; });
+      out.kept = hkL.length;
+      out.unprovable += hkL.filter(function (x) { return oddAsk.some(function (o) { return o.img === x; }); }).length;
     }
   }
   /* one R2 call per object (a failed one keeps ITS row for the next pass and stops nobody else). Second review, finding 4: the rows leave in chunks

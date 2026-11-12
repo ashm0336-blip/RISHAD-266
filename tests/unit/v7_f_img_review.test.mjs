@@ -84,21 +84,28 @@ both(test, 'finding 2 · PUT /api/img/<id>: an id outside letters, digits and "_
   }
 });
 
-/* second review, finding 1 (v7_f_img_unprovable.test.mjs): an id the reference scanner cannot match is never condemned — a typed record could show it
-   with nothing the sweep can look at. This test asserted until then that the malformed rows are deleted too; that half is now the opposite, on purpose:
-   they are KEPT (rows and objects), and still do not hold the queue. */
-both(test, 'finding 2 · 41 malformed rows left by the old PUT, older than every delay, do not hold the queue: a valid stale upload is swept; they are unprovable and kept', async (mode) => {
+/* second review, finding 1 (v7_f_img_unprovable.test.mjs): an id the reference scanner cannot match was never condemned — a typed record could show it
+   with nothing the sweep could look at; this test then asserted that the malformed rows are KEPT. Third review, item D (v7_f_img_oddref.test.mjs):
+   kept for ever meant storage nobody could reclaim, so the sweep now looks for such an id's literal text everywhere references live. This test
+   now asserts that again, on purpose: the UNREFERENCED malformed rows are swept (rows and objects) — at most 2 per pass, the others set aside for an
+   hour so they still do not hold the queue — and a malformed row that a record DOES mention is kept as it was. */
+both(test, 'finding 2 · 41 malformed rows left by the old PUT, older than every delay, do not hold the queue: a valid stale upload is swept; the unreferenced ones are swept, a referenced one is kept', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, bad = [], now = Date.now();
   for (let k = 0; k < 41; k++) { const b = 'img_bad-' + T.x + '.' + k; bad.push(b);
     raw(W).prepare("INSERT INTO imgown (img, st, k, uid, dept, ts) VALUES (?, 'claim', '', 'tst_e2', ?, ?)").run(b, D2, now - 60 * 864e5 - k);
     raw(W).prepare("INSERT INTO imgs (k, seq, v) VALUES (?, 0, '~r2~')").run(b); await W.env.IMG_R2.put('img/' + b, PNG); }
+  const held = bad[5];                                                         /* a legacy record mentions it (the match is by text: had it been bad[40], whose text holds bad[4]'s, bad[4] would be kept too) */
+  raw(W).prepare('INSERT OR REPLACE INTO kv (k, seq, v) VALUES (?, 0, ?)').run(dk(D2, 'notes'), JSON.stringify({ t: TAG, logo: held }));
   const good = id('stale'); await upload(W, S.mgr2, good); age(W, good, 31);
-  for (let k = 0; k < 9; k++) await pass(T);
+  const count = () => W.env.DB.q("SELECT COUNT(*) n FROM imgown WHERE img LIKE 'img_bad-%'")[0].n;
+  let prev = count();
+  for (let k = 0; k < 9; k++) { await pass(T); const c = count(); assert.ok(prev - c <= 2, 'at most 2 malformed rows decided per pass'); prev = c; }
   assert.ok(gone(await state(W, good)), 'the valid 31-day-old upload is swept · ' + JSON.stringify(await state(W, good)).replace(PNG, 'PNG'));
-  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM imgown WHERE img LIKE 'img_bad-%' AND st = 'claim'")[0].n, 41, 'the malformed rows are kept as they were (unprovable — never condemned)');
-  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM imgs WHERE k LIKE 'img_bad-%'")[0].n, 41);
-  for (const b of bad) assert.ok(await W.env.IMG_R2.get('img/' + b), 'and their objects');
-  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM imgown WHERE img LIKE 'img_bad-%' AND ts > ?", now - 864e5)[0].n, 41, 'each was met once and its clock restarted (not asked about again before its next term)');
+  for (let k = 0; k < 40 && count() > 1; k++) { W.env.DB.exec("UPDATE imgown SET ts = ts - 3700000 WHERE img LIKE 'img_bad-%'"); await pass(T); }
+  assert.equal(count(), 1, "every unreferenced malformed row is swept · " + JSON.stringify(W.env.DB.q("SELECT st, COUNT(*) n, MIN(ts) - " + Date.now() + " a FROM imgown WHERE img LIKE 'img_bad-%' GROUP BY st")));
+  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM imgs WHERE k LIKE 'img_bad-%'")[0].n, 1);
+  for (const b of bad) if (b !== held) assert.equal(await W.env.IMG_R2.get('img/' + b), null, 'and its object');
+  const h = await state(W, held); assert.equal(h.st, 'claim', 'the referenced malformed row is kept as it was'); assert.equal(h.r2, PNG, 'with its object');
 });
 
 /* ── finding 4 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
