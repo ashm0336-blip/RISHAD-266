@@ -3110,6 +3110,18 @@ var NF_TYPES = {
     txt: "حُذف {الاسم} من الإدارة بواسطة {المُعدّل}",
     go: "افتح سجل الحركة",
   },
+  emp_delm: {
+    id: "emp_delm",
+    k: "emp",
+    name: "حذف موظفين بالجملة",
+    when: "فور الحذف",
+    on: true,
+    to: ["mgr", "sys"],
+    lvl: "act",
+    chan: "bell",
+    txt: "حُذف {العدد} موظفاً من الإدارة بواسطة {المُعدّل}",
+    go: "افتح سجل الحركة",
+  },
   emp_gap: {
     id: "emp_gap",
     k: "emp",
@@ -4691,6 +4703,14 @@ function nfPage(A, d, type, cat, act) {
   if (A.u.role === "super") return true;
   if (page.indexOf("admin/") === 0 && act === "view" && isMgrOf(A, d)) return true;
   if (A.enf) {
+    /* RISHAD-266 · owner decision («مدير الإدارة في enforce يقرأ إشعارات الموظفين الموجّهة للمديرين»): «emps» is a container page with
+       no registry atom, so the lookup below never answered for the «emp» category and no manager read these in enforce. READ only,
+       and only for the manager role of this unit: the legacy rule itself (the manager's sheet holds «view» on the container — a
+       manager with his own narrower sheet does not) ∧ the enforce key emp.view still held (an explicit «minus» keeps dropping it).
+       Scope and the unit ceiling were checked above. Nothing else is opened: a non-manager, whatever key or leaf he holds, gets
+       false as before, and the emit path never comes here for this category (clients are dropped, the server plans internally). */
+    if (cat === "emp" && page === NF_CAP.emp)
+      return act === "view" && isMgrOf(A, d) && actsHeldOn(A, d, page, [act]) && enfHeld(A, d, "emp.view");
     var atom = KIVO_REGISTRY.atoms[page + ":" + act];
     return !!(
       atom &&
@@ -5821,7 +5841,8 @@ async function nfEmitEvents(env, A, events, internal, extra) {
    request issues nothing (its receipt returns before any plan is built); each event also carries a `once` key of the request.
    The rules are the retired browser watcher's (src/services/442 WATCH['bassam_employees_v1']) verbatim — conditions, variables
    and wording: wipe when a non-empty register becomes empty (and nothing else) · import when five or more records are added,
-   else one addition per record · one deletion per removed record · per kept record: «type» when the employment type changed,
+   else one addition per record · one aggregated deletion notice (emp_delm — owner decision, not the watcher's) when five or
+   more records are removed, else one deletion per removed record · per kept record: «type» when the employment type changed,
    «edit» for the other announced fields (never the e-mail). «المُعدّل» is the actor's name. Who READS them is not decided here. */
 var NF_EMP_RES = "bassam_employees_v1";
 var NF_EMP_FIELDS = {
@@ -5897,9 +5918,14 @@ function nfEmployeeEvents(A, d, before, after) {
     added.forEach(function (e) {
       events.push({ type: "emp_add", dept: d, vars: { الاسم: text(e.name), النوع: text(e.type || "") } });
     });
-  removed.forEach(function (e) {
-    events.push({ type: "emp_del", dept: d, vars: { الاسم: text(e.name), المُعدّل: text(who) } });
-  });
+  /* owner decision («الحذف بالجملة: إشعار واحد مجمّع»): five or more removed by one save are ONE notice with the count and the
+     actor, no names — as five or more added are one emp_imp. One emp_del per record filled the unit feed (400-row retention)
+     and evicted everything else. Fewer than five stay one emp_del each; a full wipe stays the single emp_wipe above. */
+  if (removed.length >= 5) events.push({ type: "emp_delm", dept: d, vars: { العدد: removed.length, المُعدّل: text(who) } });
+  else
+    removed.forEach(function (e) {
+      events.push({ type: "emp_del", dept: d, vars: { الاسم: text(e.name), المُعدّل: text(who) } });
+    });
   both.forEach(function (p) {
     var a = p[0],
       b = p[1],

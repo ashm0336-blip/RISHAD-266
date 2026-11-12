@@ -12,8 +12,12 @@
    enforce (the only sender e34fa23 accepted there) — and then reading /api/notifications as every probed account. The same
    measurement can be repeated at any time against that worker:
      V7_ISSUE1_BASELINE=1 KIVO_WORKER=<e34fa23 _worker.js> node --test tests/unit/v7_issue1_srv_emp_notif.test.mjs
-   (in that mode only the «recipients» tests run, driven by the client emit instead of the save). Who can READ is not changed
-   here: in enforce nobody but the platform administrator and the employee himself read these on e34fa23, and that stays so. */
+   (in that mode only the «recipients» tests run, driven by the client emit instead of the save).
+
+   OWNER DECISION 1 (after issue #1) changed who READS in enforce, deliberately: on e34fa23 nobody but the platform administrator
+   and the employee himself read these there; now the unit manager and the general manager of the node read the manager-targeted
+   ones exactly as in legacy (tests/unit/v7_d1_enforce_mgr_emp_notif.test.mjs). RECIPIENTS.enforce is therefore the legacy row —
+   the e34fa23 enforce measurement is kept as RECIPIENTS.enforce_e34fa23 and is what the BASELINE mode compares against. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -32,8 +36,9 @@ const ACC = [['tst_dm1', '0000000101', '70101'], ['tst_dm2', '0000000102', '7010
 const RECIPIENTS = {
   legacy: { emp_add: ['tst_dm1', 'tst_gm1'], emp_edit: ['tst_dm1', 'tst_emp1', 'tst_gm1'], emp_type: ['tst_dm1', 'tst_emp1', 'tst_gm1'],
     emp_del: ['super', 'tst_dm1', 'tst_gm1'], emp_imp: ['super', 'tst_dm1', 'tst_gm1'], emp_wipe: ['super'] },
-  enforce: { emp_add: [], emp_edit: ['tst_emp1'], emp_type: ['tst_emp1'], emp_del: ['super'], emp_imp: ['super'], emp_wipe: ['super'] },
+  enforce_e34fa23: { emp_add: [], emp_edit: ['tst_emp1'], emp_type: ['tst_emp1'], emp_del: ['super'], emp_imp: ['super'], emp_wipe: ['super'] },
 };
+RECIPIENTS.enforce = BASELINE ? RECIPIENTS.enforce_e34fa23 : RECIPIENTS.legacy;   /* owner decision 1: enforce reads as legacy */
 
 let seq = 0;
 async function mk(mode) {
@@ -92,7 +97,7 @@ for (const mode of ['legacy', 'enforce']) {
     }
     for (const type of ['emp_add', 'emp_edit', 'emp_type', 'emp_del', 'emp_imp']) {
       assert.equal(x.of(type).length, 1, 'exactly one ' + type + ' message: ' + JSON.stringify(x.msgs().map((m) => m.type)));
-      assert.deepEqual(await x.readers(type), want[type], type + ' recipients are those measured on e34fa23');
+      assert.deepEqual(await x.readers(type), want[type], type + ' recipients are those measured on e34fa23 (enforce: the legacy row — owner decision 1)');
     }
     /* mandatory test 2: the manager-flagged account with a view-only sheet reads none of the manager-targeted ones (as on e34fa23) */
     assert.deepEqual((await x.feed('tst_m2')).filter((m) => TYPES.includes(m.type)), [], 'tst_m2 reads no emp_* (identical to e34fa23)');
@@ -116,7 +121,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal(m[0].body, 'أُضيف TEST_ONLY · جديد 1 (TEST_ONLY رسمي) إلى موظفي الإدارة', 'wording as the browser emitted it');
     assert.equal(m[0].author_key, 'mgr:' + D); assert.equal(m[0].author_name, DM1);
     assert.equal(x.denied(), before, 'no false security alert');
-    if (mode === 'legacy') assert.ok((await x.feed('tst_dm1')).some((i) => i.type === 'emp_add' && i.srv === 1), 'and it is in the manager\'s feed');
+    assert.ok((await x.feed('tst_dm1')).some((i) => i.type === 'emp_add' && i.srv === 1), 'and it is in the manager\'s feed');
     /* the retired browser emit is refused — it is no longer how the event is produced (e34fa23 enforce: 403 notification-scope for the legitimate manager) */
     const r = await x.emit('tst_dm1', 'emp_add');
     assert.equal(r.status, 200, 'dropped, not refused'); assert.equal(x.msgs().length, m.length, 'and it produced nothing');
