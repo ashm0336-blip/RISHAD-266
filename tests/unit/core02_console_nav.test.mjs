@@ -48,7 +48,7 @@ test('(1) the one map: nine tabs and nine platform sections once each, five grou
   deq(N.plat.slice(0, 3).map((x) => x[2]), ['هوية المنصة', 'الوحدات', 'التنبيهات والتعاميم'], 'the three most-used settings first');
   /* the labels are the titles the admin page gives itself (_conHead · plVals) */
   for (const [g, items] of Object.entries(N)) for (const x of items) {
-    const re = x[0] === 'plat' ? new RegExp('"' + x[1] + '",\\s*"' + x[2] + '"') : new RegExp('\\b' + x[0] + ': \\[(""|"' + g + '"), "' + x[2] + '"\\]');
+    const re = x[0] === 'plat' ? new RegExp('"' + x[1] + '",\\s*"' + x[2] + '"') : new RegExp('\\["' + x[0] + '", (""|"' + g + '"), "' + x[2] + '", [01]\\]');   /* V7 P4: the titles live in the one tab list CON_TABS() [key · group · title · server-only] that _conHead reads */
     assert.match(L, re, g + ': ' + x[0] + (x[1] ? '/' + x[1] : '') + ' is titled «' + x[2] + '» on its own page');
   }
   /* review of S10: PL_KEYS is derived from the one section list (PL_SECS), which also titles each section's page */

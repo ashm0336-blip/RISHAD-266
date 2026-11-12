@@ -480,6 +480,7 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 }
 @media (max-width:900px){.bs-ovgrid{grid-template-columns:1fr!important}}
 @media (max-width:640px){
+.adm-pm-stat{white-space:normal}.adm-pm-keys{padding-inline-start:34px}.adm-pm-pnl{padding-inline-start:44px}
   .adm-ov-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .adm-ov-stats{grid-template-columns:minmax(0,1fr)}
   .adm-flt{padding:10px 12px}.adm-flt-r{grid-template-columns:minmax(0,1fr);gap:4px}.adm-flt-l{padding-top:0}
@@ -518,4 +519,37 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 .ed-rev .ed-add li::marker{content:"+ ";color:var(--success-text)}
 .ed-rev .ed-drop li::marker{content:"− ";color:var(--danger-text)}
 .ed-rev .ed-lb{font-weight:700;color:var(--text-secondary)}
+/* V7 P4 · خريطة الأنظمة والصلاحيات (تبويب «خريطة الصلاحيات») — شريطُ العدسة والشجرةُ للقراءة (أصنافٌ على الرموز الدلالية؛ صفوفُ الحاوية والورقة والرقاقة بنمط الشجرة المشترك) */
+.adm-pm-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 16px;border-bottom:1px solid var(--border-subtle)}
+.adm-pm-sel{flex:0 1 260px;max-width:100%}
+.adm-pm-sub{flex:1 1 260px;min-width:0;font-size:var(--fs-sm);color:var(--text-muted);line-height:1.7}
+.adm-pm-stat{font-size:var(--fs-xs);color:var(--text-faint);font-feature-settings:"tnum";white-space:nowrap}
+.adm-pm-tree{overflow:hidden}
+.adm-pm-cnt{font-size:10.5px;color:var(--text-faint);white-space:nowrap;font-feature-settings:"tnum"}
+.adm-pm-route{font-size:10px;color:var(--brand-fg);direction:ltr;unicode-bidi:isolate;white-space:nowrap;font-feature-settings:"tnum"}
+.adm-pm-req{font-size:10.5px;color:var(--text-muted);min-width:0;line-height:1.7}
+.adm-pm-req[data-tone="warn"],.adm-pm-tag[data-tone="warn"]{color:var(--warning-text)}
+.adm-pm-grp{display:flex;align-items:center;gap:8px;padding:9px 12px 3px;font-size:9.5px;font-weight:800;color:var(--text-faint);letter-spacing:.05em;border-bottom:1px solid var(--border-subtle)}
+.adm-pm-grp i{flex:1;height:1px;background:var(--border-subtle)}
+.adm-pm-ic{width:20px;height:20px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--bg-surface-3);color:var(--text-faint)}
+[data-on="true"]>.adm-pm-ic{background:var(--brand-soft);color:var(--brand-deep)}
+.adm-pm-x svg{transition:transform .2s}
+.adm-pm-x[aria-expanded="true"] svg{transform:rotate(180deg)}
+.adm-pm-tag{font-size:9.5px;border-radius:6px;padding:1px 7px;flex-shrink:0;white-space:nowrap;color:var(--text-muted);background:var(--neutral-soft);border:1px solid var(--border-strong)}
+.adm-pm-tag[data-tone="warn"]{background:var(--warning-soft);border-color:var(--warning-border)}
+.adm-pm-sys,.adm-pm-pnl{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border-subtle);color:var(--text-primary)}
+.adm-pm-sys{padding-inline-start:26px;background:var(--bg-surface-2);font-size:11.5px}
+.adm-pm-sys[data-off="true"]{opacity:.6}
+.adm-pm-pnl{padding-inline-start:70px;font-size:12.5px}
+.adm-pm-bdg{font-size:9px;font-weight:700;border-radius:6px;padding:1px 7px;flex-shrink:0;white-space:nowrap;color:var(--brand-deep);background:var(--brand-soft);border:1px solid var(--brand-glow)}
+.adm-pm-bdg[data-tone="warn"]{color:var(--warning-text);background:var(--warning-soft);border-color:var(--warning-border)}
+.adm-pm-sp{width:20px;flex-shrink:0}
+.adm-pm-some{width:9px;height:2.5px;border-radius:2px;background:var(--brand-primary)}
+.adm-pm-keys{padding:8px 12px 10px;padding-inline-start:66px;border-bottom:1px solid var(--border-subtle);background:var(--bg-surface-2)}
+.adm-pm-note{font-size:10.5px;color:var(--text-muted);margin-bottom:6px;line-height:1.8}
+.adm-pm-chips{display:flex;flex-wrap:wrap;gap:5px}
+.adm-pm-chips code{font:500 9px ui-monospace,Menlo,Consolas,monospace;color:var(--text-faint);direction:ltr;unicode-bidi:isolate}
+.adm-pl-mt[data-mod-why]{display:block}
+[data-mod]{flex-wrap:wrap}
+[data-mod]>.adm-f1{flex:1 1 190px;min-width:0}
 </style>

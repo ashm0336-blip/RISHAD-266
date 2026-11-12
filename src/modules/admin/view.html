@@ -327,6 +327,75 @@
     </sc-for>
   </section>
 </div>
+<section class="bs-card adm-card" aria-label="خريطة الأنظمة والصلاحيات" data-pm="map">
+  <div class="adm-ov-hd"><div><h3>خريطة الأنظمة والصلاحيات</h3><small>النظام ← الصفحات ← التبويبات واللوحات والعدسات ← المفاتيح — الشجرةُ نفسُها التي تُحرَّر بها السقوف وصلاحيات الحسابات، وهي المرجع</small></div>
+    <sc-if value="{{pmMapOn}}" hint-placeholder-val="{{ false }}"><div role="group" aria-label="عرض الخريطة" class="adm-tools adm-chips"><sc-for list="{{pmMapLenses}}" as="k" hint-placeholder-count="3"><button type="button" class="adm-chip" data-pm-lens="{{k.k}}" aria-pressed="{{k.on}}" onClick="{{k.go}}">{{k.t}}</button></sc-for></div></sc-if></div>
+  <sc-if value="{{pmMapOff}}" hint-placeholder-val="{{ false }}"><div class="adm-note" data-pm="map-off">{{pmMapWhy}}</div></sc-if>
+  <sc-if value="{{pmMapOn}}" hint-placeholder-val="{{ false }}">
+  <div class="adm-pm-bar">
+    <sc-if value="{{pmMapCapOn}}" hint-placeholder-val="{{ false }}"><select class="adm-q adm-pm-sel" data-pm="dept" value="{{pmMapDid}}" onChange="{{pmMapSetDid}}" aria-label="الوحدة"><sc-for list="{{pmMapDepts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></sc-if>
+    <sc-if value="{{pmMapUserOn}}" hint-placeholder-val="{{ false }}"><select class="adm-q adm-pm-sel" data-pm="user" value="{{pmMapUid}}" onChange="{{pmMapSetUid}}" aria-label="الحساب"><sc-for list="{{pmMapUsers}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></sc-if>
+    <span class="adm-pm-sub" data-pm="sub">{{pmMapSub}}</span>
+    <span class="adm-pm-stat" data-pm="stat">{{pmMapStat}}</span>
+    <button type="button" data-t24="expall" onClick="{{pmMapExpAll}}" class="adm-pl-lk">{{pmMapExpLbl}}</button>
+  </div>
+  <div data-bs="permtree24" data-t24="map" class="adm-pm-tree">
+    <sc-for list="{{pmMapRows}}" as="q" hint-placeholder-count="9">
+    <sc-if value="{{q.isGroup}}" hint-placeholder-val="{{ false }}">
+    <div class="adm-pm-grp"><span>{{q.name}}</span><i></i></div>
+    </sc-if>
+    <sc-if value="{{q.isCont}}" hint-placeholder-val="{{ true }}">
+    <div data-t24c="{{q.key}}" data-cls="{{q.cls}}" data-on="{{q.on}}" onClick="{{q.expand}}" style="{{q.rowStyle}}">
+      <span class="adm-pm-ic"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-44077fec"></svg></span>
+      <span data-t24="name" style="{{q.nameStyle}}">{{q.name}}</span>
+      <span data-t24="badge" style="{{q.badgeStyle}}">{{q.badge}}</span>
+      <sc-if value="{{q.platOff}}" hint-placeholder-val="{{ false }}"><span class="adm-pm-tag" title="أُطفئت من إعدادات المنصة (القوائم أو الوحدات) — لا تظهر في القائمة ولا تُمنح">مطفأة من المنصة</span></sc-if>
+      <span class="adm-f1"></span>
+      <span title="{{q.dotTip}}" style="{{q.dotStyle}}"></span>
+      <span class="adm-pm-cnt">{{q.countTxt}}</span>
+      <button type="button" class="adm-pm-x" onClick="{{q.expand}}" title="{{q.expTip}}" aria-label="{{q.expTip}}" aria-expanded="{{q.expanded}}" style="{{q.expStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-c92915c6"></svg></button>
+    </div>
+    </sc-if>
+    <sc-if value="{{q.isSys}}" hint-placeholder-val="{{ false }}">
+    <div data-t24s="{{q.key}}" data-cls="{{q.cls}}" data-off="{{q.off}}" class="adm-pm-sys"><b data-t24="name">{{q.name}}</b><span data-t24="badge" class="adm-pm-bdg">{{q.badge}}</span><span class="adm-f1"></span><span class="adm-pm-cnt">{{q.actTxt}}</span></div>
+    </sc-if>
+    <sc-if value="{{q.isPanel}}" hint-placeholder-val="{{ false }}">
+    <div data-t24p="{{q.key}}" data-cls="{{q.cls}}" class="adm-pm-pnl"><b data-t24="name">{{q.name}}</b><span data-t24="badge" class="adm-pm-bdg" data-tone="warn">{{q.badge}}</span><sc-if value="{{q.routeOn}}" hint-placeholder-val="{{ true }}"><span data-t24="route" class="adm-pm-route">{{q.route}}</span></sc-if><span data-t24="req" class="adm-pm-req">{{q.reqTxt}}</span></div>
+    </sc-if>
+    <sc-if value="{{q.isLeaf}}" hint-placeholder-val="{{ false }}">
+    <div data-t24l="{{q.key}}" data-cls="{{q.cls}}" style="{{q.rowStyle}}">
+      <sc-if value="{{q.chkOn}}" hint-placeholder-val="{{ true }}">
+      <span data-t24="leafchk" role="img" title="{{q.chkTip}}" aria-label="{{q.chkTip}}" style="{{q.chkStyle}}">
+        <sc-if value="{{q.all}}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></sc-if>
+        <sc-if value="{{q.some}}" hint-placeholder-val="{{ false }}"><i class="adm-pm-some"></i></sc-if>
+      </span>
+      </sc-if>
+      <sc-if value="{{q.chkOff}}" hint-placeholder-val="{{ false }}"><span class="adm-pm-sp"></span></sc-if>
+      <span data-t24="name" onClick="{{q.open}}" style="{{q.nameStyle}}">{{q.name}}</span>
+      <span data-t24="badge" style="{{q.badgeStyle}}">{{q.badge}}</span>
+      <sc-if value="{{q.routeOn}}" hint-placeholder-val="{{ true }}"><span data-t24="route" class="adm-pm-route">{{q.route}}</span></sc-if>
+      <sc-if value="{{q.out}}" hint-placeholder-val="{{ false }}"><span class="adm-pm-tag" data-tone="warn">{{q.outTxt}}</span></sc-if>
+      <sc-if value="{{q.note2On}}" hint-placeholder-val="{{ false }}"><span class="adm-pm-req" data-tone="warn">{{q.note2}}</span></sc-if>
+      <sc-if value="{{q.reqOn}}" hint-placeholder-val="{{ false }}"><span data-t24="req" class="adm-pm-req">{{q.reqTxt}}</span></sc-if>
+      <span class="adm-f1"></span>
+      <span data-t24="cnt" class="adm-pm-cnt">{{q.countTxt}}</span>
+      <button type="button" data-t24="open" onClick="{{q.open}}" title="{{q.openTip}}" aria-label="{{q.openTip}}" style="{{q.openStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="{{q.chev}}" data-i="i-c92915c6"></svg></button>
+    </div>
+    </sc-if>
+    <sc-if value="{{q.isKeys}}" hint-placeholder-val="{{ false }}">
+    <div data-t24keys="{{q.key}}" class="adm-pm-keys">
+      <sc-if value="{{q.noteOn}}" hint-placeholder-val="{{ false }}"><div class="adm-pm-note">{{q.note}}</div></sc-if>
+      <div class="adm-pm-chips">
+        <sc-for list="{{q.keys}}" as="k" hint-placeholder-count="5">
+        <span data-t24k="{{k.k}}" data-kind="{{k.kind}}" data-on="{{k.aria}}" title="{{k.tip}}" style="{{k.style}}"><i style="{{k.box}}"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" data-i="i-c37d9e39"></svg></i>{{k.name}}<sc-if value="{{k.sens}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg></sc-if><code>{{k.code}}</code></span>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+    </sc-for>
+  </div>
+  </sc-if>
+</section>
 <section class="bs-card adm-card" aria-label="مصفوفة الصلاحيات">
   <div class="adm-ov-hd"><div><h3>مصفوفة الصلاحيات</h3><small>ما يقرّره محرّك الصلاحيات لكل حساب في إدارته (مدير الإدارة العامة: في أيٍّ من إدارات فرعه · مسؤول المنصة: في الإدارة النشطة) — الخلية: <b>ع</b> عرض · <b>ت</b> تعديل · <b>ا</b> اعتماد · <b>ص</b> تصدير</small></div>
     <div class="adm-tools"><input type="search" class="adm-q" style="width:200px;flex:0 1 200px" value="{{pmQ}}" onChange="{{pmOnQ}}" placeholder="بحث بالاسم…" aria-label="بحث بالاسم…"><button type="button" class="bs-btn adm-sm" onClick="{{pmExport}}">تصدير</button></div></div>
@@ -342,7 +411,7 @@
     </div>
   </div>
   <sc-if value="{{pmCutOn}}" hint-placeholder-val="{{ false }}"><div role="status" class="adm-note" data-tone="warn">{{pmCut}}</div></sc-if>
-  <sc-if value="{{pmAzOn}}" hint-placeholder-val="{{ false }}"><div class="adm-note">في وضع الإنفاذ يحكم الخادم أيضاً بمفاتيح الصلاحيات: المنح والسحب الصريحان لموظفٍ وبوابات العدسات لا تظهر في هذه الخلايا — افتح صلاحيات الحساب لرؤيتها</div></sc-if>
+  <sc-if value="{{pmAzOn}}" hint-placeholder-val="{{ false }}"><div class="adm-note" data-pm="ref">المصفوفة ملخّصٌ بصفحة × فعل، والمرجعُ هو خريطة الأنظمة والصلاحيات أعلاه: في وضع الإنفاذ يحكم الخادم بمفاتيح الصلاحيات، فالمنح والسحب الصريحان لموظفٍ وبوابات العدسات لا تظهر في هذه الخلايا — اختر «الفعلي لحساب» في الخريطة أو افتح صلاحيات الحساب لرؤيتها</div></sc-if>
   <sc-if value="{{pmLegacyOn}}" hint-placeholder-val="{{ false }}"><div class="adm-note" data-tone="mute">{{pmLegacy}}</div></sc-if>
   <div class="adm-note" data-tone="mute">{{pmFoot}}</div>
 </section>
@@ -442,9 +511,9 @@
 
   <!-- ═══ الوحدات ═══ -->
   <sc-if value="{{plOnMods}}" hint-placeholder-val="{{ false }}">
-  <div class="adm-pl-sec"><h3 class="adm-pl-h">وحدات المنصة</h3><div class="adm-pl-help">الوحدة المطفأة تختفي من كل الإدارات ومن كل المستخدمين (حتى مسؤول المنصة) ويرفض الخادم الكتابة فيها — وبياناتها تبقى محفوظة وتعود كما كانت عند إعادة التفعيل</div>
+  <div class="adm-pl-sec"><h3 class="adm-pl-h">وحدات المنصة</h3><div class="adm-pl-help">الوحدة المطفأة تختفي من كل الإدارات ومن كل المستخدمين (حتى مسؤول المنصة) ويرفض الخادم الكتابة فيها — وبياناتها تبقى محفوظة وتعود كما كانت عند إعادة التفعيل. القائمة من سجل الصفحات: كل وحدة تظهر هنا، والمفتاح لما يُطفأ من هذه الشاشة وحده</div>
     <sc-for list="{{plMods}}" as="m" hint-placeholder-count="6">
-    <div style="{{m.style}}"><div style="width:30px;height:30px;border-radius:9px;background:var(--bg-xf7f5f0);display:flex;align-items:center;justify-content:center;color:var(--fg-x6b7280)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-8b8b72f3"></svg></div><div class="adm-f1"><b class="adm-pl-rt">{{m.name}}</b><small class="adm-pl-mt">{{m.sub}}</small></div><span class="adm-pl-mt">{{m.note}}</span><span data-k="{{m.k}}" onClick="{{plModTog}}" style="{{m.tg}}"></span></div>
+    <div data-mod="{{m.k}}" data-act="{{m.activation}}" style="{{m.style}}"><div style="width:30px;height:30px;border-radius:9px;background:var(--bg-xf7f5f0);display:flex;align-items:center;justify-content:center;color:var(--fg-x6b7280)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-8b8b72f3"></svg></div><div class="adm-f1"><b class="adm-pl-rt">{{m.name}}</b><small class="adm-pl-mt">{{m.sub}}</small><sc-if value="{{m.whyOn}}" hint-placeholder-val="{{ false }}"><small class="adm-pl-mt" data-mod-why>{{m.why}}</small></sc-if></div><span class="adm-pl-mt">{{m.note}}</span><span data-k="{{m.k}}" data-sw="{{m.sw}}" onClick="{{plModTog}}" style="{{m.tg}}"></span></div>
     </sc-for></div>
   <div class="adm-pl-sec"><h3 class="adm-pl-h">القوائم المرجعية</h3><div class="adm-pl-help">الورديات ورموز النداء وأنواع الاستئذان وخيارات الأبواب والمعالم تُدار داخل صفحات كل إدارة لأنها تختلف بين الإدارات بطبيعتها — ولا تُوحَّد من هنا</div></div>
   </sc-if>
@@ -501,7 +570,7 @@
   <div class="adm-pl-sec"><h3 class="adm-pl-h">خريطة المنصة</h3><div style="font-size:10.5px;color:var(--fg-x94a3b8);margin-bottom:12px">{{plMapStat}} — أي صفحة تُضاف أو تُحذف أو يُعاد ترتيبها تظهر هنا تلقائياً</div>
     <div style="border:1px solid var(--bd-xeceef1);border-radius:12px;overflow:hidden;background:var(--bg-xffffff)">
     <sc-for list="{{plMapRows}}" as="r" hint-placeholder-count="12">
-      <div style="{{r.rowStyle}}"><span style="{{r.nameStyle}}">{{r.name}}</span><span style="{{r.badgeStyle}}">{{r.badge}}</span><span style="{{r.offStyle}}">مطفأة من المنصة</span><span style="{{r.capOffStyle}}">خارج سقف الإدارة</span><span style="{{r.lineStyle}}"></span><span style="{{r.hintStyle}}">{{r.hint}}</span><span style="{{r.addrStyle}}">{{r.addr}}</span></div>
+      <div style="{{r.rowStyle}}"><span style="{{r.nameStyle}}">{{r.name}}</span><span style="{{r.badgeStyle}}">{{r.badge}}</span><span style="{{r.offStyle}}">مطفأة من المنصة</span><span style="{{r.capOffStyle}}">{{r.capOffTxt}}</span><span style="{{r.lineStyle}}"></span><span style="{{r.hintStyle}}">{{r.hint}}</span><span style="{{r.addrStyle}}">{{r.addr}}</span></div>
     </sc-for>
     </div></div>
   </sc-if>

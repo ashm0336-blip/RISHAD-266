@@ -593,7 +593,7 @@
   "i-3a0791fe": {
    "body": "<rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"></path>",
    "uses": {
-    "modules/admin/view.html": 5,
+    "modules/admin/view.html": 6,
     "modules/daily/view.html": 1,
     "modules/dreport/view.html": 3,
     "modules/dstats/view.html": 1,
@@ -717,7 +717,7 @@
   "i-44077fec": {
    "body": "<path d=\"M3 7h6l2 2h10v11H3z\"></path>",
    "uses": {
-    "modules/admin/view.html": 6
+    "modules/admin/view.html": 7
    },
    "viewBox": "0 0 24 24"
   },
@@ -2277,7 +2277,7 @@
   "i-c37d9e39": {
    "body": "<path d=\"M20 6 9 17l-5-5\"></path>",
    "uses": {
-    "modules/admin/view.html": 14,
+    "modules/admin/view.html": 16,
     "modules/award/view.html": 6,
     "modules/daily/view.html": 9,
     "modules/dreport/view.html": 12,
@@ -2380,7 +2380,7 @@
   "i-c92915c6": {
    "body": "<path d=\"m6 9 6 6 6-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 13,
+    "modules/admin/view.html": 15,
     "modules/award/view.html": 3,
     "modules/daily/view.html": 10,
     "modules/dreport/view.html": 6,
