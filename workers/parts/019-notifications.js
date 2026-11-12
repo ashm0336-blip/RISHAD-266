@@ -992,7 +992,7 @@ var NF_TYPES = {
     id: "sc_fail",
     k: "sec",
     name: "محاولات دخول فاشلة متكررة",
-    when: "5 محاولات خلال 10 دقائق",
+    when: "5 محاولات في دفعة، أو 3 عناوين مختلفة على حساب واحد خلال ساعة",
     on: true,
     to: ["own", "sys"],
     lvl: "urg",
@@ -3115,6 +3115,9 @@ async function nfRemind(env, A, id, base, automatic) {
     );
   return Object.assign(await nfCommit(env, A, st, base === undefined ? doc.broadcastRev : base, "remind", undefined, NF_BC_REV), { n: n });
 }
+/* v7-C · Issue 2 (أ): عتبةُ إنذار التخمين الموزَّع — عناوينُ مختلفة أخفقت على حسابٍ واحد خلال النافذة */
+var NF_FAIL_IPS = 3,
+  NF_FAIL_WIN_MS = 3600000;
 async function nfSecurityPoll(env, A) {
   // A legacy timestamp-only checkpoint means all rows at that timestamp were
   // already consumed. New checkpoints advance the exact (timestamp,id) pair.
@@ -3140,7 +3143,8 @@ async function nfSecurityPoll(env, A) {
       ).results || [],
     events = [],
     max = last,
-    fails = {};
+    fails = {},
+    failId = {};
   rows.forEach(function (r) {
     max = Math.max(max, r.ts);
     if (/^tst_/.test(String(r.uid || ""))) return;
@@ -3149,6 +3153,7 @@ async function nfSecurityPoll(env, A) {
     if (r.act === "login_fail") {
       var k = r.target || r.un;
       fails[k] = (fails[k] || 0) + 1;
+      failId[k] = r.id;
       return;
     }
     if (r.act === "lock" || r.act === "guard_unlock") {
@@ -3173,12 +3178,68 @@ async function nfSecurityPoll(env, A) {
     }
     if (type) events.push({ type: type, vars: vars, once: "security:" + r.id });
   });
-  Object.keys(fails).forEach(function (k) {
-    if (fails[k] >= 5)
+  /* v7-C · Issue 2 (أ): التخمينُ الموزَّع — عناوينُ مختلفة تُخفق على حسابٍ واحد — لم يكن يُنذِر ما لم تجتمع 5 إخفاقاتٍ في دفعةٍ واحدة، ومتغيّرُ IP
+     فارغ. الآن يُقرأ لكل اسمٍ أخفق في هذه الدفعة ما أخفق عليه في آخر ساعة مجمَّعاً بالعنوان (استعلامٌ واحد)، فيُنذَر مديرُ النظام عند
+     NF_FAIL_IPS عناوين مختلفة ولو جاء كلُّ إخفاقٍ في استطلاع، والنصُّ يحمل العددَ والعناوين. إنذارٌ فقط — لا حجبَ ولا قفل (ADR-022). */
+  var failNames = Object.keys(fails), nowF = Date.now(), byName = {};
+  if (failNames.length) {
+    (
+      (
+        await env.DB.prepare(
+          "SELECT un,ip,COUNT(*) c FROM sec WHERE act='login_fail' AND ts>?1 AND un IN (SELECT value FROM json_each(?2)) GROUP BY un,ip ORDER BY c DESC,ip",
+        )
+          .bind(nowF - NF_FAIL_WIN_MS, JSON.stringify(failNames))
+          .all()
+      ).results || []
+    ).forEach(function (x) {
+      var b = byName[x.un] || (byName[x.un] = { n: 0, ips: [] });
+      b.n += x.c;
+      if (x.ip) b.ips.push(x.ip);
+    });
+  }
+  /* المراجعة المستقلة (L2): إنذارُ العناوين المختلفة لحسابٍ قائمٍ فقط — رشُّ أسماءٍ لا وجودَ لها من عناوين قليلة كان يولّد إنذاراً عاجلاً لكل اسم.
+     و«مرّةً في الساعة» نافذةٌ متدحرجة: لا يُنذَر لاسمٍ أُنذر له خلال NF_FAIL_WIN_MS (كان المفتاحُ ساعةَ الحائط فتُنذِر الدفعةُ العابرةُ رأسَ الساعة
+     مرّتين). المفتاحُ يحمل رقمَ آخر صفٍّ للاسم في الدفعة — استطلاعان متزامنان للدفعة نفسِها يلتقيان على مفتاحٍ واحد. */
+  var spreadNames = failNames.filter(function (k) {
+      return (byName[k] || { ips: [] }).ips.length >= NF_FAIL_IPS;
+    }),
+    spreadOk = {};
+  if (spreadNames.length) {
+    var known = {};
+    ((await usersList(env)) || []).forEach(function (x) {
+      if (x.un) known["=" + String(x.un).toLowerCase()] = 1;
+      if (x.alt) known["=" + String(x.alt).toLowerCase()] = 1;
+    });
+    var recent =
+      (
+        await env.DB.prepare("SELECT once_key FROM notification_dedup WHERE created_at>?1 AND once_key GLOB 'fail:*:ips:*'")
+          .bind(nowF - NF_FAIL_WIN_MS)
+          .all()
+      ).results || [];
+    spreadNames.forEach(function (k) {
+      var pre = "fail:" + k + ":ips:";
+      spreadOk[k] =
+        known["=" + String(k).toLowerCase()] === 1 &&
+        !recent.some(function (r) {
+          return String(r.once_key).indexOf(pre) === 0;
+        });
+    });
+  }
+  failNames.forEach(function (k) {
+    var b = byName[k] || { n: 0, ips: [] },
+      spread = spreadOk[k] === true;
+    if (fails[k] >= 5 || spread)
       events.push({
         type: "sc_fail",
-        vars: { العدد: fails[k], الاسم: k, IP: "" },
-        once: "fail:" + k + ":" + Math.floor(Date.now() / 600000),
+        vars: {
+          العدد: Math.max(fails[k], b.n),
+          الاسم: k,
+          IP:
+            b.ips.length > 1
+              ? b.ips.length + " عناوين مختلفة: " + b.ips.slice(0, 5).join("، ") + (b.ips.length > 5 ? " …" : "")
+              : b.ips[0] || "",
+        },
+        once: fails[k] >= 5 ? "fail:" + k + ":" + Math.floor(nowF / 600000) : "fail:" + k + ":ips:" + failId[k],
       });
   });
   var finalRow = rows[rows.length - 1],

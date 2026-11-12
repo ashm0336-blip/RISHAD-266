@@ -30,7 +30,7 @@ function world() {
     K_USERS: KEY, K_PERM: 'test-permissions', K_DEPTS: 'test-departments', K_GDEPTS: 'test-general-departments', K_PLAT: 'test-platform',
     ERR_ITER: 'unsupported password hash iterations',
     bodyCheck: () => null, guardLeft: async () => 0,
-    guardFail: async () => {}, guardCount: async () => {}, guardReset: async () => {},
+    guardFail: async () => {}, guardCount: async () => {}, guardReset: async () => {}, THR_ON: false, guardOk: async () => {},   /* v7-C issue 2: the login route reads these globals */
     reqMeta: () => ({ ip: 'unit-test', city: '', dev: '' }),
     secAr: String, secLog: async () => {}, setCookie: (token) => ({ 'Set-Cookie': 'fixture=' + token }),
     redactPh: (value) => value, swallow: () => {},

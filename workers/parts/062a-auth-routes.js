@@ -52,9 +52,14 @@ async function authPublicRoutes(request, env, path, url) {
        وبهذا يبقى التخمينُ مكلفاً — كلُّ مصدرٍ يُقفل بعد LOCK_N — ويدخل
        صاحبُ الحساب بكلمته الصحيحة من مصدرٍ سليمٍ في كل حال. */
     var gkU = 'u:' + un, gkI = 'ip:' + ip, gkP = 'p:' + un + '|' + ip;
-    var left = Math.max(await guardLeft(env, gkI), await guardLeft(env, gkP));
+    /* v7-C · Issue 2 (المراجعة المستقلة · M1): المصدرُ أولاً، والزوجُ لا يُحجز له ما دام المصدرُ مقفلاً — فعدُّ الزوج لا يزيد إلا بمحاولةٍ عُدّت على
+       المصدر كذلك (شرطُ اغتفار guardOk: لا ينفخ أحدٌ عدّادَ زوجه بمحاولاتٍ مرفوضة ثم يمحو به إخفاقاتِه على غيره). */
+    var left = await guardLeft(env, gkI); if (!(left > 0)) left = await guardLeft(env, gkP);
     var rmF = reqMeta(request);
     if (left > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر ' + secAr(left / 1000), wait: Math.ceil(left / 1000) });   /* KIVO_260: صيغةُ العدد + الثواني رقماً (العدّادُ في الواجهة يقرؤها) */
+    /* v7-C · Issue 2 (ب): إبطاءٌ بلا قفل — مطفأ افتراضياً (سياسةُ الأمن thrOn)؛ مطفأً لا يُنفَّذ من هذا السطر شيء.
+       المراجعة المستقلة (L1): بعد ردِّ المقفل — عميلٌ مقفلُ المصدر لا يُشغّل الاستعلامَ ولا يُمهَل. */
+    if (THR_ON) { var slowL = await loginSlow(env, un); if (slowL) await new Promise(function (res) { setTimeout(res, slowL); }); }
 
     /* Every issued session is bound atomically to the identity revision just verified.
        A bounded retry rechecks credentials after concurrent edits; a stale snapshot never authenticates. */
@@ -64,16 +69,19 @@ async function authPublicRoutes(request, env, path, url) {
       var users = await usersList(env);
       /* لا تهيئة حسابات عبر مسار الدخول: قاعدة فارغة تبقى مغلقة حتى تهيئة إدارية خارج المسار العام. */
       if (!users) {
+        await verifyPw(pw, PW_DUMMY());
         await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU);
         return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
       }
       var u = users.filter(function (x) {
         return String(x.un || '').toLowerCase() === un || String(x.alt || '').toLowerCase() === un;
       })[0];
-      if (!u) { await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU); await secLog(env, { un: un, act: 'login_fail', detail: 'no-user', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' }); }
+      /* v7-C · Issue 2 (التوقيت): الاسمُ المجهول كان يُردّ بلا PBKDF2 — فرقُ زمنٍ يكشف وجودَ الحساب. الآن كلُّ إخفاقٍ يدفع اشتقاقاً واحداً
+         بالتكرارات الحالية ضد تجزئةٍ وهمية لا تطابق شيئاً (والحسابُ بتجزئةٍ قديمة p1 كذلك)؛ الردُّ نفسُه حرفاً. */
+      if (!u) { await verifyPw(pw, PW_DUMMY()); await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU); await secLog(env, { un: un, act: 'login_fail', detail: 'no-user', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' }); }
       var good = await verifyPw(pw, u.ph);
       if (good === 'unsupported') return json({ ok: 0, err: ERR_ITER });
-      if (good !== true) { await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU); await secLog(env, { uid: u.id, un: un, act: 'login_fail', detail: 'bad-pw', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' }); }
+      if (good !== true) { if (isLegacy(u.ph)) await verifyPw(pw, PW_DUMMY()); await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU); await secLog(env, { uid: u.id, un: un, act: 'login_fail', detail: 'bad-pw', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' }); }
       if (u.dis) { await secLog(env, { uid: u.id, un: un, act: 'login_fail', detail: 'frozen', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'الحساب غير نشط — راجع مدير الإدارة' }); }
 
       var loginStmts = [revGuard(env, K_USERS, usersRev)];
@@ -90,7 +98,7 @@ async function authPublicRoutes(request, env, path, url) {
       try { await env.DB.batch(loginStmts); }
       catch (eL) { if (isRevConflict(eL)) continue; throw eL; }
 
-      await guardReset(env, gkU); await guardReset(env, gkI); await guardReset(env, gkP);
+      await guardReset(env, gkU); await guardOk(env, gkI, gkP);   /* v7-C · Issue 2 (ج): الزوجُ وعدّادُ الإنذار يُحذفان كما كانا؛ المصدرُ يُغتفر له عدُّ هذا الزوج وحده (guardOk · M1) */
       /* RISHAD266 · دخولٌ من جهازٍ جديد يُحكم هنا عند الدخول (كان المتصفحُ يرسله عند فتح الصفحة بذاكرة المتصفح — فتكرّر): معرّفُ جهازٍ عشوائيّ لكل متصفح
          (كعكةُ bs_dv · HttpOnly) يُقارن بدخولات الحساب في 180 يوماً من سجل الأمن؛ أولُ دخولٍ مسجَّل بمعرّفٍ يمرّ بلا تنبيه، وفشلُ التنبيه لا يُسقط الدخول */
       var dvB = /Edg\//.test(rm.ua) ? 'Edge' : /Chrome\//.test(rm.ua) ? 'Chrome' : /Safari\//.test(rm.ua) ? 'Safari' : 'متصفح', dvC = readCookie(request, 'bs_dv'), dvN = !/^[0-9a-f]{16}$/.test(dvC || '');

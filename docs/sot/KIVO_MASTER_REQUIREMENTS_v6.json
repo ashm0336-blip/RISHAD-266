@@ -19,21 +19,21 @@
    "aud": 83,
    "by_status": {
     "مكتمل": 180,
-    "جزئي": 79,
+    "جزئي": 80,
     "غير منفذ": 3,
     "يحتاج إثبات": 4,
-    "معلّق بقرار": 9
+    "معلّق بقرار": 8
    },
    "p0_open": 38,
    "security": 56,
    "security_open": 10,
-   "decisions": 9,
+   "decisions": 8,
    "by_level": {
     "Preview": 71,
     "إجراء": 8,
-    "ساكن": 38,
+    "ساكن": 37,
     "لا تحقق": 13,
-    "محلي": 145
+    "محلي": 146
    },
    "by_status_v5": {
     "مكتمل": 33,
@@ -189,8 +189,8 @@
    "لا بدءَ لـKIVO_244 الآن",
    "لا نشرَ لتقرير التدقيق كرابط"
   ],
-  "updated": "2026-10-15",
-  "revision": 385,
+  "updated": "2026-11-12",
+  "revision": 387,
   "counts_v6_creation": {
    "total": 243,
    "sot": 192,
@@ -20254,10 +20254,10 @@
    "added_in": "KIVO_259",
    "area": "المصادقة",
    "title": "حارسُ الدخول على المصدر والزوج بلا سقفٍ لكل حساب — تخمينٌ موزَّعٌ لـPIN من 5–6 أرقام (SR-4)",
-   "status": "معلّق بقرار",
+   "status": "جزئي",
    "priority": "P1",
    "evidence": "",
-   "next": "",
+   "next": "نُفّذ قرار المالك (v7-C Issue 2): إنذار · تناقص · إبطاء مطفأ (thrOn)؛ الباقي سياسة الكلمة",
    "phase": "Hardening",
    "note": "",
    "acceptance": "قرارُ المالك في سياسة كلمة المرور: سقفٌ ليّنٌ لكل حساب (تأخيرٌ متزايد بلا قفل) أو كلمةٌ أقوى/TOTP للمدراء — ثم تنفيذُه واختبارُه",
@@ -20282,6 +20282,12 @@
      "status": "معلّق بقرار",
      "date": "2026-10-11",
      "basis": "verification"
+    },
+    {
+     "version": "RISHAD_266",
+     "status": "جزئي",
+     "date": "2026-11-12",
+     "basis": "verification"
     }
    ],
    "audit_2026_10_09": {
@@ -20289,7 +20295,7 @@
     "gap": "بندٌ جديد",
     "evidence": [],
     "source": "—",
-    "action": "",
+    "action": "تفعيلُ thrOn بقرار المالك بعد المراقبة · سياسةُ كلمة المرور الأقوى/TOTP للمدراء",
     "note": "أُضيف بعد التدقيق كمتطلب فرعي لـSOT-096",
     "verification": {
      "implementation": "—",
@@ -20314,6 +20320,21 @@
      "note": "السقفُ لكل حساب يفتح باباً لحجب دخول الضحية — لذا أُزيل سابقاً عمداً؛ الحلُّ الجذري سياسةُ كلمة المرور",
      "action": "",
      "production": "قائمٌ في Production (242)",
+     "by": "KIVO Engineering (Claude)"
+    },
+    {
+     "version": "RISHAD_266",
+     "date": "2026-11-12",
+     "status": "جزئي",
+     "level": "محلي",
+     "implementation": "workers/parts/054 (guardLeft · guardOk · guardCount · loginSlow) · 062a (/api/login) · 019 (nfSecurityPoll) · 001 (thrOn · thrN · thrWin · thrSec)",
+     "evidence": [
+      "tests/unit/v7c_issue2_login_guard.test.mjs (كلُّ ثغرةٍ باختبارٍ يعيد إنتاجها على e34fa23)",
+      "docs/adr/ADR-022 (تعديل v7-C Issue 2) · docs/security.md SR-4"
+     ],
+     "note": "قرارُ المالك (v7-C Issue 2): إنذارُ التخمين الموزَّع + النجاحُ لا يصفّر عدّادَ المصدر + تناقصُ العدّادات + كلفةُ PBKDF2 للاسم المجهول منفَّذة؛ الإبطاءُ بلا قفل لكل حساب منفَّذٌ ومطفأٌ افتراضياً (thrOn=0). الباقي: لا سقفَ إجماليّاً لكل حساب (قفلٌ = بابُ حرمان) وسياسةُ كلمة المرور/TOTP لم تتغيّر",
+     "action": "تفعيلُ thrOn بقرار المالك بعد المراقبة · سياسةُ كلمة المرور الأقوى/TOTP للمدراء",
+     "production": "غيرُ منشور — فرع claude/v7-c-issue2",
      "by": "KIVO Engineering (Claude)"
     }
    ]
