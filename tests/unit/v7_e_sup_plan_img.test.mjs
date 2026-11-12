@@ -114,7 +114,7 @@ const ACTORS = [
   ['explicit grant: every view key + one lens data edit (lens.zones.data.edit)', grant(VIEWS.concat(DER, ['lens.zones.data.edit'])), 'acc', null, ROUNDS_ONLY],
   ['explicit grant: every lens write key at once', grant(VIEWS.concat(LENS_W)), 'acc', null, ROUNDS_ONLY],
   /* a real write on the plan — must stay allowed */
-  ['a stored sheet with a write on the plan', sheet({ plan: ['view', 'edit'] }), 'acc', PLAN_ONLY, null /* measured below: the symmetric case */],
+  ['a stored sheet with a write on the plan', sheet({ plan: ['view', 'edit'] }), 'acc', null, null /* both measured below: the symmetric case */],
   ['a stored sheet with a write on the plan and on «الجولات»', sheet({ plan: ['view', 'edit'], 'daily/rounds': ['view', 'edit'] }), 'acc', BOTH, BOTH],
   ['explicit grant: site.edit', grant(['plan.view', 'site.edit']), 'acc', null, PLAN_ONLY],
   ['explicit grant: map.replace', grant(['plan.view', 'map.replace']), 'acc', null, PLAN_ONLY],
@@ -144,19 +144,28 @@ test('[enforce] the lens keys hosted by the plan alone are unchanged: the plan m
   assert.deepEqual(LENS_PLAN.slice().sort(), ['lens.dens.threshold.configure', 'lens.gates.geometry.edit']);
   for (const k of LENS_PLAN) assert.equal(await run('enforce', grant(VIEWS.concat([k]))), PLAN_ONLY, k);
 });
-test('[enforce] each write key of the plan page alone (' + PLAN_W.length + ' keys) still replaces and deletes the plan map', { timeout: 600000 }, async () => {
+/* the symmetric case for explicit grants: no key of the plan page is a write of the ROUND map (all four letters are pinned now) */
+test('[enforce] each write key of the plan page alone (' + PLAN_W.length + ' keys) still replaces and deletes the plan map — and never the round map', { timeout: 600000 }, async () => {
   assert.ok(PLAN_W.includes('site.edit') && PLAN_W.includes('map.replace'), 'the list is read from the registry');
   const got = {}, want = {};
-  for (const k of PLAN_W) { got[k] = (await run('enforce', grant(['plan.view', k]))).slice(0, 2); want[k] = 'YY'; }
+  for (const k of PLAN_W) { got[k] = await run('enforce', grant(['plan.view', 'round.view', k])); want[k] = PLAN_ONLY; }
   assert.deepEqual(got, want);
 });
 
-/* THE SYMMETRIC CASE — measured, reported, deliberately NOT changed by V7-E (the owner decision is about the plan map, and «do not
-   change who writes the rounds images»): a sheet with a write on the plan only translates to the lens keys as well, they list the
-   rounds record, so in enforce it replaces/deletes the ROUND map; legacy refuses it. Pinned so that changing it is a decision. */
-test('[symmetric, not changed] a plan-only sheet and the round map: legacy refuses, enforce allows (as measured on 5add483)', { timeout: 300000 }, async () => {
-  assert.equal(await run('legacy', sheet({ plan: ['view', 'edit'] })), PLAN_ONLY, 'legacy');
-  assert.equal(await run('enforce', sheet({ plan: ['view', 'edit'] })), BOTH, 'enforce — the open finding');
+/* THE SYMMETRIC CASE — DELIBERATELY REWRITTEN (it was pinned here as an open finding: «legacy refuses, enforce allows»).
+   Owner decision: «كاتب الخطة وصورة الجولة … يُمنعان كما في legacy.» A sheet with a write on the plan only translates to the lens keys
+   as well (asisMap plan:edit), they list the rounds record among their resources, so in enforce it replaced/deleted the ROUND map;
+   legacy refuses it. Now refused in enforce too: a key counts for the image of a record only through a page that writes that record
+   (057 enfImgKeyOn) — a lens key that the PLAN sheet confers is not a write of the round's image. Measured on 2c28c95: enforce `YYYY`. */
+/* one world per mode (this file is close to the heap limit of a test process: every world loads the worker anew): the record path first
+   (054 imgForeignIn — saving the plan with a new reference to the round-owned image), then put · del on both maps.
+   Every plan act (add · edit · del) and every key of the plan page, one at a time, against every record: v7_e_img_enforce_le_legacy. */
+for (const mode of ['legacy', 'enforce']) test('[symmetric · ' + mode + '] a plan-only sheet: the round map is refused (put · del · bind by saving the plan), the plan map stays his', { timeout: 300000 }, async () => {
+  const S = await scene(mode, sheet({ plan: ['view', 'edit'] })), { W, ids } = S, ck = (await S.who.acc()).ck, before = JSON.stringify(stored(W.env, KPLAN));
+  assert.equal(await saveKey(W, ck, KPLAN, (v) => { v.floors[0].iid = ids.rounds; }), 'imgown');
+  assert.equal(JSON.stringify(stored(W.env, KPLAN)), before, 'the stored plan is unchanged');
+  assert.deepEqual([own(W, ids.rounds).st, own(W, ids.rounds).k, await bytes(W, ids.rounds)], ['bound', KR, PNG]);
+  assert.equal(await cells(S, ck), PLAN_ONLY);
 });
 
 /* the RECORD path was never loose: the same accounts cannot put another image on the plan's site by saving the plan */
