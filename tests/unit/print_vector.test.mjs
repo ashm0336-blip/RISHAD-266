@@ -126,3 +126,27 @@ test('الطابعةُ تُنزل الملفَّ مباشرةً ونافذةُ �
 test('اللوحةُ الجانبية المطبوعة بلا شريطَي التبويب (أزرارُ شاشة) — في كل صفحة', () => {
   assert.ok(core.includes('".pg .pn .bs-subseg,.pg .pn .bs-mixtabs{display:none!important}",'));
 });
+
+/* ══ صورةُ الصفحة = الإطارُ نفسُه: شروطُ ‎@media‎ تُثبَّت بحكم الإطار قبل الرسم (ملاحظةُ المالك 2026-11-12: حافةُ «عناصر الخريطة» السفلى مقصوصة) ══
+   صورةُ SVG لا مؤشّرَ لها ولا hover: قاعدةُ الخطة ‎@media (hover:hover) and (pointer:fine){.bs-oreg{display:none!important}}‎ تصدق في الإطار
+   (فيُقاس تحجيمُ اللوحة بلا سجلّ اللمس) ولا تصدق داخل الصورة، فيظهر السجلُّ في الملف وحده ويدفع إطارَ اللوحة تحت حدّ القصّ. */
+test('شروطُ @media في أنماط صورة الصفحة تُثبَّت بحكم إطار الطباعة — لا يُعاد تقييمُها داخل الصورة', () => {
+  const C = loadCore(); assert.equal(typeof C.frozenMedia, 'function');
+  const asked = [], yes = (q) => (asked.push(q), /hover:hover/.test(q) || q === 'screen');
+  const css = '.a{color:red}@media (hover:hover) and (pointer:fine){ .bs-oreg{ display:none !important; } }\n@media (pointer: coarse){.b{min-width:36px}}@media screen{.c{top:0}}@media print{.d{display:none}}@font-face{font-family:Cairo;src:url(data:font/woff2;base64,AA==)}';
+  assert.equal(C.frozenMedia(css, yes),
+    '.a{color:red}@media all{ .bs-oreg{ display:none !important; } }\n@media not all{.b{min-width:36px}}@media all{.c{top:0}}@media not all{.d{display:none}}@font-face{font-family:Cairo;src:url(data:font/woff2;base64,AA==)}');
+  assert.deepEqual(asked, ['(hover:hover) and (pointer:fine)', '(pointer: coarse)', 'screen', 'print']);
+  /* مقيِّمٌ يرمي ⇒ القاعدةُ كما هي (لا تُسقط ولا تُفرض) · نصٌّ بلا ‎@media‎ لا يُمسّ · تعليقٌ يذكر ‎@media‎ لا يبتلع ما بعده */
+  assert.equal(C.frozenMedia('@media (x){.a{b:c}}', () => { throw new Error('x'); }), '@media (x){.a{b:c}}');
+  assert.equal(C.frozenMedia('.a{b:c}', yes), '.a{b:c}');
+  assert.equal(C.frozenMedia('/* @media note */.a{b:c}@media screen{.c{top:0}}', yes), '/* @media note */.a{b:c}@media all{.c{top:0}}');
+  /* والتنزيلُ يمرّ بها بحكم نافذة الإطار نفسِه */
+  assert.ok(core.includes('(q) => x.defaultView.matchMedia(q).matches'), 'الحكمُ حكمُ نافذة إطار الطباعة');
+  assert.match(core, /const css = frozenMedia\(/);
+});
+
+test('تحجيمُ اللوحة الجانبية على ارتفاع عمودها الفعليّ ناقصاً بكسلاً — لا على المقرَّب (كان يزيد كسرَ بكسل فيُقصّ حدُّها السفلي)', () => {
+  assert.ok(core.includes('availH: Math.floor(e.getBoundingClientRect().height) - 1,'));
+  assert.doesNotMatch(core, /availH: e\.clientHeight/);
+});
