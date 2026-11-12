@@ -26,7 +26,7 @@ import { TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 
 const BASELINE = process.env.V7_ISSUE1_BASELINE === '1';
 const D2 = 'tst_d2', KE2 = 'bsdept:' + D2 + ':bassam_employees_v1', KG = 'bsdept:' + D + ':bassam_grants_v1';
-const TYPES = ['emp_add', 'emp_edit', 'emp_type', 'emp_del', 'emp_imp', 'emp_wipe', 'emp_gap'];
+const TYPES = ['emp_add', 'emp_edit', 'emp_type', 'emp_del', 'emp_imp', 'emp_wipe', 'emp_gap', 'emp_delm'];
 const pbkdf2 = (pw, uid) => { const salt = crypto.createHash('sha256').update('v7-issue1|' + uid).digest().subarray(0, 16); return 'p2$100000$' + salt.toString('hex') + '$' + crypto.pbkdf2Sync(pw, salt, 100000, 32, 'sha256').toString('hex'); };
 /* probed accounts: [name, username, password] — «super» is the platform administrator (reads with all=1, as his page does) */
 const ACC = [['tst_dm1', '0000000101', '70101'], ['tst_dm2', '0000000102', '70102'], ['tst_gm1', '0000000103', '70103'], ['tst_sup1', '0000000111', '70111'],

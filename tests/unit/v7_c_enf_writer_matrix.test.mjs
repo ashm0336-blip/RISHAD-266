@@ -11,7 +11,13 @@
    Owner decision (option 1): in enforce a «capability» key does not make a writer (as 057 enfFieldLift already excludes it); legacy
    is not changed at all. The field observer keeps writing: his status-change keys (derived from field.view) are type «operation».
    The whole table is pinned from actual HTTP outcomes. BEFORE = the cells as measured on e34fa23, asserted only when
-   KIVO_BASE_WORKER points at a worker generated from e34fa23 (the reproduction). */
+   KIVO_BASE_WORKER points at a worker generated from e34fa23 (the reproduction).
+   V7-D (owner decision: «الراصد في enforce لا يستبدل ولا يحذف صور الخطة والجولات، كما في legacy»): the enforce observer rows pinned
+   here by V7-C as a labelled finding (`YYYYYYbbYYYY` on OPEN/FULL) are deliberately rewritten to the legacy outcome
+   (`vvnYbbbbbbbb`): the status keys derived from field.view write the status of assigned elements only and no longer make their
+   holder a writer of the plan/rounds records (bound images), nor «a writer of the unit» (technical flags · new unbound image) —
+   unless his confinement is lifted by an explicit non-derived write (057 enfDerivedBare; details in v7_d_observer_img). His
+   task-proof upload (img_tsk…, selfProof) and its binding through /api/me/tasks/act are untouched. */
 import './clock.mjs';   /* first: the task-proof cases create a task inside the fixture shift (06:00–14:00 Riyadh) — unpinned they failed after 14:00 */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -165,9 +171,10 @@ for (const [mode, src] of OBSERVERS) {
     /* once bound, the file follows the write of the task store — which an observer does not hold */
     assert.equal((await up(W, ob.ck, A, 'DELETE')).status, 403); assert.ok(inStore(W, A), 'the bound proof is not deleted through /api/img');
     /* an ordinary (non-proof) new image: the «any writer» question. Legacy: a view sheet writes nothing ⇒ refused (unchanged).
-       Enforce: his status-change keys derived from field.view are write keys ⇒ accepted before and after V7-C */
+       Enforce: was accepted through the status keys derived from field.view (before and after V7-C); V7-D (owner decision): those
+       keys are not a write of the unit ⇒ refused as in legacy */
     const g = await up(W, ob.ck, 'img_v7c' + mode.slice(0, 1) + src.slice(0, 1) + '_g3');
-    assert.equal(g.status, mode === 'enforce' ? 200 : 403, 'a non-proof new image: ' + JSON.stringify(g.j));
+    assert.equal(g.status, 403, 'a non-proof new image: ' + JSON.stringify(g.j)); assert.equal(g.j.why, 'none');
   });
 }
 for (const mode of ['legacy', 'enforce']) {
@@ -194,10 +201,9 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal((await up(W, no.ck, 'img_v7c' + x + 'none_n1')).status, 403, 'nor does he upload an ordinary new image');
     for (const m of ['PUT', 'DELETE']) { const r = await up(W, no.ck, M, m); assert.equal(r.status, 403, m + ' on the bound map: ' + JSON.stringify(r.j)); assert.equal(r.j.why, 'bound'); }
     /* the observer: no write of the plan in legacy. In enforce his derived status keys are bound to the plan and the rounds in the
-       registry (guard.resources), so enfResWriter answers yes for ANY image of those records — not confined to what is assigned to
-       him. Measured on e34fa23, untouched by V7-C, pinned so that changing it is a decision. */
-    const o = await up(W, ob.ck, M, 'PUT');
-    assert.equal(o.status, mode === 'enforce' ? 200 : 403, 'observer replaces the bound map: ' + JSON.stringify(o.j));
+       registry (guard.resources), so enfResWriter answered yes for ANY image of those records — measured on e34fa23 and pinned by
+       V7-C «so that changing it is a decision». The decision came (V7-D): refused in enforce as in legacy. */
+    for (const m of ['PUT', 'DELETE']) { const o = await up(W, ob.ck, M, m); assert.equal(o.status, 403, 'observer ' + m + ' on the bound map: ' + JSON.stringify(o.j)); assert.equal(o.j.why, 'bound'); }
     /* the writer of the record deletes it (no other record shows it) */
     assert.ok(inStore(W, M)); assert.equal((await up(W, dm.ck, M, 'DELETE')).status, 200); assert.ok(!inStore(W, M), 'deleted by the unit manager');
   });
@@ -210,9 +216,9 @@ for (const mode of ['legacy', 'enforce']) {
    LEGACY — exactly as on e34fa23 (not changed by V7-C). Known and left as they are: a unit with no ceiling record gives the manager
    and the unit account no implicit write (018 writePages — the LEGACY_GAP of v7_p3_0_open_cap_matrix), and a general manager without
    a sheet is no «writer» anywhere although he writes the records themselves.
-   ENFORCE — the target. The observer rows (sheet and explicit grant) are a «writer» wherever the ceiling carries «رصد الميدان»,
-   through the status keys derived from field.view; those keys are also bound to the plan and the rounds in the registry, so he
-   may replace/delete ANY image of those two records (not confined to his assigned elements) — measured, not decided here. */
+   ENFORCE — the target. The observer rows (sheet and explicit grant) equal legacy since V7-D (owner decision): the status keys
+   derived from field.view are neither a write of the plan/rounds records nor of the unit. As measured on 09a5fe8 they were
+   `YYYYYYbbYYYY` on OPEN/FULL (OBS_BEFORE_V7D) — he replaced/deleted ANY image of those two records. */
 const EXPECT = {
   legacy: {
     super: { OPEN: 'YYYYYYYYYYYY', FULL: 'YYYYYYYYYYYY', BASIC: 'YYYYYYYYYYYY' },
@@ -232,13 +238,15 @@ const EXPECT = {
     mgr:   { OPEN: 'YYYYYYYYYYYY', FULL: 'YYYYYYYYYYYY', BASIC: 'YYYYYYYYbbbb' },
     write: { OPEN: 'YYYYYYYYbbbb', FULL: 'YYYYYYYYbbbb', BASIC: 'YYYYYYYYbbbb' },
     view:  { OPEN: 'vvnYbbbbbbbb', FULL: 'vvnYbbbbbbbb', BASIC: 'vvnYbbbbbbbb' },
-    obs:   { OPEN: 'YYYYYYbbYYYY', FULL: 'YYYYYYbbYYYY', BASIC: 'vvnYbbbbbbbb' },
-    obsG:  { OPEN: 'YYYYYYbbYYYY', FULL: 'YYYYYYbbYYYY', BASIC: 'vvnYbbbbbbbb' },
+    obs:   { OPEN: 'vvnYbbbbbbbb', FULL: 'vvnYbbbbbbbb', BASIC: 'vvnYbbbbbbbb' },
+    obsG:  { OPEN: 'vvnYbbbbbbbb', FULL: 'vvnYbbbbbbbb', BASIC: 'vvnYbbbbbbbb' },
     none:  { OPEN: 'vvnYbbbbbbbb', FULL: 'vvnYbbbbbbbb', BASIC: 'vvnYbbbbbbbb' },
   },
 };
+/* the enforce observer rows before V7-D (e34fa23 … 09a5fe8) */
+const OBS_BEFORE_V7D = { OPEN: 'YYYYYYbbYYYY', FULL: 'YYYYYYbbYYYY', BASIC: 'vvnYbbbbbbbb' };
 /* the reproduction: on e34fa23, enforce, a view-only sheet and no sheet at all were «writers» wherever the ceiling hosts a lens */
-const BEFORE = { view: { OPEN: 'YYYYYYbbbbbb', FULL: 'YYYYYYbbbbbb', BASIC: 'vvnYbbbbbbbb' }, none: { OPEN: 'YYYYYYbbbbbb', FULL: 'YYYYYYbbbbbb', BASIC: 'vvnYbbbbbbbb' } };
+const BEFORE = { obs: OBS_BEFORE_V7D, obsG: OBS_BEFORE_V7D, view: { OPEN: 'YYYYYYbbbbbb', FULL: 'YYYYYYbbbbbb', BASIC: 'vvnYbbbbbbbb' }, none: { OPEN: 'YYYYYYbbbbbb', FULL: 'YYYYYYbbbbbb', BASIC: 'vvnYbbbbbbbb' } };
 
 for (const mode of ['legacy', 'enforce']) {
   test('[' + mode + '] the writer matrix: actor × unit ceiling × operation, by HTTP outcome', { timeout: 600000 }, async () => {
@@ -250,12 +258,13 @@ for (const mode of ['legacy', 'enforce']) {
 test('[enforce] V7-C in one line: a view-only sheet and no sheet write no technical flag, upload no new image and touch no bound image — in every unit', { timeout: 600000 }, async () => {
   const got = table(await matrix('enforce'));
   for (const a of ['view', 'none']) for (const u of Object.keys(UNITS)) assert.equal(got[a][u], 'vvnYbbbbbbbb', a + ' in ' + u);
-  for (const a of ['obs', 'obsG']) for (const u of ['OPEN', 'FULL']) assert.equal(got[a][u].slice(0, 4), 'YYYY', 'the observer (' + a + ') in ' + u + ' is still a writer');
+  /* V7-D (owner decision): the observer is no «writer of the unit» either — as legacy; the 4th letter is his task-proof upload (selfProof), kept */
+  for (const a of ['obs', 'obsG']) for (const u of Object.keys(UNITS)) assert.equal(got[a][u], EXPECT.legacy[a][u], 'the observer (' + a + ') in ' + u + ' equals legacy');
   for (const a of ['gm', 'dept', 'mgr', 'write']) for (const u of Object.keys(UNITS)) assert.equal(got[a][u].slice(0, 4), 'YYYY', a + ' in ' + u + ' is still a writer');
 });
 /* run with KIVO_BASE_WORKER=<_worker.js generated from e34fa23> to replay the measurement that led to the decision */
 test('[enforce] the reproduction on e34fa23 (needs KIVO_BASE_WORKER)', { timeout: 600000, skip: !process.env.KIVO_BASE_WORKER || !fs.existsSync(process.env.KIVO_BASE_WORKER) }, async () => {
   const got = table(await matrix('enforce', process.env.KIVO_BASE_WORKER)), want = JSON.parse(JSON.stringify(EXPECT.enforce)); Object.assign(want, BEFORE);
-  assert.deepEqual(got, want, 'before the fix: only the view-only and the sheetless rows differ from the target');
+  assert.deepEqual(got, want, 'before the fixes: only the view-only and the sheetless rows (V7-C) and the observer rows (V7-D) differ from the target');
   assert.deepEqual(table(await matrix('legacy', process.env.KIVO_BASE_WORKER)), EXPECT.legacy, 'legacy is the same before and after');
 });
