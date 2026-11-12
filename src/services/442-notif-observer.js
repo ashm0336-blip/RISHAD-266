@@ -30,18 +30,8 @@
   function diffList(a, b, keyOf){ var ma = {}, mb = {}; (a || []).forEach(function(x){ ma[keyOf(x)] = x; }); (b || []).forEach(function(x){ mb[keyOf(x)] = x; }); return { added: Object.keys(mb).filter(function(k){ return !ma[k]; }).map(function(k){ return mb[k]; }), removed: Object.keys(ma).filter(function(k){ return !mb[k]; }).map(function(k){ return ma[k]; }), both: Object.keys(mb).filter(function(k){ return ma[k]; }).map(function(k){ return [ma[k], mb[k]]; }) }; }
   function eq(a, b){ return JSON.stringify(a) === JSON.stringify(b); }
 
-  WATCH['bassam_employees_v1'] = function(did, o, n){
-    o = Array.isArray(o) ? o : []; n = Array.isArray(n) ? n : []; var key = function(e){ return e.eid || e.name; };
-    var d = diffList(o, n, key);
-    if (o.length && !n.length) { emit('emp_wipe', { dept: did, vars: { 'الإدارة': deptName(did), 'المُعدّل': who() } }); return; }
-    if (d.added.length >= 5) emit('emp_imp', { dept: did, vars: { 'المضافون': d.added.length, 'المحدثون': d.both.filter(function(p){ return !eq(p[0], p[1]); }).length, 'المُعدّل': who() } });
-    else d.added.forEach(function(e){ emit('emp_add', { dept: did, vars: { 'الاسم': e.name, 'النوع': e.type || '' } }); });
-    d.removed.forEach(function(e){ emit('emp_del', { dept: did, vars: { 'الاسم': e.name, 'المُعدّل': who() } }); });
-    var FN = { name:'الاسم', nid:'رقم الهوية', phone:'الجوال', email:'البريد', empno:'الرقم الوظيفي', type:'نوع التوظيف', work:'نوع العمل', gender:'الجنس', shift:'الوردية' };
-    d.both.forEach(function(p){ var a = p[0], b = p[1]; var ch = Object.keys(FN).filter(function(f){ return (a[f] || '') !== (b[f] || ''); }); if (!ch.length) return; var ek = key(b);
-      if (ch.indexOf('type') !== -1) { var f = 'type'; emit('emp_type', { dept: did, own: [ek], vars: { 'الحقل': FN[f], 'القيمة': b[f] || '—' } }); }
-      var rest = ch.filter(function(f){ return f !== 'type' && f !== 'email'; }); if (rest.length) emit('emp_edit', { dept: did, own: [ek], vars: { 'الحقول': rest.map(function(f){ return FN[f]; }).join('، '), 'المُعدّل': who() } }); });
-  };
+  /* RISHAD-266 · issue #1 (قرارُ المالك): إشعاراتُ الموظفين (emp_add · emp_edit · emp_type · emp_del · emp_imp · emp_wipe) يُصدرها الخادمُ نفسُه عند قبول الحفظ
+     (workers/parts/019 nfEmployeePlan — من فرق سجل الموظفين المقبول، في دفعة الحفظ الذرّية نفسِها) ولا يقبلها من المتصفح؛ فلا مراقبَ هنا لسجل الموظفين. */
   WATCH['bassam_auth_users_v1'] = function(did, o, n){
     o = Array.isArray(o) ? o : []; n = Array.isArray(n) ? n : []; var d = diffList(o, n, function(u){ return u.id; });
     var frz = [];

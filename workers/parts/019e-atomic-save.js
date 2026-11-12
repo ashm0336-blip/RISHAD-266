@@ -487,6 +487,11 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   }
   await bdWipePlans(env,A,body,plan,irWipeDepartments,opt,irFinalDepartments);
   await bdEmployeeCleanupPlan(env,A,body,plan,reference,opt,irWipeDepartments);
+  /* RISHAD-266 · issue #1 (owner decision): the server issues the employee notifications of the save it accepts, in the same
+     atomic batch (019 nfEmployeePlan) — never the browser. A unit wiped or deleted by this plan gets none (its feed is replaced). */
+  var employeeNotifications = await nfEmployeePlan(env, A, kv.pend, plan.body.requestId || enfSnapId('ops'), irWipeDepartments);
+  plan.guards.push.apply(plan.guards, employeeNotifications.guards);
+  plan.statements.push.apply(plan.statements, employeeNotifications.statements);
   if (!plan.snapshotRequired) plan.snapshots = [];
   else
     for (var dept of departments) {
