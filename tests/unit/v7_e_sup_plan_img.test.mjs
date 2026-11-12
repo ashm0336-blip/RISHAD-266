@@ -190,3 +190,111 @@ test('enforce: the image rule — a rounds-hosted lens key counts only for a rec
     for (const rn of ['bassam_plan_v1', 'bassam_rounds_v1']) assert.equal(enfImgWriteOk(A, 'bsdept:TEST_ONLY_d:' + rn), false);
   }
 });
+
+/* ═══ ADDED AFTER THE INDEPENDENT REVIEW OF 1cf4838 (accepted with changes) — pins only, no behaviour change ═══
+   The rule is wider than «the plan map»: it applies to every record that has rounds-hosted lens keys but is not written by the
+   rounds page — the plan AND the three option records (bassam_zone_opts_v1 · bassam_gate_opts_v1 · bassam_mark_kinds_v1, cap 'plan'),
+   and through 054 imgForeignIn to a ROUNDS RECORD save that newly references a plan-owned image. */
+const KOPT = (rn) => 'bsdept:' + D + ':' + rn;
+const OPTS = ['bassam_zone_opts_v1', 'bassam_gate_opts_v1', 'bassam_mark_kinds_v1'];
+const SUP = sheet({ 'daily/field': ['view'], 'daily/rounds': ['view', 'edit'] });
+const G_ROUND = grant(['field.view', 'round.view', 'plan.view', 'round.edit'].concat(DER));
+const G_LENS = grant(VIEWS.concat(DER, ['lens.zones.data.edit']));
+/* the manager uploads an image and it is bound to an option record. The binding is written straight into the ownership tables
+   (imgown · imgref), as the reviewer's probe did: the option records carry no image field of their own in the fixture */
+async function bindOpt(S, rn) {
+  const { W, x } = S, id = 'img_v7e' + x + '_' + rn.replace(/[^a-z]/g, '').slice(6, 14), dm = await S.who.dm();
+  assert.equal((await img(W, dm.ck, id, 'PUT')).status, 200, 'the manager uploads an image for ' + rn);
+  W.env.DB.db.prepare("UPDATE imgown SET st='bound', k=?, uid='' WHERE img=?").run(KOPT(rn), id);
+  W.env.DB.db.prepare('INSERT OR IGNORE INTO imgref (img,k) VALUES (?,?)').run(id, KOPT(rn));
+  assert.deepEqual([own(W, id).st, own(W, id).k], ['bound', KOPT(rn)]); assert.equal(await bytes(W, id), PNG);
+  return id;
+}
+/* PUT then DELETE one image; two letters (Y allowed · b «bound» · u «inuse»), every answer checked against the stored bytes */
+async function attempt(W, ck, id) {
+  const letter = (r) => r.status === 200 ? 'Y' : r.status === 403 && r.j && r.j.why === 'bound' ? 'b' : r.status === 403 && r.j && r.j.why === 'inuse' ? 'u' : '?(' + r.status + ':' + ((r.j && r.j.why) || '') + ')';
+  const before = await bytes(W, id), p = await img(W, ck, id, 'PUT', OTHER), afterPut = await bytes(W, id);
+  assert.equal(afterPut, p.status === 200 ? OTHER : before, 'put: the answer matches the stored bytes');
+  const d = await img(W, ck, id, 'DELETE'), afterDel = await bytes(W, id);
+  assert.equal(afterDel, d.status === 200 ? '' : afterPut, 'del: the answer matches the store');
+  return letter(p) + letter(d);
+}
+const optCells = async (mode, setup, who) => { const S = await scene(mode, setup), ck = (await S.who[who || 'acc']()).ck, o = {}; for (const rn of OPTS) o[rn.slice(7, -3)] = await attempt(S.W, ck, await bindOpt(S, rn)); if (process.env.V7E_PRINT) console.log(mode + ' opts ' + JSON.stringify(o)); return o; };
+const O = (zone, gate, mark) => ({ zone_opts: zone, gate_opts: gate, mark_kinds: mark });
+/* a save of one record by the signed-in account; returns 'OK' or the denial reason */
+async function saveKey(W, ck, k, edit) {
+  const r = await W.C.api('/api/operations/read?keys=' + encodeURIComponent(k), { cookie: ck });
+  let v = r.j && r.j.resources ? r.j.resources[k] : undefined, base = r.j && r.j.base ? r.j.base[k] : undefined;
+  if (v === undefined) { v = stored(W.env, k); base = (W.env.DB.q('SELECT rev FROM revs WHERE k = ?', k)[0] || {}).rev; }
+  v = JSON.parse(JSON.stringify(v)); edit(v);
+  const sv = await post(W, ck, '/api/save', { set: { [k]: JSON.stringify(v) }, del: [], base: { [k]: base }, why: { [k]: TAG + ' v7e' } });
+  const den = (sv.j && sv.j.denied || {})[k];
+  return sv.status === 200 && !den ? 'OK' : String((den && den.why) || (sv.j && (sv.j.why || sv.j.err)) || sv.status);
+}
+const today = (v) => Object.keys(v).filter(isDay).sort().pop();
+
+/* F1 — images bound to the option records. On base 5add483 ENFORCE ALLOWED the rounds-only writer here (measured by the reviewer:
+   sheet / round.edit / lens.zones.data.edit ⇒ Y/Y on all three records); legacy always refused. Now refused as in legacy. */
+for (const [label, setup, modes] of [['a stored supervisor sheet', SUP, ['legacy', 'enforce']], ['explicit grant: round.edit', G_ROUND, ['legacy', 'enforce']], ['explicit grant: lens.zones.data.edit', G_LENS, ['legacy', 'enforce']]]) for (const mode of modes) {
+  test('[F1 · ' + mode + '] ' + label + ': an image of the zone/gate/mark option records is refused — put · del', { timeout: 300000 }, async () => {
+    assert.deepEqual(await optCells(mode, setup), O('bb', 'bb', 'bb'));
+  });
+}
+test('[F1 · enforce] the holder of the matching reference key still writes the option image — and only that one', { timeout: 300000 }, async () => {
+  const REFK = { zone: 'ref.zone.type.edit', gate: 'ref.gate.type.edit', mark: 'ref.mark.kind.edit' };
+  for (const k of Object.values(REFK)) assert.ok(REG.some((e) => e.key === k && isWrite(e)), k + ' is a write key of the registry');
+  assert.deepEqual(await optCells('enforce', grant(VIEWS.concat([REFK.zone]))), O('YY', 'bb', 'bb'));
+  assert.deepEqual(await optCells('enforce', grant(VIEWS.concat([REFK.gate]))), O('bb', 'YY', 'bb'));
+  assert.deepEqual(await optCells('enforce', grant(VIEWS.concat([REFK.mark]))), O('bb', 'bb', 'YY'));
+});
+for (const mode of ['legacy', 'enforce']) test('[F1 · ' + mode + '] the unit manager and a plan sheet with a write still write the option images', { timeout: 300000 }, async () => {
+  assert.deepEqual(await optCells(mode, () => {}, 'dm'), O('YY', 'YY', 'YY'));
+  assert.deepEqual(await optCells(mode, sheet({ plan: ['view', 'edit'] })), O('YY', 'YY', 'YY'));
+});
+
+/* F2 — through 054 imgForeignIn: a rounds-only writer saving HIS OWN record (the round) with a new reference to an image owned by
+   the plan is refused «imgown», in enforce as in legacy (on base 5add483 enforce accepted it). His plain round save still passes. */
+for (const [label, setup, modes] of [['a stored supervisor sheet', SUP, ['legacy', 'enforce']], ['explicit grant: round.edit', G_ROUND, ['enforce']]]) for (const mode of modes) {
+  test('[F2 · ' + mode + '] ' + label + ': a round save that newly references the plan-owned image is denied imgown; the manager\'s is accepted', { timeout: 300000 }, async () => {
+    const S = await scene(mode, setup), { W, ids } = S, ck = (await S.who.acc()).ck, before = JSON.stringify(stored(W.env, KR));
+    assert.equal(await saveKey(W, ck, KR, (v) => { v[today(v)].d[0].iid = ids.plan; }), 'imgown');
+    assert.equal(JSON.stringify(stored(W.env, KR)), before, 'the stored round is unchanged');
+    assert.deepEqual([own(W, ids.plan).st, own(W, ids.plan).k, await bytes(W, ids.plan)], ['bound', KPLAN, PNG]);
+    assert.equal(await saveKey(W, ck, KR, (v) => { v[today(v)].d[0].name = (v[today(v)].d[0].name || '') + ' x'; }), 'OK', 'his round save without the foreign image passes');
+    assert.equal(await saveKey(W, (await S.who.dm()).ck, KR, (v) => { v[today(v)].d[0].iid = ids.plan; }), 'OK', 'the unit manager');
+    assert.equal(stored(W.env, KR)[today(stored(W.env, KR))].d[0].iid, ids.plan);
+  });
+}
+
+/* SHARED ID · A — bound first to the plan, then also referenced by today's round: the plan owns it; the supervisor cannot replace
+   or delete it, can take the reference out of his round, and the image stays the plan's with the same bytes. */
+for (const mode of ['legacy', 'enforce']) test('[shared id A · ' + mode + '] plan-owned image also referenced by the round: the supervisor is refused «bound», may drop his reference', { timeout: 300000 }, async () => {
+  const S = await scene(mode, SUP), { W, ids } = S, ck = (await S.who.acc()).ck;
+  assert.equal(await saveKey(W, (await S.who.dm()).ck, KR, (v) => { v[today(v)].d[0].iid = ids.plan; }), 'OK');
+  assert.deepEqual(W.env.DB.q('SELECT k FROM imgref WHERE img = ? ORDER BY k', ids.plan).map((r) => r.k), [KPLAN, KR]);
+  assert.equal(await attempt(W, ck, ids.plan), 'bb'); assert.equal(await bytes(W, ids.plan), PNG);
+  assert.equal(await saveKey(W, ck, KR, (v) => { v[today(v)].d[0].iid = null; }), 'OK', 'he removes the reference from his round');
+  assert.deepEqual([own(W, ids.plan).st, own(W, ids.plan).k, await bytes(W, ids.plan)], ['bound', KPLAN, PNG]);
+  assert.equal(stored(W.env, KPLAN).floors[0].iid, ids.plan);
+});
+/* SHARED ID · B — KNOWN FINDING, pre-existing, BOTH modes, not fixed here: ownership stays with the FIRST record that bound the
+   image. Bound first to the round and later referenced by the plan, the supervisor's PUT succeeds and replaces the bytes the plan
+   shows; only DELETE is stopped («inuse»). Pinned so that changing it is a decision. */
+for (const mode of ['legacy', 'enforce']) test('[shared id B · KNOWN FINDING · ' + mode + '] round-owned image later referenced by the plan: the supervisor\'s PUT replaces what the plan shows; DELETE is «inuse»', { timeout: 300000 }, async () => {
+  const S = await scene(mode, SUP), { W, ids } = S, ck = (await S.who.acc()).ck;
+  assert.equal(await saveKey(W, (await S.who.dm()).ck, KPLAN, (v) => { v.floors[0].iid = ids.rounds; }), 'OK');
+  assert.deepEqual([own(W, ids.rounds).st, own(W, ids.rounds).k], ['bound', KR], 'ownership did not move to the plan');
+  assert.equal(await attempt(W, ck, ids.rounds), 'Yu');
+  assert.equal(stored(W.env, KPLAN).floors[0].iid, ids.rounds); assert.equal(await bytes(W, ids.rounds), OTHER, 'the plan now shows the replaced bytes');
+});
+
+/* OPEN FINDING (awaiting an owner decision, not fixed): a plan sheet holding ONLY «approve» — legacy refuses every image write
+   (approve is not a write of the record), enforce allows the plan image and the option images (plan.approve / site.approve list
+   those records). Same on base 5add483. The other open finding — the symmetric case — is pinned above. */
+test('[OPEN FINDING] a plan sheet with only «approve»: legacy refuses the plan/option images, enforce allows them', { timeout: 300000 }, async () => {
+  const APPR = sheet({ plan: ['view', 'approve'] });
+  assert.equal(await run('legacy', APPR), NOTHING, 'legacy: plan map and round map');
+  assert.deepEqual(await optCells('legacy', APPR), O('bb', 'bb', 'bb'), 'legacy: option images');
+  assert.equal(await run('enforce', APPR), PLAN_ONLY, 'enforce — the open finding: the plan map');
+  assert.deepEqual(await optCells('enforce', APPR), O('YY', 'YY', 'YY'), 'enforce — the open finding: option images');
+});
