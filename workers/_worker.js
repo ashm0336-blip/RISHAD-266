@@ -4691,6 +4691,14 @@ function nfPage(A, d, type, cat, act) {
   if (A.u.role === "super") return true;
   if (page.indexOf("admin/") === 0 && act === "view" && isMgrOf(A, d)) return true;
   if (A.enf) {
+    /* RISHAD-266 · owner decision («مدير الإدارة في enforce يقرأ إشعارات الموظفين الموجّهة للمديرين»): «emps» is a container page with
+       no registry atom, so the lookup below never answered for the «emp» category and no manager read these in enforce. READ only,
+       and only for the manager role of this unit: the legacy rule itself (the manager's sheet holds «view» on the container — a
+       manager with his own narrower sheet does not) ∧ the enforce key emp.view still held (an explicit «minus» keeps dropping it).
+       Scope and the unit ceiling were checked above. Nothing else is opened: a non-manager, whatever key or leaf he holds, gets
+       false as before, and the emit path never comes here for this category (clients are dropped, the server plans internally). */
+    if (cat === "emp" && page === NF_CAP.emp)
+      return act === "view" && isMgrOf(A, d) && actsHeldOn(A, d, page, [act]) && enfHeld(A, d, "emp.view");
     var atom = KIVO_REGISTRY.atoms[page + ":" + act];
     return !!(
       atom &&
