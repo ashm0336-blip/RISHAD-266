@@ -23653,16 +23653,17 @@ var IMG_ESC_DEC = (function () {
 var IMG_ESC_JOIN = '(substr(a.v, -1024) || substr(b.v, 1, 1024))';
 var IMG_ESC_CTE = 'WITH esc(d) AS MATERIALIZED (SELECT ' + IMG_ESC_DEC.replace('#', 'v') + " FROM kv WHERE instr(v, '\\u00') > 0 AND v GLOB " + IMG_ESC_GLOB +
   ' UNION ALL SELECT ' + IMG_ESC_DEC.replace('#', IMG_ESC_JOIN) + ' FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + IMG_ESC_JOIN + ' GLOB ' + IMG_ESC_GLOB + ') ';
-/* second review (LOW) — the sweep deletes objects: without a store that can delete it does NOTHING (no row deleted, none condemned, no clock moved),
-   or the rows would go and leave every object in the bucket with nothing that knows it. A missing binding is seen before the first statement; a
-   binding that cannot delete is looked at only by a pass that has something to delete (as before: a pass that deletes nothing never touches it). */
+/* second review (LOW) + third review, item A — the object store is OPTIONAL (config/wrangler.toml ships with IMG_R2 commented out: every body is
+   then inline in D1). Without a store that can delete (no binding · no delete · not an object store) the sweep still runs for everything that lives
+   in D1 alone — inline bodies and staged parts, as before — and SKIPS only a row whose body is the object-store marker (IMG_R2_MARK): it is not
+   selected, so it is not condemned, not re-clocked, not deleted (its rows would go and leave the object in the bucket with nothing that knows it),
+   and it does not hold the queue. Each pass that skipped some says so (img-sweep-r2-skip { why, n }). With the binding back they are swept as
+   usual. The store is looked at only by a pass that has a due row (as before: a pass with nothing to do never touches the binding). */
 function imgSweepStore(env) { var B = imgBucket(env); return (B && typeof B.delete === 'function') ? B : null; }
-function imgSweepOff(env, out, why) { out.off = why; logEv('warn', 'img-sweep-off', { why: why, rid: env.__rid }); return out; }
 function imgSnap(rows) { return JSON.stringify(rows.map(function (x) { return { i: x.img, s: x.st, t: x.ts }; })); }
 var IMG_SNAP_SAME = "EXISTS (SELECT 1 FROM json_each(?1) j WHERE json_extract(j.value, '$.i') = imgown.img AND json_extract(j.value, '$.s') = imgown.st AND json_extract(j.value, '$.t') = imgown.ts)";
 async function imgSweep(env, now, max, maxDead) {
   var out = { seen: 0, purged: 0, kept: 0, retry: 0, staged: 0, scan: 0, unprovable: 0, more: 0 }, lease = Math.max(Date.now(), now), i, deadMax = maxDead || IMG_SWEEP_DEAD;
-  if (!env.IMG_R2) return imgSweepOff(env, out, 'no-binding');
   /* finding 5: the selections below are range scans of imgown (st, ts). The index is created here — idempotent, one statement per pass — and not
      by a numbered migration: a migration needs the operator's upgrade permit (052 migrateDb), and the sweep must not wait for an operator. */
   await env.DB.prepare(IMG_OWN_IDX).run();
@@ -23670,7 +23671,6 @@ async function imgSweep(env, now, max, maxDead) {
   await env.DB.prepare("INSERT OR IGNORE INTO imgown (img, st, k, uid, dept, ts) SELECT DISTINCT ?1 || substr(k, 6, instr(substr(k, 6), '~') - 1), 'stage', '', '', '', ?4 FROM imgs WHERE k >= ?2 AND k < ?3")
     .bind(IMG_STG, IMG_STG, IMG_STG_END, now).run();
   var sg = ((await env.DB.prepare("SELECT img, ts FROM imgown WHERE st = 'stage' AND ts < ?1 ORDER BY ts LIMIT 50").bind(now - IMG_STAGE_TTL).all()).results) || [], sgSt = [];
-  if (sg.length && !imgSweepStore(env)) return imgSweepOff(env, out, 'binding-cannot-delete');
   sg.forEach(function (x) {
     var id = String(x.img).slice(IMG_STG.length), same = "EXISTS (SELECT 1 FROM imgown WHERE img = ?3 AND st = 'stage' AND ts = ?4)";
     sgSt.push(env.DB.prepare('DELETE FROM imgs WHERE k >= ?1 AND k < ?2 AND ' + same).bind(IMG_STG + id + '~', IMG_STG + id + '\u007f', x.img, x.ts));
@@ -23678,13 +23678,26 @@ async function imgSweep(env, now, max, maxDead) {
   });
   for (i = 0; i < sgSt.length; i += 90) await env.DB.batch(sgSt.slice(i, i + 90));
   out.staged = sg.length;
-  var r = await env.DB.prepare("SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'dead' AND ts < ?3 ORDER BY ts LIMIT ?5) UNION ALL " +
-    "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'orphan' AND ts < ?1 ORDER BY ts LIMIT ?4) UNION ALL " +
-    "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'claim' AND ts < ?2 ORDER BY ts LIMIT ?4)")
-    .bind(now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max, deadMax).all();
-  var L = (r && r.results) || [], dead = L.filter(function (x) { return x.st === 'dead'; }), take = [];
+  var sel = function (r2skip) {
+    var f = r2skip ? ' AND NOT EXISTS (SELECT 1 FROM imgs WHERE imgs.k = imgown.img AND imgs.seq = 0 AND imgs.v = ?6)' : '';
+    var q = "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'dead' AND ts < ?3" + f + " ORDER BY ts LIMIT ?5) UNION ALL " +
+      "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'orphan' AND ts < ?1" + f + " ORDER BY ts LIMIT ?4) UNION ALL " +
+      "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'claim' AND ts < ?2" + f + " ORDER BY ts LIMIT ?4)";
+    /* the skipped rows are counted in the same statement (bounded: at most 1000 looked at) */
+    if (r2skip) q += " UNION ALL SELECT NULL, 'r2skip', (SELECT COUNT(*) FROM (SELECT 1 FROM imgown o JOIN imgs ON imgs.k = o.img AND imgs.seq = 0 AND imgs.v = ?6 WHERE" +
+      " (o.st = 'dead' AND o.ts < ?3) OR (o.st = 'orphan' AND o.ts < ?1) OR (o.st = 'claim' AND o.ts < ?2) LIMIT 1000))";
+    var b = [now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max, deadMax]; if (r2skip) b.push(IMG_R2_MARK);
+    var st = env.DB.prepare(q); return st.bind.apply(st, b).all();
+  };
+  var r = await sel(false), L = (r && r.results) || [], store = L.length ? imgSweepStore(env) : null, take = [];
+  if (L.length && !store) {
+    r = await sel(true); L = (r && r.results) || [];
+    var sk = L.filter(function (x) { return x.st === 'r2skip'; })[0], skN = sk ? Number(sk.ts) || 0 : 0;
+    L = L.filter(function (x) { return x.st !== 'r2skip'; });
+    if (skN) { out.r2skip = skN; logEv('warn', 'img-sweep-r2-skip', { why: imgBucket(env) ? 'binding-cannot-delete' : 'no-binding', n: skN, rid: env.__rid }); }
+  }
+  var dead = L.filter(function (x) { return x.st === 'dead'; });
   var cand = L.filter(function (x) { return x.st !== 'dead'; }).sort(function (a, b) { return a.ts - b.ts; }).slice(0, max);   /* the oldest first, whichever kind */
-  if (L.length && !imgSweepStore(env)) return imgSweepOff(env, out, 'binding-cannot-delete');
   /* an orphan whose unit is not on the platform now is the platform admin's for good (a unit re-created later under that id inherits nothing) */
   var dj = parseJson(await kvGet(env, 'kv', K_DEPTS), null);
   if (Array.isArray(dj)) await env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE st = 'orphan' AND dept != '' AND uid != ?2 AND dept NOT IN (SELECT value FROM json_each(?1))")
@@ -23730,12 +23743,12 @@ async function imgSweep(env, now, max, maxDead) {
      of IMG_SWEEP_CHUNK, as soon as R2 confirmed the chunk — an invocation that is cut (subrequest limit, waitUntil limit) keeps everything it
      finished, so every pass makes progress; before, the rows left in one batch at the very end, which a cut pass never reached. A store that
      refuses two whole chunks in a row is not asked again in this pass (it is down, or the invocation is out of subrequests). */
-  var B = take.length ? imgSweepStore(env) : null, refused = 0, j;             /* the object store is not even looked at by a pass that deletes nothing */
+  var B = store, refused = 0, j;                                           /* null: no store that can delete — only rows that live in D1 alone were taken */
   var mine = "(SELECT img FROM imgown WHERE st = 'dead' AND ts = ?2 AND img IN (SELECT value FROM json_each(?1)))";
   try { for (i = 0; i < take.length && refused < 2; i += IMG_SWEEP_CHUNK) {
     var grp = take.slice(i, i + IMG_SWEEP_CHUNK), part = [];
     for (j = 0; j < grp.length; j++) {
-      try { await B.delete('img/' + grp[j]); } catch (e) { swallow('r2-delete', e, env.__rid); out.retry++; continue; }
+      if (B) { try { await B.delete('img/' + grp[j]); } catch (e) { swallow('r2-delete', e, env.__rid); out.retry++; continue; } }
       part.push(grp[j]);
     }
     refused = part.length ? 0 : refused + 1;
