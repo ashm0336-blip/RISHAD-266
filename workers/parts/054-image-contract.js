@@ -289,14 +289,25 @@ async function imgSync(env, A, list) {
            · imgref is known COMPLETE for the typed tables: meta.imgref_scan_v1 = 'done'. Records saved before this version were indexed by a
              scan that stopped at 5000 mentions, so until imgRefScan has re-read every typed resource and inserted what was dropped, nothing is condemned.
          Typed tables with no image column (custody · irshad · awards text · notifications · daily stats) need no check.
-   THEN: 'dead' is no image for anyone (imgVerdict · imgForeignIn · listing): only now are the R2 objects deleted (one call per object, at most IMG_SWEEP_DEAD a pass),
-         outside any DB transaction; the rows go only after R2 confirmed, in one batch. A failed R2 delete, or a failed row batch, leaves the
+   THEN: 'dead' is no image for anyone (imgVerdict · imgForeignIn · listing): only now are the R2 objects deleted (one call per object, at most IMG_SWEEP_DEAD a pass
+         — IMG_SWEEP_DEAD_ADMIN for the admin's overview and a reset), outside any DB transaction; the rows go only after R2 confirmed, chunk by
+         chunk (IMG_SWEEP_CHUNK), so a pass that is cut keeps what it finished. A failed R2 delete, or a failed row batch, leaves the
          'dead' rows: the next pass retries them (IMG_DEAD_LEASE on ts keeps two passes, or a pass and a re-upload of the id, apart).
    A referenced orphan is not deleted: it turns 'amb' (the platform admin's), as before; a referenced stale upload gets its clock restarted.
    Ids of any shape are handled (the match is instr, never a GLOB pattern), so a malformed row cannot hold the queue — but only an id of the
    scanner's shape can be condemned (IMG_SCAN_ID_RX; see `odd` below): for any other id "no record mentions it" cannot be proven. */
 var IMG_ORPHAN_GRACE = 30 * 864e5, IMG_CLAIM_TTL = 30 * 864e5, IMG_STAGE_TTL = 7 * 864e5, IMG_DEAD_LEASE = 20000;
-var IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 40, IMG_SWEEP_DEAD = 400, IMG_SWEEP_EVERY = 10 * 60000, IMG_SWEEP_EVERY_ADMIN = 60000;
+var IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 40, IMG_SWEEP_EVERY = 10 * 60000, IMG_SWEEP_EVERY_ADMIN = 60000;
+/* how many condemned rows ONE pass takes on top of its candidates (second review, finding 4).
+   IMG_SWEEP_DEAD = 6 — the pass an ordinary save carries. The smallest invocation limit of the platform is 50 subrequests (every D1 round trip
+   and every R2 call counts). The sweep part of such a pass, worst case: 14 D1 round trips before any delete (the 10-minute compare-and-set ·
+   index · stage clock · stage selection · ≤ 2 stage batches · unit list · gone units · selection · unprovable · re-scan check · lease ·
+   deciding statement · keep) + 12 R2 deletes (6 condemned now + 6 waiting) + 3 row batches (chunks of IMG_SWEEP_CHUNK = 4) = 29 < 50 — and
+   with the 14–16 round trips of the typed save itself the WHOLE invocation is 43–45 ≤ 50 (measured: tests/unit/v7_f_img_drain.test.mjs).
+   (The one-time re-scan of the typed records, imgRefScan, can take more in the first passes; it saves its cursor every round, so a cut costs nothing.)
+   IMG_SWEEP_DEAD_ADMIN = 400 — the platform admin's overview (at most one pass a minute) and the pass a reset forces: what drains a large
+   backlog (a reset over 1200 images: 3 passes). Under a small limit such a pass IS cut — and still keeps every chunk it finished. */
+var IMG_SWEEP_DEAD = 6, IMG_SWEEP_DEAD_ADMIN = 400, IMG_SWEEP_CHUNK = 4;
 var IMG_OWN_IDX = 'CREATE INDEX IF NOT EXISTS imgown_st_ts ON imgown (st, ts)';
 var IMG_STAGE = 'stage', IMG_SCAN_KEY = 'imgref_scan_v1', IMG_SWEEP_KEY = 'rl:img-sweep', IMG_STG_END = '~stg\u007f';
 function imgStageRow(ik) { return IMG_STG + ik; }
@@ -361,7 +372,7 @@ var IMG_ESC_CTE = 'WITH esc(d) AS MATERIALIZED (SELECT ' + IMG_ESC_DEC.replace('
 function imgSnap(rows) { return JSON.stringify(rows.map(function (x) { return { i: x.img, s: x.st, t: x.ts }; })); }
 var IMG_SNAP_SAME = "EXISTS (SELECT 1 FROM json_each(?1) j WHERE json_extract(j.value, '$.i') = imgown.img AND json_extract(j.value, '$.s') = imgown.st AND json_extract(j.value, '$.t') = imgown.ts)";
 async function imgSweep(env, now, max, maxDead) {
-  var out = { seen: 0, purged: 0, kept: 0, retry: 0, staged: 0, scan: 0, unprovable: 0 }, lease = Math.max(Date.now(), now), i;
+  var out = { seen: 0, purged: 0, kept: 0, retry: 0, staged: 0, scan: 0, unprovable: 0, more: 0 }, lease = Math.max(Date.now(), now), i, deadMax = maxDead || IMG_SWEEP_DEAD;
   /* finding 5: the selections below are range scans of imgown (st, ts). The index is created here — idempotent, one statement per pass — and not
      by a numbered migration: a migration needs the operator's upgrade permit (052 migrateDb), and the sweep must not wait for an operator. */
   await env.DB.prepare(IMG_OWN_IDX).run();
@@ -383,7 +394,7 @@ async function imgSweep(env, now, max, maxDead) {
   var r = await env.DB.prepare("SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'dead' AND ts < ?3 ORDER BY ts LIMIT ?5) UNION ALL " +
     "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'orphan' AND ts < ?1 ORDER BY ts LIMIT ?4) UNION ALL " +
     "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'claim' AND ts < ?2 ORDER BY ts LIMIT ?4)")
-    .bind(now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max, maxDead || IMG_SWEEP_DEAD).all();
+    .bind(now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max, deadMax).all();
   var L = (r && r.results) || [], dead = L.filter(function (x) { return x.st === 'dead'; }), take = [];
   var cand = L.filter(function (x) { return x.st !== 'dead'; }).sort(function (a, b) { return a.ts - b.ts; }).slice(0, max);   /* the oldest first, whichever kind */
   /* second review, finding 1 — an id the reference scanner could not have matched (the upload accepts ^[A-Za-z0-9_]{1,128}$, imgIdsIn sees only
@@ -423,22 +434,36 @@ async function imgSweep(env, now, max, maxDead) {
       out.kept = ((hk && hk.results) || []).length;
     }
   }
-  /* one R2 call per object (a failed one keeps ITS row for the next pass and stops nobody else); the rows of everything R2 confirmed go in one batch */
-  var okIds = [], B = take.length ? imgBucket(env) : null;                /* the object store is not even looked at by a pass that deletes nothing */
-  for (i = 0; i < take.length; i++) {
-    if (B) { try { await B.delete('img/' + take[i]); } catch (e) { swallow('r2-delete', e, env.__rid); out.retry++; continue; } }
-    okIds.push(take[i]);
-  }
-  for (i = 0; i < okIds.length; i += 500) {
-    var part = okIds.slice(i, i + 500), js = JSON.stringify(part);
-    var mine = "(SELECT img FROM imgown WHERE st = 'dead' AND ts = ?2 AND img IN (SELECT value FROM json_each(?1)))";
+  /* one R2 call per object (a failed one keeps ITS row for the next pass and stops nobody else). Second review, finding 4: the rows leave in chunks
+     of IMG_SWEEP_CHUNK, as soon as R2 confirmed the chunk — an invocation that is cut (subrequest limit, waitUntil limit) keeps everything it
+     finished, so every pass makes progress; before, the rows left in one batch at the very end, which a cut pass never reached. A store that
+     refuses two whole chunks in a row is not asked again in this pass (it is down, or the invocation is out of subrequests). */
+  var B = take.length ? imgBucket(env) : null, refused = 0, j;             /* the object store is not even looked at by a pass that deletes nothing */
+  var mine = "(SELECT img FROM imgown WHERE st = 'dead' AND ts = ?2 AND img IN (SELECT value FROM json_each(?1)))";
+  try { for (i = 0; i < take.length && refused < 2; i += IMG_SWEEP_CHUNK) {
+    var grp = take.slice(i, i + IMG_SWEEP_CHUNK), part = [];
+    for (j = 0; j < grp.length; j++) {
+      if (B) { try { await B.delete('img/' + grp[j]); } catch (e) { swallow('r2-delete', e, env.__rid); out.retry++; continue; } }
+      part.push(grp[j]);
+    }
+    refused = part.length ? 0 : refused + 1;
+    if (!part.length) continue;
+    var js = JSON.stringify(part);
     await env.DB.batch([env.DB.prepare('DELETE FROM imgs WHERE k IN ' + mine).bind(js, lease),
       env.DB.prepare("DELETE FROM imgs WHERE k >= ?3 AND k < ?4 AND substr(k, 6, instr(substr(k, 6), '~') - 1) IN " + mine).bind(js, lease, IMG_STG, IMG_STG_END),
       env.DB.prepare("DELETE FROM imgown WHERE st = 'stage' AND substr(img, 6) IN " + mine).bind(js, lease),
       env.DB.prepare("DELETE FROM imgown WHERE st = 'dead' AND ts = ?2 AND img IN (SELECT value FROM json_each(?1))").bind(js, lease)]);
     out.purged += part.length;
+  } } finally {                                                            /* a pass cut inside a row batch still says what it did and that more remains */
+    if (i < take.length) out.retry += take.length - i;                     /* not asked, or not finished: they wait for the next pass, like the refused ones */
+    imgSweepSay(env, out, dead.length >= deadMax);
   }
   return out;
+}
+/* the pass reports what it deleted and whether condemned objects remain (the platform admin's overview shows the count: imgs.counts.dead) */
+function imgSweepSay(env, out, full) {
+  out.more = (out.retry || full) ? 1 : 0;
+  if (out.purged || out.retry) logEv(out.retry ? 'warn' : 'info', 'img-sweep', { purged: out.purged, retry: out.retry, more: out.more, rid: env.__rid });
 }
 /* one compare-and-set decides whether THIS request runs the pass: at most one per `every` ms for the whole platform */
 async function imgSweepDue(env, now, every) {

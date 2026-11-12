@@ -493,7 +493,7 @@ export default {
     var t0 = Date.now();
     var res0 = await this.handle(request, env);
     /* V7-F · owner decision 2: the image sweep runs after every accepted write — the typed/atomic save path included (054 imgSweep: a small batch, after the response when waitUntil exists) */
-    if ((m0 === 'POST' || m0 === 'PUT' || m0 === 'DELETE') && res0 && res0.status === 200 && url0.pathname.indexOf('/api/') === 0 && url0.pathname.indexOf('/api/img/') !== 0 && url0.pathname !== '/api/login') await (url0.pathname === '/api/reset' ? imgSweepLater(env, IMG_SWEEP_RESET, 0) : imgSweepLater(env, IMG_SWEEP_SAVE));   /* one compare-and-set per write; a pass at most once per IMG_SWEEP_EVERY · a reset condemns every R2 image (019e) and forces its first pass (batched: a handful of subrequests whatever the count) */
+    if ((m0 === 'POST' || m0 === 'PUT' || m0 === 'DELETE') && res0 && res0.status === 200 && url0.pathname.indexOf('/api/') === 0 && url0.pathname.indexOf('/api/img/') !== 0 && url0.pathname !== '/api/login') await (url0.pathname === '/api/reset' ? imgSweepLater(env, IMG_SWEEP_RESET, 0, IMG_SWEEP_DEAD_ADMIN) : imgSweepLater(env, IMG_SWEEP_SAVE));   /* one compare-and-set per write; a pass at most once per IMG_SWEEP_EVERY · a reset condemns every R2 image (019e) and forces its first pass (chunked: every chunk R2 confirmed is finished, whatever cuts the invocation) */
     var out0 = withSec(res0, url0, rid, nonce);
     /* KIVO_255 · SOT-143/149 (SOT-142): سطرُ طلبٍ واحد لكل /api/* — المدةُ داخل العامل (D1 ضمناً) بالملّي ثانية، والمسارُ بلا استعلام، بلا هوية؛
        منه تُشتقّ المقاييسُ التقنية (المعدّل · نسبةُ الأخطاء · p50/p95 لكل مسار) في Workers Logs/Logpush؛ ورأسُ Server-Timing يُظهر المدةَ نفسَها للمتصفح
@@ -768,7 +768,7 @@ export default {
         }
         /* ملخّص نظرة عامة */
         if (path === '/api/overview') {
-          if (superX) await imgSweepLater(env, IMG_SWEEP_ADMIN, IMG_SWEEP_EVERY_ADMIN);   /* V7-F · owner decision 2: the admin's overview also asks for a pass (a larger batch, at most one a minute) — never waited for when the runtime gives waitUntil */
+          if (superX) await imgSweepLater(env, IMG_SWEEP_ADMIN, IMG_SWEEP_EVERY_ADMIN, IMG_SWEEP_DEAD_ADMIN);   /* V7-F · owner decision 2: the admin's overview also asks for a pass (a larger batch, at most one a minute) — never waited for when the runtime gives waitUntil */
           var day0 = new Date(nowX); day0.setHours(0, 0, 0, 0); var dayTs = day0.getTime();
           var overviewDepartments = superX ? AX.depts.filter(function (d) { return d && typeof d.id === 'string' && d.id; }).map(function (d) { return d.id; }) : [];
           var overviewAccounts = superX ? AX.users.filter(function (u) { return u && u.role === 'staff' && typeof u.deptId === 'string' && typeof u.ekey === 'string' && u.ekey; })
