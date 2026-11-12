@@ -61,5 +61,5 @@ function enfImgWriteOk(A, k) {
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
   if (!deptInScope(A, P8.dept)) return false;
   if (R8.rule) return enfAnyWriterDept(A, P8.dept);
-  return enfResWriter(A, P8.dept, resName(k));
+  return enfImgResWriter(A, P8.dept, resName(k));   /* V7-D: المشتقّةُ من field.view ليست كتابةَ مورد الصورة */
 }

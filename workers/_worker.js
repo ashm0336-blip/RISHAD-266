@@ -24841,8 +24841,24 @@ function enfMemoDrop(A, d) {
    operation) كتابةٌ كما كانت. الوضعُ القديم لا يمرّ من هنا (018 anyWriter · 044 · 054) فلا يتغيّر فيه شيء. */
 function enfAnyWriterDept(A, d) {
   if (A.u.role === 'super') return true;
-  var ix = enfIx(), R = KIVO_REGISTRY.byKey, k; for (k in ix.write) if (!ix.selfK[k] && R[k].type !== 'capability' && enfHeld(A, d, k)) return true;
+  var ix = enfIx(), R = KIVO_REGISTRY.byKey, dv = enfDerivedBare(A, d), k; for (k in ix.write) if (!ix.selfK[k] && R[k].type !== 'capability' && !(dv && dv[k]) && enfHeld(A, d, k)) return true;
   return false;
+}
+/* RISHAD-266 · V7-D (قرارُ المالك: «الراصد في enforce لا يستبدل ولا يحذف صور الخطة والجولات، كما في legacy»): المفاتيحُ الثلاثة المشتقّة من field.view
+   (ENF_DERIVE — status.change) كتابةُ حالةِ العنصر المسنَد وحدها، وليست كتابةً للمورد: كان enfResWriter يجيب بها «يكتب الخطة والجولات» فيستبدل الراصدُ
+   ويحذف أيَّ صورةٍ مربوطةٍ بهما (خريطة الموقع)، وكان enfAnyWriterDept يعدّه بها «كاتباً» فيكتب الراياتِ التقنية ويرفع صورةً جديدة — والوضعُ القديم يرفض ذلك كلَّه.
+   القاعدةُ هي قاعدةُ الحصر نفسُها (enfFieldOnly · enfFieldLift) لا قاعدةٌ موازية: المشتقّةُ لا تُحسب «كتابةَ مورد» إلا لمن رُفع عنه الحصر — غيرُ محصورٍ بالمسنَد
+   ويحمل كتابةً صريحةً غيرَ مشتقّة على الجولات أو عدسة (مفتاحُ رفعٍ من enfFieldLift — كتابةُ المشرف) · ومسؤولُ المنصة وحسابُ الإدارة كما كانا.
+   يعيد خريطةَ المشتقّة حين لا تُحسب، وnull حين تُحسب. تعذُّرُ قراءة المنح ⇒ لا تُحسب (fail-closed). حالةُ العناصر المسنَدة نفسُها (059 enfDecide) لا تمرّ من هنا. */
+var ENF_DERIVED = null;
+function enfDerivedBare(A, d) {
+  var u = A && A.u; if (!u || u.role === 'super' || u.role === 'dept') return null;
+  var s, i;
+  if (!ENF_DERIVED) { ENF_DERIVED = {}; for (s in ENF_DERIVE) for (i = 0; i < ENF_DERIVE[s].length; i++) ENF_DERIVED[ENF_DERIVE[s][i]] = 1; }
+  try {
+    if (!enfFieldOnly(A, d)) { var L = enfFieldLift(); for (i = 0; i < L.length; i++) if (enfHeld(A, d, L[i])) return null; }
+  } catch (e0) { /* تعذّرت قراءةُ المنح ⇒ المشتقّةُ لا تُحسب */ }
+  return ENF_DERIVED;
 }
 function enfAnyWriter(A) {
   var u = A.u; if (u.role === 'super') return true;
@@ -24853,6 +24869,12 @@ function enfAnyWriter(A) {
 function enfResWriter(A, d, rn) {
   var ks = enfIx().byRes[rn] || [], i;
   for (i = 0; i < ks.length; i++) if (enfIx().write[ks[i]] && !enfIx().selfK[ks[i]] && enfHeld(A, d, ks[i])) return true;
+  return false;
+}
+/* V7-D: كاتبُ موردِ الصورة — enfResWriter بلا المشتقّة من field.view لمن لم يُرفع عنه الحصر (enfDerivedBare) */
+function enfImgResWriter(A, d, rn) {
+  var ix = enfIx(), ks = ix.byRes[rn] || [], dv = enfDerivedBare(A, d), i;
+  for (i = 0; i < ks.length; i++) if (ix.write[ks[i]] && !ix.selfK[ks[i]] && !(dv && dv[ks[i]]) && enfHeld(A, d, ks[i])) return true;
   return false;
 }
 /* إدارات الفاعل التي يُحكم فيها على الموارد المنصّية (الإحصائيات): إداراتُه في نطاقه — كما dsDepts في AS‑IS */
@@ -25309,7 +25331,7 @@ function enfImgWriteOk(A, k) {
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
   if (!deptInScope(A, P8.dept)) return false;
   if (R8.rule) return enfAnyWriterDept(A, P8.dept);
-  return enfResWriter(A, P8.dept, resName(k));
+  return enfImgResWriter(A, P8.dept, resName(k));   /* V7-D: المشتقّةُ من field.view ليست كتابةَ مورد الصورة */
 }
 /* ══ (4) القراءة — مفاتيحُ القراءة المربوطة صراحةً (readBindings · P4.1.1-01) محمولةٌ في الإدارة ∧ Department/Branch،
    ثم إسقاطُ السجلات خارج النطاق (D4-01): المصدر · المسنَد (P4.2-05) · العدساتُ المعطّلة.
