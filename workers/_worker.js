@@ -24866,11 +24866,16 @@ function enfMemoDrop(A, d) {
    بوابةُ العدسة أياً كانت الورقة، فكان صاحبُ ورقة العرض فقط، ومن لا ورقةَ له أصلاً، «كاتباً» في كل وحدةٍ على سقفها مضيفُ عدسة (plan · daily/rounds):
    يكتب الراياتِ التقنية ويرفع صورةً جديدة. يُستثنى هنا كما يستثنيه enfFieldLift؛ ومفاتيحُ الراصد المشتقّة من field.view (status.change — نوعها
    operation) تُعدّ كتابةً فقط حين يُرفع الحصر (enfDerivedBare أدناه — قرار المالك: الراصد المحصور ليس كاتباً، كما في الوضع القديم). الوضعُ القديم لا يمرّ من هنا (018 anyWriter · 044 · 054) فلا يتغيّر فيه شيء. */
-function enfAnyWriterDept(A, d) {
+/* RISHAD-266 · V7-E (القاعدةُ العامة للمالك: «في الصور، enforce لا يسمح بما يرفضه legacy»): img = السؤالُ عن صورة (رفعُ صورةٍ جديدة — enfAnyWriter ·
+   صورةٌ مربوطةٌ بمورد rule — 060 enfImgWriteOk). «كاتبُ الوحدة» في الوضع القديم مَن في ورقته فعلُ كتابة (018 writePages: add · edit · del · approve)،
+   فمفتاحٌ لا تقابله ذرّةُ ورقةٍ بفعل كتابة (backup.restore — to-build بلا ذرّة) لا يجعل حاملَه «كاتباً» للصور: كان يرفع صورةً جديدة ويستبدل ويحذف
+   صورةً مربوطةً برايةٍ تقنية، ولا نظيرَ لذلك في الوضع القديم. حفظُ الرايات التقنية نفسِها (060 rule:'tech' — ليس قرارَ صورة) يسأل بلا img فلا يتغيّر. */
+function enfAnyWriterDept(A, d, img) {
   if (A.u.role === 'super') return true;
-  var ix = enfIx(), R = KIVO_REGISTRY.byKey, dv = enfDerivedBare(A, d), k; for (k in ix.write) if (!ix.selfK[k] && R[k].type !== 'capability' && !(dv && dv[k]) && enfHeld(A, d, k)) return true;
+  var ix = enfIx(), R = KIVO_REGISTRY.byKey, dv = enfDerivedBare(A, d), k; for (k in ix.write) if (!ix.selfK[k] && R[k].type !== 'capability' && !(dv && dv[k]) && (!img || enfImgWriteAtom(k)) && enfHeld(A, d, k)) return true;
   return false;
 }
+function enfImgWriteAtom(key) { var at = enfIx().atoms[key] || [], j; for (j = 0; j < at.length; j++) if (WRITE_ACTS[at[j][1]]) return true; return false; }
 /* RISHAD-266 · V7-D (قرارُ المالك: «الراصد في enforce لا يستبدل ولا يحذف صور الخطة والجولات، كما في legacy»): المفاتيحُ الثلاثة المشتقّة من field.view
    (ENF_DERIVE — status.change) كتابةُ حالةِ العنصر المسنَد وحدها، وليست كتابةً للمورد: كان enfResWriter يجيب بها «يكتب الخطة والجولات» فيستبدل الراصدُ
    ويحذف أيَّ صورةٍ مربوطةٍ بهما (خريطة الموقع)، وكان enfAnyWriterDept يعدّه بها «كاتباً» فيكتب الراياتِ التقنية ويرفع صورةً جديدة — والوضعُ القديم يرفض ذلك كلَّه.
@@ -24889,8 +24894,8 @@ function enfDerivedBare(A, d) {
 }
 function enfAnyWriter(A) {
   var u = A.u; if (u.role === 'super') return true;
-  if (u.role === 'gm') { for (var i = 0; i < (A.depts || []).length; i++) { var dd = A.depts[i]; if (dd && deptInScope(A, dd.id) && enfAnyWriterDept(A, dd.id)) return true; } return false; }
-  return !!u.deptId && enfAnyWriterDept(A, u.deptId);
+  if (u.role === 'gm') { for (var i = 0; i < (A.depts || []).length; i++) { var dd = A.depts[i]; if (dd && deptInScope(A, dd.id) && enfAnyWriterDept(A, dd.id, true)) return true; } return false; }
+  return !!u.deptId && enfAnyWriterDept(A, u.deptId, true);   /* V7-E: السائلُ الوحيد رفعُ صورةٍ جديدة (054 imgVerdict) */
 }
 /* مفاتيحُ كتابةِ موردٍ بعينه (لصاحب الصورة · رقمُ المراجعة بلا قيمة) */
 function enfResWriter(A, d, rn) {
@@ -25403,7 +25408,7 @@ function enfImgWriteOk(A, k) {
   var P8 = parseKey(k);
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
   if (!deptInScope(A, P8.dept)) return false;
-  if (R8.rule) return enfAnyWriterDept(A, P8.dept);
+  if (R8.rule) return enfAnyWriterDept(A, P8.dept, true);   /* V7-E: سؤالُ صورة — 057 */
   return enfImgResWriter(A, P8.dept, resName(k));   /* V7-D: المشتقّةُ من field.view ليست كتابةَ مورد الصورة */
 }
 /* ══ (4) القراءة — مفاتيحُ القراءة المربوطة صراحةً (readBindings · P4.1.1-01) محمولةٌ في الإدارة ∧ Department/Branch،
