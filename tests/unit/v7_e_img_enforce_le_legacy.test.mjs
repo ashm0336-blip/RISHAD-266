@@ -183,6 +183,20 @@ const OPEN = {};
 for (const rn of RULE_RECORDS) for (const op of OPS3) { OPEN[rn + ' · ' + op] = ['general manager']; OPEN['open unit: ' + rn + ' · ' + op] = ['general manager', 'open unit · unit manager', 'open unit · unit account']; }
 for (const pfx of ['img_', 'szp_']) for (const op of OPS2) OPEN['new upload ' + pfx + ' · ' + op] = ['general manager', 'open unit · unit manager'];
 
+/* Owner decision (2026-11-12, option 1): the exception stays — the general manager and the manager/account of a unit with no
+   ceiling record — because the legacy refusal there is a missing gm branch, not a decision to refuse. Condition: the exception
+   cells are pinned LITERALLY so they cannot widen silently (a new «rule» record, a new actor or a new operation fails here).
+   Recorded in STATE.md, gate-D items, as a known legacy/enforce difference. */
+test('the OPEN exception is pinned literally (owner decision 2026-11-12, option 1): 34 cell kinds, 68 actor-cells', () => {
+  assert.deepEqual(RULE_RECORDS, ['bassam_notif_v1', 'bassam_notif_dev_v1', 'bassam_first_boot_v1', 'bassam_demo_purged_v1', 'bassam_profile_v1']);
+  assert.deepEqual(OPS3, ['PUT', 'chunked PUT', 'DELETE']); assert.deepEqual(OPS2, ['PUT', 'chunked PUT']);
+  const actors = new Set(Object.values(OPEN).flat());
+  assert.deepEqual([...actors].sort(), ['general manager', 'open unit · unit account', 'open unit · unit manager']);
+  assert.equal(Object.keys(OPEN).length, 34);
+  assert.equal(Object.values(OPEN).reduce((n, a) => n + a.length, 0), 68);
+  for (const k of Object.keys(OPEN)) assert.ok(/^(open unit: )?bassam_(notif|notif_dev|first_boot|demo_purged|profile)_v1 · |^new upload (img|szp)_ · /.test(k), k);
+});
+
 let SW = null;
 const sweeps = (t) => SW || (SW = quiet(async () => ({ L: await sweep('legacy', t), E: await sweep('enforce', t) })));
 
