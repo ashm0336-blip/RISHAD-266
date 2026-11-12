@@ -89,6 +89,8 @@ function verifyPw(pw, ph) {
   if (ph.indexOf('p1$') === 0) return Promise.resolve(eq(legacyHash(pw), ph.slice(3)));
   return Promise.resolve(eq(legacyHash(pw), ph));
 }
+/* v7-C · Issue 2 (التوقيت): تجزئةٌ وهمية بصيغة p2 والتكرارات الحالية — verifyPw يشتقّ ضدّها كاملاً ولا يطابق أبداً (ليست كلمةَ أحد) */
+function PW_DUMMY() { return 'p2$' + PBKDF2_ITER + '$00112233445566778899aabbccddeeff$' + '0000000000000000000000000000000000000000000000000000000000000000'; }
 function isLegacy(ph) { return String(ph || '').indexOf('p2$') !== 0; }
 /* سياسة الدخول الموحَّدة — نفس قاعدة المنصة، ليتطابق حكم «يجب تغييرها»:
    اسم المستخدم 10 أرقام (جوال/هوية)؛ كلمة المرور أرقام فقط — الموظف ومدير الإدارة العامة 5 أرقام، ومدير النظام وحساب الإدارة 6 أرقام */

@@ -40,3 +40,36 @@ test('nodeDel calls it after removing the node; exported on KIVO.BassamPerm', ()
   assert.match(body, /if \(kd\.length\) return \{ ok: false/, 'a node with children is still refused first — nothing is dropped');
   assert.match(T, /dropNodeCap: I\.dropNodeCap,/); assert.match(M, /I\.dropNodeCap = dropNodeCap;/);
 });
+test('nodeAdd (a node made by hand) drops a leftover of its id before seeding — it never carries a stored leftover along', () => {
+  const i = S.indexOf('nodeAdd: function(o) {'), body = S.slice(i, S.indexOf('nodeSave: function', i));
+  const d = body.indexOf('P.dropNodeCap(id)'), sd = body.indexOf('P.seedCapFrom(id, pid)');
+  assert.ok(d > 0 && sd > d, 'dropNodeCap, then seedCapFrom');
+  assert.ok(body.indexOf('this.saveNodes(') < d, 'after the node is written');
+  /* behaviour: a leftover is removed, then the parent\'s ceiling is seeded (seedCapFrom no longer answers «kept») */
+  const store = { caps: { P: ['emps', 'tasks'], N: ['emps'] }, subs: { N: { emps: ['data'] } }, lenses: {}, capOwn: { N: true } }, saved = [];
+  const ctx = { isSuper: () => true, permStore: () => store, permSave: (o) => saved.push(J(o)), hasCap: (id) => Array.isArray(store.caps[id]), effCap: (id) => store.caps[id].slice(), patternSeed: () => assert.fail('not an empty parent'), Object, JSON, Array };
+  vm.createContext(ctx); vm.runInContext(fnSrc(M, 'dropNodeCap') + '\n' + fnSrc(M, 'seedCapFrom'), ctx);
+  ctx.dropNodeCap('N'); const r = J(ctx.seedCapFrom('N', 'P'));
+  assert.deepEqual(r, { ok: true, n: 2 }, 'seeded from the parent — not «kept»');
+  assert.deepEqual(saved[saved.length - 1], { caps: { P: ['emps', 'tasks'], N: ['emps', 'tasks'] }, subs: {}, lenses: {}, capOwn: {} });
+});
+
+/* READ-ONLY check of existing leftovers (331 capOrphans): ceiling entries whose id is neither a current node nor a current unit/section. */
+function orphanWorld(store, nodes, units) {
+  const saved = [], D = nodes === null ? null : { nodes: () => nodes, list: () => units };
+  const ctx = { KIVO: { BassamDepts: D }, permStore: () => store, permSave: (o) => saved.push(o), Object, String };
+  vm.createContext(ctx); vm.runInContext(fnSrc(M, 'capOrphans'), ctx); return { ctx, saved };
+}
+test('capOrphans counts the leftovers and names the maps holding them — nodes, units and sections are not leftovers', () => {
+  const store = { caps: { N: ['emps'], U: ['tasks'], S: [], GONE: ['emps'], OLD: [] }, subs: { GONE: { emps: ['data'] }, U: {} }, lenses: { GONE: ['zones'], N: [] }, capOwn: { OLD: true, U: true },
+    emps: { ELSE: { e: {} } }, tplOf: { ELSE: {} }, empLens: { ELSE: {} } };
+  const before = JSON.stringify(store), w = orphanWorld(store, [{ id: 'N' }], [{ id: 'U' }, { id: 'S', kind: 'قسم', gid: 'U' }]);
+  assert.deepEqual(J(w.ctx.capOrphans()), { ok: true, n: 2, ids: ['GONE', 'OLD'], maps: { GONE: ['caps', 'subs', 'lenses'], OLD: ['caps', 'capOwn'] } });
+  assert.equal(JSON.stringify(store), before, 'read-only: the registry is untouched'); assert.equal(w.saved.length, 0, 'nothing is saved');
+  assert.deepEqual(J(orphanWorld({ caps: { N: [] }, subs: {}, lenses: {} }, [{ id: 'N' }], []).ctx.capOrphans()), { ok: true, n: 0, ids: [], maps: {} });
+});
+test('capOrphans: an unreadable structure is an error, never «everything is a leftover»; no deletion in its source; exported', () => {
+  assert.equal(orphanWorld({ caps: { N: [] } }, null).ctx.capOrphans().ok, false);
+  const src = fnSrc(M, 'capOrphans'); assert.doesNotMatch(src, /permSave|delete |setItem/);
+  assert.match(T, /capOrphans: I\.capOrphans,/); assert.match(M, /I\.capOrphans = capOrphans;/);
+});

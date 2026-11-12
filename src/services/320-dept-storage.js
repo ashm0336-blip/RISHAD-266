@@ -510,7 +510,9 @@
       invalidate();
       /* كل عقدةٍ تُنشأ يُفتح لها سقفُها في اللحظة نفسها — لا عقدةَ بلا سقف،
          ولا خطوةَ ضبطٍ منسيّة تُظهر الشاشة معطّلةً بلا سبب ظاهر */
-      try { var P = KIVO.BassamPerm; if (P && P.seedCapFrom) P.seedCapFrom(id, pid); } catch(e){}
+      /* V7 · القضية #4 (قرار المالك): عقدةٌ تُنشأ يدوياً لا تحمل بقايا سقفٍ خُزّن لمعرّفها من قبل — تُحذف البقايا أولاً ثم يُبذر السقفُ من الأب.
+         (كان seedCapFrom يُبقيها: «له سقفٌ مسبقاً — لا يُلمس»؛ والخادمُ يُبقي كلَّ سجلٍّ تحمله الحفظةُ لعقدةٍ تضيفها — 018 nodeCapSweep) */
+      try { var P = KIVO.BassamPerm; if (P && P.dropNodeCap) P.dropNodeCap(id); if (P && P.seedCapFrom) P.seedCapFrom(id, pid); } catch(e){}
       return { ok: true, id: id };
     },
     nodeSave: function(id, o) {

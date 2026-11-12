@@ -992,7 +992,7 @@ var NF_TYPES = {
     id: "sc_fail",
     k: "sec",
     name: "محاولات دخول فاشلة متكررة",
-    when: "5 محاولات خلال 10 دقائق",
+    when: "5 محاولات في دفعة، أو 3 عناوين مختلفة على حساب واحد خلال ساعة",
     on: true,
     to: ["own", "sys"],
     lvl: "urg",
@@ -2606,6 +2606,11 @@ async function nfPlanEvents(env, A, events, internal) {
   events.forEach(function (it) {
     nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"]);
     var T = nfType(nfStr(it.type, 80, false), cfg);
+    /* RISHAD-266 · issue #1 (owner decision): employee notifications are issued by the server alone, from the save it accepted
+       (nfEmployeePlan below). No client may emit one — whatever it holds, the platform administrator included.
+       It is dropped, not refused: a tab loaded before this release still runs the retired watcher and flushes its queue as one
+       batch; a refusal would lose the other events of that batch and log a false «denied» for every legitimate manager. */
+    if (!internal && T.k === "emp") return;
     if (!T.on) return;
     var d = it.dept || A.u.deptId || "",
       own = it.own || [];
@@ -2750,6 +2755,160 @@ async function nfEmitEvents(env, A, events, internal, extra) {
     });
   }
   return Object.assign(result, { n: ids.length, ids: ids, id: ids[0] || "", duplicate: requested > 0 && ids.length === 0 });
+}
+/* RISHAD-266 · issue #1 (owner decision): «الخادم يُصدر إشعارات الموظفين بنفسه عند قبول الحفظ ولا يقبلها من المتصفح».
+   The events are derived from the accepted old→new employee register of one unit and planned into the save's own atomic batch
+   (019e rsSaveCommit → rsCommit), exactly as irshad (019i), seized (019l) and award (019m) plan theirs: nfPlanEvents(…, internal)
+   + nfRetention + the feed revision. So: a refused or conflicting save issues nothing (the batch does not commit), and a replayed
+   request issues nothing (its receipt returns before any plan is built); each event also carries a `once` key of the request.
+   The rules are the retired browser watcher's (src/services/442 WATCH['bassam_employees_v1']) verbatim — conditions, variables
+   and wording: wipe when a non-empty register becomes empty (and nothing else) · import when five or more records are added,
+   else one addition per record · one deletion per removed record · per kept record: «type» when the employment type changed,
+   «edit» for the other announced fields (never the e-mail). «المُعدّل» is the actor's name. Who READS them is not decided here. */
+var NF_EMP_RES = "bassam_employees_v1";
+var NF_EMP_FIELDS = {
+  name: "الاسم",
+  nid: "رقم الهوية",
+  phone: "الجوال",
+  email: "البريد",
+  empno: "الرقم الوظيفي",
+  type: "نوع التوظيف",
+  work: "نوع العمل",
+  gender: "الجنس",
+  shift: "الوردية",
+};
+function nfEmployeeEvents(A, d, before, after) {
+  var o = (Array.isArray(before) ? before : []).filter(isObj),
+    n = (Array.isArray(after) ? after : []).filter(isObj),
+    who = String(A.u.name || "النظام"),
+    events = [],
+    ma = nmap(),
+    mb = nmap();
+  function key(e) {
+    return e.eid || e.name;
+  }
+  function text(v) {
+    return String(v == null ? "" : v).slice(0, 120); /* names are the actor's text: bounded before they reach another reader's feed */
+  }
+  if (o.length && !n.length) {
+    var unit = (A.depts || []).filter(function (x) {
+      return x && x.id === d;
+    })[0];
+    return [{ type: "emp_wipe", dept: d, vars: { الإدارة: text(unit ? unit.name : ""), المُعدّل: text(who) } }];
+  }
+  o.forEach(function (e) {
+    ma[key(e)] = e;
+  });
+  n.forEach(function (e) {
+    mb[key(e)] = e;
+  });
+  var added = Object.keys(mb)
+      .filter(function (k) {
+        return !ma[k];
+      })
+      .map(function (k) {
+        return mb[k];
+      }),
+    removed = Object.keys(ma)
+      .filter(function (k) {
+        return !mb[k];
+      })
+      .map(function (k) {
+        return ma[k];
+      }),
+    both = Object.keys(mb)
+      .filter(function (k) {
+        return ma[k];
+      })
+      .map(function (k) {
+        return [ma[k], mb[k]];
+      });
+  if (added.length >= 5)
+    events.push({
+      type: "emp_imp",
+      dept: d,
+      vars: {
+        المضافون: added.length,
+        المحدثون: both.filter(function (p) {
+          return JSON.stringify(p[0]) !== JSON.stringify(p[1]);
+        }).length,
+        المُعدّل: text(who),
+      },
+    });
+  else
+    added.forEach(function (e) {
+      events.push({ type: "emp_add", dept: d, vars: { الاسم: text(e.name), النوع: text(e.type || "") } });
+    });
+  removed.forEach(function (e) {
+    events.push({ type: "emp_del", dept: d, vars: { الاسم: text(e.name), المُعدّل: text(who) } });
+  });
+  both.forEach(function (p) {
+    var a = p[0],
+      b = p[1],
+      changed = Object.keys(NF_EMP_FIELDS).filter(function (f) {
+        return (a[f] || "") !== (b[f] || "");
+      });
+    if (!changed.length) return;
+    var own = [String(key(b)).slice(0, 200)];
+    if (changed.indexOf("type") !== -1)
+      events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "—") } });
+    var rest = changed.filter(function (f) {
+      return f !== "type" && f !== "email";
+    });
+    if (rest.length)
+      events.push({
+        type: "emp_edit",
+        dept: d,
+        own: own,
+        vars: {
+          الحقول: text(
+            rest
+              .map(function (f) {
+                return NF_EMP_FIELDS[f];
+              })
+              .join("، "),
+          ),
+          المُعدّل: text(who),
+        },
+      });
+  });
+  return events;
+}
+/* The notification part of an accepted save plan (019e): guards + statements to append to the plan, never a commit of its own.
+   `skip` = units whose whole data the same plan wipes or deletes (their notifications are replaced by that plan). A unit the
+   author cannot address (not declared, or outside his scope) gets no event — as the emit route answered such a sender. */
+async function nfEmployeePlan(env, A, pending, requestId, skip) {
+  var out = { guards: [], statements: [], active: 0 },
+    order = 0;
+  for (var pd of pending || []) {
+    var d = parseKey(pd.k).dept;
+    if (resName(pd.k) !== NF_EMP_RES || !d || (skip || []).indexOf(d) >= 0) continue;
+    if (
+      !deptInScope(A, d) ||
+      !(A.depts || []).some(function (x) {
+        return x && x.id === d;
+      })
+    )
+      continue;
+    var events = nfEmployeeEvents(A, d, parseJson(pd.cur, []), pd.act === "del" ? [] : parseJson(pd.v, []));
+    for (var start = 0; start < events.length; start += 200) {
+      var part = events.slice(start, start + 200);
+      for (var event of part)
+        event.once = "emp:" + (await cuFingerprint({ request: String(requestId || ""), actor: A.u.id, dept: d, type: event.type, order: order++ }));
+      var plan = await nfPlanEvents(env, A, part, true);
+      out.guards.push.apply(out.guards, plan.guards);
+      out.statements.push.apply(out.statements, plan.statements);
+      out.statements.push.apply(out.statements, nfRetention(env, Date.now(), plan.scopes));
+      out.active += plan.plans.length;
+    }
+  }
+  if (out.active)
+    out.statements.push(
+      env.DB.prepare(
+        "INSERT INTO revs(k,rev) VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev') AS INTEGER)) ON CONFLICT(k) DO UPDATE SET rev=excluded.rev",
+      ).bind(NF_REV),
+    );
+  return out;
 }
 async function nfState(env, A, body) {
   nfShape(body, ["uid", "op", "action", "id", "onlyRead", "dept", "all"], ["op", "action"]);
@@ -2956,6 +3115,9 @@ async function nfRemind(env, A, id, base, automatic) {
     );
   return Object.assign(await nfCommit(env, A, st, base === undefined ? doc.broadcastRev : base, "remind", undefined, NF_BC_REV), { n: n });
 }
+/* v7-C · Issue 2 (أ): عتبةُ إنذار التخمين الموزَّع — عناوينُ مختلفة أخفقت على حسابٍ واحد خلال النافذة */
+var NF_FAIL_IPS = 3,
+  NF_FAIL_WIN_MS = 3600000;
 async function nfSecurityPoll(env, A) {
   // A legacy timestamp-only checkpoint means all rows at that timestamp were
   // already consumed. New checkpoints advance the exact (timestamp,id) pair.
@@ -2981,7 +3143,8 @@ async function nfSecurityPoll(env, A) {
       ).results || [],
     events = [],
     max = last,
-    fails = {};
+    fails = {},
+    failId = {};
   rows.forEach(function (r) {
     max = Math.max(max, r.ts);
     if (/^tst_/.test(String(r.uid || ""))) return;
@@ -2990,6 +3153,7 @@ async function nfSecurityPoll(env, A) {
     if (r.act === "login_fail") {
       var k = r.target || r.un;
       fails[k] = (fails[k] || 0) + 1;
+      failId[k] = r.id;
       return;
     }
     if (r.act === "lock" || r.act === "guard_unlock") {
@@ -3014,12 +3178,68 @@ async function nfSecurityPoll(env, A) {
     }
     if (type) events.push({ type: type, vars: vars, once: "security:" + r.id });
   });
-  Object.keys(fails).forEach(function (k) {
-    if (fails[k] >= 5)
+  /* v7-C · Issue 2 (أ): التخمينُ الموزَّع — عناوينُ مختلفة تُخفق على حسابٍ واحد — لم يكن يُنذِر ما لم تجتمع 5 إخفاقاتٍ في دفعةٍ واحدة، ومتغيّرُ IP
+     فارغ. الآن يُقرأ لكل اسمٍ أخفق في هذه الدفعة ما أخفق عليه في آخر ساعة مجمَّعاً بالعنوان (استعلامٌ واحد)، فيُنذَر مديرُ النظام عند
+     NF_FAIL_IPS عناوين مختلفة ولو جاء كلُّ إخفاقٍ في استطلاع، والنصُّ يحمل العددَ والعناوين. إنذارٌ فقط — لا حجبَ ولا قفل (ADR-022). */
+  var failNames = Object.keys(fails), nowF = Date.now(), byName = {};
+  if (failNames.length) {
+    (
+      (
+        await env.DB.prepare(
+          "SELECT un,ip,COUNT(*) c FROM sec WHERE act='login_fail' AND ts>?1 AND un IN (SELECT value FROM json_each(?2)) GROUP BY un,ip ORDER BY c DESC,ip",
+        )
+          .bind(nowF - NF_FAIL_WIN_MS, JSON.stringify(failNames))
+          .all()
+      ).results || []
+    ).forEach(function (x) {
+      var b = byName[x.un] || (byName[x.un] = { n: 0, ips: [] });
+      b.n += x.c;
+      if (x.ip) b.ips.push(x.ip);
+    });
+  }
+  /* المراجعة المستقلة (L2): إنذارُ العناوين المختلفة لحسابٍ قائمٍ فقط — رشُّ أسماءٍ لا وجودَ لها من عناوين قليلة كان يولّد إنذاراً عاجلاً لكل اسم.
+     و«مرّةً في الساعة» نافذةٌ متدحرجة: لا يُنذَر لاسمٍ أُنذر له خلال NF_FAIL_WIN_MS (كان المفتاحُ ساعةَ الحائط فتُنذِر الدفعةُ العابرةُ رأسَ الساعة
+     مرّتين). المفتاحُ يحمل رقمَ آخر صفٍّ للاسم في الدفعة — استطلاعان متزامنان للدفعة نفسِها يلتقيان على مفتاحٍ واحد. */
+  var spreadNames = failNames.filter(function (k) {
+      return (byName[k] || { ips: [] }).ips.length >= NF_FAIL_IPS;
+    }),
+    spreadOk = {};
+  if (spreadNames.length) {
+    var known = {};
+    ((await usersList(env)) || []).forEach(function (x) {
+      if (x.un) known["=" + String(x.un).toLowerCase()] = 1;
+      if (x.alt) known["=" + String(x.alt).toLowerCase()] = 1;
+    });
+    var recent =
+      (
+        await env.DB.prepare("SELECT once_key FROM notification_dedup WHERE created_at>?1 AND once_key GLOB 'fail:*:ips:*'")
+          .bind(nowF - NF_FAIL_WIN_MS)
+          .all()
+      ).results || [];
+    spreadNames.forEach(function (k) {
+      var pre = "fail:" + k + ":ips:";
+      spreadOk[k] =
+        known["=" + String(k).toLowerCase()] === 1 &&
+        !recent.some(function (r) {
+          return String(r.once_key).indexOf(pre) === 0;
+        });
+    });
+  }
+  failNames.forEach(function (k) {
+    var b = byName[k] || { n: 0, ips: [] },
+      spread = spreadOk[k] === true;
+    if (fails[k] >= 5 || spread)
       events.push({
         type: "sc_fail",
-        vars: { العدد: fails[k], الاسم: k, IP: "" },
-        once: "fail:" + k + ":" + Math.floor(Date.now() / 600000),
+        vars: {
+          العدد: Math.max(fails[k], b.n),
+          الاسم: k,
+          IP:
+            b.ips.length > 1
+              ? b.ips.length + " عناوين مختلفة: " + b.ips.slice(0, 5).join("، ") + (b.ips.length > 5 ? " …" : "")
+              : b.ips[0] || "",
+        },
+        once: fails[k] >= 5 ? "fail:" + k + ":" + Math.floor(nowF / 600000) : "fail:" + k + ":ips:" + failId[k],
       });
   });
   var finalRow = rows[rows.length - 1],

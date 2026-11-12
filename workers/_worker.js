@@ -26,6 +26,8 @@ var SESSION_MAX = 12 * 3600 * 1000;      /* عمر الجلسة الأقصى —
 var IDLE_MAX    = 2  * 3600 * 1000;      /* الخمول الأقصى */
 var LOCK_N = 5;                           /* محاولات قبل القفل */
 var LOCK_MS = 300000;                     /* أقصى مدة قفل */
+/* v7-C · Issue 2 (ب): إبطاءُ الحساب المستهدَف من عناوين مختلفة — مطفأ افتراضياً؛ تضبطه سياسةُ الأمن (thrOn · thrN · thrWin · thrSec) */
+var THR_ON = false, THR_N = 10, THR_WIN_MS = 1800000, THR_MS = 3000;
 var PRESENCE_MS = 120000;                 /* «نشط الآن» = تفاعل خلال دقيقتين */
 /* ── ثوابتُ الدخول والاستعادة والمنصة (نُقلت كما هي من 016-identity-preflight-2.js عند حذفه · RISHAD-266 P5) ── */
 /* سقف Cloudflare لتكرارات PBKDF2 في Web Crypto هو 100,000 — ما فوقه يُرمى NotSupportedError.
@@ -57,19 +59,23 @@ async function hashKey(k) { return hashPw('rk:' + normKey(k)); }
 /* سقف حجم فرق التدقيق المخزون لكل حفظة (حرفاً) */
 var AUDIT_MAX = 24000;
 /* ═══ سياسات الأمن القابلة للضبط من شاشة مدير النظام — تُقرأ مرةً لكل طلب ═══ */
-var POLICY_DEF = { sessH: 12, idleH: 2, lockN: 5, lockMin: 5, pwMin: 6, wrMin: 1200 };   /* KIVO_255 · SOT-139: wrMin = سقفُ الحفظ في الدقيقة لكل حساب (كان ثابتاً RL_SAVE = 1200 المقيس) — من شاشة السياسات؛ رفعُ الصور ربعُه */
+var POLICY_DEF = { sessH: 12, idleH: 2, lockN: 5, lockMin: 5, pwMin: 6, wrMin: 1200, thrOn: 0, thrN: 10, thrWin: 30, thrSec: 3 };   /* KIVO_255 · SOT-139: wrMin = سقفُ الحفظ في الدقيقة لكل حساب (كان ثابتاً RL_SAVE = 1200 المقيس) — من شاشة السياسات؛ رفعُ الصور ربعُه */
 async function loadPolicy(env) {
   var p = parseJson(await metaGet(env, 'policy'), null);
   var o = Object.assign({}, POLICY_DEF, isObj(p) ? p : {});
   SESSION_MAX = Math.max(1, +o.sessH || 12) * 3600000; IDLE_MAX = Math.max(0.25, +o.idleH || 2) * 3600000;
   LOCK_N = Math.max(3, +o.lockN || 5); LOCK_MS = Math.max(1, +o.lockMin || 5) * 60000; PW_MIN = 6; o.pwMin = 6;   /* KIVO_259 (إصلاح): ثابتٌ 6 حتى لو حُفظت قيمةٌ أكبر قبلُ — قاعدةُ المنصة (pwCheck) لا تقبل أكثر من 6 أرقام لمدير النظام */ RL_SAVE = Math.min(5000, Math.max(30, +o.wrMin || 1200));
+  /* v7-C · Issue 2 (ب): مطفأٌ ما لم تكن القيمةُ المخزَّنة 1 بالضبط؛ والقيمُ تُحصر في نطاقها عند القراءة كذلك (السقفُ 10 ث مهما خُزّن) */
+  /* المراجعة المستقلة (L3): مفعَّلٌ للعدد 1 بالضبط (لا '1' ولا true)، والمُعاد (GET /api/policy) هو القيمُ الفعلية المحصورة التي يعمل بها الخادم */
+  o.thrOn = o.thrOn === 1 ? 1 : 0; THR_ON = o.thrOn === 1;
+  o.thrN = THR_N = Math.min(100, Math.max(5, Math.floor(+o.thrN) || 10)); o.thrWin = Math.min(120, Math.max(5, Math.floor(+o.thrWin) || 30)); THR_WIN_MS = o.thrWin * 60000; o.thrSec = Math.min(10, Math.max(1, Math.floor(+o.thrSec) || 3)); THR_MS = o.thrSec * 1000;
   return o;
 }
 /* CORE-02 (B2): the editable ranges of the policy form (the same limits the handler applied by clamping) — [min, max, whole number].
    policyBad(body) names the first field outside its range, or returns null. A field left out (or null) is not judged: it keeps its value.
    pwMin is not judged here: KIVO_259 (approved password policy) stores 6 whatever is sent — unchanged; the form keeps it at 6 itself. */
-var POLICY_RANGE = { sessH: [1, 72, 1], idleH: [0.25, 24, 0], lockN: [3, 20, 1], lockMin: [1, 60, 1], pwMin: [6, 6, 1], wrMin: [30, 5000, 1] };
-var POLICY_LABEL = { sessH: 'مدة الجلسة القصوى', idleH: 'الخمول قبل الخروج', lockN: 'محاولات قبل القفل', lockMin: 'مدة القفل القصوى', pwMin: 'الحد الأدنى لكلمة المرور', wrMin: 'سقف الحفظ في الدقيقة' };
+var POLICY_RANGE = { sessH: [1, 72, 1], idleH: [0.25, 24, 0], lockN: [3, 20, 1], lockMin: [1, 60, 1], pwMin: [6, 6, 1], wrMin: [30, 5000, 1], thrOn: [0, 1, 1], thrN: [5, 100, 1], thrWin: [5, 120, 1], thrSec: [1, 10, 1] };
+var POLICY_LABEL = { sessH: 'مدة الجلسة القصوى', idleH: 'الخمول قبل الخروج', lockN: 'محاولات قبل القفل', lockMin: 'مدة القفل القصوى', pwMin: 'الحد الأدنى لكلمة المرور', wrMin: 'سقف الحفظ في الدقيقة', thrOn: 'إبطاء الحساب المستهدف (0 مطفأ · 1 مفعّل)', thrN: 'عناوين مختلفة قبل الإبطاء', thrWin: 'نافذة احتساب العناوين', thrSec: 'مهلة الإبطاء' };
 function policyBad(b) {
   var ks = Object.keys(POLICY_RANGE);
   for (var i = 0; i < ks.length; i++) {
@@ -1944,6 +1950,59 @@ function nodeRemoveWhy(A, old, N) {
   var us = Array.isArray(A.users) ? A.users : [];
   for (i = 0; i < us.length; i++) if (isObj(us[i]) && us[i].role === 'gm' && G[shapeRef(us[i], 'gid')]) return 'node-has-manager';
   return '';
+}
+/* V7 · issue #4 — a node's ceiling records live and die with the node (the unit counterpart is the atomic unit delete: 019e rsWipeRoute).
+   bassam_perms_v1 holds a node's ceiling in caps · subs · lenses [<id>] and its capOwn[<id>] flag. Judged on the node registry as this
+   save leaves it (gNew) against the stored one (gCur) — only when the node rules above accepted the save (054 applySave):
+   · a node the save removes: its records go in the same save (nodeRemoveWhy decides whether it may be removed at all);
+   · a node the save adds (the id did not exist before — an import, a restore, a re-used id):
+       – the save CARRIES a record for it (pNew holds one, equal to the stored record or not) ⇒ kept exactly as sent. An import brings a
+         node back with its ceiling (owner decision); the server cannot tell «copied along» from «decided», and taking a restrictive
+         record away would silently open every unit under the node that has no record of its own (021 effCapOf: absence = open);
+       – the save carries no record for it ⇒ a record stored before it is a leftover of a deleted node and is dropped — but only for a
+         node with nothing under it in the graph this save leaves (a node made by hand is always empty). A node that arrives with
+         children keeps the stored record: fail-closed, the same reason.
+   The verified server restore (rst) that brings its own registry (pNew) keeps it verbatim. An id that is a data unit is never touched.
+   pNew = the registry this save writes (null: it carries none) · pCur = the stored one. Returns
+   { v: the registry to write instead (pNew if carried, else pCur) without those records — null when nothing changes ·
+     couple: this save writes a record for a node it adds ⇒ both registries are written together or not at all (otherwise a retried
+     structure would find its own fresh record «stored before it») }. The capOwn map itself stays, even empty (021 capOwnWhy). */
+var NODE_CAP_MAPS = ['caps', 'subs', 'lenses', 'capOwn'];
+function nodeCapRec(P, id) {
+  var r = {}, n = 0;
+  NODE_CAP_MAPS.forEach(function (f) { if (isObj(P[f]) && Object.prototype.hasOwnProperty.call(P[f], id)) { r[f] = P[f][id]; n++; } });
+  return n ? r : null;
+}
+function nodeHasKids(id, N, L) {
+  for (var q in N) if (shapeRef(N[q], 'pid') === id) return true;
+  for (var i = 0; i < L.length; i++) if (isObj(L[i]) && shapeRef(L[i], 'gid') === id) return true;
+  return false;
+}
+function nodeCapSweep(A, gNew, gCur, pNew, pCur, rst) {
+  var out = { v: null, couple: false }, b = parseJson(gNew, null), a = parseJson(gCur, null);
+  if (!Array.isArray(b)) return out;
+  var S = parseJson(pCur, null), P = pNew == null ? null : parseJson(pNew, null);
+  if (!isObj(S)) S = {};
+  if (pNew != null && !isObj(P)) return out;
+  var L = shapeList(A, K_DEPTS) || [], N = shapeFirst(b), O = shapeFirst(a), U = shapeFirst(L), T = P || S, drop = [], q, rs, rp;
+  for (q in N) if (!O[q] && !U[q]) {
+    rs = nodeCapRec(S, q); rp = P ? nodeCapRec(P, q) : null;
+    if (rp) out.couple = true;
+    else if (rs && !P && !nodeHasKids(q, N, L)) drop.push(q);
+  }
+  /* a removal the node rules did not check (a restore-flagged save skips nodeRemoveWhy) may leave units pointing at the node:
+     its record then still ceilings them — dropped only when nothing in the graph this save leaves points at it (fail-closed) */
+  if (!(rst && P)) for (q in O) if (!N[q] && !U[q] && nodeCapRec(T, q) && !nodeHasKids(q, N, L)) drop.push(q);
+  if (!drop.length) return out;
+  var R = Object.assign({}, T), hit = false;
+  NODE_CAP_MAPS.forEach(function (f) {
+    if (!isObj(T[f])) return;
+    var m = null;
+    drop.forEach(function (id) { if (Object.prototype.hasOwnProperty.call(T[f], id)) { m = m || Object.assign({}, T[f]); delete m[id]; } });
+    if (m) { R[f] = m; hit = true; }
+  });
+  if (hit) out.v = JSON.stringify(R);
+  return out;
 }
 /* ══ مديرُ الإدارة يُنشئ أقسامَ إدارته (F01 · خطة التوحيد) ══
    غيرُ مدير النظام يكتب سجلَّ الوحدات بشرطٍ واحد: كلُّ ما تغيّر قسمٌ مضافٌ (أو أُعيدت تسميتُه) تحت إدارةٍ يديرها هو (isMgrOf — وليست قسماً)،
@@ -3991,7 +4050,7 @@ var NF_TYPES = {
     id: "sc_fail",
     k: "sec",
     name: "محاولات دخول فاشلة متكررة",
-    when: "5 محاولات خلال 10 دقائق",
+    when: "5 محاولات في دفعة، أو 3 عناوين مختلفة على حساب واحد خلال ساعة",
     on: true,
     to: ["own", "sys"],
     lvl: "urg",
@@ -5605,6 +5664,11 @@ async function nfPlanEvents(env, A, events, internal) {
   events.forEach(function (it) {
     nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"]);
     var T = nfType(nfStr(it.type, 80, false), cfg);
+    /* RISHAD-266 · issue #1 (owner decision): employee notifications are issued by the server alone, from the save it accepted
+       (nfEmployeePlan below). No client may emit one — whatever it holds, the platform administrator included.
+       It is dropped, not refused: a tab loaded before this release still runs the retired watcher and flushes its queue as one
+       batch; a refusal would lose the other events of that batch and log a false «denied» for every legitimate manager. */
+    if (!internal && T.k === "emp") return;
     if (!T.on) return;
     var d = it.dept || A.u.deptId || "",
       own = it.own || [];
@@ -5749,6 +5813,160 @@ async function nfEmitEvents(env, A, events, internal, extra) {
     });
   }
   return Object.assign(result, { n: ids.length, ids: ids, id: ids[0] || "", duplicate: requested > 0 && ids.length === 0 });
+}
+/* RISHAD-266 · issue #1 (owner decision): «الخادم يُصدر إشعارات الموظفين بنفسه عند قبول الحفظ ولا يقبلها من المتصفح».
+   The events are derived from the accepted old→new employee register of one unit and planned into the save's own atomic batch
+   (019e rsSaveCommit → rsCommit), exactly as irshad (019i), seized (019l) and award (019m) plan theirs: nfPlanEvents(…, internal)
+   + nfRetention + the feed revision. So: a refused or conflicting save issues nothing (the batch does not commit), and a replayed
+   request issues nothing (its receipt returns before any plan is built); each event also carries a `once` key of the request.
+   The rules are the retired browser watcher's (src/services/442 WATCH['bassam_employees_v1']) verbatim — conditions, variables
+   and wording: wipe when a non-empty register becomes empty (and nothing else) · import when five or more records are added,
+   else one addition per record · one deletion per removed record · per kept record: «type» when the employment type changed,
+   «edit» for the other announced fields (never the e-mail). «المُعدّل» is the actor's name. Who READS them is not decided here. */
+var NF_EMP_RES = "bassam_employees_v1";
+var NF_EMP_FIELDS = {
+  name: "الاسم",
+  nid: "رقم الهوية",
+  phone: "الجوال",
+  email: "البريد",
+  empno: "الرقم الوظيفي",
+  type: "نوع التوظيف",
+  work: "نوع العمل",
+  gender: "الجنس",
+  shift: "الوردية",
+};
+function nfEmployeeEvents(A, d, before, after) {
+  var o = (Array.isArray(before) ? before : []).filter(isObj),
+    n = (Array.isArray(after) ? after : []).filter(isObj),
+    who = String(A.u.name || "النظام"),
+    events = [],
+    ma = nmap(),
+    mb = nmap();
+  function key(e) {
+    return e.eid || e.name;
+  }
+  function text(v) {
+    return String(v == null ? "" : v).slice(0, 120); /* names are the actor's text: bounded before they reach another reader's feed */
+  }
+  if (o.length && !n.length) {
+    var unit = (A.depts || []).filter(function (x) {
+      return x && x.id === d;
+    })[0];
+    return [{ type: "emp_wipe", dept: d, vars: { الإدارة: text(unit ? unit.name : ""), المُعدّل: text(who) } }];
+  }
+  o.forEach(function (e) {
+    ma[key(e)] = e;
+  });
+  n.forEach(function (e) {
+    mb[key(e)] = e;
+  });
+  var added = Object.keys(mb)
+      .filter(function (k) {
+        return !ma[k];
+      })
+      .map(function (k) {
+        return mb[k];
+      }),
+    removed = Object.keys(ma)
+      .filter(function (k) {
+        return !mb[k];
+      })
+      .map(function (k) {
+        return ma[k];
+      }),
+    both = Object.keys(mb)
+      .filter(function (k) {
+        return ma[k];
+      })
+      .map(function (k) {
+        return [ma[k], mb[k]];
+      });
+  if (added.length >= 5)
+    events.push({
+      type: "emp_imp",
+      dept: d,
+      vars: {
+        المضافون: added.length,
+        المحدثون: both.filter(function (p) {
+          return JSON.stringify(p[0]) !== JSON.stringify(p[1]);
+        }).length,
+        المُعدّل: text(who),
+      },
+    });
+  else
+    added.forEach(function (e) {
+      events.push({ type: "emp_add", dept: d, vars: { الاسم: text(e.name), النوع: text(e.type || "") } });
+    });
+  removed.forEach(function (e) {
+    events.push({ type: "emp_del", dept: d, vars: { الاسم: text(e.name), المُعدّل: text(who) } });
+  });
+  both.forEach(function (p) {
+    var a = p[0],
+      b = p[1],
+      changed = Object.keys(NF_EMP_FIELDS).filter(function (f) {
+        return (a[f] || "") !== (b[f] || "");
+      });
+    if (!changed.length) return;
+    var own = [String(key(b)).slice(0, 200)];
+    if (changed.indexOf("type") !== -1)
+      events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "—") } });
+    var rest = changed.filter(function (f) {
+      return f !== "type" && f !== "email";
+    });
+    if (rest.length)
+      events.push({
+        type: "emp_edit",
+        dept: d,
+        own: own,
+        vars: {
+          الحقول: text(
+            rest
+              .map(function (f) {
+                return NF_EMP_FIELDS[f];
+              })
+              .join("، "),
+          ),
+          المُعدّل: text(who),
+        },
+      });
+  });
+  return events;
+}
+/* The notification part of an accepted save plan (019e): guards + statements to append to the plan, never a commit of its own.
+   `skip` = units whose whole data the same plan wipes or deletes (their notifications are replaced by that plan). A unit the
+   author cannot address (not declared, or outside his scope) gets no event — as the emit route answered such a sender. */
+async function nfEmployeePlan(env, A, pending, requestId, skip) {
+  var out = { guards: [], statements: [], active: 0 },
+    order = 0;
+  for (var pd of pending || []) {
+    var d = parseKey(pd.k).dept;
+    if (resName(pd.k) !== NF_EMP_RES || !d || (skip || []).indexOf(d) >= 0) continue;
+    if (
+      !deptInScope(A, d) ||
+      !(A.depts || []).some(function (x) {
+        return x && x.id === d;
+      })
+    )
+      continue;
+    var events = nfEmployeeEvents(A, d, parseJson(pd.cur, []), pd.act === "del" ? [] : parseJson(pd.v, []));
+    for (var start = 0; start < events.length; start += 200) {
+      var part = events.slice(start, start + 200);
+      for (var event of part)
+        event.once = "emp:" + (await cuFingerprint({ request: String(requestId || ""), actor: A.u.id, dept: d, type: event.type, order: order++ }));
+      var plan = await nfPlanEvents(env, A, part, true);
+      out.guards.push.apply(out.guards, plan.guards);
+      out.statements.push.apply(out.statements, plan.statements);
+      out.statements.push.apply(out.statements, nfRetention(env, Date.now(), plan.scopes));
+      out.active += plan.plans.length;
+    }
+  }
+  if (out.active)
+    out.statements.push(
+      env.DB.prepare(
+        "INSERT INTO revs(k,rev) VALUES(?1,CAST((SELECT v FROM meta WHERE k='rev') AS INTEGER)) ON CONFLICT(k) DO UPDATE SET rev=excluded.rev",
+      ).bind(NF_REV),
+    );
+  return out;
 }
 async function nfState(env, A, body) {
   nfShape(body, ["uid", "op", "action", "id", "onlyRead", "dept", "all"], ["op", "action"]);
@@ -5955,6 +6173,9 @@ async function nfRemind(env, A, id, base, automatic) {
     );
   return Object.assign(await nfCommit(env, A, st, base === undefined ? doc.broadcastRev : base, "remind", undefined, NF_BC_REV), { n: n });
 }
+/* v7-C · Issue 2 (أ): عتبةُ إنذار التخمين الموزَّع — عناوينُ مختلفة أخفقت على حسابٍ واحد خلال النافذة */
+var NF_FAIL_IPS = 3,
+  NF_FAIL_WIN_MS = 3600000;
 async function nfSecurityPoll(env, A) {
   // A legacy timestamp-only checkpoint means all rows at that timestamp were
   // already consumed. New checkpoints advance the exact (timestamp,id) pair.
@@ -5980,7 +6201,8 @@ async function nfSecurityPoll(env, A) {
       ).results || [],
     events = [],
     max = last,
-    fails = {};
+    fails = {},
+    failId = {};
   rows.forEach(function (r) {
     max = Math.max(max, r.ts);
     if (/^tst_/.test(String(r.uid || ""))) return;
@@ -5989,6 +6211,7 @@ async function nfSecurityPoll(env, A) {
     if (r.act === "login_fail") {
       var k = r.target || r.un;
       fails[k] = (fails[k] || 0) + 1;
+      failId[k] = r.id;
       return;
     }
     if (r.act === "lock" || r.act === "guard_unlock") {
@@ -6013,12 +6236,68 @@ async function nfSecurityPoll(env, A) {
     }
     if (type) events.push({ type: type, vars: vars, once: "security:" + r.id });
   });
-  Object.keys(fails).forEach(function (k) {
-    if (fails[k] >= 5)
+  /* v7-C · Issue 2 (أ): التخمينُ الموزَّع — عناوينُ مختلفة تُخفق على حسابٍ واحد — لم يكن يُنذِر ما لم تجتمع 5 إخفاقاتٍ في دفعةٍ واحدة، ومتغيّرُ IP
+     فارغ. الآن يُقرأ لكل اسمٍ أخفق في هذه الدفعة ما أخفق عليه في آخر ساعة مجمَّعاً بالعنوان (استعلامٌ واحد)، فيُنذَر مديرُ النظام عند
+     NF_FAIL_IPS عناوين مختلفة ولو جاء كلُّ إخفاقٍ في استطلاع، والنصُّ يحمل العددَ والعناوين. إنذارٌ فقط — لا حجبَ ولا قفل (ADR-022). */
+  var failNames = Object.keys(fails), nowF = Date.now(), byName = {};
+  if (failNames.length) {
+    (
+      (
+        await env.DB.prepare(
+          "SELECT un,ip,COUNT(*) c FROM sec WHERE act='login_fail' AND ts>?1 AND un IN (SELECT value FROM json_each(?2)) GROUP BY un,ip ORDER BY c DESC,ip",
+        )
+          .bind(nowF - NF_FAIL_WIN_MS, JSON.stringify(failNames))
+          .all()
+      ).results || []
+    ).forEach(function (x) {
+      var b = byName[x.un] || (byName[x.un] = { n: 0, ips: [] });
+      b.n += x.c;
+      if (x.ip) b.ips.push(x.ip);
+    });
+  }
+  /* المراجعة المستقلة (L2): إنذارُ العناوين المختلفة لحسابٍ قائمٍ فقط — رشُّ أسماءٍ لا وجودَ لها من عناوين قليلة كان يولّد إنذاراً عاجلاً لكل اسم.
+     و«مرّةً في الساعة» نافذةٌ متدحرجة: لا يُنذَر لاسمٍ أُنذر له خلال NF_FAIL_WIN_MS (كان المفتاحُ ساعةَ الحائط فتُنذِر الدفعةُ العابرةُ رأسَ الساعة
+     مرّتين). المفتاحُ يحمل رقمَ آخر صفٍّ للاسم في الدفعة — استطلاعان متزامنان للدفعة نفسِها يلتقيان على مفتاحٍ واحد. */
+  var spreadNames = failNames.filter(function (k) {
+      return (byName[k] || { ips: [] }).ips.length >= NF_FAIL_IPS;
+    }),
+    spreadOk = {};
+  if (spreadNames.length) {
+    var known = {};
+    ((await usersList(env)) || []).forEach(function (x) {
+      if (x.un) known["=" + String(x.un).toLowerCase()] = 1;
+      if (x.alt) known["=" + String(x.alt).toLowerCase()] = 1;
+    });
+    var recent =
+      (
+        await env.DB.prepare("SELECT once_key FROM notification_dedup WHERE created_at>?1 AND once_key GLOB 'fail:*:ips:*'")
+          .bind(nowF - NF_FAIL_WIN_MS)
+          .all()
+      ).results || [];
+    spreadNames.forEach(function (k) {
+      var pre = "fail:" + k + ":ips:";
+      spreadOk[k] =
+        known["=" + String(k).toLowerCase()] === 1 &&
+        !recent.some(function (r) {
+          return String(r.once_key).indexOf(pre) === 0;
+        });
+    });
+  }
+  failNames.forEach(function (k) {
+    var b = byName[k] || { n: 0, ips: [] },
+      spread = spreadOk[k] === true;
+    if (fails[k] >= 5 || spread)
       events.push({
         type: "sc_fail",
-        vars: { العدد: fails[k], الاسم: k, IP: "" },
-        once: "fail:" + k + ":" + Math.floor(Date.now() / 600000),
+        vars: {
+          العدد: Math.max(fails[k], b.n),
+          الاسم: k,
+          IP:
+            b.ips.length > 1
+              ? b.ips.length + " عناوين مختلفة: " + b.ips.slice(0, 5).join("، ") + (b.ips.length > 5 ? " …" : "")
+              : b.ips[0] || "",
+        },
+        once: fails[k] >= 5 ? "fail:" + k + ":" + Math.floor(nowF / 600000) : "fail:" + k + ":ips:" + failId[k],
       });
   });
   var finalRow = rows[rows.length - 1],
@@ -11002,6 +11281,11 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   }
   await bdWipePlans(env,A,body,plan,irWipeDepartments,opt,irFinalDepartments);
   await bdEmployeeCleanupPlan(env,A,body,plan,reference,opt,irWipeDepartments);
+  /* RISHAD-266 · issue #1 (owner decision): the server issues the employee notifications of the save it accepts, in the same
+     atomic batch (019 nfEmployeePlan) — never the browser. A unit wiped or deleted by this plan gets none (its feed is replaced). */
+  var employeeNotifications = await nfEmployeePlan(env, A, kv.pend, plan.body.requestId || enfSnapId('ops'), irWipeDepartments);
+  plan.guards.push.apply(plan.guards, employeeNotifications.guards);
+  plan.statements.push.apply(plan.statements, employeeNotifications.statements);
   if (!plan.snapshotRequired) plan.snapshots = [];
   else
     for (var dept of departments) {
@@ -22307,7 +22591,7 @@ var KIVO_SCHEMA_VERSION = 10;
    هذه النسخةُ مطابقةٌ له حرفاً (يفرضها tests/unit/body_schemas.test.mjs) — فالقاعدةُ واحدةٌ مكتوبةٌ مرةً، قابلةٌ للاختبار بلا واجهة.
    bodyCheck(route, body) ⇒ null (سليم) أو موضعُ أوّل مخالفة ('set.<k>' · 'base.<k>' · 'del[3]' …) — والمسارُ يردّ 400 {ok:0, err:'bad-body', at}
    قبل أيّ قراءةٍ أو كتابة. كان الخادمُ يحوّل القيمةَ غيرَ النصية بـString() فيُخزَّن «[object Object]» في المفتاح (سلامةُ البيانات). */
-var KIVO_BODY_SCHEMAS = {"/api/admin/dept-delete":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/admin/dept-wipe":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/authz-migrate":{"properties":{"act":{"maxLength":32,"type":["string","null"]},"force":{"type":["boolean","null"]},"generated":{"maxLength":20,"type":["number","string","null"]},"hash":{"maxLength":128,"type":["string","null"]},"inferable":{"type":["boolean","integer","null"]},"parts":{"items":{"maxLength":16,"type":"string"},"maxItems":8,"type":["array","null"]},"seed":{"maxLength":128,"type":["string","null"]},"snap":{"maxLength":128,"type":["string","null"]}},"type":"object"},"/api/authz-test":{"properties":{"method":{"maxLength":10,"type":["string","null"]},"path":{"maxLength":2000,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]},"vals":{"items":{"maxLength":300,"type":"string"},"maxItems":200,"type":["array","null"]}},"type":"object"},"/api/award/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"docsV1":{"minimum":0,"type":"integer"},"docsV2":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"records":{"minimum":0,"type":"integer"}},"required":["epoch","records","docsV1","docsV2"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"document":{"type":"object"},"id":{"type":"string"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"status":{"type":"string"},"uid":{"type":"string"},"version":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/backup/restore":{"additionalProperties":false,"properties":{"backup":{"type":"object"},"base":{"type":"object"},"delete":{"type":["array","null"]},"domains":{"type":"object"},"keys":{"type":["object","null"]},"legacyConsent":{"type":"boolean"},"manifest":{"type":"object"},"mode":{"type":"string"},"permissionSlice":{"type":"object"},"phase":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"scope":{"type":"object"},"uid":{"type":"string"},"version":{"minimum":0,"type":"integer"}},"type":"object"},"/api/checkpw":{"properties":{"p":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/custody/act":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"color":{"type":"string"},"condition":{"type":"string"},"dept":{"type":"string"},"holderKey":{"type":"string"},"issueId":{"type":"string"},"item":{"type":"object"},"itemId":{"type":"string"},"kind":{"type":"string"},"lines":{"type":"array"},"note":{"type":"string"},"op":{"type":"string"},"patch":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/dstats":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"data":{"additionalProperties":false,"properties":{"haram":{"type":"object"},"locks":{"type":"object"},"nabawi":{"type":"object"}},"type":"object"},"operation":{"maxLength":40,"type":"string"},"ops":{"type":"object"},"reason":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["base","data"],"type":"object"},"/api/employees/transition":{"additionalProperties":false,"properties":{"accountProposals":{"type":"array"},"base":{"type":"object"},"deleteMode":{"type":"string"},"dept":{"type":"string"},"finalRows":{"type":"array"},"import":{"type":"object"},"intent":{"type":"string"},"options":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/guard/unlock":{"properties":{"all":{"type":["integer","boolean","null"]},"gk":{"maxLength":300,"type":["string","null"]},"gks":{"items":{"maxLength":300,"type":"string"},"maxItems":1000,"type":["array","null"]}},"type":"object"},"/api/irshad/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"epoch":{"minimum":0,"type":"integer"},"languages":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","languages","locations","retro"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"id":{"type":"string"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"},"values":{"type":"array"},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/login":{"properties":{"p":{"maxLength":1000,"type":["string","null"]},"u":{"maxLength":200,"type":"string"}},"type":"object"},"/api/logout":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill":{"additionalProperties":false,"type":"object"},"/api/me/tasks/act":{"additionalProperties":false,"properties":{"act":{"maxLength":8,"type":"string"},"i":{"minimum":0,"type":["integer","null"]},"id":{"maxLength":40,"type":["number","string"]},"idem":{"maxLength":40,"type":["string","null"]},"imgs":{"items":{"maxLength":80,"type":"string"},"maxItems":4,"type":["array","null"]},"k":{"maxLength":10,"type":"string"},"meta":{"items":{"additionalProperties":false,"properties":{"acc":{"minimum":0,"type":["number","null"]},"at":{"minimum":1,"type":"number"},"img":{"maxLength":80,"type":["string","null"]},"lat":{"type":["number","null"]},"lng":{"type":["number","null"]}},"required":["at"],"type":"object"},"maxItems":4,"type":["array","null"]},"note":{"maxLength":1000,"type":["string","null"]},"rm":{"items":{"maxLength":80,"type":"string"},"maxItems":12,"type":["array","null"]},"steps":{"additionalProperties":{"type":"boolean"},"type":["object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","act"],"type":"object"},"/api/notifications/act":{"additionalProperties":false,"properties":{"action":{"maxLength":40,"type":"string"},"all":{"type":"boolean"},"at":{"minimum":0,"type":"integer"},"b":{"type":"object"},"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":180,"type":"string"},"events":{"items":{"type":"object"},"maxItems":200,"type":"array"},"id":{"maxLength":800,"type":"string"},"link":{"maxLength":500,"type":"string"},"once":{"maxLength":500,"type":"string"},"onlyRead":{"type":"boolean"},"op":{"maxLength":40,"type":"string"},"own":{"items":{"maxLength":200,"type":"string"},"maxItems":20000,"type":"array"},"patch":{"type":"object"},"preview":{"type":"boolean"},"reset":{"type":"boolean"},"target":{"type":"object"},"title":{"maxLength":400,"type":"string"},"type":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"vars":{"type":"object"}},"required":["op"],"type":"object"},"/api/policy":{"properties":{"idleH":{"maxLength":16,"type":["number","string","null"]},"lockMin":{"maxLength":16,"type":["number","string","null"]},"lockN":{"maxLength":16,"type":["number","string","null"]},"pwMin":{"maxLength":16,"type":["number","string","null"]},"sessH":{"maxLength":16,"type":["number","string","null"]},"wrMin":{"maxLength":16,"type":["number","string","null"]}},"type":"object"},"/api/recover":{"properties":{"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/recovery/new":{"properties":{"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/reset":{"properties":{"admin":{"properties":{"name":{"maxLength":120,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]},"un":{"maxLength":64,"type":["string","null"]}},"type":["object","null"]},"confirm":{"maxLength":50,"type":["string","null"]},"keepBrand":{"type":["boolean","integer","null"]},"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/retro":{"properties":{"act":{"maxLength":16,"type":["string","null"]},"dept":{"maxLength":200,"type":["string","null"]},"hours":{"maxLength":16,"type":["number","string","null"]},"id":{"maxLength":100,"type":["string","null"]},"reason":{"maxLength":4000,"type":["string","null"]},"res":{"maxLength":64,"type":["string","null"]},"scope":{"properties":{"d":{"maxLength":8,"type":["integer","string","null"]},"m":{"maxLength":8,"type":["integer","string","null"]},"y":{"maxLength":8,"type":["integer","string","null"]}},"type":["object","null"]}},"type":"object"},"/api/save":{"properties":{"aud":{"type":["array","object","null"]},"base":{"additionalProperties":{"minimum":0,"type":"integer"},"type":"object"},"cur":{"maxLength":1000,"type":["string","null"]},"del":{"items":{"maxLength":300,"type":"string"},"maxItems":5000,"type":"array"},"epoch":{"minimum":0,"type":"integer"},"ops":{"type":["object","array","null"]},"requestId":{"maxLength":100,"type":"string"},"set":{"additionalProperties":{"type":"string"},"type":"object"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"type":["object","null"]}},"type":"object"},"/api/seized/act":{"additionalProperties":false,"properties":{"act":{"type":"string"},"base":{"additionalProperties":false,"properties":{"actions":{"minimum":0,"type":"integer"},"catalog":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"jew":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","catalog","actions","locations","jew","retro"],"type":"object"},"data":{"type":"object"},"day":{"minimum":1,"type":"integer"},"dept":{"type":"string"},"from":{"type":"string"},"id":{"type":"string"},"image":{"type":"string"},"index":{"type":"integer"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"to":{"type":"string"},"uid":{"type":"string"},"value":{"type":["object","array"]},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/sess/kill":{"properties":{"all":{"type":["boolean","integer","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/cancel":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":"string"}},"required":["k","id","why"],"type":"object"},"/api/tasks/create":{"additionalProperties":false,"properties":{"asg":{"items":{"maxLength":80,"type":"string"},"maxItems":50,"type":["array","null"]},"base":{"minimum":0,"type":"integer"},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"desc":{"maxLength":4000,"type":["string","null"]},"e":{"type":"number"},"epoch":{"minimum":0,"type":"integer"},"force":{"type":["boolean","null"]},"grpL":{"maxLength":120,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"needs":{"items":{"maxLength":80,"type":"string"},"maxItems":8,"type":["array","null"]},"pol":{"type":["object","null"]},"prio":{"maxLength":10,"type":["string","null"]},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"rv":{"maxLength":10,"type":["string","object","null"]},"s":{"type":"number"},"shift":{"additionalProperties":false,"properties":{"name":{"maxLength":80,"type":"string"}},"type":["object","null"]},"t":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","s","e","requestId","epoch"],"type":"object"},"/api/tasks/extend":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","e"],"type":"object"},"/api/tasks/reassign":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":["number","null"]},"force":{"type":["boolean","null"]},"from":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/recur":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":80,"type":["string","null"]},"epoch":{"minimum":0,"type":"integer"},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":["string","null"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"row":{"maxLength":40,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"required":["op","requestId","epoch","base"],"type":"object"},"/api/tasks/recur/run":{"additionalProperties":false,"properties":{"day":{"maxLength":10,"type":["string","null"]},"dept":{"maxLength":80,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/relink":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"from":{"maxLength":160,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/reopen":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id"],"type":"object"},"/api/tasks/review":{"additionalProperties":false,"properties":{"decision":{"maxLength":8,"type":"string"},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","ekey","decision"],"type":"object"},"/api/tasks/settings":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"edit":{"additionalProperties":false,"properties":{"desc":{"maxLength":4000,"type":"string"},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"prio":{"type":["string","null"]},"s":{"type":"number"},"t":{"maxLength":300,"type":"string"},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","desc","prio","s","e"],"type":"object"},"ekey":{"maxLength":80,"type":["string","null"]},"epoch":{"minimum":0,"type":"integer"},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string","null"]},"k":{"maxLength":10,"type":"string"},"pol":{"type":["object","null"]},"recur":{"additionalProperties":false,"properties":{"id":{"maxLength":40,"type":["number","string"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"row":{"maxLength":40,"type":["string","null"]}},"required":["op"],"type":"object"},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"rv":{"maxLength":10,"type":["string","object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]}},"required":["k","requestId","epoch","base"],"type":"object"}};
+var KIVO_BODY_SCHEMAS = {"/api/admin/dept-delete":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/admin/dept-wipe":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/authz-migrate":{"properties":{"act":{"maxLength":32,"type":["string","null"]},"force":{"type":["boolean","null"]},"generated":{"maxLength":20,"type":["number","string","null"]},"hash":{"maxLength":128,"type":["string","null"]},"inferable":{"type":["boolean","integer","null"]},"parts":{"items":{"maxLength":16,"type":"string"},"maxItems":8,"type":["array","null"]},"seed":{"maxLength":128,"type":["string","null"]},"snap":{"maxLength":128,"type":["string","null"]}},"type":"object"},"/api/authz-test":{"properties":{"method":{"maxLength":10,"type":["string","null"]},"path":{"maxLength":2000,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]},"vals":{"items":{"maxLength":300,"type":"string"},"maxItems":200,"type":["array","null"]}},"type":"object"},"/api/award/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"docsV1":{"minimum":0,"type":"integer"},"docsV2":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"records":{"minimum":0,"type":"integer"}},"required":["epoch","records","docsV1","docsV2"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"document":{"type":"object"},"id":{"type":"string"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"status":{"type":"string"},"uid":{"type":"string"},"version":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/backup/restore":{"additionalProperties":false,"properties":{"backup":{"type":"object"},"base":{"type":"object"},"delete":{"type":["array","null"]},"domains":{"type":"object"},"keys":{"type":["object","null"]},"legacyConsent":{"type":"boolean"},"manifest":{"type":"object"},"mode":{"type":"string"},"permissionSlice":{"type":"object"},"phase":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"scope":{"type":"object"},"uid":{"type":"string"},"version":{"minimum":0,"type":"integer"}},"type":"object"},"/api/checkpw":{"properties":{"p":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/custody/act":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"color":{"type":"string"},"condition":{"type":"string"},"dept":{"type":"string"},"holderKey":{"type":"string"},"issueId":{"type":"string"},"item":{"type":"object"},"itemId":{"type":"string"},"kind":{"type":"string"},"lines":{"type":"array"},"note":{"type":"string"},"op":{"type":"string"},"patch":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/dstats":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"data":{"additionalProperties":false,"properties":{"haram":{"type":"object"},"locks":{"type":"object"},"nabawi":{"type":"object"}},"type":"object"},"operation":{"maxLength":40,"type":"string"},"ops":{"type":"object"},"reason":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["base","data"],"type":"object"},"/api/employees/transition":{"additionalProperties":false,"properties":{"accountProposals":{"type":"array"},"base":{"type":"object"},"deleteMode":{"type":"string"},"dept":{"type":"string"},"finalRows":{"type":"array"},"import":{"type":"object"},"intent":{"type":"string"},"options":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/guard/unlock":{"properties":{"all":{"type":["integer","boolean","null"]},"gk":{"maxLength":300,"type":["string","null"]},"gks":{"items":{"maxLength":300,"type":"string"},"maxItems":1000,"type":["array","null"]}},"type":"object"},"/api/irshad/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"epoch":{"minimum":0,"type":"integer"},"languages":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","languages","locations","retro"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"id":{"type":"string"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"},"values":{"type":"array"},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/login":{"properties":{"p":{"maxLength":1000,"type":["string","null"]},"u":{"maxLength":200,"type":"string"}},"type":"object"},"/api/logout":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill":{"additionalProperties":false,"type":"object"},"/api/me/tasks/act":{"additionalProperties":false,"properties":{"act":{"maxLength":8,"type":"string"},"i":{"minimum":0,"type":["integer","null"]},"id":{"maxLength":40,"type":["number","string"]},"idem":{"maxLength":40,"type":["string","null"]},"imgs":{"items":{"maxLength":80,"type":"string"},"maxItems":4,"type":["array","null"]},"k":{"maxLength":10,"type":"string"},"meta":{"items":{"additionalProperties":false,"properties":{"acc":{"minimum":0,"type":["number","null"]},"at":{"minimum":1,"type":"number"},"img":{"maxLength":80,"type":["string","null"]},"lat":{"type":["number","null"]},"lng":{"type":["number","null"]}},"required":["at"],"type":"object"},"maxItems":4,"type":["array","null"]},"note":{"maxLength":1000,"type":["string","null"]},"rm":{"items":{"maxLength":80,"type":"string"},"maxItems":12,"type":["array","null"]},"steps":{"additionalProperties":{"type":"boolean"},"type":["object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","act"],"type":"object"},"/api/notifications/act":{"additionalProperties":false,"properties":{"action":{"maxLength":40,"type":"string"},"all":{"type":"boolean"},"at":{"minimum":0,"type":"integer"},"b":{"type":"object"},"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":180,"type":"string"},"events":{"items":{"type":"object"},"maxItems":200,"type":"array"},"id":{"maxLength":800,"type":"string"},"link":{"maxLength":500,"type":"string"},"once":{"maxLength":500,"type":"string"},"onlyRead":{"type":"boolean"},"op":{"maxLength":40,"type":"string"},"own":{"items":{"maxLength":200,"type":"string"},"maxItems":20000,"type":"array"},"patch":{"type":"object"},"preview":{"type":"boolean"},"reset":{"type":"boolean"},"target":{"type":"object"},"title":{"maxLength":400,"type":"string"},"type":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"vars":{"type":"object"}},"required":["op"],"type":"object"},"/api/policy":{"properties":{"idleH":{"maxLength":16,"type":["number","string","null"]},"lockMin":{"maxLength":16,"type":["number","string","null"]},"lockN":{"maxLength":16,"type":["number","string","null"]},"pwMin":{"maxLength":16,"type":["number","string","null"]},"sessH":{"maxLength":16,"type":["number","string","null"]},"thrN":{"maxLength":16,"type":["number","string","null"]},"thrOn":{"maxLength":16,"type":["number","string","null"]},"thrSec":{"maxLength":16,"type":["number","string","null"]},"thrWin":{"maxLength":16,"type":["number","string","null"]},"wrMin":{"maxLength":16,"type":["number","string","null"]}},"type":"object"},"/api/recover":{"properties":{"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/recovery/new":{"properties":{"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/reset":{"properties":{"admin":{"properties":{"name":{"maxLength":120,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]},"un":{"maxLength":64,"type":["string","null"]}},"type":["object","null"]},"confirm":{"maxLength":50,"type":["string","null"]},"keepBrand":{"type":["boolean","integer","null"]},"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/retro":{"properties":{"act":{"maxLength":16,"type":["string","null"]},"dept":{"maxLength":200,"type":["string","null"]},"hours":{"maxLength":16,"type":["number","string","null"]},"id":{"maxLength":100,"type":["string","null"]},"reason":{"maxLength":4000,"type":["string","null"]},"res":{"maxLength":64,"type":["string","null"]},"scope":{"properties":{"d":{"maxLength":8,"type":["integer","string","null"]},"m":{"maxLength":8,"type":["integer","string","null"]},"y":{"maxLength":8,"type":["integer","string","null"]}},"type":["object","null"]}},"type":"object"},"/api/save":{"properties":{"aud":{"type":["array","object","null"]},"base":{"additionalProperties":{"minimum":0,"type":"integer"},"type":"object"},"cur":{"maxLength":1000,"type":["string","null"]},"del":{"items":{"maxLength":300,"type":"string"},"maxItems":5000,"type":"array"},"epoch":{"minimum":0,"type":"integer"},"ops":{"type":["object","array","null"]},"requestId":{"maxLength":100,"type":"string"},"set":{"additionalProperties":{"type":"string"},"type":"object"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"type":["object","null"]}},"type":"object"},"/api/seized/act":{"additionalProperties":false,"properties":{"act":{"type":"string"},"base":{"additionalProperties":false,"properties":{"actions":{"minimum":0,"type":"integer"},"catalog":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"jew":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","catalog","actions","locations","jew","retro"],"type":"object"},"data":{"type":"object"},"day":{"minimum":1,"type":"integer"},"dept":{"type":"string"},"from":{"type":"string"},"id":{"type":"string"},"image":{"type":"string"},"index":{"type":"integer"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"to":{"type":"string"},"uid":{"type":"string"},"value":{"type":["object","array"]},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/sess/kill":{"properties":{"all":{"type":["boolean","integer","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/cancel":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":"string"}},"required":["k","id","why"],"type":"object"},"/api/tasks/create":{"additionalProperties":false,"properties":{"asg":{"items":{"maxLength":80,"type":"string"},"maxItems":50,"type":["array","null"]},"base":{"minimum":0,"type":"integer"},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"desc":{"maxLength":4000,"type":["string","null"]},"e":{"type":"number"},"epoch":{"minimum":0,"type":"integer"},"force":{"type":["boolean","null"]},"grpL":{"maxLength":120,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"needs":{"items":{"maxLength":80,"type":"string"},"maxItems":8,"type":["array","null"]},"pol":{"type":["object","null"]},"prio":{"maxLength":10,"type":["string","null"]},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"rv":{"maxLength":10,"type":["string","object","null"]},"s":{"type":"number"},"shift":{"additionalProperties":false,"properties":{"name":{"maxLength":80,"type":"string"}},"type":["object","null"]},"t":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","s","e","requestId","epoch"],"type":"object"},"/api/tasks/extend":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","e"],"type":"object"},"/api/tasks/reassign":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":["number","null"]},"force":{"type":["boolean","null"]},"from":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/recur":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":80,"type":["string","null"]},"epoch":{"minimum":0,"type":"integer"},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":["string","null"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"row":{"maxLength":40,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"required":["op","requestId","epoch","base"],"type":"object"},"/api/tasks/recur/run":{"additionalProperties":false,"properties":{"day":{"maxLength":10,"type":["string","null"]},"dept":{"maxLength":80,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/relink":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"from":{"maxLength":160,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/reopen":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id"],"type":"object"},"/api/tasks/review":{"additionalProperties":false,"properties":{"decision":{"maxLength":8,"type":"string"},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","ekey","decision"],"type":"object"},"/api/tasks/settings":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"edit":{"additionalProperties":false,"properties":{"desc":{"maxLength":4000,"type":"string"},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"prio":{"type":["string","null"]},"s":{"type":"number"},"t":{"maxLength":300,"type":"string"},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","desc","prio","s","e"],"type":"object"},"ekey":{"maxLength":80,"type":["string","null"]},"epoch":{"minimum":0,"type":"integer"},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string","null"]},"k":{"maxLength":10,"type":"string"},"pol":{"type":["object","null"]},"recur":{"additionalProperties":false,"properties":{"id":{"maxLength":40,"type":["number","string"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"row":{"maxLength":40,"type":["string","null"]}},"required":["op"],"type":"object"},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"rv":{"maxLength":10,"type":["string","object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]}},"required":["k","requestId","epoch","base"],"type":"object"}};
 function bodyTypeOk(t, v) {
   var ts = Array.isArray(t) ? t : [t], i;
   for (i = 0; i < ts.length; i++) {
@@ -22472,6 +22756,8 @@ function verifyPw(pw, ph) {
   if (ph.indexOf('p1$') === 0) return Promise.resolve(eq(legacyHash(pw), ph.slice(3)));
   return Promise.resolve(eq(legacyHash(pw), ph));
 }
+/* v7-C · Issue 2 (التوقيت): تجزئةٌ وهمية بصيغة p2 والتكرارات الحالية — verifyPw يشتقّ ضدّها كاملاً ولا يطابق أبداً (ليست كلمةَ أحد) */
+function PW_DUMMY() { return 'p2$' + PBKDF2_ITER + '$00112233445566778899aabbccddeeff$' + '0000000000000000000000000000000000000000000000000000000000000000'; }
 function isLegacy(ph) { return String(ph || '').indexOf('p2$') !== 0; }
 /* سياسة الدخول الموحَّدة — نفس قاعدة المنصة، ليتطابق حكم «يجب تغييرها»:
    اسم المستخدم 10 أرقام (جوال/هوية)؛ كلمة المرور أرقام فقط — الموظف ومدير الإدارة العامة 5 أرقام، ومدير النظام وحساب الإدارة 6 أرقام */
@@ -23612,12 +23898,22 @@ function clearCookie(url) {
    المتضاعف يضعه الإخفاقُ المؤكَّد (guardFail) من لحظته — فحدُّ الدفع المتزامن كما هو (لا يبلغ التحقّقَ أكثرُ من lockN)، والسلوكُ المتتابع كما هو
    (القفلُ بعد الإخفاق الخامس · التضاعف)، والنجاحُ يرفع القفلَ كما كان. */
 var LOCK_PROV_MS = 1500;
+/* v7-C · Issue 2 (ج) — التناقص: العدّادُ كان لا ينقص أبداً، فإخفاقاتُ مكتبٍ كاملٍ خلف عنوانٍ واحد تتراكم إلى الأبد. الآن يُغتفر إخفاقٌ واحد عن كل
+   lockMin تمضي (دلوٌ راشح) — فأقصى معدّلٍ مستدام لمصدرٍ واحد محاولةٌ كل lockMin، وهو نفسُ حدِّ القفل الأقصى قبل التغيير؛ لا يكسب المهاجمُ شيئاً.
+   بلا تغييرِ مخطّط: العمودُ until يحمل «مرساةَ التناقص» سالبةً ما دام الصفُّ غيرَ مقفل (until ≤ 0 ⇒ غيرُ مقفلٍ عند كل قارئ: until > now)،
+   وبعد انقضاء قفلٍ تكون المرساةُ لحظةَ انقضائه (القيمةُ الموجبة الماضية) — أي ABS(until) في الحالين. صفٌّ قديم (until = 0) يُغتفر كلُّه مرّةً.
+   ?2 الآن · d = موضعُ مدّة الاغتفار (LOCK_MS). k = عددُ ما يُغتفر · e = العدُّ بعد الاغتفار · a = المرساةُ الجديدة (سالبة). */
+function guardDecay(d) {
+  var k = 'CAST((?2 - ABS(guard.until)) / ' + d + ' AS INTEGER)', e = 'MAX(0, guard.n - ' + k + ')';
+  return { e: e, a: 'CASE WHEN ' + e + ' = 0 THEN -?2 ELSE -(ABS(guard.until) + ' + k + ' * ' + d + ') END' };
+}
+var GUARD_D5 = guardDecay('?5'), GUARD_D3 = guardDecay('?3');
 async function guardLeft(env, gk) {
   var now = Date.now();
   var rs = await env.DB.batch([
     env.DB.prepare('SELECT n, until FROM guard WHERE gk = ?1').bind(gk),
-    env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, 1, 0) ON CONFLICT(gk) DO UPDATE SET n = CASE WHEN guard.until > ?2 THEN guard.n ELSE guard.n + 1 END, ' +
-      'until = CASE WHEN guard.until > ?2 THEN guard.until WHEN guard.n + 1 >= ?3 THEN ?2 + ?4 ELSE guard.until END').bind(gk, now, LOCK_N, LOCK_PROV_MS)
+    env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, 1, -?2) ON CONFLICT(gk) DO UPDATE SET n = CASE WHEN guard.until > ?2 THEN guard.n ELSE ' + GUARD_D5.e + ' + 1 END, ' +
+      'until = CASE WHEN guard.until > ?2 THEN guard.until WHEN ' + GUARD_D5.e + ' + 1 >= ?3 THEN ?2 + ?4 ELSE ' + GUARD_D5.a + ' END').bind(gk, now, LOCK_N, LOCK_PROV_MS, LOCK_MS)
   ]);
   var g = rs && rs[0] && rs[0].results && rs[0].results[0];
   return g ? Math.max(0, (g.until || 0) - now) : 0;
@@ -23640,11 +23936,35 @@ function secAr(n) {
 async function guardReset(env, gk) {
   await env.DB.prepare('DELETE FROM guard WHERE gk = ?1').bind(gk).run();
 }
+/* v7-C · Issue 2 (ج) — نجاحُ الدخول لا يصفّر عدّادَ المصدر: كان الحذفُ الكامل يتيح لمن يملك حساباً صالحاً أن يصفّر عدّادَ
+   عنوانه كلَّ أربع محاولات فيرشَّ الأسماءَ بلا حدّ. وتبقى إخفاقاتُ الحسابات الأخرى تتناقص بمعدّلها.
+   قفلُ الحجز المؤقّت (≤ LOCK_PROV_MS) يُرفع كما كان يرفعه النجاح (KIVO_260)؛ القفلُ الكامل الأطول لا يُمسّ. */
+/* المراجعة المستقلة (M1): طرحُ الحجز وحده أبقى أخطاءَ الكتابة الصادقة على عنوان المكتب (خطأٌ كلَّ 4 د أسرعُ من التناقص ⇒ يُقفل المكتب).
+   الآن يُغتفر على المصدر عدُّ الزوج نفسِه p:<un>|<ip> — إخفاقاتُ صاحب الحساب قبل أن يصيب وحجزُه — ولا يُغتفر إخفاقٌ على حسابٍ آخر، ولا ينزل
+   العدُّ تحت الصفر. فالحيلةُ مغلقةٌ كما هي: دخولُ المهاجم بحسابه لا يردّ إلا ما أخفقه على حسابه هو. والعدُّ يُقرأ ويُطرح ويُحذف الزوجُ في معاملةٍ
+   واحدة (batch): نجاحٌ متزامنٌ ثانٍ للزوج نفسِه يجده محذوفاً فيطرح صفراً — لا اغتفارَ مزدوجاً. (وعدُّ الزوج لا يزيد إلا بمحاولةٍ عُدّت على
+   المصدر — مسارُ الدخول يحجز المصدرَ أولاً ولا يحجز الزوجَ والمصدرُ مقفل.) */
+async function guardOk(env, gkI, gkP) {
+  var now = Date.now();
+  await env.DB.batch([
+    env.DB.prepare('UPDATE guard SET n = MAX(0, n - COALESCE((SELECT MAX(0, p.n) FROM guard p WHERE p.gk = ?4), 0)), until = CASE WHEN until > ?2 AND until <= ?2 + ?3 THEN -?2 ELSE until END WHERE gk = ?1').bind(gkI, now, LOCK_PROV_MS, gkP),
+    env.DB.prepare('DELETE FROM guard WHERE gk = ?1').bind(gkP),
+    env.DB.prepare('DELETE FROM guard WHERE gk = ?1 AND n <= 0 AND until <= ?2').bind(gkI, now)
+  ]);
+}
+/* v7-C · Issue 2 (ب) — إبطاءُ الحساب المستهدَف: كم عنواناً مختلفاً أخفق على هذا الاسم في النافذة (من سجلّ الأمن — فهرس sec_act). عند بلوغ العتبة
+   تُمهَل كلُّ محاولةٍ على الاسم THR_MS بالضبط قبل أيِّ شيء — مهلةٌ ثابتة لا تتراكم ولا يطيلها أحد، ولا قفلَ: صاحبُ الكلمة الصحيحة يدخل بعدها.
+   والاسمُ المجهول يُعامَل كالقائم (الإخفاقُ يُسجَّل باسمه) فلا تكشف المهلةُ وجودَ الحساب. مطفأةٌ افتراضياً (THR_ON) — وعندها لا استعلامَ ولا مهلة. */
+async function loginSlow(env, un) {
+  var r = await env.DB.prepare("SELECT COUNT(DISTINCT ip) AS d FROM sec WHERE act = 'login_fail' AND ts > ?2 AND un = ?1").bind(un, Date.now() - THR_WIN_MS).first();
+  return r && r.d >= THR_N ? THR_MS : 0;
+}
 /* عدّادٌ للإنذار لا للحجب: يُحصي محاولاتِ حسابٍ بعينه ليراها مديرُ النظام،
    ولا يضع until أبداً — فلا يقفل مهاجمٌ حسابَ غيره. */
 async function guardCount(env, gk) {
   /* KIVO_259: زيادةٌ ذرّية (كان يقرأ ثم يكتب فتضيع زياداتٌ تحت التزامن) */
-  var g = await env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, 1, 0) ON CONFLICT(gk) DO UPDATE SET n = guard.n + 1, until = 0 RETURNING n').bind(gk).first();
+  /* v7-C · Issue 2 (ج): عدّادُ الإنذار يتناقص كغيره (واحدٌ لكل lockMin) — ولا يحمل until موجباً أبداً (المرساةُ سالبة: غيرُ مقفل) */
+  var g = await env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, 1, -?2) ON CONFLICT(gk) DO UPDATE SET n = ' + GUARD_D3.e + ' + 1, until = ' + GUARD_D3.a + ' RETURNING n').bind(gk, Date.now(), LOCK_MS).first();
   var n = g ? g.n : 0;
   if (n === LOCK_N) await secLog(env, { un: gk.indexOf('u:') === 0 ? gk.slice(2) : '', act: 'lock', target: gk, detail: String(n) });   /* CORE-02 (B3): the count, as guardFail writes it — was the word 'attempts' */
 }
@@ -23706,11 +24026,23 @@ function tkKeepOff(A, k, d, rst, imp, X) {
    التي بنى عليها تعديله (base) وكان الخادم قد تجاوزها فلا تُكتب القيمة بل
    تعود الأحدث ليدمج المتصفح عليها ويعيد الإرسال؛ (٣) التدقيق — كل كتابة
    نافذة تُسجَّل بفاعلها ووقتها وفرقها. */
+/* V7 · issue #4 (018 nodeCapSweep): the answer of a save whose registry the server cleaned (out.__nc — set once in applySave, read once here).
+   · hide: the request did not carry bassam_perms_v1 — nothing about that key is reported (280 saveAck9 refuses an answer naming a key the
+     request did not send); the page learns the new registry as any change by another writer (live pull · a conflict on its next save);
+   · echo: the request carried it and the server wrote it without the swept records — answered as conflicts[k] = { cur: the written value,
+     rev: its revision } so the page adopts exactly what was stored (its merge over cur is cur: nothing re-sent, nothing announced). */
+function nodeCapAck(out) {
+  var m = out && out.__nc; if (!m) return out;
+  delete out.__nc;
+  if (m.hide) { if (out.revs) delete out.revs[K_PERM]; if (out.conflicts) delete out.conflicts[K_PERM]; }
+  else if (out.revs && out.revs[K_PERM] != null) { out.conflicts = out.conflicts || {}; out.conflicts[K_PERM] = { cur: m.echo, rev: out.revs[K_PERM], by: '', at: Date.now(), self: true }; delete out.revs[K_PERM]; }
+  return out;
+}
 async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ مهامٍ في الخادم يبني من القيمة الحالية · { quiet } الرفضُ لا يُسجَّل هنا (يحكم المستدعي) — F-10 */
   var planOnly=!!(opt && opt.__restorePlan===RESTORE_INTERNAL_TOKEN);
   if (planOnly && opt.__serverDepartmentWipes) A.__udel = 1;
   if (planOnly && opt.__srvRestore === RESTORE_INTERNAL_TOKEN) A.__srvRst = 1;   /* RISHAD266 (مراجعة المالك على aae024c): الاستعادةُ الخادمية المتحقَّقة (019d) وحدها — علامةُ الاستعادة القادمة من العميل لا تستثني من سلامة العلاقات */   /* RISHAD266: حفظةُ الحذف الذرّيّ نفسُه (019e rsWipeRoute · رمزٌ داخليّ) — الطريقُ الوحيد لحذف وحدة (018 deptShapeWhy) */
- if(!planOnly&&!(opt&&opt.__cuPass===RESTORE_INTERNAL_TOKEN)&&rsSaveNeedsAtomic(body))return await rsSaveCommit(env,A,body,ip,opt);
+ if(!planOnly&&!(opt&&opt.__cuPass===RESTORE_INTERNAL_TOKEN)&&rsSaveNeedsAtomic(body))return nodeCapAck(await rsSaveCommit(env,A,body,ip,opt));
   var set = (body && body.set) || {}, del = (body && body.del) || [], base = (body && body.base) || {};
   /* Retired document key: reject the entire mixed batch before any mutation. In
      particular a full restore must never acknowledge a partial relational restore. */
@@ -24037,6 +24369,22 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
   if (todo.length === regN9) { regUndo9(todo.length - 1); regPair9(); }               /* F01: حفظةٌ فيها السجلّان وحدهما */
+  /* V7 · issue #4 (018 nodeCapSweep): the node registry was accepted ⇒ the ceiling records of the nodes it removes go in this same save, and a
+     node it adds keeps the record this save carries for it (an import) or, carrying none and arriving empty, drops a stored leftover. The registry is the request's own when it carries one (cleaned, and answered
+     with what was written — nodeCapAck), otherwise a write the server derives from the stored one. Either way the batch is all-or-nothing
+     (protOp): a refusal or a conflict on any key writes nothing, and the registry is never cleaned for a node that stays. */
+  var ncG9 = -1, ncP9 = -1, ncD9 = null, ncM9 = null;
+  for (i = 0; i < todo.length; i++) if (todo[i].act === 'set') { if (todo[i].k === K_GDEPTS) ncG9 = i; else if (todo[i].k === K_PERM) ncP9 = i; }
+  if (ncG9 !== -1 && evald[ncG9]) {
+    var ncS9 = await opResourceGet(env, K_PERM), ncE9 = ncP9 !== -1 ? evald[ncP9] : null,
+      nc9 = nodeCapSweep(A, todo[ncG9].v, await opResourceGet(env, K_GDEPTS), ncP9 !== -1 ? todo[ncP9].v : null, ncS9, !!A.__srvRst);
+    if (nc9.couple) protOp = protOp || 'nodeCap';
+    if (nc9.v != null && evald[ncG9].ok) {
+      protOp = protOp || 'nodeCap';
+      if (ncP9 === -1) { ncD9 = { cur: ncS9, v: nc9.v }; if (!A.__srvRst) ncM9 = { hide: 1 }; }
+      else if (ncE9 && (ncE9.ok || ncE9.noop)) { todo[ncP9].v = nc9.v; if (ncE9.noop) evald[ncP9] = { ok: 1, cur: ncE9.cur, keys: null, dep9: false }; ncM9 = { echo: nc9.v }; }
+    }
+  }
   /* caps-own (021 capStaleBatch): an older page that narrows a ceiling and deletes what fell outside it in the same request ⇒ the whole request
      is refused, nothing written (why 'perms' — the text an older page already shows: «الصلاحيات لم تُقبل … أُعيدت القيمة كما في الخادم») */
   if (capStaleBatch(A, todo, evald)) {
@@ -24075,6 +24423,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var snapIt = [], replace9 = false;
     for (i = 0; i < todo.length; i++) { var ev9 = evald[i]; if (!ev9 || !ev9.ok) continue; if (ev9.keys && ev9.keys.indexOf('import.replace') !== -1) replace9 = true; }
     if (ENFX.restore || replace9) for (i = 0; i < todo.length; i++) if (evald[i] && evald[i].ok) snapIt.push({ k: todo[i].k, cur: evald[i].cur });
+    if ((ENFX.restore || replace9) && ncD9) snapIt.push({ k: K_PERM, cur: ncD9.cur });   /* issue #4: the derived registry write is part of the operation */
     if (snapIt.length) { var sid9 = enfSnapId(ENFX.restore ? 'restore' : 'replace'); st = st.concat(enfSnapStmts(env, sid9, ENFX.restore ? 'restore' : 'replace', A, snapIt, revs, { keys: snapIt.length })); out.snap = sid9; }
   }
   /* ══ المرحلة الثانية: الكتابة ══ */
@@ -24124,6 +24473,13 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (k === K_PERM) secS.push(secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'perm_change', target: '', detail: permChangeDetail(parseJson(cur, {}), parseJson(v, {})), ip: ident.ip, city: ident.city, dev: ident.dev }));
     changed++;
   }
+  /* V7 · issue #4: the registry write derived from the accepted node registry — same batch, same revision, guarded by the registry's own revision */
+  if (ncD9 && pend.some(function (x) { return x.k === K_GDEPTS; })) {
+    pend.push({ k: K_PERM, act: 'set', cur: ncD9.cur, v: ncD9.v, have: revs[K_PERM] || 0, kvS: kvPutStmts(env, 'kv', K_PERM, ncD9.v), dep9: false,
+      secS: [secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'perm_change', target: '', detail: permChangeDetail(parseJson(ncD9.cur, {}), parseJson(ncD9.v, {})), ip: ident.ip, city: ident.city, dev: ident.dev })] });
+    changed++;
+  }
+  if (ncM9) out.__nc = ncM9;
   if(planOnly)return {__plan:1,ok:!Object.keys(out.denied).length&&!Object.keys(out.conflicts).length,protectedOp:protOp,pend:pend,out:out,revs:revs,ident:ident,authzRows:ENFX ? ENFX.log : []};
   /* لحظةُ التخصيص: بعد أن عُرف أن ثمّة تغييراً واحداً على الأقل سيُنفَّذ */
   if (changed) {
@@ -24175,7 +24531,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* بعد ثبوت الكتابة لا قبلها: الملكيةُ والاستعمالُ يتبعان الحالة المستقرّة */
   if (changed && imgTouch.length) await imgSync(env, A, imgTouch);
   if (ENFX) await enfLogPrune(env);
-  return out;
+  return opt && opt.__cuPass === RESTORE_INTERNAL_TOKEN ? out : nodeCapAck(out);   /* issue #4: inside rsSaveCommit the caller answers (above) */
 }
 
 /* ── حقن __BS_BOOT في صفحة المنصة ── */
@@ -24478,10 +24834,14 @@ function enfMemoDrop(A, d) {
   if (A.__enfG) delete A.__enfG[d];
   if (A.__enfV) for (var vk in A.__enfV) if (vk.indexOf(d + '|') === 0) delete A.__enfV[vk];
 }
-/* هل يحمل الفاعلُ أيَّ مفتاحٍ كتابيٍّ في الإدارة؟ (الراياتُ التقنية rule:'tech' · رفعُ صورةٍ جديدة) */
+/* هل يحمل الفاعلُ أيَّ مفتاحٍ كتابيٍّ في الإدارة؟ (الراياتُ التقنية rule:'tech' · رفعُ صورةٍ جديدة · صورةٌ مربوطةٌ برايةٍ تقنية)
+   RISHAD-266 · V7-C (قرارُ المالك — الخيار 1): مفتاحُ النوع capability (lens.<L>.enable) بوابةٌ لا كتابة — enfHeld0 يجيب عنه «محمول» متى فُتحت
+   بوابةُ العدسة أياً كانت الورقة، فكان صاحبُ ورقة العرض فقط، ومن لا ورقةَ له أصلاً، «كاتباً» في كل وحدةٍ على سقفها مضيفُ عدسة (plan · daily/rounds):
+   يكتب الراياتِ التقنية ويرفع صورةً جديدة. يُستثنى هنا كما يستثنيه enfFieldLift؛ ومفاتيحُ الراصد المشتقّة من field.view (status.change — نوعها
+   operation) كتابةٌ كما كانت. الوضعُ القديم لا يمرّ من هنا (018 anyWriter · 044 · 054) فلا يتغيّر فيه شيء. */
 function enfAnyWriterDept(A, d) {
   if (A.u.role === 'super') return true;
-  var ix = enfIx(), k; for (k in ix.write) if (!ix.selfK[k] && enfHeld(A, d, k)) return true;
+  var ix = enfIx(), R = KIVO_REGISTRY.byKey, k; for (k in ix.write) if (!ix.selfK[k] && R[k].type !== 'capability' && enfHeld(A, d, k)) return true;
   return false;
 }
 function enfAnyWriter(A) {
@@ -25348,9 +25708,14 @@ async function authPublicRoutes(request, env, path, url) {
        وبهذا يبقى التخمينُ مكلفاً — كلُّ مصدرٍ يُقفل بعد LOCK_N — ويدخل
        صاحبُ الحساب بكلمته الصحيحة من مصدرٍ سليمٍ في كل حال. */
     var gkU = 'u:' + un, gkI = 'ip:' + ip, gkP = 'p:' + un + '|' + ip;
-    var left = Math.max(await guardLeft(env, gkI), await guardLeft(env, gkP));
+    /* v7-C · Issue 2 (المراجعة المستقلة · M1): المصدرُ أولاً، والزوجُ لا يُحجز له ما دام المصدرُ مقفلاً — فعدُّ الزوج لا يزيد إلا بمحاولةٍ عُدّت على
+       المصدر كذلك (شرطُ اغتفار guardOk: لا ينفخ أحدٌ عدّادَ زوجه بمحاولاتٍ مرفوضة ثم يمحو به إخفاقاتِه على غيره). */
+    var left = await guardLeft(env, gkI); if (!(left > 0)) left = await guardLeft(env, gkP);
     var rmF = reqMeta(request);
     if (left > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر ' + secAr(left / 1000), wait: Math.ceil(left / 1000) });   /* KIVO_260: صيغةُ العدد + الثواني رقماً (العدّادُ في الواجهة يقرؤها) */
+    /* v7-C · Issue 2 (ب): إبطاءٌ بلا قفل — مطفأ افتراضياً (سياسةُ الأمن thrOn)؛ مطفأً لا يُنفَّذ من هذا السطر شيء.
+       المراجعة المستقلة (L1): بعد ردِّ المقفل — عميلٌ مقفلُ المصدر لا يُشغّل الاستعلامَ ولا يُمهَل. */
+    if (THR_ON) { var slowL = await loginSlow(env, un); if (slowL) await new Promise(function (res) { setTimeout(res, slowL); }); }
 
     /* Every issued session is bound atomically to the identity revision just verified.
        A bounded retry rechecks credentials after concurrent edits; a stale snapshot never authenticates. */
@@ -25360,16 +25725,19 @@ async function authPublicRoutes(request, env, path, url) {
       var users = await usersList(env);
       /* لا تهيئة حسابات عبر مسار الدخول: قاعدة فارغة تبقى مغلقة حتى تهيئة إدارية خارج المسار العام. */
       if (!users) {
+        await verifyPw(pw, PW_DUMMY());
         await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU);
         return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
       }
       var u = users.filter(function (x) {
         return String(x.un || '').toLowerCase() === un || String(x.alt || '').toLowerCase() === un;
       })[0];
-      if (!u) { await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU); await secLog(env, { un: un, act: 'login_fail', detail: 'no-user', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' }); }
+      /* v7-C · Issue 2 (التوقيت): الاسمُ المجهول كان يُردّ بلا PBKDF2 — فرقُ زمنٍ يكشف وجودَ الحساب. الآن كلُّ إخفاقٍ يدفع اشتقاقاً واحداً
+         بالتكرارات الحالية ضد تجزئةٍ وهمية لا تطابق شيئاً (والحسابُ بتجزئةٍ قديمة p1 كذلك)؛ الردُّ نفسُه حرفاً. */
+      if (!u) { await verifyPw(pw, PW_DUMMY()); await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU); await secLog(env, { un: un, act: 'login_fail', detail: 'no-user', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' }); }
       var good = await verifyPw(pw, u.ph);
       if (good === 'unsupported') return json({ ok: 0, err: ERR_ITER });
-      if (good !== true) { await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU); await secLog(env, { uid: u.id, un: un, act: 'login_fail', detail: 'bad-pw', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' }); }
+      if (good !== true) { if (isLegacy(u.ph)) await verifyPw(pw, PW_DUMMY()); await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU); await secLog(env, { uid: u.id, un: un, act: 'login_fail', detail: 'bad-pw', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' }); }
       if (u.dis) { await secLog(env, { uid: u.id, un: un, act: 'login_fail', detail: 'frozen', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'الحساب غير نشط — راجع مدير الإدارة' }); }
 
       var loginStmts = [revGuard(env, K_USERS, usersRev)];
@@ -25386,7 +25754,7 @@ async function authPublicRoutes(request, env, path, url) {
       try { await env.DB.batch(loginStmts); }
       catch (eL) { if (isRevConflict(eL)) continue; throw eL; }
 
-      await guardReset(env, gkU); await guardReset(env, gkI); await guardReset(env, gkP);
+      await guardReset(env, gkU); await guardOk(env, gkI, gkP);   /* v7-C · Issue 2 (ج): الزوجُ وعدّادُ الإنذار يُحذفان كما كانا؛ المصدرُ يُغتفر له عدُّ هذا الزوج وحده (guardOk · M1) */
       /* RISHAD266 · دخولٌ من جهازٍ جديد يُحكم هنا عند الدخول (كان المتصفحُ يرسله عند فتح الصفحة بذاكرة المتصفح — فتكرّر): معرّفُ جهازٍ عشوائيّ لكل متصفح
          (كعكةُ bs_dv · HttpOnly) يُقارن بدخولات الحساب في 180 يوماً من سجل الأمن؛ أولُ دخولٍ مسجَّل بمعرّفٍ يمرّ بلا تنبيه، وفشلُ التنبيه لا يُسقط الدخول */
       var dvB = /Edg\//.test(rm.ua) ? 'Edge' : /Chrome\//.test(rm.ua) ? 'Chrome' : /Safari\//.test(rm.ua) ? 'Safari' : 'متصفح', dvC = readCookie(request, 'bs_dv'), dvN = !/^[0-9a-f]{16}$/.test(dvC || '');
@@ -28758,6 +29126,9 @@ export default {
             var np = {}; Object.keys(POLICY_DEF).forEach(function (k) { var v = +bp[k]; if (isFinite(v) && v > 0) np[k] = v; });
             np.sessH = Math.min(72, Math.max(1, np.sessH || POL.sessH)); np.idleH = Math.min(24, Math.max(0.25, np.idleH || POL.idleH));
             np.lockN = Math.min(20, Math.max(3, np.lockN || POL.lockN)); np.lockMin = Math.min(60, Math.max(1, np.lockMin || POL.lockMin)); np.pwMin = 6;   /* KIVO_259 (إصلاح — كشفه التدقيقُ المستقل): رقمُ مدير النظام 6 أرقام بالضبط (pwCheck) — كان المدخلُ يُقبل حتى 32 فيجعل كلَّ رقمٍ غيرَ صالح (قفلٌ تامّ) */ np.wrMin = Math.min(5000, Math.max(30, np.wrMin || POL.wrMin));   /* KIVO_255 · SOT-139 */
+            /* v7-C · Issue 2 (ب): thrOn يقبل الصفر (إطفاء) — الحلقةُ أعلاه تُسقط الصفر؛ المتروكُ يبقى على قيمته */
+            np.thrOn = bp.thrOn === undefined || bp.thrOn === null ? (POL.thrOn === 1 ? 1 : 0) : ((bp.thrOn === 1 || bp.thrOn === '1') ? 1 : 0);   /* the admin form posts its fields as text, like every other knob here (+bp[k]); true / 2 / '01' stay off */
+            np.thrN = Math.min(100, Math.max(5, np.thrN || POL.thrN)); np.thrWin = Math.min(120, Math.max(5, np.thrWin || POL.thrWin)); np.thrSec = Math.min(10, Math.max(1, np.thrSec || POL.thrSec));
             await env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('policy', JSON.stringify(np)).run();
             var rmP = reqMeta(request);
             await secLog(env, { uid: AX.u.id, un: AX.u.un, act: 'policy_change', detail: JSON.stringify(np), ip: rmP.ip, city: rmP.city, dev: rmP.dev });

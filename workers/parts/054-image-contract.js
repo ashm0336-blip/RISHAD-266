@@ -693,12 +693,22 @@ function clearCookie(url) {
    المتضاعف يضعه الإخفاقُ المؤكَّد (guardFail) من لحظته — فحدُّ الدفع المتزامن كما هو (لا يبلغ التحقّقَ أكثرُ من lockN)، والسلوكُ المتتابع كما هو
    (القفلُ بعد الإخفاق الخامس · التضاعف)، والنجاحُ يرفع القفلَ كما كان. */
 var LOCK_PROV_MS = 1500;
+/* v7-C · Issue 2 (ج) — التناقص: العدّادُ كان لا ينقص أبداً، فإخفاقاتُ مكتبٍ كاملٍ خلف عنوانٍ واحد تتراكم إلى الأبد. الآن يُغتفر إخفاقٌ واحد عن كل
+   lockMin تمضي (دلوٌ راشح) — فأقصى معدّلٍ مستدام لمصدرٍ واحد محاولةٌ كل lockMin، وهو نفسُ حدِّ القفل الأقصى قبل التغيير؛ لا يكسب المهاجمُ شيئاً.
+   بلا تغييرِ مخطّط: العمودُ until يحمل «مرساةَ التناقص» سالبةً ما دام الصفُّ غيرَ مقفل (until ≤ 0 ⇒ غيرُ مقفلٍ عند كل قارئ: until > now)،
+   وبعد انقضاء قفلٍ تكون المرساةُ لحظةَ انقضائه (القيمةُ الموجبة الماضية) — أي ABS(until) في الحالين. صفٌّ قديم (until = 0) يُغتفر كلُّه مرّةً.
+   ?2 الآن · d = موضعُ مدّة الاغتفار (LOCK_MS). k = عددُ ما يُغتفر · e = العدُّ بعد الاغتفار · a = المرساةُ الجديدة (سالبة). */
+function guardDecay(d) {
+  var k = 'CAST((?2 - ABS(guard.until)) / ' + d + ' AS INTEGER)', e = 'MAX(0, guard.n - ' + k + ')';
+  return { e: e, a: 'CASE WHEN ' + e + ' = 0 THEN -?2 ELSE -(ABS(guard.until) + ' + k + ' * ' + d + ') END' };
+}
+var GUARD_D5 = guardDecay('?5'), GUARD_D3 = guardDecay('?3');
 async function guardLeft(env, gk) {
   var now = Date.now();
   var rs = await env.DB.batch([
     env.DB.prepare('SELECT n, until FROM guard WHERE gk = ?1').bind(gk),
-    env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, 1, 0) ON CONFLICT(gk) DO UPDATE SET n = CASE WHEN guard.until > ?2 THEN guard.n ELSE guard.n + 1 END, ' +
-      'until = CASE WHEN guard.until > ?2 THEN guard.until WHEN guard.n + 1 >= ?3 THEN ?2 + ?4 ELSE guard.until END').bind(gk, now, LOCK_N, LOCK_PROV_MS)
+    env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, 1, -?2) ON CONFLICT(gk) DO UPDATE SET n = CASE WHEN guard.until > ?2 THEN guard.n ELSE ' + GUARD_D5.e + ' + 1 END, ' +
+      'until = CASE WHEN guard.until > ?2 THEN guard.until WHEN ' + GUARD_D5.e + ' + 1 >= ?3 THEN ?2 + ?4 ELSE ' + GUARD_D5.a + ' END').bind(gk, now, LOCK_N, LOCK_PROV_MS, LOCK_MS)
   ]);
   var g = rs && rs[0] && rs[0].results && rs[0].results[0];
   return g ? Math.max(0, (g.until || 0) - now) : 0;
@@ -721,11 +731,35 @@ function secAr(n) {
 async function guardReset(env, gk) {
   await env.DB.prepare('DELETE FROM guard WHERE gk = ?1').bind(gk).run();
 }
+/* v7-C · Issue 2 (ج) — نجاحُ الدخول لا يصفّر عدّادَ المصدر: كان الحذفُ الكامل يتيح لمن يملك حساباً صالحاً أن يصفّر عدّادَ
+   عنوانه كلَّ أربع محاولات فيرشَّ الأسماءَ بلا حدّ. وتبقى إخفاقاتُ الحسابات الأخرى تتناقص بمعدّلها.
+   قفلُ الحجز المؤقّت (≤ LOCK_PROV_MS) يُرفع كما كان يرفعه النجاح (KIVO_260)؛ القفلُ الكامل الأطول لا يُمسّ. */
+/* المراجعة المستقلة (M1): طرحُ الحجز وحده أبقى أخطاءَ الكتابة الصادقة على عنوان المكتب (خطأٌ كلَّ 4 د أسرعُ من التناقص ⇒ يُقفل المكتب).
+   الآن يُغتفر على المصدر عدُّ الزوج نفسِه p:<un>|<ip> — إخفاقاتُ صاحب الحساب قبل أن يصيب وحجزُه — ولا يُغتفر إخفاقٌ على حسابٍ آخر، ولا ينزل
+   العدُّ تحت الصفر. فالحيلةُ مغلقةٌ كما هي: دخولُ المهاجم بحسابه لا يردّ إلا ما أخفقه على حسابه هو. والعدُّ يُقرأ ويُطرح ويُحذف الزوجُ في معاملةٍ
+   واحدة (batch): نجاحٌ متزامنٌ ثانٍ للزوج نفسِه يجده محذوفاً فيطرح صفراً — لا اغتفارَ مزدوجاً. (وعدُّ الزوج لا يزيد إلا بمحاولةٍ عُدّت على
+   المصدر — مسارُ الدخول يحجز المصدرَ أولاً ولا يحجز الزوجَ والمصدرُ مقفل.) */
+async function guardOk(env, gkI, gkP) {
+  var now = Date.now();
+  await env.DB.batch([
+    env.DB.prepare('UPDATE guard SET n = MAX(0, n - COALESCE((SELECT MAX(0, p.n) FROM guard p WHERE p.gk = ?4), 0)), until = CASE WHEN until > ?2 AND until <= ?2 + ?3 THEN -?2 ELSE until END WHERE gk = ?1').bind(gkI, now, LOCK_PROV_MS, gkP),
+    env.DB.prepare('DELETE FROM guard WHERE gk = ?1').bind(gkP),
+    env.DB.prepare('DELETE FROM guard WHERE gk = ?1 AND n <= 0 AND until <= ?2').bind(gkI, now)
+  ]);
+}
+/* v7-C · Issue 2 (ب) — إبطاءُ الحساب المستهدَف: كم عنواناً مختلفاً أخفق على هذا الاسم في النافذة (من سجلّ الأمن — فهرس sec_act). عند بلوغ العتبة
+   تُمهَل كلُّ محاولةٍ على الاسم THR_MS بالضبط قبل أيِّ شيء — مهلةٌ ثابتة لا تتراكم ولا يطيلها أحد، ولا قفلَ: صاحبُ الكلمة الصحيحة يدخل بعدها.
+   والاسمُ المجهول يُعامَل كالقائم (الإخفاقُ يُسجَّل باسمه) فلا تكشف المهلةُ وجودَ الحساب. مطفأةٌ افتراضياً (THR_ON) — وعندها لا استعلامَ ولا مهلة. */
+async function loginSlow(env, un) {
+  var r = await env.DB.prepare("SELECT COUNT(DISTINCT ip) AS d FROM sec WHERE act = 'login_fail' AND ts > ?2 AND un = ?1").bind(un, Date.now() - THR_WIN_MS).first();
+  return r && r.d >= THR_N ? THR_MS : 0;
+}
 /* عدّادٌ للإنذار لا للحجب: يُحصي محاولاتِ حسابٍ بعينه ليراها مديرُ النظام،
    ولا يضع until أبداً — فلا يقفل مهاجمٌ حسابَ غيره. */
 async function guardCount(env, gk) {
   /* KIVO_259: زيادةٌ ذرّية (كان يقرأ ثم يكتب فتضيع زياداتٌ تحت التزامن) */
-  var g = await env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, 1, 0) ON CONFLICT(gk) DO UPDATE SET n = guard.n + 1, until = 0 RETURNING n').bind(gk).first();
+  /* v7-C · Issue 2 (ج): عدّادُ الإنذار يتناقص كغيره (واحدٌ لكل lockMin) — ولا يحمل until موجباً أبداً (المرساةُ سالبة: غيرُ مقفل) */
+  var g = await env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, 1, -?2) ON CONFLICT(gk) DO UPDATE SET n = ' + GUARD_D3.e + ' + 1, until = ' + GUARD_D3.a + ' RETURNING n').bind(gk, Date.now(), LOCK_MS).first();
   var n = g ? g.n : 0;
   if (n === LOCK_N) await secLog(env, { un: gk.indexOf('u:') === 0 ? gk.slice(2) : '', act: 'lock', target: gk, detail: String(n) });   /* CORE-02 (B3): the count, as guardFail writes it — was the word 'attempts' */
 }
@@ -787,11 +821,23 @@ function tkKeepOff(A, k, d, rst, imp, X) {
    التي بنى عليها تعديله (base) وكان الخادم قد تجاوزها فلا تُكتب القيمة بل
    تعود الأحدث ليدمج المتصفح عليها ويعيد الإرسال؛ (٣) التدقيق — كل كتابة
    نافذة تُسجَّل بفاعلها ووقتها وفرقها. */
+/* V7 · issue #4 (018 nodeCapSweep): the answer of a save whose registry the server cleaned (out.__nc — set once in applySave, read once here).
+   · hide: the request did not carry bassam_perms_v1 — nothing about that key is reported (280 saveAck9 refuses an answer naming a key the
+     request did not send); the page learns the new registry as any change by another writer (live pull · a conflict on its next save);
+   · echo: the request carried it and the server wrote it without the swept records — answered as conflicts[k] = { cur: the written value,
+     rev: its revision } so the page adopts exactly what was stored (its merge over cur is cur: nothing re-sent, nothing announced). */
+function nodeCapAck(out) {
+  var m = out && out.__nc; if (!m) return out;
+  delete out.__nc;
+  if (m.hide) { if (out.revs) delete out.revs[K_PERM]; if (out.conflicts) delete out.conflicts[K_PERM]; }
+  else if (out.revs && out.revs[K_PERM] != null) { out.conflicts = out.conflicts || {}; out.conflicts[K_PERM] = { cur: m.echo, rev: out.revs[K_PERM], by: '', at: Date.now(), self: true }; delete out.revs[K_PERM]; }
+  return out;
+}
 async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ مهامٍ في الخادم يبني من القيمة الحالية · { quiet } الرفضُ لا يُسجَّل هنا (يحكم المستدعي) — F-10 */
   var planOnly=!!(opt && opt.__restorePlan===RESTORE_INTERNAL_TOKEN);
   if (planOnly && opt.__serverDepartmentWipes) A.__udel = 1;
   if (planOnly && opt.__srvRestore === RESTORE_INTERNAL_TOKEN) A.__srvRst = 1;   /* RISHAD266 (مراجعة المالك على aae024c): الاستعادةُ الخادمية المتحقَّقة (019d) وحدها — علامةُ الاستعادة القادمة من العميل لا تستثني من سلامة العلاقات */   /* RISHAD266: حفظةُ الحذف الذرّيّ نفسُه (019e rsWipeRoute · رمزٌ داخليّ) — الطريقُ الوحيد لحذف وحدة (018 deptShapeWhy) */
- if(!planOnly&&!(opt&&opt.__cuPass===RESTORE_INTERNAL_TOKEN)&&rsSaveNeedsAtomic(body))return await rsSaveCommit(env,A,body,ip,opt);
+ if(!planOnly&&!(opt&&opt.__cuPass===RESTORE_INTERNAL_TOKEN)&&rsSaveNeedsAtomic(body))return nodeCapAck(await rsSaveCommit(env,A,body,ip,opt));
   var set = (body && body.set) || {}, del = (body && body.del) || [], base = (body && body.base) || {};
   /* Retired document key: reject the entire mixed batch before any mutation. In
      particular a full restore must never acknowledge a partial relational restore. */
@@ -1118,6 +1164,22 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
   if (todo.length === regN9) { regUndo9(todo.length - 1); regPair9(); }               /* F01: حفظةٌ فيها السجلّان وحدهما */
+  /* V7 · issue #4 (018 nodeCapSweep): the node registry was accepted ⇒ the ceiling records of the nodes it removes go in this same save, and a
+     node it adds keeps the record this save carries for it (an import) or, carrying none and arriving empty, drops a stored leftover. The registry is the request's own when it carries one (cleaned, and answered
+     with what was written — nodeCapAck), otherwise a write the server derives from the stored one. Either way the batch is all-or-nothing
+     (protOp): a refusal or a conflict on any key writes nothing, and the registry is never cleaned for a node that stays. */
+  var ncG9 = -1, ncP9 = -1, ncD9 = null, ncM9 = null;
+  for (i = 0; i < todo.length; i++) if (todo[i].act === 'set') { if (todo[i].k === K_GDEPTS) ncG9 = i; else if (todo[i].k === K_PERM) ncP9 = i; }
+  if (ncG9 !== -1 && evald[ncG9]) {
+    var ncS9 = await opResourceGet(env, K_PERM), ncE9 = ncP9 !== -1 ? evald[ncP9] : null,
+      nc9 = nodeCapSweep(A, todo[ncG9].v, await opResourceGet(env, K_GDEPTS), ncP9 !== -1 ? todo[ncP9].v : null, ncS9, !!A.__srvRst);
+    if (nc9.couple) protOp = protOp || 'nodeCap';
+    if (nc9.v != null && evald[ncG9].ok) {
+      protOp = protOp || 'nodeCap';
+      if (ncP9 === -1) { ncD9 = { cur: ncS9, v: nc9.v }; if (!A.__srvRst) ncM9 = { hide: 1 }; }
+      else if (ncE9 && (ncE9.ok || ncE9.noop)) { todo[ncP9].v = nc9.v; if (ncE9.noop) evald[ncP9] = { ok: 1, cur: ncE9.cur, keys: null, dep9: false }; ncM9 = { echo: nc9.v }; }
+    }
+  }
   /* caps-own (021 capStaleBatch): an older page that narrows a ceiling and deletes what fell outside it in the same request ⇒ the whole request
      is refused, nothing written (why 'perms' — the text an older page already shows: «الصلاحيات لم تُقبل … أُعيدت القيمة كما في الخادم») */
   if (capStaleBatch(A, todo, evald)) {
@@ -1156,6 +1218,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var snapIt = [], replace9 = false;
     for (i = 0; i < todo.length; i++) { var ev9 = evald[i]; if (!ev9 || !ev9.ok) continue; if (ev9.keys && ev9.keys.indexOf('import.replace') !== -1) replace9 = true; }
     if (ENFX.restore || replace9) for (i = 0; i < todo.length; i++) if (evald[i] && evald[i].ok) snapIt.push({ k: todo[i].k, cur: evald[i].cur });
+    if ((ENFX.restore || replace9) && ncD9) snapIt.push({ k: K_PERM, cur: ncD9.cur });   /* issue #4: the derived registry write is part of the operation */
     if (snapIt.length) { var sid9 = enfSnapId(ENFX.restore ? 'restore' : 'replace'); st = st.concat(enfSnapStmts(env, sid9, ENFX.restore ? 'restore' : 'replace', A, snapIt, revs, { keys: snapIt.length })); out.snap = sid9; }
   }
   /* ══ المرحلة الثانية: الكتابة ══ */
@@ -1205,6 +1268,13 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (k === K_PERM) secS.push(secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'perm_change', target: '', detail: permChangeDetail(parseJson(cur, {}), parseJson(v, {})), ip: ident.ip, city: ident.city, dev: ident.dev }));
     changed++;
   }
+  /* V7 · issue #4: the registry write derived from the accepted node registry — same batch, same revision, guarded by the registry's own revision */
+  if (ncD9 && pend.some(function (x) { return x.k === K_GDEPTS; })) {
+    pend.push({ k: K_PERM, act: 'set', cur: ncD9.cur, v: ncD9.v, have: revs[K_PERM] || 0, kvS: kvPutStmts(env, 'kv', K_PERM, ncD9.v), dep9: false,
+      secS: [secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'perm_change', target: '', detail: permChangeDetail(parseJson(ncD9.cur, {}), parseJson(ncD9.v, {})), ip: ident.ip, city: ident.city, dev: ident.dev })] });
+    changed++;
+  }
+  if (ncM9) out.__nc = ncM9;
   if(planOnly)return {__plan:1,ok:!Object.keys(out.denied).length&&!Object.keys(out.conflicts).length,protectedOp:protOp,pend:pend,out:out,revs:revs,ident:ident,authzRows:ENFX ? ENFX.log : []};
   /* لحظةُ التخصيص: بعد أن عُرف أن ثمّة تغييراً واحداً على الأقل سيُنفَّذ */
   if (changed) {
@@ -1256,7 +1326,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* بعد ثبوت الكتابة لا قبلها: الملكيةُ والاستعمالُ يتبعان الحالة المستقرّة */
   if (changed && imgTouch.length) await imgSync(env, A, imgTouch);
   if (ENFX) await enfLogPrune(env);
-  return out;
+  return opt && opt.__cuPass === RESTORE_INTERNAL_TOKEN ? out : nodeCapAck(out);   /* issue #4: inside rsSaveCommit the caller answers (above) */
 }
 
 /* ── حقن __BS_BOOT في صفحة المنصة ── */

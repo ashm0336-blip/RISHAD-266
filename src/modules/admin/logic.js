@@ -1264,7 +1264,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* CORE-02 (B2): نطاقاتُ نموذج سياسات الأمن — نفسُها في الخادم (001 POLICY_RANGE): [الأدنى، الأعلى، عددٌ صحيح]. القيمةُ خارجها تُرفض باسمها
      قبل التأكيد، ولا يُعرض «حُفظت» إلا بعد قبول الخادم */
   _adPolRange() {
-    return { sessH: [1, 72, 1], idleH: [0.25, 24, 0], lockN: [3, 20, 1], lockMin: [1, 60, 1], pwMin: [6, 6, 1], wrMin: [30, 5000, 1] };
+    return { sessH: [1, 72, 1], idleH: [0.25, 24, 0], lockN: [3, 20, 1], lockMin: [1, 60, 1], pwMin: [6, 6, 1], wrMin: [30, 5000, 1], thrOn: [0, 1, 1], thrN: [5, 100, 1], thrWin: [5, 120, 1], thrSec: [1, 10, 1] };
   }
   _adPolBadOf(k, x) {
     const r = this._adPolRange()[k];
@@ -1278,7 +1278,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     for (const k of Object.keys(R))
       if (this._adPolBadOf(k, p && p[k])) {
         const r = R[k],
-          l = { sessH: "مدة الجلسة القصوى", idleH: "الخمول قبل الخروج", lockN: "محاولات قبل القفل", lockMin: "مدة القفل القصوى", pwMin: "الحد الأدنى لكلمة المرور", wrMin: "سقف الحفظ في الدقيقة" }[k];
+          l = { sessH: "مدة الجلسة القصوى", idleH: "الخمول قبل الخروج", lockN: "محاولات قبل القفل", lockMin: "مدة القفل القصوى", pwMin: "الحد الأدنى لكلمة المرور", wrMin: "سقف الحفظ في الدقيقة", thrOn: "إبطاء الحساب المستهدف (0 مطفأ · 1 مفعّل)", thrN: "عناوين مختلفة قبل الإبطاء", thrWin: "نافذة احتساب العناوين", thrSec: "مهلة الإبطاء" }[k];
         return { k: k, msg: l + (r[0] === r[1] ? " ثابت: " + r[0] : ": أدخل " + (r[2] ? "عدداً صحيحاً" : "رقماً") + " من " + r[0] + " إلى " + r[1]) };
       }
     return null;
@@ -3341,6 +3341,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ["lockMin", "مدة القفل القصوى", "دقيقة"],
         ["pwMin", "الحد الأدنى لكلمة مرور الحسابات الإدارية (ثابت)", "خانة"],
         ["wrMin", "سقفُ الحفظ لكل حساب في الدقيقة (رفعُ الصور ربعُه)", "حفظة"],
+        /* v7-C · Issue 2 (ب): إبطاءٌ بلا قفل — مطفأ افتراضياً (0)؛ الخادمُ هو الحَكَم (001 POLICY_RANGE) */
+        ["thrOn", "إبطاء الحساب المستهدَف من عناوين مختلفة (0 مطفأ · 1 مفعّل)", "0/1"],
+        ["thrN", "عناوين مختلفة أخفقت على الحساب قبل الإبطاء", "عنوان"],
+        ["thrWin", "نافذة احتساب العناوين المختلفة", "دقيقة"],
+        ["thrSec", "مهلة الإبطاء لكل محاولة (بلا قفل)", "ثانية"],
       ].map((t) => {
         const r = this._adPolRange()[t[0]];
         return { l: t[1], u: t[2], v: null == F[t[0]] ? "" : String(F[t[0]]), on: (e) => I(t[0], e.target.value), min: r[0], max: r[1], step: r[2] ? 1 : 0.25,

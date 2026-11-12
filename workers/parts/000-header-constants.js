@@ -26,6 +26,8 @@ var SESSION_MAX = 12 * 3600 * 1000;      /* عمر الجلسة الأقصى —
 var IDLE_MAX    = 2  * 3600 * 1000;      /* الخمول الأقصى */
 var LOCK_N = 5;                           /* محاولات قبل القفل */
 var LOCK_MS = 300000;                     /* أقصى مدة قفل */
+/* v7-C · Issue 2 (ب): إبطاءُ الحساب المستهدَف من عناوين مختلفة — مطفأ افتراضياً؛ تضبطه سياسةُ الأمن (thrOn · thrN · thrWin · thrSec) */
+var THR_ON = false, THR_N = 10, THR_WIN_MS = 1800000, THR_MS = 3000;
 var PRESENCE_MS = 120000;                 /* «نشط الآن» = تفاعل خلال دقيقتين */
 /* ── ثوابتُ الدخول والاستعادة والمنصة (نُقلت كما هي من 016-identity-preflight-2.js عند حذفه · RISHAD-266 P5) ── */
 /* سقف Cloudflare لتكرارات PBKDF2 في Web Crypto هو 100,000 — ما فوقه يُرمى NotSupportedError.
