@@ -23,10 +23,10 @@
    OPEN lists the cells deliberately left open (enforce allows, legacy refuses) with the reason; anything else fails the test.
 
    Measured on 2c28c95 (before the V7-E rules of 057 enfImgKeyOn / enfAnyWriterDept(img)) this file failed with: PUT/DELETE sweep —
-   88 cell kinds, 320 actor-cells (a plan sheet → the round's image · every «approve» sheet and approval/lock/retro key → the images
+   84 cell kinds, 316 actor-cells (a plan sheet → the round's image · every «approve» sheet and approval/lock/retro key → the images
    of its page's records · a monthly-table write / ref.work_type.* → bassam_options_v1 · admin/import:del / import.replace → the
    daily report and the award · backup.restore → bassam_last_export_v1, the «rule» records and a new upload · the general manager);
-   bind sweep — 39 cell kinds, 189 actor-cells of the same families. All closed except OPEN.
+   bind sweep — 26 cell kinds, 117 actor-cells of the same families. All closed except OPEN.
    Not covered here: reading and listing images (GET /api/img · /api/imgs — not writes); the task-proof bind through
    /api/me/tasks/act (v7_c_enf_writer_matrix · v7_d_observer_img) and the seized-photo bind through the seized operations route
    (same 054 imgForeignIn); restricted unit ceilings other than «every page» and «no record» (v7_c_enf_writer_matrix: BASIC).
