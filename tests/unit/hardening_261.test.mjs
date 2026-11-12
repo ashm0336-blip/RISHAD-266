@@ -168,5 +168,7 @@ test('AUD-052: فكُّ اسمٍ لا يرفع قفلَ مصدرٍ يخمّن ع
   assert.equal((await C.api('/api/guard/unlock', { method: 'POST', cookie: su.ck, body: {} })).status, 400, 'جسمٌ فارغ لا يفكّ الكلّ');
   assert.equal((await C.api('/api/guard/unlock', { method: 'POST', cookie: su.ck, body: null })).status, 400, 'null ⇒ 400 لا 500');
   assert.equal((await C.api('/api/guard/unlock', { method: 'POST', cookie: su.ck, body: { all: 1 } })).j.ok, 1);
-  assert.equal(env.DB.q("SELECT COUNT(*) AS n FROM guard")[0].n, 0, '{all:1} يفكّ الكلّ صراحةً');
+  /* V7-F (review, finding 5): the locks are the rows that are not rate-limit windows (rl: — 063 /api/guard says so); the unlock request, like any accepted write,
+     leaves the image sweep's own rate-limit row (rl:img-sweep) behind */
+  assert.equal(env.DB.q("SELECT COUNT(*) AS n FROM guard WHERE gk NOT LIKE 'rl:%'")[0].n, 0, '{all:1} يفكّ الكلّ صراحةً');
 });
