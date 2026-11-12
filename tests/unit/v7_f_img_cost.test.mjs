@@ -101,3 +101,21 @@ test('COST · an ordinary typed save with kv ≈ 100 MB: statements, D1 round tr
   out('kv 100 MB, save that runs a pass, 6 candidates', await measured(T));
   out('kv 100 MB, the write after it', await measured(T));
 });
+
+/* ── second independent review: what its fixes cost ──────────────────────────────────────────────────────────────────────────── */
+both(test, 'second review · an ordinary save with no pass due is unchanged (legacy: 100 statements, 14 D1 round trips); reading JSON escapes adds no statement to a pass — it is part of the ONE deciding statement', async (mode) => {
+  const T = await scene(mode), { W, S, id } = T, DB = W.env.DB;
+  due(W); await typedSave(T);
+  const idle = await measured(T);
+  if (mode === 'legacy') { assert.equal(idle.statements, 100, 'statements of an ordinary save'); assert.equal(idle.trips, 14, 'D1 round trips of an ordinary save'); }
+  assert.equal(idle.sql.filter((s) => /\besc\b|GLOB '\*\\u00/.test(s)).length, 0, 'an ordinary save never reads kv for escapes');
+  const big = 'y'.repeat(690000), ins = DB.db.prepare('INSERT INTO kv (k, seq, v) VALUES (?, 0, ?)'); for (let k = 0; k < 150; k++) ins.run('bsdept:zz' + k + ':bassam_fake_v1', big);
+  for (let k = 0; k < 6; k++) { const i = id('w' + k); await upload(W, S.mgr2, i); age(W, i, 31); }
+  await measured(T);                                                          /* the one-time re-scan of the typed records is behind us */
+  const ids = []; for (let k = 0; k < 6; k++) { const i = id('e' + k); await upload(W, S.mgr2, i); age(W, i, 31); ids.push(i); }
+  const six = await measured(T), esc = six.sql.filter((s) => /WITH esc\(d\) AS MATERIALIZED/.test(s));
+  assert.equal(esc.length, 1, 'one statement carries the escape reading'); assert.match(esc[0], /UPDATE imgown SET st = 'dead'/, 'and it is the deciding statement');
+  assert.equal(six.kvScans, 1, 'still one kv-reading statement in the pass');
+  for (const i of ids) assert.ok(gone(await state(W, i)));
+  console.log('# COST [' + mode + '] second review · ordinary save: statements ' + idle.statements + ' · D1 round trips ' + idle.trips + ' — pass with 6 candidates, kv 100 MB, re-scan done: statements ' + six.statements + ' · D1 round trips ' + six.trips + ' · ' + six.ms.toFixed(0) + ' ms');
+});

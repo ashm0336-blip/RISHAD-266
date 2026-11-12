@@ -39,12 +39,22 @@ var IMG_PFX = ['img_', 'szp_'];
    de-duplicates), so no bookkeeping path can lose an id; what the cap protected — the per-id statements of the plain save (imgForeignIn ·
    imgSync) — is protected by refusing the save that would GROW a value past the cap. A refused save is safe; a dropped reference is not. */
 var IMG_CAP = 5000;
-function imgLike(s9) { for (var i9 = 0; i9 < IMG_PFX.length; i9++) if (s9.indexOf(IMG_PFX[i9]) >= 0) return true; return false; }
+function imgEsc(s9) { return s9.indexOf('\\u00') >= 0 && IMG_ESC_RX.test(s9); }
+function imgLike(s9) { for (var i9 = 0; i9 < IMG_PFX.length; i9++) if (s9.indexOf(IMG_PFX[i9]) >= 0) return true; return imgEsc(s9); }   /* an escaped spelling may hide the prefix itself */
 /* the scanner's shape, whole: an id that does not match it can be mentioned by a record without imgIdsIn (and so imgref) ever seeing it */
 var IMG_SCAN_ID_RX = /^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/;
+/* second review, finding 6 — a JSON text can spell an id character as an escape ("img_…" IS img_… once parsed): the text never contains
+   the id, so the scan saw no reference — and a typed save, which stores the PARSED value, left a live record with no imgref row. Only an escape
+   of [0-9] (\u003x) · '_' (_) · [a-z] (\u006x \u007x) can spell part of an id; what an ordinary client writes (JSON.stringify: control
+   characters \u0000–\u001f, lone surrogates) never matches IMG_ESC_RX, so ordinary values pay one indexOf. When one is there, the value is read
+   BOTH as written and with every such escape decoded — whatever number of backslashes precedes it (a JSON string inside a JSON string): reading
+   one reference too many refuses or keeps, reading one too few deletes. */
+var IMG_ESC_RX = /\\u00[3567]/;
+function imgUnesc(s9) { return s9.replace(/\\+u([0-9a-fA-F]{4})/g, function (m9, h9) { return String.fromCharCode(parseInt(h9, 16)); }); }
 function imgIdsIn(v) {
   var out = {}, s9 = String(v == null ? '' : v);
   if (!imgLike(s9)) return out;
+  if (imgEsc(s9)) s9 = s9 + '\n' + imgUnesc(s9);
   var re = /(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g, m9;
   while ((m9 = re.exec(s9))) out[m9[0]] = 1;
   return out;
@@ -275,6 +285,7 @@ async function imgSync(env, A, list) {
            · no seized_item_photos row — seized photos live in their own table (0009) and may predate imgref;
            · no award_records row whose picture / signature column IS the id — award saves keep no imgref (their pictures are stored inline);
            · no kv value contains the id — in any row, AND across any row boundary of a value (IMG_KV_JOIN: values are stored in 700 000-char rows);
+           · no kv value spells the id with JSON escapes (IMG_ESC_CTE) — and every save, plain or typed, indexes such a spelling (imgIdsIn);
            · imgref is known COMPLETE for the typed tables: meta.imgref_scan_v1 = 'done'. Records saved before this version were indexed by a
              scan that stopped at 5000 mentions, so until imgRefScan has re-read every typed resource and inserted what was dropped, nothing is condemned.
          Typed tables with no image column (custody · irshad · awards text · notifications · daily stats) need no check.
@@ -328,6 +339,25 @@ async function imgRefScan(env) {
   }
   return false;
 }
+/* the same reading for the sweep's proof over kv (second review, finding 6) — for values no save of this version indexed (stored by an older
+   version, a restore, any path that writes kv without imgSync). IMG_ESC_CTE is the decoded text of every kv row that carries such an escape (and
+   of every row boundary that does: an escape, or an id, cut by the 700 000-character rows), computed ONCE per deciding statement (MATERIALIZED);
+   the statement then keeps every candidate one of them contains. Decoding in SQL: drop every backslash, then turn each uXXXX that spells a
+   character of an id into that character (replace is literal; a real escape is never broken by another — its body holds no 'u'). A row without
+   such an escape costs one instr; the text decoded too generously only ever keeps an image. */
+var IMG_ESC_GLOB = "'*\\u00[3567]*'";
+var IMG_ESC_DEC = (function () {
+  var e = "replace(#, '\\', '')", cs = '0123456789_abcdefghijklmnopqrstuvwxyz', i, h;
+  for (i = 0; i < cs.length; i++) {
+    h = cs.charCodeAt(i).toString(16);
+    e = 'replace(' + e + ", 'u00" + h + "', '" + cs.charAt(i) + "')";
+    if (h.toUpperCase() !== h) e = 'replace(' + e + ", 'u00" + h.toUpperCase() + "', '" + cs.charAt(i) + "')";
+  }
+  return e;
+})();
+var IMG_ESC_JOIN = '(substr(a.v, -1024) || substr(b.v, 1, 1024))';
+var IMG_ESC_CTE = 'WITH esc(d) AS MATERIALIZED (SELECT ' + IMG_ESC_DEC.replace('#', 'v') + " FROM kv WHERE instr(v, '\\u00') > 0 AND v GLOB " + IMG_ESC_GLOB +
+  ' UNION ALL SELECT ' + IMG_ESC_DEC.replace('#', IMG_ESC_JOIN) + ' FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + IMG_ESC_JOIN + ' GLOB ' + IMG_ESC_GLOB + ') ';
 function imgSnap(rows) { return JSON.stringify(rows.map(function (x) { return { i: x.img, s: x.st, t: x.ts }; })); }
 var IMG_SNAP_SAME = "EXISTS (SELECT 1 FROM json_each(?1) j WHERE json_extract(j.value, '$.i') = imgown.img AND json_extract(j.value, '$.s') = imgown.st AND json_extract(j.value, '$.t') = imgown.ts)";
 async function imgSweep(env, now, max, maxDead) {
@@ -375,12 +405,13 @@ async function imgSweep(env, now, max, maxDead) {
   }
   if (cand.length) {
     var snap = imgSnap(cand);
-    var hc = await env.DB.prepare("UPDATE imgown SET st = 'dead', k = '', ts = ?2 WHERE " + IMG_SNAP_SAME +
+    var hc = await env.DB.prepare(IMG_ESC_CTE + "UPDATE imgown SET st = 'dead', k = '', ts = ?2 WHERE " + IMG_SNAP_SAME +
       ' AND (SELECT v FROM meta WHERE k = ?3) = ?4' +
       ' AND NOT EXISTS (SELECT 1 FROM imgref WHERE imgref.img = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM award_records w WHERE w.picture = imgown.img OR w.employee_signature = imgown.img OR w.approver_signature = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(kv.v, imgown.img) > 0)' +
+      ' AND NOT EXISTS (SELECT 1 FROM esc WHERE instr(esc.d, imgown.img) > 0)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(imgown.img) > 1' +
       ' AND instr(substr(a.v, -(length(imgown.img) - 1)) || substr(b.v, 1, length(imgown.img) - 1), imgown.img) > 0) RETURNING img')
       .bind(snap, lease, IMG_SCAN_KEY, 'done').all();
