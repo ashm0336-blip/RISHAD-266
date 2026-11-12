@@ -484,7 +484,11 @@ test('department merge fills missing documents and preserves existing typed doma
   assert.equal(B.DB.q('SELECT v FROM kv WHERE k=?1', key)[0].v, '{}');
 });
 
-test('R2 is never touched; a new image payload refuses the whole restore before any business mutation', async () => {
+/* V7-F (owner decision 2, condition ii) — REWRITTEN ON PURPOSE. This test pinned «a record that mentions an image the platform does not hold
+   refuses the whole restore» (409 restore-image-body-missing). The sweep now really deletes an image 30 days after its record dropped it, so
+   that gate would have made every older backup unrestorable; the owner's condition is «لا تفشل الاستعادة، والصورة المفقودة تُعرض كمفقودة».
+   What stays pinned: R2 is never touched by a restore, and nothing is invented for the missing image. See v7_f_img_restore.test.mjs. */
+test('R2 is never touched; a record mentioning an image the platform does not hold is restored with a warning and no image row', async () => {
   const B = await world(),
     calls = [];
   B.env.IMG_R2 = Object.fromEntries(
@@ -498,13 +502,15 @@ test('R2 is never touched; a new image payload refuses the whole restore before 
   );
   const body = await B.body({ keys: { [OPTIONS]: '{"TEST_ONLY":"img_testonly_testonly"}' } });
   body.base.kv[OPTIONS] = 0;
-  const before = snap(B.DB),
-    response = await B.restore(body);
-  assert.equal(response.json.err, 'restore-image-body-missing');
-  assert.deepEqual(snap(B.DB), before);
+  const response = await B.restore(body);
+  assert.equal(response.status, 200, JSON.stringify(response.json));
+  assert.deepEqual(response.json.warnings, ['images-missing']);
+  assert.equal(B.DB.q('SELECT v FROM kv WHERE k=?1', OPTIONS)[0].v, '{"TEST_ONLY":"img_testonly_testonly"}');
+  assert.equal(B.DB.q("SELECT COUNT(*) n FROM imgs WHERE k='img_testonly_testonly'")[0].n, 0);
+  assert.equal(B.DB.q("SELECT COUNT(*) n FROM imgown WHERE img='img_testonly_testonly'")[0].n, 0);
   assert.deepEqual(calls, []);
   const good = await B.body({ keys: { [OPTIONS]: '{"TEST_ONLY":"no image"}' } });
-  good.base.kv[OPTIONS] = 0;
+  good.base.kv[OPTIONS] = B.DB.q('SELECT rev FROM revs WHERE k=?1', OPTIONS)[0].rev;
   ok(await B.restore(good));
   assert.deepEqual(calls, []);
 });

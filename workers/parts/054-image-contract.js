@@ -100,7 +100,7 @@ async function imgListFor(env, A) {
       if (sawL[o.k]) okL[o.img] = 1;
     });
   }
-  var rkL = await env.DB.prepare('SELECT DISTINCT k FROM imgs').all(), outL = {};
+  var rkL = await env.DB.prepare("SELECT DISTINCT k FROM imgs WHERE k NOT IN (SELECT img FROM imgown WHERE st = 'dead')").all(), outL = {};
   ((rkL && rkL.results) || []).forEach(function (r) { if (String(r.k).indexOf(IMG_STG) === 0) return; if (supL || okL[r.k]) outL[r.k] = ''; });
   return outL;
 }
@@ -113,6 +113,21 @@ async function imgRefsOfKey(env, k) {
   return ((r && r.results) || []).map(function (x) { return x.img; });
 }
 function imgDeptWriter(A, d) { var wp = writePages(A, d); return wp === null || wp.length > 0; }
+/* V7-F · owner decisions 1+3 — the ORIGINAL unit of an orphan is imgown.dept, and it only counts while that unit still exists and was never
+   deleted since the image was orphaned: a unit delete stamps its orphans IMG_GONE (019e), so a unit or section created later under the same id
+   inherits nothing. Then: an orphan is re-bound only by a record of that unit (its own undo inside the grace) or by the platform admin. */
+var IMG_GONE = '~unit-deleted~';
+function imgUnitLive(A, d) { return !!d && Array.isArray(A.depts) && A.depts.some(function (x) { return x && x.id === d; }); }
+function imgOrphanRebindOk(A, o, k) {
+  if (A.u.role === 'super') return true;
+  var d = (parseKey(k) || {}).dept || '';
+  return !!o && !!o.dept && o.uid !== IMG_GONE && d === o.dept && imgUnitLive(A, d);
+}
+/* V7-F · owner decision 4 — a refusal names its reason only to the image's own unit (a live unit the caller belongs to); to anyone else a missing id,
+   an orphan, a foreign upload and a foreign bound image are one answer (063: 403 {ok:0,err:'forbidden'}) */
+function imgNo(A, o, why) {
+  return { ok: false, why: why, open: why === 'inuse' || !!(o && o.dept && o.uid !== IMG_GONE && imgUnitLive(A, o.dept) && deptInScope(A, o.dept)) };
+}
 /* كتابةُ الصورة = كتابةُ مورد مالكها. لا anyWriter، ولا دورٌ يعلو على سجل الموارد. */
 function imgWriteOk(A, k) {
   if (A && A.enf) return enfImgWriteOk(A, k);                                 /* KIVO_243 */
@@ -128,21 +143,27 @@ async function imgVerdict(env, A, ik, mode) {
   if (!A || !A.u) return { ok: false, why: 'session' };
   /* الحسمُ أولاً ولو كان الفاعلُ مدير النظام: قراءتُه هي التي تُثبّت مالكَ
      الصورة القديمة مرّةً واحدة، فلا تبقى بلا سجلٍّ حتى يأتي من لا يملكها. */
-  var o = await imgResolve(env, ik);
-  if (A.u.role === 'super') return { ok: true, why: 'super' };
+  var o = await imgResolve(env, ik), dead = !!(o && o.st === 'dead');
+  if (dead) o = null;                                                       /* V7-F: condemned by the sweep (bytes awaiting removal) — it no longer exists for anyone */
+  if (A.u.role === 'super') return { ok: true, why: 'super', dead: dead };
   /* صورةُ توثيق مهمّة: يرفعها الموظفُ المكلَّف وإن لم تكن له صفحةٌ يكتبها — عقدٌ قائمٌ في المعتمدة */
   var selfProof = ik.indexOf('img_tsk') === 0 && !!A.u.ekey;
-  if (!o) return mode === 'put' && (anyWriter(A) || selfProof) ? { ok: true, why: 'new' } : { ok: false, why: 'none' };
-  if (o.st === 'amb') return { ok: false, why: 'amb' };                    /* قديمةٌ غيرُ محسومة: لمدير النظام وحده */
-  if (o.st === 'orphan') return { ok: false, why: 'orphan' };              /* KIVO_265 · حادثةُ الصور: أزيل مرجعُها وتنتظر الكنسَ بعد مهلة السماح — لمدير النظام وحده */
-  if (o.st === 'claim') return o.uid === A.u.id ? { ok: true, why: 'own' } : { ok: false, why: 'claim' };
-  if (mode === 'read') return canRead(A, o.k) ? { ok: true, why: 'bound' } : { ok: false, why: 'bound' };
-  if (!imgWriteOk(A, o.k)) return { ok: false, why: 'bound' };
+  if (!o) {
+    if (mode === 'put' && (anyWriter(A) || selfProof)) return { ok: true, why: 'new', dead: dead };
+    /* V7-F: an id a record the caller reads still mentions, with no image behind it (swept, or restored without its bytes) reads as MISSING to him (404) */
+    if (mode === 'read') { var rf = await imgRefsOfImg(env, ik); for (var r9 = 0; r9 < rf.length; r9++) if (!isDeviceKey(rf[r9]) && canRead(A, rf[r9])) return { ok: false, why: 'missing', open: true }; }
+    return imgNo(A, null, 'none');
+  }
+  if (o.st === 'amb') return imgNo(A, o, 'amb');                           /* قديمةٌ غيرُ محسومة: لمدير النظام وحده */
+  if (o.st === 'orphan') return imgNo(A, o, 'orphan');                     /* KIVO_265 · حادثةُ الصور: أزيل مرجعُها وتنتظر الكنسَ بعد مهلة السماح — لمدير النظام وحده */
+  if (o.st === 'claim') return o.uid === A.u.id ? { ok: true, why: 'own' } : imgNo(A, o, 'claim');
+  if (mode === 'read') return canRead(A, o.k) ? { ok: true, why: 'bound' } : imgNo(A, o, 'bound');
+  if (!imgWriteOk(A, o.k)) return imgNo(A, o, 'bound');
   if (mode === 'del') {
     /* لا يُحذف الملفُّ ما دام موردٌ آخر يعرضه — ولو كان الفاعلُ يكتبه. وإزالةُ
        المرجع من مورده هي الطريق: عند زوال آخر مرجعٍ يكنسه الخادم نفسه. */
     var refs = await imgRefsOfImg(env, ik);
-    for (var i9 = 0; i9 < refs.length; i9++) if (refs[i9] !== o.k) return { ok: false, why: 'inuse' };
+    for (var i9 = 0; i9 < refs.length; i9++) if (refs[i9] !== o.k) return imgNo(A, o, 'inuse');
   }
   return { ok: true, why: 'bound' };
 }
@@ -160,7 +181,10 @@ async function imgForeignIn(env, A, k, v, cur) {
       if (exI) return id9;
       continue;
     }
-    if (o.st === 'amb' || o.st === 'orphan') continue;                   /* KIVO_265: اليتيمةُ (مهلةُ السماح) يعيد ربطَها من يكتب المفتاح (imgSync) */
+    if (o.st === 'dead') continue;                                        /* V7-F: condemned by the sweep — as an id with no image */
+    /* V7-F · owner decisions 1+3: an orphan is re-bound by a record of its ORIGINAL unit only (or by the platform admin) — anyone else is refused as for a foreign bound image */
+    if (o.st === 'orphan') { if (!imgOrphanRebindOk(A, o, k)) return id9; continue; }
+    if (o.st === 'amb') continue;
     if (o.st === 'claim') { if (o.uid !== A.u.id && A.u.role !== 'super') return id9; continue; }
     if (o.k !== k && !(A.u.role === 'super' || imgWriteOk(A, o.k))) return id9;
   }
@@ -181,7 +205,7 @@ async function imgSync(env, A, list) {
         st.push(env.DB.prepare('UPDATE imgown SET st = ?2, k = ?3, dept = ?4 WHERE img = ?1 AND st = ?5')
           .bind(id9, 'bound', k9, (parseKey(k9) || {}).dept || '', 'claim'));
       /* KIVO_265 · حادثةُ الصور: يتيمةٌ داخل مهلة السماح يذكرها مفتاحٌ من جديد (استعادةٌ · إعادةُ صفّ) ⇒ تعود مربوطةً به */
-      else if (o9 && o9.st === 'orphan')
+      else if (o9 && o9.st === 'orphan' && imgOrphanRebindOk(A, o9, k9))
         st.push(env.DB.prepare('UPDATE imgown SET st = ?2, k = ?3, dept = ?4, uid = ?6 WHERE img = ?1 AND st = ?5')
           .bind(id9, 'bound', k9, (parseKey(k9) || {}).dept || '', 'orphan', ''));
     }
@@ -201,24 +225,73 @@ async function imgSync(env, A, list) {
     if (ow && ow.st === 'bound' && ow.k !== drop[id9]) continue;           /* المالكُ غيرُ من أزال مرجعه */
     /* KIVO_265 · حادثةُ الصور (سقيا زمزم): لا كنسَ فوريّ — الصورةُ التي زال مرجعُها تُوسم «يتيمة» وتبقى (الجسمُ في R2/D1) مدةَ IMG_ORPHAN_GRACE
        فتُسترجع بحفظٍ يذكرها من جديد (imgForeignIn · أعلاه)، ثم تُكنس بعدها (أدناه) */
+    if (ow && ow.st === 'dead') continue;                                  /* V7-F: condemned — never revived by a dropped reference */
     if (ow) st2.push(env.DB.prepare('UPDATE imgown SET st = ?2, k = ?3, ts = ?4 WHERE img = ?1').bind(id9, 'orphan', '', now9));
     else st2.push(ownStmt(env, id9, 'orphan', '', '', (parseKey(drop[id9]) || {}).dept || ''));
   }
   for (j9 = 0; j9 < st2.length; j9 += 90) await env.DB.batch(st2.slice(j9, j9 + 90));
-  await imgSweepOrphans(env, now9);
 }
-var IMG_ORPHAN_GRACE = 30 * 864e5;
-/* كنسُ اليتيمات التي جاوزت مهلةَ السماح — دفعةٌ صغيرة في كل مزامنةٍ (لا مسحَ للقاعدة) */
-async function imgSweepOrphans(env, now) {
-  var r = await env.DB.prepare('SELECT img FROM imgown WHERE st = ?1 AND ts < ?2 LIMIT 40').bind('orphan', now - IMG_ORPHAN_GRACE).all();
-  var L = ((r && r.results) || []).map(function (x) { return x.img; }), st = [], i;
+/* ══ V7-F · owner decision 2 — the sweep that really runs ══════════════════════════════════════════════════════════════════════
+   WHAT: an orphan past IMG_ORPHAN_GRACE (30 days) and an upload never bound past IMG_CLAIM_TTL (7 days) are deleted — rows and R2 object.
+   WHEN: after every accepted write request (063 fetch → imgSweepLater: off the response path when the runtime gives waitUntil), a small
+         batch (IMG_SWEEP_SAVE); a larger one when the platform admin opens the overview (IMG_SWEEP_ADMIN) and after a platform reset.
+   HOW (per image, in this order):
+     1. THE DECISION is one D1 statement: the row becomes 'dead' only if it is still the same unreferenced row read above (st and ts) AND no
+        record mentions the image at that instant (imgref — the typed records — and the kv values). A save that re-binds it, concurrent or
+        just before, changes the row first and the statement touches nothing; a save committing after it is refused by its own imgown
+        witness (019e). So no image a live record points at is ever condemned.
+     2. 'dead' is no image for anyone (imgVerdict · imgForeignIn · listing): only now is the R2 object deleted — outside any DB transaction.
+     3. The rows go only after R2 confirmed. A failed R2 delete leaves the 'dead' row: the next sweep retries it (a lease of
+        IMG_DEAD_LEASE on ts keeps two sweeps, or a sweep and a re-upload of the same id, from working on one object at once).
+   A referenced orphan is not deleted: it turns 'amb' (the platform admin's), as before; a referenced stale upload gets its clock restarted. */
+var IMG_ORPHAN_GRACE = 30 * 864e5, IMG_CLAIM_TTL = 7 * 864e5, IMG_DEAD_LEASE = 20000, IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 200;
+async function imgSweep(env, now, max) {
+  var B = imgBucket(env), out = { seen: 0, purged: 0, kept: 0, retry: 0 };
+  var r = await env.DB.prepare("SELECT img, st, ts FROM imgown WHERE (st = 'orphan' AND ts < ?1) OR (st = 'claim' AND ts < ?2) OR (st = 'dead' AND ts < ?3) ORDER BY ts LIMIT ?4")
+    .bind(now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max).all();
+  var L = (r && r.results) || [], i;
   for (i = 0; i < L.length; i++) {
-    if ((await imgRefsOfImg(env, L[i])).length) { st.push(env.DB.prepare('UPDATE imgown SET st = ?2 WHERE img = ?1').bind(L[i], 'amb')); continue; }   /* مرجعٌ عاد بلا ربطٍ: لا تُكنس */
-    await imgDropR2(env, L[i]);
-    st.push(env.DB.prepare('DELETE FROM imgs WHERE k = ?1').bind(L[i]));
-    st.push(env.DB.prepare('DELETE FROM imgown WHERE img = ?1').bind(L[i]));
+    var id = L[i].img, st0 = L[i].st, ts0 = L[i].ts, lease = Math.max(Date.now(), now, ts0 + 1), hit;
+    if (!/^[a-z0-9_]+$/.test(id)) continue;                                /* never a GLOB pattern */
+    out.seen++;
+    if (st0 === 'dead') hit = await env.DB.prepare("UPDATE imgown SET ts = ?3 WHERE img = ?1 AND st = 'dead' AND ts = ?2 RETURNING img").bind(id, ts0, lease).first();
+    else {
+      hit = await env.DB.prepare("UPDATE imgown SET st = 'dead', k = '', ts = ?4 WHERE img = ?1 AND st = ?2 AND ts = ?3" +
+        ' AND NOT EXISTS (SELECT 1 FROM imgref WHERE img = ?1)' +
+        ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(v, ?1) > 0 AND (v GLOB ?5 OR v GLOB ?6)) RETURNING img')
+        .bind(id, st0, ts0, lease, '*' + id + '[^a-z0-9]*', '*' + id).first();
+      if (!hit) {                                                          /* re-bound meanwhile (no row matches below) — or a record mentions it */
+        await env.DB.prepare("UPDATE imgown SET st = CASE WHEN st = 'orphan' THEN 'amb' ELSE st END, ts = CASE WHEN st = 'claim' THEN ?4 ELSE ts END WHERE img = ?1 AND st = ?2 AND ts = ?3")
+          .bind(id, st0, ts0, lease).run();
+        out.kept++; continue;
+      }
+    }
+    if (!hit) continue;                                                    /* another sweep (or a re-upload) holds it */
+    if (B) { try { await B.delete('img/' + id); } catch (e) { swallow('r2-delete', e, env.__rid); out.retry++; continue; } }
+    var own = "EXISTS (SELECT 1 FROM imgown WHERE img = ?1 AND st = 'dead' AND ts = ?2)";
+    await env.DB.batch([env.DB.prepare('DELETE FROM imgs WHERE k = ?1 AND ' + own).bind(id, lease),
+      env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?3 AND ' + own).bind(id, lease, IMG_STG + id + '~%'),
+      env.DB.prepare("DELETE FROM imgown WHERE img = ?1 AND st = 'dead' AND ts = ?2").bind(id, lease)]);
+    out.purged++;
   }
-  for (i = 0; i < st.length; i += 90) await env.DB.batch(st.slice(i, i + 90));
+  return out;
+}
+/* the sweep never fails the request that triggered it */
+async function imgSweepSafe(env, max) { try { return await imgSweep(env, Date.now(), max || IMG_SWEEP_SAVE); } catch (e) { swallow('img-sweep', e, env && env.__rid); return null; } }
+function imgSweepLater(env, max) {
+  var p = imgSweepSafe(env, max);
+  if (env && env.__ctx && typeof env.__ctx.waitUntil === 'function') { env.__ctx.waitUntil(p); return Promise.resolve(); }
+  return p;
+}
+/* a re-upload of a condemned id (a backup's bytes coming back): take the lease, so the pending R2 delete and this put never meet */
+async function imgDeadTake(env, ik) {
+  var now = Date.now();
+  var t = await env.DB.prepare("UPDATE imgown SET ts = ?2 WHERE img = ?1 AND st = 'dead' AND ts < ?3 RETURNING ts").bind(ik, now, now - IMG_DEAD_LEASE).first();
+  if (t) return now;
+  return (await env.DB.prepare("SELECT 1 AS x FROM imgown WHERE img = ?1 AND st = 'dead'").bind(ik).first()) ? 0 : -1;   /* 0: busy · -1: already gone */
+}
+function imgDeadFlip(env, ik, lease, uid, dept) {
+  return env.DB.prepare("UPDATE imgown SET st = 'claim', k = '', uid = ?3, dept = ?4, ts = ?5 WHERE img = ?1 AND st = 'dead' AND ts = ?2").bind(ik, lease, uid || '', dept || '', Date.now());
 }
 async function kvAll(env, table) {
   var r = await env.DB.prepare('SELECT k, seq, v FROM ' + table + ' ORDER BY k, seq').all();

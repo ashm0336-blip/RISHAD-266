@@ -99,19 +99,17 @@ test('an existing R2 reference is read-only matched and ACK identifies reuse, le
   assert.deepEqual(copy(B.DB.q('SELECT * FROM imgs')), beforeImages);
 });
 
-test('unknown, unreferenced, pending, unstable, missing or different image bodies reject the whole restore without revealing body/ID', async () => {
-  for (const scenario of ['new', 'unreferenced', 'claim', 'orphan', 'amb', 'staged', 'inline-mismatch', 'R2-mismatch', 'R2-missing']) {
+/* V7-F (owner decision 2, condition ii) — REWRITTEN ON PURPOSE: the 'new' scenario (an archived image the platform holds NOTHING of — no body
+   row, no owner row: what a swept image is) used to refuse the whole restore here. It is now restored as a missing image, with no image byte
+   written (the next test). Every other scenario keeps refusing the whole restore. */
+test('unreferenced, pending, unstable, missing or different image bodies reject the whole restore without revealing body/ID', async () => {
+  for (const scenario of ['unreferenced', 'claim', 'orphan', 'amb', 'staged', 'inline-mismatch', 'R2-mismatch', 'R2-missing']) {
     const B = await world(),
       r2 = scenario.startsWith('R2');
     await seed(B, { r2, state: ['claim', 'orphan', 'amb'].includes(scenario) ? scenario : 'bound' });
     if (scenario === 'staged') await B.DB.batch(B.W.kvPutStmts(B.env, 'imgs', '~stg~' + ID + '~0', BODY));
     const calls = readonlyR2(B, { missing: scenario === 'R2-missing', text: scenario === 'R2-mismatch' ? OTHER : BODY }),
       body = await payload(B, { [ID]: scenario === 'inline-mismatch' ? OTHER : BODY });
-    if (scenario === 'new') {
-      const key = 'img_testonly_new';
-      body.backup.idbImages = { [key]: BODY };
-      body.backup.data[OPTIONS] = JSON.stringify({ type: [key], work: [] });
-    }
     if (scenario === 'unreferenced') body.backup.data[OPTIONS] = '{}';
     const before = snap(B.DB),
       response = await B.api('super', '/api/backup/restore', body);
@@ -126,6 +124,25 @@ test('unknown, unreferenced, pending, unstable, missing or different image bodie
     );
     if (!scenario.startsWith('R2')) assert.equal(calls.length, 0);
   }
+});
+
+test('an archived image the platform holds nothing of (swept) does not stop the restore: no byte, no row, R2 untouched, a warning', async () => {
+  const B = await world(),
+    key = 'img_testonly_new';
+  await seed(B);
+  const calls = readonlyR2(B),
+    body = await payload(B, { [key]: BODY });
+  body.backup.data[OPTIONS] = JSON.stringify({ type: [key], work: [] });
+  const images = copy(B.DB.q('SELECT * FROM imgs')),
+    ack = ok(await B.api('super', '/api/backup/restore', body));
+  assert.equal(ack.ok, 1);
+  assert.equal(ack.imagesReused, 0);
+  assert.deepEqual(ack.warnings, ['images-missing']);
+  assert.equal(Object.hasOwn(ack, 'imagesRestored'), false);
+  assert.deepEqual(inspectOperationalFixture(B.env, OPTIONS), { type: [key], work: [] });
+  assert.deepEqual(copy(B.DB.q('SELECT * FROM imgs')), images);
+  assert.equal(B.DB.q('SELECT COUNT(*) n FROM imgown WHERE img=?1', key)[0].n, 0);
+  assert.deepEqual(calls, []);
 });
 
 test('foreign ownership and images absent from the final department scope are denied before R2.get', async () => {

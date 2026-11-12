@@ -258,6 +258,9 @@
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'
           : '') +
+        (i.summary.imagesMissing > 0
+          ? ' تشير النسخة إلى ' + i.summary.imagesMissing + ' صورة لم تعد موجودة على الخادم (حُذفت بعد انتهاء مهلتها)؛ تُستعاد البيانات وتظهر هذه الصور مفقودة.'
+          : '') +
         (i.summary.emptyDomains.length
           ? ' لا تتضمن النسخة ' + i.summary.emptyDomains.length + ' مجموعة بيانات؛ في وضع الاستبدال تُستعاد المجموعات المفقودة فارغة.'
           : '') +

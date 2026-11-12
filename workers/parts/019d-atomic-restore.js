@@ -1759,6 +1759,7 @@ async function rsRoute(env, request, url, ss) {
       });
       plan.guards.push.apply(plan.guards, converted.readGuards || []);
       converted.summary.imagesReused = plan.imagesReused;
+      converted.summary.imagesMissing = plan.imagesMissing || 0;   /* V7-F: images the file mentions that the platform no longer holds — restored as missing (019e) */
       if (body.phase === 'inspect')
         return json({ ok: 1, inspection: { scope: body.scope, base: base, counts: plan.counts, summary: converted.summary || {} } });
       return json(await rsCommit(env, A, plan, reqMeta(request)));

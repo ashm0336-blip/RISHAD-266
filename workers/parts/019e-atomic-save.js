@@ -87,8 +87,17 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
         return [row.img, row];
       }),
     );
+  /* V7-F · owner decision 2 (ii): an archived image the platform no longer holds at all — no owner row and no body row (swept), or condemned —
+     proves no reuse and is NOT restored from the file (no restore writes image bytes): it is left out, the restore goes on and the reference
+     reads as missing. Everything else keeps the gate: unknown-but-present, pending, orphan, foreign, mismatching ⇒ the whole restore is refused. */
+  var presentArgs = [],
+    presentWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, presentArgs),
+    presentRows = (await rsBound(env.DB.prepare("SELECT DISTINCT CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END AS id FROM imgs WHERE " + presentWhere), presentArgs).all()).results || [],
+    present = new Set(presentRows.map(function (row) { return row.id; })),
+    gone = new Set(ids.filter(function (id) { var own = ownerMap.get(id); return own ? own.st === 'dead' : !present.has(id); }));
   var checkedKeys = new Set();
   for (var id of ids) {
+    if (gone.has(id)) continue;
     var owner = ownerMap.get(id);
     if (!owner || owner.st !== 'bound' || !owner.k || !resOf(owner.k) || isDeviceKey(owner.k) || !canRead(A, owner.k)) reject();
     for (var key of mentions.get(id))
@@ -108,6 +117,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     values.set(row.k, (values.get(row.k) || '') + row.v);
   }
   for (var id of ids) {
+    if (gone.has(id)) continue;
     if (!values.has(id)) reject();
     // Inline content is the exact ordered D1 concatenation used by imgLoad;
     // its rows are guarded below. Only the R2 marker needs an object read.
@@ -124,7 +134,8 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], rows, bodyWhere, bodyArgs));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgown', ['img', 'st', 'k', 'uid', 'dept', 'ts'], owners, ownWhere, ownArgs));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], refs, ownWhere, ownArgs));
-  plan.imagesReused = ids.length;
+  plan.imagesReused = ids.length - gone.size;
+  if (gone.size) { plan.imagesMissing = Math.max(plan.imagesMissing || 0, gone.size); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
 }
 function rsImageFinalValues(plan, reference) {
   var values = Object.assign(Object.create(null), reference.inputKeys);
@@ -136,7 +147,8 @@ function rsImageFinalValues(plan, reference) {
   return values;
 }
 /* Same image ownership/reference semantics as imgSync, prepared before commit.
-   Bodies and R2 garbage collection are deliberately never called by this path. */
+   Bodies and R2 garbage collection are deliberately never called by this path: V7-F — the sweep runs AFTER the commit
+   (063 fetch → 054 imgSweep), decides in one statement that re-checks every reference, and deletes R2 outside any transaction. */
 async function rsImageMetadataPlan(env, A, plan, reference) {
   if (!plan.imgTouch || !plan.imgTouch.length) return;
   var list = plan.imgTouch,
@@ -176,12 +188,11 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
           return r.k;
         }),
       );
-    if (
-      newIds.some(function (id) {
-        return !known.has(id);
-      })
-    )
-      throw rsError('restore-image-body-missing', 409);
+    /* V7-F · owner decision 2 (ii): a backup that mentions an image the platform no longer holds (swept after its grace) is still restored —
+       the reference is written as it is and READS AS MISSING (054 imgVerdict → 404); the witness below still fences that the body is absent
+       at commit, and the receipt carries the warning. No image body is ever written by a restore. */
+    var missing = newIds.filter(function (id) { return !known.has(id); });
+    if (missing.length) { plan.imagesMissing = Math.max(plan.imagesMissing || 0, missing.length); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
     plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
   }
   var ownArgs = [],
@@ -215,7 +226,8 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     Object.keys(imgIdsIn(v.v || '')).forEach(function (id) {
       refs.push({ img: id, k: v.k });
       var o = owners.get(id);
-      if (o && (o.st === 'orphan' || (o.st === 'claim' && (o.uid === A.u.id || A.u.role === 'super'))))
+      /* V7-F · owner decisions 1+3: an orphan returns only to a record of its original unit, or by the platform admin (054 imgOrphanRebindOk) */
+      if (o && ((o.st === 'orphan' && imgOrphanRebindOk(A, o, v.k)) || (o.st === 'claim' && (o.uid === A.u.id || A.u.role === 'super'))))
         updates.set(id, Object.assign({}, o, { st: 'bound', k: v.k, dept: parseKey(v.k).dept || '', uid: o.st === 'orphan' ? '' : o.uid }));
     });
   });
@@ -229,6 +241,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
       return;
     var o = owners.get(id);
     if (o && o.st === 'bound' && !keySet.has(o.k)) return;
+    if (o && o.st === 'dead') return;                                       /* V7-F: condemned by the sweep — never revived by a dropped reference */
     updates.set(id, Object.assign({ img: id, uid: '', dept: '' }, o || {}, { st: 'orphan', k: '', ts: now }));
   });
   var dropArgs = [],
@@ -523,6 +536,13 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     plan.fingerprint = opt.__wipeFingerprint;
   }
   await rsImageMetadataPlan(env, A, plan, reference);
+  /* V7-F · owner decision 3: the orphans of a unit this plan removes (the ones it makes now and the ones still in their grace) are stamped —
+     their original unit is gone for good, so only the platform admin re-binds them (054 imgOrphanRebindOk), whoever later reuses the id */
+  A.depts.map(function (d) { return d && d.id; }).filter(function (id) {
+    return id && !irFinalDepartments.some(function (d) { return d && d.id === id; });
+  }).forEach(function (id) {
+    plan.statements.push(env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE dept = ?1 AND st = 'orphan'").bind(id, IMG_GONE));
+  });
   // Rows a scoped reference read while the plan was compiled are fenced like the rest (019d).
   plan.guards.push.apply(plan.guards, rsReferenceSince(reference, referenceMark, referenceOperational));
   var ack = await rsCommit(env, A, plan, meta);
@@ -865,8 +885,13 @@ async function rsResetRoute(env, request, path, url, AX, superX) {
     env.DB.prepare('DELETE FROM custody_request_outputs'), env.DB.prepare('DELETE FROM custody_requests'), env.DB.prepare('DELETE FROM custody_movements'), env.DB.prepare('DELETE FROM custody_issues'), env.DB.prepare('DELETE FROM custody_items'),
     env.DB.prepare('DELETE FROM restore_operations'), env.DB.prepare('DELETE FROM restore_preimage'), env.DB.prepare('DELETE FROM restore_snapshot_manifest'),
     env.DB.prepare('DELETE FROM daily_stats_day_locks'), env.DB.prepare('DELETE FROM daily_stats_month_locks'), env.DB.prepare('DELETE FROM daily_stats_days'),
-    env.DB.prepare('DELETE FROM kv'), env.DB.prepare('DELETE FROM imgs'), env.DB.prepare('DELETE FROM revs'),
+    env.DB.prepare('DELETE FROM kv'), env.DB.prepare('DELETE FROM revs'),
+    /* V7-F · owner decision 2 (iv): the reset used to drop the image rows and leave every R2 object behind, unreachable and never deleted. Now, in the same
+       batch, each image held in R2 becomes a condemned row ('dead' — no image for anyone, the new admin included) and the sweep deletes the objects:
+       a first pass right after the commit (063 fetch · IMG_SWEEP_RESET), the rest (or a failed delete) on the following writes. Inline bodies and staged parts go here as before. */
     env.DB.prepare('DELETE FROM imgown'), env.DB.prepare('DELETE FROM imgref'), env.DB.prepare("DELETE FROM meta WHERE k = 'imgown'"),
+    imgBucket(env) ? env.DB.prepare("INSERT OR IGNORE INTO imgown (img, st, k, uid, dept, ts) SELECT DISTINCT k, 'dead', '', '', '', 0 FROM imgs WHERE seq = 0 AND v = ?1 AND substr(k, 1, 5) != ?2").bind(IMG_R2_MARK, IMG_STG) : env.DB.prepare('SELECT 1'),
+    env.DB.prepare('DELETE FROM imgs WHERE k NOT IN (SELECT img FROM imgown)'),
     env.DB.prepare('DELETE FROM audit'), env.DB.prepare('DELETE FROM sess'), env.DB.prepare('DELETE FROM guard'),
     env.DB.prepare('DELETE FROM meta WHERE k IN (?1, ?2, ?3, ?4, ?5)').bind('rev', 'rk', 'rk_uid', 'rk_meta', 'rk_used')
   ];
