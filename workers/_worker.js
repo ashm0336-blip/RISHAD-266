@@ -66,8 +66,9 @@ async function loadPolicy(env) {
   SESSION_MAX = Math.max(1, +o.sessH || 12) * 3600000; IDLE_MAX = Math.max(0.25, +o.idleH || 2) * 3600000;
   LOCK_N = Math.max(3, +o.lockN || 5); LOCK_MS = Math.max(1, +o.lockMin || 5) * 60000; PW_MIN = 6; o.pwMin = 6;   /* KIVO_259 (إصلاح): ثابتٌ 6 حتى لو حُفظت قيمةٌ أكبر قبلُ — قاعدةُ المنصة (pwCheck) لا تقبل أكثر من 6 أرقام لمدير النظام */ RL_SAVE = Math.min(5000, Math.max(30, +o.wrMin || 1200));
   /* v7-C · Issue 2 (ب): مطفأٌ ما لم تكن القيمةُ المخزَّنة 1 بالضبط؛ والقيمُ تُحصر في نطاقها عند القراءة كذلك (السقفُ 10 ث مهما خُزّن) */
-  o.thrOn = +o.thrOn === 1 ? 1 : 0; THR_ON = o.thrOn === 1;
-  THR_N = Math.min(100, Math.max(5, Math.floor(+o.thrN) || 10)); THR_WIN_MS = Math.min(120, Math.max(5, Math.floor(+o.thrWin) || 30)) * 60000; THR_MS = Math.min(10, Math.max(1, Math.floor(+o.thrSec) || 3)) * 1000;
+  /* المراجعة المستقلة (L3): مفعَّلٌ للعدد 1 بالضبط (لا '1' ولا true)، والمُعاد (GET /api/policy) هو القيمُ الفعلية المحصورة التي يعمل بها الخادم */
+  o.thrOn = o.thrOn === 1 ? 1 : 0; THR_ON = o.thrOn === 1;
+  o.thrN = THR_N = Math.min(100, Math.max(5, Math.floor(+o.thrN) || 10)); o.thrWin = Math.min(120, Math.max(5, Math.floor(+o.thrWin) || 30)); THR_WIN_MS = o.thrWin * 60000; o.thrSec = Math.min(10, Math.max(1, Math.floor(+o.thrSec) || 3)); THR_MS = o.thrSec * 1000;
   return o;
 }
 /* CORE-02 (B2): the editable ranges of the policy form (the same limits the handler applied by clamping) — [min, max, whole number].
@@ -5988,7 +5989,8 @@ async function nfSecurityPoll(env, A) {
       ).results || [],
     events = [],
     max = last,
-    fails = {};
+    fails = {},
+    failId = {};
   rows.forEach(function (r) {
     max = Math.max(max, r.ts);
     if (/^tst_/.test(String(r.uid || ""))) return;
@@ -5997,6 +5999,7 @@ async function nfSecurityPoll(env, A) {
     if (r.act === "login_fail") {
       var k = r.target || r.un;
       fails[k] = (fails[k] || 0) + 1;
+      failId[k] = r.id;
       return;
     }
     if (r.act === "lock" || r.act === "guard_unlock") {
@@ -6040,9 +6043,37 @@ async function nfSecurityPoll(env, A) {
       if (x.ip) b.ips.push(x.ip);
     });
   }
+  /* المراجعة المستقلة (L2): إنذارُ العناوين المختلفة لحسابٍ قائمٍ فقط — رشُّ أسماءٍ لا وجودَ لها من عناوين قليلة كان يولّد إنذاراً عاجلاً لكل اسم.
+     و«مرّةً في الساعة» نافذةٌ متدحرجة: لا يُنذَر لاسمٍ أُنذر له خلال NF_FAIL_WIN_MS (كان المفتاحُ ساعةَ الحائط فتُنذِر الدفعةُ العابرةُ رأسَ الساعة
+     مرّتين). المفتاحُ يحمل رقمَ آخر صفٍّ للاسم في الدفعة — استطلاعان متزامنان للدفعة نفسِها يلتقيان على مفتاحٍ واحد. */
+  var spreadNames = failNames.filter(function (k) {
+      return (byName[k] || { ips: [] }).ips.length >= NF_FAIL_IPS;
+    }),
+    spreadOk = {};
+  if (spreadNames.length) {
+    var known = {};
+    ((await usersList(env)) || []).forEach(function (x) {
+      if (x.un) known["=" + String(x.un).toLowerCase()] = 1;
+      if (x.alt) known["=" + String(x.alt).toLowerCase()] = 1;
+    });
+    var recent =
+      (
+        await env.DB.prepare("SELECT once_key FROM notification_dedup WHERE created_at>?1 AND once_key GLOB 'fail:*:ips:*'")
+          .bind(nowF - NF_FAIL_WIN_MS)
+          .all()
+      ).results || [];
+    spreadNames.forEach(function (k) {
+      var pre = "fail:" + k + ":ips:";
+      spreadOk[k] =
+        known["=" + String(k).toLowerCase()] === 1 &&
+        !recent.some(function (r) {
+          return String(r.once_key).indexOf(pre) === 0;
+        });
+    });
+  }
   failNames.forEach(function (k) {
     var b = byName[k] || { n: 0, ips: [] },
-      spread = b.ips.length >= NF_FAIL_IPS;
+      spread = spreadOk[k] === true;
     if (fails[k] >= 5 || spread)
       events.push({
         type: "sc_fail",
@@ -6054,7 +6085,7 @@ async function nfSecurityPoll(env, A) {
               ? b.ips.length + " عناوين مختلفة: " + b.ips.slice(0, 5).join("، ") + (b.ips.length > 5 ? " …" : "")
               : b.ips[0] || "",
         },
-        once: fails[k] >= 5 ? "fail:" + k + ":" + Math.floor(nowF / 600000) : "fail:" + k + ":ips:" + Math.floor(nowF / NF_FAIL_WIN_MS),
+        once: fails[k] >= 5 ? "fail:" + k + ":" + Math.floor(nowF / 600000) : "fail:" + k + ":ips:" + failId[k],
       });
   });
   var finalRow = rows[rows.length - 1],
@@ -23688,14 +23719,20 @@ function secAr(n) {
 async function guardReset(env, gk) {
   await env.DB.prepare('DELETE FROM guard WHERE gk = ?1').bind(gk).run();
 }
-/* v7-C · Issue 2 (ج) — نجاحُ الدخول يردّ «حجزَه» على عدّاد المصدر ولا يصفّره: كان الحذفُ الكامل يتيح لمن يملك حساباً صالحاً أن يصفّر عدّادَ
-   عنوانه كلَّ أربع محاولات فيرشَّ الأسماءَ بلا حدّ. الآن تُطرح المحاولةُ الناجحة وحدها (فلا تتراكم دخولاتُ مكتبٍ صحيحة)، وتبقى الإخفاقاتُ السابقة
-   تتناقص بمعدّلها. قفلُ الحجز المؤقّت (≤ LOCK_PROV_MS) يُرفع كما كان يرفعه النجاح (KIVO_260)؛ القفلُ الكامل الأطول لا يُمسّ. */
-async function guardOk(env, gk) {
+/* v7-C · Issue 2 (ج) — نجاحُ الدخول لا يصفّر عدّادَ المصدر: كان الحذفُ الكامل يتيح لمن يملك حساباً صالحاً أن يصفّر عدّادَ
+   عنوانه كلَّ أربع محاولات فيرشَّ الأسماءَ بلا حدّ. وتبقى إخفاقاتُ الحسابات الأخرى تتناقص بمعدّلها.
+   قفلُ الحجز المؤقّت (≤ LOCK_PROV_MS) يُرفع كما كان يرفعه النجاح (KIVO_260)؛ القفلُ الكامل الأطول لا يُمسّ. */
+/* المراجعة المستقلة (M1): طرحُ الحجز وحده أبقى أخطاءَ الكتابة الصادقة على عنوان المكتب (خطأٌ كلَّ 4 د أسرعُ من التناقص ⇒ يُقفل المكتب).
+   الآن يُغتفر على المصدر عدُّ الزوج نفسِه p:<un>|<ip> — إخفاقاتُ صاحب الحساب قبل أن يصيب وحجزُه — ولا يُغتفر إخفاقٌ على حسابٍ آخر، ولا ينزل
+   العدُّ تحت الصفر. فالحيلةُ مغلقةٌ كما هي: دخولُ المهاجم بحسابه لا يردّ إلا ما أخفقه على حسابه هو. والعدُّ يُقرأ ويُطرح ويُحذف الزوجُ في معاملةٍ
+   واحدة (batch): نجاحٌ متزامنٌ ثانٍ للزوج نفسِه يجده محذوفاً فيطرح صفراً — لا اغتفارَ مزدوجاً. (وعدُّ الزوج لا يزيد إلا بمحاولةٍ عُدّت على
+   المصدر — مسارُ الدخول يحجز المصدرَ أولاً ولا يحجز الزوجَ والمصدرُ مقفل.) */
+async function guardOk(env, gkI, gkP) {
   var now = Date.now();
   await env.DB.batch([
-    env.DB.prepare('UPDATE guard SET n = MAX(0, n - 1), until = CASE WHEN until > ?2 AND until <= ?2 + ?3 THEN -?2 ELSE until END WHERE gk = ?1').bind(gk, now, LOCK_PROV_MS),
-    env.DB.prepare('DELETE FROM guard WHERE gk = ?1 AND n <= 0 AND until <= ?2').bind(gk, now)
+    env.DB.prepare('UPDATE guard SET n = MAX(0, n - COALESCE((SELECT MAX(0, p.n) FROM guard p WHERE p.gk = ?4), 0)), until = CASE WHEN until > ?2 AND until <= ?2 + ?3 THEN -?2 ELSE until END WHERE gk = ?1').bind(gkI, now, LOCK_PROV_MS, gkP),
+    env.DB.prepare('DELETE FROM guard WHERE gk = ?1').bind(gkP),
+    env.DB.prepare('DELETE FROM guard WHERE gk = ?1 AND n <= 0 AND until <= ?2').bind(gkI, now)
   ]);
 }
 /* v7-C · Issue 2 (ب) — إبطاءُ الحساب المستهدَف: كم عنواناً مختلفاً أخفق على هذا الاسم في النافذة (من سجلّ الأمن — فهرس sec_act). عند بلوغ العتبة
@@ -25414,11 +25451,14 @@ async function authPublicRoutes(request, env, path, url) {
        وبهذا يبقى التخمينُ مكلفاً — كلُّ مصدرٍ يُقفل بعد LOCK_N — ويدخل
        صاحبُ الحساب بكلمته الصحيحة من مصدرٍ سليمٍ في كل حال. */
     var gkU = 'u:' + un, gkI = 'ip:' + ip, gkP = 'p:' + un + '|' + ip;
-    /* v7-C · Issue 2 (ب): إبطاءٌ بلا قفل — مطفأ افتراضياً (سياسةُ الأمن thrOn)؛ مطفأً لا يُنفَّذ من هذا السطر شيء */
-    if (THR_ON) { var slowL = await loginSlow(env, un); if (slowL) await new Promise(function (res) { setTimeout(res, slowL); }); }
-    var left = Math.max(await guardLeft(env, gkI), await guardLeft(env, gkP));
+    /* v7-C · Issue 2 (المراجعة المستقلة · M1): المصدرُ أولاً، والزوجُ لا يُحجز له ما دام المصدرُ مقفلاً — فعدُّ الزوج لا يزيد إلا بمحاولةٍ عُدّت على
+       المصدر كذلك (شرطُ اغتفار guardOk: لا ينفخ أحدٌ عدّادَ زوجه بمحاولاتٍ مرفوضة ثم يمحو به إخفاقاتِه على غيره). */
+    var left = await guardLeft(env, gkI); if (!(left > 0)) left = await guardLeft(env, gkP);
     var rmF = reqMeta(request);
     if (left > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر ' + secAr(left / 1000), wait: Math.ceil(left / 1000) });   /* KIVO_260: صيغةُ العدد + الثواني رقماً (العدّادُ في الواجهة يقرؤها) */
+    /* v7-C · Issue 2 (ب): إبطاءٌ بلا قفل — مطفأ افتراضياً (سياسةُ الأمن thrOn)؛ مطفأً لا يُنفَّذ من هذا السطر شيء.
+       المراجعة المستقلة (L1): بعد ردِّ المقفل — عميلٌ مقفلُ المصدر لا يُشغّل الاستعلامَ ولا يُمهَل. */
+    if (THR_ON) { var slowL = await loginSlow(env, un); if (slowL) await new Promise(function (res) { setTimeout(res, slowL); }); }
 
     /* Every issued session is bound atomically to the identity revision just verified.
        A bounded retry rechecks credentials after concurrent edits; a stale snapshot never authenticates. */
@@ -25457,7 +25497,7 @@ async function authPublicRoutes(request, env, path, url) {
       try { await env.DB.batch(loginStmts); }
       catch (eL) { if (isRevConflict(eL)) continue; throw eL; }
 
-      await guardReset(env, gkU); await guardOk(env, gkI); await guardReset(env, gkP);   /* v7-C · Issue 2 (ج): الزوجُ وعدّادُ الإنذار يُحذفان كما كانا؛ المصدرُ يُردّ حجزُه فقط (guardOk) */
+      await guardReset(env, gkU); await guardOk(env, gkI, gkP);   /* v7-C · Issue 2 (ج): الزوجُ وعدّادُ الإنذار يُحذفان كما كانا؛ المصدرُ يُغتفر له عدُّ هذا الزوج وحده (guardOk · M1) */
       /* RISHAD266 · دخولٌ من جهازٍ جديد يُحكم هنا عند الدخول (كان المتصفحُ يرسله عند فتح الصفحة بذاكرة المتصفح — فتكرّر): معرّفُ جهازٍ عشوائيّ لكل متصفح
          (كعكةُ bs_dv · HttpOnly) يُقارن بدخولات الحساب في 180 يوماً من سجل الأمن؛ أولُ دخولٍ مسجَّل بمعرّفٍ يمرّ بلا تنبيه، وفشلُ التنبيه لا يُسقط الدخول */
       var dvB = /Edg\//.test(rm.ua) ? 'Edge' : /Chrome\//.test(rm.ua) ? 'Chrome' : /Safari\//.test(rm.ua) ? 'Safari' : 'متصفح', dvC = readCookie(request, 'bs_dv'), dvN = !/^[0-9a-f]{16}$/.test(dvC || '');
@@ -28830,7 +28870,7 @@ export default {
             np.sessH = Math.min(72, Math.max(1, np.sessH || POL.sessH)); np.idleH = Math.min(24, Math.max(0.25, np.idleH || POL.idleH));
             np.lockN = Math.min(20, Math.max(3, np.lockN || POL.lockN)); np.lockMin = Math.min(60, Math.max(1, np.lockMin || POL.lockMin)); np.pwMin = 6;   /* KIVO_259 (إصلاح — كشفه التدقيقُ المستقل): رقمُ مدير النظام 6 أرقام بالضبط (pwCheck) — كان المدخلُ يُقبل حتى 32 فيجعل كلَّ رقمٍ غيرَ صالح (قفلٌ تامّ) */ np.wrMin = Math.min(5000, Math.max(30, np.wrMin || POL.wrMin));   /* KIVO_255 · SOT-139 */
             /* v7-C · Issue 2 (ب): thrOn يقبل الصفر (إطفاء) — الحلقةُ أعلاه تُسقط الصفر؛ المتروكُ يبقى على قيمته */
-            np.thrOn = bp.thrOn === undefined || bp.thrOn === null ? (POL.thrOn === 1 ? 1 : 0) : (+bp.thrOn === 1 ? 1 : 0);
+            np.thrOn = bp.thrOn === undefined || bp.thrOn === null ? (POL.thrOn === 1 ? 1 : 0) : (bp.thrOn === 1 ? 1 : 0);
             np.thrN = Math.min(100, Math.max(5, np.thrN || POL.thrN)); np.thrWin = Math.min(120, Math.max(5, np.thrWin || POL.thrWin)); np.thrSec = Math.min(10, Math.max(1, np.thrSec || POL.thrSec));
             await env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('policy', JSON.stringify(np)).run();
             var rmP = reqMeta(request);

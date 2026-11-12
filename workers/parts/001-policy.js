@@ -6,8 +6,9 @@ async function loadPolicy(env) {
   SESSION_MAX = Math.max(1, +o.sessH || 12) * 3600000; IDLE_MAX = Math.max(0.25, +o.idleH || 2) * 3600000;
   LOCK_N = Math.max(3, +o.lockN || 5); LOCK_MS = Math.max(1, +o.lockMin || 5) * 60000; PW_MIN = 6; o.pwMin = 6;   /* KIVO_259 (إصلاح): ثابتٌ 6 حتى لو حُفظت قيمةٌ أكبر قبلُ — قاعدةُ المنصة (pwCheck) لا تقبل أكثر من 6 أرقام لمدير النظام */ RL_SAVE = Math.min(5000, Math.max(30, +o.wrMin || 1200));
   /* v7-C · Issue 2 (ب): مطفأٌ ما لم تكن القيمةُ المخزَّنة 1 بالضبط؛ والقيمُ تُحصر في نطاقها عند القراءة كذلك (السقفُ 10 ث مهما خُزّن) */
-  o.thrOn = +o.thrOn === 1 ? 1 : 0; THR_ON = o.thrOn === 1;
-  THR_N = Math.min(100, Math.max(5, Math.floor(+o.thrN) || 10)); THR_WIN_MS = Math.min(120, Math.max(5, Math.floor(+o.thrWin) || 30)) * 60000; THR_MS = Math.min(10, Math.max(1, Math.floor(+o.thrSec) || 3)) * 1000;
+  /* المراجعة المستقلة (L3): مفعَّلٌ للعدد 1 بالضبط (لا '1' ولا true)، والمُعاد (GET /api/policy) هو القيمُ الفعلية المحصورة التي يعمل بها الخادم */
+  o.thrOn = o.thrOn === 1 ? 1 : 0; THR_ON = o.thrOn === 1;
+  o.thrN = THR_N = Math.min(100, Math.max(5, Math.floor(+o.thrN) || 10)); o.thrWin = Math.min(120, Math.max(5, Math.floor(+o.thrWin) || 30)); THR_WIN_MS = o.thrWin * 60000; o.thrSec = Math.min(10, Math.max(1, Math.floor(+o.thrSec) || 3)); THR_MS = o.thrSec * 1000;
   return o;
 }
 /* CORE-02 (B2): the editable ranges of the policy form (the same limits the handler applied by clamping) — [min, max, whole number].

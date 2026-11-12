@@ -2984,7 +2984,8 @@ async function nfSecurityPoll(env, A) {
       ).results || [],
     events = [],
     max = last,
-    fails = {};
+    fails = {},
+    failId = {};
   rows.forEach(function (r) {
     max = Math.max(max, r.ts);
     if (/^tst_/.test(String(r.uid || ""))) return;
@@ -2993,6 +2994,7 @@ async function nfSecurityPoll(env, A) {
     if (r.act === "login_fail") {
       var k = r.target || r.un;
       fails[k] = (fails[k] || 0) + 1;
+      failId[k] = r.id;
       return;
     }
     if (r.act === "lock" || r.act === "guard_unlock") {
@@ -3036,9 +3038,37 @@ async function nfSecurityPoll(env, A) {
       if (x.ip) b.ips.push(x.ip);
     });
   }
+  /* المراجعة المستقلة (L2): إنذارُ العناوين المختلفة لحسابٍ قائمٍ فقط — رشُّ أسماءٍ لا وجودَ لها من عناوين قليلة كان يولّد إنذاراً عاجلاً لكل اسم.
+     و«مرّةً في الساعة» نافذةٌ متدحرجة: لا يُنذَر لاسمٍ أُنذر له خلال NF_FAIL_WIN_MS (كان المفتاحُ ساعةَ الحائط فتُنذِر الدفعةُ العابرةُ رأسَ الساعة
+     مرّتين). المفتاحُ يحمل رقمَ آخر صفٍّ للاسم في الدفعة — استطلاعان متزامنان للدفعة نفسِها يلتقيان على مفتاحٍ واحد. */
+  var spreadNames = failNames.filter(function (k) {
+      return (byName[k] || { ips: [] }).ips.length >= NF_FAIL_IPS;
+    }),
+    spreadOk = {};
+  if (spreadNames.length) {
+    var known = {};
+    ((await usersList(env)) || []).forEach(function (x) {
+      if (x.un) known["=" + String(x.un).toLowerCase()] = 1;
+      if (x.alt) known["=" + String(x.alt).toLowerCase()] = 1;
+    });
+    var recent =
+      (
+        await env.DB.prepare("SELECT once_key FROM notification_dedup WHERE created_at>?1 AND once_key GLOB 'fail:*:ips:*'")
+          .bind(nowF - NF_FAIL_WIN_MS)
+          .all()
+      ).results || [];
+    spreadNames.forEach(function (k) {
+      var pre = "fail:" + k + ":ips:";
+      spreadOk[k] =
+        known["=" + String(k).toLowerCase()] === 1 &&
+        !recent.some(function (r) {
+          return String(r.once_key).indexOf(pre) === 0;
+        });
+    });
+  }
   failNames.forEach(function (k) {
     var b = byName[k] || { n: 0, ips: [] },
-      spread = b.ips.length >= NF_FAIL_IPS;
+      spread = spreadOk[k] === true;
     if (fails[k] >= 5 || spread)
       events.push({
         type: "sc_fail",
@@ -3050,7 +3080,7 @@ async function nfSecurityPoll(env, A) {
               ? b.ips.length + " عناوين مختلفة: " + b.ips.slice(0, 5).join("، ") + (b.ips.length > 5 ? " …" : "")
               : b.ips[0] || "",
         },
-        once: fails[k] >= 5 ? "fail:" + k + ":" + Math.floor(nowF / 600000) : "fail:" + k + ":ips:" + Math.floor(nowF / NF_FAIL_WIN_MS),
+        once: fails[k] >= 5 ? "fail:" + k + ":" + Math.floor(nowF / 600000) : "fail:" + k + ":ips:" + failId[k],
       });
   });
   var finalRow = rows[rows.length - 1],

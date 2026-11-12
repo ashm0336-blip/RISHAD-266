@@ -52,11 +52,14 @@ async function authPublicRoutes(request, env, path, url) {
        وبهذا يبقى التخمينُ مكلفاً — كلُّ مصدرٍ يُقفل بعد LOCK_N — ويدخل
        صاحبُ الحساب بكلمته الصحيحة من مصدرٍ سليمٍ في كل حال. */
     var gkU = 'u:' + un, gkI = 'ip:' + ip, gkP = 'p:' + un + '|' + ip;
-    /* v7-C · Issue 2 (ب): إبطاءٌ بلا قفل — مطفأ افتراضياً (سياسةُ الأمن thrOn)؛ مطفأً لا يُنفَّذ من هذا السطر شيء */
-    if (THR_ON) { var slowL = await loginSlow(env, un); if (slowL) await new Promise(function (res) { setTimeout(res, slowL); }); }
-    var left = Math.max(await guardLeft(env, gkI), await guardLeft(env, gkP));
+    /* v7-C · Issue 2 (المراجعة المستقلة · M1): المصدرُ أولاً، والزوجُ لا يُحجز له ما دام المصدرُ مقفلاً — فعدُّ الزوج لا يزيد إلا بمحاولةٍ عُدّت على
+       المصدر كذلك (شرطُ اغتفار guardOk: لا ينفخ أحدٌ عدّادَ زوجه بمحاولاتٍ مرفوضة ثم يمحو به إخفاقاتِه على غيره). */
+    var left = await guardLeft(env, gkI); if (!(left > 0)) left = await guardLeft(env, gkP);
     var rmF = reqMeta(request);
     if (left > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر ' + secAr(left / 1000), wait: Math.ceil(left / 1000) });   /* KIVO_260: صيغةُ العدد + الثواني رقماً (العدّادُ في الواجهة يقرؤها) */
+    /* v7-C · Issue 2 (ب): إبطاءٌ بلا قفل — مطفأ افتراضياً (سياسةُ الأمن thrOn)؛ مطفأً لا يُنفَّذ من هذا السطر شيء.
+       المراجعة المستقلة (L1): بعد ردِّ المقفل — عميلٌ مقفلُ المصدر لا يُشغّل الاستعلامَ ولا يُمهَل. */
+    if (THR_ON) { var slowL = await loginSlow(env, un); if (slowL) await new Promise(function (res) { setTimeout(res, slowL); }); }
 
     /* Every issued session is bound atomically to the identity revision just verified.
        A bounded retry rechecks credentials after concurrent edits; a stale snapshot never authenticates. */
@@ -95,7 +98,7 @@ async function authPublicRoutes(request, env, path, url) {
       try { await env.DB.batch(loginStmts); }
       catch (eL) { if (isRevConflict(eL)) continue; throw eL; }
 
-      await guardReset(env, gkU); await guardOk(env, gkI); await guardReset(env, gkP);   /* v7-C · Issue 2 (ج): الزوجُ وعدّادُ الإنذار يُحذفان كما كانا؛ المصدرُ يُردّ حجزُه فقط (guardOk) */
+      await guardReset(env, gkU); await guardOk(env, gkI, gkP);   /* v7-C · Issue 2 (ج): الزوجُ وعدّادُ الإنذار يُحذفان كما كانا؛ المصدرُ يُغتفر له عدُّ هذا الزوج وحده (guardOk · M1) */
       /* RISHAD266 · دخولٌ من جهازٍ جديد يُحكم هنا عند الدخول (كان المتصفحُ يرسله عند فتح الصفحة بذاكرة المتصفح — فتكرّر): معرّفُ جهازٍ عشوائيّ لكل متصفح
          (كعكةُ bs_dv · HttpOnly) يُقارن بدخولات الحساب في 180 يوماً من سجل الأمن؛ أولُ دخولٍ مسجَّل بمعرّفٍ يمرّ بلا تنبيه، وفشلُ التنبيه لا يُسقط الدخول */
       var dvB = /Edg\//.test(rm.ua) ? 'Edge' : /Chrome\//.test(rm.ua) ? 'Chrome' : /Safari\//.test(rm.ua) ? 'Safari' : 'متصفح', dvC = readCookie(request, 'bs_dv'), dvN = !/^[0-9a-f]{16}$/.test(dvC || '');

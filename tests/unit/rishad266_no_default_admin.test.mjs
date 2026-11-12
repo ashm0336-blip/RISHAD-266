@@ -15,7 +15,7 @@ test('blank database denies default credentials without any DB write', async () 
   const context = {
     json: (body, status = 200) => new Response(JSON.stringify(body), {status}),
     bodyCheck: () => null, usersList: async () => null,
-    guardLeft: async () => 0, guardFail: async () => {guards++;},
+    guardLeft: async () => 0, guardFail: async () => {guards++;}, THR_ON: false, guardOk: async () => {}, verifyPw: async () => false, PW_DUMMY: () => '',   /* v7-C issue 2: the login route reads these globals (every failure pays one derivation — no DB access) */
     guardCount: async () => {}, reqMeta: () => ({ip: 'test', city:'', dev:''}),
     secAr: String, revsAll: async () => ({}), K_USERS: 'bassam_auth_users_v1',
   };

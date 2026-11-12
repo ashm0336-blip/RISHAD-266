@@ -29,7 +29,7 @@
 @media print{body{background:white;color:#111}.actions,.toolbar,.chips,.side,.open,.drawer{display:none!important}.card{box-shadow:none;background:white;border-color:#ddd}.content{display:block}.tw{max-height:none;overflow:visible}table{min-width:0}th{position:static;background:#eee;color:#111}td{color:#111;border-color:#ddd}}
 </style></head><body>
 <div class="wrap">
-<header class="hero"><div><div class="ey">KIVO · MASTER SOURCE OF TRUTH · v6</div><h1>لوحة المرجع الشامل للمشروع</h1><p>تحديث 2026-10-09 (1448-04-28 هـ) بدمج نتائج KIVO Comprehensive Alignment Audit في المرجع نفسه. البنود 192 من v5 محفوظة بهويتها ونصوصها، و32 بنداً جديداً (AUD) من التدقيق. لكل بند حالتان: ما أعلنه v5 وما أثبته التدقيق، مع مستوى التحقق (ساكن · محلي · Preview · إجراء) ومكان التنفيذ (KIVO_242 المنشور · KIVO_243 مرشح Preview). <b>نجاحُ Preview ليس اعتماداً للإنتاج.</b> أي معلومة أو قرار أو متطلب نتفق عليه يجب أن يصبح بندًا هنا بحالة وأولوية ودليل وخطوة تالية ومعيار قبول.</p><div class="srcline">المصدرُ الرسمي للبيانات: <code>KIVO_MASTER_REQUIREMENTS_v6.json</code> · SHA-256 <code>f3646e61a6c02d8cd09861beabc1839d5baa5abb20ae246f6f3b55a090643de4</code> · هذه اللوحة والـCSV (<code>84da006bee5e88ef…</code>) مولَّدان منه حرفياً.</div></div><div class="actions"><button class="btn" id="print">طباعة/PDF</button><button class="btn" id="csv">CSV (كامل)</button><button class="btn" id="csvf">CSV (المرشَّح)</button><button class="btn" id="json">JSON</button><button class="btn primary" id="remaining">المتبقي فقط</button></div></header>
+<header class="hero"><div><div class="ey">KIVO · MASTER SOURCE OF TRUTH · v6</div><h1>لوحة المرجع الشامل للمشروع</h1><p>تحديث 2026-10-09 (1448-04-28 هـ) بدمج نتائج KIVO Comprehensive Alignment Audit في المرجع نفسه. البنود 192 من v5 محفوظة بهويتها ونصوصها، و32 بنداً جديداً (AUD) من التدقيق. لكل بند حالتان: ما أعلنه v5 وما أثبته التدقيق، مع مستوى التحقق (ساكن · محلي · Preview · إجراء) ومكان التنفيذ (KIVO_242 المنشور · KIVO_243 مرشح Preview). <b>نجاحُ Preview ليس اعتماداً للإنتاج.</b> أي معلومة أو قرار أو متطلب نتفق عليه يجب أن يصبح بندًا هنا بحالة وأولوية ودليل وخطوة تالية ومعيار قبول.</p><div class="srcline">المصدرُ الرسمي للبيانات: <code>KIVO_MASTER_REQUIREMENTS_v6.json</code> · SHA-256 <code>a395ed9b3a4b47503da2883b04546e9e2d44d498dbb398afa7ef70e22e404a16</code> · هذه اللوحة والـCSV (<code>9a7f282b27d38fdd…</code>) مولَّدان منه حرفياً.</div></div><div class="actions"><button class="btn" id="print">طباعة/PDF</button><button class="btn" id="csv">CSV (كامل)</button><button class="btn" id="csvf">CSV (المرشَّح)</button><button class="btn" id="json">JSON</button><button class="btn primary" id="remaining">المتبقي فقط</button></div></header>
 <section class="kpis"><div class="card kpi"><small>إجمالي البنود</small><b id="total">0</b><span>192 من v5 + 32 من التدقيق</span></div><div class="card kpi"><small>الإنجاز الموزون</small><b id="score">0</b><span id="scorewas"></span></div><div class="card kpi"><small>مكتمل</small><b id="done">0</b><span id="donewas"></span></div><div class="card kpi"><small>جزئي</small><b id="part">0</b><span id="partwas"></span></div><div class="card kpi"><small>غير منفذ</small><b id="left">0</b><span id="leftwas"></span></div><div class="card kpi"><small>يحتاج إثبات</small><b id="proof">0</b><span>لا نعتمد الذاكرة</span></div><div class="card kpi"><small>معلّق</small><b id="decision">0</b><span>يحتاج قرار</span></div></section>
 <section class="kpis second"><div class="card kpi"><small>P0 غير مكتملة</small><b id="p0open">0</b><span>أعلى الأولوية</span></div><div class="card kpi"><small>بنود أمنية مفتوحة</small><b id="secopen">0</b><span>مفتوحة / إجمالي الأمنية</span></div><div class="card kpi"><small>متعارض مع v5</small><b id="conf">0</b><span>معلن «مكتمل» وليس كذلك</span></div><div class="card kpi"><small>جديد في v6</small><b id="new">0</b><span>AUD-001 … AUD-032</span></div><div class="card kpi"><small>مُثبت على Preview</small><b id="prevn">0</b><span>اختبار حقيقي — لا اعتماد إنتاج</span></div><div class="card kpi"><small>منشور ضمن KIVO_242</small><b id="prodn">0</b><span>على Production دون قياس هناك</span></div><div class="card kpi"><small>بنود بتبعيات</small><b id="deps">0</b><span>مرهونة ببند آخر</span></div></section>
 <section class="card sec next" id="next" style="margin-top:11px"></section>
@@ -237,7 +237,7 @@
    "لا نشرَ لتقرير التدقيق كرابط"
   ],
   "updated": "2026-11-12",
-  "revision": 386,
+  "revision": 387,
   "counts_v6_creation": {
    "total": 243,
    "sot": 192,
@@ -20304,7 +20304,7 @@
    "status": "جزئي",
    "priority": "P1",
    "evidence": "",
-   "next": "",
+   "next": "نُفّذ قرار المالك (v7-C Issue 2): إنذار · تناقص · إبطاء مطفأ (thrOn)؛ الباقي سياسة الكلمة",
    "phase": "Hardening",
    "note": "",
    "acceptance": "قرارُ المالك في سياسة كلمة المرور: سقفٌ ليّنٌ لكل حساب (تأخيرٌ متزايد بلا قفل) أو كلمةٌ أقوى/TOTP للمدراء — ثم تنفيذُه واختبارُه",

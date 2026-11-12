@@ -731,14 +731,20 @@ function secAr(n) {
 async function guardReset(env, gk) {
   await env.DB.prepare('DELETE FROM guard WHERE gk = ?1').bind(gk).run();
 }
-/* v7-C · Issue 2 (ج) — نجاحُ الدخول يردّ «حجزَه» على عدّاد المصدر ولا يصفّره: كان الحذفُ الكامل يتيح لمن يملك حساباً صالحاً أن يصفّر عدّادَ
-   عنوانه كلَّ أربع محاولات فيرشَّ الأسماءَ بلا حدّ. الآن تُطرح المحاولةُ الناجحة وحدها (فلا تتراكم دخولاتُ مكتبٍ صحيحة)، وتبقى الإخفاقاتُ السابقة
-   تتناقص بمعدّلها. قفلُ الحجز المؤقّت (≤ LOCK_PROV_MS) يُرفع كما كان يرفعه النجاح (KIVO_260)؛ القفلُ الكامل الأطول لا يُمسّ. */
-async function guardOk(env, gk) {
+/* v7-C · Issue 2 (ج) — نجاحُ الدخول لا يصفّر عدّادَ المصدر: كان الحذفُ الكامل يتيح لمن يملك حساباً صالحاً أن يصفّر عدّادَ
+   عنوانه كلَّ أربع محاولات فيرشَّ الأسماءَ بلا حدّ. وتبقى إخفاقاتُ الحسابات الأخرى تتناقص بمعدّلها.
+   قفلُ الحجز المؤقّت (≤ LOCK_PROV_MS) يُرفع كما كان يرفعه النجاح (KIVO_260)؛ القفلُ الكامل الأطول لا يُمسّ. */
+/* المراجعة المستقلة (M1): طرحُ الحجز وحده أبقى أخطاءَ الكتابة الصادقة على عنوان المكتب (خطأٌ كلَّ 4 د أسرعُ من التناقص ⇒ يُقفل المكتب).
+   الآن يُغتفر على المصدر عدُّ الزوج نفسِه p:<un>|<ip> — إخفاقاتُ صاحب الحساب قبل أن يصيب وحجزُه — ولا يُغتفر إخفاقٌ على حسابٍ آخر، ولا ينزل
+   العدُّ تحت الصفر. فالحيلةُ مغلقةٌ كما هي: دخولُ المهاجم بحسابه لا يردّ إلا ما أخفقه على حسابه هو. والعدُّ يُقرأ ويُطرح ويُحذف الزوجُ في معاملةٍ
+   واحدة (batch): نجاحٌ متزامنٌ ثانٍ للزوج نفسِه يجده محذوفاً فيطرح صفراً — لا اغتفارَ مزدوجاً. (وعدُّ الزوج لا يزيد إلا بمحاولةٍ عُدّت على
+   المصدر — مسارُ الدخول يحجز المصدرَ أولاً ولا يحجز الزوجَ والمصدرُ مقفل.) */
+async function guardOk(env, gkI, gkP) {
   var now = Date.now();
   await env.DB.batch([
-    env.DB.prepare('UPDATE guard SET n = MAX(0, n - 1), until = CASE WHEN until > ?2 AND until <= ?2 + ?3 THEN -?2 ELSE until END WHERE gk = ?1').bind(gk, now, LOCK_PROV_MS),
-    env.DB.prepare('DELETE FROM guard WHERE gk = ?1 AND n <= 0 AND until <= ?2').bind(gk, now)
+    env.DB.prepare('UPDATE guard SET n = MAX(0, n - COALESCE((SELECT MAX(0, p.n) FROM guard p WHERE p.gk = ?4), 0)), until = CASE WHEN until > ?2 AND until <= ?2 + ?3 THEN -?2 ELSE until END WHERE gk = ?1').bind(gkI, now, LOCK_PROV_MS, gkP),
+    env.DB.prepare('DELETE FROM guard WHERE gk = ?1').bind(gkP),
+    env.DB.prepare('DELETE FROM guard WHERE gk = ?1 AND n <= 0 AND until <= ?2').bind(gkI, now)
   ]);
 }
 /* v7-C · Issue 2 (ب) — إبطاءُ الحساب المستهدَف: كم عنواناً مختلفاً أخفق على هذا الاسم في النافذة (من سجلّ الأمن — فهرس sec_act). عند بلوغ العتبة

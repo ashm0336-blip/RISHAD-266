@@ -28,7 +28,7 @@ test('20 محاولةً متزامنةً خاطئة من مصدرٍ واحد: ل
 /* v7-C · Issue 2 (ج) — تعديلُ اختبارٍ مقصود بقرار المالك: (١) «انقضاءُ المهلة» يُحاكى بلحظةٍ مضت للتوّ (كان until = 1 — وهو الآن «مرساةُ تناقص» من عام 1970
    فيُغتفر العدُّ كلُّه)؛ (٢) النجاحُ لم يعد يصفّر عدّادَ المصدر — كان ذلك حيلةَ تصفيرٍ لمن يملك حساباً صالحاً — بل يحذف عدّادَ الزوج ويردّ حجزَه فقط،
    فتبقى إخفاقاتُ المصدر الستة محسوبةً (تتناقص واحداً لكل lockMin) بلا قفل. */
-test('بعد انقضاء القفل: محاولةٌ واحدة تمضي — خاطئةً تُعيد القفلَ بمهلةٍ مضاعفة · صحيحةً تفتحه وتحذف عدّادَ الزوج (عدّادُ المصدر يبقى بإخفاقاته)', async () => {
+test('بعد انقضاء القفل: محاولةٌ واحدة تمضي — خاطئةً تُعيد القفلَ بمهلةٍ مضاعفة · صحيحةً تفتحه وتحذف عدّادَ الزوج (المصدرُ يُغتفر له عدُّ الزوج وحده)', async () => {
   const env = makeEnv(); const C = client(env); const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   const H = { 'CF-Connecting-IP': '4.4.4.4' };
   for (let i = 0; i < 5; i++) assert.match((await C.api('/api/login', { method: 'POST', body: { u: 'admin', p: 'x' + i }, headers: H })).j.err || '', BAD);
@@ -42,8 +42,13 @@ test('بعد انقضاء القفل: محاولةٌ واحدة تمضي — خ�
   const r7 = await C.api('/api/login', { method: 'POST', body: { u: 'admin', p: 'admin' }, headers: H });
   assert.equal(r7.j.ok, 1, 'الصحيحةُ بعد الانقضاء تدخل');
   assert.equal(env.DB.q("SELECT COUNT(*) AS n FROM guard WHERE gk LIKE 'p:%|4.4.4.4'")[0].n, 0, 'النجاحُ يحذف عدّادَ الزوج');
+  /* المراجعة المستقلة للالتزام 9f64265 (M1) — تعديلٌ مقصود: الإخفاقاتُ الستة كلُّها للزوج نفسِه (admin من هذا العنوان) فيغتفرها نجاحُ صاحبه على المصدر
+     ولا يبقى له صفّ؛ وإخفاقاتُ الحسابات الأخرى من العنوان لا تُغتفر (حيلةُ التصفير مغلقة — tests/unit/v7c_issue2_login_guard.test.mjs). */
+  assert.equal(env.DB.q("SELECT COUNT(*) AS n FROM guard WHERE gk = 'ip:4.4.4.4'")[0].n, 0, 'أخطاءُ صاحب الحساب نفسِه لا تترك أثراً على المصدر بعد نجاحه');
+  for (let i = 0; i < 3; i++) assert.match((await C.api('/api/login', { method: 'POST', body: { u: 'someone-else', p: 'x' + i }, headers: H })).j.err || '', BAD);
+  assert.equal((await C.api('/api/login', { method: 'POST', body: { u: 'admin', p: 'admin' }, headers: H })).j.ok, 1);
   const g7 = env.DB.q("SELECT n, until FROM guard WHERE gk = 'ip:4.4.4.4'")[0];
-  assert.equal(g7.n, 6, 'عدّادُ المصدر يبقى بإخفاقاته الستة — النجاحُ ردّ حجزَه فقط'); assert.ok(g7.until <= Date.now(), 'وبلا قفل: ' + g7.until);
+  assert.equal(g7.n, 3, 'إخفاقاتُ حسابٍ آخر تبقى بعددها — النجاحُ لا يصفّر المصدر'); assert.ok(g7.until <= Date.now(), 'وبلا قفل: ' + g7.until);
 });
 
 /* ══ KIVO_260 (كشفته البطاقةُ المستقلة النهائية — scorecard_final §٤ بنود 10 و12) ══
