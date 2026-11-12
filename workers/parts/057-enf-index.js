@@ -187,10 +187,14 @@ function enfMemoDrop(A, d) {
   if (A.__enfG) delete A.__enfG[d];
   if (A.__enfV) for (var vk in A.__enfV) if (vk.indexOf(d + '|') === 0) delete A.__enfV[vk];
 }
-/* هل يحمل الفاعلُ أيَّ مفتاحٍ كتابيٍّ في الإدارة؟ (الراياتُ التقنية rule:'tech' · رفعُ صورةٍ جديدة) */
+/* هل يحمل الفاعلُ أيَّ مفتاحٍ كتابيٍّ في الإدارة؟ (الراياتُ التقنية rule:'tech' · رفعُ صورةٍ جديدة · صورةٌ مربوطةٌ برايةٍ تقنية)
+   RISHAD-266 · V7-C (قرارُ المالك — الخيار 1): مفتاحُ النوع capability (lens.<L>.enable) بوابةٌ لا كتابة — enfHeld0 يجيب عنه «محمول» متى فُتحت
+   بوابةُ العدسة أياً كانت الورقة، فكان صاحبُ ورقة العرض فقط، ومن لا ورقةَ له أصلاً، «كاتباً» في كل وحدةٍ على سقفها مضيفُ عدسة (plan · daily/rounds):
+   يكتب الراياتِ التقنية ويرفع صورةً جديدة. يُستثنى هنا كما يستثنيه enfFieldLift؛ ومفاتيحُ الراصد المشتقّة من field.view (status.change — نوعها
+   operation) كتابةٌ كما كانت. الوضعُ القديم لا يمرّ من هنا (018 anyWriter · 044 · 054) فلا يتغيّر فيه شيء. */
 function enfAnyWriterDept(A, d) {
   if (A.u.role === 'super') return true;
-  var ix = enfIx(), k; for (k in ix.write) if (!ix.selfK[k] && enfHeld(A, d, k)) return true;
+  var ix = enfIx(), R = KIVO_REGISTRY.byKey, k; for (k in ix.write) if (!ix.selfK[k] && R[k].type !== 'capability' && enfHeld(A, d, k)) return true;
   return false;
 }
 function enfAnyWriter(A) {
