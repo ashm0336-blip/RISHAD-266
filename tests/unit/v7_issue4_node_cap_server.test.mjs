@@ -4,8 +4,9 @@
    Rule under test (054 applySave · 018 nodeCapSweep), in the SAME save that the node-removal rule (018 nodeRemoveWhy) accepts:
      (a) delete — no caps/subs/lenses/capOwn entry of the removed node remains; every other record is byte-identical; the capOwn map
          itself stays (021 capOwnWhy refuses dropping it); a refused removal cleans nothing;
-     (b) import · (d) re-use — a node that did not exist before the save does not inherit a record stored before it, unless the same
-         save writes that record deliberately (a record that differs from the stored one);
+     (b) import — a record the save CARRIES for a node it adds is kept exactly as sent, equal to a stored leftover or not (owner decision,
+         option 1: «الاستيراد يُبقي السقف المرفق»; the descendant-opening case is proven in v7_issue4_node_cap_import.test.mjs);
+     (d) manual re-use — a node added WITHOUT a record for it (and with nothing under it) does not inherit a record stored before it;
      (c) restore — a full restore that brings its own registry keeps it verbatim; one that brings the structure without a registry
          does not revive a stored leftover.
    The registry write the server derives is never reported for a key the request did not carry (280 saveAck9 refuses such an answer);
@@ -136,19 +137,27 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(r.j.atomic, 'the page re-sends the rest (280 settle: atomic)');
   });
 
-  test('(b) ' + mode + ': an import that re-creates a node id beside a new node — the returning id drops its leftover, the new node keeps its seed', async () => {
+  /* Rewritten by owner decision (option 1) — this case used to assert that the returning id DROPS a record identical to the stored
+     leftover. An import keeps the ceiling it carries; only delete and manual re-use clean a leftover. */
+  test('(b) ' + mode + ': an import that re-creates a node id beside a new node — the returning id KEEPS the ceiling the import carries (identical to the stored one), the new node keeps its seed', async () => {
     const P0 = registry(X), W = await world(mode, { nodes: [node(G)], perms: P0 });
     const mine = J(P0); mine.caps[Y] = ['emps', 'tasks'];   /* 320 seedCapFrom: Y is seeded; X «already has a ceiling — untouched» */
-    const set = { [KG]: JSON.stringify([node(G), node(X, G), node(Y, G)]), [KP]: JSON.stringify(mine) };
+    const sent = JSON.stringify(mine), set = { [KG]: JSON.stringify([node(G), node(X, G), node(Y, G)]), [KP]: sent };
     const r = await W.C.api('/api/save', { method: 'POST', cookie: W.su.ck, body: { set, del: [], base: { [KG]: rev(W.DB, KG), [KP]: rev(W.DB, KP) }, why: { [KG]: 'TEST_ONLY import', [KP]: 'TEST_ONLY import' },
       aud: [{ cid: 'cTESTONLYimp1', k: KG, etype: 'dataset', eid: KG, ename: KG, act: 'import', ctx: '', bef: '', aft: '' }] } });
     clean(r, KG); clean(r, KP); onlyAbout(r, [KG, KP]);
     const P1 = read(W.DB, KP);
-    assert.deepEqual(holds(P1, X), [], 'the returning id does not carry the stale ceiling');
+    assert.deepEqual(holds(P1, X), ['caps', 'subs', 'lenses', 'capOwn'], 'the returning id keeps the ceiling the import carries');
     assert.deepEqual(P1.caps[Y], ['emps', 'tasks'], 'the new node keeps the ceiling this save gave it');
-    assert.equal(raw(W.DB, KP), JSON.stringify(without(mine, X)));
-    const c = (r.j.conflicts || {})[KP]; assert.ok(c && c.cur === raw(W.DB, KP) && c.rev === rev(W.DB, KP), 'the page is told what was written');
-    /* the structure alone (the page had nothing to seed) */
+    assert.equal(raw(W.DB, KP), sent, 'the registry is stored exactly as sent');
+    assert.deepEqual(r.j.conflicts || {}, {}, 'the server cleaned nothing ⇒ nothing is echoed back');
+    assert.ok(r.j.revs[KP] > 0 && r.j.revs[KG] > 0);
+    /* a registry byte-identical to the stored one (nothing seeded): kept, not written twice, not refused */
+    const W3 = await world(mode, { nodes: [node(G)], perms: P0 }), v3 = raw(W3.DB, KP);
+    const r3 = await W3.save({ [KG]: JSON.stringify([node(G), node(X, G)]), [KP]: v3 });
+    clean(r3, KG); clean(r3, KP); onlyAbout(r3, [KG, KP]);
+    assert.equal(raw(W3.DB, KP), v3); assert.deepEqual(read(W3.DB, KG), [node(G), node(X, G)]);
+    /* the structure alone (no registry carried, nothing under the node) — the same request as a node made by hand: the leftover goes */
     const W2 = await world(mode, { nodes: [node(G)], perms: P0 });
     const r2 = await W2.C.api('/api/save', { method: 'POST', cookie: W2.su.ck, body: { set: { [KG]: JSON.stringify([node(G), node(X, G)]) }, del: [], base: { [KG]: rev(W2.DB, KG) }, why: { [KG]: 'TEST_ONLY import' },
       aud: [{ cid: 'cTESTONLYimp2', k: KG, etype: 'dataset', eid: KG, ename: KG, act: 'import', ctx: '', bef: '', aft: '' }] } });

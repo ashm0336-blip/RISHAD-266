@@ -190,9 +190,13 @@ function nodeRemoveWhy(A, old, N) {
    bassam_perms_v1 holds a node's ceiling in caps · subs · lenses [<id>] and its capOwn[<id>] flag. Judged on the node registry as this
    save leaves it (gNew) against the stored one (gCur) — only when the node rules above accepted the save (054 applySave):
    · a node the save removes: its records go in the same save (nodeRemoveWhy decides whether it may be removed at all);
-   · a node the save adds (the id did not exist before — an import, a restore, a re-used id): a record stored before it is a leftover of
-     a deleted node, not a decision about this one ⇒ dropped, unless this same save writes the record deliberately (pNew carries one that
-     differs from the stored record). A record equal to the stored one is what a page copies along («it already has a ceiling»).
+   · a node the save adds (the id did not exist before — an import, a restore, a re-used id):
+       – the save CARRIES a record for it (pNew holds one, equal to the stored record or not) ⇒ kept exactly as sent. An import brings a
+         node back with its ceiling (owner decision); the server cannot tell «copied along» from «decided», and taking a restrictive
+         record away would silently open every unit under the node that has no record of its own (021 effCapOf: absence = open);
+       – the save carries no record for it ⇒ a record stored before it is a leftover of a deleted node and is dropped — but only for a
+         node with nothing under it in the graph this save leaves (a node made by hand is always empty). A node that arrives with
+         children keeps the stored record: fail-closed, the same reason.
    The verified server restore (rst) that brings its own registry (pNew) keeps it verbatim. An id that is a data unit is never touched.
    pNew = the registry this save writes (null: it carries none) · pCur = the stored one. Returns
    { v: the registry to write instead (pNew if carried, else pCur) without those records — null when nothing changes ·
@@ -204,17 +208,22 @@ function nodeCapRec(P, id) {
   NODE_CAP_MAPS.forEach(function (f) { if (isObj(P[f]) && Object.prototype.hasOwnProperty.call(P[f], id)) { r[f] = P[f][id]; n++; } });
   return n ? r : null;
 }
+function nodeHasKids(id, N, L) {
+  for (var q in N) if (shapeRef(N[q], 'pid') === id) return true;
+  for (var i = 0; i < L.length; i++) if (isObj(L[i]) && shapeRef(L[i], 'gid') === id) return true;
+  return false;
+}
 function nodeCapSweep(A, gNew, gCur, pNew, pCur, rst) {
   var out = { v: null, couple: false }, b = parseJson(gNew, null), a = parseJson(gCur, null);
   if (!Array.isArray(b)) return out;
   var S = parseJson(pCur, null), P = pNew == null ? null : parseJson(pNew, null);
   if (!isObj(S)) S = {};
   if (pNew != null && !isObj(P)) return out;
-  var N = shapeFirst(b), O = shapeFirst(a), U = shapeFirst(shapeList(A, K_DEPTS)), T = P || S, drop = [], q, rs, rp;
+  var L = shapeList(A, K_DEPTS) || [], N = shapeFirst(b), O = shapeFirst(a), U = shapeFirst(L), T = P || S, drop = [], q, rs, rp;
   for (q in N) if (!O[q] && !U[q]) {
     rs = nodeCapRec(S, q); rp = P ? nodeCapRec(P, q) : null;
-    if (rp && !deq(rp, rs)) out.couple = true;
-    else if (rs && !(rst && P)) drop.push(q);
+    if (rp) out.couple = true;
+    else if (rs && !P && !nodeHasKids(q, N, L)) drop.push(q);
   }
   if (!(rst && P)) for (q in O) if (!N[q] && !U[q] && nodeCapRec(T, q)) drop.push(q);
   if (!drop.length) return out;

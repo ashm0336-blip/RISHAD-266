@@ -40,6 +40,19 @@ test('nodeDel calls it after removing the node; exported on KIVO.BassamPerm', ()
   assert.match(body, /if \(kd\.length\) return \{ ok: false/, 'a node with children is still refused first — nothing is dropped');
   assert.match(T, /dropNodeCap: I\.dropNodeCap,/); assert.match(M, /I\.dropNodeCap = dropNodeCap;/);
 });
+test('nodeAdd (a node made by hand) drops a leftover of its id before seeding — it never carries a stored leftover along', () => {
+  const i = S.indexOf('nodeAdd: function(o) {'), body = S.slice(i, S.indexOf('nodeSave: function', i));
+  const d = body.indexOf('P.dropNodeCap(id)'), sd = body.indexOf('P.seedCapFrom(id, pid)');
+  assert.ok(d > 0 && sd > d, 'dropNodeCap, then seedCapFrom');
+  assert.ok(body.indexOf('this.saveNodes(') < d, 'after the node is written');
+  /* behaviour: a leftover is removed, then the parent\'s ceiling is seeded (seedCapFrom no longer answers «kept») */
+  const store = { caps: { P: ['emps', 'tasks'], N: ['emps'] }, subs: { N: { emps: ['data'] } }, lenses: {}, capOwn: { N: true } }, saved = [];
+  const ctx = { isSuper: () => true, permStore: () => store, permSave: (o) => saved.push(J(o)), hasCap: (id) => Array.isArray(store.caps[id]), effCap: (id) => store.caps[id].slice(), patternSeed: () => assert.fail('not an empty parent'), Object, JSON, Array };
+  vm.createContext(ctx); vm.runInContext(fnSrc(M, 'dropNodeCap') + '\n' + fnSrc(M, 'seedCapFrom'), ctx);
+  ctx.dropNodeCap('N'); const r = J(ctx.seedCapFrom('N', 'P'));
+  assert.deepEqual(r, { ok: true, n: 2 }, 'seeded from the parent — not «kept»');
+  assert.deepEqual(saved[saved.length - 1], { caps: { P: ['emps', 'tasks'], N: ['emps', 'tasks'] }, subs: {}, lenses: {}, capOwn: {} });
+});
 
 /* READ-ONLY check of existing leftovers (331 capOrphans): ceiling entries whose id is neither a current node nor a current unit/section. */
 function orphanWorld(store, nodes, units) {

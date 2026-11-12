@@ -1131,7 +1131,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   }
   if (todo.length === regN9) { regUndo9(todo.length - 1); regPair9(); }               /* F01: حفظةٌ فيها السجلّان وحدهما */
   /* V7 · issue #4 (018 nodeCapSweep): the node registry was accepted ⇒ the ceiling records of the nodes it removes go in this same save, and a
-     node it adds does not inherit a record stored before it. The registry is the request's own when it carries one (cleaned, and answered
+     node it adds keeps the record this save carries for it (an import) or, carrying none and arriving empty, drops a stored leftover. The registry is the request's own when it carries one (cleaned, and answered
      with what was written — nodeCapAck), otherwise a write the server derives from the stored one. Either way the batch is all-or-nothing
      (protOp): a refusal or a conflict on any key writes nothing, and the registry is never cleaned for a node that stays. */
   var ncG9 = -1, ncP9 = -1, ncD9 = null, ncM9 = null;
