@@ -97,13 +97,17 @@ for (const [label, setup] of OBSERVERS) test('[enforce] the observer (' + label 
   assert.deepEqual(await run('enforce', setup), REFUSED);
 });
 
-/* an explicit, non-derived write lifts it — exactly as measured before V7-D (09a5fe8): nothing changes for these accounts */
+/* an explicit, non-derived write lifts it — V7-D changed nothing for these accounts (measured ALL on 09a5fe8 … 5add483).
+   V7-E (owner decision: «المشرف وخريطة الخطة في enforce: يُمنع كما في legacy») deliberately rewrites the two plan-map cells of these
+   rows: a rounds-side write (the rounds page or a rounds-hosted lens key) is no write of the PLAN's image — the rows now equal the
+   legacy supervisor row (LEGACY_SUP). The round map, the new image and the technical flag stay as they were. Details: v7_e_sup_plan_img. */
+const SUP = { 'put@plan': '403:bound', 'del@plan': '403:bound', 'put@rounds': 'Y', 'del@rounds': 'Y', 'new img': 'Y', tech: 'Y', proof: 'Y' };
 const LIFTED = [
-  ['explicit grant with round.edit', (x) => { x.sheet(null); x.grant(['field.view', 'round.view', 'round.edit'].concat(DER)); }, ALL],
-  ['every view key + one lens data edit', (x) => { x.sheet(null); x.grant(VIEWS.concat(DER, ['lens.zones.data.edit'])); }, ALL],
-  ['a stored supervisor sheet (write on «الجولات»)', (x) => x.sheet({ 'daily/field': ['view'], 'daily/rounds': ['view', 'edit'] }), ALL],
+  ['explicit grant with round.edit', (x) => { x.sheet(null); x.grant(['field.view', 'round.view', 'round.edit'].concat(DER)); }, SUP],
+  ['every view key + one lens data edit', (x) => { x.sheet(null); x.grant(VIEWS.concat(DER, ['lens.zones.data.edit'])); }, SUP],
+  ['a stored supervisor sheet (write on «الجولات»)', (x) => x.sheet({ 'daily/field': ['view'], 'daily/rounds': ['view', 'edit'] }), SUP],
 ];
-for (const [label, setup, want] of LIFTED) test('[enforce] a real write is unchanged — ' + label, { timeout: 300000 }, async () => {
+for (const [label, setup, want] of LIFTED) test('[enforce] a rounds-side write keeps the round map, the new image and the flag; the plan map is refused as in legacy (V7-E) — ' + label, { timeout: 300000 }, async () => {
   assert.deepEqual(await run('enforce', setup), want);
 });
 test('[enforce] the unit manager is unchanged', { timeout: 300000 }, async () => {
@@ -114,6 +118,7 @@ test('[legacy] unchanged: the observer is refused, the stored sheet decides', { 
   assert.deepEqual(await run('legacy', (x) => x.sheet({ 'daily/field': ['view'] })), REFUSED, 'observer');
   assert.deepEqual(await run('legacy', (x) => x.sheet({ daily: ['view'] })), REFUSED, 'view-only page-level sheet');
   assert.deepEqual(await run('legacy', (x) => x.sheet({ 'daily/field': ['view'], 'daily/rounds': ['view', 'edit'] })), LEGACY_SUP, 'supervisor sheet (pinned as measured on 09a5fe8)');
+  assert.deepEqual(SUP, LEGACY_SUP, 'V7-E: the enforce supervisor row is the legacy one');
   assert.deepEqual(await run('legacy', () => {}, 'dm'), ALL, 'unit manager');
 });
 const LEGACY_SUP = { 'put@plan': '403:bound', 'del@plan': '403:bound', 'put@rounds': 'Y', 'del@rounds': 'Y', 'new img': 'Y', tech: 'Y', proof: 'Y' };

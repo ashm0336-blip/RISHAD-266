@@ -24897,10 +24897,21 @@ function enfResWriter(A, d, rn) {
   for (i = 0; i < ks.length; i++) if (enfIx().write[ks[i]] && !enfIx().selfK[ks[i]] && enfHeld(A, d, ks[i])) return true;
   return false;
 }
-/* V7-D: كاتبُ موردِ الصورة — enfResWriter بلا المشتقّة من field.view لمن لم يُرفع عنه الحصر (enfDerivedBare) */
+/* V7-D: كاتبُ موردِ الصورة — enfResWriter بلا المشتقّة من field.view لمن لم يُرفع عنه الحصر (enfDerivedBare)
+   RISHAD-266 · V7-E (قرارُ المالك: «المشرف وخريطة الخطة في enforce: يُمنع كما في legacy»): مفاتيحُ العدسات تذكر في السجلّ الموردَين معاً
+   (guard.resources: bassam_plan_v1 + bassam_rounds_v1 — عناصرُ العدسة تسكن الخطة وتُنسخ في الجولة)، وكتابةُ «الجولات» وحدها تُترجَم إليها
+   (asisMap daily/rounds:edit). فكان صاحبُ كتابةِ الجولات وحدها — ورقةُ المشرف · منحُ round.edit مع مفاتيح الحالة · مفتاحُ عدسةٍ واحد — «كاتباً للخطة»
+   فيستبدل ويحذف الصورةَ المربوطة بها (خريطة الموقع)، والوضعُ القديم يرفض: الصورةُ تتبع كتابةَ سجلّها، وسجلُّ الخطة تكتبه ورقةُ الخطة وحدها
+   (023 RES_REG cap → 054 imgWriteOk → authorize)، وحفظُ السجلّ نفسِه بخريطةٍ أخرى مرفوضٌ لهم أصلاً (059 enfDecide: map.replace).
+   القاعدة: مفتاحُ عدسةٍ تستضيفه ورقةُ «الجولات» (ix.hosts — أي تمنحه كتابةُ الجولات وحدها) كتابةُ عناصر العدسة من جهة الجولات، لا كتابةُ صورة السجلّ؛
+   فلا يُحسب لصورة موردٍ إلا إذا كانت ورقةُ «الجولات» من الأوراق التي تكتب ذلك المورد (الأوراقُ نفسُها التي يسألها الوضع القديم: capForAct).
+   صورةُ الخطة تحتاج إذن مفتاحاً لا تمنحه الجولات: من ورقة الخطة نفسِها (site.edit · map.replace … — ما تُترجَم إليه ورقةُ خطةٍ فيها كتابة) أو مفتاحَ عدسةٍ
+   مضيفُه الخطةُ وحدها (lens.gates.geometry.edit · lens.dens.threshold.configure — كما كانا). صورةُ الجولات لا يتغيّر فيها شيءٌ لأحد، ولا كتابةُ السجلّين،
+   ولا الوضعُ القديم. تعذُّرُ قراءة المنح ⇒ enfHeld يرفض (fail-closed). */
 function enfImgResWriter(A, d, rn) {
-  var ix = enfIx(), ks = ix.byRes[rn] || [], dv = enfDerivedBare(A, d), i;
-  for (i = 0; i < ks.length; i++) if (ix.write[ks[i]] && !ix.selfK[ks[i]] && !(dv && dv[ks[i]]) && enfHeld(A, d, ks[i])) return true;
+  var ix = enfIx(), ks = ix.byRes[rn] || [], dv = enfDerivedBare(A, d), R = RES_REG[rn], i;
+  var rnd = !!R && capForAct(R, 'edit').concat(capForAct(R, 'add')).indexOf('daily/rounds') !== -1;
+  for (i = 0; i < ks.length; i++) if (ix.write[ks[i]] && !ix.selfK[ks[i]] && !(dv && dv[ks[i]]) && (rnd || !(ix.hosts[ks[i]] && ix.hosts[ks[i]].indexOf('daily/rounds') !== -1)) && enfHeld(A, d, ks[i])) return true;
   return false;
 }
 /* إدارات الفاعل التي يُحكم فيها على الموارد المنصّية (الإحصائيات): إداراتُه في نطاقه — كما dsDepts في AS‑IS */
