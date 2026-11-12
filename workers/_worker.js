@@ -1984,7 +1984,9 @@ function nodeCapSweep(A, gNew, gCur, pNew, pCur, rst) {
     if (rp) out.couple = true;
     else if (rs && !P && !nodeHasKids(q, N, L)) drop.push(q);
   }
-  if (!(rst && P)) for (q in O) if (!N[q] && !U[q] && nodeCapRec(T, q)) drop.push(q);
+  /* a removal the node rules did not check (a restore-flagged save skips nodeRemoveWhy) may leave units pointing at the node:
+     its record then still ceilings them — dropped only when nothing in the graph this save leaves points at it (fail-closed) */
+  if (!(rst && P)) for (q in O) if (!N[q] && !U[q] && nodeCapRec(T, q) && !nodeHasKids(q, N, L)) drop.push(q);
   if (!drop.length) return out;
   var R = Object.assign({}, T), hit = false;
   NODE_CAP_MAPS.forEach(function (f) {
