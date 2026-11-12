@@ -115,8 +115,10 @@
   /** يرسم الحالة في المضيف (ويحدّثها عند كل نداء). يعيد متحكّماً صغيراً: { state(), shown(), release() }. */
   function host(el, spec) {
     if (!el || !spec) return null;
-    var s = { shape: SHAPES[spec.shape] ? spec.shape : "cards", state: spec.state || "ready", name: spec.name || "", retry: spec.retry, empty: spec.empty,
-      region: !!spec.region, auto: spec.auto !== false, content: spec.content || null };
+    /* page: اسمُ مكوّن الصفحة — يُشتقّ منه الاسمُ والقالب (describe)، والمحتوى ما يلي المضيف */
+    var d = spec.page != null ? describe(spec.page || "") : null;
+    var s = { shape: SHAPES[spec.shape] ? spec.shape : d ? d.shape : "cards", state: spec.state || "ready", name: spec.name || (d ? d.name : ""), retry: spec.retry, empty: spec.empty,
+      region: !!spec.region, auto: spec.auto !== false, content: spec.content || (d ? "next" : null) };
     var rec = find(el);
     if (!rec) { prune(); rec = { el: el, spec: s, sig: "", timer: 0, shown: false }; live.push(rec); }
     var prev = rec.spec.state, wasShown = rec.shown, sig = signature(s);

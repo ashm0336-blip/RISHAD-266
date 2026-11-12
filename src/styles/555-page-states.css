@@ -76,6 +76,7 @@
 .sc-placeholder:has(> .sc-ps:not([hidden])){height:auto !important;min-height:0;padding:0;background:transparent;overflow:visible}
 .sc-placeholder:has(> .sc-ps:not([hidden]))::before,.sc-placeholder:has(> .sc-ps:not([hidden]))::after{content:none !important}
 .bs-main > .sc-host > .sc-placeholder:has(> .sc-ps:not([hidden])){min-height:420px;padding:0;background:transparent;margin:0 0 var(--sp-3)}
+.bs-main > .sc-host > .sc-placeholder > .sc-ps{padding:var(--sp-5) var(--sp-4) 0}
 
 /* ── الدخول الهادئ: عتامة + ٨px (٠٫٤ ث)، وتدرّج ٥٠ م.ث لأول عشرة صفوف ── */
 .ps-enter{animation:ps-in .4s ease both}

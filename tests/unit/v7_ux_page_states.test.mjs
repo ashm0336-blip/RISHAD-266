@@ -263,3 +263,16 @@ test('runtime placeholder: core owns the hook, draws the place through it, and k
   r = run(false, { name: 'Staffing', error: 'تعذّر عرض هذه الشاشة الآن', failed: true });
   assert.deepEqual(r.tree.kids.map((k) => k.props.className), ['sc-placeholder-error'], 'no component registered ⇒ exactly the old placeholder');
 });
+
+test('page option: a page names itself and the component takes its name, its shape and «what follows the host» as content from the manifest', () => {
+  const { P, tick } = world({ hash: '#/award/res' }), parent = el('div'), host = el('div'), a = el('div'), b = el('div');
+  [host, a, b].forEach((x) => parent.appendChild(x));
+  Object.defineProperty(host, 'nextElementSibling', { get: () => a }); Object.defineProperty(a, 'nextElementSibling', { get: () => b }); b.nextElementSibling = null;
+  P.host(host, { page: 'Award', state: 'loading' }); tick(300);
+  assert.equal(host.getAttribute('data-ps-shape'), 'table'); assert.equal(host.cls('ps-row').length, 8);
+  P.host(host, { page: 'Award', state: 'ready' });
+  assert.equal(a.classList.contains('ps-enter'), true); assert.equal(b.classList.contains('ps-enter'), true, 'everything after the host enters calmly');
+  P.host(host, { page: 'Award', state: 'error', retry() {} }); assert.equal(host.cls('ps-title')[0].textContent, 'تعذّر تحميل نتائج الترشيحات');
+  P.host(host, { page: undefined, state: 'error', name: 'س' }); assert.equal(host.cls('ps-title')[0].textContent, 'تعذّر تحميل س', 'an explicit name wins');
+  const keep = el('div'); keep.className = 'page-own'; P.host(keep, { state: 'refreshing' }); assert.ok(keep.className.split(' ').includes('page-own'), 'the host keeps its own classes');
+});

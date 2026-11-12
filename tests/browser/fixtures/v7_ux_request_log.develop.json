@@ -1,0 +1,48 @@
+{
+ "seized": {
+  "first": [
+   "GET /api/notifications?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&all=0&limit=200&filter=all&kinds=",
+   "GET /api/operations/read?keys=bsdept%3ATEST_ONLY_A%3Abassam_dayshift_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_dreport_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_employees_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_mark_kinds_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_shift_options_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_staffing_v3&uid=TEST_ONLY_mgrA",
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=catalogs",
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=calendar&year=1448&month=6&day=2",
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=records&year=1448&month=6&day=2&q=&limit=10&page=1",
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=context&year=1448&month=6&day=2",
+   "GET /api/retro?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&res=seized"
+  ],
+  "refresh": [
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=catalogs",
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=calendar&year=1448&month=6&day=2",
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=records&year=1448&month=6&day=2&q=&limit=10&page=1",
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=context&year=1448&month=6&day=2",
+   "GET /api/retro?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&res=seized"
+  ],
+  "return": [
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=catalogs",
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=calendar&year=1448&month=6&day=2",
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=records&year=1448&month=6&day=2&q=&limit=10&page=1",
+   "GET /api/seized?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=context&year=1448&month=6&day=2",
+   "GET /api/retro?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&res=seized"
+  ]
+ },
+ "award": {
+  "first": [
+   "GET /api/notifications?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&all=0&limit=200&filter=all&kinds=",
+   "GET /api/operations/read?keys=bsdept%3ATEST_ONLY_A%3Abassam_employees_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_mark_kinds_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_shift_options_v1&uid=TEST_ONLY_mgrA",
+   "GET /api/award?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=records&q=&page=1&limit=10"
+  ],
+  "refresh": [
+   "GET /api/award?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=records&q=&page=1&limit=10"
+  ],
+  "return": [
+   "GET /api/award?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&view=records&q=&page=1&limit=10"
+  ]
+ },
+ "staffing": {
+  "first": [
+   "GET /api/notifications?uid=TEST_ONLY_mgrA&dept=TEST_ONLY_A&all=0&limit=200&filter=all&kinds=",
+   "GET /api/operations/read?keys=bsdept%3ATEST_ONLY_A%3Abassam_callsigns_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_dayshift_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_dreport_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_employees_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_mark_kinds_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_options_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_perm_limit_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_shift_options_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_staffing_locks_v1%2Cbsdept%3ATEST_ONLY_A%3Abassam_staffing_v3&uid=TEST_ONLY_mgrA"
+  ],
+  "refresh": [],
+  "return": []
+ }
+}
