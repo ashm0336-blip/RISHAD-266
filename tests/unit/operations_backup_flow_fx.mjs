@@ -48,7 +48,8 @@ export const epoch = B => +B.DB.q("SELECT v FROM meta WHERE k='restore_epoch'")[
 export function posts(C, phase) {
   return C.requests.filter(request => request.method === 'POST' && request.url.split('?')[0] === '/api/backup/restore' && JSON.parse(request.body).phase === phase);
 }
-export async function browser(B, t) {
+/* opt.images (V7-F): the fixture carries images — /api/img requests are allowed and the actual 360 image transport is loaded */
+export async function browser(B, t, opt = {}) {
   const keys = B.DB.q('SELECT DISTINCT k FROM kv ORDER BY k').map(row => row.k);
   const initial = ok(await B.api('super', '/api/get?keys=' + encodeURIComponent(keys.join(','))));
   const requests = [], localWrites = [], toasts = [];
@@ -61,13 +62,13 @@ export async function browser(B, t) {
     C: { req: async (url, { method = 'GET', cookie, body } = {}) => {
       const parsed = new URL(url, 'http://x');
       assert.equal(parsed.origin, 'http://x', 'Only isolated Worker requests');
-      assert.equal(/(?:\/api\/img|r2)/i.test(parsed.pathname), false, 'No image/R2 request');
+      if (!opt.images) assert.equal(/(?:\/api\/img|r2)/i.test(parsed.pathname), false, 'No image/R2 request');
       const request = { url: parsed.pathname + parsed.search, method, body };
       requests.push(request);
       const headers = new Headers({ Cookie: cookie });
       if (method !== 'GET') { headers.set('Origin', 'http://x'); headers.set('Content-Type', 'application/json'); }
       const response = await B.W.default.fetch(new Request(parsed, { method, headers, ...(body ? { body } : {}) }), B.env);
-      const data = await response.clone().json();
+      const data = opt.images ? await response.clone().json().catch(() => ({})) : await response.clone().json();
       request.status = response.status; request.err = data.err;
       return intercept ? intercept(request, response) : response;
     } },
@@ -99,7 +100,8 @@ export async function browser(B, t) {
   K.__BS_SRV.askReason = (_key, _caps, callback) => callback('TEST_ONLY actual backup review reason');
   K.bsConfirm = async () => true;
   K.BassamCrypt = { ok: () => true };
-  K.BassamIDB = { allForBackup: async () => ({}), get: async () => { assert.fail('No images in this fixture'); } };
+  if (opt.images) vm.runInContext(fs.readFileSync(path.join(SRC, 'services', '360-bassam-idb.js'), 'utf8'), T.ctx, { filename: '360-bassam-idb.js' });
+  else K.BassamIDB = { allForBackup: async () => ({}), get: async () => { assert.fail('No images in this fixture'); } };
   async function read(route) {
     const response = await W.fetch(route), data = await response.json();
     assert.equal(response.status, 200, JSON.stringify(data)); assert.equal(data.ok, 1, JSON.stringify(data)); return data;
