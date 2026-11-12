@@ -9,6 +9,7 @@
 Same input → same bytes (no clocks, no random, sorted iteration).  Python's zlib (level 9) is used on purpose: it is the
 compressor that produced KIVO_240's pages, so the monolith output can be compared with the frozen file byte for byte."""
 import os, re, json, base64, zlib, hashlib, urllib.parse, shutil, argparse, subprocess
+from strip_comments import _cut, strip_css_comments, strip_page_comments   # tools/strip_comments.py (this script's own directory)
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--src', required=True); ap.add_argument('--mode', choices=['monolith', 'split'], required=True)
@@ -86,14 +87,22 @@ PAGE_SCRIPT_TAG = re.compile(r'(<script(?: type="text/x-dc")? data-dc-script[^>]
 # الجسدُ لا يُفرَّغ تماماً: dc-runtime يستدعي updateJs فقط حين يكون نصُّ السكربت غيرَ فارغ (parsed.js) ثم يفضّل المنطقَ المُصرَّف — فيبقى تعليقٌ قصيرٌ علامةً
 LOGIC_STUB = '/* KIVO · precompiled — logic in *.logic.js */'
 def strip_logic(raw): return PAGE_SCRIPT_TAG.sub(lambda m: m.group(1) + LOGIC_STUB + m.group(3), raw) if PRECOMPILED else raw
+# V7 · build strip: a page's text ships without its comments — <!--…--> in the template and /*…*/ in its <style> elements
+# (tools/strip_comments.py: string-aware, comments only, whitespace untouched). One function feeds both modes — the lazy page file
+# and the monolith's bundled pages — so the dist ↔ monolith reassembly stays byte-equal. Sources and src/pages keep every comment.
+X_DC = re.compile(r'<x-dc(?:\s[^>]*)?>|</x-dc>')    # what dc-runtime's parseDcText anchors the template on
+def page_text(name):
+    raw = strip_logic(rd(L('pages') + '/' + name + '.dc.html')); out = strip_page_comments(raw)
+    assert X_DC.findall(out) == X_DC.findall(raw), name + ': an <x-dc> boundary inside a comment'
+    return out.encode('utf-8')
 def pages_json():
     out = []
     for name in META['pages']['order']:
-        raw = strip_logic(rd(L('pages') + '/' + name + '.dc.html')).encode('utf-8')
+        raw = page_text(name)
         out.append(json.dumps(name) + ':' + json.dumps(base64.b64encode(zlib.compress(raw, 9)).decode('ascii')))
     return '{' + ','.join(out) + '}'
 def page_url(name):
-    raw = strip_logic(rd(L('pages') + '/' + name + '.dc.html')).encode('utf-8')
+    raw = page_text(name)
     return hashed('pages', name.replace(' ', '-'), '.dc.txt', raw)
 # KIVO_246 (blocks.json: "dcLogic": "precompiled") — منطقُ كل صفحة (<script data-dc-script>) يُلَفّ في دالةٍ عادية تُقدَّم سكربتاً: في الوضع
 # الكسول ملفٌّ ذو بصمة /assets/pages/<name>.logic.<hash>.js وخريطتُه window.__dcLogic في محمِّل الصفحات؛ وفي المونوليث/المضمَّن تُلحَق
@@ -150,39 +159,8 @@ def own_assets(d):
 # تكافؤُ التركيب (dist ↔ monolith) بايتاً؛ والبرهانُ مدمَج: تيّارُ الرموز في الناتج = الأصل لكل كتلة وإلا يتوقف البناء.
 # CORE-01 · step 0: comments are source documentation, not shipped bytes. The inline-CSS blocks (blocks.json kind inline-css), the
 # <style> elements of the shell template and the template's own <!--…--> are emitted without comments. Both modes share these
-# functions, so the monolith and the split shell stay byte-equal. Sources keep every comment.
-_NAME = re.compile(r'[A-Za-z0-9_%\\-]|[^\x00-\x7f]')
-def _cut(t, s, e, out):
-    """Drop t[s:e]. A comment alone on its lines takes its line with it; otherwise the text around it stays as it is, and a single
-    space is put back only where removal would fuse two name characters into one token (1px/**/solid)."""
-    ls = t.rfind('\n', 0, s) + 1; le = t.find('\n', e); le = len(t) if le < 0 else le
-    if t[ls:s].strip() == '' and t[e:le].strip() == '':
-        while out:
-            last = out[-1].rstrip(' \t')
-            if last: out[-1] = last; break
-            out.pop()
-        return le + 1 if le < len(t) else le
-    if s > 0 and e < len(t) and _NAME.match(t[s - 1]) and _NAME.match(t[e]): out.append(' ')
-    return e
-def strip_css_comments(t):
-    """/*…*/ out of CSS text, string-aware: quoted strings and unquoted url(…) are copied untouched."""
-    out, i, n = [], 0, len(t)
-    while i < n:
-        c = t[i]
-        if c in '"\'':
-            j = i + 1
-            while j < n and t[j] != c and t[j] != '\n': j += 2 if t[j] == '\\' else 1
-            out.append(t[i:j + 1]); i = j + 1
-        elif c == '/' and t.startswith('/*', i):
-            e = t.find('*/', i + 2); assert e >= 0, 'unterminated CSS comment'
-            i = _cut(t, i, e + 2, out)
-        elif t[i:i + 4].lower() == 'url(' and (i == 0 or not _NAME.match(t[i - 1])):
-            k = i + 4
-            while k < n and t[k] in ' \t\n': k += 1
-            if k < n and t[k] in '"\'': out.append(t[i:k]); i = k
-            else: e = t.find(')', k); e = n if e < 0 else e + 1; out.append(t[i:e]); i = e
-        else: out.append(c); i += 1
-    return ''.join(out)
+# functions, so the monolith and the split shell stay byte-equal. Sources keep every comment. (strip_css_comments and _cut live in
+# tools/strip_comments.py, shared with the pages' stripper.)
 _KEEP_HTML_COMMENT = re.compile(r'<!--(?:BS_BOOT--|\[if|<!\[endif|\s*sc-)')
 _RAW = re.compile(r'(<(style|script)\b[^>]*>)([\s\S]*?)(</\2>)', re.I)
 def strip_shell_comments(t):
