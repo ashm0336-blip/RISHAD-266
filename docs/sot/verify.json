@@ -109,16 +109,16 @@
  "ok": true,
  "hashes": {
   "KIVO_MASTER_REQUIREMENTS_v6.json": {
-   "bytes": 897908,
-   "sha256": "9f36aebb0e1ce6dc682115e29af5bc31e5274d816f7f39010200dc8e1f56faba"
+   "bytes": 899481,
+   "sha256": "f3646e61a6c02d8cd09861beabc1839d5baa5abb20ae246f6f3b55a090643de4"
   },
   "KIVO_MASTER_REQUIREMENTS_v6.csv": {
-   "bytes": 283465,
-   "sha256": "69d0cc1fd09325a8e48493df66460a789791efcde8abebb35d914afcb3020589"
+   "bytes": 283691,
+   "sha256": "84da006bee5e88efa94fd756cb75d784d4c612d759202c699657a08affc560cd"
   },
   "KIVO_MASTER_SOURCE_OF_TRUTH_v6.html": {
-   "bytes": 1023865,
-   "sha256": "f8b25c2dc93be37d6f454480dcaf548d72703bcebda44e6a7dc90344807180b0"
+   "bytes": 1025438,
+   "sha256": "55167b03b8a96edb80f6abee21c43f9e625972caf3e08b69f87510c6614d25e1"
   }
  },
  "counts": {
@@ -127,10 +127,10 @@
   "aud": 83,
   "byStatus": {
    "مكتمل": 180,
-   "جزئي": 79,
+   "جزئي": 80,
    "غير منفذ": 3,
    "يحتاج إثبات": 4,
-   "معلّق بقرار": 9,
+   "معلّق بقرار": 8,
    "متعارض": 0
   },
   "verified": 195

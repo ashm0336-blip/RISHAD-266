@@ -1,6 +1,6 @@
 # مصفوفةُ التتبّع — المتطلب → الكود → الاختبار → الدليل (SOT-128)
 
-> مولَّدةٌ آلياً بـ`python3 tools/trace.py` من المرجع الرسمي (`docs/sot/KIVO_MASTER_REQUIREMENTS_v6.json` · مراجعته 385 · 2026-10-15) ومن ذكر المعرّف في المستودع الرسمي؛ لا تُحرَّر يدوياً.
+> مولَّدةٌ آلياً بـ`python3 tools/trace.py` من المرجع الرسمي (`docs/sot/KIVO_MASTER_REQUIREMENTS_v6.json` · مراجعته 386 · 2026-11-12) ومن ذكر المعرّف في المستودع الرسمي؛ لا تُحرَّر يدوياً.
 > الكود: `src` · `workers/parts` · `tools` · `scripts` · `build` · `migrations` · `config` · `public` — الاختبارات: `tests` · `cfbench` (مرشّحات 251+ وحزمُ البوابة الدائمة) — الوثائق: `docs` · `CHANGELOG`.
 
 ## P0 — 125 بنداً · مكتمل 87 · جزئي 35 · غير منفذ 2 · معلّق بقرار 1 · له أثرٌ في الكود أو الاختبارات: 86
@@ -133,7 +133,7 @@
 | AUD-082 | حسابُ المستخدم النشط شرطُ إسناد مهمةٍ إلكترونيةٍ جديدة للموظف (المنعُ  | مكتمل | KIVO_265 · محلي | — | `tests/gate/mandatory_265.txt` · `tests/unit/tasks_acct265.test.mjs` · `tests/unit/tasks_page_acct265.test.mjs` | — | — | reports/k265/acct/ACCT_265.md · tests/unit/tasks_acct265.test.mjs · tests/unit/tasks_page_acct265.test.mjs · وشدُّه في الحفظ الخامّ AUD-081  |
 | AUD-083 | تهيئةُ D1 تُشرك وعداً معلَّقاً بين طلبات الـisolate: جولةٌ أولى عالقة  | مكتمل | KIVO_265 · محلي | — | `tests/gate/mandatory_265.txt` · `tests/unit/d1_init_hang.test.mjs` | — | — | tests/unit/d1_init_hang.test.mjs 4/4 ((أ) تُخفق على 30258e1) · reports/k265/incident_prod_2026-10-15.md · المراجعةُ المستقلة APPROVE-WITH-NO |
 
-## P1 — 109 بنداً · مكتمل 74 · جزئي 28 · معلّق بقرار 4 · يحتاج إثبات 3 · له أثرٌ في الكود أو الاختبارات: 88
+## P1 — 109 بنداً · مكتمل 74 · جزئي 29 · يحتاج إثبات 3 · معلّق بقرار 3 · له أثرٌ في الكود أو الاختبارات: 88
 
 | المعرّف | العنوان | الحالة | آخرُ تحقّق | الكود | الاختبارات | الوثائق | التقارير | الدليل |
 |---|---|---|---|---|---|---|---|---|
@@ -231,7 +231,7 @@
 | AUD-039 | الحاشيةُ اللمسية تسرق نقراتِ الهدف المجاور («إنقاص» يغطي «زيادة» في ال | مكتمل | KIVO_259 · محلي | — | `tests/unit/touch_pad.test.mjs` | — | — | cfbench/k253devices.mjs «لا هدفَ يسرق نقرةَ غيره»: قبل الإصلاح 15 (اللوحيان: زيادة ← إنقاص ×5 لكلٍّ) · بعده 0 في الأجهزة الخمسة (reports/k25 |
 | AUD-041 | حقلُ «أقل طول للرقم السري» يقبل > 6 فيُغلق على مدير النظام تغييرَ رقمه | مكتمل | KIVO_259 · محلي | — | `tests/unit/rate_policy.test.mjs` | — | — | tests/unit/rate_policy.test.mjs: POST pwMin 12 ⇒ 6 · المخزَّن 12 يُقرأ 6 في isolate جديد · الاستعادةُ والدخول بـ6 أرقام (يُخفق على العامل ال |
 | AUD-044 | تفعيلُ حساب الموظف تلقائياً: اسمُ المستخدم رقمُ الهوية (أو الجوال) وكل | معلّق بقرار | KIVO_259 · ساكن | `tools/trace_nonengineering.json` | — | 8 | — | docs/admin.md §4ب (السلوكُ القائم وخطرُه وخياراتُه والتوصية: الإلزامُ مع رقمٍ أوّليٍّ عشوائي لحسابات المديرين) |
-| AUD-049 | حارسُ الدخول على المصدر والزوج بلا سقفٍ لكل حساب — تخمينٌ موزَّعٌ لـPI | معلّق بقرار | KIVO_259 · ساكن | `tools/trace_nonengineering.json` | — | 4 | — | reports/k259/secreview_259.md (وكيلٌ مستقلٌّ قرأ الخادمَ والعميلَ والوثائق قراءةً فقط) ؛ docs/security.md «سياسةُ كلمات المرور» |
+| AUD-049 | حارسُ الدخول على المصدر والزوج بلا سقفٍ لكل حساب — تخمينٌ موزَّعٌ لـPI | جزئي | RISHAD_266 · محلي | `tools/trace_nonengineering.json` | `tests/unit/v7c_issue2_login_guard.test.mjs` | 4 | — | tests/unit/v7c_issue2_login_guard.test.mjs (كلُّ ثغرةٍ باختبارٍ يعيد إنتاجها على e34fa23) ؛ docs/adr/ADR-022 (تعديل v7-C Issue 2) · docs/sec |
 | AUD-051 | صفحةُ المهام تسقط كلُّها على سجلٍّ بأولويةٍ أو حالةٍ خارج القائمة (خطأ | مكتمل | KIVO_259 · محلي | — | — | — | — | cfbench/k259journeys.mjs (٢)(٤): المهامُ تُعرض بلا خطأ · 14 صفحة × مدير الإدارة والمشرف بلا خطأ عرض (يُخفق قبل الإصلاح) ؛ reports/k259/gate_ |
 | AUD-052 | «فكّ القفل» لا يظهر أبداً — القفل على المصدر والزوج (ip: · p:) وovervi | مكتمل | KIVO_261 · محلي | `src/modules/admin/logic.js` · `workers/parts/063-enf-api-and-handler.js` | `tests/source/k261diff.json` · `tests/source/k261src.py` · `tests/unit/guard_unlock.test.mjs` (+1) | 2 | — | tests/unit/guard_unlock.test.mjs (يُخفق على 260) ؛ tests/unit/hardening_261.test.mjs (الوضعان · تُخفق على عامل ما قبل التشديد) ؛ cfbench/k26 |
 | AUD-054 | lensZ في bassam_perms_v1 كانت تُتخطّى في permsRule فيكتب غيرُ مدير الن | مكتمل | KIVO_261 · محلي | `workers/parts/018-ancestry.js` | `tests/source/k261diff.json` · `tests/source/k261src.py` · `tests/unit/global_keys.test.mjs` (+1) | 1 | — | tests/unit/perms_lensz.test.mjs (يُخفق على 260) ؛ tests/unit/global_keys.test.mjs ؛ cfbench/k261tamper.mjs |

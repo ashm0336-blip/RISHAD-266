@@ -754,6 +754,9 @@ export default {
             var np = {}; Object.keys(POLICY_DEF).forEach(function (k) { var v = +bp[k]; if (isFinite(v) && v > 0) np[k] = v; });
             np.sessH = Math.min(72, Math.max(1, np.sessH || POL.sessH)); np.idleH = Math.min(24, Math.max(0.25, np.idleH || POL.idleH));
             np.lockN = Math.min(20, Math.max(3, np.lockN || POL.lockN)); np.lockMin = Math.min(60, Math.max(1, np.lockMin || POL.lockMin)); np.pwMin = 6;   /* KIVO_259 (إصلاح — كشفه التدقيقُ المستقل): رقمُ مدير النظام 6 أرقام بالضبط (pwCheck) — كان المدخلُ يُقبل حتى 32 فيجعل كلَّ رقمٍ غيرَ صالح (قفلٌ تامّ) */ np.wrMin = Math.min(5000, Math.max(30, np.wrMin || POL.wrMin));   /* KIVO_255 · SOT-139 */
+            /* v7-C · Issue 2 (ب): thrOn يقبل الصفر (إطفاء) — الحلقةُ أعلاه تُسقط الصفر؛ المتروكُ يبقى على قيمته */
+            np.thrOn = bp.thrOn === undefined || bp.thrOn === null ? (POL.thrOn === 1 ? 1 : 0) : (+bp.thrOn === 1 ? 1 : 0);
+            np.thrN = Math.min(100, Math.max(5, np.thrN || POL.thrN)); np.thrWin = Math.min(120, Math.max(5, np.thrWin || POL.thrWin)); np.thrSec = Math.min(10, Math.max(1, np.thrSec || POL.thrSec));
             await env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('policy', JSON.stringify(np)).run();
             var rmP = reqMeta(request);
             await secLog(env, { uid: AX.u.id, un: AX.u.un, act: 'policy_change', detail: JSON.stringify(np), ip: rmP.ip, city: rmP.city, dev: rmP.dev });

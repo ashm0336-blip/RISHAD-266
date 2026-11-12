@@ -87,7 +87,7 @@
 | `/api/logout` (POST) · `/api/me/sess/kill` | **بلا جسم**: الفارغُ أو `{}` وحدهما (`additionalProperties:false`) | يُفحص في `063` (`bodyNone`) — الخروجُ قبل الجلسة، وجلساتي بعدها؛ GET الخروج تنقّلٌ بلا جسم |
 | `/api/retro` (POST) | `{act, res, dept, scope:{y,m,d}, hours, reason, id}` — الأرقامُ تُقبل نصاً | `res` يُطابَق بـ`hasOwnProperty` (كان `__proto__` ⇒ 500) |
 | `/api/guard/unlock` | `{gk, gks:[string ≤1000], all}` | `null` كان `{}` (261) ⇒ 400 الآن |
-| `/api/policy` (POST) | `{sessH, idleH, lockN, lockMin, pwMin, wrMin}` أرقامٌ أو نصوصٌ رقمية (حقولُ النموذج) | **E5**: `null` كان 500 |
+| `/api/policy` (POST) | `{sessH, idleH, lockN, lockMin, pwMin, wrMin, thrOn, thrN, thrWin, thrSec}` أرقامٌ أو نصوصٌ رقمية (حقولُ النموذج) | **E5**: `null` كان 500 |
 | `/api/recovery/new` · `/api/reset` | `{pw}` · `{pw, key, confirm, keepBrand, admin:{un, name, pw}}` | **E5**: `null` كان 500 |
 | `/api/authz-migrate` · `/api/authz-test` | `{act, seed, hash, generated, parts[], inferable, snap, force}` · `{uid, path, method, body, vals[]}` | بعد حرّاسهما (مديرُ النظام · البيئة · المضيف) |
 | `/api/dstats` (POST) · `/api/notifications/act` | `{base, data, uid?, operation?, reason?}` · `{op, uid?, …}` | الحقول والعمليات محددة في المخطط؛ تحقق النطاق وCAS في معالج المجال |
@@ -126,7 +126,7 @@
 | `POST /api/save` | `{ok:1, v, revs:{<k>:rev}, denied:{<k>:{why, cur, rev}}, conflicts:{<k>:{cur, rev}}, atomic}` · `409 {ok:0, err:'session-changed'}` (KIVO_264 · C1) |
 | `GET /api/aud` · `/api/sec` · `/api/guard` | `{ok:1, rows:[…]}` (+ `now` في guard) |
 | `GET /api/presence` | `{ok:1, now, active, list:[{u:{id,name,un,role,deptId,ekey,mgr,dis}, la, since, n, devs, city, mine, active, …}]}` |
-| `GET/POST /api/policy` | `{ok:1, policy:{sessH, idleH, lockN, lockMin, pwMin}}` |
+| `GET/POST /api/policy` | `{ok:1, policy:{sessH, idleH, lockN, lockMin, pwMin, wrMin, thrOn, thrN, thrWin, thrSec}}` |
 | `GET /api/overview` | `{ok:1, now, policy, oldHash, failsToday, deniedToday, lockedNow, activeNow, sessions, lastLogin, fails:[{un, n, t, city, dev, known, until, gks}]}` |
 | `GET /api/recovery` | `{ok:1, key:string|null, used:object|null, backups:[…], backupLastLogin}` |
 | `GET /api/permv2` · `/api/identity-rehearsal` | `{ok:1, version, docSha256, status, …}` · `{ok:1, worker, rehearsal:{…}}` (قراءةٌ فقط · لا كتابة) |

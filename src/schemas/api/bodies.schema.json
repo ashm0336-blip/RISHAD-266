@@ -1377,6 +1377,38 @@
             "null"
           ],
           "maxLength": 16
+        },
+        "thrOn": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ],
+          "maxLength": 16
+        },
+        "thrN": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ],
+          "maxLength": 16
+        },
+        "thrWin": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ],
+          "maxLength": 16
+        },
+        "thrSec": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ],
+          "maxLength": 16
         }
       }
     },
