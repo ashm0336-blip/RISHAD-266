@@ -145,10 +145,17 @@ test('[enforce] the lens keys hosted by the plan alone are unchanged: the plan m
   for (const k of LENS_PLAN) assert.equal(await run('enforce', grant(VIEWS.concat([k]))), PLAN_ONLY, k);
 });
 /* the symmetric case for explicit grants: no key of the plan page is a write of the ROUND map (all four letters are pinned now) */
-test('[enforce] each write key of the plan page alone (' + PLAN_W.length + ' keys) still replaces and deletes the plan map — and never the round map', { timeout: 600000 }, async () => {
+/* DELIBERATELY REWRITTEN for the approval keys (owner decision: «ورقة «اعتماد» فقط وصور الخطة: يُمنعان كما في legacy»): this test pinned
+   `YY` on the plan map for EVERY key of the plan page, the approval keys included. A key whose registry atoms are all «plan:approve»
+   (plan.approve · plan.reopen · site.approve — read from the registry below) is a decision on the plan, not a write of its record:
+   legacy never lets «approve» write an image (054 imgWriteOk asks edit · add · del), so the explicit grant of such a key writes no map. */
+const APPROVE_ONLY = (e) => { const at = (e.asisMap || []).map((x) => /^[A-Za-z]+(?:\/[A-Za-z]+)?:(view|add|edit|del|approve|export)$/.exec(String(x))).filter(Boolean); return at.length > 0 && at.every((m) => m[1] === 'approve'); };
+const PLAN_APPROVE = REG.filter((e) => PLAN_W.includes(e.key) && APPROVE_ONLY(e)).map((e) => e.key);
+test('[enforce] each write key of the plan page alone (' + PLAN_W.length + ' keys): add/edit/del keys replace and delete the plan map, the approval keys write no map, none the round map', { timeout: 600000 }, async () => {
   assert.ok(PLAN_W.includes('site.edit') && PLAN_W.includes('map.replace'), 'the list is read from the registry');
+  assert.deepEqual(PLAN_APPROVE.slice().sort(), ['plan.approve', 'plan.reopen', 'site.approve'], 'the approval keys of the plan page, from the registry');
   const got = {}, want = {};
-  for (const k of PLAN_W) { got[k] = await run('enforce', grant(['plan.view', 'round.view', k])); want[k] = PLAN_ONLY; }
+  for (const k of PLAN_W) { got[k] = await run('enforce', grant(['plan.view', 'round.view', k])); want[k] = PLAN_APPROVE.includes(k) ? NOTHING : PLAN_ONLY; }
   assert.deepEqual(got, want);
 });
 
@@ -297,13 +304,16 @@ for (const mode of ['legacy', 'enforce']) test('[shared id B · KNOWN FINDING ·
   assert.equal(stored(W.env, KPLAN).floors[0].iid, ids.rounds); assert.equal(await bytes(W, ids.rounds), OTHER, 'the plan now shows the replaced bytes');
 });
 
-/* OPEN FINDING (awaiting an owner decision, not fixed): a plan sheet holding ONLY «approve» — legacy refuses every image write
-   (approve is not a write of the record), enforce allows the plan image and the option images (plan.approve / site.approve list
-   those records). Same on base 5add483. The other open finding — the symmetric case — is pinned above. */
-test('[OPEN FINDING] a plan sheet with only «approve»: legacy refuses the plan/option images, enforce allows them', { timeout: 300000 }, async () => {
+/* APPROVE ONLY — DELIBERATELY REWRITTEN (it was pinned here as an open finding: «legacy refuses, enforce allows»).
+   Owner decision: «ورقة «اعتماد» فقط وصور الخطة: يُمنعان كما في legacy.» A plan sheet holding ONLY «approve» translates to
+   plan.approve · plan.reopen · site.approve; they list the plan and the three option records among their resources, so enforce
+   let it replace and delete the images bound to them. Legacy refuses every image write: approve is not a write of the record.
+   Now refused in enforce too (057 enfImgKeyOn: only an add · edit · del atom of a page that writes the record counts).
+   Measured on 2c28c95 and on the previous commit: enforce `YYbb` and `YY` on each option record. */
+test('a plan sheet with only «approve» writes no image of the plan or of the option records — legacy and enforce alike', { timeout: 300000 }, async () => {
   const APPR = sheet({ plan: ['view', 'approve'] });
   assert.equal(await run('legacy', APPR), NOTHING, 'legacy: plan map and round map');
   assert.deepEqual(await optCells('legacy', APPR), O('bb', 'bb', 'bb'), 'legacy: option images');
-  assert.equal(await run('enforce', APPR), PLAN_ONLY, 'enforce — the open finding: the plan map');
-  assert.deepEqual(await optCells('enforce', APPR), O('YY', 'YY', 'YY'), 'enforce — the open finding: option images');
+  assert.equal(await run('enforce', APPR), NOTHING, 'enforce: plan map and round map');
+  assert.deepEqual(await optCells('enforce', APPR), O('bb', 'bb', 'bb'), 'enforce: option images');
 });

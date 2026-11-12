@@ -258,16 +258,22 @@ function enfImgResWriter(A, d, rn) {
      • مفتاحٌ بمنحٍ صريح (plus — لا ورقةَ وراءه): يكفي أن تكون إحدى ذرّاته على ورقةٍ تكتب المورد (ومفتاحُ العدسة ذو المضيفَين يبقى جهةَ الجولات — الشرطُ أعلاه).
      • مفتاحٌ بلا ذرّةٍ على ورقةٍ تكتب المورد لا يُحسب لصورته (ref.work_type.* من «الجدول الشهري» وصورةُ bassam_options_v1 · import.replace وصورُ
        التقرير والجائزة · backup.restore بلا ذرّةٍ أصلاً) — والوضعُ القديم يرفضها كلَّها.
-   حفظُ السجلّات نفسِها وتغييرُ الحالة لا يمرّان من هنا. تعذُّرُ قراءة المنح ⇒ لا يُحسب (fail-closed). */
+   حفظُ السجلّات نفسِها وتغييرُ الحالة لا يمرّان من هنا. تعذُّرُ قراءة المنح ⇒ لا يُحسب (fail-closed).
+   V7-E (قرارُ المالك: «ورقةُ «اعتماد» فقط وصورُ الخطة: يُمنعان كما في legacy»): «الاعتماد» قرارٌ على السجلّ لا كتابةٌ له — الوضعُ القديم يسأل للصورة
+   edit · add · del وحدها (054 imgWriteOk)، فورقةُ خطةٍ فيها «اعتماد» فقط لا تكتب صورةً. وكانت مفاتيحُ القرار (plan.approve · plan.reopen · site.approve،
+   ومثلُها في كلّ صفحة: round.approve · report.approve · staff.lock · task.month.lock · award.res.approve · *.retro.open …) تذكر السجلَّ بين مواردها
+   فتُحسب كتابةً لصورته. فالذرّةُ المعتبَرة هنا ذرّةُ edit · add · del على الورقة التي يسألها الوضعُ القديم لذلك الفعل بعينه (capForAct(R, act) —
+   award/new للإضافة وaward/res لما سواها). */
+var ENF_IMG_ACTS = { edit: 1, add: 1, del: 1 };
 function enfImgKeyOn(A, d, R, key) {
-  var at = enfIx().atoms[key] || [], caps = capForAct(R, 'edit').concat(capForAct(R, 'add')), adm = A.u.role === 'super', plus, sheet = null, j, leaf;
+  var at = enfIx().atoms[key] || [], adm = A.u.role === 'super', plus, sheet = null, j, leaf, act;
   try { plus = !!enfGrantOf(A, d).plus[key]; } catch (e0) { return false; }
   for (j = 0; j < at.length; j++) {
-    leaf = at[j][0];
-    if (caps.indexOf(leaf) === -1 || (!(adm && leaf.indexOf('admin') === 0) && !capOnDept(A, d, leaf))) continue;
+    leaf = at[j][0]; act = at[j][1];
+    if (!ENF_IMG_ACTS[act] || capForAct(R, act).indexOf(leaf) === -1 || (!(adm && leaf.indexOf('admin') === 0) && !capOnDept(A, d, leaf))) continue;
     if (plus) return true;
     sheet = sheet || myPermsOf(A, d) || {};
-    if ((sheet[leaf] || []).indexOf(at[j][1]) !== -1) return true;
+    if ((sheet[leaf] || []).indexOf(act) !== -1) return true;
   }
   return false;
 }
