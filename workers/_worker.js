@@ -23612,7 +23612,7 @@ async function imgRefScan(env) {
 function imgSnap(rows) { return JSON.stringify(rows.map(function (x) { return { i: x.img, s: x.st, t: x.ts }; })); }
 var IMG_SNAP_SAME = "EXISTS (SELECT 1 FROM json_each(?1) j WHERE json_extract(j.value, '$.i') = imgown.img AND json_extract(j.value, '$.s') = imgown.st AND json_extract(j.value, '$.t') = imgown.ts)";
 async function imgSweep(env, now, max, maxDead) {
-  var B = imgBucket(env), out = { seen: 0, purged: 0, kept: 0, retry: 0, staged: 0, scan: 0 }, lease = Math.max(Date.now(), now), i;
+  var out = { seen: 0, purged: 0, kept: 0, retry: 0, staged: 0, scan: 0 }, lease = Math.max(Date.now(), now), i;
   /* finding 5: the selections below are range scans of imgown (st, ts). The index is created here — idempotent, one statement per pass — and not
      by a numbered migration: a migration needs the operator's upgrade permit (052 migrateDb), and the sweep must not wait for an operator. */
   await env.DB.prepare(IMG_OWN_IDX).run();
@@ -23664,7 +23664,7 @@ async function imgSweep(env, now, max, maxDead) {
     }
   }
   /* one R2 call per object (a failed one keeps ITS row for the next pass and stops nobody else); the rows of everything R2 confirmed go in one batch */
-  var okIds = [];
+  var okIds = [], B = take.length ? imgBucket(env) : null;                /* the object store is not even looked at by a pass that deletes nothing */
   for (i = 0; i < take.length; i++) {
     if (B) { try { await B.delete('img/' + take[i]); } catch (e) { swallow('r2-delete', e, env.__rid); out.retry++; continue; } }
     okIds.push(take[i]);
