@@ -23331,14 +23331,47 @@ var IMG_SCAN_ID_RX = /^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/;
    the id, so the scan saw no reference — and a typed save, which stores the PARSED value, left a live record with no imgref row. Only an escape
    of [0-9] (\u003x) · '_' (_) · [a-z] (\u006x \u007x) can spell part of an id; what an ordinary client writes (JSON.stringify: control
    characters \u0000–\u001f, lone surrogates) never matches IMG_ESC_RX, so ordinary values pay one indexOf. When one is there, the value is read
-   BOTH as written and with every such escape decoded — whatever number of backslashes precedes it (a JSON string inside a JSON string): reading
-   one reference too many refuses or keeps, reading one too few deletes. */
-var IMG_ESC_RX = /\\u00[3567]/;
-function imgUnesc(s9) { return s9.replace(/\\+u([0-9a-fA-F]{4})/g, function (m9, h9) { return String.fromCharCode(parseInt(h9, 16)); }); }
+   BOTH as written and decoded: reading one reference too many refuses or keeps, reading one too few deletes.
+   Third review, items B + C — ONE decoding, the same in the save (JS, imgDecLevels) and in the sweep (SQL, IMG_ESC_CTE), so they always see the
+   same ids:
+   · only a GENUINE escape is decoded: a backslash, 'u00', two hex digits (either case) spelling a character of [0-9A-Za-z_] or the backslash
+     itself (\u005c — a JSON string inside a JSON string), and an escaped backslash (\\ → \, first). Plain text is never touched: an id whose own text holds 'u0061' stays itself (before,
+     the sweep dropped every backslash first and then decoded any 'u00XX' — it rewrote such an id and deleted its image).
+   · one LEVEL is the fixed, ordered list IMG_DEC_PAIRS applied as literal replace-all, one pair after the other — split/join in JS, nested
+     replace() in SQL: both are left-to-right, non-overlapping and literal, so a level gives the very same text in both. The levels repeat until
+     nothing changes, at most IMG_DEC_MAX; every level is read (as written + each level). A nested spelling (\\u0069 · \u005cu0069) is therefore
+     decoded by both — before, the save decoded one level and the sweep all of them, and a nested spelling slipped past the ownership check.
+   · still not settled after IMG_DEC_MAX levels ("deep"): what it hides is unknown, so the safe direction — a save carrying it is refused
+     (imgForeignIn → 'img-escape' in the plain save), and while any kv value carries it the sweep condemns nothing (IMG_ESC_CTE · escdeep). */
+var IMG_ESC_RX = /\\u00[3-7]/, IMG_DEC_MAX = 8;
+var IMG_DEC_PAIRS = (function () {
+  var cs = [0x5c], c, out = [['\\\\', '\\']];                            /* first: an escaped backslash (\\ → \) — the JSON string inside a JSON string */
+  for (c = 0x30; c <= 0x39; c++) cs.push(c);
+  for (c = 0x41; c <= 0x5a; c++) cs.push(c);
+  cs.push(0x5f);
+  for (c = 0x61; c <= 0x7a; c++) cs.push(c);
+  cs.forEach(function (x) {
+    var h = x.toString(16), ch = String.fromCharCode(x);
+    out.push(['\\u00' + h, ch]);
+    if (h.toUpperCase() !== h) out.push(['\\u00' + h.toUpperCase(), ch]);
+  });
+  return out;
+})();
+function imgDec1(s9) { for (var i9 = 0; i9 < IMG_DEC_PAIRS.length; i9++) if (s9.indexOf(IMG_DEC_PAIRS[i9][0]) >= 0) s9 = s9.split(IMG_DEC_PAIRS[i9][0]).join(IMG_DEC_PAIRS[i9][1]); return s9; }
+/* the decoded levels of a text (each different from the one before) and whether it is still not settled after IMG_DEC_MAX of them */
+function imgDecLevels(s9) {
+  var t9 = [], cur = s9, nx, i9;
+  for (i9 = 0; i9 < IMG_DEC_MAX; i9++) {
+    if (!IMG_ESC_RX.test(cur) || (nx = imgDec1(cur)) === cur) return { t: t9, deep: false };
+    t9.push(nx); cur = nx;
+  }
+  return { t: t9, deep: IMG_ESC_RX.test(cur) && imgDec1(cur) !== cur };
+}
+function imgEscDeep(v) { var s9 = String(v == null ? '' : v); return imgEsc(s9) && imgDecLevels(s9).deep; }
 function imgIdsIn(v) {
   var out = {}, s9 = String(v == null ? '' : v);
   if (!imgLike(s9)) return out;
-  if (imgEsc(s9)) s9 = s9 + '\n' + imgUnesc(s9);
+  if (imgEsc(s9)) s9 = [s9].concat(imgDecLevels(s9).t).join('\n');
   var re = /(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g, m9;
   while ((m9 = re.exec(s9))) out[m9[0]] = 1;
   return out;
@@ -23492,6 +23525,7 @@ async function imgVerdict(env, A, ik, mode) {
 /* قبل الكتابة: هل يُدخل هذا المفتاحُ صورةً يملكها مفتاحٌ آخر لا يكتبه الفاعل؟
    الرفعُ المعلّق لصاحبه وحده، والغامضةُ القديمة تبقى معروضةً كما هي. */
 async function imgForeignIn(env, A, k, v, cur, seen) {
+  if (imgEscDeep(v)) return 'img-escape';                 /* third review, item C: escapes nested deeper than IMG_DEC_MAX hide what they spell — refused */
   var ids = imgIdsIn(v), had = imgIdsIn(cur), id9;
   for (id9 in ids) {
     if (had[id9]) continue;                               /* مرجعٌ قائمٌ سلفاً في هذا المفتاح: بياناتٌ قديمة تبقى تعمل */
@@ -23635,24 +23669,27 @@ async function imgRefScan(env) {
   return false;
 }
 /* the same reading for the sweep's proof over kv (second review, finding 6) — for values no save of this version indexed (stored by an older
-   version, a restore, any path that writes kv without imgSync). IMG_ESC_CTE is the decoded text of every kv row that carries such an escape (and
-   of every row boundary that does: an escape, or an id, cut by the 700 000-character rows), computed ONCE per deciding statement (MATERIALIZED);
-   the statement then keeps every candidate one of them contains. Decoding in SQL: drop every backslash, then turn each uXXXX that spells a
-   character of an id into that character (replace is literal; a real escape is never broken by another — its body holds no 'u'). A row without
-   such an escape costs one instr; the text decoded too generously only ever keeps an image. */
-var IMG_ESC_GLOB = "'*\\u00[3567]*'";
-var IMG_ESC_DEC = (function () {
-  var e = "replace(#, '\\', '')", cs = '0123456789_abcdefghijklmnopqrstuvwxyz', i, h;
-  for (i = 0; i < cs.length; i++) {
-    h = cs.charCodeAt(i).toString(16);
-    e = 'replace(' + e + ", 'u00" + h + "', '" + cs.charAt(i) + "')";
-    if (h.toUpperCase() !== h) e = 'replace(' + e + ", 'u00" + h.toUpperCase() + "', '" + cs.charAt(i) + "')";
-  }
+   version, a restore, any path that writes kv without imgSync). IMG_ESC_CTE holds, in esc(d), every decoded level of every kv row that carries
+   such an escape (and of every row boundary that does: an escape, or an id, cut by the 700 000-character rows), computed ONCE per deciding
+   statement; the statement keeps every candidate one of them contains. The decoding is imgDecLevels' own (third review, items B + C): one level is
+   IMG_DEC_SQL — the nested replace() of IMG_DEC_PAIRS in the same order — repeated by a recursive CTE until a level changes nothing or IMG_DEC_MAX
+   levels are done. escdeep has a row when some text is still not settled after IMG_DEC_MAX levels: the statement then condemns nothing.
+   Known limit (third review, finding 9 — recorded, not changed): a row boundary is read through a window of 1024 characters on each side
+   (IMG_ESC_JOIN), so an id spelled with escapes nested so deep that its spelling is longer than that window AND cut by a row boundary is not
+   decoded there. A row holds 700 000 characters; no save of this version writes such a spelling (it would have to be refused or indexed above). */
+var IMG_ESC_GLOB = "'*\\u00[3-7]*'";
+var IMG_DEC_SQL = (function () {
+  var e = '#';
+  IMG_DEC_PAIRS.forEach(function (p) { e = 'replace(' + e + ", '" + p[0] + "', '" + p[1] + "')"; });
   return e;
 })();
 var IMG_ESC_JOIN = '(substr(a.v, -1024) || substr(b.v, 1, 1024))';
-var IMG_ESC_CTE = 'WITH esc(d) AS MATERIALIZED (SELECT ' + IMG_ESC_DEC.replace('#', 'v') + " FROM kv WHERE instr(v, '\\u00') > 0 AND v GLOB " + IMG_ESC_GLOB +
-  ' UNION ALL SELECT ' + IMG_ESC_DEC.replace('#', IMG_ESC_JOIN) + ' FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + IMG_ESC_JOIN + ' GLOB ' + IMG_ESC_GLOB + ') ';
+/* (written esc first: SQLite resolves a CTE by name within the whole WITH list, and a CTE that refers to itself is recursive without the keyword) */
+var IMG_ESC_CTE = 'WITH esc(d) AS MATERIALIZED (SELECT d FROM esclv WHERE d != p), ' +
+  'escdeep(x) AS MATERIALIZED (SELECT 1 FROM esclv WHERE n = ' + IMG_DEC_MAX + ' AND d != p AND d GLOB ' + IMG_ESC_GLOB + ' AND ' + IMG_DEC_SQL.replace('#', 'd') + ' != d LIMIT 1), ' +
+  'escsrc(s) AS MATERIALIZED (SELECT v FROM kv WHERE instr(v, \'\\u00\') > 0 AND v GLOB ' + IMG_ESC_GLOB +
+  ' UNION ALL SELECT ' + IMG_ESC_JOIN + ' FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + IMG_ESC_JOIN + ' GLOB ' + IMG_ESC_GLOB + '), ' +
+  'esclv(d, p, n) AS (SELECT ' + IMG_DEC_SQL.replace('#', 's') + ', s, 1 FROM escsrc UNION ALL SELECT ' + IMG_DEC_SQL.replace('#', 'd') + ', d, n + 1 FROM esclv WHERE n < ' + IMG_DEC_MAX + ' AND d != p AND d GLOB ' + IMG_ESC_GLOB + ') ';
 /* second review (LOW) + third review, item A — the object store is OPTIONAL (config/wrangler.toml ships with IMG_R2 commented out: every body is
    then inline in D1). Without a store that can delete (no binding · no delete · not an object store) the sweep still runs for everything that lives
    in D1 alone — inline bodies and staged parts, as before — and SKIPS only a row whose body is the object-store marker (IMG_R2_MARK): it is not
@@ -23727,7 +23764,7 @@ async function imgSweep(env, now, max, maxDead) {
       ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM award_records w WHERE w.picture = imgown.img OR w.employee_signature = imgown.img OR w.approver_signature = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(kv.v, imgown.img) > 0)' +
-      ' AND NOT EXISTS (SELECT 1 FROM esc WHERE instr(esc.d, imgown.img) > 0)' +
+      ' AND NOT EXISTS (SELECT 1 FROM esc WHERE instr(esc.d, imgown.img) > 0) AND NOT EXISTS (SELECT 1 FROM escdeep)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(imgown.img) > 1' +
       ' AND instr(substr(a.v, -(length(imgown.img) - 1)) || substr(b.v, 1, length(imgown.img) - 1), imgown.img) > 0) RETURNING img')
       .bind(snap, lease, IMG_SCAN_KEY, 'done').all();
@@ -24747,7 +24784,9 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       /* V7-F (finding 1): more distinct images than the bookkeeping is allowed to carry for one value — refused whole, never truncated */
       if (imgOverCap(it0.v, cur0)) { evald.push({ deny: 'img-limit', cur: cur0, x: { detail: 'أكثر من ' + IMG_CAP + ' صورة مختلفة في سجل واحد — احذف صوراً أو قسّم السجل ثم أعد الحفظ' } }); continue; }
       var seen0 = {};
-      if (await imgForeignIn(env, A, k0, it0.v, cur0, seen0)) { evald.push({ deny: 'imgown', cur: cur0 }); continue; }
+      var fx0 = await imgForeignIn(env, A, k0, it0.v, cur0, seen0);
+      if (fx0 === 'img-escape') { evald.push({ deny: 'img-escape', cur: cur0, x: { detail: 'السجلّ يحمل ترميزاً متداخلاً أعمق من ' + IMG_DEC_MAX + ' مستويات — لا يُحفظ' } }); continue; }
+      if (fx0) { evald.push({ deny: 'imgown', cur: cur0 }); continue; }
       img0 = seen0;
     }
     if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
