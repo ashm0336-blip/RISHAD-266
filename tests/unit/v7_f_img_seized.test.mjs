@@ -87,10 +87,10 @@ test('seized photo: report removed ⇒ orphan of its unit ⇒ another unit canno
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM seized_reports WHERE department_id=?1', D2)[0].n, before, 'the other unit\'s report with the orphan photo is not saved');
   assert.deepEqual(own(B, image), { st: 'orphan', k: '', dept: D1 }); assert.equal(B.objects.get('img/' + image), PNG);
   /* inside the grace nothing happens; past it the next accepted write sweeps it */
-  B.DB.exec("UPDATE imgown SET ts = ts - " + 29 * 864e5 + " WHERE img = '" + image + "'"); B.DB.exec("DELETE FROM meta WHERE k = 'img_sweep_at'");
+  B.DB.exec("UPDATE imgown SET ts = ts - " + 29 * 864e5 + " WHERE img = '" + image + "'"); B.DB.exec("DELETE FROM guard WHERE gk = 'rl:img-sweep'");
   await createWithPhoto(C, 'szp_testonly_v7f2', 'TEST_ONLY_V7F_second');
   assert.deepEqual(own(B, image), { st: 'orphan', k: '', dept: D1 }, 'day 29: kept');
-  B.DB.exec("UPDATE imgown SET ts = ts - " + 2 * 864e5 + " WHERE img = '" + image + "'"); B.DB.exec("DELETE FROM meta WHERE k = 'img_sweep_at'");   /* and the 10 minutes between two passes go by */
+  B.DB.exec("UPDATE imgown SET ts = ts - " + 2 * 864e5 + " WHERE img = '" + image + "'"); B.DB.exec("DELETE FROM guard WHERE gk = 'rl:img-sweep'");   /* and the 10 minutes between two passes go by */
   await createWithPhoto(C, 'szp_testonly_v7f3', 'TEST_ONLY_V7F_third');
   assert.equal(own(B, image), null, 'day 31: owner row gone · ' + JSON.stringify(C.errors).slice(-300)); assert.equal(body(B, image), 0, 'body row gone'); assert.equal(B.objects.has('img/' + image), false, 'R2 object gone');
   /* what the browser gets for the swept image through the actual image transport (360): no bytes ⇒ the page shows no photo; the named reason is 404 «غير موجودة» */
@@ -102,7 +102,7 @@ test('seized photo: report removed ⇒ orphan of its unit ⇒ another unit canno
 });
 
 /* ── the independent review ──────────────────────────────────────────────────────────────────────────────────────────────────── */
-const sweepDue = (B) => B.DB.exec("DELETE FROM meta WHERE k = 'img_sweep_at'");
+const sweepDue = (B) => B.DB.exec("DELETE FROM guard WHERE gk = 'rl:img-sweep'");
 const agePhoto = (B, id, days) => { B.DB.exec("UPDATE imgown SET ts = ts - " + days * 864e5 + " WHERE img = '" + id + "'"); sweepDue(B); };
 
 /* CLAIM TTL — owner rule «إن وُجدت أي شاشة تُبقي صورة مرفوعة في مسودة قبل الحفظ: مهلة غير المربوطة تصير 30 يوماً لا 7».

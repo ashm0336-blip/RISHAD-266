@@ -1,7 +1,7 @@
 /* V7-F · the independent review, finding 5 — the cost of the sweep on every write.
    Before (68cfa6a): EVERY accepted write selected candidates by a full scan of imgown, then ran one deciding statement PER candidate, each scanning the
    whole kv table; the admin's overview awaited 40 of them inline; nothing indexed the selection.
-   Now: an ordinary write runs ONE statement for the sweep (a compare-and-set on a primary-key meta row); a pass runs at most once per 10 minutes for the
+   Now: an ordinary write runs ONE statement for the sweep (a compare-and-set on a primary-key row of the rate-limit table `guard`); a pass runs at most once per 10 minutes for the
    whole platform; a pass with no candidate reads no kv value; all candidates of a pass are decided in ONE statement; the selection is a range scan of
    the index imgown (st, ts), created by the first pass (no operator step); the admin's overview never waits for the pass; a platform reset stays far
    under the 1000-subrequest limit of one invocation. Real worker, legacy and enforce. The `# COST` lines are the measurements quoted in the report
@@ -26,7 +26,7 @@ async function measured(T) {
     kvScans: sql.filter((s) => /instr\((?:kv\.)?v, /.test(s) && /\bkv\b/.test(s)).length, selects: sql.filter((s) => /FROM imgown WHERE \(?st = '(?:orphan|dead|claim)'/.test(s)).length };
 }
 /* every statement the sweep can issue; the compare-and-set binds its key, so it is known by its shape */
-const CAS = /INTO meta \(k, v\) VALUES \(\?1, \?2\) ON CONFLICT\(k\) DO UPDATE SET v = excluded\.v WHERE CAST\(meta\.v AS INTEGER\) <= \?3 RETURNING v/;
+const CAS = /INTO guard \(gk, n, until\) VALUES \(\?1, \?2, \?4\) ON CONFLICT\(gk\) DO UPDATE SET n = excluded\.n, until = excluded\.until WHERE guard\.n <= \?3 RETURNING n/;
 const SWEEP = new RegExp(CAS.source + "|imgown_st_ts|FROM imgown WHERE \\(?st = |UPDATE imgown SET st = 'dead'|'stage'|FROM ops_nodes WHERE \\(department_id, resource\\) >");
 
 both(test, 'finding 5 · an ordinary write costs the sweep ONE statement (the 10-minute compare-and-set) — no candidate selection, no kv scan', async (mode) => {

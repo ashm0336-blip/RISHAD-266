@@ -93,6 +93,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.deepEqual(own(W,A),oldOwner,'داخل المهلة: لا كنس');assert.ok(inStore(W,A),'الجسم باقٍ');assert.deepEqual(removed,[],'لا حذفَ R2 داخل المهلة');
     /* past it (day 31) the next accepted atomic write sweeps it */
     W.env.DB.exec("UPDATE imgown SET ts = ts - 2 * 86400000 WHERE img = '" + A + "'");
+    W.env.DB.exec("DELETE FROM guard WHERE gk = 'rl:img-sweep'");   /* V7-F (review, finding 5): a pass runs at most once per 10 minutes — two days went by */
     assert.equal((await post(W, me.ck, '/api/me/tasks/act', { k: a.k, id: a.id, act: 'doc', note: 'مسودّة ٣' })).status, 200);
     assert.equal(own(W,A),null,'بعد المهلة: سجلُّ الملكية كُنس');assert.equal(inStore(W,A),false,'والجسم');assert.deepEqual(removed,['img/'+A],'وكائنُ R2 — مرّةً واحدة');
     assert.ok(inStore(W, B) && own(W, B).st === 'bound', 'ولم تُمسّ الأخرى');

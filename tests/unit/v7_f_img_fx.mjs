@@ -56,8 +56,8 @@ export async function unitOp(W, route, dept) {
   assert.equal(r.status, 200, route + ' ' + JSON.stringify(r.j).slice(0, 300));
   return r;
 }
-/* the sweep runs at most once per 10 minutes for the whole platform (meta.img_sweep_at): `due` is those minutes passing */
-export const due = (W) => W.env.DB.exec("DELETE FROM meta WHERE k = 'img_sweep_at'");
+/* the sweep runs at most once per 10 minutes for the whole platform (guard 'rl:img-sweep', n = the time of the last pass): `due` is those minutes passing */
+export const due = (W) => W.env.DB.exec("DELETE FROM guard WHERE gk = 'rl:img-sweep'");
 /* `days` pass for one image (its clock moves back) — and so do the sweep's minutes */
 export const age = (W, id, days) => { W.env.DB.exec("UPDATE imgown SET ts = ts - " + Math.round(days * DAYMS) + " WHERE img = '" + id.replace(/'/g, "''") + "'"); due(W); };
 /* what a refusal looks like from outside: status · body · the headers a caller can compare (the request id and timing are per request by design) */

@@ -114,7 +114,7 @@ test('finding 7 · the platform admin restores a backup that carries a still-pre
   assert.deepEqual(writes(S), [], 'the image store is not written'); assert.equal(S.map.get('img/' + ORPH), BODY);
   assert.equal((await get(B, 'manager1', ORPH)).text, BODY, 'its unit reads it again');
   B.DB.exec("UPDATE imgown SET ts = ts - " + 31 * 864e5 + " WHERE img = '" + ORPH + "'");
-  B.DB.exec("DELETE FROM meta WHERE k = 'img_sweep_at'"); assert.equal((await B.api('super', '/api/overview')).status, 200);   /* a pass of the sweep */
+  B.DB.exec("DELETE FROM guard WHERE gk = 'rl:img-sweep'"); assert.equal((await B.api('super', '/api/overview')).status, 200);   /* a pass of the sweep */
   assert.deepEqual(ownOf(B, ORPH), { st: 'bound', k: OPTIONS, dept: D1 }, '31 days later it is a bound image, not a candidate'); assert.equal(S.map.get('img/' + ORPH), BODY);
 });
 

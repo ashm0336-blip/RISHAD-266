@@ -23543,10 +23543,11 @@ async function imgSync(env, A, list) {
   for (j9 = 0; j9 < st2.length; j9 += 90) await env.DB.batch(st2.slice(j9, j9 + 90));
 }
 /* ══ V7-F · owner decision 2 — the sweep that really runs (reworked after the independent review) ═══════════════════════════════
-   WHAT: an orphan past IMG_ORPHAN_GRACE (30 days), an upload never bound past IMG_CLAIM_TTL (30 days — a draft can hold a confirmed upload:
-         seized report, task proof), and the parts of an abandoned chunked upload past IMG_STAGE_TTL (7 days) are deleted — rows and R2 object.
+   WHAT: an orphan past IMG_ORPHAN_GRACE (30 days), an upload never bound past IMG_CLAIM_TTL (30 days, not 7 — owner rule: a draft can hold a
+         confirmed upload; the seized draft does, for as long as its window lives: seized _szConfirmPhotos + business-cloud _businessSessions), and the parts of an abandoned chunked upload past IMG_STAGE_TTL (7 days) are deleted — rows and R2 object.
    WHEN: after an accepted write (063 fetch → imgSweepLater, off the response path when the runtime gives waitUntil) — but a pass runs at most
-         once per IMG_SWEEP_EVERY for the whole platform: ONE compare-and-set on meta.img_sweep_at per write (a primary-key row), nothing else.
+         once per IMG_SWEEP_EVERY for the whole platform: ONE compare-and-set per write on a primary-key row of `guard` (gk 'rl:img-sweep', n = the
+         time of the last pass — the table of the rate limits: it is a rate limit, and like them no business data), nothing else.
          The platform admin's overview asks with a shorter period and never waits for it; a platform reset forces a pass.
    THE RULE: a candidate that cannot be PROVEN unreferenced is not deleted. The proof, in ONE D1 statement for the whole batch (so a save that
          binds an image is either before it — the row changed, or a record mentions it — or after it, and is then refused by its own witness:
@@ -23567,7 +23568,7 @@ async function imgSync(env, A, list) {
 var IMG_ORPHAN_GRACE = 30 * 864e5, IMG_CLAIM_TTL = 30 * 864e5, IMG_STAGE_TTL = 7 * 864e5, IMG_DEAD_LEASE = 20000;
 var IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 40, IMG_SWEEP_DEAD = 400, IMG_SWEEP_EVERY = 10 * 60000, IMG_SWEEP_EVERY_ADMIN = 60000;
 var IMG_OWN_IDX = 'CREATE INDEX IF NOT EXISTS imgown_st_ts ON imgown (st, ts)';
-var IMG_STAGE = 'stage', IMG_SCAN_KEY = 'imgref_scan_v1', IMG_SWEEP_KEY = 'img_sweep_at', IMG_STG_END = '~stg\u007f';
+var IMG_STAGE = 'stage', IMG_SCAN_KEY = 'imgref_scan_v1', IMG_SWEEP_KEY = 'rl:img-sweep', IMG_STG_END = '~stg\u007f';
 function imgStageRow(ik) { return IMG_STG + ik; }
 /* the clock of a chunked upload: one imgown row per staged id ('stage' — never an image: its key starts with the staging prefix) */
 function imgStageStmt(env, ik) {
@@ -23630,13 +23631,14 @@ async function imgSweep(env, now, max, maxDead) {
   var dj = parseJson(await kvGet(env, 'kv', K_DEPTS), null);
   if (Array.isArray(dj)) await env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE st = 'orphan' AND dept != '' AND uid != ?2 AND dept NOT IN (SELECT value FROM json_each(?1))")
     .bind(JSON.stringify(dj.map(function (d) { return d && d.id; }).filter(function (x) { return typeof x === 'string' && x; })), IMG_GONE).run();
-  var scanned = await imgRefScan(env); out.scan = scanned ? 1 : 0;
   var r = await env.DB.prepare("SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'dead' AND ts < ?3 ORDER BY ts LIMIT ?5) UNION ALL " +
     "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'orphan' AND ts < ?1 ORDER BY ts LIMIT ?4) UNION ALL " +
     "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'claim' AND ts < ?2 ORDER BY ts LIMIT ?4)")
     .bind(now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max, maxDead || IMG_SWEEP_DEAD).all();
   var L = (r && r.results) || [], dead = L.filter(function (x) { return x.st === 'dead'; }), take = [];
-  var cand = scanned ? L.filter(function (x) { return x.st !== 'dead'; }).sort(function (a, b) { return a.ts - b.ts; }).slice(0, max) : [];   /* the oldest first, whichever kind */
+  var cand = L.filter(function (x) { return x.st !== 'dead'; }).sort(function (a, b) { return a.ts - b.ts; }).slice(0, max);   /* the oldest first, whichever kind */
+  /* the re-scan runs only when there is something to condemn (a platform with no candidate never pays for it, and writes nothing) */
+  if (cand.length && !(await imgRefScan(env))) cand = []; else if (cand.length) out.scan = 1;
   out.seen = dead.length + cand.length;
   if (dead.length) {
     var hd = await env.DB.prepare("UPDATE imgown SET ts = ?2 WHERE st = 'dead' AND " + IMG_SNAP_SAME + ' RETURNING img').bind(imgSnap(dead), lease).all();
@@ -23680,8 +23682,8 @@ async function imgSweep(env, now, max, maxDead) {
 }
 /* one compare-and-set decides whether THIS request runs the pass: at most one per `every` ms for the whole platform */
 async function imgSweepDue(env, now, every) {
-  return !!(await env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = excluded.v WHERE CAST(meta.v AS INTEGER) <= ?3 RETURNING v')
-    .bind(IMG_SWEEP_KEY, String(now), now - every).first());
+  return !!(await env.DB.prepare('INSERT INTO guard (gk, n, until) VALUES (?1, ?2, ?4) ON CONFLICT(gk) DO UPDATE SET n = excluded.n, until = excluded.until WHERE guard.n <= ?3 RETURNING n')
+    .bind(IMG_SWEEP_KEY, now, now - every, now + IMG_SWEEP_EVERY).first());
 }
 /* the sweep never fails the request that triggered it */
 async function imgSweepSafe(env, max, every, maxDead) {

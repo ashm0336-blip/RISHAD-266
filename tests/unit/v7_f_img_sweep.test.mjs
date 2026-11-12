@@ -137,12 +137,12 @@ both(test, 'the work is bounded: 6 per pass, ONE pass per 10 minutes for the who
   await typedSave(T); assert.equal(await left(), 9, 'one pass: 6 (the oldest first)');
   assert.ok(gone(await state(W, ids[14])), 'oldest first'); assert.equal((await state(W, ids[0])).st, 'claim');
   await typedSave(T); await typedSave(T); assert.equal(await left(), 9, 'the writes of the next 10 minutes run no pass');
-  const stamp = () => Number(W.env.DB.q("SELECT v FROM meta WHERE k = 'img_sweep_at'")[0].v);
-  W.env.DB.exec("UPDATE meta SET v = '" + (stamp() - 9 * 60000) + "' WHERE k = 'img_sweep_at'"); await typedSave(T); assert.equal(await left(), 9, '9 minutes later: still none');
-  W.env.DB.exec("UPDATE meta SET v = '" + (stamp() - 2 * 60000) + "' WHERE k = 'img_sweep_at'"); await typedSave(T); assert.equal(await left(), 3, 'past 10 minutes: the next 6');
-  W.env.DB.exec("UPDATE meta SET v = '" + (stamp() - 30000) + "' WHERE k = 'img_sweep_at'");
+  const last = () => Number(W.env.DB.q("SELECT n FROM guard WHERE gk = 'rl:img-sweep'")[0].n), back = (ms) => W.env.DB.exec("UPDATE guard SET n = " + (last() - ms) + " WHERE gk = 'rl:img-sweep'");
+  back(9 * 60000); await typedSave(T); assert.equal(await left(), 9, '9 minutes later: still none');
+  back(2 * 60000); await typedSave(T); assert.equal(await left(), 3, 'past 10 minutes: the next 6');
+  back(30000);
   let ov = await W.C.api('/api/overview', { cookie: S.super }); assert.equal(ov.status, 200); assert.equal(await left(), 3, 'the admin overview within a minute of the last pass: none');
-  W.env.DB.exec("UPDATE meta SET v = '" + (stamp() - 61000) + "' WHERE k = 'img_sweep_at'");
+  back(61000);
   ov = await W.C.api('/api/overview', { cookie: S.super }); assert.equal(ov.status, 200);
   assert.equal(await left(), 0, 'a minute after it: the admin overview read sweeps too');
   assert.equal(ov.j.imgs.grace, 30 * DAYMS); assert.equal(ov.j.imgs.claimGrace, 30 * DAYMS);
