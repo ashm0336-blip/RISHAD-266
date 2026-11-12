@@ -184,9 +184,13 @@ test('DayShift does not publish a shared choice before its ACK or after the prin
   } finally { release(); f.T.dispose(); }
 });
 
+/* RISHAD-266 · issue #1 (owner decision): employee notifications are issued by the server on the accepted save, never by the
+   browser. This test used to pin the browser's «emp_edit» emit; it now pins the same once-key contract on a watcher that is still
+   the browser's (the month lock → st_lock), and that a confirmed employee-register commit makes the browser emit nothing.
+   The server side is tests/unit/v7_issue1_srv_emp_notif.test.mjs. */
 test('the actual notification observer consumes confirmed Operations only and uses the same once key on receipt replay', async () => {
   const old = [{ eid: 'TEST_ONLY e1', name: 'TEST_ONLY old' }], next = [{ ...old[0], name: 'TEST_ONLY new' }], events = [], rawReads = [];
-  const f = await page('employees', { bassam_employees_v1: old }, ({ ack, requests }) => {
+  const f = await page('employees', { bassam_employees_v1: old, bassam_staffing_locks_v1: {} }, ({ ack, requests }) => {
     if (requests.length === 1) throw Error('TEST_ONLY response lost after commit'); return response(ack);
   });
   try {
@@ -196,16 +200,19 @@ test('the actual notification observer consumes confirmed Operations only and us
       myDept: () => DEPT, me: () => ({ id: UID, name: 'TEST_ONLY manager', role: 'dept' }),
       isMgr: () => true, isSuper: () => false, P: () => ({}),
       emit: (type, detail) => { events.push({ type, detail: clone(detail) }); return Promise.resolve({ ok: 1 }); },
-      flushEvents() {}, refresh() {}, deptName: () => 'TEST_ONLY department', depts: () => [],
+      flushEvents() {}, refresh() {}, deptName: () => 'TEST_ONLY department', depts: () => [], monLbl: month => 'TEST_ONLY ' + month,
     };
     f.K.__BS_I.notif = I; vm.runInContext(source('src/services/442-notif-observer.js'), f.T.ctx);
-    const ticket = f.ops.stage({ set: { [key('bassam_employees_v1')]: next } });
+    const ticket = f.ops.stage({ set: { [key('bassam_staffing_locks_v1')]: { '1448-5': true } } });
     assert.equal((await f.ops.flush(ticket)).uncertain, true); assert.equal(events.length, 0);
     assert.equal((await f.ops.retry(ticket)).ok, 1); assert.equal(events.length, 1);
-    assert.equal(events[0].type, 'emp_edit'); assert.equal(events[0].detail.once, 'operations:' + ticket.requestId + ':0:emp_edit:0');
+    assert.equal(events[0].type, 'st_lock'); assert.equal(events[0].detail.once, 'operations:' + ticket.requestId + ':0:st_lock:0');
     assert.equal((await f.ops.flush(ticket)).ok, 1); assert.equal(events.length, 2);
     assert.equal(events[1].detail.once, events[0].detail.once, 'The existing D1 notification dedup receives the same once token');
     assert.equal(f.requests.length, 2, 'Receipt replay does not create another business write');
+    const employees = f.ops.stage({ set: { [key('bassam_employees_v1')]: next } });
+    assert.equal((await f.ops.flush(employees)).ok, 1); assert.equal(f.requests.length, 3);
+    assert.equal(events.length, 2, 'A confirmed employee-register commit emits nothing from the browser: the server issues those');
     f.T.W.dispatchEvent(new f.T.W.CustomEvent('bassam:remote', { detail: { keys: [key('bassam_employees_v1')] } }));
     f.T.W.dispatchEvent(new f.T.W.CustomEvent('bassam:store', { detail: { key: 'bassam_employees_v1' } }));
     assert.equal(events.length, 2); assert.deepEqual(rawReads, []);
