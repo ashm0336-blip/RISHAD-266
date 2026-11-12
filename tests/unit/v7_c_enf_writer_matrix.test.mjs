@@ -12,6 +12,7 @@
    is not changed at all. The field observer keeps writing: his status-change keys (derived from field.view) are type «operation».
    The whole table is pinned from actual HTTP outcomes. BEFORE = the cells as measured on e34fa23, asserted only when
    KIVO_BASE_WORKER points at a worker generated from e34fa23 (the reproduction). */
+import './clock.mjs';   /* first: the task-proof cases create a task inside the fixture shift (06:00–14:00 Riyadh) — unpinned they failed after 14:00 */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
