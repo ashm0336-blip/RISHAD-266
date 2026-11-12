@@ -122,7 +122,10 @@ test('V7 P4 · enforce: the map, its three views, and «الفعلي لحساب�
     await su.go('#/sysadmin/plat/about', 3000);
     const sm = await q.evaluate(() => { const h = [...document.querySelectorAll('h3')].find((x) => x.textContent === 'خريطة المنصة'); return h.parentElement.innerText; });
     for (const t of ['سجل الأنشطة والتغييرات', 'الرئيسية', 'عدسة البوابات', 'على «التشغيل الميداني» و«الجولات اليومية»', 'مؤشرات المهام', 'الورديات']) assert.ok(sm.includes(t), 'site map lists «' + t + '»');
-    assert.ok(!sm.includes('خادم فقط') && !sm.includes('نظرة عامة'), 'the stale centre list is gone');
+    assert.ok(!sm.includes('نظرة عامة'), 'the stale centre list is gone');
+    /* independent review: the «خادم فقط» badge (CON_TABS[3]) and the profile sub-rows are still on the map */
+    for (const t of ['خادم فقط', 'الإدارة — البيانات الوظيفية', 'بياناتي', 'الأمان — بيانات الدخول والجلسات', 'يومك / أسبوعك', 'لوحة الرصد تمنحها ورقة «رصد الميدان» في المتابعة اليومية']) assert.ok(sm.includes(t), 'site map keeps «' + t + '»');
+    assert.equal(sm.split('خادم فقط').length - 1, 5, 'one «خادم فقط» badge per server-only centre tab');
     assert.match(sm, /خارج سقف «[^»]+»/, 'the ceiling badge names the unit it was computed for');
     assert.deepEqual(su.errs, []); await su.ctx.close();
 

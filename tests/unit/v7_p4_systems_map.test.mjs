@@ -202,7 +202,7 @@ test('A6 «الوحدات» = the pages that carry activation; always is locked;
 });
 
 /* 333 in a vm over the real manifest: its inputs from the permission model are stand-ins that say «inside the ceiling» */
-function siteMapOf(pg) {
+function siteMapOf(pg, centerIn) {
   const M = KIVO.KIVO_MANIFEST, PAGE_REG = M.clone('pages'), PAGE_OF = {}; PAGE_REG.forEach((p) => { PAGE_OF[p.key] = p; });
   const K = { KIVO_MANIFEST: M, KIVO_REGISTRY: KIVO.KIVO_REGISTRY, BassamCount: KIVO.BassamCount, BassamDepts: { list: () => [{ id: 'u1', name: 'TEST_ONLY وحدة ١' }] },
     __BS_I: { auth: { NAV_REG: M.clone('containers'), PAGE_OF, PAGE_REG, curDept: () => 'u1', onAny: () => true, onCap: (k) => k !== 'seized',
@@ -210,7 +210,7 @@ function siteMapOf(pg) {
       splitLeaf: (k) => { const i = String(k).indexOf('/'); return i === -1 ? { page: k, sub: '' } : { page: k.slice(0, i), sub: k.slice(i + 1) }; } } } };
   const c2 = vm.createContext({ KIVO: K, JSON, Object, Array, String });
   vm.runInContext(P333, c2, { filename: '333-platform-map.js' });
-  const center = pg.CON_TABS().map((t) => ({ name: t[2] || 'إعدادات المنصة', addr: '#/sysadmin/' + (t[0] === 'depts' ? 'org' : t[0]), hint: '' }));
+  const center = centerIn || pg.CON_TABS().map((t) => ({ name: t[2] || 'إعدادات المنصة', addr: '#/sysadmin/' + (t[0] === 'depts' ? 'org' : t[0]), hint: '' }));
   return { rows: J(K.__BS_I.auth.siteMap({ center, struct: pg.t24Struct() })), order: J(K.__BS_I.auth.navOrder()) };
 }
 
@@ -218,7 +218,8 @@ test('A7 siteMap: the centre tabs come from the admin page\'s one list; lenses �
   const pg = page(), tabs = J(pg.CON_TABS()), { rows, order } = siteMapOf(pg);
   assert.deepEqual(J(tabs).map((t) => t[0]), ['overview', 'sec', 'users', 'perms', 'plat', 'depts', 'oplog', 'backup', 'histimp']);
   for (const t of tabs) if (t[2]) assert.ok(!P333.includes(t[2]), '333 does not spell «' + t[2] + '»');
-  for (const lit of ['نظرة عامة', 'خادم فقط', 'هوية المنصة', 'بياناتي', "'links','help'", "['admin']"]) assert.ok(!P333.includes(lit), '333 no longer holds «' + lit + '»');
+  /* («خادم فقط» is a badge label of the kind table and the profile windows are a commented literal — see the review test below) */
+  for (const lit of ['نظرة عامة', 'هوية المنصة', "'links','help'", "['admin']"]) assert.ok(!P333.includes(lit), '333 no longer holds «' + lit + '»');
   const i0 = rows.findIndex((r) => r.name === 'مركز إدارة رشاد'), centre = rows.slice(i0 + 1);
   assert.deepEqual(centre.map((r) => r.name), tabs.map((t) => t[2] || 'إعدادات المنصة'), 'the centre rows are the list, in order (incl. «سجل الأنشطة والتغييرات»)');
   assert.deepEqual(centre.map((r) => r.addr), tabs.map((t) => '#/sysadmin/' + (t[0] === 'depts' ? 'org' : t[0])));
@@ -238,6 +239,38 @@ test('A7 siteMap: the centre tabs come from the admin page\'s one list; lenses �
   assert.equal(sz.capOffTxt, 'خارج سقف «TEST_ONLY وحدة ١»'); assert.equal(rows.find((r) => r.name === 'نظام الاسترشاد').capOffTxt, '');
   /* G11: the groups are derived — general pages (no module) and always-on pages */
   assert.deepEqual(order.groups.map((g) => [g.key, g.keys]), [['work', PAGES.navOrder], ['refs', ['links', 'help']], ['mgmt', ['admin']]]);
+});
+
+/* Independent review of P4 (low follow-up 2): two details of the map of e34fa23 were lost in the derivation — the «خادم فقط» badge of
+   the centre tabs that work with the server only (CON_TABS' fourth field), and the sub-rows of the profile page. */
+test('review: siteMap keeps the «خادم فقط» badge (from CON_TABS[3]) and the profile sub-rows', () => {
+  const pg = page(), tabs = J(pg.CON_TABS());
+  /* the admin page hands the fourth field over: its real _siteMap, with the model's siteMap captured */
+  let got = null; const P = KIVO.BassamPerm; P.siteMap = (o) => ((got = o), []);
+  try { pg._siteMap(); } finally { delete P.siteMap; }
+  assert.deepEqual(J(got.center).map((t) => !!t.srv), tabs.map((t) => !!t[3]), '_siteMap passes «works with the server only» for every centre tab');
+  assert.ok(tabs.some((t) => t[3]) && tabs.some((t) => !t[3]), 'the list has both kinds');
+  const { rows } = siteMapOf(pg, J(got.center));
+  const i0 = rows.findIndex((r) => r.name === 'مركز إدارة رشاد'), centre = rows.slice(i0 + 1);
+  assert.equal(centre.length, tabs.length);
+  centre.forEach((r, i) => {
+    assert.equal(r.kind, tabs[i][3] ? 'srv' : 'tab', '«' + r.name + '»: kind'); assert.equal(r.badge, tabs[i][3] ? 'خادم فقط' : 'تبويب', '«' + r.name + '»: badge');
+    assert.doesNotMatch(r.badgeStyle, /display:none/, 'the badge is shown');
+  });
+  /* the profile row (the platform owner «profile», from the tree builder) is followed by its sub-rows, as on e34fa23 */
+  const ip = rows.findIndex((r) => r.addr === '#/profile'); assert.ok(ip > 0, 'the profile row');
+  assert.equal(rows[ip].name, pg.t24Struct().flatMap((c) => c.leaves).find((l) => l.owner === 'profile').label);
+  const subs = rows.slice(ip + 1, ip + 5);
+  assert.deepEqual(subs.map((r) => [r.name, r.kind, r.badge]), [['الإدارة — البيانات الوظيفية', 'win', 'نافذة'], ['بياناتي', 'win', 'نافذة'], ['الأمان — بيانات الدخول والجلسات', 'win', 'نافذة'],
+    ['يومك / أسبوعك · رصد الميدان', 'tab', 'تبويب']]);
+  assert.ok(subs.every((r) => /padding-right:34px/.test(r.rowStyle)), 'they are indented under the profile row');
+  assert.equal(subs[3].hint, 'لوحة الرصد تمنحها ورقة «رصد الميدان» في المتابعة اليومية');
+  /* no manifest declares the profile windows — the literal says so; the windows themselves are in the profile template */
+  assert.match(P333, /لا مصدرَ يعلنها/);
+  const PV = rd('modules', 'profile', 'view.html');
+  for (const w of ['الإدارة', 'بياناتي', 'الأمان', 'يومك', 'أسبوعك', 'رصد الميدان']) assert.ok(PV.includes('<b>' + w + '</b>'), 'the profile template still has «' + w + '»');
+  const dl = PAGES.pages.find((p) => p.key === 'daily');
+  assert.ok((dl.subs || []).concat(dl.tabs || []).some((x) => /^رصد الميدان/.test(x.name)), '«رصد الميدان» is a leaf of daily');
 });
 
 test('editors are untouched by the map: without o.map the rows are the tree rows as before (no system/panel rows, editor badges)', () => {

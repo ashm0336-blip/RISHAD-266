@@ -60,7 +60,8 @@
     var capTxt = capOf ? 'خارج سقف «' + capOf + '»' : 'خارج سقف الإدارة النشطة';
     NAV_REG.forEach(function(g){ (g.refs || []).forEach(function(k){ GRP[k] = g.key; GRPO[k] = g; }); });
     var B = { box:['حاوية','#8A6F35','rgba(185,151,81,0.1)','rgba(185,151,81,0.35)'], page:['صفحة','#4A5C68','#F4F5F7','#E1E1E1'], tab:['تبويب','#0e7490','rgba(14,116,144,0.08)','rgba(14,116,144,0.3)'],
-              off:['خارج الصفحة','#b45309','rgba(180,83,9,0.07)','rgba(180,83,9,0.25)'], ref:['ورقة مرجعية','#0e7490','rgba(14,116,144,0.08)','rgba(14,116,144,0.3)'], 
+              off:['خارج الصفحة','#b45309','rgba(180,83,9,0.07)','rgba(180,83,9,0.25)'], ref:['ورقة مرجعية','#0e7490','rgba(14,116,144,0.08)','rgba(14,116,144,0.3)'], win:['نافذة','#64748b','transparent','#CBD5E1'],
+              srv:['خادم فقط','#64748b','transparent','#CBD5E1'],
               sup:['مسؤول المنصة','#b91c1c','rgba(185,28,28,0.07)','rgba(185,28,28,0.25)'], lens:['عدسة','#0e7490','rgba(14,116,144,0.08)','rgba(14,116,144,0.3)'],
               plat:['منصة','#64748b','transparent','#CBD5E1'], rdat:['مرجع','#6d28d9','rgba(109,40,217,0.06)','rgba(109,40,217,0.25)'], grp:['','','',''] };
     function row(depth, name, kind, addr, hint, platOff, capOff){
@@ -109,11 +110,17 @@
     /* خارج السقف بحكم طبيعتها */
     row(0, 'خارج السقف — لا تُمنح', 'grp');
     row(0, 'شاشة تسجيل الدخول', 'page', '', 'تسجيل الدخول · تأمين الحساب (أول دخول) · تعذّر الدخول؟');
+    /* نوافذُ «ملفي» وألواحُه: لا مصدرَ يعلنها (pages.json والسجلُّ يعرفان الصفحةَ مالكاً بلا أجزاء؛ والنوافذُ في قالب الصفحة وحده) —
+       فتبقى هنا حرفيةً كما كانت قبل V7 P4، تحت صفّ المالك «profile» المشتقّ من الشجرة */
+    var PF_SUB = [['الإدارة — البيانات الوظيفية','win'],['بياناتي','win'],['الأمان — بيانات الدخول والجلسات','win'],
+                  ['يومك / أسبوعك · رصد الميدان','tab','لوحة الرصد تمنحها ورقة «رصد الميدان» في المتابعة اليومية']];
     if (PF) PF.leaves.forEach(function(l){ var self = (l.keys || []).length && (l.keys || []).every(function(k){ var e = KIVO.KIVO_REGISTRY && KIVO.KIVO_REGISTRY.byKey[k]; return e && e.grant === 'self'; });
-      row(0, l.label, 'plat', l.owner === 'profile' ? '#/profile' : '', nk(l) ? (self ? 'ذاتيّ لكل مستخدم' : 'بالدور') + ' · ' + KIVO.BassamCount(nk(l), 'مفتاح') : 'بلا مفاتيح'); });
+      row(0, l.label, 'plat', l.owner === 'profile' ? '#/profile' : '', nk(l) ? (self ? 'ذاتيّ لكل مستخدم' : 'بالدور') + ' · ' + KIVO.BassamCount(nk(l), 'مفتاح') : 'بلا مفاتيح');
+      if (l.owner === 'profile') PF_SUB.forEach(function(x){ row(1, x[0], x[1], '', x[2] || ''); }); });
     if (RF) RF.leaves.forEach(function(l){ row(0, l.label, 'rdat', '', 'مرجعٌ مستقلّ يُدار في «' + nm(l.managedIn) + '»'); });
     row(0, 'مركز إدارة رشاد', 'sup', '#/sysadmin', 'لمسؤول المنصة وحده');
-    (o.center || []).forEach(function(t){ row(1, t.name, 'tab', t.addr, t.hint || ''); });
+    /* t.srv = الحقلُ الرابع في قائمة تبويبات المركز (CON_TABS): تبويبٌ يعمل مع الخادم وحده ⇒ شارةُ «خادم فقط» */
+    (o.center || []).forEach(function(t){ row(1, t.name, t.srv ? 'srv' : 'tab', t.addr, t.hint || ''); });
     return rows;
   }
   /* → للأجزاء الأخرى */

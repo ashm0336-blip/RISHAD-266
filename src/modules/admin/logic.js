@@ -1436,6 +1436,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       center: this.CON_TABS().map((t) => ({
         name: t[2] || this._conHead("plat", "").conEyebrow,
         addr: "#/sysadmin/" + ("depts" === t[0] ? "org" : t[0]),
+        srv: t[3],
         hint:
           "plat" === t[0]
             ? this.PL_SECS()
