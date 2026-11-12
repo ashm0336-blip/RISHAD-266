@@ -79,3 +79,57 @@ test('the bytes of a swept image come back only by a real upload: after it, the 
   assert.equal((await get(B, 'manager1', ID)).text, BODY, 'restored and readable by the unit');
   assert.equal(S.map.get('img/' + ID), BODY);
 });
+
+/* ── the independent review, finding 7 — the paradox: a backup that carries the bytes of an image still here as an ORPHAN (its reference was removed,
+   its 30 days are running) was refused 409 even for the platform admin — and once the sweep had deleted the orphan, the very same file restored,
+   with the image missing. So the file was restorable only after the image it carries was lost.
+   Now, inside the existing gates and still without writing one image byte: whoever may re-bind the orphan (decision 1: the platform admin, or a
+   record of its original unit) restores the file, and the restore re-binds the orphan that is still there — its stored bytes must equal the file's. */
+const ORPH = 'img_testonly_orph', D2 = 'TEST_ONLY_department_2', OTHER = 'data:image/png;base64,T1RIRVJfVjdG';
+async function payloadOf(B, ids, images, { who = 'super', scope = { kind: 'full' }, dept = D1 } = {}) {
+  const key = 'bsdept:' + dept + ':bassam_options_v1', restored = JSON.stringify({ type: ids, work: ['TEST_ONLY restored'] }), request = await B.body({ scope }), full = scope.kind === 'full';
+  const file = { app: 'bassam-crowd', version: 3, kind: scope.kind, data: full ? { ...request.keys, [key]: restored } : { bassam_options_v1: restored },
+    domains: Object.fromEntries(Object.entries(request.domains).filter(([name]) => name !== 'operations')),
+    manifest: { ...request.manifest, version: 3, domains: Object.fromEntries(Object.entries(request.manifest.domains).filter(([name]) => name !== 'operations')), keys: request.manifest.keys.concat(full ? [key] : ['bassam_options_v1']) } };
+  if (images) file.idbImages = images;
+  return { version: 1, uid: IDS[who], requestId: 'TEST_ONLY_v7f_orph_' + ++rid, scope, mode: 'replace', reason: 'TEST_ONLY v7f orphan restore', base: request.base, backup: file, phase: 'commit', legacyConsent: false };
+}
+async function seedOrphan(B, body = BODY) {
+  const S = await seed(B);
+  await B.DB.batch([...B.W.kvPutStmts(B.env, 'imgs', ORPH, '~r2~'),
+    B.DB.prepare('INSERT INTO imgown(img,st,k,uid,dept,ts) VALUES(?1,?2,?3,?4,?5,?6)').bind(ORPH, 'orphan', '', '', D1, Date.now())]);
+  S.map.set('img/' + ORPH, body);
+  return S;
+}
+const ownOf = (B, id) => copy(B.DB.q('SELECT st,k,dept FROM imgown WHERE img=?1', id))[0] || null;
+const writes = (S) => S.calls.filter((c) => c[0] === 'put' || c[0] === 'delete');
+
+test('finding 7 · the platform admin restores a backup that carries a still-present orphan: the orphan is re-bound to the restored record, no image byte is written, and it is never swept', async () => {
+  const B = await world(), S = await seedOrphan(B);
+  assert.equal(D2, (await import('./notifications_review_fx.mjs')).D2);
+  const ack = await B.api('super', '/api/backup/restore', await payloadOf(B, [ORPH, KEPT], { [ORPH]: BODY, [KEPT]: BODY }));
+  assert.equal(ack.status, 200, JSON.stringify(ack.json).slice(0, 300)); assert.equal(ack.json.ok, 1); assert.deepEqual(ack.json.warnings, [], 'nothing is missing'); assert.equal(ack.json.imagesReused, 2);
+  assert.deepEqual(ownOf(B, ORPH), { st: 'bound', k: OPTIONS, dept: D1 }, 're-bound to the record that shows it');
+  assert.deepEqual(copy(B.DB.q('SELECT k FROM imgref WHERE img=?1', ORPH)), [{ k: OPTIONS }]);
+  assert.deepEqual(writes(S), [], 'the image store is not written'); assert.equal(S.map.get('img/' + ORPH), BODY);
+  assert.equal((await get(B, 'manager1', ORPH)).text, BODY, 'its unit reads it again');
+  B.DB.exec("UPDATE imgown SET ts = ts - " + 31 * 864e5 + " WHERE img = '" + ORPH + "'");
+  B.DB.exec("DELETE FROM meta WHERE k = 'img_sweep_at'"); assert.equal((await B.api('super', '/api/overview')).status, 200);   /* a pass of the sweep */
+  assert.deepEqual(ownOf(B, ORPH), { st: 'bound', k: OPTIONS, dept: D1 }, '31 days later it is a bound image, not a candidate'); assert.equal(S.map.get('img/' + ORPH), BODY);
+});
+
+test('finding 7 · the gate is not weakened: different bytes, or an actor who may not re-bind the orphan, keep the 409 and change nothing', async () => {
+  /* the file's bytes differ from the orphan's stored bytes */
+  let B = await world(), S = await seedOrphan(B, OTHER), before = ownOf(B, ORPH);
+  let r = await B.api('super', '/api/backup/restore', await payloadOf(B, [ORPH, KEPT], { [ORPH]: BODY, [KEPT]: BODY }));
+  assert.equal(r.status, 409, JSON.stringify(r.json).slice(0, 200)); assert.equal(r.json.err, 'backup-image-reuse-rejected');
+  assert.deepEqual(ownOf(B, ORPH), before); assert.deepEqual(writes(S), []); assert.equal(S.map.get('img/' + ORPH), OTHER);
+  /* another unit's manager, a unit-scope restore of a file that carries the foreign orphan: refused (in this fixture already by the restore policy,
+     before the image gate is reached) — and nothing about the orphan changes */
+  B = await world(); S = await seedOrphan(B); before = ownOf(B, ORPH);
+  r = await B.api('manager2', '/api/backup/restore', await payloadOf(B, [ORPH], { [ORPH]: BODY }, { who: 'manager2', scope: { kind: 'dept', departmentId: D2 }, dept: D2 }));
+  assert.ok(r.status === 409 || r.status === 403, 'another unit: ' + r.status + ' ' + JSON.stringify(r.json).slice(0, 200)); assert.notEqual(r.json.ok, 1);
+  assert.equal(JSON.stringify(r.json).includes(ORPH), false, 'and the refusal does not name the image');
+  assert.deepEqual(ownOf(B, ORPH), before); assert.deepEqual(writes(S), []);
+  assert.equal(B.DB.q('SELECT COUNT(*) n FROM imgref WHERE img=?1', ORPH)[0].n, 0);
+});

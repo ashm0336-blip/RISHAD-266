@@ -101,12 +101,15 @@ test('an existing R2 reference is read-only matched and ACK identifies reuse, le
 
 /* V7-F (owner decision 2, condition ii) — REWRITTEN ON PURPOSE: the 'new' scenario (an archived image the platform holds NOTHING of — no body
    row, no owner row: what a swept image is) used to refuse the whole restore here. It is now restored as a missing image, with no image byte
-   written (the next test). Every other scenario keeps refusing the whole restore. */
+   written (the next test). Every other scenario keeps refusing the whole restore.
+   Independent review, finding 7 — 'orphan' LEFT THIS LIST ON PURPOSE: the platform admin's restore of a file that carries a still-present orphan with
+   the same bytes now re-binds it (v7_f_img_restore: accepted for the admin, refused for different bytes or another actor); it was refused here, and the
+   same file restored — image missing — once the sweep had deleted the orphan. */
 test('unreferenced, pending, unstable, missing or different image bodies reject the whole restore without revealing body/ID', async () => {
-  for (const scenario of ['unreferenced', 'claim', 'orphan', 'amb', 'staged', 'inline-mismatch', 'R2-mismatch', 'R2-missing']) {
+  for (const scenario of ['unreferenced', 'claim', 'amb', 'staged', 'inline-mismatch', 'R2-mismatch', 'R2-missing']) {
     const B = await world(),
       r2 = scenario.startsWith('R2');
-    await seed(B, { r2, state: ['claim', 'orphan', 'amb'].includes(scenario) ? scenario : 'bound' });
+    await seed(B, { r2, state: ['claim', 'amb'].includes(scenario) ? scenario : 'bound' });
     if (scenario === 'staged') await B.DB.batch(B.W.kvPutStmts(B.env, 'imgs', '~stg~' + ID + '~0', BODY));
     const calls = readonlyR2(B, { missing: scenario === 'R2-missing', text: scenario === 'R2-mismatch' ? OTHER : BODY }),
       body = await payload(B, { [ID]: scenario === 'inline-mismatch' ? OTHER : BODY });
