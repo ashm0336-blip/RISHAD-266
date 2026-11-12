@@ -322,7 +322,11 @@ test('(L3) GET /api/policy يعيد القيمَ الفعلية (المحصور�
       for (let i = 0; i < 6; i++) await attempt(C, 'tgt', 'no', '198.18.7.' + i);
       await attempt(C, 'tgt', 'no', '198.18.7.77'); assert.deepEqual(d.take(), [], 'ولا مهلة');
     }
-    for (const v of ['1', true]) { const r = await C.api('/api/policy', { method: 'POST', cookie: su.ck, body: { thrOn: v } }); assert.ok(r.status === 400 || r.j.policy.thrOn === 0, 'POST thrOn=' + JSON.stringify(v) + ' لا يفعّل: ' + JSON.stringify(r.j)); }
+    for (const v of [true, 2, '01', 'on']) { const r = await C.api('/api/policy', { method: 'POST', cookie: su.ck, body: { thrOn: v } }); assert.ok(r.status === 400 || r.j.policy.thrOn === 0, 'POST thrOn=' + JSON.stringify(v) + ' لا يفعّل: ' + JSON.stringify(r.j)); }
+    /* the admin form posts text (admin/logic.js adPol ← e.target.value): '1' must enable and '0' disable, and the stored value is the number */
+    assert.equal((await C.api('/api/policy', { method: 'POST', cookie: su.ck, body: { thrOn: '1' } })).j.policy.thrOn, 1, 'the form\'s "1" enables');
+    assert.equal((await get()).thrOn, 1); assert.strictEqual(JSON.parse(env.DB.q("SELECT v FROM meta WHERE k='policy'")[0].v).thrOn, 1, 'stored as a number');
+    assert.equal((await C.api('/api/policy', { method: 'POST', cookie: su.ck, body: { thrOn: '0' } })).j.policy.thrOn, 0, 'the form\'s "0" disables');
     assert.equal((await C.api('/api/policy', { method: 'POST', cookie: su.ck, body: { thrOn: 1 } })).j.policy.thrOn, 1);
     assert.equal((await get()).thrOn, 1);
   } finally { d.release(); }
