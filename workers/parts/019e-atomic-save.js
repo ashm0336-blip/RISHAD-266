@@ -99,7 +99,11 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
   for (var id of ids) {
     if (gone.has(id)) continue;
     var owner = ownerMap.get(id);
-    if (!owner || owner.st !== 'bound' || !owner.k || !resOf(owner.k) || isDeviceKey(owner.k) || !canRead(A, owner.k)) reject();
+    /* V7-F (independent review, finding 7): an archived image that is still here as an ORPHAN is accepted exactly when the restoring actor may re-bind
+       it (decision 1: a record of its original unit, or the platform admin) — its stored bytes must still equal the file's (below), nothing is
+       written to the image store, and rsImageMetadataPlan binds it to the restored record. Any other actor keeps the refusal. */
+    var orphanOk = !!owner && owner.st === 'orphan' && mentions.get(id).every(function (key) { return imgOrphanRebindOk(A, owner, key); });
+    if (!orphanOk && (!owner || owner.st !== 'bound' || !owner.k || !resOf(owner.k) || isDeviceKey(owner.k) || !canRead(A, owner.k))) reject();
     for (var key of mentions.get(id))
       if (!checkedKeys.has(key)) {
         checkedKeys.add(key);
@@ -135,7 +139,21 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgown', ['img', 'st', 'k', 'uid', 'dept', 'ts'], owners, ownWhere, ownArgs));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], refs, ownWhere, ownArgs));
   plan.imagesReused = ids.length - gone.size;
-  if (gone.size) { plan.imagesMissing = Math.max(plan.imagesMissing || 0, gone.size); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
+  if (gone.size) { rsImageMissingNote(plan, Array.from(gone)); plan.imagesMissing = Math.max(plan.imagesMissing || 0, gone.size); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
+}
+/* V7-F · owner decision 3 (and the independent review's low item): whenever the unit list changes — a unit removed (unit delete, or a full
+   replace-restore that no longer carries it) or a unit id (re)appearing — the orphans carrying that unit id are stamped: their original unit
+   is gone for good, so only the platform admin re-binds them (054 imgOrphanRebindOk), whoever now holds the id. */
+/* the ids a restore leaves missing, named (the first 50, sorted) — the inspection and the receipt's warning carry the count; the names let the admin find them */
+function rsImageMissingNote(plan, ids) {
+  plan.imagesMissingIds = Array.from(new Set((plan.imagesMissingIds || []).concat(ids))).sort().slice(0, 50);
+}
+function rsImageUnitStamp(env, A, plan, finalDepartments) {
+  var was = (A.depts || []).map(function (d) { return d && d.id; }).filter(Boolean),
+    now = (Array.isArray(finalDepartments) ? finalDepartments : []).map(function (d) { return d && d.id; }).filter(Boolean),
+    changed = was.filter(function (id) { return now.indexOf(id) < 0; }).concat(now.filter(function (id) { return was.indexOf(id) < 0; }));
+  if (changed.length)
+    plan.statements.push(env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE st = 'orphan' AND dept IN (SELECT value FROM json_each(?1))").bind(JSON.stringify(changed), IMG_GONE));
 }
 function rsImageFinalValues(plan, reference) {
   var values = Object.assign(Object.create(null), reference.inputKeys);
@@ -192,7 +210,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
        the reference is written as it is and READS AS MISSING (054 imgVerdict → 404); the witness below still fences that the body is absent
        at commit, and the receipt carries the warning. No image body is ever written by a restore. */
     var missing = newIds.filter(function (id) { return !known.has(id); });
-    if (missing.length) { plan.imagesMissing = Math.max(plan.imagesMissing || 0, missing.length); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
+    if (missing.length) { rsImageMissingNote(plan, missing); plan.imagesMissing = Math.max(plan.imagesMissing || 0, missing.length); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
     plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
   }
   var ownArgs = [],
@@ -538,11 +556,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   await rsImageMetadataPlan(env, A, plan, reference);
   /* V7-F · owner decision 3: the orphans of a unit this plan removes (the ones it makes now and the ones still in their grace) are stamped —
      their original unit is gone for good, so only the platform admin re-binds them (054 imgOrphanRebindOk), whoever later reuses the id */
-  A.depts.map(function (d) { return d && d.id; }).filter(function (id) {
-    return id && !irFinalDepartments.some(function (d) { return d && d.id === id; });
-  }).forEach(function (id) {
-    plan.statements.push(env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE dept = ?1 AND st = 'orphan'").bind(id, IMG_GONE));
-  });
+  rsImageUnitStamp(env, A, plan, irFinalDepartments);
   // Rows a scoped reference read while the plan was compiled are fenced like the rest (019d).
   plan.guards.push.apply(plan.guards, rsReferenceSince(reference, referenceMark, referenceOperational));
   var ack = await rsCommit(env, A, plan, meta);

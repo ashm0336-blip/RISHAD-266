@@ -73,8 +73,19 @@
         if (!r.ok) throw new Error("تعذّر جلب الصورة " + key + " (HTTP " + r.status + ")");
         return r.text();
       }).then(function(v){ imcRequire(epoch); return v; });
+    },
+    /* V7-F (مانعُ المالك): صورةٌ في الجرد يؤكّد الخادمُ غيابَ جسمها (404) تُتخطّى ولا تُسقِط النسخة — وأيُّ إخفاقٍ آخر (شبكة · 5xx · رفض) يرميها كما كان.
+       ما يُشير إليه سجلٌّ منها يسمّيه تحذيرُ النسخة (548 exportDomains) */
+    getForBackup: function(key){
+      var epoch = imcEpoch;
+      return fetch(u(key)).then(function(r){
+        if (r.status === 404) return IMG_GONE;
+        if (!r.ok) throw new Error("تعذّر جلب الصورة " + key + " (HTTP " + r.status + ")");
+        return r.text();
+      }).then(function(v){ imcRequire(epoch); return v; });
     }
   };
+  var IMG_GONE = {};
   /* جلبٌ متتابعٌ بثلاثة عمّالٍ لا أكثر — لا آلافَ الطلبات المتوازية، وأولُ
      إخفاقٍ يوقف الجميع ويرفع الخطأ كما هو. */
   function poolGet(keys, n, get){
@@ -364,7 +375,7 @@
     var epoch = imcEpoch;
     return srvIDB.getAll().then(function(m){
       imcRequire(epoch);
-      return poolGet(Object.keys(m), 3, function(k){ imcRequire(epoch); return srvIDB.getStrict(k); });
-    }).then(function(m){ imcRequire(epoch); return m; });
+      return poolGet(Object.keys(m), 3, function(k){ imcRequire(epoch); return srvIDB.getForBackup(k); });
+    }).then(function(m){ imcRequire(epoch); Object.keys(m).forEach(function(k){ if (m[k] === IMG_GONE) delete m[k]; }); return m; });
   } });
 })();

@@ -10801,6 +10801,10 @@ async function rsRoute(env, request, url, ss) {
       plan.guards.push.apply(plan.guards, converted.readGuards || []);
       converted.summary.imagesReused = plan.imagesReused;
       converted.summary.imagesMissing = plan.imagesMissing || 0;   /* V7-F: images the file mentions that the platform no longer holds — restored as missing (019e) */
+      if (plan.imagesMissingIds && plan.imagesMissingIds.length) converted.summary.imagesMissingIds = plan.imagesMissingIds;
+      /* V7-F (review, low item): a full replace-restore that drops or (re)introduces a unit id stamps that unit's orphans, as the unit routes do (019e) */
+      var unitsPd = ((plan.kv && plan.kv.pend) || []).filter(function (pd) { return pd.k === K_DEPTS; })[0];
+      if (unitsPd) rsImageUnitStamp(env, A, plan, unitsPd.act === 'del' ? [] : parseJson(unitsPd.v, []));
       if (body.phase === 'inspect')
         return json({ ok: 1, inspection: { scope: body.scope, base: base, counts: plan.counts, summary: converted.summary || {} } });
       return json(await rsCommit(env, A, plan, reqMeta(request)));
@@ -10920,7 +10924,11 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
   for (var id of ids) {
     if (gone.has(id)) continue;
     var owner = ownerMap.get(id);
-    if (!owner || owner.st !== 'bound' || !owner.k || !resOf(owner.k) || isDeviceKey(owner.k) || !canRead(A, owner.k)) reject();
+    /* V7-F (independent review, finding 7): an archived image that is still here as an ORPHAN is accepted exactly when the restoring actor may re-bind
+       it (decision 1: a record of its original unit, or the platform admin) — its stored bytes must still equal the file's (below), nothing is
+       written to the image store, and rsImageMetadataPlan binds it to the restored record. Any other actor keeps the refusal. */
+    var orphanOk = !!owner && owner.st === 'orphan' && mentions.get(id).every(function (key) { return imgOrphanRebindOk(A, owner, key); });
+    if (!orphanOk && (!owner || owner.st !== 'bound' || !owner.k || !resOf(owner.k) || isDeviceKey(owner.k) || !canRead(A, owner.k))) reject();
     for (var key of mentions.get(id))
       if (!checkedKeys.has(key)) {
         checkedKeys.add(key);
@@ -10956,7 +10964,21 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgown', ['img', 'st', 'k', 'uid', 'dept', 'ts'], owners, ownWhere, ownArgs));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], refs, ownWhere, ownArgs));
   plan.imagesReused = ids.length - gone.size;
-  if (gone.size) { plan.imagesMissing = Math.max(plan.imagesMissing || 0, gone.size); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
+  if (gone.size) { rsImageMissingNote(plan, Array.from(gone)); plan.imagesMissing = Math.max(plan.imagesMissing || 0, gone.size); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
+}
+/* V7-F · owner decision 3 (and the independent review's low item): whenever the unit list changes — a unit removed (unit delete, or a full
+   replace-restore that no longer carries it) or a unit id (re)appearing — the orphans carrying that unit id are stamped: their original unit
+   is gone for good, so only the platform admin re-binds them (054 imgOrphanRebindOk), whoever now holds the id. */
+/* the ids a restore leaves missing, named (the first 50, sorted) — the inspection and the receipt's warning carry the count; the names let the admin find them */
+function rsImageMissingNote(plan, ids) {
+  plan.imagesMissingIds = Array.from(new Set((plan.imagesMissingIds || []).concat(ids))).sort().slice(0, 50);
+}
+function rsImageUnitStamp(env, A, plan, finalDepartments) {
+  var was = (A.depts || []).map(function (d) { return d && d.id; }).filter(Boolean),
+    now = (Array.isArray(finalDepartments) ? finalDepartments : []).map(function (d) { return d && d.id; }).filter(Boolean),
+    changed = was.filter(function (id) { return now.indexOf(id) < 0; }).concat(now.filter(function (id) { return was.indexOf(id) < 0; }));
+  if (changed.length)
+    plan.statements.push(env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE st = 'orphan' AND dept IN (SELECT value FROM json_each(?1))").bind(JSON.stringify(changed), IMG_GONE));
 }
 function rsImageFinalValues(plan, reference) {
   var values = Object.assign(Object.create(null), reference.inputKeys);
@@ -11013,7 +11035,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
        the reference is written as it is and READS AS MISSING (054 imgVerdict → 404); the witness below still fences that the body is absent
        at commit, and the receipt carries the warning. No image body is ever written by a restore. */
     var missing = newIds.filter(function (id) { return !known.has(id); });
-    if (missing.length) { plan.imagesMissing = Math.max(plan.imagesMissing || 0, missing.length); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
+    if (missing.length) { rsImageMissingNote(plan, missing); plan.imagesMissing = Math.max(plan.imagesMissing || 0, missing.length); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
     plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
   }
   var ownArgs = [],
@@ -11359,11 +11381,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   await rsImageMetadataPlan(env, A, plan, reference);
   /* V7-F · owner decision 3: the orphans of a unit this plan removes (the ones it makes now and the ones still in their grace) are stamped —
      their original unit is gone for good, so only the platform admin re-binds them (054 imgOrphanRebindOk), whoever later reuses the id */
-  A.depts.map(function (d) { return d && d.id; }).filter(function (id) {
-    return id && !irFinalDepartments.some(function (d) { return d && d.id === id; });
-  }).forEach(function (id) {
-    plan.statements.push(env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE dept = ?1 AND st = 'orphan'").bind(id, IMG_GONE));
-  });
+  rsImageUnitStamp(env, A, plan, irFinalDepartments);
   // Rows a scoped reference read while the plan was compiled are fenced like the rest (019d).
   plan.guards.push.apply(plan.guards, rsReferenceSince(reference, referenceMark, referenceOperational));
   var ack = await rsCommit(env, A, plan, meta);
@@ -11863,7 +11881,7 @@ async function rsConvertBackup(env, A, file, opt) {
     rsBCFail('scope');
   if (!isObj(file) || !isObj(file.data)) rsBCFail('file-shape');
   if (privRedacted(file)) throw rsError('restore-redacted', 409);   // PRIVACY batch (019u): a copy exported without personal data restores nothing
-  rsShape(file, ['app', 'version', 'kind', 'data', 'domains', 'manifest', 'perms', 'idbImages', 'dept', 'exportedAt', 'preImport']);
+  rsShape(file, ['app', 'version', 'kind', 'data', 'domains', 'manifest', 'perms', 'idbImages', 'imagesMissing', 'dept', 'exportedAt', 'preImport']);
   var modern = rsBCOwn(file, 'manifest'),
     legacy = !modern,
     target = opt.scope.departmentId || '',
@@ -11883,6 +11901,15 @@ async function rsConvertBackup(env, A, file, opt) {
   if (scope.kind === 'full' && (A.u.role !== 'super' || kind !== 'full')) throw rsError('restore-policy', 403);
   if (scope.kind === 'dept' && kind === 'full' && (!legacy || A.u.role !== 'super')) throw rsError('restore-policy', 403);
   if (file.idbImages !== undefined) rsImageArchiveShape(file.idbImages);
+  /* V7-F (owner blocker): a backup made while a record pointed at an image whose bytes were already gone carries the list — id and where it was
+     mentioned — so the restore can say «already missing when this copy was made». It is a note only: it restores nothing and proves nothing. */
+  if (file.imagesMissing !== undefined) {
+    if (!Array.isArray(file.imagesMissing) || file.imagesMissing.length > IMG_CAP || file.imagesMissing.some(function (m) {
+      return !isObj(m) || Object.keys(m).some(function (k) { return k !== 'id' && k !== 'at'; }) || typeof m.id !== 'string' || !/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(m.id) ||
+        !Array.isArray(m.at) || m.at.length > 50 || m.at.some(function (x) { return typeof x !== 'string' || x.length > 300; });
+    })) rsBCFail('file-shape');
+    if (file.imagesMissing.length) summary.imagesMissingAtBackup = file.imagesMissing.map(function (m) { return m.id; }).sort().slice(0, 50);
+  }
   if (file.perms !== undefined && scope.kind !== 'dept') rsBCFail('permissions-scope');
   var reference = opt.reference && opt.reference.inputKeys;
   if (!isObj(reference)) rsBCFail('reference-required');
@@ -23289,26 +23316,46 @@ async function imgLoad(env, ik) {
 }
 async function imgDropR2(env, ik) { var B = imgBucket(env); if (B) { try { await B.delete('img/' + ik); } catch (e) { swallow('r2-delete', e, env.__rid); } } }
 var IMG_PFX = ['img_', 'szp_'];
+/* V7-F (independent review, finding 1) — IMG_CAP bounds DISTINCT image ids in ONE record value, and it is enforced where a save is accepted
+   (applySave → 'img-limit' · 019l seized), never inside the scan: the old loop stopped after 5000 MATCHES counting repeats, so a record that
+   repeats one map past the cap silently lost every later id from imgref / binding / orphaning — and the sweep then deleted an image the record
+   still showed. imgIdsIn now returns EVERY distinct id of the value (the scan is linear in a value the body limit already bounds; the map
+   de-duplicates), so no bookkeeping path can lose an id; what the cap protected — the per-id statements of the plain save (imgForeignIn ·
+   imgSync) — is protected by refusing the save that would GROW a value past the cap. A refused save is safe; a dropped reference is not. */
 var IMG_CAP = 5000;
 function imgLike(s9) { for (var i9 = 0; i9 < IMG_PFX.length; i9++) if (s9.indexOf(IMG_PFX[i9]) >= 0) return true; return false; }
 function imgIdsIn(v) {
   var out = {}, s9 = String(v == null ? '' : v);
   if (!imgLike(s9)) return out;
-  var re = /(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g, m9, n9 = 0;
-  while ((m9 = re.exec(s9)) && n9 < IMG_CAP) { out[m9[0]] = 1; n9++; }
+  var re = /(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g, m9;
+  while ((m9 = re.exec(s9))) out[m9[0]] = 1;
   return out;
 }
+/* the save gate: more than IMG_CAP distinct images in the new value AND more than the stored value already has (a save that only keeps or
+   removes images is never refused — a legacy record over the cap can still be edited down) */
+function imgOverCap(v, cur) {
+  var n9 = Object.keys(imgIdsIn(v)).length;
+  return n9 > IMG_CAP && n9 > Object.keys(imgIdsIn(cur)).length;
+}
+/* the shape of an id a client may upload under (finding 2): letters, digits and '_' only — what every generator emits (img_<ts36>_<n36> ·
+   img_tsk… · szp_…) and the short ids of older tools; '~' (the staging prefix), '%', '.', '-', '/', spaces … are refused before any row exists */
+var IMG_ID_RX = /^[A-Za-z0-9_]{1,128}$/;
 function ownStmt(env, img, st, k, uid, dept) {
   return env.DB.prepare('INSERT OR IGNORE INTO imgown (img, st, k, uid, dept, ts) VALUES (?1, ?2, ?3, ?4, ?5, ?6)')
     .bind(img, st, k || '', uid || '', dept || '', Date.now());
 }
-async function imgOwnOf(env, ik) { return await env.DB.prepare('SELECT img, st, k, uid, dept FROM imgown WHERE img = ?1').bind(ik).first(); }
+async function imgOwnOf(env, ik) { return await env.DB.prepare('SELECT img, st, k, uid, dept, ts FROM imgown WHERE img = ?1').bind(ik).first(); }
 /* مفاتيحُ القيم التي تذكر هذه الصورةَ ذكراً حقيقياً — لا مطابقةً جزئية.
    instr وحدَه يقبل أن يكون المعرّفُ جزءاً من معرّفٍ أطول (img_a_b داخل
    img_a_b9) فيُنسب الأقصرُ ملكاً لمفتاحٍ لا يذكره البتّة. فيُشترط معه حدٌّ
    في آخر المطابقة بنفس دلالة imgIdsIn: الحرفُ التالي ليس [a-z0-9]، أو
    انتهى النصُّ عنده. والمعرَّفُ غيرُ السليم لا يُبحث له أصلاً (ولئلا تتسرّب
    رموزُ GLOB إلى النمط)، فيبقى غيرَ محسوم. */
+/* V7-F (finding 4): a value is stored in rows of 700 000 characters (seq), and instr/GLOB look at ONE row — an id cut by a row boundary was
+   invisible. IMG_KV_JOIN finds exactly those: for every row after the first, the tail of the previous row joined to the head of this one
+   (one character short of the id on each side, so a match necessarily crosses the boundary). ?1 = the id. */
+var IMG_KV_JOIN = "SELECT b.k FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(?1) > 1" +
+  " AND instr(substr(a.v, -(length(?1) - 1)) || substr(b.v, 1, length(?1) - 1), ?1) > 0";
 async function imgKeysMentioning(env, ik, lim) {
   if (!/^[a-z0-9_]+$/.test(ik)) return [];
   // Operational image references are maintained with the typed row mutation
@@ -23317,7 +23364,12 @@ async function imgKeysMentioning(env, ik, lim) {
   var typedKeys = typed.map(function(row){return row.k;}).filter(opIsResource);
   var r = await env.DB.prepare('SELECT k FROM kv WHERE instr(v, ?1) > 0 AND (v GLOB ?2 OR v GLOB ?3) LIMIT ' + lim)
     .bind(ik, '*' + ik + '[^a-z0-9]*', '*' + ik).all();
-  return Array.from(new Set(typedKeys.concat(((r && r.results) || []).map(function (x) { return x.k; })))).slice(0,lim);
+  var out = Array.from(new Set(typedKeys.concat(((r && r.results) || []).map(function (x) { return x.k; }))));
+  if (out.length < lim) {                                                  /* the id may straddle two rows of one value */
+    var j = await env.DB.prepare(IMG_KV_JOIN + ' LIMIT ' + lim).bind(ik).all();
+    ((j && j.results) || []).forEach(function (x) { if (out.indexOf(x.k) < 0) out.push(x.k); });
+  }
+  return out.slice(0,lim);
 }
 /* مَن يملك هذه الصورة؟ — سؤالٌ عن صورةٍ واحدة، لا مسحٌ للقاعدة كلها.
    كان البناءُ الأول يقرأ جدول kv كاملاً داخل طلب المستخدم ويمسحه بتعبيرٍ
@@ -23401,6 +23453,7 @@ async function imgVerdict(env, A, ik, mode) {
   /* الحسمُ أولاً ولو كان الفاعلُ مدير النظام: قراءتُه هي التي تُثبّت مالكَ
      الصورة القديمة مرّةً واحدة، فلا تبقى بلا سجلٍّ حتى يأتي من لا يملكها. */
   var o = await imgResolve(env, ik), dead = !!(o && o.st === 'dead');
+  if (o && o.st === IMG_STAGE) o = null;                                    /* the clock of a chunked upload is not an image */
   if (dead) o = null;                                                       /* V7-F: condemned by the sweep (bytes awaiting removal) — it no longer exists for anyone */
   if (A.u.role === 'super') return { ok: true, why: 'super', dead: dead };
   /* صورةُ توثيق مهمّة: يرفعها الموظفُ المكلَّف وإن لم تكن له صفحةٌ يكتبها — عقدٌ قائمٌ في المعتمدة */
@@ -23426,7 +23479,7 @@ async function imgVerdict(env, A, ik, mode) {
 }
 /* قبل الكتابة: هل يُدخل هذا المفتاحُ صورةً يملكها مفتاحٌ آخر لا يكتبه الفاعل؟
    الرفعُ المعلّق لصاحبه وحده، والغامضةُ القديمة تبقى معروضةً كما هي. */
-async function imgForeignIn(env, A, k, v, cur) {
+async function imgForeignIn(env, A, k, v, cur, seen) {
   var ids = imgIdsIn(v), had = imgIdsIn(cur), id9;
   for (id9 in ids) {
     if (had[id9]) continue;                               /* مرجعٌ قائمٌ سلفاً في هذا المفتاح: بياناتٌ قديمة تبقى تعمل */
@@ -23440,9 +23493,10 @@ async function imgForeignIn(env, A, k, v, cur) {
     }
     if (o.st === 'dead') continue;                                        /* V7-F: condemned by the sweep — as an id with no image */
     /* V7-F · owner decisions 1+3: an orphan is re-bound by a record of its ORIGINAL unit only (or by the platform admin) — anyone else is refused as for a foreign bound image */
-    if (o.st === 'orphan') { if (!imgOrphanRebindOk(A, o, k)) return id9; continue; }
+    if (o.st === 'orphan') { if (!imgOrphanRebindOk(A, o, k)) return id9; if (seen) seen[id9] = o; continue; }
     if (o.st === 'amb') continue;
-    if (o.st === 'claim') { if (o.uid !== A.u.id && A.u.role !== 'super') return id9; continue; }
+    if (o.st === 'stage') continue;                                       /* the clock of a chunked upload, never an image */
+    if (o.st === 'claim') { if (o.uid !== A.u.id && A.u.role !== 'super') return id9; if (seen) seen[id9] = o; continue; }
     if (o.k !== k && !(A.u.role === 'super' || imgWriteOk(A, o.k))) return id9;
   }
   return '';
@@ -23488,57 +23542,159 @@ async function imgSync(env, A, list) {
   }
   for (j9 = 0; j9 < st2.length; j9 += 90) await env.DB.batch(st2.slice(j9, j9 + 90));
 }
-/* ══ V7-F · owner decision 2 — the sweep that really runs ══════════════════════════════════════════════════════════════════════
-   WHAT: an orphan past IMG_ORPHAN_GRACE (30 days) and an upload never bound past IMG_CLAIM_TTL (7 days) are deleted — rows and R2 object.
-   WHEN: after every accepted write request (063 fetch → imgSweepLater: off the response path when the runtime gives waitUntil), a small
-         batch (IMG_SWEEP_SAVE); a larger one when the platform admin opens the overview (IMG_SWEEP_ADMIN) and after a platform reset.
-   HOW (per image, in this order):
-     1. THE DECISION is one D1 statement: the row becomes 'dead' only if it is still the same unreferenced row read above (st and ts) AND no
-        record mentions the image at that instant (imgref — the typed records — and the kv values). A save that re-binds it, concurrent or
-        just before, changes the row first and the statement touches nothing; a save committing after it is refused by its own imgown
-        witness (019e). So no image a live record points at is ever condemned.
-     2. 'dead' is no image for anyone (imgVerdict · imgForeignIn · listing): only now is the R2 object deleted — outside any DB transaction.
-     3. The rows go only after R2 confirmed. A failed R2 delete leaves the 'dead' row: the next sweep retries it (a lease of
-        IMG_DEAD_LEASE on ts keeps two sweeps, or a sweep and a re-upload of the same id, from working on one object at once).
-   A referenced orphan is not deleted: it turns 'amb' (the platform admin's), as before; a referenced stale upload gets its clock restarted. */
-var IMG_ORPHAN_GRACE = 30 * 864e5, IMG_CLAIM_TTL = 7 * 864e5, IMG_DEAD_LEASE = 20000, IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 200;
-async function imgSweep(env, now, max) {
-  var B = imgBucket(env), out = { seen: 0, purged: 0, kept: 0, retry: 0 };
-  var r = await env.DB.prepare("SELECT img, st, ts FROM imgown WHERE (st = 'orphan' AND ts < ?1) OR (st = 'claim' AND ts < ?2) OR (st = 'dead' AND ts < ?3) ORDER BY ts LIMIT ?4")
-    .bind(now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max).all();
-  var L = (r && r.results) || [], i;
-  for (i = 0; i < L.length; i++) {
-    var id = L[i].img, st0 = L[i].st, ts0 = L[i].ts, lease = Math.max(Date.now(), now, ts0 + 1), hit;
-    if (!/^[a-z0-9_]+$/.test(id)) continue;                                /* never a GLOB pattern */
-    out.seen++;
-    if (st0 === 'dead') hit = await env.DB.prepare("UPDATE imgown SET ts = ?3 WHERE img = ?1 AND st = 'dead' AND ts = ?2 RETURNING img").bind(id, ts0, lease).first();
-    else {
-      hit = await env.DB.prepare("UPDATE imgown SET st = 'dead', k = '', ts = ?4 WHERE img = ?1 AND st = ?2 AND ts = ?3" +
-        ' AND NOT EXISTS (SELECT 1 FROM imgref WHERE img = ?1)' +
-        ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(v, ?1) > 0 AND (v GLOB ?5 OR v GLOB ?6)) RETURNING img')
-        .bind(id, st0, ts0, lease, '*' + id + '[^a-z0-9]*', '*' + id).first();
-      if (!hit) {                                                          /* re-bound meanwhile (no row matches below) — or a record mentions it */
-        await env.DB.prepare("UPDATE imgown SET st = CASE WHEN st = 'orphan' THEN 'amb' ELSE st END, ts = CASE WHEN st = 'claim' THEN ?4 ELSE ts END WHERE img = ?1 AND st = ?2 AND ts = ?3")
-          .bind(id, st0, ts0, lease).run();
-        out.kept++; continue;
-      }
+/* ══ V7-F · owner decision 2 — the sweep that really runs (reworked after the independent review) ═══════════════════════════════
+   WHAT: an orphan past IMG_ORPHAN_GRACE (30 days), an upload never bound past IMG_CLAIM_TTL (30 days — a draft can hold a confirmed upload:
+         seized report, task proof), and the parts of an abandoned chunked upload past IMG_STAGE_TTL (7 days) are deleted — rows and R2 object.
+   WHEN: after an accepted write (063 fetch → imgSweepLater, off the response path when the runtime gives waitUntil) — but a pass runs at most
+         once per IMG_SWEEP_EVERY for the whole platform: ONE compare-and-set on meta.img_sweep_at per write (a primary-key row), nothing else.
+         The platform admin's overview asks with a shorter period and never waits for it; a platform reset forces a pass.
+   THE RULE: a candidate that cannot be PROVEN unreferenced is not deleted. The proof, in ONE D1 statement for the whole batch (so a save that
+         binds an image is either before it — the row changed, or a record mentions it — or after it, and is then refused by its own witness:
+         019e for typed saves, imgSeenGuard for plain ones):
+           · the row is still exactly the one selected (st, ts);
+           · no imgref row — the index of every typed record (plan · rounds · tasks … 019r) and of every key saved through imgSync;
+           · no seized_item_photos row — seized photos live in their own table (0009) and may predate imgref;
+           · no kv value contains the id — in any row, AND across any row boundary of a value (IMG_KV_JOIN: values are stored in 700 000-char rows);
+           · imgref is known COMPLETE for the typed tables: meta.imgref_scan_v1 = 'done'. Records saved before this version were indexed by a
+             scan that stopped at 5000 mentions, so until imgRefScan has re-read every typed resource and inserted what was dropped, nothing is condemned.
+         Typed tables with no image column (custody · irshad · awards text · notifications · daily stats) need no check.
+   THEN: 'dead' is no image for anyone (imgVerdict · imgForeignIn · listing): only now are the R2 objects deleted (one call per object, at most IMG_SWEEP_DEAD a pass),
+         outside any DB transaction; the rows go only after R2 confirmed, in one batch. A failed R2 delete, or a failed row batch, leaves the
+         'dead' rows: the next pass retries them (IMG_DEAD_LEASE on ts keeps two passes, or a pass and a re-upload of the id, apart).
+   A referenced orphan is not deleted: it turns 'amb' (the platform admin's), as before; a referenced stale upload gets its clock restarted.
+   Ids of any shape are handled (the match is instr, never a GLOB pattern), so a malformed row can neither be skipped forever nor hold the queue. */
+var IMG_ORPHAN_GRACE = 30 * 864e5, IMG_CLAIM_TTL = 30 * 864e5, IMG_STAGE_TTL = 7 * 864e5, IMG_DEAD_LEASE = 20000;
+var IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 40, IMG_SWEEP_DEAD = 400, IMG_SWEEP_EVERY = 10 * 60000, IMG_SWEEP_EVERY_ADMIN = 60000;
+var IMG_STAGE = 'stage', IMG_SCAN_KEY = 'imgref_scan_v1', IMG_SWEEP_KEY = 'img_sweep_at', IMG_STG_END = '~stg\u007f';
+function imgStageRow(ik) { return IMG_STG + ik; }
+/* the clock of a chunked upload: one imgown row per staged id ('stage' — never an image: its key starts with the staging prefix) */
+function imgStageStmt(env, ik) {
+  return env.DB.prepare("INSERT INTO imgown (img, st, k, uid, dept, ts) VALUES (?1, 'stage', '', '', '', ?2) ON CONFLICT(img) DO UPDATE SET ts = excluded.ts").bind(imgStageRow(ik), Date.now());
+}
+function imgStageDropStmt(env, ik) { return env.DB.prepare("DELETE FROM imgown WHERE img = ?1 AND st = 'stage'").bind(imgStageRow(ik)); }
+/* the staged parts of one id — a key range, never LIKE (an id may carry '_' or '%') */
+function imgStageRowsStmt(env, ik) { return env.DB.prepare('DELETE FROM imgs WHERE k >= ?1 AND k < ?2').bind(IMG_STG + ik + '~', IMG_STG + ik + '\u007f'); }
+/* imgref completeness for the typed tables (see THE RULE): every typed resource is re-read once and every id its stored value mentions is
+   inserted — only if the record was not saved meanwhile (a save writes its own complete imgref). A cursor in meta lets it resume. */
+async function imgRefScan(env) {
+  var cur = await env.DB.prepare('SELECT v FROM meta WHERE k = ?1').bind(IMG_SCAN_KEY).first(), pos = { d: '', r: '' }, round, chars = 0;
+  if (cur && cur.v === 'done') return true;
+  if (cur) { var pj = parseJson(cur.v, null); if (pj && typeof pj.d === 'string' && typeof pj.r === 'string') pos = pj; }
+  var put = function (v) { return env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = excluded.v').bind(IMG_SCAN_KEY, v); };
+  for (round = 0; round < 5 && chars < 6e6; round++) {
+    var keys = [], i;
+    for (i = 0; i < 12; i++) {
+      var nx = await env.DB.prepare('SELECT department_id AS d, resource AS r FROM ops_nodes WHERE (department_id, resource) > (?1, ?2) ORDER BY department_id, resource LIMIT 1').bind(pos.d, pos.r).first();
+      if (!nx) break;
+      pos = { d: String(nx.d), r: String(nx.r) };
+      var k = 'bsdept:' + pos.d + ':' + pos.r, ok = false;
+      try { ok = !!opInfo(k); } catch (eK) { ok = false; }                    /* a row no resource of this version owns: nothing to read */
+      if (ok) keys.push(k);
     }
-    if (!hit) continue;                                                    /* another sweep (or a re-upload) holds it */
-    if (B) { try { await B.delete('img/' + id); } catch (e) { swallow('r2-delete', e, env.__rid); out.retry++; continue; } }
-    var own = "EXISTS (SELECT 1 FROM imgown WHERE img = ?1 AND st = 'dead' AND ts = ?2)";
-    await env.DB.batch([env.DB.prepare('DELETE FROM imgs WHERE k = ?1 AND ' + own).bind(id, lease),
-      env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?3 AND ' + own).bind(id, lease, IMG_STG + id + '~%'),
-      env.DB.prepare("DELETE FROM imgown WHERE img = ?1 AND st = 'dead' AND ts = ?2").bind(id, lease)]);
-    out.purged++;
+    var st = [], done = i < 12;
+    if (keys.length) {
+      var got = await opLoadMany(env, keys, 0);
+      keys.forEach(function (k2) {
+        var v = got.values[k2] || '', ids = Object.keys(imgIdsIn(v)); chars += v.length;
+        if (ids.length) st.push(env.DB.prepare('INSERT OR IGNORE INTO imgref (img, k) SELECT value, ?2 FROM json_each(?1) WHERE COALESCE((SELECT rev FROM revs WHERE k = ?2), 0) = ?3')
+          .bind(JSON.stringify(ids), k2, got.revs[k2] || 0));
+      });
+    }
+    st.push(put(done ? 'done' : JSON.stringify(pos)));
+    await env.DB.batch(st);
+    if (done) return true;
+  }
+  return false;
+}
+function imgSnap(rows) { return JSON.stringify(rows.map(function (x) { return { i: x.img, s: x.st, t: x.ts }; })); }
+var IMG_SNAP_SAME = "EXISTS (SELECT 1 FROM json_each(?1) j WHERE json_extract(j.value, '$.i') = imgown.img AND json_extract(j.value, '$.s') = imgown.st AND json_extract(j.value, '$.t') = imgown.ts)";
+async function imgSweep(env, now, max, maxDead) {
+  var B = imgBucket(env), out = { seen: 0, purged: 0, kept: 0, retry: 0, staged: 0, scan: 0 }, lease = Math.max(Date.now(), now), i;
+  /* abandoned chunked uploads: parts staged before this version get their clock now; the expired ones go, parts and clock, in one batch */
+  await env.DB.prepare("INSERT OR IGNORE INTO imgown (img, st, k, uid, dept, ts) SELECT DISTINCT ?1 || substr(k, 6, instr(substr(k, 6), '~') - 1), 'stage', '', '', '', ?4 FROM imgs WHERE k >= ?2 AND k < ?3")
+    .bind(IMG_STG, IMG_STG, IMG_STG_END, now).run();
+  var sg = ((await env.DB.prepare("SELECT img, ts FROM imgown WHERE st = 'stage' AND ts < ?1 ORDER BY ts LIMIT 50").bind(now - IMG_STAGE_TTL).all()).results) || [], sgSt = [];
+  sg.forEach(function (x) {
+    var id = String(x.img).slice(IMG_STG.length), same = "EXISTS (SELECT 1 FROM imgown WHERE img = ?3 AND st = 'stage' AND ts = ?4)";
+    sgSt.push(env.DB.prepare('DELETE FROM imgs WHERE k >= ?1 AND k < ?2 AND ' + same).bind(IMG_STG + id + '~', IMG_STG + id + '\u007f', x.img, x.ts));
+    sgSt.push(env.DB.prepare("DELETE FROM imgown WHERE img = ?1 AND st = 'stage' AND ts = ?2").bind(x.img, x.ts));
+  });
+  for (i = 0; i < sgSt.length; i += 90) await env.DB.batch(sgSt.slice(i, i + 90));
+  out.staged = sg.length;
+  /* an orphan whose unit is not on the platform now is the platform admin's for good (a unit re-created later under that id inherits nothing) */
+  var dj = parseJson(await kvGet(env, 'kv', K_DEPTS), null);
+  if (Array.isArray(dj)) await env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE st = 'orphan' AND dept != '' AND uid != ?2 AND dept NOT IN (SELECT value FROM json_each(?1))")
+    .bind(JSON.stringify(dj.map(function (d) { return d && d.id; }).filter(function (x) { return typeof x === 'string' && x; })), IMG_GONE).run();
+  var scanned = await imgRefScan(env); out.scan = scanned ? 1 : 0;
+  var r = await env.DB.prepare("SELECT * FROM (SELECT img, st, ts FROM imgown WHERE st = 'dead' AND ts < ?3 ORDER BY ts LIMIT ?5) UNION ALL " +
+    "SELECT * FROM (SELECT img, st, ts FROM imgown WHERE (st = 'orphan' AND ts < ?1) OR (st = 'claim' AND ts < ?2) ORDER BY ts LIMIT ?4)")
+    .bind(now - IMG_ORPHAN_GRACE, now - IMG_CLAIM_TTL, now - IMG_DEAD_LEASE, max, maxDead || IMG_SWEEP_DEAD).all();
+  var L = (r && r.results) || [], dead = L.filter(function (x) { return x.st === 'dead'; }), cand = scanned ? L.filter(function (x) { return x.st !== 'dead'; }) : [], take = [];
+  out.seen = dead.length + cand.length;
+  if (dead.length) {
+    var hd = await env.DB.prepare("UPDATE imgown SET ts = ?2 WHERE st = 'dead' AND " + IMG_SNAP_SAME + ' RETURNING img').bind(imgSnap(dead), lease).all();
+    ((hd && hd.results) || []).forEach(function (x) { take.push(x.img); });      /* the rest: another pass (or a re-upload) holds them */
+  }
+  if (cand.length) {
+    var snap = imgSnap(cand);
+    var hc = await env.DB.prepare("UPDATE imgown SET st = 'dead', k = '', ts = ?2 WHERE " + IMG_SNAP_SAME +
+      ' AND (SELECT v FROM meta WHERE k = ?3) = ?4' +
+      ' AND NOT EXISTS (SELECT 1 FROM imgref WHERE imgref.img = imgown.img)' +
+      ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +
+      ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(kv.v, imgown.img) > 0)' +
+      ' AND NOT EXISTS (SELECT 1 FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(imgown.img) > 1' +
+      ' AND instr(substr(a.v, -(length(imgown.img) - 1)) || substr(b.v, 1, length(imgown.img) - 1), imgown.img) > 0) RETURNING img')
+      .bind(snap, lease, IMG_SCAN_KEY, 'done').all();
+    var condemned = ((hc && hc.results) || []).map(function (x) { return x.img; });
+    take.push.apply(take, condemned);
+    if (condemned.length < cand.length) {                                  /* re-bound meanwhile (no row matches) — or a record mentions it */
+      var hk = await env.DB.prepare("UPDATE imgown SET st = CASE WHEN st = 'orphan' THEN 'amb' ELSE st END, ts = CASE WHEN st = 'claim' THEN ?2 ELSE ts END WHERE st IN ('orphan', 'claim') AND " + IMG_SNAP_SAME + ' RETURNING img')
+        .bind(snap, lease).all();
+      out.kept = ((hk && hk.results) || []).length;
+    }
+  }
+  /* one R2 call per object (a failed one keeps ITS row for the next pass and stops nobody else); the rows of everything R2 confirmed go in one batch */
+  var okIds = [];
+  for (i = 0; i < take.length; i++) {
+    if (B) { try { await B.delete('img/' + take[i]); } catch (e) { swallow('r2-delete', e, env.__rid); out.retry++; continue; } }
+    okIds.push(take[i]);
+  }
+  for (i = 0; i < okIds.length; i += 500) {
+    var part = okIds.slice(i, i + 500), js = JSON.stringify(part);
+    var mine = "(SELECT img FROM imgown WHERE st = 'dead' AND ts = ?2 AND img IN (SELECT value FROM json_each(?1)))";
+    await env.DB.batch([env.DB.prepare('DELETE FROM imgs WHERE k IN ' + mine).bind(js, lease),
+      env.DB.prepare("DELETE FROM imgs WHERE k >= ?3 AND k < ?4 AND substr(k, 6, instr(substr(k, 6), '~') - 1) IN " + mine).bind(js, lease, IMG_STG, IMG_STG_END),
+      env.DB.prepare("DELETE FROM imgown WHERE st = 'stage' AND substr(img, 6) IN " + mine).bind(js, lease),
+      env.DB.prepare("DELETE FROM imgown WHERE st = 'dead' AND ts = ?2 AND img IN (SELECT value FROM json_each(?1))").bind(js, lease)]);
+    out.purged += part.length;
   }
   return out;
 }
+/* one compare-and-set decides whether THIS request runs the pass: at most one per `every` ms for the whole platform */
+async function imgSweepDue(env, now, every) {
+  return !!(await env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = excluded.v WHERE CAST(meta.v AS INTEGER) <= ?3 RETURNING v')
+    .bind(IMG_SWEEP_KEY, String(now), now - every).first());
+}
 /* the sweep never fails the request that triggered it */
-async function imgSweepSafe(env, max) { try { return await imgSweep(env, Date.now(), max || IMG_SWEEP_SAVE); } catch (e) { swallow('img-sweep', e, env && env.__rid); return null; } }
-function imgSweepLater(env, max) {
-  var p = imgSweepSafe(env, max);
+async function imgSweepSafe(env, max, every, maxDead) {
+  try {
+    var now = Date.now();
+    if (every !== 0 && !(await imgSweepDue(env, now, every || IMG_SWEEP_EVERY))) return null;
+    return await imgSweep(env, now, max || IMG_SWEEP_SAVE, maxDead);
+  } catch (e) { swallow('img-sweep', e, env && env.__rid); return null; }
+}
+function imgSweepLater(env, max, every, maxDead) {
+  var p = imgSweepSafe(env, max, every, maxDead);
   if (env && env.__ctx && typeof env.__ctx.waitUntil === 'function') { env.__ctx.waitUntil(p); return Promise.resolve(); }
   return p;
+}
+/* the plain save's witness (the typed save has its own, 019e): every unbound upload or orphan this save was allowed to mention must still be
+   the very row imgForeignIn read when the value is written — otherwise the sweep condemned it in between and the key is answered as a conflict */
+function imgSeenGuard(env, seen) {
+  var rows = Object.keys(seen || {}).map(function (id) { return { i: id, s: seen[id].st, t: seen[id].ts }; });
+  if (!rows.length) return null;
+  return env.DB.prepare("SELECT CASE WHEN (SELECT COUNT(*) FROM imgown o JOIN json_each(?1) j ON o.img = json_extract(j.value, '$.i') AND o.st = json_extract(j.value, '$.s') AND o.ts = json_extract(j.value, '$.t')) != ?2 THEN json_extract('{}', 'KIVO_REV_CONFLICT') END AS g")
+    .bind(JSON.stringify(rows), rows.length);
 }
 /* a re-upload of a condemned id (a backup's bytes coming back): take the lease, so the pending R2 delete and this put never meet */
 async function imgDeadTake(env, ik) {
@@ -24374,7 +24530,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   for (i = 0; i < todo.length; i++) {
     regUndo9(i - 1);
     if (i === regN9) regPair9();
-    var it0 = todo[i], k0 = it0.k;
+    var it0 = todo[i], k0 = it0.k, img0 = null;
     if (paOn9 && i === regN9 + 1 && todo[regN9] && todo[regN9].k === K_PERM) pa9 = evald[regN9] && evald[regN9].ok ? parseJson(todo[regN9].v, null) : null;   /* R3-4: الصلاحياتُ قُيّمت أوّلاً (بعد سجلّي الهيكل) */
     if (it0.act === 'set' && (k0 === K_DEPTS || k0 === K_GDEPTS)) regMks9[i] = regMk9 = batchRegMark(A);
     if (isDeviceKey(k0)) { evald.push(null); continue; }
@@ -24488,10 +24644,14 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     }
     /* ربطٌ أجنبيّ: صورةٌ مملوكةٌ لموردٍ آخر لا يكتبه الفاعل — يُرفض ولا يُفهرس */
     if (it0.act === 'set' && imgLike(String(it0.v == null ? '' : it0.v))) {
-      if (await imgForeignIn(env, A, k0, it0.v, cur0)) { evald.push({ deny: 'imgown', cur: cur0 }); continue; }
+      /* V7-F (finding 1): more distinct images than the bookkeeping is allowed to carry for one value — refused whole, never truncated */
+      if (imgOverCap(it0.v, cur0)) { evald.push({ deny: 'img-limit', cur: cur0, x: { detail: 'أكثر من ' + IMG_CAP + ' صورة مختلفة في سجل واحد — احذف صوراً أو قسّم السجل ثم أعد الحفظ' } }); continue; }
+      var seen0 = {};
+      if (await imgForeignIn(env, A, k0, it0.v, cur0, seen0)) { evald.push({ deny: 'imgown', cur: cur0 }); continue; }
+      img0 = seen0;
     }
     if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
-    evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
+    evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa, img9: img0 });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
   if (todo.length === regN9) { regUndo9(todo.length - 1); regPair9(); }               /* F01: حفظةٌ فيها السجلّان وحدهما */
   /* V7 · issue #4 (018 nodeCapSweep): the node registry was accepted ⇒ the ceiling records of the nodes it removes go in this same save, and a
@@ -24593,7 +24753,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (imgLike(String(cur == null ? '' : cur)) || (it.act === 'set' && imgLike(String(v == null ? '' : v))))
       imgTouch.push({ k: k, v: it.act === 'set' ? v : '' });
     /* سجلُّ المراجعة والتدقيق يحملان الرقم، فيُؤجَّلان إلى ما بعد تخصيصه */
-    pend.push({ k: k, act: it.act, cur: cur, v: v, have: have, kvS: kvS, secS: secS, dep9: !!(ev && ev.dep9) });
+    pend.push({ k: k, act: it.act, cur: cur, v: v, have: have, kvS: kvS, secS: secS, dep9: !!(ev && ev.dep9), img9: (ev && ev.img9) || null });
     if (k === K_USERS) { usersSecEvents(parseJson(cur, []), parseJson(v, []), ident, now).forEach(function (e) { secS.push(secStmt(env, e)); }); secS.push.apply(secS, usersSessStmts(env, parseJson(cur, []), parseJson(v, []), A.u.id, A.tok || '')); }   /* KIVO_252 · AUD-034/035 */
     if (k === K_PERM) secS.push(secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'perm_change', target: '', detail: permChangeDetail(parseJson(cur, {}), parseJson(v, {})), ip: ident.ip, city: ident.city, dev: ident.dev }));
     changed++;
@@ -24613,7 +24773,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     for (var p9 = 0; p9 < pend.length; p9++) {
       var pd = pend[p9];
       /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ (dep9) يُكتب بعد أن كُتبت هي بنسخة هذه الحفظة — وإلا تعارض */
-      pd.g = [revGuard(env, pd.k, pd.have)].concat(pd.dep9 ? [revGuard(env, K_PERM, rev)] : [], pd.kvS, [env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(pd.k, rev)], pd.secS);
+      var ig9 = pd.img9 ? imgSeenGuard(env, pd.img9) : null;                 /* V7-F: the uploads/orphans this value was allowed to bind are still the rows that were judged (054 imgSweep) */
+      pd.g = [revGuard(env, pd.k, pd.have)].concat(pd.dep9 ? [revGuard(env, K_PERM, rev)] : [], ig9 ? [ig9] : [], pd.kvS, [env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(pd.k, rev)], pd.secS);
       out.revs[pd.k] = rev;
       /* ══ R169-CC: مخزنٌ واحد، وتسجيلٌ واحدٌ للفعل الواحد ══
          للمفتاح الذي له مخطّطُ كيانات: أحداثُ كيانِه هي السجل. ولمن لا مخطّطَ له (الصلاحيات، الحسابات،
@@ -29012,7 +29173,7 @@ export default {
     var t0 = Date.now();
     var res0 = await this.handle(request, env);
     /* V7-F · owner decision 2: the image sweep runs after every accepted write — the typed/atomic save path included (054 imgSweep: a small batch, after the response when waitUntil exists) */
-    if ((m0 === 'POST' || m0 === 'PUT' || m0 === 'DELETE') && res0 && res0.status === 200 && url0.pathname.indexOf('/api/') === 0 && url0.pathname.indexOf('/api/img/') !== 0 && url0.pathname !== '/api/login') await imgSweepLater(env, url0.pathname === '/api/reset' ? IMG_SWEEP_RESET : IMG_SWEEP_SAVE);   /* a reset condemns every R2 image (019e): its first pass is larger */
+    if ((m0 === 'POST' || m0 === 'PUT' || m0 === 'DELETE') && res0 && res0.status === 200 && url0.pathname.indexOf('/api/') === 0 && url0.pathname.indexOf('/api/img/') !== 0 && url0.pathname !== '/api/login') await (url0.pathname === '/api/reset' ? imgSweepLater(env, IMG_SWEEP_RESET, 0) : imgSweepLater(env, IMG_SWEEP_SAVE));   /* one compare-and-set per write; a pass at most once per IMG_SWEEP_EVERY · a reset condemns every R2 image (019e) and forces its first pass (batched: a handful of subrequests whatever the count) */
     var out0 = withSec(res0, url0, rid, nonce);
     /* KIVO_255 · SOT-143/149 (SOT-142): سطرُ طلبٍ واحد لكل /api/* — المدةُ داخل العامل (D1 ضمناً) بالملّي ثانية، والمسارُ بلا استعلام، بلا هوية؛
        منه تُشتقّ المقاييسُ التقنية (المعدّل · نسبةُ الأخطاء · p50/p95 لكل مسار) في Workers Logs/Logpush؛ ورأسُ Server-Timing يُظهر المدةَ نفسَها للمتصفح
@@ -29287,7 +29448,7 @@ export default {
         }
         /* ملخّص نظرة عامة */
         if (path === '/api/overview') {
-          if (superX) await imgSweepSafe(env, IMG_SWEEP_ADMIN);   /* V7-F · owner decision 2: the admin's overview read also sweeps (a larger batch), so «N days left» is true */
+          if (superX) await imgSweepLater(env, IMG_SWEEP_ADMIN, IMG_SWEEP_EVERY_ADMIN);   /* V7-F · owner decision 2: the admin's overview also asks for a pass (a larger batch, at most one a minute) — never waited for when the runtime gives waitUntil */
           var day0 = new Date(nowX); day0.setHours(0, 0, 0, 0); var dayTs = day0.getTime();
           var overviewDepartments = superX ? AX.depts.filter(function (d) { return d && typeof d.id === 'string' && d.id; }).map(function (d) { return d.id; }) : [];
           var overviewAccounts = superX ? AX.users.filter(function (u) { return u && u.role === 'staff' && typeof u.deptId === 'string' && typeof u.ekey === 'string' && u.ekey; })
@@ -29449,6 +29610,9 @@ export default {
         if (!vI.ok) return json(vI.open ? { ok: 0, err: 'forbidden', why: vI.why } : { ok: 0, err: 'forbidden' }, 403);
         if (vI.dead && mode === 'read') return new Response('', { status: 404, headers: { 'Cache-Control': 'no-store' } });   /* condemned by the sweep: gone, for the platform admin too */
         if (request.method === 'PUT') {
+          /* V7-F (independent review, finding 2): an id outside the upload shape never becomes a row — judged AFTER the verdict, so a caller with no right to upload
+             gets the one refusal above whatever the id looks like, and the 400 says nothing the caller did not type himself */
+          if (!IMG_ID_RX.test(ik)) return json({ ok: 0, err: 'img-id' }, 400);
           if (!imgCtypeOk(request.headers.get('Content-Type'))) return json({ ok: 0, err: IMG_TYPE_ERR }, 415);   /* KIVO_264 · SOT-101: العقدُ الخامّ — النوعُ قبل قراءة الجسم */
           var rlI = await rlHit(env, 'im', AI.u.id, Math.max(30, Math.floor(RL_SAVE / 4))); if (rlI) return tooMany(rlI);   /* KIVO_255 · SOT-139: رفعُ الصور محدودٌ بربع سقف الحفظ (نافذةُ دقيقة · لكل حساب) */
           var rawI = await request.arrayBuffer();
@@ -29468,7 +29632,7 @@ export default {
             var sgK = IMG_STG + ik + '~';
             if (pI > 0 && !(await env.DB.prepare('SELECT 1 AS x FROM imgs WHERE k = ?1 LIMIT 1').bind(sgK + '0').first())) return json({ ok: 0, err: 'part0-missing' }, 409);   /* لا مرحَّلَ بلا جزءٍ أوّل سليم — لا تخزينَ يتيماً */
             var stP = [];
-            if (pI === 0) stP.push(env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?1').bind(sgK + '%'));   /* رفعٌ سابقٌ مهجور */
+            if (pI === 0) { stP.push(env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?1').bind(sgK + '%')); stP.push(imgStageStmt(env, ik)); }   /* رفعٌ سابقٌ مهجور · V7-F: the staged parts get a clock (054 IMG_STAGE_TTL) */
             stP = stP.concat(kvPutStmts(env, 'imgs', sgK + pI, txtI));
             await env.DB.batch(stP);
             if (pI < nI - 1) return json({ ok: 1, part: pI, of: nI });
@@ -29482,26 +29646,29 @@ export default {
             }
             if (!imgTypeOk(allP)) { await env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?1').bind(sgK + '%').run(); return json({ ok: 0, err: IMG_TYPE_ERR }, 415); }
             var lsC = vI.dead ? await imgDeadTake(env, ik) : -1; if (lsC === 0) return json({ ok: 0, err: 'img-busy' }, 409, { 'Retry-After': '20' });
+            /* V7-F (finding 6): the owner row is written BEFORE the object and before the body rows — whatever fails afterwards (the R2 put, a later batch of
+               a large inline body) leaves a row with a clock that the sweep condemns, never an object or rows nothing points at */
+            if (lsC < 0) await ownStmt(env, ik, 'claim', '', AI.u.id, String(AI.u.deptId || '')).run();
             var stC = await imgStoreStmts(env, ik, allP);
             if (lsC > 0) stC.push(imgDeadFlip(env, ik, lsC, AI.u.id, String(AI.u.deptId || '')));
             stC.push(env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?1').bind(sgK + '%'));
-            stC.push(ownStmt(env, ik, 'claim', '', AI.u.id, String(AI.u.deptId || '')));
+            stC.push(imgStageDropStmt(env, ik));
             for (var j9 = 0; j9 < stC.length; j9 += 90) await env.DB.batch(stC.slice(j9, j9 + 90));
             return json({ ok: 1, n: allP.length, parts: nI });
           }
           if (!imgTypeOk(txtI)) return json({ ok: 0, err: IMG_TYPE_ERR }, 415);   /* KIVO_261 · SOT-068 */
           var lsI = vI.dead ? await imgDeadTake(env, ik) : -1; if (lsI === 0) return json({ ok: 0, err: 'img-busy' }, 409, { 'Retry-After': '20' });   /* V7-F: the sweep is deleting this id's old object right now */
+          /* رفعٌ لم يُربط بعد: يُسجَّل صاحبه مؤقتاً حتى أول ربطٍ مشروع بمورد — V7-F (finding 6): before the object is written, so a failed batch leaves no object without a row */
+          if (lsI < 0) await ownStmt(env, ik, 'claim', '', AI.u.id, String(AI.u.deptId || '')).run();
           var stI = await imgStoreStmts(env, ik, txtI);
           if (lsI > 0) stI.push(imgDeadFlip(env, ik, lsI, AI.u.id, String(AI.u.deptId || '')));
-          /* رفعٌ لم يُربط بعد: يُسجَّل صاحبه مؤقتاً حتى أول ربطٍ مشروع بمورد */
-          stI.push(ownStmt(env, ik, 'claim', '', AI.u.id, String(AI.u.deptId || '')));
-          await env.DB.batch(stI);
+          for (var jI = 0; jI < stI.length; jI += 90) await env.DB.batch(stI.slice(jI, jI + 90));
           return json({ ok: 1, n: txtI.length });
         }
         if (request.method === 'DELETE') {
           await imgDropR2(env, ik);
           await env.DB.batch([env.DB.prepare('DELETE FROM imgs WHERE k = ?1').bind(ik),
-            env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?1').bind(IMG_STG + ik + '~%'),
+            imgStageRowsStmt(env, ik), imgStageDropStmt(env, ik),
             env.DB.prepare('DELETE FROM imgown WHERE img = ?1').bind(ik),
             env.DB.prepare('DELETE FROM imgref WHERE img = ?1').bind(ik)]);
           return json({ ok: 1 });

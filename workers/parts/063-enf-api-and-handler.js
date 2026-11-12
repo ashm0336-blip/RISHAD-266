@@ -493,7 +493,7 @@ export default {
     var t0 = Date.now();
     var res0 = await this.handle(request, env);
     /* V7-F · owner decision 2: the image sweep runs after every accepted write — the typed/atomic save path included (054 imgSweep: a small batch, after the response when waitUntil exists) */
-    if ((m0 === 'POST' || m0 === 'PUT' || m0 === 'DELETE') && res0 && res0.status === 200 && url0.pathname.indexOf('/api/') === 0 && url0.pathname.indexOf('/api/img/') !== 0 && url0.pathname !== '/api/login') await imgSweepLater(env, url0.pathname === '/api/reset' ? IMG_SWEEP_RESET : IMG_SWEEP_SAVE);   /* a reset condemns every R2 image (019e): its first pass is larger */
+    if ((m0 === 'POST' || m0 === 'PUT' || m0 === 'DELETE') && res0 && res0.status === 200 && url0.pathname.indexOf('/api/') === 0 && url0.pathname.indexOf('/api/img/') !== 0 && url0.pathname !== '/api/login') await (url0.pathname === '/api/reset' ? imgSweepLater(env, IMG_SWEEP_RESET, 0) : imgSweepLater(env, IMG_SWEEP_SAVE));   /* one compare-and-set per write; a pass at most once per IMG_SWEEP_EVERY · a reset condemns every R2 image (019e) and forces its first pass (batched: a handful of subrequests whatever the count) */
     var out0 = withSec(res0, url0, rid, nonce);
     /* KIVO_255 · SOT-143/149 (SOT-142): سطرُ طلبٍ واحد لكل /api/* — المدةُ داخل العامل (D1 ضمناً) بالملّي ثانية، والمسارُ بلا استعلام، بلا هوية؛
        منه تُشتقّ المقاييسُ التقنية (المعدّل · نسبةُ الأخطاء · p50/p95 لكل مسار) في Workers Logs/Logpush؛ ورأسُ Server-Timing يُظهر المدةَ نفسَها للمتصفح
@@ -768,7 +768,7 @@ export default {
         }
         /* ملخّص نظرة عامة */
         if (path === '/api/overview') {
-          if (superX) await imgSweepSafe(env, IMG_SWEEP_ADMIN);   /* V7-F · owner decision 2: the admin's overview read also sweeps (a larger batch), so «N days left» is true */
+          if (superX) await imgSweepLater(env, IMG_SWEEP_ADMIN, IMG_SWEEP_EVERY_ADMIN);   /* V7-F · owner decision 2: the admin's overview also asks for a pass (a larger batch, at most one a minute) — never waited for when the runtime gives waitUntil */
           var day0 = new Date(nowX); day0.setHours(0, 0, 0, 0); var dayTs = day0.getTime();
           var overviewDepartments = superX ? AX.depts.filter(function (d) { return d && typeof d.id === 'string' && d.id; }).map(function (d) { return d.id; }) : [];
           var overviewAccounts = superX ? AX.users.filter(function (u) { return u && u.role === 'staff' && typeof u.deptId === 'string' && typeof u.ekey === 'string' && u.ekey; })
@@ -930,6 +930,9 @@ export default {
         if (!vI.ok) return json(vI.open ? { ok: 0, err: 'forbidden', why: vI.why } : { ok: 0, err: 'forbidden' }, 403);
         if (vI.dead && mode === 'read') return new Response('', { status: 404, headers: { 'Cache-Control': 'no-store' } });   /* condemned by the sweep: gone, for the platform admin too */
         if (request.method === 'PUT') {
+          /* V7-F (independent review, finding 2): an id outside the upload shape never becomes a row — judged AFTER the verdict, so a caller with no right to upload
+             gets the one refusal above whatever the id looks like, and the 400 says nothing the caller did not type himself */
+          if (!IMG_ID_RX.test(ik)) return json({ ok: 0, err: 'img-id' }, 400);
           if (!imgCtypeOk(request.headers.get('Content-Type'))) return json({ ok: 0, err: IMG_TYPE_ERR }, 415);   /* KIVO_264 · SOT-101: العقدُ الخامّ — النوعُ قبل قراءة الجسم */
           var rlI = await rlHit(env, 'im', AI.u.id, Math.max(30, Math.floor(RL_SAVE / 4))); if (rlI) return tooMany(rlI);   /* KIVO_255 · SOT-139: رفعُ الصور محدودٌ بربع سقف الحفظ (نافذةُ دقيقة · لكل حساب) */
           var rawI = await request.arrayBuffer();
@@ -949,7 +952,7 @@ export default {
             var sgK = IMG_STG + ik + '~';
             if (pI > 0 && !(await env.DB.prepare('SELECT 1 AS x FROM imgs WHERE k = ?1 LIMIT 1').bind(sgK + '0').first())) return json({ ok: 0, err: 'part0-missing' }, 409);   /* لا مرحَّلَ بلا جزءٍ أوّل سليم — لا تخزينَ يتيماً */
             var stP = [];
-            if (pI === 0) stP.push(env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?1').bind(sgK + '%'));   /* رفعٌ سابقٌ مهجور */
+            if (pI === 0) { stP.push(env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?1').bind(sgK + '%')); stP.push(imgStageStmt(env, ik)); }   /* رفعٌ سابقٌ مهجور · V7-F: the staged parts get a clock (054 IMG_STAGE_TTL) */
             stP = stP.concat(kvPutStmts(env, 'imgs', sgK + pI, txtI));
             await env.DB.batch(stP);
             if (pI < nI - 1) return json({ ok: 1, part: pI, of: nI });
@@ -963,26 +966,29 @@ export default {
             }
             if (!imgTypeOk(allP)) { await env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?1').bind(sgK + '%').run(); return json({ ok: 0, err: IMG_TYPE_ERR }, 415); }
             var lsC = vI.dead ? await imgDeadTake(env, ik) : -1; if (lsC === 0) return json({ ok: 0, err: 'img-busy' }, 409, { 'Retry-After': '20' });
+            /* V7-F (finding 6): the owner row is written BEFORE the object and before the body rows — whatever fails afterwards (the R2 put, a later batch of
+               a large inline body) leaves a row with a clock that the sweep condemns, never an object or rows nothing points at */
+            if (lsC < 0) await ownStmt(env, ik, 'claim', '', AI.u.id, String(AI.u.deptId || '')).run();
             var stC = await imgStoreStmts(env, ik, allP);
             if (lsC > 0) stC.push(imgDeadFlip(env, ik, lsC, AI.u.id, String(AI.u.deptId || '')));
             stC.push(env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?1').bind(sgK + '%'));
-            stC.push(ownStmt(env, ik, 'claim', '', AI.u.id, String(AI.u.deptId || '')));
+            stC.push(imgStageDropStmt(env, ik));
             for (var j9 = 0; j9 < stC.length; j9 += 90) await env.DB.batch(stC.slice(j9, j9 + 90));
             return json({ ok: 1, n: allP.length, parts: nI });
           }
           if (!imgTypeOk(txtI)) return json({ ok: 0, err: IMG_TYPE_ERR }, 415);   /* KIVO_261 · SOT-068 */
           var lsI = vI.dead ? await imgDeadTake(env, ik) : -1; if (lsI === 0) return json({ ok: 0, err: 'img-busy' }, 409, { 'Retry-After': '20' });   /* V7-F: the sweep is deleting this id's old object right now */
+          /* رفعٌ لم يُربط بعد: يُسجَّل صاحبه مؤقتاً حتى أول ربطٍ مشروع بمورد — V7-F (finding 6): before the object is written, so a failed batch leaves no object without a row */
+          if (lsI < 0) await ownStmt(env, ik, 'claim', '', AI.u.id, String(AI.u.deptId || '')).run();
           var stI = await imgStoreStmts(env, ik, txtI);
           if (lsI > 0) stI.push(imgDeadFlip(env, ik, lsI, AI.u.id, String(AI.u.deptId || '')));
-          /* رفعٌ لم يُربط بعد: يُسجَّل صاحبه مؤقتاً حتى أول ربطٍ مشروع بمورد */
-          stI.push(ownStmt(env, ik, 'claim', '', AI.u.id, String(AI.u.deptId || '')));
-          await env.DB.batch(stI);
+          for (var jI = 0; jI < stI.length; jI += 90) await env.DB.batch(stI.slice(jI, jI + 90));
           return json({ ok: 1, n: txtI.length });
         }
         if (request.method === 'DELETE') {
           await imgDropR2(env, ik);
           await env.DB.batch([env.DB.prepare('DELETE FROM imgs WHERE k = ?1').bind(ik),
-            env.DB.prepare('DELETE FROM imgs WHERE k LIKE ?1').bind(IMG_STG + ik + '~%'),
+            imgStageRowsStmt(env, ik), imgStageDropStmt(env, ik),
             env.DB.prepare('DELETE FROM imgown WHERE img = ?1').bind(ik),
             env.DB.prepare('DELETE FROM imgref WHERE img = ?1').bind(ik)]);
           return json({ ok: 1 });

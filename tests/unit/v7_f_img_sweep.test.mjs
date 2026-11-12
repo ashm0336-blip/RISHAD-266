@@ -1,4 +1,6 @@
 /* V7-F · owner decision 2 — «اليتيمة 30 يوماً، والمرفوعة غير المربوطة 7 أيام. التنظيف يعمل من مسار الحفظ الجديد فعلاً.»
+   (after the independent review: the unbound-upload delay is 30 days — owner rule «إن وُجدت أي شاشة تُبقي صورة مرفوعة في مسودة قبل الحفظ: 30 يوماً لا 7»,
+   the seized draft keeps a confirmed upload for as long as its window lives; and a pass runs at most once per 10 minutes — `age`/`due` are that time passing.)
    Real worker, legacy AND enforce, stored rows AND R2 bytes.
    Before (develop 5add483): the sweep was called only from the plain-KV save (imgSync); every real save goes through the typed/atomic path,
    so an orphan past its grace and an upload never bound were never deleted — and a platform reset left every R2 object behind.
@@ -7,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TEST_SUPER_PIN } from './harness.mjs';
-import { D, D2, PNG, TAG, dk, both, scene, state, gone, img, edit, bind, upload, unitOp, age, EDIT, DAYMS } from './v7_f_img_fx.mjs';
+import { D, D2, PNG, TAG, dk, both, scene, state, gone, img, edit, bind, upload, unitOp, age, due, EDIT, DAYMS } from './v7_f_img_fx.mjs';
 
 const OTHER = 'data:image/png;base64,T1RIRVJfVjdG';
 let n = 0;
@@ -28,18 +30,18 @@ both(test, 'the typed save path sweeps: an orphan past 30 days is deleted (rows 
   assert.equal((await img(W, T.S.super, old)).status, 404, 'the platform admin reads it as gone');
 });
 
-both(test, 'an upload never bound is deleted after 7 days; a 6-day-old one is kept; so is the leftover upload of a deleted unit\'s account', async (mode) => {
+both(test, 'an upload never bound is deleted after 30 days; a 29-day-old one is kept; so is the leftover upload of a deleted unit\'s account', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, stale = id('stale'), fresh = id('fresh'), left = id('leftover');
   await upload(W, S.mgr2, stale); await upload(W, S.mgr2, fresh); await upload(W, S.mgr, left);
-  age(W, stale, 8); age(W, fresh, 6);
+  age(W, stale, 31); age(W, fresh, 29);
   const f0 = await state(W, fresh); assert.equal(f0.st, 'claim');
   await typedSave(T);
   assert.ok(gone(await state(W, stale)), 'stale upload gone · ' + JSON.stringify(await state(W, stale)));
   assert.deepEqual(await state(W, fresh), f0);
   await unitOp(W, 'dept-delete', D);
-  assert.equal((await state(W, left)).st, 'claim', 'the deleted account\'s upload is still an unbound upload'); age(W, left, 8);
+  assert.equal((await state(W, left)).st, 'claim', 'the deleted account\'s upload is still an unbound upload'); age(W, left, 31);
   await typedSave(T);
-  assert.ok(gone(await state(W, left)), 'and it goes after 7 days too');
+  assert.ok(gone(await state(W, left)), 'and it goes after 30 days too');
 });
 
 both(test, 'condition (i) · an aged orphan re-bound by its own unit in the very save that triggers the sweep is not deleted', async (mode) => {
@@ -48,17 +50,17 @@ both(test, 'condition (i) · an aged orphan re-bound by its own unit in the very
   const s = await edit(W, S.mgr, D, 'plan', EDIT.plan(i)); assert.ok(s.ok, JSON.stringify(s.j).slice(0, 200));
   let st = await state(W, i);
   assert.equal(st.st, 'bound'); assert.equal(st.k, dk(D, 'plan')); assert.equal(st.r2, PNG, 'bytes intact'); assert.deepEqual(st.refs, [dk(D, 'plan')]);
-  await typedSave(T); await W.C.api('/api/overview', { cookie: S.super });
+  due(W); await typedSave(T); due(W); await W.C.api('/api/overview', { cookie: S.super });
   assert.deepEqual(await state(W, i), st, 'nor by any later sweep');
   assert.equal((await img(W, S.mgr, i)).status, 200);
 });
 
-both(test, 'condition (i) · an 8-day-old upload bound in the same save that triggers the sweep is not deleted', async (mode) => {
+both(test, 'condition (i) · a 31-day-old upload bound in the same save that triggers the sweep is not deleted', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, i = id('late');
-  await upload(W, S.mgr, i); age(W, i, 8);
+  await upload(W, S.mgr, i); age(W, i, 31);
   const s = await edit(W, S.mgr, D, 'rounds', EDIT.rounds(i)); assert.ok(s.ok, JSON.stringify(s.j).slice(0, 200));
   const st = await state(W, i); assert.equal(st.st, 'bound'); assert.equal(st.r2, PNG); assert.deepEqual(st.refs, [dk(D, 'rounds')]);
-  await typedSave(T);
+  due(W); await typedSave(T);
   assert.deepEqual(await state(W, i), st);
 });
 
@@ -66,7 +68,7 @@ both(test, 'condition (i) · an 8-day-old upload bound in the same save that tri
 function between(W, hook) {
   const DB = W.env.DB, prepare = DB.prepare.bind(DB); let fired = 0;
   DB.prepare = (sql) => { const st = prepare(sql);
-    if (/^SELECT img, st, ts FROM imgown WHERE \(st = 'orphan'/.test(sql)) { const all = st.all.bind(st); st.all = async () => { const r = await all(); if (r.results.length) { fired++; hook(); } return r; }; }
+    if (/SELECT img, st, ts FROM imgown WHERE \(st = 'orphan' AND ts </.test(sql)) { const all = st.all.bind(st); st.all = async () => { const r = await all(); if (r.results.length) { fired++; hook(); } return r; }; }
     return st; };
   return { fired: () => fired, off: () => { DB.prepare = prepare; } };
 }
@@ -74,7 +76,7 @@ both(test, 'condition (i) · a concurrent re-bind, a concurrent reference (typed
   for (const kind of ['rebind', 'typed-ref', 'kv-mention', 'upload-rebound']) {
     const T = await scene(mode), { W, S, id } = T, K = dk(D, 'plan');
     let i;
-    if (kind === 'upload-rebound') { i = id('c' + kind.length); await upload(W, S.mgr, i); age(W, i, 8); } else { i = await orphanOf(T, 'plan', 'c' + kind.length); age(W, i, 31); }
+    if (kind === 'upload-rebound') { i = id('c' + kind.length); await upload(W, S.mgr, i); age(W, i, 31); } else { i = await orphanOf(T, 'plan', 'c' + kind.length); age(W, i, 31); }
     const run = (sql, ...a) => W.env.DB.db.prepare(sql).run(...a);
     const B = between(W, () => {
       if (kind === 'rebind' || kind === 'upload-rebound') { run("UPDATE imgown SET st = 'bound', k = ?, dept = ? WHERE img = ?", K, D, i); run('INSERT OR IGNORE INTO imgref (img, k) VALUES (?, ?)', i, K); }
@@ -86,7 +88,7 @@ both(test, 'condition (i) · a concurrent re-bind, a concurrent reference (typed
     const st = await state(W, i);
     assert.equal(st.r2, PNG, kind + ': the R2 bytes are intact'); assert.equal(st.body, 'r2', kind + ': the body row is intact');
     assert.equal(st.st, kind === 'rebind' || kind === 'upload-rebound' ? 'bound' : 'amb', kind + ': ' + JSON.stringify(st));
-    await typedSave(T); await W.C.api('/api/overview', { cookie: S.super });
+    due(W); await typedSave(T); due(W); await W.C.api('/api/overview', { cookie: S.super });
     assert.equal((await state(W, i)).r2, PNG, kind + ': and later sweeps leave it');
   }
 });
@@ -105,11 +107,12 @@ both(test, 'a failed R2 delete is retried: the image is condemned (gone for ever
   assert.equal(Object.keys((await W.C.api('/api/imgs', { cookie: S.super })).j).includes(i), false, 'not in the admin\'s listing');
   const re = await edit(W, S.mgr, D, 'plan', EDIT.plan(i)); assert.ok(re.ok, 'mentioning a condemned id is mentioning an id with no image');
   st = await state(W, i); assert.equal(st.st, 'dead', 'it is not revived'); assert.equal((await img(W, S.mgr, i)).status, 404, 'his own record now shows it as missing');
-  assert.equal(fail, 1, 'within the lease no second attempt');
+  assert.equal(fail, 1, 'that save ran no second pass (one per 10 minutes)');
+  due(W); await typedSave(T); assert.equal(fail, 1, 'and a pass within the lease makes no second attempt'); assert.equal((await state(W, i)).st, 'dead');
   /* a re-upload of the same id while the delete is pending and the lease is fresh: told to retry, nothing written */
   const busy = await img(W, S.mgr, i, 'PUT', OTHER); assert.equal(busy.status, 409); assert.equal(busy.j.err, 'img-busy'); assert.equal((await state(W, i)).r2, PNG);
   /* the lease passes, R2 is back: the next sweep finishes the job */
-  W.env.DB.exec("UPDATE imgown SET ts = ts - 60000 WHERE img = '" + i + "'"); R2.delete = del;
+  W.env.DB.exec("UPDATE imgown SET ts = ts - 60000 WHERE img = '" + i + "'"); R2.delete = del; due(W);
   await typedSave(T);
   st = await state(W, i); assert.equal(st.body, null); assert.equal(st.r2, null); assert.equal(st.st, null, 'rows and object gone · ' + JSON.stringify(st));
   assert.equal((await img(W, S.mgr, i)).status, 404, 'the unit\'s record still mentions it: MISSING for its readers');
@@ -123,20 +126,26 @@ both(test, 'a condemned id re-uploaded after the lease (bytes coming back) becom
   W.env.DB.exec("UPDATE imgown SET ts = ts - 60000 WHERE img = '" + i + "'");
   const up = await img(W, S.mgr, i, 'PUT', OTHER); assert.equal(up.status, 200, JSON.stringify(up.j));
   let st = await state(W, i); assert.equal(st.st, 'claim'); assert.equal(st.r2, OTHER); assert.equal(st.body, 'r2');
-  R2.delete = del; await typedSave(T); await W.C.api('/api/overview', { cookie: S.super });
+  R2.delete = del; due(W); await typedSave(T); due(W); await W.C.api('/api/overview', { cookie: S.super });
   st = await state(W, i); assert.equal(st.st, 'claim'); assert.equal(st.r2, OTHER, 'the new bytes are not swept by the old pending delete');
 });
 
-both(test, 'the work per request is bounded: 6 per write, the rest by the following writes and by the admin\'s overview read', async (mode) => {
+both(test, 'the work is bounded: 6 per pass, ONE pass per 10 minutes for the whole platform (the writes in between run none), the admin\'s overview asks once a minute for 40', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, ids = [];
-  for (let k = 0; k < 15; k++) { const i = id('bulk' + k); await upload(W, S.mgr2, i); age(W, i, 8 + k); ids.push(i); }
+  for (let k = 0; k < 15; k++) { const i = id('bulk' + k); await upload(W, S.mgr2, i); age(W, i, 31 + k); ids.push(i); }
   const left = async () => { let c = 0; for (const i of ids) if (!gone(await state(W, i))) c++; return c; };
-  await typedSave(T); assert.equal(await left(), 9, 'one write: 6 (the oldest first)');
+  await typedSave(T); assert.equal(await left(), 9, 'one pass: 6 (the oldest first)');
   assert.ok(gone(await state(W, ids[14])), 'oldest first'); assert.equal((await state(W, ids[0])).st, 'claim');
-  await typedSave(T); assert.equal(await left(), 3);
-  const ov = await W.C.api('/api/overview', { cookie: S.super }); assert.equal(ov.status, 200);
-  assert.equal(await left(), 0, 'the admin overview read sweeps too');
-  assert.equal(ov.j.imgs.grace, 30 * DAYMS); assert.equal(ov.j.imgs.claimGrace, 7 * DAYMS);
+  await typedSave(T); await typedSave(T); assert.equal(await left(), 9, 'the writes of the next 10 minutes run no pass');
+  const stamp = () => Number(W.env.DB.q("SELECT v FROM meta WHERE k = 'img_sweep_at'")[0].v);
+  W.env.DB.exec("UPDATE meta SET v = '" + (stamp() - 9 * 60000) + "' WHERE k = 'img_sweep_at'"); await typedSave(T); assert.equal(await left(), 9, '9 minutes later: still none');
+  W.env.DB.exec("UPDATE meta SET v = '" + (stamp() - 2 * 60000) + "' WHERE k = 'img_sweep_at'"); await typedSave(T); assert.equal(await left(), 3, 'past 10 minutes: the next 6');
+  W.env.DB.exec("UPDATE meta SET v = '" + (stamp() - 30000) + "' WHERE k = 'img_sweep_at'");
+  let ov = await W.C.api('/api/overview', { cookie: S.super }); assert.equal(ov.status, 200); assert.equal(await left(), 3, 'the admin overview within a minute of the last pass: none');
+  W.env.DB.exec("UPDATE meta SET v = '" + (stamp() - 61000) + "' WHERE k = 'img_sweep_at'");
+  ov = await W.C.api('/api/overview', { cookie: S.super }); assert.equal(ov.status, 200);
+  assert.equal(await left(), 0, 'a minute after it: the admin overview read sweeps too');
+  assert.equal(ov.j.imgs.grace, 30 * DAYMS); assert.equal(ov.j.imgs.claimGrace, 30 * DAYMS);
 });
 
 both(test, 'the plain-KV save path still sweeps, and an image a plain record mentions is never deleted', async (mode) => {
@@ -145,7 +154,7 @@ both(test, 'the plain-KV save path still sweeps, and an image a plain record men
   const s1 = await W.C.save(S.mgr, { [KP]: JSON.stringify({ t: TAG + ' v7f', logo }) }); assert.equal(s1.status, 200, JSON.stringify(s1.j).slice(0, 200));
   if ((s1.j.denied || {})[KP]) { console.log('# [' + mode + '] plain profile save denied to the manager: ' + JSON.stringify(s1.j.denied[KP]).slice(0, 80) + ' — plain-path leg skipped'); return; }
   assert.equal((await state(W, logo)).st, 'bound');
-  age(W, i, 31); age(W, stale, 8); age(W, logo, 400);
+  age(W, i, 31); age(W, stale, 31); age(W, logo, 400);
   const s2 = await W.C.save(S.mgr, { [KP]: JSON.stringify({ t: TAG + ' v7f 2', logo }) }); assert.equal(s2.status, 200);
   assert.ok(gone(await state(W, i)), 'aged orphan swept from the plain path'); assert.ok(gone(await state(W, stale)), 'aged upload swept from the plain path');
   assert.equal((await state(W, logo)).r2, PNG, 'a bound image, however old, is not a candidate');
@@ -168,7 +177,7 @@ both(test, 'platform reset: the R2 objects go with the rows (they used to stay b
   const nu = await W.C.login('0500000177', '583928'); assert.ok(nu.ok, 'the new admin');
   assert.equal((await img(W, nu.ck, b)).status, 404, 'no image for the new platform admin either');
   assert.deepEqual(Object.keys((await W.C.api('/api/imgs', { cookie: nu.ck })).j), []);
-  R2.delete = del; W.env.DB.exec("UPDATE imgown SET ts = ts - 60000 WHERE img = '" + b + "'");   /* the retry lease passes */
+  R2.delete = del; W.env.DB.exec("UPDATE imgown SET ts = ts - 60000 WHERE img = '" + b + "'"); due(W);   /* the retry lease passes */
   const ov = await W.C.api('/api/overview', { cookie: nu.ck }); assert.equal(ov.status, 200, JSON.stringify(ov.j).slice(0, 200));
   sb = await state(W, b); assert.ok(gone(sb), 'retried and finished · ' + JSON.stringify(sb));
   assert.equal(W.env.DB.q('SELECT COUNT(*) n FROM imgs')[0].n, 0); assert.equal(W.env.DB.q('SELECT COUNT(*) n FROM imgown')[0].n, 0);
