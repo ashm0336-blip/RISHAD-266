@@ -133,3 +133,24 @@ test('finding 7 · the gate is not weakened: different bytes, or an actor who ma
   assert.deepEqual(ownOf(B, ORPH), before); assert.deepEqual(writes(S), []);
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM imgref WHERE img=?1', ORPH)[0].n, 0);
 });
+
+/* ── the independent review, low item — a FULL replace-restore that no longer carries a unit removes it without passing through the unit-delete
+   route, which is where the orphans of a deleted unit were stamped (decision 3). The restore now stamps them in its own commit: a unit created
+   later under the same id inherits nothing (054 imgOrphanRebindOk refuses a stamped orphan to everyone but the platform admin). */
+test('low · a full replace-restore that drops a unit stamps that unit\'s orphans in the same commit; the orphans of the units it keeps are untouched', async () => {
+  const B = await world(), scope = { kind: 'full' }, request = await B.body({ scope }), K = 'bassam_depts_v1', units = JSON.parse(request.keys[K]);
+  assert.ok(units.some((d) => d.id === D2) && units.some((d) => d.id === D1));
+  await B.DB.batch([B.DB.prepare('INSERT INTO imgown(img,st,k,uid,dept,ts) VALUES(?1,?2,?3,?4,?5,?6)').bind('img_testonly_d2orph', 'orphan', '', 'TEST_ONLY_u2', D2, Date.now()),
+    B.DB.prepare('INSERT INTO imgown(img,st,k,uid,dept,ts) VALUES(?1,?2,?3,?4,?5,?6)').bind('img_testonly_d1orph', 'orphan', '', 'TEST_ONLY_u1', D1, Date.now())]);
+  const gone = (k) => k.startsWith('bsdept:' + D2 + ':'), keep = (x) => (Array.isArray(x) ? x.filter((d) => !(d && d.scope && d.scope.departmentId === D2)) : x);
+  const data = Object.fromEntries(Object.entries(request.keys).filter(([k]) => !gone(k))); data[K] = JSON.stringify(units.filter((d) => d.id !== D2));
+  const file = { app: 'bassam-crowd', version: 3, kind: 'full', data,
+    domains: Object.fromEntries(Object.entries(request.domains).filter(([name]) => name !== 'operations').map(([name, v]) => [name, keep(v)])),
+    manifest: { ...request.manifest, version: 3, departments: (request.manifest.departments || []).filter((d) => d !== D2),
+      domains: Object.fromEntries(Object.entries(request.manifest.domains).filter(([name]) => name !== 'operations')), keys: request.manifest.keys.filter((k) => !gone(k)) } };
+  const ack = ok(await B.api('super', '/api/backup/restore', { version: 1, uid: IDS.super, requestId: 'TEST_ONLY_v7f_dropunit', scope, mode: 'replace', reason: 'TEST_ONLY v7f drop unit', base: request.base, backup: file, phase: 'commit', legacyConsent: false }));
+  assert.equal(ack.ok, 1);
+  assert.equal(JSON.parse(B.DB.q('SELECT v FROM kv WHERE k=?1', K)[0].v).some((d) => d.id === D2), false, 'the unit is no longer on the platform');
+  assert.deepEqual(copy(B.DB.q("SELECT st,uid,dept FROM imgown WHERE img='img_testonly_d2orph'")), [{ st: 'orphan', uid: '~unit-deleted~', dept: D2 }], 'its orphan is stamped: the platform admin\'s for good');
+  assert.deepEqual(copy(B.DB.q("SELECT st,uid,dept FROM imgown WHERE img='img_testonly_d1orph'")), [{ st: 'orphan', uid: 'TEST_ONLY_u1', dept: D1 }], 'a kept unit\'s orphan still returns to its own unit');
+});
