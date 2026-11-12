@@ -60,6 +60,8 @@
   function hideCard(name) { try { if (cards[name]) { cards[name].remove(); delete cards[name]; } } catch (e) { /* عرضٌ فقط */ } }
   window.addEventListener('dc:page-load-failed', function (event) { var name = event.detail && event.detail.name; if (!name) return; showCard(name); gaveUp[name] = 1; if (!sweeper) sweeper = setInterval(sweep, 30000); });   /* CORE-01: قراءةُ البيانات المتعثّرة تُعاد تلقائياً كما تقول البطاقة (كل ٣٠ ث وعند عودة الاتصال) */
   window.addEventListener('dc:page-load-ready', function (event) { var name = event.detail && event.detail.name; if (name) hideCard(name); });
+  /* V7 UX: the card belongs to the screen that failed — leaving that screen takes the card with it (re-opening retries) */
+  window.addEventListener('hashchange', function () { for (var n in cards) { var r = window.__dcRegistry && window.__dcRegistry[n]; if (!r || !r.subs || !r.subs.size) hideCard(n); } });
   function again(name) {
     var n = tries[name] = (tries[name] || 0) + 1;
     if (n > 3) { gaveUp[name] = 1; showCard(name); if (!sweeper) sweeper = setInterval(sweep, 30000); return; }

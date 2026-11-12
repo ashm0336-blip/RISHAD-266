@@ -1004,6 +1004,8 @@
           this.forceUpdate();
         };
         this.__makeLogic(dataReady(this.__name) ? registry.get(this.__name).Logic : null, null);
+        /* V7 UX: opening a screen again after its read failed is a fresh attempt (the failure is terminal only while shown) */
+        { const r0 = registry.get(this.__name); if (r0.dataError && !sessionGone()) r0.dataError = null; }
         ensureFetched(this.__name);
       }
       /** Error-boundary hook: a render crash anywhere in this DC's subtree
@@ -1866,6 +1868,10 @@
     function ensureFetched(name) {
       const r = registry.get(name);
       if (r.fetched) return;
+      /* V7 UX: a declared data failure is terminal until something asks to retry (the card's button · `online` · the 30 s
+         sweep — all clear dataError first). Without this the dispatcher's next render re-fetched the page file and restarted
+         the read cycle at once, which removed the failure card in the frame that inserted it and re-read silently forever. */
+      if (r.dataError && !dataReady(name)) return;
       r.fetched = true;
       const url = COMPONENT_DIR + "/" + encodeURIComponent(name) + ".dc.html";
       const res = KIVO.__resources;
