@@ -7,7 +7,7 @@
   "version": {"type": "integer", "minimum": 1}, "generated": {"type": "string"}, "notes": {"type": "array", "items": {"type": "string"}},
   "pages": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/page"}},
   "containers": {"type": "array", "items": {"type": "object", "required": ["key", "nav", "name", "refs", "names"], "additionalProperties": false,
-    "properties": {"key": {"$ref": "#/$defs/key"}, "nav": {"$ref": "#/$defs/key"}, "name": {"type": "string", "minLength": 1}, "refs": {"type": "array", "items": {"type": "string", "pattern": "^[a-z][A-Za-z0-9]*/[a-z][A-Za-z0-9]*$"}}, "names": {"type": "object", "additionalProperties": {"type": "string"}}}}},
+    "properties": {"key": {"$ref": "#/$defs/key"}, "nav": {"$ref": "#/$defs/key"}, "name": {"type": "string", "minLength": 1}, "refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][A-Za-z0-9]*(/[a-z][A-Za-z0-9]*)?$", "description": "page/leaf = ورقة offPage · page وحدها = لوحةُ صفحةٍ كاملة بمفتاح عرضها (V7 P4)"}}, "names": {"type": "object", "additionalProperties": {"type": "string"}}}}},
   "tabAddr": {"type": "object", "additionalProperties": {"oneOf": [{"const": 1}, {"type": "object", "additionalProperties": {"const": 1}}]}},
   "navOrder": {"type": "array", "items": {"$ref": "#/$defs/key"}, "uniqueItems": true},
   "navNames": {"type": "object", "additionalProperties": {"type": "string", "minLength": 1}},
@@ -20,9 +20,11 @@
   "tab": {"type": "object", "required": ["key", "name"], "additionalProperties": false, "properties": {"key": {"$ref": "#/$defs/key"}, "name": {"type": "string", "minLength": 1}, "offPage": {"type": "boolean"}}},
   "page": {"type": "object", "required": ["key", "nav", "name"], "additionalProperties": false,
    "properties": {"key": {"$ref": "#/$defs/key"}, "nav": {"$ref": "#/$defs/key"}, "name": {"type": "string", "minLength": 1}, "under": {"$ref": "#/$defs/key"}, "tabLabel": {"type": "string"},
-     "module": {"type": "string", "pattern": "^[a-z]+$", "description": "CORE-01: slug وحدة الشيفرة في modules/modules.json (ميثاقها meta.json) — للبناء وحده، لا يُصدَّر"},
-     "activation": {"enum": ["toggle", "always"], "description": "CORE-01: toggle = يطفئها mods.off (ff.module.<key>.enabled) · always = لا تُطفأ — للبناء وحده"},
-     "requires": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/req"}, "description": "CORE-01: اعتماديات الأوراق — للبناء وحده"},
+     "module": {"type": "string", "pattern": "^[a-z]+$", "description": "CORE-01: slug وحدة الشيفرة في modules/modules.json (ميثاقها meta.json) — يصل الواجهةَ منذ V7 P4 (خريطةُ الأنظمة)"},
+     "activation": {"enum": ["toggle", "always"], "description": "CORE-01: toggle = يطفئها mods.off (ff.module.<key>.enabled) · always = لا تُطفأ"},
+     "platSwitch": {"const": true, "description": "V7 P4: للوحدة مفتاحُ إطفاءٍ في «المنصة ← الوحدات» اليوم (toggle وحدها)"},
+     "platLock": {"type": "string", "minLength": 1, "description": "V7 P4: سببُ قفل وحدةٍ toggle في «الوحدات» (لا تُطفأ من الواجهة) — يُعرض نصاً"},
+     "requires": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/req"}, "description": "CORE-01: اعتماديات الأوراق (المصدرُ الوحيد لشروط لوحات المؤشرات — V7 P4)"},
      "departmentComponents": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z][A-Za-z0-9 -]*$"}},
      "seq": {"type": "array", "items": {"type": "string", "pattern": "^(sub|tab|page):[a-z][A-Za-z0-9]*$"}}, "subs": {"type": "array", "items": {"$ref": "#/$defs/sub"}}, "tabs": {"type": "array", "items": {"$ref": "#/$defs/tab"}}}}
  }

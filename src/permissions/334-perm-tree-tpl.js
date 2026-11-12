@@ -257,6 +257,7 @@
      فمن مُنح «مؤشرات التشغيل اليومي» دون «التقرير اليومي» يرى رابطَ «مؤشرات الإدارة» إلى صفحةٍ تقول «لا مؤشرات ممنوحة لك»). مصدرٌ واحد للرابط والصفحة. */
   function kpiPanelOk(pk, sk){
     try {
+      if (!sk) return can(pk, 'view');   /* V7 P4 · G6: لوحةُ صفحةٍ كاملة (مرجعٌ بلا «/» في refs — «مؤشرات المهام») يمنحها مفتاحُ عرض الصفحة نفسُه */
       if (!canSub(pk, sk, 'view')) return false;
       if (sk === 'kpiOcc') return onCap('zones') && onCap('dens');
       if (sk === 'kpiZones') return onCap('zones');

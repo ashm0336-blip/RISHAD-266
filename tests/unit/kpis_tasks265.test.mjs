@@ -46,7 +46,7 @@ function page(o = {}) {
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
   const can = o.can || (() => true);
-  KIVO.BassamPerm = { can: (k, a) => can(k, a), kpiPanelOk: (pk, sk) => !!(o.others && o.others(pk, sk)), canSub: () => true, on: () => true };
+  KIVO.BassamPerm = { can: (k, a) => can(k, a), kpiPanelOk: (pk, sk) => (sk ? !!(o.others && o.others(pk, sk)) : can(pk, 'view')),   /* V7 P4 · G6: a page-level ref (the tasks panel) = the page's view right, as in 334 */ canSub: () => true, on: () => true };
   KIVO.BassamHijri = { now: () => ({ y: 1448, m: 4, d: 27 }) };
   /* schema 10: tasks come from the confirmed Operations projection, and operational pages require a ready registered department context */
   KIVO.BassamDepts = { context: () => (o.scope || { state: 'ready' }) };

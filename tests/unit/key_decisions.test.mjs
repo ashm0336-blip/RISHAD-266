@@ -17,7 +17,7 @@ import { internals } from './internals.mjs';
 
 const W = await internals(['enfHeld', 'KIVO_REGISTRY', 'enfIx', 'PG_REG']);
 const R = W.KIVO_REGISTRY, ACT = R.keys.map(k => R.byKey[k]).filter(e => e.status === 'active'), RES = R.keys.map(k => R.byKey[k]).filter(e => e.status !== 'active');
-const PAGES = W.PG_REG.map(p => p.key), LENSES = JSON.parse(fs.readFileSync(path.join(SRC, 'manifests', '255-page-manifest.js'), 'utf8').match(/"lenses":(\[[^\]]*\])/)[1]).map(x => x.key);
+const PAGES = W.PG_REG.map(p => p.key), LENSES = (() => { const b = fs.readFileSync(path.join(SRC, 'manifests', '255-page-manifest.js'), 'utf8'); return JSON.parse(b.slice(b.lastIndexOf('})(') + 3, b.lastIndexOf(');'))).lenses.map(x => x.key); })();   /* V7 P4: a lens entry now carries arrays (hosts · indicators) — read the block as JSON, not by a flat-array pattern */
 const ownersById = {}; (Array.isArray(R.owners) ? R.owners : Object.values(R.owners)).forEach(o => { ownersById[o.id] = o; });
 const roleSuper = (e) => (e.asisMap || []).includes('role:super'), roleMgr = (e) => (e.asisMap || []).includes('role:mgr');
 const leaves = (e) => (e.asisMap || []).filter(x => /^[A-Za-z]+(\/[A-Za-z]+)?:(view|add|edit|del|approve|export)$/.test(x));

@@ -659,6 +659,8 @@
   var P24_COMPAT = { 'ir.rec.retro.open': 1, 'sz.rec.retro.open': 1 };   /* = ENF_COMPAT */
   var P24_LEAF_RE = /^([A-Za-z]+(?:\/[A-Za-z]+)?):(view|add|edit|del|approve|export)$/, P24_LENSES = LENS_KEYS.slice();   /* KIVO_259 · AUD-030: = عدساتُ الإضافات (LENS_REG ← plugins/lenses — كانت قائمةً حرفيّة بالترتيب نفسِه) */
   function p24R(){ var R = KIVO.KIVO_REGISTRY; return (R && R.byKey && R.owners && R.atoms && R.translate && R.keys) ? R : null; }
+  /* V7 P4 · G7: مضيفو العدسة من ملفّها (plugins/lenses/<k>/manifest.json:hosts ← KIVO_MANIFEST.lenses) — لا قائمةَ حرفية */
+  function lensHosts(L){ var x = LENS_REG.filter(function(z){ return z.key === L; })[0]; return (x && Array.isArray(x.hosts)) ? x.hosts.slice() : []; }
   function p24LensOf(key){ var m = /^lens\.([a-z]+)\./.exec(String(key || '')); return m && P24_LENSES.indexOf(m[1]) !== -1 ? m[1] : ''; }
   var _p24ix = null;
   function p24Ix(){
@@ -674,7 +676,7 @@
       var o = R.owners[e.owner];
       if (e.ownerKind === 'page') ix.leaf[k] = e.owner;
       else if (e.ownerKind === 'reference') ix.leaf[k] = (o && o.managedIn) || leaves[0] || '';
-      else if (e.ownerKind === 'lens') ix.hosts[k] = leaves.length ? leaves : ['plan', 'daily/rounds'];
+      else if (e.ownerKind === 'lens') ix.hosts[k] = leaves.length ? leaves : lensHosts(p24LensOf(k));
     });
     return (_p24ix = ix);
   }
@@ -710,7 +712,7 @@
     if (ix.hosts[key]) { var L = p24LensOf(key); if (L && !C.lens(L)) return false; return ix.hosts[key].some(function(h){ return p24LeafOn(C, h); }); }
     return p24LeafOn(C, ix.leaf[key] || '');
   }
-  function p24LensHosted(L, C){ var ix = p24Ix(); if (!ix) return false; var k = 'lens.' + L + '.view'; return (ix.hosts[k] || ['plan', 'daily/rounds']).some(function(h){ return p24LeafOn(C, h); }); }
+  function p24LensHosted(L, C){ var ix = p24Ix(); if (!ix) return false; var k = 'lens.' + L + '.view'; return (ix.hosts[k] || lensHosts(L)).some(function(h){ return p24LeafOn(C, h); }); }
   /* = enfTranslated */
   function p24Translate(sheet, C){
     var R = p24R(); if (!R) return {}; var cut = {}, k, Z = azZ(), mig = !!(Z && Z.perm);

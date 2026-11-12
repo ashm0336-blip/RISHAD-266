@@ -54,7 +54,7 @@ x = [k for k in M['navOrder'] if k not in keys]; y = [n for n in navs if n not i
 if x or z: print('✘ pages.json تناسق: navOrder غريب ' + str(x) + ' · under غريب ' + str(z)); bad += 1
 else: print('✔ pages.json متناسق داخلياً (navOrder · under)')
 if y: print('✘ pages.json: مساراتٌ بلا اسمٍ في routeNames ' + str(y) + ' (KIVO_263 · SOT-095: خطأٌ لا تحذير)'); bad += 1
-# CORE-01 · عقدُ تعريف النظام (module · activation · requires في pages.json — للبناء وحده، لا يُصدَّر): يُطابَق مع ما هو قائمٌ في الشيفرة
+# CORE-01 · عقدُ تعريف النظام (module · activation · requires في pages.json — تصل الواجهةَ للعرض منذ V7 P4؛ الخادمُ يأخذ البنيةَ وحدها): يُطابَق مع ما هو قائمٌ في الشيفرة
 def _core01(S, M):
     err = []; R = lambda *a: open(os.path.join(S, *a), encoding='utf-8').read()
     MODS = {m['slug']: m['name'] for m in json.load(open(os.path.join(S, 'modules', 'modules.json'), encoding='utf-8'))['pages']}
@@ -75,6 +75,10 @@ def _core01(S, M):
         if a is None: err.append(p['key'] + ': activation مفقود')
         elif a == 'toggle' and 'ff.module.' + p['key'] + '.enabled' not in FF: err.append(p['key'] + ': toggle بلا ff.module.' + p['key'] + '.enabled في registry-v24.9.json')
     always = {p['key'] for p in M['pages'] if p.get('activation') == 'always'}
+    # V7 P4: مفتاحُ «الوحدات» (platSwitch) وسببُ القفل (platLock) لوحدةٍ toggle وحدها، ولا يجتمعان
+    for p in M['pages']:
+        if (p.get('platSwitch') or p.get('platLock')) and p.get('activation') != 'toggle': err.append(p['key'] + ': platSwitch/platLock لوحدةٍ toggle وحدها')
+        if p.get('platSwitch') and p.get('platLock'): err.append(p['key'] + ': platSwitch و platLock لا يجتمعان')
     ex331 = set(re.findall(r"off\[i\] !== '([a-z]\w*)'", R('permissions', '331-perm-model.js')))
     exAdm = set(re.findall(r'\(\(pl && pl\.mods && pl\.mods\.off\) \|\| \[\]\)\.filter\(\(k\) => "([a-z]\w*)" !== k\)', R('modules', 'admin', 'logic.js')))
     if not (always == ex331 == exAdm): err.append('activation:always ' + str(sorted(always)) + ' ≠ استثناءُ mods.off في 331 ' + str(sorted(ex331)) + ' / admin/logic ' + str(sorted(exAdm)))
@@ -98,6 +102,9 @@ def _core01(S, M):
     # ④ containers.kpis.refs كلُّها offPage
     for c in M['containers']:
         for ref in c.get('refs', []):
+            if '/' not in ref:   # V7 P4: لوحةُ صفحةٍ كاملة — يمنحها مفتاحُ عرض الصفحة نفسُه (لا ورقةَ ولا مفتاحَ جديداً)
+                if ref not in PG or PG[ref].get('subs') or PG[ref].get('tabs'): err.append(c['key'] + '.refs: «' + ref + '» ليست صفحةً مفردة')
+                continue
             lf = leaf(ref)
             if not lf or not lf.get('offPage'): err.append(c['key'] + '.refs: «' + ref + '» ليست ورقةً offPage')
     # ⑤ اعتمادياتُ perm/lens = قواعدُ kpiPanelOk الحرفية في 334 (شيفرةٌ وإعلانٌ لا يفترقان)
