@@ -182,7 +182,7 @@ test('names and shapes come from the pages manifest: the open tab, else the page
   assert.equal(d('Staffing', '#/staffing'), 'الجدول الشهري|table');
   assert.equal(d('Operational Plan', '#/plan'), 'التشغيل الميداني|map');
   assert.equal(d('Employees', '#/employees/custody'), 'عهد الموظفين|table');
-  assert.equal(d('Employees', '#/employees'), 'موظفو الإدارة|table');
+  assert.equal(d('Employees', '#/employees'), 'بيانات الموظفين|table', 'owner-approved override (was «موظفو الإدارة»)');
   assert.equal(d('Planning', '#/planning'), 'الخطة التشغيلية|table');
   assert.equal(d('Staffing', '#/planning'), 'الجدول الشهري|table', 'a page embedded in a container is named by itself');
   assert.equal(d('Seized', '#/kpis/dash'), 'لوحة مؤشرات المضبوطات|cards', 'a KPI panel takes its container name');
@@ -192,9 +192,21 @@ test('names and shapes come from the pages manifest: the open tab, else the page
   assert.equal(d('Award', '#/award/doc'), 'المراجع المعتمدة|cards', 'no override ⇒ the tab name');
   assert.equal(d('Admin', '#/admin/oplog'), 'سجل الحركة|table');
   assert.equal(d('Admin', '#/sysadmin/depts'), 'مركز إدارة رشاد|cards', 'a route with no page of its own ⇒ the route name');
-  assert.equal(d('Profile', '#/profile'), 'صفحتي|cards');
+  assert.equal(d('Profile', '#/profile'), 'صفحتك|cards', 'owner-approved override (was «صفحتي»)');
   assert.equal(d('KPIs', '#/kpis'), 'مؤشرات الإدارة|cards');
   assert.equal(d('Unknown', '#/nowhere'), '|cards');
+});
+
+test('owner-approved names (12 Nov): irshad, employees, import, profile, the two mosques; custody stays «عهد الموظفين»', () => {
+  const { P } = world(), n = (c, h) => P.describe(c, h).name;
+  assert.equal(n('Irshad', '#/irshad'), 'سجلات الاسترشاد');
+  assert.equal(n('Irshad', '#/irshad/records'), 'سجلات الاسترشاد');
+  assert.equal(n('Employees', '#/employees'), 'بيانات الموظفين');
+  assert.equal(n('Employees', '#/employees/custody'), 'عهد الموظفين', 'not shortened to «العهد»');
+  assert.equal(n('Admin', '#/admin/import'), 'صفحة الاستيراد');
+  assert.equal(n('Profile', '#/profile'), 'صفحتك');
+  assert.equal(n('Daily Stats', '#/dstats/haram'), 'إحصائيات المسجد الحرام');
+  assert.equal(n('Daily Stats', '#/dstats/nabawi'), 'إحصائيات المسجد النبوي');
 });
 
 test('shell gate hook: skeleton after 300 ms in the screen place, the failure card with the core retry, calm entrance when the place leaves', () => {

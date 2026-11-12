@@ -26,7 +26,10 @@
      المفتاح: مسارُ الشاشة (route/tab) أو اسمُ مكوّن الصفحة. تُعرض على المالك قبل اعتمادها (V7_UX_Failure_Names). */
   var NAMES = {
     "award/new": "الترشيحات", "award/res": "نتائج الترشيحات", "award": "الترشيحات",
-    "seized/records": "سجلات المضبوطات", "seized/dash": "مؤشرات المضبوطات", "seized": "سجلات المضبوطات"
+    "seized/records": "سجلات المضبوطات", "seized/dash": "مؤشرات المضبوطات", "seized": "سجلات المضبوطات",
+    "irshad": "سجلات الاسترشاد", "irshad/records": "سجلات الاسترشاد",
+    "employees": "بيانات الموظفين", "admin/import": "صفحة الاستيراد", "profile": "صفحتك",
+    "dstats/haram": "إحصائيات المسجد الحرام", "dstats/nabawi": "إحصائيات المسجد النبوي"
   };
   var live = [];
 
