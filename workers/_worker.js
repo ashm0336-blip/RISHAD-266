@@ -23323,52 +23323,88 @@ var IMG_PFX = ['img_', 'szp_'];
    de-duplicates), so no bookkeeping path can lose an id; what the cap protected — the per-id statements of the plain save (imgForeignIn ·
    imgSync) — is protected by refusing the save that would GROW a value past the cap. A refused save is safe; a dropped reference is not. */
 var IMG_CAP = 5000;
-/* Fourth review — the conservative rule. The multi-level decoder of the third review is REMOVED, JS and SQL: it was proven, by running, to
-   miss spellings at JSON nesting depth >= 3 (a foreign image could be bound, a referenced one deleted). Image ids are matched LITERALLY only.
-   Why that is enough: an id is made of [a-z0-9_] only, and a JSON writer nests a text by escaping '"' and '\' (\" · \\) — never an id
-   character — so, at any depth, an id not spelled with a character escape stays literally in the stored text. The one way to hide it is a
-   JSON escape \u00XX whose character is an id character [0-9A-Za-z_] or the backslash itself (hex 5c: it spells such an escape one level down).
-   IMG_ESC_RX finds exactly those (whatever number of backslashes precede it; hex in either case). JSON.stringify never writes one (it escapes
-   only control characters \u0000-\u001f and lone surrogates), so ordinary clients never meet the rule:
-   · save side: a save that ADDS one is refused whole ('img-escape' — imgForeignIn) by every writer that checks images (plain save · typed save ·
-     task note · backup restore · seized), legacy and enforce alike. Fifth review: one the stored value ALREADY holds (older data — a Windows path
-     a person typed) does not block the record: the same "already present" principle as for ids (had), compared per occurrence (imgEscNew);
-   · sweep side: while any text the sweep reads for references carries one (imgEscHold), a pass condemns nothing and changes no image state.
-   IMG_ESC_HEX is the one list both sides use: the JS regex here and the SQL GLOBs of imgEscCond are built from it, so they match the same texts. */
+/* Reading ids through JSON escapes — the history, then the rule.
+   Third review: a multi-level decoder (ordered literal replacements per level, JS and SQL). Fourth review: it was proven, by running, to miss
+   spellings at JSON nesting depth >= 3 (a foreign image could be bound, a referenced one deleted) and was REMOVED; ids were matched literally
+   only, a save ADDING a \u00XX escape of an id character or of '\' was refused ('img-escape') and one such text anywhere held the whole sweep.
+   Owner decision after the fifth review: user text is NOT refused — a Windows path a person types (C:\u0041bc) is ordinary text. The checker
+   compares DECODED values instead:
+   · the trigger (unchanged). An id is made of [a-z0-9_] only (an upload id of [A-Za-z0-9_]), and a JSON writer nests a text by escaping '"'
+     and '\' (\" · \\) — never an id character — so an id not spelled with a character escape stays literally in the stored text at any depth.
+     The one way to hide it is a JSON escape \u00XX whose character is an id character [0-9A-Za-z_] or the backslash itself (hex 5c: it spells
+     such an escape one level down). IMG_ESC_RX finds exactly those (whatever number of backslashes precede it; hex in either case).
+     JSON.stringify never writes one (it escapes only control characters \u0000-\u001f and lone surrogates), so ordinary clients never pay for
+     what follows. IMG_ESC_HEX is the one list both sides use: the JS regex here and the SQL GLOBs of imgEscCond are built from it;
+   · the decoding (imgDeepEach), for a text the trigger fires on. It is STRUCTURE-BLIND and iterative — it does not parse JSON, so there is no
+     nesting depth it can get wrong. One round is a single left-to-right pass over the WHOLE text that replaces every valid JSON escape token
+     by its character (\\ \" \/ \b \f \n \r \t · \uXXXX with exactly four hex digits, either case); a backslash that starts no valid token is
+     left as it is and the pass goes on after it. Rounds repeat until the text stops changing. Why every id is seen: in a valid JSON text a
+     backslash occurs only inside string literals, each literal starts after a '"', so the pass tokenises every literal exactly as JSON.parse
+     does — round 1 holds, whole and contiguous, every string of the text; if one of them is itself JSON, round 2 holds every string of that,
+     and so on: round n holds every string a chain of n JSON.parse calls can reach. A literal scan of EVERY round (round 0 = the text itself)
+     therefore finds every id at every depth. Being blind to structure it can only see MORE than a real reader (text that is not a string, an
+     invalid escape left in place): more ids found is the safe side for both users of the result;
+   · save side (imgIdsIn — and through it the foreign check, `had`, imgref, binding, the cap, typed saves, task notes, backup restore, seized):
+     an escaped spelling of an id IS that id — bound if the literal would be bound, refused as foreign if the literal would be refused,
+     recorded in imgref so the sweep sees the reference. Honest text decodes to no id and changes nothing;
+   · sweep side (imgEscKeep): a candidate whose id appears in any round of an escape-bearing text is kept, like any referenced one;
+   · the bounds. IMG_ESC_ROUNDS rounds (a text still changing after them is nested deeper than any writer or person produces) and
+     IMG_ESC_WORK characters of decoding per text (per pass, for the sweep). Past either the answer is UNDECIDED, and only then the old
+     conservative rule applies: the save is refused ('img-escape' — imgForeignIn), the pass holds (imgSweep). */
 var IMG_ESC_HEX = ['3[0-9]', '4[1-9A-Fa-f]', '5[0-9AaCcFf]', '6[1-9A-Fa-f]', '7[0-9Aa]'];
 var IMG_ESC_RX = new RegExp('\\\\u00(?:' + IMG_ESC_HEX.join('|') + ')');
 function imgEsc(s9) { return s9.indexOf('\\u00') >= 0 && IMG_ESC_RX.test(s9); }
-/* fifth review — what a save ADDS. An occurrence is the maximal run of [0-9A-Za-z_\\] around an escape: every id an escape could spell (at any
-   depth) is made of such characters only — id characters, the escape itself, the backslashes of nesting — and the characters on either side of
-   the run are none of them, so what the run decodes to is decided by the run alone. The new value is refused when it holds any run more times
-   than the stored value does: a save keeps, moves or removes the old texts, it never adds one — not even beside an existing one. */
-var IMG_ESC_RUN = /[0-9A-Za-z_\\]/;
-function imgEscRuns(s9) {
-  var out = Object.create(null), re = new RegExp(IMG_ESC_RX.source, 'g'), m9, a9, b9;
-  if (!imgEsc(s9)) return out;
-  while ((m9 = re.exec(s9))) {
-    for (a9 = m9.index; a9 > 0 && IMG_ESC_RUN.test(s9.charAt(a9 - 1)); a9--);
-    for (b9 = m9.index + m9[0].length; b9 < s9.length && IMG_ESC_RUN.test(s9.charAt(b9)); b9++);
-    re.lastIndex = b9;                                                     /* one count per run, however many escapes it holds */
-    var r9 = s9.slice(a9, b9); out[r9] = (out[r9] || 0) + 1;
-  }
-  return out;
+var IMG_ESC_ROUNDS = 64, IMG_ESC_WORK = 64e6;
+var IMG_UNESC_RX = /\\(?:(["\\\/bfnrt])|u([0-9A-Fa-f]{4}))/g, IMG_UNESC_CH = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
+/* one round */
+function imgUnesc(s9) {
+  if (s9.indexOf('\\') < 0) return s9;
+  return s9.replace(IMG_UNESC_RX, function (m9, c9, h9) { return c9 ? IMG_UNESC_CH[c9] : String.fromCharCode(parseInt(h9, 16)); });
 }
-function imgEscNew(v, cur) {
-  var s9 = String(v == null ? '' : v);
-  if (!imgEsc(s9)) return false;
-  var n9 = imgEscRuns(s9), h9 = imgEscRuns(String(cur == null ? '' : cur)), r9;
-  for (r9 in n9) if (n9[r9] > (h9[r9] || 0)) return true;
+/* every round of s9, in order, handed to fn (round 0 first; no round is kept — a value can be megabytes). w9 = { n: characters of decoding
+   left } is shared by the caller across texts. true: the text reached its fixpoint, fn saw every round. false: undecided (rounds or work). */
+function imgDeepEach(s9, fn, w9) {
+  var cur = s9, nx, i9;
+  fn(cur);
+  for (i9 = 0; i9 <= IMG_ESC_ROUNDS; i9++) {
+    if (cur.indexOf('\\') < 0) return true;
+    if (w9) { w9.n -= cur.length; if (w9.n < 0) return false; }
+    nx = imgUnesc(cur);
+    if (nx === cur) return true;
+    if (i9 === IMG_ESC_ROUNDS) return false;                               /* it changed once more than the rounds allowed */
+    cur = nx; fn(cur);
+  }
   return false;
 }
-function imgLike(s9) { for (var i9 = 0; i9 < IMG_PFX.length; i9++) if (s9.indexOf(IMG_PFX[i9]) >= 0) return true; return imgEsc(s9); }   /* an escape may hide the prefix itself: such a text must reach imgForeignIn, which refuses it */
+/* the rounds themselves (tests · small texts): { texts: [round 0, round 1, …], undecided } */
+function imgDeepTexts(text) {
+  var out = { texts: [], undecided: false };
+  out.undecided = !imgDeepEach(String(text == null ? '' : text), function (t9) { out.texts.push(t9); }, { n: IMG_ESC_WORK });
+  return out;
+}
+function imgScanInto(s9, out) { var re = /(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g, m9; while ((m9 = re.exec(s9))) out[m9[0]] = 1; }
+/* the ids of every round of an escape-bearing text, and whether it is undecided. One save asks for the same value several times (the cap, the
+   foreign check, imgref …): the last few answers are remembered — a pure function of the text. */
+var IMG_DEEP_MEMO = [];
+function imgDeep(s9) {
+  var i9, o9;
+  for (i9 = 0; i9 < IMG_DEEP_MEMO.length; i9++) if (IMG_DEEP_MEMO[i9].s === s9) return IMG_DEEP_MEMO[i9];
+  o9 = { s: s9, ids: {}, und: false };
+  o9.und = !imgDeepEach(s9, function (t9) { imgScanInto(t9, o9.ids); }, { n: IMG_ESC_WORK });
+  IMG_DEEP_MEMO.unshift(o9); if (IMG_DEEP_MEMO.length > 4) IMG_DEEP_MEMO.pop();
+  return o9;
+}
+/* a text whose decoding did not finish inside the bounds: the one case a save is still refused for its spelling */
+function imgUndecided(v) { var s9 = String(v == null ? '' : v); return imgEsc(s9) && imgDeep(s9).und; }
+function imgLike(s9) { for (var i9 = 0; i9 < IMG_PFX.length; i9++) if (s9.indexOf(IMG_PFX[i9]) >= 0) return true; return imgEsc(s9); }   /* an escape may hide the prefix itself: such a text must reach imgIdsIn's decoding (and imgForeignIn) */
 /* the scanner's shape, whole: an id that does not match it can be mentioned by a record without imgIdsIn (and so imgref) ever seeing it */
 var IMG_SCAN_ID_RX = /^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/;
+/* every id the value names: written literally, or — in a text the trigger fires on — in any round of its decoding */
 function imgIdsIn(v) {
-  var out = {}, s9 = String(v == null ? '' : v);
+  var out = {}, s9 = String(v == null ? '' : v), d9, k9;
   if (!imgLike(s9)) return out;
-  var re = /(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g, m9;
-  while ((m9 = re.exec(s9))) out[m9[0]] = 1;
+  if (imgEsc(s9)) { d9 = imgDeep(s9).ids; for (k9 in d9) out[k9] = 1; return out; }
+  imgScanInto(s9, out);
   return out;
 }
 /* the save gate: more than IMG_CAP distinct images in the new value AND more than the stored value already has (a save that only keeps or
@@ -23520,7 +23556,9 @@ async function imgVerdict(env, A, ik, mode) {
 /* قبل الكتابة: هل يُدخل هذا المفتاحُ صورةً يملكها مفتاحٌ آخر لا يكتبه الفاعل؟
    الرفعُ المعلّق لصاحبه وحده، والغامضةُ القديمة تبقى معروضةً كما هي. */
 async function imgForeignIn(env, A, k, v, cur, seen) {
-  if (imgEscNew(v, cur)) return 'img-escape';   /* fourth review: a \u00XX escape of an id character or of '\' may hide an id — a save that ADDS one is refused whole (fifth review: one the stored value already holds stays, as had) */
+  /* an escaped spelling of an id is that id (imgIdsIn reads every round of the decoding), so it is judged below exactly as the literal id.
+     The one refusal for a spelling: a text whose decoding does not finish inside the bounds (IMG_ESC_ROUNDS · IMG_ESC_WORK) — undecided */
+  if (imgUndecided(v)) return 'img-escape';
   var ids = imgIdsIn(v), had = imgIdsIn(cur), id9;
   for (id9 in ids) {
     if (had[id9]) continue;                               /* مرجعٌ قائمٌ سلفاً في هذا المفتاح: بياناتٌ قديمة تبقى تعمل */
@@ -23598,8 +23636,11 @@ async function imgSync(env, A, list) {
            · no seized_item_photos row — seized photos live in their own table (0009) and may predate imgref;
            · no award_records row whose picture / signature column IS the id — award saves keep no imgref (their pictures are stored inline);
            · no kv value contains the id — in any row, AND across any row boundary of a value (IMG_KV_JOIN: values are stored in 700 000-char rows);
-           · (fourth review) the id is matched literally only: while any text the proof reads holds a \u00XX escape that may hide an id
-             (imgEscHold), the pass condemns nothing and changes no image state — and no save of this version adds such a text (imgForeignIn);
+           · no text that may hide an id behind a JSON escape names it once decoded: the kv values and typed records' texts that carry a
+             \u00XX escape of an id character or of '\' (imgEscHold counts them) are read and decoded by the pass, before the deciding statement,
+             and a candidate whose id appears in any round is excluded from it (imgEscKeep). Those texts are older data: a save of this version
+             records the ids it spells by escapes in imgref like any other (imgIdsIn), so the statement itself sees what is saved meanwhile.
+             Too many such texts, or one that cannot be decided: the pass condemns nothing and changes no image state (the hold);
            · imgref is known COMPLETE for the typed tables: meta.imgref_scan_v1 = 'done'. Records saved before this version were indexed by a
              scan that stopped at 5000 mentions, so until imgRefScan has re-read every typed resource and inserted what was dropped, nothing is condemned.
          Typed tables with no image column (custody · irshad · awards text · notifications · daily stats) need no check.
@@ -23616,11 +23657,12 @@ var IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 40, IMG_SWEEP_EV
 /* how many condemned rows ONE pass takes on top of its candidates (second review, finding 4).
    IMG_SWEEP_DEAD = 6 — the pass an ordinary save carries. The smallest invocation limit of the platform is 50 subrequests (every D1 round trip
    and every R2 call counts). The sweep part of such a pass, worst case: 15 D1 round trips before any delete (the 10-minute compare-and-set ·
-   index · selection · escape hold (fourth review) · stage clock · stage selection · ≤ 2 stage batches · unit list · gone units · unprovable ·
+   index · selection · escape count (imgEscHold) · stage clock · stage selection · ≤ 2 stage batches · unit list · gone units · unprovable ·
    re-scan check · lease · deciding statement · keep) + 12 R2 deletes (6 condemned now + 6 waiting) + 3 row batches (chunks of
    IMG_SWEEP_CHUNK = 4) = 30 < 50 — and with the round trips of the typed save itself the WHOLE invocation stays ≤ 50 (measured, pass by
    pass: tests/unit/v7_f_img_drain.test.mjs).
-   (The one-time re-scan of the typed records, imgRefScan, can take more in the first passes; it saves its cursor every round, so a cut costs nothing.)
+   (The one-time re-scan of the typed records, imgRefScan, can take more in the first passes; it saves its cursor every round, so a cut costs nothing.
+   A pass on a platform that stores escape-bearing texts adds 2 round trips — imgEscKeep: what they are, then the kv rows — and a held one 2 more, imgEscWhere.)
    IMG_SWEEP_DEAD_ADMIN = 400 — the platform admin's overview (at most one pass a minute) and the pass a reset forces: what drains a large
    backlog (a reset over 1200 images: 3 passes). Under a small limit such a pass IS cut — and still keeps every chunk it finished. */
 var IMG_SWEEP_DEAD = 6, IMG_SWEEP_DEAD_ADMIN = 400, IMG_SWEEP_CHUNK = 4;
@@ -23688,16 +23730,22 @@ function imgOpsCols() {
   return out;
 }
 function imgOpsJoin(cols) { return cols.map(function (c) { return "coalesce(" + c + ", '')"; }).join(" || char(1) || "); }
-/* fourth review — the sweep side of the conservative rule. imgEscCond(x): the SQL test that a text x holds a \u00XX escape of an id character or
-   of the backslash. Its GLOBs are built from IMG_ESC_HEX, the very list of IMG_ESC_RX (GLOB is case-sensitive and has no escape character, so
-   '\u00' is matched literally and the hex digits by the same classes); instr first, so a text with no '\u00' costs one instr.
+/* the sweep side of reading ids through escapes (see IMG_ESC_HEX above). imgEscCond(x): the SQL test that a text x holds a \u00XX escape of
+   an id character or of the backslash. Its GLOBs are built from IMG_ESC_HEX, the very list of IMG_ESC_RX (GLOB is case-sensitive and has no
+   escape character, so '\u00' is matched literally and the hex digits by the same classes); instr first, so a text with no '\u00' costs one instr.
    imgEscHold counts every text the sweep reads for references that carries one: every kv row, every boundary between two rows of one value (a
    window of 5 characters on each side: an escape is 6 characters long, so one cut by the boundary is wholly inside it), and every text of the
    typed records (opstxt — what the proof of an odd-shaped id reads, and what imgRefScan re-reads). It is asked once per pass, and only by a
-   pass that has a due row (a pass with nothing to do still reads no kv). Not zero ⇒ the pass condemns nothing and changes no image state:
-   nothing turns 'amb', no clock restarts, no image is deleted; it logs img-sweep-escape-hold { n, at } (at: up to IMG_ESC_AT places — a kv key,
-   or ops table.column — never a value: imgEscWhere), and the next pass asks again — the sweep resumes by itself once those texts are gone.
-   No save of this version can add one (imgForeignIn); they are older data, kept by a record that still carries them (fifth review).
+   pass that has a due row (a pass with nothing to do still reads no kv). Zero — every platform whose texts were written by JSON.stringify —
+   and the pass goes on at no further cost. Not zero ⇒ imgEscKeep reads those texts and decodes them (imgDeepEach): a candidate whose id
+   appears literally in any round of any of them is kept — excluded from the deciding statement, so it takes the path of every referenced
+   candidate (an orphan turns 'amb', an upload's clock restarts; an odd-shaped id keeps its kind). An odd-shaped id is looked for the same
+   way, as a plain substring of every round. Honest text (a Windows path) decodes to no id: it keeps nothing and holds nothing.
+   The work is bounded: at most IMG_ESC_TEXTS texts (kv values + typed texts) of IMG_ESC_CHARS characters in all, IMG_ESC_WORK characters of
+   decoding per pass, IMG_ESC_ROUNDS rounds per text. Past any bound the answer is unknown, and the pass HOLDS as the fourth review made it:
+   it condemns nothing and changes no image state — nothing turns 'amb', no clock restarts, no image is deleted; it logs
+   img-sweep-escape-hold { n, why, at } (why: texts · chars · undecided; at: up to IMG_ESC_AT places — a kv key, or ops table.column — never
+   a value: imgEscWhere), and the next pass asks again — the sweep resumes by itself once those texts are gone.
    Staged parts are not held: their cleanup reads no reference (fifth review — it runs before the hold). */
 function imgEscCond(x) {
   return '(instr(' + x + ", '\\u00') > 0 AND (" + IMG_ESC_HEX.map(function (h) { return x + " GLOB '*\\u00" + h + "*'"; }).join(' OR ') + '))';
@@ -23708,6 +23756,33 @@ async function imgEscHold(env) {
     ' + (SELECT COUNT(*) FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
     ' + (SELECT COUNT(*) FROM opstxt WHERE ' + imgEscCond('t') + ') AS n').first();
   return (r && Number(r.n)) || 0;
+}
+var IMG_ESC_TEXTS = 200, IMG_ESC_CHARS = 8e6;
+/* ids: the candidates of this pass. Returns { keep: [the ids some escape-bearing text names once decoded] } or { hold: why }.
+   Two round trips: (1) which kv keys hold such a row or row boundary, with the length of their whole value, and the typed records' texts that
+   match (a text longer than the bound comes back as NULL — it is never loaded); (2) the rows of those keys, joined per key in seq order —
+   the whole value, as kvGet assembles it, for all the keys in ONE statement (a pass has few subrequests). */
+async function imgEscKeep(env, ids) {
+  var cap = IMG_ESC_TEXTS + 1, texts = [], chars = 0, i, keep = {};
+  var rs = await env.DB.batch([
+    env.DB.prepare('SELECT e.k AS k, (SELECT SUM(length(x.v)) FROM kv x WHERE x.k = e.k) AS n FROM (SELECT k FROM kv WHERE ' + imgEscCond('v') +
+      ' UNION SELECT b.k FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + imgEscCond(IMG_ESC_WIN) + ') e LIMIT ' + cap),
+    env.DB.prepare('WITH opstxt(t) AS MATERIALIZED (' + imgOpsTxt() + ') SELECT CASE WHEN length(t) <= ?1 THEN t END AS t, length(t) AS n FROM opstxt WHERE ' + imgEscCond('t') + ' LIMIT ' + cap).bind(IMG_ESC_CHARS)]);
+  var kvL = (rs[0] && rs[0].results) || [], opL = (rs[1] && rs[1].results) || [];
+  if (kvL.length + opL.length > IMG_ESC_TEXTS) return { hold: 'texts' };
+  kvL.concat(opL).forEach(function (x) { chars += Number(x.n) || 0; });
+  if (chars > IMG_ESC_CHARS) return { hold: 'chars' };
+  for (i = 0; i < opL.length; i++) { if (typeof opL[i].t !== 'string') return { hold: 'chars' }; texts.push(opL[i].t); }
+  if (kvL.length) {
+    var rows = ((await env.DB.prepare('SELECT k, v FROM kv WHERE k IN (SELECT value FROM json_each(?1)) ORDER BY k, seq').bind(JSON.stringify(kvL.map(function (x) { return x.k; }))).all()).results) || [], at = -1;
+    for (i = 0; i < rows.length; i++) { if (i && rows[i].k === rows[i - 1].k) texts[at] += rows[i].v; else at = texts.push(String(rows[i].v)) - 1; }
+  }
+  var w = { n: IMG_ESC_WORK }, left = ids.filter(function (x, j) { return typeof x === 'string' && x && ids.indexOf(x) === j; });
+  for (i = 0; i < texts.length; i++) {
+    /* every round is searched, also once all the candidates are kept: an undecided text must still be found */
+    if (!imgDeepEach(texts[i], function (t) { left = left.filter(function (id) { if (t.indexOf(id) < 0) return true; keep[id] = 1; return false; }); }, w)) return { hold: 'undecided' };
+  }
+  return { keep: Object.keys(keep) };
 }
 /* fifth review — where a held pass found them: at most IMG_ESC_AT places, names only (a kv key · ops_table.column), asked only by a held pass.
    Two statements: kv keys and the ops tables first (one term per table, as opstxt), then the columns of the tables found. */
@@ -23773,14 +23848,21 @@ async function imgSweep(env, now, max, maxDead) {
   });
   for (i = 0; i < sgSt.length; i += 90) await env.DB.batch(sgSt.slice(i, i + 90));
   out.staged = sg.length;
-  /* fourth review: a text the proof reads holds an escape that may hide an id ⇒ this pass changes no image state at all (imgEscHold, above).
+  /* texts that may hide an id behind an escape (imgEscHold: how many): they are read and decoded, and the candidates they name are kept
+     (imgEscKeep) — read here, before the deciding statement; a save that adds such a text meanwhile writes its own imgref rows. Past the bounds
+     (too many · too large · undecided) this pass changes no image state at all, as the fourth review made every such pass.
      Fifth review: after the staged parts above — their cleanup never depended on a reference, so a hold does not keep them. */
+  var escKeep = [];
   if (L.length) {
     var hold = await imgEscHold(env);
     if (hold) {
-      out.hold = hold;
-      var at = []; try { at = await imgEscWhere(env); } catch (e) { at = ['?']; }
-      logEv('warn', 'img-sweep-escape-hold', { n: hold, at: at, rid: env.__rid }); return out;
+      var ek = await imgEscKeep(env, L.filter(function (x) { return x.st !== 'dead'; }).map(function (x) { return String(x.img); }));
+      if (ek.hold) {
+        out.hold = hold;
+        var at = []; try { at = await imgEscWhere(env); } catch (e) { at = ['?']; }
+        logEv('warn', 'img-sweep-escape-hold', { n: hold, why: ek.hold, at: at, rid: env.__rid }); return out;
+      }
+      escKeep = ek.keep;
     }
   }
   var dead = L.filter(function (x) { return x.st === 'dead'; });
@@ -23793,7 +23875,7 @@ async function imgSweep(env, now, max, maxDead) {
      (img|szp)_[a-z0-9]+_[a-z0-9]+) has no imgref row even when a typed record shows it. Third review, item D — it was then kept for ever, so any
      uploader could make storage that is never reclaimed (what PUT accepts is unchanged). Now at most IMG_SWEEP_ODD such ids a pass are decided
      by the same deciding statement, with one more proof: their literal text is in no typed record either (opstxt — every text column of every
-     ops_* table, read only by a pass that has such an id), literally (fourth review: an escaped spelling there holds the whole pass — imgEscHold). Found anywhere: kept,
+     ops_* table, read only by a pass that has such an id), literally (an escaped spelling there is read by imgEscKeep, which keeps the id). Found anywhere: kept,
      its clock restarted, its row unchanged in kind and owner (it stays unprovable). Found nowhere: swept like any other. The others met in
      this pass wait IMG_ODD_DEFER (their clock is set back to just under the delay), so they never hold the queue and are asked again soon. */
   var odd = cand.filter(function (x) { return !IMG_SCAN_ID_RX.test(String(x.img)); }), oddAsk = odd.slice(0, IMG_SWEEP_ODD), oddWait = odd.slice(IMG_SWEEP_ODD);
@@ -23816,15 +23898,16 @@ async function imgSweep(env, now, max, maxDead) {
     var oddJs = JSON.stringify(oddAsk.map(function (x) { return x.img; }));
     var hcS = env.DB.prepare((oddAsk.length ? 'WITH opstxt(t) AS MATERIALIZED (' + imgOpsTxt() + ') ' : '') + "UPDATE imgown SET st = 'dead', k = '', ts = ?2 WHERE " + IMG_SNAP_SAME +
       ' AND (SELECT v FROM meta WHERE k = ?3) = ?4' +
+      ' AND imgown.img NOT IN (SELECT value FROM json_each(?5))' +             /* named, once decoded, by a text that hides ids behind escapes (imgEscKeep) */
       ' AND NOT EXISTS (SELECT 1 FROM imgref WHERE imgref.img = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM award_records w WHERE w.picture = imgown.img OR w.employee_signature = imgown.img OR w.approver_signature = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(kv.v, imgown.img) > 0)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(imgown.img) > 1' +
       ' AND instr(substr(a.v, -(length(imgown.img) - 1)) || substr(b.v, 1, length(imgown.img) - 1), imgown.img) > 0)' +
-      (oddAsk.length ? ' AND (imgown.img NOT IN (SELECT value FROM json_each(?5)) OR NOT EXISTS (SELECT 1 FROM opstxt WHERE instr(opstxt.t, imgown.img) > 0))' : '') +
+      (oddAsk.length ? ' AND (imgown.img NOT IN (SELECT value FROM json_each(?6)) OR NOT EXISTS (SELECT 1 FROM opstxt WHERE instr(opstxt.t, imgown.img) > 0))' : '') +
       ' RETURNING img');
-    var hc = await hcS.bind.apply(hcS, [snap, lease, IMG_SCAN_KEY, 'done'].concat(oddAsk.length ? [oddJs] : [])).all();
+    var hc = await hcS.bind.apply(hcS, [snap, lease, IMG_SCAN_KEY, 'done', JSON.stringify(escKeep)].concat(oddAsk.length ? [oddJs] : [])).all();
     var condemned = ((hc && hc.results) || []).map(function (x) { return x.img; });
     take.push.apply(take, condemned);
     if (condemned.length < cand.length) {                                  /* re-bound meanwhile (no row matches) — or a record mentions it */
@@ -23893,6 +23976,15 @@ function imgSeenGuard(env, seen) {
   if (!rows.length) return null;
   return env.DB.prepare("SELECT CASE WHEN (SELECT COUNT(*) FROM imgown o JOIN json_each(?1) j ON o.img = json_extract(j.value, '$.i') AND o.st = json_extract(j.value, '$.s') AND o.ts = json_extract(j.value, '$.t')) != ?2 THEN json_extract('{}', 'KIVO_REV_CONFLICT') END AS g")
     .bind(JSON.stringify(rows), rows.length);
+}
+/* the reference rows of a value whose ids may be spelled by escapes, as ONE statement for the batch that writes the value (applySave); null for
+   every other value — its ids are literal, and the sweep's deciding statement reads them in kv itself */
+function imgEscRefStmt(env, k, v) {
+  var s9 = String(v == null ? '' : v);
+  if (!imgEsc(s9)) return null;
+  var ids = Object.keys(imgIdsIn(s9));
+  if (!ids.length) return null;
+  return env.DB.prepare('INSERT OR IGNORE INTO imgref (img, k) SELECT value, ?2 FROM json_each(?1)').bind(JSON.stringify(ids), k);
 }
 /* a re-upload of a condemned id (a backup's bytes coming back): take the lease, so the pending R2 delete and this put never meet */
 async function imgDeadTake(env, ik) {
@@ -24846,7 +24938,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       if (imgOverCap(it0.v, cur0)) { evald.push({ deny: 'img-limit', cur: cur0, x: { detail: 'أكثر من ' + IMG_CAP + ' صورة مختلفة في سجل واحد — احذف صوراً أو قسّم السجل ثم أعد الحفظ' } }); continue; }
       var seen0 = {};
       var fx0 = await imgForeignIn(env, A, k0, it0.v, cur0, seen0);
-      if (fx0 === 'img-escape') { evald.push({ deny: 'img-escape', cur: cur0, x: { detail: 'السجلّ يحمل ترميز \\u00XX لحرفٍ من حروف المعرّفات أو للشرطة المائلة — احذف الترميز ثم أعد الحفظ' } }); continue; }
+      if (fx0 === 'img-escape') { evald.push({ deny: 'img-escape', cur: cur0, x: { detail: 'نصُّ السجلّ متداخلُ الترميز (\\u…) فوق الحدّ المسموح (' + IMG_ESC_ROUNDS + ' مستوى) — بسّط النص ثم أعد الحفظ' } }); continue; }
       if (fx0) { evald.push({ deny: 'imgown', cur: cur0 }); continue; }
       img0 = seen0;
     }
@@ -24974,7 +25066,12 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       var pd = pend[p9];
       /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ (dep9) يُكتب بعد أن كُتبت هي بنسخة هذه الحفظة — وإلا تعارض */
       var ig9 = pd.img9 ? imgSeenGuard(env, pd.img9) : null;                 /* V7-F: the uploads/orphans this value was allowed to bind are still the rows that were judged (054 imgSweep) */
-      pd.g = [revGuard(env, pd.k, pd.have)].concat(pd.dep9 ? [revGuard(env, K_PERM, rev)] : [], ig9 ? [ig9] : [], pd.kvS, [env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(pd.k, rev)], pd.secS);
+      /* a value that spells an id by an escape: its reference rows go in the very batch that writes it. The sweep's deciding statement finds a
+         LITERAL id in the stored value itself, so the moment between this batch and imgSync (below) is covered for it; an escaped spelling is
+         read by the pass BEFORE that statement (imgEscKeep) — a pass that read before this batch and decides after it must find the reference
+         in imgref. imgSync then rewrites the same rows. (tests/unit/v7_f_img_escvalue.test.mjs, c · "lands between") */
+      var ir9 = pd.act === 'set' ? imgEscRefStmt(env, pd.k, pd.v) : null;
+      pd.g = [revGuard(env, pd.k, pd.have)].concat(pd.dep9 ? [revGuard(env, K_PERM, rev)] : [], ig9 ? [ig9] : [], pd.kvS, ir9 ? [ir9] : [], [env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(pd.k, rev)], pd.secS);
       out.revs[pd.k] = rev;
       /* ══ R169-CC: مخزنٌ واحد، وتسجيلٌ واحدٌ للفعل الواحد ══
          للمفتاح الذي له مخطّطُ كيانات: أحداثُ كيانِه هي السجل. ولمن لا مخطّطَ له (الصلاحيات، الحسابات،
