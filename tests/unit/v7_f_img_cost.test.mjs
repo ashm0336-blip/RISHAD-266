@@ -110,12 +110,12 @@ both(test, 'second review · an ordinary save with no pass due is unchanged (leg
   due(W); await typedSave(T);
   const idle = await measured(T);
   if (mode === 'legacy') { assert.equal(idle.statements, 100, 'statements of an ordinary save'); assert.equal(idle.trips, 14, 'D1 round trips of an ordinary save'); }
-  assert.equal(idle.sql.filter((s) => /\besc\b|GLOB '\*\\u00/.test(s)).length, 0, 'an ordinary save never reads kv for escapes');
+  assert.equal(idle.sql.filter((s) => /\besc\b|GLOB '\*\\u00|, '\\u00'\) > 0/.test(s)).length, 0, 'an ordinary save never reads kv for escapes');
   const big = 'y'.repeat(690000), ins = DB.db.prepare('INSERT INTO kv (k, seq, v) VALUES (?, 0, ?)'); for (let k = 0; k < 150; k++) ins.run('bsdept:zz' + k + ':bassam_fake_v1', big);
   for (let k = 0; k < 6; k++) { const i = id('w' + k); await upload(W, S.mgr2, i); age(W, i, 31); }
   await measured(T);                                                          /* the one-time re-scan of the typed records is behind us */
   const ids = []; for (let k = 0; k < 6; k++) { const i = id('e' + k); await upload(W, S.mgr2, i); age(W, i, 31); ids.push(i); }
-  const six = await measured(T), esc = six.sql.filter((s) => /GLOB '\*\\u00/.test(s));
+  const six = await measured(T), esc = six.sql.filter((s) => /, '\\u00'\) > 0/.test(s));   /* the trigger: instr(x, '\u00') (review, F3 — it was a GLOB, which a NUL character blinds) */
   assert.equal(esc.length, 1, 'one statement looks for escapes'); assert.doesNotMatch(esc[0], /UPDATE imgown/, 'and it changes nothing (the escape count)');
   assert.equal(six.kvScans, 2, 'two kv-reading statements in the pass: the escape count and the deciding statement');
   for (const i of ids) assert.ok(gone(await state(W, i)));

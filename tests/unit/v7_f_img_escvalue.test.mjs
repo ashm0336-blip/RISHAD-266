@@ -337,13 +337,12 @@ both(test, 'f · an odd-shaped id spelled by escapes (depth 1 and 4) in a typed 
 /* ── g · the bounds: the extreme case still holds the whole pass / refuses the save ────────────────────────────────────────────── */
 const chain = (i, levels) => { let c = '\\u0069' + i.slice(1); for (let l = 0; l < levels; l++) c = c.replace(/\\/g, '\\u005c'); return c; };
 
-both(test, 'g · more escape-bearing texts than the bound, more characters than the bound, or a text still changing after the last round: the whole pass holds (logged), nothing changes; once they are gone the sweep resumes', async (mode) => {
+both(test, 'g · more bytes of escape-bearing texts than the bound, or a text still changing after the last round: the pass holds (logged, with its bound), no candidate changes; once they are gone the sweep resumes — the NUMBER of texts is not a bound (review, F1)', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, DB = W.env.DB.db; await settled(T);
-  const m = await internals(['IMG_ESC_ROUNDS', 'IMG_ESC_TEXTS', 'IMG_ESC_CHARS'], WORKER);
-  assert.ok(m.IMG_ESC_ROUNDS >= 16 && m.IMG_ESC_TEXTS >= 50 && m.IMG_ESC_CHARS >= 1e6);
+  const m = await internals(['IMG_ESC_ROUNDS', 'IMG_ESC_CHARS'], WORKER);
+  assert.ok(m.IMG_ESC_ROUNDS >= 16 && m.IMG_ESC_CHARS >= 1e6);
   const fake = (k) => 'bsdept:zz' + k + ':bassam_fake_v1', ins = DB.prepare('INSERT OR REPLACE INTO kv (k, seq, v) VALUES (?, ?, ?)'), clear = () => DB.exec("DELETE FROM kv WHERE k LIKE 'bsdept:zz%'");
   const cases = {
-    texts: () => { for (let k = 0; k <= m.IMG_ESC_TEXTS; k++) ins.run(fake(k), 0, '{"p":"C:\\\\u0041bc ' + k + '"}'); },
     chars: () => { const row = 'y'.repeat(690000), rows = Math.ceil(m.IMG_ESC_CHARS / 690000) + 1; for (let q = 0; q < rows; q++) ins.run(fake(0), q, row); ins.run(fake(0), rows, '{"p":"C:\\\\u0041bc"}'); },
     undecided: () => ins.run(fake(0), 0, rec(chain('img_zz_zz', m.IMG_ESC_ROUNDS + 2)))
   };
@@ -354,15 +353,15 @@ both(test, 'g · more escape-bearing texts than the bound, more characters than 
     age(W, orp, 31); age(W, ctl, 31); const before = [own(W, orp), own(W, ctl)], logs = [];
     await pass(T, logs); await pass(T, logs);
     assert.deepEqual([own(W, orp), own(W, ctl)], before, nm + ': nothing changes while the pass holds');
-    const h = holds(logs); assert.ok(h.length >= 2 && h[0].n >= 1, nm + ': each held pass says so · ' + JSON.stringify(h));
+    const h = holds(logs); assert.ok(h.length >= 2 && h[0].n >= 1, nm + ': each held pass says so · ' + JSON.stringify(h)); assert.equal(h[0].why, nm, 'and which bound');
     assert.ok(h[0].at.some((x) => x.indexOf('kv:bsdept:zz') === 0), nm + ': and names where · ' + JSON.stringify(h[0]));
     clear(); await pass(T); await pass(T);
     assert.ok(gone(await state(W, orp)) && gone(await state(W, ctl)), nm + ': the sweep resumes once the texts are gone');
   }
-  /* exactly at the bound nothing holds */
-  clear(); for (let k = 0; k < m.IMG_ESC_TEXTS; k++) ins.run(fake(k), 0, '{"p":"C:\\\\u0041bc ' + k + '"}');
-  const c2 = id('atbound'); await upload(W, S.mgr2, c2); age(W, c2, 31); const logs2 = []; await pass(T, logs2);
-  assert.deepEqual(holds(logs2), [], 'IMG_ESC_TEXTS texts are read'); assert.ok(gone(await state(W, c2)));
+  /* the number of texts is no bound: 1000 small honest texts (the count bound was 200) hold nothing */
+  clear(); for (let k = 0; k < 1000; k++) ins.run(fake(k), 0, '{"p":"C:\\\\u0041bc ' + k + '"}');
+  const c2 = id('many'); await upload(W, S.mgr2, c2); age(W, c2, 31); const logs2 = []; await pass(T, logs2);
+  assert.deepEqual(holds(logs2), [], '1000 texts are read'); assert.ok(gone(await state(W, c2)));
   clear();
 });
 
@@ -470,9 +469,9 @@ test('h · the rounds: what one round replaces, what it leaves; the bound on rou
   /* the bound on rounds, exactly */
   const ok = chain('img_zz_zz', m.IMG_ESC_ROUNDS - 1), over = chain('img_zz_zz', m.IMG_ESC_ROUNDS);
   assert.equal(m.imgDeepTexts(ok).undecided, false); assert.equal(m.imgDeepTexts(ok).texts.length, m.IMG_ESC_ROUNDS + 1); assert.ok(m.imgIdsIn(ok)['img_zz_zz'], 'found at the last round');
-  assert.equal(m.imgDeepTexts(over).undecided, true, 'still changing after the last round'); assert.equal(m.imgDeep(over).und, true);
+  assert.equal(m.imgDeepTexts(over).undecided, true, 'still changing after the last round'); assert.equal(m.imgDeep(over).und, 'rounds');
   /* the bound on work: a large text that needs many rounds is undecided, the same text with few rounds is not */
   const pad = 'y'.repeat(Math.ceil(m.IMG_ESC_WORK / 16));
-  assert.equal(m.imgDeep(pad + chain('img_zz_zz', 30)).und, true, 'more work than the bound'); assert.equal(m.imgDeep(pad + chain('img_zz_zz', 3)).und, false);
+  assert.equal(m.imgDeep(pad + chain('img_zz_zz', 30)).und, 'work', 'more work than the bound'); assert.equal(m.imgDeep(pad + chain('img_zz_zz', 3)).und, '');
   assert.ok(m.imgIdsIn(pad + chain('img_zz_zz', 3))['img_zz_zz']);
 });

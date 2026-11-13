@@ -64,54 +64,80 @@ var IMG_CAP = 5000;
      an escaped spelling of an id IS that id — bound if the literal would be bound, refused as foreign if the literal would be refused,
      recorded in imgref so the sweep sees the reference. Honest text decodes to no id and changes nothing;
    · sweep side (imgEscKeep): a candidate whose id appears in any round of an escape-bearing text is kept, like any referenced one;
-   · the bounds. IMG_ESC_ROUNDS rounds (a text still changing after them is nested deeper than any writer or person produces) and
-     IMG_ESC_WORK characters of decoding per text (per pass, for the sweep). Past either the answer is UNDECIDED, and only then the old
-     conservative rule applies: the save is refused ('img-escape' — imgForeignIn), the pass holds (imgSweep). */
+   · the bounds. IMG_ESC_ROUNDS rounds (a text still changing after them is nested deeper than any writer or person produces) and a budget
+     of WORK: one unit per character a round reads plus IMG_ESC_TOK units per token it replaces (measured: a round costs about 1 ns per
+     character and 40–200 ns per token, so the units follow the time, whatever the text is made of) — IMG_ESC_WORK per text for a save,
+     IMG_ESC_PASS for all the texts of one sweep pass. Past a bound the answer is UNDECIDED ('rounds' · 'work'), and only then the old
+     conservative rule applies: a save that ADDS such a text is refused ('img-escape' — imgForeignIn; one the stored value already holds
+     stays, as `had`), the pass holds (imgSweep). */
 var IMG_ESC_HEX = ['3[0-9]', '4[1-9A-Fa-f]', '5[0-9AaCcFf]', '6[1-9A-Fa-f]', '7[0-9Aa]'];
 var IMG_ESC_RX = new RegExp('\\\\u00(?:' + IMG_ESC_HEX.join('|') + ')');
 function imgEsc(s9) { return s9.indexOf('\\u00') >= 0 && IMG_ESC_RX.test(s9); }
-var IMG_ESC_ROUNDS = 64, IMG_ESC_WORK = 64e6;
-var IMG_UNESC_RX = /\\(?:(["\\\/bfnrt])|u([0-9A-Fa-f]{4}))/g, IMG_UNESC_CH = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
-/* one round */
+var IMG_ESC_ROUNDS = 64, IMG_ESC_TOK = 32, IMG_ESC_WORK = 128e6, IMG_ESC_PASS = 512e6;
+function imgHex(c9) { return c9 >= 48 && c9 <= 57 ? c9 - 48 : c9 >= 97 && c9 <= 102 ? c9 - 87 : c9 >= 65 && c9 <= 70 ? c9 - 55 : -1; }
+/* one round. Written as a scan (indexOf from backslash to backslash, the pieces between joined once): the same result as
+   s.replace(/\\(?:(["\\\/bfnrt])|u([0-9A-Fa-f]{4}))/g, …) — tests/unit/v7_f_img_escreview.test.mjs compares them — at a fifth of its cost on a
+   text dense with backslashes. IMG_UNESC_N: the tokens the last call replaced. */
+var IMG_UNESC_N = 0;
 function imgUnesc(s9) {
-  if (s9.indexOf('\\') < 0) return s9;
-  return s9.replace(IMG_UNESC_RX, function (m9, c9, h9) { return c9 ? IMG_UNESC_CH[c9] : String.fromCharCode(parseInt(h9, 16)); });
+  var i9 = s9.indexOf('\\'), out = [], from = 0, n9 = s9.length, c9, a9, b9, d9, e9, tok = 0;
+  while (i9 >= 0 && i9 + 1 < n9) {
+    c9 = s9.charCodeAt(i9 + 1);
+    if (c9 === 92 || c9 === 34 || c9 === 47) {                               /* \\ \" \/ : the backslash goes, the character stays where it is */
+      if (i9 > from) out.push(s9.slice(from, i9)); tok++; from = i9 + 1; i9 = s9.indexOf('\\', i9 + 2); continue;
+    }
+    if (c9 === 117) {
+      if (i9 + 5 < n9 && (a9 = imgHex(s9.charCodeAt(i9 + 2))) >= 0 && (b9 = imgHex(s9.charCodeAt(i9 + 3))) >= 0 && (d9 = imgHex(s9.charCodeAt(i9 + 4))) >= 0 && (e9 = imgHex(s9.charCodeAt(i9 + 5))) >= 0) {
+        if (i9 > from) out.push(s9.slice(from, i9)); out.push(String.fromCharCode((a9 << 12) | (b9 << 8) | (d9 << 4) | e9)); tok++; from = i9 + 6; i9 = s9.indexOf('\\', from); continue;
+      }
+    } else {
+      e9 = c9 === 110 ? '\n' : c9 === 116 ? '\t' : c9 === 114 ? '\r' : c9 === 98 ? '\b' : c9 === 102 ? '\f' : '';
+      if (e9) { if (i9 > from) out.push(s9.slice(from, i9)); out.push(e9); tok++; from = i9 + 2; i9 = s9.indexOf('\\', from); continue; }
+    }
+    i9 = s9.indexOf('\\', i9 + 1);                                           /* no valid token starts here: left as it is */
+  }
+  IMG_UNESC_N = tok;
+  if (!tok) return s9;
+  out.push(s9.slice(from));
+  return out.join('');
 }
-/* every round of s9, in order, handed to fn (round 0 first; no round is kept — a value can be megabytes). w9 = { n: characters of decoding
-   left } is shared by the caller across texts. true: the text reached its fixpoint, fn saw every round. false: undecided (rounds or work). */
+/* every round of s9, in order, handed to fn (round 0 first; no round is kept — a value can be megabytes). w9 = { n: units of work left } is
+   shared by the caller across texts. '' : the text reached its fixpoint, fn saw every round. 'rounds' · 'work': undecided, and by which bound. */
 function imgDeepEach(s9, fn, w9) {
   var cur = s9, nx, i9;
   fn(cur);
   for (i9 = 0; i9 <= IMG_ESC_ROUNDS; i9++) {
-    if (cur.indexOf('\\') < 0) return true;
-    if (w9) { w9.n -= cur.length; if (w9.n < 0) return false; }
+    if (cur.indexOf('\\') < 0) return '';
+    if (w9) { w9.n -= cur.length; if (w9.n < 0) return 'work'; }
     nx = imgUnesc(cur);
-    if (nx === cur) return true;
-    if (i9 === IMG_ESC_ROUNDS) return false;                               /* it changed once more than the rounds allowed */
+    if (w9) { w9.n -= IMG_ESC_TOK * IMG_UNESC_N; if (w9.n < 0) return 'work'; }
+    if (nx === cur) return '';
+    if (i9 === IMG_ESC_ROUNDS) return 'rounds';                            /* it changed once more than the rounds allowed */
     cur = nx; fn(cur);
   }
-  return false;
+  return 'rounds';
 }
-/* the rounds themselves (tests · small texts): { texts: [round 0, round 1, …], undecided } */
+/* the rounds themselves (tests · small texts): { texts: [round 0, round 1, …], undecided, why } */
 function imgDeepTexts(text) {
-  var out = { texts: [], undecided: false };
-  out.undecided = !imgDeepEach(String(text == null ? '' : text), function (t9) { out.texts.push(t9); }, { n: IMG_ESC_WORK });
+  var out = { texts: [], undecided: false, why: '' };
+  out.why = imgDeepEach(String(text == null ? '' : text), function (t9) { out.texts.push(t9); }, { n: IMG_ESC_WORK });
+  out.undecided = !!out.why;
   return out;
 }
 function imgScanInto(s9, out) { var re = /(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g, m9; while ((m9 = re.exec(s9))) out[m9[0]] = 1; }
-/* the ids of every round of an escape-bearing text, and whether it is undecided. One save asks for the same value several times (the cap, the
-   foreign check, imgref …): the last few answers are remembered — a pure function of the text. */
+/* the ids of every round of an escape-bearing text, and whether it is undecided (und: '' · 'rounds' · 'work'). One save asks for the same
+   value several times (the cap, the foreign check, imgref …): the last few answers are remembered — a pure function of the text. */
 var IMG_DEEP_MEMO = [];
 function imgDeep(s9) {
   var i9, o9;
   for (i9 = 0; i9 < IMG_DEEP_MEMO.length; i9++) if (IMG_DEEP_MEMO[i9].s === s9) return IMG_DEEP_MEMO[i9];
-  o9 = { s: s9, ids: {}, und: false };
-  o9.und = !imgDeepEach(s9, function (t9) { imgScanInto(t9, o9.ids); }, { n: IMG_ESC_WORK });
+  o9 = { s: s9, ids: {}, und: '' };
+  o9.und = imgDeepEach(s9, function (t9) { imgScanInto(t9, o9.ids); }, { n: IMG_ESC_WORK });
   IMG_DEEP_MEMO.unshift(o9); if (IMG_DEEP_MEMO.length > 4) IMG_DEEP_MEMO.pop();
   return o9;
 }
-/* a text whose decoding did not finish inside the bounds: the one case a save is still refused for its spelling */
-function imgUndecided(v) { var s9 = String(v == null ? '' : v); return imgEsc(s9) && imgDeep(s9).und; }
+/* a text whose decoding did not finish inside the bounds ('rounds' · 'work'; '' otherwise): the one case a save is still refused for its spelling */
+function imgUndecided(v) { var s9 = String(v == null ? '' : v); return imgEsc(s9) ? imgDeep(s9).und : ''; }
 function imgLike(s9) { for (var i9 = 0; i9 < IMG_PFX.length; i9++) if (s9.indexOf(IMG_PFX[i9]) >= 0) return true; return imgEsc(s9); }   /* an escape may hide the prefix itself: such a text must reach imgIdsIn's decoding (and imgForeignIn) */
 /* the scanner's shape, whole: an id that does not match it can be mentioned by a record without imgIdsIn (and so imgref) ever seeing it */
 var IMG_SCAN_ID_RX = /^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/;
@@ -146,8 +172,10 @@ async function imgOwnOf(env, ik) { return await env.DB.prepare('SELECT img, st, 
 /* V7-F (finding 4): a value is stored in rows of 700 000 characters (seq), and instr/GLOB look at ONE row — an id cut by a row boundary was
    invisible. IMG_KV_JOIN finds exactly those: for every row after the first, the tail of the previous row joined to the head of this one
    (one character short of the id on each side, so a match necessarily crosses the boundary). ?1 = the id. */
-var IMG_KV_JOIN = "SELECT b.k FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(?1) > 1" +
-  " AND instr(substr(a.v, -(length(?1) - 1)) || substr(b.v, 1, length(?1) - 1), ?1) > 0";
+/* The window is cut from BYTES (CAST … AS BLOB): substr and length on a text stop at a NUL character, so a NUL stored in a row hid an id cut by
+   the boundary after it; instr compares bytes and does not. An id is ASCII, so its length in bytes is its length. */
+var IMG_KV_JOIN = "SELECT b.k FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(CAST(?1 AS BLOB)) > 1" +
+  " AND instr(substr(CAST(a.v AS BLOB), -(length(CAST(?1 AS BLOB)) - 1)) || substr(CAST(b.v AS BLOB), 1, length(CAST(?1 AS BLOB)) - 1), ?1) > 0";
 async function imgKeysMentioning(env, ik, lim) {
   if (!/^[a-z0-9_]+$/.test(ik)) return [];
   // Operational image references are maintained with the typed row mutation
@@ -274,7 +302,7 @@ async function imgVerdict(env, A, ik, mode) {
 async function imgForeignIn(env, A, k, v, cur, seen) {
   /* an escaped spelling of an id is that id (imgIdsIn reads every round of the decoding), so it is judged below exactly as the literal id.
      The one refusal for a spelling: a text whose decoding does not finish inside the bounds (IMG_ESC_ROUNDS · IMG_ESC_WORK) — undecided */
-  if (imgUndecided(v)) return 'img-escape';
+  if (imgUndecided(v) && !imgUndecided(cur)) return 'img-escape';         /* one the stored value already holds (older data) does not block the record: the "already present" rule, as for ids */
   var ids = imgIdsIn(v), had = imgIdsIn(cur), id9;
   for (id9 in ids) {
     if (had[id9]) continue;                               /* مرجعٌ قائمٌ سلفاً في هذا المفتاح: بياناتٌ قديمة تبقى تعمل */
@@ -302,7 +330,9 @@ async function imgSync(env, A, list) {
   var st = [], drop = {}, i9, j9, id9;
   for (i9 = 0; i9 < list.length; i9++) {
     var k9 = list[i9].k, nv = imgIdsIn(list[i9].v), old = await imgRefsOfKey(env, k9);
-    st.push(env.DB.prepare('DELETE FROM imgref WHERE k = ?1').bind(k9));
+    /* the rows of this value are inserted first and the stale ones leave LAST (review, F2): the list goes out in batches of 90, and a key whose
+       rows were deleted first had, between two batches, no row for the ids of the later ones — a pass deciding there deleted an image the
+       stored record spells by an escape (a literal id is found in the value itself). No moment now has fewer rows than the value names. */
     for (id9 in nv) {
       st.push(env.DB.prepare('INSERT OR IGNORE INTO imgref (img, k) VALUES (?1, ?2)').bind(id9, k9));
       var o9 = await imgOwnOf(env, id9);
@@ -315,6 +345,7 @@ async function imgSync(env, A, list) {
         st.push(env.DB.prepare('UPDATE imgown SET st = ?2, k = ?3, dept = ?4, uid = ?6 WHERE img = ?1 AND st = ?5')
           .bind(id9, 'bound', k9, (parseKey(k9) || {}).dept || '', 'orphan', ''));
     }
+    st.push(env.DB.prepare('DELETE FROM imgref WHERE k = ?1 AND img NOT IN (SELECT value FROM json_each(?2))').bind(k9, JSON.stringify(Object.keys(nv))));
     for (j9 = 0; j9 < old.length; j9++) if (!nv[old[j9]]) drop[old[j9]] = k9;
   }
   for (j9 = 0; j9 < st.length; j9 += 90) await env.DB.batch(st.slice(j9, j9 + 90));
@@ -356,7 +387,8 @@ async function imgSync(env, A, list) {
              \u00XX escape of an id character or of '\' (imgEscHold counts them) are read and decoded by the pass, before the deciding statement,
              and a candidate whose id appears in any round is excluded from it (imgEscKeep). Those texts are older data: a save of this version
              records the ids it spells by escapes in imgref like any other (imgIdsIn), so the statement itself sees what is saved meanwhile.
-             Too many such texts, or one that cannot be decided: the pass condemns nothing and changes no image state (the hold);
+             More bytes of such texts than a pass may read, more decoding than it may spend, or one that cannot be decided: the pass condemns
+             nothing and changes no candidate (the hold);
            · imgref is known COMPLETE for the typed tables: meta.imgref_scan_v1 = 'done'. Records saved before this version were indexed by a
              scan that stopped at 5000 mentions, so until imgRefScan has re-read every typed resource and inserted what was dropped, nothing is condemned.
          Typed tables with no image column (custody · irshad · awards text · notifications · daily stats) need no check.
@@ -378,7 +410,7 @@ var IMG_SWEEP_SAVE = 6, IMG_SWEEP_ADMIN = 40, IMG_SWEEP_RESET = 40, IMG_SWEEP_EV
    IMG_SWEEP_CHUNK = 4) = 30 < 50 — and with the round trips of the typed save itself the WHOLE invocation stays ≤ 50 (measured, pass by
    pass: tests/unit/v7_f_img_drain.test.mjs).
    (The one-time re-scan of the typed records, imgRefScan, can take more in the first passes; it saves its cursor every round, so a cut costs nothing.
-   A pass on a platform that stores escape-bearing texts adds 2 round trips — imgEscKeep: what they are, then the kv rows — and a held one 2 more, imgEscWhere.)
+   A pass on a platform that stores escape-bearing texts adds 2 to 5 round trips — imgEscKeep: their sizes, then at most 6 pages of them — so 37 at worst.)
    IMG_SWEEP_DEAD_ADMIN = 400 — the platform admin's overview (at most one pass a minute) and the pass a reset forces: what drains a large
    backlog (a reset over 1200 images: 3 passes). Under a small limit such a pass IS cut — and still keeps every chunk it finished. */
 var IMG_SWEEP_DEAD = 6, IMG_SWEEP_DEAD_ADMIN = 400, IMG_SWEEP_CHUNK = 4;
@@ -446,80 +478,136 @@ function imgOpsCols() {
   return out;
 }
 function imgOpsJoin(cols) { return cols.map(function (c) { return "coalesce(" + c + ", '')"; }).join(" || char(1) || "); }
-/* the sweep side of reading ids through escapes (see IMG_ESC_HEX above). imgEscCond(x): the SQL test that a text x holds a \u00XX escape of
-   an id character or of the backslash. Its GLOBs are built from IMG_ESC_HEX, the very list of IMG_ESC_RX (GLOB is case-sensitive and has no
-   escape character, so '\u00' is matched literally and the hex digits by the same classes); instr first, so a text with no '\u00' costs one instr.
+/* the sweep side of reading ids through escapes (see IMG_ESC_HEX above).
+   imgEscCond(x): the SQL test that a text x holds a \u00XX escape of an id character or of the backslash — one instr per escape IMG_ESC_RX
+   accepts (imgEscList: the regex itself picks them, both hex cases), behind one instr for '\u00'. instr compares BYTES; GLOB, LIKE, length
+   and substr on a text stop at a NUL character (review, F3: a NUL stored before the escape hid it — and everything after it — from the GLOBs
+   this test was made of). For the same reason every size here is a size in bytes (length(CAST(x AS BLOB))), the windows are cut from bytes,
+   and a text is handed to the worker as JSON (json_quote: a NUL arrives as \u0000 and JSON.parse gives the text back whole).
    imgEscHold counts every text the sweep reads for references that carries one: every kv row, every boundary between two rows of one value (a
-   window of 5 characters on each side: an escape is 6 characters long, so one cut by the boundary is wholly inside it), and every text of the
-   typed records (opstxt — what the proof of an odd-shaped id reads, and what imgRefScan re-reads). It is asked once per pass, and only by a
-   pass that has a due row (a pass with nothing to do still reads no kv). Zero — every platform whose texts were written by JSON.stringify —
-   and the pass goes on at no further cost. Not zero ⇒ imgEscKeep reads those texts and decodes them (imgDeepEach): a candidate whose id
-   appears literally in any round of any of them is kept — excluded from the deciding statement, so it takes the path of every referenced
-   candidate (an orphan turns 'amb', an upload's clock restarts; an odd-shaped id keeps its kind). An odd-shaped id is looked for the same
-   way, as a plain substring of every round. Honest text (a Windows path) decodes to no id: it keeps nothing and holds nothing.
-   The work is bounded: at most IMG_ESC_TEXTS texts (kv values + typed texts) of IMG_ESC_CHARS characters in all, IMG_ESC_WORK characters of
-   decoding per pass, IMG_ESC_ROUNDS rounds per text. Past any bound the answer is unknown, and the pass HOLDS as the fourth review made it:
-   it condemns nothing and changes no image state — nothing turns 'amb', no clock restarts, no image is deleted; it logs
-   img-sweep-escape-hold { n, why, at } (why: texts · chars · undecided; at: up to IMG_ESC_AT places — a kv key, or ops table.column — never
-   a value: imgEscWhere), and the next pass asks again — the sweep resumes by itself once those texts are gone.
-   Staged parts are not held: their cleanup reads no reference (fifth review — it runs before the hold). */
-function imgEscCond(x) {
-  return '(instr(' + x + ", '\\u00') > 0 AND (" + IMG_ESC_HEX.map(function (h) { return x + " GLOB '*\\u00" + h + "*'"; }).join(' OR ') + '))';
+   window of 5 bytes on each side: an escape is 6 bytes long, so one cut by the boundary is wholly inside it), and every text of the typed
+   records (opstxt — what the proof of an odd-shaped id reads, and what imgRefScan re-reads). It is asked once per pass, and only by a pass
+   that has a due row (a pass with nothing to do still reads no kv). Zero — every platform whose texts were written by JSON.stringify — and
+   the pass goes on at no further cost. Not zero ⇒ imgEscKeep reads those texts and decodes them (imgDeepEach): a candidate whose id appears
+   literally in any round of any of them is kept — excluded from the deciding statement, so it takes the path of every referenced candidate
+   (an orphan turns 'amb', an upload's clock restarts; an odd-shaped id keeps its kind). An odd-shaped id is looked for the same way, as a
+   plain substring of every round. Honest text (a Windows path) decodes to no id: it keeps nothing and holds nothing.
+   THE BOUNDS (review, F1 — the NUMBER of texts is not one: a record with 201 floor names held the sweep of the whole platform):
+   · IMG_ESC_CHARS bytes of escape-bearing texts in all (kv values whole + typed rows) — above twice the body limit, so no single save, nor
+     two, reaches it. They are read in pages of IMG_ESC_PAGE bytes (a key set / row set per statement, by key order; a value larger than a
+     page is a page of its own) and decoded page by page — nothing is kept — so memory follows the page, not the bound;
+   · IMG_ESC_PASS units of decoding work for the pass (see IMG_ESC_TOK), IMG_ESC_ROUNDS rounds per text.
+   Round trips: the count (imgEscHold) + the two totals (one batch) + the pages — for kv, and for the typed rows, floor(bytes / page) + 1 and
+   one more when the last key ends exactly on a page; the bytes of both together are under the bound, so at most 1 + 1 + 6 = 8 (usually 3 or
+   4), and one more for a held pass that names the places of a 'chars' hold.
+   Past a bound the answer is unknown for EVERY candidate (any of them may be named by what was not read or not decided), so none is
+   condemned and none changes: nothing turns 'amb', no clock restarts. The pass logs img-sweep-escape-hold { n, why, at } — why: chars ·
+   work · undecided; at: the place itself for work / undecided, the largest places for chars (up to IMG_ESC_AT): kv:<key>, or
+   ops:<table>.<column>@<unit> — never a value — and the next pass asks again: the sweep resumes by itself once those texts are gone.
+   What an earlier pass already condemned is still deleted by a held pass, and staged parts are still cleaned (neither reads a reference). */
+var IMG_ESC_LIST = null;
+function imgEscList() {
+  if (IMG_ESC_LIST) return IMG_ESC_LIST;
+  var H = '0123456789ABCDEFabcdef', out = [], a, b, e;
+  for (a = 0; a < H.length; a++) for (b = 0; b < H.length; b++) { e = '\\u00' + H.charAt(a) + H.charAt(b); if (IMG_ESC_RX.test(e)) out.push(e); }
+  IMG_ESC_LIST = out; return out;
 }
-var IMG_ESC_WIN = '(substr(a.v, -5) || substr(b.v, 1, 5))';
+function imgEscCond(x) {
+  return '(instr(' + x + ", '\\u00') > 0 AND (" + imgEscList().map(function (e) { return 'instr(' + x + ", '" + e + "') > 0"; }).join(' OR ') + '))';
+}
+var IMG_ESC_WIN = '(substr(CAST(a.v AS BLOB), -5) || substr(CAST(b.v AS BLOB), 1, 5))';
 async function imgEscHold(env) {
   var r = await env.DB.prepare('WITH opstxt(t) AS MATERIALIZED (' + imgOpsTxt() + ') SELECT (SELECT COUNT(*) FROM kv WHERE ' + imgEscCond('v') + ')' +
     ' + (SELECT COUNT(*) FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
     ' + (SELECT COUNT(*) FROM opstxt WHERE ' + imgEscCond('t') + ') AS n').first();
   return (r && Number(r.n)) || 0;
 }
-var IMG_ESC_TEXTS = 200, IMG_ESC_CHARS = 8e6;
-/* ids: the candidates of this pass. Returns { keep: [the ids some escape-bearing text names once decoded] } or { hold: why }.
-   Two round trips: (1) which kv keys hold such a row or row boundary, with the length of their whole value, and the typed records' texts that
-   match (a text longer than the bound comes back as NULL — it is never loaded); (2) the rows of those keys, joined per key in seq order —
-   the whole value, as kvGet assembles it, for all the keys in ONE statement (a pass has few subrequests). */
-async function imgEscKeep(env, ids) {
-  var cap = IMG_ESC_TEXTS + 1, texts = [], chars = 0, i, keep = {};
-  var rs = await env.DB.batch([
-    env.DB.prepare('SELECT e.k AS k, (SELECT SUM(length(x.v)) FROM kv x WHERE x.k = e.k) AS n FROM (SELECT k FROM kv WHERE ' + imgEscCond('v') +
-      ' UNION SELECT b.k FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + imgEscCond(IMG_ESC_WIN) + ') e LIMIT ' + cap),
-    env.DB.prepare('WITH opstxt(t) AS MATERIALIZED (' + imgOpsTxt() + ') SELECT CASE WHEN length(t) <= ?1 THEN t END AS t, length(t) AS n FROM opstxt WHERE ' + imgEscCond('t') + ' LIMIT ' + cap).bind(IMG_ESC_CHARS)]);
-  var kvL = (rs[0] && rs[0].results) || [], opL = (rs[1] && rs[1].results) || [];
-  if (kvL.length + opL.length > IMG_ESC_TEXTS) return { hold: 'texts' };
-  kvL.concat(opL).forEach(function (x) { chars += Number(x.n) || 0; });
-  if (chars > IMG_ESC_CHARS) return { hold: 'chars' };
-  for (i = 0; i < opL.length; i++) { if (typeof opL[i].t !== 'string') return { hold: 'chars' }; texts.push(opL[i].t); }
-  if (kvL.length) {
-    var rows = ((await env.DB.prepare('SELECT k, v FROM kv WHERE k IN (SELECT value FROM json_each(?1)) ORDER BY k, seq').bind(JSON.stringify(kvL.map(function (x) { return x.k; }))).all()).results) || [], at = -1;
-    for (i = 0; i < rows.length; i++) { if (i && rows[i].k === rows[i - 1].k) texts[at] += rows[i].v; else at = texts.push(String(rows[i].v)) - 1; }
-  }
-  var w = { n: IMG_ESC_WORK }, left = ids.filter(function (x, j) { return typeof x === 'string' && x && ids.indexOf(x) === j; });
-  for (i = 0; i < texts.length; i++) {
-    /* every round is searched, also once all the candidates are kept: an undecided text must still be found */
-    if (!imgDeepEach(texts[i], function (t) { left = left.filter(function (id) { if (t.indexOf(id) < 0) return true; keep[id] = 1; return false; }); }, w)) return { hold: 'undecided' };
-  }
-  return { keep: Object.keys(keep) };
+var IMG_ESC_CHARS = 20e6, IMG_ESC_PAGE = 8e6, IMG_ESC_AT = 5;
+/* the escape-bearing kv keys with the bytes of their whole value: e(k, n) */
+function imgEscKvSrc() {
+  return '(SELECT s.k AS k, (SELECT SUM(length(CAST(x.v AS BLOB))) FROM kv x WHERE x.k = s.k) AS n FROM (SELECT k FROM kv WHERE ' + imgEscCond('v') +
+    ' UNION SELECT b.k FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + imgEscCond(IMG_ESC_WIN) + ') s)';
 }
-/* fifth review — where a held pass found them: at most IMG_ESC_AT places, names only (a kv key · ops_table.column), asked only by a held pass.
-   Two statements: kv keys and the ops tables first (one term per table, as opstxt), then the columns of the tables found. */
-var IMG_ESC_AT = 5;
-async function imgEscWhere(env) {
-  var T = imgOpsCols(), at = [], i;
-  var q = 'SELECT * FROM (SELECT DISTINCT k AS l, 0 AS o FROM kv WHERE ' + imgEscCond('v') + ' LIMIT ' + IMG_ESC_AT + ')' +
-    ' UNION ALL SELECT * FROM (SELECT DISTINCT b.k AS l, 0 AS o FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND ' + imgEscCond(IMG_ESC_WIN) + ' LIMIT ' + IMG_ESC_AT + ')' +
-    T.map(function (x, j) { return " UNION ALL SELECT '" + x[0] + "', " + (j + 1) + ' WHERE EXISTS (SELECT 1 FROM ' + x[0] + ' WHERE ' + imgEscCond(imgOpsJoin(x[1])) + ')'; }).join('');
-  var r = ((await env.DB.prepare(q).all()).results) || [], tb = [];
-  for (i = 0; i < r.length; i++) {
-    if (!r[i].o) { if (at.indexOf('kv:' + r[i].l) < 0 && at.length < IMG_ESC_AT) at.push('kv:' + r[i].l); }
-    else if (tb.length < IMG_ESC_AT - at.length) tb.push(T[r[i].o - 1]);
+/* the escape-bearing typed rows: opsrow(j, d, r, k, t, n) — j the table (index in imgOpsCols), its primary key (unit · resource · row), the text
+   columns joined by char(1) as in opstxt, the bytes of that */
+var IMG_OPS_ROWS = null;
+function imgEscOpsSrc() {
+  if (!IMG_OPS_ROWS) IMG_OPS_ROWS = 'WITH opsall(j, d, r, k, t) AS MATERIALIZED (' + imgOpsCols().map(function (x, j) { return 'SELECT ' + j + ', department_id, resource, row_key, ' + imgOpsJoin(x[1]) + ' FROM ' + x[0]; }).join(' UNION ALL ') +
+    '), opsrow(j, d, r, k, t, n) AS MATERIALIZED (SELECT j, d, r, k, t, length(CAST(t AS BLOB)) FROM opsall WHERE ' + imgEscCond('t') + ') ';
+  return IMG_OPS_ROWS;
+}
+/* the columns of a typed row's joined text that carry an escape, as places (no column holds char(1) in practice; if one does the parts are
+   more than the columns and the column is not named) */
+function imgEscOpsAt(T, j, d, text) {
+  var parts = String(text).split('\u0001'), x = T[j] || ['?', []], out = [], i;
+  for (i = 0; i < parts.length; i++) if (imgEsc(parts[i])) out.push({ t: parts[i], at: 'ops:' + x[0] + '.' + (parts.length === x[1].length ? x[1][i] : '?') + '@' + d });
+  return out;
+}
+/* which of the ids still looked for appear in t — as plain substrings, all of them in ONE scan (an alternation; a scan per id costs ten times
+   as much on a text of near misses). After a hit the ids found at that place leave the list and the scan goes on from the same place. */
+function imgEscFind(t, st) {
+  var at = 0, m, i, rest;
+  while (st.left.length) {
+    if (!st.rx) st.rx = new RegExp(st.left.map(function (id) { return id.replace(/[^A-Za-z0-9_]/g, '\\$&'); }).join('|'), 'g');
+    st.rx.lastIndex = at; m = st.rx.exec(t);
+    if (!m) return;
+    at = m.index; rest = [];
+    for (i = 0; i < st.left.length; i++) { if (t.startsWith(st.left[i], at)) st.keep[st.left[i]] = 1; else rest.push(st.left[i]); }
+    st.left = rest; st.rx = null;
   }
-  if (tb.length && at.length < IMG_ESC_AT) {
-    var q2 = [];
-    tb.forEach(function (x) { x[1].forEach(function (c) { q2.push("SELECT '" + x[0] + '.' + c + "' AS l WHERE EXISTS (SELECT 1 FROM " + x[0] + ' WHERE ' + imgEscCond('coalesce(' + c + ", '')") + ')'); }); });
-    var r2 = ((await env.DB.prepare('SELECT l FROM (' + q2.join(' UNION ALL ') + ') LIMIT ' + (IMG_ESC_AT - at.length)).all()).results) || [];
-    r2.forEach(function (x) { at.push('ops:' + x.l); });
+}
+/* ids: the candidates of this pass. Returns { keep: [the ids some escape-bearing text names once decoded] } or { hold: why, at: [places] }. */
+async function imgEscKeep(env, ids) {
+  var T = imgOpsCols(), w = { n: IMG_ESC_PASS }, st = { left: ids.filter(function (x, j) { return typeof x === 'string' && x && ids.indexOf(x) === j; }), keep: {}, rx: null }, i, why;
+  var look = function (t) { imgEscFind(t, st); };                            /* every round is decoded, also once all the candidates are kept: an undecided text must still be found */
+  var tot = await env.DB.batch([
+    env.DB.prepare('SELECT COALESCE(SUM(e.n), 0) AS n FROM ' + imgEscKvSrc() + ' e'),
+    env.DB.prepare(imgEscOpsSrc() + 'SELECT COALESCE(SUM(n), 0) AS n FROM opsrow')]);
+  var kvN = Number(((tot[0] && tot[0].results) || [{}])[0].n) || 0, opN = Number(((tot[1] && tot[1].results) || [{}])[0].n) || 0, rows, got, text;
+  if (kvN + opN > IMG_ESC_CHARS) return { hold: 'chars', at: await imgEscWhere(env, T) };
+  /* kv: the keys after the cursor, in key order, up to a page of bytes (the key that crosses it included) — every row of each. A page that did
+     not reach its size was the last one. The loop never trusts the totals above (a save may land meanwhile and move the pages): it reads to
+     the end, and holds if what it has read passes the bound. */
+  var cur = '', read = 0, last;
+  for (last = !kvN; !last;) {
+    rows = ((await env.DB.prepare('SELECT kv.k AS k, p.n AS n, p.s AS s, json_quote(kv.v) AS q FROM kv JOIN (SELECT k, n, SUM(n) OVER (ORDER BY k) AS s FROM ' + imgEscKvSrc() + ' e WHERE e.k > ?1) p ON p.k = kv.k' +
+      ' WHERE p.s - p.n < ?2 ORDER BY kv.k, kv.seq').bind(cur, IMG_ESC_PAGE).all()).results) || [];
+    last = !rows.length || Number(rows[rows.length - 1].s) < IMG_ESC_PAGE;
+    for (i = 0; i < rows.length; i = got) {
+      text = ''; for (got = i; got < rows.length && rows[got].k === rows[i].k; got++) text += JSON.parse(rows[got].q);
+      cur = rows[i].k; read += Number(rows[i].n) || 0;
+      if (read > IMG_ESC_CHARS) return { hold: 'chars', at: await imgEscWhere(env, T) };
+      if (imgEsc(text) && (why = imgDeepEach(text, look, w))) return { hold: why === 'work' ? 'work' : 'undecided', at: ['kv:' + cur] };
+    }
   }
-  return at;
+  /* the typed rows, the same way: by (table, unit, resource, row) */
+  var c = [-1, '', '', ''];
+  for (last = !opN; !last;) {
+    rows = ((await env.DB.prepare(imgEscOpsSrc() + 'SELECT j, d, r, k, n, s, json_quote(t) AS q FROM (SELECT j, d, r, k, t, n, SUM(n) OVER (ORDER BY j, d, r, k) AS s FROM opsrow WHERE (j, d, r, k) > (?1, ?2, ?3, ?4))' +
+      ' WHERE s - n < ?5 ORDER BY j, d, r, k').bind(c[0], c[1], c[2], c[3], IMG_ESC_PAGE).all()).results) || [];
+    last = !rows.length || Number(rows[rows.length - 1].s) < IMG_ESC_PAGE;
+    for (i = 0; i < rows.length; i++) {
+      c = [rows[i].j, rows[i].d, rows[i].r, rows[i].k]; read += Number(rows[i].n) || 0;
+      if (read > IMG_ESC_CHARS) return { hold: 'chars', at: await imgEscWhere(env, T) };
+      var parts = imgEscOpsAt(T, rows[i].j, rows[i].d, JSON.parse(rows[i].q)), q;
+      for (q = 0; q < parts.length; q++) if ((why = imgDeepEach(parts[q].t, look, w))) return { hold: why === 'work' ? 'work' : 'undecided', at: [parts[q].at] };
+    }
+  }
+  return { keep: Object.keys(st.keep) };
+}
+/* where the bytes of a 'chars' hold are: the largest places, names only — asked only by such a pass, one batch */
+async function imgEscWhere(env, T) {
+  var rs = await env.DB.batch([
+    env.DB.prepare('SELECT e.k AS k, e.n AS n FROM ' + imgEscKvSrc() + ' e ORDER BY e.n DESC, e.k LIMIT ' + IMG_ESC_AT),
+    env.DB.prepare(imgEscOpsSrc() + 'SELECT j, d, n, CASE WHEN n <= 100000 THEN json_quote(t) END AS q FROM opsrow ORDER BY n DESC, j, d, r, k LIMIT ' + IMG_ESC_AT)]);
+  var all = ((rs[0] && rs[0].results) || []).map(function (x) { return { n: Number(x.n) || 0, at: ['kv:' + x.k] }; });
+  ((rs[1] && rs[1].results) || []).forEach(function (x) {
+    var at = typeof x.q === 'string' ? imgEscOpsAt(T, x.j, x.d, JSON.parse(x.q)).map(function (p) { return p.at; }) : [];
+    all.push({ n: Number(x.n) || 0, at: at.length ? at : ['ops:' + (T[x.j] || ['?'])[0] + '.?@' + x.d] });
+  });
+  var out = [];
+  all.sort(function (a, b) { return b.n - a.n; }).forEach(function (x) { x.at.forEach(function (a) { if (out.length < IMG_ESC_AT && out.indexOf(a) < 0) out.push(a); }); });
+  return out;
 }
 /* second review (LOW) + third review, item A — the object store is OPTIONAL (config/wrangler.toml ships with IMG_R2 commented out: every body is
    then inline in D1). Without a store that can delete (no binding · no delete · not an object store) the sweep still runs for everything that lives
@@ -566,25 +654,26 @@ async function imgSweep(env, now, max, maxDead) {
   out.staged = sg.length;
   /* texts that may hide an id behind an escape (imgEscHold: how many): they are read and decoded, and the candidates they name are kept
      (imgEscKeep) — read here, before the deciding statement; a save that adds such a text meanwhile writes its own imgref rows. Past the bounds
-     (too many · too large · undecided) this pass changes no image state at all, as the fourth review made every such pass.
+     (too many bytes · too much work · undecided) no candidate can be proven: this pass leaves every one of them exactly as it is, as the
+     fourth review made every such pass — and goes on only with what an earlier pass already condemned.
      Fifth review: after the staged parts above — their cleanup never depended on a reference, so a hold does not keep them. */
-  var escKeep = [];
+  var escKeep = [], held = false;
   if (L.length) {
-    var hold = await imgEscHold(env);
-    if (hold) {
-      var ek = await imgEscKeep(env, L.filter(function (x) { return x.st !== 'dead'; }).map(function (x) { return String(x.img); }));
+    var hold = await imgEscHold(env), escIds = L.filter(function (x) { return x.st !== 'dead'; }).map(function (x) { return String(x.img); });
+    if (hold && escIds.length) {
+      var ek;
+      try { ek = await imgEscKeep(env, escIds); } catch (e) { swallow('img-sweep-escape', e, env.__rid); ek = { hold: 'unread', at: ['?'] }; }
       if (ek.hold) {
-        out.hold = hold;
-        var at = []; try { at = await imgEscWhere(env); } catch (e) { at = ['?']; }
-        logEv('warn', 'img-sweep-escape-hold', { n: hold, why: ek.hold, at: at, rid: env.__rid }); return out;
-      }
-      escKeep = ek.keep;
+        out.hold = hold; held = true;
+        logEv('warn', 'img-sweep-escape-hold', { n: hold, why: ek.hold, at: ek.at, rid: env.__rid });
+        L = L.filter(function (x) { return x.st === 'dead'; });
+      } else escKeep = ek.keep;
     }
   }
   var dead = L.filter(function (x) { return x.st === 'dead'; });
   var cand = L.filter(function (x) { return x.st !== 'dead'; }).sort(function (a, b) { return a.ts - b.ts; }).slice(0, max);   /* the oldest first, whichever kind */
   /* an orphan whose unit is not on the platform now is the platform admin's for good (a unit re-created later under that id inherits nothing) */
-  var dj = parseJson(await kvGet(env, 'kv', K_DEPTS), null);
+  var dj = held ? null : parseJson(await kvGet(env, 'kv', K_DEPTS), null);
   if (Array.isArray(dj)) await env.DB.prepare("UPDATE imgown SET uid = ?2 WHERE st = 'orphan' AND dept != '' AND uid != ?2 AND dept NOT IN (SELECT value FROM json_each(?1))")
     .bind(JSON.stringify(dj.map(function (d) { return d && d.id; }).filter(function (x) { return typeof x === 'string' && x; })), IMG_GONE).run();
   /* second review, finding 1 — an id the reference scanner could not have matched (the upload accepts ^[A-Za-z0-9_]{1,128}$, imgIdsIn sees only
@@ -619,8 +708,8 @@ async function imgSweep(env, now, max, maxDead) {
       ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM award_records w WHERE w.picture = imgown.img OR w.employee_signature = imgown.img OR w.approver_signature = imgown.img)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(kv.v, imgown.img) > 0)' +
-      ' AND NOT EXISTS (SELECT 1 FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(imgown.img) > 1' +
-      ' AND instr(substr(a.v, -(length(imgown.img) - 1)) || substr(b.v, 1, length(imgown.img) - 1), imgown.img) > 0)' +
+      ' AND NOT EXISTS (SELECT 1 FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(CAST(imgown.img AS BLOB)) > 1' +
+      ' AND instr(substr(CAST(a.v AS BLOB), -(length(CAST(imgown.img AS BLOB)) - 1)) || substr(CAST(b.v AS BLOB), 1, length(CAST(imgown.img AS BLOB)) - 1), imgown.img) > 0)' +
       (oddAsk.length ? ' AND (imgown.img NOT IN (SELECT value FROM json_each(?6)) OR NOT EXISTS (SELECT 1 FROM opstxt WHERE instr(opstxt.t, imgown.img) > 0))' : '') +
       ' RETURNING img');
     var hc = await hcS.bind.apply(hcS, [snap, lease, IMG_SCAN_KEY, 'done', JSON.stringify(escKeep)].concat(oddAsk.length ? [oddJs] : [])).all();
@@ -1654,7 +1743,9 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       if (imgOverCap(it0.v, cur0)) { evald.push({ deny: 'img-limit', cur: cur0, x: { detail: 'أكثر من ' + IMG_CAP + ' صورة مختلفة في سجل واحد — احذف صوراً أو قسّم السجل ثم أعد الحفظ' } }); continue; }
       var seen0 = {};
       var fx0 = await imgForeignIn(env, A, k0, it0.v, cur0, seen0);
-      if (fx0 === 'img-escape') { evald.push({ deny: 'img-escape', cur: cur0, x: { detail: 'نصُّ السجلّ متداخلُ الترميز (\\u…) فوق الحدّ المسموح (' + IMG_ESC_ROUNDS + ' مستوى) — بسّط النص ثم أعد الحفظ' } }); continue; }
+      if (fx0 === 'img-escape') { evald.push({ deny: 'img-escape', cur: cur0, x: { detail: imgUndecided(it0.v) === 'work'
+        ? 'نصُّ السجلّ يحمل ترميز \\u… وفكُّه يتجاوز حدَّ المعالجة لسجلٍّ واحد (حجمُ السجل × مستوياتُ التداخل) — صغّر السجل أو بسّط النص ثم أعد الحفظ'
+        : 'نصُّ السجلّ متداخلُ الترميز (\\u…) فوق الحدّ المسموح (' + IMG_ESC_ROUNDS + ' مستوى) — بسّط النص ثم أعد الحفظ' } }); continue; }
       if (fx0) { evald.push({ deny: 'imgown', cur: cur0 }); continue; }
       img0 = seen0;
     }

@@ -126,14 +126,14 @@ both(test, 'the sweep holds only for a text it cannot decide (nested past the bo
   age(W, a, 31);
   let logs = []; await pass(T, logs); await pass(T, logs);
   assert.equal((await state(W, a)).r2, PNG, 'nothing is condemned while the pass holds'); assert.notEqual((await state(W, a)).st, 'dead');
-  const h = holds(logs); assert.ok(h.length >= 1, 'held'); assert.ok(h[0].at.includes('kv:' + KP), JSON.stringify(h[0]));
+  const h = holds(logs); assert.ok(h.length >= 1, 'held'); assert.deepEqual(h[0].at, ['kv:' + KP], JSON.stringify(h[0])); assert.equal(h[0].why, 'undecided');
   assert.ok(!JSON.stringify(h).includes('0500000001') && !JSON.stringify(h).includes(a.slice(1)), 'no content in the log');
   /* typed: the same in a floor name — named as table.column */
   W.env.DB.db.prepare('DELETE FROM kv WHERE k = ?').run(KP);
   assert.ok((await edit(W, S.mgr, D, 'plan', (v) => { v.floors[0].name = TAG + ' baseline'; })).ok);
   assert.ok(W.env.DB.db.prepare("UPDATE ops_plan_live_floors_floor SET f_name_text = ? WHERE department_id = ? AND resource = 'bassam_plan_v1' AND row_key = '$/f:floors/i:0'").run(UNDECIDED, D).changes === 1);
   age(W, a, 1); logs = []; await pass(T, logs);
-  const h2 = holds(logs); assert.ok(h2.length >= 1); assert.ok(h2[0].at.includes('ops:ops_plan_live_floors_floor.f_name_text'), JSON.stringify(h2[0]));
+  const h2 = holds(logs); assert.ok(h2.length >= 1); assert.deepEqual(h2[0].at, ['ops:ops_plan_live_floors_floor.f_name_text@' + D], JSON.stringify(h2[0])); assert.equal(h2[0].why, 'undecided');
   assert.equal((await state(W, a)).r2, PNG);
   /* the text goes ⇒ the sweep resumes */
   assert.ok(W.env.DB.db.prepare("UPDATE ops_plan_live_floors_floor SET f_name_text = ? WHERE department_id = ? AND resource = 'bassam_plan_v1' AND row_key = '$/f:floors/i:0'").run(TAG + ' clean', D).changes === 1);
