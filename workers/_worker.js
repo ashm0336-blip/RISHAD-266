@@ -25043,7 +25043,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       var seen0 = {};
       var fx0 = await imgForeignIn(env, A, k0, it0.v, cur0, seen0);
       if (fx0 === 'img-escape') { evald.push({ deny: 'img-escape', cur: cur0, x: { detail: imgUndecided(it0.v) === 'work'
-        ? 'نصُّ السجلّ يحمل ترميز \\u… وفكُّه يتجاوز حدَّ المعالجة لسجلٍّ واحد (حجمُ السجل × مستوياتُ التداخل) — صغّر السجل أو بسّط النص ثم أعد الحفظ'
+        ? 'السجل أكبر من الحد المسموح للحفظ — قسّمه إلى سجلات أصغر أو اختصر نصوصه ثم أعد الحفظ'
         : 'نصُّ السجلّ متداخلُ الترميز (\\u…) فوق الحدّ المسموح (' + IMG_ESC_ROUNDS + ' مستوى) — بسّط النص ثم أعد الحفظ' } }); continue; }
       if (fx0) { evald.push({ deny: 'imgown', cur: cur0 }); continue; }
       img0 = seen0;

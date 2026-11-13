@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "b3e15fc2f1f4cab96b2414434fdde47332f63b8939aa6aee0f9eff034c571cba",
+  "sha256": "4a115a9800adfabe15f50ae7df0bd9066296c1781b2cb57871b87c6001383b31",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -809,8 +809,8 @@
         23285,
         25233
       ],
-      "bytes": 201164,
-      "sha256": "f5e2a14ecca8dcfeb2ee1bdc78b635287eb0047db315d839d0e0c6a00c031dd2",
+      "bytes": 201066,
+      "sha256": "b42222799e49b73857bf3ba811588eafe1dc6209928d18732e24a7d8cce9df9d",
       "head": "/* ══ R169-CC · عقدُ الصورة الأصلية ══════════════════════════════════════════"
     },
     {
