@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "4c0a2f3ca0beb61696cafeb0e3326d94c4fbd6e81142c3cbe6c1360cc5cf469c",
+  "sha256": "cfa126ff3116c371ff6cfd3f14d52acea4719c3f90e9e197f7c306295642020e",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -178,8 +178,8 @@
         3059,
         6844
       ],
-      "bytes": 150578,
-      "sha256": "fb3aa8727f7b91aa9c42ca7c134c465aa32566555c2d7a194a3d0f590a8fcc03",
+      "bytes": 150591,
+      "sha256": "ba3636753af724eeb5816a4fac0d3cbc75ad9bedcff315550cd16ca322587496",
       "head": "/* ═══ تنبيهات الإدارة: مديرها يكتب كل شيء؛ أي منتسب يضيف عناصر (من أوقع الحدث يكتب تنبيهه) ويحدّث حالة قراءته"
     },
     {

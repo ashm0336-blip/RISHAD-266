@@ -282,7 +282,7 @@ test('V7 nf-deny · record labels and pages cannot drift from the client (KIVO.B
     bassam_irshad_retro_v1: 'نافذة استدراك الاسترشاد', bassam_seized_retro_v1: 'نافذة استدراك المضبوطات',   /* server-side state of /api/retro */
     /* review L3: registered keys the client has no label for (retired notification stores · a device key · a one-time flag) */
     bassam_notif_cfg_v1: 'إعدادات التنبيهات (سجل قديم)', bassam_notif_sys_v1: 'تنبيهات المنصة (سجل قديم)', bassam_bc_v1: 'التعاميم (سجل قديم)',
-    bassam_notif_v1: 'تنبيهات الإدارة (سجل قديم)', bslg_v1: 'بيانات الدخول على الجهاز', bassam_perm_tpls_named_v1: 'راية إعادة تسمية قوالب الصلاحيات',
+    bassam_notif_v1: 'تنبيهات الإدارة (سجل قديم)', bslg_v1: 'عدّاد محاولات الدخول على الجهاز', bassam_perm_tpls_named_v1: 'راية إعادة تسمية قوالب الصلاحيات',
   };
   /* no registered key falls back to the generic label */
   assert.deepEqual(Object.keys(W.RES_REG).filter((k) => !Object.prototype.hasOwnProperty.call(W.NF_DENY_RECS, k)), [], 'registered keys without a record label');

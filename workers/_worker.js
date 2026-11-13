@@ -6256,7 +6256,7 @@ var NF_DENY_RECS = {
   /* not in the client's list */
   bassam_dstats_v1: "الإحصائيات اليومية", bassam_irshad_retro_v1: "نافذة استدراك الاسترشاد", bassam_seized_retro_v1: "نافذة استدراك المضبوطات",
   bassam_notif_cfg_v1: "إعدادات التنبيهات (سجل قديم)", bassam_notif_sys_v1: "تنبيهات المنصة (سجل قديم)", bassam_bc_v1: "التعاميم (سجل قديم)",
-  bassam_notif_v1: "تنبيهات الإدارة (سجل قديم)", bslg_v1: "بيانات الدخول على الجهاز", bassam_perm_tpls_named_v1: "راية إعادة تسمية قوالب الصلاحيات",
+  bassam_notif_v1: "تنبيهات الإدارة (سجل قديم)", bslg_v1: "عدّاد محاولات الدخول على الجهاز", bassam_perm_tpls_named_v1: "راية إعادة تسمية قوالب الصلاحيات",
 };
 /* prettier-ignore */
 var NF_DENY_WHY = {
