@@ -3160,10 +3160,11 @@ async function nfRemind(env, A, id, base, automatic) {
      security:<id of the first row> (the key that row always had), counted «(٥ محاولات خلال دقيقة)». Groups do not span polls.
      Two overlapping polls that read batches of different length agree on the key and one of them wins, so the stored count
      can be lower than the rows of that minute (never a second notice, never a lost group); the log holds every row.
-   • names (independent review M1): the account name and the unit name are written by unit managers, so they are sanitised
-     before they enter the sentence (nfDenyClean: no «» {} · control, bidi and zero-width characters · newlines; 80 characters),
-     the sentence is filled in ONE pass (nfDenyBody — a value is never scanned for {var}), and an account or unit whose name
-     reads like one of the fallback phrases is shown as «الحساب رقم <رقم الدخول>» / «وحدة باسم ملتبس» instead.
+   • names (independent review M1): the account name, the unit name and the kind of a node are written by managers, so they
+     are sanitised before they enter the sentence (nfDenyClean — an allowlist: letters, marks, digits, space and . - ' only;
+     40 characters, the kind 20), the sentence is filled in ONE pass (nfDenyBody — a value is never scanned for {var}), and an
+     account or unit whose name reads like a phrase this notice generates is shown as «الحساب رقم <رقم الدخول>» (a login
+     number of 1–15 digits; otherwise «حساب باسم ملتبس») / «وحدة باسم ملتبس» instead.
    • the empty clauses of the sentence are dropped only under the default text; an administrator's own text is filled as it is. */
 var NF_DENY_WIN_MS = 60000,
   NF_DENY_GENERIC = "رفضه الخادم",
@@ -3215,7 +3216,8 @@ var NF_DENY_WHY = {
   /* accounts and permissions registers */
   users: "جدول الحسابات لم يُقبل", "users · dup-id ": "جدول الحسابات لم يُقبل لتكرار معرّف حساب",
   "users · users-stale-client": "جدول الحسابات لم يُقبل لأن نسخة الصفحة قديمة", perms: "الصلاحيات لم تُقبل",
-  "perms · stale-client": "الصلاحيات لم تُقبل لأن نسخة الصفحة قديمة", capmode: "صيغة سقف الصلاحيات لم تُقبل",
+  "perms · stale-client": "الصلاحيات لم تُقبل لأن نسخة الصفحة قديمة", "perms-stale-client": "الصلاحيات لم تُقبل لأن نسخة الصفحة قديمة",
+  "privacy-hidden": "التعديل يمسّ بيانات محجوبة عنه", capmode: "صيغة سقف الصلاحيات لم تُقبل",
   grant: "لا يملك منح هذه الصلاحية", target: "صلاحيات المديرين يعدّلها مسؤول المنصة أو المدير الأعلى",
   ekey: "مفتاح الحساب مفتاح مدير يعدّله مسؤول المنصة وحده", "mgr-key": "حساب مدير الإدارة لا تُنزع عنه الإدارة",
   "dept-role": "نوع «حساب الإدارة» أُلغي فلا يُنشأ ولا يُعدَّل", self: "لا يُعدَّل في حسابه سوى كلمة المرور",
@@ -3281,25 +3283,49 @@ function nfDenyCount(n) {
     r = n % 100;
   return n === 2 ? "محاولتان" : d + " " + (r >= 3 && r <= 10 ? "محاولات" : "محاولة");
 }
-var NF_DENY_NAME_MAX = 80,
+var NF_DENY_NAME_MAX = 40,
+  NF_DENY_KIND_MAX = 20,
   NF_DENY_NO_ACCOUNT = "حساب غير معروف",
   NF_DENY_NO_UNIT = "إدارة محذوفة",
-  NF_DENY_NO_NODE = "عقدة محذوفة";
-/* a name as it may enter the sentence; "" when nothing readable is left */
-function nfDenyClean(v) {
-  var s = String(v == null ? "" : v)
-      .replace(/[«»{}\u200b-\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff]/g, "")
-      .replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim(),
-    c = Array.from(s);
-  if (c.length > NF_DENY_NAME_MAX) s = c.slice(0, NF_DENY_NAME_MAX).join("").trim() + "…";
-  return /[\p{L}\p{N}]/u.test(s) ? s : "";
+  NF_DENY_NO_NODE = "عقدة محذوفة",
+  NF_DENY_ODD_ACCOUNT = "حساب باسم ملتبس",
+  NF_DENY_ODD_UNIT = "وحدة باسم ملتبس",
+  NF_DENY_NUMBERED = "الحساب رقم";
+/* A name as it may enter the sentence; "" when nothing readable is left. An ALLOWLIST (round-2 review): lone surrogates are
+   dropped; format characters, default-ignorable code points, U+2800 and tatweel are removed; only letters, combining marks,
+   digits, space and . - ' are kept and anything else becomes a space (so no ، : ( ) — or quote of any kind can rebuild the
+   frame of the sentence); at most 3 combining marks per base; whitespace collapsed; cut at max characters (+ «…»). */
+function nfDenyClean(v, max) {
+  var out = "",
+    marks = 0;
+  Array.from(String(v == null ? "" : v)).forEach(function (ch) {
+    var cp = ch.codePointAt(0);
+    if (cp >= 0xd800 && cp <= 0xdfff) return;
+    if (/[\p{Cf}\u034f\u115f\u1160\u17b4\u17b5\u180b-\u180f\u2060-\u206f\u3164\ufe00-\ufe0f\uffa0\u2800\u0640\u{E0000}-\u{E0FFF}]/u.test(ch)) return;
+    if (/\p{M}/u.test(ch)) {
+      if (++marks <= 3) out += ch;
+      return;
+    }
+    marks = 0;
+    out += /[\p{L}\p{N} .'\-]/u.test(ch) ? ch : " ";
+  });
+  out = out.replace(/\s+/g, " ").trim();
+  var c = Array.from(out),
+    n = max || NF_DENY_NAME_MAX;
+  if (c.length > n) out = c.slice(0, n).join("").trim() + "…";
+  return /[\p{L}\p{N}]/u.test(out) ? out : "";
 }
-/* does a (sanitised) name read like one of the fallback phrases? compared without diacritics and tatweel */
+/* does a (sanitised) name read like a phrase this notice generates itself? compared on LETTERS only (no marks, digits,
+   punctuation or spaces) */
 function nfDenyAmbiguous(s) {
-  var bare = String(s).replace(/[\u064b-\u065f\u0670\u0640]/g, "");
-  return [NF_DENY_NO_ACCOUNT, NF_DENY_NO_UNIT, NF_DENY_NO_NODE].indexOf(bare) >= 0;
+  var bare = function (x) {
+      return String(x).replace(/[^\p{L}]/gu, "");
+    },
+    b = bare(s);
+  return (
+    [NF_DENY_NO_ACCOUNT, NF_DENY_NO_UNIT, NF_DENY_NO_NODE, NF_DENY_ODD_ACCOUNT, NF_DENY_ODD_UNIT].map(bare).indexOf(b) >= 0 ||
+    b.indexOf(bare(NF_DENY_NUMBERED)) === 0
+  );
 }
 function nfDenyDigits(v) {
   return String(v).replace(/[0-9]/g, function (c) {
@@ -3322,14 +3348,14 @@ function nfDenyVars(A, r) {
         ((gm ? A.nodes : A.depts) || []).filter(function (x) {
           return x && x.id === id;
         })[0] || null,
-      kind = hit ? nfDenyClean(hit.kind) : "";
+      kind = hit ? nfDenyClean(hit.kind, NF_DENY_KIND_MAX) : "";
     if (u.role === "super") role = "مسؤول المنصة";
     else if (gm) role = !kind || kind === "إدارة عامة" ? "مدير إدارة عامة" : kind === "قطاع" ? "مدير القطاع" : kind === "إدارة عليا" ? "الإدارة العليا" : "مدير " + kind;
     else role = u.role === "dept" || u.mgr ? (kind === DEPT_SEC_KIND ? "مدير القسم" : "مدير الإدارة") : "موظف";
     /* a general manager's unit is a node of the structure, so a missing one is not called «إدارة» */
     unit = !id ? "" : (hit && nfDenyClean(hit.name)) || (gm ? NF_DENY_NO_NODE : NF_DENY_NO_UNIT);
-    if (hit && nfDenyClean(hit.name) && nfDenyAmbiguous(unit)) unit = "وحدة باسم ملتبس";
-    if (name && nfDenyAmbiguous(name)) name = /^[0-9]+$/.test(String(u.un || "")) ? "الحساب رقم " + nfDenyDigits(u.un) : "حساب باسم ملتبس";
+    if (hit && nfDenyClean(hit.name) && nfDenyAmbiguous(unit)) unit = NF_DENY_ODD_UNIT;
+    if (name && nfDenyAmbiguous(name)) name = /^[0-9]{1,15}$/.test(String(u.un == null ? "" : u.un)) ? NF_DENY_NUMBERED + " " + nfDenyDigits(u.un) : NF_DENY_ODD_ACCOUNT;
   }
   return {
     الاسم: name || NF_DENY_NO_ACCOUNT,

@@ -323,7 +323,8 @@ test('V7 nf-deny · record labels and pages cannot drift from the client (KIVO.B
          a helper not named …Why — and pvNo9[k] = 'privacy-hidden'). Now: for every non-literal «deny»/«sd» (of an object with
          «cur») the root variable is taken, and every string literal assigned to it or to one of its members is a code, as is every
          string literal RETURNED by a function called in such an assignment.
-    (11) a string literal assigned to a «.why» member (o.why = '…')           — reasons patched onto an answer
+         (Not followed: «x.why = '…'» patched onto an answer — tried and dropped: it only finds 'perms-scope-changed', which is a
+         CONFLICT answer and is never logged, plus diagnostics and Arabic task texts that are not reason codes.)
    Ternaries and ||/&& are followed. WHITELIST: the …Why helpers below return a human DETAIL sentence (stored in the verdict's
    «detail», never in «why» and never in sec.detail) — verified at their call sites (018 · 059: enfNo('grant', { detail: … })). */
 const DETAIL_HELPERS = ['latentLossWhy', 'usersGrantWhy', 'usersSheetWhy', 'enfPermsHeldWhy', 'enfMinusLiftWhy'];
@@ -361,7 +362,7 @@ function reasonCodes(src) {
     if (n.type === 'ReturnStatement' && st && /Why\d*$/.test(st.fn) && !DETAIL_HELPERS.includes(st.fn)) lits(n.argument).forEach((c) => add(c, 'return of ' + st.fn));
     if (n.type === 'ReturnStatement' && st && st.fn) { if (!returns.has(st.fn)) returns.set(st.fn, []); lits(n.argument, returns.get(st.fn)); }
     if (n.type === 'ObjectExpression') for (const p of n.properties) if (p.type === 'Property' && ['deny', 'sd'].includes(p.key.name || p.key.value) && n.properties.some((q) => q.key && (q.key.name || q.key.value) === 'cur')) { const r = rootOf(p.value); if (r) roots.add(r); }
-    if (n.type === 'AssignmentExpression') { assigns.push(n); if (n.left.type === 'MemberExpression' && !n.left.computed && n.left.property.name === 'why') lits(n.right).forEach((c) => add(c, '.why =')); }
+    if (n.type === 'AssignmentExpression') { assigns.push(n); }
     if (n.type === 'VariableDeclarator' && n.init && n.id.type === 'Identifier') assigns.push({ left: n.id, right: n.init });
     for (const k in n) { const v = n[k]; if (Array.isArray(v)) v.forEach((c) => walk(c, st)); else if (v && typeof v.type === 'string') walk(v, st); }
   };
@@ -451,7 +452,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal(b, 'حاول ' + name + ' (موظف — ' + UNIT + ') تعديل «إعدادات المنصة»، ورُفض الطلب: الإجراء لمسؤول المنصة وحده.');
     assert.equal(b.split('«').length - 1, 1, 'one quoted thing: the record'); assert.equal(b.split('»').length - 1, 1);
     assert.ok(Array.from(name).length <= 41 && name.endsWith('…'), 'cut at 40 characters, marked: ' + name);
-    assert.equal(name, 'أحمد في صفحة الإعدادات ورُفض الطلب لا شيء…'); assert.doesNotMatch(b.slice(0, b.indexOf(' (موظف')), /[،:()«»—]/, 'no sentence punctuation inside the name');
+    assert.equal(name, 'أحمد في صفحة الإعدادات ورُفض الطلب لا شي…'); assert.doesNotMatch(b.slice(0, b.indexOf(' (موظف')), /[،:()«»—]/, 'no sentence punctuation inside the name');
   });
 
   test('V7 nf-deny · review M1 + L1 · ' + mode + ': names and unit names are sanitised (quotes · braces · control · bidi · zero-width · newlines · 40 chars); a 4001-character name no longer stops the poll', async () => {
@@ -601,12 +602,12 @@ for (const mode of ['legacy', 'enforce']) test('V7 nf-deny · review-2 (1)(5) ·
   const lock = c.ins({ uid: 'nfd_mgr', act: 'lock', target: 'u:0000000902', detail: '5' });
   const p = await c.pollRaw(); assert.equal(p.status, 200, JSON.stringify(p.j).slice(0, 120)); assert.equal(c.once(lock).type, 'sc_guard', '4001-character names do not stop the poll');
   const U1 = ' (موظف — ' + UNIT + ')', body = (k) => c.once(ids[k]).body;
-  assert.equal(body('f_noquote'), RBODY('س ورُفض الطلب تم. حاول سعد العتيبي مسؤول المنصة…' + U1));
-  assert.equal(body('f_dq'), RBODY('س في صفحة الإعدادات ورُفض الطلب تم. حاول سع…' + U1)); assert.equal(body('f_cjk'), body('f_dq'));
-  assert.equal(body('f_role'), RBODY('سعد العتيبي مسؤول المنصة بالنيابة عن خالد' + U1)); assert.equal(body('f_look'), RBODY('أحمد السبب الصفحة x' + U1)); assert.equal(body('f_dash'), RBODY('عمر' + U1));
+  assert.equal(body('f_noquote'), RBODY('س ورُفض الطلب تم. حاول سعد العتيبي مسؤول…' + U1));
+  assert.equal(body('f_dq'), RBODY(clean(FORGE.dq) + U1)); assert.match(clean(FORGE.dq), /^س في صفحة الإعدادات ورُفض الطلب تم. حاول/); assert.equal(body('f_cjk'), body('f_dq'));
+  assert.equal(body('f_role'), RBODY('سعد العتيبي مسؤول المنصة بالنيابة عن خال…' + U1)); assert.equal(body('f_look'), RBODY('أحمد السبب الصفحة x' + U1)); assert.equal(body('f_dash'), RBODY('عمر' + U1));
   assert.equal(body('f_long'), RBODY('ط'.repeat(40) + '…' + U1));
   assert.equal(body('f_unit'), RBODY('ناصر (موظف — س تعديل الصلاحيات مسؤول المنصة)')); assert.equal(body('f_ulong'), RBODY('ناصر (موظف — ' + 'ع'.repeat(40) + '…)'));
-  assert.equal(body('f_n_k1'), RBODY('ماجد (مدير السبب x حاول سعد تعديل — الفرع)')); assert.equal(body('f_n_k2'), RBODY('ماجد (مدير ' + 'ع'.repeat(20) + '… — الفرع)'), 'the node kind is cut at 20');
+  assert.equal(body('f_n_k1'), RBODY('ماجد (مدير السبب x حاول سعد تعد… — الفرع)')); assert.equal(body('f_n_k2'), RBODY('ماجد (مدير ' + 'ع'.repeat(20) + '… — الفرع)'), 'the node kind is cut at 20');
   assert.equal(body('f_n_k3'), RBODY('ماجد (مدير وكالة — س تعديل الصلاحيات مسؤول المنصة)'));
   for (const k of Object.keys(ids)) { const b = body(k); assert.match(b, FRAME, k + ': ' + b); assert.equal(b.split('حاول ').length - 1 <= 2, true); assert.equal((b.match(/[()«»،:—]/g) || []).join(''), '(—)«»«»،:', k + ': the only sentence punctuation is the template\'s own: ' + b); assert.ok(b.length < 260, k); }
 });
