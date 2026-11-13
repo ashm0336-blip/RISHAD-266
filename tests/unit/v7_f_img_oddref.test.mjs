@@ -1,7 +1,7 @@
 /* V7-F · third independent review, item D — an upload under an id the reference scanner cannot match (PUT accepts ^[A-Za-z0-9_]{1,128}$, the
    scanner sees (img|szp)_[a-z0-9]+_[a-z0-9]+) was "unprovable → kept for ever": any uploader could make storage that is never reclaimed.
-   What PUT accepts is NOT changed. Now the sweep looks for the id's literal text everywhere references live (fourth review: literally only —
-   an escaped spelling anywhere holds the whole pass, tests/unit/v7_f_img_literal.test.mjs) — kv
+   What PUT accepts is NOT changed. Now the sweep looks for the id's literal text everywhere references live (literally — and, in a text that
+   may hide it behind a JSON escape, in every round of its decoding: tests/unit/v7_f_img_escvalue.test.mjs, f) — kv
    (rows and row boundaries), every ops_* table (the typed records), seized_item_photos, award_records: found anywhere → kept, its row unchanged
    in kind (as before); found nowhere → swept like any other. At most 2 such ids are decided per pass; the others met wait an hour, so they never
    hold the queue. Real worker, legacy and enforce, rows and R2 bytes. */

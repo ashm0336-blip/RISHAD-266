@@ -2,10 +2,13 @@
    SQL) was proven by running to be a regression: at JSON nesting depth >= 3 a spelling such as "\"\\\"i\\\\u006dg_a_b\\\"\"" (three JSON.parse
    calls give img_a_b) was seen by neither the save check nor the sweep — a unit-2 manager could bind a unit-1 image, and an upload mentioned
    only by that spelling was deleted. And while a spelling stayed "deep", the sweep's keep step turned every unreferenced orphan 'amb' for good.
-   Now (054, the conservative rule): ids are matched literally only; a saved text carrying a JSON \u00XX escape of an id character or of '\'
-   is refused ('img-escape') by every writer; while any text the sweep reads holds one, a pass changes nothing at all and says so
-   (img-sweep-escape-hold); it resumes by itself once that text is gone.
-   Each test here fails on the decoder build and passes on this one. Real worker, legacy and enforce, rows and R2 bytes (fuzz: the worker's own functions). */
+   The fourth review's answer was the conservative rule: ids matched literally only, a saved text carrying a JSON \u00XX escape of an id
+   character or of '\' refused ('img-escape') by every writer, and every pass held while a stored text carried one.
+   Owner decision after the fifth review: user text is not refused. Now (054 imgDeepEach) such a text is unescaped structure-blind, round
+   after round until it stops changing, and every round is scanned literally — there is no nesting depth to get wrong — so the depth-3
+   spelling IS the id: the unit-2 save is refused as for the literal id ('imgown'), the owner's is accepted and registered, an upload
+   mentioned only by that spelling is kept by the sweep, and the orphans nothing names are swept in the same pass (never 'amb', never held).
+   Each scenario of the fourth review is still here, with the outcome now decided. Real worker, legacy and enforce, rows and R2 bytes (fuzz: the worker's own functions). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
@@ -62,23 +65,25 @@ function chains(N) {
   }
   return out;
 }
-/* imgForeignIn with a store that knows no image: it can only answer 'img-escape' (refused for its spelling) or '' (accepted) */
+/* imgForeignIn with a store that knows no image: it can only answer 'img-escape' (refused for its spelling — only past the bound on rounds) or '' (accepted) */
 const noDb = { DB: { prepare: () => ({ bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }) }) } };
 const A0 = { u: { id: 'tst_u', role: 'staff' }, depts: [] };
 
-test('fuzz · real JSON nesting, depths 1–8, random \\u escapes: every text that names an id is either refused at the save or names it literally', async () => {
-  const m = await internals(['imgIdsIn', 'imgForeignIn'], WORKER), C = chains(4000), miss = [], by = {};
+test('fuzz · real JSON nesting, depths 1–8, random \\u escapes: every text that names an id is read as naming it — none is refused for its spelling, none hides its id', async () => {
+  const m = await internals(['imgIdsIn', 'imgForeignIn'], WORKER), C = chains(4000), miss = [], by = {}; let refusedN = 0;
   for (const c of C) {
     const refused = (await m.imgForeignIn(noDb, A0, dk(D, 'profile'), c.t, '', {})) === 'img-escape', found = !!m.imgIdsIn(c.t)[c.id];
-    const b = by[c.depth] = by[c.depth] || { n: 0, refused: 0, literal: 0 }; b.n++; if (refused) b.refused++; if (found) b.literal++;
-    if (!refused && !found) miss.push({ depth: c.depth, t: c.t.slice(0, 200) });
+    const b = by[c.depth] = by[c.depth] || { n: 0, hidden: 0, found: 0 }; b.n++; if (!c.t.includes(c.id)) b.hidden++; if (found) b.found++; if (refused) refusedN++;
+    if (!found) miss.push({ depth: c.depth, t: c.t.slice(0, 200) });
   }
-  console.log('# fuzz ' + C.length + ' chains · by depth ' + JSON.stringify(by) + ' · neither refused nor literal: ' + miss.length);
+  console.log('# fuzz ' + C.length + ' chains · by depth ' + JSON.stringify(by) + ' · refused for the spelling: ' + refusedN + ' · id not found: ' + miss.length);
   assert.ok(Object.keys(by).length === 8 && C.length > 3000, 'the corpus covers every depth');
-  assert.deepEqual(miss.slice(0, 3), [], 'A SPELLING THE SAVE NEITHER REFUSES NOR SEES');
+  for (const d of Object.keys(by)) assert.ok(by[d].hidden > 50, 'depth ' + d + ' has spellings that hide the id from the literal text');
+  assert.equal(refusedN, 0, 'A TEXT REFUSED FOR ITS SPELLING');
+  assert.deepEqual(miss.slice(0, 3), [], 'A SPELLING THE SAVE DOES NOT SEE');
 });
 
-test('fuzz · the sweep holds on exactly the texts the save refuses (JS ⇔ SQL, every row cut of a value), and JSON.stringify never trips either', async () => {
+test('fuzz · the sweep reads (SQL) exactly the texts the save decodes (JS) — every row cut of a value — and JSON.stringify never trips either', async () => {
   const m = await internals(['imgEsc', 'imgEscHold'], WORKER);
   const db = new DatabaseSync(':memory:'); db.exec('CREATE TABLE kv (k TEXT NOT NULL, seq INTEGER NOT NULL, v TEXT NOT NULL, PRIMARY KEY (k, seq))');
   /* the hold statement reads the typed records too: an empty stand-in for every table the worker names there */
@@ -104,66 +109,72 @@ test('fuzz · the sweep holds on exactly the texts the save refuses (JS ⇔ SQL,
     const t = JSON.stringify({ t: s, u: JSON.stringify(s) }); if (m.imgEsc(t) || await hold([t])) plain++; }
   console.log('# parity ' + texts.length + ' texts (' + on + ' carry an escape) · ' + cuts + ' row cuts · differ ' + bad + ' · ordinary JSON.stringify texts tripped: ' + plain);
   assert.ok(on > 500 && on < texts.length - 500, 'both kinds are exercised');
-  assert.equal(bad, 0, 'the save (JS) and the sweep (SQL) disagree'); assert.equal(plain, 0, 'an ordinary client text is refused / holds the sweep');
+  assert.equal(bad, 0, 'the save (JS) and the sweep (SQL) disagree'); assert.equal(plain, 0, 'an ordinary client text is taken for one that may hide an id');
 });
 
 /* ── end to end ────────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
-both(test, 'P14 · the depth-3 spelling: a unit-2 save naming a unit-1 image is refused, the owner\'s too; as older data it holds the sweep (nothing deleted), which resumes once it is gone', async (mode) => {
+both(test, 'P14 · the depth-3 spelling: a unit-2 save naming a unit-1 image is refused as for the literal id; the owner\'s is accepted and registered; as older data it keeps its image (nothing deleted) while the unrelated orphan is swept; once it is gone the image is swept', async (mode) => {
   const T = await scene(mode), { W, S, id } = T;
   const victim = id('victim'); await upload(W, S.mgr, victim);
   assert.ok((await edit(W, S.mgr, D, 'plan', EDIT.plan(victim))).ok, 'bound into the unit-1 plan');
   const text = spell3(victim); let v = JSON.parse(text).doc; v = JSON.parse(v); v = JSON.parse(v); assert.equal(v, victim); assert.ok(!text.includes(victim));
   const KP = dk(D2, 'profile'), r = await W.C.save(S.mgr2, { [KP]: text }), den = (r.j.denied || {})[KP];
   assert.notEqual((W.env.DB.q('SELECT v FROM kv WHERE k = ?', KP)[0] || {}).v, text, 'FOREIGN REFERENCE ACCEPTED');
-  assert.equal(den && den.why, 'img-escape', JSON.stringify(r.j).slice(0, 300));
+  assert.equal(den && den.why, 'imgown', JSON.stringify(r.j).slice(0, 300));
+  const lit = await W.C.save(S.mgr2, { [KP]: JSON.stringify({ t: TAG, doc: victim }) });
+  assert.deepEqual(r.j, lit.j, 'the very answer the literal id gets'); assert.equal(r.status, lit.status);
   assert.deepEqual((await state(W, victim)).refs, [dk(D, 'plan')], 'no reference row for unit 2');
-  const hid = id('hid'), ctl = id('ctl'); await upload(W, S.mgr, hid); await upload(W, S.mgr2, ctl);
-  const KN = dk(D, 'profile'), r2 = await W.C.save(S.mgr, { [KN]: spell3(hid) });
-  assert.equal(((r2.j.denied || {})[KN] || {}).why, 'img-escape', 'the unit-1 manager is refused the same spelling of his own upload');
-  /* the same text as older data (stored by an earlier version / a direct write), the only mention of hid */
-  W.env.DB.db.prepare('INSERT OR REPLACE INTO kv (k, seq, v) VALUES (?, 0, ?)').run(KN, spell3(hid));
-  age(W, hid, 31); age(W, ctl, 31); const before = { hid: own(W, hid), ctl: own(W, ctl) }, logs = [];
+  const mine = id('mine'), hid = id('hid'), ctl = id('ctl'); await upload(W, S.mgr, mine); await upload(W, S.mgr, hid); await upload(W, S.mgr2, ctl);
+  const KN = dk(D, 'profile'), r2 = await W.C.save(S.mgr, { [KN]: spell3(mine) });
+  assert.equal((r2.j.denied || {})[KN], undefined, 'the unit-1 manager is accepted with the same spelling of his own upload · ' + JSON.stringify(r2.j).slice(0, 200));
+  assert.deepEqual((await state(W, mine)).refs, [KN], 'and it is registered'); assert.equal((await state(W, mine)).st, 'bound');
+  /* the same kind of text as older data (stored by an earlier version / a direct write), the only mention of hid */
+  const KO = dk(D, 'notes'); W.env.DB.db.prepare('INSERT OR REPLACE INTO kv (k, seq, v) VALUES (?, 0, ?)').run(KO, spell3(hid));
+  age(W, hid, 31); age(W, ctl, 31); age(W, mine, 31); const logs = [];
   for (let k = 0; k < 3; k++) await pass(T, logs);
   const sh = await state(W, hid);
-  assert.equal(sh.r2, PNG, 'LIVE-REFERENCED IMAGE DELETED'); assert.deepEqual(own(W, hid), before.hid, 'and its row is unchanged');
-  assert.deepEqual(own(W, ctl), before.ctl, 'the pass changes nothing at all while the text is there (the control too)');
-  assert.ok(holds(logs).length >= 1 && holds(logs)[0].n >= 1, 'each held pass says so · ' + JSON.stringify(holds(logs)));
-  W.env.DB.db.prepare('DELETE FROM kv WHERE k = ?').run(KN);
-  for (let k = 0; k < 3; k++) await pass(T);
-  assert.ok(gone(await state(W, hid)) && gone(await state(W, ctl)), 'the sweep resumes once the text is gone');
+  assert.equal(sh.r2, PNG, 'LIVE-REFERENCED IMAGE DELETED'); assert.equal(sh.st, 'claim', 'kept, its uploader\'s still'); assert.deepEqual(sh.refs, []);
+  assert.equal((await state(W, mine)).r2, PNG, 'the registered one is kept');
+  assert.ok(gone(await state(W, ctl)), 'the unrelated orphan is swept while the text is there');
+  assert.deepEqual(holds(logs), [], 'no pass held');
+  W.env.DB.db.prepare('DELETE FROM kv WHERE k = ?').run(KO);
+  age(W, hid, 31); for (let k = 0; k < 3; k++) await pass(T);
+  assert.ok(gone(await state(W, hid)), 'swept once the text is gone');
 });
 
-both(test, 'P3 · while a kv value holds such a spelling, an unreferenced orphan stays an orphan (never amb), its clock untouched; once the value is gone it is swept', async (mode) => {
+both(test, 'P3 · while a kv value holds a nine-level spelling, an unreferenced orphan it does not name is swept as usual — never amb, never held; the image it does name is kept', async (mode) => {
   const T = await scene(mode), { W, S, id } = T;
   const orp = id('orp'), ctl = id('ctl'); await upload(W, S.mgr, orp); await upload(W, S.mgr, ctl);
   W.env.DB.db.prepare("UPDATE imgown SET st = 'orphan', k = '', dept = ? WHERE img IN (?, ?)").run(D, orp, ctl);
-  W.env.DB.db.prepare('INSERT OR REPLACE INTO kv (k, seq, v) VALUES (?, 0, ?)').run(dk(D, 'notes'), '{"t":"' + TAG + '","x":"' + deep9 + '"}');
-  age(W, orp, 31); const b = own(W, orp), logs = []; await pass(T, logs); await pass(T, logs);
-  assert.deepEqual(own(W, orp), b, 'an unreferenced orphan met while the value exists stays exactly as it was (it became ' + (own(W, orp) || {}).st + ')');
-  assert.ok(holds(logs).length >= 1);
-  W.env.DB.db.prepare('DELETE FROM kv WHERE k = ?').run(dk(D, 'notes'));
-  age(W, orp, 31); age(W, ctl, 31); for (let k = 0; k < 3; k++) await pass(T);
-  assert.ok(gone(await state(W, orp)), 'swept once the value is gone'); assert.ok(gone(await state(W, ctl)), 'the control too');
+  /* ctl is the image the nine-level spelling names */
+  let deepCtl = '\\u0069' + ctl.slice(1); for (let k = 0; k < 9; k++) deepCtl = deepCtl.replace(/\\/g, '\\u005c');
+  W.env.DB.db.prepare('INSERT OR REPLACE INTO kv (k, seq, v) VALUES (?, 0, ?)').run(dk(D, 'notes'), '{"t":"' + TAG + '","x":"' + deep9 + '","y":"' + deepCtl + '"}');
+  age(W, orp, 31); age(W, ctl, 31); const logs = [], seen = [];
+  for (let k = 0; k < 3; k++) { await pass(T, logs); seen.push((own(W, orp) || {}).st || 'gone'); }
+  assert.ok(!seen.includes('amb'), 'an unreferenced orphan met while the value exists never turns amb · ' + seen);
+  assert.ok(gone(await state(W, orp)), 'and it is swept while the value exists · ' + seen);
+  assert.deepEqual(holds(logs), [], 'no pass held');
+  assert.equal((await state(W, ctl)).r2, PNG, 'the orphan the value names is kept'); assert.equal((await state(W, ctl)).st, 'amb', 'as a referenced orphan');
 });
 
-both(test, 'P6 · such a spelling in a typed record\'s text with an odd-shaped candidate: nothing turns amb, nothing is re-clocked; once it is gone both are swept', async (mode) => {
+both(test, 'P6 · such a spelling in a typed record\'s text with an odd-shaped candidate: nothing it does not name turns amb or is re-clocked — both are swept while the text is there, no pass held', async (mode) => {
   const T = await scene(mode), { W, S, x, id } = T, DB = W.env.DB.db;
   const orp = id('orp'), odd = 'Odd' + x; await upload(W, S.mgr, orp); await upload(W, S.mgr2, odd);
   DB.prepare("UPDATE imgown SET st = 'orphan', k = '', dept = ? WHERE img = ?").run(D, orp);
-  const was = DB.prepare('SELECT f_name_text v FROM ops_plan_live_floors_floor WHERE department_id = ?').all(D);
   assert.ok(DB.prepare('UPDATE ops_plan_live_floors_floor SET f_name_text = ? WHERE department_id = ?').run(deep9, D).changes > 0);
-  age(W, orp, 31); age(W, odd, 32); const b = { orp: own(W, orp), odd: own(W, odd) }, logs = []; await pass(T, logs);
-  assert.deepEqual(own(W, orp), b.orp, 'the unreferenced orphan is unchanged (it became ' + (own(W, orp) || {}).st + ')');
-  assert.deepEqual(own(W, odd), b.odd, 'the odd upload is unchanged (no clock restart)');
-  assert.ok(holds(logs).length >= 1);
-  DB.prepare('UPDATE ops_plan_live_floors_floor SET f_name_text = ? WHERE department_id = ?').run(was[0] ? was[0].v : '', D);
-  for (let k = 0; k < 3; k++) { DB.exec("UPDATE imgown SET ts = ts - 3700000 WHERE st IN ('claim', 'orphan')"); await pass(T); }
-  assert.ok(gone(await state(W, orp)), 'orphan swept once the text is gone'); assert.ok(gone(await state(W, odd)), 'odd upload swept too');
+  age(W, orp, 31); age(W, odd, 32); const b = { odd: own(W, odd) }, logs = [], seen = [];
+  await pass(T, logs); seen.push((own(W, orp) || {}).st || 'gone');
+  assert.ok(!own(W, odd) || own(W, odd).ts <= b.odd.ts || own(W, odd).st === 'dead', 'the odd upload is not re-clocked as a referenced one');
+  for (let k = 0; k < 3; k++) { DB.exec("UPDATE imgown SET ts = ts - 3700000 WHERE st IN ('claim', 'orphan')"); await pass(T, logs); seen.push((own(W, orp) || {}).st || 'gone'); }
+  assert.ok(!seen.includes('amb'), 'the unreferenced orphan never turns amb · ' + seen);
+  assert.ok(DB.prepare("SELECT COUNT(*) n FROM ops_plan_live_floors_floor WHERE f_name_text = ?").get(deep9).n > 0, 'the text is still there');
+  assert.ok(gone(await state(W, orp)), 'orphan swept while the text is there'); assert.ok(gone(await state(W, odd)), 'odd upload swept too');
+  assert.deepEqual(holds(logs), [], 'no pass held');
 });
 
-/* ── the other writers: the same refusal (a one-level escape the decoder build accepted) ──────────────────────────────────────── */
+/* ── the other writers: the same acceptance of honest text (the fourth review refused it) ─────────────────────────────────────── */
 const esc1 = '\\u0041bc';                                                    /* one escaped letter: A = 'A' */
-for (const mode of ['legacy', 'enforce']) test('task note · an employee\'s note carrying a \\u escape of an id character is refused [' + mode + ']', { timeout: 600000 }, async () => {
+for (const mode of ['legacy', 'enforce']) test('task note · an employee\'s note carrying a \\u escape of an id character is accepted and stored as written [' + mode + ']', { timeout: 600000 }, async () => {
   const W = await tasksWorld({ mode }), dm = await W.login('0000000101', '70101'), me = await W.login(ME.un, ME.pw);
   const post = (ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: taskCommandBody(W.env, p, body) });
   const s = Date.now() - HR, cr = await post(dm.ck, '/api/tasks/create', { k: hij(s), t: TAG + ' lit', s, e: s + 3 * HR, asg: [ME.eid], rv: 'none' }); assert.equal(cr.status, 200);
@@ -172,11 +183,11 @@ for (const mode of ['legacy', 'enforce']) test('task note · an employee\'s note
   const ok = await post(me.ck, '/api/me/tasks/act', { k, id: rid, act: 'doc', note: TAG + ' a plain note \\ with a backslash' });
   assert.equal(ok.status, 200, 'an ordinary note is accepted · ' + JSON.stringify(ok.j).slice(0, 200));
   const r = await post(me.ck, '/api/me/tasks/act', { k, id: rid, act: 'doc', note: esc1 });
-  assert.equal(r.status, 403, JSON.stringify(r.j).slice(0, 200)); assert.equal(r.j.why, 'img-escape');
-  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM ops_task_row_proof WHERE instr(f_note_text, '\\u0041') > 0")[0].n, 0, 'not stored');
+  assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 200)); assert.notEqual(r.j.why, 'img-escape');
+  assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM ops_task_row_proof WHERE f_note_text = ?", esc1)[0].n, 1, 'stored as written');
 });
 
-test('backup restore · a typed record carrying a \\u escape of an id character is refused, nothing written', { timeout: 600000 }, async () => {
+test('backup restore · a typed record carrying a \\u escape of an id character is restored as written', { timeout: 600000 }, async () => {
   const B = await restoreWorld(), OPTIONS = 'bsdept:' + D1 + ':bassam_options_v1';
   const restored = JSON.stringify({ type: [esc1], work: [TAG + ' restored'] }), request = await B.body({ scope: { kind: 'full' } });
   const keep = (o) => Object.fromEntries(Object.entries(o).filter(([name]) => name !== 'operations'));
@@ -185,6 +196,6 @@ test('backup restore · a typed record carrying a \\u escape of an id character 
   const r = await B.api('super', '/api/backup/restore', { version: 1, uid: IDS.super, requestId: 'TEST_ONLY_lit_restore', scope: { kind: 'full' }, mode: 'replace', reason: TAG + ' lit', base: request.base, backup: file, phase: 'commit', legacyConsent: false });
   const v = inspectOperationalFixture(B.env, OPTIONS);
   console.log('# restore', r.status, JSON.stringify(r.json).slice(0, 300), JSON.stringify(v).slice(0, 200));
-  assert.notEqual(r.status, 200, 'refused · ' + JSON.stringify(r.json).slice(0, 200));
-  assert.ok(!(v && v.type && v.type[0] === esc1), 'the escaped text was not written');
+  assert.equal(r.status, 200, 'restored · ' + JSON.stringify(r.json).slice(0, 200));
+  assert.ok(v && v.type && v.type[0] === esc1, 'the text is written as it was in the file');
 });

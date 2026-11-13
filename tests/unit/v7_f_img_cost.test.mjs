@@ -49,9 +49,9 @@ both(test, 'finding 5 · a pass with no candidate reads no kv value; a pass with
   }
   const ids = []; for (let k = 0; k < 6; k++) { const i = id('c' + k); await upload(W, S.mgr2, i); age(W, i, 31); ids.push(i); }
   const six = await measured(T);
-  /* fourth review: two kv-reading statements in a pass with work — the escape hold (054 imgEscHold, once per pass) and the ONE deciding statement */
+  /* two kv-reading statements in a pass with work — the escape count (054 imgEscHold, once per pass: zero here, so nothing more is read) and the ONE deciding statement */
   assert.equal(six.sql.filter((s) => /UPDATE imgown SET st = 'dead'/.test(s)).length, 1, 'one deciding statement for the whole batch');
-  assert.equal(six.kvScans, 2, 'the escape hold and the deciding statement · ' + six.kvScans);
+  assert.equal(six.kvScans, 2, 'the escape count and the deciding statement · ' + six.kvScans);
   for (const i of ids) assert.ok(gone(await state(W, i)), 'and all six are swept');
 });
 
@@ -105,19 +105,25 @@ test('COST · an ordinary typed save with kv ≈ 100 MB: statements, D1 round tr
 });
 
 /* ── second independent review: what its fixes cost ──────────────────────────────────────────────────────────────────────────── */
-both(test, 'second review · an ordinary save with no pass due is unchanged (legacy: 100 statements, 14 D1 round trips); looking for JSON escapes is ONE statement of a pass with work (fourth review: the escape hold), not part of the deciding statement', async (mode) => {
+both(test, 'second review · an ordinary save with no pass due is unchanged (legacy: 100 statements, 14 D1 round trips); looking for JSON escapes is ONE statement of a pass with work (the escape count), not part of the deciding statement; a pass that finds escape-bearing texts reads them in 2 more round trips', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, DB = W.env.DB;
   due(W); await typedSave(T);
   const idle = await measured(T);
   if (mode === 'legacy') { assert.equal(idle.statements, 100, 'statements of an ordinary save'); assert.equal(idle.trips, 14, 'D1 round trips of an ordinary save'); }
-  assert.equal(idle.sql.filter((s) => /\besc\b|GLOB '\*\\u00/.test(s)).length, 0, 'an ordinary save never reads kv for escapes');
+  assert.equal(idle.sql.filter((s) => /\besc\b|GLOB '\*\\u00|, '\\u00'\) > 0/.test(s)).length, 0, 'an ordinary save never reads kv for escapes');
   const big = 'y'.repeat(690000), ins = DB.db.prepare('INSERT INTO kv (k, seq, v) VALUES (?, 0, ?)'); for (let k = 0; k < 150; k++) ins.run('bsdept:zz' + k + ':bassam_fake_v1', big);
   for (let k = 0; k < 6; k++) { const i = id('w' + k); await upload(W, S.mgr2, i); age(W, i, 31); }
   await measured(T);                                                          /* the one-time re-scan of the typed records is behind us */
   const ids = []; for (let k = 0; k < 6; k++) { const i = id('e' + k); await upload(W, S.mgr2, i); age(W, i, 31); ids.push(i); }
-  const six = await measured(T), esc = six.sql.filter((s) => /GLOB '\*\\u00/.test(s));
-  assert.equal(esc.length, 1, 'one statement looks for escapes'); assert.doesNotMatch(esc[0], /UPDATE imgown/, 'and it changes nothing (the escape hold)');
-  assert.equal(six.kvScans, 2, 'two kv-reading statements in the pass: the escape hold and the deciding statement');
+  const six = await measured(T), esc = six.sql.filter((s) => /, '\\u00'\) > 0/.test(s));   /* the trigger: instr(x, '\u00') (review, F3 — it was a GLOB, which a NUL character blinds) */
+  assert.equal(esc.length, 1, 'one statement looks for escapes'); assert.doesNotMatch(esc[0], /UPDATE imgown/, 'and it changes nothing (the escape count)');
+  assert.equal(six.kvScans, 2, 'two kv-reading statements in the pass: the escape count and the deciding statement');
   for (const i of ids) assert.ok(gone(await state(W, i)));
+  /* owner decision after the fifth review: honest escape text (a Windows path) is read and decoded by the pass — 2 more D1 round trips, nothing held */
+  ins.run('bsdept:zzesc:bassam_fake_v1', '{"p":"C:\\\\Users\\\\u0031452\\\\plan.pdf"}');
+  const ids2 = []; for (let k = 0; k < 6; k++) { const i = id('x' + k); await upload(W, S.mgr2, i); age(W, i, 31); ids2.push(i); }
+  const read = await measured(T);
+  assert.equal(read.trips, six.trips + 2, 'two more round trips: which texts, then their rows · ' + read.trips + ' vs ' + six.trips);
+  for (const i of ids2) assert.ok(gone(await state(W, i)), 'and the six are swept all the same');
   console.log('# COST [' + mode + '] second review · ordinary save: statements ' + idle.statements + ' · D1 round trips ' + idle.trips + ' — pass with 6 candidates, kv 100 MB, re-scan done: statements ' + six.statements + ' · D1 round trips ' + six.trips + ' · ' + six.ms.toFixed(0) + ' ms');
 });
