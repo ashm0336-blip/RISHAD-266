@@ -113,6 +113,7 @@
 @keyframes ps-run{0%{inset-inline-start:-36%}100%{inset-inline-start:100%}}
 
 @media (max-width:640px){
+  .ps-shell,.ps-tabbox,.ps-tabs{box-sizing:border-box;min-width:0;max-width:100%}
   .ps-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ps-tools{grid-template-columns:minmax(0,1fr) 44px 44px}
   .ps-card{padding:var(--sp-5) var(--sp-4)}

@@ -50,6 +50,11 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
   .bs-tabstrip{justify-content:flex-start!important}
   .bs-tabstrip > *{min-width:118px!important;padding:9px 10px!important;gap:4px!important}
   .bs-tabstrip > * > div:first-child{width:28px!important;height:28px!important}
+  /* شريطُ ترقيم الصفحات (قطعةٌ واحدة في كل الجداول) على الجوال: يلتفّ سطرين بدل أن ينزلق — أزرارُه كلُّها داخل الشاشة */
+  .bs-hbar:has(button[title="الصفحة الأخيرة"]){flex-wrap:wrap!important;overflow:visible!important;justify-content:center!important;row-gap:8px}
+  .bs-hbar:has(button[title="الصفحة الأخيرة"]) > *{flex-shrink:1!important;flex-wrap:wrap;justify-content:center;max-width:100%;min-width:0}
+  /* ثلاثة تبويبات على الجوال تتقاسم العرض: تظهر كلُّها كاملةً بلا سحبٍ ولا قصّ (أثناء التحميل وبعده) */
+  .bs-tabstrip > :first-child:nth-last-child(3),.bs-tabstrip > :first-child:nth-last-child(3) ~ *{flex:1 1 0!important;min-width:0!important;padding:9px 4px!important;text-align:center;white-space:normal;overflow-wrap:anywhere}
   /* R183 (الملاحظة ١٣): «مواقع ذات صلة» على الجوال — النطاقُ يُخفى فيأخذ اسمُ الموقع مكانه */
   .bs-lk-host{display:none!important}
 }

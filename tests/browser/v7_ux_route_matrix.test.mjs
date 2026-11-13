@@ -49,6 +49,27 @@ const EXCLUDED = {
   help: 'the address opens no screen for the lab account: the shell falls back to another page (observed, and checked on every run)',
 };
 
+/* a tab the page shows and pages.json lists as display-only (shellTabs: it has no permission leaf of its own); the page owns its address */
+const EXTRA = { employees: ['store'] };
+/* routes held to two more checks (reviewer, 13 Nov): no refresh button of the page's own, and — on a phone-wide screen — nothing to press
+   outside the screen and no sideways scroll, while loading and after */
+const STRICT = /^(?:employees|award)(?:\/|$)/, PHONE = VIEWPORT.width <= 480;
+/* bars that slide sideways on a phone by the platform's older rule (.bs-hbar: one line, swiped) — there before this work, listed for the
+   reviewer to class, each named by a word it holds. What they hold is reached by that swipe; nothing else may lie outside the screen. */
+const SWIPE = [[/^employees(?:\/data)?$/, 'نوع التوظيف', 'the employee filters bar'], [/^employees\/custody$/, 'انقضى', 'the months strip of custody']];
+const LAYOUT = (swipe) => {
+  const main = document.querySelector('main.bs-main'), W = document.documentElement.clientWidth;
+  const vis = (e) => { const r = e.getBoundingClientRect(), c = getComputedStyle(e); return r.width > 4 && r.height > 4 && c.visibility !== 'hidden' && c.display !== 'none' && +c.opacity > 0.05; };
+  /* a wide table scrolls sideways inside its own box: what it holds is reached by that scroll */
+  const inTable = (e) => { for (let p = e.parentElement; p && p !== main; p = p.parentElement) { const c = getComputedStyle(p); if (/auto|scroll/.test(c.overflowX) && p.scrollWidth > p.clientWidth + 1 && p.querySelector('table')) return true; } return false; };
+  const name = (e) => e.tagName.toLowerCase() + '«' + (e.textContent || e.getAttribute('aria-label') || e.getAttribute('placeholder') || '').replace(/\s+/g, ' ').trim().slice(0, 30) + '»';
+  const inSwipe = (e) => { for (let p = e.parentElement; p && p !== main; p = p.parentElement) { const c = getComputedStyle(p); if (/auto|scroll/.test(c.overflowX) && p.scrollWidth > p.clientWidth + 1) return swipe.some((w) => p.outerHTML.includes(w)); } return false; };
+  const press = [...main.querySelectorAll('button, a[href], input, select, textarea, [role=tab], [role=button], .bs-tabstrip > *')].filter((e) => vis(e) && !inTable(e) && !inSwipe(e));
+  const off = press.map((e) => { const r = e.getBoundingClientRect(); return r.left < -1 || r.right > W + 1 ? name(e) + ' ' + Math.round(r.left) + '…' + Math.round(r.right) : null; }).filter(Boolean);
+  const refresh = [...main.querySelectorAll('button')].filter((e) => vis(e) && !e.closest('.ps') && /^تحديث/.test(e.textContent.trim())).map(name);
+  return { off, refresh, wider: document.documentElement.scrollWidth - W };
+};
+
 /* routes that have a secondary read on entry, and the request treated as secondary (found by failing each entry request of each route
    alone and seeing that the page still draws its content and no failure card). The test fails if the request is no longer made.
    Routes not listed have one page read (or only the shell gate's operations read): nothing there is secondary. */
@@ -70,7 +91,7 @@ function routes() {
     out.push({ route: nav, nav, title: M.routeNames[nav], tabs: tabsOf(nav) });
     const p = M.pages.find((x) => x.nav === nav), addr = p && M.tabAddr[p.key]; if (!addr) continue;
     const keys = addr === 1 ? (p.subs || []).filter((s) => !s.offPage).map((s) => s.key) : Object.keys(addr);
-    for (const k of keys) out.push({ route: nav + '/' + k, nav, title: M.routeNames[nav], tabs: tabsOf(nav) });
+    for (const k of keys.concat(EXTRA[nav] || [])) out.push({ route: nav + '/' + k, nav, title: M.routeNames[nav], tabs: tabsOf(nav) });
   }
   return out;
 }
@@ -107,7 +128,7 @@ const SAMPLER = () => {
     const gate = [...main.querySelectorAll('.sc-placeholder')].some((p) => !p.querySelector('.ps-fail, .sc-placeholder-error'));
     X.log.push({ t: Math.round(performance.now() - X.t0), read: flying > 0 || gate, what: gate ? 'page gate' : what.join(' '), title: crumb ? crumb.textContent.trim() : '', tabs: strips, skel: skels.length, shape: skels.map(shape),
       live: live.length > 0, snap: snap.length > 0, line: [...main.querySelectorAll('.ps-line')].some((e) => vis(e, 2)), badge: [...main.querySelectorAll('.ps-badge')].some(vis), text: txt,
-      fail: [...main.querySelectorAll('.ps-fail, .bs-retry')].some(vis), icons,
+      fail: [...main.querySelectorAll('.ps-fail, .bs-retry')].some(vis), icons, wider: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       stale: staleBar ? staleBar.textContent.replace(/\s+/g, ' ').trim() : '', cards: cards.length, cardButtons: cards[0] ? [...cards[0].querySelectorAll('button')].map((x) => x.textContent) : [] });
   };
   setInterval(scan, 15);
@@ -225,14 +246,21 @@ test('every pages.json route × first open · first entry within the session · 
       }
       slow = true;
       const cells = {};
-      await goto('#/' + r.route); await settle(); cells.entry = await take();
+      const lay = {}, look = async (k) => { if (STRICT.test(r.route)) lay[k] = await page.evaluate(LAYOUT, SWIPE.filter((w) => w[0].test(r.route)).map((w) => w[1])); };
+      await goto('#/' + r.route); await settle(); cells.entry = await take(); await look('entry');
       const at = await page.evaluate(() => location.hash);
       assert.ok(at.startsWith('#/' + r.nav), r.route + ' does not open for the lab account (lands on ' + at + ') and is not in EXCLUDED');
       await goto(away); await settle();
-      await goto('#/' + r.route); await settle(); cells.return = await take();
-      await coldAt('#/' + r.route); await settle(); cells.first = await take();
+      await goto('#/' + r.route); await settle(); cells.return = await take(); await look('return');
+      await coldAt('#/' + r.route); await settle(); cells.first = await take(); await look('first');
       for (const kind of ['first', 'entry', 'return']) {
         const c = judge(kind, r, cells[kind]); c.shapes.forEach((x) => shapes.add(x));
+        if (lay[kind]) {
+          if (lay[kind].refresh.length) c.bad.push('a refresh button of the page\'s own: ' + lay[kind].refresh.join(' '));
+          if (PHONE && lay[kind].off.length) c.bad.push('outside the screen: ' + lay[kind].off.slice(0, 3).join(' · '));
+          const w = PHONE ? cells[kind].reduce((m, x) => Math.max(m, x.wider || 0), lay[kind].wider) : 0;
+          if (w > 1) c.bad.push('the page is wider than the screen by ' + w + ' px (it scrolls sideways)');
+        }
         rows.push({ route: r.route, kind, ...c });
         if (c.bad.length) failures.push(r.route + ' · ' + kind + ': ' + c.bad.join(' | '));
       }
