@@ -75,14 +75,15 @@ function routes() {
   return out;
 }
 
-/* ── the sampler: runs in the page from before its first script; one record per 15 ms ── */
+/* ── the sampler: runs in the page from before its first script; one record per 15 ms, and one as each read starts ── */
 const SAMPLER = () => {
   const TIMER = /^\/api\/(?:changes|presence|notifications|get)\b|^\/api\/aud\?first=1/, of = window.fetch, what = []; let flying = 0;
   window.fetch = function (input, init) {
     const p = of.apply(this, arguments);
     try {
       const u = new URL(typeof input === 'string' ? input : input.url, location.href), m = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
-      if (m === 'GET' && (u.pathname.startsWith('/api/') && !TIMER.test(u.pathname + u.search) || /\.dc\.html$|\/assets\/pages\//.test(u.pathname))) { flying++; what.push(u.pathname); const end = () => { flying--; what.splice(what.indexOf(u.pathname), 1); }; p.then(end, end); }
+      if (m === 'GET' && (u.pathname.startsWith('/api/') && !TIMER.test(u.pathname + u.search) || /\.dc\.html$|\/assets\/pages\//.test(u.pathname))) { flying++; what.push(u.pathname); const end = () => { flying--; what.splice(what.indexOf(u.pathname), 1); }; p.then(end, end);
+        Promise.resolve().then(() => scan());   /* and one record at the very instant a read starts: the mark must already be there, not a frame later */ }
     } catch (e) { /* not ours */ }
     return p;
   };

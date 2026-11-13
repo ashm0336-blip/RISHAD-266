@@ -279,9 +279,10 @@
     wrap.appendChild(bar); return wrap;
   }
 
+  function flying() { for (var i = 0; cur && i < flights.length; i++) if (flights[i] >= cur.t0 - 50) return true; return false; }
   function reading() {
     if (!cur) return false;
-    for (var i = 0; i < flights.length; i++) if (flights[i] >= cur.t0 - 50) return true;
+    if (flying()) return true;
     var h = cur.host; if (!h) return true;                       /* الغلافُ أفرغ المحتوى ولم يركّب الصفحة بعد */
     return !!(h.isConnected !== false && h.querySelector('.sc-ps[data-ps="loading"]'));
   }
@@ -361,7 +362,7 @@
     if (!cur || cur.done || cur.held) return;
     if (reading()) {
       clearTimeout(cur.quiet); cur.quiet = 0;
-      if (cur.bar && cur.host) host_(cur.bar, { state: "refreshing" });   /* الخط والشارة لقراءةٍ جارية فعلاً — لا لفاصل تركيب الصفحة */
+      if (cur.bar && (cur.host || flying())) host_(cur.bar, { state: "refreshing" });   /* الخط والشارة لقراءةٍ جارية فعلاً (ولو بدأت قبل تركيب الصفحة) — لا لفاصل التركيب وحده */
       clearTimeout(cur.poll); cur.poll = setTimeout(tick, 200);      /* مكانُ شاشةٍ مضمَّنة يزول بلا حدث — يُعاد الفحص */
       return;
     }
