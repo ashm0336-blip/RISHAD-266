@@ -124,6 +124,7 @@ for (const mode of ['legacy', 'enforce']) {
     if (mode === 'enforce') refused(re, 'task reopen without a reason (070 tkSave)'); else assert.equal(re.status, 200, 'legacy accepts the reopen');
     const rows = x.sec(); await x.poll();
     const G = groups(rows), B = x.bell();
+    if (process.env.V7_NFD_DUMP === '1') console.log(mode + ' bell\n' + B.map((m) => m.once + ' | ' + m.title + ' | ' + m.body).join('\n'));
     assert.equal(B.length, G.length, 'one notice per group: ' + JSON.stringify(B.map((m) => m.body)));
     const seen = new Set();
     for (const g of G) {
@@ -143,7 +144,9 @@ for (const mode of ['legacy', 'enforce']) {
     const r = rows.find((q) => q.target === KR);
     /* only the platform administrator reads it */
     const feed = async (who, uid) => (await x.api(who, '/api/notifications?' + new URLSearchParams(who === 'su' ? { uid, all: '1' } : { uid }))).j;
-    assert.ok((await feed('su', x.superId)).items.some((i) => i.type === 'sc_deny' && i.title === TITLE), 'the platform administrator reads it');
+    const mine = (await feed('su', x.superId)).items.filter((i) => i.type === 'sc_deny');
+    assert.equal(mine.length, G.length, 'the platform administrator reads them in his feed');
+    for (const i of mine) { assert.equal(i.t, TITLE); arabicOnly(i.t + ' ' + i.b, 'feed item'); assert.equal(i.go, 'سجل الأمن'); assert.equal(i.srv, 1); }
     for (const [who, uid] of [['emp', 'nfd_emp'], ['mgr', 'nfd_mgr']]) assert.ok(!((await feed(who, uid)).items || []).some((i) => i.type === 'sc_deny'), who + ' does not');
   });
 
@@ -180,10 +183,10 @@ for (const mode of ['legacy', 'enforce']) {
     const [rr] = one(x, KR), [rd] = one(x, KDS);
     /* (1) the account still exists but its unit does not */
     const U1 = stored(x.env, 'bassam_auth_users_v1'); U1.find((u) => u.id === 'nfd_emp').deptId = 'nfd_unit_gone'; putKV(x.env, 'bassam_auth_users_v1', U1);
-    /* the same refusal again, later than a minute, so it is its own notice */
-    x.env.DB.exec("INSERT INTO sec(ts,uid,un,act,target,detail,ip,city,dev) SELECT ts+120000,uid,un,act,target,detail,ip,city,dev FROM sec WHERE id=" + rd.id);
-    x.env.DB.exec("INSERT INTO sec(ts,uid,un,act,target,detail,ip,city,dev) SELECT ts+120000,'nfd_never_existed','0000000999',act,target,detail,ip,city,dev FROM sec WHERE id=" + rr.id);
-    x.env.DB.exec("INSERT INTO sec(ts,uid,un,act,target,detail,ip,city,dev) SELECT ts+120000," + JSON.stringify(x.superId).replace(/"/g, "'") + ",'',act,target,detail,ip,city,dev FROM sec WHERE id=" + rr.id);
+    /* the same refusals from other accounts, two minutes earlier (their own groups; never later than «now», the checkpoint is a timestamp) */
+    x.env.DB.exec("INSERT INTO sec(ts,uid,un,act,target,detail,ip,city,dev) SELECT ts-120000,uid,un,act,target,detail,ip,city,dev FROM sec WHERE id=" + rd.id);
+    x.env.DB.exec("INSERT INTO sec(ts,uid,un,act,target,detail,ip,city,dev) SELECT ts-120000,'nfd_never_existed','0000000999',act,target,detail,ip,city,dev FROM sec WHERE id=" + rr.id);
+    x.env.DB.exec("INSERT INTO sec(ts,uid,un,act,target,detail,ip,city,dev) SELECT ts-120000," + JSON.stringify(x.superId).replace(/"/g, "'") + ",'',act,target,detail,ip,city,dev FROM sec WHERE id=" + rr.id);
     await x.poll();
     const why = WHY[rr.detail], bodies = x.bell().map((m) => m.body);
     assert.ok(bodies.includes('حاول ' + EMP + ' (موظف — إدارة محذوفة) تعديل «الجولات اليومية» في صفحة «المتابعة اليومية»، ورُفض الطلب: ' + why + '.'), 'deleted unit: ' + JSON.stringify(bodies));
@@ -191,6 +194,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(bodies.some((b) => /^حاول \S.* \(مسؤول المنصة\) تعديل «الجولات اليومية»/.test(b)), 'platform administrator, role only: ' + JSON.stringify(bodies));
     for (const b of bodies) { assert.doesNotMatch(b, /^حاول\s+(\(|تعديل|—)/, 'name never empty: ' + b); assert.doesNotMatch(b, /0000000999|nfd_/, 'no login number, no id: ' + b); }
     /* (2) the account itself is deleted before the administrator polls */
+    const U2 = stored(x.env, 'bassam_auth_users_v1'); U2.find((u) => u.id === 'nfd_emp').deptId = D; putKV(x.env, 'bassam_auth_users_v1', U2);
     await SITES.employees(x);
     putKV(x.env, 'bassam_auth_users_v1', stored(x.env, 'bassam_auth_users_v1').filter((u) => u.id !== 'nfd_emp'));
     await x.poll();
@@ -282,8 +286,8 @@ test('V7 nf-deny · record labels and pages cannot drift from the client (KIVO.B
     assert.ok(C.M[k], k + ' is labelled by the client'); assert.equal(label, C.M[k].label, k);
   }
   assert.deepEqual(Object.keys(SERVER_ONLY).filter((k) => !W.NF_DENY_RECS[k]), []);
-  /* every resource the server knows, plus every target a logging site writes: the client's label, or the client's own fallback */
-  const targets = Object.keys(W.RES_REG).concat(Object.keys(C.M), Object.values(W.RETRO).map((r) => r.state), [KNF, KDS]);
+  /* every resource the server knows (RES_REG), plus the other targets a logging site writes: the client's label, or the client's own fallback */
+  const targets = Object.keys(W.RES_REG).concat(Object.values(W.RETRO).map((r) => r.state), [KNF, KDS]);
   for (const name of new Set(targets)) for (const key of [name, 'bsdept:' + D + ':' + name, 'bsdept:' + D + ':' + name + ':sub']) {
     const want = SERVER_ONLY[name] || (C.M[name] ? C.M[name].label : C.fallback);
     assert.equal(W.nfDenyRecord(key), want, key); arabicOnly(W.nfDenyRecord(key), key);
@@ -301,10 +305,10 @@ test('V7 nf-deny · record labels and pages cannot drift from the client (KIVO.B
 /* ── the reason codes of the server, enumerated from its source (AST of the generated worker = the concatenated parts) ──
    A code is a string literal (or the literal prefix of a concatenation, written «prefix…») found in one of:
      (1) the «detail» of an object literal that also carries act:'denied'   — every logging site itself
-     (2) the first argument of enfNo(…)                                      — enforce verdicts
+     (2) the first argument of enfNo(…), and its default inside enfNo         — enforce verdicts
      (3) the «why» of an object literal whose «ok» is false / 0 / !x         — legacy verdicts (authorize · canWrite · images · guards)
      (4) a value returned by a function named …Why                           — reason helpers (deptShapeWhy · taskRawWhy · …)
-     (5) «deny» / «sd» of an object literal                                  — evaluation results of the save (054)
+     (5) «deny» / «sd» of an object literal that carries «cur»               — evaluation results of the save (054)
      (6) «why» of an object assigned to .batchDeny                           — restore / import policy
      (7) «rule» of a RES_REG entry                                           — a resource's special rule returned as its reason
      (8) the third argument of dsDomainDeny(…)                               — daily statistics
@@ -338,8 +342,8 @@ function reasonCodes(src) {
       const P = {}; n.properties.forEach((p) => { if (p.type === 'Property') P[p.key.name || p.key.value] = p.value; });
       if (P.act && P.act.type === 'Literal' && P.act.value === 'denied') lits(P.detail).forEach((c) => add(c, 'sec detail'));
       if (P.ok && P.why && ((P.ok.type === 'Literal' && (P.ok.value === false || P.ok.value === 0)) || (P.ok.type === 'UnaryExpression' && P.ok.operator === '!'))) lits(P.why).forEach((c) => add(c, 'ok:false why'));
-      if (P.deny) lits(P.deny).forEach((c) => add(c, 'deny')); if (P.sd) lits(P.sd).forEach((c) => add(c, 'sd'));
-      if (P.rule && P.scope) lits(P.rule).forEach((c) => add(c, 'RES_REG rule'));
+      if (P.deny && P.cur) { lits(P.deny).forEach((c) => add(c, 'deny')); lits(P.sd).forEach((c) => add(c, 'sd')); }
+      if (P.rule && P.scope && ['global', 'dept', 'device'].includes(P.scope.value)) lits(P.rule).forEach((c) => add(c, 'RES_REG rule'));
     }
     if (n.type === 'ReturnStatement' && st && /Why\d*$/.test(st.fn) && !DETAIL_HELPERS.includes(st.fn)) lits(n.argument).forEach((c) => add(c, 'return of ' + st.fn));
     for (const k in n) { const v = n[k]; if (Array.isArray(v)) v.forEach((c) => walk(c, st)); else if (v && typeof v.type === 'string') walk(v, st); }

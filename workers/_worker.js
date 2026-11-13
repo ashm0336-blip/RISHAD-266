@@ -4097,13 +4097,13 @@ var NF_TYPES = {
   sc_deny: {
     id: "sc_deny",
     k: "sec",
-    name: "محاولة كتابة مرفوضة من الخادم",
+    name: "محاولة تعديل مرفوضة",
     when: "فور الرفض",
     on: true,
     to: ["sys"],
     lvl: "act",
     chan: "bell",
-    txt: "رفض الخادم كتابة {المفتاح} من {الاسم} — السبب: {السبب}",
+    txt: "حاول {الاسم} ({الدور} — {الإدارة}) {الفعل} «{السجل}» في صفحة «{الصفحة}»، ورُفض الطلب: {السبب}.",
     go: "سجل الأمن",
   },
   sc_guard: {
@@ -5749,7 +5749,7 @@ async function nfPlanEvents(env, A, events, internal) {
         priority: T.lvl,
         channel: T.chan,
         title: it.title || T.name,
-        body: nfFill(T.txt, it.vars),
+        body: T.id === "sc_deny" ? nfDenyTidy(nfFill(T.txt, it.vars)) : nfFill(T.txt, it.vars),
         created_at: it.at || Date.now(),
         author_key: String(A.u.ekey || A.u.id),
         author_name: String(A.u.name || A.u.un || ""),
@@ -6199,6 +6199,175 @@ async function nfRemind(env, A, id, base, automatic) {
     );
   return Object.assign(await nfCommit(env, A, st, base === undefined ? doc.broadcastRev : base, "remind", undefined, NF_BC_REV), { n: n });
 }
+/* ═══ V7 · «sc_deny» — the owner-approved wording of the refused-write notice (bell of the platform administrator) ═══
+   «حاول {الاسم} ({الدور} — {الإدارة}) {الفعل} «{السجل}» في صفحة «{الصفحة}»، ورُفض الطلب: {السبب}.»
+   The security log (sec · /api/sec) keeps the storage key and the reason CODE exactly as the logging sites write them; the bell
+   shows Arabic only. Nothing here decides who is allowed or refused — it is text built from a sec row at poll time.
+   • actor: resolved from sec.uid in the accounts the poll already holds (A.users). sec.un is not used: most logging sites do not
+     write it, and where it is written it is the login number, not the person's name. Unresolvable → «حساب غير معروف»; the server
+     cannot tell a deleted account from one that never existed, so it does not say «محذوف». A unit that no longer exists → «إدارة محذوفة».
+   • record: NF_DENY_RECS — the client's KIVO.BassamKeyLabels (src/api/280) for the keys the server can log, plus three the client
+     does not list. page: the page of the record's ceiling leaf (RES_REG.cap), named as in src/manifests/pages.json. A unit test
+     (tests/unit/v7_nf_deny_text) reads the client source and fails when either drifts.
+   • reason: NF_DENY_WHY — one phrase per reason code of the server (the same test enumerates the codes from the source and fails
+     on a code without a phrase). Unknown code → NF_DENY_GENERIC, never the code.
+   • verb: the sec row does not store it. «تعديل» unless the row itself says otherwise (keydel · custody type create/delete ·
+     retro open/close); the notifications route logs refused reads as well, so its verb is the neutral «الوصول إلى».
+   • grouping (nfSecurityPoll): rows of one poll batch, in (ts,id) order; a row joins the open group of its (uid,target,detail)
+     when its ts is within NF_DENY_WIN_MS of that group's FIRST row, else it opens a new group. One notice per group, keyed
+     security:<id of the first row> (the key that row always had), counted «(٥ محاولات خلال دقيقة)». Groups do not span polls. */
+var NF_DENY_WIN_MS = 60000,
+  NF_DENY_GENERIC = "رفضه الخادم",
+  NF_DENY_REC_OTHER = "بيانات المنصة";
+/* prettier-ignore */
+var NF_DENY_PAGES = {
+  dstats: "الإحصائيات اليومية", emps: "موظفو الإدارة", planning: "الخطة التشغيلية", staff: "الجدول الشهري", plan: "التشغيل الميداني",
+  daily: "المتابعة اليومية", dreport: "التقرير اليومي", tasks: "المهام", irshad: "نظام الاسترشاد", seized: "نظام المضبوطات",
+  award: "جائزة التميز", links: "مواقع ذات صلة", help: "المساعدة", admin: "الإعدادات",
+};
+/* prettier-ignore */
+var NF_DENY_RECS = {
+  bassam_auth_users_v1: "حسابات الدخول", bassam_perms_v1: "الصلاحيات", bassam_depts_v1: "الإدارات", bassam_gdepts_v1: "الهيكل التنظيمي",
+  bassam_platform_v1: "إعدادات المنصة", bassam_struct_seed_v1: "تهيئة الهيكل التنظيمي", bassam_perm_admsubs_v2: "ترقية الصلاحيات",
+  bassam_session_v1: "الجلسة", bassam_theme: "المظهر", bassam_active_dept_v1: "الإدارة النشطة", bassam_fresh_login_v1: "راية أول دخول",
+  bassam_notif_mute_v1: "كتم التنبيهات", bassam_page_v1: "الصفحة المحفوظة", bassam_st_grp_v1: "مجموعات الجدول الشهري",
+  bassam_employees_v1: "قائمة الموظفين", bassam_options_v1: "خيارات الموظفين", bassam_custody_v1: "عهد الموظفين",
+  bassam_staffing_v3: "الجدول الشهري", bassam_staffing_v2: "الجدول الشهري (صيغة قديمة)", bassam_staffing_snap_v1: "بيان الشهر",
+  bassam_staffing_locks_v1: "أقفال الجدول الشهري", bassam_callsigns_v1: "رموز النداء", bassam_perm_limit_v1: "ترقية الصلاحيات",
+  bassam_plan_v1: "الخطة التشغيلية", bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب",
+  bassam_mark_kinds_v1: "أنواع المعالم", bassam_rounds_v1: "الجولات اليومية", bassam_dayshift_v1: "الوردية المختارة",
+  bassam_dayfocus_v1: "اليوم المختار", bassam_dreport_v1: "التقرير اليومي", bassam_dr_grp_v1: "مجموعات التقرير اليومي",
+  bassam_leave_kinds_v1: "أنواع الإجازات", bassam_tasks_v1: "المهام", bassam_tasks_locks_v1: "أقفال المهام", bassam_irshad_v1: "نظام الاسترشاد",
+  bassam_irshad_langs_v1: "لغات الاسترشاد", bassam_irshad_locs_v1: "مواقع الاسترشاد", bassam_seized_v1: "نظام المضبوطات",
+  bassam_seized_cat_v1: "قائمة ممنوعات المضبوطات", bassam_seized_acts_v1: "إجراءات المضبوطات", bassam_seized_locs_v1: "مواقع المضبوطات",
+  bassam_seized_jew_v1: "أنواع قطع المجوهرات", bassam_award_v1: "جائزة التميز", bassam_award_docs_v1: "المراجع المعتمدة للجائزة (قديم)",
+  bassam_award_docs_v2: "المراجع المعتمدة للجائزة", bassam_shift_options_v1: "الورديات", bassam_perm_tpls_v1: "قوالب الصلاحيات",
+  bassam_last_export_v1: "آخر تصدير", bassam_last_full_export_v1: "آخر نسخة شاملة", bassam_notif_dev_v1: "جهاز التنبيهات",
+  bassam_perm_help_v1: "ترقية الصلاحيات", bassam_perm_irshad_cap_v1: "ترقية الصلاحيات", bassam_perm_seized_cap_v1: "ترقية الصلاحيات",
+  bassam_perm_leaf_v1: "ترقية الصلاحيات", bassam_perm_mgr_explicit_v1: "ترقية الصلاحيات", bassam_first_boot_v1: "أول تشغيل",
+  bassam_demo_purged_v1: "تنظيف البيانات التجريبية", bassam_profile_v1: "الملف الشخصي", bassam_notifications_domain_v1: "التنبيهات والتعاميم",
+  /* not in the client's list */
+  bassam_dstats_v1: "الإحصائيات اليومية", bassam_irshad_retro_v1: "نافذة استدراك الاسترشاد", bassam_seized_retro_v1: "نافذة استدراك المضبوطات",
+};
+/* prettier-ignore */
+var NF_DENY_WHY = {
+  /* permission and scope */
+  perm: "صلاحيته لا تشمل هذا الإجراء", "no-atom": "صلاحيته لا تشمل هذا الإجراء", none: "لا صلاحية له تتيح هذا الإجراء",
+  act: "صلاحيته على هذه الصفحة لا تشمل هذا الإجراء", page: "صلاحيته على هذه الصفحة عرضٌ فقط", view: "صلاحيته عرضٌ فقط",
+  cap: "الصفحة خارج سقف إدارته", dept: "السجل يخصّ إدارة أخرى", scope: "خارج نطاقه (المسنَد إليه أو المصدر أو الفترة)",
+  "scope-unknown": "تعذّر التحقق من قفل الفترة لهذا التعديل", "scope-retired": "سقف النطاق القديم أُلغي ولا يُحفظ",
+  super: "الإجراء لمسؤول المنصة وحده", "super-only": "الإجراء لمسؤول المنصة وحده", sys: "الإجراء لمسؤول المنصة وحده",
+  mgr: "الإجراء لمدير الإدارة", role: "دوره لا يسمح بهذا الإجراء", "mgr-without-sheet": "مدير لم تُمنح له هذه الصلاحية في ورقته",
+  feature: "الميزة غير ممنوحة له", reserved: "صلاحية محجوزة لم تُفعَّل بعد", obsolete: "صلاحية أُلغيت ولم تعد تُمنح",
+  deny: "لم يسمح به نظام الصلاحيات", reason: "الإجراء يتطلب سبباً ولم يُذكر", dslock: "اليوم أو الشهر مقفل", own: "السجل لصاحبه وحده",
+  "restore-policy": "الاستعادة لمسؤول المنصة أو لمدير الإدارة الممنوح مفتاحها", "import-allowlist": "السجل خارج قائمة الاستيراد المسموحة",
+  /* accounts and permissions registers */
+  users: "جدول الحسابات لم يُقبل", "users · dup-id ": "جدول الحسابات لم يُقبل لتكرار معرّف حساب",
+  "users · users-stale-client": "جدول الحسابات لم يُقبل لأن نسخة الصفحة قديمة", perms: "الصلاحيات لم تُقبل",
+  "perms · stale-client": "الصلاحيات لم تُقبل لأن نسخة الصفحة قديمة", capmode: "صيغة سقف الصلاحيات لم تُقبل",
+  grant: "لا يملك منح هذه الصلاحية", target: "صلاحيات المديرين يعدّلها مسؤول المنصة أو المدير الأعلى",
+  ekey: "مفتاح الحساب مفتاح مدير يعدّله مسؤول المنصة وحده", "mgr-key": "حساب مدير الإدارة لا تُنزع عنه الإدارة",
+  "dept-role": "نوع «حساب الإدارة» أُلغي فلا يُنشأ ولا يُعدَّل", self: "لا يُعدَّل في حسابه سوى كلمة المرور",
+  "self-cur": "تغيير اسم الدخول يتطلب كلمة المرور الحالية", "self-un": "اسم الدخول يجب أن يكون عشرة أرقام",
+  "self-lock": "محاولات كثيرة بكلمة مرور خاطئة", ph: "صيغة تشفير كلمة المرور قديمة",
+  /* structure */
+  unit: "المعرّف ليس وحدة بيانات (إدارة أو قسم)", "unit-delete-route": "حذف الإدارة أو القسم يتم من «الهيكل» لمسؤول المنصة وحده",
+  "dept-shape": "موضع غير مسموح في الهيكل التنظيمي", "dept-has-sections": "لا تُحذف إدارة فيها أقسام",
+  "id-clash": "المعرّف مستخدم لوحدة أو عقدة أخرى", "node-has-children": "للعقدة عُقد أو إدارات تابعة",
+  "node-has-manager": "للعقدة حساب مدير عام", "node-cascade": "لا تُحذف عقدة مع ما تحتها في خطوة واحدة", "plat-name": "اسم المنصة مطلوب ولا يُحفظ فارغاً",
+  /* shape of the record */
+  shape: "قيمة خارج الحدود المسموحة طولاً أو شكلاً", unmapped: "تعديل غير مصنَّف رُفض احتياطاً", residual: "تعديل غير مصنَّف رُفض احتياطاً",
+  unbound: "تعديل غير مصنَّف رُفض احتياطاً", keydel: "حذف السجل كاملاً غير مسموح", append: "السجل يقبل الإضافة فقط ولا يُعدَّل ما سبق فيه",
+  unknown: "سجل لا يعرفه الخادم", device: "تفضيل خاص بالجهاز لا يُحفظ في الخادم", rule: "للسجل سياسة خاصة لا تسمح بهذا الإجراء",
+  noop: "طلب بلا إجراء محدَّد", session: "جلسة غير صالحة", base: "الطلب لم يذكر نسخة السجل التي بُني عليها",
+  flag: "راية تهيئة يكتبها مدير الإدارة وحده", tech: "راية تهيئة لا يكتبها إلا من له كتابة في الإدارة",
+  selfdev: "سجل جهاز التنبيهات لصاحبه وحده", notif: "سجل التنبيهات القديم لم يعد يُكتب", "domain-moved": "السجل انتقل إلى مسار خاص ولا يُحفظ بالحفظ العام",
+  dstats: "صلاحيته لا تشمل هذا التعديل في الإحصائيات اليومية",
+  /* employees and tasks */
+  "emp-dup": "رقم الهوية أو الجوال أو الرقم الوظيفي مسجَّل لموظف أو حساب آخر",
+  "task-asg": "لا يُغيَّر مكلَّف مهمة بدأها أو أنهاها أو اعتذر عنها", "task-acct": "لا تُسند مهمة إلا لموظف له حساب نشط",
+  "task-rv": "المراجِع لا يكون المكلَّف نفسه", "task-own": "توثيق الموظف لا يُمحى بالحفظ", "task-del": "لا تُحذف مهمة بدأ عليها نشاط",
+  "task-x": "إعدادات المهمة تُغيَّر من أزرار المهمة وحدها",
+  /* images */
+  imgown: "التعديل يشير إلى صورة لا يملكها", bound: "الصورة تتبع سجلاً لا يملك تعديله", claim: "الصورة رفعها حساب آخر ولم تُربط بسجل بعد",
+  inuse: "الصورة مستعملة في سجل آخر", amb: "صورة قديمة لم تُحسم ملكيتها فهي لمسؤول المنصة وحده", orphan: "صورة أُزيل مرجعها وتنتظر الحذف",
+  /* custody · retro window · notifications route */
+  "custody:": "صلاحيته لا تشمل هذا الإجراء في عهد الموظفين", "custody-transition": "التعديل يمسّ عهد الموظفين ولم يُقبل",
+  "retro.": "لا يملك صلاحية فتح نافذة الاستدراك أو إغلاقها", "notification-scope": "خارج نطاقه في التنبيهات",
+  "notification-ack-required": "تنبيه يتطلب الإقرار قبل إخفائه", "notification-broadcast-permission": "لا يملك صلاحية إرسال التعاميم",
+  "notification-export-permission": "لا يملك صلاحية تصدير التنبيهات",
+};
+function nfDenyWhy(detail) {
+  var s = String(detail == null ? "" : detail),
+    m = /^(custody:|retro\.|users · dup-id )/.exec(s),
+    k = m ? m[1] : s;
+  return Object.prototype.hasOwnProperty.call(NF_DENY_WHY, k) ? NF_DENY_WHY[k] : NF_DENY_GENERIC;
+}
+function nfDenyRecord(key) {
+  var n = resName(key || "");
+  return Object.prototype.hasOwnProperty.call(NF_DENY_RECS, n) ? NF_DENY_RECS[n] : NF_DENY_REC_OTHER;
+}
+function nfDenyPage(key) {
+  var n = resName(key || ""),
+    R = Object.prototype.hasOwnProperty.call(RES_REG, n) ? RES_REG[n] : null,
+    cap = n === K_DSTATS ? "dstats" : R && R.cap;
+  Object.keys(RETRO).forEach(function (sys) {
+    if (RETRO[sys].state === n) cap = RETRO[sys].cap;
+  });
+  cap = String((Array.isArray(cap) ? cap[0] : cap) || "").split("/")[0];
+  return Object.prototype.hasOwnProperty.call(NF_DENY_PAGES, cap) ? NF_DENY_PAGES[cap] : "";
+}
+function nfDenyVerb(target, detail) {
+  var s = String(detail || "");
+  if (resName(target || "") === NF_REV) return "الوصول إلى";
+  if (/^retro\.open:/.test(s)) return "فتح";
+  if (/^retro\.close:/.test(s)) return "إغلاق";
+  if (s === "keydel" || s === "custody:type-delete") return "حذف";
+  if (s === "custody:type-create") return "إضافة";
+  return "تعديل";
+}
+function nfDenyCount(n) {
+  var d = String(n).replace(/[0-9]/g, function (c) {
+      return "٠١٢٣٤٥٦٧٨٩".charAt(+c);
+    }),
+    r = n % 100;
+  return n === 2 ? "محاولتان" : d + " " + (r >= 3 && r <= 10 ? "محاولات" : "محاولة");
+}
+function nfDenyVars(A, r) {
+  var u =
+      (A.users || []).filter(function (x) {
+        return x && x.id === r.uid;
+      })[0] || null,
+    role = "",
+    unit = "";
+  if (u) {
+    role = u.role === "super" ? "مسؤول المنصة" : u.role === "gm" ? "مدير إدارة عامة" : u.role === "dept" || u.mgr ? "مدير الإدارة" : "موظف";
+    var id = u.role === "super" ? "" : u.role === "gm" ? u.gid : u.deptId,
+      hit = ((u.role === "gm" ? A.nodes : A.depts) || []).filter(function (x) {
+        return x && x.id === id;
+      })[0];
+    unit = !id ? "" : (hit && String(hit.name || "").trim()) || "إدارة محذوفة";
+  }
+  return {
+    الاسم: (u && String(u.name || "").trim()) || "حساب غير معروف",
+    الدور: role,
+    الإدارة: unit,
+    الفعل: nfDenyVerb(r.target, r.detail),
+    السجل: nfDenyRecord(r.target),
+    الصفحة: nfDenyPage(r.target),
+    السبب: nfDenyWhy(r.detail),
+  };
+}
+/* the clauses of the approved sentence whose variable is empty are dropped: no page → no «في صفحة «»»; no role/unit → no «( — )» */
+function nfDenyTidy(s) {
+  return String(s)
+    .replace(/\s*في صفحة «»/g, "")
+    .replace(/\s*\(\s*—\s*\)/g, "")
+    .replace(/\(\s*—\s*/g, "(")
+    .replace(/\s*—\s*\)/g, ")")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 /* v7-C · Issue 2 (أ): عتبةُ إنذار التخمين الموزَّع — عناوينُ مختلفة أخفقت على حسابٍ واحد خلال النافذة */
 var NF_FAIL_IPS = 3,
   NF_FAIL_WIN_MS = 3600000;
@@ -6228,7 +6397,9 @@ async function nfSecurityPoll(env, A) {
     events = [],
     max = last,
     fails = {},
-    failId = {};
+    failId = {},
+    denyOpen = {},
+    denyAll = [];
   rows.forEach(function (r) {
     max = Math.max(max, r.ts);
     if (/^tst_/.test(String(r.uid || ""))) return;
@@ -6254,13 +6425,23 @@ async function nfSecurityPoll(env, A) {
         النتيجة: r.act === "recover_fail" ? "محاولة فاشلة" : "نجح",
       };
     } else if (r.act === "denied") {
+      var gk = [r.uid, r.target, r.detail].join("\u0001"),
+        g = denyOpen[gk];
+      if (g && r.ts - g.ts <= NF_DENY_WIN_MS) {
+        g.n++;
+        return;
+      }
       type = "sc_deny";
-      vars = { المفتاح: r.target || "", الاسم: r.un || "", السبب: r.detail || "" };
+      vars = nfDenyVars(A, r);
+      denyAll.push((denyOpen[gk] = { ts: r.ts, n: 1, vars: vars }));
     } else if (r.act === "acct_add" && /backup|احتياطي/.test(r.detail || "")) {
       type = "sy_bkacc";
       vars = { الفعل: "أُنشئ", المستخدم: r.target || "" };
     }
     if (type) events.push({ type: type, vars: vars, once: "security:" + r.id });
+  });
+  denyAll.forEach(function (g) {
+    if (g.n > 1) g.vars["السبب"] += " (" + nfDenyCount(g.n) + " خلال دقيقة)";
   });
   /* v7-C · Issue 2 (أ): التخمينُ الموزَّع — عناوينُ مختلفة تُخفق على حسابٍ واحد — لم يكن يُنذِر ما لم تجتمع 5 إخفاقاتٍ في دفعةٍ واحدة، ومتغيّرُ IP
      فارغ. الآن يُقرأ لكل اسمٍ أخفق في هذه الدفعة ما أخفق عليه في آخر ساعة مجمَّعاً بالعنوان (استعلامٌ واحد)، فيُنذَر مديرُ النظام عند
