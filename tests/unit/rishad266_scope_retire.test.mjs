@@ -207,7 +207,7 @@ function others(env) {
     kv: env.DB.q("SELECT k, seq, v FROM kv WHERE k NOT LIKE 'bsdept:%:bassam_scope_v1' ORDER BY k, seq"),
     revs: env.DB.q("SELECT k, rev FROM revs WHERE k NOT LIKE 'bsdept:%:bassam_scope_v1' ORDER BY k"),
     meta: env.DB.q("SELECT k, v FROM meta WHERE k NOT IN ('rev', 'authz_scope_mig') ORDER BY k"),
-    ops: env.DB.q("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").map(t => [t.name, env.DB.q('SELECT COUNT(*) n FROM "' + t.name + '"')[0].n]).filter(([n]) => !/^(kv|revs|meta|authz|authz_snap|authz_snaps|aud|sess|sec|rl|sqlite_.*)$/.test(n)),
+    ops: env.DB.q("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").map(t => [t.name, env.DB.q('SELECT COUNT(*) n FROM "' + t.name + '"' + (t.name === 'guard' ? " WHERE gk != 'rl:img-sweep'" : ''))[0].n])   /* guard: every row but ONE — the image sweep's 10-minute stamp, which follows any accepted write (narrowed by the second review: the other rl: rows are counted again) */.filter(([n]) => !/^(kv|revs|meta|authz|authz_snap|authz_snaps|aud|sess|sec|rl|sqlite_.*)$/.test(n)),
   };
 }
 test('[enforce] scope-retire: خطة ← تطبيق ← رجوع ← إعادة تطبيق · الانجراف · plan-changed · لا يمسّ غيرَه', async () => {

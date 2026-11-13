@@ -61,7 +61,8 @@ async function matrix(mode) {
       }
       row('ops write ' + k + ' (' + page + ')', res);
     }
-    const ik = 'bsdept:' + d + ':img_TEST_ONLY_' + mode;
+    /* V7-F (review, finding 2): an upload id is letters, digits and '_' — the shape every client generates; the unit is in the id only to keep it unique here */
+    const ik = 'img_TEST_ONLY_' + mode + '_' + String(d).replace(/[^A-Za-z0-9_]/g, '_');
     const ir = await C.api('/api/img/' + encodeURIComponent(ik), { cookie: L.ck, method: 'PUT', body: 'data:image/png;base64,iVBORw0KGgo=', headers: { 'Content-Type': 'text/plain' } });
     row('image upload (new, dept)', ir.status === 200 ? 'yes' : 'HTTP ' + ir.status + ':' + ((ir.j && (ir.j.why || ir.j.err)) || ''));
   }
@@ -76,7 +77,7 @@ for (const mode of ['legacy', 'enforce']) {
     for (const [k, v] of Object.entries(out)) {
       if (mode === 'legacy' && LEGACY_GAP.includes(k)) {
         assert.equal(v.FULL, 'yes', k + ': FULL allows'); assert.equal(v.BASIC, 'yes', k + ': BASIC allows (its own record)');
-        assert.equal(v.OPEN, /image/.test(k) ? 'HTTP 403:none' : 'no:view', k + ': OPEN is refused in legacy for exactly this reason (writePages/anyWriter — no implicit write without the unit record)');
+        assert.equal(v.OPEN, /image/.test(k) ? 'HTTP 403:forbidden' /* V7-F (owner decision 4): the unified refusal, no reason (was 403:none) */ : 'no:view', k + ': OPEN is refused in legacy for exactly this reason (writePages/anyWriter — no implicit write without the unit record)');
         continue;
       }
       assert.equal(v.OPEN, v.FULL, k + ': OPEN = FULL · ' + JSON.stringify(v));
