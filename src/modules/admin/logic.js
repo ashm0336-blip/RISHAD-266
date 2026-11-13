@@ -5692,7 +5692,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   KIVO.BassamCount(a.items, "عنصر بيانات") +
                   "، " +
                   KIVO.BassamCount(a.imgsN, "صورة") +
-                  ")",
+                  ")" + (KIVO.BackupRestore && KIVO.BackupRestore.missingNote ? KIVO.BackupRestore.missingNote(a.missing) : ""),
               });
             })
             .catch(() => (this.setState({ backupMsg: "تعذّر تشفير النسخة" }), a.done && a.done(!1, "تعذّر تشفير النسخة"))))
@@ -9387,7 +9387,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             await this._irBackupFence(snapshot);
             const manifest={version:4,scope:"full",domains:{kv:1,dailyStats:1,notifications:1,custody:1,irshad:1,seized:1,awards:1,operations:1},departments:declaredDepts,keys:Object.keys(s).filter(k=>typeof s[k]==="string"&&k!=="bassam_active_dept_v1")};
             const a = new Date(),
-              r = { app: "bassam-crowd", version: 4, kind: "full", exportedAt: a.toISOString(), data: s, domains: {dailyStats:{version:1,rev:KIVO.DailyStats.revision(),data:dailyStats},notifications:notificationExport.domain,custody:custodyExport.domains,...business.domains}, manifest, idbImages: business.images },
+              r = { app: "bassam-crowd", version: 4, kind: "full", exportedAt: a.toISOString(), data: s, domains: {dailyStats:{version:1,rev:KIVO.DailyStats.revision(),data:dailyStats},notifications:notificationExport.domain,custody:custodyExport.domains,...business.domains}, manifest, idbImages: business.images, ...(business.missing && business.missing.length ? { imagesMissing: business.missing } : {}) },
               i = KIVO.BassamCrypt;
             if (!i || !i.ok()) return void fail("تعذّر التصدير — التشفير غير متاح على هذا المتصفح");
             ((this._encPend = {
@@ -9396,7 +9396,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               dt: a,
               depts: t ? t.list().length : 1,
               items: Object.keys(s).length,
-              imgsN: Object.keys(e || {}).length,
+              imgsN: Object.keys(business.images || {}).length,
+              missing: business.missing || [],
             }),
               this.setState({ pwDlg: { mode: "exp", p1: "", p2: "", err: "" } }),
               setTimeout(() => {

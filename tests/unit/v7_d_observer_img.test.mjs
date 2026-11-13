@@ -83,7 +83,7 @@ async function attempts(S, ck) {
 const run = async (mode, setup, who) => { const S = await scene(mode, setup); const o = await attempts(S, S[who || 'ob'].ck); if (process.env.V7D_PRINT) console.log(mode + ' ' + JSON.stringify(o)); return o; };
 
 /* the target for an observer — in both modes: nothing but his own task-proof upload (selfProof) */
-const REFUSED = { 'put@plan': '403:bound', 'del@plan': '403:bound', 'put@rounds': '403:bound', 'del@rounds': '403:bound', 'new img': '403:none', tech: 'no:view', proof: 'Y' };
+const REFUSED = { 'put@plan': '403:bound', 'del@plan': '403:bound', 'put@rounds': '403:bound', 'del@rounds': '403:bound', 'new img': '403:' /* V7-F (owner decision 4): the unified refusal carries no reason (was 403:none) */, tech: 'no:view', proof: 'Y' };
 const ALL = { 'put@plan': 'Y', 'del@plan': 'Y', 'put@rounds': 'Y', 'del@rounds': 'Y', 'new img': 'Y', tech: 'Y', proof: 'Y' };
 
 const OBSERVERS = [

@@ -121,7 +121,7 @@ async function matrix(mode, workerFile) {
   return out;
 }
 /* compact form of a row: one letter per operation in OPS order — Y allowed, any other letter the refusal reason */
-const WHY = { yes: 'Y', 'no:view': 'v', 'no:none': 'n', 'no:bound': 'b' };
+const WHY = { yes: 'Y', 'no:view': 'v', 'no:': 'n', 'no:bound': 'b' };   /* V7-F (owner decision 4): «no such id» is the unified refusal now — 403 with no reason (it was why:'none') */
 const pack = (row) => OPS.map((o) => WHY[row[o]] || '?(' + row[o] + ')').join('');
 const table = (out) => Object.fromEntries(Object.entries(out).map(([a, us]) => [a, Object.fromEntries(Object.entries(us).map(([u, r]) => [u, pack(r)]))]));
 
@@ -179,7 +179,7 @@ for (const [mode, src] of OBSERVERS) {
        Enforce: was accepted through the status keys derived from field.view (before and after V7-C); V7-D (owner decision): those
        keys are not a write of the unit ⇒ refused as in legacy */
     const g = await up(W, ob.ck, 'img_v7c' + mode.slice(0, 1) + src.slice(0, 1) + '_g3');
-    assert.equal(g.status, 403, 'a non-proof new image: ' + JSON.stringify(g.j)); assert.equal(g.j.why, 'none');
+    assert.equal(g.status, 403, 'a non-proof new image: ' + JSON.stringify(g.j)); assert.deepEqual(g.j, { ok: 0, err: 'forbidden' });   /* V7-F: the unified refusal (was why:'none') */
   });
 }
 for (const mode of ['legacy', 'enforce']) {

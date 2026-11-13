@@ -135,7 +135,7 @@ async function rsConvertBackup(env, A, file, opt) {
     rsBCFail('scope');
   if (!isObj(file) || !isObj(file.data)) rsBCFail('file-shape');
   if (privRedacted(file)) throw rsError('restore-redacted', 409);   // PRIVACY batch (019u): a copy exported without personal data restores nothing
-  rsShape(file, ['app', 'version', 'kind', 'data', 'domains', 'manifest', 'perms', 'idbImages', 'dept', 'exportedAt', 'preImport']);
+  rsShape(file, ['app', 'version', 'kind', 'data', 'domains', 'manifest', 'perms', 'idbImages', 'imagesMissing', 'dept', 'exportedAt', 'preImport']);
   var modern = rsBCOwn(file, 'manifest'),
     legacy = !modern,
     target = opt.scope.departmentId || '',
@@ -155,6 +155,15 @@ async function rsConvertBackup(env, A, file, opt) {
   if (scope.kind === 'full' && (A.u.role !== 'super' || kind !== 'full')) throw rsError('restore-policy', 403);
   if (scope.kind === 'dept' && kind === 'full' && (!legacy || A.u.role !== 'super')) throw rsError('restore-policy', 403);
   if (file.idbImages !== undefined) rsImageArchiveShape(file.idbImages);
+  /* V7-F (owner blocker): a backup made while a record pointed at an image whose bytes were already gone carries the list — id and where it was
+     mentioned — so the restore can say «already missing when this copy was made». It is a note only: it restores nothing and proves nothing. */
+  if (file.imagesMissing !== undefined) {
+    if (!Array.isArray(file.imagesMissing) || file.imagesMissing.length > IMG_CAP || file.imagesMissing.some(function (m) {
+      return !isObj(m) || Object.keys(m).some(function (k) { return k !== 'id' && k !== 'at'; }) || typeof m.id !== 'string' || !/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(m.id) ||
+        !Array.isArray(m.at) || m.at.length > 50 || m.at.some(function (x) { return typeof x !== 'string' || x.length > 300; });
+    })) rsBCFail('file-shape');
+    if (file.imagesMissing.length) summary.imagesMissingAtBackup = file.imagesMissing.map(function (m) { return m.id; }).sort().slice(0, 50);
+  }
   if (file.perms !== undefined && scope.kind !== 'dept') rsBCFail('permissions-scope');
   var reference = opt.reference && opt.reference.inputKeys;
   if (!isObj(reference)) rsBCFail('reference-required');

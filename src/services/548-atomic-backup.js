@@ -38,8 +38,7 @@
       conflict: 'تغيّرت البيانات؛ راجع الجرد مجددًا قبل اعتماد الاستعادة',
       reason: 'أُلغي الاستيراد لعدم إدخال سبب',
       cancelled: 'أُلغيت الاستعادة دون كتابة',
-      'backup-image-reuse-rejected': 'تعذّر اعتماد صور النسخة؛ تُقبل فقط صور موجودة ومطابقة ومصرّح بمرجعها',
-      'restore-image-body-missing': 'النسخة تشير إلى صورة غير موجودة؛ أُوقفت الاستعادة كاملةً',
+      'backup-image-reuse-rejected': 'تعذّر اعتماد صور النسخة؛ تُقبل فقط صور موجودة ومطابقة ومصرّح بمرجعها. إن كانت النسخة تحمل صورة أُزيل مرجعها من سجلّها (بانتظار انتهاء مهلتها) فاطلب من مسؤول المنصة أو مدير إدارتها الأصلية تنفيذ الاستعادة ليُعاد ربطها، وإلا فبعد انتهاء المهلة تُستعاد البيانات وتظهر الصورة مفقودة',
       'restore-credential-change': 'النسخة تغيّر بيانات دخول حساب قائم؛ أُوقفت لحماية كلمات المرور الحالية',
       'restore-self-identity-change': 'النسخة تغيّر اسم دخول صاحب الجلسة؛ غيّره من إعدادات الحساب بالمصادقة الحالية',
       'restore-redacted': 'هذه النسخة صُدّرت دون البيانات الشخصية فلا تصلح للاستعادة — استعِد نسخةً كاملة صدّرها مدير الوحدة أو مسؤول المنصة',
@@ -105,17 +104,41 @@
       JSON.stringify(operationData.domains.map(function(d){return d&&d.scope&&d.scope.departmentId+'\0'+d.resource;}).sort())!==JSON.stringify(expectedOperations)||
       operationData.domains.some(function(d){return d.version!==1||!record(d.rows)||!Array.isArray(d.rows.ops_nodes)||Object.keys(d.rows).some(function(table){return !/^[a-z][a-z0-9_]*$/.test(table)||!Array.isArray(d.rows[table])||d.rows[table].some(function(row){return !record(row)||row.department_id!==d.scope.departmentId||row.resource!==d.resource;});});}))throw Error('تعذّر تصدير البيانات التشغيلية كاملةً');
     domains.operations=operationData.domains;
-    var ids=new Set();
-    domains.seized.forEach(function(d){d.rows.photos.forEach(function(row){if(typeof row.image_id==='string')ids.add(row.image_id);});});
-    domains.awards.forEach(function(d){d.rows.records.forEach(function(row){['picture','employee_signature','approver_signature'].forEach(function(k){if(typeof row[k]==='string'&&/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(row[k]))ids.add(row[k]);});});});
-    domains.operations.forEach(function(d){Object.values(d.rows).forEach(function(rows){rows.forEach(function(row){Object.values(row).forEach(function(value){if(typeof value==='string')(value.match(/(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g)||[]).forEach(function(id){ids.add(id);});});});});});
-    for(var id of ids){
+    /* V7-F (owner blocker): every referenced id remembers WHERE it is referenced («<unit>:<resource>»), so an image the server confirms missing can be named in the warning */
+    var where=new Map(),ids={add:function(id,at){if(!where.has(id))where.set(id,new Set());where.get(id).add(at);}};
+    domains.seized.forEach(function(d){d.rows.photos.forEach(function(row){if(typeof row.image_id==='string')ids.add(row.image_id,(scope(d)||'')+':seized');});});
+    domains.awards.forEach(function(d){d.rows.records.forEach(function(row){['picture','employee_signature','approver_signature'].forEach(function(k){if(typeof row[k]==='string'&&/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(row[k]))ids.add(row[k],(scope(d)||'')+':awards');});});});
+    domains.operations.forEach(function(d){Object.values(d.rows).forEach(function(rows){rows.forEach(function(row){Object.values(row).forEach(function(value){if(typeof value==='string')(value.match(/(?:img|szp)_[a-z0-9]+_[a-z0-9]+/g)||[]).forEach(function(id){ids.add(id,d.scope.departmentId+':'+d.resource);});});});});});
+    /* The backup is CREATED when a record mentions an image whose bytes are gone (swept after its grace · restored as missing): the server's 404 is the
+       confirmation, the image is skipped and NAMED (missing → the file's imagesMissing and the confirmation message). Anything else that is not the image
+       itself — no connection, 5xx, a refusal, an empty body — still fails the whole backup: only a confirmed-missing image is skipped. */
+    var missing=[];
+    for(var id of where.keys()){
       if(!current())throw Error('تغيّرت الجلسة أثناء تجميع النسخة');
-      if(!images[id]){if(!KIVO.BassamIDB||!KIVO.BassamIDB.get)throw Error('خدمة الصور غير متاحة');images[id]=await KIVO.BassamIDB.get(id);}
+      if(!images[id]){
+        if(!KIVO.BassamIDB||(!KIVO.BassamIDB.getInfo&&!KIVO.BassamIDB.get))throw Error('خدمة الصور غير متاحة');
+        if(KIVO.BassamIDB.getInfo){
+          var got=await KIVO.BassamIDB.getInfo(id);
+          if(got&&got.ok===true&&typeof got.v==='string'&&got.v)images[id]=got.v;
+          else if(got&&got.ok===false&&got.status===404){missing.push({id:id,at:Array.from(where.get(id)).sort()});continue;}
+          else throw Error('تعذّر قراءة صورة؛ لم تُنشأ نسخة جزئية');
+        }else images[id]=await KIVO.BassamIDB.get(id);
+      }
       if(typeof images[id]!=='string'||!images[id])throw Error('تعذّر قراءة صورة؛ لم تُنشأ نسخة جزئية');
     }
     if(!current())throw Error('تغيّرت البيانات قبل اكتمال النسخة');
-    return {domains:domains,images:images};
+    missing.sort(function(a,b){return a.id<b.id?-1:a.id>b.id?1:0;});
+    return {domains:domains,images:images,missing:missing};
+  }
+  /* the warning a backup shows (and a restore repeats) for images skipped as missing: each id with the unit and the record that mention it */
+  function missingNote(missing) {
+    if (!Array.isArray(missing) || !missing.length) return '';
+    var names = {};
+    try { (KIVO.BassamDepts.list() || []).forEach(function (d) { if (d && d.id) names[d.id] = d.name || d.id; }); } catch (e) {}
+    var label = { seized: 'المضبوطات', awards: 'التكريم', bassam_plan_v1: 'الخطة', bassam_rounds_v1: 'الجولات', bassam_tasks_v1: 'المهام' };
+    var place = function (at) { var i = String(at).lastIndexOf(':'), d = at.slice(0, i), r = at.slice(i + 1); return (d ? '«' + (names[d] || d) + '» ' : '') + (label[r] || r); };
+    return ' تحذير: ' + missing.length + ' صورة يشير إليها سجلٌّ ولم تعد موجودة على الخادم — تُخطّيت والنسخة أُنشئت بدونها: ' +
+      missing.slice(0, 20).map(function (m) { return m.id + ' (' + (m.at || []).map(place).join('، ') + ')'; }).join(' · ') + (missing.length > 20 ? ' · …' : '') + '.';
   }
   function identity() {
     if (!window.crypto || !window.crypto.getRandomValues) return null;
@@ -258,6 +281,13 @@
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'
           : '') +
+        (i.summary.imagesMissing > 0
+          ? ' تشير النسخة إلى ' + i.summary.imagesMissing + ' صورة لم تعد موجودة على الخادم (حُذفت بعد انتهاء مهلتها)؛ تُستعاد البيانات وتظهر هذه الصور مفقودة' +
+            (Array.isArray(i.summary.imagesMissingIds) && i.summary.imagesMissingIds.length ? ': ' + i.summary.imagesMissingIds.slice(0, 20).join(' · ') : '') + '.' +
+            (Array.isArray(i.summary.imagesMissingAtBackup) && i.summary.imagesMissingAtBackup.length
+              ? ' منها ما كان مفقودًا أصلًا وقت إنشاء النسخة: ' + i.summary.imagesMissingAtBackup.slice(0, 20).join(' · ') + '.'
+              : '')
+          : '') +
         (i.summary.emptyDomains.length
           ? ' لا تتضمن النسخة ' + i.summary.emptyDomains.length + ' مجموعة بيانات؛ في وضع الاستبدال تُستعاد المجموعات المفقودة فارغة.'
           : '') +
@@ -278,6 +308,7 @@
   KIVO.BackupRestore = Object.freeze({
     context: context,
     exportDomains: exportDomains,
+    missingNote: missingNote,
     prepare: prepare,
     approve: approve,
     send: send,
