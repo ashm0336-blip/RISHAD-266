@@ -20,8 +20,10 @@ Object.assign(Component.prototype, {
   _bcBaseSame(a, b) { return this._bcBase(a) && this._bcBase(b) && ["epoch", ...this._businessSpec().resources].every(key => a[key] === b[key]); },
   _bcFieldsSame(fields, sent) { return !!sent && Object.keys(fields).every(key => JSON.stringify(fields[key]) === JSON.stringify(sent[key])); },
   _bcStateKey(view) { return this._businessSpec().prefix + view.charAt(0).toUpperCase() + view.slice(1); },
+  /* V7 UX: بين أول _bcEnsure في الرسم و_bcStatusVals في آخره (_bcShow) يُعرض آخرُ ردٍّ مؤكَّد للاستعلام نفسه ريثما يُعاد قراءتُه
+     (_bcLast — في ذاكرة هذا المكوّن وحدها، تزول بمغادرة الصفحة). خارج الرسم — حيث حراسُ الحفظ — لا يُرى إلا المؤكَّد كما كان. */
   _bcData(view) {
-    const context = this._bcContext(), data = this.state[this._bcStateKey(view)];
+    const context = this._bcContext(), key = this._bcStateKey(view), data = this.state[key] || this._bcShow && this._bcLast?.[key];
     return context && data?._contextKey === context.key ? data : null;
   },
   _bcFailure(code, status = 0) {
@@ -74,7 +76,8 @@ Object.assign(Component.prototype, {
   _bcInvalidate() {
     this._bcReads = new Map();
     const patch = { bcMessage: "", bcTick: (this.state.bcTick || 0) + 1 };
-    this._businessSpec().views.forEach(view => { patch[this._bcStateKey(view)] = null; });
+    const last = this._bcLast = this._bcLast || {};
+    this._businessSpec().views.forEach(view => { const key = this._bcStateKey(view); last[key] = this.state[key] || last[key]; patch[key] = null; });
     this.setState(patch);
   },
   _bcEnsure(view, options = {}, all = false) {
@@ -84,17 +87,21 @@ Object.assign(Component.prototype, {
       this._bcActor = context.key; this._bcReads.clear();
       this._businessSpec().views.forEach(name => { this.state[this._bcStateKey(name)] = null; });
     }
-    const signature = JSON.stringify([context.key, options, all]), prior = this._bcReads.get(view);
+    const signature = JSON.stringify([context.key, options, all]), prior = this._bcReads.get(view), key = this._bcStateKey(view);
+    this._bcShow = 1; if (this._bcLast && this._bcLast[key]?._sig !== signature) this._bcLast[key] = 0;
     if (prior?.signature === signature && (!prior.done || Date.now() - prior.at < 30000)) return;
-    if (prior?.signature !== signature) this.state[this._bcStateKey(view)] = null;
+    if (prior?.signature !== signature) this.state[key] = null;
     const token = { signature, at: Date.now() }; this._bcReads.set(view, token);
     setTimeout(async () => {
       const result = all ? await this._bcCollect(options, context) : await this._bcRead(view, options, context);
       if (this._bcReads.get(view) !== token || !this._bcSame(context)) return;
       token.done = true; token.failed = !result.ok;
-      if (!result.ok) { token.message = result.message; this.setState({ [this._bcStateKey(view)]: null }); return; }
-      const data = { ...result.data, _contextKey: context.key };
-      this.setState({ [this._bcStateKey(view)]: data });
+      if (!result.ok) {
+        token.message = result.message; token.card = result.err === "network" || result.err === "invalid" || result.status >= 500;
+        if (!token.card && this._bcLast) this._bcLast[key] = 0; this.setState({ [key]: null }); return;
+      }
+      const data = { ...result.data, _contextKey: context.key, _sig: signature };
+      this.setState({ [key]: data });
     }, 0);
   },
   _bcStamp(base) {
@@ -178,13 +185,16 @@ Object.assign(Component.prototype, {
     this._bcGone = true; this._bcReads = new Map();
     if (this._bcOnRemote) { window.removeEventListener("bassam:remote", this._bcOnRemote); window.removeEventListener("bassam:authz", this._bcOnRemote); }
   },
+  /* V7 UX: التحميلُ والتحديثُ وفشلُ التحميل (شبكة · مهلة · 5xx · ردٌّ غير صالح) يرسمها مكوّنُ حالات الصفحة (bcStates)، والشريطُ النحيف لما سواها:
+     حفظ · تعارض · جلسة · صلاحية · مسودة — وزرُّه «تحديث البيانات» للتعارض والقراءة غير المتسقة («تغيّرت البيانات…») والقراءة المرفوضة وحدها. */
   _bcStatusVals(required = []) {
-    const data = required.map(view => this._bcData(view)), complete = data.every(Boolean);
-    const mixed = complete && data.some(value => !this._bcBaseSame(data[0].base, value.base));
-    const loading = !complete || !!this._bcReads && [...this._bcReads.values()].some(value => !value.done);
-    const readError = required.map(view => this._bcReads?.get(view)).find(read => read?.failed)?.message;
-    const message = this.state.bcMessage || readError || (mixed ? "تغيّرت البيانات أثناء القراءة؛ حدّث النتائج للحصول على نسخة متسقة" : "");
-    return { bcReady: complete && !mixed, bcNotice: loading || !!message || !!this.state.bcPending, bcMessage: message || (this.state.bcPending ? "جارٍ تأكيد العملية — مسودتك باقية حتى يصل التأكيد" : "جارٍ قراءة البيانات من الخادم"), bcCanRefresh: !this.state.bcPending,
-      bcRefresh: () => this._bcInvalidate() };
+    const data = required.map(view => this._bcData(view)), complete = data.every(Boolean), reads = required.map(view => this._bcReads?.get(view));
+    this._bcShow = 0;
+    const busy = reads.some(read => !read?.done), failed = reads.find(read => read?.failed), refused = failed && !failed.card, pending = !!this.state.bcPending;
+    const sure = required.map(view => this._bcData(view)), mixed = sure.every(Boolean) && sure.some(value => !this._bcBaseSame(sure[0].base, value.base)), refresh = () => this._bcInvalidate();
+    const message = this.state.bcMessage || refused && failed.message || (mixed ? "تغيّرت البيانات أثناء القراءة؛ حدّث النتائج للحصول على نسخة متسقة" : "");
+    return { bcReady: complete && !mixed, bcNotice: !!message || pending, bcMessage: message || "جارٍ تأكيد العملية — مسودتك باقية حتى يصل التأكيد",
+      bcCanRefresh: !pending && (!!refused || /^تغيّرت البيانات/.test(message)), bcRefresh: refresh,
+      bcStates: el => KIVO.PageStates?.host(el, { page: this.__host?.__name, retry: refresh, state: failed?.card ? complete ? "stale" : "error" : complete ? busy && !mixed ? "refreshing" : "ready" : failed ? "ready" : "loading" }) };
   },
 });

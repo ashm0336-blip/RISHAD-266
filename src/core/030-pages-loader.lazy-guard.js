@@ -39,8 +39,19 @@
     var r = entry(name); if (!r || !r.subs || !r.subs.size) return null;
     return document.querySelector('main.bs-main > .sc-host') || document.querySelector('main > .sc-host') || null;
   }
+  /* V7 UX: بطاقةُ فشل التحميل يرسمها مكوّنُ حالات الصفحة الموحَّد داخل مكان الشاشة (KIVO.__dcStates · عبر loadFailed في السجل) —
+     وبطاقةُ انتهاء الجلسة تبقى هنا كما كانت (خارج المكوّن). بلا مكوّنٍ مسجَّل يبقى كلُّ شيءٍ كما كان. */
+  var failed = {};
+  function unified() { return !!(window.KIVO && window.KIVO.__dcStates) && !gone(); }
+  function mark(name, on) {
+    var r = window.__dcRegistry && window.__dcRegistry[name];
+    if (!r || !!r.loadFailed === on) return;
+    r.loadFailed = on; if (r.subs) r.subs.forEach(function (fn) { fn(); });
+  }
   function showCard(name) {
     try {
+      failed[name] = 1;
+      if (unified()) { mark(name, true); return; }
       var host = cardHost(name); if (!host || cards[name]) return;
       var c = document.createElement("div"); c.className = "bs-retry bs-retry-page"; c.setAttribute("role", "alert"); c.setAttribute("dir", "rtl");
       cardFill(c, name);
@@ -54,12 +65,19 @@
     /* CORE-01: لغةٌ عادية — والبطاقةُ وحدها سطحُ الخطأ (نصُّ مكان الشاشة يُخفى تحتها بالـCSS) */
     c.innerHTML = g ? '<span class="m">انتهت الجلسة — سجّل الدخول</span><button type="button" class="b">تسجيل الدخول</button>'
       : '<span class="m">تعذّر عرض هذه الشاشة الآن — سنحاول مجددًا تلقائيًا</span><button type="button" class="b">↻ أعد المحاولة</button>';
-    c.querySelector("button").addEventListener("click", function () { if (gone()) { location.reload(); return; } hideCard(name); delete gaveUp[name]; tries[name] = 0; wake(name); });
+    c.querySelector("button").addEventListener("click", function () { retry(name); });
   }
-  window.addEventListener("bs:session-gone", function () { for (var n in cards) { try { cardFill(cards[n], n); } catch (e) { /* عرضٌ فقط */ } } });
-  function hideCard(name) { try { if (cards[name]) { cards[name].remove(); delete cards[name]; } } catch (e) { /* عرضٌ فقط */ } }
+  function retry(name) { if (gone()) { location.reload(); return; } hideCard(name); delete gaveUp[name]; tries[name] = 0; wake(name); }
+  if (window.KIVO) window.KIVO.__dcRetry = retry;          /* زرُّ «أعد المحاولة» في البطاقة الموحَّدة = زرُّ البطاقة القديمة نفسُه */
+  window.addEventListener("bs:session-gone", function () {
+    for (var n in cards) { try { cardFill(cards[n], n); } catch (e) { /* عرضٌ فقط */ } }
+    for (var f in failed) { try { if (!cards[f]) { mark(f, false); showCard(f); } } catch (e) { /* عرضٌ فقط */ } }   /* البطاقةُ الموحَّدة تتنحّى لبطاقة الجلسة */
+  });
+  function hideCard(name) { try { delete failed[name]; mark(name, false); if (cards[name]) { cards[name].remove(); delete cards[name]; } } catch (e) { /* عرضٌ فقط */ } }
   window.addEventListener('dc:page-load-failed', function (event) { var name = event.detail && event.detail.name; if (!name) return; showCard(name); gaveUp[name] = 1; if (!sweeper) sweeper = setInterval(sweep, 30000); });   /* CORE-01: قراءةُ البيانات المتعثّرة تُعاد تلقائياً كما تقول البطاقة (كل ٣٠ ث وعند عودة الاتصال) */
   window.addEventListener('dc:page-load-ready', function (event) { var name = event.detail && event.detail.name; if (name) hideCard(name); });
+  /* V7 UX: the card belongs to the screen that failed — leaving that screen takes the card with it (re-opening retries) */
+  window.addEventListener('hashchange', function () { for (var n in cards) { var r = window.__dcRegistry && window.__dcRegistry[n]; if (!r || !r.subs || !r.subs.size) hideCard(n); } });
   function again(name) {
     var n = tries[name] = (tries[name] || 0) + 1;
     if (n > 3) { gaveUp[name] = 1; showCard(name); if (!sweeper) sweeper = setInterval(sweep, 30000); return; }

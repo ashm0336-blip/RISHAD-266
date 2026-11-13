@@ -1345,6 +1345,7 @@ class Component extends DCLogic {
         return { profName: pr.name || "", profRole: pr.role || "", profInitial: (pr.name || "؟").trim().charAt(0) || "؟", profBadgeOn: pr.scope === "platform", profBadge: "المنصة" };
       })()),
       __nav: (KIVO.BassamNav = { go: (k, asked) => { try { (k === "sysadmin" ? goSys : go(k, asked))(); } catch (e) {} },
+        again: () => this.setState({ navPending: true }, () => this.setState({ navPending: false })),   /* V7 UX: «أعد المحاولة» في حالات الصفحة — يُعاد تركيبُ الصفحة المفتوحة فتعيد قراءتَها */
         conSync: (s) => this._conSync(s), conGo: (tab, sub) => this._conGo(tab, sub, false),
         /* CORE-02 S8: «عرض الكل» في «أحداث المنصة الأخيرة» يفتح الجرس (بعد نقرة الفتح كي لا يغلقه مستمعُ النقر خارجه) */
         bell: () => setTimeout(() => { if (!this.state.nfOpen) this.setState({ nfOpen: true, nfToast: null }, () => this._nfReload()); }, 0) }),

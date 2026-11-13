@@ -941,20 +941,28 @@
     name,
     hintSize,
     streaming,
-    error
+    error,
+    failed,
+    retry
   }) {
     const [w, hgt] = (hintSize || "100%,60px").split(",");
+    /* V7 UX: مكانُ الشاشة يرسمه مكوّنُ حالات الصفحة الموحَّد (components) عبر خطّافٍ يملكه core — KIVO.__dcStates.draw(el, info):
+       هيكلُ أول تحميل وبطاقةُ فشل التحميل (failed). بقيةُ الرسائل (انتهاء الجلسة · سياق الإدارة · عطل الشاشة) نصٌّ كما كانت.
+       بلا خطّافٍ مسجَّل يبقى المكانُ كما كان حرفاً. */
+    const states = name && typeof KIVO !== "undefined" && KIVO.__dcStates;
+    const drawn = !!(states && failed);
     return h(
       "div",
       {
         className: "sc-placeholder" + (streaming ? " sc-streaming" : ""),
         style: { width: w.trim(), height: hgt && hgt.trim() }
       },
-      error ? h(
+      error && !drawn ? h(
         "div",
         { className: "sc-placeholder-error", role: "status" },
         error
-      ) : null
+      ) : null,
+      states ? h("div", { className: "sc-ps", ref: (el) => states.draw(el, { name, failed: drawn, idle: !!error && !drawn, retry }) }) : null
     );
   }
   function hintToMin(hint) {
@@ -1004,6 +1012,8 @@
           this.forceUpdate();
         };
         this.__makeLogic(dataReady(this.__name) ? registry.get(this.__name).Logic : null, null);
+        /* V7 UX: opening a screen again after its read failed is a fresh attempt (the failure is terminal only while shown) */
+        { const r0 = registry.get(this.__name); if ((r0.dataError || r0.loadFailed) && !sessionGone()) { r0.dataError = null; r0.loadFailed = false; } }
         ensureFetched(this.__name);
       }
       /** Error-boundary hook: a render crash anywhere in this DC's subtree
@@ -1218,14 +1228,14 @@
         }
         if (!dataReady(this.__name)) {
           if (!r.dataError) { ensureFetched(this.__name); ensureData(this.__name).catch(() => {}); }
-          return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: r.dataError ? (sessionGone() ? "انتهت الجلسة — سجّل الدخول" : r.dataError) : undefined }));
+          return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: r.dataError ? (sessionGone() ? "انتهت الجلسة — سجّل الدخول" : r.dataError) : undefined, failed: loadFailed(r), retry: retryLoad(this.__name) }));
         }
         this.__reconcileLogic();
         if (!r.tpl) {
           return h(
             "div",
             hostBase,
-            h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize })
+            h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, failed: loadFailed(r), retry: retryLoad(this.__name) })
           );
         }
         const userProps = this.__userProps();
@@ -1766,6 +1776,10 @@
      لمدير المنصة أو بيئة التطوير وحدهما، ووحدةُ التحكم للجميع */
   const SCREEN_ERROR = "تعذّر عرض هذه الشاشة الآن";
   function techView() { try { return !!(typeof KIVO !== "undefined" && KIVO.bsTechView && KIVO.bsTechView()); } catch (e) { return false; } }
+  /* V7 UX: فشلُ تحميل الشاشة (قراءةُ بياناتها أو جلبُ ملفّها — يعلنه حارسُ الجلب في loadFailed) خارج انتهاء الجلسة، وإعادتُه يملكها حارسُ الجلب */
+  if (typeof KIVO !== "undefined") KIVO.__dcStates = KIVO.__dcStates || null;   /* الخطّاف: يملكه core، ويسجّل فيه مكوّنُ الحالات نفسَه (R1) */
+  function loadFailed(r) { return !!(r && (r.dataError || r.loadFailed)) && !sessionGone(); }
+  function retryLoad(name) { return () => { const f = typeof KIVO !== "undefined" && KIVO.__dcRetry; if (typeof f === "function") f(name); }; }
   function sessionGone() { try { const S = typeof KIVO !== "undefined" && KIVO.__BS_SRV; return !!(S && S.sesChanged && S.sesChanged()); } catch (e) { return false; } }
 
   // src/registry.ts
@@ -1866,6 +1880,10 @@
     function ensureFetched(name) {
       const r = registry.get(name);
       if (r.fetched) return;
+      /* V7 UX: a declared data failure is terminal until something asks to retry (the card's button · `online` · the 30 s
+         sweep — all clear dataError first). Without this the dispatcher's next render re-fetched the page file and restarted
+         the read cycle at once, which removed the failure card in the frame that inserted it and re-read silently forever. */
+      if (r.dataError && !dataReady(name)) return;
       r.fetched = true;
       const url = COMPONENT_DIR + "/" + encodeURIComponent(name) + ".dc.html";
       const res = KIVO.__resources;
