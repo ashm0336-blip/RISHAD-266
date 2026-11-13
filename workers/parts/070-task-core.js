@@ -132,19 +132,11 @@ var TK_WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعا
 function tkHm(min) { min = ((min % 1440) + 1440) % 1440; var h = Math.floor(min / 60), m = min % 60; return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; }
 function tkDayNum(k) { var p = String(k).split('-'); return (+p[0]) * 10000 + (+p[1]) * 100 + (+p[2]); }
 /* ── الهوية (مشتركةٌ مع 062c) — الموظفون بالمعرّف الثابت eid، ورقمُ الهوية مقبولٌ فريداً فقط؛ لا اسمَ أبداً ── */
-function tkEmps(raw) { var L = parseJson(raw, []); return Array.isArray(L) ? L.filter(isObj) : []; }
+/* tkEmps → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 /* SR-2.2 · F-1 (المراجعةُ المستقلة لحزمة 242 — والعيبُ نفسُه هنا): سجلٌّ يحمل هذا المعرّفَ في حقله وحده — والمكرَّرُ (خطأُ إدخالٍ أو استيراد) لا يُعيد أوّلَ مطابِق */
 function tkEmpOne(emps, f, v) { if (v == null || v === '') return null; v = String(v); var n = 0, c = null; for (var i = 0; i < emps.length; i++) if (emps[i][f] != null && emps[i][f] !== '' && String(emps[i][f]) === v) { n++; if (!c) c = emps[i]; } return n === 1 ? c : null; }
-/* KIVO_265 · M-2 (المراجعةُ المستقلة لدمج 265 — الصنفُ نفسُه بعد F-1): التفرّدُ في الحقلين معاً (eid ∪ nid) لا في حقلٍ واحد — رقمُ هويةِ سجلٍّ
-   = معرّفُ زميلٍ ثابت (خطأُ إدخالٍ أو استيراد) كان يجعل صفوفَ الزميل وصورَه لصاحب السجل. الرمزُ يُستعمل إن حمله سجلٌّ واحدٌ بالضبط في أيٍّ من
-   حقليه (السجلُّ نفسُه بالحقلين يُعدّ مرةً) — وإلا فلا يدلّ على أحد: لا ربط · لا إسناد · لا قراءة (مهامي · تقريرُ الربط · الأهلية · التكرار) */
-function tkTokN(emps, v) {
-  if (v == null || v === '') return { n: 0, c: null };
-  v = String(v); var n = 0, c = null;
-  for (var i = 0; i < emps.length; i++) { var e = emps[i]; if ((e.eid != null && e.eid !== '' && String(e.eid) === v) || (e.nid != null && e.nid !== '' && String(e.nid) === v)) { n++; if (!c) c = e; } }
-  return { n: n, c: c };
-}
-function tkTokRec(emps, v) { var o = tkTokN(emps, v); return o.n === 1 ? o.c : null; }
+/* tkTokN → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
+/* tkTokRec → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 /* SR-2.2 · F-1 + KIVO_265 · M-2 في جهة المسؤول: السجلُّ بمعرّفه الثابت إن لم يحمله غيرُه في الحقلين — المعرّفُ المكرَّر لا يُسنَد إليه ولا يُعدّ «مرتبطاً» (ولا يراه أحدٌ في «مهامي») */
 function tkEmpByEid(emps, ek) { var e = tkTokRec(emps, ek); return e && e.eid != null && String(e.eid) === String(ek) ? e : null; }
 function tkEidShared(emps, ek) { return tkTokN(emps, ek).n > 1; }

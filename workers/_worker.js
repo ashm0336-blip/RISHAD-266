@@ -1664,6 +1664,68 @@ var KIVO_IDENTITY_MIGRATION = (function (M, S, R) {
            rehearse: rehearse, sha256Hex: sha256Hex, uidCandidate: uidCandidate, sidCandidate: sidCandidate, structuralEq: structuralEq, floorLineage: floorLineage, elemLineage: elemLineage, indexFloor: indexFloor, geoSet: geoSet, stableSet: stableSet, applyOps: applyOps, invertOps: invertOps, canonJSON: canonJSON, empResolver: empResolver, validate: validate, NEAR: NEAR };
 })(KIVO_IDENTITY_MIGRATION_DATA, KIVO_SCOPE, KIVO_REGISTRY);
 
+/* ════ دوالُّ عامّة تستعملها أجزاءُ القاعدة — كانت تسكن في أجزاء أنظمةٍ بعينها (V7 · المرحلة 2 · الحزمة أ: نقلٌ حرفيٌّ بلا تغيير سلوك) ════
+   الأسماءُ كما هي (ds · cu · tk · ir) كي لا يتغيّر مستدعٍ ولا اختبار. تعتمد على: swallow (002) · parseJson · isObj (017) · hex (052) · pfHijriAt (062b). */
+/* ── من 020-dstats.js: «اليوم التشغيلي» الهجري للخادم (مهلةُ ثلاث ساعات) ── */
+var DS_GRACE = 3 * 3600 * 1000;
+function dsToday(now) {
+  try {
+    var f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
+    var o = {}; f.formatToParts(new Date(now - DS_GRACE)).forEach(function (p) { o[p.type] = +p.value; });
+    if (o.year > 1300 && o.month >= 1 && o.month <= 12 && o.day >= 1 && o.day <= 30) return { y: o.year, m: o.month, d: o.day };
+  } catch (e) { swallow('dstats', e); }
+  return null;
+}
+/* ── من 019a-custody.js: خطأٌ برمزٍ وحالة · ساعةُ اليوم الهجري · الصيغةُ القانونية · بصمةُ الطلب ── */
+function cuError(code, status) {
+  var e = new Error(code);
+  e.cuCode = code;
+  e.cuStatus = status || 400;
+  return e;
+}
+function cuClock() {
+  var x = pfHijriAt(Date.now());
+  if (!x || !x.y || !x.m || !x.d) throw cuError('custody-clock-unavailable', 503);
+  return { y: x.y, m: x.m, d: x.d };
+}
+function cuCanonical(v) {
+  if (Array.isArray(v)) return v.map(cuCanonical);
+  if (isObj(v)) {
+    var o = {};
+    Object.keys(v)
+      .sort()
+      .forEach(function (k) {
+        o[k] = cuCanonical(v[k]);
+      });
+    return o;
+  }
+  return v;
+}
+async function cuFingerprint(b) {
+  var x = Object.assign({}, b);
+  delete x.base;
+  delete x.uid;
+  return hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(cuCanonical(x)))));
+}
+/* ── من 070-task-core.js: قائمةُ الموظفين وسجلُّ الموظف برمزه الفريد (eid ∪ nid) ── */
+function tkEmps(raw) { var L = parseJson(raw, []); return Array.isArray(L) ? L.filter(isObj) : []; }
+/* KIVO_265 · M-2 (المراجعةُ المستقلة لدمج 265 — الصنفُ نفسُه بعد F-1): التفرّدُ في الحقلين معاً (eid ∪ nid) لا في حقلٍ واحد — رقمُ هويةِ سجلٍّ
+   = معرّفُ زميلٍ ثابت (خطأُ إدخالٍ أو استيراد) كان يجعل صفوفَ الزميل وصورَه لصاحب السجل. الرمزُ يُستعمل إن حمله سجلٌّ واحدٌ بالضبط في أيٍّ من
+   حقليه (السجلُّ نفسُه بالحقلين يُعدّ مرةً) — وإلا فلا يدلّ على أحد: لا ربط · لا إسناد · لا قراءة (مهامي · تقريرُ الربط · الأهلية · التكرار) */
+function tkTokN(emps, v) {
+  if (v == null || v === '') return { n: 0, c: null };
+  v = String(v); var n = 0, c = null;
+  for (var i = 0; i < emps.length; i++) { var e = emps[i]; if ((e.eid != null && e.eid !== '' && String(e.eid) === v) || (e.nid != null && e.nid !== '' && String(e.nid) === v)) { n++; if (!c) c = e; } }
+  return { n: n, c: c };
+}
+function tkTokRec(emps, v) { var o = tkTokN(emps, v); return o.n === 1 ? o.c : null; }
+/* ── من 074-task-due.js: انحرافُ ساعة العزلة المسموح لطوابع المهام المؤجّلة ── */
+var TK_GATE_SKEW = 6e4;                                                     /* طابعٌ «من المستقبل» أبعدُ من دقيقة (ساعةُ عزلةٍ منحرفة) لا يحجب شيئاً */
+/* ── من 019j-irshad-daily.js: مَن يُعدّ مديراً لمهام التذكير اليومية ── */
+function irDailyManager(A) {
+  var u = A && A.u;
+  return !!(u && (u.role === 'super' || u.role === 'dept' || u.role === 'gm' || (u.role === 'staff' && u.mgr)));
+}
 /* ═══ التفويض في الخادم ═══════════════════════════════════════════════════
    كانت البوابة تتحقق أن الحافظ مسجّل دخول فحسب، وتأخذ منه أي مفتاح بأي
    قيمة — فالصلاحيات كلها كانت تُطبَّق في المتصفح وحده. هنا تُعاد قراءة
@@ -6900,12 +6962,7 @@ var CU_TABLES = {
     ],
   ],
 };
-function cuError(code, status) {
-  var e = new Error(code);
-  e.cuCode = code;
-  e.cuStatus = status || 400;
-  return e;
-}
+/* cuError → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 function cuShape(value, fields) {
   if (
     !isObj(value) ||
@@ -7175,11 +7232,7 @@ async function cuLegacyPrepare(env) {
   });
   return { before: before, after: after, n: n };
 }
-function cuClock() {
-  var x = pfHijriAt(Date.now());
-  if (!x || !x.y || !x.m || !x.d) throw cuError('custody-clock-unavailable', 503);
-  return { y: x.y, m: x.m, d: x.d };
-}
+/* cuClock → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 async function cuRev(env, d) {
   var r = await env.DB.prepare('SELECT rev FROM revs WHERE k=?1').bind(cuKey(d)).first();
   return r ? r.rev : 0;
@@ -7230,25 +7283,8 @@ async function cuAuthority(env, A, d, op, meta) {
   await env.DB.batch(st);
   throw cuError('custody-denied', 403);
 }
-function cuCanonical(v) {
-  if (Array.isArray(v)) return v.map(cuCanonical);
-  if (isObj(v)) {
-    var o = {};
-    Object.keys(v)
-      .sort()
-      .forEach(function (k) {
-        o[k] = cuCanonical(v[k]);
-      });
-    return o;
-  }
-  return v;
-}
-async function cuFingerprint(b) {
-  var x = Object.assign({}, b);
-  delete x.base;
-  delete x.uid;
-  return hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(cuCanonical(x)))));
-}
+/* cuCanonical → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
+/* cuFingerprint → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 async function cuReceipt(env, A, d, rid, hash) {
   var r = await env.DB.prepare('SELECT * FROM custody_requests WHERE department_id=?1 AND account_uid=?2 AND request_id=?3')
     .bind(d, A.u.id, rid)
@@ -13807,10 +13843,7 @@ function irErrorResponse(error) {
 }
 /* Replacement for the retired442 ir_day poll. One active department, one
    Riyadh civil day, SQL aggregates only, and the existing NF once mechanism. */
-function irDailyManager(A) {
-  var u = A && A.u;
-  return !!(u && (u.role === 'super' || u.role === 'dept' || u.role === 'gm' || (u.role === 'staff' && u.mgr)));
-}
+/* irDailyManager → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 function irDailyPlan(ctx, day) {
   var scope = irQueryScope(ctx, 'r'), p = { args: scope.args.slice() },
     where = scope.sql + ' AND r.hijri_year=' + irQueryParam(p, day.y) +
@@ -20004,15 +20037,8 @@ function dsLockOk(v) {
 /* R183 (الملاحظة ٩): أقفالُ الأيام والأشهر — قاعدةُ الشاشة نفسُها (dayLocked · mLocked في «الإحصائيات اليومية»):
      locks["haram|1448-4"] = true (شكلٌ قديم = معتمد) أو { ap: معتمد · mo: شهرٌ منقضٍ فُتح بأثر رجعي ·
      dopen: أيامٌ منقضية فُتحت · dshut: أيامٌ لم تنقضِ أُقفلت يدوياً }. */
-var DS_GRACE = 3 * 3600 * 1000;
-function dsToday(now) {
-  try {
-    var f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
-    var o = {}; f.formatToParts(new Date(now - DS_GRACE)).forEach(function (p) { o[p.type] = +p.value; });
-    if (o.year > 1300 && o.month >= 1 && o.month <= 12 && o.day >= 1 && o.day <= 30) return { y: o.year, m: o.month, d: o.day };
-  } catch (e) { swallow('dstats', e); }
-  return null;
-}
+/* DS_GRACE → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
+/* dsToday → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 function dsLockRec(L, site, y, m) { var v = isObj(L) ? L[site + '|' + y + '-' + m] : undefined; return v === true ? { ap: 1 } : (isObj(v) ? v : {}); }
 function dsLockedIn(L, site, y, m, d, T) {
   var r = dsLockRec(L, site, y, m);
@@ -27796,19 +27822,11 @@ var TK_WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعا
 function tkHm(min) { min = ((min % 1440) + 1440) % 1440; var h = Math.floor(min / 60), m = min % 60; return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; }
 function tkDayNum(k) { var p = String(k).split('-'); return (+p[0]) * 10000 + (+p[1]) * 100 + (+p[2]); }
 /* ── الهوية (مشتركةٌ مع 062c) — الموظفون بالمعرّف الثابت eid، ورقمُ الهوية مقبولٌ فريداً فقط؛ لا اسمَ أبداً ── */
-function tkEmps(raw) { var L = parseJson(raw, []); return Array.isArray(L) ? L.filter(isObj) : []; }
+/* tkEmps → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 /* SR-2.2 · F-1 (المراجعةُ المستقلة لحزمة 242 — والعيبُ نفسُه هنا): سجلٌّ يحمل هذا المعرّفَ في حقله وحده — والمكرَّرُ (خطأُ إدخالٍ أو استيراد) لا يُعيد أوّلَ مطابِق */
 function tkEmpOne(emps, f, v) { if (v == null || v === '') return null; v = String(v); var n = 0, c = null; for (var i = 0; i < emps.length; i++) if (emps[i][f] != null && emps[i][f] !== '' && String(emps[i][f]) === v) { n++; if (!c) c = emps[i]; } return n === 1 ? c : null; }
-/* KIVO_265 · M-2 (المراجعةُ المستقلة لدمج 265 — الصنفُ نفسُه بعد F-1): التفرّدُ في الحقلين معاً (eid ∪ nid) لا في حقلٍ واحد — رقمُ هويةِ سجلٍّ
-   = معرّفُ زميلٍ ثابت (خطأُ إدخالٍ أو استيراد) كان يجعل صفوفَ الزميل وصورَه لصاحب السجل. الرمزُ يُستعمل إن حمله سجلٌّ واحدٌ بالضبط في أيٍّ من
-   حقليه (السجلُّ نفسُه بالحقلين يُعدّ مرةً) — وإلا فلا يدلّ على أحد: لا ربط · لا إسناد · لا قراءة (مهامي · تقريرُ الربط · الأهلية · التكرار) */
-function tkTokN(emps, v) {
-  if (v == null || v === '') return { n: 0, c: null };
-  v = String(v); var n = 0, c = null;
-  for (var i = 0; i < emps.length; i++) { var e = emps[i]; if ((e.eid != null && e.eid !== '' && String(e.eid) === v) || (e.nid != null && e.nid !== '' && String(e.nid) === v)) { n++; if (!c) c = e; } }
-  return { n: n, c: c };
-}
-function tkTokRec(emps, v) { var o = tkTokN(emps, v); return o.n === 1 ? o.c : null; }
+/* tkTokN → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
+/* tkTokRec → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 /* SR-2.2 · F-1 + KIVO_265 · M-2 في جهة المسؤول: السجلُّ بمعرّفه الثابت إن لم يحمله غيرُه في الحقلين — المعرّفُ المكرَّر لا يُسنَد إليه ولا يُعدّ «مرتبطاً» (ولا يراه أحدٌ في «مهامي») */
 function tkEmpByEid(emps, ek) { var e = tkTokRec(emps, ek); return e && e.eid != null && String(e.eid) === String(ek) ? e : null; }
 function tkEidShared(emps, ek) { return tkTokN(emps, ek).n > 1; }
@@ -29348,7 +29366,7 @@ async function tkDueLazy(env, request, d, seen) {
    النتيجةُ كما كانت: ما يجري يجري قبل بناء الردّ (النسخُ المولَّدة ووسمُ الانقضاء في الردّ نفسِه)، ولم يتغيّر إلا مَن يدفع الكلفة: طلبٌ واحدٌ لكل
    إدارةٍ في المهلة بدل كلّ طلب. وعطلُ القراءة أو الختم ⇒ السلوكُ القديم (ذاكرةُ العزلة) — لا يُحجب عملٌ بخلل الحارس. والتشغيلُ الصريح
    (POST /api/tasks/recur/run من صفحة المهام) يختم الطابعين بعد أن يجري. */
-var TK_GATE_SKEW = 6e4;                                                     /* طابعٌ «من المستقبل» أبعدُ من دقيقة (ساعةُ عزلةٍ منحرفة) لا يحجب شيئاً */
+/* TK_GATE_SKEW → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 async function tkGateSeen(env, d, kinds) {
   var o = nmap(); if (!d || !kinds.length) return o;
   try {

@@ -29,12 +29,7 @@ var CU_TABLES = {
     ],
   ],
 };
-function cuError(code, status) {
-  var e = new Error(code);
-  e.cuCode = code;
-  e.cuStatus = status || 400;
-  return e;
-}
+/* cuError → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 function cuShape(value, fields) {
   if (
     !isObj(value) ||
@@ -304,11 +299,7 @@ async function cuLegacyPrepare(env) {
   });
   return { before: before, after: after, n: n };
 }
-function cuClock() {
-  var x = pfHijriAt(Date.now());
-  if (!x || !x.y || !x.m || !x.d) throw cuError('custody-clock-unavailable', 503);
-  return { y: x.y, m: x.m, d: x.d };
-}
+/* cuClock → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 async function cuRev(env, d) {
   var r = await env.DB.prepare('SELECT rev FROM revs WHERE k=?1').bind(cuKey(d)).first();
   return r ? r.rev : 0;
@@ -359,25 +350,8 @@ async function cuAuthority(env, A, d, op, meta) {
   await env.DB.batch(st);
   throw cuError('custody-denied', 403);
 }
-function cuCanonical(v) {
-  if (Array.isArray(v)) return v.map(cuCanonical);
-  if (isObj(v)) {
-    var o = {};
-    Object.keys(v)
-      .sort()
-      .forEach(function (k) {
-        o[k] = cuCanonical(v[k]);
-      });
-    return o;
-  }
-  return v;
-}
-async function cuFingerprint(b) {
-  var x = Object.assign({}, b);
-  delete x.base;
-  delete x.uid;
-  return hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(cuCanonical(x)))));
-}
+/* cuCanonical → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
+/* cuFingerprint → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 async function cuReceipt(env, A, d, rid, hash) {
   var r = await env.DB.prepare('SELECT * FROM custody_requests WHERE department_id=?1 AND account_uid=?2 AND request_id=?3')
     .bind(d, A.u.id, rid)
