@@ -477,6 +477,7 @@ for (const mode of ['legacy', 'enforce']) {
     await SITES.nfEmit(x); const route = x.sec().filter((r) => r.target === KNF && r.id !== saved[0].id); assert.equal(route.length, 1);
     await x.poll();
     for (const k of Object.keys(want)) assert.equal(c.once(id[k]).body, RBODY(want[k]), k);
+    if (process.env.V7_NFD_DUMP === '1') console.log(mode + ' save of the notifications key: ' + saved[0].detail + ' | ' + c.once(saved[0].id).body);
     assert.match(c.once(saved[0].id).body, /^حاول خالد الحربي \(موظف — إدارة الحشود\) تعديل «التنبيهات والتعاميم»، ورُفض الطلب: /, 'SAVE (' + saved[0].detail + ') → «تعديل»: ' + c.once(saved[0].id).body);
     assert.match(c.once(route[0].id).body, /^حاول خالد الحربي \(موظف — إدارة الحشود\) الوصول إلى «التنبيهات والتعاميم»، ورُفض الطلب: /);
     arabicOnly(c.once(saved[0].id).body, 'save of the notifications key');
@@ -544,7 +545,7 @@ test('V7 nf-deny · review L4 + M1 (real routes): a customised sc_deny text is n
   assert.equal(c.once(a).body, 'تنبيه ( — ) خالد الحربي — ) في صفحة «» صلاحيته لا تشمل هذا الإجراء', 'the administrator\'s text, filled and untouched');
   /* other types through the real emit route, hostile values */
   let n = 0;
-  for (const id of Object.keys(W.NF_TYPES)) { const T = W.NF_TYPES[id]; if (id === 'sc_deny' || !T.on || T.to.length !== 1 || T.to[0] !== 'sys') continue;
+  for (const id of Object.keys(W.NF_TYPES)) { const T = W.NF_TYPES[id]; if (id === 'sc_deny' || !T.on || T.to.length !== 1 || T.to[0] !== 'sys' || !['sys', 'sec'].includes(T.k)) continue;   /* employee types are never accepted from a client */
     const names = [...new Set([...String(T.txt).matchAll(/\{([^}]+)\}/g)].map((m) => m[1]))], vars = {}; names.forEach((k, i) => { vars[k] = TRICKY[(i * 3 + n) % TRICKY.length]; });
     const e = await x.post('su', '/api/notifications/act', { uid: x.superId, op: 'emit', type: id, vars, once: 'TEST_ONLY:' + id }); assert.equal(e.status, 200, id + ' ' + JSON.stringify(e.j));
     const m = x.env.DB.q("SELECT m.body FROM notification_messages m JOIN notification_dedup d ON d.scope=m.scope AND d.message_id=m.id WHERE d.once_key='TEST_ONLY:" + id + "'")[0];

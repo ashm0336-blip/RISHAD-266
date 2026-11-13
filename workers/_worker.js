@@ -5749,7 +5749,7 @@ async function nfPlanEvents(env, A, events, internal) {
         priority: T.lvl,
         channel: T.chan,
         title: it.title || T.name,
-        body: T.id === "sc_deny" ? nfDenyTidy(nfFill(T.txt, it.vars)) : nfFill(T.txt, it.vars),
+        body: T.id === "sc_deny" ? nfDenyBody(T.txt, it.vars) : nfFill(T.txt, it.vars),
         created_at: it.at || Date.now(),
         author_key: String(A.u.ekey || A.u.id),
         author_name: String(A.u.name || A.u.un || ""),
@@ -6215,7 +6215,14 @@ async function nfRemind(env, A, id, base, automatic) {
      «فتح»/«إغلاق»); the notifications route logs refused reads as well, so its verb is the neutral «الوصول إلى».
    • grouping (nfSecurityPoll): rows of one poll batch, in (ts,id) order; a row joins the open group of its (uid,target,detail)
      when its ts is within NF_DENY_WIN_MS of that group's FIRST row, else it opens a new group. One notice per group, keyed
-     security:<id of the first row> (the key that row always had), counted «(٥ محاولات خلال دقيقة)». Groups do not span polls. */
+     security:<id of the first row> (the key that row always had), counted «(٥ محاولات خلال دقيقة)». Groups do not span polls.
+     Two overlapping polls that read batches of different length agree on the key and one of them wins, so the stored count
+     can be lower than the rows of that minute (never a second notice, never a lost group); the log holds every row.
+   • names (independent review M1): the account name and the unit name are written by unit managers, so they are sanitised
+     before they enter the sentence (nfDenyClean: no «» {} · control, bidi and zero-width characters · newlines; 80 characters),
+     the sentence is filled in ONE pass (nfDenyBody — a value is never scanned for {var}), and an account or unit whose name
+     reads like one of the fallback phrases is shown as «الحساب رقم <رقم الدخول>» / «وحدة باسم ملتبس» instead.
+   • the empty clauses of the sentence are dropped only under the default text; an administrator's own text is filled as it is. */
 var NF_DENY_WIN_MS = 60000,
   NF_DENY_GENERIC = "رفضه الخادم",
   NF_DENY_REC_OTHER = "بيانات المنصة";
@@ -6248,6 +6255,8 @@ var NF_DENY_RECS = {
   bassam_demo_purged_v1: "تنظيف البيانات التجريبية", bassam_profile_v1: "الملف الشخصي", bassam_notifications_domain_v1: "التنبيهات والتعاميم",
   /* not in the client's list */
   bassam_dstats_v1: "الإحصائيات اليومية", bassam_irshad_retro_v1: "نافذة استدراك الاسترشاد", bassam_seized_retro_v1: "نافذة استدراك المضبوطات",
+  bassam_notif_cfg_v1: "إعدادات التنبيهات (سجل قديم)", bassam_notif_sys_v1: "تنبيهات المنصة (سجل قديم)", bassam_bc_v1: "التعاميم (سجل قديم)",
+  bassam_notif_v1: "تنبيهات الإدارة (سجل قديم)", bslg_v1: "بيانات الدخول على الجهاز", bassam_perm_tpls_named_v1: "راية إعادة تسمية قوالب الصلاحيات",
 };
 /* prettier-ignore */
 var NF_DENY_WHY = {
@@ -6319,36 +6328,69 @@ function nfDenyPage(key) {
 }
 function nfDenyVerb(target, detail) {
   var s = String(detail || "");
-  if (resName(target || "") === NF_REV) return "الوصول إلى";
+  if (target === NF_REV && (s === "super" || /^notification-/.test(s))) return "الوصول إلى"; /* what the notifications ROUTE logs — a read may be the cause */
   if (/^retro\.open:/.test(s)) return "فتح";
   if (/^retro\.close:/.test(s)) return "إغلاق";
   if (s === "keydel") return "حذف";
   return "تعديل";
 }
 function nfDenyCount(n) {
-  var d = String(n).replace(/[0-9]/g, function (c) {
-      return "٠١٢٣٤٥٦٧٨٩".charAt(+c);
-    }),
+  var d = nfDenyDigits(n),
     r = n % 100;
   return n === 2 ? "محاولتان" : d + " " + (r >= 3 && r <= 10 ? "محاولات" : "محاولة");
+}
+var NF_DENY_NAME_MAX = 80,
+  NF_DENY_NO_ACCOUNT = "حساب غير معروف",
+  NF_DENY_NO_UNIT = "إدارة محذوفة",
+  NF_DENY_NO_NODE = "عقدة محذوفة";
+/* a name as it may enter the sentence; "" when nothing readable is left */
+function nfDenyClean(v) {
+  var s = String(v == null ? "" : v)
+      .replace(/[«»{}\u200b-\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff]/g, "")
+      .replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
+    c = Array.from(s);
+  if (c.length > NF_DENY_NAME_MAX) s = c.slice(0, NF_DENY_NAME_MAX).join("").trim() + "…";
+  return /[\p{L}\p{N}]/u.test(s) ? s : "";
+}
+/* does a (sanitised) name read like one of the fallback phrases? compared without diacritics and tatweel */
+function nfDenyAmbiguous(s) {
+  var bare = String(s).replace(/[\u064b-\u065f\u0670\u0640]/g, "");
+  return [NF_DENY_NO_ACCOUNT, NF_DENY_NO_UNIT, NF_DENY_NO_NODE].indexOf(bare) >= 0;
+}
+function nfDenyDigits(v) {
+  return String(v).replace(/[0-9]/g, function (c) {
+    return "٠١٢٣٤٥٦٧٨٩".charAt(+c);
+  });
 }
 function nfDenyVars(A, r) {
   var u =
       (A.users || []).filter(function (x) {
         return x && x.id === r.uid;
       })[0] || null,
+    name = u ? nfDenyClean(u.name) : "",
     role = "",
     unit = "";
   if (u) {
-    role = u.role === "super" ? "مسؤول المنصة" : u.role === "gm" ? "مدير إدارة عامة" : u.role === "dept" || u.mgr ? "مدير الإدارة" : "موظف";
-    var id = u.role === "super" ? "" : u.role === "gm" ? u.gid : u.deptId,
-      hit = ((u.role === "gm" ? A.nodes : A.depts) || []).filter(function (x) {
-        return x && x.id === id;
-      })[0];
-    unit = !id ? "" : (hit && String(hit.name || "").trim()) || "إدارة محذوفة";
+    /* role labels as the client names them (src/auth/330 gmRoleLabel · profile · admin adRole) — drift-tested */
+    var gm = u.role === "gm",
+      id = u.role === "super" ? "" : gm ? u.gid : u.deptId,
+      hit =
+        ((gm ? A.nodes : A.depts) || []).filter(function (x) {
+          return x && x.id === id;
+        })[0] || null,
+      kind = hit ? nfDenyClean(hit.kind) : "";
+    if (u.role === "super") role = "مسؤول المنصة";
+    else if (gm) role = !kind || kind === "إدارة عامة" ? "مدير إدارة عامة" : kind === "قطاع" ? "مدير القطاع" : kind === "إدارة عليا" ? "الإدارة العليا" : "مدير " + kind;
+    else role = u.role === "dept" || u.mgr ? (kind === DEPT_SEC_KIND ? "مدير القسم" : "مدير الإدارة") : "موظف";
+    /* a general manager's unit is a node of the structure, so a missing one is not called «إدارة» */
+    unit = !id ? "" : (hit && nfDenyClean(hit.name)) || (gm ? NF_DENY_NO_NODE : NF_DENY_NO_UNIT);
+    if (hit && nfDenyClean(hit.name) && nfDenyAmbiguous(unit)) unit = "وحدة باسم ملتبس";
+    if (name && nfDenyAmbiguous(name)) name = /^[0-9]+$/.test(String(u.un || "")) ? "الحساب رقم " + nfDenyDigits(u.un) : "حساب باسم ملتبس";
   }
   return {
-    الاسم: (u && String(u.name || "").trim()) || "حساب غير معروف",
+    الاسم: name || NF_DENY_NO_ACCOUNT,
     الدور: role,
     الإدارة: unit,
     الفعل: nfDenyVerb(r.target, r.detail),
@@ -6357,13 +6399,25 @@ function nfDenyVars(A, r) {
     السبب: nfDenyWhy(r.detail),
   };
 }
-/* the clauses of the approved sentence whose variable is empty are dropped: no page → no «في صفحة «»»; no role/unit → no «( — )» */
-function nfDenyTidy(s) {
-  return String(s)
-    .replace(/\s*في صفحة «»/g, "")
-    .replace(/\s*\(\s*—\s*\)/g, "")
-    .replace(/\(\s*—\s*/g, "(")
-    .replace(/\s*—\s*\)/g, ")")
+/* the body of an «sc_deny» notice: ONE pass over the text (a value is never scanned for {var}). Under the default text the
+   clauses whose variable is empty are dropped first — no page → no «في صفحة «»»; no role/unit → no «( — )». A text the
+   administrator wrote himself is filled as it is. */
+function nfDenyBody(txt, vars) {
+  var t = String(txt || ""),
+    v = vars || {},
+    has = function (k) {
+      return Object.prototype.hasOwnProperty.call(v, k) && v[k] != null && String(v[k]) !== "";
+    };
+  if (t === NF_TYPES.sc_deny.txt) {
+    if (!has("الصفحة")) t = t.replace(" في صفحة «{الصفحة}»", "");
+    if (!has("الدور") && !has("الإدارة")) t = t.replace(" ({الدور} — {الإدارة})", "");
+    else if (!has("الإدارة")) t = t.replace(" — {الإدارة}", "");
+    else if (!has("الدور")) t = t.replace("{الدور} — ", "");
+  }
+  return t
+    .replace(/\{([^{}]+)\}/g, function (m, k) {
+      return has(k) ? String(v[k]) : "";
+    })
     .replace(/\s{2,}/g, " ")
     .trim();
 }
