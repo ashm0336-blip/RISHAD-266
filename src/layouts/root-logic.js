@@ -801,7 +801,7 @@ class Component extends DCLogic {
             Object.keys(data).forEach(key => { if (/(?:^|:)bassam_(?:irshad(?:_langs|_locs|_retro)?|seized(?:_cat|_jew|_acts|_locs|_retro)?|award(?:_docs)?)_v[12]$/.test(key)||KIVO.__BS_SRV.operations.resources.includes(key.replace(/^bsdept:[^:]+:/,''))) delete data[key]; });
             await fence();
             const manifest={version:4,scope:"dept",domains:{kv:1,notifications:1,custody:1,irshad:1,seized:1,awards:1,operations:1},departments:[id],keys:Object.keys(data)};
-            const payload = {app:"bassam-crowd",version:4,kind:"dept",dept:nm,exportedAt:dt.toISOString(),data,domains:{notifications:notifications.domain,custody:custody.domains,...business.domains},manifest,perms:permSlice,idbImages:business.images,preImport:_pre};
+            const payload = {app:"bassam-crowd",version:4,kind:"dept",dept:nm,exportedAt:dt.toISOString(),data,domains:{notifications:notifications.domain,custody:custody.domains,...business.domains},manifest,perms:permSlice,idbImages:business.images,...(business.missing&&business.missing.length?{imagesMissing:business.missing}:{}),preImport:_pre};
             const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a2 = document.createElement("a"); a2.href = url;
@@ -812,7 +812,7 @@ class Component extends DCLogic {
             /* ختمُ آخر تصدير لهذه الإدارة — يقرؤه سطحُ الإعدادات فيُذكّر بدوريّة النسخ */
             /* KIVO_263: الختمُ رقمُ اللحظة (JSON صالح) — نصُّ ISO الخام ليس JSON فيرفضه الخادمُ في الإنفاذ («shape») فلا يصل الختمُ بقيةَ الأجهزة؛ القرّاءُ (bkTime · _expInfo) يقبلون الصيغتين */
             try { D.raw.setItem.call(localStorage, "bsdept:" + id + ":bassam_last_export_v1", String(dt.getTime())); } catch (eStamp) {}
-            this.bkToast("✓ تم تصدير نسخة «" + nm + "» (" + KIVO.BassamCount(Object.keys(data).length,"مجموعة بيانات") + "" + this.bkCapNote(Object.keys(data), id) + " و " + KIVO.BassamCount(Object.keys(imgs || {}).length,"صورة") + ")");
+            this.bkToast("✓ تم تصدير نسخة «" + nm + "» (" + KIVO.BassamCount(Object.keys(data).length,"مجموعة بيانات") + "" + this.bkCapNote(Object.keys(data), id) + " و " + KIVO.BassamCount(Object.keys(business.images || {}).length,"صورة") + ")" + (KIVO.BackupRestore.missingNote ? KIVO.BackupRestore.missingNote(business.missing) : ""));
           } catch (e) { this.bkToast("تعذّر التصدير"); }
         };
         if (iids.length && KIVO.BassamIDB) {
@@ -1345,6 +1345,7 @@ class Component extends DCLogic {
         return { profName: pr.name || "", profRole: pr.role || "", profInitial: (pr.name || "؟").trim().charAt(0) || "؟", profBadgeOn: pr.scope === "platform", profBadge: "المنصة" };
       })()),
       __nav: (KIVO.BassamNav = { go: (k, asked) => { try { (k === "sysadmin" ? goSys : go(k, asked))(); } catch (e) {} },
+        again: () => this.setState({ navPending: true }, () => this.setState({ navPending: false })),   /* V7 UX: «أعد المحاولة» في حالات الصفحة — يُعاد تركيبُ الصفحة المفتوحة فتعيد قراءتَها */
         conSync: (s) => this._conSync(s), conGo: (tab, sub) => this._conGo(tab, sub, false),
         /* CORE-02 S8: «عرض الكل» في «أحداث المنصة الأخيرة» يفتح الجرس (بعد نقرة الفتح كي لا يغلقه مستمعُ النقر خارجه) */
         bell: () => setTimeout(() => { if (!this.state.nfOpen) this.setState({ nfOpen: true, nfToast: null }, () => this._nfReload()); }, 0) }),

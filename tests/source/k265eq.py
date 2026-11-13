@@ -76,12 +76,12 @@ kinds = {}
 for u in files:
     if u in retained: continue   # أصولُ الإصدارات السابقة المُبقاة (أُثبتت أعلاه) لا تُعدّ في أصناف الإصدار الحالي
     kinds[u.split('/')[2]] = kinds.get(u.split('/')[2], 0) + 1
-ok(kinds.get('js') == 72 and kinds.get('css') == 10 and kinds.get('fonts') == 6 and kinds.get('img') == 4 and (kinds.get('pages', 0) >= 14 if info.get('pages') == 'lazy' else 'pages' not in kinds), '   الأصناف: ' + json.dumps(kinds, ensure_ascii=False), '')
+ok(kinds.get('js') == 73 and kinds.get('css') == 11 and kinds.get('fonts') == 6 and kinds.get('img') == 4 and (kinds.get('pages', 0) >= 14 if info.get('pages') == 'lazy' else 'pages' not in kinds), '   الأصناف: ' + json.dumps(kinds, ensure_ascii=False), '')
 JS = re.findall(r'<script([^>]*) src="(/assets/js/[^"]+)"></script>', shell)
 CSS = re.findall(r'<link rel="stylesheet"([^>]*) href="(/assets/css/[^"]+)">', shell)
 tags = re.findall(r'<script\b[^>]*>', shell)
-ok(len(JS) == 72 and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a) for a, _ in JS), '★ ٧٢ سكربتاً خارجياً كلاسيكياً حاجباً بترتيبها (٧٢ = ٧٤ − 480-final-delete · 510-emp-monthly-source (طبقتا توافقٍ بلا أثر) · ٧٤ = ٧٥ − 190-tabstrip-unify L-06 · ٧٥ = ٧٣ + 547-custody-api · 548-atomic-backup؛ ٧١ = ٦٩ + 545-task-self · 546-task-model المهام KIVO_265 · ٦٩ = ٦٨ + 535-profile-facts «ملفي» KIVO_264 · + منطقُ الغلاف المُصرَّف + manifest الصفحات · لا async/defer/module) — التنفيذُ بالتسلسل نفسِه كالمضمَّن', len(JS))
-ok(len(tags) == 73 and tags.count('<script type="text/x-dc" data-dc-script="">') == 1, '   في الغلاف ٧٣ وسمَ script: ٧٢ خارجياً + منطقُ x-dc الجذر مضمَّناً (نصاً؛ تنفيذُه من root-logic المُصرَّف)', len(tags))
+ok(len(JS) == 73 and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a) for a, _ in JS), '★ ٧٣ سكربتاً خارجياً كلاسيكياً حاجباً بترتيبها (٧٣ = ٧٢ + 555-page-states حالاتُ الصفحة الموحَّدة V7 UX (ومعه ورقةُ أنماطه — css ١١) · ٧٢ = ٧٤ − 480-final-delete · 510-emp-monthly-source (طبقتا توافقٍ بلا أثر) · ٧٤ = ٧٥ − 190-tabstrip-unify L-06 · ٧٥ = ٧٣ + 547-custody-api · 548-atomic-backup؛ ٧١ = ٦٩ + 545-task-self · 546-task-model المهام KIVO_265 · ٦٩ = ٦٨ + 535-profile-facts «ملفي» KIVO_264 · + منطقُ الغلاف المُصرَّف + manifest الصفحات · لا async/defer/module) — التنفيذُ بالتسلسل نفسِه كالمضمَّن', len(JS))
+ok(len(tags) == 74 and tags.count('<script type="text/x-dc" data-dc-script="">') == 1, '   في الغلاف ٧٤ وسمَ script: ٧٣ خارجياً + منطقُ x-dc الجذر مضمَّناً (نصاً؛ تنفيذُه من root-logic المُصرَّف)', len(tags))
 refs = set(u for _, u in JS) | set(u for _, u in CSS) | set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', shell))
 for u in list(files):
     if u.endswith('.css') or u.endswith('.js'): refs |= set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', files[u].decode('utf-8')))

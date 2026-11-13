@@ -4,6 +4,7 @@
 (كان docs/ux-states.md جرداً ساكناً من KIVO_252 فتقادم: لافتةُ «بلا اتصال» أُضيفت في 254 والجردُ يقول «لا تنبيه»).
      python3 tools/ux_states.py           يكتب docs/ux-states.md
      python3 tools/ux_states.py --check   يعيد التوليد ويقارن (exit 1 عند فرق) + الآلياتُ العامة موجودةٌ في مواضعها + سقّاطةٌ لكل وحدة
+     python3 tools/ux_states.py --report  يطبع القائمة الكاملة للقاعدة الجديدة (V7 UX — وضعُ تقريرٍ لا يُفشل البناء): حالاتُ صفحةٍ خارج المكوّن الموحَّد
 المنهج لكل وحدة (view.html والمنطق وأجزاؤه المعلنة في Manifest؛ يشمل catch لمعالجة async): عدُّ المواضع بأنماطٍ ثابتة (أدناه) — مقياسٌ للحضور لا للجودة؛ والتحقّقُ الحيّ في
 k253offline.mjs (اللافتة والطابور) · k254ux.mjs (الهيكل · أعد المحاولة · h1) · ack.mjs (لا «تمّ» قبل الإقرار)."""
 import os, re, sys, json
@@ -31,7 +32,71 @@ GLOBAL = [  # (الحالة · الآلية · الملف · نصٌّ يجب أ�
     ('بلا اتصال (الحاسوب)', 'مؤشرُ «حالة الاتصال» الدائم في القائمة الجانبية: متصل · انقطع الاتصال · محلي', 'src/components/240-bassam-link.js', 'انقطع الاتصال'),
     ('بلا اتصال (الجوال)', 'لافتةُ `.bs-netbar` لحظةَ الانقطاع (role=status) وتتحوّل عند العودة — KIVO_254', 'src/components/240-bassam-link.js', 'bs-netbar'),
     ('الكتابةُ المعلَّقة', '`KIVO.BassamAck`: رسالةُ النجاح بعد إقرار الخادم وحده', 'src/core/300-bassam-ack.js', 'KIVO.BassamAck ='),
+    ('أولُ تحميلٍ وفشلُ تحميل الشاشة', 'مكوّنُ حالات الصفحة الموحَّد `KIVO.PageStates` (هيكلٌ واحد · تحديث · فشل · فارغ) — به قاعدةُ الغلاف الواحدة لكل مسار: رأسٌ وهيكل، أو محتوى الذاكرة مع الخط والشارة (V7 UX)', 'src/components/555-page-states.js', 'KIVO.__dcStates ='),
 ]
+# ── V7 UX · القاعدةُ الجديدة — وضعُ «تقرير» فقط (تُطبع المخالفات ولا يفشل البناء بعد؛ تنقلب «إفشالاً» عند إغلاق الترحيل) ──────────────
+# حالاتُ الصفحة (تحميل · تحديث · فشل تحميل · فارغ) تمرّ بمكوّنٍ واحد. خارج المكوّن يُعدّ مخالفةً:
+#   U1 نصُّ تحميلِ قراءة («جارٍ قراءة/تحميل/جلب…») · U2 هيكلٌ .bs-skel · U3 زرُّ/نصُّ «أعد المحاولة» · U4 صفحةٌ في pages.json بلا المكوّن ولا إعفاء.
+# ما ليس تحميلَ صفحة مسموحٌ بسببه المكتوب (ALLOW): تقدّمُ العمليات والحفظ · «تحميل المزيد» · الحوارات (مؤجَّلة للمرحلة الثانية).
+UNIFIED = 'src/components/555-page-states.js'
+U_PAT = {
+    'U1': r'(?:جارٍ|جاري) (?:قراءة|تحميل|جلب|التحميل|القراءة|التحقّق)',
+    'U2': r'bs-skel',
+    'U3': r'أعد المحاولة|إعادة المحاولة',
+}
+U_SCAN = ('src/modules', 'src/layouts', 'src/components', 'src/services', 'src/core')
+ALLOW = [  # (بادئةُ المسار · القاعدة أو * · نمطُ السطر · السبب)
+    (UNIFIED, '*', r'', 'المكوّنُ نفسُه'),
+    ('src/styles/555-page-states.css', '*', r'', 'أنماطُ المكوّن'),
+    ('src/components/550-bassam-busy.js', '*', r'', 'تقدّمُ العمليات (تصدير · استيراد · طباعة · رفع) — ليس تحميلَ صفحة'),
+    ('src/layouts/helmet-global.css', 'U2', r'', 'تعريفُ ‎.bs-skel‎ نفسِه (يستعمله المكوّن)'),
+    ('src/core/030-pages-loader.lazy-guard.js', 'U3', r'', 'بطاقةُ انتهاء الجلسة وبديلُ غياب المكوّن — خارج المكوّن بقرار (البند ٣)'),
+    ('src/', 'U3', r'(?:أعد|إعادة) المحاولة(?![^"\'`<]*</button>)[^"\'`]*(?:مسودت|الحفظ|حفظ|الإجراء|الاعتماد|الرفع|التصدير|الاستيراد|الطباعة)|(?:مسودت|الحفظ|حفظ|الإجراء|الاعتماد|الرفع|التصدير|الاستيراد|الطباعة)[^"\'`]*(?:أعد|إعادة) المحاولة', 'جملةٌ في رسالة حفظٍ أو عملية — ليست زرَّ إعادة تحميل'),
+    ('src/', 'U1', r'تحميل (?:المزيد|بقية|حركات أخرى|أصناف أخرى)', '«تحميل المزيد» — ذيلُ قائمة (البند ١٨)'),
+]
+EXEMPT = {  # صفحاتٌ لا تحميلَ خاصاً لها (U4) — وسببُ كلٍّ
+    'planning': 'حاوية: تعرض هيكلَ صفحتها المضمَّنة وحده (وهامشُ حجمها ٣٧ بايتاً)', 'daily': 'حاويةُ تبويبات', 'links': 'من ذاكرة الإقلاع — بلا تحميل', 'help': 'بلا قالب صفحة',
+}
+def unified_report(root=None):
+    """يعيد قائمة (القاعدة، الملف، السطر، النص) لكل موضعٍ خارج المكوّن — للتقرير وحده."""
+    root = root or ROOT; out = []
+    def allowed(rel, rule, line):
+        for prefix, r, pat, _why in ALLOW:
+            if rel.startswith(prefix) and r in ('*', rule) and (not pat or re.search(pat, line)): return True
+        return False
+    for base in U_SCAN:
+        for d, _dirs, files in os.walk(os.path.join(root, base)):
+            for f in sorted(files):
+                if not f.endswith(('.js', '.html', '.css')): continue
+                p = os.path.join(d, f); rel = os.path.relpath(p, root).replace(os.sep, '/')
+                try: lines = open(p, encoding='utf-8').read().split('\n')
+                except (OSError, UnicodeDecodeError): continue
+                for i, line in enumerate(lines, 1):
+                    for rule, pat in U_PAT.items():
+                        m = re.search(pat, line)
+                        if m and not allowed(rel, rule, line): out.append((rule, rel, i, line[max(0, m.start() - 30):m.end() + 40].strip()))
+    try:
+        pages = json.load(open(os.path.join(root, 'src', 'manifests', 'pages.json'), encoding='utf-8'))['pages']
+    except (OSError, ValueError, KeyError): pages = []
+    for pg in pages:
+        if pg['key'] in EXEMPT: continue
+        slug = pg.get('module')
+        d = os.path.join(root, 'src', 'modules', slug or '')
+        if not slug or not os.path.isdir(d): out.append(('U4', 'src/manifests/pages.json', 0, pg['key'] + ': بلا وحدةٍ ولا إعفاء')); continue
+        try: meta = json.load(open(os.path.join(d, 'meta.json'), encoding='utf-8'))
+        except (OSError, ValueError): meta = {}
+        src = read_logic(d, meta) if os.path.exists(os.path.join(d, 'logic.js')) else ''
+        if not re.search(r'\bPageStates\b', src): out.append(('U4', 'src/modules/' + slug, 0, pg['key'] + ': لا تستعمل KIVO.PageStates لحالاتها الخاصة (بوابةُ الغلاف تغطي أول تحميلها وفشله)'))
+    return out
+def print_report(full):
+    found = unified_report(); by = {}
+    for rule, rel, _i, _s in found: by.setdefault(rule, {}).setdefault(rel, 0); by[rule][rel] += 1
+    names = {'U1': 'نصُّ تحميل قراءة', 'U2': 'هيكل .bs-skel', 'U3': '«أعد المحاولة»', 'U4': 'صفحةٌ بلا المكوّن'}
+    print('  ⓘ تقرير (لا يُفشل البناء): حالاتٌ خارج مكوّن حالات الصفحة — ' + ' · '.join(k + ' ' + names[k] + ': ' + str(sum(by.get(k, {}).values())) + ' في ' + str(len(by.get(k, {}))) + ' ملفاً' for k in names))
+    if full:
+        for rule, rel, i, s in found: print('    ' + rule + ' ' + rel + (':' + str(i) if i else '') + '  ' + s)
+    else: print('    (القائمة الكاملة: python3 tools/ux_states.py --report)')
+    return found
 def mods():
     d = os.path.join(ROOT, 'src', 'modules')
     return sorted(m for m in os.listdir(d) if os.path.isdir(os.path.join(d, m)))
@@ -84,6 +149,7 @@ def main():
         if not same: bad.append('docs/ux-states.md ≠ التوليد (شغّل tools/ux_states.py)')
     else:
         open(OUT, 'w', encoding='utf-8').write(txt)
+    print_report('--report' in sys.argv)                                  # V7 UX: تقريرٌ فقط — لا يدخل في bad ولا في رمز الخروج
     for x in bad: print('  ✘', x)
     print('النتيجة: حالاتُ الشاشات — %d وحدة · %d آليةً عامة · %d مخالفة' % (len(cur), len(GLOBAL), len(bad)))
     return 1 if bad else 0

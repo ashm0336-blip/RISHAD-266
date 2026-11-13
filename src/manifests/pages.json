@@ -67,6 +67,12 @@
    "departmentComponents": ["Employees"],
    "nav": "employees",
    "name": "موظفو الإدارة",
+   "shellTabs": [
+    {
+     "name": "مستودع العهد",
+     "as": "custody"
+    }
+   ],
    "seq": [
     "sub:data",
     "sub:custody"

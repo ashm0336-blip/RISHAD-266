@@ -168,5 +168,7 @@ test('AUD-052: فكُّ اسمٍ لا يرفع قفلَ مصدرٍ يخمّن ع
   assert.equal((await C.api('/api/guard/unlock', { method: 'POST', cookie: su.ck, body: {} })).status, 400, 'جسمٌ فارغ لا يفكّ الكلّ');
   assert.equal((await C.api('/api/guard/unlock', { method: 'POST', cookie: su.ck, body: null })).status, 400, 'null ⇒ 400 لا 500');
   assert.equal((await C.api('/api/guard/unlock', { method: 'POST', cookie: su.ck, body: { all: 1 } })).j.ok, 1);
-  assert.equal(env.DB.q("SELECT COUNT(*) AS n FROM guard")[0].n, 0, '{all:1} يفكّ الكلّ صراحةً');
+  /* V7-F (review, finding 5; narrowed by the second review): the unlock request, like any accepted write, leaves ONE row behind — the image sweep's own
+     10-minute stamp (rl:img-sweep). Every other row, the rate-limit windows (rl:…) included, must be cleared by {all:1} */
+  assert.equal(env.DB.q("SELECT COUNT(*) AS n FROM guard WHERE gk != 'rl:img-sweep'")[0].n, 0, '{all:1} يفكّ الكلّ صراحةً');
 });

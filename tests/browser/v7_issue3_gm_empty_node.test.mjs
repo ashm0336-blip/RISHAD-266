@@ -23,8 +23,12 @@ async function signIn(b, lab, un) {
   await p.goto(lab.base + '/', { waitUntil: 'domcontentloaded' }); await p.waitForSelector('input[type=password]', { timeout: 30000 });
   let login = null;
   for (let i = 0; i < 2 && !login; i++) { await p.fill('input:not([type=password]):not([type=hidden])', un); await p.fill('input[type=password]', LAB_PW);
-    const res = p.waitForResponse((r) => /\/api\/login\b/.test(r.url()), { timeout: 8000 }).then((r) => r.json().then((j) => ({ status: r.status(), j })), () => null);
-    await p.keyboard.press('Enter'); login = await res; }
+    /* the sign-in answer is read on its way to the page (route.fetch), before the page can act on it: reading the body of a response
+       after the page has navigated away is refused by the browser, and the page navigates as soon as it has the answer */
+    let seen = null; const got = new Promise((done) => { seen = done; });
+    await p.route(/\/api\/login\b/, async (route) => { try { const r = await route.fetch(), j = await r.json(); seen({ status: r.status(), j }); await route.fulfill({ response: r }); } catch (e) { seen(null); await route.continue().catch(() => {}); } });
+    await p.keyboard.press('Enter'); login = await Promise.race([got, new Promise((done) => setTimeout(() => done(null), 8000))]);
+    await p.unroute(/\/api\/login\b/); }
   await p.waitForTimeout(6000);
   const seen = await p.evaluate(() => ({ form: !!document.querySelector('input[type=password]'), hash: location.hash, text: document.body.innerText.replace(/\s+/g, ' ').slice(0, 600) }));
   return { ctx, p, errs, login, seen };

@@ -117,6 +117,10 @@ test('a failed typed read retries quietly, leaves no empty business Component an
     f.component.render();
     assert.equal(f.constructors.length, 0);
     assert.equal(f.runtime.registry.get(f.name).Logic, null);
+    /* V7 UX: the dispatcher re-renders after the failure (the registry bump) — that must not restart the read behind the card */
+    f.Dispatcher({}); await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(f.calls.length, 4, 'a re-render after the declared failure starts no new read');
+    assert.equal(f.runtime.registry.get(f.name).dataError, 'تعذّر عرض هذه الشاشة الآن', 'the failure stays declared until a retry is asked for');
     const card = f.body.children.find(node => node.className === 'bs-retry bs-retry-page');
     valid = true; card.button.click(); f.Dispatcher({});
     assert.equal(await until(() => !!f.runtime.registry.get(f.name).Logic, 500), true);

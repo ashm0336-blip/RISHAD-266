@@ -69,7 +69,10 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(rowOf(stored(W.env, KT), a.id), 'الصفُّ باقٍ في يومه الجديد');
   });
 
-  test(M + 'orphan: الحفظ الذري يبقي الصورة اليتيمة وجسمها بعد مهلة السماح؛ الصلاحيات تحجبها عن الموظف والمدير وتسمح لمدير النظام', async () => {
+  /* V7-F (owner decision 2) — REWRITTEN ON PURPOSE. This test pinned «the atomic save never sweeps»: an orphan past its 30 days stayed for ever,
+     because every real save is atomic. The owner's decision: «التنظيف يعمل من مسار الحفظ الجديد فعلاً». Inside the grace nothing changes (still pinned
+     here); past it the next accepted write deletes rows and R2 object — after the commit, never inside the SQL transaction. */
+  test(M + 'orphan: الحفظ الذري يبقي الصورة اليتيمة وجسمها داخل مهلة السماح ويكنسها بعدها؛ الصلاحيات تحجبها عن الموظف والمدير وتسمح لمدير النظام', async () => {
     const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM), me = await W.login(ME.un, ME.pw), su = await W.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN);
     const a = await mk(W, dm.ck, { t: 'orphan' });
     assert.equal((await post(W, me.ck, '/api/me/tasks/act', { k: a.k, id: a.id, act: 'start' })).status, 200);
@@ -82,19 +85,24 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal((await get(W, dm.ck, '/api/img/' + A)).status, 403, 'المديرُ لا يقرؤها');
     assert.equal((await get(W, su.ck, '/api/img/' + A)).status, 200, 'مديرُ النظام يقرؤها (استرجاع)');
     assert.equal(own(W, B).st, 'bound', 'الأخرى كما هي');
-    /* D1 business save commits SQL metadata only. It must not delete image
-       bodies/R2 outside that transaction, including after the legacy grace. */
-    W.env.DB.exec("UPDATE imgown SET ts = ts - 31 * 86400000 WHERE img = '" + A + "'");
+    /* inside the grace (day 29) an atomic save leaves the orphan, its body and R2 alone */
+    W.env.DB.exec("UPDATE imgown SET ts = ts - 29 * 86400000 WHERE img = '" + A + "'");
     const oldOwner=own(W,A),removed=[],drop=W.env.IMG_R2.delete.bind(W.env.IMG_R2);
     W.env.IMG_R2.delete=async key=>{removed.push(key);return drop(key);};
     assert.equal((await post(W, me.ck, '/api/me/tasks/act', { k: a.k, id: a.id, act: 'doc', note: 'مسودّة ٢' })).status, 200);
-    assert.deepEqual(own(W,A),oldOwner,'الحفظ الذري لا ينفذ كنسًا مستقلًا');assert.ok(inStore(W,A),'الجسم باقٍ');assert.deepEqual(removed,[],'لاحذفR2ضمنالحفظ');
+    assert.deepEqual(own(W,A),oldOwner,'داخل المهلة: لا كنس');assert.ok(inStore(W,A),'الجسم باقٍ');assert.deepEqual(removed,[],'لا حذفَ R2 داخل المهلة');
+    /* past it (day 31) the next accepted atomic write sweeps it */
+    W.env.DB.exec("UPDATE imgown SET ts = ts - 2 * 86400000 WHERE img = '" + A + "'");
+    W.env.DB.exec("DELETE FROM guard WHERE gk = 'rl:img-sweep'");   /* V7-F (review, finding 5): a pass runs at most once per 10 minutes — two days went by */
+    assert.equal((await post(W, me.ck, '/api/me/tasks/act', { k: a.k, id: a.id, act: 'doc', note: 'مسودّة ٣' })).status, 200);
+    assert.equal(own(W,A),null,'بعد المهلة: سجلُّ الملكية كُنس');assert.equal(inStore(W,A),false,'والجسم');assert.deepEqual(removed,['img/'+A],'وكائنُ R2 — مرّةً واحدة');
     assert.ok(inStore(W, B) && own(W, B).st === 'bound', 'ولم تُمسّ الأخرى');
   });
 }
 
-test('The existing orphan sweeper is explicit maintenance: grace and bound references protect images; only a stale unreferenced in-memory image is removed',async()=>{
-  const B=await world({worker:WU.file,mode:'enforce'}),W=await candidateWorker(['imgSweepOrphans','IMG_ORPHAN_GRACE']);
+/* V7-F: the sweeper is imgSweep now (it also runs after every accepted write) — its three rules are unchanged */
+test('The orphan sweeper: grace and live references protect images; only a stale unreferenced image is removed',async()=>{
+  const B=await world({worker:WU.file,mode:'enforce'}),W=await candidateWorker(['imgSweep','IMG_ORPHAN_GRACE']);
   try{
     const now=Date.now(),ids=['img_tskgc_grace','img_tskgc_bound','img_tskgc_stale'],removed=[],drop=B.env.IMG_R2.delete.bind(B.env.IMG_R2);
     B.env.IMG_R2.delete=async key=>{removed.push(key);return drop(key);};
@@ -103,7 +111,7 @@ test('The existing orphan sweeper is explicit maintenance: grace and bound refer
       B.env.DB.db.prepare('INSERT INTO imgown(img,st,k,uid,dept,ts)VALUES(?,?,?,?,?,?)').run(id,'orphan','','TEST_ONLY', 'tst_d1',now-(i?W.IMG_ORPHAN_GRACE+1:W.IMG_ORPHAN_GRACE-1));
     }
     B.env.DB.db.prepare('INSERT INTO imgref(img,k)VALUES(?,?)').run(ids[1],KT);
-    await W.imgSweepOrphans(B.env,now);
+    await W.imgSweep(B.env,now,40);
     assert.ok(inStore(B,ids[0])&&own(B,ids[0]).st==='orphan','Grace protects the recent orphan');
     assert.ok(inStore(B,ids[1])&&own(B,ids[1]).st==='amb','A live bound reference prevents deletion');
     assert.equal(own(B,ids[2]),null);assert.equal(inStore(B,ids[2]),false);

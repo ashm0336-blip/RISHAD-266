@@ -40,7 +40,8 @@
   "getDC",
   "DCLogic",
   "StreamableLogic",
-  "KIVO_REGISTRY_DATA"
+  "KIVO_REGISTRY_DATA",
+  "PageStates"
  ],
  "after": [
   "src/core/270-bs-ver.js",

@@ -624,9 +624,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       o = this.cuPast(r, n),
       s = r === e.y && n === e.m;
     return {
-      cuStatusOn: ["custody", "store"].includes(t.empTab),
+      cuLoadOn: ["custody", "store"].includes(t.empTab) && !!t.cuLoading,
+      cuStatusOn: ["custody", "store"].includes(t.empTab) && !!(t.cuSaving || t.cuError || (t.cuHolder && t.cuHolder.next) || (t.cuMoves && t.cuMoves.next) || (t.cuData || {}).catalogNext),
+      /* V7 UX: قراءةُ العهد تُعرض بمكوّن حالات الصفحة — خطٌّ وشارة فوق المحتوى الباقي، وهيكلٌ مصغّر لعهدة الحامل وحركاته */
+      cuStates: (el) => KIVO.PageStates?.host(el, { state: "refreshing" }), ecStates: (el) => KIVO.PageStates?.host(el, { state: "loading", region: true }),
       cuLoading: !!t.cuLoading, cuSaving: !!t.cuSaving, cuErrorOn: !!t.cuError, cuError: t.cuError || "",
-      cuRefresh: () => this._cuRefresh(), cuReviewDrafts: () => this._cuReviewDrafts(),
+      cuReviewDrafts: () => this._cuReviewDrafts(),
       cuHolderNext: !!(t.cuHolder && t.cuHolder.next), cuHolderProgress: t.cuHolder ? "المعروض " + t.cuHolder.rows.length + " من " + t.cuHolder.total + " عهدة نشطة؛ تفاصيل الحالة تخص المعروض" : "", cuHolderMore: () => this._cuLoadHolder(t.cuHolder.key, true),
       cuCatalogNext: !!((t.cuData || {}).catalogNext), cuCatalogMore: () => this._cuMoreCatalog(),
       cuMonths: a,
@@ -1057,7 +1060,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         .map((t) => t[0])
         .join(""),
       ecMonth: (this.CU_MONTHS[e - 1] || "") + " " + t + " هـ",
-      ecBadgeLbl: !ready ? n.cuHolderError ? "تعذّرت القراءة" : "جارٍ قراءة العهدة…" : total ? KIVO.BassamCount(total, "صنف") + " بعهدته" : "لا عهدة",
+      ecBadgeLbl: !ready ? n.cuHolderError ? "تعذّرت القراءة" : "يُحدَّث من الخادم" : total ? KIVO.BassamCount(total, "صنف") + " بعهدته" : "لا عهدة",
       ecBadge:
         "display:inline-flex;align-items:center;margin-right:9px;border-radius:9999px;padding:3px 11px;font-size:10.5px;font-weight:600;font-family:'Cairo',sans-serif;" +
         (ready && total

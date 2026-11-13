@@ -48,7 +48,7 @@ var ENF_REASON_OFF = { 'lens.zones.status.change': 1, 'lens.gates.status.change'
 function enfPlugLensOf(key) { var m = /^lens\.([a-z]+)\./.exec(String(key || '')); return m && KIVO_LENS_PLUGINS.keys.indexOf(m[1]) !== -1 ? m[1] : null; }
 function enfIx() {
   if (ENF_IX) return ENF_IX;
-  var R = KIVO_REGISTRY, ix = { lens: {}, reason: {}, sens: {}, leaf: {}, hosts: {}, superOnly: {}, needMgr: {}, atomless: {}, selfK: {}, roleK: {}, byRes: {}, write: {}, order: [], pos: {} }, i, j;
+  var R = KIVO_REGISTRY, ix = { lens: {}, reason: {}, sens: {}, leaf: {}, hosts: {}, atoms: {}, superOnly: {}, needMgr: {}, atomless: {}, selfK: {}, roleK: {}, byRes: {}, write: {}, order: [], pos: {} }, i, j;
   var atomT = {}, a;
   for (a in R.atoms) { var at = R.atoms[a]; for (j = 0; j < at.targets.length; j++) atomT[at.targets[j]] = 1; }
   for (i = 0; i < R.keys.length; i++) {
@@ -61,13 +61,14 @@ function enfIx() {
     if (e.grant === 'self') ix.selfK[key] = 1;
     if (e.grant === 'role') ix.roleK[key] = 1;
     if (e.type !== 'view' && e.type !== 'access') ix.write[key] = 1;
-    var am = e.asisMap || [], leaves = [];
+    var am = e.asisMap || [], leaves = [], pairs = [];
     for (j = 0; j < am.length; j++) {
       var s = String(am[j]);
       if (s === 'role:super') ix.superOnly[key] = 1;
       else if (s === 'role:mgr') ix.needMgr[key] = 1;
-      else { var m = ENF_LEAF_RE.exec(s); if (m && leaves.indexOf(m[1]) === -1) leaves.push(m[1]); }
+      else { var m = ENF_LEAF_RE.exec(s); if (m) pairs.push([m[1], m[2]]); if (m && leaves.indexOf(m[1]) === -1) leaves.push(m[1]); }
     }
+    if (pairs.length) ix.atoms[key] = pairs;                              /* V7-E: ذرّاتُ الورقة التي يقابلها المفتاح (ورقة:فعل) — لصورة المورد (enfImgKeyOn) */
     if (!atomT[key]) ix.atomless[key] = 1;
     var o = R.owners[e.owner];
     if (e.ownerKind === 'page') ix.leaf[key] = e.owner;
@@ -192,11 +193,16 @@ function enfMemoDrop(A, d) {
    بوابةُ العدسة أياً كانت الورقة، فكان صاحبُ ورقة العرض فقط، ومن لا ورقةَ له أصلاً، «كاتباً» في كل وحدةٍ على سقفها مضيفُ عدسة (plan · daily/rounds):
    يكتب الراياتِ التقنية ويرفع صورةً جديدة. يُستثنى هنا كما يستثنيه enfFieldLift؛ ومفاتيحُ الراصد المشتقّة من field.view (status.change — نوعها
    operation) تُعدّ كتابةً فقط حين يُرفع الحصر (enfDerivedBare أدناه — قرار المالك: الراصد المحصور ليس كاتباً، كما في الوضع القديم). الوضعُ القديم لا يمرّ من هنا (018 anyWriter · 044 · 054) فلا يتغيّر فيه شيء. */
-function enfAnyWriterDept(A, d) {
+/* RISHAD-266 · V7-E (القاعدةُ العامة للمالك: «في الصور، enforce لا يسمح بما يرفضه legacy»): img = السؤالُ عن صورة (رفعُ صورةٍ جديدة — enfAnyWriter ·
+   صورةٌ مربوطةٌ بمورد rule — 060 enfImgWriteOk). «كاتبُ الوحدة» في الوضع القديم مَن في ورقته فعلُ كتابة (018 writePages: add · edit · del · approve)،
+   فمفتاحٌ لا تقابله ذرّةُ ورقةٍ بفعل كتابة (backup.restore — to-build بلا ذرّة) لا يجعل حاملَه «كاتباً» للصور: كان يرفع صورةً جديدة ويستبدل ويحذف
+   صورةً مربوطةً برايةٍ تقنية، ولا نظيرَ لذلك في الوضع القديم. حفظُ الرايات التقنية نفسِها (060 rule:'tech' — ليس قرارَ صورة) يسأل بلا img فلا يتغيّر. */
+function enfAnyWriterDept(A, d, img) {
   if (A.u.role === 'super') return true;
-  var ix = enfIx(), R = KIVO_REGISTRY.byKey, dv = enfDerivedBare(A, d), k; for (k in ix.write) if (!ix.selfK[k] && R[k].type !== 'capability' && !(dv && dv[k]) && enfHeld(A, d, k)) return true;
+  var ix = enfIx(), R = KIVO_REGISTRY.byKey, dv = enfDerivedBare(A, d), k; for (k in ix.write) if (!ix.selfK[k] && R[k].type !== 'capability' && !(dv && dv[k]) && (!img || enfImgWriteAtom(k)) && enfHeld(A, d, k)) return true;
   return false;
 }
+function enfImgWriteAtom(key) { var at = enfIx().atoms[key] || [], j; for (j = 0; j < at.length; j++) if (WRITE_ACTS[at[j][1]]) return true; return false; }
 /* RISHAD-266 · V7-D (قرارُ المالك: «الراصد في enforce لا يستبدل ولا يحذف صور الخطة والجولات، كما في legacy»): المفاتيحُ الثلاثة المشتقّة من field.view
    (ENF_DERIVE — status.change) كتابةُ حالةِ العنصر المسنَد وحدها، وليست كتابةً للمورد: كان enfResWriter يجيب بها «يكتب الخطة والجولات» فيستبدل الراصدُ
    ويحذف أيَّ صورةٍ مربوطةٍ بهما (خريطة الموقع)، وكان enfAnyWriterDept يعدّه بها «كاتباً» فيكتب الراياتِ التقنية ويرفع صورةً جديدة — والوضعُ القديم يرفض ذلك كلَّه.
@@ -215,8 +221,8 @@ function enfDerivedBare(A, d) {
 }
 function enfAnyWriter(A) {
   var u = A.u; if (u.role === 'super') return true;
-  if (u.role === 'gm') { for (var i = 0; i < (A.depts || []).length; i++) { var dd = A.depts[i]; if (dd && deptInScope(A, dd.id) && enfAnyWriterDept(A, dd.id)) return true; } return false; }
-  return !!u.deptId && enfAnyWriterDept(A, u.deptId);
+  if (u.role === 'gm') { for (var i = 0; i < (A.depts || []).length; i++) { var dd = A.depts[i]; if (dd && deptInScope(A, dd.id) && enfAnyWriterDept(A, dd.id, true)) return true; } return false; }
+  return !!u.deptId && enfAnyWriterDept(A, u.deptId, true);   /* V7-E: السائلُ الوحيد رفعُ صورةٍ جديدة (054 imgVerdict) */
 }
 /* مفاتيحُ كتابةِ موردٍ بعينه (لصاحب الصورة · رقمُ المراجعة بلا قيمة) */
 function enfResWriter(A, d, rn) {
@@ -224,10 +230,56 @@ function enfResWriter(A, d, rn) {
   for (i = 0; i < ks.length; i++) if (enfIx().write[ks[i]] && !enfIx().selfK[ks[i]] && enfHeld(A, d, ks[i])) return true;
   return false;
 }
-/* V7-D: كاتبُ موردِ الصورة — enfResWriter بلا المشتقّة من field.view لمن لم يُرفع عنه الحصر (enfDerivedBare) */
+/* V7-D: كاتبُ موردِ الصورة — enfResWriter بلا المشتقّة من field.view لمن لم يُرفع عنه الحصر (enfDerivedBare)
+   RISHAD-266 · V7-E (قرارُ المالك: «المشرف وخريطة الخطة في enforce: يُمنع كما في legacy»): مفاتيحُ العدسات تذكر في السجلّ الموردَين معاً
+   (guard.resources: bassam_plan_v1 + bassam_rounds_v1 — عناصرُ العدسة تسكن الخطة وتُنسخ في الجولة)، وكتابةُ «الجولات» وحدها تُترجَم إليها
+   (asisMap daily/rounds:edit). فكان صاحبُ كتابةِ الجولات وحدها — ورقةُ المشرف · منحُ round.edit مع مفاتيح الحالة · مفتاحُ عدسةٍ واحد — «كاتباً للخطة»
+   فيستبدل ويحذف الصورةَ المربوطة بها (خريطة الموقع)، والوضعُ القديم يرفض: الصورةُ تتبع كتابةَ سجلّها، وسجلُّ الخطة تكتبه ورقةُ الخطة وحدها
+   (023 RES_REG cap → 054 imgWriteOk → authorize)، وحفظُ السجلّ نفسِه بخريطةٍ أخرى مرفوضٌ لهم أصلاً (059 enfDecide: map.replace).
+   القاعدة: مفتاحُ عدسةٍ تستضيفه ورقةُ «الجولات» (ix.hosts — أي تمنحه كتابةُ الجولات وحدها) كتابةُ عناصر العدسة من جهة الجولات، لا كتابةُ صورة السجلّ؛
+   فلا يُحسب لصورة موردٍ إلا إذا كانت ورقةُ «الجولات» من الأوراق التي تكتب ذلك المورد (الأوراقُ نفسُها التي يسألها الوضع القديم: capForAct).
+   صورةُ الخطة تحتاج إذن مفتاحاً لا تمنحه الجولات: من ورقة الخطة نفسِها (site.edit · map.replace … — ما تُترجَم إليه ورقةُ خطةٍ فيها كتابة) أو مفتاحَ عدسةٍ
+   مضيفُه الخطةُ وحدها (lens.gates.geometry.edit · lens.dens.threshold.configure — كما كانا). صورةُ الجولات لا يتغيّر فيها شيءٌ لأحد، ولا كتابةُ السجلّين،
+   ولا الوضعُ القديم. تعذُّرُ قراءة المنح ⇒ enfHeld يرفض (fail-closed).
+   النطاقُ الفعليّ (تصحيحٌ بعد المراجعة المستقلّة): القاعدةُ ليست لصورة الخطة وحدها، بل لكلّ موردٍ له مفاتيحُ عدسةٍ تستضيفها «الجولات» ولا تكتبه
+   ورقةُ «الجولات»: bassam_plan_v1 وسجلّاتُ الخيارات الثلاثة bassam_zone_opts_v1 · bassam_gate_opts_v1 · bassam_mark_kinds_v1 (cap: plan) — فصاحبُ
+   كتابةِ الجولات وحدها لا يستبدل ولا يحذف صورةً مربوطةً بأيٍّ منها، كما في الوضع القديم؛ ويبقى لها صاحبُ مفتاحِ ورقة الخطة أو مفتاحِ المرجع
+   (ref.zone.type.* · ref.gate.type.* · ref.mark.kind.* — مضيفُها الخطةُ وحدها). وعبر imgForeignIn (054): حفظُ سجلّ الجولات نفسِه بإشارةٍ جديدةٍ إلى
+   صورةٍ تملكها الخطة يُرفض «imgown» لصاحب كتابةِ الجولات وحدها، كما في الوضع القديم (كان يُقبل في enforce قبل هذه القاعدة). */
 function enfImgResWriter(A, d, rn) {
-  var ix = enfIx(), ks = ix.byRes[rn] || [], dv = enfDerivedBare(A, d), i;
-  for (i = 0; i < ks.length; i++) if (ix.write[ks[i]] && !ix.selfK[ks[i]] && !(dv && dv[ks[i]]) && enfHeld(A, d, ks[i])) return true;
+  var ix = enfIx(), ks = ix.byRes[rn] || [], dv = enfDerivedBare(A, d), R = RES_REG[rn], i;
+  if (!R) return false;
+  var rnd = capForAct(R, 'edit').concat(capForAct(R, 'add')).indexOf('daily/rounds') !== -1;
+  for (i = 0; i < ks.length; i++) if (ix.write[ks[i]] && !ix.selfK[ks[i]] && !(dv && dv[ks[i]]) && (rnd || !(ix.hosts[ks[i]] && ix.hosts[ks[i]].indexOf('daily/rounds') !== -1)) && enfImgKeyOn(A, d, R, ks[i]) && enfHeld(A, d, ks[i])) return true;
+  return false;
+}
+/* RISHAD-266 · V7-E (قرارُ المالك: «كاتبُ الخطة وصورةُ الجولة … يُمنعان كما في legacy» · والقاعدةُ العامة: «في الصور، enforce لا يسمح بما يرفضه legacy»):
+   الحالةُ المعاكسة لما سبق — ورقةٌ فيها كتابةُ «الخطة» وحدها تُترجَم هي الأخرى إلى مفاتيح العدسات (asisMap plan:edit)، وهذه تذكر سجلَّ الجولات بين
+   مواردها، فكان كاتبُ الخطة وحدها يستبدل ويحذف الصورةَ المربوطة بالجولة، والوضعُ القديم يرفض (cap: daily/rounds).
+   القاعدة (شكلُ القاعدة السابقة نفسُه، معمَّماً): المفتاحُ يُحسب لصورة موردٍ فقط عبر ورقةٍ تكتب ذلك المورد — الأوراقُ نفسُها التي يسألها الوضعُ القديم
+   (capForAct) وعلى سقف الإدارة (capOnDept، كما في 042 authorize0):
+     • مفتاحٌ جاء من ترجمة الورقة: لا بدّ أن تكون إحدى ذرّاته (ورقة:فعل في asisMap) على ورقةٍ تكتب المورد وأن تحملها ورقةُ الفاعل نفسُها (myPermsOf —
+       ما يقرؤه الوضعُ القديم). فمفتاحُ العدسة الذي منحته ورقةُ «الخطة» ليس كتابةً لصورة الجولة، والذي منحته ورقةُ «الجولات» ليس كتابةً لصورة الخطة.
+     • مفتاحٌ بمنحٍ صريح (plus — لا ورقةَ وراءه): يكفي أن تكون إحدى ذرّاته على ورقةٍ تكتب المورد (ومفتاحُ العدسة ذو المضيفَين يبقى جهةَ الجولات — الشرطُ أعلاه).
+     • مفتاحٌ بلا ذرّةٍ على ورقةٍ تكتب المورد لا يُحسب لصورته (ref.work_type.* من «الجدول الشهري» وصورةُ bassam_options_v1 · import.replace وصورُ
+       التقرير والجائزة · backup.restore بلا ذرّةٍ أصلاً) — والوضعُ القديم يرفضها كلَّها.
+   حفظُ السجلّات نفسِها وتغييرُ الحالة لا يمرّان من هنا. تعذُّرُ قراءة المنح ⇒ لا يُحسب (fail-closed).
+   V7-E (قرارُ المالك: «ورقةُ «اعتماد» فقط وصورُ الخطة: يُمنعان كما في legacy»): «الاعتماد» قرارٌ على السجلّ لا كتابةٌ له — الوضعُ القديم يسأل للصورة
+   edit · add · del وحدها (054 imgWriteOk)، فورقةُ خطةٍ فيها «اعتماد» فقط لا تكتب صورةً. وكانت مفاتيحُ القرار (plan.approve · plan.reopen · site.approve،
+   ومثلُها في كلّ صفحة: round.approve · report.approve · staff.lock · task.month.lock · award.res.approve · *.retro.open …) تذكر السجلَّ بين مواردها
+   فتُحسب كتابةً لصورته. فالذرّةُ المعتبَرة هنا ذرّةُ edit · add · del على الورقة التي يسألها الوضعُ القديم لذلك الفعل بعينه (capForAct(R, act) —
+   award/new للإضافة وaward/res لما سواها). */
+var ENF_IMG_ACTS = { edit: 1, add: 1, del: 1 };
+function enfImgKeyOn(A, d, R, key) {
+  var at = enfIx().atoms[key] || [], adm = A.u.role === 'super', plus, sheet = null, j, leaf, act;
+  try { plus = !!enfGrantOf(A, d).plus[key]; } catch (e0) { return false; }
+  for (j = 0; j < at.length; j++) {
+    leaf = at[j][0]; act = at[j][1];
+    if (!ENF_IMG_ACTS[act] || capForAct(R, act).indexOf(leaf) === -1 || (!(adm && leaf.indexOf('admin') === 0) && !capOnDept(A, d, leaf))) continue;
+    if (plus) return true;
+    sheet = sheet || myPermsOf(A, d) || {};
+    if ((sheet[leaf] || []).indexOf(act) !== -1) return true;
+  }
   return false;
 }
 /* إدارات الفاعل التي يُحكم فيها على الموارد المنصّية (الإحصائيات): إداراتُه في نطاقه — كما dsDepts في AS‑IS */

@@ -17,7 +17,11 @@
    (`vvnYbbbbbbbb`): the status keys derived from field.view write the status of assigned elements only and no longer make their
    holder a writer of the plan/rounds records (bound images), nor «a writer of the unit» (technical flags · new unbound image) —
    unless his confinement is lifted by an explicit non-derived write (057 enfDerivedBare; details in v7_d_observer_img). His
-   task-proof upload (img_tsk…, selfProof) and its binding through /api/me/tasks/act are untouched. */
+   task-proof upload (img_tsk…, selfProof) and its binding through /api/me/tasks/act are untouched.
+   V7-E (owner decision: «المشرف وخريطة الخطة في enforce: يُمنع كما في legacy»): a `sup` row is added (a stored sheet with a write on
+   «الجولات» only). Legacy: he writes the rounds image and not the plan image. Enforce on 5add483 answered Y on the plan image as well
+   (letters 9-10 — SUP_BEFORE_V7E): the lens keys his sheet translates to list the plan among their resources. The enforce row is
+   deliberately pinned to the legacy outcome for those two letters (057 enfImgResWriter; details in v7_e_sup_plan_img). */
 import './clock.mjs';   /* first: the task-proof cases create a task inside the fixture shift (06:00–14:00 Riyadh) — unpinned they failed after 14:00 */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -45,6 +49,7 @@ const ACTORS = [
   ['obs', (u) => ({ role: 'staff', deptId: 'TEST_ONLY_' + u, ekey: 'TEST_ONLY_e_o' + u }), { 'daily/field': ['view'] }, null],
   ['obsG', (u) => ({ role: 'staff', deptId: 'TEST_ONLY_' + u, ekey: 'TEST_ONLY_e_g' + u }), null, ['field.view'].concat(DER)],   /* enforce: the key-level editor, no sheet */
   ['none', (u) => ({ role: 'staff', deptId: 'TEST_ONLY_' + u, ekey: 'TEST_ONLY_e_n' + u }), null, null],
+  ['sup', (u) => ({ role: 'staff', deptId: 'TEST_ONLY_' + u, ekey: 'TEST_ONLY_e_s' + u }), { 'daily/field': ['view'], 'daily/rounds': ['view', 'edit'] }, null],   /* V7-E: the supervisor sheet — a write on the rounds only */
 ];
 /* the records an image is bound to: a technical flag («rule» ⇒ any writer of the unit) and three ordinary resources */
 const BOUND = [['profile', 'bassam_profile_v1'], ['tasks', 'bassam_tasks_v1'], ['plan', 'bassam_plan_v1'], ['rounds', 'bassam_rounds_v1']];
@@ -116,7 +121,7 @@ async function matrix(mode, workerFile) {
   return out;
 }
 /* compact form of a row: one letter per operation in OPS order — Y allowed, any other letter the refusal reason */
-const WHY = { yes: 'Y', 'no:view': 'v', 'no:none': 'n', 'no:bound': 'b' };
+const WHY = { yes: 'Y', 'no:view': 'v', 'no:': 'n', 'no:bound': 'b' };   /* V7-F (owner decision 4): «no such id» is the unified refusal now — 403 with no reason (it was why:'none') */
 const pack = (row) => OPS.map((o) => WHY[row[o]] || '?(' + row[o] + ')').join('');
 const table = (out) => Object.fromEntries(Object.entries(out).map(([a, us]) => [a, Object.fromEntries(Object.entries(us).map(([u, r]) => [u, pack(r)]))]));
 
@@ -174,7 +179,7 @@ for (const [mode, src] of OBSERVERS) {
        Enforce: was accepted through the status keys derived from field.view (before and after V7-C); V7-D (owner decision): those
        keys are not a write of the unit ⇒ refused as in legacy */
     const g = await up(W, ob.ck, 'img_v7c' + mode.slice(0, 1) + src.slice(0, 1) + '_g3');
-    assert.equal(g.status, 403, 'a non-proof new image: ' + JSON.stringify(g.j)); assert.equal(g.j.why, 'none');
+    assert.equal(g.status, 403, 'a non-proof new image: ' + JSON.stringify(g.j)); assert.deepEqual(g.j, { ok: 0, err: 'forbidden' });   /* V7-F: the unified refusal (was why:'none') */
   });
 }
 for (const mode of ['legacy', 'enforce']) {
@@ -230,6 +235,7 @@ const EXPECT = {
     obs:   { OPEN: 'vvnYbbbbbbbb', FULL: 'vvnYbbbbbbbb', BASIC: 'vvnYbbbbbbbb' },
     obsG:  { OPEN: 'vvnYbbbbbbbb', FULL: 'vvnYbbbbbbbb', BASIC: 'vvnYbbbbbbbb' },
     none:  { OPEN: 'vvnYbbbbbbbb', FULL: 'vvnYbbbbbbbb', BASIC: 'vvnYbbbbbbbb' },
+    sup:   { OPEN: 'YYYYYYbbbbYY', FULL: 'YYYYYYbbbbYY', BASIC: 'vvnYbbbbbbbb' },
   },
   enforce: {
     super: { OPEN: 'YYYYYYYYYYYY', FULL: 'YYYYYYYYYYYY', BASIC: 'YYYYYYYYYYYY' },
@@ -241,11 +247,15 @@ const EXPECT = {
     obs:   { OPEN: 'vvnYbbbbbbbb', FULL: 'vvnYbbbbbbbb', BASIC: 'vvnYbbbbbbbb' },
     obsG:  { OPEN: 'vvnYbbbbbbbb', FULL: 'vvnYbbbbbbbb', BASIC: 'vvnYbbbbbbbb' },
     none:  { OPEN: 'vvnYbbbbbbbb', FULL: 'vvnYbbbbbbbb', BASIC: 'vvnYbbbbbbbb' },
+    sup:   { OPEN: 'YYYYYYbbbbYY', FULL: 'YYYYYYbbbbYY', BASIC: 'vvnYbbbbbbbb' },
   },
 };
 /* the enforce observer rows before V7-D (e34fa23 … 09a5fe8) */
 const OBS_BEFORE_V7D = { OPEN: 'YYYYYYbbYYYY', FULL: 'YYYYYYbbYYYY', BASIC: 'vvnYbbbbbbbb' };
 /* the reproduction: on e34fa23, enforce, a view-only sheet and no sheet at all were «writers» wherever the ceiling hosts a lens */
+/* the enforce supervisor row before V7-E, as measured on 5add483: the plan image (letters 9-10) was open to a rounds-only writer.
+   The e34fa23 reproduction below expects the same row (the looseness predates V7-C; inferred for e34fa23, measured on 5add483). */
+const SUP_BEFORE_V7E = { OPEN: 'YYYYYYbbYYYY', FULL: 'YYYYYYbbYYYY', BASIC: 'vvnYbbbbbbbb' };
 const BEFORE = { obs: OBS_BEFORE_V7D, obsG: OBS_BEFORE_V7D, view: { OPEN: 'YYYYYYbbbbbb', FULL: 'YYYYYYbbbbbb', BASIC: 'vvnYbbbbbbbb' }, none: { OPEN: 'YYYYYYbbbbbb', FULL: 'YYYYYYbbbbbb', BASIC: 'vvnYbbbbbbbb' } };
 
 for (const mode of ['legacy', 'enforce']) {
@@ -261,10 +271,12 @@ test('[enforce] V7-C in one line: a view-only sheet and no sheet write no techni
   /* V7-D (owner decision): the observer is no «writer of the unit» either — as legacy; the 4th letter is his task-proof upload (selfProof), kept */
   for (const a of ['obs', 'obsG']) for (const u of Object.keys(UNITS)) assert.equal(got[a][u], EXPECT.legacy[a][u], 'the observer (' + a + ') in ' + u + ' equals legacy');
   for (const a of ['gm', 'dept', 'mgr', 'write']) for (const u of Object.keys(UNITS)) assert.equal(got[a][u].slice(0, 4), 'YYYY', a + ' in ' + u + ' is still a writer');
+  /* V7-E (owner decision): the supervisor's row equals legacy — the rounds image is his, the plan image is not */
+  for (const u of Object.keys(UNITS)) { assert.equal(got.sup[u], EXPECT.legacy.sup[u], 'the supervisor in ' + u + ' equals legacy'); }
 });
 /* run with KIVO_BASE_WORKER=<_worker.js generated from e34fa23> to replay the measurement that led to the decision */
 test('[enforce] the reproduction on e34fa23 (needs KIVO_BASE_WORKER)', { timeout: 600000, skip: !process.env.KIVO_BASE_WORKER || !fs.existsSync(process.env.KIVO_BASE_WORKER) }, async () => {
-  const got = table(await matrix('enforce', process.env.KIVO_BASE_WORKER)), want = JSON.parse(JSON.stringify(EXPECT.enforce)); Object.assign(want, BEFORE);
+  const got = table(await matrix('enforce', process.env.KIVO_BASE_WORKER)), want = JSON.parse(JSON.stringify(EXPECT.enforce)); Object.assign(want, BEFORE, { sup: SUP_BEFORE_V7E });
   assert.deepEqual(got, want, 'before the fixes: only the view-only and the sheetless rows (V7-C) and the observer rows (V7-D) differ from the target');
   assert.deepEqual(table(await matrix('legacy', process.env.KIVO_BASE_WORKER)), EXPECT.legacy, 'legacy is the same before and after');
 });

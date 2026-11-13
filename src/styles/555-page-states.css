@@ -1,0 +1,126 @@
+/* ═ حالاتُ الصفحة الموحَّدة (KIVO.PageStates · src/components/555-page-states.js) ═
+   الهيكل الواحد · قاعدةُ الغلاف (رأس + هيكل أو محتوى الذاكرة) · خط وشارة التحديث · بطاقة الفشل · بطاقة الفراغ · الدخول الهادئ.
+   الألوان بمتغيرات السمة وحدها (فاتح/داكن)، والوميض بحركة ‎sc-shine‎ القائمة (١٫٤ ث). لا يُطبع. */
+.ps{display:block;position:relative;font-family:var(--font-ui);direction:rtl;text-align:start}
+.ps[hidden]{display:none}
+.ps.ps-region[data-ps="loading"]{min-height:96px}
+
+/* ── الهيكلُ الواحد: بطاقاتٌ بيضاء (‎--bg-card‎) على خلفية الصفحة، وعظامٌ وامضة أغمق منها — يُرى فوراً في الوضعين ── */
+.ps-skel{display:grid;gap:var(--sp-4);animation:ps-fade .2s ease both}
+.ps-kpis{display:grid;gap:var(--sp-3);grid-template-columns:repeat(4,minmax(0,1fr))}
+.ps-kpi,.ps-panel{display:grid;background:var(--bg-card);border:1px solid var(--border-subtle);box-shadow:var(--shadow-card);border-radius:var(--r-lg)}
+.ps-kpi{gap:var(--sp-3);padding:var(--sp-4)}
+.ps-panel{gap:var(--sp-4);padding:var(--sp-4)}
+.ps-bone{display:block;border-radius:var(--r-sm);background-image:linear-gradient(90deg,var(--border-strong) 25%,var(--border-subtle) 37%,var(--border-strong) 63%);background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+.ps-b-num{height:28px;width:45%}
+.ps-b-lbl{height:12px;width:70%}
+.ps-tools{display:grid;gap:var(--sp-3);grid-template-columns:minmax(0,1fr) 112px 112px}
+.ps-tool{height:40px}
+.ps-rows{display:grid;gap:var(--sp-3)}
+.ps-row{height:20px}
+.ps-row:nth-child(2n){width:86%}
+.ps-row:nth-child(3n){width:68%}
+.ps-region .ps-kpis,.ps-region .ps-tools,.ps-region .ps-row:nth-child(n+4){display:none}
+.ps-region .ps-panel{padding:var(--sp-3);border:0;box-shadow:none;background:transparent}
+
+/* ── قاعدةُ الغلاف: الصفحةُ الحيّة محجوبةٌ (تبقى بعرضها كي تقيس نفسها) ما دام الغلاف يرسم الهيكل أو محتوى الذاكرة في ‎.ps-shell‎ ── */
+.bs-main[data-ps-wait]{position:relative}
+.bs-main[data-ps-wait] > .sc-host{position:absolute;inset-inline:0;max-height:100vh;overflow:hidden;visibility:hidden;pointer-events:none}
+.ps-shell{display:none;position:relative;font-family:var(--font-ui);direction:rtl}
+.bs-main[data-ps-wait] > .ps-shell{display:grid;gap:var(--sp-4);padding:18px 18px 0}
+.bs-main[data-ps-wait="snap"] > .ps-shell{display:block;padding:0}
+.ps-shell > .ps-snap{pointer-events:none}
+/* الخط والشارة فوق محتوى الذاكرة بلا إزاحةٍ له: الخط على حافته العليا والشارة في ركنه */
+.ps-shell > .ps.ps-shell-bar{position:absolute;inset:0 0 auto 0;z-index:2;justify-content:flex-end;margin:0;padding:3px var(--sp-2) 0;overflow:visible}
+.ps-shell-bar > .ps-badge{box-shadow:var(--shadow-card);padding:0 var(--sp-2);font-size:10px;line-height:1.4}
+.ps-shell > .ps[data-ps="loading"]{min-height:420px}
+.ps-tabbox{border-radius:var(--r-xl);border:2px solid var(--tone-gold-50-a10);background:linear-gradient(90deg,var(--bg-gold-50-a3),transparent,var(--bg-gold-50-a3));padding:var(--sp-3)}
+.ps-tabs{display:flex;align-items:center;justify-content:center;gap:var(--sp-2);padding:var(--sp-1) 0}
+.ps-tab{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;line-height:23px;flex-shrink:0;min-width:170px;padding:var(--sp-3) var(--sp-4);border-radius:var(--r-lg);border:1px solid transparent;font-size:var(--fs-xs);color:var(--text-secondary)}
+.ps-tab-ico{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:var(--r-sm);background:var(--bg-surface-3);color:var(--text-muted)}
+.ps-tab.is-on{border-color:var(--border-brand);background:var(--bg-card);box-shadow:var(--shadow-card);font-weight:600;color:var(--brand-text)}
+.ps-tab.is-on .ps-tab-ico{background:var(--brand-soft);color:var(--brand-text)}
+
+/* ── التحديث: خطٌّ ٣px بلون الهوية يتحرك أعلى المحتوى + شارة؛ لا يحجب المحتوى ولا يعطّله ── */
+.ps[data-ps="refreshing"]{display:flex;align-items:center;min-height:0;padding-top:calc(3px + var(--sp-2));margin-bottom:var(--sp-2);overflow:hidden;pointer-events:none}
+.ps-line{position:absolute;inset:0 0 auto 0;height:3px;border-radius:var(--r-pill);overflow:hidden;background:var(--brand-soft)}
+.ps-line::after{content:'';position:absolute;top:0;bottom:0;inset-inline-start:-36%;width:36%;border-radius:inherit;background:var(--brand-primary);animation:ps-run 1.2s ease-in-out infinite}
+.ps-badge{display:inline-flex;align-items:center;gap:var(--sp-2);padding:var(--sp-1) var(--sp-3);border-radius:var(--r-pill);border:1px solid var(--border-brand-soft);background:var(--bg-card);color:var(--brand-text);font-size:var(--fs-xs);font-weight:600;line-height:1.6}
+.ps-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--brand-primary)}
+
+/* ── البطاقتان: الفشل والفراغ ── */
+.ps[data-ps="error"],.ps[data-ps="empty"]{display:flex;align-items:center;justify-content:center;min-height:320px;padding:var(--sp-4) 0}
+.ps.ps-region[data-ps="error"],.ps.ps-region[data-ps="empty"]{min-height:0;padding:0}
+.ps-card{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:100%;max-width:460px;padding:var(--sp-6) var(--sp-5);border-radius:var(--r-xl);border:1px solid var(--border-subtle);background:var(--bg-card);color:var(--text-secondary);text-align:center}
+.ps-empty{background:var(--brand-pattern) center/96px 96px,var(--bg-card)}
+.ps-ico{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;margin-bottom:var(--sp-1);font-size:var(--fs-lg);font-weight:700;line-height:1;background:var(--brand-soft);color:var(--brand-text)}
+.ps-ico{position:relative}
+.ps-empty .ps-ico:empty::before,.ps-empty .ps-ico:empty::after{content:'';position:absolute;inset:13px;border:2px solid currentColor}
+.ps-empty .ps-ico:empty::before{transform:rotate(45deg)}
+.ps-fail .ps-ico{background:var(--danger-bg);color:var(--danger-text)}
+.ps-fail .ps-ico::before{content:'!'}
+.ps-title{font-size:var(--fs-md);font-weight:700;line-height:1.6;color:var(--text-primary)}
+.ps-text{margin:0;font-size:var(--fs-sm);line-height:1.8;color:var(--text-secondary);overflow-wrap:anywhere}
+.ps-note{box-sizing:border-box;width:100%;margin:0;padding:var(--sp-2) var(--sp-3);border-radius:var(--r-md);font-size:var(--fs-xs);line-height:1.7;text-align:start}
+.ps-note-info{background:var(--info-bg);color:var(--info-text);border:1px solid var(--info-border)}
+.ps-note-warn{background:var(--warning-bg);color:var(--warning-text);border:1px solid var(--warning-border)}
+.ps-acts{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--sp-2);margin-top:var(--sp-2)}
+.ps-btn{min-height:44px;min-width:44px;margin-top:var(--sp-2);padding:0 var(--sp-5);border-radius:var(--r-md);border:1px solid var(--brand-primary);background:var(--brand-primary);color:var(--text-on-brand);font:700 var(--fs-sm)/1 var(--font-ui);cursor:pointer}
+.ps-acts .ps-btn{margin-top:0}
+.ps-btn:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.ps-btn:focus-visible{outline:2px solid var(--brand-ring);outline-offset:2px}
+.ps-btn-2{background:var(--bg-card);color:var(--brand-text);border-color:var(--border-brand)}
+.ps-btn-2:hover{background:var(--brand-soft);border-color:var(--border-brand)}
+.ps-region .ps-card{max-width:none;padding:var(--sp-4);border:0;background-color:transparent}
+.ps-region .ps-ico{width:32px;height:32px;font-size:var(--fs-md)}
+
+/* ── الشريط النحيف لرسائل غير التحميل (حفظ · تعارض · جلسة · صلاحية · مسودة) — تملكه الصفحة، والمظهر هنا ── */
+.ps-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-2) var(--sp-3);margin-bottom:var(--sp-3);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-md);border:1px solid var(--info-border);background:var(--info-bg);color:var(--info-text);font-family:var(--font-ui);font-size:var(--fs-sm);line-height:1.7}
+.ps-bar > span{flex:1;min-width:0}
+.ps-bar > button{flex-shrink:0;min-height:44px;padding:0 var(--sp-4);border-radius:var(--r-md);border:1px solid var(--info-border);background:var(--bg-card);color:var(--info-text);font:600 var(--fs-sm)/1 var(--font-ui);cursor:pointer}
+
+/* ── شريطُ «تعذّر التحديث»: فوق المحتوى الباقي، بلون التنبيه ── */
+.ps[data-ps="stale"]{margin-bottom:var(--sp-3)}
+.ps-stale{margin-bottom:0;border-color:var(--warning-border);background:var(--warning-bg);color:var(--warning-text)}
+.ps-stale > button{border-color:var(--warning-border);color:var(--warning-text)}
+.ps-shell > .ps.ps-shell-bar[data-ps="stale"]{position:static;padding:18px 18px 0;margin:0;pointer-events:auto}
+.ps-shell > .ps[data-ps="error"]{min-height:420px}
+/* قراءةٌ ثانوية فشلت عند الدخول: الصفحةُ الحيّة ظاهرة، والشريطُ فوقها (منطقةُ الغلاف تُقدَّم بالترتيب بلا مسّ عقد الصفحة) */
+.bs-main[data-ps-note]{display:flex;flex-direction:column}
+.bs-main[data-ps-note] > .ps-shell{display:block;order:-1;padding:18px 18px 0}
+.bs-main[data-ps-note] > .ps-shell > .ps[data-ps="stale"]{margin:0}
+
+/* ── بوابة الغلاف: مكانُ الشاشة يرسمه المكوّن (‎.sc-ps‎) فيتنحّى هيكلُ الغلاف القديم وحلقتُه ── */
+.sc-placeholder:has(> .sc-ps:not([hidden])){height:auto !important;min-height:0;padding:0;background:transparent;overflow:visible}
+.sc-placeholder:has(> .sc-ps:not([hidden]))::before,.sc-placeholder:has(> .sc-ps:not([hidden]))::after{content:none !important}
+.bs-main > .sc-host > .sc-placeholder:has(> .sc-ps:not([hidden])){min-height:420px;padding:0;background:transparent;margin:0 0 var(--sp-3)}
+.bs-main > .sc-host > .sc-placeholder > .sc-ps{padding:var(--sp-5) var(--sp-4) 0}
+
+/* ── الدخول الهادئ: عتامة + ٨px (٠٫٤ ث)، وتدرّج ٥٠ م.ث لأول عشرة صفوف ── */
+.ps-enter{animation:ps-in .4s ease both}
+.ps-enter tbody > tr:nth-child(-n+10){animation:ps-in .4s ease backwards}
+.ps-enter tbody > tr:nth-child(2){animation-delay:50ms}
+.ps-enter tbody > tr:nth-child(3){animation-delay:100ms}
+.ps-enter tbody > tr:nth-child(4){animation-delay:150ms}
+.ps-enter tbody > tr:nth-child(5){animation-delay:200ms}
+.ps-enter tbody > tr:nth-child(6){animation-delay:250ms}
+.ps-enter tbody > tr:nth-child(7){animation-delay:300ms}
+.ps-enter tbody > tr:nth-child(8){animation-delay:350ms}
+.ps-enter tbody > tr:nth-child(9){animation-delay:400ms}
+.ps-enter tbody > tr:nth-child(10){animation-delay:450ms}
+@keyframes ps-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ps-fade{from{opacity:0}to{opacity:1}}
+@keyframes ps-run{0%{inset-inline-start:-36%}100%{inset-inline-start:100%}}
+
+@media (max-width:640px){
+  .ps-shell,.ps-tabbox,.ps-tabs{box-sizing:border-box;min-width:0;max-width:100%}
+  .ps-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ps-tools{grid-template-columns:minmax(0,1fr) 44px 44px}
+  .ps-card{padding:var(--sp-5) var(--sp-4)}
+  .ps-acts .ps-btn{flex:1 1 100%}
+}
+@media (prefers-reduced-motion:reduce){
+  .ps-skel,.ps-bone,.ps-line::after,.ps-enter,.ps-enter tbody > tr{animation:none !important}
+  .ps-line::after{width:100%}
+}
+@media print{.ps,.ps-bar,.ps-shell{display:none !important}}
