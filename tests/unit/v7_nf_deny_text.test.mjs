@@ -88,7 +88,7 @@ async function reopenNoReason(x) {
 /* what each refusal must read like: [record, page ('' = no page clause), verb] and the Arabic reason per stored code */
 const TEXT = {
   [KR]: ['الجولات اليومية', 'المتابعة اليومية', 'تعديل'], [KE]: ['قائمة الموظفين', 'موظفو الإدارة', 'تعديل'], [KT]: ['المهام', 'المهام', 'تعديل'],
-  [KPLAT]: ['إعدادات المنصة', '', 'تعديل'], [KCU]: ['عهد الموظفين', 'موظفو الإدارة', 'إضافة'], [KDS]: ['الإحصائيات اليومية', 'الإحصائيات اليومية', 'تعديل'],
+  [KPLAT]: ['إعدادات المنصة', '', 'تعديل'], [KCU]: ['عهد الموظفين', 'موظفو الإدارة', 'تعديل'], [KDS]: ['الإحصائيات اليومية', 'الإحصائيات اليومية', 'تعديل'],
   [KRETRO]: ['نافذة استدراك الاسترشاد', 'نظام الاسترشاد', 'فتح'], [KNF]: ['التنبيهات والتعاميم', '', 'الوصول إلى'],
 };
 const WHY = {
@@ -370,6 +370,9 @@ test('V7 nf-deny · every reason code that exists in the server source has an Ar
   const known = new Set([...codes.keys()].map((c) => (c.endsWith('…') ? c.slice(0, -1) : c)));
   assert.deepEqual(Object.keys(W.NF_DENY_WHY).filter((k) => !known.has(k)), [], 'phrases without a code in the source');
   assert.equal(W.nfDenyWhy(''), W.NF_DENY_GENERIC); assert.equal(W.nfDenyWhy(null), W.NF_DENY_GENERIC); assert.equal(W.nfDenyWhy('TEST_ONLY'), W.NF_DENY_GENERIC); assert.equal(W.NF_DENY_GENERIC, GENERIC);
+  /* the verb: not stored in the sec row — neutral «تعديل» unless the row itself says otherwise */
+  assert.deepEqual([[KR, 'perm'], [KR, 'keydel'], [KCU, 'custody:type-delete'], [KRETRO, 'retro.open:perm'], [KRETRO, 'retro.close:perm'], [KNF, 'notification-scope'], [KNF, 'super']].map((a) => W.nfDenyVerb(a[0], a[1])),
+    ['تعديل', 'حذف', 'تعديل', 'فتح', 'إغلاق', 'الوصول إلى', 'الوصول إلى']);
   assert.equal(W.nfDenyWhy('toString'), W.NF_DENY_GENERIC); assert.equal(W.nfDenyWhy('__proto__'), W.NF_DENY_GENERIC);
   for (const [code, phrase] of Object.entries(WHY)) assert.equal(W.nfDenyWhy(code), phrase, code);
   /* count forms */

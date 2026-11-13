@@ -3153,8 +3153,8 @@ async function nfRemind(env, A, id, base, automatic) {
      (tests/unit/v7_nf_deny_text) reads the client source and fails when either drifts.
    • reason: NF_DENY_WHY — one phrase per reason code of the server (the same test enumerates the codes from the source and fails
      on a code without a phrase). Unknown code → NF_DENY_GENERIC, never the code.
-   • verb: the sec row does not store it. «تعديل» unless the row itself says otherwise (keydel · custody type create/delete ·
-     retro open/close); the notifications route logs refused reads as well, so its verb is the neutral «الوصول إلى».
+   • verb: the sec row does not store it. «تعديل» unless the row itself says otherwise (keydel → «حذف» · retro open/close →
+     «فتح»/«إغلاق»); the notifications route logs refused reads as well, so its verb is the neutral «الوصول إلى».
    • grouping (nfSecurityPoll): rows of one poll batch, in (ts,id) order; a row joins the open group of its (uid,target,detail)
      when its ts is within NF_DENY_WIN_MS of that group's FIRST row, else it opens a new group. One notice per group, keyed
      security:<id of the first row> (the key that row always had), counted «(٥ محاولات خلال دقيقة)». Groups do not span polls. */
@@ -3264,8 +3264,7 @@ function nfDenyVerb(target, detail) {
   if (resName(target || "") === NF_REV) return "الوصول إلى";
   if (/^retro\.open:/.test(s)) return "فتح";
   if (/^retro\.close:/.test(s)) return "إغلاق";
-  if (s === "keydel" || s === "custody:type-delete") return "حذف";
-  if (s === "custody:type-create") return "إضافة";
+  if (s === "keydel") return "حذف";
   return "تعديل";
 }
 function nfDenyCount(n) {
