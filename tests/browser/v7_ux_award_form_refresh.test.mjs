@@ -4,7 +4,10 @@
    · the typed values stay on screen and editable during the refresh, the refresh line and badge show, nothing is disabled;
    · the save guards are exactly as before: while the re-read is in flight nothing is «confirmed» (no stamp base) and a save is
      refused with its existing message before any request is sent;
-   · after the re-read the same values are still there and the guards pass again. */
+   · after the re-read the same values are still there and the guards pass again;
+   · a re-read that FAILS (owner decision): the form stays on screen with its values, still editable, under the component strip
+     «تعذّر التحديث — المعروض قد لا يكون الأحدث» with «أعد المحاولة» — no failure card in place of the form; the guards refuse
+     as during a refresh; the button re-reads and the strip leaves. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { startLab, LAB } from './local_server.mjs';
@@ -39,7 +42,8 @@ test('award: the nomination form being filled survives a refresh; the save guard
     const gate = { slow: false, reads: 0 };
     await page.route('**/api/award**', async (route) => {
       if (route.request().method() !== 'GET') return route.continue();
-      gate.reads++; if (gate.slow) await new Promise((r) => setTimeout(r, 5000));
+      gate.reads++; if (gate.fail) return route.abort('failed').catch(() => {});
+      if (gate.slow) await new Promise((r) => setTimeout(r, 5000));
       return route.continue().catch(() => {});
     });
     await s.go('#/award/new', 3500);
@@ -76,6 +80,27 @@ test('award: the nomination form being filled survives a refresh; the save guard
     const ok = await page.evaluate(() => { const host = document.querySelector('.sc-host[data-sc-name="Award"]'), key = Object.keys(host).find((k) => k.startsWith('__reactFiber$'));
       let f = host[key]; while (f && !(f.stateNode && f.stateNode.logic && f.stateNode.logic._bcMutate)) f = f.return; const L = f.stateNode.logic; return { confirmed: !!L._bcData('records'), base: !!L._bcStamp().base }; });
     assert.deepEqual(ok, { confirmed: true, base: true }, 'after the re-read the guards pass again');
+
+    /* the re-read fails while the form is open */
+    gate.fail = true; const posts2 = s.writes.length;
+    await page.evaluate(() => { const d = window.KIVO.BassamDepts.active(); window.dispatchEvent(new CustomEvent('bassam:remote', { detail: { keys: ['bsdept:' + d + ':bassam_award_v1'] } })); });
+    await page.waitForSelector('main .ps-stale', { timeout: 15000 });
+    const stale = await form(page), strip = await page.evaluate(() => { const e = document.querySelector('main .ps-stale'); return { text: e.querySelector('span').textContent, buttons: [...e.querySelectorAll('button')].map((x) => x.textContent), role: e.getAttribute('role'), cards: document.querySelectorAll('main .ps-card.ps-fail').length }; });
+    assert.deepEqual(strip, { text: 'تعذّر التحديث — المعروض قد لا يكون الأحدث', buttons: ['أعد المحاولة'], role: 'alert', cards: 0 }, 'the strip, and no failure card');
+    assert.deepEqual(stale.states, ['stale']);
+    assert.ok(stale.phone && stale.phone.shown && stale.work.shown, 'the form stays on screen when the re-read fails');
+    assert.equal(stale.phone.value, '0500000001'); assert.equal(stale.mail.value, 'TEST_ONLY@example.gov.sa'); assert.equal(stale.work.value, 'TEST_ONLY وصف العمل المتميز — تكملة');
+    assert.equal(stale.phone.disabled, false); assert.equal(stale.work.disabled, false); assert.equal(stale.inert, false);
+    await page.locator('main ' + WORK).first().pressSequentially(' ٢');                              // still editable
+    assert.equal((await form(page)).work.value, 'TEST_ONLY وصف العمل المتميز — تكملة ٢');
+    const g2 = await guards(page);
+    assert.deepEqual(g2, { confirmed: false, base: false, ok: 0, err: 'invalid', message: 'لم يصل تأكيد كامل من الخادم؛ أعد الإجراء نفسه لتأكيد طلبك' }, 'nothing is confirmed on stale content');
+    assert.equal(s.writes.length, posts2, 'no save request left the browser');
+    gate.fail = false; const reads2 = gate.reads;
+    await page.locator('main .ps-stale button').click();
+    await page.waitForFunction(() => ![...document.querySelectorAll('main .ps')].some((e) => !e.hidden), null, { timeout: 15000 });
+    assert.ok(gate.reads > reads2, 'the retry re-reads');
+    const healed = await form(page); assert.deepEqual(healed.states, []); assert.equal(healed.work.value, 'TEST_ONLY وصف العمل المتميز — تكملة ٢');
     assert.deepEqual(s.errs, [], 'no page errors');
   } finally { try { if (s) await s.ctx.close(); } catch (e) { /* closed */ } await b.close(); await lab.close(); }
 });

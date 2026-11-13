@@ -98,7 +98,7 @@ Object.assign(Component.prototype, {
       token.done = true; token.failed = !result.ok;
       if (!result.ok) {
         token.message = result.message; token.card = result.err === "network" || result.err === "invalid" || result.status >= 500;
-        if (this._bcLast) this._bcLast[key] = 0; this.setState({ [key]: null }); return;
+        if (!token.card && this._bcLast) this._bcLast[key] = 0; this.setState({ [key]: null }); return;
       }
       const data = { ...result.data, _contextKey: context.key, _sig: signature };
       this.setState({ [key]: data });
@@ -195,6 +195,6 @@ Object.assign(Component.prototype, {
     const message = this.state.bcMessage || refused && failed.message || (mixed ? "تغيّرت البيانات أثناء القراءة؛ حدّث النتائج للحصول على نسخة متسقة" : "");
     return { bcReady: complete && !mixed, bcNotice: !!message || pending, bcMessage: message || "جارٍ تأكيد العملية — مسودتك باقية حتى يصل التأكيد",
       bcCanRefresh: !pending && (!!refused || /^تغيّرت البيانات/.test(message)), bcRefresh: refresh,
-      bcStates: el => KIVO.PageStates?.host(el, { page: this.__host?.__name, retry: refresh, state: failed?.card ? "error" : complete ? busy && !mixed ? "refreshing" : "ready" : failed ? "ready" : "loading" }) };
+      bcStates: el => KIVO.PageStates?.host(el, { page: this.__host?.__name, retry: refresh, state: failed?.card ? complete ? "stale" : "error" : complete ? busy && !mixed ? "refreshing" : "ready" : failed ? "ready" : "loading" }) };
   },
 });

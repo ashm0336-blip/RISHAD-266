@@ -2,7 +2,8 @@
    مكوّنٌ واحد لأربع حالات في منطقة المحتوى، بهيكلٍ واحدٍ لكل الصفحات (صفُّ بطاقات مؤشرات + بطاقةُ محتوى فيها شريط أدوات وصفوف):
      loading     أول تحميل: الهيكلُ الواحد وامضاً — بلا نص ولا زر، ولا شيء إن انتهى التحميل قبل ٣٠٠ م.ث
      refreshing  تحديثُ صفحةٍ معروضة: خطٌّ ٣px متحرك + شارة «يُحدَّث من الخادم»؛ المحتوى (تملكه الصفحة) يبقى ظاهراً غير محجوب
-     error       فشل التحميل: بطاقةٌ في وسط المحتوى بزرٍّ واحد «أعد المحاولة» — وتُعاد المحاولة تلقائياً عند حدث online
+     stale       فشلُ إعادة قراءةٍ والمحتوى معروض: المحتوى يبقى ظاهراً كما هو، وفوقه شريطٌ «تعذّر التحديث — المعروض قد لا يكون الأحدث» بزرّ «أعد المحاولة»
+     error       فشل التحميل ولا محتوى: بطاقةٌ في وسط المحتوى بزرٍّ واحد «أعد المحاولة» — وتُعاد المحاولة تلقائياً عند حدث online
      empty       لا بيانات: بطاقةٌ هادئة؛ الأزرار لمن يمرّ فحصُه (الفحص نفسُه القائم في الصفحة يُمرَّر في can) + ملاحظات
      ready       المحتوى وصل: يُخلى المضيف ويدخل المحتوى بهدوء (enter)
    قاعدةُ الغلاف الواحدة (آخر الملف): عند كل دخولٍ إلى مسار — إن كان محتواه في ذاكرة الجلسة ظهر فوراً مع الخط والشارة حتى تنتهي
@@ -21,6 +22,7 @@
     failName: "المحتوى",
     failLine: "لم يصل رد من الخادم. بياناتك المحفوظة لم تتأثر، وتُعاد المحاولة تلقائياً عند عودة الاتصال.",
     retry: "أعد المحاولة",
+    stale: "تعذّر التحديث — المعروض قد لا يكون الأحدث",
     emptyTitle: "لا توجد بيانات بعد"
   };
   /* تجاوزاتُ الاسم في «تعذّر تحميل <الاسم>» حيث الاسمُ الآلي (اسم التبويب وإلا اسم الصفحة من pages.json) ركيك أو غامض —
@@ -32,7 +34,7 @@
     "employees": "بيانات الموظفين", "admin/import": "صفحة الاستيراد", "profile": "صفحتك",
     "dstats/haram": "إحصائيات المسجد الحرام", "dstats/nabawi": "إحصائيات المسجد النبوي"
   };
-  var live = [];
+  var live = [], recovering = false;
 
   function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
@@ -82,6 +84,10 @@
     } else if (st === "refreshing") {
       el.appendChild(mk("i", "ps-line"));
       el.appendChild(mk("span", "ps-badge", STR.refreshing));
+    } else if (st === "stale") {
+      var note = mk("div", "ps-bar ps-stale"); note.setAttribute("role", "alert"); note.appendChild(mk("span", "", STR.stale));
+      if (typeof s.retry === "function") { var redo = mk("button", "", STR.retry); redo.type = "button"; redo.addEventListener("click", function () { retry(rec); }); note.appendChild(redo); }
+      el.appendChild(note);
     } else if (st === "error") {
       var c = card("fail", STR.failTitle.replace("{name}", s.name || STR.failName), STR.failLine);
       c.setAttribute("role", "alert");
@@ -105,7 +111,7 @@
       el.appendChild(k);
     }
   }
-  function retry(rec) { var f = rec.spec.retry; if (rec.spec.state === "error" && typeof f === "function") { try { f(); } catch (e) { /* الإعادةُ تملكها الصفحة */ } } }
+  function retry(rec) { var f = rec.spec.retry; if ((rec.spec.state === "error" || rec.spec.state === "stale") && typeof f === "function") { try { f(); } catch (e) { /* الإعادةُ تملكها الصفحة */ } } }
 
   function find(el) { for (var i = 0; i < live.length; i++) if (live[i].el === el) return live[i]; return null; }
   function prune() { live = live.filter(function (r) { if (r.el.isConnected !== false) return true; clearTimeout(r.timer); return false; }); }
@@ -143,8 +149,8 @@
 
   /* عودةُ الاتصال: كل مضيفٍ في حالة الفشل تُعاد محاولتُه مرةً واحدة (auto:false لمن يملك إعادتَه بنفسه — بوابةُ الغلاف) */
   window.addEventListener("online", function () {
-    prune();
-    live.slice().forEach(function (rec) { if (rec.spec.state === "error" && rec.spec.auto) retry(rec); });
+    prune(); recovering = true;
+    try { live.slice().forEach(function (rec) { if ((rec.spec.state === "error" || rec.spec.state === "stale") && rec.spec.auto) retry(rec); }); } finally { recovering = false; }
   });
 
   /* ── الاسم من سجل الصفحات (manifests/pages.json عبر KIVO_MANIFEST) ── */
@@ -153,8 +159,9 @@
     if (M) return M;
     try {
       var K = KIVO.KIVO_MANIFEST;
-      M = { pages: K.clone("pages"), routes: K.clone("routeNames"), boxes: K.clone("containers"), comps: K.keys.indexOf("pageComponents") !== -1 ? K.clone("pageComponents") : {} };
-    } catch (e) { return { pages: [], routes: {}, boxes: [], comps: {} }; }
+      var opt = function (k) { return K.keys.indexOf(k) !== -1 ? K.clone(k) : {}; };
+      M = { pages: K.clone("pages"), routes: K.clone("routeNames"), boxes: K.clone("containers"), comps: opt("pageComponents"), strips: opt("pageTabs"), icons: opt("tabIcons") };
+    } catch (e) { return { pages: [], routes: {}, boxes: [], comps: {}, strips: {}, icons: {} }; }
     return M;
   }
   function route(hash) { var m = /^#?\/?([A-Za-z0-9]+)(?:\/([A-Za-z0-9]+))?/.exec(hash == null ? (window.location && window.location.hash) || "" : hash); return m ? { page: m[1], tab: m[2] || "" } : { page: "", tab: "" }; }
@@ -209,9 +216,13 @@
      عنوانُ الصفحة يرسمه الغلاف في الشريط العلوي من أول لحظة. ثم تظهر الصفحة الحيّة (بدخولٍ هادئ إن سبقها هيكل).
      لا طلبَ يُضاف ولا يُعاد ترتيبه: المراقبةُ عدٌّ لطلبات القراءة الجارية وحده، والوعدُ يعود كما هو. طلباتُ المؤقِّتات (المزامنة وسحبُها /api/get · الحضور · الجرس ومراقبُه) لا تُعدّ.
      الغلافُ ينتقل على مرحلتين (يُفرغ المحتوى ثم يركّب الصفحة): الدخولُ يبدأ من لحظة الإفراغ نفسِها، فلا إطارَ فارغاً بين الصفحتين.
-     صفحةٌ لا تقرأ شيئاً عند الدخول تظهر بعد مهلة الهدوء (QUIET) بلا هيكل. الفشلُ (بطاقةُ الفشل · انتهاء الجلسة) يكشف الصفحة فوراً. */
-  var TIMER = /^\/api\/(?:changes|presence|notifications|get)\b|^\/api\/aud\?first=1/, QUIET = 100, LIMIT = 30000;
-  var flights = [], seen = {}, who = "", cur = null, watched = null, observer = null;
+     صفحةٌ لا تقرأ شيئاً عند الدخول تظهر بعد مهلة الهدوء (QUIET) بلا هيكل.
+     فشلُ القراءة (خطأ شبكة أو 5xx لطلبٍ من طلبات الدخول، أو بطاقةُ فشلٍ رسمتها الصفحة): إن كان محتوى الذاكرة معروضاً بقي ظاهراً وفوقه شريطُ
+     «تعذّر التحديث» (stale)؛ وإلا فبطاقةُ الفشل الكاملة — بطاقةُ الصفحة إن رسمتها، وإلا بطاقةُ الغلاف باسم الشاشة. «أعد المحاولة» وعودةُ الاتصال
+     يعيدان تركيبَ الصفحة (KIVO.BassamNav.again) فتعيد قراءتَها كدخولٍ جديد. انتهاءُ الجلسة يكشف الصفحة كما هي.
+     الذاكرة: حتى KEEP مساراً (الأحدث مغادرةً)؛ الأقدمُ يُسقط فيعود هيكلاً عند فتحه. */
+  var TIMER = /^\/api\/(?:changes|presence|notifications|get)\b|^\/api\/aud\?first=1/, QUIET = 100, LIMIT = 30000, KEEP = 20;
+  var flights = [], seen = {}, who = "", cur = null, watched = null, observer = null, clock = 0;
 
   function mainEl() { return document.querySelector("main.bs-main"); }
   function routeHost(main) { for (var n = main && main.firstElementChild; n; n = n.nextElementSibling) if (n.classList.contains("sc-host")) return n; return null; }
@@ -222,30 +233,45 @@
   function actor() { try { var b = window.__BS_BOOT || {}, D = KIVO.BassamDepts; return String(b.uid || "") + "\0" + String(D && D.active ? D.active() : ""); } catch (e) { return ""; } }
   function hashNow() { return String((window.location && window.location.hash) || ""); }
 
-  /** تبويباتُ مسارٍ من سجل الصفحات: [{ name, on }] — أوراقُ الصفحة غيرُ الخارجة عنها بترتيبها (وللحاوية مراجعُها)، لمن يملك عرضَها؛ أقلُّ من تبويبين = لا شريط. */
+  /** تبويباتُ مسارٍ كما ترسمها صفحتُه: [{ name, on, icon }] — أوراقُ الصفحة غيرُ الخارجة عنها (وللحاوية مراجعُها) لمن يملك عرضَها بالفحص القائم نفسِه،
+      ومعها تبويباتُ العرض المعلنة في السجل (shellTabs: تبويبٌ ترسمه الصفحة وليس ورقةً في الشجرة — يظهر مع ورقته «as»). الترتيبُ والأيقونات من
+      شريط الصفحة نفسِه (pageTabs · tabIcons: يستخرجهما البناء من قالب الصفحة). أقلُّ من تبويبين = لا شريط. */
   function tabs(hash) {
-    var mf = manifest(), r = route(hash), out = [], P = null, i;
+    var mf = manifest(), r = route(hash), out = [], P = null, i, slug = r.page;
     try { P = KIVO.BassamPerm || null; } catch (e) { P = null; }
-    var can = function (page, leaf) { try { return leaf ? !P || !P.canSub || !!P.canSub(page, leaf, "view") : !P || !P.can || !!P.can(page, "view"); } catch (e) { return true; } };
+    var can = function (page, leaf) { try { return leaf ? !P || (P.subOn ? !!P.subOn(page, leaf) : !P.canSub || !!P.canSub(page, leaf, "view")) : !P || !P.can || !!P.can(page, "view"); } catch (e) { return true; } };
     var box = pick(mf.boxes, function (c) { return c.nav === r.page; });
     if (box) {
       box.refs.forEach(function (ref) { var x = ref.split("/"), ok = true; try { ok = !P || !P.kpiPanelOk || !!P.kpiPanelOk(x[0], x[1] || ""); } catch (e) { ok = true; } if (ok) out.push({ name: box.names[ref], key: ref }); });
     } else {
       var page = pick(mf.pages, function (p) { return p.nav === r.page; }); if (!page) return [];
       var all = (page.subs || []).concat(page.tabs || []), order = page.seq || all.map(function (x) { return "leaf:" + x.key; });
+      slug = page.module || slug;
       order.forEach(function (s) {
         var k = s.split(":")[1], leaf = pick(all, function (x) { return x.key === k; }), other = s.indexOf("page:") === 0 ? pick(mf.pages, function (p) { return p.key === k; }) : null;
         if (other) { if (can(other.key)) out.push({ name: other.name, key: other.nav }); }
         else if (leaf && !leaf.offPage && can(page.key, leaf.key)) out.push({ name: leaf.name, key: leaf.key });
       });
+      (page.shellTabs || []).forEach(function (t) { if (can(page.key, t.as)) out.push({ name: t.name, key: "" }); });
     }
     if (out.length < 2) return [];
-    var hit = -1; for (i = 0; i < out.length; i++) if (out[i].key === r.tab) hit = i;
-    return out.map(function (t, n) { return { name: t.name, on: n === (hit < 0 ? 0 : hit) }; });
+    var drawn = mf.strips[slug] || [], place = function (n) { for (var j = 0; j < drawn.length; j++) if (drawn[j][0] === n) return j; return -1; }, any = drawn.length && drawn[0][0] === "*" ? drawn[0][1] : "";
+    out.forEach(function (t, n) { t.at = place(t.name); t.n = n; });
+    out.sort(function (x, y) { return (x.at < 0 || y.at < 0 ? x.n - y.n : x.at - y.at); });
+    var hit = -1; for (i = 0; i < out.length; i++) if (out[i].key && out[i].key === r.tab) hit = i;
+    return out.map(function (t, n) { return { name: t.name, on: n === (hit < 0 ? 0 : hit), icon: mf.icons[t.at < 0 ? any : drawn[t.at][1]] || "" }; });
   }
   function strip(list) {
     var wrap = mk("div", "ps-tabbox"), bar = mk("div", "bs-hbar bs-tabstrip ps-tabs"); wrap.setAttribute("aria-hidden", "true");
-    list.forEach(function (t) { var b = mk("div", "ps-tab" + (t.on ? " is-on" : "")); b.appendChild(mk("div", "ps-tab-ico")); b.appendChild(mk("span", "", t.name)); bar.appendChild(b); });
+    list.forEach(function (t) {
+      var b = mk("div", "ps-tab" + (t.on ? " is-on" : "")), ico = mk("div", "ps-tab-ico");
+      /* جسدُ الأيقونة من فهرس الأيقونات الذي تُبنى منه الصفحات (ثابتُ بناء، لا مُدخَل مستخدم) — يُحلَّل وثيقةَ SVG ويُستورد عقدةً */
+      if (t.icon) try {
+        var svg = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + t.icon + "</svg>", "image/svg+xml");
+        ico.appendChild(document.importNode(svg.documentElement, true));
+      } catch (e) { /* بلا أيقونة: المربّع وحده */ }
+      b.appendChild(ico); b.appendChild(mk("span", "", t.name)); bar.appendChild(b);
+    });
     wrap.appendChild(bar); return wrap;
   }
 
@@ -276,8 +302,30 @@
   }
   function keep(node) {
     if (!cur || !cur.done || !node || node.querySelector(".ps-fail,.sc-placeholder")) return;
-    var rec = { snap: freeze(node) };
+    var rec = { snap: freeze(node), at: ++clock };
     seen[cur.last] = rec; if (cur.last === cur.norm) seen[cur.hash] = rec;
+    trim(seen, KEEP);
+  }
+  /** يُبقي أحدثَ n محتوىً محفوظاً ويُسقط الأقدم (السجلُّ يبقى «مزوراً بلا محتوى» ⇒ هيكلٌ عند العودة). */
+  function trim(map, n) {
+    var recs = []; for (var k in map) if (map[k] && map[k].snap && recs.indexOf(map[k]) < 0) recs.push(map[k]);
+    recs.sort(function (a, b) { return b.at - a.at; });
+    for (var i = n; i < recs.length; i++) recs[i].snap = null;
+    return recs.length;
+  }
+  function failedNow() { var h = cur && cur.host; return !!(cur && (cur.failed || h && h.isConnected !== false && h.querySelector(".ps-fail"))); }
+  function gone() { try { var S = KIVO.__BS_SRV; return !!(S && S.sesChanged && S.sesChanged()); } catch (e) { return false; } }
+  /* «أعد المحاولة» وعودةُ الاتصال: إن رسمت الصفحةُ المحجوبة بطاقةَ فشلها فإعادتُها هي إعادتُها (لا طلبَ مكرراً)، وإلا يُعاد تركيبُ الصفحة */
+  function again() {
+    if (!cur || !cur.held) return;
+    var own = live.filter(function (r) { return !r.shell && r.spec.state === "error" && typeof r.spec.retry === "function" && cur.host && cur.host.contains(r.el); });
+    if (own.length && cur.bar) {
+      cur.held = false; cur.failed = false; cur.t0 = Date.now(); host_(cur.bar, { state: "refreshing" });
+      if (!recovering) own.forEach(retry);                       /* عند online أصحابُ البطاقات يعيدون بأنفسهم */
+      cur.limit = setTimeout(function () { reveal(true); }, LIMIT); setTimeout(tick, 0); return;
+    }
+    try { var N = KIVO.BassamNav; if (N && N.again) { N.again(); return; } } catch (e) { /* يُكشف أدناه */ }
+    reveal(true);
   }
   function clearShell(main) {
     var sh = main && shellOf(main); if (!sh) return;
@@ -301,25 +349,32 @@
       cur.skel = mk("div", ""); sh.appendChild(cur.skel);
       cur.ctl = host_(cur.skel, { state: "loading" });
     }
-    cur.limit = setTimeout(function () { reveal(); }, LIMIT);
+    cur.limit = setTimeout(function () { reveal(true); }, LIMIT);
     tick();
   }
   function host_(el, spec) { var c = host(el, spec), rec = find(el); if (rec) rec.shell = true; return c; }
   function tick() {
-    if (!cur || cur.done) return;
+    if (!cur || cur.done || cur.held) return;
     if (reading()) {
       clearTimeout(cur.quiet); cur.quiet = 0;
       if (cur.bar && cur.host) host_(cur.bar, { state: "refreshing" });   /* الخط والشارة لقراءةٍ جارية فعلاً — لا لفاصل تركيب الصفحة */
       clearTimeout(cur.poll); cur.poll = setTimeout(tick, 200);      /* مكانُ شاشةٍ مضمَّنة يزول بلا حدث — يُعاد الفحص */
       return;
     }
-    if (!cur.quiet) cur.quiet = setTimeout(function () { if (cur) cur.quiet = 0; if (reading()) tick(); else reveal(); }, QUIET);
+    if (!cur.quiet) cur.quiet = setTimeout(function () { if (cur) cur.quiet = 0; if (reading()) tick(); else reveal(false); }, QUIET);
   }
-  function reveal() {
+  function reveal(force) {
     if (!cur || cur.done) return;
     stop();
     var shown = !!(cur.ctl && cur.ctl.shown()), main = cur.main;
     if (!cur.host) { cur = null; clearShell(main); main.removeAttribute("data-ps-wait"); return; }
+    if (force !== true && failedNow() && !gone()) {
+      if (cur.snap) { cur.held = true; host_(cur.bar, { state: "stale", retry: again }); return; }            /* المحتوى يبقى، وفوقه الشريط */
+      if (!cur.host.querySelector(".ps-fail")) {                                                             /* لا محتوى، والصفحةُ لم ترسم بطاقتَها: بطاقةُ الغلاف */
+        cur.held = true; clearShell(main); var card = mk("div", ""); shellOf(main).appendChild(card);
+        host_(card, { state: "error", name: describe(cur.host.getAttribute("data-sc-name") || "").name, retry: again }); return;
+      }
+    }
     cur.done = true; cur.norm = cur.last = hashNow();
     clearShell(main); main.removeAttribute("data-ps-wait");
     seen[cur.hash] = seen[cur.norm] = seen[cur.norm] && !seen[cur.norm].snap ? seen[cur.norm] : { snap: null };
@@ -361,8 +416,9 @@
         var path = u.replace(/^[a-z]+:\/\/[^/]+/i, "");
         if (m === "GET" && path.indexOf("/api/") === 0 && !TIMER.test(path)) {
           var t = Date.now(), end = function () { var i = flights.indexOf(t); if (i >= 0) flights.splice(i, 1); tick(); };
+          var bad = function () { if (cur && !cur.done && !cur.held && t >= cur.t0 - 50) cur.failed = true; };
           flights.push(t); if (cur && cur.done) cur.last = hashNow();
-          p.then(end, end); tick();
+          p.then(function (res) { if (res && res.status >= 500) bad(); end(); }, function (e) { if (!e || e.name !== "AbortError") bad(); end(); }); tick();
         }
       } catch (e) { /* عدٌّ فقط — الطلبُ يمضي كما هو */ }
       return p;
@@ -373,14 +429,14 @@
     watch();
     var main = mainEl(), h = main && routeHost(main), to = hashNow();
     if (!main || !cur || cur.host !== h || !cur.done || to === cur.last || route(to).page !== route(cur.last).page) return;
-    seen[cur.last] = { snap: freeze(copy(h)) };
+    seen[cur.last] = { snap: freeze(copy(h)), at: ++clock }; trim(seen, KEEP);
     begin(main, h, to);
   });
   /* العنوانُ الذي تكتبه الصفحةُ لتبويبها بلا حدث (replaceState): يُقرأ بعد كل نقرة */
   document.addEventListener("click", function () { watch(); setTimeout(function () { if (cur && cur.done && cur.host && cur.host.isConnected !== false) cur.last = hashNow(); }, 0); }, true);
-  window.addEventListener("bs:session-gone", function () { seen = {}; reveal(); });
+  window.addEventListener("bs:session-gone", function () { seen = {}; reveal(true); });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { watch(); }); else watch();
-  var api = { host: host, enter: enter, describe: describe, tabs: tabs, STR: STR, NAMES: NAMES, DELAY: DELAY, QUIET: QUIET };
+  var api = { host: host, enter: enter, describe: describe, tabs: tabs, trim: trim, STR: STR, NAMES: NAMES, DELAY: DELAY, QUIET: QUIET };
   KIVO.PageStates = api;
   KIVO.__dcStates = { draw: gate };
 })();

@@ -16,7 +16,16 @@
    «A read in flight» = an API GET (or the page's own file) started and not yet answered; the sync long-poll, presence beats and the
    notification bell (with its observer's start mark, /api/aud?first=1) are timer-driven, not page-driven, and are left out — and with
    the long-poll, the pull it triggers when a change arrives (/api/get?keys=…: the sync layer's own request, never a page's).
-   KIVO_UX_DELAY (ms, default 1500) is the delay put on every server answer. KIVO_UX_MATRIX_OUT=<file.md> writes the table of what
+   The header the shell draws while loading must be the page's own: the same tabs with the same icons, in the same order, as the strip the
+   page then draws (compared on every first / entry cell).
+   Two more observations per route, with the page's reads FAILING (aborted at the network):
+     return-fail — the route was opened before, and its re-read on return fails ⇒ the previous content stays, with the component strip
+                   «تعذّر التحديث — المعروض قد لا يكون الأحدث» and its «أعد المحاولة»; no failure card, no skeleton, no reading text; the
+                   button recovers the page. Only where the route re-reads on return (seen in its return cell).
+     entry-fail  — first entry within the session and its reads fail ⇒ the full failure card (one, with its retry), no content, no strip; the
+                   button recovers the page. Only where the route reads on entry. (A cold load cannot be failed this way: the same requests
+                   carry the sign-in and the shell's own start.)
+   KIVO_UX_VIEWPORT=390x844 runs the matrix at that size (default 1366x900). KIVO_UX_DELAY (ms, default 1500) is the delay put on every server answer. KIVO_UX_MATRIX_OUT=<file.md> writes the table of what
    each cell showed (built from these same observations); KIVO_UX_ROUTES=a,b/c limits the run to some routes (a full run is the gate). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -27,6 +36,8 @@ import { chromium, openAs } from './lab_browser.mjs';
 const SRC = process.env.KIVO_SRC || new URL('../../src', import.meta.url).pathname;
 const M = JSON.parse(fs.readFileSync(SRC + '/manifests/pages.json', 'utf8'));
 const DELAY = +(process.env.KIVO_UX_DELAY || 1500);
+const VIEW = /^(\d+)x(\d+)$/.exec(process.env.KIVO_UX_VIEWPORT || '1366x900'), VIEWPORT = { width: +VIEW[1], height: +VIEW[2] };
+const STALE = 'تعذّر التحديث — المعروض قد لا يكون الأحدث', RETRY = 'أعد المحاولة';
 const AWAY = '#/links', AWAY2 = '#/staffing';             /* the «other page»: a page of the shell itself that reads nothing (and, for that page itself, the monthly schedule) */
 const CAP = ['tasks', 'daily', 'dreport', 'admin', 'emps', 'dstats', 'staff', 'plan', 'planning', 'irshad', 'seized', 'award', 'links', 'help'];
 /* routes the lab account cannot open, each with its reason (the test checks that they really do not open) */
@@ -77,11 +88,15 @@ const SAMPLER = () => {
     const live = [...main.querySelectorAll(':scope > .sc-host, :scope > [data-screen-label]')].filter((h) => vis(h) && [...h.querySelectorAll(':scope > *, :scope > .sc-host > *')]
       .some((c) => !c.matches('.sc-placeholder, .ps, style, .sc-host') && vis(c) && c.getBoundingClientRect().height > 40));
     const strips = [...main.querySelectorAll('.bs-tabstrip')].filter(vis).map((s) => [...s.querySelectorAll('span')].filter((c) => c.childElementCount === 0 && c.getBoundingClientRect().width > 4).map((c) => c.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean));
+    /* each visible strip as [label, icon markup] pairs, and whether the shell drew it */
+    const icons = [...main.querySelectorAll('.bs-tabstrip')].filter(vis).map((st) => ({ shell: !!st.closest('.ps-shell > .ps-tabbox'), tabs: [...st.querySelectorAll('svg')].map((g) => { const tab = g.parentElement.parentElement, lab = tab && tab.querySelector('span'); return [lab ? lab.textContent.replace(/\s+/g, ' ').trim() : '', g.innerHTML.replace(/ data-dc-tpl="\d+"/g, '').replace(/ xmlns="[^"]*"/g, '').replace(/\s+/g, ' ').replace(/> </g, '><').trim()]; }).filter((x) => x[0]) }));
+    const staleBar = [...main.querySelectorAll('.ps-stale')].filter(vis)[0], cards = [...main.querySelectorAll('.ps-card.ps-fail')].filter(vis);
     const txt = [...main.querySelectorAll('span, p, div, b')].some((e) => e.childElementCount === 0 && /جارٍ (?:ال)?(?:قراءة|تحميل)/.test(e.textContent) && vis(e));
     const gate = [...main.querySelectorAll('.sc-placeholder')].some((p) => !p.querySelector('.ps-fail, .sc-placeholder-error'));
     X.log.push({ t: Math.round(performance.now() - X.t0), read: flying > 0 || gate, what: gate ? 'page gate' : what.join(' '), title: crumb ? crumb.textContent.trim() : '', tabs: strips, skel: skels.length, shape: skels.map(shape),
       live: live.length > 0, snap: snap.length > 0, line: [...main.querySelectorAll('.ps-line')].some((e) => vis(e, 2)), badge: [...main.querySelectorAll('.ps-badge')].some(vis), text: txt,
-      fail: [...main.querySelectorAll('.ps-fail, .bs-retry')].some(vis) });
+      fail: [...main.querySelectorAll('.ps-fail, .bs-retry')].some(vis), icons,
+      stale: staleBar ? staleBar.textContent.replace(/\s+/g, ' ').trim() : '', cards: cards.length, cardButtons: cards[0] ? [...cards[0].querySelectorAll('button')].map((x) => x.textContent) : [] });
   };
   setInterval(scan, 15);
 };
@@ -114,10 +129,38 @@ function judge(kind, r, all) {
     }
   }
   const end = log[log.length - 1];
+  if (kind !== 'return' && r.tabs.length) {
+    /* the shell's header against the page's own strip: same tabs, same icons, same order */
+    const drawn = log.map((s) => s.icons.find((x) => x.shell)).filter(Boolean).pop(), own = (end.icons.find((x) => !x.shell) || {}).tabs;
+    cell.icons = !!drawn && !!own && JSON.stringify(drawn.tabs) === JSON.stringify(own) && drawn.tabs.every((t) => t[1].length > 10);
+    if (!cell.icons) add('the shell header is not the page\'s strip: ' + JSON.stringify((drawn || {}).tabs || null).slice(0, 160) + ' ≠ ' + JSON.stringify(own || null).slice(0, 160));
+  }
   if (!end.live) add('the content never arrived', end);
   if (end.skel || end.badge || end.snap) add('a loading state is left on screen at the end', end);
   if (kind !== 'return' && !noRead && reads[reads.length - 1].t > GRACE + 150 && !cell.skeleton) add('a read was in flight and no skeleton was ever shown');
   if (kind === 'return' && !noRead && reads[reads.length - 1].t > 400 && !cell.lineBadge) add('a read was in flight on a return and the line and badge never showed');
+  return cell;
+}
+
+/* the two failing observations: what is on screen once the failure has shown, and across the samples before it */
+function judgeFail(kind, r, log, recovered) {
+  const bad = [], add = (m, s) => { if (bad.length < 4) bad.push(m + (s ? ' @' + s.t + 'ms' : '')); }, end = log[log.length - 1] || {};
+  const cell = { read: true, header: true, skeleton: log.some((s) => s.skel > 0), cached: !!end.snap, lineBadge: log.some((s) => s.line && s.badge), forbidden: log.some((s) => s.text), shapes: [], bad,
+    shows: end.stale ? 'strip' : end.cards ? 'card' : 'neither' };
+  for (const s of log) { if (s.text) add('a reading text shows', s); if (s.title !== r.title) { cell.header = false; add('title «' + s.title + '»', s); } }
+  if (kind === 'return-fail') {
+    for (const s of log) { if (s.skel) add('a skeleton on a failing return', s); if (s.cards) add('a failure card while content exists', s); if (!s.snap && !s.live && s.t > 120) add('no content on a failing return', s); }
+    if (!end.snap && !end.live) add('the content did not stay');
+    if (!end.stale.startsWith(STALE) || !end.stale.endsWith(RETRY)) add('the strip is not shown («' + end.stale + '»)');
+    if (end.badge) add('the refresh badge is left with the strip');
+  } else {
+    if (end.cards !== 1) add(end.cards + ' failure cards instead of one');
+    if (JSON.stringify(end.cardButtons) !== JSON.stringify([RETRY])) add('the card buttons are ' + JSON.stringify(end.cardButtons));
+    if (end.stale) add('a stale strip with no content');
+    if (end.snap) add('cached content on a first entry');
+    for (const s of log) if (s.stale) add('a stale strip before the card', s);
+  }
+  if (!recovered) add('«أعد المحاولة» did not bring the page back');
   return cell;
 }
 
@@ -133,17 +176,24 @@ test('every pages.json route × first open · first entry within the session · 
   const b = await chromium.launch(); const rows = [], failures = [], skipped = [], shapes = new Set();
   try {
     /* the platform administrator: the one lab account that owns every page (the administration centre included) */
-    const s = await openAs(b, lab, LAB.superUn, LAB.superPw, { onPage: (p) => p.addInitScript(SAMPLER) }); const page = s.page; page.setDefaultTimeout(60000);
-    let slow = false;
+    const s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: VIEWPORT, onPage: (p) => p.addInitScript(SAMPLER) }); const page = s.page; page.setDefaultTimeout(60000);
+    let slow = false, broken = false;
     await page.route(/\/api\/|\/assets\/pages\//, async (route) => {
-      if (slow && route.request().method() === 'GET' && !/\/api\/(?:changes|presence)\b/.test(route.request().url())) await new Promise((r) => setTimeout(r, DELAY));
+      const q = route.request(), u = new URL(q.url());
+      /* broken: the page-driven reads fail at the network (the timer-driven ones and the page files go on) */
+      if (broken && q.method() === 'GET' && u.pathname.startsWith('/api/') && !/^\/api\/(?:changes|presence|notifications|get)\b|^\/api\/aud\?first=1/.test(u.pathname + u.search)) return route.abort('failed').catch(() => {});
+      if (slow && q.method() === 'GET' && !/\/api\/(?:changes|presence)\b/.test(q.url())) await new Promise((r) => setTimeout(r, DELAY));
       return route.continue().catch(() => {});
     });
+    /* a failing observation ends when the strip or the card has been on screen for a second (at most 60 s) */
+    const failed = async () => { await page.waitForFunction(() => { const L = window.__ux && window.__ux.log; if (!L || L.length < 70) return false; const tail = L.slice(-60); return tail.every((x) => x.stale || x.cards); }, null, { timeout: 60000, polling: 100 }).catch(() => {}); };
+    const retryAndSettle = async (sel) => { broken = false; const btn = page.locator(sel).first(); if (!(await btn.count())) return false; await page.evaluate(() => window.__ux.mark()); await btn.click(); await settle(); const L = await take(), e = L[L.length - 1] || {}; return !!e.live && !e.stale && !e.cards && !e.skel; };
     /* a cell ends when the content is on screen and nothing has been in flight for 1.2 s (at most 60 s) */
     const settle = async () => { await page.waitForFunction(() => { const L = window.__ux && window.__ux.log; if (!L || L.length < 20) return false; const tail = L.slice(-80); return tail.length === 80 && tail.every((x) => !x.read && !x.skel && !x.badge); }, null, { timeout: 60000, polling: 100 }).catch(() => {}); };
     const take = () => page.evaluate(() => window.__ux.log);
     const coldAt = async (hash) => { await page.evaluate((h) => { history.replaceState(null, '', location.pathname + h); }, hash); await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForSelector('main.bs-main', { timeout: 60000 }); };
-    const goto = async (hash) => { await page.evaluate((h) => { window.__ux.mark(); location.hash = h; }, hash); };
+    /* the samples of a cell start when the address change is handled (the event), not when it is asked for — a sample taken in between would still be the page being left */
+    const goto = async (hash) => { await page.evaluate((h) => { window.__ux.mark(); if (location.hash === h) return; window.addEventListener('hashchange', () => window.__ux.mark(), { once: true }); location.hash = h; }, hash); };
     for (const r of list) {
       const away = '#/' + r.route === AWAY ? AWAY2 : AWAY;
       slow = false; await coldAt(away); await settle();
@@ -166,15 +216,31 @@ test('every pages.json route × first open · first entry within the session · 
         rows.push({ route: r.route, kind, ...c });
         if (c.bad.length) failures.push(r.route + ' · ' + kind + ': ' + c.bad.join(' | '));
       }
+      /* return-fail: the route is open (cold load above); leave, break the reads, come back */
+      if (cells.return.some((x) => x.read)) {
+        slow = false; await goto(away); await settle();
+        broken = true; await goto('#/' + r.route); await failed();
+        const L = await take(), ok = await retryAndSettle('main .ps-stale button'), c = judgeFail('return-fail', r, L, ok);
+        rows.push({ route: r.route, kind: 'return-fail', ...c }); if (c.bad.length) failures.push(r.route + ' · return-fail: ' + c.bad.join(' | '));
+      } else rows.push({ route: r.route, kind: 'return-fail', skip: 'no re-read on return' });
+      /* entry-fail: a fresh session on the other page, the reads broken, first entry */
+      if (cells.entry.some((x) => x.read)) {
+        broken = false; slow = false; await coldAt(away); await settle();
+        broken = true; await goto('#/' + r.route); await failed();
+        const L = await take(), ok = await retryAndSettle('main .ps-card.ps-fail button'), c = judgeFail('entry-fail', r, L, ok);
+        rows.push({ route: r.route, kind: 'entry-fail', ...c }); if (c.bad.length) failures.push(r.route + ' · entry-fail: ' + c.bad.join(' | '));
+      } else rows.push({ route: r.route, kind: 'entry-fail', skip: 'no read on entry' });
+      broken = false;
     }
     assert.deepEqual(s.errs, [], 'no page errors');
   } finally {
     await b.close(); await lab.close();
     if (process.env.KIVO_UX_MATRIX_OUT) {
       const y = (v) => v ? 'yes' : 'no';
-      const md = ['| route | cell | read in flight | header (title + tabs) | skeleton | cached content | line + badge | forbidden text | verdict |', '|---|---|---|---|---|---|---|---|---|']
-        .concat(rows.map((c) => '| ' + [c.route, c.kind, c.read ? 'yes' : 'no read', y(c.header), y(c.skeleton), c.kind === 'return' ? y(c.cached || !c.read) : '—', y(c.lineBadge), y(c.forbidden), c.bad.length ? 'FAIL: ' + c.bad[0] : 'ok'].join(' | ') + ' |'));
-      fs.writeFileSync(process.env.KIVO_UX_MATRIX_OUT, '# Route × state matrix (server delayed ' + DELAY + ' ms)\n\n' + md.join('\n') + '\n\nSkeleton shapes seen: ' + shapes.size + '\n\nExcluded routes:\n' + skipped.map((x) => '- ' + x).join('\n') + '\n');
+      const md = ['| route | cell | read in flight | header (title + tabs) | header icons = page | skeleton | cached content | line + badge | failure shown as | forbidden text | verdict |', '|---|---|---|---|---|---|---|---|---|---|---|']
+        .concat(rows.map((c) => c.skip ? '| ' + [c.route, c.kind, '—', '—', '—', '—', '—', '—', '—', '—', 'not applicable: ' + c.skip].join(' | ') + ' |'
+          : '| ' + [c.route, c.kind, c.read ? 'yes' : 'no read', y(c.header), c.icons === undefined ? '—' : y(c.icons), y(c.skeleton), /^return/.test(c.kind) ? y(c.cached || !c.read) : c.kind === 'entry-fail' ? y(c.cached) : '—', y(c.lineBadge), c.shows || '—', y(c.forbidden), c.bad.length ? 'FAIL: ' + c.bad[0] : 'ok'].join(' | ') + ' |'));
+      fs.writeFileSync(process.env.KIVO_UX_MATRIX_OUT, '# Route × state matrix (server delayed ' + DELAY + ' ms, viewport ' + VIEWPORT.width + '×' + VIEWPORT.height + ')\n\n' + md.join('\n') + '\n\nSkeleton shapes seen: ' + shapes.size + '\n\nExcluded routes:\n' + skipped.map((x) => '- ' + x).join('\n') + '\n');
     }
   }
   assert.ok(shapes.size <= 1, 'one skeleton shape in every cell (seen ' + shapes.size + ': ' + [...shapes].join(' ‖ ') + ')');

@@ -77,6 +77,17 @@ def main():
     print('generated', len(produced), 'derived files →', S)
 # (الاستدعاء في الأسفل بعد توسعة 247)
 
+def view_tabs(path):
+    """[[label, icon id], …] of the first tab strip (.bs-tabstrip) of a page view; a looped strip gives [['*', icon id]]."""
+    if not os.path.isfile(path): return []
+    src = open(path, encoding='utf-8').read(); m = re.search(r'<div class="[^"]*\bbs-tabstrip\b[^"]*"[^>]*>', src)
+    if not m: return []
+    depth, end = 1, m.end()
+    for t in re.finditer(r'<(/?)div\b', src[m.end():]):
+        depth += -1 if t.group(1) else 1
+        if not depth: end = m.end() + t.start(); break
+    return [[('*' if '{{' in name else name.strip()), icon] for icon, name in re.findall(r'data-i="(i-[0-9a-f]{8})"></svg>\s*</div>\s*<span[^>]*>([^<]+)</span>', src[m.end():end])]
+
 # ── KIVO_247 · AUD-015: manifest الصفحات → كتلة الواجهة + PG_REG في جزء الخادم ─────────────────────────────────────────
 def gen_manifest(S):
     M = json.load(open(os.path.join(S, layout(S)['pagesManifest']), encoding='utf-8'))
@@ -88,6 +99,9 @@ def gen_manifest(S):
     data['operationsReadSets'] = {}
     # V7 UX states: page component name -> module slug, so the shared states component names and shapes a screen from this manifest
     data['pageComponents'] = {}
+    # V7 UX states: the tab strip each page draws (label + icon id, in the page's order), read from the page's own view — so the shell
+    # header shows the page's real tabs and icons from the first instant, from the same source ('*' = one icon for a looped strip)
+    data['pageTabs'] = {}; used = set()
     modules = os.path.join(S, layout(S)['modules'])
     for slug in sorted(os.listdir(modules)):
         meta_path = os.path.join(modules, slug, 'meta.json')
@@ -96,6 +110,11 @@ def gen_manifest(S):
         keys = [k for k in module.get('charter', {}).get('data', []) if re.fullmatch(r'bassam_[a-z0-9_]+', k)]
         data['operationsReadSets'][module['name']] = sorted(set(keys))
         data['pageComponents'][module['name']] = slug
+        tabs = view_tabs(os.path.join(modules, slug, 'view.html'))
+        if tabs: data['pageTabs'][slug] = tabs; used.update(i for _n, i in tabs)
+    # V7 UX states: the icon bodies of those tabs, from the icon catalog the pages themselves are built from (tools/icons.py)
+    catalog = json.load(open(os.path.join(S, 'assets', 'icons', 'catalog.json'), encoding='utf-8'))['icons']
+    data['tabIcons'] = {i: catalog[i]['body'] for i in sorted(used)}
     js = ('/* ═══ KIVO_247 · AUD-015 — manifest الصفحات: المصدرُ الواحد لسجل الصفحات (PAGE_REG) والحاويات (NAV_REG) والعدسات (LENS_REG) وعناوين التبويبات\n'
           '   (TAB_ADDR) وترتيب القائمة وأسمائها (NAVKEYS · NAVNAMES) وأسماء المسارات (_pageNames) — مولَّدٌ من manifests/pages.json بأداة tools/generate.py؛ لا يُحرَّر يدوياً.\n'
           '   المستهلكون (330-auth-perm · 260-bassam-plat · root-logic) يأخذون نسخاً عميقة clone(key) فتبقى مستقلةً كما كانت أدبياتُهم. الخادم يُولَّد منه PG_REG (البنية وحدها). ═══ */\n'

@@ -79,13 +79,35 @@ for (const module of ['seized', 'award']) {
     }
   });
 
-  test(module + ': a failed refresh drops the kept content (no stale success) and shows the failure card', async (t) => {
+  /* Owner decision (reverses «a failed refresh drops the kept content and shows the failure card»): when a re-read fails and content is on
+     screen, the content STAYS and the component shows the «تعذّر التحديث» strip with the retry; the full card is for «no content» only.
+     What does not change: nothing is «confirmed» until a read succeeds, so every save guard still refuses before any request. */
+  test(module + ': a failed refresh keeps the content on screen under the component «stale» strip; the guards still see «not confirmed»; the retry recovers', async (t) => {
     const T = setup(ok(module)); t.after(T.B.cleanup);
     await T.loaded();
     T.box.answer = async () => { throw Error('TEST_ONLY offline'); };
     T.B.page._bcInvalidate(); assert.equal(T.draw().spec.state, 'refreshing');
     await waitFor(() => REQ[module].some((view) => T.B.page._bcReads.get(view)?.failed));
-    const failed = T.draw(); assert.equal(failed.spec.state, 'error'); assert.equal(!!failed.v[flag], false);
+    const failed = T.draw();
+    assert.equal(failed.spec.state, 'stale', 'the strip, not the card'); assert.equal(failed.v[flag], true, 'the content stays');
+    assert.equal(typeof failed.spec.retry, 'function'); assert.equal(failed.v.bcNotice, false, 'the slim bar does not repeat it');
+    for (const view of REQ[module]) assert.equal(T.B.page._bcData(view), null, view + ': not confirmed outside the drawing');
+    const sent = T.B.calls.filter((c) => c.options.method === 'POST').length, refused = await T.B.page._bcMutate('create', { data: {} });
+    assert.equal(refused.ok, 0); assert.equal(refused.err, 'invalid'); assert.equal(T.B.calls.filter((c) => c.options.method === 'POST').length, sent, 'a save on stale content is refused before any request');
+    T.box.answer = ok(module); const before = T.B.calls.length;
+    T.draw().spec.retry();                                        // the strip button and the online event call this
+    const again = await T.loaded();
+    assert.ok(T.B.calls.length > before, 'the retry re-reads'); assert.equal(again.spec.state, 'ready'); assert.equal(again.v[flag], true);
+    for (const view of REQ[module]) assert.ok(T.B.page._bcData(view), view + ' confirmed again');
+  });
+
+  test(module + ': a refused refresh (403) does not keep the content — the refusal stays in the slim bar, as before', async (t) => {
+    const T = setup(ok(module)); t.after(T.B.cleanup);
+    await T.loaded();
+    T.box.answer = async () => json({ ok: 0, err: module + '-denied' }, 403);
+    T.B.page._bcInvalidate(); T.draw();
+    await waitFor(() => REQ[module].some((view) => T.B.page._bcReads.get(view)?.failed));
+    const denied = T.draw(); assert.notEqual(denied.spec.state, 'stale'); assert.notEqual(denied.spec.state, 'error'); assert.equal(!!denied.v[flag], false); assert.equal(denied.v.bcNotice, true);
   });
 
   test(module + ': permission, session and conflict refusals stay outside the component, in the slim bar', async (t) => {

@@ -31,15 +31,15 @@
 .bs-main[data-ps-wait="snap"] > .ps-shell{display:block;padding:0}
 .ps-shell > .ps-snap{pointer-events:none}
 /* الخط والشارة فوق محتوى الذاكرة بلا إزاحةٍ له: الخط على حافته العليا والشارة في ركنه */
-.ps-shell > .ps-shell-bar{position:absolute;inset:0 0 auto 0;z-index:2;justify-content:flex-end;margin:0;padding:calc(3px + var(--sp-1)) var(--sp-2) 0;overflow:visible}
-.ps-shell-bar > .ps-badge{box-shadow:var(--shadow-card)}
+.ps-shell > .ps.ps-shell-bar{position:absolute;inset:0 0 auto 0;z-index:2;justify-content:flex-end;margin:0;padding:3px var(--sp-2) 0;overflow:visible}
+.ps-shell-bar > .ps-badge{box-shadow:var(--shadow-card);padding:0 var(--sp-2);font-size:10px;line-height:1.4}
 .ps-shell > .ps[data-ps="loading"]{min-height:420px}
 .ps-tabbox{border-radius:var(--r-xl);border:2px solid var(--tone-gold-50-a10);background:linear-gradient(90deg,var(--bg-gold-50-a3),transparent,var(--bg-gold-50-a3));padding:var(--sp-3)}
 .ps-tabs{display:flex;align-items:center;justify-content:center;gap:var(--sp-2);padding:var(--sp-1) 0}
 .ps-tab{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;line-height:23px;flex-shrink:0;min-width:170px;padding:var(--sp-3) var(--sp-4);border-radius:var(--r-lg);border:1px solid transparent;font-size:var(--fs-xs);color:var(--text-secondary)}
-.ps-tab-ico{width:36px;height:36px;border-radius:var(--r-sm);background:var(--bg-surface-3)}
+.ps-tab-ico{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:var(--r-sm);background:var(--bg-surface-3);color:var(--text-muted)}
 .ps-tab.is-on{border-color:var(--border-brand);background:var(--bg-card);box-shadow:var(--shadow-card);font-weight:600;color:var(--brand-text)}
-.ps-tab.is-on .ps-tab-ico{background:var(--brand-soft)}
+.ps-tab.is-on .ps-tab-ico{background:var(--brand-soft);color:var(--brand-text)}
 
 /* ── التحديث: خطٌّ ٣px بلون الهوية يتحرك أعلى المحتوى + شارة؛ لا يحجب المحتوى ولا يعطّله ── */
 .ps[data-ps="refreshing"]{display:flex;align-items:center;min-height:0;padding-top:calc(3px + var(--sp-2));margin-bottom:var(--sp-2);overflow:hidden;pointer-events:none}
@@ -78,6 +78,13 @@
 .ps-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-2) var(--sp-3);margin-bottom:var(--sp-3);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-md);border:1px solid var(--info-border);background:var(--info-bg);color:var(--info-text);font-family:var(--font-ui);font-size:var(--fs-sm);line-height:1.7}
 .ps-bar > span{flex:1;min-width:0}
 .ps-bar > button{flex-shrink:0;min-height:44px;padding:0 var(--sp-4);border-radius:var(--r-md);border:1px solid var(--info-border);background:var(--bg-card);color:var(--info-text);font:600 var(--fs-sm)/1 var(--font-ui);cursor:pointer}
+
+/* ── شريطُ «تعذّر التحديث»: فوق المحتوى الباقي، بلون التنبيه ── */
+.ps[data-ps="stale"]{margin-bottom:var(--sp-3)}
+.ps-stale{margin-bottom:0;border-color:var(--warning-border);background:var(--warning-bg);color:var(--warning-text)}
+.ps-stale > button{border-color:var(--warning-border);color:var(--warning-text)}
+.ps-shell > .ps.ps-shell-bar[data-ps="stale"]{position:static;padding:18px 18px 0;margin:0;pointer-events:auto}
+.ps-shell > .ps[data-ps="error"]{min-height:420px}
 
 /* ── بوابة الغلاف: مكانُ الشاشة يرسمه المكوّن (‎.sc-ps‎) فيتنحّى هيكلُ الغلاف القديم وحلقتُه ── */
 .sc-placeholder:has(> .sc-ps:not([hidden])){height:auto !important;min-height:0;padding:0;background:transparent;overflow:visible}

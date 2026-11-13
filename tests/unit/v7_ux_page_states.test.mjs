@@ -32,13 +32,15 @@ const PAGES = [
   { key: 'staff', nav: 'staffing', module: 'staff', name: 'الجدول الشهري', under: 'planning' },
   { key: 'plan', nav: 'plan', module: 'plan', name: 'التشغيل الميداني' },
   { key: 'planning', nav: 'planning', module: 'planning', name: 'الخطة التشغيلية' },
-  { key: 'emps', nav: 'employees', module: 'employees', name: 'موظفو الإدارة', subs: [{ key: 'data', name: 'بيانات الموظفين' }, { key: 'custody', name: 'عهد الموظفين' }] },
+  { key: 'emps', nav: 'employees', module: 'employees', name: 'موظفو الإدارة', shellTabs: [{ name: 'مستودع العهد', as: 'custody' }], subs: [{ key: 'data', name: 'بيانات الموظفين' }, { key: 'custody', name: 'عهد الموظفين' }] },
   { key: 'seized', nav: 'seized', module: 'seized', name: 'نظام المضبوطات', subs: [{ key: 'dash', name: 'لوحة المؤشرات', offPage: true }, { key: 'records', name: 'السجلات' }] },
   { key: 'award', nav: 'award', module: 'award', name: 'جائزة التميز', subs: [{ key: 'new', name: 'ترشيح جديد' }, { key: 'res', name: 'لوحة النتائج' }, { key: 'doc', name: 'المراجع المعتمدة' }] },
   { key: 'admin', nav: 'admin', module: 'admin', name: 'الإعدادات', subs: [{ key: 'oplog', name: 'سجل الحركة' }] },
 ];
 const MANIFEST = { pages: PAGES, containers: [{ key: 'kpis', nav: 'kpis', name: 'مؤشرات الإدارة', refs: ['seized/dash', 'staff'], names: { 'seized/dash': 'لوحة مؤشرات المضبوطات', staff: 'مؤشرات الجدول' } }],
   routeNames: { kpis: 'مؤشرات الإدارة', staffing: 'الجدول الشهري', plan: 'التشغيل الميداني', planning: 'الخطة التشغيلية', employees: 'موظفو الإدارة', seized: 'نظام المضبوطات', award: 'جائزة التميز', admin: 'الإعدادات', sysadmin: 'مركز إدارة رشاد', profile: 'صفحتي' },
+  pageTabs: { employees: [['بيانات الموظفين', 'i-1'], ['عهد الموظفين', 'i-2'], ['مستودع العهد', 'i-3']], award: [['لوحة النتائج', 'i-5'], ['ترشيح جديد', 'i-4']], kpis: [['*', 'i-9']] },
+  tabIcons: { 'i-1': '<path d="M1"></path>', 'i-2': '<path d="M2"></path>', 'i-3': '<path d="M3"></path>', 'i-4': '<path d="M4"></path>', 'i-5': '<path d="M5"></path>', 'i-9': '<path d="M9"></path>' },
   pageComponents: { Staffing: 'staff', 'Operational Plan': 'plan', Planning: 'planning', Employees: 'employees', Seized: 'seized', Award: 'award', Admin: 'admin', KPIs: 'kpis', Profile: 'profile' } };
 
 function world({ reduce = false, hash = '#/staffing' } = {}) {
@@ -165,7 +167,7 @@ test('reduced motion: no entrance class from script, and the stylesheet stops ev
 
 test('one strings table; no device storage; theme variables only; 44 px targets; hidden in print', () => {
   const { P } = world();
-  assert.deepEqual(Object.keys(P.STR).sort(), ['emptyTitle', 'failLine', 'failName', 'failTitle', 'loading', 'refreshing', 'retry']);
+  assert.deepEqual(Object.keys(P.STR).sort(), ['emptyTitle', 'failLine', 'failName', 'failTitle', 'loading', 'refreshing', 'retry', 'stale']);
   assert.equal(P.STR.failTitle, 'تعذّر تحميل {name}'); assert.equal(P.STR.retry, 'أعد المحاولة'); assert.equal(P.STR.refreshing, 'يُحدَّث من الخادم');
   assert.equal(P.DELAY, 300);
   /* every Arabic literal of the component outside comments lives in STR or in the name overrides */
@@ -295,15 +297,20 @@ test('page option: a page names itself and the component takes its name and «wh
 
 test('header tabs of a route come from the pages manifest: the leaves that open in the page, in order; the open one marked; fewer than two = no strip', () => {
   const { P, KIVO } = world(), names = (h) => Array.from(P.tabs(h), (t) => (t.on ? '*' : '') + t.name);
-  assert.deepEqual(names('#/award/res'), ['ترشيح جديد', '*لوحة النتائج', 'المراجع المعتمدة']);
-  assert.deepEqual(names('#/award'), ['*ترشيح جديد', 'لوحة النتائج', 'المراجع المعتمدة'], 'no tab in the address ⇒ the first');
-  assert.deepEqual(names('#/employees/custody'), ['بيانات الموظفين', '*عهد الموظفين']);
+  assert.deepEqual(names('#/award/res'), ['*لوحة النتائج', 'ترشيح جديد', 'المراجع المعتمدة'], 'the order is the page strip\'s own (pageTabs); a tab the strip does not list keeps its place after them');
+  assert.deepEqual(names('#/award'), ['*لوحة النتائج', 'ترشيح جديد', 'المراجع المعتمدة'], 'no tab in the address ⇒ the first drawn');
+  assert.deepEqual(names('#/employees/custody'), ['بيانات الموظفين', '*عهد الموظفين', 'مستودع العهد'], 'the display-only tab (shellTabs) shows with its leaf');
   assert.deepEqual(names('#/seized/records'), [], 'the dashboard leaf lives outside the page ⇒ one tab ⇒ no strip');
   assert.deepEqual(names('#/staffing'), []); assert.deepEqual(names('#/nowhere'), []);
   assert.deepEqual(names('#/kpis'), ['*لوحة مؤشرات المضبوطات', 'مؤشرات الجدول'], 'a container shows its references');
   /* only what the viewer may open: the existing permission checks are asked, nothing new is decided here */
   KIVO.BassamPerm = { can: () => true, canSub: (page, leaf) => !(page === 'award' && leaf === 'doc'), kpiPanelOk: (page) => page === 'seized' };
-  assert.deepEqual(names('#/award/new'), ['*ترشيح جديد', 'لوحة النتائج']);
+  assert.deepEqual(names('#/award/new'), ['لوحة النتائج', '*ترشيح جديد']);
+  /* the store tab follows the custody leaf through the check the page itself uses (BassamPerm.subOn) — no permission of its own */
+  KIVO.BassamPerm = { can: () => true, subOn: (page, leaf) => !(page === 'emps' && leaf === 'custody') };
+  assert.deepEqual(names('#/employees'), [], 'custody off ⇒ neither custody nor the store ⇒ one tab ⇒ no strip');
+  KIVO.BassamPerm = { can: () => true, subOn: () => true, kpiPanelOk: (page) => page === 'seized' };
+  assert.deepEqual(names('#/employees/data'), ['*بيانات الموظفين', 'عهد الموظفين', 'مستودع العهد']);
   assert.deepEqual(names('#/kpis'), [], 'one permitted panel ⇒ no strip');
 });
 
@@ -314,4 +321,55 @@ test('the shell rule keeps to memory and counts reads only: no storage API, time
   assert.match(code, /var p = plain\.apply\(this, arguments\);[\s\S]*?return p;/, 'the same promise goes back to the caller');
   assert.equal(/plain\.(?:call|apply)\(/g.exec(code) && code.match(/plain\.(?:call|apply)\(/g).length, 1, 'one pass-through call, no second request');
   const { P } = world(); assert.equal(P.QUIET, 100);
+});
+
+test('header tab icons are the page\'s own: the icon body of each tab from the build-time strip of the page view; a looped strip gives one icon to all', () => {
+  const { P } = world(), icons = (h) => Array.from(P.tabs(h), (t) => t.icon);
+  assert.deepEqual(icons('#/employees'), ['<path d="M1"></path>', '<path d="M2"></path>', '<path d="M3"></path>']);
+  assert.deepEqual(icons('#/award'), ['<path d="M5"></path>', '<path d="M4"></path>', ''], 'a tab the page strip does not list has no icon (the generator test keeps the real manifest complete)');
+  assert.deepEqual(icons('#/kpis'), ['<path d="M9"></path>', '<path d="M9"></path>']);
+});
+
+test('the real manifest: every tab of every route has the icon of the page strip it was read from; the store tab is display-only', () => {
+  const block = read('src/manifests/255-page-manifest.js'), M = JSON.parse(block.slice(block.lastIndexOf('})(') + 3, block.lastIndexOf(');')));
+  const KIVO = {}, window = { location: { hash: '' }, addEventListener() {}, matchMedia: () => ({ matches: false }) };
+  KIVO.KIVO_MANIFEST = { keys: Object.keys(M), clone: (k) => JSON.parse(JSON.stringify(M[k])) };
+  vm.runInNewContext(SRC, { window, KIVO, document: { createElement: el, addEventListener() {}, querySelector: () => null, readyState: 'complete' }, JSON, Date, setTimeout: () => 0, clearTimeout() {} });
+  const catalog = JSON.parse(read('src/assets/icons/catalog.json')).icons; let strips = 0;
+  for (const nav of Object.keys(M.routeNames)) {
+    const page = M.pages.find((p) => p.nav === nav), slug = (page && page.module) || nav, view = fs.existsSync(new URL('../../src/modules/' + slug + '/view.html', import.meta.url)) ? read('src/modules/' + slug + '/view.html') : '';
+    const tabs = Array.from(KIVO.PageStates.tabs('#/' + nav)); if (!tabs.length) continue; strips++;
+    for (const t of tabs) {
+      /* the page view: the label inside its tab strip, and the icon reference right before it */
+      const looped = /bs-tabstrip[\s\S]{0,400}<sc-for/.test(view), m = looped ? /bs-tabstrip[\s\S]*?data-i="(i-[0-9a-f]{8})"/.exec(view) : new RegExp('data-i="(i-[0-9a-f]{8})"></svg>\\s*</div>\\s*<span[^>]*>' + t.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '</span>').exec(view);
+      assert.ok(m, nav + ': «' + t.name + '» is a tab the page view draws');
+      assert.equal(t.icon, catalog[m[1]].body, nav + ': «' + t.name + '» carries the page\'s icon ' + m[1]);
+    }
+  }
+  assert.ok(strips >= 7, 'routes with a strip: ' + strips);
+  assert.deepEqual(Array.from(KIVO.PageStates.tabs('#/employees'), (t) => t.name), ['بيانات الموظفين', 'عهد الموظفين', 'مستودع العهد']);
+  const emps = M.pages.find((p) => p.key === 'emps');
+  assert.deepEqual(emps.shellTabs, [{ name: 'مستودع العهد', as: 'custody' }]); assert.deepEqual(emps.subs.map((x) => x.key), ['data', 'custody'], 'not a leaf: the page\'s subs are as they were');
+});
+
+test('stale: the content is not touched; a strip with the fixed sentence and one retry; retried once on `online`', () => {
+  const { P, window } = world(), host = el('div'), content = el('div'); let n = 0;
+  P.host(host, { state: 'stale', retry: () => { n++; }, content });
+  assert.equal(host.hidden, false); assert.equal(host.getAttribute('data-ps'), 'stale');
+  const bar = host.cls('ps-stale')[0]; assert.ok(bar, 'the strip'); assert.equal(bar.getAttribute('role'), 'alert');
+  assert.equal(bar.childNodes[0].textContent, 'تعذّر التحديث — المعروض قد لا يكون الأحدث'); assert.equal(P.STR.stale, 'تعذّر التحديث — المعروض قد لا يكون الأحدث');
+  const buttons = host.all((x) => x.tagName === 'BUTTON'); assert.equal(buttons.length, 1); assert.equal(buttons[0].textContent, 'أعد المحاولة');
+  assert.equal(host.cls('ps-card').length, 0, 'no failure card'); assert.equal(host.cls('ps-skel').length, 0);
+  assert.equal(content.getAttribute('aria-busy'), null); assert.equal(content.hidden, false);
+  buttons[0].click(); assert.equal(n, 1); window.fire('online'); assert.equal(n, 2, 'auto-recover on online, as the card');
+  P.host(host, { state: 'ready', retry: () => { n++; } }); window.fire('online'); assert.equal(n, 2, 'not after it left the state');
+});
+
+test('session memory is capped: the most recently left routes keep their content, older ones fall back to the skeleton rule', () => {
+  const { P } = world(), map = {}; for (let i = 1; i <= 25; i++) map['#/r' + i] = { snap: { id: i }, at: i };
+  map['#/alias'] = map['#/r25'];
+  assert.equal(P.trim(map, 20), 25, 'distinct kept contents before the cut (an alias is the same record)');
+  const kept = Object.keys(map).filter((k) => map[k].snap).sort();
+  assert.equal(kept.length, 21); assert.equal(map['#/r5'].snap, null, 'the oldest five are dropped'); assert.ok(map['#/r6'].snap); assert.ok(map['#/alias'].snap);
+  assert.match(SRC, /KEEP = 20/);
 });
