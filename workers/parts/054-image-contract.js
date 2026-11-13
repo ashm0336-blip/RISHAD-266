@@ -67,7 +67,8 @@ var IMG_CAP = 5000;
    · the bounds. IMG_ESC_ROUNDS rounds (a text still changing after them is nested deeper than any writer or person produces) and a budget
      of WORK: one unit per character a round reads plus IMG_ESC_TOK units per token it replaces (measured: a round costs about 1 ns per
      character and 40–200 ns per token, so the units follow the time, whatever the text is made of) — IMG_ESC_WORK per text for a save,
-     IMG_ESC_PASS for all the texts of one sweep pass. Past a bound the answer is UNDECIDED ('rounds' · 'work'), and only then the old
+     IMG_ESC_PASS for all the texts of one sweep pass, whose search of every round for its candidates is charged too (imgEscFind: half a
+     unit per character for the one scan that serves all the scanner-shaped ids, one unit per character for each odd-shaped id asked). Past a bound the answer is UNDECIDED ('rounds' · 'work'), and only then the old
      conservative rule applies: a save that ADDS such a text is refused ('img-escape' — imgForeignIn; one the stored value already holds
      stays, as `had`), the pass holds (imgSweep). */
 var IMG_ESC_HEX = ['3[0-9]', '4[1-9A-Fa-f]', '5[0-9AaCcFf]', '6[1-9A-Fa-f]', '7[0-9Aa]'];
@@ -543,23 +544,34 @@ function imgEscOpsAt(T, j, d, text) {
   for (i = 0; i < parts.length; i++) if (imgEsc(parts[i])) out.push({ t: parts[i], at: 'ops:' + x[0] + '.' + (parts.length === x[1].length ? x[1][i] : '?') + '@' + d });
   return out;
 }
-/* which of the ids still looked for appear in t — as plain substrings, all of them in ONE scan (an alternation; a scan per id costs ten times
-   as much on a text of near misses). After a hit the ids found at that place leave the list and the scan goes on from the same place. */
+/* which of the ids still looked for appear in t — as plain substrings. The scanner-shaped ids (st.left), all of them in ONE scan (an
+   alternation; after a hit the ids found at that place leave the list and the scan goes on from the same place). The odd-shaped ids
+   (st.odd — at most IMG_SWEEP_ODD: only those the pass decides), each by its own indexOf: review, round 2 — an alternation of odd ids made of
+   one repeated character backtracks at every position (seconds per megabyte), indexOf does not. Returns the scans made over t: the caller
+   charges each as work. */
 function imgEscFind(t, st) {
-  var at = 0, m, i, rest;
+  var at = 0, m, i, rest, scans = 0;
+  if (st.odd.length) { scans += st.odd.length; st.odd = st.odd.filter(function (id) { if (t.indexOf(id) < 0) return true; st.keep[id] = 1; return false; }); }
+  if (st.left.length) scans += 0.5;
   while (st.left.length) {
-    if (!st.rx) st.rx = new RegExp(st.left.map(function (id) { return id.replace(/[^A-Za-z0-9_]/g, '\\$&'); }).join('|'), 'g');
+    if (!st.rx) st.rx = new RegExp(st.left.join('|'), 'g');                  /* [a-z0-9_] only (IMG_SCAN_ID_RX): nothing to escape */
     st.rx.lastIndex = at; m = st.rx.exec(t);
-    if (!m) return;
+    if (!m) break;
     at = m.index; rest = [];
     for (i = 0; i < st.left.length; i++) { if (t.startsWith(st.left[i], at)) st.keep[st.left[i]] = 1; else rest.push(st.left[i]); }
     st.left = rest; st.rx = null;
   }
+  return scans;
 }
-/* ids: the candidates of this pass. Returns { keep: [the ids some escape-bearing text names once decoded] } or { hold: why, at: [places] }. */
+/* ids: the candidates this pass decides (of the odd-shaped ones, only those it asks). Returns { keep: [the ids some escape-bearing text names
+   once decoded], work: units spent } or { hold: why, at: [places] }. */
 async function imgEscKeep(env, ids) {
-  var T = imgOpsCols(), w = { n: IMG_ESC_PASS }, st = { left: ids.filter(function (x, j) { return typeof x === 'string' && x && ids.indexOf(x) === j; }), keep: {}, rx: null }, i, why;
-  var look = function (t) { imgEscFind(t, st); };                            /* every round is decoded, also once all the candidates are kept: an undecided text must still be found */
+  var T = imgOpsCols(), w = { n: IMG_ESC_PASS }, uq = ids.filter(function (x, j) { return typeof x === 'string' && x && ids.indexOf(x) === j; }), i, why;
+  var st = { left: uq.filter(function (x) { return IMG_SCAN_ID_RX.test(x); }), odd: uq.filter(function (x) { return !IMG_SCAN_ID_RX.test(x); }), keep: {}, rx: null };
+  /* every round is decoded, also once all the candidates are kept: an undecided text must still be found. A round whose search is not paid
+     for is not searched: the budget is then below zero and the text ends as 'work' (dec, below) */
+  var look = function (t) { var c = (st.odd.length + (st.left.length ? 0.5 : 0)) * t.length; if (c > w.n) { w.n = -1; return; } w.n -= imgEscFind(t, st) * t.length; };
+  var dec = function (t) { var y = imgDeepEach(t, look, w); return y || (w.n < 0 ? 'work' : ''); };
   var tot = await env.DB.batch([
     env.DB.prepare('SELECT COALESCE(SUM(e.n), 0) AS n FROM ' + imgEscKvSrc() + ' e'),
     env.DB.prepare(imgEscOpsSrc() + 'SELECT COALESCE(SUM(n), 0) AS n FROM opsrow')]);
@@ -577,7 +589,7 @@ async function imgEscKeep(env, ids) {
       text = ''; for (got = i; got < rows.length && rows[got].k === rows[i].k; got++) text += JSON.parse(rows[got].q);
       cur = rows[i].k; read += Number(rows[i].n) || 0;
       if (read > IMG_ESC_CHARS) return { hold: 'chars', at: await imgEscWhere(env, T) };
-      if (imgEsc(text) && (why = imgDeepEach(text, look, w))) return { hold: why === 'work' ? 'work' : 'undecided', at: ['kv:' + cur] };
+      if (imgEsc(text) && (why = dec(text))) return { hold: why === 'work' ? 'work' : 'undecided', at: ['kv:' + cur] };
     }
   }
   /* the typed rows, the same way: by (table, unit, resource, row) */
@@ -590,10 +602,10 @@ async function imgEscKeep(env, ids) {
       c = [rows[i].j, rows[i].d, rows[i].r, rows[i].k]; read += Number(rows[i].n) || 0;
       if (read > IMG_ESC_CHARS) return { hold: 'chars', at: await imgEscWhere(env, T) };
       var parts = imgEscOpsAt(T, rows[i].j, rows[i].d, JSON.parse(rows[i].q)), q;
-      for (q = 0; q < parts.length; q++) if ((why = imgDeepEach(parts[q].t, look, w))) return { hold: why === 'work' ? 'work' : 'undecided', at: [parts[q].at] };
+      for (q = 0; q < parts.length; q++) if ((why = dec(parts[q].t))) return { hold: why === 'work' ? 'work' : 'undecided', at: [parts[q].at] };
     }
   }
-  return { keep: Object.keys(st.keep) };
+  return { keep: Object.keys(st.keep), work: IMG_ESC_PASS - w.n };
 }
 /* where the bytes of a 'chars' hold are: the largest places, names only — asked only by such a pass, one batch */
 async function imgEscWhere(env, T) {
@@ -659,7 +671,10 @@ async function imgSweep(env, now, max, maxDead) {
      Fifth review: after the staged parts above — their cleanup never depended on a reference, so a hold does not keep them. */
   var escKeep = [], held = false;
   if (L.length) {
-    var hold = await imgEscHold(env), escIds = L.filter(function (x) { return x.st !== 'dead'; }).map(function (x) { return String(x.img); });
+    /* the ids to look for: exactly the candidates decided below — the oldest `max`, and of the odd-shaped ones only the IMG_SWEEP_ODD asked
+       (the others are deferred, never condemned by this pass: round 2 of the review — every selected id was searched, at seconds each) */
+    var hold = await imgEscHold(env), escOdd = 0, escIds = L.filter(function (x) { return x.st !== 'dead'; }).sort(function (a, b) { return a.ts - b.ts; }).slice(0, max)
+      .map(function (x) { return String(x.img); }).filter(function (x) { return IMG_SCAN_ID_RX.test(x) || ++escOdd <= IMG_SWEEP_ODD; });
     if (hold && escIds.length) {
       var ek;
       try { ek = await imgEscKeep(env, escIds); } catch (e) { swallow('img-sweep-escape', e, env.__rid); ek = { hold: 'unread', at: ['?'] }; }

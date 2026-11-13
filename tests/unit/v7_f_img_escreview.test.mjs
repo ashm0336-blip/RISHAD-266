@@ -229,3 +229,37 @@ test('F1 · the decoder: one round equals the reference (a regex replace) on tok
   const dense = m.imgDeepTexts('\\'.repeat(Math.ceil(m.IMG_ESC_WORK / m.IMG_ESC_TOK) * 2 + 2));
   assert.equal(dense.undecided, true); assert.equal(dense.why, 'work');
 });
+
+/* ── round 2 · the search for the candidates is work too ───────────────────────────────────────────────────────────────────────── */
+/* The reviewer's setup (one of its three values, so that a pass that asks two odd ids fits the budget): a stored value of 6.3 MB ('a' filler + a path nested 15 levels: 16 rounds each, each saveable alone) and stale
+   uploads under odd-shaped 128-character ids made of an 'a' run with one 'b'. The search of every round for every selected candidate (one
+   alternation) was not counted in the pass budget and took 7 s for 12 such ids, 21 s for 46. Now only the odd ids the pass really decides
+   (IMG_SWEEP_ODD) are searched, each by indexOf, the alternation serves the scanner-shaped ids only, and every search of a round is charged. */
+test('round 2 · the search is charged to the pass budget, odd ids are searched only when asked: twelve odd 128-character candidates over a 6.3 MB value nested 15 levels no longer cost seconds; what is kept and what is swept is unchanged', { timeout: 600000 }, async () => {
+  const T = await scene('legacy'), { W, S, id } = T, DB = W.env.DB.db; await settled(T);
+  const m = await internals(['imgEscKeep', 'IMG_ESC_PASS', 'IMG_SWEEP_ODD'], WORKER);
+  const text = JSON.stringify({ t: TAG, pad: 'a'.repeat(6.3e6), p: chain('C:\\u0041bc', 15) });
+  const r = await W.C.save(S.mgr, { [KP]: text }); assert.equal(why(r, KP), null, 'such a value is accepted');
+  const odd = Array.from({ length: 12 }, (_, i) => 'a'.repeat(80 + i) + 'b' + 'a'.repeat(47 - i)), reg = Array.from({ length: 12 }, (_, i) => 'img_cand' + i + '_zz');
+  /* the function itself, with a deterministic counter: the work a call spent */
+  const one = await m.imgEscKeep(W.env, reg.slice(0, 1)), three = await m.imgEscKeep(W.env, reg.slice(0, 1).concat(odd.slice(0, 2)));
+  assert.ok(one.work > 0 && !one.hold, 'the work spent is reported: ' + JSON.stringify(one).slice(0, 120));
+  assert.ok(three.work >= one.work * 2, 'each searched id adds its scans of every round: ' + one.work + ' → ' + three.work);
+  assert.ok(three.work <= m.IMG_ESC_PASS, 'the ids one pass asks: inside the budget');
+  const t0 = performance.now(), all = await m.imgEscKeep(W.env, odd), ms = Math.round(performance.now() - t0);
+  assert.equal(all.hold, 'work', 'twelve odd ids searched in every round is more than a pass may spend: it stops, it does not run on'); assert.deepEqual(all.at, ['kv:' + KP]);
+  /* a real pass: 12 stale odd uploads (one of them named by an escaped spelling in a small value), a regular stale upload */
+  for (const o of odd) await upload(W, S.mgr2, o);
+  const ctl = id('ctl'); await upload(W, S.mgr2, ctl);
+  putKv(W, 'bsdept:zz0:bassam_fake_v1', '{"logo":"' + U('a') + odd[0].slice(1) + '"}');
+  DB.exec("UPDATE imgown SET ts = ts - " + (32 * 864e5) + " WHERE st = 'claim'"); odd.forEach((o, i) => DB.prepare('UPDATE imgown SET ts = ts - ? WHERE img = ?').run((12 - i) * 1000, o));   DB.prepare('UPDATE imgown SET ts = ts - 99000 WHERE img = ?').run(ctl);   /* a pass takes the oldest six: ctl, then odd[0], odd[1] … */
+  const before = own(W, odd[0]), logs = [], t1 = performance.now(); await pass(T, logs); const passMs = Math.round(performance.now() - t1);
+  console.log('# round 2: imgEscKeep with 12 odd ids ' + ms + ' ms (holds: work) · work for 1 regular id ' + one.work + ', + 2 odd ids ' + three.work + ' of ' + m.IMG_ESC_PASS + ' · the whole save that ran the pass ' + passMs + ' ms');
+  assert.deepEqual(holds(logs), [], 'the pass decided');
+  assert.equal(m.IMG_SWEEP_ODD, 2);
+  const s0 = await state(W, odd[0]); assert.equal(s0.r2, PNG, 'the odd upload a value spells by an escape is kept'); assert.equal(s0.st, 'claim'); assert.ok(own(W, odd[0]).ts > before.ts, 'its clock restarted');
+  assert.ok(gone(await state(W, odd[1])), 'the other odd upload asked by this pass, named nowhere, is swept');
+  assert.ok(gone(await state(W, ctl)), 'the regular stale upload is swept');
+  for (const o of odd.slice(2)) { const s = await state(W, o); assert.equal(s.st, 'claim', 'a deferred odd upload is not condemned by this pass'); assert.equal(s.r2, PNG); }
+  assert.ok(ms < 1000, 'imgEscKeep with twelve odd candidates: ' + ms + ' ms'); assert.ok(passMs < 1500, 'the pass: ' + passMs + ' ms');
+});
