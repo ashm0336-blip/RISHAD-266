@@ -85,6 +85,10 @@
 .ps-stale > button{border-color:var(--warning-border);color:var(--warning-text)}
 .ps-shell > .ps.ps-shell-bar[data-ps="stale"]{position:static;padding:18px 18px 0;margin:0;pointer-events:auto}
 .ps-shell > .ps[data-ps="error"]{min-height:420px}
+/* قراءةٌ ثانوية فشلت عند الدخول: الصفحةُ الحيّة ظاهرة، والشريطُ فوقها (منطقةُ الغلاف تُقدَّم بالترتيب بلا مسّ عقد الصفحة) */
+.bs-main[data-ps-note]{display:flex;flex-direction:column}
+.bs-main[data-ps-note] > .ps-shell{display:block;order:-1;padding:18px 18px 0}
+.bs-main[data-ps-note] > .ps-shell > .ps[data-ps="stale"]{margin:0}
 
 /* ── بوابة الغلاف: مكانُ الشاشة يرسمه المكوّن (‎.sc-ps‎) فيتنحّى هيكلُ الغلاف القديم وحلقتُه ── */
 .sc-placeholder:has(> .sc-ps:not([hidden])){height:auto !important;min-height:0;padding:0;background:transparent;overflow:visible}

@@ -217,9 +217,13 @@
      لا طلبَ يُضاف ولا يُعاد ترتيبه: المراقبةُ عدٌّ لطلبات القراءة الجارية وحده، والوعدُ يعود كما هو. طلباتُ المؤقِّتات (المزامنة وسحبُها /api/get · الحضور · الجرس ومراقبُه) لا تُعدّ.
      الغلافُ ينتقل على مرحلتين (يُفرغ المحتوى ثم يركّب الصفحة): الدخولُ يبدأ من لحظة الإفراغ نفسِها، فلا إطارَ فارغاً بين الصفحتين.
      صفحةٌ لا تقرأ شيئاً عند الدخول تظهر بعد مهلة الهدوء (QUIET) بلا هيكل.
-     فشلُ القراءة (خطأ شبكة أو 5xx لطلبٍ من طلبات الدخول، أو بطاقةُ فشلٍ رسمتها الصفحة): إن كان محتوى الذاكرة معروضاً بقي ظاهراً وفوقه شريطُ
-     «تعذّر التحديث» (stale)؛ وإلا فبطاقةُ الفشل الكاملة — بطاقةُ الصفحة إن رسمتها، وإلا بطاقةُ الغلاف باسم الشاشة. «أعد المحاولة» وعودةُ الاتصال
-     يعيدان تركيبَ الصفحة (KIVO.BassamNav.again) فتعيد قراءتَها كدخولٍ جديد. انتهاءُ الجلسة يكشف الصفحة كما هي.
+     فشلُ القراءة (خطأ شبكة أو 5xx لطلبٍ من طلبات الدخول، أو بطاقةُ فشلٍ رسمتها الصفحة):
+       · محتوى الذاكرة معروض ⇒ يبقى ظاهراً وفوقه شريطُ «تعذّر التحديث» (stale)؛
+       · لا محتوى وفشلت القراءةُ الرئيسة ⇒ بطاقةُ الفشل الكاملة. «القراءة الرئيسة فشلت» = الصفحةُ نفسُها رسمت بطاقةَ فشلها (فتُكشف ببطاقتها)، أو فشلت
+         كلُّ قراءات الدخول (سوى قراءة بوابة الغلاف المشتركة /api/operations/read — فشلُها ترسمه البوابةُ بطاقةً) فلا شيء نجح ليُعرض (بطاقةُ الغلاف)؛
+       · لا محتوى وفشلت قراءةٌ ثانوية (نجح غيرُها والصفحةُ لم ترسم بطاقة) ⇒ تُكشف الصفحةُ بما نجح وفوقها الشريطُ نفسُه (data-ps-note).
+     حدُّ القاعدة: صفحةٌ تعرض فشلَ قراءتها الرئيسة بملاحظتها الخاصة (لا ببطاقة المكوّن) ونجحت لها قراءةٌ أخرى تُعامَل «ثانوية» — تظهر بملاحظتها والشريط.
+     «أعد المحاولة» وعودةُ الاتصال يعيدان تركيبَ الصفحة (KIVO.BassamNav.again) فتعيد قراءتَها كدخولٍ جديد. انتهاءُ الجلسة يكشف الصفحة كما هي.
      الذاكرة: حتى KEEP مساراً (الأحدث مغادرةً)؛ الأقدمُ يُسقط فيعود هيكلاً عند فتحه. */
   var TIMER = /^\/api\/(?:changes|presence|notifications|get)\b|^\/api\/aud\?first=1/, QUIET = 100, LIMIT = 30000, KEEP = 20;
   var flights = [], seen = {}, who = "", cur = null, watched = null, observer = null, clock = 0;
@@ -313,14 +317,14 @@
     for (var i = n; i < recs.length; i++) recs[i].snap = null;
     return recs.length;
   }
-  function failedNow() { var h = cur && cur.host; return !!(cur && (cur.failed || h && h.isConnected !== false && h.querySelector(".ps-fail"))); }
+  function failedNow() { var h = cur && cur.host; return !!(cur && (cur.bad > 0 || h && h.isConnected !== false && h.querySelector(".ps-fail"))); }
   function gone() { try { var S = KIVO.__BS_SRV; return !!(S && S.sesChanged && S.sesChanged()); } catch (e) { return false; } }
   /* «أعد المحاولة» وعودةُ الاتصال: إن رسمت الصفحةُ المحجوبة بطاقةَ فشلها فإعادتُها هي إعادتُها (لا طلبَ مكرراً)، وإلا يُعاد تركيبُ الصفحة */
   function again() {
-    if (!cur || !cur.held) return;
+    if (!cur || !(cur.held || cur.note)) return;
     var own = live.filter(function (r) { return !r.shell && r.spec.state === "error" && typeof r.spec.retry === "function" && cur.host && cur.host.contains(r.el); });
     if (own.length && cur.bar) {
-      cur.held = false; cur.failed = false; cur.t0 = Date.now(); host_(cur.bar, { state: "refreshing" });
+      cur.held = false; cur.bad = cur.ok = 0; cur.t0 = Date.now(); host_(cur.bar, { state: "refreshing" });
       if (!recovering) own.forEach(retry);                       /* عند online أصحابُ البطاقات يعيدون بأنفسهم */
       cur.limit = setTimeout(function () { reveal(true); }, LIMIT); setTimeout(tick, 0); return;
     }
@@ -330,7 +334,7 @@
   function clearShell(main) {
     var sh = main && shellOf(main); if (!sh) return;
     for (var i = live.length - 1; i >= 0; i--) if (live[i].shell) { clearTimeout(live[i].timer); live.splice(i, 1); }
-    clear(sh);
+    clear(sh); main.removeAttribute("data-ps-note");
   }
   function stop() { if (cur) { clearTimeout(cur.quiet); clearTimeout(cur.limit); clearTimeout(cur.poll); } }
 
@@ -339,7 +343,7 @@
     var me = actor(); if (me !== who) { who = me; seen = {}; }
     var rec = seen[hash], snap = rec && rec.snap && rec.snap !== host ? rec.snap : null, sh = shellOf(main);
     clearShell(main);
-    cur = { main: main, host: host, hash: hash, norm: hash, last: hash, t0: Date.now(), snap: snap, done: false, quiet: 0, limit: 0, bar: null, skel: null };
+    cur = { main: main, host: host, hash: hash, norm: hash, last: hash, t0: Date.now(), snap: snap, ok: 0, bad: 0, done: false, quiet: 0, limit: 0, bar: null, skel: null };
     main.setAttribute("data-ps-wait", snap ? "snap" : "skel");
     sh.setAttribute("dir", "rtl");
     if (snap) {
@@ -368,17 +372,22 @@
     stop();
     var shown = !!(cur.ctl && cur.ctl.shown()), main = cur.main;
     if (!cur.host) { cur = null; clearShell(main); main.removeAttribute("data-ps-wait"); return; }
+    var note = false;
     if (force !== true && failedNow() && !gone()) {
       if (cur.snap) { cur.held = true; host_(cur.bar, { state: "stale", retry: again }); return; }            /* المحتوى يبقى، وفوقه الشريط */
-      if (!cur.host.querySelector(".ps-fail")) {                                                             /* لا محتوى، والصفحةُ لم ترسم بطاقتَها: بطاقةُ الغلاف */
-        cur.held = true; clearShell(main); var card = mk("div", ""); shellOf(main).appendChild(card);
-        host_(card, { state: "error", name: describe(cur.host.getAttribute("data-sc-name") || "").name, retry: again }); return;
+      if (!cur.host.querySelector(".ps-fail")) {
+        if (!cur.ok) {                                                                                         /* لا محتوى ولا قراءةَ نجحت: بطاقةُ الغلاف */
+          cur.held = true; clearShell(main); var card = mk("div", ""); shellOf(main).appendChild(card);
+          host_(card, { state: "error", name: describe(cur.host.getAttribute("data-sc-name") || "").name, retry: again }); return;
+        }
+        note = true;                                                                                           /* قراءةٌ ثانوية: الصفحةُ بما نجح، وفوقها الشريط */
       }
     }
     cur.done = true; cur.norm = cur.last = hashNow();
     clearShell(main); main.removeAttribute("data-ps-wait");
     seen[cur.hash] = seen[cur.norm] = seen[cur.norm] && !seen[cur.norm].snap ? seen[cur.norm] : { snap: null };
     if (shown && cur.host && cur.host.isConnected !== false) enter(cur.host);
+    if (note) { cur.note = true; var strip_ = mk("div", ""); shellOf(main).appendChild(strip_); main.setAttribute("data-ps-note", ""); host_(strip_, { state: "stale", retry: again }); }
   }
   /* left: صفحةٌ غادرت للتوّ. إن خلا ‎main‎ من أي صفحة (المرحلةُ الأولى من تنقّل الغلاف) والعنوانُ مسارُ صفحة بدأ الدخول بلا مضيف، ويلتحق به المضيفُ حين يُركَّب */
   function sync(left) {
@@ -416,9 +425,10 @@
         var path = u.replace(/^[a-z]+:\/\/[^/]+/i, "");
         if (m === "GET" && path.indexOf("/api/") === 0 && !TIMER.test(path)) {
           var t = Date.now(), end = function () { var i = flights.indexOf(t); if (i >= 0) flights.splice(i, 1); tick(); };
-          var bad = function () { if (cur && !cur.done && !cur.held && t >= cur.t0 - 50) cur.failed = true; };
+          /* حصيلةُ قراءات الدخول: ما نجح وما فشل — قراءةُ بوابة الغلاف المشتركة خارج العدّ (فشلُها بطاقةٌ ترسمها البوابة) */
+          var mine = path.indexOf("/api/operations/read") !== 0, count = function (k) { if (mine && cur && !cur.done && !cur.held && t >= cur.t0 - 50) cur[k]++; };
           flights.push(t); if (cur && cur.done) cur.last = hashNow();
-          p.then(function (res) { if (res && res.status >= 500) bad(); end(); }, function (e) { if (!e || e.name !== "AbortError") bad(); end(); }); tick();
+          p.then(function (res) { count(res && res.status >= 500 ? "bad" : "ok"); end(); }, function (e) { if (!e || e.name !== "AbortError") count("bad"); end(); }); tick();
         }
       } catch (e) { /* عدٌّ فقط — الطلبُ يمضي كما هو */ }
       return p;

@@ -25,6 +25,10 @@
      entry-fail  — first entry within the session and its reads fail ⇒ the full failure card (one, with its retry), no content, no strip; the
                    button recovers the page. Only where the route reads on entry. (A cold load cannot be failed this way: the same requests
                    carry the sign-in and the shell's own start.)
+     secondary-fail — first entry within the session and ONE of the page's reads fails while its others answer, a read the page can do
+                   without (SECONDARY below) ⇒ the page itself shows, with what succeeded, under the same strip; no failure card, no skeleton
+                   left, no reading text; the button recovers. The full card is for a failed MAIN read with no content: the page drew its own
+                   failure card, or every read of the entry failed (the shell gate's shared operations read apart).
    KIVO_UX_VIEWPORT=390x844 runs the matrix at that size (default 1366x900). KIVO_UX_DELAY (ms, default 1500) is the delay put on every server answer. KIVO_UX_MATRIX_OUT=<file.md> writes the table of what
    each cell showed (built from these same observations); KIVO_UX_ROUTES=a,b/c limits the run to some routes (a full run is the gate). */
 import test from 'node:test';
@@ -44,6 +48,13 @@ const CAP = ['tasks', 'daily', 'dreport', 'admin', 'emps', 'dstats', 'staff', 'p
 const EXCLUDED = {
   help: 'the address opens no screen for the lab account: the shell falls back to another page (observed, and checked on every run)',
 };
+
+/* routes that have a secondary read on entry, and the request treated as secondary (found by failing each entry request of each route
+   alone and seeing that the page still draws its content and no failure card). The test fails if the request is no longer made.
+   Routes not listed have one page read (or only the shell gate's operations read): nothing there is secondary. */
+const RETRO = /^\/api\/retro\b/, OVERVIEW = /^\/api\/overview\b/;
+const SECONDARY = { irshad: RETRO, 'irshad/records': RETRO, seized: RETRO, 'seized/records': RETRO, admin: OVERVIEW, 'admin/backup': OVERVIEW, 'admin/oplog': OVERVIEW, 'admin/shifts': OVERVIEW,
+  'admin/ptpls': OVERVIEW, 'admin/import': OVERVIEW, sysadmin: OVERVIEW, profile: /^\/api\/me\/today\b/ };
 
 /* ── the routes and their expected header, from pages.json alone ── */
 function routes() {
@@ -148,7 +159,14 @@ function judgeFail(kind, r, log, recovered) {
   const cell = { read: true, header: true, skeleton: log.some((s) => s.skel > 0), cached: !!end.snap, lineBadge: log.some((s) => s.line && s.badge), forbidden: log.some((s) => s.text), shapes: [], bad,
     shows: end.stale ? 'strip' : end.cards ? 'card' : 'neither' };
   for (const s of log) { if (s.text) add('a reading text shows', s); if (s.title !== r.title) { cell.header = false; add('title «' + s.title + '»', s); } }
-  if (kind === 'return-fail') {
+  if (kind === 'secondary-fail') {
+    for (const s of log) if (s.cards) add('a failure card for a secondary read', s);
+    if (!end.live) add('the page itself is not shown');
+    if (end.snap) add('cached content on a first entry');
+    if (end.skel) add('a skeleton is left');
+    if (!end.stale.startsWith(STALE) || !end.stale.endsWith(RETRY)) add('the strip is not shown («' + end.stale + '»)');
+    cell.shows = end.stale && end.live ? 'page + strip' : cell.shows;
+  } else if (kind === 'return-fail') {
     for (const s of log) { if (s.skel) add('a skeleton on a failing return', s); if (s.cards) add('a failure card while content exists', s); if (!s.snap && !s.live && s.t > 120) add('no content on a failing return', s); }
     if (!end.snap && !end.live) add('the content did not stay');
     if (!end.stale.startsWith(STALE) || !end.stale.endsWith(RETRY)) add('the strip is not shown («' + end.stale + '»)');
@@ -177,17 +195,18 @@ test('every pages.json route × first open · first entry within the session · 
   try {
     /* the platform administrator: the one lab account that owns every page (the administration centre included) */
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: VIEWPORT, onPage: (p) => p.addInitScript(SAMPLER) }); const page = s.page; page.setDefaultTimeout(60000);
-    let slow = false, broken = false;
+    let slow = false, broken = false, only = null, onlyHits = 0;
     await page.route(/\/api\/|\/assets\/pages\//, async (route) => {
       const q = route.request(), u = new URL(q.url());
       /* broken: the page-driven reads fail at the network (the timer-driven ones and the page files go on) */
+      if (only && q.method() === 'GET' && only.test(u.pathname + u.search)) { onlyHits++; return route.abort('failed').catch(() => {}); }
       if (broken && q.method() === 'GET' && u.pathname.startsWith('/api/') && !/^\/api\/(?:changes|presence|notifications|get)\b|^\/api\/aud\?first=1/.test(u.pathname + u.search)) return route.abort('failed').catch(() => {});
       if (slow && q.method() === 'GET' && !/\/api\/(?:changes|presence)\b/.test(q.url())) await new Promise((r) => setTimeout(r, DELAY));
       return route.continue().catch(() => {});
     });
     /* a failing observation ends when the strip or the card has been on screen for a second (at most 60 s) */
     const failed = async () => { await page.waitForFunction(() => { const L = window.__ux && window.__ux.log; if (!L || L.length < 70) return false; const tail = L.slice(-60); return tail.every((x) => x.stale || x.cards); }, null, { timeout: 60000, polling: 100 }).catch(() => {}); };
-    const retryAndSettle = async (sel) => { broken = false; const btn = page.locator(sel).first(); if (!(await btn.count())) return false; await page.evaluate(() => window.__ux.mark()); await btn.click(); await settle(); const L = await take(), e = L[L.length - 1] || {}; return !!e.live && !e.stale && !e.cards && !e.skel; };
+    const retryAndSettle = async (sel) => { broken = false; only = null; const btn = page.locator(sel).first(); if (!(await btn.count())) return false; await page.evaluate(() => window.__ux.mark()); await btn.click(); await settle(); const L = await take(), e = L[L.length - 1] || {}; return !!e.live && !e.stale && !e.cards && !e.skel; };
     /* a cell ends when the content is on screen and nothing has been in flight for 1.2 s (at most 60 s) */
     const settle = async () => { await page.waitForFunction(() => { const L = window.__ux && window.__ux.log; if (!L || L.length < 20) return false; const tail = L.slice(-80); return tail.length === 80 && tail.every((x) => !x.read && !x.skel && !x.badge); }, null, { timeout: 60000, polling: 100 }).catch(() => {}); };
     const take = () => page.evaluate(() => window.__ux.log);
@@ -231,6 +250,14 @@ test('every pages.json route × first open · first entry within the session · 
         rows.push({ route: r.route, kind: 'entry-fail', ...c }); if (c.bad.length) failures.push(r.route + ' · entry-fail: ' + c.bad.join(' | '));
       } else rows.push({ route: r.route, kind: 'entry-fail', skip: 'no read on entry' });
       broken = false;
+      /* secondary-fail: a fresh session, one read the page can do without fails, first entry */
+      if (SECONDARY[r.route]) {
+        slow = false; await coldAt(away); await settle();
+        only = SECONDARY[r.route]; onlyHits = 0; await goto('#/' + r.route); await failed();
+        const hits = onlyHits, L = await take(), ok = await retryAndSettle('main .ps-stale button'), c = judgeFail('secondary-fail', r, L, ok);
+        if (!hits) c.bad.push('the request listed as secondary (' + SECONDARY[r.route] + ') was not made on entry');
+        rows.push({ route: r.route, kind: 'secondary-fail', ...c }); if (c.bad.length) failures.push(r.route + ' · secondary-fail: ' + c.bad.join(' | '));
+      } else rows.push({ route: r.route, kind: 'secondary-fail', skip: 'no secondary read on entry' });
     }
     assert.deepEqual(s.errs, [], 'no page errors');
   } finally {
