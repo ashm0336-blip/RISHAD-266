@@ -1,8 +1,9 @@
 /* V7 UX states · step 3 — the shell gate draws through the one page-states component (lab: TEST_ONLY data, no network).
    Before this step the runtime placeholder was a shimmer block with a spinner shown at once, and the failure was a red bar above it.
    Now, in a real browser over the built package:
-   (1) first load, read delayed ⇒ nothing for 300 ms, then the skeleton of the page's shape (table for the monthly schedule), no text
-       and no button, no old spinner; the content then enters calmly;
+   (1) first load, read delayed ⇒ nothing for 300 ms, then the ONE skeleton (KPI cards + a content card with a toolbar and rows — the
+       three per-page templates are gone by owner decision), drawn by the shell in its own state area, no text and no button, no old
+       spinner; the content then enters calmly;
    (2) read aborted ⇒ the unified card «تعذّر تحميل الجدول الشهري» in the content centre with exactly one «أعد المحاولة»; no old bar;
    (3) the page file itself cannot be fetched ⇒ the same unified card; the button recovers the page;
    (4) session ended ⇒ stays outside the component: the old sign-in card, no unified card. */
@@ -15,12 +16,13 @@ const PAGE_OK = 'main .sc-host[data-sc-name="Staffing"] > :not(.sc-placeholder):
 const WATCH = () => {
   window.__ps = { box: 0, skel: 0, shape: '', text: '', buttons: 0, enter: 0, spinner: '', oldBar: 0 };
   const scan = () => {
-    const P = window.__ps, box = document.querySelector('main .sc-placeholder > .sc-ps[data-ps="loading"]');
+    const P = window.__ps, box = document.querySelector('main > .ps-shell > .ps[data-ps="loading"]'), place = document.querySelector('main .sc-placeholder');
     if (box && !P.box) P.box = performance.now();
     const sk = box && box.querySelector('.ps-skel');
     if (sk && !P.skel) {
-      P.skel = performance.now(); P.shape = sk.className; P.text = box.textContent.trim(); P.buttons = box.querySelectorAll('button').length;
-      P.spinner = getComputedStyle(box.parentNode, '::after').content + '|' + getComputedStyle(box.parentNode, '::before').content;
+      P.skel = performance.now(); P.shape = [...sk.children].map((c) => c.className + ':' + [...c.children].map((x) => x.className.split(' ')[0]).join(',')).join(' '); P.text = box.textContent.trim(); P.buttons = box.querySelectorAll('button').length;
+      P.card = getComputedStyle(sk.querySelector('.ps-panel')).backgroundColor + '|' + getComputedStyle(document.body).backgroundColor;
+      P.spinner = place ? getComputedStyle(place, '::after').content + '|' + getComputedStyle(place, '::before').content : 'no place';
     }
     if (document.querySelector('main .bs-retry')) P.oldBar++;
     if (document.querySelector('main .sc-host.ps-enter') && !P.enter) P.enter = performance.now();
@@ -59,7 +61,8 @@ test('shell gate: skeleton after 300 ms, unified failure card for a failed read 
     await page.waitForTimeout(300);
     const w = await page.evaluate(() => window.__ps);
     assert.ok(w.skel - w.box >= 250, 'nothing is drawn for the first 300 ms (skeleton came ' + Math.round(w.skel - w.box) + ' ms after the place)');
-    assert.match(w.shape, /ps-skel-table/, 'the monthly schedule gets the table skeleton');
+    assert.equal(w.shape, 'ps-kpis:ps-kpi,ps-kpi,ps-kpi,ps-kpi ps-panel:ps-tools,ps-rows', 'the one skeleton: a row of KPI cards, then the content card with its toolbar and rows');
+    assert.notEqual(w.card.split('|')[0], w.card.split('|')[1], 'the content card stands out from the page background');
     assert.equal(w.text, '', 'no text in the skeleton'); assert.equal(w.buttons, 0, 'no button in the skeleton');
     assert.equal(w.spinner, 'none|none', 'the old spinner and shimmer block are gone');
     assert.equal(w.oldBar, 0, 'no old retry bar during loading');

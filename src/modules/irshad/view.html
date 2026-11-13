@@ -1,7 +1,7 @@
 <div dir="rtl" data-screen-label="نظام الاسترشاد" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414);margin:0 auto;display:flex;flex-direction:column;gap:16px">
-<sc-if value="{{irCloudNotice}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{irCloudBusy}}" hint-placeholder-val="{{ false }}"><div ref="{{irStates}}"></div></sc-if>
+<sc-if value="{{irCloudError}}" hint-placeholder-val="{{ false }}">
   <div style="{{irPmNoteStyle}}" role="status">
-    <sc-if value="{{irCloudBusy}}" hint-placeholder-val="{{ false }}"><span>جارٍ قراءة بيانات الاسترشاد من الخادم…</span></sc-if>
     <sc-if value="{{irCloudError}}" hint-placeholder-val="{{ false }}"><span>{{irCloudError}}</span><button onClick="{{irCloudRetry}}" style="border:0;border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer;background:var(--bg-xffffff);color:var(--fg-x8a6f35)">{{irCloudRetryLabel}}</button></sc-if>
   </div>
 </sc-if>

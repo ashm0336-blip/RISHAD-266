@@ -14,7 +14,7 @@
 | بلا اتصال (الحاسوب) | مؤشرُ «حالة الاتصال» الدائم في القائمة الجانبية: متصل · انقطع الاتصال · محلي | `src/components/240-bassam-link.js` |
 | بلا اتصال (الجوال) | لافتةُ `.bs-netbar` لحظةَ الانقطاع (role=status) وتتحوّل عند العودة — KIVO_254 | `src/components/240-bassam-link.js` |
 | الكتابةُ المعلَّقة | `KIVO.BassamAck`: رسالةُ النجاح بعد إقرار الخادم وحده | `src/core/300-bassam-ack.js` |
-| أولُ تحميلٍ وفشلُ تحميل الشاشة | مكوّنُ حالات الصفحة الموحَّد `KIVO.PageStates` (هيكل · تحديث · فشل · فارغ) — ترسم به بوابةُ الغلاف مكانَ كل شاشة (V7 UX) | `src/components/555-page-states.js` |
+| أولُ تحميلٍ وفشلُ تحميل الشاشة | مكوّنُ حالات الصفحة الموحَّد `KIVO.PageStates` (هيكلٌ واحد · تحديث · فشل · فارغ) — به قاعدةُ الغلاف الواحدة لكل مسار: رأسٌ وهيكل، أو محتوى الذاكرة مع الخط والشارة (V7 UX) | `src/components/555-page-states.js` |
 
 ## لكل وحدة
 | الوحدة | فارغ | تحميل | خطأ | بلا اتصال | أعد المحاولة |
@@ -24,8 +24,8 @@
 | daily (Daily Sessions) | 60 | 9 | 179 | 0 | 3 |
 | dreport (Daily Report) | 19 | 0 | 88 | 0 | 1 |
 | dstats (Daily Stats) | 14 | 1 | 38 | 0 | 0 |
-| employees (Employees) | 48 | 9 | 98 | 0 | 7 |
-| irshad (Irshad) | 18 | 1 | 21 | 0 | 6 |
+| employees (Employees) | 48 | 5 | 98 | 0 | 7 |
+| irshad (Irshad) | 18 | 0 | 21 | 0 | 6 |
 | kpis (KPIs) | 1 | 0 | 2 | 0 | 1 |
 | plan (Operational Plan) | 57 | 8 | 98 | 0 | 2 |
 | planning (Planning) | 0 | 0 | 6 | 0 | 0 |

@@ -1,38 +1,45 @@
 /* ═ حالاتُ الصفحة الموحَّدة (KIVO.PageStates · src/components/555-page-states.js) ═
-   هيكل (ثلاثة قوالب) · خط وشارة التحديث · بطاقة الفشل · بطاقة الفراغ · الدخول الهادئ.
-   الألوان بمتغيرات السمة وحدها (فاتح/داكن)، والوميض هو تدرّج ‎.bs-skel‎ القائم (١٫٤ ث). لا يُطبع. */
+   الهيكل الواحد · قاعدةُ الغلاف (رأس + هيكل أو محتوى الذاكرة) · خط وشارة التحديث · بطاقة الفشل · بطاقة الفراغ · الدخول الهادئ.
+   الألوان بمتغيرات السمة وحدها (فاتح/داكن)، والوميض بحركة ‎sc-shine‎ القائمة (١٫٤ ث). لا يُطبع. */
 .ps{display:block;position:relative;font-family:var(--font-ui);direction:rtl;text-align:start}
 .ps[hidden]{display:none}
-.ps[data-ps="loading"]{min-height:420px}
 .ps.ps-region[data-ps="loading"]{min-height:96px}
 
-/* ── الهيكل ── */
+/* ── الهيكلُ الواحد: بطاقاتٌ بيضاء (‎--bg-card‎) على خلفية الصفحة، وعظامٌ وامضة أغمق منها — يُرى فوراً في الوضعين ── */
 .ps-skel{display:grid;gap:var(--sp-4);animation:ps-fade .2s ease both}
-.ps-skel > div{display:grid;gap:var(--sp-3)}
-.ps-skel .bs-skel{display:block;border-radius:var(--r-md)}
-.ps-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
-.ps-kpi{height:84px;border-radius:var(--r-xl)}
-.ps-tools{grid-template-columns:minmax(0,1fr) 112px 112px}
-.ps-tool{height:44px}
-.ps-rows{gap:var(--sp-2)}
-.ps-row{height:40px}
-.ps-row:nth-child(n+5){opacity:.7}
-.ps-row:nth-child(n+7){opacity:.4}
-.ps-mapwrap{grid-template-columns:minmax(0,1fr) 280px}
-.ps-canvas{height:420px;border-radius:var(--r-xl);position:relative;overflow:hidden}
-.ps-canvas::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border-subtle) 1px,transparent 1px),linear-gradient(90deg,var(--border-subtle) 1px,transparent 1px);background-size:48px 48px}
-.ps-side{display:grid;gap:var(--sp-3);align-content:start;padding:var(--sp-4);border-radius:var(--r-xl);background:var(--bg-card);border:1px solid var(--border-subtle)}
-.ps-line-s{height:16px}
-.ps-line-s:nth-child(2n){width:70%}
-.ps-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
-.ps-cardbone{height:132px;border-radius:var(--r-xl)}
-.ps-region .ps-skel{gap:var(--sp-2)}
-.ps-region .ps-kpis,.ps-region .ps-tools,.ps-region .ps-side,.ps-region .ps-row:nth-child(n+4),.ps-region .ps-cardbone:nth-child(n+3){display:none}
-.ps-region .ps-mapwrap{grid-template-columns:minmax(0,1fr)}
-.ps-region .ps-canvas{height:160px}
-.ps-region .ps-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-.ps-region .ps-cardbone{height:72px}
-.ps-region .ps-row{height:28px}
+.ps-kpis{display:grid;gap:var(--sp-3);grid-template-columns:repeat(4,minmax(0,1fr))}
+.ps-kpi,.ps-panel{display:grid;background:var(--bg-card);border:1px solid var(--border-subtle);box-shadow:var(--shadow-card);border-radius:var(--r-lg)}
+.ps-kpi{gap:var(--sp-3);padding:var(--sp-4)}
+.ps-panel{gap:var(--sp-4);padding:var(--sp-4)}
+.ps-bone{display:block;border-radius:var(--r-sm);background-image:linear-gradient(90deg,var(--border-strong) 25%,var(--border-subtle) 37%,var(--border-strong) 63%);background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+.ps-b-num{height:28px;width:45%}
+.ps-b-lbl{height:12px;width:70%}
+.ps-tools{display:grid;gap:var(--sp-3);grid-template-columns:minmax(0,1fr) 112px 112px}
+.ps-tool{height:40px}
+.ps-rows{display:grid;gap:var(--sp-3)}
+.ps-row{height:20px}
+.ps-row:nth-child(2n){width:86%}
+.ps-row:nth-child(3n){width:68%}
+.ps-region .ps-kpis,.ps-region .ps-tools,.ps-region .ps-row:nth-child(n+4){display:none}
+.ps-region .ps-panel{padding:var(--sp-3);border:0;box-shadow:none;background:transparent}
+
+/* ── قاعدةُ الغلاف: الصفحةُ الحيّة محجوبةٌ (تبقى بعرضها كي تقيس نفسها) ما دام الغلاف يرسم الهيكل أو محتوى الذاكرة في ‎.ps-shell‎ ── */
+.bs-main[data-ps-wait]{position:relative}
+.bs-main[data-ps-wait] > .sc-host{position:absolute;inset-inline:0;max-height:100vh;overflow:hidden;visibility:hidden;pointer-events:none}
+.ps-shell{display:none;position:relative;font-family:var(--font-ui);direction:rtl}
+.bs-main[data-ps-wait] > .ps-shell{display:grid;gap:var(--sp-4);padding:18px 18px 0}
+.bs-main[data-ps-wait="snap"] > .ps-shell{display:block;padding:0}
+.ps-shell > .ps-snap{pointer-events:none}
+/* الخط والشارة فوق محتوى الذاكرة بلا إزاحةٍ له: الخط على حافته العليا والشارة في ركنه */
+.ps-shell > .ps-shell-bar{position:absolute;inset:0 0 auto 0;z-index:2;justify-content:flex-end;margin:0;padding:calc(3px + var(--sp-1)) var(--sp-2) 0;overflow:visible}
+.ps-shell-bar > .ps-badge{box-shadow:var(--shadow-card)}
+.ps-shell > .ps[data-ps="loading"]{min-height:420px}
+.ps-tabbox{border-radius:var(--r-xl);border:2px solid var(--tone-gold-50-a10);background:linear-gradient(90deg,var(--bg-gold-50-a3),transparent,var(--bg-gold-50-a3));padding:var(--sp-3)}
+.ps-tabs{display:flex;align-items:center;justify-content:center;gap:var(--sp-2);padding:var(--sp-1) 0}
+.ps-tab{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;line-height:23px;flex-shrink:0;min-width:170px;padding:var(--sp-3) var(--sp-4);border-radius:var(--r-lg);border:1px solid transparent;font-size:var(--fs-xs);color:var(--text-secondary)}
+.ps-tab-ico{width:36px;height:36px;border-radius:var(--r-sm);background:var(--bg-surface-3)}
+.ps-tab.is-on{border-color:var(--border-brand);background:var(--bg-card);box-shadow:var(--shadow-card);font-weight:600;color:var(--brand-text)}
+.ps-tab.is-on .ps-tab-ico{background:var(--brand-soft)}
 
 /* ── التحديث: خطٌّ ٣px بلون الهوية يتحرك أعلى المحتوى + شارة؛ لا يحجب المحتوى ولا يعطّله ── */
 .ps[data-ps="refreshing"]{display:flex;align-items:center;min-height:0;padding-top:calc(3px + var(--sp-2));margin-bottom:var(--sp-2);overflow:hidden;pointer-events:none}
@@ -97,15 +104,11 @@
 @media (max-width:640px){
   .ps-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ps-tools{grid-template-columns:minmax(0,1fr) 44px 44px}
-  .ps-mapwrap{grid-template-columns:minmax(0,1fr)}
-  .ps-canvas{height:300px}
-  .ps-side{display:none}
-  .ps-cards{grid-template-columns:minmax(0,1fr)}
   .ps-card{padding:var(--sp-5) var(--sp-4)}
   .ps-acts .ps-btn{flex:1 1 100%}
 }
 @media (prefers-reduced-motion:reduce){
-  .ps-skel,.ps-skel .bs-skel,.ps-line::after,.ps-enter,.ps-enter tbody > tr{animation:none !important}
+  .ps-skel,.ps-bone,.ps-line::after,.ps-enter,.ps-enter tbody > tr{animation:none !important}
   .ps-line::after{width:100%}
 }
-@media print{.ps,.ps-bar{display:none !important}}
+@media print{.ps,.ps-bar,.ps-shell{display:none !important}}

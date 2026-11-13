@@ -537,6 +537,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     c.irCloudError = e.irCloudError || (mixed ? "تغيّرت البيانات أثناء القراءة؛ أعد تحديث النتائج للحصول على نسخة متسقة" : !this._irContext() ? this._irFailure("session").message : "");
     c.irCloudBusy = pending && !c.irCloudError;
     c.irCloudNotice = pending || !!c.irCloudError;
+    c.irStates = (el) => KIVO.PageStates?.host(el, { state: "loading" });   /* V7 UX: قراءةُ الاسترشاد بالهيكل الواحد (مكوّنُ حالات الصفحة) لا بنص */
     c.irCloudRetryLabel = this._irConflict ? "تحديث البيانات ومراجعة المسودة" : "إعادة المحاولة";
     c.irCloudRetry = () => { if (this._irConflict) { this._irDraftStamp = null; this._irConflict = false; } this.setState({ irCloudError: "" }); this._irRefresh(); };
     c.irOnDash = d && !pending;
