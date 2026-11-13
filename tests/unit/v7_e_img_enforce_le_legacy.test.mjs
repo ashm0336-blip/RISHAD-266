@@ -83,6 +83,11 @@ const RECORDS = Object.keys(RES_REG).map((name) => ({ id: name, k: RES_REG[name]
 /* which images an account is measured on: its own unit's (and everything for the general manager and the platform admin) */
 const SEES = { acc: (r) => !r.open, mgr: (r) => !r.open, dept: (r) => !r.open, accO: (r) => !!r.open, mgrO: (r) => !!r.open, deptO: (r) => !!r.open, gm: () => true, su: () => true };
 const WHY = { bound: 'b', none: 'n', claim: 'c', amb: 'a', orphan: 'o', inuse: 'u' };
+/* Batch 1 (V7-F, owner decision 4): to anyone outside the image's own unit every refusal is ONE answer, 403 {ok:0,err:'forbidden'}
+   with no reason — recorded here as 'x'. A cell that names a reason (e.g. 'bbb') is therefore met by that reason or by the one
+   refusal on EVERY operation of the cell — never a mix, never an allow. The rule itself (enforce allows nothing legacy refuses) and
+   the pinned OPEN cells read only 'Y', so they are unchanged. */
+const refused = (v, want, msg) => assert.ok(v === want || v === 'x'.repeat(want.length), (msg ? msg + ': ' : '') + JSON.stringify(v) + ' is neither ' + JSON.stringify(want) + ' nor the one refusal ' + JSON.stringify('x'.repeat(want.length)));
 
 /* the worker logs one line per request; a sweep makes ~10^5 of them */
 const quiet = async (fn) => { const L = console.log, W = console.warn, f = (o) => (...a) => { if (!(typeof a[0] === 'string' && a[0].indexOf('{"v":') === 0)) o(...a); }; console.log = f(L); console.warn = f(W); try { return await fn(); } finally { console.log = L; console.warn = W; } };
@@ -113,7 +118,7 @@ async function sweep(mode, t) {
   const call = async (c, id, method, body, q) => {
     DB.db.prepare("DELETE FROM guard WHERE gk LIKE 'rl:%'").run();   /* the per-minute upload limit and the daily quota are not what is measured */
     const r = await C.api('/api/img/' + encodeURIComponent(id) + (q || ''), Object.assign({ cookie: c, method }, method === 'PUT' ? { body, headers: { 'Content-Type': 'text/plain' } } : {}));
-    return r.status === 200 ? 'Y' : r.status === 403 && r.j && WHY[r.j.why] ? WHY[r.j.why] : '?(' + r.status + ':' + JSON.stringify(r.j).slice(0, 80) + ')';
+    return r.status === 200 ? 'Y' : r.status === 403 && r.j && WHY[r.j.why] ? WHY[r.j.why] : r.status === 403 && r.j && r.j.err === 'forbidden' && !('why' in r.j) && Object.keys(r.j).length === 2 ? 'x' : '?(' + r.status + ':' + JSON.stringify(r.j).slice(0, 80) + ')';
   };
   /* PUT · chunked PUT · DELETE on one stored image; three letters, each checked against the stored bytes */
   const three = async (c, id, st, k, uid, who) => {
@@ -207,11 +212,11 @@ test('the sweep is not vacuous: the lists are derived and both modes allow real 
   for (const T of [L.table, E.table]) {
     assert.equal(T['s plan:edit'].bassam_plan_v1, 'YYY'); assert.equal(T['s daily/rounds:edit'].bassam_rounds_v1, 'YYY'); assert.equal(T['s tasks:edit'].bassam_tasks_v1, 'YYY');
     assert.equal(T['s seized/records:add'].bassam_seized_v1, 'YYY'); assert.equal(T['s dreport:edit'].bassam_dayshift_v1, 'YYY'); assert.equal(T['s emps/data:del'].bassam_employees_v1, 'YYY');
-    assert.equal(T['every view'].bassam_plan_v1, 'bbb'); assert.equal(T['no sheet']['new upload img_'], 'nn'); assert.equal(T['no sheet']['new upload img_tsk'], 'YY', 'selfProof: the assignee uploads a task proof');
+    refused(T['every view'].bassam_plan_v1, 'bbb'); refused(T['no sheet']['new upload img_'], 'nn'); assert.equal(T['no sheet']['new upload img_tsk'], 'YY', 'selfProof: the assignee uploads a task proof');
     for (const a of ['unit manager', 'unit account', 'general manager', 'platform admin', 'full sheet']) for (const rn of ['bassam_plan_v1', 'bassam_rounds_v1', 'bassam_tasks_v1', 'bassam_profile_v1']) if (a !== 'general manager' || rn !== 'bassam_profile_v1') assert.equal(T[a][rn], 'YYY', a + ' ' + rn);
-    for (const a of Object.keys(T)) if (a !== 'platform admin') { if (a.indexOf('open unit') !== 0) { assert.equal(T[a]['other unit: bassam_plan_v1'], 'bbb', a); assert.equal(T[a].bassam_depts_v1, 'bbb', a); } assert.equal(T[a]['claim of another account'], 'ccc', a); assert.equal(T[a]['unresolved (amb)'], 'aaa', a); assert.equal(T[a].orphan, 'ooo', a); }
+    for (const a of Object.keys(T)) if (a !== 'platform admin') { if (a.indexOf('open unit') !== 0) { refused(T[a]['other unit: bassam_plan_v1'], 'bbb', a); refused(T[a].bassam_depts_v1, 'bbb', a); } refused(T[a]['claim of another account'], 'ccc', a); refused(T[a]['unresolved (amb)'], 'aaa', a); refused(T[a].orphan, 'ooo', a); }
     for (const a of ['open unit · unit manager', 'open unit · unit account', 'open unit · full sheet', 'general manager']) for (const rn of ['bassam_plan_v1', 'bassam_rounds_v1', 'bassam_tasks_v1']) assert.equal(T[a]['open unit: ' + rn], 'YYY', a + ' ' + rn);
-    assert.equal(T['open unit · supervisor']['open unit: bassam_plan_v1'], 'bbb'); assert.equal(T['open unit · plan writer']['open unit: bassam_rounds_v1'], 'bbb'); assert.equal(T['open unit · plan approver']['open unit: bassam_plan_v1'], 'bbb');
+    refused(T['open unit · supervisor']['open unit: bassam_plan_v1'], 'bbb'); refused(T['open unit · plan writer']['open unit: bassam_rounds_v1'], 'bbb'); refused(T['open unit · plan approver']['open unit: bassam_plan_v1'], 'bbb');
   }
   assert.equal(E.table['g site.edit'].bassam_plan_v1, 'YYY'); assert.equal(E.table['g round.edit'].bassam_rounds_v1, 'YYY'); assert.equal(E.table['g task.edit'].bassam_tasks_v1, 'YYY');
 });
