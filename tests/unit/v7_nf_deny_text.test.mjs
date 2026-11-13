@@ -318,6 +318,8 @@ test('V7 nf-deny · record labels and pages cannot drift from the client (KIVO.B
      (7) «rule» of a RES_REG entry                                           — a resource's special rule returned as its reason
      (8) the third argument of dsDomainDeny(…)                               — daily statistics
      (9) the first argument of nfErr(…, 403)                                 — the notifications route
+    (11) the third argument of imgNo(…)                                    — image verdicts: batch 1 builds them through one helper (the
+         uniform refusal), so their codes are no longer object literals with ok:false (rule 3)
     (10) round-2 review: a code that reaches «deny»/«sd» through a VARIABLE. Rules 1–9 read literals at the place they are used,
          so they missed 054's { deny: pvNo9[k], sd: pvNo9[k] }, whose values are assigned elsewhere (pvNo9[k] = privPermsStale(…) —
          a helper not named …Why — and pvNo9[k] = 'privacy-hidden'). Now: for every non-literal «deny»/«sd» (of an object with
@@ -348,6 +350,7 @@ function reasonCodes(src) {
     if (n.type === 'CallExpression' && n.callee.type === 'Identifier') {
       if (n.callee.name === 'enfNo') lits(n.arguments[0]).forEach((c) => add(c, 'enfNo'));
       if (n.callee.name === 'dsDomainDeny') lits(n.arguments[2]).forEach((c) => add(c, 'dsDomainDeny'));
+      if (n.callee.name === 'imgNo') lits(n.arguments[2]).forEach((c) => add(c, 'imgNo'));   /* rule (11) */
       if (n.callee.name === 'nfErr' && n.arguments[1] && n.arguments[1].value === 403) lits(n.arguments[0]).forEach((c) => add(c, 'nfErr 403'));
     }
     if (n.type === 'AssignmentExpression' && n.left.type === 'MemberExpression' && n.left.property.name === 'batchDeny' && n.right.type === 'ObjectExpression')
