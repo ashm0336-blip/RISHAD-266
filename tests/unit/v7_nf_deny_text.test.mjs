@@ -318,11 +318,19 @@ test('V7 nf-deny · record labels and pages cannot drift from the client (KIVO.B
      (7) «rule» of a RES_REG entry                                           — a resource's special rule returned as its reason
      (8) the third argument of dsDomainDeny(…)                               — daily statistics
      (9) the first argument of nfErr(…, 403)                                 — the notifications route
+    (10) round-2 review: a code that reaches «deny»/«sd» through a VARIABLE. Rules 1–9 read literals at the place they are used,
+         so they missed 054's { deny: pvNo9[k], sd: pvNo9[k] }, whose values are assigned elsewhere (pvNo9[k] = privPermsStale(…) —
+         a helper not named …Why — and pvNo9[k] = 'privacy-hidden'). Now: for every non-literal «deny»/«sd» (of an object with
+         «cur») the root variable is taken, and every string literal assigned to it or to one of its members is a code, as is every
+         string literal RETURNED by a function called in such an assignment.
+    (11) a string literal assigned to a «.why» member (o.why = '…')           — reasons patched onto an answer
    Ternaries and ||/&& are followed. WHITELIST: the …Why helpers below return a human DETAIL sentence (stored in the verdict's
    «detail», never in «why» and never in sec.detail) — verified at their call sites (018 · 059: enfNo('grant', { detail: … })). */
 const DETAIL_HELPERS = ['latentLossWhy', 'usersGrantWhy', 'usersSheetWhy', 'enfPermsHeldWhy', 'enfMinusLiftWhy'];
 function reasonCodes(src) {
-  const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' }), out = new Map();
+  const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' }), out = new Map(), roots = new Set(), assigns = [], returns = new Map();
+  /* the variable a non-literal expression hangs from: pvNo9[k] → pvNo9 · (a || b) → none */
+  const rootOf = (e) => { while (e && e.type === 'MemberExpression') e = e.object; return e && e.type === 'Identifier' ? e.name : ''; };
   const add = (code, how) => { if (!out.has(code)) out.set(code, new Set()); out.get(code).add(how); };
   const lits = (n, acc = []) => {
     if (!n) return acc;
@@ -351,9 +359,17 @@ function reasonCodes(src) {
       if (P.rule && P.scope && ['global', 'dept', 'device'].includes(P.scope.value)) lits(P.rule).forEach((c) => add(c, 'RES_REG rule'));
     }
     if (n.type === 'ReturnStatement' && st && /Why\d*$/.test(st.fn) && !DETAIL_HELPERS.includes(st.fn)) lits(n.argument).forEach((c) => add(c, 'return of ' + st.fn));
+    if (n.type === 'ReturnStatement' && st && st.fn) { if (!returns.has(st.fn)) returns.set(st.fn, []); lits(n.argument, returns.get(st.fn)); }
+    if (n.type === 'ObjectExpression') for (const p of n.properties) if (p.type === 'Property' && ['deny', 'sd'].includes(p.key.name || p.key.value) && n.properties.some((q) => q.key && (q.key.name || q.key.value) === 'cur')) { const r = rootOf(p.value); if (r) roots.add(r); }
+    if (n.type === 'AssignmentExpression') { assigns.push(n); if (n.left.type === 'MemberExpression' && !n.left.computed && n.left.property.name === 'why') lits(n.right).forEach((c) => add(c, '.why =')); }
+    if (n.type === 'VariableDeclarator' && n.init && n.id.type === 'Identifier') assigns.push({ left: n.id, right: n.init });
     for (const k in n) { const v = n[k]; if (Array.isArray(v)) v.forEach((c) => walk(c, st)); else if (v && typeof v.type === 'string') walk(v, st); }
   };
   walk(ast, null);
+  /* rule (10) */
+  const calls = (e, acc = []) => { if (!e || typeof e.type !== 'string') return acc; if (e.type === 'CallExpression' && e.callee.type === 'Identifier') acc.push(e.callee.name); for (const k in e) { const v = e[k]; if (Array.isArray(v)) v.forEach((c) => calls(c, acc)); else if (v && typeof v.type === 'string') calls(v, acc); } return acc; };
+  for (const a of assigns) { const r = rootOf(a.left); if (!r || !roots.has(r)) continue; lits(a.right).forEach((c) => add(c, 'assigned to ' + r));
+    for (const fn of calls(a.right)) (returns.get(fn) || []).forEach((c) => add(c.replace(/…$/, '') === c ? c : c, 'return of ' + fn + ' → ' + r)); }
   out.delete('');   /* «no reason» of the helpers; an empty sec.detail reads as the generic phrase (asserted below) */
   return out;
 }
@@ -361,7 +377,7 @@ function reasonCodes(src) {
 test('V7 nf-deny · every reason code that exists in the server source has an Arabic phrase (and only Arabic)', async () => {
   const { W, src } = await internals(), codes = reasonCodes(src);
   assert.ok(codes.size >= 80, 'the enumeration found the codes: ' + codes.size);
-  for (const must of ['perm', 'reason', 'page', 'view', 'super', 'scope', 'custody:…', 'retro.…', 'custody-transition', 'notification-scope', 'restore-policy', 'import-allowlist', 'task-x', 'users · dup-id …'])
+  for (const must of ['perm', 'reason', 'page', 'view', 'super', 'scope', 'custody:…', 'retro.…', 'custody-transition', 'notification-scope', 'restore-policy', 'import-allowlist', 'task-x', 'users · dup-id …', 'perms-stale-client', 'privacy-hidden'])
     assert.ok(codes.has(must), 'enumeration sanity: ' + must);
   const missing = [], table = [];
   for (const [code, how] of [...codes].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
@@ -395,11 +411,19 @@ test('V7 nf-deny · every reason code that exists in the server source has an Ar
 
 /* ═══ independent review of add1582 — M1 · L1 · L3 · L4 ═══ */
 const ZW = '\u200b\u200c\u200d\ufeff', BIDI = '\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069\u200e\u200f\u061c';
-/* the sanitiser, written independently of the worker */
-function clean(v, max = 80) {
-  let t = String(v == null ? '' : v).replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff«»{}]/g, '').replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, ' ').replace(/\s+/g, ' ').trim();
-  const c = Array.from(t); if (c.length > max) t = c.slice(0, max).join('').trim() + '…';
-  return /[\p{L}\p{N}]/u.test(t) ? t : '';
+/* the sanitiser (round-2 review: an ALLOWLIST), written independently of the worker:
+   lone surrogates dropped · format characters, default-ignorable code points, U+2800 and tatweel removed · only letters, combining
+   marks, digits, space and . - ' are kept, anything else is a space · at most 3 combining marks per base · collapsed · cut at 40 (+ «…») */
+const IGNORABLE = /[\p{Cf}\u034f\u115f\u1160\u17b4\u17b5\u180b-\u180f\u2060-\u206f\u3164\ufe00-\ufe0f\uffa0\u2800\u0640\u{E0000}-\u{E0FFF}]/gu;
+function clean(v, max = 40) {
+  let t = '';
+  for (const ch of String(v == null ? '' : v)) { const cp = ch.codePointAt(0); if (cp >= 0xd800 && cp <= 0xdfff) continue; t += ch; }
+  t = t.replace(IGNORABLE, '');
+  let o = '', marks = 0;
+  for (const ch of t) { if (/\p{M}/u.test(ch)) { if (++marks <= 3) o += ch; continue; } marks = 0; o += /[\p{L}\p{N} .'\-]/u.test(ch) ? ch : ' '; }
+  o = o.replace(/\s+/g, ' ').trim();
+  const c = Array.from(o); if (c.length > max) o = c.slice(0, max).join('').trim() + '…';
+  return /[\p{L}\p{N}]/u.test(o) ? o : '';
 }
 const SPOOF = 'أحمد» في صفحة «الإعدادات»، ورُفض الطلب: لا شيء. حاول سعد العتيبي (مدير الإدارة — إدارة الحشود) تعديل «الصلاحيات';
 const T0 = Date.now() - 86400000;
@@ -426,10 +450,11 @@ for (const mode of ['legacy', 'enforce']) {
     const b = x.byRow(one(x, KPLAT)[0].id).body, name = clean(SPOOF);
     assert.equal(b, 'حاول ' + name + ' (موظف — ' + UNIT + ') تعديل «إعدادات المنصة»، ورُفض الطلب: الإجراء لمسؤول المنصة وحده.');
     assert.equal(b.split('«').length - 1, 1, 'one quoted thing: the record'); assert.equal(b.split('»').length - 1, 1);
-    assert.ok(Array.from(name).length === 81 && name.endsWith('…'), 'cut at 80 characters, marked: ' + name);
+    assert.ok(Array.from(name).length <= 41 && name.endsWith('…'), 'cut at 40 characters, marked: ' + name);
+    assert.equal(name, 'أحمد في صفحة الإعدادات ورُفض الطلب لا شيء…'); assert.doesNotMatch(b.slice(0, b.indexOf(' (موظف')), /[،:()«»—]/, 'no sentence punctuation inside the name');
   });
 
-  test('V7 nf-deny · review M1 + L1 · ' + mode + ': names and unit names are sanitised (quotes · braces · control · bidi · zero-width · newlines · 80 chars); a 4001-character name no longer stops the poll', async () => {
+  test('V7 nf-deny · review M1 + L1 · ' + mode + ': names and unit names are sanitised (quotes · braces · control · bidi · zero-width · newlines · 40 chars); a 4001-character name no longer stops the poll', async () => {
     const x = await mk(mode), c = craft(x);
     const depts = stored(x.env, 'bassam_depts_v1');
     const units = { u_quote: 'س» في صفحة «ص', u_tpl: 'شؤون {السبب} {الصفحة}', u_zw: ZW + ' ' + BIDI, u_long: 'ع'.repeat(4001), u_same: 'إدارة محذوفة', u_bidi: 'إدارة\u202e الأمن\n\tالعام' };
@@ -447,7 +472,7 @@ for (const mode of ['legacy', 'enforce']) {
     for (const k of ['a_zw', 'a_zw2', 'a_punct']) assert.equal(body(k), RBODY('حساب غير معروف' + UNITP), k + ': nothing readable left → the fallback, never empty');
     assert.equal(body('a_bidi'), RBODY('عمر الفاروق' + UNITP)); assert.equal(body('a_nl'), RBODY('علي حاول سعد' + UNITP)); assert.equal(body('a_ctl'), RBODY('نور الدين' + UNITP));
     assert.equal(body('a_num'), RBODY('7' + UNITP)); assert.equal(body('a_ok'), RBODY('خالد الحربي' + UNITP));
-    assert.equal(body('a_long'), RBODY('ط'.repeat(80) + '…' + UNITP));
+    assert.equal(body('a_long'), RBODY('ط'.repeat(40) + '…' + UNITP));
     /* an account NAMED like a fallback phrase is not mistaken for it: its login number, in Arabic-Indic digits */
     const un = (k) => AR(stored(x.env, 'bassam_auth_users_v1').find((u) => u.id === k).un);
     for (const k of ['a_same', 'a_same2', 'a_same3']) { assert.equal(body(k), RBODY('الحساب رقم ' + un(k) + UNITP), k); assert.match(un(k), /^[٠-٩]{10}$/); }
@@ -455,7 +480,7 @@ for (const mode of ['legacy', 'enforce']) {
     /* units */
     const UB = (unit) => RBODY('ناصر (موظف — ' + unit + ')');
     assert.equal(body('b_u_quote'), UB('س في صفحة ص')); assert.equal(body('b_u_tpl'), UB('شؤون السبب الصفحة')); assert.equal(body('b_u_bidi'), UB('إدارة الأمن العام'));
-    assert.equal(body('b_u_zw'), UB('إدارة محذوفة'), 'a unit with no readable name reads as the fallback'); assert.equal(body('b_u_long'), UB('ع'.repeat(80) + '…'));
+    assert.equal(body('b_u_zw'), UB('إدارة محذوفة'), 'a unit with no readable name reads as the fallback'); assert.equal(body('b_u_long'), UB('ع'.repeat(40) + '…'));
     assert.equal(body('b_u_same'), UB('وحدة باسم ملتبس'), 'an existing unit NAMED «إدارة محذوفة» is not mistaken for a deleted one');
     for (const k of Object.keys(id)) { const b = body(k); assert.doesNotMatch(b, /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff\u2028\u2029{}]/, k + ' control/bidi/zero-width/brace: ' + JSON.stringify(b)); assert.equal(b.split('«').length - 1, 2, k + ': only the record and the page are quoted'); assert.doesNotMatch(b, /^حاول\s+(\(|تعديل)/, k + ': name never empty'); assert.ok(b.length < 400, k); }
   });
@@ -551,4 +576,73 @@ test('V7 nf-deny · review L4 + M1 (real routes): a customised sc_deny text is n
     const m = x.env.DB.q("SELECT m.body FROM notification_messages m JOIN notification_dedup d ON d.scope=m.scope AND d.message_id=m.id WHERE d.once_key='TEST_ONLY:" + id + "'")[0];
     assert.ok(m, id + ' stored'); assert.equal(m.body, fillRef(T.txt, vars), id); n++; }
   assert.ok(n >= 5, 'sys-only types emitted: ' + n);
+});
+
+/* ═══ round-2 review of 3c09809 — allowlist sanitiser · invisible names · ambiguity · stale-client codes · node kind ═══ */
+const SAFE = String.raw`[\p{L}\p{M}\p{N} .'\-…]+`;
+const FRAME = new RegExp('^حاول ' + SAFE + String.raw` \(` + SAFE + ' — ' + SAFE + String.raw`\) تعديل «الجولات اليومية» في صفحة «المتابعة اليومية»، ورُفض الطلب: صلاحيته لا تشمل هذا الإجراء\.$`, 'u');
+const FORGE = {
+  noquote: 'س، ورُفض الطلب: تم. حاول سعد العتيبي (مسؤول المنصة) تعديل ‹الصلاحيات›',
+  dq: 'س" في صفحة "الإعدادات"، ورُفض الطلب: تم. حاول سعد (مسؤول المنصة) حذف "الصلاحيات',
+  cjk: 'س》 في صفحة 《الإعدادات》، ورُفض الطلب: تم. حاول سعد (مسؤول المنصة) حذف 《الصلاحيات',
+  role: 'سعد العتيبي (مسؤول المنصة) بالنيابة عن خالد',
+  look: 'أحمد ‹› ❝❞ „“ ‟ ＜＞ ｛السبب｝ ﹛الصفحة﹜ ⦃x⦄',
+  dash: 'عمر ( — ) — ) ( —',
+};
+const UFORGE = 'س) تعديل ‹الصلاحيات› — (مسؤول المنصة';
+
+for (const mode of ['legacy', 'enforce']) test('V7 nf-deny · review-2 (1)(5) · ' + mode + ': no punctuation survives in a name, a unit name or a node kind — the sentence frame cannot be forged', async () => {
+  const x = await mk(mode), c = craft(x);
+  const depts = stored(x.env, 'bassam_depts_v1'); depts.push({ id: 'u_forge', name: UFORGE, gid: 'tst_g1' }, { id: 'u_long', name: 'ع'.repeat(4001), gid: 'tst_g1' }); putKV(x.env, 'bassam_depts_v1', depts);
+  const nodes = stored(x.env, 'bassam_gdepts_v1') || []; nodes.push({ id: 'n_k1', name: 'الفرع', kind: '{السبب}«x») — (حاول، سعد: تعديل' }, { id: 'n_k2', name: 'الفرع', kind: 'ع'.repeat(300) }, { id: 'n_k3', name: UFORGE, kind: 'وكالة' }); putKV(x.env, 'bassam_gdepts_v1', nodes);
+  c.addUsers(Object.keys(FORGE).map((k) => ({ id: 'f_' + k, name: FORGE[k] })).concat([{ id: 'f_long', name: 'ط'.repeat(4001) }, { id: 'f_unit', name: 'ناصر', deptId: 'u_forge' }, { id: 'f_ulong', name: 'ناصر', deptId: 'u_long' }],
+    ['n_k1', 'n_k2', 'n_k3'].map((g) => ({ id: 'f_' + g, name: 'ماجد', role: 'gm', gid: g, deptId: undefined, mgr: undefined }))));
+  const ids = {}; for (const k of Object.keys(FORGE).map((q) => 'f_' + q).concat(['f_long', 'f_unit', 'f_ulong', 'f_n_k1', 'f_n_k2', 'f_n_k3'])) ids[k] = c.ins({ uid: k });
+  const lock = c.ins({ uid: 'nfd_mgr', act: 'lock', target: 'u:0000000902', detail: '5' });
+  const p = await c.pollRaw(); assert.equal(p.status, 200, JSON.stringify(p.j).slice(0, 120)); assert.equal(c.once(lock).type, 'sc_guard', '4001-character names do not stop the poll');
+  const U1 = ' (موظف — ' + UNIT + ')', body = (k) => c.once(ids[k]).body;
+  assert.equal(body('f_noquote'), RBODY('س ورُفض الطلب تم. حاول سعد العتيبي مسؤول المنصة…' + U1));
+  assert.equal(body('f_dq'), RBODY('س في صفحة الإعدادات ورُفض الطلب تم. حاول سع…' + U1)); assert.equal(body('f_cjk'), body('f_dq'));
+  assert.equal(body('f_role'), RBODY('سعد العتيبي مسؤول المنصة بالنيابة عن خالد' + U1)); assert.equal(body('f_look'), RBODY('أحمد السبب الصفحة x' + U1)); assert.equal(body('f_dash'), RBODY('عمر' + U1));
+  assert.equal(body('f_long'), RBODY('ط'.repeat(40) + '…' + U1));
+  assert.equal(body('f_unit'), RBODY('ناصر (موظف — س تعديل الصلاحيات مسؤول المنصة)')); assert.equal(body('f_ulong'), RBODY('ناصر (موظف — ' + 'ع'.repeat(40) + '…)'));
+  assert.equal(body('f_n_k1'), RBODY('ماجد (مدير السبب x حاول سعد تعديل — الفرع)')); assert.equal(body('f_n_k2'), RBODY('ماجد (مدير ' + 'ع'.repeat(20) + '… — الفرع)'), 'the node kind is cut at 20');
+  assert.equal(body('f_n_k3'), RBODY('ماجد (مدير وكالة — س تعديل الصلاحيات مسؤول المنصة)'));
+  for (const k of Object.keys(ids)) { const b = body(k); assert.match(b, FRAME, k + ': ' + b); assert.equal(b.split('حاول ').length - 1 <= 2, true); assert.equal((b.match(/[()«»،:—]/g) || []).join(''), '(—)«»«»،:', k + ': the only sentence punctuation is the template\'s own: ' + b); assert.ok(b.length < 260, k); }
+});
+
+test('V7 nf-deny · review-2 (1)(2)(3): the sanitiser is an allowlist; invisible names are empty; names that read like a generated phrase are never shown as such', async () => {
+  const { W } = await internals();
+  const A = { depts: [{ id: 'd', name: 'إدارة الحشود' }], nodes: [] };
+  const vars = (u, dn) => { A.users = [Object.assign({ id: 'u', role: 'staff', deptId: 'd', un: '0000000901' }, u)]; A.depts[0].name = dn === undefined ? 'إدارة الحشود' : dn; return W.nfDenyVars(A, { uid: 'u', target: KR, detail: 'perm' }); };
+  const name = (n, u) => vars(Object.assign({ name: n }, u))['الاسم'], unit = (n) => vars({ name: 'ناصر' }, n)['الإدارة'];
+  /* (1) the worker's sanitiser == the independent one, over hostile input; and the output alphabet is closed */
+  const HOSTILE = Object.values(FORGE).concat([UFORGE, SPOOF, 'O\'Brien-Smith jr.', 'عبد الله بن عبد العزيز آل سعود', 'ع' + '\u0300'.repeat(60) + 'ب', 'عَ' + '\u064e\u0651'.repeat(40) + 'ب', 'ع' + 'ـ'.repeat(70), 'ـ'.repeat(50), '😀'.repeat(80) + '𝒜', '😀🇸🇦👨‍👩‍👧', 'ع'.repeat(39) + '😀😀ب',
+    'ع\ud83d', 'ع'.repeat(39) + '\ud83d' + 'ب', '\udc00\ud800', 'علي\u034f\u115f\u3164\u2800\ufe0f', '\u034f\u115f\u1160\u3164\u2800\uffa0\u17b4\u17b5\u180b\u180e\u2060\u2061\u206f', '\u3164', 'ع\u{E0001}\u{E0041}\u{E0100}', 'ع\ufe0f\u180e\u2060\u2061',
+    '<img src=x onerror=alert(1)>', 'a&b;c|d/e^f', '٣ ③ ½ 7', '…', '. - \' .', 'ط'.repeat(5000), '  خالد   الحربي  ', 'أ\nب\r\n\tج', 5, true, null, undefined, {}, ['س', 'ص']]);
+  for (const h of HOSTILE) { const got = W.nfDenyClean(h); assert.equal(got, clean(h), JSON.stringify(String(h).slice(0, 40))); assert.match(got, /^[\p{L}\p{M}\p{N} .'\-…]*$/u); assert.ok(Array.from(got).length <= 41); assert.doesNotMatch(got, /\p{M}{4}/u, 'at most 3 marks per base'); assert.doesNotMatch(got, /[\ud800-\udfff]/u, 'no lone surrogate'); assert.doesNotMatch(got, /\p{Cf}|ـ/u); }
+  assert.equal(W.nfDenyClean('ع'.repeat(30), 20), 'ع'.repeat(20) + '…'); assert.equal(W.nfDenyClean("O'Brien-Smith jr."), "O'Brien-Smith jr.");
+  /* (2) nothing visible → the fallback */
+  for (const inv of ['\u034f\u115f\u3164\u2800', '\u3164', '\u2800\u2800', '\uffa0', '\u{E0001}\u{E0041}', '\ufe0f\u180e\u2060', '\ud83d', 'ـ'.repeat(50), '😀😀', '…', '( — )', '', '   ']) {
+    assert.equal(name(inv), 'حساب غير معروف', 'invisible name ' + JSON.stringify(inv)); assert.equal(unit(inv), 'إدارة محذوفة', 'invisible unit ' + JSON.stringify(inv)); }
+  assert.equal(name('علي\u034f\u115f\u3164\u2800\ufe0f'), 'علي');
+  /* (3) ambiguity: letters only on both sides; the generated phrases are reserved too */
+  const AMB = ['حساب غير معروف', 'حساب غير معروف.', '(حساب غير معروف)', 'حساب غير معروف\u0300', 'حسابٌ  غيرُ - معروف', 'حـسـاب غير معروف', 'حساب.غير.معروف', 'إدارة محذوفة', "إدارة 'محذوفة'", 'عقدة محذوفة', 'حساب باسم ملتبس', 'وحدة باسم ملتبس', 'وحدة باسم ملتبس.',
+    'الحساب رقم ٠٥٠١٢٣٤٥٦٧', 'الحساب رقم 1', 'الحساب رقم', 'الحسابُ رقمٌ ٧٧٧ بالنيابة'];
+  for (const n of AMB) { assert.equal(name(n), 'الحساب رقم ٠٠٠٠٠٠٠٩٠١', 'account named ' + JSON.stringify(n)); assert.equal(unit(n), 'وحدة باسم ملتبس', 'unit named ' + JSON.stringify(n)); }
+  for (const n of ['حساب غير معروف لدينا', 'خالد', 'إدارة الحشود', 'رقم الحساب']) { assert.equal(name(n), n); assert.equal(unit(n), n); }
+  /* the login number shown by that path: digits only, at most 15 — otherwise the unambiguous phrase */
+  assert.equal(name('حساب غير معروف', { un: '123456789012345' }), 'الحساب رقم ١٢٣٤٥٦٧٨٩٠١٢٣٤٥');
+  for (const un of ['1234567890123456', '9'.repeat(6000), 'abc', '12 34', '١٢٣', '', null, undefined, '1e5', '-5']) assert.equal(name('حساب غير معروف', { un }), 'حساب باسم ملتبس', 'un ' + JSON.stringify(String(un).slice(0, 20)));
+  /* (5) the kind of a general manager's node */
+  const role = (kind) => { A.users = [{ id: 'u', name: 'م', role: 'gm', gid: 'n', un: '1' }]; A.nodes = [{ id: 'n', name: 'الفرع', kind }]; return W.nfDenyVars(A, { uid: 'u', target: KR, detail: 'perm' })['الدور']; };
+  assert.deepEqual(['وكالة', '{السبب}«x»', 'ع'.repeat(300), '…', '\u3164', 5, '(إدارة عامة)', 'قطاع.'].map(role), ['مدير وكالة', 'مدير السبب x', 'مدير ' + 'ع'.repeat(20) + '…', 'مدير إدارة عامة', 'مدير إدارة عامة', 'مدير 5', 'مدير إدارة عامة', 'مدير قطاع.']);
+});
+
+test('V7 nf-deny · review-2 (4) · enforce: a stale permissions page refused by the privacy guard reads in Arabic (code «perms-stale-client»)', async () => {
+  const x = await mk('enforce');
+  const sv = await x.post('mgr', '/api/save', { uid: 'nfd_mgr', set: { bassam_perms_v1: JSON.stringify({ name: 'Z' }) }, del: [], base: { bassam_perms_v1: x.rev('bassam_perms_v1') } });
+  const rows = x.sec().filter((r) => r.target === 'bassam_perms_v1' && r.uid === 'nfd_mgr'); assert.equal(rows.length, 1, JSON.stringify(sv.j).slice(0, 200)); assert.equal(rows[0].detail, 'perms-stale-client');
+  await x.poll();
+  assert.equal(x.byRow(rows[0].id).body, 'حاول ' + MGR + ' (مدير الإدارة — ' + UNIT + ') تعديل «الصلاحيات»، ورُفض الطلب: الصلاحيات لم تُقبل لأن نسخة الصفحة قديمة.');
 });
