@@ -1,0 +1,29 @@
+{
+ "note": "V7 · المرحلة 2 · الحزمة ج: مصادرُ الوحدات المرجعية الأربع في المستودع (مولّدُها الأصلي registry10/*.py غيرُ موجود). الجزءُ = header + «var <var> = <data.json مضغوطاً>;\\n» + engine.js، يولّده tools/generate.py (gen_bindings) بايتاً؛ تعديلُ الجزء باليد يُفشل --check، والتعديلُ يكون في هذه المصادر. الترويسةُ داخل كل جزء نصٌّ تاريخيٌّ يُبقى حرفاً.",
+ "targets": [
+  {
+   "part": "006-guard-bindings-2.js",
+   "source": "guard-bindings",
+   "var": "KIVO_GUARD_BINDINGS",
+   "header": "/* ═══ KIVO · R203 · Phase 4.5 — Guard Binding Shadow على v24.9 (مولَّدٌ آلياً من registry10/guard_bindings.py — لا يُحرَّر يدوياً؛ المصنِّفُ كما في Phase 3) ═══\n   الوثيقةُ المرجعية v24.9 · SHA-256 6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde\n   يُحمَّل بعد KIVO_REGISTRY ولا يمسّه. الوضع: shadow — المصنِّفُ يُخرج مفاتيحَ v24.5.1 المطلوبة للكتابة، والحكمُ النافذ للنظام القديم. */\n"
+  },
+  {
+   "part": "008-kivo-build-2.js",
+   "source": "build-bindings",
+   "var": "KIVO_BUILD_BINDINGS",
+   "header": "/* ═══ KIVO · R203 · Phase 4.5 — Build Missing Guards (shadow) على v24.9 (مولَّدٌ آلياً من registry10/build_bindings.py — لا يُحرَّر يدوياً؛ الآلياتُ كما في Phase 3) ═══\n   الوثيقةُ المرجعية v24.9 · SHA-256 6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde\n   يُحمَّل بعد KIVO_GUARDS ولا يمسّه. الوضع: shadow — تُحسب أحكامُ TO-BE للـ10 to-build وتُقارَن بحكم النظام القديم (canWrite) الذي يبقى نافذاً حرفاً بحرف. */\n"
+  },
+  {
+   "part": "010-kivo-scope-2.js",
+   "source": "scope-bindings",
+   "var": "KIVO_SCOPE_BINDINGS",
+   "header": "/* ═══ KIVO · R203 · Phase 4.5 — Read Binding Closure + Identity Binding على v24.9 (مولَّدٌ آلياً من registry10/scope_bindings.py + scope_engine.js + read_inventory.json — لا يُحرَّر يدوياً) ═══\n   الوثيقةُ المرجعية v24.9 · SHA-256 6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde\n   يُحمَّل بعد KIVO_BUILD ولا يمسّه. الوضع: shadow — KIVO_SCOPE.evaluate/evaluateWrite (الكتابة) وKIVO_SCOPE.evaluateRead (القراءة · D4‑01) تحسب نتيجةَ كلِّ بُعدٍ (allow · deny · unknown · not_applicable)\n   والقرارَ المركّب ويُقارَن بحكم النظام القديم الذي يبقى نافذاً حرفاً بحرف. D4‑02/D4‑03: لا استثناءَ زمنياً لمدير النظام · D4‑04: سقفُ الإدارة الصريح لا ALL بالدور · P4.1.1‑01: مفاتيحُ القراءة من جدول ربطٍ صريح (readKeysFor) لا من guard.kind وحده · لا مفاتيحَ جديدة · لا Default Deny · لا كتابةَ قيم نطاق. */\n"
+  },
+  {
+   "part": "014-identity-migration-2.js",
+   "source": "identity-migration",
+   "var": "KIVO_IDENTITY_MIGRATION_DATA",
+   "header": "/* ═══ KIVO · R203 · Phase 4.5 — Identity Migration Rehearsal + Site Identity Closure على v24.9 (مولَّدٌ آلياً من registry10/gen_identity.py + identity_engine.js — لا يُحرَّر يدوياً) ═══\n   الوثيقةُ المرجعية v24.9 · SHA-256 6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde\n   يُحمَّل بعد KIVO_SCOPE_MIGRATION ولا يمسّه. الوضع: rehearsal (dry-run) — KIVO_IDENTITY_MIGRATION.rehearse(input, hooks) يبني مجموعةَ الكتابة المقترحة لترحيل الهوية (uid · sid · ekey) حتمياً من بذرةٍ آمنة — ومع v24.9 (IP‑01/IP‑02) إقفالُ هوية الموقع: sid لكل طابقِ خطةٍ حالي بلا sid وانتشارُه بنيوياً إلى لقطة الشهر الجاري\n   مع تصنيف النسب (exact · high · medium · ambiguous · unlinked) وتصميمِ الرجوع والتحقّقِ ذهاباً وإياباً — ولا يكتب شيئاً قط (writes = 0). لا Enforcement · لا كتابةَ إنتاجية · لا توسيعَ نطاق. */\n"
+  }
+ ]
+}
