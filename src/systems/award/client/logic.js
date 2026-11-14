@@ -937,7 +937,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   awCanSetRef() {
     try {
       const P = KIVO.BassamPerm;
-      return this.awIsSuper() && !!(P && P.deptCap && P.deptCap().indexOf("award") !== -1);
+      void P; return this.awIsSuper();   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد — كان مشروطاً بالجائزة على سقف الإدارة */
     } catch (t) {
       return !1;
     }

@@ -55,10 +55,11 @@ test('super: switching unit changes the data shown, not identity or page access;
     }
     assert.equal(per.TEST_ONLY_A.empsAdd, true, 'inside the ceiling super keeps full actions');
     assert.ok(visA.includes('emps') && visA.includes('admin'));
-    /* B: the employees page opens through the nav and lists B's employee, with the add control (D1-c) */
+    /* B: the employees page opens through the nav and lists B's employee, with the add control (D1-c). The control is an icon
+       whose label is its title — the probe read the text only, so the former «0» held whatever the page offered; it reads the title too */
     await switchTo(s, 'TEST_ONLY_B');
     await s.page.locator('.bsb .n', { hasText: /موظفو/ }).first().click(); await s.page.waitForTimeout(3000);
-    const ev = await s.page.evaluate(() => { const m = document.querySelector('main') || document.body; return { hash: location.hash, text: m.innerText, add: [...m.querySelectorAll('button')].filter((x) => x.getBoundingClientRect().height && /إضافة موظف/.test(x.textContent)).length }; });
+    const ev = await s.page.evaluate(() => { const m = document.querySelector('main') || document.body; return { hash: location.hash, text: m.innerText, add: [...m.querySelectorAll('button')].filter((x) => x.getBoundingClientRect().height && /إضافة موظف/.test(x.textContent + ' ' + (x.getAttribute('title') || ''))).length }; });
     assert.match(ev.text, /TEST_ONLY موظف ب/, 'B employees visible to super');
     assert.ok(ev.add > 0, 'add-employee control offered to super outside the ceiling (D1-c)');
     /* pages that hang their content on sub-pages/tabs (award · irshad · seized · planning) open with their tabs and their writes, outside the ceiling (D1-c) */
