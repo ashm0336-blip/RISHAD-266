@@ -23,7 +23,7 @@ test('fail-closed: عطلُ قراءة meta في بيئة الإنفاذ ⇒ 503
   const az1 = await C.api('/api/authz', { cookie: su.ck }); assert.equal(az1.status, 503, '/api/authz 503');
   const br = await C.api('/api/brand'); assert.equal(br.status, 200, '/api/brand يبقى (هوية عامة بلا بيانات)');
   /* KIVO_261 (إفصاح — تعديلُ اختبارٍ مقصود · SOT-145): النبضُ في وضع الحماية يُعلن الجاهزيةَ (ready:0 · mode:'protect') — كان المفتاحان الأربعة وحدها */
-  const pg = await C.api('/api/ping'); assert.equal(pg.status, 200); assert.deepEqual(Object.keys(pg.j).sort(), ['cf', 'fresh', 'mode', 'ok', 'ready', 'ver'], '/api/ping نبضٌ مختصر بلا أعداد');
+  const pg = await C.api('/api/ping'); assert.equal(pg.status, 200); assert.deepEqual(Object.keys(pg.j).sort(), ['cf', 'commit', 'fresh', 'mode', 'ok', 'ready', 'ver'], '/api/ping نبضٌ مختصر بلا أعداد');
   assert.equal(pg.j.ready, 0, 'الخادمُ حيٌّ غيرُ جاهز'); assert.equal(pg.j.mode, 'protect', 'وضعُ الحماية معلَن للمراقِب');
   const bt = await C.boot(su.ck); assert.equal(bt.status, 200); assert.equal(bt.boot.auth, 'need', 'صفحةُ الدخول لا البيانات'); assert.equal(bt.boot.authz, 'unavailable'); assert.deepEqual(bt.boot.keys, {}, 'لا مفاتيحَ تُحقن');
   assert.ok(bt.boot.notice && bt.boot.notice.includes('وضع الحماية'), 'إشعارٌ لشاشة الدخول');
