@@ -255,7 +255,7 @@ test('authorize0: الجلسة · المجهول · الجهاز · العامّ
   assert.equal(W.authorize0(gm1, K('bassam_tasks_v1'), 'add').ok, true, 'مديرُ القطاع على إدارةٍ تحته (سلسلةُ الأسلاف)');
   assert.equal(W.authorize0(gm1, K('bassam_tasks_v1', 'd2'), 'add').why, 'dept', 'مديرُ القطاع خارج قطاعه');
   assert.equal(W.authorize0(actor('dm1', null, { mods: { off: ['tasks'] } }), K('bassam_tasks_v1'), 'add').why, 'page', 'وحدةٌ مطفأةٌ على مستوى المنصة: لا ورقة');
-  assert.equal(W.authorize0(actor('su', null, { mods: { off: ['tasks'] } }), K('bassam_tasks_v1'), 'add').ok, false, 'ولا يُستثنى مديرُ النظام من الوحدة المطفأة');
+  assert.equal(W.authorize0(actor('su', null, { mods: { off: ['tasks'] } }), K('bassam_tasks_v1'), 'add').ok, true, 'V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية: الوحدةُ المطفأة لا تقيّده');
   const ruled = Object.keys(W.RES_REG).find(k => W.RES_REG[k].scope === 'dept' && W.RES_REG[k].rule);
   if (ruled) assert.equal(W.authorize0(su, K(ruled), 'edit').why, 'rule', 'سياسةٌ خاصة تُفحص في موضعها');
 });

@@ -43,7 +43,7 @@ test('typed round geometry: no scope record and a narrowing legacy record both a
   const outside = await save(edit, 'TEST_ONLY_round_ceiling_outside');
   assert.equal(outside.status, 200, JSON.stringify(outside.json));
   assert.deepEqual(inspectOperationalFixture(B.env, key), edit);
-  /* سقفُ الوحدة بلا «daily»: مرفوضٌ حتى لمدير النظام ولا يُكتب شيء */
+  /* سقفُ الوحدة بلا «daily»: كان مرفوضاً حتى لمدير النظام — V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية فيُكتب (السقفُ لغيره تغطّيه اختباراتُ الأدوار) */
   const perms = copy(B.keys.bassam_perms_v1); perms.caps[D1] = perms.caps[D1].filter((k) => k !== 'daily');
   await B.DB.batch(B.W.kvPutStmts(B.env, 'kv', 'bassam_perms_v1', JSON.stringify(perms)).concat([
     B.DB.prepare("UPDATE revs SET rev=rev+1 WHERE k='bassam_perms_v1'"),
@@ -51,9 +51,8 @@ test('typed round geometry: no scope record and a narrowing legacy record both a
   const protectedNow = identitySnapshot(B.DB);
   const edit2 = copy(edit); edit2[dk].d[0].zones[0].code = '77';
   const capped = await save(edit2, 'TEST_ONLY_round_unit_ceiling');
-  assert.equal(capped.status, 403, JSON.stringify(capped.json));
-  assert.equal(capped.json.denied[key].why, 'perm');
-  assert.deepEqual(inspectOperationalFixture(B.env, key), edit);
+  assert.equal(capped.status, 200, JSON.stringify(capped.json));
+  assert.deepEqual(inspectOperationalFixture(B.env, key), edit2);
   assert.deepEqual(identitySnapshot(B.DB), protectedNow);
   void protectedBefore;
 });

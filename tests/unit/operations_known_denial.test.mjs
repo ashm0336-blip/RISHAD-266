@@ -1,7 +1,8 @@
 /* Canonical known denial, actual 280 transport and actual Daily _opCommit.
    Both source and explicit emitted bundles are exercised; no grants or cloud.
    RISHAD-266: the known denial was the retired scope ceiling ("unmigrated-department-ceiling"); it is now the unit ceiling:
-   the department's own page ceiling (bassam_perms_v1.caps) without «daily» refuses the rounds write even for the system administrator. */
+   V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية فلا يُرفض — فالرفضُ المعروف هنا لمدير الإدارة (manager1) بورقته الصريحة:
+   عرضُ الجولات وحده، فيقرأ ولا يكتب. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,7 +10,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { parse } from 'acorn';
 import { createHash } from 'node:crypto';
-import { world, D1, IDS, copy, identitySnapshot } from './custody_review_fx.mjs';
+import { world, D1, IDS, EKEYS, copy, identitySnapshot } from './custody_review_fx.mjs';
 import { installOperationalFixture, inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { ROOT } from './harness.mjs';
 import { loadClient, until } from './k264_vm.mjs';
@@ -26,12 +27,12 @@ async function setup(t,emitted){
  const floor={sid:'TEST_ONLY_SCOPE_SITE',name:'TEST_ONLY site',num:0,approved:false,zones:[],gates:[],marks:[],paths:[],sectors:[]};
  await replaceOperationalFixture(B.env,'bsdept:'+D1+':bassam_plan_v1',{pMig:3,floors:[floor],months:{[ym]:{c:1,d:[copy(floor)]}},cfg:{},delMonths:{}});
  const before={[dk]:{t:1,ap:0,auto:1,d:[{sid:floor.sid,zones:[],gates:[],marks:[],paths:[]}]}};await replaceOperationalFixture(B.env,KEY,before);
- const perms=copy(B.keys.bassam_perms_v1);perms.caps[D1]=perms.caps[D1].filter(k=>k!=='daily');   /* RISHAD-266: the unit ceiling is the known denial */
+ const perms=copy(B.keys.bassam_perms_v1);perms.emps=perms.emps||{};perms.emps[D1]=Object.assign({},perms.emps[D1],{[EKEYS.manager1]:{daily:['view'],'daily/rounds':['view']}});   /* V7 · د1-ج: the known denial is the manager's own view-only sheet on the rounds (the platform administrator is never denied) */
  await B.DB.batch([...B.W.kvPutStmts(B.env,'kv','bassam_perms_v1',JSON.stringify(perms)),B.DB.prepare("UPDATE revs SET rev=rev+1 WHERE k='bassam_perms_v1'"),B.DB.prepare("UPDATE meta SET v=CAST(CAST(v AS INTEGER)+1 AS TEXT) WHERE k='rev'")]);
- const initial=(await B.api('super','/api/get?keys=bassam_auth_users_v1,bassam_depts_v1,bassam_perms_v1,bassam_gdepts_v1,bassam_platform_v1')).json;
- const authz=await B.api('super','/api/authz');assert.equal(authz.status,200);assert.ok(authz.json.me);
+ const initial=(await B.api('manager1','/api/get?keys=bassam_auth_users_v1,bassam_depts_v1,bassam_perms_v1,bassam_gdepts_v1,bassam_platform_v1')).json;
+ const authz=await B.api('manager1','/api/authz');assert.equal(authz.status,200);assert.ok(authz.json.me);
  const control={mode:'normal',posts:[],hold:null,release:null,raced:false},protectedBefore=identitySnapshot(B.DB),toasts=[];
- const T=loadClient({blocks:[],jar:{cookie:'bs_tok=TEST_ONLY_session_super'},boot:{srv:1,cf:1,uid:IDS.super,authz:authz.json.me,v:initial.v,keys:Object.fromEntries(Object.entries(initial.keys).filter(([,x])=>x.v!=null).map(([k,x])=>[k,x.v])),revs:Object.fromEntries(Object.entries(initial.keys).map(([k,x])=>[k,x.rev]))},C:{req:async(route,o={})=>{
+ const T=loadClient({blocks:[],jar:{cookie:'bs_tok=TEST_ONLY_session_manager1'},boot:{srv:1,cf:1,uid:IDS.manager1,authz:authz.json.me,v:initial.v,keys:Object.fromEntries(Object.entries(initial.keys).filter(([,x])=>x.v!=null).map(([k,x])=>[k,x.v])),revs:Object.fromEntries(Object.entries(initial.keys).map(([k,x])=>[k,x.rev]))},C:{req:async(route,o={})=>{
   const url=new URL(route,'http://x');assert.equal(url.origin,'http://x');assert.doesNotMatch(url.pathname,/\/api\/img|r2/i);const headers=new Headers({Cookie:o.cookie});if(o.method==='POST'){headers.set('Origin','http://x');headers.set('Content-Type','application/json');}
   if(url.pathname==='/api/save'){
    control.posts.push(o.body);
@@ -43,7 +44,7 @@ async function setup(t,emitted){
   return response;
  }}});
  const W=T.W,K=W.KIVO;W.document.hidden=true;W.URLSearchParams=URLSearchParams;W.AbortController=AbortController;
- K.__BS_AUTHZ=true;K.BassamAuth={user:()=>B.users.find(u=>u.id===IDS.super)};K.BassamDepts={active:()=>D1};K.BassamCount=n=>String(n);
+ K.__BS_AUTHZ=true;K.BassamAuth={user:()=>B.users.find(u=>u.id===IDS.manager1)};K.BassamDepts={active:()=>D1};K.BassamCount=n=>String(n);
  const source=emitted?bytes('src/api/280-server-storage.js'):fs.readFileSync(path.join(ROOT,'src/api/280-server-storage.js'),'utf8');vm.runInContext(source,T.ctx,{filename:emitted?'emitted280':'source280'});
  const service=K.__BS_SRV.operations;assert.equal((await service.read([KEY])).ok,1);
  const daily=emitted?bytes('src/modules/daily/logic.js'):fs.readFileSync(path.join(ROOT,'src/modules/daily/logic.js'),'utf8');
