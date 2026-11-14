@@ -17,10 +17,10 @@
    "#/dstats"
   ],
   "ui": [
-   "src/modules/dstats/view.html",
-   "src/modules/dstats/helmet.css"
+   "src/systems/dstats/client/view.html",
+   "src/systems/dstats/client/helmet.css"
   ],
-  "domain": "src/modules/dstats/logic.js",
+  "domain": "src/systems/dstats/client/logic.js",
   "data": [
    "bassam_dayshift_v1",
    "bassam_dreport_v1",

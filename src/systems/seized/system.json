@@ -1,0 +1,52 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "seized",
+ "name": "نظام المضبوطات",
+ "note": "V7 · المرحلة 2 · الحزمة ب: نقلُ ملفات النظام الكاملة إلى مجلده (ترتيبٌ لا يغيّر ما يُرى). هذا الملف يسرد ما في المجلد وما بقي للنظام خارجه؛ لا تقرؤه القاعدة ولا الأدوات بعد (الحزمة ج).",
+ "client": {
+  "slug": "seized",
+  "component": "Seized",
+  "files": [
+   "client/defaults.json",
+   "client/helmet.css",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html"
+  ]
+ },
+ "server": {
+  "parts": [
+   "server/019l-seized.js",
+   "server/019l-seized-query.js",
+   "server/019l-seized-operations.js",
+   "server/019l-seized-dashboard.js",
+   "server/019n-seized-due.js"
+  ],
+  "order": "workers/parts.json"
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
+ },
+ "tests": [
+  "tests/seized_codec.test.mjs",
+  "tests/seized_due.test.mjs",
+  "tests/seized_fx.mjs",
+  "tests/seized_operations.test.mjs",
+  "tests/seized_query.test.mjs"
+ ],
+ "derived": [
+  "src/pages/Seized.dc.html",
+  "workers/parts/019k-seized-defaults.js"
+ ],
+ "sharedStaysInBase": [
+  "src/modules/business-cloud.js",
+  "workers/parts/019k-business-context.js",
+  "workers/parts/019n-business-integration.js",
+  "workers/parts/046-kivo-build-3.js",
+  "workers/parts/047-retro.js",
+  "migrations/0009_seized_awards.sql"
+ ]
+}

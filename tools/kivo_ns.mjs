@@ -36,7 +36,8 @@ const blocks = JSON.parse(baseText('src/blocks.json'));
 /* الملفاتُ المعاد كتابتُها: كتلُ js (عدا المورَّد ومحمِّل الصفحات الذي يُعاد بناؤه عند التركيب) · منطقُ الوحدات · منطقُ الغلاف */
 const SKIP = new Set(spec.skip || []);
 const files = blocks.blocks.filter(b => (b.kind === 'js' || b.kind === 'inline-js') && !SKIP.has(b.id)).map(b => 'src/' + b.id)
-  .concat(lsTree('src/modules').filter(f => /\/logic\.js$/.test(f)));
+  .concat(lsTree('src/modules').filter(f => /\/logic\.js$/.test(f)))
+  .concat(fs.existsSync(path.join(ROOT, 'src/systems')) ? lsTree('src/systems').filter(f => /\/client\/logic\.js$/.test(f)) : []);   /* V7 · الحزمة ب: منطقُ وحدات الأنظمة المنقولة */
 /* الأسماء: كلُّ X يُسنَد إليه «window.X = …» في المصدر أو يولّده البناء (spec.extra) — عدا المستثنى (واجهاتُ المتصفح · بيانُ الخادم) */
 const EXCL = new Set(spec.exclude || []);
 const NAMES = new Set(spec.extra || []);

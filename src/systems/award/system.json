@@ -1,0 +1,43 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "award",
+ "name": "جائزة التميز",
+ "note": "V7 · المرحلة 2 · الحزمة ب: نقلُ ملفات النظام الكاملة إلى مجلده (ترتيبٌ لا يغيّر ما يُرى). هذا الملف يسرد ما في المجلد وما بقي للنظام خارجه؛ لا تقرؤه القاعدة ولا الأدوات بعد (الحزمة ج).",
+ "client": {
+  "slug": "award",
+  "component": "Award",
+  "files": [
+   "client/helmet.css",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html"
+  ]
+ },
+ "server": {
+  "parts": [
+   "server/019m-award.js"
+  ],
+  "order": "workers/parts.json"
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
+ },
+ "tests": [
+  "tests/award_domain.test.mjs",
+  "tests/rishad266_award_delete_ceiling.test.mjs",
+  "tests/browser/v7_ux_award_form_refresh.test.mjs"
+ ],
+ "derived": [
+  "src/pages/Award.dc.html",
+  "workers/parts/019k-award-reference-html.js"
+ ],
+ "sharedStaysInBase": [
+  "src/modules/business-cloud.js",
+  "workers/parts/019k-business-context.js",
+  "workers/parts/019n-business-integration.js",
+  "migrations/0009_seized_awards.sql"
+ ]
+}

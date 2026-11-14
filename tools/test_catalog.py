@@ -80,7 +80,7 @@ def build():
     gf, labels = gate_files()
     rows = {}
     gt = open(GATE, encoding='utf-8').read() if GATE else ''
-    for f in sorted(glob.glob(os.path.join(ROOT, 'tests', 'unit', '*.test.mjs'))): gf[os.path.relpath(f, ROOT)] = 'tests/unit/*.test.mjs' in gt   # البوابةُ تشغّلها كلَّها
+    for f in sorted(glob.glob(os.path.join(ROOT, 'tests', 'unit', '*.test.mjs')) + glob.glob(os.path.join(ROOT, 'src', 'systems', '*', 'tests', '*.test.mjs'))): gf[os.path.relpath(f, ROOT)] = 'tests/unit/*.test.mjs' in gt   # V7 · الحزمة ب: اختباراتُ الأنظمة المنقولة   # البوابةُ تشغّلها كلَّها
     for f in sorted(glob.glob(os.path.join(ROOT, 'tests', 'source', '*.py'))): gf[os.path.relpath(f, ROOT)] = os.path.basename(f) in gt
     for f in sorted(glob.glob(os.path.join(ROOT, 'cfbench', 'k2[5-9]*.mjs'))): gf.setdefault(os.path.relpath(f, ROOT), False)
     cnt = log_counts(labels)

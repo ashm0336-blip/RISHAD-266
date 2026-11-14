@@ -253,7 +253,7 @@
       "sha256": "7a4762b2f54d31229b20ec2903a03b82f4a4a5aa7f631cadb6be7ed217ce382c"
     },
     {
-      "file": "019g-irshad-domain.js",
+      "file": "../../src/systems/irshad/server/019g-irshad-domain.js",
       "lines": [
         12539,
         13296
@@ -262,7 +262,7 @@
       "sha256": "f4b8669fccde22d0eeeb535a7865d92bd6b150245cf668db0943c0bcaec8325b"
     },
     {
-      "file": "019h-irshad-query.js",
+      "file": "../../src/systems/irshad/server/019h-irshad-query.js",
       "lines": [
         13297,
         13582
@@ -271,7 +271,7 @@
       "sha256": "e35135c835f097818f8c3a557afd65a61930e5bf893fd2e76613b0cd3b654b85"
     },
     {
-      "file": "019i-irshad-operations.js",
+      "file": "../../src/systems/irshad/server/019i-irshad-operations.js",
       "lines": [
         13583,
         13843
@@ -280,7 +280,7 @@
       "sha256": "517681efc61100dc7750316e2ad3366141a52d3ee43634fa4bbfa4d875c5ffe9"
     },
     {
-      "file": "019j-irshad-daily.js",
+      "file": "../../src/systems/irshad/server/019j-irshad-daily.js",
       "lines": [
         13844,
         13912
@@ -316,7 +316,7 @@
       "sha256": "55cc421a423ee7a1a1d02eee2974606e61152bf45157c08e6b72d108c79ff913"
     },
     {
-      "file": "019l-seized.js",
+      "file": "../../src/systems/seized/server/019l-seized.js",
       "lines": [
         14023,
         15206
@@ -325,7 +325,7 @@
       "sha256": "f615f0e095a05937f1b99643f7894fdfe260eeec8c44e98ef05c2c5e3e80255b"
     },
     {
-      "file": "019l-seized-query.js",
+      "file": "../../src/systems/seized/server/019l-seized-query.js",
       "lines": [
         15207,
         15875
@@ -334,7 +334,7 @@
       "sha256": "f8981b489d666454d061fb1e77c34d70194b807badda71fe510029c27c346cd0"
     },
     {
-      "file": "019l-seized-dashboard.js",
+      "file": "../../src/systems/seized/server/019l-seized-dashboard.js",
       "lines": [
         15876,
         16231
@@ -343,7 +343,7 @@
       "sha256": "bd3b62c2cb19d459c4b91e3e5d534b702f53d560a137dcdf215c02147d5805b4"
     },
     {
-      "file": "019l-seized-operations.js",
+      "file": "../../src/systems/seized/server/019l-seized-operations.js",
       "lines": [
         16232,
         17284
@@ -352,7 +352,7 @@
       "sha256": "786d9ac5c642463acfb414135725d21bd441bbc97a372fff73eb00e1d9d6df99"
     },
     {
-      "file": "019m-award.js",
+      "file": "../../src/systems/award/server/019m-award.js",
       "lines": [
         17285,
         17690
@@ -370,7 +370,7 @@
       "sha256": "0e5e6d1d038239afaeb2fe52d2056b25ea5ca26a508ca90aef45c7d3dd8428eb"
     },
     {
-      "file": "019n-seized-due.js",
+      "file": "../../src/systems/seized/server/019n-seized-due.js",
       "lines": [
         17872,
         17909
@@ -443,7 +443,7 @@
       "head": "/* ══ PRIVACY batch (SV09 · IP07 · IP10 · IP39 · SV01): least-privilege projection of personal data and of the permissions registry ══"
     },
     {
-      "file": "020-dstats.js",
+      "file": "../../src/systems/dstats/server/020-dstats.js",
       "lines": [
         19983,
         20335

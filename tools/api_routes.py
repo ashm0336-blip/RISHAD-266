@@ -22,9 +22,10 @@ RT_RX = re.compile(r"path === '(/api/[A-Za-z0-9/_-]+)'|path\.indexOf\('(/api/[A-
 
 def scan():
     found = {}
-    for f in sorted(os.listdir(PARTS)):
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import systems_paths   # V7 · الحزمة ب: الأجزاءُ كما يسمّيها parts.json (ومنها أجزاءُ الأنظمة) — بالاسم كما كانت
+    for f, fp in sorted((os.path.basename(n), p) for n, p in systems_paths.worker_parts(PARTS)):
         if not f.endswith('.js'): continue
-        t = open(os.path.join(PARTS, f), encoding='utf-8').read()
+        t = open(fp, encoding='utf-8').read()
         fns = [(m.start(), m.group(1) or m.group(2)) for m in FN_RX.finditer(t)]
         for m in RT_RX.finditer(t):
             r = m.group(1) or m.group(2)

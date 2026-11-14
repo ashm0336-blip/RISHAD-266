@@ -21,7 +21,7 @@ step "الفحوصُ الساكنة (static)" npm run -s lab:static
 step "تطابقُ السجلّين (gate.py)" python3 gate.py "pk$N"
 step "ESLint + الألوان الخام + نقاطُ الكسر + الأيقونات" bash -c "npm run -s lint && python3 tools/color_ratchet.py $SRCDIR && python3 tools/bp_ratchet.py $SRCDIR && python3 tools/icons.py check --src $SRCDIR"
 step "SBOM + مخطّطُ البيئة" bash -c "python3 tools/sbom.py --src $SRCDIR --check && python3 tools/env_check.py $SRCDIR"
-step "اختباراتُ الوحدة" bash -c "set -o pipefail; node --no-warnings --test tests/unit/*.test.mjs 2>&1 | grep -E '^# (pass|fail)' | tr '\n' ' '"
+step "اختباراتُ الوحدة" bash -c "set -o pipefail; node --no-warnings --test tests/unit/*.test.mjs src/systems/*/tests/*.test.mjs 2>&1 | grep -E '^# (pass|fail)' | tr '\n' ' '"
 step "الفرقُ بالضبط · التكافؤ · الخصوصية" bash -c "set -o pipefail; npm run -s check:$N 2>&1 | grep -E 'النتيجة|✘' | tr '\n' ' '"
 A=$(cd "$T/kivo" && find "pk$N" -type f | LC_ALL=C sort | xargs sha256sum | sha256sum | cut -c1-64)
 B=$(cd "$ROOT" && find "pk$N" -type f | LC_ALL=C sort | xargs sha256sum | sha256sum | cut -c1-64)

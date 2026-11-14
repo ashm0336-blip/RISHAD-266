@@ -1,0 +1,47 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "irshad",
+ "name": "نظام الاسترشاد",
+ "note": "V7 · المرحلة 2 · الحزمة ب: نقلُ ملفات النظام الكاملة إلى مجلده (ترتيبٌ لا يغيّر ما يُرى). هذا الملف يسرد ما في المجلد وما بقي للنظام خارجه؛ لا تقرؤه القاعدة ولا الأدوات بعد (الحزمة ج).",
+ "client": {
+  "slug": "irshad",
+  "component": "Irshad",
+  "files": [
+   "client/helmet.css",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html"
+  ]
+ },
+ "server": {
+  "parts": [
+   "server/019g-irshad-domain.js",
+   "server/019h-irshad-query.js",
+   "server/019i-irshad-operations.js",
+   "server/019j-irshad-daily.js"
+  ],
+  "order": "workers/parts.json"
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [
+   "migrations/0008_irshad.sql"
+  ],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
+ },
+ "tests": [
+  "tests/irshad_cloud_http.test.mjs",
+  "tests/irshad_cloud_ui.test.mjs",
+  "tests/irshad_daily.test.mjs",
+  "tests/irshad_domain_cutover.test.mjs",
+  "tests/irshad_query.test.mjs"
+ ],
+ "derived": [
+  "src/pages/Irshad.dc.html"
+ ],
+ "sharedStaysInBase": [
+  "workers/parts/046-kivo-build-3.js",
+  "workers/parts/047-retro.js"
+ ]
+}

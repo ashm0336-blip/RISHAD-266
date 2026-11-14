@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SRC } from './harness.mjs';
+import { SRC, moduleFile } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 /* قيمةُ رمزٍ محلولة (فاتح/داكن) من tokens.json */
@@ -53,7 +53,7 @@ test('ES-11 · شريطُ الترقيم بلون السطح في كل الوح�
   const mods = ['award', 'dreport', 'employees', 'irshad', 'plan', 'seized', 'staff', 'tasks'];
   let n = 0;
   for (const m of mods) {
-    const v = rd('modules/' + m + '/view.html');
+    const v = rd(path.relative(SRC, moduleFile(m, 'view.html')));
     assert.doesNotMatch(v, /background:var\(--bg-a2452452450p2\)/, m);
     for (const x of v.matchAll(/<div class="bs-hbar(?: bs-wrap)?" style="([^"]*)">\s*<span[^>]*>عرض /g)) { assert.match(x[1], /;background:var\(--bg-surface\);font-size:12px$/, m); n++; }
   }

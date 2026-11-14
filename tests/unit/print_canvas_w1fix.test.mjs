@@ -10,7 +10,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SRC } from './harness.mjs';
+import { SRC, moduleDir } from './harness.mjs';
+import { moduleDirs } from '../../tools/systems_paths.mjs';   /* V7 · الحزمة ب */
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 
@@ -51,7 +52,7 @@ function documentCss() {
   const tpl = rd('layouts/index.template.html'), parts = [];
   for (const m of tpl.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)) parts.push(['index.template.html <style>', m[1]]);
   for (const m of tpl.matchAll(/@@KIVO_(?:BLOCK|INLINE):([^@]+\.css)@@/g)) parts.push([m[1], rd(m[1])]);
-  for (const d of fs.readdirSync(path.join(SRC, 'modules'))) { const p = path.join('modules', d, 'helmet.css'); if (fs.existsSync(path.join(SRC, p))) parts.push([p, rd(p)]); }
+  for (const d of Object.keys(moduleDirs(SRC)).sort()) { const p = path.relative(SRC, path.join(moduleDir(d), 'helmet.css')); if (fs.existsSync(path.join(SRC, p))) parts.push([p, rd(p)]); }
   return parts;
 }
 

@@ -78,7 +78,7 @@ test('Seized build-only defaults exactly preserve the established pre-migration 
   assert.equal(members.length, 4);
   const established = vm.runInNewContext('new (class {' + members.map(node => old.slice(node.start, node.end)).join('\n') + '})()'),
     expected = JSON.parse(JSON.stringify({ cats: established.SZ_DEF_CATS(), actions: established.SZ_DEF_ACTS, kinds: established.SZ_DEF_KINDS })),
-    actual = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/modules/seized/defaults.json'), 'utf8'));
+    actual = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/systems/seized/client/defaults.json'), 'utf8'));
   assert.deepEqual(actual, expected);
   const output = execFileSync(process.execPath, [path.join(ROOT, 'tools/seized_defaults.mjs'), path.join(ROOT, 'src')], { encoding: 'utf8' }),
     generated = JSON.parse(/var SZ_DEFAULTS = (.+);/.exec(output)[1]);
@@ -246,7 +246,7 @@ test('seized dashboard consumes typed aggregates with the existing SVG presentat
 test('seized dashboard category total includes every action and matches category and known-location rows', t => {
   const B = browser('seized', async () => { throw Error('TEST_ONLY no fetch'); }); t.after(B.cleanup); seedForm(B, 'seized');
   const catalog = catalogDto();
-  catalog.catalogs.actions.value = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/modules/seized/defaults.json'), 'utf8')).actions;
+  catalog.catalogs.actions.value = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/systems/seized/client/defaults.json'), 'utf8')).actions;
   B.seed('catalogs', catalog);
   B.page._bcEnsure = () => {};
   const metrics = { reports: 1, qty: 2, sar: 0, employees: 1, actions: { sec: 0, des: 0, sto: 2 } };

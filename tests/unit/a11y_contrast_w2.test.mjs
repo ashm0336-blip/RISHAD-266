@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
-import { ROOT, SRC, moduleLogic } from './harness.mjs';
+import { ROOT, SRC, moduleLogic, moduleFile } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const T = JSON.parse(rd('styles/tokens/tokens.json'));
@@ -118,14 +118,14 @@ test('IRSZ-5 · «المضبوطات»: نصُّ رقاقة الإجراء — �
   assert.match(src, /actFg\(t\) \{\n\s+const v = KIVO\.__bsTokVal \? KIVO\.__bsTokVal\("background", this\.actColor\(t\)\) : "";\n\s+return \/\^var\\\(--bg-x\(a67c1e\|b45309\|c9702a\|d97706\|f59e0b\|fbbf24\)\\\)\$\/\.test\(v\) \? "var\(--warning-on-strong\)" : "var\(--fg-xffffff\)";/);
   /* كلُّ لونٍ حرفيٍّ تختاره الدالة للعنبر اسمٌ لـ--warning-strong فعلاً (لا قائمةً تنحرف عن الرموز) */
   for (const h of ['a67c1e', 'b45309', 'c9702a', 'd97706', 'f59e0b', 'fbbf24']) assert.equal(sem('var(--bg-x' + h + ')'), 'warning-strong', h);
-  assert.match(rd('modules/seized/view.html'), /background:\{\{lg\.actColor\}\};color:\{\{lg\.actFg\}\}/);
+  assert.match(rd('systems/seized/client/view.html'), /background:\{\{lg\.actColor\}\};color:\{\{lg\.actFg\}\}/);
   assert.match(src, /actColor: this\.actColor\(t\.act\),\n\s+actFg: this\.actFg\(t\.act\),/);
 });
 
 test('AUX-13 · عدّادُ النتائج «/ المجموع» بلون --text-muted بلا شفافية (كان 60٪ من لونٍ رماديّ ⇐ 2.47:1)', () => {
   let n = 0;
   for (const m of ['award', 'dreport', 'employees', 'irshad', 'seized', 'staff', 'tasks']) {
-    const v = rd('modules/' + m + '/view.html');
+    const v = rd(path.relative(SRC, moduleFile(m, 'view.html')));
     assert.doesNotMatch(v, /<span style="opacity:\.6"> \//, m);
     n += (v.match(/<span style="color:var\(--text-muted\)"> \//g) || []).length;
   }

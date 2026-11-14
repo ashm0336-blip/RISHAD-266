@@ -9,7 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SRC } from './harness.mjs';
+import { SRC, moduleDir } from './harness.mjs';
 const core = fs.readFileSync(path.join(SRC, 'services', '566-print-core.js'), 'utf8');
 
 test('الخريطةُ صورةٌ واحدة عاليةُ الدقّة (ملفٌّ خفيف) بخطّ المنصة واتجاهها — والمتّجهُ بخيارٍ صريح وحده', () => {
@@ -26,7 +26,7 @@ test('الخريطةُ صورةٌ واحدة عاليةُ الدقّة (ملفٌ
   assert.match(core, /\[\]\.reduce\.call\(\s*x\.querySelectorAll\("\.pg \.mcv svg"\),/);
   assert.doesNotMatch(core, /Promise\.all\(\s*\[\]\.map\.call\(\s*x\.querySelectorAll\("\.pg \.mcv svg"\)/);
   for (const m of ['plan', 'daily']) {
-    const lg = fs.readFileSync(path.join(SRC, 'modules', m, 'logic.js'), 'utf8');
+    const lg = fs.readFileSync(path.join(moduleDir(m), 'logic.js'), 'utf8');
     const call = /BassamPrintCore\.build\(this, t, \{([^\n]*)\}\)/.exec(lg); assert.ok(call, m + ': نداءُ النواة');
     assert.doesNotMatch(call[1].split('logo:')[0], /vector\s*:/, m + ': لا يطلب المتّجه');
   }

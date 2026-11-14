@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { D1Shim, PYTHON, ROOT, applySql } from './harness.mjs';
+import { D1Shim, PYTHON, ROOT, applySql } from '../../../../tests/unit/harness.mjs';
 
 function generated(mode) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'r266-fixture-stats-'));

@@ -8,7 +8,7 @@ src = sys.argv[1]; ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file
 tok = json.load(open(os.path.join(src, 'styles', 'tokens', 'tokens.json'), encoding='utf-8'))
 SCALE = {int(v) for k, v in tok.get('breakpoints', {}).items() if k != 'note'}
 RE = re.compile(r'@media[^{]*?\((?:min|max)-width:\s*([0-9.]+)px\)')
-files = sorted(glob.glob(src + '/styles/*.css') + glob.glob(src + '/layouts/*.css') + glob.glob(src + '/modules/*/helmet.css') + glob.glob(src + '/modules/*/view.html') + glob.glob(src + '/modules/*/logic.js') + glob.glob(src + '/modules/*/logic-*.js') + glob.glob(src + '/auth/*.js') + glob.glob(src + '/components/*.js') + glob.glob(src + '/core/*.js') + [src + '/layouts/index.template.html'])
+files = sorted(glob.glob(src + '/styles/*.css') + glob.glob(src + '/layouts/*.css') + glob.glob(src + '/modules/*/helmet.css') + glob.glob(src + '/modules/*/view.html') + glob.glob(src + '/modules/*/logic.js') + glob.glob(src + '/modules/*/logic-*.js') + [f for x in ('helmet.css', 'view.html', 'logic.js', 'logic-*.js') for f in glob.glob(src + '/systems/*/client/' + x)] + glob.glob(src + '/auth/*.js') + glob.glob(src + '/components/*.js') + glob.glob(src + '/core/*.js') + [src + '/layouts/index.template.html'])
 cnt = collections.OrderedDict()
 for f in files:
     if not os.path.exists(f): continue

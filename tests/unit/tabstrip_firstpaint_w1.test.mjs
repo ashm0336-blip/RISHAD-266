@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SRC } from './harness.mjs';
+import { SRC, moduleDir } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 /* بصمةُ شريط التبويبات: display:flex · align-items:center · justify-content:center · flex-wrap:wrap · gap:8px · padding:4px 0 */
@@ -21,7 +21,7 @@ test('ES-3 · PLAN-03 · DG-08: كلُّ شريط تبويباتٍ يحمل بص
   const mods = JSON.parse(rd('modules/modules.json')).pages.map((p) => p.slug);
   const found = {};
   for (const m of mods) {
-    const f = path.join(SRC, 'modules', m, 'view.html');
+    const f = path.join(moduleDir(m), 'view.html');
     if (!fs.existsSync(f)) continue;
     for (const x of fs.readFileSync(f, 'utf8').matchAll(SIG)) {
       found[m] = (found[m] || 0) + 1;

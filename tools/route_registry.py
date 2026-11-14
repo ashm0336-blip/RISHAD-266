@@ -8,6 +8,7 @@
 """
 import json, os, re, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, 'tools')); import systems_paths   # V7 · الحزمة ب
 J = lambda p: json.load(open(os.path.join(ROOT, p), encoding='utf-8'))
 OUT = os.path.join(ROOT, 'docs/routes.md')
 SPECIAL = {  # مساراتٌ خارج سجلّ الصفحات بحكم طبيعتها — حارسُها في الغلاف نفسِه (root-logic._pageAllowed)
@@ -20,7 +21,7 @@ def build():
     M = J('src/manifests/pages.json'); T = J('src/manifests/perm-tree24.json')
     mods = {}
     for slug in [p['slug'] for p in J('src/modules/modules.json')['pages']]:
-        ch = J('src/modules/%s/meta.json' % slug).get('charter') or {}
+        ch = J(os.path.relpath(os.path.join(systems_paths.module_dir(os.path.join(ROOT, 'src'), slug), 'meta.json'), ROOT)).get('charter') or {}   # V7 · الحزمة ب
         for r in ch.get('routes', []): mods[r[2:]] = slug
     view = {}
     for c in T['containers']:

@@ -22,13 +22,15 @@ def main(a):
         for f in fs:
             if not f.endswith(('.js', '.html')): continue
             p = os.path.relpath(os.path.join(d, f), ROOT).replace(os.sep, '/')
-            if p in CLIENT_ALLOW or p.startswith('src/pages/'): continue   # الصفحاتُ مولَّدةٌ من src/modules (تُفحص مصادرُها)
+            if p in CLIENT_ALLOW or p.startswith('src/pages/'): continue
+            if p.startswith('src/systems/') and p.split('/')[3] != 'client': continue   # V7 · الحزمة ب: خادمُ النظام واختباراتُه تُفحص مع الخادم أدناه   # الصفحاتُ مولَّدةٌ من src/modules (تُفحص مصادرُها)
             t = open(os.path.join(ROOT, p), encoding='utf-8', errors='replace').read()
             for rx in CLIENT_TOKENS:
                 for m in re.finditer(rx, t): bad.append('الواجهة تقيّم النطاق بنفسها: %s:%d (%s)' % (p, t.count('\n', 0, m.start()) + 1, m.group(0)))
     PD = os.path.join(ROOT, 'workers', 'parts'); seen = set()
-    for f in sorted(os.listdir(PD)):
-        t = open(os.path.join(PD, f), encoding='utf-8').read()
+    sys.path.insert(0, os.path.join(ROOT, 'tools')); import systems_paths   # V7 · الحزمة ب: الأجزاءُ كما يسمّيها parts.json (ومنها أجزاءُ الأنظمة)
+    for f, fp in sorted((os.path.basename(n), p) for n, p in systems_paths.worker_parts(PD)):
+        t = open(fp, encoding='utf-8').read()
         for m in SERVER_DIM_RX.finditer(t):
             seen.add(m.group(1))
             if f not in SERVER_ALLOW: bad.append('مقيّمُ البُعد %s خارج أجزاء المحرّك: %s' % (m.group(1), f))

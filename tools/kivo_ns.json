@@ -63,7 +63,7 @@
   "src/modules/planning/logic.js",
   "src/permissions/334-perm-tree-tpl.js",
   "src/modules/kpis/logic.js",
-  "src/modules/award/logic.js",
+  "src/systems/award/client/logic.js",
   "src/services/441-notif-core.js",
   "src/modules/dreport/logic.js",
   "src/services/332-find-day.js",
@@ -72,10 +72,10 @@
   "src/services/590-employees-import.js",
   "src/modules/employees/logic.js",
   "src/services/360-bassam-idb.js",
-  "src/modules/irshad/logic.js",
-  "src/modules/seized/logic.js",
+  "src/systems/irshad/client/logic.js",
+  "src/systems/seized/client/logic.js",
   "src/components/450-pull-refresh.js",
   "src/components/560-canvas-input.js",
-  "src/modules/dstats/logic.js"
+  "src/systems/dstats/client/logic.js"
  ]
 }

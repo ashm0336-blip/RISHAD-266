@@ -17,7 +17,7 @@ fonts = ("@font-face{font-family:'Cairo';font-style:normal;font-weight:400 900;f
 sem = T['semantic']; fam = collections.OrderedDict()
 for t in sem: fam.setdefault(t['name'].split('-')[0], []).append(t['name'])
 sizes = collections.Counter(); radii = collections.Counter()
-for f in [os.path.join(src, _lay['styles'], '100-brand-ui.css')] + glob.glob(os.path.join(src, 'modules/*/helmet.css')):
+for f in [os.path.join(src, _lay['styles'], '100-brand-ui.css')] + glob.glob(os.path.join(src, 'modules/*/helmet.css')) + glob.glob(os.path.join(src, 'systems/*/client/helmet.css')):
     s = open(f, encoding='utf-8').read(); sizes.update(re.findall(r'font-size:\s*([0-9.]+px)', s)); radii.update(re.findall(r'border-radius:\s*([0-9.]+px|9999px|50%)', s))
 top_sizes = sorted(set(k for k, _ in sizes.most_common(12)), key=lambda x: float(x[:-2]))
 top_radii = [k for k, _ in radii.most_common(7)]

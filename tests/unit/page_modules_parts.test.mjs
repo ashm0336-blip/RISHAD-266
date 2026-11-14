@@ -9,10 +9,10 @@ import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
-import { PYTHON, ROOT, SRC, moduleLogic } from './harness.mjs';
+import { PYTHON, ROOT, SRC, moduleLogic, moduleDir } from './harness.mjs';
 
 const PM = path.join(ROOT, 'tools', 'page_modules.py');
-const META = (slug) => JSON.parse(fs.readFileSync(path.join(SRC, 'modules', slug, 'meta.json'), 'utf8'));
+const META = (slug) => JSON.parse(fs.readFileSync(path.join(moduleDir(slug), 'meta.json'), 'utf8'));
 const SCRIPT_RX = /<script(?: type="text\/x-dc")? data-dc-script[^>]*>([\s\S]*?)<\/script>/;
 const M_RX = /^  (?:async )?([A-Za-z_$][\w$]*)\(.*\{$/gm;   /* مناهجُ الصنف/الكائن في المستوى الثاني (prettier) */
 const names = (t) => [...t.matchAll(M_RX)].map((m) => m[1]);

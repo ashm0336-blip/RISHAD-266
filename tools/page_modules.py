@@ -58,7 +58,9 @@ def join(mods, pages, minify):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import icons
     ICONS = icons.load(os.path.join(mods, '..')) if os.path.exists(os.path.join(mods, '..', 'assets', 'icons', 'catalog.json')) else None
     for it in idx:
-        d = os.path.join(mods, it['slug']); meta = json.load(open(os.path.join(d, 'meta.json'), encoding='utf-8'))
+        d = os.path.join(mods, it['slug'])
+        if not os.path.isdir(d): import systems_paths; d = systems_paths.module_dir(os.path.dirname(os.path.abspath(mods)), it['slug'])   # V7 · الحزمة ب: src/systems/<key>/client
+        meta = json.load(open(os.path.join(d, 'meta.json'), encoding='utf-8'))
         logic = inline_assets(read_logic(d, meta), mods)   # KIVO_265 · البند 19: logic.js + أجزاؤه
         if minify and meta['minifiedSource']:
             r = subprocess.run([os.environ.get('KIVO_NODE', 'node'), os.path.join(ROOT, 'node_modules', 'esbuild', 'bin', 'esbuild'), '--minify-whitespace', '--minify-syntax', '--target=es2020', '--charset=utf8', '--log-level=error'], input=logic, capture_output=True, text=True, encoding='utf-8')

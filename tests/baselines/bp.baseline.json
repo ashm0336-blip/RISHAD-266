@@ -19,7 +19,7 @@
   "layouts/helmet-global.css @760": 1,
   "layouts/helmet-global.css @1180": 1,
   "layouts/helmet-global.css @980": 1,
-  "modules/dstats/helmet.css @1150": 1,
+  "systems/dstats/client/helmet.css @1150": 1,
   "modules/employees/view.html @1150": 1,
   "modules/profile/helmet.css @1025": 1,
   "modules/profile/helmet.css @379": 1,

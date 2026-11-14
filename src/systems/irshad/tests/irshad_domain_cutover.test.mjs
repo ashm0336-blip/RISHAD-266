@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { candidateWorker, world, authorizeCandidateUpgrade } from './irshad_domain_fx.mjs';
-import { D1, D2, identitySnapshot } from './custody_review_fx.mjs';
+import { candidateWorker, world, authorizeCandidateUpgrade } from '../../../../tests/unit/irshad_domain_fx.mjs';
+import { D1, D2, identitySnapshot } from '../../../../tests/unit/custody_review_fx.mjs';
 
 const doc = () => ({
   reports: {

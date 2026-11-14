@@ -4,7 +4,7 @@
   "private": true,
   "description": "KIVO — المنصة التشغيلية: المصدر والبوابة (المستودع الانتقالي)",
   "scripts": {
-    "test:unit": "node --no-warnings --test tests/unit/*.test.mjs",
+    "test:unit": "node --no-warnings --test tests/unit/*.test.mjs src/systems/*/tests/*.test.mjs",
     "lint": "node_modules/.bin/eslint -f json -o tests/baselines/last.json src workers/_worker.js || true; python3 tools/lint_ratchet.py tests/baselines/last.json",
     "build:chain": "npm run -s build:265",
     "generate": "node -e \"const p=require('node:child_process').spawnSync(process.env.KIVO_PYTHON||(process.platform==='win32'?'python':'python3'),['tools/generate.py','--src','src',...process.argv.slice(1)],{stdio:'inherit',env:{...process.env,PYTHONIOENCODING:process.env.PYTHONIOENCODING||'utf-8'}});process.exit(p.status??1)\" --",
@@ -34,7 +34,7 @@
     "lab:sys:261": "cd cfbench && node k261sys.mjs ../pk261/_worker.js ../pk261 && node k261tamper.mjs ../pk261/_worker.js ../pk261",
     "build:265": "node tools/build_chain.mjs 265 --current",
     "check:265": "node tools/build_chain.mjs 265 --check-current",
-    "test:unit:265": "KIVO_WORKER=$PWD/workers/_worker.js KIVO_DIST=$PWD/pk265 KIVO_SRC=$PWD/src node --no-warnings --test tests/unit/*.test.mjs",
+    "test:unit:265": "KIVO_WORKER=$PWD/workers/_worker.js KIVO_DIST=$PWD/pk265 KIVO_SRC=$PWD/src node --no-warnings --test tests/unit/*.test.mjs src/systems/*/tests/*.test.mjs",
     "test:coverage:265": "node tools/engine_coverage.mjs tools/engine_coverage.json pk265 --json reports/k265/engine_coverage.json",
     "build:265:legacy": "python3 tools/generate.py --src src --check && python3 tools/icons.py check --src src && python3 tools/tokens.py verify src git:KIVO_264 && node tools/kivo_ns.mjs tools/kivo_ns.json --check && python3 tools/plugins.py check && python3 tools/tokens.py check src && python3 tools/deps_check.py && python3 tools/build.py --src src --mode split --pages lazy --out pk265 --retain pk264 --retain pk263 && python3 tools/build.py --src src --mode monolith --out pk265.mono/index.html && python3 tools/perf_budget.py pk265 && python3 tools/prod_strip.py pk265 && find pk265 -type f | LC_ALL=C sort | xargs sha256sum > pk265.MANIFEST.sha256",
     "check:265:legacy": "python3 tools/generate.py --src src --check && python3 tools/icons.py check --src src && python3 tools/long_lines.py --check && python3 tools/module_charter.py --check && python3 tools/route_registry.py --check && python3 tools/api_routes.py --check && python3 tools/scope_single_engine.py --check && python3 tools/scripts_check.py && python3 tools/hover_check.py && python3 tools/assets_check.py && node tools/dup_nested.mjs --check && python3 tools/reports_check.py && python3 tools/ux_states.py --check && python3 tools/trace.py --check && python3 tools/tokens_refs.py --check && python3 tools/validate_schemas.py && python3 tests/source/k265src.py pk265 && python3 tests/source/k265eq.py pk265 && python3 tests/source/k265pii.py pk265",

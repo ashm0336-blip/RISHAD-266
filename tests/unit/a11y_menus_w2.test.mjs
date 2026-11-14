@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
-import { ROOT, SRC, moduleLogic } from './harness.mjs';
+import { ROOT, SRC, moduleLogic, moduleFile } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const SERVICES = ['src/services/060-percent-format.js', 'src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js',
@@ -79,7 +79,7 @@ test('IRSZ-8 · «الاسترشاد» و«المضبوطات»: بلا تصدي
     assert.deepEqual([exo.irPmExport, exo.irLgSepOn, exo.irLgDelOnly], [true, false, false], slug + ': تصديرٌ بلا حذف — لا فاصلَ تائه');
     /* الزرُّ الصريح أحمرُ بالرموز الدلالية ومعطَّلُ المظهر حين لا سجلات (والطلبُ نفسُه يُردّ بسببه في irLgClearAllAsk) */
     assert.match(dm.irLgDelBtnStyle, /border:1px solid var\(--danger-border\);[^"]*background:var\(--danger-bg\);color:var\(--danger-text\);cursor:not-allowed;opacity:\.55$/);
-    const v = rd('modules/' + slug + '/view.html'), b = block(v, '<sc-if value="{{irLgDelOnly}}"', '<div style="height:20px;width:1px;background:var(--bg-xe2e8f0)"></div>');
+    const v = rd(path.relative(SRC, moduleFile(slug, 'view.html'))), b = block(v, '<sc-if value="{{irLgDelOnly}}"', '<div style="height:20px;width:1px;background:var(--bg-xe2e8f0)"></div>');
     assert.deepEqual(nest(b.replace(/<!--[\s\S]*?-->/g, '')), { bad: [], open: 0 }, slug);
     assert.match(b, /<sc-if value="\{\{irLgDelOnly\}\}"[^>]*>\n\s*<button onClick="\{\{irLgClearAllAsk\}\}" title="حذف جميع [^"]*يُطلب التأكيد قبل الحذف" style="\{\{irLgDelBtnStyle\}\}">/, slug + ': الزرُّ يمرّ بالتأكيد');
     assert.match(b, /<sc-if value="\{\{irPmExport\}\}" hint-placeholder-val="\{\{ true \}\}">\n\s*<div style="position:relative">\n\s*<button onClick="\{\{irLgFilesToggle\}\}"/, slug + ': «ملفات» للتصدير');
