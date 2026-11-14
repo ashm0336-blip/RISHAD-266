@@ -7,6 +7,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import nodePath from 'node:path';
+import { fileURLToPath as _f2p } from 'node:url';
+import { moduleDir as _md } from '../../tools/systems_paths.mjs';
+/* V7 · الحزمة ب: مسارُ وحدة الصفحة نسبةً إلى الجذر — src/modules/<slug> أو src/systems/<key>/client */
+const modRel = (slug) => nodePath.relative(_f2p(new URL('../../', import.meta.url)), _md(_f2p(new URL('../../src', import.meta.url)), slug)).split(nodePath.sep).join('/');
 
 const read = (p) => fs.readFileSync(new URL('../../' + p, import.meta.url), 'utf8');
 const SRC = read('src/components/555-page-states.js'), CSS = read('src/styles/555-page-states.css');
@@ -337,7 +342,7 @@ test('the real manifest: every tab of every route has the icon of the page strip
   vm.runInNewContext(SRC, { window, KIVO, document: { createElement: el, addEventListener() {}, querySelector: () => null, readyState: 'complete' }, JSON, Date, setTimeout: () => 0, clearTimeout() {} });
   const catalog = JSON.parse(read('src/assets/icons/catalog.json')).icons; let strips = 0;
   for (const nav of Object.keys(M.routeNames)) {
-    const page = M.pages.find((p) => p.nav === nav), slug = (page && page.module) || nav, view = fs.existsSync(new URL('../../src/modules/' + slug + '/view.html', import.meta.url)) ? read('src/modules/' + slug + '/view.html') : '';
+    const page = M.pages.find((p) => p.nav === nav), slug = (page && page.module) || nav, view = fs.existsSync(new URL('../../' + modRel(slug) + '/view.html', import.meta.url)) ? read(modRel(slug) + '/view.html') : '';
     const tabs = Array.from(KIVO.PageStates.tabs('#/' + nav)); if (!tabs.length) continue; strips++;
     for (const t of tabs) {
       /* the page view: the label inside its tab strip, and the icon reference right before it */
