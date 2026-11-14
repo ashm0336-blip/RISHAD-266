@@ -1654,6 +1654,14 @@ function nfPage(A, d, type, cat, act) {
     if (cat === "emp" && page === NF_CAP.emp)
       return act === "view" && isMgrOf(A, d) && actsHeldOn(A, d, page, [act]) && enfHeld(A, d, "emp.view");
     var atom = KIVO_REGISTRY.atoms[page + ":" + act];
+    /* V7 · د1-ب: الصفحةُ الحاوية (irshad · seized · award) لا ذرّةَ لها في السجل — ذرّاتُها على أوراقها — فكان لا يُحسب لها مستلمٌ في الإنفاذ.
+       المستلمون الآن هم مستلمو الوضع القديم لنفس الصلاحيات (ورقةُ القارئ تحمل الفعلَ على الحاوية) ∧ يحمل في الإنفاذ ذرّةَ ورقةٍ واحدةٍ منها
+       على الأقل (فالإسقاطُ الصريح في الإنفاذ يبقى نافذاً). emps عولجت أعلاه ولا تصل إلى هنا. */
+    if (!atom && pgIsContainer(page))
+      return actsHeldOn(A, d, page, [act]) && pgLeaves(page).some(function (leaf) {
+        var la = KIVO_REGISTRY.atoms[leaf + ":" + act];
+        return !!(la && la.targets && la.targets.some(function (k) { return enfHeld(A, d, k); }));
+      });
     return !!(
       atom &&
       atom.targets &&

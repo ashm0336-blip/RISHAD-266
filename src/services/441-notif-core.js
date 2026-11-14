@@ -449,7 +449,7 @@ var REG = [
   function muteGet(){ try { return rawGet('bassam_notif_mute_v1') === '1'; } catch(e){ return false; } }
   function muteSet(v){ rawSet('bassam_notif_mute_v1',v ? '1' : '0'); }
 
-  I.CH=CH; I.D=D; I.GO_NAV=GO_NAV; I.goNav=goNav; I.J=J; I.KC=KC; I.KI=KI; I.KN=KN; I.LEAVES=LEAVES; I.LV=LV; I.P=P; I.REG=REG; I.TO=TO;
+  I.CH=CH; I.D=D; I.GO_NAV=GO_NAV; I.goNav=goNav; I.goKpi=goKpi; I.J=J; I.KC=KC; I.KI=KI; I.KN=KN; I.LEAVES=LEAVES; I.LV=LV; I.P=P; I.REG=REG; I.TO=TO;
   I.ack=ack; I.act=act; I.bcAll=bcAll; I.bcDue=bcDue; I.bcPreviewMe=bcPreviewMe; I.bcRemind=bcRemind; I.bcSend=bcSend; I.bcSendDept=bcSendDept; I.bcStats=bcStats; I.bcWithdraw=bcWithdraw;
   I.bkTime=bkTime; I.cfg=cfg; I.deptName=deptName; I.depts=depts; I.dismiss=dismiss; I.dismissAll=dismissAll; I.emit=emit; I.exportDomain=exportDomain; I.fill=fill; I.flushEvents=flushEvents; I.goOk=goOk;
   I.isMgr=isMgr; I.isSuper=isSuper; I.list=list; I.markAll=markAll; I.markRead=markRead; I.me=me; I.monLbl=monLbl; I.muteGet=muteGet; I.muteSet=muteSet; I.myDept=myDept;

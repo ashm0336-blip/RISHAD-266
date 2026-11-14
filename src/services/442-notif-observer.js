@@ -7,7 +7,7 @@
   var D=I.D, GO_NAV=I.GO_NAV, J=I.J, KC=I.KC, KI=I.KI, KN=I.KN, LEAVES=I.LEAVES, LV=I.LV, P=I.P, REG=I.REG, TO=I.TO, CH=I.CH,
       ack=I.ack, bcAll=I.bcAll, bcDue=I.bcDue, bcPreviewMe=I.bcPreviewMe, bcRemind=I.bcRemind, bcSend=I.bcSend, bcSendDept=I.bcSendDept, bcStats=I.bcStats,
       bcWithdraw=I.bcWithdraw, bkTime=I.bkTime, cfg=I.cfg, deptName=I.deptName, depts=I.depts, dismiss=I.dismiss, dismissAll=I.dismissAll, emit=I.emit, fill=I.fill,
-      goOk=I.goOk, goNav=I.goNav, isMgr=I.isMgr, isSuper=I.isSuper, list=I.list, markAll=I.markAll, markRead=I.markRead, me=I.me, monLbl=I.monLbl, muteGet=I.muteGet,
+      goOk=I.goOk, goNav=I.goNav, goKpi=I.goKpi, isMgr=I.isMgr, isSuper=I.isSuper, list=I.list, markAll=I.markAll, markRead=I.markRead, me=I.me, monLbl=I.monLbl, muteGet=I.muteGet,
       muteSet=I.muteSet, myDept=I.myDept, rawGet=I.rawGet, rawSet=I.rawSet, resetCfg=I.resetCfg, setCfg=I.setCfg, typeOf=I.typeOf, types=I.types, unread=I.unread;
   var operationOnce = null, operationEventIndex = 0;
   emit = function(type, detail){
@@ -310,7 +310,7 @@
   setInterval(function(){ try { bcDue(); } catch(e){} }, 30000);
   setInterval(function(){ try { pollSec(); } catch(e){} }, 3 * 60000);
 
-  KIVO.BassamNotif = { REG:REG, LEAVES:LEAVES, TO:TO, LV:LV, CH:CH, KC:KC, KN:KN, KI:KI, GO_NAV:GO_NAV, goNav:goNav,
+  KIVO.BassamNotif = { REG:REG, LEAVES:LEAVES, TO:TO, LV:LV, CH:CH, KC:KC, KN:KN, KI:KI, GO_NAV:GO_NAV, goNav:goNav, goKpi:goKpi,
     cfg:cfg, typeOf:typeOf, types:types, setCfg:setCfg, resetCfg:resetCfg, _bust:I.refresh,
     emit:emit, list:list, unread:unread, markRead:markRead, ack:ack, markAll:markAll, dismiss:dismiss, dismissAll:dismissAll, goOk:goOk, muteGet:muteGet, muteSet:muteSet,
     bcAll:bcAll, bcSend:bcSend, bcWithdraw:bcWithdraw, bcRemind:bcRemind, bcStats:bcStats, bcPreviewMe:bcPreviewMe, bcDue:bcDue, bcSendDept:bcSendDept,
