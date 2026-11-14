@@ -11,7 +11,7 @@ import { ROOT, PYTHON, WORKER } from './harness.mjs';
 const MARK = /^var WORKER_COMMIT = '[^'\n]*';   \/\/ @@KIVO_COMMIT@@$/gm;
 const pkg = (worker, other = 'TEST_ONLY same') => { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'v7d1pkg_')); fs.writeFileSync(path.join(d, '_worker.js'), worker); fs.mkdirSync(path.join(d, 'assets')); fs.writeFileSync(path.join(d, 'assets', 'a.txt'), other); return d; };
 const cmp = (a, b) => spawnSync(PYTHON, [path.join(ROOT, 'tools', 'pkg_compare.py'), a, b], { encoding: 'utf8' });
-const W = (commit, tail = 'var B = 2;') => "var A = 1;\nvar WORKER_COMMIT = '" + commit + "';   // @@KIVO_COMMIT@@\n" + tail + '\n';
+const W = (commit, tail = 'var B = 2;', mark = '   // @@KIVO_COMMIT@@') => "var A = 1;\nvar WORKER_COMMIT = '" + commit + "';" + mark + "\n" + tail + '\n';
 
 test('العاملُ المولَّد: سطرُ العلامة مرّةً واحدة بقيمة unpacked، و/api/ping يعيده', () => {
   const src = fs.readFileSync(WORKER, 'utf8'), m = src.match(MARK);
@@ -28,4 +28,6 @@ test('المقارنة: سطرُ الرقم وحده يُتجاهل · أيُّ 
   assert.equal(cmp(pkg(W(c1)), pkg('var A = 1;\nvar B = 2;\n')).status, 1, 'بلا علامة ⇒ فرق');
   assert.equal(cmp(pkg(W(c1) + W(c1)), pkg(W(c1) + W(c1))).status, 1, 'علامةٌ مكرّرة ⇒ فرق');
   const r = cmp(pkg(W(c1)), pkg(W(c2))); assert.match(r.stdout, new RegExp(c1 + '  ·  ' + c2), 'يطبع الرقمين');
+  assert.equal(cmp(pkg(W(c1, 'var B = 2;', '')), pkg(W(c2, 'var B = 2;', ''))).status, 0, 'العاملُ المضغوط (بلا التعليق) كذلك');
+  assert.equal(cmp(pkg(W(c1, 'var B = 2;', '')), pkg(W(c2, 'var B = 3;', ''))).status, 1, 'والفرقُ في سطرٍ آخر فرقٌ فيه');
 });

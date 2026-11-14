@@ -35,7 +35,7 @@ pfiles = [(os.path.relpath(p, PROD).replace(os.sep, '/'), rb(p)) for p in walk(P
 # V7 · د1: رقمُ التزام البناء يُحقن هنا في _worker.js داخل الحزمة وحدها (لا في ملفٍّ متتبَّع ولا في مجلد البناء) — سطرُ العلامة مرةً واحدة بالضبط.
 #   الشجرةُ غيرُ النظيفة (git status --porcelain غيرُ فارغ) تُوسم ‎-dirty‎. tools/pkg_compare.py يقارن حزمتين متجاهلاً هذا السطر وحده.
 import re as _re, subprocess as _sp2
-COMMIT_RX = _re.compile(rb"^var WORKER_COMMIT = '[^'\n]*';(   // @@KIVO_COMMIT@@)$", _re.M)
+COMMIT_RX = _re.compile(rb"^var WORKER_COMMIT = '[^'\n]*';((?:   // @@KIVO_COMMIT@@)?)$", _re.M)   # العاملُ المبنيُّ مضغوطٌ بلا تعليقات: العلامةُ قد تغيب، والسطرُ يبقى
 def _commit():
     try:
         c = _sp2.run(['git', '-C', H, 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
@@ -49,7 +49,7 @@ def _stamp(entries):
     for rel, b in entries:
         if rel == '_worker.js':
             b, k = COMMIT_RX.subn(b"var WORKER_COMMIT = '" + COMMIT.encode('ascii') + b"';\\1", b); n += k
-            if k != 1: sys.exit('✘ _worker.js: سطرُ العلامة @@KIVO_COMMIT@@ وُجد %d مرّة (المتوقَّع 1)' % k)
+            if k != 1: sys.exit('✘ _worker.js: سطرُ رقم الالتزام (var WORKER_COMMIT) وُجد %d مرّة (المتوقَّع 1)' % k)
         out.append((rel, b))
     if n != 1: sys.exit('✘ _worker.js غائبٌ عن الحزمة — لا مكانَ لرقم الالتزام')
     return out

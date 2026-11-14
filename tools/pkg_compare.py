@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """V7 · د1 — مقارنةُ حزمتين ملفاً ملفاً، متجاهلةً سطرَ رقم الالتزام وحده:
      python3 tools/pkg_compare.py <A.zip|A/> <B.zip|B/>        exit 0 = متطابقتان (عدا سطر الرقم) · 1 = فرق
-   سطرُ الرقم في _worker.js وحده: «var WORKER_COMMIT = '…';   // @@KIVO_COMMIT@@» (يحقنه tools/pack.py). يُشترط أن يوجد مرّةً واحدة
+   سطرُ الرقم في _worker.js وحده: «var WORKER_COMMIT = '…';» (ومعه التعليقُ «// @@KIVO_COMMIT@@» في العامل غيرِ المضغوط · يحقنه tools/pack.py). يُشترط أن يوجد مرّةً واحدة
    بالضبط في كلٍّ من الطرفين — وإلا فرق. كلُّ ما عداه (كلُّ ملفٍّ آخر وكلُّ سطرٍ آخر في _worker.js) يُقارَن بايتاً ببايت."""
 import os, re, sys, zipfile, hashlib
-LINE = re.compile(rb"^var WORKER_COMMIT = '[^'\n]*';(   // @@KIVO_COMMIT@@)$", re.M)
+LINE = re.compile(rb"^var WORKER_COMMIT = '[^'\n]*';((?:   // @@KIVO_COMMIT@@)?)$", re.M)   # في الحزمة العاملُ مضغوطٌ بلا التعليق
 def load(p):
     if os.path.isdir(p):
         out = {}
