@@ -60,3 +60,19 @@ function irDailyManager(A) {
   var u = A && A.u;
   return !!(u && (u.role === 'super' || u.role === 'dept' || u.role === 'gm' || (u.role === 'staff' && u.mgr)));
 }
+/* ── من src/systems/dstats/server/020-dstats.js (V7 · د1): ترقيةُ قائمة العدسات وحدها — تستعملها قاعدةُ الصلاحيات (018 permsGrantWhy) ── */
+/* ترحيل «المناطق» إلى قائمة العدسات — كتابةٌ آلية يجريها أي متصفح عند أول فتح */
+function lensesUpgradeOnly(a, b) {
+  /* KIVO_261 (إصلاح · AUD-055 — كشفه المراجعُ الأمنيّ المستقل): كان غيرُ الكائن يُعدّ {} فتمرّ قيمةٌ نصيةٌ أو مصفوفةٌ أو رقمٌ بأيّ حجم حين تكون المخزَّنةُ
+     {} أو غائبة (الحالُ الافتراضية) — الآن: الجديدةُ كائنٌ أو غائبة، والمخزَّنةُ كذلك، وإلا فليست ترقية */
+  if ((b !== undefined && !isObj(b)) || (a !== undefined && a !== null && !isObj(a))) return false;
+  a = isObj(a) ? a : {}; b = isObj(b) ? b : {};
+  var ks = {}; Object.keys(a).concat(Object.keys(b)).forEach(function (d) { ks[d] = 1; });
+  for (var d in ks) {
+    var x = Array.isArray(a[d]) ? a[d] : null, y = Array.isArray(b[d]) ? b[d] : null;
+    if (!x || !y) return false;
+    var x2 = x.indexOf('zones') === -1 ? x.concat(['zones']) : x;
+    if (!deq(x2, y) && !deq(x, y)) return false;
+  }
+  return true;
+}

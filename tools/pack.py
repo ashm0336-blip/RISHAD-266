@@ -32,6 +32,28 @@ _sp = _ilu.spec_from_file_location('prod_strip', os.path.join(H, 'tools', 'prod_
 _bad = _ps.verify(DIST, PROD)
 if _bad: sys.exit('✘ %s ليس مشتقّاً من %s الحالي (أعد: python3 tools/prod_strip.py %s):\n  ' % (os.path.basename(PROD), os.path.basename(DIST), os.path.relpath(DIST, H)) + '\n  '.join(_bad[:8]))
 pfiles = [(os.path.relpath(p, PROD).replace(os.sep, '/'), rb(p)) for p in walk(PROD)]   # مرشّحُ الإنتاج (بلا أداة الاختبار)
+# V7 · د1: رقمُ التزام البناء يُحقن هنا في _worker.js داخل الحزمة وحدها (لا في ملفٍّ متتبَّع ولا في مجلد البناء) — سطرُ العلامة مرةً واحدة بالضبط.
+#   الشجرةُ غيرُ النظيفة (git status --porcelain غيرُ فارغ) تُوسم ‎-dirty‎. tools/pkg_compare.py يقارن حزمتين متجاهلاً هذا السطر وحده.
+import re as _re, subprocess as _sp2
+COMMIT_RX = _re.compile(rb"^var WORKER_COMMIT = '[^'\n]*';(   // @@KIVO_COMMIT@@)$", _re.M)
+def _commit():
+    try:
+        c = _sp2.run(['git', '-C', H, 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
+        d = _sp2.run(['git', '-C', H, 'status', '--porcelain'], capture_output=True, text=True, check=True).stdout.strip()
+    except Exception as e: sys.exit('✘ رقمُ الالتزام: git غيرُ متاح (' + str(e)[:120] + ')')
+    if not _re.fullmatch(r'[0-9a-f]{40}', c): sys.exit('✘ رقمُ الالتزام غيرُ صالح: ' + c[:60])
+    return c + ('-dirty' if d else '')
+COMMIT = _commit()
+def _stamp(entries):
+    out, n = [], 0
+    for rel, b in entries:
+        if rel == '_worker.js':
+            b, k = COMMIT_RX.subn(b"var WORKER_COMMIT = '" + COMMIT.encode('ascii') + b"';\\1", b); n += k
+            if k != 1: sys.exit('✘ _worker.js: سطرُ العلامة @@KIVO_COMMIT@@ وُجد %d مرّة (المتوقَّع 1)' % k)
+        out.append((rel, b))
+    if n != 1: sys.exit('✘ _worker.js غائبٌ عن الحزمة — لا مكانَ لرقم الالتزام')
+    return out
+files = _stamp(files); pfiles = _stamp(pfiles)
 man = ''.join(f'{sha(b)}  dist/{rel}\n' for rel, b in pfiles)
 manj = json.dumps({'package': NAME, 'root': 'dist/', 'production': os.path.isdir(PROD), 'files': [{'path': rel, 'bytes': len(b), 'sha256': sha(b)} for rel, b in pfiles]}, ensure_ascii=False, indent=1).encode('utf-8')
 readme = f"""{NAME} — حزمةُ النشر dist/ (مرشَّحُ الإنتاج بلا أداة الاختبار — tools/prod_strip.py · لم يُنشر على Production؛ النشرُ بقرار المالك الصريح وحده)
@@ -51,7 +73,7 @@ res = {}
 for f in sorted(os.listdir(OUT)):
     p = os.path.join(OUT, f)
     if os.path.isfile(p) and not f.startswith('SHA256SUMS') and f != 'pack.json': res[f] = {'bytes': os.path.getsize(p), 'sha256': sha(rb(p))}
-json.dump({'package': NAME, 'dist': DIST, 'prod': PROD, 'files': len(files), 'distBytes': sum(len(b) for _, b in files), 'outputs': res}, open(os.path.join(OUT, 'pack.json'), 'w'), ensure_ascii=False, indent=1)
+json.dump({'package': NAME, 'commit': COMMIT, 'dist': DIST, 'prod': PROD, 'files': len(files), 'distBytes': sum(len(b) for _, b in files), 'outputs': res}, open(os.path.join(OUT, 'pack.json'), 'w'), ensure_ascii=False, indent=1)
 with open(os.path.join(OUT, 'SHA256SUMS.txt'), 'w') as f:
     for k, v in res.items(): f.write(v['sha256'] + '  ' + k + '\n')
 print(json.dumps(res, ensure_ascii=False, indent=1))

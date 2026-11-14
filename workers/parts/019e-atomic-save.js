@@ -491,13 +491,13 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   plan.guards.push.apply(plan.guards, transition.guards);
   plan.statements.push.apply(plan.statements, transition.statements);
   plan.revisionKeys.push.apply(plan.revisionKeys, transition.revisionKeys);
-  var irWipeDepartments = Array.from(new Set(transition.transitions.filter(function (t) {
+  var wipeDepartments = Array.from(new Set(transition.transitions.filter(function (t) {
     return t.intent === 'dept-wipe';
   }).map(function (t) { return t.departmentId; }).concat(opt.__serverDepartmentWipes || [])));
-  var irDepartmentChange = kv.pend.find(function (pd) { return pd.k === K_DEPTS; }),
-    irFinalDepartments = irDepartmentChange ? (irDepartmentChange.act === 'del' ? [] : parseJson(irDepartmentChange.v, [])) : A.depts;
-  plan.snapshotRequired = plan.snapshotRequired || irWipeDepartments.length > 0;
-  for (var irDept of irWipeDepartments) {
+  var departmentChange = kv.pend.find(function (pd) { return pd.k === K_DEPTS; }),
+    finalDepartments = departmentChange ? (departmentChange.act === 'del' ? [] : parseJson(departmentChange.v, [])) : A.depts;
+  plan.snapshotRequired = plan.snapshotRequired || wipeDepartments.length > 0;
+  for (var irDept of wipeDepartments) {
     var irBase = opt.__irshadBase;
     if (!irBase) {
       irBase = {};
@@ -505,7 +505,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     }
     var irWipe = await irPlanWipe(env, A, {
       dept: irDept, base: irBase, intent: opt.__wipeKind === 'delete' ||
-        !irFinalDepartments.some(function (d) { return d.id === irDept; }) ? 'dept-delete' : 'dept-wipe',
+        !finalDepartments.some(function (d) { return d.id === irDept; }) ? 'dept-delete' : 'dept-wipe',
       reason: body.reason || '',
     });
     plan.guards.push.apply(plan.guards, irWipe.guards);
@@ -516,11 +516,11 @@ async function rsSaveCommit(env, A, body, meta, opt) {
       plan.snapshots.push({ domain: 'irshad', table: irDept + ':' + kind, rows: irWipe.snapshotRows[kind] });
     });
   }
-  await bdWipePlans(env,A,body,plan,irWipeDepartments,opt,irFinalDepartments);
-  await bdEmployeeCleanupPlan(env,A,body,plan,reference,opt,irWipeDepartments);
+  await bdWipePlans(env,A,body,plan,wipeDepartments,opt,finalDepartments);
+  await bdEmployeeCleanupPlan(env,A,body,plan,reference,opt,wipeDepartments);
   /* RISHAD-266 · issue #1 (owner decision): the server issues the employee notifications of the save it accepts, in the same
      atomic batch (019 nfEmployeePlan) — never the browser. A unit wiped or deleted by this plan gets none (its feed is replaced). */
-  var employeeNotifications = await nfEmployeePlan(env, A, kv.pend, plan.body.requestId || enfSnapId('ops'), irWipeDepartments);
+  var employeeNotifications = await nfEmployeePlan(env, A, kv.pend, plan.body.requestId || enfSnapId('ops'), wipeDepartments);
   plan.guards.push.apply(plan.guards, employeeNotifications.guards);
   plan.statements.push.apply(plan.statements, employeeNotifications.statements);
   if (!plan.snapshotRequired) plan.snapshots = [];
@@ -556,7 +556,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   await rsImageMetadataPlan(env, A, plan, reference);
   /* V7-F · owner decision 3: the orphans of a unit this plan removes (the ones it makes now and the ones still in their grace) are stamped —
      their original unit is gone for good, so only the platform admin re-binds them (054 imgOrphanRebindOk), whoever later reuses the id */
-  rsImageUnitStamp(env, A, plan, irFinalDepartments);
+  rsImageUnitStamp(env, A, plan, finalDepartments);
   // Rows a scoped reference read while the plan was compiled are fenced like the rest (019d).
   plan.guards.push.apply(plan.guards, rsReferenceSince(reference, referenceMark, referenceOperational));
   var ack = await rsCommit(env, A, plan, meta);
