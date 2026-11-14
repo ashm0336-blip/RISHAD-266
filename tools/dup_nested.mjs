@@ -10,15 +10,19 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const A = process.argv.slice(2); const MIN = A.includes('--min') ? +A[A.indexOf('--min') + 1] : 120;
 const GLOBALS = new Set(['KIVO', 'Math', 'Number', 'String', 'Array', 'Object', 'JSON', 'Date', 'isNaN', 'parseInt', 'parseFloat', 'isFinite', 'Intl', 'RegExp', 'Set', 'Map', 'Symbol', 'Promise', 'Boolean', 'Error', 'encodeURIComponent', 'decodeURIComponent', 'Infinity', 'NaN', 'undefined', 'console', 'window', 'document', 'navigator', 'location', 'localStorage', 'setTimeout', 'clearTimeout', 'requestAnimationFrame', 'getComputedStyle', 'React', 'Uint8Array', 'TextEncoder', 'TextDecoder', 'Blob', 'URL', 'atob', 'btoa']);
 const modulesRoot=A.includes('--modules')?path.resolve(A[A.indexOf('--modules')+1]):path.join(ROOT,'src/modules');
-const mods = fs.readdirSync(modulesRoot).filter(d => fs.existsSync(path.join(modulesRoot,d,'logic.js')));
+/* V7 · الحزمة ب: وحداتُ src/systems/<key>/client تُضمّ إلى src/modules بالترتيب نفسِه (الأبجدي) — dirOf يعطي مجلدَ كلٍّ */
+const sysRoot = path.join(path.dirname(modulesRoot), 'systems'), dirOf = {};
+for (const d of fs.readdirSync(modulesRoot)) if (fs.existsSync(path.join(modulesRoot,d,'logic.js'))) dirOf[d] = path.join(modulesRoot,d);
+if (fs.existsSync(sysRoot)) for (const k of fs.readdirSync(sysRoot)) { const c = path.join(sysRoot,k,'client'); if (fs.existsSync(path.join(c,'logic.js'))) dirOf[JSON.parse(fs.readFileSync(path.join(c,'meta.json'),'utf8')).slug] = c; }
+const mods = Object.keys(dirOf).sort();
 let sharedSourceOccurrencesSkipped=0;
 const groups = new Map();
 for (const m of mods) {
-  const parts = (() => { try { return JSON.parse(fs.readFileSync(path.join(modulesRoot,m,'meta.json'), 'utf8')).logicParts || []; } catch (e) { return []; } })();   /* KIVO_265 · البند 19 */
+  const parts = (() => { try { return JSON.parse(fs.readFileSync(path.join(dirOf[m],'meta.json'), 'utf8')).logicParts || []; } catch (e) { return []; } })();   /* KIVO_265 · البند 19 */
   // Measure duplicate code consistently on Windows and Unix. CRLF is one JS
   // line terminator, not extra duplicated logic; the checked-in cap is unchanged.
   const chunks=[];let offset=0;
-  const code = ['logic.js'].concat(parts).map(f=>{const file=fs.realpathSync(path.join(modulesRoot,m,f)),text=fs.readFileSync(file,'utf8').replace(/\r\n/g,'\n');chunks.push({file,start:offset,end:offset+text.length});offset+=text.length+1;return text;}).join('\n');
+  const code = ['logic.js'].concat(parts).map(f=>{const file=fs.realpathSync(path.join(dirOf[m],f)),text=fs.readFileSync(file,'utf8').replace(/\r\n/g,'\n');chunks.push({file,start:offset,end:offset+text.length});offset+=text.length+1;return text;}).join('\n');
   let ast; try { ast = espree.parse(code, { ecmaVersion: 'latest', sourceType: 'script', range: true }); } catch (e) { console.log('✘ تعذّر تحليل', m, e.message); continue; }
   const sm = escope.analyze(ast, { ecmaVersion: 2022, sourceType: 'script' });
   /* أسماءُ الدوال المجهولة من موضعها: const f = () => … · { f: function … } · x.f = function … */

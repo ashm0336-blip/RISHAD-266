@@ -11,8 +11,9 @@ PARTS = os.path.join(S, '..', 'workers', 'parts') if NEW else os.path.join(S, 'w
 sch = json.load(open(CFG, encoding='utf-8'))
 declared = set(sch['properties']) | set(sch['bindings'])
 used = set()
-for f in sorted(os.listdir(PARTS)):
-    t = open(os.path.join(PARTS, f), encoding='utf-8').read()
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import systems_paths   # V7 · الحزمة ب: ومنها أجزاءُ الأنظمة المنقولة
+for f, fp in sorted((os.path.basename(n), p) for n, p in systems_paths.worker_parts(PARTS)):
+    t = open(fp, encoding='utf-8').read()
     used |= set(re.findall(r'\benv\.([A-Z][A-Z0-9_]+)\b', t))
 undeclared = sorted(used - declared); unused = sorted(declared - used)
 secretish = [k for k, v in sch['properties'].items() if v.get('secret')]

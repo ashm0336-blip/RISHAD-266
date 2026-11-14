@@ -1,0 +1,41 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "dstats",
+ "name": "الإحصائيات اليومية",
+ "note": "V7 · المرحلة 2 · الحزمة ب: نقلُ ملفات النظام الكاملة إلى مجلده (ترتيبٌ لا يغيّر ما يُرى). هذا الملف يسرد ما في المجلد وما بقي للنظام خارجه؛ لا تقرؤه القاعدة ولا الأدوات بعد (الحزمة د).",
+ "client": {
+  "slug": "dstats",
+  "component": "Daily Stats",
+  "files": [
+   "client/helmet.css",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html",
+   "client/580-historical-import.js"
+  ]
+ },
+ "server": {
+  "parts": [
+   "server/020-dstats.js"
+  ],
+  "order": "workers/parts.json"
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [
+   "migrations/0004_daily_stats.sql"
+  ],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
+ },
+ "tests": [
+  "tests/dstats_cutover.test.mjs",
+  "tests/dstats_cutover_review.test.mjs",
+  "tests/dstats_review_security.test.mjs",
+  "tests/fixture_daily_stats.test.mjs"
+ ],
+ "derived": [
+  "src/pages/Daily Stats.dc.html"
+ ],
+ "sharedStaysInBase": []
+}

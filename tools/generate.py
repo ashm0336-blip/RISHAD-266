@@ -37,7 +37,7 @@ def gen_worker(S, produced):
     manifest = json.load(open(os.path.join(S, PD, '..', 'parts.json'), encoding='utf-8'))
     order = manifest['parts']
     def part(f):
-        rel = PD + '/' + f
+        rel = norm(PD + '/' + f)                      # V7 · الحزمة ب: الاسمُ قد يكون مساراً نسبياً إلى src/systems/<key>/server
         return produced[rel] if rel in produced else rb(os.path.join(S, rel))
     worker = b''.join(part(p['file']) for p in order)
     line = 1
@@ -102,15 +102,16 @@ def gen_manifest(S):
     # V7 UX states: the tab strip each page draws (label + icon id, in the page's order), read from the page's own view — so the shell
     # header shows the page's real tabs and icons from the first instant, from the same source ('*' = one icon for a looped strip)
     data['pageTabs'] = {}; used = set()
-    modules = os.path.join(S, layout(S)['modules'])
-    for slug in sorted(os.listdir(modules)):
-        meta_path = os.path.join(modules, slug, 'meta.json')
+    import systems_paths                              # V7 · الحزمة ب: وحداتُ src/modules و src/systems/<key>/client معاً، بترتيب الـslug كما كان
+    dirs = systems_paths.module_dirs(S)
+    for slug in sorted(dirs):
+        meta_path = os.path.join(dirs[slug], 'meta.json')
         if not os.path.isfile(meta_path): continue
         module = json.load(open(meta_path, encoding='utf-8'))
         keys = [k for k in module.get('charter', {}).get('data', []) if re.fullmatch(r'bassam_[a-z0-9_]+', k)]
         data['operationsReadSets'][module['name']] = sorted(set(keys))
         data['pageComponents'][module['name']] = slug
-        tabs = view_tabs(os.path.join(modules, slug, 'view.html'))
+        tabs = view_tabs(os.path.join(dirs[slug], 'view.html'))
         if tabs: data['pageTabs'][slug] = tabs; used.update(i for _n, i in tabs)
     # V7 UX states: the icon bodies of those tabs, from the icon catalog the pages themselves are built from (tools/icons.py)
     catalog = json.load(open(os.path.join(S, 'assets', 'icons', 'catalog.json'), encoding='utf-8'))['icons']

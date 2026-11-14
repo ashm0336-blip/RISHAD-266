@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
-import { D1Shim, ROOT, allowTestSchemaUpgrade } from './harness.mjs';
+import { D1Shim, ROOT, allowTestSchemaUpgrade } from '../../../../tests/unit/harness.mjs';
 
 const KEY = 'bassam_dstats_v1';
 const copy = value => JSON.parse(JSON.stringify(value));

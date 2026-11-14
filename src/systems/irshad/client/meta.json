@@ -17,10 +17,10 @@
    "#/irshad"
   ],
   "ui": [
-   "src/modules/irshad/view.html",
-   "src/modules/irshad/helmet.css"
+   "src/systems/irshad/client/view.html",
+   "src/systems/irshad/client/helmet.css"
   ],
-  "domain": "src/modules/irshad/logic.js",
+  "domain": "src/systems/irshad/client/logic.js",
   "data": [
    "bassam_employees_v1",
    "bassam_irshad_v1",

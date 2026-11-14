@@ -54,7 +54,7 @@ function canonicalInput() {
   let last = 0;
   const source = manifest.parts
     .map((part) => {
-      assert.match(part.file, /^\d{3}[a-z]?-[A-Za-z0-9_-]+\.js$/, 'Part paths stay in the canonical parts directory');
+      assert.match(part.file, /^(?:\.\.\/\.\.\/src\/systems\/[a-z]+\/server\/)?\d{3}[a-z]?-[A-Za-z0-9_-]+\.js$/, 'Part paths stay in the canonical parts directory (or a system\'s server folder · V7 package B)');
       assert.equal(names.has(part.file), false, 'Unique part name');
       names.add(part.file);
       assert.ok(
@@ -62,7 +62,7 @@ function canonicalInput() {
         'Actual manifest part order is contiguous',
       );
       last = part.lines[1];
-      const text = fs.readFileSync(path.join(ROOT, 'workers/parts', part.file), 'utf8');
+      const text = fs.readFileSync(path.normalize(path.join(ROOT, 'workers/parts', part.file)), 'utf8');
       assert.equal(
         createHash('sha256').update(text).digest('hex'),
         part.sha256,

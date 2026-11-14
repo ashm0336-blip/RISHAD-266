@@ -1,8 +1,8 @@
 {
- "name": "Seized",
- "slug": "seized",
+ "name": "Award",
+ "slug": "award",
  "logicParts": [
-  "../business-cloud.js"
+  "../../../modules/business-cloud.js"
  ],
  "pre": "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<script src=\"./support.js\"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n",
  "mid": "\n</helmet>\n",
@@ -11,34 +11,32 @@
  "post": "</script>\n</body>\n</html>\n",
  "minifiedSource": true,
  "prettified": true,
- "originalSha256": "2e5b89fe31a2264f1e3c5eb180e475faa949bad2d8228e1972ae5514546d9f9f",
+ "originalSha256": "13c3445b595dedf37275418d0b3158752d87a6b77285635917b9f75593dc3dfe",
  "charter": {
-  "owner": "مدير الإدارة · موظفو الضبط",
-  "purpose": "نظامُ المضبوطات: سجلٌّ ميداني يومي بالوردية والموظف",
-  "page": "seized",
+  "owner": "مدير الإدارة · لجنة التقييم",
+  "purpose": "جائزةُ التميز: ترشيحُ الموظفين وتقييمُهم",
+  "page": "award",
   "routes": [
-   "#/seized"
+   "#/award"
   ],
   "ui": [
-   "src/modules/seized/view.html",
-   "src/modules/seized/helmet.css"
+   "src/systems/award/client/view.html",
+   "src/systems/award/client/helmet.css"
   ],
   "domain": [
-   "src/modules/seized/logic.js",
-   "src/modules/seized/../business-cloud.js"
+   "src/systems/award/client/logic.js",
+   "src/systems/award/client/../../../modules/business-cloud.js"
   ],
   "data": [
-   "bassam_dayshift_v1",
-   "bassam_dreport_v1",
+   "bassam_award_v1",
    "bassam_employees_v1",
    "bassam_mark_kinds_v1",
-   "bassam_seized_v1",
-   "bassam_shift_options_v1",
-   "bassam_staffing_v3"
+   "bassam_shift_options_v1"
   ],
   "permissions": [
-   "seized/dash",
-   "seized/records"
+   "award/doc",
+   "award/new",
+   "award/res"
   ],
   "tests": [
    "gate:action.mjs",
@@ -54,7 +52,6 @@
    "gate:flag.mjs",
    "gate:hard.mjs",
    "gate:img.mjs",
-   "gate:imgcap.mjs",
    "gate:imgls.mjs",
    "gate:k259journeys.mjs",
    "gate:own.mjs",
@@ -66,20 +63,17 @@
    "gate:r189.mjs",
    "gate:read01.mjs",
    "gate:rel.mjs",
+   "gate:reload.mjs",
    "gate:res.mjs",
    "gate:restoreimg.mjs",
    "gate:rev4.mjs",
    "gate:sec.mjs",
-   "gate:sec163.mjs",
    "gate:theme248.mjs",
    "gate:visual.mjs",
+   "src/systems/award/tests/award_domain.test.mjs",
    "tests/unit/business_atomic.test.mjs",
    "tests/unit/seized_award_cloud_http.test.mjs",
-   "tests/unit/seized_award_cloud_ui.test.mjs",
-   "tests/unit/seized_codec.test.mjs",
-   "tests/unit/seized_due.test.mjs",
-   "tests/unit/seized_operations.test.mjs",
-   "tests/unit/seized_query.test.mjs"
+   "tests/unit/seized_award_cloud_ui.test.mjs"
   ]
  }
 }

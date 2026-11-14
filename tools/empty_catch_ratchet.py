@@ -17,7 +17,9 @@ def count(sub, exts=('.js',)):
 NEW = os.path.exists(os.path.join(S, 'layout.json'))   # KIVO_251 · ADR-012
 WP = '../workers/parts' if NEW else 'workers/parts'
 CLIENT = (['core', 'layouts', 'components', 'services', 'i18n', 'api', 'auth', 'permissions', 'manifests'] if NEW else ['client/js', 'shell'])
-cur = {'worker': count(WP), 'client': sum(count(d) for d in CLIENT) + sum(len(RE.findall(open(f, encoding='utf-8').read())) for f in sorted(glob.glob(os.path.join(S, 'modules', '*', 'logic.js')) + glob.glob(os.path.join(S, 'modules', '*', 'logic-*.js'))))}
+SYS_SERVER = [os.path.relpath(d, S) for d in sorted(glob.glob(os.path.join(S, 'systems', '*', 'server')))]   # V7 · الحزمة ب: أجزاءُ خادم الأنظمة المنقولة
+SYS_CLIENT = sorted(glob.glob(os.path.join(S, 'systems', '*', 'client', 'logic.js')) + glob.glob(os.path.join(S, 'systems', '*', 'client', 'logic-*.js')) + glob.glob(os.path.join(S, 'systems', '*', 'client', '[0-9]*.js')))
+cur = {'worker': count(WP) + sum(count(d) for d in SYS_SERVER), 'client': sum(count(d) for d in CLIENT) + sum(len(RE.findall(open(f, encoding='utf-8').read())) for f in sorted(glob.glob(os.path.join(S, 'modules', '*', 'logic.js')) + glob.glob(os.path.join(S, 'modules', '*', 'logic-*.js')) + SYS_CLIENT))}
 if '--update' in sys.argv: json.dump(cur, open(BASE, 'w'), indent=1); print('baseline updated:', cur); sys.exit(0)
 base = json.load(open(BASE)) if os.path.exists(BASE) else {'worker': 0, 'client': 10**9}
 bad = []

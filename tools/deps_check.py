@@ -25,6 +25,7 @@ ORDER = ['core', 'api', 'layouts', 'auth', 'permissions', 'manifests', 'plugins'
 def layer(rel):
     parts = rel.split('/')
     if parts[0] == 'services': return 'domain' if parts[-1] in DOMAIN else 'platform'
+    if parts[0] == 'systems': return 'domain' if parts[-1] in DOMAIN else 'modules'   # V7 · الحزمة ب: ملفاتُ واجهة النظام المنقولة بطبقتها الأصلية
     return parts[0]
 def scan():
     defs, refs = {}, {}
@@ -34,6 +35,7 @@ def scan():
         for f in files:
             if not f.endswith('.js'): continue
             p = os.path.join(root, f); rel = os.path.relpath(p, SRC).replace(os.sep, '/')
+            if rel.startswith('systems/') and rel.split('/')[2] != 'client': continue   # خادمُ النظام واختباراتُه ليست من الواجهة
             t = open(p, encoding='utf-8', errors='ignore').read()
             t = re.sub(r'/\*[\s\S]*?\*/', '', t)                           # التعليقاتُ لا تُعدّ
             for m in re.finditer(r'\bKIVO\.([A-Za-z_$][\w$]*)\s*=(?!=)', t):

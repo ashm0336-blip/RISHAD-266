@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { moduleDirs } from '../../tools/systems_paths.mjs';   /* V7 · الحزمة ب */
 
 const SRC = process.env.KIVO_SRC || path.resolve('src');
 const M = JSON.parse(fs.readFileSync(path.join(SRC, 'manifests/pages.json'), 'utf8'));
@@ -18,9 +19,9 @@ const SOLO_ONLY = { irshad: ['dash'], seized: ['dash'] };
 
 function writers() {
   const out = [];
-  const dir = path.join(SRC, 'modules');
-  for (const m of fs.readdirSync(dir)) {
-    const f = path.join(dir, m, 'logic.js');
+  const dirs = moduleDirs(SRC);   /* src/modules/<slug> و src/systems/<key>/client بترتيب الـslug */
+  for (const m of Object.keys(dirs).sort()) {
+    const f = path.join(dirs[m], 'logic.js');
     if (!fs.existsSync(f)) continue;
     const s = fs.readFileSync(f, 'utf8');
     if (!/_bsHT\s*\(/.test(s) || !/history\.replaceState/.test(s)) continue;

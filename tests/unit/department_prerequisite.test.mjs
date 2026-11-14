@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { loadClient, until } from './k264_vm.mjs';
+import nodePath from 'node:path';
+import { fileURLToPath as _f2p } from 'node:url';
+import { moduleDir as _md } from '../../tools/systems_paths.mjs';
+/* V7 · الحزمة ب: مسارُ وحدة الصفحة نسبةً إلى الجذر — src/modules/<slug> أو src/systems/<key>/client */
+const modRel = (slug) => nodePath.relative(_f2p(new URL('../../', import.meta.url)), _md(_f2p(new URL('../../src', import.meta.url)), slug)).split(nodePath.sep).join('/');
 
 const read = file => fs.readFileSync(new URL('../../' + file, import.meta.url), 'utf8');
 const UID = 'TEST_ONLY department owner';
@@ -56,7 +61,7 @@ function world({ registry, preference = 'd1', user = { id: UID, role: 'super' },
       createContext: value => ({ Provider: 'TEST_ONLY Provider', value }), createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
       useState: () => [0, () => {}], useEffect: callback => callback(), Fragment: 'TEST_ONLY Fragment' };
     const modules = ['employees', 'irshad', 'seized', 'award', 'admin', 'kpis', 'daily', 'dreport', 'plan', 'planning', 'staff', 'tasks', 'profile'];
-    const sets = Object.fromEntries(modules.map(slug => { const meta = JSON.parse(read('src/modules/' + slug + '/meta.json')); return [meta.name, meta.charter.data]; }));
+    const sets = Object.fromEntries(modules.map(slug => { const meta = JSON.parse(read(modRel(slug) + '/meta.json')); return [meta.name, meta.charter.data]; }));
     const manifest = JSON.parse(read('src/manifests/pages.json'));
     T.W.KIVO.KIVO_MANIFEST = { keys: ['operationsReadSets', 'pages', 'containers'], clone: key => key === 'operationsReadSets' ? sets : manifest[key] };
     vm.runInContext(read('src/core/030-pages-loader.js').replace('@@KIVO_PAGES@@', '{}'), T.ctx, { filename: '030-pages-loader.js' });

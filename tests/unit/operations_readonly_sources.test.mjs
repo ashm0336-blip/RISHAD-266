@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import nodePath from 'node:path';
+import { fileURLToPath as _f2p } from 'node:url';
+import { moduleDir as _md } from '../../tools/systems_paths.mjs';
+/* V7 · الحزمة ب: مسارُ وحدة الصفحة نسبةً إلى الجذر — src/modules/<slug> أو src/systems/<key>/client */
+const modRel = (slug) => nodePath.relative(_f2p(new URL('../../', import.meta.url)), _md(_f2p(new URL('../../src', import.meta.url)), slug)).split(nodePath.sep).join('/');
 
 const source = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -40,7 +45,7 @@ function page(module, documents) {
     text: key => values.get(key) ?? null,
   };
   const context = { KIVO: { __BS_SRV: { operations }, BassamPageKit: { base: () => class {} } }, DCLogic: class {}, window: {}, localStorage };
-  vm.runInNewContext(source('src/modules/' + module + '/logic.js') + '\nglobalThis.Page = Component;', context);
+  vm.runInNewContext(source(modRel(module) + '/logic.js') + '\nglobalThis.Page = Component;', context);
   const instance = Object.create(context.Page.prototype);
   instance.curHijri = () => ({ y: 1448, m: 5, d: 19 });
   instance.state = {};

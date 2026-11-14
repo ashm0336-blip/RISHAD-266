@@ -16,7 +16,7 @@ import os, re, sys, json, hashlib
 
 SVG_RE = re.compile(r'<svg\b([^>]*)>(.*?)</svg>', re.S)
 REF_RE = re.compile(r'<svg\b([^>]*)\sdata-i="(i-[0-9a-f]{8})"([^>]*)></svg>')
-TEMPLATES = ('modules/*/view.html', 'layouts/index.template.html')
+TEMPLATES = ('modules/*/view.html', 'systems/*/client/view.html', 'layouts/index.template.html')   # V7 · الحزمة ب: وحداتُ الأنظمة المنقولة
 
 def norm(body):
     if '<text' in body: return body.strip()                       # نصٌّ داخل الأيقونة: الفراغاتُ ذاتُ معنى — يُحفظ كما هو
@@ -100,7 +100,7 @@ def render_index(cat):
     rows = []
     for i in sorted(icons, key=lambda k: (-sum(icons[k]['uses'].values()), k)):
         e = icons[i]; n = sum(e['uses'].values())
-        mods = ' · '.join(sorted(set(u.split('/')[1] if u.startswith('modules/') else 'الغلاف' for u in e['uses'])))
+        mods = ' · '.join(sorted(set(u.split('/')[1] if u.startswith(('modules/', 'systems/')) else 'الغلاف' for u in e['uses'])))
         rows.append('<div class="c"><svg viewBox="%s" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">%s</svg><code>%s</code><span>%d موضع</span><small>%s</small></div>' % (e['viewBox'] or '0 0 24 24', e['body'], i, n, mods))
     return ('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>KIVO · فهرسُ الأيقونات (AUD-018)</title>'
             '<style>body{font:14px/1.7 Cairo,Tahoma,Arial;margin:24px;color:#0f172a;background:#fff}h1{font-size:20px}.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}'

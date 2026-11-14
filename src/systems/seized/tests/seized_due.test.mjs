@@ -1,8 +1,8 @@
 /* SQL replacement of the existing bx_old/bx_wk observer, real canonical SQLite. */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {world,seizedDocs,D1,D2,IDS,clone,batchBounds} from './business_atomic_fx.mjs';
-import {candidateWorker} from './irshad_domain_fx.mjs';
+import {world,seizedDocs,D1,D2,IDS,clone,batchBounds} from '../../../../tests/unit/business_atomic_fx.mjs';
+import {candidateWorker} from '../../../../tests/unit/irshad_domain_fx.mjs';
 const DUE=Date.parse('2026-10-31T06:01:00Z'); // Saturday09:01 Riyadh.
 async function clock(fn){const RealDate=globalThis.Date,box={now:DUE};globalThis.Date=class extends RealDate{constructor(...a){super(...(a.length?a:[box.now]));}static now(){return box.now;}};try{await fn(v=>box.now=RealDate.parse(v));}finally{globalThis.Date=RealDate;}}
 async function fixture({empty=false}={}){

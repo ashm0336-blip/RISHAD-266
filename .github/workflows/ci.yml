@@ -49,7 +49,7 @@ jobs:
       - name: secrets scan (official tree + built package)
         run: python3 tools/sec/secrets_scan.py pk${{ steps.ver.outputs.n }}
       - name: unit tests on the built candidate
-        run: KIVO_WORKER=$PWD/workers/_worker.js KIVO_DIST=$PWD/pk${{ steps.ver.outputs.n }} KIVO_SRC=$PWD/src node --no-warnings --test tests/unit/*.test.mjs
+        run: KIVO_WORKER=$PWD/workers/_worker.js KIVO_DIST=$PWD/pk${{ steps.ver.outputs.n }} KIVO_SRC=$PWD/src node --no-warnings --test tests/unit/*.test.mjs src/systems/*/tests/*.test.mjs
       - uses: actions/upload-artifact@v4
         with: { name: 'pk${{ steps.ver.outputs.n }}-dist', path: 'pk${{ steps.ver.outputs.n }}', retention-days: 30 }
       - uses: actions/upload-artifact@v4

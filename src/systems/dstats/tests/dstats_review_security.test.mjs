@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { D1Shim, ROOT } from './harness.mjs';
+import { D1Shim, ROOT } from '../../../../tests/unit/harness.mjs';
 
 const KEY = 'bassam_dstats_v1';
 const copy = x => JSON.parse(JSON.stringify(x));

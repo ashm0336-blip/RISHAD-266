@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { makeSql as makeFirstAdminSql } from '../../tools/provision_first_admin.mjs';
+import { moduleDir as _moduleDir } from '../../tools/systems_paths.mjs';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 /* Python can be explicitly selected by CI/local runners; never assume a Unix command name. */
 export const BASH = process.env.KIVO_BASH || 'bash';
@@ -34,7 +35,10 @@ export function srcDir(key) { return path.normalize(path.join(SRC, layout()[key]
 export function blockFile(name) { const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const q = path.join(d, e.name); if (e.isDirectory()) { if (e.name === 'modules' || e.name === 'pages' || e.name === 'client' && false) continue; const r = walk(q); if (r) return r; } else if (e.name === name) return q; } return null; }; const r = walk(SRC); if (!r) throw new Error('block not found: ' + name); return r; }
 
 /* KIVO_265 · البند 19: منطقُ وحدةٍ كاملاً — logic.js + أجزاؤها بترتيب meta.json "logicParts" كما يجمعها tools/page_modules.py (الصفحةُ في vm) */
-export function moduleLogic(slug) { const d = path.join(SRC, 'modules', slug); let meta = {}; try { meta = JSON.parse(fs.readFileSync(path.join(d, 'meta.json'), 'utf8')); } catch (e) { /* بلا meta: logic.js وحده */ } return ['logic.js'].concat(meta.logicParts || []).map((f) => { const t = fs.readFileSync(path.join(d, f), 'utf8'); return t.endsWith('\n') ? t : t + '\n'; }).join(''); }
+/* V7 · الحزمة ب: مجلدُ وحدة الصفحة — src/modules/<slug> أو src/systems/<key>/client (tools/systems_paths.mjs) */
+export function moduleDir(slug) { return _moduleDir(SRC, slug); }
+export function moduleFile(slug, name) { return path.join(moduleDir(slug), name); }
+export function moduleLogic(slug) { const d = moduleDir(slug); let meta = {}; try { meta = JSON.parse(fs.readFileSync(path.join(d, 'meta.json'), 'utf8')); } catch (e) { /* بلا meta: logic.js وحده */ } return ['logic.js'].concat(meta.logicParts || []).map((f) => { const t = fs.readFileSync(path.join(d, f), 'utf8'); return t.endsWith('\n') ? t : t + '\n'; }).join(''); }
 /* ── D1 بديل: الواجهة التي يستعملها العامل فقط (prepare/bind/first/all/run · batch · withSession) ── */
 export class D1Shim {
   constructor() { this.db = new DatabaseSync(':memory:'); this.failIf = null; this.log = []; this.trips = 0; this._inBatch = false; }   /* KIVO_255 · AUD-037: trips = جولاتُ D1 (كلُّ first/all/run/raw جولة · batch جولةٌ واحدة) */

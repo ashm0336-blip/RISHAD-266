@@ -57,7 +57,7 @@ function szHintPage(can, {reason='TEST_ONLY hint reason',denied=false}={}) {
   const base={epoch:0,reports:0,catalog:0,actions:0,locations:0,jew:0,retro:0};
   P.requests=[];P.reasons=[];P.c._bcContext=()=>context;P.c._bcEnsure=()=>{};
   P.KIVO.__BS_SRV={askReason:(key,keys,done)=>{P.reasons.push({key,keys});done(reason);}};
-  const defaults=JSON.parse(fs.readFileSync(path.join(SRC,'modules/seized/defaults.json'),'utf8'));
+  const defaults=JSON.parse(fs.readFileSync(path.join(SRC,'systems/seized/client/defaults.json'),'utf8'));
   P.c.state.szCatalogs={_contextKey:context.key,base,catalogs:{catalog:{present:false,value:{ver:P.c.SZ_VER,cats:defaults.cats}},actions:{present:false,value:defaults.actions},jew:{present:false,value:defaults.kinds},locations:{present:false,value:[]}}};
   const dto=()=>({ok:1,res:'seized',dept:context.dept,today:P.c.hToday(),now:NOW,maxHours:24,defHours:1,may:true,windows:J(windows),_contextKey:context.key,_received:NOW});
   P.c.state.szRetro=dto();

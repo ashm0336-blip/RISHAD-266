@@ -11,11 +11,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { page } from './w1_pages.mjs';
-import { SRC } from './harness.mjs';
+import { SRC, moduleDir } from './harness.mjs';
 
 /* RISHAD-266 (دفعة الواجهات): «المضبوطات» تحمل IRSZ-2/7/10/11 من جديد — رُفع سقفُ صفحتها بقرارٍ موثّق في perf_budget.json (unifyBatch3Decision) */
 const PAGES = { irshad: ['تقارير الاسترشاد', 'نظام الاسترشاد'], seized: ['محاضر المضبوطات', 'نظام المضبوطات'] };
-const view = (slug) => fs.readFileSync(path.join(SRC, 'modules', slug, 'view.html'), 'utf8');
+const view = (slug) => fs.readFileSync(path.join(moduleDir(slug), 'view.html'), 'utf8');
 /* RISHAD-266: الصفحتان سحابيّتان — اللوحةُ تنتظر قراءةَ الخادم (irOnDash = d && !pending) والـvm بلا خادم؛ يكفي هنا منطقُ الرابط
    (يُحسب قبل القراءة) · وسجلُّ «المتاح» فارغٌ للمضبوطات (_szAvailable) كما يكون قبل أول قراءة */
 const dash = (slug, can) => { const P = page(slug, { can }); P.c.props = { solo: 'dash' }; if (slug === 'seized') P.c._szAvailable = { context: undefined, value: { years: [], months: [], total: 0 } }; return P; };

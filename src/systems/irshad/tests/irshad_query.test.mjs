@@ -5,8 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
-import { D1Shim, ROOT } from './harness.mjs';
-import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { D1Shim, ROOT } from '../../../../tests/unit/harness.mjs';
+import { installOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 
 const D = 'TEST_ONLY_ir_department', OTHER = 'TEST_ONLY_ir_other';
 const names = ['irRead', 'irQueryContext', 'irQueryScope', 'irRowRead', 'irConvert', 'irInstallStatements',

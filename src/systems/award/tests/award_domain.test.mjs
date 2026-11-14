@@ -4,10 +4,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import {D1Shim} from './harness.mjs';
-import {world as baseWorld, ROOT, D1, D2, IDS, EKEYS, identitySnapshot} from './custody_review_fx.mjs';
-import {candidateWorker} from './irshad_domain_fx.mjs';
-import {installOperationalFixture} from './operational_legacy_seed_fx.mjs';
+import {D1Shim} from '../../../../tests/unit/harness.mjs';
+import {world as baseWorld, ROOT, D1, D2, IDS, EKEYS, identitySnapshot} from '../../../../tests/unit/custody_review_fx.mjs';
+import {candidateWorker} from '../../../../tests/unit/irshad_domain_fx.mjs';
+import {installOperationalFixture} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 
 const NAMED=['AW_RES','AW_NAMES','AW_FIELDS','AW_TABLES','awKey','awConvert','awInflate','awValidateDomain','awEmptyDomain',
   'awInstallStatements','awExportDomain','awDomainPlan','awLegacyPrepare','awPlanEmployeeCleanup','awRevs','awQueryContext',

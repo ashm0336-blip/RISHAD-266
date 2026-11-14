@@ -9,9 +9,9 @@ RE = re.compile(r'#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![0-9a-fA-F])|\brgba?\(\s
 SKIP = ('070-theme-tokens.css', '080-theme-dark.css', '010-react.js', '020-react-dom.js', '340-registry-v24-9.js', '255-page-manifest.js')
 # KIVO_251 · ADR-012: التخطيطُ المستهدف (src/layout.json) أو الانتقالي (k2NN/src) — الملفاتُ نفسُها بحسب الدور لا المسار
 # مفتاحُ الملف مستقلٌّ عن التخطيط (ADR-012): modules/<slug>/<file> أو اسمُ الملف وحده (الأسماءُ المرقَّمة فريدة)
-def keyof(rel): return rel if '/modules/' in '/' + rel else os.path.basename(rel)
+def keyof(rel): return rel if '/modules/' in '/' + rel or (rel.startswith('systems/') and not os.path.basename(rel)[:1].isdigit()) else os.path.basename(rel)   # V7 · الحزمة ب: وحدةُ نظامٍ منقولة بمسارها · ملفٌّ مرقَّم باسمه كما كان
 if os.path.exists(os.path.join(src, 'layout.json')):
-    files = sorted(glob.glob(src + '/styles/*.css') + [f for d in ('core', 'layouts', 'components', 'services', 'i18n', 'api', 'auth', 'permissions', 'manifests') for f in glob.glob(src + '/' + d + '/*.js')] + glob.glob(src + '/modules/*/*.css') + glob.glob(src + '/modules/*/logic.js') + glob.glob(src + '/modules/*/logic-*.js') + glob.glob(src + '/modules/*/view.html') + [src + '/layouts/index.template.html', src + '/layouts/root-logic.js'])
+    files = sorted(glob.glob(src + '/styles/*.css') + [f for d in ('core', 'layouts', 'components', 'services', 'i18n', 'api', 'auth', 'permissions', 'manifests') for f in glob.glob(src + '/' + d + '/*.js')] + glob.glob(src + '/modules/*/*.css') + glob.glob(src + '/modules/*/logic.js') + glob.glob(src + '/modules/*/logic-*.js') + glob.glob(src + '/modules/*/view.html') + [f for x in ('*.css', 'logic.js', 'logic-*.js', 'view.html', '[0-9]*.js') for f in glob.glob(src + '/systems/*/client/' + x)] + [src + '/layouts/index.template.html', src + '/layouts/root-logic.js'])
 else:
     files = sorted(glob.glob(src + '/client/css/*.css') + glob.glob(src + '/client/js/*.js') + glob.glob(src + '/modules/*/*.css') + glob.glob(src + '/modules/*/logic.js') + glob.glob(src + '/modules/*/logic-*.js') + glob.glob(src + '/modules/*/view.html') + [src + '/shell/index.template.html', src + '/shell/xdc/root-logic.js'])
 cnt = collections.OrderedDict()

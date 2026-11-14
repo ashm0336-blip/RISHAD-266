@@ -16,7 +16,7 @@ export function mountIrshadPage(tab,uid,dept='tst_d1') {
   tab.W.KIVO.BassamPageKit={base:()=>Base};
   tab.W.KIVO.BassamAuth={user:()=>({id:uid})};
   tab.W.KIVO.BassamDepts={active:()=>dept,has:value=>value===dept};
-  vm.runInContext(fs.readFileSync(path.join(ROOT,'src/modules/irshad/logic.js'),'utf8')+'\nglobalThis.IrshadFixtureComponent=Component;',tab.ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT,'src/systems/irshad/client/logic.js'),'utf8')+'\nglobalThis.IrshadFixtureComponent=Component;',tab.ctx);
   const page=new tab.W.IrshadFixtureComponent();
   Object.assign(page.state,{irTab:'records',irYear:TODAY.year,irMonth:TODAY.month,irDay:TODAY.day,irLedgerOpen:true,irLedgerPerPage:200});
   page.componentDidMount();page.mounted=true;page._irEnsure('records',page._irRecordQuery());

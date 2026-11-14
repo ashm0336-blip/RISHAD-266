@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { loadClient, until } from './k264_vm.mjs';
+import nodePath from 'node:path';
+import { fileURLToPath as _f2p } from 'node:url';
+import { moduleDir as _md } from '../../tools/systems_paths.mjs';
+/* V7 · الحزمة ب: مسارُ وحدة الصفحة نسبةً إلى الجذر — src/modules/<slug> أو src/systems/<key>/client */
+const modRel = (slug) => nodePath.relative(_f2p(new URL('../../', import.meta.url)), _md(_f2p(new URL('../../src', import.meta.url)), slug)).split(nodePath.sep).join('/');
 
 const UID = 'TEST_ONLY operations manager', DEPT = 'TEST_ONLY_dA';
 const key = name => 'bsdept:' + DEPT + ':' + name;
@@ -38,7 +43,7 @@ async function page(module, documents, save) {
   vm.runInContext(source('src/services/420-round-factory.js'), T.ctx);
   assert.equal(typeof K.BassamDayShift.prepareSet, 'function');
   assert.equal(typeof K.BassamRound.prepareShiftAp, 'function');
-  vm.runInContext(source('src/modules/' + module + '/logic.js') + '\nglobalThis.TEST_ONLY_Page = Component;', T.ctx);
+  vm.runInContext(source(modRel(module) + '/logic.js') + '\nglobalThis.TEST_ONLY_Page = Component;', T.ctx);
   const instance = Object.create(T.W.TEST_ONLY_Page.prototype);
   instance.state = {};
   instance.bsToast = (text, type) => messages.push({ text, type: type || 'err' });

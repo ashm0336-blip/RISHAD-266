@@ -9,7 +9,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { SRC, blockFile } from './harness.mjs';
+import { SRC, blockFile, moduleDir } from './harness.mjs';
+import { moduleDirs } from '../../tools/systems_paths.mjs';   /* V7 · الحزمة ب */
 
 class CL { constructor() { this.s = new Set(); } add(c) { this.s.add(c); } remove(c) { this.s.delete(c); } contains(c) { return this.s.has(c); } toggle(c, f) { if (f === undefined ? !this.s.has(c) : f) this.s.add(c); else this.s.delete(c); } }
 class Style { constructor() { this.p = {}; this.minWidth = ''; } getPropertyValue(k) { return (this.p[k] || [''])[0]; } getPropertyPriority(k) { return (this.p[k] || ['', ''])[1]; } setProperty(k, v, pr) { this.p[k] = [v, pr || '']; } }
@@ -103,12 +104,12 @@ function tablesOf(html) {
 }
 test('IRSZ-1 · المصدر: جداولُ الوحدات ذاتُ الترويسة الثابتة — عددُ أعمدة الترويسة = عددُ خلايا كل صفّ (وسجلُّ الاسترشاد 12 = 12)', () => {
   const bad = [];
-  for (const slug of fs.readdirSync(path.join(SRC, 'modules'))) {
-    const f = path.join(SRC, 'modules', slug, 'view.html'); if (!fs.existsSync(f)) continue;
+  for (const slug of Object.keys(moduleDirs(SRC)).sort()) {
+    const f = path.join(moduleDir(slug), 'view.html'); if (!fs.existsSync(f)) continue;
     for (const t of tablesOf(fs.readFileSync(f, 'utf8'))) for (const r of t.rows) if (r.n > 1 && r.span !== t.th) bad.push(slug + ':' + t.at + ' th=' + t.th + ' td=' + r.span);
   }
   assert.deepEqual(bad, []);
-  const ir = tablesOf(fs.readFileSync(path.join(SRC, 'modules/irshad/view.html'), 'utf8')).find((t) => t.th === 12 && t.rows.some((r) => r.n === 12));
+  const ir = tablesOf(fs.readFileSync(path.join(SRC, 'systems/irshad/client/view.html'), 'utf8')).find((t) => t.th === 12 && t.rows.some((r) => r.n === 12));
   assert.ok(ir, 'سجلُّ الحركة الشهري: 12 عموداً في الترويسة والجسم');
-  assert.match(fs.readFileSync(path.join(SRC, 'modules/irshad/view.html'), 'utf8'), /<th style="padding:8px 4px" aria-label="الإجراءات"><\/th>/);
+  assert.match(fs.readFileSync(path.join(SRC, 'systems/irshad/client/view.html'), 'utf8'), /<th style="padding:8px 4px" aria-label="الإجراءات"><\/th>/);
 });

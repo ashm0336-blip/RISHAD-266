@@ -23,7 +23,7 @@ async function session(browser, role) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } }), page = await ctx.newPage();
   const errs = [], writes = [];
   page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 200)));
-  page.on('request', (r) => { if (!['GET', 'HEAD'].includes(r.method())) writes.push(r.method() + ' ' + new URL(r.url()).pathname); });
+  page.on('request', (r) => { if (!['GET', 'HEAD'].includes(r.method())) writes.push({ w: r.method() + ' ' + new URL(r.url()).pathname, op: (() => { try { return JSON.parse(r.postData() || '{}').op || ''; } catch (e) { return ''; } })() }); });
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
   const api = (p, o) => page.evaluate(async ([p, o]) => { const r = await fetch(p, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, o || {})); let j = null; try { j = await r.json(); } catch (e) {} return { status: r.status, j }; }, [p, o || null]);
   const login = (un, pw) => api('/api/login', { method: 'POST', body: JSON.stringify({ u: un, p: pw }) });
@@ -47,7 +47,9 @@ async function uiOpen(s, role) {
   await s.page.screenshot({ path: 'live_' + role + '.png' });
   check(role + ':ui-signed-in', !(await s.page.$('input[type=password]')), 'the page shows the application, not the sign-in form');
   check(role + ':ui-open-no-error', s.errs.length === 0, s.errs.slice(0, 3));
-  check(role + ':ui-open-no-write', s.writes.filter((w) => !/\/api\/(login|changes|ping)/.test(w)).length === 0, s.writes.slice(0, 5));
+  /* the bell's own security poll (POST /api/notifications/act · op security-poll) is the page reading, not a write — only that operation is excused, not the path */
+  const opened = s.writes.filter((x) => !/\/api\/(login|changes|ping)/.test(x.w) && !(x.w === 'POST /api/notifications/act' && x.op === 'security-poll')).map((x) => x.w + (x.op ? ' ' + x.op : ''));
+  check(role + ':ui-open-no-write', opened.length === 0, opened.slice(0, 5));
 }
 
 (async () => {

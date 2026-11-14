@@ -15,8 +15,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { PYTHON, makeTestEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, applySql, ROOT } from './harness.mjs';
-import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
+import { PYTHON, makeTestEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, applySql, ROOT } from '../../../../tests/unit/harness.mjs';
+import { installCurrentSchemaFixture } from '../../../../tests/unit/current_schema_fx.mjs';
 
 const ACC = { dm1: ['0000000101', '70101'], dm2: ['0000000102', '70102'], sup1: ['0000000111', '70111'] };
 const AW2 = 'bsdept:tst_d2:bassam_award_v1';

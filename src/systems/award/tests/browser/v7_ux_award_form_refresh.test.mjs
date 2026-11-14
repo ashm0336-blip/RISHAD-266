@@ -10,8 +10,8 @@
      as during a refresh; the button re-reads and the strip leaves. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startLab, LAB } from './local_server.mjs';
-import { chromium, openAs } from './lab_browser.mjs';
+import { startLab, LAB } from '../../../../../tests/browser/local_server.mjs';
+import { chromium, openAs } from '../../../../../tests/browser/lab_browser.mjs';
 
 const CAP = ['tasks', 'daily', 'dreport', 'admin', 'emps', 'dstats', 'staff', 'plan', 'planning', 'irshad', 'seized', 'award', 'links', 'help'];
 async function widen(lab) {   /* the lab department gets the award page in its ceiling (TEST_ONLY data) */

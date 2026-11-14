@@ -7,6 +7,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { json, bases, catalogDto, ack, waitFor, browser, seedForm, save, ROOT } from './business_cloud_ui_fx.mjs';
+import nodePath from 'node:path';
+import { fileURLToPath as _f2p } from 'node:url';
+import { moduleDir as _md } from '../../tools/systems_paths.mjs';
+/* V7 · الحزمة ب: مسارُ وحدة الصفحة نسبةً إلى الجذر — src/modules/<slug> أو src/systems/<key>/client */
+const modRel = (slug) => nodePath.relative(_f2p(new URL('../../', import.meta.url)), _md(_f2p(new URL('../../src', import.meta.url)), slug)).split(nodePath.sep).join('/');
 
 const DTO = {
   seized: (view, B) => ({ ok: 1, dept: B.context().dept, view, base: { ...B.base }, ...(view === 'catalogs' ? catalogDto() : {}),
@@ -153,7 +158,7 @@ test('seized: the save path is unchanged after a completed refresh (stamp from t
 
 test('the two views: the bar is the slim one with its conditional refresh button, and the component host sits in the page', () => {
   for (const module of ['seized', 'award']) {
-    const view = fs.readFileSync(new URL('../../src/modules/' + module + '/view.html', import.meta.url), 'utf8');
+    const view = fs.readFileSync(new URL('../../' + modRel(module) + '/view.html', import.meta.url), 'utf8');
     assert.match(view, /<sc-if value="\{\{bcNotice\}\}" hint-placeholder-val="\{\{ false \}\}"><div class="ps-bar" role="status"><span>\{\{bcMessage\}\}<\/span><sc-if value="\{\{bcCanRefresh\}\}"><button onClick="\{\{bcRefresh\}\}">تحديث البيانات<\/button><\/sc-if><\/div><\/sc-if>/);
     assert.equal(view.split('ref="{{bcStates}}"').length, 2, module + ': one component host');
   }

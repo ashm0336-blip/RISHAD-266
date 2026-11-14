@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
-import { ROOT } from './harness.mjs';
+import { ROOT, moduleDir } from './harness.mjs';
 import assert from 'node:assert/strict';
 export { ROOT };
 const json = (value, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => value });
@@ -67,7 +67,7 @@ function browser(module, handler, currentClock = clock) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), W);
   const pageKitBase = W.KIVO.BassamPageKit.base;
   W.KIVO.BassamPageKit.base = (base, traits) => class extends pageKitBase(base, traits) { hToday() { return currentClock; } };
-  const dir = path.join(ROOT, 'src/modules', module), meta = JSON.parse(fs.readFileSync(path.join(dir, 'meta.json'), 'utf8'));
+  const dir = moduleDir(module), meta = JSON.parse(fs.readFileSync(path.join(dir, 'meta.json'), 'utf8'));
   const source = ['logic.js', ...(meta.logicParts || [])].map(file => fs.readFileSync(path.join(dir, file), 'utf8')).join('\n');
   vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);
   const page = new W.TestComponent(); page.bsToast = value => notices.push(value); page.bsAck = value => notices.push(value);

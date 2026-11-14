@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { world, seed, ROOT, D1, D2, IDS } from './irshad_domain_fx.mjs';
+import { world, seed, ROOT, D1, D2, IDS } from '../../../../tests/unit/irshad_domain_fx.mjs';
 
 const DUE = Date.parse('2026-10-30T20:31:00Z'); // Riyadh23:31.
 const clone = x => JSON.parse(JSON.stringify(x));

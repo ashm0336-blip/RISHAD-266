@@ -9,6 +9,7 @@
 k253offline.mjs (اللافتة والطابور) · k254ux.mjs (الهيكل · أعد المحاولة · h1) · ack.mjs (لا «تمّ» قبل الإقرار)."""
 import os, re, sys, json
 from page_modules import read_logic
+import systems_paths   # V7 · الحزمة ب
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'docs', 'ux-states.md'); BL = os.path.join(ROOT, 'tools', 'ux_states.json')
 PAT = {
@@ -44,7 +45,7 @@ U_PAT = {
     'U2': r'bs-skel',
     'U3': r'أعد المحاولة|إعادة المحاولة',
 }
-U_SCAN = ('src/modules', 'src/layouts', 'src/components', 'src/services', 'src/core')
+U_SCAN = ('src/modules', 'src/layouts', 'src/components', 'src/services', 'src/core', 'src/systems')   # V7 · الحزمة ب: واجهةُ الأنظمة المنقولة (client/ وحده — أدناه)
 ALLOW = [  # (بادئةُ المسار · القاعدة أو * · نمطُ السطر · السبب)
     (UNIFIED, '*', r'', 'المكوّنُ نفسُه'),
     ('src/styles/555-page-states.css', '*', r'', 'أنماطُ المكوّن'),
@@ -69,6 +70,7 @@ def unified_report(root=None):
             for f in sorted(files):
                 if not f.endswith(('.js', '.html', '.css')): continue
                 p = os.path.join(d, f); rel = os.path.relpath(p, root).replace(os.sep, '/')
+                if rel.startswith('src/systems/') and rel.split('/')[3] != 'client': continue
                 try: lines = open(p, encoding='utf-8').read().split('\n')
                 except (OSError, UnicodeDecodeError): continue
                 for i, line in enumerate(lines, 1):
@@ -81,12 +83,12 @@ def unified_report(root=None):
     for pg in pages:
         if pg['key'] in EXEMPT: continue
         slug = pg.get('module')
-        d = os.path.join(root, 'src', 'modules', slug or '')
+        d = systems_paths.module_dir(os.path.join(root, 'src'), slug) if slug else os.path.join(root, 'src', 'modules', '')   # V7 · الحزمة ب
         if not slug or not os.path.isdir(d): out.append(('U4', 'src/manifests/pages.json', 0, pg['key'] + ': بلا وحدةٍ ولا إعفاء')); continue
         try: meta = json.load(open(os.path.join(d, 'meta.json'), encoding='utf-8'))
         except (OSError, ValueError): meta = {}
         src = read_logic(d, meta) if os.path.exists(os.path.join(d, 'logic.js')) else ''
-        if not re.search(r'\bPageStates\b', src): out.append(('U4', 'src/modules/' + slug, 0, pg['key'] + ': لا تستعمل KIVO.PageStates لحالاتها الخاصة (بوابةُ الغلاف تغطي أول تحميلها وفشله)'))
+        if not re.search(r'\bPageStates\b', src): out.append(('U4', 'src/' + systems_paths.module_rel(os.path.join(root, 'src'), slug), 0, pg['key'] + ': لا تستعمل KIVO.PageStates لحالاتها الخاصة (بوابةُ الغلاف تغطي أول تحميلها وفشله)'))
     return out
 def print_report(full):
     found = unified_report(); by = {}
@@ -99,9 +101,9 @@ def print_report(full):
     return found
 def mods():
     d = os.path.join(ROOT, 'src', 'modules')
-    return sorted(m for m in os.listdir(d) if os.path.isdir(os.path.join(d, m)))
+    return sorted([m for m in os.listdir(d) if os.path.isdir(os.path.join(d, m))] + [m for m, p in systems_paths.module_dirs(os.path.join(ROOT, 'src')).items() if not p.startswith(d + os.sep)])   # V7 · الحزمة ب
 def count(m):
-    d=os.path.join(ROOT,'src','modules',m)
+    d=systems_paths.module_dir(os.path.join(ROOT,'src'),m)   # V7 · الحزمة ب
     try: meta=json.load(open(os.path.join(d,'meta.json'),encoding='utf-8'))
     except (OSError,ValueError): meta={}
     t=read_logic(d,meta) if os.path.exists(os.path.join(d,'logic.js')) else ''
@@ -112,7 +114,7 @@ def count(m):
         if re.search(r'\bKIVO\.' + re.escape(namespace) + r'\b', direct):
             t += '\n' + open(os.path.join(ROOT, rel), encoding='utf-8').read()
     title = ''
-    try: title = json.load(open(os.path.join(ROOT, 'src', 'modules', m, 'meta.json'), encoding='utf-8')).get('name', '')
+    try: title = json.load(open(os.path.join(systems_paths.module_dir(os.path.join(ROOT, 'src'), m), 'meta.json'), encoding='utf-8')).get('name', '')
     except Exception: pass
     return title, {k: len(re.findall(v, t)) for k, v in PAT.items()}
 def render():

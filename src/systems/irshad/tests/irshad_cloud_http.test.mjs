@@ -8,10 +8,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
-import { candidateWorker, seed, D1, D2, IDS, identitySnapshot, ROOT } from './irshad_domain_fx.mjs';
-import { world } from './custody_review_fx.mjs';
-import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
-import { EKEYS } from './notifications_review_fx.mjs';
+import { candidateWorker, seed, D1, D2, IDS, identitySnapshot, ROOT } from '../../../../tests/unit/irshad_domain_fx.mjs';
+import { world } from '../../../../tests/unit/custody_review_fx.mjs';
+import { installOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
+import { EKEYS } from '../../../../tests/unit/notifications_review_fx.mjs';
 
 test('real module saves with a lost committed ACK, retries once, edits, aggregates and exports every filtered page without duplicate effects', async t => {
   const B = await world(); B.W = await candidateWorker();
@@ -67,7 +67,7 @@ test('real module saves with a lost committed ACK, retries once, edits, aggregat
       return response;
     } };
   C.window = C; vm.createContext(C);
-  const source = fs.readFileSync(path.join(ROOT, 'src/modules/irshad/logic.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'src/systems/irshad/client/logic.js'), 'utf8');
   vm.runInContext(source + '\nglobalThis.TestComponent = Component;', C);
   const page = new C.TestComponent(); page.bsToast = () => {}; page.bsAck = () => {};
   t.after(() => timers.forEach(clearTimeout));

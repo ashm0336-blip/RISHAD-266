@@ -258,7 +258,7 @@ function browser(transport, incoming = { srv: 1, cf: 1, uid: 'TEST_ONLY-owner' }
   W.localStorage = { getItem(k) { persistence.push(['get', k]); throw new Error('No business browser storage'); }, setItem(k) { persistence.push(['set', k]); throw new Error('No business browser storage'); } };
   W.fetch = async (url, options = {}) => { calls.push({ url, ...options }); return transport(url, options); };
   const context = vm.createContext(W);
-  vm.runInContext(read('src/services/580-historical-import.js'), context);
+  vm.runInContext(read('src/systems/dstats/client/580-historical-import.js'), context);
   return { W, context, D: W.KIVO.DailyStats, calls, persistence };
 }
 
@@ -348,7 +348,7 @@ test('session failures keep the captured identity and unconfirmed draft out of b
 
 function dailyPage(B) {
   B.W.KIVO.BassamPageKit = { base: () => class {} }; B.W.DCLogic = class {};
-  const C = vm.runInContext(read('src/modules/dstats/logic.js') + '\nComponent;', B.context);
+  const C = vm.runInContext(read('src/systems/dstats/client/logic.js') + '\nComponent;', B.context);
   const page = new C(), toasts = [];
   page.state = { ...page.state, site: 'haram', year: 9999, month: 1, day: 1, draft: { worshippers: '99' } };
   page.MONTHS = ['اختبار']; page.PC = () => true; page._dayLockMsg = () => '';

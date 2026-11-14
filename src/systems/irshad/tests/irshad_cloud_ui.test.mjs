@@ -5,9 +5,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
-import { ROOT } from './harness.mjs';
+import { ROOT } from '../../../../tests/unit/harness.mjs';
 
-const source = fs.readFileSync(path.join(ROOT, 'src/modules/irshad/logic.js'), 'utf8');
+const source = fs.readFileSync(path.join(ROOT, 'src/systems/irshad/client/logic.js'), 'utf8');
 const base = { epoch: 2, reports: 3, languages: 4, locations: 5, retro: 6 };
 const clock = { y: 1448, m: 5, d: 19, now: 1793318400000 };
 const json = (value, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => value });

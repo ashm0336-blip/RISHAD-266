@@ -15,7 +15,7 @@ export default legacy ? [
   { files: [legacy + '/workers/parts/*.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.serviceworker, ...globals.es2021 } }, rules: workerRules },
 ] : [
   /* KIVO_252: الخادمُ يُفحص مضموماً (workers/_worker.js = ضمُّ الأجزاء بايتاً) لا جزءاً جزءاً — فالدالةُ المعرَّفة في جزءٍ والمستعملة في آخر ليست «غيرَ مستعملة»؛ الأجزاءُ نفسُها تبقى المصدر */
-  { ignores: ['**/node_modules/**', 'pk*/**', '**/*.min.js', 'src/core/010-react.js', 'src/core/020-react-dom.js', 'src/core/030-pages-loader.js', 'src/permissions/340-registry-v24-9.js', 'src/manifests/255-page-manifest.js', 'workers/parts/**', 'src/pages/**', 'k2*/**', 'cfbench/**', 'lab/**'] },
-  { files: ['src/{core,layouts,components,services,i18n,api,auth,permissions,manifests}/*.js', 'src/modules/*/logic*.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: browserGlobals }, rules },
+  { ignores: ['**/node_modules/**', 'pk*/**', '**/*.min.js', 'src/systems/*/server/**', 'src/systems/*/tests/**', 'src/core/010-react.js', 'src/core/020-react-dom.js', 'src/core/030-pages-loader.js', 'src/permissions/340-registry-v24-9.js', 'src/manifests/255-page-manifest.js', 'workers/parts/**', 'src/pages/**', 'k2*/**', 'cfbench/**', 'lab/**'] },
+  { files: ['src/{core,layouts,components,services,i18n,api,auth,permissions,manifests}/*.js', 'src/modules/*/logic*.js', 'src/systems/*/client/*.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: browserGlobals }, rules },
   { files: ['workers/_worker.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.serviceworker, ...globals.es2021, HTMLRewriter: 'readonly' } }, rules: { ...workerRules, 'no-undef': 'error' } },
 ];

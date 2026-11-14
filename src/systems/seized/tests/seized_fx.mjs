@@ -3,12 +3,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
-import { D1Shim, ROOT } from "./harness.mjs";
+import { D1Shim, ROOT } from "../../../../tests/unit/harness.mjs";
 import {
   installOperationalFixture,
   isOperationalFixtureKey,
   replaceOperationalFixture,
-} from "./operational_legacy_seed_fx.mjs";
+} from "../../../../tests/unit/operational_legacy_seed_fx.mjs";
 export { ROOT };
 let canonical;
 export const testedMode = "canonical";
@@ -52,7 +52,7 @@ export async function seizedWorker() {
       "019l-seized-operations.js",
     ])
       assert.ok(
-        manifest.parts.some((part) => part.file === name),
+        manifest.parts.some((part) => path.basename(part.file) === name),
         "Canonical Seized part is registered: " + name,
       );
     canonical = import(

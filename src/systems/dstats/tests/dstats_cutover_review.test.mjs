@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { pathToFileURL } from 'node:url';
-import { D1Shim, ROOT, allowTestSchemaUpgrade } from './harness.mjs';
+import { D1Shim, ROOT, allowTestSchemaUpgrade } from '../../../../tests/unit/harness.mjs';
 
 const KEY = 'bassam_dstats_v1', copy = value => JSON.parse(JSON.stringify(value));
 const metrics = { haram: ['worshippers', 'umrah', 'hijr_ismail', 'carts'], nabawi: ['worshippers', 'salam_corridor', 'rawdah_men_published', 'rawdah_men_reserved', 'rawdah_men_actual', 'rawdah_women_published', 'rawdah_women_reserved', 'rawdah_women_actual'] };

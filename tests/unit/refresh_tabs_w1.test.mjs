@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { SRC, ROOT, moduleLogic } from './harness.mjs';
+import { SRC, ROOT, moduleLogic, moduleFile } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const J = (o) => JSON.parse(JSON.stringify(o));
@@ -21,7 +21,7 @@ function method(src, head, ind = '  ') {
 }
 /* صفحةٌ بديلة: دوالُّ الوحدة الحقيقية المذكورة + حالةٌ وخصائص · العنوانُ والمؤقّتاتُ مرصودة */
 function page(mod, names, o = {}) {
-  const src = rd('modules/' + mod + '/logic.js'), timers = [], replaced = [], listeners = new Map();
+  const src = rd(path.relative(SRC, moduleFile(mod, 'logic.js'))), timers = [], replaced = [], listeners = new Map();
   const loc = { hash: o.hash || '#/' + mod, pathname: '/', search: '' };
   const KIVO = Object.assign({ BassamPerm: o.perm || {} }, o.kivo || {});
   const ctx = { KIVO, console, JSON, Object, Array, String, Number, Math, RegExp, CustomEvent: class { constructor(t, i) { this.type = t; this.detail = i && i.detail; } },
@@ -67,7 +67,7 @@ test('التميز (R1 · AUX-06): #/award/res و#/award/doc في أوّل رس�
     P.c._bsHR();
     assert.equal(P.c.state.awTab, tab); assert.equal(P.timers.length, 0); assert.deepEqual(P.replaced, [tab]);
   }
-  const src = rd('modules/award/logic.js');
+  const src = rd('systems/award/client/logic.js');
   assert.equal(firstInRender(src, 'this._bsHR();'), 2);
   assert.doesNotMatch(method(src, '_bsHR() {'), /setTimeout/);
 });
@@ -135,7 +135,7 @@ test('الإحصائيات اليومية (KD-03 · R7): #/dstats/nabawi يفت�
   const Q = page('dstats', ['_bsHR(){'], { state: { site: 'haram' }, self: Object.assign({}, self, { SITES: () => ['haram'] }), kivo: { __BS_OPEN_TAB: { page: 'dstats', tab: 'nabawi' } } });
   Q.c._bsHT = (t) => Q.replaced.push(t); Q.c._bsHR();
   assert.equal(Q.c.state.site, 'haram', 'بلا ورقة المسجد النبوي: لا'); assert.deepEqual(Q.replaced, ['']);
-  const src = rd('modules/dstats/logic.js');
+  const src = rd('systems/dstats/client/logic.js');
   assert.match(src, /click:\(\)=>\{ self\.setState\(\{site:k,draft:null\}\); self\._bsHT\(k==="haram"\?"":k\); \}/, 'التبديلُ يكتب العنوان');
   assert.match(src, /renderVals\(\)\{\n    this\._bsHR\(\);/);
   /* Real asynchronous refreshStats runs against a deferred cloud adapter. Neither
@@ -173,7 +173,7 @@ test('الاسترشاد والمضبوطات (R7): #/irshad/records و#/seized/
     assert.equal(Q.c._bsHR(), ''); assert.deepEqual(Q.replaced, [''], 'العنوانُ #/' + mod);
     const S = page(mod, ['_bsHR() {'], { state: { irTab: 'dash' }, props: { solo: 'dash' }, kivo: { __BS_OPEN_TAB: { page: mod, tab: 'records' } } });
     assert.equal(S.c._bsHR(), ''); assert.equal(S.c.state.irTab, 'dash'); assert.ok(S.KIVO.__BS_OPEN_TAB, 'الطلبُ يبقى للصفحة');
-    const src = rd('modules/' + mod + '/logic.js');
+    const src = rd(path.relative(SRC, moduleFile(mod, 'logic.js')));
     assert.match(src, /renderVals\(\) \{\n    const q = this\._bsHR\(\),/, 'قبل حساب القيم');
     assert.match(src, /q && q !== h && this\._bsHT\(h\);/, 'والعنوانُ يحمل التبويبَ المعروض فعلاً');
   }
@@ -245,7 +245,7 @@ test('الاسترشاد والمضبوطات (R7 · تحقّقُ الموجة 1
     P.c._bsHT('records'); assert.equal(P.loc.hash, '#/' + mod + '/records');
     const S = page(mod, ['_bsHT(t) {'], { hash: '#/kpis', props: { solo: 'dash' } });
     S.c._bsHT('records'); assert.equal(S.loc.hash, '#/kpis', 'نسخةُ solo داخل المؤشرات لا تكتب');
-    const src = rd('modules/' + mod + '/logic.js');
+    const src = rd(path.relative(SRC, moduleFile(mod, 'logic.js')));
     assert.match(src, /irGoDash: \(\) => \(this\._bsHT\("dash"\), this\.setState\(\{ irTab: "dash" \}\)\)/);
     assert.match(src, /irGoRecords: \(\) => \(this\._bsHT\("records"\), this\.setState\(\{ irTab: "records" \}\)\)/);
   }

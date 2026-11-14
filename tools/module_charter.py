@@ -13,6 +13,7 @@ try:
     from . import deps_check
 except ImportError:
     import deps_check
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import systems_paths   # V7 · الحزمة ب
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 J = lambda p: json.load(open(os.path.join(ROOT, p), encoding='utf-8'))
@@ -150,7 +151,7 @@ def shared_data(slug, parts, dependency_graph=None):
     """
     definitions, references = dependency_graph or deps_check.scan()
     source_root = os.path.join(ROOT, 'src')
-    files = [os.path.relpath(os.path.normpath(os.path.join(source_root, 'modules', slug, name)), source_root).replace(os.sep, '/') for name in ['logic.js'] + parts]
+    files = [os.path.relpath(os.path.normpath(os.path.join(systems_paths.module_dir(source_root, slug), name)), source_root).replace(os.sep, '/') for name in ['logic.js'] + parts]
     pending = [name for file in files for name in references.get(file, [])]
     visited, sources, allowed = set(), {}, operation_resources()
     while pending:
@@ -165,7 +166,7 @@ def shared_data(slug, parts, dependency_graph=None):
     return set().union(*operation_literals(sources).values()) & allowed if sources else set()
 
 def derive(slug, G='', dependency_graph=None):
-    d = os.path.join(ROOT, 'src/modules', slug)
+    d = systems_paths.module_dir(os.path.join(ROOT, 'src'), slug); m = 'src/' + systems_paths.module_rel(os.path.join(ROOT, 'src'), slug)   # V7 · الحزمة ب
     parts = (json.load(open(os.path.join(d, 'meta.json'), encoding='utf-8')) if os.path.exists(os.path.join(d, 'meta.json')) else {}).get('logicParts') or []   # KIVO_265 · البند 19
     logic = ''.join(open(os.path.join(d, f), encoding='utf-8').read() for f in ['logic.js'] + parts)
     view = open(os.path.join(d, 'view.html'), encoding='utf-8').read() if os.path.exists(os.path.join(d, 'view.html')) else ''
@@ -177,17 +178,17 @@ def derive(slug, G='', dependency_graph=None):
     routes = ['#/' + nav] + (['#/sysadmin'] if slug == 'admin' else [])
     pat = re.compile(r"#/" + re.escape(nav) + r"\b|go\(\s*\w+\s*,\s*'" + re.escape(nav) + r"'|PAGES\s*=\s*\[[^\]]*'" + re.escape(nav) + r"'")   # المسار · go(p,'x') · قائمةُ صفحاتٍ تُزار كلُّها
     tests = []
-    for sub in ('cfbench', 'tests/unit'):
+    for sub in ['cfbench', 'tests/unit'] + sorted('src/systems/' + k + '/tests' for k in (os.listdir(os.path.join(ROOT, 'src/systems')) if os.path.isdir(os.path.join(ROOT, 'src/systems')) else [])):
         if not os.path.isdir(os.path.join(ROOT, sub)): continue   # المستودعُ الرسمي وحده: بلا cfbench (المختبر)
         for f in sorted(os.listdir(os.path.join(ROOT, sub))):
             if not f.endswith('.mjs'): continue
             try: s = open(os.path.join(ROOT, sub, f), encoding='utf-8').read()
             except OSError: continue
-            if pat.search(s) and (sub == 'tests/unit' or f in G): tests.append(('gate:' + f) if sub == 'cfbench' else (sub + '/' + f))   # حزمُ البوابة باسمها لا بمسار المختبر (AUD-029)   # المشغَّلُ فعلاً: البوابةُ الدائمة أو اختبارُ وحدة
+            if pat.search(s) and (sub != 'cfbench' or f in G): tests.append(('gate:' + f) if sub == 'cfbench' else (sub + '/' + f))   # حزمُ البوابة باسمها لا بمسار المختبر (AUD-029)   # المشغَّلُ فعلاً: البوابةُ الدائمة أو اختبارُ وحدة
     return {
         'page': page, 'routes': routes,
-        'ui': ['src/modules/%s/view.html' % slug, 'src/modules/%s/helmet.css' % slug],
-        'domain': 'src/modules/%s/logic.js' % slug if not parts else ['src/modules/%s/%s' % (slug, f) for f in ['logic.js'] + parts],   # KIVO_265 · البند 19: الأجزاءُ مع الأصل
+        'ui': [m + '/view.html', m + '/helmet.css'],
+        'domain': m + '/logic.js' if not parts else [m + '/' + f for f in ['logic.js'] + parts],   # KIVO_265 · البند 19: الأجزاءُ مع الأصل
         'data': sorted(set(KEY_RX.findall(logic + view)) | shared_data(slug, parts, dependency_graph)) or [NODATA.get(slug, 'none')],
         'permissions': leaves if leaves else (['shownIn:' + k for k in shown] if shown else ['self (no tree leaf — every signed-in user)']),
         'tests': tests,
@@ -204,7 +205,7 @@ def main(argv):
     dependency_graph = deps_check.scan()
     gate_available = bool(G) and os.path.isdir(os.path.join(ROOT, 'cfbench'))
     for slug in mods:
-        mp = os.path.join(ROOT, 'src/modules', slug, 'meta.json')
+        mp = os.path.join(systems_paths.module_dir(os.path.join(ROOT, 'src'), slug), 'meta.json')
         meta = json.load(open(mp, encoding='utf-8'))
         ch = meta.get('charter') or {}
         der = derive(slug, G, dependency_graph)
@@ -225,7 +226,7 @@ def main(argv):
             if ch.get(k) and ch.get(k) != der[k]: bad.append(slug + ': «' + k + '» لا يطابق المصدر (أعد --write) — المصدر: ' + json.dumps(der[k], ensure_ascii=False)[:160])
         for f in (ch.get('ui') or []) + (ch.get('domain') if isinstance(ch.get('domain'), list) else [ch.get('domain') or '']):
             if f and not os.path.exists(os.path.join(ROOT, f)) and not f.endswith('helmet.css'): bad.append(slug + ': ملفٌّ غائب ' + f)
-        if gate_available and ch.get('tests') and not any(t.split(':', 1)[-1] in G or t.startswith('tests/unit/') for t in ch['tests']):
+        if gate_available and ch.get('tests') and not any(t.split(':', 1)[-1] in G or t.startswith(('tests/unit/', 'src/systems/')) for t in ch['tests']):
             bad.append(slug + ': لا اختبارَ من اختباراتها في البوابة الدائمة ولا اختبارَ وحدة')
     if write: print('كُتب الميثاقُ في ' + str(len(mods)) + ' وحدة'); return 0
     for b in bad: print('  ✘', b)
