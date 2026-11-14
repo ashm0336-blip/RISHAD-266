@@ -381,7 +381,7 @@
   }
   function tabOn(pk, tk){
     try {
-      if (isSuper()) return supSees(pk, tk);   /* المشرف: داخل السقف كما يراها مديرها، وخارجه عرضاً */
+      if (isSuper()) return true;   /* V7 · د1-ج: مدير المنصة بلا قيد */
       if (deptTabs(null, pk).indexOf(tk) === -1) return false;
       return can(pk + '/' + tk, 'view');
     } catch (e) { return false; }
@@ -391,7 +391,7 @@
      ومدير النظام يرى كل شيء كبقية المنظومة. */
   function subOn(pk, sk){
     try {
-      if (isSuper()) return supSees(pk, sk);
+      if (isSuper()) return true;   /* V7 · د1-ج: مدير المنصة بلا قيد */
       /* الصفحة الساكنة تحت هذه الحاوية تبويبٌ فيها — يتبع صلاحية صفحته (مفتاحها المستقل) */
       var q = PAGE_OF[sk]; if (q && q.under === pk) return can(sk, 'view');
       if (deptSubs(null, pk).indexOf(sk) === -1) return false;
@@ -401,7 +401,7 @@
   /* هل تملك الجلسة الحالية فعلاً على ورقة بعينها؟ */
   /* مدير النظام والوحدة المختارة: ورقةُ صفحةٍ داخل سقفها كما ضبطتها الوحدة؛ وورقةُ صفحةٍ خارجه تُرى عرضاً ما رُئيت صفحتُها (myPerms: والمطفأةُ على المنصة لا تُرى) — والكتابةُ بالسقف وحده */
   function supSees(pk, sk){ return onCap(pk + '/' + sk) || (!onCap(pk) && leafKeysOf(pk).indexOf(pk + '/' + sk) !== -1 && can(pk, 'view')); }
-  function canSub(pk, sk, act){ try { if (isSuper()) return act && act !== 'view' ? onCap(pk + '/' + sk) : supSees(pk, sk); if (deptSubs(null, pk).concat(deptTabs(null, pk)).indexOf(sk) === -1) return false; return can(pk + '/' + sk, act || 'view'); } catch (e) { return false; } }
+  function canSub(pk, sk, act){ try { if (isSuper()) return true;   /* V7 · د1-ج: مدير المنصة بلا قيد */ if (deptSubs(null, pk).concat(deptTabs(null, pk)).indexOf(sk) === -1) return false; return can(pk + '/' + sk, act || 'view'); } catch (e) { return false; } }
 
   function deptLenses(did){
     var o = permStore(), d = did || curDept();
@@ -437,7 +437,7 @@
     permSave(o); return { ok:true };
   }
   function lensOn(key, did){
-    if (isSuper()) return onCap(key, did);             /* المشرف يرى الإدارة النشطة بسقفها */
+    if (isSuper()) return true;                        /* V7 · د1-ج: مدير المنصة بلا قيد — العدساتُ كلُّها */
     if (deptLenses(did).indexOf(key) === -1) return false;
     var u = cur(); if (!u) return false;
     if (u.role === 'staff' || u.role === 'gm') return empLens(u.ekey, did || curDept()).indexOf(key) !== -1;
@@ -563,11 +563,8 @@
   function myPerms(){
     var u = cur(); if (!u) return {};
     var all = {};
-    if (u.role === 'super') {
-      /* المشرف العام: الوحدةُ المختارة تغيّر البيانات المعروضة لا هويتَه — كلُّ صفحاتها عرضاً (الخادمُ يقرأ له كلَّ شيء)،
-         وأفعالُ الكتابة بسقفها (قرار هـ: السقفُ يحكم الجميع) — والإعدادات له دائماً */
-      all = capAllPerms(curDept());
-      PAGE_KEYS.forEach(function(k){ if (all[k]) return; [k].concat(leafKeysOf(k)).forEach(function(l){ all[l] = ['view']; }); });   /* صفحةٌ خارج السقف: عرضٌ لها ولكل أوراقها — وصفحاتُ السقف بتبويباتها كما ضبطتها الوحدة */
+    if (u.role === 'super') {   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — كلُّ صفحةٍ وورقةٍ بأفعالها كلِّها مهما كان سقفُ الإدارة والوحداتُ المطفأة (يطابق myPermsOf في الخادم) */
+      PAGE_KEYS.forEach(function(k){ [k].concat(leafKeysOf(k)).forEach(function(l){ all[l] = ALL_ACTS.slice(); }); });
       all.admin = ALL_ACTS.slice(); leafKeysOf('admin').forEach(function(l){ all[l] = ALL_ACTS.slice(); });
       return all;
     }

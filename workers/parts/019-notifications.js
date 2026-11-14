@@ -1640,9 +1640,9 @@ function nfOwn(m, targets, u, refs) {
 }
 function nfPage(A, d, type, cat, act) {
   var page = NF_CAP_ID[type] || NF_CAP[cat];
-  if (!page) return A.u.role === "super" || !["sys", "sec"].includes(cat);
+  if (A.u.role === "super") return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
+  if (!page) return !["sys", "sec"].includes(cat);
   if (!d || !deptInScope(A, d) || !capOnDept(A, d, page)) return false;
-  if (A.u.role === "super") return true;
   if (page.indexOf("admin/") === 0 && act === "view" && isMgrOf(A, d)) return true;
   if (A.enf) {
     /* RISHAD-266 · owner decision («مدير الإدارة في enforce يقرأ إشعارات الموظفين الموجّهة للمديرين»): «emps» is a container page with
