@@ -13,6 +13,7 @@ function server() {
   ctx.isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
   ctx.swallow = () => {}; ctx.nmap = () => Object.create(null);
   vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'workers/parts/016-base-shared.js'), 'utf8'), ctx, { filename: '016-base-shared.js' });   /* tkEmps · tkTokN · tkTokRec انتقلت إليه (مسارُ ملفٍ فقط) */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'workers/parts/070-task-core.js'), 'utf8'), ctx, { filename: '070-task-core.js' });
   return ctx;
 }

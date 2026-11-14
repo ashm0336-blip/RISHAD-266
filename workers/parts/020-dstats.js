@@ -55,15 +55,8 @@ function dsLockOk(v) {
 /* R183 (الملاحظة ٩): أقفالُ الأيام والأشهر — قاعدةُ الشاشة نفسُها (dayLocked · mLocked في «الإحصائيات اليومية»):
      locks["haram|1448-4"] = true (شكلٌ قديم = معتمد) أو { ap: معتمد · mo: شهرٌ منقضٍ فُتح بأثر رجعي ·
      dopen: أيامٌ منقضية فُتحت · dshut: أيامٌ لم تنقضِ أُقفلت يدوياً }. */
-var DS_GRACE = 3 * 3600 * 1000;
-function dsToday(now) {
-  try {
-    var f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
-    var o = {}; f.formatToParts(new Date(now - DS_GRACE)).forEach(function (p) { o[p.type] = +p.value; });
-    if (o.year > 1300 && o.month >= 1 && o.month <= 12 && o.day >= 1 && o.day <= 30) return { y: o.year, m: o.month, d: o.day };
-  } catch (e) { swallow('dstats', e); }
-  return null;
-}
+/* DS_GRACE → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
+/* dsToday → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 function dsLockRec(L, site, y, m) { var v = isObj(L) ? L[site + '|' + y + '-' + m] : undefined; return v === true ? { ap: 1 } : (isObj(v) ? v : {}); }
 function dsLockedIn(L, site, y, m, d, T) {
   var r = dsLockRec(L, site, y, m);

@@ -1,9 +1,6 @@
 /* Replacement for the retired442 ir_day poll. One active department, one
    Riyadh civil day, SQL aggregates only, and the existing NF once mechanism. */
-function irDailyManager(A) {
-  var u = A && A.u;
-  return !!(u && (u.role === 'super' || u.role === 'dept' || u.role === 'gm' || (u.role === 'staff' && u.mgr)));
-}
+/* irDailyManager → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 function irDailyPlan(ctx, day) {
   var scope = irQueryScope(ctx, 'r'), p = { args: scope.args.slice() },
     where = scope.sql + ' AND r.hijri_year=' + irQueryParam(p, day.y) +
