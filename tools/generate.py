@@ -9,6 +9,7 @@
      migrations/NNNN_<name>.sql (KIVO_249)                                     → workers/parts/051a-schema-migrations.js (KIVO_MIGRATIONS · KIVO_SCHEMA_VERSION)  (AUD-022 · ADR-011)
      schemas/api/bodies.schema.json                                         → workers/parts/051b-body-schemas.js (KIVO_BODY_SCHEMAS)
      services/332-find-day.js (pure marked search block)                    → workers/parts/018a-find-engine.js (KIVO_FIND)
+     ../workers/bindings/<name>/{data.json,engine.js} + targets.json (V7 · الحزمة ج) → workers/parts/006 · 008 · 010 · 014 (الوحداتُ المرجعية v24.9)
      plugins/lenses/<key>/manifest.json (KIVO_259)                              → KIVO_MANIFEST.lenses (الواجهة) · workers/parts/006a-lens-plugins.js (KIVO_LENS_PLUGINS)  (AUD-030 · ADR-018)
    الترتيبُ مهم: السجلُّ قبل الضمّ لأن جزءَ الخادم 004 مشتقٌّ هو نفسُه."""
 import os, sys, json, hashlib, subprocess, re
@@ -247,11 +248,30 @@ def gen_award_reference_html(S):
     if result.returncode: raise SystemExit('Award formatter generation failed: ' + result.stderr[-600:])
     return {norm(layout(S)['workersParts']) + '/019k-award-reference-html.js': result.stdout.encode('utf-8')}
 
+# ── V7 · المرحلة 2 · الحزمة ج: الوحداتُ المرجعية الأربع (006 · 008 · 010 · 014) مولَّدةٌ من مصادر في المستودع ─────────────────────────
+# مولّدُها الأصلي (registry10/*.py) غيرُ موجود. المصادرُ الآن workers/bindings/<name>/{data.json, engine.js} + workers/bindings/targets.json
+# (الترويسةُ كما هي حرفاً واسمُ المتغيّر) — بنمط السجل نفسه (permissions/registry/targets.json): الجزءُ = الترويسة + «var X = <JSON مضغوط>;» + المحرّك.
+# التعديلُ اليدوي على جزءٍ منها يُفشل --check (المولَّدُ ≠ الملتزَم). البياناتُ تُفحص: version و docSha256 = السجل v24.9.
+def gen_bindings(S):
+    B = os.path.join(S, '..', 'workers', 'bindings'); spec_path = os.path.join(B, 'targets.json')
+    if not os.path.isfile(spec_path): return {}
+    spec = json.load(open(spec_path, encoding='utf-8'))
+    reg = json.load(open(os.path.join(S, layout(S)['registry'], 'registry-v24.9.json'), encoding='utf-8'))
+    out = {}
+    for t in spec['targets']:
+        d = os.path.join(B, t['source'])
+        data = json.load(open(os.path.join(d, 'data.json'), encoding='utf-8'))
+        for k in ('version', 'docSha256'):
+            if data.get(k) != reg.get(k): raise SystemExit('bindings %s: %s = %r ≠ السجل %r' % (t['source'], k, data.get(k), reg.get(k)))
+        body = 'var ' + t['var'] + ' = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n'
+        out[norm(layout(S)['workersParts'] + '/' + t['part'])] = (t['header'] + body + rd(os.path.join(d, 'engine.js'))).encode('utf-8')
+    return out
+
 _main0 = main
 def main():
     S = os.path.abspath(sys.argv[sys.argv.index('--src') + 1]); check = '--check' in sys.argv
     produced = {}
-    produced.update(gen_registry(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S)); produced.update(gen_find_engine(S)); produced.update(gen_seized_defaults(S)); produced.update(gen_award_reference_html(S))
+    produced.update(gen_registry(S)); produced.update(gen_bindings(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S)); produced.update(gen_find_engine(S)); produced.update(gen_seized_defaults(S)); produced.update(gen_award_reference_html(S))
     if os.path.exists(os.path.join(S, layout(S)['pagesManifest'])):
         mj, reg = gen_manifest(S); produced.update(mj); splice_pg(S, produced, reg)
     produced.update(gen_worker(S, produced)); produced.update(gen_pages(S))

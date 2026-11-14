@@ -1,0 +1,8891 @@
+{
+ "version": "v24.9",
+ "docSha256": "6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde",
+ "phase": 4.1,
+ "mode": "shadow",
+ "dims": [
+  "Department",
+  "Branch",
+  "Site",
+  "Zone/Element",
+  "Shift",
+  "Assigned",
+  "Own",
+  "DateRange",
+  "Source",
+  "Global"
+ ],
+ "oldNewPolicy": "create → newValue · delete → oldValue · edit → oldValue ∧ newValue (أيُّ تغييرٍ في هوية النطاق يُفحص بطرفَيه)",
+ "migration": {
+  "Department": {
+   "status": "as-is-enforced",
+   "confidence": "high",
+   "evidence": "bsdept:<d> + deptInScope — أقوى دليلٍ قائم"
+  },
+  "Branch": {
+   "status": "as-is-enforced",
+   "confidence": "high",
+   "evidence": "deptInScope للـgm عبر سلسلة الأسلاف (ancChain) = سقفُ الفرع → الإداراتُ المسموحة"
+  },
+  "Site": {
+   "status": "unmigrated",
+   "confidence": "low",
+   "evidence": "لا قيمةَ موقعٍ صريحة للموظف ولا سقفَ إدارةٍ صريح (D4‑04)؛ الدليلُ المساعد: تسكينُه (emp[]) على عناصر الموقع"
+  },
+  "Zone/Element": {
+   "status": "unmigrated",
+   "confidence": "low",
+   "evidence": "لا قيمةَ عنصرٍ صريحة للموظف ولا سقفَ إدارةٍ صريح (D4‑04)؛ الدليلُ المساعد: emp[] يحوي مفتاحه"
+  },
+  "Shift": {
+   "status": "unmigrated",
+   "confidence": "medium",
+   "evidence": "الدليلُ: وردية الموظف في الجدول الشهري (staffing_v3[y-m][ekey].shift) — رئيسُ الوردية مقيدٌ بورديته والمديرُ غيرُ مقيد (v24.4 §7)"
+  },
+  "Assigned": {
+   "status": "as-is-enforced",
+   "confidence": "high",
+   "evidence": "element.emp[] يحوي ekey الفاعل (fieldObsOnly) · المهام row[14]"
+  },
+  "Own": {
+   "status": "as-is-enforced",
+   "confidence": "high",
+   "evidence": "هويةُ الجلسة (uid/ekey) — selfTaskOnly · selfEmailOnly · SELF_FIELDS · notif_dev:uid"
+  },
+  "DateRange": {
+   "status": "as-is-ui-only",
+   "confidence": "medium",
+   "evidence": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds/dreport/plan/staffing/tasks: أقفالٌ واجهية"
+  },
+  "Source": {
+   "status": "as-is-enforced",
+   "confidence": "high",
+   "evidence": "أوراقُ dstats/<site> للفاعل (dsHeld) = مصادرُه؛ المصدرُ من مفتاح الموقع في المورد"
+  },
+  "Global": {
+   "status": "n/a",
+   "confidence": "high",
+   "evidence": "لا نطاقَ سجلٍّ إضافي؛ لا يتجاوز الصلاحية ولا بوابةَ العدسة ولا الدور ولا السياسةَ الحسّاسة"
+  }
+ },
+ "bindings": [
+  {
+   "key": "dstats.haram.view",
+   "owner": "dstats/haram",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.haram.entry",
+   "owner": "dstats/haram",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.haram.approve",
+   "owner": "dstats/haram",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.haram.reopen",
+   "owner": "dstats/haram",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.nabawi.view",
+   "owner": "dstats/nabawi",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.nabawi.entry",
+   "owner": "dstats/nabawi",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.nabawi.approve",
+   "owner": "dstats/nabawi",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.nabawi.reopen",
+   "owner": "dstats/nabawi",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.anHaram.view",
+   "owner": "dstats/anHaram",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.anNabawi.view",
+   "owner": "dstats/anNabawi",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.anCmp.view",
+   "owner": "dstats/anCmp",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "dstats.anTime.view",
+   "owner": "dstats/anTime",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_dstats_v1",
+   "resources": [
+    "bassam_dstats_v1"
+   ],
+   "dims": {
+    "Source": [
+     "dstatsSite"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "cust.view",
+   "owner": "emps/custody",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_custody_v1",
+   "resources": [
+    "bassam_custody_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ref.custody_type.create",
+   "owner": "emps/custody",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_custody_v1",
+   "resources": [
+    "bassam_custody_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ref.custody_type.edit",
+   "owner": "emps/custody",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_custody_v1",
+   "resources": [
+    "bassam_custody_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "cust.move.issue",
+   "owner": "emps/custody",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_custody_v1",
+   "resources": [
+    "bassam_custody_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "cust.move.return",
+   "owner": "emps/custody",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_custody_v1",
+   "resources": [
+    "bassam_custody_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "cust.move.damage",
+   "owner": "emps/custody",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_custody_v1",
+   "resources": [
+    "bassam_custody_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "cust.move.lost",
+   "owner": "emps/custody",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_custody_v1",
+   "resources": [
+    "bassam_custody_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ref.custody_type.delete",
+   "owner": "emps/custody",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_custody_v1",
+   "resources": [
+    "bassam_custody_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ready.view",
+   "owner": "planning/readiness",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_employees_v1",
+   "resources": [
+    "bassam_employees_v1",
+    "bassam_staffing_v3",
+    "bassam_dreport_v1",
+    "bassam_options_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity"
+    ]
+   }
+  },
+  {
+   "key": "staff.view",
+   "owner": "staff",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "staff.create",
+   "owner": "staff",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "staff.move",
+   "owner": "staff",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "staff.rest",
+   "owner": "staff",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "staff.delete",
+   "owner": "staff",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "staff.lock",
+   "owner": "staff",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "staff.reopen",
+   "owner": "staff",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "plan.view",
+   "owner": "plan",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "plan.create",
+   "owner": "plan",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "plan.delete",
+   "owner": "plan",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "site.create",
+   "owner": "plan",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "site.edit",
+   "owner": "plan",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "map.replace",
+   "owner": "plan",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "site.delete",
+   "owner": "plan",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "plan.approve",
+   "owner": "plan",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "plan.reopen",
+   "owner": "plan",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "report.view",
+   "owner": "dreport",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "report.create",
+   "owner": "dreport",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "report.edit",
+   "owner": "dreport",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "report.approve",
+   "owner": "dreport",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "report.reopen",
+   "owner": "dreport",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "round.view",
+   "owner": "daily/rounds",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "round.create",
+   "owner": "daily/rounds",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "round.edit",
+   "owner": "daily/rounds",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "round.delete",
+   "owner": "daily/rounds",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "round.approve",
+   "owner": "daily/rounds",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "round.reopen",
+   "owner": "daily/rounds",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "task.view",
+   "owner": "tasks",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "task.create",
+   "owner": "tasks",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "task.edit",
+   "owner": "tasks",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "task.assign",
+   "owner": "tasks",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "task.evidence",
+   "owner": "tasks",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "task.delete",
+   "owner": "tasks",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "field.view",
+   "owner": "daily/field",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "Site": [
+     "floorSid"
+    ]
+   }
+  },
+  {
+   "key": "ir.dash.view",
+   "owner": "irshad/dash",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_irshad_v1",
+   "resources": [
+    "bassam_irshad_v1",
+    "bassam_irshad_langs_v1",
+    "bassam_irshad_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "ir.rec.view",
+   "owner": "irshad/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_irshad_v1",
+   "resources": [
+    "bassam_irshad_v1",
+    "bassam_irshad_langs_v1",
+    "bassam_irshad_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "ir.rec.create",
+   "owner": "irshad/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_irshad_v1",
+   "resources": [
+    "bassam_irshad_v1",
+    "bassam_irshad_langs_v1",
+    "bassam_irshad_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "ir.rec.edit",
+   "owner": "irshad/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_irshad_v1",
+   "resources": [
+    "bassam_irshad_v1",
+    "bassam_irshad_langs_v1",
+    "bassam_irshad_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "ir.rec.delete",
+   "owner": "irshad/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_irshad_v1",
+   "resources": [
+    "bassam_irshad_v1",
+    "bassam_irshad_langs_v1",
+    "bassam_irshad_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "sz.dash.view",
+   "owner": "seized/dash",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_seized_v1",
+   "resources": [
+    "bassam_seized_v1",
+    "bassam_seized_cat_v1",
+    "bassam_seized_acts_v1",
+    "bassam_seized_locs_v1",
+    "bassam_seized_jew_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-field (seized)"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "sz.rec.view",
+   "owner": "seized/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_seized_v1",
+   "resources": [
+    "bassam_seized_v1",
+    "bassam_seized_cat_v1",
+    "bassam_seized_acts_v1",
+    "bassam_seized_locs_v1",
+    "bassam_seized_jew_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "sz.rec.create",
+   "owner": "seized/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_seized_v1",
+   "resources": [
+    "bassam_seized_v1",
+    "bassam_seized_cat_v1",
+    "bassam_seized_acts_v1",
+    "bassam_seized_locs_v1",
+    "bassam_seized_jew_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "sz.rec.edit",
+   "owner": "seized/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_seized_v1",
+   "resources": [
+    "bassam_seized_v1",
+    "bassam_seized_cat_v1",
+    "bassam_seized_acts_v1",
+    "bassam_seized_locs_v1",
+    "bassam_seized_jew_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "sz.rec.delete",
+   "owner": "seized/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_seized_v1",
+   "resources": [
+    "bassam_seized_v1",
+    "bassam_seized_cat_v1",
+    "bassam_seized_acts_v1",
+    "bassam_seized_locs_v1",
+    "bassam_seized_jew_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "award.new.view",
+   "owner": "award/new",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_award_v1",
+   "resources": [
+    "bassam_award_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "award.new.create",
+   "owner": "award/new",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_award_v1",
+   "resources": [
+    "bassam_award_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "award.res.view",
+   "owner": "award/res",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_award_v1",
+   "resources": [
+    "bassam_award_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Own": [
+     "nomineeSelf"
+    ]
+   }
+  },
+  {
+   "key": "award.res.edit",
+   "owner": "award/res",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_award_v1",
+   "resources": [
+    "bassam_award_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Own": [
+     "nomineeSelf"
+    ]
+   }
+  },
+  {
+   "key": "award.res.approve",
+   "owner": "award/res",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_award_v1",
+   "resources": [
+    "bassam_award_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Own": [
+     "nomineeSelf"
+    ]
+   }
+  },
+  {
+   "key": "award.res.reject",
+   "owner": "award/res",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_award_v1",
+   "resources": [
+    "bassam_award_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Own": [
+     "nomineeSelf"
+    ]
+   }
+  },
+  {
+   "key": "award.res.delete",
+   "owner": "award/res",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_award_v1",
+   "resources": [
+    "bassam_award_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Own": [
+     "nomineeSelf"
+    ]
+   }
+  },
+  {
+   "key": "award.doc.view",
+   "owner": "award/doc",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_award_docs_v1",
+   "resources": [
+    "bassam_award_docs_v1",
+    "bassam_award_docs_v2"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "award.doc.create",
+   "owner": "award/doc",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_award_docs_v1",
+   "resources": [
+    "bassam_award_docs_v1",
+    "bassam_award_docs_v2"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "award.doc.edit",
+   "owner": "award/doc",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_award_docs_v1",
+   "resources": [
+    "bassam_award_docs_v1",
+    "bassam_award_docs_v2"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "award.doc.delete",
+   "owner": "award/doc",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_award_docs_v1",
+   "resources": [
+    "bassam_award_docs_v1",
+    "bassam_award_docs_v2"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "backup.view",
+   "owner": "admin/backup",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_last_export_v1",
+   "resources": [
+    "bassam_last_export_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "backup.create",
+   "owner": "admin/backup",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_last_export_v1",
+   "resources": [
+    "bassam_last_export_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "backup.restore",
+   "owner": "admin/backup",
+   "type": "operation",
+   "g": "to-build",
+   "res": "bassam_last_export_v1",
+   "resources": [
+    "bassam_last_export_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "audit.view",
+   "owner": "admin/oplog",
+   "type": "access",
+   "g": "exists",
+   "res": "aud",
+   "resources": [
+    "aud"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.shift.view",
+   "owner": "ref.shift",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_shift_options_v1",
+   "resources": [
+    "bassam_shift_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ref.shift.create",
+   "owner": "ref.shift",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_shift_options_v1",
+   "resources": [
+    "bassam_shift_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ref.shift.edit",
+   "owner": "ref.shift",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_shift_options_v1",
+   "resources": [
+    "bassam_shift_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ref.shift.delete",
+   "owner": "ref.shift",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_shift_options_v1",
+   "resources": [
+    "bassam_shift_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "tpl.view",
+   "owner": "admin/ptpls",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_perm_tpls_v1",
+   "resources": [
+    "bassam_perm_tpls_v1",
+    "bassam_perm_tpls_named_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "tpl.create",
+   "owner": "admin/ptpls",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_perm_tpls_v1",
+   "resources": [
+    "bassam_perm_tpls_v1",
+    "bassam_perm_tpls_named_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "tpl.edit",
+   "owner": "admin/ptpls",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_perm_tpls_v1",
+   "resources": [
+    "bassam_perm_tpls_v1",
+    "bassam_perm_tpls_named_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "tpl.delete",
+   "owner": "admin/ptpls",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_perm_tpls_v1",
+   "resources": [
+    "bassam_perm_tpls_v1",
+    "bassam_perm_tpls_named_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "import.view",
+   "owner": "admin/import",
+   "type": "access",
+   "g": "exists",
+   "res": "__virtual__",
+   "resources": [],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "import.run",
+   "owner": "admin/import",
+   "type": "operation",
+   "g": "to-build",
+   "res": "__virtual__",
+   "resources": [],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "lens.zones.enable",
+   "owner": "lens.zones",
+   "type": "capability",
+   "g": "to-build",
+   "res": "bassam_perms_v1",
+   "resources": [
+    "bassam_perms_v1"
+   ],
+   "dims": {
+    "Department": [
+     "sectionDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "lens.zones.view",
+   "owner": "lens.zones",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.zones.create",
+   "owner": "lens.zones",
+   "type": "create",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.zones.data.edit",
+   "owner": "lens.zones",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.zones.geometry.edit",
+   "owner": "lens.zones",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.zones.status.change",
+   "owner": "lens.zones",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.zones.delete",
+   "owner": "lens.zones",
+   "type": "delete",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.paths.enable",
+   "owner": "lens.paths",
+   "type": "capability",
+   "g": "to-build",
+   "res": "bassam_perms_v1",
+   "resources": [
+    "bassam_perms_v1"
+   ],
+   "dims": {
+    "Department": [
+     "sectionDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "lens.paths.view",
+   "owner": "lens.paths",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "lens.paths.create",
+   "owner": "lens.paths",
+   "type": "create",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "lens.paths.edit",
+   "owner": "lens.paths",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "lens.paths.geometry.edit",
+   "owner": "lens.paths",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "lens.paths.status.change",
+   "owner": "lens.paths",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ]
+   }
+  },
+  {
+   "key": "lens.paths.delete",
+   "owner": "lens.paths",
+   "type": "delete",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "lens.gates.enable",
+   "owner": "lens.gates",
+   "type": "capability",
+   "g": "to-build",
+   "res": "bassam_perms_v1",
+   "resources": [
+    "bassam_perms_v1"
+   ],
+   "dims": {
+    "Department": [
+     "sectionDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "lens.gates.view",
+   "owner": "lens.gates",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_gate_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.gates.create",
+   "owner": "lens.gates",
+   "type": "create",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_gate_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.gates.edit",
+   "owner": "lens.gates",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_gate_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.gates.status.change",
+   "owner": "lens.gates",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_gate_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.gates.delete",
+   "owner": "lens.gates",
+   "type": "delete",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_gate_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.marks.enable",
+   "owner": "lens.marks",
+   "type": "capability",
+   "g": "to-build",
+   "res": "bassam_perms_v1",
+   "resources": [
+    "bassam_perms_v1"
+   ],
+   "dims": {
+    "Department": [
+     "sectionDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "lens.marks.view",
+   "owner": "lens.marks",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.marks.create",
+   "owner": "lens.marks",
+   "type": "create",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.marks.edit",
+   "owner": "lens.marks",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.marks.geometry.edit",
+   "owner": "lens.marks",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.marks.delete",
+   "owner": "lens.marks",
+   "type": "delete",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.dist.enable",
+   "owner": "lens.dist",
+   "type": "capability",
+   "g": "to-build",
+   "res": "bassam_perms_v1",
+   "resources": [
+    "bassam_perms_v1"
+   ],
+   "dims": {
+    "Department": [
+     "sectionDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "lens.dist.view",
+   "owner": "lens.dist",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1",
+    "bassam_plan_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.dist.assign.edit",
+   "owner": "lens.dist",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1",
+    "bassam_plan_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.dens.enable",
+   "owner": "lens.dens",
+   "type": "capability",
+   "g": "to-build",
+   "res": "bassam_perms_v1",
+   "resources": [
+    "bassam_perms_v1"
+   ],
+   "dims": {
+    "Department": [
+     "sectionDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "lens.dens.view",
+   "owner": "lens.dens",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.dens.threshold.configure",
+   "owner": "lens.dens",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity (plan)"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.zones.indicators.view",
+   "owner": "lens.zones",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.dens.indicators.view",
+   "owner": "lens.dens",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "emp.view",
+   "owner": "emps/data",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_employees_v1",
+   "resources": [
+    "bassam_employees_v1",
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "emp.record.create",
+   "owner": "emps/data",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_employees_v1",
+   "resources": [
+    "bassam_employees_v1",
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "emp.record.edit",
+   "owner": "emps/data",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_employees_v1",
+   "resources": [
+    "bassam_employees_v1",
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "emp.record.delete",
+   "owner": "emps/data",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_employees_v1",
+   "resources": [
+    "bassam_employees_v1",
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "emp.record.bulk.delete",
+   "owner": "emps/data",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_employees_v1",
+   "resources": [
+    "bassam_employees_v1",
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "emp.account.bulk.activate",
+   "owner": "emps/data",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_auth_users_v1",
+   "resources": [
+    "bassam_auth_users_v1"
+   ],
+   "dims": {
+    "Department": [
+     "userDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "emp.account.bulk.freeze",
+   "owner": "emps/data",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_auth_users_v1",
+   "resources": [
+    "bassam_auth_users_v1"
+   ],
+   "dims": {
+    "Department": [
+     "userDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ref.employment_type.view",
+   "owner": "emps/data",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_options_v1",
+   "resources": [
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ref.employment_type.create",
+   "owner": "emps/data",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_options_v1",
+   "resources": [
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ref.employment_type.edit",
+   "owner": "emps/data",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_options_v1",
+   "resources": [
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "ref.employment_type.delete",
+   "owner": "emps/data",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_options_v1",
+   "resources": [
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "staff.shift.assign",
+   "owner": "staff",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "links.view",
+   "owner": "links",
+   "type": "access",
+   "g": "exists",
+   "res": "__virtual__",
+   "resources": [],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "help.view",
+   "owner": "help",
+   "type": "access",
+   "g": "exists",
+   "res": "__virtual__",
+   "resources": [],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "staff.employment_type.assign",
+   "owner": "staff",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "staff.work_type.assign",
+   "owner": "staff",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "staff.callsign.assign",
+   "owner": "staff",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "staff.tasking.assign",
+   "owner": "staff",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "staff.bulk.delete",
+   "owner": "staff",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_staffing_v3",
+   "resources": [
+    "bassam_staffing_v3",
+    "bassam_staffing_v2",
+    "bassam_staffing_snap_v1",
+    "bassam_staffing_locks_v1",
+    "bassam_callsigns_v1",
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "rowShift"
+    ]
+   }
+  },
+  {
+   "key": "ref.work_type.view",
+   "owner": "staff",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_options_v1",
+   "resources": [
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ]
+   }
+  },
+  {
+   "key": "ref.work_type.create",
+   "owner": "staff",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_options_v1",
+   "resources": [
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ]
+   }
+  },
+  {
+   "key": "ref.work_type.edit",
+   "owner": "staff",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_options_v1",
+   "resources": [
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ]
+   }
+  },
+  {
+   "key": "ref.work_type.delete",
+   "owner": "staff",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_options_v1",
+   "resources": [
+    "bassam_options_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ]
+   }
+  },
+  {
+   "key": "ref.callsign.view",
+   "owner": "staff",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_callsigns_v1",
+   "resources": [
+    "bassam_callsigns_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ]
+   }
+  },
+  {
+   "key": "ref.callsign.create",
+   "owner": "staff",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_callsigns_v1",
+   "resources": [
+    "bassam_callsigns_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ]
+   }
+  },
+  {
+   "key": "ref.callsign.edit",
+   "owner": "staff",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_callsigns_v1",
+   "resources": [
+    "bassam_callsigns_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ]
+   }
+  },
+  {
+   "key": "ref.callsign.delete",
+   "owner": "staff",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_callsigns_v1",
+   "resources": [
+    "bassam_callsigns_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ]
+   }
+  },
+  {
+   "key": "report.transfer",
+   "owner": "dreport",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "report.att.absence",
+   "owner": "dreport",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "report.att.leave",
+   "owner": "dreport",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "report.att.late_in",
+   "owner": "dreport",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "report.att.early_out",
+   "owner": "dreport",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "report.callsign.assign",
+   "owner": "dreport",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_dr_grp_v1",
+    "bassam_leave_kinds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (report)"
+    ]
+   }
+  },
+  {
+   "key": "ref.leave_type.view",
+   "owner": "dreport",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_leave_kinds_v1",
+   "resources": [
+    "bassam_leave_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.leave_type.create",
+   "owner": "dreport",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_leave_kinds_v1",
+   "resources": [
+    "bassam_leave_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.leave_type.delete",
+   "owner": "dreport",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_leave_kinds_v1",
+   "resources": [
+    "bassam_leave_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "site.approve",
+   "owner": "plan",
+   "type": "decision",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "map.calibrate",
+   "owner": "plan",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "sector.create",
+   "owner": "plan",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "sector.edit",
+   "owner": "plan",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "sector.delete",
+   "owner": "plan",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_zone_opts_v1",
+    "bassam_gate_opts_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "round.sync.plan",
+   "owner": "daily/rounds",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1",
+    "bassam_dayshift_v1",
+    "bassam_dayfocus_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "task.accept",
+   "owner": "tasks",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "task.finish",
+   "owner": "tasks",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "task.reopen",
+   "owner": "tasks",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "task.month.lock",
+   "owner": "tasks",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "task.month.reopen",
+   "owner": "tasks",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "task.bulk.delete",
+   "owner": "tasks",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1",
+    "bassam_tasks_locks_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Assigned": [
+     "taskAssignee"
+    ],
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "ref.irshad.location.view",
+   "owner": "irshad/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_irshad_locs_v1",
+   "resources": [
+    "bassam_irshad_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.irshad.location.create",
+   "owner": "irshad/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_irshad_locs_v1",
+   "resources": [
+    "bassam_irshad_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.irshad.location.edit",
+   "owner": "irshad/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_irshad_locs_v1",
+   "resources": [
+    "bassam_irshad_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.irshad.location.delete",
+   "owner": "irshad/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_irshad_locs_v1",
+   "resources": [
+    "bassam_irshad_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.irshad.language.view",
+   "owner": "irshad/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_irshad_langs_v1",
+   "resources": [
+    "bassam_irshad_langs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.irshad.language.create",
+   "owner": "irshad/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_irshad_langs_v1",
+   "resources": [
+    "bassam_irshad_langs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.irshad.language.edit",
+   "owner": "irshad/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_irshad_langs_v1",
+   "resources": [
+    "bassam_irshad_langs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.irshad.language.delete",
+   "owner": "irshad/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_irshad_langs_v1",
+   "resources": [
+    "bassam_irshad_langs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ir.rec.bulk.delete",
+   "owner": "irshad/records",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_irshad_v1",
+   "resources": [
+    "bassam_irshad_v1",
+    "bassam_irshad_langs_v1",
+    "bassam_irshad_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.location.view",
+   "owner": "seized/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_seized_locs_v1",
+   "resources": [
+    "bassam_seized_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.location.create",
+   "owner": "seized/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_seized_locs_v1",
+   "resources": [
+    "bassam_seized_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.location.edit",
+   "owner": "seized/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_seized_locs_v1",
+   "resources": [
+    "bassam_seized_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.location.delete",
+   "owner": "seized/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_seized_locs_v1",
+   "resources": [
+    "bassam_seized_locs_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.category.view",
+   "owner": "seized/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_seized_cat_v1",
+   "resources": [
+    "bassam_seized_cat_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.category.create",
+   "owner": "seized/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_seized_cat_v1",
+   "resources": [
+    "bassam_seized_cat_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.category.edit",
+   "owner": "seized/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_seized_cat_v1",
+   "resources": [
+    "bassam_seized_cat_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.category.delete",
+   "owner": "seized/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_seized_cat_v1",
+   "resources": [
+    "bassam_seized_cat_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.item.view",
+   "owner": "seized/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_seized_cat_v1",
+   "resources": [
+    "bassam_seized_cat_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.item.create",
+   "owner": "seized/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_seized_cat_v1",
+   "resources": [
+    "bassam_seized_cat_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.item.edit",
+   "owner": "seized/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_seized_cat_v1",
+   "resources": [
+    "bassam_seized_cat_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.item.delete",
+   "owner": "seized/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_seized_cat_v1",
+   "resources": [
+    "bassam_seized_cat_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.kind.view",
+   "owner": "seized/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_seized_jew_v1",
+   "resources": [
+    "bassam_seized_jew_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.kind.create",
+   "owner": "seized/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_seized_jew_v1",
+   "resources": [
+    "bassam_seized_jew_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.kind.edit",
+   "owner": "seized/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_seized_jew_v1",
+   "resources": [
+    "bassam_seized_jew_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.kind.delete",
+   "owner": "seized/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_seized_jew_v1",
+   "resources": [
+    "bassam_seized_jew_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.action.view",
+   "owner": "seized/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_seized_acts_v1",
+   "resources": [
+    "bassam_seized_acts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.action.create",
+   "owner": "seized/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_seized_acts_v1",
+   "resources": [
+    "bassam_seized_acts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.action.edit",
+   "owner": "seized/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_seized_acts_v1",
+   "resources": [
+    "bassam_seized_acts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.seized.action.delete",
+   "owner": "seized/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_seized_acts_v1",
+   "resources": [
+    "bassam_seized_acts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "sz.rec.bulk.delete",
+   "owner": "seized/records",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_seized_v1",
+   "resources": [
+    "bassam_seized_v1",
+    "bassam_seized_cat_v1",
+    "bassam_seized_acts_v1",
+    "bassam_seized_locs_v1",
+    "bassam_seized_jew_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "award.doc.reset",
+   "owner": "award/doc",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_award_docs_v1",
+   "resources": [
+    "bassam_award_docs_v1",
+    "bassam_award_docs_v2"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "tpl.supervisory",
+   "owner": "admin/ptpls",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_perm_tpls_v1",
+   "resources": [
+    "bassam_perm_tpls_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "lens.marks.status.change",
+   "owner": "lens.marks",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1",
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Assigned": [
+     "elementEmp"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "report.day.delete",
+   "owner": "dreport",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "ref.custody_type.view",
+   "owner": "emps/custody",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_custody_v1",
+   "resources": [
+    "bassam_custody_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "staff.permission_limit.set",
+   "owner": "staff",
+   "type": "decision",
+   "g": "exists",
+   "res": "bassam_perm_limit_v1",
+   "resources": [
+    "bassam_perm_limit_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "perm.assign",
+   "owner": "perm",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_perms_v1",
+   "resources": [
+    "bassam_perms_v1"
+   ],
+   "dims": {
+    "Department": [
+     "sectionDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ]
+   }
+  },
+  {
+   "key": "report.indicators.view",
+   "owner": "dreport",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_staffing_v3",
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "reportShift"
+    ]
+   }
+  },
+  {
+   "key": "ref.leave_type.edit",
+   "owner": "dreport",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_leave_kinds_v1",
+   "resources": [
+    "bassam_leave_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ir.rec.retro.open",
+   "owner": "irshad/records",
+   "type": "decision",
+   "g": "to-build",
+   "res": "bassam_irshad_v1",
+   "resources": [
+    "bassam_irshad_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "sz.rec.retro.open",
+   "owner": "seized/records",
+   "type": "decision",
+   "g": "to-build",
+   "res": "bassam_seized_v1",
+   "resources": [
+    "bassam_seized_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "import.replace",
+   "owner": "admin/import",
+   "type": "operation",
+   "g": "exists",
+   "res": "bassam_dreport_v1",
+   "resources": [
+    "bassam_dreport_v1",
+    "bassam_award_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "emp.account.activate",
+   "owner": "emps/data",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_auth_users_v1",
+   "resources": [
+    "bassam_auth_users_v1"
+   ],
+   "dims": {
+    "Department": [
+     "userDept"
+    ]
+   }
+  },
+  {
+   "key": "emp.account.freeze",
+   "owner": "emps/data",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_auth_users_v1",
+   "resources": [
+    "bassam_auth_users_v1"
+   ],
+   "dims": {
+    "Department": [
+     "userDept"
+    ]
+   }
+  },
+  {
+   "key": "lens.dist.need.edit",
+   "owner": "lens.dist",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1",
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ]
+   }
+  },
+  {
+   "key": "lens.dens.reading.record",
+   "owner": "lens.dens",
+   "type": "edit",
+   "g": "to-bind",
+   "res": "bassam_rounds_v1",
+   "resources": [
+    "bassam_rounds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Site": [
+     "floorSid"
+    ],
+    "Zone/Element": [
+     "elementId"
+    ],
+    "Shift": [
+     "shApShift"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "lens.gates.geometry.edit",
+   "owner": "lens.gates",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_plan_v1",
+   "resources": [
+    "bassam_plan_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Site": [
+     "floorSid"
+    ]
+   }
+  },
+  {
+   "key": "ref.zone.type.view",
+   "owner": "lens.zones",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_zone_opts_v1",
+   "resources": [
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.zone.type.create",
+   "owner": "lens.zones",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_zone_opts_v1",
+   "resources": [
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.zone.type.edit",
+   "owner": "lens.zones",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_zone_opts_v1",
+   "resources": [
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.zone.type.delete",
+   "owner": "lens.zones",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_zone_opts_v1",
+   "resources": [
+    "bassam_zone_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.gate.type.view",
+   "owner": "lens.gates",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_gate_opts_v1",
+   "resources": [
+    "bassam_gate_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.gate.type.create",
+   "owner": "lens.gates",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_gate_opts_v1",
+   "resources": [
+    "bassam_gate_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.gate.type.edit",
+   "owner": "lens.gates",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_gate_opts_v1",
+   "resources": [
+    "bassam_gate_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.gate.type.delete",
+   "owner": "lens.gates",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_gate_opts_v1",
+   "resources": [
+    "bassam_gate_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.mark.kind.view",
+   "owner": "lens.marks",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_mark_kinds_v1",
+   "resources": [
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.mark.kind.create",
+   "owner": "lens.marks",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_mark_kinds_v1",
+   "resources": [
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.mark.kind.edit",
+   "owner": "lens.marks",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_mark_kinds_v1",
+   "resources": [
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "ref.mark.kind.delete",
+   "owner": "lens.marks",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_mark_kinds_v1",
+   "resources": [
+    "bassam_mark_kinds_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "sys.overview.view",
+   "owner": "sysadmin",
+   "type": "access",
+   "g": "exists",
+   "res": "/api/overview",
+   "resources": [
+    "/api/overview"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.security.view",
+   "owner": "sysadmin",
+   "type": "access",
+   "g": "exists",
+   "res": "/api/sec",
+   "resources": [
+    "/api/sec",
+    "/api/presence"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.sessions.kill",
+   "owner": "sysadmin",
+   "type": "operation",
+   "g": "exists",
+   "res": "/api/sess/kill",
+   "resources": [
+    "/api/sess/kill"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.guard.unlock",
+   "owner": "sysadmin",
+   "type": "operation",
+   "g": "exists",
+   "res": "/api/guard",
+   "resources": [
+    "/api/guard",
+    "/api/guard/unlock"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.policy.edit",
+   "owner": "sysadmin",
+   "type": "operation",
+   "g": "exists",
+   "res": "/api/policy",
+   "resources": [
+    "/api/policy"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.users.manage",
+   "owner": "sysadmin",
+   "type": "operation",
+   "g": "exists",
+   "res": "bassam_auth_users_v1",
+   "resources": [
+    "bassam_auth_users_v1"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.depts.manage",
+   "owner": "sysadmin",
+   "type": "operation",
+   "g": "exists",
+   "res": "bassam_depts_v1",
+   "resources": [
+    "bassam_depts_v1",
+    "bassam_gdepts_v1",
+    "bassam_struct_seed_v1"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.ceiling.set",
+   "owner": "sysadmin",
+   "type": "decision",
+   "g": "to-bind",
+   "res": "bassam_perms_v1",
+   "resources": [
+    "bassam_perms_v1"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.modules.toggle",
+   "owner": "sysadmin",
+   "type": "operation",
+   "g": "exists",
+   "res": "bassam_platform_v1",
+   "resources": [
+    "bassam_platform_v1"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.backup.full",
+   "owner": "sysadmin",
+   "type": "operation",
+   "g": "exists",
+   "res": "bassam_last_full_export_v1",
+   "resources": [
+    "bassam_last_full_export_v1"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.restore.full",
+   "owner": "sysadmin",
+   "type": "operation",
+   "g": "exists",
+   "res": "/api/reset",
+   "resources": [
+    "/api/reset",
+    "/api/recovery",
+    "/api/recovery/new",
+    "/api/recover"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.histimp.run",
+   "owner": "sysadmin",
+   "type": "operation",
+   "g": "exists",
+   "res": "*",
+   "resources": [
+    "*"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.notif.config",
+   "owner": "notifications",
+   "type": "operation",
+   "g": "exists",
+   "res": "bassam_notif_cfg_v1",
+   "resources": [
+    "bassam_notif_cfg_v1",
+    "bassam_notif_sys_v1"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.broadcast.send",
+   "owner": "notifications",
+   "type": "operation",
+   "g": "exists",
+   "res": "bassam_bc_v1",
+   "resources": [
+    "bassam_bc_v1"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.audit.view",
+   "owner": "sysadmin",
+   "type": "access",
+   "g": "exists",
+   "res": "/api/aud",
+   "resources": [
+    "/api/aud"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "sys.images.resolve",
+   "owner": "images",
+   "type": "operation",
+   "g": "exists",
+   "res": "imgs",
+   "resources": [
+    "imgs",
+    "imgown",
+    "imgref"
+   ],
+   "dims": {
+    "Global": [
+     "globalScope"
+    ]
+   }
+  },
+  {
+   "key": "notif.dept.broadcast",
+   "owner": "notifications",
+   "type": "operation",
+   "g": "exists",
+   "res": "bassam_notif_v1",
+   "resources": [
+    "bassam_notif_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ]
+   }
+  },
+  {
+   "key": "self.profile.edit",
+   "owner": "profile",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_auth_users_v1",
+   "resources": [
+    "bassam_auth_users_v1",
+    "bassam_employees_v1"
+   ],
+   "dims": {
+    "Own": [
+     "userSelf"
+    ]
+   }
+  },
+  {
+   "key": "self.password.change",
+   "owner": "profile",
+   "type": "operation",
+   "g": "exists",
+   "res": "/api/checkpw",
+   "resources": [
+    "/api/checkpw",
+    "/api/save(bassam_auth_users_v1)"
+   ],
+   "dims": {
+    "Own": [
+     "na",
+     "no-owner-identity"
+    ]
+   }
+  },
+  {
+   "key": "self.sessions.kill",
+   "owner": "profile",
+   "type": "operation",
+   "g": "exists",
+   "res": "/api/me/sess/kill",
+   "resources": [
+    "/api/me/sess/kill"
+   ],
+   "dims": {
+    "Own": [
+     "na",
+     "no-owner-identity"
+    ]
+   }
+  },
+  {
+   "key": "self.notif.device",
+   "owner": "notifications",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_notif_dev_v1",
+   "resources": [
+    "bassam_notif_dev_v1",
+    "bassam_notif_v1"
+   ],
+   "dims": {
+    "Own": [
+     "keySuffixSelf"
+    ]
+   }
+  },
+  {
+   "key": "self.task.respond",
+   "owner": "tasks",
+   "type": "operation",
+   "g": "exists",
+   "res": "bassam_tasks_v1",
+   "resources": [
+    "bassam_tasks_v1"
+   ],
+   "dims": {
+    "Own": [
+     "taskAssignee"
+    ]
+   }
+  },
+  {
+   "key": "self.task.proof.upload",
+   "owner": "images",
+   "type": "edit",
+   "g": "exists",
+   "res": "imgs",
+   "resources": [
+    "imgs"
+   ],
+   "dims": {
+    "Own": [
+     "na",
+     "no-owner-identity"
+    ]
+   }
+  },
+  {
+   "key": "auth.login",
+   "owner": "accounts",
+   "type": "access",
+   "g": "exists",
+   "res": "/api/login",
+   "resources": [
+    "/api/login",
+    "/api/logout",
+    "/api/whoami",
+    "/api/me"
+   ],
+   "dims": {
+    "Own": [
+     "na",
+     "no-owner-identity"
+    ]
+   }
+  }
+ ],
+ "byResource": {
+  "bassam_plan_v1": {
+   "items": "planItems",
+   "evidence": "floors[f:sid] · months[y-m].d[f:sid] · zones(code)/gates(id|num)/marks(id|label)/paths(code) · emp[] · approved · months[].mo",
+   "lock": "plan: شهرٌ منقضٍ بلا mo · موقعٌ معتمد (approved) — واجهةٌ فقط اليوم",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Site": "floorSid",
+    "Zone/Element": "elementId",
+    "Assigned": "elementEmp",
+    "DateRange": "periodLock"
+   },
+   "na": {
+    "Shift": "no-shift-identity (plan)",
+    "Own": "no-owner-identity",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_rounds_v1": {
+   "items": "roundsItems",
+   "evidence": "[\"y-m-d\"].d[#i] (الموقع بالموضع — مرآةُ floors) · العناصر · emp[] · ap · shAp[shift] · m:y-m {ap,mo,dopen,dshut}",
+   "lock": "rounds: m:y-m (ap/mo/dopen/dshut بقاعدة dsLockedIn) · day.ap — واجهةٌ فقط اليوم",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Site": "floorSid",
+    "Zone/Element": "elementId",
+    "Shift": "shApShift",
+    "Assigned": "elementEmp",
+    "DateRange": "periodLock"
+   },
+   "na": {
+    "Own": "no-owner-identity",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_dreport_v1": {
+   "items": "dreportItems",
+   "evidence": "[\"y-m-d\"].shifts[shift] · roster[ekey] · ap/apAt/apBy · m:y-m {ap,mo,dopen,dshut,perm}",
+   "lock": "dreport: m:y-m + shifts[sh].ap — واجهةٌ فقط اليوم",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Shift": "reportShift",
+    "DateRange": "periodLock"
+   },
+   "na": {
+    "Site": "no-site-identity (report)",
+    "Zone/Element": "no-element-identity",
+    "Assigned": "no-assignment-field",
+    "Own": "no-owner-identity",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_staffing_v3": {
+   "items": "staffingItems",
+   "evidence": "[\"y-m\"][ekey].shift (القديم والجديد) · __shifts · أقفالُ bassam_staffing_locks_v1 (تُحمَّل خادمياً)",
+   "lock": "staffing: locks[y-m] === true (قفلٌ صريح) · {mo:1} مفتوح — من موردٍ آخر (قد يغيب الدليل → unknown)",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Shift": "rowShift",
+    "DateRange": "periodLock"
+   },
+   "na": {
+    "Site": "no-site-identity",
+    "Zone/Element": "no-element-identity",
+    "Assigned": "no-assignment-field",
+    "Own": "no-owner-identity",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_staffing_v2": {
+   "items": "staffingItems",
+   "evidence": "[\"y-m\"][ekey].shift (القديم والجديد) · __shifts · أقفالُ bassam_staffing_locks_v1 (تُحمَّل خادمياً)",
+   "lock": "staffing: locks[y-m] === true (قفلٌ صريح) · {mo:1} مفتوح — من موردٍ آخر (قد يغيب الدليل → unknown)",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Shift": "rowShift",
+    "DateRange": "periodLock"
+   },
+   "na": {
+    "Site": "no-site-identity",
+    "Zone/Element": "no-element-identity",
+    "Assigned": "no-assignment-field",
+    "Own": "no-owner-identity",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_tasks_v1": {
+   "items": "tasksItems",
+   "evidence": "[\"y-m-d\"][row] · row[14] المكلَّف · row[13] المعرّف · أقفالُ bassam_tasks_locks_v1",
+   "lock": "tasks: locks[y-m] === true — من موردٍ آخر (قد يغيب الدليل → unknown)",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Assigned": "taskAssignee",
+    "Own": "taskAssignee",
+    "DateRange": "periodLock"
+   },
+   "na": {
+    "Site": "no-site-identity",
+    "Zone/Element": "no-element-identity",
+    "Shift": "no-shift-identity",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_irshad_v1": {
+   "items": "reportItems",
+   "evidence": "reports[id].{y,m,d} · loc (ref.irshad.location) · shift · G‑08 + نوافذُ الاستدراك (D3‑07)",
+   "lock": "irshad: الفترةُ المغلقة (G‑08 على اليوم الهجري) ∧ نافذةُ استدراكٍ سارية (bassam_irshad_retro_v1) — D3‑07",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Site": "recordLoc",
+    "Shift": "recordShift",
+    "DateRange": "periodLock"
+   },
+   "na": {
+    "Zone/Element": "no-element-identity",
+    "Assigned": "no-assignment-field",
+    "Own": "no-owner-identity (eid = الموظف المرشد لا المالك)",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_seized_v1": {
+   "items": "reportItems",
+   "evidence": "reports[id].{y,m,d} · loc (ref.seized.location) · G‑08 + نوافذُ الاستدراك المستقلة (D3‑07)",
+   "lock": "seized: G‑08 ∧ bassam_seized_retro_v1 — D3‑07",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Site": "recordLoc",
+    "DateRange": "periodLock"
+   },
+   "na": {
+    "Zone/Element": "no-element-identity",
+    "Shift": "no-shift-field (seized)",
+    "Assigned": "no-assignment-field",
+    "Own": "no-owner-identity",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_employees_v1": {
+   "items": "employeeItems",
+   "evidence": "[eid|nid|name] · هويةُ السجل = مفتاحُ الموظف (empKeyOf)",
+   "lock": "",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Own": "employeeSelf"
+   },
+   "na": {
+    "Site": "no-site-identity",
+    "Zone/Element": "no-element-identity",
+    "Shift": "employee.shift بيانٌ لا نطاق",
+    "Assigned": "no-assignment-field",
+    "DateRange": "no-period-identity",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_custody_v1": {
+   "items": "custodyItems",
+   "evidence": "items[name] · moves[] إلحاقية {t, eid, y, m, d}",
+   "lock": "custody: لا آليةَ قفلٍ زمنيّ → allow:no-temporal-lock",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "DateRange": "periodLock"
+   },
+   "na": {
+    "Site": "no-site-identity",
+    "Zone/Element": "no-element-identity",
+    "Shift": "no-shift-identity",
+    "Assigned": "no-assignment-field",
+    "Own": "no-owner-identity (eid = صاحب العهدة)",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_award_v1": {
+   "items": "awardItems",
+   "evidence": "recs[id].ekey (المرشَّح) · st",
+   "lock": "",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Own": "nomineeSelf"
+   },
+   "na": {
+    "Site": "no-site-identity",
+    "Zone/Element": "no-element-identity",
+    "Shift": "no-shift-identity",
+    "Assigned": "no-assignment-field",
+    "DateRange": "no-period-identity",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "bassam_dstats_v1": {
+   "items": "dstatsItems",
+   "evidence": "haram|nabawi[\"yyyy-mm-dd\"] · locks[\"site|y-m\"] (dsLockedIn)",
+   "lock": "dstats: dsLockedIn على الأقفال قبل الحفظ وبعده — الخادمُ يفرضه اليوم (dslock)",
+   "dims": {
+    "DateRange": "periodLock",
+    "Source": "dstatsSite",
+    "Global": "globalScope"
+   },
+   "na": {
+    "Department": "global-resource (dstats)",
+    "Branch": "global-resource (dstats)",
+    "Site": "no-site-identity (المصدرُ بُعدٌ مستقل)",
+    "Zone/Element": "no-element-identity",
+    "Shift": "no-shift-identity",
+    "Assigned": "no-assignment-field",
+    "Own": "no-owner-identity"
+   }
+  },
+  "bassam_auth_users_v1": {
+   "items": "userItems",
+   "evidence": "[id] · deptId (القديم والجديد) · هويةُ الجلسة",
+   "lock": "",
+   "dims": {
+    "Department": "userDept",
+    "Branch": "branchCeiling",
+    "Own": "userSelf",
+    "Global": "globalScope"
+   },
+   "na": {
+    "Site": "no-site-identity",
+    "Zone/Element": "no-element-identity",
+    "Shift": "no-shift-identity",
+    "Assigned": "no-assignment-field",
+    "DateRange": "no-period-identity",
+    "Source": "not-dstats"
+   }
+  },
+  "bassam_perms_v1": {
+   "items": "permsItems",
+   "evidence": "caps/subs/lenses/empLens/emps/tplOf[dept]",
+   "lock": "",
+   "dims": {
+    "Department": "sectionDept",
+    "Branch": "branchCeiling",
+    "Global": "globalScope"
+   },
+   "na": {
+    "Site": "no-site-identity",
+    "Zone/Element": "no-element-identity",
+    "Shift": "no-shift-identity",
+    "Assigned": "no-assignment-field",
+    "Own": "no-owner-identity",
+    "DateRange": "no-period-identity",
+    "Source": "not-dstats"
+   }
+  },
+  "bassam_notif_dev_v1": {
+   "items": "wholeItem",
+   "evidence": "لاحقةُ المفتاح :uid = مالكُ العلامة",
+   "lock": "",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Own": "keySuffixSelf"
+   },
+   "na": {
+    "Site": "no-site-identity",
+    "Zone/Element": "no-element-identity",
+    "Shift": "no-shift-identity",
+    "Assigned": "no-assignment-field",
+    "DateRange": "no-period-identity",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
+  "__default__": {
+   "items": "wholeItem",
+   "evidence": "المورد كلُّه عنصرٌ واحد (قائمةٌ مرجعية/إعداد) — بُعدا الإدارة والفرع من المفتاح",
+   "lock": "",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Global": "globalScope"
+   },
+   "na": {
+    "Site": "no-site-identity (reference/setting)",
+    "Zone/Element": "no-element-identity",
+    "Shift": "no-shift-identity",
+    "Assigned": "no-assignment-field",
+    "Own": "no-owner-identity",
+    "DateRange": "no-period-identity (reference/setting)",
+    "Source": "not-dstats"
+   }
+  },
+  "__virtual__": {
+   "items": "wholeItem",
+   "evidence": "لا موردَ كتابةٍ مباشر — يُقاس على مورد الكتابة الفعلي إن ظهر المفتاح في التصنيف",
+   "lock": "",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Own": "sessionSelf",
+    "Global": "globalScope"
+   },
+   "na": {
+    "Site": "no-site-identity",
+    "Zone/Element": "no-element-identity",
+    "Shift": "no-shift-identity",
+    "Assigned": "no-assignment-field",
+    "DateRange": "no-period-identity",
+    "Source": "not-dstats"
+   }
+  }
+ },
+ "counts": {
+  "keys": 255,
+  "pairs": 869,
+  "dims": 10,
+  "evaluators": 10,
+  "resources": 17,
+  "unknownDims": 0,
+  "invalidDims": 0,
+  "uninterpreted": 0,
+  "byDim": {
+   "Source": {
+    "keys": 12,
+    "evaluator": 12,
+    "na": 0
+   },
+   "DateRange": {
+    "keys": 151,
+    "evaluator": 109,
+    "na": 42
+   },
+   "Global": {
+    "keys": 30,
+    "evaluator": 30,
+    "na": 0
+   },
+   "Department": {
+    "keys": 218,
+    "evaluator": 218,
+    "na": 0
+   },
+   "Branch": {
+    "keys": 191,
+    "evaluator": 191,
+    "na": 0
+   },
+   "Shift": {
+    "keys": 65,
+    "evaluator": 44,
+    "na": 21
+   },
+   "Site": {
+    "keys": 108,
+    "evaluator": 66,
+    "na": 42
+   },
+   "Zone/Element": {
+    "keys": 38,
+    "evaluator": 38,
+    "na": 0
+   },
+   "Assigned": {
+    "keys": 32,
+    "evaluator": 32,
+    "na": 0
+   },
+   "Own": {
+    "keys": 24,
+    "evaluator": 20,
+    "na": 4
+   }
+  },
+  "evaluatorPairs": 760,
+  "naPairs": 109
+ },
+ "interpretations": [
+  {
+   "id": "I‑01",
+   "title": "الفاعلُ على سقف الإدارة — مصحَّح بـD4‑04 (v24.5)",
+   "text": "super · dept · مدير الإدارة (mgr:) · gm: لا يُعطَون Site/Zone = ALL بالدور؛ مديرُ الإدارة يرث سقفَ الإدارة الصريح (Department Scope Ceiling) · gm = union سقوف إدارات فرعه · super يحترم سقفَ الإدارة المستهدفة (+ Lens Ceiling + DateRange). غيابُ السقف (غيرُ مهاجر اليوم) ⇒ unknown:unmigrated-department-ceiling؛ ALL ⇒ allow · list ⇒ داخلها · outside ⇒ deny. Shift للمدير allow «المدير بلا قيد» (نصُّ v24.4 §7 — لم يتغيّر)."
+  },
+  {
+   "id": "I‑02",
+   "title": "قاعدةُ القفل الزمني للجولات والتقرير",
+   "text": "سجلُّ الشهر m:y-m {ap · mo · dopen · dshut} يُقرأ بقاعدة dsLockedIn نفسِها (R183 الملاحظة ٩) ويُضاف إليه اعتمادُ اليوم/الوردية — واجهيٌّ اليوم فيُصنَّف الاختلافُ expected:locked-period."
+  },
+  {
+   "id": "I‑03",
+   "title": "الجدولُ الشهري والمهام",
+   "text": "القفلُ الصريح locks[y-m] === true فقط؛ {mo:1} = مفتوح؛ غيابُ مورد الأقفال عن السياق = unknown:lock-evidence-missing (لا deny)."
+  },
+  {
+   "id": "I‑04",
+   "title": "Own وAssigned لحامل المفتاح",
+   "text": "مَن يملك مفتاحَ العملية الكامل (قرارُ Phase 2.1) يعمل على سجلات غيره بالصلاحية → البُعدُ not_applicable؛ ويُقاس Own/Assigned لمسار الذات ولراصد الميدان (dailyFieldOnly) فقط — كما يفعل الخادمُ اليوم (selfTaskOnly · fieldObsOnly)."
+  },
+  {
+   "id": "I‑05",
+   "title": "DateRange في القراءة (D4‑01)",
+   "text": "الأقفالُ الزمنية ونوافذُ الاستدراك تحكم الكتابة (D3‑07 · D4‑02 · D4‑03)؛ لا قيمةَ نطاقٍ زمنية للقراءة في v24.4/v24.5 ⇒ DateRange في evaluateRead = not_applicable (معلَن)."
+  },
+  {
+   "id": "I‑06",
+   "title": "قراءةُ موردٍ بلا مفتاح قراءة",
+   "text": "السجلاتُ العامة (الإدارات · الحسابات بلا بصمات · الصلاحيات · المنصة · القطاعات) تُقرأ اليوم بكل جلسة ولا مفتاحَ guard.kind=read لها في السجل ⇒ not_applicable:no-read-key (يُحصى ولا يُعدّ اختلافاً)."
+  }
+ ],
+ "conflicts": [
+  {
+   "id": "AC‑01",
+   "title": "super ↔ DateRange على bassam_dstats_v1",
+   "text": "Phase 4: AS‑IS يتجاوز dstatsRule لمدير النظام (scope global) فيكتب يوماً مقفلاً بينما v24.4 يجعل DateRange بُعداً لمفاتيح dstats.* — أُعلن expected:AC‑01.",
+   "status": "resolved",
+   "decision": "D4‑02",
+   "resolution": "Global لا يعني تجاوز DateRange: مديرُ النظام لا يكتب بصمت على يوم/شهر إحصائي مقفل؛ dstats.*.reopen أولاً (Sensitive Action · Audit مستقل · Reason حيث يطلبه السجل). الظلُّ يرفض ويصنّف expected:D4-02 super∧dslock (shadow deny until reopen) — لا تغييرَ في السلوك الحالي."
+  },
+  {
+   "id": "AC‑02",
+   "title": "super ↔ closed-period (D3‑07)",
+   "text": "Phase 4: D3‑07 لا يستثني مديرَ النظام من نافذة الاستدراك بينما v24.4 §7 يعطيه Global — أُعلن expected:AC‑02.",
+   "status": "resolved",
+   "decision": "D4‑03",
+   "resolution": "الكتابةُ على فترةٍ مغلقة = CRUD ∧ Data Scope ∧ valid Retro Window لكل فاعلٍ بما فيه super؛ super يفتح النافذة بحكم D3‑01 (reason + audit) ثم يكتب داخلها. الظلُّ: بلا نافذة ⇒ expected:D4-03 super∧closed-period (no retro window) · مع نافذةٍ سارية ⇒ allow (DateRange)."
+  }
+ ],
+ "terminology": [
+  {
+   "term": "flow",
+   "means": "اتجاه الحركة (حقلُ حالةٍ على العنصر: zones[]/gates[]/marks[].flow ∈ FIELD_KEYS) — يُستهلك بـlens.<col>.status.change",
+   "notA": "ليس lens.paths ولا عدسةَ المسارات",
+   "classifier": "تغيّر flow ⇒ lens.{zones|gates|marks}.status.change"
+  },
+  {
+   "term": "lens.paths",
+   "means": "عدسةُ المسارات التشغيلية (مجموعة paths[] في الخطة/الجولة: create · edit · geometry.edit · status.change (active) · delete · view)",
+   "notA": "ليست «اتجاه الحركة» (flow)",
+   "classifier": "paths[].active ⇒ lens.paths.status.change · هندسة/حقول paths ⇒ lens.paths.edit/geometry.edit"
+  },
+  {
+   "term": "lens.*.enable",
+   "means": "تفعيلُ العدسة (Plugin/Lens activation): سقفُ الإدارة perms.lenses[d] وعدساتُ الموظف perms.empLens[d][ekey] — بوابةُ D3‑04",
+   "notA": "ليس تغييرَ حالة عنصر (status.change) ولا منحةَ عملية",
+   "classifier": "تغيّر perms.lenses/empLens ⇒ permSection على bassam_perms_v1 (lens.*.enable) — لا status.change"
+  },
+  {
+   "term": "status.change",
+   "means": "تغييرُ حالة عنصرٍ تشغيلي (closed · off · fst · flow · … على zones/gates/marks · active على paths)",
+   "notA": "ليس تفعيلَ عدسة (enable)",
+   "classifier": "FIELD_KEYS على العنصر ⇒ lens.<col>.status.change"
+  },
+  {
+   "term": "reopen",
+   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
+   "notA": "ليس فتحَ نافذةٍ زمنية للاستدراك (retro.open)",
+   "classifier": "mo:1 / زوالُ ap ⇒ *.reopen — لا يُصنَّف retro.open أبداً"
+  },
+  {
+   "term": "retro.open",
+   "means": "فتحُ نافذة استدراكٍ زمنية (ir.rec.retro.open · sz.rec.retro.open) عبر /api/retro بسبب وتدقيق — ترفع Temporal Lock فقط (D3‑02/D3‑07)",
+   "notA": "ليس reopen ولا منحةَ CRUD ولا توسيعَ نطاق",
+   "classifier": "لا يصدر من المصنِّف (مسار /api/retro)؛ الكتابةُ على الفترة المغلقة تحتاج النافذة"
+  },
+  {
+   "term": "Assigned",
+   "means": "بُعدُ النطاق: العنصرُ المسنَد للفاعل (element.emp[] ∋ ekey · المهمة row[14] = ekey)",
+   "notA": "ليس تعيينَ عدسةٍ للموظف (empLens)",
+   "classifier": "Data Scope — يُقاس في KIVO_SCOPE (Assigned)"
+  },
+  {
+   "term": "empLens",
+   "means": "Employee Lens Assignment (perms.empLens[d][ekey]) — جزءُ بوابة العدسة (Ceiling ∧ Assignment)",
+   "notA": "ليس Assigned Data Scope",
+   "classifier": "Lens Gate (KIVO_BUILD.lensGate) — لا بُعدَ نطاق"
+  },
+  {
+   "term": "Global",
+   "means": "no additional record scope — لا نطاقَ سجلٍّ إضافي على المفتاح",
+   "notA": "ليس bypass للصلاحية ولا للقفل الزمني (DateRange) ولا لبوابة العدسة ولا للسياسة الحسّاسة ولا لسقف الإدارة",
+   "classifier": "Data Scope — Global ⇒ not_applicable دائماً"
+  },
+  {
+   "term": "Department Scope Ceiling",
+   "means": "سقفُ نطاق الإدارة لكل بُعد (Site · Zone/Element · Shift …) — يرثه مديرُ الإدارة صراحةً (D4‑04)؛ غيرُ مهاجر اليوم ⇒ unknown:unmigrated-department-ceiling",
+   "notA": "ليس «الدورُ يعني ALL»",
+   "classifier": "KIVO_SCOPE valueDim (ceiling actors)"
+  }
+ ],
+ "readPolicy": [
+  {
+   "dim": "Department",
+   "evidence": "هويةُ الإدارة من المفتاح (bsdept:<d>) أو من السجل (users[].deptId · perms[section][dept]) — deptInScope",
+   "result": "allow/deny لكل سجل"
+  },
+  {
+   "dim": "Branch",
+   "evidence": "سقفُ الفرع للـgm (ancChain) → الإداراتُ المسموحة؛ super = كل الإدارات",
+   "result": "allow/deny لكل سجل"
+  },
+  {
+   "dim": "Site",
+   "evidence": "هويةُ الموقع في السجل (floors[].sid · rounds d[#i] · reports[].loc) ضدّ قيمة الموظف الصريحة أو سقف الإدارة (D4‑04)",
+   "result": "غيرُ مهاجرة ⇒ unknown:unmigrated-site-scope / unknown:unmigrated-department-ceiling"
+  },
+  {
+   "dim": "Zone/Element",
+   "evidence": "هويةُ العنصر (z:/g:/m:/p:) ضدّ القيمة الصريحة أو سقف الإدارة (D4‑04)",
+   "result": "غيرُ مهاجرة ⇒ unknown"
+  },
+  {
+   "dim": "Shift",
+   "evidence": "ورديةُ السجل (roster[].shift · staffing[ekey].shift · reports[].shift) ضدّ القيمة الصريحة؛ المدير بلا قيد (v24.4 §7 — لم يتغيّر)",
+   "result": "غيرُ مهاجرة ⇒ unknown (+ دليلُ الجدول الشهري match/mismatch)"
+  },
+  {
+   "dim": "Assigned",
+   "evidence": "element.emp[] ∋ ekey · المهمة row[14] = ekey — لحامل المفتاح الكامل not_applicable (I‑04)",
+   "result": "allow/deny لكل سجل (راصدُ الميدان)"
+  },
+  {
+   "dim": "Own",
+   "evidence": "هويةُ الجلسة (uid/ekey) ضدّ مالك السجل — لحامل المفتاح not_applicable (I‑04)",
+   "result": "allow/deny لكل سجل"
+  },
+  {
+   "dim": "DateRange",
+   "evidence": "الأقفالُ الزمنية ونوافذُ الاستدراك تحكم الكتابة (D3‑07 · D4‑02 · D4‑03) — لا قيمةَ نطاقٍ زمنية للقراءة في v24.4/v24.5",
+   "result": "not_applicable للقراءة (معلَن I‑05)"
+  },
+  {
+   "dim": "Source",
+   "evidence": "مفتاحُ الموقع في bassam_dstats_v1 (haram · nabawi) ضدّ أوراق الفاعل dstats/<site> (dsHeld)",
+   "result": "allow/deny لكل سجل"
+  },
+  {
+   "dim": "Global",
+   "evidence": "لا نطاقَ سجلٍّ إضافي",
+   "result": "not_applicable — لا bypass"
+  }
+ ],
+ "readBindings": {
+  "byResource": {
+   "bassam_auth_users_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "الحساباتُ بلا بصمات (stripPh) تُقرأ بكل جلسة لعرض الأسماء والأدوار؛ الكتابةُ بقواعد usersRule (emp.account.* · sys.users.manage · self.profile.edit)"
+   },
+   "bassam_perms_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "الصلاحياتُ تُقرأ بكل جلسة لتحسب الواجهةُ ورقةَ المستخدم؛ الكتابةُ permsRule (perm.assign · sys.ceiling.set · lens.*.enable)"
+   },
+   "bassam_depts_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "شجرةُ الإدارات — عامّة للعرض؛ الكتابةُ super (sys.depts.manage)"
+   },
+   "bassam_gdepts_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "القطاعات/الإداراتُ العليا — عامّة للعرض؛ الكتابةُ super"
+   },
+   "bassam_platform_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "وحداتُ المنصة والهوية — عامّة؛ الكتابةُ super (sys.modules.toggle)"
+   },
+   "bassam_dstats_v1": {
+    "scope": "global",
+    "cls": "explicit read permission",
+    "keys": [
+     "dstats.haram.view",
+     "dstats.nabawi.view",
+     "dstats.anHaram.view",
+     "dstats.anNabawi.view",
+     "dstats.anCmp.view",
+     "dstats.anTime.view"
+    ],
+    "routes": [
+     {
+      "cap": "dstats/haram:view",
+      "key": "dstats.haram.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dstats/nabawi:view",
+      "key": "dstats.nabawi.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dstats/anHaram:view",
+      "key": "dstats.anHaram.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dstats/anNabawi:view",
+      "key": "dstats.anNabawi.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dstats/anCmp:view",
+      "key": "dstats.anCmp.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dstats/anTime:view",
+      "key": "dstats.anTime.view",
+      "source": "explicit-read"
+     }
+    ],
+    "note": "canRead0: dsHeld(DS_READ, view) — أوراقُ dstats/<site> (R181)"
+   },
+   "bassam_notif_cfg_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "إعداداتُ التنبيهات — عامّة؛ الكتابةُ super"
+   },
+   "bassam_notif_sys_v1": {
+    "scope": "global",
+    "cls": "super-only (denied by name)",
+    "keys": [],
+    "routes": [],
+    "note": "تنبيهاتُ مدير النظام: canRead0 يرفضها لغير super صراحةً (K_NSYS)"
+   },
+   "bassam_bc_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "التعاميم — عامّة؛ الكتابةُ super"
+   },
+   "bassam_struct_seed_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "رايةُ بذر الهيكل — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_admsubs_v2": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "رايةُ ترحيل تبويبات الإعدادات — عامّة؛ الكتابةُ super"
+   },
+   "bassam_session_v1": {
+    "scope": "device",
+    "cls": "device-excluded",
+    "keys": [],
+    "routes": [],
+    "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
+   },
+   "bslg_v1": {
+    "scope": "device",
+    "cls": "device-excluded",
+    "keys": [],
+    "routes": [],
+    "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
+   },
+   "bassam_theme": {
+    "scope": "device",
+    "cls": "device-excluded",
+    "keys": [],
+    "routes": [],
+    "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
+   },
+   "bassam_active_dept_v1": {
+    "scope": "device",
+    "cls": "device-excluded",
+    "keys": [],
+    "routes": [],
+    "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
+   },
+   "bassam_fresh_login_v1": {
+    "scope": "device",
+    "cls": "device-excluded",
+    "keys": [],
+    "routes": [],
+    "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
+   },
+   "bassam_notif_mute_v1": {
+    "scope": "device",
+    "cls": "device-excluded",
+    "keys": [],
+    "routes": [],
+    "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
+   },
+   "bassam_page_v1": {
+    "scope": "device",
+    "cls": "device-excluded",
+    "keys": [],
+    "routes": [],
+    "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
+   },
+   "bassam_st_grp_v1": {
+    "scope": "device",
+    "cls": "device-excluded",
+    "keys": [],
+    "routes": [],
+    "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
+   },
+   "bassam_employees_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "emp.view",
+     "staff.view",
+     "plan.view",
+     "round.view",
+     "field.view",
+     "report.view",
+     "report.indicators.view",
+     "task.view",
+     "ir.rec.view",
+     "sz.rec.view",
+     "award.res.view",
+     "award.new.view",
+     "award.doc.view",
+     "ready.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "emps/data:view",
+      "key": "emp.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "plan.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "tasks:view",
+      "key": "task.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "irshad/records:view",
+      "key": "ir.rec.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "seized/records:view",
+      "key": "sz.rec.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/res:view",
+      "key": "award.res.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/new:view",
+      "key": "award.new.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/doc:view",
+      "key": "award.doc.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "planning:view",
+      "key": null,
+      "source": "no-atom"
+     },
+     {
+      "cap": "planning/readiness:view",
+      "key": "ready.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_options_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "emp.view",
+     "ref.employment_type.view",
+     "staff.view",
+     "ref.work_type.view",
+     "task.view",
+     "ready.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "emps/data:view",
+      "key": "emp.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "emps/data:view",
+      "key": "ref.employment_type.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "staff:view",
+      "key": "ref.work_type.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "tasks:view",
+      "key": "task.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "planning:view",
+      "key": null,
+      "source": "no-atom"
+     },
+     {
+      "cap": "planning/readiness:view",
+      "key": "ready.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_custody_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "cust.view",
+     "ref.custody_type.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "emps/custody:view",
+      "key": "cust.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "emps/custody:view",
+      "key": "ref.custody_type.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_staffing_v3": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "emp.view",
+     "staff.view",
+     "plan.view",
+     "round.view",
+     "field.view",
+     "report.view",
+     "report.indicators.view",
+     "task.view",
+     "ir.rec.view",
+     "sz.rec.view",
+     "award.res.view",
+     "award.new.view",
+     "award.doc.view",
+     "ready.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "emps/data:view",
+      "key": "emp.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "plan.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "tasks:view",
+      "key": "task.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "irshad/records:view",
+      "key": "ir.rec.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "seized/records:view",
+      "key": "sz.rec.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/res:view",
+      "key": "award.res.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/new:view",
+      "key": "award.new.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/doc:view",
+      "key": "award.doc.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "planning:view",
+      "key": null,
+      "source": "no-atom"
+     },
+     {
+      "cap": "planning/readiness:view",
+      "key": "ready.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_staffing_v2": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "staff.view",
+     "ready.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "planning:view",
+      "key": null,
+      "source": "no-atom"
+     },
+     {
+      "cap": "planning/readiness:view",
+      "key": "ready.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_staffing_snap_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "staff.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_staffing_locks_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "staff.view",
+     "report.view",
+     "report.indicators.view",
+     "emp.view",
+     "plan.view",
+     "ready.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "emps/data:view",
+      "key": "emp.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "plan.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "planning:view",
+      "key": null,
+      "source": "no-atom"
+     },
+     {
+      "cap": "planning/readiness:view",
+      "key": "ready.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_callsigns_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "staff.view",
+     "ref.callsign.view",
+     "report.view",
+     "report.indicators.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "staff:view",
+      "key": "ref.callsign.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_perm_limit_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "staff.view",
+     "report.view",
+     "report.indicators.view",
+     "ready.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "planning:view",
+      "key": null,
+      "source": "no-atom"
+     },
+     {
+      "cap": "planning/readiness:view",
+      "key": "ready.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_plan_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "plan.view",
+     "lens.zones.view",
+     "lens.paths.view",
+     "lens.gates.view",
+     "lens.marks.view",
+     "lens.dist.view",
+     "round.view",
+     "field.view",
+     "report.view",
+     "report.indicators.view",
+     "emp.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "plan:view",
+      "key": "plan.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.zones.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.paths.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.gates.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.marks.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.dist.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.zones.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.paths.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.gates.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.marks.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.dist.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "emps/data:view",
+      "key": "emp.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_zone_opts_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "plan.view",
+     "lens.zones.view",
+     "ref.zone.type.view",
+     "round.view",
+     "field.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "plan:view",
+      "key": "plan.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.zones.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "ref.zone.type.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.zones.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_gate_opts_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "plan.view",
+     "lens.gates.view",
+     "ref.gate.type.view",
+     "round.view",
+     "field.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "plan:view",
+      "key": "plan.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.gates.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "ref.gate.type.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.gates.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_mark_kinds_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "plan.view",
+     "lens.marks.view",
+     "ref.mark.kind.view",
+     "round.view",
+     "field.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "plan:view",
+      "key": "plan.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.marks.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "ref.mark.kind.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.marks.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_rounds_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "round.view",
+     "lens.zones.view",
+     "lens.paths.view",
+     "lens.gates.view",
+     "lens.marks.view",
+     "lens.dist.view",
+     "lens.dens.view",
+     "field.view",
+     "report.view",
+     "report.indicators.view",
+     "emp.view",
+     "plan.view",
+     "sz.rec.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.zones.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.paths.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.gates.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.marks.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.dist.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "lens.dens.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "emps/data:view",
+      "key": "emp.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "plan.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.zones.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.paths.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.gates.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.marks.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.dist.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "lens.dens.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/records:view",
+      "key": "sz.rec.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_dayshift_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "round.view",
+     "field.view",
+     "report.view",
+     "report.indicators.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_dayfocus_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "round.view",
+     "field.view",
+     "report.view",
+     "report.indicators.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_dreport_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "report.view",
+     "report.indicators.view",
+     "round.view",
+     "field.view",
+     "emp.view",
+     "ir.rec.view",
+     "sz.rec.view",
+     "staff.view",
+     "task.view",
+     "ready.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "emps/data:view",
+      "key": "emp.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "irshad/records:view",
+      "key": "ir.rec.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "seized/records:view",
+      "key": "sz.rec.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "tasks:view",
+      "key": "task.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "planning:view",
+      "key": null,
+      "source": "no-atom"
+     },
+     {
+      "cap": "planning/readiness:view",
+      "key": "ready.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_dr_grp_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "report.view",
+     "report.indicators.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_leave_kinds_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "report.view",
+     "report.indicators.view",
+     "ref.leave_type.view",
+     "staff.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "ref.leave_type.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_tasks_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "task.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "tasks:view",
+      "key": "task.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_tasks_locks_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "task.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "tasks:view",
+      "key": "task.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_irshad_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "ir.rec.view",
+     "ir.dash.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "irshad/records:view",
+      "key": "ir.rec.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "irshad/dash:view",
+      "key": "ir.dash.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_irshad_langs_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "ir.rec.view",
+     "ref.irshad.language.view",
+     "ir.dash.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "irshad/records:view",
+      "key": "ir.rec.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "irshad/records:view",
+      "key": "ref.irshad.language.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "irshad/dash:view",
+      "key": "ir.dash.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_irshad_locs_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "ir.rec.view",
+     "ref.irshad.location.view",
+     "ir.dash.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "irshad/records:view",
+      "key": "ir.rec.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "irshad/records:view",
+      "key": "ref.irshad.location.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "irshad/dash:view",
+      "key": "ir.dash.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_seized_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "sz.rec.view",
+     "sz.dash.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "seized/records:view",
+      "key": "sz.rec.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/dash:view",
+      "key": "sz.dash.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_seized_cat_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "sz.rec.view",
+     "ref.seized.category.view",
+     "ref.seized.item.view",
+     "sz.dash.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "seized/records:view",
+      "key": "sz.rec.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/records:view",
+      "key": "ref.seized.category.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/records:view",
+      "key": "ref.seized.item.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/dash:view",
+      "key": "sz.dash.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_seized_acts_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "sz.rec.view",
+     "ref.seized.action.view",
+     "sz.dash.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "seized/records:view",
+      "key": "sz.rec.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/records:view",
+      "key": "ref.seized.action.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/dash:view",
+      "key": "sz.dash.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_seized_locs_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "sz.rec.view",
+     "ref.seized.location.view",
+     "sz.dash.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "seized/records:view",
+      "key": "sz.rec.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/records:view",
+      "key": "ref.seized.location.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/dash:view",
+      "key": "sz.dash.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_seized_jew_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "sz.rec.view",
+     "ref.seized.kind.view",
+     "sz.dash.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "seized/records:view",
+      "key": "sz.rec.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/records:view",
+      "key": "ref.seized.kind.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "seized/dash:view",
+      "key": "sz.dash.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_award_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "award.res.view",
+     "award.new.view",
+     "emp.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "award/res:view",
+      "key": "award.res.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "award/new:view",
+      "key": "award.new.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "emps/data:view",
+      "key": "emp.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_award_docs_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "award.doc.view",
+     "award.res.view",
+     "award.new.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "award/doc:view",
+      "key": "award.doc.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "award/res:view",
+      "key": "award.res.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/new:view",
+      "key": "award.new.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_award_docs_v2": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "award.doc.view",
+     "award.res.view",
+     "award.new.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "award/doc:view",
+      "key": "award.doc.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "award/res:view",
+      "key": "award.res.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/new:view",
+      "key": "award.new.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_shift_options_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "emp.view",
+     "staff.view",
+     "plan.view",
+     "round.view",
+     "field.view",
+     "report.view",
+     "report.indicators.view",
+     "task.view",
+     "ir.rec.view",
+     "sz.rec.view",
+     "award.res.view",
+     "award.new.view",
+     "award.doc.view",
+     "ready.view",
+     "ref.shift.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "emps/data:view",
+      "key": "emp.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "plan.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/rounds:view",
+      "key": "round.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "daily/field:view",
+      "key": "field.view",
+      "source": "special:field.view"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "tasks:view",
+      "key": "task.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "irshad/records:view",
+      "key": "ir.rec.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "seized/records:view",
+      "key": "sz.rec.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/res:view",
+      "key": "award.res.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/new:view",
+      "key": "award.new.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "award/doc:view",
+      "key": "award.doc.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "planning:view",
+      "key": null,
+      "source": "no-atom"
+     },
+     {
+      "cap": "planning/readiness:view",
+      "key": "ready.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/shifts:view",
+      "key": "ref.shift.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_perm_tpls_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "tpl.view",
+     "report.view",
+     "report.indicators.view",
+     "emp.view",
+     "plan.view",
+     "staff.view",
+     "task.view",
+     "ready.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "admin/ptpls:view",
+      "key": "tpl.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "dreport:view",
+      "key": "report.indicators.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "emps/data:view",
+      "key": "emp.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "plan:view",
+      "key": "plan.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "tasks:view",
+      "key": "task.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "planning:view",
+      "key": null,
+      "source": "no-atom"
+     },
+     {
+      "cap": "planning/readiness:view",
+      "key": "ready.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_perm_tpls_named_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability + reference-read routes",
+    "keys": [
+     "tpl.view",
+     "staff.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "admin/ptpls:view",
+      "key": "tpl.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "staff:view",
+      "key": "staff.view",
+      "source": "reference-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_last_export_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission",
+    "keys": [
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "explicit-read"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_last_full_export_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "طابعُ النسخة الشاملة — عامّ؛ الكتابةُ super (sys.backup.full)"
+   },
+   "bassam_notif_v1": {
+    "scope": "dept",
+    "cls": "explicit special read capability (rule)",
+    "keys": [
+     "self.notif.device",
+     "notif.dept.broadcast"
+    ],
+    "routes": [
+     {
+      "cap": "rule:notif",
+      "key": "self.notif.device",
+      "source": "special-rule"
+     },
+     {
+      "cap": "rule:notif",
+      "key": "notif.dept.broadcast",
+      "source": "special-rule"
+     }
+    ],
+    "note": "canRead0: R.rule ⇒ true؛ سياسةُ notifRule تحرس الصفوف (التنبيهاتُ الموجّهة بالصلاحيات) — Own/Department"
+   },
+   "bassam_notif_dev_v1": {
+    "scope": "dept",
+    "cls": "explicit special read capability (rule)",
+    "keys": [
+     "self.notif.device"
+    ],
+    "routes": [
+     {
+      "cap": "rule:selfdev",
+      "key": "self.notif.device",
+      "source": "special-rule"
+     }
+    ],
+    "note": "مفتاحٌ بلاحقة :uid — selfdev: مالكُ العلامة وحده (Own)"
+   },
+   "bassam_perm_help_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_irshad_cap_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_seized_cap_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_leaf_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_mgr_explicit_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_first_boot_v1": {
+    "scope": "dept",
+    "cls": "explicit special read capability (rule)",
+    "keys": [],
+    "routes": [],
+    "note": "رايةٌ تقنية (rule tech) — لا محتوى يُقرأ"
+   },
+   "bassam_demo_purged_v1": {
+    "scope": "dept",
+    "cls": "explicit special read capability (rule)",
+    "keys": [],
+    "routes": [],
+    "note": "رايةٌ تقنية (rule tech) — لا محتوى يُقرأ"
+   },
+   "bassam_profile_v1": {
+    "scope": "dept",
+    "cls": "explicit special read capability (rule)",
+    "keys": [],
+    "routes": [],
+    "note": "رايةٌ تقنية تُكتب مرّةً عند التهيئة (rule tech) — لا محتوى يُقرأ؛ قراءتُها session-level داخل الإدارة"
+   },
+   "bassam_irshad_retro_v1": {
+    "scope": "dept-state",
+    "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+    "keys": [],
+    "routes": [],
+    "note": "حالةُ نوافذ استدراك الاسترشاد (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات الاسترشاد) — لا مفتاحَ قراءةٍ مستقلاً"
+   },
+   "bassam_seized_retro_v1": {
+    "scope": "dept-state",
+    "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+    "keys": [],
+    "routes": [],
+    "note": "حالةُ نوافذ استدراك المضبوطات (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات المضبوطات) — لا مفتاحَ قراءةٍ مستقلاً"
+   }
+  },
+  "special": {
+   "keys": {
+    "field.view": {
+     "resources": [
+      "bassam_rounds_v1",
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1",
+      "bassam_dreport_v1",
+      "bassam_employees_v1",
+      "bassam_shift_options_v1",
+      "bassam_staffing_v3"
+     ],
+     "kind": "rule",
+     "asis": "daily/field:view (RD_REG)",
+     "primary": "bassam_rounds_v1",
+     "note": "راصدُ الميدان: مفتاحُ قراءةٍ فعلي لصفحة رصد الميدان (حارسُه rule — fieldObsOnly/dailyFieldOnly؛ لا يُحوَّل إلى read). يقرأ الجولة (Department · Assigned على emp[] · Shift · Site) وبنيةَ الموقع والمراجع التي ترسم صفحتَه كمرجع (RD_REG). Assigned يُقاس على عناصر الجولة/الخطة؛ Site/Shift غيرُ مهاجرة ⇒ unknown."
+    },
+    "backup.view": {
+     "resources": "*dept",
+     "kind": "read",
+     "asis": "admin/backup:view (RD_ANY)",
+     "primary": "bassam_last_export_v1",
+     "note": "حاملُ «النسخ الاحتياطية» يقرأ كلَّ مجموعات إدارته (RD_ANY) لأن النسخةَ لا تُصدَّر ناقصة — قراءةٌ خاصة صريحة بنطاق Department + Branch على أي مورد إدارة."
+    }
+   },
+   "rule": {
+    "bassam_notif_v1": {
+     "keys": [
+      "self.notif.device",
+      "notif.dept.broadcast"
+     ],
+     "note": "canRead0: R.rule ⇒ true؛ سياسةُ notifRule تحرس الصفوف (التنبيهاتُ الموجّهة بالصلاحيات) — Own/Department"
+    },
+    "bassam_notif_dev_v1": {
+     "keys": [
+      "self.notif.device"
+     ],
+     "note": "مفتاحٌ بلاحقة :uid — selfdev: مالكُ العلامة وحده (Own)"
+    },
+    "bassam_profile_v1": {
+     "keys": [],
+     "note": "رايةٌ تقنية تُكتب مرّةً عند التهيئة (rule tech) — لا محتوى يُقرأ؛ قراءتُها session-level داخل الإدارة"
+    },
+    "bassam_first_boot_v1": {
+     "keys": [],
+     "note": "رايةٌ تقنية (rule tech) — لا محتوى يُقرأ"
+    },
+    "bassam_demo_purged_v1": {
+     "keys": [],
+     "note": "رايةٌ تقنية (rule tech) — لا محتوى يُقرأ"
+    }
+   }
+  },
+  "noReadKey": {
+   "bassam_auth_users_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "الحساباتُ بلا بصمات (stripPh) تُقرأ بكل جلسة لعرض الأسماء والأدوار؛ الكتابةُ بقواعد usersRule (emp.account.* · sys.users.manage · self.profile.edit)"
+   },
+   "bassam_perms_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "الصلاحياتُ تُقرأ بكل جلسة لتحسب الواجهةُ ورقةَ المستخدم؛ الكتابةُ permsRule (perm.assign · sys.ceiling.set · lens.*.enable)"
+   },
+   "bassam_depts_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "شجرةُ الإدارات — عامّة للعرض؛ الكتابةُ super (sys.depts.manage)"
+   },
+   "bassam_gdepts_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "القطاعات/الإداراتُ العليا — عامّة للعرض؛ الكتابةُ super"
+   },
+   "bassam_platform_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "وحداتُ المنصة والهوية — عامّة؛ الكتابةُ super (sys.modules.toggle)"
+   },
+   "bassam_notif_cfg_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "إعداداتُ التنبيهات — عامّة؛ الكتابةُ super"
+   },
+   "bassam_notif_sys_v1": {
+    "cls": "super-only (denied by name)",
+    "note": "تنبيهاتُ مدير النظام: canRead0 يرفضها لغير super صراحةً (K_NSYS)"
+   },
+   "bassam_bc_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "التعاميم — عامّة؛ الكتابةُ super"
+   },
+   "bassam_struct_seed_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "رايةُ بذر الهيكل — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_admsubs_v2": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "رايةُ ترحيل تبويبات الإعدادات — عامّة؛ الكتابةُ super"
+   },
+   "bassam_last_full_export_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "طابعُ النسخة الشاملة — عامّ؛ الكتابةُ super (sys.backup.full)"
+   },
+   "bassam_perm_help_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_irshad_cap_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_seized_cap_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_leaf_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_mgr_explicit_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_irshad_retro_v1": {
+    "state": "RETRO.irshad.state",
+    "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+    "note": "حالةُ نوافذ استدراك الاسترشاد (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات الاسترشاد) — لا مفتاحَ قراءةٍ مستقلاً"
+   },
+   "bassam_seized_retro_v1": {
+    "state": "RETRO.seized.state",
+    "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+    "note": "حالةُ نوافذ استدراك المضبوطات (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات المضبوطات) — لا مفتاحَ قراءةٍ مستقلاً"
+   }
+  },
+  "readKindOutsideRoutes": [
+   {
+    "key": "lens.zones.indicators.view",
+    "resource": "bassam_plan_v1",
+    "owner": "lens.zones",
+    "atoms": [
+     "daily/kpiZones:view"
+    ],
+    "dispositions": [
+     "replaced_by_reference"
+    ],
+    "note": "لا ورقةَ AS‑IS تقرأ المورد بهذا المفتاح (RD_REG/cap) — البياناتُ تصل بورقة المضيف؛ ليس مسارَ قراءةٍ مستقلاً (host-read)"
+   },
+   {
+    "key": "lens.zones.indicators.view",
+    "resource": "bassam_rounds_v1",
+    "owner": "lens.zones",
+    "atoms": [
+     "daily/kpiZones:view"
+    ],
+    "dispositions": [
+     "replaced_by_reference"
+    ],
+    "note": "لا ورقةَ AS‑IS تقرأ المورد بهذا المفتاح (RD_REG/cap) — البياناتُ تصل بورقة المضيف؛ ليس مسارَ قراءةٍ مستقلاً (host-read)"
+   },
+   {
+    "key": "lens.zones.indicators.view",
+    "resource": "bassam_zone_opts_v1",
+    "owner": "lens.zones",
+    "atoms": [
+     "daily/kpiZones:view"
+    ],
+    "dispositions": [
+     "replaced_by_reference"
+    ],
+    "note": "لا ورقةَ AS‑IS تقرأ المورد بهذا المفتاح (RD_REG/cap) — البياناتُ تصل بورقة المضيف؛ ليس مسارَ قراءةٍ مستقلاً (host-read)"
+   },
+   {
+    "key": "lens.dens.indicators.view",
+    "resource": "bassam_rounds_v1",
+    "owner": "lens.dens",
+    "atoms": [
+     "daily/kpiOcc:view"
+    ],
+    "dispositions": [
+     "replaced_by_reference"
+    ],
+    "note": "لا ورقةَ AS‑IS تقرأ المورد بهذا المفتاح (RD_REG/cap) — البياناتُ تصل بورقة المضيف؛ ليس مسارَ قراءةٍ مستقلاً (host-read)"
+   }
+  ],
+  "meta": {
+   "resources": 68,
+   "routes": 243,
+   "byClass": {
+    "intentionally no-read-key / session-global": 15,
+    "explicit read permission": 2,
+    "super-only (denied by name)": 1,
+    "device-excluded": 8,
+    "explicit read permission + explicit special read capability + reference-read routes": 23,
+    "explicit read permission + explicit special read capability": 12,
+    "explicit special read capability (rule)": 5,
+    "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)": 2
+   },
+   "bySource": {
+    "explicit-read": 105,
+    "reference-read": 80,
+    "special": 46,
+    "no-atom": 9,
+    "special-rule": 3
+   },
+   "worker": "pk235",
+   "registry": "v24.5",
+   "readKindOutsideRoutes": 4
+  }
+ },
+ "readBudgetPolicy": "shadow-telemetry-only: PV4_READ_MAX/PV4_READ_BUDGET يحميان زمنَ الخادم أثناء القياس فقط؛ عند Read Enforcement لا يجوز تخطّي rows ولا الاعتمادُ على truncated/skippedBudget في قرارٍ أمني — كلُّ record يُقيَّم أو يُرفض الطلبُ بأمان (P4.1.1‑04)"
+}

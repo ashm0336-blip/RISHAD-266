@@ -1,0 +1,301 @@
+{
+ "version": "v24.9",
+ "docSha256": "6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde",
+ "phase": 4.1,
+ "mode": "shadow",
+ "bindings": [
+  {
+   "key": "import.run",
+   "group": "A — import.run",
+   "mechanism": "علامةُ عمليةٍ صريحة في طلب الحفظ: body.ops[k] = { op: \"import.run\", mode: add|update|replace, n } تضبطها BassamEmpImp.commit عبر window.__BS_OP_MODE (كما __BS_AUD_MODE) وتلتقطها طبقةُ المزامنة لكل مفتاحٍ كُتب في التدفق نفسِه؛ الخادمُ يقرؤها ويصنّفها ويقارن ولا يرفض",
+   "inputs": "body.ops (غيرُ موثوق: يُعقَّم بـKIVO_BUILD.markers — op من قائمةٍ مغلقة · حقولٌ قصيرة · مفاتيحُ هذا الطلب فقط) · ترجمةُ ورقة الفاعل (decide(\"import.run\") ⇐ admin/import:add) · حكمُ canWrite للمورد",
+   "shadow_rule": "لكل مفتاحٍ يحمل العلامة: المصنِّفُ يُخرج import.run (من العلامة لا من الشكل) فوق مفاتيح موردِه؛ TO-BE = import.run ∧ حرّاسُ المورد الحالية؛ «2+ موظفين» بلا علامة = heuristicWithoutMarker (قياس) · علامةٌ على موردٍ خارج مجموعة الاستيراد = markerOutsideImportSet (قياس)",
+   "asis_today": "الخادم يحكم على bassam_employees_v1 بـemps/data (create/edit/del) ولا يعرف admin/import:add؛ العلامةُ لا تصل إلى canWrite (تُضاف إلى ctx بعد صدور الحكم) ولا إلى أي قاعدة",
+   "expected_mismatch": "AS‑IS يقبل (emps/data) والفاعلُ لا يحمل import.run (admin/import:add) = «import.run-not-held» (F‑10 — فحصٌ صريحٌ جديد)؛ لا اتجاهَ آخر ممكن لأن TO-BE يشترط حرّاسَ المورد نفسَها",
+   "impl": [
+    "markers",
+    "marker",
+    "isImportRes"
+   ],
+   "tests": [
+    "p3marker.mjs (العلامةُ لا تمنح ولا تتجاوز: أحكامٌ متطابقة مع/بلا علامة · علامةٌ مزوَّرة · فحصٌ ساكن)",
+    "p3bind.mjs (المصنِّف: العلامةُ تُخرج import.run والشكلُ لا)",
+    "p3shadow.mjs"
+   ],
+   "status": "built-shadow",
+   "owner": "admin/import",
+   "label": "تنفيذ الاستيراد",
+   "guardKind": "derived",
+   "guardStatus": "to-build",
+   "asisMap": [
+    "admin/import:add"
+   ],
+   "sensitive": true
+  },
+  {
+   "key": "backup.restore",
+   "group": "B — backup.restore",
+   "mechanism": "علامةُ عمليةٍ صريحة body.ops[k] = { op: \"backup.restore\", scope: dept|full, mode: merge|replace, reason } تضبطها bkCommit (نسخةُ الإدارة) وfbkCommit (النسخةُ الشاملة) إلى جانب __BS_AUD_MODE؛ سياسةُ TO-BE تُحسب ظلّياً: super OR (role:mgr AND backup.restore)",
+   "inputs": "العلامة · أحداثُ التدقيق المرافقة (dataset · import|restore) دليلاً مسانداً · دورُ الفاعل (super/mgr) · ترجمةُ ورقته (decide(\"backup.restore\") — asisMap فارغ ⇒ لا يحمله أحدٌ قبل الترحيل) · reason",
+   "shadow_rule": "لكل حفظةٍ تحمل العلامة أو الدليل: wouldAllow = super ∨ (mgr ∧ key)؛ السببُ يُسجَّل (super · mgr-key · mgr-no-key · not-mgr)؛ missingReason يُحصى إن غاب السبب (TO-BE يشترطه) ولا يمنع؛ markerWithoutAud وaudWithoutMarker يُحصيان اتساقَ القناتين؛ حراسةُ كل موردٍ داخلي تبقى كما هي",
+   "asis_today": "لا فحصَ لـadmin/backup قبل موارد الاستعادة؛ كلُّ مورد يمرّ بحارسه (cap/OPS/via/ENT + import.replace للمسح)",
+   "expected_mismatch": "AS‑IS يقبل الحفظةَ والسياسةُ ترفض (not-mgr · mgr-no-key · missing-reason) = «restore-policy» (F‑13)؛ super = اتفاق",
+   "impl": [
+    "markers",
+    "marker",
+    "restorePolicy"
+   ],
+   "tests": [
+    "p3marker.mjs",
+    "p3shadow.mjs (super · mgr · موظفٌ بأوراق كتابة · بلا سبب · علامةٌ بلا دليل · دليلٌ بلا علامة)"
+   ],
+   "status": "built-shadow",
+   "owner": "admin/backup",
+   "label": "تنفيذ الاستعادة",
+   "guardKind": "derived",
+   "guardStatus": "to-build",
+   "asisMap": [],
+   "sensitive": true
+  },
+  {
+   "key": "lens.zones.enable",
+   "group": "C — Lens Enable Gate",
+   "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «المصليات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+   "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.zones.* (KIVO_GUARDS.decide)",
+   "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.zones.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+   "impl": [
+    "lensOf",
+    "lensGate"
+   ],
+   "tests": [
+    "p3build.mjs (المصفوفة الوحدوية)",
+    "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+   ],
+   "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.zones.cells)",
+   "status": "built-shadow",
+   "owner": "lens.zones",
+   "label": "تفعيل عدسة المصليات",
+   "guardKind": "capability",
+   "guardStatus": "to-build",
+   "asisMap": [
+    "lens-flag:zones (deptLenses/empLens)"
+   ],
+   "sensitive": false
+  },
+  {
+   "key": "lens.paths.enable",
+   "group": "C — Lens Enable Gate",
+   "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «المسارات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+   "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.paths.* (KIVO_GUARDS.decide)",
+   "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.paths.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+   "impl": [
+    "lensOf",
+    "lensGate"
+   ],
+   "tests": [
+    "p3build.mjs (المصفوفة الوحدوية)",
+    "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+   ],
+   "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.paths.cells)",
+   "status": "built-shadow",
+   "owner": "lens.paths",
+   "label": "تفعيل عدسة المسارات",
+   "guardKind": "capability",
+   "guardStatus": "to-build",
+   "asisMap": [
+    "lens-flag:paths (deptLenses/empLens)"
+   ],
+   "sensitive": false
+  },
+  {
+   "key": "lens.gates.enable",
+   "group": "C — Lens Enable Gate",
+   "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «البوابات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+   "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.gates.* (KIVO_GUARDS.decide)",
+   "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.gates.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+   "impl": [
+    "lensOf",
+    "lensGate"
+   ],
+   "tests": [
+    "p3build.mjs (المصفوفة الوحدوية)",
+    "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+   ],
+   "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.gates.cells)",
+   "status": "built-shadow",
+   "owner": "lens.gates",
+   "label": "تفعيل عدسة البوابات",
+   "guardKind": "capability",
+   "guardStatus": "to-build",
+   "asisMap": [
+    "lens-flag:gates (deptLenses/empLens)"
+   ],
+   "sensitive": false
+  },
+  {
+   "key": "lens.marks.enable",
+   "group": "C — Lens Enable Gate",
+   "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «العلامات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+   "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.marks.* (KIVO_GUARDS.decide)",
+   "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.marks.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+   "impl": [
+    "lensOf",
+    "lensGate"
+   ],
+   "tests": [
+    "p3build.mjs (المصفوفة الوحدوية)",
+    "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+   ],
+   "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.marks.cells)",
+   "status": "built-shadow",
+   "owner": "lens.marks",
+   "label": "تفعيل عدسة العلامات",
+   "guardKind": "capability",
+   "guardStatus": "to-build",
+   "asisMap": [
+    "lens-flag:marks (deptLenses/empLens)"
+   ],
+   "sensitive": false
+  },
+  {
+   "key": "lens.dist.enable",
+   "group": "C — Lens Enable Gate",
+   "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «التوزيع»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+   "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.dist.* (KIVO_GUARDS.decide)",
+   "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.dist.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+   "impl": [
+    "lensOf",
+    "lensGate"
+   ],
+   "tests": [
+    "p3build.mjs (المصفوفة الوحدوية)",
+    "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+   ],
+   "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.dist.cells)",
+   "status": "built-shadow",
+   "owner": "lens.dist",
+   "label": "تفعيل عدسة التوزيع",
+   "guardKind": "capability",
+   "guardStatus": "to-build",
+   "asisMap": [
+    "lens-flag:dist (deptLenses/empLens)"
+   ],
+   "sensitive": false
+  },
+  {
+   "key": "lens.dens.enable",
+   "group": "C — Lens Enable Gate",
+   "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «الكثافة»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+   "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.dens.* (KIVO_GUARDS.decide)",
+   "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.dens.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+   "impl": [
+    "lensOf",
+    "lensGate"
+   ],
+   "tests": [
+    "p3build.mjs (المصفوفة الوحدوية)",
+    "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+   ],
+   "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.dens.cells)",
+   "status": "built-shadow",
+   "owner": "lens.dens",
+   "label": "تفعيل عدسة الكثافة",
+   "guardKind": "capability",
+   "guardStatus": "to-build",
+   "asisMap": [
+    "lens-flag:dens (deptLenses/empLens)"
+   ],
+   "sensitive": false
+  },
+  {
+   "key": "ir.rec.retro.open",
+   "group": "D — retro (irshad)",
+   "mechanism": "حالةٌ خادمية لفترة الاستدراك: bsdept:<d>:bassam_irshad_retro_v1 = { windows: [{ id, scope:{y,m,d|null}, by, at, until, hours, reason, closedAt }] } تُفتح وتُغلق عبر POST /api/retro (نطاقٌ محدَّد: شهرٌ أو يومٌ منقضٍ · زمنٌ محدود ≤ 72 ساعة · فاعلٌ مثبَت من الجلسة · سطرُ تدقيقٍ مستقل etype:\"retro\") — لا فتحَ دائماً ولا عامّاً",
+   "inputs": "اليومُ الهجري للخادم (dsToday — أمُّ القرى/الرياض) · تواريخُ السجلات المتأثرة (y·m·d للمضاف/المعدَّل/المحذوف) · نوافذُ الإدارة · حكمُ canWrite · قرارُ ir.rec.retro.open (⇐ irshad/records:approve) لطلب الفتح",
+   "shadow_rule": "كتابةٌ تمسّ سجلاً بتاريخٍ في فترةٍ مغلقة (شهرٌ منقضٍ · أو يومٌ منقضٍ من الشهر الجاري — قاعدةُ G‑08 نفسُها): نافذةٌ ساريةٌ تغطيه ⇒ wouldAllowRetro · نافذةٌ منتهية فقط ⇒ retroWindowExpired · لا نافذة ⇒ wouldBlock (ونافذةٌ لنطاقٍ/إدارةٍ أخرى لا تغطي)؛ طلبُ فتحٍ من غير حامل المفتاح ⇒ missingRetroPermission؛ الفترةُ المفتوحة ⇒ اتفاق",
+   "asis_today": "القفلُ حالةُ واجهةٍ فقط (irOpenMonths/irOpenDays بنقرةٍ مزدوجة لحامل approve — G‑08)؛ الخادمُ يقبل الكتابةَ بأي تاريخٍ لحامل add/edit/del",
+   "expected_mismatch": "AS‑IS يقبل والفترةُ مغلقةٌ بلا نافذةٍ سارية (wouldBlock أو retroWindowExpired) = «closed-period» (G‑08 واجهيّ) — متوقَّع؛ لا اتجاهَ آخر",
+   "impl": [
+    "retroClosed",
+    "retroCover",
+    "retroDates"
+   ],
+   "tests": [
+    "p3build.mjs (الوحدات)",
+    "p3shadow.mjs (فترةٌ مفتوحة · مغلقةٌ بلا نافذة · مغلقةٌ مع نافذة · نافذةٌ منتهية · إدارةٌ أخرى/نطاقٌ آخر · فتحٌ بلا صلاحية)"
+   ],
+   "api": "GET/POST /api/retro — الوصول: مدير النظام أو حاملُ irshad/records:approve في الإدارة (ذرّةُ G‑08 نفسُها ⇐ ترجمةُ ir.rec.retro.open)؛ ما سواه 403 (عمليةٌ جديدة لا حكمَ AS‑IS سابقاً لها)",
+   "status": "built-shadow",
+   "owner": "irshad/records",
+   "label": "فتح شهر/يوم مقفل للاستدراك",
+   "guardKind": "rule-new",
+   "guardStatus": "to-build",
+   "asisMap": [
+    "irshad/records:approve"
+   ],
+   "sensitive": true
+  },
+  {
+   "key": "sz.rec.retro.open",
+   "group": "E — retro (seized)",
+   "mechanism": "نموذجُ الاسترشاد نفسُه على المضبوطات بحالةٍ مستقلة bsdept:<d>:bassam_seized_retro_v1 ومالكٍ ومفتاحٍ مستقلَّين (sz.rec.retro.open ⇐ seized/records:approve) — لا تشارُكَ لحالة الاستدراك بين النظامين",
+   "inputs": "كما الاسترشاد على bassam_seized_v1",
+   "shadow_rule": "كما الاسترشاد — عدّاداتٌ مستقلة PERMV3.retro.seized",
+   "asis_today": "كما الاسترشاد (الصفحة Seized: نقرةٌ مزدوجة لحامل approve تفتح الشهر/اليوم واجهياً)",
+   "expected_mismatch": "كما الاسترشاد",
+   "impl": [
+    "retroClosed",
+    "retroCover",
+    "retroDates"
+   ],
+   "tests": [
+    "p3build.mjs",
+    "p3shadow.mjs (الحالاتُ الخمس على المضبوطات مستقلةً عن الاسترشاد)"
+   ],
+   "api": "GET/POST /api/retro (res=seized)",
+   "status": "built-shadow",
+   "owner": "seized/records",
+   "label": "فتح شهر/يوم مقفل للاستدراك",
+   "guardKind": "rule-new",
+   "guardStatus": "to-build",
+   "asisMap": [
+    "seized/records:approve"
+   ],
+   "sensitive": true
+  }
+ ],
+ "counts": {
+  "toBuild": 10,
+  "built": 10,
+  "unbuilt": 0,
+  "unknownKeys": 0,
+  "reservedEmitted": 0,
+  "implFns": 10
+ },
+ "importRes": [
+  "bassam_employees_v1",
+  "bassam_options_v1",
+  "bassam_staffing_v3",
+  "bassam_staffing_locks_v1",
+  "bassam_shift_options_v1",
+  "bassam_perms_v1",
+  "bassam_dreport_v1",
+  "bassam_custody_v1",
+  "bassam_award_v1",
+  "bassam_perm_tpls_v1"
+ ],
+ "retroMaxH": 72,
+ "retroDefH": 24
+}
