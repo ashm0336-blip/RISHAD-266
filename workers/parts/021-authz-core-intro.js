@@ -184,7 +184,7 @@ function capOnDept(A, d, key) {
     if (q && q.under === pk) return capOnDept(A, d, sk);
     return deptSubsOf(A, d, pk).concat(deptTabsOf(A, d, pk)).indexOf(sk) !== -1;
   }
-  if (PG_KEYS.indexOf(key) === -1) return true;
+  if (PG_KEYS.indexOf(key) === -1) return false;   /* V7 · د1: مفتاحُ صفحةٍ رئيسيٌّ مجهول ⇒ منع (كان سماحاً) — الورقةُ المجهولة كانت منعاً أصلاً */
   return deptCapOf(A, d).indexOf(key) !== -1;
 }
 /* التوريث: كل أوراق سقف الإدارة بأفعالها كاملة — نسخة capAllPerms */

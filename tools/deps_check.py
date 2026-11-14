@@ -16,8 +16,9 @@
 import os, re, sys, json
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'src')
-DOMAIN = {'400-shift-need.js', '410-gate-units.js', '420-round-factory.js', '520-field-monitor.js', '530-emp-day-facts.js', '580-historical-import.js', '590-employees-import.js',
-          '442-notif-observer.js'}   # قواعدُ أحداث التنبيهات عبر المجالات (رصدُ الميدان · الجولات · الأبواب …) — خدمةُ تطبيقٍ لا بدائيةُ منصّة
+DOMAIN = {'400-shift-need.js', '410-gate-units.js', '420-round-factory.js', '520-field-monitor.js', '530-emp-day-facts.js', '590-employees-import.js',
+          '442-notif-observer.js'}
+DOMAIN_SYSTEMS = {'systems/dstats/client/580-historical-import.js'}   # V7 · د1: خدمةُ الاستيراد التاريخي مجاليةٌ في مكانها الجديد (كانت services/580)   # قواعدُ أحداث التنبيهات عبر المجالات (رصدُ الميدان · الجولات · الأبواب …) — خدمةُ تطبيقٍ لا بدائيةُ منصّة
 FACADES = {'BassamNotif': 'واجهةُ التنبيهات للغلاف (الجرس · العدّ · التنقّل) — يعرّفها مراقبُ التنبيهات (442)'}
 CONTRACTS = {'__ADMIN_OPEN_TAB': 'فتحُ تبويبٍ في الإعدادات من صفحةٍ أخرى', '__ADMIN_OPEN_DTAB': 'فتحُ تبويبِ إدارةٍ في الإعدادات',
              '__BS_OPEN_TAB': 'فتحُ تبويبٍ في صفحة الهدف عند التنقّل'}
@@ -25,7 +26,7 @@ ORDER = ['core', 'api', 'layouts', 'auth', 'permissions', 'manifests', 'plugins'
 def layer(rel):
     parts = rel.split('/')
     if parts[0] == 'services': return 'domain' if parts[-1] in DOMAIN else 'platform'
-    if parts[0] == 'systems': return 'domain' if parts[-1] in DOMAIN else 'modules'   # V7 · الحزمة ب: ملفاتُ واجهة النظام المنقولة بطبقتها الأصلية
+    if parts[0] == 'systems': return 'domain' if rel in DOMAIN_SYSTEMS else 'modules'   # V7 · الحزمة ب · د1: ملفاتُ واجهة النظام المنقولة بطبقتها الأصلية
     return parts[0]
 def scan():
     defs, refs = {}, {}

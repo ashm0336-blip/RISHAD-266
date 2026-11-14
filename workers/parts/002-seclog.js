@@ -22,6 +22,9 @@ var DEVICE_KEYS = { 'bassam_session_v1':1, 'bslg_v1':1, 'bassam_theme':1, 'bassa
 function isDeviceKey(k) { return !!DEVICE_KEYS[k] || /(^|:)bassam_page_v1:/.test(String(k)) || /(^|:)bassam_st_grp_v1$/.test(String(k)); }
 var PW_MIN = 6;
 var WORKER_VER = '2026.10.14-165';
+/* V7 · د1: رقمُ التزام البناء — لا يُكتب في ملفٍّ متتبَّع (الملفُّ لا يعرف التزامَه): tools/pack.py يحقنه في _worker.js داخل الحزمة وحدها
+   (‎<sha>‎ أو ‎<sha>-dirty‎ لشجرةٍ غيرِ نظيفة)، ويُقرأ من GET /api/ping. خارج الحزمة (الاختبارات · wrangler dev) يبقى «unpacked». */
+var WORKER_COMMIT = 'unpacked';   // @@KIVO_COMMIT@@
 /* ══ KIVO_250 · SOT-142/144 · AUD-021 — سجلٌّ منظَّم: سطرُ JSON واحد لكل حدث عبر console (يلتقطه Workers Logs/Logpush) ══
    المخطّط v1: { v, t, lvl: error|warn|info, ev, ver, rid?, m?, p?, st?, op?, err?, … } — بلا بياناتٍ شخصية (لا un/ip/قيم)؛ معرّفُ الطلب rid يربط
    الواجهة (ردُّ الخطأ ورأسُ X-Kivo-Rid) بالسجل. swallow(): الاستثناءُ المبتلَع عمداً (أثرٌ جانبي best-effort) يُسجَّل تحذيراً بوسمه بدل catch فارغ. */

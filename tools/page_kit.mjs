@@ -15,6 +15,7 @@ import crypto from 'crypto';
 import { execFileSync } from 'child_process';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'node:url';
+import { moduleDir } from './systems_paths.mjs';   /* V7 · د1: الوحدةُ في شجرة العمل قد تكون في src/systems/<key>/client (المرجعُ التاريخي REF يبقى src/modules) */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const req = createRequire(ROOT + '/package.json'); const acorn = req('acorn'); const eslintScope = req('eslint-scope');
 const [SPEC, MODE] = [process.argv[2], process.argv[3] || ''];
@@ -147,8 +148,8 @@ const prettier = await import(path.join(ROOT, 'node_modules', 'prettier', 'index
 const kit = await prettier.format(kitText(), { parser: 'babel', printWidth: 150, singleQuote: false });
 if (MODE === '--check') {
   const curKit = fs.existsSync(path.join(ROOT, KIT)) ? fs.readFileSync(path.join(ROOT, KIT), 'utf8') : '';
-  const errs = prove((m) => fs.readFileSync(path.join(ROOT, MOD, m, 'logic.js'), 'utf8'), curKit);
-  const regen = curKit === kit && plan.every(p => fs.readFileSync(path.join(ROOT, MOD, p.m, 'logic.js'), 'utf8') === p.text);
+  const errs = prove((m) => fs.readFileSync(path.join(moduleDir(path.join(ROOT, 'src'), m), 'logic.js'), 'utf8'), curKit);
+  const regen = curKit === kit && plan.every(p => fs.readFileSync(path.join(moduleDir(path.join(ROOT, 'src'), p.m), 'logic.js'), 'utf8') === p.text);
   console.log((errs.length ? '✘ ' : '✔ ') + 'البرهان: ' + mods.length + ' وحدة — مناهجُها الفعلية (الخاصة ∪ السمات) = المرجع ' + REF + (errs.length ? ' · ' + errs.slice(0, 6).join(' | ') : ''));
   console.log((regen ? '✔ ' : '✘ ') + 'الوحداتُ وملفُّ السمات = إعادةُ التوليد من المرجع بايتاً');
   process.exit(errs.length || !regen ? 1 : 0);
@@ -158,8 +159,8 @@ console.log('سمات: ' + order.length + ' · مناهجُ منقولة: ' + mo
 for (const g of kept) console.log('   ⋯ يبقى: ' + g.key + ' [' + g.mods.join(',') + '] ' + g.why.slice(0, 2).join(' '));
 if (MODE === '--write') {
   fs.writeFileSync(path.join(ROOT, KIT), kit);
-  for (const p of plan) fs.writeFileSync(path.join(ROOT, MOD, p.m, 'logic.js'), p.text);
-  const errs = prove((m) => fs.readFileSync(path.join(ROOT, MOD, m, 'logic.js'), 'utf8'), kit);
+  for (const p of plan) fs.writeFileSync(path.join(moduleDir(path.join(ROOT, 'src'), p.m), 'logic.js'), p.text);
+  const errs = prove((m) => fs.readFileSync(path.join(moduleDir(path.join(ROOT, 'src'), m), 'logic.js'), 'utf8'), kit);
   if (errs.length) { console.error('✘ البرهان: ' + errs.slice(0, 10).join(' | ')); process.exit(1); }
   console.log('✎ ' + KIT + ' (' + (Buffer.byteLength(kit) / 1024).toFixed(1) + ' KB) · ' + plan.filter(p => p.dropped).map(p => p.m + '−' + p.dropped).join(' ') + ' · البرهان ✔');
 }

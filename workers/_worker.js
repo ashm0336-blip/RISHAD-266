@@ -111,6 +111,9 @@ var DEVICE_KEYS = { 'bassam_session_v1':1, 'bslg_v1':1, 'bassam_theme':1, 'bassa
 function isDeviceKey(k) { return !!DEVICE_KEYS[k] || /(^|:)bassam_page_v1:/.test(String(k)) || /(^|:)bassam_st_grp_v1$/.test(String(k)); }
 var PW_MIN = 6;
 var WORKER_VER = '2026.10.14-165';
+/* V7 · د1: رقمُ التزام البناء — لا يُكتب في ملفٍّ متتبَّع (الملفُّ لا يعرف التزامَه): tools/pack.py يحقنه في _worker.js داخل الحزمة وحدها
+   (‎<sha>‎ أو ‎<sha>-dirty‎ لشجرةٍ غيرِ نظيفة)، ويُقرأ من GET /api/ping. خارج الحزمة (الاختبارات · wrangler dev) يبقى «unpacked». */
+var WORKER_COMMIT = 'unpacked';   // @@KIVO_COMMIT@@
 /* ══ KIVO_250 · SOT-142/144 · AUD-021 — سجلٌّ منظَّم: سطرُ JSON واحد لكل حدث عبر console (يلتقطه Workers Logs/Logpush) ══
    المخطّط v1: { v, t, lvl: error|warn|info, ev, ver, rid?, m?, p?, st?, op?, err?, … } — بلا بياناتٍ شخصية (لا un/ip/قيم)؛ معرّفُ الطلب rid يربط
    الواجهة (ردُّ الخطأ ورأسُ X-Kivo-Rid) بالسجل. swallow(): الاستثناءُ المبتلَع عمداً (أثرٌ جانبي best-effort) يُسجَّل تحذيراً بوسمه بدل catch فارغ. */
@@ -1725,6 +1728,22 @@ var TK_GATE_SKEW = 6e4;                                                     /* �
 function irDailyManager(A) {
   var u = A && A.u;
   return !!(u && (u.role === 'super' || u.role === 'dept' || u.role === 'gm' || (u.role === 'staff' && u.mgr)));
+}
+/* ── من src/systems/dstats/server/020-dstats.js (V7 · د1): ترقيةُ قائمة العدسات وحدها — تستعملها قاعدةُ الصلاحيات (018 permsGrantWhy) ── */
+/* ترحيل «المناطق» إلى قائمة العدسات — كتابةٌ آلية يجريها أي متصفح عند أول فتح */
+function lensesUpgradeOnly(a, b) {
+  /* KIVO_261 (إصلاح · AUD-055 — كشفه المراجعُ الأمنيّ المستقل): كان غيرُ الكائن يُعدّ {} فتمرّ قيمةٌ نصيةٌ أو مصفوفةٌ أو رقمٌ بأيّ حجم حين تكون المخزَّنةُ
+     {} أو غائبة (الحالُ الافتراضية) — الآن: الجديدةُ كائنٌ أو غائبة، والمخزَّنةُ كذلك، وإلا فليست ترقية */
+  if ((b !== undefined && !isObj(b)) || (a !== undefined && a !== null && !isObj(a))) return false;
+  a = isObj(a) ? a : {}; b = isObj(b) ? b : {};
+  var ks = {}; Object.keys(a).concat(Object.keys(b)).forEach(function (d) { ks[d] = 1; });
+  for (var d in ks) {
+    var x = Array.isArray(a[d]) ? a[d] : null, y = Array.isArray(b[d]) ? b[d] : null;
+    if (!x || !y) return false;
+    var x2 = x.indexOf('zones') === -1 ? x.concat(['zones']) : x;
+    if (!deq(x2, y) && !deq(x, y)) return false;
+  }
+  return true;
 }
 /* ═══ التفويض في الخادم ═══════════════════════════════════════════════════
    كانت البوابة تتحقق أن الحافظ مسجّل دخول فحسب، وتأخذ منه أي مفتاح بأي
@@ -11613,13 +11632,13 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   plan.guards.push.apply(plan.guards, transition.guards);
   plan.statements.push.apply(plan.statements, transition.statements);
   plan.revisionKeys.push.apply(plan.revisionKeys, transition.revisionKeys);
-  var irWipeDepartments = Array.from(new Set(transition.transitions.filter(function (t) {
+  var wipeDepartments = Array.from(new Set(transition.transitions.filter(function (t) {
     return t.intent === 'dept-wipe';
   }).map(function (t) { return t.departmentId; }).concat(opt.__serverDepartmentWipes || [])));
-  var irDepartmentChange = kv.pend.find(function (pd) { return pd.k === K_DEPTS; }),
-    irFinalDepartments = irDepartmentChange ? (irDepartmentChange.act === 'del' ? [] : parseJson(irDepartmentChange.v, [])) : A.depts;
-  plan.snapshotRequired = plan.snapshotRequired || irWipeDepartments.length > 0;
-  for (var irDept of irWipeDepartments) {
+  var departmentChange = kv.pend.find(function (pd) { return pd.k === K_DEPTS; }),
+    finalDepartments = departmentChange ? (departmentChange.act === 'del' ? [] : parseJson(departmentChange.v, [])) : A.depts;
+  plan.snapshotRequired = plan.snapshotRequired || wipeDepartments.length > 0;
+  for (var irDept of wipeDepartments) {
     var irBase = opt.__irshadBase;
     if (!irBase) {
       irBase = {};
@@ -11627,7 +11646,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     }
     var irWipe = await irPlanWipe(env, A, {
       dept: irDept, base: irBase, intent: opt.__wipeKind === 'delete' ||
-        !irFinalDepartments.some(function (d) { return d.id === irDept; }) ? 'dept-delete' : 'dept-wipe',
+        !finalDepartments.some(function (d) { return d.id === irDept; }) ? 'dept-delete' : 'dept-wipe',
       reason: body.reason || '',
     });
     plan.guards.push.apply(plan.guards, irWipe.guards);
@@ -11638,11 +11657,11 @@ async function rsSaveCommit(env, A, body, meta, opt) {
       plan.snapshots.push({ domain: 'irshad', table: irDept + ':' + kind, rows: irWipe.snapshotRows[kind] });
     });
   }
-  await bdWipePlans(env,A,body,plan,irWipeDepartments,opt,irFinalDepartments);
-  await bdEmployeeCleanupPlan(env,A,body,plan,reference,opt,irWipeDepartments);
+  await bdWipePlans(env,A,body,plan,wipeDepartments,opt,finalDepartments);
+  await bdEmployeeCleanupPlan(env,A,body,plan,reference,opt,wipeDepartments);
   /* RISHAD-266 · issue #1 (owner decision): the server issues the employee notifications of the save it accepts, in the same
      atomic batch (019 nfEmployeePlan) — never the browser. A unit wiped or deleted by this plan gets none (its feed is replaced). */
-  var employeeNotifications = await nfEmployeePlan(env, A, kv.pend, plan.body.requestId || enfSnapId('ops'), irWipeDepartments);
+  var employeeNotifications = await nfEmployeePlan(env, A, kv.pend, plan.body.requestId || enfSnapId('ops'), wipeDepartments);
   plan.guards.push.apply(plan.guards, employeeNotifications.guards);
   plan.statements.push.apply(plan.statements, employeeNotifications.statements);
   if (!plan.snapshotRequired) plan.snapshots = [];
@@ -11678,7 +11697,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   await rsImageMetadataPlan(env, A, plan, reference);
   /* V7-F · owner decision 3: the orphans of a unit this plan removes (the ones it makes now and the ones still in their grace) are stamped —
      their original unit is gone for good, so only the platform admin re-binds them (054 imgOrphanRebindOk), whoever later reuses the id */
-  rsImageUnitStamp(env, A, plan, irFinalDepartments);
+  rsImageUnitStamp(env, A, plan, finalDepartments);
   // Rows a scoped reference read while the plan was compiled are fenced like the rest (019d).
   plan.guards.push.apply(plan.guards, rsReferenceSince(reference, referenceMark, referenceOperational));
   var ack = await rsCommit(env, A, plan, meta);
@@ -20249,21 +20268,7 @@ async function dsDomainRoute(env, request, url, ss) {
   var limit = await rlHit(env, 'sv', A.u.id, RL_SAVE); if (limit) return tooMany(limit);
   var result = await dsDomainCommit(env, A, body, reqMeta(request)); return json(result.body, result.status);
 }
-/* ترحيل «المناطق» إلى قائمة العدسات — كتابةٌ آلية يجريها أي متصفح عند أول فتح */
-function lensesUpgradeOnly(a, b) {
-  /* KIVO_261 (إصلاح · AUD-055 — كشفه المراجعُ الأمنيّ المستقل): كان غيرُ الكائن يُعدّ {} فتمرّ قيمةٌ نصيةٌ أو مصفوفةٌ أو رقمٌ بأيّ حجم حين تكون المخزَّنةُ
-     {} أو غائبة (الحالُ الافتراضية) — الآن: الجديدةُ كائنٌ أو غائبة، والمخزَّنةُ كذلك، وإلا فليست ترقية */
-  if ((b !== undefined && !isObj(b)) || (a !== undefined && a !== null && !isObj(a))) return false;
-  a = isObj(a) ? a : {}; b = isObj(b) ? b : {};
-  var ks = {}; Object.keys(a).concat(Object.keys(b)).forEach(function (d) { ks[d] = 1; });
-  for (var d in ks) {
-    var x = Array.isArray(a[d]) ? a[d] : null, y = Array.isArray(b[d]) ? b[d] : null;
-    if (!x || !y) return false;
-    var x2 = x.indexOf('zones') === -1 ? x.concat(['zones']) : x;
-    if (!deq(x2, y) && !deq(x, y)) return false;
-  }
-  return true;
-}
+/* lensesUpgradeOnly → workers/parts/016-base-shared.js (V7 · د1) */
 
 
 /* Validated one-time cutover. These helpers are used only by migrateDb before
@@ -20519,7 +20524,7 @@ function capOnDept(A, d, key) {
     if (q && q.under === pk) return capOnDept(A, d, sk);
     return deptSubsOf(A, d, pk).concat(deptTabsOf(A, d, pk)).indexOf(sk) !== -1;
   }
-  if (PG_KEYS.indexOf(key) === -1) return true;
+  if (PG_KEYS.indexOf(key) === -1) return false;   /* V7 · د1: مفتاحُ صفحةٍ رئيسيٌّ مجهول ⇒ منع (كان سماحاً) — الورقةُ المجهولة كانت منعاً أصلاً */
   return deptCapOf(A, d).indexOf(key) !== -1;
 }
 /* التوريث: كل أوراق سقف الإدارة بأفعالها كاملة — نسخة capAllPerms */
@@ -22216,24 +22221,24 @@ async function retroApiRun(env, request, A, url, meta) {
   if (!d || !(A.depts || []).some(function (x) { return x && x.id === d; })) return json({ ok: 0, err: 'dept' }, 400);
   var adapter=retroDomainAdapter(sys);
   await adapter.retired(env);
-  var irCtx=await adapter.context(env,A,d,{write:true});env=irCtx.env;A=irCtx.A;
-  var irState=await adapter.snapshot(env,d);
-  irCtx.guards.push(adapter.retiredGuard(env));
-  irCtx.guards.push.apply(irCtx.guards,irState.guards);
+  var domainCtx=await adapter.context(env,A,d,{write:true});env=domainCtx.env;A=domainCtx.A;
+  var domainState=await adapter.snapshot(env,d);
+  domainCtx.guards.push(adapter.retiredGuard(env));
+  domainCtx.guards.push.apply(domainCtx.guards,domainState.guards);
   var RS = PERMV3.retro[sys], may = retroMay(A, d, sys);
   var tob = A.u.role === 'super' ? { ok: true, why: 'super' } : KIVO_GUARDS.decide(RETRO[sys].key, permv2Ctx(A, d));
   if (!!tob.ok === may) RS.openDecisions.agree++; else RS.openDecisions.disagree++;
   if (request.method === 'GET') {
     if (!may && !canRead(A, 'bsdept:' + d + ':' + RETRO[sys].res)) return json({ ok: 0, err: 'perm' }, 403);
-    var stG = irState.state;
-    if (irCtx) await env.DB.batch(irCtx.guards);
+    var stG = domainState.state;
+    if (domainCtx) await env.DB.batch(domainCtx.guards);
     return json({ ok: 1, res: sys, dept: d, today: T, now: now, maxHours: KIVO_BUILD.RETRO_MAX_H, defHours: KIVO_BUILD.RETRO_DEF_H, may: may, windows: stG.windows });
   }
   if (request.method !== 'POST') return json({ ok: 0, err: 'method' }, 405);
   var act = b.act === 'close' ? 'close' : 'open';
   if (!may && A.enf) { try { await enfInitDb(env); await enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: d, k: retroKey(d, sys), res: RETRO[sys].state, keys: RETRO[sys].key, decision: 'deny', why: 'perm', path: '/api/retro', ip: meta.ip }).run(); } catch (eL9) { swallow('retro-authz-log', eL9, env.__rid); } }
   if (!may) { RS.missingRetroPermission++; await secLog(env, { ts: now, uid: A.u.id, un: A.u.un, act: 'denied', target: retroKey(d, sys), detail: 'retro.' + act + ':perm', ip: meta.ip, city: meta.city, dev: meta.dev }); return json({ ok: 0, err: 'perm', key: RETRO[sys].key }, 403); }
-  var st9 = irState.state, w, scope;
+  var st9 = domainState.state, w, scope;
   if (act === 'open') {
     var sc0 = isObj(b.scope) ? b.scope : {}, y = parseInt(sc0.y, 10), m = parseInt(sc0.m, 10), dd0 = (sc0.d == null || sc0.d === '') ? null : parseInt(sc0.d, 10);
     if (!(y > 1300 && y < 1700 && m >= 1 && m <= 12) || (dd0 !== null && !(dd0 >= 1 && dd0 <= 30))) return json({ ok: 0, err: 'scope' }, 400);
@@ -22249,11 +22254,11 @@ async function retroApiRun(env, request, A, url, meta) {
   } else {
     var id = String(b.id || ''); w = null; for (var q = 0; q < st9.windows.length; q++) if (st9.windows[q] && st9.windows[q].id === id) w = st9.windows[q];
     if (!w) return json({ ok: 0, err: 'not-found' }, 404);
-    if (w.closedAt) { if (irCtx) await env.DB.batch(irCtx.guards); return json({ ok: 1, window: w, already: 1 }); }
+    if (w.closedAt) { if (domainCtx) await env.DB.batch(domainCtx.guards); return json({ ok: 1, window: w, already: 1 }); }
     w.closedAt = now; w.closedBy = { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || '') }; scope = w.scope; RS.closes++;
   }
-  if (irCtx) {
-    await typedRetroCommit(irCtx,sys,adapter,st9,w,scope,act,meta,now);
+  if (domainCtx) {
+    await typedRetroCommit(domainCtx,sys,adapter,st9,w,scope,act,meta,now);
     return json({ ok: 1, window: w, today: T, now: now, decision: { asis: may, toBe: !!tob.ok, why: tob.why || '' } });
   }
 }
@@ -29959,7 +29964,7 @@ export default {
       if (path === '/api/brand') return json({ ok: 1, brand: brandPublic(await platGet(env)), ver: WORKER_VER, rk: (await metaGet(env, 'rk')) ? 1 : 0 });
 
       if (path === '/api/ping') {
-        var us0 = await usersList(env), pingOut = { ok: 1, cf: 1, ver: WORKER_VER, fresh: isVirgin(us0) ? 1 : 0 };
+        var us0 = await usersList(env), pingOut = { ok: 1, cf: 1, ver: WORKER_VER, commit: WORKER_COMMIT, fresh: isVirgin(us0) ? 1 : 0 };   /* V7 · د1: commit — 002 WORKER_COMMIT */
         /* KIVO_244 · AUD-004: الأعدادُ (الحسابات · الجلسات · المراجعة) لمدير النظام وحده — لا إفشاءَ بلا جلسة؛ وفي وضع الحماية النبضُ المختصر فقط */
         /* KIVO_261 · SOT-145 (الجاهزية): في وضع الحماية الخادمُ حيٌّ (ok:1) لكنه غيرُ جاهز — كلُّ قراءةٍ وكتابة 503 — فيُعلَن ready:0 · mode:'protect'
            (كان النبضُ «ok:1» وحده فلا يفرّق المراقبُ بين السليم والمعطَّل) · ولمدير النظام: schemaOk = المخطّطُ المختوم في D1 = المعروفُ لهذا الإصدار */

@@ -10,7 +10,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import zlib from 'node:zlib';
 import { PYTHON, ROOT } from './harness.mjs';
-const W = "function json(o, s) { return { o: o, s: s }; }\n/* @@KIVO_TEST_TOOL_BEGIN · أداةُ الاختبار */\nasync function enfTestApi() { return enfIsTestUser(tu); }\n/* @@KIVO_TEST_TOOL_END */\nexport default { fetch() { return enfTestApi(); } };\n";
+const W = "var WORKER_COMMIT = 'unpacked';   // @@KIVO_COMMIT@@\nfunction json(o, s) { return { o: o, s: s }; }\n/* @@KIVO_TEST_TOOL_BEGIN · أداةُ الاختبار */\nasync function enfTestApi() { return enfIsTestUser(tu); }\n/* @@KIVO_TEST_TOOL_END */\nexport default { fetch() { return enfTestApi(); } };\n";
 function mk() {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_pack_')), pk = path.join(d, 'pk999');
   fs.mkdirSync(path.join(pk, 'assets'), { recursive: true });

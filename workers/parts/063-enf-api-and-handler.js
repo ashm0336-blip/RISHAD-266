@@ -545,7 +545,7 @@ export default {
       if (path === '/api/brand') return json({ ok: 1, brand: brandPublic(await platGet(env)), ver: WORKER_VER, rk: (await metaGet(env, 'rk')) ? 1 : 0 });
 
       if (path === '/api/ping') {
-        var us0 = await usersList(env), pingOut = { ok: 1, cf: 1, ver: WORKER_VER, fresh: isVirgin(us0) ? 1 : 0 };
+        var us0 = await usersList(env), pingOut = { ok: 1, cf: 1, ver: WORKER_VER, commit: WORKER_COMMIT, fresh: isVirgin(us0) ? 1 : 0 };   /* V7 · د1: commit — 002 WORKER_COMMIT */
         /* KIVO_244 · AUD-004: الأعدادُ (الحسابات · الجلسات · المراجعة) لمدير النظام وحده — لا إفشاءَ بلا جلسة؛ وفي وضع الحماية النبضُ المختصر فقط */
         /* KIVO_261 · SOT-145 (الجاهزية): في وضع الحماية الخادمُ حيٌّ (ok:1) لكنه غيرُ جاهز — كلُّ قراءةٍ وكتابة 503 — فيُعلَن ready:0 · mode:'protect'
            (كان النبضُ «ok:1» وحده فلا يفرّق المراقبُ بين السليم والمعطَّل) · ولمدير النظام: schemaOk = المخطّطُ المختوم في D1 = المعروفُ لهذا الإصدار */

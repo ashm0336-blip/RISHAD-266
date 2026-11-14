@@ -81,6 +81,7 @@
             "ok",
             "cf",
             "ver",
+            "commit",
             "fresh"
           ],
           "super_extra": [

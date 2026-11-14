@@ -12,24 +12,24 @@ async function retroApiRun(env, request, A, url, meta) {
   if (!d || !(A.depts || []).some(function (x) { return x && x.id === d; })) return json({ ok: 0, err: 'dept' }, 400);
   var adapter=retroDomainAdapter(sys);
   await adapter.retired(env);
-  var irCtx=await adapter.context(env,A,d,{write:true});env=irCtx.env;A=irCtx.A;
-  var irState=await adapter.snapshot(env,d);
-  irCtx.guards.push(adapter.retiredGuard(env));
-  irCtx.guards.push.apply(irCtx.guards,irState.guards);
+  var domainCtx=await adapter.context(env,A,d,{write:true});env=domainCtx.env;A=domainCtx.A;
+  var domainState=await adapter.snapshot(env,d);
+  domainCtx.guards.push(adapter.retiredGuard(env));
+  domainCtx.guards.push.apply(domainCtx.guards,domainState.guards);
   var RS = PERMV3.retro[sys], may = retroMay(A, d, sys);
   var tob = A.u.role === 'super' ? { ok: true, why: 'super' } : KIVO_GUARDS.decide(RETRO[sys].key, permv2Ctx(A, d));
   if (!!tob.ok === may) RS.openDecisions.agree++; else RS.openDecisions.disagree++;
   if (request.method === 'GET') {
     if (!may && !canRead(A, 'bsdept:' + d + ':' + RETRO[sys].res)) return json({ ok: 0, err: 'perm' }, 403);
-    var stG = irState.state;
-    if (irCtx) await env.DB.batch(irCtx.guards);
+    var stG = domainState.state;
+    if (domainCtx) await env.DB.batch(domainCtx.guards);
     return json({ ok: 1, res: sys, dept: d, today: T, now: now, maxHours: KIVO_BUILD.RETRO_MAX_H, defHours: KIVO_BUILD.RETRO_DEF_H, may: may, windows: stG.windows });
   }
   if (request.method !== 'POST') return json({ ok: 0, err: 'method' }, 405);
   var act = b.act === 'close' ? 'close' : 'open';
   if (!may && A.enf) { try { await enfInitDb(env); await enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: d, k: retroKey(d, sys), res: RETRO[sys].state, keys: RETRO[sys].key, decision: 'deny', why: 'perm', path: '/api/retro', ip: meta.ip }).run(); } catch (eL9) { swallow('retro-authz-log', eL9, env.__rid); } }
   if (!may) { RS.missingRetroPermission++; await secLog(env, { ts: now, uid: A.u.id, un: A.u.un, act: 'denied', target: retroKey(d, sys), detail: 'retro.' + act + ':perm', ip: meta.ip, city: meta.city, dev: meta.dev }); return json({ ok: 0, err: 'perm', key: RETRO[sys].key }, 403); }
-  var st9 = irState.state, w, scope;
+  var st9 = domainState.state, w, scope;
   if (act === 'open') {
     var sc0 = isObj(b.scope) ? b.scope : {}, y = parseInt(sc0.y, 10), m = parseInt(sc0.m, 10), dd0 = (sc0.d == null || sc0.d === '') ? null : parseInt(sc0.d, 10);
     if (!(y > 1300 && y < 1700 && m >= 1 && m <= 12) || (dd0 !== null && !(dd0 >= 1 && dd0 <= 30))) return json({ ok: 0, err: 'scope' }, 400);
@@ -45,11 +45,11 @@ async function retroApiRun(env, request, A, url, meta) {
   } else {
     var id = String(b.id || ''); w = null; for (var q = 0; q < st9.windows.length; q++) if (st9.windows[q] && st9.windows[q].id === id) w = st9.windows[q];
     if (!w) return json({ ok: 0, err: 'not-found' }, 404);
-    if (w.closedAt) { if (irCtx) await env.DB.batch(irCtx.guards); return json({ ok: 1, window: w, already: 1 }); }
+    if (w.closedAt) { if (domainCtx) await env.DB.batch(domainCtx.guards); return json({ ok: 1, window: w, already: 1 }); }
     w.closedAt = now; w.closedBy = { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || '') }; scope = w.scope; RS.closes++;
   }
-  if (irCtx) {
-    await typedRetroCommit(irCtx,sys,adapter,st9,w,scope,act,meta,now);
+  if (domainCtx) {
+    await typedRetroCommit(domainCtx,sys,adapter,st9,w,scope,act,meta,now);
     return json({ ok: 1, window: w, today: T, now: now, decision: { asis: may, toBe: !!tob.ok, why: tob.why || '' } });
   }
 }
