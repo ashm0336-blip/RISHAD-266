@@ -1640,9 +1640,9 @@ function nfOwn(m, targets, u, refs) {
 }
 function nfPage(A, d, type, cat, act) {
   var page = NF_CAP_ID[type] || NF_CAP[cat];
-  if (!page) return A.u.role === "super" || !["sys", "sec"].includes(cat);
+  if (A.u.role === "super") return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
+  if (!page) return !["sys", "sec"].includes(cat);
   if (!d || !deptInScope(A, d) || !capOnDept(A, d, page)) return false;
-  if (A.u.role === "super") return true;
   if (page.indexOf("admin/") === 0 && act === "view" && isMgrOf(A, d)) return true;
   if (A.enf) {
     /* RISHAD-266 · owner decision («مدير الإدارة في enforce يقرأ إشعارات الموظفين الموجّهة للمديرين»): «emps» is a container page with
@@ -1654,6 +1654,14 @@ function nfPage(A, d, type, cat, act) {
     if (cat === "emp" && page === NF_CAP.emp)
       return act === "view" && isMgrOf(A, d) && actsHeldOn(A, d, page, [act]) && enfHeld(A, d, "emp.view");
     var atom = KIVO_REGISTRY.atoms[page + ":" + act];
+    /* V7 · د1-ب: الصفحةُ الحاوية (irshad · seized · award) لا ذرّةَ لها في السجل — ذرّاتُها على أوراقها — فكان لا يُحسب لها مستلمٌ في الإنفاذ.
+       المستلمون الآن هم مستلمو الوضع القديم لنفس الصلاحيات (ورقةُ القارئ تحمل الفعلَ على الحاوية) ∧ يحمل في الإنفاذ ذرّةَ ورقةٍ واحدةٍ منها
+       على الأقل (فالإسقاطُ الصريح في الإنفاذ يبقى نافذاً). emps عولجت أعلاه ولا تصل إلى هنا. */
+    if (!atom && pgIsContainer(page))
+      return actsHeldOn(A, d, page, [act]) && pgLeaves(page).some(function (leaf) {
+        var la = KIVO_REGISTRY.atoms[leaf + ":" + act];
+        return !!(la && la.targets && la.targets.some(function (k) { return enfHeld(A, d, k); }));
+      });
     return !!(
       atom &&
       atom.targets &&

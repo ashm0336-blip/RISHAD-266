@@ -4779,9 +4779,9 @@ function nfOwn(m, targets, u, refs) {
 }
 function nfPage(A, d, type, cat, act) {
   var page = NF_CAP_ID[type] || NF_CAP[cat];
-  if (!page) return A.u.role === "super" || !["sys", "sec"].includes(cat);
+  if (A.u.role === "super") return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
+  if (!page) return !["sys", "sec"].includes(cat);
   if (!d || !deptInScope(A, d) || !capOnDept(A, d, page)) return false;
-  if (A.u.role === "super") return true;
   if (page.indexOf("admin/") === 0 && act === "view" && isMgrOf(A, d)) return true;
   if (A.enf) {
     /* RISHAD-266 · owner decision («مدير الإدارة في enforce يقرأ إشعارات الموظفين الموجّهة للمديرين»): «emps» is a container page with
@@ -4793,6 +4793,14 @@ function nfPage(A, d, type, cat, act) {
     if (cat === "emp" && page === NF_CAP.emp)
       return act === "view" && isMgrOf(A, d) && actsHeldOn(A, d, page, [act]) && enfHeld(A, d, "emp.view");
     var atom = KIVO_REGISTRY.atoms[page + ":" + act];
+    /* V7 · د1-ب: الصفحةُ الحاوية (irshad · seized · award) لا ذرّةَ لها في السجل — ذرّاتُها على أوراقها — فكان لا يُحسب لها مستلمٌ في الإنفاذ.
+       المستلمون الآن هم مستلمو الوضع القديم لنفس الصلاحيات (ورقةُ القارئ تحمل الفعلَ على الحاوية) ∧ يحمل في الإنفاذ ذرّةَ ورقةٍ واحدةٍ منها
+       على الأقل (فالإسقاطُ الصريح في الإنفاذ يبقى نافذاً). emps عولجت أعلاه ولا تصل إلى هنا. */
+    if (!atom && pgIsContainer(page))
+      return actsHeldOn(A, d, page, [act]) && pgLeaves(page).some(function (leaf) {
+        var la = KIVO_REGISTRY.atoms[leaf + ":" + act];
+        return !!(la && la.targets && la.targets.some(function (k) { return enfHeld(A, d, k); }));
+      });
     return !!(
       atom &&
       atom.targets &&
@@ -20579,10 +20587,9 @@ var DEPT_SHEET = false;
 function myPermsOf(A, d) {
   var u = A.u;
   if (!d) return {};
-  if (u.role === 'super') {
-    var all = capAllPermsOf(A, d);
-    all.admin = ACTS_ALL.slice();
-    pgLeaves('admin').forEach(function (l) { all[l] = ACTS_ALL.slice(); });
+  if (u.role === 'super') {   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
+    var all = {};
+    PG_KEYS.forEach(function (k) { all[k] = ACTS_ALL.slice(); pgLeaves(k).forEach(function (l) { all[l] = ACTS_ALL.slice(); }); });
     return all;
   }
   if (u.role === 'gm') {
@@ -21737,6 +21744,7 @@ function holdsAllWrites(A, key, R) {
 }
 /* هل يملك الفاعل هذه الأفعال كلها على ورقةٍ بعينها؟ */
 function actsHeldOn(A, d, cap, acts) {
+  if (A && A.u && A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
   if (!capOnDept(A, d, cap)) return false;
   var have = myPermsOf(A, d)[cap] || [];
   for (var i = 0; i < acts.length; i++) if (have.indexOf(acts[i]) === -1) return false;
@@ -21758,6 +21766,7 @@ function authorize0(A, key, act) {
   if (!P.dept) return { ok: false, why: 'scope' };               /* مورد إدارةٍ بلا إدارة */
   if (!deptInScope(A, P.dept)) return { ok: false, why: 'dept' };
   if (R.rule) return { ok: false, why: 'rule' };                 /* سياسته الخاصة تُفحص في موضعها */
+  if (A.u.role === 'super') return { ok: true, cap: '*' };   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
   /* مدير النظام لا يُستثنى هنا: myPermsOf تعطيه سقف الإدارة كاملاً (وهو ما
      تفعله الواجهة)، فيبقى خاضعاً لسقف الإدارة وللوحدة المطفأة على مستوى
      المنصة. وصفحة «الإعدادات» وحدها له دائماً — كما في myPerms حرفاً بحرف. */
@@ -22603,6 +22612,7 @@ function readCapsOf(name, R) {
    KIVO_264 · QA-264-D1: القاعدةُ نفسُها للوضعين — canRead0 (أدناه، بلا تغيير سلوك) وcanReadEnf (061) الذي كان يكتفي بأيّ مفتاح قراءةٍ محمول
    (backup.view …) فيقرأ مديرُ الإدارة ومديرُ الفرع قيمةَ صفحةٍ خارج سقف الإدارة أو وحدةٍ مطفأة. */
 function resOnCeiling(A, d, R) {
+  if (A && A.u && A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
   var own = Array.isArray(R.cap) ? R.cap : (R.cap ? [R.cap] : []);
   if (R.capAdd) own = own.concat([R.capAdd]);
   if (!own.length) return true;
@@ -23840,6 +23850,7 @@ function imgWriteOk(A, k) {
   var R8 = resOf(k); if (!R8 || R8.scope === 'device') return false;
   var P8 = parseKey(k);
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
+  if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
   if (!deptInScope(A, P8.dept)) return false;
   if (R8.rule) return imgDeptWriter(A, P8.dept);
   return authorize(A, k, 'edit').ok || authorize(A, k, 'add').ok || authorize(A, k, 'del').ok;
@@ -25783,6 +25794,7 @@ function enfHeld0(A, d, key) {
   if (!e || e.status !== 'active') return false;                         /* محجوزٌ أو مجهول: Default Deny */
   if (e.grant === 'self') return true;                                    /* قواعدُ الذات تُطبَّق تلقائياً — بنطاق Own في المحرّك */
   var sup = u.role === 'super';
+  if (sup) return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */ /* المفتاحُ المحجوز أو المجهول يبقى منعاً أعلاه: ليس صلاحيةً بل آليةٌ غيرُ مبنية */
   if (ix.superOnly[key]) return sup;
   /* AD-7 (F01): مفتاحُ دور الإدارة (role:mgr) على وحدة بيانات وحدها — ومديرُ النظام معهم */
   if (e.grant === 'role') return ix.needMgr[key] ? (!!d && isUnitId(A, d) && isMgrOf(A, d)) : sup;
@@ -26362,6 +26374,7 @@ function enfImgWriteOk(A, k) {
   var R8 = resOf(k); if (!R8 || R8.scope === 'device') return false;
   var P8 = parseKey(k);
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
+  if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
   if (!deptInScope(A, P8.dept)) return false;
   if (R8.rule) return enfAnyWriterDept(A, P8.dept, true);   /* V7-E: سؤالُ صورة — 057 */
   return enfImgResWriter(A, P8.dept, resName(k));   /* V7-D: المشتقّةُ من field.view ليست كتابةَ مورد الصورة */

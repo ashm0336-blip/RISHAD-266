@@ -126,7 +126,8 @@ test('the cases the old module branches got wrong are now the engine answer', ()
   assert.ok(Object.keys(REF.gm1).length > 3, 'a general manager inherits the ceiling where it has no own sheet');
   assert.deepEqual([REF.dm2.tasks, REF.dm2.irshad], [['add', 'view'], ['view']], 'an explicit own sheet is applied (its pages, with their containers)');
   assert.ok(Object.keys(REF.dm2).length < Object.keys(REF.dm1).length && !REF.dm2.emps, 'and it is narrower than the unit ceiling');
-  assert.ok(!REF.su.links && !REF.dm1.links, 'a page switched off at platform level shows nothing for anyone');
+  assert.ok(!REF.dm1.links, 'a page switched off at platform level shows nothing for a manager');
+  assert.ok(REF.su.links && REF.su.links.length, 'V7 · د1-ج (قرار صاحب المنصة): the platform administrator is not limited by a page switched off (was: nothing for anyone)');
   assert.deepEqual(REF.su, pagesOf(cp(SU.P.myPerms()), REG), 'the platform administrator row is myPerms itself (active unit · platform settings)');
 });
 

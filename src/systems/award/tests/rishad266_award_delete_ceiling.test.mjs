@@ -64,13 +64,12 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(!JSON.stringify(s.j).includes('TEST_ONLY'), 'ولا قيمةَ في الرفض');
     assert.equal(W.awardRows(), before, mode + ': award_* لم تتغيّر');
     assert.deepEqual(W.ids('tst_d2'), ['tstaw9']);
-    /* ضبطٌ بمدير النظام: السقفُ يحكم الجميع — super خارجَ سقف «الجائزة» يُرفض كذلك ولا يُكتب شيء (الوضعان) */
+    /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — كان يُرفض خارج السقف (القرار هـ «السقفُ يحكم الجميع»)؛
+       الآن يحذف خارج السقف في الوضعين. السقفُ يبقى حاكماً لمدير الإدارة أعلاه */
     const su = await W.del('su', 'tst_d2', 'tstaw9');
-    assert.equal(su.status, 403, mode + ' super ' + JSON.stringify(su.j));
-    assert.equal(su.j.ok, 0); assert.equal(su.j.err, 'award-denied');
-    assert.ok(!JSON.stringify(su.j).includes('TEST_ONLY'), 'ولا قيمةَ في الرفض');
-    assert.equal(W.awardRows(), before, mode + ' super: award_* لم تتغيّر');
-    assert.deepEqual(W.ids('tst_d2'), ['tstaw9']);
+    assert.equal(su.status, 200, mode + ' super ' + JSON.stringify(su.j));
+    assert.equal(su.j.ok, 1);
+    assert.deepEqual(W.ids('tst_d2'), [], mode + ' super: السجلُّ حُذف');
   });
   test(`[${mode}] (ب) داخلَ السقف بلا صلاحية حذف الجائزة (admin/import:del وحده) ⇒ 403 — حتى للسجلّ الأخير`, async () => {
     const W = await world(mode);

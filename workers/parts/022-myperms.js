@@ -9,10 +9,9 @@ var DEPT_SHEET = false;
 function myPermsOf(A, d) {
   var u = A.u;
   if (!d) return {};
-  if (u.role === 'super') {
-    var all = capAllPermsOf(A, d);
-    all.admin = ACTS_ALL.slice();
-    pgLeaves('admin').forEach(function (l) { all[l] = ACTS_ALL.slice(); });
+  if (u.role === 'super') {   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
+    var all = {};
+    PG_KEYS.forEach(function (k) { all[k] = ACTS_ALL.slice(); pgLeaves(k).forEach(function (l) { all[l] = ACTS_ALL.slice(); }); });
     return all;
   }
   if (u.role === 'gm') {

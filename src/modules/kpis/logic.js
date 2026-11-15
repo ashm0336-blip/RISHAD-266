@@ -39,6 +39,13 @@ class Component extends DCLogic {
     const i = t.filter(function (n) {
       return r[n.k];
     });
+    /* V7 · د1-ب: زرُّ «افتح لوحة المؤشرات» في الجرس يترك [الصفحة، اللوحة] في KIVO.__KPI_OPEN — يُلتقط مرّةً ويُفتح تبويبُه إن كان مسموحاً */
+    const want = KIVO.__KPI_OPEN;
+    if (want) {
+      KIVO.__KPI_OPEN = null;
+      const m = t.filter(function (x) { return x.pk === want[0] && x.sk === want[1]; })[0];
+      if (m && r[m.k]) this.state = Object.assign({}, this.state, { ktab: m.k });
+    }
     let o = this.state.ktab;
     (o && r[o]) || (o = i.length ? i[0].k : "");
     const e = { noneOn: !i.length, stripOn: i.length > 1 };

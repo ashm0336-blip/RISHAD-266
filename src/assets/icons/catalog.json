@@ -448,17 +448,9 @@
    },
    "viewBox": "0 0 24 24"
   },
-  "i-2ce9c9bd": {
-   "body": "<path d=\"{{k.icon}}\"></path>",
-   "uses": {
-    "modules/admin/view.html": 1
-   },
-   "viewBox": "0 0 24 24"
-  },
   "i-2d1e2ff8": {
    "body": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"></rect><path d=\"M16 2v4\"></path><path d=\"M8 2v4\"></path><path d=\"M3 10h18\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "modules/daily/view.html": 2,
     "modules/staff/view.html": 1,
     "systems/award/client/view.html": 3,
@@ -478,7 +470,7 @@
   "i-2ef48b8f": {
    "body": "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><path d=\"M17 8l-5-5-5 5\"></path><path d=\"M12 3v12\"></path>",
    "uses": {
-    "modules/admin/view.html": 7
+    "modules/admin/view.html": 5
    },
    "viewBox": "0 0 24 24"
   },
@@ -918,7 +910,7 @@
    "body": "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><path d=\"M7 10l5 5 5-5\"></path><path d=\"M12 15V3\"></path>",
    "uses": {
     "layouts/index.template.html": 2,
-    "modules/admin/view.html": 5,
+    "modules/admin/view.html": 4,
     "modules/dreport/view.html": 1,
     "modules/employees/view.html": 1,
     "modules/plan/view.html": 2,
@@ -1718,7 +1710,7 @@
    "body": "<path d=\"M3 6h18\"></path><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"></path><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"></path>",
    "uses": {
     "layouts/index.template.html": 1,
-    "modules/admin/view.html": 2,
+    "modules/admin/view.html": 1,
     "modules/daily/view.html": 6,
     "modules/employees/view.html": 7,
     "modules/plan/view.html": 13,
@@ -1745,7 +1737,7 @@
    "body": "<path d=\"M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"></path><path d=\"M12 9v4\"></path><path d=\"M12 17h.01\"></path>",
    "uses": {
     "layouts/index.template.html": 2,
-    "modules/admin/view.html": 5,
+    "modules/admin/view.html": 4,
     "modules/employees/view.html": 2
    },
    "viewBox": "0 0 24 24"
@@ -1983,7 +1975,6 @@
   "i-aac19824": {
    "body": "<path d=\"M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"></path><path d=\"M3 3v5h5\"></path><path d=\"M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16\"></path><path d=\"M16 16h5v5\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "modules/daily/view.html": 2
    },
    "viewBox": "0 0 24 24"
@@ -2636,7 +2627,7 @@
   "i-de4e6997": {
    "body": "<path d=\"M5 12h14\"></path><path d=\"M12 5v14\"></path>",
    "uses": {
-    "modules/admin/view.html": 4,
+    "modules/admin/view.html": 3,
     "modules/daily/view.html": 1,
     "modules/employees/view.html": 8,
     "modules/plan/view.html": 3,

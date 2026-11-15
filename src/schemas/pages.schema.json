@@ -16,7 +16,7 @@
  "$defs": {
   "key": {"type": "string", "pattern": "^[a-z][A-Za-z0-9]*$"},
   "req": {"type": "object", "required": ["for", "on"], "additionalProperties": false, "properties": {"for": {"type": "string", "pattern": "^[a-z][A-Za-z0-9]*/[a-z][A-Za-z0-9]*$"}, "on": {"type": "string", "pattern": "^(lens:)?[a-z][A-Za-z0-9]*$"}, "kind": {"enum": ["perm", "lens", "code"]}}},
-  "sub": {"type": "object", "required": ["key", "name"], "additionalProperties": false, "properties": {"key": {"$ref": "#/$defs/key"}, "name": {"type": "string", "minLength": 1}, "offPage": {"type": "boolean"}}},
+  "sub": {"type": "object", "required": ["key", "name"], "additionalProperties": false, "properties": {"noTab": {"type": "boolean"}, "key": {"$ref": "#/$defs/key"}, "name": {"type": "string", "minLength": 1}, "offPage": {"type": "boolean"}}},
   "tab": {"type": "object", "required": ["key", "name"], "additionalProperties": false, "properties": {"key": {"$ref": "#/$defs/key"}, "name": {"type": "string", "minLength": 1}, "offPage": {"type": "boolean"}}},
   "page": {"type": "object", "required": ["key", "nav", "name"], "additionalProperties": false,
    "properties": {"key": {"$ref": "#/$defs/key"}, "nav": {"$ref": "#/$defs/key"}, "name": {"type": "string", "minLength": 1}, "under": {"$ref": "#/$defs/key"}, "tabLabel": {"type": "string"},

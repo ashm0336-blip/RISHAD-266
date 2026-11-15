@@ -1,6 +1,7 @@
 /* RISHAD-266 · browser acceptance — the platform administrator (super) and the selected department/section.
    Required: selecting a unit changes only the data shown; super's identity and page access do not change, while the server keeps
-   every data-integrity control — including the approved ceiling on writes (decision هـ: «السقفُ يحكم الجميع»).
+   every data-integrity control. V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — كان «السقفُ يحكم الجميع» (القرار هـ)
+   فكانت كتابتُه خارج السقف ممنوعة؛ الآن يكتب في كل وحدة. ما يخصّ مدير الإدارة والموظف (الاختبار الثاني) لم يتغيّر.
    Root cause fixed (client, 331 myPerms): super's page set was the selected unit's ceiling, exactly as for that unit's own account,
    so in a unit with a narrow ceiling super lost even the view of its pages (the server already reads everything for super).
    Lab: TEST_ONLY_B ceiling = ['tasks'], section TEST_ONLY_A_S1 ceiling = [] (own). TEST_ONLY data, no network. */
@@ -30,7 +31,7 @@ async function switchTo(s, d) { const ok = await s.page.evaluate((d) => KIVO.Bas
   if (await s.page.evaluate(() => /^#\/sysadmin/.test(location.hash))) { await s.page.evaluate(() => { location.hash = '#/profile'; }); await s.page.waitForTimeout(2500); }
   return ok; }
 
-test('super: switching unit changes the data shown, not identity or page access; writes stay under the ceiling', { timeout: 300000 }, async () => {
+test('super: switching unit changes the data shown, not identity or page access; writes are offered in every unit (D1-c)', { timeout: 300000 }, async () => {
   const { lab } = await narrowWorld();
   const b = await chromium.launch();
   try {
@@ -50,17 +51,18 @@ test('super: switching unit changes the data shown, not identity or page access;
       assert.deepEqual(per[d].vis.slice().sort(), visA, 'visible pages for super in ' + d + ' equal those in A');
       assert.equal(per[d].nav.filter((n) => n.gone).length, 0, 'no page is hidden from super in ' + d);
       assert.ok(per[d].nav.filter((n) => n.out).length >= 3, 'pages outside ' + d + "'s ceiling are shown dimmed (out), still openable");
-      assert.equal(per[d].empsAdd, false, 'no employee write offered outside the ceiling of ' + d);
+      assert.equal(per[d].empsAdd, true, 'employee write offered to super outside the ceiling of ' + d + ' (D1-c)');
     }
     assert.equal(per.TEST_ONLY_A.empsAdd, true, 'inside the ceiling super keeps full actions');
     assert.ok(visA.includes('emps') && visA.includes('admin'));
-    /* B: the employees page opens through the nav and lists B's employee (view), with no add control */
+    /* B: the employees page opens through the nav and lists B's employee, with the add control (D1-c). The control is an icon
+       whose label is its title — the probe read the text only, so the former «0» held whatever the page offered; it reads the title too */
     await switchTo(s, 'TEST_ONLY_B');
     await s.page.locator('.bsb .n', { hasText: /موظفو/ }).first().click(); await s.page.waitForTimeout(3000);
-    const ev = await s.page.evaluate(() => { const m = document.querySelector('main') || document.body; return { hash: location.hash, text: m.innerText, add: [...m.querySelectorAll('button')].filter((x) => x.getBoundingClientRect().height && /إضافة موظف/.test(x.textContent)).length }; });
+    const ev = await s.page.evaluate(() => { const m = document.querySelector('main') || document.body; return { hash: location.hash, text: m.innerText, add: [...m.querySelectorAll('button')].filter((x) => x.getBoundingClientRect().height && /إضافة موظف/.test(x.textContent + ' ' + (x.getAttribute('title') || ''))).length }; });
     assert.match(ev.text, /TEST_ONLY موظف ب/, 'B employees visible to super');
-    assert.equal(ev.add, 0, 'no add-employee control outside the ceiling');
-    /* pages that hang their content on sub-pages/tabs (award · irshad · seized · planning) open with their tabs, view-only, outside the ceiling */
+    assert.ok(ev.add > 0, 'add-employee control offered to super outside the ceiling (D1-c)');
+    /* pages that hang their content on sub-pages/tabs (award · irshad · seized · planning) open with their tabs and their writes, outside the ceiling (D1-c) */
     const gates = await s.page.evaluate(() => {
       const P = KIVO.BassamPerm, out = {};
       for (const pg of P.PAGE_REG) {
@@ -73,7 +75,7 @@ test('super: switching unit changes the data shown, not identity or page access;
     for (const [pk, g] of Object.entries(gates)) {
       if (g.inCap) continue;
       assert.equal(g.seen, g.n, pk + ': every sub-page/tab is viewable outside the ceiling ' + JSON.stringify(g));
-      assert.equal(g.edit, 0, pk + ': no sub-page/tab write outside the ceiling ' + JSON.stringify(g));
+      assert.equal(g.edit, g.n, pk + ': every sub-page/tab writable by super outside the ceiling (D1-c) ' + JSON.stringify(g));
     }
     for (const [label, re] of [['جائزة', /جائزة/], ['الاسترشاد', /الاسترشاد/], ['المضبوطات', /المضبوطات/]]) {
       const item = s.page.locator('.bsb .n', { hasText: label }).first();
@@ -83,7 +85,7 @@ test('super: switching unit changes the data shown, not identity or page access;
       assert.ok(len > 120, label + ' page renders its content for super outside the ceiling (text ' + len + ')');
       assert.ok(re.test(await s.page.evaluate(() => document.title + ' ' + (document.querySelector('main') || document.body).innerText)), label);
     }
-    /* the award reference editor is a write: offered only inside the ceiling (A has award in this world; B does not) */
+    /* the award reference editor is a write: offered to super in every unit (D1-c) */
     const awSet = async () => s.page.evaluate(() => {
       for (const el of document.querySelectorAll('main [data-screen-label]')) {
         const fk = Object.keys(el).find((k) => k.indexOf('__reactFiber') === 0); let f = fk ? el[fk] : null;
@@ -93,11 +95,11 @@ test('super: switching unit changes the data shown, not identity or page access;
       return 'no-award-component';
     });
     const openAward = async () => { await s.page.locator('.bsb .n', { hasText: 'جائزة' }).first().click(); await s.page.waitForTimeout(3500); };
-    await openAward(); assert.equal(await awSet(), false, 'award reference editor not offered in B (outside the ceiling)');
+    await openAward(); assert.equal(await awSet(), true, 'award reference editor offered to super in B, outside the ceiling (D1-c)');
     await switchTo(s, 'TEST_ONLY_A'); await openAward(); assert.equal(await awSet(), true, 'award reference editor offered in A (inside the ceiling)');
-    /* server integrity: held action keys still follow each unit's ceiling (decision هـ) */
+    /* server: held action keys are the same in every unit for super — not narrowed by the ceiling (D1-c) */
     const h = await held(s.page);
-    assert.ok(h.TEST_ONLY_A > h.TEST_ONLY_B && h.TEST_ONLY_A > h.TEST_ONLY_A_S1, 'server write keys narrowed by ceiling: ' + JSON.stringify(h));
+    assert.ok(h.TEST_ONLY_A > 0 && h.TEST_ONLY_A === h.TEST_ONLY_B && h.TEST_ONLY_A === h.TEST_ONLY_A_S1, 'server write keys equal in every unit: ' + JSON.stringify(h));
     assert.deepEqual(s.errs, []);
   } finally { await b.close(); await lab.close(); }
 });
@@ -119,5 +121,37 @@ test('department manager and employee: scope selection still limited (no widenin
     assert.equal(se.empsAdd, false, 'employee gains no write');
     assert.ok(!se.vis.includes('admin'), 'employee gains no admin page');
     assert.deepEqual(m.errs.concat(e.errs), []);
+  } finally { await b.close(); await lab.close(); }
+});
+
+/* V7 · د1-ج (قرار صاحب المنصة): الوحدةُ المطفأة على مستوى المنصة (mods.off) تبقى مخفيةً من القائمة الجانبية لغير مدير المنصة،
+   وتظهر له وحده (260-bassam-plat.js). الحالتان في عالمٍ واحد: «الاسترشاد» مطفأ. */
+test('module switched off platform-wide: its sidebar link is shown to super only', { timeout: 300000 }, async () => {
+  const lab = await startLab();
+  const { env, W } = lab, DB = env.DB;
+  const rows = DB.q('SELECT v FROM kv WHERE k=?1 ORDER BY seq', 'bassam_platform_v1'), plat = rows.length ? JSON.parse(rows.map((r) => r.v).join('')) : {};
+  plat.mods = Object.assign({}, plat.mods || {}, { off: ['irshad'] });
+  await DB.batch([DB.prepare('DELETE FROM kv WHERE k=?1').bind('bassam_platform_v1'), ...W.kvPutStmts(env, 'kv', 'bassam_platform_v1', JSON.stringify(plat)),
+    DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=rev+1').bind('bassam_platform_v1')]);
+  const link = (page) => page.evaluate(() => {
+    const off = ((KIVO.BassamPlat.get().mods || {}).off || []).slice();
+    const a = document.querySelector('aside.bsb .s-nav .grp > a[data-key="irshad"]'), ctl = document.querySelector('aside.bsb .s-nav .grp > a[data-key="emps"]');
+    const shown = (e) => !!e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0;
+    return { off, link: shown(a), control: shown(ctl) };
+  });
+  const b = await chromium.launch();
+  try {
+    const s = await openAs(b, lab, LAB.superUn, LAB.superPw);
+    assert.equal(await switchTo(s, 'TEST_ONLY_A'), true);
+    const su = await link(s.page);
+    assert.deepEqual(su.off, ['irshad'], 'the module is off platform-wide');
+    assert.equal(su.control, true, 'control: the operational sidebar is rendered for super');
+    assert.equal(su.link, true, 'super sees the link of the module switched off');
+    const m = await openAs(b, lab, LAB.mgrA, LAB.pw); await m.page.waitForTimeout(2500);
+    const mg = await link(m.page);
+    assert.deepEqual(mg.off, ['irshad']);
+    assert.equal(mg.control, true, 'control: the sidebar is rendered for the manager');
+    assert.equal(mg.link, false, 'the manager does not see the link of the module switched off');
+    assert.deepEqual(s.errs.concat(m.errs), []);
   } finally { await b.close(); await lab.close(); }
 });

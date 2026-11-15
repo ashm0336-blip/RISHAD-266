@@ -32,7 +32,10 @@ const FIX = new URL('./fixtures/core02_admin_before.json', import.meta.url);
 const CAPTURE = process.env.KIVO_CORE02_CAPTURE || '';
 const SHOTS_ONLY = !!process.env.KIVO_CORE02_SHOTS_ONLY;
 const SYS_TABS = ['overview', 'sec', 'users', 'perms', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
-const DEPT_TABS = ['backup', 'oplog', 'shifts', 'ptpls', 'import'];
+const DEPT_TABS = ['backup', 'oplog', 'shifts', 'ptpls'];
+/* V7 · د1-د (تصوّرٌ معتمد): تبويبُ «استيراد بيانات» حُذف من الإعدادات — الاستيرادُ صار في «بيانات الموظفين» (ملفات ← استيراد من Excel)
+   ويغطّيه tests/browser/v7_d1d_emp_import.test.mjs. مدخلُه في اللقطة القديمة (FX.dept.import) لا يُطالَب به هنا، ويُثبَّت غيابُه. */
+const MOVED_DEPT = ['import'];
 /* The ONLY place a recorded label may change: old normalised text → new normalised text (CORE-02 display names).
    A rename applies to whole items and to the words inside an item. Add an entry only for an approved rename, never to hide a loss. */
 const RENAMES = {
@@ -394,7 +397,7 @@ if (CAPTURE) {
         try {
           s = await sess(b, lab, 'mgrA', DESKTOP, writes); s.page.setDefaultTimeout(15000);
           const rev0 = lab.revs();
-          for (const t of Object.keys(FX.dept)) {
+          for (const t of Object.keys(FX.dept).filter((t) => !MOVED_DEPT.includes(t))) {
             await s.go('#/admin/' + t, 4000);
             const states = await probes(s.page, 'dept', t), now = union(states), rec = FX.dept[t];
             assert.ok(variants(rec.selected).some((v) => states[0].selected.includes(v)), 'admin/' + t + ': opens «' + rec.selected + '» (now ' + JSON.stringify(states[0].selected) + ')');
@@ -409,6 +412,8 @@ if (CAPTURE) {
           await s.page.goto(lab.base + '/#/sysadmin/sec', { waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(4500);
           assert.doesNotMatch(await s.page.evaluate(() => location.hash), /^#\/sysadmin/, 'manager: a fresh deep link to #/sysadmin is refused');
           assert.ok(!(await s.page.evaluate(() => document.body.innerText)).includes('سياسات الأمن'), 'manager: no admin-center content on a fresh deep link');
+          /* V7 · د1-د: العنوانُ القديم لا يفتح تبويبَ استيراد، ولا أثرَ لوظيفته في الإعدادات */
+          await s.go('#/admin/import', 3000); { const r = await s.page.evaluate(() => document.body.innerText); for (const x of ['استيراد بيانات الإدارة', 'نزّل ملف الأعمدة']) assert.ok(!r.includes(x), 'admin: «' + x + '» is gone from the settings'); }
           assert.deepEqual(writes, [], 'manager: opening the settings tabs saves nothing');
           await lab.idle(); assert.equal(lab.revs(), rev0, 'manager: no stored record changed on the server');
           assert.deepEqual(s.errs, [], 'manager: no page errors');
@@ -440,7 +445,7 @@ if (CAPTURE) {
           const s = await sess(b, lab, who, view, writes); s.page.setDefaultTimeout(15000);
           try {
             await theme(s.page, th);
-            for (const t of Object.keys(rec)) {
+            for (const t of Object.keys(rec).filter((t) => scope !== 'dept' || !MOVED_DEPT.includes(t))) {
               await s.go(base + t, 3500);
               const each = async (st) => {
                 const a = await s.page.evaluate(audit), at = vn + ' ' + scope + '/' + t + (st === 'base' ? '' : ' › ' + st);

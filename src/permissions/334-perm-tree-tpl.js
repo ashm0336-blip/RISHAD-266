@@ -223,7 +223,7 @@
     bassam_seized_v1:'seized', bassam_seized_cat_v1:'seized', bassam_seized_acts_v1:'seized', bassam_seized_locs_v1:'seized', bassam_seized_jew_v1:'seized',
     bassam_award_v1:'award', bassam_award_docs_v1:'award', bassam_award_docs_v2:'award' };
   function keyCap(k){ var b = String(k || '').replace(/^bsdept:[^:]+:/, '').replace(/:.*$/, ''); return KEY_CAP[b] || ''; }
-  function keyOn(k, did){ try { var c = keyCap(k); return c ? onCap(c, did) : true; } catch (e) { return true; } }
+  function keyOn(k, did){ try { if ((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper())) return true; /* V7 · د1-ج: مدير المنصة بلا قيد */ var c = keyCap(k); return c ? onCap(c, did) : true; } catch (e) { return true; } }
   /* R188: «هل يملك المستخدمُ الحاليُّ الكتابةَ في هذا المورد؟» — من ورقته (keyCap) وأفعاله. تُسأل قبل أي كتابةٍ
      لا يطلبها المستخدم (ترحيلٌ عند الفتح · إنشاءٌ تلقائيّ) فلا تُرسل كتابةٌ يرفضها الخادم ويُعيدها برسالةٍ حمراء */
   function canW(k, act){ try { var c = keyCap(k); if (!c) return true; return can(c, act || 'edit'); } catch (e) { return true; } }
@@ -257,6 +257,7 @@
      فمن مُنح «مؤشرات التشغيل اليومي» دون «التقرير اليومي» يرى رابطَ «مؤشرات الإدارة» إلى صفحةٍ تقول «لا مؤشرات ممنوحة لك»). مصدرٌ واحد للرابط والصفحة. */
   function kpiPanelOk(pk, sk){
     try {
+      if ((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper())) return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد — اللوحاتُ كلُّها مهما كان السقفُ والعدسات */
       if (!sk) return can(pk, 'view');   /* V7 P4 · G6: لوحةُ صفحةٍ كاملة (مرجعٌ بلا «/» في refs — «مؤشرات المهام») يمنحها مفتاحُ عرض الصفحة نفسُه */
       if (!canSub(pk, sk, 'view')) return false;
       if (sk === 'kpiOcc') return onCap('zones') && onCap('dens');

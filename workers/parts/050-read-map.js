@@ -83,6 +83,7 @@ function readCapsOf(name, R) {
    KIVO_264 · QA-264-D1: القاعدةُ نفسُها للوضعين — canRead0 (أدناه، بلا تغيير سلوك) وcanReadEnf (061) الذي كان يكتفي بأيّ مفتاح قراءةٍ محمول
    (backup.view …) فيقرأ مديرُ الإدارة ومديرُ الفرع قيمةَ صفحةٍ خارج سقف الإدارة أو وحدةٍ مطفأة. */
 function resOnCeiling(A, d, R) {
+  if (A && A.u && A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
   var own = Array.isArray(R.cap) ? R.cap : (R.cap ? [R.cap] : []);
   if (R.capAdd) own = own.concat([R.capAdd]);
   if (!own.length) return true;

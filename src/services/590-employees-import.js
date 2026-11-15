@@ -182,6 +182,8 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
           denials.forEach(function (pair) { if (Array.isArray(pair[1].reasonKeys)) reasonKeys.push.apply(reasonKeys, pair[1].reasonKeys); });
           return Object.assign(fail('reason', 403), { reasonKey: denials.length ? denials[0][0] : 'bsdept:' + stamp.dept + ':bassam_employees_v1', reasonKeys: Array.from(new Set(reasonKeys.filter(function (key) { return typeof key === 'string'; }))) });
         }
+        /* V7 · د1-د: رفضٌ سببُه تكرارُ الهوية أو الجوال أو الرقم الوظيفي (emp-dup — قد يكون مع موظفٍ في وحدةٍ أخرى) يُقال بسببه، لا «صلاحيتك لا تسمح» */
+        if (response.status === 403 && denials.length && denials.every(function (pair) { return pair[1] && pair[1].why === 'emp-dup'; })) return fail('emp-dup', 403);
         var code = response.status === 401 ? 'session' : response.status === 403 ? 'forbidden' : response.status === 409 ? 'conflict' : String(value && value.err || 'invalid');
         return fail(code, response.status);
       }
@@ -280,7 +282,10 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   function summaryParts(plan, pend) {
     var parts = [];
     if (plan.added) parts.push('أُضيف ' + plan.added + ' موظف');
-    if (plan.updated) parts.push('حُدّث ' + plan.updated + ' موظف');
+    /* V7 · د1-د: الملفُ المطابق للقائمة لا يُقال عنه «حُدّث» — يُعدّ المتغيّرُ وحده، والمطابقُ يُسمّى */
+    var changed = plan.updated - (plan.same || 0);
+    if (changed > 0) parts.push('حُدّث ' + changed + ' موظف');
+    if (plan.same) parts.push(changed > 0 || plan.added ? 'بلا تغيير: ' + plan.same : 'لا تغيير — بيانات الملف مطابقة للقائمة الحالية (' + plan.same + ')');
     if (plan.skipped) parts.push('تُخطي ' + plan.skipped + ' مكرر');
     if (plan.rejected) parts.push('رُفض ' + plan.rejected + ' صف مخالف لقواعد الأرقام أو التكرار');
     if (pend.inFileDup) parts.push('تكرار داخل الملف: ' + pend.inFileDup);
@@ -335,7 +340,9 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       if (Array.isArray(warnings)) Array.from(new Set(warnings)).forEach(function (warning) { parts.push(warningText[warning] || 'اعتمد الخادم العملية مع تنبيه يحتاج مراجعة البيانات'); });
       if (!parts.length) parts.push('اعتمد الخادم الاستيراد');
       ST.pend = null; ST.snapshot = null; ST.ticket = null; ST.uncertain = false; ST.needsReview = false; host.close(); toast(parts.join(' · '), ST.plan.rejected || warnings.length ? 'warn' : 'ok');
-      try { var sync = KIVO.__BS_SRV; if (sync && sync.resync) sync.resync(false); } catch (error) {}
+      /* V7 · د1-د: المضيفُ يعرض القائمة نفسها (صفحة الموظفين) — يُعلَم عند الاعتماد وبعد إعادة القراءة ليحدّث جدوله */
+      var done9 = function () { try { if (host.done) host.done(); } catch (error) {} }; done9();
+      try { var sync = KIVO.__BS_SRV; if (sync && sync.resync) Promise.resolve(sync.resync(false)).then(done9, done9); } catch (error) {}
     } finally { ST.busy = false; notify(); }
   }
 
@@ -362,7 +369,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     const list = [...base];
     const fresh = [];
     const schedRows = [], tplRows = [];
-    let added = 0, updated = 0, skipped = 0, rejected = 0;
+    let added = 0, updated = 0, skipped = 0, rejected = 0, same = 0;   /* V7 · د1-د: same = مطابقٌ لسجله حرفاً (لا تغيير) */
     /* ═══ قواعد الأرقام تسري على الاستيراد أيضاً — وإلا صار باباً خلفياً للتكرار ═══
        الهوية والجوال: 10 أرقام أو فارغ؛ الرقم الوظيفي: 5 أو 6 أرقام أو فارغ؛ ولا
        تكرار داخل الملف نفسه ولا مع أي إدارة في الموقع. الصف المخالف يُرفض ويُعدّ. */
@@ -391,6 +398,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
         const mg = { ...list[at] };
         // كان: الخلية الفارغة تُتجاهل فلا يمكن تفريغ حقل من الملف — نميّز غياب العمود عن الخلية الفارغة
         ["name","empno","phone","type","work","gender"].forEach(k => { if (!hasCol[k]) return; if (c.blank && c.blank[k]) return; if (k === "name" && !emp[k]) return; mg[k] = emp[k] || ""; });
+        if (["name","empno","phone","type","work","gender"].every(k => String(mg[k] || "") === String(list[at][k] || ""))) same++;   /* الحقلُ الغائب والفارغ سواء */
         list[at] = mg; updated++;
         if (c.sh || c.rs || c.cs || c.muk) schedRows.push({ key: schedKey(mg), shift: c.sh, rest: c.rs, cs: c.cs, muk: c.muk });
         if (c.tpl && c.tpl !== "—") tplRows.push({ key: schedKey(mg), name: c.tpl });
@@ -403,7 +411,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     });
     // كان: وضع الاستبدال يعكس ترتيب الملف رغم أن الملف هو القائمة كاملة — العكس للإضافة فقط (محاكاة unshift)
     const finalList = mode === "replace" ? fresh.concat(list) : fresh.slice().reverse().concat(list);
-    return { finalRows: finalList, options: opts, schedule: schedRows, templates: tplRows, added: added, updated: updated, skipped: skipped, rejected: rejected };
+    return { finalRows: finalList, options: opts, schedule: schedRows, templates: tplRows, added: added, updated: updated, skipped: skipped, rejected: rejected, same: same };
   }
   /* الملتقِط: يفتح مربّع الملفات ثم يقرأ ويحضّر المرشّحين — كما كان حرفاً بحرف */
   function pickFile() {
@@ -437,7 +445,12 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
               const fileSeen = new Set();
               const cands = [];
               let inFileDup = 0, noName = 0, badLen = 0;
-              rows2.slice(hdrRow + 1).forEach(r => {
+              /* V7 · د1-د (قرار المراجع): تكرارُ الهوية أو الرقم الوظيفي أو الجوال داخل الملف نفسه يرفض الملفَّ كلَّه قبل نافذة التأكيد —
+                 القيمةُ ← أرقامُ صفوفها في الملف. الصفوفُ المتطابقة حرفاً تكرارٌ كذلك. */
+              const dupN = new Map(), dupO = new Map(), dupP = new Map();
+              const dupAdd = (mp, v, rn) => { if (!v) return; const a = mp.get(v); if (a) a.push(rn); else mp.set(v, [rn]); };
+              rows2.slice(hdrRow + 1).forEach((r, ri) => {
+                const rowNo = r.__r || (hdrRow + ri + 2);
                 /* «—» في ملفٍ صدّرته المنصة = خلية فارغة لا قيمة */
                 const g = (i) => { if (i === -1) return ""; const v = String(r[i] || "").trim(); return (v === "—" || v === "-" || v === "–") ? "" : v; };
                 const name = g(ix.name);
@@ -466,6 +479,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
                 const gender = /^ذكر/.test(gRaw) ? "ذكر" : (/^(أنثى|انثى|أنثي|انثي)/.test(gRaw) ? "أنثى" : "");
                 const emailV = g(ix.email).trim();
                 const emp = { name, nid, empno, phone, email: emailOk(emailV) ? emailV : "", type: g(ix.type) || "", work: wkNorm9(g(ix.work)), gender, eid: "e" + Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36), group: "بدون مجموعة", account: "بانتظار التفعيل", contact: "غير متوفر" };
+                dupAdd(dupN, nid, rowNo); dupAdd(dupO, String(empno || "").trim(), rowNo); dupAdd(dupP, phone, rowNo);
                 // كان: كشف التكرار داخل الملف يعتمد على الهوية وحدها فيتضاعف الكشف كله عند غيابها — مفتاح متدرّج
                 const key = empKey(emp);
                 if (key && fileSeen.has(key)) { inFileDup++; return; }
@@ -473,6 +487,9 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
                 cands.push({ emp, sh: g(ix.shift), rs: ixRestAll.map(g).filter(Boolean).join(" - "), blank: blank,
                   cs: g(ix.cs), muk: g(ix.muk), tpl: ix.tpl !== -1 ? g(ix.tpl) : "" });
               });
+              const dups = [];
+              [[dupN, "رقم الهوية"], [dupO, "الرقم الوظيفي"], [dupP, "رقم الجوال"]].forEach(pr => pr[0].forEach((rs, v) => { if (rs.length > 1) dups.push(pr[1] + " " + v + " في الصفوف " + rs.join(" و")); }));
+              if (dups.length) { toast("رُفض الملف — فيه تكرار: " + dups.slice(0, 3).join(" · ") + (dups.length > 3 ? " · و" + (dups.length - 3) + " تكراراً آخر" : "") + ". صحّح الملف ثم ارفعه من جديد — لم يُحفظ شيء.", "err"); return; }
               // كان: عند سقوط كل الصفوف لا يُذكر سبب الإسقاط — نُظهر عدد الصفوف بلا اسم
               if (!cands.length) { toast("لا توجد صفوف صالحة في الملف" + (noName ? " · " + KIVO.BassamCount(noName,"صف") + " بلا اسم" : "")); return; }
               ST.pend = { cands: cands, inFileDup: inFileDup, noName: noName, badLen: badLen, cols: { name: ix.name !== -1, empno: ix.empno !== -1, phone: ix.phone !== -1, type: ix.type !== -1, work: ix.work !== -1, gender: ix.gender !== -1, tpl: ix.tpl !== -1 },
@@ -492,7 +509,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   }
   KIVO.BassamEmpImp = {
     /* الواجهة يملكها المضيف: ask تفتح نافذة التأكيد، و close تغلقها */
-    mount: function (o) { host = { ask: (o && o.ask) || function () {}, close: (o && o.close) || function () {}, change: (o && o.change) || function () {} }; toastFn = (o && o.toast) || null; },
+    mount: function (o) { host = { ask: (o && o.ask) || function () {}, close: (o && o.close) || function () {}, change: (o && o.change) || function () {}, done: (o && o.done) || null }; toastFn = (o && o.toast) || null; },
     pick: function () { pickFile(); },
     commit: commit,
     pending: function () { return ST.pend; },
@@ -515,4 +532,360 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     curHij: curHij,
     curHijriKey: curHijriKey
   };
+})();
+
+/* ═══ V7 · د1-د: مهايئُ المضيف — قيمُ نافذة الاستيراد وأفعالُها لصفحةٍ تستضيف المحرّك (c = مكوّنُ الصفحة: state · setState · bsToast · PC · permDeny).
+   كان هذا في «الإعدادات ← استيراد بيانات» (src/modules/admin)؛ نُقل مع الاستيراد إلى «بيانات الموظفين» ووُضع هنا بجوار المحرّك
+   لا في منطق الصفحة. النصوصُ والقواعدُ كما كانت حرفاً. ═══ */
+(function () {
+  "use strict";
+  if (!KIVO.BassamEmpImp) return;
+  function impOn(t) {
+    try {
+      const e = KIVO.BassamPerm;
+      return !e || !e.on || !!e.on(t);
+    } catch (t) {
+      return !0;
+    }
+  }
+  /* حالةُ النافذة هنا لا في حالة الصفحة: الملخّصُ المعروض والخطوة. الصفحةُ تُعاد رسماً بعدّادٍ واحد (impTick). */
+  var HS = { conf: null, step: "pick" };
+  function tick(c) { c.setState({ impTick: (c.state.impTick || 0) + 1 }); }
+  function impMount(c) {
+    const t = KIVO.BassamEmpImp;
+    t &&
+      !c._impMounted &&
+      ((c._impMounted = !0),
+      t.mount({
+        ask: (t) => { HS.conf = t; HS.step = "pick"; tick(c); },
+        close: () => { HS.conf = null; HS.step = "pick"; tick(c); },
+        toast: (message, kind) => c.bsToast(message, kind || "warn"),
+        change: () => tick(c),
+        done: () => c.setState({ employees: c.loadEmp(), selected: {} }),   /* الجدولُ يُحدَّث فور الاعتماد */
+      }));
+  }
+  function impVals(c) {
+    const t = KIVO.BassamEmpImp || {
+      curHij: () => ({ y: 0, m: 0 }),
+      month: () => ({ y: 0, m: 0 }),
+      pending: () => null,
+      setMonth: () => {},
+      commit: () => {},
+      drop: () => {},
+      pick: () => {},
+    };
+    impMount(c);
+    const e = c.state,
+      r = (() => {
+        try {
+          const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
+          return Array.isArray(t) ? t.length : 0;
+        } catch (t) {
+          return 0;
+        }
+      })();
+    const V = {
+      impBusy: !!(t.status && t.status().busy),
+      impError: t.status ? t.status().error : "",
+      impNeedsReview: !!(t.status && t.status().needsReview),
+      impReviewDisabled: !!(t.status && (t.status().busy || t.status().uncertain)),
+      impCommitDisabled: !!(t.status && (t.status().busy || t.status().needsReview)),
+      impReview: () => t.review && t.review(),
+      impCanAdd: (() => {
+        try {
+          const t = KIVO.BassamPerm;
+          return !!(t && t.can && t.can("emps", "add"));
+        } catch (t) {
+          return !1;
+        }
+      })(),
+      impDenyMsg: "الاستيراد يتطلّب صلاحية الإضافة على «موظفي الإدارة»",
+      impCount: String(r),
+      impCountTxt: r ? KIVO.BassamCount(r, "موظف") + " في الإدارة الآن" : "لا موظفين في الإدارة بعد",
+      impPickDo: () => {
+        if (!c.PC("add")) return void c.permDeny();
+        (c.setState({ filesOpen: !1 }), HS.conf || t.pick());
+      },
+      impColsDo: () => (c.setState({ filesOpen: !1 }), impCols(c)),
+      ...(() => {
+        const s = HS.conf;
+        if (!s)
+          return {
+            impConfOpen: !1,
+            impStepPick: !0,
+            impStepReplace: !1,
+            impCurCount: 0,
+            impFileCount: 0,
+            impDupCount: 0,
+            impNewCount: 0,
+            impHasCur: !0,
+            impConfTitle: "",
+            impConfSub: "",
+            impSchedOn: !1,
+            impSchedYear: "",
+            impSchedMonth: "",
+            impYearOpts: [],
+            impMonthOpts: [],
+            impSetY: () => {},
+            impSetM: () => {},
+            impSchedLock: "",
+            impSchedLockStyle: "",
+            impSchedCols: "",
+            impUpdateDesc: "",
+            impAddDesc: "",
+            impReplaceDesc: "",
+            impReplaceWarn: "",
+            stopClick: (t) => {
+              t && t.stopPropagation && t.stopPropagation();
+            },
+            impConfCancel: () => {},
+            impDoUpdate: () => {},
+            impDoAdd: () => {},
+            impAskReplace: () => {},
+            impDoReplace: () => {},
+            impBackToPick: () => {},
+          };
+        const a = t.curHij(),
+          r = t.month().y,
+          i = t.month().m,
+          n = t.pending() || {},
+          o = n.sched || {},
+          p = !!(o.shift || o.rest || o.cs || o.muk);
+        let l = !1;
+        try {
+          l = !!(KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1") || {})[r + "-" + i];
+        } catch (t) {}
+        const d = [o.shift ? "الوردية" : "", o.rest ? "أيام الراحة" : "", o.cs ? "رمز النداء" : "", o.muk ? "التكليف" : ""].filter(Boolean);
+        return {
+          impConfOpen: !0,
+          impHasCur: s.cur > 0,
+          impConfTitle: s.cur > 0 ? "يوجد موظفون مسجّلون بالفعل" : "تأكيد الاستيراد",
+          impConfSub:
+            s.cur > 0
+              ? "اختر كيف تريد التعامل مع البيانات الحالية قبل إتمام الاستيراد."
+              : "القائمة فارغة — سيُضاف من في الملف كما هو. راجع شهر الجدول الشهري أدناه أولاً.",
+          impSchedOn: p,
+          impSchedYear: String(r),
+          impSchedMonth: String(i),
+          impYearOpts: [a.y - 1, a.y, a.y + 1].map((t) => ({ v: String(t), lbl: t + " هـ" })),
+          impMonthOpts: [
+            "محرم",
+            "صفر",
+            "ربيع الأول",
+            "ربيع الآخر",
+            "جمادى الأولى",
+            "جمادى الآخرة",
+            "رجب",
+            "شعبان",
+            "رمضان",
+            "شوال",
+            "ذو القعدة",
+            "ذو الحجة",
+          ].map((t, e) => ({ v: String(e + 1), lbl: t + (a.m === e + 1 && a.y === r ? " (الجاري)" : "") })),
+          impSetY: (e) => {
+            (t.setMonth(parseInt(e.target.value, 10) || 0, t.month().m), tick(c));
+          },
+          impSetM: (e) => {
+            (t.setMonth(t.month().y, parseInt(e.target.value, 10) || 0), tick(c));
+          },
+          impSchedLock: l ? "الشهر معتمد ومقفل — لن يُكتب فيه شيء" : r === a.y && i === a.m ? "الشهر الجاري" : "شهر غير الجاري",
+          impSchedLockStyle:
+            "font-size:10px;font-weight:700;border-radius:9999px;padding:4px 10px;white-space:nowrap;border:1px solid " +
+            (l
+              ? "rgba(220,38,38,0.35);background:var(--bg-a22038380p07);color:var(--fg-xb91c1c)"
+              : "rgba(4,120,87,0.3);background:var(--bg-a4120870p07);color:var(--fg-x047857)"),
+          impSchedCols:
+            (impOn("staff")
+              ? "الأعمدة التي وجدها في ملفك وستذهب إلى هذا الشهر: " +
+                (d.length ? d.join(" · ") : "لا شيء") +
+                ". أما بقية الأعمدة فتذهب إلى سجل الموظف نفسه ولا يمسّها اختيار الشهر."
+              : "أعمدة الجدول التي وجدها في ملفك (" +
+                (d.length ? d.join(" · ") : "لا شيء") +
+                ") لن تُكتب — الجدول الشهري غير مفعّل في هذه الإدارة. أما بقية الأعمدة فتذهب إلى سجل الموظف نفسه.") +
+            ((n.derived || []).length ? " ولن تُستورد أعمدةٌ محسوبةٌ في المنصة: " + n.derived.map((t) => t.t).join(" · ") + "." : "") +
+            ((n.unknown || []).length ? " وأعمدةٌ غير معروفة ستُتجاهل: " + n.unknown.join(" · ") + "." : ""),
+          impStepPick: "replace" !== HS.step,
+          impStepReplace: "replace" === HS.step,
+          impCurCount: s.cur,
+          impFileCount: s.file,
+          impDupCount: s.dup,
+          impNewCount: s.fresh,
+          impUpdateDesc:
+            "يُحدَّث " +
+            KIVO.BassamCount(s.dup, "موظف|موجود") +
+            " ببيانات الملف (المطابقة برقم الهوية، فإن غاب فبالرقم الوظيفي، فإن غاب فبالاسم مع الجوال)، ويُضاف " +
+            KIVO.BassamCount(s.fresh, "موظف|جديد") +
+            ". لا يُحذف أحد.",
+          impAddDesc:
+            "يُضاف " +
+            KIVO.BassamCount(s.fresh, "موظف|جديد") +
+            " فقط، ويُترك " +
+            KIVO.BassamCount(s.dup, "موظف|موجود") +
+            " " +
+            KIVO.BassamCount.agr(s.dup, "كما هو", "كما هما", "كما هم") +
+            " دون أي تعديل.",
+          impReplaceDesc:
+            "يُحذف " +
+            KIVO.BassamCount(s.cur, "موظف") +
+            " من القائمة الحالية ثم تُستورد بيانات الملف (" +
+            KIVO.BassamCount(s.file, "موظف") +
+            ") من جديد" +
+            (impOn("staff") ? "، ويُبنى الجدول الشهري " + KIVO.BassamCount.agr(s.file, "له", "لهما", "لهم") + " من الصفر." : "."),
+          impReplaceWarn:
+            "سيُحذف " +
+            KIVO.BassamCount(s.cur, "موظف") +
+            " من هذه الإدارة نهائياً وتحل " +
+            KIVO.BassamCount.agr(s.cur, "محله", "محلهما", "محلهم") +
+            " بيانات الملف (" +
+            KIVO.BassamCount(s.file, "موظف") +
+            ")، وتُنظّف المنصة من كل " +
+            KIVO.BassamCount.agr(s.cur, "أثره", "أثرهما", "أثرهم") +
+            ": " +
+            [
+              impOn("staff") ? "الجدول الشهري بكل أشهره" : "",
+              impOn("dreport") ? "التقارير اليومية بكل أيامها ودفاتر استئذاناتها" : "",
+              "تسكينات الخطة التشغيلية والجولات اليومية",
+              "المهام المسندة",
+              "حسابات الدخول والصلاحيات",
+              impOn("emps/custody") ? "حركات العهد" : "",
+              impOn("award") ? "ترشيحات التميز" : "",
+            ]
+              .filter(Boolean)
+              .join("، و") +
+            (impOn("staff") ? " — ويُنشأ جدول الشهر من جديد مسودة مفتوحة غير معتمدة." : ".") +
+            " لا يمكن التراجع.",
+          stopClick: (t) => {
+            t && t.stopPropagation && t.stopPropagation();
+          },
+          impConfCancel: () => {
+            if (!t.pending()) { HS.conf = null; HS.step = "pick"; return void tick(c); }
+            if (t.drop() !== false) { HS.conf = null; HS.step = "pick"; tick(c); c.bsToast("أُلغي الاستيراد — لم يتغيّر شيء"); }
+          },
+          impDoUpdate: () => t.commit("update"),
+          impDoAdd: () => t.commit("add"),
+          impAskReplace: () => { if (!(t.status && (t.status().busy || t.status().uncertain))) { HS.step = "replace"; tick(c); } },
+          impBackToPick: () => { if (!(t.status && (t.status().busy || t.status().uncertain))) { HS.step = "pick"; tick(c); } },
+          impDoReplace: () => t.commit("replace"),
+        };
+      })(),
+    };
+    impPaint(V, !!c.PC("add"));
+    return null;
+  }
+  /* ═══ V7 · د1-د: نافذةُ التأكيد يرسمها هذا الملف في حاملٍ فارغ بالصفحة ([data-emp-imp-host]) — كان ترميزُها في view.html للصفحة فنُقل هنا
+     (سقفُ حجم صفحة الموظفين). النصوصُ والأنماطُ كما كانت؛ البطاقاتُ الأربع شبكةٌ: أربعٌ في صفّ، واثنتان في صفّ على الجوال. ═══ */
+  var IC = {
+    warn: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>',
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path>',
+    sync: '<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 16h5v5"></path>',
+    plus: '<path d="M5 12h14"></path><path d="M12 5v14"></path>',
+    bin: '<path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>'
+  };
+  function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function svg(k, n, join) { return '<svg width="' + n + '" height="' + n + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"' + (join ? ' stroke-linejoin="round"' : "") + ">" + IC[k] + "</svg>"; }
+  var CSS = ".ei-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:16px}@media (max-width:560px){.ei-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
+    ".ei-card{min-width:0;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px}" +
+    ".ei-opt{text-align:right;border-radius:14px;padding:13px 14px;cursor:pointer;background:var(--bg-xffffff);display:flex;align-items:flex-start;gap:11px;transition:all .15s}" +
+    ".ei-u{border:1px solid var(--bd-xe1e1e1)}.ei-u:hover{border-color:var(--bd-xb99751);background:var(--bg-a185151810p05)}" +
+    ".ei-a{border:1px solid var(--bd-xe1e1e1)}.ei-a:hover{border-color:var(--bd-x0891b2);background:var(--bg-a81451780p05)}" +
+    ".ei-r{border:1px solid var(--bd-a23968680p35)}.ei-r:hover{border-color:var(--bd-xdc2626);background:var(--bg-a23968680p05)}" +
+    ".ei-b{height:36px;padding:0 16px;border-radius:10px;font-size:12.5px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif}.ei-b:hover{background:var(--bg-xf5f5f5)}" +
+    ".ei-sel{height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 9px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:600;color:var(--fg-x141414);background:var(--bg-xffffff);cursor:pointer;outline:none}";
+  function impHtml(V) {
+    var card = function (lbl, val, col) { return '<div class="ei-card"><div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">' + lbl + '</div><div style="font-size:17px;font-weight:600;color:var(--fg-' + col + ')">' + esc(val) + "</div></div>"; };
+    var opt = function (key, cls, act, icoBg, icoFg, ico, title, desc) {
+      return '<div data-imp="' + key + '" data-ei="' + act + '" class="ei-opt ' + cls + '"><div style="width:34px;height:34px;border-radius:10px;background:var(--bg-' + icoBg + ");color:var(--fg-" + icoFg + ');display:flex;align-items:center;justify-content:center;flex-shrink:0">' + svg(ico, 17, 1) +
+        '</div><div style="flex:1;min-width:0">' + title + '<div style="font-size:11px;color:var(--fg-x53565a);line-height:1.7">' + esc(desc) + "</div></div></div>";
+    };
+    var sel = function (act, cur, list) { return '<select data-ei="' + act + '" class="ei-sel">' + list.map(function (o) { return '<option value="' + esc(o.v) + '"' + (String(o.v) === String(cur) ? " selected" : "") + ">" + esc(o.lbl) + "</option>"; }).join("") + "</select>"; };
+    var h = "" +
+      '<div data-ei="impConfCancel" data-ei-self="1" style="position:fixed;inset:0;z-index:70;background:var(--bg-a0000p5);display:flex;align-items:center;justify-content:center;padding:24px">' +
+      '<div style="background:var(--bg-xffffff);border-radius:18px;box-shadow:var(--shadow-elevated);width:100%;max-width:520px;padding:24px;max-height:88vh;overflow-y:auto">' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><div style="width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--bg-xfffbeb);border:1px solid var(--bd-xfde68a);color:var(--fg-xb45309);flex-shrink:0">' + svg("warn", 22, 1) +
+      '</div><div style="flex:1;min-width:0"><h3 style="font-size:16px;font-weight:600;margin:0 0 3px">' + esc(V.impConfTitle) + '</h3><p style="font-size:11.5px;color:var(--fg-x53565a);margin:0;line-height:1.7">' + esc(V.impConfSub) + "</p></div></div>" +
+      '<div class="ei-cards">' + card("الموجود حالياً", V.impCurCount, "x141414") + card("في الملف", V.impFileCount, "x141414") + card("مطابق لسجل موجود", V.impDupCount, "xb45309") + card("جديد كلياً", V.impNewCount, "x047857") + "</div>";
+    if (V.impSchedOn) h += '<div style="border:1px solid var(--bd-a185151810p4);background:var(--bg-a185151810p05);border-radius:14px;padding:12px 14px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--fg-x8a6f35);white-space:nowrap">' + svg("cal", 15, 0) + " يُكتب الجدول الشهري في شهر</span>" +
+      sel("impSetM", V.impSchedMonth, V.impMonthOpts) + sel("impSetY", V.impSchedYear, V.impYearOpts) + '<span style="' + esc(V.impSchedLockStyle) + '">' + esc(V.impSchedLock) + "</span></div>" +
+      '<div style="font-size:10.5px;font-weight:400;color:var(--fg-x94a3b8);margin-top:8px;line-height:1.9">' + esc(V.impSchedCols) + "</div></div>";
+    if (V.impError) h += '<p role="alert" style="color:var(--danger-text);font-size:12px">' + esc(V.impError) + "</p>";
+    if (V.impBusy) h += '<p role="status">جارٍ تأكيد العملية مع الخادم…</p>';
+    if (V.impNeedsReview) h += '<button data-ei="impReview"' + (V.impReviewDisabled ? " disabled" : "") + ' class="ei-b" style="height:38px;background:var(--bg-surface);color:var(--text-secondary);border:1px solid var(--border-default)">مراجعة بيانات الإدارة الحالية</button>';
+    if (V.impStepPick) h += '<div style="display:flex;flex-direction:column;gap:8px">' +
+      (V.impHasCur ? opt("update", "ei-u", "impDoUpdate", "a185151810p12", "x9a7e40", "sync", '<div style="font-size:13px;font-weight:600;margin-bottom:3px">تحديث ودمج <span style="font-size:9.5px;font-weight:400;color:var(--fg-x9a7e40);background:var(--bg-a185151810p12);border-radius:6px;padding:2px 6px;margin-right:4px">موصى به</span></div>', V.impUpdateDesc) : "") +
+      opt("add", "ei-a", "impDoAdd", "a81451780p12", "x0891b2", "plus", '<div style="font-size:13px;font-weight:600;margin-bottom:3px">إضافة الجديد فقط</div>', V.impAddDesc) +
+      (V.impHasCur ? opt("askrep", "ei-r", "impAskReplace", "xfef2f2", "xdc2626", "bin", '<div style="font-size:13px;font-weight:600;margin-bottom:3px;color:var(--fg-xdc2626)">حذف الكل واستبدالهم بالملف</div>', V.impReplaceDesc) : "") +
+      '</div><div style="display:flex;justify-content:flex-start;margin-top:14px"><button data-ei="impConfCancel" class="ei-b">إلغاء الاستيراد</button></div>';
+    if (V.impStepReplace) h += '<div style="background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);border-radius:14px;padding:14px"><div style="font-size:13px;font-weight:600;color:var(--fg-xdc2626);margin-bottom:5px">تأكيد الحذف والاستبدال</div>' +
+      '<p style="font-size:11.5px;color:var(--fg-x53565a);line-height:1.9;margin:0 0 12px">' + esc(V.impReplaceWarn) + '</p><div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button data-ei="impDoReplace"' + (V.impCommitDisabled ? " disabled" : "") + ' class="ei-b" style="background:var(--danger);color:var(--text-on-fill);border:0">نعم، احذف واستبدل</button><button data-ei="impBackToPick" class="ei-b">رجوع</button></div></div>';
+    return h + "</div></div>";
+  }
+  IC.up = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5"></path><path d="M12 3v12"></path>';
+  IC.down = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path>';
+  /* بندا قائمة «ملفات» وزرُّ الحالة الفارغة — بشكل البنود والزرّ المجاورة حرفاً (كان ترميزُها في الصفحة) */
+  function menuHtml() {
+    var it = function (key, act, bg, ico, t, d) {
+      return '<div data-ei="' + act + '" data-emp-imp="' + key + '" class="ei-mi" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s">' +
+        '<span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-' + bg + ');color:var(--fg-x8a6f35);flex-shrink:0">' + svg(ico, 12, 1) + '</span>' +
+        '<div style="flex:1"><div>' + t + '</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">' + d + "</div></div></div>";
+    };
+    return it("menu", "impPickDo", "a185151810p1", "up", "استيراد من Excel", "يعرض ما سيتغيّر قبل التنفيذ — دمج أو استبدال") +
+      it("cols", "impColsDo", "a185151810p06", "down", "تنزيل قالب الاستيراد", "ملف Excel بالأعمدة الصحيحة — عبّئه ثم ارفعه");
+  }
+  function emptyHtml() {
+    return '<button data-ei="impPickDo" data-emp-imp="empty" class="ei-mi" style="height:42px;padding:0 24px;border-radius:12px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p4);cursor:pointer;font-family:\'Cairo\',sans-serif;display:inline-flex;align-items:center;gap:8px">' + svg("up", 16, 1) + " استيراد من Excel</button>";
+  }
+  function impPaint(V, canAdd) {
+    var run = function () {
+      if (!document.getElementById("ei-css")) { var st = document.createElement("style"); st.id = "ei-css"; st.textContent = CSS + ".ei-mi:hover{background:var(--bg-a185151810p06)!important}[data-ei-s]{display:contents;font-style:normal}"; document.head.appendChild(st); }
+      var all = document.querySelectorAll("[data-ei-s]");
+      for (var i = 0; i < all.length; i++) (function (el) {
+        var k = el.getAttribute("data-ei-s");
+        el.__v = V;
+        if (!el.__on) {
+          el.__on = 1;
+          el.addEventListener("click", function (ev) {
+            var t = ev.target && ev.target.closest ? ev.target.closest("[data-ei]") : null; if (!t || t.tagName === "SELECT" || t.disabled) return;
+            if (t.getAttribute("data-ei-self") && ev.target !== t) return;   /* الخلفيةُ تُلغي بالنقر عليها هي لا على ما فوقها */
+            var f = el.__v && el.__v[t.getAttribute("data-ei")]; if (f) f(ev);
+          });
+          el.addEventListener("change", function (ev) { var t = ev.target; if (!t || t.tagName !== "SELECT") return; var f = el.__v && el.__v[t.getAttribute("data-ei")]; if (f) f(ev); });
+        }
+        var h = k === "conf" ? (V.impConfOpen ? impHtml(V) : "") : !canAdd ? "" : k === "menu" ? menuHtml() : emptyHtml();
+        if (el.__h !== h) { el.__h = h; el.innerHTML = h; }
+      })(all[i]);
+    };
+    run(); (window.requestAnimationFrame || setTimeout)(run);
+  }
+  function impCols(c) {
+    const t = KIVO.BassamEmpImp,
+      e =
+        t && t.colTitles
+          ? t.colTitles()
+          : [
+              "اسم الموظف",
+              "الجنس",
+              "رقم الهوية",
+              "الرقم الوظيفي",
+              "رقم الجوال",
+              "البريد الإلكتروني",
+              "نوع التوظيف",
+              "نوع العمل",
+              "الوردية",
+              "أيام الراحة",
+              "رمز النداء",
+              "التكليف",
+            ],
+      s = e.map(() => "");
+    try {
+      KIVO.BassamXLSX
+        ? (KIVO.BassamXLSX.download([e, s.slice(), s.slice(), s.slice()], "أعمدة-استيراد-الموظفين.xlsx"),
+          c.bsToast("نُزّل قالبُ الاستيراد — عبّئ صفوفه ثم ارفعه من «ملفات ← استيراد من Excel»", "ok"))
+        : c.bsToast("تعذّر إنشاء ملف Excel في هذا المتصفح", "warn");
+    } catch (t) {
+      c.bsToast("تعذّر إنشاء ملف Excel", "warn");
+    }
+  }
+  KIVO.BassamEmpImp.hostVals = impVals;
 })();

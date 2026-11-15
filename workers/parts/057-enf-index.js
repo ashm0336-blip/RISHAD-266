@@ -155,6 +155,7 @@ function enfHeld0(A, d, key) {
   if (!e || e.status !== 'active') return false;                         /* محجوزٌ أو مجهول: Default Deny */
   if (e.grant === 'self') return true;                                    /* قواعدُ الذات تُطبَّق تلقائياً — بنطاق Own في المحرّك */
   var sup = u.role === 'super';
+  if (sup) return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */ /* المفتاحُ المحجوز أو المجهول يبقى منعاً أعلاه: ليس صلاحيةً بل آليةٌ غيرُ مبنية */
   if (ix.superOnly[key]) return sup;
   /* AD-7 (F01): مفتاحُ دور الإدارة (role:mgr) على وحدة بيانات وحدها — ومديرُ النظام معهم */
   if (e.grant === 'role') return ix.needMgr[key] ? (!!d && isUnitId(A, d) && isMgrOf(A, d)) : sup;
