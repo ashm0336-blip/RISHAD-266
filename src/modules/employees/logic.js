@@ -1878,6 +1878,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   /* ═══ V7 · د1-د: استيرادُ الموظفين من Excel في صفحة «بيانات الموظفين» (كان في «الإعدادات ← استيراد بيانات»).
      قيمُ النافذة وأفعالُها في مهايئ المضيف داخل المحرّك نفسه (590 · KIVO.BassamEmpImp.hostVals) — الصفحةُ تحمل النافذةَ وهذا السطر. ═══ */
+  impDone() {
+    this.setState({ employees: this.loadEmp(), selected: {} });
+  }
   impVals() {
     const t = KIVO.BassamEmpImp;
     return t && t.hostVals ? t.hostVals(this) : { impConfOpen: !1, impPickDo: () => {}, impColsDo: () => {} };

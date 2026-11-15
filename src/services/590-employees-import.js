@@ -182,6 +182,8 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
           denials.forEach(function (pair) { if (Array.isArray(pair[1].reasonKeys)) reasonKeys.push.apply(reasonKeys, pair[1].reasonKeys); });
           return Object.assign(fail('reason', 403), { reasonKey: denials.length ? denials[0][0] : 'bsdept:' + stamp.dept + ':bassam_employees_v1', reasonKeys: Array.from(new Set(reasonKeys.filter(function (key) { return typeof key === 'string'; }))) });
         }
+        /* V7 · د1-د: رفضٌ سببُه تكرارُ الهوية أو الجوال أو الرقم الوظيفي (emp-dup — قد يكون مع موظفٍ في وحدةٍ أخرى) يُقال بسببه، لا «صلاحيتك لا تسمح» */
+        if (response.status === 403 && denials.length && denials.every(function (pair) { return pair[1] && pair[1].why === 'emp-dup'; })) return fail('emp-dup', 403);
         var code = response.status === 401 ? 'session' : response.status === 403 ? 'forbidden' : response.status === 409 ? 'conflict' : String(value && value.err || 'invalid');
         return fail(code, response.status);
       }
@@ -280,7 +282,10 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   function summaryParts(plan, pend) {
     var parts = [];
     if (plan.added) parts.push('أُضيف ' + plan.added + ' موظف');
-    if (plan.updated) parts.push('حُدّث ' + plan.updated + ' موظف');
+    /* V7 · د1-د: الملفُ المطابق للقائمة لا يُقال عنه «حُدّث» — يُعدّ المتغيّرُ وحده، والمطابقُ يُسمّى */
+    var changed = plan.updated - (plan.same || 0);
+    if (changed > 0) parts.push('حُدّث ' + changed + ' موظف');
+    if (plan.same) parts.push(changed > 0 || plan.added ? 'بلا تغيير: ' + plan.same : 'لا تغيير — بيانات الملف مطابقة للقائمة الحالية (' + plan.same + ')');
     if (plan.skipped) parts.push('تُخطي ' + plan.skipped + ' مكرر');
     if (plan.rejected) parts.push('رُفض ' + plan.rejected + ' صف مخالف لقواعد الأرقام أو التكرار');
     if (pend.inFileDup) parts.push('تكرار داخل الملف: ' + pend.inFileDup);
@@ -335,7 +340,9 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       if (Array.isArray(warnings)) Array.from(new Set(warnings)).forEach(function (warning) { parts.push(warningText[warning] || 'اعتمد الخادم العملية مع تنبيه يحتاج مراجعة البيانات'); });
       if (!parts.length) parts.push('اعتمد الخادم الاستيراد');
       ST.pend = null; ST.snapshot = null; ST.ticket = null; ST.uncertain = false; ST.needsReview = false; host.close(); toast(parts.join(' · '), ST.plan.rejected || warnings.length ? 'warn' : 'ok');
-      try { var sync = KIVO.__BS_SRV; if (sync && sync.resync) sync.resync(false); } catch (error) {}
+      /* V7 · د1-د: المضيفُ يعرض القائمة نفسها (صفحة الموظفين) — يُعلَم عند الاعتماد وبعد إعادة القراءة ليحدّث جدوله */
+      var done9 = function () { try { if (host.done) host.done(); } catch (error) {} }; done9();
+      try { var sync = KIVO.__BS_SRV; if (sync && sync.resync) Promise.resolve(sync.resync(false)).then(done9, done9); } catch (error) {}
     } finally { ST.busy = false; notify(); }
   }
 
@@ -362,7 +369,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     const list = [...base];
     const fresh = [];
     const schedRows = [], tplRows = [];
-    let added = 0, updated = 0, skipped = 0, rejected = 0;
+    let added = 0, updated = 0, skipped = 0, rejected = 0, same = 0;   /* V7 · د1-د: same = مطابقٌ لسجله حرفاً (لا تغيير) */
     /* ═══ قواعد الأرقام تسري على الاستيراد أيضاً — وإلا صار باباً خلفياً للتكرار ═══
        الهوية والجوال: 10 أرقام أو فارغ؛ الرقم الوظيفي: 5 أو 6 أرقام أو فارغ؛ ولا
        تكرار داخل الملف نفسه ولا مع أي إدارة في الموقع. الصف المخالف يُرفض ويُعدّ. */
@@ -391,6 +398,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
         const mg = { ...list[at] };
         // كان: الخلية الفارغة تُتجاهل فلا يمكن تفريغ حقل من الملف — نميّز غياب العمود عن الخلية الفارغة
         ["name","empno","phone","type","work","gender"].forEach(k => { if (!hasCol[k]) return; if (c.blank && c.blank[k]) return; if (k === "name" && !emp[k]) return; mg[k] = emp[k] || ""; });
+        if (["name","empno","phone","type","work","gender"].every(k => String(mg[k] || "") === String(list[at][k] || ""))) same++;   /* الحقلُ الغائب والفارغ سواء */
         list[at] = mg; updated++;
         if (c.sh || c.rs || c.cs || c.muk) schedRows.push({ key: schedKey(mg), shift: c.sh, rest: c.rs, cs: c.cs, muk: c.muk });
         if (c.tpl && c.tpl !== "—") tplRows.push({ key: schedKey(mg), name: c.tpl });
@@ -403,7 +411,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     });
     // كان: وضع الاستبدال يعكس ترتيب الملف رغم أن الملف هو القائمة كاملة — العكس للإضافة فقط (محاكاة unshift)
     const finalList = mode === "replace" ? fresh.concat(list) : fresh.slice().reverse().concat(list);
-    return { finalRows: finalList, options: opts, schedule: schedRows, templates: tplRows, added: added, updated: updated, skipped: skipped, rejected: rejected };
+    return { finalRows: finalList, options: opts, schedule: schedRows, templates: tplRows, added: added, updated: updated, skipped: skipped, rejected: rejected, same: same };
   }
   /* الملتقِط: يفتح مربّع الملفات ثم يقرأ ويحضّر المرشّحين — كما كان حرفاً بحرف */
   function pickFile() {
@@ -492,7 +500,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   }
   KIVO.BassamEmpImp = {
     /* الواجهة يملكها المضيف: ask تفتح نافذة التأكيد، و close تغلقها */
-    mount: function (o) { host = { ask: (o && o.ask) || function () {}, close: (o && o.close) || function () {}, change: (o && o.change) || function () {} }; toastFn = (o && o.toast) || null; },
+    mount: function (o) { host = { ask: (o && o.ask) || function () {}, close: (o && o.close) || function () {}, change: (o && o.change) || function () {}, done: (o && o.done) || null }; toastFn = (o && o.toast) || null; },
     pick: function () { pickFile(); },
     commit: commit,
     pending: function () { return ST.pend; },
@@ -541,6 +549,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
         close: () => c.setState({ impConf: null, impStep: "pick" }),
         toast: (message, kind) => c.bsToast(message, kind || "warn"),
         change: () => c.setState({ impTick: (c.state.impTick || 0) + 1 }),
+        done: () => c.impDone && c.impDone(),
       }));
   }
   function impVals(c) {
