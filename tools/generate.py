@@ -65,6 +65,13 @@ def gen_pages(S):
 def main():
     S = os.path.abspath(sys.argv[sys.argv.index('--src') + 1]); check = '--check' in sys.argv
     produced = {}
+    # V7 · د2 — مقبسُ الأنظمة: الملفاتُ المحقونة من قوالب src/slots (tools/systems.py) تسبق بقيةَ التوليد، فما بعدها يقرأ منها.
+    # في الكتابة تُكتب أولاً؛ وفي --check تُقارن بالملتزَم مع البقية (والملتزَمُ هو ما تقرؤه المولِّداتُ التالية).
+    import systems as _SY
+    for _rel, _data in sorted(_SY.outputs(S).items()):
+        _p = os.path.join(S, '..', _rel); produced[norm(os.path.relpath(_p, S))] = _data
+        if not check and (rb(_p) if os.path.exists(_p) else None) != _data:
+            os.makedirs(os.path.dirname(_p), exist_ok=True); open(_p, 'wb').write(_data)
     produced.update(gen_registry(S)); produced.update(gen_worker(S, produced)); produced.update(gen_pages(S))
     bad = []
     for rel, data in sorted(produced.items()):
@@ -271,6 +278,13 @@ _main0 = main
 def main():
     S = os.path.abspath(sys.argv[sys.argv.index('--src') + 1]); check = '--check' in sys.argv
     produced = {}
+    # V7 · د2 — مقبسُ الأنظمة: الملفاتُ المحقونة من قوالب src/slots (tools/systems.py) تسبق بقيةَ التوليد، فما بعدها يقرأ منها.
+    # في الكتابة تُكتب أولاً؛ وفي --check تُقارن بالملتزَم مع البقية (والملتزَمُ هو ما تقرؤه المولِّداتُ التالية).
+    import systems as _SY
+    for _rel, _data in sorted(_SY.outputs(S).items()):
+        _p = os.path.join(S, '..', _rel); produced[norm(os.path.relpath(_p, S))] = _data
+        if not check and (rb(_p) if os.path.exists(_p) else None) != _data:
+            os.makedirs(os.path.dirname(_p), exist_ok=True); open(_p, 'wb').write(_data)
     produced.update(gen_registry(S)); produced.update(gen_bindings(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S)); produced.update(gen_find_engine(S)); produced.update(gen_seized_defaults(S)); produced.update(gen_award_reference_html(S))
     if os.path.exists(os.path.join(S, layout(S)['pagesManifest'])):
         mj, reg = gen_manifest(S); produced.update(mj); splice_pg(S, produced, reg)

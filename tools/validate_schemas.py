@@ -19,6 +19,12 @@ bad += check('manifests/pages.json', os.path.join(S, L['pagesManifest']), 'pages
 bad += check('styles/tokens/tokens.json', os.path.join(S, L['tokens']), 'tokens.schema.json')
 if os.path.exists(os.path.join(S, 'layout.json')): bad += check('layout.json', os.path.join(S, 'layout.json'), 'layout.schema.json')
 bad += check('blocks.json', os.path.join(S, 'blocks.json'), 'blocks.schema.json')
+# V7 · د2: system.json لكل نظامٍ حاضر (المخطط · المفتاح = المجلد · requires) — tools/systems.py
+if os.path.exists(os.path.join(SCH, 'system.schema.json')):
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import systems as _SY
+    _sb = _SY.problems(S)
+    if _sb: print('✘ systems/*/system.json: ' + ' · '.join(_sb[:5])); bad += 1
+    else: print('✔ systems/*/system.json صالح (system.schema.json) — ' + (' · '.join(d['key'] + ('←' + '+'.join(d['requires']) if d.get('requires') else '') for d in _SY.load(S)) or 'لا نظام'))
 # env.schema.json: مخطّطٌ صالح بذاته وبلا قيم
 envp = os.path.join(S, '..', 'config', 'env.schema.json') if os.path.exists(os.path.join(S, 'layout.json')) else os.path.join(S, 'config', 'env.schema.json')
 E = json.load(open(envp, encoding='utf-8'))

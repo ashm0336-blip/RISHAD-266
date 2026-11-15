@@ -1,0 +1,31 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "KIVO · src/systems/<key>/system.json — تعريفُ نظامٍ تقرؤه القاعدةُ وقتَ البناء (V7 · د2 · tools/systems.py)",
+ "type": "object", "additionalProperties": false,
+ "required": ["schema", "kind", "key", "name", "client", "server"],
+ "properties": {
+  "schema": {"const": 1}, "kind": {"const": "system"},
+  "key": {"type": "string", "pattern": "^[a-z][a-z0-9]*$"},
+  "name": {"type": "string", "minLength": 1},
+  "note": {"type": "string"},
+  "requires": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9]*$"}},
+  "client": {"type": "object", "additionalProperties": false, "required": ["slug", "component", "files"], "properties": {
+   "slug": {"type": "string"}, "component": {"type": "string"}, "files": {"type": "array", "items": {"$ref": "#/$defs/rel"}}}},
+  "server": {"type": "object", "additionalProperties": false, "required": ["parts"], "properties": {
+   "parts": {"type": "array", "items": {"oneOf": [{"$ref": "#/$defs/rel"}, {"$ref": "#/$defs/part"}]}},
+   "generated": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["part", "tool", "after", "order"], "properties": {
+    "part": {"type": "string"}, "tool": {"$ref": "#/$defs/rel"}, "what": {"type": "string"}, "after": {"type": "string"}, "order": {"type": "number"}}}},
+   "order": {"type": "string"}}},
+  "migrations": {"type": "object", "additionalProperties": false, "properties": {
+   "files": {"type": "array", "items": {"$ref": "#/$defs/rel"}}, "staysIn": {"type": "array", "items": {"$ref": "#/$defs/rel"}}, "why": {"type": "string"}}},
+  "tests": {"type": "array", "items": {"$ref": "#/$defs/rel"}},
+  "derived": {"type": "array", "items": {"$ref": "#/$defs/rel"}},
+  "sharedStaysInBase": {"type": "array", "items": {"$ref": "#/$defs/rel"}},
+  "slots": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z0-9_.\\-]+$"}, "additionalProperties": {"oneOf": [{"$ref": "#/$defs/frag"}, {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/frag"}}]}}
+ },
+ "$defs": {
+  "rel": {"type": "string", "minLength": 1, "pattern": "^[^/\\\\]"},
+  "part": {"type": "object", "additionalProperties": false, "required": ["file", "after", "order"], "properties": {"file": {"$ref": "#/$defs/rel"}, "after": {"type": "string"}, "order": {"type": "number"}}},
+  "frag": {"type": "object", "additionalProperties": false, "properties": {"order": {"type": "number"}, "text": {"type": "string"}, "file": {"$ref": "#/$defs/rel"}}}
+ }
+}
