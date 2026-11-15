@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { SRC, moduleDir } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 /* بصمةُ شريط التبويبات: display:flex · align-items:center · justify-content:center · flex-wrap:wrap · gap:8px · padding:4px 0 */
@@ -17,7 +18,7 @@ const EXPECT = { award: 1, daily: 1, dstats: 1, employees: 1, irshad: 1, plannin
    CORE-02 S7 (تغييرٌ مقصود): شريطُ «مركز إدارة رشاد» داخل الصفحة حُذف — تنقّلُه في الشريط الجانبي — فبقي شريطُ إعدادات الإدارة وحده */
 const ADM = /<div class="bs-hbar bs-tabstrip adm-tabs" role="tablist"/g;
 
-test('ES-3 · PLAN-03 · DG-08: كلُّ شريط تبويباتٍ يحمل بصمةَ التوحيد يحمل «bs-hbar bs-tabstrip» في المصدر من أول رسم', () => {
+test('ES-3 · PLAN-03 · DG-08: كلُّ شريط تبويباتٍ يحمل بصمةَ التوحيد يحمل «bs-hbar bs-tabstrip» في المصدر من أول رسم', needs('award', 'dstats', 'seized'), () => {
   const mods = JSON.parse(rd('modules/modules.json')).pages.map((p) => p.slug);
   const found = {};
   for (const m of mods) {
@@ -33,7 +34,7 @@ test('ES-3 · PLAN-03 · DG-08: كلُّ شريط تبويباتٍ يحمل بص
   assert.equal([...rd('modules/admin/view.html').matchAll(ADM)].length, 1, 'admin: شريطُ إعدادات الإدارة بالصنفين من أول رسم');
 });
 
-test('ES-3 · PLAN-03 · DG-08: الصفحاتُ المولَّدة تحمل الصنفين (generate.py) · وقواعدُ الجوال للصنف', () => {
+test('ES-3 · PLAN-03 · DG-08: الصفحاتُ المولَّدة تحمل الصنفين (generate.py) · وقواعدُ الجوال للصنف', needs('award', 'dstats', 'seized'), () => {
   assert.equal([...rd('pages/Admin.dc.html').matchAll(ADM)].length, 1, 'Admin.dc.html');
   for (const p of ['Employees', 'Planning', 'Daily Sessions', 'Irshad', 'Seized', 'Award', 'Daily Stats']) {
     const h = rd('pages/' + p + '.dc.html');

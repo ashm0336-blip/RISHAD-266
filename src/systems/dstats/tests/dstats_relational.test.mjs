@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import { parse } from 'acorn';
 import { D1Shim, ROOT } from '../../../../tests/unit/harness.mjs';
 import {world as backupWorld,backupBrowser,exportFull,seedTypedDomains,snap as backupSnapshot,until as backupUntil,copy as backupCopy} from '../../../../tests/unit/backup_review_fx.mjs';
+import { needs } from '../../../../tests/unit/harness.mjs';
 
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const cp = x => JSON.parse(JSON.stringify(x));
@@ -459,7 +460,7 @@ test('full restore entry points use the shared atomic API for relational daily s
   assert.deepEqual(backupSnapshot(B.DB), before); assert.ok(C.page._fbkPend); assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, 0); assert.deepEqual(C.writes, []);
 });
 
-test('full backup waits for actual relational reads, includes every typed domain and fails on network loss', async () => {
+test('full backup waits for actual relational reads, includes every typed domain and fails on network loss', needs('award', 'seized'), async () => {
   for (const connected of [true, false]) {
     const B = await backupWorld(); await seedTypedDomains(B, populated());
     const C = await backupBrowser(B), actualRead = C.KIVO.DailyStats.refresh; let settle;

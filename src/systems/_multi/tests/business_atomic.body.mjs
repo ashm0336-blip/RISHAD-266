@@ -1,8 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {world,clone,awardDocs,seizedDocs,snapshot,fileFrom,legacyFileFrom,seedReceipts,preimageRows,batchBounds,D1,D2,G1,IDS,EKEYS,identitySnapshot} from './business_atomic_fx.mjs';
+import { needs } from '../../../../tests/unit/harness.mjs';
 
-test('manifest3 full/dept conversion is lossless for both relational domains and explicit readonly global references',async()=>{
+test('manifest3 full/dept conversion is lossless for both relational domains and explicit readonly global references',needs('dstats'), async()=>{
  const B=await world({seed:true}),identity=identitySnapshot(B.DB);
  for(const scope of [{kind:'full'},{kind:'dept',departmentId:D1}]){
   const body=await B.body({scope}),file=legacyFileFrom(body,3),converted=await B.W.rsConvertBackup(B.env,await B.A(),file,{scope,mode:'replace',reference:{inputKeys:B.rawKeys()}});
@@ -14,7 +15,7 @@ test('manifest3 full/dept conversion is lossless for both relational domains and
  await assert.rejects(B.prepare(bad),/award-global-references-readonly/);
 });
 
-test('manifest1/2 converters preserve both legacy domains, global docs and department remap without a runtime KV write',async()=>{
+test('manifest1/2 converters preserve both legacy domains, global docs and department remap without a runtime KV write',needs('dstats'), async()=>{
  const B=await world({seed:true}),before=snapshot(B);
  for(const version of [1,2])for(const full of [true,false]){
   const scope=full?{kind:'full'}:{kind:'dept',departmentId:D1},body=await B.body({scope}),file=legacyFileFrom(body,version);
@@ -29,7 +30,7 @@ test('manifest1/2 converters preserve both legacy domains, global docs and depar
  assert.deepEqual(snapshot(B),before);
 });
 
-test('typed export requires actual read permission for every resource it returns and preserves principal/dept scope',async()=>{
+test('typed export requires actual read permission for every resource it returns and preserves principal/dept scope',needs('dstats'), async()=>{
  const B=await world({seed:true}),p=clone(B.keys.bassam_perms_v1);Object.values(p.caps).forEach(c=>c.push('award','seized'));
  p.emps[D1][EKEYS.employee1]={'award/res':['view'],'admin/backup':['view']};p.subs={...(p.subs||{}),[D1]:{...((p.subs||{})[D1]||{}),award:['new','res'],'award:tabs':['new','res']}};await B.put('bassam_perms_v1',p,true);
  const ctx=await B.W.awQueryContext(B.env,B.actor('employee1'),D1,{write:true});assert.equal(B.W.canRead(ctx.A,B.W.awKey(D1)),true);assert.equal(B.W.enfHeld(ctx.A,D1,'backup.view'),true,'Actual backup grant removes an alternate reason for denial');assert.equal(B.W.canRead(ctx.A,B.W.awKey(D1,2)),false);
@@ -39,7 +40,7 @@ test('typed export requires actual read permission for every resource it returns
  const full=await B.W.bdExport(B.env,await B.A(),new URL('http://x/export'),'awards');assert.equal(full.epoch,await B.W.rsEpoch(B.env));assert.equal(full.globalRev,await B.W.curRev(B.env));assert.ok(full.domains.some(d=>d.scope.kind==='global'));
 });
 
-test('full merge keeps existing domains/global docs and installs nonempty domains for an actually empty new department',async()=>{
+test('full merge keeps existing domains/global docs and installs nonempty domains for an actually empty new department',needs('dstats'), async()=>{
  const B=await world({seed:true}),newDept='TEST_ONLY_business_new_department',depts=JSON.parse(B.rawKeys().bassam_depts_v1).concat({id:newDept,name:'TEST_ONLY new',gid:G1}),oldAw=await B.W.awExportDomain(B.env,D1),oldSz=await B.W.szExportDomain(B.env,D1),oldGlobal=await B.W.awExportDomain(B.env,'');
  const body=await B.body({mode:'merge',keys:{bassam_depts_v1:JSON.stringify(depts)}});
  body.domains.awards=body.domains.awards.map(d=>d.scope.departmentId===newDept?B.W.awConvert(newDept,awardDocs('new')):d);
@@ -49,7 +50,7 @@ test('full merge keeps existing domains/global docs and installs nonempty domain
  assert.deepEqual(B.W.awInflate(await B.W.awExportDomain(B.env,newDept)),awardDocs('new'));assert.deepEqual(B.W.szInflate(await B.W.szExportDomain(B.env,newDept)),seizedDocs('new'));
 });
 
-test('one atomic restore replaces both typed domains, clears receipts, records full preimage and replays its ACK without a second write',async t=>{
+test('one atomic restore replaces both typed domains, clears receipts, records full preimage and replays its ACK without a second write',needs('dstats'), async t=>{
  const B=await world({seed:true});seedReceipts(B);const identity=identitySnapshot(B.DB),global=await B.W.awExportDomain(B.env,''),body=await B.body(),originalRows={};
  for(const def of B.W.bdDefinitions()){const specs={...def.tables,requests:[def.name==='awards'?'award_requests':'seized_requests']};if(def.name==='awards')specs.requestChecks=['award_request_checks'];originalRows[def.name]=Object.fromEntries(Object.entries(specs).map(([kind,[table]])=>[kind,clone(B.DB.q('SELECT * FROM '+table+' WHERE department_id=?',D1))]));}
  body.domains.awards=body.domains.awards.map(d=>d.scope.departmentId===D1?B.W.awConvert(D1,awardDocs('restored')):d);body.domains.seized=body.domains.seized.map(d=>d.scope.departmentId===D1?B.W.szConvert(D1,seizedDocs('restored')):d);
@@ -63,7 +64,7 @@ test('one atomic restore replaces both typed domains, clears receipts, records f
  assert.equal(B.DB.q('PRAGMA foreign_key_check').length,0);const duplicate=await B.commit(await B.prepare(body));assert.equal(duplicate.duplicate,1);assert.equal(duplicate.rev,ack.rev);assert.equal(mutations,1);t.diagnostic('Actual nonempty schema9 restore '+JSON.stringify(bounds));
 });
 
-test('every SQL position in the common restore batch rolls back both domains, receipt proofs, preimages, revisions and epoch',async t=>{
+test('every SQL position in the common restore batch rolls back both domains, receipt proofs, preimages, revisions and epoch',needs('dstats'), async t=>{
  const B=await world({seed:true});seedReceipts(B);const body=await B.body();body.domains.awards=body.domains.awards.map(d=>d.scope.departmentId===D1?B.W.awEmptyDomain(D1):d);body.domains.seized=body.domains.seized.map(d=>d.scope.departmentId===D1?B.W.szEmptyDomain(D1):d);
  const plan=await B.prepare(body),before=snapshot(B),original=B.DB.batch.bind(B.DB);let target=1,count=0;
  B.DB.batch=async st=>{if(!st.some(s=>s.sql.includes('INSERT INTO restore_operations')))return original(st);count=st.length;batchBounds(st);let n=0;B.DB.failIf=()=>++n===target;try{return await original(st);}finally{B.DB.failIf=null;}};
@@ -72,7 +73,7 @@ test('every SQL position in the common restore batch rolls back both domains, re
  assert.ok(count>20);t.diagnostic('Actual schema9 restore fault positions='+count);assert.equal((await B.commit(plan)).ok,1);
 });
 
-test('prepared restore rejects raw typed rows, receipt proofs and retired KV races inside its single batch',async()=>{
+test('prepared restore rejects raw typed rows, receipt proofs and retired KV races inside its single batch',needs('dstats'), async()=>{
  for(const kind of ['award-row','seized-row','award-proof','retired-child']){
   const B=await world({seed:true});seedReceipts(B);const body=await B.body();body.domains.awards=body.domains.awards.map(d=>d.scope.departmentId===D1?B.W.awEmptyDomain(D1):d);body.domains.seized=body.domains.seized.map(d=>d.scope.departmentId===D1?B.W.szEmptyDomain(D1):d);const plan=await B.prepare(body);
   if(kind==='award-row')B.DB.db.prepare('UPDATE award_records SET work_description=? WHERE department_id=?').run('TEST_ONLY concurrent',D1);
@@ -83,7 +84,7 @@ test('prepared restore rejects raw typed rows, receipt proofs and retired KV rac
  }
 });
 
-test('department wipe and delete include both typed domains and receipts while preserving global references and other departments',async()=>{
+test('department wipe and delete include both typed domains and receipts while preserving global references and other departments',needs('dstats'), async()=>{
  for(const kind of ['wipe','delete']){
   const B=await world({seed:true});await B.install('seized',D2,seizedDocs('other'));await B.install('awards',D2,awardDocs('other'));seedReceipts(B);
   const global=await B.W.awExportDomain(B.env,''),otherSz=await B.W.szExportDomain(B.env,D2),otherAw=await B.W.awExportDomain(B.env,D2),identity=identitySnapshot(B.DB),inventory=(await B.W.rsWipeInventory(B.env,await B.A(),D1,kind)).public;
@@ -95,14 +96,14 @@ test('department wipe and delete include both typed domains and receipts while p
  }
 });
 
-test('employee transition atomically cleans only removed Award nominations and leaves historical orphan, docs and Seized intact',async()=>{
+test('employee transition atomically cleans only removed Award nominations and leaves historical orphan, docs and Seized intact',needs('dstats'), async()=>{
  const B=await world(),target=B.keys['bsdept:'+D1+':bassam_employees_v1'][0],docs=awardDocs('employee');docs.records.recs=[{ekey:target.eid,name:target.name},{ekey:'TEST_ONLY_prior_orphan',name:target.name}];await B.install('awards',D1,docs);await B.install('seized',D1,seizedDocs());
  const refs=clone((await B.W.awExportDomain(B.env,D1)).rows),sz=await B.W.szExportDomain(B.env,D1),context=await B.api('super','/api/employees/transition?dept='+D1+'&intent=delete');assert.equal(context.status,200,JSON.stringify(context.json));const c=context.json;
  const result=await B.api('super','/api/employees/transition',{method:'POST',body:{uid:IDS.super,dept:D1,intent:'delete',deleteMode:'selected',requestId:'TEST_ONLY_business_employee',base:c.base,finalRows:c.employees.filter(e=>e.eid!==target.eid),reason:'TEST_ONLY employee cleanup'}});assert.equal(result.status,200,JSON.stringify(result.json));
  const domain=await B.W.awExportDomain(B.env,D1);assert.deepEqual(B.W.awInflate(domain).records.recs,[{ekey:'TEST_ONLY_prior_orphan',name:target.name}]);for(const k of ['documents','sections','items'])assert.deepEqual(clone(domain.rows[k]),refs[k]);assert.deepEqual(await B.W.szExportDomain(B.env,D1),sz);assert.equal(B.DB.q('SELECT * FROM restore_operations').length,1);
 });
 
-test('Seized photo references participate in image metadata restore without any R2 operation',async()=>{
+test('Seized photo references participate in image metadata restore without any R2 operation',needs('dstats'), async()=>{
  const B=await world(),id='szp_testonly_business',key=B.W.szKey(D1),calls=[];B.env.IMG_R2=Object.fromEntries(['get','put','delete','head','list'].map(op=>[op,async()=>{calls.push(op);throw Error('TEST_ONLY forbidden R2 '+op);} ]));
  await B.install('seized',D1,seizedDocs('old',[id,id]));await B.DB.batch([...B.W.kvPutStmts(B.env,'imgs',id,'data:image/png;base64,VEVTVF9PTkxZ'),B.DB.prepare('INSERT INTO imgown(img,st,k,uid,dept,ts)VALUES(?1,?2,?3,?4,?5,1)').bind(id,'bound',key,IDS.super,D1),B.DB.prepare('INSERT INTO imgref(img,k)VALUES(?1,?2)').bind(id,key)]);
  const body=await B.body(),images=clone(B.DB.q('SELECT * FROM imgs'));body.domains.seized=body.domains.seized.map(d=>d.scope.departmentId===D1?B.W.szConvert(D1,seizedDocs('new',[id,id])):d);const plan=await B.prepare(body);assert.ok(Object.hasOwn(plan.relationalImageBefore||{},key),'Actual relational image projection participated before metadata planning consumed imgTouch');assert.ok(plan.guards.some(s=>s.sql.includes('FROM imgs')),'Actual image-body witness exists');assert.equal((await B.commit(plan)).ok,1);assert.deepEqual(calls,[]);assert.deepEqual(clone(B.DB.q('SELECT * FROM imgs')),images);assert.deepEqual(clone(B.DB.q('SELECT img,k FROM imgref')),[{img:id,k:key}]);
@@ -110,7 +111,7 @@ test('Seized photo references participate in image metadata restore without any 
  const before=snapshot(B),missingPlan=await B.prepare(bad);assert.deepEqual(missingPlan.warnings,['images-missing']);assert.equal(missingPlan.imagesMissing,1);assert.deepEqual(snapshot(B),before);assert.deepEqual(calls,[]);
 });
 
-test('13,006 inherited accounts with unchanged empty Seized/Award stay inside the existing100-statement budget',async t=>{
+test('13,006 inherited accounts with unchanged empty Seized/Award stay inside the existing100-statement budget',needs('dstats'), async t=>{
  const B=await world(),users=clone(B.users);for(let i=users.length;i<13006;i++)users.push({id:'TEST_ONLY_bulk_'+i,un:String(2000000000+i),name:'TEST_ONLY synthetic '+i,role:'staff',deptId:D1,ekey:'TEST_ONLY_bulk_key_'+i,ph:B.users[0].ph,mc:0,dis:0});
  await B.put('bassam_auth_users_v1',users);const exported=users.map(({ph,...u})=>u);exported.at(-1).name='TEST_ONLY renamed final row';const body=await B.body({keys:{bassam_auth_users_v1:JSON.stringify(exported)}}),sessions=clone(B.DB.q('SELECT * FROM sess')),original=B.DB.batch.bind(B.DB);let count=0,batches=0;
  B.DB.batch=async st=>{if(st.some(s=>s.sql.includes('INSERT INTO restore_operations'))){count=st.length;batches++;batchBounds(st);}return original(st);};
@@ -118,7 +119,7 @@ test('13,006 inherited accounts with unchanged empty Seized/Award stay inside th
  const stored=JSON.parse(B.rawKeys().bassam_auth_users_v1);assert.equal(stored.length,13006);assert.ok(stored.every((u,i)=>u.ph===users[i].ph));assert.deepEqual(clone(B.DB.q('SELECT * FROM sess')),sessions);assert.equal(preimageRows(B,ack.snapshot,'kv','bassam_auth_users_v1').sort((a,b)=>a.seq-b.seq).map(r=>r.v).join(''),JSON.stringify(users),'Large credential preimage retains exact original chunk bytes');assert.ok(count<=100,'Project reference efficiency budget100 statements; actual='+count);
 });
 
-test('typed export reports live globalRev rather than the real request preload cache and rejects epoch/actor drift',async()=>{
+test('typed export reports live globalRev rather than the real request preload cache and rejects epoch/actor drift',needs('dstats'), async()=>{
  for(const race of ['global-revision','epoch','actor']){
   const B=await world({seed:true}),A=await B.A(),request=new Request('http://x/api/award/export',{headers:{Cookie:'bs_tok=TEST_ONLY_session_super'}}),wrapped=await B.W.preAttach(B.env,request);
   assert.equal(wrapped.__pre.live,true,'Use actual request preload, not a replacement cache implementation');
@@ -133,7 +134,7 @@ test('typed export reports live globalRev rather than the real request preload c
  }
 });
 
-test('full merge initializes empty new domains but rejects a preexisting unregistered typed target and unknown scoped payload',async()=>{
+test('full merge initializes empty new domains but rejects a preexisting unregistered typed target and unknown scoped payload',needs('dstats'), async()=>{
  for(const collision of [false,true]){
   const B=await world(),newDept='TEST_ONLY_empty_new_department',depts=JSON.parse(B.rawKeys().bassam_depts_v1).concat({id:newDept,name:'TEST_ONLY new',gid:G1}),body=await B.body({mode:'merge',keys:{bassam_depts_v1:JSON.stringify(depts)}});
   if(collision){await B.install('awards',newDept,awardDocs('collision'));const before=snapshot(B);await assert.rejects(B.prepare(body),/merge-target-not-empty/);assert.deepEqual(snapshot(B),before);}
@@ -142,13 +143,13 @@ test('full merge initializes empty new domains but rejects a preexisting unregis
  const B=await world(),bad=await B.body();bad.domains.awards[0]=B.W.awEmptyDomain('TEST_ONLY_unknown_department');const before=snapshot(B);await assert.rejects(B.prepare(bad),/incomplete-awards|scope/);assert.deepEqual(snapshot(B),before);
 });
 
-test('legacy business suffix aliases reject with a structured namespace error before any typed write',async()=>{
+test('legacy business suffix aliases reject with a structured namespace error before any typed write',needs('dstats'), async()=>{
  const B=await world(),scope={kind:'dept',departmentId:D1},body=await B.body({scope}),file=fileFrom(body);file.manifest.version=2;delete file.domains.seized;delete file.domains.awards;delete file.manifest.domains.seized;delete file.manifest.domains.awards;
  file.data[B.W.awKey(D1)+':TEST_ONLY_alias']='{"recs":[]}';file.manifest.keys=['bassam_award_v1:TEST_ONLY_alias'];const before=snapshot(B);
  await assert.rejects(B.W.rsConvertBackup(B.env,await B.A(),file,{scope,mode:'replace',reference:{inputKeys:B.rawKeys()}}),error=>error.rs==='backup-business-namespace');assert.deepEqual(snapshot(B),before);
 });
 
-test('identical business domain with prior receipts clears only receipt metadata and preserves all business rows and guards',async()=>{
+test('identical business domain with prior receipts clears only receipt metadata and preserves all business rows and guards',needs('dstats'), async()=>{
  const B=await world({seed:true});seedReceipts(B);
  for(const def of B.W.bdDefinitions()){
   const current=await def.exportDomain(B.env,D1),base=await def.revs(B.env,D1),before=clone(current),plan=await def.plan(B.env,current,D1,{base,reason:'TEST_ONLY identical restore'}),businessTables=Object.values(def.tables).map(([table])=>table);
@@ -160,7 +161,7 @@ test('identical business domain with prior receipts clears only receipt metadata
  assert.equal(B.DB.q('SELECT * FROM award_request_checks WHERE department_id=?',D1).length,0);
 });
 
-test('modern image archive reuses an unchanged typed Seized reference with and without prior receipts and no R2 operation',async()=>{
+test('modern image archive reuses an unchanged typed Seized reference with and without prior receipts and no R2 operation',needs('dstats'), async()=>{
  for(const receipts of [false,true]){
   const B=await world(),id='szp_testonly_unchanged',key=B.W.szKey(D1),data='data:image/png;base64,VEVTVF9PTkxZ',calls=[];B.env.IMG_R2=Object.fromEntries(['get','put','delete','head','list'].map(op=>[op,async()=>{calls.push(op);throw Error('TEST_ONLY forbidden R2 '+op);} ]));
   await B.install('seized',D1,seizedDocs('same',[id,id]));await B.DB.batch([...B.W.kvPutStmts(B.env,'imgs',id,data),B.DB.prepare('INSERT INTO imgown(img,st,k,uid,dept,ts)VALUES(?1,?2,?3,?4,?5,1)').bind(id,'bound',key,IDS.super,D1),B.DB.prepare('INSERT INTO imgref(img,k)VALUES(?1,?2)').bind(id,key)]);if(receipts)seedReceipts(B);
@@ -170,7 +171,7 @@ test('modern image archive reuses an unchanged typed Seized reference with and w
  }
 });
 
-test('department restore cannot grant a manager an Award doc write outside the existing resource ceiling',async()=>{
+test('department restore cannot grant a manager an Award doc write outside the existing resource ceiling',needs('dstats'), async()=>{
  const B=await world({seed:true}),p=clone(B.keys.bassam_perms_v1);Object.values(p.caps).forEach(c=>c.push('award'));p.subs={...(p.subs||{}),[D1]:{award:['new','res'],'award:tabs':['new','res']}};await B.put('bassam_perms_v1',p,true);await B.put('bsdept:'+D1+':bassam_grants_v1',{v:1,emp:{[EKEYS.manager1]:{plus:['backup.restore'],minus:[]}}},true);
  const ctx=await B.W.awQueryContext(B.env,B.actor('manager1'),D1,{write:true});assert.equal(B.W.enfHeld(ctx.A,D1,'backup.restore'),true);assert.equal(B.W.canRead(ctx.A,B.W.awKey(D1,2)),false);
  const original=B.W.awInflate(await B.W.awExportDomain(B.env,D1)),next=clone(original);next.docsV2.A.lead='TEST_ONLY blocked doc edit';
@@ -179,7 +180,7 @@ test('department restore cannot grant a manager an Award doc write outside the e
  await assert.rejects(B.prepare(body,'manager1'),e=>(e.awStatus||e.status)===403);assert.deepEqual(snapshot(B),before);
 });
 
-test('actual reset keeps password/recovery/confirm guards and atomically clears all22 new domain tables at every SQL fault',async t=>{
+test('actual reset keeps password/recovery/confirm guards and atomically clears all22 new domain tables at every SQL fault',needs('dstats'), async t=>{
  const B=await world({seed:true});seedReceipts(B);const r2Calls=[];B.env.IMG_R2=Object.fromEntries(['get','put','delete','head','list'].map(op=>[op,async()=>{r2Calls.push(op);throw Error('TEST_ONLY forbidden reset R2 '+op);} ]));const pin='583927',recovery='TESTONLYRECOVERY123456789',users=clone(B.users);users.find(u=>u.id===IDS.super).ph=await B.canonicalW.hashPw(pin);await B.put('bassam_auth_users_v1',users);await B.DB.prepare("INSERT INTO meta(k,v)VALUES('rk',?1)").bind(await B.canonicalW.hashPw('rk:'+recovery)).run();
  const reset={pw:pin,key:recovery,confirm:'تهيئة',keepBrand:true,admin:{un:'0500000199',name:'TEST_ONLY reset owner',pw:'583928'}},tables=B.W.bdDefinitions().flatMap(def=>Object.values(def.tables).map(([table])=>table)).concat(['seized_requests','award_requests','award_request_checks']);assert.equal(new Set(tables).size,22);
  const before=snapshot(B),invalid=await B.api('super','/api/reset',{method:'POST',body:{...reset,confirm:'TEST_ONLY wrong confirmation'}});assert.equal(invalid.json.ok,0);assert.equal(invalid.json.err,'اكتب كلمة «تهيئة» للتأكيد');const afterInvalid=snapshot(B);assert.equal(afterInvalid.guard[0].n,1,'Existing guardLeft reserves an attempt even when confirmation is incomplete');assert.deepEqual({...afterInvalid,guard:before.guard},before,'Confirmation leaves all application state intact except its documented attempt counter');

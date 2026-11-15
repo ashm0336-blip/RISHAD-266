@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { blockFile, SRC, ROOT } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 function load() {
   class Storage {
@@ -54,7 +55,7 @@ test('permSlice الأصلية نفسها مولدة للخادم؛ الاستع
   assert.match(rs, /rsPermSlice\([\s\S]*?body\.mode,\s*PG_KEYS,\s*KIVO_LENS_PLUGINS\.keys,\s*\)/, 'مصدر مفاتيح الصفحات والعدسات هو سجل المنصة الحالي');
 });
 
-test('★ الاستبدال: السقفُ والعدساتُ المستعادة = ما في النسخة (مصفّاةً بمفاتيح المنصة الحالية وحدها) — لا تسقط صفحةٌ ولا عدسةٌ أُضيفت لاحقاً', () => {
+test('★ الاستبدال: السقفُ والعدساتُ المستعادة = ما في النسخة (مصفّاةً بمفاتيح المنصة الحالية وحدها) — لا تسقط صفحةٌ ولا عدسةٌ أُضيفت لاحقاً', needs('award', 'seized'), () => {
   const PP = { capSet: true, cap: ['emps', 'planning', 'irshad', 'seized', 'award', 'links', 'help', 'dreport', 'plan', 'daily', 'bogus'], emps: { e1: { plan: ['view'] } }, lenses: ['zones', 'dens', 'gates', 'bogus'] };
   const cur = { caps: { d1: ['emps'] }, emps: { d1: { e9: { emps: ['view'] } } }, lenses: { d1: ['paths'] }, caps2: 1 };
   const out = D.permSlice(J(cur), 'd1', PP, 'replace', pages, lenses);

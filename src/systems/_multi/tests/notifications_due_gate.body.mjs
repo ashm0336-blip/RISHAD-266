@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import { world, seizedDocs, D1, clone } from './business_atomic_fx.mjs';
 import { canonicalWorker } from '../../../../tests/unit/notifications_review_fx.mjs';
 import { candidateWorker } from '../../../../tests/unit/irshad_domain_fx.mjs';
+import { needs as needsSys } from '../../../../tests/unit/harness.mjs';
 
 const GAP = 5 * 6e4;                                   /* NF_DUE_GAP */
 const COSTLY = /seized_items|seized_reports|irshad_reports|FROM ops_|notification_dedup/;
@@ -61,7 +62,7 @@ const bx = (B) => clone(B.DB.q("SELECT type,scope FROM notification_messages WHE
 const bxOnce = (B) => B.DB.q("SELECT once_key FROM notification_dedup WHERE once_key LIKE 'bx_%' ORDER BY once_key").map((r) => r.once_key);
 const stamp = (B) => B.DB.q("SELECT v FROM meta WHERE k=?", 'tkg:szd:' + D1)[0]?.v;
 
-test('repeated reads inside the interval never re-run the costly due work and stay within the seven-trip summary budget', async () => {
+test('repeated reads inside the interval never re-run the costly due work and stay within the seven-trip summary budget', needsSys('award', 'dstats'), async () => {
   const T = at('2026-10-28T09:00:00Z');                 /* Wednesday 12:00 Riyadh — bx_old window, nothing old enough to report */
   await clock(T, async (set) => {
     const B = await fixture({ ageDays: 2, now: T });
@@ -99,7 +100,7 @@ test('repeated reads inside the interval never re-run the costly due work and st
   });
 });
 
-test('a due reminder is emitted exactly once across many reads, and a due edge re-opens a settled gate at once', async () => {
+test('a due reminder is emitted exactly once across many reads, and a due edge re-opens a settled gate at once', needsSys('award', 'dstats'), async () => {
   const T = at('2026-10-31T05:58:00Z');                 /* Saturday 08:58 Riyadh: only the weekly summary is due */
   await clock(T, async (set) => {
     const B = await fixture({ now: T });
@@ -121,7 +122,7 @@ test('a due reminder is emitted exactly once across many reads, and a due edge r
   });
 });
 
-test('source data arriving after a check is reported within the interval bound, once', async () => {
+test('source data arriving after a check is reported within the interval bound, once', needsSys('award', 'dstats'), async () => {
   const T = at('2026-10-28T07:00:00Z');                 /* Wednesday 10:00 Riyadh */
   await clock(T, async (set) => {
     const B = await fixture({ items: false, now: T });
@@ -141,7 +142,7 @@ test('source data arriving after a check is reported within the interval bound, 
   });
 });
 
-test('a reader who cannot run the job leaves no stamp, so it never suppresses a manager reminder', async () => {
+test('a reader who cannot run the job leaves no stamp, so it never suppresses a manager reminder', needsSys('award', 'dstats'), async () => {
   const T = at('2026-10-28T07:00:00Z');
   await clock(T, async () => {
     const B = await fixture({ now: T });
@@ -153,7 +154,7 @@ test('a reader who cannot run the job leaves no stamp, so it never suppresses a 
   });
 });
 
-test('outside the due windows the summary never runs a due job or writes a stamp, and the gate costs no extra trip', async () => {
+test('outside the due windows the summary never runs a due job or writes a stamp, and the gate costs no extra trip', needsSys('award', 'dstats'), async () => {
   const T = at('2026-10-28T00:00:00Z');                 /* Wednesday 03:00 Riyadh */
   await clock(T, async () => {
     const B = await fixture({ now: T });
@@ -169,7 +170,7 @@ test('outside the due windows the summary never runs a due job or writes a stamp
   });
 });
 
-test('without an execution context the job still runs inline (local tools), within the same gate', async () => {
+test('without an execution context the job still runs inline (local tools), within the same gate', needsSys('award', 'dstats'), async () => {
   const T = at('2026-10-28T07:00:00Z');                 /* Wednesday 10:00 Riyadh */
   await clock(T, async (set) => {
     const B = await fixture({ now: T });
@@ -187,7 +188,7 @@ test('without an execution context the job still runs inline (local tools), with
    uses another once key — late data in 23:55–24:00 Riyadh was never reported. The first eligible run after the close now
    re-checks the closed window once, at its close instant, under the same once key. */
 const MIDNIGHT = at('2026-10-30T21:00:00Z');            /* Saturday 00:00 Riyadh (Friday's windows close) */
-test('irshad daily: a report landing in the final interval before midnight is caught up once after the close', async () => {
+test('irshad daily: a report landing in the final interval before midnight is caught up once after the close', needsSys('award', 'dstats'), async () => {
   await clock(MIDNIGHT - 4 * 6e4, async (set) => {      /* Friday 23:56 Riyadh */
     const B = await fixture({ items: false, now: MIDNIGHT });
     const H = await candidateWorker(['pfHijriAt']), day = H.pfHijriAt(MIDNIGHT - 4 * 6e4);
@@ -224,7 +225,7 @@ test('irshad daily: a report landing in the final interval before midnight is ca
   });
 });
 
-test('seized due: stock landing in the final interval before midnight is caught up once after the close', async () => {
+test('seized due: stock landing in the final interval before midnight is caught up once after the close', needsSys('award', 'dstats'), async () => {
   const CLOSE = at('2026-10-28T21:00:00Z');             /* Thursday 00:00 Riyadh (Wednesday's window closes) */
   await clock(CLOSE - 4 * 6e4, async (set) => {         /* Wednesday 23:56 Riyadh */
     const B = await fixture({ items: false, now: CLOSE });
@@ -256,7 +257,7 @@ test('seized due: stock landing in the final interval before midnight is caught 
   });
 });
 
-test('a window settled through its close is not re-checked after midnight', async () => {
+test('a window settled through its close is not re-checked after midnight', needsSys('award', 'dstats'), async () => {
   const CLOSE = at('2026-10-28T21:00:00Z');
   await clock(CLOSE - 10 * 6e4, async (set) => {        /* Wednesday 23:50 Riyadh: bx_old due and emitted */
     const B = await fixture({ now: CLOSE });

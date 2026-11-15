@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { SRC } from './harness.mjs';
+import { needs as needsSys } from './harness.mjs';
 
 const rd = (...p) => fs.readFileSync(path.join(SRC, ...p), 'utf8');
 const REG = JSON.parse(rd('permissions', 'registry', 'registry-v24.9.json'));
@@ -59,7 +60,7 @@ function mapRows(mode) {
 }
 const entity = (r) => !r.isKeys && !r.isGroup;
 
-test('the manifest ships the system contract and the lens hosts to the client (the source of the map)', () => {
+test('the manifest ships the system contract and the lens hosts to the client (the source of the map)', needsSys('award', 'dstats', 'seized'), () => {
   const M = KIVO.KIVO_MANIFEST.clone('pages');
   for (const p of PAGES.pages) { const q = M.find((x) => x.key === p.key); assert.equal(q.module, p.module, p.key + '.module'); assert.equal(q.activation, p.activation, p.key + '.activation'); assert.deepEqual(J(q.requires || []), p.requires || [], p.key + '.requires'); }
   assert.equal(M.filter((p) => p.module).length, 12, 'twelve systems (module)');
@@ -67,7 +68,7 @@ test('the manifest ships the system contract and the lens hosts to the client (t
 });
 
 for (const mode of ['view', 'cap']) {
-  test('A1 [' + mode + '] every active key exactly once · every reserved key marked · nothing outside the registry', () => {
+  test('A1 [' + mode + '] every active key exactly once · every reserved key marked · nothing outside the registry', needsSys('award', 'dstats', 'seized'), () => {
     const chips = mapRows(mode).filter((r) => r.isKeys).flatMap((r) => r.keys);
     const act = chips.filter((k) => k.kind !== 'resv').map((k) => k.k), res = chips.filter((k) => k.kind === 'resv').map((k) => k.k);
     assert.equal(ACTIVE.length, 255); assert.equal(RESERVED.length, 14);
@@ -79,7 +80,7 @@ for (const mode of ['view', 'cap']) {
   });
 }
 
-test('A2 every owner is one row · t24Struct = perm-tree24.json (containers · leaves · keys · reserved)', () => {
+test('A2 every owner is one row · t24Struct = perm-tree24.json (containers · leaves · keys · reserved)', needsSys('award', 'dstats', 'seized'), () => {
   assert.equal(REG.owners.length, 44);
   assert.deepEqual(J(STRUCT).map((c) => c.id), TREE.containers.map((c) => c.id), 'the same containers in the same order');
   /* leaves and keys: the keys of a leaf in the registry order; the reserved ones as a set; the leaves of a page container in the
@@ -93,7 +94,7 @@ test('A2 every owner is one row · t24Struct = perm-tree24.json (containers · l
   assert.equal(new Set(owners).size, 44);
 });
 
-test('A3 every row has exactly one derived class of the eight', () => {
+test('A3 every row has exactly one derived class of the eight', needsSys('award', 'dstats', 'seized'), () => {
   const rows = mapRows('view').filter(entity);
   for (const r of rows) { assert.ok(CLS[r.cls], 'class of «' + r.name + '»: ' + r.cls); assert.equal(r.badge, CLS[r.cls], 'the badge is the class name: ' + r.name); }
   const by = (cls) => rows.filter((r) => r.cls === cls).map((r) => r.key).sort();
@@ -143,7 +144,7 @@ test('Q5 parity: a lens manifest declares exactly the panels pages.json makes co
   assert.deepEqual(J(STRUCT.find((c) => c.id === 'lenses').leaves).map((l) => [l.lens, l.ind]), LENSES.map((m) => [m.key, (m.resources || {}).indicators || []]));
 });
 
-test('A5 the panels of the map = refs = the panels of kpis/logic.js · the shown conditions = kpiPanelOk', () => {
+test('A5 the panels of the map = refs = the panels of kpis/logic.js · the shown conditions = kpiPanelOk', needsSys('dstats', 'seized'), () => {
   const rows = mapRows('view').filter((r) => r.cls === 'panel');
   /* (1) one row per ref, and the KPIs page draws exactly those */
   const KL = rd('modules', 'kpis', 'logic.js');
@@ -176,7 +177,7 @@ test('A5 the panels of the map = refs = the panels of kpis/logic.js · the shown
   assert.equal(REG.registry.length, 269); assert.equal(PAGES.pages.find((p) => p.key === 'tasks').tabs, undefined);
 });
 
-test('A6 «الوحدات» = the pages that carry activation; always is locked; the switch is where it was', () => {
+test('A6 «الوحدات» = the pages that carry activation; always is locked; the switch is where it was', needsSys('award', 'dstats', 'seized'), () => {
   const rows = Array.from(page()._plMods(["seized"], (on) => "TG:" + on));
   const want = PAGES.pages.filter((p) => p.activation);
   assert.equal(want.length, 14);
@@ -214,7 +215,7 @@ function siteMapOf(pg, centerIn) {
   return { rows: J(K.__BS_I.auth.siteMap({ center, struct: pg.t24Struct() })), order: J(K.__BS_I.auth.navOrder()) };
 }
 
-test('A7 siteMap: the centre tabs come from the admin page\'s one list; lenses · platform · references from the tree builder', () => {
+test('A7 siteMap: the centre tabs come from the admin page\'s one list; lenses · platform · references from the tree builder', needsSys('dstats', 'seized'), () => {
   const pg = page(), tabs = J(pg.CON_TABS()), { rows, order } = siteMapOf(pg);
   assert.deepEqual(J(tabs).map((t) => t[0]), ['overview', 'sec', 'users', 'perms', 'plat', 'depts', 'oplog', 'backup', 'histimp']);
   for (const t of tabs) if (t[2]) assert.ok(!P333.includes(t[2]), '333 does not spell «' + t[2] + '»');

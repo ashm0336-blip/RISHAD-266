@@ -10,6 +10,7 @@ import vm from 'node:vm';
 import { world, stored, putKV } from './tasks_fx.mjs';
 import { loadClient, until, sleep } from './k264_vm.mjs';
 import { moduleLogic } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const D = 'tst_d1', KP = 'bassam_perms_v1', GK = 'bsdept:' + D + ':bassam_grants_v1', TPK = 'bsdept:' + D + ':bassam_perm_tpls_v1', EK = 'tst_e_emp1', TID = 'tTSTCAP';
 const PG = ['dstats', 'emps', 'planning', 'staff', 'plan', 'daily', 'dreport', 'tasks', 'irshad', 'seized', 'award', 'links', 'help', 'admin'];
@@ -76,7 +77,7 @@ async function ceiling(c, x) {
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + 'narrow then widen (pages · tabs · lenses) from the real client: stored sheets, lens lists, template ids and explicit grants stay byte-identical in D1', async () => {
+  test(M + 'narrow then widen (pages · tabs · lenses) from the real client: stored sheets, lens lists, template ids and explicit grants stay byte-identical in D1', needs('irshad'), async () => {
     const W = await scene(mode), k0 = keep(W);
     const c = await clientOf(W, 'su');
     try {
@@ -88,7 +89,7 @@ for (const mode of ['legacy', 'enforce']) {
     } finally { c.dispose(); }
   });
 
-  test(M + 'a narrowed grant gives no access in the employee client (myPerms · editors) and comes back exactly when widened', async () => {
+  test(M + 'a narrowed grant gives no access in the employee client (myPerms · editors) and comes back exactly when widened', needs('award'), async () => {
     const W = await scene(mode);
     const s = await clientOf(W, 'su'); try { await ceiling(s, NARROW); } finally { s.dispose(); }
     let e = await clientOf(W, 'emp1');
@@ -103,7 +104,7 @@ for (const mode of ['legacy', 'enforce']) {
     try { const mp = e.I.myPerms(); for (const k of LATENT) assert.deepEqual(cp(mp[k] || null), W.SH[k], 'restored: ' + k); } finally { e.dispose(); }
   });
 
-  test(M + 'the unit manager edits a sheet holding latent leaves and lenses: the worker accepts it and the latent items stay (F05 · F06)', async () => {
+  test(M + 'the unit manager edits a sheet holding latent leaves and lenses: the worker accepts it and the latent items stay (F05 · F06)', needs('award'), async () => {
     const W = await scene(mode);
     const s = await clientOf(W, 'su'); try { await ceiling(s, NARROW); } finally { s.dispose(); }
     const m = await clientOf(W, 'dm1');
@@ -123,7 +124,7 @@ for (const mode of ['legacy', 'enforce']) {
     try { assert.deepEqual(cp(e.I.empLens(EK, D)).sort(), ['dens', 'zones'], 'the lens comes back on re-enable'); } finally { e.dispose(); }
   });
 
-  test(M + 'saving a permission template under a narrowed ceiling keeps its out-of-ceiling items (F07)', async () => {
+  test(M + 'saving a permission template under a narrowed ceiling keeps its out-of-ceiling items (F07)', needs('award'), async () => {
     const W = await scene(mode);
     const s = await clientOf(W, 'su'); try { await ceiling(s, NARROW); } finally { s.dispose(); }
     const c = await clientOf(W, 'su');
@@ -150,7 +151,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok((t.perms['award/res'] || []).includes('view'), 'the out-of-ceiling leaf stays in the template');
   });
 
-  test(M + 'independent ceiling: the explicit per-unit switch is a super save the worker accepts; the parent no longer narrows the unit; a manager cannot switch', async () => {
+  test(M + 'independent ceiling: the explicit per-unit switch is a super save the worker accepts; the parent no longer narrows the unit; a manager cannot switch', needs('award'), async () => {
     const W = await scene(mode);
     const m = await clientOf(W, 'dm1');
     try { assert.equal(typeof m.I.setCapOwn, 'function'); assert.equal(m.I.setCapOwn(D, true).ok, false, 'a manager cannot switch'); } finally { m.dispose(); }

@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, D1, D2, IDS, notificationSnapshot, copy } from './notifications_review_fx.mjs';
 import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { needs } from './harness.mjs';
 
 const ORDINARY = 'bsdept:' + D2 + ':bassam_perm_tpls_v1';   /* schema 10: bassam_options_v1 is typed (a kv row of it is a retired legacy source); an ordinary key must be a non-operational KV resource */
 const SID = 'migration_test_only';
@@ -24,7 +25,7 @@ function state(W) {
 }
 const rollback = (W, force = true) => W.api('super', '/api/authz-migrate', { method: 'POST', body: { act: 'rollback', snap: SID, force } });
 
-test('mixed snapshots containing a retired daily-stats or notification key reject the entire rollback even with force', async () => {
+test('mixed snapshots containing a retired daily-stats or notification key reject the entire rollback even with force', needs('dstats'), async () => {
   const retired = ['bassam_dstats_v1', 'bsdept:' + D1 + ':bassam_dstats_v1', 'bassam_notif_v1', 'bassam_notif_sys_v1', 'bassam_notif_cfg_v1', 'bassam_bc_v1', 'bsdept:' + D1 + ':bassam_notif_v1'];
   for (const key of retired) for (const existed of [0, 1]) {
     const W = await snapshot({ retired: key, existed }), before = state(W), start = W.DB.log.length;

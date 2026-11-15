@@ -12,6 +12,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import { needs } from './harness.mjs';
 const { world, stored } = await import('./tasks_fx.mjs');
 const { internals } = await import('./internals.mjs');
 
@@ -44,7 +45,7 @@ const tplOf = (p, d, ek, t) => { p.tplOf = p.tplOf || {}; p.tplOf[d] = Object.as
 const lensOf = (p, d, ek, arr) => { p.empLens = p.empLens || {}; p.empLens[d] = Object.assign({}, p.empLens[d], { [ek]: arr }); return p; };
 
 for (const mode of ['legacy', 'enforce']) {
-  test(mode + ' · الاستعمالُ العاديّ كما كان (يمرّ قبل الإصلاح وبعده)', async () => {
+  test(mode + ' · الاستعمالُ العاديّ كما كان (يمرّ قبل الإصلاح وبعده)', needs('seized'), async () => {
     const w = await W(mode), dm = await w.as('dm1');
     /* مديرُ الإدارة (يرث سقفَ إدارته): قالبٌ وعدساتٌ وتضييقٌ وحسابُ موظف */
     let p = tplOf(P(w), 'tst_d1', 'tst_e_snop', 'tPs0'); p.emps.tst_d1.tst_e_snop = { plan: ['view', 'edit'], 'daily/rounds': ['view', 'edit'] };
@@ -145,7 +146,7 @@ for (const mode of ['legacy', 'enforce']) {
     no(await put(w, em2, KP, p), 'grant', 'ولا يزيد عليه');
   });
 
-  test(mode + ' · PAR-1/DX-04 · السقفُ الفعليّ للوحدة والأوراقُ المتغيّرة وحدها', async () => {
+  test(mode + ' · PAR-1/DX-04 · السقفُ الفعليّ للوحدة والأوراقُ المتغيّرة وحدها', needs('irshad'), async () => {
     const w = await W(mode), dm = await w.as('dm2');
     /* المُثبِّت: tst_e_emp2 له seized/records وسقفُ tst_d2 بلا seized (ورقةٌ قديمة) — لا تُسقط حفظاً لا شأن له بها */
     let p = P(w); p.emps.tst_d2.tst_e_ps0n = { 'irshad/records': ['view'] };

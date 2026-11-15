@@ -12,6 +12,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, makeEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, applySql, ROOT, WORKER } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
+import { needs } from './harness.mjs';
 /* العاملُ المختبَر قبل الإصلاح (حزمةٌ أقدم عبر KIVO_WORKER) ⇒ تخطٍّ معلن — KIVO_K264_STRICT=1 يفرض التشغيل (به ثبت الإخفاقُ قبل الإصلاح) */
 const FIX = fs.readFileSync(WORKER, 'utf8').includes('QA-264-D1') || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264 (QA-264-D1)' };
 const ACC = { gm: ['0000000103', '70103'], dm1: ['0000000101', '70101'], dm2: ['0000000102', '70102'], sup1: ['0000000111', '70111'], emp2: ['0000000121', '70121'] };
@@ -72,7 +73,7 @@ async function readable(C, ck, why) {
 const EXP_CEIL = { su: L, gm: ['d1.seized', 'd1.award', 'd2.irshad'], dm1: ['d1.seized', 'd1.award'], dm2: ['d2.irshad'], sup1: ['d1.award'], emp2: ['d2.irshad'] };
 const EXP_OFF = { su: L, gm: ['d1.award', 'd2.irshad'], dm1: ['d1.award'], dm2: ['d2.irshad'], sup1: ['d1.award'], emp2: ['d2.irshad'] };
 
-for (const mode of ['legacy', 'enforce']) test('QA-264-D1 [' + mode + '] صفحةٌ خارج سقف الإدارة ووحدةٌ مطفأةٌ على مستوى المنصة: لا قيمةَ لأحدٍ في الإدارة (ولا عبر backup.view) — والضابطُ داخل السقف يُقرأ كما كان', FIX, async () => {
+for (const mode of ['legacy', 'enforce']) test('QA-264-D1 [' + mode + '] صفحةٌ خارج سقف الإدارة ووحدةٌ مطفأةٌ على مستوى المنصة: لا قيمةَ لأحدٍ في الإدارة (ولا عبر backup.view) — والضابطُ داخل السقف يُقرأ كما كان', { ...FIX, ...needs('award', 'seized') }, async () => {
   const { env, C, S } = await world(mode);
   /* (أ) سقفُ الإدارة وحده */
   for (const who of Object.keys(EXP_CEIL)) assert.deepEqual(await readable(C, S[who], mode + ' ' + who), EXP_CEIL[who], mode + ' (أ) ' + who + ': المقروء');

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { world, ok, OPTIONS, TABLES } from './atomic_restore_review_fx.mjs';   /* OPTIONS: a plain-KV department key (schema 10: bassam_options_v1 is typed) */
 import { IDS, copy } from './custody_review_fx.mjs';
+import { needs } from './harness.mjs';
 const USERS = 'bassam_auth_users_v1',
   PIN = '583927',
   KEY = 'TESTONLYRECOVERY123456789';
@@ -72,7 +73,7 @@ async function setup() {
   return { ...B, body, ack, reset, http };
 }
 
-test('reset must retire restore receipts/private preimages so a new su lifecycle cannot replay an old successful ACK', async () => {
+test('reset must retire restore receipts/private preimages so a new su lifecycle cannot replay an old successful ACK', needs('award', 'dstats', 'seized'), async () => {
   const B = await setup(),
     beforeEpoch = await B.W.rsEpoch(B.env);
   ok(await B.api('super', '/api/reset', B.reset));
@@ -107,7 +108,7 @@ test('reset must retire restore receipts/private preimages so a new su lifecycle
   });
 });
 
-test('a late reset audit failure rolls back business state, epoch, all operation cache rows and private preimages together', async () => {
+test('a late reset audit failure rolls back business state, epoch, all operation cache rows and private preimages together', needs('award', 'dstats', 'seized'), async () => {
   const B = await setup(),
     before = digest(B.DB);
   B.DB.failIf = (sql) => /^INSERT OR IGNORE INTO aud\b/i.test(sql);
@@ -119,7 +120,7 @@ test('a late reset audit failure rolls back business state, epoch, all operation
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, 1);
 });
 
-test('reset preserves the existing aud/authz snapshot policy rather than treating its retained history as operation receipts', async () => {
+test('reset preserves the existing aud/authz snapshot policy rather than treating its retained history as operation receipts', needs('award', 'dstats', 'seized'), async () => {
   const B = await setup(),
     history = copy(B.DB.q("SELECT * FROM authz_snap WHERE snap='TEST_ONLY_retained_snapshot'")),
     headers = copy(B.DB.q("SELECT * FROM authz_snaps WHERE snap='TEST_ONLY_retained_snapshot'")),

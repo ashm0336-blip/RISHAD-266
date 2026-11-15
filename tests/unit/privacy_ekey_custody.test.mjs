@@ -12,6 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { privWorld, setSheet, login, suCk, readOp, getKV, save, stored, put, rec, KE, KP, MODES } from './privacy_fx.mjs';
 import { putKV, KT } from './tasks_fx.mjs';
+import { needs } from './harness.mjs';
 
 const NID3 = '1999999203', C3 = 'tst_e_p0_3', KU = 'bassam_auth_users_v1';
 const has = (x, s) => JSON.stringify(x).includes(s);
@@ -63,7 +64,7 @@ for (const mode of MODES) {
     assert.equal(rec(me.res[KE], C3).nid, NID3, 'himself: his own record whole');
   });
 
-  test('PRIVACY C [' + mode + ']: staffAccountKeys of the delete context and task group members carry the token, not the nid', async () => {
+  test('PRIVACY C [' + mode + ']: staffAccountKeys of the delete context and task group members carry the token, not the nid', needs('award'), async () => {
     const w = await ekeyWorld(mode);
     const S = stored(w.env, KT); let g = null;
     for (const d in S) for (const r of S[d]) if (Array.isArray(r) && r[17] === 'gTST1' && r[14] === 'tst_e_p0_2') { r[14] = NID3; g = d; }

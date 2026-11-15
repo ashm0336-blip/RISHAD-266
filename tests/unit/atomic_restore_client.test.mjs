@@ -9,6 +9,7 @@ import { world, ok, OPTIONS, snap, phase5AppBackup } from './atomic_restore_revi
 import { D1, IDS, copy } from './notifications_review_fx.mjs';
 import { SRC } from './harness.mjs';
 import { currentOperationResources } from './backup_review_fx.mjs';
+import { needs } from './harness.mjs';
 const CLIENT = SRC;
 function sourcePart(file, type, name, root = CLIENT) {
   const source = fs.readFileSync(path.join(root, file), 'utf8'),
@@ -152,7 +153,7 @@ async function exported(B, C) {
   assert.equal(/p[12]\$/.test(file.data.bassam_auth_users_v1), false);
   return file;
 }
-test('actual full export → importBackup → fbkCommit uses one shared atomic restore writer and no local overlay', async () => {
+test('actual full export → importBackup → fbkCommit uses one shared atomic restore writer and no local overlay', needs('irshad'), async () => {
   const B = await world();
   await B.DB.batch(B.W.kvPutStmts(B.env, 'kv', OPTIONS, '{"TEST_ONLY":"backup value"}'));
   const C = await browser(B),
@@ -180,7 +181,7 @@ test('actual full export → importBackup → fbkCommit uses one shared atomic r
     false,
   );
 });
-test('lost restore ACK keeps file/ticket and retries byte-identical body/requestId without resending inspection', async () => {
+test('lost restore ACK keeps file/ticket and retries byte-identical body/requestId without resending inspection', needs('irshad'), async () => {
   const B = await world(),
     C = await browser(B),
     file = await exported(B, C);
@@ -207,7 +208,7 @@ test('lost restore ACK keeps file/ticket and retries byte-identical body/request
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, 1);
   assert.deepEqual(C.writes, []);
 });
-test('malformed restore success ACK and known conflict retain drafts and never display success', async () => {
+test('malformed restore success ACK and known conflict retain drafts and never display success', needs('irshad'), async () => {
   for (const malformed of [true, false]) {
     const B = await world(),
       C = await browser(B),
@@ -237,7 +238,7 @@ test('malformed restore success ACK and known conflict retain drafts and never d
     } else assert.equal(C.page._fbkPend.ticket, null);
   }
 });
-test('authenticated 335 restore delegates to the same service; an unauthenticated gate never mutates local or remote data', async () => {
+test('authenticated 335 restore delegates to the same service; an unauthenticated gate never mutates local or remote data', needs('irshad'), async () => {
   const B = await world(),
     C = await browser(B),
     file = await exported(B, C),
@@ -284,7 +285,7 @@ test('actual department exporter → bkImportFile/bkCommit replaces only its dec
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, 1);
 });
 
-test('uncertain restore blocks cancelling, replacing a file or switching mode until the original receipt is confirmed', async () => {
+test('uncertain restore blocks cancelling, replacing a file or switching mode until the original receipt is confirmed', needs('irshad'), async () => {
   const B = await world(),
     C = await browser(B),
     file = await exported(B, C);
@@ -309,7 +310,7 @@ test('uncertain restore blocks cancelling, replacing a file or switching mode un
   assert.equal(C.page._fbkPend, null);
 });
 
-test('a historical phase5 AppBackup file converts through inspect/explicit consent and commits once without changing existing credentials', async () => {
+test('a historical phase5 AppBackup file converts through inspect/explicit consent and commits once without changing existing credentials', needs('dstats'), async () => {
   const B = await world(),
     C = await browser(B),
     identity = copy(B.DB.q("SELECT * FROM kv WHERE k='bassam_auth_users_v1'")),
@@ -338,7 +339,7 @@ test('a historical phase5 AppBackup file converts through inspect/explicit conse
   assert.deepEqual(C.writes, []);
 });
 
-test('actual legacy HTTP conversion guards preserved global NF state and DS even when concurrent writers do not advance revisions', async () => {
+test('actual legacy HTTP conversion guards preserved global NF state and DS even when concurrent writers do not advance revisions', needs('dstats'), async () => {
   for (const domain of ['NF', 'DS']) {
     const B = await world();
     await B.DB.batch([
@@ -393,7 +394,7 @@ test('actual legacy HTTP conversion guards preserved global NF state and DS even
   }
 });
 
-test('legacy credential-bearing file cannot change the active owner credential or use file content as reauthentication', async () => {
+test('legacy credential-bearing file cannot change the active owner credential or use file content as reauthentication', needs('dstats'), async () => {
   const B = await world(),
     C = await browser(B),
     file = phase5AppBackup(await exported(B, C)),
@@ -413,7 +414,7 @@ test('legacy credential-bearing file cannot change the active owner credential o
   assert.deepEqual(C.writes, []);
 });
 
-test('authenticated gate retains its uncertain receipt and refuses a different file until byte-identical retry confirms it', async () => {
+test('authenticated gate retains its uncertain receipt and refuses a different file until byte-identical retry confirms it', needs('irshad'), async () => {
   const B = await world(),
     C = await browser(B),
     file = await exported(B, C),
@@ -444,7 +445,7 @@ test('authenticated gate retains its uncertain receipt and refuses a different f
   assert.deepEqual(C.writes, []);
 });
 
-test('actual healthy AppBackup export with an identical image body uses the shared UI and ACK reports reuse only', async () => {
+test('actual healthy AppBackup export with an identical image body uses the shared UI and ACK reports reuse only', needs('irshad'), async () => {
   const B = await world(),
     id = 'img_testonly_appbackup',
     image = 'data:image/png;base64,VEVTVF9PTkxZ';
@@ -474,7 +475,7 @@ test('actual healthy AppBackup export with an identical image body uses the shar
 });
 
 
-test('a committed restore ACK missing its Irshad count remains uncertain until an identical explicit retry returns the complete receipt', async () => {
+test('a committed restore ACK missing its Irshad count remains uncertain until an identical explicit retry returns the complete receipt', needs('irshad'), async () => {
   const B = await world(), C = await browser(B), file = await exported(B, C);
   C.property('modules/admin/logic.js', 'importBackup')({ target: { files: [file], value: '' } });
   let lose = true;

@@ -7,6 +7,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import {parse} from 'acorn';
 import {ROOT,world as canonicalWorld,D1,IDS,EKEYS} from './custody_review_fx.mjs';
+import { needs } from './harness.mjs';
 const source=fs.readFileSync(path.join(ROOT,'src/modules/admin/logic.js'),'utf8');
 const COUNT=(()=>{const c={KIVO:{},window:{},Intl};vm.createContext(c);vm.runInContext(fs.readFileSync(path.join(ROOT,'src/services/440-count.js'),'utf8'),c);return c.KIVO.BassamCount;})();
 const klass=parse(source,{ecmaVersion:'latest'}).body.find(node=>node.type==='ClassDeclaration'&&node.id.name==='Component');
@@ -54,7 +55,7 @@ test('wipe reason cancellation preserves confirmation and does not invent a serv
   const B=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,why:'reason',reasonKeys:['emp.record.bulk.delete']},403));await B.page.wpOpen(DEPT);B.page.setState({wpTxt:'TEST_ONLY retain'});await B.page.wpGo(DEPT);assert.equal(B.prompts.length,1);assert.equal(B.calls.filter(call=>call.options.method==='POST').length,1);assert.equal(B.page.state.wpTxt,'TEST_ONLY retain');assert.equal(B.acks.length,0);
 });
 
-test('wipe rejects an inventory or receipt that omits the migrated Irshad domain',async()=>{
+test('wipe rejects an inventory or receipt that omits the migrated Irshad domain',needs('irshad'), async()=>{
   const missing=inventory();delete missing.base.irshad;
   const A=world(async()=>response(missing));await A.page.wpOpen(DEPT);assert.equal(A.page.state.wpBase,null);assert.equal(A.calls.filter(call=>call.options.method==='POST').length,0);
   const B=world(async(url,options)=>{if(options.method==='GET')return response(inventory());const ack=receipt(options);delete ack.counts.irshad;return response(ack);});
@@ -62,7 +63,7 @@ test('wipe rejects an inventory or receipt that omits the migrated Irshad domain
   assert.equal(B.acks.length,0);assert.equal(B.page.state.wpDid,DEPT);assert.equal(B.page.state.wpTxt,'TEST_ONLY preserved');assert.equal(B.page._wpUncertain,true);
 });
 
-test('wipe rejects an inventory or receipt that omits the seized or awards business domain',async()=>{
+test('wipe rejects an inventory or receipt that omits the seized or awards business domain',needs('award', 'seized'), async()=>{
   for(const domain of ['seized','awards']){
     for(const part of ['base','count']){const missing=inventory();if(part==='base')delete missing.base[domain];else delete missing.counts[domain];
       const A=world(async()=>response(missing));await A.page.wpOpen(DEPT);assert.equal(A.page.state.wpBase,null,domain+' '+part);assert.equal(A.page.state.wpNeedsReview,true);assert.equal(A.calls.filter(call=>call.options.method==='POST').length,0);}

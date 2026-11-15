@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { SRC, moduleFile } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 /* قيمةُ رمزٍ محلولة (فاتح/داكن) من tokens.json */
@@ -48,7 +49,7 @@ test('ES-5 · ES-11 · التباين (من الرموز): نصُّ الشارة
 });
 
 /* الموجة 2 (دمج): شريطُ ترقيم «التميّز» يحمل bs-wrap أيضاً (AUX-04 — يلتفّ ولا تخرج «التالي» و«الأخيرة» عن الشاشة) */
-test('ES-11 · شريطُ الترقيم بلون السطح في كل الوحدات: «لكل صفحة» ≥ 4.5:1 داكناً (كان 2.86) ولا تغييرَ في الفاتح', () => {
+test('ES-11 · شريطُ الترقيم بلون السطح في كل الوحدات: «لكل صفحة» ≥ 4.5:1 داكناً (كان 2.86) ولا تغييرَ في الفاتح', needs('award', 'seized'), () => {
   /* RISHAD-266: «الإحصائيات اليومية» (dstats) خارج هذا النقل — عملُ المالك المحلّي عليها */
   const mods = ['award', 'dreport', 'employees', 'irshad', 'plan', 'seized', 'staff', 'tasks'];
   let n = 0;

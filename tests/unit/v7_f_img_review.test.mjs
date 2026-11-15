@@ -8,7 +8,7 @@
      low · the plain-KV race (condemned between the ownership read and the write)       → the save is answered as a conflict, nothing half-bound */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { D, D2, PNG, TAG, dk, both, scene, state, gone, img, edit, bind, upload, age, due, EDIT, stored, K_DEPTS } from './v7_f_img_fx.mjs';
+import { D, D2, PNG, TAG, dk, both, scene, state, gone, img, edit, bind, upload, age, due, EDIT, stored, K_DEPTS, gated } from './v7_f_img_fx.mjs';
 
 let n = 0;
 const isDay = (k) => /^\d+-\d+-\d+$/.test(k);
@@ -67,7 +67,7 @@ both(test, 'finding 1 · more than 5000 DISTINCT images in one record: the save 
 });
 
 /* ── finding 2 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
-both(test, 'finding 2 · PUT /api/img/<id>: an id outside letters, digits and "_" is refused 400 and leaves nothing; every shape the clients generate is accepted', async (mode) => {
+both(gated(test, 'irshad'), 'finding 2 · PUT /api/img/<id>: an id outside letters, digits and "_" is refused 400 and leaves nothing; every shape the clients generate is accepted', async (mode) => {
   const T = await scene(mode), { W, S } = T, x = T.x;
   for (const bad of ['img_bad-' + x + '.1', 'img_' + x + '.png', 'img_' + x + '%25', 'img_' + x + '~0', 'img_' + x + '*', 'img_' + x + '-1', 'img_' + encodeURIComponent('صورة') + x]) {
     const r = await img(W, S.emp2, bad, 'PUT', PNG);

@@ -14,6 +14,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
+import { needs } from './harness.mjs';
 
 const T = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return o; })();
 const DAY = T.year + '-' + T.month + '-' + T.day;
@@ -114,7 +115,7 @@ test('[enforce] بلا سجلّ نطاق: مديرٌ وموظفٌ يكتبان �
   await allowed(W, 'sup1', await touchDreportShift(W, 'TST-A', 'own-3'), 'الوردية بعد الحذف');
 });
 
-test('[enforce] القراءة: لا إسقاطَ بالوردية ولا بالموقع/العنصر — والنتيجةُ نفسُها بوجود السجل وبعد حذفه', async () => {
+test('[enforce] القراءة: لا إسقاطَ بالوردية ولا بالموقع/العنصر — والنتيجةُ نفسُها بوجود السجل وبعد حذفه', needs('irshad'), async () => {
   const W = await world();
   const ir = async () => { const r = await W.C.api('/api/irshad?dept=tst_d1&view=records', { cookie: W.L.supB }); assert.equal(r.status, 200, JSON.stringify(r.j)); return r.j.rows.map(x => x.id).sort(); };
   const shiftsOf = async (who) => { const v = await getV(W, who, KDR); return Object.keys((v && v[DAY] && v[DAY].shifts) || {}).sort(); };
@@ -179,7 +180,7 @@ for (const enforce of [true, false]) test('[' + (enforce ? 'enforce' : 'legacy')
 });
 
 /* ── (٤) Assigned · Source ── */
-test('[enforce] Assigned (راصد الميدان) وSource (الإحصائيات) كما كانا — بوجود السجل وبعد حذفه', async () => {
+test('[enforce] Assigned (راصد الميدان) وSource (الإحصائيات) كما كانا — بوجود السجل وبعد حذفه', needs('dstats'), async () => {
   const W = await world();
   const fieldView = async () => {
     const v = await getV(W, 'fld', KRD); assert.ok(v && v[DAY], 'الجولات');

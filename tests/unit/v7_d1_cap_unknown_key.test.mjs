@@ -6,6 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { WORKER } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const SRC = fs.readFileSync(WORKER, 'utf8'), LINE = "  { key: 'irshad', subs: ['dash', 'records'], off: ['dash'] },\n";
 let n = 0;
@@ -14,7 +15,7 @@ const SUPER = { u: { id: 'TEST_ONLY_su', role: 'super' }, perms: { caps: {} }, e
 /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — فالتنبيهاتُ تُفحص بمدير الإدارة (يرث سقفَ إدارته) */
 const MGR = { u: { id: 'TEST_ONLY_m1', role: 'staff', deptId: 'TEST_ONLY_d1', ekey: 'mgr:TEST_ONLY_d1', mgr: 1 }, users: [], perms: { caps: {} }, depts: [{ id: 'TEST_ONLY_d1', name: 'TEST_ONLY' }], nodes: [], off: [], enf: false };
 
-test('مفتاحُ صفحةٍ أُزيل من PG_REG: لا يُعدّ مفعّلاً، فتنبيهاتُه لا تظهر (ir_new · ir_edit · ir_day)', async () => {
+test('مفتاحُ صفحةٍ أُزيل من PG_REG: لا يُعدّ مفعّلاً، فتنبيهاتُه لا تظهر (ir_new · ir_edit · ir_day)', needs('irshad'), async () => {
   assert.equal(SRC.split(LINE).length, 2, 'سطرُ irshad في PG_REG مرّةً واحدة');
   const W = await load(SRC), G = await load(SRC.replace(LINE, ''));
   assert.ok(W.PG_KEYS.includes('irshad') && !G.PG_KEYS.includes('irshad'), 'النسختان كما قُصد');

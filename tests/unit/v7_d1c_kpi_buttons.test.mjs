@@ -8,6 +8,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { SRC } from './harness.mjs';
 import { world } from './core01_root_world.mjs';
+import { needs } from './harness.mjs';
 
 function notif() {
   const KIVO = {
@@ -36,7 +37,7 @@ function kpis() {
 const TAB = { 'planning/readiness': 'on_read', 'daily/kpiDaily': 'on_dy', 'daily/kpiOcc': 'on_occ', 'daily/kpiZones': 'on_zn', 'seized/dash': 'on_sz', 'irshad/dash': 'on_ir' };
 const TABS = Object.values(TAB);
 
-test('كلُّ زرٍّ إلى مؤشرات الإدارة: الوجهة kpis ولوحتُه من GO_KPI ويُفتح تبويبُها', async () => {
+test('كلُّ زرٍّ إلى مؤشرات الإدارة: الوجهة kpis ولوحتُه من GO_KPI ويُفتح تبويبُها', needs('seized'), async () => {
   const N = notif(), leaves = N.LEAVES.filter((l) => N.goNav({ type: l.id, go: l.go }) === 'kpis');
   const buttons = new Set(leaves.map((l) => l.go));
   assert.ok(leaves.length >= 5, 'أنواعُ تنبيهٍ إلى المؤشرات: ' + leaves.map((l) => l.id).join(','));

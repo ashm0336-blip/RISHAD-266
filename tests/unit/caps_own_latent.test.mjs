@@ -14,6 +14,7 @@ import { world, stored, putKV } from './tasks_fx.mjs';
 import { loadClient, until, sleep } from './k264_vm.mjs';
 import { moduleLogic } from './harness.mjs';
 import { internals } from './internals.mjs';
+import { needs } from './harness.mjs';
 
 const D = 'tst_d1', KP = 'bassam_perms_v1', GK = 'bsdept:' + D + ':bassam_grants_v1', TPK = 'bsdept:' + D + ':bassam_perm_tpls_v1', EK = 'tst_e_emp1';
 const PG = ['dstats', 'emps', 'planning', 'staff', 'plan', 'daily', 'dreport', 'tasks', 'irshad', 'seized', 'award', 'links', 'help', 'admin'];
@@ -95,7 +96,7 @@ async function tpSaveAll(W) {
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + '(a) narrow → re-save sheet, lens list, templates (leaf-key and container-key) and grants → widen: everything as it was', async () => {
+  test(M + '(a) narrow → re-save sheet, lens list, templates (leaf-key and container-key) and grants → widen: everything as it was', needs('award'), async () => {
     const W = await scene(mode);
     const P0 = stored(W.env, KP), sh0 = cp(P0.emps[D][EK]), el0 = cp(P0.empLens[D][EK]), g0 = JSON.stringify(stored(W.env, GK)), stored0 = stored(W.env, TPK), t0 = [];
     let P = cp(P0); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok, 'narrowed');
@@ -121,7 +122,7 @@ for (const mode of ['legacy', 'enforce']) {
     }
   });
 
-  test(M + '(b) split requests: the narrowing first, then a request dropping latent items ⇒ refused, D1 byte-identical', async () => {
+  test(M + '(b) split requests: the narrowing first, then a request dropping latent items ⇒ refused, D1 byte-identical', needs('award'), async () => {
     const W = await scene(mode);
     let P = cp(stored(W.env, KP)); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok, 'the narrowing alone is accepted');
     const s0 = all(W);
@@ -144,7 +145,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal(all(W), s0, 'nothing written');
   });
 
-  test(M + '(c) a filtered (projected) manager view keeps latent items when saving; the same view without them is refused', async () => {
+  test(M + '(c) a filtered (projected) manager view keeps latent items when saving; the same view without them is refused', needs('award'), async () => {
     const W = await scene(mode);
     let P = cp(stored(W.env, KP)); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok);
     let v = await got(W, 'dm1', KP);
@@ -158,7 +159,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal(all(W), s0);
   });
 
-  test(M + '(d) explicit deletions stay allowed: whole sheet, lens list, grant entry, template; in-ceiling leaf; the system administrator\'s clearLatent', async () => {
+  test(M + '(d) explicit deletions stay allowed: whole sheet, lens list, grant entry, template; in-ceiling leaf; the system administrator\'s clearLatent', needs('award'), async () => {
     const W = await scene(mode);
     let P = cp(stored(W.env, KP)); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok);
     let v = await got(W, 'dm1', KP); delete v.emps[D][EK].tasks;

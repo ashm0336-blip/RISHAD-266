@@ -11,6 +11,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { SRC, blockFile, moduleDir } from './harness.mjs';
 import { moduleDirs } from '../../tools/systems_paths.mjs';   /* V7 · الحزمة ب */
+import { needs } from './harness.mjs';
 
 class CL { constructor() { this.s = new Set(); } add(c) { this.s.add(c); } remove(c) { this.s.delete(c); } contains(c) { return this.s.has(c); } toggle(c, f) { if (f === undefined ? !this.s.has(c) : f) this.s.add(c); else this.s.delete(c); } }
 class Style { constructor() { this.p = {}; this.minWidth = ''; } getPropertyValue(k) { return (this.p[k] || [''])[0]; } getPropertyPriority(k) { return (this.p[k] || ['', ''])[1]; } setProperty(k, v, pr) { this.p[k] = [v, pr || '']; } }
@@ -102,7 +103,7 @@ function tablesOf(html) {
   }
   return out;
 }
-test('IRSZ-1 · المصدر: جداولُ الوحدات ذاتُ الترويسة الثابتة — عددُ أعمدة الترويسة = عددُ خلايا كل صفّ (وسجلُّ الاسترشاد 12 = 12)', () => {
+test('IRSZ-1 · المصدر: جداولُ الوحدات ذاتُ الترويسة الثابتة — عددُ أعمدة الترويسة = عددُ خلايا كل صفّ (وسجلُّ الاسترشاد 12 = 12)', needs('irshad'), () => {
   const bad = [];
   for (const slug of Object.keys(moduleDirs(SRC)).sort()) {
     const f = path.join(moduleDir(slug), 'view.html'); if (!fs.existsSync(f)) continue;

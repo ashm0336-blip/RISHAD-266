@@ -17,6 +17,7 @@ import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, age, due, 
 import { world as restoreWorld } from './atomic_restore_review_fx.mjs';
 import { D1, IDS } from './notifications_review_fx.mjs';
 import { replaceOperationalFixture, inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { needs } from './harness.mjs';
 
 const U = (ch) => '\\u00' + ch.charCodeAt(0).toString(16).padStart(2, '0');
 const chain = (c, levels) => { for (let l = 0; l < levels; l++) c = c.replace(/\\/g, '\\u005c'); return c; };
@@ -136,7 +137,7 @@ both(test, 'F4 · a record that ALREADY stores an undecided text saves for an un
   assert.notEqual(detail(r5, KP2), detail(r3, KP), 'its own reason'); assert.ok(detail(r5, KP2).length > 10);
 });
 
-test('F4 · backup restore: a file whose record carries an undecided text is refused whole when the platform does not hold that text; when the stored record already holds it, the same file is restored', { timeout: 600000 }, async () => {
+test('F4 · backup restore: a file whose record carries an undecided text is refused whole when the platform does not hold that text; when the stored record already holds it, the same file is restored', { ...needs('award', 'dstats', 'seized'), timeout: 600000 }, async () => {
   const OPT = 'bsdept:' + D1 + ':bassam_options_v1', work = TAG + ' r ' + chain('xyz\\u0041', 70), text = JSON.stringify({ type: [], work: [work] });
   const keep = (o) => Object.fromEntries(Object.entries(o).filter(([name]) => name !== 'operations'));
   async function run(seedText) {

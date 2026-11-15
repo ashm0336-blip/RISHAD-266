@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
 import { parse } from 'acorn';
+import { needs } from './harness.mjs';
 const source=fs.readFileSync('src/services/548-atomic-backup.js','utf8');
 const transport=fs.readFileSync('src/api/280-server-storage.js','utf8');
 let resources;
@@ -31,7 +32,7 @@ function page(mutate){
   vm.runInContext(source,context);
   return{KIVO,calls,imageReads,boot,scope,export:()=>KIVO.BackupRestore.exportDomains({departments:[DEPT],full:false,v:7,images:{}})};
 }
-test('The actual backup service requires all21 typed resources and keeps operational image references in the same export',async()=>{
+test('The actual backup service requires all21 typed resources and keeps operational image references in the same export',needs('award', 'seized'), async()=>{
   const f=page(({kind,body})=>{if(kind==='operations')body.domains.find(d=>d.resource==='bassam_plan_v1').rows=clone(codec.TEST_ONLY_rows('bassam_plan_v1',{floors:[{sid:'TEST_ONLY_floor',img:'img_test_only'}]}));});
   const result=await f.export();assert.equal(result.domains.operations.length,21);assert.equal(f.calls.length,4);
   assert.deepEqual(f.imageReads,['img_test_only']);assert.equal(result.images.img_test_only,'data:image/png;base64,TEST_ONLY');

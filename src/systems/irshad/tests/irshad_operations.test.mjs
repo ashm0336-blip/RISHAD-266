@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {world,seed,D1,D2,IDS,identitySnapshot} from '../../../../tests/unit/irshad_domain_fx.mjs';
 import {EKEYS} from '../../../../tests/unit/custody_review_fx.mjs';
 import {replaceOperationalFixture} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
+import { needs } from '../../../../tests/unit/harness.mjs';
 const copy=x=>JSON.parse(JSON.stringify(x));
 const EXTRA=['irAct','irQueryContext','irRead','cuClock','NF_REV','canRead','retroApi'];
 const SHIFT='TEST_ONLY_shift_A', OTHER_SHIFT='TEST_ONLY_shift_B';
@@ -57,7 +58,7 @@ async function restoreExport(B,domain){
   return B.W.rsCommit(B.env,A,await B.W.rsPrepare(B.env,A,body,{}),{});
 }
 
-test('real create/read/edit/delete preserve server identity and sparse survivor export/restore',async()=>{
+test('real create/read/edit/delete preserve server identity and sparse survivor export/restore',needs('award', 'seized'), async()=>{
   const B=await fixture(),identity=identitySnapshot(B.DB),first=await B.act(await B.body('create',{data:data(B)})),second=await B.act(await B.body('create',{data:data(B,{bro:4})}));
   assert.notEqual(first.id,second.id);assert.match(first.id,/^ir-/);
   let page=await B.read();const original=page.rows.find(row=>row.id===first.id);

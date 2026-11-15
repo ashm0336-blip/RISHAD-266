@@ -9,6 +9,7 @@ import {createHash} from 'node:crypto';
 import {parse} from 'acorn';
 import {ROOT} from '../../../../tests/unit/harness.mjs';
 import {world, D1, D2, IDS, identitySnapshot} from './business_atomic_fx.mjs';
+import { needs } from '../../../../tests/unit/harness.mjs';
 
 assert.ok(process.env.KIVO_DIST,'Set KIVO_DIST to the current tested build; do not inspect an older default bundle');
 const DIST=path.resolve(ROOT,process.env.KIVO_DIST),sha=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -59,7 +60,7 @@ for(const name of ['Seized','Award'])test('actual emitted '+name+' factory inclu
  assert.deepEqual(forbidden,[]);assert.equal(C.KIVO.BusinessCloud,undefined);
 });
 
-test('actual emitted 548 exports all four canonical HTTP business domains with every declared department and one explicit read-only global Award scope',async t=>{
+test('actual emitted 548 exports all four canonical HTTP business domains with every declared department and one explicit read-only global Award scope',needs('dstats'), async t=>{
  const B=await world({schema:10});t.after(()=>B.DB.db.close());
  const perms=JSON.parse(JSON.stringify(B.keys.bassam_perms_v1));Object.values(perms.caps).forEach(caps=>caps.push('irshad','seized','award'));await B.put('bassam_perms_v1',perms,true);
  const revision=(await B.api('super','/api/get?keys=&uid='+IDS.super)).json.v,protectedBefore=identitySnapshot(B.DB),calls=[],assets=built(),{C,forbidden}=environment();

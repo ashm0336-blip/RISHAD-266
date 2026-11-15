@@ -10,6 +10,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import {parse} from 'acorn';
+import { needs } from './harness.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const L = rd('src/modules/admin/logic.js');
@@ -45,7 +46,7 @@ function harness(opts={}){
   return{run:target=>self.deptDel(target),calls,self,postStarted,ack(){assert.ok(settle,'A real POST is awaiting its receipt');settle();}};
 }
 
-test('إدارة فيها مدير و103 موظفين: تأكيد باسم الإدارة وجردها الخادمي — لا حذف قبل الموافقة',async()=>{
+test('إدارة فيها مدير و103 موظفين: تأكيد باسم الإدارة وجردها الخادمي — لا حذف قبل الموافقة',needs('award', 'seized'), async()=>{
   // The closed route now inventories 104 department/staff accounts together;
   // neither manager counts nor employee lists are trusted from browser storage.
   const h=harness({populated:true,answer:false});await h.run({...DEPT,name:'TEST_ONLY stale cached name'});
@@ -83,7 +84,7 @@ test('النافذةُ المشتركة: typed يعطّل التأكيد حتى 
 });
 
 
-test('جرد ناقص لمجال الاسترشاد يرفض التأكيد وPOST؛ انتظار إشارة غير مرسلة يفشل بمهلة محدودة',async()=>{
+test('جرد ناقص لمجال الاسترشاد يرفض التأكيد وPOST؛ انتظار إشارة غير مرسلة يفشل بمهلة محدودة',needs('irshad'), async()=>{
   const h=harness({populated:true,answer:true,missingIR:true});
   await bounded(h.run(DEPT),'invalid inventory completion');
   assert.deepEqual(h.calls.confirm,[]);assert.deepEqual(h.calls.post,[]);assert.deepEqual(h.calls.ack,[]);

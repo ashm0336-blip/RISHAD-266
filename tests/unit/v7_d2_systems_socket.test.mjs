@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ROOT, PYTHON, SYSTEMS, hasSystem } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const run = (src, ...a) => spawnSync(PYTHON, [path.join(ROOT, 'tools', 'systems.py'), ...a, '--src', src], { encoding: 'utf8' });
 const sys = (key, extra = {}) => Object.assign({ schema: 1, kind: 'system', key, name: 'TEST_ONLY ' + key, client: { slug: key, component: key, files: [] }, server: { parts: [] } }, extra);
@@ -59,7 +60,7 @@ test('V7 · د2-ب: النصُّ المحايد empty، وبدائلُ القط�
   assert.equal(w.out(), 'K=false;\nR=[];\nF=null;\n', 'بلا نظام: النصُّ المحايد'); w.done();
 });
 
-test('V7 · د2: المستودع — الأنظمةُ الحاضرة صالحة، وكلُّ متطلَّبٍ حاضر (المضبوطات تتطلب الاسترشاد)، والمحقونُ = الملتزَم', () => {
+test('V7 · د2: المستودع — الأنظمةُ الحاضرة صالحة، وكلُّ متطلَّبٍ حاضر (المضبوطات تتطلب الاسترشاد)، والمحقونُ = الملتزَم', needs('award'), () => {
   const r = run(path.join(ROOT, 'src'), '--list'); assert.equal(r.status, 0, r.stderr);
   /* د2-ب: المقبسُ يسرد ما في src/systems بالضبط — أربعةٌ في المستودع الكامل، وأقلّ في نسخة اختبار الحذف */
   const L = JSON.parse(r.stdout); assert.deepEqual(L.map((x) => x.key), SYSTEMS);

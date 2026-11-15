@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import { world, ok } from './atomic_restore_review_fx.mjs';
 import { D1, IDS, copy } from './notifications_review_fx.mjs';
 import { replaceOperationalFixture, inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { needs } from './harness.mjs';
 
 const OPTIONS = 'bsdept:' + D1 + ':bassam_options_v1';
 const ID = 'img_testonly_swept', KEPT = 'img_testonly_kept', BODY = 'data:image/png;base64,VEVTVF9PTkxZ';
@@ -40,7 +41,7 @@ async function seed(B) {
 const get = async (B, who, id) => { const r = await B.W.default.fetch(new Request('http://x/api/img/' + id, { headers: { Cookie: 'bs_tok=TEST_ONLY_session_' + who } }), B.env); return { status: r.status, text: await r.text() }; };
 
 for (const carried of [true, false]) {
-  test('a backup that mentions a swept image ' + (carried ? 'and CARRIES its bytes' : 'without its bytes') + ' is restored; the image reads as missing; no image byte is written', async () => {
+  test('a backup that mentions a swept image ' + (carried ? 'and CARRIES its bytes' : 'without its bytes') + ' is restored; the image reads as missing; no image byte is written', needs('award', 'dstats', 'seized'), async () => {
     const B = await world(), S = await seed(B), images = carried ? { [ID]: BODY, [KEPT]: BODY } : { [KEPT]: BODY };
     const inspected = ok(await B.api('super', '/api/backup/restore', await payload(B, images, 'inspect')));
     assert.equal(inspected.inspection.summary.imagesMissing, 1, 'the confirmation step tells the admin before anything is written');
@@ -63,7 +64,7 @@ for (const carried of [true, false]) {
   });
 }
 
-test('the bytes of a swept image come back only by a real upload: after it, the same backup restores it as a normal reused image', async () => {
+test('the bytes of a swept image come back only by a real upload: after it, the same backup restores it as a normal reused image', needs('award', 'dstats', 'seized'), async () => {
   const B = await world(), S = await seed(B);
   /* the platform admin uploads the bytes he holds (PUT /api/img) and saves them into the record — the ordinary bind path */
   const up = await B.W.default.fetch(new Request('http://x/api/img/' + ID, { method: 'PUT', headers: { Cookie: 'bs_tok=TEST_ONLY_session_super', Origin: 'http://x', 'Content-Type': 'text/plain' }, body: BODY }), B.env);
@@ -104,7 +105,7 @@ async function seedOrphan(B, body = BODY) {
 const ownOf = (B, id) => copy(B.DB.q('SELECT st,k,dept FROM imgown WHERE img=?1', id))[0] || null;
 const writes = (S) => S.calls.filter((c) => c[0] === 'put' || c[0] === 'delete');
 
-test('finding 7 · the platform admin restores a backup that carries a still-present orphan: the orphan is re-bound to the restored record, no image byte is written, and it is never swept', async () => {
+test('finding 7 · the platform admin restores a backup that carries a still-present orphan: the orphan is re-bound to the restored record, no image byte is written, and it is never swept', needs('award', 'dstats', 'seized'), async () => {
   const B = await world(), S = await seedOrphan(B);
   assert.equal(D2, (await import('./notifications_review_fx.mjs')).D2);
   const ack = await B.api('super', '/api/backup/restore', await payloadOf(B, [ORPH, KEPT], { [ORPH]: BODY, [KEPT]: BODY }));
@@ -118,7 +119,7 @@ test('finding 7 · the platform admin restores a backup that carries a still-pre
   assert.deepEqual(ownOf(B, ORPH), { st: 'bound', k: OPTIONS, dept: D1 }, '31 days later it is a bound image, not a candidate'); assert.equal(S.map.get('img/' + ORPH), BODY);
 });
 
-test('finding 7 · the gate is not weakened: different bytes, or an actor who may not re-bind the orphan, keep the 409 and change nothing', async () => {
+test('finding 7 · the gate is not weakened: different bytes, or an actor who may not re-bind the orphan, keep the 409 and change nothing', needs('award', 'dstats', 'seized'), async () => {
   /* the file's bytes differ from the orphan's stored bytes */
   let B = await world(), S = await seedOrphan(B, OTHER), before = ownOf(B, ORPH);
   let r = await B.api('super', '/api/backup/restore', await payloadOf(B, [ORPH, KEPT], { [ORPH]: BODY, [KEPT]: BODY }));
@@ -137,7 +138,7 @@ test('finding 7 · the gate is not weakened: different bytes, or an actor who ma
 /* ── the independent review, low item — a FULL replace-restore that no longer carries a unit removes it without passing through the unit-delete
    route, which is where the orphans of a deleted unit were stamped (decision 3). The restore now stamps them in its own commit: a unit created
    later under the same id inherits nothing (054 imgOrphanRebindOk refuses a stamped orphan to everyone but the platform admin). */
-test('low · a full replace-restore that drops a unit stamps that unit\'s orphans in the same commit; the orphans of the units it keeps are untouched', async () => {
+test('low · a full replace-restore that drops a unit stamps that unit\'s orphans in the same commit; the orphans of the units it keeps are untouched', needs('award', 'dstats', 'seized'), async () => {
   const B = await world(), scope = { kind: 'full' }, request = await B.body({ scope }), K = 'bassam_depts_v1', units = JSON.parse(request.keys[K]);
   assert.ok(units.some((d) => d.id === D2) && units.some((d) => d.id === D1));
   await B.DB.batch([B.DB.prepare('INSERT INTO imgown(img,st,k,uid,dept,ts) VALUES(?1,?2,?3,?4,?5,?6)').bind('img_testonly_d2orph', 'orphan', '', 'TEST_ONLY_u2', D2, Date.now()),

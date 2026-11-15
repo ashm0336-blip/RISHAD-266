@@ -9,6 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { world, rd, UNITS } from './core01_root_world.mjs';
+import { needs } from './harness.mjs';
 
 /* display() as shipped: the object-literal method of BassamAuth in 334, run with cur() returning the session */
 function realDisplay() {
@@ -86,7 +87,7 @@ test('collapsed rail: the unit picker opens without expanding the sidebar; no na
   assert.match(rd('layouts/helmet-global.css'), /\.bsb\.cx \.s-deptdd\{position:fixed;/);
 });
 
-test('shell markup: title in installed-app mode, data-key nav, key-based ordering and navigation', () => {
+test('shell markup: title in installed-app mode, data-key nav, key-based ordering and navigation', needs('award', 'dstats', 'seized'), () => {
   const T = rd('layouts/index.template.html'), R = rd('layouts/root-logic.js');
   assert.doesNotMatch(T + R, /notAppMode/, 'the title is not gated on display-mode');
   assert.match(T, /<div class="bs-crumb">\{\{crumbUnit\}\} \/ <span>\{\{pageName\}\}<\/span><\/div>/);

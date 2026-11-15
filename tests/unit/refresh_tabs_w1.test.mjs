@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { SRC, ROOT, moduleLogic, moduleFile } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const J = (o) => JSON.parse(JSON.stringify(o));
@@ -60,7 +61,7 @@ test('موظفو الإدارة (R1 · ES-1): #/employees/custody — «عهد �
   assert.doesNotMatch(method(P.src, '_bsHR() {'), /setTimeout/);
 });
 
-test('التميز (R1 · AUX-06): #/award/res و#/award/doc في أوّل رسم · بلا مؤقّت', () => {
+test('التميز (R1 · AUX-06): #/award/res و#/award/doc في أوّل رسم · بلا مؤقّت', needs('award'), () => {
   for (const tab of ['res', 'doc']) {
     const P = page('award', ['_bsHR() {'], { state: { awTab: 'new' }, perm: { subOn: () => true }, kivo: { __BS_OPEN_TAB: { page: 'award', tab } } });
     P.c._bsHT = (t) => P.replaced.push(t);
@@ -126,7 +127,7 @@ test('الإعدادات (R1 · AUX-06): #/admin/import|ptpls|shifts|oplog — �
   assert.doesNotMatch(src, /setTimeout\(\s*\(\) =>\s*this\.setState\(\{ deptTab: q \}/);
 });
 
-test('الإحصائيات اليومية (KD-03 · R7): #/dstats/nabawi يفتح المسجدَ النبوي متزامناً · والمسجدُ يُكتب في العنوان عند التبديل · والمحفوظُ يبقى بعد التركيب والقراءة السحابية', async () => {
+test('الإحصائيات اليومية (KD-03 · R7): #/dstats/nabawi يفتح المسجدَ النبوي متزامناً · والمسجدُ يُكتب في العنوان عند التبديل · والمحفوظُ يبقى بعد التركيب والقراءة السحابية', needs('dstats'), async () => {
   const self = { SOLO: () => '', SITES: () => ['haram', 'nabawi'], SITE() { return this.state.site; } };
   const P = page('dstats', ['_bsHR(){'], { state: { site: 'haram', draft: { a: 1 } }, self, kivo: { __BS_OPEN_TAB: { page: 'dstats', tab: 'nabawi' } } });
   P.c._bsHT = (t) => P.replaced.push(t);
@@ -163,7 +164,7 @@ test('الإحصائيات اليومية (KD-03 · R7): #/dstats/nabawi يفت�
   assert.match(src, /if\(!s\.year\|\|!s\.anY\) return Object\.assign\(this\.EMPTY\(\), this\.EMPTY_AN\(\)\);/, 'الرسمُ قبل التركيب فارغٌ لا يُعرض');
 });
 
-test('الاسترشاد والمضبوطات (R7): #/irshad/records و#/seized/records تُطبَّق متزامناً · والرابطُ غيرُ الصالح يعود إلى الصفحة · والنسخُ solo لا تشارك', () => {
+test('الاسترشاد والمضبوطات (R7): #/irshad/records و#/seized/records تُطبَّق متزامناً · والرابطُ غيرُ الصالح يعود إلى الصفحة · والنسخُ solo لا تشارك', needs('seized'), () => {
   for (const mod of ['irshad', 'seized']) {
     const P = page(mod, ['_bsHR() {'], { state: { irTab: 'dash' }, kivo: { __BS_OPEN_TAB: { page: mod, tab: 'records' } } });
     P.c._bsHT = (t) => P.replaced.push(t);
@@ -238,7 +239,7 @@ test('المهام (DG-14): «الشهر كاملاً» واليومُ المخ�
   R.V().tkDays[2].click();
   assert.deepEqual({ k: R.c.state.tkDayK, d: R.c.state.tkDayD }, { k: SK, d: 3 });
 });
-test('الاسترشاد والمضبوطات (R7 · تحقّقُ الموجة 1): التبديلُ داخل الصفحة يكتب التبويبَ في العنوان — فلا يعيد التحديثُ أو الرجوعُ تبويباً تركه المستخدم', () => {
+test('الاسترشاد والمضبوطات (R7 · تحقّقُ الموجة 1): التبديلُ داخل الصفحة يكتب التبويبَ في العنوان — فلا يعيد التحديثُ أو الرجوعُ تبويباً تركه المستخدم', needs('seized'), () => {
   for (const mod of ['irshad', 'seized']) {
     const P = page(mod, ['_bsHT(t) {'], { hash: '#/' + mod + '/records' });
     P.c._bsHT('dash'); assert.equal(P.loc.hash, '#/' + mod + '/dash');

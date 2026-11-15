@@ -13,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, worker, ROOT, WORKER } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { needs } from './harness.mjs';
 /* العاملُ المختبَر قبل KIVO_264 (حزمةٌ أقدم عبر KIVO_WORKER) ⇒ تخطٍّ معلن — KIVO_K264_STRICT=1 يفرض التشغيل */
 const K264 = fs.readFileSync(WORKER, 'utf8').includes("'session-changed'") || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264' };
 const TODAY = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return o; })();
@@ -126,7 +127,7 @@ for (const mode of ['legacy', 'enforce']) test('(C2) [' + mode + '] /api/changes
   const g2 = await C.api('/api/get?keys=' + encodeURIComponent(KS.slice(0, 80).join(',')), { cookie: su.ck });
   assert.equal(Object.keys(g2.j.keys).length, 80); assert.ok(!('more' in g2.j));
 });
-test('(C2) الموظفُ: القطعُ على ما يراه وحده — مفاتيحُ غيره لا تُحسب ولا تظهر', K264, async () => {
+test('(C2) الموظفُ: القطعُ على ما يراه وحده — مفاتيحُ غيره لا تُحسب ولا تظهر', { ...K264, ...needs('irshad') }, async () => {
   const { env, C } = await world('legacy');
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok);
   const v0 = +(env.DB.q("SELECT v FROM meta WHERE k = 'rev'")[0]).v;

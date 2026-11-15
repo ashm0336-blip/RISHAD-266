@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto';
 import { inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { world, browser, fullExport, assertManifest4, D1, D2, OPTIONS, optionValue, scoped, identity, snapshot, epoch, posts, sourcePart, copy } from './operations_backup_flow_fx.mjs';
 import { until } from './k264_vm.mjs';
+import { needs } from './harness.mjs';
 
 const workerSha = createHash('sha256').update(fs.readFileSync('workers/_worker.js')).digest('hex');
 console.log('Actual Operations backup frontend Worker SHA256 before ' + workerSha);
@@ -23,7 +24,7 @@ function assertProtected(B, before) {
   assert.equal(B.DB.q('SELECT COUNT(*)n FROM kv WHERE k=?', OPTIONS)[0].n, 0);
 }
 
-test('Admin actual exportBackup → Manifest4 → importBackup/fbkCommit restores normalized Operations with one atomic receipt', async t => {
+test('Admin actual exportBackup → Manifest4 → importBackup/fbkCommit restores normalized Operations with one atomic receipt', needs('award', 'seized'), async t => {
   const B = await world(), original = optionValue('TEST_ONLY archived full option');
   await replaceOperationalFixture(B.env, OPTIONS, original);
   const protectedBefore = identity(B), C = await browser(B, t), file = await fullExport(C);
@@ -84,7 +85,7 @@ test('lost full restore ACK retains ticket/file and exact retry, with no partial
   assert.deepEqual(after, committed); assert.deepEqual(C.localWrites, []); assertProtected(B, protectedBefore);
 });
 
-test('Root actual department export → bkImportFile/bkCommit restores D1 and preserves foreign D2 rows/revisions', async t => {
+test('Root actual department export → bkImportFile/bkCommit restores D1 and preserves foreign D2 rows/revisions', needs('award', 'dstats', 'seized'), async t => {
   const B = await world(), original = optionValue('TEST_ONLY archived department option'), foreign = scoped('bassam_options_v1', D2);
   await replaceOperationalFixture(B.env, OPTIONS, original);
   await replaceOperationalFixture(B.env, foreign, optionValue('TEST_ONLY foreign original'));

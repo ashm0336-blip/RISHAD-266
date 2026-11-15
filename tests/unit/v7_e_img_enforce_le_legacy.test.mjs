@@ -40,6 +40,7 @@ import { fileURLToPath } from 'node:url';
 import { makeTestEnv, client, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { internals } from './internals.mjs';
 import { world, workerUnderTest, D as FXD, PNG as FXPNG, TAG, stored, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
+import { needs } from './harness.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const { PG_KEYS, RES_REG, pgLeaves, ACTS_ALL, WRITE_ACTS } = await internals(['PG_KEYS', 'RES_REG', 'pgLeaves', 'ACTS_ALL', 'WRITE_ACTS']);
@@ -205,7 +206,7 @@ test('the OPEN exception is pinned literally (owner decision 2026-11-12, option 
 let SW = null;
 const sweeps = (t) => SW || (SW = quiet(async () => ({ L: await sweep('legacy', t), E: await sweep('enforce', t) })));
 
-test('the sweep is not vacuous: the lists are derived and both modes allow real writers', { timeout: 1800000 }, async (t) => {
+test('the sweep is not vacuous: the lists are derived and both modes allow real writers', { ...needs('award', 'dstats', 'irshad', 'seized'), timeout: 1800000 }, async (t) => {
   const { L, E } = await sweeps(t);
   assert.ok(LEAVES.length >= 40 && ASSIGN.length >= 231 && RECORDS.length >= 68 + 41, 'pages/leaves, assignable keys and records are read from the server and the registry');
   for (const rn of ['bassam_plan_v1', 'bassam_rounds_v1', 'bassam_zone_opts_v1', 'bassam_gate_opts_v1', 'bassam_mark_kinds_v1', 'bassam_tasks_v1', 'bassam_seized_v1', 'bassam_dreport_v1', 'bassam_dayshift_v1', 'bassam_employees_v1', 'bassam_profile_v1']) assert.ok(RECORDS.some((r) => r.id === rn), rn);
@@ -221,7 +222,7 @@ test('the sweep is not vacuous: the lists are derived and both modes allow real 
   assert.equal(E.table['g site.edit'].bassam_plan_v1, 'YYY'); assert.equal(E.table['g round.edit'].bassam_rounds_v1, 'YYY'); assert.equal(E.table['g task.edit'].bassam_tasks_v1, 'YYY');
 });
 
-test('IMAGES: enforce allows nothing that legacy refuses — every actor × record × operation', { timeout: 1800000 }, async (t) => {
+test('IMAGES: enforce allows nothing that legacy refuses — every actor × record × operation', { ...needs('award', 'dstats', 'irshad', 'seized'), timeout: 1800000 }, async (t) => {
   const { L, E } = await sweeps(t), V = violations(L.table, E.table);
   t.diagnostic('compared ' + V.compared + ' enforce cells against legacy (' + Object.keys(E.table).length + ' enforce actors, ' + Object.keys(L.table).length + ' legacy actors, ' + (RECORDS.length + 3) + ' stored images, 3 operations; 3 new-upload kinds, 2 operations)');
   if (process.env.V7E_PRINT) console.log(JSON.stringify(V.out, null, 1));

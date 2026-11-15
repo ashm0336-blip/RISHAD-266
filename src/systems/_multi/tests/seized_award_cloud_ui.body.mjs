@@ -8,6 +8,7 @@ import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
 import { parse } from 'acorn';
 import { json, clock, bases, item, catalogDto, ack, waitFor, browser, seedForm, save, ROOT } from './business_cloud_ui_fx.mjs';
+import { needs } from '../../../../tests/unit/harness.mjs';
 
 for (const module of ['seized', 'award']) {
   test(module + ' actual tab presentation hides unread panels and keeps a real denial visible', async t => {
@@ -71,7 +72,7 @@ test('award permitted references stay available independently of a denied record
   assert.equal(B.calls.filter(call => new URL(call.url, 'https://example.invalid').searchParams.get('view') === 'records').length, 1);
 });
 
-test('Seized build-only defaults exactly preserve the established pre-migration literals and the generated Worker defaults', () => {
+test('Seized build-only defaults exactly preserve the established pre-migration literals and the generated Worker defaults', needs('dstats'), () => {
   const old = execFileSync('git', ['show', '4d8ab1e:src/modules/seized/logic.js'], { cwd: ROOT, encoding: 'utf8' }),
     klass = parse(old, { ecmaVersion: 'latest' }).body.find(node => node.type === 'ClassDeclaration'),
     names = ['SZ_VER', 'SZ_DEF_CATS', 'SZ_DEF_ACTS', 'SZ_DEF_KINDS'], members = klass.body.body.filter(node => names.includes(node.key?.name));

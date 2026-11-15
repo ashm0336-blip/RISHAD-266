@@ -9,6 +9,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, WORKER, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
+import { needs } from './harness.mjs';
 const FIX = fs.readFileSync(WORKER, 'utf8').includes('sessUidMismatch') || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264 (uid على مسارَي القراءة)' };
 function seedSql() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {};
@@ -19,7 +20,7 @@ function seedSql() {
 }
 const K = 'bsdept:tst_d1:bassam_irshad_v1';
 
-for (const mode of ['legacy', 'enforce']) test('(C1 · القراءة) [' + mode + '] ?uid= يخالف صاحبَ الجلسة ⇒ 409 session-changed على /api/changes و/api/get بلا قراءةٍ ولا انتظار · المطابقُ والغائبُ كما كانا', FIX, async () => {
+for (const mode of ['legacy', 'enforce']) test('(C1 · القراءة) [' + mode + '] ?uid= يخالف صاحبَ الجلسة ⇒ 409 session-changed على /api/changes و/api/get بلا قراءةٍ ولا انتظار · المطابقُ والغائبُ كما كانا', { ...FIX, ...needs('irshad') }, async () => {
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await applySql(env.DB, seedSql());

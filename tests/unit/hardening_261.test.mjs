@@ -10,6 +10,7 @@ import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, ROOT } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { internals } from './internals.mjs';
+import { needs } from './harness.mjs';
 function seedSql() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; });
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_fx_h261_')); execFileSync(PYTHON, [ROOT + '/tests/fixtures/gen_fixture.py', '--today', o.year + '-' + o.month + '-' + o.day, '--out', out], { stdio: 'pipe' });
@@ -135,7 +136,7 @@ test('SOT-068: base64 كاملاً — «data:image/png,<html>» و«;base64,<ht
   assert.equal((await put('im_h6', '<html>not base64</html>', '?p=1&n=2')).status, 415, 'جزءٌ تالٍ بغير base64 ⇒ 415');
   assert.equal((await put('im_h6', 'REVG', '?p=1&n=2')).status, 200, 'والسليمُ يُجمَّع');
 });
-test('حصّةُ رفع الصور اليومية (المراجعةُ المستقلة · البند 5): حسابٌ عادي تجاوز 256 MB في يومه ⇒ 429 بلا كتابة · مديرُ النظام مستثنى · العدّادُ لا يُحتسب قفلاً', async () => {
+test('حصّةُ رفع الصور اليومية (المراجعةُ المستقلة · البند 5): حسابٌ عادي تجاوز 256 MB في يومه ⇒ 429 بلا كتابة · مديرُ النظام مستثنى · العدّادُ لا يُحتسب قفلاً', needs('irshad'), async () => {
   const W = await world('legacy');
   const put = (ck, k, body) => W.C.api('/api/img/' + k, { method: 'PUT', cookie: ck, headers: { 'content-type': 'text/plain; charset=utf-8' }, body });
   const B = 'data:image/png;base64,' + 'QUJD'.repeat(256);

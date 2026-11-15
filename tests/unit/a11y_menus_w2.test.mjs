@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { ROOT, SRC, moduleLogic, moduleFile } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const SERVICES = ['src/services/060-percent-format.js', 'src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js',
@@ -80,7 +81,7 @@ test('DG-02 · «المهام»: الكتلةُ كلُّها تحت tkPmExport (
 
 /* RISHAD-266 (دفعة الواجهات): IRSZ-8 كاملاً في الصفحتين — رُفع السقفان بقرارٍ موثّق (perf_budget.json · unifyBatch3Decision) */
 const VIEWONLY = { view: true };
-test('IRSZ-8 · «الاسترشاد» و«المضبوطات»: بلا تصدير ⇒ لا «ملفات» ولا فاصل، و«حذف الكل» زرٌّ صريح · بالتصدير والحذف ⇒ القائمةُ كما كانت بفاصلها', () => {
+test('IRSZ-8 · «الاسترشاد» و«المضبوطات»: بلا تصدير ⇒ لا «ملفات» ولا فاصل، و«حذف الكل» زرٌّ صريح · بالتصدير والحذف ⇒ القائمةُ كما كانت بفاصلها', needs('seized'), () => {
   for (const slug of ['irshad', 'seized']) {
     const vo = render(slug, VIEWONLY), dm = render(slug, DM), ex = render(slug, EX), exo = render(slug, EXONLY);
     assert.deepEqual([vo.irPmExport, vo.irLgSepOn, vo.irLgDelOnly], [false, false, false], slug + ': عرضٌ فقط — لا قائمة ولا زرّ');
@@ -98,7 +99,7 @@ test('IRSZ-8 · «الاسترشاد» و«المضبوطات»: بلا تصدي
   }
 });
 
-test('IRSZ-8 · «حذف الكل» بلا سجلاتٍ في الشهر لا يصمت: يقول السببَ وما يُفعل · وبلا صلاحية الحذف يمرّ برسالة الصلاحية', () => {
+test('IRSZ-8 · «حذف الكل» بلا سجلاتٍ في الشهر لا يصمت: يقول السببَ وما يُفعل · وبلا صلاحية الحذف يمرّ برسالة الصلاحية', needs('seized'), () => {
   for (const [slug, word] of [['irshad', 'تقارير'], ['seized', 'محاضر']]) {
     const src = moduleLogic(slug);
     assert.match(src, new RegExp('this\\.bsToast\\("لا ' + word + ' في " \\+ [A-Za-z]+ \\+ " " \\+ [A-Za-z]+ \\+ " هـ لحذفها — اختر شهراً فيه ' + word + '\\."\\)'), slug);

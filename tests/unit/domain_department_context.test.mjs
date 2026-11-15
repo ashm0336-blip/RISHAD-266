@@ -8,6 +8,7 @@ import { createHash } from "node:crypto";
 import { D1Shim } from "./harness.mjs";
 import { canonicalDigest } from "./custody_review_fx.mjs";
 import { candidateWorker } from "./irshad_domain_fx.mjs";
+import { needs } from './harness.mjs';
 
 const SOURCE = fs.readFileSync("workers/_worker.js");
 assert.equal(
@@ -317,7 +318,7 @@ async function world({ registered = true, seed = true } = {}) {
   return { DB, W, env, users, permissions, clock, put, api, read, whoId };
 }
 
-test("owner with absent/empty department registry gets domain403 for invented d1 on all records and dashboards without mutation or data", async (t) => {
+test("owner with absent/empty department registry gets domain403 for invented d1 on all records and dashboards without mutation or data", needs('award', 'seized'), async (t) => {
   for (const empty of ["absent", "array"]) {
     const B = await world({ registered: false, seed: false });
     try {
@@ -334,7 +335,7 @@ test("owner with absent/empty department registry gets domain403 for invented d1
   }
 });
 
-test("missing IR/Seized department is a scope400, while existing explicit Award global reference/context contract stays read-only", async (t) => {
+test("missing IR/Seized department is a scope400, while existing explicit Award global reference/context contract stays read-only", needs('award', 'seized'), async (t) => {
   const B = await world({ registered: false, seed: false });
   t.after(() => B.DB.db.close());
   const before = businessSnapshot(B.DB);
@@ -358,7 +359,7 @@ test("missing IR/Seized department is a scope400, while existing explicit Award 
   assert.deepEqual(businessSnapshot(B.DB), before);
 });
 
-test("valid registered departments let the real super read all domain views with records and dashboard isolation", async (t) => {
+test("valid registered departments let the real super read all domain views with records and dashboard isolation", needs('award', 'seized'), async (t) => {
   const B = await world();
   t.after(() => B.DB.db.close());
   const before = businessSnapshot(B.DB);
@@ -381,7 +382,7 @@ test("valid registered departments let the real super read all domain views with
   assert.deepEqual(B.DB.q("PRAGMA foreign_key_check"), []);
 });
 
-test("removing a department registry invalidates captured owner read/write context without touching typed data, identities or policy", async (t) => {
+test("removing a department registry invalidates captured owner read/write context without touching typed data, identities or policy", needs('award', 'seized'), async (t) => {
   const B = await world();
   t.after(() => B.DB.db.close());
   const bases = {};
@@ -415,7 +416,7 @@ test("removing a department registry invalidates captured owner read/write conte
   assert.deepEqual(B.DB.q("PRAGMA foreign_key_check"), []);
 });
 
-test("limited real staff read their registered department only; foreign and no-view reads return403 without leaking records or totals", async (t) => {
+test("limited real staff read their registered department only; foreign and no-view reads return403 without leaking records or totals", needs('award', 'seized'), async (t) => {
   const B = await world();
   t.after(() => B.DB.db.close());
   const before = businessSnapshot(B.DB);
@@ -437,7 +438,7 @@ test("limited real staff read their registered department only; foreign and no-v
   assert.deepEqual(businessSnapshot(B.DB), before);
 });
 
-test("old query UID cannot reuse a valid owner session on any domain, even when its department is valid", async (t) => {
+test("old query UID cannot reuse a valid owner session on any domain, even when its department is valid", needs('award', 'seized'), async (t) => {
   const B = await world();
   t.after(() => B.DB.db.close());
   const before = businessSnapshot(B.DB);

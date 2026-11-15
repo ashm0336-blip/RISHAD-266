@@ -8,6 +8,7 @@ import { world as canonicalWorld, D1, D2, IDS, copy } from './custody_review_fx.
 import { candidateWorker } from './irshad_domain_fx.mjs';
 import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { needs } from './harness.mjs';
 
 const workerSha = createHash('sha256').update(fs.readFileSync('workers/_worker.js')).digest('hex');
 console.log('Actual Operations HTTP Worker SHA256 ' + workerSha);
@@ -166,7 +167,7 @@ async function exportFile(B) {
     manifest: { version: 4, scope: 'full', domains: Object.fromEntries(['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards', 'operations'].map(name => [name, 1])), departments, keys: Object.keys(data) } };
 }
 
-test('Manifest4 exports every Operations resource including absent domains and restores through the real atomic HTTP path', async () => {
+test('Manifest4 exports every Operations resource including absent domains and restores through the real atomic HTTP path', needs('award', 'dstats', 'seized'), async () => {
   const B = await world(), protectedBefore = identity(B), file = await exportFile(B), original = copy(file), definitions = B.W.opDefinitions();
   assert.equal(definitions.length, 21); assert.equal(file.domains.operations.length, definitions.length * file.manifest.departments.length);
   const actual = new Set(file.domains.operations.map(domain => scoped(domain.resource, domain.scope.departmentId)));

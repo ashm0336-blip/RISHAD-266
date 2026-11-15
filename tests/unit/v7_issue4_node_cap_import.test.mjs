@@ -9,6 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, stored, putKV, D as U2 } from './tasks_fx.mjs';
+import { needs } from './harness.mjs';
 
 const KG = 'bassam_gdepts_v1', KD = 'bassam_depts_v1', KP = 'bassam_perms_v1', X = 'TEST_ONLY_X', EK = 'tst_e_emp1';
 const NARROW = ['emps', 'help'];                       /* X's ceiling: «seized» is outside it, «emps» inside */
@@ -59,7 +60,7 @@ const recOf = (P, id) => Object.fromEntries(['caps', 'subs', 'lenses', 'capOwn']
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + 'control: before the import U2 is open (no record on it or above it) — the grant the later cases must refuse is accepted here', async () => {
+  test(M + 'control: before the import U2 is open (no record on it or above it) — the grant the later cases must refuse is accepted here', needs('seized'), async () => {
     const W = await scene(mode), out = await grant(W, 'seized/records');
     assert.ok(out.ok, out.show);
   });

@@ -133,13 +133,13 @@ test('Actual Seized cutover guard rejects a writer in each of eleven target tabl
   const result=replay({...exactlyGuard(plan.after,tables,'KIVO_SEIZED_TARGET_CHANGED'),kind:'legacy'});
   assert.equal(result.checks,12);assert.equal(result.atomicMarkerRollback,true);
 });
-test('Actual Seized empty-restore guard preserves foreign departments and rejects each selected-scope writer at compound cap five',async()=>{
+test('Actual Seized empty-restore guard preserves foreign departments and rejects each selected-scope writer at compound cap five',needs('dstats'), async()=>{
   const B=await world(),tables=Object.values(B.W.SZ_TABLES).map(spec=>spec[0]).concat('seized_requests'),plan=await B.W.szDomainPlan(B.env,B.W.szEmptyDomain(D1),D1,{base:await B.W.szRevs(B.env,D1)});
   assert.equal(plan.changed,false);assert.equal(plan.statements.length,0);assert.equal(tables.length,11);
   const result=replay({...exactlyGuard(plan.guards,tables,'KIVO_RESTORE_TARGET'),kind:'empty-scope'});
   assert.equal(result.checks,23);
 });
-for(const name of ['seized','awards'])test('Actual '+name+' export orphan guard preserves allowed scopes and rejects null/orphan scopes in every table at compound cap five',async()=>{
+for(const name of ['seized','awards'])test('Actual '+name+' export orphan guard preserves allowed scopes and rejects null/orphan scopes in every table at compound cap five',needs('dstats'), async()=>{
   const B=await world(),seen=[],batch=B.DB.batch.bind(B.DB);
   B.DB.batch=async statements=>{seen.push(...statements);return batch(statements);};
   await B.W.bdExport(B.env,await B.A(),new URL('http://synthetic.test/export'),name);
@@ -150,10 +150,12 @@ for(const name of ['seized','awards'])test('Actual '+name+' export orphan guard 
   const result=replay({...guard,kind:'orphan'});
   assert.ok(result.checks>tables.length*3);assert.equal(result.atomicMarkerRollback,true);
 });
-test('Actual nonempty Award restore witness fits expression depth100 and rejects all39 record fields, raw row membership, revisions and retired keys atomically',async()=>{
+test('Actual nonempty Award restore witness fits expression depth100 and rejects all39 record fields, raw row membership, revisions and retired keys atomically',needs('dstats'), async()=>{
   const B=await world({seed:true});seedReceipts(B);
   const domain=await B.W.awExportDomain(B.env,D1),plan=await B.W.awDomainPlan(B.env,domain,D1),specs=B.W.awPhysicalTables(),tables=Object.values(specs).map(spec=>spec[0]);
   const guard=exactlyGuard(plan.guards,tables,'KIVO_AWARD_TARGET_CHANGED');
   const result=replay({...guard,kind:'award-state',specs:Object.fromEntries(Object.values(specs).map(spec=>[spec[0],spec[1]])),rows:Object.fromEntries(Object.entries(specs).map(([kind,[table]])=>[table,plan.snapshotRows[kind]]))});
   assert.equal(result.expressionDepthLimit,100);assert.equal(result.recordFieldChanges,39);assert.ok(result.fieldChanges>=39);assert.equal(result.atomicMarkerRollback,true);
 });
+
+import { needs } from '../../../../tests/unit/harness.mjs';

@@ -9,6 +9,7 @@ import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { minProved, sig } from '../../tools/jsmin_tokens.mjs';
 import { ROOT, PYTHON, makeTestEnv, client, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 test('Worker token minification preserves ASI-sensitive line breaks and both tool boundaries',()=>{
   const source=`/* source commentary */
@@ -27,7 +28,7 @@ export default sample;
   assert.equal(minProved(source).includes('@@KIVO_TEST_TOOL'),false,'Existing frontend minification remains unchanged');
 });
 
-test('the actual token-minified Worker authenticates its explicit test fixture and remains production-strippable',async()=>{
+test('the actual token-minified Worker authenticates its explicit test fixture and remains production-strippable',needs('dstats'), async()=>{
   const source=fs.readFileSync(path.join(ROOT,'workers/_worker.js'),'utf8'),output=minProved(source,{preserveTestToolMarkers:true});
   assert.deepEqual(sig(output),sig(source));
   assert.ok(Buffer.byteLength(output)<Buffer.byteLength(source),'The deploy derivative removes comments and indentation');

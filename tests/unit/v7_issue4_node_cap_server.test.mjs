@@ -14,6 +14,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTestEnv, client, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const KG = 'bassam_gdepts_v1', KD = 'bassam_depts_v1', KP = 'bassam_perms_v1';
 const G = 'TEST_ONLY_G', N = 'TEST_ONLY_N', X = 'TEST_ONLY_X', Y = 'TEST_ONLY_Y', U = 'TEST_ONLY_U';
@@ -177,7 +178,7 @@ async function restoreCase() {
   const nodes = read(DB, KG); assert.ok(!nodes.some((n) => n.id === RX));
   return { B, DB, P0, nodes, withRX: JSON.stringify(nodes.concat([{ id: RX, name: 'TEST_ONLY restored node', kind: 'إدارة عامة' }])) };
 }
-test('(c) a full restore that brings its own registry keeps it verbatim — also for the node it brings back', async () => {
+test('(c) a full restore that brings its own registry keeps it verbatim — also for the node it brings back', needs('award', 'dstats', 'seized'), async () => {
   const { B, DB, P0, withRX } = await restoreCase();
   const mine = J(P0); mine.caps[RX] = ['tasks', 'admin']; delete mine.subs[RX]; delete mine.lenses[RX]; delete mine.capOwn[RX];   /* the copy's own ceiling for RX */
   ok(await B.restore(await B.body({ keys: { [KG]: withRX, [KP]: JSON.stringify(mine) } })));
@@ -188,7 +189,7 @@ test('(c) a full restore that brings its own registry keeps it verbatim — also
   ok(await C2.B.restore(await C2.B.body({ keys: { [KG]: C2.withRX } })));   /* the fixture's copy = the stored registry */
   assert.deepEqual(read(C2.DB, KP), C2.P0);
 });
-test('(c) a restore that brings the structure without a registry does not revive a stored leftover', async () => {
+test('(c) a restore that brings the structure without a registry does not revive a stored leftover', needs('award', 'dstats', 'seized'), async () => {
   const { B, DB, P0, withRX } = await restoreCase();
   const body = await B.body({ keys: { [KG]: withRX } });
   delete body.keys[KP]; body.manifest.keys = Object.keys(body.keys);

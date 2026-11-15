@@ -7,7 +7,7 @@
    hold the queue. Real worker, legacy and enforce, rows and R2 bytes. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, age, due, EDIT, stored } from './v7_f_img_fx.mjs';
+import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, age, due, EDIT, stored, gated } from './v7_f_img_fx.mjs';
 
 let n = 0;
 const typedSave = async (T) => { const s = await edit(T.W, T.S.mgr2, D2, 'plan', (v) => { v.floors[0].name = TAG + ' od ' + (++n); }); assert.ok(s.ok, JSON.stringify(s.j).slice(0, 200)); };
@@ -24,7 +24,7 @@ both(test, 'unreferenced uploads under odd ids are swept (rows and object), a co
   for (const i of ids.concat(ctl)) assert.ok(gone(await state(W, i)), i + ' swept · ' + JSON.stringify(await state(W, i)).replace(PNG, 'PNG'));
 });
 
-both(test, 'an odd id referenced anywhere is kept — typed record, kv text, kv row boundary, award record — and keeps its kind', async (mode) => {
+both(gated(test, 'award'), 'an odd id referenced anywhere is kept — typed record, kv text, kv row boundary, award record — and keeps its kind', async (mode) => {
   const T = await scene(mode), { W, S, x, id } = T, DB = W.env.DB.db, ctl = id('ctl2');
   const ref = { typed: 'IMG_' + x.toUpperCase() + '_T', kvText: 'junk' + x + 'k', kvCut: 'img_' + x + '_c_d', award: 'aw' + x };
   for (const i of Object.values(ref)) await upload(W, S.mgr, i); await upload(W, S.mgr2, ctl);

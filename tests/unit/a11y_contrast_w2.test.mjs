@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { ROOT, SRC, moduleLogic, moduleFile } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const T = JSON.parse(rd('styles/tokens/tokens.json'));
@@ -106,7 +107,7 @@ const sem = (v) => { let m = /^var\(--([a-z0-9-]+)\)$/.exec(v || ''), n = m && m
 /* RISHAD-266: KD-09 («الإحصائيات اليومية» و«مؤشرات المصليات» في منطق المتابعة اليومية) لا يُنقل هنا — dstats/daily خارج هذا النقل (عملُ المالك المحلّي) */
 
 /* RISHAD-266 (دفعة الواجهات): IRSZ-5 مُعاد — رُفع سقفُ «المضبوطات» بقرارٍ موثّق (perf_budget.json · unifyBatch3Decision) */
-test('IRSZ-5 · «المضبوطات»: نصُّ رقاقة الإجراء — «أُتلف / صودر» (عنبر) بـ--warning-on-strong · «أُحيل للجهة الأمنية» و«محفوظ بالمستودع» بالأبيض', () => {
+test('IRSZ-5 · «المضبوطات»: نصُّ رقاقة الإجراء — «أُتلف / صودر» (عنبر) بـ--warning-on-strong · «أُحيل للجهة الأمنية» و«محفوظ بالمستودع» بالأبيض', needs('seized'), () => {
   const c = page('seized');
   /* RISHAD-266: فهرسُ الإجراءات من قراءة الخادم — هنا الإجراءاتُ الافتراضية نفسُها (019k-seized-defaults) */
   c.loadActs = () => [{ k: 'des', name: 'أُتلف / صودر', color: '#b45309' }, { k: 'sec', name: 'أُحيل للجهة الأمنية', color: '#dc2626' }, { k: 'sto', name: 'محفوظ بالمستودع', color: '#475569' }];
@@ -122,7 +123,7 @@ test('IRSZ-5 · «المضبوطات»: نصُّ رقاقة الإجراء — �
   assert.match(src, /actColor: this\.actColor\(t\.act\),\n\s+actFg: this\.actFg\(t\.act\),/);
 });
 
-test('AUX-13 · عدّادُ النتائج «/ المجموع» بلون --text-muted بلا شفافية (كان 60٪ من لونٍ رماديّ ⇐ 2.47:1)', () => {
+test('AUX-13 · عدّادُ النتائج «/ المجموع» بلون --text-muted بلا شفافية (كان 60٪ من لونٍ رماديّ ⇐ 2.47:1)', needs('award', 'seized'), () => {
   let n = 0;
   for (const m of ['award', 'dreport', 'employees', 'irshad', 'seized', 'staff', 'tasks']) {
     const v = rd(path.relative(SRC, moduleFile(m, 'view.html')));
