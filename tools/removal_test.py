@@ -122,6 +122,8 @@ def run_case(name, opts):
         if not opts['nobrowser']:
             rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/browser.test.mjs'], copy, env, 1200); step('⑤ المتصفح', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:')), '')[:200])
         if opts['units']:
+            # أدواتُ التحزيم تختم رقمَ الالتزام: النسخةُ تصير مستودعاً مستقلاً بالتزامٍ واحد (لا صلة له بمستودع المشروع)
+            for g in (['init', '-q'], ['add', '-A'], ['-c', 'user.name=removal', '-c', 'user.email=removal@test.invalid', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'removal ' + name]): sh(['git'] + g, copy)
             n, bad, tot = units(copy, env, opts['jobs']); step('⑥ وحداتُ القاعدة', not bad, '%d ملفاً · %d اختباراً: نجح %d · فشل %d · تُخطّي %d%s' % (n, tot[0], tot[1], tot[2], tot[3], (' · الفاشلة: ' + ' '.join(os.path.basename(b) for b in bad[:8])) if bad else ''))
     finally:
         if opts['keep']: print('  النسخة: ' + copy)

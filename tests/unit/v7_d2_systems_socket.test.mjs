@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { ROOT, PYTHON } from './harness.mjs';
+import { ROOT, PYTHON, SYSTEMS, hasSystem } from './harness.mjs';
 
 const run = (src, ...a) => spawnSync(PYTHON, [path.join(ROOT, 'tools', 'systems.py'), ...a, '--src', src], { encoding: 'utf8' });
 const sys = (key, extra = {}) => Object.assign({ schema: 1, kind: 'system', key, name: 'TEST_ONLY ' + key, client: { slug: key, component: key, files: [] }, server: { parts: [] } }, extra);
@@ -59,9 +59,11 @@ test('V7 · د2-ب: النصُّ المحايد empty، وبدائلُ القط�
   assert.equal(w.out(), 'K=false;\nR=[];\nF=null;\n', 'بلا نظام: النصُّ المحايد'); w.done();
 });
 
-test('V7 · د2: المستودع — الأنظمةُ الأربعة صالحة، والمضبوطات تتطلب الاسترشاد، والمحقونُ = الملتزَم', () => {
+test('V7 · د2: المستودع — الأنظمةُ الحاضرة صالحة، وكلُّ متطلَّبٍ حاضر (المضبوطات تتطلب الاسترشاد)، والمحقونُ = الملتزَم', () => {
   const r = run(path.join(ROOT, 'src'), '--list'); assert.equal(r.status, 0, r.stderr);
-  const L = JSON.parse(r.stdout); assert.deepEqual(L.map((x) => x.key), ['award', 'dstats', 'irshad', 'seized']);
-  assert.deepEqual(L.find((x) => x.key === 'seized').requires, ['irshad']);
+  /* د2-ب: المقبسُ يسرد ما في src/systems بالضبط — أربعةٌ في المستودع الكامل، وأقلّ في نسخة اختبار الحذف */
+  const L = JSON.parse(r.stdout); assert.deepEqual(L.map((x) => x.key), SYSTEMS);
+  for (const x of L) for (const q of x.requires || []) assert.ok(SYSTEMS.includes(q), x.key + ' يتطلب ' + q);
+  if (hasSystem('seized')) assert.deepEqual(L.find((x) => x.key === 'seized').requires, ['irshad']);
   const c = run(path.join(ROOT, 'src'), '--check'); assert.equal(c.status, 0, c.stdout + c.stderr);
 });
