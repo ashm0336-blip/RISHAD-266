@@ -254,7 +254,7 @@
       order.forEach(function (s) {
         var k = s.split(":")[1], leaf = pick(all, function (x) { return x.key === k; }), other = s.indexOf("page:") === 0 ? pick(mf.pages, function (p) { return p.key === k; }) : null;
         if (other) { if (can(other.key)) out.push({ name: other.name, key: other.nav }); }
-        else if (leaf && !leaf.offPage && can(page.key, leaf.key)) out.push({ name: leaf.name, key: leaf.key });
+        else if (leaf && !leaf.offPage && !leaf.noTab && can(page.key, leaf.key)) out.push({ name: leaf.name, key: leaf.key });   /* V7 · د1-د: noTab = ورقةُ صلاحيةٍ باقية بلا تبويبٍ مرسوم (admin/import — الاستيرادُ صار في صفحة الموظفين) */
       });
       (page.shellTabs || []).forEach(function (t) { if (can(page.key, t.as)) out.push({ name: t.name, key: "" }); });
     }

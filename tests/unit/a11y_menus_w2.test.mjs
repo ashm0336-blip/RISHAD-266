@@ -49,12 +49,17 @@ function nest(src) {
 /* كتلةٌ من القالب: من أول سطرٍ يطابق `from` إلى السطر الذي يطابق `to` بعده (شاملة) */
 const block = (v, from, to) => { const i = v.indexOf(from), j = v.indexOf(to, i); assert.ok(i >= 0 && j > i, from); return v.slice(v.lastIndexOf('\n', i) + 1, j + to.length); };
 
-test('ES-6 · «بيانات الموظفين»: «ملفات» لمن يملك التصدير وحده — مديرُ الإدارة بالإضافة بلا تصدير لا يرى زرّاً يفتح قائمةً فارغة', () => {
-  assert.equal(render('employees', DM).empPmFiles, false);
+/* V7 · د1-د (تصوّرٌ معتمد): «استيراد من Excel» صار أولَ بنود «ملفات» لمن يملك الإضافة — فالقائمةُ تظهر للتصدير أو للإضافة،
+   ولا تظهر لمن لا يملك أيّاً منهما (كانت: للتصدير وحده، فمديرُ الإدارة بالإضافة بلا تصدير لا يراها) */
+test('ES-6 · «بيانات الموظفين»: «ملفات» لمن يملك التصدير أو الإضافة — ومن لا يملك أيّاً منهما لا يرى زرّاً يفتح قائمةً فارغة', () => {
+  assert.equal(render('employees', DM).empPmFiles, true, 'الإضافة بلا تصدير: فيها الاستيراد');
+  assert.equal(render('employees', { view: true, add: false, edit: true, del: false, export: false }).empPmFiles, false, 'لا تصدير ولا إضافة: لا قائمة');
+  assert.equal(render('employees', EXONLY).empPmFiles, true);
   assert.equal(render('employees', EX).empPmFiles, true);
   const v = rd('modules/employees/view.html'), b = block(v, '<sc-if value="{{empPmFiles}}"', '<!-- ═══ الإجراءات الجماعية');
   assert.deepEqual(nest(b), { bad: [], open: 0 }, 'تداخلٌ سليم');
   assert.doesNotMatch(b, /<sc-if value="\{\{empPmAdd\}\}"[^>]*>\s*<\/sc-if>/, 'لا كتلةَ إضافةٍ فارغة');
+  assert.match(b, /<sc-if value="\{\{empPmAdd\}\}"[^>]*>[\s\S]*onClick="\{\{impPickDo\}\}"[\s\S]*<\/sc-if>\s*<sc-if value="\{\{empPmExport\}\}"/, 'الاستيرادُ أولاً تحت شرط الإضافة، ثم التصديرُ والطباعة تحت شرط التصدير');
   assert.doesNotMatch(b, /نافذة الطباعة مباشرة<\/div><\/div>\s*<\/div>\s*<div style="height:1px/, 'لا فاصلَ بعد آخر بند');
   assert.match(b, /onClick="\{\{exportCsv\}\}"[\s\S]*onClick="\{\{printTable\}\}"/);
 });
