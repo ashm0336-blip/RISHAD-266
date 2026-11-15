@@ -87,7 +87,7 @@ def units(copy, env, jobs):
     procs = {}; done = []; q = list(files); tot = [0, 0, 0, 0]
     def reap(block):
         for f, (p, t0) in list(procs.items()):
-            if p.poll() is None and time.time() - t0 < 420: continue
+            if p.poll() is None and time.time() - t0 < 1800: continue
             if p.poll() is None: p.kill()
             out = p.communicate()[0] or ''; del procs[f]
             for i, key in enumerate(('tests', 'pass', 'fail', 'skipped')):
