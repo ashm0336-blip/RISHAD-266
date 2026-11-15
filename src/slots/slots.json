@@ -24,6 +24,30 @@
   {
    "tpl": "tools/kivo_ns.json.tpl",
    "out": "tools/kivo_ns.json"
+  },
+  {
+   "tpl": "layouts/index.template.html.tpl",
+   "out": "src/layouts/index.template.html"
+  },
+  {
+   "tpl": "layouts/root-logic.js.tpl",
+   "out": "src/layouts/root-logic.js"
+  },
+  {
+   "tpl": "layouts/260-bassam-plat.js.tpl",
+   "out": "src/layouts/260-bassam-plat.js"
+  },
+  {
+   "tpl": "components/555-page-states.js.tpl",
+   "out": "src/components/555-page-states.js"
+  },
+  {
+   "tpl": "modules/kpis/logic.js.tpl",
+   "out": "src/modules/kpis/logic.js"
+  },
+  {
+   "tpl": "modules/kpis/view.html.tpl",
+   "out": "src/modules/kpis/view.html"
   }
  ]
 }

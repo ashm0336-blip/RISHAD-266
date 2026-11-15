@@ -132,6 +132,66 @@
   "ns.after.seized": {
    "order": 10,
    "text": "  \"src/systems/seized/client/logic.js\",\n"
+  },
+  "shell.nav.systems": {
+   "order": 20,
+   "text": "      <a class=\"{{nSeized}}\" data-key=\"seized\" role=\"link\" tabindex=\"0\" sc-camel-on-click=\"{{goSeized}}\" title=\"{{tSeized}}\"><span class=\"ni\"><svg width=\"16\" height=\"16\" sc-camel-view-box=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-i=\"i-d82ee5cd\"></svg></span><span class=\"nlbl\">نظام المضبوطات</span></a>\n"
+  },
+  "shell.mounts": {
+   "order": 30,
+   "text": "  <sc-if value=\"{{isSeized}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Seized\" hint-size=\"100%,900px\"></dc-import>\n  </sc-if>\n"
+  },
+  "root.liveKeys": {
+   "order": 20,
+   "text": "seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, "
+  },
+  "root.landing.systems": {
+   "order": 20,
+   "text": "\"seized\", "
+  },
+  "root.inPlanning": {
+   "order": 20,
+   "text": ",\"seized\""
+  },
+  "root.labels": {
+   "order": 20,
+   "text": "seized:\"نظام المضبوطات\", "
+  },
+  "root.navVals.systems": {
+   "order": 20,
+   "text": "nSeized: cls(\"seized\", \"seized\"), tSeized: tip(\"seized\"),\r\n"
+  },
+  "root.go.systems": {
+   "order": 20,
+   "text": "goSeized: go(\"seized\"), "
+  },
+  "root.is.systems": {
+   "order": 20,
+   "text": "isSeized: ap === \"seized\", "
+  },
+  "root.known.systems": {
+   "order": 20,
+   "text": "\"seized\","
+  },
+  "plat.sideOrder": {
+   "order": 20,
+   "text": ", \"seized\""
+  },
+  "pageStates.names": {
+   "order": 20,
+   "text": "    \"seized/records\": \"سجلات المضبوطات\", \"seized/dash\": \"مؤشرات المضبوطات\", \"seized\": \"سجلات المضبوطات\",\n"
+  },
+  "kpis.panels.mid": {
+   "order": 10,
+   "text": "        { k: \"sz\", pk: \"seized\", sk: \"dash\" },\n"
+  },
+  "kpis.tabs.mid": {
+   "order": 10,
+   "file": "slots/kpis.tabs.mid.frag"
+  },
+  "kpis.mounts.mid": {
+   "order": 10,
+   "text": "  <sc-if value=\"{{on_sz}}\" hint-placeholder-val=\"{{ false }}\"><dc-import name=\"Seized\" solo=\"dash\" hint-size=\"100%,1100px\"></dc-import></sc-if>\n"
   }
  }
 }

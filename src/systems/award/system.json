@@ -96,6 +96,54 @@
   "ns.after.award": {
    "order": 10,
    "text": "  \"src/systems/award/client/logic.js\",\n"
+  },
+  "shell.nav.systems": {
+   "order": 30,
+   "text": "      <a class=\"{{nAward}}\" data-key=\"award\" role=\"link\" tabindex=\"0\" sc-camel-on-click=\"{{goAward}}\" title=\"{{tAward}}\"><span class=\"ni\"><svg width=\"16\" height=\"16\" sc-camel-view-box=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-i=\"i-94b68a04\"></svg></span><span class=\"nlbl\">جائزة التميز</span></a>\n"
+  },
+  "shell.mounts": {
+   "order": 40,
+   "text": "  <sc-if value=\"{{isAward}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Award\" hint-size=\"100%,900px\"></dc-import>\n  </sc-if>\n"
+  },
+  "root.liveKeys": {
+   "order": 30,
+   "text": "award: /award|employees/, "
+  },
+  "root.landing.systems": {
+   "order": 30,
+   "text": "\"award\", "
+  },
+  "root.inPlanning": {
+   "order": 30,
+   "text": ",\"award\""
+  },
+  "root.labels": {
+   "order": 30,
+   "text": "award:\"جائزة التميز\", "
+  },
+  "root.navVals.systems": {
+   "order": 30,
+   "text": "          nAward: cls(\"award\", \"award\"), tAward: tip(\"award\"),\r\n"
+  },
+  "root.go.systems": {
+   "order": 30,
+   "text": "goAward: go(\"award\"), "
+  },
+  "root.is.systems": {
+   "order": 30,
+   "text": "isAward: ap === \"award\", "
+  },
+  "root.known.systems": {
+   "order": 30,
+   "text": "\"award\","
+  },
+  "plat.sideOrder": {
+   "order": 30,
+   "text": ", \"award\""
+  },
+  "pageStates.names": {
+   "order": 10,
+   "text": "    \"award/new\": \"الترشيحات\", \"award/res\": \"نتائج الترشيحات\", \"award\": \"الترشيحات\",\n"
   }
  }
 }

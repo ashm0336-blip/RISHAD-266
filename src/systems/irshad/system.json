@@ -111,6 +111,66 @@
   "ns.after.irshad": {
    "order": 10,
    "text": "  \"src/systems/irshad/client/logic.js\",\n"
+  },
+  "shell.nav.systems": {
+   "order": 10,
+   "text": "      <a class=\"{{nIrshad}}\" data-key=\"irshad\" role=\"link\" tabindex=\"0\" sc-camel-on-click=\"{{goIrshad}}\" title=\"{{tIrshad}}\"><span class=\"ni\"><svg width=\"16\" height=\"16\" sc-camel-view-box=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-i=\"i-8d0f2597\"></svg></span><span class=\"nlbl\">نظام الاسترشاد</span></a>\n"
+  },
+  "shell.mounts": {
+   "order": 20,
+   "text": "  <sc-if value=\"{{isIrshad}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Irshad\" hint-size=\"100%,900px\"></dc-import>\n  </sc-if>\n"
+  },
+  "root.liveKeys": {
+   "order": 10,
+   "text": "irshad: /irshad/, "
+  },
+  "root.landing.systems": {
+   "order": 10,
+   "text": "\"irshad\", "
+  },
+  "root.inPlanning": {
+   "order": 10,
+   "text": ",\"irshad\""
+  },
+  "root.labels": {
+   "order": 10,
+   "text": "irshad:\"نظام الاسترشاد\", "
+  },
+  "root.navVals.systems": {
+   "order": 10,
+   "text": "nIrshad: cls(\"irshad\", \"irshad\"), tIrshad: tip(\"irshad\"), "
+  },
+  "root.go.systems": {
+   "order": 10,
+   "text": "goIrshad: go(\"irshad\"), "
+  },
+  "root.is.systems": {
+   "order": 10,
+   "text": "isIrshad: ap === \"irshad\", "
+  },
+  "root.known.systems": {
+   "order": 10,
+   "text": "\"irshad\","
+  },
+  "plat.sideOrder": {
+   "order": 10,
+   "text": ", \"irshad\""
+  },
+  "pageStates.names": {
+   "order": 30,
+   "text": "    \"irshad\": \"سجلات الاسترشاد\", \"irshad/records\": \"سجلات الاسترشاد\",\n"
+  },
+  "kpis.panels.mid": {
+   "order": 20,
+   "text": "        { k: \"ir\", pk: \"irshad\", sk: \"dash\" },\n"
+  },
+  "kpis.tabs.mid": {
+   "order": 20,
+   "file": "slots/kpis.tabs.mid.frag"
+  },
+  "kpis.mounts.mid": {
+   "order": 20,
+   "text": "  <sc-if value=\"{{on_ir}}\" hint-placeholder-val=\"{{ false }}\"><dc-import name=\"Irshad\" solo=\"dash\" hint-size=\"100%,1100px\"></dc-import></sc-if>\n"
   }
  }
 }

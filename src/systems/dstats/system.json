@@ -98,6 +98,54 @@
   "ns.after.tail": {
    "order": 10,
    "text": ",\n  \"src/systems/dstats/client/logic.js\""
+  },
+  "shell.blocks.after570": {
+   "order": 10,
+   "text": "@@KIVO_BLOCK:systems/dstats/client/580-historical-import.js@@\n"
+  },
+  "shell.nav.dstats": {
+   "order": 10,
+   "text": "      <a class=\"{{nDstats}}\" data-key=\"dstats\" role=\"link\" tabindex=\"0\" sc-camel-on-click=\"{{goDstats}}\" title=\"{{tDstats}}\"><span class=\"ni\"><svg width=\"16\" height=\"16\" sc-camel-view-box=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-i=\"i-f90250b8\"></svg></span><span class=\"nlbl\">الإحصائيات اليومية</span></a>\n"
+  },
+  "shell.mounts": {
+   "order": 10,
+   "text": "  <sc-if value=\"{{isDstats}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Daily Stats\" hint-size=\"100%,1600px\"></dc-import>\n  </sc-if>\n"
+  },
+  "root.landing.dstats": {
+   "order": 10,
+   "text": "\"dstats\", "
+  },
+  "root.navVals.dstats": {
+   "order": 10,
+   "text": "          nDstats: cls(\"dstats\", \"dstats\"), tDstats: tip(\"dstats\"),\r\n"
+  },
+  "root.go.dstats": {
+   "order": 10,
+   "text": "      goDstats: go(\"dstats\"),\r\n"
+  },
+  "root.is.dstats": {
+   "order": 10,
+   "text": " isDstats: ap === \"dstats\","
+  },
+  "root.known.dstats": {
+   "order": 10,
+   "text": "\"dstats\","
+  },
+  "pageStates.names.tail": {
+   "order": 10,
+   "text": "    \"dstats/haram\": \"إحصائيات المسجد الحرام\", \"dstats/nabawi\": \"إحصائيات المسجد النبوي\"\n"
+  },
+  "kpis.panels.tail": {
+   "order": 10,
+   "text": "        { k: \"dsh\", pk: \"dstats\", sk: \"anHaram\" },\n        { k: \"dsn\", pk: \"dstats\", sk: \"anNabawi\" },\n        { k: \"dsc\", pk: \"dstats\", sk: \"anCmp\" },\n        { k: \"dst\", pk: \"dstats\", sk: \"anTime\" },\n"
+  },
+  "kpis.tabs.tail": {
+   "order": 10,
+   "file": "slots/kpis.tabs.tail.frag"
+  },
+  "kpis.mounts.tail": {
+   "order": 10,
+   "file": "slots/kpis.mounts.tail.frag"
   }
  }
 }
