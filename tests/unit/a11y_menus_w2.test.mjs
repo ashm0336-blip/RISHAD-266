@@ -59,7 +59,12 @@ test('ES-6 · «بيانات الموظفين»: «ملفات» لمن يملك 
   const v = rd('modules/employees/view.html'), b = block(v, '<sc-if value="{{empPmFiles}}"', '<!-- ═══ الإجراءات الجماعية');
   assert.deepEqual(nest(b), { bad: [], open: 0 }, 'تداخلٌ سليم');
   assert.doesNotMatch(b, /<sc-if value="\{\{empPmAdd\}\}"[^>]*>\s*<\/sc-if>/, 'لا كتلةَ إضافةٍ فارغة');
-  assert.match(b, /<sc-if value="\{\{empPmAdd\}\}"[^>]*>[\s\S]*onClick="\{\{impPickDo\}\}"[\s\S]*<\/sc-if>\s*<sc-if value="\{\{empPmExport\}\}"/, 'الاستيرادُ أولاً تحت شرط الإضافة، ثم التصديرُ والطباعة تحت شرط التصدير');
+  /* إصلاحُ د1-د: بندا الاستيراد يرسمهما ملفُّ الخدمة 590 في حاملٍ هو أولُ ما في القائمة (سقفُ حجم الصفحة)، وشرطُ الإضافة فيه هو:
+     لا يرسم شيئاً لمن لا يملك «إضافة موظف» — والبرهانُ الحيّ في tests/browser/v7_d1d_emp_import (البند 10) */
+  assert.match(b, /<div data-bs-dd="1"[^>]*>\s*<i data-ei-s="menu"><\/i>\s*<sc-if value="\{\{empPmExport\}\}"/, 'حاملُ الاستيراد أولاً، ثم التصديرُ والطباعة تحت شرط التصدير');
+  const svc = rd('services/590-employees-import.js');
+  assert.match(svc, /impPaint\(V, !!c\.PC\("add"\)\)/, 'الخدمةُ تأخذ شرطَ الإضافة من الصفحة');
+  assert.match(svc, /k === "conf" \? \(V\.impConfOpen \? impHtml\(V\) : ""\) : !canAdd \? "" : k === "menu" \? menuHtml\(\) : emptyHtml\(\)/, 'بلا إضافة: لا بندَ ولا زرّ');
   assert.doesNotMatch(b, /نافذة الطباعة مباشرة<\/div><\/div>\s*<\/div>\s*<div style="height:1px/, 'لا فاصلَ بعد آخر بند');
   assert.match(b, /onClick="\{\{exportCsv\}\}"[\s\S]*onClick="\{\{printTable\}\}"/);
 });
