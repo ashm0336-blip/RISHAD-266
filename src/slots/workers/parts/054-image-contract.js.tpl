@@ -721,9 +721,7 @@ async function imgSweep(env, now, max, maxDead) {
       ' AND (SELECT v FROM meta WHERE k = ?3) = ?4' +
       ' AND imgown.img NOT IN (SELECT value FROM json_each(?5))' +             /* named, once decoded, by a text that hides ids behind escapes (imgEscKeep) */
       ' AND NOT EXISTS (SELECT 1 FROM imgref WHERE imgref.img = imgown.img)' +
-      ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +
-      ' AND NOT EXISTS (SELECT 1 FROM award_records w WHERE w.picture = imgown.img OR w.employee_signature = imgown.img OR w.approver_signature = imgown.img)' +
-      ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(kv.v, imgown.img) > 0)' +
+@@SYS:images.sweepRefs@@      ' AND NOT EXISTS (SELECT 1 FROM kv WHERE instr(kv.v, imgown.img) > 0)' +
       ' AND NOT EXISTS (SELECT 1 FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND length(CAST(imgown.img AS BLOB)) > 1' +
       ' AND instr(substr(CAST(a.v AS BLOB), -(length(CAST(imgown.img AS BLOB)) - 1)) || substr(CAST(b.v AS BLOB), 1, length(CAST(imgown.img AS BLOB)) - 1), imgown.img) > 0)' +
       (oddAsk.length ? ' AND (imgown.img NOT IN (SELECT value FROM json_each(?6)) OR NOT EXISTS (SELECT 1 FROM opstxt WHERE instr(opstxt.t, imgown.img) > 0))' : '') +
@@ -1505,7 +1503,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* سياق الطلب لكل إدارةٍ يمسّها: سجل الموظفين كما سيصير بعد هذا الطلب —
      فارغاً كان أو ممتلئاً — ومفاتيحُه الحيّة التي يُقاس عليها ما زال وما بقي.
      يُحسب مرّةً واحدة لكل إدارة، ولا يُحسب لمن لا يحتاجه. */
-  var CTX_RES = { 'bassam_dreport_v1': 1, 'bassam_custody_v1': 1, 'bassam_award_v1': 1, 'bassam_employees_v1': 1,
+  var CTX_RES = { 'bassam_dreport_v1': 1, @@SYS:cleanup.ctxRes.award|pre="'bassam_custody_v1': 1,"|post=" 'bassam_employees_v1': 1,"|empty="'bassam_custody_v1': 1, 'bassam_employees_v1': 1,"@@
                   'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1, 'bassam_tasks_v1': 1, 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
   var wipeCtx = {}, empCtx = {}, empRaw9 = {};
   for (k in set) {
@@ -1575,7 +1573,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* ══ مسحُ العمليات المحمية — من شكل الطلب لا من نتيجة الحكم ════════════
      فلو رُفض جزءُ العملية الآخر بقيت العملية «محمية» ورُدّ الطلب كاملاً. */
   var CLEAN_RES = { 'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1, 'bassam_tasks_v1': 1,
-                    'bassam_custody_v1': 1, 'bassam_award_v1': 1, 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
+                    @@SYS:cleanup.cleanRes.award|pre="'bassam_custody_v1': 1,"|post=" 'bassam_plan_v1': 1,"|empty="'bassam_custody_v1': 1, 'bassam_plan_v1': 1,"@@ 'bassam_rounds_v1': 1 };
   var protOp = '';
   var hasEmp = {}, hasClean = {}, hasStaff = {};
   for (k in set) {

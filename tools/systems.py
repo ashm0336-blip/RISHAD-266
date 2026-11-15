@@ -96,6 +96,11 @@ def manifest(S):
     p = os.path.join(S, 'slots', 'slots.json')
     return json.load(open(p, encoding='utf-8'))['templates'] if os.path.isfile(p) else []
 
+def optional(S):
+    """فتحاتٌ علامتُها داخل قطعة نظامٍ آخر (slots.json ← optional): تغيب العلامةُ بغياب ذلك النظام، فقطعتُها ليست خطأً إملائياً."""
+    p = os.path.join(S, 'slots', 'slots.json')
+    return set(json.load(open(p, encoding='utf-8')).get('optional', [])) if os.path.isfile(p) else set()
+
 def outputs(S, systems=None):
     """{المسارُ نسبةً إلى جذر المستودع: bytes} لكل قالبٍ مسجَّل — ويرفض قطعةً لا فتحةَ لها (خطأٌ إملائي في الاسم)."""
     systems = load(S) if systems is None else systems
@@ -105,7 +110,7 @@ def outputs(S, systems=None):
     for t in manifest(S):
         src = open(os.path.join(S, 'slots', t['tpl']), encoding='utf-8', newline='').read()
         out[t['out']] = expand(src, frags, used).encode('utf-8')
-    orphan = sorted(set(frags) - used - RESERVED)
+    orphan = sorted(set(frags) - used - RESERVED - optional(S))
     if orphan: raise SystemExit('✘ systems: قطعٌ بلا فتحة في أي قالب: ' + ', '.join(orphan))
     return out
 

@@ -3558,7 +3558,7 @@ async function nfGuardRetired(env, gateKeys) {
      once keys and SEEN guards in the jobs (never duplicated), and every job write keeps its legacy-source/epoch guards.
    · stamp value "<from>:<until>:<restore epoch>:<settled 0|1>"; written through __rawDB with the task-gate statement shape
      (cache neutral, 052). Isolate memory {e: epoch, q: quiet-until, v: stamp} only skips the stamp read, never decides a run. */
-var NF_DUE_GAP = 5 * 6e4, NF_DUE_DAY = 864e5, NF_DUE_MEM = nmap(), NF_DUE_EDGES = { ird: [0, 1410], szd: [0, 480, 540] };
+var NF_DUE_GAP = 5 * 6e4, NF_DUE_DAY = 864e5, NF_DUE_MEM = nmap(), NF_DUE_EDGES = { @@SYS:nf.due.edges|sep=", "@@ };
 function nfDueDay(now) { return Math.floor((now + 3 * 3600000) / NF_DUE_DAY) * NF_DUE_DAY - 3 * 3600000; }   /* Riyadh 00:00 */
 function nfDueSpan(k, now) {
   var start = nfDueDay(now), m = (now - start) / 6e4, last = 0, next = 1440;
@@ -3571,7 +3571,7 @@ function nfDueSpan(k, now) {
 /* the jobs' own time windows (019j · 019n) */
 function nfDueIn(k, ts) {
   var m = pfRiyadhMins(ts);
-  return k === "ird" ? m >= 1410 : m >= 540 || (m >= 480 && new Date(ts + 3 * 3600000).getUTCDay() === 6);
+  return @@SYS:nf.due.window|empty="false"@@;
 }
 function nfDueStamp(v, now, epoch) {
   var p = /^(\d+):(\d+):(\d+):([01])$/.exec(v == null ? "" : String(v));
@@ -3589,7 +3589,7 @@ function nfDuePlan(k, s, now) {
 function nfDueOpen(env, A, url) {
   var now = Date.now(), d = url.searchParams.get("dept") || "", epoch = String(env.__restoreEpoch || 0);
   if (!d || !irDailyManager(A)) return null;
-  var kinds = ["ird", "szd"].filter(function (k) {
+  @@SYS:nf.due.kinds|sep=", "|pre="var kinds = ["|empty="var kinds = ["@@].filter(function (k) {
     var m = NF_DUE_MEM["tkg:" + k + ":" + d];
     return !(m && m.e === epoch && now < m.q);
   });
@@ -3611,7 +3611,7 @@ async function nfDueRun(env, A, url, job) {
   if (!job) return;
   var due = job.due;
   for (var i = 0; i < job.work.length; i++) {
-    var p = job.work[i], fn = p.k === "ird" ? nfIrshadDaily : nfSeizedDue, rc = null, r = null;
+    var p = job.work[i], fn = @@SYS:nf.due.handler|empty="null"@@, rc = null, r = null;
     if (p.catchUp) { rc = await fn(env, A, url, p.catchUp); if (rc.emitted) preOff(env); }   /* the previous window, at its close */
     if (p.run) { r = await fn(env, A, url); if (r.emitted) preOff(env); }
     if ((rc && !rc.checked) || (r && !r.checked)) continue;

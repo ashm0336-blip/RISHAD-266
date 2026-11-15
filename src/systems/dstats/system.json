@@ -254,6 +254,86 @@
   "nf.denyPage.dstats": {
    "order": 10,
    "text": "n === K_DSTATS ? \"dstats\" : "
+  },
+  "rs.selection.dstats": {
+   "order": 10,
+   "text": "  if (domains.dailyStats) {\n    delete domains.dailyStats;\n    kept++;\n  }\n"
+  },
+  "rs.dstats.current": {
+   "order": 10,
+   "file": "slots/rs.dstats.current.frag"
+  },
+  "rs.manifest.full.dstats.1": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "rs.manifest.full.dstats.2": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "rs.manifest.full.dstatsBody": {
+   "order": 10,
+   "text": "      !body.domains.dailyStats ||\n"
+  },
+  "rs.base.dstats": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "rs.domains.dstats": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "rs.prepare.dstatsLegacy": {
+   "order": 10,
+   "text": "  if (await dsLegacyPresent(env)) throw rsError('dstats-legacy-source-present', 503);\n"
+  },
+  "rs.keys.moved.1.dstats": {
+   "order": 10,
+   "text": " || resName(k) === K_DSTATS"
+  },
+  "rs.keys.moved.2.dstats": {
+   "order": 10,
+   "text": " || resName(k) === K_DSTATS"
+  },
+  "rs.counts.dstats": {
+   "order": 10,
+   "text": " dailyStats: 0,"
+  },
+  "rs.plan.dstats": {
+   "order": 10,
+   "file": "slots/rs.plan.dstats.frag"
+  },
+  "rs.reference.base.dstats": {
+   "order": 10,
+   "text": "      dailyStats: r[K_DSTATS] || 0,\n"
+  },
+  "reset.dstats": {
+   "order": 10,
+   "text": "    env.DB.prepare('DELETE FROM daily_stats_day_locks'), env.DB.prepare('DELETE FROM daily_stats_month_locks'), env.DB.prepare('DELETE FROM daily_stats_days'),\n"
+  },
+  "bc.required.dstats": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "bc.manifest.dstats": {
+   "order": 10,
+   "text": " ||\n    (scope.kind === 'full' && !domains.dailyStats)"
+  },
+  "bc.domains.dstats": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "bc.dsKeys": {
+   "order": 10,
+   "text": "Object.keys(keys).filter(function (k) {\n      return resName(k) === K_DSTATS;\n    })"
+  },
+  "bc.convert.dstats": {
+   "order": 10,
+   "file": "slots/bc.convert.dstats.frag"
+  },
+  "bc.out.dstats": {
+   "order": 10,
+   "text": "dailyStats: 1, "
   }
  }
 }

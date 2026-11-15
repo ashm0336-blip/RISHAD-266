@@ -308,6 +308,122 @@
    "order": 10,
    "text": "name==='seized'?hSeizedAct(env,A,read.v,reqMeta(request)):",
    "last": "hSeizedAct(env,A,read.v,reqMeta(request))"
+  },
+  "rs.scopeFilter.business": {
+   "order": 10,
+   "text": "'seized'"
+  },
+  "rs.selection.drop": {
+   "order": 20,
+   "text": "    delete domains.seized;\n"
+  },
+  "rs.manifest.systems.1": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "rs.manifest.systems.2": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "rs.manifest.systems.3": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "rs.manifest.systems.4": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "rs.base.systems": {
+   "order": 20,
+   "text": ", 'seized'"
+  },
+  "rs.counts.systems": {
+   "order": 20,
+   "text": " seized: 0,"
+  },
+  "rs.reference.base.systems": {
+   "order": 20,
+   "text": "      seized: businessBase.seized,\n"
+  },
+  "rs.manifest.systems.5": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "save.wipe.counts": {
+   "order": 20,
+   "text": "    plan.counts.seized = opt.__seizedCount || 0;\r\n"
+  },
+  "wipe.inventory.base": {
+   "order": 20,
+   "text": "        seized: businessBase.seized[dept],\r\n"
+  },
+  "wipe.inventory.counts": {
+   "order": 20,
+   "text": "        seized: businessCounts.seized,\r\n"
+  },
+  "wipe.request.base": {
+   "order": 20,
+   "text": ", 'seized'"
+  },
+  "wipe.opt.base": {
+   "order": 20,
+   "text": "        __seizedBase: input.base.seized,\r\n"
+  },
+  "wipe.opt.counts": {
+   "order": 20,
+   "text": "        __seizedCount: observed.counts.seized,\r\n"
+  },
+  "bc.required.business": {
+   "order": 10,
+   "text": "'seized'"
+  },
+  "bc.domains.systems": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "bc.out.systems": {
+   "order": 20,
+   "text": "  manifest.domains.seized = 1;\n"
+  },
+  "retro.counters": {
+   "order": 20,
+   "text": "seized: pv3Retro()"
+  },
+  "retro.table": {
+   "order": 20,
+   "text": "seized: { cap: 'seized/records', key: 'sz.rec.retro.open', res: 'bassam_seized_v1', state: 'bassam_seized_retro_v1', name: 'المضبوطات' }"
+  },
+  "retro.sysOf": {
+   "order": 20,
+   "text": "'bassam_seized_v1': 'seized'"
+  },
+  "retro.state": {
+   "order": 20,
+   "text": "  if(sys==='seized'){await szGuardRetired(env);return (await szRetroSnapshot(env,d)).state;}\n"
+  },
+  "retro.adapter.seized": {
+   "order": 10,
+   "text": "  if(sys==='seized')return {context:szQueryContext,snapshot:szRetroSnapshot,install:szRetroStatements,retired:szGuardRetired,retiredGuard:szRetiredGuard};\n"
+  },
+  "nf.due.edges": {
+   "order": 20,
+   "text": "szd: [0, 480, 540]"
+  },
+  "nf.due.window": {
+   "order": 20,
+   "text": "m >= 540 || (m >= 480 && new Date(ts + 3 * 3600000).getUTCDay() === 6)"
+  },
+  "nf.due.kinds": {
+   "order": 20,
+   "text": "\"szd\""
+  },
+  "nf.due.handler": {
+   "order": 20,
+   "text": "nfSeizedDue"
+  },
+  "images.sweepRefs": {
+   "order": 10,
+   "text": "      ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +\n"
   }
  }
 }

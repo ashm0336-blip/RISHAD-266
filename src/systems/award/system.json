@@ -266,6 +266,106 @@
   "bd.route.act": {
    "order": 20,
    "text": "hAwardAct(env,A,read.v,reqMeta(request))"
+  },
+  "rs.scopeFilter.business": {
+   "order": 20,
+   "text": "'awards'"
+  },
+  "rs.selection.drop": {
+   "order": 30,
+   "text": "    delete domains.awards;\n"
+  },
+  "rs.manifest.systems.1": {
+   "order": 30,
+   "text": "'awards',"
+  },
+  "rs.manifest.systems.2": {
+   "order": 30,
+   "text": "'awards',"
+  },
+  "rs.manifest.systems.3": {
+   "order": 30,
+   "text": "'awards',"
+  },
+  "rs.manifest.systems.4": {
+   "order": 30,
+   "text": "'awards',"
+  },
+  "rs.base.systems": {
+   "order": 30,
+   "text": ", 'awards'"
+  },
+  "rs.counts.systems": {
+   "order": 30,
+   "text": " awards: 0,"
+  },
+  "rs.reference.base.systems": {
+   "order": 30,
+   "text": "      awards: businessBase.awards,\n"
+  },
+  "rs.manifest.systems.5": {
+   "order": 30,
+   "text": "'awards',"
+  },
+  "save.wipe.counts": {
+   "order": 30,
+   "text": "    plan.counts.awards = opt.__awardsCount || 0;\r\n"
+  },
+  "wipe.inventory.base": {
+   "order": 30,
+   "text": "        awards: businessBase.awards[dept],\r\n"
+  },
+  "wipe.inventory.counts": {
+   "order": 30,
+   "text": "        awards: businessCounts.awards,\r\n"
+  },
+  "wipe.request.base": {
+   "order": 30,
+   "text": ", 'awards'"
+  },
+  "wipe.opt.base": {
+   "order": 30,
+   "text": "        __awardsBase: input.base.awards,\r\n"
+  },
+  "wipe.opt.counts": {
+   "order": 30,
+   "text": "        __awardsCount: observed.counts.awards,\r\n"
+  },
+  "emp.opt.awardsBase": {
+   "order": 10,
+   "text": "        __awardsBase: input.base.awards,\r\n"
+  },
+  "bc.required.business": {
+   "order": 20,
+   "text": "'awards'"
+  },
+  "bc.domains.systems": {
+   "order": 30,
+   "text": "'awards', "
+  },
+  "bc.keys.awardGlobal": {
+   "order": 10,
+   "text": " && !AW_RES.slice(1).includes(k)"
+  },
+  "bc.out.systems": {
+   "order": 30,
+   "text": "  manifest.domains.awards = 1;\n"
+  },
+  "images.sweepRefs": {
+   "order": 20,
+   "text": "      ' AND NOT EXISTS (SELECT 1 FROM award_records w WHERE w.picture = imgown.img OR w.employee_signature = imgown.img OR w.approver_signature = imgown.img)' +\n"
+  },
+  "cleanup.ctxRes.award": {
+   "order": 10,
+   "text": " 'bassam_award_v1': 1,"
+  },
+  "cleanup.cleanRes.award": {
+   "order": 10,
+   "text": " 'bassam_award_v1': 1,"
+  },
+  "privacy.backupLoss.award": {
+   "order": 10,
+   "text": "  D = [].concat(domains.awards || []);\n  for (i = 0; i < D.length; i++) if (isObj(D[i]) && isObj(D[i].rows) && (x = bdScope(D[i])))\n    privLoses(await q('SELECT record_id,phone,email,employee_number FROM award_records WHERE department_id=?1', x), D[i].rows.records, function (r) { return String(r.record_id); }, ['phone', 'email', 'employee_number'], out, 'awards:' + x);\n"
   }
  }
 }

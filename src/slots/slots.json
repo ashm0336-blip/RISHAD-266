@@ -1,5 +1,9 @@
 {
  "note": "V7 · د2 — قوالبُ الفتحات: tpl (في src/slots) ← out (من جذر المستودع). الناتجُ مولَّدٌ بـtools/systems.py (يستدعيه tools/generate.py) ولا يُحرَّر يدوياً؛ التعديلُ في القالب أو في قطع الأنظمة (system.json ← slots).",
+ "optional": [
+  "bd.awardIndex"
+ ],
+ "optionalNote": "فتحاتٌ علامتُها داخل قطعة نظامٍ آخر: bd.awardIndex في قطعة الجائزة bd.employeeCleanup (تملؤها المضبوطات)؛ بغياب الجائزة لا تظهر العلامة.",
  "templates": [
   {
    "tpl": "modules/modules.json.tpl",
@@ -136,6 +140,30 @@
   {
    "tpl": "workers/parts/019n-business-integration.js.tpl",
    "out": "workers/parts/019n-business-integration.js"
+  },
+  {
+   "tpl": "workers/parts/019d-atomic-restore.js.tpl",
+   "out": "workers/parts/019d-atomic-restore.js"
+  },
+  {
+   "tpl": "workers/parts/019e-atomic-save.js.tpl",
+   "out": "workers/parts/019e-atomic-save.js"
+  },
+  {
+   "tpl": "workers/parts/019f-backup-converter.js.tpl",
+   "out": "workers/parts/019f-backup-converter.js"
+  },
+  {
+   "tpl": "workers/parts/046-kivo-build-3.js.tpl",
+   "out": "workers/parts/046-kivo-build-3.js"
+  },
+  {
+   "tpl": "workers/parts/047-retro.js.tpl",
+   "out": "workers/parts/047-retro.js"
+  },
+  {
+   "tpl": "workers/parts/019u-privacy-projection.js.tpl",
+   "out": "workers/parts/019u-privacy-projection.js"
   }
  ]
 }
