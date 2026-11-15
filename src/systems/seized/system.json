@@ -424,6 +424,166 @@
   "images.sweepRefs": {
    "order": 10,
    "text": "      ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +\n"
+  },
+  "bk.counts.systems": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "bk.export.specs": {
+   "order": 20,
+   "text": "      ['seized',['reports','catalog','actions','locations','jew','retro'],['resources','reports','items','photos','history','categories','catalogItems','actions','lists','windows']],\n"
+  },
+  "bk.export.imageIds": {
+   "order": 10,
+   "text": "    domains.seized.forEach(function(d){d.rows.photos.forEach(function(row){if(typeof row.image_id==='string')ids.add(row.image_id,(scope(d)||'')+':seized');});});\n"
+  },
+  "bk.restore.base": {
+   "order": 20,
+   "text": " || !base.seized"
+  },
+  "bk.restore.summary": {
+   "order": 20,
+   "text": " و'+(c.seized||0)+' من بيانات المضبوطات"
+  },
+  "admin.keyLabels": {
+   "order": 20,
+   "text": "        bassam_seized_v1: \"نظام المضبوطات\",\r\n        bassam_seized_cat_v1: \"قائمة ممنوعات المضبوطات\",\r\n        bassam_seized_acts_v1: \"إجراءات المضبوطات\",\r\n        bassam_seized_locs_v1: \"مواقع المضبوطات\",\r\n        bassam_seized_jew_v1: \"أنواع قطع المجوهرات\",\r\n"
+  },
+  "admin.counts.list.1": {
+   "order": 20,
+   "text": ", \"seized\""
+  },
+  "admin.counts.list.2": {
+   "order": 20,
+   "text": ", \"seized\""
+  },
+  "admin.counts.list.3": {
+   "order": 20,
+   "text": ", \"seized\""
+  },
+  "admin.delete.populated": {
+   "order": 20,
+   "text": " + counts.seized"
+  },
+  "admin.delete.message": {
+   "order": 20,
+   "text": "، \"+counts.seized+\" من بيانات المضبوطات"
+  },
+  "admin.businessBase": {
+   "order": 20,
+   "text": "seized:['reports','catalog','actions','locations','jew','retro']"
+  },
+  "admin.wipe.natural": {
+   "order": 20,
+   "text": " || !natural(body.counts.seized)"
+  },
+  "admin.wipe.message": {
+   "order": 20,
+   "text": "، \"+body.counts.seized+\" من بيانات المضبوطات"
+  },
+  "admin.wipe.ack": {
+   "order": 20,
+   "text": " والمضبوطات"
+  },
+  "admin.wipe.labels": {
+   "order": 40,
+   "text": "                bassam_seized_v1: \"محاضر نظام المضبوطات\",\r\n                bassam_seized_cat_v1: \"قائمة ممنوعات المضبوطات\",\r\n                bassam_seized_acts_v1: \"إجراءات المضبوطات\",\r\n                bassam_seized_locs_v1: \"مواقع المضبوطات\",\r\n                bassam_seized_jew_v1: \"أنواع قطع المجوهرات\",\r\n"
+  },
+  "admin.wipe.rows": {
+   "order": 20,
+   "text": "            if (counts.seized > 0) p.push({label:\"بيانات المضبوطات وتوابعها (\"+counts.seized+\")\"});\n"
+  },
+  "admin.wipe.any": {
+   "order": 20,
+   "text": " + (counts.seized || 0)"
+  },
+  "admin.full.stripKeys": {
+   "order": 20,
+   "text": "seized(?:_cat|_jew|_acts|_locs|_retro)?"
+  },
+  "admin.full.manifest.systems": {
+   "order": 20,
+   "text": "seized:1,"
+  },
+  "nfc.kind.color": {
+   "order": 20,
+   "text": " box:'#475569',"
+  },
+  "nfc.kind.name": {
+   "order": 20,
+   "text": " box:'المضبوطات',"
+  },
+  "nfc.kind.icon": {
+   "order": 20,
+   "text": " box:'M21 8v13H3V8M1 3h22v5H1zM10 12h4',"
+  },
+  "nfc.reg": {
+   "order": 20,
+   "file": "slots/nfc.reg.frag"
+  },
+  "nfc.goNav.seized": {
+   "order": 10,
+   "text": " 'افتح السجلات':'seized', 'افتح المحضر':'seized',"
+  },
+  "nfc.goKpi.seized": {
+   "order": 10,
+   "text": ", 'افتح لوحة المؤشرات': ['seized', 'dash']"
+  },
+  "nfc.goPage.records": {
+   "order": 20,
+   "text": "seized: 'seized'"
+  },
+  "nfc.goPage.dash": {
+   "order": 20,
+   "text": "seized: 'kpis'"
+  },
+  "nfc.goKpiPage": {
+   "order": 20,
+   "text": "seized: ['seized', 'dash']"
+  },
+  "store.relational.systems": {
+   "order": 20,
+   "text": "seized(?:_cat|_jew|_acts|_locs|_retro)?|"
+  },
+  "store.keyLabels": {
+   "order": 20,
+   "text": "      bassam_seized_v1:[\"نظام المضبوطات\"], bassam_seized_cat_v1:[\"قائمة ممنوعات المضبوطات\"], bassam_seized_acts_v1:[\"إجراءات المضبوطات\"], bassam_seized_locs_v1:[\"مواقع المضبوطات\"], bassam_seized_jew_v1:[\"أنواع قطع المجوهرات\"],\n"
+  },
+  "store.identity": {
+   "order": 20,
+   "text": " bassam_seized_v1: { \"reports\": \"id\" },"
+  },
+  "store.retroSys": {
+   "order": 20,
+   "text": "n === \"bassam_seized_v1\" ? \"seized\" : "
+  },
+  "store.retroKey": {
+   "order": 10,
+   "text": "w.res === \"seized\" ? \"sz.rec.retro.open\" : "
+  },
+  "store.pull.systemKeys": {
+   "order": 20,
+   "text": "seized(?:_cat|_jew|_acts|_locs|_retro)?"
+  },
+  "activity.entities": {
+   "order": 10,
+   "text": " seized: 'محضر المضبوطات',"
+  },
+  "activity.filter": {
+   "order": 10,
+   "text": " ['seized', 'المضبوطات'],"
+  },
+  "res.empty.systems": {
+   "order": 20,
+   "text": "    bassam_seized_v1: '{\"reports\":[]}', bassam_seized_cat_v1: '{\"ver\":1,\"cats\":[]}', bassam_seized_acts_v1: '[]', bassam_seized_locs_v1: '[]', bassam_seized_jew_v1: '[]',\n"
+  },
+  "root.deptBackup.stripKeys": {
+   "order": 20,
+   "text": "seized(?:_cat|_jew|_acts|_locs|_retro)?"
+  },
+  "root.deptBackup.manifest": {
+   "order": 20,
+   "text": "seized:1,"
   }
  }
 }

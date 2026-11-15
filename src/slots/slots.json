@@ -164,6 +164,30 @@
   {
    "tpl": "workers/parts/019u-privacy-projection.js.tpl",
    "out": "workers/parts/019u-privacy-projection.js"
+  },
+  {
+   "tpl": "services/548-atomic-backup.js.tpl",
+   "out": "src/services/548-atomic-backup.js"
+  },
+  {
+   "tpl": "modules/admin/logic.js.tpl",
+   "out": "src/modules/admin/logic.js"
+  },
+  {
+   "tpl": "services/441-notif-core.js.tpl",
+   "out": "src/services/441-notif-core.js"
+  },
+  {
+   "tpl": "api/280-server-storage.js.tpl",
+   "out": "src/api/280-server-storage.js"
+  },
+  {
+   "tpl": "services/290-activity-log.js.tpl",
+   "out": "src/services/290-activity-log.js"
+  },
+  {
+   "tpl": "services/310-image-refs.js.tpl",
+   "out": "src/services/310-image-refs.js"
   }
  ]
 }

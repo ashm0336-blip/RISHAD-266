@@ -366,6 +366,146 @@
   "privacy.backupLoss.award": {
    "order": 10,
    "text": "  D = [].concat(domains.awards || []);\n  for (i = 0; i < D.length; i++) if (isObj(D[i]) && isObj(D[i].rows) && (x = bdScope(D[i])))\n    privLoses(await q('SELECT record_id,phone,email,employee_number FROM award_records WHERE department_id=?1', x), D[i].rows.records, function (r) { return String(r.record_id); }, ['phone', 'email', 'employee_number'], out, 'awards:' + x);\n"
+  },
+  "bk.counts.systems": {
+   "order": 30,
+   "text": "'awards', "
+  },
+  "bk.export.specs": {
+   "order": 30,
+   "text": "      ['award',['records','docsV1','docsV2'],['resources','records','caseTexts','answers','scoreRows','scores','documents','sections','items']],\n"
+  },
+  "bk.export.imageIds": {
+   "order": 20,
+   "text": "    domains.awards.forEach(function(d){d.rows.records.forEach(function(row){['picture','employee_signature','approver_signature'].forEach(function(k){if(typeof row[k]==='string'&&/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(row[k]))ids.add(row[k],(scope(d)||'')+':awards');});});});\n"
+  },
+  "bk.restore.base": {
+   "order": 30,
+   "text": " || !base.awards"
+  },
+  "bk.restore.summary": {
+   "order": 30,
+   "text": " و'+(c.awards||0)+' من بيانات التكريم"
+  },
+  "admin.keyLabels": {
+   "order": 30,
+   "text": "        bassam_award_v1: \"جائزة التميز\",\r\n"
+  },
+  "admin.counts.list.1": {
+   "order": 30,
+   "text": ", \"awards\""
+  },
+  "admin.counts.list.2": {
+   "order": 30,
+   "text": ", \"awards\""
+  },
+  "admin.counts.list.3": {
+   "order": 30,
+   "text": ", \"awards\""
+  },
+  "admin.delete.populated": {
+   "order": 30,
+   "text": " + counts.awards"
+  },
+  "admin.delete.message": {
+   "order": 30,
+   "text": "، \"+counts.awards+\" من بيانات التكريم"
+  },
+  "admin.businessBase": {
+   "order": 30,
+   "text": "awards:['records','docsV1','docsV2']"
+  },
+  "admin.wipe.natural": {
+   "order": 30,
+   "text": " || !natural(body.counts.awards)"
+  },
+  "admin.wipe.message": {
+   "order": 30,
+   "text": "، \"+body.counts.awards+\" من بيانات التكريم"
+  },
+  "admin.wipe.ack": {
+   "order": 30,
+   "text": " والتكريم"
+  },
+  "admin.wipe.labels": {
+   "order": 20,
+   "text": "                bassam_award_v1: \"ترشيحات جائزة التميز\",\r\n"
+  },
+  "admin.wipe.rows": {
+   "order": 30,
+   "text": "            if (counts.awards > 0) p.push({label:\"بيانات التكريم ومراجعه (\"+counts.awards+\")\"});\r\n"
+  },
+  "admin.wipe.any": {
+   "order": 30,
+   "text": " + (counts.awards || 0)"
+  },
+  "admin.full.stripKeys": {
+   "order": 30,
+   "text": "award(?:_docs)?"
+  },
+  "admin.full.manifest.systems": {
+   "order": 30,
+   "text": "awards:1,"
+  },
+  "nfc.kind.color": {
+   "order": 30,
+   "text": " award:'#c9a227',"
+  },
+  "nfc.kind.name": {
+   "order": 30,
+   "text": " award:'الجائزة',"
+  },
+  "nfc.kind.icon": {
+   "order": 30,
+   "text": " award:'M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM8.2 13.9 7 23l5-3 5 3-1.2-9.1',"
+  },
+  "nfc.reg": {
+   "order": 30,
+   "file": "slots/nfc.reg.frag"
+  },
+  "nfc.goNav.award": {
+   "order": 10,
+   "text": " 'افتح الترشيح':'award', 'افتح لوحة النتائج':'award', 'افتح المراجع':'award',"
+  },
+  "store.relational.systems": {
+   "order": 30,
+   "text": "award|"
+  },
+  "store.relational.awardDocs": {
+   "order": 10,
+   "text": " || /^(?:bsdept:[^:\\s]+:)?bassam_award_docs_v[12]$/.test(k)"
+  },
+  "store.keyLabels": {
+   "order": 30,
+   "text": "      bassam_award_v1:[\"جائزة التميز\"], bassam_award_docs_v1:[\"المراجع المعتمدة للجائزة (قديم)\"], bassam_award_docs_v2:[\"المراجع المعتمدة للجائزة\"],\n"
+  },
+  "store.identity": {
+   "order": 30,
+   "text": " bassam_award_v1: { \"recs\": \"id\" },"
+  },
+  "store.pull.systemKeys": {
+   "order": 30,
+   "text": "award(?:_docs)?"
+  },
+  "activity.entities": {
+   "order": 30,
+   "text": " award: 'ترشيح الجائزة',"
+  },
+  "activity.filter": {
+   "order": 30,
+   "text": " ['award', 'الجائزة'],"
+  },
+  "res.empty.award": {
+   "order": 10,
+   "text": " bassam_award_v1: '{\"recs\":[]}', bassam_award_docs_v1: '{}', bassam_award_docs_v2: '{}',"
+  },
+  "root.deptBackup.stripKeys": {
+   "order": 30,
+   "text": "award(?:_docs)?"
+  },
+  "root.deptBackup.manifest": {
+   "order": 30,
+   "text": "awards:1,"
   }
  }
 }

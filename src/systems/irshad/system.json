@@ -471,6 +471,160 @@
    "order": 10,
    "text": "p.k === \"ird\" ? nfIrshadDaily : ",
    "last": "nfIrshadDaily"
+  },
+  "bk.counts.systems": {
+   "order": 10,
+   "text": "'irshad', "
+  },
+  "bk.export.specs": {
+   "order": 10,
+   "text": "      ['irshad',['reports','languages','locations','retro'],['reports','languages','catalogs','windows']],\n"
+  },
+  "bk.restore.base": {
+   "order": 10,
+   "text": " || !base.irshad"
+  },
+  "bk.restore.summary": {
+   "order": 10,
+   "text": " و' + (c.irshad || 0) + ' سجل استرشاد"
+  },
+  "admin.keyLabels": {
+   "order": 10,
+   "text": "        bassam_irshad_v1: \"نظام الاسترشاد\",\r\n"
+  },
+  "admin.counts.list.1": {
+   "order": 10,
+   "text": ", \"irshad\""
+  },
+  "admin.counts.list.2": {
+   "order": 10,
+   "text": ", \"irshad\""
+  },
+  "admin.counts.list.3": {
+   "order": 10,
+   "text": ", \"irshad\""
+  },
+  "admin.delete.populated": {
+   "order": 10,
+   "text": " + counts.irshad"
+  },
+  "admin.delete.message": {
+   "order": 10,
+   "text": "، \" + counts.irshad + \" سجل استرشاد"
+  },
+  "admin.businessBase": {
+   "order": 10,
+   "text": "irshad:['reports','languages','locations','retro']"
+  },
+  "admin.wipe.natural": {
+   "order": 10,
+   "text": " || !natural(body.counts.irshad)"
+  },
+  "admin.wipe.message": {
+   "order": 10,
+   "text": "، \" + body.counts.irshad + \" سجل استرشاد"
+  },
+  "admin.wipe.ack": {
+   "order": 10,
+   "text": " والاسترشاد"
+  },
+  "admin.wipe.labels": [
+   {
+    "order": 10,
+    "text": "                bassam_irshad_v1: \"سجلات نظام الاسترشاد\",\r\n"
+   },
+   {
+    "order": 30,
+    "text": "                bassam_irshad_locs_v1: \"مواقع نظام الاسترشاد\",\r\n                bassam_irshad_langs_v1: \"لغات نظام الاسترشاد\",\r\n"
+   }
+  ],
+  "admin.wipe.rows": {
+   "order": 10,
+   "text": "            if (counts.irshad > 0) p.push({ label: \"سجلات الاسترشاد وقوائمه والاستدراك (\" + counts.irshad + \")\" });\n"
+  },
+  "admin.wipe.any": {
+   "order": 10,
+   "text": " + (counts.irshad || 0)"
+  },
+  "admin.full.stripKeys": {
+   "order": 10,
+   "text": "irshad(?:_langs|_locs|_retro)?"
+  },
+  "admin.full.manifest.systems": {
+   "order": 10,
+   "text": "irshad:1,"
+  },
+  "nfc.kind.color": {
+   "order": 10,
+   "text": " irshad:'#166534',"
+  },
+  "nfc.kind.name": {
+   "order": 10,
+   "text": " irshad:'الاسترشاد',"
+  },
+  "nfc.kind.icon": {
+   "order": 10,
+   "text": " irshad:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM16 8l-2 6-6 2 2-6z',"
+  },
+  "nfc.reg": {
+   "order": 10,
+   "file": "slots/nfc.reg.frag"
+  },
+  "nfc.goPage.records": {
+   "order": 10,
+   "text": "irshad: 'irshad'"
+  },
+  "nfc.goPage.dash": {
+   "order": 10,
+   "text": "irshad: 'kpis'"
+  },
+  "nfc.goKpiPage": {
+   "order": 10,
+   "text": "irshad: ['irshad', 'dash']"
+  },
+  "store.relational.systems": {
+   "order": 10,
+   "text": "irshad(?:_langs|_locs|_retro)?|"
+  },
+  "store.keyLabels": {
+   "order": 10,
+   "text": "      bassam_irshad_v1:[\"نظام الاسترشاد\"], bassam_irshad_langs_v1:[\"لغات الاسترشاد\"], bassam_irshad_locs_v1:[\"مواقع الاسترشاد\"],\n"
+  },
+  "store.identity": {
+   "order": 10,
+   "text": " bassam_irshad_v1: { \"reports\": \"id\" },"
+  },
+  "store.retroSys": {
+   "order": 10,
+   "text": "n === \"bassam_irshad_v1\" ? \"irshad\" : "
+  },
+  "store.retroKey": {
+   "order": 20,
+   "text": "\"ir.rec.retro.open\""
+  },
+  "store.pull.systemKeys": {
+   "order": 10,
+   "text": "irshad(?:_langs|_locs|_retro)?"
+  },
+  "activity.entities": {
+   "order": 20,
+   "text": " irshad: 'تقرير الاسترشاد',"
+  },
+  "activity.filter": {
+   "order": 20,
+   "text": " ['irshad', 'الاسترشاد'],"
+  },
+  "res.empty.systems": {
+   "order": 10,
+   "text": "    bassam_irshad_v1: '{\"reports\":[]}', bassam_irshad_langs_v1: '[]', bassam_irshad_locs_v1: '[]',\n"
+  },
+  "root.deptBackup.stripKeys": {
+   "order": 10,
+   "text": "irshad(?:_langs|_locs|_retro)?"
+  },
+  "root.deptBackup.manifest": {
+   "order": 10,
+   "text": "irshad:1,"
   }
  }
 }

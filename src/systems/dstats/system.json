@@ -334,6 +334,26 @@
   "bc.out.dstats": {
    "order": 10,
    "text": "dailyStats: 1, "
+  },
+  "bk.counts.dstats": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "admin.full.dstatsRead": {
+   "order": 10,
+   "text": "            if (!KIVO.DailyStats) throw new Error(\"خدمة الإحصائيات غير متاحة\");\r\n            const dailyStats = await KIVO.DailyStats.refresh();\r\n"
+  },
+  "admin.full.manifest.dstats": {
+   "order": 10,
+   "text": "dailyStats:1,"
+  },
+  "admin.full.domains.dstats": {
+   "order": 10,
+   "text": "dailyStats:{version:1,rev:KIVO.DailyStats.revision(),data:dailyStats},"
+  },
+  "store.relational.dstats": {
+   "order": 10,
+   "text": "dstats|"
   }
  }
 }
