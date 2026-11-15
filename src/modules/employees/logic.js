@@ -1871,10 +1871,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       empPmWrite: t,
       empPmReadOnly: !t,
       /* الموجة 2 · ES-6: «ملفات» لا تحمل إلا التصدير والطباعة — فلا تظهر لمن لا يملك التصدير (كانت تُفتح فارغةً لمن يملك الإضافة وحدها) */
-      empPmFiles: this.PC("export"),
+      empPmFiles: this.PC("export") || this.PC("add"),   /* V7 · د1-د: و«استيراد من Excel» لمن يملك الإضافة */
       empPmNoteStyle:
         "display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:var(--bg-a1001161390p06);border:1px solid var(--bd-a1001161390p22);font-size:11.5px;font-weight:600;color:var(--fg-x475569);line-height:1.8",
     };
+  }
+  /* ═══ V7 · د1-د: استيرادُ الموظفين من Excel في صفحة «بيانات الموظفين» (كان في «الإعدادات ← استيراد بيانات»).
+     قيمُ النافذة وأفعالُها في مهايئ المضيف داخل المحرّك نفسه (590 · KIVO.BassamEmpImp.hostVals) — الصفحةُ تحمل النافذةَ وهذا السطر. ═══ */
+  impVals() {
+    const t = KIVO.BassamEmpImp;
+    return t && t.hostVals ? t.hostVals(this) : { impConfOpen: !1, impPickDo: () => {}, impColsDo: () => {} };
   }
   permDeny() {
     try {
@@ -1965,6 +1971,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     viewIdx: null,
     fddOpen: null,
     filesOpen: !1,
+    impConf: null,
+    impStep: "pick",
+    impTick: 0,
     form: this.blankForm(),
     employees: this.loadEmp(),
     options: this.loadOptions(),
@@ -5998,6 +6007,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               ));
           }
       },
+      ...this.impVals(),   /* V7 · د1-د */
       filesOpen: e.filesOpen,
       filesToggle: () => this.setState((t) => ({ filesOpen: !t.filesOpen, fddOpen: null })),
       filesChev: "opacity:.5;transition:transform .2s;" + (e.filesOpen ? "transform:rotate(180deg)" : ""),

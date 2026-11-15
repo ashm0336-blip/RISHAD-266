@@ -516,3 +516,267 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     curHijriKey: curHijriKey
   };
 })();
+
+/* ═══ V7 · د1-د: مهايئُ المضيف — قيمُ نافذة الاستيراد وأفعالُها لصفحةٍ تستضيف المحرّك (c = مكوّنُ الصفحة: state · setState · bsToast · PC · permDeny).
+   كان هذا في «الإعدادات ← استيراد بيانات» (src/modules/admin)؛ نُقل مع الاستيراد إلى «بيانات الموظفين» ووُضع هنا بجوار المحرّك
+   لا في منطق الصفحة. النصوصُ والقواعدُ كما كانت حرفاً. ═══ */
+(function () {
+  "use strict";
+  if (!KIVO.BassamEmpImp) return;
+  function impOn(t) {
+    try {
+      const e = KIVO.BassamPerm;
+      return !e || !e.on || !!e.on(t);
+    } catch (t) {
+      return !0;
+    }
+  }
+  function impMount(c) {
+    const t = KIVO.BassamEmpImp;
+    t &&
+      !c._impMounted &&
+      ((c._impMounted = !0),
+      t.mount({
+        ask: (t) => c.setState({ impConf: t, impStep: "pick" }),
+        close: () => c.setState({ impConf: null, impStep: "pick" }),
+        toast: (message, kind) => c.bsToast(message, kind || "warn"),
+        change: () => c.setState({ impTick: (c.state.impTick || 0) + 1 }),
+      }));
+  }
+  function impVals(c) {
+    const t = KIVO.BassamEmpImp || {
+      curHij: () => ({ y: 0, m: 0 }),
+      month: () => ({ y: 0, m: 0 }),
+      pending: () => null,
+      setMonth: () => {},
+      commit: () => {},
+      drop: () => {},
+      pick: () => {},
+    };
+    impMount(c);
+    const e = c.state,
+      r = (() => {
+        try {
+          const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
+          return Array.isArray(t) ? t.length : 0;
+        } catch (t) {
+          return 0;
+        }
+      })();
+    return {
+      impBusy: !!(t.status && t.status().busy),
+      impError: t.status ? t.status().error : "",
+      impNeedsReview: !!(t.status && t.status().needsReview),
+      impReviewDisabled: !!(t.status && (t.status().busy || t.status().uncertain)),
+      impCommitDisabled: !!(t.status && (t.status().busy || t.status().needsReview)),
+      impReview: () => t.review && t.review(),
+      impCanAdd: (() => {
+        try {
+          const t = KIVO.BassamPerm;
+          return !!(t && t.can && t.can("emps", "add"));
+        } catch (t) {
+          return !1;
+        }
+      })(),
+      impDenyMsg: "الاستيراد يتطلّب صلاحية الإضافة على «موظفي الإدارة»",
+      impCount: String(r),
+      impCountTxt: r ? KIVO.BassamCount(r, "موظف") + " في الإدارة الآن" : "لا موظفين في الإدارة بعد",
+      impPickDo: () => {
+        if (!c.PC("add")) return void c.permDeny();
+        (c.setState({ filesOpen: !1 }), c.state.impConf || t.pick());
+      },
+      impColsDo: () => (c.setState({ filesOpen: !1 }), impCols(c)),
+      ...(() => {
+        const s = e.impConf;
+        if (!s)
+          return {
+            impConfOpen: !1,
+            impStepPick: !0,
+            impStepReplace: !1,
+            impCurCount: 0,
+            impFileCount: 0,
+            impDupCount: 0,
+            impNewCount: 0,
+            impHasCur: !0,
+            impConfTitle: "",
+            impConfSub: "",
+            impSchedOn: !1,
+            impSchedYear: "",
+            impSchedMonth: "",
+            impYearOpts: [],
+            impMonthOpts: [],
+            impSetY: () => {},
+            impSetM: () => {},
+            impSchedLock: "",
+            impSchedLockStyle: "",
+            impSchedCols: "",
+            impUpdateDesc: "",
+            impAddDesc: "",
+            impReplaceDesc: "",
+            impReplaceWarn: "",
+            stopClick: (t) => {
+              t && t.stopPropagation && t.stopPropagation();
+            },
+            impConfCancel: () => {},
+            impDoUpdate: () => {},
+            impDoAdd: () => {},
+            impAskReplace: () => {},
+            impDoReplace: () => {},
+            impBackToPick: () => {},
+          };
+        const a = t.curHij(),
+          r = t.month().y,
+          i = t.month().m,
+          n = t.pending() || {},
+          o = n.sched || {},
+          p = !!(o.shift || o.rest || o.cs || o.muk);
+        let l = !1;
+        try {
+          l = !!(KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1") || {})[r + "-" + i];
+        } catch (t) {}
+        const d = [o.shift ? "الوردية" : "", o.rest ? "أيام الراحة" : "", o.cs ? "رمز النداء" : "", o.muk ? "التكليف" : ""].filter(Boolean);
+        return {
+          impConfOpen: !0,
+          impHasCur: s.cur > 0,
+          impConfTitle: s.cur > 0 ? "يوجد موظفون مسجّلون بالفعل" : "تأكيد الاستيراد",
+          impConfSub:
+            s.cur > 0
+              ? "اختر كيف تريد التعامل مع البيانات الحالية قبل إتمام الاستيراد."
+              : "القائمة فارغة — سيُضاف من في الملف كما هو. راجع شهر الجدول الشهري أدناه أولاً.",
+          impSchedOn: p,
+          impSchedYear: String(r),
+          impSchedMonth: String(i),
+          impYearOpts: [a.y - 1, a.y, a.y + 1].map((t) => ({ v: String(t), lbl: t + " هـ" })),
+          impMonthOpts: [
+            "محرم",
+            "صفر",
+            "ربيع الأول",
+            "ربيع الآخر",
+            "جمادى الأولى",
+            "جمادى الآخرة",
+            "رجب",
+            "شعبان",
+            "رمضان",
+            "شوال",
+            "ذو القعدة",
+            "ذو الحجة",
+          ].map((t, e) => ({ v: String(e + 1), lbl: t + (a.m === e + 1 && a.y === r ? " (الجاري)" : "") })),
+          impSetY: (e) => {
+            (t.setMonth(parseInt(e.target.value, 10) || 0, t.month().m), c.setState({ impTick: (c.state.impTick || 0) + 1 }));
+          },
+          impSetM: (e) => {
+            (t.setMonth(t.month().y, parseInt(e.target.value, 10) || 0), c.setState({ impTick: (c.state.impTick || 0) + 1 }));
+          },
+          impSchedLock: l ? "الشهر معتمد ومقفل — لن يُكتب فيه شيء" : r === a.y && i === a.m ? "الشهر الجاري" : "شهر غير الجاري",
+          impSchedLockStyle:
+            "font-size:10px;font-weight:700;border-radius:9999px;padding:4px 10px;white-space:nowrap;border:1px solid " +
+            (l
+              ? "rgba(220,38,38,0.35);background:var(--bg-a22038380p07);color:var(--fg-xb91c1c)"
+              : "rgba(4,120,87,0.3);background:var(--bg-a4120870p07);color:var(--fg-x047857)"),
+          impSchedCols:
+            (impOn("staff")
+              ? "الأعمدة التي وجدها في ملفك وستذهب إلى هذا الشهر: " +
+                (d.length ? d.join(" · ") : "لا شيء") +
+                ". أما بقية الأعمدة فتذهب إلى سجل الموظف نفسه ولا يمسّها اختيار الشهر."
+              : "أعمدة الجدول التي وجدها في ملفك (" +
+                (d.length ? d.join(" · ") : "لا شيء") +
+                ") لن تُكتب — الجدول الشهري غير مفعّل في هذه الإدارة. أما بقية الأعمدة فتذهب إلى سجل الموظف نفسه.") +
+            ((n.derived || []).length ? " ولن تُستورد أعمدةٌ محسوبةٌ في المنصة: " + n.derived.map((t) => t.t).join(" · ") + "." : "") +
+            ((n.unknown || []).length ? " وأعمدةٌ غير معروفة ستُتجاهل: " + n.unknown.join(" · ") + "." : ""),
+          impStepPick: "replace" !== e.impStep,
+          impStepReplace: "replace" === e.impStep,
+          impCurCount: s.cur,
+          impFileCount: s.file,
+          impDupCount: s.dup,
+          impNewCount: s.fresh,
+          impUpdateDesc:
+            "يُحدَّث " +
+            KIVO.BassamCount(s.dup, "موظف|موجود") +
+            " ببيانات الملف (المطابقة برقم الهوية، فإن غاب فبالرقم الوظيفي، فإن غاب فبالاسم مع الجوال)، ويُضاف " +
+            KIVO.BassamCount(s.fresh, "موظف|جديد") +
+            ". لا يُحذف أحد.",
+          impAddDesc:
+            "يُضاف " +
+            KIVO.BassamCount(s.fresh, "موظف|جديد") +
+            " فقط، ويُترك " +
+            KIVO.BassamCount(s.dup, "موظف|موجود") +
+            " " +
+            KIVO.BassamCount.agr(s.dup, "كما هو", "كما هما", "كما هم") +
+            " دون أي تعديل.",
+          impReplaceDesc:
+            "يُحذف " +
+            KIVO.BassamCount(s.cur, "موظف") +
+            " من القائمة الحالية ثم تُستورد بيانات الملف (" +
+            KIVO.BassamCount(s.file, "موظف") +
+            ") من جديد" +
+            (impOn("staff") ? "، ويُبنى الجدول الشهري " + KIVO.BassamCount.agr(s.file, "له", "لهما", "لهم") + " من الصفر." : "."),
+          impReplaceWarn:
+            "سيُحذف " +
+            KIVO.BassamCount(s.cur, "موظف") +
+            " من هذه الإدارة نهائياً وتحل " +
+            KIVO.BassamCount.agr(s.cur, "محله", "محلهما", "محلهم") +
+            " بيانات الملف (" +
+            KIVO.BassamCount(s.file, "موظف") +
+            ")، وتُنظّف المنصة من كل " +
+            KIVO.BassamCount.agr(s.cur, "أثره", "أثرهما", "أثرهم") +
+            ": " +
+            [
+              impOn("staff") ? "الجدول الشهري بكل أشهره" : "",
+              impOn("dreport") ? "التقارير اليومية بكل أيامها ودفاتر استئذاناتها" : "",
+              "تسكينات الخطة التشغيلية والجولات اليومية",
+              "المهام المسندة",
+              "حسابات الدخول والصلاحيات",
+              impOn("emps/custody") ? "حركات العهد" : "",
+              impOn("award") ? "ترشيحات التميز" : "",
+            ]
+              .filter(Boolean)
+              .join("، و") +
+            (impOn("staff") ? " — ويُنشأ جدول الشهر من جديد مسودة مفتوحة غير معتمدة." : ".") +
+            " لا يمكن التراجع.",
+          stopClick: (t) => {
+            t && t.stopPropagation && t.stopPropagation();
+          },
+          impConfCancel: () => {
+            if (!t.pending()) return void c.setState({ impConf: null, impStep: "pick" });
+            if (t.drop() !== false) { c.setState({ impConf: null, impStep: "pick" }); c.bsToast("أُلغي الاستيراد — لم يتغيّر شيء"); }
+          },
+          impDoUpdate: () => t.commit("update"),
+          impDoAdd: () => t.commit("add"),
+          impAskReplace: () => { if (!(t.status && (t.status().busy || t.status().uncertain))) c.setState({ impStep: "replace" }); },
+          impBackToPick: () => { if (!(t.status && (t.status().busy || t.status().uncertain))) c.setState({ impStep: "pick" }); },
+          impDoReplace: () => t.commit("replace"),
+        };
+      })(),
+    };
+  }
+  function impCols(c) {
+    const t = KIVO.BassamEmpImp,
+      e =
+        t && t.colTitles
+          ? t.colTitles()
+          : [
+              "اسم الموظف",
+              "الجنس",
+              "رقم الهوية",
+              "الرقم الوظيفي",
+              "رقم الجوال",
+              "البريد الإلكتروني",
+              "نوع التوظيف",
+              "نوع العمل",
+              "الوردية",
+              "أيام الراحة",
+              "رمز النداء",
+              "التكليف",
+            ],
+      s = e.map(() => "");
+    try {
+      KIVO.BassamXLSX
+        ? (KIVO.BassamXLSX.download([e, s.slice(), s.slice(), s.slice()], "أعمدة-استيراد-الموظفين.xlsx"),
+          c.bsToast("نُزّل قالبُ الاستيراد — عبّئ صفوفه ثم ارفعه من «ملفات ← استيراد من Excel»", "ok"))
+        : c.bsToast("تعذّر إنشاء ملف Excel في هذا المتصفح", "warn");
+    } catch (t) {
+      c.bsToast("تعذّر إنشاء ملف Excel", "warn");
+    }
+  }
+  KIVO.BassamEmpImp.hostVals = impVals;
+})();
