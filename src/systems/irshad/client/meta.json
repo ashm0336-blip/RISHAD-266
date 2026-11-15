@@ -62,7 +62,11 @@
    "gate:rev4.mjs",
    "gate:sec.mjs",
    "gate:theme248.mjs",
-   "gate:visual.mjs"
+   "gate:visual.mjs",
+   "src/systems/_multi/tests/irsz_dash_w2.body.mjs",
+   "tests/unit/refresh_tabs_w1.test.mjs",
+   "tests/unit/v7_d1c_super_unbounded.test.mjs",
+   "tests/unit/v7_ux_page_states.test.mjs"
   ]
  }
 }

@@ -70,7 +70,8 @@
    "gate:sec.mjs",
    "gate:sec163.mjs",
    "gate:theme248.mjs",
-   "gate:visual.mjs"
+   "gate:visual.mjs",
+   "tests/unit/v7_d1c_super_unbounded.test.mjs"
   ]
  }
 }

@@ -95,7 +95,9 @@
    "gate:sec163.mjs",
    "gate:theme248.mjs",
    "gate:visual.mjs",
-   "tests/unit/rishad266_help_route.test.mjs"
+   "tests/unit/rishad266_help_route.test.mjs",
+   "tests/unit/v7_d1c_super_unbounded.test.mjs",
+   "tests/unit/v7_p3_0_cap_state.test.mjs"
   ]
  }
 }
