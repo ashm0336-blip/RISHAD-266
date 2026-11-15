@@ -184,6 +184,24 @@
   "routes.dispatch": {
    "order": 30,
    "text": "      if (path === '/api/award' || path === '/api/award/act' || path === '/api/award/export') return await bdRoute(env, request, url, ss, 'awards');\n"
+  },
+  "contracts.systems": [
+   {
+    "order": 70,
+    "file": "slots/contracts.systems.frag"
+   },
+   {
+    "order": 80,
+    "file": "slots/contracts.systems.2.frag"
+   },
+   {
+    "order": 90,
+    "file": "slots/contracts.systems.3.frag"
+   }
+  ],
+  "bodies.systems": {
+   "order": 30,
+   "file": "slots/bodies.systems.frag"
   }
  }
 }

@@ -232,6 +232,24 @@
   "routes.dispatch": {
    "order": 20,
    "text": "      if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');\n"
+  },
+  "contracts.systems": [
+   {
+    "order": 40,
+    "file": "slots/contracts.systems.frag"
+   },
+   {
+    "order": 50,
+    "file": "slots/contracts.systems.2.frag"
+   },
+   {
+    "order": 60,
+    "file": "slots/contracts.systems.3.frag"
+   }
+  ],
+  "bodies.systems": {
+   "order": 20,
+   "file": "slots/bodies.systems.frag"
   }
  }
 }

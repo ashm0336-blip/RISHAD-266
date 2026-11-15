@@ -170,6 +170,18 @@
   "routes.dispatch": {
    "order": 40,
    "text": "      if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);\n"
+  },
+  "contracts.dstats": {
+   "order": 10,
+   "file": "slots/contracts.dstats.frag"
+  },
+  "bodies.dstats": {
+   "order": 10,
+   "file": "slots/bodies.dstats.frag"
+  },
+  "routes.bodyLimitMax": {
+   "order": 10,
+   "text": " || path === '/api/dstats'"
   }
  }
 }

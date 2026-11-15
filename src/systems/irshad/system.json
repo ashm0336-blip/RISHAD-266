@@ -211,6 +211,24 @@
   "routes.dispatch": {
    "order": 10,
    "text": "      if (path === '/api/irshad' || path === '/api/irshad/act' || path === '/api/irshad/export') return await irRoute(env, request, url, ss);\n"
+  },
+  "contracts.systems": [
+   {
+    "order": 10,
+    "file": "slots/contracts.systems.frag"
+   },
+   {
+    "order": 20,
+    "file": "slots/contracts.systems.2.frag"
+   },
+   {
+    "order": 30,
+    "file": "slots/contracts.systems.3.frag"
+   }
+  ],
+  "bodies.systems": {
+   "order": 10,
+   "file": "slots/bodies.systems.frag"
   }
  }
 }

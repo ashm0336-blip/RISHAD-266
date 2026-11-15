@@ -76,6 +76,14 @@
   {
    "tpl": "workers/parts/063-enf-api-and-handler.js.tpl",
    "out": "workers/parts/063-enf-api-and-handler.js"
+  },
+  {
+   "tpl": "api/contracts.json.tpl",
+   "out": "src/api/contracts.json"
+  },
+  {
+   "tpl": "schemas/api/bodies.schema.json.tpl",
+   "out": "src/schemas/api/bodies.schema.json"
   }
  ]
 }
