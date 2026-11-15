@@ -167,6 +167,8 @@ KIVO.BassamXLSX = (function () {
         row[idx] = val; nextCol = idx + 1;
       }
       var r2 = []; for (j = 0; j < row.length; j++) r2.push(row[j] == null ? "" : row[j]);
+      /* V7 · د1-د: رقمُ الصف كما هو في الملف (الصفوفُ الفارغة لا تُكتب في XML فيختلف الترتيبُ عن الرقم) — لرسائل «الصف كذا» */
+      r2.__r = parseInt(rowEls[i].getAttribute("r"), 10) || (i + 1);
       rows.push(r2);
     }
     return rows;

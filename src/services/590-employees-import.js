@@ -445,7 +445,12 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
               const fileSeen = new Set();
               const cands = [];
               let inFileDup = 0, noName = 0, badLen = 0;
-              rows2.slice(hdrRow + 1).forEach(r => {
+              /* V7 · د1-د (قرار المراجع): تكرارُ الهوية أو الرقم الوظيفي أو الجوال داخل الملف نفسه يرفض الملفَّ كلَّه قبل نافذة التأكيد —
+                 القيمةُ ← أرقامُ صفوفها في الملف. الصفوفُ المتطابقة حرفاً تكرارٌ كذلك. */
+              const dupN = new Map(), dupO = new Map(), dupP = new Map();
+              const dupAdd = (mp, v, rn) => { if (!v) return; const a = mp.get(v); if (a) a.push(rn); else mp.set(v, [rn]); };
+              rows2.slice(hdrRow + 1).forEach((r, ri) => {
+                const rowNo = r.__r || (hdrRow + ri + 2);
                 /* «—» في ملفٍ صدّرته المنصة = خلية فارغة لا قيمة */
                 const g = (i) => { if (i === -1) return ""; const v = String(r[i] || "").trim(); return (v === "—" || v === "-" || v === "–") ? "" : v; };
                 const name = g(ix.name);
@@ -474,6 +479,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
                 const gender = /^ذكر/.test(gRaw) ? "ذكر" : (/^(أنثى|انثى|أنثي|انثي)/.test(gRaw) ? "أنثى" : "");
                 const emailV = g(ix.email).trim();
                 const emp = { name, nid, empno, phone, email: emailOk(emailV) ? emailV : "", type: g(ix.type) || "", work: wkNorm9(g(ix.work)), gender, eid: "e" + Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36), group: "بدون مجموعة", account: "بانتظار التفعيل", contact: "غير متوفر" };
+                dupAdd(dupN, nid, rowNo); dupAdd(dupO, String(empno || "").trim(), rowNo); dupAdd(dupP, phone, rowNo);
                 // كان: كشف التكرار داخل الملف يعتمد على الهوية وحدها فيتضاعف الكشف كله عند غيابها — مفتاح متدرّج
                 const key = empKey(emp);
                 if (key && fileSeen.has(key)) { inFileDup++; return; }
@@ -481,6 +487,9 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
                 cands.push({ emp, sh: g(ix.shift), rs: ixRestAll.map(g).filter(Boolean).join(" - "), blank: blank,
                   cs: g(ix.cs), muk: g(ix.muk), tpl: ix.tpl !== -1 ? g(ix.tpl) : "" });
               });
+              const dups = [];
+              [[dupN, "رقم الهوية"], [dupO, "الرقم الوظيفي"], [dupP, "رقم الجوال"]].forEach(pr => pr[0].forEach((rs, v) => { if (rs.length > 1) dups.push(pr[1] + " " + v + " في الصفوف " + rs.join(" و")); }));
+              if (dups.length) { toast("رُفض الملف — فيه تكرار: " + dups.slice(0, 3).join(" · ") + (dups.length > 3 ? " · و" + (dups.length - 3) + " تكراراً آخر" : "") + ". صحّح الملف ثم ارفعه من جديد — لم يُحفظ شيء.", "err"); return; }
               // كان: عند سقوط كل الصفوف لا يُذكر سبب الإسقاط — نُظهر عدد الصفوف بلا اسم
               if (!cands.length) { toast("لا توجد صفوف صالحة في الملف" + (noName ? " · " + KIVO.BassamCount(noName,"صف") + " بلا اسم" : "")); return; }
               ST.pend = { cands: cands, inFileDup: inFileDup, noName: noName, badLen: badLen, cols: { name: ix.name !== -1, empno: ix.empno !== -1, phone: ix.phone !== -1, type: ix.type !== -1, work: ix.work !== -1, gender: ix.gender !== -1, tpl: ix.tpl !== -1 },
@@ -539,17 +548,20 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       return !0;
     }
   }
+  /* حالةُ النافذة هنا لا في حالة الصفحة: الملخّصُ المعروض والخطوة. الصفحةُ تُعاد رسماً بعدّادٍ واحد (impTick). */
+  var HS = { conf: null, step: "pick" };
+  function tick(c) { c.setState({ impTick: (c.state.impTick || 0) + 1 }); }
   function impMount(c) {
     const t = KIVO.BassamEmpImp;
     t &&
       !c._impMounted &&
       ((c._impMounted = !0),
       t.mount({
-        ask: (t) => c.setState({ impConf: t, impStep: "pick" }),
-        close: () => c.setState({ impConf: null, impStep: "pick" }),
+        ask: (t) => { HS.conf = t; HS.step = "pick"; tick(c); },
+        close: () => { HS.conf = null; HS.step = "pick"; tick(c); },
         toast: (message, kind) => c.bsToast(message, kind || "warn"),
-        change: () => c.setState({ impTick: (c.state.impTick || 0) + 1 }),
-        done: () => c.impDone && c.impDone(),
+        change: () => tick(c),
+        done: () => c.setState({ employees: c.loadEmp(), selected: {} }),   /* الجدولُ يُحدَّث فور الاعتماد */
       }));
   }
   function impVals(c) {
@@ -572,7 +584,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
           return 0;
         }
       })();
-    return {
+    const V = {
       impBusy: !!(t.status && t.status().busy),
       impError: t.status ? t.status().error : "",
       impNeedsReview: !!(t.status && t.status().needsReview),
@@ -592,11 +604,11 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       impCountTxt: r ? KIVO.BassamCount(r, "موظف") + " في الإدارة الآن" : "لا موظفين في الإدارة بعد",
       impPickDo: () => {
         if (!c.PC("add")) return void c.permDeny();
-        (c.setState({ filesOpen: !1 }), c.state.impConf || t.pick());
+        (c.setState({ filesOpen: !1 }), HS.conf || t.pick());
       },
       impColsDo: () => (c.setState({ filesOpen: !1 }), impCols(c)),
       ...(() => {
-        const s = e.impConf;
+        const s = HS.conf;
         if (!s)
           return {
             impConfOpen: !1,
@@ -671,10 +683,10 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
             "ذو الحجة",
           ].map((t, e) => ({ v: String(e + 1), lbl: t + (a.m === e + 1 && a.y === r ? " (الجاري)" : "") })),
           impSetY: (e) => {
-            (t.setMonth(parseInt(e.target.value, 10) || 0, t.month().m), c.setState({ impTick: (c.state.impTick || 0) + 1 }));
+            (t.setMonth(parseInt(e.target.value, 10) || 0, t.month().m), tick(c));
           },
           impSetM: (e) => {
-            (t.setMonth(t.month().y, parseInt(e.target.value, 10) || 0), c.setState({ impTick: (c.state.impTick || 0) + 1 }));
+            (t.setMonth(t.month().y, parseInt(e.target.value, 10) || 0), tick(c));
           },
           impSchedLock: l ? "الشهر معتمد ومقفل — لن يُكتب فيه شيء" : r === a.y && i === a.m ? "الشهر الجاري" : "شهر غير الجاري",
           impSchedLockStyle:
@@ -692,8 +704,8 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
                 ") لن تُكتب — الجدول الشهري غير مفعّل في هذه الإدارة. أما بقية الأعمدة فتذهب إلى سجل الموظف نفسه.") +
             ((n.derived || []).length ? " ولن تُستورد أعمدةٌ محسوبةٌ في المنصة: " + n.derived.map((t) => t.t).join(" · ") + "." : "") +
             ((n.unknown || []).length ? " وأعمدةٌ غير معروفة ستُتجاهل: " + n.unknown.join(" · ") + "." : ""),
-          impStepPick: "replace" !== e.impStep,
-          impStepReplace: "replace" === e.impStep,
+          impStepPick: "replace" !== HS.step,
+          impStepReplace: "replace" === HS.step,
           impCurCount: s.cur,
           impFileCount: s.file,
           impDupCount: s.dup,
@@ -746,17 +758,105 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
             t && t.stopPropagation && t.stopPropagation();
           },
           impConfCancel: () => {
-            if (!t.pending()) return void c.setState({ impConf: null, impStep: "pick" });
-            if (t.drop() !== false) { c.setState({ impConf: null, impStep: "pick" }); c.bsToast("أُلغي الاستيراد — لم يتغيّر شيء"); }
+            if (!t.pending()) { HS.conf = null; HS.step = "pick"; return void tick(c); }
+            if (t.drop() !== false) { HS.conf = null; HS.step = "pick"; tick(c); c.bsToast("أُلغي الاستيراد — لم يتغيّر شيء"); }
           },
           impDoUpdate: () => t.commit("update"),
           impDoAdd: () => t.commit("add"),
-          impAskReplace: () => { if (!(t.status && (t.status().busy || t.status().uncertain))) c.setState({ impStep: "replace" }); },
-          impBackToPick: () => { if (!(t.status && (t.status().busy || t.status().uncertain))) c.setState({ impStep: "pick" }); },
+          impAskReplace: () => { if (!(t.status && (t.status().busy || t.status().uncertain))) { HS.step = "replace"; tick(c); } },
+          impBackToPick: () => { if (!(t.status && (t.status().busy || t.status().uncertain))) { HS.step = "pick"; tick(c); } },
           impDoReplace: () => t.commit("replace"),
         };
       })(),
     };
+    impPaint(V, !!c.PC("add"));
+    return null;
+  }
+  /* ═══ V7 · د1-د: نافذةُ التأكيد يرسمها هذا الملف في حاملٍ فارغ بالصفحة ([data-emp-imp-host]) — كان ترميزُها في view.html للصفحة فنُقل هنا
+     (سقفُ حجم صفحة الموظفين). النصوصُ والأنماطُ كما كانت؛ البطاقاتُ الأربع شبكةٌ: أربعٌ في صفّ، واثنتان في صفّ على الجوال. ═══ */
+  var IC = {
+    warn: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>',
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path>',
+    sync: '<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 16h5v5"></path>',
+    plus: '<path d="M5 12h14"></path><path d="M12 5v14"></path>',
+    bin: '<path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>'
+  };
+  function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function svg(k, n, join) { return '<svg width="' + n + '" height="' + n + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"' + (join ? ' stroke-linejoin="round"' : "") + ">" + IC[k] + "</svg>"; }
+  var CSS = ".ei-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:16px}@media (max-width:560px){.ei-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
+    ".ei-card{min-width:0;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px}" +
+    ".ei-opt{text-align:right;border-radius:14px;padding:13px 14px;cursor:pointer;background:var(--bg-xffffff);display:flex;align-items:flex-start;gap:11px;transition:all .15s}" +
+    ".ei-u{border:1px solid var(--bd-xe1e1e1)}.ei-u:hover{border-color:var(--bd-xb99751);background:var(--bg-a185151810p05)}" +
+    ".ei-a{border:1px solid var(--bd-xe1e1e1)}.ei-a:hover{border-color:var(--bd-x0891b2);background:var(--bg-a81451780p05)}" +
+    ".ei-r{border:1px solid var(--bd-a23968680p35)}.ei-r:hover{border-color:var(--bd-xdc2626);background:var(--bg-a23968680p05)}" +
+    ".ei-b{height:36px;padding:0 16px;border-radius:10px;font-size:12.5px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x141414);border:1px solid var(--bd-xe1e1e1);cursor:pointer;font-family:'Cairo',sans-serif}.ei-b:hover{background:var(--bg-xf5f5f5)}" +
+    ".ei-sel{height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 9px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:600;color:var(--fg-x141414);background:var(--bg-xffffff);cursor:pointer;outline:none}";
+  function impHtml(V) {
+    var card = function (lbl, val, col) { return '<div class="ei-card"><div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">' + lbl + '</div><div style="font-size:17px;font-weight:600;color:var(--fg-' + col + ')">' + esc(val) + "</div></div>"; };
+    var opt = function (key, cls, act, icoBg, icoFg, ico, title, desc) {
+      return '<div data-imp="' + key + '" data-ei="' + act + '" class="ei-opt ' + cls + '"><div style="width:34px;height:34px;border-radius:10px;background:var(--bg-' + icoBg + ");color:var(--fg-" + icoFg + ');display:flex;align-items:center;justify-content:center;flex-shrink:0">' + svg(ico, 17, 1) +
+        '</div><div style="flex:1;min-width:0">' + title + '<div style="font-size:11px;color:var(--fg-x53565a);line-height:1.7">' + esc(desc) + "</div></div></div>";
+    };
+    var sel = function (act, cur, list) { return '<select data-ei="' + act + '" class="ei-sel">' + list.map(function (o) { return '<option value="' + esc(o.v) + '"' + (String(o.v) === String(cur) ? " selected" : "") + ">" + esc(o.lbl) + "</option>"; }).join("") + "</select>"; };
+    var h = "" +
+      '<div data-ei="impConfCancel" data-ei-self="1" style="position:fixed;inset:0;z-index:70;background:var(--bg-a0000p5);display:flex;align-items:center;justify-content:center;padding:24px">' +
+      '<div style="background:var(--bg-xffffff);border-radius:18px;box-shadow:var(--shadow-elevated);width:100%;max-width:520px;padding:24px;max-height:88vh;overflow-y:auto">' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><div style="width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--bg-xfffbeb);border:1px solid var(--bd-xfde68a);color:var(--fg-xb45309);flex-shrink:0">' + svg("warn", 22, 1) +
+      '</div><div style="flex:1;min-width:0"><h3 style="font-size:16px;font-weight:600;margin:0 0 3px">' + esc(V.impConfTitle) + '</h3><p style="font-size:11.5px;color:var(--fg-x53565a);margin:0;line-height:1.7">' + esc(V.impConfSub) + "</p></div></div>" +
+      '<div class="ei-cards">' + card("الموجود حالياً", V.impCurCount, "x141414") + card("في الملف", V.impFileCount, "x141414") + card("مطابق لسجل موجود", V.impDupCount, "xb45309") + card("جديد كلياً", V.impNewCount, "x047857") + "</div>";
+    if (V.impSchedOn) h += '<div style="border:1px solid var(--bd-a185151810p4);background:var(--bg-a185151810p05);border-radius:14px;padding:12px 14px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--fg-x8a6f35);white-space:nowrap">' + svg("cal", 15, 0) + " يُكتب الجدول الشهري في شهر</span>" +
+      sel("impSetM", V.impSchedMonth, V.impMonthOpts) + sel("impSetY", V.impSchedYear, V.impYearOpts) + '<span style="' + esc(V.impSchedLockStyle) + '">' + esc(V.impSchedLock) + "</span></div>" +
+      '<div style="font-size:10.5px;font-weight:400;color:var(--fg-x94a3b8);margin-top:8px;line-height:1.9">' + esc(V.impSchedCols) + "</div></div>";
+    if (V.impError) h += '<p role="alert" style="color:var(--danger-text);font-size:12px">' + esc(V.impError) + "</p>";
+    if (V.impBusy) h += '<p role="status">جارٍ تأكيد العملية مع الخادم…</p>';
+    if (V.impNeedsReview) h += '<button data-ei="impReview"' + (V.impReviewDisabled ? " disabled" : "") + ' class="ei-b" style="height:38px;background:var(--bg-surface);color:var(--text-secondary);border:1px solid var(--border-default)">مراجعة بيانات الإدارة الحالية</button>';
+    if (V.impStepPick) h += '<div style="display:flex;flex-direction:column;gap:8px">' +
+      (V.impHasCur ? opt("update", "ei-u", "impDoUpdate", "a185151810p12", "x9a7e40", "sync", '<div style="font-size:13px;font-weight:600;margin-bottom:3px">تحديث ودمج <span style="font-size:9.5px;font-weight:400;color:var(--fg-x9a7e40);background:var(--bg-a185151810p12);border-radius:6px;padding:2px 6px;margin-right:4px">موصى به</span></div>', V.impUpdateDesc) : "") +
+      opt("add", "ei-a", "impDoAdd", "a81451780p12", "x0891b2", "plus", '<div style="font-size:13px;font-weight:600;margin-bottom:3px">إضافة الجديد فقط</div>', V.impAddDesc) +
+      (V.impHasCur ? opt("askrep", "ei-r", "impAskReplace", "xfef2f2", "xdc2626", "bin", '<div style="font-size:13px;font-weight:600;margin-bottom:3px;color:var(--fg-xdc2626)">حذف الكل واستبدالهم بالملف</div>', V.impReplaceDesc) : "") +
+      '</div><div style="display:flex;justify-content:flex-start;margin-top:14px"><button data-ei="impConfCancel" class="ei-b">إلغاء الاستيراد</button></div>';
+    if (V.impStepReplace) h += '<div style="background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);border-radius:14px;padding:14px"><div style="font-size:13px;font-weight:600;color:var(--fg-xdc2626);margin-bottom:5px">تأكيد الحذف والاستبدال</div>' +
+      '<p style="font-size:11.5px;color:var(--fg-x53565a);line-height:1.9;margin:0 0 12px">' + esc(V.impReplaceWarn) + '</p><div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button data-ei="impDoReplace"' + (V.impCommitDisabled ? " disabled" : "") + ' class="ei-b" style="background:var(--danger);color:var(--text-on-fill);border:0">نعم، احذف واستبدل</button><button data-ei="impBackToPick" class="ei-b">رجوع</button></div></div>';
+    return h + "</div></div>";
+  }
+  IC.up = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5"></path><path d="M12 3v12"></path>';
+  IC.down = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path>';
+  /* بندا قائمة «ملفات» وزرُّ الحالة الفارغة — بشكل البنود والزرّ المجاورة حرفاً (كان ترميزُها في الصفحة) */
+  function menuHtml() {
+    var it = function (key, act, bg, ico, t, d) {
+      return '<div data-ei="' + act + '" data-emp-imp="' + key + '" class="ei-mi" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s">' +
+        '<span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-' + bg + ');color:var(--fg-x8a6f35);flex-shrink:0">' + svg(ico, 12, 1) + '</span>' +
+        '<div style="flex:1"><div>' + t + '</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">' + d + "</div></div></div>";
+    };
+    return it("menu", "impPickDo", "a185151810p1", "up", "استيراد من Excel", "يعرض ما سيتغيّر قبل التنفيذ — دمج أو استبدال") +
+      it("cols", "impColsDo", "a185151810p06", "down", "تنزيل قالب الاستيراد", "ملف Excel بالأعمدة الصحيحة — عبّئه ثم ارفعه");
+  }
+  function emptyHtml() {
+    return '<button data-ei="impPickDo" data-emp-imp="empty" class="ei-mi" style="height:42px;padding:0 24px;border-radius:12px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p4);cursor:pointer;font-family:\'Cairo\',sans-serif;display:inline-flex;align-items:center;gap:8px">' + svg("up", 16, 1) + " استيراد من Excel</button>";
+  }
+  function impPaint(V, canAdd) {
+    var run = function () {
+      if (!document.getElementById("ei-css")) { var st = document.createElement("style"); st.id = "ei-css"; st.textContent = CSS + ".ei-mi:hover{background:var(--bg-a185151810p06)!important}[data-ei-s]{display:contents;font-style:normal}"; document.head.appendChild(st); }
+      var all = document.querySelectorAll("[data-ei-s]");
+      for (var i = 0; i < all.length; i++) (function (el) {
+        var k = el.getAttribute("data-ei-s");
+        el.__v = V;
+        if (!el.__on) {
+          el.__on = 1;
+          el.addEventListener("click", function (ev) {
+            var t = ev.target && ev.target.closest ? ev.target.closest("[data-ei]") : null; if (!t || t.tagName === "SELECT" || t.disabled) return;
+            if (t.getAttribute("data-ei-self") && ev.target !== t) return;   /* الخلفيةُ تُلغي بالنقر عليها هي لا على ما فوقها */
+            var f = el.__v && el.__v[t.getAttribute("data-ei")]; if (f) f(ev);
+          });
+          el.addEventListener("change", function (ev) { var t = ev.target; if (!t || t.tagName !== "SELECT") return; var f = el.__v && el.__v[t.getAttribute("data-ei")]; if (f) f(ev); });
+        }
+        var h = k === "conf" ? (V.impConfOpen ? impHtml(V) : "") : !canAdd ? "" : k === "menu" ? menuHtml() : emptyHtml();
+        if (el.__h !== h) { el.__h = h; el.innerHTML = h; }
+      })(all[i]);
+    };
+    run(); (window.requestAnimationFrame || setTimeout)(run);
   }
   function impCols(c) {
     const t = KIVO.BassamEmpImp,

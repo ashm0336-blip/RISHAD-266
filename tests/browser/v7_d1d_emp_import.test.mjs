@@ -54,6 +54,10 @@ const dialog = (p) => p.evaluate(() => {
   return { title: h.textContent.trim(), text: box.innerText, cur: num('الموجود حالياً'), file: num('في الملف'), dup: num('مطابق لسجل موجود'), fresh: num('جديد كلياً') };
 });
 const ar = (n) => n;
+/* البطاقاتُ الأربع في نافذة التأكيد: كلُّها كاملةٌ داخل صندوق النافذة، بلا تمريرٍ أفقي، وعددُ الصفوف كما طُلب */
+const cards = (p) => p.evaluate(() => { const g = document.querySelector('.ei-cards'); if (!g) return null; const box = g.parentElement.getBoundingClientRect();
+  const c = [...g.children].map((x) => { const r = x.getBoundingClientRect(); return { l: Math.round(r.left), r: Math.round(r.right), t: Math.round(r.top), w: Math.round(r.width), txt: x.innerText.replace(/\s*\n\s*/g, ' ') }; });
+  return { n: c.length, rows: [...new Set(c.map((x) => x.t))].length, inBox: c.every((x) => x.w > 60 && x.l >= Math.round(box.left) && x.r <= Math.round(box.right) + 1), noScroll: g.scrollWidth <= g.clientWidth + 1, overflow: getComputedStyle(g).overflowX, c }; });
 const act = async (p, k) => { await p.locator('[data-imp="' + k + '"]').click(); await p.waitForTimeout(3500); };   /* خياراتُ النافذة: update (تحديث ودمج) · add · askrep */
 const clickBtn = async (p, re) => { await p.locator('button', { hasText: re }).first().click(); await p.waitForTimeout(3500); };
 const within = (p, sel) => p.evaluate((sel) => { const e = document.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); return { l: Math.round(r.left), r: Math.round(r.right), t: Math.round(r.top), b: Math.round(r.bottom), w: innerWidth, h: innerHeight, ok: r.width > 0 && r.left >= 0 && r.right <= innerWidth + 1 }; }, sel);
@@ -67,7 +71,7 @@ test('V7 · د1-د: استيراد الموظفين من Excel في صفحة ا�
     const start = await emps(m, A); assert.equal(start.length, 2, 'عالمُ المختبر: موظفان');
     await openMenu(p);
     /* الشكل: «استيراد من Excel» أولُ بنود «ملفات» بوصفه */
-    const items = await p.evaluate(() => [...document.querySelectorAll('[data-bs-dd] > div')].map((x) => x.innerText.replace(/\s*\n\s*/g, ' | ')));
+    const items = await p.evaluate(() => [...document.querySelectorAll('[data-bs-dd] [data-emp-imp], [data-bs-dd] > div')].map((x) => x.innerText.replace(/\s*\n\s*/g, ' | ')));
     assert.equal(items[0], 'استيراد من Excel | يعرض ما سيتغيّر قبل التنفيذ — دمج أو استبدال', 'أولُ بنود «ملفات»: ' + JSON.stringify(items));
     await shot(p, '00_menu_desktop');
     /* 1) قالبُ الاستيراد: ملف Excel بالأعمدة الصحيحة يُفتح بلا خطأ */
@@ -131,12 +135,31 @@ test('V7 · د1-د: استيراد الموظفين من Excel في صفحة ا�
       assert.equal(JSON.stringify((await emps(m, A)).map((e) => [e.eid, e.name, e.nid, e.phone || '', e.empno || ''])), before5, name + ': لم يُحفظ شيء');
     }
     await shot(p, '07_bad_files_last_message');
-    /* هويةٌ مكررة داخل الملف: المحرّك يتخطّى الصفَّ المكرر ويعدّه (سلوكُه القائم) — يُثبَّت هنا كما هو، والقرارُ في ملف المراجع */
-    await clearToasts(p); await upload(p, await xlsx(p, [HEAD, row('TEST_ONLY مكرر أ', '1399999991'), row('TEST_ONLY مكرر ب', '1399999991')], 'dup.xlsx'));
-    d = await dialog(p); assert.ok(d, 'المكرر: النافذة تظهر بصفٍّ واحد'); assert.deepEqual([d.file, d.fresh], [ar(1), ar(1)], 'المكرر يُحسب صفاً واحداً: ' + JSON.stringify(d));
-    await shot(p, '07b_duplicate_id_preview');
-    await clickBtn(p, /إلغاء الاستيراد/);
-    assert.equal(JSON.stringify((await emps(m, A)).map((e) => [e.eid, e.name, e.nid, e.phone || '', e.empno || ''])), before5, 'المكرر بعد الإلغاء: لم يُحفظ شيء');
+    /* تكرارٌ داخل الملف نفسه (قرار المراجع): يُرفض الملفُّ كلُّه قبل نافذة التأكيد برسالةٍ تذكر القيمة وأرقامَ الصفوف، ولا يُحفظ شيء */
+    const E = (name, nid, empno, phone) => [name, 'ذكر', nid || '', empno || '', phone || '', '', '', ''];
+    const dupCases = [
+      ['شخصان بنفس الهوية', [HEAD, row('TEST_ONLY مكرر أ', '1399999991'), row('TEST_ONLY مكرر ب', '1399999991')], /رقم الهوية 1399999991 في الصفوف 2 و3/],
+      ['صفّان متطابقان حرفاً', [HEAD, row('TEST_ONLY سليم', '1399999981'), row('TEST_ONLY توأم', '1399999992'), row('TEST_ONLY توأم', '1399999992')], /رقم الهوية 1399999992 في الصفوف 3 و4/],
+      ['نفس الرقم الوظيفي', [HEAD, E('TEST_ONLY وظيفي أ', '1399999993', '77001'), E('TEST_ONLY وظيفي ب', '1399999994', '77001')], /الرقم الوظيفي 77001 في الصفوف 2 و3/],
+      ['نفس الجوال في ثلاثة صفوف', [HEAD, E('TEST_ONLY جوال أ', '1399999995', '', '0577000001'), E('TEST_ONLY جوال ب', '1399999996', '', '0577000001'), E('TEST_ONLY بينهما', '1399999997'), E('TEST_ONLY جوال ج', '1399999998', '', '0577000001')], /رقم الجوال 0577000001 في الصفوف 2 و3 و5/],
+    ];
+    const dupMsgs = {};
+    for (const [name, rows, re] of dupCases) {
+      await clearToasts(p); await upload(p, await xlsx(p, rows, 'dup.xlsx')); const t = (await toasts(p)).map((x) => x.replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x660)));   /* الرسالةُ تُعرض بالأرقام الهندية — تُقارَن بأرقامٍ لاتينية */
+      assert.equal(await dialog(p), null, name + ': لا نافذة تأكيد');
+      assert.ok(t.some((x) => re.test(x) && /رُفض الملف/.test(x) && /لم يُحفظ شيء/.test(x)), name + ': رسالةُ الرفض بأرقام الصفوف — ' + JSON.stringify(t)); dupMsgs[name] = t.find((x) => re.test(x));
+      assert.equal(JSON.stringify((await emps(m, A)).map((e) => [e.eid, e.name, e.nid, e.phone || '', e.empno || ''])), before5, name + ': العددُ والسجلاتُ في الخادم لم تتغير');
+      if (name === 'شخصان بنفس الهوية') await shot(p, '07b_duplicate_rejected');
+    }
+    /* البطاقاتُ الأربع على 1440: أربعٌ في صفٍّ واحد، كلُّها داخل النافذة، بلا تمريرٍ أفقي */
+    const w = await openAs(b, lab, LAB.mgrA, LAB.pw, { viewport: { width: 1440, height: 900 } });
+    await gotoEmps(w); await upload(w.page, await xlsx(w.page, [HEAD, row('TEST_ONLY بطاقات', '1399999971')], 'cards.xlsx'));
+    const cw = await cards(w.page); assert.ok(cw, '1440: النافذة ظهرت');
+    assert.deepEqual([cw.n, cw.rows, cw.inBox, cw.noScroll], [4, 1, true, true], '1440: أربع بطاقات في صف، كاملة، بلا تمرير — ' + JSON.stringify(cw));
+    assert.notEqual(cw.overflow, 'auto'); await shot(w.page, '11_cards_1440');
+    await clickBtn(w.page, /إلغاء الاستيراد/); assert.equal(await dialog(w.page), null, 'أُغلقت النافذة');
+    assert.equal(JSON.stringify((await emps(m, A)).map((e) => [e.eid, e.name, e.nid, e.phone || '', e.empno || ''])), before5, 'بعد الإلغاء: لم يُحفظ شيء');
+    assert.deepEqual(w.errs, []); await w.page.context().close();
     /* ══ 10) موظفٌ بلا صلاحية إضافة: لا يرى الاستيراد (قبل الاستبدال — الاستبدالُ يحذف سجلَّه وحسابَه) ══ */
     const e = await openAs(b, lab, LAB.empA, LAB.pw); await e.page.evaluate(() => { location.hash = '#/employees'; }); await e.page.waitForTimeout(3000);
     assert.equal(await e.page.evaluate(() => !!KIVO.BassamPerm.can('emps', 'add')), false, 'الموظف بلا إضافة');
@@ -213,9 +236,10 @@ test('V7 · د1-د: استيراد الموظفين من Excel في صفحة ا�
       return { l: Math.round(r.left), r: Math.round(r.right), w: innerWidth, btns, scrollX: document.documentElement.scrollWidth > innerWidth + 1 }; });
     assert.ok(dm.l >= 0 && dm.r <= dm.w + 1, '390: النافذة داخل الشاشة ' + JSON.stringify(dm));
     for (const x of dm.btns) assert.ok(x[1] >= 0 && x[2] <= dm.w + 1, '390: زرّ «' + x[0] + '» داخل الشاشة');
+    const cq = await cards(q); assert.deepEqual([cq.n, cq.rows, cq.inBox, cq.noScroll], [4, 2, true, true], '390: صفّان في كلٍّ اثنتان، كاملة، بلا تمرير — ' + JSON.stringify(cq));
     await shot(q, '09b_mobile_dialog');
     await q.locator('button', { hasText: /إلغاء الاستيراد/ }).first().click(); await q.waitForTimeout(800);
     assert.deepEqual(mm.errs, []);
-    console.log(JSON.stringify({ d1d: { template: tpl.suggested, cols, sameFileToasts: t5, badMessages: msgs } }));
+    console.log(JSON.stringify({ d1d: { template: tpl.suggested, cols, sameFileToasts: t5, badMessages: msgs, dupMessages: dupMsgs } }));
   } finally { await b.close(); await lab.close(); try { fs.rmSync(TMP, { recursive: true, force: true }); } catch (e) {} }
 });

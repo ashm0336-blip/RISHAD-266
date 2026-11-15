@@ -452,7 +452,6 @@
    "body": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"></rect><path d=\"M16 2v4\"></path><path d=\"M8 2v4\"></path><path d=\"M3 10h18\"></path>",
    "uses": {
     "modules/daily/view.html": 2,
-    "modules/employees/view.html": 1,
     "modules/staff/view.html": 1,
     "systems/award/client/view.html": 3,
     "systems/dstats/client/view.html": 2,
@@ -471,8 +470,7 @@
   "i-2ef48b8f": {
    "body": "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><path d=\"M17 8l-5-5-5 5\"></path><path d=\"M12 3v12\"></path>",
    "uses": {
-    "modules/admin/view.html": 5,
-    "modules/employees/view.html": 2
+    "modules/admin/view.html": 5
    },
    "viewBox": "0 0 24 24"
   },
@@ -914,7 +912,7 @@
     "layouts/index.template.html": 2,
     "modules/admin/view.html": 4,
     "modules/dreport/view.html": 1,
-    "modules/employees/view.html": 2,
+    "modules/employees/view.html": 1,
     "modules/plan/view.html": 2,
     "modules/staff/view.html": 1,
     "modules/tasks/view.html": 1,
@@ -1714,7 +1712,7 @@
     "layouts/index.template.html": 1,
     "modules/admin/view.html": 1,
     "modules/daily/view.html": 6,
-    "modules/employees/view.html": 8,
+    "modules/employees/view.html": 7,
     "modules/plan/view.html": 13,
     "modules/staff/view.html": 3,
     "modules/tasks/view.html": 3
@@ -1740,7 +1738,7 @@
    "uses": {
     "layouts/index.template.html": 2,
     "modules/admin/view.html": 4,
-    "modules/employees/view.html": 3
+    "modules/employees/view.html": 2
    },
    "viewBox": "0 0 24 24"
   },
@@ -1977,8 +1975,7 @@
   "i-aac19824": {
    "body": "<path d=\"M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"></path><path d=\"M3 3v5h5\"></path><path d=\"M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16\"></path><path d=\"M16 16h5v5\"></path>",
    "uses": {
-    "modules/daily/view.html": 2,
-    "modules/employees/view.html": 1
+    "modules/daily/view.html": 2
    },
    "viewBox": "0 0 24 24"
   },
@@ -2632,7 +2629,7 @@
    "uses": {
     "modules/admin/view.html": 3,
     "modules/daily/view.html": 1,
-    "modules/employees/view.html": 9,
+    "modules/employees/view.html": 8,
     "modules/plan/view.html": 3,
     "modules/staff/view.html": 2,
     "modules/tasks/view.html": 2
