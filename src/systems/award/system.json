@@ -144,6 +144,46 @@
   "pageStates.names": {
    "order": 10,
    "text": "    \"award/new\": \"الترشيحات\", \"award/res\": \"نتائج الترشيحات\", \"award\": \"الترشيحات\",\n"
+  },
+  "nf.types": {
+   "order": 30,
+   "file": "slots/nf.types.frag"
+  },
+  "nf.cap": {
+   "order": 30,
+   "text": "  award: \"award\",\n"
+  },
+  "nf.denyPages.3": {
+   "order": 10,
+   "text": "award: \"جائزة التميز\", "
+  },
+  "nf.denyRecs.4": {
+   "order": 20,
+   "text": "bassam_award_v1: \"جائزة التميز\", bassam_award_docs_v1: \"المراجع المعتمدة للجائزة (قديم)\","
+  },
+  "nf.denyRecs.5": {
+   "order": 10,
+   "text": "bassam_award_docs_v2: \"المراجع المعتمدة للجائزة\", "
+  },
+  "res.reg.dept": {
+   "order": 30,
+   "text": "  /* ── جائزة التميز ── */\n  /* الترشيح يُنشأ من award/new، وكل ما عداه — تعديلٌ أو حذفٌ أو اعتماد نتيجة — لا يكون إلا بورقة award/res */\n  'bassam_award_v1':           { scope: 'dept', cap: 'award/res', capAdd: 'award/new' },\n  'bassam_award_docs_v1':      { scope: 'dept', cap: 'award/doc' },\n  'bassam_award_docs_v2':      { scope: 'dept', cap: 'award/doc' },\n"
+  },
+  "ent.reg": {
+   "order": 10,
+   "text": "  /* ── جائزة التميز ── */\n  'bassam_award_v1':          { cols: [{ at: 'recs', idf: ['id', 'name'], lock: ['id'] }], empty: '{\"recs\":[]}' },\n  /* awDocs: جذرٌ كائنٌ بثلاثة مراجع A · B · C */\n  'bassam_award_docs_v1':     { empty: '{}' },\n  'bassam_award_docs_v2':     { empty: '{}' },\n"
+  },
+  "fields.reg": {
+   "order": 10,
+   "text": "  'bassam_award_v1':      { cols: { recs:    { req: ['id', 'st'], type: { id: 'str', st: 'str' } } } },\n"
+  },
+  "ops.reg": {
+   "order": 10,
+   "text": "  'bassam_award_v1':           { approve: ['recs.*.st'], shape: 'award' }\n"
+  },
+  "routes.dispatch": {
+   "order": 30,
+   "text": "      if (path === '/api/award' || path === '/api/award/act' || path === '/api/award/export') return await bdRoute(env, request, url, ss, 'awards');\n"
   }
  }
 }

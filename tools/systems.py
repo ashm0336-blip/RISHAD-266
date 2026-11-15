@@ -6,7 +6,7 @@
      --check  system.json صالحٌ (المخطط · المفتاح = اسم المجلد · requires حاضرة وبلا دورة) والملفاتُ المحقونة = الملتزَم
      --write  يكتب الملفات المحقونة (يستدعيه tools/generate.py أيضاً قبل بقية التوليد)
      --regen  بعد إضافة مجلد نظامٍ أو حذفه: يعيد توليدَ كل مشتقٍّ يتبدّل بحضور الأنظمة (generate · فهرس الأيقونات · docs/routes.md ·
-              docs/ux-states.md). في شجرةٍ لم يتبدّل فيها شيء لا يغيّر ملفاً.
+              docs/api-routes.md · docs/ux-states.md). في شجرةٍ لم يتبدّل فيها شيء لا يغيّر ملفاً.
 
    الفتحات: قالبٌ في src/slots/ (مسجَّلٌ في src/slots/slots.json: tpl ← out) يحمل علاماتٍ مسمّاة
        @@SYS:name@@            أو        @@SYS:name|sep=","|pre="["|post="]"@@
@@ -122,14 +122,20 @@ RESERVED = set()   # أسماءُ فتحاتٍ يستهلكها مولِّدٌ �
 
 REGEN = [  # ما يُعاد توليدُه حين يتبدّل حضورُ نظام — بالترتيب (generate أولاً: السجلاتُ تسبق من يقرؤها)
     ['tools/generate.py', '--src', 'src'], ['tools/icons.py', 'extract', '--src', 'src'], ['tools/icons.py', 'index', '--src', 'src'],
-    ['tools/route_registry.py', '--write'], ['tools/ux_states.py'],
+    ['tools/route_registry.py', '--write'], ['tools/api_routes.py', '--write'], ['tools/ux_states.py'],
 ]
+KEEP_EOL = {'tools/api_routes.py': 'docs/api-routes.md'}   # الأداةُ تكتب LF والوثيقةُ الملتزَمة CRLF (.gitattributes: -text) — تُحفظ نهاياتُ سطورها
 
 def regen(S):
     import subprocess
     root = os.path.dirname(S)
     for cmd in REGEN:
+        keep = os.path.join(root, KEEP_EOL[cmd[0]]) if cmd[0] in KEEP_EOL else None
+        crlf = bool(keep) and os.path.isfile(keep) and b'\r\n' in open(keep, 'rb').read()
         r = subprocess.run([sys.executable] + cmd, cwd=root, capture_output=True, text=True, encoding='utf-8')
+        if crlf:
+            data = open(keep, 'rb').read()
+            if b'\r\n' not in data: open(keep, 'wb').write(data.replace(b'\n', b'\r\n'))
         last = (r.stdout.strip().split('\n') or [''])[-1]
         print(('  ✔ ' if r.returncode == 0 else '  ✘ ') + ' '.join(cmd) + ' — ' + last[:150])
         if r.returncode and cmd[0] != 'tools/ux_states.py': print(r.stderr[-400:]); return 1   # ux_states: يكتب الوثيقة ثم يخبر بما نقص عن خطّ الأساس (يُراجَع)

@@ -192,6 +192,46 @@
   "kpis.mounts.mid": {
    "order": 10,
    "text": "  <sc-if value=\"{{on_sz}}\" hint-placeholder-val=\"{{ false }}\"><dc-import name=\"Seized\" solo=\"dash\" hint-size=\"100%,1100px\"></dc-import></sc-if>\n"
+  },
+  "nf.types": {
+   "order": 20,
+   "file": "slots/nf.types.frag"
+  },
+  "nf.cap": {
+   "order": 20,
+   "text": "  box: \"seized\",\n"
+  },
+  "nf.denyPages.2": {
+   "order": 20,
+   "text": " seized: \"نظام المضبوطات\","
+  },
+  "nf.denyRecs.2": {
+   "order": 20,
+   "text": "bassam_seized_v1: \"نظام المضبوطات\","
+  },
+  "nf.denyRecs.3": {
+   "order": 10,
+   "text": "bassam_seized_cat_v1: \"قائمة ممنوعات المضبوطات\", bassam_seized_acts_v1: \"إجراءات المضبوطات\", bassam_seized_locs_v1: \"مواقع المضبوطات\","
+  },
+  "nf.denyRecs.4": {
+   "order": 10,
+   "text": "bassam_seized_jew_v1: \"أنواع قطع المجوهرات\", "
+  },
+  "res.reg.dept": {
+   "order": 20,
+   "text": "  /* ── المضبوطات ── */\n  'bassam_seized_v1':          { scope: 'dept', cap: 'seized/records' },\n  'bassam_seized_cat_v1':      { scope: 'dept', cap: 'seized/records' },\n  'bassam_seized_acts_v1':     { scope: 'dept', cap: 'seized/records' },\n  'bassam_seized_locs_v1':     { scope: 'dept', cap: 'seized/records' },\n  'bassam_seized_jew_v1':      { scope: 'dept', cap: 'seized/records' },\n"
+  },
+  "ent.reg": {
+   "order": 30,
+   "text": "  /* ── المضبوطات ── */\n  'bassam_seized_v1':         { cols: [{ at: 'reports', idf: ['id'], lock: ['id'] }], empty: '{\"reports\":[]}' },\n  /* loadCat: { ver, cats:[{ name, items:[…] }] } */\n  'bassam_seized_cat_v1':     { cols: [{ at: 'cats', idf: ['id', 'name'] }], empty: '{\"ver\":1,\"cats\":[]}' },\n  'bassam_seized_acts_v1':    { cols: [{ at: '', idf: ['id', 'name'] }], empty: '[]' },\n  'bassam_seized_locs_v1':    { empty: '[]', primRoot: 1 },\n  'bassam_seized_jew_v1':     { empty: '[]', primRoot: 1 },\n"
+  },
+  "fields.reg": {
+   "order": 30,
+   "text": "  'bassam_seized_v1':     { cols: { reports: { req: ['id'], type: { id: 'str' } } } },\n  'bassam_seized_cat_v1': { cols: { cats:    { req: ['name'], type: { name: 'str' } } } },\n  'bassam_seized_acts_v1':{ at: '', req: ['name'], type: { id: 'str', name: 'str' } }\n"
+  },
+  "routes.dispatch": {
+   "order": 20,
+   "text": "      if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');\n"
   }
  }
 }

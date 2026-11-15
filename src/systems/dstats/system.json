@@ -146,6 +146,30 @@
   "kpis.mounts.tail": {
    "order": 10,
    "file": "slots/kpis.mounts.tail.frag"
+  },
+  "nf.denyPages.dstats": {
+   "order": 10,
+   "text": "dstats: \"الإحصائيات اليومية\", "
+  },
+  "nf.denyRecs.dstats": {
+   "order": 10,
+   "text": "bassam_dstats_v1: \"الإحصائيات اليومية\", "
+  },
+  "nf.denyWhy.dstats": {
+   "order": 10,
+   "text": "  dstats: \"صلاحيته لا تشمل هذا التعديل في الإحصائيات اليومية\",\n"
+  },
+  "res.reg.global": {
+   "order": 10,
+   "text": "  /* R170: إحصائياتُ الحرمين اليومية — وثيقةٌ واحدةٌ لكلِّ موقعٍ في كلِّ يوم.\n     R180: سياستُها أوراقُ المسجدين (dstatsRule) — لا مديرُ النظام وحده */\n  'bassam_dstats_v1':          { scope: 'global', rule: 'dstats' },\n"
+  },
+  "routes.bodyMax": {
+   "order": 10,
+   "text": "'/api/dstats': 8 * 1024 * 1024, "
+  },
+  "routes.dispatch": {
+   "order": 40,
+   "text": "      if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);\n"
   }
  }
 }

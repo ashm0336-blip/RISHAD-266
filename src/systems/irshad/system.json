@@ -171,6 +171,46 @@
   "kpis.mounts.mid": {
    "order": 20,
    "text": "  <sc-if value=\"{{on_ir}}\" hint-placeholder-val=\"{{ false }}\"><dc-import name=\"Irshad\" solo=\"dash\" hint-size=\"100%,1100px\"></dc-import></sc-if>\n"
+  },
+  "nf.types": {
+   "order": 10,
+   "file": "slots/nf.types.frag"
+  },
+  "nf.cap": {
+   "order": 10,
+   "text": "  irshad: \"irshad\",\n"
+  },
+  "nf.denyPages.2": {
+   "order": 10,
+   "text": " irshad: \"نظام الاسترشاد\","
+  },
+  "nf.denyRecs.1": {
+   "order": 10,
+   "text": " bassam_irshad_v1: \"نظام الاسترشاد\","
+  },
+  "nf.denyRecs.2": {
+   "order": 10,
+   "text": "bassam_irshad_langs_v1: \"لغات الاسترشاد\", bassam_irshad_locs_v1: \"مواقع الاسترشاد\", "
+  },
+  "res.reg.dept": {
+   "order": 10,
+   "text": "  /* ── الاسترشاد ── */\n  'bassam_irshad_v1':          { scope: 'dept', cap: 'irshad/records' },\n  'bassam_irshad_langs_v1':    { scope: 'dept', cap: 'irshad/records' },\n  'bassam_irshad_locs_v1':     { scope: 'dept', cap: 'irshad/records' },\n"
+  },
+  "ent.reg": {
+   "order": 20,
+   "text": "  /* ── الاسترشاد ── */\n  'bassam_irshad_v1':         { cols: [{ at: 'reports', idf: ['id'], lock: ['id'] }], empty: '{\"reports\":[]}' },\n  'bassam_irshad_langs_v1':   { empty: '[]', primRoot: 1 },\n  'bassam_irshad_locs_v1':    { empty: '[]', primRoot: 1 },\n"
+  },
+  "fields.reg": {
+   "order": 20,
+   "text": "  'bassam_irshad_v1':     { cols: { reports: { req: ['id'], type: { id: 'str' } } } },\n"
+  },
+  "routes.bodyLimit8m": {
+   "order": 10,
+   "text": "||path === '/api/irshad/act'"
+  },
+  "routes.dispatch": {
+   "order": 10,
+   "text": "      if (path === '/api/irshad' || path === '/api/irshad/act' || path === '/api/irshad/export') return await irRoute(env, request, url, ss);\n"
   }
  }
 }

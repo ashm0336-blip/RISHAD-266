@@ -48,6 +48,34 @@
   {
    "tpl": "modules/kpis/view.html.tpl",
    "out": "src/modules/kpis/view.html"
+  },
+  {
+   "tpl": "workers/parts/019-notifications.js.tpl",
+   "out": "workers/parts/019-notifications.js"
+  },
+  {
+   "tpl": "workers/parts/023-resources.js.tpl",
+   "out": "workers/parts/023-resources.js"
+  },
+  {
+   "tpl": "workers/parts/025-entities-2.js.tpl",
+   "out": "workers/parts/025-entities-2.js"
+  },
+  {
+   "tpl": "workers/parts/031-fields.js.tpl",
+   "out": "workers/parts/031-fields.js"
+  },
+  {
+   "tpl": "workers/parts/026-domain-ops.js.tpl",
+   "out": "workers/parts/026-domain-ops.js"
+  },
+  {
+   "tpl": "workers/parts/055-sec-headers.js.tpl",
+   "out": "workers/parts/055-sec-headers.js"
+  },
+  {
+   "tpl": "workers/parts/063-enf-api-and-handler.js.tpl",
+   "out": "workers/parts/063-enf-api-and-handler.js"
   }
  ]
 }
