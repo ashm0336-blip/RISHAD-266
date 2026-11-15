@@ -43,7 +43,7 @@
    "gate:r189.mjs",
    "gate:theme248.mjs",
    "gate:visual.mjs",
-   "tests/unit/irsz_dash_w2.test.mjs",
+   "src/systems/_multi/tests/irsz_dash_w2.test.mjs",
    "tests/unit/refresh_seed_w1.test.mjs",
    "tests/unit/refresh_tabs_w1.test.mjs"
   ]

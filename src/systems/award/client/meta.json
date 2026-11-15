@@ -71,9 +71,9 @@
    "gate:theme248.mjs",
    "gate:visual.mjs",
    "src/systems/award/tests/award_domain.test.mjs",
-   "tests/unit/business_atomic.test.mjs",
-   "tests/unit/seized_award_cloud_http.test.mjs",
-   "tests/unit/seized_award_cloud_ui.test.mjs"
+   "src/systems/_multi/tests/business_atomic.test.mjs",
+   "src/systems/_multi/tests/seized_award_cloud_http.test.mjs",
+   "src/systems/_multi/tests/seized_award_cloud_ui.test.mjs"
   ]
  }
 }
