@@ -108,9 +108,14 @@ def run_case(name, opts):
     print('══ حالة الحذف «%s»: %s ══' % (name, ' · '.join(gone)), flush=True)
     try:
         copy_tree(copy)
+        # مصفوفةُ التتبّع وفحصُ الأسرار وأدواتُ التحزيم تقرأ git: النسخةُ مستودعٌ مستقل (لا صلة له بمستودع المشروع) — التزامٌ قبل الحذف وآخرُ بعد التوليد
+        def commit(msg):
+            for g in (['add', '-A'], ['-c', 'user.name=removal', '-c', 'user.email=removal@test.invalid', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', msg]): sh(['git'] + g, copy)
+        sh(['git', 'init', '-q'], copy); commit('full tree')
         for k in gone: shutil.rmtree(os.path.join(copy, 'src', 'systems', k))
         env = dict(os.environ, KIVO_WORKER=os.path.join(copy, 'workers', '_worker.js'), KIVO_DIST=os.path.join(copy, 'pk265'), KIVO_SRC=os.path.join(copy, 'src'))
         rc, out = sh([sys.executable, 'tools/systems.py', '--regen'], copy); step('① الحذف ثم --regen', rc == 0 and '✘' not in out, (out.strip().split('\n') or [''])[-1][:140] if rc else '%d ملفاً مولَّداً حُذف' % out.count('  − '))
+        commit('removal ' + name)
         left = [os.path.relpath(f, copy) for f in glob.glob(os.path.join(copy, 'src', 'pages', '*.dc.html')) if os.path.basename(f)[:-8] not in {p['name'] for p in json.load(open(os.path.join(copy, 'src', 'modules', 'modules.json'), encoding='utf-8'))['pages']}]
         step('① لا صفحةَ مولَّدة يتيمة', not left, ' · '.join(left))
         hits = scan(copy, gone); step('② لا اسمَ نظامٍ غائب في أجزاء القاعدة', not hits, ' · '.join('%s:%d %s' % h[:3] for h in hits[:6]))
@@ -122,8 +127,6 @@ def run_case(name, opts):
         if not opts['nobrowser']:
             rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/browser.test.mjs'], copy, env, 1200); step('⑤ المتصفح', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:')), '')[:200])
         if opts['units']:
-            # أدواتُ التحزيم تختم رقمَ الالتزام: النسخةُ تصير مستودعاً مستقلاً بالتزامٍ واحد (لا صلة له بمستودع المشروع)
-            for g in (['init', '-q'], ['add', '-A'], ['-c', 'user.name=removal', '-c', 'user.email=removal@test.invalid', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'removal ' + name]): sh(['git'] + g, copy)
             n, bad, tot = units(copy, env, opts['jobs']); step('⑥ وحداتُ القاعدة', not bad, '%d ملفاً · %d اختباراً: نجح %d · فشل %d · تُخطّي %d%s' % (n, tot[0], tot[1], tot[2], tot[3], (' · الفاشلة: ' + ' '.join(os.path.basename(b) for b in bad[:8])) if bad else ''))
     finally:
         if opts['keep']: print('  النسخة: ' + copy)

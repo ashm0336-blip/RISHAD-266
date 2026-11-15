@@ -145,8 +145,10 @@ REGEN = [  # ما يُعاد توليدُه حين يتبدّل حضورُ نظ�
     ['tools/generate.py', '--src', 'src'], ['tools/icons.py', 'extract', '--src', 'src'], ['tools/icons.py', 'index', '--src', 'src'],
     ['tools/route_registry.py', '--write'], ['tools/api_routes.py', '--write'], ['tools/ux_states.py'], ['node:tools/gen_types.mjs'],
     ['tools/module_charter.py', '--write'],   # حقلُ «data» في مواثيق الوحدات مشتقٌّ من المصدر المولَّد
+    ['tools/generate.py', '--src', 'src'],     # بيانُ الصفحات (manifests) مشتقٌّ من المواثيق — يُولَّد بعدها
+    ['tools/trace.py'],                        # مصفوفةُ التتبّع (docs/traceability.md) تقرأ الكودَ والاختبارات
 ]
-KEEP_EOL = {'tools/api_routes.py': 'docs/api-routes.md'}   # الأداةُ تكتب LF والوثيقةُ الملتزَمة CRLF (.gitattributes: -text) — تُحفظ نهاياتُ سطورها
+KEEP_EOL = {'tools/api_routes.py': 'docs/api-routes.md', 'tools/trace.py': 'docs/traceability.md'}   # الأداةُ تكتب LF والوثيقةُ الملتزَمة CRLF (.gitattributes: -text) — تُحفظ نهاياتُ سطورها
 
 def prune(S):
     """الملفاتُ المولَّدة لنظامٍ غائب: صفحتُه في src/pages (ليست في modules.json بعد التوليد) وأجزاؤه المولَّدة في workers/parts

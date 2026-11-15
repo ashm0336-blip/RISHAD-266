@@ -72,16 +72,22 @@ def _from_prev(u):
     return False
 ok(oldonly == retained and all(_from_prev(u) for u in retained) and all(u in cur for u in files if u not in retained),
    '★ نافذةُ الإصدارين: غيرُ المشار إليه من الإصدار الحالي (' + str(len(oldonly)) + ') = الأصولُ المُبقاة المعلنة من ' + ('·'.join(sorted(RETD)) or '—') + ' بايتاً، وكلُّ ما سواه مشارٌ إليه من الغلاف', json.dumps({'old': oldonly[:6], 'retained': retained[:6]}))
+# V7 · د2-ب: الأعدادُ أدناه = القاعدة + ما تصرّح به الأنظمةُ الحاضرة (src/systems/<key>/system.json). بالأنظمة الأربعة: js 73 · صفحات 14.
+#   القاعدة: 72 سكربتاً في الغلاف و10 صفحات. كلُّ نظامٍ حاضر يضيف صفحةً (نصاً ومنطقاً)، وسكربتاتِ الغلاف التي في ملفات واجهته (‎client/NNN-*.js‎).
+_SYSD = os.path.join(ROOT, 'src', 'systems')
+_SYS = [json.load(open(os.path.join(_SYSD, k, 'system.json'), encoding='utf-8')) for k in sorted(os.listdir(_SYSD)) if os.path.isfile(os.path.join(_SYSD, k, 'system.json'))] if os.path.isdir(_SYSD) else []
+N_JS = 72 + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
+N_PG = 10 + len(_SYS)
 kinds = {}
 for u in files:
     if u in retained: continue   # أصولُ الإصدارات السابقة المُبقاة (أُثبتت أعلاه) لا تُعدّ في أصناف الإصدار الحالي
     kinds[u.split('/')[2]] = kinds.get(u.split('/')[2], 0) + 1
-ok(kinds.get('js') == 73 and kinds.get('css') == 11 and kinds.get('fonts') == 6 and kinds.get('img') == 4 and (kinds.get('pages', 0) >= 14 if info.get('pages') == 'lazy' else 'pages' not in kinds), '   الأصناف: ' + json.dumps(kinds, ensure_ascii=False), '')
+ok(kinds.get('js') == N_JS and kinds.get('css') == 11 and kinds.get('fonts') == 6 and kinds.get('img') == 4 and (kinds.get('pages', 0) >= N_PG if info.get('pages') == 'lazy' else 'pages' not in kinds), '   الأصناف: ' + json.dumps(kinds, ensure_ascii=False), '')
 JS = re.findall(r'<script([^>]*) src="(/assets/js/[^"]+)"></script>', shell)
 CSS = re.findall(r'<link rel="stylesheet"([^>]*) href="(/assets/css/[^"]+)">', shell)
 tags = re.findall(r'<script\b[^>]*>', shell)
-ok(len(JS) == 73 and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a) for a, _ in JS), '★ ٧٣ سكربتاً خارجياً كلاسيكياً حاجباً بترتيبها (٧٣ = ٧٢ + 555-page-states حالاتُ الصفحة الموحَّدة V7 UX (ومعه ورقةُ أنماطه — css ١١) · ٧٢ = ٧٤ − 480-final-delete · 510-emp-monthly-source (طبقتا توافقٍ بلا أثر) · ٧٤ = ٧٥ − 190-tabstrip-unify L-06 · ٧٥ = ٧٣ + 547-custody-api · 548-atomic-backup؛ ٧١ = ٦٩ + 545-task-self · 546-task-model المهام KIVO_265 · ٦٩ = ٦٨ + 535-profile-facts «ملفي» KIVO_264 · + منطقُ الغلاف المُصرَّف + manifest الصفحات · لا async/defer/module) — التنفيذُ بالتسلسل نفسِه كالمضمَّن', len(JS))
-ok(len(tags) == 74 and tags.count('<script type="text/x-dc" data-dc-script="">') == 1, '   في الغلاف ٧٤ وسمَ script: ٧٣ خارجياً + منطقُ x-dc الجذر مضمَّناً (نصاً؛ تنفيذُه من root-logic المُصرَّف)', len(tags))
+ok(len(JS) == N_JS and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a) for a, _ in JS), '★ ٧٣ سكربتاً خارجياً كلاسيكياً حاجباً بترتيبها (٧٣ = ٧٢ + 555-page-states حالاتُ الصفحة الموحَّدة V7 UX (ومعه ورقةُ أنماطه — css ١١) · ٧٢ = ٧٤ − 480-final-delete · 510-emp-monthly-source (طبقتا توافقٍ بلا أثر) · ٧٤ = ٧٥ − 190-tabstrip-unify L-06 · ٧٥ = ٧٣ + 547-custody-api · 548-atomic-backup؛ ٧١ = ٦٩ + 545-task-self · 546-task-model المهام KIVO_265 · ٦٩ = ٦٨ + 535-profile-facts «ملفي» KIVO_264 · + منطقُ الغلاف المُصرَّف + manifest الصفحات · لا async/defer/module) — التنفيذُ بالتسلسل نفسِه كالمضمَّن', len(JS))
+ok(len(tags) == N_JS + 1 and tags.count('<script type="text/x-dc" data-dc-script="">') == 1, '   في الغلاف ٧٤ وسمَ script: ٧٣ خارجياً + منطقُ x-dc الجذر مضمَّناً (نصاً؛ تنفيذُه من root-logic المُصرَّف)', len(tags))
 refs = set(u for _, u in JS) | set(u for _, u in CSS) | set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', shell))
 for u in list(files):
     if u.endswith('.css') or u.endswith('.js'): refs |= set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', files[u].decode('utf-8')))
@@ -168,7 +174,7 @@ ok(rec == mono, '★ إعادةُ تركيب dist/ = pk203.mono/index.html با�
 if info.get('pages') == 'lazy':
     pfiles = sorted(u for u in files if u.startswith('/assets/pages/'))
     ok(LAZY_OK == [True, True], '★ المرحلة ٢: محمِّلُ الصفحات = الرأس + خرائط الصفحات والمنطق + __resourceBlobs الفارغ + ذيل المصدر التنفيذي كاملًا + حارس الجلب — دون حذف أو إضافة (fflate لا يُشحن)', LAZY_OK)
-    ok(len(pfiles) >= 28 and all(re.fullmatch(r'/assets/pages/[A-Za-z-]+(\.logic)?\.[0-9a-f]{10}\.(dc\.txt|js)', u) for u in pfiles) and sum(1 for u in pfiles if '.logic.' in u) >= 14, '   ملفاتُ الصفحات في /assets/pages بأسماءٍ ذات بصمة: نصٌّ ومنطقٌ لكل صفحة (' + str(len(pfiles)) + ')')
+    ok(len(pfiles) >= 2 * N_PG and all(re.fullmatch(r'/assets/pages/[A-Za-z-]+(\.logic)?\.[0-9a-f]{10}\.(dc\.txt|js)', u) for u in pfiles) and sum(1 for u in pfiles if '.logic.' in u) >= N_PG, '   ملفاتُ الصفحات في /assets/pages بأسماءٍ ذات بصمة: نصٌّ ومنطقٌ لكل صفحة (' + str(len(pfiles)) + ')')
     ok(os.path.exists(os.path.join(DIR, '404.html')) and '<script' not in rdb('404.html').decode('utf-8'), '★ 404.html في الجذر (بلا سكربت) — الملفُّ المفقود يُجاب 404 لا بالغلاف (تراجعُ SPA)')
 if rec != mono:
     i = next((k for k in range(min(len(rec), len(mono))) if rec[k] != mono[k]), min(len(rec), len(mono)))
