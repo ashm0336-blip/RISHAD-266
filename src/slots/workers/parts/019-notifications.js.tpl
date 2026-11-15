@@ -3088,7 +3088,7 @@ function nfDenyRecord(key) {
 function nfDenyPage(key) {
   var n = resName(key || ""),
     R = Object.prototype.hasOwnProperty.call(RES_REG, n) ? RES_REG[n] : null,
-    cap = n === K_DSTATS ? "dstats" : R && R.cap;
+    cap = @@SYS:nf.denyPage.dstats@@R && R.cap;
   Object.keys(RETRO).forEach(function (sys) {
     if (RETRO[sys].state === n) cap = RETRO[sys].cap;
   });

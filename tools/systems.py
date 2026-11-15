@@ -9,9 +9,11 @@
               docs/api-routes.md · docs/ux-states.md). في شجرةٍ لم يتبدّل فيها شيء لا يغيّر ملفاً.
 
    الفتحات: قالبٌ في src/slots/ (مسجَّلٌ في src/slots/slots.json: tpl ← out) يحمل علاماتٍ مسمّاة
-       @@SYS:name@@            أو        @@SYS:name|sep=","|pre="["|post="]"@@
+       @@SYS:name@@            أو        @@SYS:name|sep=","|pre="["|post="]"|empty="false"@@
    يستبدلها المولِّدُ بقطع الأنظمة الحاضرة (system.json ← slots.name = {order, text} أو {order, file} أو قائمةٌ منها)
-   مرتَّبةً بـ(order ثم مفتاح النظام) وموصولةً بـsep؛ و pre/post لا يُكتبان إلا إذا وُجدت قطعة. بلا نظامٍ تخرج الفتحةُ فارغة.
+   مرتَّبةً بـ(order ثم مفتاح النظام) وموصولةً بـsep؛ و pre/post لا يُكتبان إلا إذا وُجدت قطعة. بلا نظامٍ تخرج الفتحةُ فارغة،
+   أو بنصّها المحايد empty (حيث يحتاج الكودُ قيمةً: false · [] · null). وللقطعة بدائلُ بحسب موضعها بين الحاضر:
+   first (الأولى) · last (الأخيرة) · only (وحدها) — لتعبيرٍ يتبدّل شكلُه بغياب جاره (A.concat(B) · a ? f : g).
    بالأنظمة الأربعة يخرج النصُّ الملتزَم حرفاً بحرف (generate.py --check يحرس ذلك)؛ وحذفُ مجلد نظامٍ يُخرجه من كل قالب."""
 import os, sys, re, json, glob
 
@@ -57,24 +59,38 @@ def problems(S, systems=None):
     return bad
 
 def fragments(S, systems=None):
-    """{name: [(order, key, text)]} مرتَّبةً — نصُّ القطعة من system.json أو من ملفٍ في مجلد النظام."""
+    """{name: [(order, key, {text[, first, last, only]})]} مرتَّبةً — نصُّ القطعة من system.json أو من ملفٍ في مجلد النظام."""
     systems = load(S) if systems is None else systems; out = {}
     for d in systems:
         for name, v in (d.get('slots') or {}).items():
             for it in (v if isinstance(v, list) else [v]):
                 text = it['text'] if 'text' in it else open(os.path.join(d['_dir'], it['file']), encoding='utf-8', newline='').read()
-                out.setdefault(name, []).append((it.get('order', 0), d['key'], text))
+                out.setdefault(name, []).append((it.get('order', 0), d['key'], dict({k: it[k] for k in ('first', 'last', 'only') if k in it}, text=text)))
     for name in out: out[name].sort(key=lambda t: (t[0], t[1]))
     return out
 
+def pick(items):
+    """نصُّ كل قطعةٍ بحسب موضعها بين الحاضر: only (وحدها) ثم last (الأخيرة) ثم first (الأولى) ثم text."""
+    n = len(items); out = []
+    for i, it in enumerate(items):
+        if n == 1 and 'only' in it: out.append(it['only'])
+        elif i == n - 1 and 'last' in it: out.append(it['last'])
+        elif i == 0 and 'first' in it: out.append(it['first'])
+        else: out.append(it['text'])
+    return out
+
 def expand(text, frags, used=None):
-    """يستبدل كلَّ علامةٍ بقطعها. used (اختياري): مجموعةٌ تُسجَّل فيها أسماءُ الفتحات التي مرّت."""
+    """يستبدل كلَّ علامةٍ بقطعها. used (اختياري): مجموعةٌ تُسجَّل فيها أسماءُ الفتحات التي مرّت.
+       خياراتُ العلامة: sep (الوصل) · pre/post (حول القطع إن وُجدت) · empty (النصُّ المحايد حين لا قطعة — وإلا فراغ)."""
     def rep(m):
         name = m.group(1); o = {k: json.loads(v) for k, v in OPT.findall(m.group(2) or '')}
         if used is not None: used.add(name)
-        parts = [t for _, _, t in frags.get(name, [])]
-        return (o.get('pre', '') + o.get('sep', '').join(parts) + o.get('post', '')) if parts else ''
-    return MARK.sub(rep, text)
+        parts = pick([it for _, _, it in frags.get(name, [])])
+        return (o.get('pre', '') + o.get('sep', '').join(parts) + o.get('post', '')) if parts else o.get('empty', '')
+    for _ in range(4):   # القطعةُ نفسُها قد تحمل علامة (ما يتبدّل داخل قطعة نظامٍ بحضور نظامٍ آخر) — تُحقن حتى لا تبقى علامة
+        text, n = MARK.subn(rep, text)
+        if not n or not MARK.search(text): break
+    return text
 
 def manifest(S):
     p = os.path.join(S, 'slots', 'slots.json')

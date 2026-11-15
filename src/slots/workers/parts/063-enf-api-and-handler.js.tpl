@@ -236,7 +236,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     var rows = await env.DB.prepare('SELECT k, seq, existed, rev, v FROM authz_snap WHERE snap = ?1 ORDER BY k, seq').bind(sid).all();
     /* Reject the WHOLE snapshot before nextRev or any write, including a
        tombstone for a retired key: mixed rollback must not partially succeed. */
-    if (((rows && rows.results) || []).some(function (r0) { return resName(r0.k) === K_DSTATS || nfLegacyKey(r0.k) || cuLegacyKey(r0.k) || (irLegacyKey(r0.k) || bdLegacyKey(r0.k)); })) return json({ ok: 0, err: 'domain-moved' }, 400);
+    if (((rows && rows.results) || []).some(function (r0) { return @@SYS:migrate.moved.dstats@@nfLegacyKey(r0.k) || cuLegacyKey(r0.k) || (@@SYS:migrate.moved.irshad@@bdLegacyKey(r0.k)); })) return json({ ok: 0, err: 'domain-moved' }, 400);
     var byK = {}; ((rows && rows.results) || []).forEach(function (r0) { var o = byK[r0.k] = byK[r0.k] || { existed: r0.existed, v: '' }; if (r0.existed) o.v += r0.v; });
     /* الانجراف: مفتاحٌ تغيّر بعد العملية (رقمُ مراجعته ≠ رقمِ العملية) — الرجوعُ يمحو ما بعدها، فلا يُنفَّذ إلا بتأكيدٍ صريح (force) */
     var smMeta = parseJson(sm.meta, {}) || {}, opRev = +smMeta.rev || 0, drift = [], kk0;
@@ -444,7 +444,7 @@ async function getRoute(env, url, ss) {
   var moreG = wantAll.length > GET_MAX && wantAll.slice(GET_MAX).some(function (k8) { return want.indexOf(k8) === -1; });
   var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
-  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && !bdLegacyKey(k9) && !opIsResource(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
+  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && @@SYS:get.rdKeys.dstats@@!nfLegacyKey(k9) && !cuLegacyKey(k9) && @@SYS:get.rdKeys.irshad@@!bdLegacyKey(k9) && !opIsResource(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
   if (want.indexOf(K_USERS) >= 0) await privPrepDepts(env, AG, (AG.depts || []).map(function (x) { return x && x.id; }));   /* 019u (9): the accounts lens maps an ekey that is a hidden nid */
   for (var gi = 0; gi < want.length; gi++) {
     var gk = want[gi];
@@ -453,11 +453,9 @@ async function getRoute(env, url, ss) {
     if (!rdG && !canSee(AG, gk)) continue;
     if (nfLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/notifications' }; continue; }
     if (cuLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/custody' }; continue; }
-    if (irLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/irshad' }; continue; }
-    if (bdLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: szLegacyKey(gk) ? '/api/seized' : '/api/award' }; continue; }
+@@SYS:get.moved.irshad@@    if (bdLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: @@SYS:get.moved.seizedPath@@'/api/award' }; continue; }
     if (opIsResource(gk)) { got[gk] = { v:null, rev:rvG[gk]||0, moved:'/api/operations/read' }; continue; }
-    if (resName(gk) === K_DSTATS) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/dstats' }; continue; }
-    var gv = rdG ? valsG[gk] : null;      /* لا قيمةَ لمن لا يقرأ — الرقمُ وحدَه */
+@@SYS:get.moved.dstats@@    var gv = rdG ? valsG[gk] : null;      /* لا قيمةَ لمن لا يقرأ — الرقمُ وحدَه */
     if (rdG && gk === K_USERS && gv != null) gv = usersScopeOut(usersNoOut(stripPh(gv), AG), AG);   /* KIVO_259 · SR-1: ولا رقمَ وظيفيَّ لحساب غيره · الفحصُ العميق (R4): ولا حسابَ خارج نطاقه (054) */
     /* D4‑01 (v24.5): ظلُّ نطاق القراءة على ما سيُرجَع (أو على المورد وحده حين لا قيمة) — لا يمسّ got ولا الحكم */
     if (AG.enf && rdG && gv != null) { try { if (!refsG) refsG = await enfRefsFor(env, enfDeptsOf(AG), null); gv = enfProjectStr(AG, gk, gv, refsG); } catch (eGP) { continue; } }   /* fail-closed: لا قيمةَ ولا رقم — كمن لا يقرأ */
@@ -1026,11 +1024,9 @@ export default {
       var keys = await kvAll(env, 'kv');
       for (var retiredNf in keys) if (nfLegacyKey(retiredNf)) delete keys[retiredNf];
       for (var retiredCu in keys) if (cuLegacyKey(retiredCu)) delete keys[retiredCu];
-      for (var retiredIr in keys) if (irLegacyKey(retiredIr)) delete keys[retiredIr];
-      for (var retiredBusiness in keys) if (bdLegacyKey(retiredBusiness)) delete keys[retiredBusiness];
+@@SYS:boot.strip.irshad@@      for (var retiredBusiness in keys) if (bdLegacyKey(retiredBusiness)) delete keys[retiredBusiness];
       for (var retiredOperational in keys) if (opIsResource(retiredOperational)) delete keys[retiredOperational];
-      for (var retiredDs in keys) if (resName(retiredDs) === K_DSTATS) delete keys[retiredDs];
-      for (var dk in keys) if (isDeviceKey(dk)) delete keys[dk];
+@@SYS:boot.strip.dstats@@      for (var dk in keys) if (isDeviceKey(dk)) delete keys[dk];
       if (keys[K_USERS] != null) keys[K_USERS] = stripPh(keys[K_USERS]);
       /* نطاق القراءة: كلٌّ يحمل بيانات إدارته (ومدير النظام الكل) — لا تُحقن إدارات الغير */
       var AB = actorFromKeys(keys, s3.uid) || await actorOf(env, s3.uid);

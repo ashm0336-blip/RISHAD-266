@@ -229,6 +229,46 @@
   "bodies.systems": {
    "order": 10,
    "file": "slots/bodies.systems.frag"
+  },
+  "db.prepare.irshad": {
+   "order": 10,
+   "text": " pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) :"
+  },
+  "save.moved.irshad": {
+   "order": 10,
+   "text": "irLegacyKey(k) || "
+  },
+  "save.movedPath": {
+   "order": 30,
+   "text": "irLegacyKey(k) ? '/api/irshad' : "
+  },
+  "migrate.moved.irshad": {
+   "order": 10,
+   "text": "irLegacyKey(r0.k) || "
+  },
+  "get.rdKeys.irshad": {
+   "order": 10,
+   "text": "!irLegacyKey(k9) && "
+  },
+  "get.moved.irshad": {
+   "order": 10,
+   "text": "    if (irLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/irshad' }; continue; }\n"
+  },
+  "boot.strip.irshad": {
+   "order": 10,
+   "text": "      for (var retiredIr in keys) if (irLegacyKey(retiredIr)) delete keys[retiredIr];\n"
+  },
+  "bd.commitGuard.irshad": {
+   "order": 10,
+   "text": "CASE WHEN EXISTS(SELECT 1 FROM kv WHERE \"+irLegacyPredicate()+\")THEN json_extract('{}','KIVO_IRSHAD_LEGACY_SOURCE')END,"
+  },
+  "bd.commitGuard.irshadBind": {
+   "order": 10,
+   "text": "JSON.stringify(IR_RES)"
+  },
+  "bd.errorFallback": {
+   "order": 10,
+   "text": "return irErrorResponse(error);"
   }
  }
 }

@@ -202,6 +202,70 @@
   "bodies.systems": {
    "order": 30,
    "file": "slots/bodies.systems.frag"
+  },
+  "save.movedPath": {
+   "order": 20,
+   "text": "awLegacyKey(k) ? '/api/award' : "
+  },
+  "emp.base.awards": {
+   "order": 10,
+   "text": "Object.fromEntries(AW_NAMES.map(function(name,i){return [name,source.revs[awKey(d,i)]||0];}))"
+  },
+  "bd.definitions": {
+   "order": 20,
+   "text": "    {name:'awards',resources:AW_RES,names:AW_NAMES,key:awKey,empty:awEmptyDomain,validate:awValidateDomain,convert:awConvert,inflate:awInflate,plan:awDomainPlan,exportDomain:awExportDomain,revs:awRevs,context:awQueryContext,tables:AW_TABLES},\r\n"
+  },
+  "bd.resources.1": {
+   "order": 20,
+   "text": ".concat(AW_RES)",
+   "first": "AW_RES"
+  },
+  "bd.resources.2": {
+   "order": 20,
+   "text": ".concat(AW_RES)",
+   "first": "AW_RES"
+  },
+  "bd.resources.3": {
+   "order": 20,
+   "text": ".concat(AW_RES)",
+   "first": "AW_RES"
+  },
+  "bd.resources.4": {
+   "order": 20,
+   "text": ".concat(AW_RES)",
+   "first": "AW_RES"
+  },
+  "bd.migrationPrepare": {
+   "order": 20,
+   "text": "await awLegacyPrepare(env)"
+  },
+  "bd.reset.award": {
+   "order": 10,
+   "text": "['award_request_checks','award_requests'],Object.keys(AW_TABLES).reverse().map(function(k){return AW_TABLES[k][0];})"
+  },
+  "bd.revisions.init": {
+   "order": 20,
+   "text": "awards:Object.create(null)"
+  },
+  "bd.revisions.awardGlobal": {
+   "order": 10,
+   "text": "  if(full) out.awards['']=await awRevs(env,'');\r\n"
+  },
+  "bd.export.awardGlobalKey": {
+   "order": 10,
+   "text": "dept===''?AW_RES[1]:"
+  },
+  "bd.employeeCleanup": {
+   "order": 10,
+   "file": "slots/bd.employeeCleanup.frag"
+  },
+  "bd.route.get": {
+   "order": 20,
+   "text": "hAwardGet(env,A,url)"
+  },
+  "bd.route.act": {
+   "order": 20,
+   "text": "hAwardAct(env,A,read.v,reqMeta(request))"
   }
  }
 }

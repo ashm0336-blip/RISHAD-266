@@ -84,6 +84,58 @@
   {
    "tpl": "schemas/api/bodies.schema.json.tpl",
    "out": "src/schemas/api/bodies.schema.json"
+  },
+  {
+   "tpl": "workers/parts/052-aud-events.js.tpl",
+   "out": "workers/parts/052-aud-events.js"
+  },
+  {
+   "tpl": "workers/parts/054-image-contract.js.tpl",
+   "out": "workers/parts/054-image-contract.js"
+  },
+  {
+   "tpl": "workers/parts/050-read-map.js.tpl",
+   "out": "workers/parts/050-read-map.js"
+  },
+  {
+   "tpl": "workers/parts/044-protected-ops.js.tpl",
+   "out": "workers/parts/044-protected-ops.js"
+  },
+  {
+   "tpl": "workers/parts/060-enf-canwrite.js.tpl",
+   "out": "workers/parts/060-enf-canwrite.js"
+  },
+  {
+   "tpl": "workers/parts/061-enf-read.js.tpl",
+   "out": "workers/parts/061-enf-read.js"
+  },
+  {
+   "tpl": "workers/parts/045-permv2.js.tpl",
+   "out": "workers/parts/045-permv2.js"
+  },
+  {
+   "tpl": "workers/parts/049-permv4-read.js.tpl",
+   "out": "workers/parts/049-permv4-read.js"
+  },
+  {
+   "tpl": "workers/parts/048-permv4.js.tpl",
+   "out": "workers/parts/048-permv4.js"
+  },
+  {
+   "tpl": "workers/parts/057-enf-index.js.tpl",
+   "out": "workers/parts/057-enf-index.js"
+  },
+  {
+   "tpl": "workers/parts/059-protected-ops-2.js.tpl",
+   "out": "workers/parts/059-protected-ops-2.js"
+  },
+  {
+   "tpl": "workers/parts/019c-employee-transition.js.tpl",
+   "out": "workers/parts/019c-employee-transition.js"
+  },
+  {
+   "tpl": "workers/parts/019n-business-integration.js.tpl",
+   "out": "workers/parts/019n-business-integration.js"
   }
  ]
 }

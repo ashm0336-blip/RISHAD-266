@@ -250,6 +250,64 @@
   "bodies.systems": {
    "order": 20,
    "file": "slots/bodies.systems.frag"
+  },
+  "save.movedPath": {
+   "order": 10,
+   "text": "szLegacyKey(k) ? '/api/seized' : "
+  },
+  "get.moved.seizedPath": {
+   "order": 10,
+   "text": "szLegacyKey(gk) ? '/api/seized' : "
+  },
+  "bd.definitions": {
+   "order": 10,
+   "text": "    {name:'seized',resources:SZ_RES,names:SZ_NAMES,key:szKey,empty:szEmptyDomain,validate:szValidateDomain,convert:szConvert,inflate:szInflate,plan:szDomainPlan,exportDomain:szExportDomain,revs:szRevs,context:szQueryContext,tables:SZ_TABLES},\r\n"
+  },
+  "bd.resources.1": {
+   "order": 10,
+   "text": "SZ_RES"
+  },
+  "bd.resources.2": {
+   "order": 10,
+   "text": "SZ_RES"
+  },
+  "bd.resources.3": {
+   "order": 10,
+   "text": "SZ_RES"
+  },
+  "bd.resources.4": {
+   "order": 10,
+   "text": "SZ_RES"
+  },
+  "bd.migrationPrepare": {
+   "order": 10,
+   "text": "await szLegacyPrepare(env)"
+  },
+  "bd.reset.seizedRequests": {
+   "order": 10,
+   "text": "'seized_requests'"
+  },
+  "bd.reset.seizedTables": {
+   "order": 10,
+   "text": "Object.keys(SZ_TABLES).reverse().map(function(k){return SZ_TABLES[k][0];}),\r\n    "
+  },
+  "bd.revisions.init": {
+   "order": 10,
+   "text": "seized:Object.create(null)"
+  },
+  "bd.awardIndex": {
+   "order": 10,
+   "text": "1"
+  },
+  "bd.route.get": {
+   "order": 10,
+   "text": "name==='seized'?hSeizedGet(env,A,url):",
+   "last": "hSeizedGet(env,A,url)"
+  },
+  "bd.route.act": {
+   "order": 10,
+   "text": "name==='seized'?hSeizedAct(env,A,read.v,reqMeta(request)):",
+   "last": "hSeizedAct(env,A,read.v,reqMeta(request))"
   }
  }
 }

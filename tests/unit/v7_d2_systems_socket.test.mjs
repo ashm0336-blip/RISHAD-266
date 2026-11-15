@@ -45,6 +45,20 @@ test('V7 · د2: القطعُ تُحقن بالترتيب وتوصل بـsep، �
   assert.notEqual(r.status, 0); assert.match(r.stdout + r.stderr, /قطعٌ بلا فتحة في أي قالب: typo/);
 });
 
+test('V7 · د2-ب: النصُّ المحايد empty، وبدائلُ القطعة first · last · only بحسب من حضر', () => {
+  const tpl = 'K=@@SYS:keys|sep=" || "|pre="("|post=")"|empty="false"@@;\nR=@@SYS:res|empty="[]"@@;\nF=@@SYS:fn|empty="null"@@;\n';
+  const a = sys('a', { slots: { keys: { order: 10, text: 'aKey(k)' }, res: { order: 10, text: 'A_RES', }, fn: { order: 10, text: 'p === "a" ? fa : ', last: 'fa' } } });
+  const b = sys('b', { slots: { keys: { order: 20, text: 'bKey(k)' }, res: { order: 20, text: '.concat(B_RES)', first: 'B_RES' }, fn: { order: 20, text: 'fb' } } });
+  const w = world([['a', a], ['b', b]], tpl); assert.equal(run(w.src, '--write').status, 0);
+  assert.equal(w.out(), 'K=(aKey(k) || bKey(k));\nR=A_RES.concat(B_RES);\nF=p === "a" ? fa : fb;\n', 'الاثنان: النصُّ كما كان');
+  fs.rmSync(path.join(w.src, 'systems/a'), { recursive: true }); assert.equal(run(w.src, '--write').status, 0);
+  assert.equal(w.out(), 'K=(bKey(k));\nR=B_RES;\nF=fb;\n', 'بلا a: b الأولى تأخذ first');
+  fs.rmSync(path.join(w.src, 'systems/b'), { recursive: true }); fs.mkdirSync(path.join(w.src, 'systems/a')); fs.writeFileSync(path.join(w.src, 'systems/a/system.json'), JSON.stringify(a)); assert.equal(run(w.src, '--write').status, 0);
+  assert.equal(w.out(), 'K=(aKey(k));\nR=A_RES;\nF=fa;\n', 'بلا b: a الأخيرة تأخذ last');
+  fs.rmSync(path.join(w.src, 'systems'), { recursive: true }); assert.equal(run(w.src, '--write').status, 0);
+  assert.equal(w.out(), 'K=false;\nR=[];\nF=null;\n', 'بلا نظام: النصُّ المحايد'); w.done();
+});
+
 test('V7 · د2: المستودع — الأنظمةُ الأربعة صالحة، والمضبوطات تتطلب الاسترشاد، والمحقونُ = الملتزَم', () => {
   const r = run(path.join(ROOT, 'src'), '--list'); assert.equal(r.status, 0, r.stderr);
   const L = JSON.parse(r.stdout); assert.deepEqual(L.map((x) => x.key), ['award', 'dstats', 'irshad', 'seized']);
