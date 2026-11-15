@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { parse } from 'acorn';
-import { ROOT } from './harness.mjs';
+import { ROOT } from '../../../../tests/unit/harness.mjs';
 
 const adminSource = fs.readFileSync(path.join(ROOT, 'src/modules/admin/logic.js'), 'utf8');
 const rootSource = fs.readFileSync(path.join(ROOT, 'src/layouts/root-logic.js'), 'utf8');

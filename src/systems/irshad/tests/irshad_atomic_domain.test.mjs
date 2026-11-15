@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {world,seed,receipt,tableSnapshot,D1,D2,IDS,identitySnapshot} from './irshad_domain_fx.mjs';
+import {world,seed,receipt,tableSnapshot,D1,D2,IDS,identitySnapshot} from '../../../../tests/unit/irshad_domain_fx.mjs';
 
 const clone=x=>JSON.parse(JSON.stringify(x));
 const docs=(id='TEST_ONLY_record')=>({reports:{reports:[{id,y:1448,m:1,d:2,ts:12,shift:'TEST_ONLY_shift',eid:'TEST_ONLY_old_employee',name:'TEST_ONLY historical name',langs:[{lang:'TEST_ONLY',count:0}],bro:0}]},

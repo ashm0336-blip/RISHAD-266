@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { makeTestEnv, client, applySql, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { loadClient, until, sleep, fixture } from './k264_vm.mjs';
 import {installCurrentSchemaFixture} from './current_schema_fx.mjs';
-import {mountIrshadPage} from './irshad_live_page_fx.mjs';
+import {mountIrshadPage} from '../../src/systems/irshad/tests/irshad_live_page_fx.mjs';
 
 const KT = 'bsdept:tst_d1:bassam_tasks_v1', KI = 'bsdept:tst_d1:bassam_irshad_v1';
 async function setup(mode) {

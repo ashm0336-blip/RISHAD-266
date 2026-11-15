@@ -2,9 +2,9 @@
    Synthetic identities only. No external requests or patched business rules. */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {world,seed,D1,D2,IDS,identitySnapshot} from './irshad_domain_fx.mjs';
-import {EKEYS} from './custody_review_fx.mjs';
-import {replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
+import {world,seed,D1,D2,IDS,identitySnapshot} from '../../../../tests/unit/irshad_domain_fx.mjs';
+import {EKEYS} from '../../../../tests/unit/custody_review_fx.mjs';
+import {replaceOperationalFixture} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 const copy=x=>JSON.parse(JSON.stringify(x));
 const EXTRA=['irAct','irQueryContext','irRead','cuClock','NF_REV','canRead','retroApi'];
 const SHIFT='TEST_ONLY_shift_A', OTHER_SHIFT='TEST_ONLY_shift_B';

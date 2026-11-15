@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
-import { ROOT, moduleDir } from './harness.mjs';
+import { ROOT, moduleDir } from '../../../../tests/unit/harness.mjs';
 import assert from 'node:assert/strict';
 export { ROOT };
 const json = (value, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => value });

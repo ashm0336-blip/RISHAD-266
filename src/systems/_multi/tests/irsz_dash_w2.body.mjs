@@ -10,8 +10,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { page } from './w1_pages.mjs';
-import { SRC, moduleDir } from './harness.mjs';
+import { page } from '../../../../tests/unit/w1_pages.mjs';
+import { SRC, moduleDir } from '../../../../tests/unit/harness.mjs';
 
 /* RISHAD-266 (دفعة الواجهات): «المضبوطات» تحمل IRSZ-2/7/10/11 من جديد — رُفع سقفُ صفحتها بقرارٍ موثّق في perf_budget.json (unifyBatch3Decision) */
 const PAGES = { irshad: ['تقارير الاسترشاد', 'نظام الاسترشاد'], seized: ['محاضر المضبوطات', 'نظام المضبوطات'] };

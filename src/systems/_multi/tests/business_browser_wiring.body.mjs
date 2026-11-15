@@ -7,7 +7,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import {createHash} from 'node:crypto';
 import {parse} from 'acorn';
-import {ROOT} from './harness.mjs';
+import {ROOT} from '../../../../tests/unit/harness.mjs';
 import {world, D1, D2, IDS, identitySnapshot} from './business_atomic_fx.mjs';
 
 assert.ok(process.env.KIVO_DIST,'Set KIVO_DIST to the current tested build; do not inspect an older default bundle');

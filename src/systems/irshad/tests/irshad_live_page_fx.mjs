@@ -3,8 +3,8 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
-import {ROOT} from './harness.mjs';
-import {TODAY} from './k264_vm.mjs';
+import {ROOT} from '../../../../tests/unit/harness.mjs';
+import {TODAY} from '../../../../tests/unit/k264_vm.mjs';
 export function mountIrshadPage(tab,uid,dept='tst_d1') {
   class Base {
     hToday(){return{y:TODAY.year,m:TODAY.month,d:TODAY.day};}

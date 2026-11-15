@@ -4,8 +4,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
-import {D1Shim, PYTHON, ROOT} from './harness.mjs';
-import {candidateWorker} from './irshad_domain_fx.mjs';
+import {D1Shim, PYTHON, ROOT} from '../../../../tests/unit/harness.mjs';
+import {candidateWorker} from '../../../../tests/unit/irshad_domain_fx.mjs';
 import {world, D1, seedReceipts} from './business_atomic_fx.mjs';
 
 const REPLAY=String.raw`

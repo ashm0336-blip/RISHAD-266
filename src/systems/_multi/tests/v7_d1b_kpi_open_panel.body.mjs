@@ -7,8 +7,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { SRC } from './harness.mjs';
-import { world } from './core01_root_world.mjs';
+import { SRC } from '../../../../tests/unit/harness.mjs';
+import { world } from '../../../../tests/unit/core01_root_world.mjs';
 
 function notif() {
   const KIVO = {

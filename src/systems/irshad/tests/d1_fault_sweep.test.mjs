@@ -14,10 +14,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
-import {PYTHON,makeTestEnv,client,applySql,ROOT,TEST_SUPER_USERNAME,TEST_SUPER_PIN} from './harness.mjs';
-import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
-import {installIrshadFixture} from './irshad_legacy_seed_fx.mjs';
-import {inspectOperationalFixture} from './operational_legacy_seed_fx.mjs';
+import {PYTHON,makeTestEnv,client,applySql,ROOT,TEST_SUPER_USERNAME,TEST_SUPER_PIN} from '../../../../tests/unit/harness.mjs';
+import { installCurrentSchemaFixture } from '../../../../tests/unit/current_schema_fx.mjs';
+import {installIrshadFixture} from '../../../../tests/unit/irshad_legacy_seed_fx.mjs';
+import {inspectOperationalFixture} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 const TODAY=(()=>{const f=new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn',{timeZone:'Asia/Riyadh',year:'numeric',month:'numeric',day:'numeric'}),o={};f.formatToParts(new Date()).forEach(p=>{o[p.type]=+p.value;});return {y:o.year,m:o.month,d:o.day};})();
 function seedSql(){
   const out=fs.mkdtempSync(path.join(os.tmpdir(),'kivo_fx_flt_'));

@@ -8,8 +8,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { D1Shim, WORKER } from './harness.mjs';
-import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { D1Shim, WORKER } from '../../../../tests/unit/harness.mjs';
+import { installOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 
 let loads = 0;   /* initDb يهاجر مرّةً لكل وحدة ⇒ لكل عالمٍ نسختُه من العامل */
 async function load() {

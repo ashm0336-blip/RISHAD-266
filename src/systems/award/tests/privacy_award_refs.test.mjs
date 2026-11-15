@@ -11,7 +11,7 @@
    Both authorization modes. TEST_ONLY synthetic data. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { privWorld, setSheet, login, suCk, readOp, save, rec, stored, put, KE, MODES } from './privacy_fx.mjs';
+import { privWorld, setSheet, login, suCk, readOp, save, rec, stored, put, KE, MODES } from '../../../../tests/unit/privacy_fx.mjs';
 
 const NID3 = '1999999203', C3 = 'tst_e_p0_3';
 const KS = 'bsdept:tst_d1:bassam_staffing_v3', KPL = 'bsdept:tst_d1:bassam_plan_v1';

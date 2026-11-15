@@ -6,9 +6,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { world, D1, D2, IDS, EKEYS, seizedDocs, clone } from './business_atomic_fx.mjs';
-import { browser, ROOT } from './business_cloud_ui_fx.mjs';
-import { PNG } from './tasks_fx.mjs';
+import { world, D1, D2, IDS, EKEYS, seizedDocs, clone } from '../../_multi/tests/business_atomic_fx.mjs';
+import { browser, ROOT } from '../../_multi/tests/business_cloud_ui_fx.mjs';
+import { PNG } from '../../../../tests/unit/tasks_fx.mjs';
 
 async function setup(t) {
   const B = await world({ schema: 10 }); t.after(() => B.DB.db.close());

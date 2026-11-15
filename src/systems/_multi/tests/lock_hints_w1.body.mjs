@@ -7,9 +7,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SRC } from './harness.mjs';
-import { page, EV, NOW } from './w1_pages.mjs';
-import { attachTaskOperations } from './tasks_vm_operations_fx.mjs';
+import { SRC } from '../../../../tests/unit/harness.mjs';
+import { page, EV, NOW } from '../../../../tests/unit/w1_pages.mjs';
+import { attachTaskOperations } from '../../../../tests/unit/tasks_vm_operations_fx.mjs';
 /* Schema 10: dreport/tasks/staff read their business resources through the real Operations service (src/api/280),
    preloaded from an explicit in-memory transport (tasks_vm_operations_fx) — never from browser storage. */
 async function opsPage(slug, o = {}) {

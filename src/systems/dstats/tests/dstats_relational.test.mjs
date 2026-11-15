@@ -9,8 +9,8 @@ import vm from 'node:vm';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { parse } from 'acorn';
-import { D1Shim, ROOT } from './harness.mjs';
-import {world as backupWorld,backupBrowser,exportFull,seedTypedDomains,snap as backupSnapshot,until as backupUntil,copy as backupCopy} from './backup_review_fx.mjs';
+import { D1Shim, ROOT } from '../../../../tests/unit/harness.mjs';
+import {world as backupWorld,backupBrowser,exportFull,seedTypedDomains,snap as backupSnapshot,until as backupUntil,copy as backupCopy} from '../../../../tests/unit/backup_review_fx.mjs';
 
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const cp = x => JSON.parse(JSON.stringify(x));

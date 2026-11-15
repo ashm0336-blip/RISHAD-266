@@ -9,8 +9,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, seizedDocs, D1, clone } from './business_atomic_fx.mjs';
-import { canonicalWorker } from './notifications_review_fx.mjs';
-import { candidateWorker } from './irshad_domain_fx.mjs';
+import { canonicalWorker } from '../../../../tests/unit/notifications_review_fx.mjs';
+import { candidateWorker } from '../../../../tests/unit/irshad_domain_fx.mjs';
 
 const GAP = 5 * 6e4;                                   /* NF_DUE_GAP */
 const COSTLY = /seized_items|seized_reports|irshad_reports|FROM ops_|notification_dedup/;
