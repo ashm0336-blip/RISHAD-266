@@ -3,7 +3,7 @@
  "kind": "system",
  "key": "award",
  "name": "جائزة التميز",
- "note": "V7 · المرحلة 2 · الحزمة ب: نقلُ ملفات النظام الكاملة إلى مجلده (ترتيبٌ لا يغيّر ما يُرى). هذا الملف يسرد ما في المجلد وما بقي للنظام خارجه؛ لا تقرؤه القاعدة ولا الأدوات بعد (الحزمة د).",
+ "note": "V7 · المرحلة 2 · د2: هذا الملف تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py). يسرد ما في المجلد، وموضعَ أجزاء الخادم في ترتيب الضمّ (after = جزءُ القاعدة الذي تُدرج بعده · order للترتيب عند المرسى الواحد)، والقطعَ التي تُحقن في فتحات القاعدة (slots).",
  "client": {
   "slug": "award",
   "component": "Award",
@@ -16,9 +16,21 @@
  },
  "server": {
   "parts": [
-   "server/019m-award.js"
+   {
+    "file": "server/019m-award.js",
+    "after": "019k-business-context.js",
+    "order": 70
+   }
   ],
-  "order": "workers/parts.json"
+  "generated": [
+   {
+    "part": "019k-award-reference-html.js",
+    "tool": "tools/award_reference_html.mjs",
+    "what": "منسِّقُ أقسام مرجع الجائزة من واجهتها (لا نسخةَ ثانية)",
+    "after": "019k-business-context.js",
+    "order": 20
+   }
+  ]
  },
  "migrations": {
   "files": [],
@@ -39,5 +51,51 @@
   "workers/parts/019k-business-context.js",
   "workers/parts/019n-business-integration.js",
   "migrations/0009_seized_awards.sql"
- ]
+ ],
+ "slots": {
+  "modules.award": {
+   "order": 10,
+   "text": "  {\n   \"name\": \"Award\",\n   \"slug\": \"award\",\n   \"minifiedSource\": true,\n   \"bytes\": 183156,\n   \"logicLines\": 2406\n  },\n"
+  },
+  "blocks.pages.award": {
+   "order": 10,
+   "text": "   {\n    \"b64Sha256\": \"b6a7f129e906385cddc4bb378bd515f14a024cd052570acb37fbf40107e59ae8\",\n    \"bytes\": 183156,\n    \"file\": \"client/pages/Award.dc.html\",\n    \"name\": \"Award\",\n    \"sha256\": \"13c3445b595dedf37275418d0b3158752d87a6b77285635917b9f75593dc3dfe\"\n   },\n"
+  },
+  "blocks.order.award": {
+   "order": 10,
+   "text": "   \"Award\",\n"
+  },
+  "pages.entry.systems": {
+   "order": 30,
+   "text": "  {\n   \"key\": \"award\",\n   \"module\": \"award\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"departmentComponents\": [\"Award\"],\n   \"nav\": \"award\",\n   \"name\": \"جائزة التميز\",\n   \"subs\": [\n    {\n     \"key\": \"new\",\n     \"name\": \"ترشيح جديد\"\n    },\n    {\n     \"key\": \"res\",\n     \"name\": \"لوحة النتائج\"\n    },\n    {\n     \"key\": \"doc\",\n     \"name\": \"المراجع المعتمدة\"\n    }\n   ]\n  },\n"
+  },
+  "pages.tabAddr.award": {
+   "order": 10,
+   "text": "  \"award\": 1,\n"
+  },
+  "pages.navOrder.tail": {
+   "order": 30,
+   "text": ",\n  \"award\""
+  },
+  "pages.navNames.tail": {
+   "order": 30,
+   "text": ",\n  \"award\": \"جائزة التميز\""
+  },
+  "pages.routeNames.systems": {
+   "order": 30,
+   "text": "  \"award\": \"جائزة التميز\",\n"
+  },
+  "budget.page.award": {
+   "order": 10,
+   "text": "  \"page:Award\": 47900,\r\n"
+  },
+  "uxStates.award": {
+   "order": 10,
+   "text": "  \"award\": {\n   \"فارغ\": 8,\n   \"تحميل\": 0,\n   \"خطأ\": 4,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 0\n  },\n"
+  },
+  "ns.after.award": {
+   "order": 10,
+   "text": "  \"src/systems/award/client/logic.js\",\n"
+  }
+ }
 }

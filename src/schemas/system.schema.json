@@ -14,7 +14,7 @@
   "server": {"type": "object", "additionalProperties": false, "required": ["parts"], "properties": {
    "parts": {"type": "array", "items": {"oneOf": [{"$ref": "#/$defs/rel"}, {"$ref": "#/$defs/part"}]}},
    "generated": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["part", "tool", "after", "order"], "properties": {
-    "part": {"type": "string"}, "tool": {"$ref": "#/$defs/rel"}, "what": {"type": "string"}, "after": {"type": "string"}, "order": {"type": "number"}}}},
+    "part": {"type": "string"}, "tool": {"$ref": "#/$defs/rel"}, "what": {"type": "string"}, "after": {"type": "string"}, "order": {"type": "number"}, "head": {"type": "string"}}}},
    "order": {"type": "string"}}},
   "migrations": {"type": "object", "additionalProperties": false, "properties": {
    "files": {"type": "array", "items": {"$ref": "#/$defs/rel"}}, "staysIn": {"type": "array", "items": {"$ref": "#/$defs/rel"}}, "why": {"type": "string"}}},
@@ -25,7 +25,7 @@
  },
  "$defs": {
   "rel": {"type": "string", "minLength": 1, "pattern": "^[^/\\\\]"},
-  "part": {"type": "object", "additionalProperties": false, "required": ["file", "after", "order"], "properties": {"file": {"$ref": "#/$defs/rel"}, "after": {"type": "string"}, "order": {"type": "number"}}},
+  "part": {"type": "object", "additionalProperties": false, "required": ["file", "after", "order"], "properties": {"file": {"$ref": "#/$defs/rel"}, "after": {"type": "string"}, "order": {"type": "number"}, "head": {"type": "string"}}},
   "frag": {"type": "object", "additionalProperties": false, "properties": {"order": {"type": "number"}, "text": {"type": "string"}, "file": {"$ref": "#/$defs/rel"}}}
  }
 }

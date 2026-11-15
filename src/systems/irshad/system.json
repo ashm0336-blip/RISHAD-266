@@ -3,7 +3,7 @@
  "kind": "system",
  "key": "irshad",
  "name": "نظام الاسترشاد",
- "note": "V7 · المرحلة 2 · الحزمة ب: نقلُ ملفات النظام الكاملة إلى مجلده (ترتيبٌ لا يغيّر ما يُرى). هذا الملف يسرد ما في المجلد وما بقي للنظام خارجه؛ لا تقرؤه القاعدة ولا الأدوات بعد (الحزمة د).",
+ "note": "V7 · المرحلة 2 · د2: هذا الملف تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py). يسرد ما في المجلد، وموضعَ أجزاء الخادم في ترتيب الضمّ (after = جزءُ القاعدة الذي تُدرج بعده · order للترتيب عند المرسى الواحد)، والقطعَ التي تُحقن في فتحات القاعدة (slots).",
  "client": {
   "slug": "irshad",
   "component": "Irshad",
@@ -16,12 +16,27 @@
  },
  "server": {
   "parts": [
-   "server/019g-irshad-domain.js",
-   "server/019h-irshad-query.js",
-   "server/019i-irshad-operations.js",
-   "server/019j-irshad-daily.js"
-  ],
-  "order": "workers/parts.json"
+   {
+    "file": "server/019g-irshad-domain.js",
+    "after": "019f-backup-converter.js",
+    "order": 10
+   },
+   {
+    "file": "server/019h-irshad-query.js",
+    "after": "019f-backup-converter.js",
+    "order": 20
+   },
+   {
+    "file": "server/019i-irshad-operations.js",
+    "after": "019f-backup-converter.js",
+    "order": 30
+   },
+   {
+    "file": "server/019j-irshad-daily.js",
+    "after": "019f-backup-converter.js",
+    "order": 40
+   }
+  ]
  },
  "migrations": {
   "files": [],
@@ -43,5 +58,59 @@
  "sharedStaysInBase": [
   "workers/parts/046-kivo-build-3.js",
   "workers/parts/047-retro.js"
- ]
+ ],
+ "slots": {
+  "modules.irshad": {
+   "order": 10,
+   "text": "  {\n   \"name\": \"Irshad\",\n   \"slug\": \"irshad\",\n   \"minifiedSource\": true,\n   \"bytes\": 189622,\n   \"logicLines\": 2036\n  },\n"
+  },
+  "blocks.pages.irshad": {
+   "order": 10,
+   "text": "   {\n    \"b64Sha256\": \"cf2e522092c5dcfac173ca1e501e9cd6eb20336655ac3c27bcb1054723429f09\",\n    \"bytes\": 189622,\n    \"file\": \"client/pages/Irshad.dc.html\",\n    \"name\": \"Irshad\",\n    \"sha256\": \"ca8c6ff02e5ea93a15a3d68dbc69d6c9c3353e603a3c7dd58a0c0c03a585c70f\"\n   },\n"
+  },
+  "blocks.order.irshad": {
+   "order": 10,
+   "text": "   \"Irshad\",\n"
+  },
+  "pages.entry.systems": {
+   "order": 10,
+   "text": "  {\n   \"key\": \"irshad\",\n   \"module\": \"irshad\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"departmentComponents\": [\"Irshad\"],\n   \"nav\": \"irshad\",\n   \"name\": \"نظام الاسترشاد\",\n   \"subs\": [\n    {\n     \"key\": \"dash\",\n     \"name\": \"لوحة المؤشرات\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"records\",\n     \"name\": \"السجلات\"\n    }\n   ]\n  },\n"
+  },
+  "pages.kpi.refs.mid": {
+   "order": 20,
+   "text": "    \"irshad/dash\",\n"
+  },
+  "pages.kpi.names.mid": {
+   "order": 20,
+   "text": "    \"irshad/dash\": \"لوحة مؤشرات الاسترشاد\",\n"
+  },
+  "pages.tabAddr.tail": {
+   "order": 20,
+   "text": ",\n  \"irshad\": {\n   \"records\": 1\n  }"
+  },
+  "pages.navOrder.tail": {
+   "order": 10,
+   "text": ",\n  \"irshad\""
+  },
+  "pages.navNames.tail": {
+   "order": 10,
+   "text": ",\n  \"irshad\": \"نظام الاسترشاد\""
+  },
+  "pages.routeNames.systems": {
+   "order": 10,
+   "text": "  \"irshad\": \"نظام الاسترشاد\",\n"
+  },
+  "budget.page.irshad": {
+   "order": 10,
+   "text": "  \"page:Irshad\": 41100,\r\n"
+  },
+  "uxStates.irshad": {
+   "order": 10,
+   "text": "  \"irshad\": {\n   \"فارغ\": 17,\n   \"تحميل\": 0,\n   \"خطأ\": 2,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 1\n  },\n"
+  },
+  "ns.after.irshad": {
+   "order": 10,
+   "text": "  \"src/systems/irshad/client/logic.js\",\n"
+  }
+ }
 }

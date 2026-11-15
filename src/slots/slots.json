@@ -1,0 +1,29 @@
+{
+ "note": "V7 · د2 — قوالبُ الفتحات: tpl (في src/slots) ← out (من جذر المستودع). الناتجُ مولَّدٌ بـtools/systems.py (يستدعيه tools/generate.py) ولا يُحرَّر يدوياً؛ التعديلُ في القالب أو في قطع الأنظمة (system.json ← slots).",
+ "templates": [
+  {
+   "tpl": "modules/modules.json.tpl",
+   "out": "src/modules/modules.json"
+  },
+  {
+   "tpl": "blocks.json.tpl",
+   "out": "src/blocks.json"
+  },
+  {
+   "tpl": "manifests/pages.json.tpl",
+   "out": "src/manifests/pages.json"
+  },
+  {
+   "tpl": "tools/perf_budget.json.tpl",
+   "out": "tools/perf_budget.json"
+  },
+  {
+   "tpl": "tools/ux_states.json.tpl",
+   "out": "tools/ux_states.json"
+  },
+  {
+   "tpl": "tools/kivo_ns.json.tpl",
+   "out": "tools/kivo_ns.json"
+  }
+ ]
+}

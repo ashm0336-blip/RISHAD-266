@@ -91,6 +91,31 @@ def outputs(S, systems=None):
     if orphan: raise SystemExit('✘ systems: قطعٌ بلا فتحة في أي قالب: ' + ', '.join(orphan))
     return out
 
+def parts_order(S, PD, systems=None):
+    """ترتيبُ ضمّ الخادم: أجزاءُ القاعدة (workers/parts.base.json) وبعد كلٍّ منها أجزاءُ الأنظمة المرساة عليه (server.parts و server.generated)
+       مرتَّبةً بـ(order ثم مفتاح النظام). PD = مجلد workers/parts. يعيد مداخلَ parts.json بمفاتيحها وترتيبها (lines · bytes · sha256 فارغةٌ يملؤها المولِّد)؛
+       file اسمٌ أو مسارٌ نسبيٌّ إلى PD."""
+    systems = load(S) if systems is None else systems
+    base = json.load(open(os.path.join(PD, '..', 'parts.base.json'), encoding='utf-8'))['parts']; ins = {}
+    def entry(f, p): return dict({'file': f, 'lines': None, 'bytes': None, 'sha256': None}, **({'head': p['head']} if 'head' in p else {}))
+    for d in systems:
+        for p in d['server'].get('parts', []):
+            f = os.path.relpath(os.path.join(d['_dir'], p['file']), PD).replace(os.sep, '/')
+            ins.setdefault(p['after'], []).append((p['order'], d['key'], entry(f, p)))
+        for g in d['server'].get('generated', []):
+            ins.setdefault(g['after'], []).append((g['order'], d['key'], entry(g['part'], g)))
+    names = {b['file'] for b in base}; lost = sorted(set(ins) - names)
+    if lost: raise SystemExit('✘ systems: مرسى غير موجود في workers/parts.base.json: ' + ', '.join(lost))
+    out = []
+    for b in base:
+        out.append(dict(b)); out.extend(e for _, _, e in sorted(ins.get(b['file'], []), key=lambda t: (t[0], t[1])))
+    return out
+
+def generated_parts(S, systems=None):
+    """[(اسمُ الجزء في workers/parts, مسارُ الأداة من جذر المستودع, مفتاحُ النظام)] — أجزاءٌ تولَّد من كود النظام."""
+    systems = load(S) if systems is None else systems
+    return [(g['part'], g['tool'], d['key']) for d in systems for g in d['server'].get('generated', [])]
+
 RESERVED = set()   # أسماءُ فتحاتٍ يستهلكها مولِّدٌ آخر غير القوالب (تُضاف عند الحاجة)
 
 def main(argv):

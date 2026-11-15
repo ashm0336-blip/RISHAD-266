@@ -35,8 +35,10 @@ def gen_registry(S):
 
 def gen_worker(S, produced):
     L = layout(S); PD = norm(L['workersParts'])
-    manifest = json.load(open(os.path.join(S, PD, '..', 'parts.json'), encoding='utf-8'))
-    order = manifest['parts']
+    # V7 · د2: الترتيبُ من workers/parts.base.json (أجزاءُ القاعدة) + system.json لكل نظامٍ حاضر (tools/systems.py) — parts.json ناتجٌ مولَّد
+    import systems as _SY
+    manifest = {'worker': json.load(open(os.path.join(S, PD, '..', 'parts.base.json'), encoding='utf-8'))['worker'], 'sha256': '', 'parts': []}
+    order = manifest['parts'] = _SY.parts_order(S, os.path.join(S, PD))
     def part(f):
         rel = norm(PD + '/' + f)                      # V7 · الحزمة ب: الاسمُ قد يكون مساراً نسبياً إلى src/systems/<key>/server
         return produced[rel] if rel in produced else rb(os.path.join(S, rel))
@@ -243,17 +245,16 @@ def gen_find_engine(S):
     data = '/* Generated from the marked pure engine in src/services/332-find-day.js. Do not edit. */\nvar KIVO_FIND = ' + body + '\n'
     return {norm(layout(S)['workersParts']) + '/018a-find-engine.js': data.encode('utf-8')}
 
-def gen_seized_defaults(S):
-    """Use the UI's existing catalogue defaults as the sole source for SQL reads."""
-    result = subprocess.run([os.environ.get('KIVO_NODE', 'node'), os.path.join(ROOT, 'tools', 'seized_defaults.mjs'), S], capture_output=True, text=True, encoding='utf-8')
-    if result.returncode: raise SystemExit('Seized defaults generation failed: ' + result.stderr[-600:])
-    return {norm(layout(S)['workersParts']) + '/019k-seized-defaults.js': result.stdout.encode('utf-8')}
-
-def gen_award_reference_html(S):
-    """Derive the exact existing pure Award section formatter, never a second copy."""
-    result = subprocess.run([os.environ.get('KIVO_NODE', 'node'), os.path.join(ROOT, 'tools', 'award_reference_html.mjs'), S], capture_output=True, text=True, encoding='utf-8')
-    if result.returncode: raise SystemExit('Award formatter generation failed: ' + result.stderr[-600:])
-    return {norm(layout(S)['workersParts']) + '/019k-award-reference-html.js': result.stdout.encode('utf-8')}
+def gen_system_parts(S):
+    """V7 · د2: أجزاءٌ تولَّد من كود النظام نفسه (system.json ← server.generated: part · tool) — المصدرُ الواحد واجهةُ النظام، لا نسخةَ ثانية.
+       كانت دالّتين ثابتتين (افتراضاتُ المضبوطات · منسِّقُ مرجع الجائزة)؛ صارت قائمةً يقرؤها المولِّدُ من الأنظمة الحاضرة."""
+    import systems as _SY
+    out = {}
+    for part, tool, key in _SY.generated_parts(S):
+        result = subprocess.run([os.environ.get('KIVO_NODE', 'node'), os.path.join(ROOT, tool), S], capture_output=True, text=True, encoding='utf-8')
+        if result.returncode: raise SystemExit('%s: generation of %s failed: %s' % (key, part, result.stderr[-600:]))
+        out[norm(layout(S)['workersParts']) + '/' + part] = result.stdout.encode('utf-8')
+    return out
 
 # ── V7 · المرحلة 2 · الحزمة ج: الوحداتُ المرجعية الأربع (006 · 008 · 010 · 014) مولَّدةٌ من مصادر في المستودع ─────────────────────────
 # مولّدُها الأصلي (registry10/*.py) غيرُ موجود. المصادرُ الآن workers/bindings/<name>/{data.json, engine.js} + workers/bindings/targets.json
@@ -285,7 +286,7 @@ def main():
         _p = os.path.join(S, '..', _rel); produced[norm(os.path.relpath(_p, S))] = _data
         if not check and (rb(_p) if os.path.exists(_p) else None) != _data:
             os.makedirs(os.path.dirname(_p), exist_ok=True); open(_p, 'wb').write(_data)
-    produced.update(gen_registry(S)); produced.update(gen_bindings(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S)); produced.update(gen_find_engine(S)); produced.update(gen_seized_defaults(S)); produced.update(gen_award_reference_html(S))
+    produced.update(gen_registry(S)); produced.update(gen_bindings(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S)); produced.update(gen_find_engine(S)); produced.update(gen_system_parts(S))
     if os.path.exists(os.path.join(S, layout(S)['pagesManifest'])):
         mj, reg = gen_manifest(S); produced.update(mj); splice_pg(S, produced, reg)
     produced.update(gen_worker(S, produced)); produced.update(gen_pages(S))
