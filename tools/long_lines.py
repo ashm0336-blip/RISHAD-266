@@ -17,6 +17,7 @@ ALLOW = [  # (نمط · السبب) — المولَّدُ يُعاد توليد
     ('core/020-react-dom.js',           'مورَّد: react-dom 18.3.1 كما نُشر (docs/dependencies-policy.md)'),
     ('core/030-pages-loader.js',        'مورَّد: fflate 0.8.3 مصغَّراً كما نُشر (docs/dependencies-policy.md)'),
     ('assets/icons/catalog.json',       'بيانات: جسمُ أيقونةٍ (SVG) نصاً واحداً — tools/icons.py extract/index'),
+    ('slots/tools/*.tpl',               'قالب: ملفُّ إعدادٍ في tools/ (خارج src) بسطوره كما هي — يُحقن بـtools/systems.py (V7 · د2)'),
 ]
 
 def tracked(src):

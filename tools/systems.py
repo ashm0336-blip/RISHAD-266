@@ -5,6 +5,8 @@
      --list   الأنظمةُ الحاضرة بترتيبها وما تتطلبه (JSON)
      --check  system.json صالحٌ (المخطط · المفتاح = اسم المجلد · requires حاضرة وبلا دورة) والملفاتُ المحقونة = الملتزَم
      --write  يكتب الملفات المحقونة (يستدعيه tools/generate.py أيضاً قبل بقية التوليد)
+     --regen  بعد إضافة مجلد نظامٍ أو حذفه: يعيد توليدَ كل مشتقٍّ يتبدّل بحضور الأنظمة (generate · فهرس الأيقونات · docs/routes.md ·
+              docs/ux-states.md). في شجرةٍ لم يتبدّل فيها شيء لا يغيّر ملفاً.
 
    الفتحات: قالبٌ في src/slots/ (مسجَّلٌ في src/slots/slots.json: tpl ← out) يحمل علاماتٍ مسمّاة
        @@SYS:name@@            أو        @@SYS:name|sep=","|pre="["|post="]"@@
@@ -118,8 +120,24 @@ def generated_parts(S, systems=None):
 
 RESERVED = set()   # أسماءُ فتحاتٍ يستهلكها مولِّدٌ آخر غير القوالب (تُضاف عند الحاجة)
 
+REGEN = [  # ما يُعاد توليدُه حين يتبدّل حضورُ نظام — بالترتيب (generate أولاً: السجلاتُ تسبق من يقرؤها)
+    ['tools/generate.py', '--src', 'src'], ['tools/icons.py', 'extract', '--src', 'src'], ['tools/icons.py', 'index', '--src', 'src'],
+    ['tools/route_registry.py', '--write'], ['tools/ux_states.py'],
+]
+
+def regen(S):
+    import subprocess
+    root = os.path.dirname(S)
+    for cmd in REGEN:
+        r = subprocess.run([sys.executable] + cmd, cwd=root, capture_output=True, text=True, encoding='utf-8')
+        last = (r.stdout.strip().split('\n') or [''])[-1]
+        print(('  ✔ ' if r.returncode == 0 else '  ✘ ') + ' '.join(cmd) + ' — ' + last[:150])
+        if r.returncode and cmd[0] != 'tools/ux_states.py': print(r.stderr[-400:]); return 1   # ux_states: يكتب الوثيقة ثم يخبر بما نقص عن خطّ الأساس (يُراجَع)
+    return 0
+
 def main(argv):
     S = os.path.abspath(argv[argv.index('--src') + 1]) if '--src' in argv else os.path.join(ROOT, 'src')
+    if '--regen' in argv: return regen(S)
     systems = load(S)
     if '--list' in argv:
         print(json.dumps([{'key': d['key'], 'name': d.get('name'), 'requires': d.get('requires') or []} for d in systems], ensure_ascii=False)); return 0
