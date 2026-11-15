@@ -26,7 +26,10 @@ test('pages.json without the display-only field is develop\'s pages.json; the fi
   assert.deepEqual(withField.map((p) => p.key), ['emps']);
   assert.deepEqual(withField[0].shellTabs, [{ name: 'مستودع العهد', as: 'custody' }]);
   assert.ok(withField[0].subs.some((s) => s.key === 'custody' && !s.offPage), 'it follows an existing leaf of its page');
-  for (const p of M.pages) delete p.shellTabs;
+  /* V7 · د1-د: حقلُ عرضٍ ثانٍ — noTab على ورقةٍ واحدة (admin/import: ورقةُ صلاحيةٍ باقية بلا تبويبٍ مرسوم بعد نقل الاستيراد إلى صفحة الموظفين) */
+  const noTab = M.pages.flatMap((p) => (p.subs || []).filter((x) => x.noTab !== undefined).map((x) => p.key + '/' + x.key + '=' + x.noTab));
+  assert.deepEqual(noTab, ['admin/import=true']);
+  for (const p of M.pages) { delete p.shellTabs; for (const x of p.subs || []) delete x.noTab; }
   assert.equal(sha(Buffer.from(canon(M))), DEVELOP.pages, 'every other value of pages.json is as on develop');
 });
 
@@ -44,13 +47,15 @@ test('the server page structure (PG_REG) is develop\'s and does not carry the fi
 });
 
 test('only the shell header reads the field: no permission, auth, scope or module code mentions it', () => {
-  const hits = [];
+  const hits = [], hits2 = [];
   (function walk(dir) {
     for (const f of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
       const rel = dir + '/' + f.name;
       if (f.isDirectory()) { if (rel !== 'src/pages') walk(rel); continue; }
       if (/\.(js|html|json)$/.test(f.name) && read(rel).includes('shellTabs')) hits.push(rel);
+      if (/\.(js|html|json)$/.test(f.name) && read(rel).includes('noTab')) hits2.push(rel);
     }
   })('src');
   assert.deepEqual(hits.sort(), ['src/components/555-page-states.js', 'src/manifests/255-page-manifest.js', 'src/manifests/pages.json', 'src/schemas/pages.schema.json']);
+  assert.deepEqual(hits2.sort(), ['src/components/555-page-states.js', 'src/manifests/255-page-manifest.js', 'src/manifests/pages.json', 'src/schemas/pages.schema.json'], 'noTab: the same four files only');
 });
