@@ -2,7 +2,7 @@
    v7_d1c_super_unbounded). إدارةٌ سقفُها فارغ وكلُّ وحدات المنصة مطفأة، والوضعان:
      myPermsOf · actsHeldOn — كلُّ صفحةٍ وورقة × كلُّ فعل
      authorize0 — كلُّ موردٍ إداريٍّ في السجل (بلا قاعدةٍ خاصة) × كلُّ فعل
-     resOnCeiling — كلُّ مورد · nfPage — كلُّ نوعِ تنبيه · enfHeld (الإنفاذ) — كلُّ مفتاحٍ فعّال في السجل v24.9
+     resOnCeiling · imgWriteOk — كلُّ مورد · nfPage — كلُّ نوعِ تنبيه · enfHeld (الإنفاذ) — كلُّ مفتاحٍ فعّال في السجل v24.9
    يطبع كلَّ رفضٍ وُجد ثم يشترط أن يكون صفراً. TEST_ONLY · SQLite في الذاكرة. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,7 +16,7 @@ let loads = 0;
 async function load() {
   const src = fs.readFileSync(WORKER, 'utf8');
   const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'd1c-')), f = path.join(dir, 'w.mjs');
-  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, actorOf, enfModeOf, enfAttachGrants, myPermsOf, actsHeldOn, authorize0, resOnCeiling, nfPage, enfHeld, NF_TYPES, PG_KEYS, pgLeaves, ACTS_ALL, KIVO_REGISTRY, RES_REG };\n');
+  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, actorOf, enfModeOf, enfAttachGrants, myPermsOf, actsHeldOn, authorize0, resOnCeiling, nfPage, enfHeld, imgWriteOk, NF_TYPES, PG_KEYS, pgLeaves, ACTS_ALL, KIVO_REGISTRY, RES_REG };\n');
   try { return await import(pathToFileURL(f).href + '?n=' + (++loads)); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 const D = 'TEST_ONLY_d0';
@@ -49,6 +49,7 @@ for (const mode of ['legacy', 'enforce']) {
     for (const r of RES) {
       const R = W.RES_REG[r], k = 'bsdept:' + D + ':' + r;
       chk(W.resOnCeiling(A, D, R), 'resOnCeiling ' + r);
+      chk(W.imgWriteOk(A, k), 'imgWriteOk ' + r);   /* كتابةُ الصورة = كتابةُ مورد مالكها (054 · 060 enfImgWriteOk) */
       if (!R.rule) for (const a of ['view', 'add', 'edit', 'del']) { const z = W.authorize0(A, k, a); chk(z.ok, 'authorize0 ' + r + ':' + a + ' (' + z.why + ')'); }
     }
     for (const type of Object.keys(W.NF_TYPES)) chk(W.nfPage(A, D, type, W.NF_TYPES[type].k, 'view'), 'nfPage ' + type);

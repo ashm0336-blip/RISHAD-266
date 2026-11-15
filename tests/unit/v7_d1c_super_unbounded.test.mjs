@@ -94,6 +94,16 @@ async function sweep(W) {
     await rec('write /api/save ' + k.split(':').pop(), post('/api/save', { requestId: rid(), epoch: ops.j.epoch, set: { [k]: JSON.stringify(v) }, del: [], base: { [k]: ops.j.base[k] } }));
     const again = await get('/api/operations/read?keys=' + OPS.map(encodeURIComponent).join(',')); if (again.j && again.j.base) ops.j = again.j;
   }
+  /* صورة: رفعُها ثم ربطُها بسجلٍّ في الإدارة ذاتِ السقف الفارغ (المهام) — وتصير مربوطةً بالإدارة في imgown */
+  const IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', IID = 'img_d1c_super1', TK = dk('tasks_v1');
+  await rec('write /api/img PUT (upload)', C.api('/api/img/' + IID, { method: 'PUT', body: IMG, cookie: ck, headers: { 'Content-Type': 'text/plain' } }));
+  const tg = await get('/api/operations/read?keys=' + encodeURIComponent(TK)), tv = tg.j && tg.j.resources && tg.j.resources[TK];
+  if (tv && tv[fx.DAY] && tv[fx.DAY][0]) { tv[fx.DAY][0][1] = IID;
+    await rec('write /api/save tasks (bind the image)', post('/api/save', { requestId: rid(), epoch: tg.j.epoch, set: { [TK]: JSON.stringify(tv) }, del: [], base: tg.j.base }));
+    const own = W.env.DB.q('SELECT st, dept, k FROM imgown WHERE img=?1', IID)[0] || {};
+    R.push({ name: 'image bound to the unit (imgown)', status: 200, why: own.st === 'bound' && own.dept === D ? '' : 'not-bound ' + JSON.stringify(own) });
+    await rec('read /api/img GET (bound image)', C.api('/api/img/' + IID, { cookie: ck }));
+  } else R.push({ name: 'write /api/save tasks (bind the image)', status: 0, why: 'no-task-row ' + JSON.stringify(tg.j).slice(0, 120) });
   if (irc.j && irc.j.base) await rec('write /api/irshad/act catalog-replace', post('/api/irshad/act', { uid, dept: D, requestId: rid(), base: irc.j.base, op: 'catalog-replace', kind: 'locations', values: ['TEST_ONLY موقع د1-ج'] }));
   else R.push({ name: 'write /api/irshad/act catalog-replace', status: 0, why: 'no-base ' + JSON.stringify(irc.j).slice(0, 100) });
   if (aw.j && aw.j.base) await rec('write /api/award/act edit', post('/api/award/act', { dept: D, requestId: rid(), base: aw.j.base, op: 'edit', id: 'tstaw2', data: { phone: '0599999277', email: 'tst_aw_2@example.test', comp: '70277' } }));

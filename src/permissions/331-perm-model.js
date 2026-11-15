@@ -588,6 +588,7 @@
   var _myPerms0 = myPerms;
   myPerms = function(){
     var all = _myPerms0();
+    if (isSuper()) return all;   /* V7 · د1-ج (قرار صاحب المنصة): الوحدةُ المطفأة على مستوى المنصة لا تقيّد مدير المنصة */
     try { var off = (KIVO.BassamPlat && KIVO.BassamPlat.get().mods.off) || []; for (var i = 0; i < off.length; i++) if (off[i] !== 'admin') { delete all[off[i]]; leafKeysOf(off[i]).forEach(function(l){ delete all[l]; }); } } catch(e){}
     return all;
   };

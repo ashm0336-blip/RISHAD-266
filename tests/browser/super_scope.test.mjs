@@ -123,3 +123,35 @@ test('department manager and employee: scope selection still limited (no widenin
     assert.deepEqual(m.errs.concat(e.errs), []);
   } finally { await b.close(); await lab.close(); }
 });
+
+/* V7 · د1-ج (قرار صاحب المنصة): الوحدةُ المطفأة على مستوى المنصة (mods.off) تبقى مخفيةً من القائمة الجانبية لغير مدير المنصة،
+   وتظهر له وحده (260-bassam-plat.js). الحالتان في عالمٍ واحد: «الاسترشاد» مطفأ. */
+test('module switched off platform-wide: its sidebar link is shown to super only', { timeout: 300000 }, async () => {
+  const lab = await startLab();
+  const { env, W } = lab, DB = env.DB;
+  const rows = DB.q('SELECT v FROM kv WHERE k=?1 ORDER BY seq', 'bassam_platform_v1'), plat = rows.length ? JSON.parse(rows.map((r) => r.v).join('')) : {};
+  plat.mods = Object.assign({}, plat.mods || {}, { off: ['irshad'] });
+  await DB.batch([DB.prepare('DELETE FROM kv WHERE k=?1').bind('bassam_platform_v1'), ...W.kvPutStmts(env, 'kv', 'bassam_platform_v1', JSON.stringify(plat)),
+    DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=rev+1').bind('bassam_platform_v1')]);
+  const link = (page) => page.evaluate(() => {
+    const off = ((KIVO.BassamPlat.get().mods || {}).off || []).slice();
+    const a = document.querySelector('aside.bsb .s-nav .grp > a[data-key="irshad"]'), ctl = document.querySelector('aside.bsb .s-nav .grp > a[data-key="emps"]');
+    const shown = (e) => !!e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0;
+    return { off, link: shown(a), control: shown(ctl) };
+  });
+  const b = await chromium.launch();
+  try {
+    const s = await openAs(b, lab, LAB.superUn, LAB.superPw);
+    assert.equal(await switchTo(s, 'TEST_ONLY_A'), true);
+    const su = await link(s.page);
+    assert.deepEqual(su.off, ['irshad'], 'the module is off platform-wide');
+    assert.equal(su.control, true, 'control: the operational sidebar is rendered for super');
+    assert.equal(su.link, true, 'super sees the link of the module switched off');
+    const m = await openAs(b, lab, LAB.mgrA, LAB.pw); await m.page.waitForTimeout(2500);
+    const mg = await link(m.page);
+    assert.deepEqual(mg.off, ['irshad']);
+    assert.equal(mg.control, true, 'control: the sidebar is rendered for the manager');
+    assert.equal(mg.link, false, 'the manager does not see the link of the module switched off');
+    assert.deepEqual(s.errs.concat(m.errs), []);
+  } finally { await b.close(); await lab.close(); }
+});

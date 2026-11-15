@@ -23850,6 +23850,7 @@ function imgWriteOk(A, k) {
   var R8 = resOf(k); if (!R8 || R8.scope === 'device') return false;
   var P8 = parseKey(k);
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
+  if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
   if (!deptInScope(A, P8.dept)) return false;
   if (R8.rule) return imgDeptWriter(A, P8.dept);
   return authorize(A, k, 'edit').ok || authorize(A, k, 'add').ok || authorize(A, k, 'del').ok;
@@ -26373,6 +26374,7 @@ function enfImgWriteOk(A, k) {
   var R8 = resOf(k); if (!R8 || R8.scope === 'device') return false;
   var P8 = parseKey(k);
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
+  if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
   if (!deptInScope(A, P8.dept)) return false;
   if (R8.rule) return enfAnyWriterDept(A, P8.dept, true);   /* V7-E: سؤالُ صورة — 057 */
   return enfImgResWriter(A, P8.dept, resName(k));   /* V7-D: المشتقّةُ من field.view ليست كتابةَ مورد الصورة */
