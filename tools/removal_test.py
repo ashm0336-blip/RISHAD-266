@@ -89,14 +89,15 @@ def units(copy, env, jobs):
         for f, (p, t0) in list(procs.items()):
             if p.poll() is None and time.time() - t0 < 1800: continue
             if p.poll() is None: p.kill()
-            out = p.communicate()[0] or ''; del procs[f]
+            p.wait(); lg = p._log; lg.seek(0); out = lg.read().decode('utf-8', 'replace'); lg.close(); del procs[f]
             for i, key in enumerate(('tests', 'pass', 'fail', 'skipped')):
                 m = re.search(r'^# %s (\d+)' % key, out, re.M); tot[i] += int(m.group(1)) if m else 0
             done.append((f, p.returncode))
         if block and procs: time.sleep(0.5)
     while q or procs:
         while q and len(procs) < jobs:
-            f = q.pop(0); procs[f] = (subprocess.Popen(['node', '--no-warnings', '--test', f], cwd=copy, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace'), time.time())
+            f = q.pop(0); lg = tempfile.TemporaryFile()   # المخرجاتُ إلى ملف: أنبوبٌ لا يُقرأ يمتلئ فيعلَّق الاختبار
+            pr = subprocess.Popen(['node', '--no-warnings', '--test', f], cwd=copy, env=env, stdout=lg, stderr=subprocess.STDOUT); pr._log = lg; procs[f] = (pr, time.time())
         reap(True)
     bad = [os.path.relpath(f, copy) for f, rc in done if rc != 0]
     return len(files), bad, tot
