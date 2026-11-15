@@ -1153,8 +1153,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ["depts", "org", "الإدارات", 0],
       ["oplog", "sec", "سجل الأنشطة والتغييرات", 1],
       ["backup", "data", "النسخة الاحتياطية", 0],
-      ["histimp", "data", "استيراد البيانات التاريخية", 0],
-    ];
+@@SYS:admin.console.histimp@@    ];
   }
   /* «خريطة المنصة»: صفوفُ المركز من CON_TABS وأقسامُ المنصة من PL_SECS، والعدساتُ والمنصةُ والمراجعُ من بنّاء الشجرة نفسِه (t24Struct) */
   _siteMap() {

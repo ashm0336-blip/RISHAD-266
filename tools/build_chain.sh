@@ -39,6 +39,7 @@ PY
     "$PY" tools/trace.py --check
     "$PY" tools/tokens_refs.py --check
     "$PY" tools/validate_schemas.py
+    node tools/gen_types.mjs --check
     "$PY" tools/build.py --src src --mode split --pages lazy --minify-worker --out "$OUT" --verify
     "$PY" tests/source/k265eq.py "$OUT"
     "$PY" tools/sec/secrets_scan.py "$OUT"
@@ -47,6 +48,7 @@ PY
   "$PY" tools/generate.py --src src --check
   "$PY" tools/icons.py check --src src
   node tools/kivo_ns.mjs tools/kivo_ns.json --check
+  node tools/gen_types.mjs --check
   "$PY" tools/plugins.py check
   "$PY" tools/tokens.py check src
   "$PY" tools/deps_check.py

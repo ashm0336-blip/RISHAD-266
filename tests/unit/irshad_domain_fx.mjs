@@ -4,14 +4,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {world as currentWorld, legacyWorld, ROOT, D1, D2, IDS, identitySnapshot} from './custody_review_fx.mjs';
-import {allowTestSchemaUpgrade} from './harness.mjs';
+import {allowTestSchemaUpgrade,hasSystem} from './harness.mjs';
 import {installOperationalFixture} from './operational_legacy_seed_fx.mjs';
 export {ROOT,D1,D2,IDS,identitySnapshot};
-const NAMED = ['IR_RES','IR_RES_NAMES','IR_FIELDS','IR_TABLES','IR_REQUEST_COLS','irKey','irMetaKey','irConvert','irInflate',
-  'irValidateDomain','irEmptyDomain','irSnapshot','irLegacyPrepare','irLegacyPresent','irInstallStatements','irRevs',
-  'irRevisionGuards','irRetiredGuard','irGuardRetired','irMarkResourceStatements','irPlanRestore','irPlanWipe','irExport',
-  'initDb','migrateDb','kvPutStmts','KIVO_MIGRATIONS','KIVO_SCHEMA_VERSION','actorOf','revGuard','rsPrepare','rsCommit',
-  'rsConvertBackup','rsRestoreInventory','rsWipeInventory','rsEpoch','rsSaveCommit','curRev','preOff','empTransitionContext','empPrepareTransition','bdDefinitions'];
+/* V7 · د2-ب: أسماءُ الاسترشاد تُطلب بحضوره فقط؛ عُدّةُ العالَم (world · candidateWorker) تخدم اختبارات القاعدة بالحالين */
+const IR_NAMED = ['IR_RES','IR_RES_NAMES','IR_FIELDS','IR_TABLES','IR_REQUEST_COLS','irKey','irMetaKey','irConvert','irInflate','irValidateDomain','irEmptyDomain','irSnapshot','irLegacyPrepare','irLegacyPresent','irInstallStatements','irRevs','irRevisionGuards','irRetiredGuard','irGuardRetired','irMarkResourceStatements','irPlanRestore','irPlanWipe','irExport'];
+const NAMED = (hasSystem('irshad') ? IR_NAMED : []).concat(['initDb','migrateDb','kvPutStmts','KIVO_MIGRATIONS','KIVO_SCHEMA_VERSION','actorOf','revGuard','rsPrepare','rsCommit','rsConvertBackup','rsRestoreInventory','rsWipeInventory','rsEpoch','rsSaveCommit','curRev','preOff','empTransitionContext','empPrepareTransition','bdDefinitions']);
 let instance=0;
 export async function candidateWorker(extraExports=[]) {
   const manifest=JSON.parse(fs.readFileSync(path.join(ROOT,'workers/parts.json'),'utf8')),

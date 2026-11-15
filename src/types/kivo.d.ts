@@ -226,7 +226,7 @@ export type KivoDeptKey<R extends KivoResourceName = KivoResourceName> = `bsdept
 /* ── (٣) الواجهةُ البرمجية /api/* — العقدُ الآلي (المسار · الطرائق · الوصول · مفاتيحُ الردّ لكل حالة) ── */
 export interface KivoApi {
   "/api/brand": { methods: "GET"; access: "public"; responses: { "200": { ok: unknown; brand: unknown; ver: unknown; rk: unknown } } };
-  "/api/ping": { methods: "GET"; access: "public"; responses: { "200": { ok: unknown; cf: unknown; ver: unknown; fresh: unknown } } };
+  "/api/ping": { methods: "GET"; access: "public"; responses: { "200": { ok: unknown; cf: unknown; ver: unknown; commit: unknown; fresh: unknown } } };
   "/api/recover": { methods: "POST"; access: "public"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
   "/api/login": { methods: "POST"; access: "public"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
   "/api/logout": { methods: "GET" | "POST"; access: "public"; responses: { "200": { ok: unknown }; "303": { [k: string]: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };

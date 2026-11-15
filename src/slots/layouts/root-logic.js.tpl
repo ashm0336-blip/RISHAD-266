@@ -926,7 +926,7 @@ class Component extends DCLogic {
         ["plat", "login", "شاشة تسجيل الدخول", 1], ["plat", "side", "القوائم"], ["plat", "print", "الطباعة والتقارير"], ["plat", "app", "تطبيق الجوال"],
         ["plat", "about", "حول المنصة", 1]],
       sec: [["sec", null, "الأمن"], ["oplog", null, "سجل الأنشطة والتغييرات"]],
-      data: [["backup", null, "النسخة الاحتياطية"], ["plat", "setup", "التهيئة والاستعادة"], ["histimp", null, "استيراد البيانات التاريخية"]],
+      data: [["backup", null, "النسخة الاحتياطية"], ["plat", "setup", "التهيئة والاستعادة"]@@SYS:root.console.histimp@@],
     };
   }
   _conGrpOf(tab, sub) {

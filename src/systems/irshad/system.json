@@ -264,7 +264,7 @@
   },
   "bd.commitGuard.irshadBind": {
    "order": 10,
-   "text": "JSON.stringify(IR_RES)"
+   "text": "JSON.stringify(IR_RES),"
   },
   "bd.errorFallback": {
    "order": 10,
@@ -625,6 +625,10 @@
   "root.deptBackup.manifest": {
    "order": 10,
    "text": "irshad:1,"
+  },
+  "bd.commitGuard.irshadShift": {
+   "order": 10,
+   "text": ".replace(/\\?1/g,'?2')"
   }
  }
 }

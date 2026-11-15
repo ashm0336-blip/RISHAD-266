@@ -354,6 +354,14 @@
   "store.relational.dstats": {
    "order": 10,
    "text": "dstats|"
+  },
+  "admin.console.histimp": {
+   "order": 10,
+   "text": "      [\"histimp\", \"data\", \"استيراد البيانات التاريخية\", 0],\r\n"
+  },
+  "root.console.histimp": {
+   "order": 10,
+   "text": ", [\"histimp\", null, \"استيراد البيانات التاريخية\"]"
   }
  }
 }

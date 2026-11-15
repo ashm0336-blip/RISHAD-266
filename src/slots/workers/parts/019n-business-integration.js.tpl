@@ -13,8 +13,8 @@ function bdRetiredGuard(env) {
 }
 function bdCommitRetiredGuard(env) {
   // One transaction statement, with the same independent source predicates and errors.
-  return env.DB.prepare("SELECT @@SYS:bd.commitGuard.irshad@@CASE WHEN EXISTS(SELECT 1 FROM kv WHERE "+bdLegacyPredicate().replace(/\?1/g,'?2')+")THEN json_extract('{}','KIVO_BUSINESS_LEGACY_SOURCE')END")
-    .bind(@@SYS:bd.commitGuard.irshadBind|empty="null"@@,JSON.stringify(@@SYS:bd.resources.3|empty="[]"@@));
+  return env.DB.prepare("SELECT @@SYS:bd.commitGuard.irshad@@CASE WHEN EXISTS(SELECT 1 FROM kv WHERE "+bdLegacyPredicate()@@SYS:bd.commitGuard.irshadShift@@+")THEN json_extract('{}','KIVO_BUSINESS_LEGACY_SOURCE')END")
+    .bind(@@SYS:bd.commitGuard.irshadBind@@JSON.stringify(@@SYS:bd.resources.3|empty="[]"@@));
 }
 async function bdGuardRetired(env) {
   if (await env.DB.prepare('SELECT 1 FROM kv WHERE '+bdLegacyPredicate()+' LIMIT 1').bind(JSON.stringify(@@SYS:bd.resources.4|empty="[]"@@)).first()) throw rsError('business-legacy-source-present',503);

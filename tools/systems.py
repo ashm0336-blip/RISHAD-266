@@ -6,7 +6,7 @@
      --check  system.json صالحٌ (المخطط · المفتاح = اسم المجلد · requires حاضرة وبلا دورة) والملفاتُ المحقونة = الملتزَم
      --write  يكتب الملفات المحقونة (يستدعيه tools/generate.py أيضاً قبل بقية التوليد)
      --regen  بعد إضافة مجلد نظامٍ أو حذفه: يعيد توليدَ كل مشتقٍّ يتبدّل بحضور الأنظمة (generate · فهرس الأيقونات · docs/routes.md ·
-              docs/api-routes.md · docs/ux-states.md). في شجرةٍ لم يتبدّل فيها شيء لا يغيّر ملفاً.
+              docs/api-routes.md · docs/ux-states.md · src/types/kivo.d.ts)، ثم يحذف الملفات المولَّدة لنظامٍ غائب (صفحتُه · أجزاؤه المولَّدة). في شجرةٍ لم يتبدّل فيها شيء لا يغيّر ملفاً.
 
    الفتحات: قالبٌ في src/slots/ (مسجَّلٌ في src/slots/slots.json: tpl ← out) يحمل علاماتٍ مسمّاة
        @@SYS:name@@            أو        @@SYS:name|sep=","|pre="["|post="]"|empty="false"@@
@@ -143,14 +143,34 @@ RESERVED = set()   # أسماءُ فتحاتٍ يستهلكها مولِّدٌ �
 
 REGEN = [  # ما يُعاد توليدُه حين يتبدّل حضورُ نظام — بالترتيب (generate أولاً: السجلاتُ تسبق من يقرؤها)
     ['tools/generate.py', '--src', 'src'], ['tools/icons.py', 'extract', '--src', 'src'], ['tools/icons.py', 'index', '--src', 'src'],
-    ['tools/route_registry.py', '--write'], ['tools/api_routes.py', '--write'], ['tools/ux_states.py'],
+    ['tools/route_registry.py', '--write'], ['tools/api_routes.py', '--write'], ['tools/ux_states.py'], ['node:tools/gen_types.mjs'],
 ]
 KEEP_EOL = {'tools/api_routes.py': 'docs/api-routes.md'}   # الأداةُ تكتب LF والوثيقةُ الملتزَمة CRLF (.gitattributes: -text) — تُحفظ نهاياتُ سطورها
+
+def prune(S):
+    """الملفاتُ المولَّدة لنظامٍ غائب: صفحتُه في src/pages (ليست في modules.json بعد التوليد) وأجزاؤه المولَّدة في workers/parts
+       (ليست من أجزاء القاعدة ولا في ترتيب الضمّ). المولِّدُ يكتب ولا يحذف — فتُحذف هنا، وتُطبع."""
+    root = os.path.dirname(S); gone = []
+    L = json.load(open(os.path.join(S, 'layout.json'), encoding='utf-8'))
+    pages = os.path.join(S, L['pages']); names = {p['name'] for p in json.load(open(os.path.join(S, L['modules'], 'modules.json'), encoding='utf-8'))['pages']}
+    for f in sorted(glob.glob(os.path.join(pages, '*.dc.html'))):
+        if os.path.basename(f)[:-len('.dc.html')] not in names: gone.append(f)
+    PD = os.path.normpath(os.path.join(S, L['workersParts'])); base = {b['file'] for b in json.load(open(os.path.join(PD, '..', 'parts.base.json'), encoding='utf-8'))['parts']}
+    order = {os.path.basename(e['file']) for e in parts_order(S, PD)}
+    for f in sorted(glob.glob(os.path.join(PD, '*.js'))):
+        if os.path.basename(f) not in base and os.path.basename(f) not in order: gone.append(f)
+    for f in gone: os.remove(f); print('  − ' + os.path.relpath(f, root) + ' (مولَّدٌ لنظامٍ غائب — حُذف)')
+    return gone
 
 def regen(S):
     import subprocess
     root = os.path.dirname(S)
     for cmd in REGEN:
+        if cmd[0].startswith('node:'):
+            r = subprocess.run([os.environ.get('KIVO_NODE', 'node'), cmd[0][5:]] + cmd[1:], cwd=root, capture_output=True, text=True, encoding='utf-8')
+            print(('  ✔ ' if r.returncode == 0 else '  ✘ ') + cmd[0][5:] + ' — ' + (r.stdout.strip().split('\n') or [''])[-1][:150])
+            if r.returncode: print(r.stderr[-400:]); return 1
+            continue
         keep = os.path.join(root, KEEP_EOL[cmd[0]]) if cmd[0] in KEEP_EOL else None
         crlf = bool(keep) and os.path.isfile(keep) and b'\r\n' in open(keep, 'rb').read()
         r = subprocess.run([sys.executable] + cmd, cwd=root, capture_output=True, text=True, encoding='utf-8')
@@ -164,7 +184,10 @@ def regen(S):
 
 def main(argv):
     S = os.path.abspath(argv[argv.index('--src') + 1]) if '--src' in argv else os.path.join(ROOT, 'src')
-    if '--regen' in argv: return regen(S)
+    if '--regen' in argv:
+        rc = regen(S)
+        if rc == 0: prune(S)
+        return rc
     systems = load(S)
     if '--list' in argv:
         print(json.dumps([{'key': d['key'], 'name': d.get('name'), 'requires': d.get('requires') or []} for d in systems], ensure_ascii=False)); return 0
