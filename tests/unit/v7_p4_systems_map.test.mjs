@@ -144,7 +144,7 @@ test('Q5 parity: a lens manifest declares exactly the panels pages.json makes co
   assert.deepEqual(J(STRUCT.find((c) => c.id === 'lenses').leaves).map((l) => [l.lens, l.ind]), LENSES.map((m) => [m.key, (m.resources || {}).indicators || []]));
 });
 
-test('A5 the panels of the map = refs = the panels of kpis/logic.js · the shown conditions = kpiPanelOk', needsSys('dstats', 'seized'), () => {
+test('A5 the panels of the map = refs = the panels of kpis/logic.js · the shown conditions = kpiPanelOk', needsSys('award', 'dstats', 'seized'), () => {
   const rows = mapRows('view').filter((r) => r.cls === 'panel');
   /* (1) one row per ref, and the KPIs page draws exactly those */
   const KL = rd('modules', 'kpis', 'logic.js');

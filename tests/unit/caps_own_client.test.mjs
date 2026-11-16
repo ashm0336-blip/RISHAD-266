@@ -77,7 +77,7 @@ async function ceiling(c, x) {
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + 'narrow then widen (pages · tabs · lenses) from the real client: stored sheets, lens lists, template ids and explicit grants stay byte-identical in D1', needs('irshad'), async () => {
+  test(M + 'narrow then widen (pages · tabs · lenses) from the real client: stored sheets, lens lists, template ids and explicit grants stay byte-identical in D1', needs('award', 'irshad'), async () => {
     const W = await scene(mode), k0 = keep(W);
     const c = await clientOf(W, 'su');
     try {
