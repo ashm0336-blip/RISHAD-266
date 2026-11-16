@@ -559,6 +559,22 @@
   "scope.items.award": {
    "order": 10,
    "file": "slots/scope.items.award.frag"
+  },
+  "approval.shape.award": {
+   "order": 10,
+   "file": "slots/approval.shape.award.frag"
+  },
+  "get.moved.awardPath": {
+   "order": 10,
+   "text": "'/api/award'"
+  },
+  "bk.labels": {
+   "order": 20,
+   "text": "awards: 'التكريم',"
+  },
+  "import.summary.award": {
+   "order": 10,
+   "text": "              impOn(\"award\") ? \"ترشيحات التميز\" : \"\",\n"
   }
  }
 }

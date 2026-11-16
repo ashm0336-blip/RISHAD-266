@@ -678,6 +678,14 @@
   "nf.labels.retro": {
    "order": 10,
    "text": "bassam_irshad_retro_v1: \"نافذة استدراك الاسترشاد\","
+  },
+  "retro.adapter.guard": {
+   "order": 10,
+   "text": "if(sys!=='irshad')"
+  },
+  "root.navPerm.irshad": {
+   "order": 10,
+   "text": " irshad: \"irshad\","
   }
  }
 }

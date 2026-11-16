@@ -629,6 +629,10 @@
   "nf.labels.retro": {
    "order": 20,
    "text": "bassam_seized_retro_v1: \"نافذة استدراك المضبوطات\","
+  },
+  "bk.labels": {
+   "order": 10,
+   "text": "seized: 'المضبوطات',"
   }
  }
 }

@@ -654,6 +654,18 @@
      "registry",
      {
       "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "bassam_employees_v1: حذف المحدد/الكل (شكل جماعي) — ويفتح awardCleanup/dreportCleanup حين يفرغ الموظفون"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
       "eq": "import.replace"
      },
      "guard",
@@ -662,6 +674,18 @@
     "after": 1,
     "seq": 0,
     "value": "bassam_award_v1"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "wipeAllowed → 'import' (كان admin/import:del) — تفريغ التقرير اليومي وسجلات الجائزة بشكلها القانوني فقط (dreportCleanup · awardCleanup)"
    },
    {
     "path": [
@@ -1360,7 +1384,10 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)"
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
+    "with": [
+     "dstats"
+    ]
    },
    {
     "path": [
@@ -1780,6 +1807,17 @@
      "type": "operation",
      "guardKind": "cap"
     }
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · award.recs [] · staffing)"
    },
    {
     "path": [

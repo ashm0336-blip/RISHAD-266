@@ -33,8 +33,7 @@ function pv4NoteUnknown(ST, A, d, dims) { if (!dims.length) return; var ak = pv4
 function permv4Sources(A) {
   var out = { haram: false, nabawi: false }, ds = @@SYS:permv4.sources.depts|empty="[]"@@, s, i;
   if (A.u.role === 'super') return { haram: true, nabawi: true };
-  for (s in out) for (i = 0; i < ds.length && !out[s]; i++) if ((myPermsOf(A, ds[i])['dstats/' + s] || []).length) out[s] = true;
-  return out;
+@@SYS:permv4.sources.held@@  return out;
 }
 /* D4‑04 (v24.5): سقفُ نطاق الإدارة الصريح لكل بُعد — لا سجلَّ سقفٍ في D1 اليوم (غيرُ مهاجر) ⇒ null ⇒ unknown:unmigrated-department-ceiling.
    هذه الدالّةُ هي نقطةُ الربط الوحيدة للترحيل اللاحق (ALL · قائمة · deny)؛ لا تقرأ شيئاً من العميل ولا تكتب شيئاً. gm: union سقوف إدارات فرعه · super: سقفُ الإدارة المستهدفة — كلاهما null حتى الترحيل. */

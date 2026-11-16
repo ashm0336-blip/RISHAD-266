@@ -55,12 +55,12 @@
   "DateRange": {
    "status": "as-is-ui-only",
    "confidence": "medium",
-   "evidence": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds/dreport/plan/staffing/tasks: أقفالٌ واجهية"
+   "evidence": "rounds/dreport/plan/staffing/tasks: أقفالٌ واجهية"
   },
   "Source": {
    "status": "as-is-enforced",
    "confidence": "high",
-   "evidence": "أوراقُ dstats/<site> للفاعل (dsHeld) = مصادرُه؛ المصدرُ من مفتاح الموقع في المورد"
+   "evidence": "أوراقُ الموقع للفاعل = مصادرُه؛ المصدرُ من مفتاح الموقع في المورد"
   },
   "Global": {
    "status": "n/a",
@@ -4672,7 +4672,7 @@
     "Shift": "no-shift-identity",
     "Assigned": "no-assignment-field",
     "DateRange": "no-period-identity",
-    "Source": "not-dstats"
+    "Source": "not-a-source-resource"
    }
   },
   "bassam_perms_v1": {
@@ -4691,7 +4691,7 @@
     "Assigned": "no-assignment-field",
     "Own": "no-owner-identity",
     "DateRange": "no-period-identity",
-    "Source": "not-dstats"
+    "Source": "not-a-source-resource"
    }
   },
   "bassam_notif_dev_v1": {
@@ -4729,7 +4729,7 @@
     "Assigned": "no-assignment-field",
     "Own": "no-owner-identity",
     "DateRange": "no-period-identity (reference/setting)",
-    "Source": "not-dstats"
+    "Source": "not-a-source-resource"
    }
   },
   "__virtual__": {
@@ -4748,7 +4748,7 @@
     "Shift": "no-shift-identity",
     "Assigned": "no-assignment-field",
     "DateRange": "no-period-identity",
-    "Source": "not-dstats"
+    "Source": "not-a-source-resource"
    }
   }
  },

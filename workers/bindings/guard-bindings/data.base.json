@@ -641,7 +641,7 @@
   },
   {
    "key": "emp.record.bulk.delete",
-   "res": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · award.recs [] · staffing)",
+   "res": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · staffing)",
    "where": "زوالُ ≥2 سجلٍّ في كتابةٍ واحدة أو القائمةُ تصير [] · والتنظيفاتُ المرافقة بسياق empsEmpty",
    "how": "عدُّ الكيانات الزائلة في الكتابة الواحدة",
    "asis": "emps/data:del (+ wipeAllowed→emps)",

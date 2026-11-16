@@ -216,6 +216,14 @@
   {
    "tpl": "workers/parts/040-employee-delete-cleanup.js.tpl",
    "out": "workers/parts/040-employee-delete-cleanup.js"
+  },
+  {
+   "tpl": "workers/parts/028-approval-shapes.js.tpl",
+   "out": "workers/parts/028-approval-shapes.js"
+  },
+  {
+   "tpl": "services/590-employees-import.js.tpl",
+   "out": "src/services/590-employees-import.js"
   }
  ]
 }

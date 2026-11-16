@@ -4597,7 +4597,7 @@
      "bassam_employees_v1",
      "bassam_options_v1"
     ],
-    "detail": "bassam_employees_v1: حذف المحدد/الكل (شكل جماعي) — ويفتح awardCleanup/dreportCleanup حين يفرغ الموظفون",
+    "detail": "bassam_employees_v1: حذف المحدد/الكل (شكل جماعي) — ويفتح dreportCleanup حين يفرغ الموظفون",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -6850,7 +6850,7 @@
     "resources": [
      "bassam_dreport_v1"
     ],
-    "detail": "wipeAllowed → 'import' (كان admin/import:del) — تفريغ التقرير اليومي وسجلات الجائزة بشكلها القانوني فقط (dreportCleanup · awardCleanup)",
+    "detail": "wipeAllowed → 'import' (كان admin/import:del) — تفريغ التقرير اليومي بشكله القانوني فقط (dreportCleanup)",
     "status": "exists"
    },
    "scopeDims": [

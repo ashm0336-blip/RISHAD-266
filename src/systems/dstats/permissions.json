@@ -1240,6 +1240,26 @@
   "scope-bindings": [
    {
     "path": [
+     "migration",
+     "DateRange",
+     "evidence"
+    ],
+    "set": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds/dreport/plan/staffing/tasks: أقفالٌ واجهية",
+    "with": [
+     "irshad",
+     "seized"
+    ]
+   },
+   {
+    "path": [
+     "migration",
+     "Source",
+     "evidence"
+    ],
+    "set": "أوراقُ dstats/<site> للفاعل (dsHeld) = مصادرُه؛ المصدرُ من مفتاح الموقع في المورد"
+   },
+   {
+    "path": [
      "bindings"
     ],
     "after": 0,
@@ -1600,6 +1620,42 @@
       "Own": "no-owner-identity"
      }
     }
+   },
+   {
+    "path": [
+     "byResource",
+     "bassam_auth_users_v1",
+     "na",
+     "Source"
+    ],
+    "set": "not-dstats"
+   },
+   {
+    "path": [
+     "byResource",
+     "bassam_perms_v1",
+     "na",
+     "Source"
+    ],
+    "set": "not-dstats"
+   },
+   {
+    "path": [
+     "byResource",
+     "__default__",
+     "na",
+     "Source"
+    ],
+    "set": "not-dstats"
+   },
+   {
+    "path": [
+     "byResource",
+     "__virtual__",
+     "na",
+     "Source"
+    ],
+    "set": "not-dstats"
    },
    {
     "path": [

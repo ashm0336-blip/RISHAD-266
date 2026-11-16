@@ -399,6 +399,14 @@
   "scope.source.basis.deny": {
    "order": 10,
    "text": "'as-is dstats/<site> sheets (dsHeld)'"
+  },
+  "permv4.sources.held": {
+   "order": 10,
+   "text": "  for (s in out) for (i = 0; i < ds.length && !out[s]; i++) if ((myPermsOf(A, ds[i])['dstats/' + s] || []).length) out[s] = true;\n"
+  },
+  "save.movedPath.dstats": {
+   "order": 10,
+   "text": "'/api/dstats'"
   }
  }
 }
