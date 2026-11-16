@@ -1,39 +1,39 @@
 {
- "total": 325,
+ "total": 256,
  "byRule": {
-  "eqeqeq": 240,
+  "eqeqeq": 174,
   "no-redeclare": 17,
-  "no-unused-vars": 68
+  "no-unused-vars": 65
  },
- "filesWithFindings": 26,
+ "filesWithFindings": 29,
  "top": [
   [
    "modules/plan/logic.js",
-   68
+   53
   ],
   [
    "modules/daily/logic.js",
-   61
-  ],
-  [
-   "modules/admin/logic.js",
-   46
+   50
   ],
   [
    "modules/dreport/logic.js",
    29
   ],
   [
+   "modules/admin/logic.js",
+   17
+  ],
+  [
    "modules/staff/logic.js",
-   18
+   15
   ],
   [
    "modules/employees/logic.js",
-   14
+   12
   ],
   [
    "modules/profile/logic.js",
-   13
+   12
   ],
   [
    "components/565-page-kit.js",
@@ -41,11 +41,11 @@
   ],
   [
    "modules/tasks/logic.js",
-   9
+   7
   ],
   [
    "core/050-dc-runtime.js",
-   7
+   6
   ]
  ]
 }
