@@ -625,6 +625,10 @@
   "scope.retroSys": {
    "order": 20,
    "text": "res === 'bassam_seized_v1' ? 'seized' : "
+  },
+  "nf.labels.retro": {
+   "order": 20,
+   "text": "bassam_seized_retro_v1: \"نافذة استدراك المضبوطات\","
   }
  }
 }

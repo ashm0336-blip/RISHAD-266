@@ -301,27 +301,7 @@ var KIVO_SCOPE = (function (S, R) {
     if (!items.length) items.push(it({ what: 'resource', kind: kindOf(a, b), id: 'custody', path: '*' }));
     return items;
   };
-  X.awardItems = function (a, b) {
-    var m = matchById(arr(obj(a).recs), arr(obj(b).recs), function (e) { return isObj(e) && e.id != null ? String(e.id) : null; }), items = [], i;
-    for (i = 0; i < m.added.length; i++) items.push(it({ what: 'nomination', kind: 'added', id: m.added[i].id, path: 'recs[' + m.added[i].id + ']', owner: pair(null, str(obj(m.added[i].b).ekey)) }));
-    for (i = 0; i < m.removed.length; i++) items.push(it({ what: 'nomination', kind: 'removed', id: m.removed[i].id, path: 'recs[' + m.removed[i].id + ']', owner: pair(str(obj(m.removed[i].a).ekey), null) }));
-    for (i = 0; i < m.changed.length; i++) items.push(it({ what: 'nomination', kind: 'changed', id: m.changed[i].id, path: 'recs[' + m.changed[i].id + ']', owner: pair(str(obj(m.changed[i].a).ekey), str(obj(m.changed[i].b).ekey)) }));
-    if (!items.length) items.push(it({ what: 'resource', kind: kindOf(a, b), id: 'award', path: '*' }));
-    return items;
-  };
-  X.dstatsItems = function (a, b, ctx) {
-    a = obj(a); b = obj(b); var items = [], i, q, T = ctx.today, sites = ['haram', 'nabawi'];
-    for (i = 0; i < sites.length; i++) {
-      var s = sites[i], x = obj(a[s]), y = obj(b[s]), ks = union(x, y);
-      for (q = 0; q < ks.length; q++) { var dk = ks[q]; if (deq(x[dk], y[dk])) continue; var dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dk), day = dm ? { y: +dm[1], m: +dm[2], d: +dm[3] } : null, locked = day ? (lockedIn(obj(a.locks)[s + '|' + day.y + '-' + day.m], day.y, day.m, day.d, T) && lockedIn(obj(b.locks)[s + '|' + day.y + '-' + day.m], day.y, day.m, day.d, T)) : false;
-        items.push(it({ what: 'dsDay', kind: kindOf(x[dk], y[dk]), id: s + '|' + dk, path: s + '[' + dk + ']', source: s, period: pair(day, day), lock: { locked: locked, why: locked ? 'dslock (locked before and after)' : 'open' } })); }
-    }
-    var la = obj(a.locks), lb = obj(b.locks), lk = union(la, lb);
-    for (q = 0; q < lk.length; q++) { if (deq(la[lk[q]], lb[lk[q]])) continue; var lm = /^(haram|nabawi)\|(\d{4})-(\d{1,2})$/.exec(lk[q]); items.push(it({ what: 'dsLock', kind: kindOf(la[lk[q]], lb[lk[q]]), id: lk[q], path: 'locks[' + lk[q] + ']', source: lm ? lm[1] : null, period: pair(lm ? { y: +lm[2], m: +lm[3], d: null } : null, lm ? { y: +lm[2], m: +lm[3], d: null } : null), lockOp: true })); }
-    if (!items.length) items.push(it({ what: 'resource', kind: kindOf(a, b), id: 'dstats', path: '*' }));
-    return items;
-  };
-  X.userItems = function (a, b) {
+@@SYS:scope.items.award@@@@SYS:scope.items.dstats@@  X.userItems = function (a, b) {
     /* الحساباتُ تُقرأ بلا بصمات (ph) وتُعاد بلا ph: الغائبُ يُورَث (قاعدةُ usersRule نفسُها) — فلا يُعدّ السجلُّ متغيّراً لمجرّد غياب ph */
     var la = arr(a), lb0 = arr(b), byId = {}, i, lb = [];
     for (i = 0; i < la.length; i++) if (isObj(la[i]) && la[i].id != null) byId[String(la[i].id)] = la[i];
@@ -444,7 +424,7 @@ var KIVO_SCOPE = (function (S, R) {
   D['Source'] = function (item, key, ctx) {
     if (!item.source) return na('not-a-source-record');
     var srcs = ctx.sources || {};
-    return srcs[item.source] ? allow('source-in-scope (' + item.source + ')', { basis: 'as-is dstats/<site> sheets (dsHeld)' }) : deny('cross-source (' + item.source + ')', { basis: 'as-is dstats/<site> sheets (dsHeld)' });
+    return srcs[item.source] ? @@SYS:scope.source.basis.allow|pre="allow('source-in-scope (' + item.source + ')', { basis: "|post=" })"|empty="allow('source-in-scope (' + item.source + ')', { basis: '' })"@@ : @@SYS:scope.source.basis.deny|pre="deny('cross-source (' + item.source + ')', { basis: "|post=" })"|empty="deny('cross-source (' + item.source + ')', { basis: '' })"@@;
   };
   D['Global'] = function () { return na('no-record-scope (Global) — لا يتجاوز الصلاحية ولا بوابة العدسة ولا الدور ولا السياسة الحسّاسة'); };
   /* ═══ الاستخراج ═══ */

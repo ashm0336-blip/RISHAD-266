@@ -387,6 +387,18 @@
   "scope.lock.design": {
    "order": 10,
    "text": "res === 'bassam_dstats_v1' ? ((ctx.actor && ctx.actor.role === 'super') ? 'D4-02' : '') : "
+  },
+  "scope.items.dstats": {
+   "order": 10,
+   "file": "slots/scope.items.dstats.frag"
+  },
+  "scope.source.basis.allow": {
+   "order": 10,
+   "text": "'as-is dstats/<site> sheets (dsHeld)'"
+  },
+  "scope.source.basis.deny": {
+   "order": 10,
+   "text": "'as-is dstats/<site> sheets (dsHeld)'"
   }
  }
 }

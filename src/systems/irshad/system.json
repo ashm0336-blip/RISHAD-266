@@ -674,6 +674,10 @@
   "scope.retroSys.close": {
    "order": 10,
    "text": ")"
+  },
+  "nf.labels.retro": {
+   "order": 10,
+   "text": "bassam_irshad_retro_v1: \"نافذة استدراك الاسترشاد\","
   }
  }
 }

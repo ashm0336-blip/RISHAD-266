@@ -208,6 +208,14 @@
   {
    "tpl": "workers/bindings/scope-bindings/engine.js.tpl",
    "out": "workers/bindings/scope-bindings/engine.js"
+  },
+  {
+   "tpl": "workers/parts/038-domain-cleanups.js.tpl",
+   "out": "workers/parts/038-domain-cleanups.js"
+  },
+  {
+   "tpl": "workers/parts/040-employee-delete-cleanup.js.tpl",
+   "out": "workers/parts/040-employee-delete-cleanup.js"
   }
  ]
 }
