@@ -939,6 +939,563 @@
     "seq": 16,
     "value": "ff.module.award.enabled"
    }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 22,
+    "value": {
+     "key": "award.new.view",
+     "owner": "award/new",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 23,
+    "value": {
+     "key": "award.new.create",
+     "owner": "award/new",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 24,
+    "value": {
+     "key": "award.res.view",
+     "owner": "award/res",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Own": [
+       "nomineeSelf"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 25,
+    "value": {
+     "key": "award.res.edit",
+     "owner": "award/res",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Own": [
+       "nomineeSelf"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 26,
+    "value": {
+     "key": "award.res.approve",
+     "owner": "award/res",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Own": [
+       "nomineeSelf"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 27,
+    "value": {
+     "key": "award.res.reject",
+     "owner": "award/res",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Own": [
+       "nomineeSelf"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 28,
+    "value": {
+     "key": "award.res.delete",
+     "owner": "award/res",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Own": [
+       "nomineeSelf"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 29,
+    "value": {
+     "key": "award.doc.view",
+     "owner": "award/doc",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_award_docs_v1",
+     "resources": [
+      "bassam_award_docs_v1",
+      "bassam_award_docs_v2"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 30,
+    "value": {
+     "key": "award.doc.create",
+     "owner": "award/doc",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_award_docs_v1",
+     "resources": [
+      "bassam_award_docs_v1",
+      "bassam_award_docs_v2"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 31,
+    "value": {
+     "key": "award.doc.edit",
+     "owner": "award/doc",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_award_docs_v1",
+     "resources": [
+      "bassam_award_docs_v1",
+      "bassam_award_docs_v2"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 32,
+    "value": {
+     "key": "award.doc.delete",
+     "owner": "award/doc",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_award_docs_v1",
+     "resources": [
+      "bassam_award_docs_v1",
+      "bassam_award_docs_v2"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 63,
+    "value": {
+     "key": "award.doc.reset",
+     "owner": "award/doc",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_award_docs_v1",
+     "resources": [
+      "bassam_award_docs_v1",
+      "bassam_award_docs_v2"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "byResource"
+    ],
+    "key": "bassam_award_v1",
+    "after": 8,
+    "seq": 2,
+    "value": {
+     "items": "awardItems",
+     "evidence": "recs[id].ekey (المرشَّح) · st",
+     "lock": "",
+     "dims": {
+      "Department": "keyDept",
+      "Branch": "branchCeiling",
+      "Own": "nomineeSelf"
+     },
+     "na": {
+      "Site": "no-site-identity",
+      "Zone/Element": "no-element-identity",
+      "Shift": "no-shift-identity",
+      "Assigned": "no-assignment-field",
+      "DateRange": "no-period-identity",
+      "Source": "department-resource",
+      "Global": "no-record-scope"
+     }
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_award_v1",
+    "after": 39,
+    "seq": 9,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "award.res.view",
+      "award.new.view",
+      "emp.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "award/res:view",
+       "key": "award.res.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "award/new:view",
+       "key": "award.new.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "emps/data:view",
+       "key": "emp.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_award_docs_v1",
+    "after": 39,
+    "seq": 10,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "award.doc.view",
+      "award.res.view",
+      "award.new.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "award/doc:view",
+       "key": "award.doc.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "award/res:view",
+       "key": "award.res.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "award/new:view",
+       "key": "award.new.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_award_docs_v2",
+    "after": 39,
+    "seq": 11,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "award.doc.view",
+      "award.res.view",
+      "award.new.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "award/doc:view",
+       "key": "award.doc.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "award/res:view",
+       "key": "award.res.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "award/new:view",
+       "key": "award.new.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 10,
+    "seq": 4,
+    "value": {
+     "key": "award.res.approve",
+     "res": "bassam_award_v1",
+     "where": "recs[id].st → «معتمد» (من «قيد التحكيم» أو «مستبعد»)",
+     "how": "انتقالُ الحالة على ترشيحٍ قائم (awSetStatus)",
+     "asis": "award/res:approve",
+     "decl": "v24.3 (F-09): award.res.reopen محجوزٌ بقاعدة رفض — الانتقالُ العائد إلى «قيد التحكيم» يُحصى __unmapped (محجوز) ولا يُصدر المفتاحَ المحجوز؛ المصدر لا يكتب stWhy/stAt/stBy (متطلب TO-BE باقٍ)",
+     "dup": "",
+     "owner": "award/res",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 10,
+    "seq": 5,
+    "value": {
+     "key": "award.res.reject",
+     "res": "bassam_award_v1",
+     "where": "recs[id].st → «مستبعد» (من «قيد التحكيم» أو «معتمد»)",
+     "how": "انتقالُ الحالة؛ سببُ الرفض (stWhy) متطلبُ TO-BE — يُحصى غيابُه ظلّياً ولا يُرفض",
+     "asis": "award/res:approve",
+     "decl": "",
+     "dup": "",
+     "owner": "award/res",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 54,
+    "seq": 8,
+    "value": {
+     "key": "award.doc.reset",
+     "res": "bassam_award_docs_v2",
+     "where": "استبدالُ مجموعةٍ كاملة (A|B|C): title+lead+foot+secs تتغيّر معاً أو يتغيّر طولُ secs مع ≥½ أقسامها",
+     "how": "شكلُ الاستبدال الكامل للمجموعة (awSetReset يستبدل المجموعةَ المختارة بالأصل)",
+     "asis": "award/doc:del",
+     "decl": "نصُّ v24.2: استبدالٌ كامل للمورد؛ المصدرُ يستبدل مجموعةً واحدة. الخادمُ لا يعرف النصَّ الأصلي فالاستدلالُ بالشكل",
+     "dup": "",
+     "owner": "award/doc",
+     "type": "operation",
+     "guardKind": "cap"
+    }
+   },
+   {
+    "path": [
+     "decisions"
+    ],
+    "after": 12,
+    "seq": 0,
+    "value": {
+     "id": "D-13",
+     "topic": "award.doc.reset",
+     "status": "معلَن (باقٍ)",
+     "text": "يستبدل مجموعةً واحدة (A|B|C)؛ الخادمُ لا يعرف النصَّ الأصلي → استدلالٌ بشكل الاستبدال الكامل للمجموعة."
+    }
+   }
+  ],
+  "build-bindings": [
+   {
+    "path": [
+     "importRes"
+    ],
+    "after": 8,
+    "seq": 0,
+    "value": "bassam_award_v1"
+   }
   ]
  }
 }

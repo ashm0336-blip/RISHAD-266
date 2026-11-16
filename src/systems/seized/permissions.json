@@ -1578,6 +1578,1261 @@
     "seq": 15,
     "value": "ff.module.seized.enabled"
    }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 17,
+    "value": {
+     "key": "sz.dash.view",
+     "owner": "seized/dash",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_seized_v1",
+     "resources": [
+      "bassam_seized_v1",
+      "bassam_seized_cat_v1",
+      "bassam_seized_acts_v1",
+      "bassam_seized_locs_v1",
+      "bassam_seized_jew_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-field (seized)"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 18,
+    "value": {
+     "key": "sz.rec.view",
+     "owner": "seized/records",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_seized_v1",
+     "resources": [
+      "bassam_seized_v1",
+      "bassam_seized_cat_v1",
+      "bassam_seized_acts_v1",
+      "bassam_seized_locs_v1",
+      "bassam_seized_jew_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 19,
+    "value": {
+     "key": "sz.rec.create",
+     "owner": "seized/records",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_seized_v1",
+     "resources": [
+      "bassam_seized_v1",
+      "bassam_seized_cat_v1",
+      "bassam_seized_acts_v1",
+      "bassam_seized_locs_v1",
+      "bassam_seized_jew_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 20,
+    "value": {
+     "key": "sz.rec.edit",
+     "owner": "seized/records",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_seized_v1",
+     "resources": [
+      "bassam_seized_v1",
+      "bassam_seized_cat_v1",
+      "bassam_seized_acts_v1",
+      "bassam_seized_locs_v1",
+      "bassam_seized_jew_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 21,
+    "value": {
+     "key": "sz.rec.delete",
+     "owner": "seized/records",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_seized_v1",
+     "resources": [
+      "bassam_seized_v1",
+      "bassam_seized_cat_v1",
+      "bassam_seized_acts_v1",
+      "bassam_seized_locs_v1",
+      "bassam_seized_jew_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 42,
+    "value": {
+     "key": "ref.seized.location.view",
+     "owner": "seized/records",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_seized_locs_v1",
+     "resources": [
+      "bassam_seized_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 43,
+    "value": {
+     "key": "ref.seized.location.create",
+     "owner": "seized/records",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_seized_locs_v1",
+     "resources": [
+      "bassam_seized_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 44,
+    "value": {
+     "key": "ref.seized.location.edit",
+     "owner": "seized/records",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_seized_locs_v1",
+     "resources": [
+      "bassam_seized_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 45,
+    "value": {
+     "key": "ref.seized.location.delete",
+     "owner": "seized/records",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_seized_locs_v1",
+     "resources": [
+      "bassam_seized_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 46,
+    "value": {
+     "key": "ref.seized.category.view",
+     "owner": "seized/records",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_seized_cat_v1",
+     "resources": [
+      "bassam_seized_cat_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 47,
+    "value": {
+     "key": "ref.seized.category.create",
+     "owner": "seized/records",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_seized_cat_v1",
+     "resources": [
+      "bassam_seized_cat_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 48,
+    "value": {
+     "key": "ref.seized.category.edit",
+     "owner": "seized/records",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_seized_cat_v1",
+     "resources": [
+      "bassam_seized_cat_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 49,
+    "value": {
+     "key": "ref.seized.category.delete",
+     "owner": "seized/records",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_seized_cat_v1",
+     "resources": [
+      "bassam_seized_cat_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 50,
+    "value": {
+     "key": "ref.seized.item.view",
+     "owner": "seized/records",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_seized_cat_v1",
+     "resources": [
+      "bassam_seized_cat_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 51,
+    "value": {
+     "key": "ref.seized.item.create",
+     "owner": "seized/records",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_seized_cat_v1",
+     "resources": [
+      "bassam_seized_cat_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 52,
+    "value": {
+     "key": "ref.seized.item.edit",
+     "owner": "seized/records",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_seized_cat_v1",
+     "resources": [
+      "bassam_seized_cat_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 53,
+    "value": {
+     "key": "ref.seized.item.delete",
+     "owner": "seized/records",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_seized_cat_v1",
+     "resources": [
+      "bassam_seized_cat_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 54,
+    "value": {
+     "key": "ref.seized.kind.view",
+     "owner": "seized/records",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_seized_jew_v1",
+     "resources": [
+      "bassam_seized_jew_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 55,
+    "value": {
+     "key": "ref.seized.kind.create",
+     "owner": "seized/records",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_seized_jew_v1",
+     "resources": [
+      "bassam_seized_jew_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 56,
+    "value": {
+     "key": "ref.seized.kind.edit",
+     "owner": "seized/records",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_seized_jew_v1",
+     "resources": [
+      "bassam_seized_jew_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 57,
+    "value": {
+     "key": "ref.seized.kind.delete",
+     "owner": "seized/records",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_seized_jew_v1",
+     "resources": [
+      "bassam_seized_jew_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 58,
+    "value": {
+     "key": "ref.seized.action.view",
+     "owner": "seized/records",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_seized_acts_v1",
+     "resources": [
+      "bassam_seized_acts_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 59,
+    "value": {
+     "key": "ref.seized.action.create",
+     "owner": "seized/records",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_seized_acts_v1",
+     "resources": [
+      "bassam_seized_acts_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 60,
+    "value": {
+     "key": "ref.seized.action.edit",
+     "owner": "seized/records",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_seized_acts_v1",
+     "resources": [
+      "bassam_seized_acts_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 61,
+    "value": {
+     "key": "ref.seized.action.delete",
+     "owner": "seized/records",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_seized_acts_v1",
+     "resources": [
+      "bassam_seized_acts_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 62,
+    "value": {
+     "key": "sz.rec.bulk.delete",
+     "owner": "seized/records",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_seized_v1",
+     "resources": [
+      "bassam_seized_v1",
+      "bassam_seized_cat_v1",
+      "bassam_seized_acts_v1",
+      "bassam_seized_locs_v1",
+      "bassam_seized_jew_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 147,
+    "seq": 65,
+    "value": {
+     "key": "sz.rec.retro.open",
+     "owner": "seized/records",
+     "type": "decision",
+     "g": "to-build",
+     "res": "bassam_seized_v1",
+     "resources": [
+      "bassam_seized_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "byResource"
+    ],
+    "key": "bassam_seized_v1",
+    "after": 6,
+    "seq": 1,
+    "value": {
+     "items": "reportItems",
+     "evidence": "reports[id].{y,m,d} · loc (ref.seized.location) · G‑08 + نوافذُ الاستدراك المستقلة (D3‑07)",
+     "lock": "seized: G‑08 ∧ bassam_seized_retro_v1 — D3‑07",
+     "dims": {
+      "Department": "keyDept",
+      "Branch": "branchCeiling",
+      "Site": "recordLoc",
+      "DateRange": "periodLock"
+     },
+     "na": {
+      "Zone/Element": "no-element-identity",
+      "Shift": "no-shift-field (seized)",
+      "Assigned": "no-assignment-field",
+      "Own": "no-owner-identity",
+      "Source": "department-resource",
+      "Global": "no-record-scope"
+     }
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_seized_v1",
+    "after": 39,
+    "seq": 4,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "sz.rec.view",
+      "sz.dash.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "seized/records:view",
+       "key": "sz.rec.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "seized/dash:view",
+       "key": "sz.dash.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_seized_cat_v1",
+    "after": 39,
+    "seq": 5,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "sz.rec.view",
+      "ref.seized.category.view",
+      "ref.seized.item.view",
+      "sz.dash.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "seized/records:view",
+       "key": "sz.rec.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "seized/records:view",
+       "key": "ref.seized.category.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "seized/records:view",
+       "key": "ref.seized.item.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "seized/dash:view",
+       "key": "sz.dash.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_seized_acts_v1",
+    "after": 39,
+    "seq": 6,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "sz.rec.view",
+      "ref.seized.action.view",
+      "sz.dash.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "seized/records:view",
+       "key": "sz.rec.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "seized/records:view",
+       "key": "ref.seized.action.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "seized/dash:view",
+       "key": "sz.dash.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_seized_locs_v1",
+    "after": 39,
+    "seq": 7,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "sz.rec.view",
+      "ref.seized.location.view",
+      "sz.dash.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "seized/records:view",
+       "key": "sz.rec.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "seized/records:view",
+       "key": "ref.seized.location.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "seized/dash:view",
+       "key": "sz.dash.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_seized_jew_v1",
+    "after": 39,
+    "seq": 8,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "sz.rec.view",
+      "ref.seized.kind.view",
+      "sz.dash.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "seized/records:view",
+       "key": "sz.rec.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "seized/records:view",
+       "key": "ref.seized.kind.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "seized/dash:view",
+       "key": "sz.dash.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_perm_seized_cap_v1",
+    "after": 47,
+    "seq": 13,
+    "value": {
+     "scope": "global",
+     "cls": "intentionally no-read-key / session-global",
+     "keys": [],
+     "routes": [],
+     "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_seized_retro_v1",
+    "after": 52,
+    "seq": 15,
+    "value": {
+     "scope": "dept-state",
+     "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+     "keys": [],
+     "routes": [],
+     "note": "حالةُ نوافذ استدراك المضبوطات (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات المضبوطات) — لا مفتاحَ قراءةٍ مستقلاً"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "noReadKey"
+    ],
+    "key": "bassam_perm_seized_cap_v1",
+    "after": 12,
+    "seq": 1,
+    "value": {
+     "cls": "intentionally no-read-key / session-global",
+     "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "noReadKey"
+    ],
+    "key": "bassam_seized_retro_v1",
+    "after": 14,
+    "seq": 3,
+    "value": {
+     "state": "RETRO.seized.state",
+     "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+     "note": "حالةُ نوافذ استدراك المضبوطات (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات المضبوطات) — لا مفتاحَ قراءةٍ مستقلاً"
+    }
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 54,
+    "seq": 7,
+    "value": {
+     "key": "sz.rec.bulk.delete",
+     "res": "bassam_seized_v1",
+     "where": "زوالُ ≥2 محضرٍ من reports[] في كتابةٍ واحدة",
+     "how": "عدُّ المحاضر الزائلة",
+     "asis": "seized/records:del",
+     "decl": "العتبة: 2+ = جماعي",
+     "dup": "",
+     "owner": "seized/records",
+     "type": "operation",
+     "guardKind": "cap"
+    }
+   }
+  ],
+  "build-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 1,
+    "value": {
+     "key": "sz.rec.retro.open",
+     "group": "E — retro (seized)",
+     "mechanism": "نموذجُ الاسترشاد نفسُه على المضبوطات بحالةٍ مستقلة bsdept:<d>:bassam_seized_retro_v1 ومالكٍ ومفتاحٍ مستقلَّين (sz.rec.retro.open ⇐ seized/records:approve) — لا تشارُكَ لحالة الاستدراك بين النظامين",
+     "inputs": "كما الاسترشاد على bassam_seized_v1",
+     "shadow_rule": "كما الاسترشاد — عدّاداتٌ مستقلة PERMV3.retro.seized",
+     "asis_today": "كما الاسترشاد (الصفحة Seized: نقرةٌ مزدوجة لحامل approve تفتح الشهر/اليوم واجهياً)",
+     "expected_mismatch": "كما الاسترشاد",
+     "impl": [
+      "retroClosed",
+      "retroCover",
+      "retroDates"
+     ],
+     "tests": [
+      "p3build.mjs",
+      "p3shadow.mjs (الحالاتُ الخمس على المضبوطات مستقلةً عن الاسترشاد)"
+     ],
+     "api": "GET/POST /api/retro (res=seized)",
+     "status": "built-shadow",
+     "owner": "seized/records",
+     "label": "فتح شهر/يوم مقفل للاستدراك",
+     "guardKind": "rule-new",
+     "guardStatus": "to-build",
+     "asisMap": [
+      "seized/records:approve"
+     ],
+     "sensitive": true
+    }
+   }
   ]
  }
 }

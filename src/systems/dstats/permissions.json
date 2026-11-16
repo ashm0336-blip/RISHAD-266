@@ -1236,6 +1236,519 @@
     "seq": 13,
     "value": "ff.module.dstats.enabled"
    }
-  ]
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 0,
+    "value": {
+     "key": "dstats.haram.view",
+     "owner": "dstats/haram",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "key": "dstats.haram.entry",
+     "owner": "dstats/haram",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": {
+     "key": "dstats.haram.approve",
+     "owner": "dstats/haram",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 3,
+    "value": {
+     "key": "dstats.haram.reopen",
+     "owner": "dstats/haram",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 4,
+    "value": {
+     "key": "dstats.nabawi.view",
+     "owner": "dstats/nabawi",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 5,
+    "value": {
+     "key": "dstats.nabawi.entry",
+     "owner": "dstats/nabawi",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 6,
+    "value": {
+     "key": "dstats.nabawi.approve",
+     "owner": "dstats/nabawi",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 7,
+    "value": {
+     "key": "dstats.nabawi.reopen",
+     "owner": "dstats/nabawi",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 8,
+    "value": {
+     "key": "dstats.anHaram.view",
+     "owner": "dstats/anHaram",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 9,
+    "value": {
+     "key": "dstats.anNabawi.view",
+     "owner": "dstats/anNabawi",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": {
+     "key": "dstats.anCmp.view",
+     "owner": "dstats/anCmp",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 11,
+    "value": {
+     "key": "dstats.anTime.view",
+     "owner": "dstats/anTime",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_dstats_v1",
+     "resources": [
+      "bassam_dstats_v1"
+     ],
+     "dims": {
+      "Source": [
+       "dstatsSite"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Global": [
+       "globalScope"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "byResource"
+    ],
+    "key": "bassam_dstats_v1",
+    "after": 8,
+    "seq": 3,
+    "value": {
+     "items": "dstatsItems",
+     "evidence": "haram|nabawi[\"yyyy-mm-dd\"] · locks[\"site|y-m\"] (dsLockedIn)",
+     "lock": "dstats: dsLockedIn على الأقفال قبل الحفظ وبعده — الخادمُ يفرضه اليوم (dslock)",
+     "dims": {
+      "DateRange": "periodLock",
+      "Source": "dstatsSite",
+      "Global": "globalScope"
+     },
+     "na": {
+      "Department": "global-resource (dstats)",
+      "Branch": "global-resource (dstats)",
+      "Site": "no-site-identity (المصدرُ بُعدٌ مستقل)",
+      "Zone/Element": "no-element-identity",
+      "Shift": "no-shift-identity",
+      "Assigned": "no-assignment-field",
+      "Own": "no-owner-identity"
+     }
+    }
+   },
+   {
+    "path": [
+     "conflicts"
+    ],
+    "after": 0,
+    "seq": 0,
+    "value": {
+     "id": "AC‑01",
+     "title": "super ↔ DateRange على bassam_dstats_v1",
+     "text": "Phase 4: AS‑IS يتجاوز dstatsRule لمدير النظام (scope global) فيكتب يوماً مقفلاً بينما v24.4 يجعل DateRange بُعداً لمفاتيح dstats.* — أُعلن expected:AC‑01.",
+     "status": "resolved",
+     "decision": "D4‑02",
+     "resolution": "Global لا يعني تجاوز DateRange: مديرُ النظام لا يكتب بصمت على يوم/شهر إحصائي مقفل؛ dstats.*.reopen أولاً (Sensitive Action · Audit مستقل · Reason حيث يطلبه السجل). الظلُّ يرفض ويصنّف expected:D4-02 super∧dslock (shadow deny until reopen) — لا تغييرَ في السلوك الحالي."
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_dstats_v1",
+    "after": 5,
+    "seq": 0,
+    "value": {
+     "scope": "global",
+     "cls": "explicit read permission",
+     "keys": [
+      "dstats.haram.view",
+      "dstats.nabawi.view",
+      "dstats.anHaram.view",
+      "dstats.anNabawi.view",
+      "dstats.anCmp.view",
+      "dstats.anTime.view"
+     ],
+     "routes": [
+      {
+       "cap": "dstats/haram:view",
+       "key": "dstats.haram.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dstats/nabawi:view",
+       "key": "dstats.nabawi.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dstats/anHaram:view",
+       "key": "dstats.anHaram.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dstats/anNabawi:view",
+       "key": "dstats.anNabawi.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dstats/anCmp:view",
+       "key": "dstats.anCmp.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dstats/anTime:view",
+       "key": "dstats.anTime.view",
+       "source": "explicit-read"
+      }
+     ],
+     "note": "canRead0: dsHeld(DS_READ, view) — أوراقُ dstats/<site> (R181)"
+    }
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 0,
+    "value": {
+     "key": "dstats.haram.approve",
+     "res": "bassam_dstats_v1",
+     "where": "locks[\"haram|y-m\"]: ap يظهر · أو القيمة true · أو mo يزول · أو dshut[d] يظهر · أو dopen[d] يزول",
+     "how": "اتجاه الإغلاق على سجل قفل الشهر (dsLockRec): كلُّ تغيّرٍ يزيد القفلَ = approve",
+     "asis": "dstats/haram:approve (dstatsRule: need.approve)",
+     "decl": "",
+     "dup": "",
+     "owner": "dstats/haram",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "key": "dstats.haram.reopen",
+     "res": "bassam_dstats_v1",
+     "where": "locks[\"haram|y-m\"]: ap يزول · أو mo يظهر · أو dopen[d] يظهر · أو dshut[d] يزول",
+     "how": "اتجاه الفتح على سجل قفل الشهر: كلُّ تغيّرٍ يُنقص القفلَ = reopen",
+     "asis": "dstats/haram:approve (مفتاحٌ واحدٌ للاتجاهَين)",
+     "decl": "",
+     "dup": "",
+     "owner": "dstats/haram",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": {
+     "key": "dstats.nabawi.approve",
+     "res": "bassam_dstats_v1",
+     "where": "locks[\"nabawi|y-m\"]: ap يظهر · أو القيمة true · أو mo يزول · أو dshut[d] يظهر · أو dopen[d] يزول",
+     "how": "اتجاه الإغلاق على سجل قفل الشهر (dsLockRec): كلُّ تغيّرٍ يزيد القفلَ = approve",
+     "asis": "dstats/nabawi:approve (dstatsRule: need.approve)",
+     "decl": "",
+     "dup": "",
+     "owner": "dstats/nabawi",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 3,
+    "value": {
+     "key": "dstats.nabawi.reopen",
+     "res": "bassam_dstats_v1",
+     "where": "locks[\"nabawi|y-m\"]: ap يزول · أو mo يظهر · أو dopen[d] يظهر · أو dshut[d] يزول",
+     "how": "اتجاه الفتح على سجل قفل الشهر: كلُّ تغيّرٍ يُنقص القفلَ = reopen",
+     "asis": "dstats/nabawi:approve (مفتاحٌ واحدٌ للاتجاهَين)",
+     "decl": "",
+     "dup": "",
+     "owner": "dstats/nabawi",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   }
+  ],
+  "build-bindings": []
  }
 }

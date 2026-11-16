@@ -10,6 +10,7 @@
      migrations/NNNN_<name>.sql (KIVO_249)                                     → workers/parts/051a-schema-migrations.js (KIVO_MIGRATIONS · KIVO_SCHEMA_VERSION)  (AUD-022 · ADR-011)
      schemas/api/bodies.schema.json                                         → workers/parts/051b-body-schemas.js (KIVO_BODY_SCHEMAS)
      services/332-find-day.js (pure marked search block)                    → workers/parts/018a-find-engine.js (KIVO_FIND)
+     ../workers/bindings/<name>/data.base.json + systems/<key>/permissions.json (V7 · د3) → ../workers/bindings/<name>/data.json (النطاق · الحراسة · البناء: القاعدة + الأنظمة الحاضرة)
      ../workers/bindings/<name>/{data.json,engine.js} + targets.json (V7 · الحزمة ج) → workers/parts/006 · 008 · 010 · 014 (الوحداتُ المرجعية v24.9)
      plugins/lenses/<key>/manifest.json (KIVO_259)                              → KIVO_MANIFEST.lenses (الواجهة) · workers/parts/006a-lens-plugins.js (KIVO_LENS_PLUGINS)  (AUD-030 · ADR-018)
    الترتيبُ مهم: السجلُّ قبل الضمّ لأن جزءَ الخادم 004 مشتقٌّ هو نفسُه."""

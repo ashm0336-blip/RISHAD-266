@@ -1028,6 +1028,809 @@
     "seq": 14,
     "value": "ff.module.irshad.enabled"
    }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 12,
+    "value": {
+     "key": "ir.dash.view",
+     "owner": "irshad/dash",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_irshad_v1",
+     "resources": [
+      "bassam_irshad_v1",
+      "bassam_irshad_langs_v1",
+      "bassam_irshad_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "recordShift"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 13,
+    "value": {
+     "key": "ir.rec.view",
+     "owner": "irshad/records",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_irshad_v1",
+     "resources": [
+      "bassam_irshad_v1",
+      "bassam_irshad_langs_v1",
+      "bassam_irshad_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "recordShift"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 14,
+    "value": {
+     "key": "ir.rec.create",
+     "owner": "irshad/records",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_irshad_v1",
+     "resources": [
+      "bassam_irshad_v1",
+      "bassam_irshad_langs_v1",
+      "bassam_irshad_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "recordShift"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 15,
+    "value": {
+     "key": "ir.rec.edit",
+     "owner": "irshad/records",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_irshad_v1",
+     "resources": [
+      "bassam_irshad_v1",
+      "bassam_irshad_langs_v1",
+      "bassam_irshad_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "recordShift"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 16,
+    "value": {
+     "key": "ir.rec.delete",
+     "owner": "irshad/records",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_irshad_v1",
+     "resources": [
+      "bassam_irshad_v1",
+      "bassam_irshad_langs_v1",
+      "bassam_irshad_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "recordShift"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 33,
+    "value": {
+     "key": "ref.irshad.location.view",
+     "owner": "irshad/records",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_irshad_locs_v1",
+     "resources": [
+      "bassam_irshad_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 34,
+    "value": {
+     "key": "ref.irshad.location.create",
+     "owner": "irshad/records",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_irshad_locs_v1",
+     "resources": [
+      "bassam_irshad_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 35,
+    "value": {
+     "key": "ref.irshad.location.edit",
+     "owner": "irshad/records",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_irshad_locs_v1",
+     "resources": [
+      "bassam_irshad_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 36,
+    "value": {
+     "key": "ref.irshad.location.delete",
+     "owner": "irshad/records",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_irshad_locs_v1",
+     "resources": [
+      "bassam_irshad_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 37,
+    "value": {
+     "key": "ref.irshad.language.view",
+     "owner": "irshad/records",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_irshad_langs_v1",
+     "resources": [
+      "bassam_irshad_langs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 38,
+    "value": {
+     "key": "ref.irshad.language.create",
+     "owner": "irshad/records",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_irshad_langs_v1",
+     "resources": [
+      "bassam_irshad_langs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 39,
+    "value": {
+     "key": "ref.irshad.language.edit",
+     "owner": "irshad/records",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_irshad_langs_v1",
+     "resources": [
+      "bassam_irshad_langs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 40,
+    "value": {
+     "key": "ref.irshad.language.delete",
+     "owner": "irshad/records",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_irshad_langs_v1",
+     "resources": [
+      "bassam_irshad_langs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 41,
+    "value": {
+     "key": "ir.rec.bulk.delete",
+     "owner": "irshad/records",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_irshad_v1",
+     "resources": [
+      "bassam_irshad_v1",
+      "bassam_irshad_langs_v1",
+      "bassam_irshad_locs_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "recordShift"
+      ],
+      "Site": [
+       "recordLoc"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 147,
+    "seq": 64,
+    "value": {
+     "key": "ir.rec.retro.open",
+     "owner": "irshad/records",
+     "type": "decision",
+     "g": "to-build",
+     "res": "bassam_irshad_v1",
+     "resources": [
+      "bassam_irshad_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "byResource"
+    ],
+    "key": "bassam_irshad_v1",
+    "after": 6,
+    "seq": 0,
+    "value": {
+     "items": "reportItems",
+     "evidence": "reports[id].{y,m,d} · loc (ref.irshad.location) · shift · G‑08 + نوافذُ الاستدراك (D3‑07)",
+     "lock": "irshad: الفترةُ المغلقة (G‑08 على اليوم الهجري) ∧ نافذةُ استدراكٍ سارية (bassam_irshad_retro_v1) — D3‑07",
+     "dims": {
+      "Department": "keyDept",
+      "Branch": "branchCeiling",
+      "Site": "recordLoc",
+      "Shift": "recordShift",
+      "DateRange": "periodLock"
+     },
+     "na": {
+      "Zone/Element": "no-element-identity",
+      "Assigned": "no-assignment-field",
+      "Own": "no-owner-identity (eid = الموظف المرشد لا المالك)",
+      "Source": "department-resource",
+      "Global": "no-record-scope"
+     }
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_irshad_v1",
+    "after": 39,
+    "seq": 1,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "ir.rec.view",
+      "ir.dash.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "irshad/records:view",
+       "key": "ir.rec.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "irshad/dash:view",
+       "key": "ir.dash.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_irshad_langs_v1",
+    "after": 39,
+    "seq": 2,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "ir.rec.view",
+      "ref.irshad.language.view",
+      "ir.dash.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "irshad/records:view",
+       "key": "ir.rec.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "irshad/records:view",
+       "key": "ref.irshad.language.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "irshad/dash:view",
+       "key": "ir.dash.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_irshad_locs_v1",
+    "after": 39,
+    "seq": 3,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "ir.rec.view",
+      "ref.irshad.location.view",
+      "ir.dash.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "irshad/records:view",
+       "key": "ir.rec.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "irshad/records:view",
+       "key": "ref.irshad.location.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "irshad/dash:view",
+       "key": "ir.dash.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_perm_irshad_cap_v1",
+    "after": 47,
+    "seq": 12,
+    "value": {
+     "scope": "global",
+     "cls": "intentionally no-read-key / session-global",
+     "keys": [],
+     "routes": [],
+     "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_irshad_retro_v1",
+    "after": 52,
+    "seq": 14,
+    "value": {
+     "scope": "dept-state",
+     "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+     "keys": [],
+     "routes": [],
+     "note": "حالةُ نوافذ استدراك الاسترشاد (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات الاسترشاد) — لا مفتاحَ قراءةٍ مستقلاً"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "noReadKey"
+    ],
+    "key": "bassam_perm_irshad_cap_v1",
+    "after": 12,
+    "seq": 0,
+    "value": {
+     "cls": "intentionally no-read-key / session-global",
+     "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "noReadKey"
+    ],
+    "key": "bassam_irshad_retro_v1",
+    "after": 14,
+    "seq": 2,
+    "value": {
+     "state": "RETRO.irshad.state",
+     "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+     "note": "حالةُ نوافذ استدراك الاسترشاد (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات الاسترشاد) — لا مفتاحَ قراءةٍ مستقلاً"
+    }
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 54,
+    "seq": 6,
+    "value": {
+     "key": "ir.rec.bulk.delete",
+     "res": "bassam_irshad_v1",
+     "where": "زوالُ ≥2 تقريرٍ من reports[] في كتابةٍ واحدة (تقارير شهر y/m)",
+     "how": "عدُّ التقارير الزائلة",
+     "asis": "irshad/records:del",
+     "decl": "العتبة: 2+ = جماعي",
+     "dup": "",
+     "owner": "irshad/records",
+     "type": "operation",
+     "guardKind": "cap"
+    }
+   }
+  ],
+  "build-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 0,
+    "value": {
+     "key": "ir.rec.retro.open",
+     "group": "D — retro (irshad)",
+     "mechanism": "حالةٌ خادمية لفترة الاستدراك: bsdept:<d>:bassam_irshad_retro_v1 = { windows: [{ id, scope:{y,m,d|null}, by, at, until, hours, reason, closedAt }] } تُفتح وتُغلق عبر POST /api/retro (نطاقٌ محدَّد: شهرٌ أو يومٌ منقضٍ · زمنٌ محدود ≤ 72 ساعة · فاعلٌ مثبَت من الجلسة · سطرُ تدقيقٍ مستقل etype:\"retro\") — لا فتحَ دائماً ولا عامّاً",
+     "inputs": "اليومُ الهجري للخادم (dsToday — أمُّ القرى/الرياض) · تواريخُ السجلات المتأثرة (y·m·d للمضاف/المعدَّل/المحذوف) · نوافذُ الإدارة · حكمُ canWrite · قرارُ ir.rec.retro.open (⇐ irshad/records:approve) لطلب الفتح",
+     "shadow_rule": "كتابةٌ تمسّ سجلاً بتاريخٍ في فترةٍ مغلقة (شهرٌ منقضٍ · أو يومٌ منقضٍ من الشهر الجاري — قاعدةُ G‑08 نفسُها): نافذةٌ ساريةٌ تغطيه ⇒ wouldAllowRetro · نافذةٌ منتهية فقط ⇒ retroWindowExpired · لا نافذة ⇒ wouldBlock (ونافذةٌ لنطاقٍ/إدارةٍ أخرى لا تغطي)؛ طلبُ فتحٍ من غير حامل المفتاح ⇒ missingRetroPermission؛ الفترةُ المفتوحة ⇒ اتفاق",
+     "asis_today": "القفلُ حالةُ واجهةٍ فقط (irOpenMonths/irOpenDays بنقرةٍ مزدوجة لحامل approve — G‑08)؛ الخادمُ يقبل الكتابةَ بأي تاريخٍ لحامل add/edit/del",
+     "expected_mismatch": "AS‑IS يقبل والفترةُ مغلقةٌ بلا نافذةٍ سارية (wouldBlock أو retroWindowExpired) = «closed-period» (G‑08 واجهيّ) — متوقَّع؛ لا اتجاهَ آخر",
+     "impl": [
+      "retroClosed",
+      "retroCover",
+      "retroDates"
+     ],
+     "tests": [
+      "p3build.mjs (الوحدات)",
+      "p3shadow.mjs (فترةٌ مفتوحة · مغلقةٌ بلا نافذة · مغلقةٌ مع نافذة · نافذةٌ منتهية · إدارةٌ أخرى/نطاقٌ آخر · فتحٌ بلا صلاحية)"
+     ],
+     "api": "GET/POST /api/retro — الوصول: مدير النظام أو حاملُ irshad/records:approve في الإدارة (ذرّةُ G‑08 نفسُها ⇐ ترجمةُ ir.rec.retro.open)؛ ما سواه 403 (عمليةٌ جديدة لا حكمَ AS‑IS سابقاً لها)",
+     "status": "built-shadow",
+     "owner": "irshad/records",
+     "label": "فتح شهر/يوم مقفل للاستدراك",
+     "guardKind": "rule-new",
+     "guardStatus": "to-build",
+     "asisMap": [
+      "irshad/records:approve"
+     ],
+     "sensitive": true
+    }
+   }
   ]
  }
 }
