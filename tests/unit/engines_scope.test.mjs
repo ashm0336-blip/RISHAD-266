@@ -7,6 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { internals } from './internals.mjs';
+import { needs } from './harness.mjs';
 const W = await internals(['KIVO_SCOPE', 'KIVO_REGISTRY']);
 const S = W.KIVO_SCOPE, R = W.KIVO_REGISTRY, H = S._h, D = S._D;
 const T = { y: 1447, m: 5, d: 10 };
@@ -93,7 +94,7 @@ test('مستخرِجا الجدول الشهري والمهام: الأقفال 
   assert.deepEqual(ti.find(i => i.kind === 'changed').owner, { old: 'e1', new: 'e1' }); assert.equal(whats(ex('bassam_tasks_v1', ta, ta, {})), 'resource:changed');
   assert.equal(whats(ex('bassam_staffing_v3', {}, {}, {})), 'resource:changed');
 });
-test('المستخرِجاتُ الأخرى: الاسترشاد/المضبوطات · الموظفون · العهد · الجائزة · الإحصائيات · الحسابات (ph يُورَث) · الصلاحيات · الكلّ · مالكُ إشعار الجهاز', () => {
+test('المستخرِجاتُ الأخرى: الاسترشاد/المضبوطات · الموظفون · العهد · الجائزة · الإحصائيات · الحسابات (ph يُورَث) · الصلاحيات · الكلّ · مالكُ إشعار الجهاز', needs('award', 'dstats'), () => {
   const r = ex('bassam_irshad_v1', { reports: [{ id: 1, y: 1447, m: 5, d: 1, loc: 'A' }, { id: 2 }] }, { reports: [{ id: 1, y: 1447, m: 5, d: 2, loc: 'B' }, { id: 3, loc: 'C' }] });
   assert.equal(whats(r), 'record:added,record:changed,record:removed'); const rc = r.find(i => i.kind === 'changed'); assert.deepEqual(rc.site, { old: 'A', new: 'B' }); assert.equal(rc.period.old.d, 1);
   assert.equal(whats(ex('bassam_seized_v1', {}, {})), 'resource:changed');
@@ -140,7 +141,7 @@ test('مقيّمو الأبعاد (خارج الإنفاذ — القديم): De
   assert.equal(D.Global().r, 'not_applicable');
   assert.equal(S.isCeiling(null), false); assert.equal(S.isCeiling({ role: 'staff', ekey: 'mgr:x' }), true); assert.equal(S.isCeiling({ role: 'staff' }), false);
 });
-test('Assigned · Own · DateRange: التسكينُ (قراءة · إضافة · حذف · تغيير) · المهامُّ بالمالك · الملكيةُ وتغييرُها · الأقفالُ الزمنية ونافذةُ الاستدراك (لا تجاوزَ لمدير النظام)', () => {
+test('Assigned · Own · DateRange: التسكينُ (قراءة · إضافة · حذف · تغيير) · المهامُّ بالمالك · الملكيةُ وتغييرُها · الأقفالُ الزمنية ونافذةُ الاستدراك (لا تجاوزَ لمدير النظام)', needs('irshad'), () => {
   const c = (o) => Object.assign({ dept: 'd1', actor: { role: 'staff', ekey: 'e1', id: 'u1' } }, o || {});
   const em = (kind, o, n) => ({ kind, emp: { old: o, new: n } });
   assert.equal(D.Assigned(em('current', [], ['e1']), 'k', c()).r, 'allow'); assert.equal(D.Assigned(em('current', [], []), 'k', c()).r, 'deny');

@@ -205,7 +205,7 @@ test('legacy · DX-05 · سجلُّ المنح مجهولٌ في النظام ا
   assert.ok(!(await put(w, dm, 'bsdept:tst_d2:bassam_grants_v1', { v: 1, emp: { tst_e_emp2: { plus: [], minus: ['ir.rec.edit'] } } })).ok, 'المنح');
 });
 
-test('enforce · DX-05 · أولُ سجلّ منحٍ في وحدةٍ لا سجلَّ لها يُقبل بـ v:1 من مديرها — وما سوى v:1 لمدير النظام ', async () => {
+test('enforce · DX-05 · أولُ سجلّ منحٍ في وحدةٍ لا سجلَّ لها يُقبل بـ v:1 من مديرها — وما سوى v:1 لمدير النظام ', needs('irshad'), async () => {
   const w = await W('enforce'), dm2 = await w.as('dm2'), G = 'bsdept:tst_d2:bassam_grants_v1';
   assert.equal(stored(w.env, G), null, 'لا سجلَّ منحٍ في tst_d2');
   const e = { tst_e_emp2: { plus: [], minus: ['ir.rec.edit'], at: Date.now(), by: 'tst_dm2' } };
