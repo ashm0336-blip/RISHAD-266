@@ -204,6 +204,10 @@
   {
    "tpl": "workers/bindings/guard-bindings/engine.js.tpl",
    "out": "workers/bindings/guard-bindings/engine.js"
+  },
+  {
+   "tpl": "workers/bindings/scope-bindings/engine.js.tpl",
+   "out": "workers/bindings/scope-bindings/engine.js"
   }
  ]
 }

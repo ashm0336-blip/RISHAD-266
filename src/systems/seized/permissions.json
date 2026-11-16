@@ -2877,25 +2877,9 @@
      "readBindings",
      "byResource"
     ],
-    "key": "bassam_perm_seized_cap_v1",
-    "after": 47,
-    "seq": 13,
-    "value": {
-     "scope": "global",
-     "cls": "intentionally no-read-key / session-global",
-     "keys": [],
-     "routes": [],
-     "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource"
-    ],
     "key": "bassam_seized_retro_v1",
-    "after": 52,
-    "seq": 15,
+    "after": 54,
+    "seq": 13,
     "value": {
      "scope": "dept-state",
      "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
@@ -2909,22 +2893,9 @@
      "readBindings",
      "noReadKey"
     ],
-    "key": "bassam_perm_seized_cap_v1",
-    "after": 12,
-    "seq": 1,
-    "value": {
-     "cls": "intentionally no-read-key / session-global",
-     "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "noReadKey"
-    ],
     "key": "bassam_seized_retro_v1",
-    "after": 14,
-    "seq": 3,
+    "after": 16,
+    "seq": 1,
     "value": {
      "state": "RETRO.seized.state",
      "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",

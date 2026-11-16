@@ -523,6 +523,18 @@
   "guard.classify.award": {
    "order": 10,
    "file": "slots/guard.classify.award.frag"
+  },
+  "read.ops": {
+   "order": 30,
+   "text": ",'award/res','award/new','award/doc'"
+  },
+  "read.map.systems": {
+   "order": 30,
+   "text": "  /* ── جائزة التميز ── */\n  'bassam_award_v1':           ['award/res', 'award/new', 'emps/data'],\n  'bassam_award_docs_v1':      ['award/doc', 'award/res', 'award/new'],\n  'bassam_award_docs_v2':      ['award/doc', 'award/res', 'award/new'],\n"
+  },
+  "enf.refCrud.award": {
+   "order": 10,
+   "text": "    'bassam_award_docs_v1': crud('award.doc'),\n"
   }
  }
 }

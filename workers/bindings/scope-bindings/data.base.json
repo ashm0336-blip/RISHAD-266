@@ -6390,6 +6390,20 @@
     "routes": [],
     "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
    },
+   "bassam_perm_irshad_cap_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_seized_cap_v1": {
+    "scope": "global",
+    "cls": "intentionally no-read-key / session-global",
+    "keys": [],
+    "routes": [],
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
    "bassam_perm_leaf_v1": {
     "scope": "global",
     "cls": "intentionally no-read-key / session-global",
@@ -6529,6 +6543,14 @@
     "note": "طابعُ النسخة الشاملة — عامّ؛ الكتابةُ super (sys.backup.full)"
    },
    "bassam_perm_help_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_irshad_cap_v1": {
+    "cls": "intentionally no-read-key / session-global",
+    "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
+   },
+   "bassam_perm_seized_cap_v1": {
     "cls": "intentionally no-read-key / session-global",
     "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
    },

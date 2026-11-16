@@ -1860,25 +1860,9 @@
      "readBindings",
      "byResource"
     ],
-    "key": "bassam_perm_irshad_cap_v1",
-    "after": 47,
-    "seq": 12,
-    "value": {
-     "scope": "global",
-     "cls": "intentionally no-read-key / session-global",
-     "keys": [],
-     "routes": [],
-     "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource"
-    ],
     "key": "bassam_irshad_retro_v1",
-    "after": 52,
-    "seq": 14,
+    "after": 54,
+    "seq": 12,
     "value": {
      "scope": "dept-state",
      "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
@@ -1892,22 +1876,9 @@
      "readBindings",
      "noReadKey"
     ],
-    "key": "bassam_perm_irshad_cap_v1",
-    "after": 12,
-    "seq": 0,
-    "value": {
-     "cls": "intentionally no-read-key / session-global",
-     "note": "رايةُ ترحيلٍ لمرّة — عامّة؛ الكتابةُ super"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "noReadKey"
-    ],
     "key": "bassam_irshad_retro_v1",
-    "after": 14,
-    "seq": 2,
+    "after": 16,
+    "seq": 0,
     "value": {
      "state": "RETRO.irshad.state",
      "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",

@@ -38,11 +38,12 @@ function tokensOf(k) {
 const GT = { keys: new Set(), owners: new Set(), flags: new Set(), resources: new Set() };
 for (const k of GONE) { const t = tokensOf(k); for (const f of Object.keys(GT)) t[f].forEach((x) => GT[f].add(x)); }
 /* موردٌ يذكره نظامٌ غائب وهو موردُ قاعدة (قائمةُ قراءةٍ أضاف إليها مفاتيحه) ليس «موردَ النظام»: موردُ النظام يحمل اسمَه */
-const sysRes = [...GT.resources].filter((r) => GONE.some((k) => new RegExp('^bassam_(?:perm_)?' + k + '(?:_|$)').test(r)));
-const TOKENS = [...GT.keys, ...GT.owners, ...GT.flags, ...sysRes];
+const sysRes = [...GT.resources].filter((r) => GONE.some((k) => new RegExp('^bassam_' + k + '(?:_|$)').test(r)));
+/* في الكود: المفاتيحُ والأوراقُ والأعلام. وفي وثائق البيانات (JSON): ومعها مواردُ النظام (صفوفُها تغيب معه). */
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
-const RX = TOKENS.length ? new RegExp('(?<![\\w.])(' + TOKENS.sort((a, b) => b.length - a.length).map(esc).join('|') + ')(?![\\w])', 'g') : null;
-const hits = (text) => (RX ? [...new Set(Array.from(text.matchAll(RX), (m) => m[1]))] : []);
+const rxOf = (toks) => (toks.length ? new RegExp('(?<![\\w.])(' + toks.slice().sort((a, b) => b.length - a.length).map(esc).join('|') + ')(?![\\w])', 'g') : null);
+const RX_CODE = rxOf([...GT.keys, ...GT.owners, ...GT.flags]), RX_DATA = rxOf([...GT.keys, ...GT.owners, ...GT.flags, ...sysRes]);
+const hits = (text, data) => { const RX = data ? RX_DATA : RX_CODE; return RX ? [...new Set(Array.from(text.matchAll(RX), (m) => m[1]))] : []; };
 const noComments = (code) => code.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
 const label = '[' + (SYSTEMS.join(' · ') || 'لا نظام') + ']' + (GONE.length ? ' — الغائب: ' + GONE.join(' · ') : '');
 
@@ -53,8 +54,8 @@ test('د3 · الحذف: السجلُّ والشجرةُ وروابطُ الخا
     ['root', 'workers/bindings/scope-bindings/data.json'], ['root', 'workers/bindings/guard-bindings/data.json'], ['root', 'workers/bindings/build-bindings/data.json']];
   for (const [base, rel] of files) {
     const p = path.join(base === 'src' ? SRC : ROOT, rel); assert.ok(fs.existsSync(p), rel + ' موجود');
-    const text = /\.js$/.test(rel) ? noComments(fs.readFileSync(p, 'utf8')) : fs.readFileSync(p, 'utf8');
-    assert.deepEqual(hits(text), [], rel + ': لا رمزَ لنظامٍ غائب');
+    const js = /\.js$/.test(rel), text = js ? noComments(fs.readFileSync(p, 'utf8')) : fs.readFileSync(p, 'utf8');
+    assert.deepEqual(hits(text, !js), [], rel + ': لا رمزَ لنظامٍ غائب');
   }
 });
 
