@@ -3,7 +3,10 @@
  "kind": "system",
  "key": "seized",
  "name": "نظام المضبوطات",
- "note": "V7 · المرحلة 2 · الحزمة ب: نقلُ ملفات النظام الكاملة إلى مجلده (ترتيبٌ لا يغيّر ما يُرى). هذا الملف يسرد ما في المجلد وما بقي للنظام خارجه؛ لا تقرؤه القاعدة ولا الأدوات بعد (الحزمة د).",
+ "requires": [
+  "irshad"
+ ],
+ "note": "V7 · المرحلة 2 · د2: هذا الملف تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py). يسرد ما في المجلد، وموضعَ أجزاء الخادم في ترتيب الضمّ (after = جزءُ القاعدة الذي تُدرج بعده · order للترتيب عند المرسى الواحد)، والقطعَ التي تُحقن في فتحات القاعدة (slots).",
  "client": {
   "slug": "seized",
   "component": "Seized",
@@ -17,13 +20,41 @@
  },
  "server": {
   "parts": [
-   "server/019l-seized.js",
-   "server/019l-seized-query.js",
-   "server/019l-seized-operations.js",
-   "server/019l-seized-dashboard.js",
-   "server/019n-seized-due.js"
+   {
+    "file": "server/019l-seized.js",
+    "after": "019k-business-context.js",
+    "order": 30
+   },
+   {
+    "file": "server/019l-seized-query.js",
+    "after": "019k-business-context.js",
+    "order": 40
+   },
+   {
+    "file": "server/019l-seized-dashboard.js",
+    "after": "019k-business-context.js",
+    "order": 50
+   },
+   {
+    "file": "server/019l-seized-operations.js",
+    "after": "019k-business-context.js",
+    "order": 60
+   },
+   {
+    "file": "server/019n-seized-due.js",
+    "after": "019n-business-integration.js",
+    "order": 10
+   }
   ],
-  "order": "workers/parts.json"
+  "generated": [
+   {
+    "part": "019k-seized-defaults.js",
+    "tool": "tools/seized_defaults.mjs",
+    "what": "افتراضاتُ قوائم المضبوطات من واجهتها (المصدرُ الواحد لقراءات SQL)",
+    "after": "019k-business-context.js",
+    "order": 10
+   }
+  ]
  },
  "migrations": {
   "files": [],
@@ -48,5 +79,511 @@
   "workers/parts/046-kivo-build-3.js",
   "workers/parts/047-retro.js",
   "migrations/0009_seized_awards.sql"
- ]
+ ],
+ "slots": {
+  "modules.seized": {
+   "order": 10,
+   "text": "  {\n   \"name\": \"Seized\",\n   \"slug\": \"seized\",\n   \"minifiedSource\": true,\n   \"bytes\": 247657,\n   \"logicLines\": 3113\n  },\n"
+  },
+  "blocks.pages.seized": {
+   "order": 10,
+   "text": "   {\n    \"b64Sha256\": \"f4a5c001ea4e0aefb555584b88a3e55ec50e656b38b19a66609e2de4051d0f0e\",\n    \"bytes\": 247657,\n    \"file\": \"client/pages/Seized.dc.html\",\n    \"name\": \"Seized\",\n    \"sha256\": \"2e5b89fe31a2264f1e3c5eb180e475faa949bad2d8228e1972ae5514546d9f9f\"\n   },\n"
+  },
+  "blocks.order.seized": {
+   "order": 10,
+   "text": "   \"Seized\",\n"
+  },
+  "pages.entry.systems": {
+   "order": 20,
+   "text": "  {\n   \"key\": \"seized\",\n   \"module\": \"seized\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"departmentComponents\": [\"Seized\"],\n   \"nav\": \"seized\",\n   \"name\": \"نظام المضبوطات\",\n   \"subs\": [\n    {\n     \"key\": \"dash\",\n     \"name\": \"لوحة المؤشرات\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"records\",\n     \"name\": \"السجلات\"\n    }\n   ]\n  },\n"
+  },
+  "pages.kpi.refs.mid": {
+   "order": 10,
+   "text": "    \"seized/dash\",\n"
+  },
+  "pages.kpi.names.mid": {
+   "order": 10,
+   "text": "    \"seized/dash\": \"لوحة مؤشرات المضبوطات\",\n"
+  },
+  "pages.tabAddr.tail": {
+   "order": 30,
+   "text": ",\n  \"seized\": {\n   \"records\": 1\n  }"
+  },
+  "pages.navOrder.tail": {
+   "order": 20,
+   "text": ",\n  \"seized\""
+  },
+  "pages.navNames.tail": {
+   "order": 20,
+   "text": ",\n  \"seized\": \"نظام المضبوطات\""
+  },
+  "pages.routeNames.systems": {
+   "order": 20,
+   "text": "  \"seized\": \"نظام المضبوطات\",\n"
+  },
+  "budget.page.seized": {
+   "order": 10,
+   "text": "  \"page:Seized\": 53650,\r\n"
+  },
+  "uxStates.seized": {
+   "order": 10,
+   "text": "  \"seized\": {\n   \"فارغ\": 19,\n   \"تحميل\": 0,\n   \"خطأ\": 4,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 1\n  },\n"
+  },
+  "ns.after.seized": {
+   "order": 10,
+   "text": "  \"src/systems/seized/client/logic.js\",\n"
+  },
+  "shell.nav.systems": {
+   "order": 20,
+   "text": "      <a class=\"{{nSeized}}\" data-key=\"seized\" role=\"link\" tabindex=\"0\" sc-camel-on-click=\"{{goSeized}}\" title=\"{{tSeized}}\"><span class=\"ni\"><svg width=\"16\" height=\"16\" sc-camel-view-box=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-i=\"i-d82ee5cd\"></svg></span><span class=\"nlbl\">نظام المضبوطات</span></a>\n"
+  },
+  "shell.mounts": {
+   "order": 30,
+   "text": "  <sc-if value=\"{{isSeized}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Seized\" hint-size=\"100%,900px\"></dc-import>\n  </sc-if>\n"
+  },
+  "root.liveKeys": {
+   "order": 20,
+   "text": "seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, "
+  },
+  "root.landing.systems": {
+   "order": 20,
+   "text": "\"seized\", "
+  },
+  "root.inPlanning": {
+   "order": 20,
+   "text": ",\"seized\""
+  },
+  "root.labels": {
+   "order": 20,
+   "text": "seized:\"نظام المضبوطات\", "
+  },
+  "root.navVals.systems": {
+   "order": 20,
+   "text": "nSeized: cls(\"seized\", \"seized\"), tSeized: tip(\"seized\"),\r\n"
+  },
+  "root.go.systems": {
+   "order": 20,
+   "text": "goSeized: go(\"seized\"), "
+  },
+  "root.is.systems": {
+   "order": 20,
+   "text": "isSeized: ap === \"seized\", "
+  },
+  "root.known.systems": {
+   "order": 20,
+   "text": "\"seized\","
+  },
+  "plat.sideOrder": {
+   "order": 20,
+   "text": ", \"seized\""
+  },
+  "pageStates.names": {
+   "order": 20,
+   "text": "    \"seized/records\": \"سجلات المضبوطات\", \"seized/dash\": \"مؤشرات المضبوطات\", \"seized\": \"سجلات المضبوطات\",\n"
+  },
+  "kpis.panels.mid": {
+   "order": 10,
+   "text": "        { k: \"sz\", pk: \"seized\", sk: \"dash\" },\n"
+  },
+  "kpis.tabs.mid": {
+   "order": 10,
+   "file": "slots/kpis.tabs.mid.frag"
+  },
+  "kpis.mounts.mid": {
+   "order": 10,
+   "text": "  <sc-if value=\"{{on_sz}}\" hint-placeholder-val=\"{{ false }}\"><dc-import name=\"Seized\" solo=\"dash\" hint-size=\"100%,1100px\"></dc-import></sc-if>\n"
+  },
+  "nf.types": {
+   "order": 20,
+   "file": "slots/nf.types.frag"
+  },
+  "nf.cap": {
+   "order": 20,
+   "text": "  box: \"seized\",\n"
+  },
+  "nf.denyPages.2": {
+   "order": 20,
+   "text": " seized: \"نظام المضبوطات\","
+  },
+  "nf.denyRecs.2": {
+   "order": 20,
+   "text": "bassam_seized_v1: \"نظام المضبوطات\","
+  },
+  "nf.denyRecs.3": {
+   "order": 10,
+   "text": "bassam_seized_cat_v1: \"قائمة ممنوعات المضبوطات\", bassam_seized_acts_v1: \"إجراءات المضبوطات\", bassam_seized_locs_v1: \"مواقع المضبوطات\","
+  },
+  "nf.denyRecs.4": {
+   "order": 10,
+   "text": "bassam_seized_jew_v1: \"أنواع قطع المجوهرات\", "
+  },
+  "res.reg.dept": {
+   "order": 20,
+   "text": "  /* ── المضبوطات ── */\n  'bassam_seized_v1':          { scope: 'dept', cap: 'seized/records' },\n  'bassam_seized_cat_v1':      { scope: 'dept', cap: 'seized/records' },\n  'bassam_seized_acts_v1':     { scope: 'dept', cap: 'seized/records' },\n  'bassam_seized_locs_v1':     { scope: 'dept', cap: 'seized/records' },\n  'bassam_seized_jew_v1':      { scope: 'dept', cap: 'seized/records' },\n"
+  },
+  "ent.reg": {
+   "order": 30,
+   "text": "  /* ── المضبوطات ── */\n  'bassam_seized_v1':         { cols: [{ at: 'reports', idf: ['id'], lock: ['id'] }], empty: '{\"reports\":[]}' },\n  /* loadCat: { ver, cats:[{ name, items:[…] }] } */\n  'bassam_seized_cat_v1':     { cols: [{ at: 'cats', idf: ['id', 'name'] }], empty: '{\"ver\":1,\"cats\":[]}' },\n  'bassam_seized_acts_v1':    { cols: [{ at: '', idf: ['id', 'name'] }], empty: '[]' },\n  'bassam_seized_locs_v1':    { empty: '[]', primRoot: 1 },\n  'bassam_seized_jew_v1':     { empty: '[]', primRoot: 1 },\n"
+  },
+  "fields.reg": {
+   "order": 30,
+   "text": "  'bassam_seized_v1':     { cols: { reports: { req: ['id'], type: { id: 'str' } } } },\n  'bassam_seized_cat_v1': { cols: { cats:    { req: ['name'], type: { name: 'str' } } } },\n  'bassam_seized_acts_v1':{ at: '', req: ['name'], type: { id: 'str', name: 'str' } }\n"
+  },
+  "routes.dispatch": {
+   "order": 20,
+   "text": "      if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');\n"
+  },
+  "contracts.systems": [
+   {
+    "order": 40,
+    "file": "slots/contracts.systems.frag"
+   },
+   {
+    "order": 50,
+    "file": "slots/contracts.systems.2.frag"
+   },
+   {
+    "order": 60,
+    "file": "slots/contracts.systems.3.frag"
+   }
+  ],
+  "bodies.systems": {
+   "order": 20,
+   "file": "slots/bodies.systems.frag"
+  },
+  "save.movedPath": {
+   "order": 10,
+   "text": "szLegacyKey(k) ? '/api/seized' : "
+  },
+  "get.moved.seizedPath": {
+   "order": 10,
+   "text": "szLegacyKey(gk) ? '/api/seized' : "
+  },
+  "bd.definitions": {
+   "order": 10,
+   "text": "    {name:'seized',resources:SZ_RES,names:SZ_NAMES,key:szKey,empty:szEmptyDomain,validate:szValidateDomain,convert:szConvert,inflate:szInflate,plan:szDomainPlan,exportDomain:szExportDomain,revs:szRevs,context:szQueryContext,tables:SZ_TABLES},\r\n"
+  },
+  "bd.resources.1": {
+   "order": 10,
+   "text": "SZ_RES"
+  },
+  "bd.resources.2": {
+   "order": 10,
+   "text": "SZ_RES"
+  },
+  "bd.resources.3": {
+   "order": 10,
+   "text": "SZ_RES"
+  },
+  "bd.resources.4": {
+   "order": 10,
+   "text": "SZ_RES"
+  },
+  "bd.migrationPrepare": {
+   "order": 10,
+   "text": "await szLegacyPrepare(env)"
+  },
+  "bd.reset.seizedRequests": {
+   "order": 10,
+   "text": "'seized_requests'"
+  },
+  "bd.reset.seizedTables": {
+   "order": 10,
+   "text": "Object.keys(SZ_TABLES).reverse().map(function(k){return SZ_TABLES[k][0];}),\r\n    "
+  },
+  "bd.revisions.init": {
+   "order": 10,
+   "text": "seized:Object.create(null)"
+  },
+  "bd.awardIndex": {
+   "order": 10,
+   "text": "1"
+  },
+  "bd.route.get": {
+   "order": 10,
+   "text": "name==='seized'?hSeizedGet(env,A,url):",
+   "last": "hSeizedGet(env,A,url)"
+  },
+  "bd.route.act": {
+   "order": 10,
+   "text": "name==='seized'?hSeizedAct(env,A,read.v,reqMeta(request)):",
+   "last": "hSeizedAct(env,A,read.v,reqMeta(request))"
+  },
+  "rs.scopeFilter.business": {
+   "order": 10,
+   "text": "'seized'"
+  },
+  "rs.selection.drop": {
+   "order": 20,
+   "text": "    delete domains.seized;\n"
+  },
+  "rs.manifest.systems.1": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "rs.manifest.systems.2": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "rs.manifest.systems.3": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "rs.manifest.systems.4": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "rs.base.systems": {
+   "order": 20,
+   "text": ", 'seized'"
+  },
+  "rs.counts.systems": {
+   "order": 20,
+   "text": " seized: 0,"
+  },
+  "rs.reference.base.systems": {
+   "order": 20,
+   "text": "      seized: businessBase.seized,\n"
+  },
+  "rs.manifest.systems.5": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "save.wipe.counts": {
+   "order": 20,
+   "text": "    plan.counts.seized = opt.__seizedCount || 0;\r\n"
+  },
+  "wipe.inventory.base": {
+   "order": 20,
+   "text": "        seized: businessBase.seized[dept],\r\n"
+  },
+  "wipe.inventory.counts": {
+   "order": 20,
+   "text": "        seized: businessCounts.seized,\r\n"
+  },
+  "wipe.request.base": {
+   "order": 20,
+   "text": ", 'seized'"
+  },
+  "wipe.opt.base": {
+   "order": 20,
+   "text": "        __seizedBase: input.base.seized,\r\n"
+  },
+  "wipe.opt.counts": {
+   "order": 20,
+   "text": "        __seizedCount: observed.counts.seized,\r\n"
+  },
+  "bc.required.business": {
+   "order": 10,
+   "text": "'seized'"
+  },
+  "bc.domains.systems": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "bc.out.systems": {
+   "order": 20,
+   "text": "  manifest.domains.seized = 1;\n"
+  },
+  "retro.counters": {
+   "order": 20,
+   "text": "seized: pv3Retro()"
+  },
+  "retro.table": {
+   "order": 20,
+   "text": "seized: { cap: 'seized/records', key: 'sz.rec.retro.open', res: 'bassam_seized_v1', state: 'bassam_seized_retro_v1', name: 'المضبوطات' }"
+  },
+  "retro.sysOf": {
+   "order": 20,
+   "text": "'bassam_seized_v1': 'seized'"
+  },
+  "retro.state": {
+   "order": 20,
+   "text": "  if(sys==='seized'){await szGuardRetired(env);return (await szRetroSnapshot(env,d)).state;}\n"
+  },
+  "retro.adapter.seized": {
+   "order": 10,
+   "text": "  if(sys==='seized')return {context:szQueryContext,snapshot:szRetroSnapshot,install:szRetroStatements,retired:szGuardRetired,retiredGuard:szRetiredGuard};\n"
+  },
+  "nf.due.edges": {
+   "order": 20,
+   "text": "szd: [0, 480, 540]"
+  },
+  "nf.due.window": {
+   "order": 20,
+   "text": "m >= 540 || (m >= 480 && new Date(ts + 3 * 3600000).getUTCDay() === 6)"
+  },
+  "nf.due.kinds": {
+   "order": 20,
+   "text": "\"szd\""
+  },
+  "nf.due.handler": {
+   "order": 20,
+   "text": "nfSeizedDue"
+  },
+  "images.sweepRefs": {
+   "order": 10,
+   "text": "      ' AND NOT EXISTS (SELECT 1 FROM seized_item_photos p WHERE p.image_id = imgown.img)' +\n"
+  },
+  "bk.counts.systems": {
+   "order": 20,
+   "text": "'seized', "
+  },
+  "bk.export.specs": {
+   "order": 20,
+   "text": "      ['seized',['reports','catalog','actions','locations','jew','retro'],['resources','reports','items','photos','history','categories','catalogItems','actions','lists','windows']],\n"
+  },
+  "bk.export.imageIds": {
+   "order": 10,
+   "text": "    domains.seized.forEach(function(d){d.rows.photos.forEach(function(row){if(typeof row.image_id==='string')ids.add(row.image_id,(scope(d)||'')+':seized');});});\n"
+  },
+  "bk.restore.base": {
+   "order": 20,
+   "text": " || !base.seized"
+  },
+  "bk.restore.summary": {
+   "order": 20,
+   "text": " و'+(c.seized||0)+' من بيانات المضبوطات"
+  },
+  "admin.keyLabels": {
+   "order": 20,
+   "text": "        bassam_seized_v1: \"نظام المضبوطات\",\r\n        bassam_seized_cat_v1: \"قائمة ممنوعات المضبوطات\",\r\n        bassam_seized_acts_v1: \"إجراءات المضبوطات\",\r\n        bassam_seized_locs_v1: \"مواقع المضبوطات\",\r\n        bassam_seized_jew_v1: \"أنواع قطع المجوهرات\",\r\n"
+  },
+  "admin.counts.list.1": {
+   "order": 20,
+   "text": ", \"seized\""
+  },
+  "admin.counts.list.2": {
+   "order": 20,
+   "text": ", \"seized\""
+  },
+  "admin.counts.list.3": {
+   "order": 20,
+   "text": ", \"seized\""
+  },
+  "admin.delete.populated": {
+   "order": 20,
+   "text": " + counts.seized"
+  },
+  "admin.delete.message": {
+   "order": 20,
+   "text": "، \"+counts.seized+\" من بيانات المضبوطات"
+  },
+  "admin.businessBase": {
+   "order": 20,
+   "text": "seized:['reports','catalog','actions','locations','jew','retro']"
+  },
+  "admin.wipe.natural": {
+   "order": 20,
+   "text": " || !natural(body.counts.seized)"
+  },
+  "admin.wipe.message": {
+   "order": 20,
+   "text": "، \"+body.counts.seized+\" من بيانات المضبوطات"
+  },
+  "admin.wipe.ack": {
+   "order": 20,
+   "text": " والمضبوطات"
+  },
+  "admin.wipe.labels": {
+   "order": 40,
+   "text": "                bassam_seized_v1: \"محاضر نظام المضبوطات\",\r\n                bassam_seized_cat_v1: \"قائمة ممنوعات المضبوطات\",\r\n                bassam_seized_acts_v1: \"إجراءات المضبوطات\",\r\n                bassam_seized_locs_v1: \"مواقع المضبوطات\",\r\n                bassam_seized_jew_v1: \"أنواع قطع المجوهرات\",\r\n"
+  },
+  "admin.wipe.rows": {
+   "order": 20,
+   "text": "            if (counts.seized > 0) p.push({label:\"بيانات المضبوطات وتوابعها (\"+counts.seized+\")\"});\n"
+  },
+  "admin.wipe.any": {
+   "order": 20,
+   "text": " + (counts.seized || 0)"
+  },
+  "admin.full.stripKeys": {
+   "order": 20,
+   "text": "seized(?:_cat|_jew|_acts|_locs|_retro)?"
+  },
+  "admin.full.manifest.systems": {
+   "order": 20,
+   "text": "seized:1,"
+  },
+  "nfc.kind.color": {
+   "order": 20,
+   "text": " box:'#475569',"
+  },
+  "nfc.kind.name": {
+   "order": 20,
+   "text": " box:'المضبوطات',"
+  },
+  "nfc.kind.icon": {
+   "order": 20,
+   "text": " box:'M21 8v13H3V8M1 3h22v5H1zM10 12h4',"
+  },
+  "nfc.reg": {
+   "order": 20,
+   "file": "slots/nfc.reg.frag"
+  },
+  "nfc.goNav.seized": {
+   "order": 10,
+   "text": " 'افتح السجلات':'seized', 'افتح المحضر':'seized',"
+  },
+  "nfc.goKpi.seized": {
+   "order": 10,
+   "text": ", 'افتح لوحة المؤشرات': ['seized', 'dash']"
+  },
+  "nfc.goPage.records": {
+   "order": 20,
+   "text": "seized: 'seized'"
+  },
+  "nfc.goPage.dash": {
+   "order": 20,
+   "text": "seized: 'kpis'"
+  },
+  "nfc.goKpiPage": {
+   "order": 20,
+   "text": "seized: ['seized', 'dash']"
+  },
+  "store.relational.systems": {
+   "order": 20,
+   "text": "seized(?:_cat|_jew|_acts|_locs|_retro)?|"
+  },
+  "store.keyLabels": {
+   "order": 20,
+   "text": "      bassam_seized_v1:[\"نظام المضبوطات\"], bassam_seized_cat_v1:[\"قائمة ممنوعات المضبوطات\"], bassam_seized_acts_v1:[\"إجراءات المضبوطات\"], bassam_seized_locs_v1:[\"مواقع المضبوطات\"], bassam_seized_jew_v1:[\"أنواع قطع المجوهرات\"],\n"
+  },
+  "store.identity": {
+   "order": 20,
+   "text": " bassam_seized_v1: { \"reports\": \"id\" },"
+  },
+  "store.retroSys": {
+   "order": 20,
+   "text": "n === \"bassam_seized_v1\" ? \"seized\" : "
+  },
+  "store.retroKey": {
+   "order": 10,
+   "text": "w.res === \"seized\" ? \"sz.rec.retro.open\" : "
+  },
+  "store.pull.systemKeys": {
+   "order": 20,
+   "text": "seized(?:_cat|_jew|_acts|_locs|_retro)?"
+  },
+  "activity.entities": {
+   "order": 10,
+   "text": " seized: 'محضر المضبوطات',"
+  },
+  "activity.filter": {
+   "order": 10,
+   "text": " ['seized', 'المضبوطات'],"
+  },
+  "res.empty.systems": {
+   "order": 20,
+   "text": "    bassam_seized_v1: '{\"reports\":[]}', bassam_seized_cat_v1: '{\"ver\":1,\"cats\":[]}', bassam_seized_acts_v1: '[]', bassam_seized_locs_v1: '[]', bassam_seized_jew_v1: '[]',\n"
+  },
+  "root.deptBackup.stripKeys": {
+   "order": 20,
+   "text": "seized(?:_cat|_jew|_acts|_locs|_retro)?"
+  },
+  "root.deptBackup.manifest": {
+   "order": 20,
+   "text": "seized:1,"
+  }
+ }
 }

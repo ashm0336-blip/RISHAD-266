@@ -15,6 +15,7 @@ import vm from 'node:vm';
 import { world, stored, putKV } from './tasks_fx.mjs';
 import { loadClient, until, sleep } from './k264_vm.mjs';
 import { ROOT } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const KP = 'bassam_perms_v1', D1 = 'tst_d1', D2 = 'tst_d2', D3 = 'tst_d3';
 const BLOCKS = ['255-page-manifest.js', '260-bassam-plat.js', '280-server-storage.js', '310-image-refs.js', '320-dept-storage.js', '330-auth.js', '331-perm-model.js', '332-find-day.js', '333-platform-map.js', '334-perm-tree-tpl.js', '340-registry-v24-9.js', '440-count.js'];
@@ -121,7 +122,7 @@ for (const a of Object.keys(UID)) {
   });
 }
 
-test('the cases the old module branches got wrong are now the engine answer', () => {
+test('the cases the old module branches got wrong are now the engine answer', needs('irshad'), () => {
   assert.ok(Object.keys(REF.dm1).length > 3, 'a manager without an own sheet holds the unit ceiling (the old matrix showed «—» everywhere)');
   assert.ok(Object.keys(REF.gm1).length > 3, 'a general manager inherits the ceiling where it has no own sheet');
   assert.deepEqual([REF.dm2.tasks, REF.dm2.irshad], [['add', 'view'], ['view']], 'an explicit own sheet is applied (its pages, with their containers)');

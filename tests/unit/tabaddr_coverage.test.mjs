@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { moduleDirs } from '../../tools/systems_paths.mjs';   /* V7 · الحزمة ب */
+import { needs } from './harness.mjs';
 
 const SRC = process.env.KIVO_SRC || path.resolve('src');
 const M = JSON.parse(fs.readFileSync(path.join(SRC, 'manifests/pages.json'), 'utf8'));
@@ -33,7 +34,7 @@ function writers() {
   return out;
 }
 
-test('every page that writes #/<page>/<tab> is in tabAddr, with each literal tab it writes', () => {
+test('every page that writes #/<page>/<tab> is in tabAddr, with each literal tab it writes', needs('award', 'dstats', 'seized'), () => {
   const W = writers();
   assert.ok(W.length >= 6, 'found the writing pages: ' + W.map((w) => w.module).join(','));
   for (const w of W) {

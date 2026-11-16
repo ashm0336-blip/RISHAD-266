@@ -7,6 +7,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { world, rd } from './core01_root_world.mjs';
+import { needs } from './harness.mjs';
 
 const M = JSON.parse(rd('manifests/pages.json'));
 const REFS = M.containers.filter((c) => c.key === 'kpis')[0].refs;
@@ -23,7 +24,7 @@ function ops(held, o = {}) {
   return { W, went };
 }
 
-test('the container really carries the page-level tasks ref (the case under test exists)', () => {
+test('the container really carries the page-level tasks ref (the case under test exists)', needs('irshad'), () => {
   assert.ok(REFS.includes('tasks'), '«مؤشرات المهام» is a ref without «/»');
   assert.ok(REFS.filter((r) => r.includes('/')).length >= 6, 'and the leaves are still there');
 });
@@ -45,7 +46,7 @@ test('tasks plus another page: lands on that page, not on «مؤشرات الإ�
   assert.equal(W.c._kpisOk(), true);
 });
 
-test('a real leaf of the container still makes «مؤشرات الإدارة» the workspace default (unchanged)', async () => {
+test('a real leaf of the container still makes «مؤشرات الإدارة» the workspace default (unchanged)', needs('dstats'), async () => {
   for (const held of [['dstats/anHaram'], ['tasks', 'daily', 'irshad/dash'], ['planning', 'planning/readiness']]) {
     const { W, went } = ops(held);
     assert.equal(W.c._kpisOk(1), true, held.join());

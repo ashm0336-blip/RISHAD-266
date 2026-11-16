@@ -10,6 +10,7 @@ import vm from 'node:vm';
 import nodePath from 'node:path';
 import { fileURLToPath as _f2p } from 'node:url';
 import { moduleDir as _md } from '../../tools/systems_paths.mjs';
+import { needs } from './harness.mjs';
 /* V7 · الحزمة ب: مسارُ وحدة الصفحة نسبةً إلى الجذر — src/modules/<slug> أو src/systems/<key>/client */
 const modRel = (slug) => nodePath.relative(_f2p(new URL('../../', import.meta.url)), _md(_f2p(new URL('../../src', import.meta.url)), slug)).split(nodePath.sep).join('/');
 
@@ -188,7 +189,7 @@ test('one strings table; no device storage; theme variables only; 44 px targets;
   assert.match(CSS, /tr:nth-child\(-n\+10\)/); assert.match(CSS, /tr:nth-child\(2\)\{animation-delay:50ms\}/); assert.doesNotMatch(CSS, /tr:nth-child\(11\)/);
 });
 
-test('names come from the pages manifest: the open tab, else the page; written overrides; nested screens keep their own name', () => {
+test('names come from the pages manifest: the open tab, else the page; written overrides; nested screens keep their own name', needs('award', 'seized'), () => {
   const { P } = world(), d = (c, h) => { const x = P.describe(c, h); assert.deepEqual(Object.keys(x), ['name'], 'a description is a name — no shape'); return x.name; };
   assert.equal(d('Staffing', '#/staffing'), 'الجدول الشهري');
   assert.equal(d('Operational Plan', '#/plan'), 'التشغيل الميداني');
@@ -208,7 +209,7 @@ test('names come from the pages manifest: the open tab, else the page; written o
   assert.equal(d('Unknown', '#/nowhere'), '');
 });
 
-test('owner-approved names (12 Nov): irshad, employees, import, profile, the two mosques; custody stays «عهد الموظفين»', () => {
+test('owner-approved names (12 Nov): irshad, employees, import, profile, the two mosques; custody stays «عهد الموظفين»', needs('dstats'), () => {
   const { P } = world(), n = (c, h) => P.describe(c, h).name;
   assert.equal(n('Irshad', '#/irshad'), 'سجلات الاسترشاد');
   assert.equal(n('Irshad', '#/irshad/records'), 'سجلات الاسترشاد');
@@ -287,7 +288,7 @@ test('runtime placeholder: core owns the hook, draws the place through it, and k
   assert.deepEqual(r.tree.kids.map((k) => k.props.className), ['sc-placeholder-error'], 'no component registered ⇒ exactly the old placeholder');
 });
 
-test('page option: a page names itself and the component takes its name and «what follows the host» as content from the manifest', () => {
+test('page option: a page names itself and the component takes its name and «what follows the host» as content from the manifest', needs('award'), () => {
   const { P, tick } = world({ hash: '#/award/res' }), parent = el('div'), host = el('div'), a = el('div'), b = el('div');
   [host, a, b].forEach((x) => parent.appendChild(x));
   Object.defineProperty(host, 'nextElementSibling', { get: () => a }); Object.defineProperty(a, 'nextElementSibling', { get: () => b }); b.nextElementSibling = null;
@@ -335,7 +336,7 @@ test('header tab icons are the page\'s own: the icon body of each tab from the b
   assert.deepEqual(icons('#/kpis'), ['<path d="M9"></path>', '<path d="M9"></path>']);
 });
 
-test('the real manifest: every tab of every route has the icon of the page strip it was read from; the store tab is display-only', () => {
+test('the real manifest: every tab of every route has the icon of the page strip it was read from; the store tab is display-only', needs('award', 'dstats'), () => {
   const block = read('src/manifests/255-page-manifest.js'), M = JSON.parse(block.slice(block.lastIndexOf('})(') + 3, block.lastIndexOf(');')));
   const KIVO = {}, window = { location: { hash: '' }, addEventListener() {}, matchMedia: () => ({ matches: false }) };
   KIVO.KIVO_MANIFEST = { keys: Object.keys(M), clone: (k) => JSON.parse(JSON.stringify(M[k])) };

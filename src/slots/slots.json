@@ -1,0 +1,193 @@
+{
+ "note": "V7 · د2 — قوالبُ الفتحات: tpl (في src/slots) ← out (من جذر المستودع). الناتجُ مولَّدٌ بـtools/systems.py (يستدعيه tools/generate.py) ولا يُحرَّر يدوياً؛ التعديلُ في القالب أو في قطع الأنظمة (system.json ← slots).",
+ "optional": [
+  "bd.awardIndex"
+ ],
+ "optionalNote": "فتحاتٌ علامتُها داخل قطعة نظامٍ آخر: bd.awardIndex في قطعة الجائزة bd.employeeCleanup (تملؤها المضبوطات)؛ بغياب الجائزة لا تظهر العلامة.",
+ "templates": [
+  {
+   "tpl": "modules/modules.json.tpl",
+   "out": "src/modules/modules.json"
+  },
+  {
+   "tpl": "blocks.json.tpl",
+   "out": "src/blocks.json"
+  },
+  {
+   "tpl": "manifests/pages.json.tpl",
+   "out": "src/manifests/pages.json"
+  },
+  {
+   "tpl": "tools/perf_budget.json.tpl",
+   "out": "tools/perf_budget.json"
+  },
+  {
+   "tpl": "tools/ux_states.json.tpl",
+   "out": "tools/ux_states.json"
+  },
+  {
+   "tpl": "tools/kivo_ns.json.tpl",
+   "out": "tools/kivo_ns.json"
+  },
+  {
+   "tpl": "layouts/index.template.html.tpl",
+   "out": "src/layouts/index.template.html"
+  },
+  {
+   "tpl": "layouts/root-logic.js.tpl",
+   "out": "src/layouts/root-logic.js"
+  },
+  {
+   "tpl": "layouts/260-bassam-plat.js.tpl",
+   "out": "src/layouts/260-bassam-plat.js"
+  },
+  {
+   "tpl": "components/555-page-states.js.tpl",
+   "out": "src/components/555-page-states.js"
+  },
+  {
+   "tpl": "modules/kpis/logic.js.tpl",
+   "out": "src/modules/kpis/logic.js"
+  },
+  {
+   "tpl": "modules/kpis/view.html.tpl",
+   "out": "src/modules/kpis/view.html"
+  },
+  {
+   "tpl": "workers/parts/019-notifications.js.tpl",
+   "out": "workers/parts/019-notifications.js"
+  },
+  {
+   "tpl": "workers/parts/023-resources.js.tpl",
+   "out": "workers/parts/023-resources.js"
+  },
+  {
+   "tpl": "workers/parts/025-entities-2.js.tpl",
+   "out": "workers/parts/025-entities-2.js"
+  },
+  {
+   "tpl": "workers/parts/031-fields.js.tpl",
+   "out": "workers/parts/031-fields.js"
+  },
+  {
+   "tpl": "workers/parts/026-domain-ops.js.tpl",
+   "out": "workers/parts/026-domain-ops.js"
+  },
+  {
+   "tpl": "workers/parts/055-sec-headers.js.tpl",
+   "out": "workers/parts/055-sec-headers.js"
+  },
+  {
+   "tpl": "workers/parts/063-enf-api-and-handler.js.tpl",
+   "out": "workers/parts/063-enf-api-and-handler.js"
+  },
+  {
+   "tpl": "api/contracts.json.tpl",
+   "out": "src/api/contracts.json"
+  },
+  {
+   "tpl": "schemas/api/bodies.schema.json.tpl",
+   "out": "src/schemas/api/bodies.schema.json"
+  },
+  {
+   "tpl": "workers/parts/052-aud-events.js.tpl",
+   "out": "workers/parts/052-aud-events.js"
+  },
+  {
+   "tpl": "workers/parts/054-image-contract.js.tpl",
+   "out": "workers/parts/054-image-contract.js"
+  },
+  {
+   "tpl": "workers/parts/050-read-map.js.tpl",
+   "out": "workers/parts/050-read-map.js"
+  },
+  {
+   "tpl": "workers/parts/044-protected-ops.js.tpl",
+   "out": "workers/parts/044-protected-ops.js"
+  },
+  {
+   "tpl": "workers/parts/060-enf-canwrite.js.tpl",
+   "out": "workers/parts/060-enf-canwrite.js"
+  },
+  {
+   "tpl": "workers/parts/061-enf-read.js.tpl",
+   "out": "workers/parts/061-enf-read.js"
+  },
+  {
+   "tpl": "workers/parts/045-permv2.js.tpl",
+   "out": "workers/parts/045-permv2.js"
+  },
+  {
+   "tpl": "workers/parts/049-permv4-read.js.tpl",
+   "out": "workers/parts/049-permv4-read.js"
+  },
+  {
+   "tpl": "workers/parts/048-permv4.js.tpl",
+   "out": "workers/parts/048-permv4.js"
+  },
+  {
+   "tpl": "workers/parts/057-enf-index.js.tpl",
+   "out": "workers/parts/057-enf-index.js"
+  },
+  {
+   "tpl": "workers/parts/059-protected-ops-2.js.tpl",
+   "out": "workers/parts/059-protected-ops-2.js"
+  },
+  {
+   "tpl": "workers/parts/019c-employee-transition.js.tpl",
+   "out": "workers/parts/019c-employee-transition.js"
+  },
+  {
+   "tpl": "workers/parts/019n-business-integration.js.tpl",
+   "out": "workers/parts/019n-business-integration.js"
+  },
+  {
+   "tpl": "workers/parts/019d-atomic-restore.js.tpl",
+   "out": "workers/parts/019d-atomic-restore.js"
+  },
+  {
+   "tpl": "workers/parts/019e-atomic-save.js.tpl",
+   "out": "workers/parts/019e-atomic-save.js"
+  },
+  {
+   "tpl": "workers/parts/019f-backup-converter.js.tpl",
+   "out": "workers/parts/019f-backup-converter.js"
+  },
+  {
+   "tpl": "workers/parts/046-kivo-build-3.js.tpl",
+   "out": "workers/parts/046-kivo-build-3.js"
+  },
+  {
+   "tpl": "workers/parts/047-retro.js.tpl",
+   "out": "workers/parts/047-retro.js"
+  },
+  {
+   "tpl": "workers/parts/019u-privacy-projection.js.tpl",
+   "out": "workers/parts/019u-privacy-projection.js"
+  },
+  {
+   "tpl": "services/548-atomic-backup.js.tpl",
+   "out": "src/services/548-atomic-backup.js"
+  },
+  {
+   "tpl": "modules/admin/logic.js.tpl",
+   "out": "src/modules/admin/logic.js"
+  },
+  {
+   "tpl": "services/441-notif-core.js.tpl",
+   "out": "src/services/441-notif-core.js"
+  },
+  {
+   "tpl": "api/280-server-storage.js.tpl",
+   "out": "src/api/280-server-storage.js"
+  },
+  {
+   "tpl": "services/290-activity-log.js.tpl",
+   "out": "src/services/290-activity-log.js"
+  },
+  {
+   "tpl": "services/310-image-refs.js.tpl",
+   "out": "src/services/310-image-refs.js"
+  }
+ ]
+}

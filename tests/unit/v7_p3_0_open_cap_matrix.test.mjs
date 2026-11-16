@@ -13,6 +13,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTestEnv, client, TEST_SUPER_PIN } from './harness.mjs';
 import { internals } from './internals.mjs';
+import { needs } from './harness.mjs';
 const { PG_KEYS } = await internals(['PG_KEYS']);
 const KG = 'bassam_gdepts_v1', KD = 'bassam_depts_v1', KU = 'bassam_auth_users_v1', KP = 'bassam_perms_v1';
 const put = (DB, k, v) => { DB.db.prepare('DELETE FROM kv WHERE k = ?').run(k); DB.db.prepare('INSERT INTO kv (k, seq, v) VALUES (?, 0, ?)').run(k, JSON.stringify(v)); DB.db.prepare('INSERT INTO revs (k, rev) VALUES (?, 1) ON CONFLICT(k) DO UPDATE SET rev = rev + 1').run(k); };
@@ -72,7 +73,7 @@ async function matrix(mode) {
 const OUTSIDE_BASIC = ['ops read plan (plan)', 'ops read rounds (daily/rounds)', 'ops read dreport (dreport)', 'irshad read (irshad)', 'seized read (seized)', 'ops write bassam_zone_opts_v1 (plan)', 'ops write bassam_dayfocus_v1 (daily/rounds|dreport)'];
 const LEGACY_GAP = ['write bassam_profile_v1 (tech rule)', 'write bassam_first_boot_v1 (tech rule)', 'image upload (new, dept)'];
 for (const mode of ['legacy', 'enforce']) {
-  test('[' + mode + '] a manager without a sheet: OPEN (no cap record) is served like FULL (every page) — except the documented legacy gap', { timeout: 300000 }, async () => {
+  test('[' + mode + '] a manager without a sheet: OPEN (no cap record) is served like FULL (every page) — except the documented legacy gap', { ...needs('seized'), timeout: 300000 }, async () => {
     const out = await matrix(mode);
     for (const [k, v] of Object.entries(out)) {
       if (mode === 'legacy' && LEGACY_GAP.includes(k)) {

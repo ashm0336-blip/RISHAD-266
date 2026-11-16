@@ -6,6 +6,7 @@ import { loadClient, until } from './k264_vm.mjs';
 import nodePath from 'node:path';
 import { fileURLToPath as _f2p } from 'node:url';
 import { moduleDir as _md } from '../../tools/systems_paths.mjs';
+import { needs } from './harness.mjs';
 /* V7 · الحزمة ب: مسارُ وحدة الصفحة نسبةً إلى الجذر — src/modules/<slug> أو src/systems/<key>/client */
 const modRel = (slug) => nodePath.relative(_f2p(new URL('../../', import.meta.url)), _md(_f2p(new URL('../../src', import.meta.url)), slug)).split(nodePath.sep).join('/');
 
@@ -128,7 +129,7 @@ test('a corrupt registry remains an error rather than a confirmed empty departme
   finally { f.T.dispose(); }
 });
 
-test('actual runtime withholds every declared department Component and performs no typed preload without a department', async () => {
+test('actual runtime withholds every declared department Component and performs no typed preload without a department', needs('award', 'seized'), async () => {
   for (const name of ['Employees', 'Planning', 'Staffing', 'Operational Plan', 'Daily Sessions', 'Daily Report', 'Tasks', 'Irshad', 'Seized', 'Award']) {
     const f = world(), page = f.mount(name);
     try {
@@ -142,7 +143,7 @@ test('actual runtime withholds every declared department Component and performs 
   }
 });
 
-test('global Admin and mixed KPIs can load without department preloads', async () => {
+test('global Admin and mixed KPIs can load without department preloads', needs('award', 'seized'), async () => {
   for (const name of ['Admin', 'KPIs']) {
     const f = world(), page = f.mount(name);
     try {
@@ -152,7 +153,7 @@ test('global Admin and mixed KPIs can load without department preloads', async (
   }
 });
 
-test('creating a real department rechecks the existing placeholder and waits for typed read ACK', async () => {
+test('creating a real department rechecks the existing placeholder and waits for typed read ACK', needs('award', 'seized'), async () => {
   let release; const gate = new Promise(resolve => { release = resolve; });
   const f = world({ readResponse: async data => { await gate; return response(data); } }), page = f.mount();
   try {
@@ -169,7 +170,7 @@ test('creating a real department rechecks the existing placeholder and waits for
   } finally { release(); f.T.dispose(); }
 });
 
-test('a real department denied by HTTP remains a failed read, never a no-department notice or empty Component', async () => {
+test('a real department denied by HTTP remains a failed read, never a no-department notice or empty Component', needs('award', 'seized'), async () => {
   const f = world({ registry: [{ id: 'real', name: 'TEST_ONLY department' }], readResponse: () => new Response(JSON.stringify({ ok: 0, err: 'irshad-denied' }), { status: 403 }) }), page = f.mount();
   try {
     assert.equal(await until(() => !!page.runtime.registry.get(page.name).dataError, 500), true);
@@ -180,7 +181,7 @@ test('a real department denied by HTTP remains a failed read, never a no-departm
   } finally { f.T.dispose(); }
 });
 
-test('removing a department during preload ignores the old ACK, retains draft, and recovers on a new valid scope', async () => {
+test('removing a department during preload ignores the old ACK, retains draft, and recovers on a new valid scope', needs('award', 'seized'), async () => {
   let release, delay = false; const gate = new Promise(resolve => { release = resolve; });
   const f = world({ registry: [{ id: 'first', name: 'TEST_ONLY first' }], readResponse: async data => { if (delay) await gate; return response(data); } }), page = f.mount();
   try {
@@ -199,7 +200,7 @@ test('removing a department during preload ignores the old ACK, retains draft, a
   } finally { release(); f.T.dispose(); }
 });
 
-test('actual KPIs guards inline task metrics without hiding global daily-statistics panels', () => {
+test('actual KPIs guards inline task metrics without hiding global daily-statistics panels', needs('dstats'), () => {
   const f = world();
   try {
     f.T.W.DCLogic = class {};
@@ -217,7 +218,7 @@ test('actual KPIs guards inline task metrics without hiding global daily-statist
   } finally { f.T.dispose(); }
 });
 
-test('leaving a failed department context and selecting it again performs a fresh acknowledged read', async () => {
+test('leaving a failed department context and selecting it again performs a fresh acknowledged read', needs('award', 'seized'), async () => {
   let denied = true;
   const f = world({ registry: [{ id: 'real', name: 'TEST_ONLY real' }], readResponse: data => denied ? new Response('{}', { status: 403 }) : response(data) }), page = f.mount();
   try {

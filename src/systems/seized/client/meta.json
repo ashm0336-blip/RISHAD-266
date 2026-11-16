@@ -73,13 +73,17 @@
    "gate:sec163.mjs",
    "gate:theme248.mjs",
    "gate:visual.mjs",
-   "tests/unit/business_atomic.test.mjs",
-   "tests/unit/seized_award_cloud_http.test.mjs",
-   "tests/unit/seized_award_cloud_ui.test.mjs",
+   "src/systems/_multi/tests/business_atomic.test.mjs",
+   "src/systems/_multi/tests/irsz_dash_w2.body.mjs",
+   "src/systems/_multi/tests/seized_award_cloud_http.test.mjs",
+   "src/systems/_multi/tests/seized_award_cloud_ui.test.mjs",
    "src/systems/seized/tests/seized_codec.test.mjs",
    "src/systems/seized/tests/seized_due.test.mjs",
    "src/systems/seized/tests/seized_operations.test.mjs",
-   "src/systems/seized/tests/seized_query.test.mjs"
+   "src/systems/seized/tests/seized_query.test.mjs",
+   "tests/unit/refresh_tabs_w1.test.mjs",
+   "tests/unit/v7_d1c_super_unbounded.test.mjs",
+   "tests/unit/v7_ux_page_states.test.mjs"
   ]
  }
 }

@@ -5,12 +5,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { parse } from 'acorn';
-import { D1Shim, ROOT, allowTestSchemaUpgrade } from './harness.mjs';
+import { D1Shim, ROOT, allowTestSchemaUpgrade, hasSystem } from './harness.mjs';
 import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { D1, D2, G1, G2, IDS, EKEYS, copy, identitySnapshot, notificationSnapshot } from './notifications_review_fx.mjs';
 export { ROOT, D1, D2, G1, G2, IDS, EKEYS, copy, identitySnapshot, notificationSnapshot };
 
-const NAMED = [
+const NAMED = [   /* V7 · د2-ب: اسمُ نظامٍ يُطلب بحضوره فقط (dsDomainRead ← الإحصائيات) */
   'empTransitionContext',
   'empPrepareTransition',
   'cuPlanSaveTransition',
@@ -46,7 +46,7 @@ const NAMED = [
   'opDefinitions', 'opInfo', 'opResourceGet', 'opResourceMany', 'opLoadMany',
   'opChangeStatements', 'opCommandReceipt', 'ocConvert', 'ocInflate',
   'ocPhysicalRows', 'ocFromPhysical', 'ocPhysicalTables', 'opBackupDomain',
-];
+].filter((name) => name !== 'dsDomainRead' || hasSystem('dstats'));
 function canonicalInput() {
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'workers/parts.json'), 'utf8'));
   assert.ok(Array.isArray(manifest.parts) && manifest.parts.length, 'Actual worker manifest is required');

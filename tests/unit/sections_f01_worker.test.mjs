@@ -10,6 +10,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, TAG, stored, putKV, addAccount, operationSaveBody, replaceOperationalFixture } from './tasks_fx.mjs';
+import { needs } from './harness.mjs';
 
 const K = 'bassam_auth_users_v1', KD = 'bassam_depts_v1', KG = 'bassam_gdepts_v1', KP = 'bassam_perms_v1';
 const dk = (d, r) => 'bsdept:' + d + ':bassam_' + r;
@@ -71,7 +72,7 @@ const custody = (W, ck, uid, d) => W.C.api('/api/custody?' + new URLSearchParams
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + 'F01 (1) إنشاءُ قسم: مدير النظام ومديرُ الإدارة الأم (مع بذر سقفه) — والشكلُ المخالف ومن لا يدير الإدارة مرفوضون', async () => {
+  test(M + 'F01 (1) إنشاءُ قسم: مدير النظام ومديرُ الإدارة الأم (مع بذر سقفه) — والشكلُ المخالف ومن لا يدير الإدارة مرفوضون', needs('dstats'), async () => {
     const { W, S } = await setup(mode);
     const L0 = stored(W.env, KD);
     /* مدير النظام: قسمٌ تحت إدارة ✓ · قسمٌ تحت عقدة ✗ · قسمٌ تحت قسم ✗ · قسمٌ بلا أب ✗ */

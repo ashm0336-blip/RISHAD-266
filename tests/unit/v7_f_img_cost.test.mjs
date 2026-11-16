@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TEST_SUPER_PIN } from './harness.mjs';
-import { D2, PNG, TAG, both, scene, state, gone, edit, upload, age, due } from './v7_f_img_fx.mjs';
+import { D2, PNG, TAG, both, scene, state, gone, edit, upload, age, due, gated } from './v7_f_img_fx.mjs';
 
 let n = 0;
 const typedSave = async (T) => { const s = await edit(T.W, T.S.mgr2, D2, 'plan', (v) => { v.floors[0].name = TAG + ' cost ' + (++n); }); assert.ok(s.ok, 'typed save ' + JSON.stringify(s.j).slice(0, 200)); return s; };
@@ -105,7 +105,7 @@ test('COST · an ordinary typed save with kv ≈ 100 MB: statements, D1 round tr
 });
 
 /* ── second independent review: what its fixes cost ──────────────────────────────────────────────────────────────────────────── */
-both(test, 'second review · an ordinary save with no pass due is unchanged (legacy: 100 statements, 14 D1 round trips); looking for JSON escapes is ONE statement of a pass with work (the escape count), not part of the deciding statement; a pass that finds escape-bearing texts reads them in 2 more round trips', async (mode) => {
+both(gated(test, 'irshad'), 'second review · an ordinary save with no pass due is unchanged (legacy: 100 statements, 14 D1 round trips); looking for JSON escapes is ONE statement of a pass with work (the escape count), not part of the deciding statement; a pass that finds escape-bearing texts reads them in 2 more round trips', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, DB = W.env.DB;
   due(W); await typedSave(T);
   const idle = await measured(T);

@@ -1,12 +1,16 @@
 /* Explicit TEST-ONLY schema9/10 SQL fixture cutover. Reuse the canonical
    source/empty-target witnesses; never clear a populated target or replay KV. */
 import assert from 'node:assert/strict';
-import { D1Shim } from './harness.mjs';
+import { D1Shim, hasSystem, dropLegacyDocs } from './harness.mjs';
 import { candidateWorker } from './irshad_domain_fx.mjs';
 let worker;
 export async function installBusinessFixture(env) {
   assert.ok(env.DB instanceof D1Shim, 'Only isolated fixture SQLite');
-  const W = await (worker ||= candidateWorker(['SZ_RES','AW_RES','szPredicate','awLegacyPredicate','szLegacyPrepare','awLegacyPrepare','bdGuardRetired'])), DB = env.DB;
+  /* V7 · د2-ب: كلُّ نظامٍ بحضوره — الغائبُ تُزال وثائقُه القديمة من قاعدة الاختبار (لا كودَ يحوّلها) */
+  const SZ = hasSystem('seized'), AW = hasSystem('award');
+  if (!SZ) dropLegacyDocs(env.DB, 'seized');
+  if (!AW) dropLegacyDocs(env.DB, 'award');
+  const W = await (worker ||= candidateWorker((SZ ? ['SZ_RES','szPredicate','szLegacyPrepare'] : []).concat(AW ? ['AW_RES','awLegacyPredicate','awLegacyPrepare'] : [], ['bdGuardRetired']))), DB = env.DB;
   const version = DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v;
   assert.ok(['9','10'].includes(version), 'Actual initialized seized/award tables are required');
   const protectedRows = () => JSON.parse(JSON.stringify({
@@ -15,8 +19,8 @@ export async function installBusinessFixture(env) {
     epoch: DB.q("SELECT k,v FROM meta WHERE k IN('schema_version','restore_epoch','authz_mode') ORDER BY k"),
     ownership: DB.q('SELECT * FROM imgown ORDER BY img'),
   })), before = protectedRows(), plans = [];
-  const seized = DB.q('SELECT 1 FROM kv WHERE ' + W.szPredicate() + ' LIMIT 1', JSON.stringify(W.SZ_RES));
-  const awards = DB.q('SELECT 1 FROM kv WHERE ' + W.awLegacyPredicate() + ' LIMIT 1', JSON.stringify(W.AW_RES));
+  const seized = SZ ? DB.q('SELECT 1 FROM kv WHERE ' + W.szPredicate() + ' LIMIT 1', JSON.stringify(W.SZ_RES)) : [];
+  const awards = AW ? DB.q('SELECT 1 FROM kv WHERE ' + W.awLegacyPredicate() + ' LIMIT 1', JSON.stringify(W.AW_RES)) : [];
   if (seized.length) plans.push(await W.szLegacyPrepare(env));
   if (awards.length) plans.push(await W.awLegacyPrepare(env));
   if (plans.length) await DB.batch(plans.flatMap(plan => plan.before).concat(plans.flatMap(plan => plan.after), [

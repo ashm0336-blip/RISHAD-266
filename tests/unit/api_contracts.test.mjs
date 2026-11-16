@@ -7,12 +7,13 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
 import { makeTestEnv, makeEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, worker, WORKER, SRC, since } from './harness.mjs';
+import { needs } from './harness.mjs';
 const S255 = since(155);
 const CT = JSON.parse(fs.readFileSync(path.join(SRC, 'api', 'contracts.json'), 'utf8'));
 const byPath = Object.fromEntries(CT.routes.map(r => [r.path, r]));
 const hasKeys = (j, keys) => keys.every(k => j && Object.prototype.hasOwnProperty.call(j, k));
 
-test('(أ) مساراتُ العقد = مساراتُ العامل حرفاً، بما فيها واجهة الإحصائيات العلائقية', S255, () => {
+test('(أ) مساراتُ العقد = مساراتُ العامل حرفاً، بما فيها واجهة الإحصائيات العلائقية', { ...S255, ...needs('dstats') }, () => {
   const src = fs.readFileSync(WORKER, 'utf8');
   const exact = [...new Set([...src.matchAll(/path === '(\/api\/[a-z0-9/_-]+)'/g)].map(m => m[1]))];
   const prefixes = [...new Set([...src.matchAll(/path\.indexOf\('(\/api\/[a-z0-9_-]+\/)'\)/g)].map(m => m[1]))];
@@ -23,7 +24,7 @@ test('(أ) مساراتُ العقد = مساراتُ العامل حرفاً، 
   for (const r of CT.routes) { assert.ok(Array.isArray(r.methods) && r.methods.length, r.path + ': طرائق'); assert.ok(['public', 'session', 'actor', 'super', 'enforce'].includes(r.access), r.path + ': مستوى'); assert.ok(r.responses && Object.keys(r.responses).length, r.path + ': ردود'); }
 });
 
-for (const mode of ['legacy', 'enforce']) test('(ب) الردودُ الفعلية تطابق العقد — ' + mode, S255, async () => {
+for (const mode of ['legacy', 'enforce']) test('(ب) الردودُ الفعلية تطابق العقد — ' + mode, { ...S255, ...needs('dstats') }, async () => {
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok); const ck = su.ck;
   assert.ok(hasKeys(su.j, byPath['/api/login'].responses['200'].ok1), 'login ok1');

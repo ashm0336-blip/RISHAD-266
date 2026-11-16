@@ -29,6 +29,21 @@ export const DIST = process.env.KIVO_DIST || [WORKER_N ? 'pk' + (WORKER_N + 100)
 /* KIVO_251 · ADR-012: تخطيطُ المصدر — <src>/layout.json (الشجرةُ المستهدفة) أو التخطيطُ الانتقالي k2NN/src */
 export const SRC = process.env.KIVO_SRC || path.join(ROOT, 'src');
 const LEGACY_LAYOUT = { migrations: 'migrations', workersParts: 'workers/parts', pages: 'client/pages', styles: 'client/css' };
+/* V7 · د2-ب — الأنظمةُ الحاضرة (src/systems/<key>/system.json): الاختبارُ الذي يحتاج نظاماً يُتخطّى بغيابه (needs)، والعُدّةُ المشتركة تعمل بالحالين.
+   حذفُ مجلد نظامٍ يُخرجه من القاعدة (tools/systems.py)؛ فوحداتُ القاعدة تنجح بوجوده وبغيابه. */
+export const SYSTEMS = (() => { const d = path.join(SRC, 'systems'); try { return fs.readdirSync(d).filter((k) => fs.existsSync(path.join(d, k, 'system.json'))).sort(); } catch (e) { return []; } })();
+export const hasSystem = (...keys) => keys.every((k) => SYSTEMS.includes(k));
+export const needs = (...keys) => (hasSystem(...keys) ? {} : { skip: 'نظامٌ غير حاضر: ' + keys.filter((k) => !SYSTEMS.includes(k)).join(' + ') });
+/* ملفُّ اختبارٍ كلُّه يحتاج نظاماً (أو أكثر): «X.test.mjs» محمِّلٌ بسطرين و«X.body.mjs» الاختبارُ نفسُه — فبغياب النظام لا يُستورد الجسمُ أصلاً
+   (استيرادُه الثابت لعُدّة نظامٍ غائب أو كودُه في أعلى الملف كان سيفشل قبل أي تخطٍّ)، ويُسجَّل اختبارٌ واحدٌ متخطّى باسم الملف وسببه.
+   بحضور الأنظمة كلها: الجسمُ كما هو حرفاً، فلا يتبدّل ما يُختبر. */
+export async function runIfSystems(keys, importer, name) {
+  if (hasSystem(...keys)) return importer();
+  const { default: test } = await import('node:test'); const why = needs(...keys).skip;
+  test(name + ' — ' + why, { skip: why }, () => {});
+}
+/* عُدّةُ قاعدةٍ بُذرت بوثائق KV قديمة لنظامٍ غائب: لا كودَ يحوّلها، فتُزال من قاعدة الاختبار (D1Shim في الذاكرة فقط) */
+export function dropLegacyDocs(DB, stem) { DB.exec("DELETE FROM kv WHERE k GLOB '*bassam_" + stem + "*'"); DB.exec("DELETE FROM revs WHERE k GLOB '*bassam_" + stem + "*'"); }
 export function layout() { const p = path.join(SRC, 'layout.json'); return fs.existsSync(p) ? Object.assign({}, LEGACY_LAYOUT, JSON.parse(fs.readFileSync(p, 'utf8'))) : LEGACY_LAYOUT; }
 export function srcDir(key) { return path.normalize(path.join(SRC, layout()[key])); }
 /* كتلةُ واجهةٍ بالاسم (مثل 380-hijri-fallback.js) أينما كانت في الشجرة */

@@ -19,6 +19,7 @@ import { world as tasksWorld, ME, hij, HR, taskCommandBody } from './tasks_fx.mj
 import { world as restoreWorld } from './atomic_restore_review_fx.mjs';
 import { D1, IDS } from './notifications_review_fx.mjs';
 import { inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { needs } from './harness.mjs';
 
 let n = 0;
 const typedSave = async (T) => { const s = await edit(T.W, T.S.mgr2, D2, 'plan', (v) => { v.floors[0].name = TAG + ' lit ' + (++n); }); assert.ok(s.ok, JSON.stringify(s.j).slice(0, 200)); };
@@ -187,7 +188,7 @@ for (const mode of ['legacy', 'enforce']) test('task note · an employee\'s note
   assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM ops_task_row_proof WHERE f_note_text = ?", esc1)[0].n, 1, 'stored as written');
 });
 
-test('backup restore · a typed record carrying a \\u escape of an id character is restored as written', { timeout: 600000 }, async () => {
+test('backup restore · a typed record carrying a \\u escape of an id character is restored as written', { ...needs('award', 'dstats', 'seized'), timeout: 600000 }, async () => {
   const B = await restoreWorld(), OPTIONS = 'bsdept:' + D1 + ':bassam_options_v1';
   const restored = JSON.stringify({ type: [esc1], work: [TAG + ' restored'] }), request = await B.body({ scope: { kind: 'full' } });
   const keep = (o) => Object.fromEntries(Object.entries(o).filter(([name]) => name !== 'operations'));

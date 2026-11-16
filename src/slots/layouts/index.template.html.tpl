@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob: 'unsafe-inline'; connect-src 'self' blob: data:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src 'self' blob: data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#FBFAF7">
+<meta name="color-scheme" content="light">
+<meta name="description" content="منظومة إدارة الحشود والكوادر التشغيلية بالمسجد الحرام">
+<meta name="application-name" content="المنصة التشغيلية">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="المنصة التشغيلية">
+<meta name="format-detection" content="telephone=no">
+<title>المنصة التشغيلية</title>
+<link rel="icon" href="@@KIVO_ASSET:img/favicon.svg@@">
+<link rel="icon" type="image/png" sizes="192x192" href="@@KIVO_ASSET:img/icon-192.png@@">
+<link rel="apple-touch-icon" sizes="180x180" href="@@KIVO_ASSET:img/apple-touch-180.png@@">
+<meta name="theme-color" content="#FBFAF7">
+<link rel="manifest" href="/manifest.webmanifest">@@KIVO_FONT_PRELOAD:fonts/cairo-arabic.woff2@@@@KIVO_FONT_PRELOAD:fonts/cairo-latin.woff2@@@@KIVO_PRELOADS@@
+@@KIVO_BLOCK:core/005-kivo-ns.js@@
+@@KIVO_BLOCK:core/010-react.js@@
+@@KIVO_BLOCK:core/020-react-dom.js@@
+@@KIVO_BLOCK:core/030-pages-loader.js@@
+@@KIVO_BLOCK:core/040-intl-cache.js@@
+@@KIVO_BLOCK:core/050-dc-runtime.js@@
+@@KIVO_BLOCK:services/060-percent-format.js@@
+@@KIVO_BLOCK:styles/070-theme-tokens.css@@
+@@KIVO_BLOCK:styles/080-theme-dark.css@@@@KIVO_BLOCK:styles/090-map-night.css@@@@KIVO_BLOCK:styles/100-brand-ui.css@@
+<style id="bs-critical">
+/* الفحص العميق 2026-10-21 (R3): خلفيةُ التطبيق بسمتها من أوّل رسم. كانت قاعدةُ خلفية الجسم الوحيدة داخل قالب الإطار في آخر الصفحة
+   (بعد ~77 سكربتاً) ثم تُزال معه عند التركيب، فتظهر صفحةٌ بيضاء ثم وميضٌ بيج/أبيض في كل تحديث. الرمزُ --bg-app معرَّفٌ للفاتح (070)
+   وللداكن (080 · html[data-theme=dark]) والسمةُ تُضبط قبل جسم الصفحة (110-theme-prepaint). هيكلُ الإقلاع #bs-boot أولُ عناصر الجسم
+   ويملأ الشاشة بشريطٍ بارتفاع الشريط العلوي نفسِه (81+1 · 64+1 على الجوال) حتى يُركَّب الإطار فيزيله (root-logic componentDidMount).
+   بلا وسومٍ في هذا التعليق: parseDcText وفحوصُ البناء تبحث عن أول وسمٍ نصّاً.
+   مراجعةُ التكامل W1-R3: الخلفيةُ للشاشة وحدها. على الورق كانت خلفيةُ الجذر نفسِه ترسم اللوحةَ بيجاً فلا تبلغها قاعدةُ طباعة الجسم
+   (helmet-global · body بلون السطح !important): الصفحةُ الأولى بيضاء وما بعدها كتلٌ بيج. بلا خلفيةٍ للجذر في الطباعة تنتقل خلفيةُ الجسم
+   إلى اللوحة كلِّها كما كانت قبل الموجة 1 — والرسمُ الأولُ على الشاشة (فاتحاً وداكناً) كما هو. */
+@media screen{html,body{background:var(--bg-app)}}
+#bs-boot{position:fixed;inset:0;z-index:var(--z-boot);background:var(--bg-app);font-family:var(--font-ui);direction:rtl;pointer-events:none}
+#bs-boot .bs-boot-bar{height:81px;background:var(--bg-header);border-bottom:1px solid var(--border-subtle)}
+#bs-boot .bs-boot-msg{position:absolute;top:50%;left:0;right:0;text-align:center;font-size:13px;color:var(--text-muted)}
+@media (max-width:640px){#bs-boot .bs-boot-bar{height:64px}}
+@media print{#bs-boot{display:none}}
+</style>
+@@KIVO_BLOCK:core/110-theme-prepaint.js@@
+@@KIVO_BLOCK:core/115-css-text.js@@
+</head>
+<body>
+<div id="bs-boot" aria-hidden="true"><div class="bs-boot-bar"></div><div class="bs-boot-msg">جارٍ التحميل…</div></div>
+@@KIVO_BLOCK:i18n/120-arabic-digits.js@@
+@@KIVO_BLOCK:core/130-error-bar.js@@
+
+@@KIVO_BLOCK:core/140-safety-scheduler.js@@
+@@KIVO_BLOCK:styles/150-statscroll.css@@
+
+@@KIVO_BLOCK:components/160-card-fade.js@@
+
+
+@@KIVO_BLOCK:styles/170-freeze.css@@
+@@KIVO_BLOCK:components/180-tables-engine.js@@
+@@KIVO_BLOCK:styles/200-subseg.css@@
+@@KIVO_BLOCK:components/210-mix-on.js@@
+@@KIVO_BLOCK:styles/220-cairo-font.css@@
+@@KIVO_BLOCK:styles/230-link-indicator.css@@
+@@KIVO_BLOCK:components/240-bassam-link.js@@
+@@KIVO_BLOCK:styles/250-plat-control.css@@
+@@KIVO_BLOCK:manifests/255-page-manifest.js@@
+@@KIVO_BLOCK:layouts/260-bassam-plat.js@@
+<!--BS_BOOT-->
+@@KIVO_BLOCK:core/270-bs-ver.js@@
+@@KIVO_BLOCK:api/280-server-storage.js@@
+@@KIVO_BLOCK:services/290-activity-log.js@@
+@@KIVO_BLOCK:core/300-bassam-ack.js@@
+@@KIVO_BLOCK:services/310-image-refs.js@@
+@@KIVO_BLOCK:services/320-dept-storage.js@@
+@@KIVO_BLOCK:auth/330-auth.js@@
+@@KIVO_BLOCK:permissions/331-perm-model.js@@
+@@KIVO_BLOCK:services/332-find-day.js@@
+@@KIVO_BLOCK:manifests/333-platform-map.js@@
+@@KIVO_BLOCK:permissions/334-perm-tree-tpl.js@@
+@@KIVO_BLOCK:auth/335-identity-gate.js@@
+@@KIVO_BLOCK:permissions/340-registry-v24-9.js@@
+@@KIVO_BLOCK:permissions/350-perm-v2-shadow.js@@
+@@KIVO_BLOCK:services/360-bassam-idb.js@@
+@@KIVO_BLOCK:auth/370-backup-crypto.js@@
+@@KIVO_BLOCK:i18n/380-hijri-fallback.js@@
+@@KIVO_BLOCK:services/390-kpi-primitives.js@@
+@@KIVO_BLOCK:services/400-shift-need.js@@
+@@KIVO_BLOCK:services/410-gate-units.js@@
+@@KIVO_BLOCK:services/420-round-factory.js@@
+@@KIVO_BLOCK:services/430-store-broadcast.js@@
+@@KIVO_BLOCK:services/440-count.js@@
+@@KIVO_BLOCK:services/441-notif-core.js@@
+@@KIVO_BLOCK:services/442-notif-observer.js@@
+@@KIVO_BLOCK:components/450-pull-refresh.js@@
+@@KIVO_BLOCK:components/460-hscroll-drag.js@@
+@@KIVO_BLOCK:components/470-touch-tooltips.js@@
+
+@@KIVO_BLOCK:services/490-emp-key.js@@
+@@KIVO_BLOCK:services/500-element-uid.js@@
+@@KIVO_BLOCK:services/520-field-monitor.js@@
+@@KIVO_BLOCK:services/530-emp-day-facts.js@@
+@@KIVO_BLOCK:services/535-profile-facts.js@@
+@@KIVO_BLOCK:services/545-task-self.js@@
+@@KIVO_BLOCK:services/546-task-model.js@@
+@@KIVO_BLOCK:services/547-custody-api.js@@
+@@KIVO_BLOCK:services/548-atomic-backup.js@@
+@@KIVO_BLOCK:styles/540-busy.css@@
+@@KIVO_BLOCK:components/550-bassam-busy.js@@
+@@KIVO_BLOCK:styles/555-page-states.css@@
+@@KIVO_BLOCK:components/555-page-states.js@@
+@@KIVO_BLOCK:components/560-canvas-input.js@@
+@@KIVO_BLOCK:components/565-page-kit.js@@
+@@KIVO_BLOCK:services/566-print-core.js@@
+@@KIVO_BLOCK:services/570-bassam-xlsx.js@@
+@@SYS:shell.blocks.after570@@@@KIVO_BLOCK:services/590-employees-import.js@@
+<x-dc>
+<helmet>
+<title>المنصة التشغيلية</title>
+<link rel="icon" href="@@KIVO_ASSET:img/favicon.svg@@">
+@@KIVO_BLOCK:styles/595-almarai-font.css@@
+@@KIVO_INLINE:layouts/helmet-global.css@@
+</helmet>
+
+<div dir="rtl" data-screen-label="إطار التطبيق" style="min-height:100vh;font-family:var(--font-ui);display:flex">
+
+<header class="{{topClass}}" style="{{headerStyle}}">
+  <div class="bs-tbs">
+    <!-- زر القائمة: يفتح درج الشريط الجانبي — يظهر على الجوال وحده -->
+    <button class="bs-btn bs-btn--icon bs-burger" sc-camel-on-click="{{toggleSidebar}}" title="القائمة" aria-expanded="{{burgerExp}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-198c558e"></svg>
+    </button>
+    <!-- العنوان: «نطاق / صفحة» — «المنصة» على صفحات المنصة، والوحدة النشطة في غيرها؛ يظهر في التطبيق المثبّت أيضاً ويُقصّ على الجوال -->
+    <div class="bs-crumb">{{crumbUnit}} / <span>{{pageName}}</span></div>
+  </div>
+  <div class="bs-tbe">
+    <!-- مبدّل الإدارات انتقل إلى رأس القائمة الجانبية — الهيدر للعنوان والأدوات العامة -->
+    <!-- تحديث الصفحة في التطبيق: بسحب الشاشة إلى الأسفل (ptr.js) — لا زر -->
+    <!-- ═══ الجرس: تنبيهات المستخدم — كل ما يخصّه في مكان واحد ═══ -->
+    <sc-if value="{{nfOn}}" hint-placeholder-val="{{ true }}">
+    <span data-bs-nf="1" style="position:relative;display:inline-flex">
+    <button class="bs-btn bs-btn--icon bs-nfbell" data-st="{{nfBellSt}}" sc-camel-on-click="{{nfToggle}}" title="التنبيهات">
+      <svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0c66b4d9"></svg>
+      <sc-if value="{{nfHas}}" hint-placeholder-val="{{ false }}"><i class="bs-nfbadge">{{nfCount}}</i></sc-if>
+    </button>
+    </span>
+    </sc-if>
+    <!-- زرُّ الإضاءة: سمةٌ حقيقية برموز CSS (data-theme) — لا مرشِّحات -->
+    <button class="bs-btn bs-btn--icon bs-thm" sc-camel-on-click="{{toggleTheme}}" title="{{themeTitle}}">
+      <sc-if value="{{isDarkMode}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a3f96587"></svg></sc-if>
+      <sc-if value="{{isLightMode}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-ff61c061"></svg></sc-if>
+    </button>
+    <!-- تسجيل الخروج: نفس أيقونة القائمة الجانبية وهويّتها الحمراء، بقياس أزرار الهيدر -->
+    <button class="bs-btn bs-btn--icon bs-hdrout" sc-camel-on-click="{{doLogout}}" title="تسجيل الخروج">
+      <svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-775bc568"></svg>
+    </button>
+      </div>
+</header>
+
+
+
+<!-- الطبقة المعتمة خلف الدرج: النقر عليها يُغلقه — تظهر على الشاشات الصغيرة وحدها -->
+<sc-if value="{{scrimOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-scrim" sc-camel-on-click="{{toggleSidebar}}" style="display:none"></div>
+</sc-if>
+<aside class="{{sbClass}}">
+  
+  <div class="s-brand">
+    <!-- الهيدر: اسم البرنامج والإصدار فقط -->
+    <div class="s-mark" title="المنصة التشغيلية">
+      <svg width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-8bfe300f"></svg>
+    </div>
+    <div class="s-txt"><div class="s-co">المنصة التشغيلية</div><div class="s-ver">{{bsVerTxt}}</div></div>
+  </div>
+  <!-- زر الفتح/الإغلاق: أسفل الخط الفاصل مباشرة، شريط مستقل -->
+  <div class="s-togbar">
+    <div class="s-tog2" role="button" tabindex="0" aria-label="{{sbToggleTitle}}" aria-expanded="{{sbExp}}" sc-camel-on-click="{{toggleSidebar}}" title="{{sbToggleTitle}}">
+      <svg width="14" height="14" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{sbToggleChevron}}" data-i="i-ee575b7e"></svg>
+    </div>
+  </div>
+  <nav class="s-nav" aria-label="{{sbNavLbl}}">
+    <sc-if value="{{sbOps}}" hint-placeholder-val="{{ true }}">
+    <div class="grp">
+      <div class="s-ghead">
+        <!-- مبدّل الإدارة النشطة — بديل عبارة «القائمة الرئيسية»: كل عناصر
+             التنقل تحته تخص هذه الإدارة، فالمبدّل رأسُ نطاقها. للمشرف العام
+             وحده يعمل منسدلاً؛ ولغيره اسمٌ ثابت بلا سهم -->
+        <button class="s-dept" sc-camel-on-click="{{sbDeptClick}}" aria-label="{{sbDeptTitle}}" title="{{sbDeptTip}}" aria-expanded="{{deptOpenAria}}" style="{{sbDeptBtnStyle}}">
+          <span class="s-depti"><svg width="13" height="13" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-3b3c0edc"></svg></span>
+          <span class="nlbl s-deptn">{{deptName}}</span>
+          <svg class="s-deptc" width="12" height="12" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{deptChev}}" data-i="i-820aa71e"></svg>
+        </button>
+        <sc-if value="{{secAddOn}}" hint-placeholder-val="{{ false }}"><button class="s-secadd" sc-camel-on-click="{{secAdd}}" title="إضافة قسم تحت هذه الإدارة" aria-label="إضافة قسم تحت هذه الإدارة">+ قسم</button></sc-if>
+      </div>
+      <sc-if value="{{deptOpen}}" hint-placeholder-val="{{ false }}">
+      <div class="s-deptdd">
+        <div class="s-deptddh">{{deptDdHead}}</div>
+        <sc-for list="{{deptTree}}" as="g" hint-placeholder-count="2">
+        <div style="min-width:0">
+          <sc-if value="{{g.headOn}}" hint-placeholder-val="{{ true }}">
+          <div role="button" tabindex="0" sc-camel-on-click="{{g.toggle}}" style="{{g.headStyle}}" title="{{g.name}}">
+            <svg width="11" height="11" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="{{g.chev}}" data-i="i-820aa71e"></svg>
+            <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{g.name}}</span>
+          </div>
+          </sc-if>
+          <sc-if value="{{g.open}}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{g.items}}" as="d" hint-placeholder-count="2">
+          <div role="button" tabindex="0" sc-camel-on-click="{{d.pick}}" style="{{d.style}}">
+            <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{d.name}}</span>
+            <sc-if value="{{d.on}}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" sc-camel-view-box="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-904d0d5c"></svg></sc-if>
+          </div>
+          </sc-for>
+          </sc-if>
+        </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <!-- «مؤشرات الإدارة» أول القائمة: تُقرأ المؤشرات كلها من مكانٍ واحد -->
+      <a class="{{nKpis}}" data-key="kpis" role="link" tabindex="0" sc-camel-on-click="{{goKpis}}" title="{{tKpis}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f1f8422f"></svg></span><span class="nlbl">{{lKpis}}</span></a>
+@@SYS:shell.nav.dstats@@      <a class="{{nEmployees}}" data-key="emps" role="link" tabindex="0" sc-camel-on-click="{{goEmployees}}" title="{{tEmployees}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-88b8240d"></svg></span><span class="nlbl">{{lEmployees}}</span></a>
+      <a class="{{nPlanning}}" data-key="planning" role="link" tabindex="0" sc-camel-on-click="{{goPlanning}}" title="{{tPlanning}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d81dfaae"></svg></span><span class="nlbl">الخطة التشغيلية</span></a>
+      <a class="{{nDaily}}" data-key="daily" role="link" tabindex="0" sc-camel-on-click="{{goDaily}}" title="{{tDaily}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9a375c7e"></svg></span><span class="nlbl">المتابعة اليومية</span></a>
+@@SYS:shell.nav.systems@@      <!-- «المهام اليومية» انتقلت إلى تبويب داخل صفحة موظفي الإدارة -->
+    </div>
+    <!-- الخطّ يفصل صفحات العمل عمّا بعدها، و«مواقع ذات صلة» أوّل ما يليه -->
+    <div class="grp">
+      <div style="height:1px;background:var(--bg-a3752630p08);margin:6px 8px 10px"></div>
+      <a class="{{nLinks}}" role="link" tabindex="0" sc-camel-on-click="{{goLinks}}" title="{{tLinks}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-19276319"></svg></span><span class="nlbl">مواقع ذات صلة</span></a>
+    </div>
+    <sc-if value="{{showAdminGrp}}" hint-placeholder-val="{{ true }}">
+    <!-- خطّ ثانٍ يفصل الإدارة (الإعدادات) عن المراجع (مواقع ذات صلة والمساعدة) -->
+    <div class="grp">
+      <div style="height:1px;background:var(--bg-a3752630p08);margin:6px 8px 10px"></div>
+      <a class="{{nAdmin}}" role="link" tabindex="0" sc-camel-on-click="{{goAdmin}}" title="{{tAdmin}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-6ff4a882"></svg></span><span class="nlbl">الإعدادات</span></a>
+    </div>
+    </sc-if>
+    </sc-if>
+    <!-- CORE-02 S7 · مساحةُ «مركز إدارة رشاد»: تنقّلُ المركز وحده (خمسُ مجموعاتٍ ثابتة؛ العناصرُ من خريطة _sysNav وتوافرِ صفحة الإدارة) —
+         لا أنظمةَ تشغيلية ولا مبدّلَ وحدات ولا «+ قسم». الخروجُ إلى مساحة العمل التشغيلية في موضعٍ ثابتٍ أسفل الشريط ·
+         أكورديون: رأسُ المجموعة زرٌّ (aria-expanded · aria-controls) وقائمتُها hidden حين تُطوى — لا عنصرَ مخفيّاً يأخذ التركيز -->
+    <sc-if value="{{sbConsole}}" hint-placeholder-val="{{ false }}">
+    <div class="s-space"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-97d6f6ed"></svg></span><span class="s-spt"><span class="nlbl">مركز إدارة رشاد</span></span></div>
+    <sc-if value="{{con.loading}}" hint-placeholder-val="{{ false }}"><div class="s-cskel" aria-hidden="true"><span class="bs-skel"></span><span class="bs-skel"></span><span class="bs-skel"></span><span class="bs-skel"></span><span class="bs-skel"></span><span class="bs-skel"></span></div></sc-if>
+    <div class="s-cacc" sc-camel-on-key-down="{{con.key}}">
+    <span id="con-gh-cur" hidden="hidden">الصفحة الحالية ضمن هذه المجموعة</span>
+    <sc-if value="{{con.home.show}}" hint-placeholder-val="{{ false }}"><a class="{{con.home.cls}} s-ci--top" href="#/sysadmin/overview" aria-current="{{con.home.cur}}" data-con-tab="overview" sc-camel-on-click="{{con.home.go}}" title="الرئيسية"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-6b355220"></svg></span><span class="nlbl">الرئيسية</span></a></sc-if>
+    <sc-if value="{{con.org.show}}" hint-placeholder-val="{{ false }}">
+    <div class="grp s-cg">
+      <button type="button" class="{{con.org.hCls}}" id="con-gh-org" aria-expanded="{{con.org.exp}}" aria-controls="con-gl-org" aria-describedby="{{con.org.desc}}" sc-camel-on-click="{{con.org.toggle}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-533ecb79"></svg></span><span class="nlbl">الإدارة المؤسسية</span><sc-if value="{{con.org.hBdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{con.org.bdg}}</span></sc-if><sc-if value="{{con.org.hDot}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></button><span id="con-gm-org" hidden="hidden">{{con.org.mTxt}}</span>
+      <sc-if value="{{conRail}}" hint-placeholder-val="{{ false }}"><a class="{{con.org.railCls}}" role="link" tabindex="0" aria-current="{{con.org.railCur}}" aria-label="{{con.org.railLbl}}" title="{{con.org.railTitle}}" sc-camel-on-click="{{con.org.railGo}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-533ecb79"></svg></span><sc-if value="{{con.org.railMark}}" hint-placeholder-val="{{ false }}"><i class="s-cmark" aria-hidden="true"></i></sc-if></a></sc-if>
+      <div class="s-cl" id="con-gl-org" role="group" aria-labelledby="con-gh-org" hidden="{{con.org.shut}}">
+      <sc-for list="{{con.org.items}}" as="it" hint-placeholder-count="3">
+      <sc-if value="{{it.div}}" hint-placeholder-val="{{ false }}"><span class="s-cdiv" aria-hidden="true"></span></sc-if>
+      <a class="{{it.cls}}" href="{{it.href}}" aria-current="{{it.cur}}" aria-label="{{it.lbl}}" data-con-tab="{{it.tab}}" data-con-sub="{{it.sub}}" sc-camel-on-click="{{it.go}}" title="{{it.t}}"><span class="nlbl">{{it.t}}</span><sc-if value="{{it.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{it.bdg}}</span></sc-if><sc-if value="{{it.dirty}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></a>
+      </sc-for>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{con.plat.show}}" hint-placeholder-val="{{ false }}">
+    <div class="grp s-cg">
+      <button type="button" class="{{con.plat.hCls}}" id="con-gh-plat" aria-expanded="{{con.plat.exp}}" aria-controls="con-gl-plat" aria-describedby="{{con.plat.desc}}" sc-camel-on-click="{{con.plat.toggle}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-e5471789"></svg></span><span class="nlbl">إعدادات المنصة</span><sc-if value="{{con.plat.hBdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{con.plat.bdg}}</span></sc-if><sc-if value="{{con.plat.hDot}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></button><span id="con-gm-plat" hidden="hidden">{{con.plat.mTxt}}</span>
+      <sc-if value="{{conRail}}" hint-placeholder-val="{{ false }}"><a class="{{con.plat.railCls}}" role="link" tabindex="0" aria-current="{{con.plat.railCur}}" aria-label="{{con.plat.railLbl}}" title="{{con.plat.railTitle}}" sc-camel-on-click="{{con.plat.railGo}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-e5471789"></svg></span><sc-if value="{{con.plat.railMark}}" hint-placeholder-val="{{ false }}"><i class="s-cmark" aria-hidden="true"></i></sc-if></a></sc-if>
+      <div class="s-cl" id="con-gl-plat" role="group" aria-labelledby="con-gh-plat" hidden="{{con.plat.shut}}">
+      <sc-for list="{{con.plat.items}}" as="it" hint-placeholder-count="3">
+      <sc-if value="{{it.div}}" hint-placeholder-val="{{ false }}"><span class="s-cdiv" aria-hidden="true"></span></sc-if>
+      <a class="{{it.cls}}" href="{{it.href}}" aria-current="{{it.cur}}" aria-label="{{it.lbl}}" data-con-tab="{{it.tab}}" data-con-sub="{{it.sub}}" sc-camel-on-click="{{it.go}}" title="{{it.t}}"><span class="nlbl">{{it.t}}</span><sc-if value="{{it.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{it.bdg}}</span></sc-if><sc-if value="{{it.dirty}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></a>
+      </sc-for>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{con.sec.show}}" hint-placeholder-val="{{ false }}">
+    <div class="grp s-cg">
+      <button type="button" class="{{con.sec.hCls}}" id="con-gh-sec" aria-expanded="{{con.sec.exp}}" aria-controls="con-gl-sec" aria-describedby="{{con.sec.desc}}" sc-camel-on-click="{{con.sec.toggle}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-217a5f12"></svg></span><span class="nlbl">الأمن والرقابة</span><sc-if value="{{con.sec.hBdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{con.sec.bdg}}</span></sc-if><sc-if value="{{con.sec.hDot}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></button><span id="con-gm-sec" hidden="hidden">{{con.sec.mTxt}}</span>
+      <sc-if value="{{conRail}}" hint-placeholder-val="{{ false }}"><a class="{{con.sec.railCls}}" role="link" tabindex="0" aria-current="{{con.sec.railCur}}" aria-label="{{con.sec.railLbl}}" title="{{con.sec.railTitle}}" sc-camel-on-click="{{con.sec.railGo}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-217a5f12"></svg></span><sc-if value="{{con.sec.railMark}}" hint-placeholder-val="{{ false }}"><i class="s-cmark" aria-hidden="true"></i></sc-if></a></sc-if>
+      <div class="s-cl" id="con-gl-sec" role="group" aria-labelledby="con-gh-sec" hidden="{{con.sec.shut}}">
+      <sc-for list="{{con.sec.items}}" as="it" hint-placeholder-count="3">
+      <sc-if value="{{it.div}}" hint-placeholder-val="{{ false }}"><span class="s-cdiv" aria-hidden="true"></span></sc-if>
+      <a class="{{it.cls}}" href="{{it.href}}" aria-current="{{it.cur}}" aria-label="{{it.lbl}}" data-con-tab="{{it.tab}}" data-con-sub="{{it.sub}}" sc-camel-on-click="{{it.go}}" title="{{it.t}}"><span class="nlbl">{{it.t}}</span><sc-if value="{{it.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{it.bdg}}</span></sc-if><sc-if value="{{it.dirty}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></a>
+      </sc-for>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{con.data.show}}" hint-placeholder-val="{{ false }}">
+    <div class="grp s-cg">
+      <button type="button" class="{{con.data.hCls}}" id="con-gh-data" aria-expanded="{{con.data.exp}}" aria-controls="con-gl-data" aria-describedby="{{con.data.desc}}" sc-camel-on-click="{{con.data.toggle}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-53b60cd3"></svg></span><span class="nlbl">البيانات والاستمرارية</span><sc-if value="{{con.data.hBdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{con.data.bdg}}</span></sc-if><sc-if value="{{con.data.hDot}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></button><span id="con-gm-data" hidden="hidden">{{con.data.mTxt}}</span>
+      <sc-if value="{{conRail}}" hint-placeholder-val="{{ false }}"><a class="{{con.data.railCls}}" role="link" tabindex="0" aria-current="{{con.data.railCur}}" aria-label="{{con.data.railLbl}}" title="{{con.data.railTitle}}" sc-camel-on-click="{{con.data.railGo}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-53b60cd3"></svg></span><sc-if value="{{con.data.railMark}}" hint-placeholder-val="{{ false }}"><i class="s-cmark" aria-hidden="true"></i></sc-if></a></sc-if>
+      <div class="s-cl" id="con-gl-data" role="group" aria-labelledby="con-gh-data" hidden="{{con.data.shut}}">
+      <sc-for list="{{con.data.items}}" as="it" hint-placeholder-count="3">
+      <sc-if value="{{it.div}}" hint-placeholder-val="{{ false }}"><span class="s-cdiv" aria-hidden="true"></span></sc-if>
+      <a class="{{it.cls}}" href="{{it.href}}" aria-current="{{it.cur}}" aria-label="{{it.lbl}}" data-con-tab="{{it.tab}}" data-con-sub="{{it.sub}}" sc-camel-on-click="{{it.go}}" title="{{it.t}}"><span class="nlbl">{{it.t}}</span><sc-if value="{{it.bdgOn}}" hint-placeholder-val="{{ false }}"><span class="bdg" aria-hidden="true">{{it.bdg}}</span></sc-if><sc-if value="{{it.dirty}}" hint-placeholder-val="{{ false }}"><span class="s-dot" aria-hidden="true"></span></sc-if></a>
+      </sc-for>
+      </div>
+    </div>
+    </sc-if>
+    </div>
+    </sc-if>
+  </nav>
+  <sc-if value="{{authSuperSb}}" hint-placeholder-val="{{ true }}">
+  <div class="s-togwrap">
+    <sc-if value="{{sbOps}}" hint-placeholder-val="{{ true }}">
+    <a class="{{nSysAdmin}}" role="link" tabindex="0" sc-camel-on-click="{{goSysAdmin}}" title="مركز إدارة رشاد — لمسؤول المنصة وحده"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-97d6f6ed"></svg></span><span class="nlbl">مركز إدارة رشاد</span></a>
+    </sc-if>
+    <sc-if value="{{sbConsole}}" hint-placeholder-val="{{ false }}">
+    <a class="n s-exit" role="link" tabindex="0" sc-camel-on-click="{{goOps}}" title="{{conExitTitle}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-8bfe300f"></svg></span><span class="nlbl">مساحة العمل التشغيلية<small>{{deptName}}</small></span></a>
+    </sc-if>
+  </div>
+  </sc-if>
+  <div class="s-foot">
+    <div class="s-user" role="button" tabindex="0" aria-label="الملف الشخصي" sc-camel-on-click="{{goProfile}}" style="cursor:pointer">
+      <div class="s-av">{{profInitial}}</div>
+      <div class="s-uinfo"><div class="s-un">{{profName}}</div><div class="s-ur">{{profRole}}<sc-if value="{{profBadgeOn}}" hint-placeholder-val="{{ false }}"><b class="s-badge">{{profBadge}}</b></sc-if></div></div>
+      <button class="s-logout" sc-camel-on-click="{{doLogout}}" title="تسجيل الخروج"><svg width="14" height="14" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-775bc568"></svg></button>
+    </div>
+  </div>
+</aside>
+
+<main class="bs-main" style="{{mainStyle}}">
+  <h1 class="bs-sr-only">{{screenTitle}}</h1>
+  <sc-if value="{{isEmployees}}" hint-placeholder-val="{{ true }}">
+    <dc-import name="Employees" hint-size="100%,1200px"></dc-import>
+  </sc-if>
+  <sc-if value="{{isStaffing}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="Staffing" hint-size="100%,1300px"></dc-import>
+  </sc-if>
+  <sc-if value="{{isPlan}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="Operational Plan" hint-size="100%,1100px"></dc-import>
+  </sc-if>
+
+  <sc-if value="{{isSysAdmin}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="Admin" hint-size="100%,1200px"></dc-import>
+  </sc-if>
+
+  <sc-if value="{{isTasks}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="Tasks" hint-size="100%,1200px"></dc-import>
+  </sc-if>
+
+  <sc-if value="{{isDaily}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="Daily Sessions" hint-size="100%,1100px"></dc-import>
+  </sc-if>
+  <sc-if value="{{isDreport}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="Daily Report" hint-size="100%,1100px"></dc-import>
+  </sc-if>
+  <sc-if value="{{isPlanning}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="Planning" hint-size="100%,1200px"></dc-import>
+  </sc-if>
+  <sc-if value="{{isKpis}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="KPIs" hint-size="100%,1200px"></dc-import>
+  </sc-if>
+@@SYS:shell.mounts@@  <sc-if value="{{isAdmin}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="Admin" hint-size="100%,1200px"></dc-import>
+  </sc-if>
+  <sc-if value="{{isProfile}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="Profile" hint-size="100%,950px"></dc-import>
+  </sc-if>
+  <sc-if value="{{isLinks}}" hint-placeholder-val="{{ false }}">
+    <div dir="rtl" data-screen-label="مواقع ذات صلة" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414);margin:0 auto;display:flex;flex-direction:column;gap:16px">
+      <div style="border-radius:16px;border:1px solid var(--bd-a185151810p2);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--bd-xf1f3f5)">
+          <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p1);border:1px solid var(--bd-a185151810p25);color:var(--fg-xb99751)"><svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-19276319"></svg></div>
+          <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:800;color:var(--fg-x141414)">مواقع ذات صلة</div><div style="font-size:11px;color:var(--fg-x94a3b8)">{{lkSub}}</div></div>
+          <sc-if value="{{lkCanEdit}}" hint-placeholder-val="{{ false }}"><button sc-camel-on-click="{{lkAdd}}" style="height:34px;border:0;border-radius:10px;padding:0 16px;font-size:12px;font-weight:600;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;cursor:pointer;background:linear-gradient(135deg,var(--bg-xc5a45c),var(--bg-x8a6f35))">+ إضافة موقع</button></sc-if>
+        </div>
+        <sc-if value="{{lkFormOn}}" hint-placeholder-val="{{ false }}">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--bd-xf1f3f5);background:var(--bg-xfcfbf8);display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label style="font-size:11.5px;color:var(--fg-x374151);display:block;margin-bottom:5px">اسم الموقع *</label><input value="{{lkT}}" onChange="{{lkOnT}}" placeholder="مثال: بوابة الخدمات الإلكترونية" style="width:100%;height:36px;border:1px solid var(--bd-xe1e1e1);border-radius:8px;padding:0 12px;font-size:13px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box"></div>
+          <div><label style="font-size:11.5px;color:var(--fg-x374151);display:block;margin-bottom:5px">الرابط *</label><input dir="ltr" value="{{lkU}}" onChange="{{lkOnU}}" placeholder="https://…" style="width:100%;height:36px;border:1px solid var(--bd-xe1e1e1);border-radius:8px;padding:0 12px;font-size:13px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box"></div>
+          <div style="grid-column:1/-1"><label style="font-size:11.5px;color:var(--fg-x374151);display:block;margin-bottom:5px">وصف مختصر</label><input value="{{lkD}}" onChange="{{lkOnD}}" placeholder="اختياري — سطر يوضّح متى يُستخدم" style="width:100%;height:36px;border:1px solid var(--bd-xe1e1e1);border-radius:8px;padding:0 12px;font-size:13px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box"></div>
+          <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-start"><button sc-camel-on-click="{{lkSave}}" style="height:34px;border:0;border-radius:10px;padding:0 18px;font-size:12px;font-weight:600;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;cursor:pointer;background:var(--bg-x008450)">حفظ</button><button sc-camel-on-click="{{lkCancel}}" style="height:34px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 14px;font-size:12px;font-family:'Cairo',sans-serif;cursor:pointer;background:var(--bg-xffffff);color:var(--fg-x53565a)">إلغاء</button><span style="font-size:11px;color:var(--fg-xb45309);align-self:center">{{lkErr}}</span></div>
+        </div>
+        </sc-if>
+        <sc-if value="{{lkEmpty}}" hint-placeholder-val="{{ true }}">
+        <div style="text-align:center;padding:44px 20px"><div style="font-size:14px;font-weight:700;color:var(--fg-x141414);margin-bottom:6px">لم تُضف مواقع بعد</div><div style="font-size:12px;color:var(--fg-x53565a)">{{lkEmptyHint}}</div></div>
+        </sc-if>
+        <sc-for list="{{lkRows}}" as="r" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--bd-xf4f4f4)">
+          <a href="{{r.u}}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-decoration:none;color:inherit">
+            <span style="width:36px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--bg-xf4f5f7);color:var(--fg-x8a6f35);font-weight:800;font-size:14px">{{r.ini}}</span>
+            <span style="min-width:0"><span style="display:block;font-size:13px;font-weight:700;color:var(--fg-x141414);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.t}}</span><span style="display:block;font-size:11px;color:var(--fg-x94a3b8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.d}}</span></span>
+          </a>
+          <span class="bs-lk-host" dir="ltr" style="font-size:10.5px;color:var(--fg-x94a3b8);white-space:nowrap">{{r.host}}</span>
+          <sc-if value="{{r.canEdit}}" hint-placeholder-val="{{ false }}"><button sc-camel-on-click="{{r.edit}}" title="تعديل" style="height:28px;border:1px solid var(--bd-xe1e1e1);border-radius:8px;padding:0 10px;font-size:11px;font-family:'Cairo',sans-serif;cursor:pointer;background:var(--bg-xffffff);color:var(--fg-x53565a)">تعديل</button><button sc-camel-on-click="{{r.del}}" title="حذف" style="height:28px;border:1px solid var(--bd-a22038380p3);border-radius:8px;padding:0 10px;font-size:11px;font-family:'Cairo',sans-serif;cursor:pointer;background:var(--bg-xffffff);color:var(--fg-xb91c1c)">حذف</button></sc-if>
+        </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{isPlaceholder}}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 82px);padding:48px">
+      <div style="text-align:center;max-width:420px;background:var(--bg-xffffff);border:1px solid var(--bd-a2252252250p7);border-radius:16px;padding:48px 40px;box-shadow:var(--shadow-card)">
+        <div style="width:64px;height:64px;border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p1);border:1px solid var(--bd-a185151810p25);color:var(--fg-xb99751)">
+          <svg width="28" height="28" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f7516656"></svg>
+        </div>
+        <h2 style="font-size:18px;font-weight:600;margin:0 0 8px">{{placeholderTitle}}</h2>
+        <p style="font-size:13px;color:var(--fg-x53565a);line-height:1.7;margin:0">{{placeholderSub}}</p>
+      </div>
+    </div>
+  </sc-if>
+  <div class="ps-shell"></div>
+</main>
+<sc-if value="{{cfmOn}}" hint-placeholder-val="{{ false }}">
+<div onClick="{{cfmNo}}" class="bs-dlg bs-dlg--cfm">
+  <div id="bsCfm" role="alertdialog" aria-modal="true" aria-labelledby="bsCfmTitle" aria-describedby="bsCfmMsg" onClick="{{bkcStop}}" class="bs-dlg-box bs-cfm">
+    <div class="bs-cfm-hd">
+      <div class="bs-cfm-ic {{cfmIcCls}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9d08ae4a"></svg></div>
+      <h3 id="bsCfmTitle">{{cfmTitle}}</h3>
+    </div>
+    <p id="bsCfmMsg">{{cfmMsg}}</p>
+    <sc-if value="{{cfmTypedOn}}" hint-placeholder-val="{{ false }}">
+    <label for="bsCfmTyped">{{cfmTypedLabel}}</label>
+    <input id="bsCfmTyped" value="{{cfmTypedVal}}" onChange="{{cfmTypedInput}}" autocomplete="off"/>
+    </sc-if>
+    <div class="bs-cfm-ft">
+      <button id="bsCfmOk" onClick="{{cfmYes}}" class="bs-btn {{cfmOkCls}}">{{cfmOk}}</button>
+      <sc-if value="{{cfmNoOn}}" hint-placeholder-val="{{ true }}"><button id="bsCfmNo" onClick="{{cfmNo}}" class="bs-btn">{{cfmCancel}}</button></sc-if>
+    </div>
+  </div>
+</div>
+</sc-if>
+<sc-if value="{{bkcOpen}}" hint-placeholder-val="{{ false }}">
+<div onClick="{{bkcCancel}}" class="bs-dlg bs-dlg--modal">
+  <div onClick="{{bkcStop}}" role="dialog" aria-modal="true" aria-labelledby="bsBkcTitle" class="bs-dlg-box bs-bkc">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div style="width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--bg-xfffbeb);border:1px solid var(--bd-xfde68a);color:var(--fg-xb45309);flex-shrink:0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9d08ae4a"></svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <h3 id="bsBkcTitle" style="font-size:16px;font-weight:600;margin:0 0 3px;color:var(--fg-x141414)">{{bkcHead}}</h3>
+        <p style="font-size:11.5px;color:var(--fg-x53565a);margin:0;line-height:1.7">{{bkcSub}}</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px">
+        <div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">عناصر موجودة حالياً</div>
+        <div style="font-size:17px;font-weight:600;color:var(--fg-x141414)">{{bkcCur}}</div>
+      </div>
+      <div style="flex:1;min-width:120px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px">
+        <div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">عناصر في الملف</div>
+        <div style="font-size:17px;font-weight:600;color:var(--fg-x141414)">{{bkcFile}}</div>
+      </div>
+      <div style="flex:1;min-width:120px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px">
+        <div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">ستُستبدل عند الاستبدال</div>
+        <div style="font-size:17px;font-weight:600;color:var(--fg-xb45309)">{{bkcOver}}</div>
+      </div>
+      <div style="flex:1;min-width:120px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px">
+        <div style="font-size:9.5px;color:var(--fg-x94a3b8);font-weight:400;margin-bottom:3px">غير موجودة حالياً</div>
+        <div style="font-size:17px;font-weight:600;color:var(--fg-x047857)">{{bkcFresh}}</div>
+      </div>
+    </div>
+    <sc-if value="{{bkcPick}}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div onClick="{{bkcMerge}}" style="text-align:right;border:1px solid var(--bd-xe1e1e1);border-radius:14px;padding:13px 14px;cursor:pointer;background:var(--bg-xffffff);display:flex;align-items:flex-start;gap:11px;transition:all .15s" style-hover="border-color:var(--bd-x0891b2);background:var(--bg-a81451780p05)">
+        <div style="width:34px;height:34px;border-radius:10px;background:var(--bg-a81451780p12);color:var(--fg-x0891b2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-b87f583a"></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;margin-bottom:3px">دمج مع الموجود</div>
+          <div style="font-size:11px;color:var(--fg-x53565a);line-height:1.7">{{bkcMergeDesc}}</div>
+        </div>
+      </div>
+      <div onClick="{{bkcAskReplace}}" style="text-align:right;border:1px solid var(--bd-a23968680p35);border-radius:14px;padding:13px 14px;cursor:pointer;background:var(--bg-xffffff);display:flex;align-items:flex-start;gap:11px;transition:all .15s" style-hover="border-color:var(--bd-xdc2626);background:var(--bg-a23968680p05)">
+        <div style="width:34px;height:34px;border-radius:10px;background:var(--bg-xfef2f2);color:var(--fg-xdc2626);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9bf9a6dd"></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;margin-bottom:3px;color:var(--fg-xdc2626)">استبدال كامل</div>
+          <div style="font-size:11px;color:var(--fg-x53565a);line-height:1.7">{{bkcReplaceDesc}}</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-start;margin-top:14px">
+      <button onClick="{{bkcCancel}}" class="bs-btn">إلغاء الاستيراد</button>
+    </div>
+    </sc-if>
+    <sc-if value="{{bkcConfirm}}" hint-placeholder-val="{{ false }}">
+    <div style="background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);border-radius:14px;padding:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--fg-xdc2626);margin-bottom:5px">تأكيد الاستبدال</div>
+      <p style="font-size:11.5px;color:var(--fg-x53565a);line-height:1.9;margin:0 0 12px">{{bkcWarn}}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onClick="{{bkcDoReplace}}" class="bs-btn bs-btn--danger">نعم، استبدل</button>
+        <button onClick="{{bkcBack}}" class="bs-btn">رجوع</button>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══ لوحة التنبيهات (منسدلة من الجرس) ═══ -->
+<sc-if value="{{nfOpen}}" hint-placeholder-val="{{ false }}">
+<div data-bs-nf="1" sc-camel-on-click="{{nfStop}}" dir="rtl" style="position:fixed;top:78px;left:24px;width:min(440px,94vw);max-height:84vh;background:var(--bg-xffffff);border-radius:18px;box-shadow:var(--shadow-elevated);display:flex;flex-direction:column;overflow:hidden;z-index:230;font-family:'Cairo',sans-serif">
+  <div style="padding:14px 16px 10px;border-bottom:1px solid var(--bd-xeceef1);background:linear-gradient(to left,var(--bg-a185151810p1),var(--bg-a185151810p02))">
+    <div style="display:flex;align-items:center;gap:9px">
+      <span style="width:30px;height:30px;border-radius:9px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p5);display:flex;align-items:center;justify-content:center;color:var(--fg-xb99751)"><svg width="15" height="15" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0c66b4d9"></svg></span>
+      <b style="font-size:14px;flex:1;color:var(--fg-x141414)">التنبيهات</b>
+      <span sc-camel-on-click="{{nfMuteToggle}}" title="{{nfMuteTip}}" style="{{nfMuteStyle}}"><svg width="11" height="11" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-24fd8e2d"></svg>كتم التوست</span>
+      <span sc-camel-on-click="{{nfReadAll}}" style="font-size:10.5px;font-weight:700;color:var(--fg-x8a6f35);cursor:pointer">تعليم الكل مقروءاً</span>
+      <span sc-camel-on-click="{{nfClearAll}}" title="حذف كل التنبيهات من جرسك (ما عدا ما ينتظر تأكيدك)" style="font-size:10.5px;font-weight:700;color:var(--fg-xdc2626);cursor:pointer">حذف الكل</span>
+      <span sc-camel-on-click="{{nfClose}}" style="width:26px;height:26px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);display:flex;align-items:center;justify-content:center;color:var(--fg-x53565a);cursor:pointer;font-size:14px">×</span>
+    </div>
+    <div style="display:flex;gap:2px;margin-top:10px;background:var(--bg-xf3f1ec);border-radius:10px;padding:3px">
+      <span sc-camel-on-click="{{nfFiltAll}}" style="{{nfSegAll}}">الكل · {{nfAllN}}</span><span sc-camel-on-click="{{nfFiltAct}}" style="{{nfSegAct}}">يحتاج إجراء · {{nfActN}}</span><span sc-camel-on-click="{{nfFiltUn}}" style="{{nfSegUn}}">غير المقروء · {{nfUnN}}</span>
+    </div>
+    <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+      <sc-if value="{{nfDeptOn}}" hint-placeholder-val="{{ false }}"><span sc-camel-on-click="{{nfDeptToggle}}" title="{{nfDeptTip}}" style="{{nfDeptStyle}}">{{nfDeptTxt}}</span></sc-if>
+      <sc-for list="{{nfKindRows}}" as="k" hint-placeholder-count="4"><span sc-camel-on-click="{{k.toggle}}" style="{{k.style}}">{{k.name}}</span></sc-for>
+    </div>
+  </div>
+  <div style="flex:1;overflow-y:auto">
+    <sc-if value="{{nfNoticeOn}}" hint-placeholder-val="{{ false }}"><div role="status" style="padding:12px;font-size:12px">{{nfNotice}}</div></sc-if>
+    <sc-if value="{{nfNewOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="bs-btn bs-btn--ghost" style="width:100%" sc-camel-on-click="{{nfShowNew}}">وصلت تنبيهات جديدة — عرض الجديد</button></sc-if>
+    <sc-if value="{{nfEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding:40px 16px;text-align:center;color:var(--fg-x94a3b8);font-size:12px">لا تنبيهات هنا</div></sc-if>
+    <sc-for list="{{nfRows}}" as="r" hint-placeholder-count="6">
+      <sc-if value="{{r.isGrp}}" hint-placeholder-val="{{ false }}"><div style="font-size:10px;font-weight:700;color:var(--fg-x94a3b8);padding:9px 14px 4px;background:var(--bg-xfafbfc);border-bottom:1px solid var(--bd-xf1f3f5)">{{r.name}}</div></sc-if>
+      <sc-if value="{{r.isItem}}" hint-placeholder-val="{{ true }}">
+      <div sc-camel-on-click="{{r.open}}" style="{{r.rowStyle}}">
+        <i style="{{r.dotStyle}}"></i>
+        <sc-if value="{{r.canDel}}" hint-placeholder-val="{{ true }}"><span sc-camel-on-click="{{r.del}}" title="حذف هذا التنبيه" data-bs-nfdel="1" style="position:absolute;left:8px;top:8px;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--fg-x94a3b8);font-size:14px;line-height:1;cursor:pointer" sc-camel-style-hover="background:var(--bg-a22038380p08);color:var(--fg-xdc2626)">×</span></sc-if>
+        <span style="{{r.icoStyle}}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2fadb117"></svg></span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px"><b style="font-size:12.5px;color:var(--fg-x141414);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.t}}</b>
+            <sc-if value="{{r.isUrg}}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;font-weight:800;border-radius:6px;padding:0 6px;color:var(--fg-xdc2626);background:var(--bg-a22038380p08);border:1px solid var(--bd-a22038380p25)">عاجل</span></sc-if>
+            <sc-if value="{{r.isAct}}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;font-weight:800;border-radius:6px;padding:0 6px;color:var(--fg-x8a6f35);background:var(--bg-a185151810p1);border:1px solid var(--bd-a185151810p35)">يحتاج إجراء</span></sc-if>
+          </div>
+          <div style="font-size:11px;color:var(--fg-x53565a);line-height:1.7;margin-top:1px">{{r.b}}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><small style="font-size:10px;color:var(--fg-x94a3b8)">{{r.at}}</small><sc-if value="{{r.hasDept}}" hint-placeholder-val="{{ false }}"><small style="font-size:10px;color:var(--fg-x94a3b8)">· {{r.deptName}}</small></sc-if>
+            <sc-if value="{{r.needAck}}" hint-placeholder-val="{{ false }}"><span style="margin-right:auto;font-size:10.5px;font-weight:700;color:var(--text-on-brand);background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));border-radius:8px;padding:3px 10px">✓ قرأت وفهمت</span></sc-if>
+            <sc-if value="{{r.hasGo}}" hint-placeholder-val="{{ false }}"><span style="margin-right:auto;font-size:10.5px;font-weight:700;color:var(--fg-x8a6f35);background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p45);border-radius:8px;padding:3px 10px">{{r.go}} ←</span></sc-if>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+    </sc-for>
+    <sc-if value="{{nfHasMore}}" hint-placeholder-val="{{ false }}"><div style="padding:12px;text-align:center"><button type="button" sc-camel-on-click="{{nfMore}}">{{nfMoreLabel}}</button></div></sc-if>
+  </div>
+  <div style="padding:10px 14px;border-top:1px solid var(--bd-xeceef1);background:var(--bg-xfafbfc);display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--fg-x94a3b8)">
+    <span style="flex:1">ما يصلك يحدده مسؤول المنصة من «التنبيهات والتعاميم»</span>
+    <sc-if value="{{nfIsMgr}}" hint-placeholder-val="{{ false }}"><span sc-camel-on-click="{{nfComposeGo}}" style="display:inline-flex;align-items:center;gap:5px;font-weight:700;color:var(--text-on-brand);background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));border-radius:8px;padding:4px 10px;cursor:pointer"><svg width="11" height="11" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-i="i-7e8d6b4c"></svg>تعميم لإدارتي</span></sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══ تعميم مدير الإدارة داخل إدارته ═══ -->
+<sc-if value="{{nfComposeOpen}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg" sc-camel-on-click="{{nfComposeClose}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="bsNfcpTitle" class="bs-dlg-box bs-nfcp" sc-camel-on-click="{{nfStop}}">
+    <div id="bsNfcpTitle" style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:linear-gradient(to left,var(--bg-a185151810p13),var(--bg-a185151810p03));border-bottom:2px solid var(--bd-a185151810p35);font-size:13px;font-weight:600;color:var(--fg-x9a7e40)"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-7e8d6b4c"></svg>تعميم لمنسوبي {{nfCpDept}}</div>
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+      <div><label style="display:block;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);margin-bottom:4px">العنوان</label><input value="{{nfCpTitle}}" sc-camel-on-change="{{nfCpSetTitle}}" placeholder="مثال: اجتماع الوردية الأولى غداً" style="width:100%;height:36px;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:0 11px;font-family:'Cairo',sans-serif;font-size:12px;box-sizing:border-box;outline:none"></div>
+      <div><label style="display:block;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);margin-bottom:4px">النص</label><textarea value="{{nfCpBody}}" sc-camel-on-change="{{nfCpSetBody}}" rows="4" placeholder="اكتب نص التعميم…" style="width:100%;border:1px solid var(--bd-xe1e1e1);border-radius:10px;padding:8px 11px;font-family:'Cairo',sans-serif;font-size:12px;box-sizing:border-box;outline:none;line-height:1.7;resize:vertical"></textarea></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:10.5px;font-weight:700;color:var(--fg-x53565a)">الدرجة</span><span style="display:inline-flex;gap:2px;background:var(--bg-xf3f1ec);border-radius:8px;padding:2px"><sc-for list="{{nfCpLvls}}" as="l" hint-placeholder-count="3"><span sc-camel-on-click="{{l.pick}}" style="{{l.style}}">{{l.name}}</span></sc-for></span></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bd-xeceef1);border-radius:10px;font-size:11.5px"><div style="flex:1"><b>يتطلب تأكيد القراءة</b><div style="font-size:9.5px;color:var(--fg-x94a3b8)">زر «قرأت وفهمت» — ولا يُعلَّم مقروءاً إلا به</div></div><span sc-camel-on-click="{{nfCpAckTog}}" style="{{nfCpAckStyle}}"><i style="{{nfCpAckKnob}}"></i></span></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bd-xeceef1);border-radius:10px;font-size:11.5px"><div style="flex:1"><b>تثبيت في أعلى اللوحة</b><div style="font-size:9.5px;color:var(--fg-x94a3b8)">يبقى أول تنبيه حتى يُقرأ</div></div><span sc-camel-on-click="{{nfCpPinTog}}" style="{{nfCpPinStyle}}"><i style="{{nfCpPinKnob}}"></i></span></div>
+    </div>
+    <div class="bs-nfcp-ft"><button sc-camel-on-click="{{nfCpSend}}" class="bs-btn bs-btn--primary">إرسال التعميم</button><button sc-camel-on-click="{{nfComposeClose}}" class="bs-btn">إلغاء</button></div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══ التوست الفوري للتنبيه ═══ -->
+<sc-if value="{{nfToastOn}}" hint-placeholder-val="{{ false }}">
+<div dir="rtl" data-bs-nftoast="1" style="position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:235;background:var(--bg-toast);color:var(--toast-text);border:1px solid var(--border-brand-soft);padding:10px 16px 10px 12px;border-radius:14px;font-size:12.5px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-elevated);width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;font-family:'Cairo',sans-serif">
+  <sc-if value="{{nfToastUrg}}" hint-placeholder-val="{{ false }}"><span style="width:8px;height:8px;border-radius:50%;background:var(--bg-xf87171);box-shadow:0 0 0 4px rgba(248,113,113,.25);flex-shrink:0"></span><b>عاجل:</b></sc-if>
+  <span style="min-width:0"><b>{{nfToastT}}</b> — {{nfToastB}}</span>
+  <sc-if value="{{nfToastHasGo}}" hint-placeholder-val="{{ false }}"><span sc-camel-on-click="{{nfToastOpen}}" style="margin-right:6px;font-weight:700;color:var(--fg-xf3e4bc);border:1px solid var(--bd-a2432281880p5);border-radius:8px;padding:2px 10px;cursor:pointer;white-space:nowrap">{{nfToastGo}}</span></sc-if>
+  <sc-if value="{{nfToastHasMore}}" hint-placeholder-val="{{ false }}"><span sc-camel-on-click="{{nfToastAll}}" style="font-size:10.5px;color:var(--fg-a2552552550p7);cursor:pointer;white-space:nowrap">{{nfToastMore}} أخرى</span></sc-if>
+  <span sc-camel-on-click="{{nfToastClose}}" style="cursor:pointer;color:var(--fg-a2552552550p6);padding:0 4px">×</span>
+</div>
+</sc-if>
+</div>
+</x-dc>
+@@KIVO_INLINE:layouts/root-logic.js@@
+@@KIVO_BLOCK:components/600-tooltip-portal.js@@
+@@KIVO_BLOCK:components/610-map-wheel.js@@
+@@KIVO_BLOCK:components/620-no-select.js@@
+@@KIVO_BLOCK:components/630-popover-place.js@@
+@@KIVO_BLOCK:components/640-map-tooltip.js@@
+
+@@KIVO_BLOCK:components/650-dropdown-unify.js@@
+
+@@KIVO_BLOCK:components/660-a11y-enhancer.js@@
+
+
+
+
+@@KIVO_BLOCK:components/670-big-table-lane.js@@
+
+@@KIVO_BLOCK:components/680-search-bars.js@@
+</body>
+</html>

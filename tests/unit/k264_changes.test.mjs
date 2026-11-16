@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTestEnv, client, applySql, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { loadClient, sleep, until } from './k264_vm.mjs';
+import { needs } from './harness.mjs';
 
 const q = (s) => "'" + String(s).replace(/'/g, "''") + "'";
 async function put(env, k, v) {
@@ -55,7 +56,7 @@ function c2Server(n, page = 10, always = false) {
   } };
   return S;
 }
-test('Typed Irshad revisions reach the remote event without fetching or retaining a JSON document',async()=>{
+test('Typed Irshad revisions reach the remote event without fetching or retaining a JSON document',needs('irshad'), async()=>{
   const key='bsdept:d1:bassam_irshad_v1',S=c2Server(0);S.rev=11;S.revs[key]=11;
   const T=loadClient({C:S.C,boot:{srv:1,cf:1,v:10,uid:'su',keys:{},revs:{}}}),events=[];
   T.W.addEventListener('bassam:remote',event=>events.push(...(event.detail?.keys||[])));

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { world as fixture, IDS, D1, copy } from './notifications_review_fx.mjs';
 import { guardWorker as candidateWorker, guardPart, SUPPORTED_SCHEMA } from './request_db_guard_fx.mjs';
+import { needs } from './harness.mjs';
 const futureSchemaSql="UPDATE meta SET v='"+(SUPPORTED_SCHEMA+2)+"'WHERE k='schema_version'";
 const request = (path = '/api/ping', who = 'super') =>
   new Request('http://x' + path, { headers: who ? { Cookie: 'bs_tok=TEST_ONLY_session_' + who } : {} });
@@ -320,7 +321,7 @@ async function summaryRead(W, f, path) {
   assert.equal(readLog.some((s) => /seized_items|seized_reports|irshad_reports|FROM notification_dedup WHERE scope=\?1 AND once_key/.test(s)), false, 'the due job is not on the read path');
   return { trips: (job ? job.trips : end) - t0, deferred: !!job, deferredTrips: f.DB.trips - (job ? job.trips : end) };
 }
-test('Super notification summary retains the canonical D1 trip budget after a successful preload', async (t) => {
+test('Super notification summary retains the canonical D1 trip budget after a successful preload', needs('seized'), async (t) => {
   for (const [label, iso] of Object.entries(SUMMARY_CLOCKS))
     await atClock(iso, async () => {
       const before = await fixture(),

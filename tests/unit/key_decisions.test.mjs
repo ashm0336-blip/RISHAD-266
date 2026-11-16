@@ -6,7 +6,7 @@
      · القابلُ للمنح: بالمنح الصريح (plus) يُحمل · بلا منحٍ ولا ورقة لا · منحٌ مع إسقاطٍ (minus) لا · في إدارةٍ أخرى لا · خارج سقف الإدارة (صفحةُ مالكه خارجه) لا ·
        مفاتيحُ «مدير الإدارة» (role:mgr + ورقة) لا تُحمل لموظفٍ غير مدير ولو مُنحت · وما لا ذرّةَ له (perm.assign) يحمله مديرُ الإدارة بالدور
      · العدسات: بوابةُ العدسة (سقفُ عدسات الإدارة ∧ عدساتُ الموظف) شرطٌ لكل مفتاح — enable محمولٌ متى كانت البوابةُ مفتوحة · ومضيفاها (الخطة · الجولات) خارج السقف ⇒ لا
-     · المحجوزُ والمجهول: لا يُحمل لأحد (Default Deny) ولو لمدير النظام
+     · المحجوزُ والمجهول: لا يُحمل لأحد (Default Deny · SOT-009) ولو لمدير النظام
    ومعه: لا مفتاحَ نشطاً خارج التصنيف (فالـ255 كلُّها مقرَّرةٌ هنا) — ويُكتب تقريرُ التغطية reports/key_coverage.json (القرار لكل مفتاح + أثرُه في حزم الاختبار). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, SRC } from './harness.mjs';
 import { internals } from './internals.mjs';
+import { needs } from './harness.mjs';
 
 const W = await internals(['enfHeld', 'KIVO_REGISTRY', 'enfIx', 'PG_REG']);
 const R = W.KIVO_REGISTRY, ACT = R.keys.map(k => R.byKey[k]).filter(e => e.status === 'active'), RES = R.keys.map(k => R.byKey[k]).filter(e => e.status !== 'active');
@@ -37,7 +38,7 @@ test('Default Deny: المحجوزُ (' + RES.length + ') والمجهولُ ل�
   assert.equal(held(A({ role: 'super' }), 'no.such.key'), false);
 });
 
-test('★ قرارُ الخادم لكل مفتاحٍ نشط (' + ACT.length + ') بتوقّعاتٍ من بيانات السجلّ', () => {
+test('★ قرارُ الخادم لكل مفتاحٍ نشط (' + ACT.length + ') بتوقّعاتٍ من بيانات السجلّ', needs('award', 'dstats', 'seized'), () => {
   let n = 0;
   for (const e of ACT) {
     const k = e.key, L = lensOf(e), pg = pageOf(e), ok = (got, want, why) => { assert.equal(got, want, k + ' — ' + why); n++; };
@@ -82,7 +83,7 @@ test('★ قرارُ الخادم لكل مفتاحٍ نشط (' + ACT.length + '
   assert.ok(n >= 1200, 'تأكيدات ' + n);
 });
 
-test('تقريرُ التغطية: لكل مفتاحٍ نشط قرارٌ مختبَر هنا + أثرُه في حزم الاختبار (reports/key_coverage.json)', () => {
+test('تقريرُ التغطية: لكل مفتاحٍ نشط قرارٌ مختبَر هنا + أثرُه في حزم الاختبار (reports/key_coverage.json)', needs('award', 'dstats', 'seized'), () => {
   const files = [];
   const walk = (d) => { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const q = path.join(d, f.name); if (f.isDirectory()) { if (!['node_modules', 'fixtures'].includes(f.name)) walk(q); } else if (/\.(mjs|py)$/.test(f.name)) files.push(q); } };
   walk(path.join(ROOT, 'tests')); for (const f of (fs.existsSync(path.join(ROOT, 'cfbench')) ? fs.readdirSync(path.join(ROOT, 'cfbench')) : []))   // AUD-029: حزمُ المختبر إن وُجدت (المستودعُ الرسمي وحده بلا cfbench)

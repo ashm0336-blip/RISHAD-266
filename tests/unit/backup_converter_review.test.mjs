@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { D1, D2, IDS, copy } from './notifications_review_fx.mjs';
 import { world as custodyWorld } from './custody_review_fx.mjs';
+import { needs } from './harness.mjs';
 async function world() {
   const f = await custodyWorld(),
     W = f.W;
@@ -66,7 +67,7 @@ function modern(t) {
   return file;
 }
 
-test('legacy conversion requires explicit consent and never writes or accepts an undeclared modern fallback', async () => {
+test('legacy conversion requires explicit consent and never writes or accepts an undeclared modern fallback', needs('dstats'), async () => {
   const t = await world(),
     before = snap(t);
   await assert.rejects(t.convert(full(t), { legacyConsent: false }), (e) => e.rs === 'backup-legacy-consent-required');
@@ -75,7 +76,7 @@ test('legacy conversion requires explicit consent and never writes or accepts an
   await assert.rejects(t.convert(file), (e) => e.rs === 'backup-incomplete-manifest');
   assert.deepEqual(snap(t), before);
 });
-test('legacy full conversion declares explicit empty scoped domains and preserves only unprovided global domains', async () => {
+test('legacy full conversion declares explicit empty scoped domains and preserves only unprovided global domains', needs('dstats'), async () => {
   const t = await world();
   await t.DB.batch([
     t.DB.prepare(
@@ -113,7 +114,7 @@ test('legacy custody uses the validated converter and preserves optional empty f
   assert.equal(domain.rows.moves[0].holder_key, 'TEST_ONLY_orphan');
 });
 
-test('legacy daily stats retain absent versus null versus zero and normalize only the documented legacy lock key', async () => {
+test('legacy daily stats retain absent versus null versus zero and normalize only the documented legacy lock key', needs('dstats'), async () => {
   const t = await world(),
     data = {
       haram: { '1448-01-01': { worshippers: 0, umrah: null } },
@@ -138,7 +139,7 @@ test('ambiguous old custody serials fail without business, account, audit or rev
   );
   assert.deepEqual(snap(t), before);
 });
-test('normalized plus legacy sources of the same domain are rejected, while phase5 typed DS/NF plus old custody is valid', async () => {
+test('normalized plus legacy sources of the same domain are rejected, while phase5 typed DS/NF plus old custody is valid', needs('dstats'), async () => {
   const t = await world();
   for (const [key, domain, raw] of [
     ['bsdept:' + D1 + ':bassam_custody_v1', 'custody', JSON.stringify(doc())],
@@ -157,7 +158,7 @@ test('normalized plus legacy sources of the same domain are rejected, while phas
   const out = await t.convert(file);
   assert.equal(out.domains.custody[0].rows.moves.length, 1);
 });
-test('modern manifest requires its exact declared key/dept/domain coverage and preserves account JSON byte-for-byte', async () => {
+test('modern manifest requires its exact declared key/dept/domain coverage and preserves account JSON byte-for-byte', needs('award', 'dstats', 'seized'), async () => {
   const t = await world(),
     file = modern(t),
     raw = JSON.stringify(t.keys.bassam_auth_users_v1);
@@ -259,7 +260,7 @@ test('scoped legacy notification conversion uses known source identities and rem
   assert.equal(out.domains.notifications.states[0].account_uid, IDS.manager1);
   assert.equal(out.domains.notifications.states[0].message_scope, 'd:' + D2);
 });
-test('scope ambiguity, global DS in department files, recovery/device keys, malformed JSON and image bodies fail explicitly', async () => {
+test('scope ambiguity, global DS in department files, recovery/device keys, malformed JSON and image bodies fail explicitly', needs('dstats'), async () => {
   const t = await world(),
     before = snap(t);
   const cases = [
@@ -315,7 +316,7 @@ test('preserved notification states are guarded across conversion and planning e
   assert.deepEqual(snap(t), afterConcurrent);
   assert.deepEqual(t.DB.q("SELECT * FROM revs WHERE k='nf_messages'"), revision);
 });
-test('preserved daily-stat rows use exact read witnesses against a raw writer that leaves the revision untouched', async () => {
+test('preserved daily-stat rows use exact read witnesses against a raw writer that leaves the revision untouched', needs('dstats'), async () => {
   const t = await world(),
     out = await t.convert(full(t));
   await t.DB.batch([t.DB.prepare("INSERT INTO daily_stats_days(site,hijri_date,field_mask,worshippers) VALUES('haram','1448-01-01',1,0)")]);

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { PYTHON } from "./harness.mjs";
+import { needs } from './harness.mjs';
 
 function python(program) {
   const result = spawnSync(
@@ -43,7 +44,7 @@ for (const [slug, required] of [
     "source-derived " +
       slug +
       " charter includes its actual shared Operations dependencies",
-    () => {
+    needs('seized'), () => {
       const data = python(
         "print(json.dumps(M.derive(" + JSON.stringify(slug) + ')["data"]))',
       );

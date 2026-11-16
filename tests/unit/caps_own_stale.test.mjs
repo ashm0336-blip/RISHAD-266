@@ -12,6 +12,7 @@ import { world, stored, putKV } from './tasks_fx.mjs';
 import { loadClient, until, sleep } from './k264_vm.mjs';
 import { ROOT, blockFile } from './harness.mjs';
 import { internals } from './internals.mjs';
+import { needs } from './harness.mjs';
 
 const D = 'tst_d1', KP = 'bassam_perms_v1', GK = 'bsdept:' + D + ':bassam_grants_v1', EK = 'tst_e_emp1';
 const PG = ['dstats', 'emps', 'planning', 'staff', 'plan', 'daily', 'dreport', 'tasks', 'irshad', 'seized', 'award', 'links', 'help', 'admin'];
@@ -82,7 +83,7 @@ async function save(W, who, vals) {
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + 'the ' + OLD_REV + ' client narrows a ceiling (pages · tabs · lenses): the trimming request is refused whole, D1 byte-identical, the page is told', async () => {
+  test(M + 'the ' + OLD_REV + ' client narrows a ceiling (pages · tabs · lenses): the trimming request is refused whole, D1 byte-identical, the page is told', needs('award', 'dstats', 'seized'), async () => {
     const W = await scene(mode), s0 = snap(W);
     const c = await clientOf(W, 'su', true);
     try {
@@ -92,7 +93,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal(snap(W), s0, 'nothing written: ceiling, sheets, lens lists and explicit grants as they were');
   });
 
-  test(M + 'the exact combined payload of an old page (narrowed ceiling + trimmed sheet, lens list and grants) is refused with nothing written', async () => {
+  test(M + 'the exact combined payload of an old page (narrowed ceiling + trimmed sheet, lens list and grants) is refused with nothing written', needs('award'), async () => {
     const W = await scene(mode), s0 = snap(W);
     const P = cp(stored(W.env, KP)), G = cp(stored(W.env, GK));
     P.caps[D] = PG.filter((k) => k !== 'award'); delete P.emps[D][EK]['award/res'];
@@ -110,7 +111,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal(snap(W), s0);
   });
 
-  test(M + 'the current client narrows (accepted, nothing deleted); deliberate removals in and with the same request are accepted', async () => {
+  test(M + 'the current client narrows (accepted, nothing deleted); deliberate removals in and with the same request are accepted', needs('award', 'dstats', 'seized'), async () => {
     const W = await scene(mode), sh0 = cp(stored(W.env, KP).emps[D][EK]), g0 = JSON.stringify(stored(W.env, GK));
     const c = await clientOf(W, 'su', false);
     try { await narrowWith(c); assert.equal(c.SV.denied(), 0, 'accepted'); } finally { c.dispose(); }

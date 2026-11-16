@@ -59,7 +59,11 @@
    "gate:visual.mjs",
    "gate:xss.mjs",
    "tests/unit/profile_page.test.mjs",
-   "tests/unit/profile_world.mjs"
+   "tests/unit/profile_world.mjs",
+   "tests/unit/rishad266_help_route.test.mjs",
+   "tests/unit/v7_d1c_super_unbounded.test.mjs",
+   "tests/unit/v7_p4_systems_map.test.mjs",
+   "tests/unit/v7_ux_page_states.test.mjs"
   ]
  }
 }

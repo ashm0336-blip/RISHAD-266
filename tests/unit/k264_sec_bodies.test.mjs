@@ -13,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, worker, ROOT, SRC, WORKER, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { internals } from './internals.mjs';
+import { needs } from './harness.mjs';
 const SRCW = fs.readFileSync(WORKER, 'utf8');
 const K264 = SRCW.includes('"/api/policy":') || process.env.KIVO_K264_STRICT ? {} : { skip: 'العاملُ المختبَر قبل KIVO_264' };
 const SCH = JSON.parse(fs.readFileSync(path.join(SRC, 'schemas', 'api', 'bodies.schema.json'), 'utf8'));
@@ -31,7 +32,7 @@ test('(أ) كلُّ مسارٍ مغيِّرٍ في العقد له قاعدةُ 
   for (const p of Object.keys(SCH.bodies)) { const s = (CT.routes.find(r => r.path === p).responses || {})['400']; assert.ok(s && s.err === 'bad-body' && s.schema, p + ': 400 معقود'); }
   assert.ok(SCH.raw['/api/img/'] && (CT.routes.find(r => r.path === '/api/img/').responses['415']), 'الصورة: عقدٌ خامّ و415 معقود');
 });
-test('(ب) الأجسامُ في مساراتها: السليمُ يمرّ · الخاطئُ 400 بموضعه · null ⇒ 400 (E5 — كان 500) · بلا أثر', K264, async () => {
+test('(ب) الأجسامُ في مساراتها: السليمُ يمرّ · الخاطئُ 400 بموضعه · null ⇒ 400 (E5 — كان 500) · بلا أثر', { ...K264, ...needs('irshad') }, async () => {
   const env = makeTestEnv(); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await applySql(env.DB, seedSql());

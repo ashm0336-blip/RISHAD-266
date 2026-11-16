@@ -60,7 +60,11 @@
    "gate:reload.mjs",
    "gate:theme248.mjs",
    "gate:visual.mjs",
-   "gate:xss.mjs"
+   "gate:xss.mjs",
+   "tests/unit/refresh_seed_commit_w1fix.test.mjs",
+   "tests/unit/refresh_tabs_w1.test.mjs",
+   "tests/unit/rishad266_help_route.test.mjs",
+   "tests/unit/v7_ux_page_states.test.mjs"
   ]
  }
 }

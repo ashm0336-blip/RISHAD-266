@@ -11,6 +11,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, stored, putKV } from './tasks_fx.mjs';
 import { internals } from './internals.mjs';
+import { needs } from './harness.mjs';
 
 const D = 'tst_d1', KP = 'bassam_perms_v1', EK = 'tst_e_emp1';
 const PG = ['dstats', 'emps', 'planning', 'staff', 'plan', 'daily', 'dreport', 'tasks', 'irshad', 'seized', 'award', 'links', 'help', 'admin'];
@@ -79,7 +80,7 @@ for (const mode of ['legacy', 'enforce']) {
     no(await put(W, 'dm1', p), 'grant', 'his switched-off tab is not his to grant');
   });
 
-  test(M + '(d) independent ceiling: the parent no longer narrows a switched unit; its manager grants inside its own ceiling and nothing beyond (e) the mode is the system administrator\'s', async () => {
+  test(M + '(d) independent ceiling: the parent no longer narrows a switched unit; its manager grants inside its own ceiling and nothing beyond (e) the mode is the system administrator\'s', needs('award'), async () => {
     const W = await scene(mode);
     await narrow(W, (P) => { P.caps.tst_g1 = PG.filter((k) => k !== 'award'); P.caps[D] = PG.filter((k) => k !== 'seized'); });
     let p = await view(W, 'dm1'); p.emps[D].tst_e_snop = { 'award/res': ['view'] };

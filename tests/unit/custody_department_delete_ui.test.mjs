@@ -7,6 +7,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import {parse} from 'acorn';
 import {ROOT,world as canonicalWorld,D1,D2,IDS} from './custody_review_fx.mjs';
+import { needs } from './harness.mjs';
 const source=fs.readFileSync(path.join(ROOT,'src/modules/admin/logic.js'),'utf8'),klass=parse(source,{ecmaVersion:'latest'}).body.find(node=>node.type==='ClassDeclaration'&&node.id.name==='Component');
 const COUNT=(()=>{const c={KIVO:{},window:{},Intl};vm.createContext(c);vm.runInContext(fs.readFileSync(path.join(ROOT,'src/services/440-count.js'),'utf8'),c);return c.KIVO.BassamCount;})();
 const copy=value=>JSON.parse(JSON.stringify(value)),key='bsdept:'+D1+':bassam_employees_v1',target={id:D1,name:'TEST_ONLY stale cached name'};
@@ -41,10 +42,10 @@ test('missing account counts, cancellation and stale principal cannot delete or 
   const cancelled=world(async()=>response(inventory()));cancelled.setConfirm(false);await cancelled.page.deptDel(target);assert.equal(cancelled.calls.filter(call=>call.options.method==='POST').length,0);assert.equal(cancelled.acks.length,0);
   let stale;stale=world(async(url,options)=>{if(options.method==='GET')return response(inventory());stale.switchActor();return response(receipt(options));});await stale.page.deptDel(target);assert.equal(stale.acks.length,0);assert.ok(stale.page._deptDeleteDraft);
 });
-test('wrong-mode or incomplete department receipts retain the exact ticket and cannot show success',async()=>{
+test('wrong-mode or incomplete department receipts retain the exact ticket and cannot show success',needs('irshad'), async()=>{
   for(const malformed of ['mode','accounts','irshad']){const B=world(async(url,options)=>{if(options.method==='GET')return response(inventory());const value=receipt(options);if(malformed==='mode')value.mode='dept-wipe';else if(malformed==='accounts')delete value.counts.accounts;else delete value.counts.irshad;return response(value);});await B.page.deptDel(target);assert.equal(B.acks.length,0);assert.equal(B.page.state.sysSel,D1);assert.ok(B.page._deptDeleteDraft.uncertain);const body=B.calls.at(-1).options.body;await B.page.deptDel(target);assert.equal(B.calls.at(-1).options.body,body);assert.equal(B.confirmations.length,1);assert.equal(B.syncs.length,0);assert.deepEqual(B.writes,[]);}
 });
-test('department deletion rejects an inventory or receipt that omits the seized or awards business domain',async()=>{
+test('department deletion rejects an inventory or receipt that omits the seized or awards business domain',needs('award', 'seized'), async()=>{
   for(const domain of ['seized','awards']){
     for(const part of ['base','count']){const missing=inventory();if(part==='base')delete missing.base[domain];else delete missing.counts[domain];
       const A=world(async()=>response(missing));await A.page.deptDel(target);assert.equal(A.confirmations.length,0,domain+' '+part);assert.equal(A.calls.filter(call=>call.options.method==='POST').length,0);assert.equal(A.acks.length,0);}

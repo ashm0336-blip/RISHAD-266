@@ -25,6 +25,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { world, rd } from './core01_root_world.mjs';
+import { needs } from './harness.mjs';
 
 const T = rd('layouts/index.template.html'), R = rd('layouts/root-logic.js'), P = rd('layouts/260-bassam-plat.js');
 const L = rd('modules/admin/logic.js'), V = rd('modules/admin/view.html'), C = rd('modules/admin/helmet.css'), PG = rd('pages/Admin.dc.html');
@@ -34,7 +35,7 @@ const SYS_TABS = ['overview', 'depts', 'users', 'perms', 'plat', 'sec', 'oplog',
 const PL = ['id', 'mods', 'notif', 'login', 'side', 'print', 'app', 'about', 'setup'];
 const ALL = ['overview', 'sec', 'users', 'perms', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
 
-test('(1) the one map: nine tabs and nine platform sections once each, five groups in order, setup under data', () => {
+test('(1) the one map: nine tabs and nine platform sections once each, five groups in order, setup under data', needs('dstats'), () => {
   const W = world({ hash: '#/sysadmin/overview' });
   const N = W.c._sysNav();
   deq(Object.keys(N), ['home', 'org', 'plat', 'sec', 'data']);
@@ -58,7 +59,7 @@ test('(1) the one map: nine tabs and nine platform sections once each, five grou
   assert.match(L, /p = this\.PL_SECS\(\),/, 'plVals reads the same list');
 });
 
-test('(2) template: the operational sidebar is unchanged inside sc-if sbOps; the console block holds only the console', () => {
+test('(2) template: the operational sidebar is unchanged inside sc-if sbOps; the console block holds only the console', needs('award', 'dstats', 'seized'), () => {
   const ops0 = T.indexOf('<sc-if value="{{sbOps}}" hint-placeholder-val="{{ true }}">'), con0 = T.indexOf('<sc-if value="{{sbConsole}}" hint-placeholder-val="{{ false }}">');
   assert.ok(ops0 > 0 && con0 > ops0, 'both blocks in the one aside');
   const ops = T.slice(ops0, con0), con = T.slice(con0, T.indexOf('</nav>'));
@@ -101,7 +102,7 @@ test('(3) console mode only for the platform administrator on #/sysadmin; operat
   assert.match(R, /CH = \{[^}]*conTick: 1, conCx: 1 \}/, 'conTick and conCx are cosmetic (no page re-render)');
 });
 
-test('(3b) the console items: availability from the admin page, selection from the address, the group remembers its last item', async () => {
+test('(3b) the console items: availability from the admin page, selection from the address, the group remembers its last item', needs('dstats'), async () => {
   const W = world({ hash: '#/sysadmin/plat/notif' });
   W.c.state.active = 'sysadmin';
   let v = W.vals();

@@ -80,7 +80,10 @@
    "gate:sec163.mjs",
    "gate:theme248.mjs",
    "gate:visual.mjs",
-   "gate:zcodes.mjs"
+   "gate:zcodes.mjs",
+   "tests/unit/refresh_tabs_w1.test.mjs",
+   "tests/unit/v7_d1c_super_unbounded.test.mjs",
+   "tests/unit/v7_p4_systems_map.test.mjs"
   ]
  }
 }

@@ -53,7 +53,11 @@
    "gate:r188.mjs",
    "gate:r189.mjs",
    "gate:r190.mjs",
-   "gate:r191.mjs"
+   "gate:r191.mjs",
+   "tests/unit/refresh_seed_w1.test.mjs",
+   "tests/unit/refresh_tabs_w1.test.mjs",
+   "tests/unit/v7_d1c_super_unbounded.test.mjs",
+   "tests/unit/v7_ux_page_states.test.mjs"
   ]
  }
 }

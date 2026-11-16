@@ -13,6 +13,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { ROOT, SRC, PYTHON, srcDir } from './harness.mjs';
+import { needs as needsSys } from './harness.mjs';
 
 const TOOL = path.join(ROOT, 'tools', 'strip_comments.py');
 const run = (kind, text) => {
@@ -121,7 +122,7 @@ test('aligner · accepts comment removal only (self-check of the test instrument
   assert.equal(onlyCommentsRemoved('<p>one</p><p>two</p>', '<p>one</p>').ok, false, 'removed markup');
 });
 
-test('build · no comment is left in any shipped page; the sources keep theirs', () => {
+test('build · no comment is left in any shipped page; the sources keep theirs', needsSys('irshad'), () => {
   let withComments = 0;
   for (const name of ORDER) {
     const out = built(name), src = source(name);

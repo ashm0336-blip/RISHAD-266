@@ -9,13 +9,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { privWorld, setSheet, login, suCk, readOp, save, rec, drRow, stored, put, PII, KE, KDR, PERSONAL, MODES } from './privacy_fx.mjs';
+import { needs } from './harness.mjs';
 
 const C3 = 'tst_e_p0_3';
 const hasNone = (e, fs, msg) => fs.forEach(f => assert.equal(Object.prototype.hasOwnProperty.call(e, f), false, msg + ': ' + f + ' must not be sent'));
 const hasAll = (e, fs, msg) => fs.forEach(f => assert.ok(e[f] != null && e[f] !== '', msg + ': ' + f + ' must be sent'));
 
 for (const mode of MODES) {
-  test('PRIVACY SV09/IP10 [' + mode + ']: a reader of one operational page gets colleagues without personal fields (and roster rows without empno)', async () => {
+  test('PRIVACY SV09/IP10 [' + mode + ']: a reader of one operational page gets colleagues without personal fields (and roster rows without empno)', needs('irshad'), async () => {
     const w = await privWorld(mode);
     for (const [sheet, gender] of [[{ dreport: ['view'] }, true], [{ tasks: ['view'] }, false], [{ 'irshad/records': ['view'] }, false], [{ 'daily/rounds': ['view'] }, false], [{ staff: ['view'] }, true]]) {
       setSheet(w, 'tst_e_emp1', sheet);

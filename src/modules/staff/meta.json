@@ -50,7 +50,9 @@
    "gate:r188.mjs",
    "gate:r189.mjs",
    "gate:theme248.mjs",
-   "gate:visual.mjs"
+   "gate:visual.mjs",
+   "tests/unit/refresh_seed_w1.test.mjs",
+   "tests/unit/v7_ux_page_states.test.mjs"
   ]
  }
 }

@@ -3,7 +3,7 @@
  "kind": "system",
  "key": "dstats",
  "name": "الإحصائيات اليومية",
- "note": "V7 · المرحلة 2 · الحزمة ب: نقلُ ملفات النظام الكاملة إلى مجلده (ترتيبٌ لا يغيّر ما يُرى). هذا الملف يسرد ما في المجلد وما بقي للنظام خارجه؛ لا تقرؤه القاعدة ولا الأدوات بعد (الحزمة د).",
+ "note": "V7 · المرحلة 2 · د2: هذا الملف تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py). يسرد ما في المجلد، وموضعَ أجزاء الخادم في ترتيب الضمّ (after = جزءُ القاعدة الذي تُدرج بعده · order للترتيب عند المرسى الواحد)، والقطعَ التي تُحقن في فتحات القاعدة (slots).",
  "client": {
   "slug": "dstats",
   "component": "Daily Stats",
@@ -17,9 +17,13 @@
  },
  "server": {
   "parts": [
-   "server/020-dstats.js"
-  ],
-  "order": "workers/parts.json"
+   {
+    "file": "server/020-dstats.js",
+    "after": "019u-privacy-projection.js",
+    "order": 10,
+    "head": "/* ═══ R180: «الإحصائيات اليومية» — مخزنٌ عامٌّ واحد تحكمه أوراقُ الصفحة ═══"
+   }
+  ]
  },
  "migrations": {
   "files": [],
@@ -37,5 +41,327 @@
  "derived": [
   "src/pages/Daily Stats.dc.html"
  ],
- "sharedStaysInBase": []
+ "sharedStaysInBase": [],
+ "slots": {
+  "modules.tail": {
+   "order": 10,
+   "text": ",\n  {\n   \"name\": \"Daily Stats\",\n   \"slug\": \"dstats\",\n   \"minifiedSource\": false,\n   \"bytes\": 272908,\n   \"logicLines\": 1688\n  }"
+  },
+  "blocks.shell.after570": {
+   "order": 10,
+   "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/dstats/client/580-historical-import.js\",\n   \"kind\": \"js\",\n   \"line\": 11826,\n   \"openTag\": \"<script>\",\n   \"origBytes\": 26791,\n   \"origSha256\": \"78c6a715d439ff856f755082d63bc1b4732865ecbbe6f795fe1c3e24d4b81644\"\n  },\n"
+  },
+  "blocks.pages.tail": {
+   "order": 10,
+   "text": ",\n   {\n    \"b64Sha256\": \"9c800f0a630e608b6253940e21a4ecf729295f81d6a7999a0dd07ecd1e764c82\",\n    \"bytes\": 272908,\n    \"file\": \"client/pages/Daily Stats.dc.html\",\n    \"name\": \"Daily Stats\",\n    \"sha256\": \"07c4807e8fdfab2386f43410010bd0475f8b919836a7ff3246cbf66a60eeed8a\"\n   }"
+  },
+  "blocks.order.tail": {
+   "order": 10,
+   "text": ",\n   \"Daily Stats\""
+  },
+  "pages.entry.dstats": {
+   "order": 10,
+   "text": "  {\n   \"key\": \"dstats\",\n   \"module\": \"dstats\",\n   \"activation\": \"toggle\",\n   \"nav\": \"dstats\",\n   \"name\": \"الإحصائيات اليومية\",\n   \"seq\": [\n    \"sub:haram\",\n    \"sub:nabawi\",\n    \"tab:anHaram\",\n    \"tab:anNabawi\",\n    \"tab:anCmp\",\n    \"tab:anTime\"\n   ],\n   \"subs\": [\n    {\n     \"key\": \"haram\",\n     \"name\": \"المسجد الحرام\"\n    },\n    {\n     \"key\": \"nabawi\",\n     \"name\": \"المسجد النبوي\"\n    }\n   ],\n   \"tabs\": [\n    {\n     \"key\": \"anHaram\",\n     \"name\": \"تحليل المسجد الحرام\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"anNabawi\",\n     \"name\": \"تحليل المسجد النبوي\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"anCmp\",\n     \"name\": \"مقارنة الحرمين\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"anTime\",\n     \"name\": \"المقارنة الزمنية\",\n     \"offPage\": true\n    }\n   ]\n  },\n"
+  },
+  "pages.kpi.refs.tail": {
+   "order": 10,
+   "text": ",\n    \"dstats/anHaram\",\n    \"dstats/anNabawi\",\n    \"dstats/anCmp\",\n    \"dstats/anTime\""
+  },
+  "pages.kpi.names.tail": {
+   "order": 10,
+   "text": ",\n    \"dstats/anHaram\": \"تحليل المسجد الحرام\",\n    \"dstats/anNabawi\": \"تحليل المسجد النبوي\",\n    \"dstats/anCmp\": \"مقارنة الحرمين\",\n    \"dstats/anTime\": \"المقارنة الزمنية\""
+  },
+  "pages.tabAddr.tail": {
+   "order": 10,
+   "text": ",\n  \"dstats\": {\n   \"haram\": 1,\n   \"nabawi\": 1\n  }"
+  },
+  "pages.navOrder.dstats": {
+   "order": 10,
+   "text": "  \"dstats\",\n"
+  },
+  "pages.navNames.dstats": {
+   "order": 10,
+   "text": "  \"dstats\": \"الإحصائيات اليومية\",\n"
+  },
+  "pages.routeNames.dstats": {
+   "order": 10,
+   "text": "  \"dstats\": \"الإحصائيات اليومية\",\n"
+  },
+  "budget.page.dstats": {
+   "order": 10,
+   "text": "  \"page:Daily-Stats\": 72881,\r\n"
+  },
+  "uxStates.dstats": {
+   "order": 10,
+   "text": "  \"dstats\": {\n   \"فارغ\": 14,\n   \"تحميل\": 0,\n   \"خطأ\": 8,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 0\n  },\n"
+  },
+  "ns.after.tail": {
+   "order": 10,
+   "text": ",\n  \"src/systems/dstats/client/logic.js\""
+  },
+  "shell.blocks.after570": {
+   "order": 10,
+   "text": "@@KIVO_BLOCK:systems/dstats/client/580-historical-import.js@@\n"
+  },
+  "shell.nav.dstats": {
+   "order": 10,
+   "text": "      <a class=\"{{nDstats}}\" data-key=\"dstats\" role=\"link\" tabindex=\"0\" sc-camel-on-click=\"{{goDstats}}\" title=\"{{tDstats}}\"><span class=\"ni\"><svg width=\"16\" height=\"16\" sc-camel-view-box=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-i=\"i-f90250b8\"></svg></span><span class=\"nlbl\">الإحصائيات اليومية</span></a>\n"
+  },
+  "shell.mounts": {
+   "order": 10,
+   "text": "  <sc-if value=\"{{isDstats}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Daily Stats\" hint-size=\"100%,1600px\"></dc-import>\n  </sc-if>\n"
+  },
+  "root.landing.dstats": {
+   "order": 10,
+   "text": "\"dstats\", "
+  },
+  "root.navVals.dstats": {
+   "order": 10,
+   "text": "          nDstats: cls(\"dstats\", \"dstats\"), tDstats: tip(\"dstats\"),\r\n"
+  },
+  "root.go.dstats": {
+   "order": 10,
+   "text": "      goDstats: go(\"dstats\"),\r\n"
+  },
+  "root.is.dstats": {
+   "order": 10,
+   "text": " isDstats: ap === \"dstats\","
+  },
+  "root.known.dstats": {
+   "order": 10,
+   "text": "\"dstats\","
+  },
+  "pageStates.names.tail": {
+   "order": 10,
+   "text": "    \"dstats/haram\": \"إحصائيات المسجد الحرام\", \"dstats/nabawi\": \"إحصائيات المسجد النبوي\"\n"
+  },
+  "kpis.panels.tail": {
+   "order": 10,
+   "text": "        { k: \"dsh\", pk: \"dstats\", sk: \"anHaram\" },\n        { k: \"dsn\", pk: \"dstats\", sk: \"anNabawi\" },\n        { k: \"dsc\", pk: \"dstats\", sk: \"anCmp\" },\n        { k: \"dst\", pk: \"dstats\", sk: \"anTime\" },\n"
+  },
+  "kpis.tabs.tail": {
+   "order": 10,
+   "file": "slots/kpis.tabs.tail.frag"
+  },
+  "kpis.mounts.tail": {
+   "order": 10,
+   "file": "slots/kpis.mounts.tail.frag"
+  },
+  "nf.denyPages.dstats": {
+   "order": 10,
+   "text": "dstats: \"الإحصائيات اليومية\", "
+  },
+  "nf.denyRecs.dstats": {
+   "order": 10,
+   "text": "bassam_dstats_v1: \"الإحصائيات اليومية\", "
+  },
+  "nf.denyWhy.dstats": {
+   "order": 10,
+   "text": "  dstats: \"صلاحيته لا تشمل هذا التعديل في الإحصائيات اليومية\",\n"
+  },
+  "res.reg.global": {
+   "order": 10,
+   "text": "  /* R170: إحصائياتُ الحرمين اليومية — وثيقةٌ واحدةٌ لكلِّ موقعٍ في كلِّ يوم.\n     R180: سياستُها أوراقُ المسجدين (dstatsRule) — لا مديرُ النظام وحده */\n  'bassam_dstats_v1':          { scope: 'global', rule: 'dstats' },\n"
+  },
+  "routes.bodyMax": {
+   "order": 10,
+   "text": "'/api/dstats': 8 * 1024 * 1024, "
+  },
+  "routes.dispatch": {
+   "order": 40,
+   "text": "      if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);\n"
+  },
+  "contracts.dstats": {
+   "order": 10,
+   "file": "slots/contracts.dstats.frag"
+  },
+  "bodies.dstats": {
+   "order": 10,
+   "file": "slots/bodies.dstats.frag"
+  },
+  "routes.bodyLimitMax": {
+   "order": 10,
+   "text": " || path === '/api/dstats'"
+  },
+  "db.prepare.dstats": {
+   "order": 10,
+   "text": "pending[i].name === '0004_daily_stats' ? await dsLegacyPrepare(env) :\n      "
+  },
+  "save.moved.dstats": {
+   "order": 10,
+   "text": "resName(k) === K_DSTATS || "
+  },
+  "save.audHist.dstats": {
+   "order": 10,
+   "text": " else if (audIn[ah9].act === 'import' && resName(audIn[ah9].k) === K_DSTATS) enfAudHist = true;"
+  },
+  "migrate.moved.dstats": {
+   "order": 10,
+   "text": "resName(r0.k) === K_DSTATS || "
+  },
+  "get.rdKeys.dstats": {
+   "order": 10,
+   "text": "resName(k9) !== K_DSTATS && "
+  },
+  "get.moved.dstats": {
+   "order": 10,
+   "text": "    if (resName(gk) === K_DSTATS) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/dstats' }; continue; }\n"
+  },
+  "boot.strip.dstats": {
+   "order": 10,
+   "text": "      for (var retiredDs in keys) if (resName(retiredDs) === K_DSTATS) delete keys[retiredDs];\n"
+  },
+  "authz.read.dstats": {
+   "order": 10,
+   "text": "  /* R181: الإحصائياتُ اليومية عامّةٌ للحرمين لكنها لا تُقرأ إلا بورقةٍ منها — كانت تُعطى لكلِّ من دخل المنصة */\n  if (!P.dept && P.name === K_DSTATS) return dsHeld(A, DS_READ, ['view']);\n"
+  },
+  "authz.write.dstats": {
+   "order": 10,
+   "text": "    /* R180: الإحصائيات اليومية — أوراقُ المسجدين تحكم كتابتَها، وحذفُ المفتاح كلِّه لمدير النظام وحده */\n    if (P.name === K_DSTATS) return newVal == null ? { ok: false, why: 'super' } : dstatsRule(A, newVal, curVal);\n"
+  },
+  "enf.write.dstats": {
+   "order": 10,
+   "text": "    if (P.name === K_DSTATS) return newVal == null ? enfNo('keydel') : enfDstatsWrite(A, k, newVal, curVal, ctx, X);\n"
+  },
+  "enf.read.dstats": {
+   "order": 10,
+   "text": "    if (P.name === K_DSTATS) { var S = enfSources(A, 'read'); return !!(S.haram || S.nabawi); }\n"
+  },
+  "permv2.depts.dstats": {
+   "order": 10,
+   "text": " else if (rn === 'bassam_dstats_v1') { var dd = dsDepts(A); for (i = 0; i < dd.length; i++) ds[dd[i]] = 1; }"
+  },
+  "permv4.read.dstats": {
+   "order": 10,
+   "text": "      if (name === K_DSTATS) { for (i = 0; i < DS_READ.length; i++) { var atD = R.atoms['dstats/' + DS_READ[i] + ':view']; for (j = 0; atD && j < atD.targets.length; j++) if (R.byKey[atD.targets[j]] && R.byKey[atD.targets[j]].status === 'active') expect.push(atD.targets[j]); } }\n"
+  },
+  "permv4.read.depts": {
+   "order": 10,
+   "text": "dsDepts(A)"
+  },
+  "permv4.sources.depts": {
+   "order": 10,
+   "text": "dsDepts(A)"
+  },
+  "enf.heldAnyDept.depts": {
+   "order": 10,
+   "text": "dsDepts(A)"
+  },
+  "enf.dstatsWrite": {
+   "order": 10,
+   "file": "slots/enf.dstatsWrite.frag"
+  },
+  "nf.denyPage.dstats": {
+   "order": 10,
+   "text": "n === K_DSTATS ? \"dstats\" : "
+  },
+  "rs.selection.dstats": {
+   "order": 10,
+   "text": "  if (domains.dailyStats) {\n    delete domains.dailyStats;\n    kept++;\n  }\n"
+  },
+  "rs.dstats.current": {
+   "order": 10,
+   "file": "slots/rs.dstats.current.frag"
+  },
+  "rs.manifest.full.dstats.1": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "rs.manifest.full.dstats.2": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "rs.manifest.full.dstatsBody": {
+   "order": 10,
+   "text": "      !body.domains.dailyStats ||\n"
+  },
+  "rs.base.dstats": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "rs.domains.dstats": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "rs.prepare.dstatsLegacy": {
+   "order": 10,
+   "text": "  if (await dsLegacyPresent(env)) throw rsError('dstats-legacy-source-present', 503);\n"
+  },
+  "rs.keys.moved.1.dstats": {
+   "order": 10,
+   "text": " || resName(k) === K_DSTATS"
+  },
+  "rs.keys.moved.2.dstats": {
+   "order": 10,
+   "text": " || resName(k) === K_DSTATS"
+  },
+  "rs.counts.dstats": {
+   "order": 10,
+   "text": " dailyStats: 0,"
+  },
+  "rs.plan.dstats": {
+   "order": 10,
+   "file": "slots/rs.plan.dstats.frag"
+  },
+  "rs.reference.base.dstats": {
+   "order": 10,
+   "text": "      dailyStats: r[K_DSTATS] || 0,\n"
+  },
+  "reset.dstats": {
+   "order": 10,
+   "text": "    env.DB.prepare('DELETE FROM daily_stats_day_locks'), env.DB.prepare('DELETE FROM daily_stats_month_locks'), env.DB.prepare('DELETE FROM daily_stats_days'),\n"
+  },
+  "bc.required.dstats": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "bc.manifest.dstats": {
+   "order": 10,
+   "text": " ||\n    (scope.kind === 'full' && !domains.dailyStats)"
+  },
+  "bc.domains.dstats": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "bc.dsKeys": {
+   "order": 10,
+   "text": "Object.keys(keys).filter(function (k) {\n      return resName(k) === K_DSTATS;\n    })"
+  },
+  "bc.convert.dstats": {
+   "order": 10,
+   "file": "slots/bc.convert.dstats.frag"
+  },
+  "bc.out.dstats": {
+   "order": 10,
+   "text": "dailyStats: 1, "
+  },
+  "bk.counts.dstats": {
+   "order": 10,
+   "text": "'dailyStats', "
+  },
+  "admin.full.dstatsRead": {
+   "order": 10,
+   "text": "            if (!KIVO.DailyStats) throw new Error(\"خدمة الإحصائيات غير متاحة\");\r\n            const dailyStats = await KIVO.DailyStats.refresh();\r\n"
+  },
+  "admin.full.manifest.dstats": {
+   "order": 10,
+   "text": "dailyStats:1,"
+  },
+  "admin.full.domains.dstats": {
+   "order": 10,
+   "text": "dailyStats:{version:1,rev:KIVO.DailyStats.revision(),data:dailyStats},"
+  },
+  "store.relational.dstats": {
+   "order": 10,
+   "text": "dstats|"
+  },
+  "admin.console.histimp": {
+   "order": 10,
+   "text": "      [\"histimp\", \"data\", \"استيراد البيانات التاريخية\", 0],\r\n"
+  },
+  "root.console.histimp": {
+   "order": 10,
+   "text": ", [\"histimp\", null, \"استيراد البيانات التاريخية\"]"
+  }
+ }
 }

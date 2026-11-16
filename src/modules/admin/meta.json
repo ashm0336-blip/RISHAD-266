@@ -104,7 +104,14 @@
    "gate:sec.mjs",
    "gate:theme248.mjs",
    "gate:visual.mjs",
-   "gate:xss.mjs"
+   "gate:xss.mjs",
+   "tests/unit/core02_console_nav.test.mjs",
+   "tests/unit/core02_console_visual.test.mjs",
+   "tests/unit/refresh_tabs_w1.test.mjs",
+   "tests/unit/tabaddr_coverage.test.mjs",
+   "tests/unit/v7_d1c_super_unbounded.test.mjs",
+   "tests/unit/v7_p3_0_cap_state.test.mjs",
+   "tests/unit/v7_ux_page_states.test.mjs"
   ]
  }
 }

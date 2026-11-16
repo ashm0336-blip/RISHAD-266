@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FakeStorage, loadClient, sleep } from './k264_vm.mjs';
+import { needs } from './harness.mjs';
 
 /* schema 10: bassam_plan_v1 is a typed operational resource (KV adapter refuses it: relational-domain-api-required, covered below);
    the KV adapter contract is exercised on a non-operational department resource */
@@ -22,7 +23,7 @@ const success = {
   }
 };
 
-test('Relational domains cannot be recreated through the retired storage adapter', async () => {
+test('Relational domains cannot be recreated through the retired storage adapter', needs('award', 'dstats', 'seized'), async () => {
   const keys = ['bassam_dstats_v1', 'bassam_notif_v1', 'bassam_notif_cfg_v1', 'bassam_notif_sys_v1', 'bassam_bc_v1',
     'bassam_seized_v1','bassam_seized_cat_v1','bassam_seized_acts_v1','bassam_seized_locs_v1','bassam_seized_jew_v1','bassam_seized_retro_v1','bassam_award_v1','bassam_award_docs_v1','bassam_award_docs_v2'];
   const native = new FakeStorage(), incoming = boot();

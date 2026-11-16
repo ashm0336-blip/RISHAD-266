@@ -3,7 +3,7 @@
  "kind": "system",
  "key": "irshad",
  "name": "نظام الاسترشاد",
- "note": "V7 · المرحلة 2 · الحزمة ب: نقلُ ملفات النظام الكاملة إلى مجلده (ترتيبٌ لا يغيّر ما يُرى). هذا الملف يسرد ما في المجلد وما بقي للنظام خارجه؛ لا تقرؤه القاعدة ولا الأدوات بعد (الحزمة د).",
+ "note": "V7 · المرحلة 2 · د2: هذا الملف تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py). يسرد ما في المجلد، وموضعَ أجزاء الخادم في ترتيب الضمّ (after = جزءُ القاعدة الذي تُدرج بعده · order للترتيب عند المرسى الواحد)، والقطعَ التي تُحقن في فتحات القاعدة (slots).",
  "client": {
   "slug": "irshad",
   "component": "Irshad",
@@ -16,12 +16,27 @@
  },
  "server": {
   "parts": [
-   "server/019g-irshad-domain.js",
-   "server/019h-irshad-query.js",
-   "server/019i-irshad-operations.js",
-   "server/019j-irshad-daily.js"
-  ],
-  "order": "workers/parts.json"
+   {
+    "file": "server/019g-irshad-domain.js",
+    "after": "019f-backup-converter.js",
+    "order": 10
+   },
+   {
+    "file": "server/019h-irshad-query.js",
+    "after": "019f-backup-converter.js",
+    "order": 20
+   },
+   {
+    "file": "server/019i-irshad-operations.js",
+    "after": "019f-backup-converter.js",
+    "order": 30
+   },
+   {
+    "file": "server/019j-irshad-daily.js",
+    "after": "019f-backup-converter.js",
+    "order": 40
+   }
+  ]
  },
  "migrations": {
   "files": [],
@@ -43,5 +58,577 @@
  "sharedStaysInBase": [
   "workers/parts/046-kivo-build-3.js",
   "workers/parts/047-retro.js"
- ]
+ ],
+ "slots": {
+  "modules.irshad": {
+   "order": 10,
+   "text": "  {\n   \"name\": \"Irshad\",\n   \"slug\": \"irshad\",\n   \"minifiedSource\": true,\n   \"bytes\": 189622,\n   \"logicLines\": 2036\n  },\n"
+  },
+  "blocks.pages.irshad": {
+   "order": 10,
+   "text": "   {\n    \"b64Sha256\": \"cf2e522092c5dcfac173ca1e501e9cd6eb20336655ac3c27bcb1054723429f09\",\n    \"bytes\": 189622,\n    \"file\": \"client/pages/Irshad.dc.html\",\n    \"name\": \"Irshad\",\n    \"sha256\": \"ca8c6ff02e5ea93a15a3d68dbc69d6c9c3353e603a3c7dd58a0c0c03a585c70f\"\n   },\n"
+  },
+  "blocks.order.irshad": {
+   "order": 10,
+   "text": "   \"Irshad\",\n"
+  },
+  "pages.entry.systems": {
+   "order": 10,
+   "text": "  {\n   \"key\": \"irshad\",\n   \"module\": \"irshad\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"departmentComponents\": [\"Irshad\"],\n   \"nav\": \"irshad\",\n   \"name\": \"نظام الاسترشاد\",\n   \"subs\": [\n    {\n     \"key\": \"dash\",\n     \"name\": \"لوحة المؤشرات\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"records\",\n     \"name\": \"السجلات\"\n    }\n   ]\n  },\n"
+  },
+  "pages.kpi.refs.mid": {
+   "order": 20,
+   "text": "    \"irshad/dash\",\n"
+  },
+  "pages.kpi.names.mid": {
+   "order": 20,
+   "text": "    \"irshad/dash\": \"لوحة مؤشرات الاسترشاد\",\n"
+  },
+  "pages.tabAddr.tail": {
+   "order": 20,
+   "text": ",\n  \"irshad\": {\n   \"records\": 1\n  }"
+  },
+  "pages.navOrder.tail": {
+   "order": 10,
+   "text": ",\n  \"irshad\""
+  },
+  "pages.navNames.tail": {
+   "order": 10,
+   "text": ",\n  \"irshad\": \"نظام الاسترشاد\""
+  },
+  "pages.routeNames.systems": {
+   "order": 10,
+   "text": "  \"irshad\": \"نظام الاسترشاد\",\n"
+  },
+  "budget.page.irshad": {
+   "order": 10,
+   "text": "  \"page:Irshad\": 41100,\r\n"
+  },
+  "uxStates.irshad": {
+   "order": 10,
+   "text": "  \"irshad\": {\n   \"فارغ\": 17,\n   \"تحميل\": 0,\n   \"خطأ\": 2,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 1\n  },\n"
+  },
+  "ns.after.irshad": {
+   "order": 10,
+   "text": "  \"src/systems/irshad/client/logic.js\",\n"
+  },
+  "shell.nav.systems": {
+   "order": 10,
+   "text": "      <a class=\"{{nIrshad}}\" data-key=\"irshad\" role=\"link\" tabindex=\"0\" sc-camel-on-click=\"{{goIrshad}}\" title=\"{{tIrshad}}\"><span class=\"ni\"><svg width=\"16\" height=\"16\" sc-camel-view-box=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-i=\"i-8d0f2597\"></svg></span><span class=\"nlbl\">نظام الاسترشاد</span></a>\n"
+  },
+  "shell.mounts": {
+   "order": 20,
+   "text": "  <sc-if value=\"{{isIrshad}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Irshad\" hint-size=\"100%,900px\"></dc-import>\n  </sc-if>\n"
+  },
+  "root.liveKeys": {
+   "order": 10,
+   "text": "irshad: /irshad/, "
+  },
+  "root.landing.systems": {
+   "order": 10,
+   "text": "\"irshad\", "
+  },
+  "root.inPlanning": {
+   "order": 10,
+   "text": ",\"irshad\""
+  },
+  "root.labels": {
+   "order": 10,
+   "text": "irshad:\"نظام الاسترشاد\", "
+  },
+  "root.navVals.systems": {
+   "order": 10,
+   "text": "nIrshad: cls(\"irshad\", \"irshad\"), tIrshad: tip(\"irshad\"), "
+  },
+  "root.go.systems": {
+   "order": 10,
+   "text": "goIrshad: go(\"irshad\"), "
+  },
+  "root.is.systems": {
+   "order": 10,
+   "text": "isIrshad: ap === \"irshad\", "
+  },
+  "root.known.systems": {
+   "order": 10,
+   "text": "\"irshad\","
+  },
+  "plat.sideOrder": {
+   "order": 10,
+   "text": ", \"irshad\""
+  },
+  "pageStates.names": {
+   "order": 30,
+   "text": "    \"irshad\": \"سجلات الاسترشاد\", \"irshad/records\": \"سجلات الاسترشاد\",\n"
+  },
+  "kpis.panels.mid": {
+   "order": 20,
+   "text": "        { k: \"ir\", pk: \"irshad\", sk: \"dash\" },\n"
+  },
+  "kpis.tabs.mid": {
+   "order": 20,
+   "file": "slots/kpis.tabs.mid.frag"
+  },
+  "kpis.mounts.mid": {
+   "order": 20,
+   "text": "  <sc-if value=\"{{on_ir}}\" hint-placeholder-val=\"{{ false }}\"><dc-import name=\"Irshad\" solo=\"dash\" hint-size=\"100%,1100px\"></dc-import></sc-if>\n"
+  },
+  "nf.types": {
+   "order": 10,
+   "file": "slots/nf.types.frag"
+  },
+  "nf.cap": {
+   "order": 10,
+   "text": "  irshad: \"irshad\",\n"
+  },
+  "nf.denyPages.2": {
+   "order": 10,
+   "text": " irshad: \"نظام الاسترشاد\","
+  },
+  "nf.denyRecs.1": {
+   "order": 10,
+   "text": " bassam_irshad_v1: \"نظام الاسترشاد\","
+  },
+  "nf.denyRecs.2": {
+   "order": 10,
+   "text": "bassam_irshad_langs_v1: \"لغات الاسترشاد\", bassam_irshad_locs_v1: \"مواقع الاسترشاد\", "
+  },
+  "res.reg.dept": {
+   "order": 10,
+   "text": "  /* ── الاسترشاد ── */\n  'bassam_irshad_v1':          { scope: 'dept', cap: 'irshad/records' },\n  'bassam_irshad_langs_v1':    { scope: 'dept', cap: 'irshad/records' },\n  'bassam_irshad_locs_v1':     { scope: 'dept', cap: 'irshad/records' },\n"
+  },
+  "ent.reg": {
+   "order": 20,
+   "text": "  /* ── الاسترشاد ── */\n  'bassam_irshad_v1':         { cols: [{ at: 'reports', idf: ['id'], lock: ['id'] }], empty: '{\"reports\":[]}' },\n  'bassam_irshad_langs_v1':   { empty: '[]', primRoot: 1 },\n  'bassam_irshad_locs_v1':    { empty: '[]', primRoot: 1 },\n"
+  },
+  "fields.reg": {
+   "order": 20,
+   "text": "  'bassam_irshad_v1':     { cols: { reports: { req: ['id'], type: { id: 'str' } } } },\n"
+  },
+  "routes.bodyLimit8m": {
+   "order": 10,
+   "text": "||path === '/api/irshad/act'"
+  },
+  "routes.dispatch": {
+   "order": 10,
+   "text": "      if (path === '/api/irshad' || path === '/api/irshad/act' || path === '/api/irshad/export') return await irRoute(env, request, url, ss);\n"
+  },
+  "contracts.systems": [
+   {
+    "order": 10,
+    "file": "slots/contracts.systems.frag"
+   },
+   {
+    "order": 20,
+    "file": "slots/contracts.systems.2.frag"
+   },
+   {
+    "order": 30,
+    "file": "slots/contracts.systems.3.frag"
+   }
+  ],
+  "bodies.systems": {
+   "order": 10,
+   "file": "slots/bodies.systems.frag"
+  },
+  "db.prepare.irshad": {
+   "order": 10,
+   "text": " pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) :"
+  },
+  "save.moved.irshad": {
+   "order": 10,
+   "text": "irLegacyKey(k) || "
+  },
+  "save.movedPath": {
+   "order": 30,
+   "text": "irLegacyKey(k) ? '/api/irshad' : "
+  },
+  "migrate.moved.irshad": {
+   "order": 10,
+   "text": "irLegacyKey(r0.k) || "
+  },
+  "get.rdKeys.irshad": {
+   "order": 10,
+   "text": "!irLegacyKey(k9) && "
+  },
+  "get.moved.irshad": {
+   "order": 10,
+   "text": "    if (irLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/irshad' }; continue; }\n"
+  },
+  "boot.strip.irshad": {
+   "order": 10,
+   "text": "      for (var retiredIr in keys) if (irLegacyKey(retiredIr)) delete keys[retiredIr];\n"
+  },
+  "bd.commitGuard.irshad": {
+   "order": 10,
+   "text": "CASE WHEN EXISTS(SELECT 1 FROM kv WHERE \"+irLegacyPredicate()+\")THEN json_extract('{}','KIVO_IRSHAD_LEGACY_SOURCE')END,"
+  },
+  "bd.commitGuard.irshadBind": {
+   "order": 10,
+   "text": "JSON.stringify(IR_RES),"
+  },
+  "bd.errorFallback": {
+   "order": 10,
+   "text": "return irErrorResponse(error);"
+  },
+  "rs.scopeFilter.irshad": {
+   "order": 10,
+   "text": "    if (domains.irshad) domains.irshad = domains.irshad.filter(function (domain) {\n      return domain && domain.scope && allowed.has(domain.scope.departmentId);\n    });\n"
+  },
+  "rs.selection.drop": {
+   "order": 10,
+   "text": "    delete domains.irshad;\n"
+  },
+  "rs.manifest.systems.1": {
+   "order": 10,
+   "text": "'irshad', "
+  },
+  "rs.manifest.systems.2": {
+   "order": 10,
+   "text": "'irshad', "
+  },
+  "rs.manifest.systems.3": {
+   "order": 10,
+   "text": "'irshad', "
+  },
+  "rs.manifest.systems.4": {
+   "order": 10,
+   "text": "'irshad', "
+  },
+  "rs.manifest.full.irshadArray": {
+   "order": 10,
+   "text": " || !Array.isArray(body.domains.irshad)"
+  },
+  "rs.manifest.full.irshadScopes": {
+   "order": 10,
+   "text": "    if (!deq(ids.slice().sort(), body.domains.irshad.map(function (d) {\n      return d && d.scope && d.scope.departmentId;\n    }).sort())) throw rsError('restore-incomplete-irshad');\n"
+  },
+  "rs.manifest.dept.irshad": {
+   "order": 10,
+   "text": " ||\n      !Array.isArray(body.domains.irshad) || body.domains.irshad.length !== 1 ||\n      !body.domains.irshad[0] || !body.domains.irshad[0].scope ||\n      body.domains.irshad[0].scope.departmentId !== body.scope.departmentId"
+  },
+  "rs.base.systems": {
+   "order": 10,
+   "text": ", 'irshad'"
+  },
+  "rs.prepare.irshadGuard": {
+   "order": 10,
+   "text": "  await irGuardRetired(env);\n"
+  },
+  "rs.keys.moved.1.irshad": {
+   "order": 10,
+   "text": "irLegacyKey(k) || "
+  },
+  "rs.keys.moved.2.irshad": {
+   "order": 10,
+   "text": "irLegacyKey(k) || "
+  },
+  "rs.counts.systems": {
+   "order": 10,
+   "text": " irshad: 0,"
+  },
+  "rs.plan.irshad": {
+   "order": 10,
+   "file": "slots/rs.plan.irshad.frag"
+  },
+  "rs.plan.irshadRemoved": {
+   "order": 10,
+   "file": "slots/rs.plan.irshadRemoved.frag"
+  },
+  "rs.commit.irshadGuard": {
+   "order": 10,
+   "text": "  await irGuardRetired(env);\n"
+  },
+  "rs.reference.irshadInit": {
+   "order": 10,
+   "text": ", irshad = Object.create(null)"
+  },
+  "rs.reference.irshadRevs": {
+   "order": 10,
+   "text": "    irshad[d] = await irRevs(env, d);\n"
+  },
+  "rs.reference.base.systems": {
+   "order": 10,
+   "text": "      irshad: irshad,\n"
+  },
+  "rs.manifest.systems.5": {
+   "order": 10,
+   "text": "'irshad', "
+  },
+  "save.wipe.irshad": {
+   "order": 10,
+   "file": "slots/save.wipe.irshad.frag"
+  },
+  "save.wipe.counts": {
+   "order": 10,
+   "text": "    plan.counts.irshad = opt.__irshadCount || 0;\r\n"
+  },
+  "wipe.inventory.irshadGuard": {
+   "order": 10,
+   "text": "  await irGuardRetired(env);\r\n"
+  },
+  "wipe.inventory.irshadCounts": {
+   "order": 10,
+   "text": "      env.DB.prepare('SELECT (SELECT COUNT(*) FROM irshad_reports WHERE department_id=?1)+(SELECT COUNT(*) FROM irshad_catalog_entries WHERE department_id=?1)+(SELECT COUNT(*) FROM irshad_retro_windows WHERE department_id=?1) n').bind(dept),\r\n      irRevisionRowsStatement(env, dept),\r\n"
+  },
+  "wipe.inventory.base": {
+   "order": 10,
+   "text": "        irshad: irRevisionResult(counts[4].results || [], dept),\r\n"
+  },
+  "wipe.inventory.counts": {
+   "order": 10,
+   "text": "        irshad: Number(counts[3].results[0].n),\r\n"
+  },
+  "wipe.request.base": {
+   "order": 10,
+   "text": ", 'irshad'"
+  },
+  "wipe.keys.moved.irshad": {
+   "order": 10,
+   "text": "irLegacyKey(k) || "
+  },
+  "wipe.opt.base": {
+   "order": 10,
+   "text": "        __irshadBase: input.base.irshad,\r\n"
+  },
+  "wipe.opt.counts": {
+   "order": 10,
+   "text": "        __irshadCount: observed.counts.irshad,\r\n"
+  },
+  "reset.irshad": {
+   "order": 10,
+   "text": "    env.DB.prepare('DELETE FROM irshad_requests'), env.DB.prepare('DELETE FROM irshad_report_languages'), env.DB.prepare('DELETE FROM irshad_reports'), env.DB.prepare('DELETE FROM irshad_catalog_entries'), env.DB.prepare('DELETE FROM irshad_retro_windows'),\n    env.DB.prepare(\"DELETE FROM meta WHERE k GLOB 'irshad:*:presence*'\"),\n"
+  },
+  "bc.remapIrshad": {
+   "order": 10,
+   "text": "function rsBCRemapIR(domain, source, target) {\n  var next = rsBCClone(irValidateDomain(domain, source));\n  next.scope.departmentId = target;\n  Object.keys(IR_TABLES).forEach(function (kind) {\n    next.rows[kind].forEach(function (row) { row.department_id = target; });\n  });\n  return irValidateDomain(next, target);\n}\n"
+  },
+  "bc.required.irshad": {
+   "order": 10,
+   "text": "  if (manifest.version >= 2) required.push('irshad');\n"
+  },
+  "bc.manifest.irshad": {
+   "order": 10,
+   "text": "  if (manifest.version >= 2) {\n    if (!Array.isArray(domains.irshad) || !deq(domains.irshad.map(function (d) {\n      return d && d.scope && d.scope.departmentId;\n    }).sort(), departments.slice().sort())) rsBCFail('incomplete-irshad');\n  } else if (domains.irshad !== undefined) rsBCFail('irshad-manifest-version');\n"
+  },
+  "bc.domains.systems": {
+   "order": 10,
+   "text": "'irshad', "
+  },
+  "bc.keys.irshadNamespace": {
+   "order": 10,
+   "text": "    if (irLegacyKey(k)) {\n      var part = parseKey(k), i = IR_RES.indexOf(resName(k));\n      if (k !== (part.dept ? irKey(part.dept, i) : IR_RES[i])) rsBCFail('irshad-namespace');\n    }\n"
+  },
+  "bc.irTyped": {
+   "order": 10,
+   "text": "Array.isArray(domains.irshad) && domains.irshad.length === 1 ? domains.irshad[0].scope && domains.irshad[0].scope.departmentId : null"
+  },
+  "bc.irKeys": {
+   "order": 10,
+   "text": "Object.keys(keys).filter(irLegacyKey)"
+  },
+  "bc.convert.irshad": {
+   "order": 10,
+   "file": "slots/bc.convert.irshad.frag"
+  },
+  "bc.out.systems": {
+   "order": 10,
+   "text": "  manifest.domains.irshad = 1;\n"
+  },
+  "retro.counters": {
+   "order": 10,
+   "text": "irshad: pv3Retro()"
+  },
+  "retro.table": {
+   "order": 10,
+   "text": "irshad: { cap: 'irshad/records', key: 'ir.rec.retro.open', res: 'bassam_irshad_v1', state: 'bassam_irshad_retro_v1', name: 'الاسترشاد' }"
+  },
+  "retro.sysOf": {
+   "order": 10,
+   "text": "'bassam_irshad_v1': 'irshad'"
+  },
+  "retro.state": {
+   "order": 10,
+   "text": "  if (sys === 'irshad') { await irGuardRetired(env); return (await irRetroSnapshot(env, d)).state; }\n"
+  },
+  "retro.adapter.irshad": {
+   "order": 10,
+   "file": "slots/retro.adapter.irshad.frag"
+  },
+  "nf.due.edges": {
+   "order": 10,
+   "text": "ird: [0, 1410]"
+  },
+  "nf.due.window": {
+   "order": 10,
+   "text": "k === \"ird\" ? m >= 1410 : ",
+   "last": "m >= 1410"
+  },
+  "nf.due.kinds": {
+   "order": 10,
+   "text": "\"ird\""
+  },
+  "nf.due.handler": {
+   "order": 10,
+   "text": "p.k === \"ird\" ? nfIrshadDaily : ",
+   "last": "nfIrshadDaily"
+  },
+  "bk.counts.systems": {
+   "order": 10,
+   "text": "'irshad', "
+  },
+  "bk.export.specs": {
+   "order": 10,
+   "text": "      ['irshad',['reports','languages','locations','retro'],['reports','languages','catalogs','windows']],\n"
+  },
+  "bk.restore.base": {
+   "order": 10,
+   "text": " || !base.irshad"
+  },
+  "bk.restore.summary": {
+   "order": 10,
+   "text": " و' + (c.irshad || 0) + ' سجل استرشاد"
+  },
+  "admin.keyLabels": {
+   "order": 10,
+   "text": "        bassam_irshad_v1: \"نظام الاسترشاد\",\r\n"
+  },
+  "admin.counts.list.1": {
+   "order": 10,
+   "text": ", \"irshad\""
+  },
+  "admin.counts.list.2": {
+   "order": 10,
+   "text": ", \"irshad\""
+  },
+  "admin.counts.list.3": {
+   "order": 10,
+   "text": ", \"irshad\""
+  },
+  "admin.delete.populated": {
+   "order": 10,
+   "text": " + counts.irshad"
+  },
+  "admin.delete.message": {
+   "order": 10,
+   "text": "، \" + counts.irshad + \" سجل استرشاد"
+  },
+  "admin.businessBase": {
+   "order": 10,
+   "text": "irshad:['reports','languages','locations','retro']"
+  },
+  "admin.wipe.natural": {
+   "order": 10,
+   "text": " || !natural(body.counts.irshad)"
+  },
+  "admin.wipe.message": {
+   "order": 10,
+   "text": "، \" + body.counts.irshad + \" سجل استرشاد"
+  },
+  "admin.wipe.ack": {
+   "order": 10,
+   "text": " والاسترشاد"
+  },
+  "admin.wipe.labels": [
+   {
+    "order": 10,
+    "text": "                bassam_irshad_v1: \"سجلات نظام الاسترشاد\",\r\n"
+   },
+   {
+    "order": 30,
+    "text": "                bassam_irshad_locs_v1: \"مواقع نظام الاسترشاد\",\r\n                bassam_irshad_langs_v1: \"لغات نظام الاسترشاد\",\r\n"
+   }
+  ],
+  "admin.wipe.rows": {
+   "order": 10,
+   "text": "            if (counts.irshad > 0) p.push({ label: \"سجلات الاسترشاد وقوائمه والاستدراك (\" + counts.irshad + \")\" });\n"
+  },
+  "admin.wipe.any": {
+   "order": 10,
+   "text": " + (counts.irshad || 0)"
+  },
+  "admin.full.stripKeys": {
+   "order": 10,
+   "text": "irshad(?:_langs|_locs|_retro)?"
+  },
+  "admin.full.manifest.systems": {
+   "order": 10,
+   "text": "irshad:1,"
+  },
+  "nfc.kind.color": {
+   "order": 10,
+   "text": " irshad:'#166534',"
+  },
+  "nfc.kind.name": {
+   "order": 10,
+   "text": " irshad:'الاسترشاد',"
+  },
+  "nfc.kind.icon": {
+   "order": 10,
+   "text": " irshad:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM16 8l-2 6-6 2 2-6z',"
+  },
+  "nfc.reg": {
+   "order": 10,
+   "file": "slots/nfc.reg.frag"
+  },
+  "nfc.goPage.records": {
+   "order": 10,
+   "text": "irshad: 'irshad'"
+  },
+  "nfc.goPage.dash": {
+   "order": 10,
+   "text": "irshad: 'kpis'"
+  },
+  "nfc.goKpiPage": {
+   "order": 10,
+   "text": "irshad: ['irshad', 'dash']"
+  },
+  "store.relational.systems": {
+   "order": 10,
+   "text": "irshad(?:_langs|_locs|_retro)?|"
+  },
+  "store.keyLabels": {
+   "order": 10,
+   "text": "      bassam_irshad_v1:[\"نظام الاسترشاد\"], bassam_irshad_langs_v1:[\"لغات الاسترشاد\"], bassam_irshad_locs_v1:[\"مواقع الاسترشاد\"],\n"
+  },
+  "store.identity": {
+   "order": 10,
+   "text": " bassam_irshad_v1: { \"reports\": \"id\" },"
+  },
+  "store.retroSys": {
+   "order": 10,
+   "text": "n === \"bassam_irshad_v1\" ? \"irshad\" : "
+  },
+  "store.retroKey": {
+   "order": 20,
+   "text": "\"ir.rec.retro.open\""
+  },
+  "store.pull.systemKeys": {
+   "order": 10,
+   "text": "irshad(?:_langs|_locs|_retro)?"
+  },
+  "activity.entities": {
+   "order": 20,
+   "text": " irshad: 'تقرير الاسترشاد',"
+  },
+  "activity.filter": {
+   "order": 20,
+   "text": " ['irshad', 'الاسترشاد'],"
+  },
+  "res.empty.systems": {
+   "order": 10,
+   "text": "    bassam_irshad_v1: '{\"reports\":[]}', bassam_irshad_langs_v1: '[]', bassam_irshad_locs_v1: '[]',\n"
+  },
+  "root.deptBackup.stripKeys": {
+   "order": 10,
+   "text": "irshad(?:_langs|_locs|_retro)?"
+  },
+  "root.deptBackup.manifest": {
+   "order": 10,
+   "text": "irshad:1,"
+  },
+  "bd.commitGuard.irshadShift": {
+   "order": 10,
+   "text": ".replace(/\\?1/g,'?2')"
+  }
+ }
 }

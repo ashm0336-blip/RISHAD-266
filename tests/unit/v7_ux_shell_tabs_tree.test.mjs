@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { needs } from './harness.mjs';
 
 const ROOT = new URL('../../', import.meta.url).pathname, read = (p) => fs.readFileSync(path.join(ROOT, p));
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
@@ -21,7 +22,7 @@ const DEVELOP = {
   serverPages: '39f49c1feda6098ce929b3ea41eee6c4795bbb4224be2c169896e411a56e5678',
 };
 
-test('pages.json without the display-only field is develop\'s pages.json; the field sits on one page and names a leaf that exists', () => {
+test('pages.json without the display-only field is develop\'s pages.json; the field sits on one page and names a leaf that exists', needs('award', 'dstats', 'seized'), () => {
   const M = JSON.parse(read('src/manifests/pages.json')), withField = M.pages.filter((p) => p.shellTabs);
   assert.deepEqual(withField.map((p) => p.key), ['emps']);
   assert.deepEqual(withField[0].shellTabs, [{ name: 'مستودع العهد', as: 'custody' }]);
@@ -40,7 +41,7 @@ test('the permission registry is byte-identical to develop and keeps its 255 act
   assert.equal(R.registry.filter((k) => k.status === 'active').length, 255); assert.equal(R.counts.securityActive, 255); assert.equal(R.registry.length, 269);
 });
 
-test('the server page structure (PG_REG) is develop\'s and does not carry the field', () => {
+test('the server page structure (PG_REG) is develop\'s and does not carry the field', needs('award', 'dstats', 'seized'), () => {
   const W = read('workers/_worker.js').toString('utf8'), m = /(?:const|var|let) PG_REG\s*=\s*(\[[\s\S]*?\]);\n/.exec(W);
   assert.ok(m, 'PG_REG found'); assert.equal(sha(Buffer.from(m[1])), DEVELOP.serverPages);
   assert.equal(W.includes('shellTabs'), false);

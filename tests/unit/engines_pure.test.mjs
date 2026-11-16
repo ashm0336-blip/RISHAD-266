@@ -4,9 +4,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { internals } from './internals.mjs';
+import { needs, hasSystem } from './harness.mjs';
+const DS_ONLY = ['dsDayOk', 'dsStampOk', 'dsLockOk', 'dsLockRec', 'dsLockedIn'];   /* V7 · د2-ب: دوالُّ نظام الإحصائيات تُطلب بحضوره فقط */
 const W = await internals(['unCheck', 'pwCheck', 'normKey', 'normId', 'isDeviceKey', 'isMgrKey', 'parseKey', 'stripKey', 'isObj', 'isEmptyVal', 'parseJson', 'eq', 'eqExcept',
   'dsDayOk', 'dsStampOk', 'dsToday', 'dsLockOk', 'dsLockRec', 'dsLockedIn', 'opMatch', 'opPrefix', 'splitOps', 'secHeaders', 'bodyLimit', 'isLocal', 'enfTestHostOk', 'enfIsTestUser',
-  'legacyHash', 'hex', 'pbkdf2', 'hashPw', 'verifyPw', 'readCookie']);
+  'legacyHash', 'hex', 'pbkdf2', 'hashPw', 'verifyPw', 'readCookie'].filter((n) => hasSystem('dstats') || !DS_ONLY.includes(n)));
 
 test('هويةُ الدخول: 10 أرقام بالضبط (جوال/هوية) — لا فراغات ولا حروف ولا أرقام عربية', () => {
   for (const [v, want] of [['0500000000', true], ['1234567890', true], [' 0500000000 ', true], ['050000000', false], ['05000000001', false], ['05000000a0', false], ['٠٥٠٠٠٠٠٠٠٠', false], ['', false], [null, false], [undefined, false], [500000000, false], [5000000000, true]])
@@ -35,7 +37,7 @@ test('المقارنةُ والقيمُ الفارغة: isObj · isEmptyVal · p
   assert.equal(W.eq('abc', 'abc'), true); assert.equal(W.eq('abc', 'abd'), false); assert.equal(W.eq('a', 'ab'), false); assert.equal(W.eq(1, '1'), true); assert.equal(W.eq('', ''), true);
   assert.equal(W.eqExcept({ a: 1, rev: 5 }, { a: 1, rev: 9 }, 'rev'), true); assert.equal(W.eqExcept({ a: 1, rev: 5 }, { a: 2, rev: 5 }, 'rev'), false);
 });
-test('الإحصائياتُ اليومية: شكلُ اليوم (dsDayOk) وختمُ الحقل (dsStampOk)', () => {
+test('الإحصائياتُ اليومية: شكلُ اليوم (dsDayOk) وختمُ الحقل (dsStampOk)', needs('dstats'), () => {
   assert.equal(W.dsDayOk({ men: 10, women: null, __m: { by: 'u', ts: 1 } }), true);
   assert.equal(W.dsDayOk({ men: '10' }), false, 'نصٌّ بدل رقم');
   assert.equal(W.dsDayOk({ men: Infinity }), false); assert.equal(W.dsDayOk({ men: NaN }), false);
@@ -53,7 +55,7 @@ test('dsToday: اليومُ الهجري (أم القرى) بتوقيت الري
   assert.ok(a && b && (b.d === a.d + 1 || (b.d === 1 && a.d >= 29)), 'قبل 03:00 الرياض يُحسب اليومُ السابق: ' + JSON.stringify([a, b]));
   assert.equal(W.dsToday(NaN), null, 'وقتٌ غيرُ صالح ⇒ null');
 });
-test('أقفالُ الإحصائيات: dsLockOk · dsLockRec · dsLockedIn (معتمد · شهرٌ منقضٍ · يومٌ مفتوح/مقفل يدوياً)', () => {
+test('أقفالُ الإحصائيات: dsLockOk · dsLockRec · dsLockedIn (معتمد · شهرٌ منقضٍ · يومٌ مفتوح/مقفل يدوياً)', needs('dstats'), () => {
   assert.equal(W.dsLockOk(undefined), true); assert.equal(W.dsLockOk(true), true); assert.equal(W.dsLockOk({ ap: 1 }), true); assert.equal(W.dsLockOk({ ap: 2 }), false);
   assert.equal(W.dsLockOk({ dopen: { '5': 1 } }), true); assert.equal(W.dsLockOk({ dopen: { '55x': 1 } }), false); assert.equal(W.dsLockOk({ zz: 1 }), false); assert.equal(W.dsLockOk('x'), false);
   assert.deepEqual(W.dsLockRec({ 'haram|1448-4': true }, 'haram', 1448, 4), { ap: 1 }); assert.deepEqual(W.dsLockRec({}, 'haram', 1448, 4), {});

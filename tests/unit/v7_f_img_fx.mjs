@@ -1,5 +1,6 @@
 /* V7-F · shared helpers for the image-orphan tests (real worker · legacy AND enforce · stored rows AND R2 bytes). TEST_ONLY identities. */
 import assert from 'node:assert/strict';
+import { needs } from './harness.mjs';
 import { world, workerUnderTest, D, PNG, TAG, stored, taskCommandBody, operationSaveBody, putKV, replaceOperationalFixture } from './tasks_fx.mjs';
 export { D, PNG, TAG, stored, putKV };
 export const WU = workerUnderTest();
@@ -62,4 +63,6 @@ export const due = (W) => W.env.DB.exec("DELETE FROM guard WHERE gk = 'rl:img-sw
 export const age = (W, id, days) => { W.env.DB.exec("UPDATE imgown SET ts = ts - " + Math.round(days * DAYMS) + " WHERE img = '" + id.replace(/'/g, "''") + "'"); due(W); };
 /* what a refusal looks like from outside: status · body · the headers a caller can compare (the request id and timing are per request by design) */
 export const shape = (r) => JSON.stringify({ status: r.status, body: r.j, ct: r.h.get('content-type'), cc: r.h.get('cache-control'), len: r.h.get('content-length') });
+/* V7 · د2-ب: اختبارٌ يحتاج نظاماً — both(gated(test, 'award'), …) يتخطّاه بغياب النظام */
+export const gated = (test, ...keys) => (name, opts, fn) => test(name, { ...opts, ...needs(...keys) }, fn);
 export const both = (test, name, fn) => { for (const mode of MODES) test(name + ' [' + mode + ']', { timeout: 600000 }, () => fn(mode)); };

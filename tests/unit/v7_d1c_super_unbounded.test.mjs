@@ -12,6 +12,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, ROOT } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
+import { needs } from './harness.mjs';
 
 const D = 'tst_d1', dk = (r) => 'bsdept:' + D + ':bassam_' + r;
 const OPS = ['employees_v1', 'tasks_v1', 'plan_v1', 'rounds_v1', 'dreport_v1', 'staffing_v3'].map(dk);
@@ -120,7 +121,7 @@ async function sweep(W) {
 }
 
 for (const mode of ['legacy', 'enforce']) {
-  test('V7 · د1-ج · ' + mode + ': مدير المنصة على إدارةٍ سقفُها فارغ ووحداتُها مطفأة — لا رفضَ لسبب صلاحية في أي مسار قراءة أو كتابة', { timeout: 600000 }, async (t) => {
+  test('V7 · د1-ج · ' + mode + ': مدير المنصة على إدارةٍ سقفُها فارغ ووحداتُها مطفأة — لا رفضَ لسبب صلاحية في أي مسار قراءة أو كتابة', { ...needs('award', 'seized'), timeout: 600000 }, async (t) => {
     const W = await build(mode);
     const R = await sweep(W);
     const denied = R.filter((x) => x.why);

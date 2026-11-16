@@ -3,11 +3,12 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {world,ok,snap,copy,D1,D2,OPTIONS,backupBrowser,exportFull,exportDepartment,seedTypedDomains,until,tick,currentOperationResources} from './backup_review_fx.mjs';
+import { needs } from './harness.mjs';
 const ds=()=>({haram:{'9999-01-01':{worshippers:0,umrah:null}},nabawi:{},locks:{}});
 const oldKeys=['bassam_notif_v1','bassam_notif_sys_v1','bassam_notif_cfg_v1','bassam_bc_v1'];
 const commitPosts=C=>C.requests.filter(r=>r.method==='POST'&&JSON.parse(r.body).phase==='commit');
 
-test('full backup awaits the actual normalized notification export and never offers stale encryption or a partial domain set after failure',async()=>{
+test('full backup awaits the actual normalized notification export and never offers stale encryption or a partial domain set after failure',needs('award', 'dstats', 'seized'), async()=>{
   for(const approved of [false,true]){
     const B=await world();await seedTypedDomains(B,ds());const C=await backupBrowser(B),actualExport=C.KIVO.BassamNotif.exportDomain;let settle;
     C.KIVO.BassamNotif.exportDomain=async()=>await new Promise(resolve=>{settle=async()=>resolve(approved?await actualExport():{ok:0,err:'TEST_ONLY_disconnected'});});
@@ -27,7 +28,7 @@ test('full backup awaits the actual normalized notification export and never off
   }
 });
 
-test('department export waits for the server notification domain and aborts the pre-import continuation on failure',async()=>{
+test('department export waits for the server notification domain and aborts the pre-import continuation on failure',needs('award', 'dstats', 'seized'), async()=>{
   for(const approved of [false,true]){
     const B=await world();await seedTypedDomains(B,ds());const C=await backupBrowser(B),actualExport=C.KIVO.BassamNotif.exportDomain;let settle,continued=0,requested;
     C.KIVO.BassamNotif.exportDomain=async d=>{requested=d;return await new Promise(resolve=>{settle=async()=>resolve(approved?await actualExport(d):{ok:0,err:'TEST_ONLY_disconnected'});});};
@@ -40,7 +41,7 @@ test('department export waits for the server notification domain and aborts the 
   }
 });
 
-test('full admin and authenticated gate restore normalized notifications atomically and reject every retired document in a modern manifest without partial writes',async()=>{
+test('full admin and authenticated gate restore normalized notifications atomically and reject every retired document in a modern manifest without partial writes',needs('dstats'), async()=>{
   for(const entry of ['admin','gate']){
     const B=await world();await seedTypedDomains(B,ds());const C=await backupBrowser(B),file=await exportFull(C),messages=[];
     const run=async f=>{if(entry==='admin'){C.page._fbkPend={file:f,ticket:null};await C.method('src/modules/admin/logic.js','fbkCommit').call(C.page,'replace');}else await C.func('src/auth/335-identity-gate.js','doRestore')(f,message=>messages.push(message),{setAttribute(){}});};
@@ -54,7 +55,7 @@ test('full admin and authenticated gate restore normalized notifications atomica
   }
 });
 
-test('department parsing and defensive commit use the shared atomic writer and refuse invalid notification scope or retired documents before an overwrite',async()=>{
+test('department parsing and defensive commit use the shared atomic writer and refuse invalid notification scope or retired documents before an overwrite',needs('dstats'), async()=>{
   const B=await world();await seedTypedDomains(B,ds());const C=await backupBrowser(B),file=await exportDepartment(C),foreignBefore=copy(B.DB.q('SELECT * FROM kv WHERE k GLOB ?','bsdept:'+D2+':*'));
   const parse=C.method('src/layouts/root-logic.js','bkImportFile'),commit=C.method('src/layouts/root-logic.js','bkCommit');
   parse.call(C.page,file,D1);assert.ok(C.page._bkPend);assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n,0,'Parsing alone never writes');

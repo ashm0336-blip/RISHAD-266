@@ -18,6 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { PYTHON, makeLegacyTestEnv as makeEnv, client, applySql, ROOT, since } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { replaceOperationalFixture, inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { needs as needsSys } from './harness.mjs';
 
 const MODES = ['legacy', 'enforce'];
 const ACC = { gm: ['0000000103', '70103', 'tst_gm1'], dm1: ['0000000101', '70101', 'tst_dm1'], dm2: ['0000000102', '70102', 'tst_dm2'], dm3: ['0000000104', '70104', 'tst_dm3'],
@@ -120,7 +121,7 @@ async function build(mode) {
 
 for (const mode of MODES) {
   /* ══ GET /api/get — نطاقُ القراءة بالمفتاح ══ */
-  test(`[${mode}] /api/get — المفاتيحُ المقروءة لكل هوية · لا قيمةَ لغير المقروء · لا اسمَ لمفتاح إدارةٍ أخرى · الحسابات بلا بصمة ولا رقمِ غيره`, since(163), async (t) => {
+  test(`[${mode}] /api/get — المفاتيحُ المقروءة لكل هوية · لا قيمةَ لغير المقروء · لا اسمَ لمفتاح إدارةٍ أخرى · الحسابات بلا بصمة ولا رقمِ غيره`, { ...since(163), ...needsSys('award', 'dstats', 'seized') }, async (t) => {
     const W = await world(mode), { C } = W, keys = Object.values(PK);
     for (const who of ACTIVE) {
       const r = await C.api('/api/get?keys=' + encodeURIComponent(keys.join(',')), { cookie: W.S[who] }); assert.equal(r.status, 200, who);
@@ -202,7 +203,7 @@ for (const mode of MODES) {
   });
 
   /* ══ GET /api/changes — أسماءُ ما تغيّر تمرّ بعقد القراءة نفسِه ══ */
-  test(`[${mode}] /api/changes — الأسماءُ بنطاق الهوية: كلُّ مقروءٍ يظهر · لا اسمَ لإدارةٍ أخرى ولا لتنبيهات مدير النظام`, since(163), async () => {
+  test(`[${mode}] /api/changes — الأسماءُ بنطاق الهوية: كلُّ مقروءٍ يظهر · لا اسمَ لإدارةٍ أخرى ولا لتنبيهات مدير النظام`, { ...since(163), ...needsSys('award', 'dstats', 'seized') }, async () => {
     const W = await world(mode), { C } = W;
     for (const who of ACTIVE) {
       const r = await C.api('/api/changes?since=0', { cookie: W.S[who] }); assert.equal(r.status, 200, who);
@@ -214,7 +215,7 @@ for (const mode of MODES) {
     }
   });
 
-  test(`[${mode}] /api/save — مفاتيح التنبيهات والاسترشاد المتقاعدة تُرفض صراحةً دون إعادة إنشائها`, since(163), async () => {
+  test(`[${mode}] /api/save — مفاتيح التنبيهات والاسترشاد المتقاعدة تُرفض صراحةً دون إعادة إنشائها`, { ...since(163), ...needsSys('irshad') }, async () => {
     const W = await world(mode);
     for (const [key, route] of [[PK.nsys, '/api/notifications'], [PK['d1.irshad'], '/api/irshad'], [PK['d2.irshad'], '/api/irshad']]) {
       const result = await W.C.save(W.S.su, { [key]: JSON.stringify([{ id: 'TEST_ONLY_retired', msg: 'TEST_ONLY' }]) });
@@ -225,7 +226,7 @@ for (const mode of MODES) {
   });
 
   /* ══ /api/retro — حالةُ نافذة الاستدراك (GET) وفتحُها/إغلاقُها (POST) ══ */
-  test(`[${mode}] /api/retro — GET لحامل الاستدراك (may) ولقارئ السجلّ · 403 لغيرهما · POST open/close لحامل الاستدراك وحده`, since(163), async () => {
+  test(`[${mode}] /api/retro — GET لحامل الاستدراك (may) ولقارئ السجلّ · 403 لغيرهما · POST open/close لحامل الاستدراك وحده`, { ...since(163), ...needsSys('irshad') }, async () => {
     const W = await world(mode), { C, fx } = W;
     /* «may» = ir.rec.retro.open (المديرون بالسقف · sup1 بالمنح الصريح plus) — قارئُ الاسترشاد بلا الصلاحية يرى الحالة may:false */
     const GET = { su: ['may', 'may'], sa: ['may', 'may'], gm: ['may', 'may'], dm1: ['may', 403], dm2: [403, 'may'], dm3: [403, 403], sup1: ['may', 403], emp1: ['read', 403], fld: [403, 403], emp2: [403, 'read'] };
@@ -247,7 +248,7 @@ for (const mode of MODES) {
   });
 
   /* ══ /api/aud — سجلُّ الإدارة كاملاً · تاريخُ مجموعةٍ واحدة · ولا سطرَ لا يقرؤه الطالب ══ */
-  test(`[${mode}] /api/aud — الإدارةُ كاملةً لمديرها ومدير الفرع ومدير النظام · بلا إدارة لمدير النظام وحده · تاريخُ مجموعةٍ لمن يقرؤها (READ-01)`, since(163), async () => {
+  test(`[${mode}] /api/aud — الإدارةُ كاملةً لمديرها ومدير الفرع ومدير النظام · بلا إدارة لمدير النظام وحده · تاريخُ مجموعةٍ لمن يقرؤها (READ-01)`, { ...since(163), ...needsSys('irshad') }, async () => {
     const W = await world(mode), { C } = W;
     const DEPT = { su: ['tst_d1', 'tst_d2'], sa: ['tst_d1', 'tst_d2'], gm: ['tst_d1', 'tst_d2'], dm1: ['tst_d1'], dm2: ['tst_d2'], dm3: [], sup1: [], emp1: [], fld: [], emp2: [] };
     const ENT = { su: 200, sa: 200, gm: 200, dm1: 200, dm2: 403, dm3: 403, sup1: 200, emp1: 200, fld: 403, emp2: 403 };   /* تاريخُ مهام d1: نطاقُ الإدارة ∧ قراءةُ المهام */
@@ -268,7 +269,7 @@ for (const mode of MODES) {
   });
 
   /* ══ /api/imgs و /api/img/<id> — الصورةُ تتبع مالكها: claim لرافعها · bound بقراءة مفتاحها ══ */
-  test(`[${mode}] /api/imgs · /api/img/<id> — الجردُ والقراءةُ بحكم المالك (claim لرافعها · bound بقراءة مفتاحه)`, since(163), async () => {
+  test(`[${mode}] /api/imgs · /api/img/<id> — الجردُ والقراءةُ بحكم المالك (claim لرافعها · bound بقراءة مفتاحه)`, { ...since(163), ...needsSys('irshad') }, async () => {
     const W = await world(mode), { C } = W;
     const VIS = { su: ['c3', 'i2', 't1', 'u4'], sa: ['c3', 'i2', 't1', 'u4'], gm: ['i2', 't1'], dm1: ['t1'], dm2: ['i2'], dm3: [], sup1: ['t1'], emp1: ['c3', 't1'], fld: [], emp2: ['i2'] };
     for (const who of ACTIVE) {
@@ -279,7 +280,7 @@ for (const mode of MODES) {
   });
 
   /* ══ /api/presence — القديم: نفسُه + موظفو إدارته (scopeOk) · الإنفاذ: مديرُ النظام وحده ══ */
-  test(`[${mode}] /api/presence — ${mode === 'legacy' ? 'نطاقي (نفسُه · ومديرُ الإدارة/الفرع موظفيه)' : 'مديرُ النظام وحده (403 لغيره)'}`, since(163), async () => {
+  test(`[${mode}] /api/presence — ${mode === 'legacy' ? 'نطاقي (نفسُه · ومديرُ الإدارة/الفرع موظفيه)' : 'مديرُ النظام وحده (403 لغيره)'}`, { ...since(163), ...needsSys('irshad') }, async () => {
     const W = await world(mode), { C } = W;
     const everyone = sorted(ACTIVE.map(w => W.UID[w]));
     const LIST = { su: everyone, sa: everyone, gm: sorted(['tst_gm1', 'tst_dm1', 'tst_dm2', 'tst_sup1', 'tst_emp1', 'tst_fld', 'tst_emp2']), dm1: sorted(['tst_dm1', 'tst_sup1', 'tst_emp1', 'tst_fld']),
@@ -292,7 +293,7 @@ for (const mode of MODES) {
   });
 
   /* ══ /api/sec — مديرُ النظام وحده في الوضعين (الكود · 063) ══ */
-  test(`[${mode}] /api/sec — مديرُ النظام وحده (403 لكل غيره في الوضعين)`, since(163), async () => {
+  test(`[${mode}] /api/sec — مديرُ النظام وحده (403 لكل غيره في الوضعين)`, { ...since(163), ...needsSys('irshad') }, async () => {
     const W = await world(mode), { C } = W;
     /* KIVO_264-merge (الوثائق · مالكُ WP1): docs/api.md يقول «نطاقي (قديم)» — الكودُ لمدير النظام وحده في الوضعين، وهو الأضيق؛ يُصحَّح النصُّ لا الكود */
     for (const who of ACTIVE) {
@@ -302,7 +303,7 @@ for (const mode of MODES) {
   });
 
   /* ══ /api/me و /api/me/sess/kill — بنطاق صاحب الجلسة وحده ══ */
-  test(`[${mode}] /api/me · /api/me/sess/kill — جلساتي وأحداثي وحدها · إنهاءُ جلساتي الأخرى لا يمسّ الحالية ولا جلساتِ غيري`, since(163), async () => {
+  test(`[${mode}] /api/me · /api/me/sess/kill — جلساتي وأحداثي وحدها · إنهاءُ جلساتي الأخرى لا يمسّ الحالية ولا جلساتِ غيري`, { ...since(163), ...needsSys('irshad') }, async () => {
     const W = await world(mode), { C, env } = W;
     for (const who of ACTIVE) {
       const uid = W.UID[who], second = who === 'sa' ? W.mintSa('tok_k264_sa2') : (who === 'su' ? (await C.login('admin', 'admin')).ck : (await C.login(ACC[who][0], ACC[who][1])).ck);
@@ -319,7 +320,7 @@ for (const mode of MODES) {
   });
 
   /* ══ POST /api/save — حكمُ كلّ مفتاح (مكتوبٌ/مرفوض) وأثرُه في المخزن ══ */
-  test(`[${mode}] /api/save — الكتابةُ لكل هوية: العامّ · إدارتُه · إدارةٌ أخرى · ورديةٌ أخرى · المهام · الحسابات (نفسُه وغيرُه)`, since(163), async () => {
+  test(`[${mode}] /api/save — الكتابةُ لكل هوية: العامّ · إدارتُه · إدارةٌ أخرى · ورديةٌ أخرى · المهام · الحسابات (نفسُه وغيرُه)`, { ...since(163), ...needsSys('irshad') }, async () => {
     const W = await world(mode), { C, fx } = W, enf = mode === 'enforce';
     /* W مكتوب · D مرفوض. S2b: سجلٌّ في الوردية ب. كان الإنفاذُ يقيّد المشرفَ والموظفَ بورديتهما (D4-09 staffing-bound — قرارٌ مقفل في
        012-scope-migration-2.js) عبر سقف النطاق القديم bassam_scope_v1؛ وقد أُلغي ذلك القرارُ صراحةً بإلغاء السقف نفسِه:
@@ -387,7 +388,7 @@ for (const mode of MODES) {
   });
 
   /* ══ POST /api/sess/kill — القديم: scopeOk (موظفو إدارته/فرعه · لا نفسَه) · الإنفاذ: مديرُ النظام وحده ══ */
-  test(`[${mode}] /api/sess/kill — ${mode === 'legacy' ? 'نطاقي: المديرُ لموظفي إدارته والفرعُ لإداراته' : 'مديرُ النظام وحده'} · لا نفسَه · المجهولُ 403 · والجلساتُ تُحذف فعلاً`, since(163), async () => {
+  test(`[${mode}] /api/sess/kill — ${mode === 'legacy' ? 'نطاقي: المديرُ لموظفي إدارته والفرعُ لإداراته' : 'مديرُ النظام وحده'} · لا نفسَه · المجهولُ 403 · والجلساتُ تُحذف فعلاً`, { ...since(163), ...needsSys('irshad') }, async () => {
     const W = await world(mode), { C } = W;
     const T = { emp1: 'tst_emp1', fld: 'tst_fld', emp2: 'tst_emp2', dm1: 'tst_dm1', dm2: 'tst_dm2', dm3: 'tst_dm3', gm: 'tst_gm1', su: W.UID.su, sa: 'tst_sa' };
     const LEG = { gm: ['emp1', 'fld', 'emp2', 'dm1', 'dm2'], dm1: ['emp1', 'fld'], dm2: ['emp2'], dm3: [], sup1: [], emp1: [], fld: [], emp2: [] };   /* scopeOk: role=staff ∧ isMgrOf — الفرعُ g1 = d1+d2؛ dm3 خارجه */
@@ -406,7 +407,7 @@ for (const mode of MODES) {
   });
 
   /* ══ المجمَّد وبلا جلسة — 401 على كلّ مسارات الفاعل (طبقتان: حذفُ الجلسات عند التجميد AUD-034 · وحارسُ dis لجلسةٍ باقية) ══ */
-  test(`[${mode}] المجمَّد وبلا جلسة — 401 على المسارات العشرة (+ img/ · me/sess/kill) · وجلسةٌ باقيةٌ للمجمَّد لا تُفيده`, since(163), async () => {
+  test(`[${mode}] المجمَّد وبلا جلسة — 401 على المسارات العشرة (+ img/ · me/sess/kill) · وجلسةٌ باقيةٌ للمجمَّد لا تُفيده`, { ...since(163), ...needsSys('irshad') }, async () => {
     const W = await world(mode), { C, env } = W;
     assert.equal(W.nSess('tst_supB'), 0, 'التجميدُ حذف جلساته (AUD-034)');
     const n = Date.now(); env.DB.exec(`INSERT INTO sess (tok, uid, ts, la, dev, city) VALUES ('tok_k264_stale', 'tst_supB', ${n}, ${n}, 'd', 'TEST_ONLY')`);
@@ -428,7 +429,7 @@ for (const mode of MODES) {
    KIVO_264-merge: عند الإصلاح يُعكس DEF_ENF إلى المتوقَّع الصحيح ({} = لا قيمةَ لأحد) ويُحذف DEFECT_D1_ENF أعلاه.
    schema 9/10: the value check runs on the typed route /api/seized (records view: 200 with the converted rows, or 403 with no value) and the
    write check on /api/seized/act (403 seized-denied, typed tables unchanged); a dm1 read of d1.seized before the switch-off is the control. ══ */
-test('QA-264-D1 · الوحدةُ المطفأة وصفحةُ خارج السقف — القديمُ: لا قيمةَ لأحدٍ في الإدارة · الإنفاذُ: عيبٌ مثبَّت (المديرُ ومديرُ الفرع يقرآنها عبر backup.view)', since(163), async (t) => {
+test('QA-264-D1 · الوحدةُ المطفأة وصفحةُ خارج السقف — القديمُ: لا قيمةَ لأحدٍ في الإدارة · الإنفاذُ: عيبٌ مثبَّت (المديرُ ومديرُ الفرع يقرآنها عبر backup.view)', { ...since(163), ...needsSys('seized') }, async (t) => {
   for (const mode of MODES) {
     const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
     const su = await C.login('admin', 'admin'); assert.ok(su.ok); const { sql, fx } = seed(); await applySql(env.DB, sql);
