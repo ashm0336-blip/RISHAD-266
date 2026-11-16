@@ -32,6 +32,7 @@
   ],
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
  },
+ "permissions": "permissions.json",
  "tests": [
   "tests/dstats_cutover.test.mjs",
   "tests/dstats_cutover_review.test.mjs",

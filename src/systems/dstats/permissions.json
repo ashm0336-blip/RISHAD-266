@@ -1,0 +1,1241 @@
+{
+ "schema": 1,
+ "system": "dstats",
+ "note": "V7 · د3: صلاحياتُ هذا النظام — صفوفُه في السجلّ (المفاتيح · الأوراق · الذرّات · الأعلام) وروابطُه في الخادم (النطاق · الحراسة · البناء)، وما يضيفه إلى صفوف القاعدة. تجمعها tools/perm_parts.py مع القاعدة (الشرح في رأس الأداة).",
+ "docs": {
+  "registry": [
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 0,
+    "value": {
+     "key": "dstats.haram.view",
+     "owner": "dstats/haram",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "عرض بيانات المسجد الحرام",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "قراءة bassam_dstats_v1 بورقة dstats/haram (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/haram:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "dstats.haram.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "key": "dstats.haram.entry",
+     "owner": "dstats/haram",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "إدخال/تعديل الإحصاءات اليومية",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "rule",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "dstatsRule: تصنيف الأيام المتغيّرة إلى add/edit/del (cmpMap) · dsDayOk · رفض يوم مقفل (dslock)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/haram:add",
+      "dstats/haram:del",
+      "dstats/haram:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "dstats.haram.entry"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": {
+     "key": "dstats.haram.approve",
+     "owner": "dstats/haram",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "اعتماد/قفل اليوم أو الشهر",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "locks[\"haram|y-m\"] اتجاهُ الإغلاق: ap يظهر · أو القيمة true · أو mo يزول (إعادةُ إغلاق شهرٍ منقضٍ) · أو dshut[d] يظهر · أو dopen[d] يزول",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/haram:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "dstats.haram.approve"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 3,
+    "value": {
+     "key": "dstats.haram.reopen",
+     "owner": "dstats/haram",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "فتح يوم/شهر مقفل وفق الضوابط",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "locks[\"haram|y-m\"] اتجاهُ الفتح: ap يزول · أو mo يظهر (شهرٌ منقضٍ فُتح بأثرٍ رجعي) · أو dopen[d] يظهر · أو dshut[d] يزول — كان مع approve مفتاحاً واحداً",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/haram:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "dstats.haram.reopen"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 4,
+    "value": {
+     "key": "dstats.nabawi.view",
+     "owner": "dstats/nabawi",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "عرض بيانات المسجد النبوي",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "قراءة bassam_dstats_v1 بورقة dstats/nabawi (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/nabawi:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "dstats.nabawi.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 5,
+    "value": {
+     "key": "dstats.nabawi.entry",
+     "owner": "dstats/nabawi",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "إدخال/تعديل الإحصاءات اليومية",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "rule",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "dstatsRule (كما الحرام) على ورقة النبوي",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/nabawi:add",
+      "dstats/nabawi:del",
+      "dstats/nabawi:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "dstats.nabawi.entry"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 6,
+    "value": {
+     "key": "dstats.nabawi.approve",
+     "owner": "dstats/nabawi",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "اعتماد/قفل اليوم أو الشهر",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "locks[\"nabawi|y-m\"] اتجاهُ الإغلاق: ap يظهر · أو true · أو mo يزول · أو dshut[d] يظهر · أو dopen[d] يزول",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/nabawi:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "dstats.nabawi.approve"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 7,
+    "value": {
+     "key": "dstats.nabawi.reopen",
+     "owner": "dstats/nabawi",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "فتح يوم/شهر مقفل وفق الضوابط",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "كما الحرام — اتجاه الفتح",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/nabawi:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "dstats.nabawi.reopen"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 8,
+    "value": {
+     "key": "dstats.anHaram.view",
+     "owner": "dstats/anHaram",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "عرض تحليل المسجد الحرام",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "قراءة bassam_dstats_v1 بورقة dstats/anHaram (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/anHaram:view"
+     ],
+     "references": [
+      "kpis"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "dstats.anHaram.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 9,
+    "value": {
+     "key": "dstats.anNabawi.view",
+     "owner": "dstats/anNabawi",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "عرض تحليل المسجد النبوي",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "قراءة bassam_dstats_v1 بورقة dstats/anNabawi (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/anNabawi:view"
+     ],
+     "references": [
+      "kpis"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "dstats.anNabawi.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": {
+     "key": "dstats.anCmp.view",
+     "owner": "dstats/anCmp",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "عرض مقارنة الحرمين",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "قراءة bassam_dstats_v1 بورقة dstats/anCmp (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/anCmp:view"
+     ],
+     "references": [
+      "kpis"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "dstats.anCmp.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 11,
+    "value": {
+     "key": "dstats.anTime.view",
+     "owner": "dstats/anTime",
+     "ownerKind": "page",
+     "domain": "dstats",
+     "label": "عرض المقارنة الزمنية",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_dstats_v1"
+      ],
+      "detail": "قراءة bassam_dstats_v1 بورقة dstats/anTime (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Source",
+      "DateRange",
+      "Global"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dstats/anTime:view"
+     ],
+     "references": [
+      "kpis"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "dstats.anTime.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 0,
+    "seq": 0,
+    "value": {
+     "id": "dstats/haram",
+     "kind": "page",
+     "label": "إدخال إحصائيات المسجد الحرام",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "id": "dstats/nabawi",
+     "kind": "page",
+     "label": "إدخال إحصائيات المسجد النبوي",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": {
+     "id": "dstats/anHaram",
+     "kind": "page",
+     "label": "تحليل المسجد الحرام",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 0,
+    "seq": 3,
+    "value": {
+     "id": "dstats/anNabawi",
+     "kind": "page",
+     "label": "تحليل المسجد النبوي",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 0,
+    "seq": 4,
+    "value": {
+     "id": "dstats/anCmp",
+     "kind": "page",
+     "label": "مقارنة الحرمين",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 0,
+    "seq": 5,
+    "value": {
+     "id": "dstats/anTime",
+     "kind": "page",
+     "label": "المقارنة الزمنية",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 0,
+    "value": {
+     "leaf": "dstats/haram",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "dstats.haram.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "leaf": "dstats/haram",
+     "act": "add",
+     "disposition": "merged",
+     "targets": [
+      "dstats.haram.entry"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": {
+     "leaf": "dstats/haram",
+     "act": "edit",
+     "disposition": "merged",
+     "targets": [
+      "dstats.haram.entry"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 3,
+    "value": {
+     "leaf": "dstats/haram",
+     "act": "del",
+     "disposition": "merged",
+     "targets": [
+      "dstats.haram.entry"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 4,
+    "value": {
+     "leaf": "dstats/haram",
+     "act": "approve",
+     "disposition": "migrated",
+     "targets": [
+      "dstats.haram.approve",
+      "dstats.haram.reopen"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 5,
+    "value": {
+     "leaf": "dstats/haram",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.dstats.haram.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 6,
+    "value": {
+     "leaf": "dstats/nabawi",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "dstats.nabawi.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 7,
+    "value": {
+     "leaf": "dstats/nabawi",
+     "act": "add",
+     "disposition": "merged",
+     "targets": [
+      "dstats.nabawi.entry"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 8,
+    "value": {
+     "leaf": "dstats/nabawi",
+     "act": "edit",
+     "disposition": "merged",
+     "targets": [
+      "dstats.nabawi.entry"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 9,
+    "value": {
+     "leaf": "dstats/nabawi",
+     "act": "del",
+     "disposition": "merged",
+     "targets": [
+      "dstats.nabawi.entry"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": {
+     "leaf": "dstats/nabawi",
+     "act": "approve",
+     "disposition": "migrated",
+     "targets": [
+      "dstats.nabawi.approve",
+      "dstats.nabawi.reopen"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 11,
+    "value": {
+     "leaf": "dstats/nabawi",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.dstats.nabawi.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 12,
+    "value": {
+     "leaf": "dstats/anHaram",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "dstats.anHaram.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 13,
+    "value": {
+     "leaf": "dstats/anHaram",
+     "act": "add",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 14,
+    "value": {
+     "leaf": "dstats/anHaram",
+     "act": "edit",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 15,
+    "value": {
+     "leaf": "dstats/anHaram",
+     "act": "del",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 16,
+    "value": {
+     "leaf": "dstats/anHaram",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 17,
+    "value": {
+     "leaf": "dstats/anHaram",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.dstats.anHaram.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 18,
+    "value": {
+     "leaf": "dstats/anNabawi",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "dstats.anNabawi.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 19,
+    "value": {
+     "leaf": "dstats/anNabawi",
+     "act": "add",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 20,
+    "value": {
+     "leaf": "dstats/anNabawi",
+     "act": "edit",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 21,
+    "value": {
+     "leaf": "dstats/anNabawi",
+     "act": "del",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 22,
+    "value": {
+     "leaf": "dstats/anNabawi",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 23,
+    "value": {
+     "leaf": "dstats/anNabawi",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.dstats.anNabawi.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 24,
+    "value": {
+     "leaf": "dstats/anCmp",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "dstats.anCmp.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 25,
+    "value": {
+     "leaf": "dstats/anCmp",
+     "act": "add",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 26,
+    "value": {
+     "leaf": "dstats/anCmp",
+     "act": "edit",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 27,
+    "value": {
+     "leaf": "dstats/anCmp",
+     "act": "del",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 28,
+    "value": {
+     "leaf": "dstats/anCmp",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 29,
+    "value": {
+     "leaf": "dstats/anCmp",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.dstats.anCmp.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 30,
+    "value": {
+     "leaf": "dstats/anTime",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "dstats.anTime.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 31,
+    "value": {
+     "leaf": "dstats/anTime",
+     "act": "add",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 32,
+    "value": {
+     "leaf": "dstats/anTime",
+     "act": "edit",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 33,
+    "value": {
+     "leaf": "dstats/anTime",
+     "act": "del",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 34,
+    "value": {
+     "leaf": "dstats/anTime",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 0,
+    "seq": 35,
+    "value": {
+     "leaf": "dstats/anTime",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.dstats.anTime.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 0,
+    "seq": 0,
+    "value": "ff.dstats.haram.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "ff.dstats.nabawi.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": "ff.dstats.anHaram.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 0,
+    "seq": 3,
+    "value": "ff.dstats.anNabawi.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 0,
+    "seq": 4,
+    "value": "ff.dstats.anCmp.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 0,
+    "seq": 5,
+    "value": "ff.dstats.anTime.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 26,
+    "seq": 13,
+    "value": "ff.module.dstats.enabled"
+   }
+  ]
+ }
+}

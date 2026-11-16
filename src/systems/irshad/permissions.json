@@ -1,0 +1,1033 @@
+{
+ "schema": 1,
+ "system": "irshad",
+ "note": "V7 · د3: صلاحياتُ هذا النظام — صفوفُه في السجلّ (المفاتيح · الأوراق · الذرّات · الأعلام) وروابطُه في الخادم (النطاق · الحراسة · البناء)، وما يضيفه إلى صفوف القاعدة. تجمعها tools/perm_parts.py مع القاعدة (الشرح في رأس الأداة).",
+ "docs": {
+  "registry": [
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 12,
+    "value": {
+     "key": "ir.dash.view",
+     "owner": "irshad/dash",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "عرض لوحة المؤشرات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_irshad_v1",
+       "bassam_irshad_langs_v1",
+       "bassam_irshad_locs_v1"
+      ],
+      "detail": "قراءة bassam_irshad_v1, bassam_irshad_langs_v1, bassam_irshad_locs_v1 بورقة irshad/dash (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/dash:view"
+     ],
+     "references": [
+      "kpis"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "ir.dash.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 13,
+    "value": {
+     "key": "ir.rec.view",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "عرض السجلات",
+     "type": "view",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_irshad_v1",
+       "bassam_irshad_langs_v1",
+       "bassam_irshad_locs_v1"
+      ],
+      "detail": "قراءة bassam_irshad_v1, bassam_irshad_langs_v1, bassam_irshad_locs_v1 بورقة irshad/records (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ir.rec.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 14,
+    "value": {
+     "key": "ir.rec.create",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "إضافة سجل",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_irshad_v1",
+       "bassam_irshad_langs_v1",
+       "bassam_irshad_locs_v1"
+      ],
+      "detail": "bassam_irshad_v1 (add)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ir.rec.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 15,
+    "value": {
+     "key": "ir.rec.edit",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "تعديل سجل",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_irshad_v1",
+       "bassam_irshad_langs_v1",
+       "bassam_irshad_locs_v1"
+      ],
+      "detail": "bassam_irshad_v1 (edit)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ir.rec.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 16,
+    "value": {
+     "key": "ir.rec.status",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "تغيير الحالة",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا حقل حالة في سجل الاسترشاد اليوم (bassam_irshad_v1) — يُفعَّل إن أُضيفت حالة",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ir.rec.status"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا حقل حالة في سجل الاسترشاد اليوم (bassam_irshad_v1) — يُفعَّل إن أُضيفت حالة"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 17,
+    "value": {
+     "key": "ir.rec.delete",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "حذف سجل",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_irshad_v1",
+       "bassam_irshad_langs_v1",
+       "bassam_irshad_locs_v1"
+      ],
+      "detail": "bassam_irshad_v1 (del)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ir.rec.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 151,
+    "seq": 34,
+    "value": {
+     "key": "ref.irshad.location.view",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "عرض مواقع الاسترشاد",
+     "type": "view",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_irshad_locs_v1"
+      ],
+      "detail": "قراءة القائمة المرجعية bassam_irshad_locs_v1 → locs[] بورقة المالك (RD)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.irshad.location.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 151,
+    "seq": 35,
+    "value": {
+     "key": "ref.irshad.location.create",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "إضافة موقع استرشاد",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_irshad_locs_v1"
+      ],
+      "detail": "إضافة قيمة في bassam_irshad_locs_v1 → locs[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.irshad.location.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 151,
+    "seq": 36,
+    "value": {
+     "key": "ref.irshad.location.edit",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "تعديل موقع استرشاد",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_irshad_locs_v1"
+      ],
+      "detail": "تعديل/إعادة تسمية قيمة في bassam_irshad_locs_v1 → locs[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.irshad.location.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 151,
+    "seq": 37,
+    "value": {
+     "key": "ref.irshad.location.delete",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "حذف موقع استرشاد",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_irshad_locs_v1"
+      ],
+      "detail": "حذف قيمة في bassam_irshad_locs_v1 → locs[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.irshad.location.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 151,
+    "seq": 38,
+    "value": {
+     "key": "ref.irshad.language.view",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "عرض لغات الاسترشاد",
+     "type": "view",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_irshad_langs_v1"
+      ],
+      "detail": "قراءة القائمة المرجعية bassam_irshad_langs_v1 → langs[] بورقة المالك (RD)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.irshad.language.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 151,
+    "seq": 39,
+    "value": {
+     "key": "ref.irshad.language.create",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "إضافة لغة استرشاد",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_irshad_langs_v1"
+      ],
+      "detail": "إضافة قيمة في bassam_irshad_langs_v1 → langs[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.irshad.language.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 151,
+    "seq": 40,
+    "value": {
+     "key": "ref.irshad.language.edit",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "تعديل لغة استرشاد",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_irshad_langs_v1"
+      ],
+      "detail": "تعديل/إعادة تسمية قيمة في bassam_irshad_langs_v1 → langs[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.irshad.language.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 151,
+    "seq": 41,
+    "value": {
+     "key": "ref.irshad.language.delete",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "حذف لغة استرشاد",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_irshad_langs_v1"
+      ],
+      "detail": "حذف قيمة في bassam_irshad_langs_v1 → langs[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.irshad.language.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 151,
+    "seq": 42,
+    "value": {
+     "key": "ir.rec.bulk.delete",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "حذف جميع تقارير الاسترشاد للشهر",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_irshad_v1",
+       "bassam_irshad_langs_v1",
+       "bassam_irshad_locs_v1"
+      ],
+      "detail": "bassam_irshad_v1: حذف تقارير شهر كامل (شكل جماعي)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ir.rec.month.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 159,
+    "seq": 66,
+    "value": {
+     "key": "ir.rec.retro.open",
+     "owner": "irshad/records",
+     "ownerKind": "page",
+     "domain": "irshad",
+     "label": "فتح شهر/يوم مقفل للاستدراك",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "rule-new",
+      "resources": [
+       "bassam_irshad_v1"
+      ],
+      "detail": "قاعدة قفل زمني خادمية (v24.4 D3‑01/D3‑02/D3‑07): فتحُ نافذة الاستدراك وإغلاقُها = super OR ir.rec.retro.open بنطاق Department + DateRange — لا يُشتق من approve العام (irshad/records:approve = Compatibility Mapping مؤقت في Shadow قبل ترحيل الصلاحيات، لا بديلاً دائماً)؛ النافذة: Default 24h · Max 72h · Scope = Department + Year/Month (+Day اختياري) · لا Global ولا Permanent ولا على فترة غير مغلقة · actor من Session · سطر تدقيق مستقل للفتح والإغلاق (etype retro) · سبب إلزامي (D3‑03). أي create/edit/delete على سجل في فترة مغلقة = صلاحية العملية الأصلية ∧ Data Scope الصحيح ∧ نافذة سارية تغطي الفترة — النافذة ترفع القفل الزمني فقط ولا تمنح CRUD ولا توسّع النطاق. اليوم: الفتح حالة واجهة فقط (G‑08)؛ Phase 3 (KIVO_233) بنت الآلية ظلّياً (حالة bassam_irshad_retro_v1 · /api/retro) قياساً بلا رفض",
+      "status": "to-build"
+     },
+     "scopeDims": [
+      "Department",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "irshad/records:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 9,
+    "seq": 6,
+    "value": {
+     "id": "irshad/dash",
+     "kind": "page",
+     "label": "لوحة مؤشرات الاسترشاد",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 9,
+    "seq": 7,
+    "value": {
+     "id": "irshad/records",
+     "kind": "page",
+     "label": "سجلات الاسترشاد",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 36,
+    "value": {
+     "leaf": "irshad/dash",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "ir.dash.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 37,
+    "value": {
+     "leaf": "irshad/dash",
+     "act": "add",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 38,
+    "value": {
+     "leaf": "irshad/dash",
+     "act": "edit",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 39,
+    "value": {
+     "leaf": "irshad/dash",
+     "act": "del",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 40,
+    "value": {
+     "leaf": "irshad/dash",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 41,
+    "value": {
+     "leaf": "irshad/dash",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.ir.dash.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 42,
+    "value": {
+     "leaf": "irshad/records",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "ir.rec.view",
+      "ref.irshad.location.view",
+      "ref.irshad.language.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 43,
+    "value": {
+     "leaf": "irshad/records",
+     "act": "add",
+     "disposition": "migrated",
+     "targets": [
+      "ir.rec.create",
+      "ref.irshad.location.create",
+      "ref.irshad.language.create"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 44,
+    "value": {
+     "leaf": "irshad/records",
+     "act": "edit",
+     "disposition": "migrated",
+     "targets": [
+      "ir.rec.edit",
+      "ref.irshad.location.edit",
+      "ref.irshad.language.edit"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 45,
+    "value": {
+     "leaf": "irshad/records",
+     "act": "del",
+     "disposition": "migrated",
+     "targets": [
+      "ir.rec.delete",
+      "ir.rec.bulk.delete",
+      "ref.irshad.location.delete",
+      "ref.irshad.language.delete"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 46,
+    "value": {
+     "leaf": "irshad/records",
+     "act": "approve",
+     "disposition": "migrated",
+     "targets": [
+      "ir.rec.retro.open"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 47,
+    "value": {
+     "leaf": "irshad/records",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.ir.rec.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 7,
+    "seq": 6,
+    "value": "ff.ir.dash.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 7,
+    "seq": 7,
+    "value": "ff.ir.rec.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 33,
+    "seq": 14,
+    "value": "ff.module.irshad.enabled"
+   }
+  ]
+ }
+}

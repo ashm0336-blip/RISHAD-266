@@ -61,6 +61,7 @@
   "staysIn": [],
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
  },
+ "permissions": "permissions.json",
  "tests": [
   "tests/seized_codec.test.mjs",
   "tests/seized_due.test.mjs",

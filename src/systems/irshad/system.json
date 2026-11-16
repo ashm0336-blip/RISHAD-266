@@ -45,6 +45,7 @@
   ],
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
  },
+ "permissions": "permissions.json",
  "tests": [
   "tests/irshad_cloud_http.test.mjs",
   "tests/irshad_cloud_ui.test.mjs",

@@ -37,6 +37,7 @@
   "staysIn": [],
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
  },
+ "permissions": "permissions.json",
  "tests": [
   "tests/award_domain.test.mjs",
   "tests/rishad266_award_delete_ceiling.test.mjs",
