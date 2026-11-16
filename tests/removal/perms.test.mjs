@@ -107,3 +107,25 @@ test('د3 · الحذف: الشجرةُ كما تبنيها صفحةُ الإع�
     assert.equal(md.ok, true); assert.deepEqual(hits(JSON.stringify(Array.from(md.rows))), [], 'صفوفُ الخريطة (' + mode + ') بلا رمزِ نظامٍ غائب');
   }
 });
+
+/* V7 · د3 (تتمة) — بحثٌ نصي عن أسماء الأنظمة الغائبة (اسمُ المجلد حيث ورد، بأي حالة أحرف) في أجزاء الخادم وكتل الواجهة، خارج التعليقات.
+   ما يبقى معلنٌ بسببه في tests/removal/names.allow.json (مقطعٌ بعينه في ملفٍ بعينه)؛ أيُّ ذكرٍ خارج القائمة يُفشل الاختبار. */
+test('د3 · الحذف: لا اسمَ لنظامٍ غائب في جزءٍ من القاعدة خارج قائمة الاستثناء المعلنة ' + label, () => {
+  const ALLOW = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'removal', 'names.allow.json'), 'utf8'));
+  for (const e of ALLOW.skipFiles.concat(ALLOW.patterns, ALLOW.entries)) { assert.ok(e.why && e.why.length > 20, 'لكل استثناءٍ سبب'); assert.match(e.kind, /^(legit|deferred)$/); }
+  if (!GONE.length) return;
+  const NAME = new RegExp('(?:' + GONE.join('|') + ')', 'i'), skip = new Set(ALLOW.skipFiles.map((x) => x.file)), pats = ALLOW.patterns.map((x) => new RegExp(x.pattern, 'g'));
+  const parts = JSON.parse(fs.readFileSync(path.join(ROOT, 'workers', 'parts.json'), 'utf8')).parts.map((p) => path.join(ROOT, 'workers', 'parts', p.file));
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (['systems', 'slots', 'pages'].includes(e.name) ? [] : walk(path.join(d, e.name))) : (/\.js$/.test(e.name) ? [path.join(d, e.name)] : [])));
+  const bad = [];
+  for (const f of parts.concat(walk(SRC))) {
+    const rel = path.relative(ROOT, f).split(path.sep).join('/'); if (skip.has(rel)) continue;
+    const cuts = ALLOW.entries.filter((e) => e.file === '*' || e.file === rel).flatMap((e) => e.match).sort((a, b) => b.length - a.length);
+    noComments(fs.readFileSync(f, 'utf8')).split('\n').forEach((line, i) => {
+      if (!NAME.test(line)) return;
+      let rest = line; for (const p of pats) rest = rest.replace(p, '""'); for (const c of cuts) rest = rest.split(c).join('');
+      const m = NAME.exec(rest); if (m) bad.push(rel + ':' + (i + 1) + ' «' + rest.slice(Math.max(0, m.index - 40), m.index + 50).trim() + '»');
+    });
+  }
+  assert.deepEqual(bad.slice(0, 25), [], bad.length + ' ذكراً لاسم نظامٍ غائب خارج قائمة الاستثناء');
+});
