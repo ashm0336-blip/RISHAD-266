@@ -9,6 +9,8 @@
      ② لا جزءَ من القاعدة يذكر اسماً معرَّفاً في أجزاء خادم نظامٍ غائب (خارج التعليقات والنصوص)
      ③ البناء (npm run build) · التوليد --check · npm run check          (‎--no-check يتخطّى check)
      ④ الخادمُ المبني على قاعدة بياناتٍ جديدة: tests/removal/server.test.mjs
+        + د3: tests/removal/perms.test.mjs — لا مفتاحَ ولا ورقةَ ولا ذرّةَ ولا عَلمَ لنظامٍ غائب في السجلّ (340 · 004) والشجرة وروابط 006 · 008 · 010 ولا في أجزاء
+          القاعدة · validate وperm_tree.py check · أعدادُ /api/permv2 = المحسوب · شجرةُ الواجهة بلا نظامٍ غائب · منحُ مفتاحه مرفوض والمخزَّنُ عليه باقٍ
      ⑤ المتصفح: tests/removal/browser.test.mjs                              (‎--no-browser يتخطّاه)
      ⑥ ‎--units: وحداتُ القاعدة كلها (ملفاً ملفاً، ‎--jobs بالتوازي) — طويل
    يخرج بـ0 إن نجحت كل الحالات. ‎--keep يبقي النسخ المؤقتة ويطبع مساراتها."""
@@ -114,7 +116,7 @@ def run_case(name, opts):
             for g in (['add', '-A'], ['-c', 'user.name=removal', '-c', 'user.email=removal@test.invalid', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', msg]): sh(['git'] + g, copy)
         sh(['git', 'init', '-q'], copy); commit('full tree')
         for k in gone: shutil.rmtree(os.path.join(copy, 'src', 'systems', k))
-        env = dict(os.environ, KIVO_WORKER=os.path.join(copy, 'workers', '_worker.js'), KIVO_DIST=os.path.join(copy, 'pk265'), KIVO_SRC=os.path.join(copy, 'src'))
+        env = dict(os.environ, KIVO_WORKER=os.path.join(copy, 'workers', '_worker.js'), KIVO_DIST=os.path.join(copy, 'pk265'), KIVO_SRC=os.path.join(copy, 'src'), KIVO_FULL_SRC=os.path.join(ROOT, 'src'))
         rc, out = sh([sys.executable, 'tools/systems.py', '--regen'], copy); step('① الحذف ثم --regen', rc == 0 and '✘' not in out, (out.strip().split('\n') or [''])[-1][:140] if rc else '%d ملفاً مولَّداً حُذف' % out.count('  − '))
         commit('removal ' + name)
         left = [os.path.relpath(f, copy) for f in glob.glob(os.path.join(copy, 'src', 'pages', '*.dc.html')) if os.path.basename(f)[:-8] not in {p['name'] for p in json.load(open(os.path.join(copy, 'src', 'modules', 'modules.json'), encoding='utf-8'))['pages']}]
@@ -125,6 +127,8 @@ def run_case(name, opts):
         if not opts['nocheck']:
             rc, out = sh(['npm', 'run', '-s', 'check'], copy, env); step('③ check', rc == 0, next((l.strip() for l in out.split('\n') if '✘' in l), '')[:160])
         rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/server.test.mjs'], copy, env, 600); step('④ الخادم على قاعدة بياناتٍ جديدة', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:')), '')[:200])
+        # د3: الصلاحيات — لا رمزَ لنظامٍ غائب في السجلّ والشجرة والروابط وأجزاء القاعدة · validate · perm_tree check · شجرةُ الواجهة
+        rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/perms.test.mjs'], copy, env, 600); step('④ الصلاحيات: السجلُّ والشجرةُ والروابطُ بلا نظامٍ غائب', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:') or '!==' in l), '')[:260])
         if not opts['nobrowser']:
             rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/browser.test.mjs'], copy, env, 1200); step('⑤ المتصفح', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:')), '')[:200])
         if opts['units']:
