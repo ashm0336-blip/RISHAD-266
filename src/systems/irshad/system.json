@@ -630,6 +630,22 @@
   "bd.commitGuard.irshadShift": {
    "order": 10,
    "text": ".replace(/\\?1/g,'?2')"
+  },
+  "enf.compat": {
+   "order": 10,
+   "text": "'ir.rec.retro.open': 'irshad/records:approve'"
+  },
+  "p24.compat": {
+   "order": 10,
+   "text": "'ir.rec.retro.open': 1"
+  },
+  "tree.keyCap": {
+   "order": 10,
+   "text": "    bassam_irshad_v1:'irshad', bassam_irshad_langs_v1:'irshad', bassam_irshad_locs_v1:'irshad'"
+  },
+  "guard.classify.records": {
+   "order": 10,
+   "text": "C['bassam_irshad_v1'] = recBulk('ir.rec');"
   }
  }
 }

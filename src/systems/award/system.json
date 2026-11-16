@@ -507,6 +507,22 @@
   "root.deptBackup.manifest": {
    "order": 30,
    "text": "awards:1,"
+  },
+  "priv.award.keys": {
+   "order": 10,
+   "text": "'award.res.edit', 'award.res.approve', 'award.res.reject', 'award.res.delete', 'award.res.status'"
+  },
+  "priv.award.atoms": {
+   "order": 10,
+   "text": "'award/res:edit', 'award/res:approve', 'award/res:del'"
+  },
+  "tree.keyCap": {
+   "order": 30,
+   "text": "    bassam_award_v1:'award', bassam_award_docs_v1:'award', bassam_award_docs_v2:'award'"
+  },
+  "guard.classify.award": {
+   "order": 10,
+   "file": "slots/guard.classify.award.frag"
   }
  }
 }

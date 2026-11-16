@@ -585,6 +585,22 @@
   "root.deptBackup.manifest": {
    "order": 20,
    "text": "seized:1,"
+  },
+  "enf.compat": {
+   "order": 20,
+   "text": "'sz.rec.retro.open': 'seized/records:approve'"
+  },
+  "p24.compat": {
+   "order": 20,
+   "text": "'sz.rec.retro.open': 1"
+  },
+  "tree.keyCap": {
+   "order": 20,
+   "text": "    bassam_seized_v1:'seized', bassam_seized_cat_v1:'seized', bassam_seized_acts_v1:'seized', bassam_seized_locs_v1:'seized', bassam_seized_jew_v1:'seized'"
+  },
+  "guard.classify.records": {
+   "order": 20,
+   "text": "C['bassam_seized_v1'] = recBulk('sz.rec');"
   }
  }
 }

@@ -363,6 +363,18 @@
   "root.console.histimp": {
    "order": 10,
    "text": ", [\"histimp\", null, \"استيراد البيانات التاريخية\"]"
+  },
+  "enf.src.read": {
+   "order": 10,
+   "text": "{ haram: ['dstats.haram.view', 'dstats.anHaram.view', 'dstats.anCmp.view', 'dstats.anTime.view'], nabawi: ['dstats.nabawi.view', 'dstats.anNabawi.view', 'dstats.anCmp.view', 'dstats.anTime.view'] }"
+  },
+  "enf.src.write": {
+   "order": 10,
+   "text": "{ haram: ['dstats.haram.entry', 'dstats.haram.approve', 'dstats.haram.reopen'], nabawi: ['dstats.nabawi.entry', 'dstats.nabawi.approve', 'dstats.nabawi.reopen'] }"
+  },
+  "guard.classify.dstats": {
+   "order": 10,
+   "file": "slots/guard.classify.dstats.frag"
   }
  }
 }

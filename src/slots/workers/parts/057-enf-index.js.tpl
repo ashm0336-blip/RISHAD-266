@@ -37,7 +37,7 @@ function enfFieldOnly(A, d) {
   return true;
 }
 /* D3-01 / §14.2: ربطُ approve → retro.open توافقٌ مؤقّت ينتهي عند ترحيل الصلاحيات (المنحُ الصريح وحده بعده) */
-var ENF_COMPAT = { 'ir.rec.retro.open': 'irshad/records:approve', 'sz.rec.retro.open': 'seized/records:approve' };
+@@SYS:enf.compat|sep=", "|pre="var ENF_COMPAT = { "|post=" };"|empty="var ENF_COMPAT = {};"@@
 /* KIVO_265 · قرارُ المالك 2026-10-20 («هذا الإجراء يتطلب سبباً … لا أرغب بها، أزلها»): تغييرُ حالة عناصر الخطة التشغيلية من «التشغيل الميداني»
    (المصلى · البوابة · المعلم · المسار — حقولُ الحالة: fst · flow · closed · off …) لم يعد يطلب سبباً إلزامياً. الصلاحيةُ والنطاقُ يُحكمان كما كانا،
    والفعلُ يُسجَّل في سجل التدقيق كما كان؛ السببُ وحده لم يعد شرطاً للحفظ. المرجعُ v24.9 (audit.reason في السجلّ) لا يُمسّ — الاستثناءُ هنا في فهرس الإنفاذ.
