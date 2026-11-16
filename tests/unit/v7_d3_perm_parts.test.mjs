@@ -51,6 +51,9 @@ for name, ops in (('all', {'a': A, 'b': B}), ('a', {'a': A}), ('b', {'b': B}), (
 try:
     PP.apply(base, {'a': [{'path': ['registry', {'by': 'key', 'eq': 'nope'}, 'references'], 'after': 0, 'seq': 0, 'value': 'x'}]}, 't'); out['bad'] = 'accepted'
 except SystemExit as e: out['bad'] = str(e)
+g = {'bindings': [], 'shadowOnly': [], 'decisions': [], 'toBind': 0, 'counts': {'emittedKeys': 5, 'coveredResources': 2}}
+gg = lambda ops: PP.finish('guard-bindings', PP.apply(g, ops, 't'), False)['counts']
+out['add'] = [gg({})['emittedKeys'], gg({'a': [{'path': ['counts', 'emittedKeys'], 'add': 3}]})['emittedKeys'], gg({'a': [{'path': ['counts', 'emittedKeys'], 'add': 3}], 'b': [{'path': ['counts', 'emittedKeys'], 'add': 4}, {'path': ['counts', 'coveredResources'], 'add': 1}]})]
 out['base'] = [e['key'] for e in base['registry']]
 print(json.dumps(out, ensure_ascii=False))
 `;
@@ -66,4 +69,5 @@ print(json.dumps(out, ensure_ascii=False))
   assert.deepEqual(o.all.c.guards, { exists: 1, toBind: 3, toBuild: 0 });
   assert.match(o.bad, /0 عنصراً يطابق key='nope'/, 'مسارٌ لا يطابق عنصراً في القاعدة يُرفض');
   assert.deepEqual(o.base, ['b1', 'ref.b2'], 'القاعدةُ لا تتبدّل بالجمع');
+  assert.equal(o.add[0], 5); assert.equal(o.add[1], 8); assert.equal(o.add[2].emittedKeys, 12); assert.equal(o.add[2].coveredResources, 3, 'add: نصيبُ النظام يُجمع على نصيب القاعدة');
 });

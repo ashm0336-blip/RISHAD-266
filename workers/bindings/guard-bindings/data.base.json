@@ -897,8 +897,8 @@
   "shadowOnly": 2,
   "duplicatesJustified": 2,
   "duplicatesUnjustified": 0,
-  "emittedKeys": 122,
-  "coveredResources": 20,
+  "emittedKeys": 99,
+  "coveredResources": 15,
   "decisions": 20
  }
 }

@@ -48,6 +48,7 @@ test('د2-ب · الحذف: الخادمُ بالأنظمة الحاضرة [' + 
     assert.equal(r.j.scope.readBindingCheck && r.j.scope.readBindingCheck.ok, true, 'تحقّقُ ربط القراءة: ' + JSON.stringify(r.j.scope.readBindingCheck).slice(0, 400));
     assert.equal(r.j.guards.bindings, act.filter((e) => e.guard.status === 'to-bind').length, 'روابطُ الحراسة = المفاتيحُ التي حارسُها «للربط»');
     assert.equal(r.j.guards.counts.bindings, r.j.guards.bindings);
+    assert.equal(r.j.guards.counts.coveredResources, r.j.guards.covers.length, 'المواردُ التي لها مصنِّف = المعدودُ (نصيبُ القاعدة + الأنظمة الحاضرة)');
     r = await call('/'); assert.equal(r.s, 200, 'الغلاف');
     for (const k of ALL) { r = await call(ROUTE[k]); assert.equal(r.s, SYSTEMS.includes(k) ? 200 : 404, ROUTE[k] + ' ← ' + r.s + ' ' + r.t); }
   } finally { console.log = log; }

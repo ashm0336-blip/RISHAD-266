@@ -1905,6 +1905,20 @@
      "type": "operation",
      "guardKind": "cap"
     }
+   },
+   {
+    "path": [
+     "counts",
+     "emittedKeys"
+    ],
+    "add": 4
+   },
+   {
+    "path": [
+     "counts",
+     "coveredResources"
+    ],
+    "add": 1
    }
   ],
   "build-bindings": [

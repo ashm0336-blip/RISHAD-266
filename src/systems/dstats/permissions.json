@@ -1755,6 +1755,20 @@
      "type": "decision",
      "guardKind": "ops"
     }
+   },
+   {
+    "path": [
+     "counts",
+     "emittedKeys"
+    ],
+    "add": 6
+   },
+   {
+    "path": [
+     "counts",
+     "coveredResources"
+    ],
+    "add": 1
    }
   ],
   "build-bindings": []

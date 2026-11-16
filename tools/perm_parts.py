@@ -10,8 +10,11 @@
      {"path": [...], "after": n, "seq": i, "value": v}              إدراجُ عنصرٍ في مصفوفة: بعد n عنصراً من عناصر القاعدة · seq يرتّب الإضافات
      {"path": [...], "key": k, "after": n, "seq": i, "value": v}    إدراجُ مفتاحٍ في كائن: بعد n مفتاحاً من مفاتيح القاعدة
      {"path": [...], "set": v, "with": [أنظمة أخرى]}                استبدالُ قيمةٍ نصية (تُطبَّق بحضور النظام ومن في with؛ وإلا يبقى نصُّ القاعدة)
+     {"path": [...], "add": n}                                      نصيبُ النظام من عدّادٍ لا صيغةَ له: يُجمع على نصيب القاعدة (المكتوب في ملف القاعدة)
    path: مفاتيحُ كائنات · أو {"by": حقل, "eq": قيمة} لعنصر مصفوفةٍ في القاعدة · أو رقمٌ (موضعٌ في مصفوفة القاعدة).
    الأعدادُ (counts) تُحسب من المجموع — بالأنظمة الأربعة تساوي المكتوبَ في الوثيقة المرجعية حرفاً.
+   عدّادا الحراسة اللذان لا يُحسبان من الصفوف — emittedKeys (المفاتيحُ التي يُصدرها مصنِّفُ الكتابة) وcoveredResources (المواردُ التي لها مصنِّف) —
+   يعلن كلُّ نظامٍ نصيبَه منهما (add)، والقاعدةُ نصيبَها في data.base.json؛ المجموعُ بالأربعة 122 و20.
      python3 tools/perm_parts.py --check     الناتجُ المجموع = الملتزَم (0 = مطابق)
      python3 tools/perm_parts.py --list      ما يصرّح به كل نظام (عدداً)"""
 import os, sys, json, copy
@@ -63,6 +66,10 @@ def apply(base, ops_by_sys, name='?'):
     for sysk in sorted(ops_by_sys):
         for op in ops_by_sys[sysk]:
             where = '%s/permissions.json (%s)' % (sysk, name)
+            if 'add' in op:
+                parent = _walk(doc, op['path'][:-1], where); cur = _walk(parent, [op['path'][-1]], where)
+                if not isinstance(cur, int) or not isinstance(op['add'], int): raise SystemExit('✘ %s: add على غير عدد عند %s' % (where, json.dumps(op['path'], ensure_ascii=False)))
+                parent[op['path'][-1]] = cur + op['add']; continue
             if 'set' in op:
                 if all(w in present for w in op.get('with', [])):
                     parent = _walk(doc, op['path'][:-1], where); sets.append((parent, op['path'][-1], op['set'], where))
