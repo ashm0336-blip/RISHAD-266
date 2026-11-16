@@ -795,6 +795,32 @@
    },
    {
     "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.shift.view"
+     },
+     "references"
+    ],
+    "after": 4,
+    "seq": 0,
+    "value": "irshad/records"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
+     },
+     "references"
+    ],
+    "after": 4,
+    "seq": 0,
+    "value": "irshad/records"
+   },
+   {
+    "path": [
      "owners"
     ],
     "after": 9,
@@ -1596,6 +1622,95 @@
    },
    {
     "path": [
+     "terminology",
+     5,
+     "means"
+    ],
+    "set": "فتحُ نافذة استدراكٍ زمنية (ir.rec.retro.open · sz.rec.retro.open) عبر /api/retro بسبب وتدقيق — ترفع Temporal Lock فقط (D3‑02/D3‑07)",
+    "with": [
+     "seized"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 0,
+    "value": "ir.rec.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 0,
+    "value": {
+     "cap": "irshad/records:view",
+     "key": "ir.rec.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 0,
+    "value": "ir.rec.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 0,
+    "value": {
+     "cap": "irshad/records:view",
+     "key": "ir.rec.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "keys"
+    ],
+    "after": 5,
+    "seq": 0,
+    "value": "ir.rec.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "routes"
+    ],
+    "after": 5,
+    "seq": 0,
+    "value": {
+     "cap": "irshad/records:view",
+     "key": "ir.rec.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
      "readBindings",
      "byResource"
     ],
@@ -1712,6 +1827,32 @@
       }
      ],
      "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 0,
+    "value": "ir.rec.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 0,
+    "value": {
+     "cap": "irshad/records:view",
+     "key": "ir.rec.view",
+     "source": "reference-read"
     }
    },
    {

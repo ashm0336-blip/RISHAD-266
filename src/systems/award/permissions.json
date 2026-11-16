@@ -612,6 +612,59 @@
    },
    {
     "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.shift.view"
+     },
+     "references"
+    ],
+    "after": 7,
+    "seq": 2,
+    "value": "award/res"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
+     },
+     "references"
+    ],
+    "after": 4,
+    "seq": 2,
+    "value": "award/new"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
+     },
+     "references"
+    ],
+    "after": 4,
+    "seq": 3,
+    "value": "award/res"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 1,
+    "seq": 0,
+    "value": "bassam_award_v1"
+   },
+   {
+    "path": [
      "owners"
     ],
     "after": 9,
@@ -1263,6 +1316,19 @@
    },
    {
     "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "resources"
+    ],
+    "after": 1,
+    "seq": 0,
+    "value": "bassam_award_v1"
+   },
+   {
+    "path": [
      "byResource"
     ],
     "key": "bassam_award_v1",
@@ -1286,6 +1352,170 @@
       "Source": "department-resource",
       "Global": "no-record-scope"
      }
+    }
+   },
+   {
+    "path": [
+     "terminology",
+     4,
+     "means"
+    ],
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": "award.res.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": "award.new.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": "award.doc.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": {
+     "cap": "award/res:view",
+     "key": "award.res.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": {
+     "cap": "award/new:view",
+     "key": "award.new.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": {
+     "cap": "award/doc:view",
+     "key": "award.doc.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": "award.res.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": "award.new.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": "award.doc.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": {
+     "cap": "award/res:view",
+     "key": "award.res.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": {
+     "cap": "award/new:view",
+     "key": "award.new.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": {
+     "cap": "award/doc:view",
+     "key": "award.doc.view",
+     "source": "reference-read"
     }
    },
    {
@@ -1412,6 +1642,84 @@
       }
      ],
      "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": "award.res.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": "award.new.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": "award.doc.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": {
+     "cap": "award/res:view",
+     "key": "award.res.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": {
+     "cap": "award/new:view",
+     "key": "award.new.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": {
+     "cap": "award/doc:view",
+     "key": "award.doc.view",
+     "source": "reference-read"
     }
    }
   ],

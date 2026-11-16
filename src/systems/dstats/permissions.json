@@ -1618,6 +1618,14 @@
    },
    {
     "path": [
+     "readPolicy",
+     8,
+     "evidence"
+    ],
+    "set": "مفتاحُ الموقع في bassam_dstats_v1 (haram · nabawi) ضدّ أوراق الفاعل dstats/<site> (dsHeld)"
+   },
+   {
+    "path": [
      "readBindings",
      "byResource"
     ],

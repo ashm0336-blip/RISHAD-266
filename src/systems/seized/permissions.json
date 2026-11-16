@@ -1325,6 +1325,32 @@
    },
    {
     "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.shift.view"
+     },
+     "references"
+    ],
+    "after": 4,
+    "seq": 1,
+    "value": "seized/records"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
+     },
+     "references"
+    ],
+    "after": 4,
+    "seq": 1,
+    "value": "seized/records"
+   },
+   {
+    "path": [
      "owners"
     ],
     "after": 9,
@@ -2509,6 +2535,110 @@
    {
     "path": [
      "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 1,
+    "value": "sz.rec.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 1,
+    "value": {
+     "cap": "seized/records:view",
+     "key": "sz.rec.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 1,
+    "value": "sz.rec.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 1,
+    "value": {
+     "cap": "seized/records:view",
+     "key": "sz.rec.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "keys"
+    ],
+    "after": 12,
+    "seq": 0,
+    "value": "sz.rec.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 18,
+    "seq": 0,
+    "value": {
+     "cap": "seized/records:view",
+     "key": "sz.rec.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "keys"
+    ],
+    "after": 5,
+    "seq": 1,
+    "value": "sz.rec.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "routes"
+    ],
+    "after": 5,
+    "seq": 1,
+    "value": {
+     "cap": "seized/records:view",
+     "key": "sz.rec.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
      "byResource"
     ],
     "key": "bassam_seized_v1",
@@ -2714,6 +2844,32 @@
       }
      ],
      "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 1,
+    "value": "sz.rec.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 1,
+    "value": {
+     "cap": "seized/records:view",
+     "key": "sz.rec.view",
+     "source": "reference-read"
     }
    },
    {

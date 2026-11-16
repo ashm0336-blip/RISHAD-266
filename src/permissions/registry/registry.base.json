@@ -2110,12 +2110,9 @@
     "dreport",
     "daily/rounds",
     "tasks",
-    "irshad/records",
-    "seized/records",
     "planning/readiness",
     "emps/data",
-    "plan",
-    "award/res"
+    "plan"
    ],
    "uiOnly": false,
    "v23": [
@@ -4450,10 +4447,6 @@
     "dreport",
     "daily/rounds",
     "tasks",
-    "irshad/records",
-    "seized/records",
-    "award/new",
-    "award/res",
     "planning/readiness",
     "plan"
    ],
@@ -6855,8 +6848,7 @@
    "guard": {
     "kind": "rule",
     "resources": [
-     "bassam_dreport_v1",
-     "bassam_award_v1"
+     "bassam_dreport_v1"
     ],
     "detail": "wipeAllowed → 'import' (كان admin/import:del) — تفريغ التقرير اليومي وسجلات الجائزة بشكلها القانوني فقط (dreportCleanup · awardCleanup)",
     "status": "exists"

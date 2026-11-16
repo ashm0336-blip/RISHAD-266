@@ -3837,8 +3837,7 @@
    "g": "exists",
    "res": "bassam_dreport_v1",
    "resources": [
-    "bassam_dreport_v1",
-    "bassam_award_v1"
+    "bassam_dreport_v1"
    ],
    "dims": {
     "Department": [
@@ -4886,13 +4885,13 @@
   },
   {
    "term": "reopen",
-   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
+   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · task.reopen)",
    "notA": "ليس فتحَ نافذةٍ زمنية للاستدراك (retro.open)",
    "classifier": "mo:1 / زوالُ ap ⇒ *.reopen — لا يُصنَّف retro.open أبداً"
   },
   {
    "term": "retro.open",
-   "means": "فتحُ نافذة استدراكٍ زمنية (ir.rec.retro.open · sz.rec.retro.open) عبر /api/retro بسبب وتدقيق — ترفع Temporal Lock فقط (D3‑02/D3‑07)",
+   "means": "فتحُ نافذة استدراكٍ زمنية عبر /api/retro بسبب وتدقيق — ترفع Temporal Lock فقط (D3‑02/D3‑07)",
    "notA": "ليس reopen ولا منحةَ CRUD ولا توسيعَ نطاق",
    "classifier": "لا يصدر من المصنِّف (مسار /api/retro)؛ الكتابةُ على الفترة المغلقة تحتاج النافذة"
   },
@@ -4964,7 +4963,7 @@
   },
   {
    "dim": "Source",
-   "evidence": "مفتاحُ الموقع في bassam_dstats_v1 (haram · nabawi) ضدّ أوراق الفاعل dstats/<site> (dsHeld)",
+   "evidence": "مفتاحُ الموقع في مورد المصدر ضدّ أوراق الفاعل",
    "result": "allow/deny لكل سجل"
   },
   {
@@ -5113,11 +5112,6 @@
      "report.view",
      "report.indicators.view",
      "task.view",
-     "ir.rec.view",
-     "sz.rec.view",
-     "award.res.view",
-     "award.new.view",
-     "award.doc.view",
      "ready.view",
      "backup.view"
     ],
@@ -5160,31 +5154,6 @@
      {
       "cap": "tasks:view",
       "key": "task.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "irshad/records:view",
-      "key": "ir.rec.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "seized/records:view",
-      "key": "sz.rec.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "award/res:view",
-      "key": "award.res.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "award/new:view",
-      "key": "award.new.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "award/doc:view",
-      "key": "award.doc.view",
       "source": "reference-read"
      },
      {
@@ -5300,11 +5269,6 @@
      "report.view",
      "report.indicators.view",
      "task.view",
-     "ir.rec.view",
-     "sz.rec.view",
-     "award.res.view",
-     "award.new.view",
-     "award.doc.view",
      "ready.view",
      "backup.view"
     ],
@@ -5347,31 +5311,6 @@
      {
       "cap": "tasks:view",
       "key": "task.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "irshad/records:view",
-      "key": "ir.rec.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "seized/records:view",
-      "key": "sz.rec.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "award/res:view",
-      "key": "award.res.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "award/new:view",
-      "key": "award.new.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "award/doc:view",
-      "key": "award.doc.view",
       "source": "reference-read"
      },
      {
@@ -5856,7 +5795,6 @@
      "report.indicators.view",
      "emp.view",
      "plan.view",
-     "sz.rec.view",
      "backup.view"
     ],
     "routes": [
@@ -5949,11 +5887,6 @@
       "cap": "plan:view",
       "key": "lens.dens.view",
       "source": "explicit-read"
-     },
-     {
-      "cap": "seized/records:view",
-      "key": "sz.rec.view",
-      "source": "reference-read"
      },
      {
       "cap": "admin/backup:view",
@@ -6050,8 +5983,6 @@
      "round.view",
      "field.view",
      "emp.view",
-     "ir.rec.view",
-     "sz.rec.view",
      "staff.view",
      "task.view",
      "ready.view",
@@ -6081,16 +6012,6 @@
      {
       "cap": "emps/data:view",
       "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "irshad/records:view",
-      "key": "ir.rec.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "seized/records:view",
-      "key": "sz.rec.view",
       "source": "reference-read"
      },
      {
@@ -6241,11 +6162,6 @@
      "report.view",
      "report.indicators.view",
      "task.view",
-     "ir.rec.view",
-     "sz.rec.view",
-     "award.res.view",
-     "award.new.view",
-     "award.doc.view",
      "ready.view",
      "ref.shift.view",
      "backup.view"
@@ -6289,31 +6205,6 @@
      {
       "cap": "tasks:view",
       "key": "task.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "irshad/records:view",
-      "key": "ir.rec.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "seized/records:view",
-      "key": "sz.rec.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "award/res:view",
-      "key": "award.res.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "award/new:view",
-      "key": "award.new.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "award/doc:view",
-      "key": "award.doc.view",
       "source": "reference-read"
      },
      {
