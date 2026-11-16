@@ -18,6 +18,7 @@
    "order": {"type": "string"}}},
   "migrations": {"type": "object", "additionalProperties": false, "properties": {
    "files": {"type": "array", "items": {"$ref": "#/$defs/rel"}}, "staysIn": {"type": "array", "items": {"$ref": "#/$defs/rel"}}, "why": {"type": "string"}}},
+  "permissions": {"$ref": "#/$defs/rel", "description": "V7 · د3: ملفُ صلاحيات النظام (صفوفُه في السجلّ وروابطُه) — تجمعه tools/perm_parts.py مع القاعدة"},
   "tests": {"type": "array", "items": {"$ref": "#/$defs/rel"}},
   "derived": {"type": "array", "items": {"$ref": "#/$defs/rel"}},
   "sharedStaysInBase": {"type": "array", "items": {"$ref": "#/$defs/rel"}},

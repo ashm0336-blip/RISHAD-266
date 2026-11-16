@@ -4,13 +4,13 @@
    وسجلّاتُ المضبوطات والإرشاد والجائزة والعهدة والمهام لا تقرؤها إلا صفحتُها. ومَن مُنح «النسخ
    الاحتياطية» يقرأ كلَّ مجموعات إدارته لأن النسخةَ لا تُصدَّر ناقصة. */
 var RD_ANY = ['admin/backup'];            /* ورقةٌ تقرأ كلَّ مجموعات الإدارة */
-var RD_OPS = ['emps/data','staff','plan','daily/rounds','daily/field','dreport','tasks','irshad/records','seized/records','award/res','award/new','award/doc','planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
+var RD_OPS = ['emps/data','staff','plan','daily/rounds','daily/field','dreport','tasks'@@SYS:read.ops@@,'planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
 var RD_REG = {
   /* ── مراجعُ مشتركة: تُقرأ من كل صفحةٍ تشغيليّة لتعرض اسماً أو ورديّة ── */
   'bassam_employees_v1':       RD_OPS,
   'bassam_shift_options_v1':   RD_OPS.concat(['admin/shifts']),
   'bassam_staffing_v3':        RD_OPS,
-  'bassam_dreport_v1':         ['dreport', 'daily/rounds', 'daily/field', 'emps/data', 'irshad/records', 'seized/records', 'staff', 'tasks', 'planning', 'planning/readiness'],
+  'bassam_dreport_v1':         ['dreport', 'daily/rounds', 'daily/field', 'emps/data'@@SYS:read.map.dreport@@, 'staff', 'tasks', 'planning', 'planning/readiness'],
   'bassam_options_v1':         ['emps/data', 'staff', 'tasks', 'planning', 'planning/readiness'],
   'bassam_perm_tpls_v1':       ['admin/ptpls', 'dreport', 'emps/data', 'plan', 'staff', 'tasks', 'planning', 'planning/readiness'],
   'bassam_perm_tpls_named_v1': ['admin/ptpls', 'staff'],
@@ -27,7 +27,7 @@ var RD_REG = {
   'bassam_zone_opts_v1':       ['plan', 'daily/rounds', 'daily/field'],
   'bassam_gate_opts_v1':       ['plan', 'daily/rounds', 'daily/field'],
   'bassam_mark_kinds_v1':      ['plan', 'daily/rounds', 'daily/field'],
-  'bassam_rounds_v1':          ['daily/rounds', 'daily/field', 'dreport', 'emps/data', 'plan', 'seized/records'],
+  'bassam_rounds_v1':          ['daily/rounds', 'daily/field', 'dreport', 'emps/data', 'plan'@@SYS:read.map.rounds@@],
   'bassam_dayshift_v1':        ['daily/rounds', 'daily/field', 'dreport'],
   'bassam_dayfocus_v1':        ['daily/rounds', 'daily/field', 'dreport'],
   /* ── التقرير اليومي ── */
@@ -36,21 +36,7 @@ var RD_REG = {
   /* ── المهام ── */
   'bassam_tasks_v1':           ['tasks'],
   'bassam_tasks_locks_v1':     ['tasks'],
-  /* ── الاسترشاد ── */
-  'bassam_irshad_v1':          ['irshad/records', 'irshad/dash'],
-  'bassam_irshad_langs_v1':    ['irshad/records', 'irshad/dash'],
-  'bassam_irshad_locs_v1':     ['irshad/records', 'irshad/dash'],
-  /* ── المضبوطات ── */
-  'bassam_seized_v1':          ['seized/records', 'seized/dash'],
-  'bassam_seized_cat_v1':      ['seized/records', 'seized/dash'],
-  'bassam_seized_acts_v1':     ['seized/records', 'seized/dash'],
-  'bassam_seized_locs_v1':     ['seized/records', 'seized/dash'],
-  'bassam_seized_jew_v1':      ['seized/records', 'seized/dash'],
-  /* ── جائزة التميز ── */
-  'bassam_award_v1':           ['award/res', 'award/new', 'emps/data'],
-  'bassam_award_docs_v1':      ['award/doc', 'award/res', 'award/new'],
-  'bassam_award_docs_v2':      ['award/doc', 'award/res', 'award/new'],
-  /* ── الإعدادات ── */
+@@SYS:read.map.systems@@  /* ── الإعدادات ── */
   'bassam_last_export_v1':     ['admin/backup']
 };
 /* ما يُرى دون أن يُقرأ: رقمُ المراجعة وحدَه ═══════════════════════════════

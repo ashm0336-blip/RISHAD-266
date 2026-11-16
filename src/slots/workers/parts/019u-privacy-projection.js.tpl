@@ -353,7 +353,7 @@ function privUserRow(A, d, u) { var k = privKeyOut(A, d, u.ekey); if (k === u.ek
 /* (5) award records */
 var PRIV_AW_F = ['phone', 'email', 'comp'];
 function privAwardOk(A, d) {
-  return privPersonalOk(A, d) || privMemo(A, '__privAw', d, function () { return privHeld(A, d, ['award.res.edit', 'award.res.approve', 'award.res.reject', 'award.res.delete', 'award.res.status'], ['award/res:edit', 'award/res:approve', 'award/res:del']); });
+  return privPersonalOk(A, d) || privMemo(A, '__privAw', d, function () { return @@SYS:priv.award.keys|pre="privHeld(A, d, ["|post="], ["|empty="privHeld(A, d, [], ["@@@@SYS:priv.award.atoms|post="]); });"|empty="]); });"@@
 }
 function privAwardRec(A, d, r) { return !isObj(r) || privAwardOk(A, d) || (r.ekey != null && String(r.ekey) === String(A.u.ekey || '\u0000')) ? r : privUserRow(A, d, privStrip(r, PRIV_AW_F)); }   /* (9) a plain reader: ekey too */
 /* export domain rows dom.rows[kind]: personal columns blanked (presence kept, so the copy stays valid) unless the row is the actor's own

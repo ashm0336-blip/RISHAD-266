@@ -453,7 +453,7 @@ async function getRoute(env, url, ss) {
     if (!rdG && !canSee(AG, gk)) continue;
     if (nfLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/notifications' }; continue; }
     if (cuLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/custody' }; continue; }
-@@SYS:get.moved.irshad@@    if (bdLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: @@SYS:get.moved.seizedPath@@'/api/award' }; continue; }
+@@SYS:get.moved.irshad@@    if (bdLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: @@SYS:get.moved.seizedPath@@@@SYS:get.moved.awardPath|post=" }; continue; }"|empty="'' }; continue; }"@@
     if (opIsResource(gk)) { got[gk] = { v:null, rev:rvG[gk]||0, moved:'/api/operations/read' }; continue; }
 @@SYS:get.moved.dstats@@    var gv = rdG ? valsG[gk] : null;      /* لا قيمةَ لمن لا يقرأ — الرقمُ وحدَه */
     if (rdG && gk === K_USERS && gv != null) gv = usersScopeOut(usersNoOut(stripPh(gv), AG), AG);   /* KIVO_259 · SR-1: ولا رقمَ وظيفيَّ لحساب غيره · الفحصُ العميق (R4): ولا حسابَ خارج نطاقه (054) */

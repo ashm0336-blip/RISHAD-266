@@ -32,6 +32,7 @@
   ],
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
  },
+ "permissions": "permissions.json",
  "tests": [
   "tests/dstats_cutover.test.mjs",
   "tests/dstats_cutover_review.test.mjs",
@@ -362,6 +363,50 @@
   "root.console.histimp": {
    "order": 10,
    "text": ", [\"histimp\", null, \"استيراد البيانات التاريخية\"]"
+  },
+  "enf.src.read": {
+   "order": 10,
+   "text": "{ haram: ['dstats.haram.view', 'dstats.anHaram.view', 'dstats.anCmp.view', 'dstats.anTime.view'], nabawi: ['dstats.nabawi.view', 'dstats.anNabawi.view', 'dstats.anCmp.view', 'dstats.anTime.view'] }"
+  },
+  "enf.src.write": {
+   "order": 10,
+   "text": "{ haram: ['dstats.haram.entry', 'dstats.haram.approve', 'dstats.haram.reopen'], nabawi: ['dstats.nabawi.entry', 'dstats.nabawi.approve', 'dstats.nabawi.reopen'] }"
+  },
+  "guard.classify.dstats": {
+   "order": 10,
+   "file": "slots/guard.classify.dstats.frag"
+  },
+  "enf.proj.dstats": {
+   "order": 10,
+   "file": "slots/enf.proj.dstats.frag"
+  },
+  "scope.lock.basis": {
+   "order": 10,
+   "text": "res === 'bassam_dstats_v1' ? ('as-is dslock' + (ctx.actor && ctx.actor.role === 'super' ? ' — super included (D4‑02: Global ≠ DateRange bypass; dstats.*.reopen first)' : '')) : "
+  },
+  "scope.lock.design": {
+   "order": 10,
+   "text": "res === 'bassam_dstats_v1' ? ((ctx.actor && ctx.actor.role === 'super') ? 'D4-02' : '') : "
+  },
+  "scope.items.dstats": {
+   "order": 10,
+   "file": "slots/scope.items.dstats.frag"
+  },
+  "scope.source.basis.allow": {
+   "order": 10,
+   "text": "'as-is dstats/<site> sheets (dsHeld)'"
+  },
+  "scope.source.basis.deny": {
+   "order": 10,
+   "text": "'as-is dstats/<site> sheets (dsHeld)'"
+  },
+  "permv4.sources.held": {
+   "order": 10,
+   "text": "  for (s in out) for (i = 0; i < ds.length && !out[s]; i++) if ((myPermsOf(A, ds[i])['dstats/' + s] || []).length) out[s] = true;\n"
+  },
+  "save.movedPath.dstats": {
+   "order": 10,
+   "text": "'/api/dstats'"
   }
  }
 }

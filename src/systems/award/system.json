@@ -37,6 +37,7 @@
   "staysIn": [],
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
  },
+ "permissions": "permissions.json",
  "tests": [
   "tests/award_domain.test.mjs",
   "tests/rishad266_award_delete_ceiling.test.mjs",
@@ -506,6 +507,74 @@
   "root.deptBackup.manifest": {
    "order": 30,
    "text": "awards:1,"
+  },
+  "priv.award.keys": {
+   "order": 10,
+   "text": "'award.res.edit', 'award.res.approve', 'award.res.reject', 'award.res.delete', 'award.res.status'"
+  },
+  "priv.award.atoms": {
+   "order": 10,
+   "text": "'award/res:edit', 'award/res:approve', 'award/res:del'"
+  },
+  "tree.keyCap": {
+   "order": 30,
+   "text": "    bassam_award_v1:'award', bassam_award_docs_v1:'award', bassam_award_docs_v2:'award'"
+  },
+  "guard.classify.award": {
+   "order": 10,
+   "file": "slots/guard.classify.award.frag"
+  },
+  "read.ops": {
+   "order": 30,
+   "text": ",'award/res','award/new','award/doc'"
+  },
+  "read.map.systems": {
+   "order": 30,
+   "text": "  /* ── جائزة التميز ── */\n  'bassam_award_v1':           ['award/res', 'award/new', 'emps/data'],\n  'bassam_award_docs_v1':      ['award/doc', 'award/res', 'award/new'],\n  'bassam_award_docs_v2':      ['award/doc', 'award/res', 'award/new'],\n"
+  },
+  "enf.refCrud.award": {
+   "order": 10,
+   "text": "    'bassam_award_docs_v1': crud('award.doc'),\n"
+  },
+  "cleanup.award.fn": {
+   "order": 10,
+   "file": "slots/cleanup.award.fn.frag"
+  },
+  "cleanup.award.call": {
+   "order": 10,
+   "text": "  if (awardCleanup(A, k, newVal, curVal, ctx)) return { ok: true };\n"
+  },
+  "cleanup.award.shadow": {
+   "order": 10,
+   "text": " || awardCleanup(A, k, newVal, curVal, ctx)"
+  },
+  "empGone.award.fn": {
+   "order": 10,
+   "file": "slots/empGone.award.fn.frag"
+  },
+  "empGone.award.map": {
+   "order": 10,
+   "text": ", 'bassam_award_v1': awardGoneOk"
+  },
+  "scope.items.award": {
+   "order": 10,
+   "file": "slots/scope.items.award.frag"
+  },
+  "approval.shape.award": {
+   "order": 10,
+   "file": "slots/approval.shape.award.frag"
+  },
+  "get.moved.awardPath": {
+   "order": 10,
+   "text": "'/api/award'"
+  },
+  "bk.labels": {
+   "order": 20,
+   "text": "awards: 'التكريم',"
+  },
+  "import.summary.award": {
+   "order": 10,
+   "text": "              impOn(\"award\") ? \"ترشيحات التميز\" : \"\",\n"
   }
  }
 }

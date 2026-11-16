@@ -61,6 +61,7 @@
   "staysIn": [],
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
  },
+ "permissions": "permissions.json",
  "tests": [
   "tests/seized_codec.test.mjs",
   "tests/seized_due.test.mjs",
@@ -584,6 +585,54 @@
   "root.deptBackup.manifest": {
    "order": 20,
    "text": "seized:1,"
+  },
+  "enf.compat": {
+   "order": 20,
+   "text": "'sz.rec.retro.open': 'seized/records:approve'"
+  },
+  "p24.compat": {
+   "order": 20,
+   "text": "'sz.rec.retro.open': 1"
+  },
+  "tree.keyCap": {
+   "order": 20,
+   "text": "    bassam_seized_v1:'seized', bassam_seized_cat_v1:'seized', bassam_seized_acts_v1:'seized', bassam_seized_locs_v1:'seized', bassam_seized_jew_v1:'seized'"
+  },
+  "guard.classify.records": {
+   "order": 20,
+   "text": "C['bassam_seized_v1'] = recBulk('sz.rec');"
+  },
+  "read.ops": {
+   "order": 20,
+   "text": ",'seized/records'"
+  },
+  "read.map.dreport": {
+   "order": 20,
+   "text": ", 'seized/records'"
+  },
+  "read.map.rounds": {
+   "order": 10,
+   "text": ", 'seized/records'"
+  },
+  "read.map.systems": {
+   "order": 20,
+   "text": "  /* ── المضبوطات ── */\n  'bassam_seized_v1':          ['seized/records', 'seized/dash'],\n  'bassam_seized_cat_v1':      ['seized/records', 'seized/dash'],\n  'bassam_seized_acts_v1':     ['seized/records', 'seized/dash'],\n  'bassam_seized_locs_v1':     ['seized/records', 'seized/dash'],\n  'bassam_seized_jew_v1':      ['seized/records', 'seized/dash'],\n"
+  },
+  "enf.refCrud.records": {
+   "order": 20,
+   "text": "    'bassam_seized_cat_v1': join(crud('ref.seized.category'), crud('ref.seized.item')), 'bassam_seized_acts_v1': crud('ref.seized.action'),\n    'bassam_seized_locs_v1': crud('ref.seized.location'), 'bassam_seized_jew_v1': crud('ref.seized.kind'),\n"
+  },
+  "scope.retroSys": {
+   "order": 20,
+   "text": "res === 'bassam_seized_v1' ? 'seized' : "
+  },
+  "nf.labels.retro": {
+   "order": 20,
+   "text": "bassam_seized_retro_v1: \"نافذة استدراك المضبوطات\","
+  },
+  "bk.labels": {
+   "order": 10,
+   "text": "seized: 'المضبوطات',"
   }
  }
 }

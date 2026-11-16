@@ -9,6 +9,7 @@
      · كلُّ مالكٍ في السجلّ (44) يظهر ورقةً واحدةً بالضبط في الشجرة، ولا ورقةَ بلا مالك.
      · مفاتيحُ كلّ ورقة في الوثيقة = مفاتيحُ مالكها النشطة في السجلّ (المجموعة نفسُها)، وعددُ المحجوز = محجوزُ السجلّ.
      · كلُّ حاويةِ صفحاتٍ = صفحةٌ في pages.json بالاسم نفسِه، وكلُّ ورقة «p/s» = تبويبٌ/ورقةٌ s في الصفحة p، وكلُّ ورقةٍ مفردة = صفحةٌ في pages.json.
+   V7 · د3: الوثيقةُ أرشيف — بالأنظمة كلها الناتجُ كما كان حرفاً؛ وحاويةُ نظامٍ غابت صفحتُه وأوراقُه معاً تُتخطّى (يُفحص الحاضر).
    لا يُحرَّر الناتجُ يدوياً."""
 import os, sys, re, json, hashlib, html
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -36,11 +37,22 @@ def derive():
     pages = json.load(open(os.path.join(SRC, 'manifests', 'pages.json'), encoding='utf-8'))
     PG = {p['key']: p for p in pages['pages']}; PGN = {p['name']: p for p in pages['pages']}
     cont, order, seen = {}, [], {}
+    # V7 · د3 — الوثيقةُ أرشيف: بالأنظمة كلها يساوي المجموعُ الوثيقةَ كما كان. وحين يغيب نظامٌ (مجلدُه) تغيب صفحتُه من pages.json وأوراقُه من
+    # السجلّ معاً، فتُتخطّى حاويتُه في الوثيقة ويُفحص الحاضر وحده. الغيابُ الجزئي (صفحةٌ بلا أوراقها أو أوراقٌ بلا صفحتها) يبقى مخالفةً كما كان.
+    doc_leaves = {}
+    for r in rows:
+        td = re.findall(r'<td>(.*?)</td>', r, re.S)
+        if len(td) < 7: continue
+        m = re.search(r'<b>(.*?)</b>\s*<code>(.*?)</code>', td[1], re.S)
+        if m: doc_leaves.setdefault(strip(td[0]), []).append(strip(m.group(2)))
+    ABSENT = sorted(c for c, ls in doc_leaves.items() if CONT_KIND.get(c, 'page') == 'page' and c not in PGN and not any(x in owners for x in ls))
+    derive.absent = ABSENT
     for r in rows:
         td = re.findall(r'<td>(.*?)</td>', r, re.S)
         if len(td) < 7: continue
         cname = strip(td[0]); m = re.search(r'<b>(.*?)</b>\s*<code>(.*?)</code>', td[1], re.S)
         if not m: continue
+        if cname in ABSENT: continue
         label, oid = strip(m.group(1)), strip(m.group(2)); kind = strip(td[2]); route = strip(td[3])
         own_part = td[4].split('<br>')[0]; keys = [strip(c) for c in re.findall(r'<code>(.*?)</code>', own_part, re.S)]
         mref = re.search(r'Managed References:</b>\s*<ul[^>]*>(.*?)</ul>', td[4], re.S); managed = [strip(c) for c in re.findall(r'<code>(.*?)</code>', mref.group(1), re.S)] if mref else []
@@ -123,6 +135,7 @@ if __name__ == '__main__':
     out, errs = derive()
     for e in errs: print('  ✘ ' + e)
     if errs: print('✘ شجرةُ الصلاحيات: ' + str(len(errs)) + ' مخالفة'); sys.exit(1)
+    if getattr(derive, 'absent', None): print('  · حاوياتٌ في الوثيقة بلا صفحةٍ ولا أوراقٍ هنا (نظامٌ غائب — يُفحص الحاضر): ' + ' · '.join(derive.absent))
     txt = json.dumps(out, ensure_ascii=False, indent=1) + '\n'
     if cmd == 'emit':
         open(OUT, 'w', encoding='utf-8').write(txt); print('✔ perm-tree24.json: ' + json.dumps(out['counts'], ensure_ascii=False))

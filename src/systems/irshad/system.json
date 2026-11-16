@@ -45,6 +45,7 @@
   ],
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
  },
+ "permissions": "permissions.json",
  "tests": [
   "tests/irshad_cloud_http.test.mjs",
   "tests/irshad_cloud_ui.test.mjs",
@@ -629,6 +630,62 @@
   "bd.commitGuard.irshadShift": {
    "order": 10,
    "text": ".replace(/\\?1/g,'?2')"
+  },
+  "enf.compat": {
+   "order": 10,
+   "text": "'ir.rec.retro.open': 'irshad/records:approve'"
+  },
+  "p24.compat": {
+   "order": 10,
+   "text": "'ir.rec.retro.open': 1"
+  },
+  "tree.keyCap": {
+   "order": 10,
+   "text": "    bassam_irshad_v1:'irshad', bassam_irshad_langs_v1:'irshad', bassam_irshad_locs_v1:'irshad'"
+  },
+  "guard.classify.records": {
+   "order": 10,
+   "text": "C['bassam_irshad_v1'] = recBulk('ir.rec');"
+  },
+  "read.ops": {
+   "order": 10,
+   "text": ",'irshad/records'"
+  },
+  "read.map.dreport": {
+   "order": 10,
+   "text": ", 'irshad/records'"
+  },
+  "read.map.systems": {
+   "order": 10,
+   "text": "  /* ── الاسترشاد ── */\n  'bassam_irshad_v1':          ['irshad/records', 'irshad/dash'],\n  'bassam_irshad_langs_v1':    ['irshad/records', 'irshad/dash'],\n  'bassam_irshad_locs_v1':     ['irshad/records', 'irshad/dash'],\n"
+  },
+  "enf.refCrud.records": {
+   "order": 10,
+   "text": "    'bassam_irshad_langs_v1': crud('ref.irshad.language'), 'bassam_irshad_locs_v1': crud('ref.irshad.location'),\n"
+  },
+  "permv4.staffing.irshad": {
+   "order": 10,
+   "text": " || rn === 'bassam_irshad_v1'"
+  },
+  "scope.retroSys": {
+   "order": 10,
+   "text": "res === 'bassam_irshad_v1' ? 'irshad' : ("
+  },
+  "scope.retroSys.close": {
+   "order": 10,
+   "text": ")"
+  },
+  "nf.labels.retro": {
+   "order": 10,
+   "text": "bassam_irshad_retro_v1: \"نافذة استدراك الاسترشاد\","
+  },
+  "retro.adapter.guard": {
+   "order": 10,
+   "text": "if(sys!=='irshad')"
+  },
+  "root.navPerm.irshad": {
+   "order": 10,
+   "text": " irshad: \"irshad\","
   }
  }
 }

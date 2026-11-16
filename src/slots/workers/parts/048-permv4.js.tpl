@@ -33,8 +33,7 @@ function pv4NoteUnknown(ST, A, d, dims) { if (!dims.length) return; var ak = pv4
 function permv4Sources(A) {
   var out = { haram: false, nabawi: false }, ds = @@SYS:permv4.sources.depts|empty="[]"@@, s, i;
   if (A.u.role === 'super') return { haram: true, nabawi: true };
-  for (s in out) for (i = 0; i < ds.length && !out[s]; i++) if ((myPermsOf(A, ds[i])['dstats/' + s] || []).length) out[s] = true;
-  return out;
+@@SYS:permv4.sources.held@@  return out;
 }
 /* D4‑04 (v24.5): سقفُ نطاق الإدارة الصريح لكل بُعد — لا سجلَّ سقفٍ في D1 اليوم (غيرُ مهاجر) ⇒ null ⇒ unknown:unmigrated-department-ceiling.
    هذه الدالّةُ هي نقطةُ الربط الوحيدة للترحيل اللاحق (ALL · قائمة · deny)؛ لا تقرأ شيئاً من العميل ولا تكتب شيئاً. gm: union سقوف إدارات فرعه · super: سقفُ الإدارة المستهدفة — كلاهما null حتى الترحيل. */
@@ -111,7 +110,7 @@ async function permv4RefsLoad(env, set, del) {
     var o = out[d] = out[d] || {};
     if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && o.staffingLocks === undefined) o.staffingLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_locks_v1'), {}) || {};
     if (rn === 'bassam_tasks_v1' && o.tasksLocks === undefined) o.tasksLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}) || {};
-    if ((rn === 'bassam_dreport_v1' || rn === 'bassam_rounds_v1' || rn === 'bassam_irshad_v1' || rn === 'bassam_staffing_v3') && o.staffing === undefined) o.staffing = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_v3'), null);
+    if ((rn === 'bassam_dreport_v1' || rn === 'bassam_rounds_v1'@@SYS:permv4.staffing.irshad@@ || rn === 'bassam_staffing_v3') && o.staffing === undefined) o.staffing = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_v3'), null);
   }
   return out;
 }

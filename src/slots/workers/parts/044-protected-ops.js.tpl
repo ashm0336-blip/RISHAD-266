@@ -110,8 +110,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
   }
   if (dreportCleanup(A, k, newVal, curVal, ctx)) return { ok: true };
   if (custodyCleanup(A, k, newVal, curVal, ctx)) return { ok: true };
-  if (awardCleanup(A, k, newVal, curVal, ctx)) return { ok: true };
-  var cmv9 = custodyMoveOp(A, k, curVal, newVal, PV9);
+@@SYS:cleanup.award.call@@  var cmv9 = custodyMoveOp(A, k, curVal, newVal, PV9);
   if (cmv9 === true) return { ok: true };
   if (cmv9 === false) return { ok: false, why: 'act' };
   if (empGoneCleanup(A, k, newVal, curVal, ctx, PV9)) return { ok: true, prot: 'empDelete' };

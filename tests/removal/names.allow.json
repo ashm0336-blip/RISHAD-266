@@ -1,0 +1,147 @@
+{
+ "note": "V7 · د3 (تتمة) — قائمةُ الاستثناء المعلنة لاختبار الحذف (tests/removal/perms.test.mjs): البحثُ النصي عن أسماء الأنظمة الغائبة في أجزاء الخادم وكتل الواجهة (خارج التعليقات) يفشل على أي ذكرٍ ليس هنا. كلُّ مدخلٍ مقطعٌ بعينه في ملفٍ بعينه (file: \"*\" = أي ملف) وسببُه. kind: «legit» = يبقى مشروعاً · «deferred» = فرعٌ خامل بغياب النظام، نقلُه مؤجَّل ومعلن.",
+ "skipFiles": [
+  {
+   "file": "workers/parts/051a-schema-migrations.js",
+   "kind": "legit",
+   "why": "نصوصُ SQL للترحيلات: تبقى بقرار د2 (الحذفُ لا يحذف جداولَ ولا بيانات)."
+  }
+ ],
+ "patterns": [
+  {
+   "pattern": "\"[a-z]+(?:\\+[a-z]+)+\"",
+   "kind": "legit",
+   "why": "معرّفُ كتلةٍ مشتركة بين صفحات (565-page-kit وأول سطرٍ في منطق كل صفحة): اسمٌ مولَّد من أسماء الصفحات التي تتقاسم الكتلة، محفوظٌ كما هو لتبقى الحزمة مطابقة؛ معرّفٌ لا سلوك."
+  }
+ ],
+ "entries": [
+  {
+   "file": "*",
+   "match": [
+    "bassam_perm_irshad_cap_v1",
+    "bassam_perm_seized_cap_v1"
+   ],
+   "kind": "legit",
+   "why": "رايتا ترحيلٍ قديمتان: موردا قاعدةٍ مسجَّلان في سجل الموارد (023) وتسمياتهما (019 · 280) وربطُ قراءتهما (010)، لا يتبعان مجلدَ نظام (قرار المراجع على الملف 30، البند 4)."
+  },
+  {
+   "file": "workers/parts/016-base-shared.js",
+   "match": [
+    "swallow('dstats', e)"
+   ],
+   "kind": "legit",
+   "why": "وسمُ سجلّ خطأ في دالة التاريخ الهجري المشتركة dsToday التي تستعملها القاعدة."
+  },
+  {
+   "file": "workers/parts/019c-employee-transition.js",
+   "match": [
+    "input.base.awards",
+    "context.base.awards",
+    "awards: {}",
+    "'custody', 'awards']",
+    "'award-conflict'"
+   ],
+   "kind": "legit",
+   "why": "عقدُ طلب انتقال الموظف: الحقل base.awards جزءٌ من شكل الطلب الذي يرسله العميل ويتحقق منه الخادم؛ تغييرُه تغييرُ سلوك."
+  },
+  {
+   "file": "workers/parts/019d-atomic-restore.js",
+   "match": [
+    "'irshad:'",
+    "KIVO_IRSHAD_LEGACY_SOURCE",
+    "'irshad-legacy-source-present'"
+   ],
+   "kind": "legit",
+   "why": "مرتبطٌ بمخطط قاعدة البيانات الباقي بقرار د2: بادئةُ مفاتيح جدول مراجعات الاستعادة، واسمُ زنادٍ في الترحيلات ورمزُ خطئه."
+  },
+  {
+   "file": "workers/parts/019e-atomic-save.js",
+   "match": [
+    "KIVO_IRSHAD_LEGACY_SOURCE",
+    "'irshad-legacy-source-present'"
+   ],
+   "kind": "legit",
+   "why": "اسمُ زنادٍ في الترحيلات ورمزُ خطئه (المخطط باقٍ بقرار د2)."
+  },
+  {
+   "file": "workers/parts/052-aud-events.js",
+   "match": [
+    "'0009_seized_awards'"
+   ],
+   "kind": "legit",
+   "why": "اسمُ ترحيل (الترحيلات تبقى بقرار د2)."
+  },
+  {
+   "file": "workers/parts/019d-atomic-restore.js",
+   "match": [
+    "def.name==='awards'"
+   ],
+   "kind": "deferred",
+   "why": "فرعٌ في كود الاستعادة المشترك يقارن باسم مجال؛ لا يُسلك بغياب النظام (لا تعريفَ مجالٍ بهذا الاسم)."
+  },
+  {
+   "file": "workers/parts/019f-backup-converter.js",
+   "match": [
+    "def.name==='awards'",
+    "rsBCOwn(domains, 'irshad')"
+   ],
+   "kind": "deferred",
+   "why": "فرعان في محوِّل النسخ المشترك يقارنان باسم مجال؛ لا يُسلكان بغياب النظام."
+  },
+  {
+   "file": "workers/parts/019n-business-integration.js",
+   "match": [
+    "'/api/seized':'/api/award'",
+    "'seized':'awards'",
+    "KIVO_AWARD_LEGACY_SOURCE",
+    "KIVO_SEIZED_LEGACY_SOURCE",
+    "SEIZED_TARGET",
+    "AWARD_TARGET",
+    "def.name==='awards'",
+    "def.name==='seized'",
+    "name==='awards'",
+    "name==='seized'",
+    "privAwardOk",
+    "'awards:'"
+   ],
+   "kind": "deferred",
+   "why": "ملفُّ التكامل المشترك بين المضبوطات والجائزة: يبقى في القاعدة بلا تعريفات مجالٍ بغيابهما، وفروعُه تقارن باسم المجال فلا تُسلك. تفكيكُه إلى فتحات مؤجَّل."
+  },
+  {
+   "file": "workers/parts/019u-privacy-projection.js",
+   "match": [
+    "privAwardOk",
+    "privAwardRec"
+   ],
+   "kind": "deferred",
+   "why": "دالتا خصوصيةٍ يستدعيهما ملفُّ التكامل المشترك 019n؛ مفاتيحُهما صارت في فتحة (فارغة بغياب الجائزة)، واسماهما مؤجَّلان معه."
+  },
+  {
+   "file": "src/modules/admin/logic.js",
+   "match": [
+    "irshad = false",
+    "(irshad ? \"/api/irshad/export?uid=\" : ",
+    "value[irshad ? "
+   ],
+   "kind": "deferred",
+   "why": "سياجُ تصدير النسخة في صفحة الإعدادات: معاملٌ اسمُه irshad قيمتُه false دائماً بغياب النظام، فلا يُطلب مسارُه."
+  },
+  {
+   "file": "src/modules/business-cloud.js",
+   "match": [
+    "(?:(?:seized-|award-)?conflict|(?:award-)?restore-epoch-changed)"
+   ],
+   "kind": "deferred",
+   "why": "وحدةُ العميل المشتركة لصفحتَي المضبوطات والجائزة: نمطُ رموز خطأ؛ لا صفحةَ تستعملها بغيابهما."
+  },
+  {
+   "file": "src/services/548-atomic-backup.js",
+   "match": [
+    "spec[0]==='award'?'awards':spec[0]",
+    "spec[0]==='award'"
+   ],
+   "kind": "deferred",
+   "why": "فرعان في خدمة النسخ يقارنان باسم مجال التصدير؛ لا يُسلكان بغياب الجائزة (قائمةُ المجالات تأتي من فتحة)."
+  }
+ ]
+}

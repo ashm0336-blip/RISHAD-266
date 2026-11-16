@@ -24,6 +24,8 @@ if target==root or root not in target.parents or target.relative_to(root).parts[
 PY
   if [ "$MODE" = "--check-current" ]; then
     "$PY" tools/generate.py --src src --check
+    "$PY" tools/perm_parts.py --check
+    "$PY" tools/perm_tree.py check
     "$PY" tools/icons.py check --src src
     "$PY" tools/long_lines.py --check
     "$PY" tools/module_charter.py --check
@@ -46,6 +48,8 @@ PY
     exit 0
   fi
   "$PY" tools/generate.py --src src --check
+  "$PY" tools/perm_parts.py --check
+  "$PY" tools/perm_tree.py check
   "$PY" tools/icons.py check --src src
   node tools/kivo_ns.mjs tools/kivo_ns.json --check
   node tools/gen_types.mjs --check

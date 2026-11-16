@@ -1,0 +1,1861 @@
+{
+ "schema": 1,
+ "system": "award",
+ "note": "V7 · د3: صلاحياتُ هذا النظام — صفوفُه في السجلّ (المفاتيح · الأوراق · الذرّات · الأعلام) وروابطُه في الخادم (النطاق · الحراسة · البناء)، وما يضيفه إلى صفوف القاعدة. تجمعها tools/perm_parts.py مع القاعدة (الشرح في رأس الأداة).",
+ "docs": {
+  "registry": [
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 23,
+    "value": {
+     "key": "award.new.view",
+     "owner": "award/new",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "عرض نموذج الترشيح",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_award_v1"
+      ],
+      "detail": "قراءة bassam_award_v1 بورقة award/new (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/new:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.new.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 24,
+    "value": {
+     "key": "award.new.create",
+     "owner": "award/new",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "إنشاء ترشيح",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_award_v1"
+      ],
+      "detail": "bassam_award_v1 capAdd:'award/new' — الإنشاء فقط",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/new:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.new.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 25,
+    "value": {
+     "key": "award.res.view",
+     "owner": "award/res",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "عرض النتائج",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_award_v1"
+      ],
+      "detail": "قراءة bassam_award_v1 بورقة award/res (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Own"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/res:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.res.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 26,
+    "value": {
+     "key": "award.res.edit",
+     "owner": "award/res",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "تعديل الترشيح",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_award_v1"
+      ],
+      "detail": "bassam_award_v1 recs[] (edit) عدا st",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Own"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/res:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.res.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 27,
+    "value": {
+     "key": "award.res.approve",
+     "owner": "award/res",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "اعتماد الترشيح",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_award_v1"
+      ],
+      "detail": "OPS recs.*.st — الانتقالُ إلى «معتمد» (من «قيد التحكيم» أو «مستبعد») = approve؛ الاتجاهُ يحدد المفتاح. قاعدةُ TO-BE: أيُّ انتقالٍ من «معتمد/مستبعد» إلى «قيد التحكيم» يُرفض ما دام award.res.reopen محجوزاً (F-09)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Own"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/res:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.res.status"
+     ],
+     "mergedFrom": [],
+     "splitFrom": "award.res.status",
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 28,
+    "value": {
+     "key": "award.res.reject",
+     "owner": "award/res",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "استبعاد/رفض الترشيح (بسبب)",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_award_v1"
+      ],
+      "detail": "OPS recs.*.st — الانتقال إلى «مستبعد» = reject؛ سبب الرفض إلزامي: البنية الحالية {...a, st} بلا حقل سبب → متطلب TO-BE: recs[].stWhy · stAt · stBy",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Own"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/res:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.res.status"
+     ],
+     "mergedFrom": [],
+     "splitFrom": "award.res.status",
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 29,
+    "value": {
+     "key": "award.res.delete",
+     "owner": "award/res",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "حذف الترشيح",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_award_v1"
+      ],
+      "detail": "bassam_award_v1 recs[] (del)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Own"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/res:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.res.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 30,
+    "value": {
+     "key": "award.doc.view",
+     "owner": "award/doc",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "عرض المراجع",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_award_docs_v1",
+       "bassam_award_docs_v2"
+      ],
+      "detail": "قراءة bassam_award_docs_v1, bassam_award_docs_v2 بورقة award/doc (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/doc:view"
+     ],
+     "references": [
+      "award/new",
+      "award/res"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "award.doc.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 31,
+    "value": {
+     "key": "award.doc.create",
+     "owner": "award/doc",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "إضافة مرجع",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_award_docs_v1",
+       "bassam_award_docs_v2"
+      ],
+      "detail": "bassam_award_docs_v2 (add)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/doc:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.doc.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 32,
+    "value": {
+     "key": "award.doc.edit",
+     "owner": "award/doc",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "تعديل مرجع",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_award_docs_v1",
+       "bassam_award_docs_v2"
+      ],
+      "detail": "bassam_award_docs_v2 (edit) بما فيه الترتيب",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/doc:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.doc.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 43,
+    "seq": 33,
+    "value": {
+     "key": "award.doc.delete",
+     "owner": "award/doc",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "حذف مرجع",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_award_docs_v1",
+       "bassam_award_docs_v2"
+      ],
+      "detail": "bassam_award_docs_v2 (del)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/doc:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.doc.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 151,
+    "seq": 64,
+    "value": {
+     "key": "award.doc.reset",
+     "owner": "award/doc",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "إعادة ضبط/تهيئة المراجع",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_award_docs_v1",
+       "bassam_award_docs_v2"
+      ],
+      "detail": "bassam_award_docs_v2: استبدال كامل بالافتراضي (شكل استبدال)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "award/doc:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "award.doc.reset"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 154,
+    "seq": 65,
+    "value": {
+     "key": "award.res.reopen",
+     "owner": "award/res",
+     "ownerKind": "page",
+     "domain": "award",
+     "label": "إعادة الترشيح إلى «قيد التحكيم»",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): v24.3 (F-09): لا انتقالَ حيّاً في الواجهة من «معتمد/مستبعد» إلى «قيد التحكيم» (awSetStatus يُتاح له approve/reject فقط). قاعدةُ TO-BE: أيُّ انتقالٍ عائدٍ إلى «قيد التحكيم» يُرفض في الخادم ما دام هذا المفتاحُ محجوزاً",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Own"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "v24.3 (F-09): لا انتقالَ حيّاً في الواجهة من «معتمد/مستبعد» إلى «قيد التحكيم» (awSetStatus يُتاح له approve/reject فقط). قاعدةُ TO-BE: أيُّ انتقالٍ عائدٍ إلى «قيد التحكيم» يُرفض في الخادم ما دام هذا المفتاحُ محجوزاً"
+    }
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.shift.view"
+     },
+     "references"
+    ],
+    "after": 7,
+    "seq": 2,
+    "value": "award/res"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
+     },
+     "references"
+    ],
+    "after": 4,
+    "seq": 2,
+    "value": "award/new"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
+     },
+     "references"
+    ],
+    "after": 4,
+    "seq": 3,
+    "value": "award/res"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "bassam_employees_v1: حذف المحدد/الكل (شكل جماعي) — ويفتح awardCleanup/dreportCleanup حين يفرغ الموظفون"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 1,
+    "seq": 0,
+    "value": "bassam_award_v1"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "wipeAllowed → 'import' (كان admin/import:del) — تفريغ التقرير اليومي وسجلات الجائزة بشكلها القانوني فقط (dreportCleanup · awardCleanup)"
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 9,
+    "seq": 10,
+    "value": {
+     "id": "award/new",
+     "kind": "page",
+     "label": "ترشيح جديد",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 9,
+    "seq": 11,
+    "value": {
+     "id": "award/res",
+     "kind": "page",
+     "label": "لوحة النتائج",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 9,
+    "seq": 12,
+    "value": {
+     "id": "award/doc",
+     "kind": "page",
+     "label": "المراجع المعتمدة",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 60,
+    "value": {
+     "leaf": "award/new",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "award.new.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 61,
+    "value": {
+     "leaf": "award/new",
+     "act": "add",
+     "disposition": "migrated",
+     "targets": [
+      "award.new.create"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 62,
+    "value": {
+     "leaf": "award/new",
+     "act": "edit",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 63,
+    "value": {
+     "leaf": "award/new",
+     "act": "del",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 64,
+    "value": {
+     "leaf": "award/new",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 65,
+    "value": {
+     "leaf": "award/new",
+     "act": "export",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 66,
+    "value": {
+     "leaf": "award/res",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "award.res.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 67,
+    "value": {
+     "leaf": "award/res",
+     "act": "add",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 68,
+    "value": {
+     "leaf": "award/res",
+     "act": "edit",
+     "disposition": "migrated",
+     "targets": [
+      "award.res.edit"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 69,
+    "value": {
+     "leaf": "award/res",
+     "act": "del",
+     "disposition": "migrated",
+     "targets": [
+      "award.res.delete"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 70,
+    "value": {
+     "leaf": "award/res",
+     "act": "approve",
+     "disposition": "migrated",
+     "targets": [
+      "award.res.approve",
+      "award.res.reject"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 71,
+    "value": {
+     "leaf": "award/res",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.award.res.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 72,
+    "value": {
+     "leaf": "award/doc",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "award.doc.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 73,
+    "value": {
+     "leaf": "award/doc",
+     "act": "add",
+     "disposition": "migrated",
+     "targets": [
+      "award.doc.create"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 74,
+    "value": {
+     "leaf": "award/doc",
+     "act": "edit",
+     "disposition": "migrated",
+     "targets": [
+      "award.doc.edit"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 75,
+    "value": {
+     "leaf": "award/doc",
+     "act": "del",
+     "disposition": "migrated",
+     "targets": [
+      "award.doc.delete",
+      "award.doc.reset"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 76,
+    "value": {
+     "leaf": "award/doc",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 72,
+    "seq": 77,
+    "value": {
+     "leaf": "award/doc",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.award.doc.print"
+     ]
+    }
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 7,
+    "seq": 10,
+    "value": "ff.award.res.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 26,
+    "seq": 12,
+    "value": "ff.award.doc.print"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 33,
+    "seq": 16,
+    "value": "ff.module.award.enabled"
+   }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 22,
+    "value": {
+     "key": "award.new.view",
+     "owner": "award/new",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 23,
+    "value": {
+     "key": "award.new.create",
+     "owner": "award/new",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 24,
+    "value": {
+     "key": "award.res.view",
+     "owner": "award/res",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Own": [
+       "nomineeSelf"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 25,
+    "value": {
+     "key": "award.res.edit",
+     "owner": "award/res",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Own": [
+       "nomineeSelf"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 26,
+    "value": {
+     "key": "award.res.approve",
+     "owner": "award/res",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Own": [
+       "nomineeSelf"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 27,
+    "value": {
+     "key": "award.res.reject",
+     "owner": "award/res",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Own": [
+       "nomineeSelf"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 28,
+    "value": {
+     "key": "award.res.delete",
+     "owner": "award/res",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_award_v1",
+     "resources": [
+      "bassam_award_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Own": [
+       "nomineeSelf"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 29,
+    "value": {
+     "key": "award.doc.view",
+     "owner": "award/doc",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_award_docs_v1",
+     "resources": [
+      "bassam_award_docs_v1",
+      "bassam_award_docs_v2"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 30,
+    "value": {
+     "key": "award.doc.create",
+     "owner": "award/doc",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_award_docs_v1",
+     "resources": [
+      "bassam_award_docs_v1",
+      "bassam_award_docs_v2"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 31,
+    "value": {
+     "key": "award.doc.edit",
+     "owner": "award/doc",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_award_docs_v1",
+     "resources": [
+      "bassam_award_docs_v1",
+      "bassam_award_docs_v2"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 43,
+    "seq": 32,
+    "value": {
+     "key": "award.doc.delete",
+     "owner": "award/doc",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_award_docs_v1",
+     "resources": [
+      "bassam_award_docs_v1",
+      "bassam_award_docs_v2"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 139,
+    "seq": 63,
+    "value": {
+     "key": "award.doc.reset",
+     "owner": "award/doc",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_award_docs_v1",
+     "resources": [
+      "bassam_award_docs_v1",
+      "bassam_award_docs_v2"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "resources"
+    ],
+    "after": 1,
+    "seq": 0,
+    "value": "bassam_award_v1"
+   },
+   {
+    "path": [
+     "byResource"
+    ],
+    "key": "bassam_award_v1",
+    "after": 8,
+    "seq": 2,
+    "value": {
+     "items": "awardItems",
+     "evidence": "recs[id].ekey (المرشَّح) · st",
+     "lock": "",
+     "dims": {
+      "Department": "keyDept",
+      "Branch": "branchCeiling",
+      "Own": "nomineeSelf"
+     },
+     "na": {
+      "Site": "no-site-identity",
+      "Zone/Element": "no-element-identity",
+      "Shift": "no-shift-identity",
+      "Assigned": "no-assignment-field",
+      "DateRange": "no-period-identity",
+      "Source": "department-resource",
+      "Global": "no-record-scope"
+     }
+    }
+   },
+   {
+    "path": [
+     "terminology",
+     4,
+     "means"
+    ],
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
+    "with": [
+     "dstats"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": "award.res.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": "award.new.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": "award.doc.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": {
+     "cap": "award/res:view",
+     "key": "award.res.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": {
+     "cap": "award/new:view",
+     "key": "award.new.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": {
+     "cap": "award/doc:view",
+     "key": "award.doc.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": "award.res.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": "award.new.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": "award.doc.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": {
+     "cap": "award/res:view",
+     "key": "award.res.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": {
+     "cap": "award/new:view",
+     "key": "award.new.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": {
+     "cap": "award/doc:view",
+     "key": "award.doc.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_award_v1",
+    "after": 39,
+    "seq": 9,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "award.res.view",
+      "award.new.view",
+      "emp.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "award/res:view",
+       "key": "award.res.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "award/new:view",
+       "key": "award.new.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "emps/data:view",
+       "key": "emp.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_award_docs_v1",
+    "after": 39,
+    "seq": 10,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "award.doc.view",
+      "award.res.view",
+      "award.new.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "award/doc:view",
+       "key": "award.doc.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "award/res:view",
+       "key": "award.res.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "award/new:view",
+       "key": "award.new.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_award_docs_v2",
+    "after": 39,
+    "seq": 11,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "award.doc.view",
+      "award.res.view",
+      "award.new.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "award/doc:view",
+       "key": "award.doc.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "award/res:view",
+       "key": "award.res.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "award/new:view",
+       "key": "award.new.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": "award.res.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": "award.new.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": "award.doc.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 2,
+    "value": {
+     "cap": "award/res:view",
+     "key": "award.res.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 3,
+    "value": {
+     "cap": "award/new:view",
+     "key": "award.new.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": {
+     "cap": "award/doc:view",
+     "key": "award.doc.view",
+     "source": "reference-read"
+    }
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 10,
+    "seq": 4,
+    "value": {
+     "key": "award.res.approve",
+     "res": "bassam_award_v1",
+     "where": "recs[id].st → «معتمد» (من «قيد التحكيم» أو «مستبعد»)",
+     "how": "انتقالُ الحالة على ترشيحٍ قائم (awSetStatus)",
+     "asis": "award/res:approve",
+     "decl": "v24.3 (F-09): award.res.reopen محجوزٌ بقاعدة رفض — الانتقالُ العائد إلى «قيد التحكيم» يُحصى __unmapped (محجوز) ولا يُصدر المفتاحَ المحجوز؛ المصدر لا يكتب stWhy/stAt/stBy (متطلب TO-BE باقٍ)",
+     "dup": "",
+     "owner": "award/res",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 10,
+    "seq": 5,
+    "value": {
+     "key": "award.res.reject",
+     "res": "bassam_award_v1",
+     "where": "recs[id].st → «مستبعد» (من «قيد التحكيم» أو «معتمد»)",
+     "how": "انتقالُ الحالة؛ سببُ الرفض (stWhy) متطلبُ TO-BE — يُحصى غيابُه ظلّياً ولا يُرفض",
+     "asis": "award/res:approve",
+     "decl": "",
+     "dup": "",
+     "owner": "award/res",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 54,
+    "seq": 8,
+    "value": {
+     "key": "award.doc.reset",
+     "res": "bassam_award_docs_v2",
+     "where": "استبدالُ مجموعةٍ كاملة (A|B|C): title+lead+foot+secs تتغيّر معاً أو يتغيّر طولُ secs مع ≥½ أقسامها",
+     "how": "شكلُ الاستبدال الكامل للمجموعة (awSetReset يستبدل المجموعةَ المختارة بالأصل)",
+     "asis": "award/doc:del",
+     "decl": "نصُّ v24.2: استبدالٌ كامل للمورد؛ المصدرُ يستبدل مجموعةً واحدة. الخادمُ لا يعرف النصَّ الأصلي فالاستدلالُ بالشكل",
+     "dup": "",
+     "owner": "award/doc",
+     "type": "operation",
+     "guardKind": "cap"
+    }
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · award.recs [] · staffing)"
+   },
+   {
+    "path": [
+     "decisions"
+    ],
+    "after": 12,
+    "seq": 0,
+    "value": {
+     "id": "D-13",
+     "topic": "award.doc.reset",
+     "status": "معلَن (باقٍ)",
+     "text": "يستبدل مجموعةً واحدة (A|B|C)؛ الخادمُ لا يعرف النصَّ الأصلي → استدلالٌ بشكل الاستبدال الكامل للمجموعة."
+    }
+   },
+   {
+    "path": [
+     "counts",
+     "emittedKeys"
+    ],
+    "add": 9
+   },
+   {
+    "path": [
+     "counts",
+     "coveredResources"
+    ],
+    "add": 2
+   }
+  ],
+  "build-bindings": [
+   {
+    "path": [
+     "importRes"
+    ],
+    "after": 8,
+    "seq": 0,
+    "value": "bassam_award_v1"
+   }
+  ]
+ }
+}

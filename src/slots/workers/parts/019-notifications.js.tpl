@@ -3022,7 +3022,7 @@ var NF_DENY_RECS = {
   bassam_perm_leaf_v1: "ترقية الصلاحيات", bassam_perm_mgr_explicit_v1: "ترقية الصلاحيات", bassam_first_boot_v1: "أول تشغيل",
   bassam_demo_purged_v1: "تنظيف البيانات التجريبية", bassam_profile_v1: "الملف الشخصي", bassam_notifications_domain_v1: "التنبيهات والتعاميم",
   /* not in the client's list */
-  @@SYS:nf.denyRecs.dstats@@bassam_irshad_retro_v1: "نافذة استدراك الاسترشاد", bassam_seized_retro_v1: "نافذة استدراك المضبوطات",
+  @@SYS:nf.denyRecs.dstats@@@@SYS:nf.labels.retro|sep=" "@@
   bassam_notif_cfg_v1: "إعدادات التنبيهات (سجل قديم)", bassam_notif_sys_v1: "تنبيهات المنصة (سجل قديم)", bassam_bc_v1: "التعاميم (سجل قديم)",
   bassam_notif_v1: "تنبيهات الإدارة (سجل قديم)", bslg_v1: "عدّاد محاولات الدخول على الجهاز", bassam_perm_tpls_named_v1: "راية إعادة تسمية قوالب الصلاحيات",
 };

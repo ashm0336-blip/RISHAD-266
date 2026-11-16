@@ -34,7 +34,7 @@ test('pages.json without the display-only field is develop\'s pages.json; the fi
   assert.equal(sha(Buffer.from(canon(M))), DEVELOP.pages, 'every other value of pages.json is as on develop');
 });
 
-test('the permission registry is byte-identical to develop and keeps its 255 active keys', () => {
+test('the permission registry is byte-identical to develop and keeps its 255 active keys', needs('award', 'dstats', 'irshad', 'seized'), () => {
   assert.equal(sha(read('src/permissions/registry/registry-v24.9.json')), DEVELOP.registryJson);
   assert.equal(sha(read('src/permissions/340-registry-v24-9.js')), DEVELOP.registryBlock);
   const R = JSON.parse(read('src/permissions/registry/registry-v24.9.json'));

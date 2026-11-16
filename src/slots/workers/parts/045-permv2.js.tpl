@@ -36,7 +36,7 @@ function permv2How(A, k, newVal, curVal, ctx) {
     var E9 = entOf(k), O9 = opsOf(k), PA, PB, ha = 0, hb = 0;
     var PV = { a: function () { if (!ha) { ha = 1; PA = curVal == null ? undefined : parseJson(curVal, undefined); } return PA; },
                b: function () { if (!hb) { hb = 1; PB = parseJson(newVal, undefined); } return PB; } };
-    if (dreportCleanup(A, k, newVal, curVal, ctx) || custodyCleanup(A, k, newVal, curVal, ctx) || awardCleanup(A, k, newVal, curVal, ctx)) return 'cleanup';
+    if (dreportCleanup(A, k, newVal, curVal, ctx) || custodyCleanup(A, k, newVal, curVal, ctx)@@SYS:cleanup.award.shadow@@) return 'cleanup';
     var cmv = custodyMoveOp(A, k, curVal, newVal, PV); if (cmv === true) return 'custodyMove'; if (cmv === false) return 'custodyMove-deny';
     if (empGoneCleanup(A, k, newVal, curVal, ctx, PV)) return 'empGone';
     if (shiftRenameOk(A, k, newVal, curVal, ctx)) return 'shiftRename';

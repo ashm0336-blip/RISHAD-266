@@ -180,7 +180,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(!r2.ok && r2.why === 'perms', 'the marker is the system administrator\'s alone — ' + r2.show);
   });
 
-  test(M + '(e) editing an old-format container-key template under switched-off tabs keeps them with the container\'s actions — nothing wider', async () => {
+  test(M + '(e) editing an old-format container-key template under switched-off tabs keeps them with the container\'s actions — nothing wider', needs('award'), async () => {
     const W = await scene(mode);
     let P = cp(stored(W.env, KP)); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok);
     const c = await clientOf(W, 'su');

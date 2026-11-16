@@ -188,6 +188,42 @@
   {
    "tpl": "services/310-image-refs.js.tpl",
    "out": "src/services/310-image-refs.js"
+  },
+  {
+   "tpl": "workers/parts/058-enf-scope.js.tpl",
+   "out": "workers/parts/058-enf-scope.js"
+  },
+  {
+   "tpl": "permissions/331-perm-model.js.tpl",
+   "out": "src/permissions/331-perm-model.js"
+  },
+  {
+   "tpl": "permissions/334-perm-tree-tpl.js.tpl",
+   "out": "src/permissions/334-perm-tree-tpl.js"
+  },
+  {
+   "tpl": "workers/bindings/guard-bindings/engine.js.tpl",
+   "out": "workers/bindings/guard-bindings/engine.js"
+  },
+  {
+   "tpl": "workers/bindings/scope-bindings/engine.js.tpl",
+   "out": "workers/bindings/scope-bindings/engine.js"
+  },
+  {
+   "tpl": "workers/parts/038-domain-cleanups.js.tpl",
+   "out": "workers/parts/038-domain-cleanups.js"
+  },
+  {
+   "tpl": "workers/parts/040-employee-delete-cleanup.js.tpl",
+   "out": "workers/parts/040-employee-delete-cleanup.js"
+  },
+  {
+   "tpl": "workers/parts/028-approval-shapes.js.tpl",
+   "out": "workers/parts/028-approval-shapes.js"
+  },
+  {
+   "tpl": "services/590-employees-import.js.tpl",
+   "out": "src/services/590-employees-import.js"
   }
  ]
 }

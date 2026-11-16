@@ -3,12 +3,14 @@
    python3 tools/generate.py --src src            يكتب الملفات المشتقّة في مكانها
    python3 tools/generate.py --src src --check    لا يكتب شيئاً: يولّد في الذاكرة ويقارن بالمُلتزَم (exit 1 عند أي فرق) — فحصُ CI
    المشتقّات (مصدرُ الحقيقة → الناتج):
+     registry/registry.base.json + systems/<key>/permissions.json (V7 · د3 · tools/perm_parts.py) → registry/registry-v24.9.json (السجلُّ المجموع: القاعدة + الأنظمة الحاضرة)
      registry/registry-v24.9.json + registry/engine.js + registry/targets.json → client/js/340-registry-v24-9.js · workers/parts/004-registry-2.js   (AUD-011)
      workers/parts/*.js بترتيب workers/parts.json                              → root/_worker.js                                                     (ADR-006 · الأجزاءُ مصدرُ الحقيقة)
      modules/<slug>/{meta.json,helmet.css,view.html,logic.js}                  → client/pages/<name>.dc.html (esbuild minify للمضغوطة أصلاً)         (AUD-007)
      migrations/NNNN_<name>.sql (KIVO_249)                                     → workers/parts/051a-schema-migrations.js (KIVO_MIGRATIONS · KIVO_SCHEMA_VERSION)  (AUD-022 · ADR-011)
      schemas/api/bodies.schema.json                                         → workers/parts/051b-body-schemas.js (KIVO_BODY_SCHEMAS)
      services/332-find-day.js (pure marked search block)                    → workers/parts/018a-find-engine.js (KIVO_FIND)
+     ../workers/bindings/<name>/data.base.json + systems/<key>/permissions.json (V7 · د3) → ../workers/bindings/<name>/data.json (النطاق · الحراسة · البناء: القاعدة + الأنظمة الحاضرة)
      ../workers/bindings/<name>/{data.json,engine.js} + targets.json (V7 · الحزمة ج) → workers/parts/006 · 008 · 010 · 014 (الوحداتُ المرجعية v24.9)
      plugins/lenses/<key>/manifest.json (KIVO_259)                              → KIVO_MANIFEST.lenses (الواجهة) · workers/parts/006a-lens-plugins.js (KIVO_LENS_PLUGINS)  (AUD-030 · ADR-018)
    الترتيبُ مهم: السجلُّ قبل الضمّ لأن جزءَ الخادم 004 مشتقٌّ هو نفسُه."""
@@ -286,6 +288,12 @@ def main():
         _p = os.path.join(S, '..', _rel); produced[norm(os.path.relpath(_p, S))] = _data
         if not check and (rb(_p) if os.path.exists(_p) else None) != _data:
             os.makedirs(os.path.dirname(_p), exist_ok=True); open(_p, 'wb').write(_data)
+    # V7 · د3 — صلاحياتُ كل نظامٍ من مجلده: السجلُّ (وملفاتُ الروابط) مجموعةٌ من «القاعدة + الأنظمة الحاضرة» (tools/perm_parts.py)، وتُكتب قبل
+    # المولِّدات التالية لأنها تقرأ منها (340 · 004 · 006 · 008 · 010). في --check تُقارن بالملتزَم مع البقية.
+    import perm_parts as _PP
+    for _rel, _data in sorted(_PP.outputs(S).items()):
+        _p = os.path.join(S, '..', _rel); produced[norm(os.path.relpath(_p, S))] = _data
+        if not check and (rb(_p) if os.path.exists(_p) else None) != _data: open(_p, 'wb').write(_data)
     produced.update(gen_registry(S)); produced.update(gen_bindings(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S)); produced.update(gen_find_engine(S)); produced.update(gen_system_parts(S))
     if os.path.exists(os.path.join(S, layout(S)['pagesManifest'])):
         mj, reg = gen_manifest(S); produced.update(mj); splice_pg(S, produced, reg)

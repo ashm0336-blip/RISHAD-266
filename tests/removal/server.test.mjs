@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { makeTestEnv, WORKER, SYSTEMS, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from '../unit/harness.mjs';
+import { makeTestEnv, WORKER, SRC, SYSTEMS, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from '../unit/harness.mjs';
 
 const ALL = ['award', 'dstats', 'irshad', 'seized'];
 const ROUTE = { award: '/api/award?dept=TEST_ONLY_d1', dstats: '/api/dstats', irshad: '/api/irshad?dept=TEST_ONLY_d1', seized: '/api/seized?dept=TEST_ONLY_d1' };
@@ -36,8 +36,60 @@ test('د2-ب · الحذف: الخادمُ بالأنظمة الحاضرة [' + 
     r = await call('/api/backup/restore?scope=full&uid=' + encodeURIComponent(uid)); assert.equal(r.s, 200, 'مرجعُ النسخة والاستعادة ' + r.t);
     const base = r.j.base || {};
     for (const [k, name] of [['dstats', 'dailyStats'], ['irshad', 'irshad'], ['seized', 'seized'], ['award', 'awards']]) assert.equal(Object.prototype.hasOwnProperty.call(base, name), SYSTEMS.includes(k), 'أساسُ الاستعادة يذكر مجال ' + name + ' بحضور نظامه فقط');
+    /* د3: تقريرُ الصلاحيات — السجلُّ المجموع يصحّ في الخادم، وأعدادُه = المحسوب من السجل المولَّد، وروابطُ النطاق والحراسة بعدد الحاضر */
+    r = await call('/api/permv2'); assert.equal(r.s, 200, 'permv2 ' + r.t.slice(0, 200));
+    const REG = JSON.parse(fs.readFileSync(path.join(SRC, 'permissions', 'registry', 'registry-v24.9.json'), 'utf8')), act = REG.registry.filter((e) => e.status === 'active');
+    assert.equal(r.j.validation && r.j.validation.ok, true, 'validate في الخادم: ' + JSON.stringify(r.j.validation && r.j.validation.errors));
+    assert.deepEqual(r.j.counts, REG.counts, 'أعدادُ الخادم = أعدادُ السجل المولَّد');
+    assert.equal(r.j.counts.securityActive, act.length); assert.equal(r.j.counts.owners, REG.owners.length); assert.equal(r.j.counts.atoms, REG.atoms.length);
+    assert.equal(r.j.counts.reserved, REG.registry.length - act.length); assert.equal(r.j.counts.reference, REG.registry.filter((e) => e.key.startsWith('ref.')).length);
+    assert.equal(r.j.scope.bindings, act.length, 'روابطُ النطاق = المفاتيحُ النشطة'); assert.equal(r.j.scope.counts.keys, act.length);
+    assert.equal(r.j.scope.validation && r.j.scope.validation.ok, true, 'تحقّقُ النطاق: ' + JSON.stringify(r.j.scope.validation).slice(0, 400));
+    assert.equal(r.j.scope.readBindingCheck && r.j.scope.readBindingCheck.ok, true, 'تحقّقُ ربط القراءة: ' + JSON.stringify(r.j.scope.readBindingCheck).slice(0, 400));
+    assert.equal(r.j.guards.bindings, act.filter((e) => e.guard.status === 'to-bind').length, 'روابطُ الحراسة = المفاتيحُ التي حارسُها «للربط»');
+    assert.equal(r.j.guards.counts.bindings, r.j.guards.bindings);
+    assert.equal(r.j.guards.counts.coveredResources, r.j.guards.covers.length, 'المواردُ التي لها مصنِّف = المعدودُ (نصيبُ القاعدة + الأنظمة الحاضرة)');
     r = await call('/'); assert.equal(r.s, 200, 'الغلاف');
     for (const k of ALL) { r = await call(ROUTE[k]); assert.equal(r.s, SYSTEMS.includes(k) ? 200 : 404, ROUTE[k] + ' ← ' + r.s + ' ' + r.t); }
   } finally { console.log = log; }
   assert.deepEqual([...new Set(errs)], [], 'لا خطأ خادم في أي طلب');
+});
+
+/* V7 · د3 (قرار المراجع 4): المنحُ المخزّنة على مفتاح نظامٍ حُذف لا تُمسّ — خاملة، محفوظة، تعود بعودة النظام.
+   وضعُ الإنفاذ · سجلُّ منح إدارةٍ اصطناعية (TEST_ONLY). المفتاحُ الغائب: أولُ مفتاحٍ قابلٍ للمنح من نظامٍ غائب (يُقرأ من مجلده في الشجرة الكاملة)،
+   ومعه دائماً مفتاحٌ لا وجودَ له في أي سجل. */
+const FULL = process.env.KIVO_FULL_SRC || SRC;
+function goneKey() {
+  for (const k of ALL.filter((x) => !SYSTEMS.includes(x))) {
+    const p = path.join(FULL, 'systems', k, 'permissions.json'); if (!fs.existsSync(p)) continue;
+    const rows = ((JSON.parse(fs.readFileSync(p, 'utf8')).docs || {}).registry || []).map((o) => o.value).filter((v) => v && v.key && v.status === 'active' && v.grant === 'assignable');
+    if (rows.length) return rows[0].key;
+  }
+  return null;
+}
+test('د3 · الحذف: منحُ مفتاح نظامٍ غائب مرفوض، والمنحُ المخزّنة عليه باقيةٌ لا يحذفها حفظٌ عادي [' + (SYSTEMS.join(' · ') || 'لا نظام') + ']', { timeout: 300000 }, async () => {
+  const { world, stored } = await import('../unit/tasks_fx.mjs');
+  const w = await world({ mode: 'enforce' }), su = w.su.ck, G = 'bsdept:tst_d1:bassam_grants_v1', cp = (o) => JSON.parse(JSON.stringify(o));
+  const put = async (v) => {
+    const g = await w.C.api('/api/get?keys=' + encodeURIComponent(G), { cookie: su });
+    const r = await w.C.api('/api/save', { method: 'POST', cookie: su, body: { set: { [G]: JSON.stringify(v) }, del: [], base: { [G]: ((g.j.keys || {})[G] || {}).rev || 0 } } });
+    const d = (r.j.denied || {})[G] || (r.j.conflicts || {})[G] || null;
+    return { ok: !!(r.j.revs && r.j.revs[G]), why: d ? d.why : '', detail: d ? String(d.detail || '') : '' };
+  };
+  const cur = () => cp(stored(w.env, G) || { v: 1, emp: {} });
+  const keys = ['zz.gone.view'].concat(goneKey() ? [goneKey()] : []);
+  for (const K of keys) {
+    let g = cur(); g.emp.tst_e_emp1 = { plus: [K], minus: [], at: 1, by: 'x' }; let r = await put(g);
+    assert.equal(r.ok, false, 'منحُ ' + K + ' مرفوض'); assert.match(r.why, /^(grant|cap)$/, K + ': ' + r.why + ' ' + r.detail);
+    g = cur(); g.emp.tst_e_emp1 = { plus: [], minus: [K], at: 1, by: 'x' }; r = await put(g); assert.equal(r.ok, false, 'إسقاطُ ' + K + ' مرفوض');
+    /* مخزَّنٌ سلفاً (كأنه بقي بعد حذف النظام) */
+    const st = cur(); st.emp.tst_e_emp1 = { plus: ['emp.view', K], minus: [], at: 2, by: 'x' };
+    w.env.DB.db.prepare('UPDATE kv SET v=? WHERE k=?').run(JSON.stringify(st), G); assert.deepEqual(cur().emp.tst_e_emp1.plus, ['emp.view', K], 'زُرع المخزَّن');
+    g = cur(); g.emp.tst_e_emp2 = { plus: ['emp.view'], minus: [], at: 3, by: 'x' }; r = await put(g);
+    assert.equal(r.ok, true, 'حفظٌ لا يمسّ القائمة يُقبل — ' + r.why + ' ' + r.detail); assert.deepEqual(cur().emp.tst_e_emp1.plus, ['emp.view', K], 'المنحُ المخزّنة على ' + K + ' باقية');
+    g = cur(); g.emp.tst_e_emp1 = { plus: ['emp.view'], minus: [], at: 4, by: 'x' }; r = await put(g);
+    assert.equal(r.ok, false, 'حفظٌ يحذف ' + K + ' من القائمة مرفوض'); assert.equal(r.why, 'perms'); assert.match(r.detail, /latent/);
+    assert.deepEqual(cur().emp.tst_e_emp1.plus, ['emp.view', K], 'وبعد الرفض ما زالت باقية');
+    const clean = cur(); delete clean.emp.tst_e_emp1; delete clean.emp.tst_e_emp2; w.env.DB.db.prepare('UPDATE kv SET v=? WHERE k=?').run(JSON.stringify(clean), G);
+  }
 });
