@@ -15,7 +15,7 @@
   function counts(value) {
     return (
       record(value) &&
-      @@SYS:bk.counts.dstats|pre="['kv', 'operations', "|empty="['kv', 'operations', "@@'notifications', 'custody', @@SYS:bk.counts.systems|post="'kept']"|empty="'kept']"@@.every(function (k) {
+      @@SYS:bk.counts.dstats|pre="['kv', 'operations', "|empty="['kv', 'operations', "@@'notifications', @@SYS:bk.counts.systems|post="'kept']"|empty="'kept']"@@.every(function (k) {
         return integer(value[k]);
       })
     );
@@ -185,7 +185,7 @@
     var read = await request('/api/backup/restore?' + query.toString(), {}, stamp);
     if (!read.ok) return read;
     var base = read.data.base;
-    if (!base || !integer(base.epoch) || !base.kv || !base.custody@@SYS:bk.restore.base@@) return failure('invalid');
+    if (!base || !integer(base.epoch) || !base.kv@@SYS:bk.restore.base@@) return failure('invalid');
     var body = {
         version: 1,
         uid: stamp.uid,
@@ -269,9 +269,7 @@
       text =
         'سيُعتمد ' +
         (c.kv || 0) +
-        ' مجموعة بيانات و' + (c.operations||0) + ' موردًا تشغيليًا و' +
-        (c.custody || 0) +
-        ' نطاق عهد@@SYS:bk.restore.summary@@. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
+        ' مجموعة بيانات و' + (c.operations||0) + ' موردًا تشغيليًا@@SYS:bk.restore.summary@@. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
         (legacy ? ' ستُحوَّل النسخة القديمة إلى المخطط الحالي قبل الكتابة.' : '') +
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'

@@ -20,25 +20,14 @@
    "departmentComponents": ["Employees"],
    "nav": "employees",
    "name": "موظفو الإدارة",
-   "shellTabs": [
-    {
-     "name": "مستودع العهد",
-     "as": "custody"
-    }
-   ],
-   "seq": [
-    "sub:data",
-    "sub:custody"
+@@SYS:pages.emps.shellTabs@@   "seq": [
+    "sub:data"@@SYS:pages.emps.seq.custody@@
    ],
    "subs": [
     {
      "key": "data",
      "name": "بيانات الموظفين"
-    },
-    {
-     "key": "custody",
-     "name": "عهد الموظفين"
-    }
+    }@@SYS:pages.emps.subs.custody@@
    ]
   },
   {

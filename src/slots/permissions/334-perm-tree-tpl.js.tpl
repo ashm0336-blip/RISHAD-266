@@ -213,7 +213,7 @@
     try { window.addEventListener('bassam:store', onStore); window.addEventListener('storage', onStore); } catch(e){}
   })();
   /* ═══ مفتاح التخزين → مفتاح القدرة التي يخصّها (لتجميع أسماء المجموعات في النسخ والمسح حسب سقف الإدارة) ═══ */
-  var KEY_CAP = { bassam_employees_v1:'emps', bassam_options_v1:'emps', bassam_custody_v1:'emps/custody',
+  var KEY_CAP = { bassam_employees_v1:'emps', bassam_options_v1:'emps',@@SYS:perm.keyCap.custody@@
     bassam_staffing_v3:'staff', bassam_staffing_v2:'staff', bassam_staffing_snap_v1:'staff', bassam_staffing_locks_v1:'staff', bassam_callsigns_v1:'staff',
     bassam_shift_options_v1:'admin/shifts', bassam_perm_tpls_v1:'admin/ptpls',
     bassam_plan_v1:'plan', bassam_zone_opts_v1:'plan', bassam_gate_opts_v1:'plan', bassam_mark_kinds_v1:'plan',

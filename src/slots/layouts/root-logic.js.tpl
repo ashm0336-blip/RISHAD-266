@@ -528,7 +528,7 @@ class Component extends DCLogic {
   /* أي صفحة يخصّها هذا المفتاح؟ (مفتاح غير معروف = كل الصفحات احتياطاً) */
   _liveTouches(keys, page) {
     const MAP = {
-      employees: /employees|options|custody|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|perm_tpls|perm_limit|employees/,
+      employees: /employees|options@@SYS:root.resPage.custody@@|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|perm_tpls|perm_limit|employees/,
       plan: /plan_v1|zone_opts|gate_opts|mark_kinds|employees/, planning: /plan_v1|staffing|employees|rounds|dreport/,
       @@SYS:root.liveKeys@@profile: /auth_users|employees|staffing|shift_options@@SYS:root.live.profile.tasks@@|dreport|rounds|plan_v1|dayshift|platform/, links: /^$/,
       admin: /depts|gdepts|auth_users|perms|platform|last_export/, sysadmin: /depts|gdepts|auth_users|perms|platform|last_export/
@@ -586,7 +586,7 @@ class Component extends DCLogic {
   _viewKeep(k, v) {
     if (v == null || (typeof v !== "string" && typeof v !== "number" && typeof v !== "boolean")) return false;
     if (typeof v === "string" && v.length > 60) return false;
-    return /tab$/i.test(k) || /^(year|month|floor|lens|view|day|cuYear|cuMonth|rpY|rpM|rpD|sysSel|page|site|sub@@SYS:root.keep.tasks@@)$/.test(k)
+    return /tab$/i.test(k) || /^(year|month|floor|lens|view|day|@@SYS:root.keep.custody@@rpY|rpM|rpD|sysSel|page|site|sub@@SYS:root.keep.tasks@@)$/.test(k)
       || /^ir(Year|Month|Day|LedgerOpen|LedgerPage|LedgerPerPage|DashYear|DashMonth|DashMode)$/.test(k);
   }
   /* ما يُطبَّق من سجلٍّ محفوظ على حالةٍ قائمة: مفتاحٌ في القائمة البيضاء، موجودٌ في الحالة الأولى، ومن نوعها (أو كانت فارغة) */
@@ -792,16 +792,12 @@ class Component extends DCLogic {
             await fence();
             if (!KIVO.BassamNotif) throw new Error("خدمة التنبيهات غير متاحة");
             const notifications=await KIVO.BassamNotif.exportDomain(id);
-            const custody=await KIVO.Custody.exportDomain(id);
-            if (!custody || custody.ok !== 1) throw new Error("تعذّر تصدير مجال العهد؛ لم تُنشأ نسخة جزئية");
-            Object.keys(data).forEach(key=>{if (/(?:^|:)bassam_custody_v1$/.test(key)) delete data[key];});
-            if (!notifications || notifications.ok !== 1) throw new Error("تعذّر تصدير تنبيهات الإدارة");
-            if(!Array.isArray(custody.domains)||custody.domains.length!==1||custody.domains[0].scope.departmentId!==id)throw new Error("نطاق العهد لا يطابق الإدارة");
-            const business = await KIVO.BackupRestore.exportDomains({departments:[id],full:false,v:snapshot.v,images:imgs||{}});
+@@SYS:root.deptBackup.custodyExport@@            if (!notifications || notifications.ok !== 1) throw new Error("تعذّر تصدير تنبيهات الإدارة");
+@@SYS:root.deptBackup.custodyScope@@            const business = await KIVO.BackupRestore.exportDomains({departments:[id],full:false,v:snapshot.v,images:imgs||{}});
             Object.keys(data).forEach(key => { if (/(?:^|:)bassam_(?:@@SYS:root.deptBackup.stripKeys|sep="|"@@)_v[12]$/.test(key)||KIVO.__BS_SRV.operations.resources.includes(key.replace(/^bsdept:[^:]+:/,''))) delete data[key]; });
             await fence();
-            const manifest={version:4,scope:"dept",domains:{kv:1,notifications:1,custody:1,@@SYS:root.deptBackup.manifest|post="operations:1},departments:[id]"|empty="operations:1},departments:[id]"@@,keys:Object.keys(data)};
-            const payload = {app:"bassam-crowd",version:4,kind:"dept",dept:nm,exportedAt:dt.toISOString(),data,domains:{notifications:notifications.domain,custody:custody.domains,...business.domains},manifest,perms:permSlice,idbImages:business.images,...(business.missing&&business.missing.length?{imagesMissing:business.missing}:{}),preImport:_pre};
+            const manifest={version:4,scope:"dept",domains:{kv:1,notifications:1,@@SYS:root.deptBackup.custodyManifest@@@@SYS:root.deptBackup.manifest|post="operations:1},departments:[id]"|empty="operations:1},departments:[id]"@@,keys:Object.keys(data)};
+            const payload = {app:"bassam-crowd",version:4,kind:"dept",dept:nm,exportedAt:dt.toISOString(),data,domains:{notifications:notifications.domain@@SYS:root.deptBackup.custodyDomain@@,...business.domains},manifest,perms:permSlice,idbImages:business.images,...(business.missing&&business.missing.length?{imagesMissing:business.missing}:{}),preImport:_pre};
             const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a2 = document.createElement("a"); a2.href = url;

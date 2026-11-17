@@ -20,7 +20,7 @@
   var ANON9 = BOOT.auth === "need";
   /* Relational domains have their own acknowledged APIs. A stale caller must not
      recreate a KV document or fall through to persistent device storage. */
-  function relationalKey9(k) { return /^(?:bsdept:[^:\s]+:)?@@SYS:store.relational.dstats|pre="bassam_(?:"|post="custody|"|empty="bassam_(?:custody|"@@@@SYS:store.relational.systems|post="notif(?:_cfg|_sys)?|bc)_v1$/"|empty="notif(?:_cfg|_sys)?|bc)_v1$/"@@.test(k)@@SYS:store.relational.awardDocs@@; }
+  function relationalKey9(k) { return /^(?:bsdept:[^:\s]+:)?bassam_(?:@@SYS:store.relational.dstats@@@@SYS:store.relational.systems|post="notif(?:_cfg|_sys)?|bc)_v1$/"|empty="notif(?:_cfg|_sys)?|bc)_v1$/"@@.test(k)@@SYS:store.relational.awardDocs@@; }
   var operationResources9 = Object.freeze([
     'bassam_employees_v1', 'bassam_options_v1', 'bassam_staffing_v3', 'bassam_staffing_v2',
     'bassam_staffing_snap_v1', 'bassam_staffing_locks_v1', 'bassam_callsigns_v1', 'bassam_perm_limit_v1',
@@ -187,7 +187,7 @@
       bassam_employees_v1:["قائمة الموظفين"], bassam_staffing_v3:["الجدول الشهري"], bassam_staffing_v2:["الجدول الشهري (صيغة قديمة)"], bassam_staffing_snap_v1:["بيان الشهر"],
       bassam_staffing_locks_v1:["أقفال الجدول الشهري"], bassam_rounds_v1:["الجولات اليومية"], bassam_dreport_v1:["التقرير اليومي"], bassam_dr_grp_v1:["مجموعات التقرير اليومي"],
       bassam_plan_v1:["الخطة التشغيلية"], bassam_zone_opts_v1:["خيارات المصليات"], bassam_gate_opts_v1:["خيارات الأبواب"], bassam_mark_kinds_v1:["أنواع المعالم"],
-      @@SYS:store.keyLabels.tasks@@bassam_custody_v1:["عهد الموظفين"],
+      @@SYS:store.keyLabels.tasks@@@@SYS:store.keyLabels.custody@@
 @@SYS:store.keyLabels@@      bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"], bassam_leave_kinds_v1:["أنواع الإجازات"], bassam_callsigns_v1:["رموز النداء"],
       bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_perm_tpls_v1:["قوالب الصلاحيات"],
       bassam_depts_v1:["الإدارات"], bassam_gdepts_v1:["الهيكل التنظيمي"], bassam_platform_v1:["إعدادات المنصة"], bassam_profile_v1:["الملف الشخصي"],

@@ -255,7 +255,7 @@
      أزرارُ المحرّر) أُزيلت لأنها لم تكن معروضةً ولا مستدعاة. يبقى هذا البذرُ لأبٍ سقفُه الفعليُّ فارغ (seedCapFrom): سقفُ الابن
      الفعليُّ فارغٌ لحظتَها بحكم التقاطع، ويحدّه «أساسي» إن وُسِّع سقفُ الأب لاحقاً — بلا سجلٍّ لورث التوسعةَ كلَّها (اختبارُ التكافؤ).
      ونمطٌ «أساسي» محفوظٌ في السجل (patterns.basic — كتبته واجهةٌ سابقة) يبقى هو المرجع كما كان. */
-  var SEED_BASIC = { cap:['emps',@@SYS:perm.seed.cap.tasks@@'planning','staff','links','help','admin'], subs:{ emps:['data','custody'], planning:['readiness'], admin:['shifts','backup','ptpls','import'] }, tabs:{}, lenses:[] };
+  var SEED_BASIC = { cap:['emps',@@SYS:perm.seed.cap.tasks@@'planning','staff','links','help','admin'], subs:{ emps:['data'@@SYS:perm.seed.subs.custody@@], planning:['readiness'], admin:['shifts','backup','ptpls','import'] }, tabs:{}, lenses:[] };
   function seedBasic(){ var p = (permStore().patterns || {}).basic; return JSON.parse(JSON.stringify((p && Array.isArray(p.cap)) ? p : SEED_BASIC)); }
   function patternSeed(did){
     var pt = seedBasic(); var o = permStore(); o.caps[did] = pt.cap.slice(); permSave(o);

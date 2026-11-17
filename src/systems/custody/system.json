@@ -493,6 +493,150 @@
   "emp.css.custody": {
    "order": 10,
    "text": "/* الموجة 2 · ES-7: خطواتُ معالج «سند تسليم عهدة جديد» في سطرها وسطاً على الجوال — هنا لا في <style> «الجاهزية» (sc-if) الغائب والمعالجُ مفتوح */\n@media (max-width:640px){.es-wzhd .es-wzst{flex-basis:100%;justify-content:center}}\n"
+  },
+  "pages.emps.shellTabs": {
+   "order": 10,
+   "text": "   \"shellTabs\": [\n    {\n     \"name\": \"مستودع العهد\",\n     \"as\": \"custody\"\n    }\n   ],\n"
+  },
+  "pages.emps.seq.custody": {
+   "order": 10,
+   "text": ",\n    \"sub:custody\""
+  },
+  "pages.emps.subs.custody": {
+   "order": 10,
+   "text": ",\n    {\n     \"key\": \"custody\",\n     \"name\": \"عهد الموظفين\"\n    }"
+  },
+  "root.resPage.custody": {
+   "order": 10,
+   "text": "|custody"
+  },
+  "root.keep.custody": {
+   "order": 10,
+   "text": "cuYear|cuMonth|"
+  },
+  "root.deptBackup.custodyExport": {
+   "order": 10,
+   "text": "            const custody=await KIVO.Custody.exportDomain(id);\r\n            if (!custody || custody.ok !== 1) throw new Error(\"تعذّر تصدير مجال العهد؛ لم تُنشأ نسخة جزئية\");\r\n            Object.keys(data).forEach(key=>{if (/(?:^|:)bassam_custody_v1$/.test(key)) delete data[key];});\r\n"
+  },
+  "root.deptBackup.custodyScope": {
+   "order": 10,
+   "text": "            if(!Array.isArray(custody.domains)||custody.domains.length!==1||custody.domains[0].scope.departmentId!==id)throw new Error(\"نطاق العهد لا يطابق الإدارة\");\r\n"
+  },
+  "root.deptBackup.custodyManifest": {
+   "order": 10,
+   "text": "custody:1,"
+  },
+  "root.deptBackup.custodyDomain": {
+   "order": 10,
+   "text": ",custody:custody.domains"
+  },
+  "admin.keyLabels.custody": {
+   "order": 10,
+   "text": "        bassam_custody_v1: \"العهد\",\n"
+  },
+  "admin.base.custody": {
+   "order": 10,
+   "text": " || !natural(base.custody)"
+  },
+  "admin.counts.custody": {
+   "order": 10,
+   "text": "\"custody\", "
+  },
+  "admin.delete.custodyPopulated": {
+   "order": 10,
+   "text": " + counts.custody"
+  },
+  "admin.delete.custodyMsg": {
+   "order": 10,
+   "text": " + counts.custody + \" سجل عهدة، \""
+  },
+  "admin.wipe.custodyNatural": {
+   "order": 10,
+   "text": " || !natural(body.counts.custody)"
+  },
+  "admin.wipe.custodyMsg": {
+   "order": 10,
+   "text": "، \" + body.counts.custody + \" سجل عهدة"
+  },
+  "admin.resLabels.custody": {
+   "order": 10,
+   "text": "                bassam_custody_v1: \"عهد الموظفين\",\r\n"
+  },
+  "admin.wipe.custodyRow": {
+   "order": 10,
+   "text": "            if (counts.custody > 0) p.push({ label: \"سجل العهد والأصناف (\" + counts.custody + \")\" });\r\n"
+  },
+  "admin.wipe.custodyAny": {
+   "order": 10,
+   "text": " + (counts.custody || 0)"
+  },
+  "admin.full.custodyExport": {
+   "order": 10,
+   "text": "            const custodyExport=await KIVO.Custody.exportDomain();\r\n            if (!custodyExport || custodyExport.ok !== 1) throw new Error(\"تعذّر تصدير مجال العهد؛ لم تُنشأ نسخة جزئية\");\r\n            Object.keys(s).forEach(key=>{if (/(?:^|:)bassam_custody_v1$/.test(key)) delete s[key];});\r\n"
+  },
+  "admin.full.custodyScope": {
+   "order": 10,
+   "text": "            if(!Array.isArray(custodyExport.domains)||JSON.stringify(custodyExport.domains.map(d=>d.scope.departmentId).sort())!==JSON.stringify(declaredDepts.slice().sort()))throw new Error(\"نطاق العهد لا يطابق إدارات النسخة\");\r\n"
+  },
+  "admin.full.custodyManifest": {
+   "order": 10,
+   "text": "custody:1,"
+  },
+  "admin.full.custodyDomain": {
+   "order": 10,
+   "text": ",custody:custodyExport.domains"
+  },
+  "bk.counts.systems": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "bk.restore.base": {
+   "order": 5,
+   "text": " || !base.custody"
+  },
+  "bk.restore.summary": {
+   "order": 5,
+   "text": " و' +\n        (c.custody || 0) +\n        ' نطاق عهد"
+  },
+  "import.base.custody": {
+   "order": 10,
+   "text": " && nonnegative(base.custody)"
+  },
+  "import.summary.custody": {
+   "order": 10,
+   "text": "              impOn(\"emps/custody\") ? \"حركات العهد\" : \"\",\n"
+  },
+  "nfc.kind.color.custody": {
+   "order": 10,
+   "text": " cust:'#8b6a5a',"
+  },
+  "nfc.kind.name.custody": {
+   "order": 10,
+   "text": " cust:'العهد',"
+  },
+  "nfc.kind.icon.custody": {
+   "order": 10,
+   "text": " cust:'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2',"
+  },
+  "nfc.reg.custody": {
+   "order": 10,
+   "file": "slots/nfc.reg.custody.frag"
+  },
+  "store.relational.systems": {
+   "order": 5,
+   "text": "custody|"
+  },
+  "store.keyLabels.custody": {
+   "order": 10,
+   "text": "bassam_custody_v1:[\"عهد الموظفين\"],"
+  },
+  "perm.seed.subs.custody": {
+   "order": 10,
+   "text": ",'custody'"
+  },
+  "perm.keyCap.custody": {
+   "order": 10,
+   "text": " bassam_custody_v1:'emps/custody',"
   }
  }
 }
