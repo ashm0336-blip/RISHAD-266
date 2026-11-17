@@ -140,7 +140,12 @@ def parts_order(S, PD, systems=None):
        file اسمٌ أو مسارٌ نسبيٌّ إلى PD."""
     systems = load(S) if systems is None else systems
     base = json.load(open(os.path.join(PD, '..', 'parts.base.json'), encoding='utf-8'))['parts']; ins = {}
-    def entry(f, p): return dict({'file': f, 'lines': None, 'bytes': None, 'sha256': None}, **({'head': p['head']} if 'head' in p else {}))
+    def entry(f, p):
+        e = {'file': f}
+        if 'new' in p: e['new'] = p['new']       # د4-ب: وصفُ الجزء كما كان في سجل القاعدة قبل نقله
+        if 'new' not in p: e['lines'] = None
+        e.update({'bytes': None, 'sha256': None}); e.update({'head': p['head']} if 'head' in p else {})
+        return e
     for d in systems:
         for p in d['server'].get('parts', []):
             f = os.path.relpath(os.path.join(d['_dir'], p['file']), PD).replace(os.sep, '/')

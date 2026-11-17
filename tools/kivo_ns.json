@@ -54,7 +54,7 @@
   "src/modules/plan/logic.js",
   "src/modules/admin/logic.js",
   "src/components/660-a11y-enhancer.js",
-  "src/modules/tasks/logic.js",
+  "src/systems/tasks/client/logic.js",
   "src/api/280-server-storage.js",
   "src/auth/330-auth.js",
   "src/auth/335-identity-gate.js",

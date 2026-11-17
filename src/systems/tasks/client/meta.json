@@ -28,20 +28,20 @@
    "#/tasks"
   ],
   "ui": [
-   "src/modules/tasks/view.html",
-   "src/modules/tasks/helmet.css"
+   "src/systems/tasks/client/view.html",
+   "src/systems/tasks/client/helmet.css"
   ],
   "domain": [
-   "src/modules/tasks/logic.js",
-   "src/modules/tasks/logic-picker.js",
-   "src/modules/tasks/logic-filters.js",
-   "src/modules/tasks/logic-proof.js",
-   "src/modules/tasks/logic-actions.js",
-   "src/modules/tasks/logic-bulk.js",
-   "src/modules/tasks/logic-prod.js",
-   "src/modules/tasks/logic-adv.js",
-   "src/modules/tasks/logic-recur.js",
-   "src/modules/tasks/logic-kpi.js"
+   "src/systems/tasks/client/logic.js",
+   "src/systems/tasks/client/logic-picker.js",
+   "src/systems/tasks/client/logic-filters.js",
+   "src/systems/tasks/client/logic-proof.js",
+   "src/systems/tasks/client/logic-actions.js",
+   "src/systems/tasks/client/logic-bulk.js",
+   "src/systems/tasks/client/logic-prod.js",
+   "src/systems/tasks/client/logic-adv.js",
+   "src/systems/tasks/client/logic-recur.js",
+   "src/systems/tasks/client/logic-kpi.js"
   ],
   "data": [
    "bassam_dayshift_v1",

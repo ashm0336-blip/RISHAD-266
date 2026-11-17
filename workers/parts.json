@@ -167,11 +167,29 @@
       "file": "018-ancestry.js",
       "lines": [
         1847,
+        2230
+      ],
+      "bytes": 30839,
+      "sha256": "e69c6fe6978432142cdcfe3c2c3ff49228f21ac63f9ed1ed3e456dc651c7ff44",
+      "head": "/* ══ سلسلة الأسلاف على الخادم ══════════════════════════════════════════════"
+    },
+    {
+      "file": "../../src/systems/tasks/server/018b-task-rules.js",
+      "lines": [
+        2231,
+        2483
+      ],
+      "bytes": 22915,
+      "sha256": "6da57d45d7cce358c9ed575730ca8540157d217f7e5d01d851b18e3a4e241c92"
+    },
+    {
+      "file": "018c-ancestry-rules.js",
+      "lines": [
+        2484,
         2922
       ],
-      "bytes": 96332,
-      "sha256": "a371c575b57daf9cd73db63c3199a75072de9a031480d7d32b6014f66869ee55",
-      "head": "/* ══ سلسلة الأسلاف على الخادم ══════════════════════════════════════════════"
+      "bytes": 42578,
+      "sha256": "3250fad03ccbf322b5308b838b482a9131bff767946e3c5c33e39ed6a785155d"
     },
     {
       "file": "018a-find-engine.js",
@@ -924,7 +942,7 @@
       "head": "/* ═══ KIVO_264 · «ملفي» — مسارا القراءة الذاتية (OD-3): GET /api/me/today · GET /api/me/history?ym=YYYY-M ═══"
     },
     {
-      "file": "062c-me-tasks.js",
+      "file": "../../src/systems/tasks/server/062c-me-tasks.js",
       "new": "KIVO_264 · KIVO-Tasks — «ملفي ← مهامي» (GET /api/me/tasks · POST /api/me/tasks/act · GET /api/me/tasks/img · GET /api/me/tasks/log) — المرحلةُ الثانية: ack/start/decline/stall/resume/doc/submit/expire",
       "bytes": 41351,
       "sha256": "30c526f32fb731254dce8d521c3f73267185f6b9fc61652da936457a7888b885",
@@ -935,7 +953,7 @@
       ]
     },
     {
-      "file": "070-task-core.js",
+      "file": "../../src/systems/tasks/server/070-task-core.js",
       "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيهُ من الخادم",
       "bytes": 45377,
       "sha256": "8a82a1972806155cc48dae47d40c810486518f1c677ad09fec6a9c9c7b032c70",
@@ -946,7 +964,7 @@
       ]
     },
     {
-      "file": "071-task-mgmt.js",
+      "file": "../../src/systems/tasks/server/071-task-mgmt.js",
       "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول /api/tasks/* (إنشاء · مراجعة · تمديد · إعادةُ إسناد · إلغاء · ربط · مجموعة)",
       "bytes": 60798,
       "sha256": "02cb1303c567a0f827c4f8eb26989a9091178e9ea07c3ec91408d95629ac14af",
@@ -957,7 +975,7 @@
       ]
     },
     {
-      "file": "072-task-elig.js",
+      "file": "../../src/systems/tasks/server/072-task-elig.js",
       "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — الأهليةُ وقتَ التنفيذ من الجدول الشهري (GET /api/tasks/eligibility)",
       "bytes": 16847,
       "sha256": "23ff4043c9ecc51ef97ebabc48831140a21c1164b063f1a054b879e16c677ad4",
@@ -968,7 +986,7 @@
       ]
     },
     {
-      "file": "073-task-recur.js",
+      "file": "../../src/systems/tasks/server/073-task-recur.js",
       "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — التكرارُ: قالبٌ ونُسخُ تنفيذ مولَّدةٌ في الخادم بلا Cron (متساوي القوى)",
       "bytes": 46367,
       "sha256": "f3df5b9fd71c364d91e38552e1cadf3d27082c4c9cd4ae1890d929f3b0b843e7",
@@ -979,7 +997,7 @@
       ]
     },
     {
-      "file": "074-task-due.js",
+      "file": "../../src/systems/tasks/server/074-task-due.js",
       "new": "KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (مسحٌ كسولٌ بلا Cron — البند 10)",
       "bytes": 11222,
       "sha256": "19ae36ed22074e6b1754e85eda2c226e60ed4dab93145d505e5c314cf66308f8",

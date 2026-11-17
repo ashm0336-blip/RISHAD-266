@@ -655,7 +655,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/545-task-self.js",
+   "id": "systems/tasks/client/545-task-self.js",
    "kind": "js",
    "line": 10494,
    "openTag": "<script>",
@@ -665,7 +665,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/546-task-model.js",
+   "id": "systems/tasks/client/546-task-model.js",
    "kind": "js",
    "line": 10494,
    "openTag": "<script>",

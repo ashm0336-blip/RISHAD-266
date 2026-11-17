@@ -27,7 +27,7 @@
  },
  "$defs": {
   "rel": {"type": "string", "minLength": 1, "pattern": "^[^/\\\\]"},
-  "part": {"type": "object", "additionalProperties": false, "required": ["file", "after", "order"], "properties": {"file": {"$ref": "#/$defs/rel"}, "after": {"type": "string"}, "order": {"type": "number"}, "head": {"type": "string"}}},
+  "part": {"type": "object", "additionalProperties": false, "required": ["file", "after", "order"], "properties": {"file": {"$ref": "#/$defs/rel"}, "after": {"type": "string"}, "order": {"type": "number"}, "head": {"type": "string"}, "new": {"type": "string"}}},
   "frag": {"type": "object", "additionalProperties": false, "properties": {"order": {"type": "number"}, "text": {"type": "string"}, "file": {"$ref": "#/$defs/rel"}, "first": {"type": "string"}, "last": {"type": "string"}, "only": {"type": "string"}}}
  }
 }

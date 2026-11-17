@@ -123,6 +123,12 @@
    "head": "/* ══ سلسلة الأسلاف على الخادم ══════════════════════════════════════════════"
   },
   {
+   "file": "018c-ancestry-rules.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
    "file": "018a-find-engine.js",
    "lines": null,
    "bytes": null,
@@ -561,54 +567,6 @@
    "bytes": null,
    "sha256": null,
    "head": "/* ═══ KIVO_264 · «ملفي» — مسارا القراءة الذاتية (OD-3): GET /api/me/today · GET /api/me/history?ym=YYYY-M ═══"
-  },
-  {
-   "file": "062c-me-tasks.js",
-   "new": "KIVO_264 · KIVO-Tasks — «ملفي ← مهامي» (GET /api/me/tasks · POST /api/me/tasks/act · GET /api/me/tasks/img · GET /api/me/tasks/log) — المرحلةُ الثانية: ack/start/decline/stall/resume/doc/submit/expire",
-   "bytes": null,
-   "sha256": null,
-   "head": "/* ═══ KIVO_264 · KIVO-Tasks — «ملفي ← مهامي»: قراءةُ الموظف لمهامه هو وحده، ودورةُ حياتها من جهته، من الخادم ═══",
-   "lines": null
-  },
-  {
-   "file": "070-task-core.js",
-   "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيهُ من الخادم",
-   "bytes": null,
-   "sha256": null,
-   "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة في الخادم: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيه ═══",
-   "lines": null
-  },
-  {
-   "file": "071-task-mgmt.js",
-   "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول /api/tasks/* (إنشاء · مراجعة · تمديد · إعادةُ إسناد · إلغاء · ربط · مجموعة)",
-   "bytes": null,
-   "sha256": null,
-   "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول: الإنشاء · المراجعة · التمديد · إعادةُ الإسناد · الإلغاء · الربط · المجموعة ═══",
-   "lines": null
-  },
-  {
-   "file": "072-task-elig.js",
-   "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — الأهليةُ وقتَ التنفيذ من الجدول الشهري (GET /api/tasks/eligibility)",
-   "bytes": null,
-   "sha256": null,
-   "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══",
-   "lines": null
-  },
-  {
-   "file": "073-task-recur.js",
-   "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — التكرارُ: قالبٌ ونُسخُ تنفيذ مولَّدةٌ في الخادم بلا Cron (متساوي القوى)",
-   "bytes": null,
-   "sha256": null,
-   "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — المهامُ المتكررة: قالبٌ + نسخةُ تنفيذٍ مستقلة لكل موعد، تُولَّد في الخادم بلا Cron (ق5) ═══",
-   "lines": null
-  },
-  {
-   "file": "074-task-due.js",
-   "new": "KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (مسحٌ كسولٌ بلا Cron — البند 10)",
-   "bytes": null,
-   "sha256": null,
-   "head": "/* ═══ KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (البند 10 — قرارُ المالك 2026-10-19) ═══",
-   "lines": null
   },
   {
    "file": "063-enf-api-and-handler.js",

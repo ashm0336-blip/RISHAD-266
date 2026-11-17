@@ -1,0 +1,105 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "tasks",
+ "name": "المهام",
+ "note": "V7 · د4-ب: نظامُ المهام — صفحتُه (تبويبٌ تحت «المتابعة اليومية» ولوحةٌ في المؤشرات)، وبطاقةُ «مهامك» في «ملفي» (545)، ونموذجُ المهمة (546)، وأجزاءُ الخادم. تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py).",
+ "client": {
+  "slug": "tasks",
+  "component": "Tasks",
+  "files": [
+   "client/545-task-self.js",
+   "client/546-task-model.js",
+   "client/helmet.css",
+   "client/logic-actions.js",
+   "client/logic-adv.js",
+   "client/logic-bulk.js",
+   "client/logic-filters.js",
+   "client/logic-kpi.js",
+   "client/logic-picker.js",
+   "client/logic-prod.js",
+   "client/logic-proof.js",
+   "client/logic-recur.js",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html"
+  ]
+ },
+ "server": {
+  "parts": [
+   {
+    "file": "server/018b-task-rules.js",
+    "after": "018-ancestry.js",
+    "order": 10
+   },
+   {
+    "file": "server/062c-me-tasks.js",
+    "after": "062b-me-history.js",
+    "order": 10,
+    "head": "/* ═══ KIVO_264 · KIVO-Tasks — «ملفي ← مهامي»: قراءةُ الموظف لمهامه هو وحده، ودورةُ حياتها من جهته، من الخادم ═══",
+    "new": "KIVO_264 · KIVO-Tasks — «ملفي ← مهامي» (GET /api/me/tasks · POST /api/me/tasks/act · GET /api/me/tasks/img · GET /api/me/tasks/log) — المرحلةُ الثانية: ack/start/decline/stall/resume/doc/submit/expire"
+   },
+   {
+    "file": "server/070-task-core.js",
+    "after": "062b-me-history.js",
+    "order": 20,
+    "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة في الخادم: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيه ═══",
+    "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيهُ من الخادم"
+   },
+   {
+    "file": "server/071-task-mgmt.js",
+    "after": "062b-me-history.js",
+    "order": 30,
+    "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول: الإنشاء · المراجعة · التمديد · إعادةُ الإسناد · الإلغاء · الربط · المجموعة ═══",
+    "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول /api/tasks/* (إنشاء · مراجعة · تمديد · إعادةُ إسناد · إلغاء · ربط · مجموعة)"
+   },
+   {
+    "file": "server/072-task-elig.js",
+    "after": "062b-me-history.js",
+    "order": 40,
+    "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══",
+    "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — الأهليةُ وقتَ التنفيذ من الجدول الشهري (GET /api/tasks/eligibility)"
+   },
+   {
+    "file": "server/073-task-recur.js",
+    "after": "062b-me-history.js",
+    "order": 50,
+    "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — المهامُ المتكررة: قالبٌ + نسخةُ تنفيذٍ مستقلة لكل موعد، تُولَّد في الخادم بلا Cron (ق5) ═══",
+    "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — التكرارُ: قالبٌ ونُسخُ تنفيذ مولَّدةٌ في الخادم بلا Cron (متساوي القوى)"
+   },
+   {
+    "file": "server/074-task-due.js",
+    "after": "062b-me-history.js",
+    "order": 60,
+    "head": "/* ═══ KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (البند 10 — قرارُ المالك 2026-10-19) ═══",
+    "new": "KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (مسحٌ كسولٌ بلا Cron — البند 10)"
+   }
+  ]
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [
+   "migrations/0010_operational_domains.sql"
+  ],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
+ },
+ "tests": [],
+ "derived": [
+  "src/pages/Tasks.dc.html"
+ ],
+ "sharedStaysInBase": [],
+ "slots": {
+  "task.rawWhy": {
+   "order": 10,
+   "text": "function taskRawWhy(A, a, b, d, ctx) { return taskXWhy(A, a, b, d, ctx) || taskAsgWhy(A, a, b, d, ctx) || taskOwnWhy(A, a, b, d, ctx) || taskDelWhy(A, a, b, d, ctx) || taskAcctWhy(A, a, b, d, ctx); }\n"
+  },
+  "oc.people.taskCodec": {
+   "order": 10,
+   "file": "slots/oc.people.taskCodec.frag"
+  },
+  "oc.people.taskResources": {
+   "order": 10,
+   "file": "slots/oc.people.taskResources.frag"
+  }
+ }
+}

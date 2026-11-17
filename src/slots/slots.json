@@ -224,6 +224,14 @@
   {
    "tpl": "services/590-employees-import.js.tpl",
    "out": "src/services/590-employees-import.js"
+  },
+  {
+   "tpl": "workers/parts/018c-ancestry-rules.js.tpl",
+   "out": "workers/parts/018c-ancestry-rules.js"
+  },
+  {
+   "tpl": "workers/parts/019q-operations-people-tasks.js.tpl",
+   "out": "workers/parts/019q-operations-people-tasks.js"
   }
  ]
 }
