@@ -576,8 +576,7 @@ export default {
       /* ── الحفظ المركزي — قلب المنظومة ── */
       if (path === '/api/notifications' || path === '/api/notifications/act' || path === '/api/notifications/export') return await nfRoute(env, request, url, ss);
       if(path === '/api/backup/restore')return await rsRoute(env,request,url,ss);if(path === '/api/admin/dept-wipe'||path === '/api/admin/dept-delete')return await rsWipeRoute(env,request,url,ss);if(path === '/api/employees/transition')return await rsEmployeeRoute(env,request,url,ss);
-      if (path === '/api/custody' || path === '/api/custody/act' || path === '/api/custody/export') return await cuRoute(env, request, url, ss);
-@@SYS:routes.dispatch@@      /* RISHAD266: توليدُ المواعيد المتكررة ومسحُ المواعيد (التذكير · التأخر · الانقضاء) تشغيلُ نظامٍ يجري عند قراءة مخزن مهام الإدارة — كما كان طلبُ الصفحة المحذوف.
+@@SYS:routes.custody@@@@SYS:routes.dispatch@@      /* RISHAD266: توليدُ المواعيد المتكررة ومسحُ المواعيد (التذكير · التأخر · الانقضاء) تشغيلُ نظامٍ يجري عند قراءة مخزن مهام الإدارة — كما كان طلبُ الصفحة المحذوف.
          يجري بعد أن تقبل القراءةُ نفسُها الطلبَ (الطريقة · الجلسة uid · المفاتيح · الصلاحية: 019r) ولم تحجب مفتاحَ المهام عن القارئ، وبالحارس المشترك 074؛
          فالطلبُ المرفوض لا يمسّ شيئاً. وإن جرى عملٌ أُعيدت القراءةُ ليصل أثرُه في الردّ نفسِه */
       if (path === '/api/operations/read') { var rsp = await opReadRoute(env,request,url,ss)@@SYS:ops.read.vars.tasks@@;

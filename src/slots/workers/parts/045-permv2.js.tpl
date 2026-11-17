@@ -36,9 +36,8 @@ function permv2How(A, k, newVal, curVal, ctx) {
     var E9 = entOf(k), O9 = opsOf(k), PA, PB, ha = 0, hb = 0;
     var PV = { a: function () { if (!ha) { ha = 1; PA = curVal == null ? undefined : parseJson(curVal, undefined); } return PA; },
                b: function () { if (!hb) { hb = 1; PB = parseJson(newVal, undefined); } return PB; } };
-    if (dreportCleanup(A, k, newVal, curVal, ctx) || custodyCleanup(A, k, newVal, curVal, ctx)@@SYS:cleanup.award.shadow@@) return 'cleanup';
-    var cmv = custodyMoveOp(A, k, curVal, newVal, PV); if (cmv === true) return 'custodyMove'; if (cmv === false) return 'custodyMove-deny';
-    if (empGoneCleanup(A, k, newVal, curVal, ctx, PV)) return 'empGone';
+    if (dreportCleanup(A, k, newVal, curVal, ctx)@@SYS:cleanup.custody.shadow@@@@SYS:cleanup.award.shadow@@) return 'cleanup';
+@@SYS:move.custody.shadow@@    if (empGoneCleanup(A, k, newVal, curVal, ctx, PV)) return 'empGone';
     if (shiftRenameOk(A, k, newVal, curVal, ctx)) return 'shiftRename';
     if (holdsAllWrites(A, k, R0)) return 'holdsAll';
     var need = classifyMutation(R0, curVal, newVal, E9, O9, PV), acts = Object.keys(need); if (!acts.length) acts = ['edit'];
@@ -60,13 +59,11 @@ function permv2BindCat(A, k, newVal, curVal, ctx, v, keys, missing, asisOk) {
     if (how.indexOf('via:') === 0) return 'coarse:via-rule (' + how + ')';
     if (how === 'selfEmail'@@SYS:permv2.selfRule.how.tasks@@) return 'design:self-rule (' + how + ')';
     if (how === 'cleanup' || how === 'empGone' || how === 'shiftRename') return 'design:cleanup-path (' + how + ')';
-    if (how === 'custodyMove') return 'error:asisMap (D-01)';
-    if (missing.indexOf('import.run') !== -1) return 'design:new-check import.run (D-15)';
+@@SYS:permv2.custody.how@@    if (missing.indexOf('import.run') !== -1) return 'design:new-check import.run (D-15)';
     if (how === 'global-super' || how.indexOf('rule:') === 0) return 'design:rule-vs-key (' + how + ')';
     return 'coarse:legacy-wider (' + how + ')';
   }
-  if (rn === 'bassam_custody_v1') for (i = 0; i < keys.length; i++) if (keys[i] === 'cust.move.return' || keys[i] === 'cust.move.damage' || keys[i] === 'cust.move.lost') return 'error:asisMap (D-01)';
-  return 'coarse:translation-wider (' + (v.why || '') + ')';
+@@SYS:permv2.custody.keys@@  return 'coarse:translation-wider (' + (v.why || '') + ')';
 }
 function permv2Bind(A, k, newVal, curVal, ctx, v) {
   var ST = PERMV2.bind; ST.calls++; PERMV4.write.seen++;

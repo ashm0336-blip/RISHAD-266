@@ -546,10 +546,6 @@
    "order": 10,
    "file": "slots/empGone.award.fn.frag"
   },
-  "empGone.award.map": {
-   "order": 10,
-   "text": ", 'bassam_award_v1': awardGoneOk"
-  },
   "scope.items.award": {
    "order": 10,
    "file": "slots/scope.items.award.frag"
@@ -641,6 +637,10 @@
   "bk.export.awardName": {
    "order": 10,
    "text": "spec[0]==='award'?'awards':"
+  },
+  "empGone.map": {
+   "order": 30,
+   "text": "'bassam_award_v1': awardGoneOk"
   }
  }
 }

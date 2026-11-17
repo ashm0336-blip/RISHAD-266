@@ -451,10 +451,6 @@
    "order": 10,
    "text": "  if (meTasksChanged(AC, (ch && ch.results) || [], vC)) outC.tasksChanged = 1;\n"
   },
-  "empGone.tasks.map": {
-   "order": 10,
-   "text": "'bassam_tasks_v1': tasksGoneOk, "
-  },
   "empGone.tasks.fn": {
    "order": 10,
    "file": "slots/empGone.tasks.fn.frag"
@@ -718,6 +714,10 @@
   "daily.tabBar.tasks": {
    "order": 10,
    "text": " + (TKn ? 1 : 0)"
+  },
+  "empGone.map": {
+   "order": 10,
+   "text": "'bassam_tasks_v1': tasksGoneOk"
   }
  }
 }

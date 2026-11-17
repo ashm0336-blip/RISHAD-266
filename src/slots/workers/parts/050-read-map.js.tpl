@@ -17,8 +17,7 @@ var RD_REG = {
   'bassam_staffing_locks_v1':  ['staff', 'dreport', 'emps/data', 'plan', 'planning', 'planning/readiness'],
   'bassam_perm_limit_v1':      ['staff', 'dreport', 'planning', 'planning/readiness'],
   /* ── الموظفون ── */
-  'bassam_custody_v1':         ['emps/custody'],
-  /* ── التوزيع ── */
+@@SYS:readMap.custody@@  /* ── التوزيع ── */
   'bassam_staffing_v2':        ['staff', 'planning', 'planning/readiness'],
   'bassam_staffing_snap_v1':   ['staff'],
   'bassam_callsigns_v1':       ['staff', 'dreport'],

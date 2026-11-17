@@ -30,8 +30,7 @@ var RES_REG = {
   /* ── موظفو الإدارة ── */
   'bassam_employees_v1':       { scope: 'dept', cap: 'emps/data', via: { staff: 'EMP_FIELDS' }, self: 'email' },
   'bassam_options_v1':         { scope: 'dept', cap: 'emps/data' },
-  'bassam_custody_v1':         { scope: 'dept', cap: 'emps/custody' },
-  /* ── الجدول الشهري ── */
+@@SYS:res.custody@@  /* ── الجدول الشهري ── */
   'bassam_staffing_v3':        { scope: 'dept', cap: 'staff', via: { dreport: 'CS_ONLY' } },
   'bassam_staffing_v2':        { scope: 'dept', cap: 'staff' },
   'bassam_staffing_snap_v1':   { scope: 'dept', cap: 'staff', via: { dreport: 'SNAP_CS_ONLY' } },
