@@ -1232,8 +1232,8 @@
     "path": [
      "featureFlags"
     ],
-    "after": 25,
-    "seq": 14,
+    "after": 24,
+    "seq": 15,
     "value": "ff.module.dstats.enabled"
    }
   ],
@@ -1599,8 +1599,8 @@
      "byResource"
     ],
     "key": "bassam_dstats_v1",
-    "after": 7,
-    "seq": 4,
+    "after": 6,
+    "seq": 5,
     "value": {
      "items": "dstatsItems",
      "evidence": "haram|nabawi[\"yyyy-mm-dd\"] · locks[\"site|y-m\"] (dsLockedIn)",

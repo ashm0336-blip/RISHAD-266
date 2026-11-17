@@ -124,54 +124,6 @@
    "guardKind": "ops"
   },
   {
-   "key": "cust.move.issue",
-   "res": "bassam_custody_v1",
-   "where": "moves[] إلحاقٌ في الذيل حيث move.t === \"out\" (تسليم)",
-   "how": "المصنِّف يقرأ الحقلَ الفيزيائي t من كلِّ حركةٍ مُلحَقة (v24.3 F-01)",
-   "asis": "custodyMoveOp: out ⇐ emps/custody:add أو edit — asisMap في v24.3 مطابقٌ للمصدر",
-   "decl": "",
-   "dup": "",
-   "owner": "emps/custody",
-   "type": "edit",
-   "guardKind": "field"
-  },
-  {
-   "key": "cust.move.return",
-   "res": "bassam_custody_v1",
-   "where": "moves[] إلحاقٌ في الذيل حيث move.t === \"in\" (استرجاع)",
-   "how": "المصنِّف يقرأ الحقلَ الفيزيائي t من كلِّ حركةٍ مُلحَقة (v24.3 F-01)",
-   "asis": "custodyMoveOp: in ⇐ emps/custody:edit وحده — asisMap في v24.3 مطابقٌ للمصدر",
-   "decl": "",
-   "dup": "",
-   "owner": "emps/custody",
-   "type": "edit",
-   "guardKind": "field"
-  },
-  {
-   "key": "cust.move.damage",
-   "res": "bassam_custody_v1",
-   "where": "moves[] إلحاقٌ في الذيل حيث move.t === \"dmg\" (تلف)",
-   "how": "المصنِّف يقرأ الحقلَ الفيزيائي t من كلِّ حركةٍ مُلحَقة (v24.3 F-01)",
-   "asis": "custodyMoveOp: dmg ⇐ emps/custody:edit وحده — asisMap في v24.3 مطابقٌ للمصدر",
-   "decl": "",
-   "dup": "",
-   "owner": "emps/custody",
-   "type": "edit",
-   "guardKind": "field"
-  },
-  {
-   "key": "cust.move.lost",
-   "res": "bassam_custody_v1",
-   "where": "moves[] إلحاقٌ في الذيل حيث move.t === \"lost\" (فقد)",
-   "how": "المصنِّف يقرأ الحقلَ الفيزيائي t من كلِّ حركةٍ مُلحَقة (v24.3 F-01)",
-   "asis": "custodyMoveOp: lost ⇐ emps/custody:edit وحده — asisMap في v24.3 مطابقٌ للمصدر",
-   "decl": "",
-   "dup": "",
-   "owner": "emps/custody",
-   "type": "edit",
-   "guardKind": "field"
-  },
-  {
    "key": "report.att.absence",
    "res": "bassam_dreport_v1",
    "where": "shifts[sh].roster[ekey].st → \"ab\" (أو العودةُ منها إلى \"pr\")",
@@ -557,7 +509,7 @@
   },
   {
    "key": "emp.record.bulk.delete",
-   "res": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · staffing)",
+   "res": "bassam_employees_v1 (+ تنظيفات dreport {} · staffing)",
    "where": "زوالُ ≥2 سجلٍّ في كتابةٍ واحدة أو القائمةُ تصير [] · والتنظيفاتُ المرافقة بسياق empsEmpty",
    "how": "عدُّ الكيانات الزائلة في الكتابة الواحدة",
    "asis": "emps/data:del (+ wipeAllowed→emps)",
@@ -789,8 +741,8 @@
   "shadowOnly": 2,
   "duplicatesJustified": 2,
   "duplicatesUnjustified": 0,
-  "emittedKeys": 87,
-  "coveredResources": 13,
+  "emittedKeys": 80,
+  "coveredResources": 12,
   "decisions": 20
  }
 }

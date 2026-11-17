@@ -8,8 +8,8 @@
     "path": [
      "registry"
     ],
-    "after": 37,
-    "seq": 18,
+    "after": 29,
+    "seq": 26,
     "value": {
      "key": "ir.dash.view",
      "owner": "irshad/dash",
@@ -61,8 +61,8 @@
     "path": [
      "registry"
     ],
-    "after": 37,
-    "seq": 19,
+    "after": 29,
+    "seq": 27,
     "value": {
      "key": "ir.rec.view",
      "owner": "irshad/records",
@@ -112,8 +112,8 @@
     "path": [
      "registry"
     ],
-    "after": 37,
-    "seq": 20,
+    "after": 29,
+    "seq": 28,
     "value": {
      "key": "ir.rec.create",
      "owner": "irshad/records",
@@ -163,8 +163,8 @@
     "path": [
      "registry"
     ],
-    "after": 37,
-    "seq": 21,
+    "after": 29,
+    "seq": 29,
     "value": {
      "key": "ir.rec.edit",
      "owner": "irshad/records",
@@ -214,8 +214,8 @@
     "path": [
      "registry"
     ],
-    "after": 37,
-    "seq": 22,
+    "after": 29,
+    "seq": 30,
     "value": {
      "key": "ir.rec.status",
      "owner": "irshad/records",
@@ -259,8 +259,8 @@
     "path": [
      "registry"
     ],
-    "after": 37,
-    "seq": 23,
+    "after": 29,
+    "seq": 31,
     "value": {
      "key": "ir.rec.delete",
      "owner": "irshad/records",
@@ -310,8 +310,8 @@
     "path": [
      "registry"
     ],
-    "after": 139,
-    "seq": 46,
+    "after": 131,
+    "seq": 54,
     "value": {
      "key": "ref.irshad.location.view",
      "owner": "irshad/records",
@@ -359,8 +359,8 @@
     "path": [
      "registry"
     ],
-    "after": 139,
-    "seq": 47,
+    "after": 131,
+    "seq": 55,
     "value": {
      "key": "ref.irshad.location.create",
      "owner": "irshad/records",
@@ -408,8 +408,8 @@
     "path": [
      "registry"
     ],
-    "after": 139,
-    "seq": 48,
+    "after": 131,
+    "seq": 56,
     "value": {
      "key": "ref.irshad.location.edit",
      "owner": "irshad/records",
@@ -457,8 +457,8 @@
     "path": [
      "registry"
     ],
-    "after": 139,
-    "seq": 49,
+    "after": 131,
+    "seq": 57,
     "value": {
      "key": "ref.irshad.location.delete",
      "owner": "irshad/records",
@@ -506,8 +506,8 @@
     "path": [
      "registry"
     ],
-    "after": 139,
-    "seq": 50,
+    "after": 131,
+    "seq": 58,
     "value": {
      "key": "ref.irshad.language.view",
      "owner": "irshad/records",
@@ -555,8 +555,8 @@
     "path": [
      "registry"
     ],
-    "after": 139,
-    "seq": 51,
+    "after": 131,
+    "seq": 59,
     "value": {
      "key": "ref.irshad.language.create",
      "owner": "irshad/records",
@@ -604,8 +604,8 @@
     "path": [
      "registry"
     ],
-    "after": 139,
-    "seq": 52,
+    "after": 131,
+    "seq": 60,
     "value": {
      "key": "ref.irshad.language.edit",
      "owner": "irshad/records",
@@ -653,8 +653,8 @@
     "path": [
      "registry"
     ],
-    "after": 139,
-    "seq": 53,
+    "after": 131,
+    "seq": 61,
     "value": {
      "key": "ref.irshad.language.delete",
      "owner": "irshad/records",
@@ -702,8 +702,8 @@
     "path": [
      "registry"
     ],
-    "after": 139,
-    "seq": 54,
+    "after": 131,
+    "seq": 62,
     "value": {
      "key": "ir.rec.bulk.delete",
      "owner": "irshad/records",
@@ -753,8 +753,8 @@
     "path": [
      "registry"
     ],
-    "after": 147,
-    "seq": 78,
+    "after": 138,
+    "seq": 87,
     "value": {
      "key": "ir.rec.retro.open",
      "owner": "irshad/records",
@@ -823,8 +823,8 @@
     "path": [
      "owners"
     ],
-    "after": 8,
-    "seq": 7,
+    "after": 7,
+    "seq": 8,
     "value": {
      "id": "irshad/dash",
      "kind": "page",
@@ -838,8 +838,8 @@
     "path": [
      "owners"
     ],
-    "after": 8,
-    "seq": 8,
+    "after": 7,
+    "seq": 9,
     "value": {
      "id": "irshad/records",
      "kind": "page",
@@ -853,8 +853,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 42,
+    "after": 60,
+    "seq": 48,
     "value": {
      "leaf": "irshad/dash",
      "act": "view",
@@ -868,8 +868,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 43,
+    "after": 60,
+    "seq": 49,
     "value": {
      "leaf": "irshad/dash",
      "act": "add",
@@ -881,8 +881,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 44,
+    "after": 60,
+    "seq": 50,
     "value": {
      "leaf": "irshad/dash",
      "act": "edit",
@@ -894,8 +894,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 45,
+    "after": 60,
+    "seq": 51,
     "value": {
      "leaf": "irshad/dash",
      "act": "del",
@@ -907,8 +907,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 46,
+    "after": 60,
+    "seq": 52,
     "value": {
      "leaf": "irshad/dash",
      "act": "approve",
@@ -920,8 +920,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 47,
+    "after": 60,
+    "seq": 53,
     "value": {
      "leaf": "irshad/dash",
      "act": "export",
@@ -935,8 +935,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 48,
+    "after": 60,
+    "seq": 54,
     "value": {
      "leaf": "irshad/records",
      "act": "view",
@@ -952,8 +952,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 49,
+    "after": 60,
+    "seq": 55,
     "value": {
      "leaf": "irshad/records",
      "act": "add",
@@ -969,8 +969,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 50,
+    "after": 60,
+    "seq": 56,
     "value": {
      "leaf": "irshad/records",
      "act": "edit",
@@ -986,8 +986,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 51,
+    "after": 60,
+    "seq": 57,
     "value": {
      "leaf": "irshad/records",
      "act": "del",
@@ -1004,8 +1004,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 52,
+    "after": 60,
+    "seq": 58,
     "value": {
      "leaf": "irshad/records",
      "act": "approve",
@@ -1019,8 +1019,8 @@
     "path": [
      "atoms"
     ],
-    "after": 66,
-    "seq": 53,
+    "after": 60,
+    "seq": 59,
     "value": {
      "leaf": "irshad/records",
      "act": "export",
@@ -1034,24 +1034,24 @@
     "path": [
      "featureFlags"
     ],
-    "after": 7,
-    "seq": 6,
+    "after": 6,
+    "seq": 7,
     "value": "ff.ir.dash.export"
    },
    {
     "path": [
      "featureFlags"
     ],
-    "after": 7,
-    "seq": 7,
+    "after": 6,
+    "seq": 8,
     "value": "ff.ir.rec.export"
    },
    {
     "path": [
      "featureFlags"
     ],
-    "after": 31,
-    "seq": 16,
+    "after": 30,
+    "seq": 17,
     "value": "ff.module.irshad.enabled"
    }
   ],
@@ -1060,8 +1060,8 @@
     "path": [
      "bindings"
     ],
-    "after": 37,
-    "seq": 18,
+    "after": 29,
+    "seq": 26,
     "value": {
      "key": "ir.dash.view",
      "owner": "irshad/dash",
@@ -1096,8 +1096,8 @@
     "path": [
      "bindings"
     ],
-    "after": 37,
-    "seq": 19,
+    "after": 29,
+    "seq": 27,
     "value": {
      "key": "ir.rec.view",
      "owner": "irshad/records",
@@ -1132,8 +1132,8 @@
     "path": [
      "bindings"
     ],
-    "after": 37,
-    "seq": 20,
+    "after": 29,
+    "seq": 28,
     "value": {
      "key": "ir.rec.create",
      "owner": "irshad/records",
@@ -1168,8 +1168,8 @@
     "path": [
      "bindings"
     ],
-    "after": 37,
-    "seq": 21,
+    "after": 29,
+    "seq": 29,
     "value": {
      "key": "ir.rec.edit",
      "owner": "irshad/records",
@@ -1204,8 +1204,8 @@
     "path": [
      "bindings"
     ],
-    "after": 37,
-    "seq": 22,
+    "after": 29,
+    "seq": 30,
     "value": {
      "key": "ir.rec.delete",
      "owner": "irshad/records",
@@ -1240,8 +1240,8 @@
     "path": [
      "bindings"
     ],
-    "after": 127,
-    "seq": 45,
+    "after": 119,
+    "seq": 53,
     "value": {
      "key": "ref.irshad.location.view",
      "owner": "irshad/records",
@@ -1277,8 +1277,8 @@
     "path": [
      "bindings"
     ],
-    "after": 127,
-    "seq": 46,
+    "after": 119,
+    "seq": 54,
     "value": {
      "key": "ref.irshad.location.create",
      "owner": "irshad/records",
@@ -1314,8 +1314,8 @@
     "path": [
      "bindings"
     ],
-    "after": 127,
-    "seq": 47,
+    "after": 119,
+    "seq": 55,
     "value": {
      "key": "ref.irshad.location.edit",
      "owner": "irshad/records",
@@ -1351,8 +1351,8 @@
     "path": [
      "bindings"
     ],
-    "after": 127,
-    "seq": 48,
+    "after": 119,
+    "seq": 56,
     "value": {
      "key": "ref.irshad.location.delete",
      "owner": "irshad/records",
@@ -1388,8 +1388,8 @@
     "path": [
      "bindings"
     ],
-    "after": 127,
-    "seq": 49,
+    "after": 119,
+    "seq": 57,
     "value": {
      "key": "ref.irshad.language.view",
      "owner": "irshad/records",
@@ -1425,8 +1425,8 @@
     "path": [
      "bindings"
     ],
-    "after": 127,
-    "seq": 50,
+    "after": 119,
+    "seq": 58,
     "value": {
      "key": "ref.irshad.language.create",
      "owner": "irshad/records",
@@ -1462,8 +1462,8 @@
     "path": [
      "bindings"
     ],
-    "after": 127,
-    "seq": 51,
+    "after": 119,
+    "seq": 59,
     "value": {
      "key": "ref.irshad.language.edit",
      "owner": "irshad/records",
@@ -1499,8 +1499,8 @@
     "path": [
      "bindings"
     ],
-    "after": 127,
-    "seq": 52,
+    "after": 119,
+    "seq": 60,
     "value": {
      "key": "ref.irshad.language.delete",
      "owner": "irshad/records",
@@ -1536,8 +1536,8 @@
     "path": [
      "bindings"
     ],
-    "after": 127,
-    "seq": 53,
+    "after": 119,
+    "seq": 61,
     "value": {
      "key": "ir.rec.bulk.delete",
      "owner": "irshad/records",
@@ -1572,8 +1572,8 @@
     "path": [
      "bindings"
     ],
-    "after": 135,
-    "seq": 76,
+    "after": 126,
+    "seq": 85,
     "value": {
      "key": "ir.rec.retro.open",
      "owner": "irshad/records",
@@ -1715,8 +1715,8 @@
      "byResource"
     ],
     "key": "bassam_irshad_v1",
-    "after": 37,
-    "seq": 3,
+    "after": 36,
+    "seq": 4,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability",
@@ -1751,8 +1751,8 @@
      "byResource"
     ],
     "key": "bassam_irshad_langs_v1",
-    "after": 37,
-    "seq": 4,
+    "after": 36,
+    "seq": 5,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability",
@@ -1793,8 +1793,8 @@
      "byResource"
     ],
     "key": "bassam_irshad_locs_v1",
-    "after": 37,
-    "seq": 5,
+    "after": 36,
+    "seq": 6,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability",
@@ -1861,8 +1861,8 @@
      "byResource"
     ],
     "key": "bassam_irshad_retro_v1",
-    "after": 52,
-    "seq": 14,
+    "after": 51,
+    "seq": 15,
     "value": {
      "scope": "dept-state",
      "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
@@ -1891,8 +1891,8 @@
     "path": [
      "bindings"
     ],
-    "after": 46,
-    "seq": 14,
+    "after": 42,
+    "seq": 18,
     "value": {
      "key": "ir.rec.bulk.delete",
      "res": "bassam_irshad_v1",

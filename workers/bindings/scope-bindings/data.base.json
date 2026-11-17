@@ -50,7 +50,7 @@
   "Own": {
    "status": "as-is-enforced",
    "confidence": "high",
-   "evidence": "هويةُ الجلسة (uid/ekey) — selfEmailOnly · SELF_FIELDS · notif_dev:uid"
+   "evidence": "هويةُ الجلسة (uid/ekey) — selfTaskOnly · selfEmailOnly · SELF_FIELDS · notif_dev:uid"
   },
   "DateRange": {
    "status": "as-is-ui-only",
@@ -69,150 +69,6 @@
   }
  },
  "bindings": [
-  {
-   "key": "cust.view",
-   "owner": "emps/custody",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "ref.custody_type.create",
-   "owner": "emps/custody",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "ref.custody_type.edit",
-   "owner": "emps/custody",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "cust.move.issue",
-   "owner": "emps/custody",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "cust.move.return",
-   "owner": "emps/custody",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "cust.move.damage",
-   "owner": "emps/custody",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "cust.move.lost",
-   "owner": "emps/custody",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "ref.custody_type.delete",
-   "owner": "emps/custody",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
   {
    "key": "ready.view",
    "owner": "planning/readiness",
@@ -3405,21 +3261,6 @@
    }
   },
   {
-   "key": "ref.custody_type.view",
-   "owner": "emps/custody",
-   "type": "view",
-   "g": "exists",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ]
-   }
-  },
-  {
    "key": "staff.permission_limit.set",
    "owner": "staff",
    "type": "decision",
@@ -4267,25 +4108,6 @@
     "Global": "no-record-scope"
    }
   },
-  "bassam_custody_v1": {
-   "items": "custodyItems",
-   "evidence": "items[name] · moves[] إلحاقية {t, eid, y, m, d}",
-   "lock": "custody: لا آليةَ قفلٍ زمنيّ → allow:no-temporal-lock",
-   "dims": {
-    "Department": "keyDept",
-    "Branch": "branchCeiling",
-    "DateRange": "periodLock"
-   },
-   "na": {
-    "Site": "no-site-identity",
-    "Zone/Element": "no-element-identity",
-    "Shift": "no-shift-identity",
-    "Assigned": "no-assignment-field",
-    "Own": "no-owner-identity (eid = صاحب العهدة)",
-    "Source": "department-resource",
-    "Global": "no-record-scope"
-   }
-  },
   "bassam_auth_users_v1": {
    "items": "userItems",
    "evidence": "[id] · deptId (القديم والجديد) · هويةُ الجلسة",
@@ -4465,7 +4287,7 @@
   {
    "id": "I‑04",
    "title": "Own وAssigned لحامل المفتاح",
-   "text": "مَن يملك مفتاحَ العملية الكامل (قرارُ Phase 2.1) يعمل على سجلات غيره بالصلاحية → البُعدُ not_applicable؛ ويُقاس Own/Assigned لمسار الذات ولراصد الميدان (dailyFieldOnly) فقط — كما يفعل الخادمُ اليوم (fieldObsOnly)."
+   "text": "مَن يملك مفتاحَ العملية الكامل (قرارُ Phase 2.1) يعمل على سجلات غيره بالصلاحية → البُعدُ not_applicable؛ ويُقاس Own/Assigned لمسار الذات ولراصد الميدان (dailyFieldOnly) فقط — كما يفعل الخادمُ اليوم (selfTaskOnly · fieldObsOnly)."
   },
   {
    "id": "I‑05",
@@ -4838,33 +4660,6 @@
      {
       "cap": "planning/readiness:view",
       "key": "ready.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_custody_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability",
-    "keys": [
-     "cust.view",
-     "ref.custody_type.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "emps/custody:view",
-      "key": "cust.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "emps/custody:view",
-      "key": "ref.custody_type.view",
       "source": "explicit-read"
      },
      {
