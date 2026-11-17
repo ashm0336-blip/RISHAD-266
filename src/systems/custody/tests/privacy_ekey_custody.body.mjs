@@ -10,9 +10,9 @@
       that account are unchanged; the permissions registry never shows another person's entry to such a reader. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { privWorld, setSheet, login, suCk, readOp, getKV, save, stored, put, rec, KE, KP, MODES } from './privacy_fx.mjs';
-import { putKV, KT } from '../../src/systems/tasks/tests/tasks_fx.mjs';
-import { needs } from './harness.mjs';
+import { privWorld, setSheet, login, suCk, readOp, getKV, save, stored, put, rec, KE, KP, MODES } from '../../../../tests/unit/privacy_fx.mjs';
+import { putKV, KT } from '../../tasks/tests/tasks_fx.mjs';
+import { needs } from '../../../../tests/unit/harness.mjs';
 
 const NID3 = '1999999203', C3 = 'tst_e_p0_3', KU = 'bassam_auth_users_v1';
 const has = (x, s) => JSON.stringify(x).includes(s);

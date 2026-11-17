@@ -27,7 +27,7 @@ async function restoreBody(B,{scope={kind:'full'},domains:extra={},keys:extraKey
 async function prepare(B,body){return B.W.rsPrepare(B.env,await B.W.actorOf(B.env,IDS.super),body,{});}
 async function commit(B,plan){return B.W.rsCommit(B.env,await B.W.actorOf(B.env,IDS.super),plan,{});}
 
-test('typed Irshad restore uses one common batch, clears receipts and captures complete internal preimage',needs('award', 'dstats', 'seized'), async()=>{
+test('typed Irshad restore uses one common batch, clears receipts and captures complete internal preimage',needs('award', 'custody', 'dstats', 'seized'), async()=>{
   const B=await world(); await seed(B,docs()); receipt(B);
   const identity=identitySnapshot(B.DB), next=docs('TEST_ONLY_restored'), body=await restoreBody(B);
   body.domains.irshad[0]=B.W.irConvert(D1,next);
@@ -42,7 +42,7 @@ test('typed Irshad restore uses one common batch, clears receipts and captures c
   const replay=await commit(B,await prepare(B,body));assert.equal(replay.duplicate,1);assert.equal(writes,1);
 });
 
-test('late receipt insertion failure rolls back typed replacement, receipts, preimage and all revisions',needs('award', 'dstats', 'seized'), async()=>{
+test('late receipt insertion failure rolls back typed replacement, receipts, preimage and all revisions',needs('award', 'custody', 'dstats', 'seized'), async()=>{
   const B=await world();await seed(B,docs());receipt(B);
   const body=await restoreBody(B);body.domains.irshad[0]=B.W.irConvert(D1,docs('TEST_ONLY_replacement'));
   const plan=await prepare(B,body), before=tableSnapshot(B);
@@ -51,7 +51,7 @@ test('late receipt insertion failure rolls back typed replacement, receipts, pre
   assert.deepEqual(tableSnapshot(B),before);
 });
 
-test('typed row or receipt writer after planning survives failed restore without partial application',needs('award', 'dstats', 'seized'), async()=>{
+test('typed row or receipt writer after planning survives failed restore without partial application',needs('award', 'custody', 'dstats', 'seized'), async()=>{
   for(const mutate of [B=>B.DB.db.prepare('UPDATE irshad_reports SET employee_name=? WHERE department_id=?').run('TEST_ONLY concurrent',D1),B=>receipt(B)]){
     const B=await world();await seed(B,docs());const body=await restoreBody(B);body.domains.irshad[0]=B.W.irEmptyDomain(D1);
     const plan=await prepare(B,body);mutate(B);const before=tableSnapshot(B);
@@ -59,7 +59,7 @@ test('typed row or receipt writer after planning survives failed restore without
   }
 });
 
-test('retired KV reintroduced after the precheck is rejected inside the same restore transaction',needs('award', 'dstats', 'seized'), async()=>{
+test('retired KV reintroduced after the precheck is rejected inside the same restore transaction',needs('award', 'custody', 'dstats', 'seized'), async()=>{
   const B=await world();await seed(B,docs());const body=await restoreBody(B);body.domains.irshad[0]=B.W.irEmptyDomain(D1);
   const plan=await prepare(B,body), batch=B.DB.batch.bind(B.DB);let before,changed=false;
   B.DB.batch=async statements=>{
@@ -69,14 +69,14 @@ test('retired KV reintroduced after the precheck is rejected inside the same res
   await assert.rejects(commit(B,plan),/KIVO_IRSHAD_LEGACY_SOURCE/);assert.equal(changed,true);assert.deepEqual(tableSnapshot(B),before);
 });
 
-test('v3 rejects missing explicit Irshad domains and stale independent resource bases without writes',needs('dstats'), async()=>{
+test('v3 rejects missing explicit Irshad domains and stale independent resource bases without writes',needs('custody', 'dstats'), async()=>{
   for(const mutate of [body=>delete body.domains.irshad,body=>delete body.manifest.domains.irshad,body=>body.base.irshad[D1].languages++]){
     const B=await world();const body=await restoreBody(B),before=tableSnapshot(B);mutate(body);
     await assert.rejects(prepare(B,body));assert.deepEqual(tableSnapshot(B),before);
   }
 });
 
-test('baseline manifest v1 Irshad JSON converts losslessly to explicit v3 typed domains and scoped remap',needs('dstats'), async()=>{
+test('baseline manifest v1 Irshad JSON converts losslessly to explicit v3 typed domains and scoped remap',needs('custody', 'dstats'), async()=>{
   const B=await world(), A=await B.W.actorOf(B.env,IDS.super), original=docs(), body=await restoreBody(B,{scope:{kind:'dept',departmentId:D1}}),
     file={app:'bassam-crowd',version:3,kind:'dept',data:{},domains:clone(body.domains),manifest:clone(body.manifest)};
   delete file.domains.irshad;file.manifest.version=1;delete file.manifest.domains.irshad;
@@ -91,7 +91,7 @@ test('baseline manifest v1 Irshad JSON converts losslessly to explicit v3 typed 
   assert.equal(Object.prototype.hasOwnProperty.call(converted.domains.irshad[0].rows,'requests'),false);
 });
 
-test('v2 backup cannot gain legacy empty fallback or duplicate typed/JSON Irshad sources',needs('dstats'), async()=>{
+test('v2 backup cannot gain legacy empty fallback or duplicate typed/JSON Irshad sources',needs('custody', 'dstats'), async()=>{
   for(const change of [file=>delete file.domains.irshad,file=>{file.data['bsdept:'+D1+':bassam_irshad_v1']='{"reports":[]}';file.manifest.keys.push('bassam_irshad_v1');}]){
     const B=await world(),body=await restoreBody(B,{scope:{kind:'dept',departmentId:D1}}),
       file={app:'bassam-crowd',version:3,kind:'dept',data:{},domains:body.domains,manifest:body.manifest}, before=tableSnapshot(B);
@@ -139,7 +139,7 @@ test('full typed export refuses orphan scope instead of silently omitting stored
   assert.deepEqual(tableSnapshot(B),before);
 });
 
-test('direct v3 restore and baseline conversion refuse operational or ambiguous Irshad JSON paths',needs('award', 'dstats', 'seized'), async()=>{
+test('direct v3 restore and baseline conversion refuse operational or ambiguous Irshad JSON paths',needs('award', 'custody', 'dstats', 'seized'), async()=>{
   const B=await world(), body=await restoreBody(B), key=B.W.irKey(D1);
   body.keys[key]='{"reports":[]}';body.base.kv[key]=0;body.manifest.keys.push(key);
   const before=tableSnapshot(B);

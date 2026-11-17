@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import {webcrypto} from 'node:crypto';
 import {parse} from 'acorn';
 import {world,ok,snap,seedMessage} from './atomic_restore_review_fx.mjs';
-import {ROOT,D1,D2,IDS,copy} from './custody_review_fx.mjs';
+import {ROOT,D1,D2,IDS,copy} from './canonical_fx.mjs';
 export {world,ok,snap,seedMessage,ROOT,D1,D2,IDS,copy};
 export const OPTIONS='bsdept:'+D1+':bassam_last_export_v1';   /* schema 10: a plain-KV department probe (bassam_options_v1 is a typed operational resource) */
 export const tick=()=>new Promise(resolve=>setImmediate(resolve));

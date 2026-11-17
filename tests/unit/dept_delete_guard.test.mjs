@@ -46,7 +46,7 @@ function harness(opts={}){
   return{run:target=>self.deptDel(target),calls,self,postStarted,ack(){assert.ok(settle,'A real POST is awaiting its receipt');settle();}};
 }
 
-test('إدارة فيها مدير و103 موظفين: تأكيد باسم الإدارة وجردها الخادمي — لا حذف قبل الموافقة',needs('award', 'seized'), async()=>{
+test('إدارة فيها مدير و103 موظفين: تأكيد باسم الإدارة وجردها الخادمي — لا حذف قبل الموافقة',needs('award', 'custody', 'seized'), async()=>{
   // The closed route now inventories 104 department/staff accounts together;
   // neither manager counts nor employee lists are trusted from browser storage.
   const h=harness({populated:true,answer:false});await h.run({...DEPT,name:'TEST_ONLY stale cached name'});

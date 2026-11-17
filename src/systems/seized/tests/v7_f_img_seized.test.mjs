@@ -60,7 +60,7 @@ const own = (B, id) => clone(B.DB.q('SELECT st,k,dept FROM imgown WHERE img=?1',
 const refs = (B, id) => B.DB.q('SELECT k FROM imgref WHERE img=?1', id).map((r) => r.k);
 const body = (B, id) => B.DB.q('SELECT COUNT(*) n FROM imgs WHERE k=?1', id)[0].n;
 
-test('seized photo: report removed ⇒ orphan of its unit ⇒ another unit cannot attach it ⇒ past 30 days the sweep deletes rows and object', needs('award', 'dstats'), async (t) => {
+test('seized photo: report removed ⇒ orphan of its unit ⇒ another unit cannot attach it ⇒ past 30 days the sweep deletes rows and object', needs('award', 'custody', 'dstats'), async (t) => {
   const B = await setup(t), image = 'szp_testonly_v7f', key = B.W.szKey(D1);
   await install(B, D1, 'V7F');
   const C = mount(t, B); await C.reads();
@@ -110,7 +110,7 @@ const agePhoto = (B, id, days) => { B.DB.exec("UPDATE imgown SET ts = ts - " + d
    The seized draft is such a screen: _szConfirmPhotos uploads the photo and marks it confirmed BEFORE the report is sent; if the report is then not
    saved (a conflict, a refusal, a lost connection) the draft stays — with its confirmed photo — for as long as the window lives (business-cloud
    _businessSessions), and the retry does not upload again. RUN here: the actual seized module and 360 transport against the worker. */
-test('claim delay · a seized draft whose photo was uploaded but whose report was not saved: 8 and 29 days later the photo is still there and the retried save binds it', needs('award', 'dstats'), async (t) => {
+test('claim delay · a seized draft whose photo was uploaded but whose report was not saved: 8 and 29 days later the photo is still there and the retried save binds it', needs('award', 'custody', 'dstats'), async (t) => {
   const B = await setup(t), image = 'szp_testonly_draft', key = B.W.szKey(D1);
   await install(B, D1, 'V7FD');
   const C = mount(t, B); await C.reads();
@@ -136,7 +136,7 @@ test('claim delay · a seized draft whose photo was uploaded but whose report wa
 /* finding 4 — records stored OUTSIDE kv. The sweep's proof reads them directly: a seized photo row (seized_item_photos) and an award record's picture /
    signature columns (award_records) protect their image even when the bookkeeping (imgown/imgref) is stale — «a candidate that cannot be PROVEN
    unreferenced is not deleted». */
-test('finding 4 · a photo a live seized report shows, and a picture an award record shows, survive the sweep even with stale bookkeeping (no imgref, owner row says orphan)', needs('award', 'dstats'), async (t) => {
+test('finding 4 · a photo a live seized report shows, and a picture an award record shows, survive the sweep even with stale bookkeeping (no imgref, owner row says orphan)', needs('award', 'custody', 'dstats'), async (t) => {
   const B = await setup(t), photo = 'szp_testonly_stale', pic = 'img_testonly_awpic';
   await install(B, D1, 'V7FS');
   const C = mount(t, B); await C.reads();

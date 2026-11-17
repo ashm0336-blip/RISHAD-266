@@ -10,7 +10,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { parse } from 'acorn';
 import { createHash } from 'node:crypto';
-import { world, D1, IDS, EKEYS, copy, identitySnapshot } from './custody_review_fx.mjs';
+import { world, D1, IDS, EKEYS, copy, identitySnapshot } from './canonical_fx.mjs';
 import { installOperationalFixture, inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { ROOT } from './harness.mjs';
 import { loadClient, until } from './k264_vm.mjs';

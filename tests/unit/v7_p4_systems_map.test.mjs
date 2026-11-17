@@ -68,7 +68,7 @@ test('the manifest ships the system contract and the lens hosts to the client (t
 });
 
 for (const mode of ['view', 'cap']) {
-  test('A1 [' + mode + '] every active key exactly once · every reserved key marked · nothing outside the registry', needsSys('award', 'dstats', 'seized', 'tasks'), () => {
+  test('A1 [' + mode + '] every active key exactly once · every reserved key marked · nothing outside the registry', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
     const chips = mapRows(mode).filter((r) => r.isKeys).flatMap((r) => r.keys);
     const act = chips.filter((k) => k.kind !== 'resv').map((k) => k.k), res = chips.filter((k) => k.kind === 'resv').map((k) => k.k);
     assert.equal(ACTIVE.length, 255); assert.equal(RESERVED.length, 14);
@@ -80,7 +80,7 @@ for (const mode of ['view', 'cap']) {
   });
 }
 
-test('A2 every owner is one row · t24Struct = perm-tree24.json (containers · leaves · keys · reserved)', needsSys('award', 'dstats', 'seized', 'tasks'), () => {
+test('A2 every owner is one row · t24Struct = perm-tree24.json (containers · leaves · keys · reserved)', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
   assert.equal(REG.owners.length, 44);
   assert.deepEqual(J(STRUCT).map((c) => c.id), TREE.containers.map((c) => c.id), 'the same containers in the same order');
   /* leaves and keys: the keys of a leaf in the registry order; the reserved ones as a set; the leaves of a page container in the
@@ -144,7 +144,7 @@ test('Q5 parity: a lens manifest declares exactly the panels pages.json makes co
   assert.deepEqual(J(STRUCT.find((c) => c.id === 'lenses').leaves).map((l) => [l.lens, l.ind]), LENSES.map((m) => [m.key, (m.resources || {}).indicators || []]));
 });
 
-test('A5 the panels of the map = refs = the panels of kpis/logic.js · the shown conditions = kpiPanelOk', needsSys('award', 'dstats', 'seized', 'tasks'), () => {
+test('A5 the panels of the map = refs = the panels of kpis/logic.js · the shown conditions = kpiPanelOk', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
   const rows = mapRows('view').filter((r) => r.cls === 'panel');
   /* (1) one row per ref, and the KPIs page draws exactly those */
   const KL = rd('modules', 'kpis', 'logic.js');

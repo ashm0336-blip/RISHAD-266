@@ -5,7 +5,7 @@
    Actual generated Worker over SQLite, synthetic TEST_ONLY data only. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world as fixture, D1, IDS, EKEYS, copy } from './custody_review_fx.mjs';
+import { world as fixture, D1, IDS, EKEYS, copy } from './canonical_fx.mjs';
 import { installOperationalFixture, isOperationalFixtureKey, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 
 const USERS = 'bassam_auth_users_v1', key = (n) => 'bsdept:' + D1 + ':' + n, IMPORT = (mode) => ({ mode, year: 1448, month: 1, schedule: [], templates: [] });

@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createHash } from "node:crypto";
 import { D1Shim } from "./harness.mjs";
-import { canonicalDigest } from "./custody_review_fx.mjs";
+import { canonicalDigest } from "./canonical_fx.mjs";
 import { operationalMigrationFixture } from "./operational_migration_fx.mjs";
 import { peopleTaskDocuments } from "./operational_people_tasks_fx.mjs";
 import { needs } from './harness.mjs';

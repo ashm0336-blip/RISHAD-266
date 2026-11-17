@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
-import { world, D1, D2, IDS, EKEYS, copy, identitySnapshot } from '../../../../tests/unit/custody_review_fx.mjs';
+import { world, D1, D2, IDS, EKEYS, copy, identitySnapshot } from '../../../../tests/unit/canonical_fx.mjs';
 import { installOperationalFixture, replaceOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 import { candidateWorker } from '../../../../tests/unit/irshad_domain_fx.mjs';
 import { ROOT } from '../../../../tests/unit/harness.mjs';

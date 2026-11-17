@@ -37,7 +37,7 @@ function page(mod, names, o = {}) {
 }
 const firstInRender = (src, call) => { const i = src.indexOf('\n  renderVals() {'), j = src.indexOf(call, i); assert.ok(i > 0 && j > i, call + ' في renderVals'); return src.slice(i + 1, j).split('\n').length; };
 
-test('موظفو الإدارة (R1 · ES-1): #/employees/custody — «عهد الموظفين» في الحالة قبل حساب القيم · بلا مؤقّت · والعنوانُ باقٍ', () => {
+test('موظفو الإدارة (R1 · ES-1): #/employees/custody — «عهد الموظفين» في الحالة قبل حساب القيم · بلا مؤقّت · والعنوانُ باقٍ', needs('custody'), () => {
   const P = page('employees', ['_bsHR() {'], { hash: '#/employees/custody', state: { empTab: 'data' }, perm: { subOn: () => true }, kivo: { __BS_OPEN_TAB: { page: 'employees', tab: 'custody' } } });
   /* _bsHT الحقيقية (replaceState على #/employees/<tab>) — بديلٌ مكافئ يرصد العنوان */
   P.c._bsHT = (t) => { const p = '#/employees', w = t ? p + '/' + t : p; if (P.loc.hash.indexOf(p) === 0 && P.loc.hash !== w) { P.replaced.push(w); P.loc.hash = w; } };

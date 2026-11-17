@@ -1,7 +1,7 @@
 /* A malformed legacy namespace must never be reassigned to a real department. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { legacyWorld, D1, copy } from './custody_review_fx.mjs';
+import { legacyWorld, D1, copy } from '../../../../tests/unit/canonical_fx.mjs';
 
 const state = DB => ({
   schema: copy(DB.q("SELECT type,name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name")),

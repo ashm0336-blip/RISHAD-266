@@ -76,7 +76,7 @@ function readonlyR2(B, { missing = false, text = BODY } = {}) {
   return calls;
 }
 
-test('actual backup restore accepts an identical existing inline body without rewriting image bytes or mutating R2', needs('award', 'dstats', 'seized'), async () => {
+test('actual backup restore accepts an identical existing inline body without rewriting image bytes or mutating R2', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world();
   await seed(B);
   const calls = readonlyR2(B),
@@ -88,7 +88,7 @@ test('actual backup restore accepts an identical existing inline body without re
   assert.deepEqual(calls, []);
 });
 
-test('an existing R2 reference is read-only matched and ACK identifies reuse, leaving object bytes current', needs('award', 'dstats', 'seized'), async () => {
+test('an existing R2 reference is read-only matched and ACK identifies reuse, leaving object bytes current', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world();
   await seed(B, { r2: true });
   const calls = readonlyR2(B),
@@ -106,7 +106,7 @@ test('an existing R2 reference is read-only matched and ACK identifies reuse, le
    Independent review, finding 7 — 'orphan' LEFT THIS LIST ON PURPOSE: the platform admin's restore of a file that carries a still-present orphan with
    the same bytes now re-binds it (v7_f_img_restore: accepted for the admin, refused for different bytes or another actor); it was refused here, and the
    same file restored — image missing — once the sweep had deleted the orphan. */
-test('unreferenced, pending, unstable, missing or different image bodies reject the whole restore without revealing body/ID', needs('award', 'dstats', 'seized'), async () => {
+test('unreferenced, pending, unstable, missing or different image bodies reject the whole restore without revealing body/ID', needs('award', 'custody', 'dstats', 'seized'), async () => {
   for (const scenario of ['unreferenced', 'claim', 'amb', 'staged', 'inline-mismatch', 'R2-mismatch', 'R2-missing']) {
     const B = await world(),
       r2 = scenario.startsWith('R2');
@@ -130,7 +130,7 @@ test('unreferenced, pending, unstable, missing or different image bodies reject 
   }
 });
 
-test('an archived image the platform holds nothing of (swept) does not stop the restore: no byte, no row, R2 untouched, a warning', needs('award', 'dstats', 'seized'), async () => {
+test('an archived image the platform holds nothing of (swept) does not stop the restore: no byte, no row, R2 untouched, a warning', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     key = 'img_testonly_new';
   await seed(B);
@@ -149,7 +149,7 @@ test('an archived image the platform holds nothing of (swept) does not stop the 
   assert.deepEqual(calls, []);
 });
 
-test('foreign ownership and images absent from the final department scope are denied before R2.get', needs('award', 'dstats', 'seized'), async () => {
+test('foreign ownership and images absent from the final department scope are denied before R2.get', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     foreign = 'bsdept:' + D2 + ':bassam_options_v1';
   await seed(B, { r2: true, owner: foreign });
@@ -172,7 +172,7 @@ test('foreign ownership and images absent from the final department scope are de
   assert.deepEqual(snap(B.DB), before);
 });
 
-test('an image metadata/body/staged-upload race rolls back all domains in the final restore transaction', needs('award', 'dstats', 'seized'), async () => {
+test('an image metadata/body/staged-upload race rolls back all domains in the final restore transaction', needs('award', 'custody', 'dstats', 'seized'), async () => {
   for (const change of ['owner', 'inline-body', 'staged']) {
     const B = await world();
     await seed(B);
@@ -199,7 +199,7 @@ test('an image metadata/body/staged-upload race rolls back all domains in the fi
   }
 });
 
-test('a late R2 object update remains current because restore only reuses a validated reference, never restores object bytes', needs('award', 'dstats', 'seized'), async () => {
+test('a late R2 object update remains current because restore only reuses a validated reference, never restores object bytes', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world();
   await seed(B, { r2: true });
   let current = BODY;
@@ -226,7 +226,7 @@ test('a late R2 object update remains current because restore only reuses a vali
   assert.equal(B.DB.q('SELECT v FROM imgs WHERE k=?1', ID)[0].v, '~r2~');
 });
 
-test('a failure late in the business batch rolls back the restore after read-only R2 matching', needs('award', 'dstats', 'seized'), async () => {
+test('a failure late in the business batch rolls back the restore after read-only R2 matching', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world();
   await seed(B, { r2: true });
   const calls = readonlyR2(B),
@@ -240,7 +240,7 @@ test('a failure late in the business batch rolls back the restore after read-onl
   assert.deepEqual(calls, [['get', 'img/' + ID]]);
 });
 
-test('a late reference or R2-marker change rejects the SQL transaction while preserving the concurrent value', needs('award', 'dstats', 'seized'), async () => {
+test('a late reference or R2-marker change rejects the SQL transaction while preserving the concurrent value', needs('award', 'custody', 'dstats', 'seized'), async () => {
   for (const scenario of ['ref', 'R2-marker']) {
     const B = await world();
     await seed(B, { r2: true });
@@ -268,7 +268,7 @@ test('a late reference or R2-marker change rejects the SQL transaction while pre
   }
 });
 
-test('a legacy multipart inline body is matched exactly with bounded witnesses and zero image writes', needs('award', 'dstats', 'seized'), async () => {
+test('a legacy multipart inline body is matched exactly with bounded witnesses and zero image writes', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     large = 'data:image/png;base64,' + 'A'.repeat(700004);
   await seed(B, { text: large });

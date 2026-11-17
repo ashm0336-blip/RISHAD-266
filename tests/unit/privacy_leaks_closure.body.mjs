@@ -14,6 +14,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { privWorld, setSheet, login, suCk, readOp, stored, put, KE, MODES } from './privacy_fx.mjs';
 import { rowsOf, KT, DAY, TOMORROW } from '../../src/systems/tasks/tests/tasks_fx.mjs';
+import { needs } from './harness.mjs';
 
 const NID3 = '1999999203', C3 = 'tst_e_p0_3', EMPNO3 = '70203';
 const has = (x, s) => JSON.stringify(x).includes(s);
@@ -51,7 +52,7 @@ for (const mode of MODES) {
     assert.ok(has((await ctx(w, await login(w, 'emp1'))).employees, NID3), 'record editor');
   });
 
-  test('PRIVACY closure 2/4 [' + mode + ']: the custody search does not match hidden nid/empno snapshots; a holder key that is a nid is sent as the token', async () => {
+  test('PRIVACY closure 2/4 [' + mode + ']: the custody search does not match hidden nid/empno snapshots; a holder key that is a nid is sent as the token', needs('custody'), async () => {
     const w = await privWorld(mode);
     const E = stored(w.env, KE); Object.assign(E.find(e => e.eid === C3), { empno: EMPNO3 }); await put(w, KE, E);
     const dm = await login(w, 'dm1'), cur = await w.C.api('/api/custody?dept=tst_d1&view=month', { cookie: dm });

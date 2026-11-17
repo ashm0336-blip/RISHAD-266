@@ -94,7 +94,7 @@ test('مستخرِجا الجدول الشهري والمهام: الأقفال 
   assert.deepEqual(ti.find(i => i.kind === 'changed').owner, { old: 'e1', new: 'e1' }); assert.equal(whats(ex('bassam_tasks_v1', ta, ta, {})), 'resource:changed');
   assert.equal(whats(ex('bassam_staffing_v3', {}, {}, {})), 'resource:changed');
 });
-test('المستخرِجاتُ الأخرى: الاسترشاد/المضبوطات · الموظفون · العهد · الجائزة · الإحصائيات · الحسابات (ph يُورَث) · الصلاحيات · الكلّ · مالكُ إشعار الجهاز', needs('award', 'dstats'), () => {
+test('المستخرِجاتُ الأخرى: الاسترشاد/المضبوطات · الموظفون · العهد · الجائزة · الإحصائيات · الحسابات (ph يُورَث) · الصلاحيات · الكلّ · مالكُ إشعار الجهاز', needs('award', 'custody', 'dstats'), () => {
   const r = ex('bassam_irshad_v1', { reports: [{ id: 1, y: 1447, m: 5, d: 1, loc: 'A' }, { id: 2 }] }, { reports: [{ id: 1, y: 1447, m: 5, d: 2, loc: 'B' }, { id: 3, loc: 'C' }] });
   assert.equal(whats(r), 'record:added,record:changed,record:removed'); const rc = r.find(i => i.kind === 'changed'); assert.deepEqual(rc.site, { old: 'A', new: 'B' }); assert.equal(rc.period.old.d, 1);
   assert.equal(whats(ex('bassam_seized_v1', {}, {})), 'resource:changed');

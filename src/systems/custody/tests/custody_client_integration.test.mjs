@@ -5,9 +5,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
-import {ROOT,world as canonicalWorld,D1,IDS,EKEYS} from './custody_review_fx.mjs';
-import {attachTaskOperations} from './vm_operations_fx.mjs';
-import {installOperationalFixture,replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
+import {ROOT,world as canonicalWorld,D1,IDS,EKEYS} from '../../../../tests/unit/canonical_fx.mjs';
+import {attachTaskOperations} from '../../../../tests/unit/vm_operations_fx.mjs';
+import {installOperationalFixture,replaceOperationalFixture} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 const read=file=>fs.readFileSync(path.join(ROOT,file),'utf8');
 const copy=value=>JSON.parse(JSON.stringify(value));
 async function world(){
@@ -31,7 +31,7 @@ async function world(){
   const transport={C:{req:(route,options={})=>{const headers={};if(options.cookie)headers.Cookie=options.cookie;const method=options.method||'GET';if(method!=='GET'){headers.Origin='http://x';headers['Content-Type']='application/json';}return worker.default.fetch(new Request('http://x'+route,{method,headers,...(options.body!==undefined?{body:typeof options.body==='string'?options.body:JSON.stringify(options.body)}:{})}),base.env);}}};
   await attachTaskOperations(W,{W:transport,ck:'bs_tok=TEST_ONLY_session_super',uid:IDS.super,dept:D1});
   vm.runInContext(read('src/services/440-count.js'),W);
-  vm.runInContext(read('src/services/547-custody-api.js'),W);
+  vm.runInContext(read('src/systems/custody/client/547-custody-api.js'),W);
   vm.runInContext(read('src/modules/employees/logic.js')+'\nglobalThis.TEST_ONLY_Page=Component;',W);
   const page=new W.TEST_ONLY_Page();page.bsToast=(message,kind)=>errors.push({message,kind});page.bsAck=(message,kind)=>{acks.push({message,kind});return Promise.resolve(true);};
   page.state.empTab='store';await page._cuRefresh();

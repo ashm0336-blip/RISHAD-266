@@ -1,4 +1,6 @@
-/* Canonical custody/atomic-domain fixture. Synthetic identities only.
+/* V7 · د4-ج — العُدّةُ العامة للعامل القانوني وعالَم الاختبار (كانت tests/unit/custody_review_fx.mjs): فُصلت باسمٍ محايد — يعتمد عليها
+   أكثرُ من 250 ملفَّ اختبار ليست عن العهد. أسماءُ نظام العهد تُطلب من العامل بحضوره فقط (hasSystem).
+   Canonical atomic-domain fixture. Synthetic identities only.
    The worker is read from actual parts.json, never from a staged composer. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,7 +12,8 @@ import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { D1, D2, G1, G2, IDS, EKEYS, copy, identitySnapshot, notificationSnapshot } from './notifications_review_fx.mjs';
 export { ROOT, D1, D2, G1, G2, IDS, EKEYS, copy, identitySnapshot, notificationSnapshot };
 
-const NAMED = [   /* V7 · د2-ب: اسمُ نظامٍ يُطلب بحضوره فقط (dsDomainRead ← الإحصائيات) */
+const CUSTODY_NAMED = ['cuPlanCleanup', 'cuPlanRestore', 'cuExport', 'cuValidateDomain', 'cuSnapshotRows', 'cuConvert', 'cuLegacyPrepare', 'cuAct', 'cuRead', 'cuRev'];   /* د4-ج: من أجزاء نظام العهد */
+const NAMED = [   /* V7 · د2-ب · د4-ج: اسمُ نظامٍ يُطلب بحضوره فقط (dsDomainRead ← الإحصائيات · cu* أعلاه ← العهد) */
   'empTransitionContext',
   'empPrepareTransition',
   'cuPlanSaveTransition',
@@ -46,7 +49,7 @@ const NAMED = [   /* V7 · د2-ب: اسمُ نظامٍ يُطلب بحضوره �
   'opDefinitions', 'opInfo', 'opResourceGet', 'opResourceMany', 'opLoadMany',
   'opChangeStatements', 'opCommandReceipt', 'ocConvert', 'ocInflate',
   'ocPhysicalRows', 'ocFromPhysical', 'ocPhysicalTables', 'opBackupDomain',
-].filter((name) => name !== 'dsDomainRead' || hasSystem('dstats'));
+].filter((name) => (name !== 'dsDomainRead' || hasSystem('dstats')) && (!CUSTODY_NAMED.includes(name) || hasSystem('custody')));
 function canonicalInput() {
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'workers/parts.json'), 'utf8'));
   assert.ok(Array.isArray(manifest.parts) && manifest.parts.length, 'Actual worker manifest is required');
@@ -54,7 +57,7 @@ function canonicalInput() {
   let last = 0;
   const source = manifest.parts
     .map((part) => {
-      assert.match(part.file, /^(?:\.\.\/\.\.\/src\/systems\/[a-z]+\/server\/)?\d{3}[a-z]?-[A-Za-z0-9_-]+\.js$/, 'Part paths stay in the canonical parts directory (or a system\'s server folder · V7 package B)');
+      assert.match(part.file, /^(?:\.\.\/\.\.\/src\/systems\/[a-z]+\/server\/)?\d{3}[a-z]?\d?-[A-Za-z0-9_-]+\.js$/, 'Part paths stay in the canonical parts directory (or a system\'s server folder · V7 package B)');
       assert.equal(names.has(part.file), false, 'Unique part name');
       names.add(part.file);
       assert.ok(
@@ -90,7 +93,7 @@ export async function canonicalWorker() {
   return import(
     'data:text/javascript;base64,' +
       Buffer.from(
-        source + '\nexport {' + NAMED.join(',') + '};\n//# sourceURL=canonical-custody-review-worker.mjs\n// fixture isolate ' + ++instance,
+        source + '\nexport {' + NAMED.join(',') + '};\n//# sourceURL=canonical-review-worker.mjs\n// fixture isolate ' + ++instance,
       ).toString('base64')
   );
 }

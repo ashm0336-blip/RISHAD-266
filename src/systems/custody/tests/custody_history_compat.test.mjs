@@ -5,7 +5,7 @@ import {cuInflate,CU_LEGACY_ORACLE_SOURCE_SHA256} from './custody_legacy_oracle.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {isDeepStrictEqual} from 'node:util';
-import {world as fixture,legacyWorld,canonicalWorker,D1,IDS} from './custody_review_fx.mjs';
+import {world as fixture,legacyWorld,canonicalWorker,D1,IDS} from '../../../../tests/unit/canonical_fx.mjs';
 const legacyDocument=()=>({items:[{name:'TEST_ONLY radio',qty:3,prefix:'TEST',color:'#b99751'}],moves:[{t:'out',eid:'TEST_ONLY_old_employee',item:'TEST_ONLY radio',ser:'TEST-001',y:1448,m:5,d:1,name:'x'.repeat(5000),nid:'TEST_ONLY_legacy',empno:''}]});
 
 test('canonical typed conversion preserves the tolerated 5000-character snapshot under the test-only inverse projection',async()=>{

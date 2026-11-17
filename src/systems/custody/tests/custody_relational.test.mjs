@@ -1,9 +1,9 @@
 import {cuInflate} from './custody_legacy_oracle.mjs';
 import { test } from 'node:test';
-import { inspectOperationalFixture, replaceOperationalFixture, installOperationalFixture } from './operational_legacy_seed_fx.mjs';
-import { operationSaveBody } from './world_fx.mjs';
+import { inspectOperationalFixture, replaceOperationalFixture, installOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
+import { operationSaveBody } from '../../../../tests/unit/world_fx.mjs';
 import assert from 'node:assert/strict';
-import { world as canonicalWorld, legacyWorld, canonicalWorker, canonicalDigest, D1, D2, IDS, EKEYS, identitySnapshot } from './custody_review_fx.mjs';
+import { world as canonicalWorld, legacyWorld, canonicalWorker, canonicalDigest, D1, D2, IDS, EKEYS, identitySnapshot } from '../../../../tests/unit/canonical_fx.mjs';
 
 const copy = (v) => JSON.parse(JSON.stringify(v));
 let request = 0;
@@ -223,7 +223,7 @@ test('ambiguous cross-item serial, unknown fields, unscoped source and chunk gap
   const collision = legacyDoc();
   collision.moves.push({ ...collision.moves[0], item: 'TEST_ONLY legacy no-options' });
   const unknown = legacyDoc();
-  unknown.moves[0].secret = 'TEST_ONLY_unaccepted';
+  unknown.moves[0].secret = 'TEST_ONLY_unaccepted';   // secrets-scan: allow — حقلٌ اصطناعي غيرُ معروف في وثيقة اختبار (TEST_ONLY): يُتحقق أن التحويل يرفضه؛ ليس سرّاً (الملف انتقل من tests/unit — د4-ج)
   for (const [doc, key, gap] of [
     [collision, undefined, false],
     [unknown, undefined, false],

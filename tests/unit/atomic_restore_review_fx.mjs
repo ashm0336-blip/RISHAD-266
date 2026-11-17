@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { D1, D2, IDS, EKEYS, copy, identitySnapshot } from './notifications_review_fx.mjs';
-import { world as custodyWorld } from './custody_review_fx.mjs';
+import { world as custodyWorld } from './canonical_fx.mjs';
 import { operationSaveBody } from './world_fx.mjs';
 const OPTIONS = 'bsdept:' + D1 + ':bassam_last_export_v1';   /* schema 10: a plain-KV department key (options/gate_opts are typed operational resources) */
 let rid = 0;

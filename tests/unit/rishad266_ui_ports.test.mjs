@@ -54,7 +54,7 @@ test('F20 · L-06: لا مراقبَ أشرطة التبويبات بعد أول
   assert.doesNotMatch(rd('layouts/index.template.html'), /190-tabstrip-unify/);
 });
 
-test('F20 · L-07: «موظفو الإدارة» بلا تبويب «مهام الموظفين» المعطَّل دائماً ولا استيرادِ صفحة المهام — والتبويباتُ الباقية كما هي', () => {
+test('F20 · L-07: «موظفو الإدارة» بلا تبويب «مهام الموظفين» المعطَّل دائماً ولا استيرادِ صفحة المهام — والتبويباتُ الباقية كما هي', needs('custody'), () => {
   const v = rd('modules/employees/view.html'), l = rd('modules/employees/logic.js');
   assert.doesNotMatch(v, /empTasksAllowed|empOnTasks|empGoTasks|<dc-import name="Tasks"/);
   assert.doesNotMatch(l, /empTasksAllowed|empOnTasks|empGoTasks|empTasksTab/);

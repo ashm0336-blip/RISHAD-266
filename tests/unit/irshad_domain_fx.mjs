@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-import {world as currentWorld, legacyWorld, ROOT, D1, D2, IDS, identitySnapshot} from './custody_review_fx.mjs';
+import {world as currentWorld, legacyWorld, ROOT, D1, D2, IDS, identitySnapshot} from './canonical_fx.mjs';
 import {allowTestSchemaUpgrade,hasSystem} from './harness.mjs';
 import {installOperationalFixture} from './operational_legacy_seed_fx.mjs';
 export {ROOT,D1,D2,IDS,identitySnapshot};

@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import { parse } from 'acorn';
 import { SRC } from './harness.mjs';
 import { loadClient, until } from './k264_vm.mjs';
-import { world as canonicalWorld, D1, D2, IDS, copy } from './custody_review_fx.mjs';
+import { world as canonicalWorld, D1, D2, IDS, copy } from './canonical_fx.mjs';
 import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 export { D1, D2, IDS, copy };
 export const scoped = (name, dept = D1) => 'bsdept:' + dept + ':' + name;
@@ -111,8 +111,10 @@ export async function browser(B, t, opt = {}) {
   let dailyRevision = 0;
   K.DailyStats = { refresh: async () => { const value = await read('/api/dstats'); dailyRevision = value.rev; return value.data; }, revision: () => dailyRevision };
   K.BassamNotif = { exportDomain: dept => read('/api/notifications/export' + (dept ? '?dept=' + encodeURIComponent(dept) : '')), refresh: () => read('/api/notifications') };
-  for (const source of ['547-custody-api.js', '548-atomic-backup.js'])
-    vm.runInContext(fs.readFileSync(path.join(SRC, 'services', source), 'utf8'), T.ctx, { filename: source });
+  /* V7 · د4-ج: خدمةُ واجهة العهد (547) من مجلد نظامها — تُحمَّل بحضوره فقط؛ خدمةُ النسخ (548) من القاعدة */
+  const custodyApi = path.join(SRC, 'systems', 'custody', 'client', '547-custody-api.js');
+  if (fs.existsSync(custodyApi)) vm.runInContext(fs.readFileSync(custodyApi, 'utf8'), T.ctx, { filename: '547-custody-api.js' });
+  vm.runInContext(fs.readFileSync(path.join(SRC, 'services', '548-atomic-backup.js'), 'utf8'), T.ctx, { filename: '548-atomic-backup.js' });
   const page = { state: {}, setState(patch) { Object.assign(this.state, patch); }, bkToast: (...args) => toasts.push(args) };
   function method(file, name) { return vm.runInContext('({' + sourcePart(file, 'MethodDefinition', name) + '}).' + name, T.ctx); }
   function property(file, name) { return vm.runInContext('(function(){const s=true;return {' + sourcePart(file, 'Property', name) + '};})', T.ctx).call(page)[name]; }

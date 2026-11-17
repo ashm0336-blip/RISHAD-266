@@ -98,7 +98,7 @@ for (const mode of MODES) {
 }
 
 for (const mode of MODES) {
-  test('PRIVACY SV09 custody [' + mode + ']: a custody viewer gets holders without nid/empno; the manager and the holder himself keep them', async () => {
+  test('PRIVACY SV09 custody [' + mode + ']: a custody viewer gets holders without nid/empno; the manager and the holder himself keep them', needs('custody'), async () => {
     const w = await privWorld(mode);
     const E = stored(w.env, KE); Object.assign(E.find(e => e.eid === 'tst_e_emp1'), PII(9), { empno: '70113' }); await put(w, KE, E);
     const month = async (ck) => { const r = await w.C.api('/api/custody?dept=tst_d1&view=month', { cookie: ck }); assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 200)); return r.j.rows.find(x => x.holderKey === 'tst_e_emp1'); };

@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { world, IDS } from './custody_review_fx.mjs';
+import { world, IDS } from './canonical_fx.mjs';
 
 const SRC = process.env.KIVO_SRC || path.resolve('src');
 const state = (DB) => JSON.stringify([DB.q('SELECT k, rev FROM revs ORDER BY k'), DB.q('SELECT COUNT(*) n FROM aud'), DB.q('SELECT COUNT(*) n FROM kv'), DB.q("SELECT k, v FROM meta WHERE k <> 'rev' ORDER BY k")]);

@@ -62,7 +62,7 @@ test('الربط: حارس التكرار الخادمي قائم، والاست
 });
 
 test('الاستيراد الفعلي يرفض هوية حساب إدارة أخرى قبل أي كتابة، في وضعي الصلاحيات', async () => {
-  const {world, D1, D2, IDS} = await import('./custody_review_fx.mjs');
+  const {world, D1, D2, IDS} = await import('./canonical_fx.mjs');
   for (const mode of ['legacy', 'enforce']) {
     const f = await world({mode});
     const foreign = f.users.find(u => u.deptId === D2 && /^\d{10}$/.test(u.un));

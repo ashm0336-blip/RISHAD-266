@@ -6,7 +6,7 @@ import fs from "node:fs";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { D1Shim, PYTHON } from "./harness.mjs";
-import { canonicalDigest } from "./custody_review_fx.mjs";
+import { canonicalDigest } from "./canonical_fx.mjs";
 import { operationalMigrationFixture } from "./operational_migration_fx.mjs";
 
 const source = fs.readFileSync("workers/_worker.js", "utf8");

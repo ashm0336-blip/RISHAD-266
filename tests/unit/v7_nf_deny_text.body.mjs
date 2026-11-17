@@ -118,7 +118,7 @@ function groups(rows) {
 const ACTOR = { nfd_emp: EMP + ' (موظف — ' + UNIT + ')', nfd_mgr: MGR + ' (مدير الإدارة — ' + UNIT + ')' };
 
 for (const mode of ['legacy', 'enforce']) {
-  test('V7 nf-deny · ' + mode + ': every logging site of a refused write → the bell names the actor (name · role · unit), the record, the page and an Arabic reason — no key, no code, no Latin', needsSys('dstats'), async () => {
+  test('V7 nf-deny · ' + mode + ': every logging site of a refused write → the bell names the actor (name · role · unit), the record, the page and an Arabic reason — no key, no code, no Latin', needsSys('custody', 'dstats'), async () => {
     const x = await mk(mode);
     for (const k of Object.keys(SITES)) await SITES[k](x);
     const re = await reopenNoReason(x);
@@ -151,7 +151,7 @@ for (const mode of ['legacy', 'enforce']) {
     for (const [who, uid] of [['emp', 'nfd_emp'], ['mgr', 'nfd_mgr']]) assert.ok(!((await feed(who, uid)).items || []).some((i) => i.type === 'sc_deny'), who + ' does not');
   });
 
-  test('V7 nf-deny · ' + mode + ': the security log is untouched — same rows, same key and same reason CODE as on develop; /api/sec still serves them', needsSys('dstats'), async () => {
+  test('V7 nf-deny · ' + mode + ': the security log is untouched — same rows, same key and same reason CODE as on develop; /api/sec still serves them', needsSys('custody', 'dstats'), async () => {
     const x = await mk(mode);
     for (const k of Object.keys(SITES)) await SITES[k](x);
     /* a refused READ of the notifications route is logged as «denied» as well (not approved to change — pinned as it is) */
@@ -379,7 +379,7 @@ function reasonCodes(src) {
   return out;
 }
 
-test('V7 nf-deny · every reason code that exists in the server source has an Arabic phrase (and only Arabic)', needsSys('dstats'), async () => {
+test('V7 nf-deny · every reason code that exists in the server source has an Arabic phrase (and only Arabic)', needsSys('custody', 'dstats'), async () => {
   const { W, src } = await internals(), codes = reasonCodes(src);
   assert.ok(codes.size >= 80, 'the enumeration found the codes: ' + codes.size);
   for (const must of ['perm', 'reason', 'page', 'view', 'super', 'scope', 'custody:…', 'retro.…', 'custody-transition', 'notification-scope', 'restore-policy', 'import-allowlist', 'task-x', 'users · dup-id …', 'perms-stale-client', 'privacy-hidden'])

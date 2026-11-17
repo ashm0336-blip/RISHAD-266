@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import {ROOT} from './custody_review_fx.mjs';
+import {ROOT} from '../../../../tests/unit/canonical_fx.mjs';
 const source=fs.readFileSync(path.join(ROOT,'src/services/590-employees-import.js'),'utf8');
 test('import owns preparation only: no browser account cleanup or retired custody/related-document writes remain',()=>{
   assert.doesNotMatch(source,/localStorage\.(?:setItem|removeItem)/);

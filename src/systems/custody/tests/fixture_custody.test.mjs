@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { D1Shim, PYTHON, ROOT, applySql } from "./harness.mjs";
+import { D1Shim, PYTHON, ROOT, applySql } from "../../../../tests/unit/harness.mjs";
 import { cuInflate } from "./custody_legacy_oracle.mjs";
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8"),
   CU = [

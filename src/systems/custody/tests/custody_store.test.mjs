@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {world,createType,act,ok,EKEYS,copy,pageFor} from './custody_scenarios_fx.mjs';
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 test('الواجهة: تبويبُ «مستودع العهد» بجانب «عهد الموظفين» وقسمُه بجدول الصنف · البادئة · الكمية · بعهدة · متاح · الحالة · إجراءات', () => {
   const v = rd('src/modules/employees/view.html');

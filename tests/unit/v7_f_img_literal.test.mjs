@@ -188,7 +188,7 @@ for (const mode of ['legacy', 'enforce']) test('task note · an employee\'s note
   assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM ops_task_row_proof WHERE f_note_text = ?", esc1)[0].n, 1, 'stored as written');
 });
 
-test('backup restore · a typed record carrying a \\u escape of an id character is restored as written', { ...needs('award', 'dstats', 'seized'), timeout: 600000 }, async () => {
+test('backup restore · a typed record carrying a \\u escape of an id character is restored as written', { ...needs('award', 'custody', 'dstats', 'seized'), timeout: 600000 }, async () => {
   const B = await restoreWorld(), OPTIONS = 'bsdept:' + D1 + ':bassam_options_v1';
   const restored = JSON.stringify({ type: [esc1], work: [TAG + ' restored'] }), request = await B.body({ scope: { kind: 'full' } });
   const keep = (o) => Object.fromEntries(Object.entries(o).filter(([name]) => name !== 'operations'));

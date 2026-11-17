@@ -60,7 +60,7 @@ for(const name of ['Seized','Award'])test('actual emitted '+name+' factory inclu
  assert.deepEqual(forbidden,[]);assert.equal(C.KIVO.BusinessCloud,undefined);
 });
 
-test('actual emitted 548 exports all four canonical HTTP business domains with every declared department and one explicit read-only global Award scope',needs('dstats'), async t=>{
+test('actual emitted 548 exports all four canonical HTTP business domains with every declared department and one explicit read-only global Award scope',needs('custody', 'dstats'), async t=>{
  const B=await world({schema:10});t.after(()=>B.DB.db.close());
  const perms=JSON.parse(JSON.stringify(B.keys.bassam_perms_v1));Object.values(perms.caps).forEach(caps=>caps.push('irshad','seized','award'));await B.put('bassam_perms_v1',perms,true);
  const revision=(await B.api('super','/api/get?keys=&uid='+IDS.super)).json.v,protectedBefore=identitySnapshot(B.DB),calls=[],assets=built(),{C,forbidden}=environment();

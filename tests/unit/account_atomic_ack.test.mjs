@@ -2,7 +2,7 @@
    queue; no credentials, network, grant changes or replacement ACK parser. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { world, IDS, copy } from './custody_review_fx.mjs';
+import { world, IDS, copy } from './canonical_fx.mjs';
 import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { loadClient, sleep, until } from './k264_vm.mjs';
 

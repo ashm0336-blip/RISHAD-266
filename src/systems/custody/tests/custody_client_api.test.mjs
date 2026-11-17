@@ -3,11 +3,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import {ROOT} from './custody_review_fx.mjs';
+import {ROOT} from '../../../../tests/unit/canonical_fx.mjs';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 
-const code=fs.readFileSync(path.join(ROOT,'src/services/547-custody-api.js'),'utf8');
+const code=fs.readFileSync(path.join(ROOT,'src/systems/custody/client/547-custody-api.js'),'utf8');
 const copy=value=>JSON.parse(JSON.stringify(value));
 const response=(body,status=200)=>({ok:status>=200&&status<300,status,json:async()=>copy(body)});
 const dto=overrides=>Object.assign({ok:1,rev:3,clock:{y:1448,m:5,d:19},rows:[],total:0,next:null},overrides);
@@ -17,7 +17,7 @@ function browser(fetch){
   const W={KIVO,__BS_BOOT:{srv:1,cf:1,uid:actor.id},crypto:crypto.webcrypto,URLSearchParams,AbortController,Uint8Array,setTimeout,clearTimeout,
     localStorage:{getItem(){throw Error('No business storage read permitted');},setItem(){throw Error('No business storage write permitted');}},
     fetch:async(url,options)=>{calls.push({url,options});return fetch(url,options);}};
-  W.window=W;vm.createContext(W);vm.runInContext(code,W,{filename:path.join(ROOT,'src/services/547-custody-api.js')});
+  W.window=W;vm.createContext(W);vm.runInContext(code,W,{filename:path.join(ROOT,'src/systems/custody/client/547-custody-api.js')});
   return {api:W.KIVO.Custody,calls,switchActor(){actor={id:'TEST_ONLY_other'};W.__BS_BOOT.uid=actor.id;},switchDept(){dept='TEST_ONLY_other_department';}};
 }
 test('bounded relative API reads use the current actor, never storage, and detach returned DTOs',async()=>{

@@ -9,7 +9,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
 import { candidateWorker, seed, D1, D2, IDS, identitySnapshot, ROOT } from '../../../../tests/unit/irshad_domain_fx.mjs';
-import { world } from '../../../../tests/unit/custody_review_fx.mjs';
+import { world } from '../../../../tests/unit/canonical_fx.mjs';
 import { installOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 import { EKEYS } from '../../../../tests/unit/notifications_review_fx.mjs';
 

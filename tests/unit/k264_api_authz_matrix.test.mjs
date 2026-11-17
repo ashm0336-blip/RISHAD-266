@@ -121,7 +121,7 @@ async function build(mode) {
 
 for (const mode of MODES) {
   /* ══ GET /api/get — نطاقُ القراءة بالمفتاح ══ */
-  test(`[${mode}] /api/get — المفاتيحُ المقروءة لكل هوية · لا قيمةَ لغير المقروء · لا اسمَ لمفتاح إدارةٍ أخرى · الحسابات بلا بصمة ولا رقمِ غيره`, { ...since(163), ...needsSys('award', 'dstats', 'seized', 'tasks') }, async (t) => {
+  test(`[${mode}] /api/get — المفاتيحُ المقروءة لكل هوية · لا قيمةَ لغير المقروء · لا اسمَ لمفتاح إدارةٍ أخرى · الحسابات بلا بصمة ولا رقمِ غيره`, { ...needsSys('custody'), ...since(163), ...needsSys('award', 'dstats', 'seized', 'tasks') }, async (t) => {
     const W = await world(mode), { C } = W, keys = Object.values(PK);
     for (const who of ACTIVE) {
       const r = await C.api('/api/get?keys=' + encodeURIComponent(keys.join(',')), { cookie: W.S[who] }); assert.equal(r.status, 200, who);
@@ -203,7 +203,7 @@ for (const mode of MODES) {
   });
 
   /* ══ GET /api/changes — أسماءُ ما تغيّر تمرّ بعقد القراءة نفسِه ══ */
-  test(`[${mode}] /api/changes — الأسماءُ بنطاق الهوية: كلُّ مقروءٍ يظهر · لا اسمَ لإدارةٍ أخرى ولا لتنبيهات مدير النظام`, { ...since(163), ...needsSys('award', 'dstats', 'seized', 'tasks') }, async () => {
+  test(`[${mode}] /api/changes — الأسماءُ بنطاق الهوية: كلُّ مقروءٍ يظهر · لا اسمَ لإدارةٍ أخرى ولا لتنبيهات مدير النظام`, { ...needsSys('custody'), ...since(163), ...needsSys('award', 'dstats', 'seized', 'tasks') }, async () => {
     const W = await world(mode), { C } = W;
     for (const who of ACTIVE) {
       const r = await C.api('/api/changes?since=0', { cookie: W.S[who] }); assert.equal(r.status, 200, who);

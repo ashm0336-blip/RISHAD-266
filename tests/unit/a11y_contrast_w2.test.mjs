@@ -123,7 +123,7 @@ test('IRSZ-5 · «المضبوطات»: نصُّ رقاقة الإجراء — �
   assert.match(src, /actColor: this\.actColor\(t\.act\),\n\s+actFg: this\.actFg\(t\.act\),/);
 });
 
-test('AUX-13 · عدّادُ النتائج «/ المجموع» بلون --text-muted بلا شفافية (كان 60٪ من لونٍ رماديّ ⇐ 2.47:1)', needs('award', 'seized', 'tasks'), () => {
+test('AUX-13 · عدّادُ النتائج «/ المجموع» بلون --text-muted بلا شفافية (كان 60٪ من لونٍ رماديّ ⇐ 2.47:1)', needs('award', 'custody', 'seized', 'tasks'), () => {
   let n = 0;
   for (const m of ['award', 'dreport', 'employees', 'irshad', 'seized', 'staff', 'tasks']) {
     const v = rd(path.relative(SRC, moduleFile(m, 'view.html')));

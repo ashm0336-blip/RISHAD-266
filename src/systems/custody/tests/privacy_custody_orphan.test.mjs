@@ -6,7 +6,7 @@
    closed on its stored key; issuing to a token is refused; managers keep the raw key. Both modes. TEST_ONLY synthetic data. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { privWorld, setSheet, login, MODES } from './privacy_fx.mjs';
+import { privWorld, setSheet, login, MODES } from '../../../../tests/unit/privacy_fx.mjs';
 
 const GONE = '1999999299', NAME = 'TEST_ONLY · موظف محذوف';
 const has = (x, s) => JSON.stringify(x).includes(s);

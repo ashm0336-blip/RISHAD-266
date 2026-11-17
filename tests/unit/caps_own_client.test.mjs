@@ -89,7 +89,7 @@ for (const mode of ['legacy', 'enforce']) {
     } finally { c.dispose(); }
   });
 
-  test(M + 'a narrowed grant gives no access in the employee client (myPerms · editors) and comes back exactly when widened', needs('award', 'tasks'), async () => {
+  test(M + 'a narrowed grant gives no access in the employee client (myPerms · editors) and comes back exactly when widened', needs('award', 'custody', 'tasks'), async () => {
     const W = await scene(mode);
     const s = await clientOf(W, 'su'); try { await ceiling(s, NARROW); } finally { s.dispose(); }
     let e = await clientOf(W, 'emp1');

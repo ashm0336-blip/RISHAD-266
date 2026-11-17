@@ -3,9 +3,9 @@
    before actual migration0006; normal paths use the canonical typed API/UI. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {legacyWorld,D1,IDS} from './custody_review_fx.mjs';
+import {legacyWorld,D1,IDS} from '../../../../tests/unit/canonical_fx.mjs';
 import {pageFor} from './custody_scenarios_fx.mjs';
-import {adoptOperationalFixture,replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
+import {adoptOperationalFixture,replaceOperationalFixture} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 const copy=value=>JSON.parse(JSON.stringify(value));
 
 const EMPS=[{eid:'eNEW',nid:'1234567890',empno:'7001',name:'سعد'},{eid:'eB',nid:'2222222222',empno:'7002',name:'بدر'}];

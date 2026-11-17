@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import {canonicalWorker} from './custody_review_fx.mjs';
+import {canonicalWorker} from './canonical_fx.mjs';
 import { D1Shim, ROOT, allowTestSchemaUpgrade } from './harness.mjs';
 
 /* Migration orchestration now has DS/NF/CU dependencies. Load the complete

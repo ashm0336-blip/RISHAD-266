@@ -1,7 +1,7 @@
 /* CU is an acknowledged relational domain, never a device/KV document. */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {FakeStorage,loadClient,until} from './k264_vm.mjs';
+import {FakeStorage,loadClient,until} from '../../../../tests/unit/k264_vm.mjs';
 
 const CU='bassam_custody_v1';
 const keys=[CU,'bsdept:dA:'+CU,'bsdept:dB:'+CU,'bsdept:undefined:'+CU,

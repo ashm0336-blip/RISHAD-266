@@ -3,7 +3,7 @@
    Synthetic local fixture policy only. No authorization bypass or business KV fallback. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { world, D1, IDS, copy, identitySnapshot } from './custody_review_fx.mjs';
+import { world, D1, IDS, copy, identitySnapshot } from './canonical_fx.mjs';
 import { installOperationalFixture, inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 
 test('typed round geometry: no scope record and a narrowing legacy record both allow; the unit ceiling still refuses', async () => {
