@@ -272,6 +272,18 @@
   {
    "tpl": "workers/parts/019b5-save-transition.js.tpl",
    "out": "workers/parts/019b5-save-transition.js"
+  },
+  {
+   "tpl": "modules/employees/view.html.tpl",
+   "out": "src/modules/employees/view.html"
+  },
+  {
+   "tpl": "modules/employees/logic.js.tpl",
+   "out": "src/modules/employees/logic.js"
+  },
+  {
+   "tpl": "modules/employees/helmet.css.tpl",
+   "out": "src/modules/employees/helmet.css"
   }
  ]
 }

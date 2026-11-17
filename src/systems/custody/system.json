@@ -417,6 +417,82 @@
   "save.transition.custodyChecks": {
    "order": 10,
    "text": ", checks: plan.checks, metadata: plan.metadata"
+  },
+  "emp.view.store": {
+   "order": 10,
+   "file": "slots/emp.view.store.frag"
+  },
+  "emp.view.custody": {
+   "order": 10,
+   "file": "slots/emp.view.custody.frag"
+  },
+  "emp.view.tabs": {
+   "order": 10,
+   "file": "slots/emp.view.tabs.frag"
+  },
+  "emp.view.status": {
+   "order": 10,
+   "file": "slots/emp.view.status.frag"
+  },
+  "emp.logic.custody": {
+   "order": 10,
+   "file": "slots/emp.logic.custody.frag"
+  },
+  "emp.tabs.custody": {
+   "order": 10,
+   "text": ", \"custody\", \"store\""
+  },
+  "emp.tabs.custodyLeaf": {
+   "order": 10,
+   "text": "\"store\" === t ? \"custody\" : "
+  },
+  "emp.live.custodyOpen": {
+   "order": 10,
+   "text": " ||\n      s.cuNewOpen ||\n      s.cuWiz ||\n      s.cuCard"
+  },
+  "emp.live.custodyRefresh": {
+   "order": 10,
+   "text": "    h(\"bassam_custody_v1\") && s.cuData && this._cuRefresh();\n"
+  },
+  "emp.state.custody": {
+   "order": 10,
+   "text": "    cuYear: null,\n    cuMonth: null,\n    cuData: null,\n    cuSearch: \"\",\n    cuRowOpen: null,\n    cuPage: 1,\n    cuPerPage: 10,\n    cuLogOpen: !1,\n    cuLogKind: \"\",\n    cuDd: null,\n    cuPick: {},\n    cuNewOpen: null,\n    cuNewF: {},\n    cuStoreF: null,\n    cuMenu: null,\n    cuWiz: null,\n    cuCard: null,\n"
+  },
+  "emp.close.custody": {
+   "order": 10,
+   "text": "      cuDd: null,\n      cuMenu: null,\n"
+  },
+  "emp.tab.custodyValid": {
+   "order": 10,
+   "text": " || \"custody\" === e.empTab || \"store\" === e.empTab"
+  },
+  "emp.vals.custodyAllowed": {
+   "order": 10,
+   "text": "          empCustodyAllowed: r(\"custody\"),\n"
+  },
+  "emp.vals.custodyTab": {
+   "order": 10,
+   "text": "          empCustodyTabStyle: i(\"custody\" === a),\n          empCustodyTabIcon: o(\"custody\" === a),\n          empCustodyTabLbl: s(\"custody\" === a),\n          empOnCustody: \"custody\" === a,\n"
+  },
+  "emp.vals.custodyGo": {
+   "order": 10,
+   "text": "          empGoCustody: () => this.setState({ empTab: \"custody\" }),\n          empStoreAllowed: r(\"store\"),\n          empStoreTabStyle: i(\"store\" === a),\n          empStoreTabIcon: o(\"store\" === a),\n          empStoreTabLbl: s(\"store\" === a),\n          empOnStore: \"store\" === a,\n          empGoStore: () => this.setState({ empTab: \"store\", cuStoreF: null }),\n"
+  },
+  "emp.vals.custody": {
+   "order": 10,
+   "text": "      ...this._custodyVals(),\n      ...this._storeVals(),\n"
+  },
+  "emp.confirm.custodyMoves": {
+   "order": 10,
+   "text": " وحركات عهدهم"
+  },
+  "emp.confirm.custodyCatalog": {
+   "order": 10,
+   "text": " وكتالوج العهد"
+  },
+  "emp.css.custody": {
+   "order": 10,
+   "text": "/* الموجة 2 · ES-7: خطواتُ معالج «سند تسليم عهدة جديد» في سطرها وسطاً على الجوال — هنا لا في <style> «الجاهزية» (sc-if) الغائب والمعالجُ مفتوح */\n@media (max-width:640px){.es-wzhd .es-wzst{flex-basis:100%;justify-content:center}}\n"
   }
  }
 }

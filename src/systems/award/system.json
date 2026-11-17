@@ -641,6 +641,10 @@
   "empGone.map": {
    "order": 30,
    "text": "'bassam_award_v1': awardGoneOk"
+  },
+  "emp.confirm.award": {
+   "order": 10,
+   "text": " وترشيحات التميز"
   }
  }
 }

@@ -1,0 +1,12 @@
+<style>
+body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
+a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
+/* صف مؤشرات الموظفين — بنية شبكة التقرير اليومي نفسها مكيَّفة لأربعة كروت
+   (كرت «طبيعة العمل» انتقل إلى الجدول الشهري بطلب المستخدم) */
+.emp-kpis{gap:16px}
+/* الموجة 2 · ES-9: «تعديل» و«حذف» في بطاقة الموظف (26px متلاصقان) ٣٦ بكسل بينهما 8px — على الإصبع وحده */
+@media (pointer: coarse){.emp-cardact{gap:8px!important}.emp-cardact>button{min-width:36px;min-height:36px}}
+@@SYS:emp.css.custody@@
+
+
+</style>

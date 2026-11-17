@@ -718,6 +718,10 @@
   "empGone.map": {
    "order": 10,
    "text": "'bassam_tasks_v1': tasksGoneOk"
+  },
+  "emp.confirm.tasks": {
+   "order": 10,
+   "text": " والمهام"
   }
  }
 }
