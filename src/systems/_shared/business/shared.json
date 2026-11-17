@@ -1,0 +1,14 @@
+{
+ "schema": 1,
+ "kind": "shared",
+ "key": "business",
+ "name": "قطعةُ العميل المشتركة بين صفحتَي المضبوطات والجائزة",
+ "owners": [
+  "award",
+  "seized"
+ ],
+ "files": [
+  "business-cloud.js"
+ ],
+ "note": "V7 · د4-أ: قطعةٌ مشتركة معلنة — لا صفحةَ من القاعدة تستعملها. يعلنها كلُّ مالكٍ في system.json (shared)، وتُضمّ إلى صفحته عبر logicParts. تبقى ما حضر أحدُ مالكيها، وتُحذف بـtools/systems.py --regen إن غابوا كلُّهم."
+}

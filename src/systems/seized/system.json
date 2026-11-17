@@ -73,8 +73,10 @@
   "src/pages/Seized.dc.html",
   "workers/parts/019k-seized-defaults.js"
  ],
+ "shared": [
+  "business"
+ ],
  "sharedStaysInBase": [
-  "src/modules/business-cloud.js",
   "workers/parts/019k-business-context.js",
   "workers/parts/019n-business-integration.js",
   "workers/parts/046-kivo-build-3.js",

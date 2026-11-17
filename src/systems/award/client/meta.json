@@ -2,7 +2,7 @@
  "name": "Award",
  "slug": "award",
  "logicParts": [
-  "../../../modules/business-cloud.js"
+  "../../_shared/business/business-cloud.js"
  ],
  "pre": "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<script src=\"./support.js\"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n",
  "mid": "\n</helmet>\n",
@@ -25,7 +25,7 @@
   ],
   "domain": [
    "src/systems/award/client/logic.js",
-   "src/systems/award/client/../../../modules/business-cloud.js"
+   "src/systems/award/client/../../_shared/business/business-cloud.js"
   ],
   "data": [
    "bassam_award_v1",

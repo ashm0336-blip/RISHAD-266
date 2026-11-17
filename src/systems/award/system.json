@@ -47,8 +47,10 @@
   "src/pages/Award.dc.html",
   "workers/parts/019k-award-reference-html.js"
  ],
+ "shared": [
+  "business"
+ ],
  "sharedStaysInBase": [
-  "src/modules/business-cloud.js",
   "workers/parts/019k-business-context.js",
   "workers/parts/019n-business-integration.js",
   "migrations/0009_seized_awards.sql"

@@ -70,14 +70,6 @@
    ],
    "kind": "legit",
    "why": "اسمُ ترحيل (الترحيلات تبقى بقرار د2)."
-  },
-  {
-   "file": "src/modules/business-cloud.js",
-   "match": [
-    "(?:(?:seized-|award-)?conflict|(?:award-)?restore-epoch-changed)"
-   ],
-   "kind": "deferred",
-   "why": "وحدةُ العميل المشتركة لصفحتَي المضبوطات والجائزة: نمطُ رموز خطأ؛ لا صفحةَ تستعملها بغيابهما."
   }
  ]
 }

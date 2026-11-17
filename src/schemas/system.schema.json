@@ -21,6 +21,7 @@
   "permissions": {"$ref": "#/$defs/rel", "description": "V7 · د3: ملفُ صلاحيات النظام (صفوفُه في السجلّ وروابطُه) — تجمعه tools/perm_parts.py مع القاعدة"},
   "tests": {"type": "array", "items": {"$ref": "#/$defs/rel"}},
   "derived": {"type": "array", "items": {"$ref": "#/$defs/rel"}},
+  "shared": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9]*$"}, "description": "V7 · د4-أ: قطعٌ مشتركة معلنة (src/systems/_shared/<key>/shared.json) يملكها هذا النظام مع غيره — تبقى ما حضر أحدُ مالكيها"},
   "sharedStaysInBase": {"type": "array", "items": {"$ref": "#/$defs/rel"}},
   "slots": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z0-9_.\\-]+$"}, "additionalProperties": {"oneOf": [{"$ref": "#/$defs/frag"}, {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/frag"}}]}}
  },

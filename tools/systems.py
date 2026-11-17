@@ -28,6 +28,13 @@ def load(S):
         d = json.load(open(p, encoding='utf-8')); d['_dir'] = os.path.dirname(p); out.append(d)
     return sorted(out, key=lambda d: d.get('key', ''))
 
+def shared(S):
+    """القطعُ المشتركة المعلنة: {key: shared.json مع _dir} من src/systems/_shared/<key>/shared.json (د4-أ)."""
+    out = {}
+    for p in sorted(glob.glob(os.path.join(S, 'systems', '_shared', '*', 'shared.json'))):
+        d = json.load(open(p, encoding='utf-8')); d['_dir'] = os.path.dirname(p); out[os.path.basename(d['_dir'])] = d
+    return out
+
 def problems(S, systems=None):
     """ما يمنع قراءة الأنظمة: مخططٌ · مفتاحٌ ≠ المجلد · تكرار · requires غائبة أو دائرية · قطعةٌ بلا نص."""
     systems = load(S) if systems is None else systems; bad = []
@@ -50,6 +57,18 @@ def problems(S, systems=None):
             for it in (v if isinstance(v, list) else [v]):
                 if ('text' in it) == ('file' in it): bad.append('%s: slots.%s يحمل text أو file (واحداً منهما)' % (k, name))
                 elif 'file' in it and not os.path.isfile(os.path.join(d['_dir'], it['file'])): bad.append('%s: slots.%s ← %s غير موجود' % (k, name, it['file']))
+    # د4-أ: القطعُ المشتركة المعلنة — كلُّ ما يعلنه نظامٌ موجودٌ ويسمّيه مالكاً، وكلُّ مالكٍ حاضر يعلنها، وملفاتُها موجودة
+    pieces = shared(S)
+    for d in systems:
+        for s in d.get('shared') or []:
+            if s not in pieces: bad.append('%s: shared «%s» بلا src/systems/_shared/%s/shared.json' % (d.get('key'), s, s))
+            elif d.get('key') not in pieces[s].get('owners', []): bad.append('%s: shared «%s» لا يسمّيه مالكاً' % (d.get('key'), s))
+    for s, p in pieces.items():
+        if p.get('key') != s or p.get('kind') != 'shared': bad.append('_shared/%s/shared.json: key/kind' % s)
+        for f in p.get('files') or []:
+            if not os.path.isfile(os.path.join(p['_dir'], f)): bad.append('_shared/%s: %s غير موجود' % (s, f))
+        for o in p.get('owners') or []:
+            if o in keys and s not in (next(d for d in systems if d.get('key') == o).get('shared') or []): bad.append('%s: مالكٌ للقطعة المشتركة «%s» ولا يعلنها (shared)' % (o, s))
     req = {d.get('key'): list(d.get('requires') or []) for d in systems}
     def cyc(k, seen):
         if k in seen: return True
@@ -164,6 +183,12 @@ def prune(S):
     for f in sorted(glob.glob(os.path.join(PD, '*.js'))):
         if os.path.basename(f) not in base and os.path.basename(f) not in order: gone.append(f)
     for f in gone: os.remove(f); print('  − ' + os.path.relpath(f, root) + ' (مولَّدٌ لنظامٍ غائب — حُذف)')
+    # د4-أ: قطعةٌ مشتركة غاب مالكوها كلُّهم — لا يستعملها أحد، فتُحذف مع آخر مالكيها
+    present = {d['key'] for d in load(S)}
+    for s, p in shared(S).items():
+        if not present & set(p.get('owners') or []):
+            import shutil
+            shutil.rmtree(p['_dir']); gone.append(p['_dir']); print('  − ' + os.path.relpath(p['_dir'], root) + ' (قطعةٌ مشتركة غاب مالكوها — حُذفت)')
     return gone
 
 def regen(S):

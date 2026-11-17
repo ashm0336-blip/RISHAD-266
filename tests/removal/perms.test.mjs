@@ -129,3 +129,12 @@ test('د3 · الحذف: لا اسمَ لنظامٍ غائب في جزءٍ من 
   }
   assert.deepEqual(bad.slice(0, 25), [], bad.length + ' ذكراً لاسم نظامٍ غائب خارج قائمة الاستثناء');
 });
+
+/* V7 · د4-أ — القطعةُ المشتركة المعلنة (src/systems/_shared/<key>): تبقى ما حضر أحدُ مالكيها، وتُحذف بـ--regen إن غابوا كلُّهم */
+test('د4-أ · الحذف: القطعةُ المشتركة تتبع مالكيها ' + label, () => {
+  const dir = path.join(FULL, 'systems', '_shared'); if (!fs.existsSync(dir)) return;
+  for (const k of fs.readdirSync(dir)) {
+    const piece = JSON.parse(fs.readFileSync(path.join(dir, k, 'shared.json'), 'utf8')), here = fs.existsSync(path.join(SRC, 'systems', '_shared', k));
+    assert.equal(here, piece.owners.some((o) => SYSTEMS.includes(o)), 'القطعةُ «' + k + '» حاضرةٌ ما حضر أحدُ مالكيها [' + piece.owners.join(' · ') + ']');
+  }
+});
