@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """V7 · د2-ب — اختبارُ الحذف: حذفُ مجلد نظامٍ يُخرجه من القاعدة نظيفاً (مقبسُ الأنظمة · tools/systems.py).
-   python3 tools/removal_test.py [all | none | award | dstats | seized]... [--units] [--no-browser] [--no-check] [--keep] [--jobs N]
-     none   حذفُ الأنظمة الأربعة معاً        award · dstats · seized   حذفُ نظامٍ واحد      all = الحالاتُ الأربع (الافتراضي)
+   python3 tools/removal_test.py [all | none | award | dstats | seized | tasks]... [--units] [--no-browser] [--no-check] [--keep] [--jobs N]
+     none   حذفُ الأنظمة كلِّها معاً (الأربعة والمهام)        award · dstats · seized · tasks   حذفُ نظامٍ واحد      all = الحالاتُ الخمس (الافتراضي)
      (الاسترشاد لا يُحذف وحده: المضبوطات تتطلبه — requires في system.json)
    لكل حالة، في نسخةٍ مؤقتة من شجرة العمل خارج المستودع (لا يُمسّ المستودع):
      ① حذفُ المجلد ثم  tools/systems.py --regen  (يعيد التوليد ويحذف ما وُلّد للنظام الغائب)
@@ -144,9 +144,9 @@ def run_case(name, opts):
 
 def main(argv):
     names = [a for a in argv if not a.startswith('--') and not a.isdigit()] or ['all']
-    if 'all' in names: names = ['none', 'award', 'dstats', 'seized']
+    if 'all' in names: names = ['none', 'award', 'dstats', 'seized', 'tasks']
     for n in names:
-        if n not in CASES: print('حالةٌ غير معروفة: ' + n + ' (none · award · dstats · seized · all)'); return 2
+        if n not in CASES: print('حالةٌ غير معروفة: ' + n + ' (none · award · dstats · seized · tasks · all)'); return 2
     jobs = int(argv[argv.index('--jobs') + 1]) if '--jobs' in argv else 6
     opts = {'units': '--units' in argv, 'nobrowser': '--no-browser' in argv, 'nocheck': '--no-check' in argv, 'keep': '--keep' in argv, 'jobs': jobs}
     results = {n: run_case(n, opts) for n in names}

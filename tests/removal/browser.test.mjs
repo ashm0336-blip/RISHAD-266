@@ -1,6 +1,7 @@
 /* V7 · د2-ب — اختبارُ الحذف (المتصفح): داخل نسخةٍ حُذف منها مجلدُ نظامٍ أو أكثر ثم أُعيد توليدُها وبناؤها (tools/removal_test.py)،
    ويعمل كذلك في الشجرة الكاملة. متصفحٌ حقيقي على المختبر المحلي (TEST_ONLY):
-     · الدخول، ثم «صفحتي» و«الموظفون» و«الإعدادات» بكل تبويباتها، ولوحةُ مدير المنصة بوجهاتها، و«مؤشرات الإدارة» — بلا أخطاء صفحة
+     · الدخول، ثم «صفحتي» و«الموظفون» و«المتابعة اليومية» و«مؤشرات الإدارة» و«الإعدادات» بكل تبويباتها، ولوحةُ مدير المنصة بوجهاتها — بلا أخطاء صفحة
+     · د4-ب: بغياب المهام لا تبويبَ «المهام» في «المتابعة اليومية» ولا بطاقةَ «مهامك» في «صفحتي» ولا لوحةَ «مؤشرات المهام»
      · القائمةُ الجانبية تحمل رابطَ كل نظامٍ حاضر ولا تحمل رابطَ نظامٍ غائب، وعنوانُ نظامٍ غائب لا يفتح صفحة */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,7 +11,8 @@ import { startLab, LAB } from '../browser/local_server.mjs';
 import { chromium, openAs } from '../browser/lab_browser.mjs';
 import { SYSTEMS, SRC } from '../unit/harness.mjs';
 
-const ALL = ['award', 'dstats', 'irshad', 'seized'];
+const ALL = ['award', 'dstats', 'irshad', 'seized', 'tasks'];
+const SIDE = ALL.filter((k) => k !== 'tasks');   /* المهام بلا رابطٍ في القائمة الجانبية: تبويبٌ تحت «المتابعة اليومية» ولوحةٌ في المؤشرات وبطاقةٌ في «ملفي» */
 const PAGES = JSON.parse(fs.readFileSync(path.join(SRC, 'manifests', 'pages.json'), 'utf8'));
 const adminTabs = ((PAGES.pages.find((p) => p.key === 'admin') || {}).subs || []).filter((s) => !s.noTab).map((s) => s.key);
 
@@ -19,12 +21,19 @@ test('د2-ب · الحذف: المتصفحُ بالأنظمة الحاضرة [' 
   try {
     /* مدير الإدارة: صفحتي · الموظفون · الإعدادات وتبويباتها */
     const m = await openAs(b, lab, LAB.mgrA, LAB.pw);
-    for (const h of ['#/profile', '#/employees', '#/admin'].concat(adminTabs.map((t) => '#/admin/' + t))) {
+    for (const h of ['#/profile', '#/employees', '#/daily', '#/kpis', '#/admin'].concat(adminTabs.map((t) => '#/admin/' + t))) {
       await m.go(h, 2800); const st = await m.page.evaluate(() => ({ hash: location.hash, text: (document.querySelector('main') || document.body).innerText.length }));
       assert.ok(st.text > 40, h + ': الصفحة رُسمت (' + JSON.stringify(st) + ')');
     }
     const side = await m.page.evaluate(() => [...document.querySelectorAll('aside.bsb a[data-key]')].map((a) => a.getAttribute('data-key')));
-    for (const k of ALL) assert.equal(side.includes(k), SYSTEMS.includes(k), 'رابطُ «' + k + '» في القالب بحضور نظامه فقط — ' + JSON.stringify(side));
+    /* د4-ب: بغياب المهام — لا تبويبَها في «المتابعة اليومية»، ولا بطاقةَ «مهامك» في «صفحتي»، ولا لوحةَ مؤشراتها */
+    if (!SYSTEMS.includes('tasks')) {
+      const exact = (t) => m.page.evaluate((t) => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === t), t);
+      await m.go('#/daily', 2800); assert.equal(await exact('المهام'), false, 'لا تبويبَ «المهام» في المتابعة اليومية');
+      await m.go('#/profile', 2800); assert.equal(await m.page.evaluate(() => !!document.querySelector('[data-pf-tasks]')), false, 'لا بطاقةَ «مهامك» في صفحتي');
+      await m.go('#/kpis', 2800); assert.equal(await exact('مؤشرات المهام'), false, 'لا لوحةَ «مؤشرات المهام»');
+    }
+    for (const k of SIDE) assert.equal(side.includes(k), SYSTEMS.includes(k), 'رابطُ «' + k + '» في القالب بحضور نظامه فقط — ' + JSON.stringify(side));
     for (const k of ALL.filter((x) => !SYSTEMS.includes(x))) { await m.go('#/' + k, 2500); const comp = await m.page.evaluate(() => (document.querySelector('main') || document.body).innerText.length); assert.ok(comp >= 0, '#/' + k + ' لا يُسقط الصفحة'); }
     assert.deepEqual(m.errs, [], 'مدير الإدارة: لا أخطاء صفحة');
     await m.ctx.close();
