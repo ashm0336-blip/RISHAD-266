@@ -231,7 +231,7 @@ def main(argv):
         cases = [set(d['key'] for d in systems)] + [dependents(d['key']) for d in systems]
         for gone in [g for i, g in enumerate(cases) if g and g not in cases[:i]]:
             frags = fragments(S, [d for d in systems if d['key'] not in gone])
-            res.append({'gone': sorted(gone), 'files': {t['out']: expand(open(os.path.join(S, 'slots', t['tpl']), encoding='utf-8', newline='').read(), frags) for t in manifest(S) if t['out'].endswith('.js')}})
+            res.append({'gone': sorted(gone), 'names': [n for d in systems if d['key'] in gone for n in d.get('names') or []], 'files': {t['out']: expand(open(os.path.join(S, 'slots', t['tpl']), encoding='utf-8', newline='').read(), frags) for t in manifest(S) if t['out'].endswith('.js')}})
         print(json.dumps(res, ensure_ascii=False)); return 0
     if '--list' in argv:
         print(json.dumps([{'key': d['key'], 'name': d.get('name'), 'requires': d.get('requires') or []} for d in systems], ensure_ascii=False)); return 0

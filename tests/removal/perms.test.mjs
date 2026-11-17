@@ -12,7 +12,7 @@ import vm from 'node:vm';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { SRC, ROOT, PYTHON, SYSTEMS } from '../unit/harness.mjs';
-import { noComments, scanFiles, relOf, staleAllow } from './names_allow.mjs';
+import { noComments, scanFiles, relOf, staleAllow, finder } from './names_allow.mjs';
 
 const FULL = process.env.KIVO_FULL_SRC || SRC;
 const rd = (...p) => fs.readFileSync(path.join(SRC, ...p), 'utf8');
@@ -43,8 +43,10 @@ const sysRes = [...GT.resources].filter((r) => GONE.some((k) => new RegExp('^bas
 /* في الكود: المفاتيحُ والأوراقُ والأعلام. وفي وثائق البيانات (JSON): ومعها مواردُ النظام (صفوفُها تغيب معه). */
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
 const rxOf = (toks) => (toks.length ? new RegExp('(?<![\\w.])(' + toks.slice().sort((a, b) => b.length - a.length).map(esc).join('|') + ')(?![\\w])', 'g') : null);
-const RX_CODE = rxOf([...GT.keys, ...GT.owners, ...GT.flags]), RX_DATA = rxOf([...GT.keys, ...GT.owners, ...GT.flags, ...sysRes]);
-const hits = (text, data) => { const RX = data ? RX_DATA : RX_CODE; return RX ? [...new Set(Array.from(text.matchAll(RX), (m) => m[1]))] : []; };
+/* د4-ب: ورقةٌ اسمُها كلمةٌ واحدة (صفحةٌ مثل tasks) كلمةٌ عادية في الكود (متغيّر · جزءٌ من معرّف كتلةٍ مشتركة) — تُعدّ رمزاً في الكود حين تكون نصاً كاملاً بين علامتَي اقتباس وحده */
+const bareOwners = [...GT.owners].filter((o) => /^[a-z]+$/.test(o)), pathOwners = [...GT.owners].filter((o) => !/^[a-z]+$/.test(o));
+const RX_CODE = rxOf([...GT.keys, ...pathOwners, ...GT.flags]), RX_BARE = bareOwners.length ? new RegExp('([\'"])(' + bareOwners.map(esc).join('|') + ')\\1', 'g') : null, RX_DATA = rxOf([...GT.keys, ...GT.owners, ...GT.flags, ...sysRes]);
+const hits = (text, data) => { const RX = data ? RX_DATA : RX_CODE; const out = RX ? Array.from(text.matchAll(RX), (m) => m[1]) : []; if (!data && RX_BARE) for (const m of text.matchAll(RX_BARE)) out.push(m[2]); return [...new Set(out)]; };
 const label = '[' + (SYSTEMS.join(' · ') || 'لا نظام') + ']' + (GONE.length ? ' — الغائب: ' + GONE.join(' · ') : '');
 
 test('د3 · الحذف: السجلُّ والشجرةُ وروابطُ الخادم المولَّدة لا تحمل رمزاً لنظامٍ غائب ' + label, () => {
@@ -116,15 +118,17 @@ test('د3 · الحذف: لا اسمَ لنظامٍ غائب في جزءٍ من 
   /* د4-أ: كلُّ مدخلٍ في القائمة ما زال له موضع — يُفحص على الشجرة الكاملة (الأنظمةُ كلُّها حاضرة)، فيعمل في المستودع وفي كل نسخة حذف */
   assert.deepEqual(staleAllow(ALLOW, path.dirname(FULL), FULL), [], 'مدخلٌ في قائمة الاستثناء بلا موضع');
   if (!GONE.length) return;
-  const NAME = new RegExp('(?:' + GONE.join('|') + ')', 'i'), skip = new Set(ALLOW.skipFiles.map((x) => x.file)), pats = ALLOW.patterns.map((x) => new RegExp(x.pattern, 'g'));
+  /* د4-ب: مع مفتاح المجلد، الأسماءُ الأخرى التي يعلنها النظامُ الغائب (system.json ← names) */
+  const extra = GONE.flatMap((k) => JSON.parse(fs.readFileSync(path.join(FULL, 'systems', k, 'system.json'), 'utf8')).names || []), find = finder(GONE, extra);
+  const skip = new Set(ALLOW.skipFiles.map((x) => x.file)), pats = ALLOW.patterns.map((x) => new RegExp(x.pattern, 'g'));
   const bad = [];
   for (const f of scanFiles(ROOT, SRC)) {
     const rel = relOf(ROOT, f); if (skip.has(rel)) continue;
     const cuts = ALLOW.entries.filter((e) => e.file === '*' || e.file === rel).flatMap((e) => e.match).sort((a, b) => b.length - a.length);
     noComments(fs.readFileSync(f, 'utf8')).split('\n').forEach((line, i) => {
-      if (!NAME.test(line)) return;
+      if (!find(line)) return;
       let rest = line; for (const p of pats) rest = rest.replace(p, '""'); for (const c of cuts) rest = rest.split(c).join('');
-      const m = NAME.exec(rest); if (m) bad.push(rel + ':' + (i + 1) + ' «' + rest.slice(Math.max(0, m.index - 40), m.index + 50).trim() + '»');
+      const m = find(rest); if (m) bad.push(rel + ':' + (i + 1) + ' «' + rest.slice(Math.max(0, m.index - 40), m.index + 50).trim() + '»');
     });
   }
   assert.deepEqual(bad.slice(0, 25), [], bad.length + ' ذكراً لاسم نظامٍ غائب خارج قائمة الاستثناء');

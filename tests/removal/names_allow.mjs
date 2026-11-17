@@ -14,6 +14,12 @@ export function scanFiles(root, src) {
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (['systems', 'slots', 'pages'].includes(e.name) ? [] : walk(path.join(d, e.name))) : (/\.js$/.test(e.name) ? [path.join(d, e.name)] : [])));
   return parts.concat(walk(src));
 }
+/* ما يُبحث عنه لأنظمةٍ غائبة: مفتاحُ المجلد حيث ورد (بأي حالة أحرف) + الأسماءُ الأخرى التي يعلنها النظام في system.json ← names
+   (تعابيرُ دقيقة ببداية الكلمة، حسّاسةٌ للحالة — مثل task. و tk متبوعةً بحرفٍ كبير). يعيد دالةً: أولُ مطابقةٍ في النص {index} أو null. */
+export function finder(keys, names) {
+  const rx = (keys.length ? [new RegExp('(?:' + keys.join('|') + ')', 'i')] : []).concat((names || []).map((n) => new RegExp(n)));
+  return (text) => { let best = null; for (const r of rx) { const m = r.exec(text); if (m && (!best || m.index < best.index)) best = m; } return best; };
+}
 export const relOf = (root, f) => path.relative(root, f).split(path.sep).join('/');
 
 /* مداخلُ بلا موضع: تُعاد قائمةً نصية (فارغةٌ = كلُّ مدخلٍ له موضع). root/src = الشجرةُ الكاملة. */
@@ -23,7 +29,7 @@ export function staleAllow(allow, root, src) {
   const cases = JSON.parse(run.stdout); if (!cases.length) return ['لا نظامَ في الشجرة الكاملة: لا يُعرف ما يُبحث عنه'];
   const base = scanFiles(root, src).map((f) => relOf(root, f)).filter((rel) => !rel.startsWith('src/systems/'));   /* أجزاءُ الأنظمة نفسُها ليست من القاعدة */
   const disk = new Map(base.map((rel) => [rel, noComments(fs.readFileSync(path.join(root, rel), 'utf8')).split('\n')]));
-  const views = cases.map((c) => ({ NAME: new RegExp('(?:' + c.gone.join('|') + ')', 'i'), lines: (rel) => (c.files[rel] === undefined ? disk.get(rel) : noComments(c.files[rel]).split('\n')) }));
+  const views = cases.map((c) => ({ NAME: { test: ((f) => (t) => !!f(t))(finder(c.gone, c.names)) }, lines: (rel) => (c.files[rel] === undefined ? disk.get(rel) : noComments(c.files[rel]).split('\n')) }));
   const out = [], known = new Set(base);
   for (const s of allow.skipFiles) {
     if (!known.has(s.file)) out.push('skipFiles: ' + s.file + ' ليس من الملفات المبحوث فيها');

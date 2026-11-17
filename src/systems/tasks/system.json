@@ -3,6 +3,10 @@
  "kind": "system",
  "key": "tasks",
  "name": "المهام",
+ "names": [
+  "\\btask\\.",
+  "\\btk[A-Z]"
+ ],
  "note": "V7 · د4-ب: نظامُ المهام — صفحتُه (تبويبٌ تحت «المتابعة اليومية» ولوحةٌ في المؤشرات)، وبطاقةُ «مهامك» في «ملفي» (545)، ونموذجُ المهمة (546)، وأجزاءُ الخادم. تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py).",
  "client": {
   "slug": "tasks",
@@ -566,6 +570,78 @@
   "daily.view.tab.tasks": {
    "order": 10,
    "file": "slots/daily.view.tab.tasks.frag"
+  },
+  "profile.hist.filter.tasks": {
+   "order": 10,
+   "text": "    /* «المهام ←» يفتح «سجل مهامك» القائم (لا تكرار) — ويُمحى ذيلُ #/profile/history إذ لم يعد «السجل» مفتوحاً */\n    tkOn &&\n      r.histFilters.push({\n        t: \"المهام ←\",\n        cls: \"pf-hf go\",\n        on: \"false\",\n        pick: () => {\n          this._pfHT(\"\");\n          this.tkLogOpen();\n        },\n      });\n"
+  },
+  "profile.hist.param.tasks": {
+   "order": 10,
+   "text": ", tkOn"
+  },
+  "profile.hist.arg.tasks": {
+   "order": 10,
+   "text": ", r.tkOn"
+  },
+  "profile.vals.empty.tasks": {
+   "order": 10,
+   "text": "    /* KIVO_264 · D15: «لا تملك صلاحية عرض المهام» شيءٌ و«لا مهام» شيءٌ آخر — KIVO-Tasks: مع المسار الذاتي (KIVO.BassamMyTasks) لا تتوقف رؤيةُ\n       الموظف لمهامه على task.view، فنصُّ الفراغ من حالة مصدره (_tkVals: غيرُ مرتبطٍ بسجل موظف · تعذّر التحميل · لا مهام) — ويبقى D15 لما سواه */\n    /* KIVO_265 · «ملفي»: لا إحصاءَ «هذا الشهر» بأصفارٍ قبل أوّل قراءة (tkLoad) — ونصُّ الفراغ «لا توجد لديك مهام حالية» في المسارين */\n    if (KIVO.BassamMyTasks) ((r.tkNoPerm = !1), (r.tkStatsOn = !r.tkLoad));\n    else {\n      r.tkNoPerm = !!(r.tkOn && r.tkEmpty && !this.can(\"tasks\", \"view\"));\n      r.tkStatsOn = !r.tkNoPerm;\n      r.tkEmptyT = r.tkNoPerm ? \"لا تملك صلاحية عرض المهام\" : \"لا توجد لديك مهام حالية\";\n      /* لا يُوجَّه الموظفُ إلى طلب ورقةٍ إدارية — قرارُ المالك: لا تُعالَج رؤيةُ المهام بمنح صلاحياتٍ إدارية (وكيلُ المهام يعالج المسارَ الذاتي) */\n      r.tkEmptyS = r.tkNoPerm ? \"قائمةُ المهام لا تصل حسابك بصلاحياته الحالية — يصلك تنبيهُ الجرس حين تُسند إليك مهمة\" : \"حين يُسند إليك شيء يظهر هنا فوراً ويصلك تنبيه في الجرس\";\n    }\n"
+  },
+  "profile.vals.tasks": {
+   "order": 10,
+   "text": ", this._tkVals(r, i, a)"
+  },
+  "profile.methods.2.tasks": {
+   "order": 10,
+   "file": "slots/profile.methods.2.tasks.frag"
+  },
+  "profile.draft.busy.tasks": {
+   "order": 10,
+   "text": "this.state.tkBusy || "
+  },
+  "profile.methods.1.tasks": {
+   "order": 10,
+   "file": "slots/profile.methods.1.tasks.frag"
+  },
+  "profile.data.key.tasks": {
+   "order": 10,
+   "text": "        \"bassam_tasks_v1\",\n"
+  },
+  "profile.unmount.store.tasks": {
+   "order": 10,
+   "text": "    try {\n      window.removeEventListener(\"bassam:store\", this._pfOnStore);\n    } catch (t) {}\n"
+  },
+  "profile.unmount.net.tasks": {
+   "order": 10,
+   "text": "    try {\n      this._tkOnNet && window.removeEventListener(\"online\", this._tkOnNet);\n    } catch (t) {}\n"
+  },
+  "profile.unmount.timers.1.tasks": {
+   "order": 10,
+   "text": " clearInterval(this._tkT), clearTimeout(this._pfStoreT),"
+  },
+  "profile.unmount.timers.2.tasks": {
+   "order": 10,
+   "text": ", clearTimeout(this._tkRetryT)"
+  },
+  "profile.mount.store.tasks": {
+   "order": 10,
+   "text": "    this._pfOnStore = (t) => {\n      try {\n        const e = (t && t.detail) || {},\n          s = (e.keys ? e.keys : [e.key]).filter(Boolean).map(String);\n        if (s.length && !s.some((t) => \"bassam_tasks_v1\" === t || t.slice(-16) === \":bassam_tasks_v1\")) return;\n        (clearTimeout(this._pfStoreT),\n          (this._pfStoreT = setTimeout(() => {\n            this._pfAlive && this.setState({ tkNow: Date.now() });\n          }, 0)));\n      } catch (t) {}\n    };\n    try {\n      window.addEventListener(\"bassam:store\", this._pfOnStore);\n    } catch (t) {}\n"
+  },
+  "profile.mount.clock.tasks": {
+   "order": 10,
+   "text": "      (this._tkT = setInterval(() => this._tkClockTick(), 1e3)),\n"
+  },
+  "profile.view.card.tasks": {
+   "order": 10,
+   "file": "slots/profile.view.card.tasks.frag"
+  },
+  "profile.view.popups.tasks": {
+   "order": 10,
+   "file": "slots/profile.view.popups.tasks.frag"
+  },
+  "profile.css.tasks": {
+   "order": 10,
+   "file": "slots/profile.css.tasks.frag"
   }
  }
 }

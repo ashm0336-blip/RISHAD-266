@@ -252,6 +252,18 @@
   {
    "tpl": "modules/daily/view.html.tpl",
    "out": "src/modules/daily/view.html"
+  },
+  {
+   "tpl": "modules/profile/logic.js.tpl",
+   "out": "src/modules/profile/logic.js"
+  },
+  {
+   "tpl": "modules/profile/view.html.tpl",
+   "out": "src/modules/profile/view.html"
+  },
+  {
+   "tpl": "modules/profile/helmet.css.tpl",
+   "out": "src/modules/profile/helmet.css"
   }
  ]
 }
