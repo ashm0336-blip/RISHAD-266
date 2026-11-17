@@ -124,30 +124,6 @@
    "guardKind": "ops"
   },
   {
-   "key": "task.month.lock",
-   "res": "bassam_tasks_locks_v1",
-   "where": "locks[\"y-m\"]: → true · أو {mo:1} يزول لشهرٍ منقضٍ",
-   "how": "اتجاه القفل (OPS **)",
-   "asis": "tasks:approve",
-   "decl": "",
-   "dup": "",
-   "owner": "tasks",
-   "type": "decision",
-   "guardKind": "ops"
-  },
-  {
-   "key": "task.month.reopen",
-   "res": "bassam_tasks_locks_v1",
-   "where": "locks[\"y-m\"]: true يزول · أو → {mo:1}",
-   "how": "اتجاه الفتح",
-   "asis": "tasks:approve",
-   "decl": "",
-   "dup": "",
-   "owner": "tasks",
-   "type": "decision",
-   "guardKind": "ops"
-  },
-  {
    "key": "cust.move.issue",
    "res": "bassam_custody_v1",
    "where": "moves[] إلحاقٌ في الذيل حيث move.t === \"out\" (تسليم)",
@@ -193,66 +169,6 @@
    "dup": "",
    "owner": "emps/custody",
    "type": "edit",
-   "guardKind": "field"
-  },
-  {
-   "key": "task.assign",
-   "res": "bassam_tasks_v1",
-   "where": "[\"y-m-d\"][i]: الأعمدة 7 (الأحرف الأولى) · 8 (اسم المكلَّف) · 14 (ekey) · 17/18 (المجموعة)",
-   "how": "تغيّرُ أيٍّ من أعمدة الإسناد على صفٍّ قائم",
-   "asis": "tasks:edit",
-   "decl": "",
-   "dup": "",
-   "owner": "tasks",
-   "type": "edit",
-   "guardKind": "field"
-  },
-  {
-   "key": "task.evidence",
-   "res": "bassam_tasks_v1",
-   "where": "[\"y-m-d\"][i][21] = {imgs[img_tsk…], note, at} (توثيقُ الإنهاء)",
-   "how": "تغيّرُ العمود 21؛ يُرافق task.finish عند tkFinish",
-   "asis": "tasks:edit أو selfTaskOnly (TASK_SELF)",
-   "decl": "",
-   "dup": "مع task.finish حين يُكتب الإنهاءُ والتوثيقُ في حفظةٍ واحدة (عمودان مختلفان) — مبرَّر",
-   "owner": "tasks",
-   "type": "edit",
-   "guardKind": "field"
-  },
-  {
-   "key": "task.accept",
-   "res": "bassam_tasks_v1",
-   "where": "[3]: pending → in_progress (+[11] وقتُ البدء) · أو pending → declined (+[20] سببُ الاعتذار)",
-   "how": "انتقالُ عمود الحالة من pending",
-   "asis": "tasks:edit أو selfTaskOnly",
-   "decl": "",
-   "dup": "",
-   "owner": "tasks",
-   "type": "operation",
-   "guardKind": "field"
-  },
-  {
-   "key": "task.finish",
-   "res": "bassam_tasks_v1",
-   "where": "[3]: in_progress → done (+[12] وقتُ الإنهاء · [6] الأداء)",
-   "how": "انتقالُ عمود الحالة إلى done",
-   "asis": "tasks:edit أو selfTaskOnly",
-   "decl": "",
-   "dup": "",
-   "owner": "tasks",
-   "type": "operation",
-   "guardKind": "field"
-  },
-  {
-   "key": "task.reopen",
-   "res": "bassam_tasks_v1",
-   "where": "[3]: done → in_progress (المصدر: _doReopen يُبقي [11] ويُفرغ [12]/[6]) · أو done/declined → pending",
-   "how": "انتقالٌ عائدٌ من حالةٍ منتهية",
-   "asis": "tasks:edit",
-   "decl": "",
-   "dup": "",
-   "owner": "tasks",
-   "type": "decision",
    "guardKind": "field"
   },
   {
@@ -664,18 +580,6 @@
    "guardKind": "cap"
   },
   {
-   "key": "task.bulk.delete",
-   "res": "bassam_tasks_v1",
-   "where": "زوالُ ≥2 صفٍّ في كتابةٍ واحدة (حذفُ شهر · حذفُ مجموعة)",
-   "how": "عدُّ الصفوف الزائلة",
-   "asis": "tasks:del",
-   "decl": "العتبة: 2+ صفّ = جماعي؛ صفٌّ واحد = task.delete",
-   "dup": "",
-   "owner": "tasks",
-   "type": "operation",
-   "guardKind": "cap"
-  },
-  {
    "key": "report.transfer",
    "res": "bassam_dreport_v1",
    "where": "shifts[A].roster[ekey] يزول + shifts[A].tout[ekey]={to,why} · shifts[B].roster يظهر فيه {ekey, tin:1, tfrom, treason}",
@@ -834,18 +738,6 @@
    "text": "bulk = 2+ كيان يزول (أو حساب يتبدّل) في كتابةٍ واحدة، أو زوالُ مفتاح الشهر كلِّه؛ واحدٌ = المفتاحُ الإفراديّ."
   },
   {
-   "id": "D-11",
-   "topic": "التوثيق",
-   "status": "معلَن (باقٍ)",
-   "text": "task.evidence = العمود 21 وحده؛ [6] الأداء مشتقٌّ يُرافق finish/reopen؛ [20] سببُ الاعتذار يُرافق accept(declined)."
-  },
-  {
-   "id": "D-12",
-   "topic": "task.reopen",
-   "status": "حُسم في v24.3 (F-12)",
-   "text": "done → in_progress مع تفريغ [12]/[6] وإبقاء [11]؛ لا declined → pending في المصدر — نصُّ الوثيقة مطابق."
-  },
-  {
    "id": "D-14",
    "topic": "backup.restore",
    "status": "حُسم في v24.3 (F-13) — Phase 3: علامةٌ صريحة + سياسةٌ ظلّية",
@@ -897,8 +789,8 @@
   "shadowOnly": 2,
   "duplicatesJustified": 2,
   "duplicatesUnjustified": 0,
-  "emittedKeys": 99,
-  "coveredResources": 15,
+  "emittedKeys": 87,
+  "coveredResources": 13,
   "decisions": 20
  }
 }

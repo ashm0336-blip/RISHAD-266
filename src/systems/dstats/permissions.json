@@ -1232,8 +1232,8 @@
     "path": [
      "featureFlags"
     ],
-    "after": 26,
-    "seq": 13,
+    "after": 25,
+    "seq": 14,
     "value": "ff.module.dstats.enabled"
    }
   ],
@@ -1244,7 +1244,7 @@
      "DateRange",
      "evidence"
     ],
-    "set": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds/dreport/plan/staffing/tasks: أقفالٌ واجهية",
+    "set": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds/dreport/plan/staffing: أقفالٌ واجهية",
     "with": [
      "irshad",
      "seized"
@@ -1599,8 +1599,8 @@
      "byResource"
     ],
     "key": "bassam_dstats_v1",
-    "after": 8,
-    "seq": 3,
+    "after": 7,
+    "seq": 4,
     "value": {
      "items": "dstatsItems",
      "evidence": "haram|nabawi[\"yyyy-mm-dd\"] · locks[\"site|y-m\"] (dsLockedIn)",

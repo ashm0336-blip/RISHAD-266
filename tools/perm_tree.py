@@ -46,7 +46,7 @@ def derive():
         m = re.search(r'<b>(.*?)</b>\s*<code>(.*?)</code>', td[1], re.S)
         if m: doc_leaves.setdefault(strip(td[0]), []).append(strip(m.group(2)))
     ABSENT = sorted(c for c, ls in doc_leaves.items() if CONT_KIND.get(c, 'page') == 'page' and c not in PGN and not any(x in owners for x in ls))
-    derive.absent = ABSENT
+    LEAF_ABSENT = []; derive.absent = ABSENT; derive.leaf_absent = LEAF_ABSENT
     for r in rows:
         td = re.findall(r'<td>(.*?)</td>', r, re.S)
         if len(td) < 7: continue
@@ -54,6 +54,9 @@ def derive():
         if not m: continue
         if cname in ABSENT: continue
         label, oid = strip(m.group(1)), strip(m.group(2)); kind = strip(td[2]); route = strip(td[3])
+        # د4-ب: ورقةٌ هي صفحةٌ تحت حاويةٍ حاضرة (مثل «المهام» تحت «المتابعة اليومية») — إن غابت من pages.json ومن مالكي السجلّ معاً فنظامُها غائب: تُتخطّى.
+        #        الغيابُ الجزئي (صفحةٌ بلا مالكها أو مالكٌ بلا صفحته) يبقى مخالفةً كما كان.
+        if '/' not in oid and CONT_KIND.get(cname, 'page') == 'page' and oid not in PG and oid not in owners: LEAF_ABSENT.append(oid); continue
         own_part = td[4].split('<br>')[0]; keys = [strip(c) for c in re.findall(r'<code>(.*?)</code>', own_part, re.S)]
         mref = re.search(r'Managed References:</b>\s*<ul[^>]*>(.*?)</ul>', td[4], re.S); managed = [strip(c) for c in re.findall(r'<code>(.*?)</code>', mref.group(1), re.S)] if mref else []
         nres = int(strip(td[5]) or 0) if strip(td[5]).isdigit() else 0
@@ -135,6 +138,7 @@ if __name__ == '__main__':
     out, errs = derive()
     for e in errs: print('  ✘ ' + e)
     if errs: print('✘ شجرةُ الصلاحيات: ' + str(len(errs)) + ' مخالفة'); sys.exit(1)
+    if getattr(derive, 'leaf_absent', None): print('  · أوراقٌ في الوثيقة بلا صفحةٍ ولا مالكٍ هنا (نظامٌ غائب — يُفحص الحاضر): ' + ' · '.join(derive.leaf_absent))
     if getattr(derive, 'absent', None): print('  · حاوياتٌ في الوثيقة بلا صفحةٍ ولا أوراقٍ هنا (نظامٌ غائب — يُفحص الحاضر): ' + ' · '.join(derive.absent))
     txt = json.dumps(out, ensure_ascii=False, indent=1) + '\n'
     if cmd == 'emit':
