@@ -514,6 +514,58 @@
   "permv2.selfRule.how.tasks": {
    "order": 10,
    "text": " || how === 'selfTask'"
+  },
+  "daily.tabVals.tasks": {
+   "order": 10,
+   "text": "        dsOnTasks: \"tasks\" === $n,\n        dsTasksTabStyle: ti(\"tasks\" === $n),\n        dsTasksTabIcon: ei(\"tasks\" === $n),\n        dsTasksTabLbl: si(\"tasks\" === $n),\n        dsGoTasks: () => this.setState({ dsTab: \"tasks\" }),\n        dsTasksTabShow: TKn,\n"
+  },
+  "daily.fallback.3.tasks": {
+   "order": 10,
+   "text": "TKn ? \"tasks\" : "
+  },
+  "daily.guard.tasks": {
+   "order": 10,
+   "text": ",\n      \"tasks\" !== $n || TKn || ($n = Qn ? \"kpi\" : qn ? \"dreport\" : \"rounds\")"
+  },
+  "daily.fallback.2.tasks": {
+   "order": 10,
+   "text": "Vn ? \"rounds\" : \"tasks\""
+  },
+  "daily.fallback.1.tasks": {
+   "order": 10,
+   "text": "Vn ? \"rounds\" : \"tasks\""
+  },
+  "daily.pick.tasks": {
+   "order": 10,
+   "text": "\"tasks\" === s.dsTab ? \"tasks\" : "
+  },
+  "daily.can.tasks": {
+   "order": 10,
+   "text": "      TKn = (() => {\n        try {\n          const t = KIVO.BassamPerm;\n          return !t || !t.can || !!t.can(\"tasks\", \"view\");\n        } catch (t) {\n          return !0;\n        }\n      })(),\n"
+  },
+  "daily.addr.3.tasks": {
+   "order": 10,
+   "text": " || \"tasks\" === n.dsTab"
+  },
+  "daily.addr.2.tasks": {
+   "order": 10,
+   "text": " || \"tasks\" === t"
+  },
+  "daily.addr.list.tasks": {
+   "order": 10,
+   "text": ", \"tasks\""
+  },
+  "daily.addr.1.tasks": {
+   "order": 10,
+   "text": " || \"tasks\" === x"
+  },
+  "daily.view.mount.tasks": {
+   "order": 10,
+   "text": "<!-- ═══ تبويب «المهام» — انتقل من «موظفو الإدارة»: ماذا يعمل من حضر اليوم — يستورد صفحته كما هي ═══ -->\n<sc-if value=\"{{dsOnTasks}}\" hint-placeholder-val=\"{{ false }}\">\n<dc-import name=\"Tasks\" hint-size=\"100%,1200px\"></dc-import>\n</sc-if>\n"
+  },
+  "daily.view.tab.tasks": {
+   "order": 10,
+   "file": "slots/daily.view.tab.tasks.frag"
   }
  }
 }

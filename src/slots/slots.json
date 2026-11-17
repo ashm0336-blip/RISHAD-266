@@ -244,6 +244,14 @@
   {
    "tpl": "services/320-dept-storage.js.tpl",
    "out": "src/services/320-dept-storage.js"
+  },
+  {
+   "tpl": "modules/daily/logic.js.tpl",
+   "out": "src/modules/daily/logic.js"
+  },
+  {
+   "tpl": "modules/daily/view.html.tpl",
+   "out": "src/modules/daily/view.html"
   }
  ]
 }
