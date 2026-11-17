@@ -70,6 +70,74 @@
    ],
    "kind": "legit",
    "why": "اسمُ ترحيل (الترحيلات تبقى بقرار د2)."
+  },
+  {
+   "file": "*",
+   "match": [
+    "self.task.proof.upload"
+   ],
+   "kind": "legit",
+   "why": "مفتاحُ صلاحيةٍ مالكُه «الصور» (images) وقاعدتُه في كود الصور بالقاعدة (imgVerdict selfProof)؛ صفُّه في سجلّ القاعدة ورابطُ نطاقه معه — لا يتبع مجلدَ المهام."
+  },
+  {
+   "file": "workers/parts/016-base-shared.js",
+   "match": [
+    "tkEmps",
+    "tkTokN",
+    "tkTokRec"
+   ],
+   "kind": "legit",
+   "why": "دوالُّ قاعدةٍ عامة لقائمة الموظفين ورموزها (eid ∪ nid) تحمل بادئةً تاريخية؛ تستعملها القاعدة في عقد الحفظ (054) وهوية «ملفي» (062d)."
+  },
+  {
+   "file": "workers/parts/054-image-contract.js",
+   "match": [
+    "tkEmps",
+    "tkTokRec"
+   ],
+   "kind": "legit",
+   "why": "نداءُ دالتَي القاعدة العامتين (016) من عقد الحفظ: ربطُ الحساب بسجلّه وتفرّدُ هوية الموظفين — لا منطقَ مهام."
+  },
+  {
+   "file": "workers/parts/062d-record-shared.js",
+   "match": [
+    "tkRecShared",
+    "tkTokRec"
+   ],
+   "kind": "legit",
+   "why": "قاعدةُ هوية «ملفي» (سجلٌّ يحلّ إليه حسابٌ نشطٌ آخر لا يُربط بأيٍّ منهما): دالةُ قاعدةٍ باسمها التاريخي، قُطعت من ملف المهام لتبقى في القاعدة."
+  },
+  {
+   "file": "workers/parts/062b-me-history.js",
+   "match": [
+    "tkRecShared"
+   ],
+   "kind": "legit",
+   "why": "نداءُ قاعدة هوية «ملفي» (062d) من مسار القراءة الذاتية في القاعدة."
+  },
+  {
+   "file": "workers/parts/059-protected-ops-2.js",
+   "match": [
+    "enfTaskSelfEkey"
+   ],
+   "kind": "legit",
+   "why": "اسمُ دالة قاعدةٍ في وضع الإنفاذ تعيد مفتاحَ هوية الفاعل؛ شرطُ المهام داخلها صار فتحة، والاسمُ محفوظ لتبقى الحزمة مطابقة."
+  },
+  {
+   "file": "workers/parts/062a-auth-routes.js",
+   "match": [
+    "tkG"
+   ],
+   "kind": "legit",
+   "why": "متغيّرٌ محلي لرمز الجلسة (token) في مسار الخروج — لا صلةَ له بالمهام."
+  },
+  {
+   "file": "src/core/140-safety-scheduler.js",
+   "match": [
+    "tasks"
+   ],
+   "kind": "legit",
+   "why": "متغيّرٌ محلي في مجدول الأمان: قائمةُ دوالّ مؤجَّلة اسمُها كلمةٌ عامة — لا صلةَ له بنظام المهام."
   }
  ]
 }

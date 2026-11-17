@@ -264,6 +264,10 @@
   {
    "tpl": "modules/profile/helmet.css.tpl",
    "out": "src/modules/profile/helmet.css"
+  },
+  {
+   "tpl": "services/442-notif-observer.js.tpl",
+   "out": "src/services/442-notif-observer.js"
   }
  ]
 }
