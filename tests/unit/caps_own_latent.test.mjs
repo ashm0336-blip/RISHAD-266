@@ -96,7 +96,7 @@ async function tpSaveAll(W) {
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + '(a) narrow → re-save sheet, lens list, templates (leaf-key and container-key) and grants → widen: everything as it was', needs('award'), async () => {
+  test(M + '(a) narrow → re-save sheet, lens list, templates (leaf-key and container-key) and grants → widen: everything as it was', needs('award', 'tasks'), async () => {
     const W = await scene(mode);
     const P0 = stored(W.env, KP), sh0 = cp(P0.emps[D][EK]), el0 = cp(P0.empLens[D][EK]), g0 = JSON.stringify(stored(W.env, GK)), stored0 = stored(W.env, TPK), t0 = [];
     let P = cp(P0); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok, 'narrowed');
@@ -145,7 +145,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal(all(W), s0, 'nothing written');
   });
 
-  test(M + '(c) a filtered (projected) manager view keeps latent items when saving; the same view without them is refused', needs('award'), async () => {
+  test(M + '(c) a filtered (projected) manager view keeps latent items when saving; the same view without them is refused', needs('award', 'tasks'), async () => {
     const W = await scene(mode);
     let P = cp(stored(W.env, KP)); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok);
     let v = await got(W, 'dm1', KP);

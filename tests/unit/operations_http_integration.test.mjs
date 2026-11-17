@@ -167,7 +167,7 @@ async function exportFile(B) {
     manifest: { version: 4, scope: 'full', domains: Object.fromEntries(['kv', 'dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards', 'operations'].map(name => [name, 1])), departments, keys: Object.keys(data) } };
 }
 
-test('Manifest4 exports every Operations resource including absent domains and restores through the real atomic HTTP path', needs('award', 'dstats', 'seized'), async () => {
+test('Manifest4 exports every Operations resource including absent domains and restores through the real atomic HTTP path', needs('award', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world(), protectedBefore = identity(B), file = await exportFile(B), original = copy(file), definitions = B.W.opDefinitions();
   assert.equal(definitions.length, 21); assert.equal(file.domains.operations.length, definitions.length * file.manifest.departments.length);
   const actual = new Set(file.domains.operations.map(domain => scoped(domain.resource, domain.scope.departmentId)));

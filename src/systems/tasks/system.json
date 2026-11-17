@@ -714,6 +714,10 @@
   "nfo.watch.tasks": {
    "order": 10,
    "file": "slots/nfo.watch.tasks.frag"
+  },
+  "daily.tabBar.tasks": {
+   "order": 10,
+   "text": " + (TKn ? 1 : 0)"
   }
  }
 }

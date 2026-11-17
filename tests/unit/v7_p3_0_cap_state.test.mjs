@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { needs } from './harness.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -81,7 +82,7 @@ test('the admin center shows the state from that one source in the tree, the ove
   assert.match(L, /capEmptyTxt:\s+this\._capOwnRecEmpty\(o\)\s+\? "سقف الصفحات فارغ — لا صفحة مفعّلة لهذه الإدارة/, 'the editor alert picks its text by the same rule (own record empty ⇒ «tick pages»; otherwise the ancestors)');
 });
 
-test('the unused patterns are gone; the live seed keeps its behaviour (and a stored «أساسي» still wins)', () => {
+test('the unused patterns are gone; the live seed keeps its behaviour (and a stored «أساسي» still wins)', needs('tasks'), () => {
   for (const n of ['PATTERN_META', 'PATTERN_DEF', 'patternMeta', 'patternApply', 'patternSet', 'function patterns(']) {
     assert.ok(!code(M).includes(n), '331 no longer has ' + n); assert.ok(!code(T).includes(n), '334 no longer has ' + n);
   }

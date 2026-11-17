@@ -22,7 +22,7 @@ const DEVELOP = {
   serverPages: '39f49c1feda6098ce929b3ea41eee6c4795bbb4224be2c169896e411a56e5678',
 };
 
-test('pages.json without the display-only field is develop\'s pages.json; the field sits on one page and names a leaf that exists', needs('award', 'dstats', 'seized'), () => {
+test('pages.json without the display-only field is develop\'s pages.json; the field sits on one page and names a leaf that exists', needs('award', 'dstats', 'seized', 'tasks'), () => {
   const M = JSON.parse(read('src/manifests/pages.json')), withField = M.pages.filter((p) => p.shellTabs);
   assert.deepEqual(withField.map((p) => p.key), ['emps']);
   assert.deepEqual(withField[0].shellTabs, [{ name: 'مستودع العهد', as: 'custody' }]);
@@ -34,14 +34,14 @@ test('pages.json without the display-only field is develop\'s pages.json; the fi
   assert.equal(sha(Buffer.from(canon(M))), DEVELOP.pages, 'every other value of pages.json is as on develop');
 });
 
-test('the permission registry is byte-identical to develop and keeps its 255 active keys', needs('award', 'dstats', 'irshad', 'seized'), () => {
+test('the permission registry is byte-identical to develop and keeps its 255 active keys', needs('award', 'dstats', 'irshad', 'seized', 'tasks'), () => {
   assert.equal(sha(read('src/permissions/registry/registry-v24.9.json')), DEVELOP.registryJson);
   assert.equal(sha(read('src/permissions/340-registry-v24-9.js')), DEVELOP.registryBlock);
   const R = JSON.parse(read('src/permissions/registry/registry-v24.9.json'));
   assert.equal(R.registry.filter((k) => k.status === 'active').length, 255); assert.equal(R.counts.securityActive, 255); assert.equal(R.registry.length, 269);
 });
 
-test('the server page structure (PG_REG) is develop\'s and does not carry the field', needs('award', 'dstats', 'seized'), () => {
+test('the server page structure (PG_REG) is develop\'s and does not carry the field', needs('award', 'dstats', 'seized', 'tasks'), () => {
   const W = read('workers/_worker.js').toString('utf8'), m = /(?:const|var|let) PG_REG\s*=\s*(\[[\s\S]*?\]);\n/.exec(W);
   assert.ok(m, 'PG_REG found'); assert.equal(sha(Buffer.from(m[1])), DEVELOP.serverPages);
   assert.equal(W.includes('shellTabs'), false);

@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { SRC } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const REG = JSON.parse(fs.readFileSync(path.join(SRC, 'permissions', 'registry', 'registry-v24.9.json'), 'utf8'));
 const TREE = JSON.parse(fs.readFileSync(path.join(SRC, 'manifests', 'perm-tree24.json'), 'utf8'));
@@ -52,7 +53,7 @@ const keysRow = (R, owner) => R.find((r) => r.isKeys && r.key === owner + '#keys
 const tipOf = (R, k) => (keysRow(R, 'tasks').keys.find((x) => x.k === k) || {}).tip || '';
 
 for (const mode of ['cap', 'emp', 'tpl']) {
-  test('[' + mode + '] (أ) ورقةُ «المهام»: ملاحظةُ التكرار بأسماء السجلّ · والرقاقاتُ = مفاتيحُ السجلّ حرفاً (لا رقاقةَ جديدة)', () => {
+  test('[' + mode + '] (أ) ورقةُ «المهام»: ملاحظةُ التكرار بأسماء السجلّ · والرقاقاتُ = مفاتيحُ السجلّ حرفاً (لا رقاقةَ جديدة)', needs('tasks'), () => {
     const R = rows(mode), kr = keysRow(R, 'tasks');
     assert.ok(kr, 'صفُّ مفاتيح «المهام» حاضرٌ مفروداً');
     const want = 'التكرار: إنشاءُ مهمةٍ متكررة = «' + LBL['task.create'] + '» (+ «' + LBL['task.assign'] + '») · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «' + LBL['task.edit'] + '»';
@@ -64,7 +65,7 @@ for (const mode of ['cap', 'emp', 'tpl']) {
     assert.deepEqual(J(others.map((r) => r.key)), [], 'لا ورقةَ أخرى تحمل ملاحظةَ التكرار');
   });
 
-  test('[' + mode + '] (ب) تلميحُ task.create / task.edit / task.assign يُلحق ما يشمله التكرار — ولا مفتاحَ غيرُها · و«يظهر في» باقٍ', () => {
+  test('[' + mode + '] (ب) تلميحُ task.create / task.edit / task.assign يُلحق ما يشمله التكرار — ولا مفتاحَ غيرُها · و«يظهر في» باقٍ', needs('tasks'), () => {
     const R = rows(mode);
     const cr = tipOf(R, 'task.create'), ed = tipOf(R, 'task.edit'), as = tipOf(R, 'task.assign');
     assert.ok(cr.includes(' · يشمل إنشاءَ مهمةٍ لمرة واحدة أو متكررة (يومي · أسبوعي · شهري)') && cr.includes('task.create'), cr);
@@ -78,7 +79,7 @@ for (const mode of ['cap', 'emp', 'tpl']) {
   });
 }
 
-test('(ج) شجرةُ الأفعال الستة (legacy): تلميحُ مربّع «المهام» وحده يذكر التكرار بـ«إضافة»/«تعديل» — والصفوفُ والأفعالُ كما هي', () => {
+test('(ج) شجرةُ الأفعال الستة (legacy): تلميحُ مربّع «المهام» وحده يذكر التكرار بـ«إضافة»/«تعديل» — والصفوفُ والأفعالُ كما هي', needs('tasks'), () => {
   const c = Object.create(C.prototype);
   assert.equal(typeof c.tskRecLegacy, 'function', 'tskRecLegacy موجودة');
   const acts = () => ['view', 'add', 'edit', 'del', 'approve', 'export'].map((k) => ({ k, name: k, on: !1 }));

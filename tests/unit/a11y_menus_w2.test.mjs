@@ -70,7 +70,7 @@ test('ES-6 · «بيانات الموظفين»: «ملفات» لمن يملك 
   assert.match(b, /onClick="\{\{exportCsv\}\}"[\s\S]*onClick="\{\{printTable\}\}"/);
 });
 
-test('DG-02 · «المهام»: الكتلةُ كلُّها تحت tkPmExport (كما في التقرير اليومي) والبندان مكتملان داخل شرطيهما — والتداخلُ سليم', () => {
+test('DG-02 · «المهام»: الكتلةُ كلُّها تحت tkPmExport (كما في التقرير اليومي) والبندان مكتملان داخل شرطيهما — والتداخلُ سليم', needs('tasks'), () => {
   assert.equal(render('tasks', DM).tkPmExport, false);
   assert.equal(render('tasks', EX).tkPmExport, true);
   const v = rd('systems/tasks/client/view.html'), b = block(v, '<sc-if value="{{tkPmExport}}" hint-placeholder-val="{{ true }}">\n    <div style="position:relative">', '<!-- KIVO_265 · البند 14');

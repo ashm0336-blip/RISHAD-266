@@ -1543,6 +1543,25 @@
      "irshad",
      "seized"
     ]
+   },
+   {
+    "path": [
+     "migration",
+     "Own",
+     "evidence"
+    ],
+    "set": "هويةُ الجلسة (uid/ekey) — selfTaskOnly · selfEmailOnly · SELF_FIELDS · notif_dev:uid"
+   },
+   {
+    "path": [
+     "interpretations",
+     {
+      "by": "id",
+      "eq": "I‑04"
+     },
+     "text"
+    ],
+    "set": "مَن يملك مفتاحَ العملية الكامل (قرارُ Phase 2.1) يعمل على سجلات غيره بالصلاحية → البُعدُ not_applicable؛ ويُقاس Own/Assigned لمسار الذات ولراصد الميدان (dailyFieldOnly) فقط — كما يفعل الخادمُ اليوم (selfTaskOnly · fieldObsOnly)."
    }
   ],
   "guard-bindings": [

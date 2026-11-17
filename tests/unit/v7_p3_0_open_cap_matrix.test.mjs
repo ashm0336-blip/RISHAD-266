@@ -73,7 +73,7 @@ async function matrix(mode) {
 const OUTSIDE_BASIC = ['ops read plan (plan)', 'ops read rounds (daily/rounds)', 'ops read dreport (dreport)', 'irshad read (irshad)', 'seized read (seized)', 'ops write bassam_zone_opts_v1 (plan)', 'ops write bassam_dayfocus_v1 (daily/rounds|dreport)'];
 const LEGACY_GAP = ['write bassam_profile_v1 (tech rule)', 'write bassam_first_boot_v1 (tech rule)', 'image upload (new, dept)'];
 for (const mode of ['legacy', 'enforce']) {
-  test('[' + mode + '] a manager without a sheet: OPEN (no cap record) is served like FULL (every page) — except the documented legacy gap', { ...needs('seized'), timeout: 300000 }, async () => {
+  test('[' + mode + '] a manager without a sheet: OPEN (no cap record) is served like FULL (every page) — except the documented legacy gap', { ...needs('seized', 'tasks'), timeout: 300000 }, async () => {
     const out = await matrix(mode);
     for (const [k, v] of Object.entries(out)) {
       if (mode === 'legacy' && LEGACY_GAP.includes(k)) {

@@ -7,6 +7,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { ROOT } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const DIST = path.join(ROOT, 'pk265');
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -27,7 +28,7 @@ function builtShell() {
   return { scripts, asset };
 }
 
-test('actual public shell reaches custody and atomic backup services once, after task model and before busy UI', () => {
+test('actual public shell reaches custody and atomic backup services once, after task model and before busy UI', needs('tasks'), () => {
   const B = builtShell();
   const namespace = B.asset('005-kivo-ns'), model = B.asset('546-task-model'), custody = B.asset('547-custody-api'), backup = B.asset('548-atomic-backup'), busy = B.asset('550-bassam-busy');
   for (const asset of [namespace, model, custody, backup, busy]) assert.equal(B.scripts.filter(file => file === asset.path).length, 1, asset.path + ': exactly one script reference');

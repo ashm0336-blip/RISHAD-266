@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { world as fixture, D1, D2, IDS, EKEYS, copy } from './custody_review_fx.mjs';
 import { installOperationalFixture, inspectOperationalFixture, isOperationalFixtureKey, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { candidateWorker } from './irshad_domain_fx.mjs';
+import { needs } from './harness.mjs';
 /* Typed award domain and the pure context projection, from the same actual generated Worker (no staged copy). */
 const X = await candidateWorker(['awConvert', 'awInstallStatements', 'awExportDomain', 'awInflate', 'empTransitionContextOf']);
 const key = (n) => 'bsdept:' + D1 + ':' + n;
@@ -320,7 +321,7 @@ test('cleanup does not create absent ledgers or invent a required human reason',
   );
 });
 
-test('original cross-resource cleanup removes known identities and keeps a surviving shared name and prior orphans', async () => {
+test('original cross-resource cleanup removes known identities and keeps a surviving shared name and prior orphans', needs('tasks'), async () => {
   const t = await world(),
     employees = copy(t.keys[key('bassam_employees_v1')]),
     target = employees[0];

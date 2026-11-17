@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, D, ME, stored } from './world_fx.mjs';
 import { internals } from './internals.mjs';
+import { needs } from './harness.mjs';
 
 const WU = workerUnderTest();
 const PK = 'bsdept:' + D + ':bassam_plan_v1';
@@ -47,7 +48,7 @@ test('(ب) الصلاحيةُ باقية: موظفٌ بلا صلاحية الخ�
   assert.notEqual(deniedWhy(r), 'reason', 'ليس سبباً');
 });
 
-test('(ج) فهرسُ الإنفاذ: مفاتيحُ الحالة الأربعة خارج قائمة السبب · وسائرُ مفاتيح السبب باقية · والمرجعُ يحمل audit.reason كما هو', async () => {
+test('(ج) فهرسُ الإنفاذ: مفاتيحُ الحالة الأربعة خارج قائمة السبب · وسائرُ مفاتيح السبب باقية · والمرجعُ يحمل audit.reason كما هو', needs('tasks'), async () => {
   const W = await internals(['KIVO_REGISTRY', 'ENF_REASON_OFF', 'enfIx']);
   const ix = W.enfIx(), R = W.KIVO_REGISTRY, off = ['lens.zones.status.change', 'lens.gates.status.change', 'lens.marks.status.change', 'lens.paths.status.change'];
   for (const k of off) { assert.ok(!ix.reason[k], k + ' بلا سبب'); assert.equal(R.byKey[k].audit.reason, true, k + ': المرجعُ v24.9 كما هو'); }

@@ -158,7 +158,7 @@ test('normalized plus legacy sources of the same domain are rejected, while phas
   const out = await t.convert(file);
   assert.equal(out.domains.custody[0].rows.moves.length, 1);
 });
-test('modern manifest requires its exact declared key/dept/domain coverage and preserves account JSON byte-for-byte', needs('award', 'dstats', 'seized'), async () => {
+test('modern manifest requires its exact declared key/dept/domain coverage and preserves account JSON byte-for-byte', needs('award', 'dstats', 'seized', 'tasks'), async () => {
   const t = await world(),
     file = modern(t),
     raw = JSON.stringify(t.keys.bassam_auth_users_v1);

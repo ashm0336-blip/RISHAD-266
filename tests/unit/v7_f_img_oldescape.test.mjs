@@ -8,7 +8,7 @@
    Real worker, legacy and enforce, rows and R2 bytes. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, bind, age, due, stored, read } from './v7_f_img_fx.mjs';
+import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, bind, age, due, stored, read, gated } from './v7_f_img_fx.mjs';
 import { world as tasksWorld, ME, MATE, hij, HR, taskCommandBody, operationSaveBody } from './world_fx.mjs';
 
 let n = 0;
@@ -155,7 +155,7 @@ both(test, 'staged parts of an abandoned chunked upload are cleaned even while a
   assert.equal((await state(W, orp)).r2, PNG, 'the held image is untouched');
 });
 
-both(test, 'tasks: one task whose stored note holds an escape does not block the unit — other employees act, the manager creates and cancels; a note carrying or adding an escape is accepted', async (mode) => {
+both(gated(test, 'tasks'), 'tasks: one task whose stored note holds an escape does not block the unit — other employees act, the manager creates and cancels; a note carrying or adding an escape is accepted', async (mode) => {
   const W = await tasksWorld({ mode }), dm = await W.login('0000000101', '70101'), me = await W.login(ME.un, ME.pw), mate = await W.login(MATE.un, MATE.pw);
   const post = (ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: taskCommandBody(W.env, p, body) });
   const s = Date.now() - HR;

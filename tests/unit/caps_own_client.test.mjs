@@ -77,7 +77,7 @@ async function ceiling(c, x) {
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + 'narrow then widen (pages · tabs · lenses) from the real client: stored sheets, lens lists, template ids and explicit grants stay byte-identical in D1', needs('award', 'irshad'), async () => {
+  test(M + 'narrow then widen (pages · tabs · lenses) from the real client: stored sheets, lens lists, template ids and explicit grants stay byte-identical in D1', needs('award', 'irshad', 'tasks'), async () => {
     const W = await scene(mode), k0 = keep(W);
     const c = await clientOf(W, 'su');
     try {
@@ -89,7 +89,7 @@ for (const mode of ['legacy', 'enforce']) {
     } finally { c.dispose(); }
   });
 
-  test(M + 'a narrowed grant gives no access in the employee client (myPerms · editors) and comes back exactly when widened', needs('award'), async () => {
+  test(M + 'a narrowed grant gives no access in the employee client (myPerms · editors) and comes back exactly when widened', needs('award', 'tasks'), async () => {
     const W = await scene(mode);
     const s = await clientOf(W, 'su'); try { await ceiling(s, NARROW); } finally { s.dispose(); }
     let e = await clientOf(W, 'emp1');
@@ -104,7 +104,7 @@ for (const mode of ['legacy', 'enforce']) {
     try { const mp = e.I.myPerms(); for (const k of LATENT) assert.deepEqual(cp(mp[k] || null), W.SH[k], 'restored: ' + k); } finally { e.dispose(); }
   });
 
-  test(M + 'the unit manager edits a sheet holding latent leaves and lenses: the worker accepts it and the latent items stay (F05 · F06)', needs('award'), async () => {
+  test(M + 'the unit manager edits a sheet holding latent leaves and lenses: the worker accepts it and the latent items stay (F05 · F06)', needs('award', 'tasks'), async () => {
     const W = await scene(mode);
     const s = await clientOf(W, 'su'); try { await ceiling(s, NARROW); } finally { s.dispose(); }
     const m = await clientOf(W, 'dm1');

@@ -26,6 +26,9 @@ test('د2-ب · الحذف: المتصفحُ بالأنظمة الحاضرة [' 
       assert.ok(st.text > 40, h + ': الصفحة رُسمت (' + JSON.stringify(st) + ')');
     }
     const side = await m.page.evaluate(() => [...document.querySelectorAll('aside.bsb a[data-key]')].map((a) => a.getAttribute('data-key')));
+    /* د4-ب: «المتابعة اليومية» رُسمت فعلاً بشريط تبويباتها (خطأٌ في حساب قيم الصفحة لا يظهر خطأَ صفحة، فيُفحص المرسوم نفسُه) */
+    const exactIn = (t) => m.page.evaluate((t) => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === t), t);
+    await m.go('#/daily', 2800); assert.ok((await exactIn('التقرير اليومي')) || (await exactIn('الجولات اليومية')), 'المتابعة اليومية: شريطُ التبويبات مرسوم');
     /* د4-ب: بغياب المهام — لا تبويبَها في «المتابعة اليومية»، ولا بطاقةَ «مهامك» في «صفحتي»، ولا لوحةَ مؤشراتها */
     if (!SYSTEMS.includes('tasks')) {
       const exact = (t) => m.page.evaluate((t) => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === t), t);

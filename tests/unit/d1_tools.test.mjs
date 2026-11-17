@@ -11,6 +11,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { BASH, PYTHON, makeEnv, makeTestEnv, client, applySql, ROOT, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
+import { needs } from './harness.mjs';
 const T = path.join(ROOT, 'tools', 'd1');
 function seedSql() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; });
@@ -23,7 +24,7 @@ function toFile(shim, file) {
   assert.equal(fs.existsSync(file), false);
   shim.db.exec("VACUUM INTO '" + file.replace(/'/g, "''") + "'");
 }
-test('نسخةٌ احتياطية → تحقّق → استعادة → العاملُ يعمل على المستعاد بالبيانات نفسِها', async () => {
+test('نسخةٌ احتياطية → تحقّق → استعادة → العاملُ يعمل على المستعاد بالبيانات نفسِها', needs('tasks'), async () => {
   const env = makeTestEnv(); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });

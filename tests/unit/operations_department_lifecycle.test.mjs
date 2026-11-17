@@ -9,6 +9,7 @@ import { D1Shim } from "./harness.mjs";
 import { canonicalDigest } from "./custody_review_fx.mjs";
 import { operationalMigrationFixture } from "./operational_migration_fx.mjs";
 import { peopleTaskDocuments } from "./operational_people_tasks_fx.mjs";
+import { needs } from './harness.mjs';
 
 const source = fs.readFileSync("workers/_worker.js", "utf8");
 assert.equal(
@@ -212,7 +213,7 @@ async function world() {
   };
 }
 
-test("whole-department inventory fences all21 including absent resources; protected source values remain populated and staff/forged UID cannot use the route", async (t) => {
+test("whole-department inventory fences all21 including absent resources; protected source values remain populated and staff/forged UID cannot use the route", needs('tasks'), async (t) => {
   const B = await world();
   t.after(() => B.DB.db.close());
   const { department: d, documents: docs } = B;
@@ -280,7 +281,7 @@ test("whole-department inventory fences all21 including absent resources; protec
   assert.deepEqual(exactRows(B.DB), before);
 });
 
-test("whole-department wipe rolls back a fault after its receipt, then commits one epoch/snapshot/receipt and exact replay while preserving foreign data and every account", async (t) => {
+test("whole-department wipe rolls back a fault after its receipt, then commits one epoch/snapshot/receipt and exact replay while preserving foreign data and every account", needs('tasks'), async (t) => {
   const B = await world();
   t.after(() => B.DB.db.close());
   const body = await B.body("TEST_ONLY_whole_wipe_atomic"),
@@ -349,7 +350,7 @@ test("whole-department wipe rolls back a fault after its receipt, then commits o
 
 test("late raw-authority and absent-resource revision races reject wipe without deleting business rows or advancing epoch", async (t) => {
   for (const kind of ["raw-authority", "absent-revision"]) {
-    await t.test(kind, async () => {
+    await t.test(kind, needs('tasks'), async () => {
       const B = await world();
       try {
         const body = await B.body("TEST_ONLY_whole_wipe_race_" + kind);
@@ -381,7 +382,7 @@ test("late raw-authority and absent-resource revision races reject wipe without 
   }
 });
 
-test("direct department delete handles populated locked/protected domains and removes only its department accounts; exact replay cannot delete another department", async (t) => {
+test("direct department delete handles populated locked/protected domains and removes only its department accounts; exact replay cannot delete another department", needs('tasks'), async (t) => {
   const B = await world();
   t.after(() => B.DB.db.close());
   const body = await B.body("TEST_ONLY_whole_delete_populated", "delete"),

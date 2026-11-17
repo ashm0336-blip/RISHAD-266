@@ -7,7 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ME, MATE, TAG, hij, HR, taskCommandBody, addAccount, replaceOperationalFixture } from './world_fx.mjs';
-import { D, D2, PNG, K_USERS, K_DEPTS, dk, both, scene, state, img, edit, bind, upload, unitOp, shape, EDIT, stored, putKV, read } from './v7_f_img_fx.mjs';
+import { D, D2, PNG, K_USERS, K_DEPTS, dk, both, scene, state, img, edit, bind, upload, unitOp, shape, EDIT, stored, putKV, read, gated } from './v7_f_img_fx.mjs';
 
 const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: taskCommandBody(W.env, p, body) });
 const DENY = { ok: 0, err: 'forbidden' };
@@ -30,7 +30,7 @@ async function proofOf(T) {   /* a task-proof image bound in unit D by its emplo
 }
 const sameStore = async (W, id, before, label) => assert.deepEqual(await state(W, id), before, label + ' — image row, references and bytes unchanged');
 
-both(test, 'decision 1+3 · a DELETED unit\'s orphans (plan map · round map · task proof) are re-bound by nobody but the platform admin', async (mode) => {
+both(gated(test, 'tasks'), 'decision 1+3 · a DELETED unit\'s orphans (plan map · round map · task proof) are re-bound by nobody but the platform admin', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, ids = await unitImages(T, D, 'mgr'), proof = await proofOf(T);
   /* control: what a FOREIGN BOUND image answers to another unit's writer — the orphan must answer exactly the same */
   const ctl = id('ctlbound'); await bind(W, S.mgr3, 'tst_d3', 'plan', ctl).catch(() => null);
@@ -158,7 +158,7 @@ both(test, 'decision 4 · one refusal for every id the caller is not entitled to
 });
 
 /* pinned (already so on develop): the self-proof route binds only the caller's own fresh upload — never an orphan, his own or a colleague's */
-both(test, 'decision 1 · task proof by the self route (062c): an orphan id is never attached — only the caller\'s own upload', async (mode) => {
+both(gated(test, 'tasks'), 'decision 1 · task proof by the self route (062c): an orphan id is never attached — only the caller\'s own upload', async (mode) => {
   const T = await scene(mode), { W, S } = T, proof = await proofOf(T);
   assert.equal((await post(W, proof.me, '/api/me/tasks/act', { k: proof.k, id: proof.tid, act: 'doc', rm: [proof.pid] })).status, 200);
   const o = await state(W, proof.pid); assert.equal(o.st, 'orphan'); assert.equal(o.dept, D);

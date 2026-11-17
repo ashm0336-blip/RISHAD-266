@@ -430,7 +430,7 @@ test('admin historical import retains its result until the relational server con
   }
 });
 
-test('full restore entry points use the shared atomic API for relational daily stats and reject retired-key mixtures without partial writes', async () => {
+test('full restore entry points use the shared atomic API for relational daily stats and reject retired-key mixtures without partial writes', needs('tasks'), async () => {
   for (const entry of ['admin', 'gate']) {
     const B = await backupWorld(); await seedTypedDomains(B, populated());
     const C = await backupBrowser(B), file = await exportFull(C), messages = [];
@@ -460,7 +460,7 @@ test('full restore entry points use the shared atomic API for relational daily s
   assert.deepEqual(backupSnapshot(B.DB), before); assert.ok(C.page._fbkPend); assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, 0); assert.deepEqual(C.writes, []);
 });
 
-test('full backup waits for actual relational reads, includes every typed domain and fails on network loss', needs('award', 'seized'), async () => {
+test('full backup waits for actual relational reads, includes every typed domain and fails on network loss', needs('award', 'seized', 'tasks'), async () => {
   for (const connected of [true, false]) {
     const B = await backupWorld(); await seedTypedDomains(B, populated());
     const C = await backupBrowser(B), actualRead = C.KIVO.DailyStats.refresh; let settle;

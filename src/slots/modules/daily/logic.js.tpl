@@ -13533,7 +13533,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         dsKpiTabShow: Qn,
         dsRoundsTabShow: Vn,
         dsDrTabShow: qn,
-        dsTabBarShow: !_n && (Qn ? 1 : 0) + (Vn ? 1 : 0) + (qn ? 1 : 0) + (TKn ? 1 : 0) > 1,
+        dsTabBarShow: !_n && (Qn ? 1 : 0) + (Vn ? 1 : 0) + (qn ? 1 : 0)@@SYS:daily.tabBar.tasks@@ > 1,
         dsPmNoteOn: "rounds" === $n,
       };
     return (

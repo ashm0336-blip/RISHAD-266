@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { page } from '../../../../tests/unit/w1_pages.mjs';
 import { SRC, moduleDir } from '../../../../tests/unit/harness.mjs';
+import { needs } from '../../../../tests/unit/harness.mjs';
 
 /* RISHAD-266 (دفعة الواجهات): «المضبوطات» تحمل IRSZ-2/7/10/11 من جديد — رُفع سقفُ صفحتها بقرارٍ موثّق في perf_budget.json (unifyBatch3Decision) */
 const PAGES = { irshad: ['تقارير الاسترشاد', 'نظام الاسترشاد'], seized: ['محاضر المضبوطات', 'نظام المضبوطات'] };
@@ -21,7 +22,7 @@ const view = (slug) => fs.readFileSync(path.join(moduleDir(slug), 'view.html'), 
 const dash = (slug, can) => { const P = page(slug, { can }); P.c.props = { solo: 'dash' }; if (slug === 'seized') P.c._szAvailable = { context: undefined, value: { years: [], months: [], total: 0 } }; return P; };
 
 for (const [slug, [what, name]] of Object.entries(PAGES)) {
-  test('IRSZ-11 · ' + slug + ': اللوحةُ الفارغة في «مؤشرات الإدارة» رابطُها صفحةُ «' + name + '» لمن يفتحها — لا تبويب «السجلات» غيرِ الموجود', () => {
+  test('IRSZ-11 · ' + slug + ': اللوحةُ الفارغة في «مؤشرات الإدارة» رابطُها صفحةُ «' + name + '» لمن يفتحها — لا تبويب «السجلات» غيرِ الموجود', needs('tasks'), () => {
     const V = dash(slug, () => true).V();
     assert.equal(V.irDashTabOk, true); assert.equal(V.irTabBarShow, false, 'لا شريطَ تبويبات داخل المؤشرات');
     assert.equal(V.irRecLinkOn, true); assert.equal(V.irRecLinkOff, false);
@@ -30,7 +31,7 @@ for (const [slug, [what, name]] of Object.entries(PAGES)) {
     assert.ok(v.includes('ابدأ بتسجيل ' + what + ' من صفحة <sc-if value="{{irRecLinkOn}}" hint-placeholder-val="{{ true }}"><a href="#/' + slug + '" '), 'رابطٌ إلى الصفحة');
     assert.ok(v.includes('>«' + name + '»</a></sc-if><sc-if value="{{irRecLinkOff}}" hint-placeholder-val="{{ false }}">«' + name + '»</sc-if> لتظهر المؤشرات هنا.</span>'));
   });
-  test('IRSZ-11 · ' + slug + ': من لا يفتح الصفحة (بلا «عرض» أو بلا تبويب السجلات) يرى اسمَها نصّاً بلا رابط', () => {
+  test('IRSZ-11 · ' + slug + ': من لا يفتح الصفحة (بلا «عرض» أو بلا تبويب السجلات) يرى اسمَها نصّاً بلا رابط', needs('tasks'), () => {
     let V = dash(slug, (p, a) => !(p === slug && a === 'view')).V();
     assert.equal(V.irRecLinkOn, false); assert.equal(V.irRecLinkOff, true);
     const P = dash(slug, () => true); P.KIVO.BassamPerm.subOn = (pg, sub) => !(pg === slug && sub === 'records');

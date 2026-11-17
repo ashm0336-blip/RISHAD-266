@@ -122,7 +122,7 @@ for (const a of Object.keys(UID)) {
   });
 }
 
-test('the cases the old module branches got wrong are now the engine answer', needs('irshad'), () => {
+test('the cases the old module branches got wrong are now the engine answer', needs('irshad', 'tasks'), () => {
   assert.ok(Object.keys(REF.dm1).length > 3, 'a manager without an own sheet holds the unit ceiling (the old matrix showed «—» everywhere)');
   assert.ok(Object.keys(REF.gm1).length > 3, 'a general manager inherits the ceiling where it has no own sheet');
   assert.deepEqual([REF.dm2.tasks, REF.dm2.irshad], [['add', 'view'], ['view']], 'an explicit own sheet is applied (its pages, with their containers)');

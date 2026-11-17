@@ -28,7 +28,7 @@ test('مفتاحُ صفحةٍ أُزيل من PG_REG: لا يُعدّ مفعّل
   assert.equal(G.capOnDept(SUPER, 'TEST_ONLY_d1', 'irshad/records'), false, 'الورقةُ تحتها مغلقةٌ كما كانت');
 });
 
-test('المفتاحُ المجهول يُمنع، والمعروفُ كما كان، والفارغُ كما كان', async () => {
+test('المفتاحُ المجهول يُمنع، والمعروفُ كما كان، والفارغُ كما كان', needs('tasks'), async () => {
   const W = await load(SRC);
   assert.equal(W.capOnDept(SUPER, 'TEST_ONLY_d1', 'TEST_ONLY_no_such_page'), false, 'مجهول ⇒ منع');
   for (const k of W.PG_KEYS) assert.equal(W.capOnDept(SUPER, 'TEST_ONLY_d1', k), true, 'المعروفُ بلا سقفٍ مفعّل: ' + k);

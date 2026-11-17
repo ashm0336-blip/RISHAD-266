@@ -9,7 +9,9 @@ import { ROOT, SRC, SYSTEMS } from './harness.mjs';
 import { staleAllow } from '../removal/names_allow.mjs';
 
 const ALLOW = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'removal', 'names.allow.json'), 'utf8'));
-const FULL = ['award', 'dstats', 'irshad', 'seized'].every((k) => SYSTEMS.includes(k));
+/* الشجرةُ الكاملة = كلُّ أنظمة KIVO_FULL_SRC حاضرةٌ هنا (في نسخة حذفٍ يضبطه tools/removal_test.py؛ وفي المستودع هو المصدرُ نفسُه) */
+const FULL_SRC = process.env.KIVO_FULL_SRC || SRC, ALL_SYS = fs.existsSync(path.join(FULL_SRC, 'systems')) ? fs.readdirSync(path.join(FULL_SRC, 'systems')).filter((k) => fs.existsSync(path.join(FULL_SRC, 'systems', k, 'system.json'))) : [];
+const FULL = ALL_SYS.every((k) => SYSTEMS.includes(k));
 
 test('V7 · د4-أ: المستودع — كلُّ مدخلٍ في قائمة الاستثناء له موضع', { skip: FULL ? false : 'يُفحص على الشجرة الكاملة (نظامٌ غائب هنا)' }, () => {
   assert.deepEqual(staleAllow(ALLOW, ROOT, SRC), []);

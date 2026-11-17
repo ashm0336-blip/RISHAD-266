@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { page } from './w1_pages.mjs';
 import { SRC } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const OPS = { resources: [], status: () => ({ state: 'idle', epoch: 0 }), begin: () => ({ ok: true }), get: () => null, context: () => null, state: () => 'ready' };
@@ -28,7 +29,7 @@ test('F22 · 170-freeze: تحت 640px عمودُ الهوية المثبّت ي�
   assert.match(v, /<td data-label="اسم الموظف" class="bs-fz bs-fz3 bs-fzkeep"/);
 });
 
-test('F22 · منتقي الجدول الشهري: تمريرُ القائمة نفسِها لا يغلقها · وتمريرُ الصفحة يغلقها · والقائمةُ تعيد white-space (سطرُ الحالة الفارغة لا يُقصّ)', () => {
+test('F22 · منتقي الجدول الشهري: تمريرُ القائمة نفسِها لا يغلقها · وتمريرُ الصفحة يغلقها · والقائمةُ تعيد white-space (سطرُ الحالة الفارغة لا يُقصّ)', needs('tasks'), () => {
   const P = page('staff', { srv: { operations: OPS, rev: () => 0 } }), c = P.c;
   c._pkScrollClose();
   assert.equal(typeof c._sdSc, 'function');

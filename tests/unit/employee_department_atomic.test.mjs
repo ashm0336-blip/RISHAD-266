@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { world, ok, custody, snap, seedMessage, OPTIONS } from './atomic_restore_review_fx.mjs';
 import { D1, D2, IDS, EKEYS, copy, identitySnapshot } from './notifications_review_fx.mjs';
 import { inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { needs } from './harness.mjs';
 const KV_PROBE = (dept) => 'bsdept:' + dept + ':bassam_last_export_v1';   /* schema 10: plain-KV department probe (options/employees are typed operational resources) */
 let rid = 0;
 const employeeKey = 'bsdept:' + D1 + ':bassam_employees_v1',
@@ -75,7 +76,7 @@ test('failure after employee rows are written rolls back matched custody, employ
   assert.deepEqual(snap(B.DB), before);
   saved(await B.api('super', '/api/save', body));
 });
-test('closed department wipe inventory and ACK cover KV, custody and notification data while retaining department and all accounts', async () => {
+test('closed department wipe inventory and ACK cover KV, custody and notification data while retaining department and all accounts', needs('tasks'), async () => {
   const B = await world();
   await knownAndOrphan(B);
   await seedMessage(B);
@@ -307,7 +308,7 @@ test('server-owned employee transition rolls back account removals and sessions 
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM sess WHERE uid=?1', IDS.employee1)[0].n, 0);
 });
 
-test('closed department deletion reuses inventory/atomic compiler, removes only its dept/staff accounts and preserves GM/Super/other departments', async () => {
+test('closed department deletion reuses inventory/atomic compiler, removes only its dept/staff accounts and preserves GM/Super/other departments', needs('tasks'), async () => {
   const B = await world();
   await custody(B);
   await seedMessage(B);

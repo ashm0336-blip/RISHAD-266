@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { SRC } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const J = (o) => JSON.parse(JSON.stringify(o));
@@ -70,7 +71,7 @@ test('الزرع: الشهرُ المحفوظ يُكتب في منطق «الج�
   assert.deepEqual(J(L.__bsSeeded), { month: 4 }, 'ما تغيّر فقط (تقرؤه الصفحة لتكتب تبويبَها في العنوان)');
 });
 
-test('الزرع: القائمةُ البيضاء وحدها · المفتاحُ موجودٌ في الحالة الأولى ومن نوعها · لا كائنات ولا نصوصٌ طويلة', () => {
+test('الزرع: القائمةُ البيضاء وحدها · المفتاحُ موجودٌ في الحالة الأولى ومن نوعها · لا كائنات ولا نصوصٌ طويلة', needs('tasks'), () => {
   const ss = new FakeStorage();
   saved(ss, { dstats: { v: 2, comps: { 'Daily Stats': { site: 'nabawi', year: 1448, month: 3, day: 'x', draft: 'TEST_ONLY', lgOpen: true, extra: 1, page: 2 } } } });
   const R = root({ ss, hash: '#/dstats' });

@@ -33,7 +33,7 @@ test('canonical parts execute their actual migration declarations without rewrit
   assert.equal(B.DB.q('PRAGMA foreign_keys')[0].foreign_keys, 1);
 });
 
-test('single actual POST commits KV+daily stats+notifications, preserves protected documents, snapshots empty tables and deduplicates exact retries', needs('award', 'dstats', 'seized'), async () => {
+test('single actual POST commits KV+daily stats+notifications, preserves protected documents, snapshots empty tables and deduplicates exact retries', needs('award', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world(),
     identity = identitySnapshot(B.DB),
     body = await mixed(B),
@@ -59,7 +59,7 @@ test('single actual POST commits KV+daily stats+notifications, preserves protect
   assert.equal(B.DB.q("SELECT COUNT(*) n FROM kv WHERE k GLOB '*bassam_dstats_v1' OR k GLOB '*bassam_notif*'")[0].n, 0);
 });
 
-test('mid-batch failure rolls back data, snapshots, revisions, epoch, receipt, audit and account sessions', needs('award', 'dstats', 'seized'), async () => {
+test('mid-batch failure rolls back data, snapshots, revisions, epoch, receipt, audit and account sessions', needs('award', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world(),
     body = await mixed(B),
     before = snap(B.DB),
@@ -86,7 +86,7 @@ test('all policy inputs are CAS guarded even when absent from the requested keys
   assert.deepEqual(snap(B.DB), before);
 });
 
-test('a late actual NF read-state writer captured before restore cannot commit after its epoch', needs('award', 'dstats', 'seized'), async () => {
+test('a late actual NF read-state writer captured before restore cannot commit after its epoch', needs('award', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world();
   await seedMessage(B);
   const feed = ok(await B.api('employee1', '/api/notifications?uid=' + IDS.employee1)),
@@ -193,7 +193,7 @@ test('account restore keeps current hash when backup omits it and rejects loss o
   assert.deepEqual(snap(B.DB), before);
 });
 
-test('four domains commit together through the actual API; custody export preserves orphan/snapshots and native IDs', needs('award', 'dstats', 'seized'), async () => {
+test('four domains commit together through the actual API; custody export preserves orphan/snapshots and native IDs', needs('award', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world(),
     cu = await custody(B),
     body = await mixed(B);
@@ -217,7 +217,7 @@ test('four domains commit together through the actual API; custody export preser
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM custody_requests')[0].n, 0);
 });
 
-test('failure in the final custody inserts rolls back all earlier KV/stats/NF/account writes and old custody receipts', needs('award', 'dstats', 'seized'), async () => {
+test('failure in the final custody inserts rolls back all earlier KV/stats/NF/account writes and old custody receipts', needs('award', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world(),
     cu = await custody(B),
     body = await mixed(B);
@@ -633,7 +633,7 @@ test('13,006 synthetic existing accounts restore in one bounded batch with inher
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM sec WHERE act=?1', 'pw_change')[0].n, 0);
 });
 
-test('independent scope review regression: unknown final departments are rejected in typed custody, NF and ordinary KV', needs('dstats'), async () => {
+test('independent scope review regression: unknown final departments are rejected in typed custody, NF and ordinary KV', needs('dstats', 'tasks'), async () => {
   for (const kind of ['custody', 'notifications', 'kv']) {
     const B = await world(),
       unknown = 'TEST_ONLY_unknown_department',
@@ -783,7 +783,7 @@ test('full requests missing the declared manifest, a domain, a custody scope or 
   }
 });
 
-test('actual staged department export includes a manifest and normalized domains, and restores through the same POST compiler', needs('award', 'dstats', 'seized'), async () => {
+test('actual staged department export includes a manifest and normalized domains, and restores through the same POST compiler', needs('award', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world();
   await custody(B);
   await seedMessage(B);

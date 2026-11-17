@@ -83,7 +83,7 @@ async function save(W, who, vals) {
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + 'the ' + OLD_REV + ' client narrows a ceiling (pages · tabs · lenses): the trimming request is refused whole, D1 byte-identical, the page is told', needs('award', 'dstats', 'seized'), async () => {
+  test(M + 'the ' + OLD_REV + ' client narrows a ceiling (pages · tabs · lenses): the trimming request is refused whole, D1 byte-identical, the page is told', needs('award', 'dstats', 'seized', 'tasks'), async () => {
     const W = await scene(mode), s0 = snap(W);
     const c = await clientOf(W, 'su', true);
     try {
@@ -111,7 +111,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal(snap(W), s0);
   });
 
-  test(M + 'the current client narrows (accepted, nothing deleted); deliberate removals in and with the same request are accepted', needs('award', 'dstats', 'seized'), async () => {
+  test(M + 'the current client narrows (accepted, nothing deleted); deliberate removals in and with the same request are accepted', needs('award', 'dstats', 'seized', 'tasks'), async () => {
     const W = await scene(mode), sh0 = cp(stored(W.env, KP).emps[D][EK]), g0 = JSON.stringify(stored(W.env, GK));
     const c = await clientOf(W, 'su', false);
     try { await narrowWith(c); assert.equal(c.SV.denied(), 0, 'accepted'); } finally { c.dispose(); }

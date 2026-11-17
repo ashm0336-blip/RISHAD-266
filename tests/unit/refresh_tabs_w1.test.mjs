@@ -73,7 +73,7 @@ test('التميز (R1 · AUX-06): #/award/res و#/award/doc في أوّل رس�
   assert.doesNotMatch(method(src, '_bsHR() {'), /setTimeout/);
 });
 
-test('المتابعة اليومية (DG-04 · R7 · DG-09): #/daily/rounds يُقبل بقاعدة التبويب نفسِها (tabOn + عدسة) لا subOn · والرفضُ يكتب التبويبَ المعروض لا #/daily', () => {
+test('المتابعة اليومية (DG-04 · R7 · DG-09): #/daily/rounds يُقبل بقاعدة التبويب نفسِها (tabOn + عدسة) لا subOn · والرفضُ يكتب التبويبَ المعروض لا #/daily', needs('tasks'), () => {
   const self = { _dsTabOn: (t) => t === 'rounds', bsLensOn: (k) => k === 'gates' };
   const P = page('daily', ['_bsHR() {'], { state: { dsTab: 'kpi' }, self, perm: { subOn: () => false, can: () => true }, kivo: { __BS_OPEN_TAB: { page: 'daily', tab: 'rounds' } } });
   P.c._bsHT = (t) => P.replaced.push(t);
@@ -218,7 +218,7 @@ function tasksPage() {
   return { c, V: () => c.renderVals() };
 }
 
-test('المهام (DG-14): «الشهر كاملاً» واليومُ المختار يُحملان بمفتاحين بدائيين تحفظهما حالةُ العرض (tkDayK · tkDayD) — وعرضُ kanban (sub)', () => {
+test('المهام (DG-14): «الشهر كاملاً» واليومُ المختار يُحملان بمفتاحين بدائيين تحفظهما حالةُ العرض (tkDayK · tkDayD) — وعرضُ kanban (sub)', needs('tasks'), () => {
   const P = tasksPage(), SK = '1448-5';
   assert.ok('tkDayK' in P.c.state && 'tkDayD' in P.c.state && 'sub' in P.c.state, 'في الحالة الأولى (فيُزرع المحفوظُ قبل أوّل رسم)');
   let V = P.V();
