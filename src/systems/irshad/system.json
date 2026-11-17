@@ -79,11 +79,11 @@
   },
   "pages.kpi.refs.mid": {
    "order": 20,
-   "text": "    \"irshad/dash\",\n"
+   "text": ",\n    \"irshad/dash\""
   },
   "pages.kpi.names.mid": {
    "order": 20,
-   "text": "    \"irshad/dash\": \"لوحة مؤشرات الاسترشاد\",\n"
+   "text": ",\n    \"irshad/dash\": \"لوحة مؤشرات الاسترشاد\""
   },
   "pages.tabAddr.tail": {
    "order": 20,

@@ -217,8 +217,7 @@
     bassam_staffing_v3:'staff', bassam_staffing_v2:'staff', bassam_staffing_snap_v1:'staff', bassam_staffing_locks_v1:'staff', bassam_callsigns_v1:'staff',
     bassam_shift_options_v1:'admin/shifts', bassam_perm_tpls_v1:'admin/ptpls',
     bassam_plan_v1:'plan', bassam_zone_opts_v1:'plan', bassam_gate_opts_v1:'plan', bassam_mark_kinds_v1:'plan',
-    bassam_rounds_v1:'daily/rounds', bassam_dreport_v1:'dreport', bassam_dr_grp_v1:'dreport', bassam_leave_kinds_v1:'dreport',
-    bassam_tasks_v1:'tasks', bassam_tasks_locks_v1:'tasks'@@SYS:tree.keyCap|sep=",\n"|pre=",\n"|post=" };"|empty=" };"@@
+    bassam_rounds_v1:'daily/rounds', bassam_dreport_v1:'dreport', bassam_dr_grp_v1:'dreport', bassam_leave_kinds_v1:'dreport'@@SYS:tree.keyCap|sep=",\n"|pre=",\n"|post=" };"|empty=" };"@@
   function keyCap(k){ var b = String(k || '').replace(/^bsdept:[^:]+:/, '').replace(/:.*$/, ''); return KEY_CAP[b] || ''; }
   function keyOn(k, did){ try { if ((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper())) return true; /* V7 · د1-ج: مدير المنصة بلا قيد */ var c = keyCap(k); return c ? onCap(c, did) : true; } catch (e) { return true; } }
   /* R188: «هل يملك المستخدمُ الحاليُّ الكتابةَ في هذا المورد؟» — من ورقته (keyCap) وأفعاله. تُسأل قبل أي كتابةٍ

@@ -24,8 +24,7 @@ class Component extends DCLogic {
         { k: "dy", pk: "daily", sk: "kpiDaily" },
         { k: "occ", pk: "daily", sk: "kpiOcc" },
         { k: "zn", pk: "daily", sk: "kpiZones" },
-@@SYS:kpis.panels.mid@@        { k: "tk", pk: "tasks", sk: "" },
-@@SYS:kpis.panels.tail@@      ],
+@@SYS:kpis.panels.mid@@@@SYS:kpis.panels.tasks@@@@SYS:kpis.panels.tail@@      ],
       r = {};
     t.forEach(function (t) {
       r[t.k] = n._okOf(t.pk, t.sk);
@@ -74,19 +73,7 @@ class Component extends DCLogic {
             n.setState({ ktab: t.k });
           }));
       }),
-      /* لوحةُ المهام يملكها نظامُ المهام (RISHAD-266 P9 · tasks/logic-kpi.js) — العارضُ يحرس سياقَ الإدارة وحده كما كان: بلا إدارةٍ جاهزة لا تُستورد اللوحة */
-      e.on_tk && (() => {
-        const scope = KIVO.BassamDepts?.context?.();
-        if (!scope || scope.state !== "ready") {
-          e.tkScopeNotice = scope?.message || "تعذّر قراءة سجل الإدارات — أعد المحاولة";
-          e.on_tk = false;
-        }
-      })(),
-      /* بعد أول فتح تبقى اللوحةُ مركَّبةً مخفيّة: شهرُها المختار يبقى عند الرجوع إلى التبويب كما كان قبل النقل، ولا تُقرأ قبل أن تُفتح */
-      e.on_tk && (this._tkSeen = !0),
-      (e.tkMount = !!this._tkSeen && !e.tkScopeNotice),
-      (e.tkShow = e.on_tk ? "" : "display:none"),
-      e
+@@SYS:kpis.logic.tasks@@      e
     );
   }
 }

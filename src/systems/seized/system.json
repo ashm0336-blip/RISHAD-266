@@ -102,11 +102,11 @@
   },
   "pages.kpi.refs.mid": {
    "order": 10,
-   "text": "    \"seized/dash\",\n"
+   "text": ",\n    \"seized/dash\""
   },
   "pages.kpi.names.mid": {
    "order": 10,
-   "text": "    \"seized/dash\": \"لوحة مؤشرات المضبوطات\",\n"
+   "text": ",\n    \"seized/dash\": \"لوحة مؤشرات المضبوطات\""
   },
   "pages.tabAddr.tail": {
    "order": 30,

@@ -103,8 +103,7 @@
     "tab:kpiZones",
     "page:dreport",
     "tab:rounds",
-    "page:tasks",
-    "tab:field"
+@@SYS:pages.daily.seq.tasks@@    "tab:field"
    ],
    "tabLabel": "التبويبات",
    "tabs": [
@@ -143,16 +142,7 @@
    "name": "التقرير اليومي",
    "under": "daily"
   },
-  {
-   "key": "tasks",
-   "module": "tasks",
-   "activation": "toggle",
-   "departmentComponents": ["Tasks"],
-   "nav": "tasks",
-   "name": "المهام",
-   "under": "daily"
-  },
-@@SYS:pages.entry.systems@@  {
+@@SYS:pages.entry.tasks@@@@SYS:pages.entry.systems@@  {
    "key": "links",
    "activation": "toggle",
    "nav": "links",
@@ -204,15 +194,13 @@
     "planning/readiness",
     "daily/kpiDaily",
     "daily/kpiOcc",
-    "daily/kpiZones",
-@@SYS:pages.kpi.refs.mid@@    "tasks"@@SYS:pages.kpi.refs.tail@@
+    "daily/kpiZones"@@SYS:pages.kpi.refs.mid@@@@SYS:pages.kpi.refs.tasks@@@@SYS:pages.kpi.refs.tail@@
    ],
    "names": {
     "planning/readiness": "مؤشرات الجاهزية",
     "daily/kpiDaily": "مؤشرات التشغيل اليومي",
     "daily/kpiOcc": "مؤشرات الإشغال",
-    "daily/kpiZones": "مؤشرات المصليات",
-@@SYS:pages.kpi.names.mid@@    "tasks": "مؤشرات المهام"@@SYS:pages.kpi.names.tail@@
+    "daily/kpiZones": "مؤشرات المصليات"@@SYS:pages.kpi.names.mid@@@@SYS:pages.kpi.names.tasks@@@@SYS:pages.kpi.names.tail@@
    }
   }
  ],
@@ -221,8 +209,7 @@
 @@SYS:pages.tabAddr.award@@  "admin": 1,
   "daily": {
    "rounds": 1,
-   "dreport": 1,
-   "tasks": 1
+   "dreport": 1@@SYS:pages.tabAddr.daily@@
   }@@SYS:pages.tabAddr.tail@@
  },
  "navOrder": [
@@ -245,8 +232,7 @@
   "planning": "الخطة التشغيلية",
   "daily": "المتابعة اليومية",
   "dreport": "التقرير اليومي",
-  "tasks": "المهام",
-@@SYS:pages.routeNames.systems@@  "links": "مواقع ذات صلة",
+@@SYS:pages.routeNames.tasks@@@@SYS:pages.routeNames.systems@@  "links": "مواقع ذات صلة",
   "help": "المساعدة",
   "admin": "الإعدادات",
   "sysadmin": "مركز إدارة رشاد",

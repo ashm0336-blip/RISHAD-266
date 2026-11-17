@@ -662,8 +662,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ad = N.add || "إضافة",
       ed = N.edit || "تعديل";
     (rows || []).forEach((r) => {
-      r && r.isLeaf && "tasks" === r.key && (r.chkTip += " · التكرار: إنشاءُ مهمةٍ متكررة = «" + ad + "» (+ «" + ed + "» لمكلَّفيها) · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «" + ed + "»");
-    });
+@@SYS:admin.tree.capTip.tasks@@    });
     return rows;
   }
   tpVals() {
@@ -1565,8 +1564,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         bassam_rounds_v1: "الجولات اليومية",
         bassam_dreport_v1: "التقرير اليومي",
         bassam_plan_v1: "الخطة التشغيلية",
-        bassam_tasks_v1: "المهام",
-        bassam_auth_users_v1: "حسابات الدخول",
+@@SYS:admin.keyLabels.tasks@@        bassam_auth_users_v1: "حسابات الدخول",
         bassam_perms_v1: "الصلاحيات",
         bassam_depts_v1: "الإدارات",
 @@SYS:admin.keyLabels@@        bassam_custody_v1: "العهد",
@@ -4333,10 +4331,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
          (الإنشاءُ task.create (+ task.assign بمكلَّفين) · التحويلُ إلى متكررة task.create + task.edit + task.assign · التعديلُ والإيقافُ والاستئنافُ والإنهاءُ task.edit)
          — يُلحق بتلميح الرقاقة كما يُلحق «يظهر في»، وبملاحظةِ ورقة «المهام»؛ والأسماءُ من السجلّ نفسِه فتطابق الرقاقات */
       REC = {
-        "task.create": "يشمل إنشاءَ مهمةٍ لمرة واحدة أو متكررة (يومي · أسبوعي · شهري)",
-        "task.edit": "يشمل تعديلَ التكرار وإيقافَه مؤقتاً واستئنافَه وإنهاءَه، وتحويلَ مهمةٍ إلى متكررة مع «" + lab("task.create") + "» و«" + lab("task.assign") + "»",
-        "task.assign": "يشمل مكلَّفي المهمة المتكررة",
-      },
+@@SYS:admin.tree.recNotes.tasks@@      },
       BADGE = {
         tab: ["تبويب", "var(--info-text)", "var(--info-soft)", "var(--info-border)"],
         page: ["صفحة", "var(--text-secondary)", "var(--bg-surface-3)", "var(--border-default)"],
@@ -4635,9 +4630,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     ? "عقدةُ المنصة: مفاتيحُها بالدور (مسؤول المنصة · مدير الإدارة) أو ذاتية لكل مستخدم — لا تدخل السقف ولا القوالب"
                     : gate
                       ? "العدسةُ إضافةٌ على كانفس " + hostTxt(l, " و") + " — بوابتُها: سقفُ الإدارة ∧ تفعيلُها للموظف"
-                      : "tasks" === l.owner
-                        ? "التكرار: إنشاءُ مهمةٍ متكررة = «" + lab("task.create") + "» (+ «" + lab("task.assign") + "») · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «" + lab("task.edit") + "»"
-                        : "",
+                      : @@SYS:admin.tree.leafNote.tasks@@"",
             /* المرجعُ المستقلّ: مفاتيحُه رقاقاتٌ في ورقة إدارته — وفي الخريطة لا تُكرَّر هنا (كلُّ مفتاحٍ مرةً واحدة) */
             chips = ("reference" === l.type && (!cap || map) ? [] : sts.concat(resvSt)).map(chip);
           kids.push({
@@ -8432,9 +8425,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 bassam_zone_opts_v1: "كتالوج المصليات",
                 bassam_gate_opts_v1: "كتالوج البوابات",
                 bassam_mark_kinds_v1: "كتالوج أنواع المعالم",
-                bassam_tasks_v1: "المهام",
-                bassam_tasks_locks_v1: "اعتمادات المهام",
-@@SYS:admin.wipe.labels@@                bassam_options_v1: "الخيارات العامة",
+@@SYS:admin.wipe.labels.tasks@@@@SYS:admin.wipe.labels@@                bassam_options_v1: "الخيارات العامة",
                 bassam_profile_v1: "الملف التعريفي",
               };
             let n = [];

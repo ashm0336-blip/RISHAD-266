@@ -745,8 +745,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
               impOn("staff") ? "الجدول الشهري بكل أشهره" : "",
               impOn("dreport") ? "التقارير اليومية بكل أيامها ودفاتر استئذاناتها" : "",
               "تسكينات الخطة التشغيلية والجولات اليومية",
-              "المهام المسندة",
-              "حسابات الدخول والصلاحيات",
+@@SYS:import.summary.tasks@@              "حسابات الدخول والصلاحيات",
               impOn("emps/custody") ? "حركات العهد" : "",
 @@SYS:import.summary.award@@            ]
               .filter(Boolean)

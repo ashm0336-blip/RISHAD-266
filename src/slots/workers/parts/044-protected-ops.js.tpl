@@ -100,8 +100,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
   })();
   /* KIVO_265 · H-1: العمودُ 23 في مخزن المهام للخادم وحده (018 taskXWhy) — قبل كلّ صلاحيةٍ ومسارٍ مختصر (holdsAllWrites)؛
      والمراجعةُ الموحّدة: المكلَّفُ بعد نشاط الموظف (R-1 · R-7 taskAsgWhy) والحسابُ النشط (R-2 taskAcctWhy) — 018 taskRawWhy */
-  if (nm === 'bassam_tasks_v1') { var xw9 = taskRawWhy(A, PV9.a(), PV9.b(), P.dept, ctx); if (xw9) return { ok: false, why: xw9 }; }
-  if (nm === 'bassam_employees_v1') { var xd9 = empDupWhy(A, PV9.a(), PV9.b(), P.dept, ctx); if (xd9) return { ok: false, why: xd9 }; }   /* KIVO_265 · أمن: 018 empDupWhy */
+@@SYS:canWrite.rawWhy.tasks@@  if (nm === 'bassam_employees_v1') { var xd9 = empDupWhy(A, PV9.a(), PV9.b(), P.dept, ctx); if (xd9) return { ok: false, why: xd9 }; }   /* KIVO_265 · أمن: 018 empDupWhy */
   /* الثوابت أولاً: الشكل الجذري · المجموعات المعلَنة · الهوية وتفرّدها ·
      مشروعية عملية الاعتماد — قبل التنظيف وقبل holdsAllWrites وقبل كل صلاحية */
   if (E9 || O9) {

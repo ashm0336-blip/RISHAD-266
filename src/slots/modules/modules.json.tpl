@@ -7,14 +7,7 @@
    "bytes": 530622,
    "logicLines": 6201
   },
-  {
-   "name": "Tasks",
-   "slug": "tasks",
-   "minifiedSource": true,
-   "bytes": 177288,
-   "logicLines": 2497
-  },
-  {
+@@SYS:modules.tasks@@  {
    "name": "Daily Sessions",
    "slug": "daily",
    "minifiedSource": true,

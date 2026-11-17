@@ -54,10 +54,7 @@ var RES_REG = {
   'bassam_dr_grp_v1':          { scope: 'dept', cap: 'dreport' },
   'bassam_leave_kinds_v1':     { scope: 'dept', cap: 'dreport' },
   /* ── المهام ── */
-  /* المهام: يومٌ ثم صفوفُ مهامّه — فالكيان في الطبقة الثانية */
-  'bassam_tasks_v1':           { scope: 'dept', cap: 'tasks', self: 'task' },
-  'bassam_tasks_locks_v1':     { scope: 'dept', cap: 'tasks' },
-@@SYS:res.reg.dept@@  /* ── الإعدادات: أوراقها لا صفحتها الأم ── */
+@@SYS:res.reg.tasks@@@@SYS:res.reg.dept@@  /* ── الإعدادات: أوراقها لا صفحتها الأم ── */
   'bassam_shift_options_v1':   { scope: 'dept', cap: 'admin/shifts' },
   'bassam_perm_tpls_v1':       { scope: 'dept', cap: 'admin/ptpls', via: { dreport: 'SEED_ONLY' } },
   'bassam_perm_tpls_named_v1': { scope: 'dept', cap: 'admin/ptpls' },

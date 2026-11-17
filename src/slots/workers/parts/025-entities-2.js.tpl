@@ -37,10 +37,7 @@ var ENT = {
   'bassam_staffing_v2':       { map: 1, sub: 'map', empty: '{}' },
   'bassam_staffing_snap_v1':  { map: 1, empty: '{}' },
   'bassam_staffing_locks_v1': { map: 1, empty: '{}' },
-  /* ── المهام ── */
-  'bassam_tasks_v1':          { map: 1, sub: 'list', empty: '{}' },
-  'bassam_tasks_locks_v1':    { map: 1, empty: '{}' },
-  /* ── التقرير اليومي ── */
+@@SYS:ent.reg.tasks@@  /* ── التقرير اليومي ── */
   'bassam_dreport_v1':        { map: 1, empty: '{}' },
   /* drGrpPref: { on:true, closed:{…} } */
   'bassam_dr_grp_v1':         { empty: '{}' },

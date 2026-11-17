@@ -232,6 +232,18 @@
   {
    "tpl": "workers/parts/019q-operations-people-tasks.js.tpl",
    "out": "workers/parts/019q-operations-people-tasks.js"
+  },
+  {
+   "tpl": "workers/parts/056-enforce.js.tpl",
+   "out": "workers/parts/056-enforce.js"
+  },
+  {
+   "tpl": "workers/parts/062a-auth-routes.js.tpl",
+   "out": "workers/parts/062a-auth-routes.js"
+  },
+  {
+   "tpl": "services/320-dept-storage.js.tpl",
+   "out": "src/services/320-dept-storage.js"
   }
  ]
 }

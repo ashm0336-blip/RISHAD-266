@@ -9,8 +9,7 @@ var EMP_TRANSITION_RELATED = [
   'bassam_staffing_locks_v1',
   'bassam_plan_v1',
   'bassam_rounds_v1',
-  'bassam_tasks_v1',
-  'bassam_dreport_v1',
+@@SYS:emp.keys.tasks@@  'bassam_dreport_v1',
   'bassam_shift_options_v1',
   'bassam_perm_tpls_v1',
   'bassam_grants_v1',
@@ -216,19 +215,7 @@ function empCleanupValues(values, removed, after, replace, wipe, staffOn) {
     Object.keys(rounds).forEach(function (k) {
       if (rounds[k] && Array.isArray(rounds[k].d)) rounds[k].d.forEach(fd);
     });
-  var tasks = values.bassam_tasks_v1;
-  if (isObj(tasks))
-    Object.keys(tasks).forEach(function (k) {
-      if (Array.isArray(tasks[k]))
-        tasks[k].forEach(function (r) {
-          if (Array.isArray(r) && ((r[14] && drop.has(String(r[14]).trim())) || (r[8] && drop.has(String(r[8]).trim())))) {
-            r[7] = [];
-            r[8] = '';
-            r[14] = '';
-          }
-        });
-    });
-  if (replace || wipe) {
+@@SYS:emp.cleanup.tasks@@  if (replace || wipe) {
     if (staffOn) {
       var st = values.bassam_staffing_v3,
         lk = values.bassam_staffing_locks_v1;

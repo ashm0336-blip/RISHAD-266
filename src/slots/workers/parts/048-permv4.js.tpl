@@ -41,7 +41,7 @@ function permv4DeptCeiling(dim, dept, actor) { return null; }
 function permv4Ctx(A, d, k, okMap, ctx) {
   var ac = permv4Actor(A), pv4 = (ctx && ctx.pv4) || {}, staffing = pv4.staffing || null;
   return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: dsToday(Date.now()), now: Date.now(),
-           retroWin: (ctx && ctx.retroWin) || {}, locks: { staffing: pv4.staffingLocks, tasks: pv4.tasksLocks },
+           retroWin: (ctx && ctx.retroWin) || {}, locks: { staffing: pv4.staffingLocks@@SYS:permv4.locks.ctx.tasks@@ },
            actorShift: function (mk) { var m = staffing && isObj(staffing) ? staffing[mk] : null; var r = m && isObj(m) ? m[A.u.ekey] : null; return (r && isObj(r) && r.shift) ? String(r.shift) : null; },
            held: okMap || {}, fieldOnly: !!d && enfFieldOnly(A, d), sources: permv4Sources(A), scopeValues: null, deptCeiling: permv4DeptCeiling };
 }
@@ -109,8 +109,7 @@ async function permv4RefsLoad(env, set, del) {
     k = ks[i]; var rn = resName(k), d = parseKey(k).dept; if (!d) continue;
     var o = out[d] = out[d] || {};
     if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && o.staffingLocks === undefined) o.staffingLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_locks_v1'), {}) || {};
-    if (rn === 'bassam_tasks_v1' && o.tasksLocks === undefined) o.tasksLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}) || {};
-    if ((rn === 'bassam_dreport_v1' || rn === 'bassam_rounds_v1'@@SYS:permv4.staffing.irshad@@ || rn === 'bassam_staffing_v3') && o.staffing === undefined) o.staffing = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_v3'), null);
+@@SYS:permv4.locks.load.tasks@@    if ((rn === 'bassam_dreport_v1' || rn === 'bassam_rounds_v1'@@SYS:permv4.staffing.irshad@@ || rn === 'bassam_staffing_v3') && o.staffing === undefined) o.staffing = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_v3'), null);
   }
   return out;
 }

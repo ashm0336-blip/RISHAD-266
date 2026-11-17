@@ -79,7 +79,7 @@ function permv2Bind(A, k, newVal, curVal, ctx, v) {
   var a = curVal == null ? parseJson((E && E.empty) || 'null', null) : parseJson(curVal, null), b = parseJson(newVal, null);
   if (b === null) { ST.skipped.shape++; return; }
   /* KIVO_264 · KIVO-Tasks (الرقعة 06): التصنيفُ الظلّي يرى ما يراه الإنفاذ — هويةُ الذات على مخزن المهام من المسار الذاتي وحده (059 enfTaskSelfEkey) */
-  var cx = { dept: P.dept, actor: { id: A.u.id, ekey: rn === 'bassam_tasks_v1' && !A.__tkSelf ? null : A.u.ekey, role: A.u.role }, imp: !!(ctx && ctx.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(ctx && ctx.restore),
+  var cx = { dept: P.dept, actor: { id: A.u.id, ekey: @@SYS:permv2.selfEkey.tasks@@A.u.ekey, role: A.u.role }, imp: !!(ctx && ctx.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(ctx && ctx.restore),
              op: (ctx && ctx.op && ctx.op.op) || '' };   /* Phase 3: علامةُ العملية الصريحة (للتصنيف الظلّي فقط) */
   var res = KIVO_GUARDS.classify(rn, a, b, cx); if (!res) { ST.uncovered++; return; }
   if (cx.restore) ST.flags.restoreBatches++;
