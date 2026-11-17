@@ -142,20 +142,7 @@
    "head": "/* ═══ تنبيهات الإدارة: مديرها يكتب كل شيء؛ أي منتسب يضيف عناصر (من أوقع الحدث يكتب تنبيهه) ويحدّث حالة قراءته"
   },
   {
-   "file": "019a-custody.js",
-   "head": "/* RISHAD 266 — server-owned relational storage. */",
-   "lines": null,
-   "bytes": null,
-   "sha256": null
-  },
-  {
    "file": "019a1-cursor.js",
-   "lines": null,
-   "bytes": null,
-   "sha256": null
-  },
-  {
-   "file": "019a2-custody-resolve.js",
    "lines": null,
    "bytes": null,
    "sha256": null
@@ -167,38 +154,13 @@
    "sha256": null
   },
   {
-   "file": "019a4-custody-api.js",
-   "lines": null,
-   "bytes": null,
-   "sha256": null
-  },
-  {
-   "file": "019b-custody-plans.js",
-   "head": "/* RISHAD 266 — server-owned relational storage. */",
-   "lines": null,
-   "bytes": null,
-   "sha256": null
-  },
-  {
    "file": "019b1-removed-holders.js",
    "lines": null,
    "bytes": null,
    "sha256": null
   },
   {
-   "file": "019b2-custody-cleanup.js",
-   "lines": null,
-   "bytes": null,
-   "sha256": null
-  },
-  {
    "file": "019b3-restore-permission.js",
-   "lines": null,
-   "bytes": null,
-   "sha256": null
-  },
-  {
-   "file": "019b4-custody-restore.js",
    "lines": null,
    "bytes": null,
    "sha256": null
@@ -417,13 +379,6 @@
    "bytes": null,
    "sha256": null,
    "head": "/* ══ تنظيفان مجاليّان ضيّقان — مساران مستقلّان لا شرطٌ عامّ ═══════════════"
-  },
-  {
-   "file": "039-custody-moves.js",
-   "lines": null,
-   "bytes": null,
-   "sha256": null,
-   "head": "/* ══ حركات العهد: عمليتان مجاليّتان بفعليهما كما في الواجهة ══════════════════"
   },
   {
    "file": "040-employee-delete-cleanup.js",

@@ -653,17 +653,7 @@
    "origSha256": null,
    "new": "KIVO_264 · ملفي (OD-3)"
   },
-@@SYS:blocks.shell.tasks@@  {
-   "id": "services/547-custody-api.js",
-   "kind": "js",
-   "openTag": "<script>",
-   "closeTag": "</script>",
-   "line": 10494,
-   "origBytes": null,
-   "origSha256": null,
-   "new": "Typed custody API transport included by the runtime shell"
-  },
-  {
+@@SYS:blocks.shell.tasks@@@@SYS:blocks.shell.custody@@  {
    "id": "services/548-atomic-backup.js",
    "kind": "js",
    "openTag": "<script>",

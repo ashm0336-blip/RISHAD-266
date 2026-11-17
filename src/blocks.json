@@ -674,7 +674,7 @@
    "new": "KIVO_264 · KIVO-Tasks المرحلة الثانية (نموذجُ المهمة في الواجهة — مرآةُ 070)"
   },
   {
-   "id": "services/547-custody-api.js",
+   "id": "systems/custody/client/547-custody-api.js",
    "kind": "js",
    "openTag": "<script>",
    "closeTag": "</script>",

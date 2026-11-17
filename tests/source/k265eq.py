@@ -73,12 +73,12 @@ def _from_prev(u):
 ok(oldonly == retained and all(_from_prev(u) for u in retained) and all(u in cur for u in files if u not in retained),
    '★ نافذةُ الإصدارين: غيرُ المشار إليه من الإصدار الحالي (' + str(len(oldonly)) + ') = الأصولُ المُبقاة المعلنة من ' + ('·'.join(sorted(RETD)) or '—') + ' بايتاً، وكلُّ ما سواه مشارٌ إليه من الغلاف', json.dumps({'old': oldonly[:6], 'retained': retained[:6]}))
 # V7 · د2-ب · د4-ب: الأعدادُ أدناه = القاعدة + ما تصرّح به الأنظمةُ الحاضرة (src/systems/<key>/system.json). بالأنظمة الخمسة: js 73 · صفحات 14.
-#   القاعدة: 70 سكربتاً في الغلاف و9 صفحات (د4-ب: صفحةُ المهام وكتلتاها 545 · 546 صارت من نظام المهام). كلُّ نظامٍ حاضر يضيف صفحةً (نصاً ومنطقاً)،
+#   القاعدة: 69 سكربتاً في الغلاف و9 صفحات (د4-ب: صفحةُ المهام وكتلتاها 545 · 546 صارت من نظام المهام · د4-ج: 547 صارت من نظام العهد). كلُّ نظامٍ حاضر يضيف صفحةً (نصاً ومنطقاً)،
 #   وسكربتاتِ الغلاف التي في ملفات واجهته (‎client/NNN-*.js‎).
 _SYSD = os.path.join(ROOT, 'src', 'systems')
 _SYS = [json.load(open(os.path.join(_SYSD, k, 'system.json'), encoding='utf-8')) for k in sorted(os.listdir(_SYSD)) if os.path.isfile(os.path.join(_SYSD, k, 'system.json'))] if os.path.isdir(_SYSD) else []
-N_JS = 70 + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
-N_PG = 9 + len(_SYS)
+N_JS = 69 + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
+N_PG = 9 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة
 kinds = {}
 for u in files:
     if u in retained: continue   # أصولُ الإصدارات السابقة المُبقاة (أُثبتت أعلاه) لا تُعدّ في أصناف الإصدار الحالي

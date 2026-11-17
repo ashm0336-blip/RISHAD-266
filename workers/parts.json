@@ -211,14 +211,14 @@
       "head": "/* ═══ تنبيهات الإدارة: مديرها يكتب كل شيء؛ أي منتسب يضيف عناصر (من أوقع الحدث يكتب تنبيهه) ويحدّث حالة قراءته"
     },
     {
-      "file": "019a-custody.js",
-      "head": "/* RISHAD 266 — server-owned relational storage. */",
+      "file": "../../src/systems/custody/server/019a-custody.js",
       "lines": [
         6961,
         7404
       ],
       "bytes": 16876,
-      "sha256": "9243cdc901e24f4ea7658ca5dde5827b0dbe9a5d093d29f96cfff9a5f4a1bc2e"
+      "sha256": "9243cdc901e24f4ea7658ca5dde5827b0dbe9a5d093d29f96cfff9a5f4a1bc2e",
+      "head": "/* RISHAD 266 — server-owned relational storage. */"
     },
     {
       "file": "019a1-cursor.js",
@@ -230,7 +230,7 @@
       "sha256": "b1866d53a0abc8ee4b0b019aacb057186faac2fe2914213ac5e160a6138f7703"
     },
     {
-      "file": "019a2-custody-resolve.js",
+      "file": "../../src/systems/custody/server/019a2-custody-resolve.js",
       "lines": [
         7418,
         7425
@@ -248,7 +248,7 @@
       "sha256": "70ed170ab16683b24e5fecc836438b64d54fde6c6d5ed7520aed246e44c600a1"
     },
     {
-      "file": "019a4-custody-api.js",
+      "file": "../../src/systems/custody/server/019a4-custody-api.js",
       "lines": [
         7431,
         8005
@@ -257,14 +257,14 @@
       "sha256": "68af676d26c60c737bf22e0b076ea1306cdba902955100e844d7cdcf30dfb8ab"
     },
     {
-      "file": "019b-custody-plans.js",
-      "head": "/* RISHAD 266 — server-owned relational storage. */",
+      "file": "../../src/systems/custody/server/019b-custody-plans.js",
       "lines": [
         8006,
         8088
       ],
       "bytes": 2778,
-      "sha256": "10b8bb2de2a647deb3891ff93d3819570a71710930cb66605074444a67984664"
+      "sha256": "10b8bb2de2a647deb3891ff93d3819570a71710930cb66605074444a67984664",
+      "head": "/* RISHAD 266 — server-owned relational storage. */"
     },
     {
       "file": "019b1-removed-holders.js",
@@ -276,7 +276,7 @@
       "sha256": "88c5c04d78752835d39e473b4de2009c3f2f7c5d8194c996760e9b50c51f9422"
     },
     {
-      "file": "019b2-custody-cleanup.js",
+      "file": "../../src/systems/custody/server/019b2-custody-cleanup.js",
       "lines": [
         8118,
         8360
@@ -294,7 +294,7 @@
       "sha256": "a802a7b6e025cb1160176a522953f042ea7b97fa78ecc806c73126a995f3f4e5"
     },
     {
-      "file": "019b4-custody-restore.js",
+      "file": "../../src/systems/custody/server/019b4-custody-restore.js",
       "lines": [
         8369,
         8469
@@ -732,7 +732,7 @@
       "head": "/* ══ تنظيفان مجاليّان ضيّقان — مساران مستقلّان لا شرطٌ عامّ ═══════════════"
     },
     {
-      "file": "039-custody-moves.js",
+      "file": "../../src/systems/custody/server/039-custody-moves.js",
       "lines": [
         21562,
         21586

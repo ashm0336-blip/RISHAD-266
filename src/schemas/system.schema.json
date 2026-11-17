@@ -10,7 +10,7 @@
   "note": {"type": "string"},
   "names": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 3}, "description": "V7 · د4-ب: أسماءٌ أخرى يُبحث عنها في القاعدة بغياب النظام (تعابيرُ نمطية دقيقة ببداية الكلمة، حسّاسةٌ لحالة الأحرف) — غيرُ مفتاح المجلد الذي يُبحث عنه حيث ورد"},
   "requires": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9]*$"}},
-  "client": {"type": "object", "additionalProperties": false, "required": ["slug", "component", "files"], "properties": {
+  "client": {"type": "object", "additionalProperties": false, "required": ["files"], "dependentRequired": {"slug": ["component"], "component": ["slug"]}, "description": "V7 · د4-ج: slug و component لنظامٍ له صفحة؛ نظامٌ بلا صفحة (تبويبٌ داخل صفحة قاعدة) يحمل files وحدها", "properties": {
    "slug": {"type": "string"}, "component": {"type": "string"}, "files": {"type": "array", "items": {"$ref": "#/$defs/rel"}}}},
   "server": {"type": "object", "additionalProperties": false, "required": ["parts"], "properties": {
    "parts": {"type": "array", "items": {"oneOf": [{"$ref": "#/$defs/rel"}, {"$ref": "#/$defs/part"}]}},

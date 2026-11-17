@@ -1,0 +1,78 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "custody",
+ "name": "عهد الموظفين",
+ "names": [
+  "\\bcu[A-Z]",
+  "\\bcust\\."
+ ],
+ "note": "V7 · د4-ج: نظامُ عهد الموظفين — بلا صفحة: تبويبان داخل صفحة الموظفين («عهد الموظفين» و«مستودع العهد»، قطعٌ في slots/)، وخدمةُ الواجهة 547، وأجزاءُ الخادم. تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py).",
+ "client": {
+  "files": [
+   "client/547-custody-api.js"
+  ]
+ },
+ "server": {
+  "parts": [
+   {
+    "file": "server/019a-custody.js",
+    "after": "019-notifications.js",
+    "order": 10,
+    "head": "/* RISHAD 266 — server-owned relational storage. */"
+   },
+   {
+    "file": "server/019a2-custody-resolve.js",
+    "after": "019a1-cursor.js",
+    "order": 10
+   },
+   {
+    "file": "server/019a4-custody-api.js",
+    "after": "019a3-bind.js",
+    "order": 10
+   },
+   {
+    "file": "server/019b-custody-plans.js",
+    "after": "019a3-bind.js",
+    "order": 20,
+    "head": "/* RISHAD 266 — server-owned relational storage. */"
+   },
+   {
+    "file": "server/019b2-custody-cleanup.js",
+    "after": "019b1-removed-holders.js",
+    "order": 10
+   },
+   {
+    "file": "server/019b4-custody-restore.js",
+    "after": "019b3-restore-permission.js",
+    "order": 10
+   },
+   {
+    "file": "server/039-custody-moves.js",
+    "after": "038-domain-cleanups.js",
+    "order": 10,
+    "head": "/* ══ حركات العهد: عمليتان مجاليّتان بفعليهما كما في الواجهة ══════════════════"
+   }
+  ]
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [
+   "migrations/0006_custody.sql"
+  ],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
+ },
+ "tests": [],
+ "derived": [],
+ "sharedStaysInBase": [],
+ "slots": {
+  "blocks.shell.custody": {
+   "order": 10,
+   "text": "  {\n   \"id\": \"systems/custody/client/547-custody-api.js\",\n   \"kind\": \"js\",\n   \"openTag\": \"<script>\",\n   \"closeTag\": \"</script>\",\n   \"line\": 10494,\n   \"origBytes\": null,\n   \"origSha256\": null,\n   \"new\": \"Typed custody API transport included by the runtime shell\"\n  },\n"
+  },
+  "shell.blocks.custody": {
+   "order": 10,
+   "text": "@@KIVO_BLOCK:systems/custody/client/547-custody-api.js@@\n"
+  }
+ }
+}
