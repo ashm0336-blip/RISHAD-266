@@ -352,11 +352,7 @@ function privKeyOut(A, d, k) { var T = A && A.__privTok && A.__privTok[d]; retur
 function privUserRow(A, d, u) { var k = privKeyOut(A, d, u.ekey); if (k === u.ekey) return u; u = privCopy(u); u.ekey = k; return u; }
 /* (5) award records */
 var PRIV_AW_F = ['phone', 'email', 'comp'];
-function privAwardOk(A, d) {
-  return privPersonalOk(A, d) || privMemo(A, '__privAw', d, function () { return @@SYS:priv.award.keys|pre="privHeld(A, d, ["|post="], ["|empty="privHeld(A, d, [], ["@@@@SYS:priv.award.atoms|post="]); });"|empty="]); });"@@
-}
-function privAwardRec(A, d, r) { return !isObj(r) || privAwardOk(A, d) || (r.ekey != null && String(r.ekey) === String(A.u.ekey || '\u0000')) ? r : privUserRow(A, d, privStrip(r, PRIV_AW_F)); }   /* (9) a plain reader: ekey too */
-/* export domain rows dom.rows[kind]: personal columns blanked (presence kept, so the copy stays valid) unless the row is the actor's own
+@@SYS:privacy.award.fns@@/* export domain rows dom.rows[kind]: personal columns blanked (presence kept, so the copy stays valid) unless the row is the actor's own
    (keyCol); a domain so changed is marked redacted — no restore accepts it (privRedacted) */
 function privRowsBlank(A, dom, kind, cols, keyCol) {
   var me = String(A.u.ekey || '\u0000'), R = dom.rows[kind] || [];

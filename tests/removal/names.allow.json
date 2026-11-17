@@ -72,57 +72,12 @@
    "why": "اسمُ ترحيل (الترحيلات تبقى بقرار د2)."
   },
   {
-   "file": "workers/parts/019d-atomic-restore.js",
-   "match": [
-    "def.name==='awards'"
-   ],
-   "kind": "deferred",
-   "why": "فرعٌ في كود الاستعادة المشترك يقارن باسم مجال؛ لا يُسلك بغياب النظام (لا تعريفَ مجالٍ بهذا الاسم)."
-  },
-  {
-   "file": "workers/parts/019f-backup-converter.js",
-   "match": [
-    "def.name==='awards'",
-    "rsBCOwn(domains, 'irshad')"
-   ],
-   "kind": "deferred",
-   "why": "فرعان في محوِّل النسخ المشترك يقارنان باسم مجال؛ لا يُسلكان بغياب النظام."
-  },
-  {
-   "file": "workers/parts/019u-privacy-projection.js",
-   "match": [
-    "privAwardOk",
-    "privAwardRec"
-   ],
-   "kind": "deferred",
-   "why": "دالتا خصوصيةٍ يستدعيهما ملفُّ التكامل المشترك 019n؛ مفاتيحُهما صارت في فتحة (فارغة بغياب الجائزة)، واسماهما مؤجَّلان معه."
-  },
-  {
-   "file": "src/modules/admin/logic.js",
-   "match": [
-    "irshad = false",
-    "(irshad ? \"/api/irshad/export?uid=\" : ",
-    "value[irshad ? "
-   ],
-   "kind": "deferred",
-   "why": "سياجُ تصدير النسخة في صفحة الإعدادات: معاملٌ اسمُه irshad قيمتُه false دائماً بغياب النظام، فلا يُطلب مسارُه."
-  },
-  {
    "file": "src/modules/business-cloud.js",
    "match": [
     "(?:(?:seized-|award-)?conflict|(?:award-)?restore-epoch-changed)"
    ],
    "kind": "deferred",
    "why": "وحدةُ العميل المشتركة لصفحتَي المضبوطات والجائزة: نمطُ رموز خطأ؛ لا صفحةَ تستعملها بغيابهما."
-  },
-  {
-   "file": "src/services/548-atomic-backup.js",
-   "match": [
-    "spec[0]==='award'?'awards':spec[0]",
-    "spec[0]==='award'"
-   ],
-   "kind": "deferred",
-   "why": "فرعان في خدمة النسخ يقارنان باسم مجال التصدير؛ لا يُسلكان بغياب الجائزة (قائمةُ المجالات تأتي من فتحة)."
   }
  ]
 }

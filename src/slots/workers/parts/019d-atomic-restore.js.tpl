@@ -1021,7 +1021,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     throw rsError('restore-policy', 403);
   rsShape(body.base, @@SYS:rs.base.dstats|pre="['epoch', 'kv', "|empty="['epoch', 'kv', "@@'notifications', @@SYS:rs.base.systems|pre="'custody'"|post="]);"|empty="'custody']);"@@
   for(var def of bdDefinitions()) {
-    var expected=(body.manifest.departments||[]).concat(def.name==='awards'&&body.scope.kind==='full'?['']:[]).sort();
+    var expected=(body.manifest.departments||[]).concat(@@SYS:rs.manifest.awardGlobal|empty="[]"@@).sort();
     if(!Array.isArray((body.domains||{})[def.name])||!deq(body.domains[def.name].map(bdScope).sort(),expected))throw rsError('restore-incomplete-'+def.name);
   }
   rsNat(body.base.epoch);

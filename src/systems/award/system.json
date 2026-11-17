@@ -508,14 +508,6 @@
    "order": 30,
    "text": "awards:1,"
   },
-  "priv.award.keys": {
-   "order": 10,
-   "text": "'award.res.edit', 'award.res.approve', 'award.res.reject', 'award.res.delete', 'award.res.status'"
-  },
-  "priv.award.atoms": {
-   "order": 10,
-   "text": "'award/res:edit', 'award/res:approve', 'award/res:del'"
-  },
   "tree.keyCap": {
    "order": 30,
    "text": "    bassam_award_v1:'award', bassam_award_docs_v1:'award', bassam_award_docs_v2:'award'"
@@ -615,6 +607,38 @@
   "bd.route.exportName": {
    "order": 20,
    "text": "'awards'"
+  },
+  "privacy.award.fns": {
+   "order": 10,
+   "file": "slots/privacy.award.fns.frag"
+  },
+  "rs.manifest.awardGlobal": {
+   "order": 10,
+   "text": "def.name==='awards'&&body.scope.kind==='full'?['']:[]"
+  },
+  "bc.awardGlobal.1": {
+   "order": 10,
+   "text": "def.name==='awards'&&scope.kind==='full'?['']:[]"
+  },
+  "bc.awardGlobal.2": {
+   "order": 10,
+   "text": "def.name==='awards'&&scope.kind==='full'?['']:[]"
+  },
+  "bc.awardGlobalPart": {
+   "order": 10,
+   "text": "def.name==='awards'&&index>0&&scope.kind==='full'"
+  },
+  "bc.awardGlobalScope": {
+   "order": 10,
+   "text": "def.name==='awards'&&d===''"
+  },
+  "bk.export.awardGlobal": {
+   "order": 10,
+   "text": "options.full&&spec[0]==='award'?['']:[]"
+  },
+  "bk.export.awardName": {
+   "order": 10,
+   "text": "spec[0]==='award'?'awards':"
   }
  }
 }

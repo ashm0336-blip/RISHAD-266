@@ -686,6 +686,22 @@
   "root.navPerm.irshad": {
    "order": 10,
    "text": " irshad: \"irshad\","
+  },
+  "bc.dup.irshad": {
+   "order": 10,
+   "text": "(irKeys.length && rsBCOwn(domains, 'irshad'))"
+  },
+  "admin.fence.param": {
+   "order": 10,
+   "text": ", irshad = false"
+  },
+  "admin.fence.url": {
+   "order": 10,
+   "text": "irshad ? \"/api/irshad/export?uid=\" : "
+  },
+  "admin.fence.rev": {
+   "order": 10,
+   "text": "irshad ? \"globalRev\" : "
   }
  }
 }

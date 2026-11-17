@@ -99,7 +99,7 @@ function rsBCManifest(manifest, scope, keys, domains, departments) {
   if (!deq(custody.slice().sort(), departments.slice().sort())) rsBCFail('incomplete-custody');
 @@SYS:bc.manifest.irshad@@  for(var def of bdDefinitions()) {
     if(manifest.version>=3) {
-      var expected=departments.concat(def.name==='awards'&&scope.kind==='full'?['']:[]).sort();
+      var expected=departments.concat(@@SYS:bc.awardGlobal.1|empty="[]"@@).sort();
       if(!Array.isArray(domains[def.name])||!deq(domains[def.name].map(bdScope).sort(),expected))rsBCFail('incomplete-'+def.name);
     } else if(domains[def.name]!==undefined)rsBCFail(def.name+'-manifest-version');
   }
@@ -222,7 +222,7 @@ async function rsConvertBackup(env, A, file, opt) {
   Object.keys(keys).filter(bdLegacyKey).forEach(function(k){
     var def=bdDefinitions().find(function(def){return def.resources.includes(resName(k));}),part=parseKey(k),index=def.resources.indexOf(resName(k));
     if(k!==(part.dept?def.key(part.dept,index):def.resources[index]))rsBCFail('business-namespace');
-    if(!part.dept&&!(def.name==='awards'&&index>0&&scope.kind==='full'))rsBCFail('business-global-scope');
+    if(!part.dept&&!(@@SYS:bc.awardGlobalPart|empty="false"@@))rsBCFail('business-global-scope');
     if(part.dept&&!deptIds.includes(part.dept))rsBCFail('business-department');
   });
   var cuKeys = Object.keys(keys).filter(cuLegacyKey),
@@ -234,7 +234,7 @@ async function rsConvertBackup(env, A, file, opt) {
     (cuKeys.length && rsBCOwn(domains, 'custody')) ||
     (nfKeys.length && rsBCOwn(domains, 'notifications')) ||
     (dsKeys.length && rsBCOwn(domains, 'dailyStats')) ||
-    (irKeys.length && rsBCOwn(domains, 'irshad'))
+    @@SYS:bc.dup.irshad|empty="false"@@
   )
     rsBCFail('duplicate-domain-source');
   for(var def of bdDefinitions()) if(businessKeys.some(function(k){return def.resources.includes(resName(k));})&&rsBCOwn(domains,def.name))rsBCFail('duplicate-domain-source');
@@ -256,7 +256,7 @@ async function rsConvertBackup(env, A, file, opt) {
     if(domains[def.name]!==undefined) {
       if(!Array.isArray(domains[def.name]))rsBCFail(def.name+'-shape');
       domains[def.name]=domains[def.name].map(function(domain){
-        var d=bdScope(domain),global=def.name==='awards'&&d==='';
+        var d=bdScope(domain),global=@@SYS:bc.awardGlobalScope|empty="false"@@;
         if(typeof d!=='string'||(global&&scope.kind!=='full')||(!global&&(scope.kind==='full'?!deptIds.includes(d):d!==source)))rsBCFail(def.name+'-scope');
         var next=rsBCClone(def.validate(domain,d)),targetDept=scope.kind==='dept'?target:d;
         if(targetDept!==d){next.scope={departmentId:targetDept};Object.keys(def.tables).forEach(function(kind){next.rows[kind].forEach(function(row){row.department_id=targetDept;});});}
@@ -264,7 +264,7 @@ async function rsConvertBackup(env, A, file, opt) {
       });
       if(new Set(domains[def.name].map(bdScope)).size!==domains[def.name].length)rsBCFail(def.name+'-duplicate');
     } else if(legacy||file.manifest.version<3) {
-      domains[def.name]=deptIds.concat(def.name==='awards'&&scope.kind==='full'?['']:[]).map(function(d){
+      domains[def.name]=deptIds.concat(@@SYS:bc.awardGlobal.2|empty="[]"@@).map(function(d){
         var docs={};def.names.forEach(function(name,i){var k=d?def.key(d,i):def.resources[i];if(rsBCOwn(keys,k))docs[name]=rsBCParse(keys[k]);});
         if(!Object.keys(docs).length)summary.emptyDomains.push(def.name+':'+d);
         return def.validate(def.convert(d,docs),d);

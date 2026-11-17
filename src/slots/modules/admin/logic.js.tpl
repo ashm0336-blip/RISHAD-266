@@ -3821,15 +3821,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!actor || !srv || srv.dirty() || srv.inflight() || srv.sesChanged() || !Number.isSafeInteger(v) || v < 0) throw new Error("حدّث البيانات وانتظر اكتمال الحفظ ثم أعد التصدير");
     return { actor, v, revs: Object.fromEntries(keys.map(k => [k, srv.rev(k)])) };
   }
-  async _irBackupFence(snapshot, irshad = false) {
+  async _irBackupFence(snapshot@@SYS:admin.fence.param@@) {
     const srv = KIVO.__BS_SRV;
     const same = () => this._wpActor() === snapshot.actor && window.__BS_BOOT?.v === snapshot.v && !srv.dirty() && !srv.inflight() && !srv.sesChanged() && Object.entries(snapshot.revs).every(([k, rev]) => srv.rev(k) === rev);
     if (!same()) throw new Error("تغيّرت البيانات؛ حدّثها ثم أعد التصدير");
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20000);
     try {
-      const response = await fetch((irshad ? "/api/irshad/export?uid=" : "/api/get?keys=&uid=") + encodeURIComponent(snapshot.actor), { credentials: "same-origin", cache: "no-store", signal: controller.signal });
+      const response = await fetch((@@SYS:admin.fence.url@@"/api/get?keys=&uid=") + encodeURIComponent(snapshot.actor), { credentials: "same-origin", cache: "no-store", signal: controller.signal });
       const value = await response.json();
-      if (!response.ok || value?.ok !== 1 || value[irshad ? "globalRev" : "v"] !== snapshot.v || !same()) throw new Error("حدّث البيانات من الخادم ثم أعد التصدير؛ لم تُنشأ نسخة جزئية");
+      if (!response.ok || value?.ok !== 1 || value[@@SYS:admin.fence.rev@@"v"] !== snapshot.v || !same()) throw new Error("حدّث البيانات من الخادم ثم أعد التصدير؛ لم تُنشأ نسخة جزئية");
       return value;
     } finally { clearTimeout(timer); }
   }
