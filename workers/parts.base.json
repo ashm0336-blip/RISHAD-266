@@ -569,6 +569,12 @@
    "head": "/* ═══ KIVO_264 · «ملفي» — مسارا القراءة الذاتية (OD-3): GET /api/me/today · GET /api/me/history?ym=YYYY-M ═══"
   },
   {
+   "file": "062d-record-shared.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
    "file": "063-enf-api-and-handler.js",
    "lines": null,
    "bytes": null,

@@ -47,29 +47,34 @@
     "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيهُ من الخادم"
    },
    {
+    "file": "server/070b-task-rows.js",
+    "after": "062d-record-shared.js",
+    "order": 10
+   },
+   {
     "file": "server/071-task-mgmt.js",
-    "after": "062b-me-history.js",
+    "after": "062d-record-shared.js",
     "order": 30,
     "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول: الإنشاء · المراجعة · التمديد · إعادةُ الإسناد · الإلغاء · الربط · المجموعة ═══",
     "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول /api/tasks/* (إنشاء · مراجعة · تمديد · إعادةُ إسناد · إلغاء · ربط · مجموعة)"
    },
    {
     "file": "server/072-task-elig.js",
-    "after": "062b-me-history.js",
+    "after": "062d-record-shared.js",
     "order": 40,
     "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══",
     "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — الأهليةُ وقتَ التنفيذ من الجدول الشهري (GET /api/tasks/eligibility)"
    },
    {
     "file": "server/073-task-recur.js",
-    "after": "062b-me-history.js",
+    "after": "062d-record-shared.js",
     "order": 50,
     "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — المهامُ المتكررة: قالبٌ + نسخةُ تنفيذٍ مستقلة لكل موعد، تُولَّد في الخادم بلا Cron (ق5) ═══",
     "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — التكرارُ: قالبٌ ونُسخُ تنفيذ مولَّدةٌ في الخادم بلا Cron (متساوي القوى)"
    },
    {
     "file": "server/074-task-due.js",
-    "after": "062b-me-history.js",
+    "after": "062d-record-shared.js",
     "order": 60,
     "head": "/* ═══ KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (البند 10 — قرارُ المالك 2026-10-19) ═══",
     "new": "KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (مسحٌ كسولٌ بلا Cron — البند 10)"
@@ -420,6 +425,94 @@
   "deptStore.pageKeys.tasks": {
    "order": 10,
    "text": "'tasks',"
+  },
+  "nf.denyWhy.tasks": {
+   "order": 10,
+   "text": "  \"task-asg\": \"لا يُغيَّر مكلَّف مهمة بدأها أو أنهاها أو اعتذر عنها\", \"task-acct\": \"لا تُسند مهمة إلا لموظف له حساب نشط\",\n  \"task-rv\": \"المراجِع لا يكون المكلَّف نفسه\", \"task-own\": \"توثيق الموظف لا يُمحى بالحفظ\", \"task-del\": \"لا تُحذف مهمة بدأ عليها نشاط\",\n  \"task-x\": \"إعدادات المهمة تُغيَّر من أزرار المهمة وحدها\",\n"
+  },
+  "nf.denyRecs.tasks": {
+   "order": 10,
+   "text": " bassam_tasks_v1: \"المهام\", bassam_tasks_locks_v1: \"أقفال المهام\","
+  },
+  "nf.denyPages.tasks": {
+   "order": 10,
+   "text": " tasks: \"المهام\","
+  },
+  "nf.cap.tasks": {
+   "order": 10,
+   "text": "  task: \"tasks\",\n"
+  },
+  "nf.types.tasks": {
+   "order": 10,
+   "file": "slots/nf.types.tasks.frag"
+  },
+  "save.staleConflict.tasks": {
+   "order": 10,
+   "text": "    if (!vd0.ok && it0.act === 'set' && TK_RAW_WHY[vd0.why] && resName(k0) === 'bassam_tasks_v1' && Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) {\n      evald.push({ conflict: 1, cur: cur0 }); continue;\n    }\n"
+  },
+  "save.ctx.tasks": {
+   "order": 10,
+   "text": "      tk: tkCtx9[d00] || null,                                                    /* KIVO_265 · R-2: سياقُ الحساب النشط (018 taskAcctWhy) */\n"
+  },
+  "save.keepSelf.tasks": {
+   "order": 10,
+   "text": "    if (it0.act === 'set' && cur0 != null && resName(k0) === 'bassam_tasks_v1' && !A.__tkSelf && !(opt && opt.srv) && !tkKeepOff(A, k0, d00, rstK9, impK9, ENFX)) {\n      var st9 = Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0);   /* KIVO_265: base قديم ⇒ x من الخادم (H-1 · تعارضٌ لا رفض) */\n      var kp9 = tkKeepSelf(it0.v, cur0, { x: !!st9 }); if (kp9.n) { it0.v = kp9.v; logEv('warn', 'tk-kept', { n: kp9.n, rid: env.__rid }); }\n    }\n"
+  },
+  "cleanup.cleanRes.tasks": {
+   "order": 10,
+   "text": " 'bassam_tasks_v1': 1,"
+  },
+  "save.acctCtx.tasks": {
+   "order": 10,
+   "file": "slots/save.acctCtx.tasks.frag"
+  },
+  "cleanup.ctxRes.tasks": {
+   "order": 10,
+   "text": " 'bassam_tasks_v1': 1,"
+  },
+  "save.keepOff.tasks": {
+   "order": 10,
+   "text": "function tkKeepOff(A, k, d, rst, imp, X) {\n  if (rst[k] && taskSrvExempt(A, d, { rst: 1, enf: X ? { restore: !!X.restore } : null })) return true;\n  if (imp[k]) return X ? enfHeld(A, d, 'import.replace') : actsHeldOn(A, d, 'admin/import', ['del']);\n  return false;\n}\n"
+  },
+  "guard.classify.tasks.locks": {
+   "order": 10,
+   "text": "  C['bassam_tasks_locks_v1'] = lockMap('task.month.lock', 'task.month.reopen');\n"
+  },
+  "guard.classify.tasks": {
+   "order": 10,
+   "file": "slots/guard.classify.tasks.frag"
+  },
+  "scope.assignee.tasks": {
+   "order": 10,
+   "text": "    if (item.what === 'task') {\n      if (heldFor(ctx, key)) return na('holder acts by permission (I‑04)');\n      var os = sides(item, 'owner'), i; if (!os.length) return na('no-assignee');\n      for (i = 0; i < os.length; i++) if (String(os[i].v) !== String(ek)) return deny('task-not-assigned-to-actor (' + os[i].side + ')', { basis: 'row[14]', transition: changedPair(item.owner) });\n      return allow('task-assigned-to-actor', { basis: 'row[14] = ekey', transition: changedPair(item.owner) });\n    }\n"
+  },
+  "scope.items.tasks": {
+   "order": 10,
+   "file": "slots/scope.items.tasks.frag"
+  },
+  "bodies.notes.tasks": {
+   "order": 10,
+   "text": "    \"/api/me/tasks/act\": \"KIVO_264 · KIVO-Tasks: uid (C1 — 409 session-changed كـ/api/save) في هذا المسار ومسارات /api/tasks/* المغيِّرة كلِّها\",\n"
+  },
+  "bodies.tasks": {
+   "order": 10,
+   "file": "slots/bodies.tasks.frag"
+  },
+  "contracts.tasks": {
+   "order": 10,
+   "file": "slots/contracts.tasks.frag"
+  },
+  "canWrite.selfRule.tasks": {
+   "order": 10,
+   "text": "  if (R9.self === 'task' && newVal != null && selfTaskOnly(A, newVal, curVal)) return { ok: true };\n"
+  },
+  "permv2.selfRule.tasks": {
+   "order": 10,
+   "text": "    if (R0.self === 'task' && selfTaskOnly(A, newVal, curVal)) return 'selfTask';\n"
+  },
+  "permv2.selfRule.how.tasks": {
+   "order": 10,
+   "text": " || how === 'selfTask'"
   }
  }
 }

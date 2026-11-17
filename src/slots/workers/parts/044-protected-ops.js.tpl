@@ -146,6 +146,5 @@ function canWrite(A, k, newVal, curVal, ctx) {
     if (diffs9.length && diffs9.every(fn9)) return { ok: true };
   }
   if (R9.self === 'email' && newVal != null && selfEmailOnly(A, newVal, curVal)) return { ok: true };
-  if (R9.self === 'task' && newVal != null && selfTaskOnly(A, newVal, curVal)) return { ok: true };
-  return { ok: false, why: v9.why };
+@@SYS:canWrite.selfRule.tasks@@  return { ok: false, why: v9.why };
 }

@@ -47,8 +47,7 @@ function permv2How(A, k, newVal, curVal, ctx) {
     var via = R0.via || {}, vp, diffs = null;
     for (vp in via) { if (!actsHeldOn(A, P.dept, vp, acts)) continue; var fn = VIA_FN[via[vp]]; if (!fn) continue; if (!diffs) diffs = walkDiff(curVal, newVal); if (diffs.length && diffs.every(fn)) return 'via:' + vp; }
     if (R0.self === 'email' && selfEmailOnly(A, newVal, curVal)) return 'selfEmail';
-    if (R0.self === 'task' && selfTaskOnly(A, newVal, curVal)) return 'selfTask';
-    return 'none:' + acts.join('+');
+@@SYS:permv2.selfRule.tasks@@    return 'none:' + acts.join('+');
   } catch (e) { return 'err'; } finally { PERMV2.mute--; }
 }
 function permv2BindCat(A, k, newVal, curVal, ctx, v, keys, missing, asisOk) {
@@ -59,7 +58,7 @@ function permv2BindCat(A, k, newVal, curVal, ctx, v, keys, missing, asisOk) {
     var how = permv2How(A, k, newVal, curVal, ctx);
     if (how === 'field') return 'design:field-scope (D-19)';
     if (how.indexOf('via:') === 0) return 'coarse:via-rule (' + how + ')';
-    if (how === 'selfEmail' || how === 'selfTask') return 'design:self-rule (' + how + ')';
+    if (how === 'selfEmail'@@SYS:permv2.selfRule.how.tasks@@) return 'design:self-rule (' + how + ')';
     if (how === 'cleanup' || how === 'empGone' || how === 'shiftRename') return 'design:cleanup-path (' + how + ')';
     if (how === 'custodyMove') return 'error:asisMap (D-01)';
     if (missing.indexOf('import.run') !== -1) return 'design:new-check import.run (D-15)';

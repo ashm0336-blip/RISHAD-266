@@ -955,13 +955,31 @@
     {
       "file": "../../src/systems/tasks/server/070-task-core.js",
       "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيهُ من الخادم",
-      "bytes": 45377,
-      "sha256": "8a82a1972806155cc48dae47d40c810486518f1c677ad09fec6a9c9c7b032c70",
+      "bytes": 20645,
+      "sha256": "4f2930fe3f608da72a3270e9d64c32bca84022c928e518e864d5380f67532810",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة في الخادم: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيه ═══",
       "lines": [
         27709,
-        28167
+        27893
       ]
+    },
+    {
+      "file": "062d-record-shared.js",
+      "lines": [
+        27894,
+        27906
+      ],
+      "bytes": 1271,
+      "sha256": "bd39c4bb69c1f042df024f4c7bb744496f12e99c3e01b0242c51c5ff41569ff2"
+    },
+    {
+      "file": "../../src/systems/tasks/server/070b-task-rows.js",
+      "lines": [
+        27907,
+        28167
+      ],
+      "bytes": 23461,
+      "sha256": "4dd345043d1089222ff942a5a670f7c33570b2f53e9f16d33874342e6e325098"
     },
     {
       "file": "../../src/systems/tasks/server/071-task-mgmt.js",
