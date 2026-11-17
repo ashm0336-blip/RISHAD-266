@@ -12,6 +12,7 @@ import vm from 'node:vm';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { SRC, ROOT, PYTHON, SYSTEMS } from '../unit/harness.mjs';
+import { noComments, scanFiles, relOf, staleAllow } from './names_allow.mjs';
 
 const FULL = process.env.KIVO_FULL_SRC || SRC;
 const rd = (...p) => fs.readFileSync(path.join(SRC, ...p), 'utf8');
@@ -44,7 +45,6 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
 const rxOf = (toks) => (toks.length ? new RegExp('(?<![\\w.])(' + toks.slice().sort((a, b) => b.length - a.length).map(esc).join('|') + ')(?![\\w])', 'g') : null);
 const RX_CODE = rxOf([...GT.keys, ...GT.owners, ...GT.flags]), RX_DATA = rxOf([...GT.keys, ...GT.owners, ...GT.flags, ...sysRes]);
 const hits = (text, data) => { const RX = data ? RX_DATA : RX_CODE; return RX ? [...new Set(Array.from(text.matchAll(RX), (m) => m[1]))] : []; };
-const noComments = (code) => code.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
 const label = '[' + (SYSTEMS.join(' · ') || 'لا نظام') + ']' + (GONE.length ? ' — الغائب: ' + GONE.join(' · ') : '');
 
 test('د3 · الحذف: السجلُّ والشجرةُ وروابطُ الخادم المولَّدة لا تحمل رمزاً لنظامٍ غائب ' + label, () => {
@@ -113,13 +113,13 @@ test('د3 · الحذف: الشجرةُ كما تبنيها صفحةُ الإع�
 test('د3 · الحذف: لا اسمَ لنظامٍ غائب في جزءٍ من القاعدة خارج قائمة الاستثناء المعلنة ' + label, () => {
   const ALLOW = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'removal', 'names.allow.json'), 'utf8'));
   for (const e of ALLOW.skipFiles.concat(ALLOW.patterns, ALLOW.entries)) { assert.ok(e.why && e.why.length > 20, 'لكل استثناءٍ سبب'); assert.match(e.kind, /^(legit|deferred)$/); }
+  /* د4-أ: كلُّ مدخلٍ في القائمة ما زال له موضع — يُفحص على الشجرة الكاملة (الأنظمةُ كلُّها حاضرة)، فيعمل في المستودع وفي كل نسخة حذف */
+  assert.deepEqual(staleAllow(ALLOW, path.dirname(FULL), FULL, allSystems), [], 'مدخلٌ في قائمة الاستثناء بلا موضع');
   if (!GONE.length) return;
   const NAME = new RegExp('(?:' + GONE.join('|') + ')', 'i'), skip = new Set(ALLOW.skipFiles.map((x) => x.file)), pats = ALLOW.patterns.map((x) => new RegExp(x.pattern, 'g'));
-  const parts = JSON.parse(fs.readFileSync(path.join(ROOT, 'workers', 'parts.json'), 'utf8')).parts.map((p) => path.join(ROOT, 'workers', 'parts', p.file));
-  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (['systems', 'slots', 'pages'].includes(e.name) ? [] : walk(path.join(d, e.name))) : (/\.js$/.test(e.name) ? [path.join(d, e.name)] : [])));
   const bad = [];
-  for (const f of parts.concat(walk(SRC))) {
-    const rel = path.relative(ROOT, f).split(path.sep).join('/'); if (skip.has(rel)) continue;
+  for (const f of scanFiles(ROOT, SRC)) {
+    const rel = relOf(ROOT, f); if (skip.has(rel)) continue;
     const cuts = ALLOW.entries.filter((e) => e.file === '*' || e.file === rel).flatMap((e) => e.match).sort((a, b) => b.length - a.length);
     noComments(fs.readFileSync(f, 'utf8')).split('\n').forEach((line, i) => {
       if (!NAME.test(line)) return;
