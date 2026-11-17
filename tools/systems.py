@@ -67,6 +67,7 @@ def problems(S, systems=None):
         if p.get('key') != s or p.get('kind') != 'shared': bad.append('_shared/%s/shared.json: key/kind' % s)
         for f in p.get('files') or []:
             if not os.path.isfile(os.path.join(p['_dir'], f)): bad.append('_shared/%s: %s غير موجود' % (s, f))
+        if not set(p.get('owners') or []) & set(keys): bad.append('قطعة مشتركة بلا مالك: %s — احذفها' % os.path.relpath(p['_dir'], os.path.dirname(S)).replace(os.sep, '/'))
         for o in p.get('owners') or []:
             if o in keys and s not in (next(d for d in systems if d.get('key') == o).get('shared') or []): bad.append('%s: مالكٌ للقطعة المشتركة «%s» ولا يعلنها (shared)' % (o, s))
     req = {d.get('key'): list(d.get('requires') or []) for d in systems}
@@ -183,12 +184,6 @@ def prune(S):
     for f in sorted(glob.glob(os.path.join(PD, '*.js'))):
         if os.path.basename(f) not in base and os.path.basename(f) not in order: gone.append(f)
     for f in gone: os.remove(f); print('  − ' + os.path.relpath(f, root) + ' (مولَّدٌ لنظامٍ غائب — حُذف)')
-    # د4-أ: قطعةٌ مشتركة غاب مالكوها كلُّهم — لا يستعملها أحد، فتُحذف مع آخر مالكيها
-    present = {d['key'] for d in load(S)}
-    for s, p in shared(S).items():
-        if not present & set(p.get('owners') or []):
-            import shutil
-            shutil.rmtree(p['_dir']); gone.append(p['_dir']); print('  − ' + os.path.relpath(p['_dir'], root) + ' (قطعةٌ مشتركة غاب مالكوها — حُذفت)')
     return gone
 
 def regen(S):

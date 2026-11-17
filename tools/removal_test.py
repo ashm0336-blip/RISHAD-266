@@ -117,6 +117,9 @@ def run_case(name, opts):
             for g in (['add', '-A'], ['-c', 'user.name=removal', '-c', 'user.email=removal@test.invalid', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', msg]): sh(['git'] + g, copy)
         sh(['git', 'init', '-q'], copy); commit('full tree')
         for k in gone: shutil.rmtree(os.path.join(copy, 'src', 'systems', k))
+        # د4-ب: القطعةُ المشتركة التي غاب مالكوها كلُّهم يحذفها الاختبارُ نفسُه (الأدواتُ لا تحذف ملفَّ مصدر — systems.py --check يرفض بقاءها)
+        for sj in glob.glob(os.path.join(copy, 'src', 'systems', '_shared', '*', 'shared.json')):
+            if not any(os.path.isfile(os.path.join(copy, 'src', 'systems', o, 'system.json')) for o in json.load(open(sj, encoding='utf-8')).get('owners', [])): shutil.rmtree(os.path.dirname(sj))
         env = dict(os.environ, KIVO_WORKER=os.path.join(copy, 'workers', '_worker.js'), KIVO_DIST=os.path.join(copy, 'pk265'), KIVO_SRC=os.path.join(copy, 'src'), KIVO_FULL_SRC=os.path.join(ROOT, 'src'))
         rc, out = sh([sys.executable, 'tools/systems.py', '--regen'], copy); step('① الحذف ثم --regen', rc == 0 and '✘' not in out, (out.strip().split('\n') or [''])[-1][:140] if rc else '%d ملفاً مولَّداً حُذف' % out.count('  − '))
         commit('removal ' + name)

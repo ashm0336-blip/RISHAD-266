@@ -130,7 +130,7 @@ test('د3 · الحذف: لا اسمَ لنظامٍ غائب في جزءٍ من 
   assert.deepEqual(bad.slice(0, 25), [], bad.length + ' ذكراً لاسم نظامٍ غائب خارج قائمة الاستثناء');
 });
 
-/* V7 · د4-أ — القطعةُ المشتركة المعلنة (src/systems/_shared/<key>): تبقى ما حضر أحدُ مالكيها، وتُحذف بـ--regen إن غابوا كلُّهم */
+/* V7 · د4-أ · د4-ب — القطعةُ المشتركة المعلنة (src/systems/_shared/<key>): تبقى ما حضر أحدُ مالكيها. الأدواتُ لا تحذفها؛ يحذفها اختبارُ الحذف حين يغيب مالكوها */
 test('د4-أ · الحذف: القطعةُ المشتركة تتبع مالكيها ' + label, () => {
   const dir = path.join(FULL, 'systems', '_shared'); if (!fs.existsSync(dir)) return;
   for (const k of fs.readdirSync(dir)) {

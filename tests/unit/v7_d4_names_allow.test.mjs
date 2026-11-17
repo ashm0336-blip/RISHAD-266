@@ -58,11 +58,13 @@ c = [dict(d) for d in base]
 for d in c:
     if d['key'] == 'seized': d['shared'] = ['business', 'nosuch']
 out['missing'] = SY.problems(S, c)
+out['ownerless'] = SY.problems(S, [d for d in base if d['key'] not in ('award', 'seized', 'irshad')])
 print(json.dumps(out, ensure_ascii=False))`;
   const r = spawnSync(PYTHON, ['-c', code], { cwd: ROOT, encoding: 'utf8', env: Object.assign({}, process.env, { PYTHONPATH: path.join(ROOT, 'tools') }) });
   assert.equal(r.status, 0, r.stderr); const o = JSON.parse(r.stdout);
   assert.deepEqual(o.ok, []);
   assert.equal(o.undeclared.length, 1); assert.match(o.undeclared[0], /award: مالكٌ للقطعة المشتركة «business» ولا يعلنها/);
   assert.equal(o.stranger.length, 1); assert.match(o.stranger[0], /dstats: shared «business» لا يسمّيه مالكاً/);
+  assert.deepEqual(o.ownerless, ['قطعة مشتركة بلا مالك: src/systems/_shared/business — احذفها'], 'غاب المالكان: الفحصُ يطلب الحذف ولا يحذف');
   assert.equal(o.missing.length, 1); assert.match(o.missing[0], /seized: shared «nosuch» بلا/);
 });
