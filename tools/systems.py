@@ -172,6 +172,7 @@ REGEN = [  # ما يُعاد توليدُه حين يتبدّل حضورُ نظ�
     ['tools/perm_tree.py', 'emit'],            # د3: شجرةُ الصلاحيات (perm-tree24.json) من السجلّ المجموع والصفحات الحاضرة — قبل المواثيق لأنها تقرؤها
     ['tools/module_charter.py', '--write'],   # حقلُ «data» في مواثيق الوحدات مشتقٌّ من المصدر المولَّد
     ['tools/generate.py', '--src', 'src'],     # بيانُ الصفحات (manifests) مشتقٌّ من المواثيق — يُولَّد بعدها
+    ['tools/route_registry.py', '--write'],   # د4-ج: docs/routes.md تقرأ المواثيقَ وشجرةَ الصلاحيات المولَّدتين أعلاه (تبويبٌ يغيب مع نظامه يبدّل سطرَ صفحته) — تُكتب ثانيةً بعدهما
     ['tools/trace.py'],                        # مصفوفةُ التتبّع (docs/traceability.md) تقرأ الكودَ والاختبارات
 ]
 KEEP_EOL = {'tools/api_routes.py': 'docs/api-routes.md', 'tools/trace.py': 'docs/traceability.md'}   # الأداةُ تكتب LF والوثيقةُ الملتزَمة CRLF (.gitattributes: -text) — تُحفظ نهاياتُ سطورها

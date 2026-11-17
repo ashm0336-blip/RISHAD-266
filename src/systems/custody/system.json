@@ -63,7 +63,28 @@
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
  },
  "permissions": "permissions.json",
- "tests": [],
+ "tests": [
+  "tests/custody_admin_wipe_ui.test.mjs",
+  "tests/custody_carry.test.mjs",
+  "tests/custody_client_api.test.mjs",
+  "tests/custody_client_integration.test.mjs",
+  "tests/custody_client_retirement.test.mjs",
+  "tests/custody_cutover_namespace.test.mjs",
+  "tests/custody_department_delete_ui.test.mjs",
+  "tests/custody_employee_transition_ui.test.mjs",
+  "tests/custody_history_compat.test.mjs",
+  "tests/custody_identity_api.test.mjs",
+  "tests/custody_legacy_oracle.mjs",
+  "tests/custody_mixed_compile_guard.test.mjs",
+  "tests/custody_relational.test.mjs",
+  "tests/custody_scenarios_fx.mjs",
+  "tests/custody_storage_guard.test.mjs",
+  "tests/custody_store.test.mjs",
+  "tests/fixture_custody.test.mjs",
+  "tests/privacy_custody_orphan.test.mjs",
+  "tests/privacy_ekey_custody.body.mjs",
+  "tests/privacy_ekey_custody.test.mjs"
+ ],
  "derived": [],
  "sharedStaysInBase": [],
  "slots": {
@@ -650,6 +671,10 @@
   "nf.feed.known.custody": {
    "order": 10,
    "text": ""
+  },
+  "uxStates.employees.empty": {
+   "order": 10,
+   "text": "45"
   }
  }
 }

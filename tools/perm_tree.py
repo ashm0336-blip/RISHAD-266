@@ -57,6 +57,11 @@ def derive():
         # د4-ب: ورقةٌ هي صفحةٌ تحت حاويةٍ حاضرة (مثل «المهام» تحت «المتابعة اليومية») — إن غابت من pages.json ومن مالكي السجلّ معاً فنظامُها غائب: تُتخطّى.
         #        الغيابُ الجزئي (صفحةٌ بلا مالكها أو مالكٌ بلا صفحته) يبقى مخالفةً كما كان.
         if '/' not in oid and CONT_KIND.get(cname, 'page') == 'page' and oid not in PG and oid not in owners: LEAF_ABSENT.append(oid); continue
+        # د4-ج: ورقةٌ هي تبويبٌ داخل صفحةٍ حاضرة (مثل «عهد الموظفين» emps/custody داخل «موظفو الإدارة») — إن غاب التبويبُ من subs صفحته في pages.json
+        #        ومن مالكي السجلّ معاً فنظامُه غائب: تُتخطّى. الغيابُ الجزئي يبقى مخالفةً كما كان.
+        if oid.count('/') == 1 and CONT_KIND.get(cname, 'page') == 'page' and oid not in owners:
+            pk, sk = oid.split('/')
+            if pk in PG and sk not in [x.get('key') for x in PG[pk].get('subs') or []] and sk not in (PG[pk].get('tabs') or []) and not any(isinstance(x, dict) and x.get('key') == sk for x in PG[pk].get('tabs') or []): LEAF_ABSENT.append(oid); continue
         own_part = td[4].split('<br>')[0]; keys = [strip(c) for c in re.findall(r'<code>(.*?)</code>', own_part, re.S)]
         mref = re.search(r'Managed References:</b>\s*<ul[^>]*>(.*?)</ul>', td[4], re.S); managed = [strip(c) for c in re.findall(r'<code>(.*?)</code>', mref.group(1), re.S)] if mref else []
         nres = int(strip(td[5]) or 0) if strip(td[5]).isdigit() else 0

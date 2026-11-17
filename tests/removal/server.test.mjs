@@ -11,8 +11,8 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { makeTestEnv, WORKER, SRC, SYSTEMS, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from '../unit/harness.mjs';
 
-const ALL = ['award', 'dstats', 'irshad', 'seized', 'tasks'];
-const ROUTE = { award: '/api/award?dept=TEST_ONLY_d1', dstats: '/api/dstats', irshad: '/api/irshad?dept=TEST_ONLY_d1', seized: '/api/seized?dept=TEST_ONLY_d1', tasks: '/api/me/tasks' };
+const ALL = ['award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'];
+const ROUTE = { award: '/api/award?dept=TEST_ONLY_d1', dstats: '/api/dstats', irshad: '/api/irshad?dept=TEST_ONLY_d1', seized: '/api/seized?dept=TEST_ONLY_d1', tasks: '/api/me/tasks', custody: '/api/custody?dept=TEST_ONLY_d1' };
 
 test('د2-ب · الحذف: الخادمُ بالأنظمة الحاضرة [' + (SYSTEMS.join(' · ') || 'لا نظام') + '] يجيب على الطرق الأساسية، ومساراتُ الغائب 404', { timeout: 120000 }, async () => {
   const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'rm-')), f = path.join(dir, 'w.mjs');
@@ -35,7 +35,7 @@ test('د2-ب · الحذف: الخادمُ بالأنظمة الحاضرة [' + 
     r = await call('/api/notifications'); assert.equal(r.s, 200, 'notifications ' + r.t);
     r = await call('/api/backup/restore?scope=full&uid=' + encodeURIComponent(uid)); assert.equal(r.s, 200, 'مرجعُ النسخة والاستعادة ' + r.t);
     const base = r.j.base || {};
-    for (const [k, name] of [['dstats', 'dailyStats'], ['irshad', 'irshad'], ['seized', 'seized'], ['award', 'awards']]) assert.equal(Object.prototype.hasOwnProperty.call(base, name), SYSTEMS.includes(k), 'أساسُ الاستعادة يذكر مجال ' + name + ' بحضور نظامه فقط');
+    for (const [k, name] of [['dstats', 'dailyStats'], ['irshad', 'irshad'], ['seized', 'seized'], ['award', 'awards'], ['custody', 'custody']]) assert.equal(Object.prototype.hasOwnProperty.call(base, name), SYSTEMS.includes(k), 'أساسُ الاستعادة يذكر مجال ' + name + ' بحضور نظامه فقط');
     /* د3: تقريرُ الصلاحيات — السجلُّ المجموع يصحّ في الخادم، وأعدادُه = المحسوب من السجل المولَّد، وروابطُ النطاق والحراسة بعدد الحاضر */
     r = await call('/api/permv2'); assert.equal(r.s, 200, 'permv2 ' + r.t.slice(0, 200));
     const REG = JSON.parse(fs.readFileSync(path.join(SRC, 'permissions', 'registry', 'registry-v24.9.json'), 'utf8')), act = REG.registry.filter((e) => e.status === 'active');
@@ -92,4 +92,46 @@ test('د3 · الحذف: منحُ مفتاح نظامٍ غائب مرفوض، و
     assert.deepEqual(cur().emp.tst_e_emp1.plus, ['emp.view', K], 'وبعد الرفض ما زالت باقية');
     const clean = cur(); delete clean.emp.tst_e_emp1; delete clean.emp.tst_e_emp2; w.env.DB.db.prepare('UPDATE kv SET v=? WHERE k=?').run(JSON.stringify(clean), G);
   }
+});
+
+/* V7 · د4-ج (قرار المراجع على الملف 35): تنبيهاتُ نظامٍ غائب لا تظهر في الجرس — لا في القائمة ولا في العدّاد — وتبقى محفوظةً في القاعدة وتعود بعودة النظام.
+   يُزرع في جدول التنبيهات (TEST_ONLY · في الذاكرة) تنبيهٌ من نوعِ قاعدةٍ معروف (ضابط) وتنبيهٌ من نوعٍ لكل نظامٍ غائب له أنواع (يُقرأ من مجلده في الشجرة الكاملة).
+   بالبناء الحالي: الضابطُ ظاهرٌ ومعدود، وأنواعُ الغائب غائبةٌ من القائمة والعدّاد والصفُّ باقٍ. ثم يُحمَّل عاملُ الشجرة الكاملة على القاعدة نفسِها: تظهر كلُّها. */
+function nfTypesOf(k) {
+  const d = path.join(FULL, 'systems', k, 'slots'); if (!fs.existsSync(d)) return null;
+  for (const f of fs.readdirSync(d).filter((x) => /^nf\.types.*\.frag$/.test(x)).sort()) {
+    const m = /\bid:\s*"([a-z0-9_]+)",\s*k:\s*"([a-z0-9_]+)"/.exec(fs.readFileSync(path.join(d, f), 'utf8').replace(/\s+/g, ' ')); if (m) return { type: m[1], cat: m[2] };
+  }
+  return null;
+}
+test('د4-ج · الحذف: تنبيهاتُ نظامٍ غائب خارج الجرس وعدّاده، محفوظةٌ في القاعدة، وتعود بعودة النظام [' + (SYSTEMS.join(' · ') || 'لا نظام') + ']', { timeout: 120000 }, async () => {
+  const load = async (file) => { const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'rm-')), f = path.join(dir, 'w.mjs'); fs.writeFileSync(f, fs.readFileSync(file, 'utf8')); try { return (await import(pathToFileURL(f).href)).default; } finally { fs.rmSync(dir, { recursive: true, force: true }); } };
+  const W = await load(WORKER), env = makeTestEnv(); let cookie = '';
+  const call = async (Wk, p, o = {}) => { const a = await Wk.fetch(new Request('https://t.example' + p, Object.assign({ headers: Object.assign({ 'Content-Type': 'application/json' }, cookie ? { Cookie: cookie } : {}) }, o)), env, { waitUntil() {} }); const t = await a.text(); const c = a.headers.get('set-cookie'); if (c) cookie = c.split(';')[0]; let j = null; try { j = JSON.parse(t); } catch (e) {} return { s: a.status, t, j }; };
+  let r = await call(W, '/api/login', { method: 'POST', body: JSON.stringify({ u: TEST_SUPER_USERNAME, p: TEST_SUPER_PIN }) }); assert.equal(r.s, 200, 'login ' + r.t); const uid = r.j.uid;
+  r = await call(W, '/api/get?keys=bassam_depts_v1');
+  r = await call(W, '/api/save', { method: 'POST', body: JSON.stringify({ set: { bassam_depts_v1: JSON.stringify([{ id: 'TEST_ONLY_d1', name: 'TEST_ONLY إدارة' }]) }, del: [], base: { bassam_depts_v1: r.j.keys.bassam_depts_v1.rev || 0 }, uid }) }); assert.equal(r.s, 200, 'save ' + r.t);
+  const feed = async (Wk) => { const x = await call(Wk, '/api/notifications?all=1'); assert.equal(x.s, 200, 'notifications ' + x.t.slice(0, 200)); /* معرّفُ العنصر في الجواب: 'nf:' + base64url(JSON [النطاق, المعرّف]) */
+    const raw = (id) => { try { return JSON.parse(Buffer.from(String(id).replace(/^nf:/, '').replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'))[1]; } catch (e) { return String(id); } };
+    return { ids: x.j.items.map((i) => raw(i.id)), total: x.j.total, unread: x.j.unread, byKind: x.j.byKind || {} }; };
+  const before = await feed(W);
+  const absent = ALL.filter((k) => !SYSTEMS.includes(k)).map((k) => Object.assign({ sys: k }, nfTypesOf(k))).filter((x) => x.type);
+  if (ALL.some((k) => !SYSTEMS.includes(k) && ['award', 'custody', 'irshad', 'seized', 'tasks'].includes(k))) assert.ok(absent.length > 0, 'أنواعُ تنبيه الأنظمة الغائبة قُرئت من الشجرة الكاملة');
+  const rows = [{ id: 'TEST_ONLY_nf_base', type: 'acct_pw', cat: 'acct' }].concat(absent.map((a) => ({ id: 'TEST_ONLY_nf_' + a.sys, type: a.type, cat: a.cat })));
+  const ins = env.DB.db.prepare("INSERT INTO notification_messages(scope,id,kind,department,type,category,priority,channel,title,body,created_at,target_mode) VALUES('d:TEST_ONLY_d1',?,'event','TEST_ONLY_d1',?,?,'info','bell','TEST_ONLY تنبيه','TEST_ONLY نص',?,'all')");
+  /* الموجَّه إلى الحساب نفسِه (kind=employee) يطابق أيَّ نوع — هو الموضعُ الذي كان يُظهر تنبيهَ نظامٍ غائب قبل هذا القرار */
+  const tgt = env.DB.db.prepare("INSERT INTO notification_targets(scope,message_id,kind,value) VALUES('d:TEST_ONLY_d1',?,'employee',?)");
+  rows.forEach((x, i) => { ins.run(x.id, x.type, x.cat, Date.now() - 60000 - i); tgt.run(x.id, uid); });
+  const stored = () => env.DB.db.prepare("SELECT id FROM notification_messages WHERE id LIKE 'TEST_ONLY_nf_%' ORDER BY id").all().map((x) => x.id);
+  const now = await feed(W), has = (f, id) => f.ids.includes(id);
+  assert.ok(has(now, 'TEST_ONLY_nf_base'), 'الضابط (نوعُ قاعدة) ظاهرٌ في القائمة: ' + JSON.stringify(now.ids.slice(0, 6)));
+  assert.equal(now.total, before.total + 1, 'العدّاد زاد بالضابط وحده (لا يعدّ أنواعَ الغائب)'); assert.equal(now.unread, before.unread + 1, 'وغيرُ المقروء كذلك');
+  for (const a of absent) { assert.equal(has(now, 'TEST_ONLY_nf_' + a.sys), false, 'تنبيهُ «' + a.sys + '» (' + a.type + ') خارج القائمة'); assert.equal(now.byKind[a.cat] || 0, before.byKind[a.cat] || 0, 'وخارج عدّاد فئته ' + a.cat); }
+  assert.deepEqual(stored(), rows.map((x) => x.id).sort(), 'الصفوفُ كلُّها باقيةٌ في القاعدة');
+  if (!absent.length) return;
+  /* عودةُ النظام: عاملُ الشجرة الكاملة على القاعدة نفسِها يُظهر ما كان مخفياً */
+  const WF = await load(path.join(FULL, '..', 'workers', '_worker.js')), back = await feed(WF);
+  for (const a of absent) assert.ok(has(back, 'TEST_ONLY_nf_' + a.sys), 'بعودة «' + a.sys + '» يظهر تنبيهُه: ' + JSON.stringify(back.ids.slice(0, 8)));
+  assert.equal(back.total, before.total + rows.length, 'والعدّادُ يعدّها');
+  assert.deepEqual(stored(), rows.map((x) => x.id).sort(), 'ولم يُحذف صفّ');
 });

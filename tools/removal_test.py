@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """V7 · د2-ب — اختبارُ الحذف: حذفُ مجلد نظامٍ يُخرجه من القاعدة نظيفاً (مقبسُ الأنظمة · tools/systems.py).
-   python3 tools/removal_test.py [all | none | award | dstats | seized | tasks]... [--units] [--no-browser] [--no-check] [--keep] [--jobs N]
-     none   حذفُ الأنظمة كلِّها معاً (الأربعة والمهام)        award · dstats · seized · tasks   حذفُ نظامٍ واحد      all = الحالاتُ الخمس (الافتراضي)
+   python3 tools/removal_test.py [all | none | award | dstats | seized | tasks | custody]... [--units] [--no-browser] [--no-check] [--keep] [--jobs N]
+     none   حذفُ الأنظمة كلِّها معاً (الستة)        award · dstats · seized · tasks · custody   حذفُ نظامٍ واحد      all = الحالاتُ الست (الافتراضي)
      (الاسترشاد لا يُحذف وحده: المضبوطات تتطلبه — requires في system.json)
    لكل حالة، في نسخةٍ مؤقتة من شجرة العمل خارج المستودع (لا يُمسّ المستودع):
      ① حذفُ المجلد ثم  tools/systems.py --regen  (يعيد التوليد ويحذف ما وُلّد للنظام الغائب)
      ② لا جزءَ من القاعدة يذكر اسماً معرَّفاً في أجزاء خادم نظامٍ غائب (خارج التعليقات والنصوص)
      ③ البناء (npm run build) · التوليد --check · npm run check          (‎--no-check يتخطّى check)
      ④ الخادمُ المبني على قاعدة بياناتٍ جديدة: tests/removal/server.test.mjs
+        + د4-ج: تنبيهاتُ نظامٍ غائب خارج الجرس وعدّاده، محفوظةٌ، وتعود بعودة النظام (عاملُ الشجرة الكاملة على القاعدة نفسِها)
         + د3: tests/removal/perms.test.mjs — لا مفتاحَ ولا ورقةَ ولا ذرّةَ ولا عَلمَ لنظامٍ غائب في السجلّ (340 · 004) والشجرة وروابط 006 · 008 · 010 ولا في أجزاء
           القاعدة · validate وperm_tree.py check · أعدادُ /api/permv2 = المحسوب · شجرةُ الواجهة بلا نظامٍ غائب · منحُ مفتاحه مرفوض والمخزَّنُ عليه باقٍ
           · بحثٌ نصي عن أسماء الأنظمة الغائبة في أجزاء الخادم وكتل الواجهة (خارج التعليقات والترحيلات): ما يبقى معلنٌ بسببه في tests/removal/names.allow.json
      ⑤ المتصفح: tests/removal/browser.test.mjs                              (‎--no-browser يتخطّاه)
+        + د4-ج: بغياب العهد — صفحةُ الموظفين بتبويب البيانات وحده · حذفُ موظف · نسخةُ الإدارة واستعادتُها (في browser.test) · واستيرادُ الموظفين (v7_d1d_emp_import)
      ⑥ ‎--units: وحداتُ القاعدة كلها (ملفاً ملفاً، ‎--jobs بالتوازي) — طويل
    يخرج بـ0 إن نجحت كل الحالات. ‎--keep يبقي النسخ المؤقتة ويطبع مساراتها."""
 import os, sys, re, json, glob, shutil, subprocess, tempfile, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CASES = {'none': ['award', 'dstats', 'irshad', 'seized', 'tasks'], 'award': ['award'], 'dstats': ['dstats'], 'seized': ['seized'], 'tasks': ['tasks']}
+CASES = {'none': ['award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'], 'award': ['award'], 'dstats': ['dstats'], 'seized': ['seized'], 'tasks': ['tasks'], 'custody': ['custody']}
 
 def sh(cmd, cwd, env=None, timeout=3600):
     r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout)
@@ -135,6 +137,9 @@ def run_case(name, opts):
         rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/perms.test.mjs'], copy, env, 600); step('④ الصلاحيات: السجلُّ والشجرةُ والروابطُ بلا نظامٍ غائب', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:') or '!==' in l), '')[:260])
         if not opts['nobrowser']:
             rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/browser.test.mjs'], copy, env, 1200); step('⑤ المتصفح', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:')), '')[:200])
+        # د4-ج: بغياب العهد — قبولُ استيراد الموظفين القائم (tests/browser/v7_d1d_emp_import: القالب · الدمج · التعديل · الاستبدال بحذف، من الواجهة الحقيقية) يعمل كما هو
+        if not opts['nobrowser'] and 'custody' in gone:
+            rc, out = sh(['node', '--no-warnings', '--test', 'tests/browser/v7_d1d_emp_import.test.mjs'], copy, env, 1500); step('⑤ استيراد الموظفين بلا العهد (القبول 1–10)', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:')), '')[:200])
         if opts['units']:
             n, bad, tot = units(copy, env, opts['jobs']); step('⑥ وحداتُ القاعدة', not bad, '%d ملفاً · %d اختباراً: نجح %d · فشل %d · تُخطّي %d%s' % (n, tot[0], tot[1], tot[2], tot[3], (' · الفاشلة: ' + ' '.join(os.path.basename(b) for b in bad[:8])) if bad else ''))
     finally:
@@ -144,9 +149,9 @@ def run_case(name, opts):
 
 def main(argv):
     names = [a for a in argv if not a.startswith('--') and not a.isdigit()] or ['all']
-    if 'all' in names: names = ['none', 'award', 'dstats', 'seized', 'tasks']
+    if 'all' in names: names = ['none', 'award', 'dstats', 'seized', 'tasks', 'custody']
     for n in names:
-        if n not in CASES: print('حالةٌ غير معروفة: ' + n + ' (none · award · dstats · seized · tasks · all)'); return 2
+        if n not in CASES: print('حالةٌ غير معروفة: ' + n + ' (none · award · dstats · seized · tasks · custody · all)'); return 2
     jobs = int(argv[argv.index('--jobs') + 1]) if '--jobs' in argv else 6
     opts = {'units': '--units' in argv, 'nobrowser': '--no-browser' in argv, 'nocheck': '--no-check' in argv, 'keep': '--keep' in argv, 'jobs': jobs}
     results = {n: run_case(n, opts) for n in names}

@@ -1,5 +1,5 @@
 {
- "note": "V7 · د3 (تتمة) · د4-أ — قائمةُ الاستثناء المعلنة لاختبار الحذف (tests/removal/perms.test.mjs): البحثُ النصي عن أسماء الأنظمة الغائبة في أجزاء الخادم وكتل الواجهة (خارج التعليقات) يفشل على أي ذكرٍ ليس هنا. كلُّ مدخلٍ مقطعٌ بعينه في ملفٍ بعينه (file: \"*\" = أي ملف) وسببُه. kind: «legit» وحده — ما يبقى مشروعاً؛ لا مؤجَّلَ في القائمة منذ د4-أ (يُرفض). وكلُّ مدخلٍ يجب أن يبقى له موضع (tests/removal/names_allow.mjs): مدخلٌ زال موضعُه يُفشل الاختبار.",
+ "note": "V7 · د3 (تتمة) · د4-أ · د4-ج — قائمةُ الاستثناء المعلنة لاختبار الحذف (tests/removal/perms.test.mjs): البحثُ النصي عن أسماء الأنظمة الغائبة في أجزاء الخادم وكتل الواجهة (خارج التعليقات) يفشل على أي ذكرٍ ليس هنا. كلُّ مدخلٍ مقطعٌ بعينه في ملفٍ بعينه (file: \"*\" = أي ملف) وسببُه. kind: «legit» وحده — ما يبقى مشروعاً؛ لا مؤجَّلَ في القائمة منذ د4-أ (يُرفض). وكلُّ مدخلٍ يجب أن يبقى له موضع (tests/removal/names_allow.mjs): مدخلٌ زال موضعُه يُفشل الاختبار.",
  "skipFiles": [
   {
    "file": "workers/parts/051a-schema-migrations.js",
@@ -38,7 +38,7 @@
     "input.base.awards",
     "context.base.awards",
     "awards: {}",
-    "'custody', 'awards']",
+    "'awards']",
     "'award-conflict'"
    ],
    "kind": "legit",
@@ -138,6 +138,113 @@
    ],
    "kind": "legit",
    "why": "متغيّرٌ محلي في مجدول الأمان: قائمةُ دوالّ مؤجَّلة اسمُها كلمةٌ عامة — لا صلةَ له بنظام المهام."
+  },
+  {
+   "file": "*",
+   "match": [
+    "cuError",
+    "cuCode",
+    "cuStatus",
+    "cuClock",
+    "cuCanonical",
+    "cuFingerprint"
+   ],
+   "kind": "legit",
+   "why": "دوالُّ قاعدةٍ عامة في 016 (خطأٌ برمزٍ وحالة · ساعةُ اليوم الهجري · الصيغةُ القانونية · بصمةُ الطلب) تحمل بادئةً تاريخية وتستعملها القاعدةُ كلها (الحفظ · الاستعادة · انتقال الموظف · التنبيهات)؛ ليست من نظام العهد (الملف 33: تبقى)."
+  },
+  {
+   "file": "*",
+   "match": [
+    "cuCursor",
+    "cuUncursor",
+    "cuBind",
+    "cuRemovedHolderKeys",
+    "cuRestorePermission",
+    "cuPlanSaveTransition"
+   ],
+   "kind": "legit",
+   "why": "قرارا المراجع 1 و2 على الملف 33: الدوالُّ العامة الخمس (تستعملها أنظمةٌ أخرى والقاعدة) وكاشفُ الحفظ تبقى في القاعدة بأسمائها بقطع 019a و019b؛ الأسماءُ محفوظة لتبقى الحزمة مطابقة."
+  },
+  {
+   "file": "workers/parts/016-base-shared.js",
+   "match": [
+    "'custody-clock-unavailable'"
+   ],
+   "kind": "legit",
+   "why": "رمزُ خطأ ساعة اليوم الهجري في دالة القاعدة cuClock (يستعملها انتقالُ الموظف)؛ جزءٌ من عقد الجواب، تغييرُه تغييرُ سلوك."
+  },
+  {
+   "file": "workers/parts/019a1-cursor.js",
+   "match": [
+    "'custody-cursor'"
+   ],
+   "kind": "legit",
+   "why": "رمزُ خطأ مؤشر الصفحة في دالة القاعدة العامة cuUncursor (تستعملها الاسترشاد والمضبوطات والجائزة)؛ جزءٌ من عقد الجواب."
+  },
+  {
+   "file": "workers/parts/019b1-removed-holders.js",
+   "match": [
+    "'custody-employees-shape'"
+   ],
+   "kind": "legit",
+   "why": "رمزُ خطأ شكل قائمة الموظفين في دالة القاعدة العامة cuRemovedHolderKeys (انتقالُ الموظف والاستعادة)؛ جزءٌ من عقد الجواب."
+  },
+  {
+   "file": "workers/parts/019b3-restore-permission.js",
+   "match": [
+    "'custody-denied'",
+    "'custody-restore-full-super-only'",
+    "'custody-restore-permission'"
+   ],
+   "kind": "legit",
+   "why": "رموزُ رفض إذن الاستعادة في دالة القاعدة العامة cuRestorePermission (تستعملها استعادةُ المضبوطات والجائزة في 019n)؛ جزءٌ من عقد الجواب."
+  },
+  {
+   "file": "workers/parts/019b5-save-transition.js",
+   "match": [
+    "'custody-transition-plan'",
+    "'custody-transition-server-intent'",
+    "'custody-transition-employee-plan'",
+    "'custody-transition-departments'",
+    "'custody-transition-wipe-permission'",
+    "'custody-transition-employees'",
+    "'custody-transition-wipe-employee-plan'",
+    "'custody-transition-denied'"
+   ],
+   "kind": "legit",
+   "why": "رموزُ خطأ كاشف الحفظ cuPlanSaveTransition الباقي في القاعدة بقرار المراجع 2 (كشفُ حذف موظف وحذف إدارة في كل حفظ)؛ جزءٌ من عقد الجواب، تغييرُها تغييرُ سلوك."
+  },
+  {
+   "file": "workers/parts/019e-atomic-save.js",
+   "match": [
+    "'custody-transition'"
+   ],
+   "kind": "legit",
+   "why": "سببُ الرفض ووسمُ الحفظ الذرّي الذي يكتبه الحفظُ حين يرفض كاشفُ القاعدة (cuPlanSaveTransition) انتقالاً؛ جزءٌ من عقد الجواب وسجلّ الأمان."
+  },
+  {
+   "file": "workers/parts/019-notifications.js",
+   "match": [
+    "\"custody-transition\""
+   ],
+   "kind": "legit",
+   "why": "نصُّ تنبيه الرفض لسببٍ يكتبه الحفظُ الذرّي في القاعدة (019e)؛ يتبع رمزَ القاعدة لا نظامَ العهد."
+  },
+  {
+   "file": "workers/parts/044-protected-ops.js",
+   "match": [
+    "'custodyRename'"
+   ],
+   "kind": "legit",
+   "why": "وسمٌ عام لإعادة التسمية المتتالية (rename cascade) يُستعمل لقائمة الموظفين أيضاً — اسمٌ تاريخي لا منطقَ عهد (الملف 33: يبقى)."
+  },
+  {
+   "file": "workers/parts/054-image-contract.js",
+   "match": [
+    "'custodyRename'"
+   ],
+   "kind": "legit",
+   "why": "الوسمُ العام نفسُه لإعادة التسمية في عقد الحفظ (قائمةُ الموظفين)؛ اسمٌ تاريخي لا منطقَ عهد."
   }
  ]
 }

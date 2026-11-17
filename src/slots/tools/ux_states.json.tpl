@@ -23,7 +23,7 @@
    "أعد المحاولة": 1
   },
 @@SYS:uxStates.dstats@@  "employees": {
-   "فارغ": 45,
+   "فارغ": @@SYS:uxStates.employees.empty|empty="32"@@,
    "تحميل": 1,
    "خطأ": 10,
    "بلا اتصال": 0,
