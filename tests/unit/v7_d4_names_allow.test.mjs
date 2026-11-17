@@ -13,6 +13,7 @@ const FULL = ['award', 'dstats', 'irshad', 'seized'].every((k) => SYSTEMS.includ
 
 test('V7 · د4-أ: المستودع — كلُّ مدخلٍ في قائمة الاستثناء له موضع', { skip: FULL ? false : 'يُفحص على الشجرة الكاملة (نظامٌ غائب هنا)' }, () => {
   assert.deepEqual(staleAllow(ALLOW, ROOT, SRC), []);
+  for (const e of ALLOW.skipFiles.concat(ALLOW.patterns, ALLOW.entries)) assert.equal(e.kind, 'legit', 'لا مؤجَّلَ في القائمة');
 });
 
 test('V7 · د4-أ: السلوك — المدخلُ الذي زال موضعُه يُبلَّغ عنه', { skip: FULL ? false : 'يُفحص على الشجرة الكاملة (نظامٌ غائب هنا)' }, () => {
