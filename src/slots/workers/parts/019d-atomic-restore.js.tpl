@@ -631,11 +631,7 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
       if (newDepts.length) domains.notifications = nf;
       else delete domains.notifications;
     }
-    if (domains.custody)
-      domains.custody = domains.custody.filter(function (c) {
-        return c && c.scope && allowed.has(c.scope.departmentId);
-      });
-@@SYS:rs.scopeFilter.irshad@@    @@SYS:rs.scopeFilter.business|sep=","|pre="["|post="].forEach(function(name){if(domains[name])domains[name]=domains[name].filter("|empty="[].forEach(function(name){if(domains[name])domains[name]=domains[name].filter("@@function(domain){return allowed.has(bdScope(domain));});});
+@@SYS:rs.scopeFilter.custody@@@@SYS:rs.scopeFilter.irshad@@    @@SYS:rs.scopeFilter.business|sep=","|pre="["|post="].forEach(function(name){if(domains[name])domains[name]=domains[name].filter("|empty="[].forEach(function(name){if(domains[name])domains[name]=domains[name].filter("@@function(domain){return allowed.has(bdScope(domain));});});
   } else {
     Object.keys(keys).forEach(function (k) {
       if ((opIsResource(k) ? inputKeys[k]!=null : Object.prototype.hasOwnProperty.call(inputKeys, k)) && k !== K_PERM) {
@@ -646,7 +642,6 @@ function rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base) {
     /* A typed domain is initialized by its migration for known departments. Its
        empty rowset is still an existing domain, not a missing legacy document. */
     delete domains.notifications;
-    delete domains.custody;
 @@SYS:rs.selection.drop@@  }
 @@SYS:rs.selection.dstats@@  return {
     keys: keys,
@@ -885,29 +880,7 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
     count: next.messages.length,
   };
 }
-@@SYS:rs.dstats.current@@async function rsCustodyReceiptPreimage(env, dept, plan) {
-  var specs = [
-      [
-        'custody_requests',
-        ['department_id', 'account_uid', 'request_id', 'fingerprint', 'resource_rev', 'operation', 'result_n', 'item_id', 'created_at'],
-      ],
-      ['custody_request_outputs', ['department_id', 'account_uid', 'request_id', 'position', 'issue_id', 'move_id', 'serial']],
-    ],
-    b = await env.DB.batch(
-      specs.map(function (s) {
-        return env.DB.prepare('SELECT * FROM ' + s[0] + ' WHERE department_id=?1').bind(dept);
-      }),
-    );
-  specs.forEach(function (s, i) {
-    var rows = b[i].results || [];
-    plan.guards.push.apply(plan.guards, rsWitness(env, s[0], s[1], rows, "department_id='" + dept.replace(/'/g, "''") + "'"));
-    plan.snapshots.push({ domain: 'custody', table: dept + ':' + s[0], rows: rows });
-  });
-  return b.reduce(function (n, result) {
-    return n + (result.results || []).length;
-  }, 0);
-}
-async function rsPrepare(env, A, body, meta, internal) {
+@@SYS:rs.dstats.current@@@@SYS:rs.custody.receipt@@async function rsPrepare(env, A, body, meta, internal) {
   rsShape(body, [
     'version',
     'requestId',
@@ -939,11 +912,11 @@ async function rsPrepare(env, A, body, meta, internal) {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, @@SYS:rs.manifest.full.dstats.1|pre="['kv', "|post="'notifications', 'custody', "|empty="['kv', 'notifications', 'custody', "@@@@SYS:rs.manifest.systems.1|post="'operations']"|empty="'operations']"@@);
+    rsShape(manifest.domains, @@SYS:rs.manifest.full.dstats.1|pre="['kv', "|post="'notifications', "|empty="['kv', 'notifications', "@@@@SYS:rs.manifest.systems.1|post="'operations']"|empty="'operations']"@@);
     if (
       manifest.version !== 4 ||
       manifest.scope !== 'full' ||
-      @@SYS:rs.manifest.full.dstats.2|pre="['kv', "|post="'notifications', 'custody', "|empty="['kv', 'notifications', 'custody', "@@@@SYS:rs.manifest.systems.2|post="'operations']"|empty="'operations']"@@.some(function (k) {
+      @@SYS:rs.manifest.full.dstats.2|pre="['kv', "|post="'notifications', "|empty="['kv', 'notifications', "@@@@SYS:rs.manifest.systems.2|post="'operations']"|empty="'operations']"@@.some(function (k) {
         return manifest.domains[k] !== 1;
       })
     )
@@ -952,8 +925,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     if (
       !Array.isArray(declaredDepts) ||
       !isObj(body.domains) ||
-@@SYS:rs.manifest.full.dstatsBody@@      !body.domains.notifications ||
-      !Array.isArray(body.domains.custody)@@SYS:rs.manifest.full.irshadArray@@
+@@SYS:rs.manifest.full.dstatsBody@@      !body.domains.notifications@@SYS:rs.manifest.full.custodyArray@@@@SYS:rs.manifest.full.irshadArray@@
     )
       throw rsError('restore-incomplete-manifest');
     var ids = declaredDepts.map(function (d) {
@@ -968,27 +940,20 @@ async function rsPrepare(env, A, body, meta, internal) {
       !deq(Object.keys(body.keys).sort(), manifest.keys.slice().sort())
     )
       throw rsError('restore-incomplete-manifest');
-    var scopes = body.domains.custody.map(function (c) {
-      return c && c.scope && c.scope.departmentId;
-    });
-    if (!deq(ids.slice().sort(), scopes.sort())) throw rsError('restore-incomplete-custody');
-@@SYS:rs.manifest.full.irshadScopes@@  } else {
+@@SYS:rs.manifest.full.custodyScopes@@@@SYS:rs.manifest.full.irshadScopes@@  } else {
     var manifest = body.manifest;
     if (!manifest) throw rsError('restore-incomplete-manifest');
     rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-    rsShape(manifest.domains, ['kv', 'notifications', 'custody', @@SYS:rs.manifest.systems.3|post="'operations']"|empty="'operations']"@@);
+    rsShape(manifest.domains, ['kv', 'notifications', @@SYS:rs.manifest.systems.3|post="'operations']"|empty="'operations']"@@);
     if (
       manifest.version !== 4 ||
       manifest.scope !== 'dept' ||
-      ['kv', 'notifications', 'custody', @@SYS:rs.manifest.systems.4|post="'operations']"|empty="'operations']"@@.some(function (k) {
+      ['kv', 'notifications', @@SYS:rs.manifest.systems.4|post="'operations']"|empty="'operations']"@@.some(function (k) {
         return manifest.domains[k] !== 1;
       }) ||
       !deq(manifest.departments, [body.scope.departmentId]) ||
       !body.domains ||
-      !body.domains.notifications ||
-      !Array.isArray(body.domains.custody) ||
-      body.domains.custody.length !== 1 ||
-      body.domains.custody[0].scope.departmentId !== body.scope.departmentId@@SYS:rs.manifest.dept.irshad@@
+      !body.domains.notifications@@SYS:rs.manifest.dept.custody@@@@SYS:rs.manifest.dept.irshad@@
     )
       throw rsError('restore-incomplete-manifest');
     var prefix = 'bsdept:' + body.scope.departmentId + ':',
@@ -1019,13 +984,13 @@ async function rsPrepare(env, A, body, meta, internal) {
     throw rsError('restore-scope', 403);
   if (!sup && (body.scope.kind !== 'dept' || !isMgrOf(A, dept) || !enfHeld(A, dept, 'backup.restore')))
     throw rsError('restore-policy', 403);
-  rsShape(body.base, @@SYS:rs.base.dstats|pre="['epoch', 'kv', "|empty="['epoch', 'kv', "@@'notifications', @@SYS:rs.base.systems|pre="'custody'"|post="]);"|empty="'custody']);"@@
+  rsShape(body.base, @@SYS:rs.base.dstats|pre="['epoch', 'kv', "|empty="['epoch', 'kv', "@@'notifications'@@SYS:rs.base.systems|post="]);"|empty="]);"@@
   for(var def of bdDefinitions()) {
     var expected=(body.manifest.departments||[]).concat(@@SYS:rs.manifest.awardGlobal|empty="[]"@@).sort();
     if(!Array.isArray((body.domains||{})[def.name])||!deq(body.domains[def.name].map(bdScope).sort(),expected))throw rsError('restore-incomplete-'+def.name);
   }
   rsNat(body.base.epoch);
-  @@SYS:rs.domains.dstats|pre="rsShape(body.domains || {}, ["|empty="rsShape(body.domains || {}, ["@@'notifications', 'custody', @@SYS:rs.manifest.systems.5|post="'operations']"|empty="'operations']"@@);
+  @@SYS:rs.domains.dstats|pre="rsShape(body.domains || {}, ["|empty="rsShape(body.domains || {}, ["@@'notifications', @@SYS:rs.manifest.systems.5|post="'operations']"|empty="'operations']"@@);
   var fingerprint =
       (internal && internal.fingerprint) ||
       hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(cuCanonical(body))))),
@@ -1039,8 +1004,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   }
   if (body.base.epoch !== (await rsEpoch(env))) throw rsError('restore-epoch-changed', 409);
   await nfGuardRetired(env);
-@@SYS:rs.prepare.dstatsLegacy@@  if (await cuLegacyPresent(env)) throw rsError('custody-legacy-source-present', 503);
-@@SYS:rs.prepare.irshadGuard@@  await bdGuardRetired(env);
+@@SYS:rs.prepare.dstatsLegacy@@@@SYS:rs.prepare.custodyLegacy@@@@SYS:rs.prepare.irshadGuard@@  await bdGuardRetired(env);
   if (!isObj(body.keys || {}) || !isObj(body.base.kv || {}) || !Array.isArray(body.delete || [])) throw rsError('restore-keys');
   var keys = Object.assign(Object.create(null), body.keys || {}),
     del = (body.delete || []).slice(),
@@ -1057,7 +1021,7 @@ async function rsPrepare(env, A, body, meta, internal) {
   Object.keys(keys)
     .concat(del)
     .forEach(function (k) {
-      if (nfLegacyKey(k) || cuLegacyKey(k) || (@@SYS:rs.keys.moved.1.irshad@@bdLegacyKey(k)) || opIsResource(k)@@SYS:rs.keys.moved.1.dstats@@) throw rsError('domain-moved');
+      if (nfLegacyKey(k) ||@@SYS:keys.moved.custody@@ (@@SYS:rs.keys.moved.1.irshad@@bdLegacyKey(k)) || opIsResource(k)@@SYS:rs.keys.moved.1.dstats@@) throw rsError('domain-moved');
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
   var operationalInput=opRestoreDocuments(body,reference,A);
@@ -1183,7 +1147,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     .concat(del)
     .forEach(function (k) {
       if (typeof keys[k] !== 'string' && del.indexOf(k) < 0) throw rsError('restore-key-value');
-      if (nfLegacyKey(k) || cuLegacyKey(k) || (@@SYS:rs.keys.moved.2.irshad@@bdLegacyKey(k))@@SYS:rs.keys.moved.2.dstats@@) throw rsError('domain-moved');
+      if (nfLegacyKey(k) ||@@SYS:keys.moved.custody@@ (@@SYS:rs.keys.moved.2.irshad@@bdLegacyKey(k))@@SYS:rs.keys.moved.2.dstats@@) throw rsError('domain-moved');
       if (body.scope.kind === 'dept' && parseKey(k).dept !== dept && k !== K_PERM) throw rsError('restore-scope', 403);
       rsNat(base[k]);
       ops[k] = { op: 'backup.restore', scope: body.scope.kind, mode: body.mode, reason: body.reason };
@@ -1245,7 +1209,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { kv: kv.pend.filter(function(pd){return !opIsResource(pd.k);}).length, operations:0,@@SYS:rs.counts.dstats@@ notifications: 0, custody: 0,@@SYS:rs.counts.systems@@ kept: selection.kept },
+    counts: { kv: kv.pend.filter(function(pd){return !opIsResource(pd.k);}).length, operations:0,@@SYS:rs.counts.dstats@@ notifications: 0,@@SYS:rs.counts.systems@@ kept: selection.kept },
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
@@ -1274,103 +1238,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     plan.revisionKeys.push.apply(plan.revisionKeys, np.revisionKeys);
     plan.counts.notifications = np.count;
   }
-  if (domains.custody) {
-    if (!Array.isArray(domains.custody)) throw rsError('restore-custody-shape');
-    var seenDept = new Set();
-    for (var cd of domains.custody) {
-      var d = cd && cd.scope && cd.scope.departmentId;
-      if (!d || !finalDeptIds.has(d) || seenDept.has(d) || removedDepartments.indexOf(d) >= 0 || (body.scope.kind === 'dept' && d !== dept))
-        throw rsError('restore-custody-scope');
-      seenDept.add(d);
-      var cp = await cuPlanRestore(env, A, cd, {
-        dept: d,
-        base: (body.base.custody || {})[d],
-        scope: body.scope.kind,
-        mode: 'replace',
-        reason: body.reason,
-        finalKeys: keys,
-      });
-      if (
-        body.mode === 'merge' &&
-        ((body.base.custody || {})[d] !== 0 ||
-          Object.values(cp.snapshotRows).some(function (rows) {
-            return rows.length;
-          }))
-      )
-        throw rsError('restore-merge-identity-collision', 409);
-      var snapshotStart = plan.snapshots.length,
-        receiptRows = await rsCustodyReceiptPreimage(env, d, plan),
-        emptyUnchanged =
-          receiptRows === 0 &&
-          Object.keys(cp.snapshotRows).every(function (n) {
-            return cp.snapshotRows[n].length === 0 && cd.rows[n].length === 0;
-          });
-      plan.guards.push.apply(plan.guards, cp.guards);
-      if (!emptyUnchanged) {
-        plan.statements.push.apply(plan.statements, cp.statements);
-        plan.revisionKeys.push.apply(plan.revisionKeys, cp.revisionKeys);
-        Object.keys(cp.snapshotRows || {}).forEach(function (n) {
-          plan.snapshots.push({ domain: 'custody', table: d + ':' + n, rows: cp.snapshotRows[n] });
-        });
-      } else plan.snapshots.splice(snapshotStart);
-      plan.counts.custody++;
-    }
-  }
-@@SYS:rs.plan.irshad@@  /* Employee cleanup shares the same planner/transaction. An explicit restored
-     custody candidate is its final state and must be validated by cuPlanRestore. */
-  var cleaned = new Set();
-  for (var ep of kv.pend) {
-    if (resName(ep.k) !== 'bassam_employees_v1') continue;
-    var d = parseKey(ep.k).dept;
-    cleaned.add(d);
-    if (
-      (domains.custody || []).some(function (c) {
-        return c.scope.departmentId === d;
-      })
-    )
-      continue;
-    var oldEmployees = parseJson(ep.cur, []),
-      newEmployees = ep.act === 'del' ? [] : parseJson(ep.v, []);
-    /* Backup replace is not the import wizard's trusted start-clean operation.
-       An absent custody domain preserves history, apart from the established
-       cleanup for employees actually removed. Metadata-only edits do nothing. */
-    if (removedDepartments.indexOf(d) < 0 && !cuRemovedHolderKeys(oldEmployees, newEmployees).length) continue;
-    var cl = await cuPlanCleanup(env, A, {
-      dept: d,
-      base: (body.base.custody || {})[d],
-      intent: removedDepartments.indexOf(d) >= 0 ? 'dept-wipe' : 'employee-delete',
-      oldEmployees: oldEmployees,
-      newEmployees: newEmployees,
-      reason: body.reason,
-      finalKeys: keys,
-    });
-    plan.guards.push.apply(plan.guards, cl.guards);
-    plan.statements.push.apply(plan.statements, cl.statements);
-    plan.revisionKeys.push.apply(plan.revisionKeys, cl.revisionKeys);
-    Object.keys(cl.snapshotRows || {}).forEach(function (n) {
-      plan.snapshots.push({ domain: 'custody', table: d + ':' + n, rows: cl.snapshotRows[n] });
-    });
-  }
-  for (var removed of removedDepartments) {
-    if (cleaned.has(removed)) continue;
-    var wipe = await cuPlanCleanup(env, A, {
-      dept: removed,
-      base: (body.base.custody || {})[removed],
-      intent: 'dept-wipe',
-      oldEmployees: [],
-      newEmployees: [],
-      reason: body.reason,
-      finalKeys: keys,
-    });
-    await rsCustodyReceiptPreimage(env, removed, plan);
-    plan.guards.push.apply(plan.guards, wipe.guards);
-    plan.statements.push.apply(plan.statements, wipe.statements);
-    plan.revisionKeys.push.apply(plan.revisionKeys, wipe.revisionKeys);
-    Object.keys(wipe.snapshotRows || {}).forEach(function (n) {
-      plan.snapshots.push({ domain: 'custody', table: removed + ':' + n, rows: wipe.snapshotRows[n] });
-    });
-  }
-@@SYS:rs.plan.irshadRemoved@@  await bdRestorePlan(env,A,body,plan,domains,finalDeptIds,removedDepartments,keys);
+@@SYS:rs.plan.custody@@@@SYS:rs.plan.irshad@@@@SYS:rs.plan.custodyCleanup@@@@SYS:rs.plan.irshadRemoved@@  await bdRestorePlan(env,A,body,plan,domains,finalDeptIds,removedDepartments,keys);
   if (internal && internal.images) await rsImageArchivePlan(env, A, plan, reference, internal.images);
   await rsImageMetadataPlan(env, A, plan, reference);
   return plan;
@@ -1541,12 +1409,10 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
                 })
                 .concat(requestedDepartments || []),
             ),
-          ),
-    custody = Object.create(null)@@SYS:rs.reference.irshadInit@@;
+          )@@SYS:rs.reference.custodyInit@@@@SYS:rs.reference.irshadInit@@;
   for (var d of depts) {
     if (typeof d !== 'string' || !d || d.length > 200 || BAD_ID_RX.test(d) || d.includes(':')) throw rsError('restore-departments');
-    custody[d] = r[cuKey(d)] || 0;
-    opDefinitions().forEach(function(def){var k='bsdept:'+d+':'+def.resource;kv[k]=r[k]||0;});
+@@SYS:rs.reference.custodyRevs@@    opDefinitions().forEach(function(def){var k='bsdept:'+d+':'+def.resource;kv[k]=r[k]||0;});
 @@SYS:rs.reference.irshadRevs@@  }
   var businessBase=await bdRestoreRevisions(env,depts,scope.kind==='full');
   return {
@@ -1556,7 +1422,6 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
       epoch: +(reference.inputMeta.restore_epoch || 0),
       kv: kv,
 @@SYS:rs.reference.base.dstats@@      notifications: { rev: r[NF_REV] || 0, configRev: r[NF_CFG_REV] || 0, broadcastRev: r[NF_BC_REV] || 0 },
-      custody: custody,
 @@SYS:rs.reference.base.systems@@    },
     counts: { keys: Object.keys(kv).length, departments: depts.length },
   };
@@ -1674,7 +1539,7 @@ async function rsRoute(env, request, url, ss) {
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
     if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH/.test(String(e))) return json({ ok: 0, err: 'restore-epoch-changed' }, 409);
-    if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e))) return json({ ok: 0, err: 'conflict' }, 409);
+    if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT@@SYS:rs.conflict.custodyTrigger@@/.test(String(e))) return json({ ok: 0, err: 'conflict' }, 409);
     throw e;
   }
 }

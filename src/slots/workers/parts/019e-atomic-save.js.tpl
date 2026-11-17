@@ -468,7 +468,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { keys: kv.pend.length, custody: transition.transitions.length, notifications: 0 },
+    counts: { keys: kv.pend.length,@@SYS:save.counts.custody@@ notifications: 0 },
     authz: kv.authzRows || [],
     kv: kv,
     reauth: false,
@@ -505,14 +505,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   plan.guards.push.apply(plan.guards, employeeNotifications.guards);
   plan.statements.push.apply(plan.statements, employeeNotifications.statements);
   if (!plan.snapshotRequired) plan.snapshots = [];
-  else
-    for (var dept of departments) {
-      var full = await cuSnapshotRows(env, dept);
-      Object.keys(full).forEach(function (n) {
-        plan.snapshots.push({ domain: 'custody', table: dept + ':' + n, rows: full[n] });
-      });
-    }
-  if (opt.__employeeRequestId) {
+@@SYS:save.snapshot.custody@@  if (opt.__employeeRequestId) {
     plan.fingerprint = opt.__employeeFingerprint;
     plan.intent = opt.__employeeIntent;
     Object.assign(plan.counts, opt.__employeeResult.counts);
@@ -528,8 +521,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
     plan.snapshots.push.apply(plan.snapshots, np.snapshots);
     plan.counts.notifications = opt.__notificationCount || 0;
     plan.counts.accounts = opt.__accountCount || 0;
-@@SYS:save.wipe.counts@@    await rsCustodyReceiptPreimage(env, d, plan);
-    plan.fingerprint = opt.__wipeFingerprint;
+@@SYS:save.wipe.counts@@@@SYS:save.wipe.custodyReceipt@@    plan.fingerprint = opt.__wipeFingerprint;
   }
   await rsImageMetadataPlan(env, A, plan, reference);
   /* V7-F · owner decision 3: the orphans of a unit this plan removes (the ones it makes now and the ones still in their grace) are stamped —
@@ -583,9 +575,7 @@ async function rsWipeInventory(env, A, dept, kind) {
       kv[k] = reference.inputRevs[k] || 0;
     });
   var counts = await env.DB.batch([
-      env.DB.prepare('SELECT COUNT(*) n FROM custody_items WHERE department_id=?1').bind(dept),
-      env.DB.prepare('SELECT COUNT(*) n FROM custody_movements WHERE department_id=?1').bind(dept),
-      env.DB.prepare('SELECT COUNT(*) n FROM notification_messages WHERE scope=?1').bind('d:' + dept),
+@@SYS:wipe.inventory.custodyCounts|empty="      env.DB.prepare('SELECT 0 n'),\n      env.DB.prepare('SELECT 0 n'),\n"@@      env.DB.prepare('SELECT COUNT(*) n FROM notification_messages WHERE scope=?1').bind('d:' + dept),
 @@SYS:wipe.inventory.irshadCounts@@    ]),
     nf = await nfRead(env);
   return {
@@ -609,8 +599,7 @@ async function rsWipeInventory(env, A, dept, kind) {
       base: {
         epoch: await rsEpoch(env),
         kv: kv,
-        custody: await cuRev(env, dept),
-@@SYS:wipe.inventory.base@@        notifications: { rev: nf.rev, configRev: nf.configRev, broadcastRev: nf.broadcastRev },
+@@SYS:wipe.inventory.custodyBase@@@@SYS:wipe.inventory.base@@        notifications: { rev: nf.rev, configRev: nf.configRev, broadcastRev: nf.broadcastRev },
       },
       counts: {
         keys: scopedCount,
@@ -620,8 +609,7 @@ async function rsWipeInventory(env, A, dept, kind) {
                 return u && (u.role === 'dept' || u.role === 'staff') && u.deptId === dept;
               }).length
             : 0,
-        custody: Number(counts[0].results[0].n) + Number(counts[1].results[0].n),
-        notifications: Number(counts[2].results[0].n),
+@@SYS:wipe.inventory.custodyCount@@        notifications: Number(counts[2].results[0].n),
 @@SYS:wipe.inventory.counts@@      },
     },
   };
@@ -647,7 +635,7 @@ async function rsWipeRoute(env, request, url, ss) {
     if (input.uid !== undefined && input.uid !== ss.uid) throw rsError('session-changed', 409);
     if (typeof input.dept !== 'string' || typeof input.requestId !== 'string' || !/^[-A-Za-z0-9_]{8,100}$/.test(input.requestId))
       throw rsError('bad-body');
-    rsShape(input.base, ['epoch', 'kv', 'custody', @@SYS:wipe.request.base|pre="'notifications'"|post="]);"|empty="'notifications']);"@@
+    rsShape(input.base, ['epoch', 'kv', @@SYS:wipe.request.custodyBase@@@@SYS:wipe.request.base|pre="'notifications'"|post="]);"|empty="'notifications']);"@@
     var fingerprint = hex(
         await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({ kind: kind, input: cuCanonical(input) }))),
       ),
@@ -673,13 +661,12 @@ async function rsWipeRoute(env, request, url, ss) {
         why[k] = input.reason.trim();
       }
       if (opIsResource(k)) return;
-      if (cuLegacyKey(k) || nfLegacyKey(k) || (@@SYS:wipe.keys.moved.irshad@@bdLegacyKey(k))) throw rsError('domain-moved');
+      if (@@SYS:wipe.keys.moved.custody@@nfLegacyKey(k) || (@@SYS:wipe.keys.moved.irshad@@bdLegacyKey(k))) throw rsError('domain-moved');
       var e = ENT[resName(k)];
       if (e && typeof e.empty === 'string') set[k] = e.empty;
       else del.push(k);
     });
-    base[cuKey(input.dept)] = input.base.custody;
-    if (kind === 'delete') {
+@@SYS:wipe.request.custodyRev@@    if (kind === 'delete') {
       var current = inventory.reference.A;
       set[K_DEPTS] = JSON.stringify(
         current.depts.filter(function (d) {
@@ -750,7 +737,7 @@ async function rsWipeRoute(env, request, url, ss) {
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
     if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
-    if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e)))
+    if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT@@SYS:rs.conflict.custodyTrigger@@/.test(String(e)))
       return json({ ok: 0, err: 'conflict' }, 409);
     throw e;
   }
@@ -825,7 +812,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
     if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
     if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
-    if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e)))
+    if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT@@SYS:rs.conflict.custodyTrigger@@/.test(String(e)))
       return json({ ok: 0, err: 'conflict' }, 409);
     throw e;
   }
@@ -856,8 +843,7 @@ async function rsResetRoute(env, request, path, url, AX, superX) {
   var stZ = [
     env.DB.prepare('DELETE FROM notification_user_state'), env.DB.prepare('DELETE FROM notification_targets'), env.DB.prepare('DELETE FROM notification_messages'),
     env.DB.prepare('DELETE FROM notification_dedup'), env.DB.prepare('DELETE FROM notification_type_overrides'), env.DB.prepare('DELETE FROM notification_checkpoints'),
-@@SYS:reset.irshad@@    env.DB.prepare('DELETE FROM custody_request_outputs'), env.DB.prepare('DELETE FROM custody_requests'), env.DB.prepare('DELETE FROM custody_movements'), env.DB.prepare('DELETE FROM custody_issues'), env.DB.prepare('DELETE FROM custody_items'),
-    env.DB.prepare('DELETE FROM restore_operations'), env.DB.prepare('DELETE FROM restore_preimage'), env.DB.prepare('DELETE FROM restore_snapshot_manifest'),
+@@SYS:reset.irshad@@@@SYS:reset.custody@@    env.DB.prepare('DELETE FROM restore_operations'), env.DB.prepare('DELETE FROM restore_preimage'), env.DB.prepare('DELETE FROM restore_snapshot_manifest'),
 @@SYS:reset.dstats@@    env.DB.prepare('DELETE FROM kv'), env.DB.prepare('DELETE FROM revs'),
     /* V7-F · owner decision 2 (iv): the reset used to drop the image rows and leave every R2 object behind, unreachable and never deleted. Now, in the same
        batch, each image held in R2 becomes a condemned row ('dead' — no image for anyone, the new admin included) and the sweep deletes the objects:

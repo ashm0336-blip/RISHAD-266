@@ -165,6 +165,258 @@
   "contracts.custody": {
    "order": 10,
    "file": "slots/contracts.custody.frag"
+  },
+  "rs.scopeFilter.custody": {
+   "order": 10,
+   "text": "    if (domains.custody)\n      domains.custody = domains.custody.filter(function (c) {\n        return c && c.scope && allowed.has(c.scope.departmentId);\n      });\n"
+  },
+  "rs.selection.drop": {
+   "order": 5,
+   "text": "    delete domains.custody;\n"
+  },
+  "rs.custody.receipt": {
+   "order": 10,
+   "file": "slots/rs.custody.receipt.frag"
+  },
+  "rs.manifest.systems.1": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "rs.manifest.systems.2": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "rs.manifest.systems.3": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "rs.manifest.systems.4": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "rs.manifest.systems.5": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "rs.base.systems": {
+   "order": 5,
+   "text": ", 'custody'"
+  },
+  "rs.counts.systems": {
+   "order": 5,
+   "text": " custody: 0,"
+  },
+  "rs.manifest.full.custodyArray": {
+   "order": 10,
+   "text": " ||\n      !Array.isArray(body.domains.custody)"
+  },
+  "rs.manifest.full.custodyScopes": {
+   "order": 10,
+   "text": "    var scopes = body.domains.custody.map(function (c) {\n      return c && c.scope && c.scope.departmentId;\n    });\n    if (!deq(ids.slice().sort(), scopes.sort())) throw rsError('restore-incomplete-custody');\n"
+  },
+  "rs.manifest.dept.custody": {
+   "order": 10,
+   "text": " ||\n      !Array.isArray(body.domains.custody) ||\n      body.domains.custody.length !== 1 ||\n      body.domains.custody[0].scope.departmentId !== body.scope.departmentId"
+  },
+  "rs.prepare.custodyLegacy": {
+   "order": 10,
+   "text": "  if (await cuLegacyPresent(env)) throw rsError('custody-legacy-source-present', 503);\n"
+  },
+  "keys.moved.custody": {
+   "order": 10,
+   "text": " cuLegacyKey(k) ||"
+  },
+  "rs.plan.custody": {
+   "order": 10,
+   "file": "slots/rs.plan.custody.frag"
+  },
+  "rs.plan.custodyCleanup": {
+   "order": 10,
+   "file": "slots/rs.plan.custodyCleanup.frag"
+  },
+  "rs.reference.custodyInit": {
+   "order": 10,
+   "text": ",\n    custody = Object.create(null)"
+  },
+  "rs.reference.custodyRevs": {
+   "order": 10,
+   "text": "    custody[d] = r[cuKey(d)] || 0;\n"
+  },
+  "rs.reference.base.systems": {
+   "order": 5,
+   "text": "      custody: custody,\n"
+  },
+  "rs.conflict.custodyTrigger": {
+   "order": 10,
+   "text": "|KIVO_CUSTODY_TARGET_CHANGED"
+  },
+  "save.counts.custody": {
+   "order": 10,
+   "text": " custody: transition.transitions.length,"
+  },
+  "save.snapshot.custody": {
+   "order": 10,
+   "text": "  else\r\n    for (var dept of departments) {\r\n      var full = await cuSnapshotRows(env, dept);\r\n      Object.keys(full).forEach(function (n) {\r\n        plan.snapshots.push({ domain: 'custody', table: dept + ':' + n, rows: full[n] });\r\n      });\r\n    }\r\n"
+  },
+  "save.wipe.custodyReceipt": {
+   "order": 10,
+   "text": "    await rsCustodyReceiptPreimage(env, d, plan);\r\n"
+  },
+  "wipe.inventory.custodyCounts": {
+   "order": 10,
+   "text": "      env.DB.prepare('SELECT COUNT(*) n FROM custody_items WHERE department_id=?1').bind(dept),\r\n      env.DB.prepare('SELECT COUNT(*) n FROM custody_movements WHERE department_id=?1').bind(dept),\r\n"
+  },
+  "wipe.inventory.custodyBase": {
+   "order": 10,
+   "text": "        custody: await cuRev(env, dept),\r\n"
+  },
+  "wipe.inventory.custodyCount": {
+   "order": 10,
+   "text": "        custody: Number(counts[0].results[0].n) + Number(counts[1].results[0].n),\r\n"
+  },
+  "wipe.request.custodyBase": {
+   "order": 10,
+   "text": "'custody', "
+  },
+  "wipe.keys.moved.custody": {
+   "order": 10,
+   "text": "cuLegacyKey(k) || "
+  },
+  "wipe.request.custodyRev": {
+   "order": 10,
+   "text": "    base[cuKey(input.dept)] = input.base.custody;\r\n"
+  },
+  "reset.custody": {
+   "order": 10,
+   "text": "    env.DB.prepare('DELETE FROM custody_request_outputs'), env.DB.prepare('DELETE FROM custody_requests'), env.DB.prepare('DELETE FROM custody_movements'), env.DB.prepare('DELETE FROM custody_issues'), env.DB.prepare('DELETE FROM custody_items'),\n"
+  },
+  "bc.remapCustody": {
+   "order": 10,
+   "file": "slots/bc.remapCustody.frag"
+  },
+  "bc.required.custody": {
+   "order": 10,
+   "text": ", 'custody'"
+  },
+  "bc.manifest.custody": {
+   "order": 10,
+   "text": " ||\n    !Array.isArray(domains.custody)"
+  },
+  "bc.manifest.custodyScopes": {
+   "order": 10,
+   "text": "  var custody = domains.custody.map(function (d) {\n    return d && d.scope && d.scope.departmentId;\n  });\n  if (!deq(custody.slice().sort(), departments.slice().sort())) rsBCFail('incomplete-custody');\n"
+  },
+  "bc.domains.systems": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "bc.typed.custody": {
+   "order": 10,
+   "text": "\n      Array.isArray(domains.custody) && domains.custody.length === 1\n        ? domains.custody[0].scope && domains.custody[0].scope.departmentId\n        : null"
+  },
+  "bc.keys.custody": {
+   "order": 10,
+   "text": "cuKeys = Object.keys(keys).filter(cuLegacyKey),\n    "
+  },
+  "bc.dup.custody": {
+   "order": 10,
+   "text": "    (cuKeys.length && rsBCOwn(domains, 'custody')) ||\n"
+  },
+  "bc.retiredModern.custody": {
+   "order": 10,
+   "text": "cuKeys.length || "
+  },
+  "bc.retired.custody": {
+   "order": 10,
+   "text": "cuKeys"
+  },
+  "bc.convert.custody": {
+   "order": 10,
+   "file": "slots/bc.convert.custody.frag"
+  },
+  "bc.out.custody": {
+   "order": 10,
+   "text": ", custody: 1"
+  },
+  "emp.ctx.custodyParam": {
+   "order": 10,
+   "text": ", cuRevision"
+  },
+  "emp.base.custody": {
+   "order": 10,
+   "text": " custody: cuRevision,"
+  },
+  "emp.ctx.custodyRev": {
+   "order": 10,
+   "text": ", await cuRev(env, d)"
+  },
+  "emp.base.custodyShape": {
+   "order": 10,
+   "text": "'custody', "
+  },
+  "emp.base.custodyInt": {
+   "order": 10,
+   "text": " || !Number.isSafeInteger(input.base.custody) || input.base.custody < 0"
+  },
+  "emp.base.custodyConflict": {
+   "order": 10,
+   "text": "  if (input.base.custody !== context.base.custody) throw cuError('custody-conflict', 409);\n"
+  },
+  "emp.base.custodyRev": {
+   "order": 10,
+   "text": "  base[cuKey(d)] = input.base.custody;\n"
+  },
+  "privacy.backupLoss.custody": {
+   "order": 10,
+   "text": "  D = [].concat(domains.custody || []);\n  for (i = 0; i < D.length; i++) if (isObj(D[i]) && isObj(D[i].rows) && (x = bdScope(D[i])))\n    privLoses(await q('SELECT move_id,holder_nid_snapshot,holder_empno_snapshot FROM custody_movements WHERE department_id=?1', x), D[i].rows.moves, function (r) { return String(r.move_id); }, ['holder_nid_snapshot', 'holder_empno_snapshot'], out, 'custody:' + x);\n"
+  },
+  "privacy.custody.fns": {
+   "order": 10,
+   "file": "slots/privacy.custody.fns.frag"
+  },
+  "save.movedPath": {
+   "order": 40,
+   "text": "cuLegacyKey(k) ? '/api/custody' : "
+  },
+  "cleanup.ctxRes.custody": {
+   "order": 10,
+   "text": "'bassam_custody_v1': 1,"
+  },
+  "cleanup.cleanRes.custody": {
+   "order": 10,
+   "text": "'bassam_custody_v1': 1,"
+  },
+  "save.renameRes.custody": {
+   "order": 10,
+   "text": "rnQ !== 'bassam_custody_v1' && "
+  },
+  "migrate.moved.custody": {
+   "order": 10,
+   "text": " cuLegacyKey(r0.k) ||"
+  },
+  "get.rdKeys.custody": {
+   "order": 10,
+   "text": " !cuLegacyKey(k9) &&"
+  },
+  "get.moved.custody": {
+   "order": 10,
+   "text": "    if (cuLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/custody' }; continue; }\n"
+  },
+  "boot.retired.custody": {
+   "order": 10,
+   "text": "      for (var retiredCu in keys) if (cuLegacyKey(retiredCu)) delete keys[retiredCu];\n"
+  },
+  "save.transition.custodyHistory": {
+   "order": 10,
+   "text": "        if (aliases.length)\n          potential = !!(await env.DB.prepare(\n            'SELECT 1 FROM custody_movements WHERE department_id=?1 AND (holder_key IN (SELECT value FROM json_each(?2)) OR holder_nid_snapshot IN (SELECT value FROM json_each(?2)) OR holder_empno_snapshot IN (SELECT value FROM json_each(?2))) LIMIT 1',\n          )\n            .bind(dept, JSON.stringify(aliases))\n            .first());\n"
+  },
+  "save.transition.custodyPlan": {
+   "order": 10,
+   "file": "slots/save.transition.custodyPlan.frag"
+  },
+  "save.transition.custodyChecks": {
+   "order": 10,
+   "text": ", checks: plan.checks, metadata: plan.metadata"
   }
  }
 }

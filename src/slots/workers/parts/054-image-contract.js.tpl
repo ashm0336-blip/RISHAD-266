@@ -1431,8 +1431,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var set = (body && body.set) || {}, del = (body && body.del) || [], base = (body && body.base) || {};
   /* Retired document key: reject the entire mixed batch before any mutation. In
      particular a full restore must never acknowledge a partial relational restore. */
-  var moved = Object.keys(set).concat(del.map(String)).filter(function (k) { return @@SYS:save.moved.dstats@@nfLegacyKey(k) || cuLegacyKey(k) || (@@SYS:save.moved.irshad@@bdLegacyKey(k)); });
-  if (moved.length) { var denied = {}; moved.forEach(function (k) { denied[k] = { why: 'domain-moved', path: @@SYS:save.movedPath@@cuLegacyKey(k) ? '/api/custody' : @@SYS:save.movedPath.dstats|pre="nfLegacyKey(k) ? '/api/notifications' : "|post=" }; });"|empty="nfLegacyKey(k) ? '/api/notifications' : '' }; });"@@ return { v: await curRev(env), revs: {}, denied: denied, conflicts: {}, atomic: 'domain-moved' }; }
+  var moved = Object.keys(set).concat(del.map(String)).filter(function (k) { return @@SYS:save.moved.dstats@@nfLegacyKey(k) ||@@SYS:keys.moved.custody@@ (@@SYS:save.moved.irshad@@bdLegacyKey(k)); });
+  if (moved.length) { var denied = {}; moved.forEach(function (k) { denied[k] = { why: 'domain-moved', path: @@SYS:save.movedPath@@@@SYS:save.movedPath.dstats|pre="nfLegacyKey(k) ? '/api/notifications' : "|post=" }; });"|empty="nfLegacyKey(k) ? '/api/notifications' : '' }; });"@@ return { v: await curRev(env), revs: {}, denied: denied, conflicts: {}, atomic: 'domain-moved' }; }
   /* R169: أحداثُ السجل المرافقة — تُقبل فقط لمفاتيح هذا الطلب، وتُكتب مع القيمة في الدفعة نفسِها */
   var audKeysOk = {}; for (var ka9 in set) audKeysOk[String(ka9)] = 1; for (var da9 = 0; da9 < del.length; da9++) audKeysOk[String(del[da9])] = 1;
   var audIn = audClean(body && body.aud, audKeysOk);
@@ -1498,7 +1498,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* سياق الطلب لكل إدارةٍ يمسّها: سجل الموظفين كما سيصير بعد هذا الطلب —
      فارغاً كان أو ممتلئاً — ومفاتيحُه الحيّة التي يُقاس عليها ما زال وما بقي.
      يُحسب مرّةً واحدة لكل إدارة، ولا يُحسب لمن لا يحتاجه. */
-  var CTX_RES = { 'bassam_dreport_v1': 1, @@SYS:cleanup.ctxRes.award|pre="'bassam_custody_v1': 1,"|post=" 'bassam_employees_v1': 1,"|empty="'bassam_custody_v1': 1, 'bassam_employees_v1': 1,"@@
+  var CTX_RES = { 'bassam_dreport_v1': 1, @@SYS:cleanup.ctxRes.custody@@@@SYS:cleanup.ctxRes.award@@ 'bassam_employees_v1': 1,
                   'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1,@@SYS:cleanup.ctxRes.tasks@@ 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
   var wipeCtx = {}, empCtx = {}, empRaw9 = {};
   for (k in set) {
@@ -1557,7 +1557,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* ══ مسحُ العمليات المحمية — من شكل الطلب لا من نتيجة الحكم ════════════
      فلو رُفض جزءُ العملية الآخر بقيت العملية «محمية» ورُدّ الطلب كاملاً. */
   var CLEAN_RES = { 'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1,@@SYS:cleanup.cleanRes.tasks@@
-                    @@SYS:cleanup.cleanRes.award|pre="'bassam_custody_v1': 1,"|post=" 'bassam_plan_v1': 1,"|empty="'bassam_custody_v1': 1, 'bassam_plan_v1': 1,"@@ 'bassam_rounds_v1': 1 };
+                    @@SYS:cleanup.cleanRes.custody@@@@SYS:cleanup.cleanRes.award@@ 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
   var protOp = '';
   var hasEmp = {}, hasClean = {}, hasStaff = {};
   for (k in set) {
@@ -1570,7 +1570,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   for (var dR in shRenCtx) if (hasStaff[dR]) protOp = protOp || 'shiftRename';
   if (!protOp) for (k in set) {
     var rnQ = resName(k);
-    if (rnQ !== 'bassam_custody_v1' && rnQ !== 'bassam_employees_v1') continue;
+    if (@@SYS:save.renameRes.custody@@rnQ !== 'bassam_employees_v1') continue;
     var EQ = entOf(k); if (!EQ || (!EQ.rename && !EQ.adopt)) continue;
     var aQ = parseJson(await opResourceGet(env, k), null), bQ = parseJson(String(set[k]), null);
     if (aQ == null || bQ == null) continue;

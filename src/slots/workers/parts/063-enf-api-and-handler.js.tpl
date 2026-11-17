@@ -236,7 +236,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     var rows = await env.DB.prepare('SELECT k, seq, existed, rev, v FROM authz_snap WHERE snap = ?1 ORDER BY k, seq').bind(sid).all();
     /* Reject the WHOLE snapshot before nextRev or any write, including a
        tombstone for a retired key: mixed rollback must not partially succeed. */
-    if (((rows && rows.results) || []).some(function (r0) { return @@SYS:migrate.moved.dstats@@nfLegacyKey(r0.k) || cuLegacyKey(r0.k) || (@@SYS:migrate.moved.irshad@@bdLegacyKey(r0.k)); })) return json({ ok: 0, err: 'domain-moved' }, 400);
+    if (((rows && rows.results) || []).some(function (r0) { return @@SYS:migrate.moved.dstats@@nfLegacyKey(r0.k) ||@@SYS:migrate.moved.custody@@ (@@SYS:migrate.moved.irshad@@bdLegacyKey(r0.k)); })) return json({ ok: 0, err: 'domain-moved' }, 400);
     var byK = {}; ((rows && rows.results) || []).forEach(function (r0) { var o = byK[r0.k] = byK[r0.k] || { existed: r0.existed, v: '' }; if (r0.existed) o.v += r0.v; });
     /* الانجراف: مفتاحٌ تغيّر بعد العملية (رقمُ مراجعته ≠ رقمِ العملية) — الرجوعُ يمحو ما بعدها، فلا يُنفَّذ إلا بتأكيدٍ صريح (force) */
     var smMeta = parseJson(sm.meta, {}) || {}, opRev = +smMeta.rev || 0, drift = [], kk0;
@@ -390,7 +390,7 @@ async function saveRoute(env, request, path, ss) {
   } catch (eS) {
     var guardSave=dbGuardFailure(eS);if(guardSave)return json({ok:0,err:guardSave.err},guardSave.status);
     /* فشل الحفظ يظهر باسمه في سجلات المشروع وفي فاحص الشبكة — لا صمت */
-    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
+    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT@@SYS:rs.conflict.custodyTrigger@@/.test(String(eS)))return json({ok:0,err:'conflict'},409); logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
   }
 }
 /* KIVO_264 · C1 للقراءة (اختياري — العقدُ نفسُه لـ/api/save): ?uid= على /api/changes و/api/get = هويةُ الجلسة التي بُني لها التبويب (BOOT.uid)؛
@@ -443,7 +443,7 @@ async function getRoute(env, url, ss) {
   var moreG = wantAll.length > GET_MAX && wantAll.slice(GET_MAX).some(function (k8) { return want.indexOf(k8) === -1; });
   var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
-  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && @@SYS:get.rdKeys.dstats@@!nfLegacyKey(k9) && !cuLegacyKey(k9) && @@SYS:get.rdKeys.irshad@@!bdLegacyKey(k9) && !opIsResource(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
+  var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && @@SYS:get.rdKeys.dstats@@!nfLegacyKey(k9) &&@@SYS:get.rdKeys.custody@@ @@SYS:get.rdKeys.irshad@@!bdLegacyKey(k9) && !opIsResource(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
   if (want.indexOf(K_USERS) >= 0) await privPrepDepts(env, AG, (AG.depts || []).map(function (x) { return x && x.id; }));   /* 019u (9): the accounts lens maps an ekey that is a hidden nid */
   for (var gi = 0; gi < want.length; gi++) {
     var gk = want[gi];
@@ -451,8 +451,7 @@ async function getRoute(env, url, ss) {
     var rdG = canRead(AG, gk);
     if (!rdG && !canSee(AG, gk)) continue;
     if (nfLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/notifications' }; continue; }
-    if (cuLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/custody' }; continue; }
-@@SYS:get.moved.irshad@@    if (bdLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: @@SYS:get.moved.seizedPath@@@@SYS:get.moved.awardPath|post=" }; continue; }"|empty="'' }; continue; }"@@
+@@SYS:get.moved.custody@@@@SYS:get.moved.irshad@@    if (bdLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: @@SYS:get.moved.seizedPath@@@@SYS:get.moved.awardPath|post=" }; continue; }"|empty="'' }; continue; }"@@
     if (opIsResource(gk)) { got[gk] = { v:null, rev:rvG[gk]||0, moved:'/api/operations/read' }; continue; }
 @@SYS:get.moved.dstats@@    var gv = rdG ? valsG[gk] : null;      /* لا قيمةَ لمن لا يقرأ — الرقمُ وحدَه */
     if (rdG && gk === K_USERS && gv != null) gv = usersScopeOut(usersNoOut(stripPh(gv), AG), AG);   /* KIVO_259 · SR-1: ولا رقمَ وظيفيَّ لحساب غيره · الفحصُ العميق (R4): ولا حسابَ خارج نطاقه (054) */
@@ -1017,8 +1016,7 @@ export default {
       /* مسجّل دخول: البيانات كلها تُحقن في نفس الاستجابة — كخادم الجهاز */
       var keys = await kvAll(env, 'kv');
       for (var retiredNf in keys) if (nfLegacyKey(retiredNf)) delete keys[retiredNf];
-      for (var retiredCu in keys) if (cuLegacyKey(retiredCu)) delete keys[retiredCu];
-@@SYS:boot.strip.irshad@@      for (var retiredBusiness in keys) if (bdLegacyKey(retiredBusiness)) delete keys[retiredBusiness];
+@@SYS:boot.retired.custody@@@@SYS:boot.strip.irshad@@      for (var retiredBusiness in keys) if (bdLegacyKey(retiredBusiness)) delete keys[retiredBusiness];
       for (var retiredOperational in keys) if (opIsResource(retiredOperational)) delete keys[retiredOperational];
 @@SYS:boot.strip.dstats@@      for (var dk in keys) if (isDeviceKey(dk)) delete keys[dk];
       if (keys[K_USERS] != null) keys[K_USERS] = stripPh(keys[K_USERS]);
