@@ -68,7 +68,7 @@ function goneKey() {
   return null;
 }
 test('د3 · الحذف: منحُ مفتاح نظامٍ غائب مرفوض، والمنحُ المخزّنة عليه باقيةٌ لا يحذفها حفظٌ عادي [' + (SYSTEMS.join(' · ') || 'لا نظام') + ']', { timeout: 300000 }, async () => {
-  const { world, stored } = await import('../unit/tasks_fx.mjs');
+  const { world, stored } = await import('../unit/world_fx.mjs');
   const w = await world({ mode: 'enforce' }), su = w.su.ck, G = 'bsdept:tst_d1:bassam_grants_v1', cp = (o) => JSON.parse(JSON.stringify(o));
   const put = async (v) => {
     const g = await w.C.api('/api/get?keys=' + encodeURIComponent(G), { cookie: su });

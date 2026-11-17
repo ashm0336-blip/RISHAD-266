@@ -13,7 +13,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { needs } from './harness.mjs';
-const { world, stored } = await import('./tasks_fx.mjs');
+const { world, stored } = await import('./world_fx.mjs');
 const { internals } = await import('./internals.mjs');
 
 const KU = 'bassam_auth_users_v1', KP = 'bassam_perms_v1';

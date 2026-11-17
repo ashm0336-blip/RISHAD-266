@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
-import { world, stored, putKV } from './tasks_fx.mjs';
+import { world, stored, putKV } from './world_fx.mjs';
 import { loadClient, until, sleep } from './k264_vm.mjs';
 import { ROOT, blockFile } from './harness.mjs';
 import { internals } from './internals.mjs';

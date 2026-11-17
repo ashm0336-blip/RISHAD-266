@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import { internals } from './internals.mjs';
 import { WORKER } from './harness.mjs';
 import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, age, due, stored, read } from './v7_f_img_fx.mjs';
-import { world as tasksWorld, ME, hij, HR, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
+import { world as tasksWorld, ME, hij, HR, taskCommandBody, operationSaveBody } from './world_fx.mjs';
 
 /* ── spellings ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
 const U = (ch, up) => { const h = ch.charCodeAt(0).toString(16).padStart(2, '0'); return '\\u00' + (up ? h.toUpperCase() : h); };

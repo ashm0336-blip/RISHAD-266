@@ -1,7 +1,7 @@
 import {cuInflate} from './custody_legacy_oracle.mjs';
 import { test } from 'node:test';
 import { inspectOperationalFixture, replaceOperationalFixture, installOperationalFixture } from './operational_legacy_seed_fx.mjs';
-import { operationSaveBody } from './tasks_fx.mjs';
+import { operationSaveBody } from './world_fx.mjs';
 import assert from 'node:assert/strict';
 import { world as canonicalWorld, legacyWorld, canonicalWorker, canonicalDigest, D1, D2, IDS, EKEYS, identitySnapshot } from './custody_review_fx.mjs';
 

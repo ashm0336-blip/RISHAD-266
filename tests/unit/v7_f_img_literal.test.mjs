@@ -15,7 +15,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { internals } from './internals.mjs';
 import { WORKER } from './harness.mjs';
 import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, age, due, EDIT } from './v7_f_img_fx.mjs';
-import { world as tasksWorld, ME, hij, HR, taskCommandBody } from './tasks_fx.mjs';
+import { world as tasksWorld, ME, hij, HR, taskCommandBody } from './world_fx.mjs';
 import { world as restoreWorld } from './atomic_restore_review_fx.mjs';
 import { D1, IDS } from './notifications_review_fx.mjs';
 import { inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';

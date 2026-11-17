@@ -39,7 +39,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeTestEnv, client, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 import { internals } from './internals.mjs';
-import { world, workerUnderTest, D as FXD, PNG as FXPNG, TAG, stored, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
+import { world, workerUnderTest, D as FXD, PNG as FXPNG, TAG, stored, taskCommandBody, operationSaveBody } from './world_fx.mjs';
 import { needs } from './harness.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');

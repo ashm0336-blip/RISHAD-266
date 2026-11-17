@@ -17,10 +17,10 @@ const part = (f) => fs.readFileSync(path.join(ROOT, 'workers', 'parts', f), 'utf
 const items = (lit) => { const out = []; lit.replace(/['"]([^'"]*)['"]/g, (_, s) => (out.push(s), '')); return out; };
 function serverLists() {
   const a = /ix\.hosts\[key\]\s*=\s*leaves\.length\s*\?\s*leaves\s*:\s*\[([^\]]*)\]/.exec(part('057-enf-index.js'));
-  const b = /enfIx\(\)\.hosts\['lens\.' \+ L \+ '\.view'\]\s*\|\|\s*\[([^\]]*)\]/.exec(part('018-ancestry.js'));
+  const b = /enfIx\(\)\.hosts\['lens\.' \+ L \+ '\.view'\]\s*\|\|\s*\[([^\]]*)\]/.exec(part('018c-ancestry-rules.js'));
   assert.ok(a, '057-enf-index.js: the literal lens-host fallback of enfIx is where this test reads it');
-  assert.ok(b, '018-ancestry.js: the literal lens-host fallback of permLensHosted is where this test reads it');
-  return { '057-enf-index.js (enfIx)': items(a[1]), '018-ancestry.js (permLensHosted)': items(b[1]) };
+  assert.ok(b, '018c-ancestry-rules.js: the literal lens-host fallback of permLensHosted is where this test reads it');
+  return { '057-enf-index.js (enfIx)': items(a[1]), '018c-ancestry-rules.js (permLensHosted)': items(b[1]) };
 }
 
 test('lens hosts: every lens manifest declares the hosts the server keeps literally (057 · 018)', () => {
@@ -33,7 +33,7 @@ test('lens hosts: every lens manifest declares the hosts the server keeps litera
       assert.deepEqual(m.hosts, list, 'plugins/lenses/' + dir + '/manifest.json hosts = the server list in ' + where + ' — change both together');
     }
   }
-  assert.deepEqual(S['057-enf-index.js (enfIx)'], S['018-ancestry.js (permLensHosted)'], 'the two worker parts agree');
+  assert.deepEqual(S['057-enf-index.js (enfIx)'], S['018c-ancestry-rules.js (permLensHosted)'], 'the two worker parts agree');
 });
 
 test('lens hosts: the extraction is not vacuous — the assembled worker carries the same literals, and the client reads the manifest', () => {

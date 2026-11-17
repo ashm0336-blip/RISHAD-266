@@ -9,7 +9,7 @@
      (e) the mode is the system administrator's: managers cannot set it; a stale client that drops it, or a value other than true / 'own', is refused */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, stored, putKV } from './tasks_fx.mjs';
+import { world, stored, putKV } from './world_fx.mjs';
 import { internals } from './internals.mjs';
 import { needs } from './harness.mjs';
 

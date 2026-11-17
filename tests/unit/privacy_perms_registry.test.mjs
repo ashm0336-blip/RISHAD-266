@@ -53,7 +53,7 @@ for (const mode of MODES) {
     const w = await privWorld(mode);
     /* a hidden sheet in his own unit: another manager-badge holder (not administrable by a dept manager) */
     const p0 = JSON.parse(JSON.stringify(stored(w.env, KP))); p0.emps.tst_d1['mgr:tst_d1x'] = { plan: ['view'] };
-    const { putKV } = await import('./tasks_fx.mjs'); putKV(w.env, KP, p0);
+    const { putKV } = await import('./world_fx.mjs'); putKV(w.env, KP, p0);
     const ck = await login(w, 'dm1'), P = await permsOf(w, ck);
     assert.ok(!P.v.emps.tst_d1['mgr:tst_d1x'], 'another manager sheet is not delivered to the dept manager');
     const n = JSON.parse(JSON.stringify(P.v)); n.emps.tst_d1.tst_e_emp1 = { plan: ['view'] };

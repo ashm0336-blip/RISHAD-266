@@ -6,7 +6,7 @@
    الوضعُ القديم (legacy) لا إسقاطَ فيه: يبقى كما كان (يُثبَّت هنا). بياناتٌ اصطناعية (TEST_ONLY). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, stored, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
+import { world, stored, replaceOperationalFixture, operationSaveBody } from './world_fx.mjs';
 
 const KR = 'bsdept:tst_d1:bassam_rounds_v1', KE = 'bsdept:tst_d1:bassam_employees_v1';
 const isDay = (k) => /^\d+-\d+-\d+$/.test(k);

@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { world, stored, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
+import { world, stored, replaceOperationalFixture, operationSaveBody } from './world_fx.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const D = 'tst_d1', KR = 'bsdept:' + D + ':bassam_rounds_v1', KP = 'bassam_perms_v1', KG = 'bsdept:' + D + ':bassam_grants_v1', OBS = 'tst_e_field';

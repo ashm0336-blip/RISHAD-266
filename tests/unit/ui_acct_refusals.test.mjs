@@ -19,7 +19,7 @@ function fnSrc(text, name) {
   for (; j < text.length; j++) { if (text[j] === '{') d++; else if (text[j] === '}' && --d === 0) break; }
   return text.slice(i, j + 1);
 }
-const A017 = rdW('017-authorize-core.js'), A018 = rdW('018-ancestry.js'), A054 = rdW('054-image-contract.js');
+const A017 = rdW('017-authorize-core.js'), A018 = rdW('018-ancestry.js') + rdW('018c-ancestry-rules.js'), A054 = rdW('054-image-contract.js');
 const server = vm.runInNewContext([
   fnSrc(A017, 'isObj'), fnSrc(A017, 'deq'), fnSrc(A017, 'nmap'), fnSrc(A017, 'eqExcept'),
   "function isMgrKey(k) { return String(k || '').slice(0, 4) === 'mgr:'; }",

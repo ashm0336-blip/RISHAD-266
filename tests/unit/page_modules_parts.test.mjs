@@ -51,12 +51,12 @@ test('page_modules.py join: الأجزاءُ تُلحق بـlogic.js بترتي�
 test('صفحةُ المهام مقسَّمة: الأجزاءُ معلنةٌ وموجودة وصالحةٌ وحدها · لا منهجَ مكرَّراً بين logic.js والأجزاء · الصنفُ المجمَّع يحملها كلَّها ويبدأ صارماً', () => {
   const meta = META('tasks'), parts = meta.logicParts || [];
   assert.ok(parts.length >= 6, 'logicParts: ' + parts.join(','));
-  assert.deepEqual(meta.charter.domain, ['src/modules/tasks/logic.js'].concat(parts.map((f) => 'src/modules/tasks/' + f)), 'الميثاق: domain = الأصلُ والأجزاء');
-  const core = fs.readFileSync(path.join(SRC, 'modules/tasks/logic.js'), 'utf8');
+  assert.deepEqual(meta.charter.domain, ['src/systems/tasks/client/logic.js'].concat(parts.map((f) => 'src/systems/tasks/client/' + f)), 'الميثاق: domain = الأصلُ والأجزاء');
+  const core = fs.readFileSync(path.join(SRC, 'systems/tasks/client/logic.js'), 'utf8');
   assert.ok(core.startsWith('"use strict";\nclass Component extends '), 'logic.js: "use strict" ثم الصنف');
   const all = names(core), seen = new Set(all), partNames = {};
   for (const f of parts) {
-    const t = fs.readFileSync(path.join(SRC, 'modules/tasks', f), 'utf8');
+    const t = fs.readFileSync(path.join(SRC, 'systems/tasks/client', f), 'utf8');
     assert.match(t, /^\/\* KIVO_265 · البند 19/, f + ': ترويسةُ الجزء');
     assert.ok(t.includes('\n"use strict";\nObject.assign(Component.prototype, {\n') && t.endsWith('\n});\n'), f + ': Object.assign(Component.prototype, {…}) صالحٌ وحده');
     /* يُحلَّل وحده (صالحٌ نحوياً) ويُنفَّذ على صنفٍ فارغ */

@@ -21,7 +21,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { world, stored, putKV, replaceOperationalFixture, P0, D, KE } from './tasks_fx.mjs';
+import { world, stored, putKV, replaceOperationalFixture, P0, D, KE } from './world_fx.mjs';
 import { TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
 
 const BASELINE = process.env.V7_ISSUE1_BASELINE === '1';

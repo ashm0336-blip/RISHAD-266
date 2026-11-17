@@ -6,7 +6,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import {ROOT,world as canonicalWorld,D1,IDS,EKEYS} from './custody_review_fx.mjs';
-import {attachTaskOperations} from './tasks_vm_operations_fx.mjs';
+import {attachTaskOperations} from './vm_operations_fx.mjs';
 import {installOperationalFixture,replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
 const read=file=>fs.readFileSync(path.join(ROOT,file),'utf8');
 const copy=value=>JSON.parse(JSON.stringify(value));

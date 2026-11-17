@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { privWorld, setSheet, login, suCk, readOp, getKV, KE, MODES, stored } from './privacy_fx.mjs';
-import { putKV } from './tasks_fx.mjs';
+import { putKV } from './world_fx.mjs';
 import { needs as needsSys } from './harness.mjs';
 
 const ROUTES = ['/api/operations/export', '/api/custody/export', '/api/irshad/export', '/api/seized/export', '/api/award/export', '/api/notifications/export'];

@@ -203,7 +203,7 @@ function tasksPage() {
     __BS_BOOT: { srv: 0 }, fetch: () => Promise.reject(new Error('offline')) };
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
-  for (const f of ['src/services/490-emp-key.js', 'src/services/440-count.js', 'src/services/060-percent-format.js', 'src/services/546-task-model.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
+  for (const f of ['src/services/490-emp-key.js', 'src/services/440-count.js', 'src/services/060-percent-format.js', 'src/systems/tasks/client/546-task-model.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
   KIVO.BassamPerm = { can: () => true, on: () => true };
   KIVO.BassamAuth = { user: () => ({ id: 'tst_dm1', role: 'staff', mgr: true, ekey: 'mgr:tst_d1', deptId: 'tst_d1', name: 'TEST_ONLY مدير' }), display: () => ({ name: 'TEST_ONLY مدير' }), users: () => [] };
   KIVO.BassamDepts = { active: () => 'tst_d1' }; KIVO.BassamSup = { isSup: () => false };

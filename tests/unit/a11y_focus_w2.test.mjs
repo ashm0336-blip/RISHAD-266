@@ -30,8 +30,8 @@ test('DG-11 · مرشِّحُ طبقات الحوار يقبل طبقةَ «مه
 });
 
 test('DG-11 · طبقةُ النافذة في القالب بصنف tkf-ov وموضعُها fixed ملءَ الشاشة في CSS — فيراها مديرُ التركيز «أعلى طبقة»: يضع التركيزَ في أول حقل ويحبس Tab ويعيده لزرّ «مهمة جديدة» عند الإغلاق', () => {
-  assert.match(rd('modules/tasks/view.html'), /<div onClick="\{\{closeNewTask\}\}" class="tkf-ov">/);
-  assert.match(rd('modules/tasks/helmet.css'), /\.tkf-ov\{position:fixed;inset:0;z-index:50;/);
+  assert.match(rd('systems/tasks/client/view.html'), /<div onClick="\{\{closeNewTask\}\}" class="tkf-ov">/);
+  assert.match(rd('systems/tasks/client/helmet.css'), /\.tkf-ov\{position:fixed;inset:0;z-index:50;/);
   /* مديرُ التركيز نفسُه: حفظُ صاحب التركيز · أولُ حقل · حبسُ Tab · الإعادةُ عند الزوال */
   const s = rd('layouts/root-logic.js');
   assert.match(s, /this\._dlgStack\.push\(\{ el: top, prev \}\);/);

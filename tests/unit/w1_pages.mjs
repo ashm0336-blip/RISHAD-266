@@ -7,7 +7,7 @@ import path from 'node:path';
 import { ROOT, moduleLogic } from './harness.mjs';
 
 export const NOW = new Date(2026, 9, 20, 12, 0, 0).getTime();
-const SERVICES = ['src/services/490-emp-key.js', 'src/services/440-count.js', 'src/services/060-percent-format.js', 'src/services/546-task-model.js'];
+const SERVICES = ['src/services/490-emp-key.js', 'src/services/440-count.js', 'src/services/060-percent-format.js', 'src/systems/tasks/client/546-task-model.js'];
 
 export function page(slug, o = {}) {
   const store = o.store instanceof Map ? o.store : new Map(Object.entries(o.store || {}).map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)]));

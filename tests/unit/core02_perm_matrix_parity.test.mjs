@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { world, stored, putKV } from './tasks_fx.mjs';
+import { world, stored, putKV } from './world_fx.mjs';
 import { loadClient, until, sleep } from './k264_vm.mjs';
 import { ROOT } from './harness.mjs';
 import { needs } from './harness.mjs';

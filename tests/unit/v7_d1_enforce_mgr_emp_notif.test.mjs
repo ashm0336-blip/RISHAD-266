@@ -17,7 +17,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { world, stored, putKV, replaceOperationalFixture, D, KE } from './tasks_fx.mjs';
+import { world, stored, putKV, replaceOperationalFixture, D, KE } from './world_fx.mjs';
 import { TEST_SUPER_USERNAME } from './harness.mjs';
 
 const D2 = 'tst_d2', KG = 'bsdept:' + D + ':bassam_grants_v1';

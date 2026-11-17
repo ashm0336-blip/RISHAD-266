@@ -16,7 +16,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
-import { world, workerUnderTest, TAG, stored, putKV, addAccount } from './tasks_fx.mjs';
+import { world, workerUnderTest, TAG, stored, putKV, addAccount } from './world_fx.mjs';
 import { loadClient, until, sleep } from './k264_vm.mjs';
 import { ROOT } from './harness.mjs';
 import { internals } from './internals.mjs';

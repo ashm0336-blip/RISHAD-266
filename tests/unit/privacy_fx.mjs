@@ -1,7 +1,7 @@
 /* PRIVACY batch (SV09 · IP07 · IP10 · IP39 · SV01) — shared synthetic world for tests/unit/privacy_*.test.mjs (TEST_ONLY data only).
    Built on tasks_fx.world({mode}) (gen_fixture + 17 employees + typed operational storage), in 'legacy' and 'enforce' modes.
    PII is synthetic: 199999920N national ids, 059999920N phones, @example.test e-mails; the P0 employees' empno is their initial password. */
-import { world, stored, putKV, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
+import { world, stored, putKV, replaceOperationalFixture, operationSaveBody } from './world_fx.mjs';
 import { isOperationalFixtureKey } from './operational_legacy_seed_fx.mjs';
 export { stored };
 export const D = 'tst_d1';

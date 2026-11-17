@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TEST_SUPER_PIN } from './harness.mjs';
 import { D2, PNG, TAG, dk, both, scene, state, gone, upload, age, due } from './v7_f_img_fx.mjs';
-import { taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
+import { taskCommandBody, operationSaveBody } from './world_fx.mjs';
 
 /* N rows already condemned (a reset, or objects whose delete failed), each with its R2 object */
 async function condemned(T, N, tag) {

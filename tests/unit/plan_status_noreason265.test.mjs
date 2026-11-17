@@ -5,7 +5,7 @@
      (ج) فهرسُ الإنفاذ: مفاتيحُ الحالة الأربعة خارج قائمة السبب · وما سواها باقٍ (map.replace · plan.reopen · backup.restore …) — والمرجعُ v24.9 لم يُمسّ */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, D, ME, stored } from './tasks_fx.mjs';
+import { world, workerUnderTest, D, ME, stored } from './world_fx.mjs';
 import { internals } from './internals.mjs';
 
 const WU = workerUnderTest();

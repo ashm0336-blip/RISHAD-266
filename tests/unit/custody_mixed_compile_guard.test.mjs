@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {world,createType,act,ok,D1,EKEYS,EMP,copy} from './custody_scenarios_fx.mjs';
 import {inspectOperationalFixture} from './operational_legacy_seed_fx.mjs';
-import {operationSaveBody} from './tasks_fx.mjs';
+import {operationSaveBody} from './world_fx.mjs';
 
 const OPTIONS='bsdept:'+D1+':bassam_options_v1';
 const ledger=A=>copy(Object.fromEntries(['custody_items','custody_issues','custody_movements','custody_requests'].map(table=>[table,A.DB.q('SELECT * FROM '+table)])));

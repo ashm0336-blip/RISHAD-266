@@ -93,7 +93,75 @@
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
  },
  "permissions": "permissions.json",
- "tests": [],
+ "tests": [
+  "tests/kpis_tasks265.test.mjs",
+  "tests/private_tasks_live_sync.test.mjs",
+  "tests/profile_tasks_current265.test.mjs",
+  "tests/task_cloud_image_integration.test.mjs",
+  "tests/task_self_cloud_only.test.mjs",
+  "tests/tasks_acceptance.test.mjs",
+  "tests/tasks_acct265.test.mjs",
+  "tests/tasks_atomic_commands.test.mjs",
+  "tests/tasks_c1_session.test.mjs",
+  "tests/tasks_conc_fx.mjs",
+  "tests/tasks_daylock_srv265.test.mjs",
+  "tests/tasks_due.test.mjs",
+  "tests/tasks_edit_integrity.test.mjs",
+  "tests/tasks_edit_policy.test.mjs",
+  "tests/tasks_fix265_f1.test.mjs",
+  "tests/tasks_fix265_f1nid.test.mjs",
+  "tests/tasks_fix265_f2.test.mjs",
+  "tests/tasks_fix265_f3.test.mjs",
+  "tests/tasks_fix265_g1.test.mjs",
+  "tests/tasks_fix265_g2.test.mjs",
+  "tests/tasks_fix265_reopen.test.mjs",
+  "tests/tasks_fx.mjs",
+  "tests/tasks_gate_w1.test.mjs",
+  "tests/tasks_hotfix242_sql.test.mjs",
+  "tests/tasks_k265_f10.test.mjs",
+  "tests/tasks_k265_f10_fx.mjs",
+  "tests/tasks_kanban_w2.test.mjs",
+  "tests/tasks_kpi_owner.test.mjs",
+  "tests/tasks_kpis_cancel_w1.test.mjs",
+  "tests/tasks_merge_grp265.test.mjs",
+  "tests/tasks_model_parity.test.mjs",
+  "tests/tasks_operations_ui.test.mjs",
+  "tests/tasks_p0_selfread.test.mjs",
+  "tests/tasks_page_acct265.test.mjs",
+  "tests/tasks_page_actplan265.test.mjs",
+  "tests/tasks_page_bulk265.test.mjs",
+  "tests/tasks_page_days265.test.mjs",
+  "tests/tasks_page_filters265.test.mjs",
+  "tests/tasks_page_form265.test.mjs",
+  "tests/tasks_page_p2.test.mjs",
+  "tests/tasks_page_pickperf265.test.mjs",
+  "tests/tasks_page_prod265.test.mjs",
+  "tests/tasks_page_proofmeta265.test.mjs",
+  "tests/tasks_page_recur265.test.mjs",
+  "tests/tasks_page_rereview265.test.mjs",
+  "tests/tasks_page_review265.test.mjs",
+  "tests/tasks_page_timedd265.test.mjs",
+  "tests/tasks_page_unified265.test.mjs",
+  "tests/tasks_page_verify265.test.mjs",
+  "tests/tasks_profile_patch.test.mjs",
+  "tests/tasks_proof_guard.test.mjs",
+  "tests/tasks_proof_metadata_refresh.test.mjs",
+  "tests/tasks_recur265.test.mjs",
+  "tests/tasks_recur265b.test.mjs",
+  "tests/tasks_recur_clock.mjs",
+  "tests/tasks_recur_last29_265.test.mjs",
+  "tests/tasks_recur_patterns265.test.mjs",
+  "tests/tasks_rereview265.test.mjs",
+  "tests/tasks_review265.test.mjs",
+  "tests/tasks_seed.mjs",
+  "tests/tasks_selfwrite_guard.test.mjs",
+  "tests/tasks_shift265.test.mjs",
+  "tests/tasks_unified265.test.mjs",
+  "tests/tasks_verify265.test.mjs",
+  "tests/tasks_win.test.mjs",
+  "tests/browser/tasks_kpi_panel.test.mjs",
+  "tests/browser/v7_p4_tasks_panel_link.test.mjs"
+ ],
  "derived": [
   "src/pages/Tasks.dc.html"
  ],
@@ -261,7 +329,7 @@
   },
   "store.refuse.tasks.2": {
    "order": 10,
-   "text": ",\n              \"task-acct\": \"لا تُسند مهمةٌ إلكترونية إلا لموظفٍ له حسابُ مستخدمٍ نشطٌ مربوطٌ بالمعرّف الذي يُسند به — اختر غيره أو أنشئ له حساباً أو فعِّله أولاً\",\n              \"task-rv\": \"المراجِعُ لا يكون المكلَّفَ نفسَه — غيّر المراجِعَ من إعدادات المهمة أولاً\",\n              \"task-own\": \"توثيقُ الموظف (صورُ الإثبات · التسليمُ · البدء) لا يُمحى بالحفظ — حدّث الصفحة ثم أعد التعديل؛ وإن أردت إعادة المهمة إليه فمن قائمتها\",\n              \"task-del\": \"لا تُحذف مهمةٌ بدأ عليها نشاطٌ (قبول · توثيق · تسليم · إنجاز · اعتذار) — استعمل «إلغاء» من قائمة المهمة ليبقى سجلُّها؛ الحذفُ للأخطاء الحديثة وحدها\",\n              \"task-x\": \"إعداداتُ المهمة (المراجِعُ · سياسةُ الإثبات · الإلغاءُ وإعادةُ الإسناد) تُغيَّر من أزرار المهمة وحدها — استعمل أزرارَ المهمة\""
+   "file": "slots/store.refuse.tasks.2.frag"
   },
   "store.refuse.tasks.1": {
    "order": 10,
@@ -585,7 +653,7 @@
   },
   "profile.vals.empty.tasks": {
    "order": 10,
-   "text": "    /* KIVO_264 · D15: «لا تملك صلاحية عرض المهام» شيءٌ و«لا مهام» شيءٌ آخر — KIVO-Tasks: مع المسار الذاتي (KIVO.BassamMyTasks) لا تتوقف رؤيةُ\n       الموظف لمهامه على task.view، فنصُّ الفراغ من حالة مصدره (_tkVals: غيرُ مرتبطٍ بسجل موظف · تعذّر التحميل · لا مهام) — ويبقى D15 لما سواه */\n    /* KIVO_265 · «ملفي»: لا إحصاءَ «هذا الشهر» بأصفارٍ قبل أوّل قراءة (tkLoad) — ونصُّ الفراغ «لا توجد لديك مهام حالية» في المسارين */\n    if (KIVO.BassamMyTasks) ((r.tkNoPerm = !1), (r.tkStatsOn = !r.tkLoad));\n    else {\n      r.tkNoPerm = !!(r.tkOn && r.tkEmpty && !this.can(\"tasks\", \"view\"));\n      r.tkStatsOn = !r.tkNoPerm;\n      r.tkEmptyT = r.tkNoPerm ? \"لا تملك صلاحية عرض المهام\" : \"لا توجد لديك مهام حالية\";\n      /* لا يُوجَّه الموظفُ إلى طلب ورقةٍ إدارية — قرارُ المالك: لا تُعالَج رؤيةُ المهام بمنح صلاحياتٍ إدارية (وكيلُ المهام يعالج المسارَ الذاتي) */\n      r.tkEmptyS = r.tkNoPerm ? \"قائمةُ المهام لا تصل حسابك بصلاحياته الحالية — يصلك تنبيهُ الجرس حين تُسند إليك مهمة\" : \"حين يُسند إليك شيء يظهر هنا فوراً ويصلك تنبيه في الجرس\";\n    }\n"
+   "file": "slots/profile.vals.empty.tasks.frag"
   },
   "profile.vals.tasks": {
    "order": 10,
@@ -645,7 +713,7 @@
   },
   "nfo.watch.tasks": {
    "order": 10,
-   "text": "  WATCH['bassam_tasks_v1'] = function(did, o, n){\n    o = o || {}; n = n || {};\n    Object.keys(n).forEach(function(day){ if (!/^\\d+-\\d+-\\d+$/.test(day)) return; var oa = o[day] || [], na = n[day] || [];\n      na.forEach(function(r, i){ var p = oa[i]; if (!Array.isArray(r)) return; var title = r[0] || 'مهمة'; var asg = r[14] || null;\n        if (!p) { emit('task_new', { dept: did, own: asg ? [asg] : [], vars: { 'المهمة': title, 'الوقت': r[16] ? new Date(r[16]).toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit' }) : (r[10] ? KIVO.BassamCount(r[10], \"دقيقة\") : '—') } }); return; }\n        if (eq(p, r)) return;\n        if (p[3] !== 'done' && r[3] === 'done') { var pf = r[21] && Array.isArray(r[21].imgs) ? r[21].imgs.length : 0; emit('task_done', { dept: did, vars: { 'الاسم': r[8] || empName(did, asg) || '—', 'المهمة': title + (pf ? ' — موثّقة بـ' + (pf === 1 ? 'صورة' : KIVO.BassamCount(pf, \"صورة\", \"g\")) : '') + (r[6] && r[6][1] ? ' · ' + r[6][1] : '') } }); }\n        else if (p[3] !== 'declined' && r[3] === 'declined') emit('task_chg', { dept: did, own: [], vars: { 'الفعل': 'اعتُذر عن', 'المهمة': title, 'التفصيل': (r[8] || '') + ' — ' + ((r[20] && r[20].why) || 'بلا سبب') + ' · أعِد إسنادها' } });\n        else if (!(p[20] && p[20].exp) && r[20] && r[20].exp) emit('task_chg', { dept: did, own: [], vars: { 'الفعل': 'لم تُقبل', 'المهمة': title, 'التفصيل': 'انقضت مهلة قبول ' + (r[8] || '') + ' بلا ردّ · أعِد إسنادها' } });\n        else if (!p[11] && r[11]) emit('task_chg', { dept: did, own: [], vars: { 'الفعل': 'قُبلت', 'المهمة': title, 'التفصيل': (r[8] || '') + ' بدأ العمل عليها' } });\n        else if (p[14] !== r[14] && r[14]) emit('task_new', { dept: did, own: [r[14]], vars: { 'المهمة': title, 'الوقت': r[16] ? new Date(r[16]).toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit' }) : '—' } });\n        else if (p[0] !== r[0] || p[1] !== r[1] || p[2] !== r[2] || p[15] !== r[15] || p[16] !== r[16]) emit('task_chg', { dept: did, own: asg ? [asg] : [], vars: { 'الفعل': 'عُدّلت', 'المهمة': title, 'التفصيل': 'بواسطة ' + who() } }); });\n      if (oa.length > na.length) emit('task_chg', { dept: did, own: [], vars: { 'الفعل': 'حُذفت', 'المهمة': KIVO.BassamCount(oa.length - na.length, \"مهمة\"), 'التفصيل': 'يوم ' + day.replace(/-/g, '/') + ' بواسطة ' + who() } }); });\n  };\n"
+   "file": "slots/nfo.watch.tasks.frag"
   }
  }
 }

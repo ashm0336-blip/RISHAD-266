@@ -11,7 +11,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
-const SRC = rd('workers/parts/018-ancestry.js');
+const SRC = rd('workers/parts/018-ancestry.js') + rd('workers/parts/018c-ancestry-rules.js');   /* د4-ب: 018 قُطع حول كتلة قواعد المهام — تتمّتُه في 018c-ancestry-rules.js */
 function fn(name) {
   const i = SRC.indexOf('\nfunction ' + name + '('); assert.ok(i > 0, name + ' موجودة في 018');
   let j = SRC.indexOf('{', i), d = 0;

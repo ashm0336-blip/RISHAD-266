@@ -61,7 +61,7 @@ test('PLAN-06 · DG-10 · ES-9 · AUX-13: قواعدُ الوحدات (لا في
   const plan = M('modules/plan/helmet.css', 'الموجة 2 · PLAN-06');
   assert.ok(plan.includes('.bs-mapcard button:not([style*="position: absolute"]), .bs-panel-shell button:not([style*="position: absolute"]){ min-width:36px; min-height:36px; }'));
   assert.ok(plan.includes('[title^="سيتم حذف"][style*="position: absolute"]{ min-width:24px; min-height:24px; }'));
-  const tasks = M('modules/tasks/helmet.css', 'الموجة 2 · DG-10');
+  const tasks = M('systems/tasks/client/helmet.css', 'الموجة 2 · DG-10');
   assert.ok(tasks.includes('.tk-dayall{min-height:36px}') && tasks.includes('[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}'));
   const st = M('modules/staff/helmet.css', 'الموجة 2 · ES-9');
   assert.ok(st.includes('[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}') && st.includes('.st-restdd button{min-height:36px}'));

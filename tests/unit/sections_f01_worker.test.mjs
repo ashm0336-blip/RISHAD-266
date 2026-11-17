@@ -9,7 +9,7 @@
    البياناتُ اصطناعيةٌ كلُّها (TEST_ONLY · tst_). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, TAG, stored, putKV, addAccount, operationSaveBody, replaceOperationalFixture } from './tasks_fx.mjs';
+import { world, TAG, stored, putKV, addAccount, operationSaveBody, replaceOperationalFixture } from './world_fx.mjs';
 import { needs } from './harness.mjs';
 
 const K = 'bassam_auth_users_v1', KD = 'bassam_depts_v1', KG = 'bassam_gdepts_v1', KP = 'bassam_perms_v1';

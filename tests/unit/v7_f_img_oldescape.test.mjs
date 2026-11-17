@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, bind, age, due, stored, read } from './v7_f_img_fx.mjs';
-import { world as tasksWorld, ME, MATE, hij, HR, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
+import { world as tasksWorld, ME, MATE, hij, HR, taskCommandBody, operationSaveBody } from './world_fx.mjs';
 
 let n = 0;
 const OLD = 'C:\\Users\\u0031452\\plan.pdf';                               /* as a person typed it: the characters  C:\Users\u0031452\plan.pdf */

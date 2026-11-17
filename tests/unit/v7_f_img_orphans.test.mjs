@@ -6,7 +6,7 @@
    image (imgForeignIn skipped orphans; imgSync / the atomic path re-bound them to whoever mentioned them). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ME, MATE, TAG, hij, HR, taskCommandBody, addAccount, replaceOperationalFixture } from './tasks_fx.mjs';
+import { ME, MATE, TAG, hij, HR, taskCommandBody, addAccount, replaceOperationalFixture } from './world_fx.mjs';
 import { D, D2, PNG, K_USERS, K_DEPTS, dk, both, scene, state, img, edit, bind, upload, unitOp, shape, EDIT, stored, putKV, read } from './v7_f_img_fx.mjs';
 
 const post = (W, ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: taskCommandBody(W.env, p, body) });

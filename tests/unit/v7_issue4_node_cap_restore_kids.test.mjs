@@ -5,7 +5,7 @@
    Rule: the record of a removed node is dropped only when nothing in the graph this save leaves still points at it.
    Real worker, legacy and enforce; the outcome is a real authorization decision for the unit's manager, and the stored bytes. */
 import { test } from 'node:test'; import assert from 'node:assert/strict';
-import { world, stored, putKV, D as U2 } from './tasks_fx.mjs';
+import { world, stored, putKV, D as U2 } from './world_fx.mjs';
 const KG='bassam_gdepts_v1',KD='bassam_depts_v1',KP='bassam_perms_v1',X='TEST_ONLY_X',EK='tst_e_emp1';
 const NARROW=['emps','help'],DM=['0000000101','70101'];
 const J=(x)=>JSON.parse(JSON.stringify(x));
