@@ -645,6 +645,10 @@
   "emp.confirm.award": {
    "order": 10,
    "text": " وترشيحات التميز"
+  },
+  "nf.feed.known.award": {
+   "order": 10,
+   "text": ""
   }
  }
 }

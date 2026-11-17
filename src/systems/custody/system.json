@@ -646,6 +646,10 @@
   "scope.items.custody": {
    "order": 10,
    "file": "slots/scope.items.custody.frag"
+  },
+  "nf.feed.known.custody": {
+   "order": 10,
+   "text": ""
   }
  }
 }

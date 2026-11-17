@@ -32,8 +32,7 @@
     return 'L' + hash(et + '|' + parts.join('|'));
   }
   /* معرّفُ المهمة القديمة: من طابع إنشائها والمكلَّف — لا من عنوانها (العنوانُ يُعدَّل) */
-  function taskId(t) { return Array.isArray(t) ? 'T' + hash(String(t[13] || '') + '|' + String(t[14] || '') + '|' + String(t[8] || '') + '|' + (Array.isArray(t[7]) ? t[7].join(',') : '')) : ''; }
-  /* ختمُ قائمةٍ من الكيانات: الموجودُ يبقى، والناقصُ يأخذ معرّفاً حتميّاً (قديم) أو عشوائيّاً (جديد) — مع فضّ التصادم */
+@@SYS:activity.taskId.fn@@  /* ختمُ قائمةٍ من الكيانات: الموجودُ يبقى، والناقصُ يأخذ معرّفاً حتميّاً (قديم) أو عشوائيّاً (جديد) — مع فضّ التصادم */
   function stampList(arr, et, field, fresh) {
     var n = 0; if (!Array.isArray(arr)) return 0;
     var seen = {};
@@ -142,7 +141,7 @@
       kids);
   }
 
-  KIVO.BassamAudit = { VER: 1, hash: hash, newId: newId, legacyId: legacyId, taskId: taskId, stampPlan: stampPlan, stampRounds: stampRounds, stampList: stampList, stampSite: stampSite,
+  KIVO.BassamAudit = { VER: 1, hash: hash, newId: newId, legacyId: legacyId,@@SYS:activity.taskId.export@@ stampPlan: stampPlan, stampRounds: stampRounds, stampList: stampList, stampSite: stampSite,
     describe: describe, rowVM: rowVM, detailRows: detailRows, ctxText: ctxText, fetch: fetchAud, entityHistory: entityHistory, panelNodes: panelNodes,
     ACT_AR: ACT_AR, ET_AR: ET_AR, ET_FILTER: ET_FILTER, ACT_FILTER: ACT_FILTER, MONTHS: MONTHS, mLabel: mLabel, dLabel: dLabel, clock: clock, dateTxt: dateTxt, fieldAr: fieldAr };
 })();

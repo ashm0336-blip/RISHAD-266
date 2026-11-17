@@ -722,6 +722,18 @@
   "emp.confirm.tasks": {
    "order": 10,
    "text": " والمهام"
+  },
+  "nf.feed.known.tasks": {
+   "order": 10,
+   "text": ""
+  },
+  "activity.taskId.fn": {
+   "order": 10,
+   "text": "  function taskId(t) { return Array.isArray(t) ? 'T' + hash(String(t[13] || '') + '|' + String(t[14] || '') + '|' + String(t[8] || '') + '|' + (Array.isArray(t[7]) ? t[7].join(',') : '')) : ''; }\n"
+  },
+  "activity.taskId.export": {
+   "order": 10,
+   "text": " taskId: taskId,"
   }
  }
 }
