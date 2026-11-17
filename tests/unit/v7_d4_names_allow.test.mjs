@@ -24,7 +24,7 @@ test('V7 · د4-أ: السلوك — المدخلُ الذي زال موضعُه
   assert.deepEqual(r, [], 'مقطعٌ موجود في ملفه: مقبول');
   r = staleAllow(mk({ entries: [{ file: F, match: ["TEST_ONLY_award_gone('x')"], kind: 'legit', why: 'x' }] }), ROOT, SRC);
   assert.equal(r.length, 1); assert.match(r[0], /TEST_ONLY_award_gone.*لا موضعَ له/);
-  r = staleAllow(mk({ entries: [{ file: F, match: ['function cuClock'], kind: 'legit', why: 'x' }] }), ROOT, SRC);
+  r = staleAllow(mk({ entries: [{ file: F, match: ['function dsToday']   /* د4-ج: مقطعٌ موجود في ملفه ولا يسمّي نظاماً (cuClock صار اسماً معلناً لنظام العهد وله مدخلُه) */, kind: 'legit', why: 'x' }] }), ROOT, SRC);
   assert.equal(r.length, 1); assert.match(r[0], /لا موضعَ له/);
   r = staleAllow(mk({ entries: [{ file: 'workers/parts/TEST_ONLY-none.js', match: ['award'], kind: 'legit', why: 'x' }] }), ROOT, SRC);
   assert.equal(r.length, 1); assert.match(r[0], /ليس من الملفات المبحوث فيها/);
