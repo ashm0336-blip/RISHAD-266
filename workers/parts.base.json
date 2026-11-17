@@ -149,8 +149,62 @@
    "sha256": null
   },
   {
+   "file": "019a1-cursor.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "file": "019a2-custody-resolve.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "file": "019a3-bind.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "file": "019a4-custody-api.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
    "file": "019b-custody-plans.js",
    "head": "/* RISHAD 266 — server-owned relational storage. */",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "file": "019b1-removed-holders.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "file": "019b2-custody-cleanup.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "file": "019b3-restore-permission.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "file": "019b4-custody-restore.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "file": "019b5-save-transition.js",
    "lines": null,
    "bytes": null,
    "sha256": null

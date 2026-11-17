@@ -215,20 +215,101 @@
       "head": "/* RISHAD 266 — server-owned relational storage. */",
       "lines": [
         6961,
+        7404
+      ],
+      "bytes": 16876,
+      "sha256": "9243cdc901e24f4ea7658ca5dde5827b0dbe9a5d093d29f96cfff9a5f4a1bc2e"
+    },
+    {
+      "file": "019a1-cursor.js",
+      "lines": [
+        7405,
+        7417
+      ],
+      "bytes": 373,
+      "sha256": "b1866d53a0abc8ee4b0b019aacb057186faac2fe2914213ac5e160a6138f7703"
+    },
+    {
+      "file": "019a2-custody-resolve.js",
+      "lines": [
+        7418,
+        7425
+      ],
+      "bytes": 1369,
+      "sha256": "816fcdb7d4cbdc7ddc810251fdb92cb11d70d3703e18cdc1d10dc56dd84090c3"
+    },
+    {
+      "file": "019a3-bind.js",
+      "lines": [
+        7426,
+        7430
+      ],
+      "bytes": 191,
+      "sha256": "70ed170ab16683b24e5fecc836438b64d54fde6c6d5ed7520aed246e44c600a1"
+    },
+    {
+      "file": "019a4-custody-api.js",
+      "lines": [
+        7431,
         8005
       ],
-      "bytes": 44146,
-      "sha256": "400a37cb757a08814810bc1560d981e8d1a39fa8aba29cb74ff3d5b63c468201"
+      "bytes": 25337,
+      "sha256": "68af676d26c60c737bf22e0b076ea1306cdba902955100e844d7cdcf30dfb8ab"
     },
     {
       "file": "019b-custody-plans.js",
       "head": "/* RISHAD 266 — server-owned relational storage. */",
       "lines": [
         8006,
+        8088
+      ],
+      "bytes": 2778,
+      "sha256": "10b8bb2de2a647deb3891ff93d3819570a71710930cb66605074444a67984664"
+    },
+    {
+      "file": "019b1-removed-holders.js",
+      "lines": [
+        8089,
+        8117
+      ],
+      "bytes": 993,
+      "sha256": "88c5c04d78752835d39e473b4de2009c3f2f7c5d8194c996760e9b50c51f9422"
+    },
+    {
+      "file": "019b2-custody-cleanup.js",
+      "lines": [
+        8118,
+        8360
+      ],
+      "bytes": 11277,
+      "sha256": "a15c1150ed06e50c9f174a89ee02e9395d8f0a3e7712fa1040cb17544b1a6cb0"
+    },
+    {
+      "file": "019b3-restore-permission.js",
+      "lines": [
+        8361,
+        8368
+      ],
+      "bytes": 565,
+      "sha256": "a802a7b6e025cb1160176a522953f042ea7b97fa78ecc806c73126a995f3f4e5"
+    },
+    {
+      "file": "019b4-custody-restore.js",
+      "lines": [
+        8369,
+        8469
+      ],
+      "bytes": 4642,
+      "sha256": "25d775fdb080ac176b26be7956e05950acf6122db38692e4554023e3ee9714e6"
+    },
+    {
+      "file": "019b5-save-transition.js",
+      "lines": [
+        8470,
         8641
       ],
-      "bytes": 28150,
-      "sha256": "477a2b1035641a28be64a252978e8f6aa536c493d2974fb1197234f8081ec72f"
+      "bytes": 7895,
+      "sha256": "243ce7f04b485d221e55c0f3c4ebd8ad204876ec0d80630bd4944a58d0f8b872"
     },
     {
       "file": "019c-employee-transition.js",
