@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """V7 · المرحلة 2 · د2 — مقبسُ الأنظمة (وقتَ البناء): القاعدةُ تعرف النظام من src/systems/<key>/system.json وحده.
-   python3 tools/systems.py [--list|--check|--write|--variants a,b] [--src src]
+   python3 tools/systems.py [--list|--check|--write|--variants] [--src src]
      --list   الأنظمةُ الحاضرة بترتيبها وما تتطلبه (JSON)
      --check  system.json صالحٌ (المخطط · المفتاح = اسم المجلد · requires حاضرة وبلا دورة) والملفاتُ المحقونة = الملتزَم
      --write  يكتب الملفات المحقونة (يستدعيه tools/generate.py أيضاً قبل بقية التوليد)
@@ -194,18 +194,19 @@ def main(argv):
         return rc
     systems = load(S)
     if '--variants' in argv:
-        # د4-أ: نصُّ ملفاتٍ محقونة بعينها كما يخرج بغياب الأنظمة — بلا أي نظام، ثم بغياب كل نظامٍ وحده (ومعه من يتطلبه). لا يكتب شيئاً.
-        want = set(argv[argv.index('--variants') + 1].split(',')); res = {}
+        # د4-أ: نصُّ كل ملفٍ محقون كما يخرج بغياب الأنظمة — بلا أي نظام، ثم بغياب كل نظامٍ وحده (ومعه من يتطلبه). لا يكتب شيئاً.
+        #       [{gone: [مفاتيح الغائب], files: {المسار: النص}}] — يستعمله فحصُ قائمة الاستثناء (tests/removal/names_allow.mjs)
+        res = []
         def dependents(k):
             gone = {k}
             while True:
                 more = {d['key'] for d in systems if d['key'] not in gone and gone & set(d.get('requires') or [])}
                 if not more: return gone
                 gone |= more
-        for gone in [set(d['key'] for d in systems)] + [dependents(d['key']) for d in systems]:
-            rest = [d for d in systems if d['key'] not in gone]; frags = fragments(S, rest)
-            for t in manifest(S):
-                if t['out'] in want: res.setdefault(t['out'], []).append(expand(open(os.path.join(S, 'slots', t['tpl']), encoding='utf-8', newline='').read(), frags))
+        cases = [set(d['key'] for d in systems)] + [dependents(d['key']) for d in systems]
+        for gone in [g for i, g in enumerate(cases) if g and g not in cases[:i]]:
+            frags = fragments(S, [d for d in systems if d['key'] not in gone])
+            res.append({'gone': sorted(gone), 'files': {t['out']: expand(open(os.path.join(S, 'slots', t['tpl']), encoding='utf-8', newline='').read(), frags) for t in manifest(S) if t['out'].endswith('.js')}})
         print(json.dumps(res, ensure_ascii=False)); return 0
     if '--list' in argv:
         print(json.dumps([{'key': d['key'], 'name': d.get('name'), 'requires': d.get('requires') or []} for d in systems], ensure_ascii=False)); return 0

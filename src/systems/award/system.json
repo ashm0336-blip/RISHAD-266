@@ -575,6 +575,46 @@
   "import.summary.award": {
    "order": 10,
    "text": "              impOn(\"award\") ? \"ترشيحات التميز\" : \"\",\n"
+  },
+  "bd.refs.field": {
+   "order": 20,
+   "text": "'records'"
+  },
+  "bd.restore.global": {
+   "order": 10,
+   "text": "def.name==='awards'&&d===''"
+  },
+  "bd.export.global.1": {
+   "order": 10,
+   "text": "name==='awards'"
+  },
+  "bd.export.global.2": {
+   "order": 10,
+   "text": "name==='awards'?['']:[]"
+  },
+  "bd.export.redact": {
+   "order": 10,
+   "text": "if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept)&&privRowsBlank(ctx.A,exported,'records',['phone','email','employee_number'],'employee_key'))redacted.push('awards:'+dept);"
+  },
+  "bd.error.codes": {
+   "order": 20,
+   "text": "  if(error.awCode)return json({ok:0,err:error.awCode,at:error.awPath,denied:error.awDecision},error.awStatus||400);\r\n"
+  },
+  "bd.error.targets": {
+   "order": 20,
+   "text": "|AWARD_TARGET"
+  },
+  "bd.error.legacy": {
+   "order": 20,
+   "text": "|KIVO_AWARD_LEGACY_SOURCE"
+  },
+  "bd.route.prefix": {
+   "order": 20,
+   "text": "'/api/award'"
+  },
+  "bd.route.exportName": {
+   "order": 20,
+   "text": "'awards'"
   }
  }
 }

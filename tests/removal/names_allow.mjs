@@ -1,6 +1,7 @@
 /* V7 · د4-أ — قائمةُ الاستثناء لاختبار الحذف (tests/removal/names.allow.json): الملفاتُ التي يُبحث فيها، وفحصُ أن كلَّ مدخلٍ ما زال له موضع.
-   مدخلٌ زال موضعُه (المقطعُ لم يعد في ملفه، أو لم يعد يحمل اسمَ نظام) يُفشل الاختبار — فلا تبقى القائمةُ تستثني ما ليس موجوداً.
-   يُفحص دائماً على الشجرة الكاملة (الأنظمةُ كلُّها حاضرة): نتيجتُه واحدة في المستودع وفي كل نسخة حذف. */
+   «له موضع» = في حالة حذفٍ ما (بلا أي نظام، أو بغياب نظامٍ وحده ومعه من يتطلبه) يبقى في ملفه سطرٌ يحمل المقطعَ، والمقطعُ يسمّي نظاماً غائباً
+   في تلك الحالة — أي أن البحث النصي كان سيفشل لولا المدخل. مدخلٌ نُقل مقطعُه إلى فتحة، أو لم يعد في ملفه، أو لا يسمّي نظاماً: بلا موضع، ويُفشل الاختبار.
+   نصُّ كل ملفٍ محقون في كل حالة من tools/systems.py --variants (لا يُكتب شيء)؛ فالنتيجةُ واحدة في المستودع وفي كل نسخة حذف (تُفحص على الشجرة الكاملة). */
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -15,33 +16,27 @@ export function scanFiles(root, src) {
 }
 export const relOf = (root, f) => path.relative(root, f).split(path.sep).join('/');
 
-/* مداخلُ بلا موضع: تُعاد قائمةً نصية (فارغةٌ = كلُّ مدخلٍ له موضع). names = مفاتيحُ الأنظمة كلِّها (مجلداتُ الشجرة الكاملة). */
-export function staleAllow(allow, root, src, names) {
-  const NAME = new RegExp('(?:' + names.join('|') + ')', 'i'), out = [];
-  if (!names.length) return ['لا نظامَ في الشجرة الكاملة: لا يُعرف ما يُبحث عنه'];
-  const files = scanFiles(root, src).filter((f) => !/[\\/]src[\\/]systems[\\/]/.test(path.resolve(f))).map((f) => ({ rel: relOf(root, f), lines: noComments(fs.readFileSync(f, 'utf8')).split('\n') }));
-  const byRel = new Map(files.map((f) => [f.rel, f]));
-  /* مقطعٌ لا يظهر إلا بغياب نظام (النصُّ المحايد لفتحة): موضعُه في الملف كما يُحقن بلا أنظمة، أو بغياب نظامٍ وحده (tools/systems.py --variants) */
-  const named = [...new Set(allow.entries.map((e) => e.file).filter((f) => f !== '*'))];
-  const run = spawnSync(process.env.KIVO_PYTHON || 'python3', [path.join(root, 'tools', 'systems.py'), '--src', src, '--variants', named.join(',')], { encoding: 'utf8', maxBuffer: 1 << 28 });
+/* مداخلُ بلا موضع: تُعاد قائمةً نصية (فارغةٌ = كلُّ مدخلٍ له موضع). root/src = الشجرةُ الكاملة. */
+export function staleAllow(allow, root, src) {
+  const run = spawnSync(process.env.KIVO_PYTHON || 'python3', [path.join(root, 'tools', 'systems.py'), '--src', src, '--variants'], { encoding: 'utf8', maxBuffer: 1 << 29 });
   if (run.status !== 0) return ['tools/systems.py --variants: ' + (run.stderr || run.stdout).slice(0, 300)];
-  const variants = JSON.parse(run.stdout), absentLines = (rel) => (variants[rel] || []).flatMap((t) => noComments(t).split('\n'));
+  const cases = JSON.parse(run.stdout); if (!cases.length) return ['لا نظامَ في الشجرة الكاملة: لا يُعرف ما يُبحث عنه'];
+  const base = scanFiles(root, src).map((f) => relOf(root, f)).filter((rel) => !rel.startsWith('src/systems/'));   /* أجزاءُ الأنظمة نفسُها ليست من القاعدة */
+  const disk = new Map(base.map((rel) => [rel, noComments(fs.readFileSync(path.join(root, rel), 'utf8')).split('\n')]));
+  const views = cases.map((c) => ({ NAME: new RegExp('(?:' + c.gone.join('|') + ')', 'i'), lines: (rel) => (c.files[rel] === undefined ? disk.get(rel) : noComments(c.files[rel]).split('\n')) }));
+  const out = [], known = new Set(base);
   for (const s of allow.skipFiles) {
-    const f = byRel.get(s.file);
-    if (!f) out.push('skipFiles: ' + s.file + ' ليس من الملفات المبحوث فيها');
-    else if (!f.lines.some((l) => NAME.test(l))) out.push('skipFiles: ' + s.file + ' لم يعد يذكر اسمَ نظام');
+    if (!known.has(s.file)) out.push('skipFiles: ' + s.file + ' ليس من الملفات المبحوث فيها');
+    else if (!views.some((v) => v.lines(s.file).some((l) => v.NAME.test(l)))) out.push('skipFiles: ' + s.file + ' لا يذكر اسمَ نظامٍ غائب في أي حالة حذف');
   }
   for (const p of allow.patterns) {
     const re = new RegExp(p.pattern, 'g');
-    if (!files.some((f) => f.lines.some((l) => (l.match(re) || []).some((m) => NAME.test(m))))) out.push('patterns: ' + p.pattern + ' لا يطابق موضعاً يحمل اسمَ نظام');
+    if (!views.some((v) => base.some((rel) => v.lines(rel).some((l) => (l.match(re) || []).some((m) => v.NAME.test(m)))))) out.push('patterns: ' + p.pattern + ' لا يطابق موضعاً يسمّي نظاماً غائباً في أي حالة حذف');
   }
   for (const e of allow.entries) {
-    const where = e.file === '*' ? files : [byRel.get(e.file)].filter(Boolean);
-    if (e.file !== '*' && !where.length) { out.push('entries: ' + e.file + ' ليس من الملفات المبحوث فيها'); continue; }
-    for (const m of e.match) {
-      if (!NAME.test(m)) { out.push('entries: ' + e.file + ' «' + m + '» لا يحمل اسمَ نظام'); continue; }
-      if (!where.some((f) => f.lines.some((l) => l.includes(m))) && !(e.file !== '*' && absentLines(e.file).some((l) => l.includes(m)))) out.push('entries: ' + e.file + ' «' + m + '» لا موضعَ له');
-    }
+    const where = e.file === '*' ? base : [e.file];
+    if (e.file !== '*' && !known.has(e.file)) { out.push('entries: ' + e.file + ' ليس من الملفات المبحوث فيها'); continue; }
+    for (const m of e.match) if (!views.some((v) => v.NAME.test(m) && where.some((rel) => v.lines(rel).some((l) => l.includes(m))))) out.push('entries: ' + e.file + ' «' + m + '» لا موضعَ له في أي حالة حذف');
   }
   return out;
 }

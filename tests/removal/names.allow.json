@@ -89,25 +89,6 @@
    "why": "فرعان في محوِّل النسخ المشترك يقارنان باسم مجال؛ لا يُسلكان بغياب النظام."
   },
   {
-   "file": "workers/parts/019n-business-integration.js",
-   "match": [
-    "'/api/seized':'/api/award'",
-    "'seized':'awards'",
-    "KIVO_AWARD_LEGACY_SOURCE",
-    "KIVO_SEIZED_LEGACY_SOURCE",
-    "SEIZED_TARGET",
-    "AWARD_TARGET",
-    "def.name==='awards'",
-    "def.name==='seized'",
-    "name==='awards'",
-    "name==='seized'",
-    "privAwardOk",
-    "'awards:'"
-   ],
-   "kind": "deferred",
-   "why": "ملفُّ التكامل المشترك بين المضبوطات والجائزة: يبقى في القاعدة بلا تعريفات مجالٍ بغيابهما، وفروعُه تقارن باسم المجال فلا تُسلك. تفكيكُه إلى فتحات مؤجَّل."
-  },
-  {
    "file": "workers/parts/019u-privacy-projection.js",
    "match": [
     "privAwardOk",

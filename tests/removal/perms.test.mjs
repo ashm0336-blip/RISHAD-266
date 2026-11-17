@@ -114,7 +114,7 @@ test('د3 · الحذف: لا اسمَ لنظامٍ غائب في جزءٍ من 
   const ALLOW = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'removal', 'names.allow.json'), 'utf8'));
   for (const e of ALLOW.skipFiles.concat(ALLOW.patterns, ALLOW.entries)) { assert.ok(e.why && e.why.length > 20, 'لكل استثناءٍ سبب'); assert.match(e.kind, /^(legit|deferred)$/); }
   /* د4-أ: كلُّ مدخلٍ في القائمة ما زال له موضع — يُفحص على الشجرة الكاملة (الأنظمةُ كلُّها حاضرة)، فيعمل في المستودع وفي كل نسخة حذف */
-  assert.deepEqual(staleAllow(ALLOW, path.dirname(FULL), FULL, allSystems), [], 'مدخلٌ في قائمة الاستثناء بلا موضع');
+  assert.deepEqual(staleAllow(ALLOW, path.dirname(FULL), FULL), [], 'مدخلٌ في قائمة الاستثناء بلا موضع');
   if (!GONE.length) return;
   const NAME = new RegExp('(?:' + GONE.join('|') + ')', 'i'), skip = new Set(ALLOW.skipFiles.map((x) => x.file)), pats = ALLOW.patterns.map((x) => new RegExp(x.pattern, 'g'));
   const bad = [];
