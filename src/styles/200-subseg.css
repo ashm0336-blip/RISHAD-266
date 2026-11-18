@@ -21,5 +21,5 @@
    محرّك الجداول) حتى يتّسع أطول اسم في نصيبه بلا اقتطاع. نفس التصميم، مقاسٌ يتكيّف. */
 .bs-subseg.bs-fill{display:flex!important;overflow:hidden!important}
 .bs-subseg.bs-fill .bs-subbtn{flex:1 1 0!important;min-width:0!important;height:auto!important;
-  padding:7px 5px!important;gap:.4em!important;font-size:var(--bs-fs,12.5px)!important;overflow:hidden}
+  padding:7px 5px!important;gap:.4em!important;font-size:var(--bs-fitfs,12.5px)!important;overflow:hidden}
 .bs-subseg.bs-fill .bs-subbtn svg{width:1.15em!important;height:1.15em!important}
