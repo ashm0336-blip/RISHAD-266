@@ -688,7 +688,9 @@
     var selected = Array.isArray(keys) ? Array.from(new Set(Object.keys(operationKnown9).concat(Object.keys(operationReads9), keys.filter(operationKey9))))
       .filter(function (key) { return keys.indexOf(key) !== -1 || keys.indexOf(unscoped(key)) !== -1; }) : Object.keys(operationKnown9);
     if (!Array.isArray(keys)) operationGeneration9++;
+    if (selected.length && !quiet) { try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog('drop', 'operations', Array.isArray(keys) ? 'إسقاطُ مفاتيح' : 'إسقاطُ كلِّ القراءات', selected); } catch (e) { /* تشخيصٌ فقط */ } }
     selected.forEach(function (key) { delete operationReads9[key]; operationForget9(key, undefined, quiet); });
+    if (selected.length && !quiet) setTimeout(function () { try { if (KIVO.__dcRevalidate) KIVO.__dcRevalidate(); } catch (e) { /* إعادةُ القراءة يطلبها الرسمُ التالي كذلك */ } }, 0);
   }
   async function operationRead9(keys) {
     var stamp = operationContext9();
@@ -951,12 +953,15 @@
       return operationKey9(key) && known && known.stamp && operationSame9(known.stamp) && (known.state === 'denied' || ((known.state === 'ready' || known.state === 'absent') && known.epoch === operationEpoch9));
     });
   }
-  window.addEventListener('bassam:authz', function () { operationInvalidate9(); });
+  /* كان هنا: كلُّ حدث bassam:authz يُسقط كلَّ قراءات العمليات (فتُهدم الصفحةُ المعروضة). الآن: إشارةُ az تُقارَن أولاً (authzSync9)،
+     وإن تغيّر وصفُ صلاحياتي فعلاً أُعيدت قراءةُ مفاتيحي في مكانها (readSet9)؛ ولا إسقاطَ إلا إن فشلت تلك الإعادة. */
+  function liveLog9(kind, why, keys) { try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog(kind, 'operations', why, keys); } catch (e) { /* تشخيصٌ فقط */ } }
   // Only this closure can prove that a dispatched change event already has a
   // confirmed typed read. Arbitrary/custom remote events still invalidate.
   var operationRemoteProof9 = new WeakMap();
-  function operationDispatchRemote9(keys, v, confirmed) {
-    var event = new CustomEvent('bassam:remote', { detail: { keys: keys, v: v } });
+  function operationDispatchRemote9(keys, v, confirmed, foreign) {
+    /* foreign: مفاتيحُ العمليات التي تغيّرت مراجعتُها فعلاً عمّا في هذا التبويب (تعديلُ جهازٍ آخر) — صدى حفظي أنا ليس منها */
+    var event = new CustomEvent('bassam:remote', { detail: { keys: keys, v: v, foreign: foreign || [] } });
     operationRemoteProof9.set(event, new Set(confirmed || []));
     try { window.dispatchEvent(event); } finally { operationRemoteProof9.delete(event); }
   }
@@ -1449,11 +1454,13 @@
         return Promise.reject(Error('operations-sync-pending'));
       // Do not render a transient empty value between invalidation and ACK.
       // A failed read still publishes its normal fail-closed error state.
+      var priorRev9 = Object.create(null); operationKeys.forEach(function (key) { priorRev9[key] = krev[key]; });
       if (operationKeys.length) operationInvalidate9(operationKeys, true);
       return Promise.all([getAll9(keys, null), operationKeys.length ? operationRead9(operationKeys) : { ok: 1 }]).then(function (result) {
         if (!result[1] || result[1].ok !== 1) throw Error('operations-sync-read');
         BOOT.v = v; irKeys.forEach(notify);
-        return { changed: Array.from(new Set(result[0].concat(irKeys, logicalOperationKeys))), confirmed: operationKeys };
+        return { changed: Array.from(new Set(result[0].concat(irKeys, logicalOperationKeys))), confirmed: operationKeys,
+          foreign: operationKeys.filter(function (key) { return priorRev9[key] !== undefined && krev[key] !== priorRev9[key]; }) };
       });
     }
 
@@ -1560,11 +1567,16 @@
       fetch("/api/authz").then(function (r) { return r.ok ? r.json() : null; }).then(function (z) {
         azBusy9 = false;
         if (!z || z.mode !== "enforce" || !z.me) return;
-        var was9 = KIVO.__BS_AUTHZ;
+        var was9 = KIVO.__BS_AUTHZ, same9 = false;
+        try { same9 = JSON.stringify(was9) === JSON.stringify(z.me); } catch (e) { /* مقارنةٌ فقط */ }
         KIVO.__BS_AUTHZ = z.me;
+        /* إشارةُ az تصل عند أي تغييرٍ في الحسابات/الهيكل/المنصة من أي مستخدم؛ إن لم يتغيّر وصفُ صلاحياتي فلا شيء يُعاد ولا يُبلَّغ */
+        if (same9) { liveLog9('az-unchanged', 'إشارةُ صلاحياتٍ بلا تغييرٍ في وصفي — لا إسقاط'); return; }
         try { window.dispatchEvent(new CustomEvent("bassam:authz", { detail: z.me })); } catch (e) {}
         try { window.dispatchEvent(new CustomEvent("bassam:remote", { detail: { keys: ["bassam_perms_v1"], v: BOOT.v } })); } catch (e) {}
-        try { if (JSON.stringify(was9) !== JSON.stringify(z.me)) readSet9(true); } catch (e) { /* مقارنةٌ فقط */ }   /* KIVO_264 · D-4: تغيّر وصفُ صلاحياتي ⇒ تُجدَّد بياناتي */
+        /* KIVO_264 · D-4: تغيّر وصفُ صلاحياتي ⇒ تُجدَّد بياناتي في مكانها؛ وإن تعذّر التجديد أُسقطت (لا تبقى بياناتٌ بصلاحيةٍ قديمة) */
+        liveLog9('az-changed', 'تغيّر وصفُ صلاحياتي — تُعاد قراءةُ مفاتيحي في مكانها');
+        readSet9(true).then(function (res9) { if (!res9 || res9.ok !== 1) { if (sx9 || bye9) return; liveLog9('drop', 'تعذّرت إعادةُ القراءة بعد تغيّر الصلاحيات'); operationInvalidate9(); } });
       }).catch(function () { azBusy9 = false; });
     }
     function look9() {
@@ -1596,7 +1608,7 @@
                 var privateDetail = { uid: UID9, dept: meIdentity[2], ekey: meIdentity[3], v: j.v };
                 if (j.meChanged === 1) try { window.dispatchEvent(new CustomEvent('bassam:me', { detail: privateDetail })); } catch (eM) {}
 @@SYS:store.changed.tasks.event@@              }
-              if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
+              if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed, result.foreign); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
               if (ks.some(function (k) { return SLICEK9.test(k); })) { var s9 = slice9(); if (s9 !== slice0) { slice0 = s9; readSet9(false); } }
               if (j.more && BOOT.v === j.v && ++pages < MORE_MAX9 && !sx9) return ask(false);   /* C2: البقيةُ فوراً من آخر مراجعةٍ وصلت */
             });

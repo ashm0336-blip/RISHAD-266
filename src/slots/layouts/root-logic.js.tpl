@@ -313,7 +313,7 @@ class Component extends DCLogic {
          الصفحات التي تستمع بنفسها (المتابعة اليومية، التقرير اليومي، المهام) تتحدّث في مكانها؛ والباقي يُحدَّث
          بالمفتاح: خطّاف _bsLiveReload لمن يحمل بياناته في حالته، ثم رسمٌ خفيفٌ واحد يمرّ عبر shouldComponentUpdate —
          ولا يُقاطَع المستخدم وهو يكتب أو أمام نافذة: يُؤجَّل حتى يفرغ. */
-      this._onRemote = (ev) => { try { const ks = (ev.detail && ev.detail.keys) || []; if (this._permKeys(ks)) this._permsChanged(); else this._liveQueue(ks); } catch (e) {} };
+      this._onRemote = (ev) => { try { const ks = (ev.detail && ev.detail.keys) || []; if (this._permKeys(ks)) this._permsChanged(); else this._liveQueue(ks, (ev.detail && ev.detail.foreign) || []); } catch (e) {} };
       window.addEventListener("bassam:remote", this._onRemote);
       /* ═══ الجرس: تنبيه محلي (أوقعته أنا) أو وارد من الخادم ═══ */
       this._onNotif = (ev) => { try {
@@ -536,13 +536,14 @@ class Component extends DCLogic {
     const re = MAP[page]; if (!re) return true;
     return keys.some(k => { const nm = String(k).replace(/^bsdept:[^:]+:/, ""); return re.test(nm) || !/^bassam_/.test(nm); });
   }
-  _liveQueue(keys) {
+  _liveQueue(keys, foreign) {
     const SELF = { daily: 1, dreport: 1, @@SYS:root.self.tasks@@sysadmin: 1, admin: 1 };   /* تستمع بنفسها أو تقرأ المخزن مع كل رسم (مدير النظام يحدّث نفسه دورياً) */
     const a = this.state.active;
     if (!a || SELF[a] || !this._liveTouches(keys, a)) return;
     /* تُجمَع المفاتيحُ الواصلة حتى تُطبَّق دفعةً واحدة */
     const acc = this._liveKeys || []; (keys || []).forEach(k => { if (acc.indexOf(k) === -1) acc.push(k); }); this._liveKeys = acc;
     this._livePend = true;
+    if (foreign && foreign.length && this._liveTouches(foreign, a)) this._liveForeign = true;   /* تعديلُ جهازٍ آخر لما تعرضه هذه الصفحة */
     clearTimeout(this._liveT); this._liveT = setTimeout(() => this._liveTry(0), 600);
   }
   _liveBusy() {
@@ -557,7 +558,11 @@ class Component extends DCLogic {
   }
   _liveTry(n) {
     if (!this._livePend) return;
-    if (this._liveBusy() && n < 240) { this._liveT = setTimeout(() => this._liveTry(n + 1), 1500); return; }   /* حتى ٦ دقائق ثم يُطبَّق */
+    if (this._liveBusy() && n < 240) {
+      /* تغيّر ما تعرضه هذه الصفحة وأمام المستخدم نافذةٌ أو كتابة: تنبيهٌ صغير مرةً واحدة، والتطبيقُ بعد أن يفرغ — بلا قطع عمله */
+      if (this._liveForeign && !this._liveNoted) { this._liveNoted = true; try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog("deferred", this.state.active, "نافذةٌ مفتوحة أو كتابةٌ جارية — يُطبَّق بعدها", this._liveKeys); } catch (e) {} try { this.bkToast("حُدّثت البيانات من جهاز آخر — تظهر بعد إغلاق النافذة", 3500); } catch (e) {} }
+      this._liveT = setTimeout(() => this._liveTry(n + 1), 1500); return;   /* حتى ٦ دقائق ثم يُطبَّق */
+    }
     const a = this.state.active; if (!a) { this._livePend = false; this._liveKeys = []; return; }
     const keys = (this._liveKeys || []).slice();
     /* ═══ لا إعادةَ تركيب: المكوّناتُ التي تحمل بياناتَها في حالتها تُعيد قراءتَها من المخزن في مكانها (خطّاف _bsLiveReload).
@@ -565,7 +570,7 @@ class Component extends DCLogic {
     let deferred = false;
     this._liveComps().forEach(c => { try { const L = c.logic; if (L && typeof L._bsLiveReload === "function" && L._bsLiveReload(keys) === false) deferred = true; } catch (e) {} });
     if (deferred && n < 240) { this._liveT = setTimeout(() => this._liveTry(n + 1), 1500); return; }
-    this._livePend = false; this._liveKeys = [];
+    this._livePend = false; this._liveKeys = []; this._liveNoted = false; this._liveForeign = false;
     /* تحديثُ React خفيفٌ واحد — بعد الإطار وخارج أولوية الإدخال: الجذرُ يُعاد رسمُه، وتمرُّ الصفحاتُ عبر
        shouldComponentUpdate فلا يُعاد رسمُ إلا من قرأ مفتاحاً تغيّر. لا unmount ولا scrollTo ولا استعادةَ تبويب. */
     const tick = () => {
