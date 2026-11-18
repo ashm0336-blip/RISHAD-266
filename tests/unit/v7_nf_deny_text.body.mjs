@@ -94,9 +94,14 @@ const TEXT = {
 };
 const WHY = {
   page: 'صلاحيته على هذه الصفحة عرضٌ فقط', act: 'صلاحيته على هذه الصفحة لا تشمل هذا الإجراء', view: 'صلاحيته عرضٌ فقط', perm: 'صلاحيته لا تشمل هذا الإجراء',
-  residual: 'تعديل غير مصنَّف رُفض احتياطاً', super: 'الإجراء لمسؤول المنصة وحده', reason: 'الإجراء يتطلب سبباً ولم يُذكر',
+  residual: 'تعديل غير مصنَّف رُفض احتياطاً', super: 'الإجراء لمسؤول المنصة وحده', reason: 'هذه العملية تتطلب ذكر السبب',
   'custody:type-create': 'صلاحيته لا تشمل هذا الإجراء في عهد الموظفين', 'retro.open:perm': 'لا يملك صلاحية فتح نافذة الاستدراك أو إغلاقها',
   dept: 'السجل يخصّ إدارة أخرى', 'notification-scope': 'خارج نطاقه في التنبيهات', 'notification-export-permission': 'لا يملك صلاحية تصدير التنبيهات',
+};
+const REASON_TITLE = 'عملية تتطلب ذكر السبب';
+const reasonSentence = (actor, row) => {
+  const t = TEXT[row.target]; assert.ok(t, 'test table knows ' + row.target);
+  return 'حاول ' + actor + ' ' + t[2] + ' «' + t[0] + '»' + (t[1] ? ' في صفحة «' + t[1] + '»' : '') + ' — رُفض: هذه العملية تتطلب ذكر السبب.';
 };
 const AR = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
 const COUNT = (n) => (n === 2 ? 'محاولتان' : AR(n) + ' ' + (n % 100 >= 3 && n % 100 <= 10 ? 'محاولات' : 'محاولة'));
@@ -130,12 +135,14 @@ for (const mode of ['legacy', 'enforce']) {
     const seen = new Set();
     for (const g of G) {
       const m = x.byRow(g.first.id); assert.ok(m, 'a notice keyed security:' + g.first.id + ' for ' + g.first.target + ' ' + g.first.detail);
-      assert.equal(m.title, TITLE);
-      assert.equal(m.body, sentence(ACTOR[g.first.uid], g.first, g.n), g.first.target + ' · ' + g.first.detail);
+      /* a refusal for a missing reason is not a security event: its own title and sentence, filed under the platform category */
+      const noReason = g.first.detail === 'reason';
+      assert.equal(m.title, noReason ? REASON_TITLE : TITLE);
+      assert.equal(m.body, noReason ? reasonSentence(ACTOR[g.first.uid], g.first) : sentence(ACTOR[g.first.uid], g.first, g.n), g.first.target + ' · ' + g.first.detail);
       arabicOnly(m.title + ' ' + m.body, g.first.target);
       assert.ok(!m.body.includes(g.first.target) && !m.body.includes(D), 'no storage key');
       /* routing unchanged */
-      assert.deepEqual([m.scope, m.category, m.priority, m.channel, m.action_text], ['sys', 'sec', 'act', 'bell', 'سجل الأمن']);
+      assert.deepEqual([m.scope, m.category, m.priority, m.channel, m.action_text], ['sys', noReason ? 'sys' : 'sec', noReason ? 'info' : 'act', 'bell', 'سجل الأمن']);
       seen.add(g.first.target);
     }
     /* every site was really exercised */
@@ -147,7 +154,7 @@ for (const mode of ['legacy', 'enforce']) {
     const feed = async (who, uid) => (await x.api(who, '/api/notifications?' + new URLSearchParams(who === 'su' ? { uid, all: '1' } : { uid }))).j;
     const mine = (await feed('su', x.superId)).items.filter((i) => i.type === 'sc_deny');
     assert.equal(mine.length, G.length, 'the platform administrator reads them in his feed');
-    for (const i of mine) { assert.equal(i.t, TITLE); arabicOnly(i.t + ' ' + i.b, 'feed item'); assert.equal(i.go, 'سجل الأمن'); assert.equal(i.srv, 1); }
+    for (const i of mine) { assert.ok(i.t === TITLE || i.t === REASON_TITLE, i.t); arabicOnly(i.t + ' ' + i.b, 'feed item'); assert.equal(i.go, 'سجل الأمن'); assert.equal(i.srv, 1); }
     for (const [who, uid] of [['emp', 'nfd_emp'], ['mgr', 'nfd_mgr']]) assert.ok(!((await feed(who, uid)).items || []).some((i) => i.type === 'sc_deny'), who + ' does not');
   });
 

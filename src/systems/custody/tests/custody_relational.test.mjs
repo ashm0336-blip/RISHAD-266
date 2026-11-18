@@ -975,7 +975,13 @@ test('explicit import replacement and private department wipe have separate serv
   ok(await W.act('super', { op: 'issue', itemId: id, holderKey: 'TEST_ONLY orphan' }));
   let fx = await transitionFixture(W, employeesOf(W), { ops: { [employeeKey]: { op: 'import.run', mode: 'replace' } } });
   fx.plan.pend = [];
-  await assert.rejects(W.W.cuPlanSaveTransition(W.env, fx.A, fx.body, fx.plan), /custody-cleanup-permission/);
+  /* Owner decision (fix «the platform admin is never asked for a reason»): the reason gate still refuses a department manager
+     with no reason, and no longer refuses the platform admin (this line used to assert his refusal). */
+  const mgr = await planActor(W, 'manager1');
+  await assert.rejects(W.W.cuPlanSaveTransition(W.env, mgr, fx.body, fx.plan), /custody-cleanup-permission/);
+  const withReason = { ...fx.body, why: { [employeeKey]: 'TEST_ONLY manager supplied import replacement reason' } };
+  assert.equal((await W.W.cuPlanSaveTransition(W.env, mgr, withReason, fx.plan)).transitions[0].intent, 'import-replace');
+  assert.equal((await W.W.cuPlanSaveTransition(W.env, fx.A, fx.body, fx.plan)).transitions[0].intent, 'import-replace');
   fx.body.why = { [employeeKey]: 'TEST_ONLY human supplied import replacement reason' };
   let result = await W.W.cuPlanSaveTransition(W.env, fx.A, fx.body, fx.plan);
   assert.equal(result.transitions[0].intent, 'import-replace');
