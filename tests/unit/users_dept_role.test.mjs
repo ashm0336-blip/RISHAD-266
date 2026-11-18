@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { applySql } from './harness.mjs';
-const { world, stored } = await import('./tasks_fx.mjs');
+const { world, stored } = await import('./world_fx.mjs');
 
 const KU = 'bassam_auth_users_v1';
 const q = (x) => "'" + String(x).replace(/'/g, "''") + "'";

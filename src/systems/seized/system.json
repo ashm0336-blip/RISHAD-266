@@ -73,8 +73,10 @@
   "src/pages/Seized.dc.html",
   "workers/parts/019k-seized-defaults.js"
  ],
+ "shared": [
+  "business"
+ ],
  "sharedStaysInBase": [
-  "src/modules/business-cloud.js",
   "workers/parts/019k-business-context.js",
   "workers/parts/019n-business-integration.js",
   "workers/parts/046-kivo-build-3.js",
@@ -100,11 +102,11 @@
   },
   "pages.kpi.refs.mid": {
    "order": 10,
-   "text": "    \"seized/dash\",\n"
+   "text": ",\n    \"seized/dash\""
   },
   "pages.kpi.names.mid": {
    "order": 10,
-   "text": "    \"seized/dash\": \"لوحة مؤشرات المضبوطات\",\n"
+   "text": ",\n    \"seized/dash\": \"لوحة مؤشرات المضبوطات\""
   },
   "pages.tabAddr.tail": {
    "order": 30,
@@ -633,6 +635,41 @@
   "bk.labels": {
    "order": 10,
    "text": "seized: 'المضبوطات',"
+  },
+  "bd.refs.field": {
+   "order": 10,
+   "text": "def.name==='seized'?'reports':",
+   "last": "'reports'"
+  },
+  "bd.export.readResources": {
+   "order": 10,
+   "text": "name==='seized'?def.resources.slice(0,5):"
+  },
+  "bd.error.codes": {
+   "order": 10,
+   "text": "  if(error.szCode)return json({ok:0,err:error.szCode,at:error.szPath,denied:error.szDecision},error.szStatus||400);\r\n"
+  },
+  "bd.error.targets": {
+   "order": 10,
+   "text": "|SEIZED_TARGET"
+  },
+  "bd.error.legacy": {
+   "order": 10,
+   "text": "|KIVO_SEIZED_LEGACY_SOURCE"
+  },
+  "bd.route.prefix": {
+   "order": 10,
+   "text": "name==='seized'?'/api/seized':",
+   "last": "'/api/seized'"
+  },
+  "bd.route.exportName": {
+   "order": 10,
+   "text": "name==='seized'?'seized':",
+   "last": "'seized'"
+  },
+  "nf.feed.known.seized": {
+   "order": 10,
+   "text": ""
   }
  }
 }

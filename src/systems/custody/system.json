@@ -1,0 +1,680 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "custody",
+ "name": "عهد الموظفين",
+ "names": [
+  "\\bcu[A-Z]",
+  "\\bcust\\."
+ ],
+ "note": "V7 · د4-ج: نظامُ عهد الموظفين — بلا صفحة: تبويبان داخل صفحة الموظفين («عهد الموظفين» و«مستودع العهد»، قطعٌ في slots/)، وخدمةُ الواجهة 547، وأجزاءُ الخادم. تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py).",
+ "client": {
+  "files": [
+   "client/547-custody-api.js"
+  ]
+ },
+ "server": {
+  "parts": [
+   {
+    "file": "server/019a-custody.js",
+    "after": "019-notifications.js",
+    "order": 10,
+    "head": "/* RISHAD 266 — server-owned relational storage. */"
+   },
+   {
+    "file": "server/019a2-custody-resolve.js",
+    "after": "019a1-cursor.js",
+    "order": 10
+   },
+   {
+    "file": "server/019a4-custody-api.js",
+    "after": "019a3-bind.js",
+    "order": 10
+   },
+   {
+    "file": "server/019b-custody-plans.js",
+    "after": "019a3-bind.js",
+    "order": 20,
+    "head": "/* RISHAD 266 — server-owned relational storage. */"
+   },
+   {
+    "file": "server/019b2-custody-cleanup.js",
+    "after": "019b1-removed-holders.js",
+    "order": 10
+   },
+   {
+    "file": "server/019b4-custody-restore.js",
+    "after": "019b3-restore-permission.js",
+    "order": 10
+   },
+   {
+    "file": "server/039-custody-moves.js",
+    "after": "038-domain-cleanups.js",
+    "order": 10,
+    "head": "/* ══ حركات العهد: عمليتان مجاليّتان بفعليهما كما في الواجهة ══════════════════"
+   }
+  ]
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [
+   "migrations/0006_custody.sql"
+  ],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
+ },
+ "permissions": "permissions.json",
+ "tests": [
+  "tests/custody_admin_wipe_ui.test.mjs",
+  "tests/custody_carry.test.mjs",
+  "tests/custody_client_api.test.mjs",
+  "tests/custody_client_integration.test.mjs",
+  "tests/custody_client_retirement.test.mjs",
+  "tests/custody_cutover_namespace.test.mjs",
+  "tests/custody_department_delete_ui.test.mjs",
+  "tests/custody_employee_transition_ui.test.mjs",
+  "tests/custody_history_compat.test.mjs",
+  "tests/custody_identity_api.test.mjs",
+  "tests/custody_legacy_oracle.mjs",
+  "tests/custody_mixed_compile_guard.test.mjs",
+  "tests/custody_relational.test.mjs",
+  "tests/custody_scenarios_fx.mjs",
+  "tests/custody_storage_guard.test.mjs",
+  "tests/custody_store.test.mjs",
+  "tests/fixture_custody.test.mjs",
+  "tests/privacy_custody_orphan.test.mjs",
+  "tests/privacy_ekey_custody.body.mjs",
+  "tests/privacy_ekey_custody.test.mjs"
+ ],
+ "derived": [],
+ "sharedStaysInBase": [],
+ "slots": {
+  "blocks.shell.custody": {
+   "order": 10,
+   "text": "  {\n   \"id\": \"systems/custody/client/547-custody-api.js\",\n   \"kind\": \"js\",\n   \"openTag\": \"<script>\",\n   \"closeTag\": \"</script>\",\n   \"line\": 10494,\n   \"origBytes\": null,\n   \"origSha256\": null,\n   \"new\": \"Typed custody API transport included by the runtime shell\"\n  },\n"
+  },
+  "shell.blocks.custody": {
+   "order": 10,
+   "text": "@@KIVO_BLOCK:systems/custody/client/547-custody-api.js@@\n"
+  },
+  "res.custody": {
+   "order": 10,
+   "text": "  'bassam_custody_v1':         { scope: 'dept', cap: 'emps/custody' },\n"
+  },
+  "ent.custody": {
+   "order": 10,
+   "text": "  /* العهد: items هويتها الاسم — لا id تكتبه الواجهة — وmoves إلحاقية بلا معرّف */\n  'bassam_custody_v1':        { cols: [{ at: 'items', idf: ['name'], lock: ['name'] }, { at: 'moves', idf: [] }],\n                                empty: '{\"items\":[],\"moves\":[]}', append: ['moves'],\n                                rename: { at: 'items', field: 'name', cascade: [{ at: 'moves', field: 'item' }] } },\n"
+  },
+  "fields.custody": {
+   "order": 10,
+   "file": "slots/fields.custody.frag"
+  },
+  "readMap.custody": {
+   "order": 10,
+   "text": "  'bassam_custody_v1':         ['emps/custody'],\n"
+  },
+  "cleanup.custody.fn": {
+   "order": 10,
+   "file": "slots/cleanup.custody.fn.frag"
+  },
+  "empGone.custody.fn": {
+   "order": 10,
+   "file": "slots/empGone.custody.fn.frag"
+  },
+  "empGone.map": {
+   "order": 20,
+   "text": "'bassam_custody_v1': custodyGoneOk"
+  },
+  "cleanup.custody.call": {
+   "order": 10,
+   "text": "  if (custodyCleanup(A, k, newVal, curVal, ctx)) return { ok: true };\n"
+  },
+  "move.custody.call": {
+   "order": 10,
+   "text": "  var cmv9 = custodyMoveOp(A, k, curVal, newVal, PV9);\n  if (cmv9 === true) return { ok: true };\n  if (cmv9 === false) return { ok: false, why: 'act' };\n"
+  },
+  "cleanup.custody.shadow": {
+   "order": 10,
+   "text": " || custodyCleanup(A, k, newVal, curVal, ctx)"
+  },
+  "move.custody.shadow": {
+   "order": 10,
+   "text": "    var cmv = custodyMoveOp(A, k, curVal, newVal, PV); if (cmv === true) return 'custodyMove'; if (cmv === false) return 'custodyMove-deny';\n"
+  },
+  "permv2.custody.how": {
+   "order": 10,
+   "text": "    if (how === 'custodyMove') return 'error:asisMap (D-01)';\n"
+  },
+  "permv2.custody.keys": {
+   "order": 10,
+   "text": "  if (rn === 'bassam_custody_v1') for (i = 0; i < keys.length; i++) if (keys[i] === 'cust.move.return' || keys[i] === 'cust.move.damage' || keys[i] === 'cust.move.lost') return 'error:asisMap (D-01)';\n"
+  },
+  "nf.types.custody": {
+   "order": 10,
+   "file": "slots/nf.types.custody.frag"
+  },
+  "nf.cap.custody": {
+   "order": 10,
+   "text": "  cust: \"emps/custody\",\n"
+  },
+  "nf.denyRecs.custody": {
+   "order": 10,
+   "text": " bassam_custody_v1: \"عهد الموظفين\","
+  },
+  "nf.denyWhy.custody": {
+   "order": 10,
+   "text": "\"custody:\": \"صلاحيته لا تشمل هذا الإجراء في عهد الموظفين\", "
+  },
+  "nf.denyWhy.custody.rx": {
+   "order": 10,
+   "text": "custody:|"
+  },
+  "routes.bodyLimit.custody": {
+   "order": 10,
+   "text": " if (path === '/api/custody/act') return 1024 * 1024;"
+  },
+  "routes.custody": {
+   "order": 10,
+   "text": "      if (path === '/api/custody' || path === '/api/custody/act' || path === '/api/custody/export') return await cuRoute(env, request, url, ss);\n"
+  },
+  "db.prepare.custody": {
+   "order": 10,
+   "text": " pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) :"
+  },
+  "bodies.custody": {
+   "order": 10,
+   "file": "slots/bodies.custody.frag"
+  },
+  "contracts.custody": {
+   "order": 10,
+   "file": "slots/contracts.custody.frag"
+  },
+  "rs.scopeFilter.custody": {
+   "order": 10,
+   "text": "    if (domains.custody)\n      domains.custody = domains.custody.filter(function (c) {\n        return c && c.scope && allowed.has(c.scope.departmentId);\n      });\n"
+  },
+  "rs.selection.drop": {
+   "order": 5,
+   "text": "    delete domains.custody;\n"
+  },
+  "rs.custody.receipt": {
+   "order": 10,
+   "file": "slots/rs.custody.receipt.frag"
+  },
+  "rs.manifest.systems.1": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "rs.manifest.systems.2": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "rs.manifest.systems.3": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "rs.manifest.systems.4": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "rs.manifest.systems.5": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "rs.base.systems": {
+   "order": 5,
+   "text": ", 'custody'"
+  },
+  "rs.counts.systems": {
+   "order": 5,
+   "text": " custody: 0,"
+  },
+  "rs.manifest.full.custodyArray": {
+   "order": 10,
+   "text": " ||\n      !Array.isArray(body.domains.custody)"
+  },
+  "rs.manifest.full.custodyScopes": {
+   "order": 10,
+   "text": "    var scopes = body.domains.custody.map(function (c) {\n      return c && c.scope && c.scope.departmentId;\n    });\n    if (!deq(ids.slice().sort(), scopes.sort())) throw rsError('restore-incomplete-custody');\n"
+  },
+  "rs.manifest.dept.custody": {
+   "order": 10,
+   "text": " ||\n      !Array.isArray(body.domains.custody) ||\n      body.domains.custody.length !== 1 ||\n      body.domains.custody[0].scope.departmentId !== body.scope.departmentId"
+  },
+  "rs.prepare.custodyLegacy": {
+   "order": 10,
+   "text": "  if (await cuLegacyPresent(env)) throw rsError('custody-legacy-source-present', 503);\n"
+  },
+  "keys.moved.custody": {
+   "order": 10,
+   "text": " cuLegacyKey(k) ||"
+  },
+  "rs.plan.custody": {
+   "order": 10,
+   "file": "slots/rs.plan.custody.frag"
+  },
+  "rs.plan.custodyCleanup": {
+   "order": 10,
+   "file": "slots/rs.plan.custodyCleanup.frag"
+  },
+  "rs.reference.custodyInit": {
+   "order": 10,
+   "text": ",\n    custody = Object.create(null)"
+  },
+  "rs.reference.custodyRevs": {
+   "order": 10,
+   "text": "    custody[d] = r[cuKey(d)] || 0;\n"
+  },
+  "rs.reference.base.systems": {
+   "order": 5,
+   "text": "      custody: custody,\n"
+  },
+  "rs.conflict.custodyTrigger": {
+   "order": 10,
+   "text": "|KIVO_CUSTODY_TARGET_CHANGED"
+  },
+  "save.counts.custody": {
+   "order": 10,
+   "text": " custody: transition.transitions.length,"
+  },
+  "save.snapshot.custody": {
+   "order": 10,
+   "text": "  else\r\n    for (var dept of departments) {\r\n      var full = await cuSnapshotRows(env, dept);\r\n      Object.keys(full).forEach(function (n) {\r\n        plan.snapshots.push({ domain: 'custody', table: dept + ':' + n, rows: full[n] });\r\n      });\r\n    }\r\n"
+  },
+  "save.wipe.custodyReceipt": {
+   "order": 10,
+   "text": "    await rsCustodyReceiptPreimage(env, d, plan);\r\n"
+  },
+  "wipe.inventory.custodyCounts": {
+   "order": 10,
+   "text": "      env.DB.prepare('SELECT COUNT(*) n FROM custody_items WHERE department_id=?1').bind(dept),\r\n      env.DB.prepare('SELECT COUNT(*) n FROM custody_movements WHERE department_id=?1').bind(dept),\r\n"
+  },
+  "wipe.inventory.custodyBase": {
+   "order": 10,
+   "text": "        custody: await cuRev(env, dept),\r\n"
+  },
+  "wipe.inventory.custodyCount": {
+   "order": 10,
+   "text": "        custody: Number(counts[0].results[0].n) + Number(counts[1].results[0].n),\r\n"
+  },
+  "wipe.request.custodyBase": {
+   "order": 10,
+   "text": "'custody', "
+  },
+  "wipe.keys.moved.custody": {
+   "order": 10,
+   "text": "cuLegacyKey(k) || "
+  },
+  "wipe.request.custodyRev": {
+   "order": 10,
+   "text": "    base[cuKey(input.dept)] = input.base.custody;\r\n"
+  },
+  "reset.custody": {
+   "order": 10,
+   "text": "    env.DB.prepare('DELETE FROM custody_request_outputs'), env.DB.prepare('DELETE FROM custody_requests'), env.DB.prepare('DELETE FROM custody_movements'), env.DB.prepare('DELETE FROM custody_issues'), env.DB.prepare('DELETE FROM custody_items'),\n"
+  },
+  "bc.remapCustody": {
+   "order": 10,
+   "file": "slots/bc.remapCustody.frag"
+  },
+  "bc.required.custody": {
+   "order": 10,
+   "text": ", 'custody'"
+  },
+  "bc.manifest.custody": {
+   "order": 10,
+   "text": " ||\n    !Array.isArray(domains.custody)"
+  },
+  "bc.manifest.custodyScopes": {
+   "order": 10,
+   "text": "  var custody = domains.custody.map(function (d) {\n    return d && d.scope && d.scope.departmentId;\n  });\n  if (!deq(custody.slice().sort(), departments.slice().sort())) rsBCFail('incomplete-custody');\n"
+  },
+  "bc.domains.systems": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "bc.typed.custody": {
+   "order": 10,
+   "text": "\n      Array.isArray(domains.custody) && domains.custody.length === 1\n        ? domains.custody[0].scope && domains.custody[0].scope.departmentId\n        : null"
+  },
+  "bc.keys.custody": {
+   "order": 10,
+   "text": "cuKeys = Object.keys(keys).filter(cuLegacyKey),\n    "
+  },
+  "bc.dup.custody": {
+   "order": 10,
+   "text": "    (cuKeys.length && rsBCOwn(domains, 'custody')) ||\n"
+  },
+  "bc.retiredModern.custody": {
+   "order": 10,
+   "text": "cuKeys.length || "
+  },
+  "bc.retired.custody": {
+   "order": 10,
+   "text": "cuKeys"
+  },
+  "bc.convert.custody": {
+   "order": 10,
+   "file": "slots/bc.convert.custody.frag"
+  },
+  "bc.out.custody": {
+   "order": 10,
+   "text": ", custody: 1"
+  },
+  "emp.ctx.custodyParam": {
+   "order": 10,
+   "text": ", cuRevision"
+  },
+  "emp.base.custody": {
+   "order": 10,
+   "text": " custody: cuRevision,"
+  },
+  "emp.ctx.custodyRev": {
+   "order": 10,
+   "text": ", await cuRev(env, d)"
+  },
+  "emp.base.custodyShape": {
+   "order": 10,
+   "text": "'custody', "
+  },
+  "emp.base.custodyInt": {
+   "order": 10,
+   "text": " || !Number.isSafeInteger(input.base.custody) || input.base.custody < 0"
+  },
+  "emp.base.custodyConflict": {
+   "order": 10,
+   "text": "  if (input.base.custody !== context.base.custody) throw cuError('custody-conflict', 409);\n"
+  },
+  "emp.base.custodyRev": {
+   "order": 10,
+   "text": "  base[cuKey(d)] = input.base.custody;\n"
+  },
+  "privacy.backupLoss.custody": {
+   "order": 10,
+   "text": "  D = [].concat(domains.custody || []);\n  for (i = 0; i < D.length; i++) if (isObj(D[i]) && isObj(D[i].rows) && (x = bdScope(D[i])))\n    privLoses(await q('SELECT move_id,holder_nid_snapshot,holder_empno_snapshot FROM custody_movements WHERE department_id=?1', x), D[i].rows.moves, function (r) { return String(r.move_id); }, ['holder_nid_snapshot', 'holder_empno_snapshot'], out, 'custody:' + x);\n"
+  },
+  "privacy.custody.fns": {
+   "order": 10,
+   "file": "slots/privacy.custody.fns.frag"
+  },
+  "save.movedPath": {
+   "order": 40,
+   "text": "cuLegacyKey(k) ? '/api/custody' : "
+  },
+  "cleanup.ctxRes.custody": {
+   "order": 10,
+   "text": "'bassam_custody_v1': 1,"
+  },
+  "cleanup.cleanRes.custody": {
+   "order": 10,
+   "text": "'bassam_custody_v1': 1,"
+  },
+  "save.renameRes.custody": {
+   "order": 10,
+   "text": "rnQ !== 'bassam_custody_v1' && "
+  },
+  "migrate.moved.custody": {
+   "order": 10,
+   "text": " cuLegacyKey(r0.k) ||"
+  },
+  "get.rdKeys.custody": {
+   "order": 10,
+   "text": " !cuLegacyKey(k9) &&"
+  },
+  "get.moved.custody": {
+   "order": 10,
+   "text": "    if (cuLegacyKey(gk)) { got[gk] = { v: null, rev: rvG[gk] || 0, moved: '/api/custody' }; continue; }\n"
+  },
+  "boot.retired.custody": {
+   "order": 10,
+   "text": "      for (var retiredCu in keys) if (cuLegacyKey(retiredCu)) delete keys[retiredCu];\n"
+  },
+  "save.transition.custodyHistory": {
+   "order": 10,
+   "text": "        if (aliases.length)\n          potential = !!(await env.DB.prepare(\n            'SELECT 1 FROM custody_movements WHERE department_id=?1 AND (holder_key IN (SELECT value FROM json_each(?2)) OR holder_nid_snapshot IN (SELECT value FROM json_each(?2)) OR holder_empno_snapshot IN (SELECT value FROM json_each(?2))) LIMIT 1',\n          )\n            .bind(dept, JSON.stringify(aliases))\n            .first());\n"
+  },
+  "save.transition.custodyPlan": {
+   "order": 10,
+   "file": "slots/save.transition.custodyPlan.frag"
+  },
+  "save.transition.custodyChecks": {
+   "order": 10,
+   "text": ", checks: plan.checks, metadata: plan.metadata"
+  },
+  "emp.view.store": {
+   "order": 10,
+   "file": "slots/emp.view.store.frag"
+  },
+  "emp.view.custody": {
+   "order": 10,
+   "file": "slots/emp.view.custody.frag"
+  },
+  "emp.view.tabs": {
+   "order": 10,
+   "file": "slots/emp.view.tabs.frag"
+  },
+  "emp.view.status": {
+   "order": 10,
+   "file": "slots/emp.view.status.frag"
+  },
+  "emp.logic.custody": {
+   "order": 10,
+   "file": "slots/emp.logic.custody.frag"
+  },
+  "emp.tabs.custody": {
+   "order": 10,
+   "text": ", \"custody\", \"store\""
+  },
+  "emp.tabs.custodyLeaf": {
+   "order": 10,
+   "text": "\"store\" === t ? \"custody\" : "
+  },
+  "emp.live.custodyOpen": {
+   "order": 10,
+   "text": " ||\n      s.cuNewOpen ||\n      s.cuWiz ||\n      s.cuCard"
+  },
+  "emp.live.custodyRefresh": {
+   "order": 10,
+   "text": "    h(\"bassam_custody_v1\") && s.cuData && this._cuRefresh();\n"
+  },
+  "emp.state.custody": {
+   "order": 10,
+   "text": "    cuYear: null,\n    cuMonth: null,\n    cuData: null,\n    cuSearch: \"\",\n    cuRowOpen: null,\n    cuPage: 1,\n    cuPerPage: 10,\n    cuLogOpen: !1,\n    cuLogKind: \"\",\n    cuDd: null,\n    cuPick: {},\n    cuNewOpen: null,\n    cuNewF: {},\n    cuStoreF: null,\n    cuMenu: null,\n    cuWiz: null,\n    cuCard: null,\n"
+  },
+  "emp.close.custody": {
+   "order": 10,
+   "text": "      cuDd: null,\n      cuMenu: null,\n"
+  },
+  "emp.tab.custodyValid": {
+   "order": 10,
+   "text": " || \"custody\" === e.empTab || \"store\" === e.empTab"
+  },
+  "emp.vals.custodyAllowed": {
+   "order": 10,
+   "text": "          empCustodyAllowed: r(\"custody\"),\n"
+  },
+  "emp.vals.custodyTab": {
+   "order": 10,
+   "text": "          empCustodyTabStyle: i(\"custody\" === a),\n          empCustodyTabIcon: o(\"custody\" === a),\n          empCustodyTabLbl: s(\"custody\" === a),\n          empOnCustody: \"custody\" === a,\n"
+  },
+  "emp.vals.custodyGo": {
+   "order": 10,
+   "text": "          empGoCustody: () => this.setState({ empTab: \"custody\" }),\n          empStoreAllowed: r(\"store\"),\n          empStoreTabStyle: i(\"store\" === a),\n          empStoreTabIcon: o(\"store\" === a),\n          empStoreTabLbl: s(\"store\" === a),\n          empOnStore: \"store\" === a,\n          empGoStore: () => this.setState({ empTab: \"store\", cuStoreF: null }),\n"
+  },
+  "emp.vals.custody": {
+   "order": 10,
+   "text": "      ...this._custodyVals(),\n      ...this._storeVals(),\n"
+  },
+  "emp.confirm.custodyMoves": {
+   "order": 10,
+   "text": " وحركات عهدهم"
+  },
+  "emp.confirm.custodyCatalog": {
+   "order": 10,
+   "text": " وكتالوج العهد"
+  },
+  "emp.css.custody": {
+   "order": 10,
+   "text": "/* الموجة 2 · ES-7: خطواتُ معالج «سند تسليم عهدة جديد» في سطرها وسطاً على الجوال — هنا لا في <style> «الجاهزية» (sc-if) الغائب والمعالجُ مفتوح */\n@media (max-width:640px){.es-wzhd .es-wzst{flex-basis:100%;justify-content:center}}\n"
+  },
+  "pages.emps.shellTabs": {
+   "order": 10,
+   "text": "   \"shellTabs\": [\n    {\n     \"name\": \"مستودع العهد\",\n     \"as\": \"custody\"\n    }\n   ],\n"
+  },
+  "pages.emps.seq.custody": {
+   "order": 10,
+   "text": ",\n    \"sub:custody\""
+  },
+  "pages.emps.subs.custody": {
+   "order": 10,
+   "text": ",\n    {\n     \"key\": \"custody\",\n     \"name\": \"عهد الموظفين\"\n    }"
+  },
+  "root.resPage.custody": {
+   "order": 10,
+   "text": "|custody"
+  },
+  "root.keep.custody": {
+   "order": 10,
+   "text": "cuYear|cuMonth|"
+  },
+  "root.deptBackup.custodyExport": {
+   "order": 10,
+   "text": "            const custody=await KIVO.Custody.exportDomain(id);\r\n            if (!custody || custody.ok !== 1) throw new Error(\"تعذّر تصدير مجال العهد؛ لم تُنشأ نسخة جزئية\");\r\n            Object.keys(data).forEach(key=>{if (/(?:^|:)bassam_custody_v1$/.test(key)) delete data[key];});\r\n"
+  },
+  "root.deptBackup.custodyScope": {
+   "order": 10,
+   "text": "            if(!Array.isArray(custody.domains)||custody.domains.length!==1||custody.domains[0].scope.departmentId!==id)throw new Error(\"نطاق العهد لا يطابق الإدارة\");\r\n"
+  },
+  "root.deptBackup.custodyManifest": {
+   "order": 10,
+   "text": "custody:1,"
+  },
+  "root.deptBackup.custodyDomain": {
+   "order": 10,
+   "text": ",custody:custody.domains"
+  },
+  "admin.keyLabels.custody": {
+   "order": 10,
+   "text": "        bassam_custody_v1: \"العهد\",\n"
+  },
+  "admin.base.custody": {
+   "order": 10,
+   "text": " || !natural(base.custody)"
+  },
+  "admin.counts.custody": {
+   "order": 10,
+   "text": "\"custody\", "
+  },
+  "admin.delete.custodyPopulated": {
+   "order": 10,
+   "text": " + counts.custody"
+  },
+  "admin.delete.custodyMsg": {
+   "order": 10,
+   "text": " + counts.custody + \" سجل عهدة، \""
+  },
+  "admin.wipe.custodyNatural": {
+   "order": 10,
+   "text": " || !natural(body.counts.custody)"
+  },
+  "admin.wipe.custodyMsg": {
+   "order": 10,
+   "text": "، \" + body.counts.custody + \" سجل عهدة"
+  },
+  "admin.resLabels.custody": {
+   "order": 10,
+   "text": "                bassam_custody_v1: \"عهد الموظفين\",\r\n"
+  },
+  "admin.wipe.custodyRow": {
+   "order": 10,
+   "text": "            if (counts.custody > 0) p.push({ label: \"سجل العهد والأصناف (\" + counts.custody + \")\" });\r\n"
+  },
+  "admin.wipe.custodyAny": {
+   "order": 10,
+   "text": " + (counts.custody || 0)"
+  },
+  "admin.full.custodyExport": {
+   "order": 10,
+   "text": "            const custodyExport=await KIVO.Custody.exportDomain();\r\n            if (!custodyExport || custodyExport.ok !== 1) throw new Error(\"تعذّر تصدير مجال العهد؛ لم تُنشأ نسخة جزئية\");\r\n            Object.keys(s).forEach(key=>{if (/(?:^|:)bassam_custody_v1$/.test(key)) delete s[key];});\r\n"
+  },
+  "admin.full.custodyScope": {
+   "order": 10,
+   "text": "            if(!Array.isArray(custodyExport.domains)||JSON.stringify(custodyExport.domains.map(d=>d.scope.departmentId).sort())!==JSON.stringify(declaredDepts.slice().sort()))throw new Error(\"نطاق العهد لا يطابق إدارات النسخة\");\r\n"
+  },
+  "admin.full.custodyManifest": {
+   "order": 10,
+   "text": "custody:1,"
+  },
+  "admin.full.custodyDomain": {
+   "order": 10,
+   "text": ",custody:custodyExport.domains"
+  },
+  "bk.counts.systems": {
+   "order": 5,
+   "text": "'custody', "
+  },
+  "bk.restore.base": {
+   "order": 5,
+   "text": " || !base.custody"
+  },
+  "bk.restore.summary": {
+   "order": 5,
+   "text": " و' +\n        (c.custody || 0) +\n        ' نطاق عهد"
+  },
+  "import.base.custody": {
+   "order": 10,
+   "text": " && nonnegative(base.custody)"
+  },
+  "import.summary.custody": {
+   "order": 10,
+   "text": "              impOn(\"emps/custody\") ? \"حركات العهد\" : \"\",\n"
+  },
+  "nfc.kind.color.custody": {
+   "order": 10,
+   "text": " cust:'#8b6a5a',"
+  },
+  "nfc.kind.name.custody": {
+   "order": 10,
+   "text": " cust:'العهد',"
+  },
+  "nfc.kind.icon.custody": {
+   "order": 10,
+   "text": " cust:'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2',"
+  },
+  "nfc.reg.custody": {
+   "order": 10,
+   "file": "slots/nfc.reg.custody.frag"
+  },
+  "store.relational.systems": {
+   "order": 5,
+   "text": "custody|"
+  },
+  "store.keyLabels.custody": {
+   "order": 10,
+   "text": "bassam_custody_v1:[\"عهد الموظفين\"],"
+  },
+  "perm.seed.subs.custody": {
+   "order": 10,
+   "text": ",'custody'"
+  },
+  "perm.keyCap.custody": {
+   "order": 10,
+   "text": " bassam_custody_v1:'emps/custody',"
+  },
+  "guard.classify.custody": {
+   "order": 10,
+   "file": "slots/guard.classify.custody.frag"
+  },
+  "scope.items.custody": {
+   "order": 10,
+   "file": "slots/scope.items.custody.frag"
+  },
+  "nf.feed.known.custody": {
+   "order": 10,
+   "text": ""
+  },
+  "uxStates.employees.empty": {
+   "order": 10,
+   "text": "45"
+  }
+ }
+}

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { world, ok, custody, snap, seedMessage, OPTIONS } from './atomic_restore_review_fx.mjs';
 import { D1, D2, IDS, EKEYS, copy, identitySnapshot } from './notifications_review_fx.mjs';
 import { inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { needs } from './harness.mjs';
 const KV_PROBE = (dept) => 'bsdept:' + dept + ':bassam_last_export_v1';   /* schema 10: plain-KV department probe (options/employees are typed operational resources) */
 let rid = 0;
 const employeeKey = 'bsdept:' + D1 + ':bassam_employees_v1',
@@ -29,7 +30,7 @@ function saved(r) {
   assert.ok(Number.isSafeInteger(r.json.v) && r.json.v > 0);
   return r.json;
 }
-test('actual ordinary employee delete commits KV and only matched custody cleanup atomically while retaining a prior orphan', async () => {
+test('actual ordinary employee delete commits KV and only matched custody cleanup atomically while retaining a prior orphan', needs('custody'), async () => {
   const B = await world();
   await knownAndOrphan(B);
   const after = copy(B.keys[employeeKey]).filter((e) => e.eid !== EKEYS.employee1),
@@ -43,7 +44,7 @@ test('actual ordinary employee delete commits KV and only matched custody cleanu
   assert.deepEqual(identitySnapshot(B.DB), identities);
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM custody_items')[0].n, 1);
 });
-test('explicit import replace clears movement history including prior orphans, keeps catalog and checks its client custody revision', async () => {
+test('explicit import replace clears movement history including prior orphans, keeps catalog and checks its client custody revision', needs('custody'), async () => {
   const B = await world();
   await knownAndOrphan(B);
   const base = { [employeeKey]: 1, [cuKey]: await B.W.cuRev(B.env, D1) },
@@ -62,7 +63,7 @@ test('explicit import replace clears movement history including prior orphans, k
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM custody_movements')[0].n, 0);
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM custody_items')[0].n, 1);
 });
-test('failure after employee rows are written rolls back matched custody, employee value, revisions, audit and snapshot', async () => {
+test('failure after employee rows are written rolls back matched custody, employee value, revisions, audit and snapshot', needs('custody'), async () => {
   const B = await world();
   await knownAndOrphan(B);
   const after = copy(B.keys[employeeKey]).filter((e) => e.eid !== EKEYS.employee1),
@@ -75,7 +76,7 @@ test('failure after employee rows are written rolls back matched custody, employ
   assert.deepEqual(snap(B.DB), before);
   saved(await B.api('super', '/api/save', body));
 });
-test('closed department wipe inventory and ACK cover KV, custody and notification data while retaining department and all accounts', async () => {
+test('closed department wipe inventory and ACK cover KV, custody and notification data while retaining department and all accounts', needs('custody', 'tasks'), async () => {
   const B = await world();
   await knownAndOrphan(B);
   await seedMessage(B);
@@ -109,7 +110,7 @@ test('closed department wipe inventory and ACK cover KV, custody and notificatio
   assert.deepEqual(employeesRead.absent, [employeeKey]);
   assert.ok(employeesRead.base[employeeKey] > employeeRev, 'The wipe itself advanced the employee resource revision');
 });
-test('department wipe rejects non-super and a newly added scoped key after inventory without writing partial state', async () => {
+test('department wipe rejects non-super and a newly added scoped key after inventory without writing partial state', needs('custody'), async () => {
   const B = await world();
   await custody(B);
   assert.equal((await B.api('manager1', '/api/admin/dept-wipe?dept=' + D1)).status, 403);
@@ -180,7 +181,7 @@ test('wipe image metadata retires only unreferenced images atomically, keeps sha
   assert.deepEqual(calls, []);
 });
 
-test('wipe COUNT guard rejects a scoped key inserted after preparation and before the mutation batch', async () => {
+test('wipe COUNT guard rejects a scoped key inserted after preparation and before the mutation batch', needs('custody'), async () => {
   const B = await world();
   await custody(B);
   const inventory = ok(await B.api('super', '/api/admin/dept-wipe?dept=' + D1)),
@@ -208,7 +209,7 @@ test('wipe COUNT guard rejects a scoped key inserted after preparation and befor
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM kv WHERE k=?1', extra)[0].n, 1);
 });
 
-test('server-owned employee transition GET/POST allows employee-delete permission without custody-view and retains account management restrictions', async () => {
+test('server-owned employee transition GET/POST allows employee-delete permission without custody-view and retains account management restrictions', needs('custody'), async () => {
   const B = await world(),
     perms = copy(B.keys.bassam_perms_v1);
   perms.emps[D1][EKEYS.employee1]['emps/data'] = ['view', 'del'];
@@ -259,7 +260,7 @@ test('server-owned employee transition GET/POST allows employee-delete permissio
   assert.deepEqual(snap(B.DB), before);
 });
 
-test('server-owned selected-last delete retains orphan history, while explicit all-delete wipes it and both keep catalog', async () => {
+test('server-owned selected-last delete retains orphan history, while explicit all-delete wipes it and both keep catalog', needs('custody'), async () => {
   for (const deleteMode of ['selected', 'all']) {
     const B = await world();
     await custody(B);
@@ -282,7 +283,7 @@ test('server-owned selected-last delete retains orphan history, while explicit a
   }
 });
 
-test('server-owned employee transition rolls back account removals and sessions together with assignments on a late failure', async () => {
+test('server-owned employee transition rolls back account removals and sessions together with assignments on a late failure', needs('custody'), async () => {
   const B = await world();
   await knownAndOrphan(B);
   const context = ok(await B.api('super', '/api/employees/transition?dept=' + D1 + '&intent=delete')),
@@ -307,7 +308,7 @@ test('server-owned employee transition rolls back account removals and sessions 
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM sess WHERE uid=?1', IDS.employee1)[0].n, 0);
 });
 
-test('closed department deletion reuses inventory/atomic compiler, removes only its dept/staff accounts and preserves GM/Super/other departments', async () => {
+test('closed department deletion reuses inventory/atomic compiler, removes only its dept/staff accounts and preserves GM/Super/other departments', needs('custody', 'tasks'), async () => {
   const B = await world();
   await custody(B);
   await seedMessage(B);

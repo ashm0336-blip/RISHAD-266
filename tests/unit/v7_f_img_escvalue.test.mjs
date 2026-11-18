@@ -13,7 +13,8 @@ import assert from 'node:assert/strict';
 import { internals } from './internals.mjs';
 import { WORKER } from './harness.mjs';
 import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, age, due, stored, read } from './v7_f_img_fx.mjs';
-import { world as tasksWorld, ME, hij, HR, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
+import { world as tasksWorld, ME, hij, HR, taskCommandBody, operationSaveBody } from './world_fx.mjs';
+import { needs as needsSys } from './harness.mjs';
 
 /* ── spellings ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
 const U = (ch, up) => { const h = ch.charCodeAt(0).toString(16).padStart(2, '0'); return '\\u00' + (up ? h.toUpperCase() : h); };
@@ -106,7 +107,7 @@ both(test, 'a · typed save: a floor name carrying such text is accepted and rea
   assert.equal(W.env.DB.q('SELECT COUNT(*) n FROM imgref WHERE k = ?', K)[0].n, 0, 'honest text names no image');
 });
 
-for (const mode of ['legacy', 'enforce']) test('a · task note: an employee\'s note carrying such text is accepted and stored as written [' + mode + ']', { timeout: 600000 }, async () => {
+for (const mode of ['legacy', 'enforce']) test('a · task note: an employee\'s note carrying such text is accepted and stored as written [' + mode + ']', { ...needsSys('tasks'), timeout: 600000 }, async () => {
   const W = await tasksWorld({ mode }), dm = await W.login('0000000101', '70101'), me = await W.login(ME.un, ME.pw);
   const post = (ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: taskCommandBody(W.env, p, body) });
   const s = Date.now() - HR, cr = await post(dm.ck, '/api/tasks/create', { k: hij(s), t: TAG + ' ev', s, e: s + 3 * HR, asg: [ME.eid], rv: 'none' }); assert.equal(cr.status, 200);

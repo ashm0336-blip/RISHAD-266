@@ -10,7 +10,7 @@
          بسببه بلا طلب حفظ؛ وتفعيلُه منفرداً يُرفض في الواجهة · ورفضٌ بلا dup (حسابٌ في إدارةٍ لا يديرها) يبقى كما كان: القيمةُ كلُّها تعود */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, D, TAG, stored } from './tasks_fx.mjs';
+import { world, workerUnderTest, D, TAG, stored } from './world_fx.mjs';
 import { loadClient, until, sleep, pageText } from './k264_vm.mjs';
 
 const WU = workerUnderTest();

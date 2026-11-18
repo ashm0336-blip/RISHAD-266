@@ -10,7 +10,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { world, stored, putKV } from './tasks_fx.mjs';
+import { world, stored, putKV } from './world_fx.mjs';
 import { loadClient, until, sleep } from './k264_vm.mjs';
 import { moduleLogic } from './harness.mjs';
 import { internals } from './internals.mjs';
@@ -96,7 +96,7 @@ async function tpSaveAll(W) {
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + '(a) narrow → re-save sheet, lens list, templates (leaf-key and container-key) and grants → widen: everything as it was', needs('award'), async () => {
+  test(M + '(a) narrow → re-save sheet, lens list, templates (leaf-key and container-key) and grants → widen: everything as it was', needs('award', 'tasks'), async () => {
     const W = await scene(mode);
     const P0 = stored(W.env, KP), sh0 = cp(P0.emps[D][EK]), el0 = cp(P0.empLens[D][EK]), g0 = JSON.stringify(stored(W.env, GK)), stored0 = stored(W.env, TPK), t0 = [];
     let P = cp(P0); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok, 'narrowed');
@@ -122,7 +122,7 @@ for (const mode of ['legacy', 'enforce']) {
     }
   });
 
-  test(M + '(b) split requests: the narrowing first, then a request dropping latent items ⇒ refused, D1 byte-identical', needs('award'), async () => {
+  test(M + '(b) split requests: the narrowing first, then a request dropping latent items ⇒ refused, D1 byte-identical', needs('award', 'custody'), async () => {
     const W = await scene(mode);
     let P = cp(stored(W.env, KP)); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok, 'the narrowing alone is accepted');
     const s0 = all(W);
@@ -145,7 +145,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.equal(all(W), s0, 'nothing written');
   });
 
-  test(M + '(c) a filtered (projected) manager view keeps latent items when saving; the same view without them is refused', needs('award'), async () => {
+  test(M + '(c) a filtered (projected) manager view keeps latent items when saving; the same view without them is refused', needs('award', 'tasks'), async () => {
     const W = await scene(mode);
     let P = cp(stored(W.env, KP)); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok);
     let v = await got(W, 'dm1', KP);
@@ -180,7 +180,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(!r2.ok && r2.why === 'perms', 'the marker is the system administrator\'s alone — ' + r2.show);
   });
 
-  test(M + '(e) editing an old-format container-key template under switched-off tabs keeps them with the container\'s actions — nothing wider', needs('award'), async () => {
+  test(M + '(e) editing an old-format container-key template under switched-off tabs keeps them with the container\'s actions — nothing wider', needs('award', 'custody'), async () => {
     const W = await scene(mode);
     let P = cp(stored(W.env, KP)); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok);
     const c = await clientOf(W, 'su');

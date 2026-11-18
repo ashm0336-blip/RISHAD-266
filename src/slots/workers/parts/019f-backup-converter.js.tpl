@@ -50,24 +50,13 @@ function rsBCRemapNF(domain, source, target) {
   });
   return next;
 }
-function rsBCRemapCU(domain, source, target) {
-  var original = cuValidateDomain(domain, source),
-    next = { version: 1, scope: { departmentId: target }, rows: rsBCClone(original) };
-  Object.keys(CU_TABLES).forEach(function (n) {
-    next.rows[n].forEach(function (r) {
-      r.department_id = target;
-    });
-  });
-  cuValidateDomain(next, target);
-  return next;
-}
-@@SYS:bc.remapIrshad@@function rsBCForbiddenKey(key) {
+@@SYS:bc.remapCustody@@@@SYS:bc.remapIrshad@@function rsBCForbiddenKey(key) {
   var n = resName(key);
   return isDeviceKey(key) || isDeviceKey(n) || /(?:^|_)(?:sessions?|recovery|recover|cookies?|tokens?|credentials?)(?:_|$)/i.test(n);
 }
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
-  var required = scope.kind === 'full' @@SYS:bc.required.dstats|pre="? ['kv', "|empty="? ['kv', "@@'notifications', 'custody'] : ['kv', 'notifications', 'custody'];
+  var required = scope.kind === 'full' @@SYS:bc.required.dstats|pre="? ['kv', "|empty="? ['kv', "@@'notifications'@@SYS:bc.required.custody@@] : ['kv', 'notifications'@@SYS:bc.required.custody@@];
 @@SYS:bc.required.irshad@@  if (manifest.version >= 3) @@SYS:bc.required.business|sep=","|pre="required.push("|post=");"|empty="required.push();"@@
   if (manifest.version >= 4) required.push('operations');
   rsShape(manifest.domains, required);
@@ -89,17 +78,12 @@ function rsBCManifest(manifest, scope, keys, domains, departments) {
   });
   if (
     !deq(manifest.keys.slice().sort(), declared.slice().sort()) ||
-    !domains.notifications ||
-    !Array.isArray(domains.custody)@@SYS:bc.manifest.dstats@@
+    !domains.notifications@@SYS:bc.manifest.custody@@@@SYS:bc.manifest.dstats@@
   )
     rsBCFail('incomplete-manifest');
-  var custody = domains.custody.map(function (d) {
-    return d && d.scope && d.scope.departmentId;
-  });
-  if (!deq(custody.slice().sort(), departments.slice().sort())) rsBCFail('incomplete-custody');
-@@SYS:bc.manifest.irshad@@  for(var def of bdDefinitions()) {
+@@SYS:bc.manifest.custodyScopes@@@@SYS:bc.manifest.irshad@@  for(var def of bdDefinitions()) {
     if(manifest.version>=3) {
-      var expected=departments.concat(def.name==='awards'&&scope.kind==='full'?['']:[]).sort();
+      var expected=departments.concat(@@SYS:bc.awardGlobal.1|empty="[]"@@).sort();
       if(!Array.isArray(domains[def.name])||!deq(domains[def.name].map(bdScope).sort(),expected))rsBCFail('incomplete-'+def.name);
     } else if(domains[def.name]!==undefined)rsBCFail(def.name+'-manifest-version');
   }
@@ -155,7 +139,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var input = Object.create(null),
     keys = Object.create(null),
     domains = file.domains === undefined ? {} : rsBCClone(file.domains);
-  @@SYS:bc.domains.dstats|pre="rsShape(domains, ["|empty="rsShape(domains, ["@@'notifications', 'custody', @@SYS:bc.domains.systems|post="'operations']);"|empty="'operations']);"@@
+  @@SYS:bc.domains.dstats|pre="rsShape(domains, ["|empty="rsShape(domains, ["@@'notifications', @@SYS:bc.domains.systems|post="'operations']);"|empty="'operations']);"@@
   Object.keys(file.data).forEach(function (k) {
     if (k === 'bassam_active_dept_v1') {
       summary.ignoredDevicePreferences.push(k);
@@ -195,10 +179,7 @@ async function rsConvertBackup(env, A, file, opt) {
     if (prefixes.length > 1) rsBCFail('ambiguous-department');
     var declared = modern ? file.manifest && file.manifest.departments : undefined;
     if (declared !== undefined && (!Array.isArray(declared) || declared.length !== 1)) rsBCFail('manifest-scope');
-    var typed =
-      Array.isArray(domains.custody) && domains.custody.length === 1
-        ? domains.custody[0].scope && domains.custody[0].scope.departmentId
-        : null;
+    var typed =@@SYS:bc.typed.custody|empty=" null"@@;
     var irTyped = @@SYS:bc.irTyped|empty="null"@@;
     var hints = [prefixes[0], declared && declared[0], typed, irTyped].filter(Boolean);
     if (new Set(hints).size > 1) rsBCFail('ambiguous-department');
@@ -222,23 +203,21 @@ async function rsConvertBackup(env, A, file, opt) {
   Object.keys(keys).filter(bdLegacyKey).forEach(function(k){
     var def=bdDefinitions().find(function(def){return def.resources.includes(resName(k));}),part=parseKey(k),index=def.resources.indexOf(resName(k));
     if(k!==(part.dept?def.key(part.dept,index):def.resources[index]))rsBCFail('business-namespace');
-    if(!part.dept&&!(def.name==='awards'&&index>0&&scope.kind==='full'))rsBCFail('business-global-scope');
+    if(!part.dept&&!(@@SYS:bc.awardGlobalPart|empty="false"@@))rsBCFail('business-global-scope');
     if(part.dept&&!deptIds.includes(part.dept))rsBCFail('business-department');
   });
-  var cuKeys = Object.keys(keys).filter(cuLegacyKey),
-    irKeys = @@SYS:bc.irKeys|empty="[]"@@,
+  var @@SYS:bc.keys.custody@@irKeys = @@SYS:bc.irKeys|empty="[]"@@,
     businessKeys = Object.keys(keys).filter(bdLegacyKey),
     nfKeys = Object.keys(keys).filter(nfLegacyKey),
     dsKeys = @@SYS:bc.dsKeys|empty="[]"@@;
   if (
-    (cuKeys.length && rsBCOwn(domains, 'custody')) ||
-    (nfKeys.length && rsBCOwn(domains, 'notifications')) ||
+@@SYS:bc.dup.custody@@    (nfKeys.length && rsBCOwn(domains, 'notifications')) ||
     (dsKeys.length && rsBCOwn(domains, 'dailyStats')) ||
-    (irKeys.length && rsBCOwn(domains, 'irshad'))
+    @@SYS:bc.dup.irshad|empty="false"@@
   )
     rsBCFail('duplicate-domain-source');
   for(var def of bdDefinitions()) if(businessKeys.some(function(k){return def.resources.includes(resName(k));})&&rsBCOwn(domains,def.name))rsBCFail('duplicate-domain-source');
-  if (modern && (cuKeys.length || nfKeys.length || dsKeys.length || (file.manifest && file.manifest.version >= 2 && irKeys.length))) rsBCFail('retired-key-in-modern-file');
+  if (modern && (@@SYS:bc.retiredModern.custody@@nfKeys.length || dsKeys.length || (file.manifest && file.manifest.version >= 2 && irKeys.length))) rsBCFail('retired-key-in-modern-file');
   if(modern&&file.manifest.version>=3&&businessKeys.length)rsBCFail('retired-key-in-modern-file');
   if(modern&&file.manifest.version>=4&&Object.keys(keys).some(opIsResource))rsBCFail('retired-key-in-modern-file');
   if (scope.kind === 'dept' && (dsKeys.length || domains.dailyStats !== undefined)) rsBCFail('global-domain-in-department');
@@ -256,7 +235,7 @@ async function rsConvertBackup(env, A, file, opt) {
     if(domains[def.name]!==undefined) {
       if(!Array.isArray(domains[def.name]))rsBCFail(def.name+'-shape');
       domains[def.name]=domains[def.name].map(function(domain){
-        var d=bdScope(domain),global=def.name==='awards'&&d==='';
+        var d=bdScope(domain),global=@@SYS:bc.awardGlobalScope|empty="false"@@;
         if(typeof d!=='string'||(global&&scope.kind!=='full')||(!global&&(scope.kind==='full'?!deptIds.includes(d):d!==source)))rsBCFail(def.name+'-scope');
         var next=rsBCClone(def.validate(domain,d)),targetDept=scope.kind==='dept'?target:d;
         if(targetDept!==d){next.scope={departmentId:targetDept};Object.keys(def.tables).forEach(function(kind){next.rows[kind].forEach(function(row){row.department_id=targetDept;});});}
@@ -264,48 +243,14 @@ async function rsConvertBackup(env, A, file, opt) {
       });
       if(new Set(domains[def.name].map(bdScope)).size!==domains[def.name].length)rsBCFail(def.name+'-duplicate');
     } else if(legacy||file.manifest.version<3) {
-      domains[def.name]=deptIds.concat(def.name==='awards'&&scope.kind==='full'?['']:[]).map(function(d){
+      domains[def.name]=deptIds.concat(@@SYS:bc.awardGlobal.2|empty="[]"@@).map(function(d){
         var docs={};def.names.forEach(function(name,i){var k=d?def.key(d,i):def.resources[i];if(rsBCOwn(keys,k))docs[name]=rsBCParse(keys[k]);});
         if(!Object.keys(docs).length)summary.emptyDomains.push(def.name+':'+d);
         return def.validate(def.convert(d,docs),d);
       });
     }
   }
-  if (domains.custody !== undefined) {
-    if (!Array.isArray(domains.custody)) rsBCFail('custody-shape');
-    domains.custody = domains.custody.map(function (domain) {
-      var d = domain && domain.scope && domain.scope.departmentId;
-      if (typeof d !== 'string' || (scope.kind === 'full' ? deptIds.indexOf(d) < 0 : d !== source)) rsBCFail('custody-scope');
-      return rsBCRemapCU(domain, d, scope.kind === 'dept' ? target : d);
-    });
-    var seenCU = domains.custody.map(function (d) {
-      return d.scope.departmentId;
-    });
-    if (new Set(seenCU).size !== seenCU.length) rsBCFail('custody-duplicate');
-  } else if (legacy) {
-    domains.custody = deptIds.map(function (d) {
-      var key = 'bsdept:' + d + ':' + CU_RESOURCE,
-        doc = rsBCOwn(keys, key) ? rsBCParse(keys[key]) : { items: [], moves: [] };
-      if (!rsBCOwn(keys, key)) summary.emptyDomains.push('custody:' + d);
-      var domain = { version: 1, scope: { departmentId: d }, rows: cuConvert(d, doc) };
-      cuValidateDomain(domain, d);
-      return domain;
-    });
-  }
-  if (legacy && domains.custody) {
-    var included = new Set(
-      domains.custody.map(function (d) {
-        return d.scope.departmentId;
-      }),
-    );
-    deptIds.forEach(function (d) {
-      if (!included.has(d)) {
-        domains.custody.push({ version: 1, scope: { departmentId: d }, rows: { items: [], issues: [], moves: [] } });
-        summary.emptyDomains.push('custody:' + d);
-      }
-    });
-  }
-@@SYS:bc.convert.dstats@@  if (domains.notifications !== undefined) {
+@@SYS:bc.convert.custody@@@@SYS:bc.convert.dstats@@  if (domains.notifications !== undefined) {
     if (scope.kind === 'dept') {
       var normalized = rsBCNF(domains.notifications, { kind: 'dept', departmentId: source });
       domains.notifications = rsBCNF(rsBCRemapNF(normalized, source, target), scope);
@@ -396,7 +341,7 @@ async function rsConvertBackup(env, A, file, opt) {
       });
     }
   }
-  cuKeys.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
+  @@SYS:bc.retired.custody|empty="[]"@@.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
     delete keys[k];
   });
   opConvertBackupBoundary(keys,domains,deptIds,scope,source,modern?file.manifest.version:0,summary);
@@ -411,7 +356,7 @@ async function rsConvertBackup(env, A, file, opt) {
     : {
         version: 1,
         scope: scope.kind,
-        domains: scope.kind === 'full' @@SYS:bc.out.dstats|pre="? { kv: 1, "|empty="? { kv: 1, "@@notifications: 1, custody: 1 } : { kv: 1, notifications: 1, custody: 1 },
+        domains: scope.kind === 'full' @@SYS:bc.out.dstats|pre="? { kv: 1, "|empty="? { kv: 1, "@@notifications: 1@@SYS:bc.out.custody@@ } : { kv: 1, notifications: 1@@SYS:bc.out.custody@@ },
         departments: deptIds.slice(),
         keys: Object.keys(keys).map(function (k) {
           return scope.kind === 'dept' ? resName(k) : k;

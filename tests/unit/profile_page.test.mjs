@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { world, riyadhDay, allText, LOGIC } from './profile_world.mjs';
 import { SRC } from './harness.mjs';
+import { needs } from './harness.mjs';
 const T = riyadhDay();
 const opts24 = [{ name: 'أ', tStart: '00:00', tEnd: '23:59' }, { name: 'ب', tStart: '00:00', tEnd: '23:59' }];
 const staff = (id, ekey, extra) => Object.assign({ id, role: 'staff', ekey, un: '10000000' + String(id).slice(-2).padStart(2, '0'), deptId: 'd1', name: 'حساب ' + id }, extra || {});
@@ -109,7 +110,7 @@ test('D9: «أسبوعك» بلا راحةٍ مختلقة لشهرٍ آخر — 
   });
   assert.ok(!/من التقرير اليومي وحده/.test(v.weekSub), v.weekSub);
 });
-test('D10 · OD-6: الموظفُ بصفة مدير يرى بطاقاتِ يومه ومهامَّه — ويُذكر بين مديري الإدارة', () => {
+test('D10 · OD-6: الموظفُ بصفة مدير يرى بطاقاتِ يومه ومهامَّه — ويُذكر بين مديري الإدارة', needs('tasks'), () => {
   const em = staff('s9', 'e_em', { mgr: true, name: 'موظف مدير' }), me = staff('s10', 'e_me'), dm = staff('m1', 'mgr:d1', { mgr: true, name: 'المدير المعيَّن' });
   const emps = [{ eid: 'e_em', name: 'موظف مدير' }, { eid: 'e_me', name: 'أنا' }];
   const staffing = { [T.YM]: { e_em: { shift: 'أ', rest: [] }, e_me: { shift: 'أ', rest: [] } } };
@@ -140,7 +141,7 @@ test('D12: «الإدارة» لمدير النظام — صلاحيةٌ على 
   assert.match(t, /على كل الإدارات/); assert.ok(!t.includes('إدارة الأبواب'), t);
   assert.ok(!/إدارة الأبواب/.test(v.roleLine), v.roleLine);
 });
-test('D15: «لا تملك صلاحية عرض المهام» غيرُ «لا توجد لديك مهام حالية»', () => {
+test('D15: «لا تملك صلاحية عرض المهام» غيرُ «لا توجد لديك مهام حالية»', needs('tasks'), () => {
   const v = world({ user: staff('s13', 'e_me'), emps: [{ eid: 'e_me', name: 'أنا' }], can: (k) => k !== 'tasks' }).v();
   assert.equal(v.tkOn, true); assert.equal(v.tkNoPerm, true); assert.match(v.tkEmptyT, /لا تملك صلاحية/);
   assert.ok(!/اطلب|ورقة/.test(v.tkEmptyS), 'لا يُوجَّه الموظفُ إلى طلب ورقةٍ إدارية (قرارُ المالك): ' + v.tkEmptyS);
@@ -148,7 +149,7 @@ test('D15: «لا تملك صلاحية عرض المهام» غيرُ «لا ت
   const v2 = world({ user: staff('s14', 'e_me'), emps: [{ eid: 'e_me', name: 'أنا' }] }).v();
   assert.equal(v2.tkNoPerm, false); assert.equal(v2.tkEmptyT, 'لا توجد لديك مهام حالية', 'KIVO_265 · قرارُ المالك: نصُّ الفراغ حرفاً');
 });
-test('D16: مهمةٌ قديمة بلا معرّفٍ (الاسمُ وحده) لا تُنسب لِسَميّ', () => {
+test('D16: مهمةٌ قديمة بلا معرّفٍ (الاسمُ وحده) لا تُنسب لِسَميّ', needs('tasks'), () => {
   const task = (nm, ek) => ['مهمة', '', 'normal', 'pending', null, null, null, [], nm, 'المدير', 30, null, null, Date.now(), ek || null];
   const v = world({ user: staff('s15', 'e_me'), emps: [{ eid: 'e_me', name: 'أحمد' }], tasks: { [T.DK]: [task('أحمد', null)] } }).v();
   assert.equal(v.tkEmpty, true, 'مهمةُ الاسم وحده ليست لي');
@@ -216,7 +217,7 @@ test('«بياناتي» لمدير العقدة: الاسمُ عرضٌ فقط (
   const html = fs.readFileSync(path.join(SRC, 'modules', 'profile', 'view.html'), 'utf8');
   assert.match(html, /<sc-if value="\{\{pfNameRO\}\}"[^>]*>.*data-pf-name-ro="1"/);
 });
-test('OD-10 لا يمسّ «مهامك» ولا رصدَ الميدان: اليومُ التشغيليّ لورديةٍ ليلية بدأت أمس — والمهامُّ والخريطةُ ورصدُ الميدان على يوم الجهاز كما كانت', async () => {
+test('OD-10 لا يمسّ «مهامك» ولا رصدَ الميدان: اليومُ التشغيليّ لورديةٍ ليلية بدأت أمس — والمهامُّ والخريطةُ ورصدُ الميدان على يوم الجهاز كما كانت', needs('tasks'), async () => {
   const Y = riyadhDay(Date.now() - 864e5);
   const task = ['مهمة اليوم', '', 'normal', 'pending', null, null, null, [], 'أنا', 'المدير', 30, null, null, Date.now(), 'e_me'];
   const srv = { ok: 1, v: 1, day: { y: Y.y, m: Y.m, d: Y.d, dk: Y.DK, ym: Y.YM, wd: Y.WD, op: 'night' }, account: { id: 's24', role: 'staff', deptId: 'd1' },

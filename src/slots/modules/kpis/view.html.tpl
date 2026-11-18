@@ -30,14 +30,7 @@
         <sc-if value="{{on_zn}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
       </div>
       </sc-if>
-@@SYS:kpis.tabs.mid@@      <sc-if value="{{ok_tk}}" hint-placeholder-val="{{ false }}">
-      <div onClick="{{go_tk}}" style="{{st_tk}}">
-        <div style="{{ic_tk}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-97e013f3"></svg></div>
-        <span style="{{lb_tk}}">مؤشرات المهام</span>
-        <sc-if value="{{on_tk}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
-      </div>
-      </sc-if>
-@@SYS:kpis.tabs.tail@@    </div>
+@@SYS:kpis.tabs.mid@@@@SYS:kpis.tabs.tasks@@@@SYS:kpis.tabs.tail@@    </div>
   </div>
   </sc-if>
   <sc-if value="{{noneOn}}" hint-placeholder-val="{{ false }}">
@@ -47,7 +40,4 @@
   <sc-if value="{{on_dy}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Sessions" solo="kpiDaily" hint-size="100%,1100px"></dc-import></sc-if>
   <sc-if value="{{on_occ}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Sessions" solo="kpiOcc" hint-size="100%,1100px"></dc-import></sc-if>
   <sc-if value="{{on_zn}}" hint-placeholder-val="{{ false }}"><dc-import name="Daily Sessions" solo="kpiZones" hint-size="100%,1100px"></dc-import></sc-if>
-@@SYS:kpis.mounts.mid@@  <!-- ═══ مؤشرات المهام — يملكها نظامُ المهام (RISHAD-266 P9: src/modules/tasks · logic-kpi.js) ═══ -->
-  <sc-if value="{{tkScopeNotice}}" hint-placeholder-val="{{ false }}"><div style="border:1px dashed var(--border-subtle);border-radius:12px;padding:22px;text-align:center;color:var(--text-muted);font-size:12px">{{tkScopeNotice}}</div></sc-if>
-  <sc-if value="{{tkMount}}" hint-placeholder-val="{{ false }}"><div style="{{tkShow}}"><dc-import name="Tasks" solo="kpi" hint-size="100%,600px"></dc-import></div></sc-if>
-@@SYS:kpis.mounts.tail@@</div>
+@@SYS:kpis.mounts.mid@@@@SYS:kpis.mounts.tasks@@@@SYS:kpis.mounts.tail@@</div>

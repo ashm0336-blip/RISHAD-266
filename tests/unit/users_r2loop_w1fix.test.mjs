@@ -13,7 +13,7 @@
      (د) السقف: خادمٌ يرفض كلَّ دورةٍ صفاً جديداً آخر ⇒ ثلاثُ دوراتٍ ثم الإعادةُ الكاملة (أربعُ حفظاتٍ لا ستّ) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, stored, TAG, D } from './tasks_fx.mjs';
+import { world, workerUnderTest, stored, TAG, D } from './world_fx.mjs';
 import { loadClient, until, sleep, pageText } from './k264_vm.mjs';
 
 const WU = workerUnderTest();

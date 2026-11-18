@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { world, stored, D, KE } from './tasks_fx.mjs';
+import { world, stored, D, KE } from './world_fx.mjs';
 import { TEST_SUPER_USERNAME } from './harness.mjs';
 
 const D2 = 'tst_d2', KE2 = 'bsdept:' + D2 + ':bassam_employees_v1', DM2 = 'TEST_ONLY · مدير الإدارة ٢';

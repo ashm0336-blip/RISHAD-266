@@ -19,11 +19,12 @@ test('V7 · د3: المستودع — الوثائقُ المجموعة = الم
     const sj = JSON.parse(fs.readFileSync(path.join(SRC, 'systems', k, 'system.json'), 'utf8')); assert.equal(sj.permissions, 'permissions.json', k + ': system.json يسمّي ملف صلاحياته');
     const pj = JSON.parse(fs.readFileSync(path.join(SRC, 'systems', k, 'permissions.json'), 'utf8')); assert.equal(pj.system, k);
     const rows = (pj.docs.registry || []).map((o) => o.value).filter((v) => v && v.key && v.owner);
-    assert.ok(rows.length > 0, k + ': له مفاتيح'); for (const v of rows) assert.equal(v.owner.split('/')[0], k, v.key + ' مالكُه من نظامه');
+    assert.ok(rows.length > 0, k + ': له مفاتيح'); /* د4-ج: مالكُ النظام صفحتُه (award/…) أو تبويبُه داخل صفحة قاعدة (emps/custody) */
+    for (const v of rows) assert.ok(v.owner.split('/').slice(0, 2).includes(k), v.key + ' مالكُه من نظامه: ' + v.owner);
   }
   /* القاعدةُ لا تحمل صفاً يملكه نظام */
   const base = JSON.parse(fs.readFileSync(path.join(SRC, 'permissions', 'registry', 'registry.base.json'), 'utf8'));
-  for (const e of base.registry) assert.ok(!['award', 'dstats', 'irshad', 'seized'].includes(e.owner.split('/')[0]), 'صفُّ نظامٍ في القاعدة: ' + e.key);
+  for (const e of base.registry) assert.ok(!['award', 'dstats', 'irshad', 'seized', 'tasks'].includes(e.owner.split('/')[0]) && e.owner !== 'emps/custody', 'صفُّ نظامٍ في القاعدة: ' + e.key);
   /* ومصدرُ 340 هو السجلُّ المجموع */
   const reg = JSON.parse(fs.readFileSync(path.join(SRC, 'permissions', 'registry', 'registry-v24.9.json'), 'utf8'));
   const js = fs.readFileSync(path.join(SRC, 'permissions', '340-registry-v24-9.js'), 'utf8');

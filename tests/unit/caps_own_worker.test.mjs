@@ -9,7 +9,7 @@
      (e) the mode is the system administrator's: managers cannot set it; a stale client that drops it, or a value other than true / 'own', is refused */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, stored, putKV } from './tasks_fx.mjs';
+import { world, stored, putKV } from './world_fx.mjs';
 import { internals } from './internals.mjs';
 import { needs } from './harness.mjs';
 
@@ -45,7 +45,7 @@ const narrow = async (W, f) => { const P = cp(stored(W.env, KP)); f(P); ok(await
 for (const mode of ['legacy', 'enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + '(a) F05 · F06: a manager saves a sheet still holding latent leaves and lenses; a new out-of-ceiling leaf or lens is refused «cap»', async () => {
+  test(M + '(a) F05 · F06: a manager saves a sheet still holding latent leaves and lenses; a new out-of-ceiling leaf or lens is refused «cap»', needs('tasks'), async () => {
     const W = await scene(mode);
     await narrow(W, (P) => { P.caps[D] = PG.filter((k) => k !== 'award' && k !== 'seized'); P.lenses[D] = ['zones', 'paths']; });
     let p = await view(W, 'dm1');
@@ -71,7 +71,7 @@ for (const mode of ['legacy', 'enforce']) {
     no(await put(W, 'dm1', p), 'cap', 'adding a switched-off lens to an explicit list that lacked it');
   });
 
-  test(M + '(b) grantor rule: a latent leaf of the grantor\'s own sheet is not held', async () => {
+  test(M + '(b) grantor rule: a latent leaf of the grantor\'s own sheet is not held', needs('tasks'), async () => {
     const W = await scene(mode);
     await narrow(W, (P) => { P.emps[D]['mgr:tst_d1'] = { 'daily/kpiDaily': ALL.slice(), 'daily/rounds': ALL.slice(), tasks: ALL.slice(), help: ['view'] }; P.subs[D]['daily:tabs'] = ['rounds', 'field']; });
     let p = await view(W, 'dm1'); p.emps[D].tst_e_snop = { 'daily/rounds': ['view'], tasks: ['view', 'add'] };
@@ -111,7 +111,7 @@ for (const mode of ['legacy', 'enforce']) {
   });
 }
 
-test('(c) a narrowed grant gives no access on the server: writePages · audCanDept · myPermsOf read the sheet cut to the ceiling, and it is back on widening', async () => {
+test('(c) a narrowed grant gives no access on the server: writePages · audCanDept · myPermsOf read the sheet cut to the ceiling, and it is back on widening', needs('tasks'), async () => {
   const W = await world({ mode: 'legacy' });
   const IN = await internals(['writePages', 'audCanDept', 'myPermsOf']);
   const P = stored(W.env, KP);

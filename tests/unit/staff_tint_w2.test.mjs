@@ -49,7 +49,7 @@ test('ES-5 · ES-11 · التباين (من الرموز): نصُّ الشارة
 });
 
 /* الموجة 2 (دمج): شريطُ ترقيم «التميّز» يحمل bs-wrap أيضاً (AUX-04 — يلتفّ ولا تخرج «التالي» و«الأخيرة» عن الشاشة) */
-test('ES-11 · شريطُ الترقيم بلون السطح في كل الوحدات: «لكل صفحة» ≥ 4.5:1 داكناً (كان 2.86) ولا تغييرَ في الفاتح', needs('award', 'seized'), () => {
+test('ES-11 · شريطُ الترقيم بلون السطح في كل الوحدات: «لكل صفحة» ≥ 4.5:1 داكناً (كان 2.86) ولا تغييرَ في الفاتح', needs('award', 'custody', 'seized', 'tasks'), () => {
   /* RISHAD-266: «الإحصائيات اليومية» (dstats) خارج هذا النقل — عملُ المالك المحلّي عليها */
   const mods = ['award', 'dreport', 'employees', 'irshad', 'plan', 'seized', 'staff', 'tasks'];
   let n = 0;
@@ -65,7 +65,7 @@ test('ES-11 · شريطُ الترقيم بلون السطح في كل الوح�
   assert.deepEqual(over(tok('tone-neutral-100-a20', false), tok('bg-surface', false)).map(Math.round), rgba(tok('bg-surface', false)).map(Math.round), 'فاتحاً: الشريطُ أبيضُ كما كان');
 });
 
-test('ES-7 · ترويسةُ معالج «سند تسليم عهدة جديد» تلتفّ: العنوانُ بأساس 150px والخطواتُ لا تنكسر وتنزل إلى سطرها في الوسط تحت 640px (قاعدةُ رأس الصفحة)', () => {
+test('ES-7 · ترويسةُ معالج «سند تسليم عهدة جديد» تلتفّ: العنوانُ بأساس 150px والخطواتُ لا تنكسر وتنزل إلى سطرها في الوسط تحت 640px (قاعدةُ رأس الصفحة)', needs('custody'), () => {
   const v = rd('modules/employees/view.html');
   const i = v.indexOf('>سند تسليم عهدة جديد</div>'), hd = v.slice(v.lastIndexOf('<div class="es-wzhd"', i), v.indexOf('</sc-for>', i));
   assert.match(hd, /^<div class="es-wzhd" style="display:flex;align-items:center;flex-wrap:wrap;gap:10px 11px;/);

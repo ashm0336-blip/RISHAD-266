@@ -121,7 +121,7 @@ async function sweep(W) {
 }
 
 for (const mode of ['legacy', 'enforce']) {
-  test('V7 · د1-ج · ' + mode + ': مدير المنصة على إدارةٍ سقفُها فارغ ووحداتُها مطفأة — لا رفضَ لسبب صلاحية في أي مسار قراءة أو كتابة', { ...needs('award', 'seized'), timeout: 600000 }, async (t) => {
+  test('V7 · د1-ج · ' + mode + ': مدير المنصة على إدارةٍ سقفُها فارغ ووحداتُها مطفأة — لا رفضَ لسبب صلاحية في أي مسار قراءة أو كتابة', { ...needs('award', 'custody', 'seized', 'tasks'), timeout: 600000 }, async (t) => {
     const W = await build(mode);
     const R = await sweep(W);
     const denied = R.filter((x) => x.why);

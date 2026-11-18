@@ -13,7 +13,7 @@ import { TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
          عند الحفظ التالي) · ونقلُها تحت عقدة مدير الفرع يغيّر بصمتَه وحده · والبصمةُ واحدةٌ في الإقلاع و/api/get ومسار الحفظ بعد كلٍّ منهما */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, TAG, stored, putKV, addAccount } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, TAG, stored, putKV, addAccount } from './world_fx.mjs';
 import { loadClient, until, sleep } from './k264_vm.mjs';
 
 const WU = workerUnderTest();

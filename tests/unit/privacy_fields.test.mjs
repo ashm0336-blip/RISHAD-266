@@ -16,7 +16,7 @@ const hasNone = (e, fs, msg) => fs.forEach(f => assert.equal(Object.prototype.ha
 const hasAll = (e, fs, msg) => fs.forEach(f => assert.ok(e[f] != null && e[f] !== '', msg + ': ' + f + ' must be sent'));
 
 for (const mode of MODES) {
-  test('PRIVACY SV09/IP10 [' + mode + ']: a reader of one operational page gets colleagues without personal fields (and roster rows without empno)', needs('irshad'), async () => {
+  test('PRIVACY SV09/IP10 [' + mode + ']: a reader of one operational page gets colleagues without personal fields (and roster rows without empno)', needs('irshad', 'tasks'), async () => {
     const w = await privWorld(mode);
     for (const [sheet, gender] of [[{ dreport: ['view'] }, true], [{ tasks: ['view'] }, false], [{ 'irshad/records': ['view'] }, false], [{ 'daily/rounds': ['view'] }, false], [{ staff: ['view'] }, true]]) {
       setSheet(w, 'tst_e_emp1', sheet);
@@ -51,7 +51,7 @@ for (const mode of MODES) {
     hasAll(rec(r.res[KE], C3), PERSONAL, 'emps/data add');
   });
 
-  test('PRIVACY [' + mode + ']: super, the unit manager, the branch gm and the employee himself still receive the fields', async () => {
+  test('PRIVACY [' + mode + ']: super, the unit manager, the branch gm and the employee himself still receive the fields', needs('tasks'), async () => {
     const w = await privWorld(mode);
     for (const who of ['su', 'dm1', 'gm1']) {
       const ck = who === 'su' ? await suCk(w) : await login(w, who);
@@ -98,7 +98,7 @@ for (const mode of MODES) {
 }
 
 for (const mode of MODES) {
-  test('PRIVACY SV09 custody [' + mode + ']: a custody viewer gets holders without nid/empno; the manager and the holder himself keep them', async () => {
+  test('PRIVACY SV09 custody [' + mode + ']: a custody viewer gets holders without nid/empno; the manager and the holder himself keep them', needs('custody'), async () => {
     const w = await privWorld(mode);
     const E = stored(w.env, KE); Object.assign(E.find(e => e.eid === 'tst_e_emp1'), PII(9), { empno: '70113' }); await put(w, KE, E);
     const month = async (ck) => { const r = await w.C.api('/api/custody?dept=tst_d1&view=month', { cookie: ck }); assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 200)); return r.j.rows.find(x => x.holderKey === 'tst_e_emp1'); };

@@ -14,7 +14,7 @@
      (هـ) وعلى نسخةٍ قديمة (أُضيفت بعدها حساباتٌ يراها وأخرى محجوبة) يبقى تعارضاً يُدمج لا رفضاً — والمعادُ على قيمته يُقبل بلا حذف */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, TAG, stored, putKV, addAccount } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, TAG, stored, putKV, addAccount } from './world_fx.mjs';
 import { loadClient, until, sleep } from './k264_vm.mjs';
 
 const WU = workerUnderTest();

@@ -7,6 +7,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { ROOT } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const DIST = path.join(ROOT, 'pk265');
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -27,7 +28,7 @@ function builtShell() {
   return { scripts, asset };
 }
 
-test('actual public shell reaches custody and atomic backup services once, after task model and before busy UI', () => {
+test('actual public shell reaches custody and atomic backup services once, after task model and before busy UI', needs('custody', 'tasks'), () => {
   const B = builtShell();
   const namespace = B.asset('005-kivo-ns'), model = B.asset('546-task-model'), custody = B.asset('547-custody-api'), backup = B.asset('548-atomic-backup'), busy = B.asset('550-bassam-busy');
   for (const asset of [namespace, model, custody, backup, busy]) assert.equal(B.scripts.filter(file => file === asset.path).length, 1, asset.path + ': exactly one script reference');
@@ -35,7 +36,7 @@ test('actual public shell reaches custody and atomic backup services once, after
   assert.ok(order.every((at, i) => i === 0 || order[i - 1] < at), 'Namespace → task model → custody → atomic backup → busy load in dependency order');
 });
 
-test('actual emitted namespace and service scripts load frozen callable APIs with no storage, network, timers or default identity', async () => {
+test('actual emitted namespace and service scripts load frozen callable APIs with no storage, network, timers or default identity', needs('custody'), async () => {
   const B = builtShell(), forbidden = [];
   const no = operation => { forbidden.push(operation); throw new Error('Forbidden on service load: ' + operation); };
   const C = { console, URLSearchParams, AbortController, Uint8Array,

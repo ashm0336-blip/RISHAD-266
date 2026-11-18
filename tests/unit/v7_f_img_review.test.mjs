@@ -42,7 +42,7 @@ both(test, 'finding 1 · rounds history (260 days × 20 rounds reusing one map) 
   const v = stored(W.env, K), last = Object.keys(v).filter(isDay).sort().pop(), [y] = last.split('-'), out = {}; let c = 0;
   for (let mm = 1; mm <= 12 && c < 5200; mm++) for (let dd = 1; dd <= 29 && c < 5200; dd++) { const day = { d: [] }; for (let q = 0; q < 20; q++) { day.d.push({ iid: a }); c++; } out[(y - 1) + '-' + mm + '-' + dd] = day; }
   for (const k of Object.keys(v)) out[k] = v[k];
-  const { replaceOperationalFixture } = await import('./tasks_fx.mjs'); await replaceOperationalFixture(W.env, K, out);
+  const { replaceOperationalFixture } = await import('./world_fx.mjs'); await replaceOperationalFixture(W.env, K, out);
   const all = JSON.stringify(stored(W.env, K)).match(/img_[a-z0-9]+_[a-z0-9]+/g) || [];
   assert.ok(all.indexOf(z) >= 5000, 'the bound map is past mention 5000 (at ' + all.indexOf(z) + ' of ' + all.length + ')');
   const s = await edit(W, S.mgr, D, 'rounds', (d) => { const day = Object.keys(d).filter(isDay).sort().pop(); d[day].d[0].name = TAG + ' edit of today'; });
@@ -132,7 +132,7 @@ both(test, 'finding 4 · a kv value that mentions the id ACROSS two stored rows 
 both(test, 'finding 4 · a typed record whose reference row is missing (what the 5000-mention cap left behind): the one-time re-scan restores it before anything is condemned', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, b = id('legacy'), ctl = id('ctl'), K = dk(D, 'plan');
   await upload(W, S.mgr, b); await upload(W, S.mgr, ctl);
-  const { replaceOperationalFixture } = await import('./tasks_fx.mjs'), v = stored(W.env, K); v.floors[0].iid = b;
+  const { replaceOperationalFixture } = await import('./world_fx.mjs'), v = stored(W.env, K); v.floors[0].iid = b;
   await replaceOperationalFixture(W.env, K, v);                               /* the record shows b; no save of this build indexed it */
   W.env.DB.exec("DELETE FROM imgref WHERE img = '" + b + "'"); W.env.DB.exec("DELETE FROM meta WHERE k = 'imgref_scan_v1'");   /* the database as the previous build left it */
   assert.ok(mentions(W, K, b)); assert.deepEqual((await state(W, b)).refs, []);

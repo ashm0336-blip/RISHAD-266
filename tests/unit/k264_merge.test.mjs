@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadClient, sleep, fixture, cp, pageText } from './k264_vm.mjs';
 import { world, tab, roundsPage, tasksPage, KR, KT } from './k264_opconflict_fx.mjs';
+import { needs } from './harness.mjs';
 
 const offline = { req: async () => { throw new Error('offline'); } };
 function merger() {
@@ -154,7 +155,7 @@ const CASES = [
     /* tasks/logic.js _tkChange يعرض شرحَ الخدمة نفسَه */
     told: /حفظ غيرُك هذا السجلَّ قبلك[\s\S]*لم تُحفظ مسودتك[\s\S]*أعد تحميل الصفحة/ }
 ];
-for (const mode of ['legacy', 'enforce']) for (const K of CASES) test('[' + mode + '] D-6 (طرفٌ لطرف · قرار المالك d): ' + K.name + ' — الحفظُ الثاني تعارضٌ صريح بلا دمج، ثم إعادةُ القراءة والمحاولة تُثبت التعديلين', async () => {
+for (const mode of ['legacy', 'enforce']) for (const K of CASES) test('[' + mode + '] D-6 (طرفٌ لطرف · قرار المالك d): ' + K.name + ' — الحفظُ الثاني تعارضٌ صريح بلا دمج، ثم إعادةُ القراءة والمحاولة تُثبت التعديلين', needs('tasks'), async () => {
   const Wd = await world(mode), name = K.k.split(':')[2];
   const A = await tab(Wd, ...K.a), B = await tab(Wd, ...K.b);
   try {

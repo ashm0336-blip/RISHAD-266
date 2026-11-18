@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-const { world, stored } = await import('./tasks_fx.mjs');
+const { world, stored } = await import('./world_fx.mjs');
 
 const KU = 'bassam_auth_users_v1', KP = 'bassam_perms_v1';
 const PH = (pw, tag) => { const salt = crypto.createHash('sha256').update('legit|' + tag).digest().subarray(0, 16); return 'p2$100000$' + salt.toString('hex') + '$' + crypto.pbkdf2Sync(pw, salt, 100000, 32, 'sha256').toString('hex'); };

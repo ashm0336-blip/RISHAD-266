@@ -22,7 +22,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { internals } from './internals.mjs';
 import { TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
-import { world, workerUnderTest, D, PNG, TAG, stored, addAccount, putKV, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
+import { world, workerUnderTest, D, PNG, TAG, stored, addAccount, putKV, taskCommandBody, operationSaveBody } from './world_fx.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const WU = workerUnderTest();

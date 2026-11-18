@@ -655,7 +655,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/545-task-self.js",
+   "id": "systems/tasks/client/545-task-self.js",
    "kind": "js",
    "line": 10494,
    "openTag": "<script>",
@@ -665,7 +665,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/546-task-model.js",
+   "id": "systems/tasks/client/546-task-model.js",
    "kind": "js",
    "line": 10494,
    "openTag": "<script>",
@@ -674,7 +674,7 @@
    "new": "KIVO_264 · KIVO-Tasks المرحلة الثانية (نموذجُ المهمة في الواجهة — مرآةُ 070)"
   },
   {
-   "id": "services/547-custody-api.js",
+   "id": "systems/custody/client/547-custody-api.js",
    "kind": "js",
    "openTag": "<script>",
    "closeTag": "</script>",

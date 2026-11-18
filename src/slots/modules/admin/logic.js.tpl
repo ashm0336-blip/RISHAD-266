@@ -662,8 +662,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ad = N.add || "إضافة",
       ed = N.edit || "تعديل";
     (rows || []).forEach((r) => {
-      r && r.isLeaf && "tasks" === r.key && (r.chkTip += " · التكرار: إنشاءُ مهمةٍ متكررة = «" + ad + "» (+ «" + ed + "» لمكلَّفيها) · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «" + ed + "»");
-    });
+@@SYS:admin.tree.capTip.tasks@@    });
     return rows;
   }
   tpVals() {
@@ -1565,12 +1564,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         bassam_rounds_v1: "الجولات اليومية",
         bassam_dreport_v1: "التقرير اليومي",
         bassam_plan_v1: "الخطة التشغيلية",
-        bassam_tasks_v1: "المهام",
-        bassam_auth_users_v1: "حسابات الدخول",
+@@SYS:admin.keyLabels.tasks@@        bassam_auth_users_v1: "حسابات الدخول",
         bassam_perms_v1: "الصلاحيات",
         bassam_depts_v1: "الإدارات",
-@@SYS:admin.keyLabels@@        bassam_custody_v1: "العهد",
-      }[s] || (KL ? KL.label(s) : "بيانات المنصة")) + (e ? " · " + this.adDept(e[1]) : "")
+@@SYS:admin.keyLabels@@@@SYS:admin.keyLabels.custody@@      }[s] || (KL ? KL.label(s) : "بيانات المنصة")) + (e ? " · " + this.adDept(e[1]) : "")
     );
   }
   /* CORE-02 · «اليوم» في فلاتر الواجهة = منذ منتصف الليل بتوقيت الرياض (UTC+3 بلا توقيت صيفي) أيّاً كانت منطقة جهاز المتصفح */
@@ -3754,17 +3751,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!result.ok) { this.bsToast("تعذر جرد الإدارة أو رفض الخادم حذفها؛ لم تُنفّذ أي كتابة", "warn"); return; }
       const data = result.body, base = data.base, natural = value => Number.isSafeInteger(value) && value >= 0,
         globalKeys = ["bassam_depts_v1", "bassam_auth_users_v1", "bassam_perms_v1"];
-      if (data.kind !== "delete" || data.dept !== target.id || !data.department || data.department.id !== target.id || typeof data.department.name !== "string" || !base || !natural(base.epoch) || !natural(base.custody) || !base.kv || typeof base.kv !== "object" || Array.isArray(base.kv) || globalKeys.some(key => !natural(base.kv[key])) || Object.entries(base.kv).some(([key, value]) => (!key.startsWith("bsdept:" + target.id + ":") && !globalKeys.includes(key)) || !natural(value)) || !this._businessBaseValid(base) || !base.notifications || ["rev", "configRev", "broadcastRev"].some(key => !natural(base.notifications[key])) || !data.counts || ["keys", "accounts", "custody", @@SYS:admin.counts.list.1|pre="\"notifications\""|post="].some(key =>"|empty="\"notifications\"].some(key =>"@@ !natural(data.counts[key]))) {
+      if (data.kind !== "delete" || data.dept !== target.id || !data.department || data.department.id !== target.id || typeof data.department.name !== "string" || !base || !natural(base.epoch)@@SYS:admin.base.custody@@ || !base.kv || typeof base.kv !== "object" || Array.isArray(base.kv) || globalKeys.some(key => !natural(base.kv[key])) || Object.entries(base.kv).some(([key, value]) => (!key.startsWith("bsdept:" + target.id + ":") && !globalKeys.includes(key)) || !natural(value)) || !this._businessBaseValid(base) || !base.notifications || ["rev", "configRev", "broadcastRev"].some(key => !natural(base.notifications[key])) || !data.counts || ["keys", "accounts", @@SYS:admin.counts.custody@@@@SYS:admin.counts.list.1|pre="\"notifications\""|post="].some(key =>"|empty="\"notifications\"].some(key =>"@@ !natural(data.counts[key]))) {
         this.bsToast("وصل جرد ناقص من الخادم؛ لم يُسمح بحذف الإدارة", "warn"); return;
       }
       /* F01: إدارةٌ لها أقسام لا تُحذف — يسمّيها جردُ الخادم ويرفض الحذفَ نفسَه (dept-has-sections) */
       if (Array.isArray(data.sections) && data.sections.length) { this.bsToast("«" + data.department.name + "» لها أقسام (" + data.sections.map(x => x.name).join("، ") + ") — احذفها أولاً؛ لم تُنفّذ أي كتابة", "warn"); return; }
       const draft = { dept: target.id, actor, data: JSON.parse(JSON.stringify(data)), ticket: null, uncertain: false, needsReview: false, confirmed: false };
       this._deptDeleteDraft = draft;
-      const counts = data.counts, populated = counts.keys + counts.accounts + counts.custody + counts.notifications@@SYS:admin.delete.populated@@ > 0,
+      const counts = data.counts, populated = counts.keys + counts.accounts@@SYS:admin.delete.custodyPopulated@@ + counts.notifications@@SYS:admin.delete.populated@@ > 0,
         name = data.department.name;
       if (populated) {
-        const accepted = await KIVO.bsConfirm({ title: "حذف إدارة «" + name + "»", msg: "جرد الخادم: " + counts.keys + " مورد بيانات، " + counts.accounts + " حساب إدارة/موظف، " + counts.custody + " سجل عهدة، " + counts.notifications + " تنبيه@@SYS:admin.delete.message@@. سيُحذف تعريف الإدارة وحساباتها وبياناتها ومراجع صورها نهائياً. حسابات مسؤول المنصة والإدارات العامة والإدارات الأخرى محفوظة. صدّر نسخة احتياطية قبل الحذف إن احتجتها.", ok: "احذف الإدارة وكل بياناتها", danger: true, typed: name });
+        const accepted = await KIVO.bsConfirm({ title: "حذف إدارة «" + name + "»", msg: "جرد الخادم: " + counts.keys + " مورد بيانات، " + counts.accounts + " حساب إدارة/موظف، "@@SYS:admin.delete.custodyMsg@@ + counts.notifications + " تنبيه@@SYS:admin.delete.message@@. سيُحذف تعريف الإدارة وحساباتها وبياناتها ومراجع صورها نهائياً. حسابات مسؤول المنصة والإدارات العامة والإدارات الأخرى محفوظة. صدّر نسخة احتياطية قبل الحذف إن احتجتها.", ok: "احذف الإدارة وكل بياناتها", danger: true, typed: name });
         if (!accepted || this._deptDeleteDraft !== draft || this._wpActor() !== actor) return;
         draft.confirmed = true; execute = true;
       } else {
@@ -3801,7 +3798,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return this.bsToast(draft.needsReview ? "تغيّرت بيانات الإدارة؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُحذف الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تسمح بحذف الإدارة؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
       }
       const receipt = result.body, natural = value => Number.isSafeInteger(value) && value >= 0;
-      if (receipt.mode !== "dept-delete" || receipt.dept !== draft.dept || receipt.requestId !== draft.ticket.requestId || !natural(receipt.rev) || !receipt.revs || typeof receipt.revs !== "object" || Array.isArray(receipt.revs) || Object.values(receipt.revs).some(value => !natural(value)) || !receipt.counts || ["keys", "accounts", "custody", @@SYS:admin.counts.list.2|pre="\"notifications\""|post="].some(key =>"|empty="\"notifications\"].some(key =>"@@ !natural(receipt.counts[key]))) {
+      if (receipt.mode !== "dept-delete" || receipt.dept !== draft.dept || receipt.requestId !== draft.ticket.requestId || !natural(receipt.rev) || !receipt.revs || typeof receipt.revs !== "object" || Array.isArray(receipt.revs) || Object.values(receipt.revs).some(value => !natural(value)) || !receipt.counts || ["keys", "accounts", @@SYS:admin.counts.custody@@@@SYS:admin.counts.list.2|pre="\"notifications\""|post="].some(key =>"|empty="\"notifications\"].some(key =>"@@ !natural(receipt.counts[key]))) {
         draft.uncertain = true; return this.bsToast("وصل تأكيد حذف ناقص؛ أعد محاولة الطلب نفسه قبل أي عملية أخرى", "warn");
       }
       if (this._wpActor() !== actor || this._deptDeleteDraft !== draft) return;
@@ -3821,15 +3818,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!actor || !srv || srv.dirty() || srv.inflight() || srv.sesChanged() || !Number.isSafeInteger(v) || v < 0) throw new Error("حدّث البيانات وانتظر اكتمال الحفظ ثم أعد التصدير");
     return { actor, v, revs: Object.fromEntries(keys.map(k => [k, srv.rev(k)])) };
   }
-  async _irBackupFence(snapshot, irshad = false) {
+  async _irBackupFence(snapshot@@SYS:admin.fence.param@@) {
     const srv = KIVO.__BS_SRV;
     const same = () => this._wpActor() === snapshot.actor && window.__BS_BOOT?.v === snapshot.v && !srv.dirty() && !srv.inflight() && !srv.sesChanged() && Object.entries(snapshot.revs).every(([k, rev]) => srv.rev(k) === rev);
     if (!same()) throw new Error("تغيّرت البيانات؛ حدّثها ثم أعد التصدير");
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20000);
     try {
-      const response = await fetch((irshad ? "/api/irshad/export?uid=" : "/api/get?keys=&uid=") + encodeURIComponent(snapshot.actor), { credentials: "same-origin", cache: "no-store", signal: controller.signal });
+      const response = await fetch((@@SYS:admin.fence.url@@"/api/get?keys=&uid=") + encodeURIComponent(snapshot.actor), { credentials: "same-origin", cache: "no-store", signal: controller.signal });
       const value = await response.json();
-      if (!response.ok || value?.ok !== 1 || value[irshad ? "globalRev" : "v"] !== snapshot.v || !same()) throw new Error("حدّث البيانات من الخادم ثم أعد التصدير؛ لم تُنشأ نسخة جزئية");
+      if (!response.ok || value?.ok !== 1 || value[@@SYS:admin.fence.rev@@"v"] !== snapshot.v || !same()) throw new Error("حدّث البيانات من الخادم ثم أعد التصدير؛ لم تُنشأ نسخة جزئية");
       return value;
     } finally { clearTimeout(timer); }
   }
@@ -3870,10 +3867,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (generation !== this._wpGeneration || this.state.wpDid !== dept || this._wpActor() !== actor) return;
     if (!result.ok) return void this.setState({ wpNeedsReview: true, wpMsg: "تعذّر جرد الإدارة من الخادم؛ لم تُنفّذ أي كتابة" });
     const body = result.body, base = body.base, natural = value => Number.isSafeInteger(value) && value >= 0;
-    if (body.dept !== dept || !base || !natural(base.epoch) || !natural(base.custody) || !base.kv || typeof base.kv !== "object" || Array.isArray(base.kv) || Object.entries(base.kv).some(([key, value]) => !key.startsWith("bsdept:" + dept + ":") || !natural(value)) || !this._businessBaseValid(base) || !base.notifications || ["rev", "configRev", "broadcastRev"].some(key => !natural(base.notifications[key])) || !body.counts || !natural(body.counts.keys) || !natural(body.counts.custody) || !natural(body.counts.notifications)@@SYS:admin.wipe.natural@@)
+    if (body.dept !== dept || !base || !natural(base.epoch)@@SYS:admin.base.custody@@ || !base.kv || typeof base.kv !== "object" || Array.isArray(base.kv) || Object.entries(base.kv).some(([key, value]) => !key.startsWith("bsdept:" + dept + ":") || !natural(value)) || !this._businessBaseValid(base) || !base.notifications || ["rev", "configRev", "broadcastRev"].some(key => !natural(base.notifications[key])) || !body.counts || !natural(body.counts.keys)@@SYS:admin.wipe.custodyNatural@@ || !natural(body.counts.notifications)@@SYS:admin.wipe.natural@@)
       return void this.setState({ wpNeedsReview: true, wpMsg: "وصل جرد ناقص من الخادم؛ لم يُسمح بالمسح" });
     this._wpTicket = null;
-    this.setState({ wpBase: JSON.parse(JSON.stringify(base)), wpBaseActor: actor, wpCounts: JSON.parse(JSON.stringify(body.counts)), wpNeedsReview: false, wpMsg: "جرد خادمي: " + body.counts.keys + " مورد، " + body.counts.custody + " سجل عهدة" + (natural(body.counts.notifications) ? "، " + body.counts.notifications + " تنبيه" : "") + "@@SYS:admin.wipe.message@@. راجع القائمة قبل تأكيد المسح." });
+    this.setState({ wpBase: JSON.parse(JSON.stringify(base)), wpBaseActor: actor, wpCounts: JSON.parse(JSON.stringify(body.counts)), wpNeedsReview: false, wpMsg: "جرد خادمي: " + body.counts.keys + " مورد@@SYS:admin.wipe.custodyMsg@@" + (natural(body.counts.notifications) ? "، " + body.counts.notifications + " تنبيه" : "") + "@@SYS:admin.wipe.message@@. راجع القائمة قبل تأكيد المسح." });
   }
   async wpGo(dept) {
     if (this._wpBusy) return;
@@ -3904,7 +3901,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return void this.setState({ wpNeedsReview: result.err === "conflict", wpMsg: result.err === "conflict" ? "تغيّرت بيانات الإدارة؛ لم يُنفّذ طلب المسح بهذه النسخة. أعد مراجعة الجرد قبل التأكيد." : result.err === "reason" ? "يشترط الخادم سبباً لهذا الإجراء؛ تأكيد المسح محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تشمل مسح الإدارة" : "لم يصل تأكيد المسح؛ محفوظ طلبك لإعادة المحاولة نفسها دون ادعاء نجاح" });
       }
       const receipt = result.body;
-      if (receipt.dept !== dept || receipt.requestId !== ticket.body.requestId || !Number.isSafeInteger(receipt.rev) || receipt.rev < 0 || !receipt.counts || ["keys", "custody", @@SYS:admin.counts.list.3|pre="\"notifications\""|post="].some(key =>"|empty="\"notifications\"].some(key =>"@@ !Number.isSafeInteger(receipt.counts[key]) || receipt.counts[key] < 0))
+      if (receipt.dept !== dept || receipt.requestId !== ticket.body.requestId || !Number.isSafeInteger(receipt.rev) || receipt.rev < 0 || !receipt.counts || ["keys", @@SYS:admin.counts.custody@@@@SYS:admin.counts.list.3|pre="\"notifications\""|post="].some(key =>"|empty="\"notifications\"].some(key =>"@@ !Number.isSafeInteger(receipt.counts[key]) || receipt.counts[key] < 0))
         { this._wpUncertain = true; return void this.setState({ wpMsg: "تأكيد الخادم ناقص؛ لم يُعرض نجاح، أعد المحاولة بنفس الطلب" }); }
       if (this._wpActor() !== actor || this.state.wpDid !== dept) return;
       this._wpTicket = null; this._wpUncertain = false;
@@ -4333,10 +4330,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
          (الإنشاءُ task.create (+ task.assign بمكلَّفين) · التحويلُ إلى متكررة task.create + task.edit + task.assign · التعديلُ والإيقافُ والاستئنافُ والإنهاءُ task.edit)
          — يُلحق بتلميح الرقاقة كما يُلحق «يظهر في»، وبملاحظةِ ورقة «المهام»؛ والأسماءُ من السجلّ نفسِه فتطابق الرقاقات */
       REC = {
-        "task.create": "يشمل إنشاءَ مهمةٍ لمرة واحدة أو متكررة (يومي · أسبوعي · شهري)",
-        "task.edit": "يشمل تعديلَ التكرار وإيقافَه مؤقتاً واستئنافَه وإنهاءَه، وتحويلَ مهمةٍ إلى متكررة مع «" + lab("task.create") + "» و«" + lab("task.assign") + "»",
-        "task.assign": "يشمل مكلَّفي المهمة المتكررة",
-      },
+@@SYS:admin.tree.recNotes.tasks@@      },
       BADGE = {
         tab: ["تبويب", "var(--info-text)", "var(--info-soft)", "var(--info-border)"],
         page: ["صفحة", "var(--text-secondary)", "var(--bg-surface-3)", "var(--border-default)"],
@@ -4635,9 +4629,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     ? "عقدةُ المنصة: مفاتيحُها بالدور (مسؤول المنصة · مدير الإدارة) أو ذاتية لكل مستخدم — لا تدخل السقف ولا القوالب"
                     : gate
                       ? "العدسةُ إضافةٌ على كانفس " + hostTxt(l, " و") + " — بوابتُها: سقفُ الإدارة ∧ تفعيلُها للموظف"
-                      : "tasks" === l.owner
-                        ? "التكرار: إنشاءُ مهمةٍ متكررة = «" + lab("task.create") + "» (+ «" + lab("task.assign") + "») · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «" + lab("task.edit") + "»"
-                        : "",
+                      : @@SYS:admin.tree.leafNote.tasks@@"",
             /* المرجعُ المستقلّ: مفاتيحُه رقاقاتٌ في ورقة إدارته — وفي الخريطة لا تُكرَّر هنا (كلُّ مفتاحٍ مرةً واحدة) */
             chips = ("reference" === l.type && (!cap || map) ? [] : sts.concat(resvSt)).map(chip);
           kids.push({
@@ -8420,8 +8412,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             const r = (a.filter((t) => t.id === s)[0] || {}).name || "",
               i = {
                 bassam_employees_v1: "الموظفون",
-                bassam_custody_v1: "عهد الموظفين",
-                bassam_staffing_v3: "الورديات والجدول الشهري",
+@@SYS:admin.resLabels.custody@@                bassam_staffing_v3: "الورديات والجدول الشهري",
                 bassam_staffing_v2: "الورديات والجدول الشهري",
                 bassam_staffing_locks_v1: "اعتمادات الجدول",
                 bassam_staffing_snap_v1: "بيان الشهر (لقطة الاعتماد)",
@@ -8432,9 +8423,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 bassam_zone_opts_v1: "كتالوج المصليات",
                 bassam_gate_opts_v1: "كتالوج البوابات",
                 bassam_mark_kinds_v1: "كتالوج أنواع المعالم",
-                bassam_tasks_v1: "المهام",
-                bassam_tasks_locks_v1: "اعتمادات المهام",
-@@SYS:admin.wipe.labels@@                bassam_options_v1: "الخيارات العامة",
+@@SYS:admin.wipe.labels.tasks@@@@SYS:admin.wipe.labels@@                bassam_options_v1: "الخيارات العامة",
                 bassam_profile_v1: "الملف التعريفي",
               };
             let n = [];
@@ -8455,9 +8444,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               c6 && p.push({ label: "و" + KIVO.BassamCount(c6, "مجموعة|محفوظة غير مفعّلة") + " في هذه الإدارة" }),
               l && p.push({ label: "إعدادات داخلية (" + l + ")" }));
             const counts = e.wpCounts || {};
-            if (counts.custody > 0) p.push({ label: "سجل العهد والأصناف (" + counts.custody + ")" });
-            if (counts.notifications > 0) p.push({ label: "تنبيهات الإدارة (" + counts.notifications + ")" });
-@@SYS:admin.wipe.rows@@            const d = !!e.wpBase && ((counts.keys || 0) + (counts.custody || 0) + (counts.notifications || 0)@@SYS:admin.wipe.any@@ > 0);
+@@SYS:admin.wipe.custodyRow@@            if (counts.notifications > 0) p.push({ label: "تنبيهات الإدارة (" + counts.notifications + ")" });
+@@SYS:admin.wipe.rows@@            const d = !!e.wpBase && ((counts.keys || 0)@@SYS:admin.wipe.custodyAny@@ + (counts.notifications || 0)@@SYS:admin.wipe.any@@ > 0);
             return {
               wpOn: !0,
               wpTitle: "مسح جميع بيانات إدارة «" + r + "»",
@@ -9078,18 +9066,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             await this._irBackupFence(snapshot);
 @@SYS:admin.full.dstatsRead@@            if (!KIVO.BassamNotif) throw new Error("خدمة التنبيهات غير متاحة");
             const notificationExport=await KIVO.BassamNotif.exportDomain();
-            const custodyExport=await KIVO.Custody.exportDomain();
-            if (!custodyExport || custodyExport.ok !== 1) throw new Error("تعذّر تصدير مجال العهد؛ لم تُنشأ نسخة جزئية");
-            Object.keys(s).forEach(key=>{if (/(?:^|:)bassam_custody_v1$/.test(key)) delete s[key];});
-            if (!notificationExport || notificationExport.ok !== 1) throw new Error("تعذّر تصدير مجال التنبيهات");
+@@SYS:admin.full.custodyExport@@            if (!notificationExport || notificationExport.ok !== 1) throw new Error("تعذّر تصدير مجال التنبيهات");
             const declaredDepts=JSON.parse(s.bassam_depts_v1||"[]").map(d=>d.id);
-            if(!Array.isArray(custodyExport.domains)||JSON.stringify(custodyExport.domains.map(d=>d.scope.departmentId).sort())!==JSON.stringify(declaredDepts.slice().sort()))throw new Error("نطاق العهد لا يطابق إدارات النسخة");
-            const business = await KIVO.BackupRestore.exportDomains({departments:declaredDepts,full:true,v:snapshot.v,images:e||{}});
+@@SYS:admin.full.custodyScope@@            const business = await KIVO.BackupRestore.exportDomains({departments:declaredDepts,full:true,v:snapshot.v,images:e||{}});
             Object.keys(s).forEach(key => { if (/(?:^|:)bassam_(?:@@SYS:admin.full.stripKeys|sep="|"@@)_v[12]$/.test(key)||KIVO.__BS_SRV.operations.resources.includes(key.replace(/^bsdept:[^:]+:/,''))) delete s[key]; });
             await this._irBackupFence(snapshot);
-            const manifest={version:4,scope:"full",domains:{kv:1,@@SYS:admin.full.manifest.dstats@@notifications:1,custody:1,@@SYS:admin.full.manifest.systems|post="operations:1},departments:declaredDepts"|empty="operations:1},departments:declaredDepts"@@,keys:Object.keys(s).filter(k=>typeof s[k]==="string"&&k!=="bassam_active_dept_v1")};
+            const manifest={version:4,scope:"full",domains:{kv:1,@@SYS:admin.full.manifest.dstats@@notifications:1,@@SYS:admin.full.custodyManifest@@@@SYS:admin.full.manifest.systems|post="operations:1},departments:declaredDepts"|empty="operations:1},departments:declaredDepts"@@,keys:Object.keys(s).filter(k=>typeof s[k]==="string"&&k!=="bassam_active_dept_v1")};
             const a = new Date(),
-              r = { app: "bassam-crowd", version: 4, kind: "full", exportedAt: a.toISOString(), data: s, domains: {@@SYS:admin.full.domains.dstats@@notifications:notificationExport.domain,custody:custodyExport.domains,...business.domains}, manifest, idbImages: business.images, ...(business.missing && business.missing.length ? { imagesMissing: business.missing } : {}) },
+              r = { app: "bassam-crowd", version: 4, kind: "full", exportedAt: a.toISOString(), data: s, domains: {@@SYS:admin.full.domains.dstats@@notifications:notificationExport.domain@@SYS:admin.full.custodyDomain@@,...business.domains}, manifest, idbImages: business.images, ...(business.missing && business.missing.length ? { imagesMissing: business.missing } : {}) },
               i = KIVO.BassamCrypt;
             if (!i || !i.ok()) return void fail("تعذّر التصدير — التشفير غير متاح على هذا المتصفح");
             ((this._encPend = {

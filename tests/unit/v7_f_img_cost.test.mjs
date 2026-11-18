@@ -17,7 +17,7 @@ const typedSave = async (T) => { const s = await edit(T.W, T.S.mgr2, D2, 'plan',
 async function measured(T) {
   const { W, S } = T, DB = W.env.DB, k = 'bsdept:' + D2 + ':bassam_plan_v1';
   const g = await W.C.api('/api/operations/read?keys=' + encodeURIComponent(k), { cookie: S.mgr2 }); const v = g.j.resources[k]; v.floors[0].name = TAG + ' cost ' + (++n);
-  const fx = await import('./tasks_fx.mjs'), p = '/api/save', body = { set: { [k]: JSON.stringify(v) }, del: [], base: { [k]: g.j.base[k] }, why: { [k]: TAG + ' cost' } };
+  const fx = await import('./world_fx.mjs'), p = '/api/save', body = { set: { [k]: JSON.stringify(v) }, del: [], base: { [k]: g.j.base[k] }, why: { [k]: TAG + ' cost' } };
   const payload = fx.operationSaveBody(W.env, p, fx.taskCommandBody(W.env, p, body));
   const l0 = DB.log.length, t0 = DB.trips, c0 = performance.now();
   const r = await W.C.api(p, { method: 'POST', cookie: S.mgr2, body: payload }); assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 200));

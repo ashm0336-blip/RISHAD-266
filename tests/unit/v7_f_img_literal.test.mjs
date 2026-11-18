@@ -15,7 +15,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { internals } from './internals.mjs';
 import { WORKER } from './harness.mjs';
 import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, age, due, EDIT } from './v7_f_img_fx.mjs';
-import { world as tasksWorld, ME, hij, HR, taskCommandBody } from './tasks_fx.mjs';
+import { world as tasksWorld, ME, hij, HR, taskCommandBody } from './world_fx.mjs';
 import { world as restoreWorld } from './atomic_restore_review_fx.mjs';
 import { D1, IDS } from './notifications_review_fx.mjs';
 import { inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
@@ -175,7 +175,7 @@ both(test, 'P6 · such a spelling in a typed record\'s text with an odd-shaped c
 
 /* ── the other writers: the same acceptance of honest text (the fourth review refused it) ─────────────────────────────────────── */
 const esc1 = '\\u0041bc';                                                    /* one escaped letter: A = 'A' */
-for (const mode of ['legacy', 'enforce']) test('task note · an employee\'s note carrying a \\u escape of an id character is accepted and stored as written [' + mode + ']', { timeout: 600000 }, async () => {
+for (const mode of ['legacy', 'enforce']) test('task note · an employee\'s note carrying a \\u escape of an id character is accepted and stored as written [' + mode + ']', { ...needs('tasks'), timeout: 600000 }, async () => {
   const W = await tasksWorld({ mode }), dm = await W.login('0000000101', '70101'), me = await W.login(ME.un, ME.pw);
   const post = (ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: taskCommandBody(W.env, p, body) });
   const s = Date.now() - HR, cr = await post(dm.ck, '/api/tasks/create', { k: hij(s), t: TAG + ' lit', s, e: s + 3 * HR, asg: [ME.eid], rv: 'none' }); assert.equal(cr.status, 200);
@@ -188,7 +188,7 @@ for (const mode of ['legacy', 'enforce']) test('task note · an employee\'s note
   assert.equal(W.env.DB.q("SELECT COUNT(*) n FROM ops_task_row_proof WHERE f_note_text = ?", esc1)[0].n, 1, 'stored as written');
 });
 
-test('backup restore · a typed record carrying a \\u escape of an id character is restored as written', { ...needs('award', 'dstats', 'seized'), timeout: 600000 }, async () => {
+test('backup restore · a typed record carrying a \\u escape of an id character is restored as written', { ...needs('award', 'custody', 'dstats', 'seized'), timeout: 600000 }, async () => {
   const B = await restoreWorld(), OPTIONS = 'bsdept:' + D1 + ':bassam_options_v1';
   const restored = JSON.stringify({ type: [esc1], work: [TAG + ' restored'] }), request = await B.body({ scope: { kind: 'full' } });
   const keep = (o) => Object.fromEntries(Object.entries(o).filter(([name]) => name !== 'operations'));

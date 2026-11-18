@@ -8,6 +8,7 @@ import { webcrypto } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { D1Shim, PYTHON } from "./harness.mjs";
 import { operationalMigrationFixture } from "./operational_migration_fx.mjs";
+import { needs } from './harness.mjs';
 const C = vm.createContext({
   TextEncoder,
   crypto: webcrypto,
@@ -260,7 +261,7 @@ test("revision tombstones and department absence survive a late migration SQL ro
     close(env);
   }
 });
-test("migration DDL is the aggregate canonical58-table schema and carries the closed cutover guard", () => {
+test("migration DDL is the aggregate canonical58-table schema and carries the closed cutover guard", needs('tasks'), () => {
   const p = C.ocPrepare(C.opDefinitions()),
     expected = C.ocCreateStatements(p);
   assert.equal(Object.keys(C.ocPhysicalTables(p)).length, 58);

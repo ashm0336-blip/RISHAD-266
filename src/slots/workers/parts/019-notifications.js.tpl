@@ -172,139 +172,7 @@ var NF_TYPES = {
     txt: "مُنحت قالب «{القالب}» — {العدد} صفحات",
     go: "",
   },
-  task_new: {
-    id: "task_new",
-    k: "task",
-    name: "مهمة أُسندت إليك",
-    when: "فور الإسناد",
-    on: true,
-    to: ["own"],
-    lvl: "act",
-    chan: "toast",
-    txt: "أُسندت إليك «{المهمة}» — حتى {الوقت}",
-    go: "افتح المهمة",
-  },
-  task_soon: {
-    id: "task_soon",
-    k: "task",
-    name: "موعد المهمة يقترب",
-    when: "قبل الموعد بساعة",
-    on: true,
-    to: ["own"],
-    lvl: "act",
-    chan: "toast",
-    txt: "بقي {المدة} على «{المهمة}»",
-    go: "افتح المهمة",
-  },
-  task_late: {
-    id: "task_late",
-    k: "task",
-    name: "مهمة متأخرة",
-    when: "عند تجاوز الموعد",
-    on: true,
-    to: ["own", "lead", "mgr"],
-    lvl: "urg",
-    chan: "toast",
-    txt: "تأخّرت «{المهمة}» المسندة إلى {الاسم} عن موعدها {الوقت}",
-    go: "افتح المهام",
-  },
-  task_done: {
-    id: "task_done",
-    k: "task",
-    name: "إنجاز مهمة",
-    when: "فور الإنجاز",
-    on: true,
-    to: ["mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "أنجز {الاسم} «{المهمة}»",
-    go: "افتح المهام",
-  },
-  task_chg: {
-    id: "task_chg",
-    k: "task",
-    name: "تعديل مهمة أو إلغاؤها أو إعادة إسنادها",
-    when: "فور التغيير",
-    on: true,
-    to: ["own"],
-    lvl: "act",
-    chan: "bell",
-    txt: "{الفعل} مهمة «{المهمة}» — {التفصيل}",
-    go: "افتح المهمة",
-  },
-  cu_out: {
-    id: "cu_out",
-    k: "cust",
-    name: "تسليم عهدة",
-    when: "فور التسليم",
-    on: true,
-    to: ["own"],
-    lvl: "info",
-    chan: "bell",
-    txt: "سُلّمت لك عهدة «{العهدة}» ({الرقم}) — بتاريخ {التاريخ}",
-    go: "افتح العهد",
-  },
-  cu_in: {
-    id: "cu_in",
-    k: "cust",
-    name: "استرجاع عهدة",
-    when: "فور الاسترجاع",
-    on: true,
-    to: ["own", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "استُرجعت عهدة «{العهدة}» من {الاسم}",
-    go: "",
-  },
-  cu_late: {
-    id: "cu_late",
-    k: "cust",
-    name: "عهدة متأخرة الإرجاع",
-    when: "عند تجاوز الموعد",
-    on: true,
-    to: ["own", "mgr"],
-    lvl: "act",
-    chan: "bell",
-    txt: "عهدة «{العهدة}» لدى {الاسم} تجاوزت موعد إرجاعها {التاريخ}",
-    go: "افتح العهد",
-  },
-  cu_lost: {
-    id: "cu_lost",
-    k: "cust",
-    name: "عهدة تالفة أو مفقودة",
-    when: "فور التسجيل",
-    on: true,
-    to: ["mgr", "sys"],
-    lvl: "urg",
-    chan: "toast",
-    txt: "سُجّلت عهدة «{العهدة}» {الحالة} — {الاسم}",
-    go: "افتح العهد",
-  },
-  cu_bond: {
-    id: "cu_bond",
-    k: "cust",
-    name: "اعتماد سند تسليم / استلام",
-    when: "فور الاعتماد",
-    on: true,
-    to: ["own", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "اعتُمد سند {النوع} رقم {الرقم} — {العدد} أصناف",
-    go: "افتح السند",
-  },
-  cu_stock: {
-    id: "cu_stock",
-    k: "cust",
-    name: "نفاد صنف من المستودع",
-    when: "عند آخر قطعة",
-    on: true,
-    to: ["mgr"],
-    lvl: "act",
-    chan: "bell",
-    txt: "لم يبقَ من «{الصنف}» قطع متاحة في المستودع",
-    go: "افتح المستودع",
-  },
-  st_shift: {
+@@SYS:nf.types.tasks@@@@SYS:nf.types.custody@@  st_shift: {
     id: "st_shift",
     k: "staff",
     name: "تغيير وردية موظف في الجدول",
@@ -1117,9 +985,7 @@ var NF_REV = "bassam_notifications_domain_v1",
 var NF_GLOBAL = ["bassam_notif_sys_v1", "bassam_bc_v1", "bassam_notif_cfg_v1"];
 var NF_CAP = {
   emp: "emps",
-  task: "tasks",
-  cust: "emps/custody",
-  staff: "staff",
+@@SYS:nf.cap.tasks@@@@SYS:nf.cap.custody@@  staff: "staff",
   plan: "plan",
   ready: "planning/readiness",
   rep: "dreport",
@@ -2156,7 +2022,7 @@ async function nfFeedRows(env, A, opts) {
   if (A.u.role === "super" && !opts.all) where += " AND (m.department='' OR m.department=?6 OR m.category IN ('sys','sec'))";
   bind.push(opts.dept || A.u.deptId || "");
   where += " AND json_valid(?5) AND ?6 IS NOT NULL";
-  var from =
+@@SYS:nf.feed.known.award|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.custody|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.irshad|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.seized|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.tasks|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@  var from =
       " FROM notification_messages m LEFT JOIN notification_user_state s ON s.account_uid=?1 AND s.message_scope=m.scope AND s.message_id=m.id WHERE ",
     pin = "CASE WHEN m.pinned=1 AND COALESCE(s.read_at,0)=0 THEN 1 ELSE 0 END",
     cursor = opts.cursor || "",
@@ -2997,7 +2863,7 @@ var NF_DENY_WIN_MS = 60000,
 /* prettier-ignore */
 var NF_DENY_PAGES = {
   @@SYS:nf.denyPages.dstats@@emps: "موظفو الإدارة", planning: "الخطة التشغيلية", staff: "الجدول الشهري", plan: "التشغيل الميداني",
-  daily: "المتابعة اليومية", dreport: "التقرير اليومي", tasks: "المهام",@@SYS:nf.denyPages.2@@
+  daily: "المتابعة اليومية", dreport: "التقرير اليومي",@@SYS:nf.denyPages.tasks@@@@SYS:nf.denyPages.2@@
   @@SYS:nf.denyPages.3@@links: "مواقع ذات صلة", help: "المساعدة", admin: "الإعدادات",
 };
 /* prettier-ignore */
@@ -3006,13 +2872,13 @@ var NF_DENY_RECS = {
   bassam_platform_v1: "إعدادات المنصة", bassam_struct_seed_v1: "تهيئة الهيكل التنظيمي", bassam_perm_admsubs_v2: "ترقية الصلاحيات",
   bassam_session_v1: "الجلسة", bassam_theme: "المظهر", bassam_active_dept_v1: "الإدارة النشطة", bassam_fresh_login_v1: "راية أول دخول",
   bassam_notif_mute_v1: "كتم التنبيهات", bassam_page_v1: "الصفحة المحفوظة", bassam_st_grp_v1: "مجموعات الجدول الشهري",
-  bassam_employees_v1: "قائمة الموظفين", bassam_options_v1: "خيارات الموظفين", bassam_custody_v1: "عهد الموظفين",
+  bassam_employees_v1: "قائمة الموظفين", bassam_options_v1: "خيارات الموظفين",@@SYS:nf.denyRecs.custody@@
   bassam_staffing_v3: "الجدول الشهري", bassam_staffing_v2: "الجدول الشهري (صيغة قديمة)", bassam_staffing_snap_v1: "بيان الشهر",
   bassam_staffing_locks_v1: "أقفال الجدول الشهري", bassam_callsigns_v1: "رموز النداء", bassam_perm_limit_v1: "ترقية الصلاحيات",
   bassam_plan_v1: "الخطة التشغيلية", bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب",
   bassam_mark_kinds_v1: "أنواع المعالم", bassam_rounds_v1: "الجولات اليومية", bassam_dayshift_v1: "الوردية المختارة",
   bassam_dayfocus_v1: "اليوم المختار", bassam_dreport_v1: "التقرير اليومي", bassam_dr_grp_v1: "مجموعات التقرير اليومي",
-  bassam_leave_kinds_v1: "أنواع الإجازات", bassam_tasks_v1: "المهام", bassam_tasks_locks_v1: "أقفال المهام",@@SYS:nf.denyRecs.1@@
+  bassam_leave_kinds_v1: "أنواع الإجازات",@@SYS:nf.denyRecs.tasks@@@@SYS:nf.denyRecs.1@@
   @@SYS:nf.denyRecs.2@@
   @@SYS:nf.denyRecs.3@@
   @@SYS:nf.denyRecs.4@@
@@ -3062,22 +2928,19 @@ var NF_DENY_WHY = {
   selfdev: "سجل جهاز التنبيهات لصاحبه وحده", notif: "سجل التنبيهات القديم لم يعد يُكتب", "domain-moved": "السجل انتقل إلى مسار خاص ولا يُحفظ بالحفظ العام",
 @@SYS:nf.denyWhy.dstats@@  /* employees and tasks */
   "emp-dup": "رقم الهوية أو الجوال أو الرقم الوظيفي مسجَّل لموظف أو حساب آخر",
-  "task-asg": "لا يُغيَّر مكلَّف مهمة بدأها أو أنهاها أو اعتذر عنها", "task-acct": "لا تُسند مهمة إلا لموظف له حساب نشط",
-  "task-rv": "المراجِع لا يكون المكلَّف نفسه", "task-own": "توثيق الموظف لا يُمحى بالحفظ", "task-del": "لا تُحذف مهمة بدأ عليها نشاط",
-  "task-x": "إعدادات المهمة تُغيَّر من أزرار المهمة وحدها",
-  /* images */
+@@SYS:nf.denyWhy.tasks@@  /* images */
   "img-escape": "السجل أكبر من الحد المسموح للحفظ", "img-limit": "في السجل أكثر من ٥٠٠٠ صورة مختلفة", missing: "الصورة غير موجودة",
   imgown: "التعديل يشير إلى صورة لا يملكها", bound: "الصورة تتبع سجلاً لا يملك تعديله", claim: "الصورة رفعها حساب آخر ولم تُربط بسجل بعد",
   inuse: "الصورة مستعملة في سجل آخر", amb: "صورة قديمة لم تُحسم ملكيتها فهي لمسؤول المنصة وحده", orphan: "صورة أُزيل مرجعها وتنتظر الحذف",
   /* custody · retro window · notifications route */
-  "custody:": "صلاحيته لا تشمل هذا الإجراء في عهد الموظفين", "custody-transition": "التعديل يمسّ عهد الموظفين ولم يُقبل",
+  @@SYS:nf.denyWhy.custody@@"custody-transition": "التعديل يمسّ عهد الموظفين ولم يُقبل",
   "retro.": "لا يملك صلاحية فتح نافذة الاستدراك أو إغلاقها", "notification-scope": "خارج نطاقه في التنبيهات",
   "notification-ack-required": "تنبيه يتطلب الإقرار قبل إخفائه", "notification-broadcast-permission": "لا يملك صلاحية إرسال التعاميم",
   "notification-export-permission": "لا يملك صلاحية تصدير التنبيهات",
 };
 function nfDenyWhy(detail) {
   var s = String(detail == null ? "" : detail),
-    m = /^(custody:|retro\.|users · dup-id )/.exec(s),
+    m = /^(@@SYS:nf.denyWhy.custody.rx@@retro\.|users · dup-id )/.exec(s),
     k = m ? m[1] : s;
   return Object.prototype.hasOwnProperty.call(NF_DENY_WHY, k) ? NF_DENY_WHY[k] : NF_DENY_GENERIC;
 }

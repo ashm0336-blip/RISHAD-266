@@ -1,7 +1,7 @@
 /* V7-F · shared helpers for the image-orphan tests (real worker · legacy AND enforce · stored rows AND R2 bytes). TEST_ONLY identities. */
 import assert from 'node:assert/strict';
 import { needs } from './harness.mjs';
-import { world, workerUnderTest, D, PNG, TAG, stored, taskCommandBody, operationSaveBody, putKV, replaceOperationalFixture } from './tasks_fx.mjs';
+import { world, workerUnderTest, D, PNG, TAG, stored, taskCommandBody, operationSaveBody, putKV, replaceOperationalFixture } from './world_fx.mjs';
 export { D, PNG, TAG, stored, putKV };
 export const WU = workerUnderTest();
 export const K_USERS = 'bassam_auth_users_v1', K_DEPTS = 'bassam_depts_v1';

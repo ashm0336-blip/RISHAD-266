@@ -18,11 +18,7 @@ var ENT = {
                                 adopt: { at: '', drop: ['job'] } },
   /* loadOptions: { type:[نصوص], work:[نصوص] } */
   'bassam_options_v1':        { empty: '{}', prim: ['type', 'work'] },
-  /* العهد: items هويتها الاسم — لا id تكتبه الواجهة — وmoves إلحاقية بلا معرّف */
-  'bassam_custody_v1':        { cols: [{ at: 'items', idf: ['name'], lock: ['name'] }, { at: 'moves', idf: [] }],
-                                empty: '{"items":[],"moves":[]}', append: ['moves'],
-                                rename: { at: 'items', field: 'name', cascade: [{ at: 'moves', field: 'item' }] } },
-@@SYS:ent.reg@@  /* ── الإعدادات ── */
+@@SYS:ent.custody@@@@SYS:ent.reg@@  /* ── الإعدادات ── */
   /* sfRead: [{ name, color, tStart, tEnd }] — الاسم هويةٌ، وإعادة تسميته عملية edit */
   'bassam_shift_options_v1':  { cols: [{ at: '', idf: ['name'], lock: ['name'] }], empty: '[]',
                                 rename: { at: '', field: 'name' } },
@@ -37,10 +33,7 @@ var ENT = {
   'bassam_staffing_v2':       { map: 1, sub: 'map', empty: '{}' },
   'bassam_staffing_snap_v1':  { map: 1, empty: '{}' },
   'bassam_staffing_locks_v1': { map: 1, empty: '{}' },
-  /* ── المهام ── */
-  'bassam_tasks_v1':          { map: 1, sub: 'list', empty: '{}' },
-  'bassam_tasks_locks_v1':    { map: 1, empty: '{}' },
-  /* ── التقرير اليومي ── */
+@@SYS:ent.reg.tasks@@  /* ── التقرير اليومي ── */
   'bassam_dreport_v1':        { map: 1, empty: '{}' },
   /* drGrpPref: { on:true, closed:{…} } */
   'bassam_dr_grp_v1':         { empty: '{}' },

@@ -137,7 +137,7 @@ both(test, 'F4 · a record that ALREADY stores an undecided text saves for an un
   assert.notEqual(detail(r5, KP2), detail(r3, KP), 'its own reason'); assert.ok(detail(r5, KP2).length > 10);
 });
 
-test('F4 · backup restore: a file whose record carries an undecided text is refused whole when the platform does not hold that text; when the stored record already holds it, the same file is restored', { ...needs('award', 'dstats', 'seized'), timeout: 600000 }, async () => {
+test('F4 · backup restore: a file whose record carries an undecided text is refused whole when the platform does not hold that text; when the stored record already holds it, the same file is restored', { ...needs('award', 'custody', 'dstats', 'seized'), timeout: 600000 }, async () => {
   const OPT = 'bsdept:' + D1 + ':bassam_options_v1', work = TAG + ' r ' + chain('xyz\\u0041', 70), text = JSON.stringify({ type: [], work: [work] });
   const keep = (o) => Object.fromEntries(Object.entries(o).filter(([name]) => name !== 'operations'));
   async function run(seedText) {

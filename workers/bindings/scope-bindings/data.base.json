@@ -55,7 +55,7 @@
   "DateRange": {
    "status": "as-is-ui-only",
    "confidence": "medium",
-   "evidence": "rounds/dreport/plan/staffing/tasks: أقفالٌ واجهية"
+   "evidence": "rounds/dreport/plan/staffing: أقفالٌ واجهية"
   },
   "Source": {
    "status": "as-is-enforced",
@@ -69,150 +69,6 @@
   }
  },
  "bindings": [
-  {
-   "key": "cust.view",
-   "owner": "emps/custody",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "ref.custody_type.create",
-   "owner": "emps/custody",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "ref.custody_type.edit",
-   "owner": "emps/custody",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "cust.move.issue",
-   "owner": "emps/custody",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "cust.move.return",
-   "owner": "emps/custody",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "cust.move.damage",
-   "owner": "emps/custody",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "cust.move.lost",
-   "owner": "emps/custody",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "ref.custody_type.delete",
-   "owner": "emps/custody",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
   {
    "key": "ready.view",
    "owner": "planning/readiness",
@@ -1035,174 +891,6 @@
     ],
     "Zone/Element": [
      "elementId"
-    ]
-   }
-  },
-  {
-   "key": "task.view",
-   "owner": "tasks",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
-   "key": "task.create",
-   "owner": "tasks",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
-   "key": "task.edit",
-   "owner": "tasks",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
-   "key": "task.assign",
-   "owner": "tasks",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
-   "key": "task.evidence",
-   "owner": "tasks",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
-   "key": "task.delete",
-   "owner": "tasks",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
     ]
    }
   },
@@ -3505,174 +3193,6 @@
    }
   },
   {
-   "key": "task.accept",
-   "owner": "tasks",
-   "type": "operation",
-   "g": "to-bind",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
-   "key": "task.finish",
-   "owner": "tasks",
-   "type": "operation",
-   "g": "to-bind",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
-   "key": "task.reopen",
-   "owner": "tasks",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
-   "key": "task.month.lock",
-   "owner": "tasks",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
-   "key": "task.month.reopen",
-   "owner": "tasks",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
-   "key": "task.bulk.delete",
-   "owner": "tasks",
-   "type": "operation",
-   "g": "to-bind",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1",
-    "bassam_tasks_locks_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Assigned": [
-     "taskAssignee"
-    ],
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
    "key": "tpl.supervisory",
    "owner": "admin/ptpls",
    "type": "decision",
@@ -3737,21 +3257,6 @@
     ],
     "DateRange": [
      "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "ref.custody_type.view",
-   "owner": "emps/custody",
-   "type": "view",
-   "g": "exists",
-   "res": "bassam_custody_v1",
-   "resources": [
-    "bassam_custody_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
     ]
    }
   },
@@ -4453,21 +3958,6 @@
    }
   },
   {
-   "key": "self.task.respond",
-   "owner": "tasks",
-   "type": "operation",
-   "g": "exists",
-   "res": "bassam_tasks_v1",
-   "resources": [
-    "bassam_tasks_v1"
-   ],
-   "dims": {
-    "Own": [
-     "taskAssignee"
-    ]
-   }
-  },
-  {
    "key": "self.task.proof.upload",
    "owner": "images",
    "type": "edit",
@@ -4599,25 +4089,6 @@
     "Global": "no-record-scope"
    }
   },
-  "bassam_tasks_v1": {
-   "items": "tasksItems",
-   "evidence": "[\"y-m-d\"][row] · row[14] المكلَّف · row[13] المعرّف · أقفالُ bassam_tasks_locks_v1",
-   "lock": "tasks: locks[y-m] === true — من موردٍ آخر (قد يغيب الدليل → unknown)",
-   "dims": {
-    "Department": "keyDept",
-    "Branch": "branchCeiling",
-    "Assigned": "taskAssignee",
-    "Own": "taskAssignee",
-    "DateRange": "periodLock"
-   },
-   "na": {
-    "Site": "no-site-identity",
-    "Zone/Element": "no-element-identity",
-    "Shift": "no-shift-identity",
-    "Source": "department-resource",
-    "Global": "no-record-scope"
-   }
-  },
   "bassam_employees_v1": {
    "items": "employeeItems",
    "evidence": "[eid|nid|name] · هويةُ السجل = مفتاحُ الموظف (empKeyOf)",
@@ -4633,25 +4104,6 @@
     "Shift": "employee.shift بيانٌ لا نطاق",
     "Assigned": "no-assignment-field",
     "DateRange": "no-period-identity",
-    "Source": "department-resource",
-    "Global": "no-record-scope"
-   }
-  },
-  "bassam_custody_v1": {
-   "items": "custodyItems",
-   "evidence": "items[name] · moves[] إلحاقية {t, eid, y, m, d}",
-   "lock": "custody: لا آليةَ قفلٍ زمنيّ → allow:no-temporal-lock",
-   "dims": {
-    "Department": "keyDept",
-    "Branch": "branchCeiling",
-    "DateRange": "periodLock"
-   },
-   "na": {
-    "Site": "no-site-identity",
-    "Zone/Element": "no-element-identity",
-    "Shift": "no-shift-identity",
-    "Assigned": "no-assignment-field",
-    "Own": "no-owner-identity (eid = صاحب العهدة)",
     "Source": "department-resource",
     "Global": "no-record-scope"
    }
@@ -4885,7 +4337,7 @@
   },
   {
    "term": "reopen",
-   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · task.reopen)",
+   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen)",
    "notA": "ليس فتحَ نافذةٍ زمنية للاستدراك (retro.open)",
    "classifier": "mo:1 / زوالُ ap ⇒ *.reopen — لا يُصنَّف retro.open أبداً"
   },
@@ -5111,7 +4563,6 @@
      "field.view",
      "report.view",
      "report.indicators.view",
-     "task.view",
      "ready.view",
      "backup.view"
     ],
@@ -5149,11 +4600,6 @@
      {
       "cap": "dreport:view",
       "key": "report.indicators.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "tasks:view",
-      "key": "task.view",
       "source": "reference-read"
      },
      {
@@ -5182,7 +4628,6 @@
      "ref.employment_type.view",
      "staff.view",
      "ref.work_type.view",
-     "task.view",
      "ready.view",
      "backup.view"
     ],
@@ -5208,11 +4653,6 @@
       "source": "explicit-read"
      },
      {
-      "cap": "tasks:view",
-      "key": "task.view",
-      "source": "reference-read"
-     },
-     {
       "cap": "planning:view",
       "key": null,
       "source": "no-atom"
@@ -5220,33 +4660,6 @@
      {
       "cap": "planning/readiness:view",
       "key": "ready.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_custody_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability",
-    "keys": [
-     "cust.view",
-     "ref.custody_type.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "emps/custody:view",
-      "key": "cust.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "emps/custody:view",
-      "key": "ref.custody_type.view",
       "source": "explicit-read"
      },
      {
@@ -5268,7 +4681,6 @@
      "field.view",
      "report.view",
      "report.indicators.view",
-     "task.view",
      "ready.view",
      "backup.view"
     ],
@@ -5307,11 +4719,6 @@
       "cap": "dreport:view",
       "key": "report.indicators.view",
       "source": "explicit-read"
-     },
-     {
-      "cap": "tasks:view",
-      "key": "task.view",
-      "source": "reference-read"
      },
      {
       "cap": "planning:view",
@@ -5984,7 +5391,6 @@
      "field.view",
      "emp.view",
      "staff.view",
-     "task.view",
      "ready.view",
      "backup.view"
     ],
@@ -6017,11 +5423,6 @@
      {
       "cap": "staff:view",
       "key": "staff.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "tasks:view",
-      "key": "task.view",
       "source": "reference-read"
      },
      {
@@ -6108,48 +5509,6 @@
     ],
     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
    },
-   "bassam_tasks_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability",
-    "keys": [
-     "task.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "tasks:view",
-      "key": "task.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_tasks_locks_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability",
-    "keys": [
-     "task.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "tasks:view",
-      "key": "task.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
    "bassam_shift_options_v1": {
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
@@ -6161,7 +5520,6 @@
      "field.view",
      "report.view",
      "report.indicators.view",
-     "task.view",
      "ready.view",
      "ref.shift.view",
      "backup.view"
@@ -6203,11 +5561,6 @@
       "source": "reference-read"
      },
      {
-      "cap": "tasks:view",
-      "key": "task.view",
-      "source": "reference-read"
-     },
-     {
       "cap": "planning:view",
       "key": null,
       "source": "no-atom"
@@ -6240,7 +5593,6 @@
      "emp.view",
      "plan.view",
      "staff.view",
-     "task.view",
      "ready.view",
      "backup.view"
     ],
@@ -6273,11 +5625,6 @@
      {
       "cap": "staff:view",
       "key": "staff.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "tasks:view",
-      "key": "task.view",
       "source": "reference-read"
      },
      {

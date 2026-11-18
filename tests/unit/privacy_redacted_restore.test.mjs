@@ -30,7 +30,7 @@ async function restore(w, ck, file, phase) {
 const revOf = (w, k) => (w.env.DB.q('SELECT rev FROM revs WHERE k = ' + "'" + k + "'")[0] || {}).rev || 0;
 
 for (const mode of MODES) {
-  test('PRIVACY redacted copy [' + mode + ']: an export without personal data is marked and no restore accepts it; nothing is written', needs('award', 'seized'), async () => {
+  test('PRIVACY redacted copy [' + mode + ']: an export without personal data is marked and no restore accepts it; nothing is written', needs('award', 'custody', 'seized'), async () => {
     const w = await privWorld(mode);
     setSheet(w, 'tst_e_emp1', { 'admin/backup': ['view', 'add', 'edit'] });
     const { file, redacted } = await deptCopy(w, await login(w, 'emp1'));
@@ -53,7 +53,7 @@ for (const mode of MODES) {
     assert.equal(w.env.DB.q("SELECT v FROM meta WHERE k='rev'")[0].v, v0, 'no write at all');
   });
 
-  test('PRIVACY redacted copy [' + mode + ']: the unit manager\'s full export is unmarked and restores normally', needs('award', 'seized'), async () => {
+  test('PRIVACY redacted copy [' + mode + ']: the unit manager\'s full export is unmarked and restores normally', needs('award', 'custody', 'seized'), async () => {
     const w = await privWorld(mode);
     const { file, redacted } = await deptCopy(w, await login(w, 'dm1'));
     assert.deepEqual(redacted, [], 'no redaction');

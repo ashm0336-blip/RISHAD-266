@@ -1405,12 +1405,7 @@ function tooMany(sec) {
    الاستعادةُ ببوّابة استثناء H-1 نفسِها (018 taskSrvExempt: الإنفاذ بسياسة enfSavePrep · القديم بعلامتها لمن يقبلها) · والاستيرادُ لحامل admin/import
    (القديم) أو import.replace (الإنفاذ). كان حدثُ {etype:'dataset', act:'import'|'restore'} يدّعيه العميلُ على أيّ مفتاحٍ يكفي — فيمحو حاملُ task.edit
    توثيقَ الموظف (21) وتُكنس صورةُ إثباته ويعيد كتابةَ ملاحظته. rst/imp: علامتا المفتاح (rstK9 · impK9) · X: سياقُ الإنفاذ (ENFX) أو null */
-function tkKeepOff(A, k, d, rst, imp, X) {
-  if (rst[k] && taskSrvExempt(A, d, { rst: 1, enf: X ? { restore: !!X.restore } : null })) return true;
-  if (imp[k]) return X ? enfHeld(A, d, 'import.replace') : actsHeldOn(A, d, 'admin/import', ['del']);
-  return false;
-}
-/* ── تنفيذ الحفظ: {set, del, base} → القاعدة ──
+@@SYS:save.keepOff.tasks@@/* ── تنفيذ الحفظ: {set, del, base} → القاعدة ──
    لكل مفتاح: (١) التفويض — يُرفض ما لا يحق للفاعل كتابته ويعود بقيمته
    الحالية ليرتدّ المتصفح عنها؛ (٢) التعارض — إن أرسل المتصفح رقم النسخة
    التي بنى عليها تعديله (base) وكان الخادم قد تجاوزها فلا تُكتب القيمة بل
@@ -1436,8 +1431,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var set = (body && body.set) || {}, del = (body && body.del) || [], base = (body && body.base) || {};
   /* Retired document key: reject the entire mixed batch before any mutation. In
      particular a full restore must never acknowledge a partial relational restore. */
-  var moved = Object.keys(set).concat(del.map(String)).filter(function (k) { return @@SYS:save.moved.dstats@@nfLegacyKey(k) || cuLegacyKey(k) || (@@SYS:save.moved.irshad@@bdLegacyKey(k)); });
-  if (moved.length) { var denied = {}; moved.forEach(function (k) { denied[k] = { why: 'domain-moved', path: @@SYS:save.movedPath@@cuLegacyKey(k) ? '/api/custody' : @@SYS:save.movedPath.dstats|pre="nfLegacyKey(k) ? '/api/notifications' : "|post=" }; });"|empty="nfLegacyKey(k) ? '/api/notifications' : '' }; });"@@ return { v: await curRev(env), revs: {}, denied: denied, conflicts: {}, atomic: 'domain-moved' }; }
+  var moved = Object.keys(set).concat(del.map(String)).filter(function (k) { return @@SYS:save.moved.dstats@@nfLegacyKey(k) ||@@SYS:keys.moved.custody@@ (@@SYS:save.moved.irshad@@bdLegacyKey(k)); });
+  if (moved.length) { var denied = {}; moved.forEach(function (k) { denied[k] = { why: 'domain-moved', path: @@SYS:save.movedPath@@@@SYS:save.movedPath.dstats|pre="nfLegacyKey(k) ? '/api/notifications' : "|post=" }; });"|empty="nfLegacyKey(k) ? '/api/notifications' : '' }; });"@@ return { v: await curRev(env), revs: {}, denied: denied, conflicts: {}, atomic: 'domain-moved' }; }
   /* R169: أحداثُ السجل المرافقة — تُقبل فقط لمفاتيح هذا الطلب، وتُكتب مع القيمة في الدفعة نفسِها */
   var audKeysOk = {}; for (var ka9 in set) audKeysOk[String(ka9)] = 1; for (var da9 = 0; da9 < del.length; da9++) audKeysOk[String(del[da9])] = 1;
   var audIn = audClean(body && body.aud, audKeysOk);
@@ -1503,8 +1498,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* سياق الطلب لكل إدارةٍ يمسّها: سجل الموظفين كما سيصير بعد هذا الطلب —
      فارغاً كان أو ممتلئاً — ومفاتيحُه الحيّة التي يُقاس عليها ما زال وما بقي.
      يُحسب مرّةً واحدة لكل إدارة، ولا يُحسب لمن لا يحتاجه. */
-  var CTX_RES = { 'bassam_dreport_v1': 1, @@SYS:cleanup.ctxRes.award|pre="'bassam_custody_v1': 1,"|post=" 'bassam_employees_v1': 1,"|empty="'bassam_custody_v1': 1, 'bassam_employees_v1': 1,"@@
-                  'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1, 'bassam_tasks_v1': 1, 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
+  var CTX_RES = { 'bassam_dreport_v1': 1, @@SYS:cleanup.ctxRes.custody@@@@SYS:cleanup.ctxRes.award@@ 'bassam_employees_v1': 1,
+                  'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1,@@SYS:cleanup.ctxRes.tasks@@ 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
   var wipeCtx = {}, empCtx = {}, empRaw9 = {};
   for (k in set) {
     var rnW = resName(k);
@@ -1528,18 +1523,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* KIVO_265 · المراجعةُ الموحّدة (R-2): سياقُ قاعدة الحساب النشط للحفظ الخامّ لمخزن المهام (018 taskAcctWhy) — حساباتُ الدخول بقيمتها الحالية وسجلُّ
      موظفي الإدارة كما بعد هذه الدفعة (كسياق حذف الموظف أعلاه) — ولا يُقرأ لمسارات الخادم (taskSrvExempt).
      إعادةُ المراجعة (N-3): الحساباتُ من الفاعل نفسِه (A.users — قرأها actorOf لهذا الطلب) فلا قراءةَ ثانيةً لسجلّها في كل حفظٍ للمهام */
-  var tkCtx9 = {}, tkUs9 = null, tkUs9b = null;
-  if (!A.__tkSrv) for (k in set) {
-    if (resName(k) !== 'bassam_tasks_v1') continue;
-    var dT9 = parseKey(k).dept; if (!dT9 || tkCtx9[dT9]) continue;
-    if (tkUs9 === null) { tkUs9 = Array.isArray(A.users) ? A.users : parseJson(await kvGet(env, 'kv', K_USERS), []); if (!Array.isArray(tkUs9)) tkUs9 = []; }
-    /* KIVO_265 · G-2 (تحقّقُ الخلفية): والحساباتُ كما بعد هذه الدفعة إن حملت سجلَّ الحسابات — users2 (018 taskAcctWhy: نشطٌ في القائمتين) */
-    /* الفحصُ العميق (R4): الحفظةُ تحمل القائمةَ كما رآها الفاعل — فتُكمَّل بما حُجب عنه (usersNoIn · usersScopeIn) كما ستُكتب */
-    /* مراجعةُ التكامل W1-R1: قائمةٌ من إسقاطٍ قديم لا تُكتب (تعارض) ⇒ الحساباتُ بعد الدفعة هي الحالية */
-    if (tkUs9b === null) { if (Object.prototype.hasOwnProperty.call(set, K_USERS) && !usStale9) { var tkUc9 = await kvGet(env, 'kv', K_USERS); tkUs9b = parseJson(usersScopeIn(usersNoIn(String(set[K_USERS]), tkUc9, A), tkUc9, A), []); } else tkUs9b = false; if (tkUs9b !== false && !Array.isArray(tkUs9b)) tkUs9b = []; }
-    tkCtx9[dT9] = { users: tkUs9, users2: tkUs9b || null, emps: tkEmps(Object.prototype.hasOwnProperty.call(empRaw9, dT9) ? empRaw9[dT9] : await opResourceGet(env, 'bsdept:' + dT9 + ':bassam_employees_v1')) };
-  }
-  /* KIVO_265 · ملاحظةُ المالك (أمن): سياقُ تفرّد الهوية/الجوال/الرقم الوظيفي (018 empDupWhy) — قوائمُ موظفي الإدارات الأخرى
+@@SYS:save.acctCtx.tasks@@  /* KIVO_265 · ملاحظةُ المالك (أمن): سياقُ تفرّد الهوية/الجوال/الرقم الوظيفي (018 empDupWhy) — قوائمُ موظفي الإدارات الأخرى
      بقيمتها الحالية (من سجلّ الإدارات) وحساباتُ الدخول من الفاعل نفسه؛ تُقرأ مرةً واحدة للدفعة ولمفاتيح الموظفين وحدها */
   var edCtx9 = null;
   for (k in set) {
@@ -1572,8 +1556,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   }
   /* ══ مسحُ العمليات المحمية — من شكل الطلب لا من نتيجة الحكم ════════════
      فلو رُفض جزءُ العملية الآخر بقيت العملية «محمية» ورُدّ الطلب كاملاً. */
-  var CLEAN_RES = { 'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1, 'bassam_tasks_v1': 1,
-                    @@SYS:cleanup.cleanRes.award|pre="'bassam_custody_v1': 1,"|post=" 'bassam_plan_v1': 1,"|empty="'bassam_custody_v1': 1, 'bassam_plan_v1': 1,"@@ 'bassam_rounds_v1': 1 };
+  var CLEAN_RES = { 'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1,@@SYS:cleanup.cleanRes.tasks@@
+                    @@SYS:cleanup.cleanRes.custody@@@@SYS:cleanup.cleanRes.award@@ 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
   var protOp = '';
   var hasEmp = {}, hasClean = {}, hasStaff = {};
   for (k in set) {
@@ -1586,7 +1570,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   for (var dR in shRenCtx) if (hasStaff[dR]) protOp = protOp || 'shiftRename';
   if (!protOp) for (k in set) {
     var rnQ = resName(k);
-    if (rnQ !== 'bassam_custody_v1' && rnQ !== 'bassam_employees_v1') continue;
+    if (@@SYS:save.renameRes.custody@@rnQ !== 'bassam_employees_v1') continue;
     var EQ = entOf(k); if (!EQ || (!EQ.rename && !EQ.adopt)) continue;
     var aQ = parseJson(await opResourceGet(env, k), null), bQ = parseJson(String(set[k]), null);
     if (aQ == null || bQ == null) continue;
@@ -1676,11 +1660,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
        المصرَّح بها لا تتحوّل إلى «تعارض» لمجرّد قِدَم النسخة. */
     /* F-10 (من SR-2.3 · KIVO_242): حفظٌ خامٌّ لمخزن المهام لا يمحو أفعالَ الموظف التي لم يرها (tkKeepSelf في 070) — قبل الحكم فيُحكَم على ما سيُكتب؛
        لا للمسار الذاتي ولا لمسارات المهام في الخادم (opt.srv) ولا للاستعادة والاستيراد المخوَّلين على هذا المفتاح (G-1: tkKeepOff — كان أيُّ حدثٍ يدّعيه العميل يكفي) */
-    if (it0.act === 'set' && cur0 != null && resName(k0) === 'bassam_tasks_v1' && !A.__tkSelf && !(opt && opt.srv) && !tkKeepOff(A, k0, d00, rstK9, impK9, ENFX)) {
-      var st9 = Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0);   /* KIVO_265: base قديم ⇒ x من الخادم (H-1 · تعارضٌ لا رفض) */
-      var kp9 = tkKeepSelf(it0.v, cur0, { x: !!st9 }); if (kp9.n) { it0.v = kp9.v; logEv('warn', 'tk-kept', { n: kp9.n, rid: env.__rid }); }
-    }
-    if (!ENFX && it0.act === 'set' && it0.v != null && cur0 != null && d00 && resName(k0) === 'bassam_rounds_v1') it0.v = obsKeepOthers(A, d00, it0.v, cur0);   /* RISHAD266: راصد الميدان في الوضع القديم (018) */
+@@SYS:save.keepSelf.tasks@@    if (!ENFX && it0.act === 'set' && it0.v != null && cur0 != null && d00 && resName(k0) === 'bassam_rounds_v1') it0.v = obsKeepOthers(A, d00, it0.v, cur0);   /* RISHAD266: راصد الميدان في الوضع القديم (018) */
     var ctx0 = {
       empsEmpty: wipeCtx[d00] === true, emps: empCtx[d00] || null, shRen: shRenCtx[d00] || null,
       imp: !!d00 && actsHeldOn(A, d00, 'admin/import', ['del']),
@@ -1689,8 +1669,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       pa: pa9 && resName(k0) === ENF_GRANTS_RES ? pa9 : null,                     /* «… (الجولة 2)» · R3-4 */
       cl: A.u.role === 'super' && !!body && body.clearLatent === true,           /* caps-own: the system administrator's explicit clearing of latent items (021 latentLossWhy) */
       rst: !!rstK9[k0],                                                           /* KIVO_265 · H-1: علامةُ الاستعادة على هذا المفتاح (الوضع القديم · N-6) — ولمن تُقبل: 018 taskSrvExempt (R-5) */
-      tk: tkCtx9[d00] || null,                                                    /* KIVO_265 · R-2: سياقُ الحساب النشط (018 taskAcctWhy) */
-      ed: edCtx9 && d00 && resName(k0) === 'bassam_employees_v1' ? edCtx9 : null,  /* KIVO_265 · أمن: تفرّدُ الهوية عبر الإدارات (018 empDupWhy) */
+@@SYS:save.ctx.tasks@@      ed: edCtx9 && d00 && resName(k0) === 'bassam_employees_v1' ? edCtx9 : null,  /* KIVO_265 · أمن: تفرّدُ الهوية عبر الإدارات (018 empDupWhy) */
       dw: !!(d00 && opt && Array.isArray(opt.__serverDepartmentWipes) && opt.__serverDepartmentWipes.indexOf(d00) !== -1)   /* RISHAD-266: مسحُ الإدارة أو حذفُها في الخادم (059 scopeRetiredWhy) */
     };
     if (ENFX) {
@@ -1706,10 +1685,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
        أثرَ ما كتبه الخادمُ أو غيرُه بعد قراءتها (تمديدٌ في 23 · حذفُ صفٍّ · إعادةُ إسناد) لا فعلَها هي. ولا كتابةَ على base قديمٍ أصلاً (فحصُ النسخة أدناه)
        ⇒ تعارضٌ يدمجه العميلُ ثم يعيد الإرسالَ بنسخةٍ حديثة فيُحكم عليه كاملاً (والرفضُ حينها صريح). كانت تُرفض «task-x» فتُسقط الواجهةُ تعديلاتِ
        المفتاح كلَّها («صلاحيتك لا تشمله») */
-    if (!vd0.ok && it0.act === 'set' && TK_RAW_WHY[vd0.why] && resName(k0) === 'bassam_tasks_v1' && Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) {
-      evald.push({ conflict: 1, cur: cur0 }); continue;
-    }
-    if (ENFX) { var lr9 = enfLogRow(A, k0, vd0, '/api/save', { ip: ident.ip }); if (lr9) ENFX.log.push(lr9); }
+@@SYS:save.staleConflict.tasks@@    if (ENFX) { var lr9 = enfLogRow(A, k0, vd0, '/api/save', { ip: ident.ip }); if (lr9) ENFX.log.push(lr9); }
     /* R194…R203 — الظلّ: يقيس حكمَ السجل الحالي v24.9 (ربطُ الحرّاس + آلياتُ Phase 3 + نطاقُ Phase 4/4.1/4.1.1 — وPhase 4.2 جردٌ تجريبي لا يمسّ الكتابة — وPhase 4.3 هويةٌ ثابتة يقرؤها المحرّك — وPhase 4.4 بروفةُ ترحيلٍ لا تكتب — وPhase 4.5 تمهيدٌ مُدمَج هوية→نطاق لا يكتب) بجانب حكم canWrite ولا يغيّره؛ canWrite نفسُها لم تُمسّ.
        علاماتُ العمليات (ops) وسياقُ الاستدراك يُضافان إلى ctx0 هنا — بعد صدور الحكم — فلا تراهما canWrite ولا أيُّ قاعدة */
     try { ctx0.restore = !!(pv2Restore || pv3Restore); ctx0.op = pv3M.ops[k0] || null; ctx0.retroWin = pv3RetroCtx; ctx0.pv4 = pv4Refs[d00] || {}; if (!PERMV2.mute && !ENFX) permv2Bind(A, k0, it0.v, cur0, ctx0, vd0); } catch (e9b) { swallow('permv2-batch', e9b, env.__rid); }

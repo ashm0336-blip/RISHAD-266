@@ -44,7 +44,7 @@ function bdPlanAppend(plan, definition, dept, addition) {
 }
 function bdRestoreReferences(plan,def,d,domain,addition) {
   var before=def.empty(d);Object.keys(def.tables).forEach(function(kind){before.rows[kind]=addition.snapshotRows[kind];});
-  var old=def.inflate(before),next=def.inflate(domain),name=def.name==='seized'?'reports':'records',key=def.key(d,0),
+  var old=def.inflate(before),next=def.inflate(domain),name=@@SYS:bd.refs.field|empty="''"@@,key=def.key(d,0),
     previous=JSON.stringify(old[name]||{}),candidate=JSON.stringify(next[name]||{});
   // Read-only typed references are also required for an unchanged modern archive.
   // They do not request image metadata writes or adopt ownership.
@@ -69,7 +69,7 @@ async function bdRestorePlan(env,A,body,plan,domains,finalDeptIds,removedDepartm
     if(!Array.isArray(domains[def.name])) throw rsError('restore-'+def.name+'-shape');
     var seen=new Set();
     for(var domain of domains[def.name]) {
-      var d=bdScope(domain), global=def.name==='awards'&&d==='';
+      var d=bdScope(domain), global=@@SYS:bd.restore.global|empty="false"@@;
       if(typeof d!=='string'||(!global&&!finalDeptIds.has(d))||seen.has(d)||removedDepartments.includes(d)||(body.scope.kind==='dept'&&d!==body.scope.departmentId)||(global&&(body.scope.kind!=='full'||A.u.role!=='super'))) throw rsError('restore-'+def.name+'-scope',403);
       seen.add(d);
       if(!global) await cuRestorePermission(A,d,{scope:body.scope.kind,reason:body.reason});
@@ -106,19 +106,19 @@ async function bdExport(env,actor,url,name) {
     if(departments.some(function(d){return typeof d!=='string'||!d||d.includes(':');})||new Set(departments).size!==departments.length)throw rsError('domain-export-departments');
     if(requested&&!departments.includes(requested)) throw rsError('domain-export-scope',403);
     var depts=requested?[requested]:departments.slice().sort(), domains=[], epoch=await rsEpoch(env), redacted=[];
-    if(!requested&&name==='awards') depts.push('');
+    if(!requested&&@@SYS:bd.export.global.1|empty="false"@@) depts.push('');
     for(var dept of depts) {
       var ctx=await def.context(env,fresh,dept,{write:true,global:dept===''}), k=@@SYS:bd.export.awardGlobalKey@@def.key(dept,0);
       if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
-      var readResources=(name==='seized'?def.resources.slice(0,5):def.resources).filter(function(_,i){return dept!==''||i>0;});
+      var readResources=(@@SYS:bd.export.readResources@@def.resources).filter(function(_,i){return dept!==''||i>0;});
       if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
       var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose; the copy marked redacted
-      if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept)&&privRowsBlank(ctx.A,exported,'records',['phone','email','employee_number'],'employee_key'))redacted.push('awards:'+dept);
+      @@SYS:bd.export.redact@@
       domains.push(exported);
       await ctx.env.DB.batch(ctx.guards.concat([rsEpochGuard(ctx.env.DB,epoch),bdRetiredGuard(ctx.env)]));
     }
     var base=await bdRestoreRevisions(env,depts.filter(Boolean),!requested);
-    var allowed=departments.concat(name==='awards'?['']:[]),orphan=Object.keys(def.tables).map(function(kind){return 'EXISTS(SELECT 1 FROM '+def.tables[kind][0]+' o WHERE o.department_id IS NULL OR o.department_id NOT IN(SELECT value FROM json_each(?1)))';}).join(' OR ');
+    var allowed=departments.concat(@@SYS:bd.export.global.2|empty="[]"@@),orphan=Object.keys(def.tables).map(function(kind){return 'EXISTS(SELECT 1 FROM '+def.tables[kind][0]+' o WHERE o.department_id IS NULL OR o.department_id NOT IN(SELECT value FROM json_each(?1)))';}).join(' OR ');
     await env.DB.batch([env.DB.prepare("SELECT CASE WHEN "+orphan+" THEN json_extract('{}','KIVO_BUSINESS_ORPHAN_SCOPE')END").bind(JSON.stringify(allowed))]);
     await env.DB.batch(rsWitness(env,'kv',['k','seq','v'],authority,'k IN(SELECT value FROM json_each(?1))',[JSON.stringify(globals)]));
     if(firstRev!==await bdGlobalRevision(env)||epoch!==await rsEpoch(env)) continue;
@@ -143,20 +143,18 @@ async function bdEmployeeCleanupPlan(env,A,body,plan,reference,opt,wiped) {
 @@SYS:bd.employeeCleanup@@}
 
 function bdErrorResponse(error) {
-  if(error.szCode)return json({ok:0,err:error.szCode,at:error.szPath,denied:error.szDecision},error.szStatus||400);
-  if(error.awCode)return json({ok:0,err:error.awCode,at:error.awPath,denied:error.awDecision},error.awStatus||400);
-  if(error.rs)return json({ok:0,err:error.rs},error.status);
-  if(/KIVO_(?:RESTORE_EPOCH|RESTORE_TARGET|REV_CONFLICT|SEIZED_TARGET|AWARD_TARGET)|UNIQUE constraint/.test(String(error)))return json({ok:0,err:'conflict'},409);
-  if(/KIVO_BUSINESS_LEGACY_SOURCE|KIVO_SEIZED_LEGACY_SOURCE|KIVO_AWARD_LEGACY_SOURCE/.test(String(error)))return json({ok:0,err:'business-legacy-source-present'},503);
+@@SYS:bd.error.codes@@  if(error.rs)return json({ok:0,err:error.rs},error.status);
+  if(/KIVO_(?:RESTORE_EPOCH|RESTORE_TARGET|REV_CONFLICT@@SYS:bd.error.targets@@)|UNIQUE constraint/.test(String(error)))return json({ok:0,err:'conflict'},409);
+  if(/KIVO_BUSINESS_LEGACY_SOURCE@@SYS:bd.error.legacy@@/.test(String(error)))return json({ok:0,err:'business-legacy-source-present'},503);
   @@SYS:bd.errorFallback|empty="throw error;"@@
 }
 async function bdRoute(env,request,url,ss,name) {
   try {
-    var prefix=name==='seized'?'/api/seized':'/api/award';
+    var prefix=@@SYS:bd.route.prefix|empty="''"@@;
     if(!((url.pathname===prefix||url.pathname===prefix+'/export')&&request.method==='GET')&&!(url.pathname===prefix+'/act'&&request.method==='POST'))return json({ok:0,err:'method'},405);
     var mismatch=sessUidMismatch(env,url,ss,prefix);if(mismatch)return mismatch;
     var A=await actorOf(env,ss.uid);if(!A)return json({ok:0,err:'session'},401);
-    if(url.pathname===prefix+'/export')return json(await bdExport(env,A,url,name==='seized'?'seized':'awards'));
+    if(url.pathname===prefix+'/export')return json(await bdExport(env,A,url,@@SYS:bd.route.exportName|empty="name"@@));
     if(request.method==='GET')return json(await(@@SYS:bd.route.get|empty="null"@@));
     var read=await bodyRead(request,prefix+'/act');if(read.res)return read.res;
     if(read.v.uid!==undefined&&read.v.uid!==A.u.id)throw rsError('session-changed',409);

@@ -11,7 +11,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { D, D2, PNG, TAG, dk, both, scene, state, gone, edit, upload, age, due, stored, read } from './v7_f_img_fx.mjs';
-import { taskCommandBody, operationSaveBody } from './tasks_fx.mjs';
+import { taskCommandBody, operationSaveBody } from './world_fx.mjs';
 
 let n = 0;
 const typedSave = async (T) => { const s = await edit(T.W, T.S.mgr2, D2, 'plan', (v) => { v.floors[0].name = TAG + ' e ' + (++n); }); assert.ok(s.ok, JSON.stringify(s.j).slice(0, 200)); };

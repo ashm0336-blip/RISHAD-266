@@ -8,6 +8,7 @@ import { makeTestEnv, client, applySql, TEST_SUPER_USERNAME, TEST_SUPER_PIN } fr
 import { loadClient, until, sleep, fixture } from './k264_vm.mjs';
 import {installCurrentSchemaFixture} from './current_schema_fx.mjs';
 import {mountIrshadPage} from '../../src/systems/irshad/tests/irshad_live_page_fx.mjs';
+import { needs } from './harness.mjs';
 
 const KT = 'bsdept:tst_d1:bassam_tasks_v1', KI = 'bsdept:tst_d1:bassam_irshad_v1';
 async function setup(mode) {
@@ -21,7 +22,7 @@ async function setup(mode) {
   return { env, C, su, getK };
 }
 
-for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-4: منحُ صفحةٍ وسحبُ أخرى يُطبَّقان على بيانات التبويب المفتوح بلا إعادة تحميل', async () => {
+for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-4: منحُ صفحةٍ وسحبُ أخرى يُطبَّقان على بيانات التبويب المفتوح بلا إعادة تحميل', needs('tasks'), async () => {
   const { C, su, getK } = await setup(mode);
   const U = await C.login('0000000113', '70113'); assert.ok(U.ok, 'tst_emp1');
   let P = await getK('bassam_perms_v1'); delete P.emps.tst_d1.tst_e_emp1.tasks;

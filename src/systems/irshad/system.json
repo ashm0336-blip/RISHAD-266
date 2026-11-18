@@ -79,11 +79,11 @@
   },
   "pages.kpi.refs.mid": {
    "order": 20,
-   "text": "    \"irshad/dash\",\n"
+   "text": ",\n    \"irshad/dash\""
   },
   "pages.kpi.names.mid": {
    "order": 20,
-   "text": "    \"irshad/dash\": \"لوحة مؤشرات الاسترشاد\",\n"
+   "text": ",\n    \"irshad/dash\": \"لوحة مؤشرات الاسترشاد\""
   },
   "pages.tabAddr.tail": {
    "order": 20,
@@ -686,6 +686,26 @@
   "root.navPerm.irshad": {
    "order": 10,
    "text": " irshad: \"irshad\","
+  },
+  "bc.dup.irshad": {
+   "order": 10,
+   "text": "(irKeys.length && rsBCOwn(domains, 'irshad'))"
+  },
+  "admin.fence.param": {
+   "order": 10,
+   "text": ", irshad = false"
+  },
+  "admin.fence.url": {
+   "order": 10,
+   "text": "irshad ? \"/api/irshad/export?uid=\" : "
+  },
+  "admin.fence.rev": {
+   "order": 10,
+   "text": "irshad ? \"globalRev\" : "
+  },
+  "nf.feed.known.irshad": {
+   "order": 10,
+   "text": ""
   }
  }
 }

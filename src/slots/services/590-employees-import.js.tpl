@@ -192,7 +192,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     finally { clearTimeout(timer); }
   }
   function validBase(base, dept) {
-    return !!base && nonnegative(base.epoch) && nonnegative(base.custody) && !!base.kv && typeof base.kv === 'object' && !Array.isArray(base.kv)
+    return !!base && nonnegative(base.epoch)@@SYS:import.base.custody@@ && !!base.kv && typeof base.kv === 'object' && !Array.isArray(base.kv)
       && Object.keys(base.kv).every(function (key) { return nonnegative(base.kv[key]); })
       && nonnegative(base.kv['bsdept:' + dept + ':bassam_employees_v1']);
   }
@@ -745,10 +745,8 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
               impOn("staff") ? "الجدول الشهري بكل أشهره" : "",
               impOn("dreport") ? "التقارير اليومية بكل أيامها ودفاتر استئذاناتها" : "",
               "تسكينات الخطة التشغيلية والجولات اليومية",
-              "المهام المسندة",
-              "حسابات الدخول والصلاحيات",
-              impOn("emps/custody") ? "حركات العهد" : "",
-@@SYS:import.summary.award@@            ]
+@@SYS:import.summary.tasks@@              "حسابات الدخول والصلاحيات",
+@@SYS:import.summary.custody@@@@SYS:import.summary.award@@            ]
               .filter(Boolean)
               .join("، و") +
             (impOn("staff") ? " — ويُنشأ جدول الشهر من جديد مسودة مفتوحة غير معتمدة." : ".") +

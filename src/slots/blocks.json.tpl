@@ -653,37 +653,7 @@
    "origSha256": null,
    "new": "KIVO_264 · ملفي (OD-3)"
   },
-  {
-   "closeTag": "</script>",
-   "id": "services/545-task-self.js",
-   "kind": "js",
-   "line": 10494,
-   "openTag": "<script>",
-   "origBytes": null,
-   "origSha256": null,
-   "new": "KIVO_264 · KIVO-Tasks P0 («ملفي ← مهامي» من الخادم)"
-  },
-  {
-   "closeTag": "</script>",
-   "id": "services/546-task-model.js",
-   "kind": "js",
-   "line": 10494,
-   "openTag": "<script>",
-   "origBytes": null,
-   "origSha256": null,
-   "new": "KIVO_264 · KIVO-Tasks المرحلة الثانية (نموذجُ المهمة في الواجهة — مرآةُ 070)"
-  },
-  {
-   "id": "services/547-custody-api.js",
-   "kind": "js",
-   "openTag": "<script>",
-   "closeTag": "</script>",
-   "line": 10494,
-   "origBytes": null,
-   "origSha256": null,
-   "new": "Typed custody API transport included by the runtime shell"
-  },
-  {
+@@SYS:blocks.shell.tasks@@@@SYS:blocks.shell.custody@@  {
    "id": "services/548-atomic-backup.js",
    "kind": "js",
    "openTag": "<script>",
@@ -923,14 +893,7 @@
     "name": "Employees",
     "sha256": "a9c411dfd74600407d2d6de818104d8c9896eb2567b8a8e3fad5183fefa4883b"
    },
-   {
-    "b64Sha256": "05f0ae7029a3c2dc71031f792c1cb3f8ce7a398b398641a5bc8bf9c866dd6db8",
-    "bytes": 177288,
-    "file": "client/pages/Tasks.dc.html",
-    "name": "Tasks",
-    "sha256": "e40f7c606fbd6917b9b96ba2a115c9f06afa35e53363954cf19a02dce25f57a3"
-   },
-   {
+@@SYS:blocks.pages.tasks@@   {
     "b64Sha256": "18fd106f029402372a63ee7938a81c70cb1e20d3ca365afce5f18642c8e18ed9",
     "bytes": 818646,
     "file": "client/pages/Daily Sessions.dc.html",
@@ -989,8 +952,7 @@
   ],
   "order": [
    "Employees",
-   "Tasks",
-   "Daily Sessions",
+@@SYS:blocks.order.tasks@@   "Daily Sessions",
    "Operational Plan",
    "Staffing",
    "Admin",

@@ -37,7 +37,7 @@ function page(mod, names, o = {}) {
 }
 const firstInRender = (src, call) => { const i = src.indexOf('\n  renderVals() {'), j = src.indexOf(call, i); assert.ok(i > 0 && j > i, call + ' في renderVals'); return src.slice(i + 1, j).split('\n').length; };
 
-test('موظفو الإدارة (R1 · ES-1): #/employees/custody — «عهد الموظفين» في الحالة قبل حساب القيم · بلا مؤقّت · والعنوانُ باقٍ', () => {
+test('موظفو الإدارة (R1 · ES-1): #/employees/custody — «عهد الموظفين» في الحالة قبل حساب القيم · بلا مؤقّت · والعنوانُ باقٍ', needs('custody'), () => {
   const P = page('employees', ['_bsHR() {'], { hash: '#/employees/custody', state: { empTab: 'data' }, perm: { subOn: () => true }, kivo: { __BS_OPEN_TAB: { page: 'employees', tab: 'custody' } } });
   /* _bsHT الحقيقية (replaceState على #/employees/<tab>) — بديلٌ مكافئ يرصد العنوان */
   P.c._bsHT = (t) => { const p = '#/employees', w = t ? p + '/' + t : p; if (P.loc.hash.indexOf(p) === 0 && P.loc.hash !== w) { P.replaced.push(w); P.loc.hash = w; } };
@@ -73,7 +73,7 @@ test('التميز (R1 · AUX-06): #/award/res و#/award/doc في أوّل رس�
   assert.doesNotMatch(method(src, '_bsHR() {'), /setTimeout/);
 });
 
-test('المتابعة اليومية (DG-04 · R7 · DG-09): #/daily/rounds يُقبل بقاعدة التبويب نفسِها (tabOn + عدسة) لا subOn · والرفضُ يكتب التبويبَ المعروض لا #/daily', () => {
+test('المتابعة اليومية (DG-04 · R7 · DG-09): #/daily/rounds يُقبل بقاعدة التبويب نفسِها (tabOn + عدسة) لا subOn · والرفضُ يكتب التبويبَ المعروض لا #/daily', needs('tasks'), () => {
   const self = { _dsTabOn: (t) => t === 'rounds', bsLensOn: (k) => k === 'gates' };
   const P = page('daily', ['_bsHR() {'], { state: { dsTab: 'kpi' }, self, perm: { subOn: () => false, can: () => true }, kivo: { __BS_OPEN_TAB: { page: 'daily', tab: 'rounds' } } });
   P.c._bsHT = (t) => P.replaced.push(t);
@@ -203,7 +203,7 @@ function tasksPage() {
     __BS_BOOT: { srv: 0 }, fetch: () => Promise.reject(new Error('offline')) };
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
-  for (const f of ['src/services/490-emp-key.js', 'src/services/440-count.js', 'src/services/060-percent-format.js', 'src/services/546-task-model.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
+  for (const f of ['src/services/490-emp-key.js', 'src/services/440-count.js', 'src/services/060-percent-format.js', 'src/systems/tasks/client/546-task-model.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
   KIVO.BassamPerm = { can: () => true, on: () => true };
   KIVO.BassamAuth = { user: () => ({ id: 'tst_dm1', role: 'staff', mgr: true, ekey: 'mgr:tst_d1', deptId: 'tst_d1', name: 'TEST_ONLY مدير' }), display: () => ({ name: 'TEST_ONLY مدير' }), users: () => [] };
   KIVO.BassamDepts = { active: () => 'tst_d1' }; KIVO.BassamSup = { isSup: () => false };
@@ -218,7 +218,7 @@ function tasksPage() {
   return { c, V: () => c.renderVals() };
 }
 
-test('المهام (DG-14): «الشهر كاملاً» واليومُ المختار يُحملان بمفتاحين بدائيين تحفظهما حالةُ العرض (tkDayK · tkDayD) — وعرضُ kanban (sub)', () => {
+test('المهام (DG-14): «الشهر كاملاً» واليومُ المختار يُحملان بمفتاحين بدائيين تحفظهما حالةُ العرض (tkDayK · tkDayD) — وعرضُ kanban (sub)', needs('tasks'), () => {
   const P = tasksPage(), SK = '1448-5';
   assert.ok('tkDayK' in P.c.state && 'tkDayD' in P.c.state && 'sub' in P.c.state, 'في الحالة الأولى (فيُزرع المحفوظُ قبل أوّل رسم)');
   let V = P.V();

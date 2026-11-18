@@ -15,7 +15,7 @@
   function counts(value) {
     return (
       record(value) &&
-      @@SYS:bk.counts.dstats|pre="['kv', 'operations', "|empty="['kv', 'operations', "@@'notifications', 'custody', @@SYS:bk.counts.systems|post="'kept']"|empty="'kept']"@@.every(function (k) {
+      @@SYS:bk.counts.dstats|pre="['kv', 'operations', "|empty="['kv', 'operations', "@@'notifications', @@SYS:bk.counts.systems|post="'kept']"|empty="'kept']"@@.every(function (k) {
         return integer(value[k]);
       })
     );
@@ -88,11 +88,11 @@
     for(var spec of specs){
       if(!current())throw Error('تغيّرت البيانات قبل اكتمال النسخة');
       var route='/api/'+spec[0]+'/export?uid='+encodeURIComponent(stamp.uid)+(options.full?'':'&dept='+encodeURIComponent(departments[0])),response=await request(route,{},stamp),value=response.data;
-      var expected=departments.concat(options.full&&spec[0]==='award'?['']:[]).sort();
+      var expected=departments.concat(@@SYS:bk.export.awardGlobal|empty="[]"@@).sort();
       if(!response.ok||!current()||value.globalRev!==options.v||!Array.isArray(value.domains))throw Error('تعذّر تصدير المجال كاملًا');
       var scope=function(d){return d&&d.scope&&d.scope.kind==='global'?'':d&&d.scope&&d.scope.departmentId;};
       if(JSON.stringify(value.domains.map(scope).sort())!==JSON.stringify(expected)||value.domains.some(function(d){return d.version!==1||!record(d.resources)||!record(d.rows)||spec[1].some(function(k){return typeof d.resources[k]!=='boolean';})||JSON.stringify(Object.keys(d.rows).sort())!==JSON.stringify(spec[2].slice().sort())||spec[2].some(function(k){return !Array.isArray(d.rows[k])||d.rows[k].some(function(row){return !record(row)||row.department_id!==scope(d);});});}))throw Error('مجال النسخة ناقص أو خارج نطاقها');
-      domains[spec[0]==='award'?'awards':spec[0]]=value.domains;
+      domains[@@SYS:bk.export.awardName@@spec[0]]=value.domains;
     }
     if(!current()||!srv.operations||!Array.isArray(srv.operations.resources))throw Error('خدمة البيانات التشغيلية غير جاهزة');
     var operationExport=await request('/api/operations/export?uid='+encodeURIComponent(stamp.uid)+(options.full?'':'&dept='+encodeURIComponent(departments[0])),{},stamp),operationData=operationExport.data;
@@ -130,7 +130,7 @@
     if (!Array.isArray(missing) || !missing.length) return '';
     var names = {};
     try { (KIVO.BassamDepts.list() || []).forEach(function (d) { if (d && d.id) names[d.id] = d.name || d.id; }); } catch (e) {}
-    @@SYS:bk.labels|sep=" "|pre="var label = { "|post=" bassam_plan_v1"|empty="var label = { bassam_plan_v1"@@: 'الخطة', bassam_rounds_v1: 'الجولات', bassam_tasks_v1: 'المهام' };
+    @@SYS:bk.labels|sep=" "|pre="var label = { "|post=" bassam_plan_v1"|empty="var label = { bassam_plan_v1"@@: 'الخطة', bassam_rounds_v1: 'الجولات'@@SYS:bk.labels.tasks@@ };
     var place = function (at) { var i = String(at).lastIndexOf(':'), d = at.slice(0, i), r = at.slice(i + 1); return (d ? '«' + (names[d] || d) + '» ' : '') + (label[r] || r); };
     return ' تحذير: ' + missing.length + ' صورة يشير إليها سجلٌّ ولم تعد موجودة على الخادم — تُخطّيت والنسخة أُنشئت بدونها: ' +
       missing.slice(0, 20).map(function (m) { return m.id + ' (' + (m.at || []).map(place).join('، ') + ')'; }).join(' · ') + (missing.length > 20 ? ' · …' : '') + '.';
@@ -185,7 +185,7 @@
     var read = await request('/api/backup/restore?' + query.toString(), {}, stamp);
     if (!read.ok) return read;
     var base = read.data.base;
-    if (!base || !integer(base.epoch) || !base.kv || !base.custody@@SYS:bk.restore.base@@) return failure('invalid');
+    if (!base || !integer(base.epoch) || !base.kv@@SYS:bk.restore.base@@) return failure('invalid');
     var body = {
         version: 1,
         uid: stamp.uid,
@@ -269,9 +269,7 @@
       text =
         'سيُعتمد ' +
         (c.kv || 0) +
-        ' مجموعة بيانات و' + (c.operations||0) + ' موردًا تشغيليًا و' +
-        (c.custody || 0) +
-        ' نطاق عهد@@SYS:bk.restore.summary@@. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
+        ' مجموعة بيانات و' + (c.operations||0) + ' موردًا تشغيليًا@@SYS:bk.restore.summary@@. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
         (legacy ? ' ستُحوَّل النسخة القديمة إلى المخطط الحالي قبل الكتابة.' : '') +
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'

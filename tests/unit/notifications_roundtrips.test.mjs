@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, D1, EKEYS } from './notifications_review_fx.mjs';
+import { needs } from './harness.mjs';
 
 test('super inbox avoids business reference reads while recipient statistics still resolve them', async () => {
   const W = await world(), prepare = W.DB.prepare.bind(W.DB);
@@ -32,7 +33,7 @@ test('super inbox avoids business reference reads while recipient statistics sti
   assert.ok(referenceReads > 0, 'Super recipient statistics still need staff reference data; nfRefs itself is not bypassed');
 });
 
-test('super summary preserves counters while using at most eight D1 round trips', async () => {
+test('super summary preserves counters while using at most eight D1 round trips', needs('tasks'), async () => {
   const W = await world();
   const sent = await W.act('manager1', { op: 'emit', type: 'task_new', dept: D1, own: [EKEYS.employee1], vars: { المهمة: 'TEST_ONLY' } });
   assert.equal(sent.status, 200);
@@ -44,7 +45,7 @@ test('super summary preserves counters while using at most eight D1 round trips'
   assert.ok(W.DB.log.slice(start).some(sql => /AS feed_rev.*AS config_rev.*AS broadcast_rev/.test(sql)));
 });
 
-test('a configuration writer between row and revision reads forces a consistent retry', async () => {
+test('a configuration writer between row and revision reads forces a consistent retry', needs('tasks'), async () => {
   const W = await world(), batch = W.DB.batch.bind(W.DB);
   const initial = (await W.get('super')).json;
   let armed = true, changed;

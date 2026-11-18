@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { page } from './w1_pages.mjs';
 import { SRC } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const OPS = { resources: [], status: () => ({ state: 'idle', epoch: 0 }), begin: () => ({ ok: true }), get: () => null, context: () => null, state: () => 'ready' };
@@ -28,7 +29,7 @@ test('F22 · 170-freeze: تحت 640px عمودُ الهوية المثبّت ي�
   assert.match(v, /<td data-label="اسم الموظف" class="bs-fz bs-fz3 bs-fzkeep"/);
 });
 
-test('F22 · منتقي الجدول الشهري: تمريرُ القائمة نفسِها لا يغلقها · وتمريرُ الصفحة يغلقها · والقائمةُ تعيد white-space (سطرُ الحالة الفارغة لا يُقصّ)', () => {
+test('F22 · منتقي الجدول الشهري: تمريرُ القائمة نفسِها لا يغلقها · وتمريرُ الصفحة يغلقها · والقائمةُ تعيد white-space (سطرُ الحالة الفارغة لا يُقصّ)', needs('tasks'), () => {
   const P = page('staff', { srv: { operations: OPS, rev: () => 0 } }), c = P.c;
   c._pkScrollClose();
   assert.equal(typeof c._sdSc, 'function');
@@ -53,7 +54,7 @@ test('F20 · L-06: لا مراقبَ أشرطة التبويبات بعد أول
   assert.doesNotMatch(rd('layouts/index.template.html'), /190-tabstrip-unify/);
 });
 
-test('F20 · L-07: «موظفو الإدارة» بلا تبويب «مهام الموظفين» المعطَّل دائماً ولا استيرادِ صفحة المهام — والتبويباتُ الباقية كما هي', () => {
+test('F20 · L-07: «موظفو الإدارة» بلا تبويب «مهام الموظفين» المعطَّل دائماً ولا استيرادِ صفحة المهام — والتبويباتُ الباقية كما هي', needs('custody'), () => {
   const v = rd('modules/employees/view.html'), l = rd('modules/employees/logic.js');
   assert.doesNotMatch(v, /empTasksAllowed|empOnTasks|empGoTasks|<dc-import name="Tasks"/);
   assert.doesNotMatch(l, /empTasksAllowed|empOnTasks|empGoTasks|empTasksTab/);

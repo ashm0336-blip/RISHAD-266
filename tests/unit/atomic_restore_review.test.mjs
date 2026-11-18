@@ -8,7 +8,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { parse } from '../../node_modules/acorn/dist/acorn.mjs';
 import { ROOT, SRC } from './harness.mjs';
 import { D1, D2, IDS, EKEYS, copy, identitySnapshot } from './notifications_review_fx.mjs';
-import { canonicalDigest } from './custody_review_fx.mjs';
+import { canonicalDigest } from './canonical_fx.mjs';
 import { currentOperationResources } from './backup_review_fx.mjs';
 import { inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { needs } from './harness.mjs';
@@ -33,7 +33,7 @@ test('canonical parts execute their actual migration declarations without rewrit
   assert.equal(B.DB.q('PRAGMA foreign_keys')[0].foreign_keys, 1);
 });
 
-test('single actual POST commits KV+daily stats+notifications, preserves protected documents, snapshots empty tables and deduplicates exact retries', needs('award', 'dstats', 'seized'), async () => {
+test('single actual POST commits KV+daily stats+notifications, preserves protected documents, snapshots empty tables and deduplicates exact retries', needs('award', 'custody', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world(),
     identity = identitySnapshot(B.DB),
     body = await mixed(B),
@@ -59,7 +59,7 @@ test('single actual POST commits KV+daily stats+notifications, preserves protect
   assert.equal(B.DB.q("SELECT COUNT(*) n FROM kv WHERE k GLOB '*bassam_dstats_v1' OR k GLOB '*bassam_notif*'")[0].n, 0);
 });
 
-test('mid-batch failure rolls back data, snapshots, revisions, epoch, receipt, audit and account sessions', needs('award', 'dstats', 'seized'), async () => {
+test('mid-batch failure rolls back data, snapshots, revisions, epoch, receipt, audit and account sessions', needs('award', 'custody', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world(),
     body = await mixed(B),
     before = snap(B.DB),
@@ -74,7 +74,7 @@ test('mid-batch failure rolls back data, snapshots, revisions, epoch, receipt, a
   assert.equal(ok(await B.restore(body)).ok, 1);
 });
 
-test('all policy inputs are CAS guarded even when absent from the requested keys', needs('award', 'dstats', 'seized'), async () => {
+test('all policy inputs are CAS guarded even when absent from the requested keys', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     body = await B.body({ keys: { [OPTIONS]: '{"TEST_ONLY":1}' } });
   body.base.kv[OPTIONS] = 0;
@@ -86,7 +86,7 @@ test('all policy inputs are CAS guarded even when absent from the requested keys
   assert.deepEqual(snap(B.DB), before);
 });
 
-test('a late actual NF read-state writer captured before restore cannot commit after its epoch', needs('award', 'dstats', 'seized'), async () => {
+test('a late actual NF read-state writer captured before restore cannot commit after its epoch', needs('award', 'custody', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world();
   await seedMessage(B);
   const feed = ok(await B.api('employee1', '/api/notifications?uid=' + IDS.employee1)),
@@ -116,7 +116,7 @@ test('a late actual NF read-state writer captured before restore cannot commit a
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM notification_user_state')[0].n, 0);
 });
 
-test('wrong scope, unknown domain, retired keys and malformed NF relations fail without business writes', needs('dstats'), async () => {
+test('wrong scope, unknown domain, retired keys and malformed NF relations fail without business writes', needs('custody', 'dstats'), async () => {
   for (const variant of ['scope', 'domain', 'retired', 'relation']) {
     const B = await world(),
       body = await B.body();
@@ -152,7 +152,7 @@ test('wrong scope, unknown domain, retired keys and malformed NF relations fail 
   }
 });
 
-test('application restore preserves credentials, rejects password changes and still revokes sessions for an authorized account freeze', needs('award', 'dstats', 'seized'), async () => {
+test('application restore preserves credentials, rejects password changes and still revokes sessions for an authorized account freeze', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     users = copy(B.users);
   users.find((u) => u.id === IDS.employee1).name = 'TEST_ONLY renamed';
@@ -173,7 +173,7 @@ test('application restore preserves credentials, rejects password changes and st
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM sec WHERE act=?1', 'pw_change')[0].n, 0);
 });
 
-test('account restore keeps current hash when backup omits it and rejects loss of final active super', needs('award', 'dstats', 'seized'), async () => {
+test('account restore keeps current hash when backup omits it and rejects loss of final active super', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     users = copy(B.users);
   users.forEach((u) => delete u.ph);
@@ -193,7 +193,7 @@ test('account restore keeps current hash when backup omits it and rejects loss o
   assert.deepEqual(snap(B.DB), before);
 });
 
-test('four domains commit together through the actual API; custody export preserves orphan/snapshots and native IDs', needs('award', 'dstats', 'seized'), async () => {
+test('four domains commit together through the actual API; custody export preserves orphan/snapshots and native IDs', needs('award', 'custody', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world(),
     cu = await custody(B),
     body = await mixed(B);
@@ -217,7 +217,7 @@ test('four domains commit together through the actual API; custody export preser
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM custody_requests')[0].n, 0);
 });
 
-test('failure in the final custody inserts rolls back all earlier KV/stats/NF/account writes and old custody receipts', needs('award', 'dstats', 'seized'), async () => {
+test('failure in the final custody inserts rolls back all earlier KV/stats/NF/account writes and old custody receipts', needs('award', 'custody', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world(),
     cu = await custody(B),
     body = await mixed(B);
@@ -238,7 +238,7 @@ test('failure in the final custody inserts rolls back all earlier KV/stats/NF/ac
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM sess WHERE uid=?1', IDS.employee1)[0].n, 0);
 });
 
-test('employee list replacement without a custody domain preserves prior orphan history and inventory catalog', needs('award', 'dstats', 'seized'), async () => {
+test('employee list replacement without a custody domain preserves prior orphan history and inventory catalog', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world();
   await custody(B);
   const key = 'bsdept:' + D1 + ':bassam_employees_v1',
@@ -255,7 +255,7 @@ test('employee list replacement without a custody domain preserves prior orphan 
   assert.deepEqual(identitySnapshot(B.DB), identity);
 });
 
-test('full replacement derives removed department account/session pruning and custody cleanup from final department IDs', needs('award', 'dstats', 'seized'), async () => {
+test('full replacement derives removed department account/session pruning and custody cleanup from final department IDs', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world();
   await custody(B, D2);
   const body = await B.body({ keys: { bassam_depts_v1: JSON.stringify(B.keys.bassam_depts_v1.filter((d) => d.id !== D2)) } });
@@ -285,7 +285,7 @@ test('full replacement derives removed department account/session pruning and cu
   );
 });
 
-test('a backup cannot change the current actor credential/login or supply cur as proof of reauthentication', needs('dstats'), async () => {
+test('a backup cannot change the current actor credential/login or supply cur as proof of reauthentication', needs('custody', 'dstats'), async () => {
   for (const variant of ['password', 'login', 'cur']) {
     const B = await world(),
       users = copy(B.users);
@@ -303,7 +303,7 @@ test('a backup cannot change the current actor credential/login or supply cur as
   }
 });
 
-test('actual AppBackup export from redacted GET cache restores existing credentials without exporting a hash or inventing a password', needs('award', 'dstats', 'seized'), async () => {
+test('actual AppBackup export from redacted GET cache restores existing credentials without exporting a hash or inventing a password', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     protectedBefore = identitySnapshot(B.DB),
     sessions = copy(B.DB.q('SELECT * FROM sess')),
@@ -400,7 +400,7 @@ test('actual AppBackup export from redacted GET cache restores existing credenti
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM sec WHERE act=?1', 'pw_change')[0].n, 0);
 });
 
-test('a new backup account without a credential remains unable to authenticate and is reported without generating a default PIN', needs('award', 'dstats', 'seized'), async () => {
+test('a new backup account without a credential remains unable to authenticate and is reported without generating a default PIN', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     users = B.users.map(({ ph, ...u }) => u),
     id = 'TEST_ONLY_imported_no_password',
@@ -427,7 +427,7 @@ test('a new backup account without a credential remains unable to authenticate a
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM sess WHERE uid=?1', id)[0].n, 0);
 });
 
-test('full merge adds only missing departments and their typed custody; existing data, accounts and global stats are retained', needs('award', 'dstats', 'seized'), async () => {
+test('full merge adds only missing departments and their typed custody; existing data, accounts and global stats are retained', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     cu = await custody(B),
     D3 = 'TEST_ONLY_department_new',
@@ -467,7 +467,7 @@ test('full merge adds only missing departments and their typed custody; existing
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM custody_movements WHERE department_id=?1', D3)[0].n, 1);
 });
 
-test('department merge fills missing documents and preserves existing typed domains as whole units', needs('award', 'dstats', 'seized'), async () => {
+test('department merge fills missing documents and preserves existing typed domains as whole units', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     cu = await custody(B),
     key = OPTIONS,
@@ -489,7 +489,7 @@ test('department merge fills missing documents and preserves existing typed doma
    refuses the whole restore» (409 restore-image-body-missing). The sweep now really deletes an image 30 days after its record dropped it, so
    that gate would have made every older backup unrestorable; the owner's condition is «لا تفشل الاستعادة، والصورة المفقودة تُعرض كمفقودة».
    What stays pinned: R2 is never touched by a restore, and nothing is invented for the missing image. See v7_f_img_restore.test.mjs. */
-test('R2 is never touched; a record mentioning an image the platform does not hold is restored with a warning and no image row', needs('award', 'dstats', 'seized'), async () => {
+test('R2 is never touched; a record mentioning an image the platform does not hold is restored with a warning and no image row', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     calls = [];
   B.env.IMG_R2 = Object.fromEntries(
@@ -516,7 +516,7 @@ test('R2 is never touched; a record mentioning an image the platform does not ho
   assert.deepEqual(calls, []);
 });
 
-test('a late actual generic KV save is fenced after restore and cannot recreate the old value', needs('award', 'dstats', 'seized'), async () => {
+test('a late actual generic KV save is fenced after restore and cannot recreate the old value', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     body = await B.body({ keys: { [KV_PROBE(D2)]: '{"TEST_ONLY":"epoch change"}' } }),
     batch = B.DB.batch.bind(B.DB);
@@ -543,7 +543,7 @@ test('a late actual generic KV save is fenced after restore and cannot recreate 
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM kv WHERE k=?1', OPTIONS)[0].n, 0);
 });
 
-test('concurrent restore plans on one epoch produce one complete ACK and one conflict, with one receipt/preimage set', needs('award', 'dstats', 'seized'), async () => {
+test('concurrent restore plans on one epoch produce one complete ACK and one conflict, with one receipt/preimage set', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     a = await B.body({ keys: { [OPTIONS]: '{"TEST_ONLY":"one"}' } }),
     b = await B.body({ keys: { [OPTIONS]: '{"TEST_ONLY":"two"}' } });
@@ -556,7 +556,7 @@ test('concurrent restore plans on one epoch produce one complete ACK and one con
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM aud WHERE k=?1', 'atomic_restore')[0].n, 1);
 });
 
-test('13,006 synthetic existing accounts restore in one bounded batch with inherited hashes and no per-account SQL/session loss', needs('award', 'dstats', 'seized'), async (t) => {
+test('13,006 synthetic existing accounts restore in one bounded batch with inherited hashes and no per-account SQL/session loss', needs('award', 'custody', 'dstats', 'seized'), async (t) => {
   const B = await world(),
     all = copy(B.users);
   for (let i = all.length; i < 13006; i++)
@@ -633,7 +633,7 @@ test('13,006 synthetic existing accounts restore in one bounded batch with inher
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM sec WHERE act=?1', 'pw_change')[0].n, 0);
 });
 
-test('independent scope review regression: unknown final departments are rejected in typed custody, NF and ordinary KV', needs('dstats'), async () => {
+test('independent scope review regression: unknown final departments are rejected in typed custody, NF and ordinary KV', needs('custody', 'dstats', 'tasks'), async () => {
   for (const kind of ['custody', 'notifications', 'kv']) {
     const B = await world(),
       unknown = 'TEST_ONLY_unknown_department',
@@ -663,7 +663,7 @@ test('independent scope review regression: unknown final departments are rejecte
   }
 });
 
-test('8 MiB request boundary is enforced on UTF-8 encoded bytes before parsing or writing', needs('dstats'), async () => {
+test('8 MiB request boundary is enforced on UTF-8 encoded bytes before parsing or writing', needs('custody', 'dstats'), async () => {
   const B = await world(),
     body = await B.body({ reason: 'TEST_ONLY size probe' });
   body.keys[OPTIONS] = JSON.stringify({ TEST_ONLY: 'س'.repeat(4 * 1024 * 1024) });
@@ -676,7 +676,7 @@ test('8 MiB request boundary is enforced on UTF-8 encoded bytes before parsing o
   assert.deepEqual(snap(B.DB), before);
 });
 
-test('an existing-departments-only full merge leaves business revisions and restore epoch unchanged', needs('award', 'dstats', 'seized'), async () => {
+test('an existing-departments-only full merge leaves business revisions and restore epoch unchanged', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     before = identitySnapshot(B.DB),
     body = await B.body({ mode: 'merge', keys: { bassam_depts_v1: JSON.stringify(B.keys.bassam_depts_v1), bassam_auth_users_v1: '[]' } }),
@@ -690,7 +690,7 @@ test('an existing-departments-only full merge leaves business revisions and rest
   assert.deepEqual(identitySnapshot(B.DB), before);
 });
 
-test('lost completed transaction result is an explicit failure, and an exact transport retry returns the stored receipt without a second write', needs('award', 'dstats', 'seized'), async () => {
+test('lost completed transaction result is an explicit failure, and an exact transport retry returns the stored receipt without a second write', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     body = await B.body({ keys: { [OPTIONS]: '{"TEST_ONLY":"committed once"}' } });
   body.base.kv[OPTIONS] = 0;
@@ -716,7 +716,7 @@ test('lost completed transaction result is an explicit failure, and an exact tra
   assert.deepEqual(snap(B.DB), before);
 });
 
-test('retired source documents prevent restore without importing or retiring them silently', needs('award', 'dstats', 'seized'), async () => {
+test('retired source documents prevent restore without importing or retiring them silently', needs('award', 'custody', 'dstats', 'seized'), async () => {
   for (const key of ['bassam_notif_sys_v1', 'bassam_dstats_v1', 'bsdept:' + D1 + ':bassam_custody_v1']) {
     const B = await world();
     await B.DB.batch(B.W.kvPutStmts(B.env, 'kv', key, '{}'));
@@ -730,7 +730,7 @@ test('retired source documents prevent restore without importing or retiring the
   }
 });
 
-test('independent cleanup review regression: metadata-only employee restore does not wipe custody or need its revision', async () => {
+test('independent cleanup review regression: metadata-only employee restore does not wipe custody or need its revision', needs('custody'), async () => {
   const B = await world();
   await custody(B);
   const key = 'bsdept:' + D1 + ':bassam_employees_v1',
@@ -747,7 +747,7 @@ test('independent cleanup review regression: metadata-only employee restore does
     assert.deepEqual(copy(B.DB.q('SELECT * FROM ' + table)), rows, table + ' remains unchanged');
 });
 
-test('a sparse department backup is rejected instead of silently interpreting employee replacement as custody cleanup', needs('dstats'), async () => {
+test('a sparse department backup is rejected instead of silently interpreting employee replacement as custody cleanup', needs('custody', 'dstats'), async () => {
   const B = await world(),
     cu = await custody(B),
     key = 'bsdept:' + D1 + ':bassam_employees_v1',
@@ -762,7 +762,7 @@ test('a sparse department backup is rejected instead of silently interpreting em
   assert.deepEqual(snap(B.DB), before);
 });
 
-test('full requests missing the declared manifest, a domain, a custody scope or the exact key list reject before writes', needs('award', 'dstats', 'seized'), async () => {
+test('full requests missing the declared manifest, a domain, a custody scope or the exact key list reject before writes', needs('award', 'custody', 'dstats', 'seized'), async () => {
   for (const variant of ['manifest', 'notifications', 'custody', 'keys', 'sparse']) {
     const B = await world(),
       body = await B.body();
@@ -783,7 +783,7 @@ test('full requests missing the declared manifest, a domain, a custody scope or 
   }
 });
 
-test('actual staged department export includes a manifest and normalized domains, and restores through the same POST compiler', needs('award', 'dstats', 'seized'), async () => {
+test('actual staged department export includes a manifest and normalized domains, and restores through the same POST compiler', needs('award', 'custody', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world();
   await custody(B);
   await seedMessage(B);
@@ -858,7 +858,7 @@ test('actual staged department export includes a manifest and normalized domains
   assert.equal(B.DB.q('SELECT COUNT(*) n FROM kv WHERE k GLOB ?1', '*bassam_custody_v1')[0].n, 0);
 });
 
-test('actual preload guard exposes withSession only when supported, forwards bookmarks and preserves the captured epoch', needs('award', 'dstats', 'seized'), async () => {
+test('actual preload guard exposes withSession only when supported, forwards bookmarks and preserves the captured epoch', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     bookmarks = [],
     native = B.DB,
@@ -943,7 +943,7 @@ function actualPermSlice() {
   assert.ok(node);
   return vm.runInNewContext('(' + source.slice(node.start, node.end) + ')');
 }
-test('actual permSlice replacement removes absent/default cap and lenses instead of resurrecting old branches', needs('award', 'dstats', 'seized'), async () => {
+test('actual permSlice replacement removes absent/default cap and lenses instead of resurrecting old branches', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     pm = copy(B.keys.bassam_perms_v1);
   pm.lenses = { [D1]: ['zones', 'paths'], [D2]: ['gates'] };
@@ -971,7 +971,7 @@ test('actual permSlice replacement removes absent/default cap and lenses instead
   assert.equal(Object.prototype.hasOwnProperty.call(value.lenses, D1), false);
   assert.deepEqual(value.lenses[D2], ['gates']);
 });
-test('actual permSlice merge is one joint no-op when current employee grants exist, even if current cap/lenses are absent', needs('award', 'dstats', 'seized'), async () => {
+test('actual permSlice merge is one joint no-op when current employee grants exist, even if current cap/lenses are absent', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     pm = copy(B.keys.bassam_perms_v1);
   delete pm.caps[D1];
@@ -983,7 +983,7 @@ test('actual permSlice merge is one joint no-op when current employee grants exi
   ok(await B.restore(await B.body({ scope: { kind: 'dept', departmentId: D1 }, mode: 'merge', permissionSlice: slice })));
   assert.deepEqual(copy(B.DB.q('SELECT * FROM kv WHERE k=?1', 'bassam_perms_v1')), before);
 });
-test('permission slice filters against current page/lens registries including added planning and zones keys', needs('award', 'dstats', 'seized'), async () => {
+test('permission slice filters against current page/lens registries including added planning and zones keys', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     slice = {
       capSet: true,
@@ -1001,7 +1001,7 @@ test('permission slice filters against current page/lens registries including ad
   assert.deepEqual(value.lenses[D1], ['zones', 'paths']);
 });
 
-test('restoring a known image reference changes ownership metadata atomically while retaining its existing body and never touching R2', needs('award', 'dstats', 'seized'), async () => {
+test('restoring a known image reference changes ownership metadata atomically while retaining its existing body and never touching R2', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const B = await world(),
     image = 'img_testonly_restore',
     calls = [];
@@ -1037,7 +1037,7 @@ test('restoring a known image reference changes ownership metadata atomically wh
   assert.deepEqual(calls, []);
 });
 
-test('restore envelopes keep absent/null/empty department keys equivalent under the original atomic semantics', needs('award', 'dstats', 'seized'), async () => {
+test('restore envelopes keep absent/null/empty department keys equivalent under the original atomic semantics', needs('award', 'custody', 'dstats', 'seized'), async () => {
   let expected;
   for (const variant of ['absent', 'null', 'empty']) {
     const B = await world(),
@@ -1055,7 +1055,7 @@ test('restore envelopes keep absent/null/empty department keys equivalent under 
   }
 });
 
-test('restore envelopes keep absent/null/empty delete lists equivalent for a complete full restore', needs('award', 'dstats', 'seized'), async () => {
+test('restore envelopes keep absent/null/empty delete lists equivalent for a complete full restore', needs('award', 'custody', 'dstats', 'seized'), async () => {
   let expected;
   for (const variant of ['absent', 'null', 'empty']) {
     const B = await world(),
@@ -1073,7 +1073,7 @@ test('restore envelopes keep absent/null/empty delete lists equivalent for a com
   }
 });
 
-test('restore envelopes reject malformed optional containers and incomplete full-null keys before any business write', needs('dstats'), async () => {
+test('restore envelopes reject malformed optional containers and incomplete full-null keys before any business write', needs('custody', 'dstats'), async () => {
   for (const [field, value] of [
     ['keys', []],
     ['keys', '{}'],

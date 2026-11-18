@@ -24,12 +24,12 @@ function ops(held, o = {}) {
   return { W, went };
 }
 
-test('the container really carries the page-level tasks ref (the case under test exists)', needs('irshad'), () => {
+test('the container really carries the page-level tasks ref (the case under test exists)', needs('irshad', 'tasks'), () => {
   assert.ok(REFS.includes('tasks'), '«مؤشرات المهام» is a ref without «/»');
   assert.ok(REFS.filter((r) => r.includes('/')).length >= 6, 'and the leaves are still there');
 });
 
-test('tasks only (with its container «المتابعة اليومية»): link and route stay, the default landing is not «مؤشرات الإدارة»', async () => {
+test('tasks only (with its container «المتابعة اليومية»): link and route stay, the default landing is not «مؤشرات الإدارة»', needs('tasks'), async () => {
   const { W, went } = ops(['tasks', 'daily']);
   assert.equal(W.c._kpisOk(), true, 'the link is shown');
   assert.equal(W.c._pageAllowed('kpis'), 'kpis', 'the route opens');
@@ -39,7 +39,7 @@ test('tasks only (with its container «المتابعة اليومية»): link 
   assert.equal(W.c._loadPage(), 'daily', 'a session with no saved page and no address opens the first visible page, as before P4');
 });
 
-test('tasks plus another page: lands on that page, not on «مؤشرات الإدارة»', async () => {
+test('tasks plus another page: lands on that page, not on «مؤشرات الإدارة»', needs('tasks'), async () => {
   const { W, went } = ops(['tasks', 'daily', 'emps']);
   await W.c._goOps();
   assert.deepEqual(went, ['employees']);

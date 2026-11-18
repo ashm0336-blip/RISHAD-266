@@ -1,0 +1,952 @@
+{
+ "schema": 1,
+ "system": "custody",
+ "note": "V7 · د3 · د4-ج: صلاحياتُ هذا النظام — صفوفُه في السجلّ (المفاتيح · الأوراق · الذرّات · الأعلام) وروابطُه في الخادم (النطاق · الحراسة · البناء)، وما يضيفه إلى صفوف القاعدة. تجمعها tools/perm_parts.py مع القاعدة (الشرح في رأس الأداة).",
+ "docs": {
+  "registry": [
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 12,
+    "value": {
+     "key": "cust.view",
+     "owner": "emps/custody",
+     "ownerKind": "page",
+     "domain": "emps",
+     "label": "عرض العهد",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_custody_v1"
+      ],
+      "detail": "bassam_custody_v1 بورقة emps/custody",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "emps/custody:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "cust.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 13,
+    "value": {
+     "key": "ref.custody_type.create",
+     "owner": "emps/custody",
+     "ownerKind": "page",
+     "domain": "emps",
+     "label": "إنشاء صنف عهدة",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_custody_v1"
+      ],
+      "detail": "إضافة قيمة في bassam_custody_v1 → items[] (lock: name) (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "emps/custody:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "cust.type.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 14,
+    "value": {
+     "key": "ref.custody_type.edit",
+     "owner": "emps/custody",
+     "ownerKind": "page",
+     "domain": "emps",
+     "label": "تعديل صنف عهدة",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_custody_v1"
+      ],
+      "detail": "تعديل/إعادة تسمية قيمة في bassam_custody_v1 → items[] (lock: name) (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "emps/custody:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "cust.type.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 15,
+    "value": {
+     "key": "cust.move.issue",
+     "owner": "emps/custody",
+     "ownerKind": "page",
+     "domain": "emps",
+     "label": "تسليم عهدة",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_custody_v1"
+      ],
+      "detail": "إلحاقُ حركةٍ في moves[] (append-only) حيث moves[].t === 'out' (تسليم · cuHandOut) — المصنِّفُ يقرأ الحقلَ الفيزيائي t؛ AS‑IS: emps/custody:add أو emps/custody:edit (custodyMoveOp)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "emps/custody:add",
+      "emps/custody:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "cust.out"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 16,
+    "value": {
+     "key": "cust.move.return",
+     "owner": "emps/custody",
+     "ownerKind": "page",
+     "domain": "emps",
+     "label": "استرجاع عهدة",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_custody_v1"
+      ],
+      "detail": "إلحاقُ حركةٍ في moves[] حيث moves[].t === 'in' (استرجاع · cuCloseItem) — AS‑IS: emps/custody:edit وحده",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "emps/custody:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "cust.in"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 17,
+    "value": {
+     "key": "cust.move.damage",
+     "owner": "emps/custody",
+     "ownerKind": "page",
+     "domain": "emps",
+     "label": "تسجيل تالف",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_custody_v1"
+      ],
+      "detail": "إلحاقُ حركةٍ في moves[] حيث moves[].t === 'dmg' (تلف · cuCloseItem) — AS‑IS: emps/custody:edit وحده",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "emps/custody:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "cust.damage"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 18,
+    "value": {
+     "key": "cust.move.lost",
+     "owner": "emps/custody",
+     "ownerKind": "page",
+     "domain": "emps",
+     "label": "تسجيل مفقود",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_custody_v1"
+      ],
+      "detail": "إلحاقُ حركةٍ في moves[] حيث moves[].t === 'lost' (فقد · cuCloseItem) — AS‑IS: emps/custody:edit وحده",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "emps/custody:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "cust.lost"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 0,
+    "seq": 19,
+    "value": {
+     "key": "ref.custody_type.delete",
+     "owner": "emps/custody",
+     "ownerKind": "page",
+     "domain": "emps",
+     "label": "حذف صنف",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_custody_v1"
+      ],
+      "detail": "حذف قيمة في bassam_custody_v1 → items[] (lock: name) (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "emps/custody:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "cust.type.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 134,
+    "seq": 86,
+    "value": {
+     "key": "ref.custody_type.view",
+     "owner": "emps/custody",
+     "ownerKind": "page",
+     "domain": "emps",
+     "label": "عرض أصناف العهد",
+     "type": "view",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_custody_v1"
+      ],
+      "detail": "items تُقرأ مع المورد (RD)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "emps/custody:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 1,
+    "seq": 6,
+    "value": {
+     "id": "emps/custody",
+     "kind": "page",
+     "label": "عهد الموظفين",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 6,
+    "seq": 36,
+    "value": {
+     "leaf": "emps/custody",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "cust.view",
+      "ref.custody_type.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 6,
+    "seq": 37,
+    "value": {
+     "leaf": "emps/custody",
+     "act": "add",
+     "disposition": "migrated",
+     "targets": [
+      "cust.move.issue",
+      "ref.custody_type.create"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 6,
+    "seq": 38,
+    "value": {
+     "leaf": "emps/custody",
+     "act": "edit",
+     "disposition": "migrated",
+     "targets": [
+      "cust.move.issue",
+      "cust.move.return",
+      "cust.move.damage",
+      "cust.move.lost",
+      "ref.custody_type.edit"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 6,
+    "seq": 39,
+    "value": {
+     "leaf": "emps/custody",
+     "act": "del",
+     "disposition": "migrated",
+     "targets": [
+      "ref.custody_type.delete"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 6,
+    "seq": 40,
+    "value": {
+     "leaf": "emps/custody",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 6,
+    "seq": 41,
+    "value": {
+     "leaf": "emps/custody",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.cust.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 0,
+    "seq": 6,
+    "value": "ff.cust.export"
+   }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 12,
+    "value": {
+     "key": "cust.view",
+     "owner": "emps/custody",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_custody_v1",
+     "resources": [
+      "bassam_custody_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 13,
+    "value": {
+     "key": "ref.custody_type.create",
+     "owner": "emps/custody",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_custody_v1",
+     "resources": [
+      "bassam_custody_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 14,
+    "value": {
+     "key": "ref.custody_type.edit",
+     "owner": "emps/custody",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_custody_v1",
+     "resources": [
+      "bassam_custody_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 15,
+    "value": {
+     "key": "cust.move.issue",
+     "owner": "emps/custody",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_custody_v1",
+     "resources": [
+      "bassam_custody_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 16,
+    "value": {
+     "key": "cust.move.return",
+     "owner": "emps/custody",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_custody_v1",
+     "resources": [
+      "bassam_custody_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 17,
+    "value": {
+     "key": "cust.move.damage",
+     "owner": "emps/custody",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_custody_v1",
+     "resources": [
+      "bassam_custody_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 18,
+    "value": {
+     "key": "cust.move.lost",
+     "owner": "emps/custody",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_custody_v1",
+     "resources": [
+      "bassam_custody_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 19,
+    "value": {
+     "key": "ref.custody_type.delete",
+     "owner": "emps/custody",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_custody_v1",
+     "resources": [
+      "bassam_custody_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 122,
+    "seq": 84,
+    "value": {
+     "key": "ref.custody_type.view",
+     "owner": "emps/custody",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_custody_v1",
+     "resources": [
+      "bassam_custody_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "byResource"
+    ],
+    "key": "bassam_custody_v1",
+    "after": 6,
+    "seq": 3,
+    "value": {
+     "items": "custodyItems",
+     "evidence": "items[name] · moves[] إلحاقية {t, eid, y, m, d}",
+     "lock": "custody: لا آليةَ قفلٍ زمنيّ → allow:no-temporal-lock",
+     "dims": {
+      "Department": "keyDept",
+      "Branch": "branchCeiling",
+      "DateRange": "periodLock"
+     },
+     "na": {
+      "Site": "no-site-identity",
+      "Zone/Element": "no-element-identity",
+      "Shift": "no-shift-identity",
+      "Assigned": "no-assignment-field",
+      "Own": "no-owner-identity (eid = صاحب العهدة)",
+      "Source": "department-resource",
+      "Global": "no-record-scope"
+     }
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_custody_v1",
+    "after": 20,
+    "seq": 1,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "cust.view",
+      "ref.custody_type.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "emps/custody:view",
+       "key": "cust.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "emps/custody:view",
+       "key": "ref.custody_type.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 8,
+    "value": {
+     "key": "cust.move.issue",
+     "res": "bassam_custody_v1",
+     "where": "moves[] إلحاقٌ في الذيل حيث move.t === \"out\" (تسليم)",
+     "how": "المصنِّف يقرأ الحقلَ الفيزيائي t من كلِّ حركةٍ مُلحَقة (v24.3 F-01)",
+     "asis": "custodyMoveOp: out ⇐ emps/custody:add أو edit — asisMap في v24.3 مطابقٌ للمصدر",
+     "decl": "",
+     "dup": "",
+     "owner": "emps/custody",
+     "type": "edit",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 9,
+    "value": {
+     "key": "cust.move.return",
+     "res": "bassam_custody_v1",
+     "where": "moves[] إلحاقٌ في الذيل حيث move.t === \"in\" (استرجاع)",
+     "how": "المصنِّف يقرأ الحقلَ الفيزيائي t من كلِّ حركةٍ مُلحَقة (v24.3 F-01)",
+     "asis": "custodyMoveOp: in ⇐ emps/custody:edit وحده — asisMap في v24.3 مطابقٌ للمصدر",
+     "decl": "",
+     "dup": "",
+     "owner": "emps/custody",
+     "type": "edit",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 10,
+    "value": {
+     "key": "cust.move.damage",
+     "res": "bassam_custody_v1",
+     "where": "moves[] إلحاقٌ في الذيل حيث move.t === \"dmg\" (تلف)",
+     "how": "المصنِّف يقرأ الحقلَ الفيزيائي t من كلِّ حركةٍ مُلحَقة (v24.3 F-01)",
+     "asis": "custodyMoveOp: dmg ⇐ emps/custody:edit وحده — asisMap في v24.3 مطابقٌ للمصدر",
+     "decl": "",
+     "dup": "",
+     "owner": "emps/custody",
+     "type": "edit",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 11,
+    "value": {
+     "key": "cust.move.lost",
+     "res": "bassam_custody_v1",
+     "where": "moves[] إلحاقٌ في الذيل حيث move.t === \"lost\" (فقد)",
+     "how": "المصنِّف يقرأ الحقلَ الفيزيائي t من كلِّ حركةٍ مُلحَقة (v24.3 F-01)",
+     "asis": "custodyMoveOp: lost ⇐ emps/custody:edit وحده — asisMap في v24.3 مطابقٌ للمصدر",
+     "decl": "",
+     "dup": "",
+     "owner": "emps/custody",
+     "type": "edit",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "counts",
+     "emittedKeys"
+    ],
+    "add": 7
+   },
+   {
+    "path": [
+     "counts",
+     "coveredResources"
+    ],
+    "add": 1
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · staffing)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · award.recs [] · staffing)",
+    "with": [
+     "award"
+    ]
+   }
+  ],
+  "build-bindings": [
+   {
+    "path": [
+     "importRes"
+    ],
+    "after": 7,
+    "seq": 0,
+    "value": "bassam_custody_v1"
+   }
+  ]
+ }
+}

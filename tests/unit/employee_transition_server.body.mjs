@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world as fixture, D1, D2, IDS, EKEYS, copy } from './custody_review_fx.mjs';
+import { world as fixture, D1, D2, IDS, EKEYS, copy } from './canonical_fx.mjs';
 import { installOperationalFixture, inspectOperationalFixture, isOperationalFixtureKey, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { candidateWorker } from './irshad_domain_fx.mjs';
+import { needs, hasSystem } from './harness.mjs';
 /* Typed award domain and the pure context projection, from the same actual generated Worker (no staged copy). */
 const X = await candidateWorker(['awConvert', 'awInstallStatements', 'awExportDomain', 'awInflate', 'empTransitionContextOf']);
 const key = (n) => 'bsdept:' + D1 + ':' + n;
@@ -52,7 +53,7 @@ test('context requires original employee action and exposes revisions without cu
   p.emps[D1][EKEYS.employee1]['emps/data'] = ['view', 'del'];
   await t.put('bassam_perms_v1', p);
   const c = await t.context('employee1');
-  assert.equal(c.base.custody, 0);
+  assert.equal(c.base.custody, hasSystem('custody') ? 0 : undefined);   /* V7 · د4-ج: base.custody حقلٌ من نظام العهد — بغيابه لا يُرسَل ولا يُشترط */
   assert.ok(Array.isArray(c.employees));
   assert.equal(c.base.kv.bassam_auth_users_v1, 1);
   for (const forbidden of ['users', 'ph', 'items', 'issues', 'moves']) assert.equal(Object.hasOwn(c, forbidden), false);
@@ -320,7 +321,7 @@ test('cleanup does not create absent ledgers or invent a required human reason',
   );
 });
 
-test('original cross-resource cleanup removes known identities and keeps a surviving shared name and prior orphans', async () => {
+test('original cross-resource cleanup removes known identities and keeps a surviving shared name and prior orphans', needs('tasks'), async () => {
   const t = await world(),
     employees = copy(t.keys[key('bassam_employees_v1')]),
     target = employees[0];

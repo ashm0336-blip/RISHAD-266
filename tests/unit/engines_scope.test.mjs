@@ -80,7 +80,7 @@ test('مستخرِجُ التقرير اليومي: صلاحيةُ الاستئ�
   assert.ok(rd.filter(i => i.what === 'roster').length === 2 && rd.some(i => i.what === 'shift'), 'القراءة: الورديةُ ومسكَّنوها');
   assert.equal(whats(ex('bassam_dreport_v1', {}, {}, {})), 'resource:changed');
 });
-test('مستخرِجا الجدول الشهري والمهام: الأقفال (غائبة ⇒ null · مقفل · مفتوح) · الصفوف · لقطةُ الورديات · مهامُّ بالمعرّف r[13] ومالكُها r[14]', () => {
+test('مستخرِجا الجدول الشهري والمهام: الأقفال (غائبة ⇒ null · مقفل · مفتوح) · الصفوف · لقطةُ الورديات · مهامُّ بالمعرّف r[13] ومالكُها r[14]', needs('tasks'), () => {
   const a = { '1447-05': { e1: { s: 'ص' }, e2: { s: 'م' }, __shifts: [1] }, '1447-03': { e1: {} } }, b = { '1447-05': { e1: { s: 'م' }, e3: { s: 'ص' }, __shifts: [2] }, '1447-06': { e4: { s: 'ص' }, __shifts: [] } };
   const it = ex('bassam_staffing_v3', a, b, { locks: { staffing: { '1447-05': true } } }), w = whats(it);
   for (const x of ['row:changed', 'row:added', 'row:removed', 'snapshot:changed', 'month:added', 'month:removed']) assert.ok(w.indexOf(x) !== -1, 'الجدول: ' + x + ' ⊂ ' + w);
@@ -94,7 +94,7 @@ test('مستخرِجا الجدول الشهري والمهام: الأقفال 
   assert.deepEqual(ti.find(i => i.kind === 'changed').owner, { old: 'e1', new: 'e1' }); assert.equal(whats(ex('bassam_tasks_v1', ta, ta, {})), 'resource:changed');
   assert.equal(whats(ex('bassam_staffing_v3', {}, {}, {})), 'resource:changed');
 });
-test('المستخرِجاتُ الأخرى: الاسترشاد/المضبوطات · الموظفون · العهد · الجائزة · الإحصائيات · الحسابات (ph يُورَث) · الصلاحيات · الكلّ · مالكُ إشعار الجهاز', needs('award', 'dstats'), () => {
+test('المستخرِجاتُ الأخرى: الاسترشاد/المضبوطات · الموظفون · العهد · الجائزة · الإحصائيات · الحسابات (ph يُورَث) · الصلاحيات · الكلّ · مالكُ إشعار الجهاز', needs('award', 'custody', 'dstats'), () => {
   const r = ex('bassam_irshad_v1', { reports: [{ id: 1, y: 1447, m: 5, d: 1, loc: 'A' }, { id: 2 }] }, { reports: [{ id: 1, y: 1447, m: 5, d: 2, loc: 'B' }, { id: 3, loc: 'C' }] });
   assert.equal(whats(r), 'record:added,record:changed,record:removed'); const rc = r.find(i => i.kind === 'changed'); assert.deepEqual(rc.site, { old: 'A', new: 'B' }); assert.equal(rc.period.old.d, 1);
   assert.equal(whats(ex('bassam_seized_v1', {}, {})), 'resource:changed');
@@ -141,7 +141,7 @@ test('مقيّمو الأبعاد (خارج الإنفاذ — القديم): De
   assert.equal(D.Global().r, 'not_applicable');
   assert.equal(S.isCeiling(null), false); assert.equal(S.isCeiling({ role: 'staff', ekey: 'mgr:x' }), true); assert.equal(S.isCeiling({ role: 'staff' }), false);
 });
-test('Assigned · Own · DateRange: التسكينُ (قراءة · إضافة · حذف · تغيير) · المهامُّ بالمالك · الملكيةُ وتغييرُها · الأقفالُ الزمنية ونافذةُ الاستدراك (لا تجاوزَ لمدير النظام)', needs('irshad'), () => {
+test('Assigned · Own · DateRange: التسكينُ (قراءة · إضافة · حذف · تغيير) · المهامُّ بالمالك · الملكيةُ وتغييرُها · الأقفالُ الزمنية ونافذةُ الاستدراك (لا تجاوزَ لمدير النظام)', needs('irshad', 'tasks'), () => {
   const c = (o) => Object.assign({ dept: 'd1', actor: { role: 'staff', ekey: 'e1', id: 'u1' } }, o || {});
   const em = (kind, o, n) => ({ kind, emp: { old: o, new: n } });
   assert.equal(D.Assigned(em('current', [], ['e1']), 'k', c()).r, 'allow'); assert.equal(D.Assigned(em('current', [], []), 'k', c()).r, 'deny');
@@ -168,7 +168,7 @@ test('Assigned · Own · DateRange: التسكينُ (قراءة · إضافة �
   assert.equal(D.DateRange(pr(p(1447, 5, 1), p(1447, 5, 1), { lock: { locked: true, why: 'w' } }), 'k', c(), 'bassam_plan_v1').r, 'deny');
   assert.equal(D.DateRange(pr(p(1447, 5, 1), p(1447, 5, 1), { lock: { locked: false, why: 'open' } }), 'k', c()).r, 'allow');
 });
-test('evaluate · evaluateWrite · evaluateRead · readKeysFor · validate: التركيبُ عبر المفاتيح · العناصرُ كلُّها (Bulk) · أفضلُ مفاتيح القراءة', () => {
+test('evaluate · evaluateWrite · evaluateRead · readKeysFor · validate: التركيبُ عبر المفاتيح · العناصرُ كلُّها (Bulk) · أفضلُ مفاتيح القراءة', needs('tasks'), () => {
   const kDept = keyWith(['Department', 'Branch'], (k, e) => e.scopeDims.length === 2), kTask = keyWith(['Assigned', 'Own']);
   const ctx = (o) => Object.assign({ dept: 'd1', today: T, deptInScope: (d) => d === 'd1', allowedDepts: ['d1'], actor: { role: 'staff', ekey: 'e1', id: 'u1' } }, o || {});
   const r1 = S.evaluate(kDept, null, 'bassam_custody_v1', { items: [] }, { items: [{ name: 'أ' }] }, ctx());

@@ -336,7 +336,7 @@ test('header tab icons are the page\'s own: the icon body of each tab from the b
   assert.deepEqual(icons('#/kpis'), ['<path d="M9"></path>', '<path d="M9"></path>']);
 });
 
-test('the real manifest: every tab of every route has the icon of the page strip it was read from; the store tab is display-only', needs('award', 'dstats'), () => {
+test('the real manifest: every tab of every route has the icon of the page strip it was read from; the store tab is display-only', needs('award', 'custody', 'dstats'), () => {
   const block = read('src/manifests/255-page-manifest.js'), M = JSON.parse(block.slice(block.lastIndexOf('})(') + 3, block.lastIndexOf(');')));
   const KIVO = {}, window = { location: { hash: '' }, addEventListener() {}, matchMedia: () => ({ matches: false }) };
   KIVO.KIVO_MANIFEST = { keys: Object.keys(M), clone: (k) => JSON.parse(JSON.stringify(M[k])) };

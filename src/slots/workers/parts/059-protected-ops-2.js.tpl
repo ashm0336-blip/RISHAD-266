@@ -75,7 +75,7 @@ function enfPlugOps(res) {
   return res;
 }
 /* KIVO_264 · KIVO-Tasks (الرقعة 06): هويةُ الذات التي يراها مصنِّفُ الحرّاس — على مخزن المهام من المسار الذاتي وحده (وفي غيره كما كانت) */
-function enfTaskSelfEkey(A, rn) { return rn === 'bassam_tasks_v1' && !A.__tkSelf ? null : A.u.ekey; }
+function enfTaskSelfEkey(A, rn) { return @@SYS:enf.selfEkey.tasks@@A.u.ekey; }
 /* القرارُ الكامل لكتابةٍ واحدة على موردٍ إداريّ (أو منصّيّ بسياق) — heldFn(key) يُعطى للموارد المنصّية */
 function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   opts = opts || {};

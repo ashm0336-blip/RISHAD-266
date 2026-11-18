@@ -9,8 +9,7 @@ var EMP_TRANSITION_RELATED = [
   'bassam_staffing_locks_v1',
   'bassam_plan_v1',
   'bassam_rounds_v1',
-  'bassam_tasks_v1',
-  'bassam_dreport_v1',
+@@SYS:emp.keys.tasks@@  'bassam_dreport_v1',
   'bassam_shift_options_v1',
   'bassam_perm_tpls_v1',
   'bassam_grants_v1',
@@ -69,7 +68,7 @@ async function empTransitionSource(env) {
   if (capture.guards.length) await env.DB.batch(capture.guards);
   return { keys:capture.keys,revs:revs,guards:capture.guards,snapshots:capture.snapshots };
 }
-function empTransitionContextOf(A, d, intent, source, cuRevision) {
+function empTransitionContextOf(A, d, intent, source@@SYS:emp.ctx.custodyParam@@) {
   empActionAllowed(A, d, intent);
   var keys = EMP_TRANSITION_RELATED.map(function (n) {
       return empTransitionKey(d, n);
@@ -90,7 +89,7 @@ function empTransitionContextOf(A, d, intent, source, cuRevision) {
     ok: 1,
     dept: d,
     intent: intent,
-    base: { kv: base, custody: cuRevision, awards: @@SYS:emp.base.awards|empty="{}"@@ },
+    base: { kv: base,@@SYS:emp.base.custody@@ awards: @@SYS:emp.base.awards|empty="{}"@@ },
     employees: empClone(employees),
     staffAccountKeys: (A.users || [])
       .filter(function (u) {
@@ -104,7 +103,7 @@ function empTransitionContextOf(A, d, intent, source, cuRevision) {
   };
 }
 async function empTransitionContext(env, A, d, intent) {
-  return empTransitionContextOf(A, d, intent, await empTransitionSource(env), await cuRev(env, d));
+  return empTransitionContextOf(A, d, intent, await empTransitionSource(env)@@SYS:emp.ctx.custodyRev@@);
 }
 function empTransitionValidateRows(before, after, intent, mode) {
   if (!Array.isArray(after)) throw cuError('employee-transition-rows');
@@ -216,19 +215,7 @@ function empCleanupValues(values, removed, after, replace, wipe, staffOn) {
     Object.keys(rounds).forEach(function (k) {
       if (rounds[k] && Array.isArray(rounds[k].d)) rounds[k].d.forEach(fd);
     });
-  var tasks = values.bassam_tasks_v1;
-  if (isObj(tasks))
-    Object.keys(tasks).forEach(function (k) {
-      if (Array.isArray(tasks[k]))
-        tasks[k].forEach(function (r) {
-          if (Array.isArray(r) && ((r[14] && drop.has(String(r[14]).trim())) || (r[8] && drop.has(String(r[8]).trim())))) {
-            r[7] = [];
-            r[8] = '';
-            r[14] = '';
-          }
-        });
-    });
-  if (replace || wipe) {
+@@SYS:emp.cleanup.tasks@@  if (replace || wipe) {
     if (staffOn) {
       var st = values.bassam_staffing_v3,
         lk = values.bassam_staffing_locks_v1;
@@ -503,17 +490,16 @@ async function empPrepareTransition(env, A, input) {
   if (!Array.isArray(input.finalRows)) throw cuError('employee-transition-rows');
   var d = input.dept,
     source = await empTransitionSource(env),
-    context = empTransitionContextOf(A, d, input.intent, source, await cuRev(env, d));
-  empShape(input.base, ['epoch', 'kv', 'custody', 'awards']);
+    context = empTransitionContextOf(A, d, input.intent, source@@SYS:emp.ctx.custodyRev@@);
+  empShape(input.base, ['epoch', 'kv', @@SYS:emp.base.custodyShape@@'awards']);
   if(!deq(cuCanonical(input.base.awards),cuCanonical(context.base.awards)))throw cuError('award-conflict',409);
-  if (!isObj(input.base.kv) || !Number.isSafeInteger(input.base.custody) || input.base.custody < 0)
+  if (!isObj(input.base.kv)@@SYS:emp.base.custodyInt@@)
     throw cuError('employee-transition-base');
   for (var key of Object.keys(context.base.kv))
     if (input.base.kv[key] !== context.base.kv[key]) throw cuError('employee-transition-conflict', 409);
   // RISHAD-266: the reference set is exactly the server context (no client-added keys), so 019e may trust it
   if (Object.keys(input.base.kv).length !== Object.keys(context.base.kv).length) throw cuError('employee-transition-conflict', 409);
-  if (input.base.custody !== context.base.custody) throw cuError('custody-conflict', 409);
-  var mode = input.intent === 'import' && input.import && input.import.mode,
+@@SYS:emp.base.custodyConflict@@  var mode = input.intent === 'import' && input.import && input.import.mode,
     replace = mode === 'replace',
     wipe = input.intent === 'delete' && input.deleteMode === 'all';
   if (input.intent === 'delete') {
@@ -698,8 +684,7 @@ async function empPrepareTransition(env, A, input) {
   Object.keys(set).forEach(function (k) {
     if (input.intent === 'import' && KIVO_BUILD.isImportRes(resName(k))) ops[k] = { op: 'import.run', mode: mode, n: after.length };
   });
-  base[cuKey(d)] = input.base.custody;
-  var body = { uid: A.u.id, set: set, del: [], base: base, ops: ops };
+@@SYS:emp.base.custodyRev@@  var body = { uid: A.u.id, set: set, del: [], base: base, ops: ops };
   if (typeof input.reason === 'string' && input.reason.trim()) {
     body.why = Object.create(null);
     Object.keys(set).forEach(function (k) {

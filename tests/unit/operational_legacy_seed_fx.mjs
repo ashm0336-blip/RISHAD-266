@@ -2,12 +2,12 @@
    supplies every target/source guard; no runtime compatibility reader exists. */
 import assert from 'node:assert/strict';
 import { D1Shim } from './harness.mjs';
-import { canonicalWorker } from './custody_review_fx.mjs';
+import { canonicalWorker } from './canonical_fx.mjs';
 const installed = new WeakMap();
 const clone = value => JSON.parse(JSON.stringify(value));
 export async function installOperationalFixture(env, worker) {
   assert.ok(env.DB instanceof D1Shim, 'Isolated in-memory fixture SQLite only');
-  /* Idempotent per isolated env: a shared world (custody_review_fx) may already have run the canonical cutover. */
+  /* Idempotent per isolated env: a shared world (canonical_fx) may already have run the canonical cutover. */
   if (installed.has(env)) return { documents: 0, already: true };
   const DB = env.DB, W = worker || await canonicalWorker();
   assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, '10');

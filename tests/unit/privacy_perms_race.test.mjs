@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { privWorld, login, stored, KP, MODES } from './privacy_fx.mjs';
-import { putKV, operationSaveBody } from './tasks_fx.mjs';
+import { putKV, operationSaveBody } from './world_fx.mjs';
 
 const KU = 'bassam_auth_users_v1', SUP = 'tst_e_sup1';
 /* tst_sup1 carries the manager badge (or not): his sheet is then not administrable by the dept manager (permTargetOk · 018) */

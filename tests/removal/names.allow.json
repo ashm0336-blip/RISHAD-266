@@ -1,5 +1,5 @@
 {
- "note": "V7 · د3 (تتمة) — قائمةُ الاستثناء المعلنة لاختبار الحذف (tests/removal/perms.test.mjs): البحثُ النصي عن أسماء الأنظمة الغائبة في أجزاء الخادم وكتل الواجهة (خارج التعليقات) يفشل على أي ذكرٍ ليس هنا. كلُّ مدخلٍ مقطعٌ بعينه في ملفٍ بعينه (file: \"*\" = أي ملف) وسببُه. kind: «legit» = يبقى مشروعاً · «deferred» = فرعٌ خامل بغياب النظام، نقلُه مؤجَّل ومعلن.",
+ "note": "V7 · د3 (تتمة) · د4-أ · د4-ج — قائمةُ الاستثناء المعلنة لاختبار الحذف (tests/removal/perms.test.mjs): البحثُ النصي عن أسماء الأنظمة الغائبة في أجزاء الخادم وكتل الواجهة (خارج التعليقات) يفشل على أي ذكرٍ ليس هنا. كلُّ مدخلٍ مقطعٌ بعينه في ملفٍ بعينه (file: \"*\" = أي ملف) وسببُه. kind: «legit» وحده — ما يبقى مشروعاً؛ لا مؤجَّلَ في القائمة منذ د4-أ (يُرفض). وكلُّ مدخلٍ يجب أن يبقى له موضع (tests/removal/names_allow.mjs): مدخلٌ زال موضعُه يُفشل الاختبار.",
  "skipFiles": [
   {
    "file": "workers/parts/051a-schema-migrations.js",
@@ -38,7 +38,7 @@
     "input.base.awards",
     "context.base.awards",
     "awards: {}",
-    "'custody', 'awards']",
+    "'awards']",
     "'award-conflict'"
    ],
    "kind": "legit",
@@ -72,76 +72,179 @@
    "why": "اسمُ ترحيل (الترحيلات تبقى بقرار د2)."
   },
   {
-   "file": "workers/parts/019d-atomic-restore.js",
+   "file": "*",
    "match": [
-    "def.name==='awards'"
+    "self.task.proof.upload"
    ],
-   "kind": "deferred",
-   "why": "فرعٌ في كود الاستعادة المشترك يقارن باسم مجال؛ لا يُسلك بغياب النظام (لا تعريفَ مجالٍ بهذا الاسم)."
+   "kind": "legit",
+   "why": "مفتاحُ صلاحيةٍ مالكُه «الصور» (images) وقاعدتُه في كود الصور بالقاعدة (imgVerdict selfProof)؛ صفُّه في سجلّ القاعدة ورابطُ نطاقه معه — لا يتبع مجلدَ المهام."
   },
   {
-   "file": "workers/parts/019f-backup-converter.js",
+   "file": "workers/parts/016-base-shared.js",
    "match": [
-    "def.name==='awards'",
-    "rsBCOwn(domains, 'irshad')"
+    "tkEmps",
+    "tkTokN",
+    "tkTokRec"
    ],
-   "kind": "deferred",
-   "why": "فرعان في محوِّل النسخ المشترك يقارنان باسم مجال؛ لا يُسلكان بغياب النظام."
+   "kind": "legit",
+   "why": "دوالُّ قاعدةٍ عامة لقائمة الموظفين ورموزها (eid ∪ nid) تحمل بادئةً تاريخية؛ تستعملها القاعدة في عقد الحفظ (054) وهوية «ملفي» (062d)."
   },
   {
-   "file": "workers/parts/019n-business-integration.js",
+   "file": "workers/parts/054-image-contract.js",
    "match": [
-    "'/api/seized':'/api/award'",
-    "'seized':'awards'",
-    "KIVO_AWARD_LEGACY_SOURCE",
-    "KIVO_SEIZED_LEGACY_SOURCE",
-    "SEIZED_TARGET",
-    "AWARD_TARGET",
-    "def.name==='awards'",
-    "def.name==='seized'",
-    "name==='awards'",
-    "name==='seized'",
-    "privAwardOk",
-    "'awards:'"
+    "tkEmps",
+    "tkTokRec"
    ],
-   "kind": "deferred",
-   "why": "ملفُّ التكامل المشترك بين المضبوطات والجائزة: يبقى في القاعدة بلا تعريفات مجالٍ بغيابهما، وفروعُه تقارن باسم المجال فلا تُسلك. تفكيكُه إلى فتحات مؤجَّل."
+   "kind": "legit",
+   "why": "نداءُ دالتَي القاعدة العامتين (016) من عقد الحفظ: ربطُ الحساب بسجلّه وتفرّدُ هوية الموظفين — لا منطقَ مهام."
   },
   {
-   "file": "workers/parts/019u-privacy-projection.js",
+   "file": "workers/parts/062d-record-shared.js",
    "match": [
-    "privAwardOk",
-    "privAwardRec"
+    "tkRecShared",
+    "tkTokRec"
    ],
-   "kind": "deferred",
-   "why": "دالتا خصوصيةٍ يستدعيهما ملفُّ التكامل المشترك 019n؛ مفاتيحُهما صارت في فتحة (فارغة بغياب الجائزة)، واسماهما مؤجَّلان معه."
+   "kind": "legit",
+   "why": "قاعدةُ هوية «ملفي» (سجلٌّ يحلّ إليه حسابٌ نشطٌ آخر لا يُربط بأيٍّ منهما): دالةُ قاعدةٍ باسمها التاريخي، قُطعت من ملف المهام لتبقى في القاعدة."
   },
   {
-   "file": "src/modules/admin/logic.js",
+   "file": "workers/parts/062b-me-history.js",
    "match": [
-    "irshad = false",
-    "(irshad ? \"/api/irshad/export?uid=\" : ",
-    "value[irshad ? "
+    "tkRecShared"
    ],
-   "kind": "deferred",
-   "why": "سياجُ تصدير النسخة في صفحة الإعدادات: معاملٌ اسمُه irshad قيمتُه false دائماً بغياب النظام، فلا يُطلب مسارُه."
+   "kind": "legit",
+   "why": "نداءُ قاعدة هوية «ملفي» (062d) من مسار القراءة الذاتية في القاعدة."
   },
   {
-   "file": "src/modules/business-cloud.js",
+   "file": "workers/parts/059-protected-ops-2.js",
    "match": [
-    "(?:(?:seized-|award-)?conflict|(?:award-)?restore-epoch-changed)"
+    "enfTaskSelfEkey"
    ],
-   "kind": "deferred",
-   "why": "وحدةُ العميل المشتركة لصفحتَي المضبوطات والجائزة: نمطُ رموز خطأ؛ لا صفحةَ تستعملها بغيابهما."
+   "kind": "legit",
+   "why": "اسمُ دالة قاعدةٍ في وضع الإنفاذ تعيد مفتاحَ هوية الفاعل؛ شرطُ المهام داخلها صار فتحة، والاسمُ محفوظ لتبقى الحزمة مطابقة."
   },
   {
-   "file": "src/services/548-atomic-backup.js",
+   "file": "workers/parts/062a-auth-routes.js",
    "match": [
-    "spec[0]==='award'?'awards':spec[0]",
-    "spec[0]==='award'"
+    "tkG"
    ],
-   "kind": "deferred",
-   "why": "فرعان في خدمة النسخ يقارنان باسم مجال التصدير؛ لا يُسلكان بغياب الجائزة (قائمةُ المجالات تأتي من فتحة)."
+   "kind": "legit",
+   "why": "متغيّرٌ محلي لرمز الجلسة (token) في مسار الخروج — لا صلةَ له بالمهام."
+  },
+  {
+   "file": "src/core/140-safety-scheduler.js",
+   "match": [
+    "tasks"
+   ],
+   "kind": "legit",
+   "why": "متغيّرٌ محلي في مجدول الأمان: قائمةُ دوالّ مؤجَّلة اسمُها كلمةٌ عامة — لا صلةَ له بنظام المهام."
+  },
+  {
+   "file": "*",
+   "match": [
+    "cuError",
+    "cuCode",
+    "cuStatus",
+    "cuClock",
+    "cuCanonical",
+    "cuFingerprint"
+   ],
+   "kind": "legit",
+   "why": "دوالُّ قاعدةٍ عامة في 016 (خطأٌ برمزٍ وحالة · ساعةُ اليوم الهجري · الصيغةُ القانونية · بصمةُ الطلب) تحمل بادئةً تاريخية وتستعملها القاعدةُ كلها (الحفظ · الاستعادة · انتقال الموظف · التنبيهات)؛ ليست من نظام العهد (الملف 33: تبقى)."
+  },
+  {
+   "file": "*",
+   "match": [
+    "cuCursor",
+    "cuUncursor",
+    "cuBind",
+    "cuRemovedHolderKeys",
+    "cuRestorePermission",
+    "cuPlanSaveTransition"
+   ],
+   "kind": "legit",
+   "why": "قرارا المراجع 1 و2 على الملف 33: الدوالُّ العامة الخمس (تستعملها أنظمةٌ أخرى والقاعدة) وكاشفُ الحفظ تبقى في القاعدة بأسمائها بقطع 019a و019b؛ الأسماءُ محفوظة لتبقى الحزمة مطابقة."
+  },
+  {
+   "file": "workers/parts/016-base-shared.js",
+   "match": [
+    "'custody-clock-unavailable'"
+   ],
+   "kind": "legit",
+   "why": "رمزُ خطأ ساعة اليوم الهجري في دالة القاعدة cuClock (يستعملها انتقالُ الموظف)؛ جزءٌ من عقد الجواب، تغييرُه تغييرُ سلوك."
+  },
+  {
+   "file": "workers/parts/019a1-cursor.js",
+   "match": [
+    "'custody-cursor'"
+   ],
+   "kind": "legit",
+   "why": "رمزُ خطأ مؤشر الصفحة في دالة القاعدة العامة cuUncursor (تستعملها الاسترشاد والمضبوطات والجائزة)؛ جزءٌ من عقد الجواب."
+  },
+  {
+   "file": "workers/parts/019b1-removed-holders.js",
+   "match": [
+    "'custody-employees-shape'"
+   ],
+   "kind": "legit",
+   "why": "رمزُ خطأ شكل قائمة الموظفين في دالة القاعدة العامة cuRemovedHolderKeys (انتقالُ الموظف والاستعادة)؛ جزءٌ من عقد الجواب."
+  },
+  {
+   "file": "workers/parts/019b3-restore-permission.js",
+   "match": [
+    "'custody-denied'",
+    "'custody-restore-full-super-only'",
+    "'custody-restore-permission'"
+   ],
+   "kind": "legit",
+   "why": "رموزُ رفض إذن الاستعادة في دالة القاعدة العامة cuRestorePermission (تستعملها استعادةُ المضبوطات والجائزة في 019n)؛ جزءٌ من عقد الجواب."
+  },
+  {
+   "file": "workers/parts/019b5-save-transition.js",
+   "match": [
+    "'custody-transition-plan'",
+    "'custody-transition-server-intent'",
+    "'custody-transition-employee-plan'",
+    "'custody-transition-departments'",
+    "'custody-transition-wipe-permission'",
+    "'custody-transition-employees'",
+    "'custody-transition-wipe-employee-plan'",
+    "'custody-transition-denied'"
+   ],
+   "kind": "legit",
+   "why": "رموزُ خطأ كاشف الحفظ cuPlanSaveTransition الباقي في القاعدة بقرار المراجع 2 (كشفُ حذف موظف وحذف إدارة في كل حفظ)؛ جزءٌ من عقد الجواب، تغييرُها تغييرُ سلوك."
+  },
+  {
+   "file": "workers/parts/019e-atomic-save.js",
+   "match": [
+    "'custody-transition'"
+   ],
+   "kind": "legit",
+   "why": "سببُ الرفض ووسمُ الحفظ الذرّي الذي يكتبه الحفظُ حين يرفض كاشفُ القاعدة (cuPlanSaveTransition) انتقالاً؛ جزءٌ من عقد الجواب وسجلّ الأمان."
+  },
+  {
+   "file": "workers/parts/019-notifications.js",
+   "match": [
+    "\"custody-transition\""
+   ],
+   "kind": "legit",
+   "why": "نصُّ تنبيه الرفض لسببٍ يكتبه الحفظُ الذرّي في القاعدة (019e)؛ يتبع رمزَ القاعدة لا نظامَ العهد."
+  },
+  {
+   "file": "workers/parts/044-protected-ops.js",
+   "match": [
+    "'custodyRename'"
+   ],
+   "kind": "legit",
+   "why": "وسمٌ عام لإعادة التسمية المتتالية (rename cascade) يُستعمل لقائمة الموظفين أيضاً — اسمٌ تاريخي لا منطقَ عهد (الملف 33: يبقى)."
+  },
+  {
+   "file": "workers/parts/054-image-contract.js",
+   "match": [
+    "'custodyRename'"
+   ],
+   "kind": "legit",
+   "why": "الوسمُ العام نفسُه لإعادة التسمية في عقد الحفظ (قائمةُ الموظفين)؛ اسمٌ تاريخي لا منطقَ عهد."
   }
  ]
 }

@@ -63,7 +63,7 @@ const restorers = (mode) => mode === 'enforce' ? ['su', 'dm1'] : ['su'];
 const ckOf = async (w, who) => who === 'su' ? suCk(w) : login(w, who);
 
 for (const mode of MODES) {
-  test('PRIVACY 7 [' + mode + ']: a redacted copy with its marker removed is refused before any write (inspect and commit, super included)', needs('award', 'seized'), async () => {
+  test('PRIVACY 7 [' + mode + ']: a redacted copy with its marker removed is refused before any write (inspect and commit, super included)', needs('award', 'custody', 'seized'), async () => {
     const w = await blankWorld(mode);
     const cks = {}; for (const who of restorers(mode)) cks[who] = await ckOf(w, who);
     const before = dump(w.env);
@@ -78,7 +78,7 @@ for (const mode of MODES) {
     assert.equal(stored(w.env, KE).find(e => e.eid === C3).nid, NID3);
   });
 
-  test('PRIVACY 7 [' + mode + ']: each judged place alone refuses — register, report roster empno, custody snapshot, award contact', needs('award', 'seized'), async () => {
+  test('PRIVACY 7 [' + mode + ']: each judged place alone refuses — register, report roster empno, custody snapshot, award contact', needs('award', 'custody', 'seized'), async () => {
     const w = await blankWorld(mode), su = await suCk(w), before = dump(w.env);
     const R = w.redactedCopy, F = w.fullCopy, mix = (f) => { const c = JSON.parse(JSON.stringify(F)); f(c); return c; };
     const ops = (res) => (c) => { const i = c.domains.operations.findIndex(d => d.resource === res); c.domains.operations[i] = R.domains.operations.find(d => d.resource === res); };
@@ -99,7 +99,7 @@ for (const mode of MODES) {
     assert.equal(drRow(stored(w.env, KDR), w).empno, '70999');
   });
 
-  test('PRIVACY 7 [' + mode + ']: a genuine full copy of the unit manager restores; a different non-empty value restores to the copy', needs('award', 'seized'), async () => {
+  test('PRIVACY 7 [' + mode + ']: a genuine full copy of the unit manager restores; a different non-empty value restores to the copy', needs('award', 'custody', 'seized'), async () => {
     const w = await blankWorld(mode);
     for (const who of restorers(mode)) {
       const E1 = stored(w.env, KE); Object.assign(E1.find(e => e.eid === C3), { work: 'TEST_ONLY بعد النسخة', phone: '0599999288' }); await put(w, KE, E1);
@@ -112,7 +112,7 @@ for (const mode of MODES) {
     }
   });
 
-  test('PRIVACY 7 [' + mode + ']: explicit limit — a full copy older than the entry of a personal field is refused (super and manager), nothing written', needs('award', 'seized'), async () => {
+  test('PRIVACY 7 [' + mode + ']: explicit limit — a full copy older than the entry of a personal field is refused (super and manager), nothing written', needs('award', 'custody', 'seized'), async () => {
     const w = await blankWorld(mode);
     const E2 = stored(w.env, KE); E2.find(e => e.eid === 'tst_e_p0_2').phone = '0599999202'; await put(w, KE, E2);
     const cks = {}; for (const who of restorers(mode)) cks[who] = await ckOf(w, who);

@@ -7,7 +7,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { world, D1, D2, IDS, EKEYS, identitySnapshot, awardDocs, seizedDocs, clone } from './business_atomic_fx.mjs';
 import { browser, ROOT } from './business_cloud_ui_fx.mjs';
-import { PNG } from '../../../../tests/unit/tasks_fx.mjs';
+import { PNG } from '../../../../tests/unit/world_fx.mjs';
 import { candidateWorker } from '../../../../tests/unit/irshad_domain_fx.mjs';
 import { needs } from '../../../../tests/unit/harness.mjs';
 
@@ -57,7 +57,7 @@ async function seizedReads(C, clock) {
   for (const view of ['catalogs', 'calendar', 'context', 'records']) await C.read(view, ['calendar', 'records', 'context'].includes(view) ? { year: clock.y, month: clock.m, day: clock.d, limit: 10 } : {});
 }
 
-test('canonical Seized HTTP preserves one image/receipt/audit after lost ACK and exports every filtered row while legacy history keeps its raw item id', needs('dstats'), async t => {
+test('canonical Seized HTTP preserves one image/receipt/audit after lost ACK and exports every filtered row while legacy history keeps its raw item id', needs('custody', 'dstats'), async t => {
   const B = await setup(t), data = seizedDocs('HTTP');
   const old = data.reports.reports[0]; Object.assign(old, { y: B.clock.y, m: B.clock.m, d: B.clock.d, actorKey: EKEYS.employee1 }); old.items[0].id = '23';
   data.actions.push({ k: 'sec', name: 'TEST_ONLY security', color: '#000' });
@@ -100,7 +100,7 @@ test('canonical Seized HTTP preserves one image/receipt/audit after lost ACK and
   assert.equal(B.DB.q("SELECT COUNT(*) n FROM kv WHERE k GLOB '*bassam_seized*'")[0].n, 0); assert.deepEqual(B.DB.q('PRAGMA foreign_key_check'), []); assert.deepEqual(C.storage, []);
 });
 
-test('canonical Award HTTP opens a missing-id legacy detail, preserves existing approval invariants, deletes by transport identity and isolates department reference edits', needs('dstats'), async t => {
+test('canonical Award HTTP opens a missing-id legacy detail, preserves existing approval invariants, deletes by transport identity and isolates department reference edits', needs('custody', 'dstats'), async t => {
   const B = await setup(t), data = awardDocs('HTTP'), legacy = { ekey: EKEYS.employee1, name: 'TEST_ONLY legacy', cat: 'emp', hij: '1448-5-19', st: 'قيد التحكيم', score: 85, ok: true, ans: [true, null], scores: [[], [1]], pic: PNG };
   data.records.recs.unshift(legacy); await B.install('awards', D1, data); await B.install('awards', '', { docsV2: awardDocs('GLOBAL').docsV2 });
   const protectedBefore = identitySnapshot(B.DB), C = mount(t, B, 'award', { who: 'manager1' });
@@ -142,7 +142,7 @@ test('canonical Award HTTP opens a missing-id legacy detail, preserves existing 
   assert.equal(accepted.status, 200, 'inside the ceiling: ' + accepted.status + ' ' + await accepted.clone().text());
 });
 
-test('canonical Award HTTP create retains an unacknowledged wizard and retries its committed request without a duplicate nomination', needs('dstats'), async t => {
+test('canonical Award HTTP create retains an unacknowledged wizard and retries its committed request without a duplicate nomination', needs('custody', 'dstats'), async t => {
   const B = await setup(t), C = mount(t, B, 'award', { who: 'employee1', loseCreate: true });
   await C.read('records', { limit: 10 }); Object.assign(C.page.state, { ekey: EKEYS.employee1, cat: 'emp', comp: 'TEST_ONLY_001', fileOk: true, ans: C.page.QUESTIONS.map(() => true) });
   await C.page.awDoSave(); if (!C.lost()) await C.page.awDoSave(); assert.equal(C.lost(), true, String(C.notices));

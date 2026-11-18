@@ -23,7 +23,7 @@ PAT = {
 # states only to pages that directly use the namespace, once per service.
 SHARED = {
     'BassamEmpImp': 'src/services/590-employees-import.js',
-    'Custody': 'src/services/547-custody-api.js',
+    'Custody': 'src/systems/custody/client/547-custody-api.js',   # V7 · د4-ج: خدمةُ نظام العهد — تغيب بغيابه (أدناه)
     'BackupRestore': 'src/services/548-atomic-backup.js',
 }
 GLOBAL = [  # (الحالة · الآلية · الملف · نصٌّ يجب أن يوجد فيه)
@@ -111,7 +111,7 @@ def count(m):
     if os.path.exists(view):t+='\n'+open(view,encoding='utf-8').read()
     direct = t
     for namespace, rel in SHARED.items():
-        if re.search(r'\bKIVO\.' + re.escape(namespace) + r'\b', direct):
+        if re.search(r'\bKIVO\.' + re.escape(namespace) + r'\b', direct) and os.path.isfile(os.path.join(ROOT, rel)):
             t += '\n' + open(os.path.join(ROOT, rel), encoding='utf-8').read()
     title = ''
     try: title = json.load(open(os.path.join(systems_paths.module_dir(os.path.join(ROOT, 'src'), m), 'meta.json'), encoding='utf-8')).get('name', '')

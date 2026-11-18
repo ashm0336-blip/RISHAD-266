@@ -61,7 +61,7 @@ export function roundsPage(T) {
 }
 /* Tasks page save path: _tkChange (inline edit · same slot the page uses for add/edit) and _tkClose (the page's re-read). */
 export function tasksPage(T) {
-  const M = methods(T, 'src/modules/tasks/logic.js', ['_tkChange', '_tkClose']), toasts = [];
+  const M = methods(T, 'src/systems/tasks/client/logic.js', ['_tkChange', '_tkClose']), toasts = [];
   /* the service the page calls, recording the commit result the page acts on (_tkChange itself returns true/false) */
   let last = null;
   const ops = { ...T.ops, commit: async (...a) => (last = await T.ops.commit(...a)) };

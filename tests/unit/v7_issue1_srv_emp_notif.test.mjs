@@ -21,8 +21,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { world, stored, putKV, replaceOperationalFixture, P0, D, KE } from './tasks_fx.mjs';
+import { world, stored, putKV, replaceOperationalFixture, P0, D, KE } from './world_fx.mjs';
 import { TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const BASELINE = process.env.V7_ISSUE1_BASELINE === '1';
 const D2 = 'tst_d2', KE2 = 'bsdept:' + D2 + ':bassam_employees_v1', KG = 'bsdept:' + D + ':bassam_grants_v1';
@@ -220,7 +221,7 @@ for (const mode of ['legacy', 'enforce']) {
 }
 
 /* ── the browser no longer emits them ── */
-test('V7 #1 srv: the browser observer has no employee-register watcher and emits no emp_* type', { skip: BASELINE }, async () => {
+test('V7 #1 srv: the browser observer has no employee-register watcher and emits no emp_* type', { skip: BASELINE || needs('tasks').skip || false }, async () => {
   const fs = await import('node:fs'), path = await import('node:path');
   const src = fs.readFileSync(path.join(process.env.KIVO_SRC || path.resolve('src'), 'services', '442-notif-observer.js'), 'utf8');
   assert.ok(!/WATCH\['bassam_employees_v1'\]\s*=/.test(src), 'no watcher on the employee register');

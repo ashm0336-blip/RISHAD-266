@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { D1Shim, ROOT, allowTestSchemaUpgrade } from './harness.mjs';
 import { world, canonicalWorker, D1, D2, IDS, EKEYS, identitySnapshot, copy } from './notifications_review_fx.mjs';
+import { needs } from './harness.mjs';
 
 async function legacyWorld({ ambiguous = false } = {}) {
   const fixture = await world(), W = await canonicalWorker(), DB = new D1Shim(), env = { DB };
@@ -32,7 +33,7 @@ const schema = DB => copy(DB.q("SELECT type,name,sql FROM sqlite_master WHERE na
 const kv = DB => copy(DB.q('SELECT k,seq,v FROM kv ORDER BY k,seq'));
 const migrations = DB => copy(DB.q('SELECT name FROM d1_migrations ORDER BY id'));
 
-test('startup migration cuts legacy notifications over atomically while preserving identities, permissions and password policy', async () => {
+test('startup migration cuts legacy notifications over atomically while preserving identities, permissions and password policy', needs('tasks'), async () => {
   const { W, DB, env, old, now, first, second } = await legacyWorld();
   const identities = identitySnapshot(DB), policy = DB.q("SELECT v FROM meta WHERE k='policy'")[0].v;
   await W.initDb(env);
@@ -54,7 +55,7 @@ test('startup migration cuts legacy notifications over atomically while preservi
   const cfg = DB.q('SELECT * FROM notification_type_overrides WHERE type_id=?1', 'task_new')[0]; assert.equal(cfg.enabled, 0); assert.equal(cfg.priority, 'urg'); assert.equal(cfg.target_own, 1);
 });
 
-test('ambiguous legacy SYS message ids fail before DDL, deletion or an identity rewrite', async () => {
+test('ambiguous legacy SYS message ids fail before DDL, deletion or an identity rewrite', needs('tasks'), async () => {
   const { W, DB, env } = await legacyWorld({ ambiguous: true });
   const before = { schema: schema(DB), keys: kv(DB), migrations: migrations(DB), identities: identitySnapshot(DB) };
   await assert.rejects(W.initDb(env), /notification-cutover-message-ambiguous/);
@@ -62,7 +63,7 @@ test('ambiguous legacy SYS message ids fail before DDL, deletion or an identity 
   assert.equal(DB.q("SELECT COUNT(*) n FROM meta WHERE k='nf_cutover_ready'")[0].n, 0);
 });
 
-test('a late startup backfill failure rolls back DDL, rows, source deletion and the migration marker together', async () => {
+test('a late startup backfill failure rolls back DDL, rows, source deletion and the migration marker together', needs('tasks'), async () => {
   const { W, DB, env } = await legacyWorld(); const before = { schema: schema(DB), keys: kv(DB), migrations: migrations(DB), identities: identitySnapshot(DB) };
   DB.failIf = sql => /^INSERT(?: OR (?:IGNORE|REPLACE))? INTO notification_targets\b/.test(sql);
   await assert.rejects(W.initDb(env), /injected failure/); DB.failIf = null;
@@ -72,7 +73,7 @@ test('a late startup backfill failure rolls back DDL, rows, source deletion and 
   await W.initDb(env); assert.equal(DB.q('SELECT COUNT(*) n FROM notification_messages')[0].n, 3);
 });
 
-test('a legacy notification document with no department scope fails before migration DDL or source deletion', async () => {
+test('a legacy notification document with no department scope fails before migration DDL or source deletion', needs('tasks'), async () => {
   const { W, DB, env } = await legacyWorld();
   await DB.batch(W.kvPutStmts(env, 'kv', 'bassam_notif_v1', JSON.stringify({ v: 1, items: [] })));
   const before = { schema: schema(DB), keys: kv(DB), migrations: migrations(DB), identities: identitySnapshot(DB) };
@@ -88,7 +89,7 @@ test('a missing legacy chunk cannot be silently joined into a different valid do
   assert.deepEqual(schema(DB), before.schema); assert.deepEqual(kv(DB), before.keys); assert.deepEqual(migrations(DB), before.migrations);
 });
 
-test('startup cutover refuses an existing relational target inside the atomic batch', async () => {
+test('startup cutover refuses an existing relational target inside the atomic batch', needs('tasks'), async () => {
   const { W, DB, env } = await legacyWorld();
   for (const statement of W.KIVO_MIGRATIONS[4].sql.filter(sql => /^CREATE/i.test(sql))) DB.exec(statement);
   await DB.prepare("INSERT INTO notification_messages(scope,id,kind,type,category,priority,channel,title,body,created_at) VALUES('sys','TEST_ONLY_existing','event','sc_deny','sec','info','bell','TEST_ONLY existing','TEST_ONLY',1)").run();

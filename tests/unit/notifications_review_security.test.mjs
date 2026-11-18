@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, D1, D2, IDS, EKEYS, identitySnapshot, notificationSnapshot } from './notifications_review_fx.mjs';
+import { needs } from './harness.mjs';
 
 function ok(result, label = 'operation') {
   assert.equal(result.status, 200, label + ': status');
@@ -26,7 +27,7 @@ test('notification APIs require a live account and never allow exporting through
   assert.deepEqual(identitySnapshot(W.DB), identities, 'Reads and rejected operations must not rewrite identity or permissions');
 });
 
-test('department and branch boundaries apply to notification reads and emissions', async () => {
+test('department and branch boundaries apply to notification reads and emissions', needs('tasks'), async () => {
   const W = await world();
   const sent = ok(await emit(W, 'manager2', { dept: D2, own: [EKEYS.employee2] }));
   assert.ok(await item(W, 'employee2', sent.id, { dept: D2 }));
@@ -38,7 +39,7 @@ test('department and branch boundaries apply to notification reads and emissions
   assert.deepEqual(notificationSnapshot(W.DB), before, 'Scope denial must leave notification business rows unchanged');
 });
 
-test('read and acknowledgement belong to the session actor, including under concurrent requests', async () => {
+test('read and acknowledgement belong to the session actor, including under concurrent requests', needs('tasks'), async () => {
   const W = await world();
   const sent = ok(await emit(W, 'manager1', { own: [EKEYS.employee1, EKEYS.leader] }));
   assert.equal((await item(W, 'employee1', sent.id)).un, true);
@@ -57,14 +58,14 @@ test('read and acknowledgement belong to the session actor, including under conc
   assert.ok(await item(W, 'employee1', appended.id), 'A concurrent state update must not lose a new message');
 });
 
-test('an explicitly assigned notification remains visible without the target page grant', async () => {
+test('an explicitly assigned notification remains visible without the target page grant', needs('tasks'), async () => {
   const W = await world();
   const sent = ok(await emit(W, 'manager1', { own: [EKEYS.noView] }));
   assert.ok(await item(W, 'noView', sent.id), 'The original own-recipient exception is preserved');
   assert.equal(await item(W, 'employee1', sent.id), undefined, 'Another ordinary employee is not an implicit recipient');
 });
 
-test('simultaneous once keys create one message and one dedup record rather than duplicate notifications', async () => {
+test('simultaneous once keys create one message and one dedup record rather than duplicate notifications', needs('tasks'), async () => {
   const W = await world();
   const results = await Promise.all([emit(W, 'manager1', { once: 'TEST_ONLY_same_event' }), emit(W, 'manager1', { once: 'TEST_ONLY_same_event' })]);
   const acks = results.map(result => ok(result));
@@ -74,7 +75,7 @@ test('simultaneous once keys create one message and one dedup record rather than
   assert.equal(W.DB.q('SELECT COUNT(*) AS n FROM notification_dedup')[0].n, 1);
 });
 
-test('a late relational insert failure rolls back the message, targets, dedup and notification revision', async () => {
+test('a late relational insert failure rolls back the message, targets, dedup and notification revision', needs('tasks'), async () => {
   const W = await world(), before = notificationSnapshot(W.DB), base = ok(await W.get('super')).rev;
   W.DB.failIf = sql => /^INSERT(?: OR (?:IGNORE|REPLACE))? INTO notification_targets\b/.test(sql);
   const failed = await emit(W, 'manager1', { once: 'TEST_ONLY_rollback' });
@@ -86,7 +87,7 @@ test('a late relational insert failure rolls back the message, targets, dedup an
   assert.ok(await item(W, 'employee1', retried.id), 'A failed insertion must not consume its once key');
 });
 
-test('caller-supplied author fields and updates to an invisible message never mutate notification rows', async () => {
+test('caller-supplied author fields and updates to an invisible message never mutate notification rows', needs('tasks'), async () => {
   const W = await world();
   const hidden = ok(await emit(W, 'manager2', { dept: D2, own: [EKEYS.employee2] }));
   const before = notificationSnapshot(W.DB);
@@ -165,7 +166,7 @@ test('mandatory broadcast acknowledgement and general-manager department targeti
   assert.ok(await find('leader'), 'Another recipient keeps an independent state');
 });
 
-test('configuration and broadcast CAS are separate from feed updates and from each other', async () => {
+test('configuration and broadcast CAS are separate from feed updates and from each other', needs('tasks'), async () => {
   const W = await world(), start = ok(await W.get('super'));
   const message = ok(await emit(W, 'manager1'));
   const configured = ok(await W.act('super', { op: 'config', base: start.configRev, patch: { task_new: { on: false } } }));
@@ -191,7 +192,7 @@ test('scheduled, expired and withdrawn broadcasts follow the clock rather than a
   assert.equal(ok(await W.get('employee1')).items.some(x => x.bcId === fresh.id), false);
 });
 
-test('full notification export contains normalized rows and current-account state without identity credentials', async () => {
+test('full notification export contains normalized rows and current-account state without identity credentials', needs('tasks'), async () => {
   const W = await world(), event = ok(await emit(W, 'manager1', { once: 'TEST_ONLY_export_once' }));
   ok(await W.act('employee1', { op: 'state', action: 'ack', id: event.id }));
   ok(await W.act('super', { op: 'config', base: ok(await W.get('super')).configRev, patch: { task_new: { lvl: 'urg', on: false } } }));
@@ -232,7 +233,7 @@ test('a paginated employee feed does not materialize messages or thousands of st
   assert.ok(plan.some(row => /SEARCH s USING/.test(row.detail)), 'Per-account read state uses its keyed lookup');
 });
 
-test('twenty concurrent recipients can update their states without changing another recipient feed revision or configuration base', async () => {
+test('twenty concurrent recipients can update their states without changing another recipient feed revision or configuration base', needs('tasks'), async () => {
   const W = await world(), users = W.users.slice(), now = Date.now(), keys = [];
   for (let i = 0; i < 20; i++) {
     const name = 'storm' + i, id = 'TEST_ONLY_storm_uid_' + i, ekey = 'TEST_ONLY_storm_key_' + i; keys.push({ name, ekey });
@@ -250,7 +251,7 @@ test('twenty concurrent recipients can update their states without changing anot
   assert.equal(after.items.find(x => x.id === sent.id).un, true);
 });
 
-test('a writer between revision and row reads cannot produce new messages labelled with an old feed revision', async () => {
+test('a writer between revision and row reads cannot produce new messages labelled with an old feed revision', needs('tasks'), async () => {
   const W = await world(), batch = W.DB.batch.bind(W.DB);
   let armed = true, inserted;
   const write = async () => { armed = false; inserted = ok(await emit(W, 'manager1', { once: 'TEST_ONLY_interleaved_feed' })); };
@@ -277,7 +278,7 @@ test('reintroducing a retired notification document after cutover blocks feed, m
   }
 });
 
-test('summary counters preserve audience and read state while management history is paged explicitly', async () => {
+test('summary counters preserve audience and read state while management history is paged explicitly', needs('tasks'), async () => {
   const W = await world(), first = ok(await emit(W, 'manager1')), second = ok(await emit(W, 'manager1'));
   ok(await W.act('employee1', { op: 'state', action: 'read', id: first.id }));
   const feed = ok(await W.get('employee1')), summary = ok(await W.get('employee1', { summary: '1' }));

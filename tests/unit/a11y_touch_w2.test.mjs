@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { ROOT, SRC, moduleLogic } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 /* كتلةُ @media التي تلي تعليقاً بعينه (بموازنة الأقواس) */
@@ -56,12 +57,12 @@ test('ES-9 · مربّعاتُ التحديد في جدولَي الموظفين
   }
 });
 
-test('PLAN-06 · DG-10 · ES-9 · AUX-13: قواعدُ الوحدات (لا في الغلاف) — التشغيلُ الميداني ٣٦ وشارةُ حذف الشهر ٢٤ · «الشهر كاملاً» ٣٦ · إدارةُ الموقع ٣٢ — كلُّها على الإصبع وحده', () => {
+test('PLAN-06 · DG-10 · ES-9 · AUX-13: قواعدُ الوحدات (لا في الغلاف) — التشغيلُ الميداني ٣٦ وشارةُ حذف الشهر ٢٤ · «الشهر كاملاً» ٣٦ · إدارةُ الموقع ٣٢ — كلُّها على الإصبع وحده', needs('tasks'), () => {
   const M = (f, mark) => { const m = mediaAfter(rd(f), mark); assert.equal(m.head, '@media (pointer: coarse)', f); return strip(m.body).replace(/\s+/g, ' '); };
   const plan = M('modules/plan/helmet.css', 'الموجة 2 · PLAN-06');
   assert.ok(plan.includes('.bs-mapcard button:not([style*="position: absolute"]), .bs-panel-shell button:not([style*="position: absolute"]){ min-width:36px; min-height:36px; }'));
   assert.ok(plan.includes('[title^="سيتم حذف"][style*="position: absolute"]{ min-width:24px; min-height:24px; }'));
-  const tasks = M('modules/tasks/helmet.css', 'الموجة 2 · DG-10');
+  const tasks = M('systems/tasks/client/helmet.css', 'الموجة 2 · DG-10');
   assert.ok(tasks.includes('.tk-dayall{min-height:36px}') && tasks.includes('[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}'));
   const st = M('modules/staff/helmet.css', 'الموجة 2 · ES-9');
   assert.ok(st.includes('[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}') && st.includes('.st-restdd button{min-height:36px}'));

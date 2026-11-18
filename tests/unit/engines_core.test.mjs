@@ -70,7 +70,7 @@ test('التفرّد (nid): الصيغةُ القانونية على المتغ�
   assert.equal(W.uniqViolation(sp, dupOld, dupOld.concat([{ eid: 'c', name: 'z', nid: '1111111111' }])), 'nid', 'جديدٌ يصطدم بقديم');
   assert.equal(W.uniqViolation(sp, [], [{ eid: 'e1', name: 'أ', nid: '' }, { eid: 'e2', name: 'ب' }, 5]), '', 'الفارغُ والغائبُ وغيرُ الكائن لا يدخل');
 });
-test('fieldViolation على المفاتيح الحقيقية: الجذر (الموظفون) · المجموعات (العهد: التعداد) · بلا عقد', () => {
+test('fieldViolation على المفاتيح الحقيقية: الجذر (الموظفون) · المجموعات (العهد: التعداد) · بلا عقد', needs('custody'), () => {
   const k = 'bsdept:d1:bassam_employees_v1', kc = 'bsdept:d1:bassam_custody_v1';
   assert.equal(W.fieldViolation(k, W.fieldsOf(k), [], [{ eid: 'e1', name: 'أ', nid: '1234567890' }]), '');
   assert.equal(W.fieldViolation(k, W.fieldsOf(k), [], [{ eid: 'e1', name: 'أ', nid: '12' }]), 'nid');
@@ -82,7 +82,7 @@ test('fieldViolation على المفاتيح الحقيقية: الجذر (ال�
   assert.equal(W.fieldViolation('bsdept:d1:bassam_tasks_v1', W.fieldsOf('bsdept:d1:bassam_tasks_v1'), {}, { a: 1 }), '', 'موردٌ بلا عقد');
   assert.deepEqual(W.idfFor(kc, 'items'), { lock: ['name'], idf: ['name'] }); assert.equal(W.idfFor(kc, 'nope'), null); assert.equal(W.idfFor('bsdept:d1:bassam_tasks_v1', ''), null);
 });
-test('shapeViolation: الجذرُ القانوني · الخريطة · القوائمُ البدائية · المجموعاتُ المعلنة لا تُسقط ولا يُبدَّل نوعها', needs('irshad'), () => {
+test('shapeViolation: الجذرُ القانوني · الخريطة · القوائمُ البدائية · المجموعاتُ المعلنة لا تُسقط ولا يُبدَّل نوعها', needs('custody', 'irshad', 'tasks'), () => {
   const E = (k) => W.ENT[k];
   assert.equal(W.shapeViolation(null, 1, 2), '');
   assert.equal(W.shapeViolation(E('bassam_employees_v1'), [], { a: 1 }, false), 'shape', 'الجذرُ قائمة');
@@ -169,7 +169,7 @@ test('classifyMutation: حذفُ المفتاح · أوّلُ إنشاء (الش
   const PV = { a: () => ({ x: 1 }), b: () => ({ x: 2 }) };
   assert.equal(acts(W.classifyMutation(null, 'ignored', 'ignored', null, null, PV)), 'edit', 'القيمُ المحلَّلة مسبقاً (PV)');
 });
-test('classifyMutation: المجموعات (الجذر · تحت مفتاح · الإلحاقية) · خريطةٌ بقوائم/صفوف · mapAt في الخطة · بقيةُ المورد', () => {
+test('classifyMutation: المجموعات (الجذر · تحت مفتاح · الإلحاقية) · خريطةٌ بقوائم/صفوف · mapAt في الخطة · بقيةُ المورد', needs('custody', 'tasks'), () => {
   const E1 = [{ eid: 'e1', name: 'أ' }];
   assert.equal(acts(cls('bsdept:d1:bassam_employees_v1', E1, E1.concat([{ eid: 'e2', name: 'ب' }]))), 'add');
   assert.equal(acts(cls('bsdept:d1:bassam_employees_v1', E1.concat([{ eid: 'e2', name: 'ب' }]), E1)), 'del');
@@ -188,7 +188,7 @@ test('classifyMutation: المجموعات (الجذر · تحت مفتاح · �
   assert.equal(acts(cls('bsdept:d1:bassam_plan_v1', P0, Object.assign({}, P0, { months: { '1447-03': { mo: 0 }, '1447-04': { x: 1 } } }))), 'add', 'شهرٌ جديد (mapAt)');
   assert.equal(acts(cls('bsdept:d1:bassam_plan_v1', P0, Object.assign({}, P0, { title: 'y' }))), 'edit', 'بقيةُ الخطة');
 });
-test('classifyMutation: القوائمُ البدائية (الجذر · الحقول · الفعلُ المسمّى) · عملياتُ الاعتماد (الكلّ · المسارات · newAp) · المواءمة', needs('award'), () => {
+test('classifyMutation: القوائمُ البدائية (الجذر · الحقول · الفعلُ المسمّى) · عملياتُ الاعتماد (الكلّ · المسارات · newAp) · المواءمة', needs('award', 'custody'), () => {
   assert.equal(acts(cls('bsdept:d1:bassam_irshad_langs_v1', ['ع'], ['ع', 'إن'])), 'add');
   assert.equal(acts(cls('bsdept:d1:bassam_irshad_langs_v1', ['ع', 'إن'], ['ع', 'فر'])), 'edit', 'تسمية');
   assert.deepEqual(cls('bsdept:d1:bassam_leave_kinds_v1', ['سنوية'], ['سنوية', 'مرضية']), { edit: 1 }, 'primAct: الواجهةُ تسمّي الفعلَ edit');
@@ -235,7 +235,7 @@ test('actorFromKeys: بنيةُ الفاعل · المجمَّد والمجهو�
   const B = W.actorFromKeys({ [W.K_USERS]: J(USERS), [W.K_PERM]: '[1]', [W.K_DEPTS]: '{}', [W.K_GDEPTS]: 'x', [W.K_PLAT]: '{"mods":{"off":"no"}}' }, 'st1');
   assert.deepEqual([B.perms, B.depts, B.nodes, B.off], [{}, [], [], []], 'سجلّاتٌ تالفة ⇒ قيمٌ فارغة آمنة');
 });
-test('authorize0: الجلسة · المجهول · الجهاز · العامّ (مديرُ النظام وحده) · الإدارة (النطاق · القاعدة · الورقة والفعل)', needs('irshad'), () => {
+test('authorize0: الجلسة · المجهول · الجهاز · العامّ (مديرُ النظام وحده) · الإدارة (النطاق · القاعدة · الورقة والفعل)', needs('irshad', 'tasks'), () => {
   const su = actor('su'), st1 = actor('st1'), gm1 = actor('gm1'), dm1 = actor('dm1'), st2 = actor('st2'), xx = actor('x');
   const K = (r, d = 'd1') => 'bsdept:' + d + ':' + r;
   assert.deepEqual(W.authorize0(null, K('bassam_tasks_v1'), 'add'), { ok: false, why: 'session' });
@@ -260,7 +260,7 @@ test('authorize0: الجلسة · المجهول · الجهاز · العامّ
   const ruled = Object.keys(W.RES_REG).find(k => W.RES_REG[k].scope === 'dept' && W.RES_REG[k].rule);
   if (ruled) assert.equal(W.authorize0(su, K(ruled), 'edit').why, 'rule', 'سياسةٌ خاصة تُفحص في موضعها');
 });
-test('authorize · authorizeActs: كلُّ فعلٍ في يد الفاعل — لا «أيُّ فعلٍ يكفي»', () => {
+test('authorize · authorizeActs: كلُّ فعلٍ في يد الفاعل — لا «أيُّ فعلٍ يكفي»', needs('tasks'), () => {
   const st1 = actor('st1'), k = 'bsdept:d1:bassam_tasks_v1';
   assert.deepEqual(W.authorizeActs(st1, k, []), { ok: false, why: 'noop' });
   assert.deepEqual(W.authorizeActs(st1, k, ['add', 'edit']), { ok: true });
@@ -306,7 +306,7 @@ test('أبعادُ النطاق في الإنفاذ: Site · Zone/Element · Shi
   const sh = D['Shift'](it, 'k', { dept: 'd1', actor: { ekey: 'e1', role: 'staff', id: 'u' } }, 'bassam_plan_v1');
   assert.equal(sh.r, 'unknown', 'الظلُّ القديم (بلا ctx.enf) كما كان'); assert.equal(sh.why, 'unmigrated-shift-scope');
 });
-test('enfDecide: الحرّاسُ (المفاتيحُ الحقيقية) · غيرُ المغطّى (ENF_UNCOV بالمصنِّف) · البديلُ (self) · السببُ الإلزامي · بلا تغيير', () => {
+test('enfDecide: الحرّاسُ (المفاتيحُ الحقيقية) · غيرُ المغطّى (ENF_UNCOV بالمصنِّف) · البديلُ (self) · السببُ الإلزامي · بلا تغيير', needs('tasks'), () => {
   const su = enfA('su'), st1 = enfA('st1');
   const held = (set) => ({ held: (k) => set.has(k), noScope: true });
   /* غيرُ المغطّى بالحرّاس: المصنِّفُ + ENF_UNCOV */

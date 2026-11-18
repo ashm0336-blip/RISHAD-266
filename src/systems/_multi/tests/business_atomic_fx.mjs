@@ -1,7 +1,7 @@
 /* Historical schema9 fixture; schema10 is an explicit opt-in using the
    canonical Operations fixture cutover, never a retired-resource adapter. */
 import assert from 'node:assert/strict';
-import {world as custodyWorld, D1, D2, G1, IDS, EKEYS, identitySnapshot, notificationSnapshot} from '../../../../tests/unit/custody_review_fx.mjs';
+import {world as custodyWorld, D1, D2, G1, IDS, EKEYS, identitySnapshot, notificationSnapshot} from '../../../../tests/unit/canonical_fx.mjs';
 import {candidateWorker} from '../../../../tests/unit/irshad_domain_fx.mjs';
 import {installOperationalFixture,isOperationalFixtureKey} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 export {D1,D2,G1,IDS,EKEYS,identitySnapshot,notificationSnapshot};

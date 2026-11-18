@@ -20,13 +20,13 @@
   var ANON9 = BOOT.auth === "need";
   /* Relational domains have their own acknowledged APIs. A stale caller must not
      recreate a KV document or fall through to persistent device storage. */
-  function relationalKey9(k) { return /^(?:bsdept:[^:\s]+:)?@@SYS:store.relational.dstats|pre="bassam_(?:"|post="custody|"|empty="bassam_(?:custody|"@@@@SYS:store.relational.systems|post="notif(?:_cfg|_sys)?|bc)_v1$/"|empty="notif(?:_cfg|_sys)?|bc)_v1$/"@@.test(k)@@SYS:store.relational.awardDocs@@; }
+  function relationalKey9(k) { return /^(?:bsdept:[^:\s]+:)?bassam_(?:@@SYS:store.relational.dstats@@@@SYS:store.relational.systems|post="notif(?:_cfg|_sys)?|bc)_v1$/"|empty="notif(?:_cfg|_sys)?|bc)_v1$/"@@.test(k)@@SYS:store.relational.awardDocs@@; }
   var operationResources9 = Object.freeze([
     'bassam_employees_v1', 'bassam_options_v1', 'bassam_staffing_v3', 'bassam_staffing_v2',
     'bassam_staffing_snap_v1', 'bassam_staffing_locks_v1', 'bassam_callsigns_v1', 'bassam_perm_limit_v1',
     'bassam_shift_options_v1', 'bassam_plan_v1', 'bassam_zone_opts_v1', 'bassam_gate_opts_v1',
     'bassam_mark_kinds_v1', 'bassam_rounds_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1',
-    'bassam_dreport_v1', 'bassam_dr_grp_v1', 'bassam_leave_kinds_v1', 'bassam_tasks_v1', 'bassam_tasks_locks_v1'
+    'bassam_dreport_v1', 'bassam_dr_grp_v1', 'bassam_leave_kinds_v1'@@SYS:store.opResources.tasks@@
   ]);
   function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '')) !== -1; }
   function operationKey9(k) { return typeof k === 'string' && /^bsdept:[^:\s,]+:bassam_[A-Za-z0-9_]+$/.test(k) && operationResource9(k); }
@@ -160,13 +160,7 @@
               "dept-has-sections": "لا تُحذف إدارةٌ فيها أقسام — احذف أقسامها أو انقلها أولاً، ثم احذف الإدارة من «الهيكل» (لمسؤول المنصة)",
               "unit-delete-route": "حذفُ إدارةٍ أو قسمٍ يتمّ من «الهيكل» بزرّ الحذف لمسؤول المنصة وحده (يحذف حساباتها ومفاتيحها معاً) — لا بالحفظ العادي",
               "id-clash": "المعرّف مستخدم لوحدة أو عقدة أخرى", unit: "هذا المعرّف ليس وحدةَ بيانات (إدارة أو قسم)",
-              "task-asg": "بدأ الموظفُ هذه المهمة أو أنهاها أو اعتذر عنها (أو أُغلقت) — لا يُغيَّر مكلَّفُها بالتعديل؛ استعمل «إعادة إسناد» من قائمة المهمة فيبقى سجلُّ الأول وإثباتُه",
-              "emp-dup": "رقم الهوية أو رقم الجوال أو الرقم الوظيفي مسجّل بالفعل لموظف في إدارة أخرى أو لحساب دخول آخر — لا يُقبل التكرار في المنصة كلها؛ صحّح البيانات ثم احفظ",
-              "task-acct": "لا تُسند مهمةٌ إلكترونية إلا لموظفٍ له حسابُ مستخدمٍ نشطٌ مربوطٌ بالمعرّف الذي يُسند به — اختر غيره أو أنشئ له حساباً أو فعِّله أولاً",
-              "task-rv": "المراجِعُ لا يكون المكلَّفَ نفسَه — غيّر المراجِعَ من إعدادات المهمة أولاً",
-              "task-own": "توثيقُ الموظف (صورُ الإثبات · التسليمُ · البدء) لا يُمحى بالحفظ — حدّث الصفحة ثم أعد التعديل؛ وإن أردت إعادة المهمة إليه فمن قائمتها",
-              "task-del": "لا تُحذف مهمةٌ بدأ عليها نشاطٌ (قبول · توثيق · تسليم · إنجاز · اعتذار) — استعمل «إلغاء» من قائمة المهمة ليبقى سجلُّها؛ الحذفُ للأخطاء الحديثة وحدها",
-              "task-x": "إعداداتُ المهمة (المراجِعُ · سياسةُ الإثبات · الإلغاءُ وإعادةُ الإسناد) تُغيَّر من أزرار المهمة وحدها — استعمل أزرارَ المهمة" };
+@@SYS:store.refuse.tasks.1@@              "emp-dup": "رقم الهوية أو رقم الجوال أو الرقم الوظيفي مسجّل بالفعل لموظف في إدارة أخرى أو لحساب دخول آخر — لا يُقبل التكرار في المنصة كلها؛ صحّح البيانات ثم احفظ"@@SYS:store.refuse.tasks.2@@ };
   /* KIVO_243: أسبابُ رفض الإنفاذ (تُستعمل حين __BS_AUTHZ وحده — رسائلُ النظام القديم كما هي) */
   /* RISHAD-266: سقفُ النطاق القديم أُلغي — فلا «الموقع · العنصر · الوردية» في سبب scope، ولا unmigrated-department-ceiling */
   var WHY_ENF = { perm: "صلاحيتك لا تشمل هذا الإجراء", scope: "خارج نطاقك (المسنَد إليك · المصدر · الفترة) — راجع مدير الإدارة إن كنت تحتاج هذا التعديل",
@@ -193,7 +187,7 @@
       bassam_employees_v1:["قائمة الموظفين"], bassam_staffing_v3:["الجدول الشهري"], bassam_staffing_v2:["الجدول الشهري (صيغة قديمة)"], bassam_staffing_snap_v1:["بيان الشهر"],
       bassam_staffing_locks_v1:["أقفال الجدول الشهري"], bassam_rounds_v1:["الجولات اليومية"], bassam_dreport_v1:["التقرير اليومي"], bassam_dr_grp_v1:["مجموعات التقرير اليومي"],
       bassam_plan_v1:["الخطة التشغيلية"], bassam_zone_opts_v1:["خيارات المصليات"], bassam_gate_opts_v1:["خيارات الأبواب"], bassam_mark_kinds_v1:["أنواع المعالم"],
-      bassam_tasks_v1:["المهام"], bassam_tasks_locks_v1:["أقفال المهام"], bassam_custody_v1:["عهد الموظفين"],
+      @@SYS:store.keyLabels.tasks@@@@SYS:store.keyLabels.custody@@
 @@SYS:store.keyLabels@@      bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"], bassam_leave_kinds_v1:["أنواع الإجازات"], bassam_callsigns_v1:["رموز النداء"],
       bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_perm_tpls_v1:["قوالب الصلاحيات"],
       bassam_depts_v1:["الإدارات"], bassam_gdepts_v1:["الهيكل التنظيمي"], bassam_platform_v1:["إعدادات المنصة"], bassam_profile_v1:["الملف الشخصي"],
@@ -248,8 +242,7 @@
       bassam_rounds_v1: { "*.d": "sid" },
       bassam_plan_v1: { "floors": "sid", "months.*.d": "sid" },
       bassam_dreport_v1: { "*.shifts.*.roster": "ekey" },
-      bassam_tasks_v1: { "*": { key: 13, grp: 14 } },   /* F10-fix: الهويةُ 13 — وصفوفُ المهمة الجماعية (13 نفسُها لأكثر من مكلَّف) 13·14، كما tkKeepSelf في 070 */
-      bassam_employees_v1: { "": "eid" },
+@@SYS:store.identity.tasks@@      bassam_employees_v1: { "": "eid" },
      @@SYS:store.identity@@
       bassam_auth_users_v1: { "": "id" }, bassam_depts_v1: { "": "id" }, bassam_gdepts_v1: { "": "id" }
     };
@@ -1598,12 +1591,11 @@
             var ks = j.keys || [];
             return pull9(ks, j.v).then(function (result) {
               var meNow = KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user(), meContext = operationContext9();
-              if ((j.meChanged === 1 || j.tasksChanged === 1) && meStamp && meContext && meContext.uid === meStamp.uid && meContext.dept === meStamp.dept && meNow && meIdentity &&
+              if ((j.meChanged === 1@@SYS:store.changed.tasks.cond@@) && meStamp && meContext && meContext.uid === meStamp.uid && meContext.dept === meStamp.dept && meNow && meIdentity &&
                   JSON.stringify([meNow.id, meNow.role, meNow.deptId || '', meNow.ekey || '']) === JSON.stringify(meIdentity)) {
                 var privateDetail = { uid: UID9, dept: meIdentity[2], ekey: meIdentity[3], v: j.v };
                 if (j.meChanged === 1) try { window.dispatchEvent(new CustomEvent('bassam:me', { detail: privateDetail })); } catch (eM) {}
-                if (j.tasksChanged === 1) try { window.dispatchEvent(new CustomEvent('bassam:tasks', { detail: privateDetail })); } catch (eT) {}
-              }
+@@SYS:store.changed.tasks.event@@              }
               if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
               if (ks.some(function (k) { return SLICEK9.test(k); })) { var s9 = slice9(); if (s9 !== slice0) { slice0 = s9; readSet9(false); } }
               if (j.more && BOOT.v === j.v && ++pages < MORE_MAX9 && !sx9) return ask(false);   /* C2: البقيةُ فوراً من آخر مراجعةٍ وصلت */

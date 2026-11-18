@@ -1,0 +1,1744 @@
+{
+ "schema": 1,
+ "system": "tasks",
+ "note": "V7 · د3 · د4-ب: صلاحياتُ هذا النظام — صفوفُه في السجلّ (المفاتيح · الأوراق · الذرّات · الأعلام) وروابطُه في الخادم (النطاق · الحراسة · البناء)، وما يضيفه إلى صفوف القاعدة. تجمعها tools/perm_parts.py مع القاعدة (الشرح في رأس الأداة).",
+ "docs": {
+  "registry": [
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 20,
+    "value": {
+     "key": "task.view",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "عرض المهام",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "قراءة bassam_tasks_v1, bassam_tasks_locks_v1 بورقة tasks (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:view"
+     ],
+     "references": [
+      "profile"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "task.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 21,
+    "value": {
+     "key": "task.create",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "إنشاء مهمة",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "bassam_tasks_v1 صف جديد (add) — طبقة اليوم ثم الصفوف",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 22,
+    "value": {
+     "key": "task.edit",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "تعديل المهمة",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "bassam_tasks_v1 أعمدة المهمة (edit) عدا أعمدة الحالة",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 23,
+    "value": {
+     "key": "task.assign",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "إسناد/إعادة إسناد",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "bassam_tasks_v1 عمود المكلَّفين (14)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.assign"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 24,
+    "value": {
+     "key": "task.evidence",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "إضافة إثبات/مرفق",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "bassam_tasks_v1 أعمدة التوثيق (TASK_SELF) + img_tsk",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.evidence"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 25,
+    "value": {
+     "key": "task.delete",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "حذف مهمة",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "bassam_tasks_v1 حذف صف (del)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 131,
+    "seq": 48,
+    "value": {
+     "key": "task.accept",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "قبول المهمة",
+     "type": "operation",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "عمود الحالة (3): pending → in_progress / declined (TASK_ST)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.accept"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 131,
+    "seq": 49,
+    "value": {
+     "key": "task.finish",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "إنهاء المهمة",
+     "type": "operation",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "عمود الحالة: in_progress → done",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.finish"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 131,
+    "seq": 50,
+    "value": {
+     "key": "task.reopen",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "إعادة فتح مهمة منجزة",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "عمودُ الحالة [3]: done → in_progress مع تفريغ [12] (وقتُ الإنهاء) و[6] (الأداء) وإبقاء [11] (_doReopen) — لا انتقالَ declined → pending في المصدر (المنتهية لا يمسّها المكلَّف)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.reopen"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 131,
+    "seq": 51,
+    "value": {
+     "key": "task.month.lock",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "اعتماد وإغلاق شهر المهام",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "bassam_tasks_locks_v1 OPS '**' — اتجاهُ القفل: locks[y-m] → true · أو {mo:1} يزول لشهرٍ منقضٍ (إعادةُ قفل)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.month.lock"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 131,
+    "seq": 52,
+    "value": {
+     "key": "task.month.reopen",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "إعادة فتح شهر المهام",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "bassam_tasks_locks_v1 — اتجاهُ الفتح: true يزول · أو → {mo:1} (شهرٌ منقضٍ فُتح بأثرٍ رجعي)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.month.reopen"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 131,
+    "seq": 53,
+    "value": {
+     "key": "task.bulk.delete",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "حذف جميع مهام شهر",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_tasks_v1",
+       "bassam_tasks_locks_v1"
+      ],
+      "detail": "bassam_tasks_v1: حذف كل صفوف الشهر (شكل جماعي)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Assigned",
+      "Own"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "tasks:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "task.month.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 177,
+    "seq": 89,
+    "value": {
+     "key": "self.task.respond",
+     "owner": "tasks",
+     "ownerKind": "page",
+     "domain": "tasks",
+     "label": "قبول/اعتذار/إنهاء مهمتي المسنَدة",
+     "type": "operation",
+     "sensitive": false,
+     "guard": {
+      "kind": "rule",
+      "resources": [
+       "bassam_tasks_v1"
+      ],
+      "detail": "selfTaskOnly: صفّي (العمود 14 = ekey) · أعمدة TASK_SELF · حالات TASK_ST · لا إضافة ولا حذف · ≤12 تغييراً",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Own"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "self",
+     "status": "active",
+     "asisMap": [
+      "self (قاعدة ذاتية قائمة)"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.shift.view"
+     },
+     "references"
+    ],
+    "after": 3,
+    "seq": 0,
+    "value": "tasks"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
+     },
+     "references"
+    ],
+    "after": 3,
+    "seq": 0,
+    "value": "tasks"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.employment_type.view"
+     },
+     "references"
+    ],
+    "after": 2,
+    "seq": 0,
+    "value": "tasks"
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 6,
+    "seq": 7,
+    "value": {
+     "id": "tasks",
+     "kind": "page",
+     "label": "المهام",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 60,
+    "seq": 42,
+    "value": {
+     "leaf": "tasks",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "task.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 60,
+    "seq": 43,
+    "value": {
+     "leaf": "tasks",
+     "act": "add",
+     "disposition": "migrated",
+     "targets": [
+      "task.create"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 60,
+    "seq": 44,
+    "value": {
+     "leaf": "tasks",
+     "act": "edit",
+     "disposition": "migrated",
+     "targets": [
+      "task.edit",
+      "task.assign",
+      "task.evidence",
+      "task.accept",
+      "task.finish",
+      "task.reopen"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 60,
+    "seq": 45,
+    "value": {
+     "leaf": "tasks",
+     "act": "del",
+     "disposition": "migrated",
+     "targets": [
+      "task.delete",
+      "task.bulk.delete"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 60,
+    "seq": 46,
+    "value": {
+     "leaf": "tasks",
+     "act": "approve",
+     "disposition": "migrated",
+     "targets": [
+      "task.month.lock",
+      "task.month.reopen"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 60,
+    "seq": 47,
+    "value": {
+     "leaf": "tasks",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.task.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 23,
+    "seq": 12,
+    "value": "ff.task.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 30,
+    "seq": 16,
+    "value": "ff.module.tasks.enabled"
+   }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 20,
+    "value": {
+     "key": "task.view",
+     "owner": "tasks",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 21,
+    "value": {
+     "key": "task.create",
+     "owner": "tasks",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 22,
+    "value": {
+     "key": "task.edit",
+     "owner": "tasks",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 23,
+    "value": {
+     "key": "task.assign",
+     "owner": "tasks",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 24,
+    "value": {
+     "key": "task.evidence",
+     "owner": "tasks",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 25,
+    "value": {
+     "key": "task.delete",
+     "owner": "tasks",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 119,
+    "seq": 47,
+    "value": {
+     "key": "task.accept",
+     "owner": "tasks",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 119,
+    "seq": 48,
+    "value": {
+     "key": "task.finish",
+     "owner": "tasks",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 119,
+    "seq": 49,
+    "value": {
+     "key": "task.reopen",
+     "owner": "tasks",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 119,
+    "seq": 50,
+    "value": {
+     "key": "task.month.lock",
+     "owner": "tasks",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 119,
+    "seq": 51,
+    "value": {
+     "key": "task.month.reopen",
+     "owner": "tasks",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 119,
+    "seq": 52,
+    "value": {
+     "key": "task.bulk.delete",
+     "owner": "tasks",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1",
+      "bassam_tasks_locks_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Assigned": [
+       "taskAssignee"
+      ],
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 165,
+    "seq": 87,
+    "value": {
+     "key": "self.task.respond",
+     "owner": "tasks",
+     "type": "operation",
+     "g": "exists",
+     "res": "bassam_tasks_v1",
+     "resources": [
+      "bassam_tasks_v1"
+     ],
+     "dims": {
+      "Own": [
+       "taskAssignee"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "byResource"
+    ],
+    "key": "bassam_tasks_v1",
+    "after": 5,
+    "seq": 0,
+    "value": {
+     "items": "tasksItems",
+     "evidence": "[\"y-m-d\"][row] · row[14] المكلَّف · row[13] المعرّف · أقفالُ bassam_tasks_locks_v1",
+     "lock": "tasks: locks[y-m] === true — من موردٍ آخر (قد يغيب الدليل → unknown)",
+     "dims": {
+      "Department": "keyDept",
+      "Branch": "branchCeiling",
+      "Assigned": "taskAssignee",
+      "Own": "taskAssignee",
+      "DateRange": "periodLock"
+     },
+     "na": {
+      "Site": "no-site-identity",
+      "Zone/Element": "no-element-identity",
+      "Shift": "no-shift-identity",
+      "Source": "department-resource",
+      "Global": "no-record-scope"
+     }
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 7,
+    "seq": 0,
+    "value": "task.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 7,
+    "seq": 0,
+    "value": {
+     "cap": "tasks:view",
+     "key": "task.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_options_v1",
+     "keys"
+    ],
+    "after": 4,
+    "seq": 0,
+    "value": "task.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_options_v1",
+     "routes"
+    ],
+    "after": 4,
+    "seq": 0,
+    "value": {
+     "cap": "tasks:view",
+     "key": "task.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 7,
+    "seq": 0,
+    "value": "task.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 7,
+    "seq": 0,
+    "value": {
+     "cap": "tasks:view",
+     "key": "task.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "keys"
+    ],
+    "after": 6,
+    "seq": 2,
+    "value": "task.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 2,
+    "value": {
+     "cap": "tasks:view",
+     "key": "task.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_tasks_v1",
+    "after": 36,
+    "seq": 2,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "task.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "tasks:view",
+       "key": "task.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_tasks_locks_v1",
+    "after": 36,
+    "seq": 3,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "task.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "tasks:view",
+       "key": "task.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 7,
+    "seq": 0,
+    "value": "task.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 7,
+    "seq": 0,
+    "value": {
+     "cap": "tasks:view",
+     "key": "task.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_tpls_v1",
+     "keys"
+    ],
+    "after": 6,
+    "seq": 0,
+    "value": "task.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_tpls_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 0,
+    "value": {
+     "cap": "tasks:view",
+     "key": "task.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "terminology",
+     4,
+     "means"
+    ],
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · task.reopen)"
+   },
+   {
+    "path": [
+     "terminology",
+     4,
+     "means"
+    ],
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
+    "with": [
+     "award",
+     "dstats"
+    ]
+   },
+   {
+    "path": [
+     "migration",
+     "DateRange",
+     "evidence"
+    ],
+    "set": "rounds/dreport/plan/staffing/tasks: أقفالٌ واجهية"
+   },
+   {
+    "path": [
+     "migration",
+     "DateRange",
+     "evidence"
+    ],
+    "set": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds/dreport/plan/staffing/tasks: أقفالٌ واجهية",
+    "with": [
+     "dstats",
+     "irshad",
+     "seized"
+    ]
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 4,
+    "value": {
+     "key": "task.month.lock",
+     "res": "bassam_tasks_locks_v1",
+     "where": "locks[\"y-m\"]: → true · أو {mo:1} يزول لشهرٍ منقضٍ",
+     "how": "اتجاه القفل (OPS **)",
+     "asis": "tasks:approve",
+     "decl": "",
+     "dup": "",
+     "owner": "tasks",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 5,
+    "value": {
+     "key": "task.month.reopen",
+     "res": "bassam_tasks_locks_v1",
+     "where": "locks[\"y-m\"]: true يزول · أو → {mo:1}",
+     "how": "اتجاه الفتح",
+     "asis": "tasks:approve",
+     "decl": "",
+     "dup": "",
+     "owner": "tasks",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 12,
+    "value": {
+     "key": "task.assign",
+     "res": "bassam_tasks_v1",
+     "where": "[\"y-m-d\"][i]: الأعمدة 7 (الأحرف الأولى) · 8 (اسم المكلَّف) · 14 (ekey) · 17/18 (المجموعة)",
+     "how": "تغيّرُ أيٍّ من أعمدة الإسناد على صفٍّ قائم",
+     "asis": "tasks:edit",
+     "decl": "",
+     "dup": "",
+     "owner": "tasks",
+     "type": "edit",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 13,
+    "value": {
+     "key": "task.evidence",
+     "res": "bassam_tasks_v1",
+     "where": "[\"y-m-d\"][i][21] = {imgs[img_tsk…], note, at} (توثيقُ الإنهاء)",
+     "how": "تغيّرُ العمود 21؛ يُرافق task.finish عند tkFinish",
+     "asis": "tasks:edit أو selfTaskOnly (TASK_SELF)",
+     "decl": "",
+     "dup": "مع task.finish حين يُكتب الإنهاءُ والتوثيقُ في حفظةٍ واحدة (عمودان مختلفان) — مبرَّر",
+     "owner": "tasks",
+     "type": "edit",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 14,
+    "value": {
+     "key": "task.accept",
+     "res": "bassam_tasks_v1",
+     "where": "[3]: pending → in_progress (+[11] وقتُ البدء) · أو pending → declined (+[20] سببُ الاعتذار)",
+     "how": "انتقالُ عمود الحالة من pending",
+     "asis": "tasks:edit أو selfTaskOnly",
+     "decl": "",
+     "dup": "",
+     "owner": "tasks",
+     "type": "operation",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 15,
+    "value": {
+     "key": "task.finish",
+     "res": "bassam_tasks_v1",
+     "where": "[3]: in_progress → done (+[12] وقتُ الإنهاء · [6] الأداء)",
+     "how": "انتقالُ عمود الحالة إلى done",
+     "asis": "tasks:edit أو selfTaskOnly",
+     "decl": "",
+     "dup": "",
+     "owner": "tasks",
+     "type": "operation",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 8,
+    "seq": 16,
+    "value": {
+     "key": "task.reopen",
+     "res": "bassam_tasks_v1",
+     "where": "[3]: done → in_progress (المصدر: _doReopen يُبقي [11] ويُفرغ [12]/[6]) · أو done/declined → pending",
+     "how": "انتقالٌ عائدٌ من حالةٍ منتهية",
+     "asis": "tasks:edit",
+     "decl": "",
+     "dup": "",
+     "owner": "tasks",
+     "type": "decision",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 42,
+    "seq": 17,
+    "value": {
+     "key": "task.bulk.delete",
+     "res": "bassam_tasks_v1",
+     "where": "زوالُ ≥2 صفٍّ في كتابةٍ واحدة (حذفُ شهر · حذفُ مجموعة)",
+     "how": "عدُّ الصفوف الزائلة",
+     "asis": "tasks:del",
+     "decl": "العتبة: 2+ صفّ = جماعي؛ صفٌّ واحد = task.delete",
+     "dup": "",
+     "owner": "tasks",
+     "type": "operation",
+     "guardKind": "cap"
+    }
+   },
+   {
+    "path": [
+     "decisions"
+    ],
+    "after": 10,
+    "seq": 0,
+    "value": {
+     "id": "D-11",
+     "topic": "التوثيق",
+     "status": "معلَن (باقٍ)",
+     "text": "task.evidence = العمود 21 وحده؛ [6] الأداء مشتقٌّ يُرافق finish/reopen؛ [20] سببُ الاعتذار يُرافق accept(declined)."
+    }
+   },
+   {
+    "path": [
+     "decisions"
+    ],
+    "after": 10,
+    "seq": 1,
+    "value": {
+     "id": "D-12",
+     "topic": "task.reopen",
+     "status": "حُسم في v24.3 (F-12)",
+     "text": "done → in_progress مع تفريغ [12]/[6] وإبقاء [11]؛ لا declined → pending في المصدر — نصُّ الوثيقة مطابق."
+    }
+   },
+   {
+    "path": [
+     "counts",
+     "emittedKeys"
+    ],
+    "add": 12
+   },
+   {
+    "path": [
+     "counts",
+     "coveredResources"
+    ],
+    "add": 2
+   }
+  ],
+  "build-bindings": []
+ }
+}

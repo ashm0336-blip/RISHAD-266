@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FakeStorage, loadClient, sleep, until } from './k264_vm.mjs';
+import { needs } from './harness.mjs';
 
 const E = 'bsdept:dA:bassam_employees_v1';
 const S = 'bsdept:dA:bassam_staffing_v3';
@@ -9,7 +10,7 @@ const UID = 'TEST_ONLY owner';
 const copy = value => JSON.parse(JSON.stringify(value));
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } });
 const initial = { [E]: [{ eid: 'TEST_ONLY e1', name: 'TEST_ONLY employee' }], [S]: { '1448-5': {} } };
-test('Operations explains the confirmed structured denial with the existing named reason mapper, a conflict as a conflict, and no IO', async () => {
+test('Operations explains the confirmed structured denial with the existing named reason mapper, a conflict as a conflict, and no IO', needs('tasks'), async () => {
   for (const [why, expected] of [['task-asg', /لا يُغيَّر مكلَّفُها بالتعديل؛ استعمل «إعادة إسناد»/], ['task-acct', /حسابُ مستخدمٍ نشطٌ مربوطٌ بالمعرّف الذي يُسند به/], ['task-rv', /المراجِعُ لا يكون المكلَّفَ نفسَه/]]) {
     const f = world({ save: raw => { const body = JSON.parse(raw); return json({ ok: 0, requestId: body.requestId, epoch: body.epoch, atomic: 1, revs: {}, denied: { [E]: { why } }, conflicts: {} }, 403); } });
     try {

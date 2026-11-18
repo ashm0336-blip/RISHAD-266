@@ -70,10 +70,10 @@ test('ES-6 · «بيانات الموظفين»: «ملفات» لمن يملك 
   assert.match(b, /onClick="\{\{exportCsv\}\}"[\s\S]*onClick="\{\{printTable\}\}"/);
 });
 
-test('DG-02 · «المهام»: الكتلةُ كلُّها تحت tkPmExport (كما في التقرير اليومي) والبندان مكتملان داخل شرطيهما — والتداخلُ سليم', () => {
+test('DG-02 · «المهام»: الكتلةُ كلُّها تحت tkPmExport (كما في التقرير اليومي) والبندان مكتملان داخل شرطيهما — والتداخلُ سليم', needs('tasks'), () => {
   assert.equal(render('tasks', DM).tkPmExport, false);
   assert.equal(render('tasks', EX).tkPmExport, true);
-  const v = rd('modules/tasks/view.html'), b = block(v, '<sc-if value="{{tkPmExport}}" hint-placeholder-val="{{ true }}">\n    <div style="position:relative">', '<!-- KIVO_265 · البند 14');
+  const v = rd('systems/tasks/client/view.html'), b = block(v, '<sc-if value="{{tkPmExport}}" hint-placeholder-val="{{ true }}">\n    <div style="position:relative">', '<!-- KIVO_265 · البند 14');
   assert.deepEqual(nest(b.slice(0, b.lastIndexOf('<!--'))), { bad: [], open: 0 }, 'كان </sc-if> داخل div البند');
   assert.match(b, /^<sc-if value="\{\{tkPmExport\}\}"[^>]*>\n\s*<div style="position:relative">\n\s*<button onClick="\{\{filesToggle\}\}"/);
   assert.match(b, /<sc-if value="\{\{permCanExport\}\}"[^>]*><div onClick="\{\{exportCsv\}\}"[\s\S]*?حسب الفلاتر الحالية<\/div><\/div>\n\s*<\/div><\/sc-if>/);

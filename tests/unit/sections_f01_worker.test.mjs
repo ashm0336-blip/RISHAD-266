@@ -9,7 +9,7 @@
    البياناتُ اصطناعيةٌ كلُّها (TEST_ONLY · tst_). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, TAG, stored, putKV, addAccount, operationSaveBody, replaceOperationalFixture } from './tasks_fx.mjs';
+import { world, TAG, stored, putKV, addAccount, operationSaveBody, replaceOperationalFixture } from './world_fx.mjs';
 import { needs } from './harness.mjs';
 
 const K = 'bassam_auth_users_v1', KD = 'bassam_depts_v1', KG = 'bassam_gdepts_v1', KP = 'bassam_perms_v1';
@@ -137,7 +137,7 @@ for (const mode of ['legacy', 'enforce']) {
     }
   });
 
-  test(M + 'F01 (3) العزل: الأقسامُ الشقيقة · القسمُ والإدارات الأخرى · موظفو الإدارة الأم — kv والعهدة العلائقية', async () => {
+  test(M + 'F01 (3) العزل: الأقسامُ الشقيقة · القسمُ والإدارات الأخرى · موظفو الإدارة الأم — kv والعهدة العلائقية', needs('custody'), async () => {
     const { W, S } = await setup(mode);
     /* موظفُ القسم وموظفُ الإدارة الأم ومديرُ القسم الشقيق */
     for (const [who, own, foreign] of [['se1', S1, [S2, 'tst_d1', S3]], ['sup1', 'tst_d1', [S1, S2]], ['sm2', S2, [S1, 'tst_d1']]]) {

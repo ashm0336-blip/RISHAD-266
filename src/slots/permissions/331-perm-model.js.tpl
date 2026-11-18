@@ -107,9 +107,7 @@
       var r = { caps: o.caps || {}, emps: o.emps || {}, tplOf: o.tplOf || {}, lenses: o.lenses || {}, subs: o.subs || {}, empLens: o.empLens || {}, lensZ: o.lensZ, patterns: o.patterns || {} };
       /* caps-own: the ceiling mode travels with the registry (the server refuses a save that drops it — 021 capOwnWhy) */
       if (o.capOwn !== undefined) r.capOwn = o.capOwn; if (o.capMode !== undefined) r.capMode = o.capMode;
-      /* تسامح: مفتاح الورقة القديم emps/tasks (من عهد «التوأم») يُقرأ tasks */
-      try { var mv = false; Object.keys(r.emps).forEach(function(d9){ Object.keys(r.emps[d9] || {}).forEach(function(ek){ var pm9 = r.emps[d9][ek] || {}; if (pm9['emps/tasks']) { if (!pm9.tasks) pm9.tasks = pm9['emps/tasks']; delete pm9['emps/tasks']; mv = true; } }); }); if (mv) permSave(r); } catch (e9) {}
-      /* ترقية: «المناطق» انضمّت لسقف العدسات — المصفوفات المخزونة قبلها تعدّها مفعّلة */
+@@SYS:perm.legacy.tasks@@      /* ترقية: «المناطق» انضمّت لسقف العدسات — المصفوفات المخزونة قبلها تعدّها مفعّلة */
       if (!r.lensZ) {
         Object.keys(r.lenses).forEach(function(d){ var L = r.lenses[d]; if (Array.isArray(L) && L.indexOf('zones') === -1) L.push('zones'); });
         r.lensZ = 1; permSave(r);
@@ -257,7 +255,7 @@
      أزرارُ المحرّر) أُزيلت لأنها لم تكن معروضةً ولا مستدعاة. يبقى هذا البذرُ لأبٍ سقفُه الفعليُّ فارغ (seedCapFrom): سقفُ الابن
      الفعليُّ فارغٌ لحظتَها بحكم التقاطع، ويحدّه «أساسي» إن وُسِّع سقفُ الأب لاحقاً — بلا سجلٍّ لورث التوسعةَ كلَّها (اختبارُ التكافؤ).
      ونمطٌ «أساسي» محفوظٌ في السجل (patterns.basic — كتبته واجهةٌ سابقة) يبقى هو المرجع كما كان. */
-  var SEED_BASIC = { cap:['emps','tasks','planning','staff','links','help','admin'], subs:{ emps:['data','custody'], planning:['readiness'], admin:['shifts','backup','ptpls','import'] }, tabs:{}, lenses:[] };
+  var SEED_BASIC = { cap:['emps',@@SYS:perm.seed.cap.tasks@@'planning','staff','links','help','admin'], subs:{ emps:['data'@@SYS:perm.seed.subs.custody@@], planning:['readiness'], admin:['shifts','backup','ptpls','import'] }, tabs:{}, lenses:[] };
   function seedBasic(){ var p = (permStore().patterns || {}).basic; return JSON.parse(JSON.stringify((p && Array.isArray(p.cap)) ? p : SEED_BASIC)); }
   function patternSeed(did){
     var pt = seedBasic(); var o = permStore(); o.caps[did] = pt.cap.slice(); permSave(o);

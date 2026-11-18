@@ -10,7 +10,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { world, workerUnderTest, ME, MATE, stored, putKV } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, stored, putKV } from './world_fx.mjs';
 import { internals } from './internals.mjs';
 
 const WU = workerUnderTest();

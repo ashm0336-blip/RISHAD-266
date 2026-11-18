@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { privWorld, setSheet, login, suCk, readOp, getKV, KE, MODES, stored } from './privacy_fx.mjs';
-import { putKV } from './tasks_fx.mjs';
+import { putKV } from './world_fx.mjs';
 import { needs as needsSys } from './harness.mjs';
 
 const ROUTES = ['/api/operations/export', '/api/custody/export', '/api/irshad/export', '/api/seized/export', '/api/award/export', '/api/notifications/export'];
@@ -16,7 +16,7 @@ const exp = async (w, ck, r) => w.C.api(r + '?dept=tst_d1', { cookie: ck });
 const KSTAMP = 'bsdept:tst_d1:bassam_last_export_v1', KTPL = 'bsdept:tst_d1:bassam_perm_tpls_v1';
 
 for (const mode of MODES) {
-  test('PRIVACY IP39 [' + mode + ']: backup.view alone exports nothing and reads no department collection', needsSys('award', 'seized'), async () => {
+  test('PRIVACY IP39 [' + mode + ']: backup.view alone exports nothing and reads no department collection', needsSys('award', 'custody', 'seized'), async () => {
     const w = await privWorld(mode);
     setSheet(w, 'tst_e_emp1', { 'admin/backup': ['view'] });
     const ck = await login(w, 'emp1');
@@ -35,7 +35,7 @@ for (const mode of MODES) {
     assert.ok(!(b.boot && b.boot.keys && b.boot.keys[KTPL]), 'boot: no department collection value');
   });
 
-  test('PRIVACY IP39 [' + mode + ']: backup create holders and the unit manager still export; personal fields follow the read rule', needsSys('award', 'seized'), async () => {
+  test('PRIVACY IP39 [' + mode + ']: backup create holders and the unit manager still export; personal fields follow the read rule', needsSys('award', 'custody', 'seized'), async () => {
     const w = await privWorld(mode);
     setSheet(w, 'tst_e_emp1', { 'admin/backup': ['view', 'add', 'edit'] });
     const ck = await login(w, 'emp1');
@@ -62,7 +62,7 @@ for (const mode of MODES) {
 const KU = 'bassam_auth_users_v1';
 const PH = (pw, tag) => { const salt = crypto.createHash('sha256').update('r266f|' + tag).digest().subarray(0, 16); return 'p2$100000$' + salt.toString('hex') + '$' + crypto.pbkdf2Sync(pw, salt, 100000, 32, 'sha256').toString('hex'); };
 for (const mode of MODES) {
-  test('RISHAD-266 (f) [' + mode + ']: the retired dept role is refused every backup export and the restore inventory; the department manager and super are unchanged', needsSys('award', 'seized'), async () => {
+  test('RISHAD-266 (f) [' + mode + ']: the retired dept role is refused every backup export and the restore inventory; the department manager and super are unchanged', needsSys('award', 'custody', 'seized'), async () => {
     const w = await privWorld(mode);
     /* a legacy row as an older release stored it (seeded directly: the server refuses creating it) */
     putKV(w.env, KU, (stored(w.env, KU) || []).concat([{ id: 'tst_x_deptrole', un: '1888888895', ph: PH('583915', 'tst_x_deptrole'), name: 'TEST_ONLY · retired dept account', role: 'dept', deptId: 'tst_d1', dis: 0, test: 'TEST_ONLY' }]));

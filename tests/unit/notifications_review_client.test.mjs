@@ -7,6 +7,7 @@ import vm from 'node:vm';
 import { parse } from 'acorn';
 import { ROOT } from './harness.mjs';
 import { world, IDS, EKEYS, D1 } from './notifications_review_fx.mjs';
+import { needs } from './harness.mjs';
 
 const copy = value => JSON.parse(JSON.stringify(value));
 const record = () => ({ id: 'nf:TEST_ONLY_message', type: 'task_new', k: 'task', t: 'TEST_ONLY title', b: 'TEST_ONLY body', at: Date.now() - 10, un: true, acked: false, TEST_ONLY_nested: { values: ['TEST_ONLY_value'] }, dept: 'TEST_ONLY_department' });
@@ -149,7 +150,7 @@ test('history is fetched only on demand, and an inconsistent or malformed next p
   }
 });
 
-test('observer emission failures resolve and report an error without persisting a seen or notification document', async () => {
+test('observer emission failures resolve and report an error without persisting a seen or notification document', needs('tasks'), async () => {
   const B = browser(async (url, opts) => { if (opts.method === 'POST') throw new TypeError('TEST_ONLY disconnected observer'); return response(feed(1, [])); });
   await B.N.refresh(); const pending = B.N.emit('task_new', { dept: 'TEST_ONLY_department', own: ['TEST_ONLY_ekey'], once: 'TEST_ONLY_event' });
   await B.flushEvents(); const outcome = await pending; await tick();
@@ -157,7 +158,7 @@ test('observer emission failures resolve and report an error without persisting 
   assert.ok(B.events.some(event => event.type === 'bassam:notif-error')); assert.deepEqual(B.persistence, []);
 });
 
-test('actual admin settings keep their captured draft base and draft when the server rejects an old revision', async () => {
+test('actual admin settings keep their captured draft base and draft when the server rejects an old revision', needs('tasks'), async () => {
   let reads = 0, settle;
   const B = browser(async (url, opts) => opts.method === 'POST' ? await new Promise(resolve => { settle = resolve; }) : response(feed(++reads === 1 ? 4 : 5)), 'super');
   await B.N.refresh(); const { page, acknowledgements, errors } = settingsPage(B);
@@ -173,7 +174,7 @@ test('actual admin settings keep their captured draft base and draft when the se
   assert.equal(acknowledgements.length, 0); assert.equal(errors.length, 1); assert.deepEqual(B.persistence, []);
 });
 
-test('actual admin settings clear only the exact submitted draft after a complete ACK', async () => {
+test('actual admin settings clear only the exact submitted draft after a complete ACK', needs('tasks'), async () => {
   for (const editedWhileSaving of [false, true]) {
     let settle, approved = false;
     const B = browser(async (url, opts) => {
@@ -192,7 +193,7 @@ test('actual admin settings clear only the exact submitted draft after a complet
   }
 });
 
-test('message feed changes do not change the captured configuration resource revision', async () => {
+test('message feed changes do not change the captured configuration resource revision', needs('tasks'), async () => {
   let reads = 0, approved = false, sent;
   const B = browser(async (url, opts) => {
     if (opts.method === 'POST') { sent = JSON.parse(opts.body); approved = true; return response({ ok: 1, rev: 12, configRev: 4 }); }
@@ -226,7 +227,7 @@ test('server session revocation clears the cached notification payload and resou
   assert.equal(B.N.status().configRev, null); assert.equal(B.N.status().broadcastRev, null); assert.deepEqual(B.persistence, []);
 });
 
-test('the real notification client accepts the canonical API and confirms a read without a fixture-only contract', async () => {
+test('the real notification client accepts the canonical API and confirms a read without a fixture-only contract', needs('tasks'), async () => {
   const W = await world();
   const event = await W.act('manager1', { op: 'emit', type: 'task_new', dept: D1, own: [EKEYS.employee1], title: 'TEST_ONLY integration', vars: {} });
   assert.equal(event.status, 200); assert.equal(event.json.ok, 1);

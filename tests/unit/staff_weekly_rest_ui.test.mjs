@@ -8,7 +8,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { parse } from 'acorn';
-import { world, D1, D2, G1, IDS, ROOT, identitySnapshot } from './custody_review_fx.mjs';
+import { world, D1, D2, G1, IDS, ROOT, identitySnapshot } from './canonical_fx.mjs';
 import { installOperationalFixture, inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { loadClient, until } from './k264_vm.mjs';
 

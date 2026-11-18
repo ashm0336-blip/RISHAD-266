@@ -1,0 +1,739 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "tasks",
+ "name": "المهام",
+ "names": [
+  "\\btask\\.",
+  "\\btk[A-Z]"
+ ],
+ "note": "V7 · د4-ب: نظامُ المهام — صفحتُه (تبويبٌ تحت «المتابعة اليومية» ولوحةٌ في المؤشرات)، وبطاقةُ «مهامك» في «ملفي» (545)، ونموذجُ المهمة (546)، وأجزاءُ الخادم. تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py).",
+ "client": {
+  "slug": "tasks",
+  "component": "Tasks",
+  "files": [
+   "client/545-task-self.js",
+   "client/546-task-model.js",
+   "client/helmet.css",
+   "client/logic-actions.js",
+   "client/logic-adv.js",
+   "client/logic-bulk.js",
+   "client/logic-filters.js",
+   "client/logic-kpi.js",
+   "client/logic-picker.js",
+   "client/logic-prod.js",
+   "client/logic-proof.js",
+   "client/logic-recur.js",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html"
+  ]
+ },
+ "server": {
+  "parts": [
+   {
+    "file": "server/018b-task-rules.js",
+    "after": "018-ancestry.js",
+    "order": 10
+   },
+   {
+    "file": "server/062c-me-tasks.js",
+    "after": "062b-me-history.js",
+    "order": 10,
+    "head": "/* ═══ KIVO_264 · KIVO-Tasks — «ملفي ← مهامي»: قراءةُ الموظف لمهامه هو وحده، ودورةُ حياتها من جهته، من الخادم ═══",
+    "new": "KIVO_264 · KIVO-Tasks — «ملفي ← مهامي» (GET /api/me/tasks · POST /api/me/tasks/act · GET /api/me/tasks/img · GET /api/me/tasks/log) — المرحلةُ الثانية: ack/start/decline/stall/resume/doc/submit/expire"
+   },
+   {
+    "file": "server/070-task-core.js",
+    "after": "062b-me-history.js",
+    "order": 20,
+    "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة في الخادم: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيه ═══",
+    "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيهُ من الخادم"
+   },
+   {
+    "file": "server/070b-task-rows.js",
+    "after": "062d-record-shared.js",
+    "order": 10
+   },
+   {
+    "file": "server/071-task-mgmt.js",
+    "after": "062d-record-shared.js",
+    "order": 30,
+    "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول: الإنشاء · المراجعة · التمديد · إعادةُ الإسناد · الإلغاء · الربط · المجموعة ═══",
+    "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول /api/tasks/* (إنشاء · مراجعة · تمديد · إعادةُ إسناد · إلغاء · ربط · مجموعة)"
+   },
+   {
+    "file": "server/072-task-elig.js",
+    "after": "062d-record-shared.js",
+    "order": 40,
+    "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══",
+    "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — الأهليةُ وقتَ التنفيذ من الجدول الشهري (GET /api/tasks/eligibility)"
+   },
+   {
+    "file": "server/073-task-recur.js",
+    "after": "062d-record-shared.js",
+    "order": 50,
+    "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — المهامُ المتكررة: قالبٌ + نسخةُ تنفيذٍ مستقلة لكل موعد، تُولَّد في الخادم بلا Cron (ق5) ═══",
+    "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — التكرارُ: قالبٌ ونُسخُ تنفيذ مولَّدةٌ في الخادم بلا Cron (متساوي القوى)"
+   },
+   {
+    "file": "server/074-task-due.js",
+    "after": "062d-record-shared.js",
+    "order": 60,
+    "head": "/* ═══ KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (البند 10 — قرارُ المالك 2026-10-19) ═══",
+    "new": "KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (مسحٌ كسولٌ بلا Cron — البند 10)"
+   }
+  ]
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [
+   "migrations/0010_operational_domains.sql"
+  ],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات (config/wrangler.preview.toml · migrations_dir) — لا تُنقل"
+ },
+ "permissions": "permissions.json",
+ "tests": [
+  "tests/kpis_tasks265.test.mjs",
+  "tests/private_tasks_live_sync.test.mjs",
+  "tests/profile_tasks_current265.test.mjs",
+  "tests/task_cloud_image_integration.test.mjs",
+  "tests/task_self_cloud_only.test.mjs",
+  "tests/tasks_acceptance.test.mjs",
+  "tests/tasks_acct265.test.mjs",
+  "tests/tasks_atomic_commands.test.mjs",
+  "tests/tasks_c1_session.test.mjs",
+  "tests/tasks_conc_fx.mjs",
+  "tests/tasks_daylock_srv265.test.mjs",
+  "tests/tasks_due.test.mjs",
+  "tests/tasks_edit_integrity.test.mjs",
+  "tests/tasks_edit_policy.test.mjs",
+  "tests/tasks_fix265_f1.test.mjs",
+  "tests/tasks_fix265_f1nid.test.mjs",
+  "tests/tasks_fix265_f2.test.mjs",
+  "tests/tasks_fix265_f3.test.mjs",
+  "tests/tasks_fix265_g1.test.mjs",
+  "tests/tasks_fix265_g2.test.mjs",
+  "tests/tasks_fix265_reopen.test.mjs",
+  "tests/tasks_fx.mjs",
+  "tests/tasks_gate_w1.test.mjs",
+  "tests/tasks_hotfix242_sql.test.mjs",
+  "tests/tasks_k265_f10.test.mjs",
+  "tests/tasks_k265_f10_fx.mjs",
+  "tests/tasks_kanban_w2.test.mjs",
+  "tests/tasks_kpi_owner.test.mjs",
+  "tests/tasks_kpis_cancel_w1.test.mjs",
+  "tests/tasks_merge_grp265.test.mjs",
+  "tests/tasks_model_parity.test.mjs",
+  "tests/tasks_operations_ui.test.mjs",
+  "tests/tasks_p0_selfread.test.mjs",
+  "tests/tasks_page_acct265.test.mjs",
+  "tests/tasks_page_actplan265.test.mjs",
+  "tests/tasks_page_bulk265.test.mjs",
+  "tests/tasks_page_days265.test.mjs",
+  "tests/tasks_page_filters265.test.mjs",
+  "tests/tasks_page_form265.test.mjs",
+  "tests/tasks_page_p2.test.mjs",
+  "tests/tasks_page_pickperf265.test.mjs",
+  "tests/tasks_page_prod265.test.mjs",
+  "tests/tasks_page_proofmeta265.test.mjs",
+  "tests/tasks_page_recur265.test.mjs",
+  "tests/tasks_page_rereview265.test.mjs",
+  "tests/tasks_page_review265.test.mjs",
+  "tests/tasks_page_timedd265.test.mjs",
+  "tests/tasks_page_unified265.test.mjs",
+  "tests/tasks_page_verify265.test.mjs",
+  "tests/tasks_profile_patch.test.mjs",
+  "tests/tasks_proof_guard.test.mjs",
+  "tests/tasks_proof_metadata_refresh.test.mjs",
+  "tests/tasks_recur265.test.mjs",
+  "tests/tasks_recur265b.test.mjs",
+  "tests/tasks_recur_clock.mjs",
+  "tests/tasks_recur_last29_265.test.mjs",
+  "tests/tasks_recur_patterns265.test.mjs",
+  "tests/tasks_rereview265.test.mjs",
+  "tests/tasks_review265.test.mjs",
+  "tests/tasks_seed.mjs",
+  "tests/tasks_selfwrite_guard.test.mjs",
+  "tests/tasks_shift265.test.mjs",
+  "tests/tasks_unified265.test.mjs",
+  "tests/tasks_verify265.test.mjs",
+  "tests/tasks_win.test.mjs",
+  "tests/browser/tasks_kpi_panel.test.mjs",
+  "tests/browser/v7_p4_tasks_panel_link.test.mjs"
+ ],
+ "derived": [
+  "src/pages/Tasks.dc.html"
+ ],
+ "sharedStaysInBase": [],
+ "slots": {
+  "task.rawWhy": {
+   "order": 10,
+   "text": "function taskRawWhy(A, a, b, d, ctx) { return taskXWhy(A, a, b, d, ctx) || taskAsgWhy(A, a, b, d, ctx) || taskOwnWhy(A, a, b, d, ctx) || taskDelWhy(A, a, b, d, ctx) || taskAcctWhy(A, a, b, d, ctx); }\n"
+  },
+  "oc.people.taskCodec": {
+   "order": 10,
+   "file": "slots/oc.people.taskCodec.frag"
+  },
+  "oc.people.taskResources": {
+   "order": 10,
+   "file": "slots/oc.people.taskResources.frag"
+  },
+  "modules.tasks": {
+   "order": 10,
+   "text": "  {\n   \"name\": \"Tasks\",\n   \"slug\": \"tasks\",\n   \"minifiedSource\": true,\n   \"bytes\": 177288,\n   \"logicLines\": 2497\n  },\n"
+  },
+  "blocks.order.tasks": {
+   "order": 10,
+   "text": "   \"Tasks\",\n"
+  },
+  "blocks.pages.tasks": {
+   "order": 10,
+   "text": "   {\n    \"b64Sha256\": \"05f0ae7029a3c2dc71031f792c1cb3f8ce7a398b398641a5bc8bf9c866dd6db8\",\n    \"bytes\": 177288,\n    \"file\": \"client/pages/Tasks.dc.html\",\n    \"name\": \"Tasks\",\n    \"sha256\": \"e40f7c606fbd6917b9b96ba2a115c9f06afa35e53363954cf19a02dce25f57a3\"\n   },\n"
+  },
+  "blocks.shell.tasks": {
+   "order": 10,
+   "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/tasks/client/545-task-self.js\",\n   \"kind\": \"js\",\n   \"line\": 10494,\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null,\n   \"new\": \"KIVO_264 · KIVO-Tasks P0 («ملفي ← مهامي» من الخادم)\"\n  },\n  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/tasks/client/546-task-model.js\",\n   \"kind\": \"js\",\n   \"line\": 10494,\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null,\n   \"new\": \"KIVO_264 · KIVO-Tasks المرحلة الثانية (نموذجُ المهمة في الواجهة — مرآةُ 070)\"\n  },\n"
+  },
+  "ns.after.tasks": {
+   "order": 10,
+   "text": "  \"src/systems/tasks/client/logic.js\",\n"
+  },
+  "budget.page.tasks": {
+   "order": 10,
+   "text": "  \"page:Tasks\": 90000,\r\n"
+  },
+  "shell.mounts.tasks": {
+   "order": 10,
+   "text": "  <sc-if value=\"{{isTasks}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Tasks\" hint-size=\"100%,1200px\"></dc-import>\n  </sc-if>\n\n"
+  },
+  "shell.blocks.tasks": {
+   "order": 10,
+   "text": "@@KIVO_BLOCK:systems/tasks/client/545-task-self.js@@\n@@KIVO_BLOCK:systems/tasks/client/546-task-model.js@@\n"
+  },
+  "pages.routeNames.tasks": {
+   "order": 10,
+   "text": "  \"tasks\": \"المهام\",\n"
+  },
+  "pages.entry.tasks": {
+   "order": 10,
+   "text": "  {\n   \"key\": \"tasks\",\n   \"module\": \"tasks\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Tasks\"],\n   \"nav\": \"tasks\",\n   \"name\": \"المهام\",\n   \"under\": \"daily\"\n  },\n"
+  },
+  "pages.daily.seq.tasks": {
+   "order": 10,
+   "text": "    \"page:tasks\",\n"
+  },
+  "uxStates.tail": {
+   "order": 10,
+   "text": ",\n  \"tasks\": {\n   \"فارغ\": 19,\n   \"تحميل\": 1,\n   \"خطأ\": 3,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 0\n  }"
+  },
+  "pages.tabAddr.daily": {
+   "order": 10,
+   "text": ",\n   \"tasks\": 1"
+  },
+  "pages.kpi.refs.tasks": {
+   "order": 10,
+   "text": ",\n    \"tasks\""
+  },
+  "pages.kpi.names.tasks": {
+   "order": 10,
+   "text": ",\n    \"tasks\": \"مؤشرات المهام\""
+  },
+  "root.live.profile.tasks": {
+   "order": 10,
+   "text": "|tasks"
+  },
+  "root.self.tasks": {
+   "order": 10,
+   "text": "tasks: 1, "
+  },
+  "root.overlay.tasks": {
+   "order": 10,
+   "text": "|tkf-ov"
+  },
+  "root.keep.tasks": {
+   "order": 10,
+   "text": "|tkDayK|tkDayD"
+  },
+  "root.inPlanning.tasks": {
+   "order": 10,
+   "text": ",\"tasks\""
+  },
+  "root.labels.tasks": {
+   "order": 10,
+   "text": "tasks:\"المهام\", "
+  },
+  "root.is.tasks": {
+   "order": 10,
+   "text": "isTasks: ap === \"tasks\", "
+  },
+  "root.navPerm.tasks": {
+   "order": 10,
+   "text": " tasks: \"tasks\","
+  },
+  "root.known.tasks": {
+   "order": 10,
+   "text": "\"tasks\","
+  },
+  "kpis.logic.tasks": {
+   "order": 10,
+   "text": "      /* لوحةُ المهام يملكها نظامُ المهام (RISHAD-266 P9 · tasks/logic-kpi.js) — العارضُ يحرس سياقَ الإدارة وحده كما كان: بلا إدارةٍ جاهزة لا تُستورد اللوحة */\n      e.on_tk && (() => {\n        const scope = KIVO.BassamDepts?.context?.();\n        if (!scope || scope.state !== \"ready\") {\n          e.tkScopeNotice = scope?.message || \"تعذّر قراءة سجل الإدارات — أعد المحاولة\";\n          e.on_tk = false;\n        }\n      })(),\n      /* بعد أول فتح تبقى اللوحةُ مركَّبةً مخفيّة: شهرُها المختار يبقى عند الرجوع إلى التبويب كما كان قبل النقل، ولا تُقرأ قبل أن تُفتح */\n      e.on_tk && (this._tkSeen = !0),\n      (e.tkMount = !!this._tkSeen && !e.tkScopeNotice),\n      (e.tkShow = e.on_tk ? \"\" : \"display:none\"),\n"
+  },
+  "kpis.panels.tasks": {
+   "order": 10,
+   "text": "        { k: \"tk\", pk: \"tasks\", sk: \"\" },\n"
+  },
+  "kpis.mounts.tasks": {
+   "order": 10,
+   "text": "  <!-- ═══ مؤشرات المهام — يملكها نظامُ المهام (RISHAD-266 P9: src/modules/tasks · logic-kpi.js) ═══ -->\n  <sc-if value=\"{{tkScopeNotice}}\" hint-placeholder-val=\"{{ false }}\"><div style=\"border:1px dashed var(--border-subtle);border-radius:12px;padding:22px;text-align:center;color:var(--text-muted);font-size:12px\">{{tkScopeNotice}}</div></sc-if>\n  <sc-if value=\"{{tkMount}}\" hint-placeholder-val=\"{{ false }}\"><div style=\"{{tkShow}}\"><dc-import name=\"Tasks\" solo=\"kpi\" hint-size=\"100%,600px\"></dc-import></div></sc-if>\n"
+  },
+  "kpis.tabs.tasks": {
+   "order": 10,
+   "file": "slots/kpis.tabs.tasks.frag"
+  },
+  "nfc.reg.tasks": {
+   "order": 10,
+   "text": "  {name:'المهام',k:'task',leaves:[\n   L('task_new','task','مهمة أُسندت إليك','فور الإسناد',true,['own'],'act','toast','أُسندت إليك «{المهمة}» — حتى {الوقت}','افتح المهمة'),\n   L('task_soon','task','موعد المهمة يقترب','قبل الموعد بساعة',true,['own'],'act','toast','بقي {المدة} على «{المهمة}»','افتح المهمة'),\n   L('task_late','task','مهمة متأخرة','عند تجاوز الموعد',true,['own','lead','mgr'],'urg','toast','تأخّرت «{المهمة}» المسندة إلى {الاسم} عن موعدها {الوقت}','افتح المهام'),\n   L('task_done','task','إنجاز مهمة','فور الإنجاز',true,['mgr'],'info','bell','أنجز {الاسم} «{المهمة}»','افتح المهام'),\n   L('task_chg','task','تعديل مهمة أو إلغاؤها أو إعادة إسنادها','فور التغيير',true,['own'],'act','bell','{الفعل} مهمة «{المهمة}» — {التفصيل}','افتح المهمة')]},\n"
+  },
+  "nfc.kind.color.tasks": {
+   "order": 10,
+   "text": " task:'#0e7490',"
+  },
+  "nfc.kind.name.tasks": {
+   "order": 10,
+   "text": " task:'المهام',"
+  },
+  "nfc.kind.icon.tasks": {
+   "order": 10,
+   "text": " task:'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',"
+  },
+  "nfc.goNav.tasks": {
+   "order": 10,
+   "text": " 'افتح المهمة':(function(){ try { var u = KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user(); return u && u.role === 'staff' && !u.mgr ? 'profile' : 'tasks'; } catch(e){ return 'tasks'; } })(), 'افتح المهام':'tasks',"
+  },
+  "store.changed.tasks.event": {
+   "order": 10,
+   "text": "                if (j.tasksChanged === 1) try { window.dispatchEvent(new CustomEvent('bassam:tasks', { detail: privateDetail })); } catch (eT) {}\n"
+  },
+  "store.changed.tasks.cond": {
+   "order": 10,
+   "text": " || j.tasksChanged === 1"
+  },
+  "store.identity.tasks": {
+   "order": 10,
+   "text": "      bassam_tasks_v1: { \"*\": { key: 13, grp: 14 } },   /* F10-fix: الهويةُ 13 — وصفوفُ المهمة الجماعية (13 نفسُها لأكثر من مكلَّف) 13·14، كما tkKeepSelf في 070 */\n"
+  },
+  "store.keyLabels.tasks": {
+   "order": 10,
+   "text": "bassam_tasks_v1:[\"المهام\"], bassam_tasks_locks_v1:[\"أقفال المهام\"], "
+  },
+  "store.refuse.tasks.2": {
+   "order": 10,
+   "file": "slots/store.refuse.tasks.2.frag"
+  },
+  "store.refuse.tasks.1": {
+   "order": 10,
+   "text": "              \"task-asg\": \"بدأ الموظفُ هذه المهمة أو أنهاها أو اعتذر عنها (أو أُغلقت) — لا يُغيَّر مكلَّفُها بالتعديل؛ استعمل «إعادة إسناد» من قائمة المهمة فيبقى سجلُّ الأول وإثباتُه\",\n"
+  },
+  "store.opResources.tasks": {
+   "order": 10,
+   "text": ", 'bassam_tasks_v1', 'bassam_tasks_locks_v1'"
+  },
+  "admin.wipe.labels.tasks": {
+   "order": 10,
+   "text": "                bassam_tasks_v1: \"المهام\",\r\n                bassam_tasks_locks_v1: \"اعتمادات المهام\",\r\n"
+  },
+  "admin.tree.leafNote.tasks": {
+   "order": 10,
+   "text": "\"tasks\" === l.owner\r\n                        ? \"التكرار: إنشاءُ مهمةٍ متكررة = «\" + lab(\"task.create\") + \"» (+ «\" + lab(\"task.assign\") + \"») · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «\" + lab(\"task.edit\") + \"»\"\r\n                        : "
+  },
+  "admin.tree.recNotes.tasks": {
+   "order": 10,
+   "text": "        \"task.create\": \"يشمل إنشاءَ مهمةٍ لمرة واحدة أو متكررة (يومي · أسبوعي · شهري)\",\r\n        \"task.edit\": \"يشمل تعديلَ التكرار وإيقافَه مؤقتاً واستئنافَه وإنهاءَه، وتحويلَ مهمةٍ إلى متكررة مع «\" + lab(\"task.create\") + \"» و«\" + lab(\"task.assign\") + \"»\",\r\n        \"task.assign\": \"يشمل مكلَّفي المهمة المتكررة\",\r\n"
+  },
+  "admin.keyLabels.tasks": {
+   "order": 10,
+   "text": "        bassam_tasks_v1: \"المهام\",\r\n"
+  },
+  "admin.tree.capTip.tasks": {
+   "order": 10,
+   "text": "      r && r.isLeaf && \"tasks\" === r.key && (r.chkTip += \" · التكرار: إنشاءُ مهمةٍ متكررة = «\" + ad + \"» (+ «\" + ed + \"» لمكلَّفيها) · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «\" + ed + \"»\");\r\n"
+  },
+  "bk.labels.tasks": {
+   "order": 10,
+   "text": ", bassam_tasks_v1: 'المهام'"
+  },
+  "res.empty.tasks": {
+   "order": 10,
+   "text": "bassam_tasks_v1: '{}', bassam_tasks_locks_v1: '{}', "
+  },
+  "import.summary.tasks": {
+   "order": 10,
+   "text": "              \"المهام المسندة\",\n"
+  },
+  "perm.seed.cap.tasks": {
+   "order": 10,
+   "text": "'tasks',"
+  },
+  "perm.legacy.tasks": {
+   "order": 10,
+   "text": "      /* تسامح: مفتاح الورقة القديم emps/tasks (من عهد «التوأم») يُقرأ tasks */\n      try { var mv = false; Object.keys(r.emps).forEach(function(d9){ Object.keys(r.emps[d9] || {}).forEach(function(ek){ var pm9 = r.emps[d9][ek] || {}; if (pm9['emps/tasks']) { if (!pm9.tasks) pm9.tasks = pm9['emps/tasks']; delete pm9['emps/tasks']; mv = true; } }); }); if (mv) permSave(r); } catch (e9) {}\n"
+  },
+  "tree.keyCap": {
+   "order": 0,
+   "text": "    bassam_tasks_v1:'tasks', bassam_tasks_locks_v1:'tasks'"
+  },
+  "activity.entities.tasks": {
+   "order": 10,
+   "text": " task: 'المهمة',"
+  },
+  "activity.filter.tasks": {
+   "order": 10,
+   "text": " ['task', 'المهام'],"
+  },
+  "res.reg.tasks": {
+   "order": 10,
+   "text": "  /* المهام: يومٌ ثم صفوفُ مهامّه — فالكيان في الطبقة الثانية */\n  'bassam_tasks_v1':           { scope: 'dept', cap: 'tasks', self: 'task' },\n  'bassam_tasks_locks_v1':     { scope: 'dept', cap: 'tasks' },\n"
+  },
+  "ent.reg.tasks": {
+   "order": 10,
+   "text": "  /* ── المهام ── */\n  'bassam_tasks_v1':          { map: 1, sub: 'list', empty: '{}' },\n  'bassam_tasks_locks_v1':    { map: 1, empty: '{}' },\n"
+  },
+  "ops.reg.tasks": {
+   "order": 10,
+   "text": "  'bassam_tasks_locks_v1':     { approve: ['**'] },\n"
+  },
+  "read.map.tasks": {
+   "order": 10,
+   "text": "  /* ── المهام ── */\n  'bassam_tasks_v1':           ['tasks'],\n  'bassam_tasks_locks_v1':     ['tasks'],\n"
+  },
+  "read.ops.tasks": {
+   "order": 10,
+   "text": ",'tasks'"
+  },
+  "read.map.reader.tasks.1": {
+   "order": 10,
+   "text": ", 'tasks'"
+  },
+  "read.map.reader.tasks.2": {
+   "order": 10,
+   "text": ", 'tasks'"
+  },
+  "read.map.reader.tasks.3": {
+   "order": 10,
+   "text": ", 'tasks'"
+  },
+  "canWrite.rawWhy.tasks": {
+   "order": 10,
+   "text": "  if (nm === 'bassam_tasks_v1') { var xw9 = taskRawWhy(A, PV9.a(), PV9.b(), P.dept, ctx); if (xw9) return { ok: false, why: xw9 }; }\n"
+  },
+  "enf.canWrite.rawWhy.tasks": {
+   "order": 10,
+   "text": "  if (rn === 'bassam_tasks_v1') { var xwE = taskRawWhy(A, a, b, P.dept, ctx); if (xwE) return enfNo(xwE); }\n"
+  },
+  "permv4.locks.load.tasks": {
+   "order": 10,
+   "text": "    if (rn === 'bassam_tasks_v1' && o.tasksLocks === undefined) o.tasksLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}) || {};\n"
+  },
+  "permv4.locks.ctx.tasks": {
+   "order": 10,
+   "text": ", tasks: pv4.tasksLocks"
+  },
+  "ops.read.jobs.tasks": {
+   "order": 10,
+   "text": "        if (d9 && rsp.status === 200 && typeof tkLazyJobs === 'function' && (Date.now() - (TK_REC_LAST[d9] || 0) >= TK_REC_GAP || Date.now() - (TK_DUE_LAST[d9] || 0) >= TK_DUE_GAP)) try {\n          var jr = await rsp.clone().json(), r0 = TK_REC_LAST[d9], u0 = TK_DUE_LAST[d9];\n          if (jr.ok === 1 && (jr.denied || []).indexOf(tkK(d9)) < 0) { await tkLazyJobs(env, request, d9, true); if (TK_REC_LAST[d9] !== r0 || TK_DUE_LAST[d9] !== u0) rsp = await opReadRoute(env,request,url,ss); }\n        } catch (eTk) { swallow('tk-lazy-read', eTk, env.__rid); }\n"
+  },
+  "ops.read.vars.tasks": {
+   "order": 10,
+   "text": ", tkRd = /(?:^|,)bsdept:([^,:]+):bassam_tasks_v1(?:,|$)/.exec(url.searchParams.get('keys') || ''), d9 = tkRd && tkRd[1]"
+  },
+  "changes.tasks": {
+   "order": 10,
+   "text": "  if (meTasksChanged(AC, (ch && ch.results) || [], vC)) outC.tasksChanged = 1;\n"
+  },
+  "empGone.tasks.fn": {
+   "order": 10,
+   "file": "slots/empGone.tasks.fn.frag"
+  },
+  "emp.cleanup.tasks": {
+   "order": 10,
+   "text": "  var tasks = values.bassam_tasks_v1;\n  if (isObj(tasks))\n    Object.keys(tasks).forEach(function (k) {\n      if (Array.isArray(tasks[k]))\n        tasks[k].forEach(function (r) {\n          if (Array.isArray(r) && ((r[14] && drop.has(String(r[14]).trim())) || (r[8] && drop.has(String(r[8]).trim())))) {\n            r[7] = [];\n            r[8] = '';\n            r[14] = '';\n          }\n        });\n    });\n"
+  },
+  "emp.keys.tasks": {
+   "order": 10,
+   "text": "  'bassam_tasks_v1',\n"
+  },
+  "priv.tokRes.tasks": {
+   "order": 10,
+   "text": ", bassam_tasks_v1: 1"
+  },
+  "priv.carrier": {
+   "order": 10,
+   "text": "bassam_tasks_v1"
+  },
+  "permv2.selfEkey.tasks": {
+   "order": 10,
+   "text": "rn === 'bassam_tasks_v1' && !A.__tkSelf ? null : "
+  },
+  "enf.selfEkey.tasks": {
+   "order": 10,
+   "text": "rn === 'bassam_tasks_v1' && !A.__tkSelf ? null : "
+  },
+  "enf.ver.tasks": {
+   "order": 10,
+   "text": " · tasks"
+  },
+  "routes.session.tasks": {
+   "order": 10,
+   "text": "  /* ── KIVO_264 · KIVO-Tasks: «ملفي ← مهامي» ومساراتُ المهام — /api/me/tasks* و/api/tasks/* (workers/parts/062c-me-tasks.js · 071–073 · tkRoutePath) ── */\n  if (tkRoutePath(path)) { var tkRes = await meTasksRoutes(request, env, path, ss); if (tkRes) return tkRes; }\n"
+  },
+  "deptStore.labels.tasks": {
+   "order": 10,
+   "text": " 'bassam_tasks_v1':'المهام',"
+  },
+  "deptStore.pageKeys.tasks": {
+   "order": 10,
+   "text": "'tasks',"
+  },
+  "nf.denyWhy.tasks": {
+   "order": 10,
+   "text": "  \"task-asg\": \"لا يُغيَّر مكلَّف مهمة بدأها أو أنهاها أو اعتذر عنها\", \"task-acct\": \"لا تُسند مهمة إلا لموظف له حساب نشط\",\n  \"task-rv\": \"المراجِع لا يكون المكلَّف نفسه\", \"task-own\": \"توثيق الموظف لا يُمحى بالحفظ\", \"task-del\": \"لا تُحذف مهمة بدأ عليها نشاط\",\n  \"task-x\": \"إعدادات المهمة تُغيَّر من أزرار المهمة وحدها\",\n"
+  },
+  "nf.denyRecs.tasks": {
+   "order": 10,
+   "text": " bassam_tasks_v1: \"المهام\", bassam_tasks_locks_v1: \"أقفال المهام\","
+  },
+  "nf.denyPages.tasks": {
+   "order": 10,
+   "text": " tasks: \"المهام\","
+  },
+  "nf.cap.tasks": {
+   "order": 10,
+   "text": "  task: \"tasks\",\n"
+  },
+  "nf.types.tasks": {
+   "order": 10,
+   "file": "slots/nf.types.tasks.frag"
+  },
+  "save.staleConflict.tasks": {
+   "order": 10,
+   "text": "    if (!vd0.ok && it0.act === 'set' && TK_RAW_WHY[vd0.why] && resName(k0) === 'bassam_tasks_v1' && Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) {\n      evald.push({ conflict: 1, cur: cur0 }); continue;\n    }\n"
+  },
+  "save.ctx.tasks": {
+   "order": 10,
+   "text": "      tk: tkCtx9[d00] || null,                                                    /* KIVO_265 · R-2: سياقُ الحساب النشط (018 taskAcctWhy) */\n"
+  },
+  "save.keepSelf.tasks": {
+   "order": 10,
+   "text": "    if (it0.act === 'set' && cur0 != null && resName(k0) === 'bassam_tasks_v1' && !A.__tkSelf && !(opt && opt.srv) && !tkKeepOff(A, k0, d00, rstK9, impK9, ENFX)) {\n      var st9 = Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0);   /* KIVO_265: base قديم ⇒ x من الخادم (H-1 · تعارضٌ لا رفض) */\n      var kp9 = tkKeepSelf(it0.v, cur0, { x: !!st9 }); if (kp9.n) { it0.v = kp9.v; logEv('warn', 'tk-kept', { n: kp9.n, rid: env.__rid }); }\n    }\n"
+  },
+  "cleanup.cleanRes.tasks": {
+   "order": 10,
+   "text": " 'bassam_tasks_v1': 1,"
+  },
+  "save.acctCtx.tasks": {
+   "order": 10,
+   "file": "slots/save.acctCtx.tasks.frag"
+  },
+  "cleanup.ctxRes.tasks": {
+   "order": 10,
+   "text": " 'bassam_tasks_v1': 1,"
+  },
+  "save.keepOff.tasks": {
+   "order": 10,
+   "text": "function tkKeepOff(A, k, d, rst, imp, X) {\n  if (rst[k] && taskSrvExempt(A, d, { rst: 1, enf: X ? { restore: !!X.restore } : null })) return true;\n  if (imp[k]) return X ? enfHeld(A, d, 'import.replace') : actsHeldOn(A, d, 'admin/import', ['del']);\n  return false;\n}\n"
+  },
+  "guard.classify.tasks.locks": {
+   "order": 10,
+   "text": "  C['bassam_tasks_locks_v1'] = lockMap('task.month.lock', 'task.month.reopen');\n"
+  },
+  "guard.classify.tasks": {
+   "order": 10,
+   "file": "slots/guard.classify.tasks.frag"
+  },
+  "scope.assignee.tasks": {
+   "order": 10,
+   "text": "    if (item.what === 'task') {\n      if (heldFor(ctx, key)) return na('holder acts by permission (I‑04)');\n      var os = sides(item, 'owner'), i; if (!os.length) return na('no-assignee');\n      for (i = 0; i < os.length; i++) if (String(os[i].v) !== String(ek)) return deny('task-not-assigned-to-actor (' + os[i].side + ')', { basis: 'row[14]', transition: changedPair(item.owner) });\n      return allow('task-assigned-to-actor', { basis: 'row[14] = ekey', transition: changedPair(item.owner) });\n    }\n"
+  },
+  "scope.items.tasks": {
+   "order": 10,
+   "file": "slots/scope.items.tasks.frag"
+  },
+  "bodies.notes.tasks": {
+   "order": 10,
+   "text": "    \"/api/me/tasks/act\": \"KIVO_264 · KIVO-Tasks: uid (C1 — 409 session-changed كـ/api/save) في هذا المسار ومسارات /api/tasks/* المغيِّرة كلِّها\",\n"
+  },
+  "bodies.tasks": {
+   "order": 10,
+   "file": "slots/bodies.tasks.frag"
+  },
+  "contracts.tasks": {
+   "order": 10,
+   "file": "slots/contracts.tasks.frag"
+  },
+  "canWrite.selfRule.tasks": {
+   "order": 10,
+   "text": "  if (R9.self === 'task' && newVal != null && selfTaskOnly(A, newVal, curVal)) return { ok: true };\n"
+  },
+  "permv2.selfRule.tasks": {
+   "order": 10,
+   "text": "    if (R0.self === 'task' && selfTaskOnly(A, newVal, curVal)) return 'selfTask';\n"
+  },
+  "permv2.selfRule.how.tasks": {
+   "order": 10,
+   "text": " || how === 'selfTask'"
+  },
+  "daily.tabVals.tasks": {
+   "order": 10,
+   "text": "        dsOnTasks: \"tasks\" === $n,\n        dsTasksTabStyle: ti(\"tasks\" === $n),\n        dsTasksTabIcon: ei(\"tasks\" === $n),\n        dsTasksTabLbl: si(\"tasks\" === $n),\n        dsGoTasks: () => this.setState({ dsTab: \"tasks\" }),\n        dsTasksTabShow: TKn,\n"
+  },
+  "daily.fallback.3.tasks": {
+   "order": 10,
+   "text": "TKn ? \"tasks\" : "
+  },
+  "daily.guard.tasks": {
+   "order": 10,
+   "text": ",\n      \"tasks\" !== $n || TKn || ($n = Qn ? \"kpi\" : qn ? \"dreport\" : \"rounds\")"
+  },
+  "daily.fallback.2.tasks": {
+   "order": 10,
+   "text": "Vn ? \"rounds\" : \"tasks\""
+  },
+  "daily.fallback.1.tasks": {
+   "order": 10,
+   "text": "Vn ? \"rounds\" : \"tasks\""
+  },
+  "daily.pick.tasks": {
+   "order": 10,
+   "text": "\"tasks\" === s.dsTab ? \"tasks\" : "
+  },
+  "daily.can.tasks": {
+   "order": 10,
+   "text": "      TKn = (() => {\n        try {\n          const t = KIVO.BassamPerm;\n          return !t || !t.can || !!t.can(\"tasks\", \"view\");\n        } catch (t) {\n          return !0;\n        }\n      })(),\n"
+  },
+  "daily.addr.3.tasks": {
+   "order": 10,
+   "text": " || \"tasks\" === n.dsTab"
+  },
+  "daily.addr.2.tasks": {
+   "order": 10,
+   "text": " || \"tasks\" === t"
+  },
+  "daily.addr.list.tasks": {
+   "order": 10,
+   "text": ", \"tasks\""
+  },
+  "daily.addr.1.tasks": {
+   "order": 10,
+   "text": " || \"tasks\" === x"
+  },
+  "daily.view.mount.tasks": {
+   "order": 10,
+   "text": "<!-- ═══ تبويب «المهام» — انتقل من «موظفو الإدارة»: ماذا يعمل من حضر اليوم — يستورد صفحته كما هي ═══ -->\n<sc-if value=\"{{dsOnTasks}}\" hint-placeholder-val=\"{{ false }}\">\n<dc-import name=\"Tasks\" hint-size=\"100%,1200px\"></dc-import>\n</sc-if>\n"
+  },
+  "daily.view.tab.tasks": {
+   "order": 10,
+   "file": "slots/daily.view.tab.tasks.frag"
+  },
+  "profile.hist.filter.tasks": {
+   "order": 10,
+   "text": "    /* «المهام ←» يفتح «سجل مهامك» القائم (لا تكرار) — ويُمحى ذيلُ #/profile/history إذ لم يعد «السجل» مفتوحاً */\n    tkOn &&\n      r.histFilters.push({\n        t: \"المهام ←\",\n        cls: \"pf-hf go\",\n        on: \"false\",\n        pick: () => {\n          this._pfHT(\"\");\n          this.tkLogOpen();\n        },\n      });\n"
+  },
+  "profile.hist.param.tasks": {
+   "order": 10,
+   "text": ", tkOn"
+  },
+  "profile.hist.arg.tasks": {
+   "order": 10,
+   "text": ", r.tkOn"
+  },
+  "profile.vals.empty.tasks": {
+   "order": 10,
+   "file": "slots/profile.vals.empty.tasks.frag"
+  },
+  "profile.vals.tasks": {
+   "order": 10,
+   "text": ", this._tkVals(r, i, a)"
+  },
+  "profile.methods.2.tasks": {
+   "order": 10,
+   "file": "slots/profile.methods.2.tasks.frag"
+  },
+  "profile.draft.busy.tasks": {
+   "order": 10,
+   "text": "this.state.tkBusy || "
+  },
+  "profile.methods.1.tasks": {
+   "order": 10,
+   "file": "slots/profile.methods.1.tasks.frag"
+  },
+  "profile.data.key.tasks": {
+   "order": 10,
+   "text": "        \"bassam_tasks_v1\",\n"
+  },
+  "profile.unmount.store.tasks": {
+   "order": 10,
+   "text": "    try {\n      window.removeEventListener(\"bassam:store\", this._pfOnStore);\n    } catch (t) {}\n"
+  },
+  "profile.unmount.net.tasks": {
+   "order": 10,
+   "text": "    try {\n      this._tkOnNet && window.removeEventListener(\"online\", this._tkOnNet);\n    } catch (t) {}\n"
+  },
+  "profile.unmount.timers.1.tasks": {
+   "order": 10,
+   "text": " clearInterval(this._tkT), clearTimeout(this._pfStoreT),"
+  },
+  "profile.unmount.timers.2.tasks": {
+   "order": 10,
+   "text": ", clearTimeout(this._tkRetryT)"
+  },
+  "profile.mount.store.tasks": {
+   "order": 10,
+   "text": "    this._pfOnStore = (t) => {\n      try {\n        const e = (t && t.detail) || {},\n          s = (e.keys ? e.keys : [e.key]).filter(Boolean).map(String);\n        if (s.length && !s.some((t) => \"bassam_tasks_v1\" === t || t.slice(-16) === \":bassam_tasks_v1\")) return;\n        (clearTimeout(this._pfStoreT),\n          (this._pfStoreT = setTimeout(() => {\n            this._pfAlive && this.setState({ tkNow: Date.now() });\n          }, 0)));\n      } catch (t) {}\n    };\n    try {\n      window.addEventListener(\"bassam:store\", this._pfOnStore);\n    } catch (t) {}\n"
+  },
+  "profile.mount.clock.tasks": {
+   "order": 10,
+   "text": "      (this._tkT = setInterval(() => this._tkClockTick(), 1e3)),\n"
+  },
+  "profile.view.card.tasks": {
+   "order": 10,
+   "file": "slots/profile.view.card.tasks.frag"
+  },
+  "profile.view.popups.tasks": {
+   "order": 10,
+   "file": "slots/profile.view.popups.tasks.frag"
+  },
+  "profile.css.tasks": {
+   "order": 10,
+   "file": "slots/profile.css.tasks.frag"
+  },
+  "nfo.watch.tasks": {
+   "order": 10,
+   "file": "slots/nfo.watch.tasks.frag"
+  },
+  "daily.tabBar.tasks": {
+   "order": 10,
+   "text": " + (TKn ? 1 : 0)"
+  },
+  "empGone.map": {
+   "order": 10,
+   "text": "'bassam_tasks_v1': tasksGoneOk"
+  },
+  "emp.confirm.tasks": {
+   "order": 10,
+   "text": " والمهام"
+  },
+  "nf.feed.known.tasks": {
+   "order": 10,
+   "text": ""
+  },
+  "activity.taskId.fn": {
+   "order": 10,
+   "text": "  function taskId(t) { return Array.isArray(t) ? 'T' + hash(String(t[13] || '') + '|' + String(t[14] || '') + '|' + String(t[8] || '') + '|' + (Array.isArray(t[7]) ? t[7].join(',') : '')) : ''; }\n"
+  },
+  "activity.taskId.export": {
+   "order": 10,
+   "text": " taskId: taskId,"
+  }
+ }
+}

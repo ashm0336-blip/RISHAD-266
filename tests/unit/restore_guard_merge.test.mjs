@@ -73,7 +73,7 @@ function snapshot(DB) {
   return JSON.stringify([DB.q('SELECT k,rev FROM revs ORDER BY k'), DB.q('SELECT k,v FROM meta ORDER BY k'), DB.q('SELECT * FROM ' + PROBE + ' ORDER BY department_id')]);
 }
 
-test('adjacent tagged guards fold into ordered CASE statements; untagged guards stay barriers in place', async () => {
+test('adjacent tagged guards fold into ordered CASE statements; untagged guards stay barriers in place', needs('custody'), async () => {
   const { W, env, build } = await setup(),
     original = build(),
     merged = W.rsMergeGuards(env, original);
@@ -89,7 +89,7 @@ test('adjacent tagged guards fold into ordered CASE statements; untagged guards 
   assert.deepEqual(W.rsMergeGuards(env, plain), plain);
 });
 
-test('merged guards trip for each original condition alone, with the same sentinel and no write', async () => {
+test('merged guards trip for each original condition alone, with the same sentinel and no write', needs('custody'), async () => {
   for (let i = -1; i < 6; i++) {
     const { W, env, DB, build, trips, sentinels } = await setup();
     if (i >= 0) trips[i]();
@@ -102,7 +102,7 @@ test('merged guards trip for each original condition alone, with the same sentin
   }
 });
 
-test('with two conditions tripped the merged guards raise the first sentinel in original order', async () => {
+test('with two conditions tripped the merged guards raise the first sentinel in original order', needs('custody'), async () => {
   for (let i = 0; i < 6; i++)
     for (let j = i + 1; j < 6; j++) {
       const { W, env, DB, build, trips, sentinels } = await setup();
@@ -115,7 +115,7 @@ test('with two conditions tripped the merged guards raise the first sentinel in 
     }
 });
 
-test('a guard whose literal contains a placeholder is not renumbered; it stays its own statement', async () => {
+test('a guard whose literal contains a placeholder is not renumbered; it stays its own statement', needs('custody'), async () => {
   const { W, env, DB } = await setup(),
     risky = W.rsWitness(env, PROBE, ['department_id'], [], "department_id='TEST_ONLY_?1'")[0],
     a = W.revGuard(env, 'TEST_ONLY_rev_a', 0),
@@ -145,7 +145,7 @@ db.execute('INSERT INTO revs VALUES(?,?)',(p['trip'],9))
 out['tripped']=run()
 print(json.dumps(out))
 `;
-test('long runs split within D1 limits (<=100 variables, <100 KB SQL, flat CASE) and still trip on the last member', async () => {
+test('long runs split within D1 limits (<=100 variables, <100 KB SQL, flat CASE) and still trip on the last member', needs('custody'), async () => {
   const { W, env } = await setup(),
     guards = Array.from({ length: 150 }, (_, i) => W.revGuard(env, 'TEST_ONLY_rev_' + i, 0)),
     merged = W.rsMergeGuards(env, guards);
@@ -168,3 +168,5 @@ test('long runs split within D1 limits (<=100 variables, <100 KB SQL, flat CASE)
   assert.equal(r.clean, 'ok');
   assert.match(r.tripped, /KIVO_REV_CONFLICT/);
 });
+
+import { needs } from './harness.mjs';

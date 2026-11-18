@@ -224,6 +224,66 @@
   {
    "tpl": "services/590-employees-import.js.tpl",
    "out": "src/services/590-employees-import.js"
+  },
+  {
+   "tpl": "workers/parts/018c-ancestry-rules.js.tpl",
+   "out": "workers/parts/018c-ancestry-rules.js"
+  },
+  {
+   "tpl": "workers/parts/019q-operations-people-tasks.js.tpl",
+   "out": "workers/parts/019q-operations-people-tasks.js"
+  },
+  {
+   "tpl": "workers/parts/056-enforce.js.tpl",
+   "out": "workers/parts/056-enforce.js"
+  },
+  {
+   "tpl": "workers/parts/062a-auth-routes.js.tpl",
+   "out": "workers/parts/062a-auth-routes.js"
+  },
+  {
+   "tpl": "services/320-dept-storage.js.tpl",
+   "out": "src/services/320-dept-storage.js"
+  },
+  {
+   "tpl": "modules/daily/logic.js.tpl",
+   "out": "src/modules/daily/logic.js"
+  },
+  {
+   "tpl": "modules/daily/view.html.tpl",
+   "out": "src/modules/daily/view.html"
+  },
+  {
+   "tpl": "modules/profile/logic.js.tpl",
+   "out": "src/modules/profile/logic.js"
+  },
+  {
+   "tpl": "modules/profile/view.html.tpl",
+   "out": "src/modules/profile/view.html"
+  },
+  {
+   "tpl": "modules/profile/helmet.css.tpl",
+   "out": "src/modules/profile/helmet.css"
+  },
+  {
+   "tpl": "services/442-notif-observer.js.tpl",
+   "out": "src/services/442-notif-observer.js"
+  },
+  {
+   "tpl": "workers/parts/019b5-save-transition.js.tpl",
+   "out": "workers/parts/019b5-save-transition.js"
+  },
+  {
+   "tpl": "modules/employees/view.html.tpl",
+   "out": "src/modules/employees/view.html"
+  },
+  {
+   "tpl": "modules/employees/logic.js.tpl",
+   "out": "src/modules/employees/logic.js"
+  },
+  {
+   "tpl": "modules/employees/helmet.css.tpl",
+   "out": "src/modules/employees/helmet.css"
   }
  ]
 }

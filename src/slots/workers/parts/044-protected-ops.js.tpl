@@ -100,8 +100,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
   })();
   /* KIVO_265 · H-1: العمودُ 23 في مخزن المهام للخادم وحده (018 taskXWhy) — قبل كلّ صلاحيةٍ ومسارٍ مختصر (holdsAllWrites)؛
      والمراجعةُ الموحّدة: المكلَّفُ بعد نشاط الموظف (R-1 · R-7 taskAsgWhy) والحسابُ النشط (R-2 taskAcctWhy) — 018 taskRawWhy */
-  if (nm === 'bassam_tasks_v1') { var xw9 = taskRawWhy(A, PV9.a(), PV9.b(), P.dept, ctx); if (xw9) return { ok: false, why: xw9 }; }
-  if (nm === 'bassam_employees_v1') { var xd9 = empDupWhy(A, PV9.a(), PV9.b(), P.dept, ctx); if (xd9) return { ok: false, why: xd9 }; }   /* KIVO_265 · أمن: 018 empDupWhy */
+@@SYS:canWrite.rawWhy.tasks@@  if (nm === 'bassam_employees_v1') { var xd9 = empDupWhy(A, PV9.a(), PV9.b(), P.dept, ctx); if (xd9) return { ok: false, why: xd9 }; }   /* KIVO_265 · أمن: 018 empDupWhy */
   /* الثوابت أولاً: الشكل الجذري · المجموعات المعلَنة · الهوية وتفرّدها ·
      مشروعية عملية الاعتماد — قبل التنظيف وقبل holdsAllWrites وقبل كل صلاحية */
   if (E9 || O9) {
@@ -109,11 +108,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
     if (inv9) return { ok: false, why: inv9 };
   }
   if (dreportCleanup(A, k, newVal, curVal, ctx)) return { ok: true };
-  if (custodyCleanup(A, k, newVal, curVal, ctx)) return { ok: true };
-@@SYS:cleanup.award.call@@  var cmv9 = custodyMoveOp(A, k, curVal, newVal, PV9);
-  if (cmv9 === true) return { ok: true };
-  if (cmv9 === false) return { ok: false, why: 'act' };
-  if (empGoneCleanup(A, k, newVal, curVal, ctx, PV9)) return { ok: true, prot: 'empDelete' };
+@@SYS:cleanup.custody.call@@@@SYS:cleanup.award.call@@@@SYS:move.custody.call@@  if (empGoneCleanup(A, k, newVal, curVal, ctx, PV9)) return { ok: true, prot: 'empDelete' };
   if (shiftRenameOk(A, k, newVal, curVal, ctx)) return { ok: true, prot: 'shiftRename' };
   /* الإلحاق المحض يُفحص قبل الصلاحيات: لا يكسره صاحب add+edit+del */
   if (E9 && E9.append && curVal != null && appendViolation(E9, alignOld(E9, PV9.a() === undefined ? null : PV9.a(), PV9.b()), PV9.b() === undefined ? null : PV9.b()))
@@ -147,6 +142,5 @@ function canWrite(A, k, newVal, curVal, ctx) {
     if (diffs9.length && diffs9.every(fn9)) return { ok: true };
   }
   if (R9.self === 'email' && newVal != null && selfEmailOnly(A, newVal, curVal)) return { ok: true };
-  if (R9.self === 'task' && newVal != null && selfTaskOnly(A, newVal, curVal)) return { ok: true };
-  return { ok: false, why: v9.why };
+@@SYS:canWrite.selfRule.tasks@@  return { ok: false, why: v9.why };
 }

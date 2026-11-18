@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import {createHash} from 'node:crypto';
-import {world as backend,D1,IDS,EKEYS,copy} from './custody_review_fx.mjs';
+import {world as backend,D1,IDS,EKEYS,copy} from './canonical_fx.mjs';
 import {installOperationalFixture,replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
 import {world as presentation} from './profile_world.mjs';
 import {ROOT} from './harness.mjs';

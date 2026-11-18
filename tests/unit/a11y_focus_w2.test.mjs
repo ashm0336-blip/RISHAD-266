@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { SRC } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 /* مرشِّحُ الطبقة كما هو في الإطار (_ovClassRe · _ovCand) — منسوخاً من المصدر إلى vm بلا تعديلٍ إلا this ⇐ O */
@@ -20,7 +21,7 @@ function ovCand() {
 }
 const el = (className, style = {}) => ({ className, style: Object.assign({ position: '', top: '', left: '', right: '', bottom: '' }, style) });
 
-test('DG-11 · مرشِّحُ طبقات الحوار يقبل طبقةَ «مهمة جديدة» (.tkf-ov — موضعُها في CSS) كما يقبل pf-ov وfd-ov — ولا يقبل صنفاً يشبهها', () => {
+test('DG-11 · مرشِّحُ طبقات الحوار يقبل طبقةَ «مهمة جديدة» (.tkf-ov — موضعُها في CSS) كما يقبل pf-ov وfd-ov — ولا يقبل صنفاً يشبهها', needs('tasks'), () => {
   const C = ovCand();
   assert.equal(C(el('tkf-ov')), true);
   assert.equal(C(el('x tkf-ov y')), true);
@@ -29,9 +30,9 @@ test('DG-11 · مرشِّحُ طبقات الحوار يقبل طبقةَ «مه
   assert.equal(C(el('', { position: 'fixed', top: '0px', left: '0px', right: '0px', bottom: '0px' })), true, 'النمطُ المضمَّن كما كان');
 });
 
-test('DG-11 · طبقةُ النافذة في القالب بصنف tkf-ov وموضعُها fixed ملءَ الشاشة في CSS — فيراها مديرُ التركيز «أعلى طبقة»: يضع التركيزَ في أول حقل ويحبس Tab ويعيده لزرّ «مهمة جديدة» عند الإغلاق', () => {
-  assert.match(rd('modules/tasks/view.html'), /<div onClick="\{\{closeNewTask\}\}" class="tkf-ov">/);
-  assert.match(rd('modules/tasks/helmet.css'), /\.tkf-ov\{position:fixed;inset:0;z-index:50;/);
+test('DG-11 · طبقةُ النافذة في القالب بصنف tkf-ov وموضعُها fixed ملءَ الشاشة في CSS — فيراها مديرُ التركيز «أعلى طبقة»: يضع التركيزَ في أول حقل ويحبس Tab ويعيده لزرّ «مهمة جديدة» عند الإغلاق', needs('tasks'), () => {
+  assert.match(rd('systems/tasks/client/view.html'), /<div onClick="\{\{closeNewTask\}\}" class="tkf-ov">/);
+  assert.match(rd('systems/tasks/client/helmet.css'), /\.tkf-ov\{position:fixed;inset:0;z-index:50;/);
   /* مديرُ التركيز نفسُه: حفظُ صاحب التركيز · أولُ حقل · حبسُ Tab · الإعادةُ عند الزوال */
   const s = rd('layouts/root-logic.js');
   assert.match(s, /this\._dlgStack\.push\(\{ el: top, prev \}\);/);

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """V7 · المرحلة 2 · د2 — مقبسُ الأنظمة (وقتَ البناء): القاعدةُ تعرف النظام من src/systems/<key>/system.json وحده.
-   python3 tools/systems.py [--list|--check|--write] [--src src]
+   python3 tools/systems.py [--list|--check|--write|--variants] [--src src]
      --list   الأنظمةُ الحاضرة بترتيبها وما تتطلبه (JSON)
      --check  system.json صالحٌ (المخطط · المفتاح = اسم المجلد · requires حاضرة وبلا دورة) والملفاتُ المحقونة = الملتزَم
      --write  يكتب الملفات المحقونة (يستدعيه tools/generate.py أيضاً قبل بقية التوليد)
@@ -28,6 +28,13 @@ def load(S):
         d = json.load(open(p, encoding='utf-8')); d['_dir'] = os.path.dirname(p); out.append(d)
     return sorted(out, key=lambda d: d.get('key', ''))
 
+def shared(S):
+    """القطعُ المشتركة المعلنة: {key: shared.json مع _dir} من src/systems/_shared/<key>/shared.json (د4-أ)."""
+    out = {}
+    for p in sorted(glob.glob(os.path.join(S, 'systems', '_shared', '*', 'shared.json'))):
+        d = json.load(open(p, encoding='utf-8')); d['_dir'] = os.path.dirname(p); out[os.path.basename(d['_dir'])] = d
+    return out
+
 def problems(S, systems=None):
     """ما يمنع قراءة الأنظمة: مخططٌ · مفتاحٌ ≠ المجلد · تكرار · requires غائبة أو دائرية · قطعةٌ بلا نص."""
     systems = load(S) if systems is None else systems; bad = []
@@ -50,6 +57,19 @@ def problems(S, systems=None):
             for it in (v if isinstance(v, list) else [v]):
                 if ('text' in it) == ('file' in it): bad.append('%s: slots.%s يحمل text أو file (واحداً منهما)' % (k, name))
                 elif 'file' in it and not os.path.isfile(os.path.join(d['_dir'], it['file'])): bad.append('%s: slots.%s ← %s غير موجود' % (k, name, it['file']))
+    # د4-أ: القطعُ المشتركة المعلنة — كلُّ ما يعلنه نظامٌ موجودٌ ويسمّيه مالكاً، وكلُّ مالكٍ حاضر يعلنها، وملفاتُها موجودة
+    pieces = shared(S)
+    for d in systems:
+        for s in d.get('shared') or []:
+            if s not in pieces: bad.append('%s: shared «%s» بلا src/systems/_shared/%s/shared.json' % (d.get('key'), s, s))
+            elif d.get('key') not in pieces[s].get('owners', []): bad.append('%s: shared «%s» لا يسمّيه مالكاً' % (d.get('key'), s))
+    for s, p in pieces.items():
+        if p.get('key') != s or p.get('kind') != 'shared': bad.append('_shared/%s/shared.json: key/kind' % s)
+        for f in p.get('files') or []:
+            if not os.path.isfile(os.path.join(p['_dir'], f)): bad.append('_shared/%s: %s غير موجود' % (s, f))
+        if not set(p.get('owners') or []) & set(keys): bad.append('قطعة مشتركة بلا مالك: %s — احذفها' % os.path.relpath(p['_dir'], os.path.dirname(S)).replace(os.sep, '/'))
+        for o in p.get('owners') or []:
+            if o in keys and s not in (next(d for d in systems if d.get('key') == o).get('shared') or []): bad.append('%s: مالكٌ للقطعة المشتركة «%s» ولا يعلنها (shared)' % (o, s))
     req = {d.get('key'): list(d.get('requires') or []) for d in systems}
     def cyc(k, seen):
         if k in seen: return True
@@ -120,7 +140,12 @@ def parts_order(S, PD, systems=None):
        file اسمٌ أو مسارٌ نسبيٌّ إلى PD."""
     systems = load(S) if systems is None else systems
     base = json.load(open(os.path.join(PD, '..', 'parts.base.json'), encoding='utf-8'))['parts']; ins = {}
-    def entry(f, p): return dict({'file': f, 'lines': None, 'bytes': None, 'sha256': None}, **({'head': p['head']} if 'head' in p else {}))
+    def entry(f, p):
+        e = {'file': f}
+        if 'new' in p: e['new'] = p['new']       # د4-ب: وصفُ الجزء كما كان في سجل القاعدة قبل نقله
+        if 'new' not in p: e['lines'] = None
+        e.update({'bytes': None, 'sha256': None}); e.update({'head': p['head']} if 'head' in p else {})
+        return e
     for d in systems:
         for p in d['server'].get('parts', []):
             f = os.path.relpath(os.path.join(d['_dir'], p['file']), PD).replace(os.sep, '/')
@@ -147,6 +172,7 @@ REGEN = [  # ما يُعاد توليدُه حين يتبدّل حضورُ نظ�
     ['tools/perm_tree.py', 'emit'],            # د3: شجرةُ الصلاحيات (perm-tree24.json) من السجلّ المجموع والصفحات الحاضرة — قبل المواثيق لأنها تقرؤها
     ['tools/module_charter.py', '--write'],   # حقلُ «data» في مواثيق الوحدات مشتقٌّ من المصدر المولَّد
     ['tools/generate.py', '--src', 'src'],     # بيانُ الصفحات (manifests) مشتقٌّ من المواثيق — يُولَّد بعدها
+    ['tools/route_registry.py', '--write'],   # د4-ج: docs/routes.md تقرأ المواثيقَ وشجرةَ الصلاحيات المولَّدتين أعلاه (تبويبٌ يغيب مع نظامه يبدّل سطرَ صفحته) — تُكتب ثانيةً بعدهما
     ['tools/trace.py'],                        # مصفوفةُ التتبّع (docs/traceability.md) تقرأ الكودَ والاختبارات
 ]
 KEEP_EOL = {'tools/api_routes.py': 'docs/api-routes.md', 'tools/trace.py': 'docs/traceability.md'}   # الأداةُ تكتب LF والوثيقةُ الملتزَمة CRLF (.gitattributes: -text) — تُحفظ نهاياتُ سطورها
@@ -193,6 +219,21 @@ def main(argv):
         if rc == 0: prune(S)
         return rc
     systems = load(S)
+    if '--variants' in argv:
+        # د4-أ: نصُّ كل ملفٍ محقون كما يخرج بغياب الأنظمة — بلا أي نظام، ثم بغياب كل نظامٍ وحده (ومعه من يتطلبه). لا يكتب شيئاً.
+        #       [{gone: [مفاتيح الغائب], files: {المسار: النص}}] — يستعمله فحصُ قائمة الاستثناء (tests/removal/names_allow.mjs)
+        res = []
+        def dependents(k):
+            gone = {k}
+            while True:
+                more = {d['key'] for d in systems if d['key'] not in gone and gone & set(d.get('requires') or [])}
+                if not more: return gone
+                gone |= more
+        cases = [set(d['key'] for d in systems)] + [dependents(d['key']) for d in systems]
+        for gone in [g for i, g in enumerate(cases) if g and g not in cases[:i]]:
+            frags = fragments(S, [d for d in systems if d['key'] not in gone])
+            res.append({'gone': sorted(gone), 'names': [n for d in systems if d['key'] in gone for n in d.get('names') or []], 'files': {t['out']: expand(open(os.path.join(S, 'slots', t['tpl']), encoding='utf-8', newline='').read(), frags) for t in manifest(S) if t['out'].endswith('.js')}})
+        print(json.dumps(res, ensure_ascii=False)); return 0
     if '--list' in argv:
         print(json.dumps([{'key': d['key'], 'name': d.get('name'), 'requires': d.get('requires') or []} for d in systems], ensure_ascii=False)); return 0
     bad = problems(S, systems)

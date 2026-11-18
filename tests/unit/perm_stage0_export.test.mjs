@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { SRC } from './harness.mjs';
+import { needs } from './harness.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const REG = (() => { const ctx = { KIVO: {} }; vm.createContext(ctx); vm.runInContext(rd('permissions/340-registry-v24-9.js') + '\n;globalThis.__R = KIVO_REGISTRY;', ctx); return ctx.__R; })();
@@ -42,7 +43,7 @@ function can(sheet, opts = {}) {
 const EXP = { 'emps/data': ['view', 'export'], tasks: ['view', 'add', 'export'], staff: ['view', 'export'], dreport: ['view', 'export'] };
 const NOEXP = { 'emps/data': ['view'], tasks: ['view', 'add'], staff: ['view'], dreport: ['view'] };
 
-test('M3 · السجلّ يعرّف byKey وذرّاتُ التصدير أعلامُ ميزات (converted_to_feature) لا مفاتيحَ مسجّلة — شرطُ تطبيق الفلتر', () => {
+test('M3 · السجلّ يعرّف byKey وذرّاتُ التصدير أعلامُ ميزات (converted_to_feature) لا مفاتيحَ مسجّلة — شرطُ تطبيق الفلتر', needs('tasks'), () => {
   assert.ok(REG.byKey && Object.keys(REG.byKey).length === REG.keys.length, 'R.byKey');
   for (const leaf of Object.keys(EXP)) {
     const at = REG.atoms[leaf + ':export'];

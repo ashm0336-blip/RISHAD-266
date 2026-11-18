@@ -51,7 +51,7 @@ test('the review before saving: what will be added and withdrawn, by name and ac
   assert.deepEqual(JSON.parse(JSON.stringify(kd)), { add: [{ key: 'task.view', name: 'عرض المهام' }], drop: [{ key: 'task.create', name: 'إنشاء مهمة' }], n: 2 });
 });
 
-test('enforce: a new leaf grant is its first view key alone (p24.primView) — every assignable page and lens has one', needs('irshad'), () => {
+test('enforce: a new leaf grant is its first view key alone (p24.primView) — every assignable page and lens has one', needs('custody', 'irshad', 'tasks'), () => {
   const byKey = {}, byOwner = {}; REG.registry.forEach((e) => { byKey[e.key] = e; (byOwner[e.owner] = byOwner[e.owner] || []).push(e.key); });
   const c = load(['p24PrimView'], Object.assign(ctx0(), { p24R: () => ({ byKey, byOwner }) }));
   assert.equal(c.p24PrimView('tasks'), 'task.view'); assert.equal(c.p24PrimView('staff'), 'staff.view'); assert.equal(c.p24PrimView('irshad/records'), 'ir.rec.view');

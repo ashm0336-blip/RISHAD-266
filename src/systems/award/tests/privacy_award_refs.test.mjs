@@ -12,6 +12,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { privWorld, setSheet, login, suCk, readOp, save, rec, stored, put, KE, MODES } from '../../../../tests/unit/privacy_fx.mjs';
+import { needs } from '../../../../tests/unit/harness.mjs';
 
 const NID3 = '1999999203', C3 = 'tst_e_p0_3';
 const KS = 'bsdept:tst_d1:bassam_staffing_v3', KPL = 'bsdept:tst_d1:bassam_plan_v1';
@@ -49,7 +50,7 @@ for (const mode of MODES) {
     assert.equal(r2(dm.j).phone, AWC.phone, 'unit manager');
   });
 
-  test('PRIVACY B exports [' + mode + ']: award and custody exports of a backup.create holder carry no personal fields; the manager exports them', async () => {
+  test('PRIVACY B exports [' + mode + ']: award and custody exports of a backup.create holder carry no personal fields; the manager exports them', needs('custody'), async () => {
     const w = await privWorld(mode);
     const su = await suCk(w);
     await awEdit(w, su, 'tstaw2', AWC);

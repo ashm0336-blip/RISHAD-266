@@ -8,7 +8,7 @@
    is dropped only for a node the save adds WITHOUT a record for it and with nothing placed under it (a node created by hand). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, stored, putKV, D as U2 } from './tasks_fx.mjs';
+import { world, stored, putKV, D as U2 } from './world_fx.mjs';
 import { needs } from './harness.mjs';
 
 const KG = 'bassam_gdepts_v1', KD = 'bassam_depts_v1', KP = 'bassam_perms_v1', X = 'TEST_ONLY_X', EK = 'tst_e_emp1';

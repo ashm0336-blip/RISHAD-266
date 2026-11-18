@@ -11,7 +11,7 @@ import { TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
    البياناتُ اصطناعيةٌ كلُّها (tasks_fx · TEST_ONLY). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, workerUnderTest, ME, MATE, D, KE, TAG, stored, putKV, addAccount, operationSaveBody } from './tasks_fx.mjs';
+import { world, workerUnderTest, ME, MATE, D, KE, TAG, stored, putKV, addAccount, operationSaveBody } from './world_fx.mjs';
 
 const WU = workerUnderTest();
 const K = 'bassam_auth_users_v1';

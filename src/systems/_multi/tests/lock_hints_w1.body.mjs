@@ -9,7 +9,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SRC } from '../../../../tests/unit/harness.mjs';
 import { page, EV, NOW } from '../../../../tests/unit/w1_pages.mjs';
-import { attachTaskOperations } from '../../../../tests/unit/tasks_vm_operations_fx.mjs';
+import { attachTaskOperations } from '../../../../tests/unit/vm_operations_fx.mjs';
+import { needs } from '../../../../tests/unit/harness.mjs';
 /* Schema 10: dreport/tasks/staff read their business resources through the real Operations service (src/api/280),
    preloaded from an explicit in-memory transport (tasks_vm_operations_fx) — never from browser storage. */
 async function opsPage(slug, o = {}) {
@@ -73,7 +74,7 @@ function szHintPage(can, {reason='TEST_ONLY hint reason',denied=false}={}) {
 
 for (const slug of ['irshad', 'seized']) {
   const noun = slug === 'irshad' ? 'تقريرك' : 'محضرك';
-  test('IRSZ-4 · ' + slug + ': بلا «الاعتماد» لا دعوةَ إلى نقرةٍ مزدوجة — التلميحُ والشرحُ وبطاقةُ الشهر وخانةُ اليوم تذكر السبب، والنقرةُ المزدوجة تشرحه ولا تفتح', () => {
+  test('IRSZ-4 · ' + slug + ': بلا «الاعتماد» لا دعوةَ إلى نقرةٍ مزدوجة — التلميحُ والشرحُ وبطاقةُ الشهر وخانةُ اليوم تذكر السبب، والنقرةُ المزدوجة تشرحه ولا تفتح', needs('tasks'), () => {
     const P = slug==='irshad'?irHintPage(NOAP):szHintPage(NOAP);
     P.c.setState({ irMonth: 4, irDay: 3 });
     let V = P.V();
@@ -96,7 +97,7 @@ for (const slug of ['irshad', 'seized']) {
     /* الشهرُ الجاري غيرُ المقفل: لا شيء يُفتح ⇒ لا رسالة */
     V.irMonths[4].dbl(EV); assert.equal(P.toasts.length, 2);
   });
-  test('IRSZ-4 · ' + slug + ': من يملك «الاعتماد» يرى الإرشادَ كما كان وتفتح نقرتُه المزدوجة الشهرَ واليومَ بلا رسالة', async () => {
+  test('IRSZ-4 · ' + slug + ': من يملك «الاعتماد» يرى الإرشادَ كما كان وتفتح نقرتُه المزدوجة الشهرَ واليومَ بلا رسالة', needs('tasks'), async () => {
     const P = slug==='irshad'?irHintPage(ALL):szHintPage(ALL);
     P.c.setState({ irMonth: 4, irDay: 3 });
     let V = P.V();
@@ -128,7 +129,7 @@ for (const slug of ['irshad', 'seized']) {
   });
 }
 
-test('IRSZ-4 · الاسترشاد: إلغاء السبب أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',async()=>{
+test('IRSZ-4 · الاسترشاد: إلغاء السبب أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',needs('tasks'), async()=>{
   for(const options of [{reason:''},{denied:true}]){
     const P=irHintPage(ALL,options);P.c.setState({irMonth:4,irDay:3});P.V().irMonths[3].dbl(EV);await P.settle();
     assert.equal(P.reasons.length,1);assert.equal(P.requests.filter(r=>r.options.method==='POST').length,options.denied?1:0);
@@ -137,7 +138,7 @@ test('IRSZ-4 · الاسترشاد: إلغاء السبب أو رفض الخاد
   }
 });
 
-test('IRSZ-4 · المضبوطات: إلغاء السبب أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',async()=>{
+test('IRSZ-4 · المضبوطات: إلغاء السبب أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',needs('tasks'), async()=>{
   for(const options of [{reason:''},{denied:true}]){
     const P=szHintPage(ALL,options);P.c.setState({irMonth:4,irDay:3});P.V().irMonths[3].dbl(EV);await P.settle();
     assert.equal(P.reasons.length,1);assert.equal(P.requests.filter(r=>r.options.method==='POST').length,options.denied?1:0);
@@ -146,7 +147,7 @@ test('IRSZ-4 · المضبوطات: إلغاء السبب أو رفض الخاد
   }
 });
 
-test('IRSZ-4 · التقرير اليومي: بلا «الاعتماد» خانةُ اليوم المنقضي وبطاقةُ الشهر بلا «نقرة مزدوجة» · والنقرةُ تشرح ولا تفتح نافذةً يُرفض زرُّها', async () => {
+test('IRSZ-4 · التقرير اليومي: بلا «الاعتماد» خانةُ اليوم المنقضي وبطاقةُ الشهر بلا «نقرة مزدوجة» · والنقرةُ تشرح ولا تفتح نافذةً يُرفض زرُّها', needs('tasks'), async () => {
   const P = await opsPage('dreport', { can: NOAP });
   P.c.setState({ rpM: 5, rpD: 9 });
   let V = P.V();
@@ -164,7 +165,7 @@ test('IRSZ-4 · التقرير اليومي: بلا «الاعتماد» خان�
   assert.deepEqual(J(Q.c.state.drRt), { d: 3, open: true }, 'من يملك الاعتماد: نافذةُ الفتح كما كانت'); assert.equal(Q.toasts.length, 0);
 });
 
-test('IRSZ-4 · المهام: شارةُ اليوم وتلميحُ الشهر ومفتاحُ الألوان وبطاقةُ الشهر بحسب الصلاحية · ونقرةُ الشهر المقفل تشرح', async () => {
+test('IRSZ-4 · المهام: شارةُ اليوم وتلميحُ الشهر ومفتاحُ الألوان وبطاقةُ الشهر بحسب الصلاحية · ونقرةُ الشهر المقفل تشرح', needs('tasks'), async () => {
   const P = await opsPage('tasks', { can: NOAP });
   P.c.setState({ perPage: 0, tkDaySel: { k: '1448-5', d: 3 } });
   let V = P.V();
@@ -193,7 +194,7 @@ async function staffPage(can) {
   /* صفر 1448: منقضٍ بجدولٍ غيرِ معتمد · ربيع الأول: منقضٍ بجدولٍ معتمد · ربيع الآخر: منقضٍ بلا جدول · جمادى الأولى (الجاري): مسودة · جمادى الآخرة: لا جدول */
   return opsPage('staff', { can, store: { bassam_employees_v1: EMPS, bassam_staffing_v3: { '1448-2': SCHED, '1448-3': SCHED, '1448-5': SCHED }, bassam_staffing_locks_v1: { '1448-3': true } } });
 }
-test('ES-8 · شارةُ الجدول الشهري: وجودُ الجدول أولاً — المنقضي بلا جدول «لا يوجد جدول · الشهر مقفل» رمادية (كان «معتمد ومقفل» خضراء)', async () => {
+test('ES-8 · شارةُ الجدول الشهري: وجودُ الجدول أولاً — المنقضي بلا جدول «لا يوجد جدول · الشهر مقفل» رمادية (كان «معتمد ومقفل» خضراء)', needs('tasks'), async () => {
   const P = await staffPage(ALL), at = (m) => { P.c.setState({ month: m }); return P.V(); };
   let V = at(4);
   assert.equal(V.badgeKind, 'none'); assert.equal(V.badgeLabel, 'جدول ربيع الآخر 1448 هـ — لا يوجد جدول · الشهر مقفل');
@@ -205,7 +206,7 @@ test('ES-8 · شارةُ الجدول الشهري: وجودُ الجدول أو
   V = at(6); assert.equal(V.badgeKind, 'none'); assert.equal(V.badgeLabel, 'جدول جمادى الآخرة 1448 هـ — لا يوجد جدول', 'شهرٌ قادمٌ غيرُ مقفل: بلا «الشهر مقفل»');
 });
 
-test('IRSZ-4 · الجدول الشهري: بلا «الاعتماد» بطاقاتُ الشهر وشرحُ القفل بلا «نقرة مزدوجة» والنقرةُ تشرح · ومن يملكه كما كان', async () => {
+test('IRSZ-4 · الجدول الشهري: بلا «الاعتماد» بطاقاتُ الشهر وشرحُ القفل بلا «نقرة مزدوجة» والنقرةُ تشرح · ومن يملكه كما كان', needs('tasks'), async () => {
   const P = await staffPage(NOAP);
   P.c.setState({ month: 4 });
   let V = P.V();

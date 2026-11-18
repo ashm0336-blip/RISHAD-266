@@ -162,7 +162,7 @@ test('the two views: the bar is the slim one with its conditional refresh button
     assert.match(view, /<sc-if value="\{\{bcNotice\}\}" hint-placeholder-val="\{\{ false \}\}"><div class="ps-bar" role="status"><span>\{\{bcMessage\}\}<\/span><sc-if value="\{\{bcCanRefresh\}\}"><button onClick="\{\{bcRefresh\}\}">تحديث البيانات<\/button><\/sc-if><\/div><\/sc-if>/);
     assert.equal(view.split('ref="{{bcStates}}"').length, 2, module + ': one component host');
   }
-  const cloud = fs.readFileSync(new URL('../../../../src/modules/business-cloud.js', import.meta.url), 'utf8');
+  const cloud = fs.readFileSync(new URL('../../_shared/business/business-cloud.js', import.meta.url), 'utf8');
   assert.doesNotMatch(cloud, /جارٍ قراءة البيانات من الخادم/, 'the loading text left the bar');
   assert.doesNotMatch(cloud, /localStorage|sessionStorage|indexedDB/, 'kept content lives in the component instance only');
   assert.ok(ROOT);

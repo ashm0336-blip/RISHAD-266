@@ -169,7 +169,7 @@ for (const mode of ['legacy', 'enforce']) {
 
 /* (c) the verified restore route (/api/backup/restore · 019d) on the shared restore fixture */
 const { world: restoreWorld, ok } = await import('./atomic_restore_review_fx.mjs');
-const { G1, G2, D1, D2 } = await import('./custody_review_fx.mjs');
+const { G1, G2, D1, D2 } = await import('./canonical_fx.mjs');
 const RX = 'TEST_ONLY_restored_node';
 async function restoreCase() {
   const B = await restoreWorld(), DB = B.DB;
@@ -178,7 +178,7 @@ async function restoreCase() {
   const nodes = read(DB, KG); assert.ok(!nodes.some((n) => n.id === RX));
   return { B, DB, P0, nodes, withRX: JSON.stringify(nodes.concat([{ id: RX, name: 'TEST_ONLY restored node', kind: 'إدارة عامة' }])) };
 }
-test('(c) a full restore that brings its own registry keeps it verbatim — also for the node it brings back', needs('award', 'dstats', 'seized'), async () => {
+test('(c) a full restore that brings its own registry keeps it verbatim — also for the node it brings back', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const { B, DB, P0, withRX } = await restoreCase();
   const mine = J(P0); mine.caps[RX] = ['tasks', 'admin']; delete mine.subs[RX]; delete mine.lenses[RX]; delete mine.capOwn[RX];   /* the copy's own ceiling for RX */
   ok(await B.restore(await B.body({ keys: { [KG]: withRX, [KP]: JSON.stringify(mine) } })));
@@ -189,7 +189,7 @@ test('(c) a full restore that brings its own registry keeps it verbatim — also
   ok(await C2.B.restore(await C2.B.body({ keys: { [KG]: C2.withRX } })));   /* the fixture's copy = the stored registry */
   assert.deepEqual(read(C2.DB, KP), C2.P0);
 });
-test('(c) a restore that brings the structure without a registry does not revive a stored leftover', needs('award', 'dstats', 'seized'), async () => {
+test('(c) a restore that brings the structure without a registry does not revive a stored leftover', needs('award', 'custody', 'dstats', 'seized'), async () => {
   const { B, DB, P0, withRX } = await restoreCase();
   const body = await B.body({ keys: { [KG]: withRX } });
   delete body.keys[KP]; body.manifest.keys = Object.keys(body.keys);

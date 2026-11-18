@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { DatabaseSync } from 'node:sqlite';
 import { peopleTaskDocuments } from './operational_people_tasks_fx.mjs';
+import { needs } from './harness.mjs';
 const C = vm.createContext({});
 for (const path of ['workers/parts/019o-operational-codec.js', 'workers/parts/019p-operations-scheduling.js', 'workers/parts/019q-operations-people-tasks.js']) vm.runInContext(fs.readFileSync(path, 'utf8'), C, { filename: path });
 const all = C.ocPrepare(C.OC_SCHEDULING_RESOURCES.concat(C.OC_PEOPLE_TASK_RESOURCES));
@@ -25,7 +26,7 @@ for (const definition of C.OC_PEOPLE_TASK_RESOURCES) test('Lossless typed SQL ro
     assert.equal(C.ocInflate(prepared, C.ocConvert(prepared, 'TEST_ONLY_DEPT', resource, null, true)).value, null);
   } finally { db.close(); }
 });
-test('Unsupported people/report/task fields and tuple overflow fail before SQL; no unknown historical JSON is discarded', () => {
+test('Unsupported people/report/task fields and tuple overflow fail before SQL; no unknown historical JSON is discarded', needs('tasks'), () => {
   const check = (resource, value, pattern) => assert.throws(() => C.ocConvert(C.ocForResource(all, resource), 'TEST_ONLY_DEPT', resource, value), pattern);
   check('bassam_options_v1', { job: [] }, /unknown-field/);
   check('bassam_dreport_v1', { __lv: { unproven: [] } }, /map-key/);

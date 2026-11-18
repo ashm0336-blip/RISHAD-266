@@ -49,8 +49,7 @@ function canWriteEnf(A, k, newVal, curVal, ctx) {
   if (b === undefined || b === null) return enfNo('shape');
   /* KIVO_265 · H-1: العمودُ 23 في مخزن المهام للخادم وحده (018 taskXWhy — كالوضع القديم في 044) — قبل التصنيف (059 enfDecide) وكلِّ مفتاح؛
      والمراجعةُ الموحّدة: المكلَّفُ بعد نشاط الموظف (R-1 · R-7) والحسابُ النشط (R-2) — 018 taskRawWhy */
-  if (rn === 'bassam_tasks_v1') { var xwE = taskRawWhy(A, a, b, P.dept, ctx); if (xwE) return enfNo(xwE); }
-  if (rn === 'bassam_employees_v1') { var xdE = empDupWhy(A, a, b, P.dept, ctx); if (xdE) return enfNo(xdE); }   /* KIVO_265 · أمن: 018 empDupWhy */
+@@SYS:enf.canWrite.rawWhy.tasks@@  if (rn === 'bassam_employees_v1') { var xdE = empDupWhy(A, a, b, P.dept, ctx); if (xdE) return enfNo(xdE); }   /* KIVO_265 · أمن: 018 empDupWhy */
   return enfDecide(A, k, rn, P.dept, a, b, curVal, newVal, ctx, X);
 }
 /* «authorize» في وضع الإنفاذ لمن يسأل عن فعلٍ على مورد (رقمُ المراجعة · صاحبُ الصورة): أيُّ مفتاحٍ كتابيٍّ مربوطٍ بالمورد محمول */
