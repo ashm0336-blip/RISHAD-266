@@ -313,7 +313,7 @@ class Component extends DCLogic {
          الصفحات التي تستمع بنفسها (المتابعة اليومية، التقرير اليومي، المهام) تتحدّث في مكانها؛ والباقي يُحدَّث
          بالمفتاح: خطّاف _bsLiveReload لمن يحمل بياناته في حالته، ثم رسمٌ خفيفٌ واحد يمرّ عبر shouldComponentUpdate —
          ولا يُقاطَع المستخدم وهو يكتب أو أمام نافذة: يُؤجَّل حتى يفرغ. */
-      this._onRemote = (ev) => { try { const ks = (ev.detail && ev.detail.keys) || []; if (this._permKeys(ks)) this._permsChanged(); else this._liveQueue(ks, (ev.detail && ev.detail.foreign) || []); } catch (e) {} };
+      this._onRemote = (ev) => { try { const ks = (ev.detail && ev.detail.keys) || []; if (ev.detail && ev.detail.azSame) { try { KIVO.BassamPerm && KIVO.BassamPerm._bust(); } catch (e) {} this.setState({ tick: (this.state.tick || 0) + 1 }); } else if (this._permKeys(ks)) this._permsChanged(); else this._liveQueue(ks, (ev.detail && ev.detail.foreign) || []); } catch (e) {} };
       window.addEventListener("bassam:remote", this._onRemote);
       /* ═══ الجرس: تنبيه محلي (أوقعته أنا) أو وارد من الخادم ═══ */
       this._onNotif = (ev) => { try {

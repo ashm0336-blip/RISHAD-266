@@ -1572,7 +1572,12 @@
         try { same9 = JSON.stringify(was9) === JSON.stringify(z.me); } catch (e) { /* مقارنةٌ فقط */ }
         KIVO.__BS_AUTHZ = z.me;
         /* إشارةُ az تصل عند أي تغييرٍ في الحسابات/الهيكل/المنصة من أي مستخدم؛ إن لم يتغيّر وصفُ صلاحياتي فلا شيء يُعاد ولا يُبلَّغ */
-        if (same9) { liveLog9('az-unchanged', 'إشارةُ صلاحياتٍ بلا تغييرٍ في وصفي — لا إسقاط'); return; }
+        if (same9) {
+          liveLog9('az-unchanged', 'إشارةُ صلاحياتٍ بلا تغييرٍ في وصفي — لا إسقاط');
+          /* الرسمُ الخفيف الذي كان يتبع كلَّ إشارة يبقى (قوائمُ الحسابات والهيكل تتحدّث به) — بلا إسقاطٍ ولا رسالة «تحدّثت صلاحياتك» */
+          try { window.dispatchEvent(new CustomEvent("bassam:remote", { detail: { keys: ["bassam_perms_v1"], v: BOOT.v, azSame: true } })); } catch (e) {}
+          return;
+        }
         try { window.dispatchEvent(new CustomEvent("bassam:authz", { detail: z.me })); } catch (e) {}
         try { window.dispatchEvent(new CustomEvent("bassam:remote", { detail: { keys: ["bassam_perms_v1"], v: BOOT.v } })); } catch (e) {}
         liveLog9('az-changed', 'تغيّر وصفُ صلاحياتي — تُعاد قراءةُ مفاتيحي والصفحةُ معروضة');
