@@ -978,7 +978,10 @@
   function liveLog(kind, name, why, keys) {
     try { console.info("[bs-live] " + kind + " · " + (name || "-") + " · " + (why || "") + (keys && keys.length ? " · " + keys.join(",") : "")); } catch (e) {}
   }
-  if (typeof KIVO !== "undefined") KIVO.__bsLiveLog = liveLog;
+  if (typeof KIVO !== "undefined") {
+    KIVO.__bsLiveLog = liveLog;
+    KIVO.__bsLiveMount = function (name) { const n = liveMounts[name] = (liveMounts[name] || 0) + 1; if (n > 1) liveLog("remount", name, "تركيبٌ رقم " + n + " — " + (typeof location !== "undefined" ? location.hash : "")); };
+  }
   function pageContextKey(name) {
     const context = pageContext(name);
     return context ? JSON.stringify([context.state, context.dept]) : "";
@@ -1145,8 +1148,8 @@
         }
       }
       componentDidMount() {
-        { const n = liveMounts[this.__name] = (liveMounts[this.__name] || 0) + 1; if (n > 1) liveLog("remount", this.__name, "تركيبٌ رقم " + n + " — " + (typeof location !== "undefined" ? location.hash : "")); }
         this.__bsSeedCommit();
+        try { if (KIVO.__bsLiveMount) KIVO.__bsLiveMount(this.__name); } catch (e) {}   /* سجلٌّ تشخيصي: إعادةُ تركيب */
         registry.get(this.__name).subs.add(this.__sub);
         try {
           this.logic.componentDidMount();

@@ -953,8 +953,9 @@
       return operationKey9(key) && known && known.stamp && operationSame9(known.stamp) && (known.state === 'denied' || ((known.state === 'ready' || known.state === 'absent') && known.epoch === operationEpoch9));
     });
   }
-  /* كان هنا: كلُّ حدث bassam:authz يُسقط كلَّ قراءات العمليات (فتُهدم الصفحةُ المعروضة). الآن: إشارةُ az تُقارَن أولاً (authzSync9)،
-     وإن تغيّر وصفُ صلاحياتي فعلاً أُعيدت قراءةُ مفاتيحي في مكانها (readSet9)؛ ولا إسقاطَ إلا إن فشلت تلك الإعادة. */
+  /* تغيّرُ صلاحياتي الفعلي يُسقط قراءات العمليات كما كان (المسوداتُ لا تتبنّى صلاحيةً جديدة بصمت · جيلٌ جديد). الجديد: الحدثُ لا يُطلَق
+     إلا إن تغيّر وصفُ صلاحياتي فعلاً (authzSync9)، والصفحةُ المعروضة لا تُهدم بالإسقاط — تبقى شجرتُها حتى تصل القراءةُ الجديدة (050). */
+  window.addEventListener('bassam:authz', function () { operationInvalidate9(); });
   function liveLog9(kind, why, keys) { try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog(kind, 'operations', why, keys); } catch (e) { /* تشخيصٌ فقط */ } }
   // Only this closure can prove that a dispatched change event already has a
   // confirmed typed read. Arbitrary/custom remote events still invalidate.
@@ -1574,9 +1575,8 @@
         if (same9) { liveLog9('az-unchanged', 'إشارةُ صلاحياتٍ بلا تغييرٍ في وصفي — لا إسقاط'); return; }
         try { window.dispatchEvent(new CustomEvent("bassam:authz", { detail: z.me })); } catch (e) {}
         try { window.dispatchEvent(new CustomEvent("bassam:remote", { detail: { keys: ["bassam_perms_v1"], v: BOOT.v } })); } catch (e) {}
-        /* KIVO_264 · D-4: تغيّر وصفُ صلاحياتي ⇒ تُجدَّد بياناتي في مكانها؛ وإن تعذّر التجديد أُسقطت (لا تبقى بياناتٌ بصلاحيةٍ قديمة) */
-        liveLog9('az-changed', 'تغيّر وصفُ صلاحياتي — تُعاد قراءةُ مفاتيحي في مكانها');
-        readSet9(true).then(function (res9) { if (!res9 || res9.ok !== 1) { if (sx9 || bye9) return; liveLog9('drop', 'تعذّرت إعادةُ القراءة بعد تغيّر الصلاحيات'); operationInvalidate9(); } });
+        liveLog9('az-changed', 'تغيّر وصفُ صلاحياتي — تُعاد قراءةُ مفاتيحي والصفحةُ معروضة');
+        readSet9(true);   /* KIVO_264 · D-4: تغيّر وصفُ صلاحياتي ⇒ تُجدَّد بياناتي */
       }).catch(function () { azBusy9 = false; });
     }
     function look9() {
