@@ -6531,7 +6531,7 @@ function nfDenyBody(txt, vars) {
     has = function (k) {
       return Object.prototype.hasOwnProperty.call(v, k) && v[k] != null && String(v[k]) !== "";
     };
-  if (t === NF_TYPES.sc_deny.txt) {
+  if (t === NF_TYPES.sc_deny.txt || t === NF_REASON_TXT) {
     if (!has("الصفحة")) t = t.replace(" في صفحة «{الصفحة}»", "");
     if (!has("الدور") && !has("الإدارة")) t = t.replace(" ({الدور} — {الإدارة})", "");
     else if (!has("الإدارة")) t = t.replace(" — {الإدارة}", "");
@@ -8382,7 +8382,7 @@ async function cuRestorePermission(A, dept, opt) {
 async function cuPlanRestore(env, A, domain, opt) {
   cuShape(opt, ['dept', 'base', 'scope', 'mode', 'reason', 'finalKeys']);
   var dept = cuString(opt.dept, 200, false);
-  cuString(opt.reason, 300, false);
+  cuString(opt.reason, 300, reasonExempt(A));   /* السببُ الفارغ يُقبل من مدير المنصة وحده (016 reasonExempt)؛ حدُّ الطول للجميع */
   if (opt.mode !== 'replace') throw cuError('custody-restore-mode');
   if (['dept', 'full'].indexOf(opt.scope) < 0) throw cuError('custody-restore-scope');
   if (!Number.isSafeInteger(opt.base) || opt.base < 0) throw cuError('custody-restore-base');
@@ -8414,7 +8414,7 @@ async function cuPlanRestore(env, A, domain, opt) {
       before: { items: before.items.length, issues: before.issues.length, moves: before.moves.length },
       after: { items: rows.items.length, issues: rows.issues.length, moves: rows.moves.length },
     },
-    metadata: { departmentId: dept, kind: 'restore-replace', partialSnapshot: false, reason: String(opt.reason).slice(0, 300) },
+    metadata: { departmentId: dept, kind: 'restore-replace', partialSnapshot: false, reason: reasonLogged(A, opt.reason) },
   };
 }
 async function cuExport(env, A, url) {
@@ -20265,7 +20265,7 @@ async function dsDomainCommit(env, A, body, ip) {
   var rev = await nextRev(env), meta = ip || {};
   st.unshift(revGuard(env, K_DSTATS, current.rev));
   st.push(env.DB.prepare('INSERT INTO revs (k,rev) VALUES (?1,?2) ON CONFLICT(k) DO UPDATE SET rev=excluded.rev').bind(K_DSTATS, rev));
-  st.push(audEvStmt(env, { cid: 'dstats_' + rev, ts: Date.now(), uid: A.u.id, un: '', dept: '', k: K_DSTATS, rev: rev, etype: 'dataset', eid: 'daily-stats', ename: 'الإحصائيات اليومية', act: historical ? 'import' : 'updated', ctx: JSON.stringify({ domain: 'daily-stats', reason: String(body.reason || '').slice(0, 300) }), bef: '', aft: '', ip: meta.ip || '', city: meta.city || '', dev: meta.dev || '' }));
+  st.push(audEvStmt(env, { cid: 'dstats_' + rev, ts: Date.now(), uid: A.u.id, un: '', dept: '', k: K_DSTATS, rev: rev, etype: 'dataset', eid: 'daily-stats', ename: 'الإحصائيات اليومية', act: historical ? 'import' : 'updated', ctx: JSON.stringify({ domain: 'daily-stats', reason: historical ? reasonLogged(A, body.reason) : String(body.reason || '').slice(0, 300) }), bef: '', aft: '', ip: meta.ip || '', city: meta.city || '', dev: meta.dev || '' }));
   if (X) { var log = enfLogRow(A, K_DSTATS, verdict, '/api/dstats', meta); if (log) st.push(enfLogStmt(env, log)); }
   try { await env.DB.batch(st); } catch (e) {
     if (!isRevConflict(e)) throw e;

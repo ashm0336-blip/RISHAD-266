@@ -243,7 +243,7 @@ async function dsDomainCommit(env, A, body, ip) {
   var rev = await nextRev(env), meta = ip || {};
   st.unshift(revGuard(env, K_DSTATS, current.rev));
   st.push(env.DB.prepare('INSERT INTO revs (k,rev) VALUES (?1,?2) ON CONFLICT(k) DO UPDATE SET rev=excluded.rev').bind(K_DSTATS, rev));
-  st.push(audEvStmt(env, { cid: 'dstats_' + rev, ts: Date.now(), uid: A.u.id, un: '', dept: '', k: K_DSTATS, rev: rev, etype: 'dataset', eid: 'daily-stats', ename: 'الإحصائيات اليومية', act: historical ? 'import' : 'updated', ctx: JSON.stringify({ domain: 'daily-stats', reason: String(body.reason || '').slice(0, 300) }), bef: '', aft: '', ip: meta.ip || '', city: meta.city || '', dev: meta.dev || '' }));
+  st.push(audEvStmt(env, { cid: 'dstats_' + rev, ts: Date.now(), uid: A.u.id, un: '', dept: '', k: K_DSTATS, rev: rev, etype: 'dataset', eid: 'daily-stats', ename: 'الإحصائيات اليومية', act: historical ? 'import' : 'updated', ctx: JSON.stringify({ domain: 'daily-stats', reason: historical ? reasonLogged(A, body.reason) : String(body.reason || '').slice(0, 300) }), bef: '', aft: '', ip: meta.ip || '', city: meta.city || '', dev: meta.dev || '' }));
   if (X) { var log = enfLogRow(A, K_DSTATS, verdict, '/api/dstats', meta); if (log) st.push(enfLogStmt(env, log)); }
   try { await env.DB.batch(st); } catch (e) {
     if (!isRevConflict(e)) throw e;

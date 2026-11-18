@@ -3387,7 +3387,7 @@ function nfDenyBody(txt, vars) {
     has = function (k) {
       return Object.prototype.hasOwnProperty.call(v, k) && v[k] != null && String(v[k]) !== "";
     };
-  if (t === NF_TYPES.sc_deny.txt) {
+  if (t === NF_TYPES.sc_deny.txt || t === NF_REASON_TXT) {
     if (!has("الصفحة")) t = t.replace(" في صفحة «{الصفحة}»", "");
     if (!has("الدور") && !has("الإدارة")) t = t.replace(" ({الدور} — {الإدارة})", "");
     else if (!has("الإدارة")) t = t.replace(" — {الإدارة}", "");

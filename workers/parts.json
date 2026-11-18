@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "cab1bbcd16987f34e58ca163404ce43e17cbee6b9e1c4cb63ed44ea8319b2b3d",
+  "sha256": "e21eec9fb619fcd7929bfd8aa7b93dc2bfaf644f4c7b504a18e176f1d697c995",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -206,8 +206,8 @@
         3145,
         6973
       ],
-      "bytes": 154274,
-      "sha256": "cec5472f78f5b465d90bb4dce873330c855542b1254eb14ad18a6d771624a847",
+      "bytes": 154297,
+      "sha256": "f073b9f73a09bf2398c1105691245759d104de407aa7bfe52ea79a747355fbff",
       "head": "/* ═══ تنبيهات الإدارة: مديرها يكتب كل شيء؛ أي منتسب يضيف عناصر (من أوقع الحدث يكتب تنبيهه) ويحدّث حالة قراءته"
     },
     {
@@ -299,8 +299,8 @@
         8382,
         8482
       ],
-      "bytes": 4642,
-      "sha256": "25d775fdb080ac176b26be7956e05950acf6122db38692e4554023e3ee9714e6"
+      "bytes": 4782,
+      "sha256": "e369d5e358cdfc20514e614f8da179daaeafa69319b865af6e9fe9e15193e74c"
     },
     {
       "file": "019b5-save-transition.js",
@@ -547,8 +547,8 @@
         20023,
         20361
       ],
-      "bytes": 26221,
-      "sha256": "c89f6da378981618cebdb6f1b564123cbfee972f52f3dbbbb230710bab242e4d",
+      "bytes": 26265,
+      "sha256": "154154143e066ad84e555ed23f0428f6e4fcdc21a36ac2fce6ea5f1c0de3556d",
       "head": "/* ═══ R180: «الإحصائيات اليومية» — مخزنٌ عامٌّ واحد تحكمه أوراقُ الصفحة ═══"
     },
     {
