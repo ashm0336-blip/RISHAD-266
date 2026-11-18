@@ -56,13 +56,13 @@ async function enfSavePrep(env, A, body, set, del, keysOk, markers, restoreMarke
     if (markers && markers.ops) for (fk in markers.ops) if (markers.ops[fk].op === 'backup.restore' && markers.ops[fk].scope === 'full') fullMk = true;
     if (fullMk && !isSup) X.batchDeny = { why: 'restore-policy', detail: 'full-super-only', keys: ['backup.restore'] };
     else if (!pol.ok) X.batchDeny = { why: 'restore-policy', detail: pol.why, keys: ['backup.restore'] };
-    else if (pol.missingReason) X.batchDeny = { why: 'reason', reasonKeys: ['backup.restore'], keys: ['backup.restore'] };
-    else X.restoreReason = String(reason).trim().slice(0, 300);
+    else if (pol.missingReason && !reasonExempt(A)) X.batchDeny = { why: 'reason', reasonKeys: ['backup.restore'], keys: ['backup.restore'] };   /* مدير المنصة لا يُطلب منه سبب */
+    else X.restoreReason = reasonLogged(A, reason);
   }
   /* استيرادُ البيانات التاريخية (sys.histimp.run): لمدير النظام وحده بسبب */
   if (!X.batchDeny && audHist) {
     if (A.u.role !== 'super') X.batchDeny = { why: 'super', keys: ['sys.histimp.run'] };
-    else { var hr = ''; for (wk in X.why) { hr = X.why[wk]; break; } if (!hr) X.batchDeny = { why: 'reason', reasonKeys: ['sys.histimp.run'], keys: ['sys.histimp.run'] }; else X.histReason = hr; }
+    else { var hr = ''; for (wk in X.why) { hr = X.why[wk]; break; } X.histReason = reasonLogged(A, hr); }   /* المسارُ لمدير المنصة وحده (أعلاه) — ولا يُطلب منه سبب */
   }
   return X;
 }

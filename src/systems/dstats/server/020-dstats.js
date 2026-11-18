@@ -224,7 +224,7 @@ async function dsDomainCommit(env, A, body, ip) {
   if (restore) return { status: 400, body: { ok: 0, err: 'full-restore-unsupported' } };
   var historical = body.operation === 'historical-import';
   /* Historical import is the existing super-only operation, with its mandatory reason. */
-  if (historical && (A.u.role !== 'super' || !String(body.reason || '').trim())) { var hw = A.u.role !== 'super' ? 'super' : 'reason'; return await dsDomainDeny(env, A, hw, ip, enfNo(hw, { keys: ['sys.histimp.run'], reasonKeys: ['sys.histimp.run'] })); }
+  if (historical && A.u.role !== 'super') return await dsDomainDeny(env, A, 'super', ip, enfNo('super', { keys: ['sys.histimp.run'], reasonKeys: ['sys.histimp.run'] }));   /* لمدير المنصة وحده — ولا يُطلب منه سبب */
   if (A.enf) {
     var why = {}; why[K_DSTATS] = String(body.reason || '').trim();
     X = await enfSavePrep(env, A, { why: why }, set, [], keys, markers, restore, false, historical, await permv3RetroLoad(env, set, []), await permv4RefsLoad(env, set, []));

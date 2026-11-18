@@ -1703,9 +1703,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         };
       case "denied":
         return {
-          t: "محاولة تعديل «" + this.adKeyLbl(t.target) + "» رُفضت — " + (a[t.detail] || "خارج الصلاحية"),
-          k: "sec",
-          w: "حدث أمني · كتابة خارج الصلاحية",
+          /* نقصُ السبب ليس حدثاً أمنياً ولا «خارج الصلاحية»: الفاعلُ يملك الصلاحية ولم يذكر السبب */
+          ...("reason" === t.detail
+            ? { t: "محاولة تعديل «" + this.adKeyLbl(t.target) + "» — رُفض: هذه العملية تتطلب ذكر السبب", k: "adm" }
+            : { t: "محاولة تعديل «" + this.adKeyLbl(t.target) + "» رُفضت — " + (a[t.detail] || "خارج الصلاحية"), k: "sec", w: "حدث أمني · كتابة خارج الصلاحية" }),
         };
       case "policy_change":
         return { t: "عدّل سياسات الأمن", k: "adm" };
@@ -5760,8 +5761,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!D) throw new Error("خدمة الإحصائيات غير متاحة");
       const R = KIVO.__BS_SRV;
       if (!R || !R.askReason) throw new Error("نافذة سبب الاستيراد غير متاحة");
-      const reason = await new Promise(resolve => R.askReason(HI.KEY, ["sys.histimp.run"], resolve));
-      if (!reason) return;
+      /* مدير المنصة لا يُطلب منه سبب (المسارُ له وحده): لا نافذة — والخادمُ يسجّل «بلا سبب (مدير المنصة)» */
+      const exempt = !!(R.reasonExempt && R.reasonExempt());
+      const reason = exempt ? "" : await new Promise(resolve => R.askReason(HI.KEY, ["sys.histimp.run"], resolve));
+      if (!reason && !exempt) return;
       const buf = await f.arrayBuffer(), x = await HI.execute(buf, H.mode || "add", H.blank || "ignore", this.hiMeta(f));
       if (!await D.save(x.store, { operation: "historical-import", reason: reason })) {
         this.bsToast(D.message(), "err"); return;

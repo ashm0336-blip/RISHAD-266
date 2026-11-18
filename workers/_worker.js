@@ -1679,6 +1679,11 @@ function dsToday(now) {
   } catch (e) { swallow('dstats', e); }
   return null;
 }
+/* ── إصلاح (مدير المنصة لا يُطلب منه سببٌ أبداً — قرارُ المالك): مدير المنصة (role=super) معفًى من كل بوابات السبب في الخادم؛ وإن لم يكتب سبباً
+   يُسجَّل في سجلّ القرار والتدقيق «بلا سبب (مدير المنصة)». غيرُه: طلبُ السبب كما هو. reasonExempt = هل الفاعلُ معفًى · reasonLogged = ما يُكتب في السجل ── */
+var REASON_NONE_SUPER = 'بلا سبب (مدير المنصة)';
+function reasonExempt(A) { return !!(A && A.u && A.u.role === 'super'); }
+function reasonLogged(A, r) { r = String(r == null ? '' : r).trim().slice(0, 300); return r || (reasonExempt(A) ? REASON_NONE_SUPER : ''); }
 /* ── من 019a-custody.js: خطأٌ برمزٍ وحالة · ساعةُ اليوم الهجري · الصيغةُ القانونية · بصمةُ الطلب ── */
 function cuError(code, status) {
   var e = new Error(code);
@@ -5834,11 +5839,11 @@ async function nfPlanEvents(env, A, events, internal) {
     var m = nfMessage(sys ? "sys" : nfScope(d), nfNewId(), "event", {
         department: d,
         type: T.id,
-        category: T.k,
-        priority: T.lvl,
+        category: it.cat || T.k,   /* الرفضُ لنقص السبب ليس حدثاً أمنياً: فئتُه «المنصة» لا «الأمان» (nfSecurityPoll) */
+        priority: it.lvl || T.lvl,
         channel: T.chan,
         title: it.title || T.name,
-        body: T.id === "sc_deny" ? nfDenyBody(T.txt, it.vars) : nfFill(T.txt, it.vars),
+        body: T.id === "sc_deny" ? nfDenyBody(it.txt || T.txt, it.vars) : nfFill(T.txt, it.vars),
         created_at: it.at || Date.now(),
         author_key: String(A.u.ekey || A.u.id),
         author_name: String(A.u.name || A.u.un || ""),
@@ -6313,6 +6318,8 @@ async function nfRemind(env, A, id, base, automatic) {
      account or unit whose name reads like a phrase this notice generates is shown as «الحساب رقم <رقم الدخول>» (a login
      number of 1–15 digits; otherwise «حساب باسم ملتبس») / «وحدة باسم ملتبس» instead.
    • the empty clauses of the sentence are dropped only under the default text; an administrator's own text is filled as it is. */
+var NF_REASON_TITLE = "عملية تتطلب ذكر السبب",
+  NF_REASON_TXT = "حاول {الاسم} ({الدور} — {الإدارة}) {الفعل} «{السجل}» في صفحة «{الصفحة}» — رُفض: هذه العملية تتطلب ذكر السبب.";
 var NF_DENY_WIN_MS = 60000,
   NF_DENY_GENERIC = "رفضه الخادم",
   NF_DENY_REC_OTHER = "بيانات المنصة";
@@ -6358,7 +6365,7 @@ var NF_DENY_WHY = {
   super: "الإجراء لمسؤول المنصة وحده", "super-only": "الإجراء لمسؤول المنصة وحده", sys: "الإجراء لمسؤول المنصة وحده",
   mgr: "الإجراء لمدير الإدارة", role: "دوره لا يسمح بهذا الإجراء", "mgr-without-sheet": "مدير لم تُمنح له هذه الصلاحية في ورقته",
   feature: "الميزة غير ممنوحة له", reserved: "صلاحية محجوزة لم تُفعَّل بعد", obsolete: "صلاحية أُلغيت ولم تعد تُمنح",
-  deny: "لم يسمح به نظام الصلاحيات", reason: "الإجراء يتطلب سبباً ولم يُذكر", dslock: "اليوم أو الشهر مقفل", own: "السجل لصاحبه وحده",
+  deny: "لم يسمح به نظام الصلاحيات", reason: "هذه العملية تتطلب ذكر السبب", dslock: "اليوم أو الشهر مقفل", own: "السجل لصاحبه وحده",
   "restore-policy": "الاستعادة لمسؤول المنصة أو لمدير الإدارة الممنوح مفتاحها", "import-allowlist": "السجل خارج قائمة الاستيراد المسموحة",
   /* accounts and permissions registers */
   users: "جدول الحسابات لم يُقبل", "users · dup-id ": "جدول الحسابات لم يُقبل لتكرار معرّف حساب",
@@ -6603,6 +6610,12 @@ async function nfSecurityPoll(env, A) {
       type = "sc_deny";
       vars = nfDenyVars(A, r);
       denyAll.push((denyOpen[gk] = { ts: r.ts, n: 1, vars: vars }));
+      /* إصلاح: الرفضُ لنقص السبب (detail = reason) — الفاعلُ يملك الصلاحية ولم يذكر السبب: لا «خارج الصلاحية» ولا حدثٌ أمني.
+         يُكتب «رُفض: هذه العملية تتطلب ذكر السبب» بفئة «المنصة» وأولويةٍ عادية. */
+      if (r.detail === "reason") {
+        events.push({ type: type, vars: vars, once: "security:" + r.id, cat: "sys", lvl: "info", title: NF_REASON_TITLE, txt: NF_REASON_TXT });
+        return;
+      }
     } else if (r.act === "acct_add" && /backup|احتياطي/.test(r.detail || "")) {
       type = "sy_bkacc";
       vars = { الفعل: "أُنشئ", المستخدم: r.target || "" };
@@ -8364,7 +8377,7 @@ async function cuRestorePermission(A, dept, opt) {
   var has =
     A.u.role === 'super' || (A.enf ? enfHeld(A, dept, 'backup.restore') : KIVO_GUARDS.decide('backup.restore', permv2Ctx(A, dept)).ok);
   var policy = KIVO_BUILD.restorePolicy(A.u.role === 'super', isMgrOf(A, dept), has, opt.reason);
-  if (!policy.ok || policy.missingReason) throw cuError('custody-restore-permission', 403);
+  if (!policy.ok || (policy.missingReason && !reasonExempt(A))) throw cuError('custody-restore-permission', 403);
 }
 async function cuPlanRestore(env, A, domain, opt) {
   cuShape(opt, ['dept', 'base', 'scope', 'mode', 'reason', 'finalKeys']);
@@ -10316,7 +10329,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     (body.scope.kind === 'dept' && (typeof body.scope.departmentId !== 'string' || !body.scope.departmentId))
   )
     throw rsError('restore-scope');
-  if (!['merge', 'replace'].includes(body.mode) || typeof body.reason !== 'string' || !body.reason.trim() || body.reason.length > 300)
+  if (!['merge', 'replace'].includes(body.mode) || typeof body.reason !== 'string' || (!body.reason.trim() && !reasonExempt(A)) || body.reason.length > 300)   /* السببُ الفارغ يُقبل من مدير المنصة وحده؛ حدُّ الطول 300 للجميع */
     throw rsError('restore-reason');
   /* A full backup declares its complete input. Never infer missing domains from
      its mode or silently reinterpret a sparse save as a complete backup. */
@@ -10904,7 +10917,7 @@ async function rsCommit(env, A, plan, meta) {
         now,
         A.u.id,
         plan.body.scope.departmentId || '',
-        JSON.stringify({ reason: plan.body.reason, counts: plan.counts, scope: plan.body.scope, mode: plan.body.mode }),
+        JSON.stringify({ reason: reasonLogged(A, plan.body.reason), counts: plan.counts, scope: plan.body.scope, mode: plan.body.mode }),
         (meta && meta.ip) || '',
         (meta && meta.dev) || '',
         (meta && meta.city) || '',
@@ -20233,7 +20246,7 @@ async function dsDomainCommit(env, A, body, ip) {
   if (restore) return { status: 400, body: { ok: 0, err: 'full-restore-unsupported' } };
   var historical = body.operation === 'historical-import';
   /* Historical import is the existing super-only operation, with its mandatory reason. */
-  if (historical && (A.u.role !== 'super' || !String(body.reason || '').trim())) { var hw = A.u.role !== 'super' ? 'super' : 'reason'; return await dsDomainDeny(env, A, hw, ip, enfNo(hw, { keys: ['sys.histimp.run'], reasonKeys: ['sys.histimp.run'] })); }
+  if (historical && A.u.role !== 'super') return await dsDomainDeny(env, A, 'super', ip, enfNo('super', { keys: ['sys.histimp.run'], reasonKeys: ['sys.histimp.run'] }));   /* لمدير المنصة وحده — ولا يُطلب منه سبب */
   if (A.enf) {
     var why = {}; why[K_DSTATS] = String(body.reason || '').trim();
     X = await enfSavePrep(env, A, { why: why }, set, [], keys, markers, restore, false, historical, await permv3RetroLoad(env, set, []), await permv4RefsLoad(env, set, []));
@@ -22256,8 +22269,8 @@ async function retroApiRun(env, request, A, url, meta) {
     if (!KIVO_BUILD.retroClosed(T, y, m, dd0)) return json({ ok: 0, err: 'not-closed', today: T }, 400);          /* الفترةُ المفتوحة لا تحتاج استدراكاً */
     var hours = Number(b.hours); if (!(hours > 0)) hours = KIVO_BUILD.RETRO_DEF_H; hours = Math.min(KIVO_BUILD.RETRO_MAX_H, Math.max(1 / 3600, hours));
     var reason = String(b.reason == null ? '' : b.reason).trim().slice(0, 300); if (!reason) RS.missingReason++;
-    if (!reason && A.enf) return json({ ok: 0, err: 'reason', key: RETRO[sys].key }, 400);      /* KIVO_243 · D3-03: السببُ إلزاميٌّ عند الإنفاذ */
-    w = { id: 'rw' + now.toString(36) + Math.floor(Math.random() * 1e6).toString(36), scope: scope, by: { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || ''), name: String(A.u.name || '') }, at: now, until: now + Math.round(hours * 3600000), hours: hours, reason: reason, reasonMissing: !reason };
+    if (!reason && A.enf && !reasonExempt(A)) return json({ ok: 0, err: 'reason', key: RETRO[sys].key }, 400);      /* KIVO_243 · D3-03: السببُ إلزاميٌّ عند الإنفاذ */
+    w = { id: 'rw' + now.toString(36) + Math.floor(Math.random() * 1e6).toString(36), scope: scope, by: { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || ''), name: String(A.u.name || '') }, at: now, until: now + Math.round(hours * 3600000), hours: hours, reason: reasonLogged(A, reason), reasonMissing: !reason };
     st9.windows.push(w); if (st9.windows.length > 200) st9.windows = st9.windows.slice(-200);
     RS.opens++;
   } else {
@@ -26105,8 +26118,8 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   if (sc.composite === 'unknown') return enfNo('scope-unknown', { keys: used, dims: sc.unknownDims, detail: sc.why, items: sc.items });
   /* السببُ الإلزامي (audit.reason في السجل · §12) */
   var needR = []; for (i = 0; i < used.length; i++) if (ix.reason[used[i]]) needR.push(used[i]);
-  if (needR.length && !enfReasonOf(X)) return enfNo('reason', { keys: used, reasonKeys: needR });
-  return enfOk(used, { path: path, reasonKeys: needR, reason: needR.length ? enfReasonOf(X) : '', items: sc.items, dims: [] });
+  if (needR.length && !enfReasonOf(X) && !reasonExempt(A)) return enfNo('reason', { keys: used, reasonKeys: needR });   /* مدير المنصة لا يُطلب منه سبب (016 reasonExempt) */
+  return enfOk(used, { path: path, reasonKeys: needR, reason: needR.length ? reasonLogged(A, enfReasonOf(X)) : '', items: sc.items, dims: [] });
 }
 /* ── الحساباتُ (عامّ): البنيةُ كما usersRule (المدير على موظفيه في نطاقه · الذات على حقولها) والقرارُ بمفاتيح كل إدارةٍ على مستخدميها ── */
 function enfUsersWrite(A, k, newVal, curVal, ctx, X) {
@@ -26694,13 +26707,13 @@ async function enfSavePrep(env, A, body, set, del, keysOk, markers, restoreMarke
     if (markers && markers.ops) for (fk in markers.ops) if (markers.ops[fk].op === 'backup.restore' && markers.ops[fk].scope === 'full') fullMk = true;
     if (fullMk && !isSup) X.batchDeny = { why: 'restore-policy', detail: 'full-super-only', keys: ['backup.restore'] };
     else if (!pol.ok) X.batchDeny = { why: 'restore-policy', detail: pol.why, keys: ['backup.restore'] };
-    else if (pol.missingReason) X.batchDeny = { why: 'reason', reasonKeys: ['backup.restore'], keys: ['backup.restore'] };
-    else X.restoreReason = String(reason).trim().slice(0, 300);
+    else if (pol.missingReason && !reasonExempt(A)) X.batchDeny = { why: 'reason', reasonKeys: ['backup.restore'], keys: ['backup.restore'] };   /* مدير المنصة لا يُطلب منه سبب */
+    else X.restoreReason = reasonLogged(A, reason);
   }
   /* استيرادُ البيانات التاريخية (sys.histimp.run): لمدير النظام وحده بسبب */
   if (!X.batchDeny && audHist) {
     if (A.u.role !== 'super') X.batchDeny = { why: 'super', keys: ['sys.histimp.run'] };
-    else { var hr = ''; for (wk in X.why) { hr = X.why[wk]; break; } if (!hr) X.batchDeny = { why: 'reason', reasonKeys: ['sys.histimp.run'], keys: ['sys.histimp.run'] }; else X.histReason = hr; }
+    else { var hr = ''; for (wk in X.why) { hr = X.why[wk]; break; } X.histReason = reasonLogged(A, hr); }   /* المسارُ لمدير المنصة وحده (أعلاه) — ولا يُطلب منه سبب */
   }
   return X;
 }

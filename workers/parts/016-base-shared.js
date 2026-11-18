@@ -10,6 +10,11 @@ function dsToday(now) {
   } catch (e) { swallow('dstats', e); }
   return null;
 }
+/* ── إصلاح (مدير المنصة لا يُطلب منه سببٌ أبداً — قرارُ المالك): مدير المنصة (role=super) معفًى من كل بوابات السبب في الخادم؛ وإن لم يكتب سبباً
+   يُسجَّل في سجلّ القرار والتدقيق «بلا سبب (مدير المنصة)». غيرُه: طلبُ السبب كما هو. reasonExempt = هل الفاعلُ معفًى · reasonLogged = ما يُكتب في السجل ── */
+var REASON_NONE_SUPER = 'بلا سبب (مدير المنصة)';
+function reasonExempt(A) { return !!(A && A.u && A.u.role === 'super'); }
+function reasonLogged(A, r) { r = String(r == null ? '' : r).trim().slice(0, 300); return r || (reasonExempt(A) ? REASON_NONE_SUPER : ''); }
 /* ── من 019a-custody.js: خطأٌ برمزٍ وحالة · ساعةُ اليوم الهجري · الصيغةُ القانونية · بصمةُ الطلب ── */
 function cuError(code, status) {
   var e = new Error(code);

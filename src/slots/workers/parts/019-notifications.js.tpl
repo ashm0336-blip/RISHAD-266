@@ -2378,11 +2378,11 @@ async function nfPlanEvents(env, A, events, internal) {
     var m = nfMessage(sys ? "sys" : nfScope(d), nfNewId(), "event", {
         department: d,
         type: T.id,
-        category: T.k,
-        priority: T.lvl,
+        category: it.cat || T.k,   /* الرفضُ لنقص السبب ليس حدثاً أمنياً: فئتُه «المنصة» لا «الأمان» (nfSecurityPoll) */
+        priority: it.lvl || T.lvl,
         channel: T.chan,
         title: it.title || T.name,
-        body: T.id === "sc_deny" ? nfDenyBody(T.txt, it.vars) : nfFill(T.txt, it.vars),
+        body: T.id === "sc_deny" ? nfDenyBody(it.txt || T.txt, it.vars) : nfFill(T.txt, it.vars),
         created_at: it.at || Date.now(),
         author_key: String(A.u.ekey || A.u.id),
         author_name: String(A.u.name || A.u.un || ""),
@@ -2857,6 +2857,8 @@ async function nfRemind(env, A, id, base, automatic) {
      account or unit whose name reads like a phrase this notice generates is shown as «الحساب رقم <رقم الدخول>» (a login
      number of 1–15 digits; otherwise «حساب باسم ملتبس») / «وحدة باسم ملتبس» instead.
    • the empty clauses of the sentence are dropped only under the default text; an administrator's own text is filled as it is. */
+var NF_REASON_TITLE = "عملية تتطلب ذكر السبب",
+  NF_REASON_TXT = "حاول {الاسم} ({الدور} — {الإدارة}) {الفعل} «{السجل}» في صفحة «{الصفحة}» — رُفض: هذه العملية تتطلب ذكر السبب.";
 var NF_DENY_WIN_MS = 60000,
   NF_DENY_GENERIC = "رفضه الخادم",
   NF_DENY_REC_OTHER = "بيانات المنصة";
@@ -2902,7 +2904,7 @@ var NF_DENY_WHY = {
   super: "الإجراء لمسؤول المنصة وحده", "super-only": "الإجراء لمسؤول المنصة وحده", sys: "الإجراء لمسؤول المنصة وحده",
   mgr: "الإجراء لمدير الإدارة", role: "دوره لا يسمح بهذا الإجراء", "mgr-without-sheet": "مدير لم تُمنح له هذه الصلاحية في ورقته",
   feature: "الميزة غير ممنوحة له", reserved: "صلاحية محجوزة لم تُفعَّل بعد", obsolete: "صلاحية أُلغيت ولم تعد تُمنح",
-  deny: "لم يسمح به نظام الصلاحيات", reason: "الإجراء يتطلب سبباً ولم يُذكر", dslock: "اليوم أو الشهر مقفل", own: "السجل لصاحبه وحده",
+  deny: "لم يسمح به نظام الصلاحيات", reason: "هذه العملية تتطلب ذكر السبب", dslock: "اليوم أو الشهر مقفل", own: "السجل لصاحبه وحده",
   "restore-policy": "الاستعادة لمسؤول المنصة أو لمدير الإدارة الممنوح مفتاحها", "import-allowlist": "السجل خارج قائمة الاستيراد المسموحة",
   /* accounts and permissions registers */
   users: "جدول الحسابات لم يُقبل", "users · dup-id ": "جدول الحسابات لم يُقبل لتكرار معرّف حساب",
@@ -3143,6 +3145,12 @@ async function nfSecurityPoll(env, A) {
       type = "sc_deny";
       vars = nfDenyVars(A, r);
       denyAll.push((denyOpen[gk] = { ts: r.ts, n: 1, vars: vars }));
+      /* إصلاح: الرفضُ لنقص السبب (detail = reason) — الفاعلُ يملك الصلاحية ولم يذكر السبب: لا «خارج الصلاحية» ولا حدثٌ أمني.
+         يُكتب «رُفض: هذه العملية تتطلب ذكر السبب» بفئة «المنصة» وأولويةٍ عادية. */
+      if (r.detail === "reason") {
+        events.push({ type: type, vars: vars, once: "security:" + r.id, cat: "sys", lvl: "info", title: NF_REASON_TITLE, txt: NF_REASON_TXT });
+        return;
+      }
     } else if (r.act === "acct_add" && /backup|احتياطي/.test(r.detail || "")) {
       type = "sy_bkacc";
       vars = { الفعل: "أُنشئ", المستخدم: r.target || "" };
