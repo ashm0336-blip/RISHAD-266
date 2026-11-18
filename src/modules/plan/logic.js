@@ -16854,7 +16854,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                  (280 why)؛ الإلغاءُ يُبقي النافذة مفتوحة بلا حفظ. مدير المنصة لا يُسأل. */
               if ((t.img || null) !== (s.img || null) && (s.img || s.iid)) {
                 const S9 = KIVO.__BS_SRV;
-                if (KIVO.__BS_AUTHZ && S9 && "function" == typeof S9.askReason && !(S9.reasonExempt && S9.reasonExempt())) {
+                if (KIVO.__BS_AUTHZ && S9 && "function" === typeof S9.askReason && !(S9.reasonExempt && S9.reasonExempt())) {
                   let D9 = "";
                   try { D9 = KIVO.BassamDepts.active() || ""; } catch (t) {}
                   const K9 = "bsdept:" + D9 + ":bassam_plan_v1",

@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "1c538d0b35a04b04b686291cd41f4505adba8650818cd51ab5be99bca8d990a0",
+  "sha256": "9651db333866618e53f89ecfdd5e61de7fc998bc187a3dd3f4c66844e18d1580",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -281,8 +281,8 @@
         8132,
         8374
       ],
-      "bytes": 11277,
-      "sha256": "a15c1150ed06e50c9f174a89ee02e9395d8f0a3e7712fa1040cb17544b1a6cb0"
+      "bytes": 11266,
+      "sha256": "824cf26a71abb238b50640204e8a0385de7c85d4e0d307897a2e59f364924e9c"
     },
     {
       "file": "019b3-restore-permission.js",
