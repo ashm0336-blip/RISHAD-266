@@ -2315,7 +2315,8 @@ async function nfPlanEvents(env, A, events, internal) {
     ids = [],
     plans = [];
   events.forEach(function (it) {
-    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"]);
+    /* cat · lvl · txt: للأحداث التي يصنعها الخادمُ نفسُه وحده (nfSecurityPoll: الرفض لنقص السبب) — حدثٌ من الطلب لا يحملها */
+    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt"] : []));
     var T = nfType(nfStr(it.type, 80, false), cfg);
     /* RISHAD-266 · issue #1 (owner decision): employee notifications are issued by the server alone, from the save it accepted
        (nfEmployeePlan below). No client may emit one — whatever it holds, the platform administrator included.
