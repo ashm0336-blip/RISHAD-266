@@ -174,14 +174,18 @@ test("seized denied staff/scope and old-date writes retain every business row", 
       B.today.m > 1
         ? { y: B.today.y, m: B.today.m - 1, d: 1 }
         : { y: B.today.y - 1, m: 12, d: 1 };
+  /* Owner decision (prompt 43, root 1): the platform admin is no longer held by the closed period — the refusal is asserted
+     on a unit account (it used to be asserted on the platform admin), and the platform admin's old-date write goes through. */
   await assert.rejects(
-    B.act(await B.body("create", { data: reportData(B, date) })),
+    B.act(await B.body("create", { data: reportData(B, date) }, "staff"), "staff"),
     (e) =>
       e.szStatus === 403 &&
       e.szDecision.dims.includes("DateRange") &&
       /closed-period: no-window/.test(e.szDecision.detail),
   );
   assert.deepEqual(all(B), before);
+  const lifted = await B.act(await B.body("create", { data: reportData(B, date) }));
+  assert.ok(lifted && lifted.id, "the platform admin writes the old date");
 });
 test("seized catalog deletion refuses used items/actions/locations/kinds and rename updates exact items plus both revisions", async (t) => {
   const B = await commandWorld();

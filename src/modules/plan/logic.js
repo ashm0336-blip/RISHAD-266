@@ -128,6 +128,34 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         this._opTicket = null;
         return await this._opRebase(names[0], changes[names[0]]);
       }
+      /* برومت 43 · الجذر 3: كتابةٌ عابرة (مفتاحُ نظامٍ آخر مرافقٌ لحفظ الخطة) رُفضت أو تعارضت ⇒ لا يسقط حفظُ الخطة بصمت ولا برسالةٍ عامة:
+         تُحفظ الخطةُ وحدها، ويُقال للمستخدم أيُّ مرافقٍ لم يُحدَّث ولماذا */
+      if (result && result.ok !== 1 && !result.uncertain && names.length > 1 && names.indexOf("bassam_plan_v1") !== -1) {
+        const D = (result.details && (result.details.denied || {})) || {},
+          Cf = (result.details && (result.details.conflicts || {})) || {},
+          bad = Object.keys(D).concat(Object.keys(Cf)).map((k) => String(k).replace(/^bsdept:[^:]+:/, "")),
+          side = bad.filter((n) => n !== "bassam_plan_v1");
+        if (side.length && side.length === bad.length) {
+          delete this._opActions[action];
+          this._opTicket = null;
+          const NAMES = { bassam_rounds_v1: "الجولات اليومية", bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب", bassam_mark_kinds_v1: "أنواع المعالم" };
+          let why = "";
+          try {
+            why = service.explain ? service.explain(result) : "";
+          } catch (e) {}
+          try {
+            KIVO.__bsLiveLog && KIVO.__bsLiveLog("cross-write-refused", "Operational Plan", result.err, side);
+          } catch (e) {}
+          const main = await this._opCommit({ bassam_plan_v1: changes.bassam_plan_v1 });
+          this.bsToast(
+            (main && main.ok === 1 ? "حُفظ تعديل الخطة، لكن لم يُحدَّث معه: " : "لم يُحدَّث: ") +
+              side.map((n) => "«" + (NAMES[n] || n) + "»").join(" · ") +
+              (why ? " — " + why : " — حدّث البيانات ثم أعد المحاولة"),
+            "warn",
+          );
+          return main;
+        }
+      }
       if (!result || result.ok !== 1) {
         this.bsToast(
           result && result.uncertain
@@ -156,6 +184,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         "warn",
       );
       return { ok: 0, err: "review-required" };
+    }
+  }
+  /* برومت 43 · الجذر 3: الكتابةُ العابرة من الخطة إلى «الجولات اليومية» محصورةٌ في الحاضر والمستقبل — مفتاحُ يومٍ (y-m-d) اليومَ أو بعده،
+     أو علامةُ شهرٍ (m:y-m) هذا الشهرَ أو بعده. الأيامُ الماضية والمعتمدة لا تُمسّ (كانت تُرفض فترةً فيسقط حفظُ الخطة كلُّه). */
+  _roundKeyNow(key) {
+    try {
+      const parts = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { timeZone: "Asia/Riyadh", year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date()),
+        part = (t) => +parts.find((p) => p.type === t).value,
+        now = { y: part("year"), m: part("month"), d: part("day") },
+        m = /^(?:m:)?(\d+)-(\d+)(?:-(\d+))?$/.exec(String(key));
+      if (!m) return !1;
+      const y = +m[1],
+        mo = +m[2],
+        d = null == m[3] ? null : +m[3];
+      return y !== now.y ? y > now.y : mo !== now.m ? mo > now.m : null == d || d >= now.d;
+    } catch (e) {
+      return !1;
     }
   }
   _opWrite(name, value) {
@@ -2202,6 +2247,60 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       });
     return this._opLastSave;
   }
+  /* ═══ برومت 41-د: الانعكاسُ اللحظي على مستوى العنصر ═══
+     التغييرُ الوارد من جهازٍ آخر يُطبَّق فوراً على كلِّ عناصر الخطة ولو كانت أداةٌ مفعّلة (وضع باب…)، أو رسمٌ جارٍ، أو نافذةُ عنصرٍ مفتوحة.
+     يُحمى وحده العنصرُ الذي يعدّله المستخدمُ الآن (المفتوحُ في نافذة): نافذتُه تبقى على عنصرها بمعرّفه وبما كُتب فيها؛ وإن عدّله غيرُه أو حذفه
+     ⇒ تنبيهٌ صغير، ويُسجَّل «تعارضاً» فلا يُكتب فوق نسخة غيره بصمت (_planClashCheck عند الحفظ). والمسودةُ تُجدَّد على النسخة الجديدة فلا يُرفض الحفظُ التالي.
+     يبقى مؤجَّلاً (يُعاد كلَّ ١٫٥ ث حتى يفرغ): حفظٌ في الطريق · سحبُ مسارٍ أو رأسِه أو تدويرٌ أو تحريكُ الخريطة · نوافذُ الموقع والشهر (تعديلٌ في بنية المواقع والأشهر لا في عنصر). */
+  _bsLiveMerge(K) {
+    return !0 === this._bsLiveReload(K);
+  }
+  _planEditors(s, lists) {
+    return [
+      ["gEdit", "gates", "uid", "gate"],
+      ["zEdit", "zones", "uid", "zone"],
+      ["pEdit", "paths", "uid", "path"],
+      ["mkEdit", "marks", "uid", "mark"],
+      ["sEdit", "sectors", "id", "sector"],
+    ].map(([ed, kind, idk, selT]) => ({ ed, kind, idk, selT, cur: s[ed], list: "sectors" === kind ? ((s.floors || [])[s.floor] || {}).sectors || [] : s[kind] || [], next: lists[kind] || [] }));
+  }
+  _planClashCheck(payload) {
+    /* عنصرٌ فتحتُه وعدّله غيري: إن لم أغيّره أنا تُحفظ نسخةُ غيري مكانه (لا أكتب نسختي القديمة فوقها)؛ وإن غيّرتُه ⇒ لا كتابة: رسالةٌ وتظهر نسختُه */
+    const C = this._planClash;
+    if (!C || !Object.keys(C).length) return !0;
+    let blocked = !1;
+    Object.keys(C).forEach((key) => {
+      const c = C[key],
+        lists = [];
+      const walk = (node) => {
+        if (!node || "object" !== typeof node) return;
+        if (Array.isArray(node)) return void node.forEach(walk);
+        Object.keys(node).forEach((k) => {
+          k === c.kind && Array.isArray(node[k]) && lists.push(node[k]);
+          walk(node[k]);
+        });
+      };
+      walk(payload);
+      const holders = lists.filter((list) => list.some((x) => x && x[c.idk] === c.id));
+      /* حذفتُه أنا (إلغاءٌ أو حذف) وغيري عدّله ⇒ لا حذفَ صامت */
+      if (!holders.length) return void (null !== c.theirs && (blocked = !0));
+      holders.forEach((list) => {
+        const n = list.findIndex((x) => x && x[c.idk] === c.id);
+        if (JSON.stringify(list[n]) !== c.mine) return void (blocked = !0);
+        null === c.theirs ? list.splice(n, 1) : (list[n] = JSON.parse(c.theirs));
+      });
+    });
+    if (!blocked) return !0;
+    try {
+      KIVO.__bsLiveLog && KIVO.__bsLiveLog("save-kept", "Operational Plan", "العنصرُ المفتوح عدّله غيرُك — لم يُحفظ فوقه", Object.keys(C));
+    } catch (e) {}
+    this.bsToast("عدّل مستخدمٌ آخر هذا العنصر في الوقت نفسه — لم يُحفظ تعديلك؛ تظهر نسختُه الآن، أعد تعديلك عليها إن لزم", "warn");
+    this._planClash = null;
+    try {
+      this._bsLiveReload(["bassam_plan_v1"], !0);
+    } catch (e) {}
+    return !1;
+  }
   _bsLiveReload(K, force) {
     if (this._opBusy || this._opTicket) return false;
     const h = (t) =>
@@ -2210,26 +2309,24 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         return k === t || k.slice(-t.length - 1) === ":" + t;
       });
     const s = this.state;
-    /* R3-C2b-REVERT: الحاجزُ على سحب المسار ورأسِه والتدوير وحدَها — لا يُوسَّع لكلِّ سحب: ما يصل بين الإصبعين لا يُعيده undoLead (W1-C2)،
-       وإرجاؤه خلف سحب منتصف النطاق كان يُخسر تعديلَ الجهاز الآخر (حفظُ الضغطة عند الرفع)، وخلف رايةِ سحبٍ عالقة يحبسه حتى يُسقطه _liveTry */
+    /* R3-C2b-REVERT: الحاجزُ على سحب المسار ورأسِه والتدوير وحدَها — لا يُوسَّع لكلِّ سحب: ما يصل بين الإصبعين لا يعيده undoLead (W1-C2)،
+       وإرجاؤه خلف سحب منتصف النطاق كان يُخسر تعديلَ الجهاز الآخر (حفظُ الضغطة عند الرفع)، وخلف رايةِ سحبٍ عالقة يحبسه حتى يُسقطه _liveTry.
+       برومت 41-د: الأداةُ المفعّلة والرسمُ الجاري (tool · draft · polyPts) لم تعد تمنع — الدمجُ على مستوى العنصر أدناه */
     if (
       !force &&
-      ("select" !== s.tool ||
-      s.draft ||
-      (s.polyPts && s.polyPts.length) ||
-      s.pdrag ||
-      s.pvdrag ||
-      s.rotdrag ||
-      s.pan ||
-      s.planAdd ||
-      s.planLock ||
-      s.planDelMonth ||
-      s.siteModal ||
-      s.addSiteOpen ||
-      s.zcs ||
-      s.calAsk ||
-      s.retroAsk
-    ))
+      (s.pdrag ||
+        s.pvdrag ||
+        s.rotdrag ||
+        s.pan ||
+        s.planAdd ||
+        s.planLock ||
+        s.planDelMonth ||
+        s.siteModal ||
+        s.addSiteOpen ||
+        s.zcs ||
+        s.calAsk ||
+        s.retroAsk)
+    )
       return !1;
     if (this._opDrafts)
       Object.keys(this._opDrafts).forEach((name) => {
@@ -2249,29 +2346,56 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         cfg: b.cfg,
         mapW: b.mapW,
         approved: b.approved,
-        zones: r.zones || [],
-        gates: r.gates || [],
-        marks: r.marks || [],
-        paths: r.paths || [],
+        zones: (r.zones || []).slice(),
+        gates: (r.gates || []).slice(),
+        marks: (r.marks || []).slice(),
+        paths: (r.paths || []).slice(),
         floor: i,
         sel: null,
         selMulti: [],
       });
-      if (force) {
-        /* نافذةُ عنصرٍ مفتوحة تبقى على عنصرها بمعرّفه (ترتيبُ القائمة قد يتغيّر بعناصر الجهاز الآخر) — وإن لم يعد موجوداً أُغلقت */
-        [
-          ["gEdit", "gates", "uid", p.gates],
-          ["zEdit", "zones", "uid", p.zones],
-          ["pEdit", "paths", "uid", p.paths],
-          ["mkEdit", "marks", "uid", p.marks],
-          ["sEdit", null, "id", Array.isArray(r.sectors) ? r.sectors : []],
-        ].forEach(([ed, list, idk, next]) => {
-          const cur = s[ed];
-          if (!cur) return;
-          const was = list ? (s[list] || [])[cur.i] : ((s.floors || [])[s.floor] || {}).sectors && ((s.floors || [])[s.floor].sectors || [])[cur.i],
-            n = was && null != was[idk] ? next.findIndex((x) => x && x[idk] === was[idk]) : -1;
-          p[ed] = n < 0 ? null : n === cur.i ? cur : { ...cur, i: n };
-        });
+      /* العنصرُ المفتوح في نافذة يبقى عليها بمعرّفه (الترتيبُ قد يتغيّر بعناصر الجهاز الآخر) */
+      const lists = { zones: p.zones, gates: p.gates, marks: p.marks, paths: p.paths, sectors: Array.isArray(r.sectors) ? r.sectors.slice() : [] };
+      let secs = null;
+      const clash = force ? null : Object.assign({}, this._planClash || {});
+      this._planEditors(s, lists).forEach((e) => {
+        if (!e.cur) return;
+        const was = e.list[e.cur.i],
+          id = was && was[e.idk];
+        let n = null != id ? e.next.findIndex((x) => x && x[e.idk] === id) : -1;
+        if (!force && null != id) {
+          const key = e.kind + ":" + id,
+            mine = JSON.stringify(was),
+            known = clash[key] ? clash[key].mine : mine,
+            theirs = n < 0 ? null : JSON.stringify(e.next[n]);
+          if (theirs !== known) {
+            /* غيري عدّل (أو حذف) العنصرَ المفتوح أمامي: نسختي تبقى في مكانها حتى أُغلق النافذة، ولا تُكتب فوق نسخته */
+            clash[key] || (this._planNote = !0);
+            clash[key] = { kind: e.kind, idk: e.idk, id: id, mine: known, theirs: theirs, had: !0 };
+            n < 0 ? (e.next.push(was), (n = e.next.length - 1)) : (e.next[n] = was);
+            "sectors" === e.kind && (secs = e.next);
+          } else delete clash[key];
+        }
+        p[e.ed] = n < 0 ? null : n === e.cur.i ? e.cur : { ...e.cur, i: n };
+        n >= 0 && (p.sel = { t: e.selT, i: n });
+      });
+      secs && (p.floors = p.floors.map((x, n) => (n === i ? { ...x, sectors: secs } : x)));
+      [
+        ["gdrag", "gates"],
+        ["mdrag", "marks"],
+      ].forEach(([d, kind]) => {
+        const cur = s[d],
+          was = cur && (s[kind] || [])[cur.i],
+          n = was && null != was.uid ? lists[kind].findIndex((x) => x && x.uid === was.uid) : -1;
+        cur && (p[d] = n < 0 ? null : n === cur.i ? cur : { ...cur, i: n });
+      });
+      this._planClash = clash && Object.keys(clash).length ? clash : null;
+      if (this._planNote) {
+        this._planNote = !1;
+        try {
+          KIVO.__bsLiveLog && KIVO.__bsLiveLog("element-clash", "Operational Plan", "العنصرُ المفتوح عدّله غيرُك أو حذفه", Object.keys(clash));
+        } catch (e) {}
+        this.bsToast("عدّل مستخدمٌ آخر العنصرَ المفتوح أمامك (أو حذفه) — لن يُحفظ تعديلك فوق نسخته؛ أغلق النافذة لتراها", "warn");
       }
     }
     h("bassam_gate_opts_v1") && (p.gateOpts = this.loadGateOpts());
@@ -3461,6 +3585,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       delMonths:
         t.delMonths && typeof t.delMonths === "object" ? t.delMonths : {},
     };
+    if (!this._planClashCheck(payload)) return (this._opLastSave = Promise.resolve({ ok: 0, err: "changed" })), this._opLastSave;
     this._opLastSave = this._opCommit({ ...related, bassam_plan_v1: payload });
     const ack = await this._opLastSave;
     if (ack && ack.ok === 1 && !ack.rebased && !this._pmSyncing) {
@@ -3535,7 +3660,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       let changed = false;
       Object.keys(rounds).forEach((key) => {
         const rec = rounds[key];
-        if (rec && Array.isArray(rec.d) && !rec.ap) {
+        if (rec && Array.isArray(rec.d) && !rec.ap && this._roundKeyNow(key)) {
           rec.d = rec.d.map((floor) => {
             if (!floor || floor.ap) return floor;
             changed = true;
@@ -17085,7 +17210,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   let e = !1;
                   (Object.keys(t).forEach((s) => {
                   const n = t[s];
-                  if (n && Array.isArray(n.d))
+                  if (n && Array.isArray(n.d) && !n.ap && this._roundKeyNow(s))   /* برومت 43 · الجذر 3: اليومَ وما بعده غيرَ المعتمد فقط */
                     for (; n.d.length < a.length; )
                       (n.d.push({ zones: [], gates: [], marks: [], paths: [], sid: (a[n.d.length] || {}).sid }), (e = !0));
                 }),

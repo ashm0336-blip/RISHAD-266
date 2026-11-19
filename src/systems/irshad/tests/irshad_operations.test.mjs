@@ -208,12 +208,14 @@ test('delete-month removes only visible rows and authorizes every affected day b
 
 test('actual retro API opens reads and closes typed windows while enforcing closed dates even for super',async()=>{
   const B=await fixture(),month=past(B),oldData=data(B,{...month,d:1}),before=snapshot(B);
-  await assert.rejects(B.act(await B.body('create',{data:oldData})),e=>e.irStatus===403);assert.deepEqual(snapshot(B),before);
+  /* Owner decision (prompt 43, root 1): the closed date no longer refuses the platform admin; the two refusals below are asserted
+     on the unit manager (they used to be asserted on the platform admin). The window still opens, is read and closes as before. */
+  await assert.rejects(B.act(await B.body('create',{data:oldData},'manager1'),'manager1'),e=>e.irStatus===403);assert.deepEqual(snapshot(B),before);
   const opened=await retro(B,{...month,d:1});assert.equal(opened.status,200,JSON.stringify(opened.json));assert.equal(opened.json.ok,1);
   const state=await B.api('super','/api/retro?res=irshad&dept='+D1);assert.equal(state.status,200);assert.ok(state.json.windows.some(w=>w.id===opened.json.window.id));
   const created=await B.act(await B.body('create',{data:oldData}));assert.ok(created.id);
   const closed=await retro(B,null,{act:'close',id:opened.json.window.id});assert.equal(closed.status,200,JSON.stringify(closed.json));assert.ok(closed.json.window.closedAt);
-  const after=snapshot(B);await assert.rejects(B.act(await B.body('create',{data:oldData})),e=>e.irStatus===403);assert.deepEqual(snapshot(B),after);
+  const after=snapshot(B);await assert.rejects(B.act(await B.body('create',{data:oldData},'manager1'),'manager1'),e=>e.irStatus===403);assert.deepEqual(snapshot(B),after);
   assert.equal(await B.W.irLegacyPresent(B.env),false);
 });
 

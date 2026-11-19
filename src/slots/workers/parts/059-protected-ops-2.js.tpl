@@ -227,7 +227,7 @@ function enfSheetKeys(A, d, t, sheet, el) {
 var ENF_GRANT_FIELDS = { plus: 1, minus: 1, at: 1, by: 1, src: 1 };
 function enfGrantsWrite(A, k, newVal, curVal, ctx) {
   var P = parseKey(k), d = P.dept, sup = A.u.role === 'super';
-  if (!d) return enfNo('scope');
+  if (!d) return enfNo('scope', { structural: 1 });
   if (!sup && !deptInScope(A, d)) return enfNo('dept');
   if (newVal == null) return sup ? enfOk(['perm.assign']) : enfNo('super');
   var n = parseJson(newVal, null), o = curVal == null ? {} : parseJson(curVal, null);

@@ -210,10 +210,15 @@ test('historical import remains a super-only operation; the platform admin is no
 test('the original enforced DateRange and day-lock guards apply to the new tables', async () => {
   const { W, env } = await world();
   const past = { ...empty(), haram: { '1440-01-01': { worshippers: 5 } } };
-  for (const uid of ['super', 'staff']) {
-    const r = await W.dsDomainCommit(env, actor(W, uid, { enf: true }), { base: 0, data: past });
-    assert.equal(r.status, 403, uid + ' must still respect the closed period');
+  /* Owner decision (prompt 43, root 1): the platform admin has no restriction at all — the closed period no longer refuses him
+     (this loop used to assert 403 for 'super' as well). Everyone else is refused as before. */
+  {
+    const r = await W.dsDomainCommit(env, actor(W, 'staff', { enf: true }), { base: 0, data: past });
+    assert.equal(r.status, 403, 'staff must still respect the closed period');
     assert.deepEqual((await W.dsDomainRead(env)).data, empty());
+    const S = await world(), rs = await S.W.dsDomainCommit(S.env, actor(S.W, 'super', { enf: true }), { base: 0, data: past });
+    assert.equal(rs.status, 200, 'the platform admin is not held by the closed period: ' + JSON.stringify(rs.body).slice(0, 200));
+    assert.deepEqual((await S.W.dsDomainRead(S.env)).data.haram, past.haram);
   }
   const locked = { ...empty(), haram: { '1500-01-01': { worshippers: 5 } }, locks: { 'haram|1500-1': { dshut: { 1: 1 } } } };
   await seed(W, env, locked);

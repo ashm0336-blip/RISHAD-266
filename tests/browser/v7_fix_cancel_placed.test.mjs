@@ -83,7 +83,8 @@ test('«إلغاء» الباب الجديد بعد أن حفظ جهازٌ آخ�
     assert.ok(await settle(['TEST_ONLY_o1']), '(أ) بابي حُذف من الخادم وبابُ الجهاز الآخر باقٍ: ' + JSON.stringify(await uids()));
     let r = await since(m);
     assert.deepEqual(r.toasts.filter((t) => /لم يُحفظ|لم يصل|لم يُلغَ|عدّل مستخدم/.test(t)), [], '(أ) بلا رسالة رفض: ' + JSON.stringify(r));
-    assert.ok(r.live.some((t) => t.includes('cancel-rebase')) && r.live.some((t) => t.includes('cancel-done')) && !r.live.some((t) => /save-refused|uncertain/.test(t)), '(أ) السجل: ' + JSON.stringify(r.live));
+    /* برومت 43: الواردُ يُدمج لحظياً والنافذةُ مفتوحة، فمسودةُ الصفحة تتقدّم والإلغاءُ يمرّ بالحفظ المعتاد؛ وإن سبق الإلغاءُ الدمجَ فبإعادة البناء (cancel-rebase) — النتيجةُ واحدة */
+    assert.ok(!r.live.some((t) => /save-refused|uncertain|cancel-failed|cancel-kept/.test(t)), '(أ) السجل: ' + JSON.stringify(r.live));
     assert.ok(!(await uids()).includes(mineA));
     await b2.page.waitForFunction(() => { const t = document.querySelector('#bsPtPlan').innerText.replace(/\s+/g, ' '), i = t.lastIndexOf('سجل الأبواب'); return i >= 0 && /باب واحد/.test(t.slice(i, i + 70)); }, null, { timeout: 20000 });   /* الصفحة أخذت أحدث نسخة: بابُ الجهاز الآخر وحده */
 
@@ -106,7 +107,7 @@ test('«إلغاء» الباب الجديد بعد أن حفظ جهازٌ آخ�
     await b2.page.waitForTimeout(3000); await cancel();
     await b2.page.waitForFunction(() => window.__toasts.some((t) => /عدّل مستخدمٌ آخر هذا العنصر/.test(t)), null, { timeout: 20000 });
     r = await since(m);
-    assert.ok(r.live.some((t) => t.includes('cancel-kept')), '(ج) السجل: ' + JSON.stringify(r.live));
+    assert.ok(r.live.some((t) => /cancel-kept|save-kept/.test(t)), '(ج) السجل: ' + JSON.stringify(r.live));   /* برومت 43: بالدمج اللحظي يُكشف التعارضُ عند الحفظ (save-kept)، وبدونه عند إعادة البناء (cancel-kept) */
     const kept = (await gates()).find((x) => x.uid === mineC);
     assert.ok(kept && kept.num === '99', '(ج) الباب باقٍ في الخادم بتعديل الجهاز الآخر: ' + JSON.stringify(kept));
     assert.deepEqual(await uids(), ['TEST_ONLY_o1', 'TEST_ONLY_o2', mineC].sort());
@@ -136,6 +137,6 @@ test('«إلغاء» الباب الجديد بعد أن حفظ جهازٌ آخ�
     assert.ok((await uids()).includes('TEST_ONLY_o3'), '(د) بابُ الجهاز الآخر باقٍ');
     r = await since(m);
     assert.deepEqual(r.toasts.filter((t) => /لم يُحفظ|لم يصل|لم يُلغَ|عدّل مستخدم/.test(t)), [], '(د) بلا رسالة رفض: ' + JSON.stringify(r));
-    assert.ok(r.live.some((t) => t.includes('cancel-done') && t.includes('marks:')), '(د) السجل: ' + JSON.stringify(r.live));
+    assert.ok(!r.live.some((t) => /save-refused|uncertain|cancel-failed|cancel-kept/.test(t)), '(د) السجل: ' + JSON.stringify(r.live));
   } finally { await b.close(); await lab.close(); fs.rmSync(TMP, { recursive: true, force: true }); }
 });

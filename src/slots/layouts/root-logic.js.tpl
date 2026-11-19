@@ -544,7 +544,7 @@ class Component extends DCLogic {
     const acc = this._liveKeys || []; (keys || []).forEach(k => { if (acc.indexOf(k) === -1) acc.push(k); }); this._liveKeys = acc;
     this._livePend = true;
     if (foreign && foreign.length && this._liveTouches(foreign, a)) this._liveForeign = true;   /* تعديلُ جهازٍ آخر لما تعرضه هذه الصفحة */
-    clearTimeout(this._liveT); this._liveT = setTimeout(() => this._liveTry(0), 600);
+    clearTimeout(this._liveT); this._liveT = setTimeout(() => this._liveTry(0), 250);   /* 41-د: كان ٦٠٠ م.ث */
   }
   _liveBusy() {
     try {
@@ -558,7 +558,13 @@ class Component extends DCLogic {
   }
   _liveTry(n) {
     if (!this._livePend) return;
+    /* برومت 41-د: صفحةٌ تدمج الواردَ على مستوى العنصر (_bsLiveMerge — تحمي العنصرَ المفتوح وحده) لا تنتظر إغلاقَ النافذة ولا توقّفَ الكتابة */
+    let merged = false;
     if (this._liveBusy() && n < 240) {
+      const ks = (this._liveKeys || []).slice();
+      this._liveComps().forEach(c => { try { const L = c.logic; if (L && typeof L._bsLiveMerge === "function" && L._bsLiveMerge(ks) === true) merged = true; } catch (e) {} });
+    }
+    if (!merged && this._liveBusy() && n < 240) {
       /* تغيّر ما تعرضه هذه الصفحة وأمام المستخدم نافذةٌ أو كتابة: تنبيهٌ صغير مرةً واحدة، والتطبيقُ بعد أن يفرغ — بلا قطع عمله */
       if (this._liveForeign && !this._liveNoted) { this._liveNoted = true; try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog("deferred", this.state.active, "نافذةٌ مفتوحة أو كتابةٌ جارية — يُطبَّق بعدها", this._liveKeys); } catch (e) {} try { this.bkToast("حُدّثت البيانات من جهاز آخر — تظهر بعد إغلاق النافذة", 3500); } catch (e) {} }
       this._liveT = setTimeout(() => this._liveTry(n + 1), 1500); return;   /* حتى ٦ دقائق ثم يُطبَّق */

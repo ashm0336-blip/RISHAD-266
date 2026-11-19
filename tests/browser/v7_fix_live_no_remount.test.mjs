@@ -88,7 +88,8 @@ test('التحديث التلقائي لا يهدم الصفحة: نافذة «�
     const poll = setInterval(async () => { try { if (await b2.page.evaluate(() => document.body.innerText.includes('حُدّثت البيانات من جهاز آخر'))) b2.sawNotice = true; } catch (e) {} }, 400);
     await step('حفظ باب في الإدارة نفسها', async () => { await toField(su); await gateDlg(su); await su.page.locator(FIXED.split(', ').map((q) => q + ' input').join(', ')).first().fill('5'); await su.page.locator(FIXED.split(', ').map((q) => q + ' button').join(', ')).filter({ hasText: 'حفظ البيانات' }).first().click(); await su.page.waitForTimeout(3500); assert.equal(await gatesOf(su), g0 + 1, 'باب الجهاز الأول حُفظ في الخادم'); });
     clearInterval(poll);
-    assert.ok(b2.sawNotice, 'تنبيه صغير «حُدّثت البيانات من جهاز آخر» ظهر والنافذة مفتوحة');
+    /* برومت 43 (الجذر 2): الواردُ يُدمج الآن لحظياً على مستوى العنصر والنافذةُ مفتوحة — لا تأجيلَ ولا تنبيهَ «تظهر بعد إغلاق النافذة» (كان يُثبَّت هنا) */
+    void b2.sawNotice;
     /* إغلاق النافذة وترك أداة الرسم ⇒ تظهر البيانات الجديدة في مكانها */
     const register = () => b2.page.evaluate(() => { const t = document.querySelector('#bsPtPlan').innerText.replace(/\s+/g, ' '), i = t.lastIndexOf('سجل الأبواب'); return i < 0 ? '' : t.slice(i, i + 60); });
     const reg0 = await register();

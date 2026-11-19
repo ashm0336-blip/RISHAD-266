@@ -87,7 +87,8 @@ test('حفظٌ من الجهاز الأول بعد أن حفظ الجهاز ال
     assert.deepEqual(await uids(), ['TEST_ONLY_o1', mine].sort(), '① البابان باقيان');
     let r = await since(m);
     assert.deepEqual(r.toasts.filter((t) => REFUSED.test(t)), [], '① بلا رسالة رفض: ' + JSON.stringify(r));
-    assert.ok(r.live.some((t) => t.includes('save-rebased')) && !r.live.some((t) => /save-refused|uncertain/.test(t)), '① السجل: ' + JSON.stringify(r.live));
+    /* برومت 43: الواردُ يُدمج لحظياً والنافذةُ مفتوحة فتتقدّم المسودة ويمرّ الحفظُ المعتاد؛ وإن سبق الحفظُ الدمجَ فبإعادة البناء (save-rebased) — النتيجةُ واحدة */
+    assert.ok(!r.live.some((t) => /save-refused|uncertain|save-kept/.test(t)), '① السجل: ' + JSON.stringify(r.live));
     await b2.page.waitForFunction(() => { const t = document.querySelector('#bsPtPlan').innerText.replace(/\s+/g, ' '), i = t.lastIndexOf('سجل الأبواب'); return i >= 0 && /بابان/.test(t.slice(i, i + 70)); }, null, { timeout: 20000 });   /* الصفحة أخذت أحدث نسخة */
 
     /* ── ② تحريك بابي والجهاز الثاني حفظ للتوّ (خبرُه لم يصل: كمون على /api/changes) ── */
