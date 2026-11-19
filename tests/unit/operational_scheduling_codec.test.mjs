@@ -5,10 +5,11 @@ import fs from "node:fs";
 import vm from "node:vm";
 import { DatabaseSync } from "node:sqlite";
 import { operationalMigrationFixture } from "./operational_migration_fx.mjs";
+import { SCHED_PARTS } from './sched_parts.mjs';   /* V7 · د5-د: أجزاءُ الجدولة من سجلّها */
 const C = vm.createContext({});
 for (const path of [
   "workers/parts/019o-operational-codec.js",
-  "workers/parts/019p-operations-scheduling.js", "workers/parts/019p1-scheduling-staff.js", "workers/parts/019p2-scheduling-plan.js", "workers/parts/019p3-scheduling-rounds.js", "workers/parts/019p4-scheduling-plan-options.js", "workers/parts/019p9-scheduling-registry.js",
+  ...SCHED_PARTS.map((f) => "workers/parts/" + f),
 ])
   vm.runInContext(fs.readFileSync(path, "utf8"), C, { filename: path });
 const definitions = C.OC_SCHEDULING_RESOURCES,

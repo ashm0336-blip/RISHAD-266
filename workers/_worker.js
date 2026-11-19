@@ -18302,6 +18302,28 @@ function osSchemaShiftList(table) {
     ]),
   );
 }
+// V7 · د5-د: مواردُ الجدولة التي للقاعدة لا لبرنامج — خياراتُ الورديات، ووردياتُ اليوم، وتركيزُ اليوم القديم.
+// كانت في جزء الجدول الشهري (019p1) مع موارده؛ فُصلت ليخرج الجدولُ ببرنامجه وتبقى هذه.
+function osSchemaBaseResources() {
+  return [
+    {
+      resource: "bassam_shift_options_v1",
+      name: "shifts",
+      schema: ocArray("ops_shift_options", osSchemaShift("ops_shift_option")),
+    },
+    {
+      resource: "bassam_dayshift_v1",
+      name: "dayShift",
+      schema: ocMap("ops_day_shifts", ocScalar("text")),
+    },
+    // Current day-focus is per-tab/device. This describes old cloud bytes only.
+    {
+      resource: "bassam_dayfocus_v1",
+      name: "legacyDayFocus",
+      schema: ocObject("ops_legacy_day_focus", osSchemaFields(["y", "m", "d"])),
+    },
+  ];
+}
 function osSchemaStaffRow(table) {
   var fields = osSchemaFields(["shift", "muk", "cs"]);
   fields.rest = osSchemaScalars(table + "_rest");
@@ -18332,7 +18354,7 @@ function osSchemaMonthLock(table) {
     ocObject(table + "_open", osSchemaFields(["mo"])),
   ]);
 }
-function osSchemaCoreResources() {
+function osSchemaStaffResources() {
   return [
     {
       resource: "bassam_staffing_v3",
@@ -18384,22 +18406,6 @@ function osSchemaCoreResources() {
       resource: "bassam_perm_limit_v1",
       name: "permissionLimit",
       schema: osSchemaValue("ops_permission_limit"),
-    },
-    {
-      resource: "bassam_shift_options_v1",
-      name: "shifts",
-      schema: ocArray("ops_shift_options", osSchemaShift("ops_shift_option")),
-    },
-    {
-      resource: "bassam_dayshift_v1",
-      name: "dayShift",
-      schema: ocMap("ops_day_shifts", ocScalar("text")),
-    },
-    // Current day-focus is per-tab/device. This describes old cloud bytes only.
-    {
-      resource: "bassam_dayfocus_v1",
-      name: "legacyDayFocus",
-      schema: ocObject("ops_legacy_day_focus", osSchemaFields(["y", "m", "d"])),
     },
   ];
 }
@@ -18728,7 +18734,8 @@ function osSchemaPlanResources() {
     },
   ];
 }
-var OC_SCHEDULING_RESOURCES = osSchemaCoreResources().concat(
+var OC_SCHEDULING_RESOURCES = osSchemaStaffResources().concat(
+  osSchemaBaseResources(),
   osSchemaPlanResources(),
 );
 /* Operational source contracts only. Every container has its own fixed table.
