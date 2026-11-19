@@ -1482,14 +1482,17 @@
       // Do not render a transient empty value between invalidation and ACK.
       // A failed read still publishes its normal fail-closed error state.
       var priorRev9 = Object.create(null); operationKeys.forEach(function (key) { priorRev9[key] = krev[key]; });
-      /* صدى حفظي أنا: مراجعةُ المفتاح هي النسخةُ العامة لحظةَ كتابته، فمفتاحٌ مراجعتُه عندي ≥ نسخةِ هذا الإشعار (v) لا جديدَ له في الخادم —
-         لا يُسقَط ولا تُعاد قراءتُه (كانت نافذةُ إعادة قراءته تُسقط الحفظَ التالي بـ«تغيّرت نسخة البيانات»). ما عداه يُقرأ كما كان. */
-      var staleKeys9 = operationKeys.filter(function (key) {
+      /* صدى حفظي أنا: مراجعةُ المفتاح هي النسخةُ العامة لحظةَ كتابته، فمفتاحٌ مراجعتُه عندي ≥ نسخةِ هذا الإشعار (v) لا جديدَ له في الخادم.
+         يُقرأ مع غيره كما كان، لكن **في مكانه** بلا إسقاطٍ مسبق (كانت نافذةُ قراءته تردّ الحفظَ التالي بـ«تغيّرت نسخة البيانات»)؛
+         وإن فشلت القراءةُ أُسقط كما كان يُسقط — فالنتيجةُ عند الفشل والمنع واحدة. ما عداه يُسقط قبل القراءة كما كان. */
+      var echoKeys9 = operationKeys.filter(function (key) {
         var known = operationKnown9[key];
-        return !(known && known.stamp && operationSame9(known.stamp) && ['ready', 'absent'].includes(known.state) && known.epoch === operationEpoch9 && operationInteger9(known.rev) && operationInteger9(v) && known.rev >= v);
+        return !!(known && known.stamp && operationSame9(known.stamp) && ['ready', 'absent'].includes(known.state) && known.epoch === operationEpoch9 && operationInteger9(known.rev) && operationInteger9(v) && known.rev >= v);
       });
-      if (staleKeys9.length) operationInvalidate9(staleKeys9, true);
-      return Promise.all([getAll9(keys, null), staleKeys9.length ? operationRead9(staleKeys9) : { ok: 1 }]).then(function (result) {
+      var dropKeys9 = operationKeys.filter(function (key) { return echoKeys9.indexOf(key) === -1; });
+      if (dropKeys9.length) operationInvalidate9(dropKeys9, true);
+      return Promise.all([getAll9(keys, null), operationKeys.length ? operationRead9(operationKeys) : { ok: 1 }]).then(function (result) {
+        if ((!result[1] || result[1].ok !== 1) && echoKeys9.length && !(result[1] && result[1].err === 'stale')) operationInvalidate9(echoKeys9, true);
         if (!result[1] || result[1].ok !== 1) throw Error('operations-sync-read');
         BOOT.v = v; irKeys.forEach(notify);
         return { changed: Array.from(new Set(result[0].concat(irKeys, logicalOperationKeys))), confirmed: operationKeys,
