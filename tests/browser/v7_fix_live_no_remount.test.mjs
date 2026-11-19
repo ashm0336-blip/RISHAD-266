@@ -94,12 +94,13 @@ test('التحديث التلقائي لا يهدم الصفحة: نافذة «�
     const reg0 = await register();
     await b2.page.locator(FIXED.split(', ').map((q) => q + ' button').join(', ')).filter({ hasText: /^إلغاء$/ }).first().click();
     await b2.page.waitForTimeout(800); await b2.page.keyboard.press('Escape');
-    /* باب الجهاز الأول يظهر. و«إلغاء» هنا يحاول حذف الباب الموضوع على نسخةٍ تغيّرت، فيرفضه الخادم برسالته المعتادة ويبقى البابان (سلوك التعارض القائم، لم يُمسّ) */
-    await b2.page.waitForFunction(() => { const t = document.querySelector('#bsPtPlan').innerText.replace(/\s+/g, ' '), i = t.lastIndexOf('سجل الأبواب'); return i >= 0 && /بابان/.test(t.slice(i, i + 60)); }, null, { timeout: 30000 });
+    /* باب الجهاز الأول يظهر. و«إلغاء» يحذف الباب الذي وضعه هذا الجهاز ولو تغيّرت نسخة الخطة بحفظ الجهاز الأول (برومت 41 — كان يُرفض فيبقى البابان):
+       يبقى بابُ الجهاز الأول وحده. التفصيل في tests/browser/v7_fix_cancel_placed.test.mjs */
+    await b2.page.waitForFunction(() => { const t = document.querySelector('#bsPtPlan').innerText.replace(/\s+/g, ' '), i = t.lastIndexOf('سجل الأبواب'); return i >= 0 && /باب واحد/.test(t.slice(i, i + 60)); }, null, { timeout: 30000 });
     const after = await b2.page.evaluate(() => ({ gone: window.__w.gone, ph: window.__w.ph, connected: window.__w.root.isConnected }));
     assert.deepEqual([after.gone, after.ph, after.connected], [0, 0, true], 'بعد الإغلاق: التطبيق في مكانه بلا فكّ');
     assert.notEqual(await register(), reg0, 'سجل الأبواب تحدّث بعد إغلاق النافذة');
-    assert.equal(await gatesOf(b2), g0 + 1);
+    assert.equal(await gatesOf(b2), g0, 'بابُ الجهاز الأول وحده في الخادم (بابُ هذا الجهاز أُلغي)');
     assert.equal(b2.live.some((t) => /\] (drop|placeholder|remount) /.test(t)), false, 'لا إسقاط ولا هيكل ولا إعادة تركيب: ' + JSON.stringify(b2.live));
 
     /* ── ② تغييرٌ حقيقي في صلاحيات مدير الإدارة يُطبَّق بلا هدم صفحته ── */
