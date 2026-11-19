@@ -28,30 +28,6 @@
  ],
  "bindings": [
   {
-   "key": "staff.lock",
-   "res": "bassam_staffing_locks_v1 (+ bassam_staffing_v3[\"y-m\"].__shifts)",
-   "where": "locks[\"y-m\"]: → true (من غيابٍ أو {mo:1}) · أو {mo:1} يزول لشهرٍ منقضٍ · لقطة __shifts تظهر",
-   "how": "اتجاه القفل على خريطة أقفال الجدول الشهري (OPS **)",
-   "asis": "staff:approve",
-   "decl": "",
-   "dup": "لقطة __shifts في staffing_v3 تُكتب مع القفل نفسِه (مسارٌ ثانٍ لعمليةٍ واحدة) — مبرَّر",
-   "owner": "staff",
-   "type": "decision",
-   "guardKind": "ops"
-  },
-  {
-   "key": "staff.reopen",
-   "res": "bassam_staffing_locks_v1 (+ __shifts)",
-   "where": "locks[\"y-m\"]: true يزول · أو → {mo:1} · لقطة __shifts تزول",
-   "how": "اتجاه الفتح",
-   "asis": "staff:approve",
-   "decl": "",
-   "dup": "",
-   "owner": "staff",
-   "type": "decision",
-   "guardKind": "ops"
-  },
-  {
    "key": "plan.approve",
    "res": "bassam_plan_v1",
    "where": "months[\"y-m\"].mo يزول (إعادة قفل شهرٍ منقضٍ) · months[\"y-m\"].d[i].approved → true",
@@ -516,18 +492,6 @@
    "decl": "العتبة: 2+ سجلّ = جماعي؛ سجلٌّ واحد = emp.record.delete (المصدرُ لا يرسل علامةَ «حذف المحدد»)",
    "dup": "",
    "owner": "emps/data",
-   "type": "operation",
-   "guardKind": "cap"
-  },
-  {
-   "key": "staff.bulk.delete",
-   "res": "bassam_staffing_v3 / v2",
-   "where": "زوالُ مفتاح الشهر كلِّه [\"y-m\"] (delMonthDo) أو زوالُ كلِّ صفوفه",
-   "how": "شكلُ التفريغ الكامل",
-   "asis": "staff:del (الواجهة) · staff:edit (الحفظ)",
-   "decl": "",
-   "dup": "",
-   "owner": "staff",
    "type": "operation",
    "guardKind": "cap"
   },

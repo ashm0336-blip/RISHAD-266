@@ -1232,7 +1232,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 24,
+    "after": 23,
     "seq": 15,
     "value": "ff.module.dstats.enabled"
    }
@@ -1741,7 +1741,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 0,
+    "seq": 10,
     "value": {
      "key": "dstats.haram.approve",
      "res": "bassam_dstats_v1",
@@ -1760,7 +1760,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 20,
     "value": {
      "key": "dstats.haram.reopen",
      "res": "bassam_dstats_v1",
@@ -1779,7 +1779,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 2,
+    "seq": 30,
     "value": {
      "key": "dstats.nabawi.approve",
      "res": "bassam_dstats_v1",
@@ -1798,7 +1798,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 3,
+    "seq": 40,
     "value": {
      "key": "dstats.nabawi.reopen",
      "res": "bassam_dstats_v1",

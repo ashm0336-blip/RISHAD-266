@@ -8,7 +8,7 @@
     "path": [
      "registry"
     ],
-    "after": 29,
+    "after": 22,
     "seq": 32,
     "value": {
      "key": "sz.dash.view",
@@ -63,7 +63,7 @@
     "path": [
      "registry"
     ],
-    "after": 29,
+    "after": 22,
     "seq": 33,
     "value": {
      "key": "sz.rec.view",
@@ -115,7 +115,7 @@
     "path": [
      "registry"
     ],
-    "after": 29,
+    "after": 22,
     "seq": 34,
     "value": {
      "key": "sz.rec.create",
@@ -167,7 +167,7 @@
     "path": [
      "registry"
     ],
-    "after": 29,
+    "after": 22,
     "seq": 35,
     "value": {
      "key": "sz.rec.edit",
@@ -219,7 +219,7 @@
     "path": [
      "registry"
     ],
-    "after": 29,
+    "after": 22,
     "seq": 36,
     "value": {
      "key": "sz.rec.delete",
@@ -271,7 +271,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 63,
     "value": {
      "key": "ref.seized.location.view",
@@ -319,7 +319,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 64,
     "value": {
      "key": "ref.seized.location.create",
@@ -367,7 +367,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 65,
     "value": {
      "key": "ref.seized.location.edit",
@@ -415,7 +415,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 66,
     "value": {
      "key": "ref.seized.location.delete",
@@ -463,7 +463,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 67,
     "value": {
      "key": "ref.seized.category.view",
@@ -511,7 +511,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 68,
     "value": {
      "key": "ref.seized.category.create",
@@ -559,7 +559,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 69,
     "value": {
      "key": "ref.seized.category.edit",
@@ -607,7 +607,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 70,
     "value": {
      "key": "ref.seized.category.delete",
@@ -655,7 +655,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 71,
     "value": {
      "key": "ref.seized.item.view",
@@ -703,7 +703,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 72,
     "value": {
      "key": "ref.seized.item.create",
@@ -751,7 +751,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 73,
     "value": {
      "key": "ref.seized.item.edit",
@@ -799,7 +799,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 74,
     "value": {
      "key": "ref.seized.item.delete",
@@ -847,7 +847,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 75,
     "value": {
      "key": "ref.seized.kind.view",
@@ -895,7 +895,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 76,
     "value": {
      "key": "ref.seized.kind.create",
@@ -943,7 +943,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 77,
     "value": {
      "key": "ref.seized.kind.edit",
@@ -991,7 +991,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 78,
     "value": {
      "key": "ref.seized.kind.delete",
@@ -1039,7 +1039,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 79,
     "value": {
      "key": "ref.seized.action.view",
@@ -1087,7 +1087,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 80,
     "value": {
      "key": "ref.seized.action.create",
@@ -1135,7 +1135,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 81,
     "value": {
      "key": "ref.seized.action.edit",
@@ -1183,7 +1183,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 82,
     "value": {
      "key": "ref.seized.action.delete",
@@ -1231,7 +1231,7 @@
     "path": [
      "registry"
     ],
-    "after": 131,
+    "after": 110,
     "seq": 83,
     "value": {
      "key": "sz.rec.bulk.delete",
@@ -1283,7 +1283,7 @@
     "path": [
      "registry"
     ],
-    "after": 138,
+    "after": 116,
     "seq": 88,
     "value": {
      "key": "sz.rec.retro.open",
@@ -1332,7 +1332,7 @@
      },
      "references"
     ],
-    "after": 3,
+    "after": 2,
     "seq": 2,
     "value": "seized/records"
    },
@@ -1345,7 +1345,7 @@
      },
      "references"
     ],
-    "after": 3,
+    "after": 2,
     "seq": 2,
     "value": "seized/records"
    },
@@ -1353,7 +1353,7 @@
     "path": [
      "owners"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 10,
     "value": {
      "id": "seized/dash",
@@ -1368,7 +1368,7 @@
     "path": [
      "owners"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 11,
     "value": {
      "id": "seized/records",
@@ -1383,7 +1383,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 60,
     "value": {
      "leaf": "seized/dash",
@@ -1398,7 +1398,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 61,
     "value": {
      "leaf": "seized/dash",
@@ -1411,7 +1411,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 62,
     "value": {
      "leaf": "seized/dash",
@@ -1424,7 +1424,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 63,
     "value": {
      "leaf": "seized/dash",
@@ -1437,7 +1437,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 64,
     "value": {
      "leaf": "seized/dash",
@@ -1450,7 +1450,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 65,
     "value": {
      "leaf": "seized/dash",
@@ -1465,7 +1465,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 66,
     "value": {
      "leaf": "seized/records",
@@ -1485,7 +1485,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 67,
     "value": {
      "leaf": "seized/records",
@@ -1505,7 +1505,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 68,
     "value": {
      "leaf": "seized/records",
@@ -1525,7 +1525,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 69,
     "value": {
      "leaf": "seized/records",
@@ -1546,7 +1546,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 70,
     "value": {
      "leaf": "seized/records",
@@ -1561,7 +1561,7 @@
     "path": [
      "atoms"
     ],
-    "after": 60,
+    "after": 54,
     "seq": 71,
     "value": {
      "leaf": "seized/records",
@@ -1576,7 +1576,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 9,
     "value": "ff.sz.dash.export"
    },
@@ -1584,7 +1584,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 10,
     "value": "ff.sz.rec.export"
    },
@@ -1592,7 +1592,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 23,
+    "after": 22,
     "seq": 13,
     "value": "ff.sz.photo.download"
    },
@@ -1600,7 +1600,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 30,
+    "after": 28,
     "seq": 18,
     "value": "ff.module.seized.enabled"
    }
@@ -1610,7 +1610,7 @@
     "path": [
      "bindings"
     ],
-    "after": 29,
+    "after": 22,
     "seq": 31,
     "value": {
      "key": "sz.dash.view",
@@ -1649,7 +1649,7 @@
     "path": [
      "bindings"
     ],
-    "after": 29,
+    "after": 22,
     "seq": 32,
     "value": {
      "key": "sz.rec.view",
@@ -1684,7 +1684,7 @@
     "path": [
      "bindings"
     ],
-    "after": 29,
+    "after": 22,
     "seq": 33,
     "value": {
      "key": "sz.rec.create",
@@ -1719,7 +1719,7 @@
     "path": [
      "bindings"
     ],
-    "after": 29,
+    "after": 22,
     "seq": 34,
     "value": {
      "key": "sz.rec.edit",
@@ -1754,7 +1754,7 @@
     "path": [
      "bindings"
     ],
-    "after": 29,
+    "after": 22,
     "seq": 35,
     "value": {
      "key": "sz.rec.delete",
@@ -1789,7 +1789,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 62,
     "value": {
      "key": "ref.seized.location.view",
@@ -1822,7 +1822,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 63,
     "value": {
      "key": "ref.seized.location.create",
@@ -1855,7 +1855,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 64,
     "value": {
      "key": "ref.seized.location.edit",
@@ -1888,7 +1888,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 65,
     "value": {
      "key": "ref.seized.location.delete",
@@ -1921,7 +1921,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 66,
     "value": {
      "key": "ref.seized.category.view",
@@ -1954,7 +1954,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 67,
     "value": {
      "key": "ref.seized.category.create",
@@ -1987,7 +1987,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 68,
     "value": {
      "key": "ref.seized.category.edit",
@@ -2020,7 +2020,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 69,
     "value": {
      "key": "ref.seized.category.delete",
@@ -2053,7 +2053,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 70,
     "value": {
      "key": "ref.seized.item.view",
@@ -2086,7 +2086,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 71,
     "value": {
      "key": "ref.seized.item.create",
@@ -2119,7 +2119,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 72,
     "value": {
      "key": "ref.seized.item.edit",
@@ -2152,7 +2152,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 73,
     "value": {
      "key": "ref.seized.item.delete",
@@ -2185,7 +2185,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 74,
     "value": {
      "key": "ref.seized.kind.view",
@@ -2218,7 +2218,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 75,
     "value": {
      "key": "ref.seized.kind.create",
@@ -2251,7 +2251,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 76,
     "value": {
      "key": "ref.seized.kind.edit",
@@ -2284,7 +2284,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 77,
     "value": {
      "key": "ref.seized.kind.delete",
@@ -2317,7 +2317,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 78,
     "value": {
      "key": "ref.seized.action.view",
@@ -2350,7 +2350,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 79,
     "value": {
      "key": "ref.seized.action.create",
@@ -2383,7 +2383,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 80,
     "value": {
      "key": "ref.seized.action.edit",
@@ -2416,7 +2416,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 81,
     "value": {
      "key": "ref.seized.action.delete",
@@ -2449,7 +2449,7 @@
     "path": [
      "bindings"
     ],
-    "after": 119,
+    "after": 98,
     "seq": 82,
     "value": {
      "key": "sz.rec.bulk.delete",
@@ -2484,7 +2484,7 @@
     "path": [
      "bindings"
     ],
-    "after": 126,
+    "after": 104,
     "seq": 86,
     "value": {
      "key": "sz.rec.retro.open",
@@ -2539,7 +2539,7 @@
      "bassam_employees_v1",
      "keys"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 2,
     "value": "sz.rec.view"
    },
@@ -2550,7 +2550,7 @@
      "bassam_employees_v1",
      "routes"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 2,
     "value": {
      "cap": "seized/records:view",
@@ -2565,7 +2565,7 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 2,
     "value": "sz.rec.view"
    },
@@ -2576,7 +2576,7 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 2,
     "value": {
      "cap": "seized/records:view",
@@ -2618,7 +2618,7 @@
      "keys"
     ],
     "after": 5,
-    "seq": 1,
+    "seq": 20,
     "value": "sz.rec.view"
    },
    {
@@ -2629,7 +2629,7 @@
      "routes"
     ],
     "after": 5,
-    "seq": 1,
+    "seq": 20,
     "value": {
      "cap": "seized/records:view",
      "key": "sz.rec.view",
@@ -2853,7 +2853,7 @@
      "bassam_shift_options_v1",
      "keys"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 2,
     "value": "sz.rec.view"
    },
@@ -2864,7 +2864,7 @@
      "bassam_shift_options_v1",
      "routes"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 2,
     "value": {
      "cap": "seized/records:view",
@@ -2908,8 +2908,8 @@
     "path": [
      "bindings"
     ],
-    "after": 42,
-    "seq": 19,
+    "after": 39,
+    "seq": 40,
     "value": {
      "key": "sz.rec.bulk.delete",
      "res": "bassam_seized_v1",

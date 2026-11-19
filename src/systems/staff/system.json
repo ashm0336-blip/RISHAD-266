@@ -36,9 +36,11 @@
   "staysIn": [],
   "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات — لا تُنقل"
  },
+ "permissions": "permissions.json",
  "tests": [
   "tests/staff_tint_w2.test.mjs",
-  "tests/staff_weekly_rest_ui.test.mjs"
+  "tests/staff_weekly_rest_ui.test.mjs",
+  "tests/v7_d5d_staff_links.test.mjs"
  ],
  "derived": [
   "src/pages/Staffing.dc.html"

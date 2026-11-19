@@ -38,7 +38,7 @@ export function pageText(W) {
 }
 
 /* href: عنوانُ الصفحة (http://x/ افتراضاً = أصلٌ سحابي) · boot: undefined ⇒ لا يُضبط · null ⇒ يُحذف · blocks: الكتلُ بالترتيب */
-export function loadClient({ C, boot, jar = { cookie: '' }, blocks = ['280-server-storage.js'], log = [], href = 'http://x/', native, session } = {}) {
+export function loadClient({ C, boot, jar = { cookie: '' }, blocks = ['280-server-storage.js'], log = [], href = 'http://x/', native, session, staffLinks } = {}) {
   const timers = new Set();
   const listeners = Object.create(null);
   const net = { down: false };
@@ -79,6 +79,7 @@ export function loadClient({ C, boot, jar = { cookie: '' }, blocks = ['280-serve
   if (boot !== undefined) W.__BS_BOOT = boot === null ? undefined : JSON.parse(JSON.stringify(boot));
   const ctx = vm.createContext(W);
   vm.runInContext(fs.readFileSync(blockFile('005-kivo-ns.js'), 'utf8'), ctx, { filename: '005-kivo-ns.js' });
+  vm.runInContext(fs.readFileSync(blockFile('060-bus.js'), 'utf8'), ctx, { filename: '060-bus.js' });   /* V7 · د5-د: الناقل من قلب المنصة — الصفحاتُ تسأل غيرَها بالاسم */
   const T = {
     W, ctx, net, log, urls, jar,
     run: (names) => { for (const b of names) vm.runInContext(fs.readFileSync(blockFile(b), 'utf8'), ctx, { filename: b }); return T; },
@@ -89,6 +90,8 @@ export function loadClient({ C, boot, jar = { cookie: '' }, blocks = ['280-serve
     dispose: () => { for (const t of timers) { clearTimeout(t); clearInterval(t); } timers.clear(); W.document.hidden = true; }
   };
   T.run(blocks);
+  /* V7 · د5-د: روابطُ الجدول الشهري على الناقل (ما كان الآخرون يقرؤونه ويكتبونه من مفاتيحه مباشرةً) — حاضرةٌ كما في الشجرة؛ staffLinks:false لاختبار غيابه */
+  if (staffLinks !== false) { try { T.run(['531-staff-links.js']); } catch (e) { if (!/ENOENT|not found|غير موجود/i.test(String(e && e.message))) throw e; } }
   return T;
 }
 /* تبويباتُ متصفحٍ واحد: مخزنٌ أصليٌّ واحد خلفها، وكلُّ كتابةٍ أصليةٍ في تبويب تُطلق حدثَ storage في التبويبات الأخرى وحدها (كما في المتصفحات) */

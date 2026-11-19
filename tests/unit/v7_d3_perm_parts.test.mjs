@@ -24,7 +24,7 @@ test('V7 · د3: المستودع — الوثائقُ المجموعة = الم
   }
   /* القاعدةُ لا تحمل صفاً يملكه نظام */
   const base = JSON.parse(fs.readFileSync(path.join(SRC, 'permissions', 'registry', 'registry.base.json'), 'utf8'));
-  for (const e of base.registry) assert.ok(!['award', 'dstats', 'irshad', 'seized', 'tasks'].includes(e.owner.split('/')[0]) && e.owner !== 'emps/custody', 'صفُّ نظامٍ في القاعدة: ' + e.key);
+  for (const e of base.registry) assert.ok(!['award', 'dstats', 'irshad', 'seized', 'staff', 'tasks'].includes(e.owner.split('/')[0]) && e.owner !== 'emps/custody', 'صفُّ نظامٍ في القاعدة: ' + e.key);
   /* ومصدرُ 340 هو السجلُّ المجموع */
   const reg = JSON.parse(fs.readFileSync(path.join(SRC, 'permissions', 'registry', 'registry-v24.9.json'), 'utf8'));
   const js = fs.readFileSync(path.join(SRC, 'permissions', '340-registry-v24-9.js'), 'utf8');

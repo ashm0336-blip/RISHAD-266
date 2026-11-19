@@ -13,7 +13,7 @@ import { ROOT, moduleLogic } from './harness.mjs';
 
 const LOGIC = process.env.DAILY_LOGIC ? fs.readFileSync(process.env.DAILY_LOGIC, 'utf8') : moduleLogic('daily');
 const SERVICES = ['src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js', 'src/i18n/380-hijri-fallback.js',
-  'src/services/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/560-canvas-input.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
+  'src/services/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/560-canvas-input.js', 'src/core/060-bus.js', 'src/systems/staff/client/531-staff-links.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
 
 function page() {
   const store = new Map(), KIVO = {};

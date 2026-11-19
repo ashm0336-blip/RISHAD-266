@@ -97,209 +97,6 @@
    }
   },
   {
-   "key": "staff.view",
-   "owner": "staff",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "staff.create",
-   "owner": "staff",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "staff.move",
-   "owner": "staff",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "staff.rest",
-   "owner": "staff",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "staff.delete",
-   "owner": "staff",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "staff.lock",
-   "owner": "staff",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "staff.reopen",
-   "owner": "staff",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
    "key": "plan.view",
    "owner": "plan",
    "type": "access",
@@ -2336,35 +2133,6 @@
    }
   },
   {
-   "key": "staff.shift.assign",
-   "owner": "staff",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
    "key": "links.view",
    "owner": "links",
    "type": "access",
@@ -2387,359 +2155,6 @@
    "dims": {
     "Global": [
      "globalScope"
-    ]
-   }
-  },
-  {
-   "key": "staff.employment_type.assign",
-   "owner": "staff",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "staff.work_type.assign",
-   "owner": "staff",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "staff.callsign.assign",
-   "owner": "staff",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "staff.tasking.assign",
-   "owner": "staff",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "staff.bulk.delete",
-   "owner": "staff",
-   "type": "operation",
-   "g": "to-bind",
-   "res": "bassam_staffing_v3",
-   "resources": [
-    "bassam_staffing_v3",
-    "bassam_staffing_v2",
-    "bassam_staffing_snap_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_callsigns_v1",
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "rowShift"
-    ]
-   }
-  },
-  {
-   "key": "ref.work_type.view",
-   "owner": "staff",
-   "type": "view",
-   "g": "exists",
-   "res": "bassam_options_v1",
-   "resources": [
-    "bassam_options_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
-    ]
-   }
-  },
-  {
-   "key": "ref.work_type.create",
-   "owner": "staff",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_options_v1",
-   "resources": [
-    "bassam_options_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
-    ]
-   }
-  },
-  {
-   "key": "ref.work_type.edit",
-   "owner": "staff",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_options_v1",
-   "resources": [
-    "bassam_options_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
-    ]
-   }
-  },
-  {
-   "key": "ref.work_type.delete",
-   "owner": "staff",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_options_v1",
-   "resources": [
-    "bassam_options_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
-    ]
-   }
-  },
-  {
-   "key": "ref.callsign.view",
-   "owner": "staff",
-   "type": "view",
-   "g": "exists",
-   "res": "bassam_callsigns_v1",
-   "resources": [
-    "bassam_callsigns_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
-    ]
-   }
-  },
-  {
-   "key": "ref.callsign.create",
-   "owner": "staff",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_callsigns_v1",
-   "resources": [
-    "bassam_callsigns_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
-    ]
-   }
-  },
-  {
-   "key": "ref.callsign.edit",
-   "owner": "staff",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_callsigns_v1",
-   "resources": [
-    "bassam_callsigns_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
-    ]
-   }
-  },
-  {
-   "key": "ref.callsign.delete",
-   "owner": "staff",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_callsigns_v1",
-   "resources": [
-    "bassam_callsigns_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
     ]
    }
   },
@@ -3257,25 +2672,6 @@
     ],
     "DateRange": [
      "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "staff.permission_limit.set",
-   "owner": "staff",
-   "type": "decision",
-   "g": "exists",
-   "res": "bassam_perm_limit_v1",
-   "resources": [
-    "bassam_perm_limit_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
     ]
    }
   },
@@ -4557,7 +3953,6 @@
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
      "emp.view",
-     "staff.view",
      "plan.view",
      "round.view",
      "field.view",
@@ -4571,11 +3966,6 @@
       "cap": "emps/data:view",
       "key": "emp.view",
       "source": "explicit-read"
-     },
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "reference-read"
      },
      {
       "cap": "plan:view",
@@ -4626,8 +4016,6 @@
     "keys": [
      "emp.view",
      "ref.employment_type.view",
-     "staff.view",
-     "ref.work_type.view",
      "ready.view",
      "backup.view"
     ],
@@ -4640,16 +4028,6 @@
      {
       "cap": "emps/data:view",
       "key": "ref.employment_type.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "staff:view",
-      "key": "ref.work_type.view",
       "source": "explicit-read"
      },
      {
@@ -4675,7 +4053,6 @@
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
      "emp.view",
-     "staff.view",
      "plan.view",
      "round.view",
      "field.view",
@@ -4689,11 +4066,6 @@
       "cap": "emps/data:view",
       "key": "emp.view",
       "source": "reference-read"
-     },
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "explicit-read"
      },
      {
       "cap": "plan:view",
@@ -4742,16 +4114,10 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "staff.view",
      "ready.view",
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "planning:view",
       "key": null,
@@ -4774,15 +4140,9 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability",
     "keys": [
-     "staff.view",
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "admin/backup:view",
       "key": "backup.view",
@@ -4795,7 +4155,6 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "staff.view",
      "report.view",
      "report.indicators.view",
      "emp.view",
@@ -4804,11 +4163,6 @@
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "dreport:view",
       "key": "report.view",
@@ -4851,23 +4205,11 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "staff.view",
-     "ref.callsign.view",
      "report.view",
      "report.indicators.view",
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "staff:view",
-      "key": "ref.callsign.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "dreport:view",
       "key": "report.view",
@@ -4890,18 +4232,12 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "staff.view",
      "report.view",
      "report.indicators.view",
      "ready.view",
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "dreport:view",
       "key": "report.view",
@@ -5390,7 +4726,6 @@
      "round.view",
      "field.view",
      "emp.view",
-     "staff.view",
      "ready.view",
      "backup.view"
     ],
@@ -5418,11 +4753,6 @@
      {
       "cap": "emps/data:view",
       "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
       "source": "reference-read"
      },
      {
@@ -5477,7 +4807,6 @@
      "report.view",
      "report.indicators.view",
      "ref.leave_type.view",
-     "staff.view",
      "backup.view"
     ],
     "routes": [
@@ -5497,11 +4826,6 @@
       "source": "explicit-read"
      },
      {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "reference-read"
-     },
-     {
       "cap": "admin/backup:view",
       "key": "backup.view",
       "source": "special:backup.view"
@@ -5514,7 +4838,6 @@
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
      "emp.view",
-     "staff.view",
      "plan.view",
      "round.view",
      "field.view",
@@ -5528,11 +4851,6 @@
      {
       "cap": "emps/data:view",
       "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
       "source": "reference-read"
      },
      {
@@ -5592,7 +4910,6 @@
      "report.indicators.view",
      "emp.view",
      "plan.view",
-     "staff.view",
      "ready.view",
      "backup.view"
     ],
@@ -5623,11 +4940,6 @@
       "source": "reference-read"
      },
      {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "reference-read"
-     },
-     {
       "cap": "planning:view",
       "key": null,
       "source": "no-atom"
@@ -5650,7 +4962,6 @@
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
      "tpl.view",
-     "staff.view",
      "backup.view"
     ],
     "routes": [
@@ -5658,11 +4969,6 @@
       "cap": "admin/ptpls:view",
       "key": "tpl.view",
       "source": "explicit-read"
-     },
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "reference-read"
      },
      {
       "cap": "admin/backup:view",

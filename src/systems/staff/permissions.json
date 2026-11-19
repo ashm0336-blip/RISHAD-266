@@ -1,0 +1,2560 @@
+{
+ "schema": 1,
+ "system": "staff",
+ "note": "V7 · د5-د: صلاحياتُ الجدول الشهري — صفوفُه في السجلّ (المفاتيح · الورقة · الذرّات · الأعلام) وروابطُه في الخادم (النطاق · الحراسة)، وما يضيفه إلى صفوف القاعدة. تجمعها tools/perm_parts.py مع القاعدة.",
+ "docs": {
+  "registry": [
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": {
+     "key": "staff.view",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "عرض الجدول",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "قراءة bassam_staffing_v3, bassam_staffing_v2, bassam_staffing_snap_v1, bassam_staffing_locks_v1, bassam_callsigns_v1, bassam_perm_limit_v1 بورقة staff (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 2,
+    "value": {
+     "key": "staff.create",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "إنشاء جدول شهر",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_staffing_v3: إنشاء خريطة الشهر (map)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.create"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 3,
+    "value": {
+     "key": "staff.move",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "نقل بين الورديات",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_staffing_v3: تغيير وردية موظف لأيام (edit)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.move"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 4,
+    "value": {
+     "key": "staff.rest",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "إدارة الراحات",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_staffing_v3: قيم الراحة في الخانات (edit) — يستهلكها التقرير اليومي قراءةً",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:edit"
+     ],
+     "references": [
+      "dreport"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "staff.rest"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 5,
+    "value": {
+     "key": "staff.delete",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "حذف تسكين موظف من الشهر",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_staffing_v3: إزالة موظف من شهر (del)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.remove"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 6,
+    "value": {
+     "key": "staff.lock",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "اعتماد/قفل الشهر",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_staffing_locks_v1 OPS '**' — اتجاهُ القفل: locks[y-m] → true · أو {mo:1} يزول لشهرٍ منقضٍ (إعادةُ قفل) · ولقطةُ __shifts تُكتب في staffing_v3 مع القفل نفسِه",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.lock"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 7,
+    "value": {
+     "key": "staff.reopen",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "إعادة فتح الشهر",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_staffing_locks_v1 — اتجاهُ الفتح: true يزول · أو → {mo:1} (شهرٌ منقضٍ فُتح بأثرٍ رجعي)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.reopen"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 92,
+    "seq": 1,
+    "value": {
+     "key": "staff.shift.assign",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "تسكين موظف في وردية",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_staffing_v3: خانة الموظف×اليوم (الوردية) — classifyMutation edit",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.shift.assign"
+     ],
+     "mergedFrom": [
+      "staff.shift.assign.edit"
+     ],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 1,
+    "value": {
+     "key": "staff.employment_type.assign",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "تعيين نوع التوظيف من الجدول",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "via",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_employees_v1 via staff:'EMP_FIELDS' — حقل نوع التوظيف فقط",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.employment_type.assign"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 2,
+    "value": {
+     "key": "staff.work_type.assign",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "تعيين نوع العمل",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "via",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_employees_v1 via staff:'EMP_FIELDS' — حقل نوع العمل فقط",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.work_type.assign"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 3,
+    "value": {
+     "key": "staff.callsign.assign",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "تعيين رمز النداء",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_staffing_v3 حقل cs (+ bassam_callsigns_v1)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:edit"
+     ],
+     "references": [
+      "dreport"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "staff.callsign.assign"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 4,
+    "value": {
+     "key": "staff.tasking.assign",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "إدارة التكليف",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_staffing_v3: خانة التكليف (edit)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.tasking.assign"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 5,
+    "value": {
+     "key": "staff.bulk.delete",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "حذف جميع بيانات شهر",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_staffing_v3",
+       "bassam_staffing_v2",
+       "bassam_staffing_snap_v1",
+       "bassam_staffing_locks_v1",
+       "bassam_callsigns_v1",
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "bassam_staffing_v3/v2/snap: تفريغ شهر كامل — del على كل الصفوف (شكل جماعي)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "staff.month.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 6,
+    "value": {
+     "key": "ref.work_type.view",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "عرض قائمة أنواع العمل",
+     "type": "view",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_options_v1"
+      ],
+      "detail": "قراءة القائمة المرجعية bassam_options_v1 → options.work[] بورقة المالك (RD)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.work_type.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 7,
+    "value": {
+     "key": "ref.work_type.create",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "إضافة نوع عمل",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_options_v1"
+      ],
+      "detail": "إضافة قيمة في bassam_options_v1 → options.work[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.work_type.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 8,
+    "value": {
+     "key": "ref.work_type.edit",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "تعديل نوع عمل",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_options_v1"
+      ],
+      "detail": "تعديل/إعادة تسمية قيمة في bassam_options_v1 → options.work[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.work_type.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 9,
+    "value": {
+     "key": "ref.work_type.delete",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "حذف نوع عمل",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_options_v1"
+      ],
+      "detail": "حذف قيمة في bassam_options_v1 → options.work[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.work_type.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 10,
+    "value": {
+     "key": "ref.callsign.view",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "عرض قائمة رموز النداء",
+     "type": "view",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_callsigns_v1"
+      ],
+      "detail": "قراءة القائمة المرجعية bassam_callsigns_v1 → callsigns[] بورقة المالك (RD)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:view"
+     ],
+     "references": [
+      "dreport",
+      "daily/rounds"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "ref.callsign.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 11,
+    "value": {
+     "key": "ref.callsign.create",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "إضافة رمز نداء",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_callsigns_v1"
+      ],
+      "detail": "إضافة قيمة في bassam_callsigns_v1 → callsigns[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.callsign.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 12,
+    "value": {
+     "key": "ref.callsign.edit",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "تعديل رمز نداء",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_callsigns_v1"
+      ],
+      "detail": "تعديل/إعادة تسمية قيمة في bassam_callsigns_v1 → callsigns[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.callsign.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 13,
+    "value": {
+     "key": "ref.callsign.delete",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "حذف رمز نداء",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_callsigns_v1"
+      ],
+      "detail": "حذف قيمة في bassam_callsigns_v1 → callsigns[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.callsign.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 113,
+    "seq": 30,
+    "value": {
+     "key": "staff.permission_limit.set",
+     "owner": "staff",
+     "ownerKind": "page",
+     "domain": "staff",
+     "label": "ضبط سقف الاستئذانات",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_perm_limit_v1"
+      ],
+      "detail": "OPS approve '**' — كان ضمن staff:approve",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "staff:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.shift.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "tpl.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.employment_type.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.leave_type.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "perm.assign"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff"
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 2,
+    "seq": 1,
+    "value": {
+     "id": "staff",
+     "kind": "page",
+     "label": "الجدول الشهري",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 1,
+    "value": {
+     "leaf": "staff",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "staff.view",
+      "ref.work_type.view",
+      "ref.callsign.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 2,
+    "value": {
+     "leaf": "staff",
+     "act": "add",
+     "disposition": "migrated",
+     "targets": [
+      "staff.create",
+      "ref.callsign.create",
+      "ref.work_type.create"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 3,
+    "value": {
+     "leaf": "staff",
+     "act": "edit",
+     "disposition": "migrated",
+     "targets": [
+      "staff.shift.assign",
+      "staff.move",
+      "staff.rest",
+      "staff.tasking.assign",
+      "staff.employment_type.assign",
+      "staff.work_type.assign",
+      "staff.callsign.assign",
+      "ref.callsign.edit",
+      "ref.work_type.edit"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 4,
+    "value": {
+     "leaf": "staff",
+     "act": "del",
+     "disposition": "migrated",
+     "targets": [
+      "staff.delete",
+      "staff.bulk.delete",
+      "ref.callsign.delete",
+      "ref.work_type.delete"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 5,
+    "value": {
+     "leaf": "staff",
+     "act": "approve",
+     "disposition": "migrated",
+     "targets": [
+      "staff.lock",
+      "staff.reopen",
+      "staff.permission_limit.set"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 6,
+    "value": {
+     "leaf": "staff",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.staff.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": "ff.staff.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 25,
+    "seq": 1,
+    "value": "ff.module.staff.enabled"
+   }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": {
+     "key": "staff.view",
+     "owner": "staff",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 2,
+    "value": {
+     "key": "staff.create",
+     "owner": "staff",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 3,
+    "value": {
+     "key": "staff.move",
+     "owner": "staff",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 4,
+    "value": {
+     "key": "staff.rest",
+     "owner": "staff",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 5,
+    "value": {
+     "key": "staff.delete",
+     "owner": "staff",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 6,
+    "value": {
+     "key": "staff.lock",
+     "owner": "staff",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 7,
+    "value": {
+     "key": "staff.reopen",
+     "owner": "staff",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 81,
+    "seq": 1,
+    "value": {
+     "key": "staff.shift.assign",
+     "owner": "staff",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 1,
+    "value": {
+     "key": "staff.employment_type.assign",
+     "owner": "staff",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 2,
+    "value": {
+     "key": "staff.work_type.assign",
+     "owner": "staff",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 3,
+    "value": {
+     "key": "staff.callsign.assign",
+     "owner": "staff",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 4,
+    "value": {
+     "key": "staff.tasking.assign",
+     "owner": "staff",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 5,
+    "value": {
+     "key": "staff.bulk.delete",
+     "owner": "staff",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_staffing_v3",
+     "resources": [
+      "bassam_staffing_v3",
+      "bassam_staffing_v2",
+      "bassam_staffing_snap_v1",
+      "bassam_staffing_locks_v1",
+      "bassam_callsigns_v1",
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "rowShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 6,
+    "value": {
+     "key": "ref.work_type.view",
+     "owner": "staff",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_options_v1",
+     "resources": [
+      "bassam_options_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 7,
+    "value": {
+     "key": "ref.work_type.create",
+     "owner": "staff",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_options_v1",
+     "resources": [
+      "bassam_options_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 8,
+    "value": {
+     "key": "ref.work_type.edit",
+     "owner": "staff",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_options_v1",
+     "resources": [
+      "bassam_options_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 9,
+    "value": {
+     "key": "ref.work_type.delete",
+     "owner": "staff",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_options_v1",
+     "resources": [
+      "bassam_options_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 10,
+    "value": {
+     "key": "ref.callsign.view",
+     "owner": "staff",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_callsigns_v1",
+     "resources": [
+      "bassam_callsigns_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 11,
+    "value": {
+     "key": "ref.callsign.create",
+     "owner": "staff",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_callsigns_v1",
+     "resources": [
+      "bassam_callsigns_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 12,
+    "value": {
+     "key": "ref.callsign.edit",
+     "owner": "staff",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_callsigns_v1",
+     "resources": [
+      "bassam_callsigns_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 13,
+    "value": {
+     "key": "ref.callsign.delete",
+     "owner": "staff",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_callsigns_v1",
+     "resources": [
+      "bassam_callsigns_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 101,
+    "seq": 20,
+    "value": {
+     "key": "staff.permission_limit.set",
+     "owner": "staff",
+     "type": "decision",
+     "g": "exists",
+     "res": "bassam_perm_limit_v1",
+     "resources": [
+      "bassam_perm_limit_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_options_v1",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 10,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_options_v1",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 20,
+    "value": "ref.work_type.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_options_v1",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 10,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_options_v1",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 20,
+    "value": {
+     "cap": "staff:view",
+     "key": "ref.work_type.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v2",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v2",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_snap_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_snap_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_locks_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_locks_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_callsigns_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_callsigns_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": "ref.callsign.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_callsigns_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_callsigns_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": {
+     "cap": "staff:view",
+     "key": "ref.callsign.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_limit_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_limit_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "keys"
+    ],
+    "after": 5,
+    "seq": 30,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "routes"
+    ],
+    "after": 5,
+    "seq": 30,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_leave_kinds_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_leave_kinds_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_tpls_v1",
+     "keys"
+    ],
+    "after": 5,
+    "seq": 10,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_tpls_v1",
+     "routes"
+    ],
+    "after": 5,
+    "seq": 10,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_tpls_named_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": "staff.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_tpls_named_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "reference-read"
+    }
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 50,
+    "value": {
+     "key": "staff.lock",
+     "res": "bassam_staffing_locks_v1 (+ bassam_staffing_v3[\"y-m\"].__shifts)",
+     "where": "locks[\"y-m\"]: → true (من غيابٍ أو {mo:1}) · أو {mo:1} يزول لشهرٍ منقضٍ · لقطة __shifts تظهر",
+     "how": "اتجاه القفل على خريطة أقفال الجدول الشهري (OPS **)",
+     "asis": "staff:approve",
+     "decl": "",
+     "dup": "لقطة __shifts في staffing_v3 تُكتب مع القفل نفسِه (مسارٌ ثانٍ لعمليةٍ واحدة) — مبرَّر",
+     "owner": "staff",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 60,
+    "value": {
+     "key": "staff.reopen",
+     "res": "bassam_staffing_locks_v1 (+ __shifts)",
+     "where": "locks[\"y-m\"]: true يزول · أو → {mo:1} · لقطة __shifts تزول",
+     "how": "اتجاه الفتح",
+     "asis": "staff:approve",
+     "decl": "",
+     "dup": "",
+     "owner": "staff",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 39,
+    "seq": 10,
+    "value": {
+     "key": "staff.bulk.delete",
+     "res": "bassam_staffing_v3 / v2",
+     "where": "زوالُ مفتاح الشهر كلِّه [\"y-m\"] (delMonthDo) أو زوالُ كلِّ صفوفه",
+     "how": "شكلُ التفريغ الكامل",
+     "asis": "staff:del (الواجهة) · staff:edit (الحفظ)",
+     "decl": "",
+     "dup": "",
+     "owner": "staff",
+     "type": "operation",
+     "guardKind": "cap"
+    }
+   }
+  ]
+ }
+}

@@ -377,8 +377,8 @@
     "path": [
      "registry"
     ],
-    "after": 134,
-    "seq": 86,
+    "after": 113,
+    "seq": 20,
     "value": {
      "key": "ref.custody_type.view",
      "owner": "emps/custody",
@@ -739,8 +739,8 @@
     "path": [
      "bindings"
     ],
-    "after": 122,
-    "seq": 84,
+    "after": 101,
+    "seq": 10,
     "value": {
      "key": "ref.custody_type.view",
      "owner": "emps/custody",
@@ -826,7 +826,7 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
+    "after": 6,
     "seq": 8,
     "value": {
      "key": "cust.move.issue",
@@ -845,7 +845,7 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
+    "after": 6,
     "seq": 9,
     "value": {
      "key": "cust.move.return",
@@ -864,7 +864,7 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
+    "after": 6,
     "seq": 10,
     "value": {
      "key": "cust.move.damage",
@@ -883,7 +883,7 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
+    "after": 6,
     "seq": 11,
     "value": {
      "key": "cust.move.lost",
