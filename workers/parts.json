@@ -490,10 +490,55 @@
       "file": "019p-operations-scheduling.js",
       "lines": [
         18278,
+        18304
+      ],
+      "bytes": 779,
+      "sha256": "0e4cf6fb12ac0395a86a91f74a2633070aeea39824eba75f570c1df9e8d91dab"
+    },
+    {
+      "file": "019p1-scheduling-staff.js",
+      "lines": [
+        18305,
+        18405
+      ],
+      "bytes": 2937,
+      "sha256": "faa78073fd5d31854e4a49f98caf1a3e23e330e57fe3e9e77d4373168e85b7b0"
+    },
+    {
+      "file": "019p2-scheduling-plan.js",
+      "lines": [
+        18406,
+        18599
+      ],
+      "bytes": 4750,
+      "sha256": "dcd06c193012d6e1b28b733b33ca2ac02c1e513e428649af41ecb3a8d2bd075d"
+    },
+    {
+      "file": "019p3-scheduling-rounds.js",
+      "lines": [
+        18600,
+        18642
+      ],
+      "bytes": 917,
+      "sha256": "7f4d7adb5e2c5e5d0dffc805841161f4038ceba9a833ed36736d4937e2e2bcea"
+    },
+    {
+      "file": "019p4-scheduling-plan-options.js",
+      "lines": [
+        18643,
+        18730
+      ],
+      "bytes": 2183,
+      "sha256": "0f60d8bfb8026c0d442f6362ccd7660fd7308ff90de39d98d321969f0484afe1"
+    },
+    {
+      "file": "019p9-scheduling-registry.js",
+      "lines": [
+        18731,
         18733
       ],
-      "bytes": 11658,
-      "sha256": "db481957fd6a0c07c8dfea1c02cd0059ee7dbddb38bfa8f2ef29940063c8fcca"
+      "bytes": 92,
+      "sha256": "e3328328e9b3439f73a9f25980cbf91318259f9a6e2bf0999672e85159379e83"
     },
     {
       "file": "019q-operations-people-tasks.js",

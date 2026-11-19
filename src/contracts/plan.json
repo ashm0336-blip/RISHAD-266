@@ -10,6 +10,12 @@
   "bassam_gate_opts_v1",
   "bassam_mark_kinds_v1"
  ],
+ "files": [
+  "services/400-shift-need.js",
+  "services/410-gate-units.js",
+  "../workers/parts/019p2-scheduling-plan.js",
+  "../workers/parts/019p4-scheduling-plan-options.js"
+ ],
  "provides": {},
  "consumes": {},
  "crossEffects": []

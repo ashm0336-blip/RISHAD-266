@@ -2404,7 +2404,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           });
           let s = 0,
             l = 0;
-          (r.forEach((e) => {
+          /* V7 · د5-ج: حارسُ الغياب — «نموذجُ عناصر الموقع» (الاحتياج) خدمةُ برنامجٍ قد يغيب؛ بغيابه لا عنصرَ له احتياج: الأعدادُ صفر والحساب يمضي */
+          ((KIVO.BassamNeed ? r : []).forEach((e) => {
             (e.zones || [])
               .filter((t) => !t.off && KIVO.BassamNeed.has(t, n))
               .concat((e.gates || []).filter((t) => !t.closed && KIVO.BassamNeed.has(t, n)))

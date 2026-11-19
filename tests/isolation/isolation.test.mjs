@@ -2,6 +2,8 @@
    يمسح المصدرَ الحالي (tools/contracts.py --scan) ويفشل عند:
      · استيرادٍ من مجلد برنامجٍ آخر (import) · كتابةِ مفتاحٍ لا يملكه البرنامج (write) · قراءةِ مفتاحِ برنامجٍ آخر بلا إعلان (read)
      · نشرِ حدثٍ أو توفيرِ قراءةٍ/أمرٍ غير معلنٍ في عقده، أو استهلاكِ ما لم يُعلَن (bus)
+     · استدعاءِ خدمةٍ يعرّفها برنامجٌ آخر (call) · تضمينِ صفحةِ برنامجٍ آخر (dcimport)
+     · ومعرفةِ القاعدة ببرنامج: مفتاحُه (base-key) · خدمتُه (base-call) · صفحتُه (base-dcimport) · اسمُه (base-name) — في أي ملفِ مصدرٍ ليس لبرنامجٍ ولا مولَّداً
    إلا ما في قائمة الاستثناءات tests/isolation/exceptions.json — وهي الروابطُ القائمة يوم بُني الاختبار. القائمة **تتقلّص ولا تكبر**:
      · خرقٌ ليس فيها، أو زاد عددُ أسطره ⇒ فشل (رابطٌ جديد).
      · استثناءٌ لم يعد له خرقٌ في المصدر، أو نقص عددُ أسطره ⇒ فشل حتى يُحذف/يُنقَّص (فلا يبقى فيها ما يُعاد استعمالُه).
@@ -14,7 +16,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 const ROOT = path.resolve(new URL('../..', import.meta.url).pathname);
-const CEILING = { entries: 74, lines: 146 };   /* د5-ب: الوضعُ القائم. لا يُرفعان أبداً. */
+/* د5-ب: 74 / 146 (read · write). د5-ج: وُسِّع الماسح مرةً واحدة (استدعاءُ خدمات برنامجٍ آخر · dc-import · خدماتُ البرامج في src/services وأجزاءُ خادمها ·
+   ما تعرفه القاعدة عن البرامج) فانكشف ما لم يكن يُرى ورُفع السقف بقدره — هذه المرة فقط. **بعد د5-ج لا يُرفع السقف أبداً**؛ كلُّ خطوةٍ تُنزله. */
+const CEILING = { entries: 452, lines: 1193 };
 
 const scan = () => JSON.parse(execFileSync('python3', [path.join(ROOT, 'tools/contracts.py'), '--src', path.join(ROOT, 'src'), '--scan'], { encoding: 'utf8', maxBuffer: 1 << 26 }));
 const allowed = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/isolation/exceptions.json'), 'utf8')).exceptions;
@@ -37,7 +41,7 @@ test('the exception list only shrinks: nothing stale stays in it, and it never e
   assert.deepEqual(loose, [], 'استثناءٌ نقصت أسطرُه — نقِّص عددَه في القائمة:\n' + loose.join('\n'));
   const entries = Object.keys(ok).length, lines = Object.values(ok).reduce((a, b) => a + b, 0);
   assert.ok(entries <= CEILING.entries && lines <= CEILING.lines, 'القائمة تجاوزت سقفها: ' + entries + ' استثناءً / ' + lines + ' سطراً (السقف ' + CEILING.entries + ' / ' + CEILING.lines + ') — لا يُضاف استثناء');
-  for (const k of Object.keys(ok)) assert.match(k, /^[a-z]+\|(read|write|import|bus)\|[^|]+\|[^|]+$/, k);
+  for (const k of Object.keys(ok)) assert.match(k, /^[a-z]+\|(read|write|import|bus|call|dcimport|base-key|base-call|base-dcimport|base-name)\|[^|]+\|[^|]+$/, k);
 });
 
 /* الماسحُ نفسُه يكشف كلَّ نوع خرق، وأداةُ العقود ترفض العقدَ الناقص والمتناقض — على شجرةٍ مصطنعة (TEST_ONLY) لا على المستودع */
@@ -86,5 +90,46 @@ test('an incomplete or contradictory contract fails the check', () => {
     try { assert.equal(run(dir, '--check').code, 1, name); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   }
   const good = tree({ 'systems/alpha/contract.json': contract('alpha', { owns: ['bassam_x_v1'], provides: { read: { 'alpha.v@1': 'x' } } }), 'systems/beta/contract.json': contract('beta', { consumes: { 'alpha.v@1': { absent: 'none' }, 'key:bassam_x_v1': { absent: 'none' } } }) });
+  try { assert.equal(run(good, '--check').code, 0); } finally { fs.rmSync(good, { recursive: true, force: true }); }
+});
+
+test('the widened scanner (د5-ج): a call to another program\'s service, a dc-import of its page, and what the base knows about a program', () => {
+  const dir = tree({
+    'systems/alpha/contract.json': contract('alpha', { owns: ['bassam_alpha_v1'], files: ['services/900-alpha-service.js'] }),
+    'systems/alpha/system.json': { client: { component: 'Alpha Page' } },
+    'systems/beta/contract.json': contract('beta', { owns: ['bassam_beta_v1'] }),
+    'services/900-alpha-service.js': 'KIVO.AlphaService = { run: function () {} };\n',
+    'systems/alpha/client/own.js': 'KIVO.AlphaService.run();\n',
+    'systems/beta/client/bad.js': 'KIVO.AlphaService.run();\n',
+    'systems/beta/client/view.html': '<dc-import name="Alpha Page"></dc-import>\n',
+    'layouts/shell.js': 'var k = "bassam_alpha_v1"; KIVO.AlphaService.run(); go("alpha"); var role = "x";\n',
+    'layouts/shell.html': '<dc-import name="Alpha Page"></dc-import>\n',
+    'layouts/neutral.js': 'var k = "bassam_base_v1"; KIVO.BaseThing = 1; KIVO.BaseThing;\n',
+  });
+  try {
+    const got = JSON.parse(run(dir, '--scan').out);
+    assert.deepEqual(got.errors, []);
+    assert.deepEqual(Object.keys(got.violations).sort(), [
+      'base|base-call|src/layouts/shell.js|AlphaService',
+      'base|base-dcimport|src/layouts/shell.html|Alpha Page',
+      'base|base-key|src/layouts/shell.js|bassam_alpha_v1',
+      'base|base-name|src/layouts/shell.js|alpha',
+      'beta|call|systems/beta/client/bad.js|AlphaService',
+      'beta|dcimport|systems/beta/client/view.html|Alpha Page',
+    ].map((k) => k.replace('|src/', '|' + path.basename(dir) + '/')).sort());
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('the contract registry (د5-ج): a base resource needs evidence and no program owner; a contract left in src/contracts for a moved program fails; a claimed file must exist once', () => {
+  const base = (resources) => ({ schema: 1, kind: 'base', resources });
+  const cases = {
+    'base resource without evidence': { 'contracts/_base.json': base([{ key: 'bassam_x_v1' }]), 'systems/alpha/contract.json': contract('alpha') },
+    'base resource owned by a program': { 'contracts/_base.json': base([{ key: 'bassam_x_v1', why: 'x' }]), 'systems/alpha/contract.json': contract('alpha', { owns: ['bassam_x_v1'] }) },
+    'contract left behind for a moved program': { 'contracts/alpha.json': contract('alpha'), 'systems/alpha/contract.json': contract('alpha') },
+    'claimed file missing': { 'systems/alpha/contract.json': contract('alpha', { files: ['services/none.js'] }) },
+    'file claimed twice': { 'services/s.js': '', 'systems/alpha/contract.json': contract('alpha', { files: ['services/s.js'] }), 'systems/beta/contract.json': contract('beta', { files: ['services/s.js'] }) },
+  };
+  for (const [name, files] of Object.entries(cases)) { const dir = tree(files); try { assert.equal(run(dir, '--check').code, 1, name); } finally { fs.rmSync(dir, { recursive: true, force: true }); } }
+  const good = tree({ 'contracts/_base.json': base([{ key: 'bassam_x_v1', why: 'written by a base service' }]), 'services/s.js': '', 'systems/alpha/contract.json': contract('alpha', { files: ['services/s.js'] }) });
   try { assert.equal(run(good, '--check').code, 0); } finally { fs.rmSync(good, { recursive: true, force: true }); }
 });

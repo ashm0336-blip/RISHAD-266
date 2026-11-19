@@ -7,6 +7,11 @@
  "owns": [
   "bassam_rounds_v1"
  ],
+ "files": [
+  "services/420-round-factory.js",
+  "services/520-field-monitor.js",
+  "../workers/parts/019p3-scheduling-rounds.js"
+ ],
  "provides": {},
  "consumes": {},
  "crossEffects": []

@@ -13,6 +13,10 @@
   "bassam_perm_limit_v1",
   "bassam_st_grp_v1"
  ],
+ "files": [
+  "services/530-emp-day-facts.js",
+  "../workers/parts/019p1-scheduling-staff.js"
+ ],
  "provides": {},
  "consumes": {},
  "crossEffects": []
