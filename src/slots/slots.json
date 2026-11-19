@@ -292,6 +292,10 @@
   {
    "tpl": "modules/planning/logic.js.tpl",
    "out": "src/modules/planning/logic.js"
+  },
+  {
+   "tpl": "workers/parts/019p9-scheduling-registry.js.tpl",
+   "out": "workers/parts/019p9-scheduling-registry.js"
   }
  ]
 }

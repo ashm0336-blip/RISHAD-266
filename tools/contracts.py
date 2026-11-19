@@ -109,7 +109,9 @@ def check(S):
                 if not KEY.fullmatch(n[4:]): bad.append(rel + ': مفتاحٌ بشكلٍ غير صحيح: %s' % n)
                 elif owner.get(n[4:]) == k: bad.append(rel + ': يستهلك مفتاحاً يملكه هو: %s' % n)
             elif not NAME.match(n): bad.append(rel + ': اسمٌ بشكلٍ غير صحيح في consumes: %s' % n)
-            elif n not in every: bad.append(rel + ': يستهلك «%s» ولا عقدَ يوفّره' % n)
+            elif n not in every:
+                # د5-د: مالكُ الاسم (ما قبل النقطة الأولى) برنامجٌ غائب ⇒ ليس خللاً — سلوكُ الغياب (absent) مكتوبٌ أعلاه وهو ما يجري. مالكٌ حاضر لا يوفّره ⇒ خلل.
+                if n.split('.')[0] in docs: bad.append(rel + ': يستهلك «%s» ولا يوفّره عقدُ مالكه الحاضر' % n)
             elif every[n] == k: bad.append(rel + ': يستهلك ما يوفّره هو: %s' % n)
         for n in (d['provides'].get('participants') or {}):
             if n in base_events and NAME.match(n): continue

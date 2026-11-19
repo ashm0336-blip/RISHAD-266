@@ -118,6 +118,10 @@
   "root.planning.out": {
    "order": 10,
    "text": " && outOf(\"staff\")"
+  },
+  "oc.sched.resources": {
+   "order": 10,
+   "text": "  osSchemaStaffResources(),\n"
   }
  }
 }
