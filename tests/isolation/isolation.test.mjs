@@ -18,7 +18,9 @@ import { execFileSync } from 'node:child_process';
 const ROOT = path.resolve(new URL('../..', import.meta.url).pathname);
 /* د5-ب: 74 / 146 (read · write). د5-ج: وُسِّع الماسح مرةً واحدة (استدعاءُ خدمات برنامجٍ آخر · dc-import · خدماتُ البرامج في src/services وأجزاءُ خادمها ·
    ما تعرفه القاعدة عن البرامج) فانكشف ما لم يكن يُرى ورُفع السقف بقدره — هذه المرة فقط. **بعد د5-ج لا يُرفع السقف أبداً**؛ كلُّ خطوةٍ تُنزله. */
-const CEILING = { entries: 452, lines: 1193 };
+/* د5-د: شُدِّد base-name (قرار المراجع 4) — الاسمُ يُعدّ فقط حيث يُستعمل اسمَ برنامج (القواعد في tools/contracts.py: NAME_USE · NAME_NOT، وحالاتُها أدناه).
+   فنزل السقف من 452 / 1193 إلى 403 / 984 (base-name: 71 استثناءً / 249 سطراً ← 22 / 40). لم يُرفع. */
+const CEILING = { entries: 403, lines: 984 };
 
 const scan = () => JSON.parse(execFileSync('python3', [path.join(ROOT, 'tools/contracts.py'), '--src', path.join(ROOT, 'src'), '--scan'], { encoding: 'utf8', maxBuffer: 1 << 26 }));
 const allowed = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/isolation/exceptions.json'), 'utf8')).exceptions;
@@ -132,4 +134,35 @@ test('the contract registry (د5-ج): a base resource needs evidence and no prog
   for (const [name, files] of Object.entries(cases)) { const dir = tree(files); try { assert.equal(run(dir, '--check').code, 1, name); } finally { fs.rmSync(dir, { recursive: true, force: true }); } }
   const good = tree({ 'contracts/_base.json': base([{ key: 'bassam_x_v1', why: 'written by a base service' }]), 'services/s.js': '', 'systems/alpha/contract.json': contract('alpha', { files: ['services/s.js'] }) });
   try { assert.equal(run(good, '--check').code, 0); } finally { fs.rmSync(good, { recursive: true, force: true }); }
+});
+
+/* د5-د · قرار المراجع 4 — base-name يعدّ الاسمَ حيث هو اسمُ برنامج، ويستبعد مفتاحَ الصلاحية المماثل ودورَ الحساب، كلٌّ بقاعدته.
+   كلُّ سطرٍ هنا ملفٌ في شجرةٍ مصطنعة: «يُعدّ» ⇒ استثناءُ base-name واحد لملفه · «لا يُعدّ» ⇒ لا شيء، وصنفُه في تقرير names. */
+test('base-name counts a name only where it is a program name; a same-named permission key or account role is excluded, each by its rule', () => {
+  const USE = {   /* القاعدة ← سطرٌ يطابقها */
+    'system-key': 'if (this.bsOn("alpha")) x();',
+    'system-field': 'var e = { system: "alpha" };',
+    'pk': 'if (pk === "alpha") x();',
+    'registry': 'var p = { page: "alpha", name: "x" };',
+    'go': 'this._bsGo("alpha");',
+    'page-key': 'var pg = pages.filter((p) => "alpha" === p.key)[0];',
+    'go-map': 'var go = { "افتح الصفحة": "alpha" };',
+  };
+  const NOT = {
+    'perm-key': ['var r = { scope: "dept", cap: "alpha" };', 'if (P.can("alpha", "view")) x();', 'if (capOnDept(A, d, "alpha")) x();', 'var n = { k: "alpha", n: "x" };', "  'bassam_other_v1': ['alpha', 'emps/data'],"],
+    'role': ['if (u.role === "alpha") x();'],
+  };
+  const OTHER = ['if ("alpha" === this.state.lens) x();'];   /* كلمةٌ بالحروف نفسها لمعنى آخر — لا تُعدّ، وتظهر في تقرير names تحت other */
+  const files = { 'systems/alpha/contract.json': contract('alpha') };
+  Object.entries(USE).forEach(([rule, line]) => { files['layouts/use-' + rule + '.js'] = line + '\n'; });
+  Object.entries(NOT).forEach(([rule, lines]) => lines.forEach((line, i) => { files['layouts/not-' + rule + '-' + i + '.js'] = line + '\n'; }));
+  OTHER.forEach((line, i) => { files['layouts/other-' + i + '.js'] = line + '\n'; });
+  const dir = tree(files);
+  try {
+    const got = JSON.parse(run(dir, '--scan').out);
+    assert.deepEqual(Object.keys(got.violations).sort(), Object.keys(USE).map((rule) => 'base|base-name|' + path.basename(dir) + '/layouts/use-' + rule + '.js|alpha').sort());
+    const want = { 'not:perm-key': NOT['perm-key'].length, 'not:role': NOT.role.length, other: OTHER.length };
+    Object.keys(USE).forEach((rule) => { want['use:' + rule] = 1; });
+    assert.deepEqual(got.names, want);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

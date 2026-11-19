@@ -19,6 +19,30 @@ WRITE = [r'draft\.set\(\s*["\']%s', r'_opWrite\(\s*["\']%s', r'(?:related|_opRel
 GLOBAL_DEF = re.compile(r'(?:KIVO|window)\.([A-Z][A-Za-z0-9_]{3,})\s*=(?!=)')
 GLOBAL_USE = re.compile(r'KIVO\.([A-Z][A-Za-z0-9_]{3,})\b')
 ROLE_STAFF = re.compile(r'role\b[^;\n]{0,40}["\']staff["\']|["\']staff["\'][^;\n]{0,25}\brole\b')
+# ── base-name (د5-د · قرار المراجع 4): الاسمُ يُعدّ **فقط حيث يُستعمل اسمَ برنامج**. %s = الاسم.
+#    كلُّ قاعدةٍ هنا لها حالةٌ في tests/isolation/isolation.test.mjs. ما يطابق قاعدةَ استعمالٍ يُعدّ ولو طابق استبعاداً (الأحوط).
+NAME_USE = [
+    ('system-key',   r'\b\w*[oO]n\(\s*["\']%s["\']'),                                   # bsOn("x") · _on("x") · impOn("x") — سؤالُ «هل النظام مفعَّل» بمفتاحه
+    ('system-field', r'\bsystem\s*(?::|={2,3}|!={1,2})\s*["\']%s["\']'),               # system: "x" · system === "x"
+    ('pk',           r'\bpk\s*(?::|={1,3}|!={1,2})\s*["\']%s["\']|["\']%s["\']\s*(?:={2,3}|!={1,2})\s*pk\b'),   # pk: "x" · pk === "x"
+    ('registry',     r'\b(?:module|page|nav)\s*:\s*["\']%s["\']'),                     # اسمُ صفحةٍ أو نظامٍ في سجل: module: "x" · page: "x" · nav: "x"
+    ('go',           r'\b_?(?:bsGo|go|goto)\(\s*["\']%s["\']'),                        # الانتقالُ إلى صفحة البرنامج باسمها
+    ('page-key',     r'\.key\s*(?:={2,3}|!={1,2})\s*["\']%s["\']|["\']%s["\']\s*(?:={2,3}|!={1,2})\s*\w+(?:\.\w+)*\.key\b'),   # البحثُ عن صفحة البرنامج في سجل الصفحات: "x" === p.key
+    ('go-map',       r'["\']افتح[^"\']*["\']\s*:\s*["\']%s["\']'),                    # خريطةُ «افتح …» ← صفحة البرنامج (أزرار التنبيهات)
+]
+#    المستبعَد (ليس اسمَ برنامج وإن طابقه حرفاً) — يُصنَّف ليُكتب عددُه، ولا يُعدّ:
+NAME_NOT = [
+    ('perm-key', r'\bcap\s*:|\bcan\(|\b\w*[cC]ap\w*\(|\bleafOn\(|\b_?p(?:OK|Any|tOk)\(|\bk\s*:\s*["\']%s["\']|^\s*[\'"]bassam_\w+[\'"]\s*:\s*\['),   # مفتاحُ صلاحية: cap: · can( · capOnDept( · _bsCapOk( · leafOn( · _pOK( · k: "x" (شجرة) · قائمةُ أوراق القراءة
+    ('role',     r'\brole\b'),                                                            # دورُ حساب: role === "staff"
+]
+def name_class(line, nm):
+    """صنفُ ورود الاسم في السطر: ('use', القاعدة) يُعدّ · ('not', القاعدة) مستبعَد بقاعدته · ('other', '') كلمةٌ بالحروف نفسها لمعنى آخر."""
+    q = re.escape(nm)
+    for rid, pat in NAME_USE:
+        if re.search(pat.replace('%s', q), line): return ('use', rid)
+    for rid, pat in NAME_NOT:
+        if re.search(pat.replace('%s', q), line): return ('not', rid)
+    return ('other', '')
 DCIMPORT = re.compile(r'<dc-import\s+name="([^"{]+)"')
 BASE_EXT = ('.js', '.html', '.json', '.css', '.tpl')
 BASE_SKIP_DIRS = ('pages', 'contracts', 'systems', 'schemas', 'fonts', 'img', 'assets')   # صفحاتٌ مولَّدة · العقود نفسُها · مجلدات البرامج (تُمسح مع برامجها)
@@ -192,6 +216,7 @@ def scan(S):
     except Exception: pass
     roots = [S, os.path.join(os.path.dirname(S), 'workers', 'parts')]
     names = sorted(set(os.path.basename(f) for f in folders.values()) | set(folders))   # أسماءُ البرامج ومجلداتها (staff · plan · daily · rounds · dreport · tasks …)
+    tally = {}
     NAMEQ = re.compile(r'["\'](' + '|'.join(re.escape(n) for n in names) + r')["\']') if names else None
     for root in roots:
         for base, dirs, fnames in os.walk(root):
@@ -213,9 +238,11 @@ def scan(S):
                     for c in DCIMPORT.findall(line):
                         if c in comp: add('base', 'base-dcimport', rel, c)
                     if NAMEQ and n.endswith(('.js', '.tpl')) and not n.endswith(('.json.tpl', '.html.tpl')):
-                        if ROLE_STAFF.search(line): continue   # 'staff' دورُ حسابٍ أيضاً (role === 'staff') — ليس اسمَ البرنامج
-                        for nm in set(NAMEQ.findall(line)): add('base', 'base-name', rel, nm)
-    return {'errors': bad, 'violations': found}
+                        for nm in set(NAMEQ.findall(line)):
+                            kind, rid = name_class(line, nm)
+                            tally[(kind, rid)] = tally.get((kind, rid), 0) + 1
+                            if kind == 'use': add('base', 'base-name', rel, nm)
+    return {'errors': bad, 'violations': found, 'names': {k[0] + (':' + k[1] if k[1] else ''): v for k, v in sorted(tally.items())}}
 
 def main():
     S = os.path.abspath(sys.argv[sys.argv.index('--src') + 1]) if '--src' in sys.argv else os.path.abspath('src')
