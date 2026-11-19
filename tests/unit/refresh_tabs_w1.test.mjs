@@ -183,10 +183,15 @@ test('الاسترشاد والمضبوطات (R7): #/irshad/records و#/seized/
 test('الخطة التشغيلية (PLAN-11): التبويبُ المزروع من حالة العرض (ptab) يُرسم في أوّل رسم ويُركِّب «التشغيل الميداني» — بحارس الصلاحية', () => {
   /* كان سجلُّ الحالة بمفتاح data-screen-label فتتصادم الحاويةُ و«التشغيل الميداني» (التسميةُ نفسُها) ويضيع ptab؛ الآن بمفتاح اسم المكوّن
      (اختبارُ الزرع في refresh_seed_w1). هنا: renderVals الحقيقية على حالةٍ مزروعة */
-  const P = page('planning', ['renderVals() {'], { state: { ptab: 'plan', planSeen: false }, self: { _ptOk: () => true, _bsGo() {} } });
+  /* V7 · د5-د: تبويباتُ الحاوية سجلٌّ (PT_TABS) يُحقن من مجلدات البرامج — _tabOk الحقيقية تُستخرج مع renderVals */
+  const TABS = { sched: 'staff', plan: 'plan' };
+  const P = page('planning', ['renderVals() {', '_tabOk(t) {'], { state: { ptab: 'plan', planSeen: false }, self: { PT_TABS: TABS, _ptOk: () => true, _bsGo() {} } });
   const V = P.c.renderVals();
   assert.equal(V.ptab, 'plan'); assert.equal(V.onPlan, true); assert.equal(V.planSeen, true, '«التشغيل الميداني» يُركَّب بلا planSeen');
-  const Q = page('planning', ['renderVals() {'], { state: { ptab: 'plan', planSeen: false }, self: { _ptOk: (k) => k !== 'plan', _bsGo() {} } });
+  const Q = page('planning', ['renderVals() {', '_tabOk(t) {'], { state: { ptab: 'plan', planSeen: false }, self: { PT_TABS: TABS, _ptOk: (k) => k !== 'plan', _bsGo() {} } });
+  /* وبغياب قطعة الجدول (لا تبويبَ له في السجل): الحاويةُ تعرض ما بقي بهدوء */
+  const R = page('planning', ['renderVals() {', '_tabOk(t) {'], { state: { ptab: null, planSeen: false }, self: { PT_TABS: { plan: 'plan' }, _ptOk: () => true, _bsGo() {} } }).c.renderVals();
+  assert.equal(R.schedOn, false); assert.equal(R.ptab, 'plan'); assert.equal(R.ptOn, 'plan', 'تبويبٌ واحد: الشريطُ يختفي بقاعدته');
   const W = Q.c.renderVals();
   assert.equal(W.ptab, 'sched', 'بلا صلاحية الخطة: الجدولُ الشهري'); assert.equal(W.planSeen, false);
   assert.match(rd('modules/planning/logic.js'), /state = \{ ptab: null, planSeen: !1 \};/, 'ptab في الحالة الأولى (null يقبل الزرع)');
