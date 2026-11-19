@@ -256,51 +256,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       s = +e[1];
     return (this.SF_MONTHS()[s - 1] || "الشهر " + s) + " " + e[0];
   }
-  sfLocks() {
-    return KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1") || {};
-  }
+  /* V7 · د5-د: الإعداداتُ لا تقرأ مفاتيحَ الجدول الشهري ولا تكتبها — تسأل مالكَها بالاسم (الناقل). بغياب الجدول: لا مسكَّنين ولا تبعة. */
   sfUsage(t) {
-    let e = 0,
-      s = {},
-      a = [];
-    const r = this.sfLocks();
-    if (this.bsOn("staff"))
-      try {
-        const i = KIVO.__BS_SRV.operations.get("bassam_staffing_v3") || {};
-        Object.keys(i).forEach((n) => {
-          const o = i[n];
-          if (!o || "object" != typeof o) return;
-          let p = 0;
-          (Object.keys(o).forEach((a) => {
-            "__shifts" !== a && o[a] && o[a].shift === t && (e++, (s[n] = 1), p++);
-          }),
-            p && r[n] && a.push(n));
-        });
-      } catch (t) {}
-    return { records: e, months: Object.keys(s).length, locked: a };
+    return KIVO.bus.read("staff.shiftUsage@1", t) || { on: !1, records: 0, months: 0, locked: [] };
+  }
+  sfSchedOn() {
+    return !!this.sfUsage("").on;
   }
   sfRenameEverywhere(draft, t, e, deleting) {
-    if (!this.bsOn("staff")) return !1;
-      const locks = draft.get("bassam_staffing_locks_v1") || {},
-        a = draft.get("bassam_staffing_v3") || {};
-      let r = !1;
-      return (
-        Object.keys(a).forEach((i) => {
-          const n = a[i];
-          n &&
-            "object" == typeof n &&
-            Object.keys(n).forEach((s) => {
-              if ("__shifts" === s || !n[s] || n[s].shift !== t) return;
-              if (locks[i]) {
-                if (deleting) throw Error("locked-month");
-                return;
-              }
-              n[s] = Object.assign({}, n[s], { shift: e }); r = true;
-            });
-        }),
-        r && draft.set("bassam_staffing_v3", a),
-        r
-      );
+    return KIVO.bus.participate("shifts.renamed@1", { from: t, to: e, deleting: !!deleting }, draft);
   }
   async sfRename(t, e) {
     if (!this.PC("edit")) { this.bsToast("صلاحيتك على الإعدادات عرضٌ فقط", "warn"); return false; }
@@ -313,7 +277,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       draft.set("bassam_shift_options_v1", a.map(e => e && e.name === t ? Object.assign({}, e, { name: s }) : e));
     })) return false;
     this.setState({ shRen: null });
-    this.bsAck("صارت وردية «" + t + "» باسم «" + s + "»" + (this.bsOn("staff") ? " — وأُعيدت تسميتها في كل شهرٍ مفتوح" : ""), "ok"); return true;
+    this.bsAck("صارت وردية «" + t + "» باسم «" + s + "»" + (this.sfSchedOn() ? " — وأُعيدت تسميتها في كل شهرٍ مفتوح" : ""), "ok"); return true;
   }
   async sfAdd() {
     if (!this.PC("add")) return void this.bsToast("صلاحيتك على الإعدادات لا تسمح بالإضافة", "warn");
@@ -406,7 +370,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             renOn: !(!t.shRen || t.shRen.of !== e.name),
             renOff: !(t.shRen && t.shRen.of === e.name),
             renVal: t.shRen && t.shRen.of === e.name ? t.shRen.v : e.name,
-            nameTip: s ? "اضغط لإعادة التسمية" + (this.bsOn("staff") ? " — تُطبَّق على كل شهرٍ مفتوح" : "") : e.name,
+            nameTip: s ? "اضغط لإعادة التسمية" + (a.on ? " — تُطبَّق على كل شهرٍ مفتوح" : "") : e.name,
             nameStyle: "font-size:12.5px;font-weight:800;color:var(--fg-x141414);min-width:120px" + (s ? ";cursor:pointer" : ""),
             renOpen: () => {
               s && this.sfOpen({ shRen: { of: e.name, v: e.name } });
@@ -430,7 +394,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 " في " +
                 KIVO.BassamCount(a.months, "شهر", "g") +
                 ""
-              : this.bsOn("staff")
+              : a.on
                 ? "لا أحد مسكَّن عليها"
                 : "الجدول الشهري غير مفعّل في هذه الإدارة",
             useStyle:
@@ -463,7 +427,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               " في " +
               KIVO.BassamCount(t.shDel.months, "شهر", "g") +
               " — حذفها يُفرّغ خانة الوردية عندهم ولا يمسّ راحاتهم ولا مواقعهم."
-            : this.bsOn("staff")
+            : this.sfSchedOn()
               ? "لا أحد مسكَّن عليها — حذفها بلا أثر على الجداول."
               : "حذفها بلا أثر — الجدول الشهري غير مفعّل في هذه الإدارة."
           : "",

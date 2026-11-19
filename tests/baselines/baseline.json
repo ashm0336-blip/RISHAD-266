@@ -24,7 +24,7 @@
    17
   ],
   [
-   "modules/staff/logic.js",
+   "systems/staff/client/logic.js",
    15
   ],
   [

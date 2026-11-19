@@ -1750,6 +1750,27 @@ function lensesUpgradeOnly(a, b) {
   }
   return true;
 }
+/* ═══ ناقلُ الخادم — القاعدةُ وسيطٌ فقط (V7 · د5-د) ═══
+   نظيرُ ناقل العميل (src/core/060-bus.js) بقواعده: لا اسمَ برنامجٍ هنا ولا معرفةَ بمن يجيب؛ الاسمُ «مالك.شيء@إصدار» وحده؛
+   وغيابُ الطرف الآخر ليس خطأً.
+     srvBusParticipant(name, fn) · srvBusAccepts(name, …args)
+        مشاركٌ في تبعة حدثٍ يقع أثرُه في مورده: القاعدةُ تسأل «هل يقبل أحدٌ هذه الكتابة تبعةً للحدث؟» فيجيب مالكُ المورد المتأثّر.
+        بلا مشاركٍ ⇒ false (لا تبعةَ تُقبل)، وليس خطأ.
+   التسجيلُ عند تحميل جزء البرنامج (أعلى ملفه)، فهذا الجزء يسبق أجزاءَ البرامج كلَّها في ترتيب الضمّ.
+   (شكلٌ واحد الآن لأنه المطلوب الوحيد؛ القراءةُ المعلنة تُضاف بالقواعد نفسها حين يحتاجها برنامج.) */
+var SRV_BUS_NAME = /^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9]*)+@[1-9][0-9]*$/;
+var SRV_BUS_PARTICIPANTS = Object.create(null);
+function srvBusNamed(name) { if (typeof name !== 'string' || !SRV_BUS_NAME.test(name)) throw Error('bus-name: ' + String(name)); return name; }
+function srvBusParticipant(name, fn) {
+  srvBusNamed(name); if (typeof fn !== 'function') throw Error('bus-handler');
+  var list = SRV_BUS_PARTICIPANTS[name] || (SRV_BUS_PARTICIPANTS[name] = []);
+  if (list.indexOf(fn) === -1) list.push(fn);
+}
+function srvBusAccepts(name) {
+  var list = SRV_BUS_PARTICIPANTS[srvBusNamed(name)] || [], args = Array.prototype.slice.call(arguments, 1);
+  for (var i = 0; i < list.length; i++) if (list[i].apply(null, args) === true) return true;
+  return false;
+}
 /* ═══ التفويض في الخادم ═══════════════════════════════════════════════════
    كانت البوابة تتحقق أن الحافظ مسجّل دخول فحسب، وتأخذ منه أي مفتاح بأي
    قيمة — فالصلاحيات كلها كانت تُطبَّق في المتصفح وحده. هنا تُعاد قراءة
@@ -21754,6 +21775,18 @@ function shiftLeft(v, oldN) {
   }
   return false;
 }
+/* V7 · د5-د: الجدولُ يسجّل قبولَه لتبعة إعادة التسمية على ناقل الخادم — القاعدةُ تسأل بالاسم ولا تعرف مَن يجيب (016b-server-bus.js) */
+srvBusParticipant('shifts.renamed@1', shiftRenameOk);
+/* وضعُ الإنفاذ: هل هذه الكتابةُ تبعةٌ تامّة لإعادة التسمية؟ — حقلُ shift وحده من الاسم القديم إلى الجديد، ولا يبقى صفٌّ على القديم.
+   (كان هذا الفحصُ مكتوباً في جزء القاعدة 059 بأسماء مفاتيح الجدول؛ المفتاحُ المطلوب ref.shift.edit يبقى قرارَ القاعدة.) */
+function shiftRenameCascade(rn, diffs, newVal, ctx) {
+  if (rn !== 'bassam_staffing_v3' && rn !== 'bassam_staffing_v2') return false;
+  if (!ctx || !ctx.shRen) return false;
+  var sd = diffs(), i; if (!sd.length) return false;
+  for (i = 0; i < sd.length; i++) { if (!/(^|\.)shift$/.test(sd[i].p) || String(sd[i].f) !== ctx.shRen.o || String(sd[i].t) !== ctx.shRen.n) return false; }
+  return !shiftLeft(parseJson(newVal, null), ctx.shRen.o);
+}
+srvBusParticipant('shifts.renamed.cascade@1', shiftRenameCascade);
 /* مَن يملك أفعال الكتابة كلها على هذا المورد لا يحتاج تصنيفاً: أيّاً كانت
    العملية فهي في يده. يوفّر هذا مقارنةَ فرقٍ كاملة على القيم الكبيرة في
    المسار الأكثر شيوعاً (المدير يحفظ جدولاً أو خطة) فلا تُزاد كلفة CPU. */
@@ -21988,7 +22021,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
   if (cmv9 === true) return { ok: true };
   if (cmv9 === false) return { ok: false, why: 'act' };
   if (empGoneCleanup(A, k, newVal, curVal, ctx, PV9)) return { ok: true, prot: 'empDelete' };
-  if (shiftRenameOk(A, k, newVal, curVal, ctx)) return { ok: true, prot: 'shiftRename' };
+  if (srvBusAccepts('shifts.renamed@1', A, k, newVal, curVal, ctx)) return { ok: true, prot: 'shiftRename' };
   /* الإلحاق المحض يُفحص قبل الصلاحيات: لا يكسره صاحب add+edit+del */
   if (E9 && E9.append && curVal != null && appendViolation(E9, alignOld(E9, PV9.a() === undefined ? null : PV9.a(), PV9.b()), PV9.b() === undefined ? null : PV9.b()))
     return { ok: false, why: 'append' };
@@ -22065,7 +22098,7 @@ function permv2How(A, k, newVal, curVal, ctx) {
     if (dreportCleanup(A, k, newVal, curVal, ctx) || custodyCleanup(A, k, newVal, curVal, ctx) || awardCleanup(A, k, newVal, curVal, ctx)) return 'cleanup';
     var cmv = custodyMoveOp(A, k, curVal, newVal, PV); if (cmv === true) return 'custodyMove'; if (cmv === false) return 'custodyMove-deny';
     if (empGoneCleanup(A, k, newVal, curVal, ctx, PV)) return 'empGone';
-    if (shiftRenameOk(A, k, newVal, curVal, ctx)) return 'shiftRename';
+    if (srvBusAccepts('shifts.renamed@1', A, k, newVal, curVal, ctx)) return 'shiftRename';
     if (holdsAllWrites(A, k, R0)) return 'holdsAll';
     var need = classifyMutation(R0, curVal, newVal, E9, O9, PV), acts = Object.keys(need); if (!acts.length) acts = ['edit'];
     if (authorizeActs(A, k, acts).ok) return 'acts:' + acts.join('+');
@@ -26067,12 +26100,8 @@ function enfVia(A, k, rn, d, curVal, newVal, ctx) {
     return null;
   }
   /* تبعةُ إعادة تسمية الوردية (عمليةٌ محمية): حقلُ shift وحده من الاسم القديم إلى الجديد، ولا يبقى صفٌّ على القديم — بمفتاح ref.shift.edit */
-  if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && ctx && ctx.shRen) {
-    var sd = diffs(); if (!sd.length) return null;
-    for (i = 0; i < sd.length; i++) { if (!/(^|\.)shift$/.test(sd[i].p) || String(sd[i].f) !== ctx.shRen.o || String(sd[i].t) !== ctx.shRen.n) return null; }
-    if (shiftLeft(parseJson(newVal, null), ctx.shRen.o)) return null;
-    return enfHeld(A, d, 'ref.shift.edit') ? { keys: ['ref.shift.edit'], tag: 'cascade:shiftRename' } : null;
-  }
+  if (ctx && ctx.shRen && srvBusAccepts('shifts.renamed.cascade@1', rn, diffs, newVal, ctx))
+    return enfHeld(A, d, 'ref.shift.edit') ? { keys: ['ref.shift.edit'], tag: 'cascade:shiftRename' } : null;   /* V7 · د5-د: مالكُ المورد المتأثّر يقرّر أنها تبعةٌ تامّة (ناقل الخادم) */
   return null;
 }
 /* KIVO_259 · AUD-030 (ADR-018): حقولُ عدسات الإضافات الجديدة (خارج المرجع KIVO_BUILD.LENSES) — الحارسُ المرجعي يصنّف حقلَ عنصرٍ لا يعرفه تعديلاً عامّاً

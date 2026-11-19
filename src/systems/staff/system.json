@@ -1,0 +1,97 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "staff",
+ "name": "الجدول الشهري",
+ "note": "V7 · د5-د: الجدولُ الشهري في مجلده. هذا الملف تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py): ما في المجلد، وموضعُ أجزاء الخادم في ترتيب الضمّ، والقطعُ التي تُحقن في فتحات القاعدة (slots). روابطُه مع غيره في contract.json.",
+ "client": {
+  "slug": "staff",
+  "component": "Staffing",
+  "files": [
+   "client/530-emp-day-facts.js",
+   "client/531-staff-links.js",
+   "client/helmet.css",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html"
+  ]
+ },
+ "server": {
+  "parts": [
+   {
+    "file": "server/019p1-scheduling-staff.js",
+    "after": "019p0-scheduling-base.js",
+    "order": 10
+   },
+   {
+    "file": "server/041a-shift-rename.js",
+    "after": "040-employee-delete-cleanup.js",
+    "order": 10,
+    "head": "/* ══ إعادة تسمية الوردية — تبعتُها في الجدول الشهري ═══════════════════════════"
+   }
+  ]
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات — لا تُنقل"
+ },
+ "tests": [
+  "tests/staff_tint_w2.test.mjs",
+  "tests/staff_weekly_rest_ui.test.mjs"
+ ],
+ "derived": [
+  "src/pages/Staffing.dc.html"
+ ],
+ "sharedStaysInBase": [],
+ "slots": {
+  "modules.staff": {
+   "order": 10,
+   "text": "  {\n   \"name\": \"Staffing\",\n   \"slug\": \"staff\",\n   \"minifiedSource\": true,\n   \"bytes\": 206045,\n   \"logicLines\": 3013\n  },\n"
+  },
+  "blocks.pages.staff": {
+   "order": 10,
+   "text": "   {\n    \"b64Sha256\": \"7f43ccc5601872757d06f9ef3265255b12925ab8c32794821c839897f8e8a71c\",\n    \"bytes\": 206045,\n    \"file\": \"client/pages/Staffing.dc.html\",\n    \"name\": \"Staffing\",\n    \"sha256\": \"94add6fc704b7cfaa0a63604bd2a6c31e07ad62e1477889a0fe3bf33216fd7f5\"\n   },\n"
+  },
+  "blocks.order.staff": {
+   "order": 10,
+   "text": "   \"Staffing\",\n"
+  },
+  "blocks.shell.staff": {
+   "order": 10,
+   "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/staff/client/530-emp-day-facts.js\",\n   \"kind\": \"js\",\n   \"line\": 10494,\n   \"openTag\": \"<script>\",\n   \"origBytes\": 10543,\n   \"origSha256\": \"27012b4294aa581a0688c00ff7eb69a863beadab023efdd9c52784982605fa4a\"\n  },\n  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/staff/client/531-staff-links.js\",\n   \"kind\": \"js\",\n   \"line\": 10495,\n   \"new\": \"V7 · د5-د: ما يوفّره الجدول الشهري لغيره عبر الناقل (قراءات · أمر · مشارك)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+  },
+  "shell.blocks.staff": {
+   "order": 10,
+   "text": "@@KIVO_BLOCK:systems/staff/client/530-emp-day-facts.js@@\n@@KIVO_BLOCK:systems/staff/client/531-staff-links.js@@\n"
+  },
+  "shell.mounts.staff": {
+   "order": 10,
+   "text": "  <sc-if value=\"{{isStaffing}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Staffing\" hint-size=\"100%,1300px\"></dc-import>\n  </sc-if>\n"
+  },
+  "pages.entry.staff": {
+   "order": 10,
+   "text": "  {\n   \"key\": \"staff\",\n   \"module\": \"staff\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Staffing\"],\n   \"nav\": \"staffing\",\n   \"name\": \"الجدول الشهري\",\n   \"under\": \"planning\"\n  },\n"
+  },
+  "pages.planning.seq.staff": {
+   "order": 10,
+   "text": "    \"page:staff\",\n"
+  },
+  "pages.routeNames.staff": {
+   "order": 10,
+   "text": "  \"staffing\": \"الجدول الشهري\",\n"
+  },
+  "budget.page.staff": {
+   "order": 10,
+   "text": "  \"page:Staffing\": 41921,\r\n"
+  },
+  "ns.after.staff": {
+   "order": 10,
+   "text": "  \"src/systems/staff/client/logic.js\",\n"
+  },
+  "uxStates.staff": {
+   "order": 10,
+   "text": "  \"staff\": {\n   \"فارغ\": 14,\n   \"تحميل\": 0,\n   \"خطأ\": 3,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 1\n  },\n"
+  }
+ }
+}

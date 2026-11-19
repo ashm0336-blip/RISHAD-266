@@ -109,6 +109,12 @@
    "head": "/* ════ دوالُّ عامّة تستعملها أجزاءُ القاعدة — كانت تسكن في أجزاء أنظمةٍ بعينها (V7 · المرحلة 2 · الحزمة أ: نقلٌ حرفيٌّ بلا تغيير سلوك) ════"
   },
   {
+   "file": "016b-server-bus.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
    "file": "017-authorize-core.js",
    "lines": null,
    "bytes": null,
@@ -225,12 +231,6 @@
   },
   {
    "file": "019p0-scheduling-base.js",
-   "lines": null,
-   "bytes": null,
-   "sha256": null
-  },
-  {
-   "file": "019p1-scheduling-staff.js",
    "lines": null,
    "bytes": null,
    "sha256": null
@@ -424,11 +424,11 @@
    "head": "/* ══ تنظيف أثر موظفٍ حُذف — employeeDeleteCleanup ═══════════════════════════"
   },
   {
-   "file": "041-shift-rename.js",
+   "file": "041-acts-held.js",
    "lines": null,
    "bytes": null,
    "sha256": null,
-   "head": "/* ══ إعادة تسمية الوردية — تبعتُها في الجدول الشهري ═══════════════════════════"
+   "head": "/* مَن يملك أفعال الكتابة كلها على هذا المورد لا يحتاج تصنيفاً: أيّاً كانت"
   },
   {
    "file": "042-authorize.js",

@@ -20,7 +20,9 @@ const ROOT = path.resolve(new URL('../..', import.meta.url).pathname);
    ما تعرفه القاعدة عن البرامج) فانكشف ما لم يكن يُرى ورُفع السقف بقدره — هذه المرة فقط. **بعد د5-ج لا يُرفع السقف أبداً**؛ كلُّ خطوةٍ تُنزله. */
 /* د5-د: شُدِّد base-name (قرار المراجع 4) — الاسمُ يُعدّ فقط حيث يُستعمل اسمَ برنامج (القواعد في tools/contracts.py: NAME_USE · NAME_NOT، وحالاتُها أدناه).
    فنزل السقف من 452 / 1193 إلى 403 / 984 (base-name: 71 استثناءً / 249 سطراً ← 22 / 40). لم يُرفع. */
-const CEILING = { entries: 403, lines: 984 };
+/* د5-د (النقل والتحويل): الجدولُ الشهري في مجلده، وروابطُه صارت عقوداً (staff.callsign.set@1 · staff.dayFacts@1 · staff.availText@1 ·
+   staff.permLimit@1 · staff.shiftUsage@1 · shifts.renamed@1 عميلاً وخادماً) فحُذفت استثناءاتُها ⇒ 390 / 954. */
+const CEILING = { entries: 390, lines: 954 };
 
 const scan = () => JSON.parse(execFileSync('python3', [path.join(ROOT, 'tools/contracts.py'), '--src', path.join(ROOT, 'src'), '--scan'], { encoding: 'utf8', maxBuffer: 1 << 26 }));
 const allowed = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/isolation/exceptions.json'), 'utf8')).exceptions;

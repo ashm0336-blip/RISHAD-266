@@ -109,7 +109,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
   }
   if (dreportCleanup(A, k, newVal, curVal, ctx)) return { ok: true };
 @@SYS:cleanup.custody.call@@@@SYS:cleanup.award.call@@@@SYS:move.custody.call@@  if (empGoneCleanup(A, k, newVal, curVal, ctx, PV9)) return { ok: true, prot: 'empDelete' };
-  if (shiftRenameOk(A, k, newVal, curVal, ctx)) return { ok: true, prot: 'shiftRename' };
+  if (srvBusAccepts('shifts.renamed@1', A, k, newVal, curVal, ctx)) return { ok: true, prot: 'shiftRename' };
   /* الإلحاق المحض يُفحص قبل الصلاحيات: لا يكسره صاحب add+edit+del */
   if (E9 && E9.append && curVal != null && appendViolation(E9, alignOld(E9, PV9.a() === undefined ? null : PV9.a(), PV9.b()), PV9.b() === undefined ? null : PV9.b()))
     return { ok: false, why: 'append' };

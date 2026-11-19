@@ -654,16 +654,7 @@
    "origBytes": 15231,
    "origSha256": "9f832adfc8b1074f4de0fa14a2926b0702b581bf22f489a9816bfe681ad343be"
   },
-  {
-   "closeTag": "</script>",
-   "id": "services/530-emp-day-facts.js",
-   "kind": "js",
-   "line": 10494,
-   "openTag": "<script>",
-   "origBytes": 10543,
-   "origSha256": "27012b4294aa581a0688c00ff7eb69a863beadab023efdd9c52784982605fa4a"
-  },
-  {
+@@SYS:blocks.shell.staff@@  {
    "closeTag": "</script>",
    "id": "services/535-profile-facts.js",
    "kind": "js",
@@ -927,14 +918,7 @@
     "name": "Operational Plan",
     "sha256": "8673ea459c3052cf7e1db354e1ddd2a1c50875a97eb39cad0c4fc783a01b11fa"
    },
-   {
-    "b64Sha256": "7f43ccc5601872757d06f9ef3265255b12925ab8c32794821c839897f8e8a71c",
-    "bytes": 206045,
-    "file": "client/pages/Staffing.dc.html",
-    "name": "Staffing",
-    "sha256": "94add6fc704b7cfaa0a63604bd2a6c31e07ad62e1477889a0fe3bf33216fd7f5"
-   },
-   {
+@@SYS:blocks.pages.staff@@   {
     "b64Sha256": "52e50939d94f3ab0cfc86f3ceab9c83c6e7183033504f326ca211d4031aa1508",
     "bytes": 581768,
     "file": "client/pages/Admin.dc.html",
@@ -974,8 +958,7 @@
    "Employees",
 @@SYS:blocks.order.tasks@@   "Daily Sessions",
    "Operational Plan",
-   "Staffing",
-   "Admin",
+@@SYS:blocks.order.staff@@   "Admin",
    "Profile",
 @@SYS:blocks.order.irshad@@@@SYS:blocks.order.award@@   "Daily Report",
    "Planning",

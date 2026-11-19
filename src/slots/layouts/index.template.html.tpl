@@ -103,8 +103,7 @@
 @@KIVO_BLOCK:services/490-emp-key.js@@
 @@KIVO_BLOCK:services/500-element-uid.js@@
 @@KIVO_BLOCK:services/520-field-monitor.js@@
-@@KIVO_BLOCK:services/530-emp-day-facts.js@@
-@@KIVO_BLOCK:services/535-profile-facts.js@@
+@@SYS:shell.blocks.staff@@@@KIVO_BLOCK:services/535-profile-facts.js@@
 @@SYS:shell.blocks.tasks@@@@SYS:shell.blocks.custody@@@@KIVO_BLOCK:services/548-atomic-backup.js@@
 @@KIVO_BLOCK:styles/540-busy.css@@
 @@KIVO_BLOCK:components/550-bassam-busy.js@@
@@ -320,10 +319,7 @@
   <sc-if value="{{isEmployees}}" hint-placeholder-val="{{ true }}">
     <dc-import name="Employees" hint-size="100%,1200px"></dc-import>
   </sc-if>
-  <sc-if value="{{isStaffing}}" hint-placeholder-val="{{ false }}">
-    <dc-import name="Staffing" hint-size="100%,1300px"></dc-import>
-  </sc-if>
-  <sc-if value="{{isPlan}}" hint-placeholder-val="{{ false }}">
+@@SYS:shell.mounts.staff@@  <sc-if value="{{isPlan}}" hint-placeholder-val="{{ false }}">
     <dc-import name="Operational Plan" hint-size="100%,1100px"></dc-import>
   </sc-if>
 

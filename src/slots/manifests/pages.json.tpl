@@ -43,8 +43,7 @@
    "name": "الخطة التشغيلية",
    "seq": [
     "sub:readiness",
-    "page:staff",
-    "page:plan"
+@@SYS:pages.planning.seq.staff@@    "page:plan"
    ],
    "subs": [
     {
@@ -54,16 +53,7 @@
     }
    ]
   },
-  {
-   "key": "staff",
-   "module": "staff",
-   "activation": "toggle",
-   "departmentComponents": ["Staffing"],
-   "nav": "staffing",
-   "name": "الجدول الشهري",
-   "under": "planning"
-  },
-  {
+@@SYS:pages.entry.staff@@  {
    "key": "plan",
    "module": "plan",
    "activation": "toggle",
@@ -216,8 +206,7 @@
  "routeNames": {
   "kpis": "مؤشرات الإدارة",
 @@SYS:pages.routeNames.dstats@@  "employees": "موظفو الإدارة",
-  "staffing": "الجدول الشهري",
-  "plan": "التشغيل الميداني",
+@@SYS:pages.routeNames.staff@@  "plan": "التشغيل الميداني",
   "planning": "الخطة التشغيلية",
   "daily": "المتابعة اليومية",
   "dreport": "التقرير اليومي",

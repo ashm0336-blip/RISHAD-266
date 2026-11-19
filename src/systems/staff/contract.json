@@ -1,0 +1,51 @@
+{
+ "schema": 1,
+ "system": "staff",
+ "version": 1,
+ "note": "V7 · د5-د: عقدُ الجدول الشهري بعد نقله إلى مجلده. ما يوفّره مسجَّلٌ في client/531-staff-links.js (العميل) و server/041a-shift-rename.js (الخادم).",
+ "owns": [
+  "bassam_staffing_v3",
+  "bassam_staffing_v2",
+  "bassam_staffing_snap_v1",
+  "bassam_staffing_locks_v1",
+  "bassam_callsigns_v1",
+  "bassam_perm_limit_v1",
+  "bassam_st_grp_v1"
+ ],
+ "files": [],
+ "provides": {
+  "read": {
+   "staff.dayFacts@1": "(y, m, d) ← وقائعُ يومٍ لكل موظف: الوردية والراحة والتكليف والصفّ — من الجدول الحي، أو من التقرير اليومي إن سُحب تقريرُ ذلك اليوم",
+   "staff.availText@1": "(shift, isToday) ← «متاح» أو «غير متاح» بحسب وقت الوردية الآن",
+   "staff.permLimit@1": "() ← حدُّ الاستئذانات الشهري المحفوظ (0–31)، أو undefined إن لم يُحفظ حدّ",
+   "staff.shiftUsage@1": "(shift) ← { on, records, months, locked[] }: هل الجدولُ مفعَّل، وكم مسكَّناً على الوردية وفي كم شهر، والأشهرُ المعتمدة منها"
+  },
+  "commands": {
+   "staff.callsign.set@1": "{ month, changes:[{ ekey, cs, ifCs? }] } داخل مسودة المستدعي — يكتب حقل cs وحده في شهرٍ واحد؛ ifCs: يُغيَّر فقط إن كان الموظف ما زال يحمل ذلك الرمز"
+  },
+  "participants": {
+   "shifts.renamed@1": "{ from, to, deleting } داخل مسودة إعادة تسمية الوردية أو حذفها (الإعدادات): يعيد تسميتها في كل شهرٍ مفتوح؛ والشهرُ المعتمد يُترك عند التسمية ويمنع الحذف (locked-month). ونظيرُه في الخادم يقبل هذه الكتابة تبعةً بصلاحية admin/shifts:edit وحدها",
+   "shifts.renamed.cascade@1": "الخادم (وضع الإنفاذ): يجيب هل الكتابةُ في مفتاح الجدول تبعةٌ تامّة لإعادة التسمية (حقل shift وحده، ولا صفَّ يبقى على الاسم القديم)"
+  }
+ },
+ "consumes": {
+  "key:bassam_dreport_v1": {
+   "absent": "بلا تقريرٍ يومي: وقائعُ كل يوم تُقرأ من الجدول الحي وحده، ولا يومَ «مسحوب»",
+   "why": "اليومُ المسحوب تقريرُه مكتفٍ بتقريره (530-emp-day-facts) — قراءةٌ فقط"
+  },
+  "key:bassam_mark_kinds_v1": {
+   "absent": "لا أثر: المفتاحُ مذكورٌ في ميثاق الصفحة (meta.json ← data) من منهجٍ مشترك في عُدّة الصفحات ولا تقرؤه صفحةُ الجدول",
+   "why": "ميثاقٌ مولَّد"
+  }
+ },
+ "crossEffects": [
+  {
+   "what": "إعادةُ تسمية وردية أو حذفُها في الإعدادات تغيّر حقل shift في الجدول",
+   "how": "participants ← shifts.renamed@1 (داخل المسودة نفسها: يُقبل الكلُّ أو يُرفض الكلُّ)"
+  },
+  {
+   "what": "التقرير اليومي يسند رمزَ النداء فيُكتب في الجدول",
+   "how": "commands ← staff.callsign.set@1 (داخل مسودة التقرير)"
+  }
+ ]
+}

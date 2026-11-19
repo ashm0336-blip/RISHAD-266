@@ -11,5 +11,9 @@
    "key": "bassam_dayfocus_v1",
    "why": "«اليوم المختار»: مفتاحُ جهازٍ لكل حساب (bassam_dayfocus_v1:<الحساب>) لا يُرسل للخادم، يكتبه ويقرؤه services/332-find-day.js وحده (KIVO_264 · D-5)."
   }
- ]
+ ],
+ "events": {
+  "shifts.renamed@1": "{ from, to, deleting } — أُعيدت تسميةُ وردية أو حُذفت في خيارات الورديات (مورد قاعدة: bassam_shift_options_v1، صفحة الإعدادات). تُنادى داخل مسودة التغيير نفسها (KIVO.bus.participate) فيضيف كلُّ مشاركٍ تبعتَه إليها؛ ونظيرُها في الخادم srvBusAccepts('shifts.renamed@1', …) يسأل: هل يقبل مشاركٌ هذه الكتابةَ تبعةً؟ بلا مشارك: لا تبعة.",
+  "shifts.renamed.cascade@1": "(resource, diffs, newValue, ctx) — في وضع الإنفاذ بالخادم: هل هذه الكتابةُ في موردٍ ما تبعةٌ تامّة لإعادة تسمية وردية؟ يجيب مالكُ المورد المتأثّر (srvBusAccepts)؛ المفتاحُ المطلوب (ref.shift.edit) قرارُ القاعدة. بلا مشارك: ليست تبعة."
+ }
 }

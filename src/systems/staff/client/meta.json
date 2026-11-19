@@ -17,10 +17,10 @@
    "#/staffing"
   ],
   "ui": [
-   "src/modules/staff/view.html",
-   "src/modules/staff/helmet.css"
+   "src/systems/staff/client/view.html",
+   "src/systems/staff/client/helmet.css"
   ],
-  "domain": "src/modules/staff/logic.js",
+  "domain": "src/systems/staff/client/logic.js",
   "data": [
    "bassam_callsigns_v1",
    "bassam_dayshift_v1",

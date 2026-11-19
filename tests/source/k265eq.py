@@ -77,8 +77,8 @@ ok(oldonly == retained and all(_from_prev(u) for u in retained) and all(u in cur
 #   وسكربتاتِ الغلاف التي في ملفات واجهته (‎client/NNN-*.js‎).
 _SYSD = os.path.join(ROOT, 'src', 'systems')
 _SYS = [json.load(open(os.path.join(_SYSD, k, 'system.json'), encoding='utf-8')) for k in sorted(os.listdir(_SYSD)) if os.path.isfile(os.path.join(_SYSD, k, 'system.json'))] if os.path.isdir(_SYSD) else []
-N_JS = 71 + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
-N_PG = 9 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة
+N_JS = 70 + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
+N_PG = 8 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة · د5-د: الجدولُ الشهري صار نظاماً بصفحته (8 للقاعدة)
 kinds = {}
 for u in files:
     if u in retained: continue   # أصولُ الإصدارات السابقة المُبقاة (أُثبتت أعلاه) لا تُعدّ في أصناف الإصدار الحالي
@@ -87,7 +87,7 @@ ok(kinds.get('js') == N_JS and kinds.get('css') == 11 and kinds.get('fonts') == 
 JS = re.findall(r'<script([^>]*) src="(/assets/js/[^"]+)"></script>', shell)
 CSS = re.findall(r'<link rel="stylesheet"([^>]*) href="(/assets/css/[^"]+)">', shell)
 tags = re.findall(r'<script\b[^>]*>', shell)
-ok(len(JS) == N_JS and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a) for a, _ in JS), '★ ٧٥ سكربتاً خارجياً كلاسيكياً حاجباً بترتيبها (٧٥ = ٧٤ + 385-calendar التقويم الموحّد V7 د5-د · ٧٤ = ٧٣ + 060-bus ناقلُ الأحداث V7 د5-ب · ٧٣ = ٧٢ + 555-page-states حالاتُ الصفحة الموحَّدة V7 UX (ومعه ورقةُ أنماطه — css ١١) · ٧٢ = ٧٤ − 480-final-delete · 510-emp-monthly-source (طبقتا توافقٍ بلا أثر) · ٧٤ = ٧٥ − 190-tabstrip-unify L-06 · ٧٥ = ٧٣ + 547-custody-api · 548-atomic-backup؛ ٧١ = ٦٩ + 545-task-self · 546-task-model المهام KIVO_265 · ٦٩ = ٦٨ + 535-profile-facts «ملفي» KIVO_264 · + منطقُ الغلاف المُصرَّف + manifest الصفحات · لا async/defer/module) — التنفيذُ بالتسلسل نفسِه كالمضمَّن', len(JS))
+ok(len(JS) == N_JS and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a) for a, _ in JS), '★ ٧٥ سكربتاً خارجياً كلاسيكياً حاجباً بترتيبها (٧٥ = ٧٤ + 385-calendar التقويم الموحّد V7 د5-د [ومنها 530 وقائعُ اليوم: صارت في مجلد الجدول الشهري فتُعدّ من كتل الأنظمة لا من ثابت القاعدة] · ٧٤ = ٧٣ + 060-bus ناقلُ الأحداث V7 د5-ب · ٧٣ = ٧٢ + 555-page-states حالاتُ الصفحة الموحَّدة V7 UX (ومعه ورقةُ أنماطه — css ١١) · ٧٢ = ٧٤ − 480-final-delete · 510-emp-monthly-source (طبقتا توافقٍ بلا أثر) · ٧٤ = ٧٥ − 190-tabstrip-unify L-06 · ٧٥ = ٧٣ + 547-custody-api · 548-atomic-backup؛ ٧١ = ٦٩ + 545-task-self · 546-task-model المهام KIVO_265 · ٦٩ = ٦٨ + 535-profile-facts «ملفي» KIVO_264 · + منطقُ الغلاف المُصرَّف + manifest الصفحات · لا async/defer/module) — التنفيذُ بالتسلسل نفسِه كالمضمَّن', len(JS))
 ok(len(tags) == N_JS + 1 and tags.count('<script type="text/x-dc" data-dc-script="">') == 1, '   في الغلاف ٧٦ وسمَ script: ٧٥ خارجياً + منطقُ x-dc الجذر مضمَّناً (نصاً؛ تنفيذُه من root-logic المُصرَّف)', len(tags))
 refs = set(u for _, u in JS) | set(u for _, u in CSS) | set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', shell))
 for u in list(files):

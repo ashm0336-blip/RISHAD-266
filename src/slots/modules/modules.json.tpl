@@ -21,14 +21,7 @@
    "bytes": 855494,
    "logicLines": 19783
   },
-  {
-   "name": "Staffing",
-   "slug": "staff",
-   "minifiedSource": true,
-   "bytes": 206045,
-   "logicLines": 3013
-  },
-  {
+@@SYS:modules.staff@@  {
    "name": "Admin",
    "slug": "admin",
    "minifiedSource": true,

@@ -117,7 +117,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
   if (cmv9 === true) return { ok: true };
   if (cmv9 === false) return { ok: false, why: 'act' };
   if (empGoneCleanup(A, k, newVal, curVal, ctx, PV9)) return { ok: true, prot: 'empDelete' };
-  if (shiftRenameOk(A, k, newVal, curVal, ctx)) return { ok: true, prot: 'shiftRename' };
+  if (srvBusAccepts('shifts.renamed@1', A, k, newVal, curVal, ctx)) return { ok: true, prot: 'shiftRename' };
   /* الإلحاق المحض يُفحص قبل الصلاحيات: لا يكسره صاحب add+edit+del */
   if (E9 && E9.append && curVal != null && appendViolation(E9, alignOld(E9, PV9.a() === undefined ? null : PV9.a(), PV9.b()), PV9.b() === undefined ? null : PV9.b()))
     return { ok: false, why: 'append' };

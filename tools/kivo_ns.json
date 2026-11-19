@@ -68,7 +68,7 @@
   "src/modules/dreport/logic.js",
   "src/services/332-find-day.js",
   "src/modules/profile/logic.js",
-  "src/modules/staff/logic.js",
+  "src/systems/staff/client/logic.js",
   "src/services/590-employees-import.js",
   "src/modules/employees/logic.js",
   "src/services/360-bassam-idb.js",

@@ -38,7 +38,7 @@ function permv2How(A, k, newVal, curVal, ctx) {
                b: function () { if (!hb) { hb = 1; PB = parseJson(newVal, undefined); } return PB; } };
     if (dreportCleanup(A, k, newVal, curVal, ctx)@@SYS:cleanup.custody.shadow@@@@SYS:cleanup.award.shadow@@) return 'cleanup';
 @@SYS:move.custody.shadow@@    if (empGoneCleanup(A, k, newVal, curVal, ctx, PV)) return 'empGone';
-    if (shiftRenameOk(A, k, newVal, curVal, ctx)) return 'shiftRename';
+    if (srvBusAccepts('shifts.renamed@1', A, k, newVal, curVal, ctx)) return 'shiftRename';
     if (holdsAllWrites(A, k, R0)) return 'holdsAll';
     var need = classifyMutation(R0, curVal, newVal, E9, O9, PV), acts = Object.keys(need); if (!acts.length) acts = ['edit'];
     if (authorizeActs(A, k, acts).ok) return 'acts:' + acts.join('+');

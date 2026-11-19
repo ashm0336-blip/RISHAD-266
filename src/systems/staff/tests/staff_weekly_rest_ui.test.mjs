@@ -8,9 +8,9 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { parse } from 'acorn';
-import { world, D1, D2, G1, IDS, ROOT, identitySnapshot } from './canonical_fx.mjs';
-import { installOperationalFixture, inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
-import { loadClient, until } from './k264_vm.mjs';
+import { world, D1, D2, G1, IDS, ROOT, identitySnapshot } from '../../../../tests/unit/canonical_fx.mjs';
+import { installOperationalFixture, inspectOperationalFixture, replaceOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
+import { loadClient, until } from '../../../../tests/unit/k264_vm.mjs';
 
 const EMPLOYEE = { eid: 'TEST_ONLY_UI_REST_EMP', name: 'TEST_ONLY_UI_EMP_A_EDITED' };
 const SHIFT = 'الوردية الأولى';
@@ -21,8 +21,8 @@ const emittedManifest = emittedDirectory ? JSON.parse(fs.readFileSync(emittedDir
 function frontSource(relative) {
   if (!emittedDirectory) return fs.readFileSync(path.join(ROOT, relative), 'utf8');
   const stem = path.basename(relative, '.js');
-  const pattern = relative === 'src/modules/staff/logic.js' ? /^assets\/pages\/Staffing\.logic\.[a-f0-9]{10}\.js$/
-    : relative === 'src/modules/staff/view.html' ? /^assets\/pages\/Staffing\.[a-f0-9]{10}\.dc\.txt$/
+  const pattern = relative === 'src/systems/staff/client/logic.js' ? /^assets\/pages\/Staffing\.logic\.[a-f0-9]{10}\.js$/
+    : relative === 'src/systems/staff/client/view.html' ? /^assets\/pages\/Staffing\.[a-f0-9]{10}\.dc\.txt$/
       : new RegExp('^assets/js/' + stem + '\\.[a-f0-9]{10}\\.js$');
   const names = Object.keys(emittedManifest.files).filter(name => pattern.test(name));
   assert.equal(names.length, 1, 'One exact emitted asset for ' + relative);
@@ -139,14 +139,14 @@ async function page(t, { visiblePolling = false } = {}) {
   const operations = K.__BS_SRV.operations;
   assert.equal((await operations.read(operations.resources.map(name => scoped(name)))).ok, 1);
   if (emittedDirectory) {
-    assert.match(frontSource('src/modules/staff/view.html'), /e\.weekDays/);
-    assert.match(frontSource('src/modules/staff/view.html'), /w\.toggle/);
-    vm.runInContext(frontSource('src/modules/staff/logic.js'), T.ctx, { filename: 'emitted-Staffing.logic' });
+    assert.match(frontSource('src/systems/staff/client/view.html'), /e\.weekDays/);
+    assert.match(frontSource('src/systems/staff/client/view.html'), /w\.toggle/);
+    vm.runInContext(frontSource('src/systems/staff/client/logic.js'), T.ctx, { filename: 'emitted-Staffing.logic' });
     const factory = (W.__dcLogicDefs || K.__dcLogicDefs).Staffing;
     assert.equal(typeof factory, 'function');
     W.TEST_ONLY_Staff = factory(W.DCLogic, W.DCLogic, {});
-  } else vm.runInContext(frontSource('src/modules/staff/logic.js') +
-    '\nglobalThis.TEST_ONLY_Staff = Component;', T.ctx, { filename: 'src/modules/staff/logic.js' });
+  } else vm.runInContext(frontSource('src/systems/staff/client/logic.js') +
+    '\nglobalThis.TEST_ONLY_Staff = Component;', T.ctx, { filename: 'src/systems/staff/client/logic.js' });
   const instance = new W.TEST_ONLY_Staff();
   instance.bsToast = (text, type) => messages.push({ text, type: type || 'err' });
   assert.equal(instance.monthKey(), month, 'The page and server fixture use the current Hijri month');

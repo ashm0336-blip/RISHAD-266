@@ -8690,7 +8690,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           E = (t) => "pr" === z(t),
           M = (() => {
             try {
-              return KIVO.BassamDay ? KIVO.BassamDay.of(T, s.month, m) : null;
+              return KIVO.bus.read("staff.dayFacts@1", T, s.month, m) || null;
             } catch (t) {
               return null;
             }

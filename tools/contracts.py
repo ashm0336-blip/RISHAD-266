@@ -13,7 +13,7 @@ import json, os, re, sys
 
 KEY = re.compile(r'bassam_[a-z0-9_]+_v[0-9]+')
 NAME = re.compile(r'^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9]*)+@[1-9][0-9]*$')
-PENDING_DIRS = {'staff': 'modules/staff', 'plan': 'modules/plan', 'rounds': 'modules/daily', 'dreport': 'modules/dreport'}   # برامجُ لم تُفصل بعد: مجلدُ وحدتها
+PENDING_DIRS = {'plan': 'modules/plan', 'rounds': 'modules/daily', 'dreport': 'modules/dreport'}   # برامجُ لم تُفصل بعد: مجلدُ وحدتها
 SCAN_EXT = ('.js', '.html', '.json', '.frag', '.css')
 WRITE = [r'draft\.set\(\s*["\']%s', r'_opWrite\(\s*["\']%s', r'(?:related|_opRelated)\.%s\s*=', r'\.\.\.related,\s*%s\s*:', r'(?<![.\w"\'])%s\s*:\s*[A-Za-z_]', r'setItem\(\s*["\'][^"\']*%s', r'kvPut[A-Za-z]*\([^)]*%s']
 GLOBAL_DEF = re.compile(r'(?:KIVO|window)\.([A-Z][A-Za-z0-9_]{3,})\s*=(?!=)')
@@ -95,6 +95,11 @@ def check(S):
                 if not NAME.match(n) or not n.startswith(k + '.'): bad.append(rel + ': الاسم «%s» يجب أن يكون «%s.شيء@N»' % (n, k))
                 elif n in every: bad.append(rel + ': الاسم «%s» يوفّره «%s» أيضاً' % (n, every[n]))
                 else: every[n] = k
+    # د5-د: أحداثُ القاعدة (src/contracts/_base.json ← events): حدثٌ يقع في مورد قاعدة فيشارك فيه برنامجٌ يتأثّر موردُه — «شيء.وقع@N» بلا اسم برنامج
+    base_events = (base_registry(S) or {}).get('events') or {}
+    for n, text in base_events.items():
+        if not NAME.match(n) or not str(text).strip(): bad.append('contracts/_base.json: حدثٌ بشكلٍ غير صحيح أو بلا وصف: %s' % n)
+        elif n in every or n.split('.')[0] in docs: bad.append('contracts/_base.json: الحدث «%s» يحمل اسمَ برنامج أو يوفّره «%s»' % (n, every.get(n, n.split('.')[0])))
     for k, e in docs.items():
         d, rel = e['doc'], os.path.relpath(e['path'], S)
         if not d or not isinstance(d.get('consumes'), dict) or not isinstance(d.get('provides'), dict): continue
@@ -107,6 +112,7 @@ def check(S):
             elif n not in every: bad.append(rel + ': يستهلك «%s» ولا عقدَ يوفّره' % n)
             elif every[n] == k: bad.append(rel + ': يستهلك ما يوفّره هو: %s' % n)
         for n in (d['provides'].get('participants') or {}):
+            if n in base_events and NAME.match(n): continue
             if not NAME.match(n) or every.get(n) is None or provided(docs[every[n]]['doc']).get(n) != 'events': bad.append(rel + ': يشارك في «%s» وليس حدثاً معلناً في عقد مالكه' % n)
     # موارد القاعدة المعلنة (src/contracts/_base.json): مفتاحٌ عامٌّ بلا مالكِ برنامج — لا يملكه عقدٌ ولا يُكرَّر
     B = base_registry(S)

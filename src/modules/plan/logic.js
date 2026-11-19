@@ -6703,7 +6703,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     const z = (() => {
         try {
           const t = KIVO.BassamHijri && KIVO.BassamHijri.now ? KIVO.BassamHijri.now(new Date()) : null;
-          return t && KIVO.BassamDay ? KIVO.BassamDay.of(t.y, t.m, t.d) : null;
+          return (t && KIVO.bus.read("staff.dayFacts@1", t.y, t.m, t.d)) || null;
         } catch (t) {
           return null;
         }

@@ -17,6 +17,10 @@
   "../workers/parts/019p4-scheduling-plan-options.js"
  ],
  "provides": {},
- "consumes": {},
+ "consumes": {
+  "staff.dayFacts@1": {
+   "absent": "بلا وقائع اليوم: لا حضور ولا راحة ولا تكليف يُعرض على الخريطة (كما كان حين لا خدمة)"
+  }
+ },
  "crossEffects": []
 }

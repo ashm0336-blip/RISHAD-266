@@ -325,11 +325,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return this.rpStaffLive();
   }
   async drCsPersist(t, r) {
-    var e = this.state.rpY + "-" + this.state.rpM,
-      n = Object.assign({}, this.rpStaffLive()),
-      a = Object.assign({}, n[e] || {});
-    ((a[t] = Object.assign({}, a[t] || {}, { cs: r })), (n[e] = a));
-    return await this._drCommit({ op: "callsign", month: e, employee: t, value: r }, draft => draft.set("bassam_staffing_v3", n));
+    /* V7 · د5-د: رمزُ النداء يكتبه مالكُه (الجدول الشهري) بأمرٍ معلن داخل مسودتنا — التقريرُ لا يكتب مفتاحَ الجدول. */
+    var e = this.state.rpY + "-" + this.state.rpM;
+    if (!KIVO.bus.has("staff.callsign.set@1")) return (this.bsToast("إسناد رمز النداء غير متاح", "warn"), false);
+    return await this._drCommit({ op: "callsign", month: e, employee: t, value: r }, draft => { KIVO.bus.call("staff.callsign.set@1", { month: e, changes: [{ ekey: t, cs: r }] }, draft); });
   }
   drBucketFor(t, r) {
     return this.rpStaff()[t + "-" + r] || {};
@@ -1321,11 +1320,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             i.leaders = i.leaders || {}; i.leaders[t] = r;
             if (!await this.rpSave(e, { op: "leader", day: this.DK(), shift: n, role: t, employee: r }, draft => {
               if (!o) return;
-              const staffing = draft.get("bassam_staffing_v3") || {}, month = this.state.rpY + "-" + this.state.rpM, bucket = { ...(staffing[month] || {}) };
-              let changed = false;
-              if (s && s !== r && bucket[s] && bucket[s].cs === o) { bucket[s] = { ...bucket[s], cs: "" }; changed = true; }
-              if (r && r !== s) { bucket[r] = { ...(bucket[r] || {}), cs: o }; changed = true; }
-              if (changed) { staffing[month] = bucket; draft.set("bassam_staffing_v3", staffing); }
+              const changes = [];
+              if (s && s !== r) changes.push({ ekey: s, cs: "", ifCs: o });
+              if (r && r !== s) changes.push({ ekey: r, cs: o });
+              KIVO.bus.call("staff.callsign.set@1", { month: this.state.rpY + "-" + this.state.rpM, changes }, draft);
             })) return false;
             this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
             return true;
@@ -1357,8 +1355,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!await this.rpSave(e, { op: "leader-callsign", day: this.DK(), role: t, value: r || "" }, draft => {
       var a = this.drShiftRec(e, this.drCurShift()),
         i = (a && a.leaders && a.leaders[t]) || "";
-      if (i) { const staffing = draft.get("bassam_staffing_v3") || {}, month = this.state.rpY + "-" + this.state.rpM, bucket = { ...(staffing[month] || {}) };
-        bucket[i] = { ...(bucket[i] || {}), cs: r || "" }; staffing[month] = bucket; draft.set("bassam_staffing_v3", staffing); }
+      if (i) KIVO.bus.call("staff.callsign.set@1", { month: this.state.rpY + "-" + this.state.rpM, changes: [{ ekey: i, cs: r || "" }] }, draft);
     })) return false;
     this.setState({ drCsOpen: null, rpTick: (this.state.rpTick || 0) + 1 });
   }
@@ -2639,8 +2636,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? T || "إجازة"
                   : e.onRest
                     ? "راحة"
-                    : KIVO.BassamDay && KIVO.BassamDay.availTxt
-                      ? KIVO.BassamDay.availTxt(e.shift || e.sh, ar)
+                    : KIVO.bus.has("staff.availText@1")
+                      ? KIVO.bus.read("staff.availText@1", e.shift || e.sh, ar)
                       : "متاح",
           statusColor: "ab" === e.mark ? "#b91c1c" : "pm" === e.mark ? "#C9702A" : O ? "#0e7490" : e.onRest ? "#d97706" : "#059669",
           statusTip:

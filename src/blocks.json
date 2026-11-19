@@ -656,12 +656,22 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/530-emp-day-facts.js",
+   "id": "systems/staff/client/530-emp-day-facts.js",
    "kind": "js",
    "line": 10494,
    "openTag": "<script>",
    "origBytes": 10543,
    "origSha256": "27012b4294aa581a0688c00ff7eb69a863beadab023efdd9c52784982605fa4a"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/staff/client/531-staff-links.js",
+   "kind": "js",
+   "line": 10495,
+   "new": "V7 · د5-د: ما يوفّره الجدول الشهري لغيره عبر الناقل (قراءات · أمر · مشارك)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
   },
   {
    "closeTag": "</script>",

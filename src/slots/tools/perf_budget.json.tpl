@@ -43,8 +43,7 @@
   "page:Operational-Plan": 241234,
   "page:Planning": 2870,
   "page:Profile": 70000,
-@@SYS:budget.page.seized@@  "page:Staffing": 41921,
-@@SYS:budget.page.tasks@@  "shell:index.html": 30100,
+@@SYS:budget.page.seized@@@@SYS:budget.page.staff@@@@SYS:budget.page.tasks@@  "shell:index.html": 30100,
   "worker:_worker.js": 460000
  },
  "unifyBatch3Decision": {

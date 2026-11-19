@@ -13,6 +13,10 @@
   "../workers/parts/019p3-scheduling-rounds.js"
  ],
  "provides": {},
- "consumes": {},
+ "consumes": {
+  "staff.dayFacts@1": {
+   "absent": "بلا وقائع اليوم: لوحةُ القوة فارغة (كما كان حين لا خدمة)"
+  }
+ },
  "crossEffects": []
 }

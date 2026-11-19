@@ -50,7 +50,7 @@ test('KD-11 · ES-9 · DG-10 · AUX-13: الطبقةُ المشتركة (الغ�
 });
 
 test('ES-9 · مربّعاتُ التحديد في جدولَي الموظفين والجدول الشهري داخل <label class="bs-ckhit"> — فالمساحةُ اللمسية ٣٦ والنقرُ على الغلاف يبدّل المربّع', () => {
-  for (const [f, n] of [['modules/employees/view.html', 2], ['modules/staff/view.html', 2]]) {
+  for (const [f, n] of [['modules/employees/view.html', 2], ['systems/staff/client/view.html', 2]]) {
     const v = rd(f);
     assert.equal((v.match(/<label class="bs-ckhit"><input type="checkbox" checked="\{\{(?:allSelected|e\.sel)\}\}"[^>]*><\/label>/g) || []).length, n, f);
     assert.doesNotMatch(v, /<t[hd][^>]*><input type="checkbox" checked="\{\{(?:allSelected|e\.sel)\}\}"/, f + ': لا مربّعَ عارياً');
@@ -64,7 +64,7 @@ test('PLAN-06 · DG-10 · ES-9 · AUX-13: قواعدُ الوحدات (لا في
   assert.ok(plan.includes('[title^="سيتم حذف"][style*="position: absolute"]{ min-width:24px; min-height:24px; }'));
   const tasks = M('systems/tasks/client/helmet.css', 'الموجة 2 · DG-10');
   assert.ok(tasks.includes('.tk-dayall{min-height:36px}') && tasks.includes('[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}'));
-  const st = M('modules/staff/helmet.css', 'الموجة 2 · ES-9');
+  const st = M('systems/staff/client/helmet.css', 'الموجة 2 · ES-9');
   assert.ok(st.includes('[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}') && st.includes('.st-restdd button{min-height:36px}'));
   assert.ok(M('modules/dreport/helmet.css', 'الموجة 2 · DG-10').includes('.dr-trbox button{min-height:36px}'));
   assert.equal((rd('modules/dreport/view.html').match(/<div class="dr-trbox" style="margin-top:6px;/g) || []).length, 2, 'منتقيا التحويل (الجدول والبطاقات)');
@@ -72,7 +72,7 @@ test('PLAN-06 · DG-10 · ES-9 · AUX-13: قواعدُ الوحدات (لا في
   assert.ok(adm.includes('[data-screen-label="إدارة الموقع"] button:not([style*="position: absolute"]){min-width:32px;min-height:32px}'));
   assert.ok(adm.includes('[data-screen-label="إدارة الموقع"] [data-sf=name][style*="cursor: pointer"]{min-height:32px;display:inline-flex;align-items:center}'));
   /* الشارةُ في القوالب فعلاً بهذا العنوان وموضعٍ مطلق */
-  assert.match(rd('modules/staff/view.html'), /title="سيتم حذف جميع بيانات الشهر" style="position:absolute;/);
+  assert.match(rd('systems/staff/client/view.html'), /title="سيتم حذف جميع بيانات الشهر" style="position:absolute;/);
 });
 
 /* قرار المالك 2026-11-11 (نقل دفعة الترويسة): هذا الاختبار كان يثبت التفافَ رأس الخريطة سطرين على الجوال واللمس (PLAN-06)؛
@@ -131,7 +131,7 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
 });
 
 test('ES-9 · محرِّرُ الراحات لا يتجاوز الشاشة: عرضُه max-content بحدٍّ أقصى calc(100vw - 16px) وأيامُه تلتفّ — كان 452px فيخرج «سبت» عن جوال 390px (ولا طريقَ آخر للحذف باللمس)', () => {
-  const v = rd('modules/staff/view.html');
+  const v = rd('systems/staff/client/view.html');
   const eds = v.match(/<div data-bs-dd="1" class="st-restdd" style="[^"]*">/g) || [];
   assert.equal(eds.length, 2, 'الجدولُ والبطاقات');
   for (const e of eds) {
@@ -228,7 +228,7 @@ test('ES-9 · الفأرة كما كانت: نقرةٌ على رقاقة الر�
   const rl = L.row('TEST_ONLY_e1'); assert.equal(rl.restChips[0].tip, 'الشهر مقفل'); rl.restChips[0].remove();
   assert.equal(L.writes(), 0); assert.equal(L.c.state.restOpen || null, null);
   /* القالب: المحرِّرُ خارج شرط زرّ الإضافة (يُفتح من الرقاقة ولو اكتمل النصاب) — في الجدول وفي البطاقات */
-  const v = rd('modules/staff/view.html');
+  const v = rd('systems/staff/client/view.html');
   assert.equal((v.match(/<sc-if value="\{\{e\.restCanEdit\}\}" hint-placeholder-val="\{\{ true \}\}">\n\s*<button onClick="\{\{e\.restToggle\}\}" title="تعديل أيام الراحة" style="\{\{e\.restBtnStyle\}\}">\+<\/button>\n\s*<\/sc-if>/g) || []).length, 2);
 });
 

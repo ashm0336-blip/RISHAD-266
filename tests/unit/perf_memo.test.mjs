@@ -65,7 +65,7 @@ test('الربط: cur() بالفهرس · الواجهةُ العامة userById
   const P = rd('src/permissions/331-perm-model.js');
   assert.match(P, /KIVO\.__dcWorld \|\| 0, KIVO\.__dcWrite \|\| 0, RAW\.getItem\.call\(localStorage, 'bassam_platform_v1'\),\n\s*Math\.floor\(Date\.now\(\) \/ 1000\)\]\.join/, 'المفتاحُ بنسختي العالم والثانية');
   assert.ok(!/RAW\.getItem\.call\(localStorage, 'bassam_gdepts_v1'\), RAW\.getItem\.call\(localStorage, 'bassam_depts_v1'\)/.test(P), 'لا قراءةَ لسجلّي الإدارات في المفتاح');
-  const S = rd('src/modules/staff/logic.js');
+  const S = rd('src/systems/staff/client/logic.js');
   assert.match(S, /_pcMemo\(n, f\)/); ['"PC:" \+ \(t \|\| "view"\)', '"PCE:" \+ \(t \|\| "view"\)', '"sdCanSet"', '"pmCanSet"'].forEach((k) => assert.ok(S.includes('this._pcMemo(' + k), k));
   const L = rd('src/modules/admin/logic.js');
   assert.match(L, /adUsersVals\(\) \{\n\s*return this\._adMemo\("users", \(\) => this\._adUsersVals0\(\)\);/); assert.match(L, /adVals\(\) \{\n\s*return this\._adMemo\("ov", \(\) => this\._adVals0\(\)\);/);

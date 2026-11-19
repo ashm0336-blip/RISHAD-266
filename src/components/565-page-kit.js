@@ -576,8 +576,11 @@
         return 2;
       }
       WEEKDAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+      /* V7 · د5-د: كان يعيد الافتراضي دائماً فلا يُقرأ الحدُّ المحفوظ أبداً. الحدُّ يملكه الجدولُ الشهري ويوفّره قراءةً معلنة؛
+         بلا حدٍّ محفوظ (أو بغياب الجدول) الافتراضي. */
       loadPermLimit() {
-        return this.PERM_DEF_LIMIT;
+        const t = KIVO.bus.read("staff.permLimit@1");
+        return "number" == typeof t && isFinite(t) ? t : this.PERM_DEF_LIMIT;
       }
     };
   };

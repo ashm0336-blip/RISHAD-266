@@ -66,7 +66,7 @@ test('ES-4 · حلقةُ «توزيع الورديات» تمرّ بمحوِّل
   const s = moduleLogic('staff');
   assert.match(s, /color: KIVO\.__bsTokVal \? KIVO\.__bsTokVal\("background", t\.color\) : t\.color,\n\s+dash: Math\.round/);
   /* نقطةُ الدليل نفسُها background:{{r.color}} — فالرمزُ واحد */
-  assert.match(rd('modules/staff/view.html'), /<i style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:\{\{r\.color\}\};/);
+  assert.match(rd('systems/staff/client/view.html'), /<i style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:\{\{r\.color\}\};/);
 });
 
 test('KD-09 · IRSZ-5 · --warning-on-strong على --warning-strong ≥ 4.5:1 في السمتين (الأبيضُ كان 1.8:1 داكناً) والفاتحُ كما كان (أبيض 6.99:1)', () => {
