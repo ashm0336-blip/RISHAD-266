@@ -60,24 +60,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }, 3200)));
     } catch (t) {}
   }
-  hParts(t) {
-    const r = this._hfmt().formatToParts(t),
-      e = (t) => +r.find((r) => r.type === t).value;
-    return { y: e("year"), m: e("month"), d: e("day") };
-  }
-  hGreg(t, r, e) {
-    const n = (t) => new Date(t.getFullYear(), t.getMonth(), t.getDate(), 12);
-    let a = n(new Date(new Date(2026, 5, 16).getTime() + 864e5 * (29.5306 * (12 * (t - 1448) + (r - 1)) + (e - 1))));
-    try {
-      for (let i = 0; i < 12; i++) {
-        const i = this.hParts(a);
-        if (i.y === t && i.m === r && i.d === e) return a;
-        const s = 354.367 * (i.y - t) + 29.5306 * (i.m - r) + (i.d - e);
-        a = n(new Date(a.getTime() - 864e5 * (Math.round(s) || (s > 0 ? 1 : -1))));
-      }
-    } catch (t) {}
-    return a;
-  }
+  hGreg(t, e, s) { return KIVO.BassamCal.hGregNoon(t, e, s); }   /* V7 · د5-د: نسخةُ الساعة 12 — هذه الصفحة تحسب بالأيام (385-calendar) */
   hMonthDays(t, r) {
     const e = t + "-" + r;
     if (((this.__hd = this.__hd || {}), this.__hd[e])) return this.__hd[e];
@@ -88,24 +71,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       n = a.y === t && a.m === r ? 30 : 29;
     } catch (t) {}
     return ((this.__hd[e] = n), n);
-  }
-  hGregMonthLabel(t, r) {
-    const e = t + "-" + r;
-    if (((this.__hg = this.__hg || {}), this.__hg[e])) return this.__hg[e];
-    let n = "";
-    try {
-      n = this.hGreg(t, r, 15).toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" });
-    } catch (t) {}
-    return ((this.__hg[e] = n), n);
-  }
-  hGregYearRange(t) {
-    try {
-      const r = this.hGreg(t, 1, 1).getFullYear(),
-        e = this.hGreg(t, 12, 29).getFullYear();
-      return (r === e ? r : r + " – " + e) + " م";
-    } catch (t) {
-      return "";
-    }
   }
   dayPastDS(t, r, e) {
     let n;

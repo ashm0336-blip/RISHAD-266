@@ -210,6 +210,7 @@ function tasksPage() {
   KIVO.BassamFind = { dig: (v) => String(v == null ? '' : v), filter: (q, list, f) => list.filter((r) => f(r).some((x) => String(x == null ? '' : x).indexOf(q) >= 0)) };
   class DCLogic { constructor() { this.state = {}; } setState(p, cb) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); cb && cb(); } }
   ctx.DCLogic = DCLogic;
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), ctx);   /* V7 · د5-د: التقويم الموحّد — تعتمد عليه عُدّة الصفحات */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast() {} };
   KIVO.__BS_SRV = { operations: { resources: [], status: () => ({ state: 'idle', epoch: 0 }), context: () => null, state: () => 'ready', begin: () => ({ ok: true }), draft: () => null }, rev: () => 0 };

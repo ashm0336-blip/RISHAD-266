@@ -22,6 +22,7 @@ import path from 'node:path';
 import { ROOT } from '../../../../tests/unit/harness.mjs';
 import { world, workerUnderTest, ME, MATE, KT, DAY, TAG, stored, rowsOf, putKV, hij, HR, PNG } from './tasks_fx.mjs';
 import { world as pfWorld, riyadhDay } from '../../../../tests/unit/profile_world.mjs';
+import { calendar, callers } from '../../../../tests/unit/cal_kit.mjs';   /* V7 · د5-د: التقويم الموحّد */
 
 const WU = workerUnderTest();
 const LOGIC = process.env.PROFILE_LOGIC || path.join(ROOT, 'src/modules/profile/logic.js');
@@ -36,11 +37,11 @@ function page(W, ck) {
   ctx.CustomEvent = class { constructor(t, o) { this.type = t; this.detail = o && o.detail; } };
   ctx.addEventListener = () => {}; ctx.dispatchEvent = () => true;
   ctx.fetch = async (url, opt = {}) => { const r = await W.C.req(url, { method: opt.method || 'GET', cookie: ck, headers: opt.headers, body: opt.body }); return { ok: r.status < 300, status: r.status, text: () => r.text(), json: () => r.json() }; };
-  vm.createContext(ctx);
+  vm.createContext(ctx); calendar(ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/tasks/client/545-task-self.js'), 'utf8'), ctx);
   KIVO.BassamCount = (n, w) => n + ' ' + w;
   class DCLogic { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); } }
-  KIVO.BassamPageKit = { base: (Bc) => class extends Bc { bsOn() { return true; } bsToast() {} bsAck() { return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } } };
+  KIVO.BassamPageKit = { base: (Bc) => callers(class extends Bc { bsOn() { return true; } bsToast() {} bsAck() { return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } }, KIVO) };
   ctx.DCLogic = DCLogic;
   vm.runInContext(fs.readFileSync(LOGIC, 'utf8') + '\n;globalThis.__C = Component;', ctx, { filename: 'profile/logic.js' });
   const c = new ctx.__C(); c.state = Object.assign({ pfPanel: '' }, c.state || {}); c._pfAlive = true;
@@ -364,12 +365,12 @@ function clockPage() {
   ctx.CustomEvent = class { constructor(t, o) { this.type = t; this.detail = o && o.detail; } };
   ctx.addEventListener = (t, f) => { (L[t] = L[t] || []).push(f); }; ctx.removeEventListener = (t, f) => { L[t] = (L[t] || []).filter((x) => x !== f); }; ctx.dispatchEvent = () => true;
   ctx.fetch = (url, o) => { if (/\/api\/me\/tasks/.test(String(url))) hits.push(now); return fx.impl(String(url), o); };
-  vm.createContext(ctx);
+  vm.createContext(ctx); calendar(ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/tasks/client/545-task-self.js'), 'utf8'), ctx);
   KIVO.BassamCount = (n, w) => n + ' ' + w;
   let render = () => {};
   class DCLogic { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); if (!pend) { pend = 1; ctx.setTimeout(() => { pend = 0; render(); }, 0); } } }
-  KIVO.BassamPageKit = { base: (Bc) => class extends Bc { bsOn() { return true; } bsToast() {} bsAck() { return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } } };
+  KIVO.BassamPageKit = { base: (Bc) => callers(class extends Bc { bsOn() { return true; } bsToast() {} bsAck() { return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } }, KIVO) };
   ctx.DCLogic = DCLogic;
   vm.runInContext(fs.readFileSync(LOGIC, 'utf8') + '\n;globalThis.__C = Component;', ctx, { filename: 'profile/logic.js' });
   const c = new ctx.__C(); c.state = Object.assign({ pfPanel: '' }, c.state || {}); c._pfAlive = true;

@@ -308,23 +308,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (KIVO.BassamNav && KIVO.BassamNav.go) return void KIVO.BassamNav.go(t);
     } catch (t) {}
   }
-  hParts(t) {
-    try {
-      const e = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        }).formatToParts(t || new Date()),
-        s = (t) => +e.find((e) => e.type === t).value;
-      return { y: s("year"), m: s("month"), d: s("day") };
-    } catch (e) {
-      try {
-        return KIVO.BassamHijri.now(t);
-      } catch (t) {
-        return { y: 1448, m: 1, d: 1 };
-      }
-    }
-  }
+  hParts(t) { return KIVO.BassamCal.hPartsSafe(t); }   /* V7 · د5-د: بتراجعٍ إن غاب دعمُ التقويم (385-calendar) */
   MONTHS() {
     return [
       "محرم",

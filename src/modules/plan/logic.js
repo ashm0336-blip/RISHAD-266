@@ -6211,18 +6211,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         this.setState({ gates: KIVO.BassamLeaf.removeIdx(this.state.gates, t.i), sel: null, selMulti: [] }, () => this.savePlan());
       }
   }
-  hGreg(t, e, s) {
-    let n = new Date(new Date(2026, 5, 16).getTime() + 864e5 * (29.5306 * (12 * (t - 1448) + (e - 1)) + (s - 1)));
-    try {
-      for (let a = 0; a < 12; a++) {
-        const a = this.hParts(n);
-        if (a.y === t && a.m === e && a.d === s) return n;
-        const i = 354.367 * (a.y - t) + 29.5306 * (a.m - e) + (a.d - s);
-        n = new Date(n.getTime() - 864e5 * (Math.round(i) || (i > 0 ? 1 : -1)));
-      }
-    } catch (t) {}
-    return n;
-  }
   hMonthDays(t, e) {
     const s = t + "-" + e;
     if (((this.__hd = this.__hd || {}), this.__hd[s])) return this.__hd[s];

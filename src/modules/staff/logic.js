@@ -681,18 +681,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
     });
   }
-  hGreg(t, e, s) {
-    let r = new Date(new Date(2026, 5, 16).getTime() + 864e5 * (29.5306 * (12 * (t - 1448) + (e - 1)) + (s - 1)));
-    try {
-      for (let n = 0; n < 12; n++) {
-        const n = this.hParts(r);
-        if (n.y === t && n.m === e && n.d === s) return r;
-        const i = 354.367 * (n.y - t) + 29.5306 * (n.m - e) + (n.d - s);
-        r = new Date(r.getTime() - 864e5 * (Math.round(i) || (i > 0 ? 1 : -1)));
-      }
-    } catch (t) {}
-    return r;
-  }
   hMonthDays(t, e) {
     const s = t + "-" + e;
     if (((this.__hd = this.__hd || {}), this.__hd[s])) return this.__hd[s];
@@ -703,15 +691,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       r = n.y === t && n.m === e ? 30 : 29;
     } catch (t) {}
     return ((this.__hd[s] = r), r);
-  }
-  hGregMonthLabel(t, e) {
-    const s = t + "-" + e;
-    if (((this.__hg = this.__hg || {}), this.__hg[s])) return this.__hg[s];
-    let r = "";
-    try {
-      r = this.hGreg(t, e, 15).toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" });
-    } catch (t) {}
-    return ((this.__hg[s] = r), r);
   }
   healOrphanShifts(t) {
     t = t.slice();

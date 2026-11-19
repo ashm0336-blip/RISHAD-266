@@ -11,7 +11,7 @@ import { ROOT, SRC, moduleLogic } from './harness.mjs';
 export const CANVAS = process.env.CANVAS_SRC || path.join(SRC, 'components', '560-canvas-input.js');
 const PROP = { pointerdown: 'onPointerDown', pointermove: 'onPointerMove', pointerup: 'onPointerUp', pointercancel: 'onPointerCancel', click: 'onClick', dblclick: 'onDoubleClick' };
 const SERVICES = ['src/services/060-percent-format.js', 'src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js', 'src/i18n/380-hijri-fallback.js',
-  'src/services/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/565-page-kit.js'];
+  'src/services/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
 
 export function world() {
   const T = { now: 1000 }, timers = [], frames = [], store = new Map();

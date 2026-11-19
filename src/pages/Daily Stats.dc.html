@@ -1110,7 +1110,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
 
   /* ══ التقويم ══ */
   _hf(){ try { return new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn",{year:"numeric",month:"numeric",day:"numeric"}); } catch(e){ return null; } }
-  hToday(){ const f=this._hf(); if(!f) return {y:1448,m:1,d:1}; const o={}; f.formatToParts(new Date()).forEach(p=>o[p.type]=+p.value); return {y:o.year,m:o.month,d:o.day}; }
   hOfDate(dt){ const f=this._hf(); const o={}; f.formatToParts(dt).forEach(p=>o[p.type]=+p.value); return o; }
   gOf(y,m,d){ const ck=this.__g||(this.__g={}), key=y+"|"+m+"|"+d; if(key in ck) return ck[key];
     const f=this._hf(); if(!f) return (ck[key]=null); let lo=-40000,hi=40000,k=y*10000+m*100+d;

@@ -132,7 +132,7 @@ async function page(t, { visiblePolling = false } = {}) {
       this.state = { ...this.state, ...next }; done?.();
     }
   };
-  for (const relative of ['src/i18n/380-hijri-fallback.js', 'src/services/332-find-day.js', 'src/services/440-count.js', 'src/components/565-page-kit.js']) {
+  for (const relative of ['src/i18n/380-hijri-fallback.js', 'src/services/332-find-day.js', 'src/services/440-count.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js']) {
     vm.runInContext(frontSource(relative), T.ctx, { filename: relative });
   }
   vm.runInContext(actualPick(), T.ctx, { filename: '334-perm-tree-tpl.js:actual-BassamPick' });

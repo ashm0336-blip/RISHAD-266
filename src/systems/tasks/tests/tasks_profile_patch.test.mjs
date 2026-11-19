@@ -16,6 +16,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { ROOT } from '../../../../tests/unit/harness.mjs';
 import { world, workerUnderTest, ME, KT, DAY, TOMORROW, YESTERDAY, PDAY, row, stored, rowsOf, putKV, HR, PNG } from './tasks_fx.mjs';
+import { calendar, callers } from '../../../../tests/unit/cal_kit.mjs';   /* V7 · د5-د: التقويم الموحّد */
 
 const WU = workerUnderTest();
 const PATCH = path.join(ROOT, 'reports/k264/tasks/patches/03-profile-mytasks.patch');
@@ -37,12 +38,12 @@ function page(W, ck, logicFile, opts = {}) {
   ctx.CustomEvent = class { constructor(t, o) { this.type = t; this.detail = o && o.detail; } };
   ctx.addEventListener = () => {}; ctx.dispatchEvent = () => true;
   ctx.fetch = async (url, opt = {}) => { if (B.offline) throw new TypeError('Failed to fetch'); if (opts.calls && /\/api\/me\/tasks\/act$/.test(String(url))) opts.calls.push(JSON.parse(opt.body)); const r = await W.C.req(url, { method: opt.method || 'GET', cookie: ck, headers: opt.headers, body: opt.body }); return { ok: r.status < 300, status: r.status, text: () => r.text(), json: () => r.json() }; };
-  vm.createContext(ctx);
+  vm.createContext(ctx); calendar(ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/tasks/client/545-task-self.js'), 'utf8'), ctx);
   KIVO.BassamCount = (n, w) => n + ' ' + w;
   const toasts = [];
   class DCLogic { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); } }
-  KIVO.BassamPageKit = { base: (Bc) => class extends Bc { bsOn() { return true; } bsToast(m, k) { toasts.push(['toast', m, k]); } bsAck(m, k) { toasts.push(['ack', m, k]); return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } } };
+  KIVO.BassamPageKit = { base: (Bc) => callers(class extends Bc { bsOn() { return true; } bsToast(m, k) { toasts.push(['toast', m, k]); } bsAck(m, k) { toasts.push(['ack', m, k]); return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } }, KIVO) };
   ctx.DCLogic = DCLogic;
   vm.runInContext(fs.readFileSync(logicFile, 'utf8') + '\n;globalThis.__C = Component;', ctx, { filename: 'profile/logic.js' });
   const c = new ctx.__C(); c.state = Object.assign({ pfPanel: '' }, c.state || {}); c._pfAlive = true;

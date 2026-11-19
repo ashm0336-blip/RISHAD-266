@@ -517,6 +517,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "i18n/385-calendar.js",
+   "kind": "js",
+   "line": 10752,
+   "new": "V7 · د5-د: التقويم الهجري/الميلادي — نسخة واحدة لكل دالة (KIVO.BassamCal)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "services/390-kpi-primitives.js",
    "kind": "js",
    "line": 8530,

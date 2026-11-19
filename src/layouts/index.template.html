@@ -87,6 +87,7 @@
 @@KIVO_BLOCK:services/360-bassam-idb.js@@
 @@KIVO_BLOCK:auth/370-backup-crypto.js@@
 @@KIVO_BLOCK:i18n/380-hijri-fallback.js@@
+@@KIVO_BLOCK:i18n/385-calendar.js@@
 @@KIVO_BLOCK:services/390-kpi-primitives.js@@
 @@KIVO_BLOCK:services/400-shift-need.js@@
 @@KIVO_BLOCK:services/410-gate-units.js@@

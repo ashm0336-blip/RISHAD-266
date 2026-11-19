@@ -47,7 +47,7 @@ test('actual lazy registry reaches both business bundles exactly once, with one 
 
 for(const name of ['Seized','Award'])test('actual emitted '+name+' factory includes callable typed transport and fails anonymous requests before storage/network',async()=>{
  const B=built(),{C,forbidden}=environment();
- for(const stem of ['005-kivo-ns','565-page-kit','548-atomic-backup']){const asset=B.asset(stem);vm.runInContext(asset.source,C,{filename:asset.path});}
+ for(const stem of ['005-kivo-ns','385-calendar','565-page-kit','548-atomic-backup']){const asset=B.asset(stem);vm.runInContext(asset.source,C,{filename:asset.path});}
  const Count=(n,label)=>n+' '+label;Count.pair=(key,n)=>({[key]:n});Count.agr=()=>'';
  C.KIVO.BassamCount=Count;C.KIVO.BassamAuth={user:()=>null};C.KIVO.BassamDepts={active:()=>null};
  class Base{hToday(){return{y:1448,m:5,d:19};}_hfmt(){return new Intl.DateTimeFormat('en-u-ca-islamic-umalqura',{year:'numeric',month:'numeric',day:'numeric'});}setState(value){Object.assign(this.state,typeof value==='function'?value(this.state):value);}bsOn(){return false;}}

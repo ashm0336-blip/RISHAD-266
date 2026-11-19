@@ -36,6 +36,7 @@ async function tasksPage(logicSrc, storeJson, emps, W, ck) {
   KIVO.BassamDepts = { active: () => 'tst_d1' };
   class DCLogic { constructor() { this.state = {}; } setState(p, cb) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); cb && cb(); } }
   ctx.DCLogic = DCLogic;
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), ctx);   /* V7 · د5-د: التقويم الموحّد — تعتمد عليه عُدّة الصفحات */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast() {} bsAck() { return Promise.resolve(true); } };
   vm.runInContext(logicSrc + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });

@@ -22,15 +22,6 @@
   /* ── daily · dreport · irshad · plan · seized · staff · tasks (1) ── */
   T["daily+dreport+irshad+plan+seized+staff+tasks"] = function (B) {
     return class extends B {
-      _hfmt() {
-        if (void 0 === this.__hf)
-          try {
-            this.__hf = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" });
-          } catch (t) {
-            this.__hf = null;
-          }
-        return this.__hf;
-      }
     };
   };
   /* ── dreport · irshad · planning · profile · seized · staff · tasks (1) ── */
@@ -62,20 +53,6 @@
   /* ── daily · plan · seized · staff (2) ── */
   T["daily+plan+seized+staff"] = function (B) {
     return class extends B {
-      hGregYearRange(t) {
-        try {
-          const e = this.hGreg(t, 1, 1).getFullYear(),
-            s = this.hGreg(t, 12, 29).getFullYear();
-          return e === s ? e + " م" : e + " – " + s + " م";
-        } catch (t) {
-          return "";
-        }
-      }
-      hParts(t) {
-        const e = this._hfmt().formatToParts(t),
-          s = (t) => +e.find((e) => e.type === t).value;
-        return { y: s("year"), m: s("month"), d: s("day") };
-      }
     };
   };
   /* ── admin · profile · seized (1) ── */
@@ -151,19 +128,6 @@
   /* ── irshad · seized · tasks (1) ── */
   T["irshad+seized+tasks"] = function (B) {
     return class extends B {
-      hToday() {
-        try {
-          const t = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-              year: "numeric",
-              month: "numeric",
-              day: "numeric",
-            }).formatToParts(new Date()),
-            e = (e) => +t.find((t) => t.type === e).value;
-          return { y: e("year"), m: e("month"), d: e("day") };
-        } catch (t) {
-          return KIVO.BassamHijri ? KIVO.BassamHijri.now() : { y: 1448, m: 2, d: 1 };
-        }
-      }
     };
   };
   /* ── admin · seized (1) ── */
@@ -599,15 +563,6 @@
         const e = this.GATE_LOCS.find((e) => e[0] === t);
         return e ? e[1] : null;
       }
-      hGregMonthLabel(t, e) {
-        const s = t + "-" + e;
-        if (((this.__hg = this.__hg || {}), this.__hg[s])) return this.__hg[s];
-        let n = "";
-        try {
-          n = this.hGreg(t, e, 15).toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" });
-        } catch (t) {}
-        return ((this.__hg[s] = n), n);
-      }
       zoneOptList(t) {
         const e = (this.state.zoneOpts || {})[t];
         return Array.isArray(e) ? e.filter((t) => ("string" == typeof t && t) || (t && "object" == typeof t && t.n)) : [];
@@ -781,6 +736,17 @@
   };
   var memo = new Map();
   /* base(DCLogic, سمات) ⇒ صنفٌ أساس: DCLogic ثم السماتُ بترتيبها (لا اسمَ يتكرّر بين سمات وحدةٍ واحدة — مُثبَتٌ عند التوليد) */
+  /* V7 · د5-د: التقويم — نسخةٌ واحدة لكل دالة في خدمة القاعدة KIVO.BassamCal (i18n/385-calendar.js)؛ كلُّ صفحةٍ ترث هذه المناديات، ولا تحمل صفحةٌ نسخةً.
+     (كانت منسوخةً في الصفحات وفي سماتٍ هنا؛ ومن يحتاج نسخةَ الساعة 12 أو التراجعَ يعيد تعريفَ المنادي بسطرٍ واحد.) */
+  function calendar(B) {
+    return class extends B {
+      hParts(t) { return KIVO.BassamCal.hParts(t); }
+      hGreg(t, e, s) { return KIVO.BassamCal.hGreg(t, e, s); }
+      hGregMonthLabel(t, e) { return KIVO.BassamCal.hGregMonthLabel(t, e); }
+      hGregYearRange(t) { return KIVO.BassamCal.hGregYearRange(t); }
+      hToday() { return KIVO.BassamCal.hToday(); }
+    };
+  }
   function base(DCLogic, names) {
     var k = names.join("|"),
       hit = memo.get(DCLogic);
@@ -789,7 +755,7 @@
       memo.set(DCLogic, hit);
     }
     if (hit.has(k)) return hit.get(k);
-    var C = DCLogic;
+    var C = calendar(DCLogic);
     for (var i = 0; i < names.length; i++) {
       var f = T[names[i]];
       if (!f) throw new Error("BassamPageKit: سمةٌ مجهولة " + names[i]);

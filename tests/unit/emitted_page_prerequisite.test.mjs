@@ -103,7 +103,7 @@ function world({ registered = false, readResponse = response } = {}) {
     if (url.pathname.startsWith('/assets/pages/')) return new Response(B.file(url.pathname.slice(1)).source, { headers: { 'Content-Type': 'text/plain' } });
     throw Error('Unexpected fixture route: ' + route);
   };
-  const stems = ['005-kivo-ns', '030-pages-loader', '050-dc-runtime', '255-page-manifest', '280-server-storage', '320-dept-storage', '565-page-kit'];
+  const stems = ['005-kivo-ns', '030-pages-loader', '050-dc-runtime', '255-page-manifest', '280-server-storage', '320-dept-storage', '385-calendar', '565-page-kit'];
   const assets = new Map(stems.map(stem => { const asset = B.asset(stem); assert.equal(B.scripts.filter(src => src === asset.path).length, 1); return [asset.path, asset]; }));
   for (const src of B.scripts) {
     const asset = assets.get(src); if (!asset) continue;

@@ -95,7 +95,7 @@ async function host(t,{holdFirst=false}={}){
  K.BassamAuth={user:()=>control.user,isSuper:()=>false,isMgrKey:k=>String(k||'').startsWith('mgr:')};
  K.BassamDepts={active:()=>control.user.deptId,list:()=>B.keys.bassam_depts_v1,ancestorsOf:()=>[]};K.BassamPerm={on:()=>true,can:()=>false};
  W.DCLogic=class{setState(p){this.state={...this.state,...(typeof p==='function'?p(this.state):p)};}};
- for(const name of ['280-server-storage','545-task-self','565-page-kit'])vm.runInContext(bundle.asset(name),T.ctx,{filename:'emitted-'+name});
+ for(const name of ['280-server-storage','545-task-self','385-calendar','565-page-kit'])vm.runInContext(bundle.asset(name),T.ctx,{filename:'emitted-'+name});
  vm.runInContext(bundle.profile(),T.ctx,{filename:'emitted-Profile.logic'});const factory=K.__dcLogicDefs?.Profile||W.__dcLogicDefs?.Profile,Component=factory(W.DCLogic,W.DCLogic,{}),page=new Component();
  W.addEventListener('bassam:tasks',e=>hints.push(copy(e.detail)));
  const service=K.BassamMyTasks;const load=service.load();await drain();if(!holdFirst)await load;

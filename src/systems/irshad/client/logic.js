@@ -1,22 +1,5 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","admin+profile+seized","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","award+irshad+seized","irshad+seized+tasks","dstats+irshad","irshad+seized"]) {
   static _irSessions = new WeakMap();
-  hParts(t) {
-    const e = this._hfmt().formatToParts(t),
-      r = (t) => +e.find((e) => e.type === t).value;
-    return { y: r("year"), m: r("month"), d: r("day") };
-  }
-  hGreg(t, e, r) {
-    let a = new Date(new Date(2026, 5, 16).getTime() + 864e5 * (29.5306 * (12 * (t - 1448) + (e - 1)) + (r - 1)));
-    try {
-      for (let i = 0; i < 12; i++) {
-        const i = this.hParts(a);
-        if (i.y === t && i.m === e && i.d === r) return a;
-        const s = 354.367 * (i.y - t) + 29.5306 * (i.m - e) + (i.d - r);
-        a = new Date(a.getTime() - 864e5 * (Math.round(s) || (s > 0 ? 1 : -1)));
-      }
-    } catch (t) {}
-    return a;
-  }
   hMonthDays(t, e) {
     const r = t + "-" + e;
     if (((this.__hd = this.__hd || {}), this.__hd[r])) return this.__hd[r];
@@ -27,24 +10,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       a = i.y === t && i.m === e ? 30 : 29;
     } catch (t) {}
     return ((this.__hd[r] = a), a);
-  }
-  hGregMonthLabel(t, e) {
-    const r = t + "-" + e;
-    if (((this.__hg = this.__hg || {}), this.__hg[r])) return this.__hg[r];
-    let a = "";
-    try {
-      a = this.hGreg(t, e, 15).toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" });
-    } catch (t) {}
-    return ((this.__hg[r] = a), a);
-  }
-  hGregYearRange(t) {
-    try {
-      const e = this.hGreg(t, 1, 1).getFullYear(),
-        r = this.hGreg(t, 12, 29).getFullYear();
-      return e === r ? e + " م" : e + " – " + r + " م";
-    } catch (t) {
-      return "";
-    }
   }
   LANGS = [
     "العربية",

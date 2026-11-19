@@ -3708,19 +3708,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       dsClear: null,
     };
   })();
-  hGreg(t, e, s) {
-    const n = (t) => new Date(t.getFullYear(), t.getMonth(), t.getDate(), 12);
-    let i = n(new Date(new Date(2026, 5, 16).getTime() + 864e5 * (29.5306 * (12 * (t - 1448) + (e - 1)) + (s - 1))));
-    try {
-      for (let o = 0; o < 12; o++) {
-        const o = this.hParts(i);
-        if (o.y === t && o.m === e && o.d === s) return i;
-        const r = 354.367 * (o.y - t) + 29.5306 * (o.m - e) + (o.d - s);
-        i = n(new Date(i.getTime() - 864e5 * (Math.round(r) || (r > 0 ? 1 : -1))));
-      }
-    } catch (t) {}
-    return i;
-  }
+  hGreg(t, e, s) { return KIVO.BassamCal.hGregNoon(t, e, s); }   /* V7 · د5-د: نسخةُ الساعة 12 — هذه الصفحة تحسب بالأيام (385-calendar) */
   hMonthDays(t, e) {
     const s = t + "-" + e;
     if (((this.__hd = this.__hd || {}), this.__hd[s])) return this.__hd[s];
