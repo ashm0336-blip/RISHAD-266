@@ -59,7 +59,7 @@ async function cuCleanupPermission(env, A, dept, intent, oldEmployees, newEmploy
   // and the trusted intent. Raw history writes remain append-only. Invoke the
   // existing operation classifier directly for this protected cleanup operation.
   var verdict = A.enf
-    ? enfDecide(A, key, CU_RESOURCE, dept, before, after, JSON.stringify(before), JSON.stringify(after), ctx, ctx.enf)
+    ? enfSuperGate(A, enfDecide(A, key, CU_RESOURCE, dept, before, after, JSON.stringify(before), JSON.stringify(after), ctx, ctx.enf))   /* برومت 43 · الجذر 1 (056) */
     : canWrite(A, key, JSON.stringify(after), JSON.stringify(before), ctx);
   if (!verdict.ok) throw cuError('custody-cleanup-permission', 403);
   if (intent === 'dept-wipe') {

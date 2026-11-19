@@ -88,18 +88,20 @@ test('التحديث التلقائي لا يهدم الصفحة: نافذة «�
     const poll = setInterval(async () => { try { if (await b2.page.evaluate(() => document.body.innerText.includes('حُدّثت البيانات من جهاز آخر'))) b2.sawNotice = true; } catch (e) {} }, 400);
     await step('حفظ باب في الإدارة نفسها', async () => { await toField(su); await gateDlg(su); await su.page.locator(FIXED.split(', ').map((q) => q + ' input').join(', ')).first().fill('5'); await su.page.locator(FIXED.split(', ').map((q) => q + ' button').join(', ')).filter({ hasText: 'حفظ البيانات' }).first().click(); await su.page.waitForTimeout(3500); assert.equal(await gatesOf(su), g0 + 1, 'باب الجهاز الأول حُفظ في الخادم'); });
     clearInterval(poll);
-    assert.ok(b2.sawNotice, 'تنبيه صغير «حُدّثت البيانات من جهاز آخر» ظهر والنافذة مفتوحة');
+    /* برومت 43 (الجذر 2): الواردُ يُدمج الآن لحظياً على مستوى العنصر والنافذةُ مفتوحة — لا تأجيلَ ولا تنبيهَ «تظهر بعد إغلاق النافذة» (كان يُثبَّت هنا) */
+    void b2.sawNotice;
     /* إغلاق النافذة وترك أداة الرسم ⇒ تظهر البيانات الجديدة في مكانها */
     const register = () => b2.page.evaluate(() => { const t = document.querySelector('#bsPtPlan').innerText.replace(/\s+/g, ' '), i = t.lastIndexOf('سجل الأبواب'); return i < 0 ? '' : t.slice(i, i + 60); });
     const reg0 = await register();
     await b2.page.locator(FIXED.split(', ').map((q) => q + ' button').join(', ')).filter({ hasText: /^إلغاء$/ }).first().click();
     await b2.page.waitForTimeout(800); await b2.page.keyboard.press('Escape');
-    /* باب الجهاز الأول يظهر. و«إلغاء» هنا يحاول حذف الباب الموضوع على نسخةٍ تغيّرت، فيرفضه الخادم برسالته المعتادة ويبقى البابان (سلوك التعارض القائم، لم يُمسّ) */
-    await b2.page.waitForFunction(() => { const t = document.querySelector('#bsPtPlan').innerText.replace(/\s+/g, ' '), i = t.lastIndexOf('سجل الأبواب'); return i >= 0 && /بابان/.test(t.slice(i, i + 60)); }, null, { timeout: 30000 });
+    /* باب الجهاز الأول يظهر. و«إلغاء» يحذف الباب الذي وضعه هذا الجهاز ولو تغيّرت نسخة الخطة بحفظ الجهاز الأول (برومت 41 — كان يُرفض فيبقى البابان):
+       يبقى بابُ الجهاز الأول وحده. التفصيل في tests/browser/v7_fix_cancel_placed.test.mjs */
+    await b2.page.waitForFunction(() => { const t = document.querySelector('#bsPtPlan').innerText.replace(/\s+/g, ' '), i = t.lastIndexOf('سجل الأبواب'); return i >= 0 && /باب واحد/.test(t.slice(i, i + 60)); }, null, { timeout: 30000 });
     const after = await b2.page.evaluate(() => ({ gone: window.__w.gone, ph: window.__w.ph, connected: window.__w.root.isConnected }));
     assert.deepEqual([after.gone, after.ph, after.connected], [0, 0, true], 'بعد الإغلاق: التطبيق في مكانه بلا فكّ');
     assert.notEqual(await register(), reg0, 'سجل الأبواب تحدّث بعد إغلاق النافذة');
-    assert.equal(await gatesOf(b2), g0 + 1);
+    assert.equal(await gatesOf(b2), g0, 'بابُ الجهاز الأول وحده في الخادم (بابُ هذا الجهاز أُلغي)');
     assert.equal(b2.live.some((t) => /\] (drop|placeholder|remount) /.test(t)), false, 'لا إسقاط ولا هيكل ولا إعادة تركيب: ' + JSON.stringify(b2.live));
 
     /* ── ② تغييرٌ حقيقي في صلاحيات مدير الإدارة يُطبَّق بلا هدم صفحته ── */

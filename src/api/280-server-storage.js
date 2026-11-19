@@ -855,6 +855,103 @@
     }).finally(function () { entry.promise = null; });
     return entry.promise;
   }
+  /* ═══ إعادةُ بناء تعديلٍ على أحدث نسخة (برومت 41) ═══
+     لتعديلٍ صغيرٍ مقصودٍ بذاته (حذفُ عنصرٍ وضعه المستخدمُ للتوّ) حين تكون مسودةُ الصفحة قديمةً لأن جهازاً آخر عدّل الوثيقةَ نفسَها:
+     تُقرأ الوثيقةُ من الخادم، ثم تُسلَّم نسخةٌ منها لـpatch فيعيد الوثيقةَ بعد تعديله · أو null (لا شيء يُفعل) · أو undefined (ما أراد تعديلَه غيّره غيرُه
+     ⇒ لا كتابةَ صامتة: err 'changed'). الحفظُ مسودةٌ جديدةٌ على المراجعة المقروءة نفسِها، فتعديلُ الجهاز الآخر في بقية الوثيقة يبقى كما هو؛
+     وإن كُتبت الوثيقةُ بين القراءة والحفظ (تعارض) أُعيد البناءُ من جديد، ثلاثَ مراتٍ على الأكثر. خاصيةُ المسودات باقية: لا مسودةٌ قديمةٌ تُرسل. */
+  /* ترقيعٌ جاهز لـoperationPatch9: حذفُ عنصرٍ وضعه المستخدمُ للتوّ من كلِّ موضعٍ له في الوثيقة (القوائمُ التي مفتاحُها listKey، في أي عمق)،
+     بمعرّفه idKey — بشرط أن تكون كلُّ نسخةٍ له مطابقةً حرفاً لما وضعه (mine). لا نسخةَ ⇒ null · نسخةٌ مختلفة (عدّله غيرُه) ⇒ undefined. */
+  function operationRemoval9(listKey, idKey, mine) {
+    var id = mine && mine[idKey], text = JSON.stringify(mine);
+    return function (doc) {
+      if (!doc || typeof doc !== 'object' || id == null || id === '') return null;
+      var lists = [];
+      (function walk(node) {
+        if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) { node.forEach(walk); return; }
+        Object.keys(node).forEach(function (k) {
+          var v = node[k];
+          if (k === listKey && Array.isArray(v) && v.some(function (x) { return x && x[idKey] === id; })) lists.push(v);
+          walk(v);
+        });
+      })(doc);
+      if (!lists.length) return null;
+      if (lists.some(function (list) { return list.some(function (x) { return x && x[idKey] === id && JSON.stringify(x) !== text; }); })) return undefined;
+      lists.forEach(function (list) { for (var i = list.length - 1; i >= 0; i--) if (list[i] && list[i][idKey] === id) list.splice(i, 1); });
+      return doc;
+    };
+  }
+  /* ترقيعٌ جاهز لـoperationPatch9 (برومت 41-ج): دمجٌ ثلاثيّ عام — base ما كانت عليه الصفحة · mine ما تريد حفظَه · والوثيقةُ الأحدث من الخادم.
+     ما لم أغيّره يؤخذ من الأحدث، وما لم يغيّره غيري يؤخذ مني. الكائناتُ تُدمج مفتاحاً مفتاحاً؛ والقوائمُ التي لكلِّ عنصرٍ فيها معرّفٌ فريد
+     (sid · uid · id · eid) تُدمج عنصراً عنصراً: إضافتي تُضاف، حذفي يُحذف، وتعديلي يحلّ محلَّ العنصر — بشرط ألّا يكون غيري غيّر العنصرَ نفسَه؛
+     العنصرُ ذرّيّ (لا دمجَ داخله) إلا «الموقع» (ذو sid) فيُدمج داخله. أيُّ موضعٍ غيّره الطرفان باختلاف ⇒ undefined (err 'changed' — لا كتابةَ صامتة).
+     prepare يُطبَّق على نُسخ الثلاثة قبل الدمج، وfinish على الناتج (للصفحة أن تُسقط حقولاً مشتقّة ثم تعيد اشتقاقها). لا فرقَ عن الأحدث ⇒ null. */
+  function operationMerge9(base, mine, prepare, finish) {
+    var CONFLICT = {};
+    var same = function (a, b) { return JSON.stringify(a) === JSON.stringify(b); };
+    var plain = function (x) { return !!x && typeof x === 'object' && !Array.isArray(x); };
+    var canon = function (x) { return JSON.stringify(x, function (k, v) { if (!plain(v)) return v; var o = {}; Object.keys(v).sort().forEach(function (key) { o[key] = v[key]; }); return o; }); };
+    var idOf = function (x) { return !plain(x) ? null : x.sid != null ? 's:' + x.sid : x.uid != null ? 'u:' + x.uid : x.id != null ? 'i:' + x.id : x.eid != null ? 'e:' + x.eid : null; };
+    var listed = function (a) { if (!Array.isArray(a)) return false; var seen = Object.create(null); return a.every(function (x) { var id = idOf(x); if (id === null || seen[id]) return false; seen[id] = 1; return true; }); };
+    var index = function (a) { var m = Object.create(null); a.forEach(function (x) { m[idOf(x)] = x; }); return m; };
+    function merge(b, m, t) {
+      if (same(m, b)) return t;
+      if (same(t, b) || same(m, t)) return m;
+      if (plain(b) && plain(m) && plain(t)) {
+        var out = {}, keys = Object.create(null);
+        [t, m, b].forEach(function (o) { Object.keys(o).forEach(function (k) { keys[k] = 1; }); });
+        Object.keys(keys).forEach(function (k) { var r = merge(b[k], m[k], t[k]); if (r !== undefined) out[k] = r; });
+        return out;
+      }
+      if (listed(b) && listed(m) && listed(t)) {
+        var B = index(b), M = index(m), T = index(t), list = [];
+        t.forEach(function (tv) {
+          var id = idOf(tv), bv = B[id], mv = M[id];
+          if (mv === undefined) { if (bv === undefined) list.push(tv); else if (!same(tv, bv)) throw CONFLICT; return; }   /* أضافه غيري · أو حذفتُه أنا وهو لم يُمسّ */
+          if (bv === undefined) { if (!same(mv, tv)) throw CONFLICT; list.push(tv); return; }
+          if (tv.sid != null) { list.push(merge(bv, mv, tv)); return; }
+          if (same(mv, bv)) list.push(tv); else if (same(tv, bv) || same(mv, tv)) list.push(mv); else throw CONFLICT;
+        });
+        m.forEach(function (mv) {
+          var id = idOf(mv); if (T[id] !== undefined) return;
+          if (B[id] === undefined) list.push(mv); else if (!same(mv, B[id])) throw CONFLICT;   /* إضافتي · أو حذفه غيري وأنا غيّرتُه */
+        });
+        return list;
+      }
+      throw CONFLICT;
+    }
+    return function (theirs) {
+      try {
+        var cut = typeof prepare === 'function' ? prepare : function (x) { return x; };
+        var out = merge(cut(operationClone9(base)), cut(operationClone9(mine)), cut(operationClone9(theirs)));
+        if (typeof finish === 'function') out = finish(out, theirs) || out;
+        return canon(out) === canon(theirs) ? null : out;   /* مطابقٌ للأحدث (ولو اختلف ترتيبُ المفاتيح) ⇒ لا كتابة */
+      } catch (error) { if (error === CONFLICT) return undefined; throw error; }
+    };
+  }
+  async function operationPatch9(owner, action, name, patch) {
+    var editors, key, last = operationFailure9('read', 0);
+    try { editors = operationEditor9(owner, action); key = operationScoped9(name); if (typeof patch !== 'function') throw Error('patch'); }
+    catch (error) { return operationFailure9('patch', 400); }
+    for (var attempt = 0; attempt < 3; attempt++) {
+      if (operationActive9 || dirty || inflight) await flushAsync(OP_CHAIN_WAIT9);   /* حفظٌ سابقٌ في الطريق (وضعُ العنصر نفسِه) يُحسم أولاً */
+      if (operationActive9) return operationFailure9('pending', 409, true);
+      var read = await operationRead9([key]);
+      if (!read || read.ok !== 1) { last = operationFailure9(read && read.err === 'stale' ? 'stale' : 'read', read && read.status); if (read && read.err === 'stale') continue; return last; }
+      var current, next;
+      try { current = operationValue9(key); } catch (error) { return operationFailure9('read-required', 409); }
+      try { next = patch(current == null ? null : operationClone9(current)); } catch (error) { return operationFailure9('patch', 400); }
+      if (next === undefined) return Object.assign(operationFailure9('changed', 409), { rev: krev[key] });
+      if (next === null) return { ok: 1, noop: 1, rev: krev[key] };
+      delete editors[action];
+      last = await operationCommit9(owner, action, { patch: attempt, rev: krev[key] }, (function (value) { return function (draft) { draft.set(name, value); }; })(next));
+      if (last && last.ok === 1) return last;
+      if (!last || last.err !== 'conflict') return last;
+      try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog('patch-retry', 'operations', 'كُتبت الوثيقةُ بين القراءة والحفظ — يُعاد البناء', [key]); } catch (e) { /* تشخيصٌ فقط */ }
+    }
+    return last;
+  }
   function operationStage9(changes) {
     var stamp = operationContext9();
     if (!stamp) return operationFailure9('session', 401);
@@ -1746,6 +1843,9 @@
       draft: operationDraft9,
       begin: operationBegin9,
       commit: operationCommit9,
+      patch: operationPatch9,
+      removal: operationRemoval9,
+      merge: operationMerge9,
       stage: operationStage9,
       flush: function (ticket) { return operationFlush9(ticket, false); },
       retry: function (ticket) { return operationFlush9(ticket, true); },

@@ -224,6 +224,9 @@ test("lost Plan ACK retries the exact ticket/body and a changed intent never rep
 test("gate option deletion changes catalog, unapproved rounds and Plan in exactly one atomic ticket", async () => {
   const w = world();
   w.op.data.bassam_rounds_v1["1448-1-3"] = { ap: 1, d: [floor()] };
+  /* Owner rule (prompt 43, root 3): a cross-system write from the Plan into the rounds is limited to today and later —
+     past days are never rewritten (this test used to pin the purge of the past unapproved day 1448-1-2). */
+  w.op.data.bassam_rounds_v1["1500-1-2"] = { d: [floor()] };
   w.component.delGateOpt("loc", 0);
   assert.equal((await w.component._opLastSave).ok, 1);
   assert.equal(w.op.control.stages.length, 1);
@@ -234,7 +237,8 @@ test("gate option deletion changes catalog, unapproved rounds and Plan in exactl
     "bassam_rounds_v1",
   ]);
   assert.equal(body.bassam_plan_v1.floors[0].gates[0].loc, "");
-  assert.equal(body.bassam_rounds_v1["1448-1-2"].d[0].gates[0].loc, "");
+  assert.equal(body.bassam_rounds_v1["1500-1-2"].d[0].gates[0].loc, "", "a coming unapproved day is purged");
+  assert.equal(body.bassam_rounds_v1["1448-1-2"].d[0].gates[0].loc, "TEST_ONLY loc", "a past day is not rewritten");
   assert.equal(
     body.bassam_rounds_v1["1448-1-3"].d[0].gates[0].loc,
     "TEST_ONLY loc",

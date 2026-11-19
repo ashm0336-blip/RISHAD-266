@@ -8190,7 +8190,7 @@ async function cuCleanupPermission(env, A, dept, intent, oldEmployees, newEmploy
   // and the trusted intent. Raw history writes remain append-only. Invoke the
   // existing operation classifier directly for this protected cleanup operation.
   var verdict = A.enf
-    ? enfDecide(A, key, CU_RESOURCE, dept, before, after, JSON.stringify(before), JSON.stringify(after), ctx, ctx.enf)
+    ? enfSuperGate(A, enfDecide(A, key, CU_RESOURCE, dept, before, after, JSON.stringify(before), JSON.stringify(after), ctx, ctx.enf))   /* برومت 43 · الجذر 1 (056) */
     : canWrite(A, key, JSON.stringify(after), JSON.stringify(before), ctx);
   if (!verdict.ok) throw cuError('custody-cleanup-permission', 403);
   if (intent === 'dept-wipe') {
@@ -25303,7 +25303,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       ctx0.enf = enfCtxFor(ENFX, k0, d00);
     }
     if (i < regN9) regRst9[i] = ENFX ? !!(ctx0.enf && ctx0.enf.restore) : !!ctx0.rst;   /* F01: علامةُ الاستعادة كما رآها حكمُه (044 · 060) */
-    var vd0 = ENFX && ENFX.batchDeny ? enfNo(ENFX.batchDeny.why, ENFX.batchDeny) : (ENFX && ctx0.enfHidden ? enfNo('scope', { detail: ctx0.enfHidden }) : canWrite(A, k0, it0.v, cur0, ctx0));
+    var vd0 = ENFX && ENFX.batchDeny ? enfNo(ENFX.batchDeny.why, ENFX.batchDeny) : (ENFX && ctx0.enfHidden ? enfSuperGate(A, enfNo('scope', { detail: ctx0.enfHidden })) : canWrite(A, k0, it0.v, cur0, ctx0));
     /* KIVO_265 · المراجعةُ الموحّدة (R-4): أحكامُ مخزن المهام الخامّ (018 taskRawWhy) تقيس الحفظةَ على القيمة الحالية — فعلى base قديمٍ قد يكون الحكمُ
        أثرَ ما كتبه الخادمُ أو غيرُه بعد قراءتها (تمديدٌ في 23 · حذفُ صفٍّ · إعادةُ إسناد) لا فعلَها هي. ولا كتابةَ على base قديمٍ أصلاً (فحصُ النسخة أدناه)
        ⇒ تعارضٌ يدمجه العميلُ ثم يعيد الإرسالَ بنسخةٍ حديثة فيُحكم عليه كاملاً (والرفضُ حينها صريح). كانت تُرفض «task-x» فتُسقط الواجهةُ تعديلاتِ
@@ -25648,6 +25648,20 @@ function enfTestHostOk(env, url) {
 async function enfTestSweep(env) { try { await env.DB.prepare("DELETE FROM sess WHERE dev = 'test' AND ts < ?1").bind(Date.now() - ENF_TEST_TTL).run(); } catch (e) { swallow('test-sweep', e, env.__rid); } }
 /* ── الأحكام: نتيجةٌ واحدة الشكل لكل قرار ── */
 function enfOk(keys, x) { var o = { ok: true, keys: keys || [] }; if (x) for (var q in x) o[q] = x[q]; return o; }
+/* ═══ برومت 43 · الجذر 1: إعفاءُ مدير المنصة في نقطةٍ واحدة ═══
+   قرارُ المالك: مديرُ المنصة بلا أي قيد (صلاحية · نطاق · فترة · سبب · قفل · تصنيف…) مع بقاء التدقيق. كلُّ قرار رفضٍ يخرج من قرار الإنفاذ (enfDecide)
+   أو من فحص الكتابة (canWrite) يمرّ من هنا: إن كان الفاعلُ مديرَ المنصة والرفضُ «قيداً» رُفع (يُسجَّل ما رُفع في lifted). ويبقى حتى له ما هو
+   «سلامةُ بيانات» لا صلاحية — القائمةُ ENF_SUPER_KEEPS — وما وُسم invariant أو structural. كلُّ نوع رفضٍ في الخادم يجب أن يُصنَّف في إحدى القائمتين
+   (اختبارٌ حارس: tests/unit/v7_fix_super_gate.test.mjs) — نوعٌ جديد غيرُ مصنَّف يُفشله. */
+var ENF_SUPER_KEEPS = { shape: 'شكلُ البيانات', unknown: 'موردٌ غير معروف', device: 'مفتاحُ جهاز', unit: 'معرّفٌ ليس وحدةَ بيانات', 'unit-delete-route': 'حذفُ الوحدات له مسارُه',
+  keydel: 'حذفُ المفتاح كلِّه', append: 'سجلٌّ يُلحق به ولا يُعدَّل', users: 'شكلُ سجل الحسابات', perms: 'شكلُ سجل الصلاحيات', ph: 'بصمةُ كلمة المرور', self: 'حسابُ الفاعل نفسِه',
+  target: 'هدفُ منحٍ غير صالح', grant: 'منحٌ غير صالح', cap: 'منحٌ خارج سقف الإدارة', 'scope-retired': 'حقلٌ قديمٌ أُلغي', dstats: 'شكلُ الإحصائيات اليومية', unmapped: 'انتقالٌ محجوزٌ لا عمليةَ حيّةً له' };
+var ENF_SUPER_LIFTS = { perm: 1, scope: 1, 'scope-unknown': 1, reason: 1, residual: 1, unbound: 1, dept: 1, view: 1, flag: 1, own: 1, mgr: 1, 'super': 1 };
+function enfSuperGate(A, out) {
+  if (!out || out.ok || !A || !A.u || A.u.role !== 'super') return out;
+  if (out.invariant || out.structural || ENF_SUPER_KEEPS[out.why] || !ENF_SUPER_LIFTS[out.why]) return out;
+  return enfOk(out.keys || [], { path: 'super', lifted: out.why, liftedDetail: out.detail || '', items: out.items || 0 });
+}
 function enfNo(why, x) { var o = { ok: false, why: String(why || 'deny') }; if (x) for (var q in x) o[q] = x[q]; return o; }
 function enfUniq(a) { var s = {}, o = [], i; for (i = 0; i < (a || []).length; i++) if (!s[a[i]]) { s[a[i]] = 1; o.push(a[i]); } return o; }
 
@@ -26227,7 +26241,7 @@ function enfSheetKeys(A, d, t, sheet, el) {
 var ENF_GRANT_FIELDS = { plus: 1, minus: 1, at: 1, by: 1, src: 1 };
 function enfGrantsWrite(A, k, newVal, curVal, ctx) {
   var P = parseKey(k), d = P.dept, sup = A.u.role === 'super';
-  if (!d) return enfNo('scope');
+  if (!d) return enfNo('scope', { structural: 1 });
   if (!sup && !deptInScope(A, d)) return enfNo('dept');
   if (newVal == null) return sup ? enfOk(['perm.assign']) : enfNo('super');
   var n = parseJson(newVal, null), o = curVal == null ? {} : parseJson(curVal, null);
@@ -26330,7 +26344,8 @@ function scopeRetiredWhy(A, newVal, ctx) { return newVal == null && A && A.u && 
 /* مفتاحُ سجلّ الإنفاذ لحذف بقايا وحدةٍ أُزيلت — مفتاحُ كتابة سجلّ الوحدات نفسُه (sys.*) */
 function enfUnitDelKeys() { var gk = enfIx().byRes[K_DEPTS] || [], gs = gk.filter(function (x) { return x.indexOf('sys.') === 0; }); return gs.length ? [gs[0]] : ['sys.modules.toggle']; }
 /* ══ canWrite في وضع الإنفاذ — البنيةُ نفسُها، والقرارُ من السجل ══ */
-function canWriteEnf(A, k, newVal, curVal, ctx) {
+function canWriteEnf(A, k, newVal, curVal, ctx) { return enfSuperGate(A, canWriteEnfCore(A, k, newVal, curVal, ctx)); }   /* برومت 43 · الجذر 1 (056) */
+function canWriteEnfCore(A, k, newVal, curVal, ctx) {
   var u = A.u, P = parseKey(k), rn = resName(k), X = (ctx && ctx.enf) || {};
   /* RISHAD-266: سقفُ النطاق القديم أُلغي — قبل كل استثناء (059 scopeRetiredWhy) */
   if (P.dept && rn === ENF_SCOPE_RES) return scopeRetiredWhy(A, newVal, ctx) ? enfNo('scope-retired', { detail: SCOPE_RETIRED_DETAIL }) : enfOk(enfUnitDelKeys());
@@ -26347,7 +26362,7 @@ function canWriteEnf(A, k, newVal, curVal, ctx) {
   if (!R0) return enfNo('unknown');
   if (R0.scope === 'device') return enfNo('device');
   if (!P.dept) {
-    if (R0.scope !== 'global') return enfNo('scope');
+    if (R0.scope !== 'global') return enfNo('scope', { structural: 1 });
     if (P.name === K_USERS) return newVal == null ? enfNo('users') : enfUsersWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_PERM) return newVal == null ? enfNo('super') : enfPermsWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_DSTATS) return newVal == null ? enfNo('keydel') : enfDstatsWrite(A, k, newVal, curVal, ctx, X);

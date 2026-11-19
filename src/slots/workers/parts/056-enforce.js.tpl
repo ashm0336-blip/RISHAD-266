@@ -55,6 +55,20 @@ function enfTestHostOk(env, url) {
 async function enfTestSweep(env) { try { await env.DB.prepare("DELETE FROM sess WHERE dev = 'test' AND ts < ?1").bind(Date.now() - ENF_TEST_TTL).run(); } catch (e) { swallow('test-sweep', e, env.__rid); } }
 /* ── الأحكام: نتيجةٌ واحدة الشكل لكل قرار ── */
 function enfOk(keys, x) { var o = { ok: true, keys: keys || [] }; if (x) for (var q in x) o[q] = x[q]; return o; }
+/* ═══ برومت 43 · الجذر 1: إعفاءُ مدير المنصة في نقطةٍ واحدة ═══
+   قرارُ المالك: مديرُ المنصة بلا أي قيد (صلاحية · نطاق · فترة · سبب · قفل · تصنيف…) مع بقاء التدقيق. كلُّ قرار رفضٍ يخرج من قرار الإنفاذ (enfDecide)
+   أو من فحص الكتابة (canWrite) يمرّ من هنا: إن كان الفاعلُ مديرَ المنصة والرفضُ «قيداً» رُفع (يُسجَّل ما رُفع في lifted). ويبقى حتى له ما هو
+   «سلامةُ بيانات» لا صلاحية — القائمةُ ENF_SUPER_KEEPS — وما وُسم invariant أو structural. كلُّ نوع رفضٍ في الخادم يجب أن يُصنَّف في إحدى القائمتين
+   (اختبارٌ حارس: tests/unit/v7_fix_super_gate.test.mjs) — نوعٌ جديد غيرُ مصنَّف يُفشله. */
+var ENF_SUPER_KEEPS = { shape: 'شكلُ البيانات', unknown: 'موردٌ غير معروف', device: 'مفتاحُ جهاز', unit: 'معرّفٌ ليس وحدةَ بيانات', 'unit-delete-route': 'حذفُ الوحدات له مسارُه',
+  keydel: 'حذفُ المفتاح كلِّه', append: 'سجلٌّ يُلحق به ولا يُعدَّل', users: 'شكلُ سجل الحسابات', perms: 'شكلُ سجل الصلاحيات', ph: 'بصمةُ كلمة المرور', self: 'حسابُ الفاعل نفسِه',
+  target: 'هدفُ منحٍ غير صالح', grant: 'منحٌ غير صالح', cap: 'منحٌ خارج سقف الإدارة', 'scope-retired': 'حقلٌ قديمٌ أُلغي', dstats: 'شكلُ الإحصائيات اليومية', unmapped: 'انتقالٌ محجوزٌ لا عمليةَ حيّةً له' };
+var ENF_SUPER_LIFTS = { perm: 1, scope: 1, 'scope-unknown': 1, reason: 1, residual: 1, unbound: 1, dept: 1, view: 1, flag: 1, own: 1, mgr: 1, 'super': 1 };
+function enfSuperGate(A, out) {
+  if (!out || out.ok || !A || !A.u || A.u.role !== 'super') return out;
+  if (out.invariant || out.structural || ENF_SUPER_KEEPS[out.why] || !ENF_SUPER_LIFTS[out.why]) return out;
+  return enfOk(out.keys || [], { path: 'super', lifted: out.why, liftedDetail: out.detail || '', items: out.items || 0 });
+}
 function enfNo(why, x) { var o = { ok: false, why: String(why || 'deny') }; if (x) for (var q in x) o[q] = x[q]; return o; }
 function enfUniq(a) { var s = {}, o = [], i; for (i = 0; i < (a || []).length; i++) if (!s[a[i]]) { s[a[i]] = 1; o.push(a[i]); } return o; }
 

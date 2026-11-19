@@ -1,7 +1,8 @@
 /* مفتاحُ سجلّ الإنفاذ لحذف بقايا وحدةٍ أُزيلت — مفتاحُ كتابة سجلّ الوحدات نفسُه (sys.*) */
 function enfUnitDelKeys() { var gk = enfIx().byRes[K_DEPTS] || [], gs = gk.filter(function (x) { return x.indexOf('sys.') === 0; }); return gs.length ? [gs[0]] : ['sys.modules.toggle']; }
 /* ══ canWrite في وضع الإنفاذ — البنيةُ نفسُها، والقرارُ من السجل ══ */
-function canWriteEnf(A, k, newVal, curVal, ctx) {
+function canWriteEnf(A, k, newVal, curVal, ctx) { return enfSuperGate(A, canWriteEnfCore(A, k, newVal, curVal, ctx)); }   /* برومت 43 · الجذر 1 (056) */
+function canWriteEnfCore(A, k, newVal, curVal, ctx) {
   var u = A.u, P = parseKey(k), rn = resName(k), X = (ctx && ctx.enf) || {};
   /* RISHAD-266: سقفُ النطاق القديم أُلغي — قبل كل استثناء (059 scopeRetiredWhy) */
   if (P.dept && rn === ENF_SCOPE_RES) return scopeRetiredWhy(A, newVal, ctx) ? enfNo('scope-retired', { detail: SCOPE_RETIRED_DETAIL }) : enfOk(enfUnitDelKeys());
@@ -18,7 +19,7 @@ function canWriteEnf(A, k, newVal, curVal, ctx) {
   if (!R0) return enfNo('unknown');
   if (R0.scope === 'device') return enfNo('device');
   if (!P.dept) {
-    if (R0.scope !== 'global') return enfNo('scope');
+    if (R0.scope !== 'global') return enfNo('scope', { structural: 1 });
     if (P.name === K_USERS) return newVal == null ? enfNo('users') : enfUsersWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_PERM) return newVal == null ? enfNo('super') : enfPermsWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_DSTATS) return newVal == null ? enfNo('keydel') : enfDstatsWrite(A, k, newVal, curVal, ctx, X);
