@@ -156,3 +156,53 @@ test('removal: an element without its identifier, or absent from the document, c
     assert.equal(f.seen.length, 0);
   } finally { f.T.dispose(); }
 });
+
+/* ── برومت 41-ج: الدمجُ الثلاثي العام operations.merge — يُعاد بناءُ تعديلي (إضافة · تعديل حقول · تحريك · حذف) فوق أحدث نسخة ── */
+const site = (extra) => ({ sid: 'TEST_ONLY_s', name: 'TEST_ONLY موقع', approved: false, zones: [], marks: [], paths: [], sectors: [], gates: [], ...extra });
+const doc3 = (gates, more = {}) => ({ pMig: 3, zones: [], marks: [], paths: [], gates: copy(gates), floors: [site({ gates: copy(gates) })], months: { '1448-6': { c: 1, d: [site({ gates: copy(gates) })] } }, cfg: {}, ...more });
+const LISTS4 = ['zones', 'gates', 'marks', 'paths'];
+const prepare = (d) => { LISTS4.forEach((k) => delete d[k]); return d; };
+const finish = (d) => { LISTS4.forEach((k) => { d[k] = d.floors[0][k] || []; }); return d; };
+const G = (uid, extra) => ({ uid, x: 10, y: 20, label: 'باب', ...extra });
+const gatesEverywhere = (doc) => [doc.gates, doc.floors[0].gates, doc.months['1448-6'].d[0].gates];
+async function rebase(base, mine, theirs) {
+  const f = world();
+  f.documents[E] = theirs; await f.operations.read([E]);
+  const result = await f.operations.patch({}, 'page:rebase', NAME, f.operations.merge(base, mine, prepare, finish));
+  const out = { result, sent: f.seen.length, doc: f.documents[E] }; f.T.dispose(); return out;
+}
+for (const [what, mineGates, want] of [
+  ['edits its fields', [G('a'), G('mine', { num: '7' })], [G('a'), G('mine', { num: '7' }), G('other')]],
+  ['moves it', [G('a'), G('mine', { x: 99, y: 88 })], [G('a'), G('mine', { x: 99, y: 88 }), G('other')]],
+  ['deletes it', [G('a')], [G('a'), G('other')]],
+  ['adds another', [G('a'), G('mine'), G('mine2')], [G('a'), G('mine'), G('other'), G('mine2')]],
+]) test('41-ج (أ) another device added an element, and this page ' + what + ': my change is rebuilt on the latest version, theirs stays', async () => {
+  const base = doc3([G('a'), G('mine')]), theirs = doc3([G('a'), G('mine'), G('other')]);
+  const { result, sent, doc } = await rebase(base, doc3(mineGates), theirs);
+  assert.equal(result.ok, 1, JSON.stringify(result)); assert.equal(sent, 1);
+  for (const list of gatesEverywhere(doc)) assert.deepEqual(list, want);
+});
+test('41-ج (ج) another device changed the same element I edited: changed, nothing written', async () => {
+  const base = doc3([G('a'), G('mine')]), theirs = doc3([G('a'), G('mine', { label: 'عدّله غيري' })]);
+  for (const mine of [doc3([G('a'), G('mine', { num: '7' })]), doc3([G('a')])]) {   /* edit · delete */
+    const { result, sent, doc } = await rebase(base, mine, theirs);
+    assert.deepEqual([result.ok, result.err, result.uncertain], [0, 'changed', false]); assert.equal(sent, 0);
+    assert.deepEqual(doc, theirs);
+  }
+});
+test('41-ج: they deleted what I edited ⇒ changed · both made the same change ⇒ nothing to write · an unrelated field they changed is kept', async () => {
+  const base = doc3([G('a'), G('mine')]);
+  let r = await rebase(base, doc3([G('a'), G('mine', { num: '7' })]), doc3([G('a')]));
+  assert.equal(r.result.err, 'changed'); assert.equal(r.sent, 0);
+  r = await rebase(base, doc3([G('a'), G('mine', { num: '7' })]), doc3([G('a'), G('mine', { num: '7' })]));
+  assert.deepEqual([r.result.ok, r.result.noop], [1, 1]); assert.equal(r.sent, 0);
+  const theirs = doc3([G('a'), G('mine')], { cfg: { TEST_ONLY: 1 } }); theirs.floors[0].approved = true; theirs.months['1448-6'].d[0].approved = true;
+  r = await rebase(base, doc3([G('a'), G('mine', { num: '7' })]), theirs);
+  assert.equal(r.result.ok, 1); assert.deepEqual(r.doc.cfg, { TEST_ONLY: 1 }); assert.equal(r.doc.floors[0].approved, true);
+  assert.deepEqual(r.doc.floors[0].gates, [G('a'), G('mine', { num: '7' })]);
+});
+test('41-ج: the same scalar changed differently by both sides ⇒ changed (no silent overwrite)', async () => {
+  const base = doc3([G('a')]), mine = doc3([G('a')], { cfg: { v: 'mine' } }), theirs = doc3([G('a')], { cfg: { v: 'theirs' } });
+  const r = await rebase(base, mine, theirs);
+  assert.equal(r.result.err, 'changed'); assert.equal(r.sent, 0);
+});

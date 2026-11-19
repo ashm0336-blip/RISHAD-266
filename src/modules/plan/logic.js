@@ -17,8 +17,81 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   _opRead(name) {
     const service = this._opService();
     this._opDrafts || (this._opDrafts = Object.create(null));
-    if (!this._opDrafts[name]) this._opDrafts[name] = service.draft();
+    if (!this._opDrafts[name]) {
+      this._opDrafts[name] = service.draft();
+      /* برومت 41-ج: أساسُ الصفحة — ما كانت عليه الوثيقةُ حين أُخذت مسودتُها (لإعادة بناء الحفظ على أحدث نسخة إن قدُمت المسودة) */
+      const first = this._opDrafts[name].get(name);
+      (this._opBase || (this._opBase = Object.create(null)))[name] = JSON.stringify(first === undefined ? null : first);
+      return first;
+    }
     return this._opDrafts[name].get(name);
+  }
+  /* برومت 41-ج: مسودةُ الصفحة قديمة (جهازٌ آخر حفظ والصفحةُ أجّلت أخذَ تعديله: نافذة · كتابة · رسم) ⇒ لا تُرسل وثيقةُ الصفحة القديمة ولا يُرفض عملُ المستخدم:
+     يُعاد بناءُ تعديلي — الفرقُ بين أساس الصفحة وما تريد حفظَه — فوق أحدث نسخةٍ في الخادم (operations.patch + operations.merge). ما عدّله غيري
+     في عناصر أخرى يبقى؛ وإن عدّل غيري العنصرَ نفسَه ⇒ لا كتابةَ صامتة: رسالةٌ ويبقى للمراجعة. ثم تأخذ الصفحةُ أحدثَ نسخةٍ في مكانها. */
+  _opStale(name) {
+    try {
+      const d = this._opDrafts && this._opDrafts[name];
+      if (!d) return false;
+      d.get(name);
+      return false;
+    } catch (e) {
+      return !!(this._opBase && "string" === typeof this._opBase[name]);
+    }
+  }
+  async _opRebase(name, mine) {
+    const service = this._opService(),
+      log = (k, why) => {
+        try {
+          KIVO.__bsLiveLog && KIVO.__bsLiveLog(k, "Operational Plan", why, [name]);
+        } catch (e) {}
+      },
+      LISTS = ["zones", "gates", "marks", "paths"],
+      plan = "bassam_plan_v1" === name,
+      sid = plan ? ((mine.floors || [])[this.state.floor] || {}).sid : null,
+      at = this.state.floor || 0;
+    /* القوائمُ الأربع في المستوى الأعلى نسخةٌ من «موقع من حفظ آخراً» — تُسقط قبل الدمج وتُشتقّ بعده من موقعي في الناتج */
+    const prepare = plan
+        ? (d) => {
+            d && "object" === typeof d && LISTS.forEach((k) => delete d[k]);
+            return d;
+          }
+        : null,
+      finish = plan
+        ? (d) => {
+            const f = (d.floors || []).find((x) => x && null != sid && x.sid === sid) || (d.floors || [])[at] || {};
+            LISTS.forEach((k) => (d[k] = f[k] || []));
+            return d;
+          }
+        : null;
+    log("save-rebase", "مسودةُ الصفحة قديمة — يُعاد بناءُ تعديلي على أحدث نسخة");
+    this._opBusy = (this._opBusy || 0) + 1;
+    let result;
+    try {
+      result = await service.patch(this, "plan:rebase:" + name, name, service.merge(JSON.parse(this._opBase[name]), mine, prepare, finish));
+    } catch (e) {
+      result = { ok: 0, err: String((e && e.message) || e) };
+    } finally {
+      this._opBusy--;
+    }
+    if (result && result.ok === 1) log("save-rebased", result.noop ? "لا فرقَ عن أحدث نسخة" : "حُفظ تعديلي فوق أحدث نسخة");
+    else if (result && "changed" === result.err) {
+      log("save-kept", "عدّل غيرُك ما عدّلتَه — لم يُحفظ");
+      this.bsToast("عدّل مستخدمٌ آخر هذا العنصر في الوقت نفسه — لم يُحفظ تعديلك؛ تظهر نسختُه الآن، أعد تعديلك عليها إن لزم", "warn");
+    } else {
+      log("save-refused", String((result && result.err) || "save"));
+      this.bsToast(
+        result && result.uncertain
+          ? "لم يصل تأكيد الحفظ — بقيت المسودة؛ أعد المحاولة بنفس البيانات لحسم الطلب"
+          : "لم يُحفظ التعديل — راجع التغييرات والصلاحيات ثم أعد تحميل البيانات",
+        "warn",
+      );
+      return result || { ok: 0, err: "save" };
+    }
+    try {
+      this._bsLiveReload([name], !0);
+    } catch (e) {}
+    return Object.assign({}, result, { rebased: 1 });
   }
   async _opCommit(changes) {
     try {
@@ -28,6 +101,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       // These drafts were captured when the displayed source was loaded. Verify
       // every original scope/revision synchronously before staging one batch.
       this._opActions || (this._opActions = Object.create(null));
+      if (!this._opActions[action] && 1 === names.length && this._opStale(names[0])) return await this._opRebase(names[0], changes[names[0]]);
       if (!this._opActions[action]) {
         names.forEach((name) => {
           if (!this._opDrafts || !this._opDrafts[name])
@@ -48,6 +122,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         this._opBusy--;
       }
       this._opTicket = result && result.ticket;
+      /* برومت 41-ج: الخادمُ ردّ «تعارض» (جهازٌ آخر حفظ ولم يصل خبرُه هذه الصفحةَ بعد) ⇒ يُعاد بناءُ تعديلي على أحدث نسخة بدل رفضه */
+      if (result && "conflict" === result.err && !result.uncertain && 1 === names.length && this._opBase && "string" === typeof this._opBase[names[0]]) {
+        delete this._opActions[action];
+        this._opTicket = null;
+        return await this._opRebase(names[0], changes[names[0]]);
+      }
       if (!result || result.ok !== 1) {
         this.bsToast(
           result && result.uncertain
@@ -61,8 +141,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       this._opTicket = null;
       names.forEach((name) => {
         // Advance only our acknowledged source, never another editor's draft.
-        if (JSON.stringify(service.get(name)) === JSON.stringify(changes[name]))
+        if (JSON.stringify(service.get(name)) === JSON.stringify(changes[name])) {
           this._opDrafts[name] = service.draft();
+          (this._opBase || (this._opBase = Object.create(null)))[name] = JSON.stringify(changes[name]);
+        }
       });
       return result;
     } catch (error) {
@@ -2175,6 +2257,22 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         sel: null,
         selMulti: [],
       });
+      if (force) {
+        /* نافذةُ عنصرٍ مفتوحة تبقى على عنصرها بمعرّفه (ترتيبُ القائمة قد يتغيّر بعناصر الجهاز الآخر) — وإن لم يعد موجوداً أُغلقت */
+        [
+          ["gEdit", "gates", "uid", p.gates],
+          ["zEdit", "zones", "uid", p.zones],
+          ["pEdit", "paths", "uid", p.paths],
+          ["mkEdit", "marks", "uid", p.marks],
+          ["sEdit", null, "id", Array.isArray(r.sectors) ? r.sectors : []],
+        ].forEach(([ed, list, idk, next]) => {
+          const cur = s[ed];
+          if (!cur) return;
+          const was = list ? (s[list] || [])[cur.i] : ((s.floors || [])[s.floor] || {}).sectors && ((s.floors || [])[s.floor].sectors || [])[cur.i],
+            n = was && null != was[idk] ? next.findIndex((x) => x && x[idk] === was[idk]) : -1;
+          p[ed] = n < 0 ? null : n === cur.i ? cur : { ...cur, i: n };
+        });
+      }
     }
     h("bassam_gate_opts_v1") && (p.gateOpts = this.loadGateOpts());
     h("bassam_zone_opts_v1") && (p.zoneOpts = this.loadZoneOpts());
@@ -3365,7 +3463,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     };
     this._opLastSave = this._opCommit({ ...related, bassam_plan_v1: payload });
     const ack = await this._opLastSave;
-    if (ack && ack.ok === 1 && !this._pmSyncing) {
+    if (ack && ack.ok === 1 && !ack.rebased && !this._pmSyncing) {
       this._pmSyncing = true;
       try {
         this.setState({ planMonths: s });
