@@ -194,14 +194,17 @@ test('enforced Source scope hides another mosque and rejects forged hidden data 
   assert.equal(DB.q("SELECT COUNT(*) AS n FROM sec WHERE target=?1 AND act='denied'", KEY)[0].n, 1);
 });
 
-test('historical import remains a super-only operation with an explicit reason', async () => {
+/* Owner decision (fix «the platform admin is never asked for a reason»): the import stays super-only; super is no longer refused
+   for an empty reason (it was 403 why 'reason'), and the audit line then carries «بلا سبب (مدير المنصة)». */
+test('historical import remains a super-only operation; the platform admin is not asked for a reason', async () => {
   const { W, env } = await world();
-  const missing = await W.dsDomainCommit(env, actor(W), { base: 0, data: populated(), operation: 'historical-import', reason: '' });
-  assert.equal(missing.status, 403); assert.equal(missing.body.why, 'reason');
   const denied = await W.dsDomainCommit(env, actor(W, 'staff'), { base: 0, data: populated(), operation: 'historical-import', reason: 'TEST_ONLY import' });
   assert.equal(denied.status, 403); assert.equal(denied.body.why, 'super');
   const ok = await W.dsDomainCommit(env, actor(W), { base: 0, data: populated(), operation: 'historical-import', reason: 'TEST_ONLY migration validation' });
   assert.equal(ok.status, 200); assert.equal(ok.body.ok, 1);
+  const B = await world(), none = await B.W.dsDomainCommit(B.env, actor(B.W), { base: 0, data: populated(), operation: 'historical-import', reason: '' });
+  assert.equal(none.status, 200, JSON.stringify(none.body)); assert.equal(none.body.ok, 1);
+  assert.notDeepEqual((await B.W.dsDomainRead(B.env)).data, empty(), 'the import without a reason really stored the data');
 });
 
 test('the original enforced DateRange and day-lock guards apply to the new tables', async () => {

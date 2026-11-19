@@ -270,8 +270,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!activeWindow) {
       const srv = KIVO.__BS_SRV;
       if (!srv || typeof srv.askReason !== "function") { this.bsToast("تعذّر طلب سبب الاستدراك؛ لم تُفتح النافذة"); return; }
-      body.reason = await new Promise(resolve => srv.askReason("bsdept:" + context.dept + ":bassam_irshad_v1", ["ir.rec.retro.open"], resolve));
-      if (!body.reason || !this._irSame(context)) return;
+      /* مدير المنصة لا يُطلب منه سبب: تُفتح النافذة بلا سؤال */
+      const exempt = !!(srv.reasonExempt && srv.reasonExempt());
+      body.reason = exempt ? "" : await new Promise(resolve => srv.askReason("bsdept:" + context.dept + ":bassam_irshad_v1", ["ir.rec.retro.open"], resolve));
+      if ((!body.reason && !exempt) || !this._irSame(context)) return;
     }
     const result = await this._irRequest("/api/retro?uid=" + encodeURIComponent(context.uid), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, context);
     this.setState({ irRetro: null });

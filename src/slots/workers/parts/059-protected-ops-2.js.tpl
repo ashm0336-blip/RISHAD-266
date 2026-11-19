@@ -119,8 +119,8 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   if (sc.composite === 'unknown') return enfNo('scope-unknown', { keys: used, dims: sc.unknownDims, detail: sc.why, items: sc.items });
   /* السببُ الإلزامي (audit.reason في السجل · §12) */
   var needR = []; for (i = 0; i < used.length; i++) if (ix.reason[used[i]]) needR.push(used[i]);
-  if (needR.length && !enfReasonOf(X)) return enfNo('reason', { keys: used, reasonKeys: needR });
-  return enfOk(used, { path: path, reasonKeys: needR, reason: needR.length ? enfReasonOf(X) : '', items: sc.items, dims: [] });
+  if (needR.length && !enfReasonOf(X) && !reasonExempt(A)) return enfNo('reason', { keys: used, reasonKeys: needR });   /* مدير المنصة لا يُطلب منه سبب (016 reasonExempt) */
+  return enfOk(used, { path: path, reasonKeys: needR, reason: needR.length ? reasonLogged(A, enfReasonOf(X)) : '', items: sc.items, dims: [] });
 }
 /* ── الحساباتُ (عامّ): البنيةُ كما usersRule (المدير على موظفيه في نطاقه · الذات على حقولها) والقرارُ بمفاتيح كل إدارةٍ على مستخدميها ── */
 function enfUsersWrite(A, k, newVal, curVal, ctx, X) {

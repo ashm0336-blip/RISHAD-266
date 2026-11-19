@@ -171,8 +171,10 @@
     var fd = file.domains && typeof file.domains === 'object' ? file.domains : {};
     if ((file.manifest && file.manifest.redacted) || Object.keys(fd).some(function (k) { return [].concat(fd[k]).some(function (x) { return !!(x && x.redacted); }); }))
       return failure('restore-redacted', 409);
-    var reason = typeof opt.reason === 'string' ? opt.reason.trim() : await askReason(scope);
-    if (!reason) return failure('reason', 403);
+    /* مدير المنصة لا يُطلب منه سبب: لا نافذة، ويُرسل السبب فارغاً (الخادمُ يقبله منه وحده ويسجّل «بلا سبب (مدير المنصة)») */
+    var srvR = KIVO.__BS_SRV, exempt = !!(srvR && typeof srvR.reasonExempt === 'function' && srvR.reasonExempt());
+    var reason = typeof opt.reason === 'string' ? opt.reason.trim() : exempt ? '' : await askReason(scope);
+    if (!reason && !exempt) return failure('reason', 403);
     if (!same(stamp)) return failure('session', 401);
     var departments = [];
     try {

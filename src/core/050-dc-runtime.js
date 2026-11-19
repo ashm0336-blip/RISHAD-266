@@ -973,6 +973,15 @@
   function pageContext(name) {
     return typeof KIVO.__dcPageContext === "function" ? KIVO.__dcPageContext(name) : null;
   }
+  /* سجلٌّ تشخيصيٌّ خفيف (console فقط — لا يُرسل للخادم): سطرٌ عند أي إعادة تركيبٍ أو إسقاط بياناتٍ لصفحة */
+  const liveMounts = /* @__PURE__ */ Object.create(null);
+  function liveLog(kind, name, why, keys) {
+    try { console.info("[bs-live] " + kind + " · " + (name || "-") + " · " + (why || "") + (keys && keys.length ? " · " + keys.join(",") : "")); } catch (e) {}
+  }
+  if (typeof KIVO !== "undefined") {
+    KIVO.__bsLiveLog = liveLog;
+    KIVO.__bsLiveMount = function (name) { const n = liveMounts[name] = (liveMounts[name] || 0) + 1; if (n > 1) liveLog("remount", name, "تركيبٌ رقم " + n + " — " + (typeof location !== "undefined" ? location.hash : "")); };
+  }
   function pageContextKey(name) {
     const context = pageContext(name);
     return context ? JSON.stringify([context.state, context.dept]) : "";
@@ -1140,6 +1149,7 @@
       }
       componentDidMount() {
         this.__bsSeedCommit();
+        try { if (KIVO.__bsLiveMount) KIVO.__bsLiveMount(this.__name); } catch (e) {}   /* سجلٌّ تشخيصي: إعادةُ تركيب */
         registry.get(this.__name).subs.add(this.__sub);
         try {
           this.logic.componentDidMount();
@@ -1228,6 +1238,15 @@
         }
         if (!dataReady(this.__name)) {
           if (!r.dataError) { ensureFetched(this.__name); ensureData(this.__name).catch(() => {}); }
+          /* التحديث التلقائي لا يهدم الصفحة: الهيكلُ للتحميل الأول وحده. صفحةٌ رُسمت مرةً تبقى شجرتُها الأخيرة معروضةً كما هي
+             ريثما تُعاد قراءةُ بياناتها (ensureData أعلاه)، ثم تُرسم في مكانها عند وصولها (registry.bump). تُترك للهيكل/بطاقة الفشل
+             ثلاثُ حالات فقط: تغيّرُ الإدارة (سياقٌ آخر = تحميلٌ أول له) · فشلُ القراءة بعد كل المحاولات · انتهاءُ الجلسة. */
+          const heldOk = this.__held && this.__heldCtx === pageContextKey(this.__name) && !r.dataError && !sessionGone();
+          if (heldOk) {
+            if (!this.__holding) { this.__holding = true; liveLog("hold", this.__name, "بياناتُ الصفحة تُعاد قراءتُها — تبقى معروضةً في مكانها"); }
+            return this.__held;
+          }
+          if (this.__held) liveLog("placeholder", this.__name, r.dataError ? "فشلت إعادةُ القراءة" : sessionGone() ? "انتهت الجلسة" : "تغيّرت الإدارة");
           return h("div", hostBase, h(Placeholder, { name: this.__name, hintSize: this.props.__hintSize, error: r.dataError ? (sessionGone() ? "انتهت الجلسة — سجّل الدخول" : r.dataError) : undefined, failed: loadFailed(r), retry: retryLoad(this.__name) }));
         }
         this.__reconcileLogic();
@@ -1271,7 +1290,9 @@
            كانت تُجبر كلَّ مكوّنٍ تحتها على الرسم مهما قال shouldComponentUpdate */
         const chainKey = chain.join("\u0001") + "\u0001" + this.__name;
         if (this.__chainKey !== chainKey) { this.__chainKey = chainKey; this.__chainVal = [...chain, this.__name]; }
-        return h(
+        if (this.__holding) { this.__holding = false; liveLog("applied", this.__name, "وصلت البياناتُ الجديدة ورُسمت في مكانها"); }
+        this.__heldCtx = pageContextKey(this.__name);
+        return this.__held = h(
           "div",
           { ...hostBase, className: cls + (renderErr ? " sc-has-error" : "") },
           renderErr && techView() && h(
@@ -1877,6 +1898,11 @@
       r.dataPromise = promise;
       return promise;
     }
+    /* بعد إسقاط قراءاتٍ (تغيّر صلاحيات · تغيّر جيل الخادم…): كلُّ صفحةٍ معروضةٍ فقدت بياناتها تُعاد قراءتُها فوراً في الخلفية،
+       وتبقى شجرتُها معروضة (render أعلاه) حتى تصل — لا انتظارَ لنقرة المستخدم التالية. يناديها 280 عند الإسقاط. */
+    KIVO.__dcRevalidate = function () {
+      try { for (const name in registry.entries) { const r = registry.entries[name]; if (r.subs.size && !r.dataError && !dataReady(name)) ensureData(name).catch(() => {}); } } catch (e) {}
+    };
     function ensureFetched(name) {
       const r = registry.get(name);
       if (r.fetched) return;

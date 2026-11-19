@@ -4,5 +4,5 @@ async function cuRestorePermission(A, dept, opt) {
   var has =
     A.u.role === 'super' || (A.enf ? enfHeld(A, dept, 'backup.restore') : KIVO_GUARDS.decide('backup.restore', permv2Ctx(A, dept)).ok);
   var policy = KIVO_BUILD.restorePolicy(A.u.role === 'super', isMgrOf(A, dept), has, opt.reason);
-  if (!policy.ok || policy.missingReason) throw cuError('custody-restore-permission', 403);
+  if (!policy.ok || (policy.missingReason && !reasonExempt(A))) throw cuError('custody-restore-permission', 403);
 }

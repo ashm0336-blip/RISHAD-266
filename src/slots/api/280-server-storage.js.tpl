@@ -165,7 +165,7 @@
   /* RISHAD-266: سقفُ النطاق القديم أُلغي — فلا «الموقع · العنصر · الوردية» في سبب scope، ولا unmigrated-department-ceiling */
   var WHY_ENF = { perm: "صلاحيتك لا تشمل هذا الإجراء", scope: "خارج نطاقك (المسنَد إليك · المصدر · الفترة) — راجع مدير الإدارة إن كنت تحتاج هذا التعديل",
               "scope-unknown": "تعذّر التحقق من قفل الفترة لهذا التعديل — أعد المحاولة بعد قليل، وإن تكرر فأبلغ مسؤول المنصة",
-              "scope-retired": WHY["scope-retired"], reason: "هذا الإجراء يتطلب سبباً",
+              "scope-retired": WHY["scope-retired"], reason: "هذه العملية تتطلب ذكر السبب",
               "restore-policy": "الاستعادةُ لمسؤول المنصة أو لمدير الإدارة الممنوح مفتاحها", "import-allowlist": "هذا السجلّ خارج قائمة الاستيراد المسموحة",
               grant: "لا تملك منح هذا المفتاح", unmapped: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً", residual: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً",
               unbound: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً", keydel: "حذفُ السجل كاملاً غيرُ مسموح", shape: "صيغةُ البيانات لم تُقبل", ph: "كلمةُ المرور لم تُحفظ: صيغةُ تشفيرها قديمة — حدّث الصفحة ثم أعد المحاولة" };   /* KIVO_262 */
@@ -688,7 +688,9 @@
     var selected = Array.isArray(keys) ? Array.from(new Set(Object.keys(operationKnown9).concat(Object.keys(operationReads9), keys.filter(operationKey9))))
       .filter(function (key) { return keys.indexOf(key) !== -1 || keys.indexOf(unscoped(key)) !== -1; }) : Object.keys(operationKnown9);
     if (!Array.isArray(keys)) operationGeneration9++;
+    if (selected.length && !quiet) { try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog('drop', 'operations', Array.isArray(keys) ? 'إسقاطُ مفاتيح' : 'إسقاطُ كلِّ القراءات', selected); } catch (e) { /* تشخيصٌ فقط */ } }
     selected.forEach(function (key) { delete operationReads9[key]; operationForget9(key, undefined, quiet); });
+    if (selected.length && !quiet) setTimeout(function () { try { if (KIVO.__dcRevalidate) KIVO.__dcRevalidate(); } catch (e) { /* إعادةُ القراءة يطلبها الرسمُ التالي كذلك */ } }, 0);
   }
   async function operationRead9(keys) {
     var stamp = operationContext9();
@@ -783,9 +785,12 @@
     if (!editors) { editors = Object.create(null); operationEditors9.set(owner, editors); }
     return editors;
   }
+  var OP_CHAIN_WAIT9 = 5000;   /* أقصى انتظارٍ لحسم حفظٍ سابقٍ في الطريق قبل إرسال التالي (م.ث) */
   function operationBegin9(owner, action) {
-    var editors = operationEditor9(owner, action), prior = editors[action];
-    if (prior && prior.ticket && ['staged', 'queued', 'sending', 'uncertain'].includes(operationStatus9(prior.ticket).state)) return operationFailure9('pending', 409);
+    var editors = operationEditor9(owner, action), prior = editors[action], priorState = prior && prior.ticket ? operationStatus9(prior.ticket).state : '';
+    /* حفظٌ سابقٌ ما زال في الطريق: المحرِّرُ يبقى كما هو، والحفظُ التالي ينتظره في operationCommit9 (لا «معلّق» يُسقط عملَ المستخدم) */
+    if (prior && prior.promise && ['staged', 'queued', 'sending'].includes(priorState)) return { ok: 1, chained: 1 };
+    if (prior && prior.ticket && ['staged', 'queued', 'sending', 'uncertain'].includes(priorState)) return operationFailure9('pending', 409);
     try { editors[action] = { draft: operationDraft9(), ticket: null, intent: null, prepared: false, error: null, promise: null }; return { ok: 1 }; }
     catch (error) { return operationFailure9('read-required', 409); }
   }
@@ -801,6 +806,23 @@
       var state = operationStatus9(entry.ticket).state;
       if (entry.intent !== signature) {
         if ((state === 'denied' || state === 'conflict') && entry.result) return entry.result;
+        /* حفظٌ تالٍ للمحرِّر نفسِه والسابقُ ما زال في الطريق (وضعُ عنصرٍ ثم حفظُ بياناته · تعديلان متتاليان مع كمون الشبكة):
+           لا يُرفض ولا يُعرض «غير مؤكَّد» — ينتظر حسمَ السابق؛ فإن ثبّته الخادمُ ومراجعةُ كلِّ مفتاحٍ عندي هي مراجعةُ إيصاله نفسُها
+           (لم يدخل بينهما تعديلُ غيري) أُرسل التالي بمسودةٍ جديدة على تلك المراجعة. وإن لم يثبت السابق أو تغيّرت المراجعة فالمراجعةُ كما كانت. */
+        if (entry.promise && ['staged', 'queued', 'sending'].includes(state)) {
+          var waited = entry;
+          /* الانتظارُ محدود (OP_CHAIN_WAIT9): إيصالٌ لم يصل (شبكةٌ انقطعت · ردٌّ ضائع) يبقى على سلوكه — «راجِع» بتذكرة السابق نفسِها */
+          return Promise.race([entry.promise, new Promise(function (resolve) { setTimeout(function () { resolve(null); }, OP_CHAIN_WAIT9); })]).then(function (first) {
+            var revs = first && first.ok === 1 && first.receipt && first.receipt.revs;
+            var follows = operationObject9(revs) && editors[action] !== waited && Object.keys(revs).every(function (key) {
+              var known = operationKnown9[key];
+              return known && known.stamp && operationSame9(known.stamp) && ['ready', 'absent'].includes(known.state) && known.rev === revs[key];
+            });
+            if (!follows) { operationUncertainLog9('review-required', waited.ticket && operationsTickets9.get(waited.ticket) ? operationsTickets9.get(waited.ticket).keys : []); return Object.assign(operationFailure9('review-required', 409, true), { ticket: waited.ticket }); }
+            return operationCommit9(owner, action, intent, edit);
+          });
+        }
+        operationUncertainLog9('review-required', operationsTickets9.get(entry.ticket) ? operationsTickets9.get(entry.ticket).keys : []);
         return Object.assign(operationFailure9('review-required', 409, true), { ticket: entry.ticket });
       }
       if (entry.promise) return entry.promise;
@@ -866,11 +888,17 @@
     operation.keys.forEach(function (key) { if (key in operation.snap.set) pSet[key] = operation.snap.set[key]; else pDel[key] = 1; });
     recount();
     await flushAsync();
+    if (!operation.result) operationUncertainLog9('pending', operation.keys);
     return operation.result || operationFailure9('pending', 0, true);
+  }
+  /* سجلٌّ تشخيصي (console فقط): حفظٌ لم يُحسم — المسارُ والمفاتيحُ وحالةُ كلِّ مفتاحٍ ورقمُ مراجعته المعروف */
+  function operationUncertainLog9(err, keys) {
+    try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog('uncertain', 'operations', err, (keys || []).map(function (key) { var known = operationKnown9[key] || {}; return key + ' [' + (known.state || '-') + ' rev ' + (known.rev == null ? '-' : known.rev) + ']'; })); } catch (e) { /* تشخيصٌ فقط */ }
   }
   function operationUncertain9(operation, err, status) {
     if (inflight === operation.snap) inflight = null;
     operation.state = 'uncertain'; operation.result = operationFailure9(err, status, true);
+    operationUncertainLog9(err, operation.keys);
     warn(true);
     settleWaiters(false);
   }
@@ -885,6 +913,20 @@
     if (!operationSame9(operation.stamp)) { operationUncertain9(operation, 'session', status); return; }
     if (status === 401 || (status === 409 && data && data.err === 'session-changed')) {
       operationUncertain9(operation, 'session', status); sessGone9(operation.snap); return;
+    }
+    /* سباقُ نسخةٍ في الخادم: حفظان وصلا في اللحظة نفسها (حفظي وحفظُ أي مستخدم) فأُلغيت معاملتي كلُّها وعاد 409 {ok:0, err:'conflict'}
+       بلا هويةِ الطلب ولا خريطةِ تعارض — لم يُكتب شيء. كان يُعرض «لم يصل تأكيد الحفظ». الآن يُعاد الطلبُ نفسُه (المعرّفُ والجسمُ نفسُهما —
+       وهو ما كان يُطلب من المستخدم يدوياً) مرتين على الأكثر؛ تعارضٌ حقيقي في مفتاحي يعود بهويته وخريطته فيُحسم كما كان. */
+    if (status === 409 && operationObject9(data) && data.ok === 0 && data.err === 'conflict' && data.requestId === undefined && data.conflicts === undefined && data.denied === undefined
+        && (operation.raceRetries || 0) < 2 && operationActive9 === operation) {
+      operation.raceRetries = (operation.raceRetries || 0) + 1;
+      operationUncertainLog9('race-retry-' + operation.raceRetries, operation.keys);
+      if (inflight === operation.snap) inflight = null;
+      operation.state = 'queued';
+      operation.keys.forEach(function (key) { if (key in operation.snap.set) pSet[key] = operation.snap.set[key]; else pDel[key] = 1; });
+      recount();
+      setTimeout(function () { if (operationActive9 === operation && operation.state === 'queued') sendNow(); }, 150 * operation.raceRetries);
+      return;
     }
     var identity = operationObject9(data) && data.requestId === operation.ticket.requestId && data.epoch === operation.epoch && data.atomic === 1;
     var revs = data && data.revs;
@@ -951,12 +993,16 @@
       return operationKey9(key) && known && known.stamp && operationSame9(known.stamp) && (known.state === 'denied' || ((known.state === 'ready' || known.state === 'absent') && known.epoch === operationEpoch9));
     });
   }
+  /* تغيّرُ صلاحياتي الفعلي يُسقط قراءات العمليات كما كان (المسوداتُ لا تتبنّى صلاحيةً جديدة بصمت · جيلٌ جديد). الجديد: الحدثُ لا يُطلَق
+     إلا إن تغيّر وصفُ صلاحياتي فعلاً (authzSync9)، والصفحةُ المعروضة لا تُهدم بالإسقاط — تبقى شجرتُها حتى تصل القراءةُ الجديدة (050). */
   window.addEventListener('bassam:authz', function () { operationInvalidate9(); });
+  function liveLog9(kind, why, keys) { try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog(kind, 'operations', why, keys); } catch (e) { /* تشخيصٌ فقط */ } }
   // Only this closure can prove that a dispatched change event already has a
   // confirmed typed read. Arbitrary/custom remote events still invalidate.
   var operationRemoteProof9 = new WeakMap();
-  function operationDispatchRemote9(keys, v, confirmed) {
-    var event = new CustomEvent('bassam:remote', { detail: { keys: keys, v: v } });
+  function operationDispatchRemote9(keys, v, confirmed, foreign) {
+    /* foreign: مفاتيحُ العمليات التي تغيّرت مراجعتُها فعلاً عمّا في هذا التبويب (تعديلُ جهازٍ آخر) — صدى حفظي أنا ليس منها */
+    var event = new CustomEvent('bassam:remote', { detail: { keys: keys, v: v, foreign: foreign || [] } });
     operationRemoteProof9.set(event, new Set(confirmed || []));
     try { window.dispatchEvent(event); } finally { operationRemoteProof9.delete(event); }
   }
@@ -1449,11 +1495,22 @@
         return Promise.reject(Error('operations-sync-pending'));
       // Do not render a transient empty value between invalidation and ACK.
       // A failed read still publishes its normal fail-closed error state.
-      if (operationKeys.length) operationInvalidate9(operationKeys, true);
+      var priorRev9 = Object.create(null); operationKeys.forEach(function (key) { priorRev9[key] = krev[key]; });
+      /* صدى حفظي أنا: مراجعةُ المفتاح هي النسخةُ العامة لحظةَ كتابته، فمفتاحٌ مراجعتُه عندي ≥ نسخةِ هذا الإشعار (v) لا جديدَ له في الخادم.
+         يُقرأ مع غيره كما كان، لكن **في مكانه** بلا إسقاطٍ مسبق (كانت نافذةُ قراءته تردّ الحفظَ التالي بـ«تغيّرت نسخة البيانات»)؛
+         وإن فشلت القراءةُ أُسقط كما كان يُسقط — فالنتيجةُ عند الفشل والمنع واحدة. ما عداه يُسقط قبل القراءة كما كان. */
+      var echoKeys9 = operationKeys.filter(function (key) {
+        var known = operationKnown9[key];
+        return !!(known && known.stamp && operationSame9(known.stamp) && ['ready', 'absent'].includes(known.state) && known.epoch === operationEpoch9 && operationInteger9(known.rev) && operationInteger9(v) && known.rev >= v);
+      });
+      var dropKeys9 = operationKeys.filter(function (key) { return echoKeys9.indexOf(key) === -1; });
+      if (dropKeys9.length) operationInvalidate9(dropKeys9, true);
       return Promise.all([getAll9(keys, null), operationKeys.length ? operationRead9(operationKeys) : { ok: 1 }]).then(function (result) {
+        if ((!result[1] || result[1].ok !== 1) && echoKeys9.length && !(result[1] && result[1].err === 'stale')) operationInvalidate9(echoKeys9, true);
         if (!result[1] || result[1].ok !== 1) throw Error('operations-sync-read');
         BOOT.v = v; irKeys.forEach(notify);
-        return { changed: Array.from(new Set(result[0].concat(irKeys, logicalOperationKeys))), confirmed: operationKeys };
+        return { changed: Array.from(new Set(result[0].concat(irKeys, logicalOperationKeys))), confirmed: operationKeys,
+          foreign: operationKeys.filter(function (key) { return priorRev9[key] !== undefined && krev[key] !== priorRev9[key]; }) };
       });
     }
 
@@ -1560,11 +1617,20 @@
       fetch("/api/authz").then(function (r) { return r.ok ? r.json() : null; }).then(function (z) {
         azBusy9 = false;
         if (!z || z.mode !== "enforce" || !z.me) return;
-        var was9 = KIVO.__BS_AUTHZ;
+        var was9 = KIVO.__BS_AUTHZ, same9 = false;
+        try { same9 = JSON.stringify(was9) === JSON.stringify(z.me); } catch (e) { /* مقارنةٌ فقط */ }
         KIVO.__BS_AUTHZ = z.me;
+        /* إشارةُ az تصل عند أي تغييرٍ في الحسابات/الهيكل/المنصة من أي مستخدم؛ إن لم يتغيّر وصفُ صلاحياتي فلا شيء يُعاد ولا يُبلَّغ */
+        if (same9) {
+          liveLog9('az-unchanged', 'إشارةُ صلاحياتٍ بلا تغييرٍ في وصفي — لا إسقاط');
+          /* الرسمُ الخفيف الذي كان يتبع كلَّ إشارة يبقى (قوائمُ الحسابات والهيكل تتحدّث به) — بلا إسقاطٍ ولا رسالة «تحدّثت صلاحياتك» */
+          try { window.dispatchEvent(new CustomEvent("bassam:remote", { detail: { keys: ["bassam_perms_v1"], v: BOOT.v, azSame: true } })); } catch (e) {}
+          return;
+        }
         try { window.dispatchEvent(new CustomEvent("bassam:authz", { detail: z.me })); } catch (e) {}
         try { window.dispatchEvent(new CustomEvent("bassam:remote", { detail: { keys: ["bassam_perms_v1"], v: BOOT.v } })); } catch (e) {}
-        try { if (JSON.stringify(was9) !== JSON.stringify(z.me)) readSet9(true); } catch (e) { /* مقارنةٌ فقط */ }   /* KIVO_264 · D-4: تغيّر وصفُ صلاحياتي ⇒ تُجدَّد بياناتي */
+        liveLog9('az-changed', 'تغيّر وصفُ صلاحياتي — تُعاد قراءةُ مفاتيحي والصفحةُ معروضة');
+        readSet9(true);   /* KIVO_264 · D-4: تغيّر وصفُ صلاحياتي ⇒ تُجدَّد بياناتي */
       }).catch(function () { azBusy9 = false; });
     }
     function look9() {
@@ -1596,7 +1662,7 @@
                 var privateDetail = { uid: UID9, dept: meIdentity[2], ekey: meIdentity[3], v: j.v };
                 if (j.meChanged === 1) try { window.dispatchEvent(new CustomEvent('bassam:me', { detail: privateDetail })); } catch (eM) {}
 @@SYS:store.changed.tasks.event@@              }
-              if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
+              if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed, result.foreign); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
               if (ks.some(function (k) { return SLICEK9.test(k); })) { var s9 = slice9(); if (s9 !== slice0) { slice0 = s9; readSet9(false); } }
               if (j.more && BOOT.v === j.v && ++pages < MORE_MAX9 && !sx9) return ask(false);   /* C2: البقيةُ فوراً من آخر مراجعةٍ وصلت */
             });
@@ -1643,6 +1709,8 @@
     why: function (k, text) { if (KIVO.__BS_AUTHZ && k && text) why9[String(k)] = String(text).slice(0, 300); },
     /* KIVO_265 · k265-fix: نافذةُ السبب لمسارات الخادم (askReason9) — إعادةُ فتح المهمة في الإنفاذ */
     askReason: askReason9,
+    /* إصلاح (مدير المنصة لا يُطلب منه سبب): هل الحسابُ الحالي معفًى من نوافذ السبب؟ الخادمُ هو الحَكَم (016 reasonExempt) — هذه لئلا تُفتح نافذةٌ لا حاجة لها */
+    reasonExempt: function () { try { var a9 = KIVO.BassamAuth, u9 = a9 && a9.user && a9.user(); return !!(u9 && u9.role === "super"); } catch (e) { return false; } },
     /* يُفرغ ما في الطابور ثم يغلق الباب — قبل إنهاء الجلسة. الوعدُ يُنتظر. */
     bye: function () { var p = flushAsync(5000); bye9 = true; try { imcClear9(); } catch (e) {} return p; },
     /* R169: للاختبار والتشخيص — أحداثُ ما في الطابور الآن */

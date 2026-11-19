@@ -1,7 +1,7 @@
 async function cuPlanRestore(env, A, domain, opt) {
   cuShape(opt, ['dept', 'base', 'scope', 'mode', 'reason', 'finalKeys']);
   var dept = cuString(opt.dept, 200, false);
-  cuString(opt.reason, 300, false);
+  cuString(opt.reason, 300, reasonExempt(A));   /* السببُ الفارغ يُقبل من مدير المنصة وحده (016 reasonExempt)؛ حدُّ الطول للجميع */
   if (opt.mode !== 'replace') throw cuError('custody-restore-mode');
   if (['dept', 'full'].indexOf(opt.scope) < 0) throw cuError('custody-restore-scope');
   if (!Number.isSafeInteger(opt.base) || opt.base < 0) throw cuError('custody-restore-base');
@@ -33,7 +33,7 @@ async function cuPlanRestore(env, A, domain, opt) {
       before: { items: before.items.length, issues: before.issues.length, moves: before.moves.length },
       after: { items: rows.items.length, issues: rows.issues.length, moves: rows.moves.length },
     },
-    metadata: { departmentId: dept, kind: 'restore-replace', partialSnapshot: false, reason: String(opt.reason).slice(0, 300) },
+    metadata: { departmentId: dept, kind: 'restore-replace', partialSnapshot: false, reason: reasonLogged(A, opt.reason) },
   };
 }
 async function cuExport(env, A, url) {

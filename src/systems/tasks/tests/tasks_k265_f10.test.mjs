@@ -213,7 +213,9 @@ for (const mode of MODES) {
       assert.equal((await act(Wd, me.ck, { k: DAY, id: 1760000000101, i: idx(S, DAY, 1760000000101, ME.eid), act: 'accept' })).j.ok, 1);
       const cur = await get(Wd, Wd.su.ck), audR = () => [{ cid: 'rstTEST' + Date.now().toString(36), k: KT, etype: 'dataset', act: 'restore', eid: 'bassam_tasks_v1', ename: 'TEST_ONLY استعادة' }];
       if (mode === 'enforce') {                                                                        /* الإنفاذ: الاستعادةُ عمليةٌ محميةٌ بسببها (backup.restore · §12) */
-        const r0 = await post(Wd, Wd.su.ck, '/api/save', { set: { [KT]: old.v }, del: [], base: { [KT]: cur.rev }, aud: audR() }), d0 = r0.j.denied && r0.j.denied[KT];
+        /* قرار المالك: مدير المنصة لا يُطلب منه سبب؛ فيُثبَّت الرفض على مدير الإدارة (كان على مدير المنصة) */
+        const dm = await Wd.login(MGR.un, MGR.pw);
+        const r0 = await post(Wd, dm.ck, '/api/save', { set: { [KT]: old.v }, del: [], base: { [KT]: cur.rev }, aud: audR() }), d0 = r0.j.denied && r0.j.denied[KT];
         assert.ok(!(r0.j.revs && r0.j.revs[KT]) && d0 && d0.why === 'reason', 'الإنفاذ: استعادةٌ بلا سبب ⇒ «يتطلب سبباً»: ' + JSON.stringify(r0.j).slice(0, 200));
       }
       const r = await post(Wd, Wd.su.ck, '/api/save', Object.assign({ set: { [KT]: old.v }, del: [], base: { [KT]: cur.rev }, aud: audR() },

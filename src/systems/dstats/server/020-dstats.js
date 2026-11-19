@@ -224,7 +224,7 @@ async function dsDomainCommit(env, A, body, ip) {
   if (restore) return { status: 400, body: { ok: 0, err: 'full-restore-unsupported' } };
   var historical = body.operation === 'historical-import';
   /* Historical import is the existing super-only operation, with its mandatory reason. */
-  if (historical && (A.u.role !== 'super' || !String(body.reason || '').trim())) { var hw = A.u.role !== 'super' ? 'super' : 'reason'; return await dsDomainDeny(env, A, hw, ip, enfNo(hw, { keys: ['sys.histimp.run'], reasonKeys: ['sys.histimp.run'] })); }
+  if (historical && A.u.role !== 'super') return await dsDomainDeny(env, A, 'super', ip, enfNo('super', { keys: ['sys.histimp.run'], reasonKeys: ['sys.histimp.run'] }));   /* لمدير المنصة وحده — ولا يُطلب منه سبب */
   if (A.enf) {
     var why = {}; why[K_DSTATS] = String(body.reason || '').trim();
     X = await enfSavePrep(env, A, { why: why }, set, [], keys, markers, restore, false, historical, await permv3RetroLoad(env, set, []), await permv4RefsLoad(env, set, []));
@@ -243,7 +243,7 @@ async function dsDomainCommit(env, A, body, ip) {
   var rev = await nextRev(env), meta = ip || {};
   st.unshift(revGuard(env, K_DSTATS, current.rev));
   st.push(env.DB.prepare('INSERT INTO revs (k,rev) VALUES (?1,?2) ON CONFLICT(k) DO UPDATE SET rev=excluded.rev').bind(K_DSTATS, rev));
-  st.push(audEvStmt(env, { cid: 'dstats_' + rev, ts: Date.now(), uid: A.u.id, un: '', dept: '', k: K_DSTATS, rev: rev, etype: 'dataset', eid: 'daily-stats', ename: 'الإحصائيات اليومية', act: historical ? 'import' : 'updated', ctx: JSON.stringify({ domain: 'daily-stats', reason: String(body.reason || '').slice(0, 300) }), bef: '', aft: '', ip: meta.ip || '', city: meta.city || '', dev: meta.dev || '' }));
+  st.push(audEvStmt(env, { cid: 'dstats_' + rev, ts: Date.now(), uid: A.u.id, un: '', dept: '', k: K_DSTATS, rev: rev, etype: 'dataset', eid: 'daily-stats', ename: 'الإحصائيات اليومية', act: historical ? 'import' : 'updated', ctx: JSON.stringify({ domain: 'daily-stats', reason: historical ? reasonLogged(A, body.reason) : String(body.reason || '').slice(0, 300) }), bef: '', aft: '', ip: meta.ip || '', city: meta.city || '', dev: meta.dev || '' }));
   if (X) { var log = enfLogRow(A, K_DSTATS, verdict, '/api/dstats', meta); if (log) st.push(enfLogStmt(env, log)); }
   try { await env.DB.batch(st); } catch (e) {
     if (!isRevConflict(e)) throw e;

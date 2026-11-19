@@ -951,7 +951,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     (body.scope.kind === 'dept' && (typeof body.scope.departmentId !== 'string' || !body.scope.departmentId))
   )
     throw rsError('restore-scope');
-  if (!['merge', 'replace'].includes(body.mode) || typeof body.reason !== 'string' || !body.reason.trim() || body.reason.length > 300)
+  if (!['merge', 'replace'].includes(body.mode) || typeof body.reason !== 'string' || (!body.reason.trim() && !reasonExempt(A)) || body.reason.length > 300)   /* السببُ الفارغ يُقبل من مدير المنصة وحده؛ حدُّ الطول 300 للجميع */
     throw rsError('restore-reason');
   /* A full backup declares its complete input. Never infer missing domains from
      its mode or silently reinterpret a sparse save as a complete backup. */
@@ -1539,7 +1539,7 @@ async function rsCommit(env, A, plan, meta) {
         now,
         A.u.id,
         plan.body.scope.departmentId || '',
-        JSON.stringify({ reason: plan.body.reason, counts: plan.counts, scope: plan.body.scope, mode: plan.body.mode }),
+        JSON.stringify({ reason: reasonLogged(A, plan.body.reason), counts: plan.counts, scope: plan.body.scope, mode: plan.body.mode }),
         (meta && meta.ip) || '',
         (meta && meta.dev) || '',
         (meta && meta.city) || '',

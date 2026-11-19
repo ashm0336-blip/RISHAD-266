@@ -89,8 +89,8 @@
       };
       var key=el.clientWidth+'|'+(el.textContent||'').replace(/\s+/g,' ').trim();
       if(el.getAttribute('data-bsfit')===key && !clips()) continue;
-      var fs=12.5; el.style.setProperty('--bs-fs', fs+'px');
-      var g=0; while(g++<9 && fs>8.5 && clips()){ fs-=0.5; el.style.setProperty('--bs-fs', fs+'px'); }
+      var fs=12.5; el.style.setProperty('--bs-fitfs', fs+'px');
+      var g=0; while(g++<9 && fs>8.5 && clips()){ fs-=0.5; el.style.setProperty('--bs-fitfs', fs+'px'); }
       el.setAttribute('data-bsfit', key);
     }
   }

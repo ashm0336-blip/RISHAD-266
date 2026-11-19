@@ -146,7 +146,7 @@ async function cuPlanCleanup(env, A, opt) {
       affectedMoves: moves.length,
       affectedIssues: issues.length,
     },
-    metadata: { departmentId: dept, kind: intent, partialSnapshot: intent !== 'dept-wipe', reason: String(opt.reason || '').slice(0, 300) },
+    metadata: { departmentId: dept, kind: intent, partialSnapshot: intent !== 'dept-wipe', reason: reasonLogged(A, opt.reason) },
   };
 }
 function cuValidateDomain(domain, dept) {
