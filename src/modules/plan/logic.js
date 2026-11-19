@@ -66,6 +66,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       });
       return result;
     } catch (error) {
+      try {
+        KIVO.__bsLiveLog && KIVO.__bsLiveLog("save-refused", "Operational Plan", String((error && error.message) || error), Object.keys(changes || {}));
+      } catch (e) {}
       this.bsToast(
         "لم يُحفظ التعديل — تغيّرت نسخة البيانات أو سياق الحساب؛ بقي عملك في الصفحة للمراجعة",
         "warn",

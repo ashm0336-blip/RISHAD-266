@@ -785,9 +785,12 @@
     if (!editors) { editors = Object.create(null); operationEditors9.set(owner, editors); }
     return editors;
   }
+  var OP_CHAIN_WAIT9 = 5000;   /* أقصى انتظارٍ لحسم حفظٍ سابقٍ في الطريق قبل إرسال التالي (م.ث) */
   function operationBegin9(owner, action) {
-    var editors = operationEditor9(owner, action), prior = editors[action];
-    if (prior && prior.ticket && ['staged', 'queued', 'sending', 'uncertain'].includes(operationStatus9(prior.ticket).state)) return operationFailure9('pending', 409);
+    var editors = operationEditor9(owner, action), prior = editors[action], priorState = prior && prior.ticket ? operationStatus9(prior.ticket).state : '';
+    /* حفظٌ سابقٌ ما زال في الطريق: المحرِّرُ يبقى كما هو، والحفظُ التالي ينتظره في operationCommit9 (لا «معلّق» يُسقط عملَ المستخدم) */
+    if (prior && prior.promise && ['staged', 'queued', 'sending'].includes(priorState)) return { ok: 1, chained: 1 };
+    if (prior && prior.ticket && ['staged', 'queued', 'sending', 'uncertain'].includes(priorState)) return operationFailure9('pending', 409);
     try { editors[action] = { draft: operationDraft9(), ticket: null, intent: null, prepared: false, error: null, promise: null }; return { ok: 1 }; }
     catch (error) { return operationFailure9('read-required', 409); }
   }
@@ -803,6 +806,23 @@
       var state = operationStatus9(entry.ticket).state;
       if (entry.intent !== signature) {
         if ((state === 'denied' || state === 'conflict') && entry.result) return entry.result;
+        /* حفظٌ تالٍ للمحرِّر نفسِه والسابقُ ما زال في الطريق (وضعُ عنصرٍ ثم حفظُ بياناته · تعديلان متتاليان مع كمون الشبكة):
+           لا يُرفض ولا يُعرض «غير مؤكَّد» — ينتظر حسمَ السابق؛ فإن ثبّته الخادمُ ومراجعةُ كلِّ مفتاحٍ عندي هي مراجعةُ إيصاله نفسُها
+           (لم يدخل بينهما تعديلُ غيري) أُرسل التالي بمسودةٍ جديدة على تلك المراجعة. وإن لم يثبت السابق أو تغيّرت المراجعة فالمراجعةُ كما كانت. */
+        if (entry.promise && ['staged', 'queued', 'sending'].includes(state)) {
+          var waited = entry;
+          /* الانتظارُ محدود (OP_CHAIN_WAIT9): إيصالٌ لم يصل (شبكةٌ انقطعت · ردٌّ ضائع) يبقى على سلوكه — «راجِع» بتذكرة السابق نفسِها */
+          return Promise.race([entry.promise, new Promise(function (resolve) { setTimeout(function () { resolve(null); }, OP_CHAIN_WAIT9); })]).then(function (first) {
+            var revs = first && first.ok === 1 && first.receipt && first.receipt.revs;
+            var follows = operationObject9(revs) && editors[action] !== waited && Object.keys(revs).every(function (key) {
+              var known = operationKnown9[key];
+              return known && known.stamp && operationSame9(known.stamp) && ['ready', 'absent'].includes(known.state) && known.rev === revs[key];
+            });
+            if (!follows) { operationUncertainLog9('review-required', waited.ticket && operationsTickets9.get(waited.ticket) ? operationsTickets9.get(waited.ticket).keys : []); return Object.assign(operationFailure9('review-required', 409, true), { ticket: waited.ticket }); }
+            return operationCommit9(owner, action, intent, edit);
+          });
+        }
+        operationUncertainLog9('review-required', operationsTickets9.get(entry.ticket) ? operationsTickets9.get(entry.ticket).keys : []);
         return Object.assign(operationFailure9('review-required', 409, true), { ticket: entry.ticket });
       }
       if (entry.promise) return entry.promise;
@@ -868,11 +888,17 @@
     operation.keys.forEach(function (key) { if (key in operation.snap.set) pSet[key] = operation.snap.set[key]; else pDel[key] = 1; });
     recount();
     await flushAsync();
+    if (!operation.result) operationUncertainLog9('pending', operation.keys);
     return operation.result || operationFailure9('pending', 0, true);
+  }
+  /* سجلٌّ تشخيصي (console فقط): حفظٌ لم يُحسم — المسارُ والمفاتيحُ وحالةُ كلِّ مفتاحٍ ورقمُ مراجعته المعروف */
+  function operationUncertainLog9(err, keys) {
+    try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog('uncertain', 'operations', err, (keys || []).map(function (key) { var known = operationKnown9[key] || {}; return key + ' [' + (known.state || '-') + ' rev ' + (known.rev == null ? '-' : known.rev) + ']'; })); } catch (e) { /* تشخيصٌ فقط */ }
   }
   function operationUncertain9(operation, err, status) {
     if (inflight === operation.snap) inflight = null;
     operation.state = 'uncertain'; operation.result = operationFailure9(err, status, true);
+    operationUncertainLog9(err, operation.keys);
     warn(true);
     settleWaiters(false);
   }
@@ -1456,8 +1482,14 @@
       // Do not render a transient empty value between invalidation and ACK.
       // A failed read still publishes its normal fail-closed error state.
       var priorRev9 = Object.create(null); operationKeys.forEach(function (key) { priorRev9[key] = krev[key]; });
-      if (operationKeys.length) operationInvalidate9(operationKeys, true);
-      return Promise.all([getAll9(keys, null), operationKeys.length ? operationRead9(operationKeys) : { ok: 1 }]).then(function (result) {
+      /* صدى حفظي أنا: مراجعةُ المفتاح هي النسخةُ العامة لحظةَ كتابته، فمفتاحٌ مراجعتُه عندي ≥ نسخةِ هذا الإشعار (v) لا جديدَ له في الخادم —
+         لا يُسقَط ولا تُعاد قراءتُه (كانت نافذةُ إعادة قراءته تُسقط الحفظَ التالي بـ«تغيّرت نسخة البيانات»). ما عداه يُقرأ كما كان. */
+      var staleKeys9 = operationKeys.filter(function (key) {
+        var known = operationKnown9[key];
+        return !(known && known.stamp && operationSame9(known.stamp) && ['ready', 'absent'].includes(known.state) && known.epoch === operationEpoch9 && operationInteger9(known.rev) && operationInteger9(v) && known.rev >= v);
+      });
+      if (staleKeys9.length) operationInvalidate9(staleKeys9, true);
+      return Promise.all([getAll9(keys, null), staleKeys9.length ? operationRead9(staleKeys9) : { ok: 1 }]).then(function (result) {
         if (!result[1] || result[1].ok !== 1) throw Error('operations-sync-read');
         BOOT.v = v; irKeys.forEach(notify);
         return { changed: Array.from(new Set(result[0].concat(irKeys, logicalOperationKeys))), confirmed: operationKeys,

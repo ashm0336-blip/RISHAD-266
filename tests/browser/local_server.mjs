@@ -58,6 +58,7 @@ export async function startLab({ port = 0, mode = 'enforce' } = {}) {   /* V7 P3
   await installOperationalFixture(env, W);
   const pending = new Set();
   const ctx = { waitUntil(p) { const q = Promise.resolve(p).catch(() => {}); pending.add(q); q.finally(() => pending.delete(q)); }, passThroughOnException() {} };
+  const lab = { delay: null, delayBefore: null };
   const server = http.createServer(async (req, res) => {
     try {
       const chunks = []; for await (const c of req) chunks.push(c);
@@ -67,8 +68,12 @@ export async function startLab({ port = 0, mode = 'enforce' } = {}) {   /* V7 P3
       headers.set('origin', headers.get('origin') ? 'https://lab.local' : '');
       if (!headers.get('origin')) headers.delete('origin');
       headers.set('host', 'lab.local');
+      /* optional artificial latency (lab.delay = { '/api/save': ms, … } or a function(path, method) → ms): applied to the response, after the worker has done the work */
+      const path0 = new URL(url).pathname, lag = typeof lab.delay === 'function' ? lab.delay(path0, req.method) : (lab.delay && lab.delay[path0]) || 0, lagBefore = typeof lab.delayBefore === 'function' ? lab.delayBefore(path0, req.method) : (lab.delayBefore && lab.delayBefore[path0]) || 0;
+      if (lagBefore) await new Promise((go) => setTimeout(go, lagBefore));
       const r = await W.default.fetch(new Request(url, { method: req.method, headers, body: ['GET', 'HEAD'].includes(req.method) ? undefined : body }), env, ctx);
       const out = Buffer.from(await r.arrayBuffer());
+      if (lag) await new Promise((go) => setTimeout(go, lag));
       const h = {}; r.headers.forEach((v, k) => { if (k !== 'set-cookie') h[k] = v; });
       const cookies = typeof r.headers.getSetCookie === 'function' ? r.headers.getSetCookie() : [];
       if (cookies.length) h['set-cookie'] = cookies.map((c) => c.replace(/;\s*Secure/ig, '').replace(/;\s*Domain=[^;]*/ig, ''));
@@ -82,7 +87,7 @@ export async function startLab({ port = 0, mode = 'enforce' } = {}) {   /* V7 P3
   });
   await new Promise((r) => server.listen(port, '127.0.0.1', r));
   const addr = server.address();
-  return { env, W, base: 'http://127.0.0.1:' + addr.port, idle: async () => { while (pending.size) await Promise.all([...pending]); }, close: () => new Promise((r) => server.close(r)) };
+  return Object.assign(lab, { env, W, base: 'http://127.0.0.1:' + addr.port, idle: async () => { while (pending.size) await Promise.all([...pending]); }, close: () => new Promise((r) => server.close(r)) });
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
