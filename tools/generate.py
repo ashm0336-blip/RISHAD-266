@@ -313,6 +313,9 @@ def main():
         if os.path.isdir(os.path.join(S, 'schemas')):
             rv = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'validate_schemas.py'), S], capture_output=True, text=True, encoding='utf-8'); print(rv.stdout.strip())
             if rv.returncode: bad.append('schemas')
+        # V7 · د5-ب: سجلُّ العقود — عقدٌ ناقص أو متناقض يُفشل --check (tools/contracts.py)
+        rc = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'contracts.py'), '--src', S, '--check'], capture_output=True, text=True, encoding='utf-8'); print(rc.stdout.rstrip())
+        if rc.returncode: bad.append('contracts')
         sys.exit(1 if bad else 0)
     print('generated', len(produced), 'derived files →', S)
 if __name__ == '__main__': main()

@@ -51,6 +51,7 @@
 <div id="bs-boot" aria-hidden="true"><div class="bs-boot-bar"></div><div class="bs-boot-msg">جارٍ التحميل…</div></div>
 @@KIVO_BLOCK:i18n/120-arabic-digits.js@@
 @@KIVO_BLOCK:core/130-error-bar.js@@
+@@KIVO_BLOCK:core/060-bus.js@@
 
 @@KIVO_BLOCK:core/140-safety-scheduler.js@@
 @@KIVO_BLOCK:styles/150-statscroll.css@@

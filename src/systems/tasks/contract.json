@@ -1,0 +1,44 @@
+{
+ "schema": 1,
+ "system": "tasks",
+ "version": 1,
+ "note": "V7 · د5-ب: عقدٌ مكتوبٌ من الواقع. owns = مفاتيحُه · consumes = مفاتيحُ القاعدة التي يقرؤها (key:…). قراءاتُه لمفاتيح برامجَ أخرى لم تُعلَن بعد (لا عقدَ يوفّرها): موثّقةٌ في tests/isolation/exceptions.json وتُحوَّل إلى استهلاكٍ معلن مع فصل تلك البرامج. لا شيءَ يُنشر عبر الناقل بعد.",
+ "owns": [
+  "bassam_tasks_v1",
+  "bassam_tasks_locks_v1"
+ ],
+ "provides": {},
+ "consumes": {
+  "key:bassam_dayshift_v1": {
+   "absent": "موردُ قاعدةٍ حاضرٌ دائماً",
+   "base": true
+  },
+  "key:bassam_employees_v1": {
+   "absent": "موردُ قاعدةٍ حاضرٌ دائماً",
+   "base": true
+  },
+  "key:bassam_notif_v1": {
+   "absent": "موردُ قاعدةٍ حاضرٌ دائماً",
+   "base": true
+  },
+  "key:bassam_options_v1": {
+   "absent": "موردُ قاعدةٍ حاضرٌ دائماً",
+   "base": true
+  },
+  "key:bassam_perm_tpls_v1": {
+   "absent": "موردُ قاعدةٍ حاضرٌ دائماً",
+   "base": true
+  },
+  "key:bassam_shift_options_v1": {
+   "absent": "موردُ قاعدةٍ حاضرٌ دائماً",
+   "base": true
+  },
+  "key:bassam_tasks_filters_v1": {
+   "absent": "موردُ قاعدةٍ حاضرٌ دائماً",
+   "base": true
+  }
+ },
+ "crossEffects": [
+  "حذفُ موظفٍ من القاعدة ينظّف مهامَه (فتحة البناء emp.cleanup — تتحوّل إلى استهلاك حدث القاعدة employee.removed)"
+ ]
+}

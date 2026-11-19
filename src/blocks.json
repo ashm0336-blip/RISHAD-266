@@ -233,6 +233,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "core/060-bus.js",
+   "kind": "js",
+   "line": 2724,
+   "new": "V7 · د5-ب: ناقل الأحداث — القاعدة وسيط فقط (قراءة · أمر · حدث · مشارك داخل المسودة)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "core/140-safety-scheduler.js",
    "kind": "js",
    "line": 2724,
