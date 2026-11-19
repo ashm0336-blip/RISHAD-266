@@ -12,7 +12,7 @@ const source = fs.readFileSync("src/modules/daily/logic.js", "utf8"),
   codec = vm.createContext({});
 for (const file of [
   "019o-operational-codec.js",
-  "019p-operations-scheduling.js",
+  "019p-operations-scheduling.js", "019p1-scheduling-staff.js", "019p2-scheduling-plan.js", "019p3-scheduling-rounds.js", "019p4-scheduling-plan-options.js", "019p9-scheduling-registry.js",
   "019q-operations-people-tasks.js",
 ])
   vm.runInContext(fs.readFileSync("workers/parts/" + file, "utf8"), codec);

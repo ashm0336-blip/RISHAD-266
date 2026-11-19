@@ -14,7 +14,7 @@ function visit(node){if(!node||typeof node!=='object')return;if(node.type==='Var
 visit(parse(transport,{ecmaVersion:'latest'}));assert.equal(resources.length,21);
 const clone=value=>JSON.parse(JSON.stringify(value)),DEPT='TEST_ONLY_backup',UID='TEST_ONLY_backup_manager';
 const codec=vm.createContext({});
-vm.runInContext(['019o-operational-codec.js','019p-operations-scheduling.js','019q-operations-people-tasks.js'].map(file=>fs.readFileSync('workers/parts/'+file,'utf8')).join('\n')+'\nvar TEST_ONLY_PREPARED=ocPrepare(OC_SCHEDULING_RESOURCES.concat(OC_PEOPLE_TASK_RESOURCES));function TEST_ONLY_rows(resource,value){var p=ocForResource(TEST_ONLY_PREPARED,resource);return ocPhysicalRows(p,ocConvert(p,"'+DEPT+'",resource,value,true));}',codec);
+vm.runInContext(['019o-operational-codec.js','019p-operations-scheduling.js', '019p1-scheduling-staff.js', '019p2-scheduling-plan.js', '019p3-scheduling-rounds.js', '019p4-scheduling-plan-options.js', '019p9-scheduling-registry.js','019q-operations-people-tasks.js'].map(file=>fs.readFileSync('workers/parts/'+file,'utf8')).join('\n')+'\nvar TEST_ONLY_PREPARED=ocPrepare(OC_SCHEDULING_RESOURCES.concat(OC_PEOPLE_TASK_RESOURCES));function TEST_ONLY_rows(resource,value){var p=ocForResource(TEST_ONLY_PREPARED,resource);return ocPhysicalRows(p,ocConvert(p,"'+DEPT+'",resource,value,true));}',codec);
 function page(mutate){
   const calls=[],imageReads=[],boot={srv:1,cf:1,uid:UID,v:7},scope={uid:UID};
   const ops=resources.map(resource=>({version:1,scope:{departmentId:DEPT},resource,rows:{ops_nodes:[]}}));

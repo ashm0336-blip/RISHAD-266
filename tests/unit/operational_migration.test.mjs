@@ -29,7 +29,7 @@ C.K_DEPTS = "bassam_depts_v1";
 for (const file of [
   "019d-atomic-restore.js",
   "019o-operational-codec.js",
-  "019p-operations-scheduling.js",
+  "019p-operations-scheduling.js", "019p1-scheduling-staff.js", "019p2-scheduling-plan.js", "019p3-scheduling-rounds.js", "019p4-scheduling-plan-options.js", "019p9-scheduling-registry.js",
   "019q-operations-people-tasks.js",
   "019r-operational-storage.js",
   "019s-operational-migration.js",

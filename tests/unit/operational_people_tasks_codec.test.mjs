@@ -6,7 +6,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { peopleTaskDocuments } from './operational_people_tasks_fx.mjs';
 import { needs } from './harness.mjs';
 const C = vm.createContext({});
-for (const path of ['workers/parts/019o-operational-codec.js', 'workers/parts/019p-operations-scheduling.js', 'workers/parts/019q-operations-people-tasks.js']) vm.runInContext(fs.readFileSync(path, 'utf8'), C, { filename: path });
+for (const path of ['workers/parts/019o-operational-codec.js', 'workers/parts/019p-operations-scheduling.js', 'workers/parts/019p1-scheduling-staff.js', 'workers/parts/019p2-scheduling-plan.js', 'workers/parts/019p3-scheduling-rounds.js', 'workers/parts/019p4-scheduling-plan-options.js', 'workers/parts/019p9-scheduling-registry.js', 'workers/parts/019q-operations-people-tasks.js']) vm.runInContext(fs.readFileSync(path, 'utf8'), C, { filename: path });
 const all = C.ocPrepare(C.OC_SCHEDULING_RESOURCES.concat(C.OC_PEOPLE_TASK_RESOURCES));
 const docs = peopleTaskDocuments(), copy = value => JSON.parse(JSON.stringify(value));
 for (const definition of C.OC_PEOPLE_TASK_RESOURCES) test('Lossless typed SQL roundtrip: ' + definition.resource, () => {

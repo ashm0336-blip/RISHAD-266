@@ -8,7 +8,7 @@ import { operationalMigrationFixture } from "./operational_migration_fx.mjs";
 const C = vm.createContext({});
 for (const path of [
   "workers/parts/019o-operational-codec.js",
-  "workers/parts/019p-operations-scheduling.js",
+  "workers/parts/019p-operations-scheduling.js", "workers/parts/019p1-scheduling-staff.js", "workers/parts/019p2-scheduling-plan.js", "workers/parts/019p3-scheduling-rounds.js", "workers/parts/019p4-scheduling-plan-options.js", "workers/parts/019p9-scheduling-registry.js",
 ])
   vm.runInContext(fs.readFileSync(path, "utf8"), C, { filename: path });
 const definitions = C.OC_SCHEDULING_RESOURCES,
