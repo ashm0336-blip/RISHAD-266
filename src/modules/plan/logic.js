@@ -2074,7 +2074,73 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     }),
       e.readAsDataURL(t));
   }
-  _bsLiveReload(K) {
+  /* «إلغاء» عنصرٍ وُضع للتوّ (برومت 41). مسودةُ الصفحة سليمة ⇒ الحفظُ المعتاد. مسودتُها قديمة (جهازٌ آخر عدّل الخطة والنافذةُ مفتوحة) ⇒
+     لا تُرسل الصفحةُ وثيقتَها القديمة: يُعاد بناءُ الحذف على أحدث نسخةٍ في الخادم (operations.patch) — يُحذف العنصرُ بمعرّفه من كلِّ موضعٍ له
+     إن كان كما وضعتُه حرفاً، وما عدّله غيري في بقية الخطة يبقى. إن عدّل غيري العنصرَ نفسَه ⇒ لا حذفَ صامت: رسالةٌ واضحة ويبقى للمراجعة.
+     ثم تُقرأ الصفحةُ من المخزن في مكانها (أحدثُ نسخة) بدل حالتها القديمة. */
+  _planDraftFresh() {
+    try {
+      const d = this._opDrafts && this._opDrafts.bassam_plan_v1;
+      if (!d) return false;
+      d.get("bassam_plan_v1");
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  _cancelPlaced(kind, el) {
+    if (!el || !el.uid || this._planDraftFresh()) return this.savePlan();
+    const mine = JSON.stringify(el),
+      uid = el.uid,
+      log = (k, why) => {
+        try {
+          KIVO.__bsLiveLog && KIVO.__bsLiveLog(k, "Operational Plan", why, [kind + ":" + uid]);
+        } catch (e) {}
+      };
+    const patch = (doc) => {
+      if (!doc || "object" !== typeof doc) return null;
+      const lists = [];
+      const walk = (node) => {
+        if (!node || "object" !== typeof node) return;
+        if (Array.isArray(node)) return void node.forEach(walk);
+        Object.keys(node).forEach((k) => {
+          const v = node[k];
+          k === kind && Array.isArray(v) && v.some((x) => x && x.uid === uid) && lists.push(v);
+          walk(v);
+        });
+      };
+      walk(doc);
+      if (!lists.length) return null;
+      if (lists.some((list) => list.some((x) => x && x.uid === uid && JSON.stringify(x) !== mine))) return void 0;
+      lists.forEach((list) => {
+        for (let i = list.length - 1; i >= 0; i--) list[i] && list[i].uid === uid && list.splice(i, 1);
+      });
+      return doc;
+    };
+    log("cancel-rebase", "مسودةُ الصفحة قديمة — يُعاد بناءُ حذف العنصر على أحدث نسخة");
+    this._opBusy = (this._opBusy || 0) + 1;
+    this._opLastSave = Promise.resolve()
+      .then(() => this._opService().patch(this, "plan:cancel:" + uid, "bassam_plan_v1", patch))
+      .catch((e) => ({ ok: 0, err: String((e && e.message) || e) }))
+      .then((result) => {
+        this._opBusy--;
+        if (result && result.ok === 1) log("cancel-done", result.noop ? "العنصرُ غيرُ موجودٍ في أحدث نسخة" : "حُذف العنصرُ من أحدث نسخة");
+        else if (result && "changed" === result.err) {
+          log("cancel-kept", "عدّل غيرُك العنصرَ نفسَه — لم يُحذف");
+          this.bsToast("عدّل مستخدمٌ آخر هذا العنصر أثناء فتح النافذة — لم يُحذف وبقي على الخريطة للمراجعة", "warn");
+        } else {
+          log("cancel-failed", String((result && result.err) || "save"));
+          this.bsToast("لم يُلغَ وضعُ العنصر — تعذّر الحفظ؛ بقي على الخريطة، احذفه بعد تحديث البيانات", "warn");
+        }
+        /* الصفحةُ تأخذ أحدثَ نسخةٍ من المخزن في مكانها — حالتُها كانت على نسخةٍ قديمة */
+        try {
+          this._bsLiveReload(["bassam_plan_v1"], !0);
+        } catch (e) {}
+        return result;
+      });
+    return this._opLastSave;
+  }
+  _bsLiveReload(K, force) {
     if (this._opBusy || this._opTicket) return false;
     const h = (t) =>
       (K || []).some((k) => {
@@ -2085,7 +2151,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     /* R3-C2b-REVERT: الحاجزُ على سحب المسار ورأسِه والتدوير وحدَها — لا يُوسَّع لكلِّ سحب: ما يصل بين الإصبعين لا يُعيده undoLead (W1-C2)،
        وإرجاؤه خلف سحب منتصف النطاق كان يُخسر تعديلَ الجهاز الآخر (حفظُ الضغطة عند الرفع)، وخلف رايةِ سحبٍ عالقة يحبسه حتى يُسقطه _liveTry */
     if (
-      "select" !== s.tool ||
+      !force &&
+      ("select" !== s.tool ||
       s.draft ||
       (s.polyPts && s.polyPts.length) ||
       s.pdrag ||
@@ -2100,7 +2167,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       s.zcs ||
       s.calAsk ||
       s.retroAsk
-    )
+    ))
       return !1;
     if (this._opDrafts)
       Object.keys(this._opDrafts).forEach((name) => {
@@ -5876,7 +5943,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 selMulti: [],
                 zones: (t.zones || []).filter((t, s) => s !== e.i),
               },
-              () => this.savePlan(),
+              () => this._cancelPlaced("zones", (t.zones || [])[e.i]),
             ))
           : this.setState({ zEdit: null, zDd: null, zDdEdit: null, zDdEditT: null }),
         !0
@@ -5889,7 +5956,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           ? ((this._histMerge = "drop"),
             this.setState(
               { gEdit: null, gDd: null, gDdEdit: null, sel: null, selMulti: [], gates: (t.gates || []).filter((t, s) => s !== e.i) },
-              () => this.savePlan(),
+              () => this._cancelPlaced("gates", (t.gates || [])[e.i]),
             ))
           : this.setState({ gEdit: null, gDd: null, gDdEdit: null }),
         !0
@@ -5901,7 +5968,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         e.isNew
           ? ((this._histMerge = "drop"),
             this.setState({ pEdit: null, sel: null, selMulti: [], paths: (t.paths || []).filter((t, s) => s !== e.i) }, () =>
-              this.savePlan(),
+              this._cancelPlaced("paths", (t.paths || [])[e.i]),
             ))
           : e.pts0
             ? this.setState(

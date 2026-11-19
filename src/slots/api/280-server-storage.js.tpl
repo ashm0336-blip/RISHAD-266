@@ -845,6 +845,33 @@
     }).finally(function () { entry.promise = null; });
     return entry.promise;
   }
+  /* ═══ إعادةُ بناء تعديلٍ على أحدث نسخة (برومت 41) ═══
+     لتعديلٍ صغيرٍ مقصودٍ بذاته (حذفُ عنصرٍ وضعه المستخدمُ للتوّ) حين تكون مسودةُ الصفحة قديمةً لأن جهازاً آخر عدّل الوثيقةَ نفسَها:
+     تُقرأ الوثيقةُ من الخادم، ثم تُسلَّم نسخةٌ منها لـpatch فيعيد الوثيقةَ بعد تعديله · أو null (لا شيء يُفعل) · أو undefined (ما أراد تعديلَه غيّره غيرُه
+     ⇒ لا كتابةَ صامتة: err 'changed'). الحفظُ مسودةٌ جديدةٌ على المراجعة المقروءة نفسِها، فتعديلُ الجهاز الآخر في بقية الوثيقة يبقى كما هو؛
+     وإن كُتبت الوثيقةُ بين القراءة والحفظ (تعارض) أُعيد البناءُ من جديد، ثلاثَ مراتٍ على الأكثر. خاصيةُ المسودات باقية: لا مسودةٌ قديمةٌ تُرسل. */
+  async function operationPatch9(owner, action, name, patch) {
+    var editors, key, last = operationFailure9('read', 0);
+    try { editors = operationEditor9(owner, action); key = operationScoped9(name); if (typeof patch !== 'function') throw Error('patch'); }
+    catch (error) { return operationFailure9('patch', 400); }
+    for (var attempt = 0; attempt < 3; attempt++) {
+      if (operationActive9 || dirty || inflight) await flushAsync(OP_CHAIN_WAIT9);   /* حفظٌ سابقٌ في الطريق (وضعُ العنصر نفسِه) يُحسم أولاً */
+      if (operationActive9) return operationFailure9('pending', 409, true);
+      var read = await operationRead9([key]);
+      if (!read || read.ok !== 1) { last = operationFailure9(read && read.err === 'stale' ? 'stale' : 'read', read && read.status); if (read && read.err === 'stale') continue; return last; }
+      var current, next;
+      try { current = operationValue9(key); } catch (error) { return operationFailure9('read-required', 409); }
+      try { next = patch(current == null ? null : operationClone9(current)); } catch (error) { return operationFailure9('patch', 400); }
+      if (next === undefined) return Object.assign(operationFailure9('changed', 409), { rev: krev[key] });
+      if (next === null) return { ok: 1, noop: 1, rev: krev[key] };
+      delete editors[action];
+      last = await operationCommit9(owner, action, { patch: attempt, rev: krev[key] }, (function (value) { return function (draft) { draft.set(name, value); }; })(next));
+      if (last && last.ok === 1) return last;
+      if (!last || last.err !== 'conflict') return last;
+      try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog('patch-retry', 'operations', 'كُتبت الوثيقةُ بين القراءة والحفظ — يُعاد البناء', [key]); } catch (e) { /* تشخيصٌ فقط */ }
+    }
+    return last;
+  }
   function operationStage9(changes) {
     var stamp = operationContext9();
     if (!stamp) return operationFailure9('session', 401);
@@ -1735,6 +1762,7 @@
       draft: operationDraft9,
       begin: operationBegin9,
       commit: operationCommit9,
+      patch: operationPatch9,
       stage: operationStage9,
       flush: function (ticket) { return operationFlush9(ticket, false); },
       retry: function (ticket) { return operationFlush9(ticket, true); },
