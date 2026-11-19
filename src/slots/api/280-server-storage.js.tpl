@@ -914,6 +914,20 @@
     if (status === 401 || (status === 409 && data && data.err === 'session-changed')) {
       operationUncertain9(operation, 'session', status); sessGone9(operation.snap); return;
     }
+    /* سباقُ نسخةٍ في الخادم: حفظان وصلا في اللحظة نفسها (حفظي وحفظُ أي مستخدم) فأُلغيت معاملتي كلُّها وعاد 409 {ok:0, err:'conflict'}
+       بلا هويةِ الطلب ولا خريطةِ تعارض — لم يُكتب شيء. كان يُعرض «لم يصل تأكيد الحفظ». الآن يُعاد الطلبُ نفسُه (المعرّفُ والجسمُ نفسُهما —
+       وهو ما كان يُطلب من المستخدم يدوياً) مرتين على الأكثر؛ تعارضٌ حقيقي في مفتاحي يعود بهويته وخريطته فيُحسم كما كان. */
+    if (status === 409 && operationObject9(data) && data.ok === 0 && data.err === 'conflict' && data.requestId === undefined && data.conflicts === undefined && data.denied === undefined
+        && (operation.raceRetries || 0) < 2 && operationActive9 === operation) {
+      operation.raceRetries = (operation.raceRetries || 0) + 1;
+      operationUncertainLog9('race-retry-' + operation.raceRetries, operation.keys);
+      if (inflight === operation.snap) inflight = null;
+      operation.state = 'queued';
+      operation.keys.forEach(function (key) { if (key in operation.snap.set) pSet[key] = operation.snap.set[key]; else pDel[key] = 1; });
+      recount();
+      setTimeout(function () { if (operationActive9 === operation && operation.state === 'queued') sendNow(); }, 150 * operation.raceRetries);
+      return;
+    }
     var identity = operationObject9(data) && data.requestId === operation.ticket.requestId && data.epoch === operation.epoch && data.atomic === 1;
     var revs = data && data.revs;
     var success = status >= 200 && status < 300 && identity && data.ok === 1 && operationObject9(revs)

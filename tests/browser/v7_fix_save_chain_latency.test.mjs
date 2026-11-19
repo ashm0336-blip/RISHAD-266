@@ -70,6 +70,7 @@ test('حفظان متتاليان على الكانفس مع كمون الشبك
       console.log('RUN ' + label + ' toasts=' + JSON.stringify((await su.page.evaluate(() => window.__toasts)).slice(t0)) + ' live=' + JSON.stringify(su.live.slice(l0)));
       await su.page.keyboard.press('Escape'); await su.page.waitForTimeout(3000);
     };
+    su.page.on('response', async (r) => { if (/\/api\/save\b/.test(r.url())) { let t = ''; try { t = await r.text(); } catch (e) {} let q = ''; try { q = r.request().postData() || ''; } catch (e) {} if (r.status() !== 200) su.live.push('[net] save ' + r.status() + ' ' + t.slice(0, 400) + ' <= ' + q.replace(/"set":\{.*?\},"del"/, '"set":{…},"del"').slice(0, 300)); } });
     const srv = async () => { const P = await plan(su); return ((P.floors[0] || {}).gates || []).map((g) => g.num || '∅'); };
     let base = 10;
     const row = async (label, delay, foreign) => {
@@ -80,7 +81,7 @@ test('حفظان متتاليان على الكانفس مع كمون الشبك
       await su.page.waitForTimeout(6000); stop = true; if (bg) await bg; lab.delay = null;
       const all = await srv(), got = all.slice(before);
       const toasts = (await su.page.evaluate(() => window.__toasts)).slice(t0), numbered = got.filter((x) => nums.map(String).includes(String(x))).length, bad = su.live.slice(l0).filter((t) => /\] (uncertain|save-refused) /.test(t));
-      assert.deepEqual(toasts.filter((t) => /لم يصل تأكيد الحفظ|لم يُحفظ/.test(t)), [], label + ': لا رسالة حفظٍ غير مؤكَّد أو مرفوض');
+      assert.deepEqual(toasts.filter((t) => /لم يصل تأكيد الحفظ|لم يُحفظ/.test(t)), [], label + ': لا رسالة حفظٍ غير مؤكَّد أو مرفوض — السجل: ' + JSON.stringify(su.live.slice(l0)));
       assert.deepEqual([got.length, numbered], [3, 3], label + ': الأبواب الثلاثة وأرقامها ثبتت في الخادم — ' + JSON.stringify(got));
       assert.deepEqual(bad, [], label + ': السجل التشخيصي بلا uncertain ولا save-refused');
       await su.page.keyboard.press('Escape'); await su.page.waitForTimeout(4000);
