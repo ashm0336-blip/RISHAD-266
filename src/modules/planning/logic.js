@@ -2,6 +2,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planni
   state = { ptab: null, planSeen: !1 };
   /* KIVO_261 (SOT-003/010 · كشفه k261tree): تبويبا الحاوية يتبعان صلاحيةَ المستخدم لا سقفَ الإدارة وحده — كان موظفٌ مُنح «الجدول الشهري»
      وحده يرى تبويبَ «التشغيل الميداني» فارغاً بزرّ «إضافة خطة» (الخادمُ يرفض قراءتَه وكتابتَه) · ومثلُه بالعكس */
+  /* V7 · د5-د (قرار المراجع 1 · فتحاتُ البناء): تبويبُ كلِّ برنامجٍ قطعةٌ في مجلده تُحقن هنا وفي القالب — معرّفُ التبويب ← مفتاحُ صفحته.
+     الحاويةُ لا تسمّي برنامجاً منقولاً؛ بغياب القطعة يغيب التبويب بزرّه ومحتواه. («plan» يبقى هنا حتى يُنقل برنامجُه في د5-هـ.) */
+  PT_TABS = { sched: "staff", plan: "plan" };
+  _tabOk(t) {
+    const k = this.PT_TABS[t];
+    return !!k && this._ptOk(k);
+  }
   _ptOk(k) {
     if (!this.bsOn(k)) return !1;
     try {
@@ -13,7 +20,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planni
   }
   _bsGo(t) {
     "read" === t && (t = "sched");
-    if (!this._ptOk("sched" === t ? "staff" : "plan")) return;
+    if (!this._tabOk(t)) return;
     const e = () => {
       try {
         window.dispatchEvent(new CustomEvent("bs:ptab-shown", { detail: t }));
@@ -47,8 +54,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planni
     var t = this,
       e = this.state.ptab || "sched";
     "read" === e && (e = "sched");
-    var S = this._ptOk("staff"),
-      P = this._ptOk("plan");
+    var S = this._tabOk("sched"),
+      P = this._tabOk("plan");
     ("sched" !== e || S || (e = P ? "plan" : "none"), "plan" !== e || P || (e = S ? "sched" : "none"));
     var n = function (t) {
         return (

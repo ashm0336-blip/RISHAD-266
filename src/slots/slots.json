@@ -284,6 +284,14 @@
   {
    "tpl": "modules/employees/helmet.css.tpl",
    "out": "src/modules/employees/helmet.css"
+  },
+  {
+   "tpl": "modules/planning/view.html.tpl",
+   "out": "src/modules/planning/view.html"
+  },
+  {
+   "tpl": "modules/planning/logic.js.tpl",
+   "out": "src/modules/planning/logic.js"
   }
  ]
 }

@@ -505,7 +505,7 @@ class Component extends DCLogic {
     const a = this.state.active;
     const NAVP2 = P.NAV2PERM || {};
     const pk = NAVP2[a];
-    const lost = a === "sysadmin" ? true : (a === "planning" ? !["planning", "staff", "plan"].some(k => P.can(k, "view")) : (pk ? !P.can(pk, "view") : false));
+    const lost = a === "sysadmin" ? true : (a === "planning" ? !["planning"@@SYS:root.planning.perms.sp@@, "plan"].some(k => P.can(k, "view")) : (pk ? !P.can(pk, "view") : false));
     if (lost) {
       const nm = (this._pageNames && this._pageNames()[a]) || a;
       this._savePage("profile");
@@ -1116,7 +1116,7 @@ class Component extends DCLogic {
       const pk = NAVP[key];
       /* حاوية «الخطة التشغيلية» تُفتح إن كانت أيٌّ من صفحاتها الثلاث متاحة */
       /* حاوية «مؤشرات الإدارة» تُفتح لمن ملك ورقةً واحدةً من أوراقها الستّ */
-      if (key === "kpis" ? !this._kpisOk() : (key === "planning" ? !_pAny(["planning","staff","plan"]) : (pk && !_pOK(pk)))) return;   /* ردّ الانتقال لصفحة غير متاحة */
+      if (key === "kpis" ? !this._kpisOk() : (key === "planning" ? !_pAny(["planning"@@SYS:root.planning.perms@@,"plan"]) : (pk && !_pOK(pk)))) return;   /* ردّ الانتقال لصفحة غير متاحة */
       if (!asked && this._conDirty()) { this._conLeaveOk().then((y) => { if (y) go(key, true)(); }); return; }   /* مراجعة S10: مسوّداتُ المركز */
       this._savePage(key);           /* تُستعاد بعد التحديث */
       /* على الجوال الشريط درجٌ فوق المحتوى — اختيار وجهة يغلقه فوراً، فلا
@@ -1181,7 +1181,7 @@ class Component extends DCLogic {
           nDaily: cls("daily", "daily"), tDaily: tip("daily"),
           nDreport: cls("dreport", "dreport"), tDreport: tip("dreport"),
           /* كانت مربوطة بـ«الجدول الشهري» وحده فتختفي عمّن له «التشغيل الميداني» فقط */
-          nPlanning: "n" + (a === "planning" ? " on" : "") + (_pAny(["planning","staff","plan"]) ? "" : " gone") + (outOf("planning") && outOf("staff") && outOf("plan") ? " out" : ""), tPlanning: tip("planning"),
+          nPlanning: "n" + (a === "planning" ? " on" : "") + (_pAny(["planning"@@SYS:root.planning.perms@@,"plan"]) ? "" : " gone") + (outOf("planning")@@SYS:root.planning.out@@ && outOf("plan") ? " out" : ""), tPlanning: tip("planning"),
           @@SYS:root.navVals.systems@@          nLinks: cls("links", "links"), tLinks: tip("links"),
           tAdmin: outOf("admin")
             ? ("الإعدادات — خارج سقف «" + dn + "» · مرئية لك بصلاحية المشرف")

@@ -94,6 +94,30 @@
   "uxStates.staff": {
    "order": 10,
    "text": "  \"staff\": {\n   \"فارغ\": 14,\n   \"تحميل\": 0,\n   \"خطأ\": 3,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 1\n  },\n"
+  },
+  "planning.tabs": {
+   "order": 10,
+   "file": "slots/planning.tabs.frag"
+  },
+  "planning.mounts": {
+   "order": 10,
+   "file": "slots/planning.mounts.frag"
+  },
+  "planning.tabs.reg": {
+   "order": 10,
+   "text": "sched: \"staff\", "
+  },
+  "root.planning.perms.sp": {
+   "order": 10,
+   "text": ", \"staff\""
+  },
+  "root.planning.perms": {
+   "order": 10,
+   "text": ",\"staff\""
+  },
+  "root.planning.out": {
+   "order": 10,
+   "text": " && outOf(\"staff\")"
   }
  }
 }
