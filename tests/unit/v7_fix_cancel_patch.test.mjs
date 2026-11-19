@@ -111,3 +111,48 @@ test('the placing save is still in flight when cancel is pressed: it is settled 
     assert.deepEqual(f.documents[E].map((x) => x.eid), ['TEST_ONLY e1']);
   } finally { f.T.dispose(); }
 });
+
+/* ── برومت 41-ب: الترقيعُ الجاهز operations.removal على وثيقةٍ بشكل الخطة — المصليات · المسارات · المعالم (uid) والنطاقات (id) ──
+   العنصرُ محفوظٌ في مواضعه الحقيقية: المستوى الأعلى (غير النطاقات) · floors[i] · لقطة الشهر months[k].d[i] */
+const KINDS = [['zones', 'uid'], ['paths', 'uid'], ['marks', 'uid'], ['sectors', 'id']];
+const planDoc = (kind, idKey, items) => { const site = { sid: 'TEST_ONLY_s', name: 'TEST_ONLY موقع', zones: [], gates: [], marks: [], paths: [], sectors: [], [kind]: copy(items) }; return { pMig: 3, zones: [], gates: [], marks: [], paths: [], ...(kind === 'sectors' ? {} : { [kind]: copy(items) }), floors: [copy(site)], months: { '1448-6': { c: 1, d: [copy(site)] } }, cfg: {} }; };
+const everyList = (doc, kind) => [doc[kind], doc.floors[0][kind], doc.months['1448-6'].d[0][kind]].filter(Array.isArray);
+for (const [kind, idKey] of KINDS) {
+  const mine = { [idKey]: 'TEST_ONLY_mine', label: 'TEST_ONLY عنصري', x: 10, y: 20 }, base = { [idKey]: 'TEST_ONLY_base', label: 'TEST_ONLY قائم' };
+  test('(أ) ' + kind + ': another device added another element — mine is removed from every place it is stored, theirs stays', async () => {
+    const f = world();
+    try {
+      f.documents[E] = planDoc(kind, idKey, [base, mine]); await f.operations.read([E]);
+      const stale = f.operations.draft();
+      f.documents[E] = planDoc(kind, idKey, [base, mine, { [idKey]: 'TEST_ONLY_other', label: 'TEST_ONLY لغيري' }]); f.revs[E]++;
+      await f.operations.read([E]);
+      assert.throws(() => stale.get(NAME), /operations-draft-review-required/);
+      const result = await f.operations.patch({}, 'page:cancel', NAME, f.operations.removal(kind, idKey, mine));
+      assert.equal(result.ok, 1, JSON.stringify(result));
+      const lists = everyList(f.documents[E], kind);
+      assert.equal(lists.length, kind === 'sectors' ? 2 : 3);
+      for (const list of lists) assert.deepEqual(list.map((x) => x[idKey]), ['TEST_ONLY_base', 'TEST_ONLY_other']);
+    } finally { f.T.dispose(); }
+  });
+  test('(ج) ' + kind + ': another device changed my element in one of its places — changed, nothing written', async () => {
+    const f = world();
+    try {
+      const doc = planDoc(kind, idKey, [base, mine]); doc.floors[0][kind][1].label = 'TEST_ONLY عدّله غيري';
+      f.documents[E] = doc; await f.operations.read([E]);
+      const sent = f.seen.length, result = await f.operations.patch({}, 'page:cancel', NAME, f.operations.removal(kind, idKey, mine));
+      assert.deepEqual([result.ok, result.err, result.uncertain], [0, 'changed', false]); assert.equal(f.seen.length, sent);
+      for (const list of everyList(f.documents[E], kind)) assert.equal(list.length, 2, 'the element stays everywhere');
+    } finally { f.T.dispose(); }
+  });
+}
+test('removal: an element without its identifier, or absent from the document, changes nothing', async () => {
+  const f = world();
+  try {
+    f.documents[E] = planDoc('marks', 'uid', [{ uid: 'TEST_ONLY_base' }]); await f.operations.read([E]);
+    for (const mine of [{ label: 'no id' }, { uid: '' }, { uid: 'TEST_ONLY_absent' }]) {
+      const result = await f.operations.patch({}, 'page:cancel', NAME, f.operations.removal('marks', 'uid', mine));
+      assert.deepEqual([result.ok, result.noop], [1, 1]);
+    }
+    assert.equal(f.seen.length, 0);
+  } finally { f.T.dispose(); }
+});

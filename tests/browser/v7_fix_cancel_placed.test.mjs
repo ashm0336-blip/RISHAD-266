@@ -3,6 +3,7 @@
    operations-draft-review-required) فيبقى الباب في الخادم. الإصلاح: الحذفُ يُعاد بناؤه على أحدث نسخة (operations.patch).
      (أ) الجهاز الآخر أضاف عنصراً آخر ⇒ بابي يُحذف، وعنصرُه يبقى، بلا رسالة.   (ب) نفسُها مع كمونٍ مصطنع (lab.delay).
      (ج) الجهاز الآخر عدّل بابي نفسَه ⇒ لا حذفَ صامت: رسالةٌ واضحة والباب يبقى بتعديله.
+     (د) 41-ب: المعلم الجديد — «إلغاء» يحذفه كالباب، بمسودةٍ سليمة وبمسودةٍ قديمة.
    الجهاز الآخر يكتب بخدمة العميل الحقيقية في صفحته (operations.read ثم commit). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -110,5 +111,31 @@ test('«إلغاء» الباب الجديد بعد أن حفظ جهازٌ آخ�
     assert.ok(kept && kept.num === '99', '(ج) الباب باقٍ في الخادم بتعديل الجهاز الآخر: ' + JSON.stringify(kept));
     assert.deepEqual(await uids(), ['TEST_ONLY_o1', 'TEST_ONLY_o2', mineC].sort());
     await b2.page.waitForFunction(() => { const t = document.querySelector('#bsPtPlan').innerText.replace(/\s+/g, ' '), i = t.lastIndexOf('سجل الأبواب'); return i >= 0 && /[3٣]/.test(t.slice(i, i + 70)); }, null, { timeout: 20000 }).catch(async () => { throw Error('(ج) الصفحة لم تعرض الأبواب الثلاثة: ' + (await register())); });
+    /* ── (د) برومت 41-ب · المعلم الجديد: «إلغاء» يحذفه كالباب ── */
+    const marksOf = async () => { const P = await plan(su); return ((P.floors[0] || {}).marks || []).map((x) => x.uid).sort(); };
+    const placeMark = async (fx, fy) => {
+      await b2.page.keyboard.press('Escape'); await b2.page.waitForTimeout(400);
+      await b2.page.locator('#bsPtPlan button[title^="عدسة المعالم"], #bsPtPlan button[data-tip^="عدسة المعالم"]').first().click(); await b2.page.waitForTimeout(600);
+      await b2.page.locator('button[title^="وضع معلم جديد"], button[data-tip^="وضع معلم جديد"]').first().click(); await b2.page.waitForTimeout(300);
+      const b0 = await b2.page.evaluate(() => { const im = [...document.querySelectorAll('#bsPtPlan img, #bsPtPlan svg image, #bsPtPlan canvas')].map((x) => x.getBoundingClientRect()).filter((r) => r.width > 300).sort((a, b) => b.width * b.height - a.width * a.height)[0]; return { x: im.x, y: im.y, w: im.width, h: im.height }; });
+      await b2.page.mouse.click(b0.x + b0.w * fx, b0.y + b0.h * fy);
+      await b2.page.getByText('معلم جديد — «إلغاء» يلغي وضعه', { exact: true }).first().waitFor({ timeout: 15000 });
+    };
+    const markCancel = async () => { await b2.page.evaluate(() => { const t = [...document.querySelectorAll('span')].find((x) => x.textContent.trim() === 'معلم جديد — «إلغاء» يلغي وضعه'); let c = t; while (c && ![...c.querySelectorAll('button')].some((q) => q.textContent.trim() === 'إلغاء')) c = c.parentElement; [...c.querySelectorAll('button')].find((q) => q.textContent.trim() === 'إلغاء').click(); }); };
+    const until = async (fn, want) => { for (let i = 0; i < 40; i++) { if (JSON.stringify(await fn()) === JSON.stringify(want)) return true; await b2.page.waitForTimeout(500); } return false; };
+    /* مسودةٌ سليمة: الحفظُ المعتاد */
+    await placeMark(0.25, 0.6); assert.ok(await until(async () => (await marksOf()).length, 1), 'المعلم وُضع وحُفظ');
+    await b2.page.waitForTimeout(1500); await markCancel();
+    assert.ok(await until(marksOf, []), '(د) مسودة سليمة: «إلغاء» حذف المعلم: ' + JSON.stringify(await marksOf()));
+    /* مسودةٌ قديمة: جهازٌ آخر أضاف باباً والنافذةُ مفتوحة */
+    await b2.page.waitForTimeout(2500); m = await mark();
+    await placeMark(0.35, 0.7); assert.ok(await until(async () => (await marksOf()).length, 1));
+    assert.equal((await foreign('add', 'TEST_ONLY_o3')).ok, 1);
+    await b2.page.waitForTimeout(3000); await markCancel();
+    assert.ok(await until(marksOf, []), '(د) مسودة قديمة: المعلم حُذف من أحدث نسخة: ' + JSON.stringify(await marksOf()));
+    assert.ok((await uids()).includes('TEST_ONLY_o3'), '(د) بابُ الجهاز الآخر باقٍ');
+    r = await since(m);
+    assert.deepEqual(r.toasts.filter((t) => /لم يُحفظ|لم يصل|لم يُلغَ|عدّل مستخدم/.test(t)), [], '(د) بلا رسالة رفض: ' + JSON.stringify(r));
+    assert.ok(r.live.some((t) => t.includes('cancel-done') && t.includes('marks:')), '(د) السجل: ' + JSON.stringify(r.live));
   } finally { await b.close(); await lab.close(); fs.rmSync(TMP, { recursive: true, force: true }); }
 });

@@ -850,6 +850,28 @@
      تُقرأ الوثيقةُ من الخادم، ثم تُسلَّم نسخةٌ منها لـpatch فيعيد الوثيقةَ بعد تعديله · أو null (لا شيء يُفعل) · أو undefined (ما أراد تعديلَه غيّره غيرُه
      ⇒ لا كتابةَ صامتة: err 'changed'). الحفظُ مسودةٌ جديدةٌ على المراجعة المقروءة نفسِها، فتعديلُ الجهاز الآخر في بقية الوثيقة يبقى كما هو؛
      وإن كُتبت الوثيقةُ بين القراءة والحفظ (تعارض) أُعيد البناءُ من جديد، ثلاثَ مراتٍ على الأكثر. خاصيةُ المسودات باقية: لا مسودةٌ قديمةٌ تُرسل. */
+  /* ترقيعٌ جاهز لـoperationPatch9: حذفُ عنصرٍ وضعه المستخدمُ للتوّ من كلِّ موضعٍ له في الوثيقة (القوائمُ التي مفتاحُها listKey، في أي عمق)،
+     بمعرّفه idKey — بشرط أن تكون كلُّ نسخةٍ له مطابقةً حرفاً لما وضعه (mine). لا نسخةَ ⇒ null · نسخةٌ مختلفة (عدّله غيرُه) ⇒ undefined. */
+  function operationRemoval9(listKey, idKey, mine) {
+    var id = mine && mine[idKey], text = JSON.stringify(mine);
+    return function (doc) {
+      if (!doc || typeof doc !== 'object' || id == null || id === '') return null;
+      var lists = [];
+      (function walk(node) {
+        if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) { node.forEach(walk); return; }
+        Object.keys(node).forEach(function (k) {
+          var v = node[k];
+          if (k === listKey && Array.isArray(v) && v.some(function (x) { return x && x[idKey] === id; })) lists.push(v);
+          walk(v);
+        });
+      })(doc);
+      if (!lists.length) return null;
+      if (lists.some(function (list) { return list.some(function (x) { return x && x[idKey] === id && JSON.stringify(x) !== text; }); })) return undefined;
+      lists.forEach(function (list) { for (var i = list.length - 1; i >= 0; i--) if (list[i] && list[i][idKey] === id) list.splice(i, 1); });
+      return doc;
+    };
+  }
   async function operationPatch9(owner, action, name, patch) {
     var editors, key, last = operationFailure9('read', 0);
     try { editors = operationEditor9(owner, action); key = operationScoped9(name); if (typeof patch !== 'function') throw Error('patch'); }
@@ -1763,6 +1785,7 @@
       begin: operationBegin9,
       commit: operationCommit9,
       patch: operationPatch9,
+      removal: operationRemoval9,
       stage: operationStage9,
       flush: function (ticket) { return operationFlush9(ticket, false); },
       retry: function (ticket) { return operationFlush9(ticket, true); },

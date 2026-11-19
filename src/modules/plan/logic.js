@@ -2088,35 +2088,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       return false;
     }
   }
-  _cancelPlaced(kind, el) {
-    if (!el || !el.uid || this._planDraftFresh()) return this.savePlan();
-    const mine = JSON.stringify(el),
-      uid = el.uid,
+  _cancelPlaced(kind, el, idKey = "uid") {
+    if (!el || !el[idKey] || this._planDraftFresh()) return this.savePlan();
+    const uid = el[idKey],
+      patch = this._opService().removal(kind, idKey, el),
       log = (k, why) => {
         try {
           KIVO.__bsLiveLog && KIVO.__bsLiveLog(k, "Operational Plan", why, [kind + ":" + uid]);
         } catch (e) {}
       };
-    const patch = (doc) => {
-      if (!doc || "object" !== typeof doc) return null;
-      const lists = [];
-      const walk = (node) => {
-        if (!node || "object" !== typeof node) return;
-        if (Array.isArray(node)) return void node.forEach(walk);
-        Object.keys(node).forEach((k) => {
-          const v = node[k];
-          k === kind && Array.isArray(v) && v.some((x) => x && x.uid === uid) && lists.push(v);
-          walk(v);
-        });
-      };
-      walk(doc);
-      if (!lists.length) return null;
-      if (lists.some((list) => list.some((x) => x && x.uid === uid && JSON.stringify(x) !== mine))) return void 0;
-      lists.forEach((list) => {
-        for (let i = list.length - 1; i >= 0; i--) list[i] && list[i].uid === uid && list.splice(i, 1);
-      });
-      return doc;
-    };
     log("cancel-rebase", "مسودةُ الصفحة قديمة — يُعاد بناءُ حذف العنصر على أحدث نسخة");
     this._opBusy = (this._opBusy || 0) + 1;
     this._opLastSave = Promise.resolve()
@@ -6178,8 +6158,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     const t = this.state.sEdit;
     if (!t) return;
     if (t.isNew) {
-      const e = this._secs().filter((e, s) => s !== t.i);
-      return (this.setState({ sEdit: null, sel: null, selMulti: [] }), void this._secWrite(e));
+      /* برومت 41-ب: «إلغاء» النطاق الجديد بالمساعد نفسِه (معرّفُه id) */
+      const mine = this._secs()[t.i],
+        e = this._secs().filter((e, s) => s !== t.i);
+      return void this.setState(
+        (p) => ({ sEdit: null, sel: null, selMulti: [], floors: (p.floors || []).map((s, n) => (n === p.floor ? { ...s, sectors: e } : s)) }),
+        () => this._cancelPlaced("sectors", mine, "id"),
+      );
     }
     this.setState({ sEdit: null });
   }
@@ -15948,7 +15933,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               mkEdit: { ...this.state.mkEdit, off: !this.state.mkEdit.off },
             }),
           mkSave: () => this.saveMarkEdit(),
-          mkCancel: () => this.setState({ mkEdit: null }),
+          mkTitle: e.mkEdit && e.mkEdit.isNew ? "معلم جديد — «إلغاء» يلغي وضعه" : "بيانات المعلم",
+          /* برومت 41-ب: «إلغاء» المعلم الجديد يحذفه كالباب — بالمساعد نفسِه */
+          mkCancel: () => {
+            const m = this.state.mkEdit;
+            if (!m || !m.isNew) return void this.setState({ mkEdit: null });
+            const marks = this.state.marks || [],
+              mine = marks[m.i];
+            this._histMerge = "drop";
+            this.setState({ mkEdit: null, sel: null, selMulti: [], marks: marks.filter((x, n) => n !== m.i) }, () => this._cancelPlaced("marks", mine));
+          },
           mkDelete: () => {
             const t = this.state.mkEdit;
             t &&
