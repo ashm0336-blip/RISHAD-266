@@ -8,7 +8,13 @@
   "bassam_dr_grp_v1",
   "bassam_leave_kinds_v1"
  ],
- "provides": {},
+ "provides": {
+  "read": {
+   "dreport.doc@1": "(via?) ← وثيقةُ التقرير اليومي كما هي مخزَّنة؛ via: مسودةُ المستدعي أو قارئُ صفحته (name ⇒ قيمة) أو granted ‏(undefined إن حُجبت) أو text ‏(نسخةٌ من نصّ المورد أو null)، وبلا via قراءةُ Operations المباشرة (ترمي إن لم يُقرأ المورد)",
+   "dreport.leaveKinds@1": "(via?) ← أنواعُ الإجازات (القائمة المرجعية) كما هي مخزَّنة — via كما في dreport.doc@1",
+   "dreport.resources@1": "(…kinds) ← أسماءُ موارد التقرير بحسب النوع: doc · leaveKinds (بلا نوعٍ: كلُّها) — لمن ينتظر تغيّرَها دون أن يسمّيها"
+  }
+ },
  "consumes": {
   "staff.callsign.set@1": {
    "absent": "إسناد رمز النداء غير متاح: الزرُّ يُبلغ «إسناد رمز النداء غير متاح» ولا يُحفظ شيء؛ وتعيينُ رئيسٍ أو نائب يُحفظ في التقرير بلا كتابة رمزٍ في الجدول"
@@ -36,5 +42,14 @@
   }
  },
  "crossEffects": [],
- "files": []
+ "files": [],
+ "readResources": {
+  "_note": "V7 · د5-هـ: ما تحتاجه كلُّ قراءةٍ معلنة من موارد Operations محمَّلةً قبل رسم الصفحة التي تستعملها (tools/generate.py ← operationsReadSets)",
+  "dreport.doc@1": [
+   "bassam_dreport_v1"
+  ],
+  "dreport.leaveKinds@1": [
+   "bassam_leave_kinds_v1"
+  ]
+ }
 }

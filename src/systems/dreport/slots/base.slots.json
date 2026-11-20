@@ -46,5 +46,13 @@
  "budget.page.dreport": {
   "order": 10,
   "text": "  \"page:Daily-Report\": 54585,\r\n"
+ },
+ "blocks.shell.dreport": {
+  "order": 10,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/dreport/client/405-dreport-links.js\",\n   \"kind\": \"js\",\n   \"line\": 10495,\n   \"new\": \"V7 · د5-هـ: قراءاتُ التقرير اليومي المعلنة لغيره (وثيقةُ التقرير · أنواعُ الإجازات)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+ },
+ "shell.blocks.dreport": {
+  "order": 10,
+  "text": "@@KIVO_BLOCK:systems/dreport/client/405-dreport-links.js@@\n"
  }
 }

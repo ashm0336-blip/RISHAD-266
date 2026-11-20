@@ -725,6 +725,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "systems/dreport/client/405-dreport-links.js",
+   "kind": "js",
+   "line": 10495,
+   "new": "V7 · د5-هـ: قراءاتُ التقرير اليومي المعلنة لغيره (وثيقةُ التقرير · أنواعُ الإجازات)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "services/535-profile-facts.js",
    "kind": "js",
    "line": 10494,

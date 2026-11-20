@@ -17,6 +17,7 @@
   "slug": "dreport",
   "component": "Daily Report",
   "files": [
+   "client/405-dreport-links.js",
    "client/helmet.css",
    "client/logic.js",
    "client/meta.json",
