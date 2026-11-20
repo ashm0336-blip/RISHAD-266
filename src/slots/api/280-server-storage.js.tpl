@@ -1162,7 +1162,7 @@
   function resName9(k) { return String(k || "").replace(/^bsdept:[^:]+:/, "").replace(/:.*$/, ""); }
   function rsnByRes9() {
     if (rsnRes9) return rsnRes9;
-    var R = KIVO.KIVO_REGISTRY || (typeof KIVO_REGISTRY !== "undefined" ? KIVO_REGISTRY : null), out = Object.create(null);   // eslint-disable-line no-undef
+    var R = KIVO.KIVO_REGISTRY || (typeof KIVO_REGISTRY !== "undefined" ? KIVO_REGISTRY : null), out = Object.create(null);
     if (!R || !R.keys || !R.byKey) return out;
     R.keys.forEach(function (key) {
       var e = R.byKey[key]; if (!e || e.status !== "active" || e.type === "view" || e.type === "access") return;

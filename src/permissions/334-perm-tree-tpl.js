@@ -33,151 +33,15 @@
       staffStatus = I.staffStatus, subKeysOf = I.subKeysOf, subOn = I.subOn, tabKeysOf = I.tabKeysOf, tabOn = I.tabOn, taken = I.taken,
       unCheck = I.unCheck, upsertBackupSuper = I.upsertBackupSuper, visiblePages = I.visiblePages,
       writeUsers = I.writeUsers;
-  /* ═══ شجرة صلاحيات الموظف — نموذج عرضٍ واحد للواجهتين (مدير النظام ومدير الإدارة) ═══
-     الحاوية بلا تأشير: نقطة خضراء تُشتق من أوراقها. الورقة: مربعٌ ثلاثي الحالة (✓ الستة · – جزئي · فارغ)
-     وأفعالها الستة. ما هو خارج سقف الإدارة يُعرض باهتاً مقفلاً. */
+  /* V7 · د5-هـ (44): شجرةُ صلاحيات الموظف القديمة (الصفحة × الأفعال الستة) وقواعدُ تحريرها حُذفت مع
+     نافذة صلاحيات الموظف وقوالب الصلاحيات — الأدوارُ تُدار من تبويب «الصلاحيات». أسماءُ الأفعال الستة باقية للعرض. */
   var ACT_NAMES = { view:'عرض', add:'إضافة', edit:'تعديل', del:'حذف', approve:'اعتماد', export:'تصدير' };
-  function treeModel(o){
-    o = o || {};
-    var d = o.did || curDept(), cap = deptCap(d), draft = o.draft || {}, canEdit = !!o.canEdit, exp = o.expanded || {}, cb = o.cb || {};
-    /* hideOut: شجرة موظف داخل الإدارة — ما هو خارج سقفها لا يُعرض أصلاً (لا يُمنح ولا يُوصل إليه)؛ شجرة السقف نفسها تعرض الكل */
-    var hideOut = !!o.hideOut;
-    var G = '#b99751', G2 = '#8A6F35', T = '#0e7490';
-    var rows = [], nOnTot = 0, nTot = 0;
-    function leafRow(key, name, child, out){
-      var acts = draft[key] || [], all = acts.length === ALL_ACTS.length, some = acts.length > 0 && !all, on = acts.length > 0;
-      var dis = out || !canEdit;
-      if (!out) { nTot++; if (on) nOnTot++; }
-      return { kind:'leaf', isLeaf:true, isCont:false, key:key, name:name, child:!!child, on:on, out:!!out, all:all, some:some,
-        rowStyle: 'display:flex;align-items:center;gap:9px;padding:8px 12px;border-bottom:1px solid var(--bd-xf1f3f5);' + (on ? '' : 'background:var(--bg-a2502512520p6);') + (out ? 'opacity:.5;' : ''),
-        chkStyle: 'width:20px;height:20px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:' + (dis ? 'default' : 'pointer') + ';border:2px solid ' + (all || some ? G : 'var(--bd-xcbd5e1)') + ';background:' + (all ? G : 'var(--bg-xffffff)') + ';color:' + (all ? 'var(--fg-xffffff)' : G) + (out ? ';opacity:.35' : ''),
-        chkTip: out ? 'خارج سقف الإدارة' : (on ? 'إلغاء كل الأفعال' : 'منحُ العرض وحده — ثم اختر باقي الأفعال صراحةً'),
-        nameStyle: 'min-width:0;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:' + (dis ? 'default' : 'pointer') + ';color:' + (on ? 'var(--fg-x141414)' : 'var(--fg-x94a3b8)'),
-        toggle: function(ev){ if (ev && ev.stopPropagation) ev.stopPropagation(); if (dis || !cb.togLeaf) return; cb.togLeaf(key, !on); },   /* V7 P3: فارغ → العرض وحده · ✓ أو – → لا شيء */
-        acts: ALL_ACTS.map(function(a){
-          var onA = acts.indexOf(a) !== -1;
-          return { k:a, name:ACT_NAMES[a], on:onA,
-            toggle: function(){ if (dis || !cb.togAct) return; cb.togAct(key, a); },
-            style: 'display:inline-flex;align-items:center;gap:4px;border-radius:9999px;padding:3px 9px;font-size:10.5px;font-weight:600;font-family:\'Cairo\',sans-serif;white-space:nowrap;cursor:' + (dis ? 'default' : 'pointer') + ';border:1px solid ' + (onA ? 'rgba(14,116,144,0.4);background:var(--bg-a141161440p07);color:' + T : '#e2e8f0;background:var(--bg-xffffff);color:var(--fg-x53565a)') + (out ? ';opacity:.35' : ''),
-            box: 'width:12px;height:12px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid ' + (onA ? T + ';background:' + T + ';color:var(--fg-xffffff)' : '#CBD5E1;background:var(--bg-xffffff);color:transparent') };
-        }) };
-    }
-    function contRow(p, kids, out){
-      var nOn = kids.filter(function(k){ return k.on; }).length, on = nOn > 0, isX = !!exp[p.key];
-      return { kind:'cont', isCont:true, isLeaf:false, key:p.key, name:p.name, on:on, out:!!out, nOn:nOn, nTot:kids.length, expanded:isX, countTxt: nOn + ' من ' + KIVO.BassamCount(kids.length, "صفحة", "g"),
-        rowStyle: 'display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid var(--bd-xf1f3f5);cursor:pointer;' + (on ? '' : 'background:var(--bg-a2502512520p6);') + (out ? 'opacity:.5;' : ''),
-        iconStyle: 'width:20px;height:20px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:' + (on ? 'var(--bg-a185151810p14)' : 'var(--bg-xf1f3f5)') + ';color:' + (on ? G2 : 'var(--fg-xb8c0cc)'),
-        nameStyle: 'min-width:0;font-size:12.5px;font-weight:700;white-space:nowrap;color:' + (on ? 'var(--fg-x141414)' : 'var(--fg-x94a3b8)'),
-        dotStyle: 'width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + (on ? 'var(--bg-x059669)' : 'var(--bg-xcbd5e1)') + (on ? ';box-shadow:0 0 0 3px rgba(5,150,105,0.15)' : ''),
-        dotTip: on ? 'تظهر في القائمة الجانبية للموظف' : 'مخفية من قائمته — لم تُمنح صفحة تحتها',
-        expStyle: 'width:24px;height:24px;border-radius:7px;border:1px solid ' + (isX ? 'var(--bd-a185151810p4)' : 'var(--bd-xe1e1e1)') + ';background:var(--bg-xffffff);color:' + (isX ? G2 : 'var(--fg-x94a3b8)') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer',
-        chev: 'transition:transform .2s;' + (isX ? 'transform:rotate(180deg)' : ''),
-        expTip: isX ? 'طيّ «' + p.name + '»' : 'فرد «' + p.name + '» وعرض صفحاتها',
-        expand: function(ev){ if (ev && ev.stopPropagation) ev.stopPropagation(); if (cb.expand) cb.expand(p.key); } };
-    }
-    var subs = {}, tabs = {};
-    /* ── أوراقُ حاويات العرض تُجمع تحتها في الشجرة ───────────────────────────
-       «مؤشرات الإدارة» تجمع ستّ لوحاتٍ من أربع صفحات. فتُعرض هنا صفاً واحداً
-       تحته أوراقُها، وتُرفع من صفحاتها الأصلية كي لا تُعرض الورقة مرّتين.
-       ومفاتيحها لا تتغيّر: daily/kpiOcc تبقى daily/kpiOcc في المنح والحفظ. */
-    var GRP = {}, GRP_REG = [], GRPO = {};
-    NAV_REG.forEach(function(g){ (g.refs || []).forEach(function(k){ GRP[k] = g.key; GRPO[k] = g; }); GRP_REG.push(g); });
-    var grpKids = {};
-    PAGE_REG.forEach(function(p){ if (p.under) return;
-      /* الحاوية خارج السقف فقط إن كان مفتاحها خارجه ولم تكن تحتها صفحةٌ مستقلة داخله — «المهام» تحت «المتابعة اليومية» لها مفتاحها هي */
-      var outP = cap.indexOf(p.key) === -1;
-      var out = outP && !PAGE_REG.some(function(q){ return q.under === p.key && cap.indexOf(q.key) !== -1; });
-      if (hideOut && out) return;
-      if (!isContainer(p.key)) { rows.push(leafRow(p.key, p.name, false, out)); return; }
-      var ds = deptSubs(d, p.key), dt = deptTabs(d, p.key), kids = [];
-      var seq = p.seq || [].concat((p.subs || []).map(function(x){ return 'sub:' + x.key; }), (p.tabs || []).map(function(x){ return 'tab:' + x.key; }), PAGE_REG.filter(function(q){ return q.under === p.key; }).map(function(q){ return 'page:' + q.key; }));
-      seq.forEach(function(e){ var t = e.split(':'), kind = t[0], k = t[1];
-        if (kind === 'page') { var q = PAGE_OF[k]; if (q) { var qOut = cap.indexOf(q.key) === -1; if (hideOut && qOut) return; kids.push(leafRow(q.key, q.name, true, qOut)); } return; }
-        var reg = kind === 'sub' ? (p.subs || []) : (p.tabs || []); var x = reg.filter(function(z){ return z.key === k; })[0]; if (!x) return;
-        var onDept = (kind === 'sub' ? ds : dt).indexOf(k) !== -1;
-        if (hideOut && (outP || !onDept)) return;
-        /* ورقةٌ تنتمي لحاويةِ عرضٍ: تُدفع إليها لا إلى صفحتها */
-        var gk9 = GRP[p.key + '/' + k];
-        if (gk9) { var g9 = GRPO[p.key + '/' + k], nm9 = (g9 && g9.names && g9.names[p.key + '/' + k]) || x.name;
-          (grpKids[gk9] = grpKids[gk9] || []).push(leafRow(p.key + '/' + k, nm9, true, outP || !onDept)); return; }
-        kids.push(leafRow(p.key + '/' + k, x.name, true, outP || !onDept));
-      });
-      if (hideOut && !kids.length) return;
-      var c = contRow(p, kids, out); rows.push(c); if (c.expanded) kids.forEach(function(k){ rows.push(k); });
-    });
-    /* صفُّ الحاوية وأوراقُها — بعد الصفحات، وبالمكوّن نفسه */
-    GRP_REG.forEach(function(g){
-      var ord9 = g.refs || [], kids = (grpKids[g.key] || []).slice().sort(function(x, y){ return ord9.indexOf(x.key) - ord9.indexOf(y.key); });
-      if (!kids.length) return;
-      var c = contRow({ key:g.key, name:g.name }, kids, false);
-      rows.push(c); if (c.expanded) kids.forEach(function(k){ rows.push(k); });
-    });
-    /* العدسات */
-    var dl = deptLenses(d), lens = Array.isArray(o.lens) ? o.lens : dl.slice();
-    var lensRows = LENS_REG.map(function(L){ var inCap = dl.indexOf(L.key) !== -1, on = inCap && lens.indexOf(L.key) !== -1, dis = !inCap || !canEdit;
-      return { key:L.key, name:L.name, on:on, out:!inCap, toggle: function(){ if (dis || !cb.togLens) return; cb.togLens(L.key); },
-        style: 'display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:9999px;font-size:11px;font-weight:600;font-family:\'Cairo\',sans-serif;cursor:' + (dis ? 'default' : 'pointer') + ';border:1px solid ' + (on ? 'rgba(14,116,144,0.45);background:var(--bg-a141161440p07);color:' + T : '#e2e8f0;background:var(--bg-xffffff);color:var(--fg-x94a3b8)') + (inCap ? '' : ';opacity:.4'),
-        box: 'width:12px;height:12px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;border:2px solid ' + (on ? T + ';background:' + T + ';color:var(--fg-xffffff)' : '#CBD5E1;background:var(--bg-xffffff);color:transparent') }; });
-    if (hideOut) lensRows = lensRows.filter(function(x){ return !x.out; });
-    rows = orderRows(rows);   /* ترتيب القائمة الجانبية نفسه + رؤوس المجموعات + وسم المطفأ */
-    return { rows: rows, lensRows: lensRows, lensOnN: lensRows.filter(function(x){ return x.on; }).length, lensTot: dl.length, pagesOn: nOnTot, pagesTot: nTot, capEmpty: cap.length === 0,
-      allExpanded: PAGE_REG.filter(function(p){ return !p.under && isContainer(p.key); }).every(function(p){ return !!exp[p.key]; })
-        && NAV_REG.every(function(g){ return !!exp[g.key]; }) };
-  }
   /* اسم مفتاح صلاحية — صفحة أو ورقة «pk/sk» */
   function nameOf(key){
     var sp = splitLeaf(key), p = PAGE_OF[sp.page]; if (!p) return key;
     if (!sp.sub) return p.name;
     var x = (p.subs || []).concat(p.tabs || []).filter(function(z){ return z.key === sp.sub; })[0];
     return p.name + ' · ' + (x ? x.name : sp.sub);
-  }
-  /* تبديل فعلٍ في ورقة مع قاعدة «العرض شرط الباقي» */
-  function togActIn(draft, key, a){
-    var d2 = JSON.parse(JSON.stringify(draft || {})); var cur9 = (d2[key] || []).slice();
-    if (cur9.indexOf(a) !== -1) { cur9 = cur9.filter(function(x){ return x !== a; }); if (a === 'view') cur9 = []; }
-    else { cur9.push(a); if (cur9.indexOf('view') === -1) cur9.push('view'); }
-    if (cur9.length) d2[key] = ALL_ACTS.filter(function(x){ return cur9.indexOf(x) !== -1; }); else delete d2[key];
-    return d2;
-  }
-  /* ═══ V7 P3 · المحرّر الموحّد — قواعدُ المنح ومراجعةُ الفرق لكل نقاط الدخول (نافذةُ الحساب · قوالبُ الإدارة · الجدولُ الشهري ·
-     التقريرُ اليومي) بلا مخزنٍ ولا معالجِ تفويضٍ جديد: الكتابةُ بالدوال نفسِها (setEmpPerms · setEmpTpl · setEmpLens · p24.setGrant).
-     القاعدة: المنحُ الجديد لورقةٍ يبدأ بالعرض وحده، وبقيةُ الأفعال تُختار صراحةً. وما خُزِّن قبلُ يُعرض ويُحفظ كما هو — لا يُعاد تفسيرُه
-     ولا يُضيَّق ولا يُوسَّع. (كان مربّعُ الورقة يمنح الأفعال الستة دفعةً واحدة «ثم ألغِ ما لا تريده».) ═══ */
-  function togLeafIn(draft, key, on){
-    var d2 = JSON.parse(JSON.stringify(draft || {}));
-    if (!on) delete d2[key];
-    else if (!(d2[key] || []).length) d2[key] = ['view'];   /* منحٌ جديد: العرضُ وحده */
-    return d2;
-  }
-  /* «تحديد الكل»: العرضُ وحده لكل ورقةٍ بلا منح، وما مُنح قبلُ يبقى كما هو */
-  function viewAllIn(draft, keys){
-    var d2 = JSON.parse(JSON.stringify(draft || {}));
-    (keys || []).forEach(function(k){ if (!(d2[k] || []).length) d2[k] = ['view']; });
-    return d2;
-  }
-  /* الفرقُ قبل الحفظ: ما سيُضاف وما سيُسحب، ورقةً ورقة وفعلاً فعلاً — بالأسماء المعروضة */
-  function sheetDiff(base, draft){
-    var add = [], drop = [], seen = {};
-    Object.keys(base || {}).concat(Object.keys(draft || {})).forEach(function(k){
-      if (seen[k]) return; seen[k] = 1;
-      var b = (base || {})[k] || [], d = (draft || {})[k] || [];
-      var plus = ALL_ACTS.filter(function(a){ return d.indexOf(a) !== -1 && b.indexOf(a) === -1; }),
-          minus = ALL_ACTS.filter(function(a){ return b.indexOf(a) !== -1 && d.indexOf(a) === -1; });
-      var nm = nameOf(k), an = function(L){ return L.map(function(a){ return ACT_NAMES[a] || a; }); };
-      if (plus.length) add.push({ key:k, name:nm, acts:an(plus), whole:!b.length });
-      if (minus.length) drop.push({ key:k, name:nm, acts:an(minus), whole:!d.length });
-    });
-    return { add: add, drop: drop, n: add.length + drop.length };
-  }
-  /* وضعُ الإنفاذ: الفرقُ مفتاحاً مفتاحاً بأسماء السجلّ */
-  function keyDiff(base, draft){
-    var R = p24R(), lab = function(k){ return (R && R.byKey[k] && R.byKey[k].label) || k; }, add = [], drop = [], seen = {};
-    Object.keys(base || {}).concat(Object.keys(draft || {})).forEach(function(k){
-      if (seen[k]) return; seen[k] = 1;
-      var b = !!(base || {})[k], d = !!(draft || {})[k];
-      if (d && !b) add.push({ key:k, name:lab(k) }); else if (b && !d) drop.push({ key:k, name:lab(k) });
-    });
-    return { add: add, drop: drop, n: add.length + drop.length };
   }
   /* مفتاحُ العرض الأوّل للمالك (access/view بترتيب السجلّ — نظيرُ «العرض» في الورقة القديمة): المنحُ الجديد لورقةٍ على شجرة v24.9 يبدأ به وحده */
   function p24PrimView(owner, keys){
@@ -237,8 +101,7 @@
     tabKeysOf: tabKeysOf, deptTabs: deptTabs, setDeptTabs: setDeptTabs, tabOn: tabOn,
     empPerms: empPerms, setEmpPerms: setEmpPerms, clearEmpPerms: clearEmpPerms, empPagePerms: empPagePerms, capAllPerms: capAllPerms, hasOwnSheet: hasOwnSheet,
     isContainer: isContainer, leafKeysOf: leafKeysOf, leafReg: leafReg, splitLeaf: splitLeaf, expandPerms: expandPerms, derivePages: derivePages, canSub: canSub,
-    empLens: empLens, setEmpLens: setEmpLens, treeModel: treeModel, nameOf: nameOf, togActIn: togActIn, togLeafIn: togLeafIn, ACT_NAMES: ACT_NAMES,
-    viewAllIn: viewAllIn, sheetDiff: sheetDiff, keyDiff: keyDiff,   /* V7 P3 · المحرّر الموحّد */
+    empLens: empLens, setEmpLens: setEmpLens, nameOf: nameOf, ACT_NAMES: ACT_NAMES,
     dropEmpPerms: dropEmpPerms, pruneOrphanEmpPerms: pruneOrphanEmpPerms,
     myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk,
     key: azKey, authz: function(){ return azZ(); },

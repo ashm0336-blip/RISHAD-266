@@ -977,7 +977,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     let tp = [];
     try {
       const P4 = KIVO.Perm44;
-      tp = (P4 && "function" == typeof P4.rolesOf ? P4.rolesOf(e.deptId) || [] : []).filter((t) => t && t.id && P && P.isSupRole && P.isSupRole(t));
+      tp = (P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(e.deptId) || [] : []).filter((t) => t && t.id && P && P.isSupRole && P.isSupRole(t));
     } catch (t) {
       tp = [];
     }

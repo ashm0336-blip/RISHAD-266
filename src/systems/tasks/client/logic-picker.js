@@ -61,14 +61,14 @@ Object.assign(Component.prototype, {
       n = KIVO.Perm44;
     let e = [];
     try {
-      const t = n && "function" == typeof n.rolesOf ? n.rolesOf(this._tkDept ? this._tkDept() : undefined) : [];
+      const t = n && "function" === typeof n.rolesOf ? n.rolesOf(this._tkDept ? this._tkDept() : undefined) : [];
       Array.isArray(t) && (e = t.filter((x) => x && x.id));
     } catch (t) {}
     return (
       this.loadEmps().forEach((a) => {
         try {
           const r = KIVO.BassamEmp ? KIVO.BassamEmp.key(a) : a.eid || a.nid || a.name,
-            q = n && "function" == typeof n.roleOf ? n.roleOf(r, this._tkDept ? this._tkDept() : undefined) : null,
+            q = n && "function" === typeof n.roleOf ? n.roleOf(r, this._tkDept ? this._tkDept() : undefined) : null,
             s = q ? q.id : "",
             o = s ? e.findIndex((t) => t.id === s) : -1;
           t[r] = { tpl: o >= 0 ? e[o].name : "", ord: o >= 0 ? o : s ? 98 : 99 };

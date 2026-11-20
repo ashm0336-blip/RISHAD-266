@@ -17220,7 +17220,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           })();
         let L = [];
         try {
-          const t = P4 && "function" == typeof P4.rolesOf ? P4.rolesOf(D4) : [];
+          const t = P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(D4) : [];
           Array.isArray(t) && (L = t.filter((x) => x && x.id));
         } catch (t) {}
         const EM = KIVO.BassamEmp;
@@ -17228,7 +17228,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           if (!t || !t.name) return;
           try {
             const e = EM && EM.key ? EM.key(t) : t.eid || t.nid || t.name,
-              q = P4 && "function" == typeof P4.roleOf ? P4.roleOf(e, D4) : null,
+              q = P4 && "function" === typeof P4.roleOf ? P4.roleOf(e, D4) : null,
               s = q ? q.id : "",
               n = s ? L.findIndex((t) => t.id === s) : -1;
             T[t.name] = { tpl: n >= 0 ? L[n].name : "", ord: n >= 0 ? n : s ? 98 : 99 };

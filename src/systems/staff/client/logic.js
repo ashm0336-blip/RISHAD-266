@@ -241,7 +241,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
   }
   _pmColOn() {
-    return !!(KIVO.Perm44 && "function" == typeof KIVO.Perm44.rolesOf);
+    return !!(KIVO.Perm44 && "function" === typeof KIVO.Perm44.rolesOf);
   }
   _pmCanSet() {
     return this._pcMemo("pmCanSet", () => {

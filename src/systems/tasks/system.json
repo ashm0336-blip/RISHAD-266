@@ -355,10 +355,6 @@
    "order": 10,
    "text": "        bassam_tasks_v1: \"المهام\",\r\n"
   },
-  "admin.tree.capTip.tasks": {
-   "order": 10,
-   "text": "      r && r.isLeaf && \"tasks\" === r.key && (r.chkTip += \" · التكرار: إنشاءُ مهمةٍ متكررة = «\" + ad + \"» (+ «\" + ed + \"» لمكلَّفيها) · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «\" + ed + \"»\");\r\n"
-  },
   "bk.labels.tasks": {
    "order": 10,
    "text": ", bassam_tasks_v1: 'المهام'"

@@ -1203,7 +1203,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   drRoles() {
     try {
       var P4 = KIVO.Perm44,
-        L = P4 && "function" == typeof P4.rolesOf ? P4.rolesOf(this.drDept()) : [];
+        L = P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(this.drDept()) : [];
       return Array.isArray(L) ? L.filter(function (r) { return r && r.id; }) : [];
     } catch (t) {
       return [];
@@ -1212,7 +1212,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   drRoleOf(k) {
     try {
       var P4 = KIVO.Perm44;
-      return (k && P4 && "function" == typeof P4.roleOf && P4.roleOf(k, this.drDept())) || null;
+      return (k && P4 && "function" === typeof P4.roleOf && P4.roleOf(k, this.drDept())) || null;
     } catch (t) {
       return null;
     }
@@ -1246,7 +1246,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 p = this.drRoles(),
                 l = null;
               if (!r || (p.forEach(function (x) { x.id === r && (l = x); }), l)) {
-                var u = P4 && "function" == typeof P4.setPerson ? P4.setPerson(t, l ? l.id : null, this.drDept()) : { ok: !1, err: "محرّك الأدوار غير متاح" };
+                var u = P4 && "function" === typeof P4.setPerson ? P4.setPerson(t, l ? l.id : null, this.drDept()) : { ok: !1, err: "محرّك الأدوار غير متاح" };
                 if (u && !1 === u.ok) this.bsToast(u.err || "تعذّر حفظ الصلاحيات", "warn");
                 else {
                   try {
@@ -2020,7 +2020,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       });
     var bsRd = !!KIVO.bus.read("daily.usable@1") &&   /* V7 · د5-هـ: «الجولات» مفعَّلة؟ يجيب مالكُها؛ بغيابه مطفأة */
       (r.bsLensOn("zones") || r.bsLensOn("gates") || r.bsLensOn("marks")),
-      bsTp = !!(KIVO.Perm44 && "function" == typeof KIVO.Perm44.rolesOf),   /* V7 · د5-هـ (44): عمودُ «الصلاحية» = الدور — يظهر بحضور محرّك الأدوار (كان بورقة قوالب الصلاحيات المحذوفة) */
+      bsTp = !!(KIVO.Perm44 && "function" === typeof KIVO.Perm44.rolesOf),   /* V7 · د5-هـ (44): عمودُ «الصلاحية» = الدور — يظهر بحضور محرّك الأدوار (كان بورقة قوالب الصلاحيات المحذوفة) */
       Et = [
         { k: "onspot", t: bsRd ? "حاضرون على مواقعهم" : "حاضرون", c: "#059669", sub: bsRd ? "من جولة اليوم" : "" },
         { k: "reserve", t: "حاضرون بلا موقع — الاحتياط", c: "#0e7490", sub: "جاهزون للتسكين" },

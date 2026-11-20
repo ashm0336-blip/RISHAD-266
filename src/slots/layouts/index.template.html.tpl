@@ -188,7 +188,6 @@
           <span class="nlbl s-deptn">{{deptName}}</span>
           <svg class="s-deptc" width="12" height="12" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{deptChev}}" data-i="i-820aa71e"></svg>
         </button>
-        <sc-if value="{{secAddOn}}" hint-placeholder-val="{{ false }}"><button class="s-secadd" sc-camel-on-click="{{secAdd}}" title="إضافة قسم تحت هذه الإدارة" aria-label="إضافة قسم تحت هذه الإدارة">+ قسم</button></sc-if>
       </div>
       <sc-if value="{{deptOpen}}" hint-placeholder-val="{{ false }}">
       <div class="s-deptdd">
@@ -233,7 +232,7 @@
     </sc-if>
     </sc-if>
     <!-- CORE-02 S7 · مساحةُ «مركز إدارة رشاد»: تنقّلُ المركز وحده (خمسُ مجموعاتٍ ثابتة؛ العناصرُ من خريطة _sysNav وتوافرِ صفحة الإدارة) —
-         لا أنظمةَ تشغيلية ولا مبدّلَ وحدات ولا «+ قسم». الخروجُ إلى مساحة العمل التشغيلية في موضعٍ ثابتٍ أسفل الشريط ·
+         لا أنظمةَ تشغيلية ولا مبدّلَ وحدات. الخروجُ إلى مساحة العمل التشغيلية في موضعٍ ثابتٍ أسفل الشريط ·
          أكورديون: رأسُ المجموعة زرٌّ (aria-expanded · aria-controls) وقائمتُها hidden حين تُطوى — لا عنصرَ مخفيّاً يأخذ التركيز -->
     <sc-if value="{{sbConsole}}" hint-placeholder-val="{{ false }}">
     <div class="s-space"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-97d6f6ed"></svg></span><span class="s-spt"><span class="nlbl">مركز إدارة رشاد</span></span></div>

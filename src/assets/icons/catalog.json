@@ -585,7 +585,7 @@
   "i-3a0791fe": {
    "body": "<rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"></path>",
    "uses": {
-    "modules/admin/view.html": 4,
+    "modules/admin/view.html": 3,
     "systems/daily/client/view.html": 1,
     "systems/dreport/client/view.html": 3,
     "systems/dstats/client/view.html": 1,
@@ -709,7 +709,7 @@
   "i-44077fec": {
    "body": "<path d=\"M3 7h6l2 2h10v11H3z\"></path>",
    "uses": {
-    "modules/admin/view.html": 4
+    "modules/admin/view.html": 2
    },
    "viewBox": "0 0 24 24"
   },
@@ -1033,7 +1033,6 @@
   "i-5f1a581b": {
    "body": "<path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "systems/award/client/view.html": 5,
     "systems/daily/client/view.html": 3,
     "systems/irshad/client/view.html": 6,
@@ -2118,7 +2117,7 @@
   "i-b8548f13": {
    "body": "<circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M12 16v-4\"></path><path d=\"M12 8h.01\"></path>",
    "uses": {
-    "modules/admin/view.html": 3,
+    "modules/admin/view.html": 2,
     "modules/employees/view.html": 1,
     "systems/award/client/view.html": 1,
     "systems/daily/client/view.html": 2,
@@ -2254,7 +2253,7 @@
   "i-c37d9e39": {
    "body": "<path d=\"M20 6 9 17l-5-5\"></path>",
    "uses": {
-    "modules/admin/view.html": 9,
+    "modules/admin/view.html": 4,
     "modules/employees/view.html": 16,
     "systems/award/client/view.html": 6,
     "systems/daily/client/view.html": 9,
@@ -2357,7 +2356,7 @@
   "i-c92915c6": {
    "body": "<path d=\"m6 9 6 6 6-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 9,
+    "modules/admin/view.html": 6,
     "modules/employees/view.html": 14,
     "systems/award/client/view.html": 3,
     "systems/daily/client/view.html": 10,
@@ -2451,7 +2450,7 @@
   "i-d16c7afd": {
    "body": "<circle cx=\"11\" cy=\"11\" r=\"7\"></circle><path d=\"m21 21-4.3-4.3\"></path>",
    "uses": {
-    "modules/admin/view.html": 2
+    "modules/admin/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },

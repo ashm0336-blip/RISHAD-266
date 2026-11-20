@@ -663,7 +663,7 @@
       }
       PERM_ROLES(did) {
         try {
-          const P4 = KIVO.Perm44, L = P4 && "function" == typeof P4.rolesOf ? P4.rolesOf(this._p44Dept(did)) : [];
+          const P4 = KIVO.Perm44, L = P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(this._p44Dept(did)) : [];
           return Array.isArray(L) ? L.filter((r) => r && r.id) : [];
         } catch (t) {
           return [];
@@ -673,7 +673,7 @@
       PERM_ROLE_OF(ekey, did) {
         try {
           const P4 = KIVO.Perm44;
-          return (ekey && P4 && "function" == typeof P4.roleOf && P4.roleOf(ekey, this._p44Dept(did))) || null;
+          return (ekey && P4 && "function" === typeof P4.roleOf && P4.roleOf(ekey, this._p44Dept(did))) || null;
         } catch (t) {
           return null;
         }
