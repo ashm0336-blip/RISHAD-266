@@ -101,16 +101,10 @@
    "nav": "kpis",
    "name": "مؤشرات الإدارة",
    "refs": [
-    "planning/readiness",
-    "daily/kpiDaily",
-    "daily/kpiOcc",
-    "daily/kpiZones"@@SYS:pages.kpi.refs.mid@@@@SYS:pages.kpi.refs.tasks@@@@SYS:pages.kpi.refs.tail@@
+    "planning/readiness"@@SYS:pages.kpi.refs.daily@@@@SYS:pages.kpi.refs.mid@@@@SYS:pages.kpi.refs.tasks@@@@SYS:pages.kpi.refs.tail@@
    ],
    "names": {
-    "planning/readiness": "مؤشرات الجاهزية",
-    "daily/kpiDaily": "مؤشرات التشغيل اليومي",
-    "daily/kpiOcc": "مؤشرات الإشغال",
-    "daily/kpiZones": "مؤشرات المصليات"@@SYS:pages.kpi.names.mid@@@@SYS:pages.kpi.names.tasks@@@@SYS:pages.kpi.names.tail@@
+    "planning/readiness": "مؤشرات الجاهزية"@@SYS:pages.kpi.names.daily@@@@SYS:pages.kpi.names.mid@@@@SYS:pages.kpi.names.tasks@@@@SYS:pages.kpi.names.tail@@
    }
   }
  ],
