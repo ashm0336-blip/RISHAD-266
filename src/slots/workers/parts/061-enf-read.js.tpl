@@ -198,10 +198,9 @@ var ENF_PROJ = {
 /* مرجعياتُ الإسقاط لطلب: جداولُ الورديات وسجلُّ الموظفين للإدارات المعنية — الشكلُ { recs, staffing, emps } ثابتٌ لمستدعيه (019k · 019r · 019t · 020 · 062 · 063)؛
    RISHAD-266: recs فارغٌ دائماً (سقفُ النطاق القديم أُلغي فلا يُقرأ سجلُّه) */
 async function enfRefsFor(env, depts, keys) {
-  var out = { recs: {}, staffing: {}, emps: {} }, i, d;
+  var out = { recs: {}, @@SYS:enf.refs.init.staff@@emps: {} }, i, d;
   for (i = 0; keys && i < depts.length; i++) { d = 'bsdept:' + depts[i] + ':bassam_employees_v1'; if (Object.prototype.hasOwnProperty.call(keys, d)) out.emps[depts[i]] = keys[d]; }   /* F24 (enfToksOf) */
-  for (i = 0; i < depts.length; i++) { d = depts[i]; if (!d || out.staffing[d] !== undefined) continue; var sk = 'bsdept:' + d + ':bassam_staffing_v3'; var raw = keys && Object.prototype.hasOwnProperty.call(keys, sk) ? keys[sk] : (keys ? null : await opResourceGet(env, sk)); out.staffing[d] = parseJson(raw, null); }
-  return out;
+@@SYS:enf.refs.load.staff@@  return out;
 }
 /* الإسقاطُ على نصّ قيمةٍ كما ستُرسل — يرمي عند الخطأ (fail-closed: المستدعي يرفض القراءة) */
 function enfProjectStr(A, k, raw, refs) {

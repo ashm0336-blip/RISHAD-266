@@ -296,6 +296,14 @@
   {
    "tpl": "workers/parts/019p9-scheduling-registry.js.tpl",
    "out": "workers/parts/019p9-scheduling-registry.js"
+  },
+  {
+   "tpl": "workers/parts/019k-business-context.js.tpl",
+   "out": "workers/parts/019k-business-context.js"
+  },
+  {
+   "tpl": "workers/parts/019r-operational-storage.js.tpl",
+   "out": "workers/parts/019r-operational-storage.js"
   }
  ]
 }

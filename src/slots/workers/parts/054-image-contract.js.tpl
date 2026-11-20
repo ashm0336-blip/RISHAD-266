@@ -1499,7 +1499,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      فارغاً كان أو ممتلئاً — ومفاتيحُه الحيّة التي يُقاس عليها ما زال وما بقي.
      يُحسب مرّةً واحدة لكل إدارة، ولا يُحسب لمن لا يحتاجه. */
   var CTX_RES = { 'bassam_dreport_v1': 1, @@SYS:cleanup.ctxRes.custody@@@@SYS:cleanup.ctxRes.award@@ 'bassam_employees_v1': 1,
-                  'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1,@@SYS:cleanup.ctxRes.tasks@@ 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
+                  @@SYS:cleanup.ctxRes.staff@@@@SYS:cleanup.ctxRes.tasks@@ 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
   var wipeCtx = {}, empCtx = {}, empRaw9 = {};
   for (k in set) {
     var rnW = resName(k);
@@ -1556,7 +1556,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   }
   /* ══ مسحُ العمليات المحمية — من شكل الطلب لا من نتيجة الحكم ════════════
      فلو رُفض جزءُ العملية الآخر بقيت العملية «محمية» ورُدّ الطلب كاملاً. */
-  var CLEAN_RES = { 'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1,@@SYS:cleanup.cleanRes.tasks@@
+  var CLEAN_RES = { @@SYS:cleanup.cleanRes.staff@@@@SYS:cleanup.cleanRes.tasks@@
                     @@SYS:cleanup.cleanRes.custody@@@@SYS:cleanup.cleanRes.award@@ 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
   var protOp = '';
   var hasEmp = {}, hasClean = {}, hasStaff = {};
@@ -1564,8 +1564,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var rnP = resName(k), dP = parseKey(k).dept; if (!dP) continue;
     if (rnP === 'bassam_employees_v1') hasEmp[dP] = k;
     if (CLEAN_RES[rnP]) hasClean[dP] = 1;
-    if (rnP === 'bassam_staffing_v3' || rnP === 'bassam_staffing_v2') hasStaff[dP] = 1;
-  }
+@@SYS:save.protOp.roster.staff@@  }
   for (var dQ in hasEmp) if (hasClean[dQ]) protOp = 'empDelete';
   for (var dR in shRenCtx) if (hasStaff[dR]) protOp = protOp || 'shiftRename';
   if (!protOp) for (k in set) {

@@ -8,7 +8,7 @@
    • كلُّ خطّافٍ في الكود القائم مشروطٌ بـ A.enf (لا يُضبط إلا في وضع الإنفاذ) — فالمسارُ القديم لا يرى شيئاً جديداً.
    الأجزاء: (1) الوضع والمفاتيح المحمولة · (2) النطاق · (3) الكتابة · (4) القراءة والإسقاط والدمج · (5) الحفظة والتدقيق ·
             (6) واجهاتُ الحالة والترحيل والرجوع · (7) حقنُ الإقلاع. */
-var ENF_VER = 'KIVO_265 · enforce 2 (fail-closed · host-guard · ph-strip · schema · logs · sess · pre · ph-new · first-plan · read-ceiling · self-fields · az-staffing@@SYS:enf.ver.tasks@@)';
+var ENF_VER = 'KIVO_265 · enforce 2 (fail-closed · host-guard · ph-strip · schema · logs · sess · pre · ph-new · first-plan · read-ceiling · self-fields@@SYS:enf.ver.staff@@@@SYS:enf.ver.tasks@@)';
 var ENF_SCOPE_RES = 'bassam_scope_v1';
 function enfEnvOn(env) { return !!(env && String(env.KIVO_AUTHZ_MODE || '').trim().toLowerCase() === 'enforce'); }
 /* أداةُ بيانات الاختبار وجلسةُ الاختبار الداخلية: متغيّرٌ مستقلّ يُضبط لـPreview وحدها — لا أثر له بلا وضع الإنفاذ في ENV */

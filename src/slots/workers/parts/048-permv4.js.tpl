@@ -39,10 +39,10 @@ function permv4Sources(A) {
    هذه الدالّةُ هي نقطةُ الربط الوحيدة للترحيل اللاحق (ALL · قائمة · deny)؛ لا تقرأ شيئاً من العميل ولا تكتب شيئاً. gm: union سقوف إدارات فرعه · super: سقفُ الإدارة المستهدفة — كلاهما null حتى الترحيل. */
 function permv4DeptCeiling(dim, dept, actor) { return null; }
 function permv4Ctx(A, d, k, okMap, ctx) {
-  var ac = permv4Actor(A), pv4 = (ctx && ctx.pv4) || {}, staffing = pv4.staffing || null;
+  var ac = permv4Actor(A), pv4 = (ctx && ctx.pv4) || {}@@SYS:permv4.ctx.roster.staff@@;
   return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: dsToday(Date.now()), now: Date.now(),
-           retroWin: (ctx && ctx.retroWin) || {}, locks: { staffing: pv4.staffingLocks@@SYS:permv4.locks.ctx.tasks@@ },
-           actorShift: function (mk) { var m = staffing && isObj(staffing) ? staffing[mk] : null; var r = m && isObj(m) ? m[A.u.ekey] : null; return (r && isObj(r) && r.shift) ? String(r.shift) : null; },
+           retroWin: (ctx && ctx.retroWin) || {}, locks: { @@SYS:permv4.locks.ctx.staff|empty="none: null"@@@@SYS:permv4.locks.ctx.tasks@@ },
+           actorShift: @@SYS:permv4.actorShift.staff|empty="function () { return null; }"@@,
            held: okMap || {}, fieldOnly: !!d && enfFieldOnly(A, d), sources: permv4Sources(A), scopeValues: null, deptCeiling: permv4DeptCeiling };
 }
 function pv4Bump(o, r) { o.calls++; if (r === 'allow') o.allow++; else if (r === 'deny') o.deny++; else if (r === 'unknown') o.unknown++; else o.notApplicable++; }
@@ -108,8 +108,7 @@ async function permv4RefsLoad(env, set, del) {
   for (i = 0; i < ks.length; i++) {
     k = ks[i]; var rn = resName(k), d = parseKey(k).dept; if (!d) continue;
     var o = out[d] = out[d] || {};
-    if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && o.staffingLocks === undefined) o.staffingLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_locks_v1'), {}) || {};
-@@SYS:permv4.locks.load.tasks@@    if ((rn === 'bassam_dreport_v1' || rn === 'bassam_rounds_v1'@@SYS:permv4.staffing.irshad@@ || rn === 'bassam_staffing_v3') && o.staffing === undefined) o.staffing = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_v3'), null);
+@@SYS:permv4.locks.load.staff@@@@SYS:permv4.locks.load.tasks@@    if ((rn === 'bassam_dreport_v1' || rn === 'bassam_rounds_v1'@@SYS:permv4.staffing.irshad@@@@SYS:permv4.roster.own.staff@@)@@SYS:permv4.roster.load.staff|empty=") { }"@@
   }
   return out;
 }
