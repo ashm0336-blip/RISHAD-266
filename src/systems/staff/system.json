@@ -10,6 +10,7 @@
   "files": [
    "client/530-emp-day-facts.js",
    "client/531-staff-links.js",
+   "client/533-staff-g3.js",
    "client/helmet.css",
    "client/logic.js",
    "client/meta.json",

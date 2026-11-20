@@ -548,6 +548,10 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       return !0;
     }
   }
+  /* V7 · د5-د2: هل برنامجُ الجدولة حاضرٌ ومفعَّل — يجيب مالكُه بالاسم؛ بغيابه لا */
+  function impSched() {
+    return !!KIVO.bus.read("staff.usable@1");
+  }
   /* حالةُ النافذة هنا لا في حالة الصفحة: الملخّصُ المعروض والخطوة. الصفحةُ تُعاد رسماً بعدّادٍ واحد (impTick). */
   var HS = { conf: null, step: "pick" };
   function tick(c) { c.setState({ impTick: (c.state.impTick || 0) + 1 }); }
@@ -653,7 +657,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
           p = !!(o.shift || o.rest || o.cs || o.muk);
         let l = !1;
         try {
-          l = !!(KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1") || {})[r + "-" + i];
+          l = !!(KIVO.bus.read("staff.locks@1") || {})[r + "-" + i];
         } catch (t) {}
         const d = [o.shift ? "الوردية" : "", o.rest ? "أيام الراحة" : "", o.cs ? "رمز النداء" : "", o.muk ? "التكليف" : ""].filter(Boolean);
         return {
@@ -695,7 +699,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
               ? "rgba(220,38,38,0.35);background:var(--bg-a22038380p07);color:var(--fg-xb91c1c)"
               : "rgba(4,120,87,0.3);background:var(--bg-a4120870p07);color:var(--fg-x047857)"),
           impSchedCols:
-            (impOn("staff")
+            (impSched()
               ? "الأعمدة التي وجدها في ملفك وستذهب إلى هذا الشهر: " +
                 (d.length ? d.join(" · ") : "لا شيء") +
                 ". أما بقية الأعمدة فتذهب إلى سجل الموظف نفسه ولا يمسّها اختيار الشهر."
@@ -730,7 +734,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
             " من القائمة الحالية ثم تُستورد بيانات الملف (" +
             KIVO.BassamCount(s.file, "موظف") +
             ") من جديد" +
-            (impOn("staff") ? "، ويُبنى الجدول الشهري " + KIVO.BassamCount.agr(s.file, "له", "لهما", "لهم") + " من الصفر." : "."),
+            (impSched() ? "، ويُبنى الجدول الشهري " + KIVO.BassamCount.agr(s.file, "له", "لهما", "لهم") + " من الصفر." : "."),
           impReplaceWarn:
             "سيُحذف " +
             KIVO.BassamCount(s.cur, "موظف") +
@@ -742,14 +746,14 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
             KIVO.BassamCount.agr(s.cur, "أثره", "أثرهما", "أثرهم") +
             ": " +
             [
-              impOn("staff") ? "الجدول الشهري بكل أشهره" : "",
+              impSched() ? "الجدول الشهري بكل أشهره" : "",
               impOn("dreport") ? "التقارير اليومية بكل أيامها ودفاتر استئذاناتها" : "",
               "تسكينات الخطة التشغيلية والجولات اليومية",
 @@SYS:import.summary.tasks@@              "حسابات الدخول والصلاحيات",
 @@SYS:import.summary.custody@@@@SYS:import.summary.award@@            ]
               .filter(Boolean)
               .join("، و") +
-            (impOn("staff") ? " — ويُنشأ جدول الشهر من جديد مسودة مفتوحة غير معتمدة." : ".") +
+            (impSched() ? " — ويُنشأ جدول الشهر من جديد مسودة مفتوحة غير معتمدة." : ".") +
             " لا يمكن التراجع.",
           stopClick: (t) => {
             t && t.stopPropagation && t.stopPropagation();

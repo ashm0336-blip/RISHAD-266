@@ -43,6 +43,8 @@ function page(W, ck) {
   class DCLogic { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); } }
   KIVO.BassamPageKit = { base: (Bc) => callers(class extends Bc { bsOn() { return true; } bsToast() {} bsAck() { return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } }, KIVO) };
   ctx.DCLogic = DCLogic;
+  /* V7 · د5-د2: «ملفي» يسأل الجدولَ الشهري بالاسم — الناقلُ وقراءاتُ الجدول المعلنة حاضرةٌ كما في الشجرة */
+  for (const f of ['src/core/060-bus.js', 'src/systems/staff/client/533-staff-g3.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(LOGIC, 'utf8') + '\n;globalThis.__C = Component;', ctx, { filename: 'profile/logic.js' });
   const c = new ctx.__C(); c.state = Object.assign({ pfPanel: '' }, c.state || {}); c._pfAlive = true;
   return { c, MT: KIVO.BassamMyTasks };
@@ -372,6 +374,8 @@ function clockPage() {
   class DCLogic { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); if (!pend) { pend = 1; ctx.setTimeout(() => { pend = 0; render(); }, 0); } } }
   KIVO.BassamPageKit = { base: (Bc) => callers(class extends Bc { bsOn() { return true; } bsToast() {} bsAck() { return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } }, KIVO) };
   ctx.DCLogic = DCLogic;
+  /* V7 · د5-د2: «ملفي» يسأل الجدولَ الشهري بالاسم — الناقلُ وقراءاتُ الجدول المعلنة حاضرةٌ كما في الشجرة */
+  for (const f of ['src/core/060-bus.js', 'src/systems/staff/client/533-staff-g3.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(LOGIC, 'utf8') + '\n;globalThis.__C = Component;', ctx, { filename: 'profile/logic.js' });
   const c = new ctx.__C(); c.state = Object.assign({ pfPanel: '' }, c.state || {}); c._pfAlive = true;
   const P = { c, MT: KIVO.BassamMyTasks, hits, L, fx, steps: 0 };

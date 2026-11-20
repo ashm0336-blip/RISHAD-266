@@ -675,6 +675,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "systems/staff/client/533-staff-g3.js",
+   "kind": "js",
+   "line": 10496,
+   "new": "V7 · د5-د2: قراءاتٌ معلنة من الجدول الشهري لصفحات القاعدة (مفعَّل؟ · وثيقة الأشهر · الأشهر المعتمدة)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "services/535-profile-facts.js",
    "kind": "js",
    "line": 10494,

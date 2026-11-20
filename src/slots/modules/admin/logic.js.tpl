@@ -1523,9 +1523,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return (
       ({
         bassam_employees_v1: "قائمة الموظفين",
-        bassam_staffing_v3: "الجدول الشهري",
-        bassam_staffing_snap_v1: "بيان الشهر",
-        bassam_rounds_v1: "الجولات اليومية",
+@@SYS:admin.keyLabels.staff@@        bassam_rounds_v1: "الجولات اليومية",
         bassam_dreport_v1: "التقرير اليومي",
         bassam_plan_v1: "الخطة التشغيلية",
 @@SYS:admin.keyLabels.tasks@@        bassam_auth_users_v1: "حسابات الدخول",
@@ -8379,11 +8377,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             const r = (a.filter((t) => t.id === s)[0] || {}).name || "",
               i = {
                 bassam_employees_v1: "الموظفون",
-@@SYS:admin.resLabels.custody@@                bassam_staffing_v3: "الورديات والجدول الشهري",
-                bassam_staffing_v2: "الورديات والجدول الشهري",
-                bassam_staffing_locks_v1: "اعتمادات الجدول",
-                bassam_staffing_snap_v1: "بيان الشهر (لقطة الاعتماد)",
-                bassam_leave_kinds_v1: "كتالوج أنواع الإجازات",
+@@SYS:admin.resLabels.custody@@@@SYS:admin.resLabels.staff@@                bassam_leave_kinds_v1: "كتالوج أنواع الإجازات",
                 bassam_shift_options_v1: "خيارات الورديات",
                 bassam_plan_v1: "الخطة التشغيلية وخرائط المواقع",
                 bassam_rounds_v1: "الجولات اليومية",

@@ -67,6 +67,7 @@ function browser(module, handler, currentClock = clock) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), W);   /* V7 · د5-د: التقويم الموحّد — تعتمد عليه عُدّة الصفحات */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/core/060-bus.js'), 'utf8'), W);   /* V7 · د5-د: الناقل (قلب المنصة) وروابطُ الجدول الشهري عليه — الصفحاتُ تسأل بالاسم */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/531-staff-links.js'), 'utf8'), W);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), W);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), W);
   const pageKitBase = W.KIVO.BassamPageKit.base;
   W.KIVO.BassamPageKit.base = (base, traits) => class extends pageKitBase(base, traits) { hToday() { return currentClock; } };

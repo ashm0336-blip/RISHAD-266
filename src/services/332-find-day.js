@@ -281,7 +281,8 @@
             var e2 = null; emps.forEach(function(e){ if (e2 || !e) return; if (keyOf(e) === x.ekey || toksOf(e).indexOf(x.ekey) !== -1) e2 = e; });
             if ((e2 ? keyOf(e2) : x.ekey) === myKey) found = nm; }); });
         if (!found) {
-          var b = (J9('bassam_staffing_v3', {}) || {})[y + '-' + m] || {};
+          /* V7 · د5-د2: شهرُ الجدولة يُسأل مالكُه بالاسم (الناقل)؛ بغيابه لا وردية من الجدول */
+          var b = (KIVO.bus.read('staff.months@1') || {})[y + '-' + m] || {};
           var st = (E && E.entry && me) ? E.entry(b, me) : b[myKey];
           if (st && typeof st === 'object' && st.shift) found = st.shift;
         }
