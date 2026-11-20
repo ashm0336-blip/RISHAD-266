@@ -85,7 +85,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
      يُقرأ «لا يكتب شيئاً» فيُحرم من كل مفتاحٍ تقنيّ، فيتكرّر الرفض ومعه تنبيهُه.
      وهو جذرُ الكتابات الخلفية على bassam_notif_sys_v1. */
   if (rule9 === 'tech') { var wpT = writePages(A, P.dept); return (wpT === null || wpT.length) ? { ok: true } : { ok: false, why: 'view' }; }
-  if (rule9 === 'perm44') { var p4r = perm44RolesWhy(A, k, newVal, curVal); return p4r ? { ok: false, why: p4r } : { ok: true }; }   /* V7 · د5-هـ (44) */
+  if (R9.p44) { var p4r = perm44RolesWhy(A, k, newVal, curVal); return p4r ? { ok: false, why: p4r } : { ok: true }; }   /* V7 · د5-هـ (44) */
   if (rule9) return { ok: false, why: rule9 };            /* users · perms · notif · flag · selfdev فُحصت أعلاه */
   /* العملية تُستنتج من القيمة نفسها ثم يُشترط امتلاك كل فعلٍ فيها */
   /* حذف المفتاح كله يُعرف من القيمة بلا مقارنةٍ أصلاً، ومَن يملك أفعال الكتابة

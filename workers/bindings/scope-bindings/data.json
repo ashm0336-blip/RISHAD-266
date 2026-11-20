@@ -8680,10 +8680,18 @@
    },
    "bassam_roles_v1": {
     "scope": "dept",
-    "cls": "explicit special read capability (rule)",
-    "keys": [],
-    "routes": [],
-    "note": "V7 · د5-هـ (44): أدوارُ الإدارة وأشخاصُها (rule perm44) — canRead0: R.rule ⇒ true؛ اسمُ الدور يُعرض لكل من في الإدارة، وكتابتُها لمدير الوحدة أو مدير المنصة (057b)"
+    "cls": "explicit read permission",
+    "keys": [
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "explicit-read"
+     }
+    ],
+    "note": "V7 · د5-هـ (44): أدوارُ الإدارة (p44) — canRead0/canReadEnf: يُقرأ داخل الإدارة لكلّ من فيها (اسمُ الدور)؛ ومسارُ RD_ANY (النسخ الاحتياطية) كسائر موارد الإدارة"
    }
   },
   "special": {
@@ -8740,10 +8748,6 @@
     "bassam_demo_purged_v1": {
      "keys": [],
      "note": "رايةٌ تقنية (rule tech) — لا محتوى يُقرأ"
-    },
-    "bassam_roles_v1": {
-     "keys": [],
-     "note": "V7 · د5-هـ (44): سجلُّ الأدوار (rule perm44) — يُقرأ داخل الإدارة؛ الكتابةُ تحرسها perm44RolesWhy"
     }
    }
   },
@@ -8875,19 +8879,19 @@
   ],
   "meta": {
    "resources": 69,
-   "routes": 243,
+   "routes": 244,
    "byClass": {
     "intentionally no-read-key / session-global": 15,
-    "explicit read permission": 2,
+    "explicit read permission": 3,
     "super-only (denied by name)": 1,
     "device-excluded": 8,
     "explicit read permission + explicit special read capability + reference-read routes": 23,
     "explicit read permission + explicit special read capability": 12,
-    "explicit special read capability (rule)": 6,
+    "explicit special read capability (rule)": 5,
     "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)": 2
    },
    "bySource": {
-    "explicit-read": 105,
+    "explicit-read": 106,
     "reference-read": 80,
     "special": 46,
     "no-atom": 9,

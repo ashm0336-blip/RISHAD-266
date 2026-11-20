@@ -29,7 +29,7 @@ function canSee(A, k) {
   if (canRead(A, k)) return true;
   var P = parseKey(k); if (!P.dept || !deptInScope(A, P.dept)) return false;
   var R = resOf(k); if (!R || R.scope !== 'dept') return false;
-  if (R.rule) return true;
+  if (R.rule || R.p44) return true;
   for (var i = 0; i < WR_ACTS.length; i++) if (authorize(A, k, WR_ACTS[i]).ok) return true;
   /* الأوراقُ الثلاث التي تكتب عملياتُها المحميّةُ في موارد صفحاتٍ أخرى بحكم التبعة:
      «حذف الكل واستيراد» · «حذف جميع الموظفين» (تنظيفُ أثره في العهد والمهام والجائزة والخطة والتوزيع) ·
@@ -65,7 +65,7 @@ function canRead0(A, k) {
   var R = resOf(k);
   if (!R) return false;                                      /* مورد مجهول = رفض */
   if (R.scope !== 'dept') return false;                      /* مفتاحٌ عامٌّ أو جهازيٌّ بادئتُه إدارة: لا */
-  if (R.rule) return true;                                   /* تنبيهاتٌ وملفٌّ شخصيّ: سياستُها الخاصة تحرسها */
+  if (R.rule || R.p44) return true;                          /* تنبيهاتٌ وملفٌّ شخصيّ: سياستُها الخاصة تحرسها · وسجلُّ الأدوار (V7 · د5-هـ 44) */
   /* سقفُ الإدارة أولاً: صفحةٌ خارجَ سقف الإدارة (أو وحدةٌ مطفأةٌ على مستوى المنصة) لا يقرؤها أحدٌ فيها —
      ولا صاحبُ «النسخ الاحتياطية»، فالنسخةُ لا تتجاوز سقفَ إدارتها. (KIVO_264: الفحصُ نفسُه حرفاً في resOnCeiling — مشتركٌ مع الإنفاذ) */
   if (!resOnCeiling(A, P.dept, R)) return false;

@@ -267,6 +267,7 @@ function imgWriteOk(A, k) {
   if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
   if (!deptInScope(A, P8.dept)) return false;
   if (R8.rule) return imgDeptWriter(A, P8.dept);
+  if (R8.p44) return isMgrOf(A, P8.dept);   /* V7 · د5-هـ (44): صورةُ سجلّ الأدوار تتبع كاتبَه (مديرُ الوحدة) */
   return authorize(A, k, 'edit').ok || authorize(A, k, 'add').ok || authorize(A, k, 'del').ok;
 }
 /* mode: 'read' | 'put' | 'del' — الحكمُ من المالك وحده */

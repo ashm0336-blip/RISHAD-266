@@ -18,6 +18,7 @@ function canReadEnf(A, k) {
   if (rn === ENF_GRANTS_RES) return isMgrOf(A, P.dept);                      /* سجلُّ المنح: مديرُ الإدارة (والموظفُ يتسلّم مفاتيحَه الفعلية في الإقلاع) */
   var R2 = resOf(k);
   if (!R2 || R2.scope !== 'dept') return false;
+  if (R2.p44) return true;                                                   /* V7 · د5-هـ (44): سجلُّ الأدوار يُقرأ داخل الإدارة */
   if (R2.rule) {
     if (P.name.indexOf('bassam_notif_dev_v1:') === 0) return P.name === 'bassam_notif_dev_v1:' + u.id || isMgrOf(A, P.dept);   /* Own */
     return true;                                                             /* التنبيهاتُ (self) · الراياتُ التقنية · الملف — قواعدُها تحرسها */

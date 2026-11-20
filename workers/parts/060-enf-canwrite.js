@@ -40,7 +40,7 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
   if (FLAG_KEYS[nm]) return isMgrOf(A, P.dept) ? enfOk([]) : enfNo('flag');
   var rule9 = R0.rule || '';
   if (rule9 === 'tech') return enfAnyWriterDept(A, P.dept) ? enfOk([]) : enfNo('view');
-  if (rule9 === 'perm44') { var p4r9 = perm44RolesWhy(A, k, newVal, curVal); return p4r9 ? enfNo(p4r9) : enfOk(['perm.assign']); }   /* V7 · د5-هـ (44) */
+  if (R0.p44) { var p4r9 = perm44RolesWhy(A, k, newVal, curVal); return p4r9 ? enfNo(p4r9) : enfOk(['perm.assign']); }   /* V7 · د5-هـ (44) */
   if (rule9) return enfNo(rule9);
   if (newVal == null) return enfNo('keydel');
   var E9 = entOf(k), O9 = opsOf(k);
@@ -64,5 +64,6 @@ function enfImgWriteOk(A, k) {
   if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
   if (!deptInScope(A, P8.dept)) return false;
   if (R8.rule) return enfAnyWriterDept(A, P8.dept, true);   /* V7-E: سؤالُ صورة — 057 */
+  if (R8.p44) return isMgrOf(A, P8.dept);   /* V7 · د5-هـ (44): صورةُ سجلّ الأدوار تتبع كاتبَه (مديرُ الوحدة) — كالوضع القديم */
   return enfImgResWriter(A, P8.dept, resName(k));   /* V7-D: المشتقّةُ من field.view ليست كتابةَ مورد الصورة */
 }
