@@ -342,6 +342,14 @@
   {
    "tpl": "plugins/lenses/dens/manifest.json.tpl",
    "out": "src/plugins/lenses/dens/manifest.json"
+  },
+  {
+   "tpl": "workers/bindings/identity-migration/engine.js.tpl",
+   "out": "workers/bindings/identity-migration/engine.js"
+  },
+  {
+   "tpl": "workers/bindings/identity-migration/data.json.tpl",
+   "out": "workers/bindings/identity-migration/data.json"
   }
  ]
 }
