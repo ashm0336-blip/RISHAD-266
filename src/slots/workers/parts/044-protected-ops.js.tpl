@@ -61,7 +61,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
     (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1;
   }
   if (!P.dept) {
-    /* F01: مديرُ الإدارة يُنشئ أقسامَ إدارته ويعيد تسميتها (018 deptSecMgrWhy) — وما سواه في سجلّ الوحدات لمدير النظام */
+    /* F01: مديرُ الإدارة يعيد تسميةَ أقسام إدارته — والإنشاءُ لمدير المنصة وحده (V7 · د5-هـ 44 · 018 deptSecMgrWhy) — وما سواه في سجلّ الوحدات لمدير النظام */
     if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (!smw) unitBatchAdd(A, newVal); return smw ? { ok: false, why: smw } : { ok: true }; }
     if (P.name === K_USERS) return newVal == null ? { ok: false, why: 'users' } : usersRule(A, newVal, curVal, ctx);
     if (P.name === K_PERM) return newVal == null ? { ok: false, why: 'super' } : permsRule(A, newVal, curVal);

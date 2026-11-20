@@ -285,7 +285,7 @@ function permsRule(A, newJson, curJson) {
     if (k === 'lensZ') { if (deq(o.lensZ, n.lensZ) || (n.lensZ === 1 && !o.lensZ)) continue; return { ok: false, why: 'super' }; }
     if (k === 'lenses' && lensesUpgradeOnly(o.lenses, n.lenses)) continue;
     var ov = o[k] === undefined ? {} : o[k], nv = n[k] === undefined ? {} : n[k];   /* الغائب والفارغ سواء */
-    if (!deq(ov, nv) && !((k === 'caps' || k === 'capOwn') && permsSecSeedEq(A, o, n, k))) return { ok: false, why: 'super' };   /* F01: بذرُ سقف القسم الجديد */
+    if (!deq(ov, nv)) return { ok: false, why: 'super' };   /* V7 · د5-هـ (44): السقفُ لمدير المنصة وحده — بذرُ سقف القسم الجديد ذهب مع إنشائه (الأقسامُ لمدير المنصة) */
   }
   var ds = {}; Object.keys(n.emps || {}).concat(Object.keys(o.emps || {}), Object.keys(n.tplOf || {}), Object.keys(o.tplOf || {}), Object.keys(n.empLens || {}), Object.keys(o.empLens || {})).forEach(function (d) { ds[d] = 1; });
   for (var d in ds) {

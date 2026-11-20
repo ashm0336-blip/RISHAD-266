@@ -2230,9 +2230,10 @@ function nodeCapSweep(A, gNew, gCur, pNew, pCur, rst) {
   if (hit) out.v = JSON.stringify(R);
   return out;
 }
-/* ══ مديرُ الإدارة يُنشئ أقسامَ إدارته (F01 · خطة التوحيد) ══
-   غيرُ مدير النظام يكتب سجلَّ الوحدات بشرطٍ واحد: كلُّ ما تغيّر قسمٌ مضافٌ (أو أُعيدت تسميتُه) تحت إدارةٍ يديرها هو (isMgrOf — وليست قسماً)،
-   وما سواه كما خُزِّن حرفاً: لا حذفَ (الحذفُ ذرّيٌّ في الخادم: /api/admin/dept-delete لمدير النظام) ولا نقلَ ولا إدارةٌ جديدة. ثم قاعدةُ الشكل كاملةً. */
+/* ══ مديرُ الإدارة يعيد تسميةَ أقسام إدارته (F01 · خطة التوحيد) ══
+   V7 · د5-هـ (44) (قرار المالك): الأقسامُ يضيفها مديرُ المنصة من «الإدارات» وحده — لا قسمَ جديداً من غيره (كان مديرُ الإدارة الأم يُنشئه).
+   غيرُ مدير النظام يكتب سجلَّ الوحدات بشرطٍ واحد: كلُّ ما تغيّر قسمٌ قائمٌ أُعيدت تسميتُه تحت إدارةٍ يديرها هو (isMgrOf — وليست قسماً)،
+   وما سواه كما خُزِّن حرفاً: لا إضافةَ ولا حذفَ (الحذفُ ذرّيٌّ في الخادم: /api/admin/dept-delete لمدير النظام) ولا نقلَ ولا إدارةٌ جديدة. ثم قاعدةُ الشكل كاملةً. */
 function deptSecMgrWhy(A, newJson, curJson) {
   var b = parseJson(newJson, null), a = parseJson(curJson, []), i;
   if (!Array.isArray(b)) return 'super';
@@ -2242,6 +2243,7 @@ function deptSecMgrWhy(A, newJson, curJson) {
   for (i = 0; i < b.length; i++) {
     var r = b[i]; if (!isObj(r) || r.id == null || r.id === '') return 'super';
     var o = O[String(r.id)]; if (o && deq(o, r)) continue;
+    if (!o) return 'super';                                                     /* V7 · د5-هـ (44): إنشاءُ قسمٍ لمدير المنصة وحده */
     if (r.kind !== DEPT_SEC_KIND) return 'super';
     var g = shapeRef(r, 'gid'); if (!g || isNodeId(A, g)) return 'dept-shape';
     var p = (A.depts || []).filter(function (x) { return isObj(x) && String(x.id) === g; })[0];
@@ -2252,25 +2254,6 @@ function deptSecMgrWhy(A, newJson, curJson) {
     if (!o && Object.keys(r).some(function (f) { return ['id', 'name', 'gid', 'kind'].indexOf(f) === -1; })) return 'shape';
   }
   return deptShapeWhy(A, newJson, curJson, false);
-}
-/* سقفُ القسم الذي ينشئه مديرُ الإدارة: يُبذر مرةً (لا سجلَّ له قبلُ) من سقف الإدارة الأم (لا أوسعَ منه) — caps[قسم] · capOwn[قسم] = true وحدهما.
-   وما بعد البذر (توسيعٌ · تضييقٌ · تغييرُ الوضع) لمدير النظام وحده كسقف كلّ وحدة */
-function permsSecSeedOk(A, o, n, k, d) {
-  if (A.u.role === 'super' || !d) return false;
-  var p = secParentOf(A, d); if (!p || !isMgrOf(A, p)) return false;
-  var ov = isObj(o[k]) ? o[k][d] : undefined, nv = isObj(n[k]) ? n[k][d] : undefined;
-  if (ov !== undefined) return false;
-  if (k === 'capOwn') return nv === true;
-  if (k !== 'caps' || !Array.isArray(nv)) return false;
-  var pc = deptCapOf(permOnAll(A), p);
-  return nv.every(function (x) { return typeof x === 'string' && pc.indexOf(x) !== -1; });
-}
-function permsSecSeedEq(A, o, n, k) {
-  var ov = isObj(o[k]) ? o[k] : {}, nv = isObj(n[k]) ? n[k] : {}, ks = nmap(), q;
-  if ((o[k] !== undefined && !isObj(o[k])) || (n[k] !== undefined && !isObj(n[k]))) return false;
-  for (q in ov) ks[q] = 1; for (q in nv) ks[q] = 1;
-  for (q in ks) if (!deq(ov[q], nv[q]) && !permsSecSeedOk(A, o, n, k, q)) return false;
-  return true;
 }
 function isMgrOf(A, d) {
   var u = A.u;
@@ -2914,7 +2897,7 @@ function permsRule(A, newJson, curJson) {
     if (k === 'lensZ') { if (deq(o.lensZ, n.lensZ) || (n.lensZ === 1 && !o.lensZ)) continue; return { ok: false, why: 'super' }; }
     if (k === 'lenses' && lensesUpgradeOnly(o.lenses, n.lenses)) continue;
     var ov = o[k] === undefined ? {} : o[k], nv = n[k] === undefined ? {} : n[k];   /* الغائب والفارغ سواء */
-    if (!deq(ov, nv) && !((k === 'caps' || k === 'capOwn') && permsSecSeedEq(A, o, n, k))) return { ok: false, why: 'super' };   /* F01: بذرُ سقف القسم الجديد */
+    if (!deq(ov, nv)) return { ok: false, why: 'super' };   /* V7 · د5-هـ (44): السقفُ لمدير المنصة وحده — بذرُ سقف القسم الجديد ذهب مع إنشائه (الأقسامُ لمدير المنصة) */
   }
   var ds = {}; Object.keys(n.emps || {}).concat(Object.keys(o.emps || {}), Object.keys(n.tplOf || {}), Object.keys(o.tplOf || {}), Object.keys(n.empLens || {}), Object.keys(o.empLens || {})).forEach(function (d) { ds[d] = 1; });
   for (var d in ds) {
@@ -22557,7 +22540,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
     (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1;
   }
   if (!P.dept) {
-    /* F01: مديرُ الإدارة يُنشئ أقسامَ إدارته ويعيد تسميتها (018 deptSecMgrWhy) — وما سواه في سجلّ الوحدات لمدير النظام */
+    /* F01: مديرُ الإدارة يعيد تسميةَ أقسام إدارته — والإنشاءُ لمدير المنصة وحده (V7 · د5-هـ 44 · 018 deptSecMgrWhy) — وما سواه في سجلّ الوحدات لمدير النظام */
     if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (!smw) unitBatchAdd(A, newVal); return smw ? { ok: false, why: smw } : { ok: true }; }
     if (P.name === K_USERS) return newVal == null ? { ok: false, why: 'users' } : usersRule(A, newVal, curVal, ctx);
     if (P.name === K_PERM) return newVal == null ? { ok: false, why: 'super' } : permsRule(A, newVal, curVal);
@@ -27372,7 +27355,7 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
     if (P.name === K_USERS) return newVal == null ? enfNo('users') : enfUsersWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_PERM) return newVal == null ? enfNo('super') : enfPermsWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_DSTATS) return newVal == null ? enfNo('keydel') : enfDstatsWrite(A, k, newVal, curVal, ctx, X);
-    /* F01: مديرُ الإدارة يُنشئ أقسامَ إدارته (018 deptSecMgrWhy) — بمفتاح الإدارة perm.assign في الإدارة الأم */
+    /* F01: مديرُ الإدارة يعيد تسميةَ أقسام إدارته — والإنشاءُ لمدير المنصة وحده (V7 · د5-هـ 44 · 018 deptSecMgrWhy) — بمفتاح الإدارة perm.assign في الإدارة الأم */
     if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (smw) return enfNo(smw); unitBatchAdd(A, newVal); return enfOk([]); }
     if (u.role !== 'super') return enfNo('super');
     if (P.name === K_DEPTS && newVal != null) { var dsE = deptShapeWhy(A, newVal, curVal, !!X.restore); if (dsE) return enfNo(dsE); unitBatchAdd(A, newVal); }

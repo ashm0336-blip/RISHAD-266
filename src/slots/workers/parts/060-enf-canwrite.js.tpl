@@ -22,7 +22,7 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
     if (R0.scope !== 'global') return enfNo('scope', { structural: 1 });
     if (P.name === K_USERS) return newVal == null ? enfNo('users') : enfUsersWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_PERM) return newVal == null ? enfNo('super') : enfPermsWrite(A, k, newVal, curVal, ctx, X);
-@@SYS:enf.write.dstats@@    /* F01: مديرُ الإدارة يُنشئ أقسامَ إدارته (018 deptSecMgrWhy) — بمفتاح الإدارة perm.assign في الإدارة الأم */
+@@SYS:enf.write.dstats@@    /* F01: مديرُ الإدارة يعيد تسميةَ أقسام إدارته — والإنشاءُ لمدير المنصة وحده (V7 · د5-هـ 44 · 018 deptSecMgrWhy) — بمفتاح الإدارة perm.assign في الإدارة الأم */
     if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (smw) return enfNo(smw); unitBatchAdd(A, newVal); return enfOk([]); }
     if (u.role !== 'super') return enfNo('super');
     if (P.name === K_DEPTS && newVal != null) { var dsE = deptShapeWhy(A, newVal, curVal, !!X.restore); if (dsE) return enfNo(dsE); unitBatchAdd(A, newVal); }

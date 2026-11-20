@@ -239,9 +239,10 @@ function nodeCapSweep(A, gNew, gCur, pNew, pCur, rst) {
   if (hit) out.v = JSON.stringify(R);
   return out;
 }
-/* ══ مديرُ الإدارة يُنشئ أقسامَ إدارته (F01 · خطة التوحيد) ══
-   غيرُ مدير النظام يكتب سجلَّ الوحدات بشرطٍ واحد: كلُّ ما تغيّر قسمٌ مضافٌ (أو أُعيدت تسميتُه) تحت إدارةٍ يديرها هو (isMgrOf — وليست قسماً)،
-   وما سواه كما خُزِّن حرفاً: لا حذفَ (الحذفُ ذرّيٌّ في الخادم: /api/admin/dept-delete لمدير النظام) ولا نقلَ ولا إدارةٌ جديدة. ثم قاعدةُ الشكل كاملةً. */
+/* ══ مديرُ الإدارة يعيد تسميةَ أقسام إدارته (F01 · خطة التوحيد) ══
+   V7 · د5-هـ (44) (قرار المالك): الأقسامُ يضيفها مديرُ المنصة من «الإدارات» وحده — لا قسمَ جديداً من غيره (كان مديرُ الإدارة الأم يُنشئه).
+   غيرُ مدير النظام يكتب سجلَّ الوحدات بشرطٍ واحد: كلُّ ما تغيّر قسمٌ قائمٌ أُعيدت تسميتُه تحت إدارةٍ يديرها هو (isMgrOf — وليست قسماً)،
+   وما سواه كما خُزِّن حرفاً: لا إضافةَ ولا حذفَ (الحذفُ ذرّيٌّ في الخادم: /api/admin/dept-delete لمدير النظام) ولا نقلَ ولا إدارةٌ جديدة. ثم قاعدةُ الشكل كاملةً. */
 function deptSecMgrWhy(A, newJson, curJson) {
   var b = parseJson(newJson, null), a = parseJson(curJson, []), i;
   if (!Array.isArray(b)) return 'super';
@@ -251,6 +252,7 @@ function deptSecMgrWhy(A, newJson, curJson) {
   for (i = 0; i < b.length; i++) {
     var r = b[i]; if (!isObj(r) || r.id == null || r.id === '') return 'super';
     var o = O[String(r.id)]; if (o && deq(o, r)) continue;
+    if (!o) return 'super';                                                     /* V7 · د5-هـ (44): إنشاءُ قسمٍ لمدير المنصة وحده */
     if (r.kind !== DEPT_SEC_KIND) return 'super';
     var g = shapeRef(r, 'gid'); if (!g || isNodeId(A, g)) return 'dept-shape';
     var p = (A.depts || []).filter(function (x) { return isObj(x) && String(x.id) === g; })[0];
@@ -261,25 +263,6 @@ function deptSecMgrWhy(A, newJson, curJson) {
     if (!o && Object.keys(r).some(function (f) { return ['id', 'name', 'gid', 'kind'].indexOf(f) === -1; })) return 'shape';
   }
   return deptShapeWhy(A, newJson, curJson, false);
-}
-/* سقفُ القسم الذي ينشئه مديرُ الإدارة: يُبذر مرةً (لا سجلَّ له قبلُ) من سقف الإدارة الأم (لا أوسعَ منه) — caps[قسم] · capOwn[قسم] = true وحدهما.
-   وما بعد البذر (توسيعٌ · تضييقٌ · تغييرُ الوضع) لمدير النظام وحده كسقف كلّ وحدة */
-function permsSecSeedOk(A, o, n, k, d) {
-  if (A.u.role === 'super' || !d) return false;
-  var p = secParentOf(A, d); if (!p || !isMgrOf(A, p)) return false;
-  var ov = isObj(o[k]) ? o[k][d] : undefined, nv = isObj(n[k]) ? n[k][d] : undefined;
-  if (ov !== undefined) return false;
-  if (k === 'capOwn') return nv === true;
-  if (k !== 'caps' || !Array.isArray(nv)) return false;
-  var pc = deptCapOf(permOnAll(A), p);
-  return nv.every(function (x) { return typeof x === 'string' && pc.indexOf(x) !== -1; });
-}
-function permsSecSeedEq(A, o, n, k) {
-  var ov = isObj(o[k]) ? o[k] : {}, nv = isObj(n[k]) ? n[k] : {}, ks = nmap(), q;
-  if ((o[k] !== undefined && !isObj(o[k])) || (n[k] !== undefined && !isObj(n[k]))) return false;
-  for (q in ov) ks[q] = 1; for (q in nv) ks[q] = 1;
-  for (q in ks) if (!deq(ov[q], nv[q]) && !permsSecSeedOk(A, o, n, k, q)) return false;
-  return true;
 }
 function isMgrOf(A, d) {
   var u = A.u;
