@@ -695,6 +695,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "systems/plan/client/403-plan-p3.js",
+   "kind": "js",
+   "line": 10496,
+   "new": "V7 · د5-هـ: قراءاتٌ وأمرٌ معلنة من التشغيل الميداني لصفحات القاعدة (مفعَّل؟ · الخطة · مواقع الشهر · أنواع المعالم)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "services/535-profile-facts.js",
    "kind": "js",
    "line": 10494,

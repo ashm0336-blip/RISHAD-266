@@ -103,7 +103,7 @@
 @@KIVO_BLOCK:services/490-emp-key.js@@
 @@KIVO_BLOCK:services/500-element-uid.js@@
 @@KIVO_BLOCK:services/520-field-monitor.js@@
-@@SYS:shell.blocks.staff@@@@KIVO_BLOCK:services/535-profile-facts.js@@
+@@SYS:shell.blocks.staff@@@@SYS:shell.blocks.plan.p3@@@@KIVO_BLOCK:services/535-profile-facts.js@@
 @@SYS:shell.blocks.tasks@@@@SYS:shell.blocks.custody@@@@KIVO_BLOCK:services/548-atomic-backup.js@@
 @@KIVO_BLOCK:styles/540-busy.css@@
 @@KIVO_BLOCK:components/550-bassam-busy.js@@

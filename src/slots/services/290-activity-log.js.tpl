@@ -47,17 +47,7 @@
   }
   var SITE_LISTS = [['zones', 'zone', 'eid'], ['gates', 'gate', 'eid'], ['marks', 'mark', 'eid'], ['paths', 'path', 'id'], ['sectors', 'sector', 'id']];
   function stampSite(f, fresh) { var n = 0; if (!isObj(f)) return 0; for (var i = 0; i < SITE_LISTS.length; i++) n += stampList(f[SITE_LISTS[i][0]], SITE_LISTS[i][1], SITE_LISTS[i][2], fresh); return n; }
-  /* خطةُ التشغيل الميداني: المواقع (sid) وكيانات كلِّ شهرٍ وكيانات المواقع الحيّة */
-  function stampPlan(p, fresh) {
-    var n = 0; if (!isObj(p)) return 0;
-    n += stampList(p.floors, 'site', 'sid', fresh);
-    (p.floors || []).forEach(function (f) { n += stampSite(f, fresh); });
-    var M = p.months || p.planMonths;
-    if (isObj(M)) Object.keys(M).forEach(function (mk) { var m = M[mk]; var d = m ? (Array.isArray(m) ? m : m.d) : null; if (Array.isArray(d)) d.forEach(function (f) { n += stampSite(f, fresh); }); });
-    [['zones', 'zone', 'eid'], ['gates', 'gate', 'eid'], ['marks', 'mark', 'eid'], ['paths', 'path', 'id']].forEach(function (L) { n += stampList(p[L[0]], L[1], L[2], fresh); });
-    return n;
-  }
-  function stampRounds(R, fresh) {
+@@SYS:activity.stampPlan.fn@@  function stampRounds(R, fresh) {
     var n = 0; if (!isObj(R)) return 0;
     Object.keys(R).forEach(function (rk) { var r = R[rk]; if (!r || !Array.isArray(r.d)) return; r.d.forEach(function (f) { n += stampSite(f, fresh); }); if (r.shAp && isObj(r.shAp)) Object.keys(r.shAp).forEach(function (s) { var sn = r.shAp[s]; if (sn && Array.isArray(sn.snap)) sn.snap.forEach(function (f) { n += stampSite(f, fresh); }); }); });
     return n;
@@ -68,8 +58,8 @@
     /* رموزُ الخادم لأحداث مجموعات البيانات (054 · 019e · 063 · 019 · 020 · 019a/i/m) — بالعربية لا بالرمز */
     changed: 'عُدِّل', updated: 'حُدِّث', added: 'أُضيف', migrated: 'رُحِّل', rolled_back: 'أُعيد إلى ما قبل التعديل', emitted: 'أُرسل تنبيه', remind: 'أُرسل تذكير', config: 'عُدِّلت إعداداته', state: 'حُدِّثت حالته',
     create: 'أُنشئ', edit: 'عُدِّل', delete: 'حُذف', status: 'تغيّرت حالته', issue: 'سُلِّم', close: 'أُغلق' };
-  var ET_AR = { zone: 'المصلى', gate: 'الباب', mark: 'المعلم', path: 'المسار', sector: 'النطاق', site: 'الموقع', plan: 'خطة الشهر', plan_site: 'خطة الموقع', round: 'جولة اليوم', round_site: 'موقع الجولة', round_month: 'جولات الشهر', round_shift: 'جولة الوردية', round_lock: 'قفل اليوم',@@SYS:activity.entities.tasks@@ employee: 'الموظف',@@SYS:activity.entities.staff@@ dreport: 'التقرير اليومي',@@SYS:activity.entities@@ dataset: 'مجموعة البيانات', system: 'المنصة' };
-  var ET_FILTER = [['zone', 'المصليات'], ['gate', 'الأبواب'], ['mark', 'المعالم'], ['path', 'المسارات'], ['sector', 'النطاقات'], ['site', 'المواقع'], ['plan', 'خطط الشهور'], ['round', 'الجولات'],@@SYS:activity.filter.tasks@@ ['employee', 'الموظفون'],@@SYS:activity.filter.staff@@ ['dreport', 'التقرير اليومي'],@@SYS:activity.filter@@ ['dataset', 'مجموعات البيانات']];
+  var ET_AR = { zone: 'المصلى', gate: 'الباب', mark: 'المعلم', path: 'المسار', sector: 'النطاق', site: 'الموقع',@@SYS:activity.entities.plan@@ round: 'جولة اليوم', round_site: 'موقع الجولة', round_month: 'جولات الشهر', round_shift: 'جولة الوردية', round_lock: 'قفل اليوم',@@SYS:activity.entities.tasks@@ employee: 'الموظف',@@SYS:activity.entities.staff@@ dreport: 'التقرير اليومي',@@SYS:activity.entities@@ dataset: 'مجموعة البيانات', system: 'المنصة' };
+  var ET_FILTER = [['zone', 'المصليات'], ['gate', 'الأبواب'], ['mark', 'المعالم'], ['path', 'المسارات'], ['sector', 'النطاقات'], ['site', 'المواقع'],@@SYS:activity.filter.plan@@ ['round', 'الجولات'],@@SYS:activity.filter.tasks@@ ['employee', 'الموظفون'],@@SYS:activity.filter.staff@@ ['dreport', 'التقرير اليومي'],@@SYS:activity.filter@@ ['dataset', 'مجموعات البيانات']];
   var ACT_FILTER = [['created', 'إنشاء'], ['edited', 'تعديل'], ['geometry_changed', 'تعديل الشكل'], ['moved', 'نقل'], ['enabled', 'تفعيل'], ['disabled', 'تعطيل'], ['status_changed', 'تغيير حالة'], ['reassigned', 'إعادة توزيع'], ['approved', 'اعتماد'], ['approval_revoked', 'إلغاء اعتماد'], ['locked', 'قفل'], ['unlocked', 'فتح'], ['completed', 'إنجاز'], ['deleted', 'حذف'], ['restore', 'استعادة'], ['import', 'استيراد'], ['wipe', 'مسح بيانات']];
   var FIELD_AR = { name: 'الاسم', code: 'الرمز', ser: 'التسلسل', cat: 'الفئة', label: 'التسمية', num: 'الرقم', kind: 'النوع', loc: 'الموقع', gtype: 'نوع الباب', route: 'المسار', cls: 'التصنيف', pri: 'الأولوية', cats: 'الفئات', needN: 'الاحتياج', hideLabel: 'إخفاء التسمية', region: 'المنطقة', level: 'الدور', ztype: 'النوع', zcat: 'الفئة', yard: 'الساحة', off: 'معطَّل', closed: 'مغلق', active: 'مفعَّل', color: 'اللون', line: 'الخط', w: 'العرض', lead: 'المسؤول', note: 'ملاحظة', showLbl: 'إظهار التسمية', chip: 'الشارة', iid: 'الخريطة', phone: 'الجوال', email: 'البريد', type: 'النوع', work: 'نوع العمل', gender: 'الجنس', shift: 'الوردية', group: 'المجموعة', nid: 'الهوية', empno: 'الرقم الوظيفي', title: 'العنوان', desc: 'الوصف', prio: 'الأولوية', dur: 'المدة', from: 'من', until: 'إلى', wt: 'نوع العمل', rest: 'الراحة', muk: 'مكلَّف', cs: 'رمز النداء', status: 'الحالة', st: 'الحالة', ok: 'مقبول', score: 'الدرجة', items: 'الأصناف', langs: 'اللغات', bro: 'مطويات', pros: 'نشرات', pol: 'استطلاع', actor: 'المنفّذ', lsz: 'حجم الخط', lang: 'دوران الخط', hideSectors: 'إخفاء النطاقات' };
   function fieldAr(q) { return FIELD_AR[q] || q; }
@@ -141,7 +131,7 @@
       kids);
   }
 
-  KIVO.BassamAudit = { VER: 1, hash: hash, newId: newId, legacyId: legacyId,@@SYS:activity.taskId.export@@ stampPlan: stampPlan, stampRounds: stampRounds, stampList: stampList, stampSite: stampSite,
+  KIVO.BassamAudit = { VER: 1, hash: hash, newId: newId, legacyId: legacyId,@@SYS:activity.taskId.export@@@@SYS:activity.stampPlan.export@@ stampRounds: stampRounds, stampList: stampList, stampSite: stampSite,
     describe: describe, rowVM: rowVM, detailRows: detailRows, ctxText: ctxText, fetch: fetchAud, entityHistory: entityHistory, panelNodes: panelNodes,
     ACT_AR: ACT_AR, ET_AR: ET_AR, ET_FILTER: ET_FILTER, ACT_FILTER: ACT_FILTER, MONTHS: MONTHS, mLabel: mLabel, dLabel: dLabel, clock: clock, dateTxt: dateTxt, fieldAr: fieldAr };
 })();

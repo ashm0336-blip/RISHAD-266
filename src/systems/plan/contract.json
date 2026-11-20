@@ -10,7 +10,17 @@
   "bassam_mark_kinds_v1"
  ],
  "files": [],
- "provides": {},
+ "provides": {
+  "read": {
+   "plan.usable@1": "() ← هل التشغيلُ الميداني مفعَّلٌ في الإدارة النشطة (ورقتُه في سقف الإدارة) — لصفحات القاعدة التي تُظهر أو تُخفي ما يخصّه (client/403-plan-p3.js)",
+   "plan.doc@1": "(how?) ← وثيقةُ الخطة { floors, months … } — how: بلا قيمة كما هي (ترمي إن لم تُقرأ) · granted ‏undefined إن حُجبت · text نسخةٌ من نصّ المورد أو null",
+   "plan.sites@1": "(ym, how?) ← مواقعُ الشهر «سنة-شهر» (مصفوفةُ الشهر أو حقلُها d) أو null إن لم تكن له خطة — how كما في plan.doc@1",
+   "plan.markKinds@1": "() ← نصُّ كتالوج أنواع المعالم كما هو مخزَّن (JSON) أو null — لعُدّة الصفحات المشتركة (نافذةُ المعلم)"
+  },
+  "commands": {
+   "plan.markKinds.set@1": "{ kinds:[…] } داخل مسودة المستدعي — يكتب كتالوجَ أنواع المعالم كاملاً"
+  }
+ },
  "consumes": {
   "staff.dayFacts@1": {
    "absent": "بلا وقائع اليوم: لا حضور ولا راحة ولا تكليف يُعرض على الخريطة (كما كان حين لا خدمة)"
@@ -22,5 +32,17 @@
    "absent": "بصمةُ تغيّر البيانات تُحسب بلا أقفال الجدول (لا شيء يتغيّر فيها)"
   }
  },
- "crossEffects": []
+ "crossEffects": [],
+ "readResources": {
+  "_note": "V7 · د5-هـ: ما تحتاجه كلُّ قراءةٍ معلنة من موارد Operations محمَّلةً قبل رسم الصفحة التي تستعملها — يضمّه tools/generate.py إلى operationsReadSets لتلك الصفحة (المستهلكُ لا يسمّي المفتاح)",
+  "plan.doc@1": [
+   "bassam_plan_v1"
+  ],
+  "plan.sites@1": [
+   "bassam_plan_v1"
+  ],
+  "plan.markKinds@1": [
+   "bassam_mark_kinds_v1"
+  ]
+ }
 }

@@ -476,7 +476,9 @@
         if (!e) return false;
         const s = this._markKinds();
         if (s.includes(e)) return true;
-        const result = await KIVO.__BS_SRV.operations.commit(this, "mark-kind", { kind: e }, draft => draft.set("bassam_mark_kinds_v1", [...s, e]));
+        /* V7 · د5-د2: كتالوجُ أنواع المعالم يملكه التشغيلُ الميداني — يُكتب بأمره داخل المسودة؛ بغيابه لا إضافة */
+        if (!KIVO.bus.has("plan.markKinds.set@1")) return false;
+        const result = await KIVO.__BS_SRV.operations.commit(this, "mark-kind", { kind: e }, draft => KIVO.bus.call("plan.markKinds.set@1", { kinds: [...s, e] }, draft));
         if (!result || result.ok !== 1) { this.bsToast("لم يصل تأكيد حفظ النوع — أعد الإجراء نفسه للتحقق من المسودة."); return false; }
         return true;
       }
@@ -521,7 +523,7 @@
       _markKinds() {
         let t = ["دورات مياه", "سلالم", "مصاعد", "سبيل", "نقطة إسعاف", "مخرج طوارئ", "نقطة تجمّع"];
         try {
-          const e = KIVO.__BS_SRV.operations.text("bassam_mark_kinds_v1");
+          const e = KIVO.bus.read("plan.markKinds@1");   /* V7 · د5-د2: نصُّ الكتالوج من مالكه؛ بغيابه الأنواعُ الافتراضية */
           if (e) {
             const s = JSON.parse(e);
             Array.isArray(s) && s.length && (t = s);

@@ -209,7 +209,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       m = +p[2],
       upto = 12 * y + m < 12 * T.y + T.m ? 31 : y === T.y && m === T.m ? T.d : 0,
       H = toks.length
-        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), dreport: this.LS("bassam_dreport_v1", {}), plan: this.LS("bassam_plan_v1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
+        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), dreport: this.LS("bassam_dreport_v1", {}), plan: this.LB("plan.doc@1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
         : null;
     return {
       ok: 1,
@@ -1915,7 +1915,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       LK = this.LB("staff.locks@1", {}),
       B = this.LS("bassam_dreport_v1", {}),
       RND = this.LS("bassam_rounds_v1", {}),
-      Z = this.LS("bassam_plan_v1", {}),
+      Z = this.LB("plan.doc@1", {}),   /* V7 · د5-د2: الخطةُ يملكها التشغيلُ الميداني — بالناقل؛ بغيابه أو حجبها لا خطة */
       GO = this.LS("bassam_shift_options_v1", []);
     const ME = l ? this.pfMine({ user: t, emps: y, months: u, locks: LK, dreport: B, plan: Z, rounds: RND, opts: GO, readable: null !== raw("bassam_employees_v1") && null !== rawSched() }) : null,
       MM = ME && ME.M,
@@ -2096,13 +2096,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         for (let ii = 0; ii < L.length; ii++) {
           const el = L[ii];
           if (!el) continue;
-          const hit = sx.uid ? String(el.uid || el.eid || "") === sx.uid : (("round" === src && Q) || ("plan" === src && at)) && fi === sx.fi && ii === sx.i;
+          const hit = sx.uid ? String(el.uid || el.eid || "") === sx.uid : (("round" === src && Q) || ("official" === src && at)) && fi === sx.fi && ii === sx.i;
           if (hit) return { fi: fi, kind: sx.kind, i: ii, x: el.x, y: el.y, label: sx.label, short: sx.short, loc: sx.loc, closed: "gates" === sx.kind ? !!el.closed : !!el.off };
         }
       }
       return null;
     };
-    const offEl = l && SITE ? findEl(SITE.official, "plan") : null,
+    const offEl = l && SITE ? findEl(SITE.official, "official") : null,
       tdEl = l && SITE ? findEl(SITE.today, "round") : null,
       lt = offEl ? Object.assign({ which: "official" }, offEl) : tdEl ? Object.assign({ which: "today" }, tdEl) : null,
       ltToday = offEl && tdEl && !(offEl.fi === tdEl.fi && offEl.kind === tdEl.kind && offEl.i === tdEl.i) ? tdEl : null;
@@ -2680,7 +2680,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       bsSt = !!KIVO.bus.read("staff.usable@1"),
       bsDr = this.bsOn("dreport"),
       bsDi = this.bsLensOn("dist"),
-      bsPl = this.bsOn("plan");
+      bsPl = !!KIVO.bus.read("plan.usable@1");   /* V7 · د5-د2: ورقةُ التشغيل الميداني يجيب عنها مالكُه؛ بغيابه مطفأة */
     let b = "none";
     S && (b = w < d ? "before" : w <= g ? "during" : "after");
     const restToday = !!(F && F.rest.today),

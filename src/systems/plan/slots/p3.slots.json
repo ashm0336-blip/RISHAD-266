@@ -1,0 +1,142 @@
+{
+ "store.opResources.plan": {
+  "order": 10,
+  "text": " 'bassam_plan_v1', 'bassam_zone_opts_v1', 'bassam_gate_opts_v1',\n    'bassam_mark_kinds_v1',"
+ },
+ "store.keyLabels.plan": {
+  "order": 10,
+  "text": "      bassam_plan_v1:[\"الخطة التشغيلية\"], bassam_zone_opts_v1:[\"خيارات المصليات\"], bassam_gate_opts_v1:[\"خيارات الأبواب\"], bassam_mark_kinds_v1:[\"أنواع المعالم\"],\n"
+ },
+ "store.identity.plan": {
+  "order": 10,
+  "text": "      bassam_plan_v1: { \"floors\": \"sid\", \"months.*.d\": \"sid\" },\n"
+ },
+ "store.identity.uid.plan": {
+  "order": 10,
+  "text": ", [\"bassam_plan_v1\", \"\"], [\"bassam_plan_v1\", \"floors.*.\"], [\"bassam_plan_v1\", \"months.*.d.*.\"]"
+ },
+ "store.proj.plan": {
+  "order": 10,
+  "text": "bassam_plan_v1: 1, "
+ },
+ "activity.entities.plan": {
+  "order": 10,
+  "text": " plan: 'خطة الشهر', plan_site: 'خطة الموقع',"
+ },
+ "activity.filter.plan": {
+  "order": 10,
+  "text": " ['plan', 'خطط الشهور'],"
+ },
+ "activity.stampPlan.fn": {
+  "order": 10,
+  "text": "  /* خطةُ التشغيل الميداني: المواقع (sid) وكيانات كلِّ شهرٍ وكيانات المواقع الحيّة */\n  function stampPlan(p, fresh) {\n    var n = 0; if (!isObj(p)) return 0;\n    n += stampList(p.floors, 'site', 'sid', fresh);\n    (p.floors || []).forEach(function (f) { n += stampSite(f, fresh); });\n    var M = p.months || p.planMonths;\n    if (isObj(M)) Object.keys(M).forEach(function (mk) { var m = M[mk]; var d = m ? (Array.isArray(m) ? m : m.d) : null; if (Array.isArray(d)) d.forEach(function (f) { n += stampSite(f, fresh); }); });\n    [['zones', 'zone', 'eid'], ['gates', 'gate', 'eid'], ['marks', 'mark', 'eid'], ['paths', 'path', 'id']].forEach(function (L) { n += stampList(p[L[0]], L[1], L[2], fresh); });\n    return n;\n  }\n"
+ },
+ "activity.stampPlan.export": {
+  "order": 10,
+  "text": " stampPlan: stampPlan,"
+ },
+ "imgref.empty.plan": {
+  "order": 10,
+  "text": "bassam_plan_v1: '{\"zones\":[],\"gates\":[],\"marks\":[],\"paths\":[],\"floors\":[],\"months\":{}}', bassam_zone_opts_v1: '{}', bassam_gate_opts_v1: '{}', bassam_mark_kinds_v1: '[]', "
+ },
+ "deptStore.labels.plan": {
+  "order": 10,
+  "text": "\n                 'bassam_plan_v1':'الخطة التشغيلية'"
+ },
+ "deptStore.pageKeys.plan": {
+  "order": 10,
+  "text": "'plan',"
+ },
+ "tree.keyCap.plan": {
+  "order": 10,
+  "text": "    bassam_plan_v1:'plan', bassam_zone_opts_v1:'plan', bassam_gate_opts_v1:'plan', bassam_mark_kinds_v1:'plan',\n"
+ },
+ "root.planning.perms.sp": {
+  "order": 20,
+  "text": ", \"plan\""
+ },
+ "root.planning.perms": {
+  "order": 20,
+  "text": ",\"plan\""
+ },
+ "root.planning.out": {
+  "order": 20,
+  "text": " && outOf(\"plan\")"
+ },
+ "root.liveKeys.plan": {
+  "order": 10,
+  "text": "plan: /plan_v1|zone_opts|gate_opts|mark_kinds|employees/, "
+ },
+ "root.live.planning.plan": {
+  "order": 10,
+  "text": "plan_v1"
+ },
+ "root.live.profile.plan": {
+  "order": 10,
+  "text": "|plan_v1"
+ },
+ "root.navPerm.plan": {
+  "order": 10,
+  "text": " plan: \"plan\","
+ },
+ "root.inPlanning.plan": {
+  "order": 10,
+  "text": "\"plan\","
+ },
+ "root.labels.plan": {
+  "order": 10,
+  "text": " plan:\"التشغيل الميداني\","
+ },
+ "root.navVals.plan": {
+  "order": 10,
+  "text": "          nPlan: cls(\"plan\", \"plan\"), tPlan: tip(\"plan\"),\n"
+ },
+ "root.go.plan": {
+  "order": 10,
+  "text": "goPlan: go(\"plan\"), "
+ },
+ "root.is.plan": {
+  "order": 10,
+  "text": " isPlan: ap === \"plan\","
+ },
+ "root.known.plan": {
+  "order": 10,
+  "text": "\"plan\","
+ },
+ "admin.keyLabels.plan": {
+  "order": 10,
+  "text": "        bassam_plan_v1: \"الخطة التشغيلية\",\r\n"
+ },
+ "admin.scRefs.plan": {
+  "order": 10,
+  "text": "\"bassam_plan_v1\", "
+ },
+ "admin.wipe.labels.plan": {
+  "order": 10,
+  "text": "                bassam_plan_v1: \"الخطة التشغيلية وخرائط المواقع\",\r\n"
+ },
+ "admin.wipe.labels.plan.opts": {
+  "order": 10,
+  "text": "                bassam_zone_opts_v1: \"كتالوج المصليات\",\r\n                bassam_gate_opts_v1: \"كتالوج البوابات\",\r\n                bassam_mark_kinds_v1: \"كتالوج أنواع المعالم\",\r\n"
+ },
+ "emp.permPages.plan": {
+  "order": 10,
+  "text": "          { k: \"plan\", n: \"الخطة التشغيلية\", acts: r },\n"
+ },
+ "profile.rel.plan": {
+  "order": 10,
+  "text": " \"bassam_plan_v1\","
+ },
+ "profile.data.key.plan": {
+  "order": 10,
+  "text": "        \"bassam_plan_v1\",\n"
+ },
+ "blocks.shell.plan.p3": {
+  "order": 10,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/plan/client/403-plan-p3.js\",\n   \"kind\": \"js\",\n   \"line\": 10496,\n   \"new\": \"V7 · د5-هـ: قراءاتٌ وأمرٌ معلنة من التشغيل الميداني لصفحات القاعدة (مفعَّل؟ · الخطة · مواقع الشهر · أنواع المعالم)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+ },
+ "shell.blocks.plan.p3": {
+  "order": 10,
+  "text": "@@KIVO_BLOCK:systems/plan/client/403-plan-p3.js@@\n"
+ }
+}

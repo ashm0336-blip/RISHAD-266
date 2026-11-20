@@ -35,6 +35,7 @@ export function page(slug, o = {}) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/core/060-bus.js'), 'utf8'), ctx);   /* V7 · د5-د: الناقل (قلب المنصة) وروابطُ الجدول الشهري عليه — الصفحاتُ تسأل بالاسم */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/531-staff-links.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/plan/client/403-plan-p3.js'), 'utf8'), ctx);   /* V7 · د5-هـ: قراءاتُ التشغيل الميداني المعلنة */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base;

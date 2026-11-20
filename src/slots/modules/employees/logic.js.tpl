@@ -1,5 +1,7 @@
 /* V7 · د5-د2: ورقةُ برنامج الجدولة يجيب عنها مالكُه بالاسم على الناقل (انظر _bsCapOk)؛ بغيابه مطفأة */
 const _bsSched = "@staff.usable@1";
+/* V7 · د5-د2: ورقةُ التشغيل الميداني كذلك — يجيب عنها مالكُه بالناقل؛ بغيابه مطفأة */
+const _bsPlan = "@plan.usable@1";
 function _bsCapOk(c) {
   try {
     const P = KIVO.BassamPerm;
@@ -514,8 +516,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ? n.map((t) => ({ k: t.key, n: t.name, acts: e[t.key] || r }))
       : [
           { k: "emps", n: "موظفو الإدارة", acts: e.emps },
-@@SYS:emp.permPages.staff@@          { k: "plan", n: "الخطة التشغيلية", acts: r },
-          { k: "daily", n: "المتابعة اليومية", acts: r },
+@@SYS:emp.permPages.staff@@@@SYS:emp.permPages.plan@@          { k: "daily", n: "المتابعة اليومية", acts: r },
           { k: "admin", n: "الإعدادات", acts: e.admin },
         ];
   }
@@ -792,8 +793,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           placedBy: {},
         };
         try {
-          const e = ((KIVO.__BS_SRV.operations.get("bassam_plan_v1") || {}).months || {})[P + "-" + T],
-            r = e ? (Array.isArray(e) ? e : e.d) : null;
+          /* V7 · د5-د2: مواقعُ الشهر من مالكها بالناقل (ترمي كقراءة المورد إن لم يُقرأ)؛ بغيابه undefined ⇒ لا خطة */
+          const r = KIVO.bus.read("plan.sites@1", P + "-" + T);
           if (!Array.isArray(r) || !r.length) return t;
           ((t.has = !0),
             (t.floors = r.length),
@@ -910,8 +911,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       nt = (() => {
         const t = [];
         try {
-          const e = ((KIVO.__BS_SRV.operations.get("bassam_plan_v1") || {}).months || {})[P + "-" + T];
-          ((e ? (Array.isArray(e) ? e : e.d) : null) || []).forEach((e) => {
+          (KIVO.bus.read("plan.sites@1", P + "-" + T) || []).forEach((e) => {   /* V7 · د5-د2: بالناقل؛ بغيابه لا مواقع */
             const r = {};
             ((e.gates || []).forEach((t) => {
               const e = String(null == t.num ? "" : t.num).trim();
@@ -1385,7 +1385,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           const r = e.need - e.net,
             n = t[0];
           ne.push({
-            cap: _bsSched + "&plan&dist",   /* V7 · د5-د2: ورقةُ الجدول بالناقل */
+            cap: _bsSched + "&" + _bsPlan + "&dist",   /* V7 · د5-د2: ورقةُ الجدول بالناقل */
             s: "critical",
             title: "عجز اليوم في " + e.nm + " — " + KIVO.BassamCount(r, "موظف") + "",
             action:
@@ -1416,7 +1416,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           .slice(0, 1)
           .forEach((t) => {
             ne.push({
-              cap: _bsSched + "&plan&dist",   /* V7 · د5-د2: ورقةُ الجدول بالناقل */
+              cap: _bsSched + "&" + _bsPlan + "&dist",   /* V7 · د5-د2: ورقةُ الجدول بالناقل */
               s: "warning",
               title: t.nm + " بلا احتياط اليوم",
               action:
@@ -1486,7 +1486,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         $.need > 0 &&
           2 * $.placed < $.need &&
           ne.push({
-            cap: "plan&dist",
+            cap: _bsPlan + "&dist",
             s: 10 * $.placed < $.need ? "critical" : "warning",
             title: "الميدان بلا تسكين يذكر",
             action:
@@ -1503,7 +1503,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     (nt.length &&
       ne.push({
-        cap: "plan&gates",
+        cap: _bsPlan + "&gates",
         s: "warning",
         title: "أرقام أبواب مكرّرة في الخطة",
         action:
@@ -1688,8 +1688,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       hijriChip: KIVO.BassamCal.hText(e, { month: "long", year: "numeric" }),
       assignPct: String(z),
       rdSchedOn: _bsCapOk(_bsSched),
-      netCovOn: G && rt.length > 0 && _bsCapOk(_bsSched + "&plan&dist"),
-      netCovNoNeed: G && rt.length > 0 && _bsCapOk(_bsSched + "&plan&dist") && !rt.some((t) => t.need > 0),
+      netCovOn: G && rt.length > 0 && _bsCapOk(_bsSched + "&" + _bsPlan + "&dist"),
+      netCovNoNeed: G && rt.length > 0 && _bsCapOk(_bsSched + "&" + _bsPlan + "&dist") && !rt.some((t) => t.need > 0),
       netCovSub:
         "القوة الاسمية − راحات اليوم − الإجازات السارية − الغياب المتوقّع = القوة الصافية، مقابل احتياج الميدان" +
         (et.days
@@ -1833,9 +1833,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ];
       })(),
       h = m.map((t) => t.name),
-      u = r("bassam_plan_v1", {}),
-      g = ((u && u.months) || {})[d],
-      f = (g && (Array.isArray(g) ? g : g.d)) || [],
+      /* V7 · د5-د2: مواقعُ الشهر من مالكها بالناقل («text»: من نصّ المورد كما كانت تُقرأ)؛ بغيابه أو تعذّرها لا مواقع */
+      f = (() => {
+        try {
+          return KIVO.bus.read("plan.sites@1", d, "text") || [];
+        } catch (t) {}
+        return [];
+      })(),
       b = [];
     let A = 0,
       x = 0;
@@ -2249,7 +2253,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           tip: "أخفّ وردية ÷ أثقلها: " + Dt + " ÷ " + Wt + " = " + Zt + "٪ · الفجوة الكبيرة ترهق وردية وتريح أخرى بلا سبب تشغيلي.",
         },
         {
-          cap: "plan",
+          cap: _bsPlan,
           nm: "كشف أيام الأسبوع — " + KIVO.BassamCount(Xt, "يوم|مغطّى") + " من 7",
           p: Math.round((100 * Xt) / 7),
           lbl: Xt + "/7",
@@ -2444,10 +2448,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           (t) =>
             ({
               p1: !0,
-              p2: _on("plan") && _on("gates"),
-              p3: _on("plan") && _on("dist"),
+              p2: _on(_bsPlan) && _on("gates"),
+              p3: _on(_bsPlan) && _on("dist"),
               p4: _on(_bsSched),
-              p5: _on("plan") && _on("dist"),
+              p5: _on(_bsPlan) && _on("dist"),
               p6: _on("dreport") || _on("daily/rounds"),
             })[t.key] && t.rows.length,
         )
@@ -2824,7 +2828,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     (ut &&
       (vt < ut || ft.length) &&
       Fe.push({
-        cap: "plan&gates",
+        cap: _bsPlan + "&gates",
         s: "critical",
         title: "صنّف أولوية التغطية (أ/ب/ج)" + (ft.length ? " — ووحّد الأرقام المكرّرة" : ""),
         action:
@@ -2850,7 +2854,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       Tt &&
         Y < Tt &&
         Fe.push({
-          cap: "plan&dist",
+          cap: _bsPlan + "&dist",
           s: "critical",
           title: "راجع احتياج أبوابك باباً باباً بدل الرقم الموروث",
           action:
@@ -2872,7 +2876,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       j > 0 &&
         $t < 50 &&
         Fe.push({
-          cap: "plan&dist",
+          cap: _bsPlan + "&dist",
           s: "critical",
           title: "نفّذ التوزيع — الخطوة الواقفة في الجاهزية كلها",
           action:
@@ -3091,10 +3095,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       rdKpis: ye.filter(
         (t) =>
           ({
-            "نطاق الميدان": _on("plan") && _on("gates"),
-            "احتياج الشهر": _on("plan") && _on("dist"),
+            "نطاق الميدان": _on(_bsPlan) && _on("gates"),
+            "احتياج الشهر": _on(_bsPlan) && _on("dist"),
             "مجدولون على الورديات": _on(_bsSched),
-            "موزّعون على المواقع": _on("plan") && _on("dist"),
+            "موزّعون على المواقع": _on(_bsPlan) && _on("dist"),
             "أيام موثّقة بجولة": _on("daily/rounds"),
           })[t.label] !== !1,
       ),

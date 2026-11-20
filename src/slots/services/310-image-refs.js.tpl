@@ -21,6 +21,6 @@
     bassam_employees_v1: '[]', bassam_options_v1: '{}',@@SYS:res.empty.award@@
 @@SYS:res.empty.systems@@    bassam_shift_options_v1: '[]', bassam_perm_tpls_v1: '[]', bassam_perm_tpls_named_v1: '{}',@@SYS:res.empty.staff.callsigns@@ bassam_leave_kinds_v1: '[]',@@SYS:res.empty.staff@@
     @@SYS:res.empty.tasks@@bassam_dreport_v1: '{}', bassam_dr_grp_v1: '{}', bassam_rounds_v1: '{}', bassam_dayshift_v1: '{}', bassam_dayfocus_v1: '{}',
-    bassam_plan_v1: '{"zones":[],"gates":[],"marks":[],"paths":[],"floors":[],"months":{}}', bassam_zone_opts_v1: '{}', bassam_gate_opts_v1: '{}', bassam_mark_kinds_v1: '[]', bassam_last_export_v1: '0', bassam_last_full_export_v1: '0'
+    @@SYS:imgref.empty.plan@@bassam_last_export_v1: '0', bassam_last_full_export_v1: '0'
   };
 })();
