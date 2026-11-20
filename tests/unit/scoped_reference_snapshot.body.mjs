@@ -40,14 +40,17 @@ const isCommit = statements => statements.some(s => /INSERT INTO ops_/.test(s.sq
 const isReadFence = statements => statements.length > 0 && statements.every(s => /^SELECT CASE/.test(s.sql)) && statements.some(s => /KIVO_RESTORE_TARGET/.test(s.sql));
 /* Runs one request; `change` runs once right before the batch `when` selects (the commit / the read fence), as a concurrent writer would.
    Returns the response, whether the change ran, and every argument bound to any batched statement of the request. */
-async function race(B, when, change, run) {
-  const DB = B.env.DB, batch = DB.batch.bind(DB), args = []; let ran = false;
+/* V7 · د5-هـ (أمن ٣): every:true runs the change before EVERY selected batch (a writer that keeps changing the row);
+   failed counts the selected batches (fences / commits) that the database refused — one per attempt that saw the change */
+async function race(B, when, change, run, every) {
+  const DB = B.env.DB, batch = DB.batch.bind(DB), args = []; let ran = false, failed = 0;
   DB.batch = async statements => {
     statements.forEach(s => (s.args || []).forEach(a => args.push(a)));
-    if (!ran && change && when(statements)) { ran = true; change(B.env.DB.db); }
-    return batch(statements);
+    const sel = when(statements);
+    if ((every || !ran) && change && sel) { ran = true; change(B.env.DB.db); }
+    try { return await batch(statements); } catch (e) { if (sel) failed++; throw e; }
   };
-  try { return { result: await run(), ran, args }; } finally { DB.batch = batch; }
+  try { return { result: await run(), ran, args, failed }; } finally { DB.batch = batch; }
 }
 const bump = (db, k) => db.prepare("INSERT INTO revs(k,rev) VALUES(?,1000) ON CONFLICT(k) DO UPDATE SET rev=rev+1").run(k);
 /* Rows of another department in a witness: kv piece keys, operational revision pairs, empty-resource pairs and per-resource witness arguments. */
@@ -105,16 +108,25 @@ test('Another department neither conflicts with nor is loaded by a task command,
   } finally { B.env.DB.db.close(); }
 });
 
-test('An operations read still fails closed (409 conflict) when a row it depends on changes before its fence', async () => {
+/* V7 · د5-هـ (أمن ٣ · إفصاح — تعديلُ اختبار بقرار المالك «القراءةُ لا تُخفق بسياجٍ يحمي الكتابة»): كان التغيّرُ الواحد قبل سياج القراءة يُردّ 409.
+   السياجُ ما زال يكشفه (يُخفق)، والقراءةُ تُعاد مرّةً واحدة على لقطةٍ جديدة فتعيد البياناتِ الجديدة متّسقة (200 · base الجديد)؛ وكاتبٌ يغيّر الصفَّ
+   في كلّ محاولة يبقى 409 conflict (fail closed) — فلا تُقدَّم بياناتٌ غيرُ متّسقة أبداً. */
+test('An operations read is fenced: a dependency change before its fence is detected, retried once on a fresh snapshot, and fails closed (409) if it persists', async () => {
   const B = await setup();
   try {
     for (const [name, change] of Object.entries({
       'the read resource': db => bump(db, KT),
-      'global permissions (kv)': db => db.prepare("UPDATE kv SET v=json_set(v,'$.tstOnlyScoped',1) WHERE k='bassam_perms_v1' AND seq=0").run(),
+      'global permissions (kv)': db => db.prepare("UPDATE kv SET v=json_set(v,'$.tstOnlyScoped',COALESCE(json_extract(v,'$.tstOnlyScoped'),0)+1) WHERE k='bassam_perms_v1' AND seq=0").run(),   /* a new value on every call */
       'department employees it projects with': db => bump(db, KE),
     })) {
-      const { result, ran } = await race(B, isReadFence, change, () => B.api('/api/operations/read?keys=' + encodeURIComponent(KT)));
-      assert.equal(ran, true, name); assert.equal(result.status, 409, name + ': ' + JSON.stringify(result.j)); assert.equal(result.j.err, 'conflict', name);
+      const before = B.env.DB.q('SELECT rev FROM revs WHERE k=?', KT)[0]?.rev || 0;
+      const once = await race(B, isReadFence, change, () => B.api('/api/operations/read?keys=' + encodeURIComponent(KT)));
+      assert.equal(once.ran, true, name); assert.equal(once.failed, 1, name + ': the fence detected the change (the read was then retried once)');
+      assert.equal(once.result.status, 200, name + ': ' + JSON.stringify(once.result.j));
+      assert.equal(once.result.j.base[KT], B.env.DB.q('SELECT rev FROM revs WHERE k=?', KT)[0]?.rev || 0, name + ': the retried read reports the current revision');
+      if (name === 'the read resource') assert.notEqual(once.result.j.base[KT], before, 'the changed revision, not the stale one');
+      const always = await race(B, isReadFence, change, () => B.api('/api/operations/read?keys=' + encodeURIComponent(KT)), true);
+      assert.equal(always.failed, 2, name + ': both fences refused — one retry only'); assert.equal(always.result.status, 409, name + ': ' + JSON.stringify(always.result.j)); assert.equal(always.result.j.err, 'conflict', name);
     }
   } finally { B.env.DB.db.close(); }
 });
@@ -130,17 +142,23 @@ test('Cross-department rows a request legitimately reads are loaded on first rea
       return operationSaveBody(B.env, '/api/save', { set: { [KE]: JSON.stringify([{ eid: 'tst_e_scoped_' + ++serial, name: 'TEST_ONLY scoped ' + serial, nid: String(2900000100 + serial), empno: String(990000 + serial), type: 'TEST_ONLY' }].concat(list)) }, del: [], base: { [KE]: r.j.base[KE] } });
     };
     // A new identity in tst_d1 is checked against every other unit's roster (054 emp-dup): those rosters are read, so they are fenced.
-    const first = await roster(), raced = await race(B, isCommit, db => bump(db, K2E), () => B.api('/api/save', first, su.ck));
+    /* V7 · د5-هـ (أمن ٣ · إفصاح): تغيّرٌ في قائمة وحدةٍ أخرى قبل الالتزام يُخفق السياجَ (لا يُكتب شيء) ثم يُعاد الحفظُ مرّةً على لقطةٍ جديدة
+       (فحصُ التكرار على القائمة الجديدة · base العميل لم يتغيّر ⇒ يُحفظ)؛ وكاتبٌ يغيّرها في كلّ محاولة ⇒ 409 كما كان */
+    const first = await roster(), raced = await race(B, isCommit, db => bump(db, K2E), () => B.api('/api/save', first, su.ck), true);
     assert.equal(raced.ran, true);
     assert.equal(raced.result.status, 409, JSON.stringify(raced.result.j));
     const second = await roster(), clean = await race(B, isCommit, null, () => B.api('/api/save', second, su.ck));
     assert.equal(clean.result.status, 200, JSON.stringify(clean.result.j)); assert.ok(clean.result.j.revs[KE]);
+    assert.equal(raced.failed, 2, 'the fenced commit was refused, retried once, refused again (no loop)');
     assert.ok(clean.args.some(a => typeof a === 'string' && a.includes('["' + K2E + '",')), 'the other unit roster read by the duplicate check is fenced by revision');
     // A sector manager's authority includes the explicit grants of every unit of its branch, read with its actor and fenced.
     const gm = await B.login('0000000103', '70103');
-    const grants = db => db.prepare("INSERT INTO kv(k,seq,v) VALUES('bsdept:" + D2 + ":bassam_grants_v1',0,?) ON CONFLICT(k,seq) DO UPDATE SET v=excluded.v").run(JSON.stringify({ v: 1, emp: {} }));
-    const gmRead = await race(B, isReadFence, grants, () => B.api('/api/operations/read?keys=' + encodeURIComponent(KT), undefined, gm.ck));
-    assert.equal(gmRead.ran, true); assert.equal(gmRead.result.status, 409, JSON.stringify(gmRead.result.j)); assert.equal(gmRead.result.j.err, 'conflict');
+    const grants = db => db.prepare("SELECT 1 FROM kv WHERE k='bsdept:" + D2 + ":bassam_grants_v1'").get()   /* a real change on every call: the grants appear, then disappear */
+      ? db.prepare("DELETE FROM kv WHERE k='bsdept:" + D2 + ":bassam_grants_v1'").run()
+      : db.prepare("INSERT INTO kv(k,seq,v) VALUES('bsdept:" + D2 + ":bassam_grants_v1',0,?) ON CONFLICT(k,seq) DO UPDATE SET v=excluded.v").run(JSON.stringify({ v: 1, emp: {} }));
+    const gmRead = await race(B, isReadFence, grants, () => B.api('/api/operations/read?keys=' + encodeURIComponent(KT), undefined, gm.ck), true);
+    assert.equal(gmRead.ran, true); assert.equal(gmRead.failed, 2, 'the grants are fenced (both fences refused, one retry)');
+    assert.equal(gmRead.result.status, 409, JSON.stringify(gmRead.result.j)); assert.equal(gmRead.result.j.err, 'conflict');
     B.env.DB.db.prepare("DELETE FROM kv WHERE k='bsdept:" + D2 + ":bassam_grants_v1'").run();
     const tmRead = await race(B, isReadFence, grants, () => B.api('/api/operations/read?keys=' + encodeURIComponent(KT)));
     assert.equal(tmRead.ran, true); assert.equal(tmRead.result.status, 200, 'the tst_d1 manager does not depend on tst_d2 grants: ' + JSON.stringify(tmRead.result.j));

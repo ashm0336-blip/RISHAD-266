@@ -9678,11 +9678,14 @@ async function rsReferenceSnapshot(env, uid, options) {
     scope: scope,
   };
 }
-/* Base witnesses: the full kv/meta tables, or exactly the scoped predicate sets (rows read later carry their own, in scope.late). */
+/* Base witnesses: the full kv/meta tables, or exactly the scoped predicate sets (rows read later carry their own, in scope.late).
+   V7 · د5-هـ (أمن ٣): طوابعُ حارس المهام (tkg:<kind>:<dept> — 074 tkGateStamp) خارج الشاهد: محايدةٌ للمخبأ (052 dbGuardCacheNeutral)، تُقرأ وتُكتب
+   بـ__rawDB وحدها ولا يبني عليها المرجعُ قراراً — فكتابتُها كلَّ 5–10 دقائق كانت تحوّل حفظاً أو قراءةً لا تمسّها إلى 409. تبقى في اللقطة كما كانت. */
+var RS_FENCE_META = "substr(k,1,4)<>'tkg:'";
 function rsReferenceBase(env, reference, meta) {
   var scope = reference.scope, later = new Set(scope ? scope.later : []),
-    rows = (meta ? reference.metaRows : reference.inputRows).filter(function (row) { return !later.has(row.k); });
-  if (meta) return scope ? rsWitness(env, 'meta', ['k', 'v'], rows, RS_SCOPE_META, [scope.arg]) : rsWitness(env, 'meta', ['k', 'v'], rows, "k<>'rev'");
+    rows = (meta ? reference.metaRows : reference.inputRows).filter(function (row) { return !later.has(row.k) && !(meta && String(row.k).slice(0, 4) === 'tkg:'); });
+  if (meta) return scope ? rsWitness(env, 'meta', ['k', 'v'], rows, RS_SCOPE_META + ' AND ' + RS_FENCE_META, [scope.arg]) : rsWitness(env, 'meta', ['k', 'v'], rows, "k<>'rev' AND " + RS_FENCE_META);
   return scope ? rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, RS_SCOPE_KV, [scope.arg]) : rsWitness(env, 'kv', ['k', 'seq', 'v'], rows);
 }
 /* Position in a scoped reference's lazily grown witnesses; rsReferenceSince returns what was read after it. */
@@ -19748,10 +19751,26 @@ async function opCompilePending(env, plan, pending, capture) {
     plan.revisionKeys.push.apply(plan.revisionKeys, addition.revisionKeys); plan.snapshots.push.apply(plan.snapshots, addition.snapshots);
   }
 }
+/* V7 · د5-هـ (أمن ٣): القراءةُ تُعاد مرّةً واحدة إن أخفق سياجُها — السياجُ يثبت أن جولاتِها لقطةٌ واحدة متّسقة (السلطةُ والبيانات من لحظةٍ واحدة)
+   ولا يحمي كتابة؛ فكتابةٌ متزامنة في جولاتها تعني لقطةً جديدة لا تعارضاً يُعرض. القراءةُ بلا أثر فإعادتُها آمنة، وإخفاقان ⇒ 409 كما كان (لا حلقة).
+   تغيّرُ حقبة الاستعادة (KIVO_RESTORE_EPOCH) لا يُعاد: العميلُ يعيد التحميل. */
+function opFenceRetry(error) { return !dbGuardFailure(error) && (error && error.rs === 'conflict' || /KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT/.test(String(error))) && !/KIVO_RESTORE_EPOCH/.test(String(error)); }
 async function opReadRoute(env, request, url, session) {
   if (request.method !== 'GET') return json({ ok: 0, err: 'method' }, 405);
   var mismatch = sessUidMismatch(env, url, session, '/api/operations/read'); if (mismatch) return mismatch;
-  try {
+  for (var attempt = 0; ; attempt++) {
+    try { return await opReadOnce(env, url, session); }
+    catch (error) { if (attempt || !opFenceRetry(error)) return opReadFailed(error); }
+  }
+}
+function opReadFailed(error) {
+  var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
+  if (error.rs || error.ocCode) return json({ ok: 0, err: error.rs || error.ocCode }, error.status || 400);
+  if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
+  throw error;
+}
+async function opReadOnce(env, url, session) {
+  {
     var wanted = Array.from(new Set(String(url.searchParams.get('keys') || '').split(',').filter(Boolean)));
     if (!wanted.length || wanted.length > GET_MAX || wanted.some(function (key) { return !opInfo(key); })) throw ocError('read-keys');
     // Establish authority before loading any business rows, including rows of
@@ -19774,11 +19793,6 @@ async function opReadRoute(env, request, url, session) {
     });
     await env.DB.batch(rsReferenceGuards(env,reference));
     return json({ ok: 1, uid: session.uid, v:reference.operational.globalRev, epoch: Number(reference.inputMeta.restore_epoch || 0), resources: resources, absent: absent, denied: denied, base: base });
-  } catch (error) {
-    var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
-    if (error.rs || error.ocCode) return json({ ok: 0, err: error.rs || error.ocCode }, error.status || 400);
-    if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
-    throw error;
   }
 }
 /* One-time canonical KV cutover. Runtime access is typed SQL in019r; this
@@ -30516,7 +30530,12 @@ async function saveRoute(env, request, path, ss) {
     var operationKeys=Object.keys(bs.set||{}).concat(bs.del||[]), operationalSave=operationKeys.some(opIsResource);
     if(operationalSave && (typeof bs.requestId!=='string'||!/^[-A-Za-z0-9_]{8,100}$/.test(bs.requestId)||!Number.isSafeInteger(bs.epoch)||bs.epoch<0||operationKeys.some(function(k){return !bs.base||!Number.isSafeInteger(bs.base[k])||bs.base[k]<0;})))
       return json({ok:0,err:'operations-request-envelope'},400);
-    var r2 = await applySave(env, bs, A1, reqMeta(request));
+    /* V7 · د5-هـ (أمن ٣): حفظُ موردٍ تشغيلي يُعاد مرّةً واحدة إن أخفق سياجُ مرجعه بكتابةٍ متزامنة (لم يُكتب شيء — الدفعةُ ذرّية): الإعادةُ لقطةٌ جديدة
+       تعيد الحكمَ بالسلطة الحالية وتقارن «base» العميل بالنسخة الحالية — فتعديلُ المورد نفسِه يبقى تعارضاً (409)، والكتابةُ غيرُ ذات الصلة لا تُفشله. */
+    for (var svTry = 0; ; svTry++) {
+      try { var r2 = await applySave(env, bs, A1, reqMeta(request)); break; }
+      catch (eT) { if (svTry || !operationalSave || !opFenceRetry(eT)) throw eT; }
+    }
     if(operationalSave) return json(Object.assign({},r2,{ok:r2.ok===1?1:0,requestId:bs.requestId,epoch:bs.epoch,atomic:1}),r2.ok===1?200:Object.keys(r2.conflicts||{}).length?409:403);
     return json({ ok: 1, v: r2.v, revs: r2.revs, denied: r2.denied, conflicts: r2.conflicts, atomic: r2.atomic || '' });
   } catch (eS) {

@@ -410,7 +410,12 @@ async function saveRoute(env, request, path, ss) {
     var operationKeys=Object.keys(bs.set||{}).concat(bs.del||[]), operationalSave=operationKeys.some(opIsResource);
     if(operationalSave && (typeof bs.requestId!=='string'||!/^[-A-Za-z0-9_]{8,100}$/.test(bs.requestId)||!Number.isSafeInteger(bs.epoch)||bs.epoch<0||operationKeys.some(function(k){return !bs.base||!Number.isSafeInteger(bs.base[k])||bs.base[k]<0;})))
       return json({ok:0,err:'operations-request-envelope'},400);
-    var r2 = await applySave(env, bs, A1, reqMeta(request));
+    /* V7 · د5-هـ (أمن ٣): حفظُ موردٍ تشغيلي يُعاد مرّةً واحدة إن أخفق سياجُ مرجعه بكتابةٍ متزامنة (لم يُكتب شيء — الدفعةُ ذرّية): الإعادةُ لقطةٌ جديدة
+       تعيد الحكمَ بالسلطة الحالية وتقارن «base» العميل بالنسخة الحالية — فتعديلُ المورد نفسِه يبقى تعارضاً (409)، والكتابةُ غيرُ ذات الصلة لا تُفشله. */
+    for (var svTry = 0; ; svTry++) {
+      try { var r2 = await applySave(env, bs, A1, reqMeta(request)); break; }
+      catch (eT) { if (svTry || !operationalSave || !opFenceRetry(eT)) throw eT; }
+    }
     if(operationalSave) return json(Object.assign({},r2,{ok:r2.ok===1?1:0,requestId:bs.requestId,epoch:bs.epoch,atomic:1}),r2.ok===1?200:Object.keys(r2.conflicts||{}).length?409:403);
     return json({ ok: 1, v: r2.v, revs: r2.revs, denied: r2.denied, conflicts: r2.conflicts, atomic: r2.atomic || '' });
   } catch (eS) {
