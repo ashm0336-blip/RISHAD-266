@@ -120,7 +120,7 @@ def _core01(S, M):
         lit |= {(sk, 'lens:' + x, 'lens') for x in re.findall(r"onCap\('(\w+)'\)", expr)}
         lit |= {(sk, x, 'perm') for x in re.findall(r"\bcan\('(\w+)', 'view'\)", expr)}
     dec = {(f.split('/')[1], on, k) for f, on, k in reqs if k != 'code'}
-    if not lit: err.append('334 kpiPanelOk: لم تُقرأ قواعدُه')
+    if not lit and dec: err.append('334 kpiPanelOk: لم تُقرأ قواعدُه')   # د5-هـ: بغياب المتابعة لا اعتماديةَ معلنة ولا قاعدة — اتساقٌ لا خلل
     elif dec != lit: err.append('requires(perm/lens) ≠ 334 kpiPanelOk: زائدٌ ' + str(sorted(dec - lit)) + ' · ناقصٌ ' + str(sorted(lit - dec)))
     # ⑥ اعتمادياتُ code: صفحةُ for تستورد لوحتَها من وحدة on (<dc-import name="<وحدة on>" solo="<الورقة>">)
     for f, on, k in reqs:
