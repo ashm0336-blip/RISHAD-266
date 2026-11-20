@@ -43,6 +43,12 @@
     "file": "server/019p3-scheduling-rounds.js",
     "after": "019p5-scheduling-floors.js",
     "order": 10
+   },
+   {
+    "file": "server/016e-daily-t1.js",
+    "after": "016b-server-bus.js",
+    "order": 30,
+    "new": "V7 · د5-هـ: قراءاتُ المتابعة اليومية المعلنة على ناقل الخادم (المضبوطات)"
    }
   ]
  },

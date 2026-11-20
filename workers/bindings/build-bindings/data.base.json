@@ -63,7 +63,7 @@
    "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «المصليات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
    "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.zones.* (KIVO_GUARDS.decide)",
    "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.zones.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
-   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
    "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
    "impl": [
     "lensOf",
@@ -90,7 +90,7 @@
    "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «المسارات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
    "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.paths.* (KIVO_GUARDS.decide)",
    "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.paths.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
-   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
    "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
    "impl": [
     "lensOf",
@@ -117,7 +117,7 @@
    "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «البوابات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
    "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.gates.* (KIVO_GUARDS.decide)",
    "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.gates.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
-   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
    "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
    "impl": [
     "lensOf",
@@ -144,7 +144,7 @@
    "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «العلامات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
    "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.marks.* (KIVO_GUARDS.decide)",
    "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.marks.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
-   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
    "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
    "impl": [
     "lensOf",
@@ -171,7 +171,7 @@
    "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «التوزيع»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
    "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.dist.* (KIVO_GUARDS.decide)",
    "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.dist.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
-   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
    "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
    "impl": [
     "lensOf",
@@ -198,7 +198,7 @@
    "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «الكثافة»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
    "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.dens.* (KIVO_GUARDS.decide)",
    "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.dens.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
-   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+   "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
    "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
    "impl": [
     "lensOf",

@@ -217,7 +217,7 @@
   },
   "pages.entry.tasks": {
    "order": 10,
-   "text": "  {\n   \"key\": \"tasks\",\n   \"module\": \"tasks\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Tasks\"],\n   \"nav\": \"tasks\",\n   \"name\": \"المهام\",\n   \"under\": \"daily\"\n  },\n"
+   "text": "  {\n   \"key\": \"tasks\",\n   \"module\": \"tasks\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Tasks\"],\n   \"nav\": \"tasks\",\n   \"name\": \"المهام\"@@SYS:pages.under.daily@@\n  },\n"
   },
   "pages.daily.seq.tasks": {
    "order": 10,

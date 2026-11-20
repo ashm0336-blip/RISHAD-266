@@ -631,7 +631,7 @@ export default {
             var captureR = await opCaptureReferences(env, await kvAll(env, 'kv')), keysR = captureR.keys, revsR = Object.assign({},await revsAll(env),captureR.revs), byDeptR = {}, deptsR = parseJson(keysR[K_DEPTS], []), usersR = parseJson(keysR[K_USERS], []), dri;
             if (!Array.isArray(deptsR)) deptsR = []; if (!Array.isArray(usersR)) usersR = [];
             for (dri = 0; dri < deptsR.length; dri++) { var dIdR = deptsR[dri] && deptsR[dri].id; if (!dIdR) continue; var preR = 'bsdept:' + dIdR + ':';
-              byDeptR[dIdR] = { @@SYS:ident.rehearse.plan@@rounds: parseJson(keysR[preR + 'bassam_rounds_v1'], null), employees: parseJson(keysR[preR + 'bassam_employees_v1'], []) }; }
+              byDeptR[dIdR] = { @@SYS:ident.rehearse.plan@@@@SYS:ident.rehearse.daily@@employees: parseJson(keysR[preR + 'bassam_employees_v1'], []) }; }
             var seedQ = String(url.searchParams.get('seed') || ''), seedR = '', seedSrcR = 'crypto.getRandomValues';
             if (/^[0-9a-f]{64}$/i.test(seedQ)) { seedR = seedQ.toLowerCase(); seedSrcR = 'query (replay)'; }
             else { var sbR = new Uint8Array(32), sbi; crypto.getRandomValues(sbR); for (sbi = 0; sbi < 32; sbi++) seedR += (sbR[sbi] < 16 ? '0' : '') + sbR[sbi].toString(16); }

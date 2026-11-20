@@ -120,20 +120,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
   if (v9.ok) return { ok: true, prot: prot9(E9, k, PV9, ctx) };
   /* ═══ الاستثناءات المقيَّدة: منحٌ محدودٌ بحقولٍ بعينها لا يتحوّل إلى كتابة
      المورد كاملاً — كلٌّ منها يقارن القديم بالجديد ويقبل التغيير المسموح وحده ═══ */
-  /* ═══ رصد الميدان: قدرةٌ تشغيلية مخصوصة لا كتابةٌ عامة ═══
-     نصّ المنصة صريحٌ أن «عرض» يكفي للرصد (canField تعتمد tabOn('daily','field')).
-     فتُستعاد الصفة كما هي، لكن محصورةً في عمليةٍ واحدة لا تتعدّاها:
-       • الفاعل يملك daily/field:view في هذه الإدارة
-       • و fieldObsOnly تُثبت أن كل موضعٍ تغيّر هو حقلُ رصدٍ من FIELD_KEYS
-         داخل موقعٍ مسكَّنٍ للموظف نفسه (day.d.N.(gates|zones|marks).M.field)
-       • فلا موقعٌ يُضاف ولا يُحذف، ولا تسكينُ غيره يُمسّ، ولا بقيةُ الجولة،
-         ولا مفتاحٌ يُحذف — لأن شكل المسار نفسه يمنع ذلك.
-     وهي لا تُعطي add ولا del ولا approve على المورد. */
-  if (R9.field === 'daily' && newVal != null && !need9.keyDelete
-      && (myPermsOf(A, P.dept)['daily/field'] || []).indexOf('view') !== -1
-      && capOnDept(A, P.dept, 'daily/field')
-      && fieldObsOnly(A, newVal, curVal, P.dept)) return { ok: true };
-  var via9 = R9.via || {}, diffs9 = null;
+@@SYS:canWrite.field.daily@@  var via9 = R9.via || {}, diffs9 = null;
   for (var vp9 in via9) {
     if (newVal == null || !actsHeldOn(A, P.dept, vp9, acts9)) continue;
     var fn9 = VIA_FN[via9[vp9]]; if (!fn9) continue;

@@ -9,7 +9,8 @@
  },
  "ident.shape.plan": {
   "order": 10,
-  "text": "bsdept:<dept>:bassam_plan_v1 | "
+  "text": "bsdept:<dept>:bassam_plan_v1 | ",
+  "only": "bsdept:<dept>:bassam_plan_v1"
  },
  "_note": "V7 · د5-هـ (م1): ترحيلُ الهوية (014) — بروفةُ قراءةٍ تنسب عناصرَ الجولات إلى طوابق الخطة؛ بغياب الخطة لا تعمل (if (!plan) continue)، فمواضعُ الخطة فيها قطعٌ من مجلدها."
 }

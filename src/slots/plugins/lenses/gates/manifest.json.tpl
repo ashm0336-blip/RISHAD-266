@@ -6,7 +6,7 @@
  "label": "عدسة البوابات",
  "order": 3,
  "owner": "lens.gates",
- "hosts": [@@SYS:lens.hosts.plan@@"daily/rounds"],
+ "hosts": [@@SYS:lens.hosts.plan@@@@SYS:lens.hosts.daily@@],
  "keys": {
   "own": ["lens.gates.enable", "lens.gates.view", "lens.gates.create", "lens.gates.edit", "lens.gates.status.change", "lens.gates.delete", "lens.gates.geometry.edit", "ref.gate.type.view", "ref.gate.type.create", "ref.gate.type.edit", "ref.gate.type.delete"],
   "managedRefs": [],

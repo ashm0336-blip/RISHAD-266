@@ -2,7 +2,7 @@
 var ENF_IX = null;
 var ENF_LEAF_RE = /^([A-Za-z]+(?:\/[A-Za-z]+)?):(view|add|edit|del|approve|export)$/;
 /* D-19 (v24.3 F-14): كاتبُ رصد الميدان يستهلك status.change على العناصر المسنَدة إليه فقط — بنطاق Assigned الذي يفرضه المحرّك (fieldOnly) */
-var ENF_DERIVE = { 'field.view': ['lens.zones.status.change', 'lens.gates.status.change', 'lens.marks.status.change'] };
+var ENF_DERIVE = { @@SYS:enf.derive.daily@@ };
 /* RISHAD-266 · V7 P3-sec — «المسنَد فقط» للراصد أياً كان مصدرُ المنح. كان حصرُ Assigned يُحسب من الورقة المخزَّنة وحدها (018 dailyFieldOnly):
    من جاءه field.view بمنحٍ صريح (bassam_grants_v1 — بلا ورقة) ومعه عرضُ «الجولات» أو «التشغيل الميداني» عومل كمشرفٍ بلا حصر، فكتب
    حالةَ عناصرَ غيرِ مسنَدةٍ إليه (القبولُ الحيّ لـV7 P3). القاعدة:
@@ -20,18 +20,17 @@ function enfFieldLift() {
     k = R.keys[i]; e = R.byKey[k];
     if (!e || e.status !== 'active' || der[k] || k.indexOf('ref.') === 0) continue;
     if (e.type === 'access' || e.type === 'view' || e.type === 'capability') continue;
-    if (e.owner === 'daily/rounds' || e.ownerKind === 'lens') out.push(k);
+    if (@@SYS:enf.lift.owner.daily@@e.ownerKind === 'lens') out.push(k);
   }
   return (ENF_FIELD_LIFT = out);
 }
 function enfFieldOnly(A, d) {
   var u = A && A.u; if (!u || !d || u.role === 'super' || u.role === 'dept') return false;
   var ep = ((A.perms.emps || {})[d] || {})[u.ekey] || {};
-  if ((ep['daily/field'] || []).length && capOnDept(A, d, 'daily/field')) return dailyFieldOnly(A, d);   /* الورقةُ المخزَّنة تحكم كما كانت */
-  /* V7 sec (fail-closed): تعذُّرُ قراءة سجلّ المنح له حالتان. الوضعُ القديم (لا A.enf): لا سجلَّ منحٍ بالتصميم ⇒ الورقةُ وحدها كما كانت (غيرُ محصور).
+@@SYS:enf.fieldOnly.sheet.daily@@  /* V7 sec (fail-closed): تعذُّرُ قراءة سجلّ المنح له حالتان. الوضعُ القديم (لا A.enf): لا سجلَّ منحٍ بالتصميم ⇒ الورقةُ وحدها كما كانت (غيرُ محصور).
      وضعُ الإنفاذ (A.enf): السجلُّ يُرفق دائماً عند إنشاء الفاعل، فغيابُه أو عطلُ قراءته خطأٌ حقيقي ⇒ محصورٌ بالمسنَد (لا يُفتح الحصرُ بخطأ) */
   var g; try { g = enfGrantOf(A, d); } catch (e0) { return !!A.enf; }
-  if (!g.plus['field.view'] || !enfHeld(A, d, 'field.view')) return false;
+  if (@@SYS:enf.fieldOnly.held.daily|empty="true"@@) return false;
   var L = enfFieldLift(), i;
   for (i = 0; i < L.length; i++) if (enfHeld(A, d, L[i])) return false;                                  /* كتابةٌ صريحةٌ غيرُ مشتقّة ⇒ بلا حصر، كالمشرف */
   return true;
@@ -73,7 +72,7 @@ function enfIx() {
     var o = R.owners[e.owner];
     if (e.ownerKind === 'page') ix.leaf[key] = e.owner;
     else if (e.ownerKind === 'reference') ix.leaf[key] = (o && o.managedIn) || leaves[0] || '';
-    else if (e.ownerKind === 'lens') ix.hosts[key] = leaves.length ? leaves : [@@SYS:enf.lens.hosts.plan@@'daily/rounds'];
+    else if (e.ownerKind === 'lens') ix.hosts[key] = leaves.length ? leaves : [@@SYS:enf.lens.hosts.plan@@@@SYS:enf.lens.hosts.daily@@];
     var rs = (e.guard && e.guard.resources) || [];
     for (j = 0; j < rs.length; j++) (ix.byRes[rs[j]] = ix.byRes[rs[j]] || []).push(key);
   }
@@ -250,8 +249,8 @@ function enfResWriter(A, d, rn) {
 function enfImgResWriter(A, d, rn) {
   var ix = enfIx(), ks = ix.byRes[rn] || [], dv = enfDerivedBare(A, d), R = RES_REG[rn], i;
   if (!R) return false;
-  var rnd = capForAct(R, 'edit').concat(capForAct(R, 'add')).indexOf('daily/rounds') !== -1;
-  for (i = 0; i < ks.length; i++) if (ix.write[ks[i]] && !ix.selfK[ks[i]] && !(dv && dv[ks[i]]) && (rnd || !(ix.hosts[ks[i]] && ix.hosts[ks[i]].indexOf('daily/rounds') !== -1)) && enfImgKeyOn(A, d, R, ks[i]) && enfHeld(A, d, ks[i])) return true;
+  var rnd = @@SYS:enf.img.rnd.daily|empty="false"@@;
+  for (i = 0; i < ks.length; i++) if (ix.write[ks[i]] && !ix.selfK[ks[i]] && !(dv && dv[ks[i]]) && @@SYS:enf.img.host.daily|empty="true"@@ && enfImgKeyOn(A, d, R, ks[i]) && enfHeld(A, d, ks[i])) return true;
   return false;
 }
 /* RISHAD-266 · V7-E (قرارُ المالك: «كاتبُ الخطة وصورةُ الجولة … يُمنعان كما في legacy» · والقاعدةُ العامة: «في الصور، enforce لا يسمح بما يرفضه legacy»):

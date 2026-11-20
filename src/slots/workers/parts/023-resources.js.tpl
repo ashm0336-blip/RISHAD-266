@@ -30,12 +30,8 @@ var RES_REG = {
   /* ── موظفو الإدارة ── */
   'bassam_employees_v1':       { scope: 'dept', cap: 'emps/data'@@SYS:res.emp.via.staff@@, self: 'email' },
   'bassam_options_v1':         { scope: 'dept', cap: 'emps/data' },
-@@SYS:res.custody@@@@SYS:res.reg.staff@@@@SYS:res.reg.plan@@  /* ── المتابعة اليومية ── */
-  /* اعتماد الجولة عمليةُ setShiftAp: أعلامُ الاعتماد وبياناتها التابعة وحدها.
-     أمّا closed · cWhy · needN · off · dopen فرصدٌ تشغيليّ لا اعتماد. */
-  'bassam_rounds_v1':          { scope: 'dept', cap: 'daily/rounds', via: { @@SYS:res.via.rounds.dreport@@'emps/data': 'EMP_REFS' }, field: 'daily' },
-  'bassam_dayshift_v1':        { scope: 'dept', cap: ['daily/rounds'@@SYS:read.reader.dreport@@] },
-  'bassam_dayfocus_v1':        { scope: 'dept', cap: ['daily/rounds'@@SYS:read.reader.dreport@@] },
+@@SYS:res.custody@@@@SYS:res.reg.staff@@@@SYS:res.reg.plan@@@@SYS:res.reg.daily@@  'bassam_dayshift_v1':        { scope: 'dept', cap: [@@SYS:res.dayCap.daily|empty="...[]"@@@@SYS:read.reader.dreport@@] },
+  'bassam_dayfocus_v1':        { scope: 'dept', cap: [@@SYS:res.dayCap.daily|empty="...[]"@@@@SYS:read.reader.dreport@@] },
 @@SYS:res.reg.dreport@@  /* ── المهام ── */
 @@SYS:res.reg.tasks@@@@SYS:res.reg.dept@@  /* ── الإعدادات: أوراقها لا صفحتها الأم ── */
   'bassam_shift_options_v1':   { scope: 'dept', cap: 'admin/shifts' },

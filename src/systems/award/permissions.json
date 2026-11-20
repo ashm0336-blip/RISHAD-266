@@ -619,7 +619,7 @@
      },
      "references"
     ],
-    "after": 3,
+    "after": 2,
     "seq": 20,
     "value": "award/res"
    },
@@ -632,8 +632,8 @@
      },
      "references"
     ],
-    "after": 1,
-    "seq": 3,
+    "after": 0,
+    "seq": 70,
     "value": "award/new"
    },
    {
@@ -645,8 +645,8 @@
      },
      "references"
     ],
-    "after": 1,
-    "seq": 4,
+    "after": 0,
+    "seq": 80,
     "value": "award/res"
    },
    {
@@ -691,8 +691,8 @@
     "path": [
      "owners"
     ],
-    "after": 4,
-    "seq": 12,
+    "after": 2,
+    "seq": 110,
     "value": {
      "id": "award/new",
      "kind": "page",
@@ -706,8 +706,8 @@
     "path": [
      "owners"
     ],
-    "after": 4,
-    "seq": 13,
+    "after": 2,
+    "seq": 120,
     "value": {
      "id": "award/res",
      "kind": "page",
@@ -721,8 +721,8 @@
     "path": [
      "owners"
     ],
-    "after": 4,
-    "seq": 14,
+    "after": 2,
+    "seq": 130,
     "value": {
      "id": "award/doc",
      "kind": "page",
@@ -1004,7 +1004,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 19,
+    "after": 18,
     "seq": 14,
     "value": "ff.award.doc.print"
    },
@@ -1012,7 +1012,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 21,
+    "after": 20,
     "seq": 80,
     "value": "ff.module.award.enabled"
    }
@@ -1356,7 +1356,7 @@
      "byResource"
     ],
     "key": "bassam_award_v1",
-    "after": 2,
+    "after": 1,
     "seq": 4,
     "value": {
      "items": "awardItems",
@@ -1384,7 +1384,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · dstats.*.reopen · award.res.reopen)",
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (… · dstats.*.reopen · award.res.reopen)",
     "with": [
      "dstats"
     ]
@@ -1569,7 +1569,7 @@
      "byResource"
     ],
     "key": "bassam_award_v1",
-    "after": 23,
+    "after": 22,
     "seq": 140,
     "value": {
      "scope": "dept",
@@ -1611,7 +1611,7 @@
      "byResource"
     ],
     "key": "bassam_award_docs_v1",
-    "after": 23,
+    "after": 22,
     "seq": 150,
     "value": {
      "scope": "dept",
@@ -1653,7 +1653,7 @@
      "byResource"
     ],
     "key": "bassam_award_docs_v2",
-    "after": 23,
+    "after": 22,
     "seq": 160,
     "value": {
      "scope": "dept",
@@ -1841,7 +1841,7 @@
     "path": [
      "decisions"
     ],
-    "after": 8,
+    "after": 7,
     "seq": 2,
     "value": {
      "id": "D-13",

@@ -6,7 +6,7 @@
  "label": "عدسة الكثافة",
  "order": 6,
  "owner": "lens.dens",
- "hosts": [@@SYS:lens.hosts.plan@@"daily/rounds"],
+ "hosts": [@@SYS:lens.hosts.plan@@@@SYS:lens.hosts.daily@@],
  "keys": {
   "own": ["lens.dens.enable", "lens.dens.view", "lens.dens.threshold.configure", "lens.dens.indicators.view", "lens.dens.reading.record"],
   "managedRefs": [],
@@ -26,7 +26,7 @@
     "op": "lens.dens.threshold.configure"
    }
   ],
-  "indicators": ["daily/kpiOcc"]
+  "indicators": [@@SYS:lens.ind.dens.daily@@]
  },
  "guards": {
   "enable": "lens.dens.enable",

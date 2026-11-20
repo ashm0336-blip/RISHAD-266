@@ -156,17 +156,7 @@
   }
  ],
  "codeInvariance": [
-  {
-   "path": "إنشاءُ جولة اليوم",
-   "evidence": "BassamRound.ensure: dcopy = lensFilter(plan.months[y-m].d).map(…) — طابقُ الجولة i = طابقُ لقطة الشهر i (موضعي)؛ ومن جولةٍ سابقة: نسخُ d بترتيبه",
-   "conclusion": "الموضعُ يُورَث عند الإنشاء"
-  },
-  {
-   "path": "الجولاتُ اليومية — البدءُ من الخطة · النسخُ من يوم",
-   "evidence": "roundPull: P.map(…) بالموضع · roundCopyDay: e.d.map(…) بالموضع",
-   "conclusion": "الموضعُ يُورَث"
-  },
-  {
+@@SYS:ident.inv.daily@@  {
    "path": "حذفُ موقعٍ من الخطة",
    "evidence": "delFloorDo: floors.filter(s !== i) · كلُّ لقطات الأشهر d.filter(s !== i) · كلُّ أيام الجولات n.d.splice(i, 1)",
    "conclusion": "القصُّ متزامنٌ في الخطة واللقطات والجولات ⇒ المحاذاةُ الموضعية محفوظة"
@@ -193,7 +183,7 @@
   }
  ],
  "writeSet": {
-  "shape": "{ seed · keys[]: { key: @@SYS:ident.shape.plan@@bassam_rounds_v1 · before: { sha256 · rawSha256 · bytes · rev } · after: { sha256 · bytes } · ops[] · counts } · hash · tierAHash · tierBHash }",
+  "shape": "{ seed · keys[]: { key: @@SYS:ident.shape.plan@@ · before: { sha256 · rawSha256 · bytes · rev } · after: { sha256 · bytes } · ops[] · counts } · hash · tierAHash · tierBHash }",
   "ops": "set (uid على عنصرٍ بلا uid · sid على طابق جولةٍ بلا sid) · replace (emp[i]: رمزٌ قديم → ekey) · remove (emp[i] مكرَّرٌ بعد التقويم) — كلُّ عمليةٍ بمسارها وقيمتَيها وصنفها وأساسها؛ الترتيبُ = ترتيبُ الاجتياز الحتمي",
   "tiers": "tier A (exact · high) = مجموعةُ الكتابة المقترحة · tier B (medium) = معلَّقةٌ للتأكيد لا تُكتب · ambiguous/unlinked خارجَ المجموعة",
   "determinism": "البذرةُ + البيانات ⇒ العملياتُ والبصماتُ نفسُها في كلِّ إعادة تشغيل (hash يُقارَن)؛ البذرةُ تُنشر في التقرير (ليست سرّاً ولا PII)",

@@ -1332,8 +1332,8 @@
      },
      "references"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 60,
     "value": "seized/records"
    },
    {
@@ -1345,16 +1345,16 @@
      },
      "references"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 60,
     "value": "seized/records"
    },
    {
     "path": [
      "owners"
     ],
-    "after": 4,
-    "seq": 10,
+    "after": 2,
+    "seq": 90,
     "value": {
      "id": "seized/dash",
      "kind": "page",
@@ -1368,8 +1368,8 @@
     "path": [
      "owners"
     ],
-    "after": 4,
-    "seq": 11,
+    "after": 2,
+    "seq": 100,
     "value": {
      "id": "seized/records",
      "kind": "page",
@@ -1592,15 +1592,15 @@
     "path": [
      "featureFlags"
     ],
-    "after": 18,
-    "seq": 13,
+    "after": 17,
+    "seq": 30,
     "value": "ff.sz.photo.download"
    },
    {
     "path": [
      "featureFlags"
     ],
-    "after": 21,
+    "after": 20,
     "seq": 70,
     "value": "ff.module.seized.enabled"
    }
@@ -2510,8 +2510,8 @@
      "byResource"
     ],
     "key": "bassam_seized_v1",
-    "after": 1,
-    "seq": 60,
+    "after": 0,
+    "seq": 80,
     "value": {
      "items": "reportItems",
      "evidence": "reports[id].{y,m,d} · loc (ref.seized.location) · G‑08 + نوافذُ الاستدراك المستقلة (D3‑07)",
@@ -2593,36 +2593,10 @@
    {
     "path": [
      "readBindings",
-     "byResource",
-     "bassam_rounds_v1",
-     "keys"
-    ],
-    "after": 7,
-    "seq": 20,
-    "value": "sz.rec.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_rounds_v1",
-     "routes"
-    ],
-    "after": 7,
-    "seq": 80,
-    "value": {
-     "cap": "seized/records:view",
-     "key": "sz.rec.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
      "byResource"
     ],
     "key": "bassam_seized_v1",
-    "after": 23,
+    "after": 22,
     "seq": 90,
     "value": {
      "scope": "dept",
@@ -2658,7 +2632,7 @@
      "byResource"
     ],
     "key": "bassam_seized_cat_v1",
-    "after": 23,
+    "after": 22,
     "seq": 100,
     "value": {
      "scope": "dept",
@@ -2706,7 +2680,7 @@
      "byResource"
     ],
     "key": "bassam_seized_acts_v1",
-    "after": 23,
+    "after": 22,
     "seq": 110,
     "value": {
      "scope": "dept",
@@ -2748,7 +2722,7 @@
      "byResource"
     ],
     "key": "bassam_seized_locs_v1",
-    "after": 23,
+    "after": 22,
     "seq": 120,
     "value": {
      "scope": "dept",
@@ -2790,7 +2764,7 @@
      "byResource"
     ],
     "key": "bassam_seized_jew_v1",
-    "after": 23,
+    "after": 22,
     "seq": 130,
     "value": {
      "scope": "dept",
@@ -2858,7 +2832,7 @@
      "byResource"
     ],
     "key": "bassam_seized_retro_v1",
-    "after": 38,
+    "after": 37,
     "seq": 16,
     "value": {
      "scope": "dept-state",

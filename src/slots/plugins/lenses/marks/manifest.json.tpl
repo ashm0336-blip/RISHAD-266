@@ -6,7 +6,7 @@
  "label": "عدسة العلامات",
  "order": 4,
  "owner": "lens.marks",
- "hosts": [@@SYS:lens.hosts.plan@@"daily/rounds"],
+ "hosts": [@@SYS:lens.hosts.plan@@@@SYS:lens.hosts.daily@@],
  "keys": {
   "own": ["lens.marks.enable", "lens.marks.view", "lens.marks.create", "lens.marks.edit", "lens.marks.geometry.edit", "lens.marks.delete", "lens.marks.status.change", "ref.mark.kind.view", "ref.mark.kind.create", "ref.mark.kind.edit", "ref.mark.kind.delete"],
   "managedRefs": [],

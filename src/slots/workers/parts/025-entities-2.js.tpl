@@ -26,8 +26,7 @@ var ENT = {
   /* رايةُ ترحيلٍ تُكتب مرةً واحدة — بلا شكلٍ مفروض */
   'bassam_perm_tpls_named_v1':{ },
 @@SYS:ent.reg.callsigns.staff@@@@SYS:ent.reg.leave.dreport@@@@SYS:ent.reg.staff@@@@SYS:ent.reg.tasks@@@@SYS:ent.reg.dreport@@  /* ── الجولات ── */
-  'bassam_rounds_v1':         { map: 1, empty: '{}' },
-  'bassam_dayshift_v1':       { map: 1, empty: '{}' },
+@@SYS:ent.reg.daily@@  'bassam_dayshift_v1':       { map: 1, empty: '{}' },
   /* اليوم المختار: { y, m, d } */
   'bassam_dayfocus_v1':       { empty: '{}' },
 @@SYS:ent.reg.plan@@  /* ── طوابع التصدير ── */

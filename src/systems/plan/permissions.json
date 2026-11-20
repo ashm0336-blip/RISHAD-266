@@ -197,9 +197,7 @@
      "asisMap": [
       "plan:add"
      ],
-     "references": [
-      "daily/rounds"
-     ],
+     "references": [],
      "uiOnly": false,
      "v23": [
       "site.add"
@@ -250,9 +248,7 @@
      "asisMap": [
       "plan:edit"
      ],
-     "references": [
-      "daily/rounds"
-     ],
+     "references": [],
      "uiOnly": false,
      "v23": [
       "site.edit"
@@ -354,9 +350,7 @@
      "asisMap": [
       "plan:del"
      ],
-     "references": [
-      "daily/rounds"
-     ],
+     "references": [],
      "uiOnly": false,
      "v23": [
       "site.delete"
@@ -733,7 +727,7 @@
      },
      "references"
     ],
-    "after": 3,
+    "after": 2,
     "seq": 10,
     "value": "plan"
    },
@@ -746,8 +740,8 @@
      },
      "references"
     ],
-    "after": 2,
-    "seq": 1,
+    "after": 0,
+    "seq": 30,
     "value": "plan"
    },
    {
@@ -759,8 +753,8 @@
      },
      "references"
     ],
-    "after": 2,
-    "seq": 1,
+    "after": 0,
+    "seq": 30,
     "value": "plan"
    },
    {
@@ -769,6 +763,19 @@
      {
       "by": "key",
       "eq": "lens.dist.assign.edit"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 30,
+    "value": "plan"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
      },
      "references"
     ],
@@ -781,25 +788,12 @@
      "registry",
      {
       "by": "key",
-      "eq": "emp.view"
-     },
-     "references"
-    ],
-    "after": 2,
-    "seq": 1,
-    "value": "plan"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
       "eq": "lens.marks.status.change"
      },
      "references"
     ],
-    "after": 2,
-    "seq": 1,
+    "after": 0,
+    "seq": 30,
     "value": "plan"
    },
    {
@@ -812,7 +806,7 @@
      "references"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "plan"
    },
    {
@@ -994,7 +988,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 21,
+    "after": 20,
     "seq": 20,
     "value": "ff.module.plan.enabled"
    },
@@ -1009,7 +1003,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1022,8 +1016,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
    },
    {
@@ -1035,8 +1029,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:view"
    },
    {
@@ -1050,7 +1044,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1063,8 +1057,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
    },
    {
@@ -1076,8 +1070,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:add"
    },
    {
@@ -1085,26 +1079,13 @@
      "registry",
      {
       "by": "key",
-      "eq": "lens.zones.create"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
       "eq": "lens.zones.data.edit"
      },
      "guard",
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1117,8 +1098,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
    },
    {
@@ -1129,63 +1110,9 @@
       "eq": "lens.zones.data.edit"
      },
      "asisMap"
-    ],
-    "after": 1,
-    "seq": 1,
-    "value": "plan:edit"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.zones.data.edit"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.zones.geometry.edit"
-     },
-     "guard",
-     "resources"
     ],
     "after": 0,
-    "seq": 1,
-    "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.zones.geometry.edit"
-     },
-     "guard",
-     "resources"
-    ],
-    "after": 1,
-    "seq": 2,
-    "value": "bassam_zone_opts_v1"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.zones.geometry.edit"
-     },
-     "asisMap"
-    ],
-    "after": 1,
-    "seq": 1,
+    "seq": 20,
     "value": "plan:edit"
    },
    {
@@ -1196,23 +1123,10 @@
       "eq": "lens.zones.geometry.edit"
      },
      "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.zones.status.change"
-     },
-     "guard",
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1220,13 +1134,13 @@
      "registry",
      {
       "by": "key",
-      "eq": "lens.zones.status.change"
+      "eq": "lens.zones.geometry.edit"
      },
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
    },
    {
@@ -1234,13 +1148,41 @@
      "registry",
      {
       "by": "key",
+      "eq": "lens.zones.geometry.edit"
+     },
+     "asisMap"
+    ],
+    "after": 0,
+    "seq": 20,
+    "value": "plan:edit"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
       "eq": "lens.zones.status.change"
      },
      "guard",
-     "detail"
+     "resources"
     ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
+    "after": 0,
+    "seq": 10,
+    "value": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.zones.status.change"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 0,
+    "seq": 30,
+    "value": "bassam_zone_opts_v1"
    },
    {
     "path": [
@@ -1253,7 +1195,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1266,8 +1208,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
    },
    {
@@ -1279,22 +1221,9 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:del"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.zones.delete"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
    },
    {
     "path": [
@@ -1307,7 +1236,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1319,8 +1248,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:view"
    },
    {
@@ -1334,7 +1263,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1346,8 +1275,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:add"
    },
    {
@@ -1355,26 +1284,13 @@
      "registry",
      {
       "by": "key",
-      "eq": "lens.paths.create"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
       "eq": "lens.paths.edit"
      },
      "guard",
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1386,22 +1302,9 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:edit"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.paths.edit"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
    },
    {
     "path": [
@@ -1414,7 +1317,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1426,22 +1329,9 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:edit"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.paths.geometry.edit"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
    },
    {
     "path": [
@@ -1454,7 +1344,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1466,8 +1356,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:edit"
    },
    {
@@ -1481,7 +1371,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1493,22 +1383,9 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:del"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.paths.delete"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
    },
    {
     "path": [
@@ -1521,7 +1398,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1534,8 +1411,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_gate_opts_v1"
    },
    {
@@ -1547,8 +1424,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:view"
    },
    {
@@ -1562,7 +1439,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1575,8 +1452,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_gate_opts_v1"
    },
    {
@@ -1588,8 +1465,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:add"
    },
    {
@@ -1597,26 +1474,13 @@
      "registry",
      {
       "by": "key",
-      "eq": "lens.gates.create"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
       "eq": "lens.gates.edit"
      },
      "guard",
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1629,8 +1493,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_gate_opts_v1"
    },
    {
@@ -1642,8 +1506,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:edit"
    },
    {
@@ -1651,26 +1515,13 @@
      "registry",
      {
       "by": "key",
-      "eq": "lens.gates.edit"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
       "eq": "lens.gates.status.change"
      },
      "guard",
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1683,8 +1534,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_gate_opts_v1"
    },
    {
@@ -1692,26 +1543,13 @@
      "registry",
      {
       "by": "key",
-      "eq": "lens.gates.status.change"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
       "eq": "lens.gates.delete"
      },
      "guard",
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1724,8 +1562,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_gate_opts_v1"
    },
    {
@@ -1737,22 +1575,9 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:del"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.gates.delete"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
    },
    {
     "path": [
@@ -1765,7 +1590,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1778,8 +1603,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
    },
    {
@@ -1791,8 +1616,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:view"
    },
    {
@@ -1806,7 +1631,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1819,8 +1644,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
    },
    {
@@ -1832,8 +1657,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:add"
    },
    {
@@ -1841,26 +1666,13 @@
      "registry",
      {
       "by": "key",
-      "eq": "lens.marks.create"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
       "eq": "lens.marks.edit"
      },
      "guard",
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1873,8 +1685,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
    },
    {
@@ -1885,63 +1697,9 @@
       "eq": "lens.marks.edit"
      },
      "asisMap"
-    ],
-    "after": 1,
-    "seq": 1,
-    "value": "plan:edit"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.marks.edit"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.marks.geometry.edit"
-     },
-     "guard",
-     "resources"
     ],
     "after": 0,
-    "seq": 1,
-    "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.marks.geometry.edit"
-     },
-     "guard",
-     "resources"
-    ],
-    "after": 1,
-    "seq": 2,
-    "value": "bassam_mark_kinds_v1"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.marks.geometry.edit"
-     },
-     "asisMap"
-    ],
-    "after": 1,
-    "seq": 1,
+    "seq": 20,
     "value": "plan:edit"
    },
    {
@@ -1952,10 +1710,38 @@
       "eq": "lens.marks.geometry.edit"
      },
      "guard",
-     "detail"
+     "resources"
     ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
+    "after": 0,
+    "seq": 10,
+    "value": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.marks.geometry.edit"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 0,
+    "seq": 30,
+    "value": "bassam_mark_kinds_v1"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.marks.geometry.edit"
+     },
+     "asisMap"
+    ],
+    "after": 0,
+    "seq": 20,
+    "value": "plan:edit"
    },
    {
     "path": [
@@ -1968,7 +1754,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -1981,8 +1767,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
    },
    {
@@ -1994,8 +1780,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:del"
    },
    {
@@ -2003,26 +1789,13 @@
      "registry",
      {
       "by": "key",
-      "eq": "lens.marks.delete"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
       "eq": "lens.dist.view"
      },
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "bassam_plan_v1"
    },
    {
@@ -2034,8 +1807,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:view"
    },
    {
@@ -2048,22 +1821,9 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.dist.assign.edit"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
    },
    {
     "path": [
@@ -2074,8 +1834,8 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:view"
    },
    {
@@ -2116,7 +1876,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -2129,8 +1889,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
    },
    {
@@ -2144,7 +1904,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -2157,22 +1917,9 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.marks.status.change"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit)",
-    "by": "plan:edit/daily/rounds:edit)"
    },
    {
     "path": [
@@ -2185,7 +1932,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -2197,22 +1944,9 @@
      },
      "asisMap"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "plan:edit"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "lens.dist.need.edit"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "plan:edit و daily/rounds:edit"
    },
    {
     "path": [
@@ -2733,6 +2467,261 @@
     ],
     "sub": "مرجعية",
     "by": "مرجعية (كانت cap plan:del)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.zones.create"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "إضافة كيان في zones[] — تصنيف المجموعة → lens.zones في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.zones.data.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقول الخصائص في zones[] (غير الهندسية) — تصنيف المجموعة → lens.zones في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.zones.geometry.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "الحقول الهندسية في zones[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.zones في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.zones.status.change"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقول الحالة في zones[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.zones في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.zones.delete"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "إزالة كيان من zones[] مع تبعاته — تصنيف المجموعة → lens.zones في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.paths.create"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "إضافة كيان في paths[] — تصنيف المجموعة → lens.paths في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.paths.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقول الخصائص في paths[] — تصنيف المجموعة → lens.paths في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.paths.geometry.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "الحقول الهندسية في paths[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.paths في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.paths.delete"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "إزالة كيان من paths[] مع تبعاته — تصنيف المجموعة → lens.paths في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.gates.create"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "إضافة كيان في gates[] — تصنيف المجموعة → lens.gates في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.gates.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقول الخصائص في gates[] — تصنيف المجموعة → lens.gates في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.gates.status.change"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقول الحالة في gates[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.gates في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.gates.delete"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "إزالة كيان من gates[] مع تبعاته — تصنيف المجموعة → lens.gates في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.marks.create"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "إضافة كيان في marks[] — تصنيف المجموعة → lens.marks في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.marks.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقول الخصائص في marks[] — تصنيف المجموعة → lens.marks في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.marks.geometry.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "الحقول الهندسية في marks[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.marks في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.marks.delete"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "إزالة كيان من marks[] مع تبعاته — تصنيف المجموعة → lens.marks في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.dist.assign.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — تصنيف المجموعة → lens.dist في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.dist.assign.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — كان dreport عبر NO_APPROVAL — تصنيف المجموعة → lens.dist في classifyMutation (كان plan:edit)",
+    "with": [
+     "dreport"
+    ]
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.marks.status.change"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقول الحالة في marks[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.marks في classifyMutation (كان plan:edit)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.dist.need.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقلا needN/needS على كيانات zones/gates/marks — كانت تحت plan:edit"
    }
   ],
   "scope-bindings": [
@@ -3242,10 +3231,36 @@
     "path": [
      "readBindings",
      "byResource",
-     "bassam_rounds_v1",
+     "bassam_shift_options_v1",
      "keys"
     ],
-    "after": 7,
+    "after": 1,
+    "seq": 20,
+    "value": "plan.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 20,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_tpls_v1",
+     "keys"
+    ],
+    "after": 2,
     "seq": 10,
     "value": "plan.view"
    },
@@ -3253,10 +3268,10 @@
     "path": [
      "readBindings",
      "byResource",
-     "bassam_rounds_v1",
+     "bassam_perm_tpls_v1",
      "routes"
     ],
-    "after": 7,
+    "after": 2,
     "seq": 10,
     "value": {
      "cap": "plan:view",
@@ -3268,293 +3283,129 @@
     "path": [
      "readBindings",
      "byResource",
-     "bassam_rounds_v1",
-     "routes"
+     "bassam_staffing_v3",
+     "keys"
     ],
-    "after": 7,
-    "seq": 20,
-    "value": {
-     "cap": "plan:view",
-     "key": "lens.zones.view",
-     "source": "explicit-read"
-    }
+    "after": 2,
+    "seq": 1,
+    "value": "plan.view",
+    "needs": [
+     "staff"
+    ]
    },
    {
     "path": [
      "readBindings",
      "byResource",
-     "bassam_rounds_v1",
+     "bassam_staffing_v3",
      "routes"
     ],
-    "after": 7,
+    "after": 2,
+    "seq": 1,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_locks_v1",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 0,
+    "value": "plan.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_locks_v1",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 0,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.view"
+     },
+     "resources"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.view"
+     },
+     "resources"
+    ],
+    "after": 0,
     "seq": 30,
-    "value": {
-     "cap": "plan:view",
-     "key": "lens.paths.view",
-     "source": "explicit-read"
-    }
+    "value": "bassam_zone_opts_v1"
    },
    {
     "path": [
-     "readBindings",
-     "byResource",
-     "bassam_rounds_v1",
-     "routes"
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.create"
+     },
+     "resources"
     ],
-    "after": 7,
-    "seq": 40,
-    "value": {
-     "cap": "plan:view",
-     "key": "lens.gates.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_rounds_v1",
-     "routes"
-    ],
-    "after": 7,
-    "seq": 50,
-    "value": {
-     "cap": "plan:view",
-     "key": "lens.marks.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_rounds_v1",
-     "routes"
-    ],
-    "after": 7,
-    "seq": 60,
-    "value": {
-     "cap": "plan:view",
-     "key": "lens.dist.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_rounds_v1",
-     "routes"
-    ],
-    "after": 7,
-    "seq": 70,
-    "value": {
-     "cap": "plan:view",
-     "key": "lens.dens.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_shift_options_v1",
-     "keys"
-    ],
-    "after": 1,
-    "seq": 20,
-    "value": "plan.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_shift_options_v1",
-     "routes"
-    ],
-    "after": 1,
-    "seq": 20,
-    "value": {
-     "cap": "plan:view",
-     "key": "plan.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_tpls_v1",
-     "keys"
-    ],
-    "after": 2,
+    "after": 0,
     "seq": 10,
-    "value": "plan.view"
+    "value": "bassam_plan_v1"
    },
    {
     "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_tpls_v1",
-     "routes"
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.create"
+     },
+     "resources"
     ],
-    "after": 2,
+    "after": 0,
+    "seq": 30,
+    "value": "bassam_zone_opts_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.data.edit"
+     },
+     "resources"
+    ],
+    "after": 0,
     "seq": 10,
-    "value": {
-     "cap": "plan:view",
-     "key": "plan.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_v3",
-     "keys"
-    ],
-    "after": 2,
-    "seq": 1,
-    "value": "plan.view",
-    "needs": [
-     "staff"
-    ]
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_v3",
-     "routes"
-    ],
-    "after": 2,
-    "seq": 1,
-    "value": {
-     "cap": "plan:view",
-     "key": "plan.view",
-     "source": "reference-read"
-    },
-    "needs": [
-     "staff"
-    ]
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_locks_v1",
-     "keys"
-    ],
-    "after": 2,
-    "seq": 0,
-    "value": "plan.view",
-    "needs": [
-     "staff"
-    ]
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_locks_v1",
-     "routes"
-    ],
-    "after": 2,
-    "seq": 0,
-    "value": {
-     "cap": "plan:view",
-     "key": "plan.view",
-     "source": "reference-read"
-    },
-    "needs": [
-     "staff"
-    ]
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.view"
-     },
-     "resources"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.view"
-     },
-     "resources"
-    ],
-    "after": 1,
-    "seq": 2,
-    "value": "bassam_zone_opts_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.view"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.create"
-     },
-     "resources"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.create"
-     },
-     "resources"
-    ],
-    "after": 1,
-    "seq": 2,
-    "value": "bassam_zone_opts_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.create"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.data.edit"
-     },
-     "resources"
-    ],
-    "after": 0,
-    "seq": 1,
     "value": "bassam_plan_v1"
    },
    {
@@ -3566,20 +3417,9 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.data.edit"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3591,7 +3431,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -3603,20 +3443,9 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.geometry.edit"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3628,7 +3457,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -3640,20 +3469,9 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.status.change"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3665,7 +3483,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -3677,20 +3495,9 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.delete"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3702,19 +3509,8 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.view"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3726,19 +3522,8 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.create"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3750,19 +3535,8 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.edit"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3774,19 +3548,8 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.geometry.edit"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3798,31 +3561,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
-    "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.status.change"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.delete"
-     },
-     "resources"
-    ],
-    "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -3832,21 +3571,10 @@
       "by": "key",
       "eq": "lens.paths.delete"
      },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.view"
-     },
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -3858,9 +3586,9 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
-    "value": "bassam_gate_opts_v1"
+    "after": 0,
+    "seq": 10,
+    "value": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3869,9 +3597,24 @@
       "by": "key",
       "eq": "lens.gates.view"
      },
-     "res"
+     "resources"
     ],
-    "set": "bassam_plan_v1"
+    "after": 0,
+    "seq": 30,
+    "value": "bassam_gate_opts_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.create"
+     },
+     "resources"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3883,20 +3626,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
-    "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.create"
-     },
-     "resources"
-    ],
-    "after": 1,
-    "seq": 2,
+    "seq": 30,
     "value": "bassam_gate_opts_v1"
    },
    {
@@ -3904,11 +3634,13 @@
      "bindings",
      {
       "by": "key",
-      "eq": "lens.gates.create"
+      "eq": "lens.gates.edit"
      },
-     "res"
+     "resources"
     ],
-    "set": "bassam_plan_v1"
+    "after": 0,
+    "seq": 10,
+    "value": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3920,20 +3652,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
-    "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.edit"
-     },
-     "resources"
-    ],
-    "after": 1,
-    "seq": 2,
+    "seq": 30,
     "value": "bassam_gate_opts_v1"
    },
    {
@@ -3941,11 +3660,13 @@
      "bindings",
      {
       "by": "key",
-      "eq": "lens.gates.edit"
+      "eq": "lens.gates.status.change"
      },
-     "res"
+     "resources"
     ],
-    "set": "bassam_plan_v1"
+    "after": 0,
+    "seq": 10,
+    "value": "bassam_plan_v1"
    },
    {
     "path": [
@@ -3957,57 +3678,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
-    "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.status.change"
-     },
-     "resources"
-    ],
-    "after": 1,
-    "seq": 2,
-    "value": "bassam_gate_opts_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.status.change"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.delete"
-     },
-     "resources"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.delete"
-     },
-     "resources"
-    ],
-    "after": 1,
-    "seq": 2,
+    "seq": 30,
     "value": "bassam_gate_opts_v1"
    },
    {
@@ -4017,9 +3688,24 @@
       "by": "key",
       "eq": "lens.gates.delete"
      },
-     "res"
+     "resources"
     ],
-    "set": "bassam_plan_v1"
+    "after": 0,
+    "seq": 10,
+    "value": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.delete"
+     },
+     "resources"
+    ],
+    "after": 0,
+    "seq": 30,
+    "value": "bassam_gate_opts_v1"
    },
    {
     "path": [
@@ -4031,7 +3717,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -4043,20 +3729,9 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.view"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -4068,7 +3743,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -4080,20 +3755,9 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.create"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -4105,7 +3769,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -4117,20 +3781,9 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.edit"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -4142,7 +3795,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -4154,20 +3807,9 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.geometry.edit"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -4179,7 +3821,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -4191,20 +3833,9 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.delete"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -4215,8 +3846,8 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "bassam_plan_v1"
    },
    {
@@ -4228,8 +3859,8 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 20,
     "value": "bassam_plan_v1"
    },
    {
@@ -4280,7 +3911,7 @@
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -4292,8 +3923,8 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_zone_opts_v1"
    },
    {
@@ -4301,23 +3932,12 @@
      "bindings",
      {
       "by": "key",
-      "eq": "lens.zones.indicators.view"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
       "eq": "lens.marks.status.change"
      },
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
    },
    {
@@ -4329,8 +3949,8 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": "bassam_mark_kinds_v1"
    },
    {
@@ -4338,35 +3958,13 @@
      "bindings",
      {
       "by": "key",
-      "eq": "lens.marks.status.change"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
       "eq": "lens.dist.need.edit"
      },
      "resources"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "bassam_plan_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.dist.need.edit"
-     },
-     "res"
-    ],
-    "set": "bassam_plan_v1"
    },
    {
     "path": [
@@ -4686,7 +4284,7 @@
     ],
     "after": 0,
     "key": "bassam_plan_v1",
-    "seq": 1,
+    "seq": 10,
     "value": {
      "items": "planItems",
      "evidence": "floors[f:sid] · months[y-m].d[f:sid] · zones(code)/gates(id|num)/marks(id|label)/paths(code) · emp[] · approved · months[].mo",
@@ -4780,7 +4378,7 @@
     ],
     "after": 20,
     "key": "bassam_zone_opts_v1",
-    "seq": 81,
+    "seq": 90,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability + reference-read routes",
@@ -4822,7 +4420,7 @@
     ],
     "after": 20,
     "key": "bassam_gate_opts_v1",
-    "seq": 82,
+    "seq": 100,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability + reference-read routes",
@@ -4864,7 +4462,7 @@
     ],
     "after": 20,
     "key": "bassam_mark_kinds_v1",
-    "seq": 83,
+    "seq": 110,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability + reference-read routes",
@@ -4902,77 +4500,15 @@
    {
     "path": [
      "readBindings",
-     "special",
-     "keys",
-     "field.view",
-     "resources"
-    ],
-    "after": 1,
-    "seq": 1,
-    "value": "bassam_plan_v1",
-    "needs": [
-     "daily"
-    ]
-   },
-   {
-    "path": [
-     "readBindings",
-     "special",
-     "keys",
-     "field.view",
-     "resources"
-    ],
-    "after": 1,
-    "seq": 2,
-    "value": "bassam_zone_opts_v1",
-    "needs": [
-     "daily"
-    ]
-   },
-   {
-    "path": [
-     "readBindings",
-     "special",
-     "keys",
-     "field.view",
-     "resources"
-    ],
-    "after": 1,
-    "seq": 3,
-    "value": "bassam_gate_opts_v1",
-    "needs": [
-     "daily"
-    ]
-   },
-   {
-    "path": [
-     "readBindings",
-     "special",
-     "keys",
-     "field.view",
-     "resources"
-    ],
-    "after": 1,
-    "seq": 4,
-    "value": "bassam_mark_kinds_v1",
-    "needs": [
-     "daily"
-    ]
-   },
-   {
-    "path": [
-     "readBindings",
      "readKindOutsideRoutes"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": {
      "key": "lens.zones.indicators.view",
      "resource": "bassam_plan_v1",
      "owner": "lens.zones",
-     "atoms": [
-      "daily/kpiZones:view"
-     ],
+     "atoms": [],
      "dispositions": [
       "replaced_by_reference"
      ],
@@ -4984,15 +4520,13 @@
      "readBindings",
      "readKindOutsideRoutes"
     ],
-    "after": 1,
-    "seq": 2,
+    "after": 0,
+    "seq": 30,
     "value": {
      "key": "lens.zones.indicators.view",
      "resource": "bassam_zone_opts_v1",
      "owner": "lens.zones",
-     "atoms": [
-      "daily/kpiZones:view"
-     ],
+     "atoms": [],
      "dispositions": [
       "replaced_by_reference"
      ],
@@ -5014,8 +4548,283 @@
      4,
      "means"
     ],
-    "sub": "(round.reopen",
-    "by": "(plan.reopen · round.reopen"
+    "sub": "(…",
+    "by": "(plan.reopen · …"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.view"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.create"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.data.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.geometry.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.status.change"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.view"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.create"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.geometry.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.status.change"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.view"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.create"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.status.change"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.view"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.create"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.geometry.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.indicators.view"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.status.change"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.dist.need.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1"
    }
   ],
   "guard-bindings": [
@@ -5099,7 +4908,7 @@
     "path": [
      "decisions"
     ],
-    "after": 5,
+    "after": 4,
     "seq": 1,
     "value": {
      "id": "D-06",
@@ -5112,7 +4921,7 @@
     "path": [
      "decisions"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 2,
     "value": {
      "id": "D-09",
@@ -5126,504 +4935,12 @@
      "bindings",
      {
       "by": "key",
-      "eq": "lens.zones.create"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.create"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:add",
-    "by": "plan:add / daily/rounds:add"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.data.edit"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.data.edit"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "plan:edit / daily/rounds:edit"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.geometry.edit"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.geometry.edit"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "plan:edit / daily/rounds:edit"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.status.change"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.delete"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.zones.delete"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:del",
-    "by": "plan:del / daily/rounds:del"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.create"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.create"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:add",
-    "by": "plan:add / daily/rounds:add"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.edit"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.edit"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "plan:edit / daily/rounds:edit"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.geometry.edit"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.geometry.edit"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "plan:edit / daily/rounds:edit"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.status.change"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.status.change"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "plan:edit / daily/rounds:edit"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.delete"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.paths.delete"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:del",
-    "by": "plan:del / daily/rounds:del"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.create"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.create"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:add",
-    "by": "plan:add / daily/rounds:add"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.edit"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.edit"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "plan:edit / daily/rounds:edit"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.geometry.edit"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
       "eq": "lens.gates.geometry.edit"
      },
      "asis"
     ],
     "sub": "(الأبوابُ",
     "by": "plan:edit (الأبوابُ"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.status.change"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.delete"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.gates.delete"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:del",
-    "by": "plan:del / daily/rounds:del"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.create"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.create"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:add",
-    "by": "plan:add / daily/rounds:add"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.edit"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.edit"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "plan:edit / daily/rounds:edit"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.geometry.edit"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.geometry.edit"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "plan:edit / daily/rounds:edit"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.status.change"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.delete"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.marks.delete"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:del",
-    "by": "plan:del / daily/rounds:del"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.dist.assign.edit"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.dist.assign.edit"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "daily/rounds:edit (وplan:edit في الخطة)"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.dist.need.edit"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.dist.need.edit"
-     },
-     "asis"
-    ],
-    "sub": "daily/rounds:edit",
-    "by": "plan:edit / daily/rounds:edit"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "lens.dens.reading.record"
-     },
-     "res"
-    ],
-    "sub": "bassam_rounds_v1",
-    "by": "bassam_rounds_v1 (و bassam_plan_v1 عند التصفير)"
    },
    {
     "path": [
@@ -5660,6 +4977,457 @@
      "coveredResources"
     ],
     "add": 1
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.create"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.create"
+     },
+     "asis"
+    ],
+    "set": "plan:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.data.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.data.edit"
+     },
+     "asis"
+    ],
+    "set": "plan:edit"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.geometry.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.geometry.edit"
+     },
+     "asis"
+    ],
+    "set": "plan:edit"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.status.change"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.zones.delete"
+     },
+     "asis"
+    ],
+    "set": "plan:del"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.create"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.create"
+     },
+     "asis"
+    ],
+    "set": "plan:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.edit"
+     },
+     "asis"
+    ],
+    "set": "plan:edit"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.geometry.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.geometry.edit"
+     },
+     "asis"
+    ],
+    "set": "plan:edit"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.status.change"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.status.change"
+     },
+     "asis"
+    ],
+    "set": "plan:edit"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.paths.delete"
+     },
+     "asis"
+    ],
+    "set": "plan:del"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.create"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.create"
+     },
+     "asis"
+    ],
+    "set": "plan:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.edit"
+     },
+     "asis"
+    ],
+    "set": "plan:edit"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.geometry.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.status.change"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.gates.delete"
+     },
+     "asis"
+    ],
+    "set": "plan:del"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.create"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.create"
+     },
+     "asis"
+    ],
+    "set": "plan:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.edit"
+     },
+     "asis"
+    ],
+    "set": "plan:edit"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.geometry.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.geometry.edit"
+     },
+     "asis"
+    ],
+    "set": "plan:edit"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.status.change"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.marks.delete"
+     },
+     "asis"
+    ],
+    "set": "plan:del"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.dist.assign.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) (+ mvLog)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.dist.assign.edit"
+     },
+     "asis"
+    ],
+    "set": "plan:edit (في الخطة)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.dist.need.edit"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر)"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.dist.need.edit"
+     },
+     "asis"
+    ],
+    "set": "plan:edit"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "lens.dens.reading.record"
+     },
+     "res"
+    ],
+    "set": "bassam_plan_v1 (عند التصفير)"
    }
   ],
   "build-bindings": [
@@ -5672,8 +5440,7 @@
      },
      "asis_today"
     ],
-    "sub": "(daily/rounds:edit",
-    "by": "(plan:edit · daily/rounds:edit"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
    },
    {
     "path": [
@@ -5684,8 +5451,7 @@
      },
      "asis_today"
     ],
-    "sub": "(daily/rounds:edit",
-    "by": "(plan:edit · daily/rounds:edit"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
    },
    {
     "path": [
@@ -5696,8 +5462,7 @@
      },
      "asis_today"
     ],
-    "sub": "(daily/rounds:edit",
-    "by": "(plan:edit · daily/rounds:edit"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
    },
    {
     "path": [
@@ -5708,8 +5473,7 @@
      },
      "asis_today"
     ],
-    "sub": "(daily/rounds:edit",
-    "by": "(plan:edit · daily/rounds:edit"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
    },
    {
     "path": [
@@ -5720,8 +5484,7 @@
      },
      "asis_today"
     ],
-    "sub": "(daily/rounds:edit",
-    "by": "(plan:edit · daily/rounds:edit"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
    },
    {
     "path": [
@@ -5732,8 +5495,7 @@
      },
      "asis_today"
     ],
-    "sub": "(daily/rounds:edit",
-    "by": "(plan:edit · daily/rounds:edit"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
    }
   ]
  }

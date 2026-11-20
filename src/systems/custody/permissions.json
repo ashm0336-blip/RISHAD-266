@@ -762,7 +762,7 @@
      "byResource"
     ],
     "key": "bassam_custody_v1",
-    "after": 2,
+    "after": 1,
     "seq": 3,
     "value": {
      "items": "custodyItems",

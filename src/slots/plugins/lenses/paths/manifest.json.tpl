@@ -6,7 +6,7 @@
  "label": "عدسة المسارات",
  "order": 2,
  "owner": "lens.paths",
- "hosts": [@@SYS:lens.hosts.plan@@"daily/rounds"],
+ "hosts": [@@SYS:lens.hosts.plan@@@@SYS:lens.hosts.daily@@],
  "keys": {
   "own": ["lens.paths.enable", "lens.paths.view", "lens.paths.create", "lens.paths.edit", "lens.paths.geometry.edit", "lens.paths.status.change", "lens.paths.delete"],
   "managedRefs": [],

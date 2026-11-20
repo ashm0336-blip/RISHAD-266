@@ -658,8 +658,8 @@
      },
      "references"
     ],
-    "after": 1,
-    "seq": 0,
+    "after": 0,
+    "seq": 40,
     "value": "tasks"
    },
    {
@@ -671,8 +671,8 @@
      },
      "references"
     ],
-    "after": 1,
-    "seq": 0,
+    "after": 0,
+    "seq": 40,
     "value": "tasks"
    },
    {
@@ -692,8 +692,8 @@
     "path": [
      "owners"
     ],
-    "after": 3,
-    "seq": 7,
+    "after": 2,
+    "seq": 50,
     "value": {
      "id": "tasks",
      "kind": "page",
@@ -804,15 +804,15 @@
     "path": [
      "featureFlags"
     ],
-    "after": 18,
-    "seq": 12,
+    "after": 17,
+    "seq": 20,
     "value": "ff.task.export"
    },
    {
     "path": [
      "featureFlags"
     ],
-    "after": 21,
+    "after": 20,
     "seq": 50,
     "value": "ff.module.tasks.enabled"
    }
@@ -1265,8 +1265,8 @@
      "byResource"
     ],
     "key": "bassam_tasks_v1",
-    "after": 1,
-    "seq": 40,
+    "after": 0,
+    "seq": 60,
     "value": {
      "items": "tasksItems",
      "evidence": "[\"y-m-d\"][row] · row[14] المكلَّف · row[13] المعرّف · أقفالُ bassam_tasks_locks_v1",
@@ -1377,7 +1377,7 @@
      "byResource"
     ],
     "key": "bassam_tasks_v1",
-    "after": 23,
+    "after": 22,
     "seq": 40,
     "value": {
      "scope": "dept",
@@ -1407,7 +1407,7 @@
      "byResource"
     ],
     "key": "bassam_tasks_locks_v1",
-    "after": 23,
+    "after": 22,
     "seq": 50,
     "value": {
      "scope": "dept",
@@ -1489,7 +1489,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · task.month.reopen · task.reopen)"
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (… · task.month.reopen · task.reopen)"
    },
    {
     "path": [
@@ -1497,7 +1497,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (… · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
     "with": [
      "award",
      "dstats"
@@ -1670,7 +1670,7 @@
     "path": [
      "decisions"
     ],
-    "after": 8,
+    "after": 7,
     "seq": 0,
     "value": {
      "id": "D-11",
@@ -1683,7 +1683,7 @@
     "path": [
      "decisions"
     ],
-    "after": 8,
+    "after": 7,
     "seq": 1,
     "value": {
      "id": "D-12",
