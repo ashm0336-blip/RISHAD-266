@@ -1,7 +1,7 @@
 /* RISHAD V7 P4 — «خريطة الأنظمة والصلاحيات»: one structure builder (admin t24Struct → t24Rows{map}) derived at run time from the
    generated manifest (255 ← pages.json + lens plug-ins) and the registry (340 ← registry-v24.9.json). The real admin logic runs in a vm
    over the real generated blocks; the p24 engine is a stand-in that says «inside the ceiling» (the engine itself is proven against the
-   server elsewhere — A8 is the browser test v7_p4_map). Acceptance criteria of the approved inventory:
+   server elsewhere — A8, the browser test v7_p4_map, was deleted in V7 · د5-هـ 44 with the map tab). Acceptance criteria of the approved inventory:
      A1 every active key (255) appears exactly once in the full map; every reserved key (14) is shown marked; nothing outside the registry
      A2 every owner (44) is one row; t24Struct = perm-tree24.json for leaves and keys
      A3 every row carries one derived class of {نظام، حاوية، صفحة، تبويب، لوحة مؤشرات، عدسة، منصة، مرجع}
